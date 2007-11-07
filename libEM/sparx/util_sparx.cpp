@@ -187,11 +187,11 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	 
 	if ((nvox*S1 - S3*S4) == 0. || (nvox*S2 - S4*S4) == 0)  
 	{ 		
-		A =1.0 ;
+		A =1.0f ;
 	}
 	else 
 	{ 
-		A = static_cast<float> (nvox*S1 - S3*S4)/(nvox*S2 - S4*S4);
+		A = static_cast<float>( (nvox*S1 - S3*S4)/(nvox*S2 - S4*S4) );
 	}		
 	B = static_cast<float> (A*S4  -  S3)/nvox;
         
@@ -238,10 +238,10 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 	
 	   	for (int ix=(1-Mid);  ix<Mid; ix++){
 	        	for (int iy=(1-Mid);  iy<Mid; iy++){
-		  		x = ix;
-		  		y = iy;
-	       	  		tempIm= (1/(2*M_PI)) * cos(p*x)* cos(q*y) * exp(-.5*x*x/(a*a))* exp(-.5*y*y/(b*b)) ;
-		  		(*ImBW)(ix+Mid-1,iy+Mid-1) = tempIm * exp(.5*p*p*a*a)* exp(.5*q*q*b*b);
+		  		x = (float)ix;
+		  		y = (float)iy;
+	       	  	tempIm= static_cast<float>( (1/(2*M_PI)) * cos(p*x)* cos(q*y) * exp(-.5*x*x/(a*a))* exp(-.5*y*y/(b*b)) );
+		  		(*ImBW)(ix+Mid-1,iy+Mid-1) = tempIm * exp(.5f*p*p*a*a)* exp(.5f*q*q*b*b);
 	   		}
 	   	}
 	   	ImBW->update();
@@ -259,10 +259,10 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 	
 	   	for (int ir=(1-Mid);  ir<Mid; ir++){
 	        	for (int is=(1-Mid);  is<Mid; is++){
-		   		r = ir;
-		   		s = is;
-	       	   		(*ImBWFFT)(2*(ir+Mid-1),is+Mid-1)= cosh(p*r*a*a) * cosh(q*s*b*b) *
-		            	exp(-.5*r*r*a*a)* exp(-.5*s*s*b*b);
+		   		r = (float)ir;
+		   		s = (float)is;
+	       	   	(*ImBWFFT)(2*(ir+Mid-1),is+Mid-1)= cosh(p*r*a*a) * cosh(q*s*b*b) *
+		            	exp(-.5f*r*r*a*a)* exp(-.5f*s*s*b*b);
 	   		}
 	   	}
 	   	ImBWFFT->update();
@@ -274,7 +274,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 	   	return ImBWFFT;
    	}   		
    	else if (flag==2 || flag==3) { //   This is the projection in Real Space
-		float alpha =alphaDeg*M_PI/180.0;
+		float alpha = static_cast<float>( alphaDeg*M_PI/180.0 );
 		float C=cos(alpha);
 		float S=sin(alpha);
 		float D= sqrt(S*S*b*b + C*C*a*a);
@@ -288,15 +288,15 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 			pofalpha ->set_size(Size,1,1);
 			pofalpha ->to_zero();
 
-			float Norm0 =  D*sqrt(2*pi);
-			float Norm1 =  exp( .5*(P+Q)*(P+Q)) / Norm0 ;
-			float Norm2 =  exp( .5*(P-Q)*(P-Q)) / Norm0 ;
+			float Norm0 =  D*(float)sqrt(2*pi);
+			float Norm1 =  exp( .5f*(P+Q)*(P+Q)) / Norm0 ;
+			float Norm2 =  exp( .5f*(P-Q)*(P-Q)) / Norm0 ;
 			float sD;
 
 			for (int is=(1-Mid);  is<Mid; is++){
 				sD = is/D ;
-				(*pofalpha)(is+Mid-1) =  Norm1 * exp(-.5*sD*sD)*cos(sD*(P+Q))
-                         + Norm2 * exp(-.5*sD*sD)*cos(sD*(P-Q));
+				(*pofalpha)(is+Mid-1) =  Norm1 * exp(-.5f*sD*sD)*cos(sD*(P+Q))
+                         + Norm2 * exp(-.5f*sD*sD)*cos(sD*(P-Q));
 			}
 			pofalpha-> update();
 			pofalpha-> set_complex(false);
@@ -313,7 +313,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 		
 			for (int iv=(1-Mid);  iv<Mid; iv++){
 				vD = iv*D ;
-		 		(*pofalphak)(2*(iv+Mid-1)) =  exp(-.5*vD*vD)*(cosh(vD*(P+Q)) + cosh(vD*(P-Q)) );
+		 		(*pofalphak)(2*(iv+Mid-1)) =  exp(-.5f*vD*vD)*(cosh(vD*(P+Q)) + cosh(vD*(P-Q)) );
 			}
 			pofalphak-> update();
 			pofalphak-> set_complex(false);
@@ -666,9 +666,9 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 
 	f0  = fdata(i,j);
 	c1  = fdata(ip1,j) - f0;
-	c2  = (c1 - f0 + fdata(im1,j)) * 0.5;
+	c2  = (c1 - f0 + fdata(im1,j)) * 0.5f;
 	c3  = fdata(i,jp1) - f0;
-	c4  = (c3 - f0 + fdata(i,jm1)) * 0.5;
+	c4  = (c3 - f0 + fdata(i,jm1)) * 0.5f;
 
 	dxb = dx0 - 1;
 	dyb = dy0 - 1;
@@ -683,8 +683,8 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 	if (ic > nxdata) ic -= nxdata;  else if (ic < 1) ic += nxdata;
 	if (jc > nydata) jc -= nydata;  else if (jc < 1) jc += nydata;
 
-	c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0)) * c2 
-		- hyc * c3 - (hyc * (hyc - 1.0)) * c4) * (hxc * hyc));
+	c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0f)) * c2 
+		- hyc * c3 - (hyc * (hyc - 1.0f)) * c4) * (hxc * hyc));
 
 
 	quadri = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
@@ -1197,7 +1197,7 @@ float Util::KaiserBessel::i0win(float x) const {
 	float absx = fabs(x);
 	if (absx > vadjust) return 0.f;
 	float rt = sqrt(1.f - pow(absx/vadjust, 2));
-	float res = gsl_sf_bessel_I0(facadj*rt)/val0;
+	float res = static_cast<float>(gsl_sf_bessel_I0(facadj*rt))/val0;
 	return res;
 }
 
@@ -1205,13 +1205,13 @@ void Util::KaiserBessel::build_I0table() {
 	i0table.resize(ntable+1); // i0table[0:ntable]
 	int ltab = int(round(float(ntable)/1.25f));
 	fltb = float(ltab)/(K/2);
-	float val0 = gsl_sf_bessel_I0(facadj);
+	float val0 = static_cast<float>(gsl_sf_bessel_I0(facadj));
 	for (int i=ltab+1; i <= ntable; i++) i0table[i] = 0.f;
 	for (int i=0; i <= ltab; i++) {
 		float s = float(i)/fltb/N;
 		if (s < vadjust) {
 			float rt = sqrt(1.f - pow(s/vadjust, 2));
-			i0table[i] = gsl_sf_bessel_I0(facadj*rt)/val0;
+			i0table[i] = static_cast<float>(gsl_sf_bessel_I0(facadj*rt))/val0;
 		} else {
 			i0table[i] = 0.f;
 		}
@@ -1262,13 +1262,13 @@ void Util::FakeKaiserBessel::build_I0table() {
 	i0table.resize(ntable+1); // i0table[0:ntable]
 	int ltab = int(round(float(ntable)/1.1f));
 	fltb = float(ltab)/(K/2);
-	float val0 = sqrt(facadj)*gsl_sf_bessel_I1(facadj);
+	float val0 = sqrt(facadj)*static_cast<float>(gsl_sf_bessel_I1(facadj));
 	for (int i=ltab+1; i <= ntable; i++) i0table[i] = 0.f;
 	for (int i=0; i <= ltab; i++) {
 		float s = float(i)/fltb/N;
 		if (s < vadjust) {
 			float rt = sqrt(1.f - pow(s/vadjust, 2));
-			i0table[i] = sqrt(facadj*rt)*gsl_sf_bessel_I1(facadj*rt)/val0;
+			i0table[i] = sqrt(facadj*rt)*static_cast<float>(gsl_sf_bessel_I1(facadj*rt))/val0;
 		} else {
 			i0table[i] = 0.f;
 		}
@@ -1370,7 +1370,7 @@ c
    for (i=1;i<=nring;i++) {
      // radius of the ring
      inr = numr(1,i);
-     yq  = inr;
+     yq  = static_cast<float>(inr);
      l   = numr(3,i);
      if (mode == 'h' || mode == 'H') {
         lt = l/2;
@@ -1382,24 +1382,24 @@ c
      nsim           = lt-1;
      dfi            = dpi/(nsim+1);
      kcirc          = numr(2,i);
-     xold           = 0.0;
-     yold           = inr;
-     circ(kcirc)    = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
-     xold           = inr;
-     yold           = 0.0;
+     xold           = 0.0f;
+     yold           = static_cast<float>(inr);
+     circ(kcirc)    = quadri(xold+(float)ns2,yold+(float)nr2,nsam,nrow,xim);
+     xold           = static_cast<float>(inr);
+     yold           = 0.0f;
      circ(lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
 
      if (mode == 'f' || mode == 'F') {
-        xold              = 0.0;
-        yold              = -inr;
+        xold              = 0.0f;
+        yold              = static_cast<float>(-inr);
         circ(lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
-        xold              = -inr;
-        yold              = 0.0;
+        xold              = static_cast<float>(-inr);
+        yold              = 0.0f;
         circ(lt+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
      }
 
      for (j=1;j<=nsim;j++) {
-        fi               = dfi*j;
+        fi               = static_cast<float>(dfi*j);
         x                = sin(fi)*yq;
         y                = cos(fi)*yq;
         xold             = x;
@@ -1480,27 +1480,27 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
       nsim  = lt - 1;
       dfi   = dpi / (nsim+1);
       kcirc = numr(2,it);
-      xold  = 0.0+cns2;
+      xold  = 0.0f+cns2;
       yold  = inr+cnr2;
 
       circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on 90 degree
 
       xold  = inr+cns2;
-      yold  = 0.0+cnr2;
+      yold  = 0.0f+cnr2;
       circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 0 degree
 
       if ( mode == 'f' || mode == 'F' ) {
-         xold = 0.0+cns2;
+         xold = 0.0f+cns2;
          yold = -inr+cnr2;
          circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 270 degree
 
          xold = -inr+cns2;
-         yold = 0.0+cnr2;
+         yold = 0.0f+cnr2;
          circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on 180 degree
       }
       
       for (jt=1; jt<=nsim; jt++) {
-         fi   = dfi * jt;
+         fi   = static_cast<float>(dfi * jt);
          x    = sin(fi) * inr;
          y    = cos(fi) * inr;
 
@@ -1603,27 +1603,27 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
       kcirc = numr(2,it);
 	  
 	  
-	xold  = 0.0+cns2;
+	xold  = 0.0f+cns2;
 	yold  = inr+cnr2;
 
 	circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
       xold  = inr+cns2;
-      yold  = 0.0+cnr2;
+      yold  = 0.0f+cnr2;
       circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
       if ( mode == 'f' || mode == 'F' ) {
-         xold = 0.0+cns2;
+         xold = 0.0f+cns2;
          yold = -inr+cnr2;
          circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
          xold = -inr+cns2;
-         yold = 0.0+cnr2;
+         yold = 0.0f+cnr2;
          circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
       }
       
       for (jt=1; jt<=nsim; jt++) {
-         fi   = dfi * jt;
+         fi   = static_cast<float>(dfi * jt);
          x    = sin(fi) * inr;
          y    = cos(fi) * inr;
 
@@ -1762,7 +1762,7 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    for (it=1;it<=nring;it++) {
       // radius of the ring
       inr = numr(1,it);
-      yq  = inr;
+      yq  = static_cast<float>(inr);
 
       l = numr(3,it);
       if ( mode == 'h' || mode == 'H' ) { 
@@ -1775,30 +1775,30 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
       nsim  = lt - 1;
       dfi   = dpi / (nsim+1);
       kcirc = numr(2,it);
-      xold  = 0.0;
-      yold  = inr;
+      xold  = 0.0f;
+      yold  = static_cast<float>(inr);
       circ(kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
 //      circ(kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
       
-      xold  = inr;
-      yold  = 0.0;
+      xold  = static_cast<float>(inr);
+      yold  = 0.0f;
       circ(lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
 //      circ(lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
       if ( mode == 'f' || mode == 'F' ) {
-         xold = 0.0;
-         yold = -inr;
+         xold = 0.0f;
+         yold = static_cast<float>(-inr);
          circ(lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
 //         circ(lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
-         xold = -inr;
-         yold = 0.0;
+         xold = static_cast<float>(-inr);
+         yold = 0.0f;
          circ(lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
 //         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
       }
       
       for (jt=1;jt<=nsim;jt++) {
-         fi   = dfi * jt;
+         fi   = static_cast<float>(dfi * jt);
          x    = sin(fi) * yq;
          y    = cos(fi) * yq;
 
@@ -2024,21 +2024,21 @@ void Util::fftc_q(float *br, float *bi, int ln, int ks)
    int status=0;
 
    const float tab1[] = {
-   9.58737990959775e-5,
-   1.91747597310703e-4,
-   3.83495187571395e-4,
-   7.66990318742704e-4,
-   1.53398018628476e-3,
-   3.06795676296598e-3,
-   6.13588464915449e-3,
-   1.22715382857199e-2,
-   2.45412285229123e-2,
-   4.90676743274181e-2,
-   9.80171403295604e-2,
-   1.95090322016128e-1,
-   3.82683432365090e-1,
-   7.07106781186546e-1,
-   1.00000000000000,
+   9.58737990959775e-5f,
+   1.91747597310703e-4f,
+   3.83495187571395e-4f,
+   7.66990318742704e-4f,
+   1.53398018628476e-3f,
+   3.06795676296598e-3f,
+   6.13588464915449e-3f,
+   1.22715382857199e-2f,
+   2.45412285229123e-2f,
+   4.90676743274181e-2f,
+   9.80171403295604e-2f,
+   1.95090322016128e-1f,
+   3.82683432365090e-1f,
+   7.07106781186546e-1f,
+   1.00000000000000f,
    };
 
    n=(int)pow(2.f,ln);
@@ -2049,11 +2049,11 @@ void Util::fftc_q(float *br, float *bi, int ln, int ks)
    b6=b3;
    b7=k;
    if( ks > 0 ) {
-      sgn=1.0;
+      sgn=1.0f;
    } 
    else {
-      sgn=-1.0;
-      rni=1.0/(float)n;
+      sgn=-1.0f;
+      rni=1.0f/(float)n;
       j=1;
       for (i=1; i<=n;i++) {
          br(j)=br(j)*rni;
@@ -2084,8 +2084,8 @@ L14:
    if (b6 == b7)  goto  L20;
 
    b4=b7;
-   cc=2.0*pow(tab1(l),2);
-   c=1.0-cc;
+   cc=2.0f*pow(tab1(l),2);
+   c=1.0f-cc;
    l=l+1;
    ss=sgn*tab1(l);
    s=ss;
@@ -2173,21 +2173,21 @@ void  Util::fftr_q(float *xcmplx, int nv)
    float ss, cc, c, s, tr, ti, tr1, tr2, ti1, ti2, t;
 
    const float tab1[] = {
-   9.58737990959775e-5,
-   1.91747597310703e-4,
-   3.83495187571395e-4,
-   7.66990318742704e-4,
-   1.53398018628476e-3,
-   3.06795676296598e-3,
-   6.13588464915449e-3,
-   1.22715382857199e-2,
-   2.45412285229123e-2,
-   4.90676743274181e-2,
-   9.80171403295604e-2,
-   1.95090322016128e-1,
-   3.82683432365090e-1,
-   7.07106781186546e-1,
-   1.00000000000000,
+   9.58737990959775e-5f,
+   1.91747597310703e-4f,
+   3.83495187571395e-4f,
+   7.66990318742704e-4f,
+   1.53398018628476e-3f,
+   3.06795676296598e-3f,
+   6.13588464915449e-3f,
+   1.22715382857199e-2f,
+   2.45412285229123e-2f,
+   4.90676743274181e-2f,
+   9.80171403295604e-2f,
+   1.95090322016128e-1f,
+   3.82683432365090e-1f,
+   7.07106781186546e-1f,
+   1.00000000000000f,
    };
 
    nu=abs(nv);
@@ -2197,9 +2197,9 @@ void  Util::fftr_q(float *xcmplx, int nv)
    isub=16-nu1;
 
    ss=-tab1(isub);
-   cc=-2.0*pow(tab1(isub-1),2.f);
-   c=1.0;
-   s=0.0;
+   cc=-2.0f*pow(tab1(isub-1),2.f);
+   c=1.0f;
+   s=0.0f;
    n2=n/2;
    if ( inv > 0) {
       fftc_q(&xcmplx(1,1),&xcmplx(2,1),nu1,2);
@@ -2217,17 +2217,17 @@ void  Util::fftr_q(float *xcmplx, int nv)
          t=(cc*c-ss*s)+c;
          s=(cc*s+ss*c)+s;
          c=t;
-         xcmplx(1,i1)=0.5*((tr1+tr2)+(ti1+ti2)*c-(tr1-tr2)*s);
-         xcmplx(1,i2)=0.5*((tr1+tr2)-(ti1+ti2)*c+(tr1-tr2)*s);
-         xcmplx(2,i1)=0.5*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
-         xcmplx(2,i2)=0.5*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+         xcmplx(1,i1)=0.5f*((tr1+tr2)+(ti1+ti2)*c-(tr1-tr2)*s);
+         xcmplx(1,i2)=0.5f*((tr1+tr2)-(ti1+ti2)*c+(tr1-tr2)*s);
+         xcmplx(2,i1)=0.5f*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+         xcmplx(2,i2)=0.5f*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
      }
    }
    else {
      tr=xcmplx(1,1);
      ti=xcmplx(2,1);
-     xcmplx(1,1)=0.5*(tr+ti);
-     xcmplx(2,1)=0.5*(tr-ti);
+     xcmplx(1,1)=0.5f*(tr+ti);
+     xcmplx(2,1)=0.5f*(tr-ti);
      for (i=1; i<=n2; i++) {
         i1=i+1;
         i2=n-i+1;
@@ -2238,10 +2238,10 @@ void  Util::fftr_q(float *xcmplx, int nv)
         t=(cc*c-ss*s)+c;
         s=(cc*s+ss*c)+s;
         c=t;
-        xcmplx(1,i1)=0.5*((tr1+tr2)-(tr1-tr2)*s-(ti1+ti2)*c);
-        xcmplx(1,i2)=0.5*((tr1+tr2)+(tr1-tr2)*s+(ti1+ti2)*c);
-        xcmplx(2,i1)=0.5*((ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
-        xcmplx(2,i2)=0.5*(-(ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+        xcmplx(1,i1)=0.5f*((tr1+tr2)-(tr1-tr2)*s-(ti1+ti2)*c);
+        xcmplx(1,i2)=0.5f*((tr1+tr2)+(tr1-tr2)*s+(ti1+ti2)*c);
+        xcmplx(2,i1)=0.5f*((ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+        xcmplx(2,i2)=0.5f*(-(ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
      }
      fftc_q(&xcmplx(1,1),&xcmplx(2,1),nu1,-2);
    }
@@ -2414,7 +2414,7 @@ void Util::prb1d(double *b, int npoint, float *pos)
       c3 = (28.*b(1) + 7.*b(2) - 8.*b(3) - 17.*b(4) - 20.*b(5)
          - 17.*b(6) - 8.*b(7) + 7.*b(8) + 28.*b(9) ) / 924.0;
    }
-   if (c3 != 0.0)  *pos = c2/(2.0*c3) - nhalf;
+   if (c3 != 0.0)  *pos = static_cast<float>(c2/(2.0*c3) - nhalf);
 }
 #undef  b
 
@@ -2875,11 +2875,11 @@ c
   }
 
   // straight
-  for (i=1; i<=maxrin; i++) {temp(i)=q(i);}
+  for (i=1; i<=maxrin; i++) {temp(i)=static_cast<float>(q(i));}
   fftr_q(temp,ip);
 
   jtot = 0;
-  *qn  = -1.0e20;
+  *qn  = -1.0e20f;
   for (j=1; j<=maxrin; j++) {
      if (temp(j) >= *qn) {
         *qn  = temp(j);
@@ -2898,11 +2898,11 @@ c
   *tot = (float)(jtot)+pos;
 
   // mirrored
-  for (i=1; i<=maxrin; i++) {temp(i)=t(i);}
+  for (i=1; i<=maxrin; i++) {temp(i)=static_cast<float>(t(i));}
   fftr_q(temp,ip);
 
   // find angle
-  *qm = -1.0e20;
+  *qm = -1.0e20f;
   for (j=1; j<=maxrin;j++) {
      if ( temp(j) >= *qm ) {
         *qm   = temp(j);
@@ -3022,7 +3022,7 @@ c
   EMData* out = new EMData();
   out->set_size(maxrin,2,1);
   float *dout = out->get_data();
-  for (int i=0; i<maxrin; i++) {dout(i,0)=q[i]; dout(i,1)=t[i];}
+  for (int i=0; i<maxrin; i++) {dout(i,0)=static_cast<float>(q[i]); dout(i,1)=static_cast<float>(t[i]);}
   //out->set_size(maxrin,1,1);
   //float *dout = out->get_data();
   //for (int i=0; i<maxrin; i++) {dout(i,0)=q[i];}
@@ -3103,7 +3103,7 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
   EMData* out = new EMData();
   out->set_size(maxrin,1,1);
   float *dout = out->get_data();
-  for (int i=0; i<maxrin; i++) dout[i]=q[i];
+  for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(q[i]);
   free(q);
   return out;
 
@@ -3179,7 +3179,7 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
   EMData* out = new EMData();
   out->set_size(maxrin,1,1);
   float *dout = out->get_data();
-  for (int i=0; i<maxrin; i++) dout[i]=t[i];
+  for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(t[i]);
   free(t);
   return out;
 
@@ -3214,12 +3214,12 @@ vector<float> Util::ener(EMData* ave, vector<int> numr) {
 	for (int i=1; i<=nring; i++) {
         int numr3i = numr(3,i);
         int np     = numr(2,i)-1;
-		float tq = PI2*numr(1,i)/numr3i;
+		float tq = static_cast<float>(PI2*numr(1,i)/numr3i);
 		en = tq*(aveptr[np]*aveptr[np]+aveptr[np+1]*aveptr[np+1])*0.5;
 		for (int j=2; j<np+numr3i-1; j++) en += tq*aveptr[j]*aveptr[j];
 		ener += en/numr3i;
 	}            
-	norm.push_back(ener);
+	norm.push_back(static_cast<float>(ener));
 	EXITFUNC;
 	return norm;
 }
@@ -3236,9 +3236,9 @@ void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<i
             numr3i = numr(3,i);
             np     = numr(2,i)-1;
 			ave[np]   += dat[np];
-			ave[np+1] += dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			ave[np+1] += static_cast<float>( dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin) );
 			for (j=2; j<numr3i; j=j+2) {
-				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				arg = static_cast<float>( PI2*(tot-1.)*(j/2)/maxrin );
 				cs = cos(arg);
 				si = sin(arg);
 				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
@@ -3251,9 +3251,9 @@ void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<i
             numr3i = numr(3,i);
             np     = numr(2,i)-1;
 			ave[np]   += dat[np];
-			ave[np+1] += dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			ave[np+1] += static_cast<float>( dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin) );
 			for (j=2; j<numr3i; j=j+2) {
-				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				arg = static_cast<float>( PI2*(tot-1.)*(j/2)/maxrin );
 				cs = cos(arg);
 				si = sin(arg);
 				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
@@ -3278,9 +3278,9 @@ void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int>
             numr3i = numr(3,i);
             np     = numr(2,i)-1;
 			ave[np]   -= dat[np];
-			ave[np+1] -= dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			ave[np+1] -= static_cast<float>( dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin) );
 			for (j=2; j<numr3i; j=j+2) {
-				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				arg = static_cast<float>( PI2*(tot-1.)*(j/2)/maxrin );
 				cs = cos(arg);
 				si = sin(arg);
 				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
@@ -3293,9 +3293,9 @@ void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int>
             numr3i = numr(3,i);
             np     = numr(2,i)-1;
 			ave[np]   -= dat[np];
-			ave[np+1] -= dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			ave[np+1] -= static_cast<float>( dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin) );
 			for (j=2; j<numr3i; j=j+2) {
-				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				arg = static_cast<float>( PI2*(tot-1.)*(j/2)/maxrin );
 				cs = cos(arg);
 				si = sin(arg);
 				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
@@ -3487,7 +3487,7 @@ EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, 
 		background = sum1/cnt;
 	}		
 	else{	
-		background = atof( params );
+		background = static_cast<float>( atof( params ) );
 	}
 	/*=====================================================================================*/
 	
@@ -3767,8 +3767,8 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	args.push_back(B);
 	
 	vector<float> scale;
-	scale.push_back(1.e-7*A);
-	scale.push_back(-1.e-7*B);
+	scale.push_back(1.e-7f*A);
+	scale.push_back(-1.e-7f*B);
 	
 	vector<float> ref_freq_hist;
 	for(int i = 0;i < (3*hist_len);i++)
@@ -3817,7 +3817,7 @@ float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData 
 	for(int i = 0;i < (3*hist_len);i++)
 		freq_hist += (int)pow((float)((int)ref_freq_hist[i] - (int)img_freq_bin[i]),2.f);
 	freq_hist = (-freq_hist);
-	return freq_hist;
+	return static_cast<float>(freq_hist);
 }
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #define    QUADPI      		        3.141592653589793238462643383279502884197
@@ -4016,8 +4016,8 @@ PROJ->postift_depad_corner_inplace();
   
 void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 {
- float rad2deg =(180.0/3.1415926);
- float deg2rad = (3.1415926/180.0);
+ float rad2deg =(180.0f/3.1415926f);
+ float deg2rad = (3.1415926f/180.0f);
  
  int NSAM,NROW,NNNN,NR2,NANG,L,JY;
   
@@ -4038,7 +4038,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
  RI(2,3)=SS(4,NUMP)*SS(6,NUMP);
  RI(3,3)=SS(3,NUMP);
  
- float THICK=NSAM/DIAMETER/2.0;
+ float THICK=static_cast<float>( NSAM/DIAMETER/2.0 );
 
  EMData* W = new EMData();
  int Wnx = NNNN/2;
@@ -4055,10 +4055,10 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 	  CC(3)=SS(1,L)*SS(4,L)*SS(2,NUMP)*SS(4,NUMP)-SS(2,L)*SS(4,L)*SS(1,NUMP)*SS(4,NUMP);
 	  
 	  TMP = sqrt(CC(1)*CC(1) +  CC(2)*CC(2) + CC(3)*CC(3)); 
-	  CCN=AMAX1( AMIN1(TMP,1.0) ,-1.0);
+	  CCN=static_cast<float>( AMAX1( AMIN1(TMP,1.0) ,-1.0) );
 	  ALPHA=rad2deg*float(asin(CCN));
-	  if (ALPHA>180.0) ALPHA=ALPHA-180.0;
-	  if (ALPHA>90.0) ALPHA=180.0-ALPHA;
+	  if (ALPHA>180.0) ALPHA=ALPHA-180.0f;
+	  if (ALPHA>90.0) ALPHA=180.0f-ALPHA;
 	  if(ALPHA<1.0E-6) {
           for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++) W(I,J)+=1.0;
     } else {
@@ -4078,15 +4078,15 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
       TMP = CP(1)*VP(2)-CP(2)*VP(1);
 
        //     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
-       TMP = AMAX1(1.0E-4,fabs(TMP));
+       TMP = AMAX1(1.0E-4f,fabs(TMP));
 	   float tmpinv = 1/TMP;   
        for(int J=1;J<=NROW;J++) {
 	     JY = (J-1);
          if (JY>NR2)  JY=JY-NROW;
          for(int I=1;I<=NNNN/2;I++) {
         		FV     = fabs((JY*CP(1)-(I-1)*CP(2))*tmpinv);
-        		RT     = 1.0-FV/FM;
-        		W(I,J) += ((RT>0.0)*RT);		 
+        		RT     = 1.0f-FV/FM;
+        		W(I,J) += ((RT>0.0f)*RT);		 
          }
        } 
       }  
@@ -4151,9 +4151,9 @@ Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)  
 {
 	float cst  = cs*1.0e7f;
-	float wght = atan(wgh/(1.0-wgh));
-	float lambda=12.398/pow(voltage *(1022.+voltage),.5); 
-    float ctfv = sin(-M_PI*(dzz*lambda*ak*ak-cst*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wght)*sign;
+	float wght = atan(wgh/(1.0f-wgh));
+	float lambda=12.398f/pow(voltage *(1022.f+voltage),.5f); 
+    float ctfv = static_cast<float>( sin(-M_PI*(dzz*lambda*ak*ak-cst*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wght)*sign );
 	if(b_factor != 0.0f)  ctfv *= b_factor*exp(-b_factor*ak*ak);
     return ctfv;
 }
@@ -4581,12 +4581,12 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
 	    tmp += pow(q1[i__ + q1_dim1], tmp__j) * x[j];	 
 	}
 	tmp += x[*n];
-	p.push_back(exp(tmp));
+	p.push_back(static_cast<float>(exp(tmp)));
 	p.push_back(q1[i__ + q1_dim1]);	 
     }
     i__2=*n;
     for (i__=1;i__<=i__2;++i__)
-    	{ p.push_back(x[i__]);}	
+    	{ p.push_back(static_cast<float>(x[i__]));}	
     return p;
 }
 void Util::cl1(long int *k, long int *l, long int *m, long int *n, long int *klm2d,
@@ -4897,7 +4897,7 @@ L350:
     kode = 2;
     goto L590;
 L360:
-    xmin = res[1];
+    xmin = static_cast<float>( res[1] );
     iout = (long int) s[1];
     j = 1;
     if (kk == 1) {
@@ -4909,7 +4909,7 @@ L360:
 	    goto L370;
 	}
 	j = i__;
-	xmin = res[i__];
+	xmin = static_cast<float>( res[i__] );
 	iout = (long int) s[i__];
 L370:
 	;
@@ -5190,7 +5190,7 @@ vector<double> Util::vrdg(const vector<float>& th, const vector<float>& ph)
 		weight(i) = 0.0;
 	}
 
-	for(int i = 0;i<len;i++){
+	for(i = 0;i<len;i++){
 		theta[i] = thptr[i];
 		phi[i]   = phptr[i];
 	}
@@ -5215,7 +5215,7 @@ vector<double> Util::vrdg(const vector<float>& th, const vector<float>& ph)
 		count += weight(i);
 	}
 
-        if( abs(count-6.28) > 0.1 ) 
+	if( abs(count-6.28) > 0.1 ) 
 	{
 	    printf("Warning: SUM OF VORONOI CELLS AREAS IS %lf, should 2*PI\n", count);
 	}
@@ -7475,7 +7475,7 @@ L4:
 
     *nb = 0;
     *na = (nn - 2) * 3;
-    *nt = nn - 2 << 1;
+    *nt = nn - (2<<1);
     return 0;
 
 /* NST is the first boundary node encountered.  Initialize */
@@ -9980,8 +9980,8 @@ L12:
     swap_(&next, &n0, &nl, &nr, &list[1], &lptr[1], &lend[1], &lp21);
     i__1 = iwl;
     for (i__ = iwcp1; i__ <= i__1; ++i__) {
-	iwk[(i__ - 1 << 1) + 1] = iwk[(i__ << 1) + 1];
-	iwk[(i__ - 1 << 1) + 2] = iwk[(i__ << 1) + 2];
+	iwk[(i__ - (1<<1)) + 1] = iwk[(i__ << 1) + 1];
+	iwk[(i__ - (1<<1)) + 2] = iwk[(i__ << 1) + 2];
 /* L13: */
     }
     iwk[(iwl << 1) + 1] = n0;
@@ -10037,8 +10037,8 @@ L17:
     swap_(&next, &n0, &nl, &nr, &list[1], &lptr[1], &lend[1], &lp21);
     i__1 = iwf;
     for (i__ = iwc - 1; i__ >= i__1; --i__) {
-	iwk[(i__ + 1 << 1) + 1] = iwk[(i__ << 1) + 1];
-	iwk[(i__ + 1 << 1) + 2] = iwk[(i__ << 1) + 2];
+	iwk[(i__ + (1<<1)) + 1] = iwk[(i__ << 1) + 1];
+	iwk[(i__ + (1<<1)) + 2] = iwk[(i__ << 1) + 2];
 /* L18: */
     }
     iwk[(iwf << 1) + 1] = n0;
@@ -10100,8 +10100,8 @@ L22:
     swap_(&n2, &n0, &nl, &nr, &list[1], &lptr[1], &lend[1], &lp21);
     i__ = iwl;
 L23:
-    iwk[(i__ << 1) + 1] = iwk[(i__ - 1 << 1) + 1];
-    iwk[(i__ << 1) + 2] = iwk[(i__ - 1 << 1) + 2];
+    iwk[(i__ << 1) + 1] = iwk[(i__ - (1<<1)) + 1];
+    iwk[(i__ << 1) + 2] = iwk[(i__ - (1<<1)) + 2];
     --i__;
     if (i__ > iwf) {
 	goto L23;
@@ -10126,7 +10126,7 @@ L24:
 
 /*   Optimize the set of new arcs to the left of IN1->IN2. */
 
-	nit = iwc - 1 << 2;
+	nit = iwc - (1<<2);
 	i__1 = iwc - 1;
 	optim_(&x[1], &y[1], &z__[1], &i__1, &list[1], &lptr[1], &lend[1], &
 		nit, &iwk[3], &ierr);
@@ -10141,10 +10141,10 @@ L24:
 
 /*   Optimize the set of new arcs to the right of IN1->IN2. */
 
-	nit = iwend - iwc << 2;
+	nit = iwend - (iwc<<2);
 	i__1 = iwend - iwc;
 	optim_(&x[1], &y[1], &z__[1], &i__1, &list[1], &lptr[1], &lend[1], &
-		nit, &iwk[(iwc + 1 << 1) + 1], &ierr);
+		nit, &iwk[(iwc + (1<<1)) + 1], &ierr);
 	if (ierr != 0 && ierr != 1) {
 	    goto L34;
 	}
@@ -15689,9 +15689,9 @@ EMData* Util::pack_complex_to_real(EMData* img)
 float Util::ang_n(float peakp, string mode, int maxrin)
 {
     if (mode == "f" || mode == "F") 
-        return fmodf(((peakp-1.0) / maxrin+1.0)*360.0,360.0);
+        return fmodf(((peakp-1.0f) / maxrin+1.0f)*360.0f,360.0f);
     else
-        return fmodf(((peakp-1.0) / maxrin+1.0)*180.0,180.0);
+        return fmodf(((peakp-1.0f) / maxrin+1.0f)*180.0f,180.0f);
 }
 
 vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
@@ -15716,7 +15716,7 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 */
 	size_t crefim_len = crefim.size();
 	
-	float peak = -1.0E23;
+	float peak = -1.0E23f;
 	int   ky = int(2*yrng/step+0.5)/2; 
 	int   kx = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0; 
@@ -15740,11 +15740,11 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 			nref = iref;
 			if (qn >= qm) {
 			    ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-			    peak = qn;
+			    peak = static_cast<float>(qn);
 			    mirror = 0;
 			} else {
 			    ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-			    peak = qm;
+			    peak = static_cast<float>(qm);
 			    mirror = 1;
 			}
 		    }
@@ -15752,16 +15752,16 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 	    }
 	}
 	float co, so, sxs, sys;
-	co =  cos(ang*pi/180.0);
-	so = -sin(ang*pi/180.0);
+	co = static_cast<float>( cos(ang*pi/180.0) );
+	so = static_cast<float>( -sin(ang*pi/180.0) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;
 	res.push_back(ang);
 	res.push_back(sxs);
 	res.push_back(sys);
-	res.push_back(mirror);
-	res.push_back(nref);
+	res.push_back(static_cast<float>(mirror));
+	res.push_back(static_cast<float>(nref));
 	res.push_back(peak);
 	return res;
 }
@@ -15787,10 +15787,10 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
     }
 */
 	size_t crefim_len = crefim.size();
-	const float qv = pi/180.0;
+	const float qv = static_cast<float>( pi/180.0 );
 	float  phi = image->get_attr("phi");
 	float  theta = image->get_attr("theta");
-	float  peak = -1.0E23;
+	float  peak = -1.0E23f;
 	int   ky = int(2*yrng/step+0.5)/2; 
 	int   kx = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0; 
@@ -15818,11 +15818,11 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 					nref = iref;
 					if (qn >= qm) {
 						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = qn;
+						peak = static_cast<float>( qn );
 						mirror = 0;
 					} else {
 						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak = qm; 
+						peak = static_cast<float>( qm ); 
 						mirror = 1;
 					}
 		    	}
@@ -15844,8 +15844,8 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	res.push_back(ang);
 	res.push_back(sxs);
 	res.push_back(sys);
-	res.push_back(mirror);
-	res.push_back(nref);
+	res.push_back(static_cast<float>(mirror));
+	res.push_back(static_cast<float>(nref));
 	res.push_back(peak);
 	return res;
 }
@@ -15902,30 +15902,30 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 
 		//        Compute function value f for the sample problem.
 		rot = new EMData();
-		rot = image->rot_scale_trans2D(x[0], x[1], x[2], 1.0);
+		rot = image->rot_scale_trans2D((float)x[0], (float)x[1], (float)x[2], 1.0f);
 		f = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//f = -f;
 		delete rot;
 		
 	      	//        Compute gradient g for the sample problem.
-		float dt = 1.0e-3;
+		float dt = 1.0e-3f;
 		rot = new EMData();
-		rot = image->rot_scale_trans2D(x[0]+dt, x[1], x[2], 1.0);
+		rot = image->rot_scale_trans2D((float)x[0]+dt, (float)x[1], (float)x[2], 1.0f);
 		f1 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//f1 = -f1;
 		g[0] = (f1-f)/dt;
 		delete rot;
 
-		dt = 1.0e-2;
+		dt = 1.0e-2f;
 		rot = new EMData();
-		rot = image->rot_scale_trans2D(x[0], x[1]+dt, x[2], 1.0);
+		rot = image->rot_scale_trans2D((float)x[0], (float)x[1]+dt, (float)x[2], 1.0f);
 		f2 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));		
 		//f2 = -f2;
 		g[1] = (f2-f)/dt;
 		delete rot;
 		
 		rot = new EMData();
-		rot = image->rot_scale_trans2D(x[0], x[1], x[2]+dt, 1.0);
+		rot = image->rot_scale_trans2D((float)x[0], (float)x[1], (float)x[2]+dt, 1.0f);
 		f3 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//f3 = -f3;
 		g[2] = (f3-f)/dt;
@@ -15939,9 +15939,9 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 	
 	//printf("Total step is %d\n", step);
 	vector<float> res;
-	res.push_back(x[0]);
-	res.push_back(x[1]);
-	res.push_back(x[2]);	
+	res.push_back(static_cast<float>(x[0]));
+	res.push_back(static_cast<float>(x[1]));
+	res.push_back(static_cast<float>(x[2]));	
 	//res.push_back(step);
 	return res;
 }
@@ -15998,29 +15998,29 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 
 		//        Compute function value f for the sample problem.
 		rot = new EMData();
-		rot = image->rot_scale_conv7(x[0]*pi/180, x[1], x[2], kb, 1.0);
+		rot = image->rot_scale_conv7((float)(x[0]*pi/180), (float)x[1], (float)x[2], kb, 1.0f);
 		f = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//f = -f;
 		delete rot;
 		
 	      	//        Compute gradient g for the sample problem.
-		float dt = 1.0e-3;
+		float dt = 1.0e-3f;
 		rot = new EMData();
-		rot = image->rot_scale_conv7((x[0]+dt)*pi/180, x[1], x[2], kb, 1.0);
+		rot = image->rot_scale_conv7((float)((x[0]+dt)*pi/180), (float)x[1], (float)x[2], kb, 1.0f);
 		f1 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//f1 = -f1;
 		g[0] = (f1-f)/dt;
 		delete rot;
 
 		rot = new EMData();
-		rot = image->rot_scale_conv7(x[0]*pi/180, x[1]+dt, x[2], kb, 1.0);
+		rot = image->rot_scale_conv7((float)(x[0]*pi/180), (float)x[1]+dt, (float)x[2], kb, 1.0);
 		f2 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));		
 		//f2 = -f2;
 		g[1] = (f2-f)/dt;
 		delete rot;
 		
 		rot = new EMData();
-		rot = image->rot_scale_conv7(x[0]*pi/180, x[1], x[2]+dt, kb, 1.0);
+		rot = image->rot_scale_conv7((float)(x[0]*pi/180), (float)x[1], (float)x[2]+dt, kb, 1.0f);
 		f3 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//f3 = -f3;
 		g[2] = (f3-f)/dt;
@@ -16034,9 +16034,9 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 	
 	//printf("Total step is %d\n", step);
 	vector<float> res;
-	res.push_back(x[0]);
-	res.push_back(x[1]);
-	res.push_back(x[2]);
+	res.push_back(static_cast<float>(x[0]));
+	res.push_back(static_cast<float>(x[1]));
+	res.push_back(static_cast<float>(x[2]));
 	//res.push_back(step);	
 	return res;
 }
@@ -16096,7 +16096,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		//        Compute function value f for the sample problem.
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]),kb);
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
@@ -16109,10 +16109,10 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		delete proj2;
 		
 	      	//        Compute gradient g for the sample problem.
-		float dt = 1.0e-3;
+		float dt = 1.0e-3f;
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0]+dt,x[1],x[2]),kb);
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0]+dt,(float)x[1],(float)x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
@@ -16126,7 +16126,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1]+dt,x[2]),kb);
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1]+dt,(float)x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
@@ -16140,7 +16140,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]+dt),kb);
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]+dt),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
@@ -16154,7 +16154,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]),kb);
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3]+dt, "y_shift", x[4], "z_shift", 0.0f));
@@ -16168,7 +16168,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]),kb);
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4]+dt, "z_shift", 0.0f));
@@ -16188,11 +16188,11 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 	
 	printf("Total step is %d\n", step);
 	vector<float> res;
-	res.push_back(x[0]);
-	res.push_back(x[1]);
-	res.push_back(x[2]);
-	res.push_back(x[3]);
-	res.push_back(x[4]);
+	res.push_back(static_cast<float>(x[0]));
+	res.push_back(static_cast<float>(x[1]));
+	res.push_back(static_cast<float>(x[2]));
+	res.push_back(static_cast<float>(x[3]));
+	res.push_back(static_cast<float>(x[4]));
 	//res.push_back(step);	
 	return res;
 }
@@ -16216,10 +16216,10 @@ vector<float> Util::twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask,
 	//printf("Took %d steps\n", n);
 
 	vector<float> res;
-	res.push_back(x[1]);
-	res.push_back(x[2]);
-	res.push_back(x[3]);
-	res.push_back(n);	
+	res.push_back(static_cast<float>(x[1]));
+	res.push_back(static_cast<float>(x[2]));
+	res.push_back(static_cast<float>(x[3]));
+	res.push_back(static_cast<float>(n));	
 	return res;
 }
 
@@ -16253,10 +16253,10 @@ vector<float> Util::twoD_fine_ali_SD_G(EMData* image, EMData *refim, EMData* mas
 	//printf("Took %d steps\n", n);
 
 	vector<float> res;
-	res.push_back(x[1]);
-	res.push_back(x[2]);
-	res.push_back(x[3]);
-	res.push_back(n);	
+	res.push_back(static_cast<float>(x[1]));
+	res.push_back(static_cast<float>(x[2]));
+	res.push_back(static_cast<float>(x[3]));
+	res.push_back(static_cast<float>(n));	
 	return res;
 }
 
@@ -16266,7 +16266,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 	EMData *rot= new EMData();
 	float ccc;
 	
-	rot = image->rot_scale_conv7(ang*pi/180.0, sx, sy, kb, 1.0);
+	rot = image->rot_scale_conv7(static_cast<float>(ang*pi/180.0), sx, sy, kb, 1.0f);
 	ccc = -rot->cmp("SqEuclidean", refim, Dict("mask", mask));
 	delete rot;
 	return ccc;
@@ -16300,7 +16300,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	int n2 = nx/2;
 
 	for (int k=-n2; k<=n2; k++) {		//cout << " k   "<<k <<endl;
-		float z2 = k*k;
+		float z2 = static_cast<float>(k*k);
 		for (int j=-n2; j<=n2; j++) {
 			float y2 = z2 + j*j;
 			if(y2 <= r2) {
@@ -16384,7 +16384,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 											newx = Util::get_irand(-1,1);
 											newy = Util::get_irand(-1,1);
 											newz = Util::get_irand(-1,1);
-											if(newx != 0 & newy != 0 & newz != 0)  {
+											if(newx != 0 && newy != 0 && newz != 0)  {
 												if(img_ptr(ib+newx,jb+newy,kb+newz) == 0.0f) {
 													img2_ptr(ib+newx,jb+newy,kb+newz) = 1.0f;//?????
 													keep_going = false;

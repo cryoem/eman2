@@ -71,7 +71,7 @@ using namespace EMAN;
       X1[i]=X[i];
       X[i] += xk*D[i]/(*dd);
     }
-    Y[3]=(*my_func)(image, refim, mask, X[1], X[2], X[3]);
+    Y[3]=(*my_func)(image, refim, mask, (float)X[1], (float)X[2], (float)X[3]);
   }
 
   // Find approximations of partial derivatives D(i)
@@ -88,7 +88,7 @@ using namespace EMAN;
       // Move increment in X(i)
       X[i]=X[i]+b;
       // Obtain yy
-      yy=(*my_func)(image, refim, mask, X[1], X[2], X[3]);
+      yy=(*my_func)(image, refim, mask, (float)X[1], (float)X[2], (float)X[3]);
       // Guard against divide by zero near maximum
       if (b==0) b=1e-12;
       // Update D(i)
@@ -142,7 +142,7 @@ using namespace EMAN;
   // Start initial probe
   for (i=1; i<l+1; i++) {
     // Obtain yy and D[i]
-    Y[i]=(*my_func)(image, refim, mask, X[1], X[2], X[3]);
+    Y[i]=(*my_func)(image, refim, mask, (float)X[1], (float)X[2], (float)X[3]);
     // Update X[i]
     Utilit1(D, &dd, l);
     Utilit2(X, X1, Y, D, &dd, xk, l, my_func, image, refim, mask);
@@ -162,7 +162,7 @@ e51: if (Y[3]<Y[2]) xk=xk/2.0;
   goto e200;
 e100: Y[1]=Y[2]; Y[2]=Y[3];
   // Obtain new values
-e200: Y[3]=(*my_func)(image, refim, mask, X[1], X[2], X[3]);
+e200: Y[3]=(*my_func)(image, refim, mask, (float)X[1], (float)X[2], (float)X[3]);
   Derivatives(X, D, Y, &dd, xk, l, my_func, image, refim, mask); // Get D(i)
   //if dd=0 then the precision limit of the computer has been reached
   if (dd==0) return;
@@ -215,7 +215,7 @@ int main() {
       X1[i]=X[i];
       X[i] += xk*D[i]/(*dd);
     }
-    Y[3]=(*my_func)(image, refim, mask, kb, X[1], X[2], X[3]);
+    Y[3]=(*my_func)(image, refim, mask, kb, (float)X[1], (float)X[2], (float)X[3]);
   }
 
   // Find approximations of partial derivatives D(i)
@@ -232,7 +232,7 @@ int main() {
       // Move increment in X(i)
       X[i]=X[i]+b;
       // Obtain yy
-      yy=(*my_func)(image, refim, mask, kb, X[1], X[2], X[3]);
+      yy=(*my_func)(image, refim, mask, kb, (float)X[1], (float)X[2], (float)X[3]);
       // Guard against divide by zero near maximum
       if (b==0) b=1e-12;
       // Update D(i)
@@ -266,7 +266,7 @@ int main() {
   // Start initial probe
   for (i=1; i<l+1; i++) {
     // Obtain yy and D[i]
-    Y[i]=(*my_func)(image, refim, mask, kb, X[1], X[2], X[3]);
+    Y[i]=(*my_func)(image, refim, mask, kb, (float)X[1], (float)X[2], (float)X[3]);
     // Update X[i]
     Utilit1(D, &dd, l);
     Utilit2_G(X, X1, Y, D, &dd, xk, l, my_func, image, refim, mask, kb);
@@ -286,7 +286,7 @@ e51: if (Y[3]<Y[2]) xk=xk/2.0;
   goto e200;
 e100: Y[1]=Y[2]; Y[2]=Y[3];
   // Obtain new values
-e200: Y[3]=(*my_func)(image, refim, mask, kb, X[1], X[2], X[3]);
+e200: Y[3]=(*my_func)(image, refim, mask, kb, (float)X[1], (float)X[2], (float)X[3]);
   Derivatives_G(X, D, Y, &dd, xk, l, my_func, image, refim, mask, kb); // Get D(i)
   //if dd=0 then the precision limit of the computer has been reached
   if (dd==0) return;

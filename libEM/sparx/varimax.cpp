@@ -154,7 +154,7 @@ int varmx(float *aload,int nv, int nf, int method, float *params,
 				for (i = 0;i < nv ;i++)
 				{
 					float    c2 = aloadj[i]*aloadj[i] - aloadk[i]*aloadk[i];
-					float    s2 = 2.0*aloadj[i]*aloadk[i];
+					float    s2 = 2.0f*aloadj[i]*aloadk[i];
 
 					a += c2;
 					b += s2;
@@ -163,13 +163,13 @@ int varmx(float *aload,int nv, int nf, int method, float *params,
 				} /*for (i = 0;i < nv ;i++)*/
 
 				denominator = fnv*c + lambda*(b*b - a*a);
-				numerator = 2.0*(fnv*d - lambda*a*b);
+				numerator = 2.0f*(fnv*d - lambda*a*b);
 
 				if (fabs(numerator) > eps1*fabs(denominator))
 				{
 					iflip = 1;
 					irot++;
-					angl = 0.25*atan2(numerator,denominator);
+					angl = 0.25f*atan2(numerator,denominator);
 					
 					c = cos(angl);
 					s = sin(angl);
@@ -188,7 +188,7 @@ int varmx(float *aload,int nv, int nf, int method, float *params,
 		ict++;
 
 		crit = compcrit(aload, nv, nf, lambda);
-		trot = (crit > 0.0) ? (crit - oldCrit)/crit : 0.0;
+		trot = (crit > 0.0f) ? (crit - oldCrit)/crit : 0.0f;
 		inoim++;
 		if (trot > eps2)
 		{
@@ -283,7 +283,7 @@ int doRotation(int method, float *aload, int nv, int nf,
 			else
 			{
 				/* equimax */
-				params[0] = .5*(float) nf;
+				params[0] = .5f*(float) nf;
 			}
 		}
 		if (knorm != (float *) 0)
@@ -299,7 +299,7 @@ int doRotation(int method, float *aload, int nv, int nf,
 				{
 					s += aload[k]*aload[k];
 				}
-				knorm[i] = s = (s > 0) ? sqrt(s) : 1.0;
+				knorm[i] = s = (s > 0) ? sqrt(s) : 1.0f;
 
 				k = i;
 				for (j = 0; j < nf; j++, k += nv)
