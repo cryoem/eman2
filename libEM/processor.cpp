@@ -405,7 +405,6 @@ void Wiener2DAutoAreaProcessor::process_inplace(EMData *image) {
 
 EMData * Wiener2DFourierProcessor::process(const EMData * image)
 {
-// TODO NOT IMPLEMENTED YET !!!
 	EMData *ret;
 	const EMData *fft;
 	float *fftd;
@@ -425,6 +424,16 @@ EMData * Wiener2DFourierProcessor::process(const EMData * image)
 		fft=image;
 		fftd=image->get_data();
 	}
+	powd=image->get_data();
+
+	int bad=0;
+	for (int i=0; i<image->get_xsize()*image->get_ysize(); i+=2) {
+		snr=(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1]-powd[i])/powd[i];
+		if (snr<0) { bad++; snr=0; }
+		
+	}
+
+	print("%d bad pixels\n",snr);
 	return ret;
 
 }
