@@ -204,7 +204,7 @@ void EMData::write_image(const string & filename, int img_index,
 		}
 	}
 	//PNG image already do cleaning in write_data function.
-	if (!imgtype == EMUtil::IMAGE_PNG) {
+	if (!(imgtype == EMUtil::IMAGE_PNG)) {
 		imageio->flush();
 	}
 

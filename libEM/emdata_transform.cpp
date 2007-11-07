@@ -311,7 +311,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	}
 
 	float gs = (maxgray - mingray) / (render_max - render_min);
-	float gs2 = 4095.999 / (render_max - render_min);
+	float gs2 = 4095.999f / (render_max - render_min);
 //	float gs2 = 1.0 / (render_max - render_min);
 	if (render_max < render_min) {
 		gs = 0;
@@ -658,7 +658,7 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 	}
 
 	float gs = (maxgray - mingray) / (render_max - render_min);
-	float gs2 = 4095.999 / (render_max - render_min);
+	float gs2 = 4095.999f / (render_max - render_min);
 //	float gs2 = 1.0 / (render_max - render_min);
 	if (render_max < render_min) {
 		gs = 0;
@@ -1445,7 +1445,7 @@ EMData* EMData::fft_continuous_rotate(const Transform3D& t3d)
 				t1++;
 				for (int y = 0; y < return_slice->get_ysize(); ++y) {
 					for (int x = 0; x < return_slice->get_xsize(); ++x) {
-						double cur_val = return_slice->get_value_at(x,y);
+						float cur_val = return_slice->get_value_at(x,y);
 						return_slice->set_value_at(x,y,cur_val+dat[idx]);
 					}
 				}
@@ -1492,7 +1492,7 @@ EMData* EMData::fft_continuous_rotate(const Transform3D& t3d)
 				for (int y = 0; y < return_slice->get_ysize(); ++y) {
 					for (int x = 0; x < return_slice->get_xsize(); ++x) {
 						double cur_val = return_slice->get_value_at(x,y);
-						return_slice->set_value_at(x,y,cur_val+mult*amp*cos(mdash*x+ndash*y+phase)); 
+						return_slice->set_value_at(x,y,static_cast<float>(cur_val+mult*amp*cos(mdash*x+ndash*y+phase))); 
 					}
 				}
 			}
@@ -1565,7 +1565,7 @@ EMData* EMData::ifft_realspace_rotate(const Transform3D& t3d)
 					if ( midx == 0 && nidx == 0 )
 					{
 						t1++;
-						double cur_val = return_slice->get_value_at(x,y);
+						float cur_val = return_slice->get_value_at(x,y);
 						return_slice->set_value_at(x,y,cur_val+dat[idx]);
 					}
 					else
@@ -1606,7 +1606,7 @@ EMData* EMData::ifft_realspace_rotate(const Transform3D& t3d)
 						}
 						else t9++;
 						double cur_val = return_slice->get_value_at(x,y);
-						return_slice->set_value_at(x,y,cur_val+mult*amp*cos(mdash*rotx+ndash*roty+phase)); 
+						return_slice->set_value_at(x,y,static_cast<float>(cur_val+mult*amp*cos(mdash*rotx+ndash*roty+phase))); 
 					}
 				}
 			}

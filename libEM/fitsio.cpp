@@ -180,7 +180,7 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 	case 32:
 		fread(cdata,nx,ny*nz*4,fitsfile);
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((int*) rdata, nx*ny*nz);
-		for (i=0; i<nx*ny*nz; i++) rdata[i]=idata[i];
+		for (i=0; i<nx*ny*nz; i++) rdata[i]=static_cast<float>(idata[i]);
 		break;
 	case -32:
 		fread(cdata,nx*4,ny*nz,fitsfile);
@@ -190,7 +190,7 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 		ddata=(double *)malloc(nx*ny*nz*8);
 		fread(ddata,nx,ny*nz*8,fitsfile);
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((double*) ddata, nx*ny*nz);
-		for (i=0; i<nx*ny*nz; i++) rdata[i]=ddata[i];
+		for (i=0; i<nx*ny*nz; i++) rdata[i]=static_cast<float>(ddata[i]);
 		free(ddata);
 		break;
 	}

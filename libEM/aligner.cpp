@@ -263,7 +263,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 		cf = 0;
 	}
 	EMData *cfL=this_img->copy();
-	float rotateAngle = (float) peak_index * 180.0 / this_img2_nx;
+	float rotateAngle = (float) (peak_index * 180.0f / this_img2_nx);
 	//printf("rotateAngleInit= %f \n",rotateAngle ); // eliminate later, PRB
 	cfL->rotate( rotateAngle, 0, 0);
 	EMData *cfR=cfL->copy();
@@ -307,7 +307,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 	int peak_index = 0;
 	Util::find_max(data, size, &peak, &peak_index);
 	float a = (float) ((1.0f - 1.0f * peak_index / size) * 180. * 2);
-	this_img->rotate(a*180./M_PI, 0, 0);
+	this_img->rotate(float(a*180./M_PI), 0, 0);
 
 	cf->set_attr("align.score", peak);
 	cf->set_attr("align.az",a);
@@ -478,7 +478,7 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,
 	printf("%f\t%d\n", aa / ndot * 180.0 / M_PI, i + 5);
 #endif
 
-	this_img->rotate(aa * 180. / ndot, 0, 0);
+	this_img->rotate(aa * 180.0f / ndot, 0, 0);
 	this_img->set_attr("align.az", aa * 180. / ndot);
 	return 0;
 }
@@ -1537,11 +1537,11 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 //	float dda = atan(2.0f / ny);
 
 	int mode = params.set_default("mode", 0);
-	float saz = params.set_default("az",0.0);
+	float saz = params.set_default("az",0.0f);
 // 	saz -= 1.0;
-	float sdx = params.set_default("dx",0.0);
+	float sdx = params.set_default("dx",0.0f);
 // 	sdx -= 1.0;
-	float sdy = params.set_default("dy",0.0);
+	float sdy = params.set_default("dy",0.0f);
 // 	sdy -= 1.0;
 	
 	int np = 3;
@@ -1553,10 +1553,10 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
 	
-	float stepx = params.set_default("stepx",1.0);
-	float stepy = params.set_default("stepy",1.0);
+	float stepx = params.set_default("stepx",1.0f);
+	float stepy = params.set_default("stepy",1.0f);
 	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
-	float stepaz = params.set_default("stepaz",5.0);
+	float stepaz = params.set_default("stepaz",5.0f);
 	
 // 	cout << "Using steps " << stepx << " " << stepy << " " << stepaz << endl;
 	// 	cout << "Using steps " << stepx << " " << stepy << " " << stepaz << endl;
@@ -1591,7 +1591,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	int status = GSL_SUCCESS;
 	int iter = 1;
 	
-	float precision = params.set_default("precision",0.04);
+	float precision = params.set_default("precision",0.04f);
 	int maxiter = params.set_default("maxiter",28);
 	while (rval == GSL_CONTINUE && iter < maxiter) {
 		iter++;

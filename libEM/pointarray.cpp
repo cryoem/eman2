@@ -189,7 +189,7 @@ EMData *mx0=distmx(1);
 EMData *mx1=to->distmx(1);
 unsigned int n2=mx1->get_xsize();	// same as get_number_points on to
 
-if (max_miss<0) max_miss=(float)mx0->get_attr("sigma")/10.0;
+if (max_miss<0) max_miss=(float)mx0->get_attr("sigma")/10.0f;
 //printf("max error %f\n",max_miss);
 
 
@@ -227,7 +227,7 @@ for (i=0; i<n; i++) {
 		if (d<bestd) { bestd=d; bestn=j; }
 	}
 	ret[i]=bestn;
-	rete[i]=bestd;
+	rete[i]=static_cast<float>(bestd);
 }
 
 // This will remove duplicate assignments, keeping the best one
@@ -310,10 +310,10 @@ if (flags&1) {
 }
 else if (flags&2) {
 	// find the 'a' list peak
-	float hia=0;
+	float hia=0.0f;
 	int hina=0;
 	for (i=0; i<na; i++) {
-		if (get_value_at(i)>hia) { hia=get_value_at(i); hina=i; }
+		if (get_value_at(i)>hia) { hia=static_cast<float>(get_value_at(i)); hina=i; }
 	}
 	cax=get_vector_at(hina)[0];
 	cay=get_vector_at(hina)[1];
@@ -322,7 +322,7 @@ else if (flags&2) {
 	float hib=0;
 	int hinb=0;
 	for (i=0; i<na; i++) {
-		if (to->get_value_at(i)>hib) { hib=to->get_value_at(i); hinb=i; }
+		if (to->get_value_at(i)>hib) { hib=static_cast<float>(to->get_value_at(i)); hinb=i; }
 	}
 	cbx=to->get_vector_at(hinb)[0];
 	cby=to->get_vector_at(hinb)[1];
@@ -343,7 +343,7 @@ Vec3f offset(cbx-cax,cby-cay,0);
 
 // find the nearest point for each x point, taking the estimated centers into account
 for (i=0; i<na; i++) {
-	float rmin=1.0e30;
+	float rmin=1.0e30f;
 	for (j=0; j<nb; j++) {
 		float r=(get_vector_at(i)+offset-to->get_vector_at(j)).length();
 		if (r<rmin) { a2b[i]=j; rmin=r; }
@@ -352,7 +352,7 @@ for (i=0; i<na; i++) {
 
 // find the nearest point for each y point
 for (i=0; i<nb; i++) {
-	float rmin=1.0e30;
+	float rmin=1.0e30f;
 	for (j=0; j<na; j++) {
 		float r=(get_vector_at(j)+offset-to->get_vector_at(i)).length();
 		if (r<rmin) { b2a[i]=j; rmin=r; }

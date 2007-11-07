@@ -337,8 +337,8 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	for (i=0; i<n; i+=2) {
 		float c;
 		if (dosqrt) c=pow(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1],0.25f);
-		else c = hypot(fftd[i],fftd[i+1]);
-		if (c==0) c=1.0e-30;	// prevents divide by zero in normalization
+		else c = static_cast<float>(hypot(fftd[i],fftd[i+1]));
+		if (c==0) c=1.0e-30f;	// prevents divide by zero in normalization
 		fftd[i]*=c;
 		fftd[i+1]*=c;
 		if (sumd) { sumd[i]+=c; sumd[i+1]+=0; }
@@ -372,7 +372,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 {
 // TODO NOT IMPLEMENTED YET !!!
-	EMData *ret;
+	EMData *ret = 0;
 	const EMData *fft;
 	float *fftd;
 	int f=0;
@@ -406,7 +406,7 @@ void Wiener2DAutoAreaProcessor::process_inplace(EMData *image) {
 EMData * Wiener2DFourierProcessor::process(const EMData * image)
 {
 	EMData *ret;
-	const EMData *fft;
+/*	const EMData *fft;
 	float *fftd;
 	int f=0;
 
@@ -434,7 +434,7 @@ EMData * Wiener2DFourierProcessor::process(const EMData * image)
 	}
 
 	print("%d bad pixels\n",snr);
-	return ret;
+*/	return ret;
 
 }
 
@@ -511,7 +511,7 @@ void LowpassTanhProcessor::create_radial_func(vector < float >&radial_mask) cons
 	Assert(radial_mask.size() > 0);
 	float x = 0.0f , step = 0.5f/radial_mask.size();
 	for (size_t i = 0; i < radial_mask.size(); i++) {
-		radial_mask[i] = tanh((lowpass - x)*60.0) / 2.0f + 0.5f;
+		radial_mask[i] = tanh((lowpass - x)*60.0f) / 2.0f + 0.5f;
 		x += step;
 	}
 }
@@ -1430,7 +1430,7 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 		for(int j=0; j<nx; j++){
 			for(int i=0; i<ny; i++){
 				int ij = j*nx+i;
-				d[ij]-=-((i-m[0])*n[0]+(j-m[1])*n[1])/n[2]+m[2];
+				d[ij]-=static_cast<float>(-((i-m[0])*n[0]+(j-m[1])*n[1])/n[2]+m[2]);
 			}
 		}
 	}
@@ -1438,7 +1438,7 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 		for(int j=0; j<nx; j++){
 			for(int i=0; i<ny; i++){
 				int ij = j*nx+i;
-				if(d[ij]) d[ij]-=-((i-m[0])*n[0]+(j-m[1])*n[1])/n[2]+m[2];
+				if(d[ij]) d[ij]-=static_cast<float>(-((i-m[0])*n[0]+(j-m[1])*n[1])/n[2]+m[2]);
 			}
 		}
 	}
@@ -1446,8 +1446,8 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 	// set return plane parameters
 	vector< float > planeParam;
 	planeParam.resize(6);
-	for(int i=0; i<3; i++) planeParam[i] = n[i];
-	for(int i=0; i<3; i++) planeParam[i+3] = m[i];
+	for(int i=0; i<3; i++) planeParam[i] = static_cast<float>(n[i]);
+	for(int i=0; i<3; i++) planeParam[i+3] = static_cast<float>(m[i]);
 	params["planeParam"]=EMObject(planeParam);
 }
 
@@ -1509,7 +1509,7 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 	int ny=image->get_ysize();
 	
 	int x,y;
-	float norm=nx*ny;
+	float norm=static_cast<float>(nx*ny);
 
 	for (y=0; y<ny; y++) image->set_value_at(0,y,0);
 	
@@ -2043,7 +2043,7 @@ float NormalizeMaskProcessor::calc_sigma(EMData * image) const
 				n_norm++;
 			}
 		}
-		return sqrt((sq2 - sum * sum /n_norm)/float(n_norm -1)) ;
+		return sqrt(static_cast<float>((sq2 - sum * sum /n_norm)/(n_norm -1))) ;
 	}
 }
 
@@ -2435,7 +2435,7 @@ void BilateralProcessor::process_inplace(EMData * image)
 							index2=(i+half_width+m)*tempint3+(j+half_width+n);
 							tempfloat3=(OrgImg[index1]-OrgImg[index2])*(OrgImg[index1]-OrgImg[index2]);
 	
-							tempfloat3=mask[index]*(1.0/(1+tempfloat3/value_sigma));	// Lorentz kernel
+							tempfloat3=mask[index]*(1.0f/(1+tempfloat3/value_sigma));	// Lorentz kernel
 							//tempfloat3=mask[index]*exp(tempfloat3/Sigma2/(-2.0));	// Guassian kernel
 							tempfloat1+=tempfloat3;
 	
@@ -5384,7 +5384,7 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 	float y_sigma = params["y_sigma"];
 	float z_sigma = params["z_sigma"];
 
-        float x_center = params["x_center"];
+	float x_center = params["x_center"];
 	float y_center = params["y_center"];
 	float z_center = params["z_center"];
 
@@ -5392,11 +5392,11 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-        float x_twosig2 = 2*x_sigma*x_sigma;
+	float x_twosig2 = 2*x_sigma*x_sigma;
 	float y_twosig2 = 2*y_sigma*y_sigma;
 	float z_twosig2 = 2*z_sigma*z_sigma;
 
-        float sr2pi = sqrt( 2.0*pi );
+	float sr2pi = sqrt( 2.0f*(float)pi );
 	float norm  = 1.0f/ ( x_sigma*y_sigma*z_sigma*sr2pi*sr2pi*sr2pi );
 
 	for (int iz=0; iz < nz; iz++) {
@@ -5623,9 +5623,9 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	float radius = params.set_default("radius",nx/2);
+	float radius = params.set_default("radius",nx/2.0f);
 	string axis = (const char*)params["axis"];
-	float c =  params.set_default("c",nx/2);
+	float c =  params.set_default("c",nx/2.0f);
 	int fill = params.set_default("fill",1);
 	
 	float *dat = image->get_data();
@@ -5770,7 +5770,7 @@ void TestImageCylinder::process_inplace(EMData * image)
 		}
 	}
 	else {
-		height = nz;
+		height = static_cast<float>(nz);
 	}
 	
 	float *dat = image->get_data();
@@ -5984,7 +5984,7 @@ void WaveletProcessor::process_inplace(EMData *image)
 	ny=image->get_ysize();
 	
 	if (nx != ny && ny!=1) throw ImageDimensionException("Wavelet transform only supports square images");
-	float l=log((float)nx)/log(2.0);
+	float l=log((float)nx)/log(2.0f);
 	if (l!=floor(l)) throw ImageDimensionException("Wavelet transform size must be power of 2");
 
 	// Unfortunately GSL works only on double() arrays
@@ -6014,7 +6014,7 @@ void WaveletProcessor::process_inplace(EMData *image)
 	gsl_wavelet_workspace_free (work);
 	gsl_wavelet_free (w);
 
-	for (i=0; i<nx*ny; i++) image->set_value_at_fast(i,0,0,cpy[i]);
+	for (i=0; i<nx*ny; i++) image->set_value_at_fast(i,0,0,static_cast<float>(cpy[i]));
 	
 	free(cpy);
 }

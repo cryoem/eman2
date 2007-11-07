@@ -310,9 +310,9 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	new_hed.avdens = (float)dict["mean"];
 	new_hed.sigma = (float)dict["sigma"];
 	
-	if(dict.has_key("euler_alt")) new_hed.mrc1[1] = (float)dict["euler_alt"]*M_PI/180.0;
-	if(dict.has_key("euler_az")) new_hed.mrc1[2] = (float)dict["euler_az"]*M_PI/180.0;
-	if(dict.has_key("euler_phi")) new_hed.mrc1[0] = (float)dict["euler_phi"]*M_PI/180.0;
+	if(dict.has_key("euler_alt")) new_hed.mrc1[1] = (float)dict["euler_alt"]*M_PI/180.0f;
+	if(dict.has_key("euler_az")) new_hed.mrc1[2] = (float)dict["euler_az"]*M_PI/180.0f;
+	if(dict.has_key("euler_phi")) new_hed.mrc1[0] = (float)dict["euler_phi"]*M_PI/180.0f;
 	
 	if(dict.has_key("ptcl_repr")) new_hed.mrc2 = (int)dict["ptcl_repr"];
 

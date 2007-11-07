@@ -271,7 +271,7 @@ vector<EMData *> Util::svdcmp(const vector<EMData *> &data,int nvec) {
 		for (z=0,i=0; z<data[0]->get_zsize(); z++) {
 			for (y=0; y<data[0]->get_ysize(); y++) {
 				for (x=0; x<data[0]->get_xsize(); x++,i++) {
-					a->set_value_at(x,y,z,gsl_matrix_get(A,i,im));
+					a->set_value_at(x,y,z,static_cast<float>(gsl_matrix_get(A,i,im)));
 				}
 			}
 		}
@@ -517,9 +517,9 @@ double d=S*Sxy*Sxy - 2*Sx*Sxy*Sy + Sxx*Sy*Sy  + Sx*Sx*Syy - S*Sxx*Syy;
 
 Vec3f ret(0,0,0);
 
-ret[0]=-((Sxy*Sxz*Sy - Sx*Sxz*Syy + Sx*Sxy*Syz - Sxx*Sy*Syz - Sxy*Sxy*Sz +Sxx*Syy*Sz)/d);
-ret[1]=-((-Sxz*Sy*Sy  + S*Sxz*Syy - S*Sxy*Syz + Sx*Sy*Syz + Sxy*Sy*Sz -Sx*Syy*Sz) /d);
-ret[2]=-((-S*Sxy*Sxz + Sx*Sxz*Sy - Sx*Sx*Syz + S*Sxx*Syz + Sx*Sxy*Sz -Sxx*Sy*Sz) /d);
+ret[0]=static_cast<float>(-((Sxy*Sxz*Sy - Sx*Sxz*Syy + Sx*Sxy*Syz - Sxx*Sy*Syz - Sxy*Sxy*Sz +Sxx*Syy*Sz)/d));
+ret[1]=static_cast<float>(-((-Sxz*Sy*Sy  + S*Sxz*Syy - S*Sxy*Syz + Sx*Sy*Syz + Sxy*Sy*Sz -Sx*Syy*Sz) /d));
+ret[2]=static_cast<float>(-((-S*Sxy*Sxz + Sx*Sxz*Sy - Sx*Sx*Syz + S*Sxx*Syz + Sx*Sxy*Sz -Sxx*Sy*Sz) /d));
 
 return ret;
 }

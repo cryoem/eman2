@@ -190,7 +190,7 @@ void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& r
 #else
 		if (rendermax<=rendermin || std::isnan(rendermin) || std::isnan(rendermax)) {
 #endif
-		double m=0,s=0;
+		float m=0.0f,s=0.0f;
 			
 		for (int i=0; i<nx*ny; i++) { m+=data[i]; s+=data[i]*data[i]; }
 		m/=(float)(nx*ny);
@@ -200,7 +200,7 @@ void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& r
 #else
 		if (s<=0 || std::isnan(s)) s=1.0;	// this means all data values are the same
 #endif	//_WIN32	
-		rendermin=m-s*3.0;
-		rendermax=m+s*3.0;	
+		rendermin=m-s*3.0f;
+		rendermax=m+s*3.0f;	
 	}
 }

@@ -1351,7 +1351,7 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 
 	this_data = get_data();
 
-	float da_rad = da*M_PI/180.0;
+	float da_rad = da*(float)M_PI/180.0f;
 	
 	float *with_data = with->get_data();
 	float mx0 = cos(da_rad);
@@ -2189,7 +2189,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 		r1 = 4;
 	}
 
-	int rr = ny / 2 - 2 - (int) Util::fast_floor(hypot(dx, dy));
+	int rr = ny / 2 - 2 - (int) Util::fast_floor(static_cast<float>(hypot(dx, dy)));
 	rr-=rr%2;
 	if (r2 <= r1 || r2 > rr) {
 		r2 = rr;
@@ -2587,9 +2587,9 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 				float r,v;
 				if (step==2) {		//complex
 					if (x==0 && y>ny/2) continue;
-					r=hypot(x/2.0f,float(y<ny/2?y:ny-y));		// origin at 0,0; periodic
+					r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 					if (!inten) {
-						if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
+						if (is_ri()) v=static_cast<float>(hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
 						else v=rdata[i];							// amp/phase, just get amp
 					} else {
 						if (isinten) v=rdata[i];
@@ -2598,7 +2598,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 					}
 				}
 				else {
-					r=hypot(float(x-nx/2),float(y-ny/2));
+					r=static_cast<float>(hypot(x-nx/2,y-ny/2));
 					if (inten) v=rdata[i]*rdata[i];
 					else v=rdata[i];
 				}
@@ -2606,8 +2606,8 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 				int f=int(r);	// safe truncation, so floor isn't needed
 				r-=float(f);	// r is now the fractional spacing between bins
 				if (f>=0 && f<n) {
-					ret[f]+=v*(1.0-r);
-					norm[f]+=(1.0-r);
+					ret[f]+=v*(1.0f-r);
+					norm[f]+=(1.0f-r);
 					if (f<n-1) {
 						ret[f+1]+=v*r;
 						norm[f+1]+=r;
@@ -2626,7 +2626,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 						if (x==0 && z==nz/2 && y<ny/2) continue;
 						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 						if (!inten) {
-							if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
+							if (is_ri()) v=static_cast<float>(hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
 							else v=rdata[i];							// amp/phase, just get amp
 						} else {
 							if (isinten) v=rdata[i];
@@ -2643,8 +2643,8 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 					int f=int(r);	// safe truncation, so floor isn't needed
 					r-=float(f);	// r is now the fractional spacing between bins
 					if (f>=0 && f<n) {
-						ret[f]+=v*(1.0-r);
-						norm[f]+=(1.0-r);
+						ret[f]+=v*(1.0f-r);
+						norm[f]+=(1.0f-r);
 						if (f<n-1) {
 							ret[f+1]+=v*r;
 							norm[f+1]+=r;
@@ -2655,7 +2655,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 		}
 	}
 
-	for (i=0; i<n; i++) ret[i]/=norm[i]?norm[i]:1.0;	// Normalize
+	for (i=0; i<n; i++) ret[i]/=norm[i]?norm[i]:1.0f;	// Normalize
 
 	EXITFUNC;
 
@@ -2676,7 +2676,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 
 	int x,y,i;
 	int step=is_complex()?2:1;
-	float astep=M_PI*2.0/float(nwedge);
+	float astep=static_cast<float>(M_PI*2.0/nwedge);
 
 	for (i=0; i<n*nwedge; i++) ret[i]=norm[i]=0.0;
 
@@ -2685,10 +2685,10 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 		for (x=0; x<nx; x+=step,i+=step) {
 			float r,v,a;
 			if (is_complex()) {
-				r=hypot(x/2.0,float(y<ny/2?y:ny-y));		// origin at 0,0; periodic
+				r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 				a=atan2(float(y<ny/2?y:ny-y),x/2.0f);
 				if (!inten) {
-					if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
+					if (is_ri()) v=static_cast<float>(hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
 					else v=rdata[i];							// amp/phase, just get amp
 				} else {
 					if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
@@ -2696,7 +2696,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 				}
 			}
 			else {
-				r=hypot(float(x-nx/2),float(y-ny/2));
+				r=static_cast<float>(hypot(x-nx/2,y-ny/2));
 				a=atan2(float(y-ny/2),float(x-nx/2));
 				if (inten) v=rdata[i]*rdata[i];
 				else v=rdata[i];
@@ -2707,8 +2707,8 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 			int f=int(r);	// safe truncation, so floor isn't needed
 			r-=float(f);	// r is now the fractional spacing between bins
 			if (f>=0 && f<n) {
-				ret[f+bin]+=v*(1.0-r);
-				norm[f+bin]+=(1.0-r);
+				ret[f+bin]+=v*(1.0f-r);
+				norm[f+bin]+=(1.0f-r);
 				if (f<n-1) {
 					ret[f+1+bin]+=v*r;
 					norm[f+1+bin]+=r;
@@ -2717,7 +2717,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 		}
 	}
 
-	for (i=0; i<n*nwedge; i++) ret[i]/=norm[i]?norm[i]:1.0;	// Normalize
+	for (i=0; i<n*nwedge; i++) ret[i]/=norm[i]?norm[i]:1.0f;	// Normalize
 	EXITFUNC;
 
 	return ret;
