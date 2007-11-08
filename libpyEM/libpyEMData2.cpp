@@ -172,6 +172,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("set_complex_size", &EMAN::EMData::set_complex_size, EMAN_EMData_set_complex_size_overloads_1_3())
         .def("set_path", &EMAN::EMData::set_path)
         .def("set_pathnum", &EMAN::EMData::set_pathnum)
+#ifdef EMAN2_USING_OPENGL
+        .def("gen_glu_mipmaps", (unsigned int (EMAN::EMData::*)() const)&EMAN::EMData::gen_glu_mipmaps)
+#endif //EMAN2_USING_OPENGL
         .def("get_2dview", (EMAN::MArray2D (EMAN::EMData::*)() const)&EMAN::EMData::get_2dview)
         .def("get_3dview", (EMAN::MArray3D (EMAN::EMData::*)() const)&EMAN::EMData::get_3dview)
         .def("get_2dcview", (EMAN::MCArray2D (EMAN::EMData::*)() const)&EMAN::EMData::get_2dcview)

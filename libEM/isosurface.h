@@ -38,7 +38,9 @@ namespace EMAN
 		virtual int get_sampling_range() = 0;
 		
 		virtual Dict get_isosurface()  = 0;
+#ifdef EMAN2_USING_OPENGL
 		virtual unsigned long get_isosurface_dl() = 0;
+#endif
 	
 	protected:
 		EMData * _emdata;

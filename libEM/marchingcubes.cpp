@@ -5,7 +5,10 @@
 #ifdef _WIN32
 	#include <windows.h>
 #endif	//_WIN32
+
+#ifdef EMAN2_USING_OPENGL
 #include "GL/gl.h"
+#endif
 // #include "GL/glext.h"
 
 #include "marchingcubes.h"
@@ -190,6 +193,7 @@ Dict MarchingCubes::get_isosurface()
 	return d;
 }
 
+#ifdef EMAN2_USING_OPENGL
 unsigned long MarchingCubes::get_isosurface_dl()
 {
 	
@@ -255,6 +259,9 @@ unsigned long MarchingCubes::get_isosurface_dl()
 #endif
 	return _isodl;
 }
+
+#endif //EMAN2_USING_OPENGL
+
 void MarchingCubes::set_data(EMData* data)
 {
 	if ( data->get_zsize() == 1 ) throw ImageDimensionException("The z dimension of the image must be greater than 1");

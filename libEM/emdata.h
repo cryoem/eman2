@@ -46,6 +46,10 @@
 #include "geometry.h"
 #include "transform.h"
 
+#ifdef EMAN2_USING_OPENGL
+#include <GL/glu.h>
+#endif
+
 using std::string;
 using std::vector;
 using std::map;
@@ -94,7 +98,12 @@ namespace EMAN
 	
 		/** This is the header of EMData stay in sparx directory */
 		#include "sparx/emdata_sparx.h"
-	
+
+#ifdef EMAN2_USING_OPENGL
+		/** GL Texturing */
+		#include  "emdata_gl.h"
+#endif //EMAN2_USING_OPENGL
+
 		/** This is the header of EMData stay in sparx directory */
 		#include "sparx/normpadft.h"
 		

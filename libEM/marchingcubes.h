@@ -177,13 +177,15 @@ namespace EMAN
 		* @return a dictionary object containing to float pointers (to vertex and normal data), and an int pointer (to face data)
 		*/
 		Dict get_isosurface();
-		
+
+#ifdef EMAN2_USING_OPENGL
 		/** Get an isosurface display list
 		* Traverses the tree, marches the cubes, and renders a display list using the associated vertices and normals
 		* Uses OpenGL arrays for maximum performance
 		* @return an OpenGL display list number
 		*/
 		unsigned long get_isosurface_dl();
+#endif //EMAN2_USING_OPENGL
 		
 	private:	
 		map<int, int> point_map;
