@@ -28,12 +28,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  * 
  * */
+#ifndef EMDATA_WRAPPER_H_
+#define EMDATA_WRAPPER_H_
 
 #include "emdata.h"
 #include <boost/python.hpp>
-
-#ifndef EMDATA_WRAPPER_H_
-#define EMDATA_WRAPPER_H_
 
 using boost::python::object;
 

@@ -455,7 +455,7 @@ float dist(int lnlen, const float* line_1, const float* line_2)
        float tmp = line_1[i] - line_2[i];
        dis2 += tmp*tmp;
     }
-    return std::sqrt( dis2 );
+    return static_cast<float>(std::sqrt(dis2));
 }   
 
 float dist_r(int lnlen, const float* line_1, const float* line_2)
@@ -465,7 +465,7 @@ float dist_r(int lnlen, const float* line_1, const float* line_2)
         float tmp = line_1[lnlen-1-i] - line_2[i];
         dis2 += tmp*tmp;
     }
-    return std::sqrt(dis2);
+    return static_cast<float>(std::sqrt(dis2));
 }
 
 
@@ -484,7 +484,7 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 
     float* line_1 = get_data() + n1*lnlen;
     float* line_2 = sinoj->get_data() + n2*lnlen;
-    float just = (alpha1-180.0)*(alpha2-180.0);
+    float just = (alpha1-180.0f)*(alpha2-180.0f);
     if( just > 0.0 ) {
         return dist(lnlen, line_1, line_2);
     }
@@ -690,7 +690,7 @@ vector<float> EMData::cog() {
 		cntog.push_back(MX);
 		cntog.push_back(RG);
 #ifdef _WIN32
-		cntog.push_back(Util::round(MX));
+		cntog.push_back((float)Util::round(MX));
 #else
 		cntog.push_back(round(MX));
 #endif	//_WIN32
@@ -722,7 +722,7 @@ vector<float> EMData::cog() {
 		cntog.push_back(MY);
 		cntog.push_back(RG);
 #ifdef _WIN32
-		cntog.push_back(Util::round(MX));cntog.push_back(Util::round(MY));
+		cntog.push_back((float)Util::round(MX));cntog.push_back((float)Util::round(MY));
 #else
 		cntog.push_back(round(MX));cntog.push_back(round(MY));
 #endif	//_WIN32
@@ -762,7 +762,7 @@ vector<float> EMData::cog() {
 		cntog.push_back(MZ);
 		cntog.push_back(RG);
 #ifdef _WIN32
-		cntog.push_back(Util::round(MX));cntog.push_back(Util::round(MY));cntog.push_back(Util::round(MZ));
+		cntog.push_back((float)Util::round(MX));cntog.push_back((float)Util::round(MY));cntog.push_back((float)Util::round(MZ));
 #else
 		cntog.push_back(round(MX));cntog.push_back(round(MY));cntog.push_back(round(MZ));
 #endif	//_WIN32	
@@ -971,13 +971,13 @@ EMData* EMData::average_circ_sub() const
 	float *proj = image->get_data();
 	float *pnewimg = newimg->get_data();
 	//  Calculate average outside of a circle
-	float r2 = (nx/2)*(nx/2);
+	float r2 = static_cast<float>( (nx/2)*(nx/2) );
 	float qs=0.0f;
 	int m=0;
 	int ncz = nz/2 + 1;
 	int ncy = ny/2 + 1;
 	int ncx = nx/2 + 1;
-	for (int iz = 1; iz <= nz; iz++) { float yy = (iz-ncz)*(iz-ncz);
+	for (int iz = 1; iz <= nz; iz++) { float yy = static_cast<float>( (iz-ncz)*(iz-ncz) );
 		for (int iy = 1; iy <=ny; iy++) { float xx = yy + (iy-ncy)*(iy-ncy);
 			for (int ix = 1; ix <= nx; ix++) {
 				if ( xx+float((ix-ncx)*(ix-ncx)) > r2 ) {
@@ -1372,7 +1372,7 @@ public:
 
         m_winsize2= m_winsize*m_winsize;
         m_vecsize = m_winsize2/4;
-        m_wgh=atan( amp_contrast/(1.0-amp_contrast) );
+        m_wgh=atan( amp_contrast/(1.0f-amp_contrast) );
 	m_lambda = 12.398f/std::sqrt(voltage*(1022.f+voltage));
     }
 
@@ -1408,7 +1408,7 @@ public:
 	    float ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
 	    float a = m_lambda*ak*ak;
 	    float b = m_lambda*a*a;
-	    float ctf = -sin(-M_PI*(defocus*a-m_Cs*b/2.)-m_wgh);
+	    float ctf = -sin(-M_PI*(defocus*a-m_Cs*b/2.0f)-m_wgh);
      //	    ptr->at(r2) = ctf;
      //    }
 
@@ -2139,8 +2139,8 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 		float fdata[27];
 		
 		for (int iL=0; iL<27 ; iL++){  // need this indexing array later
-			xArr[iL]  =  (int) (fmod(iL,3.0f) - 1);
-			yArr[iL]  =  (int)( fmod( ((int) (iL/3) ),3.0f)- 1);
+			xArr[iL]  =  (int) (fmod((float)iL,3.0f) - 1.0f);
+			yArr[iL]  =  (int)( fmod( ((float) (iL/3) ),3.0f)- 1.0f);
 			zArr[iL]  = ((int) (iL/9)  ) -1;
 //			printf("iL=%d, \t xArr=%d, \t yArr=%d, \t zArr=%d \n",iL, xArr[iL],yArr[iL],zArr[iL]);
 		}
@@ -2306,7 +2306,7 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	int nxn, nyn, nzn;
 	if(scale_input == 0.0f) scale_input = 1.0f;
 	//const float scale=0.5;
-	float  scale = 0.5*scale_input;
+	float  scale = 0.5f*scale_input;
 	float  sum, w;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
@@ -2398,7 +2398,7 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 // This fucntion is at first just a test, but I found it is slightly faster (about 10%) than rot_scale_conv_new(), so I decided to retain it. 
 EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 	int nxn, nyn, nzn;
-	float  scale = 0.5*scale_input;
+	float  scale = 0.5f*scale_input;
 	float  sum, w;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
@@ -2551,7 +2551,7 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	int nxn, nyn, nzn;
 	
 	if (scale_input == 0.0f) scale_input = 1.0f;
-	float  scale = 0.5*scale_input;
+	float  scale = 0.5f*scale_input;
 
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
@@ -2609,8 +2609,8 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
 			float yold = x*sang/scale + ycang-iys;
 			
-			xold = xold/2.0;
-			yold = yold/2.0;
+			xold = xold/2.0f;
+			yold = yold/2.0f;
 			(*ret)(ix,iy) = Util::get_pixel_conv_new(nx, ny, 1, xold, yold, 1, data, kb);
 			
 		}
@@ -3004,11 +3004,11 @@ void EMData::divkbsinh(const Util::KaiserBessel& kb) {
 	// for a 2-d image iz=0, nz=1, so iz-nz/2 = 0 - 1/2 = 0, since
 	// the division is an integer division.)
 	for (int iz=0; iz < nz; iz++) {
-		float wz = kb.sinhwin(iz-nz/2);
+		float wz = kb.sinhwin(static_cast<float>(iz-nz/2));
 		for (int iy=0; iy < ny; iy++) {
-			float wy = kb.sinhwin(iy-ny/2);
+			float wy = kb.sinhwin(static_cast<float>(iy-ny/2));
 			for (int ix=0; ix < nx; ix++) {
-				float wx = kb.sinhwin(ix-nx/2);
+				float wx = kb.sinhwin(static_cast<float>(ix-nx/2));
 				float w = wx*wy*wz;
 				(*this)(ix,iy,iz) /= w;
 			}
@@ -3081,7 +3081,7 @@ EMData* EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 	tftrans.transpose();      // with spider
 	for (int jy = -nhalf; jy < nhalf; jy++) {
 		for (int jx = 0; jx <= nhalf; jx++) {
-			Vec3f nucur(jx, jy, 0.f);
+			Vec3f nucur((float)jx, (float)jy, 0.f);
 			Vec3f nunew = tftrans*nucur;
 			float xnew = nunew[0], ynew = nunew[1], znew = nunew[2];
 			if (xnew*xnew+ynew*ynew+znew*znew <= rim) {
@@ -3353,10 +3353,10 @@ vector<float> EMData::peak_search(int ml, float invert) {
 			count=count+1;
 	    		if(count<=ml) {
 				res.push_back((*it).value);
-				res.push_back((*it).x);
-				if(img_dim!=1) res.push_back((*it).y);
+				res.push_back(static_cast<float>((*it).x));
+				if(img_dim!=1) res.push_back(static_cast<float>((*it).y));
     			 
-				if(nz!=1) {res.push_back((*it).z);}   
+				if(nz!=1) {res.push_back(static_cast<float>((*it).z));}   
     			 
 				if(xval != 0.0)
 					{res.push_back((*it).value/xval);}
@@ -3395,11 +3395,11 @@ vector<float> EMData::phase_cog()
 		         S += sin(P * (i-1)) * rdata(i,j,k);}
 		F1 = atan2(S,C);
 		if (F1 < 0.0){ F1 += 8*atan(1.0f); }
-		SNX = F1/P +1.0;
+		SNX = F1/P +1.0f;
 		SNX = SNX - ((nx/2)+1);
 		ph_cntog.push_back(SNX);
 #ifdef _WIN32
-		ph_cntog.push_back(Util::round(SNX));
+		ph_cntog.push_back((float)Util::round(SNX));
 #else
 		ph_cntog.push_back(round(SNX));
 #endif //_WIN32
@@ -3426,7 +3426,7 @@ vector<float> EMData::phase_cog()
 			 S += sin(P*(j-1))*T;}
 		 F1=atan2(S,C);
 		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNY = F1/P +1.0;
+		 SNY = F1/P +1.0f;
 		 C=0.f;S=0.f;
 		 P = 8*atan(1.0f)/nx;
 		 for(i=1;i<=nx;i++)
@@ -3434,12 +3434,12 @@ vector<float> EMData::phase_cog()
 			 S += sin(P*(i-1))*X(i);}
 	         F1=atan2(S,C);
 		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNX = F1/P +1.0;
+		 SNX = F1/P +1.0f;
 		 SNX = SNX - ((nx/2)+1);
 		 SNY = SNY - ((ny/2)+1);
 		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);	
 #ifdef _WIN32
-		 ph_cntog.push_back(Util::round(SNX)); ph_cntog.push_back(Util::round(SNY));
+		 ph_cntog.push_back((float)Util::round(SNX)); ph_cntog.push_back((float)Util::round(SNY));
 #else
 		 ph_cntog.push_back(round(SNX)); ph_cntog.push_back(round(SNY));
 #endif	//_WIN32
@@ -3477,8 +3477,8 @@ vector<float> EMData::phase_cog()
 			{C += cos(P*(i-1))*X(i);
 			 S += sin(P*(i-1))*X(i);}
 		 F1=atan2(S,C);
-		 if(F1<0.0){ F1 += 8*atan(1.0); }
-		 SNX = F1/P +1.0;
+		 if(F1<0.0){ F1 += 8*atan(1.0f); }
+		 SNX = F1/P +1.0f;
 		 C=0.f;S=0.f;
 		 P = 8*atan(1.0f)/ny;
 		 for(j=1;j<=ny;j++)
@@ -3486,7 +3486,7 @@ vector<float> EMData::phase_cog()
 			 S += sin(P*(j-1))*Y(j);}
 		 F1=atan2(S,C);
 		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNY = F1/P +1.0;
+		 SNY = F1/P +1.0f;
 		 C=0.f;S=0.f;
 		 P = 8*atan(1.0f)/nz;
 		 for(k=1;k<=nz;k++)
@@ -3494,13 +3494,13 @@ vector<float> EMData::phase_cog()
 		         S += sin(P*(k-1))*Z(k);}
 		 F1=atan2(S,C);
 		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNZ = F1/P +1.0;	
+		 SNZ = F1/P +1.0f;	
 		 SNX = SNX - ((nx/2)+1);
 		 SNY = SNY - ((ny/2)+1);
 		 SNZ = SNZ - ((nz/2)+1);		
 		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY); ph_cntog.push_back(SNZ);
 #ifdef _WIN32
-		 ph_cntog.push_back(Util::round(SNX)); ph_cntog.push_back(Util::round(SNY)); ph_cntog.push_back(Util::round(SNZ));
+		 ph_cntog.push_back((float)Util::round(SNX)); ph_cntog.push_back((float)Util::round(SNY)); ph_cntog.push_back((float)Util::round(SNZ));
 #else
 		 ph_cntog.push_back(round(SNX)); ph_cntog.push_back(round(SNY));ph_cntog.push_back(round(SNZ));
 #endif
@@ -3514,7 +3514,7 @@ vector<float> EMData::phase_cog()
 
 #define avagadro (6.023*(double)pow(10.0,23.0))
 #define density_protein (1.36)
-#define R (0.61803399)
+#define R (0.61803399f)
 #define C (1.f-R)
 float EMData::find_3d_threshold(float mass, float pixel_size)
 {
@@ -3526,9 +3526,9 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	/* Calculation of the volume of the voxels */
 	float density_1_mole, vol_1_mole, vol_angstrom;
 	int  vol_voxels;
-	density_1_mole = (float)(mass*1000.0f)/avagadro;
-	vol_1_mole = density_1_mole/density_protein;
-	vol_angstrom = vol_1_mole*(double)pow((double)pow(10.0,8),3);
+	density_1_mole = static_cast<float>( (mass*1000.0f)/avagadro );
+	vol_1_mole =  static_cast<float>( density_1_mole/density_protein );
+	vol_angstrom =  static_cast<float>( vol_1_mole*(double)pow((double)pow(10.0,8),3) );
 	vol_voxels = static_cast<int> (vol_angstrom/(double)pow(pixel_size,3));
 	/* ===============================================================*/
 
@@ -3560,9 +3560,9 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 		if(rdata[i]>=x2)
 			cnt2++;
 	}
-	float LF1 = cnt1 - ILE;
+	float LF1 = static_cast<float>( cnt1 - ILE );
 	float F1 = LF1*LF1;
-	float LF2 = cnt2 - ILE;
+	float LF2 = static_cast<float>( cnt2 - ILE );
 	float F2 = LF2*LF2;
 	
 	while ((LF1 != 0 || LF2 != 0) && (fabs(LF1-LF2) >= 1.f) && (abs(x1-x2) > (double)pow(10.0,-5) && abs(x1-x3) > (double)pow(10.0,-5) && abs(x2-x3) > (double)pow(10.0,-5)))
@@ -3577,7 +3577,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 			for(int i=0;i<size;i++)
 				if(rdata[i]>=x2)
 					cnt++;
-			LF2 = cnt - ILE;
+			LF2 = static_cast<float>( cnt - ILE );
 			F2 = LF2*LF2;
 		} else {
 			x3=x2;
@@ -3588,7 +3588,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 			for(int i=0;i<size;i++)
 				if(rdata[i]>=x1)
 					cnt++;
-			LF1 = cnt - ILE;
+			LF1 = static_cast<float>( cnt - ILE );
 			F1 = LF1*LF1;
 		}
 	}
@@ -3687,8 +3687,8 @@ vector<float> EMData::peak_ccf(float hf_p)
 			for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++) 
 				{
 					res.push_back((*it).value);
-					res.push_back((*it).x);
-					res.push_back((*it).y);			
+					res.push_back(static_cast<float>((*it).x));
+					res.push_back(static_cast<float>((*it).y));			
 			
 		 		}
 		}
@@ -3875,10 +3875,10 @@ EMData* EMData::ctf_img(int nx, int ny, int nz,float dz,float ps,float voltage,f
 	lsm = nx + offset;		     	   
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(lsm, ny, nz);
-	float freq=1./(2.*ps);		    
-	scx=2./float(nx);
-	if(ny<=1) scy=2./ny; else scy=0.0;
-	if(nz<=1) scz=2./nz; else scz=0.0;
+	float freq=1.f/(2.f*ps);		    
+	scx=2.f/float(nx);
+	if(ny<=1) scy=2.f/ny; else scy=0.0f;
+	if(nz<=1) scz=2.f/nz; else scz=0.0f;
 	nr2 = ny/2 ;
 	nl2 = nz/2 ;
 	for ( k=0; k<nz;k++) {
@@ -3889,7 +3889,7 @@ EMData* EMData::ctf_img(int nx, int ny, int nz,float dz,float ps,float voltage,f
 	     		   ix=i;
 	     		   ak=pow(ix*ix*scx*scx+iy*scy*iy*scy+iz*scz*iz*scz, 0.5f)*freq;
 	     		   if(ak!=0) az=0.0; else az=M_PI;
-	     		   dzz=dz+dza/2.*sin(2*(az-azz*M_PI/180.));
+	     		   dzz=dz+dza/2.f*sin(2*(az-azz*M_PI/180.f));
 			       (*ctf_img1) (i*2,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
 	     		   (*ctf_img1) (i*2+1,j,k) = 0.0f;
 	     	     }

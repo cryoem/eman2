@@ -25,7 +25,7 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
         }
     }
     
-    void set_surface_value(float p0) {
+    void set_surface_value(const float p0) {
         this->get_override("set_surface_value")(p0);
     }
     
