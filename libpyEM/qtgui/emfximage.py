@@ -42,6 +42,7 @@ from OpenGL.GLU import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
+from emimage2d import *
 import sys
 import array
 
@@ -53,7 +54,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		
 		
 		self.imtex=0
 		self.spinang=0.0
@@ -297,14 +297,11 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			glTexCoord2f(0.,0.)
 			glVertex(-1., 1.)
 			glEnd()
-			
 
-			
 			glBindTexture(GL_TEXTURE_2D,0)
 			
 			glDisable(GL_TEXTURE_2D)
-			
-			
+
 			glColor(.2,.2,.8)
 			glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
 			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
@@ -335,6 +332,10 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				glVertex(-3.5, 1.)
 				glEnd()
 				self.deleteTexture(self.itex)
+				glPushMatrix()
+				glTranslate(-2.5,0,0)
+				glCallList(self.framedl)
+				glPopMatrix()
 				
 				wmodel=glGetDoublev(GL_MODELVIEW_MATRIX)
 				wproj=glGetDoublev(GL_PROJECTION_MATRIX)
@@ -345,9 +346,56 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				self.mc11=gluProject(-1.5, 1.0,0.0,wmodel,wproj,wview)
 				self.mc01=gluProject(-3.5, 1.0,0.0,wmodel,wproj,wview)
 				glPopMatrix()
+				
+				#this is debug code to plot the extreme points of the widgit in screen coordinates
+				glMatrixMode(GL_PROJECTION)
+				glPushMatrix()
+				glLoadIdentity()
+				glOrtho(0.0,self.width(),0.0,self.height(),-1,1)
+				glMatrixMode(GL_MODELVIEW)
+				glLoadIdentity()
+				glPointSize(10)
+				glColor(1.0,1.0,1.0,1.0)
+				glBegin(GL_POINTS)
+				glVertex(self.mc00[0], self.mc00[1])
+				glVertex(self.mc10[0], self.mc10[1])
+				glVertex(self.mc11[0], self.mc11[1])
+				glVertex(self.mc01[0], self.mc01[1])
+				glEnd()
+				glMatrixMode(GL_PROJECTION)
+				# pop the temporary orthographic matrix from the GL_PROJECTION stack
+				glPopMatrix()
+				glMatrixMode(GL_MODELVIEW)
 
-#				print "-3.5,-1.0", self.mouseinwin(self.mc00[0],self.mc00[1])
+				#print "-3.5,-1.0", self.mouseinwin(self.mc00[0],self.mc00[1])
 #				print "mid", self.mouseinwin((self.mc00[0]+self.mc11[0])/2,(self.mc00[1]+self.mc11[1])/2)
+
+	def isinwin(self,x,y):
+		# this works by simple geometry - if the mouse point e is within the four points (a,b,c,d)
+		# at the extremities of  the qtwidget, then aed + bec + ced + dea is +/- 360 degrees. 
+		# If e is outside the four points then the sum is zero...
+		
+		ly = self.height() - y
+		a = [self.mc00[0]-x, self.mc00[1]-ly]
+		b = [self.mc01[0]-x, self.mc01[1]-ly]
+		c = [self.mc11[0]-x, self.mc11[1]-ly]
+		d = [self.mc10[0]-x, self.mc10[1]-ly]
+		
+		
+		aeb = self.getsubtendingangle(a,b)
+		bec = self.getsubtendingangle(b,c)
+		ced = self.getsubtendingangle(c,d)
+		dea = self.getsubtendingangle(d,a)
+		if abs(aeb + bec + ced + dea) > 0.1:
+			return True 
+		else:
+			return False
+		
+	def getsubtendingangle(self,a,b):
+		sinaeb = a[0]*b[1]-a[1]*b[0]
+		cosaeb = a[0]*b[0]+a[1]*b[1]
+		
+		return atan2(sinaeb,cosaeb)
 
 	def mouseinwin(self,x,y):
 		x00=self.mc00[0]
@@ -402,7 +450,16 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		glViewport(0,0,self.width(),self.height())
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		glFrustum(-1.*width/height,1.*width/height, -1.,1., 5.,15.)
+		#glFrustum(-1.*width/height,1.*width/height, -1.,1., 5.,15.)
+		
+		
+		# fov angle is the given by
+		self.fov = 2*180*atan2(1,5)/pi
+		# aspect ratio is given by
+		self.aspect = float(self.width())/float(self.height())
+		# this is the same as the glFrustum call above
+		gluPerspective(self.fov,self.aspect,5,15)
+		
 		glTranslatef(0.,0.,-10.0)
 		
 		glMatrixMode(GL_MODELVIEW)
@@ -448,14 +505,14 @@ class EMFXImage(QtOpenGL.QGLWidget):
 #			self.mousedrag=(event.x(),event.y())
 			app=QtGui.QApplication.instance()
 			if self.inspector :
-				l=self.mouseinwin(event.x(),event.y())
-				cw=self.inspector.childAt(l[0],l[1])
-				gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-				qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
+				if ( self.isinwin(event.x(),event.y()) ):
+					l=self.mouseinwin(event.x(),event.y())
+					cw=self.inspector.childAt(l[0],l[1])
+					gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+					qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
 #				self.inspector.mousePressEvent(qme)
-				cw.mousePressEvent(qme)
+					cw.mousePressEvent(qme)
 #				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
-				print qme.x(),qme.y(),l,gp.x(),gp.y()
 	
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
@@ -465,14 +522,15 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		elif event.buttons()==Qt.LeftButton:
 #			self.mousedrag=(event.x(),event.y())
 			if self.inspector :
-				l=self.mouseinwin(event.x(),event.y())
-				cw=self.inspector.childAt(l[0],l[1])
-				gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-				qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
-#				self.inspector.mousePressEvent(qme)
-				cw.mouseMoveEvent(qme)
+				if ( self.isinwin(event.x(),event.y()) ):
+					l=self.mouseinwin(event.x(),event.y())
+					cw=self.inspector.childAt(l[0],l[1])
+					gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+					qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
+	#				self.inspector.mousePressEvent(qme)
+					cw.mouseMoveEvent(qme)
 #				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
-				print qme.x(),qme.y(),l,gp.x(),gp.y()
+				#print qme.x(),qme.y(),l,gp.x(),gp.y()
 		
 	def mouseReleaseEvent(self, event):
 		if event.button()==Qt.RightButton:
@@ -480,14 +538,19 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		elif event.button()==Qt.LeftButton:
 #			self.mousedrag=(event.x(),event.y())
 			if self.inspector :
-				l=self.mouseinwin(event.x(),event.y())
-				cw=self.inspector.childAt(l[0],l[1])
-				gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-				qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
-#				self.inspector.mousePressEvent(qme)
-				cw.mouseReleaseEvent(qme)
-#				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
-				print qme.x(),qme.y(),l,gp.x(),gp.y()
+				if ( self.isinwin(event.x(),event.y()) ):
+					l=self.mouseinwin(event.x(),event.y())
+					cw=self.inspector.childAt(l[0],l[1])
+					gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+					qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
+	#				self.inspector.mousePressEvent(qme)
+					cw.mouseReleaseEvent(qme)
+	#				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
+					#print qme.x(),qme.y(),l,gp.x(),gp.y()
+
+class EMFxTexture:
+	def __init__(self,parent):
+		self.parent = parent
 
 class ImgHistogram(QtGui.QWidget):
 	def __init__(self,parent):

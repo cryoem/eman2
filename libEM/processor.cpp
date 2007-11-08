@@ -5327,18 +5327,17 @@ void TestImageX::process_inplace(EMData * image)
 	{
 		// nx > 1 && ny > 1 && nz > 1
 		int min = ( nx < ny ? nx : ny );
-		if ( min < nz ) min = nz;
+		if (nz < min ) min = nz;
 		min /= 2;
 		
-		int radius = params.set_default("radius", min );
+		int radius = params.set_default("radius", min);
 		if ( radius > min ) radius = min;
+
 		
-		(*image)(cx,cy,cy) = fill;
-		
+		(*image)(cx,cy,cz) = fill;
 		for ( int i = 1; i <=radius-xoffset; ++i ) (*image)(cx+i,cy,cz) = fill;
 		for ( int i = 1; i <=radius-yoffset; ++i ) (*image)(cx,cy+i,cz) = fill;
 		for ( int i = 1; i <=radius-zoffset; ++i ) (*image)(cx,cy,cz+i) = fill;
-		
 		for ( int i = 1; i <= radius; ++i )
 		{
 			(*image)(cx-i,cy,cz) = fill;

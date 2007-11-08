@@ -113,7 +113,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	
 	def timeout(self):
 		self.updateGL()
-		
 	
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
@@ -121,9 +120,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.data=data
 		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
-			print "return here"
 			self.updateGL()
 			return
+		print "a"
+		#if ( self.data.get_xsize() != self.data.get_zsize() or self.data.get_xsize() != self.data.get_ysize() ):
+			#print "Image dimensions must be currently be the same size in volume renderer"
+			#exit(1)
 		
 		self.default_z = -1.25*data.get_zsize()
 		self.cam_z = self.default_z
@@ -132,7 +134,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			self.inspector=EMImageInspector3D(self)
 		
 		self.inspector.setColors(self.colors,self.isocolor)
-		self.data.mult(1.0/self.data.get_zsize())
+		self.data.mult(2.0/self.data.get_zsize())
 		
 		self.updateDataAndTexture()
 		self.tex_dl = self.tex_dl_z
@@ -143,8 +145,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.data_copy.add(self.brightness)
 		self.data_copy.mult(self.contrast)
 
-		hist = self.data_copy.calc_hist(256,0,1.0/self.data_copy.get_zsize())
-		self.inspector.setHist(hist,0,1.0/self.data_copy.get_zsize()) 
+		hist = self.data_copy.calc_hist(256,0,1.0)
+		self.inspector.setHist(hist,0,1.0) 
 
 		self.genTexture()
 	
@@ -264,9 +266,9 @@ class EMImage3D(QtOpenGL.QGLWidget):
 
 		t3d = Transform3D()
 		rot = {}
-		rot["az"] = 0.01
-		rot["alt"] = 0.01
-		rot["phi"] = 0.01
+		rot["az"] = 0.0
+		rot["alt"] = 0.0
+		rot["phi"] = 0.0
 		
 		t3d.set_rotation( EULER_EMAN, rot )
 		self.t3d_stack = []
@@ -277,6 +279,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		# Why didn't I use GL_REPLACE? I don't know....GL_MODULATE works, so does GL_REPLACE... needs some more
 		# thought but for the time being stick with these
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+		
+		glShadeModel(GL_SMOOTH)
 	
 	def determineTextureView(self):
 		t3d = self.t3d_stack[len(self.t3d_stack)-1]
@@ -325,7 +329,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 
 		if ( self.tex_dl == 0 ):
 			self.updateDataAndTexture()
-			
+		
+		# here is where the correct display list (x,y or z direction) is determined
 		self.determineTextureView()
 
 		glPushMatrix()
@@ -333,7 +338,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
 		glEnable(GL_BLEND)
 		glBlendEquation(GL_FUNC_ADD)
-		#glShadeModel(GL_FLAT)
 		glDepthMask(GL_FALSE)
 		glBlendFunc(GL_ONE, GL_ONE)
 		glCallList(self.tex_dl)
@@ -423,7 +427,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			glDepthMask(GL_TRUE)
 		
 	def draw_volume_bounds(self):
-		
+		# FIXME - should be a display list
 		width = self.data.get_xsize()
 		height = self.data.get_ysize()
 		depth = self.data.get_zsize()
@@ -1008,7 +1012,9 @@ if __name__ == '__main__':
  	if len(sys.argv)==1 : 
 		e = EMData()
 		e.set_size(128,128,128)
+		print "here"
 		e.process_inplace('testimage.x')
+		print "end"
  		window.setData(e)
 
 		# these lines are for testing shape rendering
