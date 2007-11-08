@@ -82,6 +82,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.brightness = 0.0
 		self.glcontrast = 1.0
 		self.glbrightness = 0.0
+		self.texsample = 1.0	
 		
 		self.wire = False
 		
@@ -133,11 +134,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.inspector.setColors(self.colors,self.isocolor)
 		self.data.mult(1.0/self.data.get_zsize())
 		
-		self.genTexture()
+		self.updateDataAndTexture()
 		self.tex_dl = self.tex_dl_z
 	
-	def genTexture(self):
-
+	def updateDataAndTexture(self):
+	
 		self.data_copy = self.data.copy()
 		self.data_copy.add(self.brightness)
 		self.data_copy.mult(self.contrast)
@@ -145,6 +146,10 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		hist = self.data_copy.calc_hist(256,0,1.0/self.data_copy.get_zsize())
 		self.inspector.setHist(hist,0,1.0/self.data_copy.get_zsize()) 
 
+		self.genTexture()
+	
+	def genTexture(self):
+	
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
 		
 		# Get the texture here
@@ -159,8 +164,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glBindTexture(GL_TEXTURE_3D, self.tex_name)
 		
 		glBegin(GL_QUADS)
-		for z in range(0,self.data.get_zsize()):
-			zz = float(z)/float(self.data.get_zsize())
+		for z in range(0,int(self.texsample*self.data.get_zsize())):
+			zz = float(z)/float(self.data.get_zsize())/self.texsample
 			glTexCoord3f(0,0,zz)
 			glVertex(0,0,zz)
 			
@@ -187,8 +192,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glBindTexture(GL_TEXTURE_3D, self.tex_name)
 		
 		glBegin(GL_QUADS)
-		for y in range(0,self.data.get_ysize()):
-			yy = float(y)/float(self.data.get_ysize())
+		for y in range(0,int(self.texsample*self.data.get_ysize())):
+			yy = float(y)/float(self.data.get_ysize())/self.texsample
 			glTexCoord3f(0,yy,0)
 			glVertex(0,yy,0)
 			
@@ -215,8 +220,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glBindTexture(GL_TEXTURE_3D, self.tex_name)
 		
 		glBegin(GL_QUADS)
-		for x in range(0,self.data.get_xsize()):
-			xx = float(x)/float(self.data.get_xsize())
+		for x in range(0,int(self.texsample*self.data.get_xsize())):
+			xx = float(x)/float(self.data.get_xsize())/self.texsample
 			glTexCoord3f(xx,0,0)
 			glVertex(xx,0,0)
 			
@@ -319,7 +324,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glScalef(self.scale,self.scale,self.scale)
 
 		if ( self.tex_dl == 0 ):
-			self.genTexture()
+			self.updateDataAndTexture()
 			
 		self.determineTextureView()
 
@@ -656,12 +661,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 	def setContrast(self,val):
 		self.contrast = val
-		self.genTexture()
+		self.updateDataAndTexture()
 		self.updateGL()
 		
 	def setBrightness(self,val):
 		self.brightness = val/self.data.get_zsize()
-		self.genTexture()
+		self.updateDataAndTexture()
 		self.updateGL()
 		
 	def setGLBrightness(self,val):
@@ -671,6 +676,16 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def setGLContrast(self,val):
 		self.glcontrast = val
 		self.updateGL()
+		
+	def setTextureSample(self,val):
+		if ( val < 0 ) :
+			print "Error, cannot handle texture sample less than 0"
+			return
+		
+		self.texsample = val
+		self.genTexture()
+		self.updateGL()
+		
 
 class EMImageInspector3D(QtGui.QWidget):
 	def __init__(self,target) :
@@ -720,6 +735,22 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.bright.setValue(0.1)
 		self.bright.setValue(0.0)
 		self.vbl.addWidget(self.bright)
+
+		self.hbl_smp = QtGui.QHBoxLayout()
+		self.hbl_smp.setMargin(0)
+		self.hbl_smp.setSpacing(6)
+		self.hbl_smp.setObjectName("Texture Oversampling")
+		self.vbl.addLayout(self.hbl_smp)
+		
+		self.smp_label = QtGui.QLabel()
+		self.smp_label.setText('Texture Oversampling')
+		self.hbl_smp.addWidget(self.smp_label)
+		
+		self.smp = QtGui.QSpinBox(self)
+		self.smp.setMaximum(10)
+		self.smp.setMinimum(1)
+		self.smp.setValue(1)
+		self.hbl_smp.addWidget(self.smp)
 
 		self.glcontrast = ValSlider(self,(0.0,20.0),"GLShd:")
 		self.glcontrast.setObjectName("GLShade")
@@ -822,6 +853,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
+		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setTextureSample)
 	
 	def setDefaults(self):
 		self.x_trans.setValue(0.0)
