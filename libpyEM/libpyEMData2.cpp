@@ -56,7 +56,9 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_add_overloads_1_2, add, 1, 2)
 
+#ifndef	_WIN32
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_array_offsets_overloads_0_3, set_array_offsets, 0, 3)
+#endif
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_real2complex_overloads_0_1, real2complex, 0, 1)
 
@@ -280,8 +282,10 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("set_value_at", (void (EMAN::EMData::*)(int, int, float) )&EMAN::EMData::set_value_at)
         .def("set_value_at_fast", (void (EMAN::EMData::*)(int, int, float) )&EMAN::EMData::set_value_at_fast)
         .def("set_value_at", (void (EMAN::EMData::*)(int, float) )&EMAN::EMData::set_value_at)
+#ifndef	_WIN32
         .def("set_array_offsets", (void (EMAN::EMData::*)(const int, const int, const int) )&EMAN::EMData::set_array_offsets, EMAN_EMData_set_array_offsets_overloads_0_3())
         .def("set_array_offsets", (void (EMAN::EMData::*)(std::vector<int,std::allocator<int> >) )&EMAN::EMData::set_array_offsets)
+#endif
         .def("get_array_offsets", &EMAN::EMData::get_array_offsets)
         .def("power", &EMAN::EMData::power, return_value_policy< manage_new_object >())
         .def("sqrt", &EMAN::EMData::sqrt, return_value_policy< manage_new_object >())
@@ -307,9 +311,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("nn", &EMAN::EMData::nn, EMAN_EMData_nn_overloads_3_4())
         .def("nn_SSNR", &EMAN::EMData::nn_SSNR, EMAN_EMData_nn_SSNR_overloads_4_5())
         .def("nn_SSNR_ctf", &EMAN::EMData::nn_SSNR_ctf)
-	.def("symplane0", &EMAN::EMData::symplane0)
+		.def("symplane0", &EMAN::EMData::symplane0)
         .def("symplane1", &EMAN::EMData::symplane1)
-	.def("symplane2", &EMAN::EMData::symplane2)
+		.def("symplane2", &EMAN::EMData::symplane2)
         .def("onelinenn_ctf", &EMAN::EMData::onelinenn_ctf)
         .def("nn_ctf", &EMAN::EMData::nn_ctf)
         .def("onelinenn_ctf_applied", &EMAN::EMData::onelinenn_ctf_applied)
@@ -354,7 +358,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("Four_shuf_ds_cen_us", &EMAN::EMData::Four_shuf_ds_cen_us, EMAN_EMData_Four_shuf_ds_cen_us_overloads_1_4()[ return_value_policy< manage_new_object >() ])
         .def("filter_by_image", &EMAN::EMData::filter_by_image, EMAN_EMData_filter_by_image_overloads_1_2()[ return_value_policy< manage_new_object >() ])
         .def("get_clip", &EMAN::EMData::get_clip, return_value_policy< manage_new_object >())
-	.def("clip_inplace", &EMAN::EMData::clip_inplace, return_value_policy< reference_existing_object >())
+		.def("clip_inplace", &EMAN::EMData::clip_inplace, return_value_policy< reference_existing_object >())
         .def("get_top_half", &EMAN::EMData::get_top_half, return_value_policy< manage_new_object >())
         .def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, EMAN_EMData_get_rotated_clip_overloads_2_3()[ return_value_policy< manage_new_object >() ])
         .def("window_center", &EMAN::EMData::window_center, return_value_policy< manage_new_object >())
@@ -422,8 +426,10 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def( self *= self )
         .def( self /= self )
         .def("__call__", (float& (EMAN::EMData::*)(const int, const int, const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
+#ifndef	_WIN32
         .def("__call__", (float& (EMAN::EMData::*)(const int, const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
         .def("__call__", (float& (EMAN::EMData::*)(const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
+#endif	//_WIN32    
     );
 
     enum_< EMAN::EMData::FFTPLACE >("FFTPLACE")
