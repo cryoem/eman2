@@ -962,7 +962,7 @@ integer pow_ii(integer *ap, integer *bp)
 		if (n == 0 || x == 1)
 			return 1;
 		if (x != -1)
-			return x == 0 ? 1/x : 0;
+			return x != 0 ? 1/x : 0;
 		n = -n;
 		}
 	u = n;
