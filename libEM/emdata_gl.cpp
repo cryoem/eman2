@@ -33,6 +33,12 @@
 #ifdef EMAN2_USING_OPENGL
 
 #include "emdata.h"
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
+#endif
+#include "GL/gl.h"
+#include "GL/glu.h"
+#include "GL/glext.h"
 using namespace EMAN;
 
 unsigned int EMData::gen_glu_mipmaps() const
@@ -43,29 +49,41 @@ unsigned int EMData::gen_glu_mipmaps() const
 	unsigned int tex_name;
 	glGenTextures(1, &tex_name);
 	
-// 	EMData* tmp = new EMData();
-// 	tmp->set_size(2*nx,ny,nz);
-// 	
-// 	for(int z = 0; z < get_zsize(); ++z) {
-// 		for(int y = 0; y < get_ysize(); ++y) {
-// 			for(int x = 0; x < get_xsize(); ++x) {
-// 				(*tmp)(2*x+y*tmp->get_xsize() + z*tmp->get_xsize()*tmp->get_ysize()) = get_value_at(x,y,z);
-// 				(*tmp)(2*x+y*tmp->get_xsize() + z*tmp->get_xsize()*tmp->get_ysize()+1) = 0.5;
-// 			}
-// 		}
-// 	}	
+	if ( ny == 1 and nz == 1 )
+	{
+		glBindTexture(GL_TEXTURE_1D, tex_name);
+		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_LUMINANCE, nx, GL_LUMINANCE, GL_FLOAT, (void*)get_data());
+	} else if (nz == 1) {
+		glBindTexture(GL_TEXTURE_2D, tex_name);
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE, nx, ny, GL_LUMINANCE, GL_FLOAT, (void*)get_data());
+	}
+	else {
+		glBindTexture(GL_TEXTURE_3D, tex_name);
+		gluBuild3DMipmaps(GL_TEXTURE_3D, GL_LUMINANCE, nx, ny, nz, GL_LUMINANCE, GL_FLOAT, (void*)get_data());
+	}
+	
+	return tex_name;
+}
+
+unsigned int EMData::gen_gl_texture() const
+{
+	if ( get_data() == 0 ) throw NullPointerException("Error, attempt to create an OpenGL mipmap without internally stored data");
+	ENTERFUNC;
+	
+	unsigned int tex_name;
+	glGenTextures(1, &tex_name);
 		
 	if ( ny == 1 and nz == 1 )
 	{
 		glBindTexture(GL_TEXTURE_1D, tex_name);
-		gluBuild1DMipmaps(GL_TEXTURE_1D,  1, nx, GL_LUMINANCE, GL_FLOAT, (void*)get_data());
+		glTexImage1D(GL_TEXTURE_1D,0,GL_LUMINANCE,nx,0,GL_LUMINANCE, GL_FLOAT, (void*)get_data());
 	} else if (nz == 1) {
 		glBindTexture(GL_TEXTURE_2D, tex_name);
-		gluBuild2DMipmaps(GL_TEXTURE_2D,  1, nx, ny, GL_LUMINANCE, GL_FLOAT, (void*)get_data());
+		glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,nx,ny,0,GL_LUMINANCE, GL_FLOAT, (void*)get_data());
 	}
 	else {
 		glBindTexture(GL_TEXTURE_3D, tex_name);
-		gluBuild3DMipmaps(GL_TEXTURE_3D,  1, nx, ny, nz, GL_LUMINANCE, GL_FLOAT, (void*)get_data());
+		glTexImage3D(GL_TEXTURE_3D,0, GL_LUMINANCE,nx,ny,nz,0,GL_LUMINANCE, GL_FLOAT, (void*)get_data());
 	}
 	
 	return tex_name;

@@ -122,7 +122,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
 			self.updateGL()
 			return
-		print "a"
 		#if ( self.data.get_xsize() != self.data.get_zsize() or self.data.get_xsize() != self.data.get_ysize() ):
 			#print "Image dimensions must be currently be the same size in volume renderer"
 			#exit(1)
@@ -134,7 +133,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			self.inspector=EMImageInspector3D(self)
 		
 		self.inspector.setColors(self.colors,self.isocolor)
-		self.data.mult(2.0/self.data.get_zsize())
+		self.data.mult(1.0/self.data.get_zsize())
 		
 		self.updateDataAndTexture()
 		self.tex_dl = self.tex_dl_z
@@ -155,7 +154,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
 		
 		# Get the texture here
-		self.tex_name = self.data_copy.gen_glu_mipmaps()
+		self.tex_name = self.data_copy.gen_gl_texture()
 		
 		if ( self.tex_dl_z != 0 ): glDeleteLists( self.tex_dl_z, 1)
 		
@@ -164,9 +163,17 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glNewList(self.tex_dl_z,GL_COMPILE)
 		glEnable(GL_TEXTURE_3D)
 		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		# Why didn't I use GL_REPLACE? I don't know....GL_MODULATE works, so does GL_REPLACE... needs some more
+		# thought but for the time being stick with these
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
 		glBegin(GL_QUADS)
-		for z in range(0,int(self.texsample*self.data.get_zsize())):
+		for z in range(0,int(self.texsample*(self.data.get_zsize()+1))):
 			zz = float(z)/float(self.data.get_zsize())/self.texsample
 			glTexCoord3f(0,0,zz)
 			glVertex(0,0,zz)
@@ -192,9 +199,17 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glNewList(self.tex_dl_y,GL_COMPILE)
 		glEnable(GL_TEXTURE_3D)
 		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		# Why didn't I use GL_REPLACE? I don't know....GL_MODULATE works, so does GL_REPLACE... needs some more
+		# thought but for the time being stick with these
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
 		glBegin(GL_QUADS)
-		for y in range(0,int(self.texsample*self.data.get_ysize())):
+		for y in range(0,int(self.texsample*(self.data.get_ysize()+1))):
 			yy = float(y)/float(self.data.get_ysize())/self.texsample
 			glTexCoord3f(0,yy,0)
 			glVertex(0,yy,0)
@@ -220,9 +235,17 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glNewList(self.tex_dl_x,GL_COMPILE)
 		glEnable(GL_TEXTURE_3D)
 		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		# Why didn't I use GL_REPLACE? I don't know....GL_MODULATE works, so does GL_REPLACE... needs some more
+		# thought but for the time being stick with these
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
 		glBegin(GL_QUADS)
-		for x in range(0,int(self.texsample*self.data.get_xsize())):
+		for x in range(0,int(self.texsample*(self.data.get_xsize()+1))):
 			xx = float(x)/float(self.data.get_xsize())/self.texsample
 			glTexCoord3f(xx,0,0)
 			glVertex(xx,0,0)
@@ -273,13 +296,17 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		t3d.set_rotation( EULER_EMAN, rot )
 		self.t3d_stack = []
 		self.t3d_stack.append(t3d)
-
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+		
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 		# Why didn't I use GL_REPLACE? I don't know....GL_MODULATE works, so does GL_REPLACE... needs some more
 		# thought but for the time being stick with these
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
-		
+	
 		glShadeModel(GL_SMOOTH)
 	
 	def determineTextureView(self):
@@ -1011,7 +1038,7 @@ if __name__ == '__main__':
 	window = EMImage3D()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(128,128,128)
+		e.set_size(1024,512,256)
 		print "here"
 		e.process_inplace('testimage.x')
 		print "end"

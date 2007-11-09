@@ -46,10 +46,6 @@
 #include "geometry.h"
 #include "transform.h"
 
-#ifdef EMAN2_USING_OPENGL
-#include <GL/glu.h>
-#endif
-
 using std::string;
 using std::vector;
 using std::map;

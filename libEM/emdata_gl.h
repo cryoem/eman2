@@ -39,10 +39,14 @@
 #define emdata__gl_h__ 
 
 public:
-/** create an OpenGL mipmap
+/** create an OpenGL mipmap set
  * @return the texture id used in the call to glBindTextures
  */
 unsigned int gen_glu_mipmaps() const;
 
+/** create an OpenGL texture
+ * @return the texture id used in the call to glBindTextures
+ */
+unsigned int gen_gl_texture() const;
 		
 #endif	//emdata__gl_h__
