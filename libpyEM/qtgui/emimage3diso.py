@@ -49,58 +49,165 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-t3d_stack = []
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMImage3D(QtOpenGL.QGLWidget):
-	""" This class is not yet complete.
-	A QT widget for rendering 3D EMData objects.
-	"""
-	allim=WeakKeyDictionary()
-	def __init__(self, image=None, parent=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImage3D.allim[self]=0
-# 		try: 
-# 			if EMImage2D.gq : pass
-# 		except:
-# 			EMImage2D.gq=GLU.gluNewQuadric()
-# 			GLU.gluQuadricDrawStyle(EMImage2D.gq,GLU.GLU_FILL)
-# 			GLU.gluQuadricNormals(EMImage2D.gq,GLU.GLU_SMOOTH)
-# 			GLU.gluQuadricNormals(EMImage2D.gq,GLU.GLU_NONE)
-# 			GLU.gluQuadricOrientation(EMImage2D.gq,GLU.GLU_OUTSIDE)
-# 			GLU.gluQuadricOrientation(EMImage2D.gq,GLU.GLU_INSIDE)
-# 			GLU.gluQuadricTexture(EMImage2D.gq,GL.GL_FALSE)
+class EMIsosurface:
+	def __init__(self,image=None, parent=None):
+		self.parent = parent
 		
-		self.timer = QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-
+		self.init()
+		self.initialized = True
 		
-		self.data=None
+		self.initializedGL= False
 		
-		self.aspect=1.0
-		self.gq=0
-		self.mmode=0
+		self.inspector=None
+		if image :
+			self.setData(image)
+	
+	def render(self):
+		glTranslatef(self.cam_x, self.cam_y, self.cam_z)
+		#print "Scene is positioned at %f %f %f" %(self.cam_x, self.cam_y, self.cam_z)
+		# get the current rotation from the rotation stack and apply
+		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+				
+		glRotate(float(rot["phi"]),0,0,1)
+		glRotate(float(rot["alt"]),1,0,0)
+		glRotate(float(rot["az"]),0,0,1)
+		
+		# here is where zoom is applied
+		glScalef(self.scale,self.scale,self.scale)
+			
+		if ( self.isodl == 0 ):
+			self.getIsoDL()
+			
+		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
+		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
+		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
+		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
+		glColor(self.colors[self.isocolor]["ambient"])
+		glPushMatrix()
+		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
+		glCallList(self.isodl)
+		glPopMatrix()
+	
+		if self.cube:
+			glPushMatrix()
+			self.draw_volume_bounds()
+			glPopMatrix()
+			
+	def init(self):
+		self.mmode = 0
+		self.inspector=None
 		self.isothr=0.5
 		self.isorender=None
 		self.isodl = 0
 		self.smpval=-1
 		self.griddl = 0
 		self.scale = 1.0
+		self.cube = False
+		self.wire = False
+		
 		self.cam_x = 0
 		self.cam_y = 0
 		self.cam_z = 0
-		self.cube = False
 		
-		self.wire = False
+		t3d = Transform3D()
+		rot = {}
+		rot["az"] = 0.01
+		rot["alt"] = 0.01
+		rot["phi"] = 0.01
+	
+		t3d.set_rotation( EULER_EMAN, rot )
+		self.t3d_stack = []
+		self.t3d_stack.append(t3d)
+
+	def draw_volume_bounds(self):
 		
-		self.fov = 50 # field of view angle used by gluPerspective
-		self.generate_iso = True
-		self.inspector=None
-		#self.ctrl_down = False
+		width = self.data.get_xsize()
+		height = self.data.get_ysize()
+		depth = self.data.get_zsize()
+		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
+		glLineWidth(0.2)
+		glNormal(0,1,0)
+		glColor(.2,.1,0.4,1.0)
+		glColor(1,1,1,1.0)
+		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
+		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
+		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
+		glMaterial(GL_FRONT, GL_SHININESS, 128.0)
+
+		glBegin(GL_LINE_STRIP)
+		glVertex(0,0,0)
+		glVertex(width,0,0)
+		glVertex(width,0,depth)
+		glVertex(0,0,depth)
+		glVertex(0,0,0)
+		glVertex(0,height,0)
+		glVertex(width,height,0)
+		glVertex(width,height,depth)
+		glVertex(0,height,depth)
+		glVertex(0,height,0)
+		glEnd()
 		
+		glBegin(GL_LINES)
+		glVertex(width,height,depth)
+		glVertex(width,0,depth)
+		
+		glVertex(width,height,0)
+		glVertex(width,0,0)
+		
+		glVertex(0,height,depth)
+		glVertex(0,0,depth)
+		glEnd()
+		
+	def getIsoDL(self):
+		# create the isosurface display list
+		self.isorender.set_surface_value(self.isothr)
+		self.isorender.set_sampling(self.smpval)
+		
+		#time1 = clock()
+		if self.initializedGL == False:
+			glEnableClientState(GL_VERTEX_ARRAY)
+			glEnableClientState(GL_NORMAL_ARRAY)
+			self.initializedGL = True
+		
+		self.isodl = self.isorender.get_isosurface_dl()
+		#time2 = clock()
+		#dt1 = time2 - time1
+		#print "It took %f to render the isosurface" %dt1
+	
+	def setData(self,data):
+		"""Pass in a 3D EMData object"""
+		
+		self.data=data
+		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
+			print "Error, tried to set data that is invalid for EMIsosurface"
+			return
+		
+		self.minden=data.get_attr("minimum")
+		self.maxden=data.get_attr("maximum")
+		mean=data.get_attr("mean")
+		sigma=data.get_attr("sigma")
+
+		self.default_z = -1.25*data.get_zsize()
+		self.cam_z = self.default_z
+		
+		if not self.inspector or self.inspector ==None:
+			self.inspector=EMIsoInspector(self)
+		
+		hist = data.calc_hist(256,self.minden,self.maxden)
+		self.inspector.setHist(hist,self.minden,self.maxden) 
+	
+		self.inspector.setThrs(self.minden,self.maxden,mean+3.0*sigma)
+		self.isothr = mean+3.0*sigma
+		
+		self.isorender=MarchingCubes(data)
+		self.inspector.setSamplingRange(self.isorender.get_sampling_range())
+		
+		self.loadColors()
+		self.inspector.setColors(self.colors,self.isocolor)
+	
+	def loadColors(self):
 		ruby = {}
 		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
 		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
@@ -167,312 +274,36 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.colors["yellow"] = yellow
 		
 		self.isocolor = "ruby"
-		
-		if image :
-			self.setData(image)
-			self.show()
-		
-	def timeout(self):
-		self.updateGL()
-		
 	
-	def setData(self,data):
-		"""Pass in a 3D EMData object"""
-#		if not self.data and data: self.resize(data.get_xsize(),data.get_ysize())
-		
-		self.data=data
-		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
-			self.updateGL()
-			return
-		
-		self.minden=data.get_attr("minimum")
-		self.maxden=data.get_attr("maximum")
-		mean=data.get_attr("mean")
-		sigma=data.get_attr("sigma")
-
-		self.default_z = -1.25*data.get_zsize()
-		self.cam_z = self.default_z
-		
-		if not self.inspector or self.inspector ==None:
-			self.inspector=EMImageInspector3D(self)
-		
-		hist = data.calc_hist(256,self.minden,self.maxden)
-		self.inspector.setHist(hist,self.minden,self.maxden) 
-	
-		self.inspector.setThrs(self.minden,self.maxden,mean+3.0*sigma)
-		self.isothr = mean+3.0*sigma
-		
-		self.isorender=MarchingCubes(data)
-		self.inspector.setSamplingRange(self.isorender.get_sampling_range())
-		
-		self.inspector.setColors(self.colors,self.isocolor)
-		
-	def initializeGL(self):
-		
-		glEnable(GL_NORMALIZE)
-		
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		
-		GL.glClearColor(0,0,0,0)
-		
-		if not self.gq:
-			self.gq=gluNewQuadric()
-			gluQuadricDrawStyle(self.gq,GLU_FILL)
-			gluQuadricNormals(self.gq,GLU_SMOOTH)
-			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-			gluQuadricTexture(self.gq,GL_FALSE)
-		
-		# Precompile a displaylist for the display volume border
-		#self.volcubedl=glGenLists(1)
-		#glNewList(self.volcubedl,GL_COMPILE)
-		#glPushMatrix()
-		#glColor(.7,.7,1.0)
-##		glRotate(90.,1.,0.,0.)
-		#glTranslate(-self.aspect-.01,1.01,-4.0)
-		#gluCylinder(self.gq,.01,.01,15.0,12,2)
-		#glTranslate(self.aspect*2.0+.02,0.0,0.0)
-		#gluCylinder(self.gq,.01,.01,15.0,12,2)
-		#glTranslate(0.0,-2.02,0.0)
-		#gluCylinder(self.gq,.01,.01,15.0,12,2)
-		#glTranslate(-self.aspect*2.0-.02,0.0,0.0)
-		#gluCylinder(self.gq,.01,.01,15.0,12,2)		
-		#glPopMatrix()
-		#glEndList()
-		
-		#cl = 50
-		#self.cylinderdl = glGenLists(1)
-		#glNewList(self.cylinderdl,GL_COMPILE)
-		#glColor(.7,.7,1.0)
-		#glMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, [.2,.1,0.4,1.0])
-		#glMaterial(GL_FRONT, GL_SPECULAR, [.2,.2,0.1,1.0])
-		#glMaterial(GL_FRONT, GL_SHININESS, 32)
-		#gluCylinder(self.gq,5,5,cl,16,16)
-		#glEndList()
-		
-		#self.xshapedl = glGenLists(1)
-		#glNewList(self.xshapedl,GL_COMPILE)
-		#glPushMatrix()
-		#glTranslate(0,0,-cl/2)
-		#glCallList(self.cylinderdl)
-		#glPopMatrix()
-		#glPushMatrix()
-		#glRotate(90,0,1,0)
-		#glTranslate(0,0,-cl/2)
-		#glCallList(self.cylinderdl)
-		#glPopMatrix()
-		#glPushMatrix()
-		#glRotate(90,1,0,0)
-		#glTranslate(0,0,-cl/2)
-		#glCallList(self.cylinderdl)
-		#glPopMatrix()
-		#glEndList()
-		
-		t3d = Transform3D()
-		rot = {}
-		rot["az"] = 0.01
-		rot["alt"] = 0.01
-		rot["phi"] = 0.01
-		
-		t3d.set_rotation( EULER_EMAN, rot )
-		self.t3d_stack = []
-		self.t3d_stack.append(t3d)
-		
-		# For the time being
-		glEnable(GL_CULL_FACE);
-		
-		glPolygonMode(GL_FRONT,GL_FILL);
-	
-		glEnableClientState(GL_VERTEX_ARRAY)
-		glEnableClientState(GL_NORMAL_ARRAY)
-		#glEnableClientState(GL_COLOR_ARRAY)
-		
-	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-		# because the viewing volume extends from -0.001 to -10000 in the z direction,
-		# translate the scene back into it so it is visible...
-		glTranslated(self.cam_x, self.cam_y, self.cam_z)
-		#print "Scene is positioned at %f %f %f" %(self.cam_x, self.cam_y, self.cam_z)
-		# get the current rotation from the rotation stack and apply
-		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-				
-		glRotate(float(rot["phi"]),0,0,1)
-		glRotate(float(rot["alt"]),1,0,0)
-		glRotate(float(rot["az"]),0,0,1)
-		
-		# here is where zoom is applied
-		glScalef(self.scale,self.scale,self.scale)
-
-		if ( self.isodl == 0 ):
-			self.getIsoDL()
-
-		#if self.griddl == 0:
-			#self.createGridDL()
-			
-		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
-		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
-		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
-		glColor(self.colors[self.isocolor]["ambient"])
-		glPushMatrix()
-		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
-		glCallList(self.isodl)
-		glPopMatrix()
-	
-		if self.cube:
-			glPushMatrix()
-			self.draw_volume_bounds()
-			glPopMatrix()
-		
-	def draw_volume_bounds(self):
-		
-		width = self.data.get_xsize()
-		height = self.data.get_ysize()
-		depth = self.data.get_zsize()
-		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
-		glLineWidth(0.2)
-		glNormal(0,1,0)
-		glColor(.2,.1,0.4,1.0)
-		glColor(1,1,1,1.0)
-		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
-		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
-		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
-		glMaterial(GL_FRONT, GL_SHININESS, 128.0)
-
-		glBegin(GL_LINE_STRIP)
-		glVertex(0,0,0)
-		glVertex(width,0,0)
-		glVertex(width,0,depth)
-		glVertex(0,0,depth)
-		glVertex(0,0,0)
-		glVertex(0,height,0)
-		glVertex(width,height,0)
-		glVertex(width,height,depth)
-		glVertex(0,height,depth)
-		glVertex(0,height,0)
-		glEnd()
-		
-		glBegin(GL_LINES)
-		glVertex(width,height,depth)
-		glVertex(width,0,depth)
-		
-		glVertex(width,height,0)
-		glVertex(width,0,0)
-		
-		glVertex(0,height,depth)
-		glVertex(0,0,depth)
-		glEnd()
-		
-	def getIsoDL(self):
-		# create the isosurface display list
-		self.isorender.set_surface_value(self.isothr)
-		self.isorender.set_sampling(self.smpval)
-		
-		#time1 = clock()
-		self.isodl = self.isorender.get_isosurface_dl()
-		#time2 = clock()
-		#dt1 = time2 - time1
-		#print "It took %f to render the isosurface" %dt1
-		
-	def createGridDL(self):
-		# create the isosurface display list
-		
-		if ( self.griddl != 0 ): glDeleteLists(self.griddl,1)
-		
-		width = self.data.get_xsize()
-		height = self.data.get_ysize()
-		depth = self.data.get_zsize()
-		
-		self.griddl = glGenLists(1)
-		
-		glLineWidth(0.5)
-		glNewList(self.griddl,GL_COMPILE)
-		
-		glColor(1,1,1,1.0)
-		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
-		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
-		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
-		glMaterial(GL_FRONT, GL_SHININESS, 76.8)
-		
-		glPushMatrix()
-		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
-		glBegin(GL_LINES)
-		
-		glNormal(0,1,0)
-		for i in range(0,height):
-			for j in range(0,width):
-				glVertex(j,i,0)
-				glVertex(j,i,depth)
-			
-		glNormal(0,0,-1)
-		for i in range(0,depth):
-			for j in range(0,width):
-				glVertex(j,0,i)
-				glVertex(j,height,i)
-		glNormal(0,1,0)
-		for i in range(0,depth):
-			for j in range(0,height):
-				glVertex(0,j,i)
-				glVertex(width,j,i)
-		glEnd()
-		
-		
-		glPopMatrix()
-		glEndList()
-		
-	def resizeGL(self, width, height):
-		# just use the whole window for rendering
-		glViewport(0,0,self.width(),self.height())
-		
-		# maintain the aspect ratio of the window we have
-		self.aspect = float(width)/float(height)
-		
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,0.001,1000000)
-		
-		# switch back to model view mode
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.updateInspectorTranslateScale()
-		
-	def setupShapes(self):
-		# make our own cirle rather than use gluDisk or somesuch
-		pass
+	def getInspector(self):
+		if not self.inspector : self.inspector=EMIsoInspector(self)
+		return self.inspector
 	
 	def showInspector(self,force=0):
 		if not force and self.inspector==None : return
 		
-		if not self.inspector : self.inspector=EMImageInspector3D(self)
+		if not self.inspector : self.inspector=EMIsoInspector(self)
 		self.inspector.show()
 	
 	def updateInspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMImageInspector3D(self)
+			self.inspector=EMIsoInspector(self)
 		self.inspector.updateRotations(t3d)
+		
+	def updateInspectorTranslateScale(self):
+		[xscale,yscale] = self.getTranslateScale()
+		if not self.inspector or self.inspector ==None:
+			self.inspector=EMIsoInspector(self)
+		if ( xscale > yscale ): self.inspector.setTranslateScale(xscale,yscale,yscale)
+		else: self.inspector.setTranslateScale(xscale,yscale,xscale)
 	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
-		
+	
 	def mousePressEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.MidButton:
 			if not self.inspector or self.inspector ==None:
-				self.inspector=EMImageInspector3D(self)
+				self.inspector=EMIsoInspector(self)
 			self.inspector.updateRotations(self.t3d_stack[len(self.t3d_stack)-1])
 			self.updateInspectorTranslateScale()
 			self.showInspector(1)
@@ -489,31 +320,26 @@ class EMImage3D(QtOpenGL.QGLWidget):
 				self.t3d_stack.append(t3d)
 				self.updateInspector(t3d)
 				
-				self.emit(QtCore.SIGNAL("mousedown"), event)
+				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				return
 		elif event.button()==Qt.RightButton:
 			if self.mmode==0:
 				self.mpressx = event.x()
 				self.mpressy = event.y()
-				self.emit(QtCore.SIGNAL("mousedown"), event)
+				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				return
 		
 	def mouseMoveEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
-# 		if self.rmousedrag and event.buttons()&Qt.RightButton:
-# 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
-# 			self.rmousedrag=(event.x(),event.y())
-# 			self.update()
 		if event.buttons()&Qt.LeftButton:
 			if self.mmode==0:
 				if event.modifiers() == Qt.ControlModifier:
 					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
 				else:
 					self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y())
-				self.updateGL()
+				self.parent.updateGL()
 				self.mpressx = event.x()
 				self.mpressy = event.y()
-				self.emit(QtCore.SIGNAL("mousedrag"), event)
+				#self.emit(QtCore.SIGNAL("mousedrag"), event)
 				return
 		if event.buttons()&Qt.RightButton:
 			if self.mmode==0:
@@ -524,32 +350,24 @@ class EMImage3D(QtOpenGL.QGLWidget):
 					
 				self.mpressx = event.x()
 				self.mpressy = event.y()
-				self.updateGL()
+				self.parent.updateGL()
 				
-				self.emit(QtCore.SIGNAL("mousedrag"), event)
+				#self.emit(QtCore.SIGNAL("mousedrag"), event)
 				return
 	
 	def mouseReleaseEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
-# 		if event.button()==Qt.RightButton:
-# 			self.rmousedrag=None
 		if event.button()==Qt.LeftButton:
 			if self.mmode==0:
 				return
 		elif event.button()==Qt.RightButton:
 			if self.mmode==0:
-				self.emit(QtCore.SIGNAL("mouseup"), event)
+				#self.emit(QtCore.SIGNAL("mouseup"), event)
 				return
 			
 	def wheelEvent(self, event):
 		self.scale_event(event.delta())
 		self.updateInspectorTranslateScale()
-
-	def updateInspectorTranslateScale(self):
-		[xscale,yscale] = self.getTranslateScale()
-		if ( xscale > yscale ): self.inspector.setTranslateScale(xscale,yscale,yscale)
-		else: self.inspector.setTranslateScale(xscale,yscale,xscale)
-
+		
 	def scale_event(self,delta):
 		if delta > 0:
 			self.scale *= MAG_INCREMENT_FACTOR
@@ -558,22 +376,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.setScale(self.scale)
 
-
-	def get_render_dims_at_depth(self):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(self.cam_z)
-		width = self.aspect*height
-		
-		return [width,height]
-
 	def getTranslateScale(self):
 	
-		[rx,ry] = self.get_render_dims_at_depth()
+		[rx,ry] = self.parent.get_render_dims_at_depth(self.cam_z)
 		
 		#print "render area is %f %f " %(xx,yy)
-		xscale = rx/float(self.width())
-		yscale = ry/float(self.height())
+		xscale = rx/float(self.parent.width())
+		yscale = ry/float(self.parent.height())
 		
 		return [xscale,yscale]
 
@@ -587,15 +396,15 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 	def setCamZ(self,z):
 		self.cam_z = self.default_z + z
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setCamY(self,y):
 		self.cam_y = y
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setCamX(self,x):
 		self.cam_x = x
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def motionRotate(self,x,y):
 		if ( x == 0 and y == 0): return
@@ -627,17 +436,17 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 	def setScale(self,val):
 		self.scale = val
-		self.updateGL()
+		self.parent.updateGL()
 	
 	def loadRotation(self,t3d):
 		self.t3d_stack.append(t3d)
-		self.updateGL()
+		self.parent.updateGL()
 	
 	def setThr(self,val):
 		if (self.isothr != val):
 			self.isothr = val
 			self.getIsoDL()
-			self.updateGL()
+			self.parent.updateGL()
 	
 	def setSample(self,val):
 		if ( self.smpval != int(val)):
@@ -645,16 +454,16 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			# However the user wants the highest level of detail to be 1, and the next best to be 2 and then 3 etc
 			self.smpval = int(val)-2
 			self.getIsoDL()
-			self.updateGL()
+			self.parent.updateGL()
 	
 	def setColor(self,val):
 		#print val
 		self.isocolor = str(val)
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def toggleCube(self):
 		self.cube = not self.cube
-		self.updateGL()
+		self.parent.updateGL()
 	
 	def toggleWire(self,val):
 		self.wire = not self.wire
@@ -663,7 +472,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			glPolygonMode(GL_FRONT,GL_LINE);
 		else:
 			glPolygonMode(GL_FRONT,GL_FILL);
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def toggleLight(self,val):
 		enabled = glIsEnabled(GL_LIGHTING)
@@ -673,9 +482,110 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		else:
 			glEnable(GL_LIGHTING)
 			
-		self.updateGL()
+		self.parent.updateGL()
+		
+class EMImageIso(QtOpenGL.QGLWidget):
+	""" This class is not yet complete.
+	A QT widget for rendering 3D EMData objects.
+	"""
+	allim=WeakKeyDictionary()
+	def __init__(self, image=None, parent=None):
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		fmt.setDepth(1)
+		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		EMImageIso.allim[self]=0
+		self.isosurface = EMIsosurface(image,self)
+		self.timer = QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
-class EMImageInspector3D(QtGui.QWidget):
+		self.aspect=1.0
+		self.fov = 50 # field of view angle used by gluPerspective
+	def timeout(self):
+		self.updateGL()
+		
+	def initializeGL(self):
+		
+		glEnable(GL_NORMALIZE)
+		
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
+		#print "Initializing"
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+
+		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		
+		GL.glClearColor(0,0,0,0)
+		
+		# For the time being
+		glEnable(GL_CULL_FACE);
+		
+		glPolygonMode(GL_FRONT,GL_FILL);
+
+		
+	def paintGL(self):
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		
+		glPushMatrix()
+		self.isosurface.render()
+		glPopMatrix()
+
+	def resizeGL(self, width, height):
+		# just use the whole window for rendering
+		glViewport(0,0,self.width(),self.height())
+		
+		# maintain the aspect ratio of the window we have
+		self.aspect = float(width)/float(height)
+		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		# using gluPerspective for simplicity
+		gluPerspective(self.fov,self.aspect,0.001,1000000)
+		
+		# switch back to model view mode
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		self.isosurface.updateInspectorTranslateScale()
+
+	def setData(self,data):
+		self.isosurface.setData(data)
+	
+	def showInspector(self,force=0):
+		self.isosurface.showInspector()
+	
+	def closeEvent(self,event) :
+		self.isosurface.closeEvent(event)
+		
+	def mousePressEvent(self, event):
+		self.isosurface.mousePressEvent(event)
+		
+	def mouseMoveEvent(self, event):
+		self.isosurface.mouseMoveEvent(event)
+	
+	def mouseReleaseEvent(self, event):
+		self.isosurface.mouseReleaseEvent(event)
+			
+	def wheelEvent(self, event):
+		self.isosurface.wheelEvent(event)
+
+	def get_render_dims_at_depth(self, depth):
+		# This function returns the width and height of the renderable 
+		# area at the origin of the data volume
+		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		width = self.aspect*height
+		
+		return [width,height]
+
+class EMIsoInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -988,7 +898,7 @@ class EMImageInspector3D(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMImage3D()
+	window = EMImageIso()
  	if len(sys.argv)==1 : 
 		e = EMData()
 		e.set_size(40,35,30)

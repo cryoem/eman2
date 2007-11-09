@@ -33,6 +33,8 @@
 #ifdef EMAN2_USING_OPENGL
 
 #include "emdata.h"
+
+// need GL_GLEXT_PROTOTYPES for glTexImage3D 
 #ifndef GL_GLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
 #endif
@@ -40,6 +42,7 @@
 #include "GL/glu.h"
 #include "GL/glext.h"
 using namespace EMAN;
+
 
 unsigned int EMData::gen_glu_mipmaps() const
 {
@@ -90,5 +93,10 @@ unsigned int EMData::gen_gl_texture() const
 	EXITFUNC;
 	return tex_name;
 }
+
+// undef GL_GLEXT_PROTOTYPES
+#ifdef GL_GLEXT_PROTOTYPES
+#undef GL_GLEXT_PROTOTYPES
+#endif
 
 #endif // EMAN2_USING_OPENGL
