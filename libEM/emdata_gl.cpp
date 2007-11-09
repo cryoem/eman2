@@ -62,12 +62,13 @@ unsigned int EMData::gen_glu_mipmaps() const
 		gluBuild3DMipmaps(GL_TEXTURE_3D, GL_LUMINANCE, nx, ny, nz, GL_LUMINANCE, GL_FLOAT, (void*)get_data());
 	}
 	
+	EXITFUNC;
 	return tex_name;
 }
 
 unsigned int EMData::gen_gl_texture() const
 {
-	if ( get_data() == 0 ) throw NullPointerException("Error, attempt to create an OpenGL mipmap without internally stored data");
+	if ( get_data() == 0 ) throw NullPointerException("Error, attempt to create an OpenGL texture without internally stored data");
 	ENTERFUNC;
 	
 	unsigned int tex_name;
@@ -86,6 +87,7 @@ unsigned int EMData::gen_gl_texture() const
 		glTexImage3D(GL_TEXTURE_3D,0, GL_LUMINANCE,nx,ny,nz,0,GL_LUMINANCE, GL_FLOAT, (void*)get_data());
 	}
 	
+	EXITFUNC;
 	return tex_name;
 }
 
