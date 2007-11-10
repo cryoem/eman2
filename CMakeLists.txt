@@ -436,7 +436,8 @@ IF(ENABLE_PYTHON)
     	/usr/lib64/python2.4/site-packages/numpy/core/include
     	/usr/lib/python2.5/site-packages/numpy/core/include
 		/usr/lib/python2.4/site-packages/numpy/core/include
-		/usr/include)
+		/usr/include
+		DOC "look for the site-packages/numpy/core/include")
 
     INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
     
