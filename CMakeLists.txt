@@ -45,9 +45,15 @@ OPTION(ENABLE_BOUNDS_CHECKING "enable bounds checking support" OFF)
 OPTION(ENABLE_RT "enable RT support" OFF)
 OPTION(ENABLE_IOCACHE "enable ImageIO caching" OFF)
 
-OPTION(ENABLE_ATHLON "if enable ATHLON specific support" OFF)
-OPTION(ENABLE_OPTERON "if enable OPTERON/AMD64 specific support" OFF)
-OPTION(ENABLE_G5 "if enable G5 CPU specific support" OFF)
+OPTION(ENABLE_ATHLON "enable ATHLON specific support" OFF)
+OPTION(ENABLE_OPTERON "enable OPTERON/AMD64 specific support" OFF)
+OPTION(ENABLE_LEOPARD "enable OSX 10.5 support" OFF)
+OPTION(ENABLE_G5 "enable G5 CPU specific support" OFF)
+
+IF (ENABLE_LEOPARD)
+	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
+	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
+ENDIF (ENABLE_LEOPARD)
 
 IF (ENABLE_MEMDEBUG)
 	ADD_DEFINITIONS(-DMEMDEBUG -W -Wall)
@@ -435,9 +441,9 @@ IF(ENABLE_PYTHON)
     	/usr/lib64/python2.5/site-packages/numpy/core/include
     	/usr/lib64/python2.4/site-packages/numpy/core/include
     	/usr/lib/python2.5/site-packages/numpy/core/include
-		/usr/lib/python2.4/site-packages/numpy/core/include
-		/usr/include
-		DOC "look for the site-packages/numpy/core/include")
+	/Library/Python/2.5/site-packages/numpy/core/include
+	/usr/lib/python2.4/site-packages/numpy/core/include
+	/usr/include)
 
     INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
     

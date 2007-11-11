@@ -1672,8 +1672,8 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 		return cf;
 	}
 	else {
-		float *f1 = (float *) calloc(nx, sizeof(float));
-		float *f2 = (float *) calloc(nx, sizeof(float));
+		float *f1 = (float *) calloc(nx+2, sizeof(float));
+		float *f2 = (float *) calloc(nx+2, sizeof(float));
 
 		float *cfd = cf->get_data();
 		float *d1 = get_data();
