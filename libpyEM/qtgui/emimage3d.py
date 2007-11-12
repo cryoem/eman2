@@ -46,11 +46,12 @@ from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
-from emimage3diso import *
+
+from emimage3diso import EMIsosurface
+from emimage3dvol import EMVolume
 
 from time import *
 
-t3d_stack = []
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMImage3D(QtOpenGL.QGLWidget):
@@ -65,13 +66,24 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImage3D.allim[self]=0
 		
+		self.image = image
+		self.currentselection = -1
 		self.inspector = None
-		self.isosurface = EMIsosurface(image,self)
+		#self.isosurface = EMIsosurface(image,self)
+		#self.volume = EMVolume(image,self)
+		self.viewables = []
+		self.num_iso = 0
+		self.num_vol = 0
+		self.num_sli = 0
+		
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
+		
+		self.addIsosurface()
+		
 	def timeout(self):
 		self.updateGL()
 		
@@ -104,10 +116,18 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		
-		glPushMatrix()
-		self.isosurface.render()
-		glPopMatrix()
+		for i in self.viewables:
+			if (i.getType() == "volume"):
+				glPushMatrix()
+				i.render()
+				glPopMatrix()
+			
+		for i in self.viewables:
+			if (i.getType() != "volume"):
+				glPushMatrix()
+				i.render()
+				glPopMatrix()
+
 
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
@@ -125,10 +145,14 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.isosurface.updateInspectorTranslateScale()
-
+		for i in self.viewables:
+			i.resizeEvent()
+			
 	def setData(self,data):
-		self.isosurface.setData(data)
+		self.image = data
+		for i in self.viewables:
+			i.setData(data)
+		#self.volume.setData(data)
 	
 	def showInspector(self,force=0):
 		if not force and self.inspector==None : return
@@ -137,7 +161,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.inspector.show()
 	
 	def closeEvent(self,event) :
-		self.isosurface.closeEvent(event)
+		for i in self.viewables:
+			i.closeEvent(event)
 		if self.inspector: self.inspector.close()
 		
 	def mousePressEvent(self, event):
@@ -146,16 +171,20 @@ class EMImage3D(QtOpenGL.QGLWidget):
 				self.inspector=EMImageInspector3D(self)
 			self.showInspector(1)
 		else:
-			self.isosurface.mousePressEvent(event)
+			for i in self.viewables:
+				i.mousePressEvent(event)
 
 	def mouseMoveEvent(self, event):
-		self.isosurface.mouseMoveEvent(event)
+		for i in self.viewables:
+			i.mouseMoveEvent(event)
 	
 	def mouseReleaseEvent(self, event):
-		self.isosurface.mouseReleaseEvent(event)
+		for i in self.viewables:
+			i.mouseReleaseEvent(event)
 			
 	def wheelEvent(self, event):
-		self.isosurface.wheelEvent(event)
+		for i in self.viewables:
+			i.wheelEvent(event)
 
 	def get_render_dims_at_depth(self, depth):
 		# This function returns the width and height of the renderable 
@@ -166,12 +195,54 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		return [width,height]
 
 	def getSundryInspector(self):
-		return self.isosurface.getInspector()
+		return self.viewables[self.currentselection].getInspector()
+	
+	def addIsosurface(self):
+		self.viewables.append(EMIsosurface(self.image,self))
+		self.num_iso += 1
+		name = "Isosurface " + str(self.num_iso)
+		self.viewables[len(self.viewables)-1].setName(name)
+		self.currentselection = len(self.viewables)-1
+		self.updateGL()
+		
+	def addVolume(self):
+		self.viewables.append(EMVolume(self.image,self))
+		self.num_vol += 1
+		name = "Volume " + str(self.num_vol)
+		self.viewables[len(self.viewables)-1].setName(name)
+		self.currentselection = len(self.viewables)-1
+		self.updateGL()
+		
+	def rowChanged(self,row):
+		if ( row == self.currentselection ): return
+		self.currentselection=row
+		self.updateGL()
+		
+	def getCurrentName(self):
+		return self.viewables[self.currentselection].getName()
+	
+	def getCurrentInspector(self):
+		return self.viewables[self.currentselection].getInspector()
+	
+	def deleteCurrent(self):
+		if ( len(self.viewables) == 0 ): return
 
+		self.viewables.pop(self.currentselection)
+		if (len(self.viewables) == 0 ) :  self.currentselection = -1
+		elif ( self.currentselection == 0): pass
+		else : self.currentselection -= 1
+
+		self.updateGL()
+	
 class EMImageInspector3D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
+		
+		self.hbl = QtGui.QHBoxLayout(self)
+		self.hbl.setMargin(0)
+		self.hbl.setSpacing(6)
+		self.hbl.setObjectName("hbl")
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -179,18 +250,76 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.vbl.setObjectName("vbl")
 		
 		self.listwidget = QtGui.QListWidget(self)
-		self.listwidget.addItem("isosurface")
-		self.listwidget.addItem("volume")
-		#self.listview.addItem('isosurface')
+		self.listwidget.addItem("Isosurface")
+		self.listwidget.setCurrentRow(0)
 		self.vbl.addWidget(self.listwidget)
 		
-		self.zoom = ValSlider(self,(0.01,30.0),"Zoom:")
-		self.zoom.setObjectName("scale")
-		self.zoom.setValue(1.0)
-		self.vbl.addWidget(self.zoom)
+		self.hbl_buttons = QtGui.QHBoxLayout(self)
+		self.hbl_buttons.setMargin(0)
+		self.hbl_buttons.setSpacing(6)
+		self.hbl_buttons.setObjectName("hbl_buttons")
+		
+		self.addIso = QtGui.QPushButton("Isosurface")
+		self.hbl_buttons.addWidget(self.addIso)
+		
+		self.addVol = QtGui.QPushButton("Volume")
+		self.hbl_buttons.addWidget(self.addVol)
+		
+		self.addSli = QtGui.QPushButton("Slices")
+		self.hbl_buttons.addWidget(self.addSli)
 
+		self.vbl.addLayout(self.hbl_buttons)
+		
+		self.hbl_buttons2 = QtGui.QHBoxLayout(self)
+		self.delete = QtGui.QPushButton("Delete")
+		self.hbl_buttons2.addWidget(self.delete)
+		self.vbl.addLayout(self.hbl_buttons2)
+		
+		self.tabwidget = QtGui.QTabWidget(self)
+		self.tabwidget.addTab(self.target.getSundryInspector(), "Isosurface")
+		self.hbl.addLayout(self.vbl)
+		self.hbl.addWidget(self.tabwidget)
+		
+		QtCore.QObject.connect(self.addIso, QtCore.SIGNAL("clicked()"), self.addIsosurface)
+		QtCore.QObject.connect(self.addVol, QtCore.SIGNAL("clicked()"), self.addVolume)
+		QtCore.QObject.connect(self.addSli, QtCore.SIGNAL("clicked()"), self.addSlices)
+		QtCore.QObject.connect(self.delete, QtCore.SIGNAL("clicked()"), self.deleteSelection)
+		
+		QtCore.QObject.connect(self.listwidget, QtCore.SIGNAL("currentRowChanged(int)"), self.rowChanged)
+		QtCore.QObject.connect(self.tabwidget, QtCore.SIGNAL("currentChanged(int)"), self.tabChanged)
+		
+	def tabChanged(self,tab):
+		self.target.rowChanged(tab)
+		self.listwidget.setCurrentRow(self.target.currentselection)
+		
+	def rowChanged(self,row):
+		self.target.rowChanged(row)
+		self.tabwidget.setCurrentIndex(self.target.currentselection)
+
+	def addIsosurface(self):
+		self.target.addIsosurface()
+		self.updateSelection()
 	
-		self.vbl.addWidget(self.target.getSundryInspector())
+	def addVolume(self):
+		self.target.addVolume()
+		self.updateSelection()
+	
+	def updateSelection(self):
+		self.listwidget.addItem(self.target.getCurrentName())
+		self.listwidget.setCurrentRow(self.target.currentselection)
+		self.tabwidget.addTab(self.target.getCurrentInspector(), self.target.getCurrentName())
+		self.tabwidget.setCurrentIndex(self.target.currentselection)
+	
+	
+	def addSlices(self):
+		pass
+	
+	def deleteSelection(self):
+		tmp = self.target.currentselection
+		self.target.deleteCurrent()
+		self.tabwidget.removeTab(tmp)
+		self.listwidget.takeItem(tmp)
+		
 		
 		#self.x_trans = QtGui.QDoubleSpinBox(self)
 		#self.x_trans.setMinimum(-10000)
@@ -390,7 +519,7 @@ if __name__ == '__main__':
  	if len(sys.argv)==1 : 
 		pass
 		e = EMData()
-		e.set_size(40,35,30)
+		e.set_size(64,64,64)
 		e.process_inplace('testimage.x')
  		window.setData(e)
 

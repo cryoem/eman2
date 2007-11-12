@@ -30,7 +30,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
-#
+
+
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -49,243 +50,40 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-t3d_stack = []
+from emimage3dobject import EMImage3DObject
+
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMImage3D(QtOpenGL.QGLWidget):
-	""" This class is not yet complete.
-	A QT widget for rendering 3D EMData objects.
-	"""
-	allim=WeakKeyDictionary()
-	def __init__(self, image=None, parent=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImage3D.allim[self]=0
+
+class EMVolume(EMImage3DObject):
+	def __init__(self,image=None, parent=None):
+		self.parent = parent
 		
-		self.loadColors()
+		self.init()
+		self.initialized = True
 		
+		self.initializedGL= False
+		
+		self.inspector=None
+		
+		if image :
+			self.setData(image)
+	
+	def getType(self):
+		return "volume"
+
+	def init(self):
 		self.data=None
 		
 		self.aspect=1.0
-		self.gq=0
 		self.mmode=0
 		
 		self.scale = 1.0
 		self.cam_x = 0
 		self.cam_y = 0
 		self.cam_z = 0
-		self.cube = True
+		self.cube = False
 		
-		self.contrast = 1.0
-		self.brightness = 0.0
-		self.glcontrast = 1.0
-		self.glbrightness = 0.0
-		self.texsample = 1.0	
-		
-		self.wire = False
-		
-		self.tex_name = 0
-		
-		self.fov = 50 # field of view angle used by gluPerspective
-
-		self.tex_dl = 0
-		self.tex_dl_x = 0
-		self.tex_dl_y = 0
-		self.tex_dl_z = 0
-		self.inspector=None
-		#self.ctrl_down = False
-	
-		if image :
-			self.setData(image)
-			self.show()
-	
-	def loadColors(self):
-		ruby = {}
-		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
-		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
-		ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
-		ruby["shininess"] = 128.0
-		self.colors = {}
-		self.colors["ruby"] = ruby
-		self.isocolor = "ruby"
-	
-	def timeout(self):
-		self.updateGL()
-	
-	def setData(self,data):
-		"""Pass in a 3D EMData object"""
-#		if not self.data and data: self.resize(data.get_xsize(),data.get_ysize())
-		
-		self.data=data
-		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
-			self.updateGL()
-			return
-		#if ( self.data.get_xsize() != self.data.get_zsize() or self.data.get_xsize() != self.data.get_ysize() ):
-			#print "Image dimensions must be currently be the same size in volume renderer"
-			#exit(1)
-		
-		self.default_z = -1.25*data.get_zsize()
-		self.cam_z = self.default_z
-		
-		if not self.inspector or self.inspector ==None:
-			self.inspector=EMImageInspector3D(self)
-		
-		self.inspector.setColors(self.colors,self.isocolor)
-		self.data.mult(1.0/self.data.get_zsize())
-		
-		self.updateDataAndTexture()
-		self.tex_dl = self.tex_dl_z
-	
-	def updateDataAndTexture(self):
-	
-		self.data_copy = self.data.copy()
-		self.data_copy.add(self.brightness)
-		self.data_copy.mult(self.contrast)
-
-		hist = self.data_copy.calc_hist(256,0,1.0)
-		self.inspector.setHist(hist,0,1.0) 
-
-		self.genTexture()
-	
-	def genTexture(self):
-	
-		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
-		
-		# Get the texture here
-		self.tex_name = self.data_copy.gen_gl_texture()
-		
-		if ( self.tex_dl_z != 0 ): glDeleteLists( self.tex_dl_z, 1)
-		
-		self.tex_dl_z = glGenLists(1)
-		
-		glNewList(self.tex_dl_z,GL_COMPILE)
-		glEnable(GL_TEXTURE_3D)
-		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		# Why didn't I use GL_REPLACE? I don't know....GL_MODULATE works, so does GL_REPLACE... needs some more
-		# thought but for the time being stick with these
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
-		glBegin(GL_QUADS)
-		for z in range(0,int(self.texsample*(self.data.get_zsize()+1))):
-			zz = float(z)/float(self.data.get_zsize())/self.texsample
-			glTexCoord3f(0,0,zz)
-			glVertex(0,0,zz)
-			
-			glTexCoord3f(1,0,zz)
-			glVertex(1,0,zz)
-			
-			glTexCoord3f(1,1,zz)
-			glVertex(1,1,zz)
-			
-			glTexCoord3f(0,1,zz)
-			glVertex(0,1,zz)
-		
-		glEnd()
-		
-		glDisable(GL_TEXTURE_3D)
-		glEndList()
-		
-		if ( self.tex_dl_y != 0 ): glDeleteLists( self.tex_dl_y, 1)
-		
-		self.tex_dl_y = glGenLists(1)
-		
-		glNewList(self.tex_dl_y,GL_COMPILE)
-		glEnable(GL_TEXTURE_3D)
-		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		# Why didn't I use GL_REPLACE? I don't know....GL_MODULATE works, so does GL_REPLACE... needs some more
-		# thought but for the time being stick with these
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
-		glBegin(GL_QUADS)
-		for y in range(0,int(self.texsample*(self.data.get_ysize()+1))):
-			yy = float(y)/float(self.data.get_ysize())/self.texsample
-			glTexCoord3f(0,yy,0)
-			glVertex(0,yy,0)
-			
-			glTexCoord3f(1,yy,0)
-			glVertex(1,yy,0)
-			
-			glTexCoord3f(1,yy,1)
-			glVertex(1,yy,1)
-			
-			glTexCoord3f(0,yy,1)
-			glVertex(0,yy,1)
-		
-		glEnd()
-		
-		glDisable(GL_TEXTURE_3D)
-		glEndList()
-		
-		if ( self.tex_dl_x != 0 ): glDeleteLists( self.tex_dl_x, 1)
-		
-		self.tex_dl_x = glGenLists(1)
-		
-		glNewList(self.tex_dl_x,GL_COMPILE)
-		glEnable(GL_TEXTURE_3D)
-		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		# Why didn't I use GL_REPLACE? I don't know....GL_MODULATE works, so does GL_REPLACE... needs some more
-		# thought but for the time being stick with these
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
-		glBegin(GL_QUADS)
-		for x in range(0,int(self.texsample*(self.data.get_xsize()+1))):
-			xx = float(x)/float(self.data.get_xsize())/self.texsample
-			glTexCoord3f(xx,0,0)
-			glVertex(xx,0,0)
-			
-			glTexCoord3f(xx,1,0)
-			glVertex(xx,1,0)
-			
-			glTexCoord3f(xx,1,1)
-			glVertex(xx,1,1)
-			
-			glTexCoord3f(xx,0,1)
-			glVertex(xx,0,1)
-		
-		glEnd()
-		
-		glDisable(GL_TEXTURE_3D)
-		glEndList()
-		
-	def initializeGL(self):
-		
-		glEnable(GL_NORMALIZE)
-		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		
-		GL.glClearColor(0,0,0,0)
-		
-		if not self.gq:
-			self.gq=gluNewQuadric()
-			gluQuadricDrawStyle(self.gq,GLU_FILL)
-			gluQuadricNormals(self.gq,GLU_SMOOTH)
-			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-			gluQuadricTexture(self.gq,GL_FALSE)
-
 		t3d = Transform3D()
 		rot = {}
 		rot["az"] = 0.0
@@ -296,54 +94,72 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.t3d_stack = []
 		self.t3d_stack.append(t3d)
 		
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-	
-		glShadeModel(GL_SMOOTH)
-	
-	def determineTextureView(self):
-		t3d = self.t3d_stack[len(self.t3d_stack)-1]
+		self.contrast = 1.0
+		self.brightness = 0.0
+		self.glcontrast = 1.0
+		self.glbrightness = 0.0
+		self.texsample = 1.0
 		
-		point = Vec3f(0,0,1)
+		self.loadColors()
 		
-		point = point*t3d
+		self.tex_name = 0
 		
-		point = [abs(point[0]), abs(point[1]),abs(point[2])]
+		self.tex_dl = 0
+		self.tex_dl_x = 0
+		self.tex_dl_y = 0
+		self.tex_dl_z = 0
+		self.inspector=None
 		
-		xyangle = 180*atan2(point[1],point[0])/pi
-		xzangle = 180*atan2(point[2],point[0])/pi
-		yzangle = 180*atan2(point[2],point[1])/pi
+	def loadColors(self):
+		# There is a bug, if the accompanying functionality to this function is removed we get a seg fault
+		ruby = {}
+		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
+		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
+		ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
+		ruby["shininess"] = 128.0
+		self.colors = {}
+		self.colors["ruby"] = ruby
+		self.isocolor = "ruby"
 		
-		if (xzangle > 45 ):
-			
-			if ( yzangle > 45 ):
-				self.tex_dl = self.tex_dl_z
-			else:
-				self.tex_dl = self.tex_dl_y
-		else:
-			if ( xyangle < 45 ):
-				self.tex_dl = self.tex_dl_x
-			else:
-				self.tex_dl = self.tex_dl_y
+	def setData(self,data):
+		"""Pass in a 3D EMData object"""
 		
-	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		self.data=data
+		if data==None:
+			print "Error, the data is empty"
+			return
 		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-		# because the viewing volume extends from -0.001 to -10000 in the z direction,
-		# translate the scene back into it so it is visible...
+	 	if (isinstance(data,EMData) and data.get_zsize()<=1) :
+			print "Error, the data is not 3D"
+			return
+		
+		self.default_z = -1.25*data.get_zsize()
+		self.cam_z = self.default_z
+		
+		if not self.inspector or self.inspector ==None:
+			self.inspector=EMVolumeInspector(self)
+		
+		self.inspector.setColors(self.colors,self.isocolor)
+		
+		self.updateDataAndTexture()
+		self.tex_dl = self.tex_dl_z
+		
+	def render(self):
+		lighting = glIsEnabled(GL_LIGHTING)
+		cull = glIsEnabled(GL_CULL_FACE)
+		depth = glIsEnabled(GL_DEPTH_TEST)
+		
+		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
+
+		glDisable(GL_LIGHTING)
+		glDisable(GL_CULL_FACE)
+		glDisable(GL_DEPTH_TEST)
+		
+		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+		
 		glTranslated(self.cam_x, self.cam_y, self.cam_z)
-		#print "Scene is positioned at %f %f %f" %(self.cam_x, self.cam_y, self.cam_z)
-		# get the current rotation from the rotation stack and apply
+		
 		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-				
 		glRotate(float(rot["phi"]),0,0,1)
 		glRotate(float(rot["alt"]),1,0,0)
 		glRotate(float(rot["az"]),0,0,1)
@@ -381,6 +197,200 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			self.draw_volume_bounds()
 			glPopMatrix()
 			
+		if ( lighting ): glEnable(GL_LIGHTING)
+		if ( cull ): glEnable(GL_CULL_FACE)
+		if ( depth ): glEnable(GL_DEPTH_TEST)
+		
+		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
+		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
+		
+	
+	def draw_volume_bounds(self):
+		# FIXME - should be a display list
+		width = self.data.get_xsize()
+		height = self.data.get_ysize()
+		depth = self.data.get_zsize()
+		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
+		glLineWidth(0.2)
+		glNormal(0,1,0)
+		glColor(.2,.1,0.4,1.0)
+		glColor(1,1,1,1.0)
+		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
+		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
+		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
+		glMaterial(GL_FRONT, GL_SHININESS, 128.0)
+
+		glBegin(GL_LINE_STRIP)
+		glVertex(0,0,0)
+		glVertex(width,0,0)
+		glVertex(width,0,depth)
+		glVertex(0,0,depth)
+		glVertex(0,0,0)
+		glVertex(0,height,0)
+		glVertex(width,height,0)
+		glVertex(width,height,depth)
+		glVertex(0,height,depth)
+		glVertex(0,height,0)
+		glEnd()
+		
+		glBegin(GL_LINES)
+		glVertex(width,height,depth)
+		glVertex(width,0,depth)
+		
+		glVertex(width,height,0)
+		glVertex(width,0,0)
+		
+		glVertex(0,height,depth)
+		glVertex(0,0,depth)
+		glEnd()
+	
+	def determineTextureView(self):
+		t3d = self.t3d_stack[len(self.t3d_stack)-1]
+		
+		point = Vec3f(0,0,1)
+		
+		point = point*t3d
+		
+		point = [abs(point[0]), abs(point[1]),abs(point[2])]
+		
+		xyangle = 180*atan2(point[1],point[0])/pi
+		xzangle = 180*atan2(point[2],point[0])/pi
+		yzangle = 180*atan2(point[2],point[1])/pi
+		
+		if (xzangle > 45 ):
+			
+			if ( yzangle > 45 ):
+				self.tex_dl = self.tex_dl_z
+			else:
+				self.tex_dl = self.tex_dl_y
+		else:
+			if ( xyangle < 45 ):
+				self.tex_dl = self.tex_dl_x
+			else:
+				self.tex_dl = self.tex_dl_y
+	
+	def genTexture(self):
+	
+		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
+		
+		# Get the texture here
+		self.tex_name = self.data_copy.gen_gl_texture()
+		
+		if ( self.tex_dl_z != 0 ): glDeleteLists( self.tex_dl_z, 1)
+		
+		self.tex_dl_z = glGenLists(1)
+		
+		glNewList(self.tex_dl_z,GL_COMPILE)
+		glEnable(GL_TEXTURE_3D)
+		glBindTexture(GL_TEXTURE_3D, self.tex_name)
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		glBegin(GL_QUADS)
+		for z in range(0,int(self.texsample*(self.data.get_zsize()))):
+			zz = float(z)/float(self.data.get_zsize()-1)/self.texsample
+			glTexCoord3f(0,0,zz)
+			glVertex(0,0,zz)
+			
+			glTexCoord3f(1,0,zz)
+			glVertex(1,0,zz)
+			
+			glTexCoord3f(1,1,zz)
+			glVertex(1,1,zz)
+			
+			glTexCoord3f(0,1,zz)
+			glVertex(0,1,zz)
+		
+		glEnd()
+		
+		glDisable(GL_TEXTURE_3D)
+		glEndList()
+		
+		if ( self.tex_dl_y != 0 ): glDeleteLists( self.tex_dl_y, 1)
+		
+		self.tex_dl_y = glGenLists(1)
+		
+		glNewList(self.tex_dl_y,GL_COMPILE)
+		glEnable(GL_TEXTURE_3D)
+		glBindTexture(GL_TEXTURE_3D, self.tex_name)
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		glBegin(GL_QUADS)
+		for y in range(0,int(self.texsample*(self.data.get_ysize()))):
+			yy = float(y)/float(self.data.get_ysize()-1)/self.texsample
+			glTexCoord3f(0,yy,0)
+			glVertex(0,yy,0)
+			
+			glTexCoord3f(1,yy,0)
+			glVertex(1,yy,0)
+			
+			glTexCoord3f(1,yy,1)
+			glVertex(1,yy,1)
+			
+			glTexCoord3f(0,yy,1)
+			glVertex(0,yy,1)
+		
+		glEnd()
+		
+		glDisable(GL_TEXTURE_3D)
+		glEndList()
+		
+		if ( self.tex_dl_x != 0 ): glDeleteLists( self.tex_dl_x, 1)
+		
+		self.tex_dl_x = glGenLists(1)
+		
+		glNewList(self.tex_dl_x,GL_COMPILE)
+		glEnable(GL_TEXTURE_3D)
+		glBindTexture(GL_TEXTURE_3D, self.tex_name)
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		glBegin(GL_QUADS)
+		for x in range(0,int(self.texsample*(self.data.get_xsize()))):
+			xx = float(x)/float(self.data.get_xsize()-1)/self.texsample
+			glTexCoord3f(xx,0,0)
+			glVertex(xx,0,0)
+			
+			glTexCoord3f(xx,1,0)
+			glVertex(xx,1,0)
+			
+			glTexCoord3f(xx,1,1)
+			glVertex(xx,1,1)
+			
+			glTexCoord3f(xx,0,1)
+			glVertex(xx,0,1)
+		
+		glEnd()
+		
+		glDisable(GL_TEXTURE_3D)
+		glEndList()
+	
+	def updateDataAndTexture(self):
+	
+		if ( not isinstance(self.data,EMData) ): return
+		
+		self.data_copy = self.data.copy()
+		self.data_copy.mult(self.contrast*1.0/self.data.get_zsize())
+		self.data_copy.add(self.brightness)
+
+		hist = self.data_copy.calc_hist(256,0,1.0)
+		self.inspector.setHist(hist,0,1.0) 
+
+		self.genTexture()
+	
 	def draw_bc_screen(self):
 		if (self.glcontrast == 1 and self.glbrightness == 0 ): return
 		
@@ -449,74 +459,21 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glDisable(GL_BLEND)
 		if depth_testing_was_on:
 			glDepthMask(GL_TRUE)
-		
-	def draw_volume_bounds(self):
-		# FIXME - should be a display list
-		width = self.data.get_xsize()
-		height = self.data.get_ysize()
-		depth = self.data.get_zsize()
-		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
-		glLineWidth(0.2)
-		glNormal(0,1,0)
-		glColor(.2,.1,0.4,1.0)
-		glColor(1,1,1,1.0)
-		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
-		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
-		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
-		glMaterial(GL_FRONT, GL_SHININESS, 128.0)
-
-		glBegin(GL_LINE_STRIP)
-		glVertex(0,0,0)
-		glVertex(width,0,0)
-		glVertex(width,0,depth)
-		glVertex(0,0,depth)
-		glVertex(0,0,0)
-		glVertex(0,height,0)
-		glVertex(width,height,0)
-		glVertex(width,height,depth)
-		glVertex(0,height,depth)
-		glVertex(0,height,0)
-		glEnd()
-		
-		glBegin(GL_LINES)
-		glVertex(width,height,depth)
-		glVertex(width,0,depth)
-		
-		glVertex(width,height,0)
-		glVertex(width,0,0)
-		
-		glVertex(0,height,depth)
-		glVertex(0,0,depth)
-		glEnd()
-		
-	def resizeGL(self, width, height):
-		# just use the whole window for rendering
-		glViewport(0,0,self.width(),self.height())
-		
-		# maintain the aspect ratio of the window we have
-		self.aspect = float(width)/float(height)
-		
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,0.001,1000000)
-		
-		# switch back to model view mode
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.updateInspectorTranslateScale()
-
+	
 	def showInspector(self,force=0):
 		if not force and self.inspector==None : return
 		
-		if not self.inspector : self.inspector=EMImageInspector3D(self)
+		if not self.inspector : self.inspector=EMVolumeInspector(self)
 		self.inspector.show()
-	
+			
 	def updateInspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMImageInspector3D(self)
+			self.inspector=EMVolumeInspector(self)
 		self.inspector.updateRotations(t3d)
+	
+	def getInspector(self):
+		if not self.inspector : self.inspector=EMIsoInspector(self)
+		return self.inspector
 	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
@@ -527,7 +484,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			if not self.inspector or self.inspector ==None:
 				self.inspector=EMImageInspector3D(self)
 			self.inspector.updateRotations(self.t3d_stack[len(self.t3d_stack)-1])
-			self.updateInspectorTranslateScale()
+			self.resizeEvent()
 			self.showInspector(1)
 		
 		elif event.button()==Qt.LeftButton:
@@ -542,13 +499,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 				self.t3d_stack.append(t3d)
 				self.updateInspector(t3d)
 				
-				self.emit(QtCore.SIGNAL("mousedown"), event)
+				
 				return
 		elif event.button()==Qt.RightButton:
 			if self.mmode==0:
 				self.mpressx = event.x()
 				self.mpressy = event.y()
-				self.emit(QtCore.SIGNAL("mousedown"), event)
 				return
 		
 	def mouseMoveEvent(self, event):
@@ -558,10 +514,9 @@ class EMImage3D(QtOpenGL.QGLWidget):
 					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
 				else:
 					self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y())
-				self.updateGL()
+				self.parent.updateGL()
 				self.mpressx = event.x()
 				self.mpressy = event.y()
-				self.emit(QtCore.SIGNAL("mousedrag"), event)
 				return
 		if event.buttons()&Qt.RightButton:
 			if self.mmode==0:
@@ -572,9 +527,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 					
 				self.mpressx = event.x()
 				self.mpressy = event.y()
-				self.updateGL()
-				
-				self.emit(QtCore.SIGNAL("mousedrag"), event)
+				self.parent.updateGL()
 				return
 	
 	def mouseReleaseEvent(self, event):
@@ -583,14 +536,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 				return
 		elif event.button()==Qt.RightButton:
 			if self.mmode==0:
-				self.emit(QtCore.SIGNAL("mouseup"), event)
 				return
 			
 	def wheelEvent(self, event):
 		self.scale_event(event.delta())
-		self.updateInspectorTranslateScale()
+		self.resizeEvent()
 
-	def updateInspectorTranslateScale(self):
+	def resizeEvent(self):
 		[xscale,yscale] = self.getTranslateScale()
 		if ( xscale > yscale ): self.inspector.setTranslateScale(xscale,yscale,yscale)
 		else: self.inspector.setTranslateScale(xscale,yscale,xscale)
@@ -603,21 +555,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.setScale(self.scale)
 
-	def get_render_dims_at_depth(self):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(self.cam_z)
-		width = self.aspect*height
-		
-		return [width,height]
-
 	def getTranslateScale(self):
 	
-		[rx,ry] = self.get_render_dims_at_depth()
+		[rx,ry] = self.parent.get_render_dims_at_depth(self.cam_z)
 		
 		#print "render area is %f %f " %(xx,yy)
-		xscale = rx/float(self.width())
-		yscale = ry/float(self.height())
+		xscale = rx/float(self.parent.width())
+		yscale = ry/float(self.parent.height())
 		
 		return [xscale,yscale]
 
@@ -631,15 +575,15 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 	def setCamZ(self,z):
 		self.cam_z = self.default_z + z
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setCamY(self,y):
 		self.cam_y = y
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setCamX(self,x):
 		self.cam_x = x
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def motionRotate(self,x,y):
 		if ( x == 0 and y == 0): return
@@ -671,38 +615,38 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 	def setScale(self,val):
 		self.scale = val
-		self.updateGL()
+		self.parent.updateGL()
 	
 	def loadRotation(self,t3d):
 		self.t3d_stack.append(t3d)
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setColor(self,val):
 		#print val
 		#self.isocolor = str(val)
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def toggleCube(self):
 		self.cube = not self.cube
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setContrast(self,val):
 		self.contrast = val
 		self.updateDataAndTexture()
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setBrightness(self,val):
 		self.brightness = val/self.data.get_zsize()
 		self.updateDataAndTexture()
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setGLBrightness(self,val):
 		self.glbrightness = val
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setGLContrast(self,val):
 		self.glcontrast = val
-		self.updateGL()
+		self.parent.updateGL()
 		
 	def setTextureSample(self,val):
 		if ( val < 0 ) :
@@ -711,10 +655,98 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.texsample = val
 		self.genTexture()
-		self.updateGL()
+		self.parent.updateGL()
+
+class EMVolumeWidget(QtOpenGL.QGLWidget):
+	
+	allim=WeakKeyDictionary()
+	def __init__(self, image=None, parent=None):
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		fmt.setDepth(1)
+		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		EMVolumeWidget.allim[self]=0
+		
+		self.fov = 50 # field of view angle used by gluPerspective
+		
+		self.volume = EMVolume(image,self)
+	def setData(self,data):
+		self.volume.setData(data)
+	def initializeGL(self):
+		
+		glEnable(GL_NORMALIZE)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
+		#print "Initializing"
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		
+		GL.glClearColor(0,0,0,0)
+	
+		glShadeModel(GL_SMOOTH)
+		
+	def paintGL(self):
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		glPushMatrix()
+		self.volume.render()
+		glPopMatrix()
+	
+		
+	def resizeGL(self, width, height):
+		# just use the whole window for rendering
+		glViewport(0,0,self.width(),self.height())
+		
+		# maintain the aspect ratio of the window we have
+		self.aspect = float(width)/float(height)
+		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		# using gluPerspective for simplicity
+		gluPerspective(self.fov,self.aspect,0.001,1000000)
+		
+		# switch back to model view mode
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		self.volume.resizeEvent()
+
+	def showInspector(self,force=0):
+		self.volume.showInspector(self,force)
+
+	def closeEvent(self,event) :
+		self.volume.closeEvent(event)
+		
+	def mousePressEvent(self, event):
+		self.volume.mousePressEvent(event)
+		self.emit(QtCore.SIGNAL("mousedown"), event)
+		
+	def mouseMoveEvent(self, event):
+		self.volume.mouseMoveEvent(event)
+		self.emit(QtCore.SIGNAL("mousedrag"), event)
+	
+	def mouseReleaseEvent(self, event):
+		self.volume.mouseReleaseEvent(event)
+		self.emit(QtCore.SIGNAL("mouseup"), event)
+			
+	def wheelEvent(self, event):
+		self.volume.wheelEvent(event)
+
+	def get_render_dims_at_depth(self,depth):
+		# This function returns the width and height of the renderable 
+		# area at the origin of the data volume
+		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		width = self.aspect*height
+		
+		return [width,height]
 		
 
-class EMImageInspector3D(QtGui.QWidget):
+class EMVolumeInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -747,119 +779,12 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.defaults = QtGui.QPushButton("Defaults")
 		self.vbl2.addWidget(self.defaults)
 		
-		self.scale = ValSlider(self,(0.01,30.0),"Mag:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		self.vbl.addWidget(self.scale)
+		self.tabwidget = QtGui.QTabWidget()
 		
-		self.contrast = ValSlider(self,(0.0,20.0),"Cont:")
-		self.contrast.setObjectName("contrast")
-		self.contrast.setValue(1.0)
-		self.vbl.addWidget(self.contrast)
-
-		self.bright = ValSlider(self,(-5.0,5.0),"Brt:")
-		self.bright.setObjectName("bright")
-		self.bright.setValue(0.1)
-		self.bright.setValue(0.0)
-		self.vbl.addWidget(self.bright)
-
-		self.hbl_smp = QtGui.QHBoxLayout()
-		self.hbl_smp.setMargin(0)
-		self.hbl_smp.setSpacing(6)
-		self.hbl_smp.setObjectName("Texture Oversampling")
-		self.vbl.addLayout(self.hbl_smp)
+		self.tabwidget.addTab(self.getMainTab(), "Main")
+		self.tabwidget.addTab(self.getGLTab(),"GL")
 		
-		self.smp_label = QtGui.QLabel()
-		self.smp_label.setText('Texture Oversampling')
-		self.hbl_smp.addWidget(self.smp_label)
-		
-		self.smp = QtGui.QSpinBox(self)
-		self.smp.setMaximum(10)
-		self.smp.setMinimum(1)
-		self.smp.setValue(1)
-		self.hbl_smp.addWidget(self.smp)
-
-		self.glcontrast = ValSlider(self,(0.0,20.0),"GLShd:")
-		self.glcontrast.setObjectName("GLShade")
-		self.glcontrast.setValue(1.0)
-		self.vbl.addWidget(self.glcontrast)
-		
-		self.glbrightness = ValSlider(self,(-1.0,1.0),"GLBst:")
-		self.glbrightness.setObjectName("GLBoost")
-		self.glbrightness.setValue(0.1)
-		self.glbrightness.setValue(0.0)
-		self.vbl.addWidget(self.glbrightness)
-
-		self.lowlim=0
-		self.highlim=1.0
-		self.busy=0
-		
-		self.cbb = QtGui.QComboBox(self)
-		self.vbl.addWidget(self.cbb)
-		self.cbb.deleteLater()
-
-		self.hbl_trans = QtGui.QHBoxLayout()
-		self.hbl_trans.setMargin(0)
-		self.hbl_trans.setSpacing(6)
-		self.hbl_trans.setObjectName("Trans")
-		self.vbl.addLayout(self.hbl_trans)
-		
-		self.x_label = QtGui.QLabel()
-		self.x_label.setText('x')
-		self.hbl_trans.addWidget(self.x_label)
-		
-		self.x_trans = QtGui.QDoubleSpinBox(self)
-		self.x_trans.setMinimum(-10000)
-		self.x_trans.setMaximum(10000)
-		self.x_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.x_trans)
-		
-		self.y_label = QtGui.QLabel()
-		self.y_label.setText('y')
-		self.hbl_trans.addWidget(self.y_label)
-		
-		self.y_trans = QtGui.QDoubleSpinBox(self)
-		self.y_trans.setMinimum(-10000)
-		self.y_trans.setMaximum(10000)
-		self.y_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.y_trans)
-		
-		self.z_label = QtGui.QLabel()
-		self.z_label.setText('z')
-		self.hbl_trans.addWidget(self.z_label)
-		
-		self.z_trans = QtGui.QDoubleSpinBox(self)
-		self.z_trans.setMinimum(-10000)
-		self.z_trans.setMaximum(10000)
-		self.z_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.z_trans)
-		
-		self.hbl_src = QtGui.QHBoxLayout()
-		self.hbl_src.setMargin(0)
-		self.hbl_src.setSpacing(6)
-		self.hbl_src.setObjectName("hbl")
-		self.vbl.addLayout(self.hbl_src)
-		
-		self.label_src = QtGui.QLabel()
-		self.label_src.setText('Rotation Convention')
-		self.hbl_src.addWidget(self.label_src)
-		
-		self.src = QtGui.QComboBox(self)
-		self.load_src_options(self.src)
-		self.hbl_src.addWidget(self.src)
-		
-		# set default value -1 ensures that the val slider is updated the first time it is created
-		self.az = ValSlider(self,(-360.0,360.0),"az",-1)
-		self.az.setObjectName("az")
-		self.vbl.addWidget(self.az)
-		
-		self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
-		self.alt.setObjectName("alt")
-		self.vbl.addWidget(self.alt)
-		
-		self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
-		self.phi.setObjectName("phi")
-		self.vbl.addWidget(self.phi)
+		self.vbl.addWidget(self.tabwidget)
 		
 		self.n3_showing = False
 		
@@ -881,6 +806,143 @@ class EMImageInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
 		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setTextureSample)
+	
+	def getGLTab(self):
+		self.gltab = QtGui.QWidget()
+		gltab = self.gltab
+		
+		gltab.vbl = QtGui.QVBoxLayout(self.gltab )
+		gltab.vbl.setMargin(0)
+		gltab.vbl.setSpacing(6)
+		gltab.vbl.setObjectName("Main")
+		
+		self.glcontrast = ValSlider(self,(0.0,20.0),"GLShd:")
+		self.glcontrast.setObjectName("GLShade")
+		self.glcontrast.setValue(1.0)
+		gltab.vbl.addWidget(self.glcontrast)
+		
+		self.glbrightness = ValSlider(self,(-1.0,1.0),"GLBst:")
+		self.glbrightness.setObjectName("GLBoost")
+		self.glbrightness.setValue(0.1)
+		self.glbrightness.setValue(0.0)
+		gltab.vbl.addWidget(self.glbrightness)
+	
+		return gltab
+	
+	def getMainTab(self):
+	
+		self.maintab = QtGui.QWidget()
+		maintab = self.maintab
+		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		maintab.vbl.setMargin(0)
+		maintab.vbl.setSpacing(6)
+		maintab.vbl.setObjectName("Main")
+		
+		
+		self.scale = ValSlider(self,(0.01,30.0),"Zoom:")
+		self.scale.setObjectName("scale")
+		self.scale.setValue(1.0)
+		maintab.vbl.addWidget(self.scale)
+		
+		self.contrast = ValSlider(maintab,(0.0,20.0),"Cont:")
+		self.contrast.setObjectName("contrast")
+		self.contrast.setValue(1.0)
+		maintab.vbl.addWidget(self.contrast)
+
+		self.bright = ValSlider(maintab,(-5.0,5.0),"Brt:")
+		self.bright.setObjectName("bright")
+		self.bright.setValue(0.1)
+		self.bright.setValue(0.0)
+		maintab.vbl.addWidget(self.bright)
+
+		self.hbl_smp = QtGui.QHBoxLayout()
+		self.hbl_smp.setMargin(0)
+		self.hbl_smp.setSpacing(6)
+		self.hbl_smp.setObjectName("Texture Oversampling")
+		maintab.vbl.addLayout(self.hbl_smp)
+		
+		self.smp_label = QtGui.QLabel()
+		self.smp_label.setText('Texture Oversampling')
+		self.hbl_smp.addWidget(self.smp_label)
+		
+		self.smp = QtGui.QSpinBox(maintab)
+		self.smp.setMaximum(10)
+		self.smp.setMinimum(1)
+		self.smp.setValue(1)
+		self.hbl_smp.addWidget(self.smp)
+
+		self.lowlim=0
+		self.highlim=1.0
+		self.busy=0
+		
+		self.cbb = QtGui.QComboBox(maintab)
+		self.vbl.addWidget(self.cbb)
+		self.cbb.deleteLater()
+
+		self.hbl_trans = QtGui.QHBoxLayout()
+		self.hbl_trans.setMargin(0)
+		self.hbl_trans.setSpacing(6)
+		self.hbl_trans.setObjectName("Trans")
+		maintab.vbl.addLayout(self.hbl_trans)
+		
+		self.x_label = QtGui.QLabel()
+		self.x_label.setText('x')
+		self.hbl_trans.addWidget(self.x_label)
+		
+		self.x_trans = QtGui.QDoubleSpinBox(maintab)
+		self.x_trans.setMinimum(-10000)
+		self.x_trans.setMaximum(10000)
+		self.x_trans.setValue(0.0)
+		self.hbl_trans.addWidget(self.x_trans)
+		
+		self.y_label = QtGui.QLabel()
+		self.y_label.setText('y')
+		self.hbl_trans.addWidget(self.y_label)
+		
+		self.y_trans = QtGui.QDoubleSpinBox(maintab)
+		self.y_trans.setMinimum(-10000)
+		self.y_trans.setMaximum(10000)
+		self.y_trans.setValue(0.0)
+		self.hbl_trans.addWidget(self.y_trans)
+		
+		self.z_label = QtGui.QLabel()
+		self.z_label.setText('z')
+		self.hbl_trans.addWidget(self.z_label)
+		
+		self.z_trans = QtGui.QDoubleSpinBox(maintab)
+		self.z_trans.setMinimum(-10000)
+		self.z_trans.setMaximum(10000)
+		self.z_trans.setValue(0.0)
+		self.hbl_trans.addWidget(self.z_trans)
+		
+		self.hbl_src = QtGui.QHBoxLayout()
+		self.hbl_src.setMargin(0)
+		self.hbl_src.setSpacing(6)
+		self.hbl_src.setObjectName("hbl")
+		maintab.vbl.addLayout(self.hbl_src)
+		
+		self.label_src = QtGui.QLabel()
+		self.label_src.setText('Rotation Convention')
+		self.hbl_src.addWidget(self.label_src)
+		
+		self.src = QtGui.QComboBox(maintab)
+		self.load_src_options(self.src)
+		self.hbl_src.addWidget(self.src)
+		
+		# set default value -1 ensures that the val slider is updated the first time it is created
+		self.az = ValSlider(maintab,(-360.0,360.0),"az",-1)
+		self.az.setObjectName("az")
+		maintab.vbl.addWidget(self.az)
+		
+		self.alt = ValSlider(maintab,(-180.0,180.0),"alt",-1)
+		self.alt.setObjectName("alt")
+		maintab.vbl.addWidget(self.alt)
+		
+		self.phi = ValSlider(maintab,(-360.0,360.0),"phi",-1)
+		self.phi.setObjectName("phi")
+		maintab.vbl.addWidget(self.phi)
+		
+		return maintab
 	
 	def setDefaults(self):
 		self.x_trans.setValue(0.0)
@@ -1031,14 +1093,12 @@ class EMImageInspector3D(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMImage3D()
+	window = EMVolumeWidget()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(1024,512,256)
-		print "here"
+		e.set_size(128,128,128)
 		e.process_inplace('testimage.x')
-		print "end"
- 		window.setData(e)
+		window.setData(e)
 
 		# these lines are for testing shape rendering
 # 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])

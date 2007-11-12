@@ -49,9 +49,11 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
+from emimage3dobject import EMImage3DObject
+
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMIsosurface:
+class EMIsosurface(EMImage3DObject):
 	def __init__(self,image=None, parent=None):
 		self.parent = parent
 		
@@ -61,10 +63,36 @@ class EMIsosurface:
 		self.initializedGL= False
 		
 		self.inspector=None
+		self.data = None
 		if image :
 			self.setData(image)
 	
+	def getType(self):
+		return "isosurface"
+	
 	def render(self):
+		if (not isinstance(self.data,EMData)): return
+		
+		lighting = glIsEnabled(GL_LIGHTING)
+		cull = glIsEnabled(GL_CULL_FACE)
+		depth = glIsEnabled(GL_DEPTH_TEST)
+		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
+
+		glEnable(GL_CULL_FACE)
+		glEnable(GL_DEPTH_TEST)
+		
+		if ( self.wire ):
+			glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+		else:
+			glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+		
+		if self.light:
+			glEnable(GL_LIGHTING)
+		else:
+			glDisable(GL_LIGHTING)
+			
+
+		
 		glTranslatef(self.cam_x, self.cam_y, self.cam_z)
 		#print "Scene is positioned at %f %f %f" %(self.cam_x, self.cam_y, self.cam_z)
 		# get the current rotation from the rotation stack and apply
@@ -95,6 +123,18 @@ class EMIsosurface:
 			self.draw_volume_bounds()
 			glPopMatrix()
 			
+		if ( lighting ): glEnable(GL_LIGHTING)
+		else: glDisable(GL_LIGHTING)
+		if ( cull ): glEnable(GL_CULL_FACE)
+		else: glDisable(GL_CULL_FACE)
+		if ( depth ): glEnable(GL_DEPTH_TEST)
+		else : glDisable(GL_DEPTH_TEST)
+		
+		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
+		else: glPolygonMode(GL_FRONT, GL_FILL)
+		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
+		else: glPolygonMode(GL_BACK, GL_FILL)
+			
 	def init(self):
 		self.mmode = 0
 		self.inspector=None
@@ -106,6 +146,7 @@ class EMIsosurface:
 		self.scale = 1.0
 		self.cube = False
 		self.wire = False
+		self.light = True
 		
 		self.cam_x = 0
 		self.cam_y = 0
@@ -290,7 +331,7 @@ class EMIsosurface:
 			self.inspector=EMIsoInspector(self)
 		self.inspector.updateRotations(t3d)
 		
-	def updateInspectorTranslateScale(self):
+	def resizeEvent(self):
 		[xscale,yscale] = self.getTranslateScale()
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMIsoInspector(self)
@@ -305,7 +346,7 @@ class EMIsosurface:
 			if not self.inspector or self.inspector ==None:
 				self.inspector=EMIsoInspector(self)
 			self.inspector.updateRotations(self.t3d_stack[len(self.t3d_stack)-1])
-			self.updateInspectorTranslateScale()
+			self.resizeEvent()
 			self.showInspector(1)
 		
 		elif event.button()==Qt.LeftButton:
@@ -366,7 +407,7 @@ class EMIsosurface:
 			
 	def wheelEvent(self, event):
 		self.scale_event(event.delta())
-		self.updateInspectorTranslateScale()
+		self.resizeEvent()
 		
 	def scale_event(self,delta):
 		if delta > 0:
@@ -467,24 +508,13 @@ class EMIsosurface:
 	
 	def toggleWire(self,val):
 		self.wire = not self.wire
-		
-		if ( self.wire ):
-			glPolygonMode(GL_FRONT,GL_LINE);
-		else:
-			glPolygonMode(GL_FRONT,GL_FILL);
 		self.parent.updateGL()
 		
 	def toggleLight(self,val):
-		enabled = glIsEnabled(GL_LIGHTING)
-		
-		if enabled:
-			glDisable(GL_LIGHTING)
-		else:
-			glEnable(GL_LIGHTING)
-			
+		self.light = not self.light
 		self.parent.updateGL()
 		
-class EMImageIso(QtOpenGL.QGLWidget):
+class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
 	A QT widget for rendering 3D EMData objects.
 	"""
@@ -494,7 +524,7 @@ class EMImageIso(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImageIso.allim[self]=0
+		EMIsosurfaceWidget.allim[self]=0
 		self.isosurface = EMIsosurface(image,self)
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
@@ -522,10 +552,6 @@ class EMImageIso(QtOpenGL.QGLWidget):
 		GL.glClearColor(0,0,0,0)
 		
 		# For the time being
-		glEnable(GL_CULL_FACE);
-		
-		glPolygonMode(GL_FRONT,GL_FILL);
-
 		
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -554,7 +580,7 @@ class EMImageIso(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.isosurface.updateInspectorTranslateScale()
+		self.isosurface.resizeEvent()
 
 	def setData(self,data):
 		self.isosurface.setData(data)
@@ -623,7 +649,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.cubetog.setCheckable(1)
 		self.vbl2.addWidget(self.cubetog)
 		
-		self.scale = ValSlider(self,(0.01,30.0),"Mag:")
+		self.scale = ValSlider(self,(0.01,30.0),"Zoom:")
 		self.scale.setObjectName("scale")
 		self.scale.setValue(1.0)
 		self.vbl.addWidget(self.scale)
@@ -632,7 +658,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.highlim=1.0
 		self.busy=0
 
-		self.thr = ValSlider(self,(0.0,2.0),"Thr:")
+		self.thr = ValSlider(self,(0.0,4.0),"Thr:")
 		self.thr.setObjectName("thr")
 		self.thr.setValue(0.5)
 		self.vbl.addWidget(self.thr)
@@ -898,7 +924,7 @@ class EMIsoInspector(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMImageIso()
+	window = EMIsosurfaceWidget()
  	if len(sys.argv)==1 : 
 		e = EMData()
 		e.set_size(40,35,30)
