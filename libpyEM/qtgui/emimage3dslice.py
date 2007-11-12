@@ -30,7 +30,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
-#
+
+
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -54,263 +55,238 @@ from emimage3dobject import Camera
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMIsosurface(EMImage3DObject):
+class EM3DSliceViewer(EMImage3DObject):
 	def __init__(self,image=None, parent=None):
 		self.parent = parent
 		
 		self.init()
 		self.initialized = True
 		
-		self.cam=Camera()
-		
-		self.initializedGL= False
-		
 		self.inspector=None
-		self.data = None
+		
 		if image :
 			self.setData(image)
 	
 	def getType(self):
-		return "Isosurface"
-	
-	def render(self):
-		if (not isinstance(self.data,EMData)): return
+		return "Slice Viewer"
+
+	def init(self):
+		self.data=None
+
+		self.mmode=0
+		self.cam = Camera()
 		
+		self.cube = False
+		self.inspector=None
+		
+		self.tex_name = 0
+		self.tex_dl = 0
+
+		self.glcontrast = 1.0
+		self.glbrightness = 0.0
+		
+	def setData(self,data):
+		"""Pass in a 3D EMData object"""
+		
+		self.data = data.copy()
+		
+		min = self.data.get_attr("minimum")
+		max = self.data.get_attr("maximum")
+		
+		self.data.add(-min)
+		self.data.mult(1/(max-min))
+		
+		if data==None:
+			print "Error, the data is empty"
+			return
+		
+	 	if (isinstance(data,EMData) and data.get_zsize()<=1) :
+			print "Error, the data is not 3D"
+			return
+		
+		self.cam.default_z = -1.25*data.get_zsize()
+		self.cam.cam_z = -1.25*data.get_zsize()
+		
+		if not self.inspector or self.inspector ==None:
+			self.inspector=EMVolumeInspector(self)
+
+		hist = self.data.calc_hist(256,0,1.0)
+		self.inspector.setHist(hist,0,1.0) 
+
+		self.zslice = data.get_zsize()/2.0
+		self.yslice = data.get_ysize()/2.0
+		self.xslice = data.get_xsize()/2.0
+		self.axis = 'z'
+		self.inspector.setSliceRange(0,data.get_zsize())
+		self.inspector.setSlice(self.zslice)
+		self.genTexture()
+		self.genCurrentDisplayList()
+		
+	def genTexture(self):
+		if ( self.tex_name != 0 ):
+			glDeleteTextures(self.tex_name)
+		
+		self.tex_name = self.data.gen_gl_texture()
+		
+	def genCurrentDisplayList(self):
+		if ( self.tex_dl != 0 ): glDeleteLists( self.tex_dl, 1)
+		
+		self.tex_dl = glGenLists(1)
+	
+		if (self.tex_dl == 0): return #OpenGL is initialized yet
+		
+		glNewList(self.tex_dl,GL_COMPILE)
+		glEnable(GL_TEXTURE_3D)
+		glBindTexture(GL_TEXTURE_3D, self.tex_name)
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		
+		glBegin(GL_QUADS)
+		
+		if self.axis == 'z':
+			zz = float(self.zslice)/float(self.data.get_zsize())
+			glTexCoord3f(0,0,zz)
+			glVertex(0,0,zz)
+			
+			glTexCoord3f(1,0,zz)
+			glVertex(1,0,zz)
+			
+			glTexCoord3f(1,1,zz)
+			glVertex(1,1,zz)
+			
+			glTexCoord3f(0,1,zz)
+			glVertex(0,1,zz)
+			
+		elif self.axis == 'y':
+			yy = float(self.yslice)/float(self.data.get_ysize())
+			glTexCoord3f(0,yy,0)
+			glVertex(0,yy,0)
+			
+			glTexCoord3f(1,yy,0)
+			glVertex(1,yy,0)
+			
+			glTexCoord3f(1,yy,1)
+			glVertex(1,yy,1)
+			
+			glTexCoord3f(0,yy,1)
+			glVertex(0,yy,1)
+			
+		elif self.axis == 'x':
+			xx = float(self.xslice)/float(self.data.get_zsize())
+			glTexCoord3f(xx,0,0)
+			glVertex(xx,0,0)
+			
+			glTexCoord3f(xx,1,0)
+			glVertex(xx,1,0)
+			
+			glTexCoord3f(xx,1,1)
+			glVertex(xx,1,1)
+			
+			glTexCoord3f(xx,0,1)
+			glVertex(xx,0,1)
+			
+		else:
+			print "Error, unknow axis", self.axis
+			
+		glEnd()
+		
+		glDisable(GL_TEXTURE_3D)
+		glEndList()
+		
+	def render(self):
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
-		depth = glIsEnabled(GL_DEPTH_TEST)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
-
-		glEnable(GL_CULL_FACE)
-		glEnable(GL_DEPTH_TEST)
+		glDisable(GL_LIGHTING)
+		glDisable(GL_CULL_FACE)
 		
-		if ( self.wire ):
-			glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-		else:
-			glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 		
-		if self.light:
-			glEnable(GL_LIGHTING)
-		else:
-			glDisable(GL_LIGHTING)
-
 		self.cam.position()
+		
+		if ( self.tex_dl == 0 ):
+			self.genCurrentDisplayList()
 			
-		if ( self.isodl == 0 ):
-			self.getIsoDL()
 			
-		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
-		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
-		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
-		glColor(self.colors[self.isocolor]["ambient"])
 		glPushMatrix()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
-		glCallList(self.isodl)
+		glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
+		glCallList(self.tex_dl)
 		glPopMatrix()
-	
+		
+		glPushMatrix()
+		glLoadIdentity()
+		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
+		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
+		self.draw_bc_screen()
+		glPopMatrix()
+		
 		if self.cube:
 			glPushMatrix()
 			self.draw_volume_bounds()
 			glPopMatrix()
 			
 		if ( lighting ): glEnable(GL_LIGHTING)
-		else: glDisable(GL_LIGHTING)
 		if ( cull ): glEnable(GL_CULL_FACE)
-		else: glDisable(GL_CULL_FACE)
-		if ( depth ): glEnable(GL_DEPTH_TEST)
-		else : glDisable(GL_DEPTH_TEST)
 		
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
-		else: glPolygonMode(GL_FRONT, GL_FILL)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
-		else: glPolygonMode(GL_BACK, GL_FILL)
-			
-	def init(self):
-		self.mmode = 0
-		self.inspector=None
-		self.isothr=0.5
-		self.isorender=None
-		self.isodl = 0
-		self.smpval=-1
-		self.griddl = 0
-		self.scale = 1.0
-		self.cube = False
-		self.wire = False
-		self.light = True
-		
-		
-	def getIsoDL(self):
-		# create the isosurface display list
-		self.isorender.set_surface_value(self.isothr)
-		self.isorender.set_sampling(self.smpval)
-		
-		#time1 = clock()
-		if self.initializedGL == False:
-			glEnableClientState(GL_VERTEX_ARRAY)
-			glEnableClientState(GL_NORMAL_ARRAY)
-			self.initializedGL = True
-		
-		self.isodl = self.isorender.get_isosurface_dl()
-		#time2 = clock()
-		#dt1 = time2 - time1
-		#print "It took %f to render the isosurface" %dt1
 	
-	def setData(self,data):
-		"""Pass in a 3D EMData object"""
+	def setSlice(self,val):
+		if self.axis == 'z':
+			self.zslice = val
+		elif self.axis == 'y':
+			self.yslice = val
+		elif self.axis == 'x':
+			self.xslice = val
+		else:
+			print "Error, unknown axis", self.axis
 		
-		self.data=data
-		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
-			print "Error, tried to set data that is invalid for EMIsosurface"
-			return
+		self.genCurrentDisplayList()
+		self.parent.updateGL()
 		
-		self.minden=data.get_attr("minimum")
-		self.maxden=data.get_attr("maximum")
-		mean=data.get_attr("mean")
-		sigma=data.get_attr("sigma")
+	def setAxis(self,val):
+		self.axis = str(val).strip()
+		
+		if (self.inspector != None):
+			if self.axis == 'z':
+				self.inspector.setSliceRange(0,self.data.get_zsize())
+				self.inspector.setSlice(self.zslice)
+			elif self.axis == 'y':
+				self.inspector.setSliceRange(0,self.data.get_ysize())
+				self.inspector.setSlice(self.yslice)
+			elif self.axis == 'x':
+				self.inspector.setSliceRange(0,self.data.get_xsize())
+				self.inspector.setSlice(self.xslice)
+			else:
+				print "Error, unknown axis", self.axis
+		
+		self.genCurrentDisplayList()
+		self.parent.updateGL()
 
-		self.cam.default_z = -1.25*data.get_zsize()
-		self.cam.cam_z = -1.25*data.get_zsize()
-		
-		if not self.inspector or self.inspector ==None:
-			self.inspector=EMIsoInspector(self)
-		
-		hist = data.calc_hist(256,self.minden,self.maxden)
-		self.inspector.setHist(hist,self.minden,self.maxden) 
+class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 	
-		self.inspector.setThrs(self.minden,self.maxden,mean+3.0*sigma)
-		self.isothr = mean+3.0*sigma
-		
-		self.isorender=MarchingCubes(data)
-		self.inspector.setSamplingRange(self.isorender.get_sampling_range())
-		
-		self.loadColors()
-		self.inspector.setColors(self.colors,self.isocolor)
-	
-	def loadColors(self):
-		ruby = {}
-		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
-		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
-		ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
-		ruby["shininess"] = 128.0
-		
-		emerald = {}
-		emerald["ambient"] = [0.0215, 0.1745, 0.0215,1.0]
-		emerald["diffuse"] = [0.07568, 0.61424,  0.07568,1.0]
-		emerald["specular"] = [0.833, 0.927811, 0.833,1.0]
-		emerald["shininess"] = 128.0
-		
-		pearl = {}
-		pearl["ambient"] = [0.25, 0.20725, 0.20725,1.0]
-		pearl["diffuse"] = [1.0, 0.829, 0.829,1.0]
-		pearl["specular"] = [0.296648, 0.296648, 0.296648,1.0]
-		pearl["shininess"] = 128.0
-		
-		silver = {}
-		silver["ambient"] = [0.25, 0.25, 0.25,1.0]
-		silver["diffuse"] = [0.4, 0.4, 0.4,1.0]
-		silver["specular"] = [0.974597, 0.974597, 0.974597,1.0]
-		silver["shininess"] = 128.0
-		
-		gold = {}
-		gold["ambient"] = [0.24725, 0.2245, 0.0645,1.0]
-		gold["diffuse"] = [0.34615, 0.3143, 0.0903,1.0]
-		gold["specular"] = [1.000, 0.9079885, 0.26086934,1.0]
-		gold["shininess"] = 128.0
-		
-		copper = {}
-		copper["ambient"] = [0.2295, 0.08825, 0.0275,1.0]
-		copper["diffuse"] = [0.5508, 0.2118, 0.066,1.0]
-		copper["specular"] = [0.9, 0.5, 0.2,1.0]
-		copper["shininess"] = 128.0
-		
-		obsidian = {}
-		obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
-		obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
-		obsidian["specular"] = [0.66, 0.65, 0.69]
-		obsidian["shininess"] = 128.0
-		
-		turquoise = {}
-		turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
-		turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
-		turquoise["specular"] = [0.297254, 0.30829, 0.306678]
-		turquoise["shininess"] = 128.0
-		
-		yellow = {}
-		yellow["ambient"] = [0.3, 0.3, 0.0,1]
-		yellow["diffuse"] = [0.5, 0.5, 0.0,1]
-		yellow["specular"] = [0.7, 0.7, 0.0,1]
-		yellow["shininess"] =  60
-		
-		self.colors = {}
-		self.colors["ruby"] = ruby
-		self.colors["emerald"] = emerald
-		self.colors["pearl"] = pearl
-		self.colors["silver"] = silver
-		self.colors["gold"] = gold
-		self.colors["copper"] = copper
-		self.colors["obsidian"] = obsidian
-		self.colors["turquoise"] = turquoise
-		self.colors["yellow"] = yellow
-		
-		self.isocolor = "ruby"
-	
-	def setThr(self,val):
-		if (self.isothr != val):
-			self.isothr = val
-			self.getIsoDL()
-			self.parent.updateGL()
-	
-	def setSample(self,val):
-		if ( self.smpval != int(val)):
-			# the minus two is here because the marching cubes thinks -1 is the high level of detail, 0 is the next best and  so forth
-			# However the user wants the highest level of detail to be 1, and the next best to be 2 and then 3 etc
-			self.smpval = int(val)-2
-			self.getIsoDL()
-			self.parent.updateGL()
-	
-	def setColor(self,val):
-		#print val
-		self.isocolor = str(val)
-		self.parent.updateGL()
-		
-	def toggleCube(self):
-		self.cube = not self.cube
-		self.parent.updateGL()
-	
-	def toggleWire(self,val):
-		self.wire = not self.wire
-		self.parent.updateGL()
-		
-	def toggleLight(self,val):
-		self.light = not self.light
-		self.parent.updateGL()
-		
-class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
-	""" This class is not yet complete.
-	A QT widget for rendering 3D EMData objects.
-	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMIsosurfaceWidget.allim[self]=0
-		self.isosurface = EMIsosurface(image,self)
-		self.timer = QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-
-		self.aspect=1.0
-		self.fov = 50 # field of view angle used by gluPerspective
-	def timeout(self):
-		self.updateGL()
+		EMSliceViewerWidget.allim[self]=0
 		
+		self.fov = 50 # field of view angle used by gluPerspective
+		
+		self.sliceviewer = EM3DSliceViewer(image,self)
+	def setData(self,data):
+		self.sliceviewer.setData(data)
 	def initializeGL(self):
 		
 		glEnable(GL_NORMALIZE)
-		
-		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
 		#print "Initializing"
@@ -318,24 +294,22 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		
 		GL.glClearColor(0,0,0,0)
-		
-		# For the time being
+	
+		glShadeModel(GL_SMOOTH)
 		
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		
-		
 		glPushMatrix()
-		self.isosurface.render()
+		self.sliceviewer.render()
 		glPopMatrix()
-
+	
+		
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
 		glViewport(0,0,self.width(),self.height())
@@ -352,38 +326,39 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.isosurface.resizeEvent()
+		self.sliceviewer.resizeEvent()
 
-	def setData(self,data):
-		self.isosurface.setData(data)
-	
 	def showInspector(self,force=0):
-		self.isosurface.showInspector()
-	
+		self.sliceviewer.showInspector(self,force)
+
 	def closeEvent(self,event) :
-		self.isosurface.closeEvent(event)
+		self.sliceviewer.closeEvent(event)
 		
 	def mousePressEvent(self, event):
-		self.isosurface.mousePressEvent(event)
+		self.sliceviewer.mousePressEvent(event)
+		self.emit(QtCore.SIGNAL("mousedown"), event)
 		
 	def mouseMoveEvent(self, event):
-		self.isosurface.mouseMoveEvent(event)
+		self.sliceviewer.mouseMoveEvent(event)
+		self.emit(QtCore.SIGNAL("mousedrag"), event)
 	
 	def mouseReleaseEvent(self, event):
-		self.isosurface.mouseReleaseEvent(event)
+		self.sliceviewer.mouseReleaseEvent(event)
+		self.emit(QtCore.SIGNAL("mouseup"), event)
 			
 	def wheelEvent(self, event):
-		self.isosurface.wheelEvent(event)
+		self.sliceviewer.wheelEvent(event)
 
-	def get_render_dims_at_depth(self, depth):
+	def get_render_dims_at_depth(self,depth):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
 		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
 		width = self.aspect*height
 		
 		return [width,height]
+		
 
-class EMIsoInspector(QtGui.QWidget):
+class EMVolumeInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -408,71 +383,97 @@ class EMIsoInspector(QtGui.QWidget):
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
-		
-		self.wiretog = QtGui.QPushButton("Wire")
-		self.wiretog.setCheckable(1)
-		self.vbl2.addWidget(self.wiretog)
-		
-		self.lighttog = QtGui.QPushButton("Light")
-		self.lighttog.setCheckable(1)
-		self.vbl2.addWidget(self.lighttog)
-		
+	
 		self.cubetog = QtGui.QPushButton("Cube")
 		self.cubetog.setCheckable(1)
 		self.vbl2.addWidget(self.cubetog)
 		
+		self.defaults = QtGui.QPushButton("Defaults")
+		self.vbl2.addWidget(self.defaults)
+		
+		self.vbl.addWidget(self.getMainTab())
+		
+		self.n3_showing = False
+		
+		self.current_src = EULER_EMAN
+		
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.slice, QtCore.SIGNAL("valueChanged"), target.setSlice)
+		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
+		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
+		QtCore.QObject.connect(self.axisCombo, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setAxis)
+		
+		#QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), target.setBrightness)
+		#QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		#QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		#QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
+		#QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
+		#QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
+		#QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
+		#QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
+		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
+		#QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
+		#QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setTextureSample)
+
+	def getMainTab(self):
+	
+		self.maintab = QtGui.QWidget()
+		maintab = self.maintab
+		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		maintab.vbl.setMargin(0)
+		maintab.vbl.setSpacing(6)
+		maintab.vbl.setObjectName("Main")
+		
+		
 		self.scale = ValSlider(self,(0.01,30.0),"Zoom:")
 		self.scale.setObjectName("scale")
 		self.scale.setValue(1.0)
-		self.vbl.addWidget(self.scale)
+		maintab.vbl.addWidget(self.scale)
 		
-		self.lowlim=0
-		self.highlim=1.0
-		self.busy=0
-
-		self.thr = ValSlider(self,(0.0,4.0),"Thr:")
-		self.thr.setObjectName("thr")
-		self.thr.setValue(0.5)
-		self.vbl.addWidget(self.thr)
+		self.hbl_slice = QtGui.QHBoxLayout()
+		self.hbl_slice.setMargin(0)
+		self.hbl_slice.setSpacing(6)
+		self.hbl_slice.setObjectName("Axis")
+		maintab.vbl.addLayout(self.hbl_slice)
 		
-		self.hbl_smp = QtGui.QHBoxLayout()
-		self.hbl_smp.setMargin(0)
-		self.hbl_smp.setSpacing(6)
-		self.hbl_smp.setObjectName("Sample")
-		self.vbl.addLayout(self.hbl_smp)
+		self.slice = ValSlider(maintab,(0.0,10.0),"Slice:")
+		self.slice.setObjectName("slice")
+		self.slice.setValue(1.0)
+		self.hbl_slice.addWidget(self.slice)
 		
-		self.smp_label = QtGui.QLabel()
-		self.smp_label.setText('Sample Level')
-		self.hbl_smp.addWidget(self.smp_label)
+		self.axisCombo = QtGui.QComboBox(maintab)
+		self.axisCombo.addItem(' z ')
+		self.axisCombo.addItem(' y ')
+		self.axisCombo.addItem(' x ')
+		self.hbl_slice.addWidget(self.axisCombo)
 		
-		self.smp = QtGui.QSpinBox(self)
-		self.smp.setValue(1)
-		self.hbl_smp.addWidget(self.smp)
+		self.glcontrast = ValSlider(maintab,(1.0,5.0),"GLShd:")
+		self.glcontrast.setObjectName("GLShade")
+		self.glcontrast.setValue(1.0)
+		maintab.vbl.addWidget(self.glcontrast)
 		
-		self.hbl_color = QtGui.QHBoxLayout()
-		self.hbl_color.setMargin(0)
-		self.hbl_color.setSpacing(6)
-		self.hbl_color.setObjectName("Material")
-		self.vbl.addLayout(self.hbl_color)
+		self.glbrightness = ValSlider(maintab,(-1.0,0.0),"GLBst:")
+		self.glbrightness.setObjectName("GLBoost")
+		self.glbrightness.setValue(0.1)
+		self.glbrightness.setValue(0.0)
+		maintab.vbl.addWidget(self.glbrightness)
 		
-		self.color_label = QtGui.QLabel()
-		self.color_label.setText('Material')
-		self.hbl_color.addWidget(self.color_label)
-		
-		self.cbb = QtGui.QComboBox(self)
-		self.hbl_color.addWidget(self.cbb)
+		self.cbb = QtGui.QComboBox(maintab)
+		self.vbl.addWidget(self.cbb)
+		self.cbb.deleteLater()
 
 		self.hbl_trans = QtGui.QHBoxLayout()
 		self.hbl_trans.setMargin(0)
 		self.hbl_trans.setSpacing(6)
 		self.hbl_trans.setObjectName("Trans")
-		self.vbl.addLayout(self.hbl_trans)
+		maintab.vbl.addLayout(self.hbl_trans)
 		
 		self.x_label = QtGui.QLabel()
 		self.x_label.setText('x')
 		self.hbl_trans.addWidget(self.x_label)
 		
-		self.x_trans = QtGui.QDoubleSpinBox(self)
+		self.x_trans = QtGui.QDoubleSpinBox(maintab)
 		self.x_trans.setMinimum(-10000)
 		self.x_trans.setMaximum(10000)
 		self.x_trans.setValue(0.0)
@@ -482,18 +483,17 @@ class EMIsoInspector(QtGui.QWidget):
 		self.y_label.setText('y')
 		self.hbl_trans.addWidget(self.y_label)
 		
-		self.y_trans = QtGui.QDoubleSpinBox(self)
+		self.y_trans = QtGui.QDoubleSpinBox(maintab)
 		self.y_trans.setMinimum(-10000)
 		self.y_trans.setMaximum(10000)
 		self.y_trans.setValue(0.0)
 		self.hbl_trans.addWidget(self.y_trans)
 		
-		
 		self.z_label = QtGui.QLabel()
 		self.z_label.setText('z')
 		self.hbl_trans.addWidget(self.z_label)
 		
-		self.z_trans = QtGui.QDoubleSpinBox(self)
+		self.z_trans = QtGui.QDoubleSpinBox(maintab)
 		self.z_trans.setMinimum(-10000)
 		self.z_trans.setMaximum(10000)
 		self.z_trans.setValue(0.0)
@@ -503,51 +503,43 @@ class EMIsoInspector(QtGui.QWidget):
 		self.hbl_src.setMargin(0)
 		self.hbl_src.setSpacing(6)
 		self.hbl_src.setObjectName("hbl")
-		self.vbl.addLayout(self.hbl_src)
+		maintab.vbl.addLayout(self.hbl_src)
 		
 		self.label_src = QtGui.QLabel()
 		self.label_src.setText('Rotation Convention')
 		self.hbl_src.addWidget(self.label_src)
 		
-		self.src = QtGui.QComboBox(self)
+		self.src = QtGui.QComboBox(maintab)
 		self.load_src_options(self.src)
 		self.hbl_src.addWidget(self.src)
 		
 		# set default value -1 ensures that the val slider is updated the first time it is created
-		self.az = ValSlider(self,(-360.0,360.0),"az",-1)
+		self.az = ValSlider(maintab,(-360.0,360.0),"az",-1)
 		self.az.setObjectName("az")
-		self.vbl.addWidget(self.az)
+		maintab.vbl.addWidget(self.az)
 		
-		self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
+		self.alt = ValSlider(maintab,(-180.0,180.0),"alt",-1)
 		self.alt.setObjectName("alt")
-		self.vbl.addWidget(self.alt)
+		maintab.vbl.addWidget(self.alt)
 		
-		self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
+		self.phi = ValSlider(maintab,(-360.0,360.0),"phi",-1)
 		self.phi.setObjectName("phi")
-		self.vbl.addWidget(self.phi)
+		maintab.vbl.addWidget(self.phi)
 		
-		self.n3_showing = False
-		
-		self.current_src = EULER_EMAN
-		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), target.setThr)
-		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
-		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setSample)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
-		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggleWire)
-		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggleLight)
-		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
+		return maintab
 	
-	def setSamplingRange(self,range):
-		self.smp.setMinimum(1)
-		self.smp.setMaximum(1+range-1)
+	def setDefaults(self):
+		self.x_trans.setValue(0.0)
+		self.y_trans.setValue(0.0)
+		self.z_trans.setValue(0.0)
+		self.scale.setValue(1.0)
+		self.slice.setValue(1.0)
+		self.glcontrast.setValue(1.0)
+		self.glbrightness.setValue(0.0)
+		
+		self.az.setValue(0.0)
+		self.alt.setValue(0.0)
+		self.phi.setValue(0.0)
 
 	def setXYTrans(self, x, y):
 		self.x_trans.setValue(x)
@@ -672,36 +664,30 @@ class EMIsoInspector(QtGui.QWidget):
 		
 	
 	def setColors(self,colors,current_color):
-		a = 0
 		for i in colors:
 			self.cbb.addItem(i)
-			if ( i == current_color):
-				self.cbb.setCurrentIndex(a)
-			a += 1
 
-	def setThrs(self,low,high,val):
-		self.thr.setRange(low,high)
-		self.thr.setValue(val, True)
-	
-	def setSamp(self,low,high,val):
-		self.smp.setRange(int(low),int(high))
-		self.smp.setValue(val, True)
-		
 	def setHist(self,hist,minden,maxden):
 		self.hist.setData(hist,minden,maxden)
 
 	def setScale(self,newscale):
 		self.scale.setValue(newscale)
 		
+	def setSlice(self,val):
+		self.slice.setValue(val)
+	
+	def setSliceRange(self,min,max):
+		self.slice.setRange(min,max)
+		
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMIsosurfaceWidget()
+	window = EMSliceViewerWidget()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(40,35,30)
+		e.set_size(128,128,128)
 		e.process_inplace('testimage.x')
- 		window.setData(e)
+		window.setData(e)
 
 		# these lines are for testing shape rendering
 # 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])

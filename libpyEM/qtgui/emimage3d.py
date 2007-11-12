@@ -49,6 +49,7 @@ from PyQt4.QtCore import QTimer
 
 from emimage3diso import EMIsosurface
 from emimage3dvol import EMVolume
+from emimage3dslice import EM3DSliceViewer
 
 from time import *
 
@@ -117,13 +118,20 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 		
 		for i in self.viewables:
-			if (i.getType() == "volume"):
+			if (i.getType() == "Slice Viewer"):
+				glPushMatrix()
+				i.render()
+				glPopMatrix()
+			
+		
+		for i in self.viewables:
+			if (i.getType() == "Volume"):
 				glPushMatrix()
 				i.render()
 				glPopMatrix()
 			
 		for i in self.viewables:
-			if (i.getType() != "volume"):
+			if (i.getType() == "Isosurface"):
 				glPushMatrix()
 				i.render()
 				glPopMatrix()
@@ -199,6 +207,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	
 	def addIsosurface(self):
 		self.viewables.append(EMIsosurface(self.image,self))
+		self.loadLastViewableCamera()
 		self.num_iso += 1
 		name = "Isosurface " + str(self.num_iso)
 		self.viewables[len(self.viewables)-1].setName(name)
@@ -207,11 +216,27 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 	def addVolume(self):
 		self.viewables.append(EMVolume(self.image,self))
+		self.loadLastViewableCamera()
 		self.num_vol += 1
 		name = "Volume " + str(self.num_vol)
 		self.viewables[len(self.viewables)-1].setName(name)
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
+		
+	def addSliceViewer(self):
+		self.viewables.append(EM3DSliceViewer(self.image,self))
+		self.loadLastViewableCamera()
+		self.num_sli += 1
+		name = "Slices " + str(self.num_sli)
+		self.viewables[len(self.viewables)-1].setName(name)
+		self.currentselection = len(self.viewables)-1
+		self.updateGL()
+		
+	def loadLastViewableCamera(self):
+		size = len(self.viewables)
+		if ( size <= 1 ): return
+		self.viewables[size-1].setCamera(self.viewables[0].getCurrentCamera())
+		
 		
 	def rowChanged(self,row):
 		if ( row == self.currentselection ): return
@@ -244,7 +269,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtGui.QVBoxLayout()
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -254,7 +279,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.listwidget.setCurrentRow(0)
 		self.vbl.addWidget(self.listwidget)
 		
-		self.hbl_buttons = QtGui.QHBoxLayout(self)
+		self.hbl_buttons = QtGui.QHBoxLayout()
 		self.hbl_buttons.setMargin(0)
 		self.hbl_buttons.setSpacing(6)
 		self.hbl_buttons.setObjectName("hbl_buttons")
@@ -270,7 +295,7 @@ class EMImageInspector3D(QtGui.QWidget):
 
 		self.vbl.addLayout(self.hbl_buttons)
 		
-		self.hbl_buttons2 = QtGui.QHBoxLayout(self)
+		self.hbl_buttons2 = QtGui.QHBoxLayout()
 		self.delete = QtGui.QPushButton("Delete")
 		self.hbl_buttons2.addWidget(self.delete)
 		self.vbl.addLayout(self.hbl_buttons2)
@@ -312,7 +337,8 @@ class EMImageInspector3D(QtGui.QWidget):
 	
 	
 	def addSlices(self):
-		pass
+		self.target.addSliceViewer()
+		self.updateSelection()
 	
 	def deleteSelection(self):
 		tmp = self.target.currentselection
@@ -320,197 +346,6 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.tabwidget.removeTab(tmp)
 		self.listwidget.takeItem(tmp)
 		
-		
-		#self.x_trans = QtGui.QDoubleSpinBox(self)
-		#self.x_trans.setMinimum(-10000)
-		#self.x_trans.setMaximum(10000)
-		#self.x_trans.setValue(0.0)
-		#self.hbl_trans.addWidget(self.x_trans)
-		
-		#self.y_label = QtGui.QLabel()
-		#self.y_label.setText('y')
-		#self.hbl_trans.addWidget(self.y_label)
-		
-		#self.y_trans = QtGui.QDoubleSpinBox(self)
-		#self.y_trans.setMinimum(-10000)
-		#self.y_trans.setMaximum(10000)
-		#self.y_trans.setValue(0.0)
-		#self.hbl_trans.addWidget(self.y_trans)
-		
-		
-		#self.z_label = QtGui.QLabel()
-		#self.z_label.setText('z')
-		#self.hbl_trans.addWidget(self.z_label)
-		
-		#self.z_trans = QtGui.QDoubleSpinBox(self)
-		#self.z_trans.setMinimum(-10000)
-		#self.z_trans.setMaximum(10000)
-		#self.z_trans.setValue(0.0)
-		#self.hbl_trans.addWidget(self.z_trans)
-		
-		#self.hbl_src = QtGui.QHBoxLayout()
-		#self.hbl_src.setMargin(0)
-		#self.hbl_src.setSpacing(6)
-		#self.hbl_src.setObjectName("hbl")
-		#self.vbl.addLayout(self.hbl_src)
-		
-		#self.label_src = QtGui.QLabel()
-		#self.label_src.setText('Rotation Convention')
-		#self.hbl_src.addWidget(self.label_src)
-		
-		#self.src = QtGui.QComboBox(self)
-		#self.load_src_options(self.src)
-		#self.hbl_src.addWidget(self.src)
-		
-		## set default value -1 ensures that the val slider is updated the first time it is created
-		#self.az = ValSlider(self,(-360.0,360.0),"az",-1)
-		#self.az.setObjectName("az")
-		#self.vbl.addWidget(self.az)
-		
-		#self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
-		#self.alt.setObjectName("alt")
-		#self.vbl.addWidget(self.alt)
-		
-		#self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
-		#self.phi.setObjectName("phi")
-		#self.vbl.addWidget(self.phi)
-		
-		#self.n3_showing = False
-		
-		#self.current_src = EULER_EMAN
-		
-		#QtCore.QObject.connect(self.zoom, QtCore.SIGNAL("valueChanged"), target.setZoom)
-		#QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		#QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		#QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		#QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		#QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
-		#QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
-		#QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
-
-	#def setXYTrans(self, x, y):
-		#self.x_trans.setValue(x)
-		#self.y_trans.setValue(y)
-	
-	#def setTranslateScale(self, xscale,yscale,zscale):
-		#self.x_trans.setSingleStep(xscale)
-		#self.y_trans.setSingleStep(yscale)
-		#self.z_trans.setSingleStep(zscale)
-
-	#def updateRotations(self,t3d):
-		#rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
-		
-		#convention = self.src.currentText()
-		#if ( self.src_map[str(convention)] == EULER_SPIN ):
-			#self.n3.setValue(rot[self.n3.getLabel()],True)
-		
-		#self.az.setValue(rot[self.az.getLabel()],True)
-		#self.alt.setValue(rot[self.alt.getLabel()],True)
-		#self.phi.setValue(rot[self.phi.getLabel()],True)
-	
-	#def sliderRotate(self):
-		#self.target.loadRotation(self.getCurrentRotation())
-	
-	#def getCurrentRotation(self):
-		#convention = self.src.currentText()
-		#rot = {}
-		#if ( self.current_src == EULER_SPIN ):
-			#rot[self.az.getLabel()] = self.az.getValue()
-			
-			#n1 = self.alt.getValue()
-			#n2 = self.phi.getValue()
-			#n3 = self.n3.getValue()
-			
-			#norm = sqrt(n1*n1 + n2*n2 + n3*n3)
-			
-			#n1 /= norm
-			#n2 /= norm
-			#n3 /= norm
-			
-			#rot[self.alt.getLabel()] = n1
-			#rot[self.phi.getLabel()] = n2
-			#rot[self.n3.getLabel()] = n3
-			
-		#else:
-			#rot[self.az.getLabel()] = self.az.getValue()
-			#rot[self.alt.getLabel()] = self.alt.getValue()
-			#rot[self.phi.getLabel()] = self.phi.getValue()
-		
-		#return Transform3D(self.current_src, rot)
-	
-	#def set_src(self, val):
-		#t3d = self.getCurrentRotation()
-		
-		#if (self.n3_showing) :
-			#self.vbl.removeWidget(self.n3)
-			#self.n3.deleteLater()
-			#self.n3_showing = False
-			#self.az.setRange(-360,360)
-			#self.alt.setRange(-180,180)
-			#self.phi.setRange(-360,660)
-		
-		#if ( self.src_map[str(val)] == EULER_SPIDER ):
-			#self.az.setLabel('phi')
-			#self.alt.setLabel('theta')
-			#self.phi.setLabel('psi')
-		#elif ( self.src_map[str(val)] == EULER_EMAN ):
-			#self.az.setLabel('az')
-			#self.alt.setLabel('alt')
-			#self.phi.setLabel('phi')
-		#elif ( self.src_map[str(val)] == EULER_IMAGIC ):
-			#self.az.setLabel('alpha')
-			#self.alt.setLabel('beta')
-			#self.phi.setLabel('gamma')
-		#elif ( self.src_map[str(val)] == EULER_XYZ ):
-			#self.az.setLabel('xtilt')
-			#self.alt.setLabel('ytilt')
-			#self.phi.setLabel('ztilt')
-		#elif ( self.src_map[str(val)] == EULER_MRC ):
-			#self.az.setLabel('phi')
-			#self.alt.setLabel('theta')
-			#self.phi.setLabel('omega')
-		#elif ( self.src_map[str(val)] == EULER_SPIN ):
-			#self.az.setLabel('Omega')
-			#self.alt.setRange(-1,1)
-			#self.phi.setRange(-1,1)
-			
-			#self.alt.setLabel('n1')
-			#self.phi.setLabel('n2')
-			
-			#self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
-			#self.n3.setRange(-1,1)
-			#self.n3.setObjectName("n3")
-			#self.vbl.addWidget(self.n3)
-			#QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-			#self.n3_showing = True
-		
-		#self.current_src = self.src_map[str(val)]
-		#self.updateRotations(t3d)
-	
-	#def load_src_options(self,widgit):
-		#self.load_src()
-		#for i in self.src_strings:
-			#widgit.addItem(i)
-	
-	## read src as 'supported rotation conventions'
-	#def load_src(self):
-		## supported_rot_conventions
-		#src_flags = []
-		#src_flags.append(EULER_EMAN)
-		#src_flags.append(EULER_SPIDER)
-		#src_flags.append(EULER_IMAGIC)
-		#src_flags.append(EULER_MRC)
-		#src_flags.append(EULER_SPIN)
-		#src_flags.append(EULER_XYZ)
-		
-		#self.src_strings = []
-		#self.src_map = {}
-		#for i in src_flags:
-			#self.src_strings.append(str(i))
-			#self.src_map[str(i)] = i
-
-	#def setZoom(self,newscale):
-		#self.zoom.setValue(newscale)
 		
 # This is just for testing, of course
 if __name__ == '__main__':
