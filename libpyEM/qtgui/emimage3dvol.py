@@ -394,7 +394,17 @@ class EMVolume(EMImage3DObject):
 	def draw_bc_screen(self):
 		if (self.glcontrast == 1 and self.glbrightness == 0 ): return
 		
-		depth_testing_was_on = glIsEnabled(GL_DEPTH_TEST)
+		lighting = glIsEnabled(GL_LIGHTING)
+		cull = glIsEnabled(GL_CULL_FACE)
+		depth = glIsEnabled(GL_DEPTH_TEST)
+		blend = glIsEnabled(GL_BLEND)
+		
+		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
+
+		glDisable(GL_LIGHTING)
+		glDisable(GL_CULL_FACE)
+		glDisable(GL_DEPTH_TEST)
+		
 
 		glEnable(GL_BLEND)
 		glDepthMask(GL_FALSE)
@@ -456,9 +466,15 @@ class EMVolume(EMImage3DObject):
 			glVertex2f(0, 1)
 			glEnd()
 		
-		glDisable(GL_BLEND)
-		if depth_testing_was_on:
-			glDepthMask(GL_TRUE)
+		glDepthMask(GL_TRUE)
+	
+		if ( lighting ): glEnable(GL_LIGHTING)
+		if ( cull ): glEnable(GL_CULL_FACE)
+		if ( depth ): glEnable(GL_DEPTH_TEST)
+		if ( not blend ): glDisable(GL_BLEND)
+		
+		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
+		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 	
 	def showInspector(self,force=0):
 		if not force and self.inspector==None : return
@@ -816,12 +832,12 @@ class EMVolumeInspector(QtGui.QWidget):
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 		
-		self.glcontrast = ValSlider(self,(0.0,20.0),"GLShd:")
+		self.glcontrast = ValSlider(gltab,(0.0,20.0),"GLShd:")
 		self.glcontrast.setObjectName("GLShade")
 		self.glcontrast.setValue(1.0)
 		gltab.vbl.addWidget(self.glcontrast)
 		
-		self.glbrightness = ValSlider(self,(-1.0,1.0),"GLBst:")
+		self.glbrightness = ValSlider(gltab,(-1.0,1.0),"GLBst:")
 		self.glbrightness.setObjectName("GLBoost")
 		self.glbrightness.setValue(0.1)
 		self.glbrightness.setValue(0.0)
