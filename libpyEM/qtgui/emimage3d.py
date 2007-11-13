@@ -254,14 +254,19 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def getCurrentInspector(self):
 		return self.viewables[self.currentselection].getInspector()
 	
-	def deleteCurrent(self):
+	def deleteCurrent(self, val):
 		if ( len(self.viewables) == 0 ): return
-
-		self.viewables.pop(self.currentselection)
-		if (len(self.viewables) == 0 ) :  self.currentselection = -1
-		elif ( self.currentselection == 0): pass
-		else : self.currentselection -= 1
-
+		
+		self.viewables.pop(val)
+		if (len(self.viewables) == 0 ) : 
+			self.currentselection = -1
+		elif ( len(self.viewables) == 1):
+			self.currentselection = 0
+		elif ( val == 0):
+			pass
+		else : 
+			self.currentselection = val - 1
+		
 		self.updateGL()
 	
 class EMImageInspector3D(QtGui.QWidget):
@@ -343,10 +348,10 @@ class EMImageInspector3D(QtGui.QWidget):
 	
 	def deleteSelection(self):
 		tmp = self.target.currentselection
-		self.target.deleteCurrent()
 		self.tabwidget.removeTab(tmp)
 		self.listwidget.takeItem(tmp)
-		
+		self.target.deleteCurrent(tmp)
+		#self.tabChanged(tmp-1)
 		
 # This is just for testing, of course
 if __name__ == '__main__':
