@@ -81,7 +81,7 @@ class EMIsosurface(EMImage3DObject):
 		depth = glIsEnabled(GL_DEPTH_TEST)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
 
-		glEnable(GL_CULL_FACE)
+		glDisable(GL_CULL_FACE)
 		glEnable(GL_DEPTH_TEST)
 		
 		if ( self.wire ):

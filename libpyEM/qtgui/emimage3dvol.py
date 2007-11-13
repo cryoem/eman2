@@ -709,7 +709,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		t3d = self.getCurrentRotation()
 		
 		if (self.n3_showing) :
-			self.vbl.removeWidget(self.n3)
+			self.maintab.vbl.removeWidget(self.n3)
 			self.n3.deleteLater()
 			self.n3_showing = False
 			self.az.setRange(-360,360)
@@ -747,7 +747,7 @@ class EMVolumeInspector(QtGui.QWidget):
 			self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
 			self.n3.setRange(-1,1)
 			self.n3.setObjectName("n3")
-			self.vbl.addWidget(self.n3)
+			self.maintab.vbl.addWidget(self.n3)
 			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 			self.n3_showing = True
 		

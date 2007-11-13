@@ -402,19 +402,14 @@ class EMVolumeInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
 		QtCore.QObject.connect(self.axisCombo, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setAxis)
-		
-		#QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), target.setBrightness)
-		#QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		#QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		#QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
-		#QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		#QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
-		#QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
-		#QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
+		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
+		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
+		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
+		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
-		#QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
-		#QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setTextureSample)
 
 	def getMainTab(self):
 	
@@ -595,7 +590,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		t3d = self.getCurrentRotation()
 		
 		if (self.n3_showing) :
-			self.vbl.removeWidget(self.n3)
+			self.maintab.vbl.removeWidget(self.n3)
 			self.n3.deleteLater()
 			self.n3_showing = False
 			self.az.setRange(-360,360)
@@ -633,7 +628,7 @@ class EMVolumeInspector(QtGui.QWidget):
 			self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
 			self.n3.setRange(-1,1)
 			self.n3.setObjectName("n3")
-			self.vbl.addWidget(self.n3)
+			self.maintab.vbl.addWidget(self.n3)
 			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 			self.n3_showing = True
 		

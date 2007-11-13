@@ -267,15 +267,15 @@ class EMImage3DObject:
 		self.inspector.setXYTrans(self.cam.cam_x, self.cam.cam_y)
 		
 	def setCamZ(self,z):
-		self.cam.cam_z = self.default_z + z
+		self.cam.setCamZ( z )
 		self.parent.updateGL()
 		
 	def setCamY(self,y):
-		self.cam.cam_y = y
+		self.cam.setCamY( y )
 		self.parent.updateGL()
 		
 	def setCamX(self,x):
-		self.cam.cam_x = x
+		self.cam.setCamX( x )
 		self.parent.updateGL()
 		
 	def motionRotate(self,x,y):
