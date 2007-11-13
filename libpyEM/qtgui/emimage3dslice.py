@@ -419,6 +419,19 @@ class EMSlice3DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
 		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
+		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
+		
+	def setDefaults(self):
+		self.x_trans.setValue(0.0)
+		self.y_trans.setValue(0.0)
+		self.z_trans.setValue(0.0)
+		self.scale.setValue(1.0)
+		self.glcontrast.setValue(1.0)
+		self.glbrightness.setValue(0.0)
+		
+		self.az.setValue(0.0)
+		self.alt.setValue(0.0)
+		self.phi.setValue(0.0)
 
 	def getMainTab(self):
 	
@@ -537,7 +550,6 @@ class EMSlice3DInspector(QtGui.QWidget):
 		self.y_trans.setValue(0.0)
 		self.z_trans.setValue(0.0)
 		self.scale.setValue(1.0)
-		self.slice.setValue(1.0)
 		self.glcontrast.setValue(1.0)
 		self.glbrightness.setValue(0.0)
 		

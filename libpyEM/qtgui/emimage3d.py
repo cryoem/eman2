@@ -116,18 +116,19 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 		
 		for i in self.viewables:
-			if (i.getType() == "Slice Viewer"):
+			if (i.getType() == "Volume"):
 				glPushMatrix()
 				i.render()
 				glPopMatrix()
 			
 		
 		for i in self.viewables:
-			if (i.getType() == "Volume"):
+			if (i.getType() == "Slice Viewer"):
 				glPushMatrix()
 				i.render()
 				glPopMatrix()
 			
+		
 		for i in self.viewables:
 			if (i.getType() == "Isosurface"):
 				glPushMatrix()
