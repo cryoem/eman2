@@ -83,8 +83,10 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
 		
-		self.addIsosurface()
 		
+		self.addIsosurface()
+		self.inspector=EMImageInspector3D(self)
+		self.inspector.updateSelection() 
 	def timeout(self):
 		self.updateGL()
 		
@@ -104,10 +106,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		
 		GL.glClearColor(0,0,0,0)
-		
-		# For the time being
-		glEnable(GL_CULL_FACE);
-		
 		glPolygonMode(GL_FRONT,GL_FILL);
 
 		
@@ -275,8 +273,6 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.vbl.setObjectName("vbl")
 		
 		self.listwidget = QtGui.QListWidget(self)
-		self.listwidget.addItem("Isosurface")
-		self.listwidget.setCurrentRow(0)
 		self.vbl.addWidget(self.listwidget)
 		
 		self.hbl_buttons = QtGui.QHBoxLayout()
@@ -301,7 +297,6 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.vbl.addLayout(self.hbl_buttons2)
 		
 		self.tabwidget = QtGui.QTabWidget(self)
-		self.tabwidget.addTab(self.target.getSundryInspector(), "Isosurface")
 		self.hbl.addLayout(self.vbl)
 		self.hbl.addWidget(self.tabwidget)
 		
@@ -334,7 +329,6 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.listwidget.setCurrentRow(self.target.currentselection)
 		self.tabwidget.addTab(self.target.getCurrentInspector(), self.target.getCurrentName())
 		self.tabwidget.setCurrentIndex(self.target.currentselection)
-	
 	
 	def addSlices(self):
 		self.target.addSliceViewer()

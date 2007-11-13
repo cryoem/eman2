@@ -286,6 +286,15 @@ class EMIsosurface(EMImage3DObject):
 		self.light = not self.light
 		self.parent.updateGL()
 		
+	def updateInspector(self,t3d):
+		if not self.inspector or self.inspector ==None:
+			self.inspector=EMIsoInspector(self)
+		self.inspector.updateRotations(t3d)
+	
+	def getInspector(self):
+		if not self.inspector : self.inspector=EMIsoInspector(self)
+		return self.inspector
+		
 class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
 	A QT widget for rendering 3D EMData objects.

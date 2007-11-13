@@ -108,7 +108,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.cam.cam_z = -1.25*data.get_zsize()
 		
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMVolumeInspector(self)
+			self.inspector=EMSlice3DInspector(self)
 
 		hist = self.data.calc_hist(256,0,1.0)
 		self.inspector.setHist(hist,0,1.0) 
@@ -269,6 +269,15 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.genCurrentDisplayList()
 		self.parent.updateGL()
 
+	def updateInspector(self,t3d):
+		if not self.inspector or self.inspector ==None:
+			self.inspector=EMSlice3DInspector(self)
+		self.inspector.updateRotations(t3d)
+	
+	def getInspector(self):
+		if not self.inspector : self.inspector=EMSlice3DInspector(self)
+		return self.inspector
+
 class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 	
 	allim=WeakKeyDictionary()
@@ -358,7 +367,7 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		return [width,height]
 		
 
-class EMVolumeInspector(QtGui.QWidget):
+class EMSlice3DInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -673,6 +682,7 @@ class EMVolumeInspector(QtGui.QWidget):
 	
 	def setSliceRange(self,min,max):
 		self.slice.setRange(min,max)
+	
 		
 # This is just for testing, of course
 if __name__ == '__main__':

@@ -354,6 +354,15 @@ class EMVolume(EMImage3DObject):
 		self.genTexture()
 		self.parent.updateGL()
 
+	def updateInspector(self,t3d):
+		if not self.inspector or self.inspector ==None:
+			self.inspector=EMVolumeInspector(self)
+		self.inspector.updateRotations(t3d)
+	
+	def getInspector(self):
+		if not self.inspector : self.inspector=EMVolumeInspector(self)
+		return self.inspector
+
 class EMVolumeWidget(QtOpenGL.QGLWidget):
 	
 	allim=WeakKeyDictionary()

@@ -439,14 +439,6 @@ class EMImage3DObject:
 		if not self.inspector : self.inspector=EMVolumeInspector(self)
 		self.inspector.show()
 			
-	def updateInspector(self,t3d):
-		if not self.inspector or self.inspector ==None:
-			self.inspector=EMVolumeInspector(self)
-		self.inspector.updateRotations(t3d)
-	
-	def getInspector(self):
-		if not self.inspector : self.inspector=EMIsoInspector(self)
-		return self.inspector
 	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
