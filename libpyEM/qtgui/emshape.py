@@ -216,4 +216,3 @@ class EMShape:
 		if x1!=None : self.shape[6]=x1
 		if y1!=None : self.shape[7]=y1
 		
-initGL()

@@ -147,7 +147,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glViewport(0,0,self.width(),self.height())
 		
 		# maintain the aspect ratio of the window we have
-		self.aspect = float(width)/float(height)
+		self.aspect = float(self.width())/float(self.height())
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()

@@ -40,9 +40,11 @@ from math import *
 from EMAN2 import *
 import EMAN2
 import sys
-import numpy
+#import numpy
+import struct
 from emimageutil import ImgHistogram
-from emshape import *
+import emshape 
+from emshape import EMShape
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
@@ -54,8 +56,6 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
-#	        GLUT.glutInit( len(sys.argv), sys.argv )
-#		print 'glutInit called'
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
@@ -215,6 +215,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
+		emshape.initGL()
 		self.shapelist=GL.glGenLists(1)		# displaylist for shapes displayed over the image
 		#GL.glNewList(self.shapelist,GL.GL_COMPILE)
 		#GL.glEndList()
@@ -249,7 +250,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			GL.glRasterPos(0,self.height()-1)
 			GL.glPixelZoom(1.0,-1.0)
 			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-		hist=numpy.fromstring(a[-1024:],'i')
+#			GL.glDrawPixelsub(self.width(),self.height(),GL.GL_RGBA,"AZ9G"*(self.width()*self.height()))
+#		hist=numpy.fromstring(a[-1024:],'i')
+		hist=struct.unpack('256i',a[-1024:])
 		if self.inspector : 
 			if self.invert: self.inspector.setHist(hist,self.maxden,self.minden) 
 			else: self.inspector.setHist(hist,self.minden,self.maxden)
