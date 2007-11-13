@@ -115,25 +115,31 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		for i in self.viewables:
-			if (i.getType() == "Volume"):
-				glPushMatrix()
-				i.render()
-				glPopMatrix()
-			
 		
 		for i in self.viewables:
-			if (i.getType() == "Slice Viewer"):
-				glPushMatrix()
-				i.render()
-				glPopMatrix()
+			glPushMatrix()
+			i.render()
+			glPopMatrix()
+		
+		#for i in self.viewables:
+			#if (i.getType() == "Volume"):
+				#glPushMatrix()
+				#i.render()
+				#glPopMatrix()
 			
 		
-		for i in self.viewables:
-			if (i.getType() == "Isosurface"):
-				glPushMatrix()
-				i.render()
-				glPopMatrix()
+		#for i in self.viewables:
+			#if (i.getType() == "Slice Viewer"):
+				#glPushMatrix()
+				#i.render()
+				#glPopMatrix()
+			
+		
+		#for i in self.viewables:
+			#if (i.getType() == "Isosurface"):
+				#glPushMatrix()
+				#i.render()
+				#glPopMatrix()
 
 
 	def resizeGL(self, width, height):
