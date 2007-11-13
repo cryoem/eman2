@@ -1624,14 +1624,8 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 		return 1;
 	}
 
-        int padffted=0;
-        try {
-	    padffted= slice->get_attr("padffted");
-        }
-        catch(_NotExistingObjectException) {
-	    padffted= 0;
-        }
-
+        int padffted= slice->get_attr_default( "padffted", 0 );
+        
 	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
         {
 		// FIXME: Why doesn't this throw an exception?
@@ -1650,13 +1644,7 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
         padfft = padfft_slice( slice, m_npad );
     }
 
-    int mult=0;
-    try {
-    mult = slice->get_attr("mult");
-    }
-    catch(_NotExistingObjectException) {
-    mult = 1;
-    }
+    int mult= slice->get_attr_default( "mult", 1 );
 
         Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
