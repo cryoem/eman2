@@ -40,7 +40,7 @@ from math import *
 from EMAN2 import *
 import EMAN2
 import sys
-#import numpy
+import numpy
 import struct
 from emimageutil import ImgHistogram
 import emshape 
@@ -246,11 +246,12 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 			
 		else : 
-			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 			GL.glRasterPos(0,self.height()-1)
 			GL.glPixelZoom(1.0,-1.0)
-			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-#			GL.glDrawPixelsub(self.width(),self.height(),GL.GL_RGBA,"AZ9G"*(self.width()*self.height()))
+#			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,18)
+#			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+
 #		hist=numpy.fromstring(a[-1024:],'i')
 		hist=struct.unpack('256i',a[-1024:])
 		if self.inspector : 

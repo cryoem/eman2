@@ -405,6 +405,7 @@ class EMVolumeWidget(QtOpenGL.QGLWidget):
 	
 		
 	def resizeGL(self, width, height):
+		if width<=0 or height<=0 : return
 		# just use the whole window for rendering
 		glViewport(0,0,self.width(),self.height())
 		

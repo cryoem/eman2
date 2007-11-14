@@ -38,6 +38,10 @@
 
 #include <stdio.h>
 
+#ifdef EMAN2_USING_OPENGL
+#include "GL/gl.h"
+#endif EMAN2_USING_OPENGL
+
 
 using namespace EMAN;
 
@@ -587,6 +591,12 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	}
 
     //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
+	if (flags&16) {
+#ifdef EMAN2_USING_OPENGL
+		glDrawPixels(ixsize,iysize,GL_LUMINANCE,GL_UNSIGNED_BYTE,(const GLvoid *)ret.data());
+#endif EMAN2_USING_OPENGL
+	}
+
 	return ret;
 }
 

@@ -305,6 +305,7 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+
 		EMIsosurfaceWidget.allim[self]=0
 		self.isosurface = EMIsosurface(image,self)
 		self.timer = QTimer()
@@ -346,11 +347,14 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		glPopMatrix()
 
 	def resizeGL(self, width, height):
+		if width<=0 or height<=0 : 
+			print "bad size"
+			return
 		# just use the whole window for rendering
 		glViewport(0,0,self.width(),self.height())
 		
 		# maintain the aspect ratio of the window we have
-		self.aspect = float(width)/float(height)
+		self.aspect = float(self.width())/float(self.height())
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()

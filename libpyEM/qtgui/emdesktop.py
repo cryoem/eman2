@@ -173,7 +173,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		
 		if self.time>150 :
 			glPushMatrix()
-			glScale(.25,.25,.25)
+			glScalef(.25,.25,.25)
 			glTranslate(-2.5,0.0,2.0)
 			glRotate(self.time,1.0,-.2,0.0)
 			glCallList(self.framedl)
