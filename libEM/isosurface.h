@@ -39,7 +39,7 @@ namespace EMAN
 		
 		virtual Dict get_isosurface()  = 0;
 #ifdef EMAN2_USING_OPENGL
-		virtual unsigned long get_isosurface_dl() = 0;
+		virtual unsigned long get_isosurface_dl(unsigned int) = 0;
 #endif
 	
 	protected:

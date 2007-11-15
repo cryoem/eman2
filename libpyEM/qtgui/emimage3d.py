@@ -174,8 +174,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.inspector.show()
 	
 	def closeEvent(self,event) :
-		for i in self.viewables:
-			i.closeEvent(event)
+		#for i in self.viewables:
+			#i.closeEvent(event)
 		if self.inspector: self.inspector.close()
 		
 	def mousePressEvent(self, event):
@@ -241,8 +241,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		size = len(self.viewables)
 		if ( size <= 1 ): return
 		self.viewables[size-1].setCamera(self.viewables[0].getCurrentCamera())
-		
-		
+
 	def rowChanged(self,row):
 		if ( row == self.currentselection ): return
 		self.currentselection=row

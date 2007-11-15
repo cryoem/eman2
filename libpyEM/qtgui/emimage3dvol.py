@@ -322,8 +322,9 @@ class EMVolume(EMImage3DObject):
 		if ( not isinstance(self.data,EMData) ): return
 		
 		self.data_copy = self.data.copy()
-		self.data_copy.mult(self.contrast*1.0/self.data.get_zsize())
 		self.data_copy.add(self.brightness)
+		self.data_copy.mult(self.contrast*1.0/self.data.get_zsize())
+		
 
 		hist = self.data_copy.calc_hist(256,0,1.0)
 		self.inspector.setHist(hist,0,1.0) 
@@ -341,7 +342,7 @@ class EMVolume(EMImage3DObject):
 		self.parent.updateGL()
 		
 	def setBrightness(self,val):
-		self.brightness = val/self.data.get_zsize()
+		self.brightness = val
 		self.updateDataAndTexture()
 		self.parent.updateGL()
 		
@@ -523,12 +524,12 @@ class EMVolumeInspector(QtGui.QWidget):
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 		
-		self.glcontrast = ValSlider(gltab,(0.0,20.0),"GLShd:")
+		self.glcontrast = ValSlider(gltab,(1.0,5.0),"GLShd:")
 		self.glcontrast.setObjectName("GLShade")
 		self.glcontrast.setValue(1.0)
 		gltab.vbl.addWidget(self.glcontrast)
 		
-		self.glbrightness = ValSlider(gltab,(-1.0,1.0),"GLBst:")
+		self.glbrightness = ValSlider(gltab,(-1.0,0.0),"GLBst:")
 		self.glbrightness.setObjectName("GLBoost")
 		self.glbrightness.setValue(0.1)
 		self.glbrightness.setValue(0.0)

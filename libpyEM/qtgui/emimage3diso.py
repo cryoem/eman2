@@ -62,16 +62,44 @@ class EMIsosurface(EMImage3DObject):
 		self.initialized = True
 		
 		self.cam=Camera()
-		
-		self.initializedGL= False
+		self.tex_name = 0
+		self.texture = False
+
+		self.brightness = 0
+		self.contrast = 10
+		self.glcontrast = 1.0
+		self.glbrightness = 0.0
 		
 		self.inspector=None
 		self.data = None
+		self.data_copy = None
+		
 		if image :
 			self.setData(image)
 	
 	def getType(self):
 		return "Isosurface"
+	
+	def updateDataAndTexture(self):
+		
+		self.data_copy = self.data.copy()
+		self.data_copy.add(self.brightness)
+		self.data_copy.mult(self.contrast)
+		
+		hist = self.data_copy.calc_hist(256,self.minden,self.maxden)
+		self.inspector.setHist(hist,self.minden,self.maxden) 
+
+		if ( self.texture ): self.genTexture()
+	
+	def genTexture(self):
+		if ( self.texture == False ): return
+		if ( self.tex_name != 0 ):
+			glDeleteTextures(self.tex_name)
+		
+		if ( self.data_copy == None ):
+			self.tex_name = self.data.gen_gl_texture()
+		else:
+			self.tex_name = self.data_copy.gen_gl_texture()
 	
 	def render(self):
 		if (not isinstance(self.data,EMData)): return
@@ -96,6 +124,7 @@ class EMIsosurface(EMImage3DObject):
 
 		self.cam.position()
 			
+		glShadeModel(GL_SMOOTH)
 		if ( self.isodl == 0 ):
 			self.getIsoDL()
 			
@@ -106,8 +135,18 @@ class EMIsosurface(EMImage3DObject):
 		glColor(self.colors[self.isocolor]["ambient"])
 		glPushMatrix()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
+		if ( self.texture ):
+			glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
 		glCallList(self.isodl)
 		glPopMatrix()
+		
+		if ( self.texture ):
+			glPushMatrix()
+			glLoadIdentity()
+			glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
+			glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
+			self.draw_bc_screen()
+			glPopMatrix()
 	
 		if self.cube:
 			glPushMatrix()
@@ -145,13 +184,14 @@ class EMIsosurface(EMImage3DObject):
 		self.isorender.set_surface_value(self.isothr)
 		self.isorender.set_sampling(self.smpval)
 		
-		#time1 = clock()
-		if self.initializedGL == False:
-			glEnableClientState(GL_VERTEX_ARRAY)
-			glEnableClientState(GL_NORMAL_ARRAY)
-			self.initializedGL = True
-		
-		self.isodl = self.isorender.get_isosurface_dl()
+		if ( self.texture ):
+			if ( self.tex_name == 0 ):
+				self.updateDataAndTexture()
+				
+		if ( self.texture  ):
+			self.isodl = self.isorender.get_isosurface_dl(self.tex_name)
+		else:
+			self.isodl = self.isorender.get_isosurface_dl(0)
 		#time2 = clock()
 		#dt1 = time2 - time1
 		#print "It took %f to render the isosurface" %dt1
@@ -180,6 +220,7 @@ class EMIsosurface(EMImage3DObject):
 	
 		self.inspector.setThrs(self.minden,self.maxden,mean+3.0*sigma)
 		self.isothr = mean+3.0*sigma
+		self.brightness = -self.isothr
 		
 		self.isorender=MarchingCubes(data)
 		self.inspector.setSamplingRange(self.isorender.get_sampling_range())
@@ -258,6 +299,9 @@ class EMIsosurface(EMImage3DObject):
 	def setThr(self,val):
 		if (self.isothr != val):
 			self.isothr = val
+			self.brightness = -val
+			if ( self.texture ):
+				self.updateDataAndTexture()
 			self.getIsoDL()
 			self.parent.updateGL()
 	
@@ -285,7 +329,15 @@ class EMIsosurface(EMImage3DObject):
 	def toggleLight(self,val):
 		self.light = not self.light
 		self.parent.updateGL()
+	
+	def toggleTexture(self):
+		self.texture = not self.texture
+		if ( self.texture ):
+			self.updateDataAndTexture()
 		
+		self.getIsoDL()
+		self.parent.updateGL()
+	
 	def updateInspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMIsoInspector(self)
@@ -294,6 +346,16 @@ class EMIsosurface(EMImage3DObject):
 	def getInspector(self):
 		if not self.inspector : self.inspector=EMIsoInspector(self)
 		return self.inspector
+		
+	def setContrast(self,val):
+		self.contrast = val
+		self.updateDataAndTexture()
+		self.parent.updateGL()
+		
+	def setBrightness(self,val):
+		self.brightness = val
+		self.updateDataAndTexture()
+		self.parent.updateGL()
 		
 class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
@@ -434,120 +496,27 @@ class EMIsoInspector(QtGui.QWidget):
 		self.cubetog.setCheckable(1)
 		self.vbl2.addWidget(self.cubetog)
 		
-		self.scale = ValSlider(self,(0.01,30.0),"Zoom:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		self.vbl.addWidget(self.scale)
+		self.texturetog = QtGui.QPushButton("Texture")
+		self.texturetog.setCheckable(1)
+		self.vbl2.addWidget(self.texturetog)
+		self.texture = False
 		
-		self.lowlim=0
-		self.highlim=1.0
-		self.busy=0
-
-		self.thr = ValSlider(self,(0.0,4.0),"Thr:")
-		self.thr.setObjectName("thr")
-		self.thr.setValue(0.5)
-		self.vbl.addWidget(self.thr)
-		
-		self.hbl_smp = QtGui.QHBoxLayout()
-		self.hbl_smp.setMargin(0)
-		self.hbl_smp.setSpacing(6)
-		self.hbl_smp.setObjectName("Sample")
-		self.vbl.addLayout(self.hbl_smp)
-		
-		self.smp_label = QtGui.QLabel()
-		self.smp_label.setText('Sample Level')
-		self.hbl_smp.addWidget(self.smp_label)
-		
-		self.smp = QtGui.QSpinBox(self)
-		self.smp.setValue(1)
-		self.hbl_smp.addWidget(self.smp)
-		
-		self.hbl_color = QtGui.QHBoxLayout()
-		self.hbl_color.setMargin(0)
-		self.hbl_color.setSpacing(6)
-		self.hbl_color.setObjectName("Material")
-		self.vbl.addLayout(self.hbl_color)
-		
-		self.color_label = QtGui.QLabel()
-		self.color_label.setText('Material')
-		self.hbl_color.addWidget(self.color_label)
-		
-		self.cbb = QtGui.QComboBox(self)
-		self.hbl_color.addWidget(self.cbb)
-
-		self.hbl_trans = QtGui.QHBoxLayout()
-		self.hbl_trans.setMargin(0)
-		self.hbl_trans.setSpacing(6)
-		self.hbl_trans.setObjectName("Trans")
-		self.vbl.addLayout(self.hbl_trans)
-		
-		self.x_label = QtGui.QLabel()
-		self.x_label.setText('x')
-		self.hbl_trans.addWidget(self.x_label)
-		
-		self.x_trans = QtGui.QDoubleSpinBox(self)
-		self.x_trans.setMinimum(-10000)
-		self.x_trans.setMaximum(10000)
-		self.x_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.x_trans)
-		
-		self.y_label = QtGui.QLabel()
-		self.y_label.setText('y')
-		self.hbl_trans.addWidget(self.y_label)
-		
-		self.y_trans = QtGui.QDoubleSpinBox(self)
-		self.y_trans.setMinimum(-10000)
-		self.y_trans.setMaximum(10000)
-		self.y_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.y_trans)
-		
-		
-		self.z_label = QtGui.QLabel()
-		self.z_label.setText('z')
-		self.hbl_trans.addWidget(self.z_label)
-		
-		self.z_trans = QtGui.QDoubleSpinBox(self)
-		self.z_trans.setMinimum(-10000)
-		self.z_trans.setMaximum(10000)
-		self.z_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.z_trans)
-		
-		self.hbl_src = QtGui.QHBoxLayout()
-		self.hbl_src.setMargin(0)
-		self.hbl_src.setSpacing(6)
-		self.hbl_src.setObjectName("hbl")
-		self.vbl.addLayout(self.hbl_src)
-		
-		self.label_src = QtGui.QLabel()
-		self.label_src.setText('Rotation Convention')
-		self.hbl_src.addWidget(self.label_src)
-		
-		self.src = QtGui.QComboBox(self)
-		self.load_src_options(self.src)
-		self.hbl_src.addWidget(self.src)
-		
-		# set default value -1 ensures that the val slider is updated the first time it is created
-		self.az = ValSlider(self,(-360.0,360.0),"az",-1)
-		self.az.setObjectName("az")
-		self.vbl.addWidget(self.az)
-		
-		self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
-		self.alt.setObjectName("alt")
-		self.vbl.addWidget(self.alt)
-		
-		self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
-		self.phi.setObjectName("phi")
-		self.vbl.addWidget(self.phi)
-		
+		self.tabwidget = QtGui.QTabWidget()
+		self.maintab = None
+		self.tabwidget.addTab(self.getMainTab(), "Main")
+		self.texturetab = None
+		self.tabwidget.addTab(self.getTextureTab(),"Texture")
+		self.getTextureTab().setEnabled(False)
+		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
-		
-		self.current_src = EULER_EMAN
 		
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
 		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), target.setThr)
+		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThrSlider)
+		QtCore.QObject.connect(self.contrast, QtCore.SIGNAL("valueChanged"), target.setContrast)
+		QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), target.setBrightness)
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
 		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setSample)
@@ -556,7 +525,162 @@ class EMIsoInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggleWire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggleLight)
+		QtCore.QObject.connect(self.texturetog, QtCore.SIGNAL("toggled(bool)"), self.toggleTexture)
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
+		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
+		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
+	
+	def toggleTexture(self):
+		self.texture = not self.texture
+		self.target.toggleTexture()
+		self.getTextureTab().setEnabled(self.texture)
+	
+	def getTextureTab(self):
+		if ( self.texturetab == None ):
+			self.texturetab = QtGui.QWidget()
+			texturetab = self.texturetab
+			texturetab.vbl = QtGui.QVBoxLayout(self.texturetab)
+			texturetab.vbl.setMargin(0)
+			texturetab.vbl.setSpacing(6)
+			texturetab.vbl.setObjectName("Main")
+		
+			self.contrast = ValSlider(texturetab,(0.0,20.0),"Cont:")
+			self.contrast.setObjectName("contrast")
+			self.contrast.setValue(10.0)
+			texturetab.vbl.addWidget(self.contrast)
+	
+			self.bright = ValSlider(texturetab,(-5.0,5.0),"Brt:")
+			self.bright.setObjectName("bright")
+			self.bright.setValue(0.1)
+			self.bright.setValue(0.0)
+			texturetab.vbl.addWidget(self.bright)
+			
+			self.glcontrast = ValSlider(texturetab,(1.0,5.0),"GLShd:")
+			self.glcontrast.setObjectName("GLShade")
+			self.glcontrast.setValue(1.0)
+			texturetab.vbl.addWidget(self.glcontrast)
+			
+			self.glbrightness = ValSlider(texturetab,(-1.0,0.0),"GLBst:")
+			self.glbrightness.setObjectName("GLBoost")
+			self.glbrightness.setValue(0.1)
+			self.glbrightness.setValue(0.0)
+			texturetab.vbl.addWidget(self.glbrightness)
+			
+		return self.texturetab
+	
+	def getMainTab(self):
+		if ( self.maintab == None ):
+			self.maintab = QtGui.QWidget()
+			maintab = self.maintab
+			maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+			maintab.vbl.setMargin(0)
+			maintab.vbl.setSpacing(6)
+			maintab.vbl.setObjectName("Main")
+			
+			self.scale = ValSlider(maintab,(0.01,30.0),"Zoom:")
+			self.scale.setObjectName("scale")
+			self.scale.setValue(1.0)
+			maintab.vbl.addWidget(self.scale)
+			
+			self.thr = ValSlider(maintab,(0.0,4.0),"Thr:")
+			self.thr.setObjectName("thr")
+			self.thr.setValue(0.5)
+			maintab.vbl.addWidget(self.thr)
+			
+			self.hbl_smp = QtGui.QHBoxLayout()
+			self.hbl_smp.setMargin(0)
+			self.hbl_smp.setSpacing(6)
+			self.hbl_smp.setObjectName("Sample")
+			maintab.vbl.addLayout(self.hbl_smp)
+			
+			self.smp_label = QtGui.QLabel()
+			self.smp_label.setText('Sample Level')
+			self.hbl_smp.addWidget(self.smp_label)
+			
+			self.smp = QtGui.QSpinBox(maintab)
+			self.smp.setValue(1)
+			self.hbl_smp.addWidget(self.smp)
+			
+			self.hbl_color = QtGui.QHBoxLayout()
+			self.hbl_color.setMargin(0)
+			self.hbl_color.setSpacing(6)
+			self.hbl_color.setObjectName("Material")
+			maintab.vbl.addLayout(self.hbl_color)
+			
+			self.color_label = QtGui.QLabel()
+			self.color_label.setText('Material')
+			self.hbl_color.addWidget(self.color_label)
+			
+			self.cbb = QtGui.QComboBox(maintab)
+			self.hbl_color.addWidget(self.cbb)
+	
+			self.hbl_trans = QtGui.QHBoxLayout()
+			self.hbl_trans.setMargin(0)
+			self.hbl_trans.setSpacing(6)
+			self.hbl_trans.setObjectName("Trans")
+			maintab.vbl.addLayout(self.hbl_trans)
+			
+			self.x_label = QtGui.QLabel()
+			self.x_label.setText('x')
+			self.hbl_trans.addWidget(self.x_label)
+			
+			self.x_trans = QtGui.QDoubleSpinBox(self)
+			self.x_trans.setMinimum(-10000)
+			self.x_trans.setMaximum(10000)
+			self.x_trans.setValue(0.0)
+			self.hbl_trans.addWidget(self.x_trans)
+			
+			self.y_label = QtGui.QLabel()
+			self.y_label.setText('y')
+			self.hbl_trans.addWidget(self.y_label)
+			
+			self.y_trans = QtGui.QDoubleSpinBox(maintab)
+			self.y_trans.setMinimum(-10000)
+			self.y_trans.setMaximum(10000)
+			self.y_trans.setValue(0.0)
+			self.hbl_trans.addWidget(self.y_trans)
+			
+			
+			self.z_label = QtGui.QLabel()
+			self.z_label.setText('z')
+			self.hbl_trans.addWidget(self.z_label)
+			
+			self.z_trans = QtGui.QDoubleSpinBox(maintab)
+			self.z_trans.setMinimum(-10000)
+			self.z_trans.setMaximum(10000)
+			self.z_trans.setValue(0.0)
+			self.hbl_trans.addWidget(self.z_trans)
+			
+			self.hbl_src = QtGui.QHBoxLayout()
+			self.hbl_src.setMargin(0)
+			self.hbl_src.setSpacing(6)
+			self.hbl_src.setObjectName("hbl")
+			maintab.vbl.addLayout(self.hbl_src)
+			
+			self.label_src = QtGui.QLabel()
+			self.label_src.setText('Rotation Convention')
+			self.hbl_src.addWidget(self.label_src)
+			
+			self.src = QtGui.QComboBox(maintab)
+			self.load_src_options(self.src)
+			self.hbl_src.addWidget(self.src)
+			
+			# set default value -1 ensures that the val slider is updated the first time it is created
+			self.az = ValSlider(self,(-360.0,360.0),"az",-1)
+			self.az.setObjectName("az")
+			maintab.vbl.addWidget(self.az)
+			
+			self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
+			self.alt.setObjectName("alt")
+			maintab.vbl.addWidget(self.alt)
+			
+			self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
+			self.phi.setObjectName("phi")
+			maintab.vbl.addWidget(self.phi)
+		
+			self.current_src = EULER_EMAN
+		
+		return self.maintab
 	
 	def setSamplingRange(self,range):
 		self.smp.setMinimum(1)
@@ -692,9 +816,14 @@ class EMIsoInspector(QtGui.QWidget):
 				self.cbb.setCurrentIndex(a)
 			a += 1
 
+	def onThrSlider(self,val):
+		self.target.setThr(val)
+		self.bright.setValue(-val,True)
+		
 	def setThrs(self,low,high,val):
 		self.thr.setRange(low,high)
 		self.thr.setValue(val, True)
+		self.bright.setValue(-val,True)
 	
 	def setSamp(self,low,high,val):
 		self.smp.setRange(int(low),int(high))

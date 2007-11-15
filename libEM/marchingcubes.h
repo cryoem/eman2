@@ -89,6 +89,17 @@ namespace EMAN
 				elements = elements + 3;
 			}
 			
+			/** Multiply contiguous groups of 3 by different values
+			 */
+			inline void mult3(const type& v1, const type& v2, const type& v3)
+			{
+				for(int i = 0; (i + 2) < elements; i += 3 ){
+					data[i] *= v1;
+					data[i+1] *= v2;
+					data[i+2] *= v3;
+				}
+			}
+			
 			/** The number of elements, is the same as STL::vector size()
 			* Should be called size() but oh well...
 			* @return the number of elements stored by this object
@@ -184,7 +195,7 @@ namespace EMAN
 		* Uses OpenGL arrays for maximum performance
 		* @return an OpenGL display list number
 		*/
-		unsigned long get_isosurface_dl();
+		unsigned long get_isosurface_dl(unsigned int tex_id = 0);
 #endif //EMAN2_USING_OPENGL
 		
 	private:	

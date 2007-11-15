@@ -1,7 +1,5 @@
 
-// #ifndef GL_GLEXT_PROTOTYPES
-// #define GL_GLEXT_PROTOTYPES
-// #endif
+
 #ifdef _WIN32
 	#include <windows.h>
 #endif	//_WIN32
@@ -9,7 +7,7 @@
 #ifdef EMAN2_USING_OPENGL
 #include "GL/gl.h"
 #endif
-// #include "GL/glext.h"
+
 
 #include "marchingcubes.h"
 
@@ -154,6 +152,8 @@ bool MarchingCubes::calculate_min_max_vals()
 		
 		if ( size == 0 ){
 			Dict a;
+			// Setting search to 3 at the bottom level is most important.
+			// FIXME - d.woolford add comments heere
 			a["search"] = 3;
 			minvals.push_back(_emdata->process("math.minshrink",a));
 			maxvals.push_back(_emdata->process("math.maxshrink",a));
@@ -194,11 +194,11 @@ Dict MarchingCubes::get_isosurface()
 }
 
 #ifdef EMAN2_USING_OPENGL
-unsigned long MarchingCubes::get_isosurface_dl()
+unsigned long MarchingCubes::get_isosurface_dl(unsigned int tex_id)
 {
-	
 	if ( _isodl != 0 ) glDeleteLists(_isodl,1);
 	
+
 	calculate_surface();
 #if MARCHING_CUBES_DEBUG
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
@@ -224,7 +224,20 @@ unsigned long MarchingCubes::get_isosurface_dl()
 		maxf = maxf - (maxf%3);
 	}
 	
-	glNormalPointer(GL_FLOAT,0,nn.get_data());
+	if ( tex_id != 0 ) {
+		// Normalize the coordinates to be on the interval 0,1
+		pp.mult3(1.0/(float) _emdata->get_xsize(), 1.0/(float)_emdata->get_ysize(), 1.0/(float)_emdata->get_zsize());
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+		glTexCoordPointer(3,GL_FLOAT,0,pp.get_data());
+	}
+	else {
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glNormalPointer(GL_FLOAT,0,nn.get_data());
+	}
+	
+	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3,GL_FLOAT,0,pp.get_data());
 	
 	_isodl = glGenLists(1);
@@ -233,6 +246,17 @@ unsigned long MarchingCubes::get_isosurface_dl()
 	int time0 = clock();
 #endif
 	glNewList(_isodl,GL_COMPILE);
+	
+	if ( tex_id != 0 ) {
+		glEnable(GL_TEXTURE_3D);
+		glBindTexture(GL_TEXTURE_3D, tex_id);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	}
 	// Drawing range elements based on the output of glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
 	// Saved about 60% of the time... drawRange should probably always be true
 	bool drawRange = true;
@@ -251,6 +275,8 @@ unsigned long MarchingCubes::get_isosurface_dl()
 				// glDrawRangeElements(GL_TRIANGLES,0,0,maxf,GL_UNSIGNED_INT,&ff[i]);
 		}
 	}
+	
+	if ( tex_id != 0 ) glDisable(GL_TEXTURE_3D);
 
 	glEndList();
 #if MARCHING_CUBES_DEBUG
@@ -476,13 +502,13 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 								 afCubeValue[ a2iEdgeConnection[iEdge][1] ], _surf_value);
 
 			if ( cur_level == -1 ){
-				asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]);
-				asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]);
-				asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]);
+				asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]) + 0.5;
+				asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]) + 0.5;
+				asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]) + 0.5;
 			} else {
-				asEdgeVertex[iEdge][0] = fxScale*(fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]));
-				asEdgeVertex[iEdge][1] = fyScale*(fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]));
-				asEdgeVertex[iEdge][2] = fzScale*(fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]));
+				asEdgeVertex[iEdge][0] = fxScale*(fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0])) + 0.5;
+				asEdgeVertex[iEdge][1] = fyScale*(fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1])) + 0.5;
+				asEdgeVertex[iEdge][2] = fzScale*(fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2])) + 0.5;
 			}
 			
 			pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0], fY+edgeLookUp[iEdge][1], fZ+edgeLookUp[iEdge][2], edgeLookUp[iEdge][3]);

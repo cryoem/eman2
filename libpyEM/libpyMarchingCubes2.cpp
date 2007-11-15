@@ -41,7 +41,7 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
        return this->get_override("get_isosurface")();
     }
 #ifdef EMAN2_USING_OPENGL
-	unsigned long get_isosurface_dl() {
+	unsigned long get_isosurface_dl(unsigned int) {
 		return this->get_override("get_isosurface_dl")();
 	}
 #endif
