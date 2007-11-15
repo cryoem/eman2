@@ -36,6 +36,7 @@ from PyQt4.QtCore import Qt
 from emimage2d import *
 from emimagemx import *
 from emimage3d import *
+from emimageutil import EMParentWin
 from OpenGL import GL,GLU,GLUT
 from sys import argv
 #from valslider import ValSlider
@@ -88,7 +89,6 @@ def imageupdate():
 					break
 			except: pass
 		if upd : i.setData(i.data)
-
 
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """

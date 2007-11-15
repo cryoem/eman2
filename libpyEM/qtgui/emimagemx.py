@@ -40,7 +40,7 @@ from EMAN2 import *
 import EMAN2
 import sys
 import numpy
-from emimageutil import ImgHistogram
+from emimageutil import ImgHistogram,EMParentWin
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtGui import QImage
@@ -222,6 +222,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		
 	
 	def paintGL(self):
+		if not self.parentWidget() : return
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 #		GL.glLoadIdentity()
 #		GL.glTranslated(0.0, 0.0, -10.0)
@@ -443,9 +444,9 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	def mousePressEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))
 #		print lc
-		if event.button()==Qt.MidButton:
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.showInspector(1)
-		elif event.button()==Qt.RightButton:
+		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.mousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
 			if self.mmode=="drag" and lc:
@@ -485,7 +486,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			self.emit(QtCore.SIGNAL("mousedrag"),event)
 		
 	def mouseReleaseEvent(self, event):
-		if event.button()==Qt.RightButton:
+		if self.mousedrag:
 			self.mousedrag=None
 		elif event.button()==Qt.LeftButton and self.mmode=="app":
 			self.emit(QtCore.SIGNAL("mouseup"),event)
@@ -515,7 +516,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		action.setChecked(1)
 		
 		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setMargin(2)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vboxlayout")
 		
@@ -760,7 +761,8 @@ if __name__ == '__main__':
 	else :
 		a=EMData.read_images(sys.argv[1])
 		window.setData(a)
-	window.show()
+	window2=EMParentWin(window)
+	window2.show()
 	
 #	w2=QtGui.QWidget()
 #	w2.resize(256,128)

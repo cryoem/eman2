@@ -33,6 +33,7 @@
 
 from EMAN2 import *
 from emimage import EMImage
+from emimageutil import EMParentWin
 import sys
 from optparse import OptionParser
 from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -76,9 +77,10 @@ def display(img):
 		a=EMData.read_images(f)
 		if len(a)==1 : a=a[0]
 		w=EMImage(a)
-		w.setWindowTitle("EMImage (%s)"%f)
-		w.show()
-		win.append(w)
+		pwin=EMParentWin(w)
+		pwin.setWindowTitle("EMImage (%s)"%f)
+		pwin.show()
+		win.append(pwin)
 	
 	sys.exit(app.exec_())
 

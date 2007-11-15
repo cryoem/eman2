@@ -43,7 +43,7 @@ from math import *
 from EMAN2 import *
 import sys
 import numpy
-from emimageutil import ImgHistogram
+from emimageutil import ImgHistogram,EMParentWin
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
@@ -717,7 +717,8 @@ if __name__ == '__main__':
 			exit(1)
 		a=EMData.read_images(sys.argv[1],[0])
 		window.setData(a[0])
-	window.show()
+	window2=EMParentWin(window)
+	window2.show()
 	
 #	w2=QtGui.QWidget()
 #	w2.resize(256,128)

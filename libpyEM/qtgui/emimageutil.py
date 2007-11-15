@@ -35,8 +35,25 @@ from PyQt4.QtCore import Qt
 from math import *
 import numpy
 
+class EMParentWin(QtGui.QWidget):
+	"""Used to give the opengl widgets a parent, necessary for OSX Leopard"""
+	def __init__(self,child=None):
+		QtGui.QWidget.__init__(self,None)
+		
+		self.child = child
+		self.resize(child.width()+20,child.height()+20)
+
+		self.hbl = QtGui.QHBoxLayout()
+		self.hbl.setMargin(0)
+		self.hbl.setSpacing(6)
+		self.hbl.addWidget(self.child)
+		self.setLayout(self.hbl)
+		
+#		self.setWindowTitle(self.tr("Whatever"))
+
 
 class ImgHistogram(QtGui.QWidget):
+	""" A small fixed-size histogram widget"""
 	def __init__(self,parent):
 		QtGui.QWidget.__init__(self,parent)
 		self.brush=QtGui.QBrush(Qt.black)

@@ -42,7 +42,7 @@ import EMAN2
 import sys
 import numpy
 import struct
-from emimageutil import ImgHistogram
+from emimageutil import ImgHistogram,EMParentWin
 import emshape 
 from emshape import EMShape
 from weakref import WeakKeyDictionary
@@ -131,6 +131,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			self.setFFT(self.curfft)
 		
 		self.showInspector()		# shows the correct inspector if already open
+		self.origin=(self.width()/2,self.height()/2)
 		self.updateGL()
 		
 	def setDenRange(self,x0,x1):
@@ -221,6 +222,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		#GL.glEndList()
 
 	def paintGL(self):
+		if not self.parentWidget(): return
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 #		GL.glLoadIdentity()
 #		GL.glTranslated(0.0, 0.0, -10.0)
@@ -248,9 +250,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		else : 
 			GL.glRasterPos(0,self.height()-1)
 			GL.glPixelZoom(1.0,-1.0)
-#			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,18)
-#			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+#			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,18)
+			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 
 #		hist=numpy.fromstring(a[-1024:],'i')
 		hist=struct.unpack('256i',a[-1024:])
@@ -372,10 +374,10 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	
 	def mousePressEvent(self, event):
 		lc=self.scr2img(event.x(),event.y())
-		if event.button()==Qt.MidButton:
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.showInspector(1)
-		elif event.button()==Qt.RightButton:
-			self.rmousedrag=(event.x(),event.y())
+		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+			self.rmousedrag=(event.x(),event.y() )
 		elif event.button()==Qt.LeftButton:
 			if self.mmode==0:
 				self.emit(QtCore.SIGNAL("mousedown"), event)
@@ -400,7 +402,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				
 	def mouseMoveEvent(self, event):
 		lc=self.scr2img(event.x(),event.y())
-		if self.rmousedrag and event.buttons()&Qt.RightButton:
+		if self.rmousedrag:
 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
 			self.update()
@@ -424,7 +426,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				
 	def mouseReleaseEvent(self, event):
 		lc=self.scr2img(event.x(),event.y())
-		if event.button()==Qt.RightButton:
+		if self.rmousedrag:
 			self.rmousedrag=None
 		elif event.button()==Qt.LeftButton:
 			if self.mmode==0:
@@ -449,7 +451,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.target=target
 		
 		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setMargin(2)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
@@ -699,7 +701,9 @@ if __name__ == '__main__':
 	else :
 		a=EMData.read_images(sys.argv[1],[0])
 		window.setData(a[0])
-	window.show()
+
+	window2=EMParentWin(window)
+	window2.show()
 	
 #	w2=QtGui.QWidget()
 #	w2.resize(256,128)

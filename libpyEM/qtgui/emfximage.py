@@ -42,6 +42,7 @@ from OpenGL.GLU import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
+from emimageutil import *
 from emimage2d import *
 import sys
 import array
@@ -852,7 +853,8 @@ if __name__ == '__main__':
 		a=EMData.read_images(sys.argv[1])
 		if len(a)==1 : window.setData(a[0])
 		else : window.setData(a)
-	window.show()
+	window2 = EMParentWin(window)
+	window2.show()
 	
 	ti=QtCore.QTimer()
 	ti.setInterval(50.)

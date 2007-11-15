@@ -42,7 +42,7 @@ import EMAN2
 import sys
 import numpy
 from emshape import *
-from emimageutil import ImgHistogram
+from emimageutil import ImgHistogram,EMParentWin
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 import struct
@@ -101,6 +101,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		GL.glClearColor(0,0,0,0)
 		
 	def paintGL(self):
+		if not self.parentWidget() : return
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 #		GL.glLoadIdentity()
 #		GL.glTranslated(0.0, 0.0, -10.0)
@@ -331,7 +332,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.target=target
 		
 		self.hbl = QtGui.QHBoxLayout(self)
-		self.hbl.setMargin(0)
+		self.hbl.setMargin(2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		
@@ -530,8 +531,7 @@ if __name__ == '__main__':
 				
 		window.setData(sys.argv[1].split("/")[-1],data)
 			
-				
-
-	window.show()
+	window2=EMParentWin(window)
+	window2.show()
 		
 	sys.exit(app.exec_())
