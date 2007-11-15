@@ -93,7 +93,7 @@ def imageupdate():
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
 
-	def __new__(cls,data=None,old=None):
+	def __new__(cls,data=None,old=None,parent=1):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
@@ -104,6 +104,13 @@ class EMImage(object):
 				if isinstance(old,EMImage2D) :
 					old.setData(data)
 					return old
+			if parent : 
+				ret=EMParentWin(EMImage2D(data))
+				ret.show()
+#				ret.raise()
+				ret.releaseMouse()
+				ret.releaseKeyboard()
+				return ret
 			return EMImage2D(data)
 		elif isinstance(data,EMData):
 			# must be a single 3D image
@@ -111,6 +118,13 @@ class EMImage(object):
 				if isinstance(old,EMImage3D) :
 					old.setData(data)
 					return old
+			if parent : 
+				ret=EMParentWin(EMImage3D(data))
+				ret.show()
+#				ret.raise()
+				ret.releaseMouse()
+				ret.releaseKeyboard()
+				return ret
 			return EMImage3D(data)
 		elif isinstance(data,list):
 			# list or tuple of images
@@ -118,6 +132,13 @@ class EMImage(object):
 				if isinstance(old,EMImageMX) :
 					old.setData(data)
 					return old
+			if parent : 
+				ret=EMParentWin(EMImageMX(data))
+				ret.show()
+#				ret.raise()
+				ret.releaseMouse()
+				ret.releaseKeyboard()
+				return ret
 			return EMImageMX(data)
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"

@@ -161,7 +161,7 @@ class EMShape:
 				if s[8]<0 :
 					GL.glColor(1.,1.,1.)
 					GL.glTranslate(s[4],s[5],0)
-					GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
+					GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
 					GL.glLineWidth(-s[8])
 					w=104.76*len(s[6])
 					GL.glBegin(GL.GL_QUADS)
@@ -177,7 +177,7 @@ class EMShape:
 					GL.glColor(*col)
 					GL.glTranslate(s[4],s[5],0)
 	#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
-					GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
+					GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
 					GL.glLineWidth(fabs(s[8]))
 					for i in s[6]:
 						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))

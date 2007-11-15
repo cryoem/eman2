@@ -71,6 +71,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.plotimg=None
 		self.shapes={}
 		self.limits=None
+		self.rmousedrag=None
 
 		self.data={}				# List of Lists to plot 
 		
@@ -260,9 +261,9 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 	
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
-		if event.button()==Qt.MidButton:
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.showInspector(1)
-		elif event.button()==Qt.RightButton:
+		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.delShapes()
 			self.rmousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
@@ -280,29 +281,17 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 	def mouseMoveEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
 		
-		if event.buttons()&Qt.LeftButton:
+		if  self.rmousedrag:
+			self.addShape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.x(),self.height()-event.y(),1)))
+		elif event.buttons()&Qt.LeftButton:
 			self.addShape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.addShape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
-			self.addShape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),1.5,1)))
+			self.addShape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),1.5,1)))
 #			self.addShape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
-		elif  event.buttons()&Qt.RightButton and self.rmousedrag:
-			self.addShape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.x(),self.height()-event.y(),1)))
-			#self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
-			#self.rmousedrag=(event.x(),event.y())
-			#self.update()
-		#elif event.buttons()&Qt.LeftButton:
-			#if self.mmode==0:
-				#self.emit(QtCore.SIGNAL("mousedrag"), event)
-				#return
-			#elif self.mmode==1 :
-				#self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
-				#dx=lc[0]-self.shapes["MEAS"][4]
-				#dy=lc[1]-self.shapes["MEAS"][5]
-				#self.addShape("MEASL",("label",.5,.1,.5,lc[0]+2,lc[1]+2,"%d,%d - %d,%d\n%1.1f,%1.1f (%1.2f)"%(self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],dx,dy,hypot(dx,dy)),10,-1))
 	
 	def mouseReleaseEvent(self, event):
 		lc =self.scr2plot(event.x(),event.y())
-		if event.button()==Qt.RightButton and self.rmousedrag:
+		if self.rmousedrag:
 			lc2=self.scr2plot(*self.rmousedrag)
 			if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.limits=None
 			else : self.limits=((min(lc[0],lc2[0]),max(lc[0],lc2[0])),(min(lc[1],lc2[1]),max(lc[1],lc2[1])))
