@@ -77,10 +77,9 @@ def display(img):
 		a=EMData.read_images(f)
 		if len(a)==1 : a=a[0]
 		w=EMImage(a)
-		pwin=EMParentWin(w)
-		pwin.setWindowTitle("EMImage (%s)"%f)
-		pwin.show()
-		win.append(pwin)
+		w.setWindowTitle("EMImage (%s)"%f)
+		w.show()
+		win.append(w)
 	
 	sys.exit(app.exec_())
 
