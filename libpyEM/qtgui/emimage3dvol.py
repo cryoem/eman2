@@ -416,7 +416,7 @@ class EMVolumeWidget(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,0.001,1000000)
+		gluPerspective(self.fov,self.aspect,1,5000)
 		
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)

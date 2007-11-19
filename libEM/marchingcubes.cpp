@@ -5,9 +5,14 @@
 #endif	//_WIN32
 
 #ifdef EMAN2_USING_OPENGL
+
+
+#ifdef __APPLE__
+#include "OpenGL/gl.h"
+#else // _WIN32, LINUX
 #include "GL/gl.h"
 #endif
-
+#endif
 
 #include "marchingcubes.h"
 
