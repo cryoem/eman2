@@ -346,6 +346,35 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 				return_slice->get_data()[i*x+j] -= zeroangle_edge_mean;	
 			}
 		}
+
+		if ( (int) params["t_emm_gauss"] != 0 )
+			{
+				int falloff_width = (int) params["t_emm_gauss"];
+				float sigma = (float) falloff_width/3.0f;
+				
+				GaussianFunctoid gf(sigma);
+				
+				for ( int i = 0; i < y; ++i ) {
+					
+					float left_value = return_slice->get_value_at(x_clip+falloff_width, i );
+					
+					float scale = left_value;
+					
+					for ( int j = falloff_width-1; j >= 0; --j )
+					{
+						return_slice->set_value_at(x_clip+j, i, scale*gf((float)(falloff_width-j)) );
+					}
+				
+					float right_value = return_slice->get_value_at(x - x_clip - falloff_width, i );
+					scale = right_value;
+					
+					for ( int j = 1; j < falloff_width; ++j )
+					{
+						return_slice->set_value_at(x - x_clip - falloff_width + j, i, scale*gf( (float)j ));
+					}
+				
+				}
+		}
 	}
 	
 	// Perform tomographic weighting if the argument is specified (default is for this not to happen)
