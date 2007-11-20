@@ -44,7 +44,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 133)
+        self.assertEqual(len(processor_names), 135)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -352,7 +352,59 @@ class TestProcessor(unittest.TestCase):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d[z][y][x], d2[z][y][x], 3)
-                    
+
+    def test_threshold_clampminmax(self):
+        """test threshold.clampminmax processor ............."""
+        n = 32
+        
+        for i in [1,n]:
+			e = EMData()
+			e.set_size(n,n,i)
+			e.process_inplace("testimage.noise.uniform.rand")
+			
+			cmax = e.get_attr("maximum")
+			cmin = e.get_attr("minimum")
+			
+			nmax = cmax/2.0
+			nmin = cmin/2.0
+			
+			a = {}
+			a["minval"] = nmin
+			a["maxval"] = nmax
+			
+			e.process_inplace("threshold.clampminmax", a)
+			
+			d = e.get_3dview()
+			for z in range(i):
+				for y in range(n):
+					for x in range(n):
+						assert d[z][y][x] >= nmin
+						assert d[z][y][x] <= nmax
+						
+    def test_threshold_clampminmax_nsigma(self):
+        """test threshold.clampminmax.nsigma processor ......"""
+        n = 32
+        
+        for i in [1,n]:
+			for nsigma in [0.5,1,2]:
+				e = EMData()
+				e.set_size(n,n,i)
+				e.process_inplace("testimage.noise.uniform.rand")
+				
+				cmax = e.get_attr("mean") + nsigma*e.get_attr("sigma")
+				cmin = e.get_attr("mean") - nsigma*e.get_attr("sigma")
+				
+				a = {}
+				a["nsigma"] = nsigma
+				e.process_inplace("threshold.clampminmax.nsigma", a)
+				
+				d = e.get_3dview()
+				for z in range(i):
+					for y in range(n):
+						for x in range(n):
+							assert d[z][y][x] >= cmin
+							assert d[z][y][x] <= cmax
+
     def test_threshold_notzero(self):
         """test threshold.notzero processor ................."""
         e = EMData()

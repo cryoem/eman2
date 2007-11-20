@@ -71,6 +71,9 @@ template <> Factory < Processor >::Factory()
 	force_add(&ValueSquaredProcessor::NEW);
 	force_add(&ValueSqrtProcessor::NEW);
 
+	force_add(&ClampingProcessor::NEW);
+	force_add(&NSigmaClampingProcessor::NEW);
+	
 	force_add(&ToZeroProcessor::NEW);
 	force_add(&ToMinvalProcessor::NEW);
 	force_add(&CutToZeroProcessor::NEW);
@@ -6195,6 +6198,38 @@ int EMAN::multi_processors(EMData * image, vector < string > processornames)
 	return 0;
 }
 
+
+void ClampingProcessor::process_inplace( EMData* image )
+{
+	
+	if ( image->is_complex() ) throw ImageFormatException("Error: clamping processor does not work on complex images");
+	
+	float min = params.set_default("minval",default_min);
+	float max = params.set_default("maxval",default_max);
+	
+	// Okay, throwing such an error is probably overkill - but atleast the user will get a loud message
+	// saying what went wrong.
+	if ( max < min ) throw InvalidParameterException("Error: minval was greater than maxval, aborting");
+	
+	int size = image->get_xsize()*image->get_ysize()*image->get_zsize();
+	for(int i = 0; i < size; ++i )
+	{
+		float * data = &image->get_data()[i];
+		if ( *data < min ) *data = min;
+		else if ( *data > max ) *data = max;
+	}
+}
+
+void NSigmaClampingProcessor::process_inplace(EMData *image)
+{
+	float nsigma = params.set_default("nsigma",default_sigma);
+	float sigma = image->get_attr("sigma");
+	float mean = image->get_attr("mean");
+	params.set_default("minval",mean - nsigma*sigma);
+	params.set_default("maxval",mean + nsigma*sigma);
+				
+	ClampingProcessor::process_inplace(image);
+}
 
 void EMAN::dump_processors()
 {

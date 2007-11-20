@@ -834,6 +834,7 @@ The basic design of EMAN Processors: <br>\
 		}
 		
 	};
+	
 
 	/**f(x) = 0 if x = 0; f(x) = 1 if x != 0
 	 */
@@ -955,42 +956,112 @@ The basic design of EMAN Processors: <br>\
 			*x = sqrt(*x);
 		}
 	};
-
+	
 	/**f(x) = x if x >= minval; f(x) = 0 if x < minval
-	 *@param minval
+	*@param minval
 	 */
 	class ToZeroProcessor:public RealPixelProcessor
 	{
+		public:
+			string get_name() const
+			{
+				return "threshold.belowtozero";
+			}
+			static Processor *NEW()
+			{
+				return new ToZeroProcessor();
+			}
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("minval", EMObject::FLOAT);
+				return d;
+			}
+
+			string get_desc() const
+			{
+				return "f(x) = x if x >= minval; f(x) = 0 if x < minval.";
+			}
+		
+		protected:
+			inline void process_pixel(float *x) const
+			{
+				if (*x < value) {
+					*x = 0;
+				}
+			}
+	};
+
+	/**f(x) = maxval if f(x) > maxval;
+	  * f(x) = minval if f(x) < minval
+	  * @param minval the minimum value to clamp to
+	  * @param maxval the maximum value to clamp to
+	 */
+	class ClampingProcessor :public Processor
+	{
 	  public:
+		ClampingProcessor() : default_max(1.0), default_min(0.0) {}
+		
 		string get_name() const
 		{
-			return "threshold.belowtozero";
+			return "threshold.clampminmax";
 		}
 		static Processor *NEW()
 		{
-			return new ToZeroProcessor();
+			return new ClampingProcessor();
 		}
+		
+		void process_inplace(EMData *image);
+		
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("minval", EMObject::FLOAT);
+			d.put("minval", EMObject::FLOAT, "The pixel values that bounds the smallest pixel value in the output image" );
+			d.put("maxval", EMObject::FLOAT, "The pixel values that bounds the largest pixel value in the output image" );
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "f(x) = x if x >= minval; f(x) = 0 if x < minval.";
+			return "This function clamps the min and max vals in the image at minval and maxval, respectively. In a sense this a bi-truncation of the data.";
 		}
 		
 	  protected:
-		void process_pixel(float *x) const
-		{
-			if (*x < value) {
-				*x = 0;
-			}
-		}
+		float default_max, default_min;
 	};
 
+	class NSigmaClampingProcessor : public ClampingProcessor
+	{
+		public:
+			NSigmaClampingProcessor() : default_sigma(2.0) {}
+			
+			string get_name() const
+			{
+				return "threshold.clampminmax.nsigma";
+			}
+			
+			static Processor *NEW()
+			{
+				return new NSigmaClampingProcessor();
+			}
+			
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("nsigma", EMObject::FLOAT, "The number (n) of sigmas to clamp min and max vals at, so that the clamped boundaries are mean-n*sigma and mean+n*sigma" );
+				return d;
+			}
+		
+			void process_inplace(EMData *image);
+			
+			string get_desc() const
+			{
+				return "This function clamps the min and max vals in the image at minval and maxval at mean-n*sigma and mean+n*sigma, respectively. The parameter specified by the user is n, the default value of n is 2.";
+			}
+			
+		protected:
+			float default_sigma;
+	};
 
 	/**f(x) = x if x >= minval; f(x) = minval if x < minval
 	 *@param minval
@@ -1006,6 +1077,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return new ToMinvalProcessor();
 		}
+		
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -1018,14 +1090,12 @@ The basic design of EMAN Processors: <br>\
 			return "f(x) = x if x >= minval; f(x) = minval if x < minval.";
 		}
 		
-	  protected:
-		void process_pixel(float *x) const
+	protected:
+		inline void process_pixel(float *x) const
 		{
-#ifdef 	_WIN32
-			*x = _cpp_max(*x, value);
-#else
-			*x = std::max(*x, value);
-#endif	//_WIN32
+			if (*x < value) {
+				*x = 0;
+			}
 		}
 	};
 
@@ -4174,7 +4244,7 @@ The basic design of EMAN Processors: <br>\
 		
 			string get_name() const
 			{
-				return "testimage.x";
+				return "testimage.axes";
 			}
 		
 			string get_desc() const
