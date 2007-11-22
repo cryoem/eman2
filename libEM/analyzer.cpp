@@ -363,7 +363,11 @@ int PCAlarge::Lanczos(const string &maskedimages, int *kstep,
     }
 
     // may choose a random starting guess here     
-    for ( i = 1; i <= imgsize; i++) v0(i) = 1.0;
+    for ( i = 1; i <= imgsize; i++) 
+    {
+        v0(i) = 1.0;
+        Av(i) = 0.0;
+    }
 
     // normalize the starting vector
     *beta  = snrm2_(&imgsize, v0, &ione);
