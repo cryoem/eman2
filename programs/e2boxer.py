@@ -118,12 +118,19 @@ for single particle analysis."""
 			i.append(1)		# 'changed' flag initially set to 1
 
 		if options.boxsize<5 : options.boxsize=boxes[0][2]
+		else :
+			for i in boxes:
+				i[0]-=(options.boxsize-i[2])/2
+				i[1]-=(options.boxsize-i[2])/2
+				i[2]=options.boxsize
+				i[3]=options.boxsize
 
 	# we need to know how big to make the boxes. If nothing is specified, but
 	# reference particles are, then we use the reference particle size
 	if options.boxsize<5 :
 		if options.refptcl : options.boxsize=refptcl[0].get_xsize()
 		elif options.ptclsize : 
+			pass
 			options.boxsize=options.ptclsize
 #			options.boxsize=good_boxsize(options.ptclsize*1.2)
 		else : parser.error("Please specify a box size")
