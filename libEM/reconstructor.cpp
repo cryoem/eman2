@@ -166,10 +166,10 @@ void FourierReconstructor::setup()
 	// working for images with odd dimensions - once we are certain the xform.fourierorigin has no problems with oddness
 	// then there could be bugs in the reconstructor itself - it needs testing.
 	int x_size = params["x_in"];
-	if ( x_size % 2 == 1 ) throw InvalidValueException(x_size, "x size of images must be even");
+// 	if ( x_size % 2 == 1 ) throw InvalidValueException(x_size, "x size of images must be even");
 	if ( x_size < 0 ) throw InvalidValueException(x_size, "x size of images must be greater than 0");
 	int y_size = params["y_in"];
-	if ( y_size % 2 == 1 ) throw InvalidValueException(y_size, "y size of images must be even");
+// 	if ( y_size % 2 == 1 ) throw InvalidValueException(y_size, "y size of images must be even");
 	if ( y_size < 0 ) throw InvalidValueException(y_size, "y size of images must be greater than 0");
 	
 	if ( x_size > y_size ) max_padded_dim = x_size;
@@ -219,7 +219,7 @@ void FourierReconstructor::setup()
 		if ( x_pad != 0 )
 		{
 			if ( x_pad < 0) throw InvalidValueException(x_pad, "x_pad must be greater than zero");
-			if ( x_pad % 2 == 1) throw InvalidValueException(x_pad, "x_pad must be even");
+// 			if ( x_pad % 2 == 1) throw InvalidValueException(x_pad, "x_pad must be even");
 			if ( x_pad <= x_size ) throw InvalidValueException(x_pad, "x_pad must be greater than the image x size");
 			
 			if ( (int) params["xsample"] == 0 ) nx = x_pad;
@@ -228,7 +228,7 @@ void FourierReconstructor::setup()
 		if ( y_pad != 0 )
 		{
 			if ( y_pad < 0) throw InvalidValueException(y_pad, "y_pad must be greater than 0");
-			if ( y_pad % 2 == 1) throw InvalidValueException(y_pad, "y_pad must be even");
+// 			if ( y_pad % 2 == 1) throw InvalidValueException(y_pad, "y_pad must be even");
 			if ( y_pad <= y_size ) throw InvalidValueException(y_pad, "y_pad must be greater than the image y size");
 			
 			if ( (int) params["ysample"] == 0 )	ny = y_pad;
@@ -240,7 +240,7 @@ void FourierReconstructor::setup()
 	else if ( pad != 0 )
 	{
 		if ( pad <= 0) throw InvalidValueException(x_pad, "if you specify pad it must be positive and non-zero");
-		if ( pad % 2 == 1) throw InvalidValueException(pad, "pad must be even");
+// 		if ( pad % 2 == 1) throw InvalidValueException(pad, "pad must be even");
 		if ( pad <= x_size ) throw InvalidValueException(pad, "pad must be greater than the image x size");
 		if ( pad <= y_size) throw InvalidValueException(pad, "pad must be greater than the image y size");
 		
@@ -876,6 +876,40 @@ EMData *FourierReconstructor::finish()
 		normalize_threed();
 	}
 	
+	
+	if ( true )
+	{
+		EMData* e = new EMData;
+		e->set_size(nx,nz,1);
+		EMData* count = new EMData;
+		count->set_size(nx/2,nz,1);
+		for ( int z = 0; z < nz; ++z ) {
+			for ( int y = 0; y < ny; ++y ) {
+				for ( int x = 0; x < nx/2; ++x ) {
+					(*e)(2*x,z) += rdata[z*ny*nx + y*nx + 2*x];
+					(*e)(2*x+1,z) += rdata[z*ny*nx + y*nx + 2*x+1];
+					(*count)(x,z) += 1;
+				}
+			}
+		}
+		for ( int z = 0; z < nz; ++z ) {
+			for ( int x = 0; x < nx/2; ++x ) {
+				float div = (*count)(x,z);
+				if ( div != 0 ) {
+					(*e)(2*x,z) /= div;
+					(*e)(2*x+1,z) /= div;
+				}
+			}
+		}
+		e->set_complex(true);
+//  		e->write_image("threedrecon_normvals.img");
+// 		
+		EMData* f = e->get_fft_amplitude();
+		f->write_image("threedrecon_normvals_amp.img");
+		delete count;
+		delete e;
+		delete f;
+	}
 	
 	if ( (bool) params["tomo_mask"] == true )
 	{

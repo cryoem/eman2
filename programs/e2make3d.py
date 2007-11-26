@@ -63,7 +63,7 @@ def main():
 	parser.add_option("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction")
 	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
 	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
-	parser.add_option("--keep", type=float, dest="keep", help="The percentage of slices to keep, based on quality scores")
+	parser.add_option("--keep", type=float, dest="keep", help="The percentage of slices to keep, based on quality scores", default=1)
 	parser.add_option("--keepsig", type=float, dest="keepsig", help="The standard deviation alternative to the --keep argument")
 	
 	parser.add_option("--no_wt", action="store_true", dest="no_wt", default=False, help="Turn weighting off")
