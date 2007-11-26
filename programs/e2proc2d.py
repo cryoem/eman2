@@ -186,8 +186,8 @@ def main():
 	# reads header only
 	isthreed = False
 	plane = options.plane
-	[nx, ny, nz] = gimme_image_dimensions3D(infile)
-	if nz != 1:
+	[tomo_nx, tomo_ny, tomo_nz] = gimme_image_dimensions3D(infile)
+	if tomo_nz != 1:
 		isthreed = True
 		if not plane in threedplanes:
 			parser.error("the plane (%s) you specified is invalid" %plane)
@@ -196,7 +196,7 @@ def main():
 		if nimg <= n1 or n1 < 0:
 			n1 = nimg - 1
 	else:
-		n1 = nz-1
+		n1 = tomo_nz-1
 
 	ld = EMData()
 	print "%d images, processing %d-%d"%(nimg,n0,n1)
@@ -209,6 +209,10 @@ def main():
 		index_d[append_option] = 0
 	
 	for i in range(n0, n1+1):
+		if options.verbose >= 1:
+			sys.stdout.write("%d" %i)
+			sys.stdout.flush()
+		
 		if imagelist and (not imagelist[i]):
 			continue
 
@@ -219,17 +223,17 @@ def main():
 			d.read_image(infile, i)
 		else:
 			if plane in xyplanes:
-				roi=Region(0,0,i,nx,ny,1)
+				roi=Region(0,0,i,tomo_nx,tomo_ny,1)
 				d.read_image(infile,0, HEADER_AND_DATA, roi)
-				d.set_size(nx,ny,1)
+				d.set_size(tomo_nx,tomo_ny,1)
 			elif plane in xzplanes:
-				roi=Region(0,i,0,nx,1,nz)
+				roi=Region(0,i,0,tomo_nx,1,tomo_nz)
 				d.read_image(infile,0, HEADER_AND_DATA, roi)
-				d.set_size(nx,nz,1)
+				d.set_size(tomo_nx,tomo_nz,1)
 			elif plane in yzplanes:
-				roi=Region(i,0,0,1,ny,nz)
+				roi=Region(i,0,0,1,tomo_ny,tomo_nz)
 				d.read_image(infile,0, HEADER_AND_DATA, roi)
-				d.set_size(ny,nz,1)
+				d.set_size(tomo_ny,tomo_nz,1)
 		
 		if pltfp:
 			r = d.get_rotation()
@@ -238,7 +242,7 @@ def main():
 										r.eman_alt() * pi2d,
 										r.eman_az() * pi2d))
 			continue
-		
+
 		nx = d.get_xsize()
 		ny = d.get_ysize()
 		
