@@ -321,7 +321,7 @@ def gimme_image_dimensions3D( imagefilename ):
 	
 	xsize = e.get_xsize()
 	ysize = e.get_ysize()
-	zsize = e.get_ysize()
+	zsize = e.get_zsize()
 	
 	return (xsize, ysize,zsize)
 

@@ -91,6 +91,7 @@ def main():
 
     parser.add_option("--outtype", metavar="image-type", type="string",
                       help="Set output image format, mrc, imagic, hdf, etc")
+
     
     append_options = ["clip", "fftclip", "filter", "shrink", "scale"]
 

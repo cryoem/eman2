@@ -41,6 +41,15 @@ import math
 import random
 import pyemtbx.options
 
+#constants
+HEADER_ONLY=True
+HEADER_AND_DATA=False
+
+xyplanes = ['xy', 'yx']
+xzplanes = ['xz', 'zx']
+yzplanes = ['yz', 'yz']
+threedplanes = xyplanes + xzplanes + yzplanes
+
 # usage: e2proc2d.py [options] input output
 
 def read_listfile(listfile, excludefile, nimg):
@@ -130,6 +139,9 @@ def main():
 	parser.add_option("--split", metavar="n", type="int",
 					help="Splits the input file into a set of n output files")
 	parser.add_option("--verbose", metavar="n", type="int", help="verbose level [1-4]")
+	parser.add_option("--plane", metavar=threedplanes, type="string", default='xy',
+                      help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
+	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 
 	append_options = ["clip", "process", "meanshrink", "shrink", "scale"]
 
@@ -171,9 +183,20 @@ def main():
 	
 	d = EMData()
 	nimg = EMUtil.get_image_count(infile)
+	# reads header only
+	isthreed = False
+	plane = options.plane
+	[nx, ny, nz] = gimme_image_dimensions3D(infile)
+	if nz != 1:
+		isthreed = True
+		if not plane in threedplanes:
+			parser.error("the plane (%s) you specified is invalid" %plane)
 	
-	if nimg <= n1 or n1 < 0:
-		n1 = nimg - 1
+	if not isthreed:
+		if nimg <= n1 or n1 < 0:
+			n1 = nimg - 1
+	else:
+		n1 = nz-1
 
 	ld = EMData()
 	print "%d images, processing %d-%d"%(nimg,n0,n1)
@@ -192,8 +215,22 @@ def main():
 		if options.split and options.split > 1:
 			outfile = outfile[:-4] + ".%02d.img" % (i % split)
 
-		d.read_image(infile, i)
-
+		if not isthreed:
+			d.read_image(infile, i)
+		else:
+			if plane in xyplanes:
+				roi=Region(0,0,i,nx,ny,1)
+				d.read_image(infile,0, HEADER_AND_DATA, roi)
+				d.set_size(nx,ny,1)
+			elif plane in xzplanes:
+				roi=Region(0,i,0,nx,1,nz)
+				d.read_image(infile,0, HEADER_AND_DATA, roi)
+				d.set_size(nx,nz,1)
+			elif plane in yzplanes:
+				roi=Region(i,0,0,1,ny,nz)
+				d.read_image(infile,0, HEADER_AND_DATA, roi)
+				d.set_size(ny,nz,1)
+		
 		if pltfp:
 			r = d.get_rotation()
 			pi2d = 180/math.pi
@@ -207,8 +244,10 @@ def main():
 		
 		sigma = d.get_attr("sigma").__float__()
 		if sigma == 0:
-			print "Warning: sigma = 0 for image " + i
-			continue
+			print "Warning: sigma = 0 for image ",i
+			if options.writejunk == False:
+				print "Use the writejunk option to force writing this image to disk"
+				continue
 
 		if not "outtype" in optionlist:
 			optionlist.append("outtype")
