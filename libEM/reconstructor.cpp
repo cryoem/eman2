@@ -589,8 +589,8 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 					else rx *= x_scale;
 				}
 				
-				if ((rx * rx + Util::square(ry - max_padded_dim / 2)) > rl)
-					continue;
+// 				if ((rx * rx + Util::square(ry - max_padded_dim / 2)) > rl)
+// 					continue;
 
 				float xx = (float) (rx * t3d[0][0] + (ry - max_padded_dim / 2) * t3d[1][0]);
 				float yy = (float) (rx * t3d[0][1] + (ry - max_padded_dim / 2) * t3d[1][1]);

@@ -469,7 +469,6 @@ void EMData::clip_inplace(const Region & area)
 				continue;
 			}
 			
-			// Asserts are compiled only in debug mode
 			// This situation not encountered in testing thus far
 			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 			

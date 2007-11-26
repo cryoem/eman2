@@ -147,8 +147,8 @@ def main():
 
         elif option1 == "filter":
             fi = index_d[option1]
-            (filtername, param_dict) = parse_filter_params(options.filter[fi])
-            d.process_inplace(filtername, param_dict)
+            (filtername, param_dict) = parsemodopt(options.filter[fi])
+            data.process_inplace(filtername, param_dict)
             index_d[option1] += 1
 
         elif option1 == "mult":

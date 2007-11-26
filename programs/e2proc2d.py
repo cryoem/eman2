@@ -196,7 +196,13 @@ def main():
 		if nimg <= n1 or n1 < 0:
 			n1 = nimg - 1
 	else:
-		n1 = tomo_nz-1
+		if plane in xyplanes:
+			n1 = tomo_nz-1
+		elif plane in xzplanes:
+			n1 = tomo_ny-1
+		elif plane in yzplanes:
+			n1 = tomo_nx-1
+		
 
 	ld = EMData()
 	print "%d images, processing %d-%d"%(nimg,n0,n1)
