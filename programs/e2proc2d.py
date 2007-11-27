@@ -202,6 +202,8 @@ def main():
 			n1 = tomo_ny-1
 		elif plane in yzplanes:
 			n1 = tomo_nx-1
+		threed = EMData()
+		threed.read_image(infile)
 		
 
 	ld = EMData()
@@ -230,15 +232,18 @@ def main():
 		else:
 			if plane in xyplanes:
 				roi=Region(0,0,i,tomo_nx,tomo_ny,1)
-				d.read_image(infile,0, HEADER_AND_DATA, roi)
+				d = threed.get_clip(roi)
+				#d.read_image(infile,0, HEADER_AND_DATA, roi)
 				d.set_size(tomo_nx,tomo_ny,1)
 			elif plane in xzplanes:
 				roi=Region(0,i,0,tomo_nx,1,tomo_nz)
-				d.read_image(infile,0, HEADER_AND_DATA, roi)
+				d = threed.get_clip(roi)
+				#d.read_image(infile,0, HEADER_AND_DATA, roi)
 				d.set_size(tomo_nx,tomo_nz,1)
 			elif plane in yzplanes:
 				roi=Region(i,0,0,1,tomo_ny,tomo_nz)
-				d.read_image(infile,0, HEADER_AND_DATA, roi)
+				d = threed.get_clip(roi)
+				#d.read_image(infile,0, HEADER_AND_DATA, roi)
 				d.set_size(tomo_ny,tomo_nz,1)
 		
 		if pltfp:

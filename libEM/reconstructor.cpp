@@ -385,7 +385,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 		float cosine = cos(alt*3.14159265358979323846f/180.0f);
 		
 		// This weights slices according to their tilt angle, because tilted images have more mass in single pixels.
-		float mult_fac =  1.0f/ (cosine);
+		float mult_fac =  1.0f/(cosine);
 		return_slice->mult( mult_fac );
 	}
 	
@@ -877,7 +877,7 @@ EMData *FourierReconstructor::finish()
 	}
 	
 	
-	if ( true )
+	if ( false )
 	{
 		EMData* e = new EMData;
 		e->set_size(nx,nz,1);
