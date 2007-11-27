@@ -161,7 +161,8 @@ class EMShape:
 				if s[8]<0 :
 					GL.glColor(1.,1.,1.)
 					GL.glTranslate(s[4],s[5],0)
-					GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
+#					GL.glScalef(s[7]/1500.0/sc,s[7]/1500.0/sc,s[7]/1500.0/sc)
+					GL.glScalef(s[7]/1500.0,s[7]/1500.0,s[7]/1500.0)
 					GL.glLineWidth(-s[8])
 					w=104.76*len(s[6])
 					GL.glBegin(GL.GL_QUADS)
