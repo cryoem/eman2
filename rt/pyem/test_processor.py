@@ -44,7 +44,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 135)
+        self.assertEqual(len(processor_names), 136)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -381,6 +381,42 @@ class TestProcessor(unittest.TestCase):
 						assert d[z][y][x] >= nmin
 						assert d[z][y][x] <= nmax
 						
+		
+    def test_histogram_bin(self):
+        """test historgram.bin processor ...................."""
+        n = 32
+        
+        for i in [1,n]:
+			for nbin in [1,128,256,512]:
+				e = EMData()
+				e.set_size(n,n,i)
+				e.process_inplace("testimage.noise.uniform.rand")
+				
+				cmax = e.get_attr("mean")
+				cmin = e.get_attr("mean")
+				
+				a = {}
+				a["nbins"] = nbin
+				#a["debug"] = 1
+				e.process_inplace("histogram.bin", a)
+				
+				d = e.get_3dview()
+				
+				bins = []
+				for z in range(i):
+					for y in range(n):
+						for x in range(n):
+							streuth = False
+							val = d[z][y][x] 
+							for blah in bins:
+								if ( val == blah ):
+									streuth = True
+									break
+							
+							if ( streuth == False ):
+								bins.append(val)
+				assert len(bins) <= nbin
+						
     def test_threshold_clampminmax_nsigma(self):
         """test threshold.clampminmax.nsigma processor ......"""
         n = 32
@@ -402,8 +438,20 @@ class TestProcessor(unittest.TestCase):
 				for z in range(i):
 					for y in range(n):
 						for x in range(n):
-							assert d[z][y][x] >= cmin
-							assert d[z][y][x] <= cmax
+							# the multiplication above in calculating cmax and cmin
+							# sometimes causes some floating point precision issues
+							# so the following approach overlooks cases where
+							# the clamped values are slightly beyond the intended
+							# clamping region
+							if ( d[z][y][x] < cmin ):
+								self.assertAlmostEqual(d[z][y][x] - cmin, 0, 6)
+							if ( d[z][y][x] > cmax ):
+								self.assertAlmostEqual(d[z][y][x] - cmax, 0, 6)
+							
+							# the above two if statements implicitly (in a fuzzy way) enforce
+							# these two assert statements
+							#assert d[z][y][x] >= cmin
+							#assert d[z][y][x] <= cmax
 
     def test_threshold_notzero(self):
         """test threshold.notzero processor ................."""

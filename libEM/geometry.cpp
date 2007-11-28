@@ -86,7 +86,7 @@ bool Region::inside_region(const FloatPoint & p) const
 bool Region::inside_region(float x) const
 {
 	if (size[0] >= 0 && origin[0] <= x && 
-		(origin[0] + size[0]) >= x ) {
+		(origin[0] + size[0]) > x ) {
 		return true;
 	}
 	return false;
@@ -97,18 +97,22 @@ bool Region::inside_region(float x, float y) const
 {
 	if (size[0] >= 0 && size[1] >= 0 &&
 		origin[0] <= x && origin[1] <= y &&
-		(origin[0] + size[0]) >= x && (origin[1] + size[1]) >= y) {
+		(origin[0] + size[0]) > x && (origin[1] + size[1]) > y) {
 		return true;
 	}
 	return false;
 }
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 bool Region::inside_region(float x, float y, float z) const
 {
 	if (size[0] >= 0 && size[1] >= 0 && size[2] >= 0 &&
 		origin[0] <= x && origin[1] <= y && origin[2] <= z &&
-		(origin[0] + size[0]) >= x &&
-		(origin[1] + size[1]) >= y && (origin[2] + size[2]) >= z) {
+		(origin[0] + size[0]) > x &&
+		(origin[1] + size[1]) > y && (origin[2] + size[2]) > z) {
 		return true;
 	}
 	return false;

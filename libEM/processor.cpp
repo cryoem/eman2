@@ -139,6 +139,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&NormalizeMaxMinProcessor::NEW);
 	force_add(&NormalizeRowProcessor::NEW);
 	
+	force_add(&HistogramBin::NEW);
+	
 	force_add(&NormalizeToStdProcessor::NEW);
 	force_add(&NormalizeToFileProcessor::NEW);
 	force_add(&NormalizeToLeastSquareProcessor::NEW);
@@ -6229,6 +6231,48 @@ void NSigmaClampingProcessor::process_inplace(EMData *image)
 	params.set_default("maxval",mean + nsigma*sigma);
 				
 	ClampingProcessor::process_inplace(image);
+}
+
+void HistogramBin::process_inplace(EMData *image)
+{
+	float min = image->get_attr("minimum");
+	float max = image->get_attr("maximum");
+	float nbins = params.set_default("nbins",default_bins);
+	bool debug = params.set_default("debug",false);
+	
+	vector<int> debugscores;
+	if ( debug ) {
+		debugscores = vector<int>(nbins, 0);
+	}
+	
+	if ( nbins < 0 ) throw InvalidParameterException("nbins must be greater than 0");
+	
+	float bin_width = (max-min)/nbins;
+	float bin_val_offset = bin_width/2.0;
+	
+	int size = image->get_xsize()*image->get_ysize()*image->get_zsize();
+	float* dat = image->get_data();
+	
+	for(int i = 0; i < size; ++i ) {
+		float val = dat[i];
+		val -= min;
+		int bin = (int) (val/bin_width);
+		
+		// This makes the last interval [] and not [)
+		if (bin == nbins) bin -= 1;
+		
+		dat[i] = min + bin*bin_width + bin_val_offset;
+		if ( debug ) {
+			debugscores[bin]++;
+		}
+	}
+	
+	if ( debug ) {
+		int i = 0;
+		for( vector<int>::const_iterator it = debugscores.begin(); it != debugscores.end(); ++it, ++i)
+			cout << "Bin " << i << " has " << *it << " pixels in it" << endl;
+	}
+	
 }
 
 void EMAN::dump_processors()

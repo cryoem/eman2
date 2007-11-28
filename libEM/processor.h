@@ -974,7 +974,7 @@ The basic design of EMAN Processors: <br>\
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("minval", EMObject::FLOAT);
+				d.put("minval", EMObject::FLOAT, "Everything below this value is set to zero");
 				return d;
 			}
 
@@ -1081,7 +1081,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("minval", EMObject::FLOAT);
+			d.put("minval", EMObject::FLOAT, "Everything below this value is set to this value");
 			return d;
 		}
 
@@ -1117,7 +1117,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("minval", EMObject::FLOAT);
+			d.put("minval", EMObject::FLOAT, "the value that will be set to zero - all values below will also be set to zero. Values above get minval subtracted from them" );
 			return d;
 		}
 
@@ -1153,7 +1153,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("value", EMObject::FLOAT);
+			d.put("value", EMObject::FLOAT, "The thresholding value. If a pixel value is equal to or above the threshold it is set to 1. If it is below it is set to 0" );
 			return d;
 		}
 
@@ -1202,8 +1202,8 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("range", EMObject::FLOAT);
-			d.put("value", EMObject::FLOAT);
+			d.put("range", EMObject::FLOAT, "The range about 'value' which will be collapsed to 'value'");
+			d.put("value", EMObject::FLOAT, "The pixel value where the focus of the collapse operation is");
 			return d;
 		}
 
@@ -1252,14 +1252,14 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("shift", EMObject::FLOAT);
-			d.put("scale", EMObject::FLOAT);
+			d.put("shift", EMObject::FLOAT, "The amount to shift pixel values by before scaling");
+			d.put("scale", EMObject::FLOAT, "The scaling factor to be applied to pixel values");
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "linear transform processor: f(x) = x * scale + shift";
+			return "linear transform processor: f(x) = x * scale + shift. This is equivalent to a regular contrast stretching operation";
 		}
 		
 	  protected:
@@ -1304,8 +1304,8 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("low", EMObject::FLOAT);
-			d.put("high", EMObject::FLOAT);
+			d.put("low", EMObject::FLOAT, "Pixels are divided by (low - high) prior to the exponential operation");
+			d.put("high", EMObject::FLOAT, "Pixels are divided by (low - high) prior to the exponential operation");
 			return d;
 		}
 
@@ -1362,14 +1362,14 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("low", EMObject::FLOAT);
-			d.put("high", EMObject::FLOAT);
+			d.put("low", EMObject::FLOAT, "The lower limit of the range that will be set to 1");
+			d.put("high", EMObject::FLOAT, "The upper limit of the range that will be set to 1");
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "f(x) = 1 if (low <= x <= high); else f(x) = 0;";
+			return "Range thresholding. A range of values is set to 1, all else is set to 0. f(x) = 1 if (low <= x <= high); else f(x) = 0";
 		}
 		
 	  protected:
@@ -1414,8 +1414,8 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("value1", EMObject::FLOAT);
-			d.put("value2", EMObject::FLOAT);
+			d.put("value1", EMObject::FLOAT, "A number reflecting total standard deviations in the right direction");
+			d.put("value2", EMObject::FLOAT, "A number reflecting total standard deviations in the left direction");
 			return d;
 		}
 
@@ -1762,7 +1762,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d = CircularMaskProcessor::get_param_types();
-			d.put("gauss_width", EMObject::FLOAT);
+			d.put("gauss_width", EMObject::FLOAT, "Used to calculate the constant factor - gauss_width / (ny*ny)" );
 			d.put("ring_width", EMObject::INT, "The width of the mask ring.");
 			return d;
 		}
@@ -1913,7 +1913,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("areasize", EMObject::INT);
+			d.put("areasize", EMObject::INT, "The width of the area to process (not radius)");
 			return d;
 		}
 
@@ -4713,6 +4713,39 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "multiply an image in real-space by a radial function";
 		}
+	};
+	
+	class HistogramBin : public Processor
+	{
+		public:
+			HistogramBin() : default_bins(1024) {}
+			
+			void process_inplace(EMData * image);
+		
+			string get_name() const
+			{
+				return "histogram.bin";
+			}
+		
+			static Processor *NEW()
+			{
+				return new HistogramBin();
+			}
+		
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("nbins", EMObject::INT, "The number of bins the pixel values will be compressed into");
+				d.put("debug", EMObject::BOOL, "Outputs debugging information (number of pixels per bin)");
+				return d;
+			}
+		
+			string get_desc() const
+			{
+				return "Bins pixel values, similar to calculating a histogram. The histogram is comprised of 'nbins' bins, and the value assigned to each pixel in the bin is the midpoint of the bin's upper and lower limits. Defaults to 256 bins";
+			}
+		protected:
+			int default_bins;
 	};
 
 #if 0

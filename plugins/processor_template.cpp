@@ -59,3 +59,46 @@ void XYZProcessor::process_inplace(EMData * image)
 #endif
 
 }
+
+
+void SubstituteZeroPixelsProcessor::process_inplace(EMData* image)
+{
+	EMData* null = 0;
+	EMData* other_image = params.set_default("image", null);
+	
+	if (other_image == 0 ) throw NullPointerException("Error, the EMData pointer set in the params was null");
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	if ( nx != other_image->get_xsize() ) throw ImageDimensionException("Error, the parameter image's x dimension did not match the argument image's x dimension");
+	if ( ny != other_image->get_ysize() ) throw ImageDimensionException("Error, the parameter image's y dimension did not match the argument image's y dimension");
+	if ( nz != other_image->get_zsize() ) throw ImageDimensionException("Error, the parameter image's z dimension did not match the argument image's z dimension");
+	
+	if ( image->is_complex() != other_image->is_complex() ) throw ImageFormatException("Error, the image formats did not match - one of the images is complex");
+	
+	int size = nx*ny*nz;
+	float* image_data = image->get_data();
+	float* other_image_data = other_image->get_data();
+	
+	
+	if ( image->is_complex() ) {
+		int count = 0;
+		for(int i = 0; i < size/2; ++i ) {
+			if ( fabs(image_data[2*i]) < 0.00001 && fabs(image_data[2*i+1]) < 0.00001 ) {
+				count++;
+				image_data[2*i] = other_image_data[2*i];
+				image_data[2*i+1] = other_image_data[2*i+1];
+			}
+		}
+	}
+	else {
+		
+		for(int i = 0; i < size; ++i ) {
+			if ( image_data[i] == 0 ) {
+				image_data[i] = other_image_data[i];
+			}
+		}
+	}
+}
