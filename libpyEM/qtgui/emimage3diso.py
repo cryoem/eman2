@@ -842,7 +842,7 @@ if __name__ == '__main__':
  	if len(sys.argv)==1 : 
 		e = EMData()
 		e.set_size(40,35,30)
-		e.process_inplace('testimage.x')
+		e.process_inplace('testimage.axes')
  		window.setData(e)
 
 		# these lines are for testing shape rendering

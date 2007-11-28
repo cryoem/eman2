@@ -223,7 +223,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		glLoadIdentity()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
-		self.draw_bc_screen()
+		#self.draw_bc_screen()
 		glPopMatrix()
 		
 		if self.cube:
@@ -294,7 +294,7 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 	def setData(self,data):
 		self.sliceviewer.setData(data)
 	def initializeGL(self):
-		
+		glPixelTransferf(GL_BLUE_SCALE, 0.0)
 		glEnable(GL_NORMALIZE)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
@@ -306,10 +306,12 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		
 		GL.glClearColor(0,0,0,0)
+		GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
 		
 	def paintGL(self):
+		glClear(GL_ACCUM_BUFFER_BIT)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
 		glMatrixMode(GL_MODELVIEW)
@@ -317,6 +319,9 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		glPushMatrix()
 		self.sliceviewer.render()
 		glPopMatrix()
+		glAccum(GL_ADD, self.sliceviewer.glbrightness)
+		glAccum(GL_ACCUM, self.sliceviewer.glcontrast)
+		glAccum(GL_RETURN, 1.0)
 	
 		
 	def resizeGL(self, width, height):
@@ -703,7 +708,7 @@ if __name__ == '__main__':
  	if len(sys.argv)==1 : 
 		e = EMData()
 		e.set_size(128,128,128)
-		e.process_inplace('testimage.x')
+		e.process_inplace('testimage.axes')
 		window.setData(e)
 
 		# these lines are for testing shape rendering

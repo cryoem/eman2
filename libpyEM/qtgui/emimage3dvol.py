@@ -156,7 +156,7 @@ class EMVolume(EMImage3DObject):
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
 		glEnable(GL_BLEND)
-		glBlendEquation(GL_FUNC_ADD)
+		glBlendEquation(GL_MAX)
 		glDepthMask(GL_FALSE)
 		glBlendFunc(GL_ONE, GL_ONE)
 		glCallList(self.tex_dl)
@@ -805,7 +805,7 @@ if __name__ == '__main__':
  	if len(sys.argv)==1 : 
 		e = EMData()
 		e.set_size(128,128,128)
-		e.process_inplace('testimage.x')
+		e.process_inplace('testimage.axes')
 		window.setData(e)
 
 		# these lines are for testing shape rendering

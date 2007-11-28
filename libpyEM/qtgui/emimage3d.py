@@ -83,10 +83,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
 		
-		
-		self.addIsosurface()
 		self.inspector=EMImageInspector3D(self)
-		self.inspector.updateSelection() 
+		#self.inspector.updateSelection() 
 	def timeout(self):
 		self.updateGL()
 		
@@ -248,9 +246,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.updateGL()
 		
 	def getCurrentName(self):
+		if self.currentselection == -1 : return ""
 		return self.viewables[self.currentselection].getName()
 	
 	def getCurrentInspector(self):
+		if self.currentselection == -1 : return None
 		return self.viewables[self.currentselection].getInspector()
 	
 	def deleteCurrent(self, val):
@@ -360,7 +360,7 @@ if __name__ == '__main__':
 		pass
 		e = EMData()
 		e.set_size(64,64,64)
-		e.process_inplace('testimage.x')
+		e.process_inplace('testimage.axes')
  		window.setData(e)
 
 		# these lines are for testing shape rendering

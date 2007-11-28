@@ -194,16 +194,17 @@ def main():
             index_d[option1] += 1
             
         elif option1 == "icos5fhalfmap":
-            print "not implemnted yet"
+            print "not implemented yet"
 
         elif option1 == "tophalf":
             half = data.get_top_half()
             data = half
-            
-        elif option1 == "outtype":            
-            data.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype))
+
 
     print_iminfo(data, "   Final")
+	
+    data.write_image(outfile, 0 )
+			
     
 
 if __name__ == "__main__":
