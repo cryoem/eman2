@@ -553,7 +553,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	string mode = (string) params["mode"];
 	if ( mode != inserter->get_name() )	load_inserter();
 	
-	int rl = Util::square( max_padded_dim / 2);
+// 	int rl = Util::square( max_padded_dim / 2);
 	
 	float dt[2];
 	

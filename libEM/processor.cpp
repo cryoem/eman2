@@ -410,7 +410,7 @@ void Wiener2DAutoAreaProcessor::process_inplace(EMData *image) {
 
 EMData * Wiener2DFourierProcessor::process(const EMData * image)
 {
-	EMData *ret;
+	EMData *ret = NULL;
 /*	const EMData *fft;
 	float *fftd;
 	int f=0;
@@ -6242,7 +6242,7 @@ void HistogramBin::process_inplace(EMData *image)
 	
 	vector<int> debugscores;
 	if ( debug ) {
-		debugscores = vector<int>(nbins, 0);
+		debugscores = vector<int>((int)nbins, 0);
 	}
 	
 	if ( nbins < 0 ) throw InvalidParameterException("nbins must be greater than 0");
