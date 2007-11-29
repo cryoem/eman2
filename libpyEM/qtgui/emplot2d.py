@@ -482,6 +482,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 # This is just for testing, of course
 if __name__ == '__main__':
+	GLUT.glutInit(sys.argv )
 	app = QtGui.QApplication(sys.argv)
 	window = EMPlot2D()
 	if len(sys.argv)==1 : 

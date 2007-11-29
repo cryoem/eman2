@@ -131,7 +131,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			self.setFFT(self.curfft)
 		
 		self.showInspector()		# shows the correct inspector if already open
-		self.origin=(self.width()/2,self.height()/2)
+#		self.origin=(self.width()/2,self.height()/2)
 		self.updateGL()
 		
 	def setDenRange(self,x0,x1):
