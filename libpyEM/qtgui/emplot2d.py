@@ -56,6 +56,9 @@ linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]
 colortypes=["k","b","r","g"]
 
+def NewPlot2DWin():
+	return EMParentWin(EMPlot2D())
+
 
 class EMPlot2D(QtOpenGL.QGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib

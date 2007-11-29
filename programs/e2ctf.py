@@ -210,7 +210,7 @@ class GUIctf(QtGui.QWidget):
 			print "Cannot import EMAN image GUI objects (emimage,etc.)"
 			sys.exit(1)
 #		try:
-		from emplot2d import EMPlot2D
+		from emplot2d import EMPlot2D,NewPlot2DWin
 		#except:
 			#print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
 			#sys.exit(1)
@@ -230,9 +230,11 @@ class GUIctf(QtGui.QWidget):
 			self.pow1d=[]
 			self.pow2d=[]
 		
-		try: self.guiim=EMImage(pow2d[0])
-		except: self.guiim=EMImage()
-		self.guiplot=EMPlot2D()
+		try: self.guiimw=EMImage(pow2d[0])
+		except: self.guiimw=EMImage()
+		self.guiim=self.guiimw.child
+		self.guiplotw=NewPlot2DWin()
+		self.guiplot=self.guiplotw.child
 		
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.imgmousedown)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
@@ -284,8 +286,8 @@ class GUIctf(QtGui.QWidget):
 
 		self.updateData()
 		
-		self.guiim.show()
-		self.guiplot.show()
+		self.guiimw.show()
+		self.guiplotw.show()
 		self.show()
 		
 	def newData(self,name,p1d,p2d):
