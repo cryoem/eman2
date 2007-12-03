@@ -114,6 +114,7 @@ def powspecbg(image,size):
 	
 	avgr=Averagers.get("minmax",{"max":0})
 #	avgr=Averagers.get("image")
+	allav=[]
 	
 	norm=size*size
 	n=0
@@ -124,11 +125,12 @@ def powspecbg(image,size):
 			imf.ri2inten()
 			i2=imf.calc_radial_dist(imf.get_ysize()/2,0.0,1.0,1)
 			if n==0 : i2a=i2[:]
-			else : 
+			else :
 				for i,j in enumerate(i2):
 					i2a[i]=min(j,i2a[i])
 			avgr.add_image(imf)
 			n+=1
+			allav.append(i2)	# store the individual power spectra
 	
 	av=avgr.finish()
 	av/=norm
@@ -138,6 +140,15 @@ def powspecbg(image,size):
 	
 	av.set_complex(1)
 	av.set_attr("is_intensity", 1)
+	
+	# this writes a 2D image containing all of the individual power spectra
+	aa=EMData(len(allav[0]),len(allav))
+	aa.to_zero()
+	for y,a in enumerate(allav):
+		for x in range(1,len(a)):
+			aa.set_value_at(x,y,a[x])
+	aa.write_image("psp.mrc")
+	
 	return av,i2a
 
 def powspecdb(image,boxes):
