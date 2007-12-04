@@ -725,7 +725,6 @@ EMObject EMData::get_attr(const string & key) const
 		if (tmp == 0 ) throw BadAllocException("Error - could not create deep copy of image data");
 		for(int i=0; i < n; ++i) tmp[i] = d[i]; // should just be a memcpy
 		qsort(tmp, n, sizeof(float), &greaterthan);
-		for (int i=0; i<n; ++i) cout << tmp[i] << endl;
 		float median;
 		if (n%2==1) median = tmp[n/2];
 		else median = (tmp[n/2-1]+tmp[n/2])/2.0;
@@ -743,7 +742,6 @@ EMObject EMData::get_attr(const string & key) const
 			if ( d[i] != 0 ) tmp.push_back(d[i]);
 		}
 		sort(tmp.begin(), tmp.end());
-		for (int i=0; i<tmp.size(); ++i) cout << tmp[i] << endl;
 		unsigned int size = tmp.size();
 		float median;
 		if (size%2==1) median = tmp[size/2];
