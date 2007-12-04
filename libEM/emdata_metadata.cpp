@@ -673,6 +673,15 @@ MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
 	return marray;
 }
 
+int greaterthan( const void* p1, const void* p2 )
+{
+	float*  v1 = (float*) p1;
+	float*  v2 = (float*) p2;
+	
+	if ( *v1 < *v2 )  return 0;
+	else return 1;
+}
+
 
 EMObject EMData::get_attr(const string & key) const
 {
@@ -706,6 +715,41 @@ EMObject EMData::get_attr(const string & key) const
 		float skewness = (float)(skewness_sum / size);
 		attr_dict["skewness"] = skewness;
 		return attr_dict["skewness"];
+	}
+	else if (key == "median")
+	{
+		if ( is_complex() ) throw ImageFormatException("Error - can not calculate the median of a complex image");
+		int n = get_xsize()*get_ysize()*get_zsize();
+		float* tmp = new float[n];
+		float* d = get_data();
+		if (tmp == 0 ) throw BadAllocException("Error - could not create deep copy of image data");
+		for(int i=0; i < n; ++i) tmp[i] = d[i]; // should just be a memcpy
+		qsort(tmp, n, sizeof(float), &greaterthan);
+		for (int i=0; i<n; ++i) cout << tmp[i] << endl;
+		float median;
+		if (n%2==1) median = tmp[n/2];
+		else median = (tmp[n/2-1]+tmp[n/2])/2.0;
+		attr_dict["median"] = median;
+		delete [] tmp;
+		return attr_dict["median"];
+	}
+	else if (key == "nonzero_median")
+	{
+		if ( is_complex() ) throw ImageFormatException("Error - can not calculate the median of a complex image");
+		vector<float> tmp;
+		int n = get_xsize()*get_ysize()*get_zsize();
+		float* d = get_data();
+		for( int i = 0; i < n; ++i ) {
+			if ( d[i] != 0 ) tmp.push_back(d[i]);
+		}
+		sort(tmp.begin(), tmp.end());
+		for (int i=0; i<tmp.size(); ++i) cout << tmp[i] << endl;
+		unsigned int size = tmp.size();
+		float median;
+		if (size%2==1) median = tmp[size/2];
+		else median = (tmp[size/2-1]+tmp[size/2])/2.0;
+		attr_dict["median"] = median;
+		return attr_dict["median"];
 	}
 	else if (key == "changecount") return EMObject(changecount);
 

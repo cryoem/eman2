@@ -76,7 +76,7 @@ void SubstituteZeroPixelsProcessor::process_inplace(EMData* image)
 	if ( ny != other_image->get_ysize() ) throw ImageDimensionException("Error, the parameter image's y dimension did not match the argument image's y dimension");
 	if ( nz != other_image->get_zsize() ) throw ImageDimensionException("Error, the parameter image's z dimension did not match the argument image's z dimension");
 	
-	if ( image->is_complex() != other_image->is_complex() ) throw ImageFormatException("Error, the image formats did not match - one of the images is complex");
+	if ( image->is_complex() != other_image->is_complex() ) throw ImageFormatException("Error, the image formats did not match - only one of the images is complex");
 	
 	int size = nx*ny*nz;
 	float* image_data = image->get_data();
@@ -84,10 +84,8 @@ void SubstituteZeroPixelsProcessor::process_inplace(EMData* image)
 	
 	
 	if ( image->is_complex() ) {
-		int count = 0;
 		for(int i = 0; i < size/2; ++i ) {
 			if ( fabs(image_data[2*i]) < 0.00001 && fabs(image_data[2*i+1]) < 0.00001 ) {
-				count++;
 				image_data[2*i] = other_image_data[2*i];
 				image_data[2*i+1] = other_image_data[2*i+1];
 			}

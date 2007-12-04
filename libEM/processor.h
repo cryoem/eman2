@@ -38,6 +38,7 @@
 
 #include "emobject.h"
 #include "util.h"
+#include "geometry.h"
 
 #include <cfloat>
 
@@ -388,7 +389,49 @@ The basic design of EMAN Processors: <br>\
 		int dosqrt;
 	};
 
-	/** Automatically detrmines the background for the image then uses this to perform
+	/** Determines the partial derivativesin the x direction
+	 * Does this in Fourier space by multiplying Fourier pixles by 2 pi i u
+	 * Where u is the Fourier component in the u direction
+	 * Automatically converts real space images into Fourier space and back into real space
+	 * If the image is already in Fourier space, it is left that way!
+	 *
+	 *@author David Woolford
+	 *@date 2007/12/04
+	 */
+	class XGradientProcessor : public Processor 
+	{
+	 public:
+		XGradientProcessor() {}
+		  
+		string get_name() const
+		{
+			return "math.xgradient";
+		}
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new XGradientProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Determines the image gradient in the x direction";
+		}
+		
+		void set_params(const Dict & new_params)
+		{
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+	};
+	
+	/** Automatically determines the background for the image then uses this to perform
 	 * Wiener filters on overlapping subregions of the image, which are then 
 	 * combined using linear interpolation 
 	 *@param size[in] size in pixels of the boxes to chop the image into during processing
@@ -2012,6 +2055,13 @@ The basic design of EMAN Processors: <br>\
 		static string get_group_desc()
 		{
 			return "BoxStatProcessor files are a kind of neighborhood processors. These processors compute every output pixel using information from a reduced region on the neighborhood of the input pixel. The classical form are the 3x3 processors. BoxStatProcessors could perform diverse tasks ranging from noise reduction, to differential , to mathematical morphology. BoxStatProcessor class is the base class. Specific BoxStatProcessor needs to define process_pixel(float *pixel, const float *array, int n).";
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("radius", EMObject::INT, "The radius of the search box, default is 1 which results in a 3x3 box (3 = 2xradius + 1)");
+			return d;
 		}
 		
 	  protected:
@@ -4227,6 +4277,36 @@ The basic design of EMAN Processors: <br>\
 			d.put("z_center", EMObject::FLOAT, "center for this Gaussian blob on z direction" );
 			return d;
 		}
+	};
+	
+	/**Make an image useful for tomographic reconstruction testing
+	 */
+	class TestTomoImage : public TestImageProcessor
+	{
+		public:
+			/** Make an image consisting entirely of a cross
+		 * @param image the image to operate upon
+			 */
+			void process_inplace(EMData * image);
+		
+			string get_name() const
+			{
+				return "testimage.tomo.objects";
+			}
+		
+			string get_desc() const
+			{
+				return "Make an image consisting various objects, useful for tomographic testing";
+			}
+		
+			static Processor * NEW()
+			{
+				return new TestTomoImage();
+			}
+		private:
+			void insert_solid_ellipse( EMData* image, const Region& region, const float& value, const Transform3D* const t3d = NULL );
+			void insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform3D* const t3d = NULL );
+			void insert_rectangle( EMData* image, const Region& region, const float& value, const Transform3D* const t3d = NULL );
 	};
 	
 	/**Make an image consisting of a single cross, with lines
