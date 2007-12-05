@@ -687,11 +687,13 @@ EMObject EMData::get_attr(const string & key) const
 {
 	ENTERFUNC;
 
+	size_t size = nx * ny * nz;
+	if ( size == 0 ) throw ImageDimensionException("Error - the image has no pixels in it");
+	
 	update_stat();
 
 	float mean = attr_dict["mean"];
 	float sigma = attr_dict["sigma"];
-	size_t size = nx * ny * nz;
 
 	if (key == "kurtosis") {
 		double kurtosis_sum = 0;
@@ -719,7 +721,7 @@ EMObject EMData::get_attr(const string & key) const
 	else if (key == "median")
 	{
 		if ( is_complex() ) throw ImageFormatException("Error - can not calculate the median of a complex image");
-		int n = get_xsize()*get_ysize()*get_zsize();
+		int n = size;
 		float* tmp = new float[n];
 		float* d = get_data();
 		if (tmp == 0 ) throw BadAllocException("Error - could not create deep copy of image data");
@@ -736,16 +738,16 @@ EMObject EMData::get_attr(const string & key) const
 	{
 		if ( is_complex() ) throw ImageFormatException("Error - can not calculate the median of a complex image");
 		vector<float> tmp;
-		int n = get_xsize()*get_ysize()*get_zsize();
+		int n = size;
 		float* d = get_data();
 		for( int i = 0; i < n; ++i ) {
 			if ( d[i] != 0 ) tmp.push_back(d[i]);
 		}
 		sort(tmp.begin(), tmp.end());
-		unsigned int size = tmp.size();
+		unsigned int vsize = tmp.size();
 		float median;
-		if (size%2==1) median = tmp[size/2];
-		else median = (tmp[size/2-1]+tmp[size/2])/2.0;
+		if (vsize%2==1) median = tmp[vsize/2];
+		else median = (tmp[vsize/2-1]+tmp[vsize/2])/2.0;
 		attr_dict["median"] = median;
 		return attr_dict["median"];
 	}

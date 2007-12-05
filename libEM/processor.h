@@ -389,11 +389,38 @@ The basic design of EMAN Processors: <br>\
 		int dosqrt;
 	};
 
-	/** Determines the partial derivativesin the x direction
-	 * Does this in Fourier space by multiplying Fourier pixles by 2 pi i u
-	 * Where u is the Fourier component in the u direction
-	 * Automatically converts real space images into Fourier space and back into real space
-	 * If the image is already in Fourier space, it is left that way!
+	class ConvolutionProcessor : public Processor 
+	{
+		public:
+			ConvolutionProcessor() {}
+		  
+			string get_name() const
+			{
+				return "convolution";
+			}
+		
+			void process_inplace(EMData *image);
+
+			static Processor *NEW()
+			{
+				return new ConvolutionProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Performs Fourier space convolution. Maintains the space that the image is in - i.e. if image is real, the result is real and vice versa.";
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("with", EMObject::EMDATA, "The image that will convolute the other image");
+				return d;
+			}
+	};
+	
+	/** Determines the partial derivatives in the x direction
+	 * Does this by constructing edge kernels in real space but convoluting in Fourier space
 	 *
 	 *@author David Woolford
 	 *@date 2007/12/04
@@ -405,7 +432,7 @@ The basic design of EMAN Processors: <br>\
 		  
 		string get_name() const
 		{
-			return "math.xgradient";
+			return "edge.xgradient";
 		}
 		
 		void process_inplace(EMData *image);
@@ -429,6 +456,72 @@ The basic design of EMAN Processors: <br>\
 			TypeDict d;
 			return d;
 		}
+	};
+	
+	class YGradientProcessor : public Processor 
+	{
+		public:
+			YGradientProcessor() {}
+		  
+			string get_name() const
+			{
+				return "edge.ygradient";
+			}
+		
+			void process_inplace(EMData *image);
+
+			static Processor *NEW()
+			{
+				return new YGradientProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Determines the image gradient in the y direction";
+			}
+		
+			void set_params(const Dict & new_params)
+			{
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				return d;
+			}
+	};
+	
+	class ZGradientProcessor : public Processor 
+	{
+		public:
+			ZGradientProcessor() {}
+		  
+			string get_name() const
+			{
+				return "edge.zgradient";
+			}
+		
+			void process_inplace(EMData *image);
+
+			static Processor *NEW()
+			{
+				return new ZGradientProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Determines the image gradient in the z direction";
+			}
+		
+			void set_params(const Dict & new_params)
+			{
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				return d;
+			}
 	};
 	
 	/** Automatically determines the background for the image then uses this to perform

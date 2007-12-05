@@ -129,6 +129,8 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&BilateralProcessor::NEW);
 	
+	force_add(&ConvolutionProcessor::NEW);
+	
 	force_add(&NormalizeStdProcessor::NEW);
 	force_add(&NormalizeUnitProcessor::NEW);
 	force_add(&NormalizeUnitSumProcessor::NEW);
@@ -170,6 +172,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&SNRProcessor::NEW);
 
 	force_add(&XGradientProcessor::NEW);
+	force_add(&YGradientProcessor::NEW);
+	force_add(&ZGradientProcessor
 	
 	force_add(&FileFourierProcessor::NEW);
 
@@ -6614,38 +6618,205 @@ void HistogramBin::process_inplace(EMData *image)
 	}
 	
 }
-
-void XGradientProcessor::process_inplace( EMData* image )
+void ConvolutionProcessor::process_inplace(EMData* image)
 {
-	bool complex_flag = image->is_complex();
-	if ( complex_flag == false ) image->do_fft_inplace();
+	bool complexflag = false;
+	EMData* null = 0;
+	EMData* with = params.set_default("with", null);
+	if ( with == NULL ) throw InvalidParameterException("Error - the image required for the convolution is null");
 	
-	int nw = image->get_zsize();
-	int nv = image->get_ysize();
-	int nu = image->get_xsize();
-	float* d = image->get_data();
+	if ( image->is_complex() != with->is_complex() ) throw ImageFormatException("Error - one of the images is complex and one is real. Can not proceed");
 	
-	int nvu = nv*nu;
-	float twopi = 2.0*3.1415926535897931;
+	if ( image->is_complex() ) complexflag = true;
+	else {
+		image->process_inplace("xform.phaseorigin.tocorner");
+		image->do_fft_inplace();
+		with->process_inplace("xform.phaseorigin.tocorner");
+		with->do_fft_inplace();
+	}
 	
-	for(int w = 0; w < nw; ++w) {
-		for ( int v = 0; v < nv; ++v) {
-			for (int u = 0; u < nu/2; ++u) {
-				int idx = w*nvu + v*nu + 2*u;
-				
-				float a = d[idx];
-				float b = d[idx+1];
-				
-				d[idx] = -twopi*b;
-				d[idx+1] = twopi*a;
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	for (int iz = 0; iz < nz; iz++) {
+		for (int iy = 0; iy < ny; iy++) {
+			for (int ix = 0; ix < nx/2; ix++) {
+				image->cmplx(ix,iy,iz) *= with->cmplx(ix,iy,iz);
 			}
 		}
 	}
-
-	if ( complex_flag == false ) {
+	
+	if ( complexflag == false ) {
 		image->do_ift_inplace();
 		image->postift_depad_corner_inplace();
+		image->process_inplace("xform.phaseorigin.tocenter");
 	}
+	
+}
+
+void XGradientProcessor::process_inplace( EMData* image )
+{
+	if (image->is_complex()) throw ImageFormatException("Cannot edge detect a complex image");
+	
+	EMData* e = new EMData();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	if ( nz == 1 && ny == 1 ) {
+		if ( nx < 3 ) throw ImageDimensionException("Error - cannot edge detect an image with less than three pixels");
+		
+		e->set_size(3,1,1);
+		e->set_value_at(0,-1);
+		e->set_value_at(2, 1);
+		
+		Region r = Region(-nx/2+1,nx);
+		e->clip_inplace(r);
+	} else if ( nz == 1 ) {
+		if ( nx < 3 || ny < 3 ) throw ImageDimensionException("Error - cannot edge detect an image with less than three pixels");
+		e->set_size(3,3,1);
+		e->set_value_at(0,0,-1);
+		e->set_value_at(0,1,-2);
+		e->set_value_at(0,2,-1);
+		
+		e->set_value_at(2,0,1);
+		e->set_value_at(2,1,2);
+		e->set_value_at(2,2,1);
+		Region r = Region(-nx/2+1,-ny/2+1,nx,ny);
+		e->clip_inplace(r);
+	} else {
+		if ( nx < 3 || ny < 3 || nz < 3) throw ImageDimensionException("Error - cannot edge detect an image with less than three pixels");
+		e->set_size(3,3,3);
+		e->set_value_at(0,0,0,-1);
+		e->set_value_at(0,1,0,-1);
+		e->set_value_at(0,2,0,-1);
+		e->set_value_at(0,0,1,-1);
+		e->set_value_at(0,1,1,-8);
+		e->set_value_at(0,2,1,-1);
+		e->set_value_at(0,0,2,-1);
+		e->set_value_at(0,1,2,-1);
+		e->set_value_at(0,2,2,-1);
+		
+		e->set_value_at(2,0,0,1);
+		e->set_value_at(2,1,0,1);
+		e->set_value_at(2,2,0,1);
+		e->set_value_at(2,0,1,1);
+		e->set_value_at(2,1,1,8);
+		e->set_value_at(2,2,1,1);
+		e->set_value_at(2,0,2,1);
+		e->set_value_at(2,1,2,1);
+		e->set_value_at(2,2,2,1);
+		
+		Region r = Region(-nx/2+1,-ny/2+1,-nz/2+1,nx,ny,nz);
+		e->clip_inplace(r);
+	}
+	
+	Dict conv_parms;
+	conv_parms["with"] = e;
+	image->process_inplace("convolution", conv_parms);
+	
+	delete e;
+}
+
+void YGradientProcessor::process_inplace( EMData* image )
+{
+	if (image->is_complex()) throw ImageFormatException("Cannot edge detect a complex image");
+	
+	EMData* e = new EMData();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	if ( nz == 1 && ny == 1 ) {
+		throw ImageDimensionException("Error - cannot detect Y edges for an image that that is 1D!");
+	} else if ( nz == 1 ) {
+		if ( nx < 3 || ny < 3 ) throw ImageDimensionException("Error - cannot edge detect an image with less than three pixels");
+		e->set_size(3,3,1);
+		e->set_value_at(0,0,-1);
+		e->set_value_at(1,0,-2);
+		e->set_value_at(2,0,-1);
+		
+		e->set_value_at(0,2,1);
+		e->set_value_at(1,2,2);
+		e->set_value_at(2,2,1);
+		Region r = Region(-nx/2+1,-ny/2+1,nx,ny);
+		e->clip_inplace(r);
+	} else {
+		if ( nx < 3 || ny < 3 || nz < 3) throw ImageDimensionException("Error - cannot edge detect an image with less than three pixels");
+		e->set_size(3,3,3);
+		e->set_value_at(0,0,0,-1);
+		e->set_value_at(1,0,0,-1);
+		e->set_value_at(2,0,0,-1);
+		e->set_value_at(0,0,1,-1);
+		e->set_value_at(1,0,1,-8);
+		e->set_value_at(2,0,1,-1);
+		e->set_value_at(0,0,2,-1);
+		e->set_value_at(1,0,2,-1);
+		e->set_value_at(2,0,2,-1);
+		
+		e->set_value_at(0,2,0,1);
+		e->set_value_at(1,2,0,1);
+		e->set_value_at(2,2,0,1);
+		e->set_value_at(0,2,1,1);
+		e->set_value_at(1,2,1,8);
+		e->set_value_at(2,2,1,1);
+		e->set_value_at(0,2,2,1);
+		e->set_value_at(1,2,2,1);
+		e->set_value_at(2,2,2,1);
+		
+		Region r = Region(-nx/2+1,-ny/2+1,-nz/2+1,nx,ny,nz);
+		e->clip_inplace(r);
+	}
+	
+	Dict conv_parms;
+	conv_parms["with"] = e;
+	image->process_inplace("convolution", conv_parms);
+	
+	delete e;
+}
+
+
+void ZGradientProcessor::process_inplace( EMData* image )
+{
+	if (image->is_complex()) throw ImageFormatException("Cannot edge detect a complex image");
+	
+	EMData* e = new EMData();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	if ( nx < 3 || ny < 3 || nz < 3) throw ImageDimensionException("Error - cannot edge detect in the z direction with any dimension being less than three pixels");
+	
+	e->set_size(3,3,3);
+	e->set_value_at(0,0,0,-1);
+	e->set_value_at(1,0,0,-1);
+	e->set_value_at(2,0,0,-1);
+	e->set_value_at(0,1,0,-1);
+	e->set_value_at(1,1,0,-8);
+	e->set_value_at(2,1,0,-1);
+	e->set_value_at(0,2,0,-1);
+	e->set_value_at(1,2,0,-1);
+	e->set_value_at(2,2,0,-1);
+	
+	e->set_value_at(0,0,2,1);
+	e->set_value_at(1,0,2,1);
+	e->set_value_at(2,0,2,1);
+	e->set_value_at(0,1,2,1);
+	e->set_value_at(1,1,2,8);
+	e->set_value_at(2,1,2,1);
+	e->set_value_at(0,2,2,1);
+	e->set_value_at(1,2,2,1);
+	e->set_value_at(2,2,2,1);
+	
+	Region r = Region(-nx/2+1,-ny/2+1,-nz/2+1,nx,ny,nz);
+	e->clip_inplace(r);
+	
+	Dict conv_parms;
+	conv_parms["with"] = e;
+	image->process_inplace("convolution", conv_parms);
+	
+	delete e;
 }
 
 void EMAN::dump_processors()
