@@ -992,7 +992,7 @@ EMData *FourierReconstructor::finish()
 
 	print_stats(quality_scores);
 	
-	image->mult(image->get_zsize());
+// 	image->mult(2.0f);
 	
 	image->update();
 	
