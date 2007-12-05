@@ -173,7 +173,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&XGradientProcessor::NEW);
 	force_add(&YGradientProcessor::NEW);
-	force_add(&ZGradientProcessor
+	force_add(&ZGradientProcessor::NEW);
 	
 	force_add(&FileFourierProcessor::NEW);
 
