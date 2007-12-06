@@ -1758,7 +1758,7 @@ class TestEMData(unittest.TestCase):
 				for k in [n-1,n]:
 					e = EMData()
 					e.set_size(i,j,k);
-					e.process_inplace("testimage.x")
+					e.process_inplace("testimage.axes")
 					
 					for dx in [-1,0,1]:
 						for dy in [-1,0,1]:

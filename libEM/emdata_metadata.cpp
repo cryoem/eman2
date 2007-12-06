@@ -687,9 +687,7 @@ EMObject EMData::get_attr(const string & key) const
 {
 	ENTERFUNC;
 
-	size_t size = nx * ny * nz;
-	if ( size == 0 ) throw ImageDimensionException("Error - the image has no pixels in it");
-	
+	size_t size = nx * ny * nz;	
 	update_stat();
 
 	float mean = attr_dict["mean"];
