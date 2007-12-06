@@ -114,7 +114,7 @@ def powspecbg(image,size):
 	
 	avgr=Averagers.get("minmax",{"max":0})
 #	avgr=Averagers.get("image")
-	allav=[]
+	allav=[]	# used for development, can be removed in production
 	
 	norm=size*size
 	n=0
@@ -140,6 +140,15 @@ def powspecbg(image,size):
 	
 	av.set_complex(1)
 	av.set_attr("is_intensity", 1)
+	
+	# SVD on individual spectra
+	allav2=[]
+	for i in allav:
+		im=EMData(len(i),1,1)
+		for j in range(len(i)): im.set_value_at(j,0,0,i[j])
+		allav2.append(im) 
+	s=Util.svdcmp(allav2,10)
+	for i in s: i.write_image("basis.hed",-1)
 	
 	# this writes a 2D image containing all of the individual power spectra
 	aa=EMData(len(allav[0]),len(allav))
