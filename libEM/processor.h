@@ -1230,7 +1230,7 @@ The basic design of EMAN Processors: <br>\
 		inline void process_pixel(float *x) const
 		{
 			if (*x < value) {
-				*x = 0;
+				*x = value;
 			}
 		}
 	};
