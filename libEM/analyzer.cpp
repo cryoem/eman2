@@ -58,6 +58,9 @@ namespace EMAN {
 #define imgdata(i)  imgdata[ (i)-1 ]
 int PCAsmall::insert_image(EMData * image)
 {
+	if(mask==0)
+		throw NullPointerException("Null mask image pointer, set_params() first");
+	
    EMData *maskedimage = Util::compress_image_mask(image,mask);
 
    int nx = maskedimage->get_xsize();
@@ -140,6 +143,9 @@ void PCAsmall::set_params(const Dict & new_params)
 
 int PCAlarge::insert_image(EMData * image)
 {
+	if(mask==0)
+		throw NullPointerException("Null mask image pointer, set_params() first");
+	
    EMData *maskedimage = Util::compress_image_mask(image,mask);
 
    FILE *fp;
@@ -480,6 +486,9 @@ void varimax::set_params(const Dict & new_params)
 
 int varimax::insert_image(EMData* image)
 {
+	if(m_mask==0)
+		throw NullPointerException("Null mask image pointer, set_params() first");
+	
     EMData* img1d = Util::compress_image_mask(image,m_mask);
 
     m_data.insert( m_data.end(), img1d->get_data(), img1d->get_data() + m_nlen );
