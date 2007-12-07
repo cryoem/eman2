@@ -3573,7 +3573,7 @@ void Util::cyclicshift(EMData *image, Dict params) {
     EMData *im1 = new EMData();
     im1->set_size(70,80,85);
     im1->to_one();
-    Dict params; params["dx"] = 10;params["dy"] = 10000;params["zx"] = -10;
+    Dict params; params["dx"] = 10;params["dy"] = 10000;params["dz"] = -10;
     Utils::cyclicshift(im1,params);
     im1.peak_search(1,1)
 */
@@ -3601,11 +3601,11 @@ if (image->is_complex())
  #ifdef DEBUG
          std::cout << dx << std::endl;
          std::cout << dy << std::endl;
-	     std::cout << dz << std::endl;
+	 std::cout << dz << std::endl;
  #endif
          int mx = -(dx - nx);
          int my = -(dy - ny);
-	 	 int mz = -(dz - nz);
+ 	 int mz = -(dz - nz);
 	 
          float* data = image->get_data();
          // x-reverses
