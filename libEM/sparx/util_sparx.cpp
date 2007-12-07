@@ -3630,7 +3630,7 @@ if (image->is_complex())
          }
 	 if (mz != 0) {
                  slicereverse(&data[0], &data[mz*ny*nx], nx, ny);
-                 slicereverse(&data[my*ny*nx], &data[nz*ny*nx], nx, ny);
+                 slicereverse(&data[mz*ny*nx], &data[nz*ny*nx], nx, ny);
                  slicereverse(&data[0], &data[nz*ny*nx], nx ,ny);
          }
 	image->update();	 
