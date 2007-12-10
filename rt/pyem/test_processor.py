@@ -44,7 +44,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 141)
+        self.assertEqual(len(processor_names), 142)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
