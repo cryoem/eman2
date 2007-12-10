@@ -145,10 +145,20 @@ def powspecbg(image,size):
 	allav2=[]
 	for i in allav:
 		im=EMData(len(i),1,1)
-		for j in range(len(i)): im.set_value_at(j,0,0,i[j])
+		im.to_zero()
+		for j in range(1,len(i)): im.set_value_at(j,0,0,i[j])
 		allav2.append(im) 
-	s=Util.svdcmp(allav2,10)
-	for i in s: i.write_image("basis.hed",-1)
+	#s=Util.svdcmp(allav2,10)
+	#for i in s: i.write_image("basis.hed",-1)
+	
+	# PCA on individual spectra
+	#msk=allav2[0].copy()
+	#msk.to_one()
+	#an=Analyzers.get("pca",{"mask":msk ,"nvec":20})
+	#an.insert_images_list(allav2)
+	#s=an.analyze()
+	for i in allav2: i.write_image("basis.hed",-1)
+	
 	
 	# this writes a 2D image containing all of the individual power spectra
 	aa=EMData(len(allav[0]),len(allav))

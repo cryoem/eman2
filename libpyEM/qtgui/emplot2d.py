@@ -83,9 +83,14 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
 		Multiple axes may be set, and which axis represents which axis in the plot can be
-		selected by the user."""
+		selected by the user. 'data' can also be an EMData object, in which case the entire
+		data array is plotted as if it were 1-D."""
 		
 		self.needupd=1
+		
+		if type(data)==EMData :
+			data=(data.get_data_pickle(),)
+		
 		try:
 			if len(data)>1 : self.axes[key]=(0,1,-1)
 			else : self.axes[key]=(-1,0,-1)

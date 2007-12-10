@@ -1934,6 +1934,33 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
+	/**Multiplies image by a 'linear pyramid'
+       1-(|x-xsize/2|*|y-ysize/2|*4/(xsize*ysize))
+       This is useful in averaging together boxed out regions with 50% overlap.
+	 */
+	class LinearPyramidProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return "math.linearpyramid";
+		}
+
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new LinearPyramidProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Multiplies image by a 'linear pyramid', 1-(|x-xsize/2|*|y-ysize/2|*4/(xsize*ysize))";
+		}
+
+	};
+
+
 	/**overwrites input, f(x) = radius * radius
 	 */
 	class MakeRadiusSquaredProcessor:public CircularMaskProcessor

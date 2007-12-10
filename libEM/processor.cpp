@@ -64,6 +64,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&AmpweightFourierProcessor::NEW);
 	force_add(&Wiener2DFourierProcessor::NEW);
 
+	force_add(&LinearPyramidProcessor::NEW);
 	force_add(&LinearRampProcessor::NEW);
 	force_add(&AbsoluateValueProcessor::NEW);
 	force_add(&BooleanProcessor::NEW);
@@ -381,6 +382,23 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 
 }
 
+void LinearPyramidProcessor::process_inplace(EMData *image) {
+
+	if (image->get_zsize()!=1) { throw ImageDimensionException("Only 2-D images supported"); }
+
+	float *d=image->get_data();
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	
+	for (int y=0; y<ny; y++) {
+		for (int x=0; x<nx; x++) {
+			int l=x+y*nx;
+			d[l]*=1.0-abs(x-nx/2)*abs(y-ny/2)*4.0/(nx*ny);
+		}
+	}
+	image->update();
+}
+
 EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 {
 // TODO NOT IMPLEMENTED YET !!!
@@ -393,6 +411,7 @@ EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 		LOGWARN("NULL Image");
 		return ret;
 	}
+	throw NullPointerException("Processor not yet implemented");
 
 	if (!image->is_complex()) {
 		fft = image->do_fft();
@@ -403,6 +422,7 @@ EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 		fft=image;
 		fftd=image->get_data();
 	}
+	
 	return ret;
 }
 

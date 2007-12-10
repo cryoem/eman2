@@ -57,6 +57,7 @@ be classified. """
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
 	parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
+	parser.add_option("--normavg",action="store_true",help="Normalize averages",default=False)
 	parser.add_option("--clsfiles","-C",action="store_true",help="Write cls files with members of each class",default=False)
 	parser.add_option("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
 	parser.add_option("--nosingle","-X",action="store_true",help="Try to eliminate classes with only 1 member",default=False)
@@ -106,7 +107,8 @@ be classified. """
 				centers[j]=data[classes[j][0][0]].copy()
 				for i in range(1,len(classes[j])):
 					centers[j]+=data[classes[j][i][0]]
-				centers[j].process_inplace("normalize")
+				if options.normavg : centers[j].process_inplace("normalize")
+				else: centers[j]/=len(classes[j])-1
 				
 		if todel!=-1 : del data[todel]
 				
@@ -114,7 +116,7 @@ be classified. """
 		if (npc==npcold) : break
 		npcold=npc
 	
-	if (options.average != None) :
+	if (options.average) :
 		if (centers[0].get_zsize()>1) :
 			for i in range(len(centers)):
 				centers[i].write_image("avg.%04d.mrc"%i,0)
@@ -122,9 +124,9 @@ be classified. """
 			for i in range(len(centers)):
 				centers[i].write_image("avg.hed",-1)
 		
-	if (options.clsfiles!=None) :
+	if (options.clsfiles) :
 		os.system("rm -f cls????.lst")
-		stackname=argv[0]
+		stackname=argv[1]
 		if options.original : stackname=options.original
 		for j in range(len(classes)):
 			out=open("cls%04d.lst"%j,"w")
