@@ -208,6 +208,8 @@ class TestAligner(unittest.TestCase):
 				assert soln_dy == dy
 				assert (soln_az%180)/az < 1.2
 				assert (soln_az%180)/az > 0.8
+                    
+        testlib.safe_unlink('testc.img')
 		
     def no_test_RotateTranslateBestAligner(self):
         """test RotateTranslateBestAligner .................."""
