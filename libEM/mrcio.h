@@ -121,11 +121,11 @@ namespace EMAN
 
 			float xorigin;		/* X origin. */
 			float yorigin;		/* Y origin. */
-			float zorigin;		/* Y origin. */
+			float zorigin;		/* Z origin. */
 
 			char map[4];		/* constant string "MAP "  */
 			int machinestamp;	/* machine stamp in CCP4 convention:
-								   big endian=0x11110000 little endian=0x4444000 */
+								   big endian=0x11110000 little endian=0x44440000 */
 
 			float rms;			/* rms deviation of map from mean density */
 

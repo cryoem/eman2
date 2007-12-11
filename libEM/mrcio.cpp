@@ -342,30 +342,61 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mrch.amax = dict["maximum"];
 	mrch.amean = dict["mean"];
 
-	mrch.mx = nx - 1;
-	mrch.my = ny - 1;
-	mrch.mz = nz - 1;
+	if(dict.has_key("MRC.mx")) {
+		mrch.mx = dict["MRC.mx"]; 
+	}
+	else {
+		mrch.mx = nx - 1;
+	}
+	if(dict.has_key("MRC.my")) {
+		mrch.my = dict["MRC.my"];
+	}	
+	else {
+		mrch.my = ny - 1;
+	}
+	if(dict.has_key("MRC.mz")) {
+		mrch.mz = dict["MRC.mz"];	
+	}	
+	else {
+		mrch.mz = nz - 1;
+	}
 
 	mrch.xlen = (nx - 1) * (float) dict["apix_x"];
 	mrch.ylen = (ny - 1) * (float) dict["apix_y"];
 	mrch.zlen = (nz - 1) * (float) dict["apix_z"];
 
-	mrch.nxstart = -nx / 2;
-	mrch.nystart = -ny / 2;
-	mrch.nzstart = -nz / 2;
+	if(dict.has_key("MRC.nxstart")) {
+		mrch.nxstart = dict["MRC.nxstart"];
+	}
+	else {	
+		mrch.nxstart = -nx / 2;
+	}
+	if(dict.has_key("MRC.nystart")) {
+		mrch.nystart = dict["MRC.nystart"];	
+	}
+	else {
+		mrch.nystart = -ny / 2;
+	}
+	if(dict.has_key("MRC.nzstart")) {
+		mrch.nzstart = dict["MRC.nzstart"];	
+	}
+	else {
+		mrch.nzstart = -nz / 2;
+	}
 
-	mrch.xorigin = dict["origin_row"];
-	mrch.yorigin = dict["origin_col"];
+	mrch.xorigin = (float)dict["origin_row"];
+	mrch.yorigin = (float)dict["origin_col"];
 
 	if (is_new_file) {
-		mrch.zorigin = dict["origin_sec"];
+		mrch.zorigin = (float)dict["origin_sec"];
 	}
 	else {
 		mrch.zorigin = (float) dict["origin_sec"] - (float) dict["apix_z"] * image_index;
 	}
-
-	sprintf(mrch.map, "MAP");
+	
+	sprintf(mrch.map, "MAP ");
 	mrch.machinestamp = generate_machine_stamp();
+	mrch.rms = (float)dict["MRC.rms"];
 
 	MrcHeader mrch2 = mrch;
 	
@@ -722,16 +753,16 @@ int MrcIO::generate_machine_stamp()
 	char *p = (char *) (&stamp);
 
 	if (ByteOrder::is_host_big_endian()) {
-		p[0] = 0x44;
-		p[1] = 0x44;
-		p[2] = 0;
-		p[3] = 0;
-	}
-	else {
 		p[0] = 0x11;
 		p[1] = 0x11;
 		p[2] = 0;
 		p[3] = 0;
+	}
+	else {
+		p[0] = 0;
+		p[1] = 0;
+		p[2] = 0x44;
+		p[3] = 0x44;
 	}
 	return stamp;
 }
