@@ -149,7 +149,7 @@ both box sizes should be multiples of 8."""
 			sum+=ccf
 			ccf.process_inplace("mask.onlypeaks",{"npeaks":0})		# only look at peak values in the CCF map
 			
-#			ccf.write_image('ccf.%0d%0d%0d.mrc'%(a1,a2,a3))
+			#ccf.write_image('ccf.%0d%0d%0d.mrc'%(a1,a2,a3))
 			vec=ccf.calc_highest_locations(mean+sig+.0000001)
 			for v in vec: best.append([v.value,a1,a2,a3,v.x-tdim2[0]/2,v.y-tdim2[1]/2,v.z-tdim2[2]/2,0])
 			
@@ -245,6 +245,7 @@ both box sizes should be multiples of 8."""
 		a=cmp_target.get_rotated_clip(Transform3D((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),b[0],b[1],b[2],(0,0,0)),pdim,1.0)
 		a.write_image("clip.%02d.mrc"%i)
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
+		print pc
 		pc.rotate(-b[0],-b[2],-b[1])
 		pc.rotate_translate(0,0,0,b[3],b[4],b[5])		# FIXME, when rotate_translate with post-translate works
 #		pc.rotate_translate(-b[0],-b[2],-b[1],0,0,0,b[3],b[4],b[5])

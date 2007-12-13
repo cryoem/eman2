@@ -71,6 +71,7 @@ template < typename T > void checked_delete( T*& x )
 template <> Factory < Reconstructor >::Factory()
 {
 	force_add(&FourierReconstructor::NEW);
+	force_add(&BaldwinWoolfordReconstructor::NEW);
 	force_add(&WienerFourierReconstructor::NEW);
 	force_add(&BackProjectionReconstructor::NEW);
 	force_add(&nn4Reconstructor::NEW);
@@ -997,6 +998,95 @@ EMData *FourierReconstructor::finish()
 	image->update();
 	
 	return image;
+}
+
+EMData* BaldwinWoolfordReconstructor::finish()
+{
+	return new EMData(*tmp_data);
+}
+
+int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
+{
+	int x_in = params["x_in"];
+	int y_in = params["y_in"];
+	
+	float y_scale = 1.0, x_scale = 1.0;
+	if ( y_in != x_in )
+	{
+		if ( x_in > y_in ) y_scale = (float) x_in / (float) y_in;
+		else x_scale = (float) y_in / (float) x_in;
+	}
+	
+	for (int y = 0; y < y_in; y++) {
+		for (int x = 0; x < x_in / 2; x++) {
+				
+			float rx = (float) x;
+			float ry = (float) y;
+				
+			if ( y_in != x_in )
+			{
+				if ( x_in > y_in ) ry *= y_scale;
+				else rx *= x_scale;
+			}
+
+			float xx = (float) (rx * t3d[0][0] + (ry - max_padded_dim / 2) * t3d[1][0]);
+			float yy = (float) (rx * t3d[0][1] + (ry - max_padded_dim / 2) * t3d[1][1]);
+			float zz = (float) (rx * t3d[0][2] + (ry - max_padded_dim / 2) * t3d[1][2]);
+			
+			if (xx < 0 ){
+				xx = -xx;
+				yy = -yy;
+				zz = -zz;
+			}
+			
+			yy += ny/2;
+			zz += nz/2;
+			insert_density_at(xx,yy,zz);
+		}
+	}
+	
+	return 0;
+}
+
+void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float& y, const float& z)
+{
+	int xl = Util::fast_floor(x);
+	int yl = Util::fast_floor(y);
+	int zl = Util::fast_floor(z);
+	
+	int w = 2;
+	// w minus one
+	int wmo = w-1;
+	
+	float* d = tmp_data->get_data();
+	
+	for(int k = zl-wmo; k <= zl+w; ++k ) {
+		for(int j = yl-wmo; j <= yl+w; ++j) {
+			for( int i = xl-wmo; i <= xl+w; ++i) {
+				// Still have to handle cases where the boundaries are exceded
+				int ic = i, jc = j, kc = k;
+				if ( i < 0 ) ic = -i;
+				if ( i >= nx/2 ) ic = nx-i-1;
+				if ( j < 0 ) jc = ny+j;
+				if ( j >= ny ) jc = ny-j;
+				if ( k < 0 ) kc = nz+k;
+				if ( k >= nz ) kc = nz-k;
+				
+				
+				float zd = (z-(float)kc);
+				float yd = (y-(float)jc);
+				float xd = (x-(float)ic);
+				zd *= zd; yd *= yd; xd *= xd;
+				float f = exp(-(xd+yd+zd)*.5);
+				if ( (kc*nx*ny/2+jc*nx/2+ic) > nz*ny*nx/2 )  {
+					cout << "woops" << endl;
+					cout << kc << " " << jc << " " << ic << endl;
+					continue;
+				}
+				d[kc*nx*ny/2+jc*nx/2+ic] += f;
+			}
+		}
+	}
 }
 
 void WienerFourierReconstructor::setup()

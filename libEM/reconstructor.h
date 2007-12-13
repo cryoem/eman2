@@ -265,6 +265,8 @@ namespace EMAN
 		// A function used only by the Fourier reconstructor for testing and writing to std out purposes in e2make3d.py
 		virtual float get_norm(const unsigned int idx) { return 0; }
 
+		
+		virtual int insert_slice_weights(const Transform3D& t3d) {return 0;}
 	  protected:
 		mutable Dict params;
 		
@@ -274,7 +276,6 @@ namespace EMAN
 		Reconstructor& operator=(const Reconstructor& );
 	
 	};
-
 
 	/** Fourier space 3D reconstruction
 	 * The Fourier reconstructor is designed to work in an iterative fashion, where similarity ("quality") metrics
@@ -459,7 +460,6 @@ namespace EMAN
 	  	 * @exception InvalidValueException when the specified padding value is less than the size of the images
 		 */
 		EMData* preprocess_slice( const EMData* const slice, const Transform3D transform = Transform3D() );
-	  private:
 		// Disallow copy construction
 		FourierReconstructor( const FourierReconstructor& that );
 		// Disallow assignment
@@ -542,6 +542,49 @@ namespace EMAN
 		int output_x, output_y, output_z;
 	};
 
+	class BaldwinWoolfordReconstructor : public FourierReconstructor
+	{
+		public:
+		BaldwinWoolfordReconstructor() {}
+		
+		/** Deconstructor
+		 */
+		virtual ~BaldwinWoolfordReconstructor() { }
+
+		/** Get the unique name of the reconstructor
+		 */
+		virtual string get_name() const
+		{
+			return "baldwinwoolford";
+		}
+		
+		/** Get the one line description of the reconstructor
+		 */
+		virtual string get_desc() const
+		{
+			return "Reconstruction via direct Fourier inversion using gridding and delta function based weights";
+		}
+
+		/** Factory themed method allocating a new FourierReconstructor
+		 * @return a Reconstructor pointer to a newly allocated FourierReconstructor
+		 */
+		static Reconstructor *NEW()
+		{
+			return new BaldwinWoolfordReconstructor();
+		}
+
+		
+		/** Finish reconstruction and return the complete model.
+		 * @return The result 3D model.
+		 */
+		virtual EMData *finish();
+		
+		virtual int insert_slice_weights(const Transform3D& t3d);
+		
+		void insert_density_at(const float& x, const float& y, const float& z);
+		
+	};
+	
 	/** Fourier space 3D reconstruction with slices already Wiener filter processed.
      */
 	class WienerFourierReconstructor:public Reconstructor
