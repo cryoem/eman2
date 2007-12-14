@@ -1007,31 +1007,42 @@ EMData* BaldwinWoolfordReconstructor::finish()
 
 int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 {
-	int x_in = params["x_in"];
-	int y_in = params["y_in"];
+	bool fftodd = image->is_fftodd();
+	int rnx = nx-2*!fftodd;
 	
 	float y_scale = 1.0, x_scale = 1.0;
-	if ( y_in != x_in )
+	
+	if ( ny != rnx  )
 	{
-		if ( x_in > y_in ) y_scale = (float) x_in / (float) y_in;
-		else x_scale = (float) y_in / (float) x_in;
+		if ( rnx > ny ) y_scale = (float) rnx / (float) ny;
+		else x_scale = (float) ny / (float) rnx;
 	}
 	
-	for (int y = 0; y < y_in; y++) {
-		for (int x = 0; x < x_in / 2; x++) {
+	int tnx = tmp_data->get_xsize();
+	int tny = tmp_data->get_ysize();
+	int tnz = tmp_data->get_zsize();
+	
+	for (int y = 0; y < tny; y++) {
+		for (int x = 0; x < tnx; x++) {
 				
 			float rx = (float) x;
 			float ry = (float) y;
 				
-			if ( y_in != x_in )
+			if ( ny != rnx )
 			{
-				if ( x_in > y_in ) ry *= y_scale;
+				if ( rnx > ny ) ry *= y_scale;
 				else rx *= x_scale;
 			}
+			
+			float xx = (float) (rx * t3d[0][0] + (ry - tny/2) * t3d[1][0]);
+			float yy = (float) (rx * t3d[0][1] + (ry - tny/2) * t3d[1][1]);
+			float zz = (float) (rx * t3d[0][2] + (ry - tny/2) * t3d[1][2]);
 
-			float xx = (float) (rx * t3d[0][0] + (ry - max_padded_dim / 2) * t3d[1][0]);
-			float yy = (float) (rx * t3d[0][1] + (ry - max_padded_dim / 2) * t3d[1][1]);
-			float zz = (float) (rx * t3d[0][2] + (ry - max_padded_dim / 2) * t3d[1][2]);
+			
+// 			if ( x == 0 ) {
+// 				cout << "(ry - max_padded_dim / 2) = " << (ry - max_padded_dim / 2) << endl;
+// 				cout << "xx,yy,zz are " << xx << " " << yy << " " << zz << endl;	
+// 			}
 			
 			if (xx < 0 ){
 				xx = -xx;
@@ -1039,8 +1050,9 @@ int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 				zz = -zz;
 			}
 			
-			yy += ny/2;
-			zz += nz/2;
+			yy += tny/2;
+			zz += tnz/2;
+// 			cout << xx << " " << yy << " " << zz << endl;
 			insert_density_at(xx,yy,zz);
 		}
 	}
@@ -1054,36 +1066,60 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	int yl = Util::fast_floor(y);
 	int zl = Util::fast_floor(z);
 	
-	int w = 2;
+	int w = 1;
 	// w minus one
-	int wmo = w-1;
+	int wmo = w;
 	
 	float* d = tmp_data->get_data();
+	int tnx = tmp_data->get_xsize();
+	int tny = tmp_data->get_ysize();
+	int tnz = tmp_data->get_zsize();
+	int tnxy = tnx*tny;
 	
 	for(int k = zl-wmo; k <= zl+w; ++k ) {
 		for(int j = yl-wmo; j <= yl+w; ++j) {
 			for( int i = xl-wmo; i <= xl+w; ++i) {
-				// Still have to handle cases where the boundaries are exceded
+				float fac = 1.0;
 				int ic = i, jc = j, kc = k;
-				if ( i < 0 ) ic = -i;
-				if ( i >= nx/2 ) ic = nx-i-1;
-				if ( j < 0 ) jc = ny+j;
-				if ( j >= ny ) jc = ny-j;
-				if ( k < 0 ) kc = nz+k;
-				if ( k >= nz ) kc = nz-k;
+				if ( i <= 0 ) {
+					if ( x != 0 ) {
+						fac = 2.0;
+					}
+					else if ( i < 0 ) continue;
+					ic = -i;
+				}
+				if ( i >= tnx ) ic = 2*tnx-i-1;
+				if ( j < 0 ) jc = tny+j;
+				if ( j >= tny ) jc = j-tny;
+				if ( k < 0 ) kc = tnz+k;
+				if ( k >= tnz ) kc = k-tnz;
+// 				
+				if ( ic < 0 ) { cout << "wo 1" << endl; }
+				if ( ic >= tnx  ){ cout << "wo 2" << endl; }
+				if ( jc < 0 ) { cout << "wo 3" << endl; }
+				if ( jc >= tny ) { cout << "wo 4" << endl; }
+				if ( kc < 0 ) { cout << "wo 5" << endl; }
+				if ( kc >= tnz ) { cout << "wo 6" << endl; }
 				
 				
-				float zd = (z-(float)kc);
-				float yd = (y-(float)jc);
-				float xd = (x-(float)ic);
+				float zd = (z-(float)k);
+				float yd = (y-(float)j);
+				float xd = (x-(float)i);
 				zd *= zd; yd *= yd; xd *= xd;
-				float f = exp(-(xd+yd+zd)*.5);
-				if ( (kc*nx*ny/2+jc*nx/2+ic) > nz*ny*nx/2 )  {
+				float f = fac*exp(-(xd+yd+zd)*.5);
+// 				if ( x == 1 && y == ny/2 && z == nz/2 ) {
+// 					cout << "input x,y and z are " << x << " " << y << " " << z << endl;
+// 					cout << "coords are " << ic <<  " " << jc << " " << kc << endl;
+// 					cout << "iterators are " << i << " " << j << " " << k << endl;
+// 					cout << "distances are " << xd << " " << yd << " " << zd << endl;
+// 					cout << "value is " << f << endl;
+// 				}
+				if ( (kc*tnxy+jc*tnx+ic) >= tnxy*tnz )  {
 					cout << "woops" << endl;
 					cout << kc << " " << jc << " " << ic << endl;
 					continue;
 				}
-				d[kc*nx*ny/2+jc*nx/2+ic] += f;
+				d[kc*tnxy+jc*tnx+ic] += f;
 			}
 		}
 	}
