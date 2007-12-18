@@ -158,6 +158,7 @@ static void Radialize(int *PermMatTr,  float * kValsSorted,
  *      J. Opt. Soc. Am. _21_, 449 (2004)
  * 
  */
+
 class KaiserBessel 
 {
 	protected:

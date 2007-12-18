@@ -60,19 +60,27 @@ template <> Factory < Projector >::Factory()
 
 EMData *GaussFFTProjector::project3d(EMData * image) const
 {
+	Transform3D* t3d = params["t3d"];
+	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
 	EMData *f = image;
 	if (!image->is_complex()) {
-		f->process_inplace("xform.phaseorigin.tocorner");
+		image->process_inplace("xform.phaseorigin.tocorner");
 		f = image->do_fft();
-		//image->process_inplace("xform.phaseorigin"); // This is not required, i don't think it should be here - d.woolford 10-17-2007
 		f->process_inplace("xform.fourierorigin.tocenter");
+		image->process_inplace("xform.phaseorigin.tocenter");
 	}
 
 	int f_nx = f->get_xsize();
 	int f_ny = f->get_ysize();
 	int f_nz = f->get_zsize();
-	float alt2=params["alt"], az2=params["az"], phi2=params["phi"]; //fix this
-
+	
+	// This part was modified by David Woolford -
+	// The framework of the Transform3D allows for a generic implementation
+	// as specified here.
+	Dict p = t3d->get_rotation();
+	float alt2=p["alt"], az2=p["az"], phi2=p["phi"];
+	// End David Woolford modifications
+	
 	if (!f->is_complex() || f_nz != f_ny || f_nx != f_ny + 2) {
 		LOGERR("Cannot project this image");
 		return 0;
@@ -90,8 +98,9 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	r.transpose();
 
 	int mode = params["mode"];
-	float gauss_width = 0;
-	if (mode == 2) {
+	float gauss_width = 1;
+	if ( mode == 0 ) mode = 2;
+	if (mode == 2 ) {
 		gauss_width = EMConsts::I2G;
 	}
 	else if (mode == 3) {
@@ -163,6 +172,8 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
+	
+	if ( mode == 0 ) mode = 2;
 
 	if (mode == 1) {
 		int x0 = 2 * (int) floor(x + 0.5f);
@@ -477,6 +488,9 @@ void PawelProjector::prepcubes(int, int ny, int nz, int ri, Vec3i origin,
 
 EMData *PawelProjector::project3d(EMData * image) const
 {
+	Transform3D* t3d = params["t3d"];
+	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+	
 	if (!image) {
 		return 0;
 	}
@@ -514,38 +528,23 @@ EMData *PawelProjector::project3d(EMData * image) const
 	vector<float> anglelist = params["anglelist"];
 	int nangles = anglelist.size() / 3;
 	
-	// For the moment, let's assume the user wants to use either
-	// EMAN or SPIDER Euler angles, but nothing else.
-	string angletype = params["angletype"].to_str();
-	Transform3D::EulerType eulertype;
-	if (angletype == "SPIDER") {
-		eulertype = Transform3D::SPIDER;
-		if (nangles == 0) {
-			// a single SPIDER angle was passed in
-			float phi = params["phi"];
-			float theta = params["theta"];
-			float psi = params["psi"];
-			anglelist.push_back(phi);
-			anglelist.push_back(theta);
-			anglelist.push_back(psi);
-			nangles = 1;
-		}
-	} else if (angletype == "EMAN") {
-		eulertype = Transform3D::EMAN;
-		if (nangles == 0) {
-			// a single EMAN angle was passed in
-			float az = params["az"];
-			float alt = params["alt"];
-			float phi = params["phi"];
-			anglelist.push_back(az);
-			anglelist.push_back(alt);
-			anglelist.push_back(phi);
-			nangles = 1;
-		}
-	} else {
-		LOGERR("Only SPIDER and EMAN Euler angles supported");
-		return 0;
-	}
+	// This part was modified by David Woolford -
+	// Before this the code worked only for SPIDER and EMAN angles,
+	// but the framework of the Transform3D allows for a generic implementation
+	// as specified here.
+	Dict p = t3d->get_rotation(Transform3D::SPIDER);
+	
+	string angletype = "SPIDER";
+	float phi = p["phi"];
+	float theta = p["theta"];
+	float psi = p["psi"];
+	anglelist.push_back(phi);
+	anglelist.push_back(theta);
+	anglelist.push_back(psi);
+	nangles = 1;
+	
+	// End David Woolford modifications
+	
 	// initialize return object
 	EMData* ret = new EMData();
 	ret->set_size(nx, ny, nangles);
@@ -554,7 +553,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
 		int indx = 3*ia;
-		Transform3D rotation(eulertype, anglelist[indx],anglelist[indx+1], anglelist[indx+2]);
+		Transform3D rotation(Transform3D::SPIDER, anglelist[indx],anglelist[indx+1], anglelist[indx+2]);
 		if (2*(ri+1)+1 > dim) {
 			// Must check x and y boundaries
 			for (int i = 0 ; i <= nn; i++) {
@@ -636,9 +635,15 @@ EMData *PawelProjector::project3d(EMData * image) const
 
 EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 {
-	float alt = params["alt"];
-	float az = params["az"];
-	float phi = params["phi"];
+
+	Transform3D* t3d = params["t3d"];
+	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+	Dict p = t3d->get_rotation();
+	
+	float alt = p["alt"];
+	float az = p["az"];
+	float phi = p["phi"];
+
 	float threshold = params["threshold"];
 
 	int nx = image->get_xsize();
@@ -711,10 +716,14 @@ EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 
 EMData *StandardFastProjector::project3d(EMData * image) const
 {
-	float alt = params["alt"];
-	float az = params["az"];
-	float phi = params["phi"];
-
+	Transform3D* t3d = params["t3d"];
+	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+	Dict p = t3d->get_rotation();
+	
+	float alt = p["alt"];
+	float az = p["az"];
+	float phi = p["phi"];
+	
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
@@ -744,9 +753,14 @@ EMData *StandardFastProjector::project3d(EMData * image) const
 
 EMData *StandardProjector::project3d(EMData * image) const
 {
-	float alt = params["alt"];
-	float az = params["az"];
-	float phi = params["phi"];
+	
+	Transform3D* t3d = params["t3d"];
+	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+	Dict p = t3d->get_rotation();
+	
+	float alt = p["alt"];
+	float az = p["az"];
+	float phi = p["phi"];
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -818,18 +832,23 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 	const int m = Util::get_min(nx,ny,nz);
 	const int n = m*npad;
 
-	const int K = params["kb_K"];
-	const float alpha = params["kb_alpha"];
+	int K = params["kb_K"];
+	if ( K == 0 ) K = 6;
+	float alpha = params["kb_alpha"];
+	if ( alpha == 0 ) alpha = 1.25;
 	Util::KaiserBessel kb(alpha, K, (float)(m/2), K/(2.0f*n), n);
+
 	// divide out gridding weights
-	image->divkbsinh(kb);
+	EMData* tmpImage = image->copy();
+	tmpImage->divkbsinh(kb);
 	// pad and center volume, then FFT and multiply by (-1)**(i+j+k)
-	EMData* imgft = image->pad_fft(npad);
+	EMData* imgft = tmpImage->pad_fft(npad);
 	imgft->center_padded();
 	imgft->do_fft_inplace();
 	imgft->center_origin_fft();
 	imgft->fft_shuffle();
-
+	delete tmpImage;
+	
 	// Do we have a list of angles?
 	int nangles = 0;
 	vector<float> anglelist;
@@ -837,47 +856,37 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 		anglelist = params["anglelist"];
 		nangles = anglelist.size() / 3;
 	}
+	else
+	{
 
-	// For the moment, let's assume the user wants to use either
-	// EMAN or SPIDER Euler angles, but nothing else.
-	string angletype = params["angletype"].to_str();
-	Transform3D::EulerType eulertype;
-	if (angletype == "SPIDER") {
-		eulertype = Transform3D::SPIDER;
-		if (nangles == 0) {
-			// a single SPIDER angle was passed in
-			float phi = params["phi"];
-			float theta = params["theta"];
-			float psi = params["psi"];
-			anglelist.push_back(phi);
-			anglelist.push_back(theta);
-			anglelist.push_back(psi);
-			nangles = 1;
-		}
-	} else if (angletype == "EMAN") {
-		eulertype = Transform3D::EMAN;
-		if (nangles == 0) {
-			// a single EMAN angle was passed in
-			float az = params["az"];
-			float alt = params["alt"];
-			float phi = params["phi"];
-			anglelist.push_back(az);
-			anglelist.push_back(alt);
-			anglelist.push_back(phi);
-			nangles = 1;
-		}
-	} else 
-		throw InvalidValueException(0,
-				"Only SPIDER and EMAN Euler angles currently supported");
+		// This part was modified by David Woolford -
+		// Before this the code worked only for SPIDER and EMAN angles,
+		// but the framework of the Transform3D allows for a generic implementation
+		// as specified here.
+		Transform3D* t3d = params["t3d"];
+		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+		Dict p = t3d->get_rotation(Transform3D::SPIDER);
+		
+		string angletype = "SPIDER";
+		float phi = p["phi"];
+		float theta = p["theta"];
+		float psi = p["psi"];
+		anglelist.push_back(phi);
+		anglelist.push_back(theta);
+		anglelist.push_back(psi);
+		nangles = 1;
+	}
+	
+	// End David Woolford modifications
+	
 	// initialize return object
 	EMData* ret = new EMData();
 	ret->set_size(nx, ny, nangles);
 	ret->to_zero();
-
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
 		int indx = 3*ia;
-		Transform3D tf(eulertype, anglelist[indx],anglelist[indx+1],anglelist[indx+2]);
+		Transform3D tf(Transform3D::SPIDER, anglelist[indx],anglelist[indx+1],anglelist[indx+2]);
 		EMData* proj = imgft->extractplane(tf, kb);
 		if (proj->is_shuffled()) proj->fft_shuffle();
 		proj->center_origin_fft();
@@ -888,9 +897,10 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 			for (int ix=0; ix < nx; ix++)
 				(*ret)(ix,iy,ia) = (*winproj)(ix,iy);
 		delete winproj;
-	}
+	}	
 	delete imgft;
 	ret->update();
+	
 	return ret;
 }
 
@@ -1230,6 +1240,7 @@ void ChaoProjector::setdm(vector<float> anglelist, string const , float *dm) con
         theta = static_cast<float>(anglelist(2,j)*dgr_to_rad);
         psi   = static_cast<float>(anglelist(3,j)*dgr_to_rad);
 
+// 		cout << phi << " " << theta << " " << psi << endl;
         cthe  = cos(theta);
         sthe  = sin(theta);
         cpsi  = cos(psi);
@@ -1255,16 +1266,18 @@ void ChaoProjector::setdm(vector<float> anglelist, string const , float *dm) con
 // project from 3D to 2D (multiple projections)
 EMData *ChaoProjector::project3d(EMData * vol) const
 {
-        int nrays, nnz, status, j;
-        float *dm;
-        string angletype;
-        int   *ptrs, *cord;
-        float *sphere, *images;
- 
+	Transform3D* t3d = params["t3d"];
+	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+	
+	int nrays, nnz, status, j;
+	float *dm;
+	int   *ptrs, *cord;
+	float *sphere, *images;
+
 	int nxvol = vol->get_xsize();
 	int nyvol = vol->get_ysize();
 	int nzvol = vol->get_zsize();
-        Vec3i volsize(nxvol,nyvol,nzvol);
+	Vec3i volsize(nxvol,nyvol,nzvol);
 
 	int dim = Util::get_min(nxvol,nyvol,nzvol);
 	if (nzvol == 1) {
@@ -1285,84 +1298,72 @@ EMData *ChaoProjector::project3d(EMData * vol) const
 	if (params.has_key("radius")) {ri = params["radius"];} 
 	else {ri = dim/2 - 1;}
 
-        // retrieve the voxel values
-        float *cube = vol->get_data(); 
+	// retrieve the voxel values
+	float *cube = vol->get_data(); 
 
-        // count the number of voxels within a sphere centered at icent, 
-        // with radius ri 
-        status = getnnz(volsize, ri, origin, &nrays, &nnz);
-        // need to check status...
+	// count the number of voxels within a sphere centered at icent, 
+	// with radius ri 
+	status = getnnz(volsize, ri, origin, &nrays, &nnz);
+	// need to check status...
 
-        // convert from cube to sphere
-        sphere = new float[nnz];
-        ptrs   = new int[nrays+1];
-        cord   = new int[3*nrays];
-        if (sphere == NULL || ptrs == NULL || cord == NULL) {
-           fprintf(stderr,"ChaoProjector::project3d, failed to allocate!\n");
-           exit(1);
-        }
-        for (int i = 0; i<nnz; i++) sphere[i] = 0.0;
-        for (int i = 0; i<nrays+1; i++) ptrs[i] = 0;
-        for (int i = 0; i<3*nrays; i++) cord[i] = 0;
-       
-        status = cb2sph(cube, volsize, ri, origin, nnz, ptrs, cord, sphere);
-        // check status
+	// convert from cube to sphere
+	sphere = new float[nnz];
+	ptrs   = new int[nrays+1];
+	cord   = new int[3*nrays];
+	if (sphere == NULL || ptrs == NULL || cord == NULL) {
+	fprintf(stderr,"ChaoProjector::project3d, failed to allocate!\n");
+	exit(1);
+	}
+	for (int i = 0; i<nnz; i++) sphere[i] = 0.0;
+	for (int i = 0; i<nrays+1; i++) ptrs[i] = 0;
+	for (int i = 0; i<3*nrays; i++) cord[i] = 0;
+
+	status = cb2sph(cube, volsize, ri, origin, nnz, ptrs, cord, sphere);
+	// check status
 
 	// Do we have a list of angles?
 	vector<float> anglelist = params["anglelist"];
 	int nangles = anglelist.size() / 3;
 
-	// For the moment, let's assume the user wants to use either
-	// EMAN or SPIDER Euler angles, but nothing else.
-	angletype = params["angletype"].to_str();
-	if (angletype == "SPIDER") {
-            if (nangles == 0) {
-               // a single SPIDER angle was passed in
-               float phi = params["phi"];
-               float theta = params["theta"];
-               float psi = params["psi"];
-               anglelist.push_back(phi);
-               anglelist.push_back(theta);
-               anglelist.push_back(psi);
-               nangles = 1;
-            }
-	} else if (angletype == "EMAN") {
-            if (nangles == 0) {
-               // a single EMAN angle was passed in
-               float az = params["az"];
-               float alt = params["alt"];
-               float phi = params["phi"];
-               anglelist.push_back(az);
-               anglelist.push_back(alt);
-               anglelist.push_back(phi);
-               nangles = 1;
-            }
-        } else {
-            throw InvalidValueException(0,"Only SPIDER and EMAN Euler angles currently supported");
-        } //end if (angletype)
+	// This part was modified by David Woolford -
+	// Before this the code worked only for SPIDER and EMAN angles,
+	// but the framework of the Transform3D allows for a generic implementation
+	// as specified here.
+	Dict p = t3d->get_rotation(Transform3D::SPIDER);
+	
+	string angletype = "SPIDER";
+	float phi = p["phi"];
+	float theta = p["theta"];
+	float psi = p["psi"];
+	anglelist.push_back(phi);
+	anglelist.push_back(theta);
+	anglelist.push_back(psi);
+	nangles = 1;
+	
+	// End David Woolford modifications
 
-        dm = new float[nangles*9];
-        setdm(anglelist, angletype, dm);
+	dm = new float[nangles*9];
+	setdm(anglelist, angletype, dm);
 
-        // return images
+		// return images
 	EMData *ret = new EMData();
 	ret->set_size(nxvol, nyvol, nangles);
 	ret->set_complex(false);
 	ret->set_ri(true);
 
-        images = ret->get_data();
+	images = ret->get_data();
 
-        for (j = 1; j <= nangles; j++) { 
-           status = fwdpj3(volsize, nrays, nnz   , &dm(1,j), origin, ri, 
-                           ptrs   ,  cord, sphere, &images(1,1,j));
-           // check status?
-        }
+	for (j = 1; j <= nangles; j++) { 
+	status = fwdpj3(volsize, nrays, nnz   , &dm(1,j), origin, ri, 
+					ptrs   ,  cord, sphere, &images(1,1,j));
+	// check status?
+	}
 
-        // deallocate all temporary work space
-        EMDeleteArray(dm);
-        EMDeleteArray(ptrs);
-        EMDeleteArray(cord);
-        EMDeleteArray(sphere);
+	// deallocate all temporary work space
+	EMDeleteArray(dm);
+	EMDeleteArray(ptrs);
+	EMDeleteArray(cord);
+	EMDeleteArray(sphere);
 
 	ret->update();
 	return ret;
@@ -1374,123 +1375,112 @@ EMData *ChaoProjector::project3d(EMData * vol) const
 // backproject from 2D to 3D (multiple images)
 EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 {
-    int nrays, nnz, status, j;
-    float *dm;
-    string angletype;
-    int   *ptrs, *cord;
-    float *sphere, *images, *cube;
+	Transform3D* t3d = params["t3d"];
+	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+	int nrays, nnz, status, j;
+	float *dm;
+	int   *ptrs, *cord;
+	float *sphere, *images, *cube;
 
-    int nximg   = imagestack->get_xsize();
-    int nyimg   = imagestack->get_ysize();
-    int nslices = imagestack->get_zsize();
+	int nximg   = imagestack->get_xsize();
+	int nyimg   = imagestack->get_ysize();
+	int nslices = imagestack->get_zsize();
 
-    int dim = Util::get_min(nximg,nyimg);
-    Vec3i volsize(nximg,nyimg,dim);
+	int dim = Util::get_min(nximg,nyimg);
+	Vec3i volsize(nximg,nyimg,dim);
 
-    Vec3i origin(0,0,0);
-    // If a sensible origin isn't passed in, choose the middle of
-    // the cube.
-    if (params.has_key("origin_x")) {origin[0] = params["origin_x"];} 
-    else {origin[0] = nximg/2+1;}
-    if (params.has_key("origin_y")) {origin[1] = params["origin_y"];} 
-    else {origin[1] = nyimg/2+1;}
-    if (params.has_key("origin_z")) {origin[1] = params["origin_z"];} 
-    else {origin[2] = dim/2+1;}
+	Vec3i origin(0,0,0);
+	// If a sensible origin isn't passed in, choose the middle of
+	// the cube.
+	if (params.has_key("origin_x")) {origin[0] = params["origin_x"];} 
+	else {origin[0] = nximg/2+1;}
+	if (params.has_key("origin_y")) {origin[1] = params["origin_y"];} 
+	else {origin[1] = nyimg/2+1;}
+	if (params.has_key("origin_z")) {origin[1] = params["origin_z"];} 
+	else {origin[2] = dim/2+1;}
 
-    int ri;
-    if (params.has_key("radius")) {ri = params["radius"];} 
-    else {ri = dim/2 - 1;}
+	int ri;
+	if (params.has_key("radius")) {ri = params["radius"];} 
+	else {ri = dim/2 - 1;}
 
-    // retrieve the voxel values
-    images = imagestack->get_data(); 
+	// retrieve the voxel values
+	images = imagestack->get_data(); 
 
-    // count the number of voxels within a sphere centered at icent, 
-    // with radius ri 
-    status = getnnz(volsize, ri, origin, &nrays, &nnz);
-    // need to check status...
+	// count the number of voxels within a sphere centered at icent, 
+	// with radius ri 
+	status = getnnz(volsize, ri, origin, &nrays, &nnz);
+	// need to check status...
 
-    // convert from cube to sphere
-    sphere = new float[nnz];
-    ptrs   = new int[nrays+1];
-    cord   = new int[3*nrays];
-    if (sphere == NULL || ptrs == NULL || cord == NULL) {
-       fprintf(stderr,"ChaoProjector::backproject3d, failed to allocate!\n");
-       exit(1);
-    }
-    for (int i = 0; i<nnz; i++) sphere[i] = 0.0;
-    for (int i = 0; i<nrays+1; i++) ptrs[i] = 0;
-    for (int i = 0; i<3*nrays; i++) cord[i] = 0;
+	// convert from cube to sphere
+	sphere = new float[nnz];
+	ptrs   = new int[nrays+1];
+	cord   = new int[3*nrays];
+	if (sphere == NULL || ptrs == NULL || cord == NULL) {
+	fprintf(stderr,"ChaoProjector::backproject3d, failed to allocate!\n");
+	exit(1);
+	}
+	for (int i = 0; i<nnz; i++) sphere[i] = 0.0;
+	for (int i = 0; i<nrays+1; i++) ptrs[i] = 0;
+	for (int i = 0; i<3*nrays; i++) cord[i] = 0;
 
-    // Do we have a list of angles?
-    vector<float> anglelist = params["anglelist"];
-    int nangles = anglelist.size() / 3;
+	// Do we have a list of angles?
+	vector<float> anglelist = params["anglelist"];
+	int nangles = anglelist.size() / 3;
 
-    // For the moment, let's assume the user wants to use either
-    // EMAN or SPIDER Euler angles, but nothing else.
-    angletype = params["angletype"].to_str();
-    if (angletype == "SPIDER") {
-        if (nangles == 0) {
-           // a single SPIDER angle was passed in
-           float phi = params["phi"];
-           float theta = params["theta"];
-           float psi = params["psi"];
-           anglelist.push_back(phi);
-           anglelist.push_back(theta);
-           anglelist.push_back(psi);
-           nangles = 1;
-       }
-    } else if (angletype == "EMAN") {
-        if (nangles == 0) {
-           // a single EMAN angle was passed in
-           float az = params["az"];
-           float alt = params["alt"];
-           float phi = params["phi"];
-           anglelist.push_back(az);
-           anglelist.push_back(alt);
-           anglelist.push_back(phi);
-           nangles = 1;
-        }
-    } else {
-        throw InvalidValueException(0,"Only SPIDER and EMAN Euler angles currently supported");
-    } //end if (angletype)
+	// This part was modified by David Woolford -
+	// Before this the code worked only for SPIDER and EMAN angles,
+	// but the framework of the Transform3D allows for a generic implementation
+	// as specified here.
+	Dict p = t3d->get_rotation(Transform3D::SPIDER);
+	
+	string angletype = "SPIDER";
+	float phi = p["phi"];
+	float theta = p["theta"];
+	float psi = p["psi"];
+	anglelist.push_back(phi);
+	anglelist.push_back(theta);
+	anglelist.push_back(psi);
+	nangles = 1;
+	
+	// End David Woolford modifications
 
-    if (nslices != nangles) {
-        LOGERR("the number of images does not match the number of angles");
-        return 0;
-    }
+	if (nslices != nangles) {
+		LOGERR("the number of images does not match the number of angles");
+		return 0;
+	}
 
-    dm = new float[nangles*9];
-    setdm(anglelist, angletype, dm);
+	dm = new float[nangles*9];
+	setdm(anglelist, angletype, dm);
 
-    // return volume
-    EMData *ret = new EMData();
-    ret->set_size(nximg, nyimg, dim);
-    ret->set_complex(false);
-    ret->set_ri(true);
-    ret->to_zero();
+	// return volume
+	EMData *ret = new EMData();
+	ret->set_size(nximg, nyimg, dim);
+	ret->set_complex(false);
+	ret->set_ri(true);
+	ret->to_zero();
 
-    cube = ret->get_data();
-    // cb2sph should be replaced by something that touches only ptrs and cord
-    status = cb2sph(cube, volsize, ri, origin, nnz, ptrs, cord, sphere);
-    // check status
+	cube = ret->get_data();
+	// cb2sph should be replaced by something that touches only ptrs and cord
+	status = cb2sph(cube, volsize, ri, origin, nnz, ptrs, cord, sphere);
+	// check status
 
-    for (j = 1; j <= nangles; j++) { 
-       status = bckpj3(volsize, nrays, nnz, &dm(1,j), origin, ri, 
-                       ptrs   , cord , &images(1,1,j), sphere);
-       // check status?
-    }
+	for (j = 1; j <= nangles; j++) { 
+	status = bckpj3(volsize, nrays, nnz, &dm(1,j), origin, ri, 
+					ptrs   , cord , &images(1,1,j), sphere);
+	// check status?
+	}
 
-    status = sph2cb(sphere, volsize, nrays, ri, nnz, ptrs, cord, cube); 
-    // check status?
+	status = sph2cb(sphere, volsize, nrays, ri, nnz, ptrs, cord, cube); 
+	// check status?
 
-    // deallocate all temporary work space
-    EMDeleteArray(dm);
-    EMDeleteArray(ptrs);
-    EMDeleteArray(cord);
-    EMDeleteArray(sphere);
+	// deallocate all temporary work space
+	EMDeleteArray(dm);
+	EMDeleteArray(ptrs);
+	EMDeleteArray(cord);
+	EMDeleteArray(sphere);
 
-    ret->update();
-    return ret;
+	ret->update();
+	return ret;
 }
 
 #undef images 
@@ -1511,6 +1501,8 @@ EMData *GaussFFTProjector::backproject3d(EMData * ) const
 
 EMData *PawelProjector::backproject3d(EMData * imagestack) const
 {
+	Transform3D* t3d = params["t3d"];
+	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
     float *images;
 
     if (!imagestack) {
@@ -1519,7 +1511,7 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
     int ri;
     int nx      = imagestack->get_xsize();
     int ny      = imagestack->get_ysize();
-    int nslices = imagestack->get_zsize();
+//     int nslices = imagestack->get_zsize();
     int dim = Util::get_min(nx,ny);
     images  = imagestack->get_data();
 
@@ -1548,43 +1540,22 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
     vector<float> anglelist = params["anglelist"];
     int nangles = anglelist.size() / 3;
 
-    // For the moment, let's assume the user wants to use either
-    // EMAN or SPIDER Euler angles, but nothing else.
-    string angletype = params["angletype"].to_str();
-    Transform3D::EulerType eulertype;
-    if (angletype == "SPIDER") {
-       eulertype = Transform3D::SPIDER;
-       if (nangles == 0) {
-          // a single SPIDER angle was passed in
-          float phi = params["phi"];
-          float theta = params["theta"];
-          float psi = params["psi"];
-          anglelist.push_back(phi);
-          anglelist.push_back(theta);
-          anglelist.push_back(psi);
-          nangles = 1;
-       }
-    } else if (angletype == "EMAN") {
-       eulertype = Transform3D::EMAN;
-       if (nangles == 0) {
-          // a single EMAN angle was passed in
-          float az = params["az"];
-          float alt = params["alt"];
-          float phi = params["phi"];
-          anglelist.push_back(az);
-          anglelist.push_back(alt);
-          anglelist.push_back(phi);
-          nangles = 1;
-       }
-    } else {
-       LOGERR("Only SPIDER and EMAN Euler angles supported");
-       return 0;
-    }
-
-    if (nslices != nangles) {
-        LOGERR("the number of images does not match the number of angles");
-        return 0;
-    }
+	// This part was modified by David Woolford -
+	// Before this the code worked only for SPIDER and EMAN angles,
+	// but the framework of the Transform3D allows for a generic implementation
+	// as specified here.
+	Dict p = t3d->get_rotation(Transform3D::SPIDER);
+	
+	string angletype = "SPIDER";
+	float phi = p["phi"];
+	float theta = p["theta"];
+	float psi = p["psi"];
+	anglelist.push_back(phi);
+	anglelist.push_back(theta);
+	anglelist.push_back(psi);
+	nangles = 1;
+	
+	// End David Woolford modifications
 
     // initialize return object
     EMData* ret = new EMData();
@@ -1594,7 +1565,7 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
     // loop over sets of angles
     for (int ia = 0; ia < nangles; ia++) {
        int indx = 3*ia;
-       Transform3D rotation(eulertype, float(anglelist[indx]),
+	   Transform3D rotation(Transform3D::SPIDER, float(anglelist[indx]),
                             float(anglelist[indx+1]), 
                             float(anglelist[indx+2]));
        float dm1 = rotation.at(0,0);

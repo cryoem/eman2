@@ -352,7 +352,12 @@ def get_h(prop,altitude,maxcsym):
 def generate_and_save_projections(options,data,eulers,smear=0, phiprop=0):
 	
 	for i,euler in enumerate(eulers):
-		p=data.project(options.projector,{"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg})
+		#if i == 0 : continue
+		a = {"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg}
+		t3d = Transform3D(EULER_EMAN, a)
+		b = {"t3d": t3d }
+		p=data.project(options.projector,b)
+		
 		#FIXME:: In EMAN2 everything should be set in degrees but atm radians are being used in error!
 		# this problem is being fixed by Phil Baldwin, and when fixed, the arguments here should change to radians
 		p.set_rotation(euler[1]* rad2deg,euler[0]* rad2deg,euler[2]* rad2deg)
@@ -391,7 +396,10 @@ def verify_mirror_test(data, eulers, symmetry, projector):
 	
 
 	for i,euler in enumerate(eulers) :
-		p=data.project(projector,{"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg})
+		a = {"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg}
+		t3d = Transform3D(EULER_EMAN, a)
+		b = {"t3d": t3d }
+		p=data.project(options.projector,b)
 		
 		mirrorEuler = sym_object.asym_unit_mirror_orientation(euler)
 			

@@ -1002,8 +1002,39 @@ EMData *FourierReconstructor::finish()
 
 EMData* BaldwinWoolfordReconstructor::finish()
 {
-	return new EMData(*tmp_data);
+	tmp_data->write_image("density.mrc");
+	image->process_inplace("xform.fourierorigin");
+	image->do_ift_inplace();
+	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
+	image->postift_depad_corner_inplace();
+	image->process_inplace("xform.phaseorigin.tocenter");
+	
+	// now undo the Fourier convolution with real space division
+	float* d = image->get_data();
+	float N = (float) image->get_xsize()/2.0;
+	N *= N;
+	int rnx = image->get_xsize();
+	int rny = image->get_ysize();
+	int rnxy = rnx*rny;
+	int cx = image->get_xsize()/2;
+	int cy = image->get_ysize()/2;
+	int cz = image->get_zsize()/2;
+	for (int k = 0; k < image->get_zsize(); ++k ){
+		for (int j = 0; j < image->get_ysize(); ++j ) {
+			for (int i =0; i < image->get_xsize(); ++i ) {
+				float xd = i-cx; xd *= xd;
+				float yd = j-cy; yd *= yd;
+				float zd = k-cz; zd *= zd;
+				float weight = 	exp((xd+yd+zd)/N);
+				d[k*rnxy + j*rnx + i] *=  weight;
+			}
+		}
+	}
+	image->update();
+	return  image;
 }
+
+#include <iomanip>
 
 int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 {
@@ -1022,38 +1053,42 @@ int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 	int tny = tmp_data->get_ysize();
 	int tnz = tmp_data->get_zsize();
 	
-	for (int y = 0; y < tny; y++) {
-		for (int x = 0; x < tnx; x++) {
+	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
+	{
+		Transform3D n3d;
+		// Just to a straight copy to avoid uneccesary multiplication by the identity,
+		// and to maintain greater numerical accuracy.
+		if ( i == 0 ) { n3d = t3d;}
+		else n3d = t3d.get_sym((string) params["sym"], i);
+	
+		for (int y = 0; y < tny; y++) {
+			for (int x = 0; x < tnx; x++) {
+					
+				float rx = (float) x;
+				float ry = (float) y;
+					
+				if ( ny != rnx )
+				{
+					if ( rnx > ny ) ry *= y_scale;
+					else rx *= x_scale;
+				}
+				float xx = (float) (rx * n3d[0][0] + (ry - tny/2) * n3d[1][0]);
+				float yy = (float) (rx * n3d[0][1] + (ry - tny/2) * n3d[1][1]);
+				float zz = (float) (rx * n3d[0][2] + (ry - tny/2) * n3d[1][2]);
 				
-			float rx = (float) x;
-			float ry = (float) y;
+				if (xx < 0 ){
+// 					cout << "xx was less than zero " << xx << endl;
+					xx = -xx;
+					yy = -yy;
+					zz = -zz;
+				}
 				
-			if ( ny != rnx )
-			{
-				if ( rnx > ny ) ry *= y_scale;
-				else rx *= x_scale;
+				if ( xx < 0.001) xx = 0;
+				
+				yy += tny/2;
+				zz += tnz/2;
+				insert_density_at(xx,yy,zz);
 			}
-			
-			float xx = (float) (rx * t3d[0][0] + (ry - tny/2) * t3d[1][0]);
-			float yy = (float) (rx * t3d[0][1] + (ry - tny/2) * t3d[1][1]);
-			float zz = (float) (rx * t3d[0][2] + (ry - tny/2) * t3d[1][2]);
-
-			
-// 			if ( x == 0 ) {
-// 				cout << "(ry - max_padded_dim / 2) = " << (ry - max_padded_dim / 2) << endl;
-// 				cout << "xx,yy,zz are " << xx << " " << yy << " " << zz << endl;	
-// 			}
-			
-			if (xx < 0 ){
-				xx = -xx;
-				yy = -yy;
-				zz = -zz;
-			}
-			
-			yy += tny/2;
-			zz += tnz/2;
-// 			cout << xx << " " << yy << " " << zz << endl;
-			insert_density_at(xx,yy,zz);
 		}
 	}
 	
@@ -1066,9 +1101,32 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	int yl = Util::fast_floor(y);
 	int zl = Util::fast_floor(z);
 	
-	int w = 1;
-	// w minus one
-	int wmo = w;
+	// w is the windowing width
+	int w = params.set_default("maskwidth",3);
+	float dw = 1.0/w;
+	dw *= dw;
+	dw = 2;
+// 	cout << w << endl;
+	// 	int w = 3;
+	// w minus one - this control the number of 
+	// pixels/voxels to the left of the main pixel
+	// that will have density
+	int wmox = w-1;
+	int wmoy = w-1;
+	int wmoz = w-1;
+	
+	// If any coordinate is incedental with a vertex, then
+	// make sure there is symmetry in density accruing.
+	// i.e. the window width must be equal in both directions
+	if ( ((float) xl) == x ) wmox = w;
+	if ( ((float) yl) == y ) wmoy = w;
+	if ( ((float) zl) == z ) wmoz = w;
+	
+// 	if (xl == 0 && yl == ny/2 && zl == nz/2 ) {
+// 		cout << endl;
+// 		cout << x << " " << y << " " << z << endl;
+// 		cout << "wmo " << wmox << " " << wmoy << " " << wmoz << endl;
+// 	}
 	
 	float* d = tmp_data->get_data();
 	int tnx = tmp_data->get_xsize();
@@ -1076,24 +1134,36 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	int tnz = tmp_data->get_zsize();
 	int tnxy = tnx*tny;
 	
-	for(int k = zl-wmo; k <= zl+w; ++k ) {
-		for(int j = yl-wmo; j <= yl+w; ++j) {
-			for( int i = xl-wmo; i <= xl+w; ++i) {
+	for(int k = zl-wmoz; k <= zl+w; ++k ) {
+		for(int j = yl-wmoy; j <= yl+w; ++j) {
+			for( int i = xl-wmox; i <= xl+w; ++i) {
 				float fac = 1.0;
 				int ic = i, jc = j, kc = k;
+				
+				// Fourier space is periodic, which is enforced
+				// by the next 6 if statements. These if statements
+				// assume that the Fourier DC components is at 
+				// (0,ny/2,nz/2).
 				if ( i <= 0 ) {
-					if ( x != 0 ) {
-						fac = 2.0;
+					if ( x != 0 && i == 0 ) fac = 2.0;
+					else if ( x == 0 && i < 0) continue;
+// 					if (i < 0 ) ic = -i;
+					if (i < 0 ) {
+						ic = -i;
+						jc = tny-jc;
+						kc = tnz-kc;
+						
+// 						static int sadf = 0;
+// 						cout << ++sadf << endl;
 					}
-					else if ( i < 0 ) continue;
-					ic = -i;
 				}
-				if ( i >= tnx ) ic = 2*tnx-i-1;
-				if ( j < 0 ) jc = tny+j;
-				if ( j >= tny ) jc = j-tny;
-				if ( k < 0 ) kc = tnz+k;
-				if ( k >= tnz ) kc = k-tnz;
-// 				
+				if ( ic >= tnx ) ic = 2*tnx-ic-1;
+				if ( jc < 0 ) jc = tny+jc;
+				if ( jc >= tny ) jc = jc-tny;
+				if ( kc < 0 ) kc = tnz+kc;
+				if ( kc >= tnz ) kc = kc-tnz;
+				// This shouldn't happen
+				// Debug remove later
 				if ( ic < 0 ) { cout << "wo 1" << endl; }
 				if ( ic >= tnx  ){ cout << "wo 2" << endl; }
 				if ( jc < 0 ) { cout << "wo 3" << endl; }
@@ -1106,24 +1176,226 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 				float yd = (y-(float)j);
 				float xd = (x-(float)i);
 				zd *= zd; yd *= yd; xd *= xd;
-				float f = fac*exp(-(xd+yd+zd)*.5);
-// 				if ( x == 1 && y == ny/2 && z == nz/2 ) {
-// 					cout << "input x,y and z are " << x << " " << y << " " << z << endl;
-// 					cout << "coords are " << ic <<  " " << jc << " " << kc << endl;
-// 					cout << "iterators are " << i << " " << j << " " << k << endl;
-// 					cout << "distances are " << xd << " " << yd << " " << zd << endl;
-// 					cout << "value is " << f << endl;
-// 				}
-				if ( (kc*tnxy+jc*tnx+ic) >= tnxy*tnz )  {
-					cout << "woops" << endl;
-					cout << kc << " " << jc << " " << ic << endl;
-					continue;
-				}
+				float f = fac*exp(-dw*(xd+yd+zd)*.5);
+				// Debug - this error should never occur.
+				if ( (kc*tnxy+jc*tnx+ic) >= tnxy*tnz ) throw OutofRangeException(0,tnxy*tnz,kc*tnxy+jc*tnx+ic, "in density insertion" );
 				d[kc*tnxy+jc*tnx+ic] += f;
 			}
 		}
 	}
 }
+
+int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, const Transform3D & t3d)
+{	
+// 	bool fftodd = image->is_fftodd();
+// 	int rnx = nx-2*!fftodd;
+/*	
+	float y_scale = 1.0, x_scale = 1.0;*/
+	
+// 	if ( ny != rnx  )
+// 	{
+// 		if ( rnx > ny ) y_scale = (float) rnx / (float) ny;
+// 		else x_scale = (float) ny / (float) rnx;
+// 	}
+	
+	EMData* slice = input_slice->process("xform.phaseorigin.tocorner");
+	slice->do_fft_inplace();
+	slice->process_inplace("xform.fourierorigin.tocenter");
+	
+	float dt[2];
+
+	float *dat = slice->get_data();
+	
+	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
+	{
+		Transform3D n3d;
+		if ( i == 0 ) { n3d = t3d;}
+		else n3d = t3d.get_sym((string) params["sym"], i);
+
+		for (int y = 0; y < slice->get_ysize(); y++) {
+			for (int x = 0; x < slice->get_xsize() / 2; x++) {
+				
+				float rx = (float) x;
+				float ry = (float) y;
+				
+// 				if ( y_in != x_in )
+// 				{
+// 					if ( x_in > y_in ) ry *= y_scale;
+// 					else rx *= x_scale;
+// 				}
+				
+// 				if ((rx * rx + Util::square(ry - max_padded_dim / 2)) > rl)
+// 					continue;
+
+				float xx = (float) (rx * n3d[0][0] + (ry - max_padded_dim / 2) * n3d[1][0]);
+				float yy = (float) (rx * n3d[0][1] + (ry - max_padded_dim / 2) * n3d[1][1]);
+				float zz = (float) (rx * n3d[0][2] + (ry - max_padded_dim / 2) * n3d[1][2]);
+
+				float cc = 1;
+	
+				if (xx < 0 ) {
+					xx = -xx;
+					yy = -yy;
+					zz = -zz;
+					cc = -1.0;
+				}
+				
+// 				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
+// 				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
+// 				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
+				
+				if ( xx < 0.001) xx = 0;
+				
+				yy += ny / 2;
+				zz += nz / 2;
+								
+				
+				int idx = x * 2 + y * (slice->get_xsize());
+				dt[0] = dat[idx];
+				dt[1] = cc * dat[idx+1];
+
+				insert_pixel(xx,yy,zz,dt);
+			}
+		}
+	}
+	
+	delete slice;
+	
+	return 0;
+}
+
+void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, const float& z, const float dt[2])
+{
+	int xl = Util::fast_floor(x);
+	int yl = Util::fast_floor(y);
+	int zl = Util::fast_floor(z);
+	
+	// w is the windowing width
+	int w = params.set_default("maskwidth",3);
+	float dw = 1.0/w;
+	dw *= dw;
+	dw = 2;
+// 	cout << w << endl;
+	// 	int w = 3;
+	// w minus one - this control the number of 
+	// pixels/voxels to the left of the main pixel
+	// that will have density
+	int wmox = w-1;
+	int wmoy = w-1;
+	int wmoz = w-1;
+	
+	// If any coordinate is incedental with a vertex, then
+	// make sure there is symmetry in density accruing.
+	// i.e. the window width must be equal in both directions
+	if ( ((float) xl) == x ) wmox = w;
+	if ( ((float) yl) == y ) wmoy = w;
+	if ( ((float) zl) == z ) wmoz = w;
+	
+	float* d = tmp_data->get_data();
+	int tnx = tmp_data->get_xsize();
+	int tny = tmp_data->get_ysize();
+	int tnz = tmp_data->get_zsize();
+	int tnxy = tnx*tny;
+	
+	float weight = 1.0;
+// 	
+	for(int k = zl-wmoz; k <= zl+w; ++k ) {
+		for(int j = yl-wmoy; j <= yl+w; ++j) {
+			for( int i = xl-wmox; i <= xl+w; ++i) {
+				float fac = 1.0;
+				int ic = i, jc = j, kc = k;
+				
+				// Fourier space is periodic, which is enforced
+				// by the next 6 if statements. These if statements
+				// assume that the Fourier DC components is at 
+				// (0,ny/2,nz/2).
+				if ( i <= 0 ) {
+					if ( x != 0 && i == 0 ) fac = 2.0;
+					else if ( x == 0 && i < 0) continue;
+// 					if (i < 0 ) ic = -i;
+					if (i < 0 ) {
+						ic = -i;
+						jc = tny-jc;
+						kc = tnz-kc;
+					}
+				}
+				if ( ic >= tnx ) ic = 2*tnx-ic-1;
+				if ( jc < 0 ) jc = tny+jc;
+				if ( jc >= tny ) jc = jc-tny;
+				if ( kc < 0 ) kc = tnz+kc;
+				if ( kc >= tnz ) kc = kc-tnz;
+				// This shouldn't happen
+				// Debug remove later
+				if ( ic < 0 ) { cout << "wo 1" << endl; }
+				if ( ic >= tnx  ){ cout << "wo 2" << endl; }
+				if ( jc < 0 ) { cout << "wo 3" << endl; }
+				if ( jc >= tny ) { cout << "wo 4" << endl; }
+				if ( kc < 0 ) { cout << "wo 5" << endl; }
+				if ( kc >= tnz ) { cout << "wo 6" << endl; }
+				
+				
+				float zd = (z-(float)k);
+				float yd = (y-(float)j);
+				float xd = (x-(float)i);
+				zd *= zd; yd *= yd; xd *= xd;
+				// Debug - this error should never occur.
+				if ( (kc*tnxy+jc*tnx+ic) >= tnxy*tnz ) throw OutofRangeException(0,tnxy*tnz,kc*tnxy+jc*tnx+ic, "in weight determination insertion" );
+				float f = fac*exp(-dw*(xd+yd+zd)*0.5);
+				weight += f*(d[kc*tnxy+jc*tnx+ic] - f);
+			}
+		}
+	}
+	
+	weight = 1.0/weight;
+// 	cout << weight << endl;
+	int rnx = 2*tnx;
+	int rnxy = 2*tnxy;
+	d = image->get_data();
+	for(int k = zl-wmoz; k <= zl+w; ++k ) {
+		for(int j = yl-wmoy; j <= yl+w; ++j) {
+			for( int i = xl-wmox; i <= xl+w; ++i) {
+				float fac = 1.0;
+				int ic = i, jc = j, kc = k;
+				
+				// Fourier space is periodic, which is enforced
+				// by the next 6 if statements. These if statements
+				// assume that the Fourier DC components is at 
+				// (0,ny/2,nz/2).
+				float negfac=1.0;
+				if ( i <= 0 ) {
+					if ( x != 0 && i == 0 ) fac = 2.0;
+					else if ( x == 0 && i < 0) continue;
+					if (i < 0 ) {
+						ic = -i;
+						jc = tny-jc;
+						kc = tnz-kc;
+						negfac=-1.0;
+					}
+				}
+				if ( ic >= tnx ) ic = 2*tnx-ic-1;
+				if ( jc < 0 ) jc = tny+jc;
+				if ( jc >= tny ) jc = jc-tny;
+				if ( kc < 0 ) kc = tnz+kc;
+				if ( kc >= tnz ) kc = kc-tnz;
+				// This shouldn't happen
+				// Debug remove later
+				
+				
+				float zd = (z-(float)k);
+				float yd = (y-(float)j);
+				float xd = (x-(float)i);
+				zd *= zd; yd *= yd; xd *= xd;
+				float f = fac*exp(-dw*(xd+yd+zd));
+				// Debug - this error should never occur.
+				if ( (kc*rnxy+jc*rnx+2*ic+1) >= rnxy*tnz ) throw OutofRangeException(0,rnxy*tnz,kc*rnxy+jc*rnx+2*ic+1, "in pixel insertion" );
+				
+				d[kc*rnxy+jc*rnx+2*ic] += weight*f*dt[0];
+				d[kc*rnxy+jc*rnx+2*ic+1] += negfac*weight*f*dt[1];
+			}
+		}
+	}
+}
+
 
 void WienerFourierReconstructor::setup()
 {

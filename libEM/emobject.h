@@ -780,7 +780,7 @@ namespace EMAN
 			const vector<string> valid_keys = i->get_param_types().keys();
 			typename vector<string>::const_iterator it;
 			for(it=para_keys.begin(); it!=para_keys.end(); ++it) {
-//				std::cout << "the iterator  is " << *it << std::endl; // PRB May 19th
+// 				std::cout << "the iterator  is " << *it << std::endl; // PRB May 19th
 				if( find(valid_keys.begin(), valid_keys.end(), *it) == valid_keys.end() ) {
 					throw InvalidParameterException(*it);
 				}

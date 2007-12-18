@@ -185,6 +185,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("t3d", EMObject::TRANSFORM3D);
 			d.put("alt", EMObject::FLOAT);
 			d.put("az", EMObject::FLOAT);
 			d.put("phi", EMObject::FLOAT);
@@ -228,6 +229,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("t3d", EMObject::TRANSFORM3D);
 			d.put("kb_alpha", EMObject::FLOAT);
 			d.put("kb_K", EMObject::FLOAT);
 			d.put("angletype", EMObject::STRING);
@@ -269,6 +271,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("t3d", EMObject::TRANSFORM3D);
 			d.put("origin_x", EMObject::INT);
 			d.put("origin_y", EMObject::INT);
 			d.put("origin_z", EMObject::INT);
@@ -324,9 +327,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("alt", EMObject::FLOAT);
-			d.put("az", EMObject::FLOAT);
-			d.put("phi", EMObject::FLOAT);
+			d.put("t3d", EMObject::TRANSFORM3D);
 			d.put("threshold", EMObject::FLOAT);
 			return d;
 		}
@@ -340,9 +341,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("alt", EMObject::FLOAT);
-			d.put("az", EMObject::FLOAT);
-			d.put("phi", EMObject::FLOAT);
+			d.put("t3d", EMObject::TRANSFORM3D);
 			return d;
 		}
 
@@ -397,9 +396,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("az", EMObject::FLOAT);
-			d.put("alt", EMObject::FLOAT);
-			d.put("phi", EMObject::FLOAT);
+			d.put("t3d", EMObject::TRANSFORM3D);
 			return d;
 		}
 	};
@@ -430,17 +427,11 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("t3d", EMObject::TRANSFORM3D);
 			d.put("origin_x", EMObject::INT);
 			d.put("origin_y", EMObject::INT);
 			d.put("origin_z", EMObject::INT);
-			d.put("radius", EMObject::INT);
 			d.put("anglelist", EMObject::FLOATARRAY);
-			d.put("angletype", EMObject::STRING);
-			d.put("az", EMObject::FLOAT);
-			d.put("alt", EMObject::FLOAT);
-			d.put("phi", EMObject::FLOAT);
-			d.put("theta", EMObject::FLOAT);
-			d.put("psi", EMObject::FLOAT);
 			d.put("radius", EMObject::FLOAT);
 			return d;
 		}

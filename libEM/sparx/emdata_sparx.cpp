@@ -3105,6 +3105,7 @@ EMData* EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 					wy[i] = kb.i0win_tab(ynew - iyp);
 					int ixp = ixn + i;
 					wx[i] = kb.i0win_tab(xnew - ixp);
+					
 				}
 				// restrict weight arrays to non-zero elements
 				int lnbz = 0;

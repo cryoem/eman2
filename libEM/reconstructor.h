@@ -573,7 +573,27 @@ namespace EMAN
 			return new BaldwinWoolfordReconstructor();
 		}
 
-		
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("x_in", EMObject::INT, "Necessary. The x dimension of the input images.");
+			d.put("y_in", EMObject::INT, "Necessary. The y dimension of the input images.");
+			d.put("zsample", EMObject::INT, "Optional. The z dimension (Fourier sampling) of the reconstructed volume, very useful for tomographic reconstruction. Works for general volumes.");
+			d.put("ysample", EMObject::INT, "Optional. The y dimension (Fourier sampling) of the reconstructed volume, works for general volumes. Not commonly specified.");
+			d.put("xsample", EMObject::INT, "Optional. The x dimension (Fourier sampling) of the reconstructed volume, works for general volumes. Not commonly specified.");
+			d.put("pad", EMObject::INT, "Optional. The amount to pad the input images to - should be greater than the image size.");
+			d.put("x_pad", EMObject::INT, "Optional. The amount to pad the input images to in the x direction - should be greater than the image x size.");
+			d.put("y_pad", EMObject::INT, "Optional. The amount to pad the input images to in the y direction - should be greater than the image y size.");
+			d.put("sym", EMObject::STRING, "Optional. The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?. Default is c1");
+			
+			d.put("tomo_weight", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes inserted slices to be weighted by 1/cos(alt) - alt is the tilt angle. Default is false.");
+			d.put("tomo_mask", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes inserted slices to have their edge pixels masked according to tilt angle, ensuring that each projection image depicts approximately the same volume, default is false." );
+			d.put("tomo", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes cool stuff." );
+			d.put("t_emm", EMObject::BOOL, "Optional. Read as tomo edge mean mask - experimental, default false");
+			d.put("t_emm_gauss", EMObject::INT, "Optional. An optional gaussain fall off for tomo_mask" );
+			d.put("maskwidth", EMObject::INT, "The width of the Fourier space kernel used to interpolate data to grid points" );
+			return d;
+		}
 		/** Finish reconstruction and return the complete model.
 		 * @return The result 3D model.
 		 */
@@ -581,7 +601,33 @@ namespace EMAN
 		
 		virtual int insert_slice_weights(const Transform3D& t3d);
 		
+		virtual int insert_slice(const EMData* const image, const Transform3D& t3d);
+		
+		void insert_pixel(const float& x, const float& y, const float& z, const float dt[2]);
+		
 		void insert_density_at(const float& x, const float& y, const float& z);
+		
+		protected:
+		/** Load default settings
+		*/
+		void load_default_settings()
+		{
+			params["x_in"] = 0;
+			params["y_in"] = 0;
+			params["zsample"] = 0;
+			params["ysample"] = 0;
+			params["xsample"] = 0;
+			params["x_pad"] = 0;
+			params["y_pad"] = 0;
+			params["sym"] = "c1";
+			params["tomo_weight"] = false;
+			params["tomo_mask"] = false;
+			params["t_emm"] = false;
+			params["tomo"] = false;
+			params["edgenorm"] = true;
+			params["t_emm_gauss"] = 10;
+			params["maskwidth"] = 3;
+		}
 		
 	};
 	
