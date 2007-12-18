@@ -1897,8 +1897,6 @@ EMData* nn4Reconstructor::finish()
 	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
 	pow_a[3*kc] = 0.0;
 
-	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
-	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 
 	float max = max3d( kc, pow_a );
 	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
@@ -1938,9 +1936,7 @@ EMData* nn4Reconstructor::finish()
 								}
 							}
 						}
-						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-						Assert( r >=0 && r < (int)pow_b.size() );
-						float wght = pow_b[r] / ( 1.0f - alpha * sum );
+						float wght = 1.0 / ( 1.0f - alpha * sum );
 						tmp = tmp * wght;
 					}
 					(*m_volume)(2*ix,iy,iz) *= tmp;
@@ -2180,7 +2176,6 @@ EMData* nnSSNR_Reconstructor::finish()
 	float alpha = 0.0;
 	float argx, argy, argz;
 	vector< float > pow_a( 3*kc+1, 1.0 );
-	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
 	float w = params["w"];
 	EMData* vol_ssnr = new EMData();
 	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
@@ -2216,7 +2211,6 @@ EMData* nnSSNR_Reconstructor::finish()
 		int vol = box*box*box;
 		for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
 		pow_a[3*kc] = 0.0;
-		for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 		float max = max3d( kc, pow_a );
 		alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	}
@@ -2262,9 +2256,7 @@ EMData* nnSSNR_Reconstructor::finish()
 								}
 							}
 						}
-						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-						Assert( r >=0 && r < (int)pow_b.size() );
-						wght = pow_b[r] / ( 1.0f - alpha * sum );
+						wght = 1.0f / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
 					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
@@ -2608,9 +2600,6 @@ EMData* nn4_ctfReconstructor::finish()
 	pow_a[3*kc]=0.0;
 
 
-	vector< float > pow_b( 3*m_vnyc, 1.0 );
-	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
-
 	float max = max3d( kc, pow_a );
 	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	float osnr = 1.0f/m_snr;
@@ -2654,9 +2643,7 @@ EMData* nn4_ctfReconstructor::finish()
 								}
 							}
 						}
-						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-						Assert( r >=0 && r < (int)pow_b.size() );
-						float wght = pow_b[r] / ( 1.0f - alpha * sum );
+						float wght = 1.0f / ( 1.0f - alpha * sum );
 /*
                         if(ix%10==0 && iy%10==0)
                         {
@@ -2939,7 +2926,6 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	float alpha = 0.0;
 	float argx, argy, argz;
 	vector< float > pow_a( 3*kc+1, 1.0 );
-	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
 	float w = params["w"];
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
@@ -2972,7 +2958,6 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		int vol = box*box*box;
 		for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
 		pow_a[3*kc] = 0.0;
-		for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 		float max = max3d( kc, pow_a );
 		alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	}
@@ -3017,8 +3002,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 							}
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-						Assert( r >=0 && r < (int)pow_b.size() );
-						wght = pow_b[r] / ( 1.0f - alpha * sum );
+						wght = 1.0 / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator   = std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz);
 					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz))/(Kn-1.0f);
