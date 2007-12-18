@@ -644,9 +644,11 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 
 	x = xx;
 	y = yy;
-
-	if (x < 1.0) x += nxdata; else if (x >= (float)(nxdata+1))  x -= nxdata;
-	if (y < 1.0) y += nydata; else if (y >= (float)(nydata+1))  y -= nydata;
+	
+	// Commented by Zhengfan Yang on 12/18/07
+	// Do not change these two lines, please contact me if in doubt.
+	if (x < 1.0) x += nxdata; if (x >= (float)(nxdata+1))  x -= nxdata;
+	if (y < 1.0) y += nydata; if (y >= (float)(nydata+1))  y -= nydata;
 
 	i   = (int) x;
 	j   = (int) y;
