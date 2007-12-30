@@ -586,10 +586,10 @@ c
     y = yy;
 
     // circular closure
-    if (x < 1.0)               x = x+(1 - (int) x / nxdata) * nxdata;
-    if (x > (float)nxdata+0.5)  x = fmod(x-1.0f,(float)nxdata) + 1.0f;
-    if (y < 1.0)               y = y+(1 - (int) y / nydata) * nydata;
-    if (y > (float)nydata+0.5)  y = fmod(y-1.0f,(float)nydata) + 1.0f;
+	while ( x < 1.0 ) x += nxdata; 
+	while ( x >= (float)(nxdata+1) )  x -= nxdata;
+	while ( y < 1.0 ) y += nydata;
+	while ( y >= (float)(nydata+1) )  y -= nydata;
 
 
     i   = (int) x;
@@ -647,8 +647,14 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 	
 	// Commented by Zhengfan Yang on 12/18/07
 	// Do not change these two lines, please contact me if in doubt.
-	if (x < 1.0) x += nxdata; if (x >= (float)(nxdata+1))  x -= nxdata;
-	if (y < 1.0) y += nydata; if (y >= (float)(nydata+1))  y -= nydata;
+	//if (x < 1.0) x += nxdata; if (x >= (float)(nxdata+1))  x -= nxdata;
+	//if (y < 1.0) y += nydata; if (y >= (float)(nydata+1))  y -= nydata;
+	//  Replaced by PAP on 12/29 in order to accelerate the code.  This way, the calling function can have
+	//                                                                        any xx and yy
+	while ( x < 1.0 ) x += nxdata; 
+	while ( x >= (float)(nxdata+1) )  x -= nxdata;
+	while ( y < 1.0 ) y += nydata;
+	while ( y >= (float)(nydata+1) )  y -= nydata;
 
 	i   = (int) x;
 	j   = (int) y;
@@ -1123,9 +1129,9 @@ size, say N=5, you can easily modify it by referring my code.
 float Util::triquad(float R, float S, float T, float* fdata)
 {
 
-    float C2 = 1.0 / 2.0;
-    float C4 = 1.0 / 4.0;
-    float C8 = 1.0 / 8.0;
+    const float C2 = 0.5f;    //1.0 / 2.0;
+    const float C4 = 0.25f;   //1.0 / 4.0;
+    const float C8 = 0.125f;  //1.0 / 8.0;
 
     float  RS   = R * S;
     float  ST   = S * T;
@@ -3319,7 +3325,7 @@ void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int>
 
 
 
-#define old_ptr(i,j,k)          old_ptr[(i+(j+(k*ny))*nx)]
+#define old_ptr(i,j,k)          old_ptr[i+(j+(k*ny))*nx]
 #define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny))*new_nx]
 EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 {
