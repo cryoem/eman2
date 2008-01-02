@@ -36,6 +36,7 @@
 #include "pifio.h"
 #include "portable_fileio.h"
 #include "geometry.h"
+#include "imageio.h"
 
 #ifdef WIN32
 #include <time.h>
@@ -81,8 +82,10 @@ int PifIO::get_mode_size(PifDataMode mode)
 		size = sizeof(short);
 		break;
 	case PIF_FLOAT:
-	case PIF_FLOAT_INT:
 	case PIF_FLOAT_COMPLEX:
+		size = sizeof(float);
+		break;
+	case PIF_FLOAT_INT:
 	case PIF_FLOAT_INT_COMPLEX:
 	case PIF_MAP_FLOAT_INT:
 		size = sizeof(int);
@@ -93,15 +96,15 @@ int PifIO::get_mode_size(PifDataMode mode)
 	return size;
 }
 
-bool PifIO::is_float(int m)
+bool PifIO::is_float_int(int m)
 {
 	PifDataMode mode = static_cast < PifDataMode > (m);
 	switch (mode) {
 	case PIF_SHORT_FLOAT:
 	case PIF_SHORT_FLOAT_COMPLEX:
-	case PIF_FLOAT:
+	//case PIF_FLOAT:
 	case PIF_FLOAT_INT:
-	case PIF_FLOAT_COMPLEX:
+	//case PIF_FLOAT_COMPLEX:
 	case PIF_FLOAT_INT_COMPLEX:
 	case PIF_MAP_FLOAT_SHORT:
 	case PIF_MAP_FLOAT_INT:
@@ -145,7 +148,7 @@ void PifIO::init()
 		become_host_endian(&pfh.nz);
 		become_host_endian(&pfh.nimg);
 
-		if (is_float(pfh.mode)) {
+		if (is_float_int(pfh.mode)) {
 			real_scale_factor = (float) atof(pfh.scalefactor);
 		}
 
@@ -359,7 +362,8 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	if (area) {
 		check_region(area, FloatSize(pih.nx, pih.ny, pih.nz), is_new_file);
 	}
-
+	
+	PifDataMode data_mode = static_cast < PifDataMode > (pih.mode);
 	int num_layers = pih.nz;
 #if 0
 	if (pfh.nz == pfh.nimg) {
@@ -379,29 +383,35 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	EMUtil::get_region_dims(area, pih.nx, &xlen, pih.ny, &ylen, pih.nz, &zlen);
 	size_t size = xlen * ylen * zlen;
 
-	if (mode_size == sizeof(short)) {
-		become_host_endian((short *) sdata, size);
+	if(data_mode == PIF_FLOAT || data_mode == PIF_FLOAT_COMPLEX)
+	{
+		become_host_endian< float >(data, size);
 	}
-	else if (mode_size == sizeof(int)) {
-		become_host_endian((int *) data, size);
-	}
-
-	if (mode_size == sizeof(char)) {
-		for (size_t i = 0; i < size; i++) {
-			size_t j = size - 1 - i;
-			data[j] = (float)(cdata[j]) * real_scale_factor;
+	else {
+		if (mode_size == sizeof(short)) {
+			become_host_endian((short *) sdata, size);
 		}
-	}
-	else if (mode_size == sizeof(short)) {
-		for (size_t i = 0; i < size; i++) {
-			size_t j = size - 1 - i;
-			data[j] = (float)(sdata[j]) * real_scale_factor;
+		else if (mode_size == sizeof(int)) {
+			become_host_endian((int *) data, size);
 		}
-	}
-	else if (mode_size == sizeof(int)) {
-		for (size_t i = 0; i < size; i++) {
-			size_t j = size - 1 - i;
-			data[j] = (float) ((int *)data)[j] * real_scale_factor;
+		
+		if (mode_size == sizeof(char)) {
+			for (size_t i = 0; i < size; i++) {
+				size_t j = size - 1 - i;
+				data[j] = (float)(cdata[j]) * real_scale_factor;
+			}
+		}
+		else if (mode_size == sizeof(short)) {
+			for (size_t i = 0; i < size; i++) {
+				size_t j = size - 1 - i;
+				data[j] = (float)(sdata[j]) * real_scale_factor;
+			}
+		}
+		else if (mode_size == sizeof(int)) {
+			for (size_t i = 0; i < size; i++) {
+				size_t j = size - 1 - i;
+				data[j] = (float) ((int *)data)[j] * real_scale_factor;
+			}
 		}
 	}
 	

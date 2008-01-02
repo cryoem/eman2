@@ -156,7 +156,7 @@ namespace EMAN
 		};
 	  
 		int get_mode_size(PifDataMode mode);
-		bool is_float(int mode);
+		bool is_float_int(int mode);
 		void fseek_to(int image_index);
 		int to_em_datatype(int pif_datatype);
 		int to_pif_datatype(int em_datatype);
