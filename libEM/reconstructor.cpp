@@ -1060,7 +1060,11 @@ int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 		// and to maintain greater numerical accuracy.
 		if ( i == 0 ) { n3d = t3d;}
 		else n3d = t3d.get_sym((string) params["sym"], i);
-	
+		cout << "Printing n3d" << endl;
+		n3d.printme();
+		n3d.dsaw_zero_hack();
+		n3d.printme();
+		cout << "Done" << endl;
 		for (int y = 0; y < tny; y++) {
 			for (int x = 0; x < tnx; x++) {
 					
@@ -1072,10 +1076,10 @@ int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 					if ( rnx > ny ) ry *= y_scale;
 					else rx *= x_scale;
 				}
-				float xx = (float) (rx * n3d[0][0] + (ry - tny/2) * n3d[1][0]);
-				float yy = (float) (rx * n3d[0][1] + (ry - tny/2) * n3d[1][1]);
-				float zz = (float) (rx * n3d[0][2] + (ry - tny/2) * n3d[1][2]);
-				
+				float xx = rx * n3d[0][0] + (ry - tny/2) * n3d[1][0];
+				float yy = rx * n3d[0][1] + (ry - tny/2) * n3d[1][1];
+				float zz = rx * n3d[0][2] + (ry - tny/2) * n3d[1][2];
+						
 				if (xx < 0 ){
 // 					cout << "xx was less than zero " << xx << endl;
 					xx = -xx;
@@ -1083,7 +1087,7 @@ int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 					zz = -zz;
 				}
 				
-				if ( xx < 0.001) xx = 0;
+// 				if ( xx < 0.001) xx = 0;
 				
 				yy += tny/2;
 				zz += tnz/2;
@@ -1102,10 +1106,10 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	int zl = Util::fast_floor(z);
 	
 	// w is the windowing width
-	int w = params.set_default("maskwidth",3);
+	int w = params.set_default("maskwidth",2);
 	float dw = 1.0/w;
 	dw *= dw;
-	dw = 2;
+// 	dw = 2;
 // 	cout << w << endl;
 	// 	int w = 3;
 	// w minus one - this control the number of 
@@ -1211,7 +1215,7 @@ int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, 
 		Transform3D n3d;
 		if ( i == 0 ) { n3d = t3d;}
 		else n3d = t3d.get_sym((string) params["sym"], i);
-
+		n3d.dsaw_zero_hack();
 		for (int y = 0; y < slice->get_ysize(); y++) {
 			for (int x = 0; x < slice->get_xsize() / 2; x++) {
 				
@@ -1244,7 +1248,7 @@ int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, 
 // 				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
 // 				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
 				
-				if ( xx < 0.001) xx = 0;
+// 				if ( xx < 0.001) xx = 0;
 				
 				yy += ny / 2;
 				zz += nz / 2;
@@ -1271,10 +1275,10 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 	int zl = Util::fast_floor(z);
 	
 	// w is the windowing width
-	int w = params.set_default("maskwidth",3);
+	int w = params.set_default("maskwidth",2);
 	float dw = 1.0/w;
 	dw *= dw;
-	dw = 2;
+// 	dw = 2;
 // 	cout << w << endl;
 	// 	int w = 3;
 	// w minus one - this control the number of 
@@ -3273,7 +3277,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 								}
 							}
 						}
-						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
+// 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						wght = 1.0 / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator   = std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz);

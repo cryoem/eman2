@@ -128,7 +128,7 @@ namespace EMAN
 		Transform3D(float az, float alt, float phi, const Vec3f& posttrans);
  
  	     // C4
-	     	Transform3D(EulerType euler_type, float a1, float a2, float a3) ; // only EMAN: az alt phi
+		Transform3D(EulerType euler_type, float a1, float a2, float a3) ; // only EMAN: az alt phi
 								                            // SPIDER     phi theta psi
 		
 	     // C5   First apply pretrans: Then rotation
@@ -189,7 +189,7 @@ namespace EMAN
 
 		void printme() const {
 			for (int i=0; i<3; i++) {
-				printf("%6.3f\t%6.3f\t%6.3f\t%6.3f\n",
+				printf("%6.15f\t%6.15f\t%6.15f\t%6.1f\n",
 					   matrix[i][0],matrix[i][1],matrix[i][2],matrix[i][3]);
 			}
 			printf("%6.3f\t%6.3f\t%6.3f\t%6.3f\n",0.0,0.0,0.0,1.0);
@@ -226,6 +226,15 @@ namespace EMAN
 		static vector<Transform3D*>
 			angles2tfvec(EulerType eulertype, const vector<float> angles);
 
+		void dsaw_zero_hack(){
+			for (int j=0; j<4; ++j) {
+				for (int i=0; i<4; i++) {
+				if ( fabs(matrix[j][i]) < 0.000001 )
+					matrix[j][i] = 0.0;
+				}
+			}
+			
+		}
 
 	private:
 		enum SymType
