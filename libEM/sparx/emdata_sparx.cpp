@@ -2080,14 +2080,14 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 				//else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
 				//if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
 				//else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
-				while ( xold >= (float)(nx) )  xold -= nx;
 				while ( xold < 0.0f )         xold += nx;
-				while ( yold >= (float)(ny) )  yold -= ny;
+				while ( xold >= (float)(nx) )  xold -= nx;
 				while ( yold < 0.0f )         yold += ny;
+				while ( yold >= (float)(ny) )  yold -= ny;
 
 				int xfloor = int(xold);
 				int yfloor = int(yold);
-				float t=xold-xfloor;
+				float t = xold-xfloor;
 				float u = yold-yfloor;
 				if(xfloor == nx -1 && yfloor == ny -1) {
 
@@ -2157,12 +2157,12 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 					float yold = yoldzy + x*RAinv[1][0] ;
 					float zold = zoldzy + x*RAinv[2][0] ;
 
-					while ( xold >= (float)(nx) )  xold -= nx;
 					while ( xold < 0.0f )		  xold += nx;
-					while ( yold >= (float)(ny) )  yold -= ny;
+					while ( xold >= (float)(nx) )  xold -= nx;
 					while ( yold < 0.0f )		  yold += ny;
-					while ( zold >= (float)(nz) )  zold -= nz;
+					while ( yold >= (float)(ny) )  yold -= ny;
 					while ( zold < 0.0f )		  zold += nz;
+					while ( zold >= (float)(nz) )  zold -= nz;
 
 					int IOX = int(xold);
 					int IOY = int(yold);
