@@ -2172,7 +2172,8 @@ class TestEMData(unittest.TestCase):
         volume = EMData()
         volume.read_image(infile)
         pi = math.pi
-        proj = volume.project("standard", { "alt" : pi/3, "az" : pi/5, "phi" : 1})
+        t3d = Transform3D(EULER_EMAN, pi/3, pi/5, 1)
+        proj = volume.project("standard", { "t3d" : t3d})
         self.assertEqual(proj.get_xsize(), n)
         self.assertEqual(proj.get_ysize(), n)
         self.assertEqual(proj.get_zsize(), 1)
