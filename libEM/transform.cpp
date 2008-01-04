@@ -560,7 +560,6 @@ void Transform3D::set_rotation(EulerType euler_type, float a1, float a2, float a
 	set_rotation(euler_type, rot);  // Or should it be &rot ?
 }
 
-
 void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 {
 	float e0  = 0;float e1=0; float e2=0; float e3=0;
@@ -657,10 +656,10 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	Vec3f preT   = get_pretrans( ) ;
 
 
-	float azp  = az*M_PI/180;
+	float azp  = fmod(az,360.0)*M_PI/180;
 	float altp  = alt*M_PI/180;
-	float phip = phi*M_PI/180;
-	
+	float phip = fmod(phi,360.0)*M_PI/180;
+
 	if (!is_quaternion && !is_matrix) {
 		matrix[0][0] =  cos(phip)*cos(azp) - cos(altp)*sin(azp)*sin(phip);
 		matrix[0][1] =  cos(phip)*sin(azp) + cos(altp)*cos(azp)*sin(phip);

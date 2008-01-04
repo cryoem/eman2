@@ -592,6 +592,7 @@ namespace EMAN
 			d.put("t_emm", EMObject::BOOL, "Optional. Read as tomo edge mean mask - experimental, default false");
 			d.put("t_emm_gauss", EMObject::INT, "Optional. An optional gaussain fall off for tomo_mask" );
 			d.put("maskwidth", EMObject::INT, "The width of the Fourier space kernel used to interpolate data to grid points" );
+			d.put("postmultiply", EMObject::BOOL, "A flag that controls whether or not the reconstructed volume is post multiplied in real space by the IFT of the weighting function. Default is on");
 			return d;
 		}
 		/** Finish reconstruction and return the complete model.

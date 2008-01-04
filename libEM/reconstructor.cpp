@@ -1009,24 +1009,28 @@ EMData* BaldwinWoolfordReconstructor::finish()
 	image->postift_depad_corner_inplace();
 	image->process_inplace("xform.phaseorigin.tocenter");
 	
+	if ( (bool) params.set_default("postmultiply", true) )
+	{
+		cout << "POST MULTIPLYING" << endl;
 	// now undo the Fourier convolution with real space division
-	float* d = image->get_data();
-	float N = (float) image->get_xsize()/2.0;
-	N *= N;
-	int rnx = image->get_xsize();
-	int rny = image->get_ysize();
-	int rnxy = rnx*rny;
-	int cx = image->get_xsize()/2;
-	int cy = image->get_ysize()/2;
-	int cz = image->get_zsize()/2;
-	for (int k = 0; k < image->get_zsize(); ++k ){
-		for (int j = 0; j < image->get_ysize(); ++j ) {
-			for (int i =0; i < image->get_xsize(); ++i ) {
-				float xd = i-cx; xd *= xd;
-				float yd = j-cy; yd *= yd;
-				float zd = k-cz; zd *= zd;
-				float weight = 	exp((xd+yd+zd)/N);
-				d[k*rnxy + j*rnx + i] *=  weight;
+		float* d = image->get_data();
+		float N = (float) image->get_xsize()/2.0;
+		N *= N;
+		int rnx = image->get_xsize();
+		int rny = image->get_ysize();
+		int rnxy = rnx*rny;
+		int cx = image->get_xsize()/2;
+		int cy = image->get_ysize()/2;
+		int cz = image->get_zsize()/2;
+		for (int k = 0; k < image->get_zsize(); ++k ){
+			for (int j = 0; j < image->get_ysize(); ++j ) {
+				for (int i =0; i < image->get_xsize(); ++i ) {
+					float xd = i-cx; xd *= xd;
+					float yd = j-cy; yd *= yd;
+					float zd = k-cz; zd *= zd;
+					float weight = exp((xd+yd+zd)/N);
+					d[k*rnxy + j*rnx + i] *=  weight;
+				}
 			}
 		}
 	}
@@ -1062,8 +1066,8 @@ int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 		else n3d = t3d.get_sym((string) params["sym"], i);
 		cout << "Printing n3d" << endl;
 		n3d.printme();
-		n3d.dsaw_zero_hack();
-		n3d.printme();
+// 		n3d.dsaw_zero_hack();
+// 		n3d.printme();
 		cout << "Done" << endl;
 		for (int y = 0; y < tny; y++) {
 			for (int x = 0; x < tnx; x++) {
@@ -1109,6 +1113,7 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	int w = params.set_default("maskwidth",2);
 	float dw = 1.0/w;
 	dw *= dw;
+
 // 	dw = 2;
 // 	cout << w << endl;
 	// 	int w = 3;
@@ -1215,7 +1220,7 @@ int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, 
 		Transform3D n3d;
 		if ( i == 0 ) { n3d = t3d;}
 		else n3d = t3d.get_sym((string) params["sym"], i);
-		n3d.dsaw_zero_hack();
+// 		n3d.dsaw_zero_hack();
 		for (int y = 0; y < slice->get_ysize(); y++) {
 			for (int x = 0; x < slice->get_xsize() / 2; x++) {
 				
@@ -1349,9 +1354,8 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 			}
 		}
 	}
-	
 	weight = 1.0/weight;
-// 	cout << weight << endl;
+	cout << weight << endl;
 	int rnx = 2*tnx;
 	int rnxy = 2*tnxy;
 	d = image->get_data();
