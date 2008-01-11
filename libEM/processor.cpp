@@ -5310,7 +5310,7 @@ void TestImageAxisCoordinate::process_inplace(EMData * image)
 	
 	preprocess(image);
 	
-	if ( axis == 'x')
+	if ( axis == "x")
 	{
 		for(int k=0; k<nz;++k) {
 			for(int j=0; j<ny; ++j) {
@@ -5320,7 +5320,7 @@ void TestImageAxisCoordinate::process_inplace(EMData * image)
 			}
 		}
 	}
-	else if ( axis == 'y')
+	else if ( axis == "y")
 	{
 		for(int k=0; k<nz;++k) {
 			for(int j=0; j<ny; ++j) {
@@ -5330,7 +5330,7 @@ void TestImageAxisCoordinate::process_inplace(EMData * image)
 			}
 		}
 	}
-	else if ( axis == 'z')
+	else if ( axis == "z")
 	{
 		for(int k=0; k<nz;++k) {
 			for(int j=0; j<ny; ++j) {

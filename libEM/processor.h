@@ -4453,7 +4453,7 @@ The basic design of EMAN Processors: <br>\
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("axus", EMObject::STRING, "The axis the will be used to determine pixel values. Must be x,y or z");
+				d.put("axis", EMObject::STRING, "The axis the will be used to determine pixel values. Must be x,y or z");
 				return d;
 			}
 	};
