@@ -4429,12 +4429,41 @@ The basic design of EMAN Processors: <br>\
 			void insert_rectangle( EMData* image, const Region& region, const float& value, const Transform3D* const t3d = NULL );
 	};
 	
+	
+	class TestImageAxisCoordinate : public TestImageProcessor
+	{
+		public:
+			void process_inplace(EMData * image);
+		
+			string get_name() const
+			{
+				return "testimage.axiscoord";
+			}
+		
+			string get_desc() const
+			{
+				return "Make an image where the pixel values are one of the axis coordinates";
+			}
+		
+			static Processor * NEW()
+			{
+				return new TestImageAxisCoordinate();
+			}
+		
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("axus", EMObject::STRING, "The axis the will be used to determine pixel values. Must be x,y or z");
+				return d;
+			}
+	};
+	
 	/**Make an image consisting of a single cross, with lines
 	 * going in the axial directions, intersecting at the origin.
 	 *@param radius the radial length of the lines from the origin
 	 *@param fill the value to assign to pixels made non zero
 	 */
-	class TestImageX : public TestImageProcessor
+	class TestImageAxes : public TestImageProcessor
 	{
 		public:
 			/** Make an image consisting entirely of a cross
@@ -4454,7 +4483,7 @@ The basic design of EMAN Processors: <br>\
 		
 			static Processor * NEW()
 			{
-				return new TestImageX();
+				return new TestImageAxes();
 			}
 		
 			TypeDict get_param_types() const
@@ -4852,6 +4881,39 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 	
+	class TomoTiltEdgeMaskProcessor : public Processor
+	{
+	public:
+		void process_inplace(EMData* image);
+			
+		string get_name() const
+		{
+			return "tomo.tiltedgemask";
+		}
+		
+		static Processor *NEW()
+		{
+			return new TomoTiltEdgeMaskProcessor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("biedgemean", EMObject::BOOL, "Mutually  exclusive of edgemean. Experimental. Causes the pixels in the masked out areas to take the average value of both the left and right edge pixel strips");
+			d.put("edgemean", EMObject::INT, "Mutually  exclusive of biedgemean. Masked pixels values assume the mean edge pixel value, independently, for both sides of the image.");
+			d.put("angle", EMObject::INT, "The angle that the image is, with respect to the zero tilt image");
+			d.put("gauss_falloff",EMObject::INT, "Causes the edge masking to have a smooth Gaussian fall-off - this parameter specify how many pixels the fall-off will proceed over");
+			d.put("gauss_sigma",EMObject::FLOAT,"The sigma of the Gaussian function used to smooth the edge fall-off (functional form is exp(-x^2/sigma^2)");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "Masks the part of the image which is not present in the 0-tilt image. Masked areas can be 0 or set to the edgemean (of the nearest or both edges). Masked areas can also have a Gaussian fall-off to make the appearance smooth.";
+		}
+
+	};
+
 	/** Perform a FFT transform by calling EMData::do_fft() and EMData::do_ift()
 	 * @param dir 1 for forward transform, -1 for inverse transform, forward transform by default
 	 */

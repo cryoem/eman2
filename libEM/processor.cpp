@@ -194,12 +194,15 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageSinewaveCircular::NEW);
 	force_add(&TestImageSquarecube::NEW);
 	force_add(&TestImageCirclesphere::NEW);
-	force_add(&TestImageX::NEW);
+	force_add(&TestImageAxes::NEW);
 	force_add(&TestImageNoiseUniformRand::NEW);
 	force_add(&TestImageNoiseGauss::NEW);
 	force_add(&TestImageScurve::NEW);
 	force_add(&TestImageCylinder::NEW);
+	force_add(&TestImageAxisCoordinate::NEW);
 	force_add(&TestTomoImage::NEW);
+	
+	force_add(&TomoTiltEdgeMaskProcessor::NEW);
 
 	force_add(&NewLowpassTopHatProcessor::NEW);
 	force_add(&NewHighpassTopHatProcessor::NEW);
@@ -5299,7 +5302,48 @@ void TestImageGaussian::process_inplace(EMData * image)
 	image->update();
 }
 
-void TestImageX::process_inplace(EMData * image)
+void TestImageAxisCoordinate::process_inplace(EMData * image)
+{
+	string axis = params.set_default("axis", "x");
+	
+	if ( axis != "z" && axis != "y" && axis != "x") throw InvalidParameterException("Axis must be x,y or z");
+	
+	preprocess(image);
+	
+	if ( axis == 'x')
+	{
+		for(int k=0; k<nz;++k) {
+			for(int j=0; j<ny; ++j) {
+				for(int i=0; i <nx; ++i) {
+					image->set_value_at(i,j,k,i);
+				}
+			}
+		}
+	}
+	else if ( axis == 'y')
+	{
+		for(int k=0; k<nz;++k) {
+			for(int j=0; j<ny; ++j) {
+				for(int i=0; i <nx; ++i) {
+					image->set_value_at(i,j,k,j);
+				}
+			}
+		}
+	}
+	else if ( axis == 'z')
+	{
+		for(int k=0; k<nz;++k) {
+			for(int j=0; j<ny; ++j) {
+				for(int i=0; i <nx; ++i) {
+					image->set_value_at(i,j,k,k);
+				}
+			}
+		}
+	}
+	image->update();
+}
+
+void TestImageAxes::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
@@ -6737,6 +6781,136 @@ void XGradientProcessor::process_inplace( EMData* image )
 	image->process_inplace("convolution", conv_parms);
 	
 	delete e;
+}
+
+class GaussianFunctoid
+{
+	public:
+		GaussianFunctoid(const float sigma, const float mean = 0.0) : m_mean(mean), m_sigma_squared(sigma*sigma) {}
+		~GaussianFunctoid() {}
+		
+		float operator()(const float distance ) 
+		{
+			return exp( -(distance-m_mean)*(distance-m_mean)/ (m_sigma_squared ));
+		}
+	private:
+		float m_mean, m_sigma_squared;
+};
+
+void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
+{
+	bool biedgemean = params.set_default("biedgemean", false);
+	bool edgemean = params.set_default("edgemean", false);
+	// You can only do one of these - so if someone specifies them both the code complains loudly
+	if (biedgemean && edgemean) throw InvalidParameterException("The edgemean and biedgemean options are mutually exclusive");
+
+	
+	float alt = params.set_default("angle", 0.);
+	
+	float cosine = cos(alt*M_PI/180.0f);
+		
+	// Zero the edges
+	float nx = image->get_xsize();
+	int x_clip = static_cast<int>( (float) nx * ( 1.0 - cosine ) / 2.0);
+	int x = image->get_xsize();
+	int y = image->get_ysize();
+	
+	float x1_edge_mean = 0.0;
+	float x2_edge_mean = 0.0;
+
+	if ( biedgemean )
+	{
+		float edge_mean = 0.0;
+			
+		// Accrue the pixel densities on the side strips
+		for ( int i = 0; i < y; ++i ) {
+			edge_mean += image->get_value_at(x_clip, i );
+			edge_mean += image->get_value_at(x - x_clip-1, i );
+		}
+		// Now make it so the mean is stored
+		edge_mean /= 2*y;
+		
+		// Now shift pixel values accordingly
+		float* dat = image->get_data();
+		for ( int i = 0; i < y; ++i ) {
+			for ( int j = x_clip; j < x - x_clip; ++j) {
+				dat[i*x+j] = edge_mean;	
+			}
+			for ( int j = 0; j < x_clip; ++j) {
+				dat[i*x+j] = edge_mean;	
+			}
+		}
+		x1_edge_mean = edge_mean;
+		x2_edge_mean = edge_mean;
+		
+	}
+	else if (edgemean)
+	{
+		for ( int i = 0; i < y; ++i ) {
+			x1_edge_mean += image->get_value_at(x_clip, i );
+			x2_edge_mean += image->get_value_at(x - x_clip-1, i );
+		}
+		x1_edge_mean /= y;
+		x2_edge_mean /= y;
+		
+		float* dat = image->get_data();
+		for ( int i = 0; i < y; ++i ) {
+			for ( int j = x_clip; j < x - x_clip; ++j) {
+				dat[i*x+j] = x2_edge_mean;	
+			}
+			for ( int j = 0; j < x_clip; ++j) {
+				dat[i*x+j] = x1_edge_mean;	
+			}
+		}
+	}
+	else
+	{
+		// The edges are just zeroed - 
+		Dict zero_dict;
+		zero_dict["x0"] = x_clip;
+		zero_dict["x1"] = x_clip;
+		zero_dict["y0"] = 0;
+		zero_dict["y1"] = 0;
+		image->process_inplace( "mask.zeroedge2d", zero_dict );
+	}
+
+	int gauss_rad = params.set_default("gauss_falloff", 0);
+	if ( gauss_rad != 0)
+	{
+		// If the gaussian falloff distance is greater than x_clip, it will technically
+		// go beyond the image boundaries. Thus we clamp gauss_rad so this cannot happen.
+		// Therefore, there is potential here for (benevolent) unexpected behavior.
+		if ( gauss_rad > x_clip ) gauss_rad = x_clip;
+		
+		float gauss_sigma = params.set_default("gauss_sigma", 3.0f);
+		if ( gauss_sigma < 0 ) throw InvalidParameterException("Error - you must specify a positive, non-zero gauss_sigma");
+		float sigma = (float) gauss_rad/gauss_sigma;
+		
+		GaussianFunctoid gf(sigma);
+		
+		for ( int i = 0; i < y; ++i ) {
+			
+			float left_value = image->get_value_at(x_clip+gauss_rad, i );
+			
+			float scale = left_value-x1_edge_mean;
+			
+			for ( int j = gauss_rad-1; j >= 0; --j )
+			{
+				image->set_value_at(x_clip+j, i, scale*gf((float)(gauss_rad-j))+x1_edge_mean );
+			}
+		
+			float right_value = image->get_value_at(x - x_clip - gauss_rad, i );
+			scale = right_value-x2_edge_mean;
+			
+			for ( int j = 1; j < gauss_rad; ++j )
+			{
+				image->set_value_at(x - x_clip - gauss_rad + j, i, scale*gf( (float)j )+x2_edge_mean);
+			}
+		
+		}
+	}
+	
+	image->update();
 }
 
 void YGradientProcessor::process_inplace( EMData* image )

@@ -479,16 +479,10 @@ namespace EMAN
 		}
 		
 		/** Default setting behavior
+		 * This can be achieved using a template - d.woolford Jan 2008 (before there was a function being written for every type)
 		 */
-		EMData *set_default(const string & key, EMData * val)
-		{
-			if (!has_key(key)) {
-				dict[key] = EMObject(val);
-			}
-			return dict[key];
-		}
-
-		int set_default(const string & key, int val)
+		template<typename type>
+		type set_default(const string & key, type val)
 		{
 			if (!has_key(key)) {
 				dict[key] = val;
@@ -496,21 +490,6 @@ namespace EMAN
 			return dict[key];
 		}
 
-		float set_default(const string & key, float val)
-		{
-			if (!has_key(key)) {
-				dict[key] = val;
-			}
-			return dict[key];
-		}
-
-		double set_default(const string & key, double val)
-		{
-			if (!has_key(key)) {
-				dict[key] = val;
-			}
-			return dict[key];
-		}
 
 		EMObject & operator[] (const string & key)
 		{

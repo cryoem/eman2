@@ -405,7 +405,7 @@ namespace EMAN {
 							   int line = 0, const string& desc_str = "")
 			: E2Exception(file, line, desc_str) {}
 		
-			const char *name() const { return "Bad allocation"; }
+			const char *name() const { return "Unexpected behavior"; }
 	};
 #define UnexpectedBehaviorException(desc) _UnexpectedBehaviorException(__FILE__, __LINE__, desc)
 }
