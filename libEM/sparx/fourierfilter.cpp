@@ -79,11 +79,14 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	} else if (1 == dopad) {
 		// 2x padding (hard-wired)
 		npad = 2;
-	} else {
+	} else if (2 == dopad) {
+        npad = 4;
+    } else {
 		// invalid entry
 		LOGERR("The dopad parameter must be 0 (false) or 1 (true)");
 		return NULL; // FIXME: replace w/ exception throw
 	}
+
 	// If the input image is already a Fourier image, then we want to 
 	// have this routine return a Fourier image
 	complex_input = fimage->is_complex();
@@ -269,9 +272,9 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			sz[1] = static_cast<float>(nyp2); 
 			sz[2] = static_cast<float>(nzp2);
 			szmax = *max_element(&sz[0],&sz[3]);
-			// for 2d, sqrt(2) ~ 1.5
-			// for 3d, sqrt(3) ~ 1.8
-			if (nzp > 1) {maxsize = vector<float>::size_type(1.8*szmax);} else {maxsize = vector<float>::size_type(1.5*szmax);}
+			// for 2d, sqrt(2) = 1.414, relax a little bit to 1.6
+			// for 3d, sqrt(3) = 1.732, relax a little bit to 1.9
+			if (nzp > 1) {maxsize = vector<float>::size_type(1.9*szmax);} else {maxsize = vector<float>::size_type(1.6*szmax);}
 			for (vector<float>::size_type i = tsize+1; i < maxsize; i++) 
 				table.push_back(0.f);
 			break;
