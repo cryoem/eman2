@@ -199,7 +199,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageNoiseGauss::NEW);
 	force_add(&TestImageScurve::NEW);
 	force_add(&TestImageCylinder::NEW);
-	force_add(&TestImageAxisCoordinate::NEW);
+	force_add(&TestImageGradient::NEW);
 	force_add(&TestTomoImage::NEW);
 	
 	force_add(&TomoTiltEdgeMaskProcessor::NEW);
@@ -5302,9 +5302,12 @@ void TestImageGaussian::process_inplace(EMData * image)
 	image->update();
 }
 
-void TestImageAxisCoordinate::process_inplace(EMData * image)
+void TestImageGradient::process_inplace(EMData * image)
 {
 	string axis = params.set_default("axis", "x");
+	
+	float m = params.set_default("m", 1.0);
+	float b = params.set_default("b", 0.0);
 	
 	if ( axis != "z" && axis != "y" && axis != "x") throw InvalidParameterException("Axis must be x,y or z");
 	
@@ -5315,7 +5318,7 @@ void TestImageAxisCoordinate::process_inplace(EMData * image)
 		for(int k=0; k<nz;++k) {
 			for(int j=0; j<ny; ++j) {
 				for(int i=0; i <nx; ++i) {
-					image->set_value_at(i,j,k,i);
+					image->set_value_at(i,j,k,m*i+b);
 				}
 			}
 		}
@@ -5325,7 +5328,7 @@ void TestImageAxisCoordinate::process_inplace(EMData * image)
 		for(int k=0; k<nz;++k) {
 			for(int j=0; j<ny; ++j) {
 				for(int i=0; i <nx; ++i) {
-					image->set_value_at(i,j,k,j);
+					image->set_value_at(i,j,k,m*j+b);
 				}
 			}
 		}
@@ -5335,7 +5338,7 @@ void TestImageAxisCoordinate::process_inplace(EMData * image)
 		for(int k=0; k<nz;++k) {
 			for(int j=0; j<ny; ++j) {
 				for(int i=0; i <nx; ++i) {
-					image->set_value_at(i,j,k,k);
+					image->set_value_at(i,j,k,m*k+b);
 				}
 			}
 		}
@@ -6803,17 +6806,21 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 	bool edgemean = params.set_default("edgemean", false);
 	// You can only do one of these - so if someone specifies them both the code complains loudly
 	if (biedgemean && edgemean) throw InvalidParameterException("The edgemean and biedgemean options are mutually exclusive");
-
 	
-	float alt = params.set_default("angle", 0.);
+	bool fim = params.set_default("angle_fim", false);
+	float alt;
+	if ( fim ) {
+		alt = image->get_attr("euler_alt");
+	}
+	else alt = params.set_default("angle", 0.0);
+	
 	
 	float cosine = cos(alt*M_PI/180.0f);
 		
 	// Zero the edges
-	float nx = image->get_xsize();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
 	int x_clip = static_cast<int>( (float) nx * ( 1.0 - cosine ) / 2.0);
-	int x = image->get_xsize();
-	int y = image->get_ysize();
 	
 	float x1_edge_mean = 0.0;
 	float x2_edge_mean = 0.0;
@@ -6823,43 +6830,40 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 		float edge_mean = 0.0;
 			
 		// Accrue the pixel densities on the side strips
-		for ( int i = 0; i < y; ++i ) {
+		for ( int i = 0; i < ny; ++i ) {
 			edge_mean += image->get_value_at(x_clip, i );
-			edge_mean += image->get_value_at(x - x_clip-1, i );
+			edge_mean += image->get_value_at(nx - x_clip-1, i );
 		}
 		// Now make it so the mean is stored
-		edge_mean /= 2*y;
+		edge_mean /= 2*ny;
 		
 		// Now shift pixel values accordingly
-		float* dat = image->get_data();
-		for ( int i = 0; i < y; ++i ) {
-			for ( int j = x_clip; j < x - x_clip; ++j) {
-				dat[i*x+j] = edge_mean;	
+		for ( int i = 0; i < ny; ++i ) {
+			for ( int j = nx-1; j >= nx - x_clip; --j) {
+				image->set_value_at(j,i,edge_mean);
 			}
 			for ( int j = 0; j < x_clip; ++j) {
-				dat[i*x+j] = edge_mean;	
+				image->set_value_at(j,i,edge_mean);
 			}
 		}
 		x1_edge_mean = edge_mean;
 		x2_edge_mean = edge_mean;
-		
 	}
 	else if (edgemean)
 	{
-		for ( int i = 0; i < y; ++i ) {
+		for ( int i = 0; i < ny; ++i ) {
 			x1_edge_mean += image->get_value_at(x_clip, i );
-			x2_edge_mean += image->get_value_at(x - x_clip-1, i );
+			x2_edge_mean += image->get_value_at(nx - x_clip-1, i );
 		}
-		x1_edge_mean /= y;
-		x2_edge_mean /= y;
+		x1_edge_mean /= ny;
+		x2_edge_mean /= ny;
 		
-		float* dat = image->get_data();
-		for ( int i = 0; i < y; ++i ) {
-			for ( int j = x_clip; j < x - x_clip; ++j) {
-				dat[i*x+j] = x2_edge_mean;	
-			}
+		for ( int i = 0; i < ny; ++i ) {
 			for ( int j = 0; j < x_clip; ++j) {
-				dat[i*x+j] = x1_edge_mean;	
+				image->set_value_at(j,i,x1_edge_mean);
+			}
+			for ( int j = nx-1; j >= nx - x_clip; --j) {
+				image->set_value_at(j,i,x2_edge_mean);
 			}
 		}
 	}
@@ -6888,25 +6892,19 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 		
 		GaussianFunctoid gf(sigma);
 		
-		for ( int i = 0; i < y; ++i ) {
+		for ( int i = 0; i < ny; ++i ) {
 			
-			float left_value = image->get_value_at(x_clip+gauss_rad, i );
+			float left_value = image->get_value_at(x_clip, i );
+			float scale1 = left_value-x1_edge_mean;
 			
-			float scale = left_value-x1_edge_mean;
-			
-			for ( int j = gauss_rad-1; j >= 0; --j )
-			{
-				image->set_value_at(x_clip+j, i, scale*gf((float)(gauss_rad-j))+x1_edge_mean );
-			}
-		
-			float right_value = image->get_value_at(x - x_clip - gauss_rad, i );
-			scale = right_value-x2_edge_mean;
+			float right_value = image->get_value_at(nx - x_clip - 1, i );
+			float scale2 = right_value-x2_edge_mean;
 			
 			for ( int j = 1; j < gauss_rad; ++j )
 			{
-				image->set_value_at(x - x_clip - gauss_rad + j, i, scale*gf( (float)j )+x2_edge_mean);
+				image->set_value_at(x_clip-j, i, scale1*gf((float)j)+x1_edge_mean );
+				image->set_value_at(nx - x_clip + j-1, i, scale2*gf((float)j)+x2_edge_mean);
 			}
-		
 		}
 	}
 	

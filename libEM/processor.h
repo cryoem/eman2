@@ -4400,6 +4400,11 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/**Make an image useful for tomographic reconstruction testing
+	 * this is a 3D phantom image based on the 2D phantom described in
+	 * Delaney and Bresler, "Globally convergent edge-preserving regularized reconstruction: An application to limited-angle tomography". IEEE
+	 * Transactions on Image Processing, 7(2), Feb 1998, 204-221.
+	 * @author David Woolford
+	 * @date November 2007
 	 */
 	class TestTomoImage : public TestImageProcessor
 	{
@@ -4429,37 +4434,47 @@ The basic design of EMAN Processors: <br>\
 			void insert_rectangle( EMData* image, const Region& region, const float& value, const Transform3D* const t3d = NULL );
 	};
 	
-	
-	class TestImageAxisCoordinate : public TestImageProcessor
+	/** Put a gradient in the image of the form y = mx+b - x can be any of the image axes, i.e., x,y or z.
+	 * @author David Woolford <woolford@bcm.edu>
+	 * @date 01/10/2008
+	 * @param axis The axis the will be used to determine pixel values. Must be x,y or z. Default is x
+	 * @param m m in the equation m*axis+b. Default is 1.0
+	 * @param b b in the equation m*axis+b. Default is 0.0
+	*/
+	class TestImageGradient : public TestImageProcessor
 	{
 		public:
 			void process_inplace(EMData * image);
 		
 			string get_name() const
 			{
-				return "testimage.axiscoord";
+				return "testimage.gradient";
 			}
 		
 			string get_desc() const
 			{
-				return "Make an image where the pixel values are one of the axis coordinates";
+				return "Make a gradient image of the form y=mx+b, where x is any of the image axes.";
 			}
 		
 			static Processor * NEW()
 			{
-				return new TestImageAxisCoordinate();
+				return new TestImageGradient();
 			}
 		
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("axis", EMObject::STRING, "The axis the will be used to determine pixel values. Must be x,y or z");
+				d.put("m", EMObject::FLOAT, "m in the equation m*axis+b. Default is 1.0");
+				d.put("b", EMObject::FLOAT, "b in the equation m*axis+b. Default is 0.0");
 				return d;
 			}
 	};
 	
 	/**Make an image consisting of a single cross, with lines
 	 * going in the axial directions, intersecting at the origin.
+	 * @author David Woolford <woolford@bcm.edu>
+	 * @date October 2007
 	 *@param radius the radial length of the lines from the origin
 	 *@param fill the value to assign to pixels made non zero
 	 */
@@ -4881,6 +4896,21 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 	
+	/** A processor designed specifically for tomographic tilt series data.
+	 * This processors masks out 'mass' in tilted images that is not present in the zero-tilt (0 degrees) image.
+	 * It does this based on the tilt angle. The tilt angle can be extracted from the image metadata (stored as the euler_alt attribute),
+	 * or it may be specified explicitly (specifying the angle is the default behavior). The masked out regions at both sides of the image are set to 0 by default, 
+	 * but can  also be set to the mean of the nearest non-masked data edge (in the y direction), or similarly the mean of both non-masked data
+	 * edges on either side of the image. A gaussian fall-off is optional (but off by default).
+	 * @author David Woolford <woolford@bcm.edu>
+	 * @date 01/10/2008
+	 * @param biedgemean Mutually  exclusive of edgemean. Experimental. Causes the pixels in the masked out areas to take the average value of both the left and right edge pixel strips
+	 * @param edgemean Mutually  exclusive of biedgemean. Masked pixels values assume the mean edge pixel value, independently, for both sides of the image
+	 * @param angle The angle that the image is, with respect to the zero tilt image
+	 * @param angle_fim Read fim as 'from image metadata' - this causes the altitude angle stored in by the image object (i.e. as extracted from the header, as currently stored in memory) to be used as the angle. This overrides the angle argument
+	 * @param gauss_falloff Causes the edge masking to have a smooth Gaussian fall-off - this parameter specifies how many pixels the fall-off will proceed over. Default is 0
+	 * @param gauss_sigma The sigma of the Gaussian function used to smooth the edge fall-off (functional form is exp(-(pixel distance)^2/sigma^2)
+	 */
 	class TomoTiltEdgeMaskProcessor : public Processor
 	{
 	public:
@@ -4902,8 +4932,9 @@ The basic design of EMAN Processors: <br>\
 			d.put("biedgemean", EMObject::BOOL, "Mutually  exclusive of edgemean. Experimental. Causes the pixels in the masked out areas to take the average value of both the left and right edge pixel strips");
 			d.put("edgemean", EMObject::INT, "Mutually  exclusive of biedgemean. Masked pixels values assume the mean edge pixel value, independently, for both sides of the image.");
 			d.put("angle", EMObject::INT, "The angle that the image is, with respect to the zero tilt image");
-			d.put("gauss_falloff",EMObject::INT, "Causes the edge masking to have a smooth Gaussian fall-off - this parameter specify how many pixels the fall-off will proceed over");
-			d.put("gauss_sigma",EMObject::FLOAT,"The sigma of the Gaussian function used to smooth the edge fall-off (functional form is exp(-x^2/sigma^2)");
+			d.put("gauss_falloff",EMObject::INT, "Causes the edge masking to have a smooth Gaussian fall-off - this parameter specifies how many pixels the fall-off will proceed over. Default is 0.");
+			d.put("gauss_sigma",EMObject::FLOAT,"The sigma of the Gaussian function used to smooth the edge fall-off (functional form is exp(-(pixel distance)^2/sigma^2)");
+			d.put("angle_fim",EMObject::BOOL,"Read fim as 'from image metadata' - this causes the altitude angle stored in by the image object (i.e. as extracted from the header, as currently stored in memory) to be used as the angle. This overrides the angle argument");
 			return d;
 		}
 
