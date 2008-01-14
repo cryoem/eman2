@@ -425,9 +425,8 @@ namespace EMAN
 			
 			d.put("apix", EMObject::FLOAT, "Optional. Angstrom per pixel of the input images, default is 1.0.");
 			d.put("tomo_weight", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes inserted slices to be weighted by 1/cos(alt) - alt is the tilt angle. Default is false.");
-			d.put("tomo_mask", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes inserted slices to have their edge pixels masked according to tilt angle, ensuring that each projection image depicts approximately the same volume, default is false." );
 			d.put("tomo", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes cool stuff." );
-			d.put("t_emm", EMObject::BOOL, "Optional. Read as tomo edge mean mask - experimental, default false");
+			d.put("t_emm", EMObject::BOOL, "Optional. Read as tomo edge mean mask - experimental, default true - only applicable if 'tomo' is specified. ");
 			d.put("t_emm_gauss", EMObject::INT, "Optional. An optional gaussain fall off for tomo_mask" );
 			d.put("dlog", EMObject::BOOL, "Optional. This is a residual parameter from EMAN1 that has not yet been addressed in the EMAN2 implementation.");
 			d.put("quiet", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");

@@ -290,20 +290,6 @@ void FourierReconstructor::setup()
 	}
 }
 
-class GaussianFunctoid
-{
-	public:
-		GaussianFunctoid(const float sigma, const float mean = 0.0) : m_mean(mean), m_sigma_squared(sigma*sigma) {}
-		~GaussianFunctoid() {}
-		
-		float operator()(const float distance ) 
-		{
-			return exp( -(distance-m_mean)*(distance-m_mean)/ (m_sigma_squared ));
-		}
-	private:
-		float m_mean, m_sigma_squared;
-};
-
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const Transform3D transform )
 {
 	EMData* return_slice;
@@ -311,72 +297,6 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 	// First edgenorm - default behaviour is for this to happen
 	if ( (bool) params["edgenorm"] == true ) return_slice = slice->process("normalize.edgemean");
 	else return_slice = new EMData(*slice);
-	
-	
-
-	// Perform tomographic masking, ensuring a consistent volume is reconstructed (default is for this not to happen)
-	if ( (bool) params["tomo"] == true )
-	{
-		float alt = (transform.get_rotation())["alt"];
-		// FIXME use a global def for deg2rad
-		float cosine = cos(alt*3.14159265358979323846f/180.0f);
-		
-		Dict zero_dict;
-		float x_in = params["x_in"];
-		int x_clip = static_cast<int>( (float) x_in * ( 1.0 - cosine ) / 2.0);
-		zero_dict["x0"] = x_clip;
-		zero_dict["x1"] = x_clip;
-		zero_dict["y0"] = 0;
-		zero_dict["y1"] = 0;
-		return_slice->process_inplace( "mask.zeroedge2d", zero_dict );
-		
-		float zeroangle_edge_mean = 0.0;
-
-		int x = return_slice->get_xsize();
-		int y = return_slice->get_ysize();
-			
-		for ( int i = 0; i < y; ++i ) {
-			zeroangle_edge_mean += return_slice->get_value_at(x_clip, i );
-			zeroangle_edge_mean += return_slice->get_value_at(x - x_clip-1, i );
-		}
-		
-		zeroangle_edge_mean /= 2*y;
-					
-		for ( int i = 0; i < y; ++i ) {
-			for ( int j = x_clip; j < x - x_clip; ++j) {
-				return_slice->get_data()[i*x+j] -= zeroangle_edge_mean;	
-			}
-		}
-
-		if ( (int) params["t_emm_gauss"] != 0 )
-			{
-				int falloff_width = (int) params["t_emm_gauss"];
-				float sigma = (float) falloff_width/3.0f;
-				
-				GaussianFunctoid gf(sigma);
-				
-				for ( int i = 0; i < y; ++i ) {
-					
-					float left_value = return_slice->get_value_at(x_clip+falloff_width, i );
-					
-					float scale = left_value;
-					
-					for ( int j = falloff_width-1; j >= 0; --j )
-					{
-						return_slice->set_value_at(x_clip+j, i, scale*gf((float)(falloff_width-j)) );
-					}
-				
-					float right_value = return_slice->get_value_at(x - x_clip - falloff_width, i );
-					scale = right_value;
-					
-					for ( int j = 1; j < falloff_width; ++j )
-					{
-						return_slice->set_value_at(x - x_clip - falloff_width + j, i, scale*gf( (float)j ));
-					}
-				
-				}
-		}
-	}
 	
 	// Perform tomographic weighting if the argument is specified (default is for this not to happen)
 	if ( (bool) params["tomo_weight"] == true )
@@ -391,85 +311,16 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 	}
 	
 	// Perform tomographic masking, ensuring a consistent volume is reconstructed (default is for this not to happen)
-	if ( (bool) params["tomo_mask"] == true )
+	if ( (bool) params["tomo"] == true )
 	{
-		float alt = (transform.get_rotation())["alt"];
-		// FIXME use a global def for deg2rad
-		float cosine = cos(alt*3.14159265358979323846f/180.0f);
-	
-		// This masks out the edges of the image which are not present in the image with zero tilt.
-		Dict zero_dict;
-		float x_in = params["x_in"];
-		int x_clip = static_cast<int>( (float) x_in * ( 1.0 - cosine ) / 2.0);
-		zero_dict["x0"] = x_clip;
-		zero_dict["x1"] = x_clip;
-		zero_dict["y0"] = 0;
-		zero_dict["y1"] = 0;
-		return_slice->process_inplace( "mask.zeroedge2d", zero_dict );
-		
-		
-		// Set the zeroed edge pixels to be the mean of the pixel column where the drop off occurs.
-		// This is experimental and was suggested by Mike Schmid. Sometimes it seems to solve
-		// strip artifacts, other times not. The best solution might be to employ a Gaussian drop off to
-		// the mean.
-		if ( (bool) params["t_emm"] == true && x_clip > 0 )
-		{
-			float left_mean = 0.0, right_mean = 0.0;
-
-			int x = return_slice->get_xsize();
-			int y = return_slice->get_ysize();
-			
-			for ( int i = 0; i < y; ++i ) {
-				left_mean += return_slice->get_value_at(x_clip, i );
-				right_mean += return_slice->get_value_at(x - x_clip-1, i );
-			}
-			left_mean /= y;
-			right_mean /= y;
-			
-			for ( int i = 0; i < y; ++i ) {
-				for ( int j = 0; j < x_clip; ++j )
-				{
-					return_slice->set_value_at(j, i, left_mean );
-				}
-				
-				for ( int j = x - x_clip; j < x; ++j )
-				{
-					return_slice->set_value_at(j, i, right_mean );
-				}
-				
-			}
-			
-			if ( (int) params["t_emm_gauss"] != 0 )
-			{
-				int falloff_width = (int) params["t_emm_gauss"];
-				float sigma = (float) falloff_width/3.0f;
-				
-				GaussianFunctoid gf(sigma);
-				
-				for ( int i = 0; i < y; ++i ) {
-					
-					float left_value = return_slice->get_value_at(x_clip+falloff_width, i );
-					
-					float scale = left_value - left_mean;
-					
-					for ( int j = falloff_width-1; j >= 0; --j )
-					{
-						return_slice->set_value_at(x_clip+j, i, scale*gf((float)(falloff_width-j)) + left_mean );
-					}
-				
-					float right_value = return_slice->get_value_at(x - x_clip - falloff_width, i );
-					scale = right_value - right_mean;
-					
-					for ( int j = 1; j < falloff_width; ++j )
-					{
-						return_slice->set_value_at(x - x_clip - falloff_width + j, i, scale*gf( (float)j ) + right_mean );
-					}
-				
-				}
-				
-			}
-		}
+		Dict tparms;
+		tparms["gauss_falloff"] = (int) params["t_emm_gauss"];
+		tparms["gauss_sigma"] = 3;
+		tparms["biedgemean"] = true;
+		tparms["angle"] = (float) (transform.get_rotation())["alt"];
+		return_slice->process_inplace("tomo.tiltedgemask", tparms);
 	}
+	
 	
 	// Apply padding if the option has been set, and it's sensible
 	if ( (int) params["x_pad"] != 0 || (int) params["y_pad"] != 0 )

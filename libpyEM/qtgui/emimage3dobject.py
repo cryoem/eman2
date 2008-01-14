@@ -40,24 +40,48 @@ from math import *
 from EMAN2 import *
 
 class Camera:
+	"""\brief A camera object encapsulates 6 degrees of freedom, and a scale factor
+	
+	The camera object stores x,y,z coordinates and a single transform object.
+	For instance, it can be used for positioning and moving the 'camera' in OpenGL,
+	however, instead of literally moving a camera, in OpenGL the scene itself is moved
+	and the camera is generally thought of as staying still.
+	
+	Use the public interface of setCamTrans and motionRotate (which is based on mouse movement)_
+	to move the camera position
+	
+	Then call 'position' in your main OpenGL draw function before drawing anything.
+	
+	"""
 	def __init__(self):
+		# The magnification factor influences how the scale (zoom) is altered when a zoom event is received.
+		# The equation is scale *= mag_factor or scale /= mag_factor, depending on the event.
 		self.mag_factor = 1.1
 		self.scale = 1.0
+		
+		# The camera coordinates
 		self.cam_x = 0
 		self.cam_y = 0
 		self.cam_z = 0
 		
+		# Camera offsets - generally you want to set default_z to some negative
+		# value the OpenGL scene is viewable.
 		self.default_x = 0
 		self.default_y = 0
 		self.default_z = 0
 		
+		# The Transform3D object stores the rotation
 		t3d = Transform3D()
 		t3d.to_identity()
 	
+		# At the moment there is a stack of Transform3D objects, this is for the purposes
+		# of undoing actions. If the undo functionality was not required, the stack could be
+		# removed.
 		self.t3d_stack = []
 		self.t3d_stack.append(t3d)
 		
 	def position(self):
+		# position the camera, regualar OpenGL movement.
 		glTranslated(self.cam_x, self.cam_y, self.cam_z)
 		
 		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
@@ -73,7 +97,23 @@ class Camera:
 			self.scale *= self.mag_factor
 		elif delta < 0:
 			self.scale *= 1.0/self.mag_factor
-			
+	
+	def setCamTrans(self,axis,value):
+		if ( axis == 'x'):
+			setCamX(value)
+		elif ( axis == 'y'):
+			setCamY(value)
+		elif ( axis == 'z'):
+			setCamZ(value)
+		elif ( axis == 'default_x'):
+			self.default_x = value
+		elif ( axis == 'default_y'):
+			self.default_y = value
+		elif ( axis == 'default_z'):
+			self.default_z = value
+		else:
+			print 'Error, the axis (%s) specified is unknown. No action was taken' %axis
+	
 	def setCamZ(self,z):
 		self.cam_z = self.default_z + z
 		
@@ -84,6 +124,11 @@ class Camera:
 		self.cam_x = self.default_x + x
 
 	def motionRotate(self,x,y):
+		# this function implements mouse interactive rotation
+		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
+		# Rotation occurs about the vector 90 degrees to [x,y,0]
+		# The amount of rotation is linealy proportional to the length of [x,y]
+		
 		if ( x == 0 and y == 0): return
 		
 		theta = atan2(-y,x)
@@ -133,11 +178,92 @@ class Camera:
 		
 		return cam
 		
+class EMWithImage3DObject:
+	# this class is a wrapper for the EMImage3DObject
+	# Wrapping is used to so as to define a strict "has-a" relationship
+	# 
+	def __init__(self):
+		self.image3DObject = EMImage3DObject()
+	
+	def setName(self, name):
+		self.image3DObject.setName(name)
+
+	def getName(self):
+		return self.image3DObject.getName()
+	
+	def getCurrentCamera(self):
+		return self.image3DObject.getCurrentCamera()
+	
+	def setCamera(self,camera):
+		self.image3DObject.setCamera(camera)
+	
+	def mousePressEvent(self, event):
+		self.mousePressEvent(event)
 		
+	def mouseMoveEvent(self, event):
+		self.image3DObject.mouseMoveEvent(event)
+	
+	def mouseReleaseEvent(self, event):
+		self.image3DObject.mouseReleaseEvent(event)
+			
+	def wheelEvent(self, event):
+		self.image3DObject.wheelEvent(event)
+		
+	def scale_event(self,delta):
+		self.image3DObject(delta)
+
+	def getTranslateScale(self):
+		return self.image3DObject.getTranslateScale()
+	
+	def motionTranslate(self,x,y):
+		self.image3DObject.motionTranslate(x,y)
+		
+	def setCamZ(self,z):
+		self.image3DObject.setCamZ(z)
+		
+	def setCamY(self,y):
+		self.image3DObject.setCamY(y)
+		
+	def setCamX(self,x):
+		self.image3DObject.setCamX(z)
+		
+	def motionRotate(self,x,y):
+		self.image3DObject.motionRotate(x,y)
+		
+	def setScale(self,val):
+		self.image3DObject.motionRotate(val)
+	
+	def loadRotation(self,t3d):
+		self.image3DObject.loadRotation(t3d)
+		
+	def resizeEvent(self):
+		self.image3DObject.resizeEvent()
+		
+	def draw_bc_screen(self):
+		self.image3DObject.draw_bc_screen()
+	
+	def setGLBrightness(self,val):
+		self.image3DObject.setGLBrightness(val)
+		
+	def setGLContrast(self,val):
+		self.image3DObject.setGLContrast(val)
+		
+	def draw_volume_bounds(self):
+		self.image3DObject.draw_volume_bounds()
+	
+	def toggleCube(self):
+		self.image3DObject.toggleCube()
+		
+	def showInspector(self,force=0):
+		self.image3DObject.showInspector(force)
+
+	def closeEvent(self,event) :
+		self.image3DObject.closeEvent()
+	
 class EMImage3DObject:
 	def __init__(self):
 		pass
-	
+		
 	def render(self):
 		pass
 
