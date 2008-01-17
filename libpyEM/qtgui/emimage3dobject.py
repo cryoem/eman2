@@ -177,92 +177,10 @@ class Camera:
 		cam.default_z = self.default_z
 		
 		return cam
-		
-class EMWithImage3DObject:
-	# this class is a wrapper for the EMImage3DObject
-	# Wrapping is used to so as to define a strict "has-a" relationship
-	# 
-	def __init__(self):
-		self.image3DObject = EMImage3DObject()
-	
-	def setName(self, name):
-		self.image3DObject.setName(name)
 
-	def getName(self):
-		return self.image3DObject.getName()
-	
-	def getCurrentCamera(self):
-		return self.image3DObject.getCurrentCamera()
-	
-	def setCamera(self,camera):
-		self.image3DObject.setCamera(camera)
-	
-	def mousePressEvent(self, event):
-		self.mousePressEvent(event)
-		
-	def mouseMoveEvent(self, event):
-		self.image3DObject.mouseMoveEvent(event)
-	
-	def mouseReleaseEvent(self, event):
-		self.image3DObject.mouseReleaseEvent(event)
-			
-	def wheelEvent(self, event):
-		self.image3DObject.wheelEvent(event)
-		
-	def scale_event(self,delta):
-		self.image3DObject(delta)
-
-	def getTranslateScale(self):
-		return self.image3DObject.getTranslateScale()
-	
-	def motionTranslate(self,x,y):
-		self.image3DObject.motionTranslate(x,y)
-		
-	def setCamZ(self,z):
-		self.image3DObject.setCamZ(z)
-		
-	def setCamY(self,y):
-		self.image3DObject.setCamY(y)
-		
-	def setCamX(self,x):
-		self.image3DObject.setCamX(z)
-		
-	def motionRotate(self,x,y):
-		self.image3DObject.motionRotate(x,y)
-		
-	def setScale(self,val):
-		self.image3DObject.motionRotate(val)
-	
-	def loadRotation(self,t3d):
-		self.image3DObject.loadRotation(t3d)
-		
-	def resizeEvent(self):
-		self.image3DObject.resizeEvent()
-		
-	def draw_bc_screen(self):
-		self.image3DObject.draw_bc_screen()
-	
-	def setGLBrightness(self,val):
-		self.image3DObject.setGLBrightness(val)
-		
-	def setGLContrast(self,val):
-		self.image3DObject.setGLContrast(val)
-		
-	def draw_volume_bounds(self):
-		self.image3DObject.draw_volume_bounds()
-	
-	def toggleCube(self):
-		self.image3DObject.toggleCube()
-		
-	def showInspector(self,force=0):
-		self.image3DObject.showInspector(force)
-
-	def closeEvent(self,event) :
-		self.image3DObject.closeEvent()
-	
 class EMImage3DObject:
 	def __init__(self):
-		pass
+		self.rank = 0
 		
 	def render(self):
 		pass
@@ -294,6 +212,9 @@ class EMImage3DObject:
 	
 	def getInspector(self):
 		pass
+	
+	def setRank(self,rank):
+		self.rank = rank
 	
 	def setName(self, name):
 		self.name = name

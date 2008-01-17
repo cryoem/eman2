@@ -127,7 +127,8 @@ class EMIsosurface(EMImage3DObject):
 		glShadeModel(GL_SMOOTH)
 		if ( self.isodl == 0 ):
 			self.getIsoDL()
-			
+		glStencilFunc(GL_EQUAL,self.rank,0)
+		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
@@ -140,14 +141,16 @@ class EMIsosurface(EMImage3DObject):
 		glCallList(self.isodl)
 		glPopMatrix()
 		
-		if ( self.texture ):
-			glPushMatrix()
-			glLoadIdentity()
-			glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
-			glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
-			self.draw_bc_screen()
-			glPopMatrix()
-	
+		glStencilFunc(GL_EQUAL,self.rank,self.rank)
+		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
+		glPushMatrix()
+		glLoadIdentity()
+		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
+		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
+		self.draw_bc_screen()
+		glPopMatrix()
+		
+		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
 			glPushMatrix()
 			self.draw_volume_bounds()
@@ -505,6 +508,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.maintab = None
 		self.tabwidget.addTab(self.getMainTab(), "Main")
 		self.texturetab = None
+		self.tabwidget.addTab(self.getGLTab(),"GL")
 		self.tabwidget.addTab(self.getTextureTab(),"Texture")
 		self.getTextureTab().setEnabled(False)
 		self.vbl.addWidget(self.tabwidget)
@@ -529,6 +533,28 @@ class EMIsoInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
+	
+	def getGLTab(self):
+		self.gltab = QtGui.QWidget()
+		gltab = self.gltab
+		
+		gltab.vbl = QtGui.QVBoxLayout(self.gltab )
+		gltab.vbl.setMargin(0)
+		gltab.vbl.setSpacing(6)
+		gltab.vbl.setObjectName("Main")
+		
+		self.glcontrast = ValSlider(gltab,(1.0,5.0),"GLShd:")
+		self.glcontrast.setObjectName("GLShade")
+		self.glcontrast.setValue(1.0)
+		gltab.vbl.addWidget(self.glcontrast)
+		
+		self.glbrightness = ValSlider(gltab,(-1.0,0.0),"GLBst:")
+		self.glbrightness.setObjectName("GLBoost")
+		self.glbrightness.setValue(0.1)
+		self.glbrightness.setValue(0.0)
+		gltab.vbl.addWidget(self.glbrightness)
+	
+		return gltab
 	
 	def toggleTexture(self):
 		self.texture = not self.texture
@@ -555,16 +581,16 @@ class EMIsoInspector(QtGui.QWidget):
 			self.bright.setValue(0.0)
 			texturetab.vbl.addWidget(self.bright)
 			
-			self.glcontrast = ValSlider(texturetab,(1.0,5.0),"GLShd:")
-			self.glcontrast.setObjectName("GLShade")
-			self.glcontrast.setValue(1.0)
-			texturetab.vbl.addWidget(self.glcontrast)
+			#self.glcontrast = ValSlider(texturetab,(1.0,5.0),"GLShd:")
+			#self.glcontrast.setObjectName("GLShade")
+			#self.glcontrast.setValue(1.0)
+			#texturetab.vbl.addWidget(self.glcontrast)
 			
-			self.glbrightness = ValSlider(texturetab,(-1.0,0.0),"GLBst:")
-			self.glbrightness.setObjectName("GLBoost")
-			self.glbrightness.setValue(0.1)
-			self.glbrightness.setValue(0.0)
-			texturetab.vbl.addWidget(self.glbrightness)
+			#self.glbrightness = ValSlider(texturetab,(-1.0,0.0),"GLBst:")
+			#self.glbrightness.setObjectName("GLBoost")
+			#self.glbrightness.setValue(0.1)
+			#self.glbrightness.setValue(0.0)
+			#texturetab.vbl.addWidget(self.glbrightness)
 			
 		return self.texturetab
 	

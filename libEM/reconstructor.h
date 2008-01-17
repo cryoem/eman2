@@ -482,7 +482,6 @@ namespace EMAN
 			params["sym"] = "c1";
 			params["apix"] = 1.0;
 			params["tomo_weight"] = false;
-			params["tomo_mask"] = false;
 			params["t_emm"] = false;
 			params["tomo"] = false;
 			params["edgenorm"] = true;

@@ -63,7 +63,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def __init__(self, image=None, parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
+		fmt.setDepth(True)
+		fmt.setStencil(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImage3D.allim[self]=0
 		
@@ -84,12 +85,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.fov = 50 # field of view angle used by gluPerspective
 		
 		self.inspector=EMImageInspector3D(self)
-		#self.inspector.updateSelection() 
+		#self.inspector.addSlices()
 	def timeout(self):
 		self.updateGL()
 		
 	def initializeGL(self):
-		
 		glEnable(GL_NORMALIZE)
 		
 		glEnable(GL_LIGHTING)
@@ -105,40 +105,19 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		GL.glClearColor(0,0,0,0)
 		glPolygonMode(GL_FRONT,GL_FILL);
-
-		
+		GL.glClearAccum(0,0,0,0)
+		glClearStencil(0)
+		glEnable(GL_STENCIL_TEST)
 	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		
+		glClear(GL_ACCUM_BUFFER_BIT)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		
-		
+
 		for i in self.viewables:
 			glPushMatrix()
 			i.render()
 			glPopMatrix()
-		
-		#for i in self.viewables:
-			#if (i.getType() == "Volume"):
-				#glPushMatrix()
-				#i.render()
-				#glPopMatrix()
-			
-		
-		#for i in self.viewables:
-			#if (i.getType() == "Slice Viewer"):
-				#glPushMatrix()
-				#i.render()
-				#glPopMatrix()
-			
-		
-		#for i in self.viewables:
-			#if (i.getType() == "Isosurface"):
-				#glPushMatrix()
-				#i.render()
-				#glPopMatrix()
-
 
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
@@ -214,6 +193,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.num_iso += 1
 		name = "Isosurface " + str(self.num_iso)
 		self.viewables[len(self.viewables)-1].setName(name)
+		self.viewables[len(self.viewables)-1].setRank(len(self.viewables))
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
 		
@@ -223,6 +203,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.num_vol += 1
 		name = "Volume " + str(self.num_vol)
 		self.viewables[len(self.viewables)-1].setName(name)
+		self.viewables[len(self.viewables)-1].setRank(len(self.viewables))
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
 		
@@ -232,6 +213,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.num_sli += 1
 		name = "Slices " + str(self.num_sli)
 		self.viewables[len(self.viewables)-1].setName(name)
+		self.viewables[len(self.viewables)-1].setRank(len(self.viewables))
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
 		
@@ -265,6 +247,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			pass
 		else : 
 			self.currentselection = val - 1
+		
+		
+		# Need to set the rank appropriately
+		for i in range(0,len(self.viewables)):
+			self.viewables[i].setRank(i+1)
 		
 		self.updateGL()
 	

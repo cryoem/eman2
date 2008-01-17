@@ -211,21 +211,25 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		if ( self.tex_dl == 0 ):
 			self.genCurrentDisplayList()
-			
-			
+		
+		glStencilFunc(GL_EQUAL,self.rank,0)
+		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 		glPushMatrix()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
 		glCallList(self.tex_dl)
 		glPopMatrix()
 		
+		glStencilFunc(GL_EQUAL,self.rank,self.rank)
+		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 		glPushMatrix()
 		glLoadIdentity()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
-		#self.draw_bc_screen()
+		self.draw_bc_screen()
 		glPopMatrix()
 		
+		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
 			glPushMatrix()
 			self.draw_volume_bounds()
@@ -294,7 +298,6 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 	def setData(self,data):
 		self.sliceviewer.setData(data)
 	def initializeGL(self):
-		glPixelTransferf(GL_BLUE_SCALE, 0.0)
 		glEnable(GL_NORMALIZE)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
@@ -306,23 +309,27 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		
 		GL.glClearColor(0,0,0,0)
-		GL.glClearAccum(0,0,0,0)
+		#GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
 		
+		glClearStencil(0)
+		glEnable(GL_STENCIL_TEST)
+		
 	def paintGL(self):
-		glClear(GL_ACCUM_BUFFER_BIT)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		#glClear(GL_ACCUM_BUFFER_BIT)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
+		
 		glPushMatrix()
 		self.sliceviewer.render()
 		glPopMatrix()
-		glAccum(GL_ADD, self.sliceviewer.glbrightness)
-		glAccum(GL_ACCUM, self.sliceviewer.glcontrast)
-		glAccum(GL_RETURN, 1.0)
-	
+		
+		#glAccum(GL_ADD, self.sliceviewer.glbrightness)
+		#glAccum(GL_ACCUM, self.sliceviewer.glcontrast)
+		#glAccum(GL_RETURN, 1.0)
 		
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering

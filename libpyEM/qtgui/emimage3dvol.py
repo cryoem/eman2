@@ -131,6 +131,49 @@ class EMVolume(EMImage3DObject):
 		self.updateDataAndTexture()
 		self.tex_dl = self.tex_dl_z
 		
+	def test_accum(self):
+		glClear(GL_ACCUM_BUFFER_BIT)
+		
+		self.accum = True
+		self.zsample = self.texsample*(self.data.get_zsize())
+		
+		for z in range(0,int(self.texsample*(self.data.get_zsize()))):
+			glEnable(GL_TEXTURE_3D)
+			glBindTexture(GL_TEXTURE_3D, self.tex_name)
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+			glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		
+		
+			glBegin(GL_QUADS)
+			
+			zz = float(z)/float(self.data.get_zsize()-1)/self.texsample
+			glTexCoord3f(0,0,zz)
+			glVertex(0,0,zz)
+			
+			glTexCoord3f(1,0,zz)
+			glVertex(1,0,zz)
+			
+			glTexCoord3f(1,1,zz)
+			glVertex(1,1,zz)
+			
+			glTexCoord3f(0,1,zz)
+			glVertex(0,1,zz)
+		
+			glEnd()
+			glDisable(GL_TEXTURE_3D)
+		
+			if ( self.accum ):
+				glAccum(GL_ADD, 1.0/self.zsample*self.brightness)
+				glAccum(GL_ACCUM, 1.0/self.zsample*self.contrast)
+		
+		
+		glAccum(GL_RETURN, 1.0)
+		
 	def render(self):
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
@@ -152,6 +195,8 @@ class EMVolume(EMImage3DObject):
 		# here is where the correct display list (x,y or z direction) is determined
 		self.determineTextureView()
 
+		glStencilFunc(GL_EQUAL,self.rank,0)
+		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 		glPushMatrix()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
@@ -164,7 +209,16 @@ class EMVolume(EMImage3DObject):
 		glDepthMask(GL_TRUE)
 		glDisable(GL_BLEND)
 		glPopMatrix()
-	
+
+		#glPushMatrix()
+		#glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
+		#glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
+		#self.test_accum()
+		#glPopMatrix()
+		
+		
+		glStencilFunc(GL_EQUAL,self.rank,self.rank)
+		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 		glPushMatrix()
 		glLoadIdentity()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
@@ -172,6 +226,7 @@ class EMVolume(EMImage3DObject):
 		self.draw_bc_screen()
 		glPopMatrix()
 		
+		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
 			glPushMatrix()
 			self.draw_volume_bounds()
@@ -326,7 +381,6 @@ class EMVolume(EMImage3DObject):
 		self.data_copy.add(self.brightness)
 		self.data_copy.mult(self.contrast*1.0/self.data.get_zsize())
 		
-
 		hist = self.data_copy.calc_hist(256,0,1.0)
 		self.inspector.setHist(hist,0,1.0) 
 
@@ -397,6 +451,8 @@ class EMVolumeWidget(QtOpenGL.QGLWidget):
 		glShadeModel(GL_SMOOTH)
 		
 	def paintGL(self):
+		glClear(GL_ACCUM_BUFFER_BIT)
+		glClear(GL_STENCIL_BUFFER_BIT)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
 		glMatrixMode(GL_MODELVIEW)
