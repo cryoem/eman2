@@ -309,6 +309,7 @@ void EMData::postift_depad_corner_inplace() {
 		set_attr("npad", 1);
 		set_size(nxold, nyold, nzold);
 		set_fftpad(false);
+		set_fftodd(false);
 		update();
 		set_complex(false);
 		if(ny==1 && nz==1) set_complex_x(false);
