@@ -107,13 +107,19 @@ class EM3DFont(EMImage3DObject):
 		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
 		glColor(self.colors[self.currentcolor]["ambient"])
 		
+		glEnable(GL_NORMALIZE)
+		#HERE
 		glPushMatrix()
 		glScalef(10,10,1)
-		glNormal(0,0,1)
+		
 		glBegin(GL_QUADS)
+		glNormal(-1,-1,1)
 		glVertex(-0.5,-0.5,0)
+		glNormal(-1,1,1)
 		glVertex( 0.5,-0.5,0)
+		glNormal(1,1,1)
 		glVertex( 0.5, 0.5,0)
+		glNormal(1,-1,1)
 		glVertex(-0.5, 0.5,0)
 		glEnd()
 		glPopMatrix()
