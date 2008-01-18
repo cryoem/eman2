@@ -44,6 +44,7 @@ from math import *
 from EMAN2 import *
 from emimageutil import *
 from emimage2d import *
+from random import random
 
 from emimage3dobject import Camera
 
@@ -112,7 +113,7 @@ class EMQtWidgetDrawer:
 		self.mapcoords = True
 		self.debugcoords = True
 		self.itex = 0
-		
+		self.click_debug = False
 		self.cam = Camera()
 		self.cam.motionRotate(25,25)
 		
@@ -124,7 +125,24 @@ class EMQtWidgetDrawer:
 			self.qwidget.deleteLater()
 		
 		self.qwidget = widget
+	
+	def print_angles(self):
+		self.print_angles_d(self.mc00,self.mc10)
+		self.print_angles_d(self.mc10,self.mc11)
+		self.print_angles_d(self.mc11,self.mc01)
+		self.print_angles_d(self.mc01,self.mc00)
+	
+	def print_angles_d(self,p1,p2,u=1,v=0):
+		x = p2[0]-p1[0]
+		y = p2[1]-p1[1]
 		
+		l1 = sqrt(x*x+y*y)
+		l2 = sqrt(u*u+v*v)
+		
+		theta = acos((x*u+v*y)/(l1*l2))
+		print "the angle between [%f,%f] and [%f,%f] is %f" %(p1[0],p1[1],p2[0],p2[1],180.0*theta/pi)
+		
+	
 	def paintGL(self):
 		
 		self.cam.position()
@@ -151,10 +169,18 @@ class EMQtWidgetDrawer:
 			wproj=glGetDoublev(GL_PROJECTION_MATRIX)
 			wview=glGetIntegerv(GL_VIEWPORT)
 	
+			print wmodel
+			print wproj
+			print wview
+	
 			self.mc00=gluProject(-1.,-1.,0.,wmodel,wproj,wview)
 			self.mc10=gluProject( 1.,-1.,0.,wmodel,wproj,wview)
 			self.mc11=gluProject( 1., 1.,0.,wmodel,wproj,wview)
 			self.mc01=gluProject(-1., 1.,0.,wmodel,wproj,wview)
+			
+			print self.mc00
+			print gluUnProject(self.mc00[0],self.mc00[1],self.mc00[2],wmodel,wproj,wview)
+			print gluUnProject(self.mc11[0],self.mc11[1],self.mc11[2],wmodel,wproj,wview)
 			
 			if ( self.debugcoords ):
 				glMatrixMode(GL_PROJECTION)
@@ -165,6 +191,9 @@ class EMQtWidgetDrawer:
 				glMatrixMode(GL_MODELVIEW)
 				glPushMatrix()
 				
+				#print "extremes"
+				#print self.mc00[0], self.mc00[1], self.mc00[2]
+				#print self.mc11[0], self.mc11[1], self.mc11[2]
 				glLoadIdentity()
 				glPointSize(10)
 				glColor(1.0,1.0,1.0,1.0)
@@ -173,6 +202,25 @@ class EMQtWidgetDrawer:
 				glVertex(self.mc10[0], self.mc10[1])
 				glVertex(self.mc11[0], self.mc11[1])
 				glVertex(self.mc01[0], self.mc01[1])
+				if (self.click_debug == True):
+					glVertex(self.mcd00[0], self.mcd00[1])
+					glVertex(self.mcd10[0], self.mcd10[1])
+					glVertex(self.mcd11[0], self.mcd11[1])
+					glVertex(self.mcd01[0], self.mcd01[1])
+					
+				glEnd()
+				
+				glBegin(GL_LINES)
+				glVertex(self.mc00[0], self.mc00[1])
+				glVertex(self.mc11[0], self.mc11[1])
+				glVertex(self.mc10[0], self.mc10[1])
+				glVertex(self.mc01[0], self.mc01[1])
+				if (self.click_debug == True):
+					glVertex(self.mcd00[0], self.mcd00[1])
+					glVertex(self.mcd10[0], self.mcd10[1])
+					glVertex(self.mcd11[0], self.mcd11[1])
+					glVertex(self.mcd01[0], self.mcd01[1])
+					
 				glEnd()
 				
 				glPopMatrix()
@@ -191,7 +239,7 @@ class EMQtWidgetDrawer:
 		# this works by simple geometry - if the mouse point e is within the four points (a,b,c,d)
 		# at the extremities of  the qtwidget, then aed + bec + ced + dea is +/- 360 degrees. 
 		# If e is outside the four points then the sum is zero...
-		
+		print self.mc00[0], self.mc00[1]
 		a = [self.mc00[0]-x, self.mc00[1]-y]
 		b = [self.mc01[0]-x, self.mc01[1]-y]
 		c = [self.mc11[0]-x, self.mc11[1]-y]
@@ -207,6 +255,24 @@ class EMQtWidgetDrawer:
 		else:
 			return False
 		
+	def check(self):
+		[A,B,C,D] = self.equation_of_plane(self.mc00,self.mc01,self.mc11)
+		[A,B,C,D] = self.equation_of_plane(self.mc11,self.mc01,self.mc00)
+		[A,B,C,D] = self.equation_of_plane(self.mc10,self.mc01,self.mc11)
+		[A,B,C,D] = self.equation_of_plane(self.mc10,self.mc01,self.mc00)
+		
+	def equation_of_plane(self,a,b,c):
+		x1,y1,z1=a[0],a[1],a[2]
+		x2,y2,z2=b[0],b[1],b[2]
+		x3,y3,z3=c[0],c[1],c[2]
+		A = y1*(z2-z3)+y2*(z3-z1)+y3*(z1-z2)
+		B = z1*(x2-x3)+z2*(x3-x1)+z3*(x1-x2)
+		C = x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2)
+		D = -(x1*(y2*z3-y3*z2)+x2*(y3*z1-y1*z3)+x3*(y1*z2-y2*z1))
+		
+		print A,B,C,D
+		return [A,B,C,D]
+	
 	def mouseinwin(self,x,y):
 		x00=self.mc00[0]
 		x01=self.mc01[0]-x00
@@ -260,7 +326,7 @@ class EMQtWidgetDrawer:
 		
 	def timerEvent(self,event=None):
 		# event = None is just here incase anyone ever actually wants to pass the event
-		#self.cam.motionRotate(1,1)
+		self.cam.motionRotate(-1,0)
 		pass
 		
 	def getsubtendingangle(self,a,b):
@@ -552,6 +618,8 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		# at the extremities of  the qtwidget, then aed + bec + ced + dea is +/- 360 degrees. 
 		# If e is outside the four points then the sum is zero...
 		
+		print mc00[0], mc00[1]
+		
 		ly = self.height() - y
 		a = [self.mc00[0]-x, self.mc00[1]-ly]
 		b = [self.mc01[0]-x, self.mc01[1]-ly]
@@ -575,6 +643,9 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		return atan2(sinaeb,cosaeb)
 
 	def mouseinwin(self,x,y):
+		print mc00[0], mc00[1]
+		print "hello"
+		
 		x00=self.mc00[0]
 		x01=self.mc01[0]-x00
 		x10=self.mc10[0]-x00

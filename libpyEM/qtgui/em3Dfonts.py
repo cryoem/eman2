@@ -54,55 +54,28 @@ from emimage3dobject import Camera
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMIsosurface(EMImage3DObject):
-	def __init__(self,image=None, parent=None):
+class EM3DFont(EMImage3DObject):
+	def __init__(self, parent=None):
 		self.parent = parent
 		
 		self.init()
 		self.initialized = True
 		
 		self.cam=Camera()
-		self.tex_name = 0
-		self.texture = False
-
+		
 		self.brightness = 0
 		self.contrast = 10
 		self.glcontrast = 1.0
 		self.glbrightness = 0.0
 		self.rank = 1
 		self.inspector=None
-		self.data = None
-		self.data_copy = None
-		
-		if image :
-			self.setData(image)
-	
-	def getType(self):
-		return "Isosurface"
-	
-	def updateDataAndTexture(self):
-		
-		self.data_copy = self.data.copy()
-		self.data_copy.add(self.brightness)
-		self.data_copy.mult(self.contrast)
-		
-		hist = self.data_copy.calc_hist(256,self.minden,self.maxden)
-		self.inspector.setHist(hist,self.minden,self.maxden) 
 
-		if ( self.texture ): self.genTexture()
+	def getType(self):
+		return "Font"
 	
-	def genTexture(self):
-		if ( self.texture == False ): return
-		if ( self.tex_name != 0 ):
-			glDeleteTextures(self.tex_name)
-		
-		if ( self.data_copy == None ):
-			self.tex_name = self.data.gen_gl_texture()
-		else:
-			self.tex_name = self.data_copy.gen_gl_texture()
-	
+
 	def render(self):
-		if (not isinstance(self.data,EMData)): return
+		#if (not isinstance(self.data,EMData)): return
 		
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
@@ -125,30 +98,23 @@ class EMIsosurface(EMImage3DObject):
 		self.cam.position()
 			
 		glShadeModel(GL_SMOOTH)
-		if ( self.isodl == 0 ):
-			self.getIsoDL()
+
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
-		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
-		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
-		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
-		glColor(self.colors[self.isocolor]["ambient"])
-		glPushMatrix()
-		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
-		if ( self.texture ):
-			glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
-		glCallList(self.isodl)
-		glPopMatrix()
+		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
+		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
+		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
+		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
+		glColor(self.colors[self.currentcolor]["ambient"])
 		
 		glPushMatrix()
-		glScalef(100,100,1)
+		glScalef(10,10,1)
 		glNormal(0,0,1)
 		glBegin(GL_QUADS)
-		glVertex(0,0,0)
-		glVertex(1,0,0)
-		glVertex(1,1,0)
-		glVertex(0,1,0)
+		glVertex(-0.5,-0.5,0)
+		glVertex( 0.5,-0.5,0)
+		glVertex( 0.5, 0.5,0)
+		glVertex(-0.5, 0.5,0)
 		glEnd()
 		glPopMatrix()
 		
@@ -156,16 +122,13 @@ class EMIsosurface(EMImage3DObject):
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 		glPushMatrix()
 		glLoadIdentity()
-		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
-		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
+		glScalef(10,10,1)
+		glTranslate(-0.5,-0.5,-1)
 		self.draw_bc_screen()
 		glPopMatrix()
 		
 		glStencilFunc(GL_ALWAYS,1,1)
-		if self.cube:
-			glPushMatrix()
-			self.draw_volume_bounds()
-			glPopMatrix()
+
 			
 		if ( lighting ): glEnable(GL_LIGHTING)
 		else: glDisable(GL_LIGHTING)
@@ -181,67 +144,19 @@ class EMIsosurface(EMImage3DObject):
 			
 	def init(self):
 		self.mmode = 0
-		self.inspector=None
-		self.isothr=0.5
-		self.isorender=None
-		self.isodl = 0
-		self.smpval=-1
-		self.griddl = 0
-		self.scale = 1.0
-		self.cube = False
 		self.wire = False
 		self.light = True
-		
-		
-	def getIsoDL(self):
-		# create the isosurface display list
-		self.isorender.set_surface_value(self.isothr)
-		self.isorender.set_sampling(self.smpval)
-		
-		if ( self.texture ):
-			if ( self.tex_name == 0 ):
-				self.updateDataAndTexture()
-				
-		if ( self.texture  ):
-			self.isodl = self.isorender.get_isosurface_dl(self.tex_name)
-		else:
-			self.isodl = self.isorender.get_isosurface_dl(0)
-		#time2 = clock()
-		#dt1 = time2 - time1
-		#print "It took %f to render the isosurface" %dt1
 	
-	def setData(self,data):
-		"""Pass in a 3D EMData object"""
-		
-		self.data=data
-		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
-			print "Error, tried to set data that is invalid for EMIsosurface"
-			return
-		
-		self.minden=data.get_attr("minimum")
-		self.maxden=data.get_attr("maximum")
-		mean=data.get_attr("mean")
-		sigma=data.get_attr("sigma")
+	def setInit(self):
 
-		self.cam.default_z = -1.25*data.get_zsize()
-		self.cam.cam_z = -1.25*data.get_zsize()
+		self.cam.default_z = -1.25*32
+		self.cam.cam_z = -1.25*32
 		
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMIsoInspector(self)
-		
-		hist = data.calc_hist(256,self.minden,self.maxden)
-		self.inspector.setHist(hist,self.minden,self.maxden) 
-	
-		self.inspector.setThrs(self.minden,self.maxden,mean+3.0*sigma)
-		self.isothr = mean+3.0*sigma
-		self.brightness = -self.isothr
-		
-		self.isorender=MarchingCubes(data)
-		self.inspector.setSamplingRange(self.isorender.get_sampling_range())
+			self.inspector=EMFontInspector(self)
 		
 		self.loadColors()
-		self.inspector.setColors(self.colors,self.isocolor)
-	
+		self.inspector.setColors(self.colors,self.currentcolor)
 	def loadColors(self):
 		ruby = {}
 		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
@@ -308,32 +223,11 @@ class EMIsosurface(EMImage3DObject):
 		self.colors["turquoise"] = turquoise
 		self.colors["yellow"] = yellow
 		
-		self.isocolor = "ruby"
-	
-	def setThr(self,val):
-		if (self.isothr != val):
-			self.isothr = val
-			self.brightness = -val
-			if ( self.texture ):
-				self.updateDataAndTexture()
-			self.getIsoDL()
-			self.parent.updateGL()
-	
-	def setSample(self,val):
-		if ( self.smpval != int(val)):
-			# the minus two is here because the marching cubes thinks -1 is the high level of detail, 0 is the next best and  so forth
-			# However the user wants the highest level of detail to be 1, and the next best to be 2 and then 3 etc
-			self.smpval = int(val)-2
-			self.getIsoDL()
-			self.parent.updateGL()
+		self.currentcolor = "obsidian"
 	
 	def setColor(self,val):
 		#print val
-		self.isocolor = str(val)
-		self.parent.updateGL()
-		
-	def toggleCube(self):
-		self.cube = not self.cube
+		self.currentcolor = str(val)
 		self.parent.updateGL()
 	
 	def toggleWire(self,val):
@@ -344,46 +238,28 @@ class EMIsosurface(EMImage3DObject):
 		self.light = not self.light
 		self.parent.updateGL()
 	
-	def toggleTexture(self):
-		self.texture = not self.texture
-		if ( self.texture ):
-			self.updateDataAndTexture()
-		
-		self.getIsoDL()
-		self.parent.updateGL()
-	
 	def updateInspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMIsoInspector(self)
+			self.inspector=EMFontInspector(self)
 		self.inspector.updateRotations(t3d)
 	
 	def getInspector(self):
-		if not self.inspector : self.inspector=EMIsoInspector(self)
+		if not self.inspector : self.inspector=EMFontInspector(self)
 		return self.inspector
 		
-	def setContrast(self,val):
-		self.contrast = val
-		self.updateDataAndTexture()
-		self.parent.updateGL()
-		
-	def setBrightness(self,val):
-		self.brightness = val
-		self.updateDataAndTexture()
-		self.parent.updateGL()
-		
-class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
+class EM3DFontWidget(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
 	A QT widget for rendering 3D EMData objects.
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None, parent=None):
+	def __init__(self, parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 
-		EMIsosurfaceWidget.allim[self]=0
-		self.isosurface = EMIsosurface(image,self)
+		EM3DFontWidget.allim[self]=0
+		self.isosurface = EM3DFont(self)
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
@@ -443,9 +319,9 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		
 		self.isosurface.resizeEvent()
 
-	def setData(self,data):
-		self.isosurface.setData(data)
-	
+	def setInit(self):
+		self.isosurface.setInit()
+
 	def showInspector(self,force=0):
 		self.isosurface.showInspector()
 	
@@ -472,7 +348,7 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		
 		return [width,height]
 
-class EMIsoInspector(QtGui.QWidget):
+class EMFontInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -506,22 +382,10 @@ class EMIsoInspector(QtGui.QWidget):
 		self.lighttog.setCheckable(1)
 		self.vbl2.addWidget(self.lighttog)
 		
-		self.cubetog = QtGui.QPushButton("Cube")
-		self.cubetog.setCheckable(1)
-		self.vbl2.addWidget(self.cubetog)
-		
-		self.texturetog = QtGui.QPushButton("Texture")
-		self.texturetog.setCheckable(1)
-		self.vbl2.addWidget(self.texturetog)
-		self.texture = False
-		
 		self.tabwidget = QtGui.QTabWidget()
 		self.maintab = None
 		self.tabwidget.addTab(self.getMainTab(), "Main")
-		self.texturetab = None
 		self.tabwidget.addTab(self.getGLTab(),"GL")
-		self.tabwidget.addTab(self.getTextureTab(),"Texture")
-		self.getTextureTab().setEnabled(False)
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
 		
@@ -529,19 +393,13 @@ class EMIsoInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThrSlider)
-		QtCore.QObject.connect(self.contrast, QtCore.SIGNAL("valueChanged"), target.setContrast)
-		QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), target.setBrightness)
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setSample)
 		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
 		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
 		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggleWire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggleLight)
-		QtCore.QObject.connect(self.texturetog, QtCore.SIGNAL("toggled(bool)"), self.toggleTexture)
-		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
 	
@@ -567,44 +425,6 @@ class EMIsoInspector(QtGui.QWidget):
 	
 		return gltab
 	
-	def toggleTexture(self):
-		self.texture = not self.texture
-		self.target.toggleTexture()
-		self.getTextureTab().setEnabled(self.texture)
-	
-	def getTextureTab(self):
-		if ( self.texturetab == None ):
-			self.texturetab = QtGui.QWidget()
-			texturetab = self.texturetab
-			texturetab.vbl = QtGui.QVBoxLayout(self.texturetab)
-			texturetab.vbl.setMargin(0)
-			texturetab.vbl.setSpacing(6)
-			texturetab.vbl.setObjectName("Main")
-		
-			self.contrast = ValSlider(texturetab,(0.0,20.0),"Cont:")
-			self.contrast.setObjectName("contrast")
-			self.contrast.setValue(10.0)
-			texturetab.vbl.addWidget(self.contrast)
-	
-			self.bright = ValSlider(texturetab,(-5.0,5.0),"Brt:")
-			self.bright.setObjectName("bright")
-			self.bright.setValue(0.1)
-			self.bright.setValue(0.0)
-			texturetab.vbl.addWidget(self.bright)
-			
-			#self.glcontrast = ValSlider(texturetab,(1.0,5.0),"GLShd:")
-			#self.glcontrast.setObjectName("GLShade")
-			#self.glcontrast.setValue(1.0)
-			#texturetab.vbl.addWidget(self.glcontrast)
-			
-			#self.glbrightness = ValSlider(texturetab,(-1.0,0.0),"GLBst:")
-			#self.glbrightness.setObjectName("GLBoost")
-			#self.glbrightness.setValue(0.1)
-			#self.glbrightness.setValue(0.0)
-			#texturetab.vbl.addWidget(self.glbrightness)
-			
-		return self.texturetab
-	
 	def getMainTab(self):
 		if ( self.maintab == None ):
 			self.maintab = QtGui.QWidget()
@@ -618,25 +438,6 @@ class EMIsoInspector(QtGui.QWidget):
 			self.scale.setObjectName("scale")
 			self.scale.setValue(1.0)
 			maintab.vbl.addWidget(self.scale)
-			
-			self.thr = ValSlider(maintab,(0.0,4.0),"Thr:")
-			self.thr.setObjectName("thr")
-			self.thr.setValue(0.5)
-			maintab.vbl.addWidget(self.thr)
-			
-			self.hbl_smp = QtGui.QHBoxLayout()
-			self.hbl_smp.setMargin(0)
-			self.hbl_smp.setSpacing(6)
-			self.hbl_smp.setObjectName("Sample")
-			maintab.vbl.addLayout(self.hbl_smp)
-			
-			self.smp_label = QtGui.QLabel()
-			self.smp_label.setText('Sample Level')
-			self.hbl_smp.addWidget(self.smp_label)
-			
-			self.smp = QtGui.QSpinBox(maintab)
-			self.smp.setValue(1)
-			self.hbl_smp.addWidget(self.smp)
 			
 			self.hbl_color = QtGui.QHBoxLayout()
 			self.hbl_color.setMargin(0)
@@ -718,10 +519,6 @@ class EMIsoInspector(QtGui.QWidget):
 			self.current_src = EULER_EMAN
 		
 		return self.maintab
-	
-	def setSamplingRange(self,range):
-		self.smp.setMinimum(1)
-		self.smp.setMaximum(1+range-1)
 
 	def setXYTrans(self, x, y):
 		self.x_trans.setValue(x)
@@ -853,54 +650,15 @@ class EMIsoInspector(QtGui.QWidget):
 				self.cbb.setCurrentIndex(a)
 			a += 1
 
-	def onThrSlider(self,val):
-		self.target.setThr(val)
-		self.bright.setValue(-val,True)
-		
-	def setThrs(self,low,high,val):
-		self.thr.setRange(low,high)
-		self.thr.setValue(val, True)
-		self.bright.setValue(-val,True)
-	
-	def setSamp(self,low,high,val):
-		self.smp.setRange(int(low),int(high))
-		self.smp.setValue(val, True)
-		
-	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
-
 	def setScale(self,newscale):
 		self.scale.setValue(newscale)
 		
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMIsosurfaceWidget()
- 	if len(sys.argv)==1 : 
-		e = EMData()
-		e.set_size(40,35,30)
-		e.process_inplace('testimage.axes')
- 		window.setData(e)
-
-		# these lines are for testing shape rendering
-# 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
-# 		window.addShape("b",["circle",.5,.8,.2,120,50,30.0,2])
-# 		window.addShape("c",["line",.2,.8,.5,20,120,100,200,2])
-# 		window.addShape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
-	else :
-		if not os.path.exists(sys.argv[1]):
-			print "Error, input file %s does not exist" %sys.argv[1]
-			exit(1)
-		a=EMData.read_images(sys.argv[1],[0])
-		window.setData(a[0])
+	window = EM3DFontWidget()
+	window.setInit()
 	window2=EMParentWin(window)
 	window2.show()
-	
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
 	
 	sys.exit(app.exec_())

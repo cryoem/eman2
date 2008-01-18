@@ -232,7 +232,7 @@ class EMImage3DObject:
 #		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.MidButton:
 			if not self.inspector or self.inspector ==None:
-				self.inspector=EMImageInspector3D(self)
+				return
 			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
 			self.resizeEvent()
 			self.showInspector(1)
