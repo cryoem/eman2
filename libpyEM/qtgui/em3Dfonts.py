@@ -86,9 +86,9 @@ class EM3DFont(EMImage3DObject):
 		glEnable(GL_DEPTH_TEST)
 		
 		if ( self.wire ):
-			glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+			glPolygonMode(GL_FRONT_AND_BACK,GL_LINE)
 		else:
-			glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+			glPolygonMode(GL_FRONT_AND_BACK,GL_FILL)
 		
 		if self.light:
 			glEnable(GL_LIGHTING)

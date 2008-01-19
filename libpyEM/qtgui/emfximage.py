@@ -46,6 +46,8 @@ from emimageutil import *
 from emimage2d import *
 from random import random
 
+wmodel*wproj
+
 from emimage3dobject import Camera
 
 import sys
@@ -169,14 +171,16 @@ class EMQtWidgetDrawer:
 			wproj=glGetDoublev(GL_PROJECTION_MATRIX)
 			wview=glGetIntegerv(GL_VIEWPORT)
 	
-			print wmodel
-			print wproj
-			print wview
-	
 			self.mc00=gluProject(-1.,-1.,0.,wmodel,wproj,wview)
 			self.mc10=gluProject( 1.,-1.,0.,wmodel,wproj,wview)
 			self.mc11=gluProject( 1., 1.,0.,wmodel,wproj,wview)
 			self.mc01=gluProject(-1., 1.,0.,wmodel,wproj,wview)
+	
+			print wmodel
+			print wproj
+			print wview
+			
+			print (wmodel*wproj)
 			
 			print self.mc00
 			print gluUnProject(self.mc00[0],self.mc00[1],self.mc00[2],wmodel,wproj,wview)
@@ -461,8 +465,9 @@ class EMFXImage(QtOpenGL.QGLWidget):
 	
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-#		glLoadIdentity()
-#		glTranslated(0.0, 0.0, -10.0)
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		glTranslated(0.0, 0.0, -10.0)
 		
 		if not self.data : return
 		
@@ -709,8 +714,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		self.aspect = float(self.width())/float(self.height())
 		# this is the same as the glFrustum call above
 		gluPerspective(self.fov,self.aspect,5,15)
-		
-		glTranslatef(0.,0.,-10.0)
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
