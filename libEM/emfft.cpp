@@ -298,6 +298,7 @@ rfftwnd_plan EMfft::EMfftw2_cache_nd::get_plan(const int rank_in, const int x, c
 		r2c[0]=r2c_flag;
 		rfftwnd_plans[0] = plan;
 		rank[0]=rank_in;
+		ip[0]=ip_flag;
 		if (num_plans<EMFFTW2_ND_CACHE_SIZE) num_plans++;
 		
 		return rfftwnd_plans[0];
