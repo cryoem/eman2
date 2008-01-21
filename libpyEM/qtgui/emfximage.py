@@ -40,16 +40,16 @@ from PyQt4.QtCore import Qt
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from valslider import ValSlider
-from math import *
+
 from EMAN2 import *
 from emimageutil import *
 from emimage2d import *
-from random import random
-
-wmodel*wproj
+from math import sqrt
 
 from emimage3dobject import Camera
 
+import Numeric
+import LinearAlgebra
 import sys
 import array
 
@@ -148,7 +148,9 @@ class EMQtWidgetDrawer:
 	def paintGL(self):
 		
 		self.cam.position()
-		
+		self.wmodel=glGetDoublev(GL_MODELVIEW_MATRIX)
+		self.wproj=glGetDoublev(GL_PROJECTION_MATRIX)
+		self.wview=glGetIntegerv(GL_VIEWPORT)
 		self.itex = self.glparent.bindTexture(QtGui.QPixmap.grabWidget(self.qwidget))
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D,self.itex)
@@ -167,25 +169,18 @@ class EMQtWidgetDrawer:
 		self.glparent.deleteTexture(self.itex)
 	
 		if ( self.mapcoords ):
-			wmodel=glGetDoublev(GL_MODELVIEW_MATRIX)
-			wproj=glGetDoublev(GL_PROJECTION_MATRIX)
-			wview=glGetIntegerv(GL_VIEWPORT)
+			
+			
 	
-			self.mc00=gluProject(-1.,-1.,0.,wmodel,wproj,wview)
-			self.mc10=gluProject( 1.,-1.,0.,wmodel,wproj,wview)
-			self.mc11=gluProject( 1., 1.,0.,wmodel,wproj,wview)
-			self.mc01=gluProject(-1., 1.,0.,wmodel,wproj,wview)
+			self.mc00=gluProject(-1.,-1.,0.,self.wmodel,self.wproj,self.wview)
+			self.mc10=gluProject( 1.,-1.,0.,self.wmodel,self.wproj,self.wview)
+			self.mc11=gluProject( 1., 1.,0.,self.wmodel,self.wproj,self.wview)
+			self.mc01=gluProject(-1., 1.,0.,self.wmodel,self.wproj,self.wview)
 	
-			print wmodel
-			print wproj
-			print wview
-			
-			print (wmodel*wproj)
-			
-			print self.mc00
-			print gluUnProject(self.mc00[0],self.mc00[1],self.mc00[2],wmodel,wproj,wview)
-			print gluUnProject(self.mc11[0],self.mc11[1],self.mc11[2],wmodel,wproj,wview)
-			
+			#print "CHECKING",self.mc00[0],self.mc00[1],self.mc00[2]
+			#print gluUnProject(self.mc00[0],self.mc00[1],self.mc00[2],self.wmodel,self.wproj,self.wview)
+			#self.mouseinwin(self.mc00[0],self.mc00[1])
+	
 			if ( self.debugcoords ):
 				glMatrixMode(GL_PROJECTION)
 				glPushMatrix()
@@ -195,9 +190,6 @@ class EMQtWidgetDrawer:
 				glMatrixMode(GL_MODELVIEW)
 				glPushMatrix()
 				
-				#print "extremes"
-				#print self.mc00[0], self.mc00[1], self.mc00[2]
-				#print self.mc11[0], self.mc11[1], self.mc11[2]
 				glLoadIdentity()
 				glPointSize(10)
 				glColor(1.0,1.0,1.0,1.0)
@@ -243,7 +235,6 @@ class EMQtWidgetDrawer:
 		# this works by simple geometry - if the mouse point e is within the four points (a,b,c,d)
 		# at the extremities of  the qtwidget, then aed + bec + ced + dea is +/- 360 degrees. 
 		# If e is outside the four points then the sum is zero...
-		print self.mc00[0], self.mc00[1]
 		a = [self.mc00[0]-x, self.mc00[1]-y]
 		b = [self.mc01[0]-x, self.mc01[1]-y]
 		c = [self.mc11[0]-x, self.mc11[1]-y]
@@ -278,40 +269,46 @@ class EMQtWidgetDrawer:
 		return [A,B,C,D]
 	
 	def mouseinwin(self,x,y):
-		x00=self.mc00[0]
-		x01=self.mc01[0]-x00
-		x10=self.mc10[0]-x00
-		x11=self.mc11[0]-x00
-		y00=self.mc00[1]
-		y01=self.mc01[1]-y00
-		y10=self.mc10[1]-y00
-		y11=self.mc11[1]-y00
-		x-=x00
-		y-=y00
+		# to determine the mouse coordinates in the window we carefully perform
+		# linear algebra similar to what's done in gluUnProject
+
+		# the problem is determining what the z coordinate of the mouse event should have
+		# been, given that we know that  thewidget itself is located in the x,y plane, along z=0.
 		
-# 		print "%f,%f  %f,%f  %f,%f  %f,%f"%(x00,y00,x01,y01,x11,y11,x10,y10)
+		# get x and y normalized device coordinates
+		xNDC = 2.0*(x-self.wview[0])/self.wview[2] - 1
+		yNDC = 2.0*(y-self.wview[1])/self.wview[3] - 1
 		
-		try: xx=(x01*y + x10*y - x11*y - x*y01 - x10*y01 - x*y10 + x01*y10 +
-		x*y11 + sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
-		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*((x01 - x11)*y10 + x10*(-y01 + y11)))
-		except: xx=x/x10
-			
-		try: yy=(x01*y + x10*y - x11*y - x*y01 + x10*y01 - x*y10 - x01*y10 +
-		x*y11 - sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
-		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*(x10*y01 - x11*y01 + x01*(-y10 + y11)))
-		except: yy=y/y01
-			
-		return (xx*self.qwidget.width(),yy*self.qwidget.height())
+		# invert the projection and model view matrices, they will be used shortly
+		# note the OpenGL returns matrices in column major format -  the calculations below 
+		# are done with this in  mind - this saves the need to transpose the matrices
+		P = Numeric.array(self.wproj)
+		M = Numeric.array(self.wmodel)
+		P_inv = LinearAlgebra.inverse(P)
+		M_inv = LinearAlgebra.inverse(M)
+		PM_inv = Numeric.matrixmultiply(P_inv,M_inv)
+		
+		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
+		zNDC = (PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2])/(-PM_inv[2,2])
+	
+		# We need zprime, which is really 'eye_z' in OpenGL lingo
+		zprime = 1.0/(xNDC*P_inv[0,3]+yNDC*P_inv[1,3]+zNDC*P_inv[2,3]+P_inv[3,3])
+		
+		# Now we compute the x and y coordinates - these are precisely what we're after
+		xcoord = zprime*(xNDC*PM_inv[0,0]+yNDC*PM_inv[1,0]+zNDC*PM_inv[2,0]+PM_inv[3,0])
+		ycoord = zprime*(xNDC*PM_inv[0,1]+yNDC*PM_inv[1,1]+zNDC*PM_inv[2,1]+PM_inv[3,1])
+
+		return ((xcoord+1)/2.0*self.qwidget.width(),(1-(ycoord+1)/2.0)*self.qwidget.height())
 		
 	def mousePressEvent(self, event):
-		l=self.mouseinwin(event.x(),event.y())
+		l=self.mouseinwin(event.x(),self.glparent.height()-event.y())
 		cw=self.qwidget.childAt(l[0],l[1])
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 		qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
 		cw.mousePressEvent(qme)
 		
 	def mouseMoveEvent(self,event):
-		l=self.mouseinwin(event.x(),event.y())
+		l=self.mouseinwin(event.x(),self.glparent.height()-event.y())
 		cw=self.qwidget.childAt(l[0],l[1])
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 		qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
@@ -319,7 +316,7 @@ class EMQtWidgetDrawer:
 		cw.mouseMoveEvent(qme)
 		
 	def mouseReleaseEvent(self,event):
-		l=self.mouseinwin(event.x(),event.y())
+		l=self.mouseinwin(event.x(),self.glparent.height()-event.y())
 		cw=self.qwidget.childAt(l[0],l[1])
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 		qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
@@ -330,7 +327,7 @@ class EMQtWidgetDrawer:
 		
 	def timerEvent(self,event=None):
 		# event = None is just here incase anyone ever actually wants to pass the event
-		self.cam.motionRotate(-1,0)
+		self.cam.motionRotate(.2,.2)
 		pass
 		
 	def getsubtendingangle(self,a,b):
@@ -623,8 +620,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		# at the extremities of  the qtwidget, then aed + bec + ced + dea is +/- 360 degrees. 
 		# If e is outside the four points then the sum is zero...
 		
-		print mc00[0], mc00[1]
-		
 		ly = self.height() - y
 		a = [self.mc00[0]-x, self.mc00[1]-ly]
 		b = [self.mc01[0]-x, self.mc01[1]-ly]
@@ -648,9 +643,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		return atan2(sinaeb,cosaeb)
 
 	def mouseinwin(self,x,y):
-		print mc00[0], mc00[1]
-		print "hello"
-		
+
 		x00=self.mc00[0]
 		x01=self.mc01[0]-x00
 		x10=self.mc10[0]-x00
