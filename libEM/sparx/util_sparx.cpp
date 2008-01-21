@@ -4024,101 +4024,100 @@ PROJ->postift_depad_corner_inplace();
   
 void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 {
- float rad2deg =(180.0f/3.1415926f);
- float deg2rad = (3.1415926f/180.0f);
- 
- int NSAM,NROW,NNNN,NR2,NANG,L,JY;
-  
- NSAM = PROJ->get_xsize();
- NROW = PROJ->get_ysize(); 
- NNNN   = NSAM+2-(NSAM%2);
- NR2 = NROW/2;
- NANG = int(SS.size())/6; 
-  
- float RI[9]; 
- RI(1,1)=SS(1,NUMP)*SS(3,NUMP)*SS(5,NUMP)-SS(2,NUMP)*SS(6,NUMP);
- RI(2,1)=-SS(1,NUMP)*SS(3,NUMP)*SS(6,NUMP)-SS(2,NUMP)*SS(5,NUMP);
- RI(3,1)=SS(1,NUMP)*SS(4,NUMP);
- RI(1,2)=SS(2,NUMP)*SS(3,NUMP)*SS(5,NUMP)+SS(1,NUMP)*SS(6,NUMP);
- RI(2,2)=-SS(2,NUMP)*SS(3,NUMP)*SS(6,NUMP)+SS(1,NUMP)*SS(5,NUMP);
- RI(3,2)=SS(2,NUMP)*SS(4,NUMP);
- RI(1,3)=-SS(4,NUMP)*SS(5,NUMP);
- RI(2,3)=SS(4,NUMP)*SS(6,NUMP);
- RI(3,3)=SS(3,NUMP);
- 
- float THICK=static_cast<float>( NSAM/DIAMETER/2.0 );
+	float rad2deg =(180.0f/3.1415926f);
+	float deg2rad = (3.1415926f/180.0f);
 
- EMData* W = new EMData();
- int Wnx = NNNN/2;
- W->set_size(NNNN/2,NROW,1);
- W->to_one();
- float *Wptr = W->get_data(); 
-  
- float ALPHA,TMP,FV,RT,FM,CCN,CC[3],CP[2],VP[2],VV[3]; 
-  
- for (L=1; L<=NANG; L++) { 
-	if (L != NUMP) {
-	  CC(1)=SS(2,L)*SS(4,L)*SS(3,NUMP)-SS(3,L)*SS(2,NUMP)*SS(4,NUMP);
-	  CC(2)=SS(3,L)*SS(1,NUMP)*SS(4,NUMP)-SS(1,L)*SS(4,L)*SS(3,NUMP);
-	  CC(3)=SS(1,L)*SS(4,L)*SS(2,NUMP)*SS(4,NUMP)-SS(2,L)*SS(4,L)*SS(1,NUMP)*SS(4,NUMP);
-	  
-	  TMP = sqrt(CC(1)*CC(1) +  CC(2)*CC(2) + CC(3)*CC(3)); 
-	  CCN=static_cast<float>( AMAX1( AMIN1(TMP,1.0) ,-1.0) );
-	  ALPHA=rad2deg*float(asin(CCN));
-	  if (ALPHA>180.0) ALPHA=ALPHA-180.0f;
-	  if (ALPHA>90.0) ALPHA=180.0f-ALPHA;
-	  if(ALPHA<1.0E-6) {
-          for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++) W(I,J)+=1.0;
-    } else {
-      FM=THICK/(fabs(sin(ALPHA*deg2rad)));
-      CC(1)   = CC(1)/CCN;CC(2)   = CC(2)/CCN;CC(3)   = CC(3)/CCN;
-      VV(1)= SS(2,L)*SS(4,L)*CC(3)-SS(3,L)*CC(2);
-      VV(2)= SS(3,L)*CC(1)-SS(1,L)*SS(4,L)*CC(3);
-      VV(3)= SS(1,L)*SS(4,L)*CC(2)-SS(2,L)*SS(4,L)*CC(1);
-      CP(1)   = 0.0;CP(2) = 0.0;
-      VP(1)   = 0.0;VP(2) = 0.0;
-      
-	  CP(1) = CP(1) + RI(1,1)*CC(1) + RI(1,2)*CC(2) + RI(1,3)*CC(3);
-	  CP(2) = CP(2) + RI(2,1)*CC(1) + RI(2,2)*CC(2) + RI(2,3)*CC(3);
-	  VP(1) = VP(1) + RI(1,1)*VV(1) + RI(1,2)*VV(2) + RI(1,3)*VV(3);
-	  VP(2) = VP(2) + RI(2,1)*VV(1) + RI(2,2)*VV(2) + RI(2,3)*VV(3);						
-      
-      TMP = CP(1)*VP(2)-CP(2)*VP(1);
+	int NSAM,NROW,NNNN,NR2,NANG,L,JY;
+	 
+	NSAM = PROJ->get_xsize();
+	NROW = PROJ->get_ysize(); 
+	NNNN   = NSAM+2-(NSAM%2);
+	NR2 = NROW/2;
+	NANG = int(SS.size())/6;
 
-       //     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
-       TMP = AMAX1(1.0E-4f,fabs(TMP));
-	   float tmpinv = 1/TMP;   
-       for(int J=1;J<=NROW;J++) {
-	     JY = (J-1);
-         if (JY>NR2)  JY=JY-NROW;
-         for(int I=1;I<=NNNN/2;I++) {
-        		FV     = fabs((JY*CP(1)-(I-1)*CP(2))*tmpinv);
-        		RT     = 1.0f-FV/FM;
-        		W(I,J) += ((RT>0.0f)*RT);		 
-         }
-       } 
-      }  
+	float RI[9];
+	RI(1,1)=SS(1,NUMP)*SS(3,NUMP)*SS(5,NUMP)-SS(2,NUMP)*SS(6,NUMP);
+	RI(2,1)=-SS(1,NUMP)*SS(3,NUMP)*SS(6,NUMP)-SS(2,NUMP)*SS(5,NUMP);
+	RI(3,1)=SS(1,NUMP)*SS(4,NUMP);
+	RI(1,2)=SS(2,NUMP)*SS(3,NUMP)*SS(5,NUMP)+SS(1,NUMP)*SS(6,NUMP);
+	RI(2,2)=-SS(2,NUMP)*SS(3,NUMP)*SS(6,NUMP)+SS(1,NUMP)*SS(5,NUMP);
+	RI(3,2)=SS(2,NUMP)*SS(4,NUMP);
+	RI(1,3)=-SS(4,NUMP)*SS(5,NUMP);
+	RI(2,3)=SS(4,NUMP)*SS(6,NUMP);
+	RI(3,3)=SS(3,NUMP);
+
+	float THICK=static_cast<float>( NSAM/DIAMETER/2.0 );
+
+	EMData* W = new EMData();
+	int Wnx = NNNN/2;
+	W->set_size(NNNN/2,NROW,1);
+	W->to_one();
+	float *Wptr = W->get_data(); 
+	 
+	float ALPHA,TMP,FV,RT,FM,CCN,CC[3],CP[2],VP[2],VV[3]; 
+	 
+	for (L=1; L<=NANG; L++) {
+		if (L != NUMP) {
+			CC(1)=SS(2,L)*SS(4,L)*SS(3,NUMP)-SS(3,L)*SS(2,NUMP)*SS(4,NUMP);
+			CC(2)=SS(3,L)*SS(1,NUMP)*SS(4,NUMP)-SS(1,L)*SS(4,L)*SS(3,NUMP);
+			CC(3)=SS(1,L)*SS(4,L)*SS(2,NUMP)*SS(4,NUMP)-SS(2,L)*SS(4,L)*SS(1,NUMP)*SS(4,NUMP);
+
+			TMP = sqrt(CC(1)*CC(1) +  CC(2)*CC(2) + CC(3)*CC(3)); 
+			CCN=static_cast<float>( AMAX1( AMIN1(TMP,1.0) ,-1.0) );
+			ALPHA=rad2deg*float(asin(CCN));
+			if (ALPHA>180.0) ALPHA=ALPHA-180.0f;
+			if (ALPHA>90.0) ALPHA=180.0f-ALPHA;
+			if(ALPHA<1.0E-6) {
+				for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++) W(I,J)+=1.0;
+			} else {
+			      FM=THICK/(fabs(sin(ALPHA*deg2rad)));
+			      CC(1)   = CC(1)/CCN;CC(2)   = CC(2)/CCN;CC(3)   = CC(3)/CCN;
+			      VV(1)= SS(2,L)*SS(4,L)*CC(3)-SS(3,L)*CC(2);
+			      VV(2)= SS(3,L)*CC(1)-SS(1,L)*SS(4,L)*CC(3);
+			      VV(3)= SS(1,L)*SS(4,L)*CC(2)-SS(2,L)*SS(4,L)*CC(1);
+			      CP(1)   = 0.0;CP(2) = 0.0;
+			      VP(1)   = 0.0;VP(2) = 0.0;
+	
+			      CP(1) = CP(1) + RI(1,1)*CC(1) + RI(1,2)*CC(2) + RI(1,3)*CC(3);
+			      CP(2) = CP(2) + RI(2,1)*CC(1) + RI(2,2)*CC(2) + RI(2,3)*CC(3);
+			      VP(1) = VP(1) + RI(1,1)*VV(1) + RI(1,2)*VV(2) + RI(1,3)*VV(3);
+			      VP(2) = VP(2) + RI(2,1)*VV(1) + RI(2,2)*VV(2) + RI(2,3)*VV(3);						   
+	
+			      TMP = CP(1)*VP(2)-CP(2)*VP(1);
+
+			      //     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
+			      TMP = AMAX1(1.0E-4f,fabs(TMP));
+			      float tmpinv = 1/TMP;   
+			      for(int J=1;J<=NROW;J++) {
+			              JY = (J-1);
+			              if (JY>NR2)  JY=JY-NROW;
+			              for(int I=1;I<=NNNN/2;I++) {
+			        	      FV     = fabs((JY*CP(1)-(I-1)*CP(2))*tmpinv);
+			        	      RT     = 1.0f-FV/FM;
+			        	      W(I,J) += ((RT>0.0f)*RT); 	       
+			              }
+			      }
+			} 
+		}
 	}
 
- }
- 
- PROJ->pad_fft();
- PROJ->do_fft_inplace();
- PROJ->update();
- float *PROJptr = PROJ->get_data();
-  
- int KX;
- float WW;
- for(int J=1; J<=NROW; J++)
-    for(int I=1; I<=NNNN; I+=2) {
-         KX          =  (I+1)/2;
-         WW          =  1.0f/W(KX,J);
-	     PROJ(I,J)   = PROJ(I,J)*WW;
-         PROJ(I+1,J) = PROJ(I+1,J)*WW;
-    }  
+	PROJ->pad_fft();
+	PROJ->do_fft_inplace();
+	PROJ->update();
+	float *PROJptr = PROJ->get_data();
+	 
+	int KX;
+	float WW;
+	for(int J=1; J<=NROW; J++)
+		for(int I=1; I<=NNNN; I+=2) {
+			KX	    =  (I+1)/2;
+			WW	    =  1.0f/W(KX,J);
+			PROJ(I,J)   = PROJ(I,J)*WW;
+			PROJ(I+1,J) = PROJ(I+1,J)*WW;
+		} 
 
- PROJ->do_ift_inplace();
- PROJ->postift_depad_corner_inplace();  
+	PROJ->do_ift_inplace();
+	PROJ->postift_depad_corner_inplace();  
 }	
 	
 #undef   AMAX1	
@@ -4136,23 +4135,22 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 //-----------------------------------------------------------------------------------------------------------------------
 Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 {
-  //exp(-16) is 1.0E-7 approximately)
-  vector<float> expvect;
-  
-  double inc = double(ymax)/nsamples;
-  double temp;
-  for(int i =0;i<nsamples;i++)
-     {
-      temp = exp((-4*(i*inc)*(i*inc)));
-      expvect.push_back(float(temp));  
-     }
- expvect.push_back(0.0);
- Dict lookupdict;
- lookupdict["table"] = expvect;
- lookupdict["ymax"] = ymax;
- lookupdict["nsamples"] = nsamples;
+	//exp(-16) is 1.0E-7 approximately)
+	vector<float> expvect;
 
-  return lookupdict;  
+	double inc = double(ymax)/nsamples;
+	double temp;
+	for(int i =0;i<nsamples;i++) {
+		temp = exp((-4*(i*inc)*(i*inc)));
+		expvect.push_back(float(temp));  
+	}
+	expvect.push_back(0.0);
+	Dict lookupdict;
+	lookupdict["table"]    = expvect;
+	lookupdict["ymax"]     = ymax;
+	lookupdict["nsamples"] = nsamples;
+
+	return lookupdict;  
 }
 //------------------------------------------------------------------------------------------------------------------------- 
 
@@ -4161,9 +4159,9 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 	float cst  = cs*1.0e7f;
 	float wght = atan(wgh/(1.0f-wgh));
 	float lambda=12.398f/pow(voltage *(1022.f+voltage),.5f); 
-    float ctfv = static_cast<float>( sin(-M_PI*(dzz*lambda*ak*ak-cst*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wght)*sign );
+	float ctfv = static_cast<float>( sin(-M_PI*(dzz*lambda*ak*ak-cst*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wght)*sign );
 	if(b_factor != 0.0f)  ctfv *= b_factor*exp(-b_factor*ak*ak);
-    return ctfv;
+	return ctfv;
 }
 EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 {
@@ -4183,9 +4181,7 @@ EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 	float* mask_ptr = mask->get_data();
 
 	int ln=0;  //length of the output image = number of points under the mask.
-	for(i = 0;i < size;i++){
-		if(mask_ptr[i] > 0.5f) ln++;
-	}
+	for(i = 0;i < size;i++) if(mask_ptr[i] > 0.5f) ln++;
 
 	EMData* new_image = new EMData();
 	new_image->set_size(ln,1,1); /* set size of the new image */
@@ -4194,8 +4190,8 @@ EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 	ln=-1;
 	for(i = 0;i < size;i++){
 		if(mask_ptr[i] > 0.5f) {
-		ln++;
-		new_ptr[ln]=img_ptr[i];
+			ln++;
+			new_ptr[ln]=img_ptr[i];
 		}
 	}
 
@@ -4230,24 +4226,19 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask )
 				new_ptr[i] = img_ptr[count];
 				sum_under_mask += img_ptr[count];
 				count++;
-                                if( count > image->get_xsize() )
-                                {
+                                if( count > image->get_xsize() ) {
                                     throw ImageDimensionException("Error: in reconstitute_image_mask, the mask doesn't match the image, it is too large");
                                 }
 			}
 	}
 
-        if( count > image->get_xsize() )
-        {
+        if( count > image->get_xsize() ) {
             throw ImageDimensionException("Error: in reconstitute_image_mask, the mask doesn't match the image, it is too small");
         }
 
 	float avg_under_mask = sum_under_mask / count;
-	for(i = 0;i < size;i++)
-	{
-		if(mask_ptr[i] <= 0.5f) {			
-			new_ptr[i] = avg_under_mask;
-		}
+	for(i = 0;i < size;i++) {
+		if(mask_ptr[i] <= 0.5f)  new_ptr[i] = avg_under_mask;
 	}
 	new_image->update();
 	return new_image;
@@ -4260,26 +4251,21 @@ vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p
 	vector<float>new_peak;
 	int n1=peak1.size()/3;
 	float p_size2=p_size*p_size;
-	for (int i=0;i<n1;++i)
-		{
+	for (int i=0;i<n1;++i) {
 			vector<float>::iterator it2= peak1.begin()+3*i;
 			bool push_back1=true;
 			int n2=peak2.size()/3;
 			/*cout<<"peak2 size==="<<n2<<"i====="<<i<<endl;
 			cout<<"new peak size==="<<new_peak.size()/3<<endl;*/
 			
-			if(n2 ==0) 
-				{
+			if(n2 ==0) {
 					new_peak.push_back(*it2);
 					new_peak.push_back(*(it2+1));
 					new_peak.push_back(*(it2+2));
 				
-				}
-			else 
-				{						
+			} else  {						
 					int j=0;					
-					while (j< n2-1 )
-						{								
+					while (j< n2-1 ) {								
 							vector<float>::iterator it3= peak2.begin()+3*j;
 							float d2=((*(it2+1))-(*(it3+1)))*((*(it2+1))-(*(it3+1)))+((*(it2+2))-(*(it3+2)))*((*(it2+2))-(*(it3+2)));							
 							if(d2< p_size2 )
@@ -4321,38 +4307,34 @@ vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p
 
 int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
 {
-    // n size of the covariance/correlation matrix
-    // covmat --- covariance/correlation matrix (n by n)
-    // eigval --- returns eigenvalues
-    // eigvec --- returns eigenvectors
+	// n size of the covariance/correlation matrix
+	// covmat --- covariance/correlation matrix (n by n)
+	// eigval --- returns eigenvalues
+	// eigvec --- returns eigenvectors
 
-    ENTERFUNC;
+	ENTERFUNC;
 
-    int i;
+	int i;
 
-    // make a copy of covmat so that it will not be overwritten
-    for ( i = 0 ; i < n * n ; i++ ) {
-       eigvec[i] = covmat[i];
-    }		
-	
-    char NEEDV = 'V';
-    char UPLO = 'U';
-    int lwork = -1;
-    int info = 0;
-    float *work, wsize;
-  
-    //	query to get optimal workspace
-    ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, &wsize, 
-           &lwork, &info);
-    lwork = (int)wsize;
+	// make a copy of covmat so that it will not be overwritten
+	for ( i = 0 ; i < n * n ; i++ )   eigvec[i] = covmat[i];  
 
-    work = (float *)calloc(lwork, sizeof(float));
-    // 	calculate eigs
-    ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, work, 
-           &lwork, &info);
-    free(work);
-    EXITFUNC;
-    return info;
+	char NEEDV = 'V';
+	char UPLO = 'U';
+	int lwork = -1;
+	int info = 0;
+	float *work, wsize;
+
+	//  query to get optimal workspace
+	ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, &wsize, &lwork, &info);
+	lwork = (int)wsize;
+
+	work = (float *)calloc(lwork, sizeof(float));
+	//  calculate eigs
+	ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, work, &lwork, &info);
+	free(work);
+	EXITFUNC;
+	return info;
 }
 
 vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
@@ -15696,7 +15678,7 @@ EMData* Util::pack_complex_to_real(EMData* img)
 
 float Util::ang_n(float peakp, string mode, int maxrin)
 {
-    if (mode == "f" || mode == "F") 
+    if (mode == "f" || mode == "F")
         return fmodf(((peakp-1.0f) / maxrin+1.0f)*360.0f,360.0f);
     else
         return fmodf(((peakp-1.0f) / maxrin+1.0f)*180.0f,180.0f);
@@ -15724,40 +15706,40 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 */
 	size_t crefim_len = crefim.size();
 	
-	float peak = -1.0E23f;
 	int   ky = int(2*yrng/step+0.5)/2; 
 	int   kx = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0; 
 	float iy, ix, sx=0, sy=0;
+	float peak = -1.0E23f;
 	float ang=0.0f;
 	for (int i = -ky; i <= ky; i++) {
-	    iy = i * step ;
-	    for (int j = -kx; j <= kx; j++) {
-		ix = j*step ; 
-		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-		Frngs(cimage, numr);
-		//  compare with all reference images
-		// for iref in xrange(len(crefim)): 
-		for ( iref = 0; iref < (int)crefim_len; iref++) {
-		    Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);  
-		    double qn = retvals["qn"];
-		    double qm = retvals["qm"];
-		    if(qn >= peak || qm >= peak) {
-			sx = -ix;
-			sy = -iy;
-			nref = iref;
-			if (qn >= qm) {
-			    ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-			    peak = static_cast<float>(qn);
-			    mirror = 0;
-			} else {
-			    ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-			    peak = static_cast<float>(qm);
-			    mirror = 1;
-			}
-		    }
-		}  delete cimage; cimage = 0;
-	    }
+		iy = i * step ;
+		for (int j = -kx; j <= kx; j++) {
+			ix = j*step ; 
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			Frngs(cimage, numr);
+			//  compare with all reference images
+			// for iref in xrange(len(crefim)): 
+			for ( iref = 0; iref < (int)crefim_len; iref++) {
+				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);  
+				double qn = retvals["qn"];
+				double qm = retvals["qm"];
+				if(qn >= peak || qm >= peak) {
+					sx = -ix;
+					sy = -iy;
+					nref = iref;
+					if (qn >= qm) {
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qn);
+						mirror = 0;
+					} else {
+						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qm);
+						mirror = 1;
+					}
+				}
+			}  delete cimage; cimage = 0;
+		}
 	}
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
@@ -15796,31 +15778,39 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 */
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
-	float  phi = image->get_attr("phi");
-	float  theta = image->get_attr("theta");
-	float  peak = -1.0E23f;
+	float phi = image->get_attr("phi");
+	float theta = image->get_attr("theta");
 	int   ky = int(2*yrng/step+0.5)/2; 
 	int   kx = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0; 
 	float iy, ix, sx=0, sy=0;
+	float peak = -1.0E23f;
 	float ang=0.0f;
+	float imn1 = sin(theta*qv)*cos(phi*qv);
+	float imn2 = sin(theta*qv)*sin(phi*qv);
+	float imn3 = cos(theta*qv);
+	vector<float> n1(crefim_len);
+	vector<float> n2(crefim_len);
+	vector<float> n3(crefim_len);
+	for ( iref = 0; iref < (int)crefim_len; iref++) {
+			n1[iref] = crefim[iref]->get_attr("n1");
+			n2[iref] = crefim[iref]->get_attr("n2");
+			n3[iref] = crefim[iref]->get_attr("n3");
+	}
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
 	    for (int j = -kx; j <= kx; j++) {
-		ix = j*step ; 
+		ix = j*step;
 		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 		Frngs(cimage, numr);
 		//  compare with all reference images
-		// for iref in xrange(len(crefim)): 
+		// for iref in xrange(len(crefim)):
 		for ( iref = 0; iref < (int)crefim_len; iref++) {
-			float n1 = crefim[iref]->get_attr("n1");
-			float n2 = crefim[iref]->get_attr("n2");
-			float n3 = crefim[iref]->get_attr("n3");
-			if(abs(n1*sin(theta*qv)*cos(phi*qv) + n2*sin(theta*qv)*sin(phi*qv) + n3*cos(theta*qv))>=ant) {
-		    	Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);  
-		    	double qn = retvals["qn"];
-		    	double qm = retvals["qm"];
-		    	if(qn >= peak || qm >= peak) {
+			if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
+		    		Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+		    		double qn = retvals["qn"];
+		    		double qm = retvals["qm"];
+		    		if(qn >= peak || qm >= peak) {
 					sx = -ix;
 					sy = -iy;
 					nref = iref;
@@ -15830,11 +15820,11 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 						mirror = 0;
 					} else {
 						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qm ); 
+						peak = static_cast<float>( qm );
 						mirror = 1;
 					}
+				}
 		    	}
-			}
 		}  delete cimage; cimage = 0;
 	    }
 	}
