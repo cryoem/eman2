@@ -83,6 +83,7 @@ are stored as a parameter of each image."""
 	
 	if options.verbose : print "MSA complete"
 	for i in out:
+		if options.verbose : print "Eigenvalue: ",i.get_attr("eigval")
 		i.write_image(args[1],-1)
 		
 
