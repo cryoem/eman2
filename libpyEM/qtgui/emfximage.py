@@ -303,8 +303,11 @@ class EMQtWidgetDrawer:
 		
 	def mousePressEvent(self, event):
 		l=self.mouseinwin(event.x(),self.glparent.height()-event.y())
+		print l
 		cw=self.qwidget.childAt(l[0],l[1])
+		print cw
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+		print gp
 		qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
 		cw.mousePressEvent(qme)
 		
