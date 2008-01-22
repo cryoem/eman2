@@ -109,6 +109,7 @@ def main():
 					help="Incoherent Fourier average of all images and write a single power spectrum image")
 	parser.add_option("--process", metavar="processor_name(param1=value1,param2=value2)", type="string",
 					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
+	parser.add_option("--mult", metavar="k", type="float", help="Multiply image by a constant. mult=-1 to invert contrast.")
 	parser.add_option("--first", metavar="n", type="int", default=0, help="the first image in the input to process [0 - n-1])")
 	parser.add_option("--inplace", action="store_true",
 					help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
@@ -276,6 +277,8 @@ def main():
 				d.process_inplace(processorname, param_dict)
 				#index_d[option1] += 1
 
+			elif option1 == "mult" :
+				d.mult(options.mult)
 			elif option1 == "norefs" and d.get_average_nimg() <= 0:
 				continue
 			

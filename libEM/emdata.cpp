@@ -1853,16 +1853,18 @@ EMData *EMData::make_rotational_footprint( bool unwrap)
 EMData *EMData::make_footprint() 
 {
 	//EMData *ccf=calc_ccf(this);
-	EMData *ccf=calc_mutual_correlation(this);
-	ccf->process_inplace("xform.phaseorigin.tocenter");
-	ccf->process_inplace("normalize.edgemean");
-	EMData *un=ccf->unwrap();
-	EMData *tmp=un->get_clip(Region(0,4,un->get_xsize()/2,un->get_ysize()-6));	// 4 and 6 are empirical
+//	EMData *ccf=calc_mutual_correlation(this);
+//	ccf->process_inplace("xform.phaseorigin.tocenter");
+//	ccf->process_inplace("normalize.edgemean");
+//	EMData *un=ccf->unwrap();
+	EMData *un=make_rotational_footprint();
+	EMData *tmp=un->get_clip(Region(0,4,un->get_xsize(),un->get_ysize()-6));	// 4 and 6 are empirical
 	EMData *cx=tmp->calc_ccfx(tmp,0,-1,1);
-	delete ccf;
+	EMData *fp=cx->get_clip(Region(0,0,cx->get_xsize()/2,cx->get_ysize()));
 	delete un;
 	delete tmp;
-	return cx;
+	delete cx;
+	return fp;
 }
 
 
