@@ -48,8 +48,8 @@ from math import sqrt
 
 from emimage3dobject import Camera
 
-import Numeric
-import LinearAlgebra
+import numpy
+#import LinearAlgebra
 import sys
 import array
 
@@ -282,11 +282,12 @@ class EMQtWidgetDrawer:
 		# invert the projection and model view matrices, they will be used shortly
 		# note the OpenGL returns matrices in column major format -  the calculations below 
 		# are done with this in  mind - this saves the need to transpose the matrices
-		P = Numeric.array(self.wproj)
-		M = Numeric.array(self.wmodel)
-		P_inv = LinearAlgebra.inverse(P)
-		M_inv = LinearAlgebra.inverse(M)
-		PM_inv = Numeric.matrixmultiply(P_inv,M_inv)
+		P = numpy.matrix(self.wproj)
+		M = numpy.matrix(self.wmodel)
+		P_inv = P.I
+		M_inv = M.I
+		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
+		PM_inv = P_inv*M_inv
 		
 		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
 		zNDC = (PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2])/(-PM_inv[2,2])
