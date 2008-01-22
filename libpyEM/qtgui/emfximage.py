@@ -300,34 +300,30 @@ class EMQtWidgetDrawer:
 		ycoord = zprime*(xNDC*PM_inv[0,1]+yNDC*PM_inv[1,1]+zNDC*PM_inv[2,1]+PM_inv[3,1])
 
 		return ((xcoord+1)/2.0*self.qwidget.width(),(1-(ycoord+1)/2.0)*self.qwidget.height())
-		
+	
 	def mousePressEvent(self, event):
 		l=self.mouseinwin(event.x(),self.glparent.height()-event.y())
-		print l
 		cw=self.qwidget.childAt(l[0],l[1])
-		print cw
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-		print gp
-		qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
+		lp=cw.mapFromGlobal(gp)
+		qme=QtGui.QMouseEvent(event.Type(),lp,event.button(),event.buttons(),event.modifiers())
 		cw.mousePressEvent(qme)
 		
 	def mouseMoveEvent(self,event):
 		l=self.mouseinwin(event.x(),self.glparent.height()-event.y())
 		cw=self.qwidget.childAt(l[0],l[1])
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-		qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
-		#self.inspector.mousePressEvent(qme)
+		lp=cw.mapFromGlobal(gp)
+		qme=QtGui.QMouseEvent(event.Type(),lp,event.button(),event.buttons(),event.modifiers())
 		cw.mouseMoveEvent(qme)
-		
+
 	def mouseReleaseEvent(self,event):
 		l=self.mouseinwin(event.x(),self.glparent.height()-event.y())
 		cw=self.qwidget.childAt(l[0],l[1])
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-		qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
-		#self.inspector.mousePressEvent(qme)
+		lp=cw.mapFromGlobal(gp)
+		qme=QtGui.QMouseEvent(event.Type(),lp,event.button(),event.buttons(),event.modifiers())
 		cw.mouseReleaseEvent(qme)
-		#print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
-		#print qme.x(),qme.y(),l,gp.x(),gp.y()
 		
 	def timerEvent(self,event=None):
 		# event = None is just here incase anyone ever actually wants to pass the event
@@ -1071,7 +1067,10 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.maxs.setRange(lowlim,highlim)
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
-		
+	
+	def mouseMoveEvent(self,event):
+		print str(event.__dict__)
+		print "received event"
 # 	def mousePressEvent(self, event):
 # 		print str(event.__dict__)
 # 		QtGui.QWidget.mousePressEvent(self,event)
