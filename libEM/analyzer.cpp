@@ -55,6 +55,16 @@ namespace EMAN {
 
 }
 
+int Analyzer::insert_images_list(vector<EMData *> image_list)
+{
+	vector<EMData *>::const_iterator iter;
+		for(iter=image_list.begin(); iter!=image_list.end(); ++iter) {
+			insert_image(*iter);
+		}
+	return 0;
+}
+
+
 #define covmat(i,j) covmat[ ((j)-1)*nx + (i)-1 ]
 #define imgdata(i)  imgdata[ (i)-1 ]
 int PCAsmall::insert_image(EMData * image)

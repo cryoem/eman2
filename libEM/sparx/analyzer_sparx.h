@@ -54,14 +54,6 @@ namespace EMAN
 //}
 		virtual int insert_image(EMData * image);
 		
-		virtual int insert_images_list(vector<EMData *> image_list) {
-			vector<EMData*>::const_iterator iter;
-			for(iter=image_list.begin(); iter!=image_list.end(); ++iter) {
-				images.push_back(*iter);
-			}
-			return 0;
-		}
-		
 		virtual vector<EMData*> analyze();
 		
 		string get_name() const
@@ -116,14 +108,6 @@ namespace EMAN
 		
 		virtual int insert_image(EMData * image);
 		
-		virtual int insert_images_list(vector<EMData *> image_list) {
-			vector<EMData*>::const_iterator iter;
-			for(iter=image_list.begin(); iter!=image_list.end(); ++iter) {
-				images.push_back(*iter);
-			}
-			return 0;
-		}
-		
 		virtual vector<EMData*> analyze();
 		
 		string get_name() const
@@ -172,14 +156,6 @@ namespace EMAN
 		varimax() : m_mask(NULL) {}
 		
 		virtual int insert_image(EMData * image);
-		
-		virtual int insert_images_list(vector<EMData *> image_list) {
-			vector<EMData*>::const_iterator iter;
-			for(iter=image_list.begin(); iter!=image_list.end(); ++iter) {
-				insert_image(*iter);
-			}
-			return 0;
-		}
 		
 		virtual vector<EMData*> analyze();
 		

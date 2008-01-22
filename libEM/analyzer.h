@@ -75,7 +75,7 @@ namespace EMAN
 		 * @param image_list 
 		 * @return int 0 for success, <0 for fail
 		 * */
-		virtual int insert_images_list(vector<EMData *> image_list) = 0;
+		virtual int insert_images_list(vector<EMData *> image_list);
 		
 		/** main function for Analyzer, analyze input images and create output images
 		 * @return vector<EMData *> result os images analysis
