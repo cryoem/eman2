@@ -2,6 +2,7 @@
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# Author: David Woolford Early 2008 woolford@bcm.edu
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -49,7 +50,6 @@ from math import sqrt
 from emimage3dobject import Camera
 
 import numpy
-#import LinearAlgebra
 import sys
 import array
 
@@ -62,6 +62,7 @@ class EMBasicObjects:
 		gluQuadricNormals(self.gq,GLU_SMOOTH)
 		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 		gluQuadricTexture(self.gq,GL_FALSE)
+			
 
 	def getFrameDL(self):
 		# draws a frame using Quadrics
@@ -72,7 +73,7 @@ class EMBasicObjects:
 			glPushMatrix()
 			
 			glRotate(90.,1.,0.,0.)
-			glTranslate(1.02,0.,-1.02)
+			glTranslate(1.0,0.,-1.0)
 			gluCylinder(self.gq,.02,.02,2.04,12,2)
 			glTranslate(-2.04,0.,0.)
 			gluCylinder(self.gq,.02,.02,2.04,12,2)
@@ -118,6 +119,8 @@ class EMQtWidgetDrawer:
 		self.click_debug = False
 		self.cam = Camera()
 		self.cam.motionRotate(25,25)
+		
+		self.borderwidth = 10
 		
 		self.glbasicobjects = EMBasicObjects()
 		
@@ -301,8 +304,18 @@ class EMQtWidgetDrawer:
 
 		return ((xcoord+1)/2.0*self.qwidget.width(),(1-(ycoord+1)/2.0)*self.qwidget.height())
 	
+	def wheelEvent(self,event):
+		l=self.mouseinwin(event.x(),self.glparent.height()-event.y())
+		cw=self.qwidget.childAt(l[0],l[1])
+		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+		lp=cw.mapFromGlobal(gp)
+		qme=QtGui.QWheelEvent(lp,event.delta(),event.buttons(),event.modifiers(),event.orientation())
+		cw.wheelEvent(qme)
+	
 	def mousePressEvent(self, event):
 		l=self.mouseinwin(event.x(),self.glparent.height()-event.y())
+		if l[1] < 5: print "small y"
+		print l
 		cw=self.qwidget.childAt(l[0],l[1])
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 		lp=cw.mapFromGlobal(gp)
@@ -326,9 +339,7 @@ class EMQtWidgetDrawer:
 		cw.mouseReleaseEvent(qme)
 		
 	def timerEvent(self,event=None):
-		# event = None is just here incase anyone ever actually wants to pass the event
 		self.cam.motionRotate(.2,.2)
-		pass
 		
 	def getsubtendingangle(self,a,b):
 		sinaeb = a[0]*b[1]-a[1]*b[0]
@@ -615,66 +626,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.qwidgetdrawer.paintGL()
 			glPopMatrix()
 
-	def isinwin(self,x,y):
-		# this works by simple geometry - if the mouse point e is within the four points (a,b,c,d)
-		# at the extremities of  the qtwidget, then aed + bec + ced + dea is +/- 360 degrees. 
-		# If e is outside the four points then the sum is zero...
-		
-		ly = self.height() - y
-		a = [self.mc00[0]-x, self.mc00[1]-ly]
-		b = [self.mc01[0]-x, self.mc01[1]-ly]
-		c = [self.mc11[0]-x, self.mc11[1]-ly]
-		d = [self.mc10[0]-x, self.mc10[1]-ly]
-		
-		
-		aeb = self.getsubtendingangle(a,b)
-		bec = self.getsubtendingangle(b,c)
-		ced = self.getsubtendingangle(c,d)
-		dea = self.getsubtendingangle(d,a)
-		if abs(aeb + bec + ced + dea) > 0.1:
-			return True 
-		else:
-			return False
-		
-	def getsubtendingangle(self,a,b):
-		sinaeb = a[0]*b[1]-a[1]*b[0]
-		cosaeb = a[0]*b[0]+a[1]*b[1]
-		
-		return atan2(sinaeb,cosaeb)
-
-	def mouseinwin(self,x,y):
-
-		x00=self.mc00[0]
-		x01=self.mc01[0]-x00
-		x10=self.mc10[0]-x00
-		x11=self.mc11[0]-x00
-		y00=self.mc00[1]
-		y01=self.mc01[1]-y00
-		y10=self.mc10[1]-y00
-		y11=self.mc11[1]-y00
-		x-=x00
-		y-=y00
-		
-# 		print "%f,%f  %f,%f  %f,%f  %f,%f"%(x00,y00,x01,y01,x11,y11,x10,y10)
-		
-		try: xx=(x01*y + x10*y - x11*y - x*y01 - x10*y01 - x*y10 + x01*y10 +
-		x*y11 + sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
-		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*((x01 - x11)*y10 + x10*(-y01 + y11)))
-		except: xx=x/x10
-			
-		try: yy=(x01*y + x10*y - x11*y - x*y01 + x10*y01 - x*y10 - x01*y10 +
-		x*y11 - sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
-		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*(x10*y01 - x11*y01 + x01*(-y10 + y11)))
-		except: yy=y/y01
-			
-		return (xx*self.inspector.width(),yy*self.inspector.height())
-		
-		
-# 		return (x01*y + x10*y - x11*y - x*y01 - x10*y01 - x*y10 + x01*y10 +
-# 		x*y11 + sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
-# 		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*((x01 - x11)*y10 + x10*(-y01 + y11)))
-
-
 	def timer(self):
 		self.spinang+=0.5
 		self.insang+=0.2
@@ -706,8 +657,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		# aspect ratio is given by
 		self.aspect = float(self.width())/float(self.height())
 		# this is the same as the glFrustum call above
-		gluPerspective(self.fov,self.aspect,5,15)
-		
+		gluPerspective(self.fov,self.aspect,1,30)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 
@@ -737,8 +687,21 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			if self.inspector3 : self.inspector3.hide()
 			if not self.inspector : self.inspector=EMImageInspector2D(self)
 			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+			#print "trying here"
+			#e = QtGui.QResizeEvent(self.inspector.size(), QtCore.QSize(0,0))
+			#self.inspector.resizeEvent(e)
+			#print self.inspector.layout().update()
+			#self.inspector.updateGeometry()
+			##self.inspector.layout().setEnabled(True)
+			
+			#print self.inspector.layout().activate()
+			
+			
+			##self.inspector.create()
+			##self.inspector.layout().activate()
+			##self.inspector.layout().update()
 			self.inspector.show()
-#			self.inspector.hide()
+			self.inspector.hide()
 		else:
 			pass	# 3d not done yet
 	
@@ -777,6 +740,11 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			if self.inspector :
 				if ( self.qwidgetdrawer.isinwin(event.x(),self.height()-event.y()) ):
 					self.qwidgetdrawer.mouseReleaseEvent(event)
+					
+	def wheelEvent(self, event):
+		if self.inspector :
+			if ( self.qwidgetdrawer.isinwin(event.x(),self.height()-event.y()) ):
+					self.qwidgetdrawer.wheelEvent(event)
 
 class EMFxTexture:
 	def __init__(self,parent):
