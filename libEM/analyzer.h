@@ -37,7 +37,7 @@
 #define eman_analyzer_h__ 
 
 #include "emobject.h"
-
+#include <gsl/gsl_linalg.h>
 using std::vector;
 
 namespace EMAN
@@ -121,58 +121,59 @@ namespace EMAN
 		vector<EMData *> images;
 	};
 	
-// 	class SVDAnalyzer : public Analyzer
-// 	{
-// 	  public:
-// 		SVDAnalyzer() : mask(0), nvec(0) {}
-// 		
-// 		virtual int insert_image(EMData * image);
-// 		
-// 		virtual int insert_images_list(vector<EMData *> image_list) {
-// 			vector<EMData*>::const_iterator iter;
-// 			for(iter=image_list.begin(); iter!=image_list.end(); ++iter) {
-// 				images.push_back(*iter);
-// 			}
-// 			return 0;
-// 		}
-// 		
-// 		virtual vector<EMData*> analyze();
-// 		
-// 		string get_name() const
-// 		{
-// 			return "svd";
-// 		}	  	
-// 		
-// 		string get_desc() const
-// 		{
-// 			return "Singular Value Decomposition from GSL. Comparable to pca";
-// 		}
-// 		
-// 		static Analyzer * NEW()
-// 		{
-// 			return new SVDAnalyzer();
-// 		}
-// 		
-// 		void set_params(const Dict & new_params);
-// 
-// 		TypeDict get_param_types() const
-// 		{
-// 			TypeDict d;
-// 			d.put("mask", EMObject::EMDATA, "mask image");
-// 			d.put("nvec", EMObject::INT, "number of desired principal components");
-// 			return d;
-// 		}
-// 		
-// 	  protected:
-// 		EMData * mask;
-// 		int nvec;	//number of desired principal components
-// 
-//           private:
-//                 float *covmat; // covariance matrix 
-//                 int   ncov;    // dimension of the covariance matrix
-//                 int   nimages; // number of images
-//                 float *eigval; // array for storing computed eigvalues
-// 	}; 
+	class SVDAnalyzer : public Analyzer
+	{
+	  public:
+		SVDAnalyzer() : mask(0), nvec(0), nimg(0), A(NULL) {}
+		
+		virtual int insert_image(EMData * image);
+		
+		virtual int insert_images_list(vector<EMData *> image_list) {
+			vector<EMData*>::const_iterator iter;
+			for(iter=image_list.begin(); iter!=image_list.end(); ++iter) {
+				images.push_back(*iter);
+			}
+			return 0;
+		}
+		
+		virtual vector<EMData*> analyze();
+		
+		string get_name() const
+		{
+			return "svd";
+		}	  	
+		
+		string get_desc() const
+		{
+			return "Singular Value Decomposition from GSL. Comparable to pca";
+		}
+		
+		static Analyzer * NEW()
+		{
+			return new SVDAnalyzer();
+		}
+		
+		void set_params(const Dict & new_params);
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("mask", EMObject::EMDATA, "mask image");
+			d.put("nvec", EMObject::INT, "number of desired basis vectors");
+			d.put("nimg", EMObject::INT, "total number of input images, required even with insert_image()");
+			return d;
+		}
+		
+		protected:
+		EMData * mask;
+		int nvec;	//number of desired principal components
+		int pixels;	// pixels under the mask
+		int nimg; // number of input images
+
+		private:
+		int nsofar;
+		gsl_matrix *A;
+	}; 
 
 	template <> Factory < Analyzer >::Factory();
 	

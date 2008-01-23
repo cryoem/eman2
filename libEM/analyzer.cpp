@@ -544,87 +544,76 @@ vector<EMData*> varimax::analyze()
     return images;
 }
 
-// int SVDAnalyzer::insert_image(EMData * image)
-// {
-// 	if(mask==0)
-// 		throw NullPointerException("Null mask image pointer, set_params() first");
-// 	
-//    EMData *maskedimage = Util::compress_image_mask(image,mask);
-// 
-//    int nx = maskedimage->get_xsize();
-//    float *imgdata = maskedimage->get_data();
-//    if (nx != ncov) {
-//       fprintf(stderr,"insert_image: something is wrong...\n");
-//       exit(1);
-//    }
-// 
-//    // there is a faster version of the following rank-1 update 
-//    nimages++;
-//    for (int j = 1; j <= nx; j++)
-//        for (int i = 1; i<=nx; i++) {
-//            covmat(i,j) += imgdata(i)*imgdata(j);
-//    }   
-// 
-//    EMDeletePtr(maskedimage);
-//    return 0;
-// }
-// #undef covmat
-// 
-// #define eigvec(i,j) eigvec[(j)*ncov + (i)]
-// vector<EMData*> SVDAnalyzer::analyze()
-// {
-//         float *eigvec;
-// 	int status = 0;
-// 	printf("start analyzing..., ncov = %d\n", ncov);
-//         eigval = (float*)calloc(ncov,sizeof(float));
-//         eigvec = (float*)calloc(ncov*ncov,sizeof(float));
-//         status = Util::coveig(ncov, covmat, eigval, eigvec);
-// 
-//         for (int i=1; i<=nvec; i++) printf("eigval = %11.4e\n", 
-//             eigval[ncov-i]);
-// 
-//         // pack eigenvectors into the return imagelist
-//         EMData *eigenimage = new EMData();
-//         eigenimage->set_size(ncov,1,1);
-//         float *rdata = eigenimage->get_data();
-//         for (int j = 1; j<= nvec; j++) {
-// 	    for (int i = 0; i < ncov; i++)
-// 		rdata[i] = eigvec(i,ncov-j);
-// 	    images.push_back(Util::reconstitute_image_mask(eigenimage,mask));
-//         }
-// 
-//         free(eigvec);
-//         EMDeletePtr(eigenimage); 
-// 
-// 	return images;
-// }
-// #undef eigvec
-// 
-// void SVDAnalyzer::set_params(const Dict & new_params)
-// {
-// 	params = new_params;
-// 	mask = params["mask"];
-// 	nvec = params["nvec"];
-// 
-//         // count the number of pixels under the mask
-//         // (this is really ugly!!!)
-//         EMData *dummy = new EMData();
-// 
-//         int nx = mask->get_xsize();
-//         int ny = mask->get_ysize();
-//         int nz = mask->get_zsize();
-// 
-//         dummy->set_size(nx,ny,nz);
-// 
-//         EMData *dummy1d = Util::compress_image_mask(dummy,mask);
-//         ncov = dummy1d->get_xsize();
-//         EMDeletePtr(dummy);
-//         EMDeletePtr(dummy1d);
-// 
-// 	// allocate and set up the covriance matrix
-//         nimages = 0;
-// 	covmat = (float*)calloc(ncov*ncov,sizeof(float));
-// }
+int SVDAnalyzer::insert_image(EMData * image)
+{
+	if (mask==0)
+		throw NullPointerException("Null mask image pointer, set_params() first");
+	
+	// count pixels under mask
+	int totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
+	float  *d=image->get_data();
+	float *md=mask ->get_data();
+	for (int i=0,j=0; i<totpix; i++) {
+		if (md[i]) {
+			gsl_matrix_set(A,j,nsofar,d[i]);
+			j++;
+		}
+	}
+	nsofar++;
+
+   return 0;
+}
+#undef covmat
+
+#define eigvec(i,j) eigvec[(j)*ncov + (i)]
+vector<EMData*> SVDAnalyzer::analyze()
+{
+// Allocate the working space
+gsl_vector *work=gsl_vector_alloc(nimg);
+gsl_vector *S=gsl_vector_alloc(nimg);
+gsl_matrix *V=gsl_matrix_alloc(nimg,nimg);
+gsl_matrix *X=gsl_matrix_alloc(nimg,nimg);
+
+
+// Do the decomposition. All the real work is here
+gsl_linalg_SV_decomp_mod (A,X, V, S, work);
+//else gsl_linalg_SV_decomp_jacobi(A,V,S);
+
+//unpack the results and write the output file
+for (int i=0; i<nvec; i++) {
+/*	EMData out;
+	out.setSize(imsize,imsize,1);
+	circularunpack(A,&out,i,mask);
+	out.setNImg((int)floor(gsl_vector_get(S,i)*999999.0/max));		// set an integer proportional to importance of each basis element
+	out.writeIMAGIC(argv[2],i);*/
+}
+
+gsl_vector_free(work);
+gsl_vector_free(S);
+gsl_matrix_free(V);
+gsl_matrix_free(X);
+
+gsl_matrix_free(A);
+A=NULL;
+mask=NULL;
+}
+
+void SVDAnalyzer::set_params(const Dict & new_params)
+{
+	params = new_params;
+	mask = params["mask"];
+	nvec = params["nvec"];
+	nimg = params["nimg"];
+
+	// count pixels under mask
+	pixels=0;
+	int totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
+	float *d=mask->get_data();
+	for (int i=0; i<totpix; i++) if (d[i]) pixels++;
+
+	A=gsl_matrix_alloc(pixels,nimg);
+	nsofar=0;
+}
 
 
 void EMAN::dump_analyzers()
