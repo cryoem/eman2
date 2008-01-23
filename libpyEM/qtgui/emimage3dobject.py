@@ -82,16 +82,23 @@ class Camera2:
 		self.t3d_stack.append(t3d)
 		
 		self.mmode = 0
-		
+		self.debug = False
 	def position(self):
 		# position the camera, regualar OpenGL movement.
+		if (self.debug):
+			print "Camera translational position",self.cam_x,self.cam_y,self.cam_z
 		glTranslated(self.cam_x, self.cam_y, self.cam_z)
 		
+		
 		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+		if (self.debug):
+			print "Camera rotation ",float(rot["phi"]),float(rot["alt"]),float(rot["az"])
 		glRotate(float(rot["phi"]),0,0,1)
 		glRotate(float(rot["alt"]),1,0,0)
 		glRotate(float(rot["az"]),0,0,1)
 		
+		if (self.debug):
+			print "Camera scale ",self.scale
 		# here is where zoom is applied
 		glScalef(self.scale,self.scale,self.scale)
 		
@@ -114,6 +121,7 @@ class Camera2:
 			self.default_y = value
 		elif ( axis == 'default_z'):
 			self.default_z = value
+			self.setCamZ(0)
 		else:
 			print 'Error, the axis (%s) specified is unknown. No action was taken' %axis
 	
@@ -206,7 +214,7 @@ class Camera2:
 				if event.modifiers() == Qt.ControlModifier:
 					self.scale_event(event.y()-self.mpressy)	
 				else:
-					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
+					self.motionTranslateLA(self.mpressx, self.mpressy,event)
 					
 				self.mpressx = event.x()
 				self.mpressy = event.y()
@@ -221,20 +229,18 @@ class Camera2:
 			
 	def wheelEvent(self, event):
 		self.scale_event(event.delta())
-		
-	def getTranslateScale(self):
 	
-		[rx,ry] = self.parent.get_render_dims_at_depth(self.cam_z)
-		#print "render area is %f %f " %(xx,yy)
-		xscale = rx/float(self.parent.width())
-		yscale = ry/float(self.parent.height())
-		
-		return [xscale,yscale]
-	
-	def motionTranslate(self,x,y):
-		[xscale,yscale] = self.getTranslateScale()
-		self.cam_x += x*xscale
-		self.cam_y += y*yscale
+	def motionTranslateLA(self,prev_x,prev_y,event):
+		#print "motion translate"
+		[dx,dy] = self.parent.eyeCoordsDif(prev_x,self.parent.parentHeight()-prev_y,event.x(),self.parent.parentHeight()-event.y())
+		#[wx2,wy2,wz2] = self.parent.eyeCoords(event.x(),self.parent.parentHeight()-event.y())
+		#[wx2,wy2,wz2] =  self.parent.mouseViewportMovement(event.x(),self.parent.parentHeight()-event.y(),wx1,wy1,wz1,zprime)
+		#self.parent.mouseViewportMovement(1,2,3,4)
+		#[wx1,wy1] = self.parent.mouseinwin(prev_x,self.parent.parentHeight()-prev_y)
+		#[wx2,wy2] = self.parent.mouseinwin(event.x(),self.parent.parentHeight()-event.y())
+		self.cam_x += dx
+		self.cam_y += dy
+		#self.cam_z += wz2
 
 class Camera:
 	"""\brief A camera object encapsulates 6 degrees of freedom, and a scale factor
