@@ -50,7 +50,7 @@ namespace EMAN {
 		force_add(&PCAsmall::NEW);
 		force_add(&PCAlarge::NEW);
 		force_add(&varimax::NEW);
-// 		force_add(&SVDAnalyzer::NEW);
+ 		force_add(&SVDAnalyzer::NEW);
 	}
 
 }
@@ -579,13 +579,23 @@ gsl_matrix *X=gsl_matrix_alloc(nimg,nimg);
 gsl_linalg_SV_decomp_mod (A,X, V, S, work);
 //else gsl_linalg_SV_decomp_jacobi(A,V,S);
 
+vector<EMData*> ret;
 //unpack the results and write the output file
-for (int i=0; i<nvec; i++) {
-/*	EMData out;
-	out.setSize(imsize,imsize,1);
-	circularunpack(A,&out,i,mask);
-	out.setNImg((int)floor(gsl_vector_get(S,i)*999999.0/max));		// set an integer proportional to importance of each basis element
-	out.writeIMAGIC(argv[2],i);*/
+float *md=mask->get_data();
+int totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
+for (int k=0; k<nvec; k++) {
+	EMData *img = new EMData;
+	img->set_size(mask->get_xsize(),mask->get_ysize(),mask->get_zsize());
+
+	float  *d=img->get_data();
+	for (int i=0,j=0; i<totpix; i++) {
+		if (md[i]) {
+			d[i]=gsl_matrix_get(A,j,k);
+			j++;
+		}
+	}
+	img->set_attr( "eigval", gsl_vector_get(S,k));
+	ret.push_back(img);
 }
 
 gsl_vector_free(work);
@@ -596,6 +606,8 @@ gsl_matrix_free(X);
 gsl_matrix_free(A);
 A=NULL;
 mask=NULL;
+
+return ret;
 }
 
 void SVDAnalyzer::set_params(const Dict & new_params)
@@ -610,7 +622,8 @@ void SVDAnalyzer::set_params(const Dict & new_params)
 	int totpix=mask->get_xsize()*mask->get_ysize()*mask->get_zsize();
 	float *d=mask->get_data();
 	for (int i=0; i<totpix; i++) if (d[i]) pixels++;
-
+	
+	printf("%d,%d\n",pixels,nimg);
 	A=gsl_matrix_alloc(pixels,nimg);
 	nsofar=0;
 }

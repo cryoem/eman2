@@ -59,6 +59,7 @@ are stored as a parameter of each image."""
 	parser.add_option("--maskfile","-M",type="string",help="File containing a mask defining the pixels to include in the Eigenimages")
 	parser.add_option("--varimax",action="store_true",help="Perform a 'rotation' of the basis set to produce a varimax basis",default=False)
 	parser.add_option("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
+	parser.add_option("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
 	parser.add_option("--verbose","-v",action="store_true",help="Verbose output",default=False)
 
 	#parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
@@ -79,7 +80,11 @@ are stored as a parameter of each image."""
 		mask.to_one()
 	
 	if options.verbose : print "Beginning MSA"
-	out=msa(args[0],mask,options.nbasis,options.varimax,options.lowmem)
+	if options.gsl : mode="svd_gsl"
+	elif options.lowmem : mode="pca_large"
+	else : mode="pca"
+	
+	out=msa(args[0],mask,options.nbasis,options.varimax,mode)
 	
 	if options.verbose : print "MSA complete"
 	for i in out:
@@ -87,23 +92,26 @@ are stored as a parameter of each image."""
 		i.write_image(args[1],-1)
 		
 
-def msa(images,mask,nbasis,varimax,lowmem):
+def msa(images,mask,nbasis,varimax,mode):
 	"""Perform principle component analysis (in this context similar to Multivariate Statistical Analysis (MSA) or
 Singular Value Decomposition (SVD). 'images' is either a list of EMImages or a filename containing a stack of images
 to analyze. 'mask' is an EMImage with a binary mask defining the region to analyze (must be the same size as the input
-images. If 'varimax' is set, the final basis set will be 'rotated' to produce a varimax basis. If 'lowmem' is set,
-the algorithm will try to conserve memory, even if there is a performance cost"""
+images. If 'varimax' is set, the final basis set will be 'rotated' to produce a varimax basis. Mode must be one of
+pca,pca_large or svd_gsl"""
 	
-	if lowmem: pca=Analyzers.get("pca_large",{"mask":mask,"nvec":nbasis})
-	else: pca=Analyzers.get("pca",{"mask":mask,"nvec":nbasis})
 	
 	if isinstance(images,str) :
 		n=EMUtil.get_image_count(images)
+		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":n})
+		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
 		
 		for i in range(n):
 			im=EMData(images,i)
 			pca.insert_image(im)
 	else:
+		if mode=="svd_gsl" : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis,"nimg":len(images)})
+		else : pca=Analyzers.get(mode,{"mask":mask,"nvec":nbasis})
+		
 		for im in images:
 			pca.insert_image(im)
 			

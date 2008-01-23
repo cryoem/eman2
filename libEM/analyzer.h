@@ -140,7 +140,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "svd";
+			return "svd_gsl";
 		}	  	
 		
 		string get_desc() const
