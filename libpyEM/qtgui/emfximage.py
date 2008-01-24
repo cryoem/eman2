@@ -549,10 +549,17 @@ class EMQtWidgetDrawer:
 			cw=self.qwidget.childAt(l[0],l[1])
 			#print cw
 			if cw == None: return
+			print cw.objectName()
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
-			qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
-			print  QtCore.QCoreApplication.sendEvent(cw,qme)
+			if (isinstance(cw,QtGui.QComboBox)):
+				print "it's a combo"
+				cw.showPopup()
+				#QtGui.QComboBox(cw).showPopup()
+			else:
+				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
+				print  QtCore.QCoreApplication.sendEvent(cw,qme)
+				
 			self.genTexture = True
 		
 	def mouseMoveEvent(self,event):
@@ -577,8 +584,12 @@ class EMQtWidgetDrawer:
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
-			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
-			print  QtCore.QCoreApplication.sendEvent(cw,qme)
+			if (isinstance(cw,QtGui.QComboBox)):
+				print "it's a combo"
+				cw.showPopup()
+			else:
+				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+				print  QtCore.QCoreApplication.sendEvent(cw,qme)
 			self.genTexture = True
 		
 	def timerEvent(self,event=None):
