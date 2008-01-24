@@ -55,6 +55,8 @@ import array
 
 height_plane = 500
 
+mouseEvents = [QtCore.QEvent.MouseButtonDblClick, QtCore.QEvent.MouseButtonRelease,QtCore.QEvent.MouseTrackingChange, QtCore.QEvent.MouseButtonPress, QtCore.QEvent.MouseMove]
+
 class EMBasicObjects:
 	def __init__(self):
 		self.framedl = 0
@@ -212,8 +214,9 @@ class EMQtWidgetDrawer:
 		theta = acos((x*u+v*y)/(l1*l2))
 		print "the angle between [%f,%f] and [%f,%f] is %f" %(p1[0],p1[1],p2[0],p2[1],180.0*theta/pi)
 		
-		
 	def paintGL(self):
+		
+		if (self.qwidget == None ) : return
 		
 		self.cam.position()
 		if ( self.itex == 0 or self.genTexture == True ) : 
@@ -532,10 +535,11 @@ class EMQtWidgetDrawer:
 		else:
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
+			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
 			qme=QtGui.QWheelEvent(lp,event.delta(),event.buttons(),event.modifiers(),event.orientation())
-			cw.wheelEvent(qme)
+			print  QtCore.QCoreApplication.sendEvent(cw,qme)
 			self.genTexture = True
 	
 	def mousePressEvent(self, event):
@@ -545,12 +549,12 @@ class EMQtWidgetDrawer:
 		else:
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
-			print cw
+			#print cw
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
-			qme=QtGui.QMouseEvent(event.Type(),lp,event.button(),event.buttons(),event.modifiers())
-			cw.mousePressEvent(qme)
+			qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			print  QtCore.QCoreApplication.sendEvent(cw,qme)
 			self.genTexture = True
 		
 	def mouseMoveEvent(self,event):
@@ -562,8 +566,8 @@ class EMQtWidgetDrawer:
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
-			qme=QtGui.QMouseEvent(event.Type(),lp,event.button(),event.buttons(),event.modifiers())
-			cw.mouseMoveEvent(qme)
+			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			print  QtCore.QCoreApplication.sendEvent(cw,qme)
 			self.genTexture = True
 
 	def mouseReleaseEvent(self,event):
@@ -575,8 +579,8 @@ class EMQtWidgetDrawer:
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
-			qme=QtGui.QMouseEvent(event.Type(),lp,event.button(),event.buttons(),event.modifiers())
-			cw.mouseReleaseEvent(qme)
+			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			print  QtCore.QCoreApplication.sendEvent(cw,qme)
 			self.genTexture = True
 		
 	def timerEvent(self,event=None):
@@ -623,10 +627,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 	
 		self.qwidgets = []
 		self.qwidgets.append(EMQtWidgetDrawer(self))
-		#self.qwidgets.append(EMQtWidgetDrawer(self))
-		#self.fd = QtGui.QFileDialog(self,"Open File")
-		#self.qwidgets[1].setQtWidget(self.fd)
-		#self.qwidgets[1].cam.setCamX(-100)
+		self.qwidgets.append(EMQtWidgetDrawer(self))
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
@@ -889,8 +890,13 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			if ( self.qwidgets[0].qwidget == None ):
 				print "setting Q widget"
 				self.qwidgets[0].setQtWidget(self.inspector)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+				self.qtc = QtCore.QCoreApplication
+				self.fd = QtGui.QFileDialog(self,"Open File")
+				#self.fd.show()
+				self.qwidgets[1].setQtWidget(self.fd)
+				self.qwidgets[1].cam.setCamX(-100)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
 			for i in self.qwidgets:
 				glPushMatrix()
@@ -1294,9 +1300,44 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
 	
-	def mouseMoveEvent(self,event):
-		print str(event.__dict__)
-		print "received event"
+	#def event(self,event):
+		##if event.spontaneous(): return False
+		#print "hi from here"
+		#print event.type()
+		#if event.type() in mouseEvents:
+			#cw=self.childAt(event.x,event.y)
+			#if cw == None:
+				#print "no child"
+				#return False
+			#gp=self.mapToGlobal(QtCore.QPoint(event.x,event.y))
+			#lp=cw.mapFromGlobal(gp)
+			#qme=QtGui.QMouseEvent(event.type(),lp,event.button,event.buttons,event.modifiers)
+			#print "returning event"
+			#return cw.event(qme)
+		#elif event.Type() == QtCore.QEvent.Wheel:
+			#cw=self.childAt(event.x,event.y)
+			#if cw == None:
+				#print "no child"
+				#return False
+			#gp=self.mapToGlobal(QtCore.QPoint(event.x,event.y))
+			#lp=cw.mapFromGlobal(gp)
+			#qme=QtGui.QWheelEvent(lp,event.delta,event.buttons,event.modifiers,event.orientation)
+			#return cw.event(qme)
+		
+	
+		##print event.t
+		#print event.Type()
+		#print mouseEvents
+		#print "no event"
+		#return False
+	
+	#def mouseMoveEvent(self,event):
+		#print str(event.__dict__)
+		#print "received event"
+		
+	#def mousePressEvent(self, event):
+		#print "RECIEVED EVENT"
+		
 # 	def mousePressEvent(self, event):
 # 		print str(event.__dict__)
 # 		QtGui.QWidget.mousePressEvent(self,event)
