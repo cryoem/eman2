@@ -55,8 +55,6 @@ import array
 
 height_plane = 500
 
-mouseEvents = [QtCore.QEvent.MouseButtonDblClick, QtCore.QEvent.MouseButtonRelease,QtCore.QEvent.MouseTrackingChange, QtCore.QEvent.MouseButtonPress, QtCore.QEvent.MouseMove]
-
 class EMBasicObjects:
 	def __init__(self):
 		self.framedl = 0
