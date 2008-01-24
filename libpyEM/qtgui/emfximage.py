@@ -623,10 +623,10 @@ class EMFXImage(QtOpenGL.QGLWidget):
 	
 		self.qwidgets = []
 		self.qwidgets.append(EMQtWidgetDrawer(self))
-		self.qwidgets.append(EMQtWidgetDrawer(self))
-		self.fd = QtGui.QFileDialog(self,"Open File")
-		self.qwidgets[1].setQtWidget(self.fd)
-		self.qwidgets[1].cam.setCamX(-100)
+		#self.qwidgets.append(EMQtWidgetDrawer(self))
+		#self.fd = QtGui.QFileDialog(self,"Open File")
+		#self.qwidgets[1].setQtWidget(self.fd)
+		#self.qwidgets[1].cam.setCamX(-100)
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
