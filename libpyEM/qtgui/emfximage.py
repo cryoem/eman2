@@ -225,20 +225,22 @@ class EMQtWidgetDrawer:
 		self.wproj=glGetDoublev(GL_PROJECTION_MATRIX)
 		self.wview=glGetIntegerv(GL_VIEWPORT)
 		
+		glPushMatrix()
+		glTranslate(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0,0.0)
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D,self.itex)
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.,0.)
-		glVertex(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
+		glVertex(0,0)
 		glTexCoord2f(1.,0.)
-		glVertex( self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
+		glVertex( self.qwidget.width(),0)
 		glTexCoord2f(1.,1.)
-		glVertex( self.qwidget.width()/2.0, self.qwidget.height()/2.0)
+		glVertex( self.qwidget.width(), self.qwidget.height())
 		glTexCoord2f(0.,1.)
-		glVertex(-self.qwidget.width()/2.0, self.qwidget.height()/2.0)
+		glVertex(0, self.qwidget.height())
 		glEnd()
 		glDisable(GL_TEXTURE_2D)
-		
+		glPopMatrix()
 		#self.parent.deleteTexture(self.itex)
 	
 		if ( self.mapcoords ):
@@ -622,7 +624,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		self.qwidgets = []
 		self.qwidgets.append(EMQtWidgetDrawer(self))
 		self.qwidgets.append(EMQtWidgetDrawer(self))
-		self.fd = QtGui.QFileDialog(None,"Open File")
+		self.fd = QtGui.QFileDialog(self,"Open File")
 		self.qwidgets[1].setQtWidget(self.fd)
 		self.qwidgets[1].cam.setCamX(-100)
 	
@@ -887,6 +889,8 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			if ( self.qwidgets[0].qwidget == None ):
 				print "setting Q widget"
 				self.qwidgets[0].setQtWidget(self.inspector)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
 			for i in self.qwidgets:
 				glPushMatrix()
