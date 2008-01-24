@@ -165,7 +165,7 @@ class EMQtWidgetDrawer:
 		self.cam = Camera2(self)
 		self.cam.setCamTrans('default_z',-self.parent.get_depth_for_height(height_plane))
 		self.cam.motionRotate(0,0)
-		self.borderwidth = 4.0
+		self.borderwidth = 3.0
 		self.glbasicobjects = EMBasicObjects()
 		self.setQtWidget(qwidget)
 		self.P_inv = None
@@ -253,7 +253,7 @@ class EMQtWidgetDrawer:
 				glMatrixMode(GL_PROJECTION)
 				glPushMatrix()
 				glLoadIdentity()
-				glOrtho(0.0,self.parent.width(),0.0,self.parent.height(),-10,10)
+				glOrtho(0.0,self.parent.width(),0.0,self.parent.height(),-5,5)
 	
 				glMatrixMode(GL_MODELVIEW)
 				glPushMatrix()
@@ -263,7 +263,6 @@ class EMQtWidgetDrawer:
 				glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
 				glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 				glMaterial(GL_FRONT,GL_SHININESS,50.0)
-				
 				glPushMatrix()
 				self.cylinderToFrom(self.mc00,self.mc10)
 				glPopMatrix()
@@ -277,24 +276,24 @@ class EMQtWidgetDrawer:
 				self.cylinderToFrom(self.mc01,self.mc00)
 				glPopMatrix()
 				
-				glBegin(GL_LINES)
-				glVertex(self.mc00[0],self.mc00[1])
-				glVertex(self.mc11[0],self.mc11[1])
-				glVertex(self.mc01[0],self.mc01[1])
-				glVertex(self.mc10[0],self.mc10[1])
-				glEnd()
-				#glPushMatrix()4
-				#self.sphereAt(self.mc00)
-				#glPopMatrix()
-				#glPushMatrix()
-				#self.sphereAt(self.mc10)
-				#glPopMatrix()
-				#glPushMatrix()
-				#self.sphereAt(self.mc11)
-				#glPopMatrix()
-				#glPushMatrix()
-				#self.sphereAt(self.mc01)
-				#glPopMatrix()
+				#glBegin(GL_LINES)
+				#glVertex(self.mc00[0],self.mc00[1])
+				#glVertex(self.mc11[0],self.mc11[1])
+				#glVertex(self.mc01[0],self.mc01[1])
+				#glVertex(self.mc10[0],self.mc10[1])
+				#glEnd()
+				glPushMatrix()
+				self.sphereAt(self.mc00)
+				glPopMatrix()
+				glPushMatrix()
+				self.sphereAt(self.mc10)
+				glPopMatrix()
+				glPushMatrix()
+				self.sphereAt(self.mc11)
+				glPopMatrix()
+				glPushMatrix()
+				self.sphereAt(self.mc01)
+				glPopMatrix()
 				
 				glPopMatrix()
 				
@@ -310,7 +309,7 @@ class EMQtWidgetDrawer:
 	
 	def sphereAt(self,at):
 		glTranslate(at[0],at[1],0)
-		glScalef(self.borderwidth,self.borderwidth,self.borderwidth)
+		glScalef(3.0*self.borderwidth,3.0*self.borderwidth,3.0*self.borderwidth)
 		glCallList(self.glbasicobjects.getSphereDL())
 		
 	def cylinderToFrom(self,To,From):
@@ -321,12 +320,12 @@ class EMQtWidgetDrawer:
 		
 		angle = 180.0*atan2(dy,dx)/pi
 		
-		glTranslate(From[0],From[1],0)
-		glRotate(90.0+angle,0.,0.,1.0)
-		glRotate(90.,1.,0.,0.)
-		glTranslate(0.0,0.0,length/2.0)
-		glScalef(self.borderwidth,self.borderwidth,length)
-		glTranslate(-0.5,-0.5,-0.5)
+		glTranslated(From[0],From[1],0)
+		glRotated(90.0+angle,0.,0.,1.0)
+		glRotated(90.,1.,0.,0.)
+		glTranslated(0.0,0.0,length/2.0)
+		glScaled(self.borderwidth,self.borderwidth,length)
+		glTranslated(0.0,0.0,-0.5)
 		glCallList(self.glbasicobjects.getCylinderDL())
 
 	def isinwin(self,x,y):
@@ -544,6 +543,7 @@ class EMQtWidgetDrawer:
 		else:
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
+			print cw
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
@@ -619,7 +619,12 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		self.inspectorl=None
 		self.inspector3=None
 	
-		self.qwidgetdrawer = EMQtWidgetDrawer(self)
+		self.qwidgets = []
+		self.qwidgets.append(EMQtWidgetDrawer(self))
+		self.qwidgets.append(EMQtWidgetDrawer(self))
+		self.fd = QtGui.QFileDialog(None,"Open File")
+		self.qwidgets[1].setQtWidget(self.fd)
+		self.qwidgets[1].cam.setCamX(-100)
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
@@ -756,7 +761,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			gluQuadricTexture(self.gq,GL_FALSE)
 
 		glPushMatrix()
-		self.qwidgetdrawer.cam.position()
 		# define a square frame of rounded components bordering -1,-1 to 1,1
 		if not self.framedl :
 			self.framedl=glGenLists(1)
@@ -880,14 +884,15 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			
 		glPopMatrix()
 		if self.inspector:
-			if ( self.qwidgetdrawer.qwidget == None ):
+			if ( self.qwidgets[0].qwidget == None ):
 				print "setting Q widget"
-				self.qwidgetdrawer.setQtWidget(self.inspector)
+				self.qwidgets[0].setQtWidget(self.inspector)
 			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
-			glPushMatrix()
-			self.qwidgetdrawer.paintGL()
-			glPopMatrix()
-
+			for i in self.qwidgets:
+				glPushMatrix()
+				i.paintGL()
+				glPopMatrix()
+				
 	def timer(self):
 		pass
 		#self.updateGL()
@@ -908,7 +913,8 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		depth = self.get_depth_for_height(height_plane)
 		print depth
 		gluPerspective(self.fov,self.aspect,depth-depth/4,depth+depth/4)
-		self.qwidgetdrawer.set_update_P_inv()
+		for i in self.qwidgets:
+			i.set_update_P_inv()
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
@@ -929,7 +935,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 			self.inspector.show()
 			print "told gen texture"
-			self.qwidgetdrawer.genTexture = True
+			self.qwidgets[0].genTexture = True
 		else:
 			pass	# 3d not done yet
 	
@@ -937,16 +943,22 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		if event.button()==Qt.MidButton:
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton:
-			if ( self.qwidgetdrawer.isinwin(event.x(),self.height()-event.y()) ):
-				self.qwidgetdrawer.mousePressEvent(event)
-			else:
+			intercepted = False
+			for i in self.qwidgets:
+				if ( i.isinwin(event.x(),self.height()-event.y()) ):
+					i.mousePressEvent(event)
+					intercepted = True
+					break
+			if intercepted == False:
 				self.mousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
 #			self.mousedrag=(event.x(),event.y())
 			app=QtGui.QApplication.instance()
 			if self.inspector :
-				if ( self.qwidgetdrawer.isinwin(event.x(),self.height()-event.y()) ):
-					self.qwidgetdrawer.mousePressEvent(event)
+				for i in self.qwidgets:
+					if ( i.isinwin(event.x(),self.height()-event.y()) ):
+						i.mousePressEvent(event)
+						break
 #				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
 		self.updateGL()
 	
@@ -958,8 +970,10 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		else :
 #			self.mousedrag=(event.x(),event.y())
 			if self.inspector :
-				if ( self.qwidgetdrawer.isinwin(event.x(),self.height()-event.y()) ):
-					self.qwidgetdrawer.mouseMoveEvent(event)
+				for i in self.qwidgets:
+					if ( i.isinwin(event.x(),self.height()-event.y()) ):
+						i.mouseMoveEvent(event)
+						break
 		
 		self.updateGL()
 #				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
@@ -971,16 +985,19 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		elif event.button()==Qt.LeftButton:
 #			self.mousedrag=(event.x(),event.y())
 			if self.inspector :
-				if ( self.qwidgetdrawer.isinwin(event.x(),self.height()-event.y()) ):
-					self.qwidgetdrawer.mouseReleaseEvent(event)
+				for i in self.qwidgets:
+					if ( i.isinwin(event.x(),self.height()-event.y()) ):
+						i.mouseReleaseEvent(event)
+						break
 					
 		self.updateGL()
 					
 	def wheelEvent(self, event):
 		if self.inspector :
-			if ( self.qwidgetdrawer.isinwin(event.x(),self.height()-event.y()) ):
-					self.qwidgetdrawer.wheelEvent(event)
-					
+			for i in self.qwidgets:
+					if ( i.isinwin(event.x(),self.height()-event.y()) ):
+						i.wheelEvent(event)
+						break
 		self.updateGL()
 
 class EMFxTexture:
