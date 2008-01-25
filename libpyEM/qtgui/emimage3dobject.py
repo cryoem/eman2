@@ -58,6 +58,14 @@ class Camera2:
 		# The equation is scale *= mag_factor or scale /= mag_factor, depending on the event.
 		self.parent=parent
 		self.mag_factor = 1.1
+		
+		self.t3d_stack = []
+		self.loadIdentity()
+		
+		self.mmode = 0
+		self.debug = False
+		
+	def loadIdentity(self):
 		self.scale = 1.0
 		
 		# The camera coordinates
@@ -71,18 +79,10 @@ class Camera2:
 		self.default_y = 0
 		self.default_z = 0
 		
-		# The Transform3D object stores the rotation
 		t3d = Transform3D()
 		t3d.to_identity()
-	
-		# At the moment there is a stack of Transform3D objects, this is for the purposes
-		# of undoing actions. If the undo functionality was not required, the stack could be
-		# removed.
-		self.t3d_stack = []
 		self.t3d_stack.append(t3d)
 		
-		self.mmode = 0
-		self.debug = False
 	def position(self):
 		# position the camera, regualar OpenGL movement.
 		if (self.debug):
@@ -110,11 +110,11 @@ class Camera2:
 	
 	def setCamTrans(self,axis,value):
 		if ( axis == 'x'):
-			setCamX(value)
+			self.setCamX(value)
 		elif ( axis == 'y'):
-			setCamY(value)
+			self.setCamY(value)
 		elif ( axis == 'z'):
-			setCamZ(value)
+			self.setCamZ(value)
 		elif ( axis == 'default_x'):
 			self.default_x = value
 		elif ( axis == 'default_y'):

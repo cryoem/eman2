@@ -84,7 +84,6 @@ class EMBasicObjects:
 			glNewList(self.spheredl,GL_COMPILE)
 			glPushMatrix()
 			gluSphere(self.gq,.5,self.sphere_along_z,self.sphere_around_z)
-			
 			glPopMatrix()
 			
 			glEndList()
@@ -156,9 +155,9 @@ class EMBasicObjects:
 class EMQtWidgetDrawer:
 	def __init__(self, parent=None, qwidget=None):
 		self.parent = parent
-		self.drawframe = False
+		self.qwidget = qwidget
+		self.drawframe = True
 		self.mapcoords = True
-		self.debugcoords = True
 		self.itex = 0
 		self.genTexture = True
 		self.click_debug = False
@@ -170,9 +169,14 @@ class EMQtWidgetDrawer:
 		self.setQtWidget(qwidget)
 		self.P_inv = None
 		self.update_P_inv = True
+		self.childreceiver = None
+		
+		self.children = []
 	
 	def set_update_P_inv(self,val=True):
 		self.update_P_inv = val
+		for i in self.children:
+			i.set_update_P_inv(val)
 	
 	def width(self):
 		return self.qwidget.width()
@@ -221,38 +225,37 @@ class EMQtWidgetDrawer:
 			self.parent.deleteTexture(self.itex)
 			self.genTexture = False
 			self.itex = self.parent.bindTexture(QtGui.QPixmap.grabWidget(self.qwidget))
+			#this is a hack for now
 		
 		self.wmodel=glGetDoublev(GL_MODELVIEW_MATRIX)
 		self.wproj=glGetDoublev(GL_PROJECTION_MATRIX)
 		self.wview=glGetIntegerv(GL_VIEWPORT)
 		
 		glPushMatrix()
-		glTranslate(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0,0.0)
+		print self.qwidget.width(),self.qwidget.height()
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D,self.itex)
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.,0.)
-		glVertex(0,0)
+		glVertex(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
 		glTexCoord2f(1.,0.)
-		glVertex( self.qwidget.width(),0)
+		glVertex( self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
 		glTexCoord2f(1.,1.)
-		glVertex( self.qwidget.width(), self.qwidget.height())
+		glVertex( self.qwidget.width()/2.0, self.qwidget.height()/2.0)
 		glTexCoord2f(0.,1.)
-		glVertex(0, self.qwidget.height())
+		glVertex( -self.qwidget.width()/2.0,self.qwidget.height()/2.0)
 		glEnd()
 		glDisable(GL_TEXTURE_2D)
 		glPopMatrix()
 		#self.parent.deleteTexture(self.itex)
 	
 		if ( self.mapcoords ):
-			
-	
 			self.mc00=gluProject(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0,0.,self.wmodel,self.wproj,self.wview)
 			self.mc10=gluProject( self.qwidget.width()/2.0,-self.qwidget.height()/2.0,0.,self.wmodel,self.wproj,self.wview)
 			self.mc11=gluProject( self.qwidget.width()/2.0, self.qwidget.height()/2.0,0.,self.wmodel,self.wproj,self.wview)
 			self.mc01=gluProject(-self.qwidget.width()/2.0, self.qwidget.height()/2.0,0.,self.wmodel,self.wproj,self.wview)
 	
-			if ( self.debugcoords ):
+			if ( self.drawframe ):
 				glMatrixMode(GL_PROJECTION)
 				glPushMatrix()
 				glLoadIdentity()
@@ -305,9 +308,15 @@ class EMQtWidgetDrawer:
 				glPopMatrix()
 				glMatrixMode(GL_MODELVIEW)
 				
-		if ( self.drawframe ):
+		#if ( self.drawframe ):
+			#glPushMatrix()
+			#glCallList(self.glbasicobjects.getFrameDL())
+			#glPopMatrix()
+			
+		for i in self.children:
+			print "children drawing"
 			glPushMatrix()
-			glCallList(self.glbasicobjects.getFrameDL())
+			i.paintGL()
 			glPopMatrix()
 	
 	def sphereAt(self,at):
@@ -332,6 +341,10 @@ class EMQtWidgetDrawer:
 		glCallList(self.glbasicobjects.getCylinderDL())
 
 	def isinwin(self,x,y):
+		for i in self.children:
+			if i.isinwin(x,y):
+				self.childreceiver = i
+				return True
 		# this works by simple geometry - if the mouse point e is within the four points (a,b,c,d)
 		# at the extremities of  the qtwidget, then aed + bec + ced + dea is +/- 360 degrees. 
 		# If e is outside the four points then the sum is zero...
@@ -440,7 +453,6 @@ class EMQtWidgetDrawer:
 		zprime1 = 1.0/(xNDC1*self.P_inv[0,3]+yNDC1*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
 		zprime2 = 1.0/(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
 
-		
 		ex1 = (self.P_inv[0,0]*xNDC1 + self.P_inv[1,0]*yNDC1 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime1;
 		ey1 = (self.P_inv[0,1]*xNDC1 + self.P_inv[1,1]*yNDC1 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime1;
 		#ez1 = (self.P_inv[0,2]*xNDC1 + self.P_inv[1,2]*yNDC1 + self.P_inv[2,2]*zNDC1+self.P_inv[3,2])*zprime1;
@@ -449,7 +461,6 @@ class EMQtWidgetDrawer:
 		ey2 = (self.P_inv[0,1]*xNDC2 + self.P_inv[1,1]*yNDC2 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime2;
 		#ez2 = (self.P_inv[0,2]*xNDC2 + self.P_inv[1,2]*yNDC2 + self.P_inv[2,2]*zNDC1+self.P_inv[3,2])*zprime2;
 		
-
 		#return [ex2-ex1,ey2-ey1,ez2-ez1] # ez2-ez1 should be zero
 		return [ex2-ex1,ey2-ey1]
 	def eyeCoords(self,x,y):
@@ -531,6 +542,10 @@ class EMQtWidgetDrawer:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.wheelEvent(event)
 		else:
+			if ( self.childreceiver != None ):
+				self.childreceiver.wheelEvent(event)
+				self.childreceiver = None
+				return
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
@@ -540,11 +555,35 @@ class EMQtWidgetDrawer:
 			print  QtCore.QCoreApplication.sendEvent(cw,qme)
 			self.genTexture = True
 	
+	def mouseDoubleClickEvent(self, event):
+		if ( self.childreceiver != None ):
+			self.childreceiver.mouseReleaseEvent(event)
+			self.childreceiver = None
+			return
+		l=self.mouseinwin(event.x(),self.parent.height()-event.y())
+		cw=self.qwidget.childAt(l[0],l[1])
+		if cw == None: return
+		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+		lp=cw.mapFromGlobal(gp)
+		if (isinstance(cw,QtGui.QComboBox)):
+			print "it's a combo"
+			#cw.showPopup()
+		else:
+			qme=QtGui.mouseDoubleClickEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			print  QtCore.QCoreApplication.sendEvent(cw,qme)
+		self.genTexture = True
+		
+	def get_depth_for_height(self,height_plane):
+		return self.parent.get_depth_for_height(height_plane)
 	def mousePressEvent(self, event):
 		if event.modifiers() == Qt.ShiftModifier:
 			#qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.cam.mousePressEvent(event)
 		else:
+			if ( self.childreceiver != None ):
+				self.childreceiver.mousePressEvent(event)
+				self.childreceiver = None
+				return
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
 			#print cw
@@ -553,8 +592,33 @@ class EMQtWidgetDrawer:
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
 			if (isinstance(cw,QtGui.QComboBox)):
-				print "it's a combo"
-				cw.showPopup()
+				pass
+				#cw.showPopup()
+				#cw.hidePopup()
+				#widget = EMQtWidgetDrawer(self.parent);
+				#widget.setQtWidget(cw.view())
+				#widget.cam.loadIdentity()
+				#widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
+				#widget.cam.setCamTrans("y",((self.height()/2.0-cw.geometry().y())-cw.view().height()/2.0))
+				#widget.cam.setCamTrans("z",0.1)
+				#widget.drawframe = False
+				#self.children.append(widget)
+				#completer = cw.completer()
+				#if ( isinstance(completer,QtGui.QCompleter)):
+					#completer.setCompletionMode(QtGui.QCompleter.PopupCompletion)
+					#view = completer.popup()
+					#print view.height()
+					#print view.width()
+					#widget = EMQtWidgetDrawer(self.parent);
+					#widget.setQtWidget(cw.listBox())
+					#widget.cam.loadIdentity()
+					#widget.cam.setCamTrans("x",cw.geometry().x())
+					#widget.cam.setCamTrans("y",-cw.geometry().y())
+					#widget.cam.setCamTrans("z",0.1)
+					#widget.drawframe = False
+					#self.children.append(widget)
+					#print "that was a completer"
+				#else : print "that wasn't a completer"
 				#QtGui.QComboBox(cw).showPopup()
 			else:
 				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
@@ -566,6 +630,10 @@ class EMQtWidgetDrawer:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
+			if ( self.childreceiver != None ):
+				self.childreceiver.mouseMoveEvent(event)
+				self.childreceiver = None
+				return
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
@@ -579,6 +647,10 @@ class EMQtWidgetDrawer:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
+			if ( self.childreceiver != None ):
+				self.childreceiver.mouseReleaseEvent(event)
+				self.childreceiver = None
+				return
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
@@ -586,7 +658,7 @@ class EMQtWidgetDrawer:
 			lp=cw.mapFromGlobal(gp)
 			if (isinstance(cw,QtGui.QComboBox)):
 				print "it's a combo"
-				cw.showPopup()
+				#cw.showPopup()
 			else:
 				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				print  QtCore.QCoreApplication.sendEvent(cw,qme)
@@ -629,6 +701,8 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		self.nperrow=6
 		self.nshow=0
 		self.mousedrag=None
+		
+		self.setMouseTracking(True)
 		
 		self.inspector=None
 		self.inspectorl=None
@@ -772,7 +846,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 			gluQuadricTexture(self.gq,GL_FALSE)
 
-		glPushMatrix()
 		# define a square frame of rounded components bordering -1,-1 to 1,1
 		if not self.framedl :
 			self.framedl=glGenLists(1)
@@ -888,22 +961,22 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 			glMaterial(GL_FRONT,GL_SHININESS,50.0)
 			
-			glPushMatrix()
-			glCallList(self.framedl)
-			glPopMatrix()
+			#glPushMatrix()
+			#glCallList(self.framedl)
+			#glPopMatrix()
 			
 			glPopMatrix()
 			
-		glPopMatrix()
 		if self.inspector:
 			if ( self.qwidgets[0].qwidget == None ):
 				print "setting Q widget"
 				self.qwidgets[0].setQtWidget(self.inspector)
 				self.qtc = QtCore.QCoreApplication
 				self.fd = QtGui.QFileDialog(self,"Open File")
-				#self.fd.show()
+				self.fd.show()
 				self.qwidgets[1].setQtWidget(self.fd)
 				self.qwidgets[1].cam.setCamX(-100)
+			
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
@@ -967,7 +1040,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				if ( i.isinwin(event.x(),self.height()-event.y()) ):
 					i.mousePressEvent(event)
 					intercepted = True
-					break
+					return
 			if intercepted == False:
 				self.mousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
@@ -977,45 +1050,78 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				for i in self.qwidgets:
 					if ( i.isinwin(event.x(),self.height()-event.y()) ):
 						i.mousePressEvent(event)
-						break
+						self.updateGL()
+						return
 #				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
-		self.updateGL()
 	
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
 			self.mousedrag=(event.x(),event.y())
 			self.update()
+			return
 		else :
 #			self.mousedrag=(event.x(),event.y())
 			if self.inspector :
 				for i in self.qwidgets:
 					if ( i.isinwin(event.x(),self.height()-event.y()) ):
 						i.mouseMoveEvent(event)
-						break
-		
-		self.updateGL()
+						self.updateGL()
+						return
+			
 #				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
 				#print qme.x(),qme.y(),l,gp.x(),gp.y()
 		
 	def mouseReleaseEvent(self, event):
 		if event.button()==Qt.RightButton:
 			self.mousedrag=None
+			return
 		elif event.button()==Qt.LeftButton:
 #			self.mousedrag=(event.x(),event.y())
 			if self.inspector :
 				for i in self.qwidgets:
 					if ( i.isinwin(event.x(),self.height()-event.y()) ):
 						i.mouseReleaseEvent(event)
-						break
+						self.updateGL()
+						return
 					
-		self.updateGL()
-					
+		
+	def mouseDoubleClickEvent(self, event):
+		if self.inspector :
+			for i in self.qwidgets:
+				if ( i.isinwin(event.x(),self.height()-event.y()) ):
+					i.mouseReleaseEvent(event)
+					self.updateGL()
+					return
+		
+		
 	def wheelEvent(self, event):
 		if self.inspector :
 			for i in self.qwidgets:
 					if ( i.isinwin(event.x(),self.height()-event.y()) ):
 						i.wheelEvent(event)
+						self.updateGL()
+						return
+		
+
+	def dragMoveEvent(self,event):
+		print "received drag move event"
+		
+	#def event(self,event):
+		#if event.type() == QtCore.QEvent.MouseButtonPress: return self.mousePressEvent(event)
+		#elif event.type() == QtCore.QEvent.MouseButtonRelease: return self.mouseReleaseEvent(event)
+		#elif event.type() == QtCore.QEvent.MouseMove: return self.mouseMoveEvent(event)
+		#elif event.type() == QtCore.QEvent.MouseButtonDblClick: return self.mouseDoubleClickEvent(event)
+		#elif event.type() == QtCore.QEvent.Wheel: return self.wheelEvent(event)
+		
+		#return False
+
+	def hoverEvent(self,event):
+		print "hoverEvent"
+		if self.inspector :
+			for i in self.qwidgets:
+					if ( i.isinwin(event.x(),self.height()-event.y()) ):
+						i.hoverEvent(event)
 						break
 		self.updateGL()
 
