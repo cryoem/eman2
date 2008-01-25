@@ -1113,7 +1113,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		elif event.type() == QtCore.QEvent.MouseMove: return self.mouseMoveEvent(event)
 		elif event.type() == QtCore.QEvent.MouseButtonDblClick: return self.mouseDoubleClickEvent(event)
 		elif event.type() == QtCore.QEvent.Wheel: return self.wheelEvent(event)
-		else: QtWindow.event(event)
+		else: return QtOpenGL.QGLWidget.event(self,event)
 		
 		return False
 
