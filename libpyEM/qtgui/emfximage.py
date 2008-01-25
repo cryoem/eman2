@@ -1107,14 +1107,15 @@ class EMFXImage(QtOpenGL.QGLWidget):
 	def dragMoveEvent(self,event):
 		print "received drag move event"
 		
-	#def event(self,event):
-		#if event.type() == QtCore.QEvent.MouseButtonPress: return self.mousePressEvent(event)
-		#elif event.type() == QtCore.QEvent.MouseButtonRelease: return self.mouseReleaseEvent(event)
-		#elif event.type() == QtCore.QEvent.MouseMove: return self.mouseMoveEvent(event)
-		#elif event.type() == QtCore.QEvent.MouseButtonDblClick: return self.mouseDoubleClickEvent(event)
-		#elif event.type() == QtCore.QEvent.Wheel: return self.wheelEvent(event)
+	def event(self,event):
+		if event.type() == QtCore.QEvent.MouseButtonPress: return self.mousePressEvent(event)
+		elif event.type() == QtCore.QEvent.MouseButtonRelease: return self.mouseReleaseEvent(event)
+		elif event.type() == QtCore.QEvent.MouseMove: return self.mouseMoveEvent(event)
+		elif event.type() == QtCore.QEvent.MouseButtonDblClick: return self.mouseDoubleClickEvent(event)
+		elif event.type() == QtCore.QEvent.Wheel: return self.wheelEvent(event)
+		else: QtWindow.event(event)
 		
-		#return False
+		return False
 
 	def hoverEvent(self,event):
 		print "hoverEvent"
