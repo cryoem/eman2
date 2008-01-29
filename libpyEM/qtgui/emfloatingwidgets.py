@@ -214,8 +214,10 @@ class EMQtWidgetDrawer:
 				#passpyth
 				self.parent.deleteTexture(self.itex)
 			self.genTexture = False
-			#print "binding texture"
-			self.itex = self.parent.bindTexture(QtGui.QPixmap.grabWidget(self.qwidget))
+			##print "binding texture"
+			pixmap = QtGui.QPixmap.grabWidget(self.qwidget)
+			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
+			self.itex = self.parent.bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 
 	def print_angles(self):
@@ -232,22 +234,33 @@ class EMQtWidgetDrawer:
 		l2 = sqrt(u*u+v*v)
 		
 		theta = acos((x*u+v*y)/(l1*l2))
-		print "the angle between [%f,%f] and [%f,%f] is %f" %(p1[0],p1[1],p2[0],p2[1],180.0*theta/pi)
+		#print "the angle between [%f,%f] and [%f,%f] is %f" %(p1[0],p1[1],p2[0],p2[1],180.0*theta/pi)
 		
 	def paintGL(self):
-		#print "in paint", self.qwidget
-		if (self.qwidget == None ) : return
-		
+		#print "paintGL children"
+		if (self.qwidget == None or self.itex == 0) :
+			#print "no widget - paintGL children return" 
+			return
 		
 		self.cam.position()
 		
-		self.wmodel=glGetDoublev(GL_MODELVIEW_MATRIX)
-		self.wproj=glGetDoublev(GL_PROJECTION_MATRIX)
-		self.wview=glGetIntegerv(GL_VIEWPORT)
+		#print "parent is valid?",self.parent.isValid()
+		#print self.parent.overlayContext()
 		
+		#print "getting opengl matrices"
+		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
+		#print "getting opengl matrices 2"
+		self.wproj= glGetDoublev(GL_PROJECTION_MATRIX)
+		#print "getting opengl matrices 3"
+		self.wview= glGetIntegerv(GL_VIEWPORT)
+		
+		#print "drawing main texture"
 		glPushMatrix()
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D,self.itex)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.,0.)
 		glVertex(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
@@ -260,6 +273,7 @@ class EMQtWidgetDrawer:
 		glEnd()
 		glDisable(GL_TEXTURE_2D)
 		glPopMatrix()
+		#print "drawing main texture done"
 		#self.parent.deleteTexture(self.itex)
 	
 		if ( self.mapcoords ):
@@ -282,6 +296,7 @@ class EMQtWidgetDrawer:
 				glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
 				glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 				glMaterial(GL_FRONT,GL_SHININESS,50.0)
+				#print "drawing frame"
 				glPushMatrix()
 				self.cylinderToFrom(self.mc00,self.mc10)
 				glPopMatrix()
@@ -295,6 +310,7 @@ class EMQtWidgetDrawer:
 				self.cylinderToFrom(self.mc01,self.mc00)
 				glPopMatrix()
 				
+				#print "done drawing frame"
 				#glBegin(GL_LINES)
 				#glVertex(self.mc00[0],self.mc00[1])
 				#glVertex(self.mc11[0],self.mc11[1])
@@ -324,9 +340,13 @@ class EMQtWidgetDrawer:
 			
 		# now draw children if necessary - such as a qcombobox list view that has poppud up
 		for i in self.e2children:
+			#print "children paintGL paint children"
 			glPushMatrix()
 			i.paintGL()
 			glPopMatrix()
+			#print "children paintGL paint children done"
+	
+		#print "paintGL children done"
 	
 	def sphereAt(self,at):
 		glTranslate(at[0],at[1],0)
@@ -396,11 +416,11 @@ class EMQtWidgetDrawer:
 		zNDC = (PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2])/(-PM_inv[2,2])
 	
 		# We need zprime, which is really 'eye_z' in OpenGL lingo
-		print "zprimes"
-		print 1.0/(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3])
-		print zprime
+		#print "zprimes"
+		#print 1.0/(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3])
+		#print zprime
 		zp = M[0,3]*ex + M[1,3]*ey + M[2,3]*ez + M[3,3]
-		print zp
+		#print zp
 		
 		xtrans = (self.P_inv[0,0]*xNDC + self.P_inv[1,0]*yNDC + self.P_inv[2,0]*zNDC + self.P_inv[3,0])*zprime
 		xtrans = xtrans - M[0,0]*ex - M[1,0]*ey - M[2,0]*ez
@@ -411,8 +431,8 @@ class EMQtWidgetDrawer:
 		ztrans = (self.P_inv[0,2]*xNDC + self.P_inv[1,2]*yNDC + self.P_inv[2,2]*zNDC + self.P_inv[3,2])*zprime
 		ztrans = ytrans - M[0,2]*ex - M[1,2]*ey - M[2,2]*ez
 		
-		#print xNDC,yNDC,zNDC
-		#print xtrans,ytrans,ztrans
+		##print xNDC,yNDC,zNDC
+		##print xtrans,ytrans,ztrans
 		return [xtrans,ytrans,ztrans]
 	
 	def eyeCoordsDif(self,x1,y1,x2,y2):
@@ -486,8 +506,8 @@ class EMQtWidgetDrawer:
 		ey = (self.P_inv[0,1]*xNDC + self.P_inv[1,1]*yNDC + self.P_inv[2,1]*zNDC+self.P_inv[3,1])*zprime;
 		ez = (self.P_inv[0,2]*xNDC + self.P_inv[1,2]*yNDC + self.P_inv[2,2]*zNDC+self.P_inv[3,2])*zprime;
 		
-		#print xNDC,yNDC,zNDC
-		#print ex,ey,ez
+		##print xNDC,yNDC,zNDC
+		##print ex,ey,ez
 		return [ex,ey,ez]
 		
 	def mouseinwin(self,x,y):
@@ -614,7 +634,7 @@ class EMQtWidgetDrawer:
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
-			#print cw.objectName()
+			##print cw.objectName()
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
 			if (isinstance(cw,QtGui.QComboBox)):
@@ -632,10 +652,10 @@ class EMQtWidgetDrawer:
 			else:
 				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child):
-					#print self.qwidget
-					#print self.qwidget.currentIndex()
+					##print self.qwidget
+					##print self.qwidget.currentIndex()
 					#self.qwidget.commitData(self.qwidget.parent())
-					#print self.qwidget.currentText()
+					##print self.qwidget.currentText()
 					QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
 				else:
 					self.qwidget.setVisible(True)
@@ -718,16 +738,16 @@ class EMQtWidgetDrawer:
 			else:
 				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child):
-					#print self.qwidget
-					#print self.qwidget.currentIndex().row()
-					#print self.widget_parent
-					#print self.qwidget.rect().left(),self.qwidget.rect().right(),self.qwidget.rect().top(),self.qwidget.rect().bottom()
-					#print lp.x(),lp.y()
+					##print self.qwidget
+					##print self.qwidget.currentIndex().row()
+					##print self.widget_parent
+					##print self.qwidget.rect().left(),self.qwidget.rect().right(),self.qwidget.rect().top(),self.qwidget.rect().bottom()
+					##print lp.x(),lp.y()
 					self.widget_parent.setCurrentIndex(self.qwidget.currentIndex().row())
 					#self.widget_parent.changeEvent(QtCore.QEvent())
 					#self.widget_parent.highlighted(self.qwidget.currentIndex().row())
 					#self.qwidget.commitData(self.qwidget.parent())
-					#print self.qwidget.currentText()
+					##print self.qwidget.currentText()
 					#self.widget_parent.setVisible(True)
 					#self.widget_parent.setEnabled(True)
 					#self.qwidget.setVisible(True)
@@ -768,137 +788,32 @@ class EMFXImage(QtOpenGL.QGLWidget):
 	or sets of 2D images.
 	"""
 	def __init__(self, parent=None):
+		#print "init"
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		
 		self.fov = 2*180*atan2(1,5)/pi
 		self.imtex=0
-		self.spinang=0.0
-		self.insang=0.0
-		self.gq=0			# quadric object for cylinders, etc
-		self.framedl=0		# display list for an image frame
-		
-		self.data=None
-		self.datasize=(1,1)
-		self.scale=1.0
-		self.minden=0
-		self.maxden=1.0
-		self.mindeng=0
-		self.maxdeng=1.0
-		self.origin=(0,0)
-		self.nperrow=6
-		self.nshow=0
-		self.mousedrag=None
 		
 		self.setMouseTracking(True)
-		
-		self.inspector=None
-		self.inspectorl=None
-		self.inspector3=None
-		
 		self.current = None
 		self.previous = None
 	
+		self.initFlag = True
 		self.qwidgets = []
-		self.qwidgets.append(EMQtWidgetDrawer(self))
-		self.qwidgets.append(EMQtWidgetDrawer(self))
+		
+		#print "init done"
 	
-	def setData(self,data):
-		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
-		self.data=data
-		if data==None:
-			self.updateGL()
-			return
-		
-		# If we have a list of 2D images
-		if isinstance(data,list) :
-			self.minden=data[0].get_attr("mean")
-			self.maxden=self.minden
-			self.mindeng=self.minden
-			self.maxdeng=self.minden
-			for i in data:
-				if i.get_zsize()!=1 :
-					self.data=None
-					self.updateGL()
-					return
-				mean=i.get_attr("mean")
-				sigma=i.get_attr("sigma")
-				m0=i.get_attr("minimum")
-				m1=i.get_attr("maximum")
-			
-				self.minden=min(self.minden,max(m0,mean-3.0*sigma))
-				self.maxden=max(self.maxden,min(m1,mean+3.0*sigma))
-				self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
-				self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
-		# If we have a single 2D image
-		elif data.get_zsize()==1:
-			mean=data.get_attr("mean")
-			sigma=data.get_attr("sigma")
-			m0=data.get_attr("minimum")
-			m1=data.get_attr("maximum")
-			
-			self.minden=max(m0,mean-3.0*sigma)
-			self.maxden=min(m1,mean+3.0*sigma)
-			self.mindeng=max(m0,mean-5.0*sigma)
-			self.maxdeng=min(m1,mean+5.0*sigma)
-
-			self.datasize=(data.get_xsize(),data.get_ysize())
-		# if we have a single 3D image
-		elif data.get_zsize()>1 :
-			pass
-		# Someone passed something wierd
-		else :
-			self.data=None
-			self.updateGL()
-			return
-		
-		self.showInspector()		# shows the correct inspector if already open
-		self.updateGL()
-		
-	def setDenRange(self,x0,x1):
-		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
-		self.minden=x0
-		self.maxden=x1
-		self.updateGL()
 		
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
 		depth = height/(2.0*tan(self.fov/2.0*pi/180.0))
 		return depth
-	
-	def setOrigin(self,x,y):
-		"""Set the display origin within the image"""
-		self.origin=(x,y)
-		self.updateGL()
 		
-	def setScale(self,newscale):
-		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
-		if isinstance(self.data,list) :
-			yo=self.height()-self.origin[1]-1
-			self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
-		else : self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+self.origin[1])-self.height()/2)
-		self.scale=newscale
-		self.updateGL()
-		
-	def setDenMin(self,val):
-		self.minden=val
-		self.updateGL()
-		
-	def setDenMax(self,val):
-		self.maxden=val
-		self.updateGL()
-
-	def setNPerRow(self,val):
-		self.nperrow=val
-		self.updateGL()
-		
-	def setNShow(self,val):
-		self.nshow=val
-		self.updateGL()
-
 	def initializeGL(self):
+		#print "initializeGL"
 		glClearColor(0,0,0,0)
 		
 		
@@ -912,49 +827,43 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		glEnable(GL_DEPTH_TEST)
 		
 		glEnable(GL_NORMALIZE)
-	
+		#print "initializeGL done"
 	def paintGL(self):
-		#print "in main paint"
+		if ( self.initFlag == True ):
+			self.fd = QtGui.QFileDialog(self,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
+			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
+			self.fd.show()
+			self.fd.hide()
+			self.qwidgets.append(EMQtWidgetDrawer(self))
+			self.qwidgets[0].setQtWidget(self.fd)
+			self.qwidgets[0].cam.setCamX(-100)
+			self.initFlag = False
+		#print "paintGL"
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
+	
+		for i in self.qwidgets:
+			#print "paint child"
+			#print "getting opengl matrices"
+			glPushMatrix()
+			i.paintGL()
+			glPopMatrix()
+			#print "paint child done"
 		
-		self.makeCurrent()
-		
-		
-		# define the texture used to render the image on the screen
-		if self.inspector:
-			if ( self.qwidgets[0].qwidget == None ):
-				#print "setting Q widget"
-				self.qwidgets[0].setQtWidget(self.inspector)
-				self.qtc = QtCore.QCoreApplication
-				self.fd = QtGui.QFileDialog(self,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
-				QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
-				self.fd.show()
-				self.fd.hide()
-				self.qwidgets[1].setQtWidget(self.fd)
-				self.qwidgets[1].cam.setCamX(-100)
-			
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
-			for i in self.qwidgets:
-				glPushMatrix()
-				i.paintGL()
-				glPopMatrix()
-		
-		#print "exiting main paint"
+		#print "paintGL done"
 	def finished(self,val):
-		print "file dialog finished with code",val
-		for i in self.fd.selectedFiles():
-			print "I was told to open",i
+		#print "file dialog finished with code",val
+		if ( val == 1 ):
+			for i in self.fd.selectedFiles():
+				print "I was told to open",i
 			
 	def timer(self):
 		pass
 		#self.updateGL()
 	
 	def resizeGL(self, width, height):
-		
+		#print "resizeGL"
 		glViewport(0,0,self.width(),self.height())
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
@@ -973,113 +882,66 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.updateGL()
+		#self.updateGL()
+		#print "resizeGL done"
 	
-	def showInspector(self,force=0):
-		if not force and self.inspector==None and self.inspectorl==None and self.inspector3==None : return
-		if isinstance(self.data,list) or isinstance(self.data,tuple) :
-			if self.inspector : self.inspector.hide()
-			if self.inspector3 : self.inspector3.hide()
-			if not self.inspectorl : self.inspectorl=EMImageMxInspector2D(self)
-			self.inspectorl.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
-#			self.inspectorl.show()
-		elif self.data.get_zsize()==1 :
-			if self.inspectorl : self.inspectorl.hide()
-			if self.inspector3 : self.inspector3.hide()
-			if not self.inspector : self.inspector=EMImageInspector2D(self)
-			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
-			self.inspector.show()
-			self.inspector.hide()
-			#print "told gen texture"
-			self.qwidgets[0].genTexture = True
-			self.qwidgets[0].updateTexture()
-		else:
-			pass	# 3d not done yet
 	
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton:
-			self.showInspector(1)
-		elif event.button()==Qt.RightButton:
-			intercepted = False
+		if event.button()==Qt.RightButton:
 			for i in self.qwidgets:
 				if ( i.isinwin(event.x(),self.height()-event.y()) ):
 					i.mousePressEvent(event)
 					intercepted = True
 					return
-			if intercepted == False:
-				self.mousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
-#			self.mousedrag=(event.x(),event.y())
-			app=QtGui.QApplication.instance()
-			if self.inspector :
-				for i in self.qwidgets:
-					if ( i.isinwin(event.x(),self.height()-event.y()) ):
-						i.mousePressEvent(event)
-						self.updateGL()
-						return
-#				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
+			for i in self.qwidgets:
+				if ( i.isinwin(event.x(),self.height()-event.y()) ):
+					i.mousePressEvent(event)
+					self.updateGL()
+					return
 	
 	def mouseMoveEvent(self, event):
-		if self.mousedrag:
-			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
-			self.mousedrag=(event.x(),event.y())
-			self.update()
-			return
-		else :
-#			self.mousedrag=(event.x(),event.y())
-			if self.inspector :
-				for i in self.qwidgets:
-					if ( i.isinwin(event.x(),self.height()-event.y()) ):
-						self.current = i
-						if (self.current != self.previous ):
-							if ( self.previous != None ):
-								self.previous.leaveEvent()
-						i.mouseMoveEvent(event)
-						self.previous = i
-						self.updateGL()
-						return
-			
-#				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
-				#print qme.x(),qme.y(),l,gp.x(),gp.y()
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				self.current = i
+				if (self.current != self.previous ):
+					if ( self.previous != None ):
+						self.previous.leaveEvent()
+				i.mouseMoveEvent(event)
+				self.previous = i
+				self.updateGL()
+				return
 		
 	def mouseReleaseEvent(self, event):
-		if event.button()==Qt.RightButton:
-			self.mousedrag=None
-			return
-		elif event.button()==Qt.LeftButton:
-#			self.mousedrag=(event.x(),event.y())
-			if self.inspector :
-				for i in self.qwidgets:
-					if ( i.isinwin(event.x(),self.height()-event.y()) ):
-						i.mouseReleaseEvent(event)
-						self.updateGL()
-						return
-					
-		
-	def mouseDoubleClickEvent(self, event):
-		if self.inspector :
+		if event.button()==Qt.LeftButton:
 			for i in self.qwidgets:
 				if ( i.isinwin(event.x(),self.height()-event.y()) ):
 					i.mouseReleaseEvent(event)
 					self.updateGL()
 					return
+					
+		
+	def mouseDoubleClickEvent(self, event):
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				i.mouseReleaseEvent(event)
+				self.updateGL()
+				return
 		
 		
 	def wheelEvent(self, event):
-		if self.inspector :
-			for i in self.qwidgets:
-					if ( i.isinwin(event.x(),self.height()-event.y()) ):
-						i.wheelEvent(event)
-						self.updateGL()
-						return
+		for i in self.qwidgets:
+				if ( i.isinwin(event.x(),self.height()-event.y()) ):
+					i.wheelEvent(event)
+					self.updateGL()
+					return
 
 	def toolTipEvent(self, event):
-		if self.inspector :
-			for i in self.qwidgets:
-					if ( i.isinwin(event.x(),self.height()-event.y()) ):
-						i.toolTipEvent(event)
-						self.updateGL()
-						return
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				i.toolTipEvent(event)
+				self.updateGL()
+				return
 		
 		QtGui.QToolTip.hideText()
 		
@@ -1088,6 +950,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		print "received drag move event"
 		
 	def event(self,event):
+		#print "event"
 		#QtGui.QToolTip.hideText()
 		if event.type() == QtCore.QEvent.MouseButtonPress: 
 			self.mousePressEvent(event)
@@ -1111,7 +974,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			return QtOpenGL.QGLWidget.event(self,event)
 
 	def hoverEvent(self,event):
-		print "hoverEvent"
+		#print "hoverEvent"
 		if self.inspector :
 			for i in self.qwidgets:
 					if ( i.isinwin(event.x(),self.height()-event.y()) ):
@@ -1119,300 +982,22 @@ class EMFXImage(QtOpenGL.QGLWidget):
 						break
 		self.updateGL()
 
-class EMImageMxInspector2D(QtGui.QWidget):
-	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
-		self.target=target
-		
-		self.vboxlayout = QtGui.QVBoxLayout(self)
-		self.vboxlayout.setMargin(0)
-		self.vboxlayout.setSpacing(6)
-		self.vboxlayout.setObjectName("vboxlayout")
-		
-		self.hist = ImgHistogram(self)
-		self.hist.setObjectName("hist")
-		self.vboxlayout.addWidget(self.hist)
-		
-		self.hboxlayout = QtGui.QHBoxLayout()
-		self.hboxlayout.setMargin(0)
-		self.hboxlayout.setSpacing(6)
-		self.hboxlayout.setObjectName("hboxlayout")
-		self.vboxlayout.addLayout(self.hboxlayout)
-		
-		self.lbl = QtGui.QLabel("#/row:")
-		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-		self.hboxlayout.addWidget(self.lbl)
-		
-		self.nrow = QtGui.QSpinBox(self)
-		self.nrow.setObjectName("nrow")
-		self.nrow.setRange(1,50)
-		self.nrow.setValue(6)
-		self.hboxlayout.addWidget(self.nrow)
-		
-		self.lbl = QtGui.QLabel("N:")
-		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-		self.hboxlayout.addWidget(self.lbl)
-		
-		self.imgn = QtGui.QSpinBox(self)
-		self.imgn.setObjectName("imgn")
-		self.imgn.setRange(-1,50)
-		self.imgn.setValue(0)
-		self.imgn.setSpecialValueText("All")
-		self.hboxlayout.addWidget(self.imgn)
-		
-		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		self.vboxlayout.addWidget(self.scale)
-		
-		self.mins = ValSlider(self,label="Min:")
-		self.mins.setObjectName("mins")
-		self.vboxlayout.addWidget(self.mins)
-		
-		self.maxs = ValSlider(self,label="Max:")
-		self.maxs.setObjectName("maxs")
-		self.vboxlayout.addWidget(self.maxs)
-		
-		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
-		self.brts.setObjectName("brts")
-		self.vboxlayout.addWidget(self.brts)
-		
-		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
-		self.conts.setObjectName("conts")
-		self.vboxlayout.addWidget(self.conts)
-		
-		self.lowlim=0
-		self.highlim=1.0
-		self.busy=0
-		
-		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), target.setNPerRow)
-		QtCore.QObject.connect(self.imgn, QtCore.SIGNAL("valueChanged(int)"), target.setNShow)
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
-		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
-		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
-		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
-		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
-
-
-	def newMin(self,val):
-		if self.busy : return
-		self.busy=1
-		self.target.setDenMin(val)
-
-		self.updBC()
-		self.busy=0
-		
-	def newMax(self,val):
-		if self.busy : return
-		self.busy=1
-		self.target.setDenMax(val)
-		self.updBC()
-		self.busy=0
-	
-	def newBrt(self,val):
-		if self.busy : return
-		self.busy=1
-		self.updMM()
-		self.busy=0
-		
-	def newCont(self,val):
-		if self.busy : return
-		self.busy=1
-		self.updMM()
-		self.busy=0
-
-	def updBC(self):
-		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))
-		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
-		self.brts.setValue(-b)
-		self.conts.setValue(1.0-c)
-		
-	def updMM(self):
-		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value+self.brts.value))
-		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value-self.brts.value))
-		self.mins.setValue(x0)
-		self.maxs.setValue(x1)
-		self.target.setDenRange(x0,x1)
-		
-	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
-
-	def setLimits(self,lowlim,highlim,curmin,curmax):
-		self.lowlim=lowlim
-		self.highlim=highlim
-		self.mins.setRange(lowlim,highlim)
-		self.maxs.setRange(lowlim,highlim)
-		self.mins.setValue(curmin)
-		self.maxs.setValue(curmax)
-
-
-class EMImageInspector2D(QtGui.QWidget):
-	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
-		self.target=target
-		
-		self.vboxlayout = QtGui.QVBoxLayout(self)
-		self.vboxlayout.setMargin(0)
-		self.vboxlayout.setSpacing(6)
-		self.vboxlayout.setObjectName("vboxlayout")
-		
-		self.hist = ImgHistogram(self)
-		self.hist.setObjectName("hist")
-		self.vboxlayout.addWidget(self.hist)
-		
-		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		self.vboxlayout.addWidget(self.scale)
-		
-		self.mins = ValSlider(self,label="Min:")
-		self.mins.setObjectName("mins")
-		self.vboxlayout.addWidget(self.mins)
-		
-		self.combo = QtGui.QComboBox(self)
-		
-		for i in range(0,10):
-			self.combo.addItem(str(i))
-		self.vboxlayout.addWidget(self.combo)
-		
-		self.maxs = ValSlider(self,label="Max:")
-		self.maxs.setObjectName("maxs")
-		self.vboxlayout.addWidget(self.maxs)
-		
-		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
-		self.brts.setObjectName("brts")
-		self.vboxlayout.addWidget(self.brts)
-		
-		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
-		self.conts.setObjectName("conts")
-		self.vboxlayout.addWidget(self.conts)
-		
-		self.lowlim=0
-		self.highlim=1.0
-		self.busy=0
-		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
-		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
-		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
-		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
-		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
-		QtCore.QObject.connect(self.combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.setCombo)
-		
-	def setCombo(self,val):
-		pass
-		#print val
-		#print "yeealllow"
-	
-	def newMin(self,val):
-		if self.busy : return
-		self.busy=1
-		self.target.setDenMin(val)
-
-		self.updBC()
-		self.busy=0
-		
-	def newMax(self,val):
-		if self.busy : return
-		self.busy=1
-		self.target.setDenMax(val)
-		self.updBC()
-		self.busy=0
-	
-	def newBrt(self,val):
-		if self.busy : return
-		self.busy=1
-		self.updMM()
-		self.busy=0
-		
-	def newCont(self,val):
-		if self.busy : return
-		self.busy=1
-		self.updMM()
-		self.busy=0
-
-	def updBC(self):
-		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))
-		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
-		self.brts.setValue(-b)
-		self.conts.setValue(1.0-c)
-		
-	def updMM(self):
-		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value+self.brts.value))
-		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value-self.brts.value))
-		self.mins.setValue(x0)
-		self.maxs.setValue(x1)
-		self.target.setDenRange(x0,x1)
-		
-	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
-
-	def setLimits(self,lowlim,highlim,curmin,curmax):
-		self.lowlim=lowlim
-		self.highlim=highlim
-		self.mins.setRange(lowlim,highlim)
-		self.maxs.setRange(lowlim,highlim)
-		self.mins.setValue(curmin)
-		self.maxs.setValue(curmax)
-	
-	#def event(self,event):
-		##if event.spontaneous(): return False
-		#print "hi from here"
-		#print event.type()
-		#if event.type() in mouseEvents:
-			#cw=self.childAt(event.x,event.y)
-			#if cw == None:
-				#print "no child"
-				#return False
-			#gp=self.mapToGlobal(QtCore.QPoint(event.x,event.y))
-			#lp=cw.mapFromGlobal(gp)
-			#qme=QtGui.QMouseEvent(event.type(),lp,event.button,event.buttons,event.modifiers)
-			#print "returning event"
-			#return cw.event(qme)
-		#elif event.Type() == QtCore.QEvent.Wheel:
-			#cw=self.childAt(event.x,event.y)
-			#if cw == None:
-				#print "no child"
-				#return False
-			#gp=self.mapToGlobal(QtCore.QPoint(event.x,event.y))
-			#lp=cw.mapFromGlobal(gp)
-			#qme=QtGui.QWheelEvent(lp,event.delta,event.buttons,event.modifiers,event.orientation)
-			#return cw.event(qme)
-		
-	
-		##print event.t
-		#print event.Type()
-		#print mouseEvents
-		#print "no event"
-		#return False
-	
-	#def mouseMoveEvent(self,event):
-		#print str(event.__dict__)
-		#print "received event"
-		
-	#def mousePressEvent(self, event):
-		#print "RECIEVED EVENT"
-		
-# 	def mousePressEvent(self, event):
-# 		print str(event.__dict__)
-# 		QtGui.QWidget.mousePressEvent(self,event)
-		
-
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMFXImage()
-	if len(sys.argv)==1 : window.setData(test_image(size=(512,512)))
-	else :
-		a=EMData.read_images(sys.argv[1])
-		if len(a)==1 : window.setData(a[0])
-		else : window.setData(a)
+	#if len(sys.argv)==1 : window.setData(test_image(size=(512,512)))
+	#else :
+		#a=EMData.read_images(sys.argv[1])
+		#if len(a)==1 : window.setData(a[0])
+		#else : window.setData(a)
 	window2 = EMParentWin(window)
 	window2.show()
 	
-	ti=QtCore.QTimer()
-	ti.setInterval(50.)
-	QtCore.QObject.connect(ti, QtCore.SIGNAL("timeout()"), window.timer)
-	ti.start()
+	#ti=QtCore.QTimer()
+	##ti.setInterval(50.)
+	#QtCore.QObject.connect(ti, QtCore.SIGNAL("timeout()"), window.timer)
+	#ti.start()
 
 	
 #	w2=QtGui.QWidget()
