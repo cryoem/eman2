@@ -201,6 +201,8 @@ class EMQtWidgetDrawer:
 		self.qwidget = widget
 		
 		if ( widget != None ):
+			#self.qwidget.setVisible(True)
+			self.qwidget.setEnabled(True)
 			self.glbasicobjects.setWidth(self.qwidget.width())
 			self.glbasicobjects.setHeight(self.qwidget.height())
 			self.genTexture = True
@@ -619,7 +621,9 @@ class EMQtWidgetDrawer:
 			#cw.showPopup()
 		else:
 			qme=QtGui.mouseDoubleClickEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			self.qwidget.setVisible(True)
 			QtCore.QCoreApplication.sendEvent(cw,qme)
+			self.qwidget.setVisible(False)
 		self.genTexture = True
 		self.updateTexture()
 		
@@ -647,7 +651,7 @@ class EMQtWidgetDrawer:
 			cw=self.qwidget.childAt(l[0],l[1])
 			#print cw
 			if cw == None: return
-			print cw.objectName()
+			#print cw.objectName()
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
 			if (isinstance(cw,QtGui.QComboBox)):
@@ -665,13 +669,15 @@ class EMQtWidgetDrawer:
 			else:
 				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child):
-					print self.qwidget
-					print self.qwidget.currentIndex()
+					#print self.qwidget
+					#print self.qwidget.currentIndex()
 					#self.qwidget.commitData(self.qwidget.parent())
 					#print self.qwidget.currentText()
 					QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
 				else:
+					self.qwidget.setVisible(True)
 					QtCore.QCoreApplication.sendEvent(cw,qme)
+					self.qwidget.setVisible(False)
 				
 			self.genTexture = True
 			self.updateTexture()
@@ -749,21 +755,26 @@ class EMQtWidgetDrawer:
 			else:
 				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child):
-					print self.qwidget
-					print self.qwidget.currentIndex().row()
-					print self.widget_parent
-					print self.qwidget.rect().left(),self.qwidget.rect().right(),self.qwidget.rect().top(),self.qwidget.rect().bottom()
-					print lp.x(),lp.y()
+					#print self.qwidget
+					#print self.qwidget.currentIndex().row()
+					#print self.widget_parent
+					#print self.qwidget.rect().left(),self.qwidget.rect().right(),self.qwidget.rect().top(),self.qwidget.rect().bottom()
+					#print lp.x(),lp.y()
 					self.widget_parent.setCurrentIndex(self.qwidget.currentIndex().row())
 					#self.widget_parent.changeEvent(QtCore.QEvent())
 					#self.widget_parent.highlighted(self.qwidget.currentIndex().row())
 					#self.qwidget.commitData(self.qwidget.parent())
 					#print self.qwidget.currentText()
-					self.widget_parent.setVisible(True)
-					self.widget_parent.setEnabled(True)
-					QtCore.QCoreApplication.sendEvent(self.widget_parent,qme)
+					#self.widget_parent.setVisible(True)
+					#self.widget_parent.setEnabled(True)
+					#self.qwidget.setVisible(True)
+					#QtCore.QCoreApplication.sendEvent(self.widget_parent,qme)
+					#self.qwidget.setVisible(False)
+					self.widget_parent.emit(QtCore.SIGNAL("activated(QString)"),self.widget_parent.itemText(self.qwidget.currentIndex().row()))
 				else:
+					self.qwidget.setVisible(True)
 					QtCore.QCoreApplication.sendEvent(cw,qme)
+					self.qwidget.setVisible(False)
 			
 			self.genTexture = True
 			self.updateTexture()
@@ -951,12 +962,13 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		# define the texture used to render the image on the screen
 		if self.inspector:
 			if ( self.qwidgets[0].qwidget == None ):
-				print "setting Q widget"
+				#print "setting Q widget"
 				self.qwidgets[0].setQtWidget(self.inspector)
 				self.qtc = QtCore.QCoreApplication
 				self.fd = QtGui.QFileDialog(self,"Open File")
+				QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
 				self.fd.show()
-				#self.fd.hide()
+				self.fd.hide()
 				self.qwidgets[1].setQtWidget(self.fd)
 				self.qwidgets[1].cam.setCamX(-100)
 			
@@ -969,7 +981,11 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				glPopMatrix()
 		
 		#print "exiting main paint"
-		
+	def finished(self,val):
+		print "file dialog finished with code",val
+		for i in self.fd.selectedFiles():
+			print "I was told to open",i
+			
 	def timer(self):
 		pass
 		#self.updateGL()
@@ -1011,7 +1027,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 			self.inspector.show()
 			self.inspector.hide()
-			print "told gen texture"
+			#print "told gen texture"
 			self.qwidgets[0].genTexture = True
 			self.qwidgets[0].updateTexture()
 		else:
@@ -1320,8 +1336,9 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.setCombo)
 		
 	def setCombo(self,val):
-		print val
-		print "yeealllow"
+		pass
+		#print val
+		#print "yeealllow"
 	
 	def newMin(self,val):
 		if self.busy : return
