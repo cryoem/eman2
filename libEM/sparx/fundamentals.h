@@ -72,7 +72,7 @@ namespace EMAN
 		PADDED_LAG = 5,
 		PADDED_NORMALIZED_LAG = 6
 	};
-	EMData* self_correlation(EMData* f, fp_flag myflag);
+
 	// You probably don't need to use these next two directly.
 	enum fp_type {
 		CORRELATION,
@@ -103,7 +103,7 @@ namespace EMAN
 	 *  @return 1-, 2-, or 3-dimensional real fourier product image.
 	 */
 	EMData* fourierproduct(EMData* f, EMData* g, fp_flag myflag,
-			fp_type mytype, const bool phase_fac_mult=false);
+			fp_type mytype, bool center);
 	/** Correlation of two images.
 	 *
 	 * @par Purpose: Calculate the correlation of two 1-, 2-,
@@ -121,8 +121,8 @@ namespace EMAN
 	 *
 	 *  @return Real-space correlation image.
 	 */
-	inline EMData* correlation(EMData* f, EMData* g, fp_flag myflag) {
-		return fourierproduct(f, g, myflag, CORRELATION);
+	inline EMData* correlation(EMData* f, EMData* g, fp_flag myflag, bool center) {
+		return fourierproduct(f, g, myflag, CORRELATION, center);
 	}
 	/** Convolution of two images.
 	 *
@@ -141,8 +141,8 @@ namespace EMAN
 	 *
 	 *  @return Real-space convolution image.
 	 */
-	inline EMData* convolution(EMData* f, EMData* g, fp_flag myflag) {
-		return fourierproduct(f, g, myflag, CONVOLUTION);
+	inline EMData* convolution(EMData* f, EMData* g, fp_flag myflag, bool center) {
+		return fourierproduct(f, g, myflag, CONVOLUTION, center);
 	}
 	/** Real-space convolution of two images.
 	 *
@@ -182,12 +182,10 @@ namespace EMAN
 	 *
 	 *  @return Real-space autocorrelation image.
 	 */
-	inline EMData* autocorrelation(EMData* f, fp_flag myflag) {
-		return fourierproduct(f, NULL, myflag, AUTOCORRELATION);
+	inline EMData* autocorrelation(EMData* f, fp_flag myflag, bool center) {
+		return fourierproduct(f, NULL, myflag, AUTOCORRELATION, center);
 	}
-	/** Image self-c			// incommensurate sizes
-			throw ImageDimensionException("input images are incommensurate");
-orrelation.
+	/** Image self-correlation.
 	 *
 	 * @par Purpose: Calculate the self-correlation of a 1-, 2-,
 	 *               or 3-dimensional image.
@@ -202,8 +200,8 @@ orrelation.
 	 *
 	 *  @return Real-space self-correlation image.
 	 */
-	inline EMData* self_correlation(EMData* f, fp_flag myflag) {
-		return fourierproduct(f, NULL, myflag, SELF_CORRELATION);
+	inline EMData* self_correlation(EMData* f, fp_flag myflag, bool center) {
+		return fourierproduct(f, NULL, myflag, SELF_CORRELATION, center);
 	}
 	/** Image periodogram.
 	 *

@@ -162,7 +162,7 @@ Output: 1-2-3D real image with the result
         and with the origin at the image center int[n/2]+1.
 */  
 	EMData* 
-	fourierproduct(EMData* f, EMData* g, fp_flag flag, fp_type ptype, const bool phase_fac_mult) {
+	fourierproduct(EMData* f, EMData* g, fp_flag flag, fp_type ptype, bool center) {
 		int normfact;
 		//std::complex<float> phase_mult;
 		// Not only does the value of "flag" determine how we handle
@@ -228,8 +228,9 @@ Output: 1-2-3D real image with the result
 		fp->set_array_offsets(1,1,1);
 		gp->set_array_offsets(1,1,1);
 		
-		// If the phase factor multiplication flag is true, use this approach
-		if (phase_fac_mult) {
+		// If the center flag is true, put the center of the correlation in the middle
+		// If it is false, put it in (0,0), this approach saves time, but it is diffcult to manage the result
+		if (center) {
 			//  Multiply two functions (the real work of this routine)
 			int itmp = nx/2;
 			//float sx  = float(-twopi*float(itmp)/float(nxp));
@@ -371,7 +372,7 @@ Output: 1-2-3D real image with the result
 			}
 		}
 		else {
-			// If the phase factor multiplication flag is false, then just do basic multiplication
+			// If the center flag is false, then just do basic multiplication
 			switch (ptype)
 			{
 				case AUTOCORRELATION:
