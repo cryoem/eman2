@@ -195,10 +195,10 @@ class Camera2:
 		if event.button()==Qt.LeftButton:
 			if self.mmode==0:
 				# this is just a way of duplicating the last copy
-				tmp =t3d_stack.pop()
+				tmp =self.t3d_stack.pop()
 				t3d = Transform3D(tmp)
-				t3d_stack.append(tmp)
-				t3d_stack.append(t3d)
+				self.t3d_stack.append(tmp)
+				self.t3d_stack.append(t3d)
 		
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton:

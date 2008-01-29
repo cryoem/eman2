@@ -153,7 +153,7 @@ class EMBasicObjects:
 	
 
 class EMQtWidgetDrawer:
-	def __init__(self, parent=None, qwidget=None):
+	def __init__(self, parent=None, qwidget=None, widget_parent=None):
 		self.parent = parent
 		self.qwidget = qwidget
 		self.drawframe = True
@@ -162,7 +162,7 @@ class EMQtWidgetDrawer:
 		self.genTexture = True
 		self.click_debug = False
 		self.cam = Camera2(self)
-		self.cam.setCamTrans('default_z',-self.parent.get_depth_for_height(height_plane))
+		self.cam.setCamTrans('default_z',-1250)
 		self.cam.motionRotate(0,0)
 		self.borderwidth = 3.0
 		self.glbasicobjects = EMBasicObjects()
@@ -170,12 +170,17 @@ class EMQtWidgetDrawer:
 		self.P_inv = None
 		self.update_P_inv = True
 		self.childreceiver = None
+		self.widget_parent = widget_parent
 		
-		self.children = []
+		self.current = None
+		self.previous = None
+		
+		self.e2children = []
+		self.is_child = False
 	
 	def set_update_P_inv(self,val=True):
 		self.update_P_inv = val
-		for i in self.children:
+		for i in self.e2children:
 			i.set_update_P_inv(val)
 	
 	def width(self):
@@ -199,6 +204,24 @@ class EMQtWidgetDrawer:
 			self.glbasicobjects.setWidth(self.qwidget.width())
 			self.glbasicobjects.setHeight(self.qwidget.height())
 			self.genTexture = True
+			self.updateTexture()
+			
+	def updateTexture(self):
+		if ( self.itex == 0 or self.genTexture == True ) : 
+			if (self.itex != 0 ):
+				#passpyth
+				self.parent.deleteTexture(self.itex)
+			self.genTexture = False
+			#print "binding texture"
+			self.itex = self.parent.bindTexture(QtGui.QPixmap.grabWidget(self.qwidget))
+			if ( self.itex == 0 ): print 'NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
+			#print "I have", len(self.qwidget.children())
+			#for i in self.qwidget.children():
+				#if len(i.children()) > 0:
+					#for j in i.children():
+						#print j
+			#print self.itex
+			#print 'done'
 		
 	def print_angles(self):
 		self.print_angles_d(self.mc00,self.mc10)
@@ -217,22 +240,17 @@ class EMQtWidgetDrawer:
 		print "the angle between [%f,%f] and [%f,%f] is %f" %(p1[0],p1[1],p2[0],p2[1],180.0*theta/pi)
 		
 	def paintGL(self):
-		
+		#print "in paint", self.qwidget
 		if (self.qwidget == None ) : return
 		
+		
 		self.cam.position()
-		if ( self.itex == 0 or self.genTexture == True ) : 
-			self.parent.deleteTexture(self.itex)
-			self.genTexture = False
-			self.itex = self.parent.bindTexture(QtGui.QPixmap.grabWidget(self.qwidget))
-			#this is a hack for now
 		
 		self.wmodel=glGetDoublev(GL_MODELVIEW_MATRIX)
 		self.wproj=glGetDoublev(GL_PROJECTION_MATRIX)
 		self.wview=glGetIntegerv(GL_VIEWPORT)
 		
 		glPushMatrix()
-		print self.qwidget.width(),self.qwidget.height()
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D,self.itex)
 		glBegin(GL_QUADS)
@@ -313,11 +331,12 @@ class EMQtWidgetDrawer:
 			#glCallList(self.glbasicobjects.getFrameDL())
 			#glPopMatrix()
 			
-		for i in self.children:
-			print "children drawing"
+		for i in self.e2children:
 			glPushMatrix()
 			i.paintGL()
 			glPopMatrix()
+			
+		#print "leave paint"
 	
 	def sphereAt(self,at):
 		glTranslate(at[0],at[1],0)
@@ -341,7 +360,7 @@ class EMQtWidgetDrawer:
 		glCallList(self.glbasicobjects.getCylinderDL())
 
 	def isinwin(self,x,y):
-		for i in self.children:
+		for i in self.e2children:
 			if i.isinwin(x,y):
 				self.childreceiver = i
 				return True
@@ -537,27 +556,57 @@ class EMQtWidgetDrawer:
 
 		return (xcoord + self.qwidget.width()/2.0, 0.5*self.qwidget.height()-ycoord)
 	
+	def toolTipEvent(self,event):
+		if ( self.childreceiver != None ):
+			# this means this class already knows that the mouse event is in the child
+			# that is being displayed
+			self.childreceiver.toolTip(event)
+			self.childreceiver = None
+			return
+		l=self.mouseinwin(event.x(),self.parent.height()-event.y())
+		cw=self.qwidget.childAt(l[0],l[1])
+		if cw == None: 
+			QtGui.QToolTip.hideText()
+			self.genTexture = True
+			self.updateTexture()
+			return
+	
+		p1 = QtCore.QPoint(event.x(),event.y())
+		p2 = self.parent.mapToGlobal(p1)
+		QtGui.QToolTip.showText(p2,cw.toolTip())
+		#QtGui.QToolTip.showText(p1,cw.toolTip())
+	
 	def wheelEvent(self,event):
 		
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.wheelEvent(event)
 		else:
 			if ( self.childreceiver != None ):
+				# this means this class already knows that the mouse event is in the child
+				# that is being displayed
 				self.childreceiver.wheelEvent(event)
 				self.childreceiver = None
 				return
+			else:
+				# if we have any children (i.e. a drop down combo box) it should now disappear
+				if len(self.e2children) > 0:
+					self.e2children.pop()
+					return
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
 			qme=QtGui.QWheelEvent(lp,event.delta(),event.buttons(),event.modifiers(),event.orientation())
-			print  QtCore.QCoreApplication.sendEvent(cw,qme)
+			QtCore.QCoreApplication.sendEvent(cw,qme)
 			self.genTexture = True
+			self.updateTexture()
 	
 	def mouseDoubleClickEvent(self, event):
 		if ( self.childreceiver != None ):
-			self.childreceiver.mouseReleaseEvent(event)
+			# this means this class already knows that the mouse event is in the child
+			# that is being displayed
+			self.childreceiver.mouseDoubleClickEvent(event)
 			self.childreceiver = None
 			return
 		l=self.mouseinwin(event.x(),self.parent.height()-event.y())
@@ -570,20 +619,30 @@ class EMQtWidgetDrawer:
 			#cw.showPopup()
 		else:
 			qme=QtGui.mouseDoubleClickEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
-			print  QtCore.QCoreApplication.sendEvent(cw,qme)
+			QtCore.QCoreApplication.sendEvent(cw,qme)
 		self.genTexture = True
+		self.updateTexture()
 		
-	def get_depth_for_height(self,height_plane):
-		return self.parent.get_depth_for_height(height_plane)
+	#def get_depth_for_height(self,height_plane):
+		#return self.parent.get_depth_for_height(height_plane)
+	
 	def mousePressEvent(self, event):
 		if event.modifiers() == Qt.ShiftModifier:
 			#qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.cam.mousePressEvent(event)
 		else:
 			if ( self.childreceiver != None ):
+				# this means this class already knows that the mouse event is in the child
+				# that is being displayed
 				self.childreceiver.mousePressEvent(event)
 				self.childreceiver = None
 				return
+			else:
+				# if we have any children (i.e. a drop down combo box) it should now disappear
+				if len(self.e2children) > 0:
+					self.e2children.pop()
+					return
+				
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
 			#print cw
@@ -592,65 +651,93 @@ class EMQtWidgetDrawer:
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
 			if (isinstance(cw,QtGui.QComboBox)):
-				pass
-				#cw.showPopup()
-				#cw.hidePopup()
-				#widget = EMQtWidgetDrawer(self.parent);
-				#widget.setQtWidget(cw.view())
-				#widget.cam.loadIdentity()
-				#widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
-				#widget.cam.setCamTrans("y",((self.height()/2.0-cw.geometry().y())-cw.view().height()/2.0))
-				#widget.cam.setCamTrans("z",0.1)
-				#widget.drawframe = False
-				#self.children.append(widget)
-				#completer = cw.completer()
-				#if ( isinstance(completer,QtGui.QCompleter)):
-					#completer.setCompletionMode(QtGui.QCompleter.PopupCompletion)
-					#view = completer.popup()
-					#print view.height()
-					#print view.width()
-					#widget = EMQtWidgetDrawer(self.parent);
-					#widget.setQtWidget(cw.listBox())
-					#widget.cam.loadIdentity()
-					#widget.cam.setCamTrans("x",cw.geometry().x())
-					#widget.cam.setCamTrans("y",-cw.geometry().y())
-					#widget.cam.setCamTrans("z",0.1)
-					#widget.drawframe = False
-					#self.children.append(widget)
-					#print "that was a completer"
-				#else : print "that wasn't a completer"
-				#QtGui.QComboBox(cw).showPopup()
+				cw.showPopup()
+				cw.hidePopup()
+				widget = EMQtWidgetDrawer(self.parent,None,cw);
+				widget.setQtWidget(cw.view())
+				widget.cam.loadIdentity()
+				widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
+				widget.cam.setCamTrans("y",((self.height()/2.0-cw.geometry().y())-cw.view().height()/2.0))
+				widget.cam.setCamTrans("z",0.1)
+				widget.drawframe = False
+				self.e2children.append(widget)
+				self.e2children[0].is_child = True
 			else:
 				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
-				print  QtCore.QCoreApplication.sendEvent(cw,qme)
+				if (self.is_child):
+					print self.qwidget
+					print self.qwidget.currentIndex()
+					#self.qwidget.commitData(self.qwidget.parent())
+					#print self.qwidget.currentText()
+					QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
+				else:
+					QtCore.QCoreApplication.sendEvent(cw,qme)
 				
 			self.genTexture = True
+			self.updateTexture()
 		
 	def mouseMoveEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
 			if ( self.childreceiver != None ):
+				# this means this class already knows that the mouse event is in the child
+				# that is being displayed
 				self.childreceiver.mouseMoveEvent(event)
 				self.childreceiver = None
 				return
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
-			if cw == None: return
+			self.current = cw
+			if ( self.current != self.previous ):
+				QtGui.QToolTip.hideText()
+				if ( self.current != None ):
+					qme=QtCore.QEvent(QtCore.QEvent.Enter)
+					QtCore.QCoreApplication.sendEvent(self.current,qme)
+					
+				if ( self.previous != None ):
+					qme=QtCore.QEvent(QtCore.QEvent.Leave)
+					QtCore.QCoreApplication.sendEvent(self.previous,qme)
+			
+			self.previous = self.current
+			if cw == None:
+				QtGui.QToolTip.hideText()
+				if ( self.previous != None ):
+					qme=QtCore.QEvent(QtCore.QEvent.Leave)
+					QtCore.QCoreApplication.sendEvent(self.previous,qme)
+					self.genTexture = True
+					self.updateTexture()
+				return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
 			lp=cw.mapFromGlobal(gp)
 			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
-			print  QtCore.QCoreApplication.sendEvent(cw,qme)
+			QtCore.QCoreApplication.sendEvent(cw,qme)
+			# FIXME
+			# setting the genTexture flag true here causes the texture to be regenerated
+			# when the mouse moves over it, which is inefficient.
+			# The fix is to only set the genTexture flag when mouse movement without modifiers
+			# actually causes a change in the appearance of the widget (for instance, list boxes from comboboxes)
 			self.genTexture = True
+			self.updateTexture()
 
 	def mouseReleaseEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
 			if ( self.childreceiver != None ):
+				# this means this class already knows that the mouse event is in the child
+				# that is being displayed
+				#try:
 				self.childreceiver.mouseReleaseEvent(event)
 				self.childreceiver = None
+				self.e2children.pop()
 				return
+			else:
+				# if we have any children (i.e. a drop down combo box) it should now disappear
+				if len(self.e2children) > 0:
+					self.e2children.pop()
+					return
+			
 			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
@@ -661,9 +748,37 @@ class EMQtWidgetDrawer:
 				#cw.showPopup()
 			else:
 				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
-				print  QtCore.QCoreApplication.sendEvent(cw,qme)
+				if (self.is_child):
+					print self.qwidget
+					print self.qwidget.currentIndex().row()
+					print self.widget_parent
+					print self.qwidget.rect().left(),self.qwidget.rect().right(),self.qwidget.rect().top(),self.qwidget.rect().bottom()
+					print lp.x(),lp.y()
+					self.widget_parent.setCurrentIndex(self.qwidget.currentIndex().row())
+					#self.widget_parent.changeEvent(QtCore.QEvent())
+					#self.widget_parent.highlighted(self.qwidget.currentIndex().row())
+					#self.qwidget.commitData(self.qwidget.parent())
+					#print self.qwidget.currentText()
+					self.widget_parent.setVisible(True)
+					self.widget_parent.setEnabled(True)
+					QtCore.QCoreApplication.sendEvent(self.widget_parent,qme)
+				else:
+					QtCore.QCoreApplication.sendEvent(cw,qme)
+			
 			self.genTexture = True
+			self.updateTexture()
 		
+	def leaveEvent(self):
+		if (self.current != None) : 
+			qme = QtCore.QEvent(QtCore.QEvent.Leave)
+			QtCore.QCoreApplication.sendEvent(self.current,qme)
+			self.current = None
+			self.previouse = None
+			self.genTexture = True
+			self.updateTexture()
+			
+	def enterEvent():
+		pass
 	def timerEvent(self,event=None):
 		pass
 		#self.cam.motionRotate(.2,.2)
@@ -707,6 +822,9 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		self.inspector=None
 		self.inspectorl=None
 		self.inspector3=None
+		
+		self.current = None
+		self.previous = None
 	
 		self.qwidgets = []
 		self.qwidgets.append(EMQtWidgetDrawer(self))
@@ -822,151 +940,15 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		glEnable(GL_NORMALIZE)
 	
 	def paintGL(self):
+		#print "in main paint"
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		#glTranslated(0.0, 0.0, -10.0)
 		
-		if not self.data : return
+		self.makeCurrent()
+		
 		
 		# define the texture used to render the image on the screen
-		if not self.imtex :
-#			 glDeleteTextures([self.imtex])
-			self.imtex=glGenTextures(1)				# 'name' of the image display texture
-#			print "tex=",self.imtex
-			glBindTexture(GL_TEXTURE_2D,self.imtex)
-			glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE8,512,512,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,"\000"*(512*512))	# start with an empty texture
-			glBindTexture(GL_TEXTURE_2D,0)
-
-		# get a new Quadric object for drawing cylinders, spheres, etc
-		if not self.gq:
-			self.gq=gluNewQuadric()
-			gluQuadricDrawStyle(self.gq,GLU_FILL)
-			gluQuadricNormals(self.gq,GLU_SMOOTH)
-			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-			gluQuadricTexture(self.gq,GL_FALSE)
-
-		# define a square frame of rounded components bordering -1,-1 to 1,1
-		if not self.framedl :
-			self.framedl=glGenLists(1)
-			glNewList(self.framedl,GL_COMPILE)
-			glPushMatrix()
-			glRotate(90.,1.,0.,0.)
-			glTranslate(1.02,0.,-1.02)
-			gluCylinder(self.gq,.02,.02,2.04,12,2)
-			glTranslate(-2.04,0.,0.)
-			gluCylinder(self.gq,.02,.02,2.04,12,2)
-			glPopMatrix()
-			
-			glPushMatrix()
-			glRotate(90.,0.,1.,0.)
-			glTranslate(0.,1.02,-1.02)
-			gluCylinder(self.gq,.02,.02,2.04,12,2)
-			glTranslate(0.,-2.04,0.)
-			gluCylinder(self.gq,.02,.02,2.04,12,2)
-			glPopMatrix()
-			
-			glTranslate(1.02,1.02,0.)
-			gluSphere(self.gq,.02,6,6)
-			glTranslate(-2.04,0.,0.)
-			gluSphere(self.gq,.02,6,6)
-			glTranslate(0.,-2.04,0.)
-			gluSphere(self.gq,.02,6,6)
-			glTranslate(2.04,0.,0.)
-			gluSphere(self.gq,.02,6,6)
-			glEndList()
-
-		if isinstance(self.data,list) :
-			if self.nshow==-1 :
-				glPixelZoom(1.0,-1.0)
-				n=len(self.data)
-				x,y=-self.origin[0],self.height()-self.origin[1]-1
-				for i in range(n):
-					w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
-					h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
-#					print i,x,y,w,h
-					if x>0 and x<self.width() and y>0 and y<self.height() :
-						a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,1.0,2)
-						glRasterPos(x,y)
-						glDrawPixels(w,h,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
-					elif x+w>0 and y-h<self.height() and x<self.width() and y>0:
-						if x<0 : 
-							x0=-x/self.scale
-							x1=w+x
-						else : 
-							x0=0
-							x1=w
-						if y>self.height()-1 : y1=h-y+self.height()-1
-						else : y1=h
-						x0,x1,y1=int(x0),int(x1),int(y1)
-						a=self.data[i].render_amp8(x0,0,x1,y1,(x1-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,1.0,2)
-#						a=self.data[i].render_amp8(int(-x),int(y-self.height()),min(w,int(x+w)),int(h-y+self.height()),min(w-1,int(x+w-1))/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
-						if x<0 : xx=0
-						else : xx=x
-						if y>=self.height() : yy=self.height()-1
-						else : yy=y
-						glRasterPos(xx,yy)
-						glDrawPixels(x1,y1,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
-						
-					
-					if (i+1)%self.nperrow==0 : 
-						y-=h+2.0
-						x=-self.origin[0]
-					else: x+=w+2.0
-			else:
-				a=self.data[self.nshow].render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,1.0,2)
-				glRasterPos(0,self.height()-1)
-				glPixelZoom(1.0,-1.0)
-				glDrawPixels(self.width(),self.height(),GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
-				hist=array.array("I")
-				hist.fromstring(a[-1024:])
-				if self.inspectorl : self.inspectorl.setHist(hist,self.minden,self.maxden)
-		else :
-			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),512,512,512,self.scale,0,255,self.minden,self.maxden,1.0,2)
-			hist=array.array("I")
-			hist.fromstring(a[-1024:])
-			if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
-
-			glEnable(GL_TEXTURE_2D)
-			glBindTexture(GL_TEXTURE_2D,self.imtex)
-#			glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE8,512,512,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)	# start with an empty texture
-			glTexSubImage2D(GL_TEXTURE_2D,0,0,0,512,512,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
-			
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
-
-			# This is the textured square showing the actual image
-			glPushMatrix()
-			glRotate(self.spinang,1.,.2,0.)
-			glBegin(GL_QUADS)
-			glTexCoord2f(0.,.999)
-			glVertex(-1.,-1.)
-			glTexCoord2f(.999,.999)
-			glVertex( 1.,-1.)
-			glTexCoord2f(.999,0.)
-			glVertex( 1., 1.)
-			glTexCoord2f(0.,0.)
-			glVertex(-1., 1.)
-			glEnd()
-
-			glBindTexture(GL_TEXTURE_2D,0)
-			
-			glDisable(GL_TEXTURE_2D)
-
-			glColor(.2,.2,.8)
-			glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
-			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-			glMaterial(GL_FRONT,GL_SHININESS,50.0)
-			
-			#glPushMatrix()
-			#glCallList(self.framedl)
-			#glPopMatrix()
-			
-			glPopMatrix()
-			
 		if self.inspector:
 			if ( self.qwidgets[0].qwidget == None ):
 				print "setting Q widget"
@@ -974,17 +956,20 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				self.qtc = QtCore.QCoreApplication
 				self.fd = QtGui.QFileDialog(self,"Open File")
 				self.fd.show()
+				#self.fd.hide()
 				self.qwidgets[1].setQtWidget(self.fd)
 				self.qwidgets[1].cam.setCamX(-100)
 			
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
 			for i in self.qwidgets:
 				glPushMatrix()
 				i.paintGL()
 				glPopMatrix()
-				
+		
+		#print "exiting main paint"
+		
 	def timer(self):
 		pass
 		#self.updateGL()
@@ -1003,7 +988,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		self.aspect = float(self.width())/float(self.height())
 		# this is the same as the glFrustum call above
 		depth = self.get_depth_for_height(height_plane)
-		print depth
 		gluPerspective(self.fov,self.aspect,depth-depth/4,depth+depth/4)
 		for i in self.qwidgets:
 			i.set_update_P_inv()
@@ -1026,8 +1010,10 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			if not self.inspector : self.inspector=EMImageInspector2D(self)
 			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 			self.inspector.show()
+			self.inspector.hide()
 			print "told gen texture"
 			self.qwidgets[0].genTexture = True
+			self.qwidgets[0].updateTexture()
 		else:
 			pass	# 3d not done yet
 	
@@ -1065,7 +1051,12 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			if self.inspector :
 				for i in self.qwidgets:
 					if ( i.isinwin(event.x(),self.height()-event.y()) ):
+						self.current = i
+						if (self.current != self.previous ):
+							if ( self.previous != None ):
+								self.previous.leaveEvent()
 						i.mouseMoveEvent(event)
+						self.previous = i
 						self.updateGL()
 						return
 			
@@ -1102,20 +1093,43 @@ class EMFXImage(QtOpenGL.QGLWidget):
 						i.wheelEvent(event)
 						self.updateGL()
 						return
+
+	def toolTipEvent(self, event):
+		if self.inspector :
+			for i in self.qwidgets:
+					if ( i.isinwin(event.x(),self.height()-event.y()) ):
+						i.toolTipEvent(event)
+						self.updateGL()
+						return
+		
+		QtGui.QToolTip.hideText()
 		
 
 	def dragMoveEvent(self,event):
 		print "received drag move event"
 		
 	def event(self,event):
-		if event.type() == QtCore.QEvent.MouseButtonPress: return self.mousePressEvent(event)
-		elif event.type() == QtCore.QEvent.MouseButtonRelease: return self.mouseReleaseEvent(event)
-		elif event.type() == QtCore.QEvent.MouseMove: return self.mouseMoveEvent(event)
-		elif event.type() == QtCore.QEvent.MouseButtonDblClick: return self.mouseDoubleClickEvent(event)
-		elif event.type() == QtCore.QEvent.Wheel: return self.wheelEvent(event)
-		else: return QtOpenGL.QGLWidget.event(self,event)
-		
-		return False
+		#QtGui.QToolTip.hideText()
+		if event.type() == QtCore.QEvent.MouseButtonPress: 
+			self.mousePressEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.MouseButtonRelease:
+			self.mouseReleaseEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.MouseMove: 
+			self.mouseMoveEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.MouseButtonDblClick: 
+			self.mouseDoubleClickEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.Wheel: 
+			self.wheelEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.ToolTip: 
+			self.toolTipEvent(event)
+			return True
+		else: 
+			return QtOpenGL.QGLWidget.event(self,event)
 
 	def hoverEvent(self,event):
 		print "hoverEvent"
@@ -1125,73 +1139,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 						i.hoverEvent(event)
 						break
 		self.updateGL()
-
-class EMFxTexture:
-	def __init__(self,parent):
-		self.parent = parent
-
-class ImgHistogram(QtGui.QWidget):
-	def __init__(self,parent):
-		QtGui.QWidget.__init__(self,parent)
-		self.brush=QtGui.QBrush(Qt.black)
-		
-		self.font=QtGui.QFont("Helvetica", 10);
-		self.probe=None
-		self.histdata=None
-		self.setMinimumSize(QtCore.QSize(258,128))
-	
-	def setData(self,data,minden,maxden):
-		self.histdata=data
-#		self.norm=max(self.histdata)
-		self.norm=0
-		self.minden=minden
-		self.maxden=maxden
-		for i in self.histdata: self.norm+=i*i
-		self.norm-=max(self.histdata)**2
-		self.norm=sqrt(self.norm/255)*3.0
-		self.total=sum(self.histdata)
-		if self.norm==0 : self.norm=1.0
-		if self.total==0 : self.histdata=None
-		self.update()
-	
-	def paintEvent (self, event):
-		if not self.histdata : return
-		p=QtGui.QPainter()
-		p.begin(self)
-		p.setPen(Qt.darkGray)
-		for i,j in enumerate(self.histdata):
-			p.drawLine(i,127,i,127-j*126/self.norm)
-		
-		# If the user has dragged, we need to show a value
-		if self.probe :
-			p.setPen(Qt.blue)
-			p.drawLine(self.probe[0]+1,0,self.probe[0]+1,127-self.probe[1]*126/self.norm)
-			p.setPen(Qt.darkRed)
-			p.drawLine(self.probe[0]+1,127,self.probe[0]+1,127-self.probe[1]*126/self.norm)
-			p.setFont(self.font)
-			p.drawText(200,20,"x=%d"%(self.probe[0]))
-			p.drawText(200,34,"%1.2f"%(self.probe[0]/255.0*(self.maxden-self.minden)+self.minden))
-			p.drawText(200,48,"y=%d"%(self.probe[1]))
-			p.drawText(200,62,"%1.2f%%"%(100.0*float(self.probe[1])/self.total))
-		
-		p.setPen(Qt.black)
-		p.drawRect(0,0,257,128)
-		p.end()
-
-	def mousePressEvent(self, event):
-		if event.button()==Qt.LeftButton:
-			x=max(min(event.x()-1,255),0)
-			self.probe=(x,self.histdata[x])
-			self.update()
-			
-	def mouseMoveEvent(self, event):
-		if event.buttons()&Qt.LeftButton:
-			x=max(min(event.x()-1,255),0)
-			self.probe=(x,self.histdata[x])
-			self.update()
-	
-	def mouseReleaseEvent(self, event):
-		self.probe=None
 
 class EMImageMxInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
@@ -1343,6 +1290,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mins.setObjectName("mins")
 		self.vboxlayout.addWidget(self.mins)
 		
+		self.combo = QtGui.QComboBox(self)
+		
+		for i in range(0,10):
+			self.combo.addItem(str(i))
+		self.vboxlayout.addWidget(self.combo)
+		
 		self.maxs = ValSlider(self,label="Max:")
 		self.maxs.setObjectName("maxs")
 		self.vboxlayout.addWidget(self.maxs)
@@ -1364,7 +1317,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
-
+		QtCore.QObject.connect(self.combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.setCombo)
+		
+	def setCombo(self,val):
+		print val
+		print "yeealllow"
+	
 	def newMin(self,val):
 		if self.busy : return
 		self.busy=1
