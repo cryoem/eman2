@@ -58,7 +58,7 @@ are stored as a parameter of each image."""
 	parser.add_option("--nbasis","-n",type="int",help="Number of basis images to generate.",default=20)
 	parser.add_option("--maskfile","-M",type="string",help="File containing a mask defining the pixels to include in the Eigenimages")
 	parser.add_option("--varimax",action="store_true",help="Perform a 'rotation' of the basis set to produce a varimax basis",default=False)
-	parser.add_option("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
+#	parser.add_option("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
 	parser.add_option("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
 	parser.add_option("--verbose","-v",action="store_true",help="Verbose output",default=False)
 
@@ -81,8 +81,9 @@ are stored as a parameter of each image."""
 	
 	if options.verbose : print "Beginning MSA"
 	if options.gsl : mode="svd_gsl"
-	elif options.lowmem : mode="pca_large"
-	else : mode="pca"
+	else : mode="pca_large"
+	#elif options.lowmem : mode="pca_large"
+	#else : mode="pca"
 	
 	out=msa(args[0],mask,options.nbasis,options.varimax,mode)
 	

@@ -257,8 +257,8 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	int hist=(flags&2)/2;
 	int invy=(flags&4)?1:0;
 
-	if (get_ndim() != 2) {
-		throw ImageDimensionException("2D only");
+	if (get_ndim() > 2) {
+		throw ImageDimensionException("1D/2D only");
 	}
 
 	if (is_complex()) {

@@ -49,11 +49,14 @@ varimax <basis input> <basis output>
 	Performs a varimax rotation on an input basis set
 	
 project <basis input> <image input> <projection output>
-	Projects a set of images into the input basis subspace"""
+	Projects a set of images into the input basis subspace. The default
+	is to normalize the individual basis vectors, but not the final resulting
+	projection. The projections are stored as a 1-D image stack."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--normproj",action="store_true",help="Normalize the projections resulting from 'project', such that the length of each vector is 1",default=False)
+	parser.add_option("--nbasis","-n",type="int",help="Will use the first n basis images from the input",default=-1)
 	
 	#parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
@@ -64,12 +67,38 @@ project <basis input> <image input> <projection output>
 
 	logid=E2init(sys.argv)
 	
-	basis=EMData.read_images(args[0])
+	# second parameter is always the input basis set
+	if options.nbasis>1 : basis=EMData.read_images(args[1],0,options.nbasis)
+	else :basis=EMData.read_images(args[1])
 	
 	# Project an image stack into a basis subspace
 	if args[0]=="project" :
+		# normalize the basis vectors to unit length
+		for b in basis: b.process_inplace("normalize.unitlen")
 		
+		# outer loop over images to be projected
+		n=EMUtil.get_image_count(args[2])
+		for i in range(n):
+			im=EMData(args[2],i)
+			proj=EMData(len(basis),1,1)
+		
+			# inner loop over the basis images
+			for j,b in enumerate(basis):
+				proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+				
+			proj.write_image(args[3],i)
+				
 	elif args[0]=="varimax" :
+		mask=basis[0].copy()
+		mask.to_one()
+		pca=Analyzers.get("varimax",{"mask":mask})
 		
+		for im in basis:
+			pca.insert_image(im)
 		
+		results=pca.analyze()
+		for im in results: im.write_image(args[2],-1)
+		
+if __name__== "__main__":
+	main()
 	
