@@ -379,7 +379,9 @@ Output: 1-2-3D real image with the result
 					for (int iz = 1; iz <= nzp; iz++) {
 						for (int iy = 1; iy <= nyp; iy++) {
 							for (int ix = 1; ix <= lsd2; ix++) {
-								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*fp->cmplx(ix,iy,iz);
+								float fpr = real(fp->cmplx(ix,iy,iz));
+								float fpi = imag(fp->cmplx(ix,iy,iz));
+								fp->cmplx(ix,iy,iz) = (fpr*fpr + fpi*fpi);
 							}
 						}
 					}
@@ -388,7 +390,7 @@ Output: 1-2-3D real image with the result
 					for (int iz = 1; iz <= nzp; iz++) {
 						for (int iy = 1; iy <= nyp; iy++) {
 							for (int ix = 1; ix <= lsd2; ix++) {
-								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*conj(fp->cmplx(ix,iy,iz));
+								fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz));
 							}
 						}
 					}
@@ -399,8 +401,6 @@ Output: 1-2-3D real image with the result
 						for (int iy = 1; iy <= nyp; iy++) {
 							for (int ix = 1; ix <= lsd2; ix++) {
 								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*conj(gp->cmplx(ix,iy,iz));
-								//fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*conj(gp->cmplx(ix,iy,iz))*phase_mult;
-								//phase_mult = -phase_mult;
 							}
 						}
 					}
