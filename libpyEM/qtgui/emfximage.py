@@ -153,7 +153,7 @@ class EMBasicObjects:
 	
 
 class EMQtWidgetDrawer:
-	def __init__(self, parent=None, qwidget=None, widget_parent=None):
+	def __init__(self, parent=None, qwidget=None, widget_parent=None,emqtwidget_parent=None):
 		self.parent = parent
 		self.qwidget = qwidget
 		self.drawframe = True
@@ -171,7 +171,7 @@ class EMQtWidgetDrawer:
 		self.update_P_inv = True
 		self.childreceiver = None
 		self.widget_parent = widget_parent
-		
+		self.emqtwidget_parent = emqtwidget_parent
 		self.current = None
 		self.previous = None
 		
@@ -189,9 +189,9 @@ class EMQtWidgetDrawer:
 	def height(self):
 		return self.qwidget.height()
 	
-	def parentHeight(self):
+	def veiwportHeight(self):
 		return self.parent.height()
-	def parentWidth(self):
+	def viewportWidth(self):
 		return self.parent.width()
 	
 	def setQtWidget(self, widget, delete_current = False):
@@ -619,7 +619,7 @@ class EMQtWidgetDrawer:
 			if (isinstance(cw,QtGui.QComboBox)):
 				cw.showPopup()
 				cw.hidePopup()
-				widget = EMQtWidgetDrawer(self.parent,None,cw);
+				widget = EMQtWidgetDrawer(self.parent,None,cw,self);
 				widget.setQtWidget(cw.view())
 				widget.cam.loadIdentity()
 				widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
@@ -631,8 +631,14 @@ class EMQtWidgetDrawer:
 			else:
 				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child):
+<<<<<<< emfximage.py
+					print self.qwidget
+					print self.qwidget.currentIndex()
+					print self.qwidget.isEnabled()
+=======
 					#print self.qwidget
 					#print self.qwidget.currentIndex()
+>>>>>>> 1.35
 					#self.qwidget.commitData(self.qwidget.parent())
 					#print self.qwidget.currentText()
 					QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
@@ -725,6 +731,16 @@ class EMQtWidgetDrawer:
 					self.widget_parent.setCurrentIndex(self.qwidget.currentIndex().row())
 					#self.widget_parent.changeEvent(QtCore.QEvent())
 					#self.widget_parent.highlighted(self.qwidget.currentIndex().row())
+<<<<<<< emfximage.py
+					self.widget_parent.setVisible(True)
+					print self.widget_parent.isEnabled()
+					self.widget_parent.setEnabled(True)
+					QtCore.QCoreApplication.sendEvent(self.widget_parent,qme)
+					self.widget_parent.update()
+					self.widget_parent.parent().update()
+					self.emqtwidget_parent.genTexture = True
+					self.emqtwidget_parent.updateTexture()
+=======
 					#self.qwidget.commitData(self.qwidget.parent())
 					#print self.qwidget.currentText()
 					#self.widget_parent.setVisible(True)
@@ -733,6 +749,7 @@ class EMQtWidgetDrawer:
 					#QtCore.QCoreApplication.sendEvent(self.widget_parent,qme)
 					#self.qwidget.setVisible(False)
 					self.widget_parent.emit(QtCore.SIGNAL("activated(QString)"),self.widget_parent.itemText(self.qwidget.currentIndex().row()))
+>>>>>>> 1.35
 				else:
 					self.qwidget.setVisible(True)
 					QtCore.QCoreApplication.sendEvent(cw,qme)
@@ -919,7 +936,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 		
 		self.makeCurrent()
-		
 		
 		# define the texture used to render the image on the screen
 		if self.inspector:

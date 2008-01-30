@@ -53,7 +53,7 @@ class Camera2:
 	Then call 'position' in your main OpenGL draw function before drawing anything.
 	
 	"""
-	def __init__(self,parent=None):
+	def __init__(self,parent):
 		# The magnification factor influences how the scale (zoom) is altered when a zoom event is received.
 		# The equation is scale *= mag_factor or scale /= mag_factor, depending on the event.
 		self.parent=parent
@@ -64,6 +64,8 @@ class Camera2:
 		
 		self.mmode = 0
 		self.debug = False
+		
+		self.enablerotation = True
 		
 	def loadIdentity(self):
 		self.scale = 1.0
@@ -93,9 +95,10 @@ class Camera2:
 		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
 		if (self.debug):
 			print "Camera rotation ",float(rot["phi"]),float(rot["alt"]),float(rot["az"])
-		glRotate(float(rot["phi"]),0,0,1)
-		glRotate(float(rot["alt"]),1,0,0)
-		glRotate(float(rot["az"]),0,0,1)
+		if ( self.enablerotation ):
+			glRotate(float(rot["phi"]),0,0,1)
+			glRotate(float(rot["alt"]),1,0,0)
+			glRotate(float(rot["az"]),0,0,1)
 		
 		if (self.debug):
 			print "Camera scale ",self.scale
@@ -194,6 +197,7 @@ class Camera2:
 		self.mpressy = event.y()
 		if event.button()==Qt.LeftButton:
 			if self.mmode==0:
+				if self.enablerotation == False: return
 				# this is just a way of duplicating the last copy
 				tmp =self.t3d_stack.pop()
 				t3d = Transform3D(tmp)
@@ -206,6 +210,7 @@ class Camera2:
 				if event.modifiers() == Qt.ControlModifier:
 					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
 				else:
+					if self.enablerotation == False: return
 					self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y())
 				self.mpressx = event.x()
 				self.mpressy = event.y()
@@ -232,7 +237,7 @@ class Camera2:
 	
 	def motionTranslateLA(self,prev_x,prev_y,event):
 		#print "motion translate"
-		[dx,dy] = self.parent.eyeCoordsDif(prev_x,self.parent.parentHeight()-prev_y,event.x(),self.parent.parentHeight()-event.y())
+		[dx,dy] = self.parent.eyeCoordsDif(prev_x,self.parent.viewportHeight()-prev_y,event.x(),self.parent.viewportHeight()-event.y())
 		#[wx2,wy2,wz2] = self.parent.eyeCoords(event.x(),self.parent.parentHeight()-event.y())
 		#[wx2,wy2,wz2] =  self.parent.mouseViewportMovement(event.x(),self.parent.parentHeight()-event.y(),wx1,wy1,wz1,zprime)
 		#self.parent.mouseViewportMovement(1,2,3,4)

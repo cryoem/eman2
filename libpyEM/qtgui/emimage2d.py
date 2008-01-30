@@ -360,7 +360,6 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			event.setDropAction(Qt.CopyAction)
 			event.accept()
 
-	
 	def dropEvent(self,event):
 #		lc=self.scr2img((event.pos().x(),event.pos().y()))
 		if EMAN2.GUIbeingdragged:

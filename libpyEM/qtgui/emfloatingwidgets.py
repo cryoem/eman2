@@ -50,6 +50,7 @@ from math import sqrt
 from emimage import EMImage
 
 from emimage3dobject import Camera2
+from emimage2dtex import *
 
 import numpy
 import sys
@@ -105,54 +106,268 @@ class EMBasicObjects:
 			
 		return self.cylinderdl
 	
-	def getFrameDL(self):
-		# draws a frame using Quadrics
-		if ( self.framedl == 0 ):
-			self.framedl=glGenLists(1)
-			
-			glNewList(self.framedl,GL_COMPILE)
-			glPushMatrix()
-			
-			glRotate(90.,1.,0.,0.)
-			glTranslate(1.0,0.,-1.0)
-			gluCylinder(self.gq,.02,.02,2.04,12,2)
-			glTranslate(-2.04,0.,0.)
-			gluCylinder(self.gq,.02,.02,2.04,12,2)
-			
-			glPopMatrix()
-			
-			glPushMatrix()
-				
-			glRotate(90.,0.,1.,0.)
-			glTranslate(0.,1.02,-1.02)
-			gluCylinder(self.gq,.02,.02,2.04,12,2)
-			glTranslate(0.,-2.04,0.)
-			gluCylinder(self.gq,.02,.02,2.04,12,2)
-			
-			glPopMatrix()
-			
-			glPushMatrix()
-			
-			glTranslate(1.02,1.02,0.)
-			gluSphere(self.gq,.02,6,6)
-			glTranslate(-2.04,0.,0.)
-			gluSphere(self.gq,.02,6,6)
-			glTranslate(0.,-2.04,0.)
-			gluSphere(self.gq,.02,6,6)
-			glTranslate(2.04,0.,0.)
-			gluSphere(self.gq,.02,6,6)
-			
-			glPopMatrix()
-			
-			glEndList()
-			
-		return self.framedl
-		
 	def setWidth(self,width):
 		self.width = width
 	def setHeight(self,height):
 		self.height = height
+
+class ViewportCornerCoords:
+	def __init__(self, parent):
+		self.parent = parent
+		
+		self.update_P_inv = True
+		
+		self.glbasicobjects = EMBasicObjects()
+		self.borderwidth = 3.0
+
+	def set_update_P_inv(self,val=True):
+		self.update_P_inv = val
 	
+	def drawFrame(self):
+	
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		glOrtho(0.0,self.parent.viewportWidth(),0.0,self.parent.viewportHeight(),-5,5)
+
+		glMatrixMode(GL_MODELVIEW)
+		glPushMatrix()
+		glLoadIdentity()
+		
+		glColor(.9,.2,.8)
+		glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,50.0)
+		#print "drawing frame"
+		glPushMatrix()
+		self.cylinderToFrom(self.mc00,self.mc10)
+		glPopMatrix()
+		glPushMatrix()
+		self.cylinderToFrom(self.mc10,self.mc11)
+		glPopMatrix()
+		glPushMatrix()
+		self.cylinderToFrom(self.mc11,self.mc01)
+		glPopMatrix()
+		glPushMatrix()
+		self.cylinderToFrom(self.mc01,self.mc00)
+		glPopMatrix()
+		
+		#print "done drawing frame"
+		#glBegin(GL_LINES)
+		#glVertex(self.mc00[0],self.mc00[1])
+		#glVertex(self.mc11[0],self.mc11[1])
+		#glVertex(self.mc01[0],self.mc01[1])
+		#glVertex(self.mc10[0],self.mc10[1])
+		#glEnd()
+		glPushMatrix()
+		self.sphereAt(self.mc00)
+		glPopMatrix()
+		glPushMatrix()
+		self.sphereAt(self.mc10)
+		glPopMatrix()
+		glPushMatrix()
+		self.sphereAt(self.mc11)
+		glPopMatrix()
+		glPushMatrix()
+		self.sphereAt(self.mc01)
+		glPopMatrix()
+		
+		glPopMatrix()
+		
+		glMatrixMode(GL_PROJECTION)
+		# pop the temporary orthographic matrix from the GL_PROJECTION stack
+		glPopMatrix()
+		glMatrixMode(GL_MODELVIEW)
+			
+	def cylinderToFrom(self,To,From):
+		dx = To[0] - From[0]
+		dy = To[1] - From[1]
+		
+		length = sqrt(dx*dx+dy*dy)
+		
+		angle = 180.0*atan2(dy,dx)/pi
+		
+		glTranslated(From[0],From[1],0)
+		glRotated(90.0+angle,0.,0.,1.0)
+		glRotated(90.,1.,0.,0.)
+		glTranslated(0.0,0.0,length/2.0)
+		glScaled(self.borderwidth,self.borderwidth,length)
+		glTranslated(0.0,0.0,-0.5)
+		glCallList(self.glbasicobjects.getCylinderDL())
+		
+	def sphereAt(self,at):
+		glTranslate(at[0],at[1],0)
+		glScalef(3.0*self.borderwidth,3.0*self.borderwidth,3.0*self.borderwidth)
+		glCallList(self.glbasicobjects.getSphereDL())
+	
+	def mapMyCorners(self):
+		
+		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
+		if self.update_P_inv == True:
+			self.wproj= glGetDoublev(GL_PROJECTION_MATRIX)
+		self.wview= glGetIntegerv(GL_VIEWPORT)
+	
+		width = self.parent.width()/2.0
+		height = self.parent.height()/2.0
+	
+		try:
+			self.mc00=gluProject(-width,-height,0.,self.wmodel,self.wproj,self.wview)
+			self.mc10=gluProject( width,-height,0.,self.wmodel,self.wproj,self.wview)
+			self.mc11=gluProject( width, height,0.,self.wmodel,self.wproj,self.wview)
+			self.mc01=gluProject(-width, height,0.,self.wmodel,self.wproj,self.wview)
+		except:
+			self.mc00 = [0,0,0]
+			self.mc10 = [0,0,0]
+			self.mc11 = [0,0,0]
+			self.mc01 = [0,0,0]
+	
+	def isinwin(self,x,y):
+		
+		try:
+			a = [self.mc00[0]-x, self.mc00[1]-y]
+			b = [self.mc01[0]-x, self.mc01[1]-y]
+			c = [self.mc11[0]-x, self.mc11[1]-y]
+			d = [self.mc10[0]-x, self.mc10[1]-y]
+			
+			aeb = self.getsubtendingangle(a,b)
+			bec = self.getsubtendingangle(b,c)
+			ced = self.getsubtendingangle(c,d)
+			dea = self.getsubtendingangle(d,a)
+			if abs(aeb + bec + ced + dea) > 0.1:
+				return True 
+			else:
+				return False
+		except:
+			return False
+	
+	def getsubtendingangle(self,a,b):
+		sinaeb = a[0]*b[1]-a[1]*b[0]
+		cosaeb = a[0]*b[0]+a[1]*b[1]
+		
+		return atan2(sinaeb,cosaeb)
+
+class EMGLDrawer2D:
+	def __init__(self, parent=None,image=None):
+		self.parent = parent
+		self.cam = Camera2(self)
+		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
+		
+		self.image2dtex = EMImage2DTex(image,self)
+		
+		self.viewportcoords = ViewportCornerCoords(self)
+		
+		self.depthtracker = DepthTracker(self)
+
+	def eyeCoordsDif(self,x1,y1,x2,y2):
+		return self.depthtracker.eyeCoordsDif(x1,y1,x2,y2)
+	
+	def set_update_P_inv(self,val=True):
+		self.depthtracker.set_update_P_inv(val)
+		self.viewportcoords.set_update_P_inv(val)
+	
+	def width(self):
+		try:
+			return self.image2dtex.width()
+		except:
+			return 0
+	
+	def height(self):
+		try:
+			return self.image2dtex.height()
+		except:
+			return 0
+	
+	def setData(self,data):
+		self.image2dtex.setData(data)
+		
+	def initializeGL(self):
+		GL.glClearColor(0,0,0,0)
+		self.image2dtex.initializeGL()
+	
+	def viewportHeight(self):
+		return self.parent.height()
+	
+	def viewportWidth(self):
+		return self.parent.width()
+	
+	def paintGL(self):
+		self.cam.position()
+		
+		self.depthtracker.storeMatrices()
+		self.viewportcoords.mapMyCorners()
+		
+		clip_plane1 = [1.0,0.0,0.0,self.width()/2.0]
+		clip_plane2 = [-1.0,0.0,0.0,self.width()/2.0]
+		clip_plane3 = [0.0,1.0,0.0,self.height()/2.0]
+		clip_plane4 = [0.0,-1.0,0.0,self.height()/2.0]
+		glClipPlane(GL_CLIP_PLANE1,clip_plane1);
+		glClipPlane(GL_CLIP_PLANE2,clip_plane2);
+		glClipPlane(GL_CLIP_PLANE3,clip_plane3);
+		glClipPlane(GL_CLIP_PLANE4,clip_plane4);
+		glEnable(GL_CLIP_PLANE1)
+		glEnable(GL_CLIP_PLANE2)
+		glEnable(GL_CLIP_PLANE3)
+		glEnable(GL_CLIP_PLANE4)
+		
+		glPushMatrix()
+		self.image2dtex.render()
+		glPopMatrix()
+		
+		glDisable(GL_CLIP_PLANE1)
+		glDisable(GL_CLIP_PLANE2)
+		glDisable(GL_CLIP_PLANE3)
+		glDisable(GL_CLIP_PLANE4)
+		
+		self.viewportcoords.drawFrame()
+	
+	def updateGL(self):
+		self.parent.updateGL()
+	
+	def mousePressEvent(self, event):
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+			self.image2dtex.initInspector()
+			self.image2dtex.inspector.show()
+			self.image2dtex.inspector.hide()
+			self.parent.addQtWidgetDrawer(self.image2dtex.inspector)
+			
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.mousePressEvent(event)
+		else:
+			self.image2dtex.mousePressEvent(event)
+		
+		self.updateGL()
+			
+	def wheelEvent(self,event):
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.wheelEvent(event)
+		else:
+			self.image2dtex.wheelEvent(event)
+			
+		self.updateGL()
+	
+	def mouseMoveEvent(self,event):
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.mouseMoveEvent(event)
+		else:
+			self.image2dtex.mouseMoveEvent(event)
+		self.updateGL()
+
+	def mouseReleaseEvent(self,event):
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.mouseReleaseEvent(event)
+		else:
+			self.image2dtex.mouseReleaseEvent(event)
+
+		self.updateGL()
+		
+	def leaveEvent(self):
+		pass
+	
+	def toolTipEvent(self,event):
+		pass
+	
+	def isinwin(self,x,y):
+		return self.viewportcoords.isinwin(x,y)
 
 class EMQtWidgetDrawer:
 	def __init__(self, parent=None, qwidget=None, widget_parent=None):
@@ -179,6 +394,7 @@ class EMQtWidgetDrawer:
 		
 		self.e2children = []
 		self.is_child = False
+		
 	
 	def set_update_P_inv(self,val=True):
 		self.update_P_inv = val
@@ -191,9 +407,10 @@ class EMQtWidgetDrawer:
 	def height(self):
 		return self.qwidget.height()
 	
-	def parentHeight(self):
+	def viewportHeight(self):
 		return self.parent.height()
-	def parentWidth(self):
+	
+	def viewportWidth(self):
 		return self.parent.width()
 	
 	def setQtWidget(self, widget, delete_current = False):
@@ -613,9 +830,9 @@ class EMQtWidgetDrawer:
 			print "it's a combo"
 		else:
 			qme=QtGui.mouseDoubleClickEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
-			self.qwidget.setVisible(True)
+			#self.qwidget.setVisible(True)
 			QtCore.QCoreApplication.sendEvent(cw,qme)
-			self.qwidget.setVisible(False)
+			#self.qwidget.setVisible(False)
 		self.genTexture = True
 		self.updateTexture()
 		
@@ -665,9 +882,9 @@ class EMQtWidgetDrawer:
 					##print self.qwidget.currentText()
 					QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
 				else:
-					self.qwidget.setVisible(True)
+					#self.qwidget.setVisible(True)
 					QtCore.QCoreApplication.sendEvent(cw,qme)
-					self.qwidget.setVisible(False)
+					#self.qwidget.setVisible(False)
 				
 			self.genTexture = True
 			self.updateTexture()
@@ -762,9 +979,9 @@ class EMQtWidgetDrawer:
 					#self.qwidget.setVisible(False)
 					self.widget_parent.emit(QtCore.SIGNAL("activated(QString)"),self.widget_parent.itemText(self.qwidget.currentIndex().row()))
 				else:
-					self.qwidget.setVisible(True)
+					#self.qwidget.setVisible(True)
 					QtCore.QCoreApplication.sendEvent(cw,qme)
-					self.qwidget.setVisible(False)
+					#self.qwidget.setVisible(False)
 			
 			self.genTexture = True
 			self.updateTexture()
@@ -834,6 +1051,15 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		glEnable(GL_DEPTH_TEST)
 		
 		glEnable(GL_NORMALIZE)
+		
+		glClearStencil(0)
+		glEnable(GL_STENCIL_TEST)
+	
+	def addQtWidgetDrawer(self,widget):
+		w = EMQtWidgetDrawer(self)
+		w.setQtWidget(widget)
+		self.qwidgets.append(w)
+		
 		#print "initializeGL done"
 	def paintGL(self):
 		if ( self.initFlag == True ):
@@ -846,7 +1072,12 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.qwidgets[0].cam.setCamX(-100)
 			self.initFlag = False
 		#print "paintGL"
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		glClear(GL_COLOR_BUFFER_BIT)
+		if glIsEnabled(GL_DEPTH_TEST):
+			glClear(GL_DEPTH_BUFFER_BIT)
+		if glIsEnabled(GL_STENCIL_TEST):
+			glClear(GL_STENCIL_BUFFER_BIT)
+			
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 	
@@ -863,19 +1094,20 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		#print "file dialog finished with code",val
 		if ( val == 1 ):
 			for i in self.fd.selectedFiles():
-				try:
+				#try:
 					print i,str(i)
-					a=EMData.read_images(str(i))
-					if len(a)==1 : a=a[0]
-					w=EMImage(a,None,0)
+					a=EMData.read_images(str(i),[0])
+					a[0].write_image("result.img")
+					#if len(a)==1 : a=a[0]
 					#w.setWindowTitle("EMImage (%s)"%f)
 					#w.show()
-					self.qwidgets.append(EMQtWidgetDrawer(self))
-					self.qwidgets[1].setQtWidget(w)
-					print w.width(),w.height()
+					w = EMGLDrawer2D(self)
+					w.setData(a[0])
+					self.qwidgets.append(w)
+					
 					#self.qwidgets[0].cam.setCamX(100)
 					#self.initFlag = False
-				except:
+				#except:
 					print "error, could not open",i
 			
 	def timer(self):
@@ -888,7 +1120,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		#glFrustum(-1.*width/height,1.*width/height, -1.,1., 5.,15.)
-		
 		
 		# fov angle is the given by
 		#self.fov = 2*180*atan2(1,5)/pi
@@ -907,18 +1138,11 @@ class EMFXImage(QtOpenGL.QGLWidget):
 	
 	
 	def mousePressEvent(self, event):
-		if event.button()==Qt.RightButton:
-			for i in self.qwidgets:
-				if ( i.isinwin(event.x(),self.height()-event.y()) ):
-					i.mousePressEvent(event)
-					intercepted = True
-					return
-		elif event.button()==Qt.LeftButton:
-			for i in self.qwidgets:
-				if ( i.isinwin(event.x(),self.height()-event.y()) ):
-					i.mousePressEvent(event)
-					self.updateGL()
-					return
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				i.mousePressEvent(event)
+				intercepted = True
+				return
 	
 	def mouseMoveEvent(self, event):
 		for i in self.qwidgets:
@@ -997,9 +1221,9 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		#print "hoverEvent"
 		if self.inspector :
 			for i in self.qwidgets:
-					if ( i.isinwin(event.x(),self.height()-event.y()) ):
-						i.hoverEvent(event)
-						break
+				if ( i.isinwin(event.x(),self.height()-event.y()) ):
+					i.hoverEvent(event)
+					break
 		self.updateGL()
 
 # This is just for testing, of course

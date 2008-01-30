@@ -91,6 +91,8 @@ class EMVolume(EMImage3DObject):
 		
 		self.tex_name = 0
 		
+		self.rank = 1
+		
 		self.tex_dl = 0
 		self.tex_dl_x = 0
 		self.tex_dl_y = 0
