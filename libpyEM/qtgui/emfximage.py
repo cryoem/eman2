@@ -238,7 +238,6 @@ class EMQtWidgetDrawer:
 		#print "in paint", self.qwidget
 		if (self.qwidget == None ) : return
 		
-		
 		self.cam.position()
 		
 		self.wmodel=glGetDoublev(GL_MODELVIEW_MATRIX)

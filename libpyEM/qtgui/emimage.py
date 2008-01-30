@@ -97,7 +97,6 @@ class EMImage(object):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
-		
 		if isinstance(data,EMData) and data.get_zsize()==1:
 			# single 2D image
 			if old:

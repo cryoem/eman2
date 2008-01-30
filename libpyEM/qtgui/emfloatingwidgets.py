@@ -47,6 +47,8 @@ from emimageutil import *
 from emimage2d import *
 from math import sqrt
 
+from emimage import EMImage
+
 from emimage3dobject import Camera2
 
 import numpy
@@ -254,7 +256,12 @@ class EMQtWidgetDrawer:
 		#print "getting opengl matrices 3"
 		self.wview= glGetIntegerv(GL_VIEWPORT)
 		
-		#print "drawing main texture"
+		#try:
+			#self.qwidget.paintGL()
+			##print "painted child"
+		#except:
+			
+			#print "drawing main texture"
 		glPushMatrix()
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D,self.itex)
@@ -856,7 +863,20 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		#print "file dialog finished with code",val
 		if ( val == 1 ):
 			for i in self.fd.selectedFiles():
-				print "I was told to open",i
+				try:
+					print i,str(i)
+					a=EMData.read_images(str(i))
+					if len(a)==1 : a=a[0]
+					w=EMImage(a,None,0)
+					#w.setWindowTitle("EMImage (%s)"%f)
+					#w.show()
+					self.qwidgets.append(EMQtWidgetDrawer(self))
+					self.qwidgets[1].setQtWidget(w)
+					print w.width(),w.height()
+					#self.qwidgets[0].cam.setCamX(100)
+					#self.initFlag = False
+				except:
+					print "error, could not open",i
 			
 	def timer(self):
 		pass
