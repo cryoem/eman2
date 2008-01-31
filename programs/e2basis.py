@@ -87,7 +87,8 @@ project <basis input> <image input> <projection output>
 				proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
 				
 			proj.write_image(args[3],i)
-				
+	
+	# Apply the varimax rotation to a set of basis vectors
 	elif args[0]=="varimax" :
 		mask=basis[0].copy()
 		mask.to_one()

@@ -58,7 +58,7 @@ be classified. """
 	parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
 	parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 	parser.add_option("--normavg",action="store_true",help="Normalize averages",default=False)
-	parser.add_option("--clsfiles","-C",action="store_true",help="Write cls files with members of each class",default=False)
+	parser.add_option("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
 	parser.add_option("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
 	parser.add_option("--nosingle","-X",action="store_true",help="Try to eliminate classes with only 1 member",default=False)
 	parser.add_option("--original","-O",type="string",help="If the input stack was derived from another stack, you can provide the name of the original stack here",default=None)
