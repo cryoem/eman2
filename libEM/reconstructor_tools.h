@@ -446,6 +446,51 @@ namespace EMAN
 			FourierInserter3DMode7& operator=( const FourierInserter3DMode7& );
 	};
 	
+	/** FourierPixelInserter3DMode8  - encapsulates "method 8" for inserting a 2D Fourier slice into a 3D volume
+	 * See comments in FourierPixelInserter3D for explanations
+	 */
+	class FourierInserter3DMode8 : public FourierPixelInserter3D
+	{
+		public:
+			FourierInserter3DMode8() : W(0)
+			{
+				
+			}
+			virtual ~FourierInserter3DMode8()
+			{
+				if ( W != 0 )
+					delete [] W;
+			}
+		
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
+		
+			static FourierPixelInserter3D *NEW()
+			{
+				return new FourierInserter3DMode8();
+			}
+
+			virtual string get_name() const
+			{
+				return "8";
+			}
+		
+			virtual string get_desc() const
+			{
+				return "Fourier pixel insertion mode 8";
+			}
+		
+			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz) { throw; }
+			
+			virtual void init();
+		private:
+			int mFreqCutoff;
+			float mDFreq;
+		// Disallow copy and assignment by default
+			FourierInserter3DMode8( const FourierInserter3DMode8& );
+			FourierInserter3DMode8& operator=( const FourierInserter3DMode8& );
+			
+			float* W;
+	};
 	
 	/** QualityScores class is used by the FourierReconstructor and InterpolatedFRC for storing useful quality information.
 	 * It's basically a data storage object that has a whole heap of getter and setter methods, and nothing more.

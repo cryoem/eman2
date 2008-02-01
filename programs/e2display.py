@@ -74,6 +74,7 @@ def display(img):
 	
 	win=[]
 	for f in img:
+		print f
 		a=EMData.read_images(f)
 		if len(a)==1 : a=a[0]
 		w=EMImage(a)

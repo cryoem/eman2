@@ -464,7 +464,7 @@ def fourier_reconstruction(options):
 			
 		idx = 0	
 		for i in xrange(0,total_images):
-			
+			#print i
 			image = EMData()
 			image.read_image(options.input_file, i)
 

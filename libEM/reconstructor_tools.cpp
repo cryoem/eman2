@@ -45,6 +45,7 @@ template <> Factory < FourierPixelInserter3D >::Factory()
 	force_add(&FourierInserter3DMode5::NEW);
 	force_add(&FourierInserter3DMode6::NEW);
 	force_add(&FourierInserter3DMode7::NEW);
+	force_add(&FourierInserter3DMode8::NEW);
 }
 
 InterpolatedFRC::InterpolatedFRC( const Dict & new_params ) :
@@ -1182,6 +1183,59 @@ bool FourierInserter3DMode7::effected_pixels_are_zero(const float& xx, const flo
 					if ( fabs(rdata[ii]) > tolerance ) return false;
 					if ( fabs(rdata[ii + 1]) > tolerance ) return false;
 				}
+			}
+		}
+	}
+	
+	return true;
+}
+
+void FourierInserter3DMode8::init()
+{
+	FourierPixelInserter3D::init();
+	int P = (1.0+0.25)*nx+1;
+	float r = (float)(nx+1)/(float)P;
+	mFreqCutoff = 2;
+	mDFreq = 0.2;
+	if (W != 0) delete [] W;
+	W = Util::getBaldwinGridWeights(mFreqCutoff, P, r,mDFreq,0.5,0.2);
+	
+}
+bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, const float& qz, const float fq[], const float& weight)
+{
+	int x0 = (int) floor(qx);
+	int y0 = (int) floor(qy);
+	int z0 = (int) floor(qz);
+
+	int sizeW = (int)(1+2*mFreqCutoff/mDFreq);
+	int sizeWmid = sizeW/2;
+	
+	for (int z = z0-mFreqCutoff; z < z0+mFreqCutoff; ++z){
+		for (int y = y0-mFreqCutoff; y < y0+mFreqCutoff; ++y){
+			for (int x = x0-mFreqCutoff; x < x0+mFreqCutoff; ++x){
+				if ( x < 0 || x >= nx ) continue;
+				if ( y < 0 || y >= ny ) continue;
+				if ( z < 0 || z >= nz ) continue;
+				float dist = (float)((x-x0)*(x-x0)+(y-y0)*(y-y0)+(z-z0)*(z-z0));
+				dist = sqrtf(dist);
+				// We enforce a spherical kernel
+				if ( dist > mFreqCutoff ) continue;
+				int idx = sizeWmid + dist/mDFreq;
+				if (idx >= sizeW) throw;
+				float residual = dist/mDFreq - (int)(dist/mDFreq);
+				if ( fabs(residual) > 1) throw;
+				
+				float factor = W[idx]*(1.0-residual)+W[idx+1]*residual;
+				
+				int k = z*nxy + y*nx + 2*x;
+				
+// 				float c = Util::agauss(1, x-x0,y-y0,z-z0, EMConsts::I2G);
+				rdata[k] += fq[0]*factor;
+				rdata[k+1] += fq[1]*factor;
+				
+				
+				norm[k/2] += factor;
+				
 			}
 		}
 	}

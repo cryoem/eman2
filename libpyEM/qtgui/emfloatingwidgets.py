@@ -111,7 +111,7 @@ class EMBasicObjects:
 	def setHeight(self,height):
 		self.height = height
 
-class ViewportCornerCoords:
+class ViewportDepthTools:
 	def __init__(self, parent):
 		self.parent = parent
 		
@@ -200,7 +200,7 @@ class ViewportCornerCoords:
 		glScalef(3.0*self.borderwidth,3.0*self.borderwidth,3.0*self.borderwidth)
 		glCallList(self.glbasicobjects.getSphereDL())
 	
-	def mapMyCorners(self):
+	def update(self):
 		
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
 		if self.update_P_inv == True:
@@ -245,6 +245,80 @@ class ViewportCornerCoords:
 		cosaeb = a[0]*b[0]+a[1]*b[1]
 		
 		return atan2(sinaeb,cosaeb)
+	
+	def eyeCoordsDif(self,x1,y1,x2,y2):
+		# get x and y normalized device coordinates
+		xNDC1 = 2.0*(x1-self.wview[0])/self.wview[2] - 1
+		yNDC1 = 2.0*(y1-self.wview[1])/self.wview[3] - 1
+		
+		xNDC2 = 2.0*(x2-self.wview[0])/self.wview[2] - 1
+		yNDC2 = 2.0*(y2-self.wview[1])/self.wview[3] - 1
+		
+		## invert the projection and model view matrices, they will be used shortly
+		## note the OpenGL returns matrices are in column major format -  the calculations below 
+		## are done with this in  mind - this saves the need to transpose the matrices
+		if ( self.update_P_inv == True ):
+			P = numpy.matrix(self.wproj)
+			self.update_P_inv = False
+			self.P_inv = P.I
+		M = numpy.matrix(self.wmodel)
+		M_inv = M.I
+		
+		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
+		PM_inv = self.P_inv*M_inv
+		
+		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
+		zNDC1 = (PM_inv[0,2]*xNDC1 + PM_inv[1,2]*yNDC1 + PM_inv[3,2])/(-PM_inv[2,2])
+		#zNDC2 = (PM_inv[0,2]*xNDC2 + PM_inv[1,2]*yNDC2 + PM_inv[3,2])/(-PM_inv[2,2])
+	
+		# We need zprime, which is really 'eye_z' in OpenGL lingo
+		zprime1 = 1.0/(xNDC1*self.P_inv[0,3]+yNDC1*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
+		zprime2 = 1.0/(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
+
+		ex1 = (self.P_inv[0,0]*xNDC1 + self.P_inv[1,0]*yNDC1 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime1;
+		ey1 = (self.P_inv[0,1]*xNDC1 + self.P_inv[1,1]*yNDC1 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime1;
+		#ez1 = (self.P_inv[0,2]*xNDC1 + self.P_inv[1,2]*yNDC1 + self.P_inv[2,2]*zNDC1+self.P_inv[3,2])*zprime1;
+		
+		ex2 = (self.P_inv[0,0]*xNDC2 + self.P_inv[1,0]*yNDC2 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime2;
+		ey2 = (self.P_inv[0,1]*xNDC2 + self.P_inv[1,1]*yNDC2 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime2;
+		
+		return [ex2-ex1,ey2-ey1]
+
+	def mouseinwin(self,x,y):
+		# to determine the mouse coordinates in the window we carefully perform
+		# linear algebra similar to what's done in gluUnProject
+
+		# the problem is determining what the z coordinate of the mouse event should have
+		# been, given that we know that the widget itself is located in the x,y plane, along z=0.
+		
+		# get x and y normalized device coordinates
+		xNDC = 2.0*(x-self.wview[0])/self.wview[2] - 1
+		yNDC = 2.0*(y-self.wview[1])/self.wview[3] - 1
+		
+		# invert the projection and model view matrices, they will be used shortly
+		# note the OpenGL returns matrices are in column major format -  the calculations below 
+		# are done with this in  mind - this saves the need to transpose the matrices
+		if ( self.update_P_inv == True ):
+			P = numpy.matrix(self.wproj)
+			self.update_P_inv = False
+			self.P_inv = P.I
+		M = numpy.matrix(self.wmodel)
+		
+		M_inv = M.I
+		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
+		PM_inv = self.P_inv*M_inv
+		
+		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
+		zNDC = (PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2])/(-PM_inv[2,2])
+	
+		# We need zprime, which is really 'eye_z' in OpenGL lingo
+		zprime = 1.0/(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3])
+		
+		# Now we compute the x and y coordinates - these are precisely what we're after
+		xcoord = zprime*(xNDC*PM_inv[0,0]+yNDC*PM_inv[1,0]+zNDC*PM_inv[2,0]+PM_inv[3,0])
+		ycoord = zprime*(xNDC*PM_inv[0,1]+yNDC*PM_inv[1,1]+zNDC*PM_inv[2,1]+PM_inv[3,1])
+
+		return (xcoord + self.parent.width()*0.5, 0.5*self.parent.height()-ycoord)
 
 class EMGLDrawer2D:
 	def __init__(self, parent=None,image=None):
@@ -254,16 +328,17 @@ class EMGLDrawer2D:
 		
 		self.image2dtex = EMImage2DTex(image,self)
 		
-		self.viewportcoords = ViewportCornerCoords(self)
+		self.vdtools = ViewportDepthTools(self)
 		
-		self.depthtracker = DepthTracker(self)
+		self.drawFrame = True
 
 	def eyeCoordsDif(self,x1,y1,x2,y2):
-		return self.depthtracker.eyeCoordsDif(x1,y1,x2,y2)
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2)
 	
 	def set_update_P_inv(self,val=True):
-		self.depthtracker.set_update_P_inv(val)
-		self.viewportcoords.set_update_P_inv(val)
+		self.vdtools.set_update_P_inv(val)
+		
+		self.image2dtex.set_update_P_inv(val)
 	
 	def width(self):
 		try:
@@ -293,8 +368,8 @@ class EMGLDrawer2D:
 	def paintGL(self):
 		self.cam.position()
 		
-		self.depthtracker.storeMatrices()
-		self.viewportcoords.mapMyCorners()
+		# make sure the vdtools store the current matrices
+		self.vdtools.update()
 		
 		clip_plane1 = [1.0,0.0,0.0,self.width()/2.0]
 		clip_plane2 = [-1.0,0.0,0.0,self.width()/2.0]
@@ -318,7 +393,7 @@ class EMGLDrawer2D:
 		glDisable(GL_CLIP_PLANE3)
 		glDisable(GL_CLIP_PLANE4)
 		
-		self.viewportcoords.drawFrame()
+		if self.drawFrame: self.vdtools.drawFrame()
 	
 	def updateGL(self):
 		self.parent.updateGL()
@@ -367,13 +442,13 @@ class EMGLDrawer2D:
 		pass
 	
 	def isinwin(self,x,y):
-		return self.viewportcoords.isinwin(x,y)
+		return self.vdtools.isinwin(x,y)
 
 class EMQtWidgetDrawer:
 	def __init__(self, parent=None, qwidget=None, widget_parent=None):
 		self.parent = parent
 		self.qwidget = qwidget
-		self.drawframe = True
+		self.drawFrame = True
 		self.mapcoords = True
 		self.itex = 0
 		self.genTexture = True
@@ -395,11 +470,10 @@ class EMQtWidgetDrawer:
 		self.e2children = []
 		self.is_child = False
 		
-	
+		self.vdtools = ViewportDepthTools(self)
+		
 	def set_update_P_inv(self,val=True):
-		self.update_P_inv = val
-		for i in self.e2children:
-			i.set_update_P_inv(val)
+		self.vdtools.set_update_P_inv(val)
 	
 	def width(self):
 		return self.qwidget.width()
@@ -438,22 +512,6 @@ class EMQtWidgetDrawer:
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
 			self.itex = self.parent.bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
-
-	def print_angles(self):
-		self.print_angles_d(self.mc00,self.mc10)
-		self.print_angles_d(self.mc10,self.mc11)
-		self.print_angles_d(self.mc11,self.mc01)
-		self.print_angles_d(self.mc01,self.mc00)
-	
-	def print_angles_d(self,p1,p2,u=1,v=0):
-		x = p2[0]-p1[0]
-		y = p2[1]-p1[1]
-		
-		l1 = sqrt(x*x+y*y)
-		l2 = sqrt(u*u+v*v)
-		
-		theta = acos((x*u+v*y)/(l1*l2))
-		#print "the angle between [%f,%f] and [%f,%f] is %f" %(p1[0],p1[1],p2[0],p2[1],180.0*theta/pi)
 		
 	def paintGL(self):
 		#print "paintGL children"
@@ -463,22 +521,9 @@ class EMQtWidgetDrawer:
 		
 		self.cam.position()
 		
-		#print "parent is valid?",self.parent.isValid()
-		#print self.parent.overlayContext()
+		# make sure the vdtools store the current matrices
+		self.vdtools.update()
 		
-		#print "getting opengl matrices"
-		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		#print "getting opengl matrices 2"
-		self.wproj= glGetDoublev(GL_PROJECTION_MATRIX)
-		#print "getting opengl matrices 3"
-		self.wview= glGetIntegerv(GL_VIEWPORT)
-		
-		#try:
-			#self.qwidget.paintGL()
-			##print "painted child"
-		#except:
-			
-			#print "drawing main texture"
 		glPushMatrix()
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D,self.itex)
@@ -497,279 +542,33 @@ class EMQtWidgetDrawer:
 		glEnd()
 		glDisable(GL_TEXTURE_2D)
 		glPopMatrix()
-		#print "drawing main texture done"
-		#self.parent.deleteTexture(self.itex)
 	
-		if ( self.mapcoords ):
-			self.mc00=gluProject(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0,0.,self.wmodel,self.wproj,self.wview)
-			self.mc10=gluProject( self.qwidget.width()/2.0,-self.qwidget.height()/2.0,0.,self.wmodel,self.wproj,self.wview)
-			self.mc11=gluProject( self.qwidget.width()/2.0, self.qwidget.height()/2.0,0.,self.wmodel,self.wproj,self.wview)
-			self.mc01=gluProject(-self.qwidget.width()/2.0, self.qwidget.height()/2.0,0.,self.wmodel,self.wproj,self.wview)
-	
-			if ( self.drawframe ):
-				glMatrixMode(GL_PROJECTION)
-				glPushMatrix()
-				glLoadIdentity()
-				glOrtho(0.0,self.parent.width(),0.0,self.parent.height(),-5,5)
-	
-				glMatrixMode(GL_MODELVIEW)
-				glPushMatrix()
-				glLoadIdentity()
-				
-				glColor(.9,.2,.8)
-				glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
-				glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-				glMaterial(GL_FRONT,GL_SHININESS,50.0)
-				#print "drawing frame"
-				glPushMatrix()
-				self.cylinderToFrom(self.mc00,self.mc10)
-				glPopMatrix()
-				glPushMatrix()
-				self.cylinderToFrom(self.mc10,self.mc11)
-				glPopMatrix()
-				glPushMatrix()
-				self.cylinderToFrom(self.mc11,self.mc01)
-				glPopMatrix()
-				glPushMatrix()
-				self.cylinderToFrom(self.mc01,self.mc00)
-				glPopMatrix()
-				
-				#print "done drawing frame"
-				#glBegin(GL_LINES)
-				#glVertex(self.mc00[0],self.mc00[1])
-				#glVertex(self.mc11[0],self.mc11[1])
-				#glVertex(self.mc01[0],self.mc01[1])
-				#glVertex(self.mc10[0],self.mc10[1])
-				#glEnd()
-				glPushMatrix()
-				self.sphereAt(self.mc00)
-				glPopMatrix()
-				glPushMatrix()
-				self.sphereAt(self.mc10)
-				glPopMatrix()
-				glPushMatrix()
-				self.sphereAt(self.mc11)
-				glPopMatrix()
-				glPushMatrix()
-				self.sphereAt(self.mc01)
-				glPopMatrix()
-				
-				glPopMatrix()
-				
-				glMatrixMode(GL_PROJECTION)
-				# pop the temporary orthographic matrix from the GL_PROJECTION stack
-				glPopMatrix()
-				glMatrixMode(GL_MODELVIEW)
-			
+		if self.drawFrame: self.vdtools.drawFrame()
+		
 			
 		# now draw children if necessary - such as a qcombobox list view that has poppud up
 		for i in self.e2children:
-			#print "children paintGL paint children"
 			glPushMatrix()
-			i.paintGL()
+			try:
+				i.paintGL()
+			except:
+				glPopMatrix()
 			glPopMatrix()
-			#print "children paintGL paint children done"
 	
-		#print "paintGL children done"
-	
-	def sphereAt(self,at):
-		glTranslate(at[0],at[1],0)
-		glScalef(3.0*self.borderwidth,3.0*self.borderwidth,3.0*self.borderwidth)
-		glCallList(self.glbasicobjects.getSphereDL())
-		
-	def cylinderToFrom(self,To,From):
-		dx = To[0] - From[0]
-		dy = To[1] - From[1]
-		
-		length = sqrt(dx*dx+dy*dy)
-		
-		angle = 180.0*atan2(dy,dx)/pi
-		
-		glTranslated(From[0],From[1],0)
-		glRotated(90.0+angle,0.,0.,1.0)
-		glRotated(90.,1.,0.,0.)
-		glTranslated(0.0,0.0,length/2.0)
-		glScaled(self.borderwidth,self.borderwidth,length)
-		glTranslated(0.0,0.0,-0.5)
-		glCallList(self.glbasicobjects.getCylinderDL())
-
 	def isinwin(self,x,y):
 		for i in self.e2children:
 			if i.isinwin(x,y):
 				self.childreceiver = i
 				return True
-		# this works by simple geometry - if the mouse point e is within the four points (a,b,c,d)
-		# at the extremities of  the qtwidget, then aed + bec + ced + dea is +/- 360 degrees. 
-		# If e is outside the four points then the sum is zero...
-		a = [self.mc00[0]-x, self.mc00[1]-y]
-		b = [self.mc01[0]-x, self.mc01[1]-y]
-		c = [self.mc11[0]-x, self.mc11[1]-y]
-		d = [self.mc10[0]-x, self.mc10[1]-y]
 		
-		
-		aeb = self.getsubtendingangle(a,b)
-		bec = self.getsubtendingangle(b,c)
-		ced = self.getsubtendingangle(c,d)
-		dea = self.getsubtendingangle(d,a)
-		if abs(aeb + bec + ced + dea) > 0.1:
-			return True 
-		else:
-			return False
-	
-	def mouseViewportMovement(self,x,y,ex,ey,ez,zprime):
-		xNDC = 2.0*(x-self.wview[0])/self.wview[2] - 1
-		yNDC = 2.0*(y-self.wview[1])/self.wview[3] - 1
-		
-		P = numpy.matrix(self.wproj)
-		M = numpy.matrix(self.wmodel)
-		PM = P*M
-		## invert the projection and model view matrices, they will be used shortly
-		## note the OpenGL returns matrices are in column major format -  the calculations below 
-		## are done with this in  mind - this saves the need to transpose the matrices
-		if ( self.update_P_inv == True ):
-			P = numpy.matrix(self.wproj)
-			self.update_P_inv = False
-			self.P_inv = P.I
-		M = numpy.matrix(self.wmodel)
-		M_inv = M.I
-		
-		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
-		PM_inv = self.P_inv*M_inv
-		
-		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
-		zNDC = (PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2])/(-PM_inv[2,2])
-	
-		# We need zprime, which is really 'eye_z' in OpenGL lingo
-		#print "zprimes"
-		#print 1.0/(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3])
-		#print zprime
-		zp = M[0,3]*ex + M[1,3]*ey + M[2,3]*ez + M[3,3]
-		#print zp
-		
-		xtrans = (self.P_inv[0,0]*xNDC + self.P_inv[1,0]*yNDC + self.P_inv[2,0]*zNDC + self.P_inv[3,0])*zprime
-		xtrans = xtrans - M[0,0]*ex - M[1,0]*ey - M[2,0]*ez
-		
-		ytrans = (self.P_inv[0,1]*xNDC + self.P_inv[1,1]*yNDC + self.P_inv[2,1]*zNDC + self.P_inv[3,1])*zprime
-		ytrans = ytrans - M[0,1]*ex - M[1,1]*ey - M[2,1]*ez
-		
-		ztrans = (self.P_inv[0,2]*xNDC + self.P_inv[1,2]*yNDC + self.P_inv[2,2]*zNDC + self.P_inv[3,2])*zprime
-		ztrans = ytrans - M[0,2]*ex - M[1,2]*ey - M[2,2]*ez
-		
-		##print xNDC,yNDC,zNDC
-		##print xtrans,ytrans,ztrans
-		return [xtrans,ytrans,ztrans]
+		return self.vdtools.isinwin(x,y)
 	
 	def eyeCoordsDif(self,x1,y1,x2,y2):
-		# get x and y normalized device coordinates
-		xNDC1 = 2.0*(x1-self.wview[0])/self.wview[2] - 1
-		yNDC1 = 2.0*(y1-self.wview[1])/self.wview[3] - 1
-		
-		xNDC2 = 2.0*(x2-self.wview[0])/self.wview[2] - 1
-		yNDC2 = 2.0*(y2-self.wview[1])/self.wview[3] - 1
-		
-		## invert the projection and model view matrices, they will be used shortly
-		## note the OpenGL returns matrices are in column major format -  the calculations below 
-		## are done with this in  mind - this saves the need to transpose the matrices
-		if ( self.update_P_inv == True ):
-			P = numpy.matrix(self.wproj)
-			self.update_P_inv = False
-			self.P_inv = P.I
-		M = numpy.matrix(self.wmodel)
-		M_inv = M.I
-		
-		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
-		PM_inv = self.P_inv*M_inv
-		
-		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
-		zNDC1 = (PM_inv[0,2]*xNDC1 + PM_inv[1,2]*yNDC1 + PM_inv[3,2])/(-PM_inv[2,2])
-		#zNDC2 = (PM_inv[0,2]*xNDC2 + PM_inv[1,2]*yNDC2 + PM_inv[3,2])/(-PM_inv[2,2])
-	
-		# We need zprime, which is really 'eye_z' in OpenGL lingo
-		zprime1 = 1.0/(xNDC1*self.P_inv[0,3]+yNDC1*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
-		zprime2 = 1.0/(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
-
-		ex1 = (self.P_inv[0,0]*xNDC1 + self.P_inv[1,0]*yNDC1 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime1;
-		ey1 = (self.P_inv[0,1]*xNDC1 + self.P_inv[1,1]*yNDC1 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime1;
-		#ez1 = (self.P_inv[0,2]*xNDC1 + self.P_inv[1,2]*yNDC1 + self.P_inv[2,2]*zNDC1+self.P_inv[3,2])*zprime1;
-		
-		ex2 = (self.P_inv[0,0]*xNDC2 + self.P_inv[1,0]*yNDC2 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime2;
-		ey2 = (self.P_inv[0,1]*xNDC2 + self.P_inv[1,1]*yNDC2 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime2;
-		#ez2 = (self.P_inv[0,2]*xNDC2 + self.P_inv[1,2]*yNDC2 + self.P_inv[2,2]*zNDC1+self.P_inv[3,2])*zprime2;
-		
-		#return [ex2-ex1,ey2-ey1,ez2-ez1] # ez2-ez1 should be zero
-		return [ex2-ex1,ey2-ey1]
-	def eyeCoords(self,x,y):
-		# get x and y normalized device coordinates
-		xNDC = 2.0*(x-self.wview[0])/self.wview[2] - 1
-		yNDC = 2.0*(y-self.wview[1])/self.wview[3] - 1
-		
-		P = numpy.matrix(self.wproj)
-		M = numpy.matrix(self.wmodel)
-		PM = P*M
-		## invert the projection and model view matrices, they will be used shortly
-		## note the OpenGL returns matrices are in column major format -  the calculations below 
-		## are done with this in  mind - this saves the need to transpose the matrices
-		if ( self.update_P_inv == True ):
-			P = numpy.matrix(self.wproj)
-			self.update_P_inv = False
-			self.P_inv = P.I
-		M = numpy.matrix(self.wmodel)
-		M_inv = M.I
-		
-		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
-		PM_inv = self.P_inv*M_inv
-		
-		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
-		zNDC = (PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2])/(-PM_inv[2,2])
-	
-		# We need zprime, which is really 'eye_z' in OpenGL lingo
-		zprime = 1.0/(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3])
-		
-		
-		ex = (self.P_inv[0,0]*xNDC + self.P_inv[1,0]*yNDC + self.P_inv[2,0]*zNDC+self.P_inv[3,0])*zprime;
-		ey = (self.P_inv[0,1]*xNDC + self.P_inv[1,1]*yNDC + self.P_inv[2,1]*zNDC+self.P_inv[3,1])*zprime;
-		ez = (self.P_inv[0,2]*xNDC + self.P_inv[1,2]*yNDC + self.P_inv[2,2]*zNDC+self.P_inv[3,2])*zprime;
-		
-		##print xNDC,yNDC,zNDC
-		##print ex,ey,ez
-		return [ex,ey,ez]
-		
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2)
+			
 	def mouseinwin(self,x,y):
-		# to determine the mouse coordinates in the window we carefully perform
-		# linear algebra similar to what's done in gluUnProject
+		return self.vdtools.mouseinwin(x,y)
 
-		# the problem is determining what the z coordinate of the mouse event should have
-		# been, given that we know that the widget itself is located in the x,y plane, along z=0.
-		
-		# get x and y normalized device coordinates
-		xNDC = 2.0*(x-self.wview[0])/self.wview[2] - 1
-		yNDC = 2.0*(y-self.wview[1])/self.wview[3] - 1
-		
-		# invert the projection and model view matrices, they will be used shortly
-		# note the OpenGL returns matrices are in column major format -  the calculations below 
-		# are done with this in  mind - this saves the need to transpose the matrices
-		if ( self.update_P_inv == True ):
-			P = numpy.matrix(self.wproj)
-			self.update_P_inv = False
-			self.P_inv = P.I
-		M = numpy.matrix(self.wmodel)
-		
-		M_inv = M.I
-		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
-		PM_inv = self.P_inv*M_inv
-		
-		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
-		zNDC = (PM_inv[0,2]*xNDC + PM_inv[1,2]*yNDC + PM_inv[3,2])/(-PM_inv[2,2])
-	
-		# We need zprime, which is really 'eye_z' in OpenGL lingo
-		zprime = 1.0/(xNDC*self.P_inv[0,3]+yNDC*self.P_inv[1,3]+zNDC*self.P_inv[2,3]+self.P_inv[3,3])
-		
-		# Now we compute the x and y coordinates - these are precisely what we're after
-		xcoord = zprime*(xNDC*PM_inv[0,0]+yNDC*PM_inv[1,0]+zNDC*PM_inv[2,0]+PM_inv[3,0])
-		ycoord = zprime*(xNDC*PM_inv[0,1]+yNDC*PM_inv[1,1]+zNDC*PM_inv[2,1]+PM_inv[3,1])
-
-		return (xcoord + self.qwidget.width()/2.0, 0.5*self.qwidget.height()-ycoord)
-	
 	def toolTipEvent(self,event):
 		if ( self.childreceiver != None ):
 			# this means this class already knows that the mouse event is in the child
@@ -870,21 +669,13 @@ class EMQtWidgetDrawer:
 				widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
 				widget.cam.setCamTrans("y",((self.height()/2.0-cw.geometry().y())-cw.view().height()/2.0))
 				widget.cam.setCamTrans("z",0.1)
-				widget.drawframe = False
+				widget.drawFrame = False
 				self.e2children.append(widget)
 				self.e2children[0].is_child = True
 			else:
 				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
-				if (self.is_child):
-					##print self.qwidget
-					##print self.qwidget.currentIndex()
-					#self.qwidget.commitData(self.qwidget.parent())
-					##print self.qwidget.currentText()
-					QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
-				else:
-					#self.qwidget.setVisible(True)
-					QtCore.QCoreApplication.sendEvent(cw,qme)
-					#self.qwidget.setVisible(False)
+				if (self.is_child): QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
+				else: QtCore.QCoreApplication.sendEvent(cw,qme)
 				
 			self.genTexture = True
 			self.updateTexture()
@@ -899,32 +690,33 @@ class EMQtWidgetDrawer:
 				self.childreceiver.mouseMoveEvent(event)
 				self.childreceiver = None
 				return
-			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
-			cw=self.qwidget.childAt(l[0],l[1])
-			self.current = cw
-			if ( self.current != self.previous ):
-				QtGui.QToolTip.hideText()
-				if ( self.current != None ):
-					qme=QtCore.QEvent(QtCore.QEvent.Enter)
-					QtCore.QCoreApplication.sendEvent(self.current,qme)
-					
-				if ( self.previous != None ):
-					qme=QtCore.QEvent(QtCore.QEvent.Leave)
-					QtCore.QCoreApplication.sendEvent(self.previous,qme)
-			
-			self.previous = self.current
-			if cw == None:
-				QtGui.QToolTip.hideText()
-				if ( self.previous != None ):
-					qme=QtCore.QEvent(QtCore.QEvent.Leave)
-					QtCore.QCoreApplication.sendEvent(self.previous,qme)
-					self.genTexture = True
-					self.updateTexture()
-				return
-			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-			lp=cw.mapFromGlobal(gp)
-			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
-			QtCore.QCoreApplication.sendEvent(cw,qme)
+			else:
+				l=self.mouseinwin(event.x(),self.parent.height()-event.y())
+				cw=self.qwidget.childAt(l[0],l[1])
+				self.current = cw
+				if ( self.current != self.previous ):
+					QtGui.QToolTip.hideText()
+					if ( self.current != None ):
+						qme=QtCore.QEvent(QtCore.QEvent.Enter)
+						QtCore.QCoreApplication.sendEvent(self.current,qme)
+						
+					if ( self.previous != None ):
+						qme=QtCore.QEvent(QtCore.QEvent.Leave)
+						QtCore.QCoreApplication.sendEvent(self.previous,qme)
+				
+				self.previous = self.current
+				if cw == None:
+					QtGui.QToolTip.hideText()
+					if ( self.previous != None ):
+						qme=QtCore.QEvent(QtCore.QEvent.Leave)
+						QtCore.QCoreApplication.sendEvent(self.previous,qme)
+						self.genTexture = True
+						self.updateTexture()
+					return
+				gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+				lp=cw.mapFromGlobal(gp)
+				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+				QtCore.QCoreApplication.sendEvent(cw,qme)
 			# FIXME
 			# setting the genTexture flag true here causes the texture to be regenerated
 			# when the mouse moves over it, which is inefficient.
@@ -1000,12 +792,7 @@ class EMQtWidgetDrawer:
 	def timerEvent(self,event=None):
 		pass
 		#self.cam.motionRotate(.2,.2)
-		
-	def getsubtendingangle(self,a,b):
-		sinaeb = a[0]*b[1]-a[1]*b[0]
-		cosaeb = a[0]*b[0]+a[1]*b[1]
-		
-		return atan2(sinaeb,cosaeb)
+
 
 class EMFXImage(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -1097,7 +884,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				#try:
 					print i,str(i)
 					a=EMData.read_images(str(i),[0])
-					a[0].write_image("result.img")
 					#if len(a)==1 : a=a[0]
 					#w.setWindowTitle("EMImage (%s)"%f)
 					#w.show()

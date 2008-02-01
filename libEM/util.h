@@ -896,6 +896,8 @@ namespace EMAN
 		 * @exception ImageDimensionException 3D image only 
 		 * */
 //		static Dict get_isosurface(EMData * image, float surface_value, bool smooth);
+		
+		static float* getBaldwinGridWeights( const int& freq_cutoff, const float& P, const float& r, const float& dfreq = 1, const float& alpha=0.5, const float& beta = 0.2);
 	};
 }
 

@@ -944,6 +944,90 @@ void Util::printMatI3D(MIArray3D& mat, const string str, ostream& out) {
 		}
 	}
 }
+
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_linalg.h>
+
+void printmatrix( gsl_matrix* M, const int n, const int m, const string& message = "")
+{
+	cout << message << endl;
+	for(int i = 0; i < n; ++i ){
+		for (int j = 0; j < m; ++j ){
+			cout << gsl_matrix_get(M,i,j) << "\t";
+		}
+		cout << endl;
+	}
+}
+			 
+void printvector( gsl_vector* M, const int n, const string& message = "")
+{
+	cout << message << endl;
+	for(int i = 0; i < n; ++i ){
+		cout << gsl_vector_get(M,i) << "\t";
+	}
+	cout << endl;
+}
+			 
+float* Util::getBaldwinGridWeights( const int& freq_cutoff, const float& P, const float& r, const float& dfreq, const float& alpha, const float& beta)
+{
+	int i = 0;
+	int discs = (int)(1+2*freq_cutoff/dfreq);
+	
+	float*  W = new float[discs];
+	
+	int fc = (int)(2*freq_cutoff + 1);
+	gsl_matrix* M = gsl_matrix_calloc(fc,fc);
+	
+	gsl_vector* rhs = gsl_vector_calloc(fc);
+	cout << i++ << endl;
+	for(int k = -freq_cutoff; k <= freq_cutoff; ++k){
+		for(int kp = -freq_cutoff; kp <= freq_cutoff; ++kp){
+			int kdiff =abs( k-kp);
+			int evenoddfac = ( kdiff % 2 == 0 ? 1 : -1);
+
+			if (kdiff !=0){
+				float val = sin(M_PI*(float)kdiff*r)/(sin(M_PI*(float)kdiff/(float)P))*(alpha+2.0*beta*evenoddfac);
+				gsl_matrix_set(M,int(k+freq_cutoff),int(kp+freq_cutoff),val);
+			}
+		}
+		gsl_matrix_set(M,int(k+freq_cutoff),int(k+freq_cutoff),r*P* (alpha+2*beta));
+		float val = alpha*sin(M_PI*k*r)/(sin(M_PI*(float)k/(float)P));
+		if (k!=0) {
+			gsl_vector_set(rhs,int(k+freq_cutoff),val);
+		}
+	}
+	printmatrix(M,fc,fc,"M");
+	
+	gsl_vector_set(rhs,int(freq_cutoff),alpha*r*P);
+	gsl_matrix* V = gsl_matrix_calloc(fc,fc);
+	gsl_vector* S = gsl_vector_calloc(fc);
+	gsl_vector* soln = gsl_vector_calloc(fc);
+	gsl_linalg_SV_decomp(M,V,S,soln);
+	
+	gsl_linalg_SV_solve(M, V, S, rhs, soln); // soln now runs from -freq_cutoff to + freq_cutoff
+	printvector(soln,fc,"soln");
+	
+	// we want to solve for W, which ranges from -freq_cutoff to +freq_cutoff in steps of dfreq                            2
+	int Count=0;
+	for(float q = -freq_cutoff; q <= freq_cutoff; q+= dfreq){
+		float temp=0;
+		for(int k = -freq_cutoff; k <= freq_cutoff; ++k){
+			float dtemp;
+			if (q!=k) { 
+				dtemp=(1/(float) P)* gsl_vector_get(soln,int(k+freq_cutoff))  * sin(M_PI*(q-k))/sin(M_PI*(q-k)/((float) P));
+			} else{
+				dtemp = (1/(float) P)* gsl_vector_get(soln,int(k+freq_cutoff))  * P;
+			}				
+			temp +=dtemp;
+		}
+		W[Count]=temp;
+		cout << W[Count] << " ";
+		Count+=1;
+	}
+	cout << endl;
+	return W;
+}
 /*
 Dict Util::get_isosurface(EMData * image, float surface_value, bool smooth)
 {
