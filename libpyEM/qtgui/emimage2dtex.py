@@ -51,19 +51,21 @@ class DepthTracker:
 	def __init__(self,parent):
 		self.parent = parent
 		self.update_P_inv = True
-
+		
 	def set_update_P_inv(self,val=True):
 		self.update_P_inv = val
 		
 	def storeMatrices(self):
-		
 		self.wmodel = glGetDoublev(GL_MODELVIEW_MATRIX)
 		if self.update_P_inv == True:
 			self.wproj = glGetDoublev(GL_PROJECTION_MATRIX)
 		self.wview = glGetIntegerv(GL_VIEWPORT)
-	
-	def eyeCoordsDif(self,x1,y1,x2,y2):
+
+	def eyeCoordsDif(self,x1,y1,x2,y2,maintaindepth=True):
 		# get x and y normalized device coordinates
+		print self.wview
+		print self.wmodel
+		print self.wproj
 		xNDC1 = 2.0*(x1-self.wview[0])/self.wview[2] - 1
 		yNDC1 = 2.0*(y1-self.wview[1])/self.wview[3] - 1
 		
@@ -73,30 +75,39 @@ class DepthTracker:
 		## invert the projection and model view matrices, they will be used shortly
 		## note the OpenGL returns matrices are in column major format -  the calculations below 
 		## are done with this in  mind - this saves the need to transpose the matrices
-		if ( self.update_P_inv == True ):
+		
+		if ( self.update_P_inv == True):
 			P = numpy.matrix(self.wproj)
 			self.update_P_inv = False
 			self.P_inv = P.I
+		
 		M = numpy.matrix(self.wmodel)
 		M_inv = M.I
 		
 		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
 		PM_inv = self.P_inv*M_inv
-		
+		print self.P_inv
+		print PM_inv
 		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
 		zNDC1 = (PM_inv[0,2]*xNDC1 + PM_inv[1,2]*yNDC1 + PM_inv[3,2])/(-PM_inv[2,2])
-		#zNDC2 = (PM_inv[0,2]*xNDC2 + PM_inv[1,2]*yNDC2 + PM_inv[3,2])/(-PM_inv[2,2])
+		if ( maintaindepth == False):
+			zNDC2 = (PM_inv[0,2]*xNDC2 + PM_inv[1,2]*yNDC2 + PM_inv[3,2])/(-PM_inv[2,2])
+		else:
+			zNDC2 = zNDC1
 	
 		# We need zprime, which is really 'eye_z' in OpenGL lingo
 		zprime1 = 1.0/(xNDC1*self.P_inv[0,3]+yNDC1*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
-		zprime2 = 1.0/(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
+		zprime2 = 1.0/(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC2*self.P_inv[2,3]+self.P_inv[3,3])
+
+		print xNDC1,yNDC1,zNDC1,zprime1
+		print xNDC2,yNDC2,zNDC2,zprime2
 
 		ex1 = (self.P_inv[0,0]*xNDC1 + self.P_inv[1,0]*yNDC1 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime1;
 		ey1 = (self.P_inv[0,1]*xNDC1 + self.P_inv[1,1]*yNDC1 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime1;
 		#ez1 = (self.P_inv[0,2]*xNDC1 + self.P_inv[1,2]*yNDC1 + self.P_inv[2,2]*zNDC1+self.P_inv[3,2])*zprime1;
 		
-		ex2 = (self.P_inv[0,0]*xNDC2 + self.P_inv[1,0]*yNDC2 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime2;
-		ey2 = (self.P_inv[0,1]*xNDC2 + self.P_inv[1,1]*yNDC2 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime2;
+		ex2 = (self.P_inv[0,0]*xNDC2 + self.P_inv[1,0]*yNDC2 + self.P_inv[2,0]*zNDC2+self.P_inv[3,0])*zprime2;
+		ey2 = (self.P_inv[0,1]*xNDC2 + self.P_inv[1,1]*yNDC2 + self.P_inv[2,1]*zNDC2+self.P_inv[3,1])*zprime2;
 		
 		return [ex2-ex1,ey2-ey1]
 
@@ -470,11 +481,16 @@ class EMImage2DTex:
 
 		if ( self.tex_dl == 0 ):
 			self.genCurrentDisplayList()
-		
+			
 		self.cam.position()
-		
 		self.depthtracker.storeMatrices()
 		
+		glPushMatrix()
+		glLoadIdentity()
+		self.cam.position()
+		self.depthtracker.storeMatrices()
+		glPopMatrix()
+
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 		glPushMatrix()

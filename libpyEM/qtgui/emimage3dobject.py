@@ -67,6 +67,8 @@ class Camera2:
 		
 		self.enablerotation = True
 		
+		self.basicmapping = False
+		
 	def loadIdentity(self):
 		self.scale = 1.0
 		
@@ -237,7 +239,12 @@ class Camera2:
 	
 	def motionTranslateLA(self,prev_x,prev_y,event):
 		#print "motion translate"
-		[dx,dy] = self.parent.eyeCoordsDif(prev_x,self.parent.viewportHeight()-prev_y,event.x(),self.parent.viewportHeight()-event.y())
+
+		if (self.basicmapping == False):
+			[dx,dy] = self.parent.eyeCoordsDif(prev_x,self.parent.viewportHeight()-prev_y,event.x(),self.parent.viewportHeight()-event.y())
+		else:
+			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+
 		#[wx2,wy2,wz2] = self.parent.eyeCoords(event.x(),self.parent.parentHeight()-event.y())
 		#[wx2,wy2,wz2] =  self.parent.mouseViewportMovement(event.x(),self.parent.parentHeight()-event.y(),wx1,wy1,wz1,zprime)
 		#self.parent.mouseViewportMovement(1,2,3,4)
@@ -245,7 +252,6 @@ class Camera2:
 		#[wx2,wy2] = self.parent.mouseinwin(event.x(),self.parent.parentHeight()-event.y())
 		self.cam_x += dx
 		self.cam_y += dy
-		#self.cam_z += wz2
 
 class Camera:
 	"""\brief A camera object encapsulates 6 degrees of freedom, and a scale factor

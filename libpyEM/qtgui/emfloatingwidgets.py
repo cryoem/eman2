@@ -58,73 +58,131 @@ import array
 
 height_plane = 500
 
-class EMBasicObjects:
+class EMBasicOpenGLObjects:
+	"""
+	This class is supposed to encapsulate basic and common objects
+	used by various other OpenGL classes in EMAN2 pyqt interfaces.
+	
+	It currently supplies display list ids - one for a sphere, one for
+	a cylinder
+	
+	It's implemented as a singleton
+	"""
+	class __impl:
+		""" Implementation of the singleton interface """
+
+		def __init__(self):
+			# this display list ids
+			self.cylinderdl = 0
+			self.spheredl = 0
+		
+			# cylinder parameters
+			self.cylinder_around_z = 12
+			self.cylinder_along_z = 2
+			
+			# sphere parameters
+			self.sphere_around_z = 6
+			self.sphere_along_z = 6
+			
+			self.gq=gluNewQuadric()
+			gluQuadricDrawStyle(self.gq,GLU_FILL)
+			gluQuadricNormals(self.gq,GLU_SMOOTH)
+			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+			gluQuadricTexture(self.gq,GL_FALSE)
+			
+		def getSphereDL(self):
+			if ( self.spheredl == 0 ):
+				self.spheredl=glGenLists(1)
+				
+				glNewList(self.spheredl,GL_COMPILE)
+				glPushMatrix()
+				gluSphere(self.gq,.5,self.sphere_along_z,self.sphere_around_z)
+				glPopMatrix()
+				
+				glEndList()
+				
+			return self.spheredl
+		
+		def getCylinderDL(self):
+			if ( self.cylinderdl == 0 ):
+				self.cylinderdl=glGenLists(1)
+				
+				glNewList(self.cylinderdl,GL_COMPILE)
+				glPushMatrix()
+				gluCylinder(self.gq,1.0,1.0,1.0,self.cylinder_around_z,self.cylinder_along_z)
+				glPopMatrix()
+				
+				glEndList()
+				
+			return self.cylinderdl
+
+	# storage for the instance reference
+	__instance = None
+
+
 	def __init__(self):
-		self.framedl = 0
-		self.cylinderdl = 0
-		self.spheredl = 0
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if EMBasicOpenGLObjects.__instance is None:
+			# Create and remember instance
+			EMBasicOpenGLObjects.__instance = EMBasicOpenGLObjects.__impl()
 	
-		self.cylinder_around_z = 12
-		self.cylinder_along_z = 2
-		
-		self.sphere_around_z = 6
-		self.sphere_along_z = 6
-		
-		self.gq=gluNewQuadric()
-		gluQuadricDrawStyle(self.gq,GLU_FILL)
-		gluQuadricNormals(self.gq,GLU_SMOOTH)
-		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-		gluQuadricTexture(self.gq,GL_FALSE)
-		
-		# call setter methods to changes these
-		self.width = 1.0
-		self.height = 1.0
-	
-	def getSphereDL(self):
-		if ( self.spheredl == 0 ):
-			self.spheredl=glGenLists(1)
-			
-			glNewList(self.spheredl,GL_COMPILE)
-			glPushMatrix()
-			gluSphere(self.gq,.5,self.sphere_along_z,self.sphere_around_z)
-			glPopMatrix()
-			
-			glEndList()
-			
-		return self.spheredl
-	
-	def getCylinderDL(self):
-		if ( self.cylinderdl == 0 ):
-			self.cylinderdl=glGenLists(1)
-			
-			glNewList(self.cylinderdl,GL_COMPILE)
-			glPushMatrix()
-			gluCylinder(self.gq,1.0,1.0,1.0,self.cylinder_around_z,self.cylinder_along_z)
-			glPopMatrix()
-			
-			glEndList()
-			
-		return self.cylinderdl
-	
-	def setWidth(self,width):
-		self.width = width
-	def setHeight(self,height):
-		self.height = height
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+
 
 class ViewportDepthTools:
+	"""
+	This class provides important tools for EMAN2 floating widgets -
+	these are widgets that get mapped as textures to polygons situated
+	in OpenGL volumes.
+	
+	These widgets need to have mouse events (etc) correctly rerouted to them,
+	and this is not trivial (but not difficult) to do, considering that the
+	mouse events are always in terms of the viewport, but the texture mapped
+	widget is somewhere in 3D space. The function eyeCoordsDif is primarily
+	for positioning the widgits in 3D space (translation), whereas the 
+	mouseinwin function is specifically for mapping the mouse event coordinates
+	into the widgit's transformed coordinate system.
+
+	This class also provides important collision detection functionality - it
+	does this by mapping the corners of the (widgit mapped) polygon to the viewport,
+	and then determing if the (mouse) coordinate is within this area. Mapping 
+	polygon vertices to the veiwport is done using gluUnproject, whereas converting
+	viewport coordinates into polygon coordinates is done doing something similar to
+	gluProject (the opposite operation).
+
+	This class also provides widget frame drawing functionality (which may become redundant)
+	It does this by drawing cylinders in terms of how the polygon corners mapped
+	to the viewport - this causes the loss of depth information
+	
+	The only important behaviour expected of something that uses this class is
+	1 - you must call update() just before you draw the textured widgit polygon
+	(i.e. when the contents of the OpenGL modelview matrix reflect all of the operations
+	that are applied before rendering)
+	2 - you should call set_update_P_inv() if the OpenGL projection matrix is altered
+	"""
 	def __init__(self, parent):
 		self.parent = parent
 		
+		# the first time update is called, the projection view matrix is stored
 		self.update_P_inv = True
 		
-		self.glbasicobjects = EMBasicObjects()
+		# need basic objects for drawing the frame
+		self.glbasicobjects = EMBasicOpenGLObjects()
+		
+		
 		self.borderwidth = 3.0
 
 	def set_update_P_inv(self,val=True):
 		self.update_P_inv = val
 	
 	def drawFrame(self):
-	
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
@@ -246,7 +304,7 @@ class ViewportDepthTools:
 		
 		return atan2(sinaeb,cosaeb)
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2):
+	def eyeCoordsDif(self,x1,y1,x2,y2,maintaindepth=True):
 		# get x and y normalized device coordinates
 		xNDC1 = 2.0*(x1-self.wview[0])/self.wview[2] - 1
 		yNDC1 = 2.0*(y1-self.wview[1])/self.wview[3] - 1
@@ -269,18 +327,21 @@ class ViewportDepthTools:
 		
 		# If the widget is planar (which obviosuly holds), and along z=0, then the following holds
 		zNDC1 = (PM_inv[0,2]*xNDC1 + PM_inv[1,2]*yNDC1 + PM_inv[3,2])/(-PM_inv[2,2])
-		#zNDC2 = (PM_inv[0,2]*xNDC2 + PM_inv[1,2]*yNDC2 + PM_inv[3,2])/(-PM_inv[2,2])
+		if ( maintaindepth == False):
+			zNDC2 = (PM_inv[0,2]*xNDC2 + PM_inv[1,2]*yNDC2 + PM_inv[3,2])/(-PM_inv[2,2])
+		else:
+			zNDC2 = zNDC1
 	
 		# We need zprime, which is really 'eye_z' in OpenGL lingo
 		zprime1 = 1.0/(xNDC1*self.P_inv[0,3]+yNDC1*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
-		zprime2 = 1.0/(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC1*self.P_inv[2,3]+self.P_inv[3,3])
+		zprime2 = 1.0/(xNDC2*self.P_inv[0,3]+yNDC2*self.P_inv[1,3]+zNDC2*self.P_inv[2,3]+self.P_inv[3,3])
 
 		ex1 = (self.P_inv[0,0]*xNDC1 + self.P_inv[1,0]*yNDC1 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime1;
 		ey1 = (self.P_inv[0,1]*xNDC1 + self.P_inv[1,1]*yNDC1 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime1;
 		#ez1 = (self.P_inv[0,2]*xNDC1 + self.P_inv[1,2]*yNDC1 + self.P_inv[2,2]*zNDC1+self.P_inv[3,2])*zprime1;
 		
-		ex2 = (self.P_inv[0,0]*xNDC2 + self.P_inv[1,0]*yNDC2 + self.P_inv[2,0]*zNDC1+self.P_inv[3,0])*zprime2;
-		ey2 = (self.P_inv[0,1]*xNDC2 + self.P_inv[1,1]*yNDC2 + self.P_inv[2,1]*zNDC1+self.P_inv[3,1])*zprime2;
+		ex2 = (self.P_inv[0,0]*xNDC2 + self.P_inv[1,0]*yNDC2 + self.P_inv[2,0]*zNDC2+self.P_inv[3,0])*zprime2;
+		ey2 = (self.P_inv[0,1]*xNDC2 + self.P_inv[1,1]*yNDC2 + self.P_inv[2,1]*zNDC2+self.P_inv[3,1])*zprime2;
 		
 		return [ex2-ex1,ey2-ey1]
 
@@ -321,23 +382,30 @@ class ViewportDepthTools:
 		return (xcoord + self.parent.width()*0.5, 0.5*self.parent.height()-ycoord)
 
 class EMGLDrawer2D:
+	"""
+	FIXME: insert comments
+	
+	"""
 	def __init__(self, parent=None,image=None):
 		self.parent = parent
 		self.cam = Camera2(self)
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
 		self.image2dtex = EMImage2DTex(image,self)
-		
+		self.image2dtex.cam.basicmapping=True
 		self.vdtools = ViewportDepthTools(self)
 		
 		self.drawFrame = True
 
-	def eyeCoordsDif(self,x1,y1,x2,y2):
-		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2)
+	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
 	
 	def set_update_P_inv(self,val=True):
+		#FIXME - both of these objects updates and inverts the OpenGL
+		# projection matrix - they both have a copy - so it would be 
+		# more efficient if there were a common place where the matrix
+		# and its inverse are stored
 		self.vdtools.set_update_P_inv(val)
-		
 		self.image2dtex.set_update_P_inv(val)
 	
 	def width(self):
@@ -408,7 +476,10 @@ class EMGLDrawer2D:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mousePressEvent(event)
 		else:
-			self.image2dtex.mousePressEvent(event)
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.image2dtex.mousePressEvent(qme)
+			#self.image2dtex.mousePressEvent(event)
 		
 		self.updateGL()
 			
@@ -424,14 +495,21 @@ class EMGLDrawer2D:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			self.image2dtex.mouseMoveEvent(event)
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.image2dtex.mouseMoveEvent(qme)
+			#self.image2dtex.mouseMoveEvent(event)
+		
 		self.updateGL()
 
 	def mouseReleaseEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
-			self.image2dtex.mouseReleaseEvent(event)
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.image2dtex.mouseReleaseEvent(qme)
+			#self.image2dtex.mouseReleaseEvent(event)
 
 		self.updateGL()
 		
@@ -457,7 +535,7 @@ class EMQtWidgetDrawer:
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		self.cam.motionRotate(0,0)
 		self.borderwidth = 3.0
-		self.glbasicobjects = EMBasicObjects()
+		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.setQtWidget(qwidget)
 		self.P_inv = None
 		self.update_P_inv = True
@@ -496,8 +574,6 @@ class EMQtWidgetDrawer:
 		if ( widget != None ):
 			#self.qwidget.setVisible(True)
 			self.qwidget.setEnabled(True)
-			self.glbasicobjects.setWidth(self.qwidget.width())
-			self.glbasicobjects.setHeight(self.qwidget.height())
 			self.genTexture = True
 			self.updateTexture()
 			
@@ -881,8 +957,8 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		#print "file dialog finished with code",val
 		if ( val == 1 ):
 			for i in self.fd.selectedFiles():
-				#try:
-					print i,str(i)
+				try:
+					#print i,str(i)
 					a=EMData.read_images(str(i),[0])
 					#if len(a)==1 : a=a[0]
 					#w.setWindowTitle("EMImage (%s)"%f)
@@ -893,7 +969,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 					
 					#self.qwidgets[0].cam.setCamX(100)
 					#self.initFlag = False
-				#except:
+				except:
 					print "error, could not open",i
 			
 	def timer(self):
