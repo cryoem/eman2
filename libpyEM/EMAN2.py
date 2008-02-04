@@ -50,6 +50,10 @@ Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4
 GUIMode=0
 GUIbeingdragged=None
 
+# Aliases
+EMData.get=EMData.get_value_at
+EMData.set=EMData.set_value_at
+
 def timer(fn,n=1):
 	a=time.time()
 	for i in range(n): fn()
