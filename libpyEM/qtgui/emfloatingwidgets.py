@@ -392,7 +392,8 @@ class EMGLDrawer2D:
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
 		self.image2dtex = EMImage2DTex(image,self)
-		self.image2dtex.cam.basicmapping=True
+		self.image2dtex.depthtracking = False
+		self.image2dtex.cam.basicmapping = True
 		self.vdtools = ViewportDepthTools(self)
 		
 		self.drawFrame = True
@@ -917,6 +918,8 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		
 		glClearStencil(0)
 		glEnable(GL_STENCIL_TEST)
+		
+		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 	
 	def addQtWidgetDrawer(self,widget):
 		w = EMQtWidgetDrawer(self)

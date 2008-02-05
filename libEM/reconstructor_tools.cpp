@@ -1193,7 +1193,7 @@ bool FourierInserter3DMode7::effected_pixels_are_zero(const float& xx, const flo
 void FourierInserter3DMode8::init()
 {
 	FourierPixelInserter3D::init();
-	int P = (1.0+0.25)*nx+1;
+	int P = (int)((1.0+0.25)*nx+1);
 	float r = (float)(nx+1)/(float)P;
 	mFreqCutoff = 2;
 	mDFreq = 0.2;
@@ -1220,7 +1220,7 @@ bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, cons
 				dist = sqrtf(dist);
 				// We enforce a spherical kernel
 				if ( dist > mFreqCutoff ) continue;
-				int idx = sizeWmid + dist/mDFreq;
+				int idx = (int)(sizeWmid + dist/mDFreq);
 				if (idx >= sizeW) throw;
 				float residual = dist/mDFreq - (int)(dist/mDFreq);
 				if ( fabs(residual) > 1) throw;

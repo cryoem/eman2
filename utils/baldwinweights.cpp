@@ -41,7 +41,7 @@ using std::endl;
 int main(int argc, char *argv[])
 {
 	int nx = 64;
-	int P = (1.0+0.25)*nx+1;
+	int P = (int)((1.0+0.25)*nx+1);
 	float r = (float)(nx+1)/(float)P;
 	int mFreqCutoff = 2;
 	float mDFreq = 0.2;

@@ -72,11 +72,10 @@ class EM3DHelloWorld(EMImage3DObject):
 
 	def getType(self):
 		return "Font"
-	
 
 	def render(self):
 		#if (not isinstance(self.data,EMData)): return
-		
+		print "in render"
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
 		depth = glIsEnabled(GL_DEPTH_TEST)
@@ -95,7 +94,9 @@ class EM3DHelloWorld(EMImage3DObject):
 		else:
 			glDisable(GL_LIGHTING)
 
+		print "position camera"
 		self.cam.position()
+		print "done"
 			
 		glShadeModel(GL_SMOOTH)
 
@@ -147,7 +148,8 @@ class EM3DHelloWorld(EMImage3DObject):
 		else: glPolygonMode(GL_FRONT, GL_FILL)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 		else: glPolygonMode(GL_BACK, GL_FILL)
-			
+		
+		print "left render"
 	def init(self):
 		self.mmode = 0
 		self.wire = False
@@ -265,7 +267,7 @@ class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 
 		EM3DHelloWorldWidget.allim[self]=0
-		self.isosurface = EM3DHelloWorld(self)
+		self.helloworld = EM3DHelloWorld(self)
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
@@ -301,7 +303,7 @@ class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
 		
 		
 		glPushMatrix()
-		self.isosurface.render()
+		self.helloworld.render()
 		glPopMatrix()
 
 	def resizeGL(self, width, height):
@@ -323,28 +325,31 @@ class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.isosurface.resizeEvent()
+		self.helloworld.resizeEvent()
 
 	def setInit(self):
-		self.isosurface.setInit()
+		self.helloworld.setInit()
 
 	def showInspector(self,force=0):
-		self.isosurface.showInspector()
+		self.helloworld.showInspector()
 	
 	def closeEvent(self,event) :
-		self.isosurface.closeEvent(event)
+		self.helloworld.closeEvent(event)
 		
 	def mousePressEvent(self, event):
-		self.isosurface.mousePressEvent(event)
+		print "hello from mouse press event"
+		self.helloworld.mousePressEvent(event)
+		print "finished handling mouse press event"
+		self.updateGL()
 		
 	def mouseMoveEvent(self, event):
-		self.isosurface.mouseMoveEvent(event)
+		self.helloworld.mouseMoveEvent(event)
 	
 	def mouseReleaseEvent(self, event):
-		self.isosurface.mouseReleaseEvent(event)
-			
+		self.helloworld.mouseReleaseEvent(event)
+		
 	def wheelEvent(self, event):
-		self.isosurface.wheelEvent(event)
+		self.helloworld.wheelEvent(event)
 
 	def get_render_dims_at_depth(self, depth):
 		# This function returns the width and height of the renderable 
