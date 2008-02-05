@@ -452,7 +452,6 @@ class EMImage3DObject:
 			self.showInspector(1)
 		
 		elif event.button()==Qt.LeftButton:
-			print 'got left butt'
 			if self.mmode==0:
 				self.mpressx = event.x()
 				self.mpressy = event.y()
@@ -464,7 +463,6 @@ class EMImage3DObject:
 				self.cam.t3d_stack.append(t3d)
 				self.updateInspector(t3d)
 				
-				print 'returning'
 				return
 		elif event.button()==Qt.RightButton:
 			if self.mmode==0:

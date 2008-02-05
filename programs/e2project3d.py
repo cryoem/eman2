@@ -141,6 +141,13 @@ def main():
 	# generate and save all the projections to disk - that's it, that main job is done
 	if ( options.verbose ):
 		print "Generating and saving projections..."
+		
+	if (DEBUG):
+		tally = 0
+		for i in eulers:
+			print tally,i[0] * rad2deg, i[1] * rad2deg, i[2] * rad2deg
+			tally += 1
+		exit(1)
 	generate_and_save_projections(options, data, eulers, options.smear, options.phitoo)
 	if ( options.verbose ):
 		print "%s...done" %progname
@@ -260,8 +267,13 @@ def get_asym_unit_orientations(symmetry, prop, nomirror, perturb = False):
 		alt_iterator = sym_object.asym_unit_alt_min()
 		
 	eulers = []
-	while ( alt_iterator <= altmax ):
+	while ( alt_iterator < altmax + prop * deg2rad ):
 		# get h
+		
+		if (alt_iterator == altmax):
+			print "hey prestos"
+			exit(1)
+		
 		h = get_h(prop,alt_iterator,sym_object.get_maxcsym())
 		
 		#not sure what this does?
@@ -271,7 +283,7 @@ def get_asym_unit_orientations(symmetry, prop, nomirror, perturb = False):
 			h = azmax
 			
 		az_iterator = 0.0;
-		while ( az_iterator < azmax - h / 4):
+		while ( az_iterator < azmax - h / 4.0):
 			# FIXME: add an intelligent comment - this was copied from old code	
 			if ( az_iterator > math.pi and alt_iterator > math.pi/(2.0-0.001) and alt_iterator < math.pi/(2.0+0.001) ):
 				az_iterator = az_iterator + h
@@ -350,12 +362,12 @@ def get_h(prop,altitude,maxcsym):
 		return h
 	
 def generate_and_save_projections(options,data,eulers,smear=0, phiprop=0):
-	
+	t3d = Transform3D()
+	b = {"t3d": t3d }
 	for i,euler in enumerate(eulers):
 		#if i == 0 : continue
-		a = {"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg}
-		t3d = Transform3D(EULER_EMAN, a)
-		b = {"t3d": t3d }
+		#a = {"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg}
+		t3d.set_rotation(EULER_EMAN, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg)
 		p=data.project(options.projector,b)
 		
 		#FIXME:: In EMAN2 everything should be set in degrees but atm radians are being used in error!
@@ -394,7 +406,6 @@ def verify_mirror_test(data, eulers, symmetry, projector):
 	
 	sym_object = get_sym_object( symmetry )
 	
-
 	for i,euler in enumerate(eulers) :
 		a = {"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg}
 		t3d = Transform3D(EULER_EMAN, a)
