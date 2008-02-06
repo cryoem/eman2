@@ -234,6 +234,10 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	dict["MRC.nx"] = mrch.nx;
 	dict["MRC.ny"] = mrch.ny;
 	dict["MRC.nz"] = mrch.nz;
+	
+	dict["MRC.xlen"] = mrch.xlen;
+	dict["MRC.ylen"] = mrch.ylen;
+	dict["MRC.zlen"] = mrch.zlen;
 
 	dict["MRC.alpha"] = mrch.alpha;
 	dict["MRC.beta"] = mrch.beta;
