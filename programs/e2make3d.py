@@ -58,7 +58,7 @@ def print_usage():
 def main():
 
 	parser=OptionParser(usage="%prog <input file> [options]", version="%prog 2.0a")
-	parser.add_option("--out", dest="outfile", default="", help="Output 3D MRC file")
+	parser.add_option("--out", dest="outfile", default="threed.mrc", help="Output 3D MRC file")
 	parser.add_option("--sym", dest="sym", default="UNKNOWN", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct")
 	parser.add_option("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction")
 	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
@@ -160,7 +160,7 @@ def main():
 			
 	recon_type = (parsemodopt(options.recon_type))[0]
 	
-	if recon_type=="fourier" or recon_type=="nn4":
+	if recon_type=="fourier" or recon_type=="nn4" or recon_type=="baldwinwoolford":
 		output=fourier_reconstruction(options)
 	elif recon_type=="back_projection":
 		output=back_projection_reconstruction(options)
@@ -178,15 +178,11 @@ def main():
 	if ( options.mask):	
 		output.process_inplace("mask.ringmean",{"ring_width":options.mask})
 
-	if (options.outfile==""):
-		output.write_image("threed.mrc")
-		if not(options.verbose):
-			print "Output File: threed.mrc"
-	else:
-		output.write_image(options.outfile)
-		if not(options.verbose):
+	output.write_image(options.outfile)
+	if options.verbose:
 			print "Output File: "+options.outfile
 
+	
 	E2end(logger)
 	
 	print "Exiting"
@@ -288,6 +284,7 @@ def back_projection_reconstruction(options):
 	params["size"] = xsize;
 	params["sym"] = options.sym
 
+	params.pop("use_weights")
 	recon.insert_params(params)
 
 	recon.setup()
@@ -522,7 +519,6 @@ def fourier_reconstruction(options):
 	output = recon.finish()
 	if (options.verbose):
 		print "Finished Reconstruction"
-		
 	#if(options.savenorm):   # need to alter reconstructor class to get access to this
 		#nm=EMData()
 		#nm.set_size(out2.get_xsize(),out2.get_ysize(), out2.get_zsize())
@@ -533,8 +529,8 @@ def fourier_reconstruction(options):
 			#nm.set_value_at_fast(i/2,math.hypot(out2.get_value_at(i,0,0),out2.get_value_at(i+1,0,0)))
 		#nm.write_image("map.mrc")
 					
-	if(recon.get_params()["dlog"]):
-		output.process_inplace("math.exp")
+	#if(recon.get_params()["dlog"]):
+		#output.process_inplace("math.exp")
 			
 	#if(options.resmap): #doesn't work
 		#out=EMData()
@@ -564,7 +560,7 @@ def fourier_reconstruction(options):
 			#out.set_value_at_fast(i,temp)
 			#out.set_value_at_fast(i+1,temp)
 		#out.write_image("filter3d.mrc")
-		
+
 	return output
 	
 def check(options,verbose=False):

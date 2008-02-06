@@ -388,7 +388,11 @@ The basic design of EMAN Processors: <br>\
 		EMData *sum;
 		int dosqrt;
 	};
-
+	/**
+	 * This processor performs fast convolution in Fourier space
+	 *@author David Woolford
+	 *@date 2007/12/04
+	 */
 	class ConvolutionProcessor : public Processor 
 	{
 		public:
@@ -3582,7 +3586,10 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/** Undo the effects of the FourierToCenterProcessor
-	*/
+	 * @author David Woolford <woolford@bcm.edu> 
+	 * @date October 2007
+	 * @ingroup tested3c
+	 */
 	class FourierToCornerProcessor:public Processor
 	{
 		public:
@@ -3616,6 +3623,10 @@ The basic design of EMAN Processors: <br>\
 	 * After this you operate on the Fourier image in convenient format, then
 	 * you call FourierToCornerProcessor (above) and then inverse FT to get to the
 	 * original image
+	 *
+	 * @author David Woolford <woolford@bcm.edu> 
+	 * @date October 2007
+	 * @ingroup tested3c
 	 */
 	class FourierToCenterProcessor:public Processor
 	{
@@ -3670,7 +3681,7 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/** Translates a centered image to the corner
-	 * DEPRECATED - works only for even dimensioned images
+	 * partially DEPRECATED - works only for even dimensioned images
 	 * instead use PhaseToCenterProcessor and PhaseToCornerProcessor
 	 * All explicit calls to this function's process inplace function
 	 * should be removed from the code and replace to calls to the aforementioned
@@ -3679,6 +3690,10 @@ The basic design of EMAN Processors: <br>\
 	 * but the class should be kept, because the PhaseToCenterProcessor and PhaseToCornerProcessor
 	 * derive from this class (i.e. both of these classes use the same functions, but call them in a
 	 * different order)
+	 *
+	 * @author David Woolford <woolford@bcm.edu> 
+	 * @date October 2007
+	 * @ingroup tested3c
 	 */
 	class Phase180Processor:public Processor
 	{
@@ -3741,7 +3756,10 @@ The basic design of EMAN Processors: <br>\
 	 * Undoes the PhaseToCornerProcessor
 	 *
 	 * works for 1D, 2D and 3D images, for all combinations of even and oddness
-	 * 
+	 *
+	 * @author David Woolford <woolford@bcm.edu> 
+	 * @date October 2007
+	 * @ingroup tested3c
 	 */
 	class PhaseToCenterProcessor:public Phase180Processor
 	{
@@ -3767,6 +3785,10 @@ The basic design of EMAN Processors: <br>\
 	
 	/** Translates a centered image to the corner
 	 * works for 1D, 2D and 3D images, for all combinations of even and oddness
+	 *
+	 * @author David Woolford <woolford@bcm.edu> 
+	 * @date October 2007
+	 * @ingroup tested3c
 	 */
 	class PhaseToCornerProcessor:public Phase180Processor
 	{

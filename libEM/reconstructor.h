@@ -417,7 +417,7 @@ namespace EMAN
 			d.put("pad", EMObject::INT, "Optional. The amount to pad the input images to - should be greater than the image size.");
 			d.put("x_pad", EMObject::INT, "Optional. The amount to pad the input images to in the x direction - should be greater than the image x size.");
 			d.put("y_pad", EMObject::INT, "Optional. The amount to pad the input images to in the y direction - should be greater than the image y size.");
-			d.put("mode", EMObject::INT, "Optional. Fourier pixel insertion mode [1-7] - mode 2 is default.");
+			d.put("mode", EMObject::INT, "Optional. Fourier pixel insertion mode [1-8] - mode 2 is default.");
 			d.put("weight", EMObject::FLOAT, "Optional. A temporary weight variable, used to weight slices as they are inserted. Default is 1");
 			d.put("hard", EMObject::FLOAT, "Optional. The quality metric threshold. Default is 0 (off).");
 			d.put("edgenorm", EMObject::BOOL, "Optional. Whether or not to perform edge normalization on the inserted slices before Fourier transforming them. Default is true." );
@@ -574,6 +574,7 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("mode", EMObject::INT, "Optional. Fourier pixel insertion mode [1-8] - mode 2 is default.");
 			d.put("x_in", EMObject::INT, "Necessary. The x dimension of the input images.");
 			d.put("y_in", EMObject::INT, "Necessary. The y dimension of the input images.");
 			d.put("zsample", EMObject::INT, "Optional. The z dimension (Fourier sampling) of the reconstructed volume, very useful for tomographic reconstruction. Works for general volumes.");
@@ -583,7 +584,7 @@ namespace EMAN
 			d.put("x_pad", EMObject::INT, "Optional. The amount to pad the input images to in the x direction - should be greater than the image x size.");
 			d.put("y_pad", EMObject::INT, "Optional. The amount to pad the input images to in the y direction - should be greater than the image y size.");
 			d.put("sym", EMObject::STRING, "Optional. The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?. Default is c1");
-			
+			d.put("edgenorm", EMObject::BOOL, "Optional. Whether or not to perform edge normalization on the inserted slices before Fourier transforming them. Default is true." );
 			d.put("tomo_weight", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes inserted slices to be weighted by 1/cos(alt) - alt is the tilt angle. Default is false.");
 			d.put("tomo_mask", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes inserted slices to have their edge pixels masked according to tilt angle, ensuring that each projection image depicts approximately the same volume, default is false." );
 			d.put("tomo", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes cool stuff." );
@@ -591,6 +592,13 @@ namespace EMAN
 			d.put("t_emm_gauss", EMObject::INT, "Optional. An optional gaussain fall off for tomo_mask" );
 			d.put("maskwidth", EMObject::INT, "The width of the Fourier space kernel used to interpolate data to grid points" );
 			d.put("postmultiply", EMObject::BOOL, "A flag that controls whether or not the reconstructed volume is post multiplied in real space by the IFT of the weighting function. Default is on");
+			// Currently redundant
+			d.put("3damp", EMObject::BOOL, "this doesn't work, fixme dsaw");
+			d.put("weight", EMObject::FLOAT, "Optional. A temporary weight variable, used to weight slices as they are inserted. Default is 1");
+			d.put("hard", EMObject::FLOAT, "Optional. The quality metric threshold. Default is 0 (off).");
+			d.put("apix", EMObject::FLOAT, "Optional. Angstrom per pixel of the input images, default is 1.0.");
+			d.put("quiet", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
+			d.put("dlog", EMObject::BOOL, "Optional. This is a residual parameter from EMAN1 that has not yet been addressed in the EMAN2 implementation.");
 			return d;
 		}
 		/** Finish reconstruction and return the complete model.
@@ -626,6 +634,14 @@ namespace EMAN
 			params["edgenorm"] = true;
 			params["t_emm_gauss"] = 10;
 			params["maskwidth"] = 3;
+
+			// Currently redundant
+			params["dlog"] = false;
+			params["3damp"] = false;
+			params["weight"] = 1.0;
+			params["hard"] = 0.05;
+			params["apix"] = 1.0;
+			params["quiet"] = false;
 		}
 		
 	};

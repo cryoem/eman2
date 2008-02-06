@@ -139,10 +139,12 @@ class EMBasicOpenGLObjects:
 class ViewportDepthTools:
 	"""
 	This class provides important tools for EMAN2 floating widgets -
-	these are widgets that get mapped as textures to polygons situated
-	in OpenGL volumes.
+	these are either qt widgets that get mapped as textures to
+	polygons situated in OpenGL volumes, or are OpenGL objects themselves
+	(such as a 2D image texture, or a 3D isosurface), that get drawn
+	within a frame somewhere in the 3D world.
 	
-	These widgets need to have mouse events (etc) correctly rerouted to them,
+	These objects need to have mouse events (etc) correctly rerouted to them,
 	and this is not trivial (but not difficult) to do, considering that the
 	mouse events are always in terms of the viewport, but the texture mapped
 	widget is somewhere in 3D space. The function eyeCoordsDif is primarily
@@ -163,9 +165,10 @@ class ViewportDepthTools:
 	
 	The only important behaviour expected of something that uses this class is
 	1 - you must call update() just before you draw the textured widgit polygon
-	(i.e. when the contents of the OpenGL modelview matrix reflect all of the operations
-	that are applied before rendering)
-	2 - you should call set_update_P_inv() if the OpenGL projection matrix is altered
+	other object (i.e. when the contents of the OpenGL modelview matrix reflect 
+	all of the operations that are applied before rendering)
+	2 - you should call set_update_P_inv() if the OpenGL projection matrix is altered,
+	this typically happens when resizeGL is called in the root widgit.
 	"""
 	def __init__(self, parent):
 		self.parent = parent
@@ -193,10 +196,13 @@ class ViewportDepthTools:
 		glLoadIdentity()
 		
 		glColor(.9,.2,.8)
+		# this is a nice light blue color (when lighting is on)
+		# and is the default color of the frame
 		glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,50.0)
-		#print "drawing frame"
+		
+		#draw the cylinders around the edges of the frame
 		glPushMatrix()
 		self.cylinderToFrom(self.mc00,self.mc10)
 		glPopMatrix()
@@ -210,13 +216,7 @@ class ViewportDepthTools:
 		self.cylinderToFrom(self.mc01,self.mc00)
 		glPopMatrix()
 		
-		#print "done drawing frame"
-		#glBegin(GL_LINES)
-		#glVertex(self.mc00[0],self.mc00[1])
-		#glVertex(self.mc11[0],self.mc11[1])
-		#glVertex(self.mc01[0],self.mc01[1])
-		#glVertex(self.mc10[0],self.mc10[1])
-		#glEnd()
+		# draw spheres as nodes at the corners of the frame
 		glPushMatrix()
 		self.sphereAt(self.mc00)
 		glPopMatrix()
@@ -238,6 +238,7 @@ class ViewportDepthTools:
 		glMatrixMode(GL_MODELVIEW)
 			
 	def cylinderToFrom(self,To,From):
+		# draw a cylinder to To from From
 		dx = To[0] - From[0]
 		dy = To[1] - From[1]
 		
@@ -280,7 +281,9 @@ class ViewportDepthTools:
 			self.mc01 = [0,0,0]
 	
 	def isinwin(self,x,y):
-		
+		# this function can be called to determine
+		# if the event at x,y (in terms of the viewport)
+		# was within the frame of the object being drawn
 		try:
 			a = [self.mc00[0]-x, self.mc00[1]-y]
 			b = [self.mc01[0]-x, self.mc01[1]-y]

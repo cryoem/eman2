@@ -264,7 +264,11 @@ void FourierReconstructor::setup()
 	
 	// Finally adjust nx if for Fourier transform even odd issues
 	bool is_fftodd = nx % 2 == 1;
-	nx += 2*(!is_fftodd);
+
+	// The Fourier transform requires one extra pixel in the x direction,
+	// which is two spaces in memory, one each for the complex and the 
+	// real components
+	nx += 2-is_fftodd;
 	
 	// Odd dimension support is here atm, but not above.
 	image = new EMData();
@@ -414,7 +418,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	int y_in = input_slice->get_ysize();
 	int x_in = input_slice->get_xsize();
 	// Addjust the dimensions to account for odd and even ffts
-	x_in -= 2*(!input_slice->is_fftodd());
+// 	x_in -= 2*(!input_slice->is_fftodd());
 				
 	if ( y_in != x_in )
 	{
@@ -528,7 +532,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	
 	int y_in = slice->get_ysize();
 	int x_in = slice->get_xsize();
-	x_in -= 2*(!slice->is_fftodd());
+// 	x_in -= 2*(!slice->is_fftodd());
 				
 	if ( y_in != x_in )
 	{
@@ -825,14 +829,14 @@ EMData *FourierReconstructor::finish()
 	}
 	
 	// 
-	image->process_inplace("xform.fourierorigin");
+	image->process_inplace("xform.fourierorigin.tocorner");
 	image->do_ift_inplace();
 	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
-	image->postift_depad_corner_inplace();
+	bool is_fftodd = nx%2;
+	if ( !is_fftodd ) image->postift_depad_corner_inplace();
 	image->process_inplace("xform.phaseorigin.tocenter");
 	
 	// If the image was padded it should be age size, as the client would expect
-	bool is_fftodd = nx%2;
 	if ( (nx-2*(!is_fftodd)) != output_x || ny != output_y || nz != output_z )
 	{
 		FloatPoint origin( (nx-output_x)/2, (ny-output_y)/2, (nz-output_z)/2 );
