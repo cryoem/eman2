@@ -5154,7 +5154,7 @@ float Util::eval(char * images,EMData * img, vector<int> S,int N, int ,int size)
 #define key(i)			key     [i-1]
 
 
-vector<double> Util::vrdg(const vector<float>& th, const vector<float>& ph)
+vector<double> Util::vrdg(const vector<float>& ph, const vector<float>& th)
 { 
 
 	ENTERFUNC;
@@ -5170,7 +5170,7 @@ vector<double> Util::vrdg(const vector<float>& th, const vector<float>& ph)
 	theta   = 	(double*) calloc(len,sizeof(double));
 	phi     = 	(double*) calloc(len,sizeof(double));
 	weight  = 	(double*) calloc(len,sizeof(double));
-	key     =      (int*) calloc(len,sizeof(int));
+	key     =       (int*) calloc(len,sizeof(int));
 	const float *thptr, *phptr;
 
 	thptr = &th[0];
@@ -5585,7 +5585,8 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 
 
 	double *ds, *x, *y, *z;
-	double tol=1.0e-8;
+	double tol  = 1.0e-8;
+	double dtol = 15; 
 	double a;
 
 	/*if(last){
@@ -5633,6 +5634,8 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
         bool colinear=true;
 	while(colinear)
 	{
+
+	L1:
  	    for(i = 0; i<nt; i++){
 		x[i] = theta[i];
 		y[i] = phi[i];
@@ -5641,10 +5644,23 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	    }
 
 	    Util::disorder2(x, y, key, n);
+
+	    // check if the first three angles are not close, else shuffle
+	    double val;
+            for(k=0; k<2; k++){
+		for(i=k+1; i<3; i++){
+		    val = (x[i]-x[k])*(x[i]-x[k]) + (y[i]-y[k])*(y[i]-y[k]);
+		    if( val  < dtol) {
+			goto L1;
+		    } 
+		}
+	    }
+	   	   	    
 	    Util::ang_to_xyz(x, y, z, n);
 
 	    //  Make sure that first three has no duplication
 	    bool dupnode=true;
+	    dupnode=true;
   	    while(dupnode)
 	    {
 	        for(k=0; k<2; k++){
@@ -5657,11 +5673,10 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	        }
 	        dupnode = false;
 	    }
-        
-
+	    
        	    ier = 0;
 	    status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew, indx, lcnt, iwk, good, ds, &ier);
-
+	    
 	    if (status != 0) {
 	 	printf(" error in trmsh3 \n");
 		exit(1);
@@ -5674,14 +5689,15 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 
 	    mdup=n-nout;
 	    if (ier == -2) {
-		printf("in TRMESH:the first three nodes are collinear*** disorder again\n");
+		printf("in TRMESH:the first three nodes are colinear*** disorder again\n");
 	    }
 	    else 
 	    {
 	        colinear=false;
 	    }
         }
-
+	
+	
 	Assert( ier != -2 );
 //  Create a list of unique nodes GOOD, the numbers refer to locations on the full list
 //  INDX contains node numbers from the squeezed list
@@ -5692,6 +5708,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 			good[nd-1]=k;
 		}
 	}
+
 
 //
 // *** Compute the Voronoi region areas.
@@ -5713,6 +5730,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 			}
 		}
 	}
+
 
 // Fill out the duplicated weights
 	for(i = 1; i<=n; i++){
@@ -5738,6 +5756,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	free(x);
 	free(y);
 	free(z);
+
 
 	EXITFUNC;
 }
@@ -6093,6 +6112,8 @@ int i_dnnt(double *x)
 	return 0;
     }
 
+    //printf("pass check colinear\n");
+
 /* Initialize LNEW, INDX, and LCNT, and test for N = 3. */
 
     *lnew = 7;
@@ -6170,7 +6191,6 @@ int i_dnnt(double *x)
 
 /* Remove KU from the set of unprocessed nodes associated */
 /*   with NEAR(KU). */
-
 	i__ = nku;
 	if (near__[i__] == ku) {
 	    near__[i__] = next[ku];
@@ -6193,6 +6213,7 @@ L2:
 	    ++lcnt[nku];
 	    goto L6;
 	}
+
 
 /* Add a new triangulation node KT with LCNT(KT) = 1. */
 
@@ -6416,6 +6437,7 @@ L6:
 
     kk = *k;
     if (kk < 4) {
+	printf("goto L3\n");
 	goto L3;
     }
 
