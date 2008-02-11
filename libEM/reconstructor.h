@@ -543,11 +543,14 @@ namespace EMAN
 	class BaldwinWoolfordReconstructor : public FourierReconstructor
 	{
 		public:
-		BaldwinWoolfordReconstructor() {}
+		BaldwinWoolfordReconstructor() : W(0) {}
 		
 		/** Deconstructor
 		 */
-		virtual ~BaldwinWoolfordReconstructor() { }
+		virtual ~BaldwinWoolfordReconstructor() {
+			if ( W != 0 )
+				delete [] W;
+		}
 
 		/** Get the unique name of the reconstructor
 		 */
@@ -614,6 +617,8 @@ namespace EMAN
 		
 		void insert_density_at(const float& x, const float& y, const float& z);
 		
+		virtual void setup();
+		
 		protected:
 		/** Load default settings
 		*/
@@ -643,6 +648,11 @@ namespace EMAN
 			params["apix"] = 1.0;
 			params["quiet"] = false;
 		}
+		
+		private:
+
+		float* W;
+		float dfreq;
 		
 	};
 	

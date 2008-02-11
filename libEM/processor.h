@@ -450,10 +450,6 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Determines the image gradient in the x direction";
 		}
-		
-		void set_params(const Dict & new_params)
-		{
-		}
 
 		TypeDict get_param_types() const
 		{
@@ -483,10 +479,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return "Determines the image gradient in the y direction";
 			}
-		
-			void set_params(const Dict & new_params)
-			{
-			}
+	
 
 			TypeDict get_param_types() const
 			{
@@ -517,10 +510,6 @@ The basic design of EMAN Processors: <br>\
 				return "Determines the image gradient in the z direction";
 			}
 		
-			void set_params(const Dict & new_params)
-			{
-			}
-
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
@@ -4431,8 +4420,8 @@ The basic design of EMAN Processors: <br>\
 	class TestTomoImage : public TestImageProcessor
 	{
 		public:
-			/** Make an image consisting entirely of a cross
-		 * @param image the image to operate upon
+			/** Make a useful tomographic phantom image 
+			 * @param image the image to operate upon
 			 */
 			void process_inplace(EMData * image);
 		
@@ -4503,7 +4492,8 @@ The basic design of EMAN Processors: <br>\
 	class TestImageAxes : public TestImageProcessor
 	{
 		public:
-			/** Make an image consisting entirely of a cross
+			/** Make an image where the axes (where x,y and z=0) are some
+			 * nono zero value
 			* @param image the image to operate upon
 			 */
 			void process_inplace(EMData * image);

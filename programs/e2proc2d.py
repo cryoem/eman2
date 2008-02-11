@@ -107,7 +107,7 @@ def main():
 					type="string", help="Excludes image numbers in EXCLUDE file")
 	parser.add_option("--fftavg", metavar="filename", type="string",
 					help="Incoherent Fourier average of all images and write a single power spectrum image")
-	parser.add_option("--process", metavar="processor_name(param1=value1,param2=value2)", type="string",
+	parser.add_option("--process", metavar="processor_name(param1=value1:param2=value2)", type="string",
 					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 	parser.add_option("--mult", metavar="k", type="float", help="Multiply image by a constant. mult=-1 to invert contrast.")
 	parser.add_option("--first", metavar="n", type="int", default=0, help="the first image in the input to process [0 - n-1])")

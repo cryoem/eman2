@@ -267,13 +267,8 @@ def get_asym_unit_orientations(symmetry, prop, nomirror, perturb = False):
 		alt_iterator = sym_object.asym_unit_alt_min()
 		
 	eulers = []
-	while ( alt_iterator < altmax + prop * deg2rad ):
-		# get h
-		
-		if (alt_iterator == altmax):
-			print "hey prestos"
-			exit(1)
-		
+	while ( alt_iterator <= altmax ):
+		# get h		
 		h = get_h(prop,alt_iterator,sym_object.get_maxcsym())
 		
 		#not sure what this does?

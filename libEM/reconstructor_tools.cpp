@@ -1234,7 +1234,7 @@ bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, cons
 				rdata[k+1] += fq[1]*factor;
 				
 				
-				norm[k/2] += factor;
+				norm[k/2] += 1;
 				
 			}
 		}

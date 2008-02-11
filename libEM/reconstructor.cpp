@@ -418,7 +418,8 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	int y_in = input_slice->get_ysize();
 	int x_in = input_slice->get_xsize();
 	// Addjust the dimensions to account for odd and even ffts
-// 	x_in -= 2*(!input_slice->is_fftodd());
+	if (input_slice->is_fftodd()) x_in -= 1;
+	else x_in -= 2;
 				
 	if ( y_in != x_in )
 	{
@@ -854,6 +855,19 @@ EMData *FourierReconstructor::finish()
 	return image;
 }
 
+
+void BaldwinWoolfordReconstructor::setup()
+{
+	//This is a bit of a hack - but for now it suffices
+	FourierReconstructor::setup();
+	int P = (int)((1.0+0.25)*max_padded_dim+1);
+	float r = (float)(max_padded_dim+1)/(float)P;
+	dfreq = 0.2;
+	if (W != 0) delete [] W;
+	int maskwidth = params.set_default("maskwidth",2);
+	W = Util::getBaldwinGridWeights(maskwidth, P, r,dfreq,0.5,0.2);
+}
+
 EMData* BaldwinWoolfordReconstructor::finish()
 {
 	tmp_data->write_image("density.mrc");
@@ -934,7 +948,7 @@ int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 				float xx = rx * n3d[0][0] + (ry - tny/2) * n3d[1][0];
 				float yy = rx * n3d[0][1] + (ry - tny/2) * n3d[1][1];
 				float zz = rx * n3d[0][2] + (ry - tny/2) * n3d[1][2];
-						
+
 				if (xx < 0 ){
 					xx = -xx;
 					yy = -yy;
@@ -1138,6 +1152,8 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 	int rnx = 2*tnx;
 	int rnxy = 2*tnxy;
 	
+	int mode = 1;
+	
 	float* d = image->get_data();
 	for(int k = zl-wmoz; k <= zl+w; ++k ) {
 		for(int j = yl-wmoy; j <= yl+w; ++j) {
@@ -1176,13 +1192,43 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 				float yd = (y-(float)j);
 				float xd = (x-(float)i);
 				zd *= zd; yd *= yd; xd *= xd;
+				
 				float f = fac*exp(-2.467*(xd+yd+zd));
 				float weight = f/we[kc*tnxy+jc*tnx+ic];
 				// debug - this error should never occur
 				if ( (kc*rnxy+jc*rnx+2*ic+1) >= rnxy*tnz ) throw OutofRangeException(0,rnxy*tnz,kc*rnxy+jc*rnx+2*ic+1, "in pixel insertion" );
+				int k = kc*rnxy+jc*rnx+2*ic;
 				
-				d[kc*rnxy+jc*rnx+2*ic] += weight*f*dt[0];
-				d[kc*rnxy+jc*rnx+2*ic+1] += negfac*weight*f*dt[1];
+				float factor, dist,residual;
+				int sizeW,sizeWmid,idx;
+				switch (mode) {
+					case 0:
+						d[k] += weight*f*dt[0];
+						d[k+1] += negfac*weight*f*dt[1];
+					break;
+					
+					case 1:
+						sizeW = (int)(1+2*w/dfreq);
+						sizeWmid = sizeW/2;
+
+						dist = sqrtf(zd + yd + xd);
+						// We enforce a spherical kernel
+						if ( dist > w ) continue;
+						idx = (int)(sizeWmid + dist/dfreq);
+						if (idx >= sizeW) throw;
+						residual = dist/dfreq - (int)(dist/dfreq);
+						if ( fabs(residual) > 1) throw;
+				
+						factor = (W[idx]*(1.0-residual)+W[idx+1]*residual)*weight;
+				
+						d[k] += dt[0]*factor;
+						d[k+1] += dt[1]*factor;
+					break;
+					
+					default:
+						throw;
+					break;
+				}
 			}
 		}
 	}
