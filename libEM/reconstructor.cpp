@@ -210,52 +210,52 @@ void FourierReconstructor::setup()
 	ny = output_y;
 	nz = output_z;
 	
-	int pad = params["pad"];
-	int x_pad = params["x_pad"];
-	int y_pad = params["y_pad"];
-	if ( x_pad != 0 || y_pad != 0 )
-	{
-		if ( pad != 0 ) throw InvalidValueException(pad, "Ambiguous parameters - you cannot specify pad while also specifying atleast one of y_pad and x_pad.");
-		
-		if ( x_pad != 0 )
-		{
-			if ( x_pad < 0) throw InvalidValueException(x_pad, "x_pad must be greater than zero");
-// 			if ( x_pad % 2 == 1) throw InvalidValueException(x_pad, "x_pad must be even");
-			if ( x_pad <= x_size ) throw InvalidValueException(x_pad, "x_pad must be greater than the image x size");
-			
-			if ( (int) params["xsample"] == 0 ) nx = x_pad;
-		}
-			
-		if ( y_pad != 0 )
-		{
-			if ( y_pad < 0) throw InvalidValueException(y_pad, "y_pad must be greater than 0");
-// 			if ( y_pad % 2 == 1) throw InvalidValueException(y_pad, "y_pad must be even");
-			if ( y_pad <= y_size ) throw InvalidValueException(y_pad, "y_pad must be greater than the image y size");
-			
-			if ( (int) params["ysample"] == 0 )	ny = y_pad;
-		}
-		
-		if ( x_pad > y_pad ) max_padded_dim  = x_pad;
-		else max_padded_dim = y_pad;
-	}
-	else if ( pad != 0 )
-	{
-		if ( pad <= 0) throw InvalidValueException(x_pad, "if you specify pad it must be positive and non-zero");
-// 		if ( pad % 2 == 1) throw InvalidValueException(pad, "pad must be even");
-		if ( pad <= x_size ) throw InvalidValueException(pad, "pad must be greater than the image x size");
-		if ( pad <= y_size) throw InvalidValueException(pad, "pad must be greater than the image y size");
-		
-		// This information is used in finish - to clip the real space 3D reconstruction to the correct dimensions.
-		if ( (int) params["ysample"] == 0 ) nx = pad;
-		if ( (int) params["xsample"] == 0 ) ny = pad;
-		
-		max_padded_dim = pad;
-		
-		// Storing x_pad and y_pad here is essential - it ensures preprocess_slice pads the input images correctly 
-		params["x_pad"] = pad;
-		params["y_pad"] = pad;
-	}
-	
+// 	int pad = params["pad"];
+// 	int x_pad = params["x_pad"];
+// 	int y_pad = params["y_pad"];
+// 	if ( x_pad != 0 || y_pad != 0 )
+// 	{
+// 		if ( pad != 0 ) throw InvalidValueException(pad, "Ambiguous parameters - you cannot specify pad while also specifying atleast one of y_pad and x_pad.");
+// 		
+// 		if ( x_pad != 0 )
+// 		{
+// 			if ( x_pad < 0) throw InvalidValueException(x_pad, "x_pad must be greater than zero");
+// // 			if ( x_pad % 2 == 1) throw InvalidValueException(x_pad, "x_pad must be even");
+// 			if ( x_pad <= x_size ) throw InvalidValueException(x_pad, "x_pad must be greater than the image x size");
+// 			
+// 			if ( (int) params["xsample"] == 0 ) nx = x_pad;
+// 		}
+// 			
+// 		if ( y_pad != 0 )
+// 		{
+// 			if ( y_pad < 0) throw InvalidValueException(y_pad, "y_pad must be greater than 0");
+// // 			if ( y_pad % 2 == 1) throw InvalidValueException(y_pad, "y_pad must be even");
+// 			if ( y_pad <= y_size ) throw InvalidValueException(y_pad, "y_pad must be greater than the image y size");
+// 			
+// 			if ( (int) params["ysample"] == 0 )	ny = y_pad;
+// 		}
+// 		
+// 		if ( x_pad > y_pad ) max_padded_dim  = x_pad;
+// 		else max_padded_dim = y_pad;
+// 	}
+// 	else if ( pad != 0 )
+// 	{
+// 		if ( pad <= 0) throw InvalidValueException(x_pad, "if you specify pad it must be positive and non-zero");
+// // 		if ( pad % 2 == 1) throw InvalidValueException(pad, "pad must be even");
+// 		if ( pad <= x_size ) throw InvalidValueException(pad, "pad must be greater than the image x size");
+// 		if ( pad <= y_size) throw InvalidValueException(pad, "pad must be greater than the image y size");
+// 		
+// 		// This information is used in finish - to clip the real space 3D reconstruction to the correct dimensions.
+// 		if ( (int) params["ysample"] == 0 ) nx = pad;
+// 		if ( (int) params["xsample"] == 0 ) ny = pad;
+// 		
+// 		max_padded_dim = pad;
+// 		
+// 		// Storing x_pad and y_pad here is essential - it ensures preprocess_slice pads the input images correctly 
+// 		params["x_pad"] = pad;
+// 		params["y_pad"] = pad;
+// 	}
+// 	
 	if ( (int) params["zsample"] == 0  ) nz = max_padded_dim;
 	
 	if ( nz < max_padded_dim ) z_scale_factor = (float) nz / (float) max_padded_dim;
@@ -296,53 +296,9 @@ void FourierReconstructor::setup()
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const Transform3D transform )
 {
-	EMData* return_slice;
-	
-	// First edgenorm - default behaviour is for this to happen
-	if ( (bool) params["edgenorm"] == true ) return_slice = slice->process("normalize.edgemean");
-	else return_slice = new EMData(*slice);
-	
-	// Perform tomographic weighting if the argument is specified (default is for this not to happen)
-	if ( (bool) params["tomo_weight"] == true )
-	{
-		float alt = (transform.get_rotation())["alt"];
-		// FIXME use a global def for deg2rad
-		float cosine = cos(alt*3.14159265358979323846f/180.0f);
-		
-		// This weights slices according to their tilt angle, because tilted images have more mass in single pixels.
-		float mult_fac =  1.0f/(cosine);
-		return_slice->mult( mult_fac );
-	}
-	
-	// Perform tomographic masking, ensuring a consistent volume is reconstructed (default is for this not to happen)
-	if ( (bool) params["tomo"] == true )
-	{
-		Dict tparms;
-		tparms["gauss_falloff"] = (int) params["t_emm_gauss"];
-		tparms["gauss_sigma"] = 3;
-		tparms["biedgemean"] = true;
-		tparms["angle"] = (float) (transform.get_rotation())["alt"];
-		return_slice->process_inplace("tomo.tiltedgemask", tparms);
-	}
-	
-	
-	// Apply padding if the option has been set, and it's sensible
-	if ( (int) params["x_pad"] != 0 || (int) params["y_pad"] != 0 )
-	{
-		int new_x_size = slice->get_xsize();
-		int new_y_size = slice->get_ysize();
-		if ( (int) params["x_pad"] != 0 ) new_x_size = params["x_pad"];
-		if ( (int) params["y_pad"] != 0 ) new_y_size = params["y_pad"];
-		int x_size = slice->get_xsize();
-		int y_size = slice->get_ysize();
 
-		// Note checking to make sure that pad dimensions are greater than the image dimensions is done in FourierReconstructor::setup
-		
-		return_slice->clip_inplace(Region((x_size-new_x_size)/2,(y_size-new_y_size)/2,new_x_size,new_y_size));
-	}
-	
-	// Shift the image pixels so the real space origin is now located at the phase origin (to work with FFTW) (d.woolford)
-	return_slice->process_inplace("xform.phaseorigin.tocorner");
+	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
+	EMData* return_slice = slice->process("xform.phaseorigin.tocorner");
 
 	// Fourier transform the slice
 	return_slice->do_fft_inplace();
@@ -428,7 +384,6 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	}
 	
 	float *dat = input_slice->get_data();
-	float weight = (float)params["weight"];
 	
 	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
 	{
@@ -472,7 +427,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				dt[0] = dat[idx];
 				dt[1] = cc * dat[idx+1];
 
-				inserter->insert_pixel(xx,yy,zz,dt,weight);
+				inserter->insert_pixel(xx,yy,zz,dt);
 			}
 		}
 	}
@@ -533,7 +488,8 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	
 	int y_in = slice->get_ysize();
 	int x_in = slice->get_xsize();
-// 	x_in -= 2*(!slice->is_fftodd());
+	if (input_slice->is_fftodd()) x_in -= 1;
+	else x_in -= 2;
 				
 	if ( y_in != x_in )
 	{
@@ -581,7 +537,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 			dt[0] = dat[idx];
 			dt[1] = cc * dat[idx+1];
 
-			float weight = (float)params["weight"];
+			float weight = 1.0;
 			if ( prev_quality_scores.size() != 0 )
 			{
 				// If the slice was not inserted into the 3D volume in the previous round of slice insertion
@@ -732,87 +688,6 @@ EMData *FourierReconstructor::finish()
 		normalize_threed();
 	}
 	
-	
-	if ( false )
-	{
-		EMData* e = new EMData;
-		e->set_size(nx,nz,1);
-		EMData* count = new EMData;
-		count->set_size(nx/2,nz,1);
-		for ( int z = 0; z < nz; ++z ) {
-			for ( int y = 0; y < ny; ++y ) {
-				for ( int x = 0; x < nx/2; ++x ) {
-					(*e)(2*x,z) += rdata[z*ny*nx + y*nx + 2*x];
-					(*e)(2*x+1,z) += rdata[z*ny*nx + y*nx + 2*x+1];
-					(*count)(x,z) += 1;
-				}
-			}
-		}
-		for ( int z = 0; z < nz; ++z ) {
-			for ( int x = 0; x < nx/2; ++x ) {
-				float div = (*count)(x,z);
-				if ( div != 0 ) {
-					(*e)(2*x,z) /= div;
-					(*e)(2*x+1,z) /= div;
-				}
-			}
-		}
-		e->set_complex(true);
-//  		e->write_image("threedrecon_normvals.img");
-// 		
-		EMData* f = e->get_fft_amplitude();
-		f->write_image("threedrecon_normvals_amp.img");
-		delete count;
-		delete e;
-		delete f;
-	}
-	
-	if ( (bool) params["tomo_mask"] == true )
-	{
-// 		int nxy = nx*ny;
-// 		vector<float> power_sums;
-// 		for ( int x = 0; x <= 2; x += 2)
-// 		{
-// 			float power_sum = 0.0;
-// 			for ( int z = 1; z < nz; ++z )
-// 			{
-// 				for ( int y = 1; y < nx; y += 1 )
-// 				{
-// 					int idx = x + y * nx + z * nxy;
-// 					power_sum += Util::square_sum( rdata[idx], rdata[idx+1]);
-// 				}
-// 			}
-// 			cout << "power is " << power_sum << endl;
-// 			power_sums.push_back(power_sum);
-// 		}
-// 		
-// 		int length = power_sums.size();
-// 		float big_power = power_sums[0];
-// 		float average = 0;
-// 		for(int i = 1; i < length; ++i )
-// 		{
-// 			average += power_sums[i];
-// 		}
-// 		
-// 		average /= (float) (length-1);
-// 		
-// 		float scale = average / big_power;
-// 		
-// 		cout << "Scale is " << sqrtf(scale) << endl;
-// 		
-// 		for ( int x = 0; x <= 1; x += 1)
-// 		{
-// 		for ( int z = 1; z < nz; ++z )
-// 		{
-// 			for ( int y = 1; y < ny; y += 1 )
-// 			{
-// 				int idx = x + y * nx + z * nxy;
-// 				rdata[idx] *= sqrtf(scale);
-// 			}
-// 		}
-// 		}
-	}
-	
 	// we may as well delete the tmp data now... it saves memory and the calling program might
 	// need memory after it gets the return volume.
 	// If this delete didn't happen now, it would happen when the deconstructor was called,
@@ -837,6 +712,7 @@ EMData *FourierReconstructor::finish()
 	if ( !is_fftodd ) image->postift_depad_corner_inplace();
 	image->process_inplace("xform.phaseorigin.tocenter");
 	
+	// FIXME- double check this when all is done!
 	// If the image was padded it should be age size, as the client would expect
 	if ( (nx-2*(!is_fftodd)) != output_x || ny != output_y || nz != output_z )
 	{
@@ -860,6 +736,8 @@ void BaldwinWoolfordReconstructor::setup()
 {
 	//This is a bit of a hack - but for now it suffices
 	FourierReconstructor::setup();
+		
+	// Set up the Baldwin Kernel 
 	int P = (int)((1.0+0.25)*max_padded_dim+1);
 	float r = (float)(max_padded_dim+1)/(float)P;
 	dfreq = 0.2;
@@ -973,6 +851,7 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	
 	// w is the windowing width
 	int w = params.set_default("maskwidth",2);
+	float wsquared = (float) w*w;
 	float dw = 1.0/w;
 	dw *= dw;
 	
@@ -995,6 +874,8 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	int tny = tmp_data->get_ysize();
 	int tnz = tmp_data->get_zsize();
 	int tnxy = tnx*tny;
+	
+	int mode = params.set_default("mode",1);
 	
 	for(int k = zl-wmoz; k <= zl+w; ++k ) {
 		for(int j = yl-wmoy; j <= yl+w; ++j) {
@@ -1042,8 +923,12 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 				float yd = (y-(float)j);
 				float xd = (x-(float)i);
 				zd *= zd; yd *= yd; xd *= xd;
-// 				float f = fac*exp(-dw*(xd+yd+zd)*.5);
-				float f = fac*exp(-2.467*(xd+yd+zd));
+				float distsquared = xd+yd+zd;
+				// We enforce a spherical kernel
+				if ( mode == 1 && distsquared > wsquared ) continue;
+
+// 				float f = fac*exp(-dw*(distsquared));
+				float f = fac*exp(-2.467*(distsquared));
 				// Debug - this error should never occur.
 				if ( (kc*tnxy+jc*tnx+ic) >= tnxy*tnz ) throw OutofRangeException(0,tnxy*tnz,kc*tnxy+jc*tnx+ic, "in density insertion" );
 				d[kc*tnxy+jc*tnx+ic] += f;
@@ -1129,6 +1014,7 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 	
 	// w is the windowing width
 	int w = params.set_default("maskwidth",2);
+	float wsquared = (float) w*w;
 	float dw = 1.0/w;
 	dw *= dw;
 	
@@ -1152,7 +1038,7 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 	int rnx = 2*tnx;
 	int rnxy = 2*tnxy;
 	
-	int mode = 1;
+	int mode = params.set_default("mode",1);
 	
 	float* d = image->get_data();
 	for(int k = zl-wmoz; k <= zl+w; ++k ) {
@@ -1192,8 +1078,9 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 				float yd = (y-(float)j);
 				float xd = (x-(float)i);
 				zd *= zd; yd *= yd; xd *= xd;
-				
-				float f = fac*exp(-2.467*(xd+yd+zd));
+				float distsquared = xd+yd+zd;
+// 				float f = fac*exp(-dw*(distsquared));
+				float f = fac*exp(-2.467*(distsquared));
 				float weight = f/we[kc*tnxy+jc*tnx+ic];
 				// debug - this error should never occur
 				if ( (kc*rnxy+jc*rnx+2*ic+1) >= rnxy*tnz ) throw OutofRangeException(0,rnxy*tnz,kc*rnxy+jc*rnx+2*ic+1, "in pixel insertion" );
@@ -1205,20 +1092,22 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 					case 0:
 						d[k] += weight*f*dt[0];
 						d[k+1] += negfac*weight*f*dt[1];
+						cout << "hello" << endl;
 					break;
 					
 					case 1:
+						// We enforce a spherical kernel
+						if ( distsquared > wsquared ) continue;
+						
 						sizeW = (int)(1+2*w/dfreq);
 						sizeWmid = sizeW/2;
-
-						dist = sqrtf(zd + yd + xd);
-						// We enforce a spherical kernel
-						if ( dist > w ) continue;
+						
+						dist = sqrtf(distsquared);
 						idx = (int)(sizeWmid + dist/dfreq);
-						if (idx >= sizeW) throw;
+						if (idx >= sizeW) throw InvalidValueException(idx, "idx was greater than or equal to sizeW");
 						residual = dist/dfreq - (int)(dist/dfreq);
-						if ( fabs(residual) > 1) throw;
-				
+						if ( fabs(residual) > 1) throw InvalidValueException(residual, "Residual was too big");
+						
 						factor = (W[idx]*(1.0-residual)+W[idx+1]*residual)*weight;
 				
 						d[k] += dt[0]*factor;
@@ -1226,7 +1115,7 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 					break;
 					
 					default:
-						throw;
+						throw InvalidValueException(mode, "The mode was unsupported in BaldwinWoolfordReconstructor::insert_pixel");
 					break;
 				}
 			}

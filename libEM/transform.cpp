@@ -489,6 +489,8 @@ Now this middle matrix is equal to
 
 MRC  th=theta; om=omega ;
 
+dwoolford says - this is wrong, the derivation of phi is the negative of the true result
+
 | cos om   sin om    0 |  |  cos th  0   -sin th   | |  cos phi  sin phi   0 |
 |-sin om   cos om    0 |  |  0       1       0     | | -sin phi  cos phi   0 |
 |   0        0       1 |  |  sin th  0    cos th   | |     0        0      1 |
@@ -567,7 +569,7 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	float az  = 0;
 	float alt = 0;
 	float phi = 0;
-        float cxtilt = 0;
+	float cxtilt = 0;
 	float sxtilt = 0;
 	float cytilt = 0;
 	float sytilt = 0;
@@ -587,17 +589,17 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 		break;
 
 	case SPIDER:
-		az =  (float)rotation["phi"]    + 90.0f ;              ;
-		alt = (float)rotation["theta"]  ;
-		phi = (float)rotation["psi"]    - 90.0f ;
+		az =  (float)rotation["phi"]    + 90.0f;
+		alt = (float)rotation["theta"] ;
+		phi = (float)rotation["psi"]    - 90.0f;
 		break;
 
 	case XYZ:
-	        cxtilt = cos( (M_PI/180.0f)*(float)rotation["xtilt"]);
-	        sxtilt = sin( (M_PI/180.0f)*(float)rotation["xtilt"]);
-	        cytilt = cos( (M_PI/180.0f)*(float)rotation["ytilt"]);
-	        sytilt = sin( (M_PI/180.0f)*(float)rotation["ytilt"]);
-		az =  (180.0f/M_PI)*atan2(-cytilt*sxtilt,sytilt)   + 90.0f ;              ;
+		cxtilt = cos( (M_PI/180.0f)*(float)rotation["xtilt"]);
+		sxtilt = sin( (M_PI/180.0f)*(float)rotation["xtilt"]);
+		cytilt = cos( (M_PI/180.0f)*(float)rotation["ytilt"]);
+		sytilt = sin( (M_PI/180.0f)*(float)rotation["ytilt"]);	
+		az =  (180.0f/M_PI)*atan2(-cytilt*sxtilt,sytilt)   + 90.0f ;
 		alt = (180.0f/M_PI)*acos(cytilt*cxtilt)  ;
 		phi = (float)rotation["ztilt"] +(180.0f/M_PI)*atan2(sxtilt,cxtilt*sytilt)   - 90.0f ;
 		break;
@@ -605,7 +607,12 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	case MRC:
 		az  = (float)rotation["phi"]   + 90.0f ;
 		alt = (float)rotation["theta"] ;
-		phi = (float)rotation["omega"] - 90.0f ;
+		// This was what was written originally, but according to Phil Baldwin's
+		// transform class paper, phi should be negated
+		//phi = (float)rotation["omega"] - 90.0f ;
+		//  So below is the correct answer (if the paper is correct)
+		// FIXME: double check this by going through the formulas and verifying
+		phi = -(float)rotation["omega"] + 90.0f ;
 		break;
 
 	case QUATERNION:
@@ -872,7 +879,10 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	case MRC:
 		result["phi"]   = phiS;
 		result["theta"] = alt;
-		result["omega"] = psiS;
+		// This should be negated, according to the Baldwin Transform paper
+		// FIXME - this should be checked
+		result["omega"] = -psiS;
+		//result["omega"] = psiS;
 		break;
 
 	case XYZ:

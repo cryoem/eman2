@@ -592,7 +592,7 @@ void FourierPixelInserter3D::init()
 	nxy = nx*ny;
 }
 
-bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[])
 {
 	int x0 = 2 * (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
@@ -600,9 +600,9 @@ bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, cons
 	
 	int idx = x0 + y0 * nx + z0 * nxy;
 	
-	rdata[idx] += weight * dt[0];
-	rdata[idx + 1] += weight  * dt[1];
-	norm[idx/2] += weight;
+	rdata[idx] += dt[0];
+	rdata[idx + 1] +=  dt[1];
+	norm[idx/2] += 1;
 
 
 	return true;
@@ -638,7 +638,7 @@ void FourierInserter3DMode2::init()
 	off[7] = nxy + nx + 2;
 }
 
-bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[])
 {
 	int x0 = (int) floor(xx);
 	int y0 = (int) floor(yy);
@@ -654,14 +654,14 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 
 	int i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
 
-	g[0] = weight * Util::agauss(1, dx, dy, dz, EMConsts::I2G);
-	g[1] = weight * Util::agauss(1, 1 - dx, dy, dz, EMConsts::I2G);
-	g[2] = weight * Util::agauss(1, dx, 1 - dy, dz, EMConsts::I2G);
-	g[3] = weight * Util::agauss(1, 1 - dx, 1 - dy, dz, EMConsts::I2G);
-	g[4] = weight * Util::agauss(1, dx, dy, 1 - dz, EMConsts::I2G);
-	g[5] = weight * Util::agauss(1, 1 - dx, dy, 1 - dz, EMConsts::I2G);
-	g[6] = weight * Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
-	g[7] = weight * Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
+	g[0] = Util::agauss(1, dx, dy, dz, EMConsts::I2G);
+	g[1] = Util::agauss(1, 1 - dx, dy, dz, EMConsts::I2G);
+	g[2] = Util::agauss(1, dx, 1 - dy, dz, EMConsts::I2G);
+	g[3] = Util::agauss(1, 1 - dx, 1 - dy, dz, EMConsts::I2G);
+	g[4] = Util::agauss(1, dx, dy, 1 - dz, EMConsts::I2G);
+	g[5] = Util::agauss(1, 1 - dx, dy, 1 - dz, EMConsts::I2G);
+	g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
+	g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
 	
 	for (int j = 0; j < 8; j++)
 	{
@@ -696,7 +696,7 @@ bool FourierInserter3DMode2::effected_pixels_are_zero(const float& xx, const flo
 	return true;
 }
 
-bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[])
 {
 	int x0 = 2 * (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
@@ -715,7 +715,7 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 		for (int j = y0 - 1; j <= y0 + 1; j++) {
 			for (int i = l; i <= x0 + 2; i += 2) {
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-				float gg = weight * exp(-r / EMConsts::I3G);
+				float gg = exp(-r / EMConsts::I3G);
 
 				int idx = i + j * nx + k * nxy;
 				
@@ -759,7 +759,7 @@ bool FourierInserter3DMode3::effected_pixels_are_zero(const float& xx, const flo
 	return true;
 }
 
-bool FourierInserter3DMode4::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool FourierInserter3DMode4::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[])
 {
 	int x0 = 2 * (int) floor(xx);
 	int y0 = (int) floor(yy);
@@ -778,7 +778,7 @@ bool FourierInserter3DMode4::insert_pixel(const float& xx, const float& yy, cons
 		for (int j = y0 - 1; j <= y0 + 2; j++) {
 			for (int i = l; i <= x0 + 4; i += 2) {
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-				float gg = weight * exp(-r / EMConsts::I4G);
+				float gg = exp(-r / EMConsts::I4G);
 
 				int idx = i + j * nx + k * nxy;
 
@@ -823,7 +823,7 @@ bool FourierInserter3DMode4::effected_pixels_are_zero(const float& xx, const flo
 	return true;
 }
 
-bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[])
 {
 	int x0 = (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
@@ -854,7 +854,7 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 		for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
 			for (int i = l, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
 				int ii = i + j * nx + k * nxy;
-				float gg = weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
+				float gg = gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 
 				rdata[ii] += gg * dt[0];
 				rdata[ii + 1] += gg * dt[1];
@@ -883,7 +883,7 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 			for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
 				for (int i = 0, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
 					int ii = i + j * nx + k * nxy;
-					float gg = weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
+					float gg = gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 					
 					rdata[ii] += gg * dt[0];
 					rdata[ii + 1] -= gg * dt[1]; // note the -, complex conj.
@@ -966,7 +966,7 @@ bool FourierInserter3DMode5::effected_pixels_are_zero(const float& xx, const flo
 	return true;
 }
 
-bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[])
 {
 	int	x0 = 2 * (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
@@ -985,7 +985,7 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 			for (int i = l; i <= x0 + 4; i += 2) {
 				int ii = i + j * nx + k * nxy;
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-				float gg = weight * exp(-r / EMConsts::I5G);
+				float gg = exp(-r / EMConsts::I5G);
 
 				rdata[ii] += gg * dt[0];
 				rdata[ii + 1] += gg * dt[1];
@@ -1013,7 +1013,7 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 					int ii = i + j * nx + k * nxy;
 					float r = Util::hypot3((float) i / 2 - xx_b, (float) j - yy_b,
 											(float) k - zz_b);
-					float gg = weight * exp(-r / EMConsts::I5G);
+					float gg = exp(-r / EMConsts::I5G);
 
 					rdata[ii] += gg * dt[0];
 					rdata[ii + 1] -= gg * dt[1]; // note the -, complex conj
@@ -1079,7 +1079,7 @@ bool FourierInserter3DMode6::effected_pixels_are_zero(const float& xx, const flo
 	return true;
 }
 
-bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[])
 {
 	int x0 = 2 * (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
@@ -1099,7 +1099,7 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 				float r =
 					sqrt(Util::
 						hypot3((float) i / 2 - xx, (float) j - yy, (float) k - zz));
-				float gg = weight * Interp::hyperg(r);
+				float gg = Interp::hyperg(r);
 
 				rdata[ii] += gg * dt[0];
 				rdata[ii + 1] += gg * dt[1];
@@ -1126,7 +1126,7 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 					int ii = i + j * nx + k * nxy;
 					float r = sqrt(Util::hypot3((float) i / 2 - xx_b, (float) j - yy_b,
 								   (float) k - zz_b));
-					float gg = weight * Interp::hyperg(r);
+					float gg = Interp::hyperg(r);
 
 					rdata[ii] += gg * dt[0];
 					rdata[ii + 1] -= gg * dt[1];// note the -, complex conj
@@ -1201,7 +1201,7 @@ void FourierInserter3DMode8::init()
 	W = Util::getBaldwinGridWeights(mFreqCutoff, P, r,mDFreq,0.5,0.2);
 	
 }
-bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, const float& qz, const float fq[], const float& weight)
+bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, const float& qz, const float fq[])
 {
 	int x0 = (int) floor(qx);
 	int y0 = (int) floor(qy);

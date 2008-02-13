@@ -278,6 +278,11 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.hbl_buttons.setSpacing(6)
 		self.hbl_buttons.setObjectName("hbl_buttons")
 		
+		self.hbl_buttons2 = QtGui.QHBoxLayout()
+		self.hbl_buttons2.setMargin(0)
+		self.hbl_buttons2.setSpacing(6)
+		self.hbl_buttons2.setObjectName("hbl_buttons2")
+		
 		self.addIso = QtGui.QPushButton("Isosurface")
 		self.hbl_buttons.addWidget(self.addIso)
 		
@@ -285,14 +290,18 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.hbl_buttons.addWidget(self.addVol)
 		
 		self.addSli = QtGui.QPushButton("Slices")
-		self.hbl_buttons.addWidget(self.addSli)
+		self.hbl_buttons2.addWidget(self.addSli)
+		
+		self.addSym = QtGui.QPushButton("Sym")
+		self.hbl_buttons2.addWidget(self.addSym)
 
 		self.vbl.addLayout(self.hbl_buttons)
-		
-		self.hbl_buttons2 = QtGui.QHBoxLayout()
-		self.delete = QtGui.QPushButton("Delete")
-		self.hbl_buttons2.addWidget(self.delete)
 		self.vbl.addLayout(self.hbl_buttons2)
+		
+		self.hbl_buttons3 = QtGui.QHBoxLayout()
+		self.delete = QtGui.QPushButton("Delete")
+		self.hbl_buttons3.addWidget(self.delete)
+		self.vbl.addLayout(self.hbl_buttons3)
 		
 		self.tabwidget = QtGui.QTabWidget(self)
 		self.hbl.addLayout(self.vbl)

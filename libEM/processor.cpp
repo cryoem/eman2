@@ -203,7 +203,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestTomoImage::NEW);
 	
 	force_add(&TomoTiltEdgeMaskProcessor::NEW);
-
+	force_add(&TomoTiltAngleWeightProcessor::NEW);
+	
 	force_add(&NewLowpassTopHatProcessor::NEW);
 	force_add(&NewHighpassTopHatProcessor::NEW);
 	force_add(&NewBandpassTopHatProcessor::NEW);
@@ -6799,6 +6800,20 @@ class GaussianFunctoid
 	private:
 		float m_mean, m_sigma_squared;
 };
+
+void TomoTiltAngleWeightProcessor::process_inplace( EMData* image )
+{
+	bool fim = params.set_default("angle_fim", false);
+	float alt;
+	if ( fim ) {
+		alt = image->get_attr("euler_alt");
+	}
+	else alt = params.set_default("angle", 0.0);
+	
+	float cosine = cos(alt*M_PI/180.0f);
+	float mult_fac =  1.0f/(cosine);
+	image->mult( mult_fac );
+}
 
 void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 {

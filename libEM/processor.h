@@ -4942,7 +4942,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 			d.put("biedgemean", EMObject::BOOL, "Mutually  exclusive of edgemean. Experimental. Causes the pixels in the masked out areas to take the average value of both the left and right edge pixel strips");
-			d.put("edgemean", EMObject::INT, "Mutually  exclusive of biedgemean. Masked pixels values assume the mean edge pixel value, independently, for both sides of the image.");
+			d.put("edgemean", EMObject::BOOL, "Mutually  exclusive of biedgemean. Masked pixels values assume the mean edge pixel value, independently, for both sides of the image.");
 			d.put("angle", EMObject::INT, "The angle that the image is, with respect to the zero tilt image");
 			d.put("gauss_falloff",EMObject::INT, "Causes the edge masking to have a smooth Gaussian fall-off - this parameter specifies how many pixels the fall-off will proceed over. Default is 0.");
 			d.put("gauss_sigma",EMObject::FLOAT,"The sigma of the Gaussian function used to smooth the edge fall-off (functional form is exp(-(pixel distance)^2/sigma^2)");
@@ -4954,6 +4954,50 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Masks the part of the image which is not present in the 0-tilt image. Masked areas can be 0 or set to the edgemean (of the nearest or both edges). Masked areas can also have a Gaussian fall-off to make the appearance smooth.";
 		}
+
+	};
+	
+	/** A processor that can be used to weight an image by 1/cos(angle)
+	 * This processor evolved originally as an experimental tool for weighting tomographic data
+	 * by the width of its cross section relative to the electron beam. The relative width
+	 * can be derived using elementary trigonometry to be 1/cos(tiltangle). This processor 
+	 * should hence probably be called OneOverCosineWeightingProcessor. You can specify the
+	 * angle explicitly (which is the default behavior), or you can force the angle
+	 * to be the altitude angle as derived from the EMData metadata. The processor could obviously
+	 * be made more robust if the angle derived from the EMData header could be specified...
+	 *
+	 * @author David Woolford <woolford@bcm.edu>
+	 * @date 02/11/2008
+	 * @param angle The angle that the image is, with respect to the zero tilt image
+	 * @param angle_fim Read fim as 'from image metadata' - this causes the altitude angle stored in by the image object (i.e. as extracted from the header, as currently stored in memory) to be used as the angle. This overrides the angle argument
+	 */
+	class TomoTiltAngleWeightProcessor : public Processor
+	{
+		public:
+			void process_inplace(EMData* image);
+			
+			string get_name() const
+			{
+				return "tomo.tiltangleweight";
+			}
+		
+			static Processor *NEW()
+			{
+				return new TomoTiltAngleWeightProcessor();
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("angle", EMObject::INT, "The angle that the image is, with respect to the zero tilt image");
+				d.put("angle_fim",EMObject::BOOL,"Read fim as 'from image metadata' - this causes the altitude angle stored in by the image object (i.e. as extracted from the header, as currently stored in memory) to be used as the angle. This overrides the angle argument");
+				return d;
+			}
+
+			string get_desc() const
+			{
+				return "Weights the image by 1/cos(angle)";
+			}
 
 	};
 

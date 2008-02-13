@@ -146,7 +146,7 @@ namespace EMAN
 		* @param weight the weight to given to this complex pixel
 		* @return A boolean that indicates the pixel has been inserted (or not)
 		 */
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight) = 0;
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]) = 0;
 	
 		/** Get the FourierPixelInserter3D's name. Each FourierPixelInserter3D is
 		* identified by a unique name, them being (strings) 1,2,3,4,5,6 and 7
@@ -199,7 +199,7 @@ namespace EMAN
 			FourierInserter3DMode1() {}
 			virtual ~FourierInserter3DMode1() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]);
 
 			static FourierPixelInserter3D *NEW()
 			{
@@ -233,7 +233,7 @@ namespace EMAN
 			FourierInserter3DMode2() {}
 			virtual ~FourierInserter3DMode2() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -271,7 +271,7 @@ namespace EMAN
 			FourierInserter3DMode3() {}
 			virtual ~FourierInserter3DMode3() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]);
 				
 			static FourierPixelInserter3D *NEW()
 			{
@@ -305,7 +305,7 @@ namespace EMAN
 			FourierInserter3DMode4() {}
 			virtual ~FourierInserter3DMode4() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -351,7 +351,7 @@ namespace EMAN
 // 				}
 			}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -387,7 +387,7 @@ namespace EMAN
 			FourierInserter3DMode6() {}
 			virtual ~FourierInserter3DMode6() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -421,7 +421,7 @@ namespace EMAN
 			FourierInserter3DMode7() {}
 			virtual ~FourierInserter3DMode7() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]);
 		
 			static FourierPixelInserter3D *NEW()
 			{
@@ -462,7 +462,7 @@ namespace EMAN
 					delete [] W;
 			}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]);
 		
 			static FourierPixelInserter3D *NEW()
 			{
