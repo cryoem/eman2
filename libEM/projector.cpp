@@ -754,61 +754,108 @@ EMData *StandardFastProjector::project3d(EMData * image) const
 EMData *StandardProjector::project3d(EMData * image) const
 {
 	
+	
 	Transform3D* t3d = params["t3d"];
 	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
 	Dict p = t3d->get_rotation();
 	
-	float alt = p["alt"];
-	float az = p["az"];
-	float phi = p["phi"];
-
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-
-	Transform3D r(Transform3D::EMAN, az, alt, phi);
-	r.transpose();
-	int xy = nx * ny;
-
-	EMData *proj = new EMData();
-	proj->set_size(nx, ny, 1);
-
-	float *sdata = image->get_data();
-	float *ddata = proj->get_data();
-	for (int k = -nz / 2; k < nz - nz / 2; k++) {
-		int l = 0;
-		for (int j = -ny / 2; j < ny - ny / 2; j++) {
-			ddata[l]=0;
-			for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
-				float x2 = (float)(r[0][0] * i + r[0][1] * j + r[0][2] * k + nx / 2);
-				float y2 = (float)(r[1][0] * i + r[1][1] * j + r[1][2] * k + ny / 2);
-				float z2 = (float)(r[2][0] * i + r[2][1] * j + r[2][2] * k + nz / 2);
-
-				if (x2 >= 0 && y2 >= 0 && z2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1)
-					&& z2 < (nz - 1)) {
-					float x = (float)Util::fast_floor(x2);
-					float y = (float)Util::fast_floor(y2);
-					float z = (float)Util::fast_floor(z2);
-
-					float t = x2 - x;
-					float u = y2 - y;
-					float v = z2 - z;
-
-					int ii = (int) (x + y * nx + z * xy);
-
-					ddata[l] +=
-						Util::trilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],
-													sdata[ii + nx + 1], sdata[ii + nx * ny],
-													sdata[ii + xy + 1], sdata[ii + xy + nx],
-													sdata[ii + xy + nx + 1], t, u, v);
+	
+	if ( image->get_ndim() == 3 )
+	{
+		float alt = p["alt"];
+		float az = p["az"];
+		float phi = p["phi"];
+	
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+		int nz = image->get_zsize();
+	
+		Transform3D r(Transform3D::EMAN, az, alt, phi);
+		r.transpose();
+		int xy = nx * ny;
+	
+		EMData *proj = new EMData();
+		proj->set_size(nx, ny, 1);
+	
+		float *sdata = image->get_data();
+		float *ddata = proj->get_data();
+		for (int k = -nz / 2; k < nz - nz / 2; k++) {
+			int l = 0;
+			for (int j = -ny / 2; j < ny - ny / 2; j++) {
+				ddata[l]=0;
+				for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
+					float x2 = (float)(r[0][0] * i + r[0][1] * j + r[0][2] * k + nx / 2);
+					float y2 = (float)(r[1][0] * i + r[1][1] * j + r[1][2] * k + ny / 2);
+					float z2 = (float)(r[2][0] * i + r[2][1] * j + r[2][2] * k + nz / 2);
+	
+					if (x2 >= 0 && y2 >= 0 && z2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1)
+						&& z2 < (nz - 1)) {
+						float x = (float)Util::fast_floor(x2);
+						float y = (float)Util::fast_floor(y2);
+						float z = (float)Util::fast_floor(z2);
+	
+						float t = x2 - x;
+						float u = y2 - y;
+						float v = z2 - z;
+	
+						int ii = (int) (x + y * nx + z * xy);
+	
+						ddata[l] +=
+							Util::trilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],
+														sdata[ii + nx + 1], sdata[ii + nx * ny],
+														sdata[ii + xy + 1], sdata[ii + xy + nx],
+														sdata[ii + xy + nx + 1], t, u, v);
+					}
 				}
 			}
 		}
+		image->update();
+		proj->update();
+		return proj;
 	}
+	else if ( image->get_ndim() == 2 ) {
+		
+		float alt = p["alt"];
+		alt = -(alt*M_PI/180.0);
+		
+		float cosalt = cos(alt);
+		float sinalt = sin(alt);
+		
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+		
+		EMData *proj = new EMData();
+		proj->set_size(nx, 1, 1);
+		proj->to_zero();
+		
+		float *sdata = image->get_data();
+		float *ddata = proj->get_data();
+		
+		for (int j = -ny / 2; j < ny - ny / 2; j++) {
+			int l = 0;
+			for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
+				float x2 = cosalt*i-sinalt*j + nx/2;
+				float y2 = sinalt*i+cosalt*j + ny/2;
 
-	image->update();
-	proj->update();
-	return proj;
+				if ( x2 >= 0 && y2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1) ) {
+					float x = (float)Util::fast_floor(x2);
+					float y = (float)Util::fast_floor(y2);
+
+					float u = x2 - x;
+					float v = y2 - y;
+
+					int ii = (int) (x + y * nx);
+
+					ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],
+							sdata[ii + nx + 1], u, v);
+				}
+			}
+		}
+		image->update();
+		proj->update();
+		return proj;
+	}
+	else throw ImageDimensionException("Standard projection works only for 2D and 3D images");
 }
 
 EMData *FourierGriddingProjector::project3d(EMData * image) const
