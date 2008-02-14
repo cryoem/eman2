@@ -756,7 +756,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 	
 	
 	Transform3D* t3d = params["t3d"];
-	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+	if ( t3d == NULL ) throw NullPointerException("The transform3d object containing the angles(required for projection), was not specified");
 	Dict p = t3d->get_rotation();
 	
 	

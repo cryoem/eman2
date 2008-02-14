@@ -882,7 +882,11 @@ class EMFXImage(QtOpenGL.QGLWidget):
 	def __init__(self, parent=None):
 		#print "init"
 		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
+		fmt.setDoubleBuffer(True)
+		# enable multisampling to combat aliasing
+		fmt.setSampleBuffers(True)
+		# stenciling is for object dependent shading
+		fmt.setStencil(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		
 		self.fov = 2*180*atan2(1,5)/pi
@@ -908,7 +912,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		#print "initializeGL"
 		glClearColor(0,0,0,0)
 		
-		
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
@@ -924,7 +927,12 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		glEnable(GL_STENCIL_TEST)
 		
 		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
+		glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST)
 	
+		# enable multisampling to combat aliasing
+		if ( "GL_ARB_multisample" in glGetString(GL_EXTENSIONS) ): glEnable(GL_MULTISAMPLE)
+		else: glDisable(GL_MULTISAMPLE)
 	def addQtWidgetDrawer(self,widget):
 		w = EMQtWidgetDrawer(self)
 		w.setQtWidget(widget)
@@ -1099,25 +1107,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMFXImage()
-	#if len(sys.argv)==1 : window.setData(test_image(size=(512,512)))
-	#else :
-		#a=EMData.read_images(sys.argv[1])
-		#if len(a)==1 : window.setData(a[0])
-		#else : window.setData(a)
 	window2 = EMParentWin(window)
 	window2.show()
-	
-	#ti=QtCore.QTimer()
-	##ti.setInterval(50.)
-	#QtCore.QObject.connect(ti, QtCore.SIGNAL("timeout()"), window.timer)
-	#ti.start()
-
-	
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
 	
 	sys.exit(app.exec_())

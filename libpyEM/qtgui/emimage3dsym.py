@@ -222,7 +222,6 @@ class EM3DSymViewer(EMImage3DObject):
 		
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
-	
 
 	def updateInspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
