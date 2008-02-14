@@ -173,8 +173,8 @@ void FourierReconstructor::setup()
 // 	if ( y_size % 2 == 1 ) throw InvalidValueException(y_size, "y size of images must be even");
 	if ( y_size < 0 ) throw InvalidValueException(y_size, "y size of images must be greater than 0");
 	
-	if ( x_size > y_size ) max_padded_dim = x_size;
-	else max_padded_dim = y_size;
+	if ( x_size > y_size ) max_input_dim = x_size;
+	else max_input_dim = y_size;
 	
 	// This is a helical adaptation - FIXME explain
 	bool helical_special_behavior = true;
@@ -210,66 +210,20 @@ void FourierReconstructor::setup()
 	ny = output_y;
 	nz = output_z;
 	
-// 	int pad = params["pad"];
-// 	int x_pad = params["x_pad"];
-// 	int y_pad = params["y_pad"];
-// 	if ( x_pad != 0 || y_pad != 0 )
-// 	{
-// 		if ( pad != 0 ) throw InvalidValueException(pad, "Ambiguous parameters - you cannot specify pad while also specifying atleast one of y_pad and x_pad.");
-// 		
-// 		if ( x_pad != 0 )
-// 		{
-// 			if ( x_pad < 0) throw InvalidValueException(x_pad, "x_pad must be greater than zero");
-// // 			if ( x_pad % 2 == 1) throw InvalidValueException(x_pad, "x_pad must be even");
-// 			if ( x_pad <= x_size ) throw InvalidValueException(x_pad, "x_pad must be greater than the image x size");
-// 			
-// 			if ( (int) params["xsample"] == 0 ) nx = x_pad;
-// 		}
-// 			
-// 		if ( y_pad != 0 )
-// 		{
-// 			if ( y_pad < 0) throw InvalidValueException(y_pad, "y_pad must be greater than 0");
-// // 			if ( y_pad % 2 == 1) throw InvalidValueException(y_pad, "y_pad must be even");
-// 			if ( y_pad <= y_size ) throw InvalidValueException(y_pad, "y_pad must be greater than the image y size");
-// 			
-// 			if ( (int) params["ysample"] == 0 )	ny = y_pad;
-// 		}
-// 		
-// 		if ( x_pad > y_pad ) max_padded_dim  = x_pad;
-// 		else max_padded_dim = y_pad;
-// 	}
-// 	else if ( pad != 0 )
-// 	{
-// 		if ( pad <= 0) throw InvalidValueException(x_pad, "if you specify pad it must be positive and non-zero");
-// // 		if ( pad % 2 == 1) throw InvalidValueException(pad, "pad must be even");
-// 		if ( pad <= x_size ) throw InvalidValueException(pad, "pad must be greater than the image x size");
-// 		if ( pad <= y_size) throw InvalidValueException(pad, "pad must be greater than the image y size");
-// 		
-// 		// This information is used in finish - to clip the real space 3D reconstruction to the correct dimensions.
-// 		if ( (int) params["ysample"] == 0 ) nx = pad;
-// 		if ( (int) params["xsample"] == 0 ) ny = pad;
-// 		
-// 		max_padded_dim = pad;
-// 		
-// 		// Storing x_pad and y_pad here is essential - it ensures preprocess_slice pads the input images correctly 
-// 		params["x_pad"] = pad;
-// 		params["y_pad"] = pad;
-// 	}
-// 	
-	if ( (int) params["zsample"] == 0  ) nz = max_padded_dim;
-	
-	if ( nz < max_padded_dim ) z_scale_factor = (float) nz / (float) max_padded_dim;
-	if ( ny < max_padded_dim ) y_scale_factor = (float) ny / (float) max_padded_dim;
-	if ( nx < max_padded_dim ) x_scale_factor = (float) nx / (float) max_padded_dim;
-	
-	// Finally adjust nx if for Fourier transform even odd issues
-	bool is_fftodd = nx % 2 == 1;
-
+	// Adjust nx if for Fourier transform even odd issues
+	bool is_fftodd = (nx % 2 == 1);
 	// The Fourier transform requires one extra pixel in the x direction,
 	// which is two spaces in memory, one each for the complex and the 
 	// real components
 	nx += 2-is_fftodd;
+
+	if ( (int) params["zsample"] == 0  ) nz = max_input_dim;
 	
+	if ( nz < max_input_dim ) z_scale_factor = (float) nz / (float) max_input_dim;
+	if ( ny < max_input_dim ) y_scale_factor = (float) ny / (float) max_input_dim;
+	if ( nx < max_input_dim ) x_scale_factor = (float) nx / (float) max_input_dim;
+	
+
 	// Odd dimension support is here atm, but not above.
 	image = new EMData();
 	image->set_size(nx, ny, nz);
@@ -290,13 +244,12 @@ void FourierReconstructor::setup()
 		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
 		cout << "You will require approximately " << setprecision(3) << (nx*ny*nz*sizeof(float)*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
 		cout << "Scale factors are " << x_scale_factor << " " << y_scale_factor << " " << z_scale_factor << endl;
-		cout << "Max padded dim is " << max_padded_dim << endl;
+		cout << "Max input dim is " << max_input_dim << endl;
 	}
 }
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const Transform3D transform )
 {
-
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
 	EMData* return_slice = slice->process("xform.phaseorigin.tocorner");
 
@@ -365,7 +318,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	string mode = (string) params["mode"];
 	if ( mode != inserter->get_name() )	load_inserter();
 	
-	int rl = Util::square( max_padded_dim / 2);
+	int rl = Util::square( max_input_dim / 2);
 	
 	float dt[2];
 	
@@ -373,7 +326,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	
 	int y_in = input_slice->get_ysize();
 	int x_in = input_slice->get_xsize();
-	// Addjust the dimensions to account for odd and even ffts
+	// Adjust the dimensions to account for odd and even ffts
 	if (input_slice->is_fftodd()) x_in -= 1;
 	else x_in -= 2;
 				
@@ -400,12 +353,12 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 					else rx *= x_scale;
 				}
 				
-				if ((rx * rx + Util::square(ry - max_padded_dim / 2)) > rl)
+				if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
 					continue;
 
-				float xx = (float) (rx * t3d[0][0] + (ry - max_padded_dim / 2) * t3d[1][0]);
-				float yy = (float) (rx * t3d[0][1] + (ry - max_padded_dim / 2) * t3d[1][1]);
-				float zz = (float) (rx * t3d[0][2] + (ry - max_padded_dim / 2) * t3d[1][2]);
+				float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[1][0]);
+				float yy = (float) (rx * t3d[0][1] + (ry - max_input_dim / 2) * t3d[1][1]);
+				float zz = (float) (rx * t3d[0][2] + (ry - max_input_dim / 2) * t3d[1][2]);
 
 				float cc = 1;
 	
@@ -480,7 +433,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	// Reset zeros the associated memory in the ifrc
 	interpFRC_calculator->reset();
 	
-	int rl = Util::square( max_padded_dim / 2);
+	int rl = Util::square( max_input_dim / 2);
 	
 	float dt[2];
 	
@@ -510,12 +463,12 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 				else rx *= x_scale;
 			}
 				
-			if ((rx * rx + Util::square(ry - max_padded_dim / 2)) > rl)
+			if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
 				continue;
 
-			float xx = (float) (rx * t3d[0][0] + (ry - max_padded_dim / 2) * t3d[1][0]);
-			float yy = (float) (rx * t3d[0][1] + (ry - max_padded_dim / 2) * t3d[1][1]);
-			float zz = (float) (rx * t3d[0][2] + (ry - max_padded_dim / 2) * t3d[1][2]);
+			float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[1][0]);
+			float yy = (float) (rx * t3d[0][1] + (ry - max_input_dim / 2) * t3d[1][1]);
+			float zz = (float) (rx * t3d[0][2] + (ry - max_input_dim / 2) * t3d[1][2]);
 
 			float cc = 1;
 	
@@ -712,7 +665,7 @@ EMData *FourierReconstructor::finish()
 	if ( !is_fftodd ) image->postift_depad_corner_inplace();
 	image->process_inplace("xform.phaseorigin.tocenter");
 	
-	// FIXME- double check this when all is done!
+	// FIXME- double check this when all is done! especially the "nx-2*!is_fftodd !!
 	// If the image was padded it should be age size, as the client would expect
 	if ( (nx-2*(!is_fftodd)) != output_x || ny != output_y || nz != output_z )
 	{
@@ -723,8 +676,6 @@ EMData *FourierReconstructor::finish()
 	}
 
 	print_stats(quality_scores);
-	
-// 	image->mult(2.0f);
 	
 	image->update();
 	
@@ -738,8 +689,8 @@ void BaldwinWoolfordReconstructor::setup()
 	FourierReconstructor::setup();
 		
 	// Set up the Baldwin Kernel 
-	int P = (int)((1.0+0.25)*max_padded_dim+1);
-	float r = (float)(max_padded_dim+1)/(float)P;
+	int P = (int)((1.0+0.25)*max_input_dim+1);
+	float r = (float)(max_input_dim+1)/(float)P;
 	dfreq = 0.2;
 	if (W != 0) delete [] W;
 	int maskwidth = params.set_default("maskwidth",2);

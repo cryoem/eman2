@@ -90,6 +90,7 @@ class EMBasicOpenGLObjects:
 			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 			gluQuadricTexture(self.gq,GL_FALSE)
 			
+			
 		def getSphereDL(self):
 			if ( self.spheredl == 0 ):
 				self.spheredl=glGenLists(1)

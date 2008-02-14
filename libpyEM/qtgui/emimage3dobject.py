@@ -298,6 +298,7 @@ class Camera:
 		# position the camera, regualar OpenGL movement.
 		glTranslated(self.cam_x, self.cam_y, self.cam_z)
 		
+
 		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
 		glRotate(float(rot["phi"]),0,0,1)
 		glRotate(float(rot["alt"]),1,0,0)
@@ -314,17 +315,18 @@ class Camera:
 	
 	def setCamTrans(self,axis,value):
 		if ( axis == 'x'):
-			setCamX(value)
+			self.setCamX(value)
 		elif ( axis == 'y'):
-			setCamY(value)
+			self.setCamY(value)
 		elif ( axis == 'z'):
-			setCamZ(value)
+			self.setCamZ(value)
 		elif ( axis == 'default_x'):
 			self.default_x = value
 		elif ( axis == 'default_y'):
 			self.default_y = value
 		elif ( axis == 'default_z'):
 			self.default_z = value
+			self.setCamZ(self.cam_z)
 		else:
 			print 'Error, the axis (%s) specified is unknown. No action was taken' %axis
 	

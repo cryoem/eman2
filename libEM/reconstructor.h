@@ -334,7 +334,7 @@ namespace EMAN
 		*/
 		FourierReconstructor() : image_idx(0), inserter(0), interpFRC_calculator(0), slice_insertion_flag(true),
 		slice_agreement_flag(false), x_scale_factor(0.0), y_scale_factor(0.0), z_scale_factor(0.0), 
-		max_padded_dim(0), output_x(0), output_y(0), output_z(0) { load_default_settings(); }
+		max_input_dim(0), output_x(0), output_y(0), output_z(0) { load_default_settings(); }
 		
 		/** Deconstructor
 		* calls free_memory()
@@ -512,7 +512,7 @@ namespace EMAN
 		float x_scale_factor, y_scale_factor, z_scale_factor;
 		
 		/// Keeps track of the maximum dimension size
-		int max_padded_dim;
+		int max_input_dim;
 		
 		/// Keeps track of the eventual size of the output real space volume
 		int output_x, output_y, output_z;

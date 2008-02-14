@@ -50,6 +50,7 @@ from PyQt4.QtCore import QTimer
 from emimage3diso import EMIsosurface
 from emimage3dvol import EMVolume
 from emimage3dslice import EM3DSliceViewer
+from emimage3dsym import EM3DSymViewer
 
 from time import *
 
@@ -77,6 +78,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.num_iso = 0
 		self.num_vol = 0
 		self.num_sli = 0
+		self.num_sym = 0
 		
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
@@ -100,6 +102,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		
 
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		
@@ -186,6 +190,22 @@ class EMImage3D(QtOpenGL.QGLWidget):
 
 	def getSundryInspector(self):
 		return self.viewables[self.currentselection].getInspector()
+	
+	def addSym(self):
+		sym = EM3DSymViewer(self)
+		self.viewables.append(sym)
+		if (len(self.viewables)==1):
+			sym.cam.default_z = -1.25*self.image.get_zsize()
+			sym.cam.cam_z = -1.25*self.image.get_zsize()
+		else:
+			self.loadLastViewableCamera()
+		sym.setRadius(self.image.get_zsize()/2.0)
+		self.num_sym += 1
+		name = "Sym " + str(self.num_sym)
+		self.viewables[len(self.viewables)-1].setName(name)
+		self.viewables[len(self.viewables)-1].setRank(len(self.viewables))
+		self.currentselection = len(self.viewables)-1
+		self.updateGL()
 	
 	def addIsosurface(self):
 		self.viewables.append(EMIsosurface(self.image,self))
@@ -310,6 +330,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.addIso, QtCore.SIGNAL("clicked()"), self.addIsosurface)
 		QtCore.QObject.connect(self.addVol, QtCore.SIGNAL("clicked()"), self.addVolume)
 		QtCore.QObject.connect(self.addSli, QtCore.SIGNAL("clicked()"), self.addSlices)
+		QtCore.QObject.connect(self.addSym, QtCore.SIGNAL("clicked()"), self.addSymmetry)
 		QtCore.QObject.connect(self.delete, QtCore.SIGNAL("clicked()"), self.deleteSelection)
 		
 		QtCore.QObject.connect(self.listwidget, QtCore.SIGNAL("currentRowChanged(int)"), self.rowChanged)
@@ -325,6 +346,10 @@ class EMImageInspector3D(QtGui.QWidget):
 
 	def addIsosurface(self):
 		self.target.addIsosurface()
+		self.updateSelection()
+	
+	def addSymmetry(self):
+		self.target.addSym()
 		self.updateSelection()
 	
 	def addVolume(self):
