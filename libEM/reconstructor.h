@@ -277,6 +277,38 @@ namespace EMAN
 	
 	};
 
+	class FourierReconstructor2D : public Reconstructor
+	{
+		public:
+			FourierReconstructor2D() {}
+
+			virtual ~FourierReconstructor2D() { }
+			
+			virtual void setup();
+			
+			virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
+		
+			virtual EMData *finish();
+
+			virtual string get_name() const { return "fourier2D"; }
+
+			virtual string get_desc() const { return "performs 2D reconstruction"; }
+			
+			static Reconstructor *NEW()
+			{
+				return new FourierReconstructor2D();
+			}
+
+			
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("nx", EMObject::INT, "Necessary. The x dimension of the input images.");
+				d.put("sym", EMObject::STRING, "Symmetry - assumed to be C1 if not specified");
+				return d;
+			}
+	};
+	
 	/** Fourier space 3D reconstruction
 	 * The Fourier reconstructor is designed to work in an iterative fashion, where similarity ("quality") metrics
 	 * are used to determine if a slice should be inserted into the 3D in each subsequent iteration.

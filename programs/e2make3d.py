@@ -76,7 +76,7 @@ def main():
 	parser.add_option("--pad", metavar="a single value, or a tuple of values", default=None,type="string", help="apply padding after processing")
 
 	(options, args) = parser.parse_args()
-	options.input_file = args[0]
+	
 	
 	if options.nofilecheck: options.check = True
 	
@@ -85,6 +85,7 @@ def main():
 		parser.error("No input file specified")
 	
 	options.datafile = args[0]
+	options.input_file = args[0]
 	
 	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
 	
@@ -146,6 +147,8 @@ def main():
 		output=bw_reconstruction(options)
 	elif recon_type=="back_projection":
 		output=back_projection_reconstruction(options)
+	elif recon_type=="fourier2D":
+		output=fourier2D_reconstruction(options)
 	else:
 		# this point should never be reached
 		sys.stderr.write("%s reconstuctor is not supported" %options.recon_type)
@@ -347,7 +350,50 @@ def back_projection_reconstruction(options):
 	
 	return recon.finish()
 		
+def fourier2D_reconstruction(options):
+	a = parsemodopt(options.recon_type)
+	recon=Reconstructors.get(a[0], a[1])
+	(xsize, ysize) = gimme_image_dimensions2D_consider_pad( options )
+	if (ysize != 1):
+		print "Error, dimensions are greater than 1"
+		exit(1)
+		
+	params = recon.get_params()
+	params["nx"] = xsize;
+	params["sym"] = options.sym
+	
+	recon.insert_params(params)
+	recon.setup()
+	
+	total_images=EMUtil.get_image_count(options.input_file)
+	
+	for i in xrange(0,total_images):
+		print i
+		image = get_processed_image(options,i)
+	
+		transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
+		failure = recon.insert_slice(image,transform)
+			
+		if (options.verbose):
+			sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
+							(i+1,total_images, image.get_attr("IMAGIC.imgnum"),
+							image.get_attr("euler_az"),
+							image.get_attr("euler_alt"),
+							image.get_attr("euler_phi"),
+							image.get_attr("maximum"),image.get_attr("minimum")))
+				
+			if ( failure ):
+				sys.stdout.write( " X" )
+			
+			sys.stdout.write("\n")
 
+
+	if (options.verbose):
+		print "Inverting 3D Fourier volume to generate the real space reconstruction"
+	output = recon.finish()
+
+	return output
+	
 def fourier_reconstruction(options):
 	if (options.verbose):
 		print "Initializing the reconstructor ..."

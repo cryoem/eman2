@@ -59,6 +59,7 @@ using std::cout; // for debug
 using std::setprecision;
 
 
+		 
 template < typename T > void checked_delete( T*& x )
 {
     typedef char type_must_be_complete[ sizeof(T)? 1: -1 ];
@@ -71,6 +72,7 @@ template < typename T > void checked_delete( T*& x )
 template <> Factory < Reconstructor >::Factory()
 {
 	force_add(&FourierReconstructor::NEW);
+	force_add(&FourierReconstructor2D::NEW);
 	force_add(&BaldwinWoolfordReconstructor::NEW);
 	force_add(&WienerFourierReconstructor::NEW);
 	force_add(&BackProjectionReconstructor::NEW);
@@ -80,6 +82,122 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&nnSSNR_ctfReconstructor::NEW);
 	force_add(&bootstrap_nnReconstructor::NEW); 
 	force_add(&bootstrap_nnctfReconstructor::NEW); 
+}
+
+void FourierReconstructor2D::setup()
+{
+	nx = params.set_default("nx",0);
+	
+	if ( nx < 0 ) throw InvalidValueException(nx, "nx must be positive");
+	
+	bool is_fftodd = (nx % 2 == 1);
+	
+	ny = nx;
+	nx += 2-is_fftodd;
+	
+	image = new EMData();
+	image->set_size(nx, ny);
+	image->set_complex(true);
+	image->set_fftodd(is_fftodd);
+	image->set_ri(true);
+
+	tmp_data = new EMData();
+	tmp_data->set_size(nx/2, nx);
+}
+			
+int FourierReconstructor2D::insert_slice(const EMData* const slice, const Transform3D & euler)
+{
+	
+	// Are these exceptions really necessary? (d.woolford)
+	if (!slice) throw NullPointerException("EMData pointer (input image) is NULL");
+
+	if ( slice->get_ndim() != 1 ) throw ImageDimensionException("Image dimension must be 1");
+	
+	// I could also test to make sure the image is the right dimensions...
+	if (slice->is_complex()) throw ImageFormatException("The image is complex, expecting real");
+	
+	EMData* working_slice = slice->process("xform.phaseorigin.tocorner");
+
+	// Fourier transform the slice
+	working_slice->do_fft_inplace();
+	
+	string sym = params.set_default("sym","c1");
+	
+	float* rdata = image->get_data();
+	float* norm = tmp_data->get_data();
+	float* dat = working_slice->get_data();
+	
+	float g[4];
+	int offset[4];
+	float dt[2];
+	offset[0] = 0; offset[1] = 2; offset[2] = nx; offset[3] = nx+2;
+	for ( int i = 0; i < Transform3D::get_nsym(sym); ++i)
+	{
+		Transform3D t3d = euler.get_sym(sym, i);
+		float alt = ((float)(t3d.get_rotation())["alt"])*M_PI/180.0;
+		for (int x = 0; x < working_slice->get_xsize() / 2; x++) {
+			
+			float rx = (float) x;
+
+			float xx = rx*cos(alt);
+			float yy = rx*sin(alt);
+			float cc = 1.0;
+
+			if (xx < 0) {
+				xx = -xx;
+				yy = -yy;
+				cc = -1.0;
+			}
+			
+			yy += ny / 2;
+			
+
+			dt[0] = dat[2*x];
+			dt[1] = cc * dat[2*x+1];
+
+			// PHIL IS INTERESTED FROM HERE DOWN
+			int x0 = (int) floor(xx);
+			int y0 = (int) floor(yy);
+
+			int i = 2*x0 + y0*nx;
+			
+			float dx = xx - x0;
+			float dy = yy - y0;
+
+			if (x0 >= nx - 2 || y0 > nx - 1) continue;
+			
+			g[0] = Util::agauss(1, dx, dy, 0, EMConsts::I5G);
+			g[1] = Util::agauss(1, 1 - dx, dy, 0, EMConsts::I5G);
+			g[2] = Util::agauss(1, dx, 1 - dy, 0, EMConsts::I5G);
+			g[3] = Util::agauss(1, 1 - dx, 1 - dy, 0, EMConsts::I5G);
+			
+			
+			for (int j = 0; j < 4; j++)
+			{
+				int k = i + offset[j];
+				rdata[k] += g[j] * dt[0];
+				rdata[k + 1] += g[j] * dt[1];
+				norm[k/2] += g[j];
+
+			}
+		}
+		
+	}
+	return 0;
+	
+}
+		
+EMData *FourierReconstructor2D::finish()
+{
+	normalize_threed();
+	
+	image->process_inplace("xform.fourierorigin.tocorner");
+	image->do_ift_inplace();
+	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
+	image->postift_depad_corner_inplace();
+	image->process_inplace("xform.phaseorigin.tocenter");
+	
+	return  	image;
 }
 
 void ReconstructorVolumeData::normalize_threed()
