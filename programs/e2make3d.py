@@ -116,6 +116,10 @@ def main():
 	(xsize, ysize ) = gimme_image_dimensions2D( options.input_file );
 	options.xsize = xsize
 	options.ysize = ysize
+	if ysize == 1:
+		options.ndim = 1
+	else:
+		options.ndim = 2
 	
 	# if we don't have to be careful about memory, store all the images in memory now
 	if (options.lowmem == False):
@@ -157,35 +161,39 @@ def main():
 	# post depad the reconstruction if padding was used.
 	pad_dims = parse_pad(options.pad)
 	if pad_dims != None:
-		if len(pad_dims) == 1:
-			xpad = pad_dims[0]
-			ypad = pad_dims[0]
-		elif len(pad_dims) == 2:
-			xpad = pad_dims[0]
-			ypad = pad_dims[1]
-		
-		if options.suppress_x_clip: 
-			startx = 0
-			lengthx = output.get_xsize()
-		else:
-			startx = (xpad-options.xsize)/2
-			lengthx = options.xsize
+		if options.ndim == 2:
+			if len(pad_dims) == 1:
+				xpad = pad_dims[0]
+				ypad = pad_dims[0]
+			elif len(pad_dims) == 2:
+				xpad = pad_dims[0]
+				ypad = pad_dims[1]
 			
-		if options.suppress_y_clip: 
-			starty = 0
-			lengthy = output.get_ysize()
-		else:
-			starty = (ypad-options.ysize)/2
-			lengthy = options.ysize
+			if options.suppress_x_clip: 
+				startx = 0
+				lengthx = output.get_xsize()
+			else:
+				startx = (xpad-options.xsize)/2
+				lengthx = options.xsize
+				
+			if options.suppress_y_clip: 
+				starty = 0
+				lengthy = output.get_ysize()
+			else:
+				starty = (ypad-options.ysize)/2
+				lengthy = options.ysize
+				
+			if options.suppress_z_clip: 
+				startz = 0
+				lengthz = output.get_zsize()
+			else:
+				startz = (xpad-options.zsize)/2
+				lengthz = options.zsize
 			
-		if options.suppress_z_clip: 
-			startz = 0
-			lengthz = output.get_zsize()
-		else:
-			startz = (xpad-options.zsize)/2
-			lengthz = options.zsize
-		
-		output.clip_inplace(Region(startx,starty,startz,lengthx,lengthy,lengthz))
+			output.clip_inplace(Region(startx,starty,startz,lengthx,lengthy,lengthz))
+		elif options.ndim == 1:
+			pad = pad_dims[0]
+			output.clip_inplace(Region((pad-options.xsize)/2,(pad-options.xsize)/2,options.xsize,options.xsize))
 
 	# apply any post processing operations
 	if options.postprocess != None:
@@ -227,7 +235,10 @@ def get_processed_image(options,i, force_read_from_disk=False):
 				xpad = pad_dims[0]
 				ypad = pad_dims[1]
 			
-			d.clip_inplace(Region((options.xsize-xpad)/2,(options.ysize-ypad)/2, xpad, ypad))
+			if d.get_ndim() == 2:
+				d.clip_inplace(Region((options.xsize-xpad)/2,(options.ysize-ypad)/2, xpad, ypad))
+			elif d.get_ndim() == 1:
+				d.clip_inplace(Region((options.xsize-xpad)/2, xpad))
 		
 		return d
 	else:
@@ -235,19 +246,26 @@ def get_processed_image(options,i, force_read_from_disk=False):
 
 def gimme_image_dimensions2D_consider_pad(options):
 	
-	pad_dims = parse_pad(options.pad)
-	if pad_dims != None:
-		if len(pad_dims) == 1:
-			xsize = pad_dims[0]
-			ysize = pad_dims[0]
-		elif len(pad_dims) == 2:
-			xsize = pad_dims[0]
-			ysize = pad_dims[1]
+	if options.ndim == 2:
+		pad_dims = parse_pad(options.pad)
+		if pad_dims != None:
+			if len(pad_dims) == 1:
+				xsize = pad_dims[0]
+				ysize = pad_dims[0]
+			elif len(pad_dims) == 2:
+				xsize = pad_dims[0]
+				ysize = pad_dims[1]
+				
+			return (xsize, ysize)
 			
-		return (xsize, ysize)
-		
-	else:
-		return (options.xsize,options.ysize)
+		else:
+			return (options.xsize,options.ysize)
+	elif options.ndim == 1:
+		pad_dims = parse_pad(options.pad)
+		if pad_dims != None:
+			return (pad_dims[0],1)
+		else:
+			return (options.xsize,1)
 
 def parse_pad(padstring):
 	if padstring == None: return None
@@ -296,7 +314,6 @@ def bw_reconstruction(options):
 	
 		transform = Transform3D(EULER_EMAN,d.get_attr("euler_az"),d.get_attr("euler_alt"),d.get_attr("euler_phi"))
 		failure = recon.insert_slice(d,transform)
-
 
 	return recon.finish()
 

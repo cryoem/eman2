@@ -648,9 +648,8 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	float dy = yy - y0;
 	float dz = zz - z0;
 
-	if (x0 >= nx - 2 || y0 >= ny - 1 || z0 >= nz - 1) {
-		return false;
-	}
+	// 
+	if (x0 >= nx - 2 || y0 >= ny - 1 || z0 >= nz - 1) return false;
 
 	int i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
 
@@ -667,11 +666,8 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	{
 		int k = i + off[j];
 		float gg = g[j];
-
-// 		cout << "inserting pixels at " << k << " adding to current " << gg * dt[0] << " current is " << rdata[k];
 		rdata[k] += gg * dt[0];
 		rdata[k + 1] += gg * dt[1];
-// 		cout << " now it is " << rdata[k] << endl;
 		norm[k/2] += gg;
 
 	}
