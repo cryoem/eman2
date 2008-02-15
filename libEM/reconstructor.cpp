@@ -163,19 +163,58 @@ int FourierReconstructor2D::insert_slice(const EMData* const slice, const Transf
 			
 			float dx = xx - x0;
 			float dy = yy - y0;
-
-			if (x0 >= nx - 2 || y0 >= ny - 1) continue;
 			
 			g[0] = Util::agauss(1, dx, dy, 0, EMConsts::I2G);
 			g[1] = Util::agauss(1, 1 - dx, dy, 0, EMConsts::I2G);
 			g[2] = Util::agauss(1, dx, 1 - dy, 0, EMConsts::I2G);
 			g[3] = Util::agauss(1, 1 - dx, 1 - dy, 0, EMConsts::I2G);
+
+			// At the extreme we can only do some much...
+			if ( x0 == nx-2 ) {
+				int k = i + offset[0];
+				rdata[k] += g[0] * dt[0];
+				rdata[k + 1] += g[0] * dt[1];
+				norm[k/2] += g[0];
+				
+				k = i + offset[2];
+				rdata[k] += g[2] * dt[0];
+				rdata[k + 1] += g[2] * dt[1];
+				norm[k/2] += g[2];
+				continue;
+				
+			}
+			// capture and accommodate for periodic boundary conditions in the x direction
+			if ( x0 > nx-2 ) {
+				int dif = x0 - (nx-2);
+				x0 -= dif;
+			}
+			// At the extreme we can only do some much...
+			if ( y0 == ny -1 ) {
+				int k = i + offset[0];
+				rdata[k] += g[0] * dt[0];
+				rdata[k + 1] += g[0] * dt[1];
+				norm[k/2] += g[0];
+				
+				k = i + offset[1];
+				rdata[k] += g[1] * dt[0];
+				rdata[k + 1] += g[1] * dt[1];
+				norm[k/2] += g[1];
+				continue;	
+			}
+			// capture and accommodate for periodic boundary conditions in the y direction
+			if ( y0 > ny-1) {
+				int dif = y0 - (ny-1);
+				y0 -= dif;
+			}
+			
+			if (x0 >= nx - 2 || y0 >= ny - 1) continue;
+			
+			
 			
 			
 			for (int j = 0; j < 4; j++)
 			{
 				int k = i + offset[j];
-				if ( k >= nx*ny ) throw InvalidValueException(k, "weird");
 				rdata[k] += g[j] * dt[0];
 				rdata[k + 1] += g[j] * dt[1];
 				norm[k/2] += g[j];

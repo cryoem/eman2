@@ -235,11 +235,11 @@ def get_processed_image(options,i, force_read_from_disk=False):
 				xpad = pad_dims[0]
 				ypad = pad_dims[1]
 			
-			if d.get_ndim() == 2:
+			if options.ndim == 2:
 				d.clip_inplace(Region((options.xsize-xpad)/2,(options.ysize-ypad)/2, xpad, ypad))
-			elif d.get_ndim() == 1:
+			elif options.ndim == 1:
 				d.clip_inplace(Region((options.xsize-xpad)/2, xpad))
-		
+			#else should never happen
 		return d
 	else:
 		return options.images[i]
@@ -266,6 +266,7 @@ def gimme_image_dimensions2D_consider_pad(options):
 			return (pad_dims[0],1)
 		else:
 			return (options.xsize,1)
+	#else should never happen
 
 def parse_pad(padstring):
 	if padstring == None: return None
