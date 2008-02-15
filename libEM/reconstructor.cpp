@@ -134,7 +134,7 @@ int FourierReconstructor2D::insert_slice(const EMData* const slice, const Transf
 	for ( int i = 0; i < Transform3D::get_nsym(sym); ++i)
 	{
 		Transform3D t3d = euler.get_sym(sym, i);
-		float alt = ((float)(t3d.get_rotation())["alt"])*M_PI/180.0;
+		float alt = -((float)(t3d.get_rotation())["alt"])*M_PI/180.0;
 		for (int x = 0; x < working_slice->get_xsize() / 2; x++) {
 			
 			float rx = (float) x;
@@ -164,17 +164,18 @@ int FourierReconstructor2D::insert_slice(const EMData* const slice, const Transf
 			float dx = xx - x0;
 			float dy = yy - y0;
 
-			if (x0 >= nx - 2 || y0 > nx - 1) continue;
+			if (x0 >= nx - 2 || y0 >= ny - 1) continue;
 			
-			g[0] = Util::agauss(1, dx, dy, 0, EMConsts::I5G);
-			g[1] = Util::agauss(1, 1 - dx, dy, 0, EMConsts::I5G);
-			g[2] = Util::agauss(1, dx, 1 - dy, 0, EMConsts::I5G);
-			g[3] = Util::agauss(1, 1 - dx, 1 - dy, 0, EMConsts::I5G);
+			g[0] = Util::agauss(1, dx, dy, 0, EMConsts::I2G);
+			g[1] = Util::agauss(1, 1 - dx, dy, 0, EMConsts::I2G);
+			g[2] = Util::agauss(1, dx, 1 - dy, 0, EMConsts::I2G);
+			g[3] = Util::agauss(1, 1 - dx, 1 - dy, 0, EMConsts::I2G);
 			
 			
 			for (int j = 0; j < 4; j++)
 			{
 				int k = i + offset[j];
+				if ( k >= nx*ny ) throw InvalidValueException(k, "weird");
 				rdata[k] += g[j] * dt[0];
 				rdata[k + 1] += g[j] * dt[1];
 				norm[k/2] += g[j];

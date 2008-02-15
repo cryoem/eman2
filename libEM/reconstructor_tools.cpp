@@ -648,7 +648,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	float dy = yy - y0;
 	float dz = zz - z0;
 
-	if (x0 >= nx - 2 || y0 >= ny - 1 || z0 >= nz - 2) {
+	if (x0 >= nx - 2 || y0 >= ny - 1 || z0 >= nz - 1) {
 		return false;
 	}
 
