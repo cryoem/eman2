@@ -354,39 +354,40 @@ class FakeKaiserBessel : public KaiserBessel {
 		};
 	/*static void alrq(float *xim,  int nsam , int nrow , int *numr,
                              float *circ, int lcirc, int nring, char mode);*/
-    static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
-    static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode);
-    /*static void alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
-                        int  *numr, float *circ, int lcirc, int  nring, char  mode);*/
-    static void alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
-                        int  *numr, float *circ, int lcirc, int  nring, char  mode);
-    /*static void alrq_msi(EMData* image,float cns2, float cnr2,
-                       int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel&
-					   kb);*/
-    static EMData* Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode, Util::KaiserBessel& kb);
+	static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
+	static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode);
+	/*static void alrq_ms(float *xim, int	 nsam, int  nrow, float cns2, float cnr2,
+			    int  *numr, float *circ, int lcirc, int  nring, char  mode);*/
+	static void alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
+			    int  *numr, float *circ, int lcirc, int  nring, char  mode);
+	/*static void alrq_msi(EMData* image,float cns2, float cnr2,
+			   int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel&
+	    				       kb);*/
+	static EMData* Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode, Util::KaiserBessel& kb);
 
-    static void  fftr_q(float  *xcmplx, int nv);
-    static void  fftr_d(double *xcmplx, int nv);
-    static void  fftc_q(float  *br, float  *bi, int ln, int ks);
-    static void  fftc_d(double *br, double *bi, int ln, int ks);
-    static void  Frngs(EMData* circ, vector<int> numr);
-    static void  Frngs_inv(EMData* circ, vector<int> numr);
+	static void  fftr_q(float  *xcmplx, int nv);
+	static void  fftr_d(double *xcmplx, int nv);
+	static void  fftc_q(float  *br, float  *bi, int ln, int ks);
+	static void  fftc_d(double *br, double *bi, int ln, int ks);
+	static void  Frngs(EMData* circ, vector<int> numr);
+	static void  Frngs_inv(EMData* circ, vector<int> numr);
 
 	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
 	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
-	       
-    static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
+	    	   
+	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
+	static Dict Crosrng_ns(EMData* circ1, EMData* circ2, vector<int> numr);
 
-    static Dict Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr);
-    static void  crosrng_msr(float *circ1, float *circ2, int  lcirc, int  nring,
-                            int   maxrin, int   *numr , float *qn, float *tot,
-                            float   *qm, float *tmt);
-			
-    static EMData* Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr);
- 	static EMData* Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr);
+	static Dict Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr);
+	static void  crosrng_msr(float *circ1, float *circ2, int  lcirc, int  nring,
+				int   maxrin, int   *numr , float *qn, float *tot,
+				float	*qm, float *tmt);
+	    		    
+	static EMData* Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr);
+	static EMData* Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr);
 	static EMData* Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr);
-	
-    static void  prb1d(double *b, int npoint, float *pos);
+
+	static void  prb1d(double *b, int npoint, float *pos);
 		
 	static void update_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
 	static void sub_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
@@ -478,16 +479,19 @@ class FakeKaiserBessel : public KaiserBessel {
 	/* img *= img1  */
 	static void mul_img(EMData* img, EMData* img1);
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
-	static EMData* pack_complex_to_real(EMData* img);	
+	static EMData* pack_complex_to_real(EMData* img);
 private:	
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
 public:
 	static vector<float> multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
-                vector< int >numr, float cnx, float cny); 
+                vector< int >numr, float cnx, float cny);
+	static vector<float> multiref_polar_ali_2d_nom(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, string mode,
+                vector< int >numr, float cnx, float cny);
 	static vector<float> multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
-                vector< int >numr, float cnx, float cny); 
+                vector< int >numr, float cnx, float cny);
 		
 	static vector<float> twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys);
 	
