@@ -33,6 +33,7 @@
 
 from EMAN2 import *
 from emimage import EMImage
+from emplot2d import EMPlot2D,NewPlot2DWin
 from emimageutil import EMParentWin
 import sys
 from optparse import OptionParser
@@ -65,6 +66,7 @@ def main():
 
 	logid=E2init(sys.argv)
 #        GLUT.glutInit(sys.argv)
+
 	display(args)
 	E2end(logid)
 
@@ -72,13 +74,25 @@ def display(img):
 	if isinstance(img,str) : img=[img]
 	app = QtGui.QApplication(sys.argv)
 	
+	plot=None
+	
 	win=[]
 	for f in img:
-		print f
-		a=EMData.read_images(f)
-		if len(a)==1 : a=a[0]
-		w=EMImage(a)
-		w.setWindowTitle("EMImage (%s)"%f)
+		try:
+			a=EMData.read_images(f)
+			if len(a)==1 : a=a[0]
+			w=EMImage(a)
+			w.setWindowTitle("EMImage (%s)"%f)
+			w.show()
+			win.append(w)
+		except:
+			if not plot : 
+				plot=EMPlot2D()
+			plot.setDataFromFile(f,f)
+	
+	if plot:
+		w=EMParentWin(plot)
+		w.setWindowTitle("EMPlot2D")
 		w.show()
 		win.append(w)
 	

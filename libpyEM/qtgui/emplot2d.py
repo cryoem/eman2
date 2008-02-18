@@ -106,6 +106,40 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		
 		self.updateGL()
 		
+	def setDataFromFile(self,key,filename):
+		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
+		
+		data=None
+		try:
+			# if it's an image file
+			im=EMData(filename)
+			# This could be faster...
+			data=[[im.get_value_at(i,j) for j in range(im.get_ysize())] for j in range(im.get_xsize())]
+		except:
+			try:
+				# Maybe an EMAN1 .fp file
+				fin=file(filename)
+				fph=struct.unpack("120sII",fin.read(128))
+				ny=fph[1]
+				nx=fph[2]
+				data=[]
+				for i in range(nx):
+					data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
+			except:
+				# Probably a text file
+				fin=file(filename)
+				fin.seek(0)
+				rdata=fin.readlines()
+				rdata=[i for i in rdata if i[0]!='#']
+				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
+				else : rdata=[[float(j) for j in i.split()] for i in rdata]
+				nx=len(rdata[0])
+				ny=len(rdata)
+				
+				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
+				
+		if data : self.setData(filename.split("/")[-1],data)
+		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
 		
