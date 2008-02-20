@@ -16,6 +16,41 @@ using namespace boost::python;
 // Declarations ================================================================
 namespace  {
 
+struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
+{
+    EMAN_Symmetry3D_Wrapper(PyObject* py_self_):
+			EMAN::Symmetry3D(), py_self(py_self_) {}
+	
+	float get_h(const float& prop, const float& altitude) const {
+		return call_method< float >(py_self, "get_h", prop, altitude);
+	}
+	
+	int get_nsym() const {
+		return call_method< int >(py_self, "get_nsym");
+	}
+	
+	EMAN::Transform3D get_sym(const int n) const {
+		return call_method< EMAN::Transform3D >(py_self, "get_sym", n);
+	}
+	
+	EMAN::Dict get_delimiters() const {
+		return call_method< EMAN::Dict >(py_self, "get_delimiters");
+	}
+	
+	std::string get_name() const {
+		return call_method< std::string >(py_self, "get_name");
+	}
+	std::string get_desc() const {
+		return call_method< std::string >(py_self, "get_desc");
+	}
+	
+	EMAN::TypeDict get_param_types() const {
+		return call_method< EMAN::TypeDict >(py_self, "get_param_types");
+	}
+
+	PyObject* py_self;
+};
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_rotation_overloads_0_1, get_rotation, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_pretrans_overloads_0_1, get_pretrans, 0, 1)
@@ -25,13 +60,31 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_posttrans_overloads_
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_pretrans_overloads_2_3, set_pretrans, 2, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
-
+		
 }// namespace 
 
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyTransform2)
 {
+	def("dump_symmetries", &EMAN::dump_symmetries);
+	def("dump_symmetries_list", &EMAN::dump_symmetries_list);
+	class_< EMAN::Symmetry3D, boost::noncopyable, EMAN_Symmetry3D_Wrapper >("__Symmetry3D", init<  >())
+		.def("get_delimiters", pure_virtual(&EMAN::Symmetry3D::get_delimiters))
+		.def("get_sym", pure_virtual(&EMAN::Symmetry3D::get_sym))
+		.def("is_in_asym_unit", pure_virtual(&EMAN::Symmetry3D::is_in_asym_unit))
+		.def("get_h", pure_virtual(&EMAN::Symmetry3D::get_h))
+		.def("get_nsym",pure_virtual(&EMAN::Symmetry3D::get_nsym))
+		;
+
+	class_< EMAN::Factory<EMAN::Symmetry3D>, boost::noncopyable >("Symmetries", no_init)
+		.def("get", (EMAN::Symmetry3D* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Symmetry3D>::get, return_value_policy< manage_new_object >())
+		.def("get", (EMAN::Symmetry3D* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::Symmetry3D>::get, return_value_policy< manage_new_object >())
+		.def("get_list", &EMAN::Factory<EMAN::Symmetry3D>::get_list)
+		.staticmethod("get_list")
+		.staticmethod("get")
+		;
+	
     class_< EMAN::Vec3f >("Vec3f", init<  >())
     	.def_pickle(Vec3f_pickle_suite())
         .def(init< float, float, optional< float > >())
@@ -217,8 +270,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .value("SPIN", EMAN::Transform3D::SPIN)
         .value("EMAN", EMAN::Transform3D::EMAN)
     ;
-
-    delete EMAN_Transform3D_scope;
-
+	
+	delete EMAN_Transform3D_scope;
 }
 

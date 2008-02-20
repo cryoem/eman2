@@ -395,7 +395,8 @@ class EMGLDrawer2D:
 		self.cam = Camera2(self)
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
-		self.image2dtex = EMImage2DTex(image,self)
+		#self.image2dtex = EMImage2DTex(image,self)
+		self.image2dtex = EMImage2D(image,self)
 		self.image2dtex.depthtracking = False
 		self.image2dtex.cam.basicmapping = True
 		self.vdtools = ViewportDepthTools(self)

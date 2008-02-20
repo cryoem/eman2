@@ -274,7 +274,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	// Calculating a full floating point gamma for
 	// each pixel in the image slows rendering unacceptably
 	// however, applying a gamma-mapping to an 8 bit colorspace
-	// has unaccepable accuracy. So, we oversample the 8 bit colorspace
+	// has unacceptable coarse accuracy. So, we oversample the 8 bit colorspace
 	// as a 12 bit colorspace and apply the gamma mapping to that
 	// This should produce good accuracy for gamma values
 	// larger than 0.5 (and a high upper limit)

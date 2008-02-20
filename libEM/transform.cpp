@@ -1258,4 +1258,270 @@ Transform3D::angles2tfvec(EulerType eulertype, const vector<float> ang) {
 	return tfvec;
 }
 
+
+template <> Factory < Symmetry3D >::Factory()
+{
+	force_add(&CSym::NEW);
+	force_add(&DSym::NEW);
+	force_add(&TetrahedralSym::NEW);
+	force_add(&OctahedralSym::NEW);
+	force_add(&IcosahedralSym::NEW);
+}
+
+void EMAN::dump_symmetries()
+{
+	dump_factory < Symmetry3D > ();
+}
+
+map<string, vector<string> > EMAN::dump_symmetries_list()
+{
+	return dump_factory_list < Symmetry3D > ();
+}
+
+// C Symmetry stuff 
+Dict CSym::get_delimiters() const {
+	Dict returnDict;
+			
+			// Get the parameters of interest
+	bool inc_mirror = params.set_default("inc_mirror",false);
+	int nsym = params.set_default("nsym",0);
+	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
+			
+	if ( inc_mirror ) returnDict["alt_max"] = M_PI;
+	else  returnDict["alt_max"] = M_PI/2.0;
+		
+	returnDict["az_max"] = 2.0*M_PI/(float)nsym;
+			
+	return returnDict;
+}
+		
+Transform3D CSym::get_sym(int n) const {
+	int nsym = params.set_default("nsym",0);
+	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero n");
+			
+	Transform3D ret;
+	// courtesy of Phil Baldwin
+	ret.set_rotation( n * 360.0f / nsym, 0, 0);
+	return ret;
+}
+		
+		
+float CSym::get_h(const float& prop,const float& altitude) const
+{
+	int nsym = params.set_default("nsym",0);
+	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
+			
+	return Symmetry3D::get_h_base(prop,altitude,nsym);
+}
+
+// D symmetry stuff
+Dict DSym::get_delimiters() const {
+	Dict returnDict;
+			
+	// Get the parameters of interest
+	bool inc_mirror = params.set_default("inc_mirror",false);
+	int nsym = params.set_default("nsym",0);
+	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
+			
+	returnDict["alt_max"] = M_PI/2.0;
+		
+	if ( inc_mirror )  returnDict["az_max"] = 2.0*M_PI/(float)nsym;
+	else returnDict["az_max"] = M_PI/(float)nsym;
+				
+	return returnDict;
+}
+
+Transform3D DSym::get_sym(int n) const
+{
+	int nsym = 2*params.set_default("nsym",0);
+	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero n");
+	
+	// courtesy of Phil Baldwin
+	Transform3D ret;
+	if (n >= nsym / 2) {
+		ret.set_rotation((n - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
+	}
+	else {
+		ret.set_rotation( n * 360.0f / (nsym / 2),0, 0);
+	}
+	return ret;
+}
+
+float DSym::get_h(const float& prop,const float& altitude) const
+{
+	// This is exactly the same as the used for C symmetry, FIXME there may be a way to remove code redundancy here
+	int nsym = params.set_default("nsym",0);
+	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
+			
+	return Symmetry3D::get_h_base(prop,altitude,nsym);
+}
+
+// Generic platonic symmetry stuff
+void PlatonicSym::init()
+{
+	//See the manuscript "The Transform Class in Sparx and EMAN2", Baldwin & Penczek 2007. J. Struct. Biol. 157 (250-261)
+	//In particular see pages 257-259
+	//cap_sig is capital sigma in the Baldwin paper
+	float cap_sig =  2.0*M_PI/ get_max_csym();
+	//In EMAN2 projection cap_sig is really az_max
+	platonic_params["az_max"] = cap_sig;
+			
+	// Alpha is the angle between (immediately) neighborhing 3 fold axes of symmetry
+	// This follows the conventions in the Baldwin paper
+	float alpha = acos(1.0/(sqrtf(3.0)*tan(cap_sig/2.0)));
+	// In EMAN2 projection alpha is really al_maz
+	platonic_params["alt_max"] = alpha;
+			
+	// This is half of "theta_c" as in the conventions of the Balwin paper. See also http://blake.bcm.edu/emanwiki/EMAN2/Symmetry.
+	platonic_params["theta_c_on_two"] = 1.0/2.0*acos( cos(cap_sig)/(1.0-cos(cap_sig)));
+
+}
+
+float PlatonicSym::get_h(const float& prop,const float& altitude) const
+{
+	return Symmetry3D::get_h_base(prop,altitude,get_max_csym());
+}
+
+Dict PlatonicSym::get_delimiters() const
+{
+	return platonic_params;
+}
+
+//.Warning, this function only returns valid answers for octahedral and icosahedral symmetries.
+bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth)
+{
+	
+	float cap_sig = platonic_params["az_max"];
+	float tmp = azimuth;
+	float alt_max = platonic_params["az_max"];
+	if ( tmp > ( cap_sig/2.0 ) )tmp = cap_sig - tmp;
+	float lower_alt_bound = platonic_alt_lower_bound(tmp, alt_max );
+	
+	if ( lower_alt_bound > altitude ) {
+		bool inc_mirror = params.set_default("inc_mirror",false);
+		if ( !inc_mirror )
+		{
+			if ( cap_sig/2.0 < azimuth ) return false;
+			else return true;
+		}
+		else return true;
+	}
+	return false;
+}
+
+float PlatonicSym::platonic_alt_lower_bound(const float& azimuth, const float& alpha)
+{
+	
+	float cap_sig = platonic_params["az_max"];
+	float theta_c_on_two = platonic_params["theta_c_on_two"];
+	
+	float baldwin_lower_alt_bound = sin(cap_sig/2.0-azimuth)/tan(theta_c_on_two);
+	baldwin_lower_alt_bound += sin(azimuth)/tan(alpha);
+	baldwin_lower_alt_bound *= 1/sin(cap_sig/2.0);
+	baldwin_lower_alt_bound = atan(1/baldwin_lower_alt_bound);
+
+	return baldwin_lower_alt_bound;
+}
+
+
+Transform3D IcosahedralSym::get_sym(int n) const
+{
+	// These rotations courtesy of Phil Baldwin
+	static double  lvl0=0.; //  there is one pentagon on top; five-fold along z
+	static double  lvl1= 63.4349; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
+	static double  lvl2=116.5651; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
+	static double lvl3=180.0;
+	
+	static double ICOS[180] = { // This is with a pentagon normal to z 
+		0,lvl0,0,    0,lvl0,288,   0,lvl0,216,   0,lvl0,144,  0,lvl0,72,
+		0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
+		72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
+		144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
+		216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
+		288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
+		36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
+		108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
+		180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
+		252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
+		324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
+		0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
+	};
+	
+	int idx = n % 60;
+	Transform3D ret;
+	ret.set_rotation((float)ICOS[idx * 3 ],(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2] );
+	return ret;
+	
+}
+
+Transform3D OctahedralSym::get_sym(int n) const
+{
+	// These rotations courtesy of Phil Baldwin
+	// We have placed the OCT symmetry group with a face along the z-axis
+	static double lvl0=0.;
+	static double lvl1=90.;
+	static double lvl2=180.;
+
+	static double OCT[72] = {// This is with a face of a cube along z 
+		0,lvl0,0,   0,lvl0,90,    0,lvl0,180,    0,lvl0,270,
+		0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
+		90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
+		180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
+		270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
+		0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
+	};
+	
+	int idx = n % 24;
+	Transform3D ret;
+	ret.set_rotation((float)OCT[idx * 3 ],(float)OCT[idx * 3 + 1], (float)OCT[idx * 3 + 2] );
+	return ret;
+	
+}
+
+bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth)
+{
+	
+	float cap_sig = platonic_params["az_max"];
+	float tmp = azimuth;
+	float alt_max = platonic_params["az_max"];
+	if ( tmp > ( cap_sig/2.0 ) )tmp = cap_sig - tmp;
+	
+	float lower_alt_bound = platonic_alt_lower_bound(tmp, alt_max );
+	
+	if ( lower_alt_bound > altitude ) {
+		bool inc_mirror = params.set_default("inc_mirror",false);
+		if ( !inc_mirror ) {
+			float upper_alt_bound = platonic_alt_lower_bound( tmp, alt_max/2.0);
+			// you could change the "<" to a ">" here to get the other mirror part of the asym unit
+			if ( upper_alt_bound < altitude ) return false;
+			else return true;
+		}
+		else return true;
+	}
+	return false;
+}
+
+
+Transform3D TetrahedralSym::get_sym(int n) const
+{
+	// These rotations courtesy of Phil Baldwin
+	 // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
+	static double lvl0=0;         // There is a face along z
+	static double lvl1=109.4712;  //  that is acos(-1/3)  // There  are 3 faces at this angle
+
+	static double TET[36] = {// This is with the face along z 
+		0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
+		0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
+		120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
+		240,lvl1,60, 240,lvl1,180,  240,lvl1,300
+	};
+	
+	int idx = n % 12;
+	Transform3D ret;
+	ret.set_rotation((float)TET[idx * 3 ],(float)TET[idx * 3 + 1], (float)TET[idx * 3 + 2] );
+	return ret;
+	
+}
+
+
 /* vim: set ts=4 noet: */

@@ -260,6 +260,268 @@ namespace EMAN
 	Vec3f operator*(const Vec3f & v    , const Transform3D & M);
 	Vec3f operator*(const Transform3D & M, const Vec3f & v    );
 
+	/** Symmetry3D 
+	* an abstract (mean it has pure virtual functions) base class for Symmetry3D objects
+	* Objects of this type must provide delimiters for the asymmetric unit (get_delimiters), and
+	* must also provide all of the rotational symmetric operations (get_sym(int n)).
+	* get_delimiter returns a dictionary with "alt_max" and "az_max" keys, which correspond to the
+	* encompassing azimuth and altitude angles of the asymmetric unit. These can be interpreted in a
+	* literal fashion when dealing with C and D symmetries, however
+	@author David Woolford
+	@date Feb 2008
+	*/
+	class Symmetry3D
+	{
+		public:
+		Symmetry3D() {};
+		virtual  ~Symmetry3D() {};
+		
+		// Factory dependent functionality
+		virtual string get_name() const = 0;
+
+		virtual string get_desc() const = 0;
+
+		virtual TypeDict get_param_types() const
+		{
+			// NOTE - child classes should call
+			// TypeDict d = Symmetry3D::get_params_types();
+			// to initialize their type dict before inserting their own parameters
+			TypeDict d;
+			d.put("inc_mirror", EMObject::BOOL, "Include mirror portion of asymmetric unit. Default faulse.");
+			return d;
+		}
+		
+		Dict get_params() const
+		{
+			return params;
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			// This commented out by d.woolford. 
+			//params.clear();
+			insert_params(new_params);
+		}
+		
+		void insert_params(const Dict & new_params)
+		{
+			// this is really inserting OR individually replacing...
+			// the old data will be kept if it is not written over
+			TypeDict permissable_params = get_param_types();
+			for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
+			{
+			
+				if ( !permissable_params.find_type(it->first) )
+				{
+					throw InvalidParameterException(it->first);
+				}
+				params[it->first] = it->second;
+			}	
+		}
+		// end factory dependent functionality
+		
+		// Symmetry virtual behavior
+		virtual Dict get_delimiters() const = 0;
+		
+		virtual Transform3D get_sym(int n) const = 0;
+		
+		// This is a hack, because this functionality is only relevant to platonic symmetries. But it could
+		// grow into functionality for the other symmetries.
+		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth) { return true; }
+		
+		virtual float get_h(const float& prop,const float& altitude) const = 0;
+		
+		virtual float get_h_base(const float& prop,const float& altitude, const int maxcsym) const
+		{
+			// This is taken from EMAN1 project3d.C
+			float h=floor(360.0/(prop*1.1547));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
+			h=(int)floor(h*sin(altitude)+.5);
+			if (h==0) h=1;
+			h=abs(maxcsym)*floor(h/(float)abs(maxcsym)+.5);
+			h=2.0*M_PI/h;
+			return h;
+		}
+		
+		virtual int get_nsym() const = 0;
+			
+		protected:
+		mutable Dict params;
+
+	};
+	
+	class CSym : public Symmetry3D
+	{
+		public:
+		CSym() {};
+		virtual  ~CSym() {};
+		
+		static Symmetry3D *NEW()
+		{
+			return new CSym();
+		}
+		
+		virtual string get_name() const { return "c"; }
+
+		virtual string get_desc() const { return "C symmetry support"; }
+		
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d = Symmetry3D::get_param_types();
+			d.put("nsym", EMObject::INT, "The symmetry number");
+			return d;
+		}
+		
+		virtual Dict get_delimiters() const;
+		
+		virtual Transform3D get_sym(int n) const;
+		
+		virtual float get_h(const float& prop,const float& altitude) const;
+		
+		virtual int get_nsym() const { return params["nsym"]; };
+	};
+	
+	class DSym : public Symmetry3D
+	{
+		public:
+		DSym() {};
+		virtual  ~DSym() {};
+		
+		static Symmetry3D *NEW()
+		{
+			return new DSym();
+		}
+		
+		virtual string get_name() const { return "d"; }
+
+		virtual string get_desc() const { return "D symmetry support"; }
+		
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d = Symmetry3D::get_param_types();
+			d.put("nsym", EMObject::INT, "The symmetry number");
+			return d;
+		}
+		
+		virtual Dict get_delimiters() const;
+		
+		virtual Transform3D get_sym(int n) const;
+		
+		virtual float get_h(const float& prop,const float& altitude) const;
+		
+		
+		virtual int get_nsym() const { return 2*(int)params["nsym"]; };
+	};
+	
+	// Note, anything that derives from this class must call init in its constructor
+	class PlatonicSym : public Symmetry3D
+	{
+		public:
+		PlatonicSym() {};
+		virtual  ~PlatonicSym() {};
+		
+		virtual string get_name() const = 0;
+
+		virtual string get_desc() const = 0;
+		
+		virtual Dict get_delimiters() const;
+		
+		virtual Transform3D get_sym(int n) const = 0;
+		
+		virtual float get_h(const float& prop,const float& altitude) const;
+		
+		// A virtual function particular to PlatonicSym
+		virtual int get_max_csym() const = 0;
+		
+		// This function works for icosahedral and octahedral, but not tetrahedral
+		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth);
+		
+		// Returns the lower bound of the asymmetric unit, as dependent on azimuth, and on alpha -
+		// alpha is alt_max for icos and oct, but may be alt_max/2.0 for tet depending on mirror
+		// symmetry etc
+		float platonic_alt_lower_bound(const float& azimuth, const float& alpha);
+			
+		protected:
+		Dict platonic_params;
+
+		// Called to initialize platonic_params, should be called in the constructor of all
+		// Platonic solids that derive from this
+		void init();
+	};
+	
+	class TetrahedralSym : public PlatonicSym
+	{
+		public:
+		TetrahedralSym()  {init();}
+		virtual  ~TetrahedralSym() {}
+		
+		static Symmetry3D *NEW()
+		{
+			return new TetrahedralSym();
+		}
+		
+		virtual string get_name() const { return "tet"; };
+
+		virtual string get_desc() const { return "Tetrahedral symmetry support"; }
+
+		virtual int get_max_csym() const { return 3; }
+		
+		virtual Transform3D get_sym(int n) const;
+		
+		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth);
+		
+		
+		virtual int get_nsym() const { return 12; };
+	};
+	
+	class OctahedralSym : public PlatonicSym
+	{
+		public:
+		OctahedralSym()  {init();}
+		virtual  ~OctahedralSym() {}
+		
+		static Symmetry3D *NEW()
+		{
+			return new OctahedralSym();
+		}
+		
+		virtual string get_name() const { return "oct"; };
+
+		virtual string get_desc() const { return "Octahedral symmetry support"; }
+
+		virtual int get_max_csym() const { return 4; }
+		
+		virtual Transform3D get_sym(int n) const;
+		
+		
+		virtual int get_nsym() const { return 24; };
+	};
+	
+	class IcosahedralSym : public PlatonicSym
+	{
+		public:
+		IcosahedralSym() {init(); }
+		virtual  ~IcosahedralSym() { }
+		
+		static Symmetry3D *NEW()
+		{
+			return new IcosahedralSym();
+		}
+			
+		virtual string get_name() const { return "icos"; };
+
+		virtual string get_desc() const { return "Icosahedral symmetry support"; }
+
+		virtual int get_max_csym() const { return 5; }// 5 is the greatest symmetry
+		
+		virtual Transform3D get_sym(int n) const;
+		
+		virtual int get_nsym() const { return 60; };
+			
+	};
+	
+	template <> Factory < Symmetry3D >::Factory();
+	void dump_symmetries();
+	map<string, vector<string> > dump_symmetries_list();
 }  // ends NameSpace EMAN
 
 

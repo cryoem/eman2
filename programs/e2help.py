@@ -57,7 +57,7 @@ Interactive help on a variety of topics. """
 	(options, args) = parser.parse_args()
 	if len(args)<1 : 
 		print """Help is available on the following topics:
-processors, cmps, aligners, projectors, reconstructors"""
+processors, cmps, aligners, projectors, reconstructors, symmetries"""
 		exit(0)
 	
 	l=None
@@ -82,6 +82,9 @@ processors, cmps, aligners, projectors, reconstructors"""
 	elif args[0] in ("aligner","aligners") :
 		print "Available aligners:"
 		l=dump_aligners_list()
+	elif args[0] in ("sym","symmetry","symmetries") :
+		print "Available symmetries:"
+		l=dump_symmetries_list()
 		
 	if l:
 		if options.verbose:
