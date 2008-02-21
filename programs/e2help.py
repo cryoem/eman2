@@ -85,6 +85,9 @@ processors, cmps, aligners, projectors, reconstructors, symmetries"""
 	elif args[0] in ("sym","symmetry","symmetries") :
 		print "Available symmetries:"
 		l=dump_symmetries_list()
+	elif args[0] in ("orientgen","orientationgen","orientationgenerators") :
+		print "Available orientation generators:"
+		l=dump_orientgens_list()
 		
 	if l:
 		if options.verbose:

@@ -21,8 +21,8 @@ struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
     EMAN_Symmetry3D_Wrapper(PyObject* py_self_):
 			EMAN::Symmetry3D(), py_self(py_self_) {}
 	
-	float get_h(const float& prop, const float& altitude) const {
-		return call_method< float >(py_self, "get_h", prop, altitude);
+	int get_max_csym() const {
+		return call_method< int >(py_self, "get_max_csym");
 	}
 	
 	int get_nsym() const {
@@ -33,10 +33,33 @@ struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
 		return call_method< EMAN::Transform3D >(py_self, "get_sym", n);
 	}
 	
-	EMAN::Dict get_delimiters() const {
-		return call_method< EMAN::Dict >(py_self, "get_delimiters");
+	EMAN::Dict get_delimiters(const bool b) const {
+		return call_method< EMAN::Dict >(py_self, "get_delimiters",b);
 	}
 	
+	std::string get_name() const {
+		return call_method< std::string >(py_self, "get_name");
+	}
+	std::string get_desc() const {
+		return call_method< std::string >(py_self, "get_desc");
+	}
+	
+	EMAN::TypeDict get_param_types() const {
+		return call_method< EMAN::TypeDict >(py_self, "get_param_types");
+	}
+
+	PyObject* py_self;
+};
+
+struct EMAN_OrientationGenerator_Wrapper : public EMAN::OrientationGenerator
+{
+    EMAN_OrientationGenerator_Wrapper(PyObject* py_self_):
+			EMAN::OrientationGenerator(), py_self(py_self_) {}
+	
+	std::vector<EMAN::Transform3D> gen_orientations(const EMAN::Symmetry3D* const sym) const {
+		return call_method< std::vector<EMAN::Transform3D> >(py_self, "gen_orientations", sym);
+	}
+
 	std::string get_name() const {
 		return call_method< std::string >(py_self, "get_name");
 	}
@@ -67,21 +90,24 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyTransform2)
 {
+	def("dump_orientgens", &EMAN::dump_orientgens);
+	def("dump_orientgens_list", &EMAN::dump_orientgens_list);
+	
 	def("dump_symmetries", &EMAN::dump_symmetries);
 	def("dump_symmetries_list", &EMAN::dump_symmetries_list);
 	class_< EMAN::Symmetry3D, boost::noncopyable, EMAN_Symmetry3D_Wrapper >("__Symmetry3D", init<  >())
 		.def("get_delimiters", pure_virtual(&EMAN::Symmetry3D::get_delimiters))
 		.def("get_sym", pure_virtual(&EMAN::Symmetry3D::get_sym))
 		.def("is_in_asym_unit", pure_virtual(&EMAN::Symmetry3D::is_in_asym_unit))
-		.def("get_h", pure_virtual(&EMAN::Symmetry3D::get_h))
 		.def("get_nsym",pure_virtual(&EMAN::Symmetry3D::get_nsym))
 		.def("get_name",pure_virtual(&EMAN::Symmetry3D::get_name))
 		.def("is_platonic",pure_virtual(&EMAN::Symmetry3D::is_platonic))
 		.def("get_az_alignment_offset", pure_virtual(&EMAN::Symmetry3D::get_az_alignment_offset))
-		.def("is_h_sym", &EMAN::Symmetry3D::is_h_sym)
+		.def("is_h_sym", pure_virtual(&EMAN::Symmetry3D::is_h_sym))
 		.def("get_params", &EMAN::Symmetry3D::get_params)
 		.def("gen_orientations", &EMAN::Symmetry3D::gen_orientations)
 		;
+		
 
 	class_< EMAN::Factory<EMAN::Symmetry3D>, boost::noncopyable >("Symmetries", no_init)
 		.def("get", (EMAN::Symmetry3D* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Symmetry3D>::get, return_value_policy< manage_new_object >())
@@ -91,6 +117,17 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.staticmethod("get")
 		;
 	
+	class_< EMAN::OrientationGenerator, boost::noncopyable, EMAN_OrientationGenerator_Wrapper >("__OrientationGenerator", init<  >())
+			.def("gen_orientations", pure_virtual(&EMAN::OrientationGenerator::gen_orientations))
+		;
+	
+	class_< EMAN::Factory<EMAN::OrientationGenerator>, boost::noncopyable >("OrientGens", no_init)
+		.def("get", (EMAN::OrientationGenerator* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::OrientationGenerator>::get, return_value_policy< manage_new_object >())
+		.def("get", (EMAN::OrientationGenerator* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::OrientationGenerator>::get, return_value_policy< manage_new_object >())
+		.def("get_list", &EMAN::Factory<EMAN::OrientationGenerator>::get_list)
+		.staticmethod("get_list")
+		.staticmethod("get")
+		;	
     class_< EMAN::Vec3f >("Vec3f", init<  >())
     	.def_pickle(Vec3f_pickle_suite())
         .def(init< float, float, optional< float > >())

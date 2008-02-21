@@ -1287,35 +1287,28 @@ map<string, vector<string> > EMAN::dump_symmetries_list()
 	return dump_factory_list < Symmetry3D > ();
 }
 
-// Base Symmetry stuff
-
-float Symmetry3D::get_h_base(const float& prop,const float& altitude, const int maxcsym) const
-{
-	// convert altitude into radians
-	float tmp = EMConsts::deg2rad * altitude;
-			
-	// This is taken from EMAN1 project3d.C
-	float h=floor(360.0/(prop*1.1547));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
-	h=(int)floor(h*sin(tmp)+.5);
-	if (h==0) h=1;
-	h=abs(maxcsym)*floor(h/(float)abs(maxcsym)+.5);
-	if ( h == 0 ) h = maxcsym;
-	h=2.0*M_PI/h;
-	
-	return EMConsts::rad2deg*h;
-}
-
-template <> Factory < SymOrientationGenerator >::Factory()
+template <> Factory < OrientationGenerator >::Factory()
 {
 	force_add(&AsymmUnitCoverer::NEW);
 }
+
+void EMAN::dump_orientgens()
+{
+	dump_factory < OrientationGenerator > ();
+}
+
+map<string, vector<string> > EMAN::dump_orientgens_list()
+{
+	return dump_factory_list < OrientationGenerator > ();
+}
+
 
 
 vector<Transform3D> Symmetry3D::gen_orientations(const string& generatorname, const Dict& parms)
 {
 	ENTERFUNC;
 	vector<Transform3D> ret;
-	SymOrientationGenerator *g = Factory < SymOrientationGenerator >::get(generatorname, parms);
+	OrientationGenerator *g = Factory < OrientationGenerator >::get(generatorname, parms);
 	if (g) {
 		ret = g->gen_orientations(this);
 		if( g )
@@ -1331,31 +1324,150 @@ vector<Transform3D> Symmetry3D::gen_orientations(const string& generatorname, co
 	return ret;
 }
 
-vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const sym)
+int AsymmUnitCoverer::get_orientations_tally(const Symmetry3D* const sym, const float& prop) const
 {
-
-	Dict delimiters = sym->get_delimiters();
+	bool inc_mirror = params.set_default("inc_mirror",false);
+	Dict delimiters = sym->get_delimiters(inc_mirror);
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
-	float prop = params["prop"];
-	if ( prop < 0 ) throw InvalidValueException(prop, "Error, cannot generate orientations using a negative or zero value for prop");
+	float alt_iterator = 0.0;
+	
+	// #If it's a h symmetry then the alt iterator starts at very close
+	// #to the altmax... the object is a h symmetry then it knows its alt_min...
+	if (sym->is_h_sym()) alt_iterator = delimiters["alt_min"];
+	
+	int tally = 0;
+	while ( alt_iterator <= altmax ) {
+		float h = get_az_prop(prop,alt_iterator, sym->get_max_csym() );
+
+		// not sure what this does code taken from EMAN1 - FIXME original author add comments
+		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1;
+		else if (alt_iterator == 0) h = azmax;
+			
+		float az_iterator = 0.0;
+		while ( az_iterator < azmax - h / 4.0 ) {
+			// FIXME: add an intelligent comment - this was copied from old code	
+			if ( az_iterator > 180.0 && alt_iterator > 180.0/(2.0-0.001) && alt_iterator < 180.0/(2.0+0.001) ) {
+				az_iterator +=  h;
+				continue;
+			}
+			
+			if (sym->is_platonic()) {
+				if ( sym->is_in_asym_unit(alt_iterator, az_iterator,inc_mirror) == false ) {
+					az_iterator += h;
+					continue;
+				}
+			}
+				
+			tally++;
+			if ( sym->is_h_sym() && inc_mirror && alt_iterator != (float) delimiters["alt_min"] ) {
+				tally++;
+			}
+			az_iterator += h;
+		}
+		alt_iterator += prop;
+	}
+	return tally;
+}
+
+float AsymmUnitCoverer::get_optimal_prop(const Symmetry3D* const sym, const int& n) const
+{
+	
+	float prop_soln = 360.0;
+	float prop_upper_bound = 360.0;
+	float prop_lower_bound = 0.0;
+	
+	// This is an example of a divide and conquer approach, the possible values of prop are searched
+	// like a binary tree
+	
+	bool soln_found = false;
+	
+	while ( soln_found == false ) {
+		int tally = get_orientations_tally(sym,prop_soln);
+		if ( tally == n ) soln_found = true;
+		else if ( (prop_upper_bound - prop_lower_bound) < 0.000001 ) {
+			// If this is the case, the requested number of projections is practically infeasible
+			// in which case just return the nearest guess
+			soln_found = true;
+			prop_soln = (prop_upper_bound+prop_lower_bound)/2.0;
+		}
+		else if (tally < n) {
+			prop_upper_bound = prop_soln;
+			prop_soln = prop_soln - (prop_soln-prop_lower_bound)/2.0;
+		}
+		else  /* tally > n*/{
+			prop_lower_bound = prop_soln;
+			prop_soln = prop_soln  + (prop_upper_bound-prop_soln)/2.0;
+		}
+	}
+	
+	return prop_soln;
+}
+
+bool AsymmUnitCoverer::add_orientation(vector<Transform3D>& v, const float& az, const float& alt, const float& phi, const float& phitoo) const
+{
+	Transform3D t(az,alt,phi);
+	v.push_back(t);
+	if ( phitoo != 0 ) {
+		if (phitoo < 0) return false;
+		else {
+			for ( float p = phitoo; p <= 360.0-phitoo; p+= phitoo )
+			{
+				Transform3D t(az,alt,fmod(phi+p,360));
+				v.push_back(t);
+			}
+		}
+	}
+	return true;
+}
+
+float AsymmUnitCoverer::get_az_prop(const float& prop,const float& altitude, const int maxcsym) const
+{
+	// convert altitude into radians
+	float tmp = EMConsts::deg2rad * altitude;
+			
+	// This is taken from EMAN1 project3d.C
+	float h=floor(360.0/(prop*1.1547));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
+	h=(int)floor(h*sin(tmp)+.5);
+	if (h==0) h=1;
+	h=abs(maxcsym)*floor(h/(float)abs(maxcsym)+.5);
+	if ( h == 0 ) h = maxcsym;
+	h=2.0*M_PI/h;
+	
+	return EMConsts::rad2deg*h;
+}
+
+vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const sym) const
+{	
+	float prop = params.set_default("prop", 0);
+	int n = params.set_default("n", 0);
+	float phitoo = params.set_default("phitoo",0);
+	
+	if ( prop <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero prop or n");
+	if ( prop > 0 && n > 0 ) throw InvalidParameterException("Error, the prop and the n arguments are mutually exclusive");
+	if ( phitoo < 0 ) throw InvalidValueException(phitoo, "Error, if you specify phitoo is must be positive");
+	
+	if ( n > 0 ) {
+		prop = get_optimal_prop(sym,n);
+	}
+	
+	bool inc_mirror = params.set_default("inc_mirror",false);
+	Dict delimiters = sym->get_delimiters(inc_mirror);
+	float altmax = delimiters["alt_max"];
+	float azmax = delimiters["az_max"];
+	
 	bool perturb = params.set_default("perturb",false);
 	
 	float alt_iterator = 0.0;
 	
 	// #If it's a h symmetry then the alt iterator starts at very close
 	// #to the altmax... the object is a h symmetry then it knows its alt_min...
-	bool inc_mirror = false;
-	if (sym->is_h_sym()) {
-		alt_iterator = delimiters["alt_min"];
-		inc_mirror = sym->get_params()["inc_mirror"];
-	}
-	cout << alt_iterator << " " << altmax << endl;
+	if (sym->is_h_sym()) alt_iterator = delimiters["alt_min"];
 	
 	vector<Transform3D> ret;
 	while ( alt_iterator <= altmax ) {
-		float h = sym->get_h(prop,alt_iterator);
+		float h = get_az_prop(prop,alt_iterator, sym->get_max_csym() );
 
 		// not sure what this does code taken from EMAN1 - FIXME original author add comments
 		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1;
@@ -1373,7 +1485,7 @@ vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const s
 			float az_soln = az_iterator;
 			
 			if (sym->is_platonic()) {
-				if ( sym->is_in_asym_unit(alt_soln, az_soln) == false ) {
+				if ( sym->is_in_asym_unit(alt_soln, az_soln,inc_mirror) == false ) {
 					az_iterator += h;
 					continue;
 				}
@@ -1387,12 +1499,10 @@ vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const s
 				az_soln += Util::get_gauss_rand(0.0,h/4.0);
 			}
 				
-			Transform3D t(az_soln,alt_soln,0);
-			
-			ret.push_back(t);
+			add_orientation(ret,az_soln,alt_soln,0,phitoo);
+		
 			if ( sym->is_h_sym() && inc_mirror && alt_iterator != (float) delimiters["alt_min"] ) {
-				Transform3D t(az_soln,2.0f*(float)delimiters["alt_min"]-alt_soln,0);
-				ret.push_back(t);
+				add_orientation(ret, az_soln,2.0f*(float)delimiters["alt_min"]-alt_soln,0,phitoo);
 			}
 			az_iterator += h;
 		}
@@ -1400,15 +1510,12 @@ vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const s
 	}
 	
 	return ret;
-}	
-
-bool Symmetry3D::is_h_sym() const  { return get_name() == HSym::NAME; }
+}
 
 // C Symmetry stuff 
-Dict CSym::get_delimiters() const {
+Dict CSym::get_delimiters(const bool inc_mirror) const {
 	Dict returnDict;		
 	// Get the parameters of interest
-	bool inc_mirror = params.set_default("inc_mirror",false);
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
 			
@@ -1429,22 +1536,12 @@ Transform3D CSym::get_sym(int n) const {
 	ret.set_rotation( n * 360.0f / nsym, 0, 0);
 	return ret;
 }
-		
-		
-float CSym::get_h(const float& prop,const float& altitude) const
-{
-	int nsym = params.set_default("nsym",0);
-	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
-			
-	return Symmetry3D::get_h_base(prop,altitude,nsym);
-}
 
 // D symmetry stuff
-Dict DSym::get_delimiters() const {
+Dict DSym::get_delimiters(const bool inc_mirror) const {
 	Dict returnDict;
 			
 	// Get the parameters of interest
-	bool inc_mirror = params.set_default("inc_mirror",false);
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
 			
@@ -1472,20 +1569,10 @@ Transform3D DSym::get_sym(int n) const
 	return ret;
 }
 
-float DSym::get_h(const float& prop,const float& altitude) const
-{
-	// This is exactly the same as the used for C symmetry, FIXME there may be a way to remove code redundancy here
-	int nsym = params.set_default("nsym",0);
-	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
-			
-	return Symmetry3D::get_h_base(prop,altitude,nsym);
-}
-
-
 // H symmetry stuff
-Dict HSym::get_delimiters() const {
+Dict HSym::get_delimiters(const bool inc_mirror) const {
 	Dict returnDict;
-			
+	
 	// Get the parameters of interest
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
@@ -1513,16 +1600,6 @@ Transform3D HSym::get_sym(int n) const
 	return ret;
 }
 
-float HSym::get_h(const float& prop,const float& altitude) const
-{
-	// This is exactly the same as the used for C symmetry, FIXME there may be a way to remove code redundancy here
-	int nsym = params.set_default("nsym",0);
-	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
-	
-	return Symmetry3D::get_h_base(prop,altitude,nsym);
-}
-
-
 // Generic platonic symmetry stuff
 void PlatonicSym::init()
 {
@@ -1544,17 +1621,12 @@ void PlatonicSym::init()
 
 }
 
-float PlatonicSym::get_h(const float& prop,const float& altitude) const
-{
-	return Symmetry3D::get_h_base(prop,altitude,get_max_csym());
-}
 
-Dict PlatonicSym::get_delimiters() const
+Dict PlatonicSym::get_delimiters(const bool inc_mirror) const
 {
 	Dict ret;
 	ret["az_max"] = EMConsts::rad2deg * (float) platonic_params["az_max"];
 	// For icos and oct symmetries, excluding the mirror means halving az_maz
-	bool inc_mirror = params.set_default("inc_mirror",false);
 	if ( inc_mirror == false ) 
 		if ( get_name() ==  IcosahedralSym::NAME || get_name() == OctahedralSym::NAME ) 
 			ret["az_max"] = 0.5*EMConsts::rad2deg * (float) platonic_params["az_max"];
@@ -1564,7 +1636,7 @@ Dict PlatonicSym::get_delimiters() const
 }
 
 //.Warning, this function only returns valid answers for octahedral and icosahedral symmetries.
-bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth) const
+bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const
 {
 	// Convert azimuth to radians
 	float tmpaz = EMConsts::deg2rad * azimuth;
@@ -1578,7 +1650,6 @@ bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth) c
 	// convert altitude to radians
 	float tmpalt = EMConsts::deg2rad * altitude;
 	if ( lower_alt_bound > tmpalt ) {
-		bool inc_mirror = params.set_default("inc_mirror",false);
 		if ( inc_mirror == false )
 		{
 			if ( cap_sig/2.0 < tmpaz ) return false;
@@ -1658,7 +1729,7 @@ Transform3D OctahedralSym::get_sym(int n) const
 	
 }
 
-bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth) const
+bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const
 {
 	// convert azimuth to radians
 	float tmpaz = EMConsts::deg2rad * azimuth;
@@ -1672,7 +1743,6 @@ bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth
 	// convert altitude to radians
 	float tmpalt = EMConsts::deg2rad * altitude;
 	if ( lower_alt_bound > tmpalt ) {
-		bool inc_mirror = params.set_default("inc_mirror",false);
 		if ( !inc_mirror ) {
 			float upper_alt_bound = platonic_alt_lower_bound( tmpaz, alt_max/2.0);
 			// you could change the "<" to a ">" here to get the other mirror part of the asym unit

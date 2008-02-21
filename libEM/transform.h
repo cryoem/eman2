@@ -324,38 +324,25 @@ namespace EMAN
 		Symmetry3D() {};
 		virtual  ~Symmetry3D() {};
 		
-		virtual TypeDict get_param_types() const
-		{
-			// NOTE - child classes should call
-			// TypeDict d = Symmetry3D::get_params_types();
-			// to initialize their type dict before inserting their own parameters
-			TypeDict d;
-			d.put("inc_mirror", EMObject::BOOL, "Include mirror portion of asymmetric unit. Default faulse.");
-			return d;
-		}
-		// end factory dependent functionality
-		
 		// Symmetry virtual behavior
-		virtual Dict get_delimiters() const = 0;
+		virtual Dict get_delimiters(const bool inc_mirror=false) const = 0;
 		
 		virtual Transform3D get_sym(int n) const = 0;
 		
 		// This is a hack, because this functionality is only relevant to platonic symmetries. But it could
 		// grow into functionality for the other symmetries.
-		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth) const { return true; }
+		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const { return true; }
 		// This is a hack, because this functionality is only relevant to platonic symmetries. But it could
 		// grow into functionality for the other symmetries.
 		virtual float get_az_alignment_offset() const { return 0.0; }
-		
-		virtual float get_h(const float& prop,const float& altitude) const = 0;
-		
-		virtual float get_h_base(const float& prop,const float& altitude, const int maxcsym) const;
 		
 		virtual int get_nsym() const = 0;
 		
 		virtual bool is_platonic() const { return false; }
 		
-		bool is_h_sym() const;
+		virtual bool is_h_sym() const { return false; }
+		
+		virtual int get_max_csym() const = 0;
 		
 		vector<Transform3D> gen_orientations(const string& generatorname="standard", const Dict& parms=Dict());
 
@@ -378,18 +365,18 @@ namespace EMAN
 		
 		virtual TypeDict get_param_types() const
 		{
-			TypeDict d = Symmetry3D::get_param_types();
+			TypeDict d;
 			d.put("nsym", EMObject::INT, "The symmetry number");
 			return d;
 		}
 		
-		virtual Dict get_delimiters() const;
+		virtual Dict get_delimiters(const bool inc_mirror=false) const;
 		
 		virtual Transform3D get_sym(int n) const;
-		
-		virtual float get_h(const float& prop,const float& altitude) const;
-		
+
 		virtual int get_nsym() const { return params["nsym"]; };
+		
+		virtual int get_max_csym() const { return params["nsym"]; }
 		
 		static const string NAME;
 	};
@@ -411,19 +398,18 @@ namespace EMAN
 		
 		virtual TypeDict get_param_types() const
 		{
-			TypeDict d = Symmetry3D::get_param_types();
+			TypeDict d;
 			d.put("nsym", EMObject::INT, "The symmetry number");
 			return d;
 		}
 		
-		virtual Dict get_delimiters() const;
+		virtual Dict get_delimiters(const bool inc_mirror=false) const;
 		
 		virtual Transform3D get_sym(int n) const;
 		
-		virtual float get_h(const float& prop,const float& altitude) const;
-		
-		
 		virtual int get_nsym() const { return 2*(int)params["nsym"]; };
+		
+		virtual int get_max_csym() const { return params["nsym"]; }
 		
 		static const string NAME;
 	};
@@ -445,7 +431,7 @@ namespace EMAN
 		
 			virtual TypeDict get_param_types() const
 			{
-				TypeDict d = Symmetry3D::get_param_types();
+				TypeDict d;
 				d.put("nsym", EMObject::INT, "The symmetry number");
 				d.put("equator_range", EMObject::FLOAT, "The amount altitude angles are allowed to vary above and below the equator. Default is 5");
 				d.put("dz", EMObject::FLOAT, "The translational distance (along z) between succesive identical subunits in angstrom (default a/pix is 1)");
@@ -454,16 +440,17 @@ namespace EMAN
 				return d;
 			}
 		
-			virtual Dict get_delimiters() const;
+			virtual Dict get_delimiters(const bool inc_mirror=false) const;
 		
 			virtual Transform3D get_sym(int n) const;
-		
-			virtual float get_h(const float& prop,const float& altitude) const;
-		
-		
+	
 			virtual int get_nsym() const { return (int)params["nsym"]; };
+			
+			virtual int get_max_csym() const { return params["nsym"]; }
 		
 			static const string NAME;
+			
+			virtual bool is_h_sym() const { return true; }
 	};
 	
 	/**
@@ -485,20 +472,21 @@ namespace EMAN
 		virtual  ~PlatonicSym() {};
 		
 		virtual string get_name() const = 0;
-
+		
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+		
 		virtual string get_desc() const = 0;
 		
-		virtual Dict get_delimiters() const;
+		virtual Dict get_delimiters(const bool inc_mirror=false) const;
 		
 		virtual Transform3D get_sym(int n) const = 0;
 		
-		virtual float get_h(const float& prop,const float& altitude) const;
-		
-		// A virtual function particular to PlatonicSym
-		virtual int get_max_csym() const = 0;
-		
 		// This function works for icosahedral and octahedral, but not tetrahedral
-		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth) const;
+		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const;
 		
 		virtual bool is_platonic() const { return true; }
 		protected:
@@ -534,7 +522,7 @@ namespace EMAN
 		
 		virtual Transform3D get_sym(int n) const;
 		
-		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth) const;
+		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const;
 		
 		virtual int get_nsym() const { return 12; };
 		
@@ -609,46 +597,54 @@ namespace EMAN
 	void dump_symmetries();
 	map<string, vector<string> > dump_symmetries_list();
 	
-	class SymOrientationGenerator : public FactoryBase
+	class OrientationGenerator : public FactoryBase
 	{
 	public:
-		SymOrientationGenerator() {};
-		virtual ~SymOrientationGenerator() {};
+		OrientationGenerator() {};
+		virtual ~OrientationGenerator() {};
 		
-		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const)  = 0;
+		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const) const  = 0;
 		
 	};
 	
-	class AsymmUnitCoverer : public SymOrientationGenerator
+	class AsymmUnitCoverer : public OrientationGenerator
 	{
 	public:
 		AsymmUnitCoverer() {};
 		virtual  ~AsymmUnitCoverer() {};
 		
-		static SymOrientationGenerator *NEW()
+		static OrientationGenerator *NEW()
 		{
 			return new AsymmUnitCoverer();
 		}
 		
-		virtual string get_name() const { return "asymmunit"; }
+		virtual string get_name() const { return "eman"; }
 
-		virtual string get_desc() const { return "Generate projections distributed quasi-uniformaly over the asymmetric unit"; }
+		virtual string get_desc() const { return "Generate projections distributed quasi-uniformaly over the asymmetric unit using the EMAN strategy"; }
 		
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("prop", EMObject::FLOAT, "The angular separation of projections");
-			d.put("perturb", EMObject::BOOL, "Whether or not to perturb the generated orientations, default is false");
-			d.put("smear", EMObject::BOOL, "Whether or not smear the projections in plane");
-			d.put("phitoo", EMObject::FLOAT, "Specifying a non zero value for this argument will cause phi rotations to be included");
+			d.put("prop", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
+			d.put("perturb", EMObject::BOOL, "Whether or not to perturb the generated orientations in a small local area, default is false.");
+			d.put("phitoo", EMObject::FLOAT, "Specifying a non zero value for this argument will cause phi rotations to be included. The value specified is the angular spacing of the phi rotations in degrees");
+			d.put("n", EMObject::INT, "The number of projections to generate. Exclusive of the prop argument. Will attempt to get as close to the number specified as possible.");
+			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
 			return d;
 		}
 		
-		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const);
+		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const) const;
 		
+	private:
+		float get_optimal_prop(const Symmetry3D* const sym, const int& n) const;
+		int get_orientations_tally(const Symmetry3D* const sym, const float& prop) const;
+		bool add_orientation(vector<Transform3D>& v, const float& az, const float& alt, const float& phi, const float& phitoo) const;
+		float get_az_prop(const float& prop,const float& altitude, const int maxcsym) const;
 	};
 	
-	template <> Factory < SymOrientationGenerator >::Factory();
+	template <> Factory < OrientationGenerator >::Factory();
+	void dump_orientgens();
+	map<string, vector<string> > dump_orientgens_list();
 }  // ends NameSpace EMAN
 
 

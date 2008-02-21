@@ -52,9 +52,6 @@ from time import *
 
 from emimage3dobject import EMImage3DObject
 from emimage3dobject import Camera
-from e2project3d import *
-
-rad2deg = 180.0 / math.pi
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -156,17 +153,24 @@ class EM3DSymViewer(EMImage3DObject):
 			self.sym = None
 			self.prop = None
 			return #OpenGL is not initialized yet
+		sym_object = parsesym(str(sym))
+		if mirror == True : val = 0
+		else: val = 1
+		og = "eman" + ":prop=" + str(prop) + ":inc_mirror=" + str(val)
+		if ( perturb == True ) : val = 1
+		else: val = 0
+		og += ":perturb="+ str(val)
+		[og_name,og_args] = parsemodopt(og)
+		eulers = sym_object.gen_orientations(og_name, og_args)
 
-		arg = str(self.sym) + ":inc_mirror="
-		if (self.nomirror): arg += '0'
-		else: arg += '1'
-		self.eulers = get_asym_unit_orientations( arg, self.prop, self.nomirror, self.perturb )
 		glNewList(self.sym_dl,GL_COMPILE)
-		for i in self.eulers:
+		for i in eulers:
+			d = i.get_rotation()
 			glPushMatrix()
-			glRotate(i[2],1,0,0)
-			glRotate(i[1],0,0,1)
-			glRotate(i[0],1,0,0)
+			glRotate(d["az"],0,0,1)
+			glRotate(d["alt"],1,0,0)
+			glRotate(d["phi"],0,0,1)
+			#print d["phi"],d["alt"],d["az"]
 			glTranslate(0,0,self.radius)
 			glCallList(self.spheredl)
 			glPopMatrix()
