@@ -121,7 +121,7 @@ def main():
 	eulers = []
 	
 	if ( options.random ):
-		eulers = get_random_orientations( options.sym, options.random, options.nomirror )
+		eulers = get_random_orientations( options.random, options.nomirror )
 	else:
 		if (options.prop):
 				eulers = get_asym_unit_orientations( options.sym, options.prop, options.nomirror, options.perturb )
@@ -172,11 +172,11 @@ def include_phi_rotations(eulers, phiprop):
 		# have to use a tmp az_iterator because of 
 			return_eulers.append([euler[0],euler[1],phi_iterator])
 		
-			phi_iterator = phi_iterator + phiprop * deg2rad
+			phi_iterator = phi_iterator + phiprop
 
 	return return_eulers
 		
-def get_random_orientations( symmetry, totalprojections, nomirror ):
+def get_random_orientations( totalprojections, nomirror ):
 		
 	i = 0
 	eulers = []
@@ -252,76 +252,57 @@ def get_asym_unit_orientations_numproj(symmetry, num_proj, nomirror, perturb = F
 
 def get_asym_unit_orientations(symmetry, prop, nomirror, perturb = False):
 
-	sym_object = get_sym_object( symmetry, nomirror)
-	altmax = sym_object.asym_unit_alt_max()
-	azmax = sym_object.asym_unit_az_max()
+	#sym_object = get_sym_object( symmetry, nomirror)
+	sym_object = parsesym(symmetry)
+	delimiters = sym_object.get_delimiters()
+	altmax = delimiters["alt_max"]
+	azmax = delimiters["az_max"]
 
 	if (DEBUG):
-		print "for symmetry %s altitude max is %f, azimuth max is %f" %(symmetry, rad2deg*altmax, rad2deg*azmax)
+		print "for symmetry %s altitude max is %f, azimuth max is %f" %(sym.get_name(), altmax, azmax)
 
 	alt_iterator = 0.0
 	
-	# If it's a h symmetry then the alt iterator starts at very close
-	# to the altmax... the object is a h symmetry then it knows its alt_min...
-	if sym_object.is_h_symmetry():
-		alt_iterator = sym_object.asym_unit_alt_min()
-		
+	#If it's a h symmetry then the alt iterator starts at very close
+	#to the altmax... the object is a h symmetry then it knows its alt_min...
+	if sym_object.is_h_sym():
+		alt_iterator = delimiters["alt_min"]
+		inc_mirror = sym_object.get_params()["inc_mirror"]
+	
+	print alt_iterator,altmax
+	
 	eulers = []
 	while ( alt_iterator <= altmax ):
 		# get h		
-		h = get_h(prop,alt_iterator,sym_object.get_maxcsym())
-		
-		#not sure what this does?
+		h = sym_object.get_h(prop,alt_iterator)
+
+		#not sure what this does code taken from EMAN1 - FIXME original author add comments
 		if (alt_iterator > 0) and ( (azmax/h) < 2.8):
-			h = (azmax) / 2.1
+			h = rad2deg*((deg2rad*azmax) / (2.1))
 		elif (alt_iterator == 0):
 			h = azmax
 			
 		az_iterator = 0.0;
-		while ( az_iterator < azmax - h / 4.0):
+		while ( az_iterator < azmax - h / 4.0 ):
 			# FIXME: add an intelligent comment - this was copied from old code	
-			if ( az_iterator > math.pi and alt_iterator > math.pi/(2.0-0.001) and alt_iterator < math.pi/(2.0+0.001) ):
+			if ( az_iterator > 180.0 and alt_iterator > 180.0/(2.0-0.001) and alt_iterator < 180.0/(2.0+0.001) ):
 				az_iterator = az_iterator + h
 				continue
 			
-			if EMAN1_OCT:
-				if az_iterator > (math.pi/4.0):
-					tmpvalue = math.pi/2.0 - az_iterator
-				else:
-					tmpvalue = az_iterator
-					
-				if (math.tan(alt_iterator)*math.cos(tmpvalue)) > 1.0:
-					az_iterator = az_iterator + h
-					continue
-			
-			#FIXME: double check that symmetry axes are aligned with make3D! Wen Jiang added 3pi/2 for icos
-			# and david woolford added pi for tet
-			# May 11th 2007 - Yes that's right, the output of the make3d (EMAN1) aligns symmeterized objects
-			# in specific orientations (d.woolford) - this might change in EMAN2 ?
-			
 			localEuler = ([alt_iterator, az_iterator, 0])
 			
-			#FIXME: when testing is done remove all references to WEN_JIANG and EMAN1_OCT
-			if not WEN_JIANG and not EMAN1_OCT :
-				if sym_object.is_platonic_symmetry():
-					if sym_object.is_in_asym_unit(localEuler) == False:
-						az_iterator = az_iterator + h
-						continue
-					else :
-						# tetrahedron and icosahedron have their asymetric units
-						# aligned so that an azimuthal offset is needed to
-						# ensure correct orientation generation
-						# unfortunately this results in a redundant call when the
-						# the symmetry is octahedral.
-						# FIXME: this might be fixable by altering make3d to generate
-						# output such that the symmetric axes are aligned so that 
-						# no effsets are needed here
-						localEuler[1] = localEuler[1] + sym_object.get_az_alignment_offset()
+
+			if sym_object.is_platonic():
+				if sym_object.is_in_asym_unit(alt_iterator, az_iterator) == False:
+					az_iterator = az_iterator + h
+					continue
+				
+				localEuler[1] = localEuler[1] + sym_object.get_az_alignment_offset()
 				
 			if perturb and localEuler[0] != 0:
 				# this perturbation scheme is copied from EMAN1
-				if localEuler[0] < (math.pi/2.0-.01):
-					localEuler[0] += gaussian_rand(0.0,.5*prop*math.pi/360.0)
+				if localEuler[0] < (180.0-.01):
+					localEuler[0] += gaussian_rand(0.0,.25*prop)
 				
 				localEuler[1] += gaussian_rand(0.0,h/4.0)
 				
@@ -332,13 +313,15 @@ def get_asym_unit_orientations(symmetry, prop, nomirror, perturb = False):
 					localEuler[1] > azmax
 				elif localEuler[1] < 0:
 					localEuler[1] = 0
-				
+					
 			eulers.append(localEuler)
+			if sym_object.is_h_sym() and inc_mirror and alt_iterator != delimiters["alt_min"]:
+				eulers.append( [2*delimiters["alt_min"]-localEuler[0],localEuler[1], localEuler[2]] )
 
 			az_iterator = az_iterator + h
 
-		alt_iterator = alt_iterator + prop * deg2rad
-
+		alt_iterator = alt_iterator + prop
+	
 	return eulers
 
 def get_h(prop,altitude,maxcsym):
@@ -362,12 +345,12 @@ def generate_and_save_projections(options,data,eulers,smear=0, phiprop=0):
 	for i,euler in enumerate(eulers):
 		#if i == 0 : continue
 		#a = {"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg}
-		t3d.set_rotation(EULER_EMAN, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg)
+		t3d.set_rotation(EULER_EMAN, euler[0], euler[1], euler[2])
 		p=data.project(options.projector,b)
 		
 		#FIXME:: In EMAN2 everything should be set in degrees but atm radians are being used in error!
 		# this problem is being fixed by Phil Baldwin, and when fixed, the arguments here should change to radians
-		p.set_rotation(euler[1]* rad2deg,euler[0]* rad2deg,euler[2]* rad2deg)
+		p.set_rotation(euler[1],euler[0],euler[2])
 		# this values reads as "particles_represented"
 		#p.set_attr("ptcl_repr", int( random.random() * 50 ) + 1)
 		p.set_attr("ptcl_repr", 1)
@@ -378,9 +361,9 @@ def generate_and_save_projections(options,data,eulers,smear=0, phiprop=0):
 			if not phiprop:
 				print "ERROR: can not perform smearing operation without a valid phi angle"
 				exit(1)
-			smear_iterator = euler[2] + deg2rad*phiprop/(smear+1)
+			smear_iterator = deg2rad*euler[2] + deg2rad*phiprop/(smear+1)
 			while ( smear_iterator < euler[2] + phiprop*deg2rad ):
-				ptmp=data.project(options.projector,{"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : smear_iterator * rad2deg})
+				ptmp=data.project(options.projector,{"alt" : euler[0],"az" : euler[1],"phi" : smear_iterator * rad2deg})
 				
 				p.add(ptmp)
 				smear_iterator +=  deg2rad*phiprop/(smear+1)
@@ -394,7 +377,7 @@ def generate_and_save_projections(options,data,eulers,smear=0, phiprop=0):
 		pcopy = p;
 		
 		if (options.verbose):
-			print "%d\t%4.2f\t%4.2f\t%4.2f" % (i, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg)
+			print "%d\t%4.2f\t%4.2f\t%4.2f" % (i, euler[0], euler[1], euler[2])
 
 
 def verify_mirror_test(data, eulers, symmetry, projector):
@@ -839,17 +822,23 @@ def check(options, verbose=False):
 		error = True
 	
 	elif options.sym:
-		options.sym=options.sym.lower()
-		if (options.sym[0] in ["c","d", "h"]):
-			if not(options.sym[1:].isdigit()):
-				if verbose:
-					print "Error: %s is an invalid symmetry type. You must specify the --sym argument"%options.sym
-				error = True
-		else :
-			if not (options.sym in ["tet","oct","icos"]):
-				if verbose:
-					print "Error: %s is an invalid symmetry type. You must specify the --sym argument"%options.sym
-				error = True
+		try: sym = parsesym(options.sym)
+		except Exception, inst:
+			print type(inst)     # the exception instance
+			print inst.args      # arguments stored in .args:
+			error = True
+			
+		#name = sym.get_name()
+		#if (name in ["c","d", "h"]):
+			#if not(options.sym[1:].isdigit()):
+				#if verbose:
+					#print "Error: %s is an invalid symmetry type. You must specify the --sym argument"%options.sym
+				#error = True
+		#else :
+			#if not (options.sym in ["tet","oct","icos"]):
+				#if verbose:
+					#print "Error: %s is an invalid symmetry type. You must specify the --sym argument"%options.sym
+				#error = True
 	
 	if (options.phitoo):	
 		if (options.phitoo <= 0):

@@ -69,6 +69,10 @@ namespace EMAN
 		static const float I3G; // used for 3 and 5x5x5 interpolation
 		static const float I4G; // used for 4 interpolation
 		static const float I5G; // used for 5x5x5 interpolation
+		
+		static const double rad2deg; // radians to degree constant factor
+		static const double deg2rad; // degrees to radians constant factor
+		static const double pi; // degrees to radians constant factor
 	};
 	
 	class EMData;

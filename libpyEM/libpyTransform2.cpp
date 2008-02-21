@@ -75,6 +75,12 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("is_in_asym_unit", pure_virtual(&EMAN::Symmetry3D::is_in_asym_unit))
 		.def("get_h", pure_virtual(&EMAN::Symmetry3D::get_h))
 		.def("get_nsym",pure_virtual(&EMAN::Symmetry3D::get_nsym))
+		.def("get_name",pure_virtual(&EMAN::Symmetry3D::get_name))
+		.def("is_platonic",pure_virtual(&EMAN::Symmetry3D::is_platonic))
+		.def("get_az_alignment_offset", pure_virtual(&EMAN::Symmetry3D::get_az_alignment_offset))
+		.def("is_h_sym", &EMAN::Symmetry3D::is_h_sym)
+		.def("get_params", &EMAN::Symmetry3D::get_params)
+		.def("gen_orientations", &EMAN::Symmetry3D::gen_orientations)
 		;
 
 	class_< EMAN::Factory<EMAN::Symmetry3D>, boost::noncopyable >("Symmetries", no_init)

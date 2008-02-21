@@ -54,8 +54,13 @@ using std::endl;
 
 const float EMConsts::I2G = (float) (4.0 / (M_PI*M_PI));  
 const float EMConsts::I3G = (float) (6.4 / (M_PI*M_PI));  
-const float EMConsts::I4G = (float) (8.8 / (M_PI*M_PI));  
-const float EMConsts::I5G = (float) (10.4 / (M_PI*M_PI)); 
+const float EMConsts::I4G = (float) (8.8 / (M_PI*M_PI)); 
+const float EMConsts::I5G = (float) (10.4 / (M_PI*M_PI));
+// This stolen from wikipedia.org
+const double EMConsts::pi = 3.141592653589793238462643383279502884197169399;
+const double EMConsts::deg2rad = pi/180.0;
+const double EMConsts::rad2deg = 180.0/pi;
+
 
 #include <sstream>
 using std::stringstream;

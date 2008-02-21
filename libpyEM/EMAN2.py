@@ -172,6 +172,16 @@ This function will get an application default by first checking the local direct
 	
 	return None
 
+def parsesym(optstr):
+	
+	[sym, dict] = parsemodopt(optstr)
+	if sym[0] in ['c','d','h']:
+		dict["nsym"] = int(sym[1:])
+		sym = sym[0]
+
+	sym = Symmetries.get(sym, dict)
+	return sym
+
 parseparmobj1=re.compile("([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
 parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
 parseparmobj3=re.compile("[^:]\w*=*[\w.]*") # This parses ("a:v1=2:v2=3") into ("a", "v1=2", "v2=3") 

@@ -156,14 +156,17 @@ class EM3DSymViewer(EMImage3DObject):
 			self.sym = None
 			self.prop = None
 			return #OpenGL is not initialized yet
-		
-		self.eulers = get_asym_unit_orientations( self.sym, self.prop, self.nomirror, self.perturb )
+
+		arg = str(self.sym) + ":inc_mirror="
+		if (self.nomirror): arg += '0'
+		else: arg += '1'
+		self.eulers = get_asym_unit_orientations( arg, self.prop, self.nomirror, self.perturb )
 		glNewList(self.sym_dl,GL_COMPILE)
 		for i in self.eulers:
 			glPushMatrix()
-			glRotate(i[2] * rad2deg,1,0,0)
-			glRotate(i[1] * rad2deg,0,0,1)
-			glRotate(i[0] * rad2deg,1,0,0)
+			glRotate(i[2],1,0,0)
+			glRotate(i[1],0,0,1)
+			glRotate(i[0],1,0,0)
 			glTranslate(0,0,self.radius)
 			glCallList(self.spheredl)
 			glPopMatrix()
@@ -406,7 +409,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.phi.setValue(0.0)
 
 	def symChanged(self, sym):
-		if sym == ' D ' or sym == ' C ':
+		if sym == ' D ' or sym == ' C ' or sym == ' H ':
 			self.sym_text.setEnabled(True)
 		else:
 			self.sym_text.setEnabled(False)
@@ -415,7 +418,7 @@ class EMSymInspector(QtGui.QWidget):
 
 	def getSym(self):
 		sym = self.sym_map[str(self.sym_combo.currentText())]
-		if sym in ['c','d']:
+		if sym in ['c','d','h']:
 			sym = sym+self.sym_text.displayText()
 		return sym
 		
@@ -456,17 +459,19 @@ class EMSymInspector(QtGui.QWidget):
 		self.symmetries.append(' Tetrahedral ')
 		self.symmetries.append(' D ')
 		self.symmetries.append(' C ')
+		self.symmetries.append(' H ')
 		self.sym_map = {}
 		self.sym_map[" Icosahedral "] = "icos"
 		self.sym_map[" Octahedral "] = "oct"
 		self.sym_map[" Tetrahedral "] = "tet"
 		self.sym_map[" D "] = "d"
 		self.sym_map[" C "] = "c"
+		self.sym_map[" H "] = "h"
 		for i in self.symmetries: self.sym_combo.addItem(i)
 		self.hbl_sym.addWidget(self.sym_combo)
 		
 		self.sym_label = QtGui.QLabel()
-		self.sym_label.setText('C/D sym')
+		self.sym_label.setText('C/D/H sym')
 		self.hbl_sym.addWidget(self.sym_label)
 		
 		
@@ -487,7 +492,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.pos_int_validator.setBottom(1)
 		self.sym_text = QtGui.QLineEdit(self)
 		self.sym_text.setValidator(self.pos_int_validator)
-		self.sym_text.setText("1")
+		self.sym_text.setText("5")
 		self.sym_text.setFixedWidth(50)
 		self.hbl_sym.addWidget(self.sym_text)
 		self.sym_text.setEnabled(False)
