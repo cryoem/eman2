@@ -101,6 +101,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.tex_name = 0
 		
 		self.using_textures = True
+		self.power_of_two_init_check = True
 		
 		if image : 
 			self.setData(image)
@@ -252,6 +253,14 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			gl_render_type = GL_LUMINANCE
 
 
+		if ( self.power_of_two_init_check and self.using_textures ):
+			if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
+				print "EMAN(ALPHA) message: No support for non power of two texture detected. Using glDrawPixels"
+				self.using_textures = False
+			else:
+				print "EMAN(ALPHA) message: Support for non power of two textures detected"
+			self.power_of_two_init_check = False
+
 		if ( self.using_textures ):
 			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
 			self.tex_name = GL.glGenTextures(1)
@@ -269,29 +278,28 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			# using GL_NEAREST ensures pixel granularity
 			# using GL_LINEAR blurs textures and makes them more difficult
 			# to interpret (in cryo-em)
-			glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 			# this makes it so that the texture is impervious to lighting
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			
-			# POSITIONING POLICY - the texture is centered on the origin,
-			# and has the height and width of the data
+			# POSITIONING POLICY - the texture occupies the entire screen area
 			glBegin(GL_QUADS)
 			
 			width = self.width()/2.0
 			height = self.height()/2.0
 			
 			glTexCoord2f(0,0)
-			glVertex(0,self.height())
+			glVertex2f(0,self.height())
 			
 			glTexCoord2f(1,0)
-			glVertex( self.width(),self.height())
+			glVertex2f( self.width(),self.height())
 				
 			glTexCoord2f(1,1)
-			glVertex( self.width(),0)
+			glVertex2f( self.width(),0)
 			
 			glTexCoord2f(0,1)
-			glVertex(0, 0)
+			glVertex2f(0, 0)
 				
 			glEnd()
 			
