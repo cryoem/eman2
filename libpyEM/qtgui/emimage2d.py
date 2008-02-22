@@ -100,6 +100,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.resize(99,99)
 		self.tex_name = 0
 		
+		self.using_textures = True
+		
 		if image : 
 			self.setData(image)
 			self.show()
@@ -240,73 +242,64 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		if self.curfft==1 : 
 			a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
-			#GL.glRasterPos(0,self.height()-1)
-			#GL.glPixelZoom(1.0,-1.0)
-			#GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,a)
-			
-			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
-			self.tex_name = GL.glGenTextures(1)
-			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-			self.tex = GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGB, GL.GL_UNSIGNED_BYTE, a)
+			gl_render_type = GL_RGB
 			
 		elif self.curfft in (2,3) :
 			a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-			#GL.glRasterPos(0,self.height()-1)
-			#GL.glPixelZoom(1.0,-1.0)
-			#GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-			
-			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
-			self.tex_name = GL.glGenTextures(1)
-			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-			self.tex = GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_LUMINANCE,self.width(),self.height(),0,GL.GL_LUMINANCE, GL.GL_UNSIGNED_BYTE, a)
-			
+			gl_render_type = GL_LUMINANCE
 		else : 
-			#GL.glRasterPos(0,self.height()-1)
-			#GL.glPixelZoom(1.0,-1.0)
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-#			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,18)
-			#GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-			
+			gl_render_type = GL_LUMINANCE
+
+
+		if ( self.using_textures ):
 			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
 			self.tex_name = GL.glGenTextures(1)
+			if ( self.tex_name <= 0 ):
+				raise("failed to generate texture name")
+			
 			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-			self.tex = GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_LUMINANCE,self.width(),self.height(),0,GL.GL_LUMINANCE, GL.GL_UNSIGNED_BYTE, a)
+			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.width(),self.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 			
-		glEnable(GL_TEXTURE_2D)
-		glBindTexture(GL_TEXTURE_2D, self.tex_name)
-		#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		# using GL_NEAREST ensures pixel granularity
-		# using GL_LINEAR blurs textures and makes them more difficult
-		# to interpret (in cryo-em)
-		glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-		glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-		# this makes it so that the texture is impervious to lighting
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		
-		
-		# POSITIONING POLICY - the texture is centered on the origin,
-		# and has the height and width of the data
-		glBegin(GL_QUADS)
-		
-		width = self.width()/2.0
-		height = self.height()/2.0
-		
-		glTexCoord2f(0,0)
-		glVertex(0,self.height())
-		
-		glTexCoord2f(1,0)
-		glVertex( self.width(),self.height())
 			
-		glTexCoord2f(1,1)
-		glVertex( self.width(),0)
-		
-		glTexCoord2f(0,1)
-		glVertex(0, 0)
+			glEnable(GL_TEXTURE_2D)
+			glBindTexture(GL_TEXTURE_2D, self.tex_name)
+			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+			# using GL_NEAREST ensures pixel granularity
+			# using GL_LINEAR blurs textures and makes them more difficult
+			# to interpret (in cryo-em)
+			glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			# this makes it so that the texture is impervious to lighting
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			
-		glEnd()
-		
-		glDisable(GL_TEXTURE_2D)
+			# POSITIONING POLICY - the texture is centered on the origin,
+			# and has the height and width of the data
+			glBegin(GL_QUADS)
+			
+			width = self.width()/2.0
+			height = self.height()/2.0
+			
+			glTexCoord2f(0,0)
+			glVertex(0,self.height())
+			
+			glTexCoord2f(1,0)
+			glVertex( self.width(),self.height())
+				
+			glTexCoord2f(1,1)
+			glVertex( self.width(),0)
+			
+			glTexCoord2f(0,1)
+			glVertex(0, 0)
+				
+			glEnd()
+			
+			glDisable(GL_TEXTURE_2D)
+		else:
+			GL.glRasterPos(0,self.height()-1)
+			GL.glPixelZoom(1.0,-1.0)
+			GL.glDrawPixels(self.width(),self.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
 
 #		hist=numpy.fromstring(a[-1024:],'i')
 		hist=struct.unpack('256i',a[-1024:])
