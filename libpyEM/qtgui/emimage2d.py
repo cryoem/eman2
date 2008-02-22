@@ -245,7 +245,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			#GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,a)
 			
 			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
-			GL.glGenTextures(1,self.tex_name)
+			self.tex_name = GL.glGenTextures(1)
 			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 			self.tex = GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGB, GL.GL_UNSIGNED_BYTE, a)
 			
@@ -256,20 +256,19 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			#GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 			
 			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
-			GL.glGenTextures(1,self.tex_name)
+			self.tex_name = GL.glGenTextures(1)
 			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 			self.tex = GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_LUMINANCE,self.width(),self.height(),0,GL.GL_LUMINANCE, GL.GL_UNSIGNED_BYTE, a)
 			
 		else : 
 			#GL.glRasterPos(0,self.height()-1)
 			#GL.glPixelZoom(1.0,-1.0)
-			print self.width(),self.height()
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 #			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,18)
 			#GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 			
 			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
-			GL.glGenTextures(1,self.tex_name)
+			self.tex_name = GL.glGenTextures(1)
 			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 			self.tex = GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_LUMINANCE,self.width(),self.height(),0,GL.GL_LUMINANCE, GL.GL_UNSIGNED_BYTE, a)
 			

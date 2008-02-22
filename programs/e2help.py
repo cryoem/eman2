@@ -44,9 +44,12 @@ from sys import exit
 
 def main():
 	progname = os.path.basename(sys.argv[0])
+	helpstring =  """Help is available on the following topics:
+processors, cmps, aligners, projectors, reconstructors, symmetries, orientgens"""
 	usage = """%prog <topic>
 	
-Interactive help on a variety of topics. """
+Interactive help on a variety of topics."""
+	usage += " "+helpstring
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -55,9 +58,9 @@ Interactive help on a variety of topics. """
 	parser.add_option("--verbose", "-v", action="store_true", help="More detailed help", default=False)
 	
 	(options, args) = parser.parse_args()
+	
 	if len(args)<1 : 
-		print """Help is available on the following topics:
-processors, cmps, aligners, projectors, reconstructors, symmetries"""
+		print helpstring
 		exit(0)
 	
 	l=None
@@ -85,9 +88,12 @@ processors, cmps, aligners, projectors, reconstructors, symmetries"""
 	elif args[0] in ("sym","symmetry","symmetries") :
 		print "Available symmetries:"
 		l=dump_symmetries_list()
-	elif args[0] in ("orientgen","orientationgen","orientationgenerators") :
+	elif args[0] in ("orientgen","orientationgen","orientgens","orientationgens","orientationgenerators") :
 		print "Available orientation generators:"
 		l=dump_orientgens_list()
+	else:
+		print helpstring
+		print "unknown option:",args[0]
 		
 	if l:
 		if options.verbose:
