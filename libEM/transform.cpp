@@ -841,8 +841,8 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		phiS = az   - 90.0f;
 		psiS = phi  + 90.0f;
 	}
-	phiS = fmod((phiS   + 540.0f ), 360.0f) - 180.0f;
-	psiS = fmod((psiS   + 540.0f ), 360.0f) - 180.0f;
+	phiS = fmod((phiS   + 360.0f ), 360.0f) ;
+	psiS = fmod((psiS   + 360.0f ), 360.0f) ;
 
 //   do some quaternionic stuff here
 
