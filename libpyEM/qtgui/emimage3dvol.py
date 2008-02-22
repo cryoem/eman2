@@ -99,6 +99,9 @@ class EMVolume(EMImage3DObject):
 		self.tex_dl_z = 0
 		self.inspector=None
 		
+		self.power_of_two_init_check = True
+		self.use_mipmaps = False
+		
 	def loadColors(self):
 		# There is a bug, if the accompanying functionality to this function is removed we get a seg fault
 		ruby = {}
@@ -265,13 +268,23 @@ class EMVolume(EMImage3DObject):
 				self.tex_dl = self.tex_dl_x
 			else:
 				self.tex_dl = self.tex_dl_y
-	
+			
 	def genTexture(self):
 	
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
 		
 		# Get the texture here
-		self.tex_name = self.data_copy.gen_gl_texture()
+		if ( self.power_of_two_init_check and not data_dims_power_of(self.data_copy,2) ):
+			if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
+				self.use_mipmaps = True;
+				print "EMAN(ALPHA) message: No support for non power of two (3D) textures detected. Using mipmaps."
+			else:
+				print "EMAN(ALPHA) message: Support for non power of two (3D) textures detected."
+		
+		if (self.use_mipmaps):
+			self.tex_name = self.data_copy.gen_glu_mipmaps()
+		else:
+			self.tex_name = self.data_copy.gen_gl_texture()
 		
 		if ( self.tex_dl_z != 0 ): glDeleteLists( self.tex_dl_z, 1)
 		

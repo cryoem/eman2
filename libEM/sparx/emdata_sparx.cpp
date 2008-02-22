@@ -443,7 +443,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 EMData *EMData::FH2Real(int Size, float OverSamplekB, int)  // PRB
 {
 	EMData* FFT= FH2F(Size,OverSamplekB,0);
-	FFT->process_inplace("xform.fourierorigin");
+	FFT->process_inplace("xform.fourierorigin.tocorner");
 	EMData* eguess= FFT ->do_ift();
 	return eguess;
 }  // ends FH2F

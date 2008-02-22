@@ -87,6 +87,12 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		self.rank = 1
 		
+		self.power_of_two_init_check = True
+		self.use_mipmaps = False
+		
+		self.threed_texture_check = True
+		self.using_3d_texture = True
+		
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
 		
@@ -128,7 +134,82 @@ class EM3DSliceViewer(EMImage3DObject):
 		if ( self.tex_name != 0 ):
 			glDeleteTextures(self.tex_name)
 		
-		self.tex_name = self.data.gen_gl_texture()
+		
+		if ( self.threed_texture_check == True ):
+			self.check_threed_texturing()
+		
+		if ( self.power_of_two_init_check ):
+			self.check_non_power_of_two_support()
+		
+		if ( self.using_3d_texture ):
+			if ( not self.use_mipmaps ):
+				self.tex_name = self.data.gen_gl_texture()
+			else:
+				self.tex_name = self.data.gen_glu_mipmaps()
+	
+	def gen2DTexture(self):
+		if self.axis == 'z':
+			tmp = EMData(self.data.get_xsize(),self.data.get_ysize())
+			# 90 alt followed by 90 phi to get the xy plane to the yz plane
+			t = Transform3D(0,0,0)
+			t.set_posttrans(0,0,self.zslice-self.data.get_zsize()/2)
+			tmp.cut_slice(self.data,0,t)
+		elif self.axis == 'y':
+			tmp = EMData(self.data.get_xsize(),self.data.get_zsize())
+			#90 alt followed by 90 phi to get the xy plane to the yz plane
+			t = Transform3D(0,90,0)
+			t.set_posttrans(0,-(self.yslice-self.data.get_ysize()/2),0)
+			tmp.cut_slice(self.data,0,t)
+		elif self.axis == 'x':
+			tmp = EMData(self.data.get_ysize(),self.data.get_zsize())
+			#90 alt to get the  xy plane to the xz plane
+			t = Transform3D(0,90,90)
+			t.set_posttrans(self.xslice-self.data.get_xsize()/2,0,0)
+			tmp.cut_slice(self.data,0,t)
+		else:
+			raise("Cannot call get2DTextureName is the axis is not yet set")
+		
+		
+		if ( self.power_of_two_init_check ):
+			self.check_non_power_of_two_support()
+		
+		if ( self.tex_name != 0 ):
+			glDeleteTextures(self.tex_name)
+		
+		if not self.use_mipmaps:
+			self.tex_name = tmp.gen_gl_texture()
+		else:
+			self.tex_name = tmp.gen_glu_mipmaps()
+		
+		return self.tex_name
+
+	def check_non_power_of_two_support(self):
+
+		if not data_dims_power_of(self.data,2):
+			if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
+				self.use_mipmaps = True;
+				print "EMAN(ALPHA) message: No support for non power of two (3D) textures detected. Using mipmaps."
+			else:
+				print "EMAN(ALPHA) message: Support for non power of two (3D) textures detected."
+		
+		self.power_of_two_init_check = False
+	
+	def check_threed_texturing(self):
+		disable = True
+		
+		# sigh - I couldn't find an EXTENSION or simple way of testing for this,
+		# so I just did it this way
+		try: glEnable(GL_TEXTURE_3D)
+		except:
+			disable = False
+			print "EMAN(ALPHA) message: disabling use of 3D textures"
+			self.using_3d_texture = False
+		
+		if (disable):
+			glDisable(GL_TEXTURE_3D)
+			print "EMAN(ALPHA) message: 3D texture support detected"
+		
+		self.threed_texture_check = False
 		
 	def genCurrentDisplayList(self):
 		if ( self.tex_dl != 0 ): glDeleteLists( self.tex_dl, 1)
@@ -138,66 +219,138 @@ class EM3DSliceViewer(EMImage3DObject):
 		if (self.tex_dl == 0): return #OpenGL is initialized yet
 		
 		glNewList(self.tex_dl,GL_COMPILE)
-		glEnable(GL_TEXTURE_3D)
-		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 		
-		glBegin(GL_QUADS)
+		if ( self.threed_texture_check == True ):
+			self.check_threed_texturing()
 		
-		if self.axis == 'z':
-			zz = float(self.zslice)/float(self.data.get_zsize())
-			glTexCoord3f(0,0,zz)
-			glVertex(0,0,zz)
+		if ( self.using_3d_texture ):
+			glEnable(GL_TEXTURE_3D)
+			glBindTexture(GL_TEXTURE_3D, self.tex_name)
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			if (not self.use_mipmaps):
+				glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			else:
+				glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST)
+				
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			
-			glTexCoord3f(1,0,zz)
-			glVertex(1,0,zz)
+			glBegin(GL_QUADS)
 			
-			glTexCoord3f(1,1,zz)
-			glVertex(1,1,zz)
-			
-			glTexCoord3f(0,1,zz)
-			glVertex(0,1,zz)
-			
-		elif self.axis == 'y':
-			yy = float(self.yslice)/float(self.data.get_ysize())
-			glTexCoord3f(0,yy,0)
-			glVertex(0,yy,0)
-			
-			glTexCoord3f(1,yy,0)
-			glVertex(1,yy,0)
-			
-			glTexCoord3f(1,yy,1)
-			glVertex(1,yy,1)
-			
-			glTexCoord3f(0,yy,1)
-			glVertex(0,yy,1)
-			
-		elif self.axis == 'x':
-			xx = float(self.xslice)/float(self.data.get_zsize())
-			glTexCoord3f(xx,0,0)
-			glVertex(xx,0,0)
-			
-			glTexCoord3f(xx,1,0)
-			glVertex(xx,1,0)
-			
-			glTexCoord3f(xx,1,1)
-			glVertex(xx,1,1)
-			
-			glTexCoord3f(xx,0,1)
-			glVertex(xx,0,1)
-			
+			if self.axis == 'z':
+				zz = float(self.zslice)/float(self.data.get_zsize())
+				glTexCoord3f(0,0,zz)
+				glVertex(0,0,zz)
+				
+				glTexCoord3f(1,0,zz)
+				glVertex(1,0,zz)
+				
+				glTexCoord3f(1,1,zz)
+				glVertex(1,1,zz)
+				
+				glTexCoord3f(0,1,zz)
+				glVertex(0,1,zz)
+				
+			elif self.axis == 'y':
+				yy = float(self.yslice)/float(self.data.get_ysize())
+				glTexCoord3f(0,yy,0)
+				glVertex(0,yy,0)
+				
+				glTexCoord3f(1,yy,0)
+				glVertex(1,yy,0)
+				
+				glTexCoord3f(1,yy,1)
+				glVertex(1,yy,1)
+				
+				glTexCoord3f(0,yy,1)
+				glVertex(0,yy,1)
+				
+			elif self.axis == 'x':
+				xx = float(self.xslice)/float(self.data.get_zsize())
+				glTexCoord3f(xx,0,0)
+				glVertex(xx,0,0)
+				
+				glTexCoord3f(xx,1,0)
+				glVertex(xx,1,0)
+				
+				glTexCoord3f(xx,1,1)
+				glVertex(xx,1,1)
+				
+				glTexCoord3f(xx,0,1)
+				glVertex(xx,0,1)
+				
+			else:
+				print "Error, unknow axis", self.axis
+				
+			glEnd()
+		
+			glDisable(GL_TEXTURE_3D)
 		else:
-			print "Error, unknow axis", self.axis
+			self.gen2DTexture()
+			glEnable(GL_TEXTURE_2D)
+			glBindTexture(GL_TEXTURE_2D, self.tex_name)
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			if (not self.use_mipmaps):
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			else:
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST)
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			
-		glEnd()
-		
-		glDisable(GL_TEXTURE_3D)
+			glBegin(GL_QUADS)
+			
+			if self.axis == 'z':
+				zz = float(self.zslice)/float(self.data.get_zsize())
+				glTexCoord2f(0,0)
+				glVertex3f(0,0,zz)
+				
+				glTexCoord2f(1,0)
+				glVertex3f(1,0,zz)
+				
+				glTexCoord2f(1,1)
+				glVertex3f(1,1,zz)
+				
+				glTexCoord2f(0,1)
+				glVertex3f(0,1,zz)
+				
+			elif self.axis == 'y':
+				yy = float(self.yslice)/float(self.data.get_ysize())
+				
+				glTexCoord2f(0,0)
+				glVertex3f(0,yy,0)
+				
+				glTexCoord2f(1,0)
+				glVertex3f(1,yy,0)
+				
+				glTexCoord2f(1,1)
+				glVertex3f(1,yy,1)
+				
+				glTexCoord2f(0,1)
+				glVertex3f(0,yy,1)
+				
+			elif self.axis == 'x':
+				xx = float(self.xslice)/float(self.data.get_zsize())
+				glTexCoord2f(0,0)
+				glVertex3f(xx,0,0)
+				
+				glTexCoord2f(1,0)
+				glVertex3f(xx,1,0)
+				
+				glTexCoord2f(1,1)
+				glVertex3f(xx,1,1)
+				
+				glTexCoord2f(0,1)
+				glVertex3f(xx,0,1)
+			
+			glEnd()		
+			glDisable(GL_TEXTURE_2D)
+
+	
 		glEndList()
 		
 	def render(self):
@@ -717,7 +870,7 @@ if __name__ == '__main__':
 	window = EMSliceViewerWidget()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(128,128,128)
+		e.set_size(127,121,135)
 		e.process_inplace('testimage.axes')
 		window.setData(e)
 

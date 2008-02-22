@@ -255,10 +255,11 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 		if ( self.power_of_two_init_check and self.using_textures ):
 			if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
-				print "EMAN(ALPHA) message: No support for non power of two texture detected. Using glDrawPixels"
+				#print "EMAN(ALPHA) message: No support for non power of two texture detected. Using glDrawPixels"
 				self.using_textures = False
 			else:
-				print "EMAN(ALPHA) message: Support for non power of two textures detected"
+				pass
+				#print "EMAN(ALPHA) message: Support for non power of two textures detected"
 			self.power_of_two_init_check = False
 
 		if ( self.using_textures ):

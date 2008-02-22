@@ -3643,66 +3643,18 @@ The basic design of EMAN Processors: <br>\
 			}
 
 	};
-	/** Translates the origin in Fourier space from the corner to the center in Y
-	 * DEPRECATED - use instead FourierToCenterProcessor and 
-	 * FourierToCornerProcessor processor
-	 */
-	class FourierOriginShiftProcessor:public Processor
-	{
-	  public:
-		void process_inplace(EMData * image);
-
-		string get_name() const
-		{
-			return "xform.fourierorigin";
-		}
-
-		static Processor *NEW()
-		{
-			return new FourierOriginShiftProcessor();
-		}
-		
-		string get_desc() const
-		{
-			return "Translates the origin in Fourier space from the corner to the center in Y";
-		}
-
-	};
 	
-	/** Translates a centered image to the corner
-	 * partially DEPRECATED - works only for even dimensioned images
-	 * instead use PhaseToCenterProcessor and PhaseToCornerProcessor
-	 * All explicit calls to this function's process inplace function
-	 * should be removed from the code and replace to calls to the aforementioned
-	 * processors.
-	 * Once this clean up occurs, the process_inplace function should be made pure virtual
-	 * but the class should be kept, because the PhaseToCenterProcessor and PhaseToCornerProcessor
-	 * derive from this class (i.e. both of these classes use the same functions, but call them in a
-	 * different order)
+	/**
+	 * This class is abstract. It contains functionality common to the PhaseToCenterProcessor and PhaseToCornerProcessor
+	 * processors
 	 *
 	 * @author David Woolford <woolford@bcm.edu> 
 	 * @date October 2007
 	 * @ingroup tested3c
+	 * though the testing of this processor is really implicit
 	 */
 	class Phase180Processor:public Processor
 	{
-		public:
-			void process_inplace(EMData * image);
-
-			string get_name() const
-			{
-				return "xform.phaseorigin";
-			}
-
-			static Processor *NEW()
-			{
-				return new Phase180Processor();
-			}
-		
-			string get_desc() const
-			{
-				return "Translates a centered image to the corner";
-			}
 		protected:
 			/** swap_corners_180 - works on 2D and 3D images
 			* 
@@ -4445,7 +4397,7 @@ The basic design of EMAN Processors: <br>\
 			void insert_rectangle( EMData* image, const Region& region, const float& value, const Transform3D* const t3d = NULL );
 	};
 	
-	/** Put a gradient in the image of the form y = mx+b - x can be any of the image axes, i.e., x,y or z.
+	/** Put a gradient in the image of the form y = mx+b : "x" is a string indicating any of the image axes, i.e., x,y or z.
 	 * @author David Woolford <woolford@bcm.edu>
 	 * @date 01/10/2008
 	 * @param axis The axis the will be used to determine pixel values. Must be x,y or z. Default is x

@@ -464,6 +464,25 @@ def isosurface(marchingcubes, threshhold, smooth=False):
 	d = marchingcubes.get_isosurface(smooth)
 	return d['points'], d['faces'], d['normals']
 
+# determines if all of the data dimensions are a power of val
+# e.g. if ( data_dims_power_of(emdata,2) print "the dimensions of the image are all a power of 2"
+def data_dims_power_of(data,val):
+	
+	test_cases = [data.get_xsize()]
+	
+	if ( data.get_ndim() >= 2 ):
+		test_cases.append(data.get_ysize())
+	if ( data.get_ndim == 3):
+		test_cases.append(data.get_zsize())
+
+	for i in test_cases:
+		x = i
+		while ( x > 1 and x % val == 0 ): x /= val
+		if x != 1: 
+			return False
+		
+	return True
+
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\
 single particle reconstructions.\n\

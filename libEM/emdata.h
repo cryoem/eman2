@@ -702,8 +702,8 @@ namespace EMAN
 		 * @param dy
 		 * @exception NullPointerException If map is NULL.
 		 */
-		void cut_slice(const EMData * map, float dz, Transform3D * orientation = 0,
-					   bool interpolate = true, float dx = 0, float dy = 0);
+		void cut_slice(const EMData * map, float dz=1, Transform3D * orientation = 0,
+					   bool interpolate = true, float dx = 1, float dy = 1);
 
 		/** Opposite of the cut_slice(). It will take a slice and insert
 		 * the data into a real 3D map. It does not interpolate, it uses

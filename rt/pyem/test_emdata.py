@@ -1744,7 +1744,7 @@ class TestEMData(unittest.TestCase):
             e5.calc_ccfx(e6)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-    def test_calc_ccf_dsaw(self):
+    def no_test_calc_ccf_dsaw(self):
 		"""test calc_ccf function expected behavior.........."""
 		n = 16
 		

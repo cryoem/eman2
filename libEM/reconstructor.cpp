@@ -858,7 +858,7 @@ void BaldwinWoolfordReconstructor::setup()
 EMData* BaldwinWoolfordReconstructor::finish()
 {
 	tmp_data->write_image("density.mrc");
-	image->process_inplace("xform.fourierorigin");
+	image->process_inplace("xform.fourierorigin.tocorner");
 	image->do_ift_inplace();
 	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
 	image->postift_depad_corner_inplace();
