@@ -163,7 +163,7 @@ for single particle analysis."""
 	flt.to_one()
 	flt.process_inplace("mask.sharp",{"outer_radius":filtrad})
 	flt/=(float(flt.get_attr("mean"))*flt.get_xsize()*flt.get_ysize())
-	flt.process_inplace("xform.phaseorigin")
+	flt.process_inplace("xform.phaseorigin.tocorner")
 	a=shrink.get_clip(Region(-filtrad*2,-filtrad*2,shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4))
 	a.process_inplace("mask.zeroedgefill")
 #	a.write_image("q0.hdf",0)
@@ -557,8 +557,10 @@ class GUIbox:
 		
 		self.moving=None					# Used during a user box drag
 		
-		self.guiim=EMImage(self.image)		# widget for displaying large image
-		self.guimx=EMImage(self.ptcl)		# widget for displaying matrix of smaller images
+		self.guiimp=EMImage(self.image)		# widget for displaying large image
+		self.guiim=self.guiimp.child
+		self.guimxp=EMImage(self.ptcl)		# widget for displaying matrix of smaller images
+		self.guimx=self.guimxp.child
 		
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mousedown)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mousedrag)
@@ -569,8 +571,8 @@ class GUIbox:
 		self.guictl=GUIboxPanel(self)
 		
 		try:
-			E2loadappwin("boxer","imagegeom",self.guiim)
-			E2loadappwin("boxer","matrixgeom",self.guimx)
+			E2loadappwin("boxer","imagegeom",self.guiimp)
+			E2loadappwin("boxer","matrixgeom",self.guimxp)
 			E2loadappwin("boxer","controlgeom",self.guictl)
 			self.guimx.nperrow=E2getappval("boxer","matrixnperrow")
 			
@@ -583,8 +585,8 @@ class GUIbox:
 		except:
 			pass
 		
-		self.guiim.show()
-		self.guimx.show()
+		self.guiimp.show()
+		self.guimxp.show()
 		self.guictl.show()
 		
 		self.boxupdate()
