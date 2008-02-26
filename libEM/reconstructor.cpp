@@ -1468,7 +1468,11 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 				continue;
 			}
 
+#ifdef _WIN32
 			int r = Util::round((float)_hypot(x, (float) y - ny / 2) * Ctf::CTFOS / padratio);
+#else
+			int r = Util::round((float)hypot(x, (float) y - ny / 2) * Ctf::CTFOS / padratio);
+#endif
 			if (r >= Ctf::CTFOS * ny / 2) {
 				r = Ctf::CTFOS * ny / 2 - 1;
 			}

@@ -703,14 +703,22 @@ void CtfAverager::add_image(EMData * image)
 		int j = 0;
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx / 2; x++, j += 2) {
+#ifdef	_WIN32
+				float r = (float)_hypot((float)x, (float)(y - ny / 2.0f));
+#else
 				float r = (float)hypot((float)x, (float)(y - ny / 2.0f));
+#endif	//_WIN32
 				int l = static_cast < int >(Util::fast_floor(r));
 
 				if (l >= 0 && l < ny / 2) {
 					int k = y*nx/2 + x;
 					tdr[k] *= src[j];
 					tdi[k] *= src[j + 1];
+#ifdef	_WIN32
+					tn[k] *= (float)_hypot(src[j], src[j + 1]);
+#else
 					tn[k] *= (float)hypot(src[j], src[j + 1]);
+#endif	//_WIN32
 				}
 			}
 		}
@@ -745,7 +753,11 @@ EMData * CtfAverager::finish()
 	int j = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++, j += 2) {
+#ifdef	_WIN32
+			float r = (float) _hypot(x, y - ny / 2.0f);
+#else			
 			float r = (float) hypot(x, y - ny / 2.0f);
+#endif
 			int l = static_cast < int >(Util::fast_floor(r));
 			if (l >= 0 && l < ny / 2) {
 				int k = y*nx/2 + x;
