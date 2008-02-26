@@ -134,7 +134,7 @@ int FourierReconstructor2D::insert_slice(const EMData* const slice, const Transf
 	for ( int i = 0; i < Transform3D::get_nsym(sym); ++i)
 	{
 		Transform3D t3d = euler.get_sym(sym, i);
-		float alt = -((float)(t3d.get_rotation())["alt"])*M_PI/180.0;
+		float alt = -((float)(t3d.get_rotation())["alt"])*M_PI/180.0f;
 		for (int x = 0; x < working_slice->get_xsize() / 2; x++) {
 			
 			float rx = (float) x;
@@ -749,16 +749,16 @@ void FourierReconstructor::print_stats( const vector<QualityScores>& scores )
 	double mean = gsl_stats_mean(norm_frc, 1, contributing_images);
 	double variance = gsl_stats_variance_m(norm_frc, 1, contributing_images, mean);
 
-	cout << "Normalized FRC mean " << mean << " std dev " << sqrtf(variance) << endl;
+	cout << "Normalized FRC mean " << mean << " std dev " << sqrt(variance) << endl;
 
 	mean = gsl_stats_mean(frc, 1, contributing_images);
 	variance = gsl_stats_variance_m(frc, 1, contributing_images, mean);
 	
-	cout << "FRC mean " << mean << " std dev " << sqrtf(variance) << endl;
+	cout << "FRC mean " << mean << " std dev " << sqrt(variance) << endl;
 
 	mean = gsl_stats_mean(norm_snr, 1, contributing_images);
 	variance = gsl_stats_variance_m(norm_snr, 1, contributing_images, mean);
-	cout << "SNR mean " << mean << " std dev " << sqrtf(variance) << endl;
+	cout << "SNR mean " << mean << " std dev " << sqrt(variance) << endl;
 
 	double c0, c1, cov00, cov01, cov11, sumsq;
 	gsl_fit_linear (norm_frc, 1, frc, 1, contributing_images, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
@@ -849,10 +849,10 @@ void BaldwinWoolfordReconstructor::setup()
 	// Set up the Baldwin Kernel 
 	int P = (int)((1.0+0.25)*max_input_dim+1);
 	float r = (float)(max_input_dim+1)/(float)P;
-	dfreq = 0.2;
+	dfreq = 0.2f;
 	if (W != 0) delete [] W;
 	int maskwidth = params.set_default("maskwidth",2);
-	W = Util::getBaldwinGridWeights(maskwidth, P, r,dfreq,0.5,0.2);
+	W = Util::getBaldwinGridWeights(maskwidth, (float)P, r,dfreq,0.5f,0.2f);
 }
 
 EMData* BaldwinWoolfordReconstructor::finish()
@@ -869,7 +869,7 @@ EMData* BaldwinWoolfordReconstructor::finish()
 		cout << "POST MULTIPLYING" << endl;
 	// now undo the Fourier convolution with real space division
 		float* d = image->get_data();
-		float N = (float) image->get_xsize()/2.0;
+		float N = (float) image->get_xsize()/2.0f;
 		N *= N;
 		int rnx = image->get_xsize();
 		int rny = image->get_ysize();
@@ -880,9 +880,9 @@ EMData* BaldwinWoolfordReconstructor::finish()
 		for (int k = 0; k < image->get_zsize(); ++k ){
 			for (int j = 0; j < image->get_ysize(); ++j ) {
 				for (int i =0; i < image->get_xsize(); ++i ) {
-					float xd = i-cx; xd *= xd;
-					float yd = j-cy; yd *= yd;
-					float zd = k-cz; zd *= zd;
+					float xd = (float)(i-cx); xd *= xd;
+					float yd = (float)(j-cy); yd *= yd;
+					float zd = (float)(k-cz); zd *= zd;
 					float weight = exp((xd+yd+zd)/N);
 					d[k*rnxy + j*rnx + i] *=  weight;
 				}
@@ -961,7 +961,7 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	// w is the windowing width
 	int w = params.set_default("maskwidth",2);
 	float wsquared = (float) w*w;
-	float dw = 1.0/w;
+	float dw = 1.0f/w;
 	dw *= dw;
 	
 	// w minus one - this control the number of 
@@ -1037,7 +1037,7 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 				if ( mode == 1 && distsquared > wsquared ) continue;
 
 // 				float f = fac*exp(-dw*(distsquared));
-				float f = fac*exp(-2.467*(distsquared));
+				float f = fac*exp(-2.467f*(distsquared));
 				// Debug - this error should never occur.
 				if ( (kc*tnxy+jc*tnx+ic) >= tnxy*tnz ) throw OutofRangeException(0,tnxy*tnz,kc*tnxy+jc*tnx+ic, "in density insertion" );
 				d[kc*tnxy+jc*tnx+ic] += f;
@@ -1124,7 +1124,7 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 	// w is the windowing width
 	int w = params.set_default("maskwidth",2);
 	float wsquared = (float) w*w;
-	float dw = 1.0/w;
+	float dw = 1.0f/w;
 	dw *= dw;
 	
 	int wmox = w-1;
@@ -1189,7 +1189,7 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 				zd *= zd; yd *= yd; xd *= xd;
 				float distsquared = xd+yd+zd;
 // 				float f = fac*exp(-dw*(distsquared));
-				float f = fac*exp(-2.467*(distsquared));
+				float f = fac*exp(-2.467f*(distsquared));
 				float weight = f/we[kc*tnxy+jc*tnx+ic];
 				// debug - this error should never occur
 				if ( (kc*rnxy+jc*rnx+2*ic+1) >= rnxy*tnz ) throw OutofRangeException(0,rnxy*tnz,kc*rnxy+jc*rnx+2*ic+1, "in pixel insertion" );
@@ -1217,7 +1217,7 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 						residual = dist/dfreq - (int)(dist/dfreq);
 						if ( fabs(residual) > 1) throw InvalidValueException(residual, "Residual was too big");
 						
-						factor = (W[idx]*(1.0-residual)+W[idx+1]*residual)*weight;
+						factor = (W[idx]*(1.0f-residual)+W[idx+1]*residual)*weight;
 				
 						d[k] += dt[0]*factor;
 						d[k+1] += dt[1]*factor;
@@ -1468,7 +1468,7 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 				continue;
 			}
 
-			int r = Util::round((float)hypot(x, (float) y - ny / 2) * Ctf::CTFOS / padratio);
+			int r = Util::round((float)_hypot(x, (float) y - ny / 2) * Ctf::CTFOS / padratio);
 			if (r >= Ctf::CTFOS * ny / 2) {
 				r = Ctf::CTFOS * ny / 2 - 1;
 			}
@@ -2177,7 +2177,7 @@ EMData* nn4Reconstructor::finish()
 								}
 							}
 						}
-						float wght = 1.0 / ( 1.0f - alpha * sum );
+						float wght = 1.0f / ( 1.0f - alpha * sum );
 						tmp = tmp * wght;
 					}
 					(*m_volume)(2*ix,iy,iz) *= tmp;
@@ -3243,7 +3243,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 							}
 						}
 // 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-						wght = 1.0 / ( 1.0f - alpha * sum );
+						wght = 1.0f / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator   = std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz);
 					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz))/(Kn-1.0f);
