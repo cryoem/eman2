@@ -39,6 +39,84 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 
+class EMOpenGLFlags:
+	"""
+	This is a singleton class that encapsulates OpenGL
+	flags that are important to the functioning of EMAN2 user interfaces. 
+	
+	For instance, this class can be asked whether or not 3D texturing
+	is supported, whether or not power of two textures are supported,
+	and various other things that will be added as development continues.
+	
+	All OpenGL-related flags should end up in this class.
+	"""
+	class __impl:
+		""" Implementation of the singleton interface """
+
+		def __init__(self):
+			self.power_of_two_init_check = True 	# an internal flag for perming a test
+			self.use_mipmaps = False				# use mipmaps means power of two-textures are not supported
+		
+			self.threed_texture_check = True	# an internal flag for perming a test
+			self.use_3d_texture = True			# this flag stores whether or not 3D texturing is supported 
+			
+			
+		def power_of_two_textures_unsupported(self):
+			if self.power_of_two_init_check == True:
+				if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
+					self.use_mipmaps = True
+					print "EMAN(ALPHA) message: No support for non power of two textures detected. Using mipmaps."
+				else:
+					self.use_mipmaps = False
+					print "EMAN(ALPHA) message: Support for non power of two textures detected."
+			
+				self.power_of_two_init_check = False
+			
+			return self.use_mipmaps
+			
+		def threed_texturing_supported(self):
+			
+			if ( self.threed_texture_check == True ):
+				disable = True
+				
+				# sigh - I couldn't find an EXTENSION or simple way of testing for this,
+				# so I just did it this way. I am worried this approach may not work
+				# in all cases because it is not conventional
+				try: glEnable(GL_TEXTURE_3D)
+				except:
+					disable = False
+					print "EMAN(ALPHA) message: disabling use of 3D textures"
+					self.use_3d_texture = False
+				
+				if (disable):
+					glDisable(GL_TEXTURE_3D)
+					self.use_3d_texture = True
+					print "EMAN(ALPHA) message: 3D texture support detected"
+				
+				self.threed_texture_check = False
+
+			return self.use_3d_texture
+
+	# storage for the instance reference
+	__instance = None
+
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if EMOpenGLFlags.__instance is None:
+			# Create and remember instance
+			EMOpenGLFlags.__instance = EMOpenGLFlags.__impl()
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+
+
 class Camera2:
 	"""\brief A camera object encapsulates 6 degrees of freedom, and a scale factor
 	

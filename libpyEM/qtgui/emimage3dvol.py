@@ -52,6 +52,7 @@ from time import *
 
 from emimage3dobject import EMImage3DObject
 from emimage3dobject import Camera
+from emimage3dobject import EMOpenGLFlags
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -66,6 +67,9 @@ class EMVolume(EMImage3DObject):
 		self.initializedGL= False
 		
 		self.inspector=None
+		
+		self.tex_names_list = []		# A storage object, used to remember and later delete texture names
+		self.axis = 'z'					# a string indicated which axis the volume is being rendered along - this might eventual change to a vector
 		
 		if image :
 			self.setData(image)
@@ -94,13 +98,9 @@ class EMVolume(EMImage3DObject):
 		self.rank = 1
 		
 		self.tex_dl = 0
-		self.tex_dl_x = 0
-		self.tex_dl_y = 0
-		self.tex_dl_z = 0
 		self.inspector=None
-		
-		self.power_of_two_init_check = True
-		self.use_mipmaps = False
+
+		self.glflags = EMOpenGLFlags()		# OpenGL flags - this is a singleton convenience class for testing texture support
 		
 	def loadColors(self):
 		# There is a bug, if the accompanying functionality to this function is removed we get a seg fault
@@ -134,7 +134,6 @@ class EMVolume(EMImage3DObject):
 		self.inspector.setColors(self.colors,self.isocolor)
 		
 		self.updateDataAndTexture()
-		self.tex_dl = self.tex_dl_z
 		
 	def test_accum(self):
 		glClear(GL_ACCUM_BUFFER_BIT)
@@ -152,22 +151,21 @@ class EMVolume(EMImage3DObject):
 			glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 			glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		
-		
+
 			glBegin(GL_QUADS)
 			
 			zz = float(z)/float(self.data.get_zsize()-1)/self.texsample
 			glTexCoord3f(0,0,zz)
-			glVertex(0,0,zz)
+			glVertex3f(0,0,zz)
 			
 			glTexCoord3f(1,0,zz)
-			glVertex(1,0,zz)
+			glVertex3f(1,0,zz)
 			
 			glTexCoord3f(1,1,zz)
-			glVertex(1,1,zz)
+			glVertex3f(1,1,zz)
 			
 			glTexCoord3f(0,1,zz)
-			glVertex(0,1,zz)
+			glVertex3f(0,1,zz)
 		
 			glEnd()
 			glDisable(GL_TEXTURE_3D)
@@ -211,6 +209,7 @@ class EMVolume(EMImage3DObject):
 		glDepthMask(GL_FALSE)
 		glBlendFunc(GL_ONE, GL_ONE)
 		glCallList(self.tex_dl)
+		#self.gen2DTexture()
 		glDepthMask(GL_TRUE)
 		glDisable(GL_BLEND)
 		glPopMatrix()
@@ -257,137 +256,234 @@ class EMVolume(EMImage3DObject):
 		xzangle = 180*atan2(point[2],point[0])/pi
 		yzangle = 180*atan2(point[2],point[1])/pi
 		
+		currentaxis = self.axis
+		
 		if (xzangle > 45 ):
 			
 			if ( yzangle > 45 ):
-				self.tex_dl = self.tex_dl_z
+				self.axis = 'z'
 			else:
-				self.tex_dl = self.tex_dl_y
+				self.axis = 'y'
 		else:
 			if ( xyangle < 45 ):
-				self.tex_dl = self.tex_dl_x
+				self.axis = 'x'
 			else:
-				self.tex_dl = self.tex_dl_y
+				self.axis = 'y'
+				
+		if (currentaxis != self.axis):
+			print self.axis
+			self.gen2DTexture()
 			
-	def genTexture(self):
+	def gen3DTexture(self):
 	
-		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
+		if ( self.tex_dl != 0 ): glDeleteLists( self.tex_dl, 1)
 		
-		# Get the texture here
-		if ( self.power_of_two_init_check and not data_dims_power_of(self.data_copy,2) ):
-			if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
-				self.use_mipmaps = True;
-				print "EMAN(ALPHA) message: No support for non power of two (3D) textures detected. Using mipmaps."
-			else:
-				print "EMAN(ALPHA) message: Support for non power of two (3D) textures detected."
+		self.tex_dl = glGenLists(1)
 		
-		if (self.use_mipmaps):
-			self.tex_name = self.data_copy.gen_glu_mipmaps()
+		if self.tex_dl == 0:
+			print "Error, failed to generate display list"
+			return
+		
+		if self.tex_name == 0:
+			print "Error, can not render 3D texture - texture name is 0"
+			return
+		
+		glNewList(self.tex_dl,GL_COMPILE)
+		glEnable(GL_TEXTURE_3D)
+		glBindTexture(GL_TEXTURE_3D, self.tex_name)
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.power_of_two_textures_unsupported()):
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
 		else:
-			self.tex_name = self.data_copy.gen_gl_texture()
-		
-		if ( self.tex_dl_z != 0 ): glDeleteLists( self.tex_dl_z, 1)
-		
-		self.tex_dl_z = glGenLists(1)
-		
-		glNewList(self.tex_dl_z,GL_COMPILE)
-		glEnable(GL_TEXTURE_3D)
-		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+
 		glBegin(GL_QUADS)
-		for z in range(0,int(self.texsample*(self.data.get_zsize()))):
-			zz = float(z)/float(self.data.get_zsize()-1)/self.texsample
-			glTexCoord3f(0,0,zz)
-			glVertex(0,0,zz)
-			
-			glTexCoord3f(1,0,zz)
-			glVertex(1,0,zz)
-			
-			glTexCoord3f(1,1,zz)
-			glVertex(1,1,zz)
-			
-			glTexCoord3f(0,1,zz)
-			glVertex(0,1,zz)
 		
+		if ( self.axis == 'z'):
+			for z in range(0,int(self.texsample*(self.data.get_zsize()))):
+				zz = float(z)/float(self.data.get_zsize())/self.texsample
+				glTexCoord3f(0,0,zz)
+				glVertex3f(0,0,zz)
+				
+				glTexCoord3f(1,0,zz)
+				glVertex3f(1,0,zz)
+				
+				glTexCoord3f(1,1,zz)
+				glVertex3f(1,1,zz)
+				
+				glTexCoord3f(0,1,zz)
+				glVertex3f(0,1,zz)
+		elif (self.axis == 'y'):
+			for y in range(0,int(self.texsample*(self.data.get_ysize()))):
+				yy = float(y)/float(self.data.get_ysize())/self.texsample
+				glTexCoord3f(0,yy,0)
+				glVertex3f(0,yy,0)
+				
+				glTexCoord3f(1,yy,0)
+				glVertex3f(1,yy,0)
+				
+				glTexCoord3f(1,yy,1)
+				glVertex3f(1,yy,1)
+				
+				glTexCoord3f(0,yy,1)
+				glVertex3f(0,yy,1)
+		elif (self.axis == 'x'):
+			for x in range(0,int(self.texsample*(self.data.get_xsize()))):
+				xx = float(x)/float(self.data.get_xsize())/self.texsample
+				glTexCoord3f(xx,0,0)
+				glVertex3f(xx,0,0)
+				
+				glTexCoord3f(xx,1,0)
+				glVertex3f(xx,1,0)
+				
+				glTexCoord3f(xx,1,1)
+				glVertex3f(xx,1,1)
+				
+				glTexCoord3f(xx,0,1)
+				glVertex3f(xx,0,1)
 		glEnd()
-		
-		glDisable(GL_TEXTURE_3D)
-		glEndList()
-		
-		if ( self.tex_dl_y != 0 ): glDeleteLists( self.tex_dl_y, 1)
-		
-		self.tex_dl_y = glGenLists(1)
-		
-		glNewList(self.tex_dl_y,GL_COMPILE)
-		glEnable(GL_TEXTURE_3D)
-		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		glBegin(GL_QUADS)
-		for y in range(0,int(self.texsample*(self.data.get_ysize()))):
-			yy = float(y)/float(self.data.get_ysize()-1)/self.texsample
-			glTexCoord3f(0,yy,0)
-			glVertex(0,yy,0)
-			
-			glTexCoord3f(1,yy,0)
-			glVertex(1,yy,0)
-			
-			glTexCoord3f(1,yy,1)
-			glVertex(1,yy,1)
-			
-			glTexCoord3f(0,yy,1)
-			glVertex(0,yy,1)
-		
-		glEnd()
-		
-		glDisable(GL_TEXTURE_3D)
-		glEndList()
-		
-		if ( self.tex_dl_x != 0 ): glDeleteLists( self.tex_dl_x, 1)
-		
-		self.tex_dl_x = glGenLists(1)
-		
-		glNewList(self.tex_dl_x,GL_COMPILE)
-		glEnable(GL_TEXTURE_3D)
-		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameter(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		glBegin(GL_QUADS)
-		for x in range(0,int(self.texsample*(self.data.get_xsize()))):
-			xx = float(x)/float(self.data.get_xsize()-1)/self.texsample
-			glTexCoord3f(xx,0,0)
-			glVertex(xx,0,0)
-			
-			glTexCoord3f(xx,1,0)
-			glVertex(xx,1,0)
-			
-			glTexCoord3f(xx,1,1)
-			glVertex(xx,1,1)
-			
-			glTexCoord3f(xx,0,1)
-			glVertex(xx,0,1)
-		
-		glEnd()
-		
 		glDisable(GL_TEXTURE_3D)
 		glEndList()
 	
+	def gen2DTexture(self):
+			
+		if ( self.tex_dl != 0 ): 
+			glDeleteLists( self.tex_dl, 1)
+		
+		for i in self.tex_names_list:
+			glDeleteTextures(i)
+			
+		self.tex_dl = glGenLists(1)
+		if (self.tex_dl == 0 ):
+			print "error, could not generate list"
+			return
+
+		glNewList(self.tex_dl,GL_COMPILE)
+		glEnable(GL_TEXTURE_2D)
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.power_of_two_textures_unsupported()):
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+		else:
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		
+		if ( self.axis == 'z'):
+			for z in range(0,int(self.texsample*(self.data_copy.get_zsize()))):
+				zz = float(z)/float(self.data_copy.get_zsize())/self.texsample
+				tmp = EMData(self.data_copy.get_xsize(),self.data_copy.get_ysize())
+				t = Transform3D(0,0,0)
+				t.set_posttrans(0,0,(zz-0.5)*self.data_copy.get_zsize())
+				tmp.cut_slice(self.data_copy,0,t)
+				
+				# get the texture name, store it, and bind it in OpenGL
+				tex_name = self.genTextureName(tmp)
+				self.tex_names_list.append(tex_name)
+				glBindTexture(GL_TEXTURE_2D, tex_name)
+				
+				self.loadDefault2DTextureParms()
+				
+				glBegin(GL_QUADS)
+				glTexCoord2f(0,0)
+				glVertex3f(0,0,zz)
+				
+				glTexCoord2f(1,0)
+				glVertex3f(1,0,zz)
+				
+				glTexCoord2f(1,1)
+				glVertex3f(1,1,zz)
+				
+				glTexCoord2f(0,1)
+				glVertex3f(0,1,zz)
+				glEnd()
+		elif self.axis == 'y':
+			for y in range(0,int(self.texsample*(self.data_copy.get_ysize()))):
+				yy = float(y)/float(self.data_copy.get_ysize())/self.texsample
+				tmp = EMData(self.data_copy.get_xsize(),self.data_copy.get_zsize())
+				#90 alt followed by 90 phi to get the xy plane to the yz plane
+				t = Transform3D(0,-90,0)
+				t.set_posttrans(0,(yy-0.5)*self.data_copy.get_ysize(),0)
+				tmp.cut_slice(self.data_copy,0,t)
+				
+				# get the texture name, store it, and bind it in OpenGL
+				tex_name = self.genTextureName(tmp)
+				self.tex_names_list.append(tex_name)
+				glBindTexture(GL_TEXTURE_2D, tex_name)
+				self.loadDefault2DTextureParms()
+				
+				yy = float(y)/float(self.data_copy.get_ysize())/self.texsample
+				glBegin(GL_QUADS)
+				glTexCoord2f(0,0)
+				glVertex3f(0,yy,0)
+				
+				glTexCoord2f(1,0)
+				glVertex3f(1,yy,0)
+				
+				glTexCoord2f(1,1)
+				glVertex3f(1,yy,1)
+				
+				glTexCoord2f(0,1)
+				glVertex3f(0,yy,1)
+				glEnd()
+				
+		elif self.axis == 'x':
+			for x in range(0,int(self.texsample*(self.data_copy.get_xsize()))):
+				xx = float(x)/float(self.data_copy.get_xsize())/self.texsample
+				tmp = EMData(self.data_copy.get_ysize(),self.data_copy.get_zsize())
+				#90 alt to get the  xy plane to the xz plane
+				t = Transform3D(0,-90,-90)
+				t.set_posttrans((xx-0.5)*self.data_copy.get_xsize(),0,0)
+				tmp.cut_slice(self.data_copy,0,t)
+				
+				# get the texture name, store it, and bind it in OpenGL
+				tex_name = self.genTextureName(tmp)
+				self.tex_names_list.append(tex_name)
+				glBindTexture(GL_TEXTURE_2D, tex_name)
+				self.loadDefault2DTextureParms()
+				
+				glBegin(GL_QUADS)
+				glTexCoord2f(0,0)
+				glVertex3f(xx,0,0)
+				
+				glTexCoord2f(0,1)
+				glVertex3f(xx,0,1)
+				
+				glTexCoord2f(1,1)
+				glVertex3f(xx,1,1)
+				
+				glTexCoord2f(1,0)
+				glVertex3f(xx,1,0)
+				glEnd()
+		else:
+			raise("unknown axis in volume render, 2D texturing")
+		
+		glDisable(GL_TEXTURE_2D)
+		glEndList()
+		
+	def loadDefault2DTextureParms(self):
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.power_of_two_textures_unsupported()):
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+		else:
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+
+	def genTextureName(self,data):
+		if ( not data_dims_power_of(data,2) and self.glflags.power_of_two_textures_unsupported()):
+			return data.gen_glu_mipmaps()
+		else:
+			return data.gen_gl_texture() 
+		
 	def updateDataAndTexture(self):
 	
 		if ( not isinstance(self.data,EMData) ): return
@@ -399,7 +495,10 @@ class EMVolume(EMImage3DObject):
 		hist = self.data_copy.calc_hist(256,0,1.0)
 		self.inspector.setHist(hist,0,1.0) 
 
-		self.genTexture()
+		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
+		self.tex_name = self.genTextureName(self.data_copy)
+
+		self.gen2DTexture()
 
 	def setColor(self,val):
 		#print val
@@ -422,7 +521,7 @@ class EMVolume(EMImage3DObject):
 			return
 		
 		self.texsample = val
-		self.genTexture()
+		self.gen2DTexture()
 		self.parent.updateGL()
 
 	def updateInspector(self,t3d):
@@ -876,7 +975,7 @@ if __name__ == '__main__':
 	window = EMVolumeWidget()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(128,128,128)
+		e.set_size(8,8,8)
 		e.process_inplace('testimage.axes')
 		window.setData(e)
 

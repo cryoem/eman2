@@ -52,6 +52,7 @@ from time import *
 
 from emimage3dobject import EMImage3DObject
 from emimage3dobject import Camera
+from emimage3dobject import EMOpenGLFlags
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -87,14 +88,18 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		self.rank = 1
 		
-		self.power_of_two_init_check = True
-		self.use_mipmaps = False
-		
-		self.threed_texture_check = True
-		self.using_3d_texture = True
+		self.glflags = EMOpenGLFlags()		# OpenGL flags - this is a singleton convenience class for testing texture support
 		
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
+		
+		if data==None:
+			print "Error, the data is empty"
+			return
+		
+		if (isinstance(data,EMData) and data.get_zsize()<=1) :
+			print "Error, the data is not 3D"
+			return
 		
 		self.data = data.copy()
 		
@@ -103,14 +108,6 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		self.data.add(-min)
 		self.data.mult(1/(max-min))
-		
-		if data==None:
-			print "Error, the data is empty"
-			return
-		
-	 	if (isinstance(data,EMData) and data.get_zsize()<=1) :
-			print "Error, the data is not 3D"
-			return
 		
 		self.cam.default_z = -1.25*data.get_zsize()
 		self.cam.cam_z = -1.25*data.get_zsize()
@@ -134,18 +131,11 @@ class EM3DSliceViewer(EMImage3DObject):
 		if ( self.tex_name != 0 ):
 			glDeleteTextures(self.tex_name)
 		
-		
-		if ( self.threed_texture_check == True ):
-			self.check_threed_texturing()
-		
-		if ( self.power_of_two_init_check ):
-			self.check_non_power_of_two_support()
-		
-		if ( self.using_3d_texture ):
-			if ( not self.use_mipmaps ):
-				self.tex_name = self.data.gen_gl_texture()
-			else:
+		if ( self.glflags.threed_texturing_supported() ):
+			if ( self.glflags.power_of_two_textures_unsupported() ):
 				self.tex_name = self.data.gen_glu_mipmaps()
+			else:
+				self.tex_name = self.data.gen_gl_texture()
 	
 	def gen2DTexture(self):
 		if self.axis == 'z':
@@ -167,63 +157,28 @@ class EM3DSliceViewer(EMImage3DObject):
 			t.set_posttrans(self.xslice-self.data.get_xsize()/2,0,0)
 			tmp.cut_slice(self.data,0,t)
 		else:
-			raise("Cannot call get2DTextureName is the axis is not yet set")
-		
-		
-		if ( self.power_of_two_init_check ):
-			self.check_non_power_of_two_support()
+			raise("Cannot call get2DTextureName as the axis is not yet set")
+	
 		
 		if ( self.tex_name != 0 ):
 			glDeleteTextures(self.tex_name)
 		
-		if not self.use_mipmaps:
-			self.tex_name = tmp.gen_gl_texture()
-		else:
+		if self.glflags.power_of_two_textures_unsupported():
 			self.tex_name = tmp.gen_glu_mipmaps()
-		
-		return self.tex_name
+		else:
+			self.tex_name = tmp.gen_gl_texture()
 
-	def check_non_power_of_two_support(self):
+		return self.tex_name	
 
-		if not data_dims_power_of(self.data,2):
-			if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
-				self.use_mipmaps = True;
-				print "EMAN(ALPHA) message: No support for non power of two (3D) textures detected. Using mipmaps."
-			else:
-				print "EMAN(ALPHA) message: Support for non power of two (3D) textures detected."
-		
-		self.power_of_two_init_check = False
-	
-	def check_threed_texturing(self):
-		disable = True
-		
-		# sigh - I couldn't find an EXTENSION or simple way of testing for this,
-		# so I just did it this way
-		try: glEnable(GL_TEXTURE_3D)
-		except:
-			disable = False
-			print "EMAN(ALPHA) message: disabling use of 3D textures"
-			self.using_3d_texture = False
-		
-		if (disable):
-			glDisable(GL_TEXTURE_3D)
-			print "EMAN(ALPHA) message: 3D texture support detected"
-		
-		self.threed_texture_check = False
-		
 	def genCurrentDisplayList(self):
 		if ( self.tex_dl != 0 ): glDeleteLists( self.tex_dl, 1)
 		
 		self.tex_dl = glGenLists(1)
-	
+
 		if (self.tex_dl == 0): return #OpenGL is initialized yet
 		
 		glNewList(self.tex_dl,GL_COMPILE)
-		
-		if ( self.threed_texture_check == True ):
-			self.check_threed_texturing()
-		
-		if ( self.using_3d_texture ):
+		if ( self.glflags.threed_texturing_supported() == False ):
 			glEnable(GL_TEXTURE_3D)
 			glBindTexture(GL_TEXTURE_3D, self.tex_name)
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
@@ -231,10 +186,10 @@ class EM3DSliceViewer(EMImage3DObject):
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			if (not self.use_mipmaps):
-				glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-			else:
+			if ( not data_dims_power_of(self.data,2) and self.glflags.power_of_two_textures_unsupported()):
 				glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST)
+			else:
+				glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 				
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			
@@ -243,44 +198,44 @@ class EM3DSliceViewer(EMImage3DObject):
 			if self.axis == 'z':
 				zz = float(self.zslice)/float(self.data.get_zsize())
 				glTexCoord3f(0,0,zz)
-				glVertex(0,0,zz)
+				glVertex3f(0,0,zz)
 				
 				glTexCoord3f(1,0,zz)
-				glVertex(1,0,zz)
+				glVertex3f(1,0,zz)
 				
 				glTexCoord3f(1,1,zz)
-				glVertex(1,1,zz)
+				glVertex3f(1,1,zz)
 				
 				glTexCoord3f(0,1,zz)
-				glVertex(0,1,zz)
+				glVertex3f(0,1,zz)
 				
 			elif self.axis == 'y':
 				yy = float(self.yslice)/float(self.data.get_ysize())
 				glTexCoord3f(0,yy,0)
-				glVertex(0,yy,0)
+				glVertex3f(0,yy,0)
 				
 				glTexCoord3f(1,yy,0)
-				glVertex(1,yy,0)
+				glVertex3f(1,yy,0)
 				
 				glTexCoord3f(1,yy,1)
-				glVertex(1,yy,1)
+				glVertex3f(1,yy,1)
 				
 				glTexCoord3f(0,yy,1)
-				glVertex(0,yy,1)
+				glVertex3f(0,yy,1)
 				
 			elif self.axis == 'x':
 				xx = float(self.xslice)/float(self.data.get_zsize())
 				glTexCoord3f(xx,0,0)
-				glVertex(xx,0,0)
+				glVertex3f(xx,0,0)
 				
 				glTexCoord3f(xx,1,0)
-				glVertex(xx,1,0)
+				glVertex3f(xx,1,0)
 				
 				glTexCoord3f(xx,1,1)
-				glVertex(xx,1,1)
+				glVertex3f(xx,1,1)
 				
 				glTexCoord3f(xx,0,1)
-				glVertex(xx,0,1)
+				glVertex3f(xx,0,1)
 				
 			else:
 				print "Error, unknow axis", self.axis
@@ -296,10 +251,10 @@ class EM3DSliceViewer(EMImage3DObject):
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			if (not self.use_mipmaps):
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-			else:
+			if ( not data_dims_power_of(self.data,2) and self.glflags.power_of_two_textures_unsupported()):
 				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST)
+			else:
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			
 			glBegin(GL_QUADS)
@@ -870,7 +825,7 @@ if __name__ == '__main__':
 	window = EMSliceViewerWidget()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(127,121,135)
+		e.set_size(128,128,128)
 		e.process_inplace('testimage.axes')
 		window.setData(e)
 
