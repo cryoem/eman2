@@ -122,7 +122,7 @@ void EMData::write_image(const string & filename, int img_index,
 		fft_shuffle();
 
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
-		char *ext = strrchr(filename.c_str(), '.');
+		const char *ext = strrchr(filename.c_str(), '.');
 		if (ext) {
 			ext++;
 			imgtype = EMUtil::get_image_ext_type(ext);

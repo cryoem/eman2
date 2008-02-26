@@ -671,9 +671,9 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	Vec3f preT   = get_pretrans( ) ;
 
 
-	float azp  = fmod(az,360.0)*M_PI/180;
-	float altp  = alt*M_PI/180;
-	float phip = fmod(phi,360.0)*M_PI/180;
+	float azp  = fmod(az,360.0f)*M_PI/180.0f;
+	float altp  = alt*M_PI/180.0f;
+	float phip = fmod(phi,360.0f)*M_PI/180.0f;
 
 	if (!is_quaternion && !is_matrix) {
 		matrix[0][0] =  cos(phip)*cos(azp) - cos(altp)*sin(azp)*sin(phip);

@@ -60,7 +60,7 @@ unsigned int EMData::gen_glu_mipmaps() const
 	unsigned int tex_name;
 	glGenTextures(1, &tex_name);
 	
-	if ( ny == 1 and nz == 1 )
+	if ( ny == 1 && nz == 1 )
 	{
 		glBindTexture(GL_TEXTURE_1D, tex_name);
 		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_LUMINANCE, nx, GL_LUMINANCE, GL_FLOAT, (void*)get_data());
@@ -85,7 +85,7 @@ unsigned int EMData::gen_gl_texture() const
 	unsigned int tex_name;
 	glGenTextures(1, &tex_name);
 		
-	if ( ny == 1 and nz == 1 )
+	if ( ny == 1 && nz == 1 )
 	{
 		glBindTexture(GL_TEXTURE_1D, tex_name);
 		glTexImage1D(GL_TEXTURE_1D,0,GL_LUMINANCE,nx,0,GL_LUMINANCE, GL_FLOAT, (void*)get_data());
