@@ -3701,33 +3701,41 @@ void EMData::cut_slice(const EMData * map, float dz, Transform3D * ort,
 				float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
 				float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
 				
-				xx += (float) map_nx/2.0;
-				yy += (float) map_ny/2.0;
-				zz += (float) map_nz/2.0;
+				xx += map_nx/2;
+				yy += map_ny/2;
+				zz += map_nz/2;
 				
 				int l = (x+nx/2) + (y+ny/2) * nx;
 				
-				if (xx < 0 || yy < 0 || zz < 0 || xx > map_nx - 2 || yy > map_ny - 2 || zz > map_nz - 2) {
+				float t = xx - floor(xx);
+				float u = yy - floor(yy);
+				float v = zz - floor(zz);
+
+				if (xx < 0 || yy < 0 || zz < 0 ) {
 					ddata[l] = 0;
+					continue;
+				}
+				if (interpolate) {
+					if ( xx > map_nx - 2 || yy > map_ny - 2 || zz > map_nz - 2) {
+						
+						continue;
+					}
+					int k = (int) (floor(xx) + floor(yy) * map_nx + floor(zz) * map_nxy);
+
+					ddata[l] = Util::trilinear_interpolate(sdata[k],
+							sdata[k + 1], sdata[k + map_nx],sdata[k + map_nx + 1],
+							sdata[k + map_nxy], sdata[k + map_nxy + 1], sdata[k + map_nx + map_nxy],
+							sdata[k + map_nx + map_nxy + 1],t, u, v);
 				}
 				else {
-					float t = xx - floor(xx);
-					float u = yy - floor(yy);
-					float v = zz - floor(zz);
-
-					if (interpolate) {
-						int k = (int) (floor(xx) + floor(yy) * map_nx + floor(zz) * map_nxy);
-
-						ddata[l] = Util::trilinear_interpolate(sdata[k],
-								sdata[k + 1], sdata[k + map_nx],sdata[k + map_nx + 1],
-								sdata[k + map_nxy], sdata[k + map_nxy + 1], sdata[k + map_nx + map_nxy],
-								sdata[k + map_nx + map_nxy + 1],t, u, v);
+					if ( xx > map_nx - 1 || yy > map_ny - 1 || zz > map_nz - 1) {
+						ddata[l] = 0;
+						continue;
 					}
-					else {
-						int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
-						ddata[l] = sdata[k];
-					}
+					int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
+					ddata[l] = sdata[k];
 				}
+				
 			}
 		}
 	} else {

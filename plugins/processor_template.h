@@ -83,33 +83,33 @@ namespace EMAN
 	};
 
 	
-	class SubstituteZeroPixelsProcessor:public Processor
-	{
-		public:
-			void process_inplace(EMData * image);
-
-			string get_name() const
-			{
-				return "substitute.zeropixels";
-			}
-
-			static Processor *NEW()
-			{
-				return new SubstituteZeroPixelsProcessor();
-			}
-
-			string get_desc() const
-			{
-				return "Replaces zero pixels in the image with corresponding (coordinate-wise) pixel values in the EMData object specified in the parameters.";
-			}
-
-			TypeDict get_param_types() const
-			{
-				TypeDict d;
-				d.put("image", EMObject::EMDATA, "EMData object that contains useful image data");
-				return d;
-			}
-	};
+// 	class SubstituteZeroPixelsProcessor:public Processor
+// 	{
+// 		public:
+// 			void process_inplace(EMData * image);
+// 
+// 			string get_name() const
+// 			{
+// 				return "substitute.zeropixels";
+// 			}
+// 
+// 			static Processor *NEW()
+// 			{
+// 				return new SubstituteZeroPixelsProcessor();
+// 			}
+// 
+// 			string get_desc() const
+// 			{
+// 				return "Replaces zero pixels in the image with corresponding (coordinate-wise) pixel values in the EMData object specified in the parameters.";
+// 			}
+// 
+// 			TypeDict get_param_types() const
+// 			{
+// 				TypeDict d;
+// 				d.put("image", EMObject::EMDATA, "EMData object that contains useful image data");
+// 				return d;
+// 			}
+// 	};
 
 	/** Add your new processor to FilterFactoryExt().
      */
@@ -119,7 +119,7 @@ namespace EMAN
 		FilterFactoryExt()
 		{
 			//Factory < Processor >::add(&XYZProcessor::NEW);
-			Factory < Processor >::add(&SubstituteZeroPixelsProcessor::NEW);
+// 			Factory < Processor >::add(&SubstituteZeroPixelsProcessor::NEW);
 		}
 	};
 

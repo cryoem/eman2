@@ -39,9 +39,9 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 
-class EMOpenGLFlags:
+class EMOpenGLTextureFlags:
 	"""
-	This is a singleton class that encapsulates OpenGL
+	This is a singleton class that encapsulates OpenGL Textures flags (and settings)
 	flags that are important to the functioning of EMAN2 user interfaces. 
 	
 	For instance, this class can be asked whether or not 3D texturing
@@ -94,8 +94,15 @@ class EMOpenGLFlags:
 					print "EMAN(ALPHA) message: 3D texture support detected"
 				
 				self.threed_texture_check = False
-
+				
 			return self.use_3d_texture
+
+		
+	def genTextureName(self,data):
+		if ( not data_dims_power_of(data,2) and self.power_of_two_textures_unsupported()):
+			return data.gen_glu_mipmaps()
+		else:
+			return data.gen_gl_texture() 
 
 	# storage for the instance reference
 	__instance = None
@@ -104,9 +111,9 @@ class EMOpenGLFlags:
 	def __init__(self):
 		""" Create singleton instance """
 		# Check whether we already have an instance
-		if EMOpenGLFlags.__instance is None:
+		if EMOpenGLTextureFlags.__instance is None:
 			# Create and remember instance
-			EMOpenGLFlags.__instance = EMOpenGLFlags.__impl()
+			EMOpenGLTextureFlags.__instance = EMOpenGLTextureFlags.__impl()
 	
 	def __getattr__(self, attr):
 		""" Delegate access to implementation """

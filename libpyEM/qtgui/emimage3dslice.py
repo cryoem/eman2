@@ -52,7 +52,7 @@ from time import *
 
 from emimage3dobject import EMImage3DObject
 from emimage3dobject import Camera
-from emimage3dobject import EMOpenGLFlags
+from emimage3dobject import EMOpenGLTextureFlags
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -88,7 +88,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		self.rank = 1
 		
-		self.glflags = EMOpenGLFlags()		# OpenGL flags - this is a singleton convenience class for testing texture support
+		self.glflags = EMOpenGLTextureFlags()		# OpenGL flags - this is a singleton convenience class for testing texture support
 		
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
@@ -118,11 +118,11 @@ class EM3DSliceViewer(EMImage3DObject):
 		hist = self.data.calc_hist(256,0,1.0)
 		self.inspector.setHist(hist,0,1.0) 
 
-		self.zslice = data.get_zsize()/2.0
-		self.yslice = data.get_ysize()/2.0
-		self.xslice = data.get_xsize()/2.0
+		self.zslice = data.get_zsize()/2
+		self.yslice = data.get_ysize()/2
+		self.xslice = data.get_xsize()/2
 		self.axis = 'z'
-		self.inspector.setSliceRange(0,data.get_zsize())
+		self.inspector.setSliceRange(0,data.get_zsize()-1)
 		self.inspector.setSlice(self.zslice)
 		self.genTexture()
 		self.genCurrentDisplayList()
@@ -132,30 +132,27 @@ class EM3DSliceViewer(EMImage3DObject):
 			glDeleteTextures(self.tex_name)
 		
 		if ( self.glflags.threed_texturing_supported() ):
-			if ( self.glflags.power_of_two_textures_unsupported() ):
-				self.tex_name = self.data.gen_glu_mipmaps()
-			else:
-				self.tex_name = self.data.gen_gl_texture()
+			self.tex_name = self.glflags.genTextureName(self.data)
 	
 	def gen2DTexture(self):
 		if self.axis == 'z':
 			tmp = EMData(self.data.get_xsize(),self.data.get_ysize())
 			# 90 alt followed by 90 phi to get the xy plane to the yz plane
 			t = Transform3D(0,0,0)
-			t.set_posttrans(0,0,self.zslice-self.data.get_zsize()/2)
-			tmp.cut_slice(self.data,0,t)
+			t.set_posttrans(0,0,self.zslice-int(self.data.get_zsize()/2))
+			tmp.cut_slice(self.data,0,t,False)
 		elif self.axis == 'y':
 			tmp = EMData(self.data.get_xsize(),self.data.get_zsize())
 			#90 alt followed by 90 phi to get the xy plane to the yz plane
-			t = Transform3D(0,90,0)
-			t.set_posttrans(0,-(self.yslice-self.data.get_ysize()/2),0)
-			tmp.cut_slice(self.data,0,t)
+			t = Transform3D(0,-90,0)
+			t.set_posttrans(0,(self.yslice-int(self.data.get_ysize()/2)),0)
+			tmp.cut_slice(self.data,0,t,False)
 		elif self.axis == 'x':
 			tmp = EMData(self.data.get_ysize(),self.data.get_zsize())
 			#90 alt to get the  xy plane to the xz plane
-			t = Transform3D(0,90,90)
-			t.set_posttrans(self.xslice-self.data.get_xsize()/2,0,0)
-			tmp.cut_slice(self.data,0,t)
+			t = Transform3D(0,-90,-90)
+			t.set_posttrans(self.xslice-int(self.data.get_xsize()/2),0,0)
+			tmp.cut_slice(self.data,0,t,False)
 		else:
 			raise("Cannot call get2DTextureName as the axis is not yet set")
 	
@@ -163,10 +160,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		if ( self.tex_name != 0 ):
 			glDeleteTextures(self.tex_name)
 		
-		if self.glflags.power_of_two_textures_unsupported():
-			self.tex_name = tmp.gen_glu_mipmaps()
-		else:
-			self.tex_name = tmp.gen_gl_texture()
+		self.tex_name = self.glflags.genTextureName(tmp)
 
 		return self.tex_name	
 
@@ -178,7 +172,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		if (self.tex_dl == 0): return #OpenGL is initialized yet
 		
 		glNewList(self.tex_dl,GL_COMPILE)
-		if ( self.glflags.threed_texturing_supported() == False ):
+		if ( self.glflags.threed_texturing_supported()):	
 			glEnable(GL_TEXTURE_3D)
 			glBindTexture(GL_TEXTURE_3D, self.tex_name)
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
@@ -369,13 +363,13 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		if (self.inspector != None):
 			if self.axis == 'z':
-				self.inspector.setSliceRange(0,self.data.get_zsize())
+				self.inspector.setSliceRange(0,self.data.get_zsize()-1)
 				self.inspector.setSlice(self.zslice)
 			elif self.axis == 'y':
-				self.inspector.setSliceRange(0,self.data.get_ysize())
+				self.inspector.setSliceRange(0,self.data.get_ysize()-1)
 				self.inspector.setSlice(self.yslice)
 			elif self.axis == 'x':
-				self.inspector.setSliceRange(0,self.data.get_xsize())
+				self.inspector.setSliceRange(0,self.data.get_xsize()-1)
 				self.inspector.setSlice(self.xslice)
 			else:
 				print "Error, unknown axis", self.axis
@@ -825,7 +819,7 @@ if __name__ == '__main__':
 	window = EMSliceViewerWidget()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(128,128,128)
+		e.set_size(7,7,7)
 		e.process_inplace('testimage.axes')
 		window.setData(e)
 

@@ -52,7 +52,7 @@ from time import *
 
 from emimage3dobject import EMImage3DObject
 from emimage3dobject import Camera
-from emimage3dobject import EMOpenGLFlags
+from emimage3dobject import EMOpenGLTextureFlags
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -69,7 +69,47 @@ class EMVolume(EMImage3DObject):
 		self.inspector=None
 		
 		self.tex_names_list = []		# A storage object, used to remember and later delete texture names
-		self.axis = 'z'					# a string indicated which axis the volume is being rendered along - this might eventual change to a vector
+		
+		self.axes = []
+		self.axes.append( Vec3f(1,0,0) )
+		self.axes.append( Vec3f(0,1,0) )
+		self.axes.append( Vec3f(0,0,1) )
+		self.axes.append( Vec3f(-1,0,0) )
+		self.axes.append( Vec3f(0,-1,0) )
+		#v = Vec3f(1,1,1)
+		#v.normalize()
+		#self.axes.append( v )
+		
+		#v1 = Vec3f(-1,1,1);
+		#v1.normalize()
+		#self.axes.append( v1 )
+		
+		#v2 = Vec3f(-1,-1,1);
+		#v2.normalize()
+		#self.axes.append( v2 )
+		
+		#v3 = Vec3f(1,-1,1);
+		#v3.normalize()
+		#self.axes.append( v3 )
+		#v1 = Vec3f(1,1,0);
+		#v1.normalize()
+		#self.axes.append( v1 )
+		#self.axes.append( -v1 )
+		
+		#v2 = Vec3f(0,1,1);
+		#v2.normalize()
+		#self.axes.append( v2 )
+		#self.axes.append( -v2 )
+
+		#v3 = Vec3f(1,0,1);
+		#v3.normalize()
+		
+		#v3 = Vec3f(1,0,1);
+		#v3.normalize()
+		#self.axes.append( v3 )
+		#self.axes.append( -v3 )
+
+		self.axes_idx = -1;
 		
 		if image :
 			self.setData(image)
@@ -100,7 +140,7 @@ class EMVolume(EMImage3DObject):
 		self.tex_dl = 0
 		self.inspector=None
 
-		self.glflags = EMOpenGLFlags()		# OpenGL flags - this is a singleton convenience class for testing texture support
+		self.glflags = EMOpenGLTextureFlags()		# OpenGL flags - this is a singleton convenience class for testing texture support
 		
 	def loadColors(self):
 		# There is a bug, if the accompanying functionality to this function is removed we get a seg fault
@@ -136,6 +176,9 @@ class EMVolume(EMImage3DObject):
 		self.updateDataAndTexture()
 		
 	def test_accum(self):
+		# this code will do volume rendering using the accumulation buffer
+		# I opted not to go this way because you can't retain depth in the accumulation buffer
+		# Note that it only works in the z-direction
 		glClear(GL_ACCUM_BUFFER_BIT)
 		
 		self.accum = True
@@ -209,7 +252,6 @@ class EMVolume(EMImage3DObject):
 		glDepthMask(GL_FALSE)
 		glBlendFunc(GL_ONE, GL_ONE)
 		glCallList(self.tex_dl)
-		#self.gen2DTexture()
 		glDepthMask(GL_TRUE)
 		glDisable(GL_BLEND)
 		glPopMatrix()
@@ -250,28 +292,35 @@ class EMVolume(EMImage3DObject):
 		
 		point = point*t3d
 		
-		point = [abs(point[0]), abs(point[1]),abs(point[2])]
+		#point[0] = abs(point[0])
+		#point[1] = abs(point[1])
+		point[2] = abs(point[2])
 		
-		xyangle = 180*atan2(point[1],point[0])/pi
-		xzangle = 180*atan2(point[2],point[0])/pi
-		yzangle = 180*atan2(point[2],point[1])/pi
+		#point = [abs(point[0]), abs(point[1]),abs(point[2])]
+	
+		currentaxis = self.axes_idx
 		
-		currentaxis = self.axis
-		
-		if (xzangle > 45 ):
+		closest = 2*pi
+		lp = point.length()
+		idx = 0
+		for i in self.axes:
+			angle = abs(acos(point.dot(i)))
+			#angle /= i.length()*lp
+			#print i, angle * 180/pi
+			if (angle < closest):
+				closest = angle
+				self.axes_idx = idx
 			
-			if ( yzangle > 45 ):
-				self.axis = 'z'
-			else:
-				self.axis = 'y'
+			idx += 1
+
+		if (currentaxis != self.axes_idx):
+			print self.axes[self.axes_idx]
+			self.genTexture()
+			
+	def genTexture(self):
+		if ( self.glflags.threed_texturing_supported() ):
+			self.gen3DTexture()
 		else:
-			if ( xyangle < 45 ):
-				self.axis = 'x'
-			else:
-				self.axis = 'y'
-				
-		if (currentaxis != self.axis):
-			print self.axis
 			self.gen2DTexture()
 			
 	def gen3DTexture(self):
@@ -302,53 +351,72 @@ class EMVolume(EMImage3DObject):
 		else:
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
+		glPushMatrix()
+		glTranslate(0.5,0.5,0.5)
 		glBegin(GL_QUADS)
 		
-		if ( self.axis == 'z'):
-			for z in range(0,int(self.texsample*(self.data.get_zsize()))):
-				zz = float(z)/float(self.data.get_zsize())/self.texsample
-				glTexCoord3f(0,0,zz)
-				glVertex3f(0,0,zz)
-				
-				glTexCoord3f(1,0,zz)
-				glVertex3f(1,0,zz)
-				
-				glTexCoord3f(1,1,zz)
-				glVertex3f(1,1,zz)
-				
-				glTexCoord3f(0,1,zz)
-				glVertex3f(0,1,zz)
-		elif (self.axis == 'y'):
-			for y in range(0,int(self.texsample*(self.data.get_ysize()))):
-				yy = float(y)/float(self.data.get_ysize())/self.texsample
-				glTexCoord3f(0,yy,0)
-				glVertex3f(0,yy,0)
-				
-				glTexCoord3f(1,yy,0)
-				glVertex3f(1,yy,0)
-				
-				glTexCoord3f(1,yy,1)
-				glVertex3f(1,yy,1)
-				
-				glTexCoord3f(0,yy,1)
-				glVertex3f(0,yy,1)
-		elif (self.axis == 'x'):
-			for x in range(0,int(self.texsample*(self.data.get_xsize()))):
-				xx = float(x)/float(self.data.get_xsize())/self.texsample
-				glTexCoord3f(xx,0,0)
-				glVertex3f(xx,0,0)
-				
-				glTexCoord3f(xx,1,0)
-				glVertex3f(xx,1,0)
-				
-				glTexCoord3f(xx,1,1)
-				glVertex3f(xx,1,1)
-				
-				glTexCoord3f(xx,0,1)
-				glVertex3f(xx,0,1)
+		n = self.getDimensionSize()
+		v = self.axes[self.axes_idx]
+		[t,alt,phi] = self.getEmanTransform(v)
+		v1 = t*Vec3f(-0.5,-0.5,0)
+		v2 = t*Vec3f(-0.5, 0.5,0)
+		v3 = t*Vec3f( 0.5, 0.5,0)
+		v4 = t*Vec3f( 0.5,-0.5,0)
+		vecs = [v1,v2,v3,v4]
+		for i in range(0,int(self.texsample*n)):
+			nn = float(i)/float(n)/self.texsample
+
+			trans = (nn-0.5)*v
+			
+			for r in vecs:
+			
+				w = [r[0] + trans[0], r[1] + trans[1], r[2] + trans[2]]
+				t = [w[0]+0.5,w[1]+0.5,w[2]+0.5]
+				glTexCoord3fv(t)
+				glVertex3fv(w)
+			
 		glEnd()
+		glPopMatrix()
 		glDisable(GL_TEXTURE_3D)
 		glEndList()
+		
+	def getEmanTransform(self,p):
+		
+		if ( p[2] == 0 ):
+			alt = 90
+			phi = atan2(p[0],p[1])*180/pi
+		else :
+			alt = acos(p[2])
+			if ( p[1] == 0 ): phi = 0
+			else: phi = atan2(p[0],p[1])
+			alt *= 180.0/pi
+			phi *= 180.0/pi
+		
+		return [Transform3D(0,alt,phi),alt,phi]
+			
+	def getDimensionSize(self):
+		if ( self.axes_idx == 0 ):
+			return self.data_copy.get_zsize()
+		elif ( self.axes_idx == 1 ):
+			return self.data_copy.get_ysize()
+		elif ( self.axes_idx == 2 ):
+			return self.data_copy.get_xsize()
+		else:
+			#print "unsupported axis"
+			return self.data_copy.get_xsize()
+			#return 0
+		
+	def getCorrectDims2DEMData(self):
+		if ( self.axes_idx == 0 ):
+			return EMData(self.data_copy.get_xsize(),self.data_copy.get_ysize())
+		elif ( self.axes_idx == 1 ):
+			return EMData(self.data_copy.get_xsize(),self.data_copy.get_zsize())
+		elif ( self.axes_idx == 2 ):
+			return EMData(self.data_copy.get_ysize(),self.data_copy.get_zsize())
+		else:
+			#print "unsupported axis"
+			return EMData(self.data_copy.get_xsize(),self.data_copy.get_zsize())
+
 	
 	def gen2DTexture(self):
 			
@@ -365,104 +433,47 @@ class EMVolume(EMImage3DObject):
 
 		glNewList(self.tex_dl,GL_COMPILE)
 		glEnable(GL_TEXTURE_2D)
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.power_of_two_textures_unsupported()):
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-		else:
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		
-		if ( self.axis == 'z'):
-			for z in range(0,int(self.texsample*(self.data_copy.get_zsize()))):
-				zz = float(z)/float(self.data_copy.get_zsize())/self.texsample
-				tmp = EMData(self.data_copy.get_xsize(),self.data_copy.get_ysize())
-				t = Transform3D(0,0,0)
-				t.set_posttrans(0,0,(zz-0.5)*self.data_copy.get_zsize())
-				tmp.cut_slice(self.data_copy,0,t)
-				
-				# get the texture name, store it, and bind it in OpenGL
-				tex_name = self.genTextureName(tmp)
-				self.tex_names_list.append(tex_name)
-				glBindTexture(GL_TEXTURE_2D, tex_name)
-				
-				self.loadDefault2DTextureParms()
-				
-				glBegin(GL_QUADS)
-				glTexCoord2f(0,0)
-				glVertex3f(0,0,zz)
-				
-				glTexCoord2f(1,0)
-				glVertex3f(1,0,zz)
-				
-				glTexCoord2f(1,1)
-				glVertex3f(1,1,zz)
-				
-				glTexCoord2f(0,1)
-				glVertex3f(0,1,zz)
-				glEnd()
-		elif self.axis == 'y':
-			for y in range(0,int(self.texsample*(self.data_copy.get_ysize()))):
-				yy = float(y)/float(self.data_copy.get_ysize())/self.texsample
-				tmp = EMData(self.data_copy.get_xsize(),self.data_copy.get_zsize())
-				#90 alt followed by 90 phi to get the xy plane to the yz plane
-				t = Transform3D(0,-90,0)
-				t.set_posttrans(0,(yy-0.5)*self.data_copy.get_ysize(),0)
-				tmp.cut_slice(self.data_copy,0,t)
-				
-				# get the texture name, store it, and bind it in OpenGL
-				tex_name = self.genTextureName(tmp)
-				self.tex_names_list.append(tex_name)
-				glBindTexture(GL_TEXTURE_2D, tex_name)
-				self.loadDefault2DTextureParms()
-				
-				yy = float(y)/float(self.data_copy.get_ysize())/self.texsample
-				glBegin(GL_QUADS)
-				glTexCoord2f(0,0)
-				glVertex3f(0,yy,0)
-				
-				glTexCoord2f(1,0)
-				glVertex3f(1,yy,0)
-				
-				glTexCoord2f(1,1)
-				glVertex3f(1,yy,1)
-				
-				glTexCoord2f(0,1)
-				glVertex3f(0,yy,1)
-				glEnd()
-				
-		elif self.axis == 'x':
-			for x in range(0,int(self.texsample*(self.data_copy.get_xsize()))):
-				xx = float(x)/float(self.data_copy.get_xsize())/self.texsample
-				tmp = EMData(self.data_copy.get_ysize(),self.data_copy.get_zsize())
-				#90 alt to get the  xy plane to the xz plane
-				t = Transform3D(0,-90,-90)
-				t.set_posttrans((xx-0.5)*self.data_copy.get_xsize(),0,0)
-				tmp.cut_slice(self.data_copy,0,t)
-				
-				# get the texture name, store it, and bind it in OpenGL
-				tex_name = self.genTextureName(tmp)
-				self.tex_names_list.append(tex_name)
-				glBindTexture(GL_TEXTURE_2D, tex_name)
-				self.loadDefault2DTextureParms()
-				
-				glBegin(GL_QUADS)
-				glTexCoord2f(0,0)
-				glVertex3f(xx,0,0)
-				
-				glTexCoord2f(0,1)
-				glVertex3f(xx,0,1)
-				
-				glTexCoord2f(1,1)
-				glVertex3f(xx,1,1)
-				
-				glTexCoord2f(1,0)
-				glVertex3f(xx,1,0)
-				glEnd()
-		else:
-			raise("unknown axis in volume render, 2D texturing")
+
+		n = self.getDimensionSize()
+		v = self.axes[self.axes_idx]
+		[t,alt,phi] = self.getEmanTransform(v)
+		t.printme()
+		print alt,phi
+		for i in range(0,int(self.texsample*n)):
+			nn = float(i)/float(n)/self.texsample
+			tmp = self.getCorrectDims2DEMData() 
+			
+			trans = (nn-0.5)*v
+			t.set_posttrans(2.0*int(n/2)*trans)
+			tmp.cut_slice(self.data_copy,0,t,False)
+			#tmp.write_image("tmp.img",-1)
+			
+			# get the texture name, store it, and bind it in OpenGL
+			tex_name = self.glflags.genTextureName(tmp)
+			self.tex_names_list.append(tex_name)
+			glBindTexture(GL_TEXTURE_2D, tex_name)
+			
+			self.loadDefault2DTextureParms()
+			
+			glPushMatrix()
+			
+			glTranslate(trans[0]+0.5,trans[1]+0.5,trans[2]+0.5)
+			glRotatef(-phi,0,0,1)
+			glRotatef(-alt,1,0,0)
+			glBegin(GL_QUADS)
+			glTexCoord2f(0,0)
+			glVertex2f(-0.5,-0.5)
+			
+			glTexCoord2f(1,0)
+			glVertex2f( 0.5,-0.5)
+			
+			glTexCoord2f(1,1)
+			glVertex2f( 0.5, 0.5)
+			
+			glTexCoord2f(0,1)
+			glVertex2f(-0.5, 0.5)
+			glEnd()
+			glPopMatrix()
 		
 		glDisable(GL_TEXTURE_2D)
 		glEndList()
@@ -476,13 +487,7 @@ class EMVolume(EMImage3DObject):
 		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.power_of_two_textures_unsupported()):
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
 		else:
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-
-	def genTextureName(self,data):
-		if ( not data_dims_power_of(data,2) and self.glflags.power_of_two_textures_unsupported()):
-			return data.gen_glu_mipmaps()
-		else:
-			return data.gen_gl_texture() 
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) 
 		
 	def updateDataAndTexture(self):
 	
@@ -496,9 +501,9 @@ class EMVolume(EMImage3DObject):
 		self.inspector.setHist(hist,0,1.0) 
 
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
-		self.tex_name = self.genTextureName(self.data_copy)
+		self.tex_name = self.glflags.genTextureName(self.data_copy)
 
-		self.gen2DTexture()
+		#self.genTexture()
 
 	def setColor(self,val):
 		#print val
@@ -521,7 +526,7 @@ class EMVolume(EMImage3DObject):
 			return
 		
 		self.texsample = val
-		self.gen2DTexture()
+		self.genTexture()
 		self.parent.updateGL()
 
 	def updateInspector(self,t3d):
@@ -975,7 +980,7 @@ if __name__ == '__main__':
 	window = EMVolumeWidget()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(8,8,8)
+		e.set_size(7,7,7)
 		e.process_inplace('testimage.axes')
 		window.setData(e)
 
