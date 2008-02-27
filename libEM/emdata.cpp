@@ -3722,14 +3722,17 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 }
 
 
-void EMData::cut_slice(const EMData * map, float dz, Transform3D * ort,
-					   bool interpolate, float dx, float dy)
+void EMData::cut_slice(const EMData * map, Transform3D * ort, bool interpolate)
 {
 	ENTERFUNC;
 
-	if (!map) {
-		throw NullPointerException("NULL image");
-	}
+	if (!map) throw NullPointerException("NULL image");
+	// These restrictions should be ultimately restricted so that all that matters is get_ndim() = (map->get_ndim() -1)
+	if ( get_ndim() != 2 ) throw ImageDimensionException("Can not call cut slice on an image that is not 2D");
+	if ( map->get_ndim() != 3 ) throw ImageDimensionException("Can not cut slice from an image that is not 3D");
+	// Now check for complex images - this is really just being thorough
+	if ( is_complex() ) throw ImageFormatException("Can not call cut slice on an image that is complex");
+	if ( map->is_complex() ) throw ImageFormatException("Can not cut slice from a complex image");
 
 	Transform3D r(0, 0, 0); // EMAN by default
 	if (!ort) {
@@ -3744,121 +3747,74 @@ void EMData::cut_slice(const EMData * map, float dz, Transform3D * ort,
 	int map_nz = map->get_zsize();
 	int map_nxy = map_nx * map_ny;
 
-	bool eman1 = false;
-	if (!eman1) {
-		
-		Vec3f posttrans = ort->get_posttrans();
-		Vec3f pretrans = ort->get_pretrans();
-		
-		int ymax = ny/2;
-		if ( ny % 2 == 1 ) ymax += 1;
-		int xmax = nx/2;
-		if ( nx % 2 == 1 ) xmax += 1;
-		for (int y = -ny/2; y < ymax; y++) {
-			for (int x = -nx/2; x < xmax; x++) {
-				float xx = (x+pretrans[0]) * (*ort)[0][0] +  (y+pretrans[1]) * (*ort)[0][1] + pretrans[2] * (*ort)[0][2] + posttrans[0];
-				float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
-				float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
-				
-				xx += map_nx/2;
-				yy += map_ny/2;
-				zz += map_nz/2;
-				
-				int l = (x+nx/2) + (y+ny/2) * nx;
-				
-				float t = xx - floor(xx);
-				float u = yy - floor(yy);
-				float v = zz - floor(zz);
+	Vec3f posttrans = ort->get_posttrans();
+	Vec3f pretrans = ort->get_pretrans();
+	
+	int ymax = ny/2;
+	if ( ny % 2 == 1 ) ymax += 1;
+	int xmax = nx/2;
+	if ( nx % 2 == 1 ) xmax += 1;
+	for (int y = -ny/2; y < ymax; y++) {
+		for (int x = -nx/2; x < xmax; x++) {
+			float xx = (x+pretrans[0]) * (*ort)[0][0] +  (y+pretrans[1]) * (*ort)[0][1] + pretrans[2] * (*ort)[0][2] + posttrans[0];
+			float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
+			float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
+			
+			xx += map_nx/2;
+			yy += map_ny/2;
+			zz += map_nz/2;
+			
+			int l = (x+nx/2) + (y+ny/2) * nx;
+			
+			float t = xx - floor(xx);
+			float u = yy - floor(yy);
+			float v = zz - floor(zz);
 
-				if (xx < 0 || yy < 0 || zz < 0 ) {
+			if (xx < 0 || yy < 0 || zz < 0 ) {
+				ddata[l] = 0;
+				continue;
+			}
+			if (interpolate) {
+				if ( xx > map_nx - 2 || yy > map_ny - 2 || zz > map_nz - 2) {
 					ddata[l] = 0;
 					continue;
 				}
-				if (interpolate) {
-					if ( xx > map_nx - 2 || yy > map_ny - 2 || zz > map_nz - 2) {
-						
-						continue;
-					}
-					int k = (int) (floor(xx) + floor(yy) * map_nx + floor(zz) * map_nxy);
+				int k = (int) (floor(xx) + floor(yy) * map_nx + floor(zz) * map_nxy);
 
-					ddata[l] = Util::trilinear_interpolate(sdata[k],
-							sdata[k + 1], sdata[k + map_nx],sdata[k + map_nx + 1],
-							sdata[k + map_nxy], sdata[k + map_nxy + 1], sdata[k + map_nx + map_nxy],
-							sdata[k + map_nx + map_nxy + 1],t, u, v);
-				}
-				else {
-					if ( xx > map_nx - 1 || yy > map_ny - 1 || zz > map_nz - 1) {
-						ddata[l] = 0;
-						continue;
-					}
-					int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
-					ddata[l] = sdata[k];
-				}
-				
-			}
-		}
-	} else {
-	float mdz0 = dz * (*ort)[0][2] + map_nx / 2;
-	float mdz1 = dz * (*ort)[1][2] + map_ny / 2;
-	float mdz2 = dz * (*ort)[2][2] + map_nz / 2;
-
-	for (int y = 0; y < ny; y++) {
-		int y2 = (int) (y - ny / 2 - dy);
-		float my2_0 = y2 * (*ort)[0][1] * y2 + mdz0;
-		float my2_1 = y2 * (*ort)[1][1] * y2 + mdz1;
-		float my2_2 = y2 * (*ort)[2][1] * y2 + mdz2;
-
-		for (int x = 0; x < nx; x++) {
-			int x2 = (int) (x - nx / 2 - dx);
-			float xx = x2 * (*ort)[0][0] + my2_0;
-			float yy = x2 * (*ort)[1][0] + my2_1;
-			float zz = x2 * (*ort)[2][0] + my2_2;
-			int l = x + y * nx;
-
-			if (xx < 0 || yy < 0 || zz < 0 || xx > map_nx - 2 ||
-				yy > map_ny - 2 || zz > map_nz - 2) {
-				ddata[l] = 0;
+				ddata[l] = Util::trilinear_interpolate(sdata[k],
+						sdata[k + 1], sdata[k + map_nx],sdata[k + map_nx + 1],
+						sdata[k + map_nxy], sdata[k + map_nxy + 1], sdata[k + map_nx + map_nxy],
+						sdata[k + map_nx + map_nxy + 1],t, u, v);
 			}
 			else {
-				float t = xx - floor(xx);
-				float u = yy - floor(yy);
-				float v = zz - floor(zz);
-
-				if (interpolate) {
-					int k = (int) (floor(xx) + floor(yy) * map_nx + floor(zz) * map_nxy);
-
-					ddata[l] = Util::trilinear_interpolate(sdata[k],
-														   sdata[k + 1],
-														   sdata[k + map_nx],
-														   sdata[k + map_nx + 1],
-														   sdata[k + map_nxy],
-														   sdata[k + map_nxy + 1],
-														   sdata[k + map_nx + map_nxy],
-														   sdata[k + map_nx + map_nxy + 1],
-														   t, u, v);
+				if ( xx > map_nx - 1 || yy > map_ny - 1 || zz > map_nz - 1) {
+					ddata[l] = 0;
+					continue;
 				}
-				else {
-					int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
-					ddata[l] = sdata[k];
-				}
+				int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
+				ddata[l] = sdata[k];
 			}
-		}
+			
+		}	
 	}
-
-	}
+	
 	update();
 
 	EXITFUNC;
 }
 
 
-void EMData::uncut_slice(EMData * map, float dz, Transform3D * ort, float dx, float dy)
+void EMData::uncut_slice(EMData * map, Transform3D * ort) const
 {
 	ENTERFUNC;
 
-	if (!map) {
-		throw NullPointerException("NULL image");
-	}
+	if (!map) throw NullPointerException("NULL image");
+	// These restrictions should be ultimately restricted so that all that matters is get_ndim() = (map->get_ndim() -1)
+	if ( get_ndim() != 2 ) throw ImageDimensionException("Can not call cut slice on an image that is not 2D");
+	if ( map->get_ndim() != 3 ) throw ImageDimensionException("Can not cut slice from an image that is not 3D");
+	// Now check for complex images - this is really just being thorough
+	if ( is_complex() ) throw ImageFormatException("Can not call cut slice on an image that is complex");
+	if ( map->is_complex() ) throw ImageFormatException("Can not cut slice from a complex image");
 
 	Transform3D r( 0, 0, 0); // EMAN by default
 	if (!ort) {
@@ -3873,33 +3829,31 @@ void EMData::uncut_slice(EMData * map, float dz, Transform3D * ort, float dx, fl
 	int map_nz = map->get_zsize();
 	int map_nxy = map_nx * map_ny;
 
-	float mdz0 = dz * (*ort)[0][2] + map_nx / 2;
-	float mdz1 = dz * (*ort)[1][2] + map_ny / 2;
-	float mdz2 = dz * (*ort)[2][2] + map_nz / 2;
-
-	for (int y = 0; y < ny; y++) {
-		int y2 = (int) (y - ny / 2 - dy);
-
-		float my2_0 = y2 * (*ort)[0][1] + mdz0;
-		float my2_1 = y2 * (*ort)[1][1] + mdz1;
-		float my2_2 = y2 * (*ort)[2][1] + mdz2;
-
-		for (int x = 0; x < nx; x++) {
-			int x2 = (int) (x - nx / 2 - dx);
-
-			float xx = x2 * (*ort)[0][0] + my2_0;
-			float yy = x2 * (*ort)[1][0] + my2_1;
-			float zz = x2 * (*ort)[2][0] + my2_2;
-
-			if (xx >= 0 && yy >= 0 && zz >= 0 && xx <= map_nx - 2 && yy <= map_ny - 2
-				&& zz <= map_nz - 2) {
-				int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
-				ddata[k] = sdata[x + y * nx];
-			}
+	Vec3f posttrans = ort->get_posttrans();
+	Vec3f pretrans = ort->get_pretrans();
+	
+	int ymax = ny/2;
+	if ( ny % 2 == 1 ) ymax += 1;
+	int xmax = nx/2;
+	if ( nx % 2 == 1 ) xmax += 1;
+	for (int y = -ny/2; y < ymax; y++) {
+		for (int x = -nx/2; x < xmax; x++) {
+			float xx = (x+pretrans[0]) * (*ort)[0][0] +  (y+pretrans[1]) * (*ort)[0][1] + pretrans[2] * (*ort)[0][2] + posttrans[0];
+			float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
+			float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
+			
+			xx += map_nx/2;
+			yy += map_ny/2;
+			zz += map_nz/2;
+			
+			if (xx < 0 || yy < 0 || zz < 0 || xx >= map_nx || yy >= map_ny || zz >= map_nz) continue;
+			
+			int k = Util::round(xx) + Util::round(yy) * map_nx + Util::round(zz) * map_nxy;
+			int l = (x+nx/2) + (y+ny/2) * nx;
+			ddata[k] = sdata[l];
 		}
 	}
-
-	update();
+	
 	map->update();
 	EXITFUNC;
 }

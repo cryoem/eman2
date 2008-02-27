@@ -58,6 +58,9 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DSliceViewer(EMImage3DObject):
 	def __init__(self,image=None, parent=None):
+		
+		EMImage3DObject.__init__(self)
+		
 		self.parent = parent
 		
 		self.init()
@@ -251,7 +254,7 @@ class EM3DSliceViewer(EMImage3DObject):
 
 		trans = (nn-0.5)*v
 		t.set_posttrans(2.0*int(n/2)*trans)
-		tmp.cut_slice(self.data,0,t,True)
+		tmp.cut_slice(self.data,t,True)
 			
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
 		
@@ -319,7 +322,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 		glPushMatrix()
 		glLoadIdentity()
-		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
+		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-1)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
 		self.draw_bc_screen()
 		glPopMatrix()

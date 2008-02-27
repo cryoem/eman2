@@ -56,6 +56,7 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EMIsosurface(EMImage3DObject):
 	def __init__(self,image=None, parent=None):
+		EMImage3DObject.__init__(self)
 		self.parent = parent
 		
 		self.init()

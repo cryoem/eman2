@@ -57,6 +57,7 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DSymViewer(EMImage3DObject):
 	def __init__(self, parent=None):
+		EMImage3DObject.__init__(self)
 		self.parent = parent
 		
 		self.init()

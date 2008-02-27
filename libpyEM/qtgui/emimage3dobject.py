@@ -39,46 +39,6 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 
-#class EMOpenGL3DAxisTexturer:
-	#"""
-	#This class encapsulates all the functionality necessary to render 2D texture slices
-	#of a 3D volume along some axis.
-	
-	#After you have instantiated a class of this type you specify the axes that textures
-	#will be rendered on by calling addRenderAxis(x,y,z)
-	
-	#More comments will come as the functionality of this class takes form
-	#"""
-	#def __init__(self):
-		#self.axes_idx = -1
-		#self.axes = []
-		
-		#self.data = None
-	
-	#def addRenderAxis(self,x,y,z):
-		#v = Vec3f(a,b,c);
-		#v.normalize()
-		#self.axes.append( v )
-		
-	#def setData(self, data):
-		#"""
-		#The data is stored because we need access to its dimensions
-		#"""
-		#self.data = data
-
-	#def getEmanTransform(self,p):
-		
-		#if ( p[2] == 0 ):
-			#alt = 90
-		#else :
-			#alt = acos(p[2])*180.0/pi
-		
-		#phi = atan2(p[0],p[1])
-		#phi *= 180.0/pi
-		
-		#return [Transform3D(0,alt,phi),alt,phi]
-	
-
 class EMOpenGLFlagsAndTools:
 	"""
 	This is a singleton class that encapsulates OpenGL flags and tools -
@@ -165,10 +125,10 @@ class EMOpenGLFlagsAndTools:
 			if self.blend_equation_check == True:
 				try:
 					if str("GL_ARB_imaging") not in glGetString(GL_EXTENSIONS) :
-						self.use_blend_equation = True
+						self.use_blend_equation = False
 						print "EMAN(ALPHA) message: No support for glBlendEquation detected. Disabling."
 					else:
-						self.use_blend_equation = False
+						self.use_blend_equation = True
 						print "EMAN(ALPHA) message: Support for glBlendEquation detected.."
 				except:
 					print "error, OpenGL seems not to be initialized"
@@ -556,7 +516,6 @@ class Camera:
 
 class EMImage3DObject:
 	def __init__(self):
-		self.rank = 0
 		self.blendflags = EMOpenGLFlagsAndTools()
 		
 	def render(self):
@@ -747,7 +706,7 @@ class EMImage3DObject:
 				try:
 					if self.blendflags.blend_equation_supported():
 						glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-					glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
+						glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
 				except:
 					print "EMAN(ALPHA) warning: GL_FUNC_REVERSE_SUBTRACT unsupported. No action taken"
 					pass
@@ -794,9 +753,10 @@ class EMImage3DObject:
 				glColor4f(self.glbrightness,self.glbrightness,self.glbrightness,self.glcontrast)
 			else:
 				try:
+					# FIXME - look for GL_EXT_blend_subtract in glGetString(GL_EXTENSIONS)
 					if self.blendflags.blend_equation_supported():
 						glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-					glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
+						glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
 				except:
 					print "EMAN(ALPHA) warning: GL_FUNC_REVERSE_SUBTRACT unsupported. No action taken"
 					pass

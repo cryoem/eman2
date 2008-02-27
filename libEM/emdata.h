@@ -695,28 +695,33 @@ namespace EMAN
 		/** cut a 2D slice out of a real 3D map. Put slice into 'this' image.
 		 *
 		 * @param map The real 3D map.
-		 * @param dz 
-		 * @param orientation Orientation of the slice.
+		 * @param orientation Orientation of the slice. Takes into account rotation, post and pretrans.
 		 * @param interpolate Do interpolation or not.
-		 * @param dx
-		 * @param dy
 		 * @exception NullPointerException If map is NULL.
+		 * @exception ImageDimensionException If this image is not 2D.
+		 * @exception ImageDimensionException If map image is not 3D.
+		 * @exception ImageFormatException If this image is complex
+		 * @exception ImageFormatException If map is complex
+		 * @author David Woolford (adapted from an original version by Steve Ludkte)
+		 * @date Feb 2008
 		 */
-		void cut_slice(const EMData * map, float dz=1, Transform3D * orientation = 0,
-					   bool interpolate = true, float dx = 1, float dy = 1);
+		void cut_slice(const EMData * map, Transform3D * orientation = 0, bool interpolate = true);
 
 		/** Opposite of the cut_slice(). It will take a slice and insert
 		 * the data into a real 3D map. It does not interpolate, it uses
 		 * the nearest neighbor.
 		 *
 		 * @param map  The real 3D map.
-		 * @param dz
 		 * @param orientation Orientation of the slice.
-		 * @param dx
-		 * @param dy
+		 * @exception NullPointerException If map is NULL.
+		 * @exception ImageDimensionException If this image is not 2D.
+		 * @exception ImageDimensionException If map image is not 3D.
+		 * @exception ImageFormatException If this image is complex
+		 * @exception ImageFormatException If map is complex
+		 * @author David Woolford (adapted from an original version by Steve Ludkte)
+		 * @date Feb 2008
 		 */		 
-		void uncut_slice(EMData * map, float dz, Transform3D * orientation = 0,
-						 float dx = 0, float dy = 0);
+		void uncut_slice(EMData * map, Transform3D * orientation = 0) const;
 
 		/** function for MarchingCubes, for 3D image display
 		 * @return the resolution

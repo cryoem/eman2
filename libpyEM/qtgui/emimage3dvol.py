@@ -59,6 +59,7 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EMVolume(EMImage3DObject):
 	def __init__(self,image=None, parent=None):
+		EMImage3DObject.__init__(self)
 		self.parent = parent
 		
 		self.init()
@@ -229,7 +230,6 @@ class EMVolume(EMImage3DObject):
 		#glBlendEquation(GL_MAX)
 		if self.glflags.blend_equation_supported():
 			glBlendEquation(GL_FUNC_ADD)
-		
 		glDepthMask(GL_FALSE)
 		glBlendFunc(GL_ONE, GL_ONE)
 		glCallList(self.tex_dl)
@@ -438,7 +438,7 @@ class EMVolume(EMImage3DObject):
 			
 			trans = (nn-0.5)*v
 			t.set_posttrans(2.0*int(n/2)*trans)
-			tmp.cut_slice(self.data_copy,0,t,False)
+			tmp.cut_slice(self.data_copy,t,True)
 			#tmp.write_image("tmp.img",-1)
 			
 			# get the texture name, store it, and bind it in OpenGL
