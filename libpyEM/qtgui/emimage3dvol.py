@@ -52,7 +52,7 @@ from time import *
 
 from emimage3dobject import EMImage3DObject
 from emimage3dobject import Camera
-from emimage3dobject import EMOpenGLTextureFlags
+from emimage3dobject import EMOpenGLFlagsAndTools
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -130,7 +130,7 @@ class EMVolume(EMImage3DObject):
 		
 		self.force_texture_update = False
 
-		self.glflags = EMOpenGLTextureFlags()		# OpenGL flags - this is a singleton convenience class for testing texture support
+		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support
 		
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
@@ -227,7 +227,9 @@ class EMVolume(EMImage3DObject):
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
 		glEnable(GL_BLEND)
 		#glBlendEquation(GL_MAX)
-		glBlendEquation(GL_FUNC_ADD)
+		if self.glflags.blend_equation_supported():
+			glBlendEquation(GL_FUNC_ADD)
+		
 		glDepthMask(GL_FALSE)
 		glBlendFunc(GL_ONE, GL_ONE)
 		glCallList(self.tex_dl)

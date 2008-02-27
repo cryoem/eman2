@@ -52,7 +52,7 @@ from time import *
 
 from emimage3dobject import EMImage3DObject
 from emimage3dobject import Camera
-from emimage3dobject import EMOpenGLTextureFlags
+from emimage3dobject import EMOpenGLFlagsAndTools
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -97,7 +97,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		self.rank = 1
 		
-		self.glflags = EMOpenGLTextureFlags()		# OpenGL flags - this is a singleton convenience class for testing texture support
+		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support
 		
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
