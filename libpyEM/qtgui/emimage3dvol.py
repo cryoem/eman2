@@ -76,43 +76,30 @@ class EMVolume(EMImage3DObject):
 		self.axes.append( Vec3f(0,0,1) )
 		self.axes.append( Vec3f(-1,0,0) )
 		self.axes.append( Vec3f(0,-1,0) )
-		#v = Vec3f(1,1,1)
-		#v.normalize()
-		#self.axes.append( v )
+		self.addRenderAxis(1,1,1)
+		self.addRenderAxis(-1,1,1)
+		self.addRenderAxis(-1,-1,1)
+		self.addRenderAxis(1,-1,1)
 		
-		#v1 = Vec3f(-1,1,1);
-		#v1.normalize()
-		#self.axes.append( v1 )
+		#self.addRenderAxis(1,1,0)
+		#self.addRenderAxis(-1,1,0)
+		#self.addRenderAxis(-1,-1,0)
+		#self.addRenderAxis(1,-1,0)
 		
-		#v2 = Vec3f(-1,-1,1);
-		#v2.normalize()
-		#self.axes.append( v2 )
+		#self.addRenderAxis(0,1,1)
+		#self.addRenderAxis(0,-1,1)
 		
-		#v3 = Vec3f(1,-1,1);
-		#v3.normalize()
-		#self.axes.append( v3 )
-		#v1 = Vec3f(1,1,0);
-		#v1.normalize()
-		#self.axes.append( v1 )
-		#self.axes.append( -v1 )
-		
-		#v2 = Vec3f(0,1,1);
-		#v2.normalize()
-		#self.axes.append( v2 )
-		#self.axes.append( -v2 )
-
-		#v3 = Vec3f(1,0,1);
-		#v3.normalize()
-		
-		#v3 = Vec3f(1,0,1);
-		#v3.normalize()
-		#self.axes.append( v3 )
-		#self.axes.append( -v3 )
-
+		#self.addRenderAxis(1,0,1)
+		#self.addRenderAxis(-1,0,1)
+	
 		self.axes_idx = -1;
 		
 		if image :
 			self.setData(image)
+	def addRenderAxis(self,a,b,c):
+		v = Vec3f(a,b,c);
+		v.normalize()
+		self.axes.append( v )
 	
 	def getType(self):
 		return "Volume"
@@ -293,10 +280,11 @@ class EMVolume(EMImage3DObject):
 		point = point*t3d
 		
 		#point[0] = abs(point[0])
-		#point[1] = abs(point[1])
-		point[2] = abs(point[2])
-		
-		#point = [abs(point[0]), abs(point[1]),abs(point[2])]
+		point[1] = -point[1]
+		if ( point[2] < 0 ):
+			point[2] = -point[2]
+			point[1] = -point[1]
+			point[0] = -point[0]
 	
 		currentaxis = self.axes_idx
 		
@@ -305,8 +293,6 @@ class EMVolume(EMImage3DObject):
 		idx = 0
 		for i in self.axes:
 			angle = abs(acos(point.dot(i)))
-			#angle /= i.length()*lp
-			#print i, angle * 180/pi
 			if (angle < closest):
 				closest = angle
 				self.axes_idx = idx
@@ -314,7 +300,7 @@ class EMVolume(EMImage3DObject):
 			idx += 1
 
 		if (currentaxis != self.axes_idx):
-			print self.axes[self.axes_idx]
+			#print self.axes[self.axes_idx]
 			self.genTexture()
 			
 	def genTexture(self):
@@ -384,13 +370,11 @@ class EMVolume(EMImage3DObject):
 		
 		if ( p[2] == 0 ):
 			alt = 90
-			phi = atan2(p[0],p[1])*180/pi
 		else :
-			alt = acos(p[2])
-			if ( p[1] == 0 ): phi = 0
-			else: phi = atan2(p[0],p[1])
-			alt *= 180.0/pi
-			phi *= 180.0/pi
+			alt = acos(p[2])*180/pi
+		
+		phi = atan2(p[0],p[1])
+		phi *= 180.0/pi
 		
 		return [Transform3D(0,alt,phi),alt,phi]
 			
@@ -437,8 +421,8 @@ class EMVolume(EMImage3DObject):
 		n = self.getDimensionSize()
 		v = self.axes[self.axes_idx]
 		[t,alt,phi] = self.getEmanTransform(v)
-		t.printme()
-		print alt,phi
+		#t.printme()
+		#print alt,phi
 		for i in range(0,int(self.texsample*n)):
 			nn = float(i)/float(n)/self.texsample
 			tmp = self.getCorrectDims2DEMData() 
@@ -506,8 +490,6 @@ class EMVolume(EMImage3DObject):
 		#self.genTexture()
 
 	def setColor(self,val):
-		#print val
-		#self.isocolor = str(val)
 		self.parent.updateGL()
 		
 	def setContrast(self,val):

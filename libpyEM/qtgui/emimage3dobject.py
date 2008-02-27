@@ -95,7 +95,7 @@ class EMOpenGLTextureFlags:
 				
 				self.threed_texture_check = False
 				
-			return self.use_3d_texture
+			return not self.use_3d_texture
 
 		
 	def genTextureName(self,data):
