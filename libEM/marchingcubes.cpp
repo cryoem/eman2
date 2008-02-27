@@ -6,11 +6,17 @@
 
 #ifdef EMAN2_USING_OPENGL
 
+// need GL_GLEXT_PROTOTYPES for glTexImage3D 
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
+#endif
 
 #ifdef __APPLE__
 #include "OpenGL/gl.h"
 #else // _WIN32, LINUX
 #include "GL/gl.h"
+#include "GL/glu.h"
+#include "GL/glext.h"
 #endif
 #endif
 
@@ -231,7 +237,7 @@ unsigned long MarchingCubes::get_isosurface_dl(unsigned int tex_id)
 	
 	if ( tex_id != 0 ) {
 		// Normalize the coordinates to be on the interval 0,1
-		pp.mult3(1.0/(float) _emdata->get_xsize(), 1.0/(float)_emdata->get_ysize(), 1.0/(float)_emdata->get_zsize());
+		pp.mult3(1.0f/(float) _emdata->get_xsize(), 1.0f/(float)_emdata->get_ysize(), 1.0f/(float)_emdata->get_zsize());
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glDisableClientState(GL_NORMAL_ARRAY);
 		glTexCoordPointer(3,GL_FLOAT,0,pp.get_data());
@@ -507,13 +513,13 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 								 afCubeValue[ a2iEdgeConnection[iEdge][1] ], _surf_value);
 
 			if ( cur_level == -1 ){
-				asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]) + 0.5;
-				asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]) + 0.5;
-				asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]) + 0.5;
+				asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]) + 0.5f;
+				asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]) + 0.5f;
+				asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]) + 0.5f;
 			} else {
-				asEdgeVertex[iEdge][0] = fxScale*(fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0])) + 0.5;
-				asEdgeVertex[iEdge][1] = fyScale*(fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1])) + 0.5;
-				asEdgeVertex[iEdge][2] = fzScale*(fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2])) + 0.5;
+				asEdgeVertex[iEdge][0] = fxScale*(fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0])) + 0.5f;
+				asEdgeVertex[iEdge][1] = fyScale*(fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1])) + 0.5f;
+				asEdgeVertex[iEdge][2] = fzScale*(fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2])) + 0.5f;
 			}
 			
 			pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0], fY+edgeLookUp[iEdge][1], fZ+edgeLookUp[iEdge][2], edgeLookUp[iEdge][3]);
