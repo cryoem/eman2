@@ -716,8 +716,12 @@ class EMImage3DObject:
 				glBlendEquation(GL_FUNC_ADD);
 				glColor4f(self.glbrightness,self.glbrightness,self.glbrightness,1.0)
 			else:
-				glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-				glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
+				try:
+					glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+					glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
+				except:
+					print "EMAN(ALPHA) warning: GL_FUNC_REVERSE_SUBTRACT unsupported. No action taken"
+					pass
 			
 			glBegin( GL_QUADS )
 			glVertex(0, 0)
@@ -756,8 +760,12 @@ class EMImage3DObject:
 				glBlendEquation(GL_FUNC_ADD)
 				glColor4f(self.glbrightness,self.glbrightness,self.glbrightness,self.glcontrast)
 			else:
-				glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-				glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness,self.glcontrast)
+				try:
+					glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+					glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
+				except:
+					print "EMAN(ALPHA) warning: GL_FUNC_REVERSE_SUBTRACT unsupported. No action taken"
+					pass
 				
 			glBlendFunc(GL_ONE, GL_SRC_ALPHA)
 
