@@ -65,6 +65,15 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		self.inspector=None
 		
+		
+		self.axes = []
+		self.axes.append( Vec3f(1,0,0) )
+		self.axes.append( Vec3f(0,1,0) )
+		self.axes.append( Vec3f(0,0,1) )
+		self.axes_idx = 2
+		
+		self.track = False
+		
 		if image :
 			self.setData(image)
 	
@@ -118,188 +127,170 @@ class EM3DSliceViewer(EMImage3DObject):
 		hist = self.data.calc_hist(256,0,1.0)
 		self.inspector.setHist(hist,0,1.0) 
 
+		self.slice = data.get_zsize()/2
 		self.zslice = data.get_zsize()/2
 		self.yslice = data.get_ysize()/2
 		self.xslice = data.get_xsize()/2
+		self.trackslice = data.get_xsize()/2
 		self.axis = 'z'
 		self.inspector.setSliceRange(0,data.get_zsize()-1)
 		self.inspector.setSlice(self.zslice)
-		self.genTexture()
 		self.genCurrentDisplayList()
 		
-	def genTexture(self):
-		if ( self.tex_name != 0 ):
-			glDeleteTextures(self.tex_name)
+	def getEmanTransform(self,p):
 		
-		if ( self.glflags.threed_texturing_supported() ):
-			self.tex_name = self.glflags.genTextureName(self.data)
-	
-	def gen2DTexture(self):
-		if self.axis == 'z':
-			tmp = EMData(self.data.get_xsize(),self.data.get_ysize())
-			# 90 alt followed by 90 phi to get the xy plane to the yz plane
-			t = Transform3D(0,0,0)
-			t.set_posttrans(0,0,self.zslice-int(self.data.get_zsize()/2))
-			tmp.cut_slice(self.data,0,t,False)
-		elif self.axis == 'y':
-			tmp = EMData(self.data.get_xsize(),self.data.get_zsize())
-			#90 alt followed by 90 phi to get the xy plane to the yz plane
-			t = Transform3D(0,-90,0)
-			t.set_posttrans(0,(self.yslice-int(self.data.get_ysize()/2)),0)
-			tmp.cut_slice(self.data,0,t,False)
-		elif self.axis == 'x':
-			tmp = EMData(self.data.get_ysize(),self.data.get_zsize())
-			#90 alt to get the  xy plane to the xz plane
-			t = Transform3D(0,-90,-90)
-			t.set_posttrans(self.xslice-int(self.data.get_xsize()/2),0,0)
-			tmp.cut_slice(self.data,0,t,False)
+		if ( p[2] == 0 ):
+			alt = 90
+		else :
+			alt = acos(p[2])*180.0/pi
+		
+		phi = atan2(p[0],p[1])
+		phi *= 180.0/pi
+		
+		return [Transform3D(0,alt,phi),alt,phi]
+			
+	def getDimensionSize(self):
+		if ( self.axes_idx == 0 ):
+			return self.data.get_zsize()
+		elif ( self.axes_idx == 1 ):
+			return self.data.get_ysize()
+		elif ( self.axes_idx == 2 ):
+			return self.data.get_xsize()
 		else:
-			raise("Cannot call get2DTextureName as the axis is not yet set")
-	
-		
-		if ( self.tex_name != 0 ):
-			glDeleteTextures(self.tex_name)
-		
-		self.tex_name = self.glflags.genTextureName(tmp)
-
-		return self.tex_name	
+			#print "unsupported axis"
+			# this is a hack and needs to be fixed eventually
+			return self.data.get_xsize()
+			#return 0
+	def getCorrectDims2DEMData(self):
+		if ( self.axes_idx == 0 ):
+			return EMData(self.data.get_xsize(),self.data.get_ysize())
+		elif ( self.axes_idx == 1 ):
+			return EMData(self.data.get_xsize(),self.data.get_zsize())
+		elif ( self.axes_idx == 2 ):
+			return EMData(self.data.get_ysize(),self.data.get_zsize())
+		else:
+			#print "unsupported axis"
+			# this is a hack and needs to be fixed eventually
+			return EMData(self.data.get_xsize(),self.data.get_zsize())
 
 	def genCurrentDisplayList(self):
+		
 		if ( self.tex_dl != 0 ): glDeleteLists( self.tex_dl, 1)
 		
 		self.tex_dl = glGenLists(1)
 
 		if (self.tex_dl == 0): return #OpenGL is initialized yet
 		
-		glNewList(self.tex_dl,GL_COMPILE)
-		if ( self.glflags.threed_texturing_supported()):	
-			glEnable(GL_TEXTURE_3D)
-			glBindTexture(GL_TEXTURE_3D, self.tex_name)
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
-			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			if ( not data_dims_power_of(self.data,2) and self.glflags.power_of_two_textures_unsupported()):
-				glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST)
-			else:
-				glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-				
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			
-			glBegin(GL_QUADS)
-			
-			if self.axis == 'z':
-				zz = float(self.zslice)/float(self.data.get_zsize())
-				glTexCoord3f(0,0,zz)
-				glVertex3f(0,0,zz)
-				
-				glTexCoord3f(1,0,zz)
-				glVertex3f(1,0,zz)
-				
-				glTexCoord3f(1,1,zz)
-				glVertex3f(1,1,zz)
-				
-				glTexCoord3f(0,1,zz)
-				glVertex3f(0,1,zz)
-				
-			elif self.axis == 'y':
-				yy = float(self.yslice)/float(self.data.get_ysize())
-				glTexCoord3f(0,yy,0)
-				glVertex3f(0,yy,0)
-				
-				glTexCoord3f(1,yy,0)
-				glVertex3f(1,yy,0)
-				
-				glTexCoord3f(1,yy,1)
-				glVertex3f(1,yy,1)
-				
-				glTexCoord3f(0,yy,1)
-				glVertex3f(0,yy,1)
-				
-			elif self.axis == 'x':
-				xx = float(self.xslice)/float(self.data.get_zsize())
-				glTexCoord3f(xx,0,0)
-				glVertex3f(xx,0,0)
-				
-				glTexCoord3f(xx,1,0)
-				glVertex3f(xx,1,0)
-				
-				glTexCoord3f(xx,1,1)
-				glVertex3f(xx,1,1)
-				
-				glTexCoord3f(xx,0,1)
-				glVertex3f(xx,0,1)
-				
-			else:
-				print "Error, unknow axis", self.axis
-				
-			glEnd()
-		
-			glDisable(GL_TEXTURE_3D)
+		if ( self.glflags.threed_texturing_supported()):
+			self.gen3DTexture()
 		else:
 			self.gen2DTexture()
-			glEnable(GL_TEXTURE_2D)
-			glBindTexture(GL_TEXTURE_2D, self.tex_name)
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			if ( not data_dims_power_of(self.data,2) and self.glflags.power_of_two_textures_unsupported()):
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST)
-			else:
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			
-			glBegin(GL_QUADS)
-			
-			if self.axis == 'z':
-				zz = float(self.zslice)/float(self.data.get_zsize())
-				glTexCoord2f(0,0)
-				glVertex3f(0,0,zz)
-				
-				glTexCoord2f(1,0)
-				glVertex3f(1,0,zz)
-				
-				glTexCoord2f(1,1)
-				glVertex3f(1,1,zz)
-				
-				glTexCoord2f(0,1)
-				glVertex3f(0,1,zz)
-				
-			elif self.axis == 'y':
-				yy = float(self.yslice)/float(self.data.get_ysize())
-				
-				glTexCoord2f(0,0)
-				glVertex3f(0,yy,0)
-				
-				glTexCoord2f(1,0)
-				glVertex3f(1,yy,0)
-				
-				glTexCoord2f(1,1)
-				glVertex3f(1,yy,1)
-				
-				glTexCoord2f(0,1)
-				glVertex3f(0,yy,1)
-				
-			elif self.axis == 'x':
-				xx = float(self.xslice)/float(self.data.get_zsize())
-				glTexCoord2f(0,0)
-				glVertex3f(xx,0,0)
-				
-				glTexCoord2f(1,0)
-				glVertex3f(xx,1,0)
-				
-				glTexCoord2f(1,1)
-				glVertex3f(xx,1,1)
-				
-				glTexCoord2f(0,1)
-				glVertex3f(xx,0,1)
-			
-			glEnd()		
-			glDisable(GL_TEXTURE_2D)
-
 	
+	def gen3DTexture(self):
+
+		glNewList(self.tex_dl,GL_COMPILE)
+		
+		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
+		
+		self.tex_name = self.glflags.genTextureName(self.data)
+		
+		glEnable(GL_TEXTURE_3D)
+		glBindTexture(GL_TEXTURE_3D, self.tex_name)
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		if ( not data_dims_power_of(self.data,2) and self.glflags.power_of_two_textures_unsupported()):
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+		else:
+			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		
+		glPushMatrix()
+		glTranslate(0.5,0.5,0.5)
+		
+		glBegin(GL_QUADS)
+		
+		n = self.getDimensionSize()
+		v = self.axes[self.axes_idx]
+		[t,alt,phi] = self.getEmanTransform(v)
+		v1 = t*Vec3f(-0.5,-0.5,0)
+		v2 = t*Vec3f(-0.5, 0.5,0)
+		v3 = t*Vec3f( 0.5, 0.5,0)
+		v4 = t*Vec3f( 0.5,-0.5,0)
+		vecs = [v1,v2,v3,v4]
+		nn = float(self.slice)/float(n)
+
+		trans = (nn-0.5)*v
+		
+		for r in vecs:
+		
+			w = [r[0] + trans[0], r[1] + trans[1], r[2] + trans[2]]
+			t = [w[0]+0.5,w[1]+0.5,w[2]+0.5]
+			glTexCoord3fv(t)
+			glVertex3fv(w)
+			
+		glEnd()
+		glPopMatrix()
+		glDisable(GL_TEXTURE_3D)
+		
+		glEndList()
+		
+	def gen2DTexture(self):		
+		glNewList(self.tex_dl,GL_COMPILE)
+		
+		n = self.getDimensionSize()
+		v = self.axes[self.axes_idx]
+		
+		[t,alt,phi] = self.getEmanTransform(v)
+			
+		nn = float(self.slice)/float(n)
+		tmp = self.getCorrectDims2DEMData() 
+
+		trans = (nn-0.5)*v
+		t.set_posttrans(2.0*int(n/2)*trans)
+		tmp.cut_slice(self.data,0,t,True)
+			
+		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
+		
+		self.tex_name = self.glflags.genTextureName(tmp)
+		
+		glEnable(GL_TEXTURE_2D)
+		glBindTexture(GL_TEXTURE_2D, self.tex_name)
+			
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		if ( not data_dims_power_of(self.data,2) and self.glflags.power_of_two_textures_unsupported()):
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+		else:
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		
+			
+		glPushMatrix()
+		glTranslate(trans[0]+0.5,trans[1]+0.5,trans[2]+0.5)
+		glRotatef(-phi,0,0,1)
+		glRotatef(-alt,1,0,0)
+		glBegin(GL_QUADS)
+		glTexCoord2f(0,0)
+		glVertex2f(-0.5,-0.5)
+		
+		glTexCoord2f(1,0)
+		glVertex2f( 0.5,-0.5)
+		
+		glTexCoord2f(1,1)
+		glVertex2f( 0.5, 0.5)
+		
+		glTexCoord2f(0,1)
+		glVertex2f(-0.5, 0.5)
+		glEnd()
+		glPopMatrix()
+		
+		glDisable(GL_TEXTURE_2D)
 		glEndList()
 		
 	def render(self):
@@ -334,6 +325,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		glPopMatrix()
 		
 		glStencilFunc(GL_ALWAYS,1,1)
+		glColor3f(1,1,1)
 		if self.cube:
 			glPushMatrix()
 			self.draw_volume_bounds()
@@ -346,6 +338,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 	
 	def setSlice(self,val):
+		self.slice = val
 		if self.axis == 'z':
 			self.zslice = val
 		elif self.axis == 'y':
@@ -353,7 +346,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		elif self.axis == 'x':
 			self.xslice = val
 		else:
-			print "Error, unknown axis", self.axis
+			self.trackslice = val
 		
 		self.genCurrentDisplayList()
 		self.parent.updateGL()
@@ -365,14 +358,27 @@ class EM3DSliceViewer(EMImage3DObject):
 			if self.axis == 'z':
 				self.inspector.setSliceRange(0,self.data.get_zsize()-1)
 				self.inspector.setSlice(self.zslice)
+				self.axes_idx = 2
+				self.track = False
 			elif self.axis == 'y':
 				self.inspector.setSliceRange(0,self.data.get_ysize()-1)
 				self.inspector.setSlice(self.yslice)
+				self.axes_idx = 1
+				self.track = False
 			elif self.axis == 'x':
 				self.inspector.setSliceRange(0,self.data.get_xsize()-1)
 				self.inspector.setSlice(self.xslice)
+				self.axes_idx = 0
+				self.track = False
+			elif self.axis == 'track':
+				self.track = True
+				self.inspector.setSliceRange(0,self.data.get_xsize()-1)
+				self.inspector.setSlice(self.trackslice)
+				self.axes_idx = 3
+				
+				self.loadTrackAxis()
 			else:
-				print "Error, unknown axis", self.axis
+				print "Error, unknown axis", self.axis, val
 		
 		self.genCurrentDisplayList()
 		self.parent.updateGL()
@@ -386,6 +392,25 @@ class EM3DSliceViewer(EMImage3DObject):
 		if not self.inspector : self.inspector=EMSlice3DInspector(self)
 		return self.inspector
 
+	def loadTrackAxis(self):
+		t3d = self.cam.t3d_stack[len(self.cam.t3d_stack)-1]
+		
+		point = Vec3f(0,0,1)
+		
+		point = point*t3d
+		if ( point[1] != 0 ): point[1] = -point[1]
+		
+		if len(self.axes) == 3 :
+			self.axes.append(point)
+		else:
+			self.axes[3] = point
+	
+	def mouseMoveEvent(self, event):
+		if ( self.track ):
+			self.loadTrackAxis()
+			self.genCurrentDisplayList()
+		EMImage3DObject.mouseMoveEvent(self,event)
+		
 class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 	
 	allim=WeakKeyDictionary()
@@ -580,6 +605,7 @@ class EMSlice3DInspector(QtGui.QWidget):
 		self.axisCombo.addItem(' z ')
 		self.axisCombo.addItem(' y ')
 		self.axisCombo.addItem(' x ')
+		self.axisCombo.addItem(' track ')
 		self.hbl_slice.addWidget(self.axisCombo)
 		
 		self.glcontrast = ValSlider(maintab,(1.0,5.0),"GLShd:")

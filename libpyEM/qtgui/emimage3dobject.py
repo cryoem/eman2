@@ -39,6 +39,46 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 
+#class EMOpenGL3DAxisTexturer:
+	#"""
+	#This class encapsulates all the functionality necessary to render 2D texture slices
+	#of a 3D volume along some axis.
+	
+	#After you have instantiated a class of this type you specify the axes that textures
+	#will be rendered on by calling addRenderAxis(x,y,z)
+	
+	#More comments will come as the functionality of this class takes form
+	#"""
+	#def __init__(self):
+		#self.axes_idx = -1
+		#self.axes = []
+		
+		#self.data = None
+	
+	#def addRenderAxis(self,x,y,z):
+		#v = Vec3f(a,b,c);
+		#v.normalize()
+		#self.axes.append( v )
+		
+	#def setData(self, data):
+		#"""
+		#The data is stored because we need access to its dimensions
+		#"""
+		#self.data = data
+
+	#def getEmanTransform(self,p):
+		
+		#if ( p[2] == 0 ):
+			#alt = 90
+		#else :
+			#alt = acos(p[2])*180.0/pi
+		
+		#phi = atan2(p[0],p[1])
+		#phi *= 180.0/pi
+		
+		#return [Transform3D(0,alt,phi),alt,phi]
+	
+
 class EMOpenGLTextureFlags:
 	"""
 	This is a singleton class that encapsulates OpenGL Textures flags (and settings)
@@ -48,33 +88,42 @@ class EMOpenGLTextureFlags:
 	is supported, whether or not power of two textures are supported,
 	and various other things that will be added as development continues.
 	
-	All OpenGL-related flags should end up in this class.
+	All OpenGL-related Texture flags and generic operations should end up in this class.
 	"""
 	class __impl:
 		""" Implementation of the singleton interface """
 
 		def __init__(self):
-			self.power_of_two_init_check = True 	# an internal flag for perming a test
+			self.power_of_two_init_check = True 	# an internal flag for forcing a once (and only) OpenGL query about power of 2 textures
 			self.use_mipmaps = False				# use mipmaps means power of two-textures are not supported
+			self.force_use_mipmaps = False			# This flag is toggled by the developer to force the use of mipmaps
 		
-			self.threed_texture_check = True	# an internal flag for perming a test
-			self.use_3d_texture = True			# this flag stores whether or not 3D texturing is supported 
+			self.threed_texture_check = True		# an internal flag for forcing a once (and only) OpenGL query regarding 3D textures
+			self.use_3d_texture = True				# this flag stores whether or not 3D texturing is supported 
+			self.disable_3d_texture = False			# This flag is toggled by the developer to force the use of 2D textures
 			
 			
 		def power_of_two_textures_unsupported(self):
+			if ( self.force_use_mipmaps ): return True
+			
 			if self.power_of_two_init_check == True:
-				if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
-					self.use_mipmaps = True
-					print "EMAN(ALPHA) message: No support for non power of two textures detected. Using mipmaps."
-				else:
-					self.use_mipmaps = False
-					print "EMAN(ALPHA) message: Support for non power of two textures detected."
+				try:
+					if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
+						self.use_mipmaps = True
+						print "EMAN(ALPHA) message: No support for non power of two textures detected. Using mipmaps."
+					else:
+						self.use_mipmaps = False
+						print "EMAN(ALPHA) message: Support for non power of two textures detected."
+				except:
+					print "error, OpenGL seems not to be initialized"
+					return False
 			
 				self.power_of_two_init_check = False
 			
 			return self.use_mipmaps
 			
 		def threed_texturing_supported(self):
+			if ( self.disable_3d_texture ): return False
 			
 			if ( self.threed_texture_check == True ):
 				disable = True
@@ -95,14 +144,14 @@ class EMOpenGLTextureFlags:
 				
 				self.threed_texture_check = False
 				
-			return not self.use_3d_texture
+			return self.use_3d_texture
 
 		
-	def genTextureName(self,data):
-		if ( not data_dims_power_of(data,2) and self.power_of_two_textures_unsupported()):
-			return data.gen_glu_mipmaps()
-		else:
-			return data.gen_gl_texture() 
+		def genTextureName(self,data):
+			if ( not data_dims_power_of(data,2) and self.power_of_two_textures_unsupported()):
+				return data.gen_glu_mipmaps()
+			else:
+				return data.gen_gl_texture() 
 
 	# storage for the instance reference
 	__instance = None

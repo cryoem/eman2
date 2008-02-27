@@ -70,16 +70,17 @@ class EMVolume(EMImage3DObject):
 		
 		self.tex_names_list = []		# A storage object, used to remember and later delete texture names
 		
+		self.axes_idx = -1
 		self.axes = []
 		self.axes.append( Vec3f(1,0,0) )
 		self.axes.append( Vec3f(0,1,0) )
 		self.axes.append( Vec3f(0,0,1) )
-		self.axes.append( Vec3f(-1,0,0) )
-		self.axes.append( Vec3f(0,-1,0) )
-		self.addRenderAxis(1,1,1)
-		self.addRenderAxis(-1,1,1)
-		self.addRenderAxis(-1,-1,1)
-		self.addRenderAxis(1,-1,1)
+		#self.axes.append( Vec3f(-1,0,0) )
+		#self.axes.append( Vec3f(0,-1,0) )
+		#self.addRenderAxis(1,1,1)
+		#self.addRenderAxis(-1,1,1)
+		#self.addRenderAxis(-1,-1,1)
+		#self.addRenderAxis(1,-1,1)
 		
 		#self.addRenderAxis(1,1,0)
 		#self.addRenderAxis(-1,1,0)
@@ -92,10 +93,11 @@ class EMVolume(EMImage3DObject):
 		#self.addRenderAxis(1,0,1)
 		#self.addRenderAxis(-1,0,1)
 	
-		self.axes_idx = -1;
+		
 		
 		if image :
 			self.setData(image)
+
 	def addRenderAxis(self,a,b,c):
 		v = Vec3f(a,b,c);
 		v.normalize()
@@ -118,7 +120,6 @@ class EMVolume(EMImage3DObject):
 		self.glcontrast = 1.0
 		self.glbrightness = 0.0
 		self.cube = False
-		self.loadColors()
 		
 		self.tex_name = 0
 		
@@ -126,19 +127,10 @@ class EMVolume(EMImage3DObject):
 		
 		self.tex_dl = 0
 		self.inspector=None
+		
+		self.force_texture_update = False
 
 		self.glflags = EMOpenGLTextureFlags()		# OpenGL flags - this is a singleton convenience class for testing texture support
-		
-	def loadColors(self):
-		# There is a bug, if the accompanying functionality to this function is removed we get a seg fault
-		ruby = {}
-		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
-		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
-		ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
-		ruby["shininess"] = 128.0
-		self.colors = {}
-		self.colors["ruby"] = ruby
-		self.isocolor = "ruby"
 		
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
@@ -158,8 +150,6 @@ class EMVolume(EMImage3DObject):
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMVolumeInspector(self)
 		
-		self.inspector.setColors(self.colors,self.isocolor)
-		
 		self.updateDataAndTexture()
 		
 	def test_accum(self):
@@ -170,6 +160,11 @@ class EMVolume(EMImage3DObject):
 		
 		self.accum = True
 		self.zsample = self.texsample*(self.data.get_zsize())
+		
+		if self.tex_name == 0:
+			print "Error, can not render 3D texture - texture name is 0"
+			return
+		
 		
 		for z in range(0,int(self.texsample*(self.data.get_zsize()))):
 			glEnable(GL_TEXTURE_3D)
@@ -222,11 +217,8 @@ class EMVolume(EMImage3DObject):
 		
 		self.cam.position()
 
-		if ( self.tex_dl == 0 ):
-			self.updateDataAndTexture()
-		
 		# here is where the correct display list (x,y or z direction) is determined
-		self.determineTextureView()
+		self.textureUpdateIfNecessary()
 
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
@@ -243,6 +235,8 @@ class EMVolume(EMImage3DObject):
 		glDisable(GL_BLEND)
 		glPopMatrix()
 
+		# this is the accumulation buffer version of the volume renderer - it was for testing purposes
+		# and is left here commented out incase anyone wants to investigate it in the future
 		#glPushMatrix()
 		#glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		#glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
@@ -272,19 +266,22 @@ class EMVolume(EMImage3DObject):
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 	
-	def determineTextureView(self):
+	def textureUpdateIfNecessary(self):
+		
 		t3d = self.cam.t3d_stack[len(self.cam.t3d_stack)-1]
 		
 		point = Vec3f(0,0,1)
 		
 		point = point*t3d
 		
-		#point[0] = abs(point[0])
-		point[1] = -point[1]
-		if ( point[2] < 0 ):
-			point[2] = -point[2]
-			point[1] = -point[1]
-			point[0] = -point[0]
+		point[0] = abs(point[0])
+		point[1] = abs(point[1])
+		point[2] = abs(point[2])
+		#point[1] = -point[1]
+		#if ( point[2] < 0 ):
+			#point[2] = -point[2]
+			#point[1] = -point[1]
+			#point[0] = -point[0]
 	
 		currentaxis = self.axes_idx
 		
@@ -299,7 +296,7 @@ class EMVolume(EMImage3DObject):
 			
 			idx += 1
 
-		if (currentaxis != self.axes_idx):
+		if (currentaxis != self.axes_idx or self.force_texture_update):
 			#print self.axes[self.axes_idx]
 			self.genTexture()
 			
@@ -319,9 +316,19 @@ class EMVolume(EMImage3DObject):
 			print "Error, failed to generate display list"
 			return
 		
+		if ( self.force_texture_update ):
+			if self.tex_name != 0:
+				glDeleteTextures(self.tex_name)
+			
+			self.tex_name = self.glflags.genTextureName(self.data_copy)
+			
+			self.force_texture_update = False
+			
+		
 		if self.tex_name == 0:
 			print "Error, can not render 3D texture - texture name is 0"
 			return
+		
 		
 		glNewList(self.tex_dl,GL_COMPILE)
 		glEnable(GL_TEXTURE_3D)
@@ -371,7 +378,7 @@ class EMVolume(EMImage3DObject):
 		if ( p[2] == 0 ):
 			alt = 90
 		else :
-			alt = acos(p[2])*180/pi
+			alt = acos(p[2])*180.0/pi
 		
 		phi = atan2(p[0],p[1])
 		phi *= 180.0/pi
@@ -387,6 +394,7 @@ class EMVolume(EMImage3DObject):
 			return self.data_copy.get_xsize()
 		else:
 			#print "unsupported axis"
+			# this is a hack and needs to be fixed eventually
 			return self.data_copy.get_xsize()
 			#return 0
 		
@@ -399,6 +407,7 @@ class EMVolume(EMImage3DObject):
 			return EMData(self.data_copy.get_ysize(),self.data_copy.get_zsize())
 		else:
 			#print "unsupported axis"
+			# this is a hack and needs to be fixed eventually
 			return EMData(self.data_copy.get_xsize(),self.data_copy.get_zsize())
 
 	
@@ -421,8 +430,6 @@ class EMVolume(EMImage3DObject):
 		n = self.getDimensionSize()
 		v = self.axes[self.axes_idx]
 		[t,alt,phi] = self.getEmanTransform(v)
-		#t.printme()
-		#print alt,phi
 		for i in range(0,int(self.texsample*n)):
 			nn = float(i)/float(n)/self.texsample
 			tmp = self.getCorrectDims2DEMData() 
@@ -462,6 +469,10 @@ class EMVolume(EMImage3DObject):
 		glDisable(GL_TEXTURE_2D)
 		glEndList()
 		
+		# this may have been toggled (i.e. if the image contrast or brightness changed)
+		if self.force_texture_update == True:
+			self.force_texture_update = False
+	
 	def loadDefault2DTextureParms(self):
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
@@ -482,16 +493,10 @@ class EMVolume(EMImage3DObject):
 		self.data_copy.mult(self.contrast*1.0/self.data.get_zsize())
 		
 		hist = self.data_copy.calc_hist(256,0,1.0)
-		self.inspector.setHist(hist,0,1.0) 
+		self.inspector.setHist(hist,0,1.0)
 
-		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
-		self.tex_name = self.glflags.genTextureName(self.data_copy)
+		self.force_texture_update = True
 
-		#self.genTexture()
-
-	def setColor(self,val):
-		self.parent.updateGL()
-		
 	def setContrast(self,val):
 		self.contrast = val
 		self.updateDataAndTexture()
@@ -508,7 +513,7 @@ class EMVolume(EMImage3DObject):
 			return
 		
 		self.texsample = val
-		self.genTexture()
+		self.force_texture_update = True
 		self.parent.updateGL()
 
 	def updateInspector(self,t3d):
@@ -528,10 +533,11 @@ class EMVolumeWidget(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		self.initializeGL()
 		EMVolumeWidget.allim[self]=0
 		
 		self.fov = 50 # field of view angle used by gluPerspective
-		
+
 		self.volume = EMVolume(image,self)
 	def setData(self,data):
 		self.volume.setData(data)
@@ -545,12 +551,11 @@ class EMVolumeWidget(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		
-		GL.glClearColor(0,0,0,0)
+		glClearColor(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
-		
 	def paintGL(self):
 		glClear(GL_ACCUM_BUFFER_BIT)
 		glClear(GL_STENCIL_BUFFER_BIT)
@@ -664,7 +669,6 @@ class EMVolumeInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
 		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
 		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
@@ -740,10 +744,6 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.lowlim=0
 		self.highlim=1.0
 		self.busy=0
-		
-		self.cbb = QtGui.QComboBox(maintab)
-		self.vbl.addWidget(self.cbb)
-		self.cbb.deleteLater()
 
 		self.hbl_trans = QtGui.QHBoxLayout()
 		self.hbl_trans.setMargin(0)
@@ -945,11 +945,6 @@ class EMVolumeInspector(QtGui.QWidget):
 			self.src_strings.append(str(i))
 			self.src_map[str(i)] = i
 		
-	
-	def setColors(self,colors,current_color):
-		for i in colors:
-			self.cbb.addItem(i)
-
 	def setHist(self,hist,minden,maxden):
 		self.hist.setData(hist,minden,maxden)
 
@@ -964,21 +959,19 @@ if __name__ == '__main__':
 		e = EMData()
 		e.set_size(7,7,7)
 		e.process_inplace('testimage.axes')
+		
+		window2=EMParentWin(window)
+		window2.show()
 		window.setData(e)
-
-		# these lines are for testing shape rendering
-# 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
-# 		window.addShape("b",["circle",.5,.8,.2,120,50,30.0,2])
-# 		window.addShape("c",["line",.2,.8,.5,20,120,100,200,2])
-# 		window.addShape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
 	else :
 		if not os.path.exists(sys.argv[1]):
 			print "Error, input file %s does not exist" %sys.argv[1]
 			exit(1)
 		a=EMData.read_images(sys.argv[1],[0])
+		window2=EMParentWin(window)
+		window2.show()
 		window.setData(a[0])
-	window2=EMParentWin(window)
-	window2.show()
+	
 	
 #	w2=QtGui.QWidget()
 #	w2.resize(256,128)
