@@ -213,9 +213,14 @@ bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& y
 	
 	frc_norm_dt[radius] += dt[0] * dt[0] + dt[1] * dt[1];
 	
+#ifdef	_WIN32
+	r += (float)_hypot(dt[0], dt[1]);
+	rn += (float)_hypot(interp_real/weight_sum, interp_comp/weight_sum);
+#else
 	r += (float)hypot(dt[0], dt[1]);
 	rn += (float)hypot(interp_real/weight_sum, interp_comp/weight_sum);
-	
+#endif	//_WIN32	
+
 	return true;
 }
 
@@ -342,10 +347,15 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 	frc_norm_rdata[radius] += interp_real_mtp*interp_real_mtp + interp_comp_mtp*interp_comp_mtp;
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
-	
+
+#ifdef	_WIN32
+	r += (float)_hypot(dt[0], dt[1]);
+	rn += (float)_hypot(interp_real/weight_sum, interp_comp/weight_sum);
+#else
 	r += (float)hypot(dt[0], dt[1]);
 	rn += (float)hypot(interp_real/weight_sum, interp_comp/weight_sum);
-	
+#endif	//_WIN32	
+
 	return true;
 }
 
@@ -433,10 +443,15 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 	frc_norm_rdata[radius] += interp_real_mtp*interp_real_mtp + interp_comp_mtp*interp_comp_mtp;
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
-		
+
+#ifdef	_WIN32
+	r += (float)_hypot(dt[0], dt[1]);
+	rn += (float)_hypot(interp_real/weight_sum, interp_comp/weight_sum);
+#else
 	r += (float)hypot(dt[0], dt[1]);
 	rn += (float)hypot(interp_real/weight_sum, interp_comp/weight_sum);
-	
+#endif	//_WIN32	
+
 	return true;
 }
 
@@ -480,9 +495,14 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
 	
+#ifdef	_WIN32
+	r += (float)_hypot(dt[0], dt[1]);
+	rn += (float)_hypot(interp_real, interp_comp);
+#else
 	r += (float)hypot(dt[0], dt[1]);
 	rn += (float)hypot(interp_real, interp_comp);
-	
+#endif	//_WIN32	
+
 	return true;
 }
 
@@ -1192,9 +1212,9 @@ void FourierInserter3DMode8::init()
 	int P = (int)((1.0+0.25)*nx+1);
 	float r = (float)(nx+1)/(float)P;
 	mFreqCutoff = 2;
-	mDFreq = 0.2;
+	mDFreq = 0.2f;
 	if (W != 0) delete [] W;
-	W = Util::getBaldwinGridWeights(mFreqCutoff, P, r,mDFreq,0.5,0.2);
+	W = Util::getBaldwinGridWeights(mFreqCutoff, P, r,mDFreq,0.5f,0.2f);
 	
 }
 bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, const float& qz, const float fq[])
@@ -1221,7 +1241,7 @@ bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, cons
 				float residual = dist/mDFreq - (int)(dist/mDFreq);
 				if ( fabs(residual) > 1) throw;
 				
-				float factor = W[idx]*(1.0-residual)+W[idx+1]*residual;
+				float factor = W[idx]*(1.0f-residual)+W[idx+1]*residual;
 				
 				int k = z*nxy + y*nx + 2*x;
 				

@@ -2067,7 +2067,11 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 			for (int x = 0; x < nx; x += 2, c += 2) {
 				float x1 = x / 2.0f;
 				float y1 = y - ny / 2.0f;
+#ifdef	_WIN32
+				float r = (float)_hypot(x1, y1);
+#else
 				float r = (float)hypot(x1, y1);
+#endif	//_WIN32
 
 				if (r >= rmin && r <= rmax) {
 					float a = 0;
@@ -2090,7 +2094,11 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 					else if (i > 0 && i < (n - 1)) {
 						float h = 0;
 						if (is_ri()) {
+#ifdef	_WIN32
+							h = (float)_hypot(rdata[c], rdata[c + 1]);
+#else
 							h = (float)hypot(rdata[c], rdata[c + 1]);
+#endif	//_WIN32			
 						}
 						else {
 							h = rdata[c];
@@ -2114,7 +2122,11 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 			for (int x = 0; x < nx; x++, c++) {
 				float y1 = y - half_ny;
 				float x1 = x - half_nx;
+#ifdef	_WIN32
+				float r = (float)_hypot(x1, y1);
+#else
 				float r = (float)hypot(x1, y1);
+#endif
 
 				if (r >= rmin && r <= rmax) {
 					float a = 0;
@@ -2191,7 +2203,11 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 		r1 = 4;
 	}
 
+#ifdef	_WIN32
+	int rr = ny / 2 - 2 - (int) Util::fast_floor(static_cast<float>(_hypot(dx, dy)));
+#else
 	int rr = ny / 2 - 2 - (int) Util::fast_floor(static_cast<float>(hypot(dx, dy)));
+#endif	//_WIN32	
 	rr-=rr%2;
 	if (r2 <= r1 || r2 > rr) {
 		r2 = rr;
@@ -2484,8 +2500,13 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i += 2, k += 2) {
 				float r;
+#ifdef	_WIN32
+				if (j<ny/2) r = (float)_hypot(i/(float)(nx*2), j/(float)ny);
+				else r = (float)_hypot(i/(float)(nx*2), (ny-j)/(float)ny);
+#else
 				if (j<ny/2) r = (float)hypot(i/(float)(nx*2), j/(float)ny);
 				else r = (float)hypot(i/(float)(nx*2), (ny-j)/(float)ny);
+#endif	//_WIN32			
 				r = (r - x0) / step;
 
 				int l = 0;
@@ -2589,9 +2610,15 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 				float r,v;
 				if (step==2) {		//complex
 					if (x==0 && y>ny/2) continue;
+#ifdef	_WIN32
+					r=static_cast<float>(_hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
+					if (!inten) {
+						if (is_ri()) v=static_cast<float>(_hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+#else
 					r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 					if (!inten) {
 						if (is_ri()) v=static_cast<float>(hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+#endif	//_WIN32	
 						else v=rdata[i];							// amp/phase, just get amp
 					} else {
 						if (isinten) v=rdata[i];
@@ -2600,7 +2627,11 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 					}
 				}
 				else {
+#ifdef	_WIN32
+					r=static_cast<float>(_hypot(x-nx/2,y-ny/2));
+#else
 					r=static_cast<float>(hypot(x-nx/2,y-ny/2));
+#endif	//_WIN32			
 					if (inten) v=rdata[i]*rdata[i];
 					else v=rdata[i];
 				}
@@ -2628,7 +2659,11 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 						if (x==0 && z==nz/2 && y<ny/2) continue;
 						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 						if (!inten) {
+#ifdef	_WIN32
+							if (is_ri()) v=static_cast<float>(_hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+#else
 							if (is_ri()) v=static_cast<float>(hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+#endif	//_WIN32			
 							else v=rdata[i];							// amp/phase, just get amp
 						} else {
 							if (isinten) v=rdata[i];
@@ -2687,10 +2722,18 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 		for (x=0; x<nx; x+=step,i+=step) {
 			float r,v,a;
 			if (is_complex()) {
+#ifdef	_WIN32
+				r=static_cast<float>(_hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
+#else
 				r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
+#endif			
 				a=atan2(float(y<ny/2?y:ny-y),x/2.0f);
 				if (!inten) {
+#ifdef	_WIN32
+					if (is_ri()) v=static_cast<float>(_hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+#else
 					if (is_ri()) v=static_cast<float>(hypot(rdata[i],rdata[i+1]));	// real/imag, compute amplitude
+#endif	//_WIN32			
 					else v=rdata[i];							// amp/phase, just get amp
 				} else {
 					if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
@@ -2698,7 +2741,11 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 				}
 			}
 			else {
+#ifdef	_WIN32
+				r=static_cast<float>(_hypot(x-nx/2,y-ny/2));
+#else
 				r=static_cast<float>(hypot(x-nx/2,y-ny/2));
+#endif	//_WIN32			
 				a=atan2(float(y-ny/2),float(x-nx/2));
 				if (inten) v=rdata[i]*rdata[i];
 				else v=rdata[i];
@@ -3010,7 +3057,11 @@ void EMData::add_incoherent(EMData * obj)
 	float *src = obj->get_data();
 	int size = nx * ny * nz;
 	for (int j = 0; j < size; j += 2) {
+#ifdef	_WIN32
+		dest[j] = (float) _hypot(src[j], dest[j]);
+#else
 		dest[j] = (float) hypot(src[j], dest[j]);
+#endif	//_WIN32	
 		dest[j + 1] = 0;
 	}
 
@@ -3452,7 +3503,11 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 							i2 += k;
 							j2 += k;
 
+#ifdef	_WIN32
+							float a1 = (float) _hypot(im1[i2], im1[i2 + 1]);
+#else
 							float a1 = (float) hypot(im1[i2], im1[i2 + 1]);
+#endif	//_WIN32			
 							float p1 = atan2(im1[i2 + 1], im1[i2]);
 							float p2 = atan2(im2[j2 + 1], im2[j2]);
 
@@ -3483,7 +3538,11 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 						for (int k = 0; k < jmax; k += 2) {
 							i2 += k;
 							j2 += k;
+#ifdef	_WIN32
+							rdata[l] += (float) (_hypot(im1[i2], im1[i2 + 1]) * _hypot(im2[j2], im2[j2 + 1]));
+#else
 							rdata[l] += (float) (hypot(im1[i2], im1[i2 + 1]) * hypot(im2[j2], im2[j2 + 1]));
+#endif	//_WIN32
 						}
 					}
 				}
