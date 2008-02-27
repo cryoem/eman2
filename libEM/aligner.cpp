@@ -406,7 +406,11 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,
 								a = atan2((float) (y - ny / 2), (float) (x - nx / 2));
 							}
 
+#ifdef	_WIN32
+							float r = (float)_hypot((y - ny / 2), (x - nx / 2)) - cen;
+#else
 							float r = (float)hypot((y - ny / 2), (x - nx / 2)) - cen;
+#endif	//_WIN32
 							dat1[x + y * nx] = sin(a * na) * exp(-r * r / (wid * wid / 2.4f));
 							dat2[x + y * nx] = cos(a * na) * exp(-r * r / (wid * wid / 2.4f));
 						}
@@ -440,7 +444,11 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,
 		ta = to->dot(d1);
 		tb = to->dot(d2);
 
+#ifdef	_WIN32
+		float a2 = (float)_hypot(ta, tb);
+#else
 		float a2 = (float)hypot(ta, tb);
+#endif		
 		float p2 = 0;
 		if (ta != 0 || tb != 0) {
 			p2 = atan2(ta, tb);
@@ -1029,7 +1037,11 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,
 		
 		for (int dy = -half_maxshift; dy <= half_maxshift; dy++) {
 			for (int dx = -half_maxshift; dx <= half_maxshift; dx++) {
+#ifdef	_WIN32
+				if (_hypot(dx, dy) <= half_maxshift) {
+#else
 				if (hypot(dx, dy) <= half_maxshift) {
+#endif			
 					EMData *uw = u->unwrap(4, ur2, xst / 2, dx, dy, true);
 					EMData *uwc = uw->copy();
 					EMData *a = uw->calc_ccfx(to_copy);
@@ -1109,7 +1121,11 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,
 
 		for (int dy = bestdy2 - 3; dy <= bestdy2 + 3; dy++) {
 			for (int dx = bestdx2 - 3; dx <= bestdx2 + 3; dx++) {
+#ifdef	_WIN32
+				if (_hypot(dx, dy) <= maxshift) {
+#else
 				if (hypot(dx, dy) <= maxshift) {
+#endif			
 					EMData *uw = u->unwrap(4, u->get_ysize() / 2 - 2 - maxshift, xst, dx, dy, true);
 					EMData *uwc = uw->copy();
 					EMData *a = uw->calc_ccfx(to);

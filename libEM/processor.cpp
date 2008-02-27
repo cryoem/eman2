@@ -354,7 +354,11 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	for (i=0; i<n; i+=2) {
 		float c;
 		if (dosqrt) c=pow(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1],0.25f);
+#ifdef	_WIN32
+		else c = static_cast<float>(_hypot(fftd[i],fftd[i+1]));
+#else
 		else c = static_cast<float>(hypot(fftd[i],fftd[i+1]));
+#endif	//_WIN32
 		if (c==0) c=1.0e-30f;	// prevents divide by zero in normalization
 		fftd[i]*=c;
 		fftd[i+1]*=c;
@@ -397,7 +401,7 @@ void LinearPyramidProcessor::process_inplace(EMData *image) {
 	for (int y=0; y<ny; y++) {
 		for (int x=0; x<nx; x++) {
 			int l=x+y*nx;
-			d[l]*=1.0-abs(x-nx/2)*abs(y-ny/2)*4.0/(nx*ny);
+			d[l]*=1.0f-abs(x-nx/2)*abs(y-ny/2)*4.0f/(nx*ny);
 		}
 	}
 	image->update();
@@ -1025,7 +1029,11 @@ void CutoffBlockProcessor::process_inplace(EMData * image)
 						continue;
 					}
 
+#ifdef	_WIN32
+					if (_hypot(j, i) < value2) {
+#else
 					if (hypot(j, i) < value2) {
+#endif
 						int t = j * 2 + (i + v1 / 2) * (v1 + 2);
 						sum += (fft_data[t] * fft_data[t] + fft_data[t + 1] * fft_data[t + 1]);
 						nitems++;
@@ -1744,7 +1752,11 @@ void BeamstopProcessor::process_inplace(EMData * image)
 	for (int i = 0; i < nx; i++) {
 		for (int j = 0; j < ny; j++) {
 
+#ifdef	_WIN32
+			int r = Util::round(_hypot((float) i - cenx, (float) j - ceny));
+#else
 			int r = Util::round(hypot((float) i - cenx, (float) j - ceny));
+#endif	//_WIN32
 
 			if (value1 < 0) {
 				if (data[i + j * nx] < (mean_values[r] - sigma_values[r] * thr)) {
@@ -2656,7 +2668,11 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 	int c = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx; x++, c++) {
+#ifdef	_WIN32
+			float r = (float) _hypot(x - nx / 2.0f, y - ny / 2.0f);
+#else
 			float r = (float) hypot(x - nx / 2.0f, y - ny / 2.0f);
+#endif	//_WIN32
 
 			int i = (int) floor(r);
 			r -= i;
@@ -2693,7 +2709,11 @@ void RadialSubstractProcessor::process_inplace(EMData * image)
 	int c = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx; x++, c++) {
+#ifdef	_WIN32
+			float r = (float) _hypot(x - nx / 2, y - ny / 2);
+#else
 			float r = (float) hypot(x - nx / 2, y - ny / 2);
+#endif	
 			int i = (int) floor(r);
 			r -= i;
 			if (i >= 0 && i < nx / 2 - 1) {
@@ -3598,7 +3618,11 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 
 	for (int l = 0; l < d_ny; l++) {
 		for (int j = 0; j < d_nx; j++) {
+#ifdef	_WIN32
+			if (_hypot(l - d_ny / 2, j - d_nx / 2) >= d_ny / 2) {
+#else
 			if (hypot(l - d_ny / 2, j - d_nx / 2) >= d_ny / 2) {
+#endif	
 				dn[k] = -dn_const;
 			}
 			else if (dd[k] < threshold_sigma) {
@@ -4972,8 +4996,8 @@ void TestImageGradient::process_inplace(EMData * image)
 {
 	string axis = params.set_default("axis", "x");
 	
-	float m = params.set_default("m", 1.0);
-	float b = params.set_default("b", 0.0);
+	float m = params.set_default("m", 1.0f);
+	float b = params.set_default("b", 0.0f);
 	
 	if ( axis != "z" && axis != "y" && axis != "x") throw InvalidParameterException("Axis must be x,y or z");
 	
@@ -5112,7 +5136,11 @@ void TestImageScurve::process_inplace(EMData * image)
 		int y=ny/4+i*ny/200;
 		for (int xx=x-nx/10; xx<x+nx/10; xx++) {
 			for (int yy=y-ny/10; yy<y+ny/10; yy++) {
+#ifdef	_WIN32
+				(*image)(xx,yy)+=exp(-pow(static_cast<float>(_hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
+#else
 				(*image)(xx,yy)+=exp(-pow(static_cast<float>(hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
+#endif
 			}
 		}
 	}
@@ -5974,9 +6002,9 @@ void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const
 	int endz  = (int)region.origin[2] + (int)region.size[2]/2;
 	
 	if ( t3d != NULL ) {
-		for ( float z = startz; z < endz; z += 0.25 ) {
-			for ( float y = starty; y < endy; y += 0.25 ) {
-				for ( float x = startx; x < endx; x += 0.25 ) {
+		for ( float z = (float)startz; z < (float)endz; z += 0.25f ) {
+			for ( float y = (float)starty; y < (float)endy; y += 0.25f ) {
+				for ( float x = (float)startx; x < (float)endx; x += 0.25f ) {
 					float xt = (float) x - region.origin[0];
 					float yt = (float) y - region.origin[1];
 					float zt = (float) z - region.origin[2];
@@ -6010,21 +6038,21 @@ void TestTomoImage::insert_solid_ellipse( EMData* image, const Region& region, c
 	int maxrad = ( radiusx > radiusy ? radiusx : radiusy );
 	maxrad = ( maxrad > radiusz ? maxrad : radiusz );
 	
-	float length = radiusx*radiusx + radiusy*radiusy + radiusz*radiusz;
+	float length = (float)(radiusx*radiusx + radiusy*radiusy + radiusz*radiusz);
 	length = sqrtf(length);
 	
-	float xinc = radiusx/length/2.0;
-	float yinc = radiusy/length/2.0;
-	float zinc = radiusz/length/2.0;
+	float xinc = radiusx/length/2.0f;
+	float yinc = radiusy/length/2.0f;
+	float zinc = radiusz/length/2.0f;
 	
 	for ( float rad = 0; rad <= 2.0*length; rad += 1.0 ) {
 		float rx = xinc + rad*xinc;
 		float ry = yinc + rad*yinc;
 		float rz = zinc + rad*zinc;
-		for ( float beta = -90.0; beta <= 90.0; beta += 0.2 ) {
-			for ( float lambda = -180.0; lambda <= 180.0; lambda += 0.2 ) {
-				float b = deg2rad * beta;
-				float l = deg2rad * lambda;
+		for ( float beta = -90.0f; beta <= 90.0f; beta += 0.2f ) {
+			for ( float lambda = -180.0f; lambda <= 180.0f; lambda += 0.2f ) {
+				float b = (float)(deg2rad * beta);
+				float l = (float)(deg2rad * lambda);
 				if ( t3d != NULL ) {
 					float z = rz * sin(b);
 					float y = ry * cos(b) * sin(l);
@@ -6059,10 +6087,10 @@ void TestTomoImage::insert_hollow_ellipse( EMData* image, const Region& region, 
 		int rx = radiusx + tmprad;
 		int ry = radiusy + tmprad;
 		int rz = radiusz + tmprad;
-		for ( float beta = -90.0; beta <= 90.0; beta += 0.2 ) {
-			for ( float lambda = -180.0; lambda <= 180.0; lambda += 0.2 ) {
-				float b = deg2rad * beta;
-				float l = deg2rad * lambda;
+		for ( float beta = -90.0f; beta <= 90.0f; beta += 0.2f ) {
+			for ( float lambda = -180.0f; lambda <= 180.0f; lambda += 0.2f ) {
+				float b = (float)(deg2rad * beta);
+				float l = (float)(deg2rad * lambda);
 				
 				if ( t3d != NULL ) {
 					float z = rz * sin(b);
@@ -6092,54 +6120,54 @@ void TestTomoImage::process_inplace( EMData* image )
 	// This increment is used to simplified positioning
 	// It's an incremental factor that matches the grid size of the paper
 	// that I drew this design on before implementing it in code
-	float inc = 1.0/22.0;
+	float inc = 1.0f/22.0f;
 	
 	image->set_size((int)nx,(int)ny,(int)nz);
 	
 	Region region(nx/2.0,ny/2.,nz/2.,.4*nx,0.4*ny,0.4*nz);
-	insert_solid_ellipse(image, region, 0.1);
-	insert_hollow_ellipse(image, region, 0.2, 3);	
+	insert_solid_ellipse(image, region, 0.1f);
+	insert_hollow_ellipse(image, region, 0.2f, 3);	
 	
 	// Center x, center z, bottom y ellipsoids that grow progessively smaller
 	{
 		Region region(nx/2.,ny*4.*inc,nz/2.,2.*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3);
+		insert_solid_ellipse(image, region, 0.3f);
 	}
 	
 	{
 		Region region(nx/2.,ny*5.5*inc,nz/2.,1.5*inc*nx,.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.0);
+		insert_solid_ellipse(image, region, 0.0f);
 	}
 	
 	{
 		Region region(nx/2.,ny*7.*inc,nz/2.,1.*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3);
+		insert_solid_ellipse(image, region, 0.3f);
 	}
 	
 	{
 		Region region(nx/2.,ny*8.5*inc,nz/2.,0.75*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.0);
+		insert_solid_ellipse(image, region, 0.0f);
 	}
 	
 	// Center x, center z, bottom y ellipsoids that grow progessively smaller
 	{
 		Region region(nx/2.,ny*18.*inc,nz/2.,2.*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3);
+		insert_solid_ellipse(image, region, 0.3f);
 	}
 	
 	{
 		Region region(nx/2.,ny*16.5*inc,nz/2.,1.5*inc*nx,.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3);
+		insert_solid_ellipse(image, region, 0.3f);
 	}
 	
 	{
 		Region region(nx/2.,ny*15.*inc,nz/2.,1.*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3);
+		insert_solid_ellipse(image, region, 0.3f);
 	}
 	
 	{
 		Region region(nx/2.,ny*13.5*inc,nz/2.,0.75*inc*nx,0.5*inc*ny,1.*inc*nz);
-		insert_solid_ellipse(image, region, 0.3);
+		insert_solid_ellipse(image, region, 0.3f);
 	}
 	
 	// Left ellipsoids from the bottom up
@@ -6194,99 +6222,99 @@ void TestTomoImage::process_inplace( EMData* image )
 	{
 		Region region(nx/2.,ny/2.,nz/2.,2.*inc*nx,2.5*inc*ny,1.*inc*nz);
 		Transform3D t3d(-25.0,0.,0.);
-		insert_rectangle(image, region, 0.4, &t3d);
+		insert_rectangle(image, region, 0.4f, &t3d);
 	}
 	
 	// Rotated ellipsoids
 	{
 		Region region(nx*6.8*inc,ny*16.*inc,nz/2.,1.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
 		Transform3D t3d(45.0,0.,0.);
-		insert_solid_ellipse(image, region, 0.2, &t3d);
+		insert_solid_ellipse(image, region, 0.2f, &t3d);
 	}
 	{
 		Region region(nx*7.2*inc,ny*16.*inc,nz/2.,1.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
 		Transform3D t3d(135.0,0.,0.);
-		insert_solid_ellipse(image, region, 0.3, &t3d);
+		insert_solid_ellipse(image, region, 0.3f, &t3d);
 	}
 	
 	// Dense small ellipsoids
 	{
 		Region region(nx*4.*inc,ny*8.*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05);
+		insert_solid_ellipse(image, region, 2.05f);
 	}
 	{
 		Region region(nx*8.*inc,ny*18.*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05);
+		insert_solid_ellipse(image, region, 2.05f);
 	}
 	{
 		Region region(nx*14.*inc,ny*18.2*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05);
+		insert_solid_ellipse(image, region, 2.05f);
 	}
 	
 	{
 		Region region(nx*18.*inc,ny*14.*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05);
+		insert_solid_ellipse(image, region, 2.05f);
 	}
 	
 	{
 		Region region(nx*17.*inc,ny*7.5*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, 2.05);
+		insert_solid_ellipse(image, region, 2.05f);
 	}
 	
 	// Dense small rectangles
 	{
 		Region region(nx*18.*inc,ny*11.5*inc,nz/2.,1.*inc*nx,1.*inc*ny,1.*inc*nz);
 		Transform3D t3d(45.0,0.,0.);
-		insert_rectangle(image, region, 1.45, &t3d);
+		insert_rectangle(image, region, 1.45f, &t3d);
 	}
 	{
 		Region region(nx*3.5*inc,ny*10.5*inc,nz/2.,1.*inc*nx,1.*inc*ny,1.*inc*nz);
 		Transform3D t3d(45.0,0.,0.);
-		insert_rectangle(image, region, 1.45, &t3d);
+		insert_rectangle(image, region, 1.45f, &t3d);
 	}
 	
 	// Insert small cluster of spheres
 	{
 		Region region(nx*14.*inc,ny*7.5*inc,nz/2.,0.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 	{
 		Region region(nx*15.*inc,ny*7.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 	{
 		Region region(nx*13.5*inc,ny*6.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 	{
 		Region region(nx*14.5*inc,ny*6.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 	{
 		Region region(nx*15.5*inc,ny*6.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 	
 	{
 		Region region(nx*14.*inc,ny*5.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 	{
 		Region region(nx*15.*inc,ny*5.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 	{
 		Region region(nx*16.*inc,ny*5.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 
 	{
 		Region region(nx*14.5*inc,ny*4.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 	{
 		Region region(nx*15.5*inc,ny*4.5*inc,nz/2.,0.25*inc*nx,0.25*inc*ny,0.25*inc*nz);
-		insert_solid_ellipse(image, region, .35);
+		insert_solid_ellipse(image, region, .35f);
 	}
 	
 	// Insert feducials around the outside of the "cell"
@@ -6325,7 +6353,7 @@ void HistogramBin::process_inplace(EMData *image)
 	if ( nbins < 0 ) throw InvalidParameterException("nbins must be greater than 0");
 	
 	float bin_width = (max-min)/nbins;
-	float bin_val_offset = bin_width/2.0;
+	float bin_val_offset = bin_width/2.0f;
 	
 	int size = image->get_xsize()*image->get_ysize()*image->get_zsize();
 	float* dat = image->get_data();
@@ -6473,7 +6501,7 @@ void TomoTiltAngleWeightProcessor::process_inplace( EMData* image )
 	if ( fim ) {
 		alt = image->get_attr("euler_alt");
 	}
-	else alt = params.set_default("angle", 0.0);
+	else alt = params.set_default("angle", 0.0f);
 	
 	float cosine = cos(alt*M_PI/180.0f);
 	float mult_fac =  1.0f/(cosine);
@@ -6492,7 +6520,7 @@ void TomoTiltEdgeMaskProcessor::process_inplace( EMData* image )
 	if ( fim ) {
 		alt = image->get_attr("euler_alt");
 	}
-	else alt = params.set_default("angle", 0.0);
+	else alt = params.set_default("angle", 0.0f);
 	
 	
 	float cosine = cos(alt*M_PI/180.0f);

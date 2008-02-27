@@ -1331,7 +1331,7 @@ int AsymmUnitCoverer::get_orientations_tally(const Symmetry3D* const sym, const 
 	float altmax = delimiters["alt_max"];
 	float azmax = delimiters["az_max"];
 
-	float alt_iterator = 0.0;
+	float alt_iterator = 0.0f;
 	
 	// #If it's a h symmetry then the alt iterator starts at very close
 	// #to the altmax... the object is a h symmetry then it knows its alt_min...
@@ -1342,7 +1342,7 @@ int AsymmUnitCoverer::get_orientations_tally(const Symmetry3D* const sym, const 
 		float h = get_az_prop(prop,alt_iterator, sym->get_max_csym() );
 
 		// not sure what this does code taken from EMAN1 - FIXME original author add comments
-		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1;
+		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8f) ) h = azmax / 2.1f;
 		else if (alt_iterator == 0) h = azmax;
 			
 		float az_iterator = 0.0;
@@ -1390,15 +1390,15 @@ float AsymmUnitCoverer::get_optimal_prop(const Symmetry3D* const sym, const int&
 			// If this is the case, the requested number of projections is practically infeasible
 			// in which case just return the nearest guess
 			soln_found = true;
-			prop_soln = (prop_upper_bound+prop_lower_bound)/2.0;
+			prop_soln = (prop_upper_bound+prop_lower_bound)/2.0f;
 		}
 		else if (tally < n) {
 			prop_upper_bound = prop_soln;
-			prop_soln = prop_soln - (prop_soln-prop_lower_bound)/2.0;
+			prop_soln = prop_soln - (prop_soln-prop_lower_bound)/2.0f;
 		}
 		else  /* tally > n*/{
 			prop_lower_bound = prop_soln;
-			prop_soln = prop_soln  + (prop_upper_bound-prop_soln)/2.0;
+			prop_soln = prop_soln  + (prop_upper_bound-prop_soln)/2.0f;
 		}
 	}
 	
@@ -1425,24 +1425,24 @@ bool AsymmUnitCoverer::add_orientation(vector<Transform3D>& v, const float& az, 
 float AsymmUnitCoverer::get_az_prop(const float& prop,const float& altitude, const int maxcsym) const
 {
 	// convert altitude into radians
-	float tmp = EMConsts::deg2rad * altitude;
+	float tmp = (float)(EMConsts::deg2rad * altitude);
 			
 	// This is taken from EMAN1 project3d.C
-	float h=floor(360.0/(prop*1.1547));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
+	float h=floor(360.0f/(prop*1.1547f));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
 	h=(int)floor(h*sin(tmp)+.5);
 	if (h==0) h=1;
-	h=abs(maxcsym)*floor(h/(float)abs(maxcsym)+.5);
-	if ( h == 0 ) h = maxcsym;
-	h=2.0*M_PI/h;
+	h=abs(maxcsym)*floor(h/(float)abs(maxcsym)+.5f);
+	if ( h == 0 ) h = (float)maxcsym;
+	h=2.0f*M_PI/h;
 	
-	return EMConsts::rad2deg*h;
+	return (float)(EMConsts::rad2deg*h);
 }
 
 vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const sym) const
 {	
-	float prop = params.set_default("prop", 0);
+	float prop = params.set_default("prop", 0.0f);
 	int n = params.set_default("n", 0);
-	float phitoo = params.set_default("phitoo",0);
+	float phitoo = params.set_default("phitoo",0.0f);
 	
 	if ( prop <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero prop or n");
 	if ( prop > 0 && n > 0 ) throw InvalidParameterException("Error, the prop and the n arguments are mutually exclusive");
@@ -1470,7 +1470,7 @@ vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const s
 		float h = get_az_prop(prop,alt_iterator, sym->get_max_csym() );
 
 		// not sure what this does code taken from EMAN1 - FIXME original author add comments
-		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1;
+		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1f;
 		else if (alt_iterator == 0) h = azmax;
 			
 		float az_iterator = 0.0;
@@ -1495,8 +1495,8 @@ vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const s
 			}
 				
 			if ( perturb &&  alt_soln != 0 ) {
-				alt_soln += Util::get_gauss_rand(0.0,.25*prop);
-				az_soln += Util::get_gauss_rand(0.0,h/4.0);
+				alt_soln += Util::get_gauss_rand(0.0f,.25f*prop);
+				az_soln += Util::get_gauss_rand(0.0f,h/4.0f);
 			}
 				
 			add_orientation(ret,az_soln,alt_soln,0,phitoo);
@@ -1577,7 +1577,7 @@ Dict HSym::get_delimiters(const bool inc_mirror) const {
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
 	
-	float equator_range = params.set_default("equator_range",5.0);
+	float equator_range = params.set_default("equator_range",5.0f);
 	
 	returnDict["alt_max"] = 90.0 + equator_range;
 	
@@ -1590,8 +1590,8 @@ Dict HSym::get_delimiters(const bool inc_mirror) const {
 
 Transform3D HSym::get_sym(int n) const
 {
-	float daz = params.set_default("daz",0);
-	float apix = params.set_default("apix",1.0);
+	float daz = params.set_default("daz",0.0f);
+	float apix = params.set_default("apix",1.0f);
 	float dz = params.set_default("dz", 0)/apix;
 	
 	Transform3D ret;
@@ -1606,13 +1606,13 @@ void PlatonicSym::init()
 	//See the manuscript "The Transform Class in Sparx and EMAN2", Baldwin & Penczek 2007. J. Struct. Biol. 157 (250-261)
 	//In particular see pages 257-259
 	//cap_sig is capital sigma in the Baldwin paper
-	float cap_sig =  2.0*M_PI/ get_max_csym();
+	float cap_sig =  2.0f*M_PI/ get_max_csym();
 	//In EMAN2 projection cap_sig is really az_max
 	platonic_params["az_max"] = cap_sig;
 			
 	// Alpha is the angle between (immediately) neighborhing 3 fold axes of symmetry
 	// This follows the conventions in the Baldwin paper
-	float alpha = acos(1.0/(sqrtf(3.0)*tan(cap_sig/2.0)));
+	float alpha = acos(1.0f/(sqrtf(3.0f)*tan(cap_sig/2.0f)));
 	// In EMAN2 projection alpha is really al_maz
 	platonic_params["alt_max"] = alpha;
 			
@@ -1639,7 +1639,7 @@ Dict PlatonicSym::get_delimiters(const bool inc_mirror) const
 bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const
 {
 	// Convert azimuth to radians
-	float tmpaz = EMConsts::deg2rad * azimuth;
+	float tmpaz = (float)(EMConsts::deg2rad * azimuth);
 	
 	float cap_sig = platonic_params["az_max"];
 	float alt_max = platonic_params["alt_max"];
@@ -1648,7 +1648,7 @@ bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth, c
 	float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
 	
 	// convert altitude to radians
-	float tmpalt = EMConsts::deg2rad * altitude;
+	float tmpalt = (float)(EMConsts::deg2rad * altitude);
 	if ( lower_alt_bound > tmpalt ) {
 		if ( inc_mirror == false )
 		{
@@ -1666,9 +1666,9 @@ float PlatonicSym::platonic_alt_lower_bound(const float& azimuth, const float& a
 	float cap_sig = platonic_params["az_max"];
 	float theta_c_on_two = platonic_params["theta_c_on_two"];
 	
-	float baldwin_lower_alt_bound = sin(cap_sig/2.0-azimuth)/tan(theta_c_on_two);
+	float baldwin_lower_alt_bound = sin(cap_sig/2.0f-azimuth)/tan(theta_c_on_two);
 	baldwin_lower_alt_bound += sin(azimuth)/tan(alpha);
-	baldwin_lower_alt_bound *= 1/sin(cap_sig/2.0);
+	baldwin_lower_alt_bound *= 1/sin(cap_sig/2.0f);
 	baldwin_lower_alt_bound = atan(1/baldwin_lower_alt_bound);
 
 	return baldwin_lower_alt_bound;
@@ -1732,7 +1732,7 @@ Transform3D OctahedralSym::get_sym(int n) const
 bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const
 {
 	// convert azimuth to radians
-	float tmpaz = EMConsts::deg2rad * azimuth;
+	float tmpaz = (float)(EMConsts::deg2rad * azimuth);
 		
 	float cap_sig = platonic_params["az_max"];
 	float alt_max = platonic_params["alt_max"];
@@ -1741,10 +1741,10 @@ bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth
 	float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
 	
 	// convert altitude to radians
-	float tmpalt = EMConsts::deg2rad * altitude;
+	float tmpalt = (float)(EMConsts::deg2rad * altitude);
 	if ( lower_alt_bound > tmpalt ) {
 		if ( !inc_mirror ) {
-			float upper_alt_bound = platonic_alt_lower_bound( tmpaz, alt_max/2.0);
+			float upper_alt_bound = platonic_alt_lower_bound( tmpaz, alt_max/2.0f);
 			// you could change the "<" to a ">" here to get the other mirror part of the asym unit
 			if ( upper_alt_bound < tmpalt ) return false;
 			else return true;

@@ -430,7 +430,7 @@ string Util::sbasename(const string & filename)
 #ifdef WIN32
 	s = '\\';
 #endif
-	char * c = strrchr(filename.c_str(), s);
+	const char * c = strrchr(filename.c_str(), s);
     if (!c) {
         return filename;
     }
@@ -448,7 +448,7 @@ string Util::get_filename_ext(const string& filename)
     }
 
 	string result = "";
-	char *ext = strrchr(filename.c_str(), '.');
+	const char *ext = strrchr(filename.c_str(), '.');
 	if (ext) {
 		ext++;
 		result = string(ext);
@@ -987,7 +987,7 @@ float* Util::getBaldwinGridWeights( const int& freq_cutoff, const float& P, cons
 			int evenoddfac = ( kdiff % 2 == 0 ? 1 : -1);
 
 			if (kdiff !=0){
-				float val = sin(M_PI*(float)kdiff*r)/(sin(M_PI*(float)kdiff/(float)P))*(alpha+2.0*beta*evenoddfac);
+				float val = sin(M_PI*(float)kdiff*r)/(sin(M_PI*(float)kdiff/(float)P))*(alpha+2.0f*beta*evenoddfac);
 				gsl_matrix_set(M,int(k+freq_cutoff),int(kp+freq_cutoff),val);
 			}
 		}
@@ -1010,14 +1010,14 @@ float* Util::getBaldwinGridWeights( const int& freq_cutoff, const float& P, cons
 	
 	// we want to solve for W, which ranges from -freq_cutoff to +freq_cutoff in steps of dfreq                            2
 	int Count=0;
-	for(float q = -freq_cutoff; q <= freq_cutoff; q+= dfreq){
+	for(float q = (float)(-freq_cutoff); q <= (float)(freq_cutoff); q+= dfreq){
 		float temp=0;
 		for(int k = -freq_cutoff; k <= freq_cutoff; ++k){
 			float dtemp;
 			if (q!=k) { 
-				dtemp=(1/(float) P)* gsl_vector_get(soln,int(k+freq_cutoff))  * sin(M_PI*(q-k))/sin(M_PI*(q-k)/((float) P));
+				dtemp=(1/(float) P)* (float)gsl_vector_get(soln,int(k+freq_cutoff))  * sin(M_PI*(q-k))/sin(M_PI*(q-k)/((float) P));
 			} else{
-				dtemp = (1/(float) P)* gsl_vector_get(soln,int(k+freq_cutoff))  * P;
+				dtemp = (1/(float) P)* (float)gsl_vector_get(soln,int(k+freq_cutoff))  * P;
 			}				
 			temp +=dtemp;
 		}

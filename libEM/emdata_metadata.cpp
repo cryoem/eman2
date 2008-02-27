@@ -727,7 +727,7 @@ EMObject EMData::get_attr(const string & key) const
 		qsort(tmp, n, sizeof(float), &greaterthan);
 		float median;
 		if (n%2==1) median = tmp[n/2];
-		else median = (tmp[n/2-1]+tmp[n/2])/2.0;
+		else median = (tmp[n/2-1]+tmp[n/2])/2.0f;
 		attr_dict["median"] = median;
 		delete [] tmp;
 		return attr_dict["median"];
@@ -745,7 +745,7 @@ EMObject EMData::get_attr(const string & key) const
 		unsigned int vsize = tmp.size();
 		float median;
 		if (vsize%2==1) median = tmp[vsize/2];
-		else median = (tmp[vsize/2-1]+tmp[vsize/2])/2.0;
+		else median = (tmp[vsize/2-1]+tmp[vsize/2])/2.0f;
 		attr_dict["median"] = median;
 		return attr_dict["median"];
 	}

@@ -116,7 +116,11 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	for (int y = 0; y < f_ny; y++) {
 		for (int x = 0; x < f_nx / 2; x++) {
 			int ii = x * 2 + y * f_nx;
+#ifdef	_WIN32
+			if (_hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
+#else
 			if (hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
+#endif	//_WIN32
 				data[ii] = 0;
 				data[ii + 1] = 0;
 			}
@@ -690,13 +694,24 @@ EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 				dat[k] = 2.0f;
 			}
 			else {
+#ifdef	_WIN32
+				v0[0] = 1.0f / (float)_hypot(1, slx);
+				v0[1] = 0;
+				v0[2] = slx / (float)_hypot(1, slx);
+#else
 				v0[0] = 1.0f / (float)hypot(1, slx);
 				v0[1] = 0;
 				v0[2] = slx / (float)hypot(1, slx);
+#endif
 
 				v1[0] = 0;
+#ifdef	_WIN32
+				v1[1] = 1.0f / (float)_hypot(1, sly);
+				v1[2] = sly / (float)_hypot(1, sly);
+#else
 				v1[1] = 1.0f / (float)hypot(1, sly);
 				v1[2] = sly / (float)hypot(1, sly);
+#endif	//_WIN32
 
 				v2[0] = v0[1] * v1[2] - v0[2] * v1[1];
 				v2[1] = v0[2] * v1[0] - v0[0] * v1[2];
@@ -813,7 +828,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 	else if ( image->get_ndim() == 2 ) {
 		
 		float alt = p["alt"];
-		alt = -(alt*M_PI/180.0);
+		alt = -(alt*M_PI/180.0f);
 		
 		float cosalt = cos(alt);
 		float sinalt = sin(alt);
