@@ -71,7 +71,7 @@ unsigned int EMData::gen_glu_mipmaps() const
 	else {
 #ifdef	_WIN32
 		//There is no gluBuild3DMipmaps() function in glu.h for VS2003 and VS2005
-		printf("3D GL is not available on this platform.\n");
+		printf("3D OpenGL mipmaps are not available on this platform.\n");
 #else
 		glBindTexture(GL_TEXTURE_3D, tex_name);
 		gluBuild3DMipmaps(GL_TEXTURE_3D, GL_LUMINANCE, nx, ny, nz, GL_LUMINANCE, GL_FLOAT, (void*)get_data());

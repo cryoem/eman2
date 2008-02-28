@@ -129,7 +129,7 @@ class EMOpenGLFlagsAndTools:
 						print "EMAN(ALPHA) message: No support for glBlendEquation detected. Disabling."
 					else:
 						self.use_blend_equation = True
-						print "EMAN(ALPHA) message: Support for glBlendEquation detected.."
+						print "EMAN(ALPHA) message: Support for glBlendEquation detected."
 				except:
 					print "error, OpenGL seems not to be initialized"
 					return False

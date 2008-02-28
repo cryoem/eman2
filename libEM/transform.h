@@ -305,14 +305,13 @@ namespace EMAN
 	};
 	
 	/** Symmetry3D 
-	* an abstract (meaning it has pure virtual functions) base class for Symmetry3D objects
+	* An abstract (meaning it has pure virtual functions) base class for Symmetry3D objects
 	* Objects of this type must provide delimiters for the asymmetric unit (get_delimiters), and
 	* must also provide all of the rotational symmetric operations (get_sym(int n)).
 	* get_delimiter returns a dictionary with "alt_max" and "az_max" keys, which correspond to the
 	* encompassing azimuth and altitude angles of the asymmetric unit. These can be interpreted in a
 	* relatively straight forward fashion when dealing with C and D symmetries to demarcate the asymmetric
-	* unit, however when dealing with Platonic symmetries the story is not so basic.... to be continued
-	*
+	* unit, however when dealing with Platonic symmetries the asymmetric unit is not so trivial.
 	* see http://blake.bcm.edu/emanwiki/EMAN2/Symmetry for figures and description of what we're doing
 	* here, for all the symmetries
 	* @author David Woolford
@@ -324,7 +323,6 @@ namespace EMAN
 		Symmetry3D() {};
 		virtual  ~Symmetry3D() {};
 		
-		// Symmetry virtual behavior
 		virtual Dict get_delimiters(const bool inc_mirror=false) const = 0;
 		
 		virtual Transform3D get_sym(int n) const = 0;
@@ -348,21 +346,37 @@ namespace EMAN
 
 	};
 	
+	/** An encapsulation of cyclic 3D symmetry
+	 * @author David Woolford (based on previous work by Phil Baldwin and Steve Ludtke)
+	 * @date Feb 2008
+	 */
 	class CSym : public Symmetry3D
 	{
 		public:
 		CSym() {};
 		virtual  ~CSym() {};
 		
+		/** Factory support function NEW
+		 * @return a newly instantiated class of this type
+		 */
 		static Symmetry3D *NEW()
 		{
 			return new CSym();
 		}
 		
+		/** Return CSym::NAME
+		 * @return the unique name of this class
+		 */
 		virtual string get_name() const { return NAME; }
 
+		/** Get a description
+		 * @return a clear desciption of this class
+		 */
 		virtual string get_desc() const { return "C symmetry support"; }
 		
+		/** Get a dictionary containing the permissable parameters of this class
+		 * @return a dictionary containing the permissable parameters of this class
+		 */
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -370,32 +384,72 @@ namespace EMAN
 			return d;
 		}
 		
+		/** Get the altitude and phi angle of the c symmetry, which depends on nysm.
+		 * The "alt_max" value in the return dicts is 180 or 90 degrees, depending inc_mirror
+		 * The "az_max" is 360/nsym degrees.
+		 * @param inc_mirror whether or not to include the part of the asymmetric unit which contains the mirror projections of the other half
+		 * @return a dictionary containing the keys "alt_max" and "az_max"
+		 * @exception InvalidValueException if nsym is less than or equal to zero
+		 */
 		virtual Dict get_delimiters(const bool inc_mirror=false) const;
 		
+		/** Provides access to the complete set of rotational symmetry operations associated with this symmetry.
+		 * Rotational symmetry operations for C symmetry are always about the z-axis (in the EMAN convention), and
+		 * therefore the only non zero return angle is azimuth. Specifically, it is n*360/nsym degrees.
+		 * @param n the rotational symmetry operation number. If n is greater than nsym we take n modulo nsym 
+		 * @return a transform3d containing the correct rotational symmetric operation.
+		 * @exception InvalidValueException if nsym is less than or equal to zero
+		 */
 		virtual Transform3D get_sym(int n) const;
 
+		/** Gets the total number of unique roational symmetry operations associated with this symmetry
+		* For C symmetry, this is simply nsym
+		* @return the degree of of cyclic symmetry (nsym)
+		*/
 		virtual int get_nsym() const { return params["nsym"]; };
 		
+		
+		/** Gets the maximum symmetry of this object. This is used by OrientationGenerators, and is
+		 * probably not something a general user would utilize.
+		 * @return the degree of of cyclic symmetry (nsym) - this is the maximum symmetry
+		 */
 		virtual int get_max_csym() const { return params["nsym"]; }
 		
+		/// The name of this class - used to access it from factories etc. Should be "c"
 		static const string NAME;
 	};
 	
+	/** An encapsulation of di-cyclic 3D symmetry
+	 * @author David Woolford (based on previous work by Phil Baldwin and Steve Ludtke)
+	 * @date Feb 2008
+	 */
 	class DSym : public Symmetry3D
 	{
 		public:
 		DSym() {};
 		virtual  ~DSym() {};
 		
+		/** Factory support function NEW
+		 * @return a newly instantiated class of this type
+		 */
 		static Symmetry3D *NEW()
 		{
 			return new DSym();
 		}
 		
+		/** Return DSym::NAME
+		 * @return the unique name of this class
+		 */
 		virtual string get_name() const { return NAME; }
-
+		
+		/** Get a description
+		 * @return a clear desciption of this class
+		 */
 		virtual string get_desc() const { return "D symmetry support"; }
 		
+		/** Get a dictionary containing the permissable parameters of this class
+		 * @return a dictionary containing the permissable parameters of this class
+		 */
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -403,14 +457,39 @@ namespace EMAN
 			return d;
 		}
 		
+		/** Get the altitude and phi angle of the d symmetry, which depends on nysm.
+		 * The "alt_max" is always 90 degrees
+		 * The "az_max" is 360/nsym degrees of 180/nsym, depending the inc_mirror argument
+		 * @param inc_mirror whether or not to include the part of the asymmetric unit which contains the mirror projections of the other half
+		 * @return a dictionary containing the keys "alt_max" and "az_max"
+		 * @exception InvalidValueException if nsym is less than or equal to zero
+		 */
 		virtual Dict get_delimiters(const bool inc_mirror=false) const;
 		
+		/** Provides access to the complete set of rotational symmetry operations associated with this symmetry.
+		 * The first half symmetry operations returned by this function are all about the z axis (i.e. only azimuth
+		 * is non zero. The second half of the symmetry operations are replicas of the first half, except that they
+		 * have an additional 180 degree rotation about x (in EMAN terms, the altitude angle is 180).
+		 * @param n the rotational symmetry operation number. If n is greater than nsym we take n modulo nsym 
+		 * @return a transform3d containing the correct rotational symmetric operation.
+		 * @exception InvalidValueException if nsym is less than or equal to zero
+		 */
 		virtual Transform3D get_sym(int n) const;
 		
+		/** Gets the total number of unique roational symmetry operations associated with this symmetry
+		 * For D symmetry, this is simply 2*nsym
+		 * @return two times nsym
+		 */
 		virtual int get_nsym() const { return 2*(int)params["nsym"]; };
 		
+		
+		/** Gets the maximum symmetry of this object. This is used by OrientationGenerators, and is
+		 * probably not something a general user would utilize.
+		 * @return nsym - this is the maximum symmetry about a given any axis for D symmetry
+		 */
 		virtual int get_max_csym() const { return params["nsym"]; }
 		
+		/// The name of this class - used to access it from factories etc. Should be "d"
 		static const string NAME;
 	};
 	

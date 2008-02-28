@@ -1531,9 +1531,10 @@ Transform3D CSym::get_sym(int n) const {
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero n");
 			
+	
 	Transform3D ret;
 	// courtesy of Phil Baldwin
-	ret.set_rotation( n * 360.0f / nsym, 0, 0);
+	ret.set_rotation( (n%nsym) * 360.0f / nsym, 0, 0);
 	return ret;
 }
 
@@ -1561,10 +1562,10 @@ Transform3D DSym::get_sym(int n) const
 	// courtesy of Phil Baldwin
 	Transform3D ret;
 	if (n >= nsym / 2) {
-		ret.set_rotation((n - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
+		ret.set_rotation(( (n%nsym) - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
 	}
 	else {
-		ret.set_rotation( n * 360.0f / (nsym / 2),0, 0);
+		ret.set_rotation( (n%nsym) * 360.0f / (nsym / 2),0, 0);
 	}
 	return ret;
 }
