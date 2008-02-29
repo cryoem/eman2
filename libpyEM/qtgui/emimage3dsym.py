@@ -96,9 +96,11 @@ class EM3DSymViewer(EMImage3DObject):
 		self.perturb = False
 		self.nomirror = True
 		
+		self.sym_object = None
+		
 		self.radius = 50
 		
-		self.arc_t = 10
+		self.arc_t = 16
 		self.arc_dl = 0;
 		self.cylinderdl = 0
 		
@@ -123,7 +125,6 @@ class EM3DSymViewer(EMImage3DObject):
 		
 	def traceGreatArcs(self, points):
 		# this functionality is momentarily disabled for the night
-		return
 		if ( self.cylinderdl == 0 ):
 			self.cylinderdl=glGenLists(1)
 				
@@ -141,47 +142,45 @@ class EM3DSymViewer(EMImage3DObject):
 			return
 		
 		self.arc_dl=glGenLists(1)
+		
 		glNewList(self.arc_dl,GL_COMPILE)
-		
-		
 		
 		for i in range(0,n):
 			p1 = points[i]
 			if ( i == n-1 ): p2 = points[0]
 			else: p2 = points[i+1]
-			
 			angle = acos(p2.dot(p1))
 			sinangle = sin(angle)
-			
-			prev = p1
-			for t in range(1, self.arc_t):
+			prev = self.radius*Vec3f(p1[0],p1[1],p1[2])
+			for t in range(1, self.arc_t+1):
 				timeangle = float(t)/float(self.arc_t)*angle
-				p1Copy = Vec3f(p1[0],p1[1],p1[2])
-				p2Copy = Vec3f(p2[0],p2[1],p2[2])
+				p1Copy = self.radius*Vec3f(p1[0],p1[1],p1[2])
+				p2Copy = self.radius*Vec3f(p2[0],p2[1],p2[2])
 				next = (sin(angle-timeangle)*p1Copy + sin(timeangle)*p2Copy)/sinangle
 				
 				self.cylinderToFrom(next,prev)
 				prev = Vec3f(next[0],next[1],next[2])
 				
+				
 		glEndList()
 	
 	def cylinderToFrom(self,next,prev):
-		
 		dx = next[0] - prev[0]
 		dy = next[1] - prev[1]
 		dz = next[2] - prev[2]
 		
-		alt = acos(dz)
-		phi = atan2(dy,dx)
+		length = sqrt(dx**2 + dy**2 + dz**2)
+		
+		alt = acos(dz/length)*180.0/pi
+		phi = atan2(dy,dx)*180.0/pi
 		
 		glPushMatrix()
-		glTranslatef(self.radius*prev[0],self.radius*prev[1],self.radius*prev[2] )
+		glTranslatef(prev[0],prev[1],prev[2] )
 		#print "positioned at", prev[0],prev[1],prev[2]
+		glRotatef(90+phi,0,0,1)
+		glRotatef(alt,1,0,0)
 		
-		glRotatef(-phi,0,0,1)
-		glRotatef(-alt,1,0,0)
-		glRotated(90.,1.,0.,0.)
-		glScalef(1,1,self.radius*sqrt(dx**2 + dy**2 + dz**2))
+		glScalef(0.2,0.2,length)
 		glCallList(self.cylinderdl)
 		glPopMatrix()
 			
@@ -222,17 +221,17 @@ class EM3DSymViewer(EMImage3DObject):
 			self.sym = None
 			self.prop = None
 			return #OpenGL is not initialized yet
-		sym_object = parsesym(str(sym))
+		self.sym_object = parsesym(str(sym))
 		if mirror == True : val = 0
 		else: val = 1
 		og = "eman" + ":prop=" + str(prop) + ":inc_mirror=" + str(val)
-		self.traceGreatArcs(sym_object.get_asymm_unit_points(val))
+		self.traceGreatArcs(self.sym_object.get_asymm_unit_points(val))
 		if ( perturb == True ) : val = 1
 		else: val = 0
 		og += ":perturb="+ str(val)
 		[og_name,og_args] = parsemodopt(og)
 		
-		eulers = sym_object.gen_orientations(og_name, og_args)
+		eulers = self.sym_object.gen_orientations(og_name, og_args)
 
 		glNewList(self.sym_dl,GL_COMPILE)
 		for i in eulers:
@@ -266,7 +265,23 @@ class EM3DSymViewer(EMImage3DObject):
 				return
 		
 		if ( self.arc_dl != 0 ):
+			glColor(.2,.9,.2)
+			# this is a nice light blue color (when lighting is on)
+			# and is the default color of the frame
+			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.3,.1,1.0))
+			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+			glMaterial(GL_FRONT,GL_SHININESS,40.0)
 			glCallList(self.arc_dl)
+			for i in range(1,self.sym_object.get_nsym()):
+				t = self.sym_object.get_sym(i)
+				d = t.get_rotation()
+				glPushMatrix()
+				glRotate(d["az"],0,0,1)
+				glRotate(d["alt"],1,0,0)
+				glRotate(d["phi"],0,0,1)
+				glCallList(self.arc_dl)
+				glPopMatrix()
+			
 		glColor(.9,.2,.8)
 		# this is a nice light blue color (when lighting is on)
 		# and is the default color of the frame

@@ -536,10 +536,13 @@ namespace EMAN
 		mutable map < string, EMObject > dict;
 
 	public:
-		// Iterator support added by d.woolford May 2007
-		// This is just a wrapper, everything is inherited from the map<string,EMObject>::iterator
-		// so the interface is the same as you would expect
-		// i.e for ( Dict::const_iterator it = params.begin(); it != params.end(); ++it )
+		/** Non const iterator support for the Dict object
+		* This is just a wrapper, everything is inherited from the map<string,EMObject>::iterator
+		* so the interface is the same as you would expect
+		* i.e for ( Dict::iterator it = params.begin(); it != params.end(); ++it )
+		* @author David Woolford
+		* @date Mid 2007
+		*/
 		class iterator : public map < string, EMObject >::iterator
 		{
 		public:
@@ -554,7 +557,13 @@ namespace EMAN
 			iterator& operator=( const iterator& that );
 		};
 		
-		// const_iterator support added by d.woolford May 2007
+		/** Const iterator support for the Dict object
+		 * This is just a wrapper, everything is inherited from the map<string,EMObject>::cons_iterator
+		 * so the interface is the same as you would expect
+		 * i.e for ( Dict::const_iterator it = params.begin(); it != params.end(); ++it )
+		 * @author David Woolford
+		 * @date Mid 2007
+		 */
 		class const_iterator :  public map < string, EMObject >::const_iterator
 		{
 		public:
@@ -672,6 +681,7 @@ namespace EMAN
      *
      *	    Processor *f1 = Factory<Processor>::get("math.absvalue");
      *      Processor *f2 = Factory<Processor>::get("eman1.filter.lowpass.gaussian", Dict("lowpass", EMObject(12));
+	 * @author Liwei Peng
      */
 	template < class T > class Factory
 	{
@@ -838,15 +848,18 @@ namespace EMAN
 		FactoryBase() {}
 		virtual ~FactoryBase() {};
 	
-		/** @return the unique name of this class
+		/** Get the unique name of this class (especially for factory based instantiation access) 
+		 * @return the unique name of this class
 		*/
 		virtual string get_name() const = 0;
 
-		/** @return a clear, concise description of this class
+		/** Get a clear, concise description of this class
+		 * @return a clear, concise description of this class
 		 */
 		virtual string get_desc() const = 0;
 	
-		/** @return a copy of the parameters of this class
+		/** get a copy of the parameters of this class
+		 * @return a copy of the parameters of this class
 		 */
 		Dict get_params() const	{ return params; }
 

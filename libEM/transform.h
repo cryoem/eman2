@@ -691,6 +691,12 @@ namespace EMAN
 		 * @return the altitude corresponding to the lower bound for the given azimuth, in radians
 		 */
 		float platonic_alt_lower_bound(const float& azimuth, const float& alpha) const;
+		
+		/** @param inc_mirror whether or not to include the mirror portion of the asymmetric unit
+		 * @return a cyclic set of points which can be connected using great arcs on the unit sphere
+		 * to demarcate the asymmetric unit. The last should may be connected to the first.
+		 */
+		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
 	};
 	
 	/** An encapsulation of tetrahedral symmetry
@@ -770,11 +776,16 @@ namespace EMAN
 		 * result of using the delimiters supplied by this class should by offset by this azimuth
 		 * to ensure proper alignment with tetrahedral objects in EMAN2
 		 */
-		virtual float get_az_alignment_offset() const { return  180.0; }
+		virtual float get_az_alignment_offset() const { return  0.0; }
 		
 		/// The name of this class - used to access it from factories etc. Should be "tet"
 		static const string NAME;
 		
+		/** @param inc_mirror whether or not to include the mirror portion of the asymmetric unit
+		 * @return a cyclic set of points which can be connected using great arcs on the unit sphere
+		 * to demarcate the asymmetric unit. The last should may be connected to the first.
+		 */
+		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
 		
 	};
 	
@@ -911,7 +922,7 @@ namespace EMAN
 		 * result of using the delimiters supplied by this class should by offset by this azimuth
 		 * to ensure proper alignment with tetrahedral objects in EMAN2
 		 */
-		virtual float get_az_alignment_offset() const { return  234.0; /*270.0-36.0;*/ }
+		virtual float get_az_alignment_offset() const { return  0.0; /*270.0-36.0;*/ }
 		
 		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
