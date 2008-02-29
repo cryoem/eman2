@@ -145,6 +145,24 @@ class EM3DSymViewer(EMImage3DObject):
 		
 		glNewList(self.arc_dl,GL_COMPILE)
 		
+		if ( self.sym_object.is_h_sym() ):
+			glPushMatrix()
+			dz = self.sym_object.get_params()["equator_range"]
+			if ( dz == 0 ): dz = 5
+			if (not self.nomirror):
+				glTranslatef(0,0,dz)
+			self.genArcs(points,n)
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslatef(0,0,-dz)
+			self.genArcs(points,n)
+			glPopMatrix()
+		else:
+			self.genArcs(points,n)
+		glEndList()
+		
+	def genArcs(self,points,n):
 		for i in range(0,n):
 			p1 = points[i]
 			if ( i == n-1 ): p2 = points[0]
@@ -161,8 +179,6 @@ class EM3DSymViewer(EMImage3DObject):
 				self.cylinderToFrom(next,prev)
 				prev = Vec3f(next[0],next[1],next[2])
 				
-				
-		glEndList()
 	
 	def cylinderToFrom(self,next,prev):
 		dx = next[0] - prev[0]
@@ -272,10 +288,19 @@ class EM3DSymViewer(EMImage3DObject):
 			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 			glMaterial(GL_FRONT,GL_SHININESS,40.0)
 			glCallList(self.arc_dl)
+			if ( self.sym_object.is_h_sym() ):
+				a = {}
+				a["daz"] = 60
+				dz = 5
+				a["dz"] = dz
+				self.sym_object.insert_params(a)
 			for i in range(1,self.sym_object.get_nsym()):
 				t = self.sym_object.get_sym(i)
 				d = t.get_rotation()
 				glPushMatrix()
+				if ( self.sym_object.is_h_sym() ):
+					trans = t.get_posttrans()
+					glTranslatef(trans[0],trans[1],trans[2])
 				glRotate(d["az"],0,0,1)
 				glRotate(d["alt"],1,0,0)
 				glRotate(d["phi"],0,0,1)

@@ -1659,6 +1659,100 @@ Dict HSym::get_delimiters(const bool inc_mirror) const {
 	return returnDict;
 }
 
+vector<Vec3f> HSym::get_asymm_unit_points(bool inc_mirror) const
+{
+	vector<Vec3f> ret;
+	
+	Dict delim = get_delimiters(inc_mirror);
+	float equator_range = params.set_default("equator_range",5.0f);
+	int nsym = params.set_default("nsym",0);
+	float az = -(float)delim["az_max"];
+	
+	
+	bool tracing_arcs = false;
+	
+	if ( !tracing_arcs) {
+		Vec3f a(0,-1,0);
+		ret.push_back(a);
+		
+		if ( nsym > 2 )	{
+			Vec3f b = Transform3D(az,0,0)*a; 
+			ret.push_back(b);
+		}
+		else
+		{
+			Vec3f b = Transform3D(-90,0,0)*a; 
+			ret.push_back(b);
+			
+			Vec3f c = Transform3D(-180,0,0)*a; 
+			ret.push_back(c);
+			
+			if ( nsym == 1 ) {
+				Vec3f d = Transform3D(-270,0,0)*a; 
+				ret.push_back(d);
+				
+				ret.push_back(a);
+			}
+		}
+	}
+	else {
+		Vec3f a = Transform3D(0,-equator_range,0)*Vec3f(0,-1,0);
+		ret.push_back(a);
+		
+		float upper = 0;
+		if (inc_mirror) upper = equator_range;
+		Vec3f d = Transform3D(0,upper,0)*Vec3f(0,-1,0);
+	
+		if ( nsym > 2 )	{
+			Vec3f b = Transform3D(az,0,0)*a; 
+			ret.push_back(b);
+		
+			Vec3f c = Transform3D(az,0,0)*d;
+			ret.push_back(c);
+			ret.push_back(d);
+			
+			
+		}
+		else {
+			Vec3f b = Transform3D(-90,0,0)*a; 
+			ret.push_back(b);
+			
+			Vec3f c = Transform3D(-180,0,0)*a; 
+			ret.push_back(c);
+			
+			if ( nsym == 1 ) {
+				Vec3f e = Transform3D(-270,0,0)*a; 
+				ret.push_back(e);
+				ret.push_back(a);
+				ret.push_back(d);
+				
+				Vec3f f = Transform3D(-90,0,0)*d; 
+				ret.push_back(f);
+			
+				Vec3f g = Transform3D(-180,0,0)*d; 
+				ret.push_back(g);
+				
+				Vec3f h = Transform3D(-270,0,0)*d;
+				ret.push_back(h);
+				ret.push_back(d); 
+				
+			}
+			else {
+			
+				Vec3f e = Transform3D(-180,0,0)*d; 
+				ret.push_back(e);
+				
+				Vec3f f = Transform3D(-90,0,0)*d; 
+				ret.push_back(f);
+				
+				ret.push_back(d);
+			}
+		}
+	}
+	return ret;
+	
+}
+
 Transform3D HSym::get_sym(int n) const
 {
 	float daz = params.set_default("daz",0.0f);
@@ -1750,8 +1844,6 @@ float PlatonicSym::platonic_alt_lower_bound(const float& azimuth, const float& a
 vector<Vec3f> PlatonicSym::get_asymm_unit_points(bool inc_mirror) const
 {
 	vector<Vec3f> ret;
-		
-	Transform3D t(-get_az_alignment_offset(),0,0);
 	
 	Vec3f b = Vec3f(0,0,1);
 	ret.push_back(b);
@@ -1760,7 +1852,7 @@ vector<Vec3f> PlatonicSym::get_asymm_unit_points(bool inc_mirror) const
 	
 	Vec3f c_on_two = Vec3f(0,-sin(theta_c_on_two),cos(theta_c_on_two));
 	Vec3f c = Vec3f(0,-sin(theta_c),cos(theta_c));
-	ret.push_back(t*c_on_two);
+	ret.push_back(c_on_two);
 	
 	float cap_sig = platonic_params["az_max"];
 	Vec3f a = Vec3f(sin(theta_c)*sin(cap_sig),-sin(theta_c)*cos(cap_sig),cos(theta_c));
@@ -1768,11 +1860,11 @@ vector<Vec3f> PlatonicSym::get_asymm_unit_points(bool inc_mirror) const
 	Vec3f f = a+b+c;
 	f.normalize();
 		
-	ret.push_back(t*f);
+	ret.push_back(f);
 	
 	if ( inc_mirror ) {
 		Vec3f a_on_two = Vec3f(sin(theta_c_on_two)*sin(cap_sig),-sin(theta_c_on_two)*cos(cap_sig),cos(theta_c_on_two));
-		ret.push_back(t*a_on_two);
+		ret.push_back(a_on_two);
 	}
 	
 	return ret;
@@ -1885,8 +1977,6 @@ Transform3D TetrahedralSym::get_sym(int n) const
 vector<Vec3f> TetrahedralSym::get_asymm_unit_points(bool inc_mirror) const
 {
 	vector<Vec3f> ret;
-		
-	Transform3D t(-get_az_alignment_offset(),0,0);
 	
 	Vec3f b = Vec3f(0,0,1);
 	ret.push_back(b);
@@ -1895,7 +1985,7 @@ vector<Vec3f> TetrahedralSym::get_asymm_unit_points(bool inc_mirror) const
 	
 	Vec3f c_on_two = Vec3f(0,-sin(theta_c_on_two),cos(theta_c_on_two));
 	Vec3f c = Vec3f(0,-sin(theta_c),cos(theta_c));
-	ret.push_back(t*c_on_two);
+	ret.push_back(c_on_two);
 	float cap_sig = platonic_params["az_max"];
 	if ( inc_mirror ) {
 		Vec3f a = Vec3f(sin(theta_c)*sin(cap_sig),-sin(theta_c)*cos(cap_sig),cos(theta_c));
@@ -1903,11 +1993,11 @@ vector<Vec3f> TetrahedralSym::get_asymm_unit_points(bool inc_mirror) const
 		Vec3f f = a+b+c;
 		f.normalize();
 			
-		ret.push_back(t*f);
+		ret.push_back(f);
 	}
 	
 	Vec3f a_on_two = Vec3f(sin(theta_c_on_two)*sin(cap_sig),-sin(theta_c_on_two)*cos(cap_sig),cos(theta_c_on_two));
-	ret.push_back(t*a_on_two);
+	ret.push_back(a_on_two);
 
 	
 	return ret;

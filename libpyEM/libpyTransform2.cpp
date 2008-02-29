@@ -52,6 +52,10 @@ struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
 		return call_method< std::vector<EMAN::Vec3f > >(py_self, "get_asymm_unit_points", b);
 	}
 	
+	void insert_params(const EMAN::Dict& d) {
+		return call_method< void >(py_self, "insert_params", d);
+	}
+	
 	PyObject* py_self;
 };
 
@@ -113,6 +117,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("get_params", &EMAN::Symmetry3D::get_params)
 		.def("gen_orientations", &EMAN::Symmetry3D::gen_orientations)
 		.def("get_asymm_unit_points", pure_virtual(&EMAN::Symmetry3D::get_asymm_unit_points))
+		.def("insert_params", pure_virtual(&EMAN::Symmetry3D::insert_params))
+		.def("get_params", &EMAN::Symmetry3D::get_params)
 		;
 		
 

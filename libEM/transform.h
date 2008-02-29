@@ -590,9 +590,9 @@ namespace EMAN
 			 * @exception InvalidValueException if d_az (as stored internally in parms) is less than or equal to zero
 			 */
 			virtual int get_nsym() const {
-				float d_az = params.set_default("d_az",0.0f);
-				if ( d_az <= 0 ) throw InvalidValueException(d_az,"Error, you must specify a positive non zero d_az");
-				return static_cast<int>(360.0/d_az);
+				float daz = params.set_default("daz",0.0f);
+				if ( daz <= 0 ) throw InvalidValueException(daz,"Error, you must specify a positive non zero d_az");
+				return static_cast<int>(360.0/daz);
 			};
 			
 			/** Gets the maximum cylcic symmetry exhibited by this object. This is used by OrientationGenerators, and is
@@ -608,6 +608,12 @@ namespace EMAN
 			* @return true - indicating that this is a helical symmetry object
 			*/
 			virtual bool is_h_sym() const { return true; }
+			
+			/** @param inc_mirror whether or not to include the mirror portion of the asymmetric unit
+			 * @return a cyclic set of points which can be connected using great arcs on the unit sphere
+			 * to demarcate the asymmetric unit. The last should may be connected to the first.
+			 */
+			virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
 	};
 	
 	/** A base (or parent) class for the Platonic symmetries. It cannot be instantieted on its own.
