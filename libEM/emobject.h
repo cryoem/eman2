@@ -825,6 +825,67 @@ namespace EMAN
 		
 		return factory_list;
 	}
+	
+	/** A class one may inherit from to ensure that the responsibilities of 
+	* being incorporated into an EMAN2::Factory are met.
+	* This class is abstract.
+	* @author David Woolford
+	* @date Feb 2008
+	*/
+	class FactoryBase
+	{
+	public:
+		FactoryBase() {}
+		virtual ~FactoryBase() {};
+	
+		/** @return the unique name of this class
+		*/
+		virtual string get_name() const = 0;
+
+		/** @return a clear, concise description of this class
+		 */
+		virtual string get_desc() const = 0;
+	
+		/** @return a copy of the parameters of this class
+		 */
+		Dict get_params() const	{ return params; }
+
+		/** Set new parameters. Old parameters are cleared
+		 * @param new_params the new parameters
+		 */
+		void set_params(const Dict & new_params)
+		{
+			params.clear();
+			insert_params(new_params);
+		}
+	
+		/** @return a TypeDict defining and describing the feasible parameters of this class 
+		 */
+		virtual TypeDict get_param_types() const = 0;
+	
+		/** Insert parameters. Previously present parameters are replaced, new ones are inserted.
+		 * @param new_params the parameters to insert
+		 */
+		void insert_params(const Dict & new_params)
+		{
+		// this is really inserting OR individually replacing...
+		// the old data will be kept if it is not written over
+			TypeDict permissable_params = get_param_types();
+			for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
+			{
+		
+				if ( !permissable_params.find_type(it->first) )
+				{
+					throw InvalidParameterException(it->first);
+				}
+				params[it->first] = it->second;
+			}	
+		}
+	
+		protected:
+		/// This is the dictionary the stores the parameters of the object
+		mutable Dict params;
+	};
 }
 
 #endif

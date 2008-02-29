@@ -53,6 +53,7 @@ from time import *
 from emimage3dobject import EMImage3DObject
 from emimage3dobject import Camera
 
+
 MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DSymViewer(EMImage3DObject):
@@ -97,6 +98,9 @@ class EM3DSymViewer(EMImage3DObject):
 		
 		self.radius = 50
 		
+		self.arc_t = 10
+		self.arc_dl = 0;
+		self.cylinderdl = 0
 		
 		self.gq=gluNewQuadric()
 		gluQuadricDrawStyle(self.gq,GLU_FILL)
@@ -117,6 +121,70 @@ class EM3DSymViewer(EMImage3DObject):
 			print "Error, tried to set a zero or negative radius (",radius,")"
 			exit(1)
 		
+	def traceGreatArcs(self, points):
+		# this functionality is momentarily disabled for the night
+		return
+		if ( self.cylinderdl == 0 ):
+			self.cylinderdl=glGenLists(1)
+				
+			glNewList(self.cylinderdl,GL_COMPILE)
+			glPushMatrix()
+			gluCylinder(self.gq,1.0,1.0,1.0,12,2)
+			glPopMatrix()
+				
+			glEndList()
+		
+		if ( self.arc_dl != 0 ): glDeleteLists(self.arc_dl, 1)
+		n = len(points)
+		if ( n <= 1 ):
+			self.arc_dl = 0
+			return
+		
+		self.arc_dl=glGenLists(1)
+		glNewList(self.arc_dl,GL_COMPILE)
+		
+		
+		
+		for i in range(0,n):
+			p1 = points[i]
+			if ( i == n-1 ): p2 = points[0]
+			else: p2 = points[i+1]
+			
+			angle = acos(p2.dot(p1))
+			sinangle = sin(angle)
+			
+			prev = p1
+			for t in range(1, self.arc_t):
+				timeangle = float(t)/float(self.arc_t)*angle
+				p1Copy = Vec3f(p1[0],p1[1],p1[2])
+				p2Copy = Vec3f(p2[0],p2[1],p2[2])
+				next = (sin(angle-timeangle)*p1Copy + sin(timeangle)*p2Copy)/sinangle
+				
+				self.cylinderToFrom(next,prev)
+				prev = Vec3f(next[0],next[1],next[2])
+				
+		glEndList()
+	
+	def cylinderToFrom(self,next,prev):
+		
+		dx = next[0] - prev[0]
+		dy = next[1] - prev[1]
+		dz = next[2] - prev[2]
+		
+		alt = acos(dz)
+		phi = atan2(dy,dx)
+		
+		glPushMatrix()
+		glTranslatef(self.radius*prev[0],self.radius*prev[1],self.radius*prev[2] )
+		#print "positioned at", prev[0],prev[1],prev[2]
+		
+		glRotatef(-phi,0,0,1)
+		glRotatef(-alt,1,0,0)
+		glRotated(90.,1.,0.,0.)
+		glScalef(1,1,self.radius*sqrt(dx**2 + dy**2 + dz**2))
+		glCallList(self.cylinderdl)
+		glPopMatrix()
+			
 	def genCurrentDisplayList(self):
 		sym = self.inspector.getSym()
 		prop = self.inspector.getProp()
@@ -158,10 +226,12 @@ class EM3DSymViewer(EMImage3DObject):
 		if mirror == True : val = 0
 		else: val = 1
 		og = "eman" + ":prop=" + str(prop) + ":inc_mirror=" + str(val)
+		self.traceGreatArcs(sym_object.get_asymm_unit_points(val))
 		if ( perturb == True ) : val = 1
 		else: val = 0
 		og += ":perturb="+ str(val)
 		[og_name,og_args] = parsemodopt(og)
+		
 		eulers = sym_object.gen_orientations(og_name, og_args)
 
 		glNewList(self.sym_dl,GL_COMPILE)
@@ -195,7 +265,8 @@ class EM3DSymViewer(EMImage3DObject):
 				print "error, you can't draw an empty list"
 				return
 		
-		
+		if ( self.arc_dl != 0 ):
+			glCallList(self.arc_dl)
 		glColor(.9,.2,.8)
 		# this is a nice light blue color (when lighting is on)
 		# and is the default color of the frame
@@ -218,6 +289,8 @@ class EM3DSymViewer(EMImage3DObject):
 		glTranslate(-0.5,-0.5,0)
 		self.draw_bc_screen()
 		glPopMatrix()
+		
+		
 		
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:

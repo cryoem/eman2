@@ -1526,6 +1526,36 @@ Dict CSym::get_delimiters(const bool inc_mirror) const {
 			
 	return returnDict;
 }
+
+vector<Vec3f> CSym::get_asymm_unit_points(bool inc_mirror) const
+{
+	Dict delim = get_delimiters(inc_mirror);
+	int nsym = params.set_default("nsym",0);
+	vector<Vec3f> ret;
+	
+	if ( nsym == 1 ) {
+		if (inc_mirror == false ) {
+			ret.push_back(Vec3f(0,-1,0));
+			ret.push_back(Vec3f(1,0,0));
+			ret.push_back(Vec3f(0,1,0));
+			ret.push_back(Vec3f(-1,0,0));
+		}
+		// else return ret; // an empty vector! this is fine
+	}
+	else {
+		ret.push_back(Vec3f(0,0,1));
+		ret.push_back(Vec3f(0,-1,0));
+		if (inc_mirror == false) {
+			ret.push_back(Vec3f(0,0,-1));
+		}
+		float y = -cos(float(delim["az_max"]));
+		float x = -sin(float(delim["az_max"]));
+		ret.push_back(Vec3f(x,y,0));
+	}
+	
+	return ret;
+	
+}
 		
 Transform3D CSym::get_sym(int n) const {
 	int nsym = params.set_default("nsym",0);
@@ -1568,6 +1598,38 @@ Transform3D DSym::get_sym(int n) const
 		ret.set_rotation( (n%nsym) * 360.0f / (nsym / 2),0, 0);
 	}
 	return ret;
+}
+
+vector<Vec3f> DSym::get_asymm_unit_points(bool inc_mirror) const
+{
+	Dict delim = get_delimiters(inc_mirror);
+	
+	vector<Vec3f> ret;
+	int nsym = params.set_default("nsym",0);
+	if ( nsym == 1 ) {
+		if (inc_mirror == false ) {
+			ret.push_back(Vec3f(0,0,1));
+			ret.push_back(Vec3f(0,-1,0));
+			ret.push_back(Vec3f(1,0,0));
+			ret.push_back(Vec3f(0,1,0));
+		}
+		else {
+			ret.push_back(Vec3f(0,-1,0));
+			ret.push_back(Vec3f(1,0,0));
+			ret.push_back(Vec3f(0,1,0));
+			ret.push_back(Vec3f(-1,0,0));
+		}
+	}
+	else {
+		ret.push_back(Vec3f(0,0,1));
+		ret.push_back(Vec3f(0,-1,0));
+		float y = -cos(float(delim["az_max"]));
+		float x = -sin(float(delim["az_max"]));
+		ret.push_back(Vec3f(x,y,0));
+	}
+	
+	return ret;
+	
 }
 
 // H symmetry stuff
@@ -1619,19 +1681,22 @@ void PlatonicSym::init()
 			
 	// This is half of "theta_c" as in the conventions of the Balwin paper. See also http://blake.bcm.edu/emanwiki/EMAN2/Symmetry.
 	platonic_params["theta_c_on_two"] = 1.0/2.0*acos( cos(cap_sig)/(1.0-cos(cap_sig)));
-
+	
 }
 
 
 Dict PlatonicSym::get_delimiters(const bool inc_mirror) const
-{
+{	
 	Dict ret;
 	ret["az_max"] = EMConsts::rad2deg * (float) platonic_params["az_max"];
 	// For icos and oct symmetries, excluding the mirror means halving az_maz
 	if ( inc_mirror == false ) 
 		if ( get_name() ==  IcosahedralSym::NAME || get_name() == OctahedralSym::NAME ) 
 			ret["az_max"] = 0.5*EMConsts::rad2deg * (float) platonic_params["az_max"];
-			
+		//else
+		//the alt_max variable should probably be altered if the symmetry is tet, but
+		//this is taken care of in TetSym::is_in_asym_unit
+	
 	ret["alt_max"] = EMConsts::rad2deg * (float) platonic_params["alt_max"];
 	return ret;
 }
@@ -1663,7 +1728,6 @@ bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth, c
 
 float PlatonicSym::platonic_alt_lower_bound(const float& azimuth, const float& alpha) const
 {
-	
 	float cap_sig = platonic_params["az_max"];
 	float theta_c_on_two = platonic_params["theta_c_on_two"];
 	

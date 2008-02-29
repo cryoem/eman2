@@ -48,6 +48,10 @@ struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
 		return call_method< EMAN::TypeDict >(py_self, "get_param_types");
 	}
 
+	std::vector<EMAN::Vec3f > get_asymm_unit_points(bool b) const {
+		return call_method< std::vector<EMAN::Vec3f > >(py_self, "get_asymm_unit_points", b);
+	}
+	
 	PyObject* py_self;
 };
 
@@ -84,6 +88,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_pretrans_overloads_2
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
 		
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Symmetry3D_get_asymm_unit_points_overloads_1_2, get_asymm_unit_points, 1, 2)
+		
 }// namespace 
 
 
@@ -106,6 +112,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("is_h_sym", pure_virtual(&EMAN::Symmetry3D::is_h_sym))
 		.def("get_params", &EMAN::Symmetry3D::get_params)
 		.def("gen_orientations", &EMAN::Symmetry3D::gen_orientations)
+		.def("get_asymm_unit_points", pure_virtual(&EMAN::Symmetry3D::get_asymm_unit_points))
 		;
 		
 
