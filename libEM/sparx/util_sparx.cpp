@@ -50,6 +50,8 @@ using namespace EMAN;
 using namespace std;
 
 vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
+//  flip true:  find statistics under the mask (mask >0.5)
+//  flip false: find statistics ourside the mask (mask <0.5)
 {
 	ENTERFUNC;
 	vector<float> stats;
@@ -2593,8 +2595,8 @@ c       automatic arrays
          } else {
 	    	for (j=3; j<=numr3i; j=j+2) {
 	      		jc = j+numr2i-1;
-				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
-				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+			t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+			t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 	    	}
          }
          for (j=1;j<=numr3i+1;j++) q(j) += t(j)*w[i-1];
@@ -2603,16 +2605,16 @@ c       automatic arrays
         if (neg) {
             // first set is conjugated (mirrored)
 	    	for (j=3; j<=maxrin; j=j+2) {
-				jc = j+numr2i-1;
-				t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
-				t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+			jc = j+numr2i-1;
+			t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
+			t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 	    	}
          } else {
-			for (j=3; j<=maxrin; j=j+2) {
-				jc = j+numr2i-1;
-				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
-				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
-			} 
+		for (j=3; j<=maxrin; j=j+2) {
+			jc = j+numr2i-1;
+			t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+			t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+		} 
          }
          for (j = 1; j <= maxrin; j++) q(j) += t(j)*w[i-1];
       }
@@ -2635,7 +2637,7 @@ c       automatic arrays
 
    if (q) free(q);
    if (t) free(t);
-   
+
    Dict retvals;
    retvals["qn"] = qn;
    retvals["tot"] = tot;
