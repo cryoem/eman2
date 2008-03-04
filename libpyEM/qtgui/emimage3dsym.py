@@ -153,19 +153,19 @@ class EM3DSymViewer(EMImage3DObject):
 			if ( dz == 0 ): dz = 5
 			if (not self.nomirror):
 				glTranslatef(0,0,dz)
-			self.genArcs(points,n)
+			self.genArcs(points,n,1)
 			glPopMatrix()
 			
 			glPushMatrix()
 			glTranslatef(0,0,-dz)
-			self.genArcs(points,n)
+			self.genArcs(points,n,1)
 			glPopMatrix()
 		else:
 			self.genArcs(points,n)
 		glEndList()
 		
-	def genArcs(self,points,n):
-		for i in range(0,n):
+	def genArcs(self,points,n,halt=0):
+		for i in range(0,n-halt):
 			p1 = points[i]
 			if ( i == n-1 ): p2 = points[0]
 			else: p2 = points[i+1]
@@ -252,7 +252,6 @@ class EM3DSymViewer(EMImage3DObject):
 			parms.append(li[i])
 		
 		if (self.angle_label) not in parms:
-			print "angle label", self.angle_label, "unknown."
 			return
 		else:
 			og = self.strategy + ":" + self.angle_label + "=" + str(prop)
@@ -317,18 +316,19 @@ class EM3DSymViewer(EMImage3DObject):
 				dz = 5
 				a["dz"] = dz
 				self.sym_object.insert_params(a)
-			for i in range(1,self.sym_object.get_nsym()):
-				t = self.sym_object.get_sym(i)
-				d = t.get_rotation()
-				glPushMatrix()
-				if ( self.sym_object.is_h_sym() ):
-					trans = t.get_posttrans()
-					glTranslatef(trans[0],trans[1],trans[2])
-				glRotate(d["az"],0,0,1)
-				glRotate(d["alt"],1,0,0)
-				glRotate(d["phi"],0,0,1)
-				glCallList(self.arc_dl)
-				glPopMatrix()
+			if self.inspector.symtoggled():
+				for i in range(1,self.sym_object.get_nsym()):
+					t = self.sym_object.get_sym(i)
+					d = t.get_rotation()
+					glPushMatrix()
+					if ( self.sym_object.is_h_sym() ):
+						trans = t.get_posttrans()
+						glTranslatef(trans[0],trans[1],trans[2])
+					glRotate(d["az"],0,0,1)
+					glRotate(d["alt"],1,0,0)
+					glRotate(d["phi"],0,0,1)
+					glCallList(self.arc_dl)
+					glPopMatrix()
 			
 		glColor(.9,.2,.8)
 		# this is a nice light blue color (when lighting is on)
@@ -358,6 +358,7 @@ class EM3DSymViewer(EMImage3DObject):
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
 			glPushMatrix()
+			
 			self.draw_volume_bounds()
 			glPopMatrix()
 			
@@ -378,6 +379,9 @@ class EM3DSymViewer(EMImage3DObject):
 		
 	def regenDL(self, dummy=False):
 		self.force_update = True
+		self.parent.updateGL()
+		
+	def updateGL(self,dummy=False):
 		self.parent.updateGL()
 
 class EMSymViewerWidget(QtOpenGL.QGLWidget):
@@ -502,12 +506,17 @@ class EMSymInspector(QtGui.QWidget):
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 	
-		self.cubetog = QtGui.QPushButton("Cube")
-		self.cubetog.setCheckable(1)
-		self.vbl2.addWidget(self.cubetog)
+		#self.cubetog = QtGui.QPushButton("Cube")
+		#self.cubetog.setCheckable(1)
+		#self.vbl2.addWidget(self.cubetog)
 		
 		self.defaults = QtGui.QPushButton("Defaults")
 		self.vbl2.addWidget(self.defaults)
+		
+		self.symtog = QtGui.QPushButton("All syms")
+		self.symtog.setCheckable(1)
+		self.vbl2.addWidget(self.symtog)
+		
 		
 		self.vbl.addWidget(self.getMainTab())
 		
@@ -531,11 +540,15 @@ class EMSymInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
 		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
 		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
+		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), target.updateGL)
 		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 		QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angleLabelChanged)
 		QtCore.QObject.connect(self.orient_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.orientLabelChanged)
-		
+	
+	def symtoggled(self):
+		return self.symtog.isChecked()
+	
 	def perturbtoggled(self,val):
 		self.target.regenDL()
 		
@@ -552,8 +565,10 @@ class EMSymInspector(QtGui.QWidget):
 			self.angle_label.addItem('n')
 		elif label == 'even':
 			self.angle_label.addItem('delta')
+			self.angle_label.addItem('n')
 		elif label == 'saff':
 			self.angle_label.addItem('delta')
+			self.angle_label.addItem('n')
 		else : 
 			print "error, unknow label", label
 			
