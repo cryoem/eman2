@@ -95,6 +95,8 @@ class EM3DSymViewer(EMImage3DObject):
 		self.prop = None
 		self.perturb = False
 		self.nomirror = True
+		self.angle_label = ''
+		self.strategy = ''
 		
 		self.sym_object = None
 		
@@ -205,14 +207,17 @@ class EM3DSymViewer(EMImage3DObject):
 		prop = self.inspector.getProp()
 		mirror = not self.inspector.getMirror()
 		perturb = self.inspector.getPerturb()
+		angle_label = self.inspector.getAngleLabel()
+		strategy = str(self.inspector.getOrientLabel())
 		
-		
-		if self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.force_force_update == False: return
+		if self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.angle_label == angle_label and self.strategy == strategy and self.force_force_update == False: return
 		else:
 			self.sym = sym
 			self.prop = prop
 			self.nomirror = mirror
 			self.perturb = perturb
+			self.angle_label = angle_label
+			self.strategy = strategy
 		
 		if self.spheredl == 0:
 			self.spheredl=glGenLists(1)
@@ -238,14 +243,32 @@ class EM3DSymViewer(EMImage3DObject):
 			self.prop = None
 			return #OpenGL is not initialized yet
 		self.sym_object = parsesym(str(sym))
+		
+		
+		l = dump_orientgens_list()
+		parms = []
+		li = l[str(self.strategy)]
+		for i in range(1,len(li),3):
+			parms.append(li[i])
+		
+		if (self.angle_label) not in parms:
+			print "angle label", self.angle_label, "unknown."
+			return
+		else:
+			og = self.strategy + ":" + self.angle_label + "=" + str(prop)
+		
 		if mirror == True : val = 0
 		else: val = 1
-		og = "eman" + ":prop=" + str(prop) + ":inc_mirror=" + str(val)
 		self.traceGreatArcs(self.sym_object.get_asymm_unit_points(val))
-		if ( perturb == True ) : val = 1
-		else: val = 0
-		og += ":perturb="+ str(val)
-		[og_name,og_args] = parsemodopt(og)
+		if ('inc_mirror' in parms):
+			og += ":inc_mirror=" + str(val)
+			
+		if ('perturb' in parms):
+			if ( perturb == True ) : val = 1
+			else: val = 0
+			og += ":perturb="+ str(val)
+				
+		[og_name,og_args] = parsemodopt(str(og))
 		
 		eulers = self.sym_object.gen_orientations(og_name, og_args)
 
@@ -510,10 +533,32 @@ class EMSymInspector(QtGui.QWidget):
 		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
+		QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angleLabelChanged)
+		QtCore.QObject.connect(self.orient_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.orientLabelChanged)
 		
 	def perturbtoggled(self,val):
 		self.target.regenDL()
-	
+		
+	def angleLabelChanged(self,string):
+		self.target.regenDL()
+		
+	def orientLabelChanged(self,string):
+		label = string
+		self.angle_label.clear()
+		if label == 'random':
+			self.angle_label.addItem('n')
+		elif label == 'eman':
+			self.angle_label.addItem('delta')
+			self.angle_label.addItem('n')
+		elif label == 'even':
+			self.angle_label.addItem('delta')
+		elif label == 'saff':
+			self.angle_label.addItem('delta')
+		else : 
+			print "error, unknow label", label
+			
+		self.target.regenDL()
+		
 	def setDefaults(self):
 		self.x_trans.setValue(0.0)
 		self.y_trans.setValue(0.0)
@@ -539,7 +584,13 @@ class EMSymInspector(QtGui.QWidget):
 		if sym in ['c','d','h']:
 			sym = sym+self.sym_text.displayText()
 		return sym
-		
+	
+	def getAngleLabel(self):
+		return self.angle_label.currentText()
+	
+	def getOrientLabel(self):
+		return self.orient_label.currentText()
+	
 	def getProp(self):
 		return float(self.prop_text.displayText())
 	
@@ -592,20 +643,6 @@ class EMSymInspector(QtGui.QWidget):
 		self.sym_label.setText('C/D/H sym')
 		self.hbl_sym.addWidget(self.sym_label)
 		
-		
-		self.hbl_sym2 = QtGui.QHBoxLayout()
-		self.hbl_sym2.setMargin(0)
-		self.hbl_sym2.setSpacing(6)
-		self.hbl_sym2.setObjectName("Sym2")
-		maintab.vbl.addLayout(self.hbl_sym2)
-		
-		self.mirror_checkbox = QtGui.QCheckBox("Mirror")
-		self.hbl_sym2.addWidget(self.mirror_checkbox)
-		
-		self.perturbtog = QtGui.QPushButton("Perturb")
-		self.perturbtog.setCheckable(1)
-		self.hbl_sym2.addWidget(self.perturbtog)
-		
 		self.pos_int_validator = QtGui.QIntValidator(self)
 		self.pos_int_validator.setBottom(1)
 		self.sym_text = QtGui.QLineEdit(self)
@@ -615,9 +652,10 @@ class EMSymInspector(QtGui.QWidget):
 		self.hbl_sym.addWidget(self.sym_text)
 		self.sym_text.setEnabled(False)
 		
-		self.prop_label = QtGui.QLabel()
-		self.prop_label.setText('prop')
-		self.hbl_sym.addWidget(self.prop_label)
+		self.angle_label = QtGui.QComboBox(self)
+		self.angle_label.addItem('delta')
+		self.angle_label.addItem('n')
+		self.hbl_sym.addWidget(self.angle_label)
 		
 		self.pos_double_validator = QtGui.QDoubleValidator(self)
 		self.pos_double_validator.setBottom(0.05)
@@ -626,6 +664,34 @@ class EMSymInspector(QtGui.QWidget):
 		self.prop_text.setText("2.0")
 		self.prop_text.setFixedWidth(50)
 		self.hbl_sym.addWidget(self.prop_text)
+		
+		self.hbl_sym2 = QtGui.QHBoxLayout()
+		self.hbl_sym2.setMargin(0)
+		self.hbl_sym2.setSpacing(6)
+		self.hbl_sym2.setObjectName("Sym2")
+		maintab.vbl.addLayout(self.hbl_sym2)
+		
+		self.og_label = QtGui.QLabel()
+		self.og_label.setText('Strategy')
+		self.hbl_sym2.addWidget(self.og_label)
+		
+		
+		self.orient_label = QtGui.QComboBox(self)
+		l = dump_orientgens_list()
+		
+		n = len(l)
+		for i in l:
+			self.orient_label.addItem(str(i))
+		
+		self.orient_label.setCurrentIndex(n-1)
+		self.hbl_sym2.addWidget(self.orient_label)
+		
+		self.mirror_checkbox = QtGui.QCheckBox("Mirror")
+		self.hbl_sym2.addWidget(self.mirror_checkbox)
+		
+		self.perturbtog = QtGui.QPushButton("Perturb")
+		self.perturbtog.setCheckable(1)
+		self.hbl_sym2.addWidget(self.perturbtog)
 		
 		self.glcontrast = ValSlider(maintab,(1.0,5.0),"GLShd:")
 		self.glcontrast.setObjectName("GLShade")

@@ -56,6 +56,10 @@ struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
 		return call_method< void >(py_self, "insert_params", d);
 	}
 	
+	bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const {
+		return call_method< bool >(py_self, "is_in_asymm_init",altitude,azimuth,inc_mirror);
+	}
+	
 	PyObject* py_self;
 };
 

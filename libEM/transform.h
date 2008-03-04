@@ -301,11 +301,6 @@ namespace EMAN
 		virtual int get_nsym() const = 0;
 		
 		/**This functionality is only relevant to platonic symmetries. But it could
-		* grow into functionality for the other symmetries.
-		*/
-		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const { return true; }
-		
-		/**This functionality is only relevant to platonic symmetries. But it could
 		 * grow into functionality for the other symmetries.
 		 */
 		virtual float get_az_alignment_offset() const { return 0.0; }
@@ -348,6 +343,16 @@ namespace EMAN
 		 * @return a set of orientations in the unit spher
 		*/
 		vector<Transform3D> gen_orientations(const string& generatorname="eman", const Dict& parms=Dict());
+		
+		/** A function to be used when generating orientations over portion of the unit sphere
+		 * defined by parameters returned by get_delimiters. In platonic symmetry altitude and azimuth
+		 * alone are not enough to correctly demarcate the asymmetric unit. See the get_delimiters comments.
+		 * @param altitude the EMAN style altitude of the 3D orientation in degrees 
+		 * @param azimuth the EMAN style azimuth of the 3D orientation in degrees
+		 * @param inc_mirror whether or not to include orientations if they are in the mirror portion of the asymmetric unit
+		 * @return true or false, depending on whether or not the orientation is within the asymmetric unit
+		 */
+		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const = 0;
 
 	};
 	
@@ -428,6 +433,17 @@ namespace EMAN
 		 * to demarcate the asymmetric unit. The last should may be connected to the first.
 		 */
 		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
+		
+		/** A function to be used when generating orientations over portion of the unit sphere
+		 * defined by parameters returned by get_delimiters. In platonic symmetry altitude and azimuth
+		 * alone are not enough to correctly demarcate the asymmetric unit. See the get_delimiters comments.
+		 * @param altitude the EMAN style altitude of the 3D orientation in degrees 
+		 * @param azimuth the EMAN style azimuth of the 3D orientation in degrees
+		 * @param inc_mirror whether or not to include orientations if they are in the mirror portion of the asymmetric unit
+		 * @return true or false, depending on whether or not the orientation is within the asymmetric unit
+		 */
+		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const;
+
 	};
 	
 	/** An encapsulation of dihedral 3D symmetry
@@ -505,6 +521,16 @@ namespace EMAN
 		 * to demarcate the asymmetric unit. The last should may be connected to the first.
 		 */
 		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
+		
+		/** A function to be used when generating orientations over portion of the unit sphere
+		 * defined by parameters returned by get_delimiters. In platonic symmetry altitude and azimuth
+		 * alone are not enough to correctly demarcate the asymmetric unit. See the get_delimiters comments.
+		 * @param altitude the EMAN style altitude of the 3D orientation in degrees 
+		 * @param azimuth the EMAN style azimuth of the 3D orientation in degrees
+		 * @param inc_mirror whether or not to include orientations if they are in the mirror portion of the asymmetric unit
+		 * @return true or false, depending on whether or not the orientation is within the asymmetric unit
+		 */
+		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const;
 		
 		/// The name of this class - used to access it from factories etc. Should be "d"
 		static const string NAME;
@@ -608,6 +634,16 @@ namespace EMAN
 			* @return true - indicating that this is a helical symmetry object
 			*/
 			virtual bool is_h_sym() const { return true; }
+			
+			/** A function to be used when generating orientations over portion of the unit sphere
+			 * defined by parameters returned by get_delimiters. In platonic symmetry altitude and azimuth
+			 * alone are not enough to correctly demarcate the asymmetric unit. See the get_delimiters comments.
+			 * @param altitude the EMAN style altitude of the 3D orientation in degrees 
+			 * @param azimuth the EMAN style azimuth of the 3D orientation in degrees
+			 * @param inc_mirror whether or not to include orientations if they are in the mirror portion of the asymmetric unit
+			 * @return true or false, depending on whether or not the orientation is within the asymmetric unit
+			 */
+			virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const;
 			
 			/** @param inc_mirror whether or not to include the mirror portion of the asymmetric unit
 			 * @return a cyclic set of points which can be connected using great arcs on the unit sphere
@@ -964,11 +1000,10 @@ namespace EMAN
 	
 	/** AsymmUnitCover generates orientations quasi-evenly distributed in the asymmetric unit.
 	 * Historically, it is an adaptation of the method first used in EMAN1 and developed by Steve
-	 * Ludtke. In EMAN2 it is more or less the same thing, but with more accurate treatmeant of the
+	 * Ludtke. In EMAN2 it is more or less the same thing, but with more precise treatmeant of the
 	 * platonic symmetries. In terms of approach, the altitude angles in the asymmetric unit are traversed
-	 * universal instep of "prop" (a parameter of this class). However, the azimuth steps vary according
-	 * to altitude, and the maximum c-symmetry of the Symmetry3D object being used as the basis for
-	 * the orientation generation.
+	 * constantly in steps of "prop" (a parameter of this class). However, the azimuth steps vary according
+	 * to altitude, and this helps to achieve a more even distribution of orientations.
 	 * @author David Woolford (based on previous work by Phil Baldwin and Steve Ludtke)
 	 * @date Feb 2008
 	 */
@@ -994,7 +1029,7 @@ namespace EMAN
 		/** Get a description
 		 * @return a clear desciption of this class
 		 */
-		virtual string get_desc() const { return "Generate projections distributed quasi-uniformaly over the asymmetric unit using the EMAN strategy"; }
+		virtual string get_desc() const { return "Generate orientations distributed quasi-uniformaly over the asymmetric unit using a proportional strategy"; }
 		
 		/** Get a dictionary containing the permissable parameters of this class
 		 * @return a dictionary containing the permissable parameters of this class
@@ -1003,10 +1038,10 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("prop", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
+			d.put("delta", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
 			d.put("perturb", EMObject::BOOL, "Whether or not to perturb the generated orientations in a small local area, default is false.");
 			d.put("phitoo", EMObject::FLOAT, "Specifying a non zero value for this argument will cause phi rotations to be included. The value specified is the angular spacing of the phi rotations in degrees");
-			d.put("n", EMObject::INT, "The number of projections to generate. Exclusive of the prop argument. Will attempt to get as close to the number specified as possible.");
+			d.put("n", EMObject::INT, "The number of orientations to generate. Exclusive of the delta argument. Will attempt to get as close to the number specified as possible.");
 			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
 			return d;
 		}
@@ -1018,23 +1053,23 @@ namespace EMAN
 		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
 		
 	private:
-		/** This function gets the optimal value of the prop (or angular spacing) of the orientations
+		/** This function gets the optimal value of the delta (or angular spacing) of the orientations
 		 * based on a desired total number of orientations (n). It does this using a bifurcation strategy,
 		 * calling get_orientations_tally using the next best guess etc. The solution may not exist (simpy
 		 * because the orientation generation strategy does not contain it), so a best guess may be returned.
 		 * @param sym the symmetry which defines the interesting asymmetric unit
 		 * @param n the desired number of orientations
-		 * @return the optimal value of prop to ensure as near to the desired number of orientations is generated
+		 * @return the optimal value of delta to ensure as near to the desired number of orientations is generated
 		*/
-		float get_optimal_prop(const Symmetry3D* const sym, const int& n) const;
+		float get_optimal_delta(const Symmetry3D* const sym, const int& n) const;
 		
-		/** This function returns how many orientations will be generated for a given prop (angular spacing)
+		/** This function returns how many orientations will be generated for a given delta (angular spacing)
 		 * It does this by simulated gen_orientations.
 		 * @param sym the symmetry which defines the interesting asymmetric unit
-		 * @param prop the desired angular spacing of the orientations
+		 * @param delta the desired angular spacing of the orientations
 		 * @return the number of orientations that will be generated using these parameters
 		 */
-		int get_orientations_tally(const Symmetry3D* const sym, const float& prop) const;
+		int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
 		
 		/** This functions adds one or more Transform3D objects to the vector v, depending
 		 * on the input arguments. It is for internal convenience.
@@ -1046,15 +1081,15 @@ namespace EMAN
 		*/
 		bool add_orientation(vector<Transform3D>& v, const float& az, const float& alt, const float& phi, const float& phitoo) const;
 		
-		/** Gets the correct azimuth prop (angular separation) for a given altitude, prop and 
+		/** Gets the correct azimuth delta (angular separation) for a given altitude, delta and 
 		 * maximum symmetry. This function is important for the generation of evenly distributed
 		 * orientations
-		 * @param prop - the angular spacing of the altitude angles, this is usually the "prop" parameter
+		 * @param delta - the angular spacing of the altitude angles, this is usually the "delta" parameter
 		 * @param altitude the altitude along which the azimuth is going to be varied
 		 * @param maxcsym the maximum csym of the Symmetry3D object - this is usually Symmetry3D::get_max_csym
 		 * @return the optimal azimuth angular spacing
 		*/
-		float get_az_prop(const float& prop,const float& altitude, const int maxcsym) const;
+		float get_az_delta(const float& delta,const float& altitude, const int maxcsym) const;
 	};
 	
 	/// Template specialization for the OrientationGenerator class
@@ -1064,6 +1099,155 @@ namespace EMAN
 	/// Can be used to get useful information about the OrientationGenerator factory
 	map<string, vector<string> > dump_orientgens_list();
 	
+	
+	/**Random Orientation Generator
+	 * Generates random points in the asymmetric unit of any of the supported Symmetry3D types
+	 * in EMAN2. For points distributed in the unit sphere, just use the CSym type with nysm = 1. 
+	 * (i.e. c1 symmetry)
+	 * @author David Woolford
+	 * @date March 2008
+	 */
+	class RandomOrientationGenerator : public OrientationGenerator
+	{
+		public:
+		RandomOrientationGenerator() {}
+		virtual ~RandomOrientationGenerator() {}
+		
+		/** Factory support function NEW
+		* @return a newly instantiated class of this type
+		*/
+		static OrientationGenerator *NEW()
+		{
+			return new RandomOrientationGenerator();
+		}
+		
+		/** Return 	"random"
+		 * @return the unique name of this class
+		 */
+		virtual string get_name() const { return "random"; }
+
+		/** Get a description
+		 * @return a clear desciption of this class
+		 */
+		virtual string get_desc() const { return "Generate random orientations within an asymmetric unit"; }
+		
+		/** Get a dictionary containing the permissable parameters of this class
+		 * @return a dictionary containing the permissable parameters of this class
+		 * parameters are explained in the dictionary itself
+		 */
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("n", EMObject::INT, "The number of orientations to generate.");
+			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
+			d.put("phitoo", EMObject::BOOL, "Indicates whether the random orientations should also have a random phi on the interval [0,360) degrees. If not phi is always 0, which is the default behavior.");
+			return d;
+		}
+		
+		/** Generate random orientations in the asymmetric unit of the symmetry
+		 * @param sym the symmetry which defines the interesting asymmetric unit
+		 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
+		 */
+		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+	};
+	
+	/**Sparx even orientation generator - see util_sparx.cpp - Util::even_angles(...)
+	 * @author David Woolford
+	 * @date March 2008
+	 */
+	class EvenOrientationGenerator : public OrientationGenerator
+	{
+		public:
+		EvenOrientationGenerator() {}
+		virtual ~EvenOrientationGenerator() {}
+		
+		/** Factory support function NEW
+			 * @return a newly instantiated class of this type
+		 */
+		static OrientationGenerator *NEW()
+		{
+			return new EvenOrientationGenerator();
+		}
+		
+		/** Return 	"random"
+			* @return the unique name of this class
+		*/
+		virtual string get_name() const { return "even"; }
+
+		/** Get a description
+		 * @return a clear desciption of this class
+		 */
+		virtual string get_desc() const { return "Generate quasi-evenly distributed orientations within an asymmetric unit"; }
+		
+		/** Get a dictionary containing the permissable parameters of this class
+		 * @return a dictionary containing the permissable parameters of this class
+		 * parameters are explained in the dictionary itself
+		 */
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("n", EMObject::INT, "The number of orientations to generate.");
+			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
+			d.put("phitoo", EMObject::BOOL, "Indicates whether the random orientations should also have a random phi on the interval [0,360) degrees. If not phi is always 0, which is the default behavior.");
+			d.put("delta", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
+			return d;
+		}
+		
+		/** Generate even distributed orientations in the asymmetric unit of the symmetry
+		 * @param sym the symmetry which defines the interesting asymmetric unit
+		 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
+		 */
+		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+	};
+	
+	/** Saff even orientation generator 
+	 * @author David Woolford
+	 * @date March 2008
+		 */
+	class SaffOrientationGenerator : public OrientationGenerator
+	{
+		public:
+			SaffOrientationGenerator() {}
+			virtual ~SaffOrientationGenerator() {}
+		
+			/** Factory support function NEW
+			* @return a newly instantiated class of this type
+			*/
+			static OrientationGenerator *NEW()
+			{
+				return new SaffOrientationGenerator();
+			}
+		
+			/** Return 	"random"
+			* @return the unique name of this class
+			*/
+			virtual string get_name() const { return "saff"; }
+
+			/** Get a description
+			* @return a clear desciption of this class
+			*/
+			virtual string get_desc() const { return "Generate quasi-evenly distributed orientations within an asymmetric unit"; }
+		
+			/** Get a dictionary containing the permissable parameters of this class
+			 * @return a dictionary containing the permissable parameters of this class
+			 * parameters are explained in the dictionary itself
+			 */
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("n", EMObject::INT, "The number of orientations to generate.");
+				d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
+				d.put("phitoo", EMObject::BOOL, "Indicates whether the random orientations should also have a random phi on the interval [0,360) degrees. If not phi is always 0, which is the default behavior.");
+				d.put("delta", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
+				return d;
+			}
+		
+			/** Generate random orientations in the asymmetric unit of the symmetry
+			 * @param sym the symmetry which defines the interesting asymmetric unit
+			 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
+			 */
+			virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+	};
 }  // ends NameSpace EMAN
 
 

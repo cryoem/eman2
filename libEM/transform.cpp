@@ -1290,6 +1290,9 @@ map<string, vector<string> > EMAN::dump_symmetries_list()
 template <> Factory < OrientationGenerator >::Factory()
 {
 	force_add(&AsymmUnitCoverer::NEW);
+	force_add(&RandomOrientationGenerator::NEW);
+	force_add(&EvenOrientationGenerator::NEW);
+	force_add(&SaffOrientationGenerator::NEW);
 }
 
 void EMAN::dump_orientgens()
@@ -1324,7 +1327,7 @@ vector<Transform3D> Symmetry3D::gen_orientations(const string& generatorname, co
 	return ret;
 }
 
-int AsymmUnitCoverer::get_orientations_tally(const Symmetry3D* const sym, const float& prop) const
+int AsymmUnitCoverer::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
 {
 	bool inc_mirror = params.set_default("inc_mirror",false);
 	Dict delimiters = sym->get_delimiters(inc_mirror);
@@ -1339,7 +1342,7 @@ int AsymmUnitCoverer::get_orientations_tally(const Symmetry3D* const sym, const 
 	
 	int tally = 0;
 	while ( alt_iterator <= altmax ) {
-		float h = get_az_prop(prop,alt_iterator, sym->get_max_csym() );
+		float h = get_az_delta(delta,alt_iterator, sym->get_max_csym() );
 
 		// not sure what this does code taken from EMAN1 - FIXME original author add comments
 		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8f) ) h = azmax / 2.1f;
@@ -1366,43 +1369,45 @@ int AsymmUnitCoverer::get_orientations_tally(const Symmetry3D* const sym, const 
 			}
 			az_iterator += h;
 		}
-		alt_iterator += prop;
+		alt_iterator += delta;
 	}
 	return tally;
 }
 
-float AsymmUnitCoverer::get_optimal_prop(const Symmetry3D* const sym, const int& n) const
+float AsymmUnitCoverer::get_optimal_delta(const Symmetry3D* const sym, const int& n) const
 {
 	
-	float prop_soln = 360.0;
-	float prop_upper_bound = 360.0;
-	float prop_lower_bound = 0.0;
+	float delta_soln = 360.0/sym->get_max_csym();
+	float delta_upper_bound = delta_soln;
+	float delta_lower_bound = 0.0;
 	
-	// This is an example of a divide and conquer approach, the possible values of prop are searched
+	int prev_tally = -1;
+	// This is an example of a divide and conquer approach, the possible values of delta are searched
 	// like a binary tree
 	
 	bool soln_found = false;
 	
 	while ( soln_found == false ) {
-		int tally = get_orientations_tally(sym,prop_soln);
+		int tally = get_orientations_tally(sym,delta_soln);
 		if ( tally == n ) soln_found = true;
-		else if ( (prop_upper_bound - prop_lower_bound) < 0.000001 ) {
+		else if ( (delta_upper_bound - delta_lower_bound) < 0.0001 ) {
 			// If this is the case, the requested number of projections is practically infeasible
 			// in which case just return the nearest guess
 			soln_found = true;
-			prop_soln = (prop_upper_bound+prop_lower_bound)/2.0f;
+			delta_soln = (delta_upper_bound+delta_lower_bound)/2.0f;
 		}
 		else if (tally < n) {
-			prop_upper_bound = prop_soln;
-			prop_soln = prop_soln - (prop_soln-prop_lower_bound)/2.0f;
+			delta_upper_bound = delta_soln;
+			delta_soln = delta_soln - (delta_soln-delta_lower_bound)/2.0f;
 		}
 		else  /* tally > n*/{
-			prop_lower_bound = prop_soln;
-			prop_soln = prop_soln  + (prop_upper_bound-prop_soln)/2.0f;
+			delta_lower_bound = delta_soln;
+			delta_soln = delta_soln  + (delta_upper_bound-delta_soln)/2.0f;
 		}
+		prev_tally = tally;
 	}
 	
-	return prop_soln;
+	return delta_soln;
 }
 
 bool AsymmUnitCoverer::add_orientation(vector<Transform3D>& v, const float& az, const float& alt, const float& phi, const float& phitoo) const
@@ -1422,13 +1427,13 @@ bool AsymmUnitCoverer::add_orientation(vector<Transform3D>& v, const float& az, 
 	return true;
 }
 
-float AsymmUnitCoverer::get_az_prop(const float& prop,const float& altitude, const int maxcsym) const
+float AsymmUnitCoverer::get_az_delta(const float& delta,const float& altitude, const int maxcsym) const
 {
 	// convert altitude into radians
 	float tmp = (float)(EMConsts::deg2rad * altitude);
 			
 	// This is taken from EMAN1 project3d.C
-	float h=floor(360.0f/(prop*1.1547f));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
+	float h=floor(360.0f/(delta*1.1547f));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
 	h=(int)floor(h*sin(tmp)+.5);
 	if (h==0) h=1;
 	h=abs(maxcsym)*floor(h/(float)abs(maxcsym)+.5f);
@@ -1440,16 +1445,16 @@ float AsymmUnitCoverer::get_az_prop(const float& prop,const float& altitude, con
 
 vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const sym) const
 {	
-	float prop = params.set_default("prop", 0.0f);
+	float delta = params.set_default("delta", 0.0f);
 	int n = params.set_default("n", 0);
 	float phitoo = params.set_default("phitoo",0.0f);
 	
-	if ( prop <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero prop or n");
-	if ( prop > 0 && n > 0 ) throw InvalidParameterException("Error, the prop and the n arguments are mutually exclusive");
+	if ( delta <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero delta or n");
+	if ( delta > 0 && n > 0 ) throw InvalidParameterException("Error, the delta and the n arguments are mutually exclusive");
 	if ( phitoo < 0 ) throw InvalidValueException(phitoo, "Error, if you specify phitoo is must be positive");
 	
 	if ( n > 0 ) {
-		prop = get_optimal_prop(sym,n);
+		delta = get_optimal_delta(sym,n);
 	}
 	
 	bool inc_mirror = params.set_default("inc_mirror",false);
@@ -1467,7 +1472,7 @@ vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const s
 	
 	vector<Transform3D> ret;
 	while ( alt_iterator <= altmax ) {
-		float h = get_az_prop(prop,alt_iterator, sym->get_max_csym() );
+		float h = get_az_delta(delta,alt_iterator, sym->get_max_csym() );
 
 		// not sure what this does code taken from EMAN1 - FIXME original author add comments
 		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1f;
@@ -1495,7 +1500,7 @@ vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const s
 			}
 				
 			if ( perturb &&  alt_soln != 0 ) {
-				alt_soln += Util::get_gauss_rand(0.0f,.25f*prop);
+				alt_soln += Util::get_gauss_rand(0.0f,.25f*delta);
 				az_soln += Util::get_gauss_rand(0.0f,h/4.0f);
 			}
 				
@@ -1506,11 +1511,131 @@ vector<Transform3D> AsymmUnitCoverer::gen_orientations(const Symmetry3D* const s
 			}
 			az_iterator += h;
 		}
-		alt_iterator += prop;
+		alt_iterator += delta;
 	}
 	
 	return ret;
 }
+
+vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+{
+	int n = params.set_default("n", 0);
+	
+	if ( n <= 0 ) throw InvalidParameterException("You must specify a positive, non zero n for the Random Orientation Generator");
+	
+	bool phitoo = params.set_default("phitoo", false);
+	bool inc_mirror = params.set_default("inc_mirror", false);
+	
+	vector<Transform3D> ret;
+	
+	int i = 0;
+	while ( i < n ){
+		float u1 =  Util::get_frand(-1.0,1.0);
+		float u2 =  Util::get_frand(-1.0,1.0);
+		float s = u1*u1 + u2*u2;
+		if ( s > 1.0 ) continue;
+		float alpha = 2.0*sqrtf(1.0-s);
+		float x = alpha * u1;
+		float y = alpha * u2;
+		float z = 2.0*s-1.0;
+		
+		float altitude = EMConsts::rad2deg*acos(z);
+		float azimuth = EMConsts::rad2deg*atan2(y,x);
+		
+		if ( !sym->is_in_asym_unit(altitude,azimuth,inc_mirror) ) continue;
+		
+		float phi = 0.0;
+		if ( phitoo ) phi = Util::get_frand(0.0,359.9999);
+		
+		ret.push_back(Transform3D(	azimuth, altitude, phi ) );
+		i++;
+	}
+	return ret;
+}
+
+vector<Transform3D> EvenOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+{
+	float delta = params.set_default("delta", 0.0f);
+	int n = params.set_default("n", 0);
+	float phitoo = params.set_default("phitoo",0.0f);
+	
+	if ( delta <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero delta or n");
+	if ( delta > 0 && n > 0 ) throw InvalidParameterException("Error, the delta and the n arguments are mutually exclusive");
+	if ( phitoo < 0 ) throw InvalidValueException(phitoo, "Error, if you specify phitoo is must be positive");
+	
+// 	if ( n > 0 ) {
+// 		delta = get_optimal_delta(sym,n);
+// 	}
+	
+	bool inc_mirror = params.set_default("inc_mirror",false);
+	Dict delimiters = sym->get_delimiters(inc_mirror);
+	float altmax = delimiters["alt_max"];
+	float azmax = delimiters["az_max"];
+	vector<Transform3D> ret;
+	
+	for (float alt = 0; alt <= altmax; alt += delta) {
+		float detaz;
+		int lt;
+		if ((0.0 == alt)||(180.0 == alt)) {
+			detaz = 360.0f;
+			lt = 1;
+		} else {
+			detaz = delta/sin(alt*EMConsts::deg2rad);
+			lt = int(azmax/detaz)-1;
+			if (lt < 1) lt = 1;
+			detaz = azmax/(float)lt;
+		}
+		for (int i = 0; i < lt; i++) {
+			float az = (float)i*detaz;
+			if (sym->is_platonic()) {
+				if ( sym->is_in_asym_unit(alt, az,inc_mirror) == false ) continue;
+			}
+			ret.push_back(Transform3D(az,alt,0));
+		}
+	}
+
+	return ret;	
+}
+
+vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+{
+	float delta = params.set_default("delta", 0.0f);
+	int n = params.set_default("n", 0);
+	float phitoo = params.set_default("phitoo",0.0f);
+	
+	if ( delta <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero delta or n");
+	if ( delta > 0 && n > 0 ) throw InvalidParameterException("Error, the delta and the n arguments are mutually exclusive");
+	if ( phitoo < 0 ) throw InvalidValueException(phitoo, "Error, if you specify phitoo is must be positive");
+	
+// 	if ( n > 0 ) {
+// 		delta = get_optimal_delta(sym,n);
+// 	}
+	
+	bool inc_mirror = params.set_default("inc_mirror",false);
+	Dict delimiters = sym->get_delimiters(inc_mirror);
+	float altmax = delimiters["alt_max"];
+	float azmax = delimiters["az_max"];
+	
+	float Deltaz  = cos(altmax*EMConsts::deg2rad);
+	float s = delta*pi/180.0;
+	float NFactor = 3.6/s;
+	int wedgeFactor = abs( (int) Deltaz*(azmax)/720.0);
+	int NumPoints   = (int) NFactor*NFactor*wedgeFactor;
+	
+	vector<Transform3D> ret;
+// 	ret.append(Transform3D(0,0,0));
+	float phi = 0.0;
+	for(int i = 0; i < NumPoints; ++i ){
+		float z=Deltaz* (float)i/ float(NumPoints-1);
+		float r= sqrt(1.0-z*z);
+		phi = fmod(phi + delta/r,azmax);
+		ret.push_back( Transform3D(phi,acos(z)*EMConsts::rad2deg,0 ));
+	}
+
+	return ret;	
+}
+
+
 
 // C Symmetry stuff 
 Dict CSym::get_delimiters(const bool inc_mirror) const {
@@ -1525,6 +1650,18 @@ Dict CSym::get_delimiters(const bool inc_mirror) const {
 	returnDict["az_max"] = 360.0/(float)nsym;
 			
 	return returnDict;
+}
+
+bool CSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror = false) const
+{
+	Dict d = get_delimiters(inc_mirror);
+	float alt_max = d["alt_max"];
+	float az_max = d["az_max"];
+	
+	int nsym = params.set_default("nsym",0);
+	if ( nsym != 1 && azimuth < 0) return false;
+	if ( altitude <= alt_max && azimuth <= az_max ) return true;
+	return false;
 }
 
 vector<Vec3f> CSym::get_asymm_unit_points(bool inc_mirror) const
@@ -1591,6 +1728,23 @@ Dict DSym::get_delimiters(const bool inc_mirror) const {
 	return returnDict;
 }
 
+bool DSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror = false) const
+{
+	Dict d = get_delimiters(inc_mirror);
+	float alt_max = d["alt_max"];
+	float az_max = d["az_max"];
+	
+	int nsym = params.set_default("nsym",0);
+	
+	if ( nsym == 1 && inc_mirror ) {
+		 if (altitude >= 0 && altitude <= alt_max && azimuth <= az_max ) return true;
+	}
+	else {
+		if ( altitude >= 0 && altitude <= alt_max && azimuth <= az_max && azimuth >= 0 ) return true;
+	}
+	return false;
+}
+
 Transform3D DSym::get_sym(int n) const
 {
 	int nsym = 2*params.set_default("nsym",0);
@@ -1627,6 +1781,12 @@ vector<Vec3f> DSym::get_asymm_unit_points(bool inc_mirror) const
 			ret.push_back(Vec3f(-1,0,0));
 		}
 	}
+	else if ( nsym == 2 && inc_mirror ) {
+		ret.push_back(Vec3f(0,0,1));
+		ret.push_back(Vec3f(0,-1,0));
+		ret.push_back(Vec3f(1,0,0));
+		ret.push_back(Vec3f(0,1,0));
+	}
 	else {
 		float angle = EMConsts::deg2rad*float(delim["az_max"]);
 		ret.push_back(Vec3f(0,0,1));
@@ -1657,6 +1817,17 @@ Dict HSym::get_delimiters(const bool inc_mirror) const {
 	returnDict["az_max"] = 360.0/(float)nsym;
 
 	return returnDict;
+}
+
+bool HSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror = false) const
+{
+	Dict d = get_delimiters(inc_mirror);
+	float alt_max = d["alt_max"];
+	float alt_min = d["alt_min"];
+	float az_max = d["az_max"];
+	
+	if ( altitude >=alt_min && altitude <= alt_max && azimuth <= az_max && azimuth >= 0 ) return true;
+	return false;
 }
 
 vector<Vec3f> HSym::get_asymm_unit_points(bool inc_mirror) const
@@ -1806,24 +1977,32 @@ Dict PlatonicSym::get_delimiters(const bool inc_mirror) const
 //.Warning, this function only returns valid answers for octahedral and icosahedral symmetries.
 bool PlatonicSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const
 {
-	// Convert azimuth to radians
-	float tmpaz = (float)(EMConsts::deg2rad * azimuth);
+	Dict d = get_delimiters(inc_mirror);
+	float alt_max = d["alt_max"];
+	float az_max = d["az_max"];
 	
-	float cap_sig = platonic_params["az_max"];
-	float alt_max = platonic_params["alt_max"];
-	if ( tmpaz > ( cap_sig/2.0 ) )tmpaz = cap_sig - tmpaz;
+	if ( altitude >= 0 &&  altitude <= alt_max && azimuth <= az_max && azimuth >= 0) {
 	
-	float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
-	
-	// convert altitude to radians
-	float tmpalt = (float)(EMConsts::deg2rad * altitude);
-	if ( lower_alt_bound > tmpalt ) {
-		if ( inc_mirror == false )
-		{
-			if ( cap_sig/2.0 < tmpaz ) return false;
+		// Convert azimuth to radians
+		float tmpaz = (float)(EMConsts::deg2rad * azimuth);
+		
+		float cap_sig = platonic_params["az_max"];
+		float alt_max = platonic_params["alt_max"];
+		if ( tmpaz > ( cap_sig/2.0 ) )tmpaz = cap_sig - tmpaz;
+		
+		float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
+		
+		// convert altitude to radians
+		float tmpalt = (float)(EMConsts::deg2rad * altitude);
+		if ( lower_alt_bound > tmpalt ) {
+			if ( inc_mirror == false )
+			{
+				if ( cap_sig/2.0 < tmpaz ) return false;
+				else return true;
+			}
 			else return true;
 		}
-		else return true;
+		return false;
 	}
 	return false;
 }
@@ -1928,27 +2107,34 @@ Transform3D OctahedralSym::get_sym(int n) const
 
 bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const
 {
-	// convert azimuth to radians
-	float tmpaz = (float)(EMConsts::deg2rad * azimuth);
+	Dict d = get_delimiters(inc_mirror);
+	float alt_max = d["alt_max"];
+	float az_max = d["az_max"];
+	
+	if ( altitude >= 0 &&  altitude <= alt_max && azimuth <= az_max && azimuth >= 0) {
+		// convert azimuth to radians
+		float tmpaz = (float)(EMConsts::deg2rad * azimuth);
+			
+		float cap_sig = platonic_params["az_max"];
+		float alt_max = platonic_params["alt_max"];
+		if ( tmpaz > ( cap_sig/2.0 ) )tmpaz = cap_sig - tmpaz;
 		
-	float cap_sig = platonic_params["az_max"];
-	float alt_max = platonic_params["alt_max"];
-	if ( tmpaz > ( cap_sig/2.0 ) )tmpaz = cap_sig - tmpaz;
-	
-	float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
-	
-	// convert altitude to radians
-	float tmpalt = (float)(EMConsts::deg2rad * altitude);
-	if ( lower_alt_bound > tmpalt ) {
-		if ( !inc_mirror ) {
-			float upper_alt_bound = platonic_alt_lower_bound( tmpaz, alt_max/2.0f);
-			// you could change the "<" to a ">" here to get the other mirror part of the asym unit
-			if ( upper_alt_bound < tmpalt ) return false;
+		float lower_alt_bound = platonic_alt_lower_bound(tmpaz, alt_max );
+		
+		// convert altitude to radians
+		float tmpalt = (float)(EMConsts::deg2rad * altitude);
+		if ( lower_alt_bound > tmpalt ) {
+			if ( !inc_mirror ) {
+				float upper_alt_bound = platonic_alt_lower_bound( tmpaz, alt_max/2.0f);
+				// you could change the "<" to a ">" here to get the other mirror part of the asym unit
+				if ( upper_alt_bound < tmpalt ) return false;
+				else return true;
+			}
 			else return true;
 		}
-		else return true;
+		return false;
 	}
-	return false;
+	else return false;
 }
 
 
