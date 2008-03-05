@@ -753,6 +753,14 @@ namespace EMAN
 		if (fi != my_instance->my_dict.end()) {
 			return my_instance->my_dict[instancename] ();
 		}
+
+		string lower = instancename;
+		for (int i=0; i<lower.length(); i++) lower[i]=tolower(lower[i]);
+
+		fi = my_instance->my_dict.find(lower);
+		if (fi != my_instance->my_dict.end()) {
+			return my_instance->my_dict[lower] ();
+		}
 		
 		throw NotExistingObjectException(instancename, "No such an instance existing");
 	}
@@ -765,8 +773,14 @@ namespace EMAN
 		typename map < string, InstanceType >::iterator fi =
 			my_instance->my_dict.find(instancename);
 
+		string lower = instancename;
+		if (fi == my_instance->my_dict.end()) {
+			for (int i=0; i<lower.length(); i++) lower[i]=tolower(lower[i]);
+			fi = my_instance->my_dict.find(lower);
+		}
+
 		if (fi != my_instance->my_dict.end()) {
-			T *i = my_instance->my_dict[instancename] ();
+			T *i = my_instance->my_dict[lower] ();
 			
 			const vector<string> para_keys = params.keys();
 //			std::cout << "the number of keys is " << para_keys.size() << std::endl; // PRB May 19th

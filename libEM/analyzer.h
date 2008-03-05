@@ -121,6 +121,67 @@ namespace EMAN
 		vector<EMData *> images;
 	};
 	
+	/** KMeansAnalyzer
+	 * Performs k-means classification on a set of input images (shape/size arbitrary)
+	 * returned result is a set of classification vectors
+	 * @author Steve Ludtke
+	 * @date 03/02/2008
+	 *
+	 */
+	class KMeansAnalyzer:public Analyzer
+	{
+	  public:
+		KMeansAnalyzer() : verbose(0),ncls(0),minchange(0),mininclass(2),maxiter(100) {}
+		
+		virtual int insert_image(EMData * image) {
+			images.push_back(image);
+			return 0;
+		}
+		
+		virtual vector<EMData*> analyze();
+		
+		string get_name() const
+		{
+			return "kmeans";
+		}	  	
+		
+		string get_desc() const
+		{
+			return "k-means classification";
+		}
+		
+		static Analyzer * NEW()
+		{
+			return new KMeansAnalyzer();
+		}
+		
+		void set_params(const Dict & new_params);
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("verbose", EMObject::INT, "Display progress if set, more detail with larger numbers (9 max)");
+			d.put("ncls", EMObject::INT, "number of desired classes");
+			d.put("maxiter", EMObject::INT, "maximum number of iterations");
+			d.put("minchange", EMObject::INT, "Terminate if fewer than minchange members move in an iteration");
+			d.put("mininclass", EMObject::INT, "Minumum number of particles to keep a class as good (not enforced at termination");
+			return d;
+		}
+		
+		protected:
+		void update_centers();
+		void reclassify();
+
+		vector<EMData *> centers;
+		int nchanged;
+		int maxiter;
+		int ncls;	//number of desired classes
+		int minchange;
+		int mininclass;
+		int verbose;
+	};
+
+
 	class SVDAnalyzer : public Analyzer
 	{
 	  public:

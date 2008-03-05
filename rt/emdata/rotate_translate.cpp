@@ -197,7 +197,7 @@ void debug_align()
 	}
 */	
 	
-	EMData* d=b->align("rotate_translate",a,Dict(),"SqEuclidean",Dict());
+	EMData* d=b->align("rotate_translate",a,Dict(),"sqeuclidean",Dict());
 	
 	printf("Dic of d is: \n");
 	Dict dic1 = d->get_attr_dict();

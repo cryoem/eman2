@@ -48,7 +48,7 @@ class TestCmp(unittest.TestCase):
         e1.read_image(imgfile1)
 
         e2 = e1.copy()
-        score = e2.cmp("SqEuclidean", e1)
+        score = e2.cmp("sqeuclidean", e1)
         self.assertEqual(score, 0)
         testlib.safe_unlink(imgfile1)
         
@@ -69,7 +69,7 @@ class TestCmp(unittest.TestCase):
         dot_score = e2.cmp("dot", e1, {"negative":0, "normalize":1})
 #        self.assertEqual(dot_score, 19944.0)    #todo: dot score not match, anything wrong?
 
-        variance_score = e2.cmp("SqEuclidean", e1)
+        variance_score = e2.cmp("sqeuclidean", e1)
 #        self.assertEqual(variance_score, 0)    #todo: score not match, anything wrong?
         
         phase_score = e2.cmp("phase", e1, {})
@@ -177,9 +177,9 @@ class TestCmp(unittest.TestCase):
         e2.set_size(64,64,1)
         e2.process_inplace('testimage.noise.uniform.rand')
         
-        score  = e.cmp('SqEuclidean', e2, {})
+        score  = e.cmp('sqeuclidean', e2, {})
         # the square euclidiean distance difference of an image and itself should always be zero
-        zero  = e2.cmp('SqEuclidean', e2, {})
+        zero  = e2.cmp('sqeuclidean', e2, {})
 
         # the square euclidiean distance difference of an image and itself should always be zero
         # Here this assertion is tested for all combinations of all even odd combinations
@@ -191,7 +191,7 @@ class TestCmp(unittest.TestCase):
 					e3 = EMData()
 					e3.set_size(i,j,k)
 					e3.process_inplace('testimage.noise.uniform.rand')
-					zero  = e3.cmp('SqEuclidean', e3.copy(), {})
+					zero  = e3.cmp('sqeuclidean', e3.copy(), {})
 					self.assertAlmostEqual(zero,0, places=6)
         
     def test_DotCmp(self):

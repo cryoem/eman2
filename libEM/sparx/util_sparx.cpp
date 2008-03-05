@@ -16082,7 +16082,7 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 		//        Compute function value f for the sample problem.
 		rot = new EMData();
 		rot = image->rot_scale_trans2D((float)x[0], (float)x[1], (float)x[2], 1.0f);
-		f = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
+		f = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f = -f;
 		delete rot;
 		
@@ -16090,7 +16090,7 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 		float dt = 1.0e-3f;
 		rot = new EMData();
 		rot = image->rot_scale_trans2D((float)x[0]+dt, (float)x[1], (float)x[2], 1.0f);
-		f1 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
+		f1 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f1 = -f1;
 		g[0] = (f1-f)/dt;
 		delete rot;
@@ -16098,14 +16098,14 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 		dt = 1.0e-2f;
 		rot = new EMData();
 		rot = image->rot_scale_trans2D((float)x[0], (float)x[1]+dt, (float)x[2], 1.0f);
-		f2 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));		
+		f2 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));		
 		//f2 = -f2;
 		g[1] = (f2-f)/dt;
 		delete rot;
 		
 		rot = new EMData();
 		rot = image->rot_scale_trans2D((float)x[0], (float)x[1], (float)x[2]+dt, 1.0f);
-		f3 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
+		f3 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f3 = -f3;
 		g[2] = (f3-f)/dt;
 		delete rot;
@@ -16178,7 +16178,7 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 		//        Compute function value f for the sample problem.
 		rot = new EMData();
 		rot = image->rot_scale_conv7((float)(x[0]*pi/180), (float)x[1], (float)x[2], kb, 1.0f);
-		f = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
+		f = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f = -f;
 		delete rot;
 		
@@ -16186,21 +16186,21 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 		float dt = 1.0e-3f;
 		rot = new EMData();
 		rot = image->rot_scale_conv7((float)((x[0]+dt)*pi/180), (float)x[1], (float)x[2], kb, 1.0f);
-		f1 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
+		f1 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f1 = -f1;
 		g[0] = (f1-f)/dt;
 		delete rot;
 
 		rot = new EMData();
 		rot = image->rot_scale_conv7((float)(x[0]*pi/180), (float)x[1]+dt, (float)x[2], kb, 1.0);
-		f2 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));		
+		f2 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));		
 		//f2 = -f2;
 		g[1] = (f2-f)/dt;
 		delete rot;
 		
 		rot = new EMData();
 		rot = image->rot_scale_conv7((float)(x[0]*pi/180), (float)x[1], (float)x[2]+dt, kb, 1.0f);
-		f3 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));
+		f3 = rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f3 = -f3;
 		g[2] = (f3-f)/dt;
 		delete rot;
@@ -16282,7 +16282,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		proj->do_ift_inplace();
 		int M = proj->get_ysize()/2;
 		proj2 = proj->window_center(M);
-		f = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
+		f = proj2->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//f = -f;
 		delete proj;
 		delete proj2;
@@ -16297,7 +16297,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
 		proj->do_ift_inplace();
 		proj2 = proj->window_center(M);
-		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
+		ft = proj2->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
 		delete proj2;
@@ -16311,7 +16311,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
 		proj->do_ift_inplace();
 		proj2 = proj->window_center(M);
-		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
+		ft = proj2->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
 		delete proj2;
@@ -16325,7 +16325,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
 		proj->do_ift_inplace();
 		proj2 = proj->window_center(M);
-		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
+		ft = proj2->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
 		delete proj2;
@@ -16339,7 +16339,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3]+dt, "y_shift", x[4], "z_shift", 0.0f));
 		proj->do_ift_inplace();
 		proj2 = proj->window_center(M);
-		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
+		ft = proj2->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
 		delete proj2;
@@ -16353,7 +16353,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4]+dt, "z_shift", 0.0f));
 		proj->do_ift_inplace();
 		proj2 = proj->window_center(M);
-		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
+		ft = proj2->cmp("sqeuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
 		delete proj2;
@@ -16409,7 +16409,7 @@ float Util::ccc_images(EMData* image, EMData* refim, EMData* mask, float ang, fl
 	float ccc;
 	
 	rot = image->rot_scale_trans2D(ang, sx, sy, 1.0);
-	ccc = -rot->cmp("SqEuclidean", refim, Dict("mask", mask));
+	ccc = -rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 	delete rot;
 	return ccc;
 }
@@ -16446,7 +16446,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 	float ccc;
 	
 	rot = image->rot_scale_conv7(static_cast<float>(ang*pi/180.0), sx, sy, kb, 1.0f);
-	ccc = -rot->cmp("SqEuclidean", refim, Dict("mask", mask));
+	ccc = -rot->cmp("sqeuclidean", refim, Dict("mask", mask));
 	delete rot;
 	return ccc;
 }

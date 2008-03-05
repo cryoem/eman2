@@ -395,8 +395,7 @@ namespace EMAN
 		 * @return the gaussian random number.
 		 */
 		static float get_gauss_rand(float mean, float sigma);
-
-
+		
 		/** Get ceiling round of a float number x.
 		 * @param[in] x Given float number.
 		 * @return Ceiling round of x.

@@ -66,63 +66,92 @@ be classified. """
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 
+	logid=E2init(sys.argv)
+	
 	data=EMData.read_images(args[0])
 
 	print len(data)," images to classify."
 
-	Ncls=options.ncls
+	an=Analyzers.get("kmeans")
+	an.set_params({"ncls":options.ncls,"minchange":len(data)/(options.ncls*25)+1,"verbose":1})
+	
+	an.insert_images_list(data)
+	centers=an.analyze()
+	
+	nrep=[i.get_attr("ptcl_repr") for i in centers]
+	maxcls=max(nrep)
+	for n,i in enumerate(nrep):
+		print "%d) %s (%d)"%(n,"#"*int(i*72/maxcls),i)
+	
+	classes=[[] for i in range(options.ncls)]
+	for n,i in enumerate(data):
+		classes[i.get_attr("class_id")].append(n)
+		
 
-	# start with Ncls random images
-	centers=[]		# the average images for each class
-	for i in range(Ncls): centers.append(data[random.randint(0,len(data)-1)])
+	# This is the old python version of the algorithm, functional but slow
+	# left here in case someone needs something they can tweak
 	
-	iter=40
-	npcold=[0]*Ncls
+	## start with Ncls random images
+	#centers=[]		# the average images for each class
+	#for i in range(Ncls): centers.append(data[random.randint(0,len(data)-1)])
 	
-	while (iter>0) :
-		iter-=1
+	#iter=40
+	#npcold=[0]*Ncls
 	
-		classes=[]					# list of particle #'s in each class
-		for i in range(Ncls): classes.append([])
+	#while (iter>0) :
+		#iter-=1
 	
-		for i in range(len(data)):			# put each particle in a class
-			best=(1.0e30,-1)
-			for j in range(len(centers)):	# check for best matching center
-				c=1.0-centers[j].cmp("dot",data[i],{"normalize":1,"negative":0})
-				if (c<best[0]) : best=(c,j)
-			classes[best[1]].append((i,best[0]))
+		#classes=[]					# list of particle #'s in each class
+		#for i in range(Ncls): classes.append([])
 	
-		# make new averages
-		print "\nIteration ",40-iter
-		todel=-1
-		for j in range(len(centers)):
-			print "%3d. %4d\t(%d)"%(j,len(classes[j]),npcold[j])
-			if (len(classes[j])==0 ) :
-				centers[j]=data[random.randint(0,len(data)-1)]		# reseed empty classes with random image
-			elif options.nosingle and len(classes[j])==1:
-				centers[j]=data[random.randint(0,len(data)-1)]		# reseed empty classes with random image
-				todel=classes[j][0][0]		# delete the particle that was in its own class later
-				iter+=1
-			else :
-				centers[j]=data[classes[j][0][0]].copy()
-				for i in range(1,len(classes[j])):
-					centers[j]+=data[classes[j][i][0]]
-				if options.normavg : centers[j].process_inplace("normalize")
-				else: centers[j]/=len(classes[j])-1
+		#for i in range(len(data)):			# put each particle in a class
+			#best=(1.0e30,-1)
+			#for j in range(len(centers)):	# check for best matching center
+				#c=1.0-centers[j].cmp("dot",data[i],{"normalize":1,"negative":0})
+				#if (c<best[0]) : best=(c,j)
+			#classes[best[1]].append((i,best[0]))
+	
+		## make new averages
+		#print "\nIteration ",40-iter
+		#todel=-1
+		#for j in range(len(centers)):
+			#print "%3d. %4d\t(%d)"%(j,len(classes[j]),npcold[j])
+			#if (len(classes[j])==0 ) :
+				#centers[j]=data[random.randint(0,len(data)-1)]		# reseed empty classes with random image
+			#elif options.nosingle and len(classes[j])==1:
+				#centers[j]=data[random.randint(0,len(data)-1)]		# reseed empty classes with random image
+				#todel=classes[j][0][0]		# delete the particle that was in its own class later
+				#iter+=1
+			#else :
+				#centers[j]=data[classes[j][0][0]].copy()
+				#for i in range(1,len(classes[j])):
+					#centers[j]+=data[classes[j][i][0]]
+				#if options.normavg : centers[j].process_inplace("normalize")
+				#else: centers[j]/=len(classes[j])-1
 				
-		if todel!=-1 : del data[todel]
+		#if todel!=-1 : del data[todel]
 				
-		npc=map(lambda x:len(x),classes)		# produces a list with the number of particles in each class
-		if (npc==npcold) : break
-		npcold=npc
+		#npc=map(lambda x:len(x),classes)		# produces a list with the number of particles in each class
+		#if (npc==npcold) : break
+		#npcold=npc
 	
 	if (options.average) :
 		if (centers[0].get_zsize()>1) :
 			for i in range(len(centers)):
 				centers[i].write_image("avg.%04d.mrc"%i,0)
 		else:
+			# write the class-averages to avg.hed
 			for i in range(len(centers)):
 				centers[i].write_image("avg.hed",-1)
+			
+			# if original images specified, also write those averages to avg.orig.hed
+			if options.original :
+				for j in range(len(classes)):
+					avg=EMData(options.original,classes[j][0])
+					for i in range(1,len(classes[j])):
+						avg+=EMData(options.original,classes[j][i])
+					avg/=len(classes[j])
+					avg.write_image("avg.orig.hed",-1)
 		
 	if (options.clsfiles) :
 		os.system("rm -f cls????.lst")
@@ -132,8 +161,10 @@ be classified. """
 			out=open("cls%04d.lst"%j,"w")
 			out.write("#LST\n")
 			for i in range(len(classes[j])):
-				out.write("%d\t%s\n"%(classes[j][i][0],stackname))
+				out.write("%d\t%s\n"%(classes[j][i],stackname))
 			out.close()
+	
+	E2end(logid)
 
 if __name__ == "__main__":
 	main()

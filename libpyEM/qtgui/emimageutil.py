@@ -52,7 +52,12 @@ class EMParentWin(QtGui.QWidget):
 		
 #		self.setWindowTitle(self.tr("Whatever"))
 
-
+	def closeEvent(self, e):
+		try:
+			self.child.inspector.close()
+		except: pass
+		QtGui.QWidget.closeEvent(self,e)
+		
 class ImgHistogram(QtGui.QWidget):
 	""" A small fixed-size histogram widget"""
 	def __init__(self,parent):

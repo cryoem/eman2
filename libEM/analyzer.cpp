@@ -50,6 +50,7 @@ namespace EMAN {
 		force_add(&PCAsmall::NEW);
 		force_add(&PCAlarge::NEW);
 		force_add(&varimax::NEW);
+ 		force_add(&KMeansAnalyzer::NEW);
  		force_add(&SVDAnalyzer::NEW);
 	}
 
@@ -64,6 +65,83 @@ int Analyzer::insert_images_list(vector<EMData *> image_list)
 	return 0;
 }
 
+void KMeansAnalyzer::set_params(const Dict & new_params)
+{
+	params = new_params;
+	if (params.has_key("ncls")) ncls = params["ncls"];
+	if (params.has_key("maxiter"))maxiter = params["maxiter"];
+	if (params.has_key("minchange"))minchange = params["minchange"];
+	if (params.has_key("mininclass"))mininclass = params["mininclass"];
+	if (params.has_key("verbose"))verbose = params["verbose"];
+
+}
+
+vector<EMData *> KMeansAnalyzer::analyze()
+{
+if (ncls<=1) return vector<EMData *>();
+srandom(time(0));
+
+// These are the class centers, start each with a random image
+int nptcl=images.size();
+centers.resize(ncls);
+for (int i=0; i<ncls; i++) {
+	centers[i]=images[Util::get_irand(0,nptcl)]->copy();
+}
+
+for (int i=0; i<maxiter; i++) {
+	nchanged=0;
+	reclassify();
+	if (verbose) printf("iter %d>  %d\n",i,nchanged);
+	if (nchanged<minchange) break;
+	update_centers();
+}
+
+return centers;
+}
+
+void KMeansAnalyzer::update_centers() {
+int nptcl=images.size();
+
+for (int i=0; i<ncls; i++) {
+	centers[i]->to_zero();
+	centers[i]->set_attr("ptcl_repr",0);
+}
+
+for (int i=0; i<nptcl; i++) {
+	int cid=images[i]->get_attr("class_id");
+	centers[cid]->add(*images[i]);
+	centers[cid]->set_attr("ptcl_repr",(int)centers[cid]->get_attr("ptcl_repr")+1);
+}
+
+for (int i=0; i<ncls; i++) {
+	if ((int)centers[i]->get_attr("ptcl_repr")==0) {
+		delete centers[i];
+		centers[i]=images[Util::get_irand(0,nptcl)]->copy();
+		centers[i]->set_attr("ptcl_repr",1);
+	}
+	else centers[i]->mult((float)1.0/(float)(centers[i]->get_attr("ptcl_repr")));
+	if (verbose>1) printf("%d(%d)\t",i,(int)centers[i]->get_attr("ptcl_repr"));
+}
+if (verbose>1) printf("\n");
+
+}
+
+void KMeansAnalyzer::reclassify() {
+int nptcl=images.size();
+
+for (int i=0; i<nptcl; i++) {
+	float best=1.0e38;
+	int bestn=0;
+	for (int j=0; j<ncls; j++) {
+		float d=images[i]->cmp("sqeuclidean",centers[j]);
+		if (d<best) { best=d; bestn=j; }
+	}
+	int oldn=images[i]->get_attr_default("class_id",0);
+	if (oldn!=bestn) nchanged++;
+	images[i]->set_attr("class_id",bestn);
+}
+
+}
 
 #define covmat(i,j) covmat[ ((j)-1)*nx + (i)-1 ]
 #define imgdata(i)  imgdata[ (i)-1 ]

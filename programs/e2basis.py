@@ -68,7 +68,7 @@ project <basis input> <image input> <projection output>
 	logid=E2init(sys.argv)
 	
 	# second parameter is always the input basis set
-	if options.nbasis>1 : basis=EMData.read_images(args[1],0,options.nbasis)
+	if options.nbasis>1 : basis=EMData.read_images(args[1],(0,options.nbasis-1))
 	else :basis=EMData.read_images(args[1])
 	
 	# Project an image stack into a basis subspace
@@ -99,7 +99,10 @@ project <basis input> <image input> <projection output>
 		
 		results=pca.analyze()
 		for im in results: im.write_image(args[2],-1)
-		
+	else: print "Valid commands are project and varimax"
+	
+	E2end(logid)
+
 if __name__== "__main__":
 	main()
 	
