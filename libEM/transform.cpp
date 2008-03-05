@@ -1697,11 +1697,9 @@ vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D*
 {
 	float delta = params.set_default("delta", 0.0f);
 	int n = params.set_default("n", 0);
-	float phitoo = params.set_default("phitoo",0.0f);
 	
 	if ( delta <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero delta or n");
 	if ( delta > 0 && n > 0 ) throw InvalidParameterException("Error, the delta and the n arguments are mutually exclusive");
-	if ( phitoo < 0 ) throw InvalidValueException(phitoo, "Error, if you specify phitoo is must be positive");
 	
 	if ( n > 0 ) {
 		delta = get_optimal_delta(sym,n);
@@ -1778,7 +1776,8 @@ vector<Transform3D> OptimumOrientationGenerator::gen_orientations(const Symmetry
 	string generatorname = params.set_default("use","saff");
 	
 	if ( n > 0 && generatorname != RandomOrientationGenerator::NAME ) {
-		delta = get_optimal_delta(sym,n);
+		params["delta"] = get_optimal_delta(sym,n);
+		params["n"] = (int)0;
 	}
 	
 	// Force the orientation generator to include the mirror - this is because 
@@ -1788,9 +1787,8 @@ vector<Transform3D> OptimumOrientationGenerator::gen_orientations(const Symmetry
 	OrientationGenerator* g = Factory < OrientationGenerator >::get(generatorname);
 	g->set_params(copy_relevant_params(g));
 
-	params["inc_mirror"] = inc_mirror;
-	// get the starting orientation distribution
 	
+	// get the starting orientation distribution
 	CSym* unit_sphere = new CSym();
 	Dict nsym; nsym["nsym"] = 1; unit_sphere->set_params(nsym);
 	
@@ -1800,7 +1798,6 @@ vector<Transform3D> OptimumOrientationGenerator::gen_orientations(const Symmetry
 	
 	vector<Vec3f> angles = optimize_distances(unitsphereorientations);
 	
-	
 	vector<Transform3D> ret;
 	for (vector<Vec3f>::const_iterator it = angles.begin(); it != angles.end(); ++it ) {
 		if ( sym->is_in_asym_unit((*it)[1],(*it)[0],inc_mirror) ) {
@@ -1808,9 +1805,12 @@ vector<Transform3D> OptimumOrientationGenerator::gen_orientations(const Symmetry
 		}
 	}
 	
+	// reset the params to what they were before they were acted upon by this class
+	params["inc_mirror"] = inc_mirror;
+	params["delta"] = delta;
+	params["n"] = n;
+	
 	return ret;
-	
-	
 }
 
 vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Transform3D>& v) const
