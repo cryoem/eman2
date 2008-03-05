@@ -93,7 +93,7 @@ namespace EMAN
 	 *  r->insert_pixel(xx, yy, zz, dt, weight)
 	@endcode
 	 */
-	class FourierPixelInserter3D
+	class FourierPixelInserter3D : public FactoryBase
 	{
 		public:
 		/** Construct a FourierPixelInserter3D
@@ -106,25 +106,6 @@ namespace EMAN
 		virtual ~FourierPixelInserter3D()
 		{
 			free_memory();
-		}
-			
-		/** Set the Reconstructor's parameters using a key/value dictionary.
-		* @param new_params A dictionary containing the new parameters.
-		 */
-		void set_params(const Dict & new_params)
-		{
-		// note but this is really inserting OR individually replacing...
-		// the old data will be kept if it is not written over
-			TypeDict permissable_params = get_param_types();
-			for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
-			{
-			
-				if ( !permissable_params.find_type(it->first) )
-				{
-					throw InvalidParameterException(it->first);
-				}
-				params[it->first] = it->second;
-			}	
 		}
 		
 		TypeDict get_param_types() const
@@ -148,16 +129,6 @@ namespace EMAN
 		 */
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[]) = 0;
 	
-		/** Get the FourierPixelInserter3D's name. Each FourierPixelInserter3D is
-		* identified by a unique name, them being (strings) 1,2,3,4,5,6 and 7
-		* @return The FourierPixelInserter3D's ID.
-		 */
-		virtual string get_name() const = 0;
-
-		/** Get the FourierPixelInserter3D's desc.
-			* @return The FourierPixelInserter3D's description.
-		 */
-		virtual string get_desc() const = 0;
 
 		virtual void init();
 		
@@ -169,7 +140,6 @@ namespace EMAN
 		virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz) = 0;
 		
 		protected:
-			mutable Dict params;
 			/// A pointer to the constructor argument normalize_values
 			float * norm;
 			/// A pointer to the constructor argument real_data

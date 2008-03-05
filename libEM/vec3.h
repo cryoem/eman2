@@ -129,6 +129,16 @@ namespace EMAN
 			return (float)sqrt(t);
 		}
 		
+		/** Calculate its squared length.
+		 * no sqrt called 
+		 * @return The vector's length squared.
+		 */
+		float squared_length() const
+		{
+			float t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+			return t;
+		}
+		
 		/** Calculate the dot product of 'this' vector with a second
 		 * vector.
 		 * @param v  The second vector to do the dot product.
@@ -465,6 +475,16 @@ namespace EMAN
 		{
 			float t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
 			return (float)sqrt(t);
+		}
+		
+		/** Calculate its squared length.
+		 * The same as calling length except sqrt is not called.
+		 * @return The vector's length squared.
+		 */
+		float squared_length() const
+		{
+			float t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+			return t;
 		}
 
 		/** Calculate the dot product of 'this' vector with a second

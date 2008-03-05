@@ -39,6 +39,7 @@
 #include <boost/shared_ptr.hpp>
 #include "emdata.h"
 #include "exception.h"
+#include "emobject.h"
 #include "interp.h"
 
 using std::vector;
@@ -154,7 +155,7 @@ namespace EMAN
      *        TypeDict get_param_types() const;
 	 @endcode
 	*/
-	class Reconstructor : public ReconstructorVolumeData
+	class Reconstructor : public ReconstructorVolumeData, public FactoryBase
 	{
 	  public:
 		Reconstructor() {}
@@ -191,54 +192,6 @@ namespace EMAN
 		 */
 		virtual EMData *finish() = 0;
 
-		/** Get the Reconstructor's name. Each Reconstructor is
-		 * identified by a unique name.
-		 * @return The Reconstructor's name.
-		 */
-		virtual string get_name() const = 0;
-
-		
-		virtual string get_desc() const = 0;
-
-		/** Get the Reconstructor's parameters in a key/value dictionary.
-		 * @return A key/value pair dictionary containing the parameters.
-		 */
-		Dict get_params() const
-		{
-			return params;
-		}
-
-		/** Set the Reconstructor's parameters using a key/value dictionary.
-		 * @param new_params A dictionary containing the new parameters.
-		 */
-		void set_params(const Dict & new_params)
-		{
-			// This commented out by d.woolford. 
-			//params.clear();
-			
-			insert_params(new_params);
-		}
-		
-		/** Insert the Reconstructor's parameters using a key/value dictionary.
-		 * @param new_params A dictionary containing the new parameters.
-		 * @exception InvalidParameterException thrown when the parameter being inserted is not in the list of permissable params
-		 */
-		void insert_params(const Dict & new_params)
-		{
-			// this is really inserting OR individually replacing...
-			// the old data will be kept if it is not written over
-			TypeDict permissable_params = get_param_types();
-			for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
-			{
-				
-				if ( !permissable_params.find_type(it->first) )
-				{
-					throw InvalidParameterException(it->first);
-				}
-				params[it->first] = it->second;
-			}	
-		}
-
 		/** Print the current parameters to std::out
 		 */
 		void print_params() const
@@ -250,13 +203,7 @@ namespace EMAN
 			}	
 			std::cout << "Done printing reconstructor params" << std::endl;
 		}
-		/** Get reconstructor parameter information in a dictionary. 
-		 * Each parameter has one record in the dictionary. Each 
-		 * record contains its name, data-type, and description.
-		 *
-		 * @return A dictionary containing the parameter info.
-		 */	 
-		virtual TypeDict get_param_types() const = 0;
+
 
 		EMObject& operator[]( const string& key ) { return params[key]; }
 
@@ -267,8 +214,6 @@ namespace EMAN
 
 		
 		virtual int insert_slice_weights(const Transform3D& t3d) {return 0;}
-	  protected:
-		mutable Dict params;
 		
 	  private:
 		// Disallow copy construction

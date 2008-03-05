@@ -95,6 +95,7 @@ class EM3DSymViewer(EMImage3DObject):
 		self.prop = None
 		self.perturb = False
 		self.nomirror = True
+		self.opt = False
 		self.angle_label = ''
 		self.strategy = ''
 		
@@ -206,11 +207,12 @@ class EM3DSymViewer(EMImage3DObject):
 		sym = self.inspector.getSym()
 		prop = self.inspector.getProp()
 		mirror = not self.inspector.getMirror()
+		opt = self.inspector.getOpt()
 		perturb = self.inspector.getPerturb()
 		angle_label = self.inspector.getAngleLabel()
 		strategy = str(self.inspector.getOrientLabel())
 		
-		if self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.angle_label == angle_label and self.strategy == strategy and self.force_force_update == False: return
+		if self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.angle_label == angle_label and self.strategy == strategy and self.opt == opt and self.force_force_update == False: return
 		else:
 			self.sym = sym
 			self.prop = prop
@@ -218,7 +220,8 @@ class EM3DSymViewer(EMImage3DObject):
 			self.perturb = perturb
 			self.angle_label = angle_label
 			self.strategy = strategy
-		
+			self.opt = opt
+			
 		if self.spheredl == 0:
 			self.spheredl=glGenLists(1)
 				
@@ -266,7 +269,11 @@ class EM3DSymViewer(EMImage3DObject):
 			if ( perturb == True ) : val = 1
 			else: val = 0
 			og += ":perturb="+ str(val)
-				
+		
+		if opt == True : val = 1
+		else: val = 0
+		og += ":optimize="+str(val)
+		
 		[og_name,og_args] = parsemodopt(str(og))
 		
 		eulers = self.sym_object.gen_orientations(og_name, og_args)
@@ -531,6 +538,7 @@ class EMSymInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), target.regenDL)
 		QtCore.QObject.connect(self.prop_text, QtCore.SIGNAL("editingFinished()"), target.regenDL)
 		QtCore.QObject.connect(self.mirror_checkbox, QtCore.SIGNAL("stateChanged(int)"), target.regenDL)
+		QtCore.QObject.connect(self.opt_checkbox, QtCore.SIGNAL("stateChanged(int)"), target.regenDL)
 		QtCore.QObject.connect(self.perturbtog, QtCore.SIGNAL("toggled(bool)"), self.perturbtoggled)
 		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
@@ -611,6 +619,9 @@ class EMSymInspector(QtGui.QWidget):
 	
 	def getMirror(self):
 		return self.mirror_checkbox.checkState() == Qt.Checked
+	
+	def getOpt(self):
+		return self.opt_checkbox.checkState() == Qt.Checked
 	
 	def getPerturb(self):
 		return self.perturbtog.isChecked()
@@ -703,6 +714,9 @@ class EMSymInspector(QtGui.QWidget):
 		
 		self.mirror_checkbox = QtGui.QCheckBox("Mirror")
 		self.hbl_sym2.addWidget(self.mirror_checkbox)
+		
+		self.opt_checkbox = QtGui.QCheckBox("optimize")
+		self.hbl_sym2.addWidget(self.opt_checkbox)
 		
 		self.perturbtog = QtGui.QPushButton("Perturb")
 		self.perturbtog.setCheckable(1)

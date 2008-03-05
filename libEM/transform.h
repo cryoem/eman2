@@ -999,12 +999,22 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("phitoo", EMObject::FLOAT,  "Specifying a non zero value for this argument will cause phi rotations to be included. The value specified is the angular spacing of the phi rotations in degrees. The default for this value is 0, causing no extra phi rotations to be included.");
-			d.put("random_phi", EMObject::BOOL,  "Causes the orientataions to have a random phi. This occurs before the phitoo parameter is considered.");
+			d.put("random_phi", EMObject::BOOL,  "Causes the orientations to have a random phi. This occurs before the phitoo parameter is considered.");
+			d.put("optimize", EMObject::BOOL,  "Invokes a final round of optimization which forces the orientations to have a more even distribution. Default is off.");
 			return d;
 		}
 		
 		/** This functions adds one or more Transform3D objects to the vector v, depending
-		 * on the input arguments. It is for internal convenience.
+		 * on the parameters stored in the dictionary (which the inheriting class may
+		 * include by initializing the typedict in get_param_types by calling 
+		 *
+		 * @code
+		 * TypeDict d = OrientationGenerator::get_param_types();
+		 * @endcode
+		 *
+		 * to initialize. If phitoo is no zero, this cause extra orientations to be included in phi (in steps of phitoo).
+		 * If random_phi is true, the phi of the Transform3D object is randomized.
+		 * This function is for internal convenience of child classes.
 		 * @param v the vector to add Transform3D objects to
 		 * @param az the azimuth to be used as a basis for generated Transform3D objects (in degrees)
 		 * @param alt the altitude to be used as a basis for generated Transform3D objects (in degrees)
@@ -1012,34 +1022,51 @@ namespace EMAN
 		 */
 		bool add_orientation(vector<Transform3D>& v, const float& az, const float& alt) const;
 		
+		/// This is currently functionality that will be subsumed by another class
+		vector<Transform3D> optimize_distances(const vector<Transform3D>& v) const;
+		
+		/** Delta optimizer is an encapsulation of a strategy for generating an optimium delta for some target number of orientations n.
+		 *  It uses a bifurcation strategy that could be improved in future. Having a common place for the optimization
+		 *  strategy means that future developers only need modify the code in this class if improvements are identified.
+		 *  It is a member class of OrientationGenerator to emphasis its close relationship.
+		 *  Classes wishing to use the functionality of this class should inherit and supply the function get_orientations_tally.
+		 * @author David Woolford
+		 * @date March 2008
+		 */
+		class DeltaOptimizer
+		{
+			public:
+				DeltaOptimizer() {}
+				virtual ~DeltaOptimizer() {}
+		
+				/** This function gets the optimal value of the delta (or angular spacing) of the orientations
+				* based on a desired total number of orientations (n). It does this using a bifurcation strategy,
+				* calling get_orientations_tally (which must be supplied by the child class)
+				* using the next best guess etc. The solution may not exist (simply  because the
+				* orientation generation strategy does not contain it), so a best guess may be returned.
+				*
+				* The inheriting class must supply the get_orientations_tally function, which returns
+				* the number of orientations generated (an int), for a given delta.
+				*
+				* @param sym the symmetry which defines the interesting asymmetric unit
+				* @param n the desired number of orientations
+				* @return the optimal value of delta to ensure as near to the desired number of orientations is generated
+				*/
+				float get_optimal_delta(const Symmetry3D* const sym, const int& n) const;
+		
+				 /** This function returns how many orientations will be generated for a given delta (angular spacing)
+				 * It should general do this by simulating the function gen_orientations
+				 * @param sym the symmetry which defines the interesting asymmetric unit
+				 * @param delta the desired angular spacing of the orientations
+				 * @return the number of orientations that will be generated using these parameters
+				  */
+				virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const = 0;
+		};
 	};
 	
-	class OrientationOptimizer
-	{
-	public:
-		OrientationOptimizer() {}
-		virtual ~OrientationOptimizer() {}
+	
 		
-		/** This function gets the optimal value of the delta (or angular spacing) of the orientations
-		 * based on a desired total number of orientations (n). It does this using a bifurcation strategy,
-		 * calling get_orientations_tally using the next best guess etc. The solution may not exist (simpy
-		 * because the orientation generation strategy does not contain it), so a best guess may be returned.
-		 * @param sym the symmetry which defines the interesting asymmetric unit
-		 * @param n the desired number of orientations
-		 * @return the optimal value of delta to ensure as near to the desired number of orientations is generated
-		 */
-		float get_optimal_delta(const Symmetry3D* const sym, const int& n) const;
-		
-		 /** This function returns how many orientations will be generated for a given delta (angular spacing)
-		 * It does this by simulated gen_orientations.
-		 * @param sym the symmetry which defines the interesting asymmetric unit
-		 * @param delta the desired angular spacing of the orientations
-		 * @return the number of orientations that will be generated using these parameters
-		 */
-		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const = 0;
-	};
-		
-	 /** AsymmUnitCover generates orientations quasi-evenly distributed in the asymmetric unit.
+	 /** EmanOrientationGenerator generates orientations quasi-evenly distributed in the asymmetric unit.
 	 * Historically, it is an adaptation of the method first used in EMAN1 and developed by Steve
 	 * Ludtke. In EMAN2 it is more or less the same thing, but with more precise treatmeant of the
 	 * platonic symmetries. In terms of approach, the altitude angles in the asymmetric unit are traversed
@@ -1048,7 +1075,7 @@ namespace EMAN
 	 * @author David Woolford (based on previous work by Phil Baldwin and Steve Ludtke)
 	 * @date Feb 2008
 	 */
-	class EmanOrientationGenerator : public OrientationGenerator, public OrientationOptimizer
+	class EmanOrientationGenerator : public OrientationGenerator, public OrientationGenerator::DeltaOptimizer
 	{
 	public:
 		EmanOrientationGenerator() {};
@@ -1070,7 +1097,7 @@ namespace EMAN
 		/** Get a description
 		 * @return a clear desciption of this class
 		 */
-		virtual string get_desc() const { return "Generate orientations distributed quasi-uniformaly over the asymmetric unit using a proportional strategy"; }
+		virtual string get_desc() const { return "Generate orientations distributed quasi-uniformaly over the asymmetric unit using an altitude-proportional strategy"; }
 		
 		/** Get a dictionary containing the permissable parameters of this class
 		 * @return a dictionary containing the permissable parameters of this class
@@ -1081,7 +1108,7 @@ namespace EMAN
 			TypeDict d = OrientationGenerator::get_param_types();
 			d.put("delta", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
 			d.put("perturb", EMObject::BOOL, "Whether or not to perturb the generated orientations in a small local area, default is false.");
-			d.put("n", EMObject::INT, "The number of orientations to generate. Exclusive of the delta argument. Will attempt to get as close to the number specified as possible.");
+			d.put("n", EMObject::INT, "The number of orientations to generate. This option is mutually exclusively of the delta argument.Will attempt to get as close to the number specified as possible.");
 			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
 			return d;
 		}
@@ -1102,7 +1129,7 @@ namespace EMAN
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
 		
 		
-		/** Gets the correct azimuth delta (angular separation) for a given altitude, delta and 
+		/** Gets the optimum azimuth delta (angular step) for a given altitude, delta and 
 		 * maximum symmetry. This function is important for the generation of evenly distributed
 		 * orientations
 		 * @param delta - the angular spacing of the altitude angles, this is usually the "delta" parameter
@@ -1113,9 +1140,8 @@ namespace EMAN
 		float get_az_delta(const float& delta,const float& altitude, const int maxcsym) const;
 	};	
 	
-	/**Random Orientation Generator
-	 * Generates random points in the asymmetric unit of any of the supported Symmetry3D types
-	 * in EMAN2. For points distributed in the unit sphere, just use the CSym type with nysm = 1. 
+	/** Random Orientation Generator - carefully generates uniformly random orientations in any asymmetric unit.
+	 *  For points distributed in the unit sphere, just use the CSym type with nysm = 1.
 	 * (i.e. c1 symmetry)
 	 * @author David Woolford
 	 * @date March 2008
@@ -1153,6 +1179,7 @@ namespace EMAN
 			TypeDict d;
 			d.put("n", EMObject::INT, "The number of orientations to generate.");
 			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
+			d.put("optimize", EMObject::BOOL,  "Invokes a final round of optimization which forces the orientations to have a more even distribution. Default is off.");
 			return d;
 		}
 		
@@ -1164,10 +1191,17 @@ namespace EMAN
 	};
 	
 	/**Sparx even orientation generator - see util_sparx.cpp - Util::even_angles(...)
-	 * @author David Woolford
+	 * This orientation generator is based on work presented in Penczek et al., 1994 P.A. Penczek, R.A.
+	 * Grassucci and J. Frank, The ribosome at improved resolution: new techniques for merging and 
+	 * orientation refinement in 3D cryo-electron microscopy of biological particles, Ultramicroscopy 53 (1994).
+	 * 
+	 * This is a proportional approach very similar to the eman approach - the differences between these
+	 * two approaches is mostly visible near altitude=0
+	 *
+	 * @author David Woolford (ported directly from Sparx utilities.py, which is written by Pawel Penczek)
 	 * @date March 2008
 	 */
-	class EvenOrientationGenerator : public OrientationGenerator, public OrientationOptimizer
+	class EvenOrientationGenerator : public OrientationGenerator, public OrientationGenerator::DeltaOptimizer
 	{
 		public:
 		EvenOrientationGenerator() {}
@@ -1181,7 +1215,7 @@ namespace EMAN
 			return new EvenOrientationGenerator();
 		}
 		
-		/** Return 	"random"
+		/** Return 	"even"
 			* @return the unique name of this class
 		*/
 		virtual string get_name() const { return "even"; }
@@ -1189,7 +1223,7 @@ namespace EMAN
 		/** Get a description
 		 * @return a clear desciption of this class
 		 */
-		virtual string get_desc() const { return "Generate quasi-evenly distributed orientations within an asymmetric unit"; }
+		virtual string get_desc() const { return "Generate quasi-evenly distributed orientations within an asymmetric unit using Penczek's (94) approach"; }
 		
 		/** Get a dictionary containing the permissable parameters of this class
 		 * @return a dictionary containing the permissable parameters of this class
@@ -1198,9 +1232,9 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d = OrientationGenerator::get_param_types();
-			d.put("n", EMObject::INT, "The number of orientations to generate.");
-			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
 			d.put("delta", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
+			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
+			d.put("n", EMObject::INT, "The number of orientations to generate. This option is mutually exclusively of the delta argument.Will attempt to get as close to the number specified as possible.");
 			return d;
 		}
 		
@@ -1219,11 +1253,12 @@ namespace EMAN
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
 	};
 	
-	/** Saff even orientation generator 
-	 * @author David Woolford
+	/** Saff even orientation generator - based on the work of Saff and Kuijlaars, 1997 E.B. Saff and A.B.J. Kuijlaars, Distributing many points on a sphere,
+	 * Mathematical Intelligencer 19 (1997), pp. 5–11. This is a spiral based approach
+	 * @author David Woolford (ported directly from Sparx utilities.py, which is written by Pawel Penczek)
 	 * @date March 2008
 	 */
-	class SaffOrientationGenerator : public OrientationGenerator, public OrientationOptimizer
+	class SaffOrientationGenerator : public OrientationGenerator, public OrientationGenerator::DeltaOptimizer
 	{
 		public:
 			SaffOrientationGenerator() {}
@@ -1237,7 +1272,7 @@ namespace EMAN
 				return new SaffOrientationGenerator();
 			}
 		
-			/** Return 	"random"
+			/** Return 	"saff"
 			* @return the unique name of this class
 			*/
 			virtual string get_name() const { return "saff"; }
@@ -1245,7 +1280,7 @@ namespace EMAN
 			/** Get a description
 			* @return a clear desciption of this class
 			*/
-			virtual string get_desc() const { return "Generate quasi-evenly distributed orientations within an asymmetric unit"; }
+			virtual string get_desc() const { return "Generate quasi-evenly distributed orientations within an asymmetric unit using a spiraling method attributed to Saff"; }
 		
 			/** Get a dictionary containing the permissable parameters of this class
 			 * @return a dictionary containing the permissable parameters of this class
@@ -1253,14 +1288,14 @@ namespace EMAN
 			 */
 			virtual TypeDict get_param_types() const
 			{
-				TypeDict d = OrientationGenerator::get_param_types();
-				d.put("n", EMObject::INT, "The number of orientations to generate.");
+				TypeDict d = OrientationGenerator::get_param_types(); 
+				d.put("n", EMObject::INT, "The number of orientations to generate. This option is mutually exclusively of the delta argument.Will attempt to get as close to the number specified as possible.");
 				d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
 				d.put("delta", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
 				return d;
 			}
 		
-			/** Generate random orientations in the asymmetric unit of the symmetry
+			/** Generate Saff orientations in the asymmetric unit of the symmetry
 			 * @param sym the symmetry which defines the interesting asymmetric unit
 			 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
 			 */
@@ -1274,6 +1309,9 @@ namespace EMAN
 			 */
 			virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
 			
+			// This was a function that paid special considerations to the overall algorithm in the
+			// case of the Platonic symmetries, which have non trivial asymmetric units. But unfortunately
+			// it was bug-prone, and the approach in place seemed good enough
 // 			vector<Transform3D> gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const;
 	};
 	

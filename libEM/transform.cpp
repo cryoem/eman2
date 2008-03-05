@@ -1374,7 +1374,7 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	return tally;
 }
 
-float OrientationOptimizer::get_optimal_delta(const Symmetry3D* const sym, const int& n) const
+float OrientationGenerator::DeltaOptimizer::get_optimal_delta(const Symmetry3D* const sym, const int& n) const
 {
 	
 	float delta_soln = 360.0/sym->get_max_csym();
@@ -1430,6 +1430,62 @@ bool OrientationGenerator::add_orientation(vector<Transform3D>& v, const float& 
 		}
 	}
 	return true;
+}
+
+vector<Transform3D> OrientationGenerator::optimize_distances(const vector<Transform3D>& v) const
+{
+	
+	if ( v.size() <= 2 ) {
+		// Somewhat of an unfortunate/hacky solution, but the copy is only tiny so it
+		// is a trivial expense.
+		vector<Transform3D> ret(v);
+		return ret;
+	}
+	
+	vector<Vec3f> points;
+	
+	for (vector<Transform3D>::const_iterator it = v.begin(); it != v.end(); ++it ) {
+		points.push_back(Vec3f(0,0,1)*(*it));
+	}
+	
+	int max_it = 1000;
+	float percentage = 0.01;
+	
+	for ( int i = 0; i < max_it; ++i ){
+		unsigned int p1 = 0;
+		unsigned int p2 = 1;
+		
+		float distsquared = (points[p1]-points[p2]).squared_length();
+		
+		// Find the nearest points
+		for(unsigned int j = 0; j < points.size(); ++j) {
+			for(unsigned int k = j+1; k < points.size(); ++k) {
+				float d = (points[j]-points[k]).squared_length();
+				if ( d < distsquared ) {
+					distsquared = d;
+					p1 = j;
+					p2 = k;
+				}
+			}
+		}
+		
+		// Move them apart by a small fraction
+		Vec3f delta = percentage*(points[p2]-points[p1]);
+		
+		points[p2] += delta;
+		points[p2].normalize();
+		points[p1] -= delta;
+		points[p1].normalize();
+	}	
+	
+	vector<Transform3D> ret;
+	for (vector<Vec3f>::const_iterator it = points.begin(); it != points.end(); ++it ) {
+		float altitude = EMConsts::rad2deg*acos((*it)[2]);
+		float azimuth = EMConsts::rad2deg*atan2((*it)[1],(*it)[0]);
+		ret.push_back(Transform3D(90.0+azimuth,altitude,0));
+	}
+	
+	return ret;
 }
 
 float EmanOrientationGenerator::get_az_delta(const float& delta,const float& altitude, const int maxcsym) const
@@ -1517,7 +1573,9 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 		alt_iterator += delta;
 	}
 	
-	return ret;
+	bool opt = params.set_default("optimize",false);
+	if ( opt ) return optimize_distances(ret);
+	else return ret;
 }
 
 vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
@@ -1553,7 +1611,9 @@ vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3
 		ret.push_back(Transform3D(	azimuth, altitude, phi ) );
 		i++;
 	}
-	return ret;
+	bool opt = params.set_default("optimize",false);
+	if ( opt ) return optimize_distances(ret);
+	else return ret;
 }
 
 int EvenOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
@@ -1645,7 +1705,9 @@ vector<Transform3D> EvenOrientationGenerator::gen_orientations(const Symmetry3D*
 		}
 	}
 
-	return ret;	
+	bool opt = params.set_default("optimize",false);
+	if ( opt ) return optimize_distances(ret);
+	else return ret;
 }
 
 int SaffOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
@@ -1742,7 +1804,9 @@ vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D*
 		add_orientation(ret,az,alt);
 	}
 
-	return ret;	
+	bool opt = params.set_default("optimize",false);
+	if ( opt ) return optimize_distances(ret);
+	else return ret;
 }
 
 // vector<Transform3D> SaffOrientationGenerator::gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const	
@@ -1780,13 +1844,12 @@ vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D*
 // 	//nLast=  [ sin(acos(z))*cos(phi*piOver) ,  sin(acos(z))*sin(phi*piOver) , z]
 // 	//nVec.append(nLast)	
 // 		
-// 	for(int k = 0; k < NumPoints; ++k ) {
+// 	for(int k = 0; k < NumPoints-1; ++k ) {
 // 		z = z0 + Deltaz*(float)k/(float)(NumPoints-1);
 // 		float r= sqrt(1-z*z);
-// 		float phiMax = 0.0;
+// 		float phiMax =180.0*OmegaR/M_PI/2.0;
 // 		// Is it higher than fhat or lower
-// 		if (z > fheight) phiMax=  180.0*OmegaR/M_PI/2.0;
-// 		else if (z<= fheight) {
+// 		if (z<= fheight && false) {
 // 			float thetaR   = acos(z); 
 // 			float cosStuff = (cos(thetaR)/sin(thetaR))*sqrt(1. - 2 *cosOmega);
 // 			phiMax   =  180.0*( OmegaR - acos(cosStuff))/M_PI;
@@ -1794,17 +1857,19 @@ vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D*
 // 		float angleJump = fudge* delta/r;
 // 		phi = fmod(phi + angleJump,phiMax);
 // // 		anglesNew = [phi,180.0*acos(z)/pi,0.];
-// 		Vec3f nNew( sin(acos(z))*cos(phi*EMConsts::deg2rad) ,  sin(acos(z))*sin(phi*EMConsts::deg2rad) , z);
-// 		float mindiff = acos(nNew.dot(points[0]));
-// 		for(unsigned int l = 0; l < points.size(); ++l ) {
-// 			float dx = nNew.dot(points[l]);
-// 			if (dx < mindiff ) mindiff = dx;
-// 		}
-// 		if (mindiff > (angleJump*EMConsts::deg2rad *scrunch) ){
-// 			points.push_back(nNew);
-// 			ret.push_back(Transform3D(0, acos(z)*EMConsts::rad2deg, 0 ));
-// 		}
+// // 		Vec3f nNew( sin(acos(z))*cos(phi*EMConsts::deg2rad) ,  sin(acos(z))*sin(phi*EMConsts::deg2rad) , z);
+// // 		float mindiff = acos(nNew.dot(points[0]));
+// // 		for(unsigned int l = 0; l < points.size(); ++l ) {
+// // 			float dx = acos(nNew.dot(points[l]));
+// // 			if (dx < mindiff ) mindiff = dx;
+// // 		}
+// // 		if (mindiff > (angleJump*EMConsts::deg2rad *scrunch) ){
+// // 			points.push_back(nNew);
+// 			cout << "phi " << phi << " alt " << acos(z)*EMConsts::rad2deg << " " << z << endl;
+// 			ret.push_back(Transform3D(phi, acos(z)*EMConsts::rad2deg, 0 ));
+// // 		}
 // 	}
+// 	ret.push_back(Transform3D(0,0,0 ));
 // 	
 // 	return ret;
 // }
