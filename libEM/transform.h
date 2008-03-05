@@ -1000,7 +1000,6 @@ namespace EMAN
 			TypeDict d;
 			d.put("phitoo", EMObject::FLOAT,  "Specifying a non zero value for this argument will cause phi rotations to be included. The value specified is the angular spacing of the phi rotations in degrees. The default for this value is 0, causing no extra phi rotations to be included.");
 			d.put("random_phi", EMObject::BOOL,  "Causes the orientations to have a random phi. This occurs before the phitoo parameter is considered.");
-			d.put("optimize", EMObject::BOOL,  "Invokes a final round of optimization which forces the orientations to have a more even distribution. Default is off.");
 			return d;
 		}
 		
@@ -1022,46 +1021,31 @@ namespace EMAN
 		 */
 		bool add_orientation(vector<Transform3D>& v, const float& az, const float& alt) const;
 		
-		/// This is currently functionality that will be subsumed by another class
-		vector<Transform3D> optimize_distances(const vector<Transform3D>& v) const;
 		
-		/** Delta optimizer is an encapsulation of a strategy for generating an optimium delta for some target number of orientations n.
-		 *  It uses a bifurcation strategy that could be improved in future. Having a common place for the optimization
-		 *  strategy means that future developers only need modify the code in this class if improvements are identified.
-		 *  It is a member class of OrientationGenerator to emphasis its close relationship.
-		 *  Classes wishing to use the functionality of this class should inherit and supply the function get_orientations_tally.
-		 * @author David Woolford
-		 * @date March 2008
-		 */
-		class DeltaOptimizer
-		{
-			public:
-				DeltaOptimizer() {}
-				virtual ~DeltaOptimizer() {}
 		
-				/** This function gets the optimal value of the delta (or angular spacing) of the orientations
-				* based on a desired total number of orientations (n). It does this using a bifurcation strategy,
-				* calling get_orientations_tally (which must be supplied by the child class)
-				* using the next best guess etc. The solution may not exist (simply  because the
-				* orientation generation strategy does not contain it), so a best guess may be returned.
-				*
-				* The inheriting class must supply the get_orientations_tally function, which returns
-				* the number of orientations generated (an int), for a given delta.
-				*
-				* @param sym the symmetry which defines the interesting asymmetric unit
-				* @param n the desired number of orientations
-				* @return the optimal value of delta to ensure as near to the desired number of orientations is generated
-				*/
-				float get_optimal_delta(const Symmetry3D* const sym, const int& n) const;
-		
-				 /** This function returns how many orientations will be generated for a given delta (angular spacing)
-				 * It should general do this by simulating the function gen_orientations
-				 * @param sym the symmetry which defines the interesting asymmetric unit
-				 * @param delta the desired angular spacing of the orientations
-				 * @return the number of orientations that will be generated using these parameters
-				  */
-				virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const = 0;
-		};
+		/** This function gets the optimal value of the delta (or angular spacing) of the orientations
+		* based on a desired total number of orientations (n). It does this using a bifurcation strategy,
+		* calling get_orientations_tally (which must be supplied by the child class)
+		* using the next best guess etc. The solution may not exist (simply  because the
+		* orientation generation strategy does not contain it), so a best guess may be returned.
+		*
+		* The inheriting class must supply the get_orientations_tally function, which returns
+		* the number of orientations generated (an int), for a given delta.
+		*
+		* @param sym the symmetry which defines the interesting asymmetric unit
+		* @param n the desired number of orientations
+		* @return the optimal value of delta to ensure as near to the desired number of orientations is generated
+		*/
+		float get_optimal_delta(const Symmetry3D* const sym, const int& n) const;
+
+		/** This function returns how many orientations will be generated for a given delta (angular spacing)
+		* It should general do this by simulating the function gen_orientations
+		* @param sym the symmetry which defines the interesting asymmetric unit
+		* @param delta the desired angular spacing of the orientations
+		* @return the number of orientations that will be generated using these parameters
+		*/
+		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const = 0;
+
 	};
 	
 	
@@ -1075,7 +1059,7 @@ namespace EMAN
 	 * @author David Woolford (based on previous work by Phil Baldwin and Steve Ludtke)
 	 * @date Feb 2008
 	 */
-	class EmanOrientationGenerator : public OrientationGenerator, public OrientationGenerator::DeltaOptimizer
+	class EmanOrientationGenerator : public OrientationGenerator
 	{
 	public:
 		EmanOrientationGenerator() {};
@@ -1092,7 +1076,7 @@ namespace EMAN
 		/** Return 	"eman"
 		 * @return the unique name of this class
 		 */
-		virtual string get_name() const { return "eman"; }
+		virtual string get_name() const { return NAME; }
 
 		/** Get a description
 		 * @return a clear desciption of this class
@@ -1119,6 +1103,8 @@ namespace EMAN
 		 */
 		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
 		
+		/// The name of this class - used to access it from factories etc. Should be "icos"
+		static const string NAME;
 	private:
 		/** This function returns how many orientations will be generated for a given delta (angular spacing)
 		 * It does this by simulated gen_orientations.
@@ -1138,6 +1124,7 @@ namespace EMAN
 		 * @return the optimal azimuth angular spacing
 		*/
 		float get_az_delta(const float& delta,const float& altitude, const int maxcsym) const;
+		
 	};	
 	
 	/** Random Orientation Generator - carefully generates uniformly random orientations in any asymmetric unit.
@@ -1163,7 +1150,7 @@ namespace EMAN
 		/** Return 	"random"
 		 * @return the unique name of this class
 		 */
-		virtual string get_name() const { return "random"; }
+		virtual string get_name() const { return NAME; }
 
 		/** Get a description
 		 * @return a clear desciption of this class
@@ -1179,7 +1166,6 @@ namespace EMAN
 			TypeDict d;
 			d.put("n", EMObject::INT, "The number of orientations to generate.");
 			d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
-			d.put("optimize", EMObject::BOOL,  "Invokes a final round of optimization which forces the orientations to have a more even distribution. Default is off.");
 			return d;
 		}
 		
@@ -1188,6 +1174,11 @@ namespace EMAN
 		 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
 		 */
 		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+		
+		/// The name of this class - used to access it from factories etc. Should be "icos"
+		static const string NAME;
+		
+		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const { return 0; }
 	};
 	
 	/**Sparx even orientation generator - see util_sparx.cpp - Util::even_angles(...)
@@ -1201,7 +1192,7 @@ namespace EMAN
 	 * @author David Woolford (ported directly from Sparx utilities.py, which is written by Pawel Penczek)
 	 * @date March 2008
 	 */
-	class EvenOrientationGenerator : public OrientationGenerator, public OrientationGenerator::DeltaOptimizer
+	class EvenOrientationGenerator : public OrientationGenerator
 	{
 		public:
 		EvenOrientationGenerator() {}
@@ -1215,10 +1206,11 @@ namespace EMAN
 			return new EvenOrientationGenerator();
 		}
 		
+		
 		/** Return 	"even"
 			* @return the unique name of this class
 		*/
-		virtual string get_name() const { return "even"; }
+		virtual string get_name() const { return NAME; }
 
 		/** Get a description
 		 * @return a clear desciption of this class
@@ -1243,6 +1235,9 @@ namespace EMAN
 		 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
 		 */
 		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+		
+		/// The name of this class - used to access it from factories etc. Should be "icos"
+		static const string NAME;
 		private:
 		/** This function returns how many orientations will be generated for a given delta (angular spacing)
 		 * It does this by simulated gen_orientations.
@@ -1253,12 +1248,12 @@ namespace EMAN
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
 	};
 	
-	/** Saff even orientation generator - based on the work of Saff and Kuijlaars, 1997 E.B. Saff and A.B.J. Kuijlaars, Distributing many points on a sphere,
+	/** Saff orientation generator - based on the work of Saff and Kuijlaars, 1997 E.B. Saff and A.B.J. Kuijlaars, Distributing many points on a sphere,
 	 * Mathematical Intelligencer 19 (1997), pp. 5–11. This is a spiral based approach
 	 * @author David Woolford (ported directly from Sparx utilities.py, which is written by Pawel Penczek)
 	 * @date March 2008
 	 */
-	class SaffOrientationGenerator : public OrientationGenerator, public OrientationGenerator::DeltaOptimizer
+	class SaffOrientationGenerator : public OrientationGenerator
 	{
 		public:
 			SaffOrientationGenerator() {}
@@ -1271,11 +1266,11 @@ namespace EMAN
 			{
 				return new SaffOrientationGenerator();
 			}
-		
+			
 			/** Return 	"saff"
 			* @return the unique name of this class
 			*/
-			virtual string get_name() const { return "saff"; }
+			virtual string get_name() const { return NAME; }
 
 			/** Get a description
 			* @return a clear desciption of this class
@@ -1300,6 +1295,9 @@ namespace EMAN
 			 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
 			 */
 			virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+			
+			/// The name of this class - used to access it from factories etc. Should be "icos"
+			static const string NAME;
 		private:
 			/** This function returns how many orientations will be generated for a given delta (angular spacing)
 			 * It does this by simulated gen_orientations.
@@ -1315,12 +1313,83 @@ namespace EMAN
 // 			vector<Transform3D> gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const;
 	};
 	
+	
+	/** Optimum orientation generator. Optimally distributes points on a unit sphere, then slices out
+	 * a correctly sized asymmetric unit, depending on the symmetry type. The approach relies on an initial
+	 * distribution of points on the unit sphere, which may be generated using any of the other orientation
+	 * generators. By default, the Saff orientation generator is used.
+	 *
+	 * @author David Woolford 
+	 * @date March 2008
+	 */
+	class OptimumOrientationGenerator : public OrientationGenerator
+	{
+		public:
+			OptimumOrientationGenerator() {}
+			virtual ~OptimumOrientationGenerator() {}
+		
+			/** Factory support function NEW
+			 * @return a newly instantiated class of this type
+			 */
+			static OrientationGenerator *NEW()
+			{
+				return new OptimumOrientationGenerator();
+			}
+			
+			/** Return 	"opt"
+			 * @return the unique name of this class
+			 */
+			virtual string get_name() const { return NAME; }
+
+			/** Get a description
+			 * @return a clear desciption of this class
+			 */
+			virtual string get_desc() const { return "Generate optimally distributed orientations within an asymmetric using a basic optimization technique"; }
+		
+			/** Get a dictionary containing the permissable parameters of this class
+			 * @return a dictionary containing the permissable parameters of this class
+			 * parameters are explained in the dictionary itself
+			 */
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d = OrientationGenerator::get_param_types(); 
+				d.put("n", EMObject::INT, "The number of orientations to generate. This option is mutually exclusively of the delta argument.Will attempt to get as close to the number specified as possible.");
+				d.put("inc_mirror", EMObject::BOOL, "Indicates whether or not to include the mirror portion of the asymmetric unit. Default is false.");
+				d.put("delta", EMObject::FLOAT, "The angular separation of orientations in degrees. This option is mutually exclusively of the n argument.");
+				d.put("use", EMObject::STRING, "The orientation generation technique used to generate the initial distribution on the unit sphere.");
+				return d;
+			}
+		
+			/** Generate Saff orientations in the asymmetric unit of the symmetry
+			 * @param sym the symmetry which defines the interesting asymmetric unit
+			 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
+			 */
+			virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+			
+			/// The name of this class - used to access it from factories etc. Should be "icos"
+			static const string NAME;
+		private:
+			/** This function returns how many orientations will be generated for a given delta (angular spacing)
+			* It does this by simulated gen_orientations.
+			* @param sym the symmetry which defines the interesting asymmetric unit
+			* @param delta the desired angular spacing of the orientations
+			* @return the number of orientations that will be generated using these parameters
+			 */
+			virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
+			
+			
+			/// Optimize the distances in separating points on the unit sphere, as described by the
+			/// the rotations in Transform3D objects.
+			vector<Vec3f> optimize_distances(const vector<Transform3D>& v) const;
+	};
+	
 	/// Template specialization for the OrientationGenerator class
 	template <> Factory < OrientationGenerator >::Factory();
 	/// Dumps useful information about the OrientationGenerator factory
 	void dump_orientgens();
 	/// Can be used to get useful information about the OrientationGenerator factory
 	map<string, vector<string> > dump_orientgens_list();
+	
 }  // ends NameSpace EMAN
 
 

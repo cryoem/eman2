@@ -83,6 +83,10 @@ struct EMAN_OrientationGenerator_Wrapper : public EMAN::OrientationGenerator
 		return call_method< EMAN::TypeDict >(py_self, "get_param_types");
 	}
 
+	int get_orientations_tally(const EMAN::Symmetry3D* const sym, const float& delta ) const {
+		return call_method< int >(py_self, "get_orientations_tally",sym,delta);
+	}
+	
 	PyObject* py_self;
 };
 
@@ -136,6 +140,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	
 	class_< EMAN::OrientationGenerator, boost::noncopyable, EMAN_OrientationGenerator_Wrapper >("__OrientationGenerator", init<  >())
 			.def("gen_orientations", pure_virtual(&EMAN::OrientationGenerator::gen_orientations))
+			.def("get_orientations_tally", pure_virtual(&EMAN::OrientationGenerator::get_orientations_tally))
 		;
 	
 	class_< EMAN::Factory<EMAN::OrientationGenerator>, boost::noncopyable >("OrientGens", no_init)

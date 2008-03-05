@@ -52,6 +52,11 @@ const string HSym::NAME = "h";
 const string TetrahedralSym::NAME = "tet";
 const string OctahedralSym::NAME = "oct";
 const string IcosahedralSym::NAME = "icos";
+const string EmanOrientationGenerator::NAME = "eman";
+const string SaffOrientationGenerator::NAME = "saff";
+const string EvenOrientationGenerator::NAME = "even";
+const string RandomOrientationGenerator::NAME = "rand";
+const string OptimumOrientationGenerator::NAME = "opt";
 
 //  C1
 Transform3D::Transform3D()  //    C1
@@ -1293,6 +1298,7 @@ template <> Factory < OrientationGenerator >::Factory()
 	force_add(&RandomOrientationGenerator::NEW);
 	force_add(&EvenOrientationGenerator::NEW);
 	force_add(&SaffOrientationGenerator::NEW);
+	force_add(&OptimumOrientationGenerator::NEW);
 }
 
 void EMAN::dump_orientgens()
@@ -1304,8 +1310,6 @@ map<string, vector<string> > EMAN::dump_orientgens_list()
 {
 	return dump_factory_list < OrientationGenerator > ();
 }
-
-
 
 vector<Transform3D> Symmetry3D::gen_orientations(const string& generatorname, const Dict& parms)
 {
@@ -1374,7 +1378,7 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	return tally;
 }
 
-float OrientationGenerator::DeltaOptimizer::get_optimal_delta(const Symmetry3D* const sym, const int& n) const
+float OrientationGenerator::get_optimal_delta(const Symmetry3D* const sym, const int& n) const
 {
 	
 	float delta_soln = 360.0/sym->get_max_csym();
@@ -1430,62 +1434,6 @@ bool OrientationGenerator::add_orientation(vector<Transform3D>& v, const float& 
 		}
 	}
 	return true;
-}
-
-vector<Transform3D> OrientationGenerator::optimize_distances(const vector<Transform3D>& v) const
-{
-	
-	if ( v.size() <= 2 ) {
-		// Somewhat of an unfortunate/hacky solution, but the copy is only tiny so it
-		// is a trivial expense.
-		vector<Transform3D> ret(v);
-		return ret;
-	}
-	
-	vector<Vec3f> points;
-	
-	for (vector<Transform3D>::const_iterator it = v.begin(); it != v.end(); ++it ) {
-		points.push_back(Vec3f(0,0,1)*(*it));
-	}
-	
-	int max_it = 1000;
-	float percentage = 0.01;
-	
-	for ( int i = 0; i < max_it; ++i ){
-		unsigned int p1 = 0;
-		unsigned int p2 = 1;
-		
-		float distsquared = (points[p1]-points[p2]).squared_length();
-		
-		// Find the nearest points
-		for(unsigned int j = 0; j < points.size(); ++j) {
-			for(unsigned int k = j+1; k < points.size(); ++k) {
-				float d = (points[j]-points[k]).squared_length();
-				if ( d < distsquared ) {
-					distsquared = d;
-					p1 = j;
-					p2 = k;
-				}
-			}
-		}
-		
-		// Move them apart by a small fraction
-		Vec3f delta = percentage*(points[p2]-points[p1]);
-		
-		points[p2] += delta;
-		points[p2].normalize();
-		points[p1] -= delta;
-		points[p1].normalize();
-	}	
-	
-	vector<Transform3D> ret;
-	for (vector<Vec3f>::const_iterator it = points.begin(); it != points.end(); ++it ) {
-		float altitude = EMConsts::rad2deg*acos((*it)[2]);
-		float azimuth = EMConsts::rad2deg*atan2((*it)[1],(*it)[0]);
-		ret.push_back(Transform3D(90.0+azimuth,altitude,0));
-	}
-	
-	return ret;
 }
 
 float EmanOrientationGenerator::get_az_delta(const float& delta,const float& altitude, const int maxcsym) const
@@ -1573,9 +1521,7 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 		alt_iterator += delta;
 	}
 	
-	bool opt = params.set_default("optimize",false);
-	if ( opt ) return optimize_distances(ret);
-	else return ret;
+	return ret;
 }
 
 vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
@@ -1611,9 +1557,7 @@ vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3
 		ret.push_back(Transform3D(	azimuth, altitude, phi ) );
 		i++;
 	}
-	bool opt = params.set_default("optimize",false);
-	if ( opt ) return optimize_distances(ret);
-	else return ret;
+	return ret;
 }
 
 int EvenOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
@@ -1705,9 +1649,7 @@ vector<Transform3D> EvenOrientationGenerator::gen_orientations(const Symmetry3D*
 		}
 	}
 
-	bool opt = params.set_default("optimize",false);
-	if ( opt ) return optimize_distances(ret);
-	else return ret;
+	return ret;
 }
 
 int SaffOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
@@ -1804,9 +1746,121 @@ vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D*
 		add_orientation(ret,az,alt);
 	}
 
-	bool opt = params.set_default("optimize",false);
-	if ( opt ) return optimize_distances(ret);
-	else return ret;
+	return ret;
+}
+
+int OptimumOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
+{
+	string deltaoptname = params.set_default("use","saff");
+	Dict a;
+	a["inc_mirror"] = (bool)params.set_default("inc_mirror",false);
+	OrientationGenerator *g = Factory < OrientationGenerator >::get(deltaoptname,a);
+	if (g) {
+		int tally = g->get_orientations_tally(sym,delta);
+		delete g;
+		g = 0;
+		return tally;
+	}
+	else throw;
+}
+
+
+vector<Transform3D> OptimumOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+{	
+	float delta = params.set_default("delta", 0.0f);
+	int n = params.set_default("n", 0);
+	
+	bool inc_mirror = params.set_default("inc_mirror",false);
+	
+	if ( delta <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero delta or n");
+	if ( delta > 0 && n > 0 ) throw InvalidParameterException("Error, the delta and the n arguments are mutually exclusive");
+	
+	string generatorname = params.set_default("use","saff");
+	
+	if ( n > 0 && generatorname != RandomOrientationGenerator::NAME ) {
+		delta = get_optimal_delta(sym,n);
+	}
+	
+	// Force the orientation generator to include the mirror - this is because 
+	// We will enventually use it to generate orientations over the intire sphere
+	// which is C1 symmetry, with the inc_mirror flag set to true
+	params["inc_mirror"] = true;
+	OrientationGenerator* g = Factory < OrientationGenerator >::get(generatorname);
+	g->set_params(copy_relevant_params(g));
+
+	params["inc_mirror"] = inc_mirror;
+	// get the starting orientation distribution
+	
+	CSym* unit_sphere = new CSym();
+	Dict nsym; nsym["nsym"] = 1; unit_sphere->set_params(nsym);
+	
+	vector<Transform3D> unitsphereorientations = g->gen_orientations(unit_sphere);
+	delete g; g = 0;
+	delete unit_sphere; unit_sphere = 0;
+	
+	vector<Vec3f> angles = optimize_distances(unitsphereorientations);
+	
+	
+	vector<Transform3D> ret;
+	for (vector<Vec3f>::const_iterator it = angles.begin(); it != angles.end(); ++it ) {
+		if ( sym->is_in_asym_unit((*it)[1],(*it)[0],inc_mirror) ) {
+			add_orientation(ret,(*it)[0],(*it)[1]);
+		}
+	}
+	
+	return ret;
+	
+	
+}
+
+vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Transform3D>& v) const
+{
+	vector<Vec3f> points;
+	
+	for (vector<Transform3D>::const_iterator it = v.begin(); it != v.end(); ++it ) {
+		points.push_back(Vec3f(0,0,1)*(*it));
+	}
+	
+	if ( points.size() >= 2 ) {
+		int max_it = 1000;
+		float percentage = 0.01;
+		
+		for ( int i = 0; i < max_it; ++i ){
+			unsigned int p1 = 0;
+			unsigned int p2 = 1;
+			
+			float distsquared = (points[p1]-points[p2]).squared_length();
+			
+			// Find the nearest points
+			for(unsigned int j = 0; j < points.size(); ++j) {
+				for(unsigned int k = j+1; k < points.size(); ++k) {
+					float d = (points[j]-points[k]).squared_length();
+					if ( d < distsquared ) {
+						distsquared = d;
+						p1 = j;
+						p2 = k;
+					}
+				}
+			}
+			
+			// Move them apart by a small fraction
+			Vec3f delta = percentage*(points[p2]-points[p1]);
+			
+			points[p2] += delta;
+			points[p2].normalize();
+			points[p1] -= delta;
+			points[p1].normalize();
+		}
+	}
+	
+	vector<Vec3f> ret;
+	for (vector<Vec3f>::const_iterator it = points.begin(); it != points.end(); ++it ) {
+		float altitude = EMConsts::rad2deg*acos((*it)[2]);
+		float azimuth = EMConsts::rad2deg*atan2((*it)[1],(*it)[0]);
+		ret.push_back(Vec3f(90.0+azimuth,altitude,0));
+	}
+	
+	return ret;
 }
 
 // vector<Transform3D> SaffOrientationGenerator::gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const	

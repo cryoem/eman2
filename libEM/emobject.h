@@ -300,6 +300,75 @@ namespace EMAN
 	bool operator==(const EMObject &e1, const EMObject & e2);
 	bool operator!=(const EMObject &e1, const EMObject & e2);
 
+		/** TypeDict is a dictionary to store <string, EMObject::ObjectType> pair.
+	 * It is mainly used to store processor-like class's parameter
+	 * information: <parameter-name, parameter-type>.
+     * Typical usage of this class:
+	 *
+	 *    TypeDict d;
+	 *    d.put("with", EMObject::EMDATA);
+	 *    d.put("lowpass", EMObject::FLOAT);
+	 *
+	 *    string lowpass_type = d["lowpass"];
+		 */
+	class TypeDict
+	{
+		public:
+			TypeDict()
+			{
+			}
+
+			~TypeDict()
+			{
+			}
+
+			vector < string > keys() const
+			{
+				vector < string > result;
+				map < string, string >::const_iterator p;
+
+				for (p = type_dict.begin(); p != type_dict.end(); p++) {
+					result.push_back(p->first);
+				}
+
+				return result;
+			}
+
+			size_t size() const
+			{
+				return type_dict.size();
+			}
+
+			void put(const string& key, EMObject::ObjectType o, const string& desc = "")
+			{
+				type_dict[key] = EMObject::get_object_type_name(o);
+				desc_dict[key] = desc;
+			}
+
+			string get_type(const string& key)
+			{
+				return type_dict[key];
+			}
+
+			string get_desc(const string& key)
+			{
+				return desc_dict[key];
+			}
+		
+			string operator[] (const string & key)
+			{
+				return type_dict[key];
+			}
+
+			void dump();
+
+			inline bool find_type( const string& type ) {  if ( type_dict.find(type) != type_dict.end() ) return true; return false; }
+
+		private:
+			map < string, string > type_dict;
+			map < string, string > desc_dict;
+	};
+	
 	
 	/** Dict is a dictionary to store <string, EMObject> pair.
      * Typical ways to construct a Dict:
@@ -494,6 +563,31 @@ namespace EMAN
 			return dict[key];
 		}
 
+		Dict copy_exclude_keys(const vector<string>& excluded_keys) const
+		{
+			Dict ret(*this);
+			
+			for ( vector<string>::const_iterator it = excluded_keys.begin(); it != excluded_keys.end(); ++it ) {
+				if (ret.has_key(*it)) ret.erase(*it);
+			}
+			
+			return ret;
+		}
+		
+		Dict copy_exclusive_keys(const vector<string>& exclusive_keys) const
+		{
+			Dict ret;	
+			for ( vector<string>::const_iterator it = exclusive_keys.begin(); it != exclusive_keys.end(); ++it ) {
+				if (has_key(*it)) ret[*it] = (*this)[*it];
+			}
+			
+			return ret;
+		}
+		
+		Dict copy_keys_in( const TypeDict& tdict ) const {
+			vector<string> keys = tdict.keys();
+			return copy_exclusive_keys(keys);
+		}
 
 		EMObject & operator[] (const string & key)
 		{
@@ -595,75 +689,6 @@ namespace EMAN
 	bool operator==(const Dict &d1, const Dict& d2);
 	bool operator!=(const Dict &d1, const Dict& d2);
 
-	/** TypeDict is a dictionary to store <string, EMObject::ObjectType> pair.
-     * It is mainly used to store processor-like class's parameter
-     * information: <parameter-name, parameter-type>.
-     * Typical usage of this class:
-     *
-     *    TypeDict d;
-     *    d.put("with", EMObject::EMDATA);
-     *    d.put("lowpass", EMObject::FLOAT);
-     *
-     *    string lowpass_type = d["lowpass"];
-     */
-	class TypeDict
-	{
-	public:
-		TypeDict()
-		{
-		}
-
-		~TypeDict()
-		{
-		}
-
-		vector < string > keys() const
-		{
-			vector < string > result;
-			map < string, string >::const_iterator p;
-
-			for (p = type_dict.begin(); p != type_dict.end(); p++) {
-				result.push_back(p->first);
-			}
-
-			return result;
-		}
-
-		size_t size() const
-		{
-			return type_dict.size();
-		}
-
-		void put(const string& key, EMObject::ObjectType o, const string& desc = "")
-		{
-			type_dict[key] = EMObject::get_object_type_name(o);
-			desc_dict[key] = desc;
-		}
-
-		string get_type(const string& key)
-		{
-			return type_dict[key];
-		}
-
-		string get_desc(const string& key)
-		{
-			return desc_dict[key];
-		}
-		
-		string operator[] (const string & key)
-		{
-			return type_dict[key];
-		}
-
-		void dump();
-
-		inline bool find_type( const string& type ) {  if ( type_dict.find(type) != type_dict.end() ) return true; return false; }
-
-	private:
-		map < string, string > type_dict;
-		map < string, string > desc_dict;
-	};
-
 	
 	/** Factory is used to store objects to create new instances.
      * It is a singleton template. Typical usages are as follows:
@@ -755,7 +780,7 @@ namespace EMAN
 		}
 
 		string lower = instancename;
-		for (int i=0; i<lower.length(); i++) lower[i]=tolower(lower[i]);
+		for (unsigned int i=0; i<lower.length(); i++) lower[i]=tolower(lower[i]);
 
 		fi = my_instance->my_dict.find(lower);
 		if (fi != my_instance->my_dict.end()) {
@@ -775,7 +800,7 @@ namespace EMAN
 
 		string lower = instancename;
 		if (fi == my_instance->my_dict.end()) {
-			for (int i=0; i<lower.length(); i++) lower[i]=tolower(lower[i]);
+			for (unsigned int i=0; i<lower.length(); i++) lower[i]=tolower(lower[i]);
 			fi = my_instance->my_dict.find(lower);
 		}
 
@@ -907,6 +932,12 @@ namespace EMAN
 				}
 				params[it->first] = it->second;
 			}	
+		}
+		
+		Dict copy_relevant_params(const FactoryBase* const that) const
+		{
+			return params.copy_keys_in(that->get_param_types());
+	
 		}
 	
 		protected:

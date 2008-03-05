@@ -131,7 +131,7 @@ namespace EMAN
 	class KMeansAnalyzer:public Analyzer
 	{
 	  public:
-		KMeansAnalyzer() : verbose(0),ncls(0),minchange(0),mininclass(2),maxiter(100) {}
+		KMeansAnalyzer() : ncls(0),verbose(0),minchange(0),maxiter(100),mininclass(2) {}
 		
 		virtual int insert_image(EMData * image) {
 			images.push_back(image);
@@ -173,12 +173,13 @@ namespace EMAN
 		void reclassify();
 
 		vector<EMData *> centers;
-		int nchanged;
-		int maxiter;
 		int ncls;	//number of desired classes
-		int minchange;
-		int mininclass;
 		int verbose;
+		int minchange;
+		int maxiter;
+		int mininclass;
+		int nchanged;
+		
 	};
 
 
