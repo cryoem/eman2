@@ -102,26 +102,28 @@ return centers;
 
 void KMeansAnalyzer::update_centers() {
 int nptcl=images.size();
+int repr[ncls];
 
 for (int i=0; i<ncls; i++) {
 	centers[i]->to_zero();
-	centers[i]->set_attr("ptcl_repr",0);
+	repr[i]=0;
 }
 
 for (int i=0; i<nptcl; i++) {
 	int cid=images[i]->get_attr("class_id");
 	centers[cid]->add(*images[i]);
-	centers[cid]->set_attr("ptcl_repr",(int)centers[cid]->get_attr("ptcl_repr")+1);
+	repr[cid]++;
 }
 
 for (int i=0; i<ncls; i++) {
-	if ((int)centers[i]->get_attr("ptcl_repr")==0) {
+	if (repr[i]==0) {
 		delete centers[i];
 		centers[i]=images[Util::get_irand(0,nptcl)]->copy();
-		centers[i]->set_attr("ptcl_repr",1);
+		repr[i]=1;
 	}
-	else centers[i]->mult((float)1.0/(float)(centers[i]->get_attr("ptcl_repr")));
-	if (verbose>1) printf("%d(%d)\t",i,(int)centers[i]->get_attr("ptcl_repr"));
+	else centers[i]->mult((float)1.0/(float)(repr[i]));
+	centers[i]->set_attr("ptcl_repr",repr[i]);
+	if (verbose>1) printf("%d(%d)\t",i,(int)repr[i]);
 }
 if (verbose>1) printf("\n");
 
