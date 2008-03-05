@@ -38,6 +38,7 @@
 #include "analyzer.h"
 #include "sparx/analyzer_sparx.h"
 #include "util.h"
+#include "cmp.h"
 #include "sparx/lapackblas.h"
 #include "sparx/varimax.h"
 
@@ -129,18 +130,20 @@ if (verbose>1) printf("\n");
 void KMeansAnalyzer::reclassify() {
 int nptcl=images.size();
 
+Cmp *c = Factory < Cmp >::get("sqeuclidean");
 for (int i=0; i<nptcl; i++) {
 	float best=1.0e38;
 	int bestn=0;
 	for (int j=0; j<ncls; j++) {
-		float d=images[i]->cmp("sqeuclidean",centers[j]);
+		float d=c->cmp(images[i],centers[j]);
+//images[i]->cmp("sqeuclidean",centers[j]);
 		if (d<best) { best=d; bestn=j; }
 	}
 	int oldn=images[i]->get_attr_default("class_id",0);
 	if (oldn!=bestn) nchanged++;
 	images[i]->set_attr("class_id",bestn);
 }
-
+delete c;
 }
 
 #define covmat(i,j) covmat[ ((j)-1)*nx + (i)-1 ]
