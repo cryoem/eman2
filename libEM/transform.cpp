@@ -2283,19 +2283,19 @@ vector<Vec3f> PlatonicSym::get_asymm_unit_points(bool inc_mirror) const
 		ret.push_back(a_on_two);
 	}
 	
-	if ( get_az_alignment_offset() != 0 ) {
-		Transform3D t(0,0,get_az_alignment_offset());
-		for (vector<Vec3f>::iterator it = ret.begin(); it != ret.end(); ++it )
-		{
-			*it = (*it)*t;
-		} 
-	}
-	
+// 	if ( get_az_alignment_offset() != 0 ) {
+// 		Transform3D t(0,0,get_az_alignment_offset());
+// 		for (vector<Vec3f>::iterator it = ret.begin(); it != ret.end(); ++it )
+// 		{
+// 			*it = (*it)*t;
+// 		} 
+// 	}
+// 	
 	return ret;
 	
 }
 
-float IcosahedralSym::get_az_alignment_offset() const { return  36.0; }
+float IcosahedralSym::get_az_alignment_offset() const { return  0.0; }
 
 Transform3D IcosahedralSym::get_sym(int n) const
 {
@@ -2351,7 +2351,7 @@ Transform3D OctahedralSym::get_sym(int n) const
 	
 }
 
-float TetrahedralSym::get_az_alignment_offset() const { return  180.0; }
+float TetrahedralSym::get_az_alignment_offset() const { return  0.0; }
 
 bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const
 {
@@ -2434,13 +2434,13 @@ vector<Vec3f> TetrahedralSym::get_asymm_unit_points(bool inc_mirror) const
 	ret.push_back(a_on_two);
 
 	
-	if ( get_az_alignment_offset() != 0 ) {
-		Transform3D t(0,0,get_az_alignment_offset());
-		for (vector<Vec3f>::iterator it = ret.begin(); it != ret.end(); ++it )
-		{
-			*it = (*it)*t;
-		} 
-	}
+// 	if ( get_az_alignment_offset() != 0 ) {
+// 		Transform3D t(0,0,get_az_alignment_offset());
+// 		for (vector<Vec3f>::iterator it = ret.begin(); it != ret.end(); ++it )
+// 		{
+// 			*it = (*it)*t;
+// 		} 
+// 	}
 	
 	return ret;
 	
