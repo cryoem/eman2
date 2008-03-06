@@ -198,7 +198,7 @@ class EM3DSymViewer(EMImage3DObject):
 		glRotatef(90+phi,0,0,1)
 		glRotatef(alt,1,0,0)
 		
-		glScalef(0.2,0.2,length)
+		glScalef(0.5,0.5,length)
 		glCallList(self.cylinderdl)
 		glPopMatrix()
 			

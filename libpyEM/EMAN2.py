@@ -193,16 +193,12 @@ def parsemodopt(optstr):
 	
 	if not optstr or len(optstr)==0 : return (None,{})
 	
-	print optstr
 	p_1 = re.findall( parseparmobj3, optstr )
-	print p_1
 	if len(p_1)==0: return (optstr,{})
 	
 	r2 = {}
 	for i in range (1, len(p_1)):
-		print  p_1[i]
 		args = re.findall( parseparmobj4, p_1[i] )
-		print args
 		if len(args) != 2:
 			print "ERROR: Command line parameter options failed"
 			print "\tSpecify parameters using this syntax - optiontype:p1=v1:p2=v2 etc"
