@@ -817,7 +817,7 @@ namespace EMAN
 		 * result of using the delimiters supplied by this class should by offset by this azimuth
 		 * to ensure proper alignment with tetrahedral objects in EMAN2
 		 */
-		virtual float get_az_alignment_offset() const { return  0.0; }
+		virtual float get_az_alignment_offset() const;
 		
 		/// The name of this class - used to access it from factories etc. Should be "tet"
 		static const string NAME;
@@ -963,7 +963,7 @@ namespace EMAN
 		 * result of using the delimiters supplied by this class should by offset by this azimuth
 		 * to ensure proper alignment with tetrahedral objects in EMAN2
 		 */
-		virtual float get_az_alignment_offset() const { return  0.0; /*270.0-36.0;*/ }
+		virtual float get_az_alignment_offset() const;
 		
 		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;

@@ -342,6 +342,20 @@ class EM3DSymViewer(EMImage3DObject):
 		glCallList(self.sym_dl)
 		glPopMatrix()
 		
+		if self.inspector.symtoggled():
+			for i in range(1,self.sym_object.get_nsym()):
+				t = self.sym_object.get_sym(i)
+				d = t.get_rotation()
+				glPushMatrix()
+				if ( self.sym_object.is_h_sym() ):
+					trans = t.get_posttrans()
+					glTranslatef(trans[0],trans[1],trans[2])
+				glRotate(d["az"],0,0,1)
+				glRotate(d["alt"],1,0,0)
+				glRotate(d["phi"],0,0,1)
+				glCallList(self.sym_dl)
+				glPopMatrix()
+		
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 		glPushMatrix()
