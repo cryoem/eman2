@@ -184,7 +184,7 @@ def parsesym(optstr):
 
 parseparmobj1=re.compile("([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
 parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
-parseparmobj3=re.compile("[^:]\w*=*[\w.]*") # This parses ("a:v1=2:v2=3") into ("a", "v1=2", "v2=3") 
+parseparmobj3=re.compile("[^:]\w*=*[-\w.]*") # This parses ("a:v1=2:v2=3") into ("a", "v1=2", "v2=3") 
 parseparmobj4=re.compile("\w*[^=][\w.]*") # This parses ("v1=2") into ("v1", "2")
 def parsemodopt(optstr):
 	"""This is used so the user can provide the name of a comparator, processor, etc. with options
@@ -193,13 +193,16 @@ def parsemodopt(optstr):
 	
 	if not optstr or len(optstr)==0 : return (None,{})
 	
+	print optstr
 	p_1 = re.findall( parseparmobj3, optstr )
-	
+	print p_1
 	if len(p_1)==0: return (optstr,{})
 	
 	r2 = {}
 	for i in range (1, len(p_1)):
+		print  p_1[i]
 		args = re.findall( parseparmobj4, p_1[i] )
+		print args
 		if len(args) != 2:
 			print "ERROR: Command line parameter options failed"
 			print "\tSpecify parameters using this syntax - optiontype:p1=v1:p2=v2 etc"
