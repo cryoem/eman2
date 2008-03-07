@@ -172,6 +172,16 @@ This function will get an application default by first checking the local direct
 	
 	return None
 
+def remove_image(fsp):
+	"""This will remove the image file pointed to by fsp. The reason for this function
+	to exist is formats like IMAGIC which store data in two files. This insures that
+	both files are removed."""
+	try:
+		os.unlink(fsp)
+		if fsp[-4:]==".hed" : os.unlink(fsp[:-3]+"img")
+		elif fsp[-4:]==".img" : os.unlink(fsp[:-3]+"hed")
+	except: pass
+
 def parsesym(optstr):
 	
 	[sym, dict] = parsemodopt(optstr)

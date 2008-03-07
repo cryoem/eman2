@@ -42,7 +42,7 @@ READ_HEADER_ONLY = True
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <input particles> <sim mx> <output> [options]
+	usage = """%prog <input particles> <class mx> <output> [options]
 	Produces class averages """
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -70,7 +70,7 @@ def main():
 		
 	if (options.nofilecheck == False):
 		options.classifyfile=args[1]
-		if ( options.ref != None ):
+		if ( options.ref ):
 			options.reffile=options.ref
 		options.datafile = args[0]
 		options.outfile = args[2]
@@ -105,7 +105,7 @@ def main():
 	num_proj_required = classes.get_attr("maximum") 
 	
 	# double check that the argument reference image makes sense
-	if (options.ref != ""):
+	if (options.ref):
 		if not os.path.exists(options.ref):
 			parser.error("File %s does not exist" %options.ref)
 			
@@ -171,7 +171,7 @@ def main():
 			# if this is the first iteration, and the user has specified the reference image
 			# then we calculate the quality metric. This is used to exclude particles from the
 			# class average.
-			if (options.ref != "" ):
+			if (options.ref ):
 				if options.verbose: 
 					print "Generating similarity metrics using reference images, iteration %d" %it
 				for i in classification.items():
@@ -190,7 +190,7 @@ def main():
 						j[2] = tmp2.cmp(options.cmp[0],tmp1,options.cmp[1])
 			
 			if (options.debug):
-				if (options.ref != "" ): print "Used reference to generate quality metrics on the first round"
+				if (options.ref ): print "Used reference to generate quality metrics on the first round"
 				else: print "Did not generate quality metrics in the first round"
 		else:
 			# if this is not the first iteration we compare the particles to the class average
@@ -250,7 +250,7 @@ def main():
 		# Should quality scores be calculated...?
 		do_qual = True
 		# Only if not the following
-		if ( it == 0 and options.ref == "" ): do_qual = False
+		if ( it == 0 and not options.ref ): do_qual = False
 		
 		# Should the quality threshold be calculated?
 		do_thresh = True
@@ -348,7 +348,7 @@ def main():
 	if options.verbose: 
 		print "Writing %s" %args[2]
 	for i in classes.items():
-		if ( options.ref != "" ):
+		if ( options.ref  ):
 			tmp3.read_image(options.ref, int(i[0]), READ_HEADER_ONLY)
 			alt = tmp3.get_attr("euler_alt")
 			az = tmp3.get_attr("euler_az")

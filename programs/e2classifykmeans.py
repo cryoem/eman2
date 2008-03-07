@@ -58,6 +58,7 @@ be classified. """
 	parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
 	parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 	parser.add_option("--normavg",action="store_true",help="Normalize averages",default=False)
+	parser.add_option("--clsmx",type="string",default=None,help="Standard EMAN2 output suitable for use with e2classaverage, etc.")
 	parser.add_option("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
 	parser.add_option("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
 	parser.add_option("--nosingle","-X",action="store_true",help="Try to eliminate classes with only 1 member",default=False)
@@ -163,6 +164,28 @@ be classified. """
 			for i in range(len(classes[j])):
 				out.write("%d\t%s\n"%(classes[j][i],stackname))
 			out.close()
+	
+	# Write an EMAN2 standard classification matrix. Particles run along y
+	# each class a particle is in takes a slot in x. There are then a set of
+	# 5 images containing class #, a weight, and dx,dy,dangle
+	if (options.clsmx) :
+		clsnum=EMData(1,len(data),1)
+		weight=EMData(1,len(data),1)
+		dx=EMData(1,len(data),1)
+		dy=dx		# we don't have alignment values, so...
+		dang=dx
+	
+		weight.to_one()
+		dx.to_zero()
+		for n,i in enumerate(data):
+			clsnum[n]=float(i.get_attr("class_id"))
+		
+		remove_image(options.clsmx)
+		clsnum.write_image(options.clsmx,0)
+		weight.write_image(options.clsmx,1)
+		dx.write_image(options.clsmx,2)
+		dy.write_image(options.clsmx,3)
+		dang.write_image(options.clsmx,4)
 	
 	E2end(logid)
 
