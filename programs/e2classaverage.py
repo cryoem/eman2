@@ -56,7 +56,7 @@ def main():
 	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="dot:normalize=1")
 	parser.add_option("--averager",type="string",help="The type of average that will produce the class average.",default="image")
 	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes", default="dot:normalize=1")
-	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.")
+	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.", default=1.0)
 	parser.add_option("--keepsig", type=float, dest="keepsig", help="The standard deviation alternative to the --keep argument")
 	parser.add_option("--verbose","-v",action="store_true",help="Print useful information while the program is running. Default is off.",default=False)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
@@ -73,7 +73,7 @@ def main():
 	if (options.nofilecheck == False):
 		options.classifyfile=args[1]
 		if ( options.ref ):
-			options.reffile=options.ref
+			options.ref=options.ref
 		options.datafile = args[0]
 		options.outfile = args[2]
 	
@@ -168,7 +168,6 @@ def main():
 		################################################################################
 		# OVERSEE THE GENERATION AND STORAGE OF THE QUALITY METRIC, AND POTENTIAL ALIGNMENT
 		################################################################################
-		
 		if (it == 0):
 			# if this is the first iteration, and the user has specified the reference image
 			# then we calculate the quality metric. This is used to exclude particles from the
@@ -219,13 +218,13 @@ def main():
 					if ( options.ralign != None ):
 						refineparms=parsemodopt(options.ralign)
 						
-						refineparms[1]["az"] = ta.get_attr_default("align.az",0)-1
-						refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)-1
-						refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)-1
-						refineparms[1]["mode"] = 0
-						refineparms[1]["stepx"] = 2
-						refineparms[1]["stepy"] = 2
-						refineparms[1]["stepaz"] = 5
+						#refineparms[1]["az"] = ta.get_attr_default("align.az",0)-1
+						#refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)-1
+						#refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)-1
+						#refineparms[1]["mode"] = 0
+						#refineparms[1]["stepx"] = 2
+						#refineparms[1]["stepy"] = 2
+						#refineparms[1]["stepaz"] = 5
 						#print refineparms[1]
 						
 						ta = tmp1.align(refineparms[0],r,refineparms[1],options.alircmp[0],options.alircmp[1])
@@ -282,14 +281,17 @@ def main():
 					std_dev = a["std_dev"]
 					threshold[i[0]] = [mean + options.keepsig*std_dev]
 				else:
-					b = deepcopy(i[1])
-					b.sort()
-					# The ceil reflects a conservative policy. If the user specified keep=0.93
-					# and there were 10 particles, then they would all be kept. If floor were
-					# used instead of ceil, the last particle would be thrown away (in the
-					# class average)
-					idx = int(ceil(options.keep*len(b))-1)
-					threshold[i[0]] = [b[idx]]
+					if ( len(i[1]) != 0 ):
+						b = deepcopy(i[1])
+						b.sort()
+						# The ceil reflects a conservative policy. If the user specified keep=0.93
+						# and there were 10 particles, then they would all be kept. If floor were
+						# used instead of ceil, the last particle would be thrown away (in the
+						# class average)
+						idx = int(ceil(options.keep*len(b))-1)
+						threshold[i[0]] = [b[idx]]
+					else:
+						threshold[i[0]] = 0
 		
 		if (options.debug):
 			if ( do_qual and do_thresh ): print "Performed quality metric threshold calculation"
@@ -391,17 +393,16 @@ def check(options, verbose=False):
 					print "Error - the number of rows (%d) in the classification matrix image %s does not match the number of images (%d) in %s" %(ysize, options.classifyfile,numimg,options.datafile)
 				
 			
-		if options.reffile and not os.path.exists(options.reffile):
-			print "Error: the file expected to contain the reference images (%s) does not exist" %(options.reffile)
+		if options.ref != None and not os.path.exists(options.ref):
+			print "Error: the file expected to contain the reference images (%s) does not exist" %(options.ref)
 			error = True
-	
-		if os.path.exists(options.reffile) and os.path.exists(options.datafile):
-			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
-			(pxsize, pysize ) = gimme_image_dimensions2D(options.reffile);
-			if ( xsize != pxsize ):
-				error = True
-				if (verbose):
-					print "Error - the dimensions of the reference and particle images do not match"
+			if os.path.exists(options.ref) and os.path.exists(options.datafile):
+				(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
+				(pxsize, pysize ) = gimme_image_dimensions2D(options.ref);
+				if ( xsize != pxsize ):
+					error = True
+					if (verbose):
+						print "Error - the dimensions of the reference and particle images do not match"
 
 	
 	if ( options.keep and options.keepsig ):

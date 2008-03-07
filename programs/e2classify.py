@@ -182,9 +182,9 @@ def main():
 	for iPart in range(NumPart):
 		vv=[ ReturnVal[j][iPart] for j in range(NumPeaks)];
 		sumvv= sum(vv);
-		for iPeaks in range(NumPeaks):
-			ReturnWt[iPeaks][iPart]= ReturnVal[iPeaks][iPart]/sumvv;
-	
+		if ( sumvv != 0 ):
+			for iPeaks in range(NumPeaks):
+				ReturnWt[iPeaks][iPart]= ReturnVal[iPeaks][iPart]/sumvv;	
 #	Section 3.
 #       write to outFile	
 	if ( options.verbose ):

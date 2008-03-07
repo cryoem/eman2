@@ -2295,7 +2295,7 @@ vector<Vec3f> PlatonicSym::get_asymm_unit_points(bool inc_mirror) const
 	
 }
 
-float IcosahedralSym::get_az_alignment_offset() const { return 0.0; }
+float IcosahedralSym::get_az_alignment_offset() const { return 234.0; }
 
 Transform3D IcosahedralSym::get_sym(int n) const
 {

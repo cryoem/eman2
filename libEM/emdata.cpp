@@ -1593,13 +1593,13 @@ void EMData::zero_corner_circulant(const int radius)
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag)
 {
 	if( with == 0 ) {
-		return autocorrelation(this,fpflag, true);
+		return autocorrelation(this,fpflag, false);
 	}
 // 	else if ( with == this ){ // this if statement is not necessary, the correlation function tests to see if with == this
 // 		return correlation(this, this, fpflag);
 // 	}
 	else {
-		return correlation(this, with, fpflag, true);
+		return correlation(this, with, fpflag, false);
 	}
 }
 
