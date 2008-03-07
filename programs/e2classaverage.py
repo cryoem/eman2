@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: David Woolford, 09/13/2007 (woolford@bcm.edu)
+# Author: Steven Ludtke, 2007 (sludtke@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -43,7 +43,9 @@ READ_HEADER_ONLY = True
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog <input particles> <class mx> <output> [options]
+
 	Produces class averages """
+	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 1.", default=1)

@@ -269,7 +269,20 @@ class EM3DSymViewer(EMImage3DObject):
 		
 		[og_name,og_args] = parsemodopt(str(og))
 		
-		eulers = self.sym_object.gen_orientations(og_name, og_args)
+		filedebug = False
+		if ( not filedebug ):
+			eulers = self.sym_object.gen_orientations(og_name, og_args)
+		
+		else:
+			f = file("icos-asymunit-ang-1-step.txt")
+			lines=f.readlines()
+			angles=[]
+			eulers = []
+			for line in lines:
+				angles = str.split(line)
+				alt = angles[0]
+				az = angles[1]
+				eulers.append(Transform3D(float(az),float(alt),0))
 
 		glNewList(self.sym_dl,GL_COMPILE)
 		for i in eulers:
