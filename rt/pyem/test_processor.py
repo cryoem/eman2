@@ -1329,8 +1329,6 @@ class TestProcessor(unittest.TestCase):
 		self.assertEqual(e.is_complex(), False)
 		e.do_fft_inplace()
 		self.assertEqual(e.is_complex(), True)
-		
-		e.process_inplace('xform.fourierorigin')
 
 		n = 16
 		# test that 2D works
