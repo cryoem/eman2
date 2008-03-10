@@ -318,12 +318,20 @@ class ViewportDepthTools:
 		t = gluProject(x,y,0.,self.wmodel,self.wproj,self.wview)
 		print t[0],t[1],t[2]
 		
+	def getVscale(self):
+		return self.vscale
+	def getHscale(self):
+		return self.hscale
+	
+		
 	def norotHeight(self):
 		top = self.mc11nr[1] 
 		bot = self.mc00nr[1]
 		if top > self.parent.viewportHeight(): top = self.parent.viewportHeight()
 		if bot < 0: bot = 0
-		return int(top-bot)
+		height = top-bot
+		self.vscale = height/(self.mc11nr[1]-self.mc00nr[1])
+		return int(height)
 		
 	def norotWidth(self):
 		right = self.mc11nr[0]
@@ -331,7 +339,9 @@ class ViewportDepthTools:
 		if right > self.parent.viewportWidth() : right = self.parent.viewportWidth()
 		if left < 0 : left = 0
 		#print "norotWidth is", right-left, "other is ", self.mc11[0]-self.mc00[0]
-		return int(right-left)
+		width = right-left
+		self.hscale = width/(self.mc11nr[0]-self.mc00nr[0])
+		return int(width)
 	
 	def isinwin(self,x,y):
 		# this function can be called to determine
@@ -473,6 +483,12 @@ class EMGLDrawer2D:
 		self.updateFlag = True
 		#self.image2dtex.set_update_P_inv(val)
 	
+	def adjustedWidth(self):
+		return self.vdtools.getHscale()*self.width()
+	
+	def adjustedHeight(self):
+		return self.vdtools.getVscale()*self.height()
+	
 	def width(self):
 		try:
 			return self.image2dtex.width()
@@ -508,14 +524,14 @@ class EMGLDrawer2D:
 		self.cam.position()
 		self.vdtools.updateNoRot(self.cam)
 		
-		print "draw Width"
-		self.vdtools.printUnproj(-self.drawWidth()/2.0,-self.drawHeight()/2.0)
-		self.vdtools.printUnproj(self.drawWidth()/2.0,self.drawHeight()/2.0)
-		print "self width"
-		self.vdtools.printUnproj(-self.width()/2.0,-self.height()/2.0)
-		self.vdtools.printUnproj(self.width()/2.0,self.height()/2.0)
+		#print "draw Width"
+		#self.vdtools.printUnproj(-self.drawWidth()/2.0,-self.drawHeight()/2.0)
+		#self.vdtools.printUnproj(self.drawWidth()/2.0,self.drawHeight()/2.0)
+		#print "self width"
+		#self.vdtools.printUnproj(-self.width()/2.0,-self.height()/2.0)
+		#self.vdtools.printUnproj(self.width()/2.0,self.height()/2.0)
 		
-
+		self.image2dtex.updateOrigin(self.drawWidth(),self.drawHeight())
 		# make sure the vdtools store the current matrices
 		if (self.updateFlag):
 			self.image2dtex.updateOrigin(self.drawWidth(),self.drawHeight())

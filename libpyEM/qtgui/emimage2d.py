@@ -290,8 +290,8 @@ class EMImage2D():
 			self.power_of_two_init_check = False
 
 		if ( self.using_textures ):
-			width = self.parent.width()/2.0
-			height = self.parent.height()/2.0
+			width = self.parent.adjustedWidth()/2.0
+			height = self.parent.adjustedHeight()/2.0
 			
 			if self.originshift :
 				glPushMatrix()
@@ -609,6 +609,12 @@ class EMImage2DGLWidget(QtOpenGL.QGLWidget):
 		
 	def dragEnterEvent(self,event):
 		self.image2d.dragEnterEvent(event)
+		
+	def adjustedHeight(self):
+		return self.height()
+	
+	def adjustedWidth(self):
+		return self.width()
 		
 	def drawHeight(self):
 		return self.height()
