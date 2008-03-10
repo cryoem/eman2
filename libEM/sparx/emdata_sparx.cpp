@@ -424,9 +424,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 	} // ends jkx
 	outCopy->update();
 	outCopy->set_complex(true);
-	if(outCopy->get_ysize()==1 && outCopy->get_zsize()==1) {
-		outCopy->set_complex_x(true);
-	}
+	if(outCopy->get_ysize()==1 && outCopy->get_zsize()==1) outCopy->set_complex_x(true);
 	outCopy->set_ri(true);
 	outCopy->set_FH(false);
 	outCopy->set_fftodd(true);
@@ -450,22 +448,22 @@ EMData *EMData::FH2Real(int Size, float OverSamplekB, int)  // PRB
 
 float dist(int lnlen, const float* line_1, const float* line_2)
 {
-    double dis2=0.0;
-    for( int i=0; i < lnlen; ++i) {
-       float tmp = line_1[i] - line_2[i];
-       dis2 += tmp*tmp;
-    }
-    return static_cast<float>(std::sqrt(dis2));
+	double dis2=0.0;
+	for( int i=0; i < lnlen; ++i) {
+		float tmp = line_1[i] - line_2[i];
+		dis2 += tmp*tmp;
+	}
+	return static_cast<float>(std::sqrt(dis2));
 }   
 
 float dist_r(int lnlen, const float* line_1, const float* line_2)
 {
-    double dis2 = 0.0;
-    for( int i=0; i < lnlen; ++i ) {
-        float tmp = line_1[lnlen-1-i] - line_2[i];
-        dis2 += tmp*tmp;
-    }
-    return static_cast<float>(std::sqrt(dis2));
+	double dis2 = 0.0;
+	for( int i=0; i < lnlen; ++i ) {
+		float tmp = line_1[lnlen-1-i] - line_2[i];
+		dis2 += tmp*tmp;
+	}
+	return static_cast<float>(std::sqrt(dis2));
 }
 
 
@@ -478,29 +476,27 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 #endif	//DEBUG
 
 	Assert( n1 >=0 && n1 < nline );
-    Assert( n2 >=0 && n2 < nline );
-    Assert( alpha1>=0.0 && alpha1 < 360.0 );
-    Assert( alpha2>=0.0 && alpha2 < 360.0 );
+	Assert( n2 >=0 && n2 < nline );
+	Assert( alpha1>=0.0 && alpha1 < 360.0 );
+	Assert( alpha2>=0.0 && alpha2 < 360.0 );
 
-    float* line_1 = get_data() + n1*lnlen;
-    float* line_2 = sinoj->get_data() + n2*lnlen;
-    float just = (alpha1-180.0f)*(alpha2-180.0f);
-    if( just > 0.0 ) {
-        return dist(lnlen, line_1, line_2);
-    }
+	float* line_1 = get_data() + n1*lnlen;
+	float* line_2 = sinoj->get_data() + n2*lnlen;
+	float just = (alpha1-180.0f)*(alpha2-180.0f);
+	if( just > 0.0 ) return dist(lnlen, line_1, line_2);
 
-    if( just == 0.0 ) {
-        float dist_1 = dist(lnlen, line_1, line_2);
+	if( just == 0.0 ) {
+		float dist_1 = dist(lnlen, line_1, line_2);
 		float dist_2 = dist_r(lnlen, line_1, line_2);
 #ifdef	_WIN32
 		return _cpp_min(dist_1, dist_2);
 #else
 		return std::min(dist_1, dist_2);
 #endif	//_WIN32
-    }
+	}
 
-    Assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
-    return dist_r(lnlen, line_1, line_2);
+	Assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
+	return dist_r(lnlen, line_1, line_2);
 }
 
 
@@ -1025,35 +1021,26 @@ void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Tra
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
-			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)
-				            && (izn >= -n2) && (izn <= n2)) {
+			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)  && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
 					int iza, iya;
-					if (izn >= 0) {
-						iza = izn + 1;
-					} else {
-						iza = n + izn + 1;
-					}
-					if (iyn >= 0) {
-						iya = iyn + 1;
-					} else {
-						iya = n + iyn + 1;
-					}
+					if (izn >= 0)  iza = izn + 1;
+					else	       iza = n + izn + 1;
+
+					if (iyn >= 0) iya = iyn + 1;
+					else	      iya = n + iyn + 1;
+
 					cmplx(ixn,iya,iza) += btq;
 					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
 					(*wptr)(ixn,iya,iza)++;
 				} else {
 					int izt, iyt;
-					if (izn > 0) {
-						izt = n - izn + 1;
-					} else {
-						izt = -izn + 1;
-					}
-					if (iyn > 0) {
-						iyt = n - iyn + 1;
-					} else {
-						iyt = -iyn + 1;
-					}
+					if (izn > 0) izt = n - izn + 1;
+					else	     izt = -izn + 1;
+
+					if (iyn > 0) iyt = n - iyn + 1;
+					else	     iyt = -iyn + 1;
+
 					cmplx(-ixn,iyt,izt) += conj(btq);
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
 					(*wptr)(-ixn,iyt,izt)++;
@@ -1088,34 +1075,25 @@ void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, cons
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
-			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)
-				            && (izn >= -n2) && (izn <= n2)) {
+			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)  && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
 					int iza, iya;
-					if (izn >= 0) {
-						iza = izn + 1;
-					} else {
-						iza = n + izn + 1;
-					}
-					if (iyn >= 0) {
-						iya = iyn + 1;
-					} else {
-						iya = n + iyn + 1;
-					}
+					if (izn >= 0)  iza = izn + 1;
+					else	       iza = n + izn + 1;
+
+					if (iyn >= 0) iya = iyn + 1;
+					else	      iya = n + iyn + 1;
+
 					cmplx(ixn,iya,iza) += btq*float(mult);
 					(*wptr)(ixn,iya,iza)+=float(mult);
 				} else {
 					int izt, iyt;
-					if (izn > 0) {
-						izt = n - izn + 1;
-					} else {
-						izt = -izn + 1;
-					}
-					if (iyn > 0) {
-						iyt = n - iyn + 1;
-					} else {
-						iyt = -iyn + 1;
-					}
+					if (izn > 0) izt = n - izn + 1;
+					else	     izt = -izn + 1;
+
+					if (iyn > 0) iyt = n - iyn + 1;
+					else	     iyt = -iyn + 1;
+
 					cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
 					(*wptr)(-ixn,iyt,izt)+=float(mult);
 				}
@@ -1134,13 +1112,10 @@ void EMData::nn(EMData* wptr, EMData* myfft, const Transform3D& tf, int mult)
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 	// loop over frequencies in y
-	if( mult == 1 )
-	{
-	    for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn(iy, ny, nxc, wptr, myfft, tf);
-	}
-	else
-	{
-	    for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_mult(iy, ny, nxc, wptr, myfft, tf, mult);
+	if( mult == 1 ) {
+		for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn(iy, ny, nxc, wptr, myfft, tf);
+	} else {
+		for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_mult(iy, ny, nxc, wptr, myfft, tf, mult);
         }
 
         set_array_offsets(saved_offsets);
@@ -1186,31 +1161,23 @@ void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform
 				if ((ixn <= nxc) && (iyn >= iymin) && (iyn <= iymax) && (izn >= izmin) && (izn <= izmax)) {
 					if (ixn >= 0) {
 						int iza, iya;
-						if (izn >= 0) {
-							iza = izn + 1;
-						} else {
-							iza = nz + izn + 1;
-						}
-						if (iyn >= 0) {
-							iya = iyn + 1;
-						} else {
-							iya = ny + iyn + 1;
-						}
+						if (izn >= 0)  iza = izn + 1;
+						else	       iza = nz + izn + 1;
+
+						if (iyn >= 0) iya = iyn + 1;
+						else	      iya = ny + iyn + 1;
+
 						cmplx(ixn,iya,iza) += btq;
 						(*wptr)(ixn,iya,iza)++;
 						(*wptr2)(ixn,iya,iza) += norm(btq);
 					} else {
 						int izt, iyt;
-						if (izn > 0) {
-							izt = nz - izn + 1;
-						} else {
-							izt = -izn + 1;
-						}
-						if (iyn > 0) {
-							iyt = ny - iyn + 1;
-						} else {
-							iyt = -iyn + 1;
-						}
+						if (izn > 0) izt = nz - izn + 1;
+						else	     izt = -izn + 1;
+
+						if (iyn > 0) iyt = ny - iyn + 1;
+						else	     iyt = -iyn + 1;
+
 						cmplx(-ixn,iyt,izt) += conj(btq);
 						(*wptr)(-ixn,iyt,izt)++;
 						(*wptr2)(-ixn,iyt,izt) += norm(btq);
@@ -1467,24 +1434,16 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
 					int iza, iya;
-					if (izn >= 0) {
-						iza = izn + 1;
-					} else {
-						iza = n + izn + 1;
-					}
-					if (iyn >= 0) {
-						iya = iyn + 1;
-					} else {
-						iya = n + iyn + 1;
-					}
+					if (izn >= 0)  iza = izn + 1;
+					else           iza = n + izn + 1;
 
-                                        if(remove > 0 )
-                                        {
+					if (iyn >= 0) iya = iyn + 1;
+					else          iya = n + iyn + 1;
+
+                                        if(remove > 0 ) {
                                             cmplx(ixn,iya,iza) -= btq*ctf*float(mult);
 					    (*w)(ixn,iya,iza) -= ctf*ctf*mult;
-                                        }
-                                        else
-                                        {
+                                        } else {
 				            cmplx(ixn,iya,iza) += btq*ctf*float(mult);
 					    (*w)(ixn,iya,iza) += ctf*ctf*mult;
                                         }
@@ -1492,24 +1451,16 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 				       //	std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<ctf<<std::endl;
 				} else {
 					int izt, iyt;
-					if (izn > 0) {
-						izt = n - izn + 1;
-					} else {
-						izt = -izn + 1;
-					}
-					if (iyn > 0) {
-						iyt = n - iyn + 1;
-					} else {
-						iyt = -iyn + 1;
-					}
+					if (izn > 0) izt = n - izn + 1;
+					else         izt = -izn + 1;
 
-                                        if( remove > 0 ) 
-                                        {
+					if (iyn > 0) iyt = n - iyn + 1;
+					else         iyt = -iyn + 1;
+
+                                        if( remove > 0 ) {
 					    cmplx(-ixn,iyt,izt) -= conj(btq)*ctf*float(mult);
 					    (*w)(-ixn,iyt,izt) -= ctf*ctf*float(mult);
-                                        }
-                                        else
-                                        {
+                                        } else {
 					    cmplx(-ixn,iyt,izt) += conj(btq)*ctf*float(mult);
 					    (*w)(-ixn,iyt,izt) += ctf*ctf*float(mult);
                                         }
@@ -1551,50 +1502,35 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
 					int iza, iya;
-					if (izn >= 0) {
-						iza = izn + 1;
-					} else {
-						iza = n + izn + 1;
-					}
-					if (iyn >= 0) {
-						iya = iyn + 1;
-					} else {
-						iya = n + iyn + 1;
-					}
+					if (izn >= 0)  iza = izn + 1;
+					else           iza = n + izn + 1;
 
-                                        if( remove > 0 )
-                                        {
-                                            cmplx(ixn,iya,iza) -= btq*float(mult);
-                                            (*w)(ixn,iya,iza) -= mult*ctf*ctf;
-                                        }
-                                        else
-                                        {
-					    cmplx(ixn,iya,iza) += btq*float(mult);
-					    (*w)(ixn,iya,iza) += mult*ctf*ctf;
+					if (iyn >= 0) iya = iyn + 1;
+					else          iya = n + iyn + 1;
+
+                                        if( remove > 0 ) {
+                                        	cmplx(ixn,iya,iza) -= btq*float(mult);
+                                        	(*w)(ixn,iya,iza) -= mult*ctf*ctf;
+                                        } else {
+						cmplx(ixn,iya,iza) += btq*float(mult);
+						(*w)(ixn,iya,iza) += mult*ctf*ctf;
                                         }
 
 				} else {
 					int izt, iyt;
-					if (izn > 0) {
-						izt = n - izn + 1;
-					} else {
-						izt = -izn + 1;
-					}
-					if (iyn > 0) {
-						iyt = n - iyn + 1;
-					} else {
-						iyt = -iyn + 1;
-					}
+					if (izn > 0) izt = n - izn + 1;
+					else         izt = -izn + 1;
 
-                                        if( remove > 0 )
-                                        {
-                                            cmplx(-ixn,iyt,izt) -= conj(btq)*float(mult);
-					    (*w)(-ixn,iyt,izt) -= mult*ctf*ctf;
-	                                }
-                                        else
-                                        {    
-					    cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
-					    (*w)(-ixn,iyt,izt) += mult*ctf*ctf;
+					if (iyn > 0) iyt = n - iyn + 1;
+					else         iyt = -iyn + 1;
+
+
+                                        if( remove > 0 ) {
+                                        	cmplx(-ixn,iyt,izt) -= conj(btq)*float(mult);
+						(*w)(-ixn,iyt,izt) -= mult*ctf*ctf;
+	                                } else {    
+						cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
+						(*w)(-ixn,iyt,izt) += mult*ctf*ctf;
                                         }
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
 				}
@@ -1613,15 +1549,14 @@ EMData::nn_ctf(EMData* w, EMData* myfft, const Transform3D& tf, int mult) {
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 
-	// if( ! ctf_store::inited() )
-	{
+	// if( ! ctf_store::inited() ) {
             float Cs = myfft->get_attr( "Cs" );
             float pixel = myfft->get_attr( "Pixel_size" );
             float voltage = myfft->get_attr("voltage");
             float amp_contrast = myfft->get_attr( "amp_contrast" );
             float b_factor = 0.0;
             ctf_store::init( ny, voltage, pixel, Cs, amp_contrast, b_factor );
-	}
+	//}
 
 	// loop over frequencies in y
         float defocus = myfft->get_attr( "defocus" );
@@ -1641,15 +1576,14 @@ EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform3D& tf, int mult
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 
-	// if( ! ctf_store::inited() )
-	{
+	// if( ! ctf_store::inited() ) {
             float Cs= myfft->get_attr( "Cs" );
             float pixel = myfft->get_attr( "Pixel_size" );
             float voltage = myfft->get_attr("voltage");
             float amp_contrast = myfft->get_attr( "amp_contrast" );
             float b_factor=0.0;
             ctf_store::init( ny, voltage, pixel, Cs, amp_contrast, b_factor );
-	}
+	//}
 
 	// loop over frequencies in y
 	float defocus = myfft->get_attr( "defocus" );
@@ -1687,17 +1621,16 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
         float b_factor     = 0.0;
         ctf_store::init( ny, voltage, pixel, Cs, amp_contrast, b_factor );
         float defocus = myfft->get_attr( "defocus" );
-	int iymin = is_fftodd() ? -ny/2 : -ny/2 + 1 ;
+	int iymin = is_fftodd() ? -ny/2 : -ny/2 + 1;
 	int iymax = ny/2;
-	int izmin = is_fftodd() ? -nz/2 : -nz/2 + 1 ;
+	int izmin = is_fftodd() ? -nz/2 : -nz/2 + 1;
 	int izmax = nz/2;
 //	std::complex<float> tmpq, tmp2;
 	for (int iy = iymin; iy <= iymax; iy++) {
 		int jp = iy >= 0 ? iy+1 : ny+iy+1; //checked, works for both odd and even
 		for (int ix = 0; ix <= nxc; ix++) {
 			int r2 = ix*ix+iy*iy;
-        		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) ) 
-			{
+        		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) ) {
 			        float  ctf = ctf_store::get_ctf( defocus, r2 )*10.f;
 				float xnew = ix*tf[0][0] + iy*tf[1][0];
 				float ynew = ix*tf[0][1] + iy*tf[1][1];
@@ -1717,32 +1650,24 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 				if ((ixn <= nxc) && (iyn >= iymin) && (iyn <= iymax) && (izn >= izmin) && (izn <= izmax)) {
 					if (ixn >= 0) {
 						int iza, iya;
-						if (izn >= 0) {
-							iza = izn + 1;
-						} else {
-							iza = nz + izn + 1;
-						}
-						if (iyn >= 0) {
-							iya = iyn + 1;
-						} else {
-							iya = ny + iyn + 1;
-						}
+						if (izn >= 0) iza = izn + 1;
+						else          iza = nz + izn + 1;
+
+						if (iyn >= 0) iya = iyn + 1;
+						else          iya = ny + iyn + 1;
+
 						cmplx(ixn,iya,iza)    += btq*ctf;
 						(*wptr)(ixn,iya,iza)  += ctf*ctf;						
 						(*wptr2)(ixn,iya,iza) += std::norm(btq);
 						(*wptr3)(ixn,iya,iza) += 1;
 					} else {
 						int izt, iyt;
-						if (izn > 0) {
-							izt = nz - izn + 1;
-						} else {
-							izt = -izn + 1;
-						}
-						if (iyn > 0) {
-							iyt = ny - iyn + 1;
-						} else {
-							iyt = -iyn + 1;
-						}
+						if (izn > 0)  izt = nz - izn + 1;
+						else          izt = -izn + 1;
+ 
+						if (iyn > 0) iyt = ny - iyn + 1;
+						else         iyt = -iyn + 1;
+
 						cmplx(-ixn,iyt,izt)     += std::conj(btq)*ctf;
 						(*wptr) (-ixn,iyt,izt)  += ctf*ctf;
 						(*wptr2)(-ixn,iyt,izt)  += std::norm(btq);
@@ -1783,50 +1708,42 @@ void EMData::nn_SSNR_ctf_applied(EMData* wptr, EMData* wptr2, EMData* wptr3, EMD
         float b_factor     = 0.0;
         ctf_store::init( ny, voltage, pixel, Cs, amp_contrast, b_factor );
         float defocus = myfft->get_attr( "defocus" );
-	int iymin = is_fftodd() ? -ny/2 : -ny/2 + 1 ;
+	int iymin = is_fftodd() ? -ny/2 : -ny/2 + 1;
 	int iymax = ny/2;
-	int izmin = is_fftodd() ? -nz/2 : -nz/2 + 1 ;
+	int izmin = is_fftodd() ? -nz/2 : -nz/2 + 1;
 	int izmax = nz/2;
 //	std::complex<float> tmpq, tmp2;
 	for (int iy = iymin; iy <= iymax; iy++) {
 		int jp = iy >= 0 ? iy+1 : ny+iy+1; //checked, works for both odd and even
 		for (int ix = 0; ix <= nxc; ix++) {
 			int r2 = ix*ix+iy*iy;
-        		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) ) 
-			{
+        		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) ) {
 			        float  ctf = ctf_store::get_ctf( defocus, r2 );
 				float xnew = ix*tf[0][0] + iy*tf[1][0];
 				float ynew = ix*tf[0][1] + iy*tf[1][1];
 				float znew = ix*tf[0][2] + iy*tf[1][2];
 				std::complex<float> btq;
-				if (xnew < 0.0) 
-				{
+				if (xnew < 0.0) {
 					xnew = -xnew; // ensures xnew>=0.0
 					ynew = -ynew;
 					znew = -znew;
 					btq = conj(myfft->cmplx(ix,jp));
-				} 
-				else 
-				{
+				} else {
 					btq = myfft->cmplx(ix,jp);
 				}
 				int ixn = int(xnew + 0.5 + nx) - nx; // ensures ixn >= 0
 				int iyn = int(ynew + 0.5 + ny) - ny;
 				int izn = int(znew + 0.5 + nz) - nz;
-				if ((ixn <= nxc) && (iyn >= iymin) && (iyn <= iymax) && (izn >= izmin) && (izn <= izmax)) 
-				{
+				if ((ixn <= nxc) && (iyn >= iymin) && (iyn <= iymax) && (izn >= izmin) && (izn <= izmax)) {
 					if (ixn >= 0) {
 						int iza, iya;
-						if (izn >= 0) {
-							iza = izn + 1;
-						} else {
-							iza = nz + izn + 1;
-						}
-						if (iyn >= 0) {
-							iya = iyn + 1;
-						} else {
-							iya = ny + iyn + 1;
-						}
+
+						if (izn >= 0) iza = izn + 1;
+						else          iza = nz + izn + 1;
+
+						if (iyn >= 0) iya = iyn + 1;
+						else          iya = ny + iyn + 1;
+
 						//tmpq = (*m_wvolume)(ixn,iya,iza);
 						cmplx(ixn,iya,iza)    += btq;
 						(*wptr)(ixn,iya,iza)  += ctf*ctf;						
@@ -1837,16 +1754,13 @@ void EMData::nn_SSNR_ctf_applied(EMData* wptr, EMData* wptr2, EMData* wptr3, EMD
 						//(*wptr4)(ixn,iya,iza) += -2.*std::real(tmp2);
 					} else {
 						int izt, iyt;
-						if (izn > 0) {
-							izt = nz - izn + 1;
-						} else {
-							izt = -izn + 1;
-						}
-						if (iyn > 0) {
-							iyt = ny - iyn + 1;
-						} else {
-							iyt = -iyn + 1;
-						}
+						
+						if (izn > 0) izt = nz - izn + 1;
+						else         izt = -izn + 1;
+
+						if (iyn > 0) iyt = ny - iyn + 1;
+						else         iyt = -iyn + 1;
+
 						//tmpq = (*m_wvolume)(-ixn,iyt,izt);
 						cmplx(-ixn,iyt,izt)     += std::conj(btq);
 						(*wptr) (-ixn,iyt,izt)  += ctf*ctf;
@@ -2445,7 +2359,7 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	float xmax = -xmin;
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
-	
+
 	float   *t = (float*)calloc(kbmax-kbmin+1, sizeof(float));
 
 	// trig
@@ -2917,8 +2831,7 @@ std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::Kaise
 		for (int ix = ixmin; ix <= ixmax; ix++)
 			wsum += wx[ix]*wy[iy];
 	std::complex<float> result(0.f,0.f);
-	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax)
-			&& (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
+	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax) && (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
 		// (xin,yin) not within window border from the edge
 		for (int iy = iymin; iy <= iymax; iy++) {
 			int iyp = iyn + iy;
@@ -2959,17 +2872,13 @@ std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::Kaise
 				if (iyt == nhalf) iyt = -nhalf;
 				float w = wx[ix]*wy[iy];
 				std::complex<float> val = this->cmplx(ixt,iyt);
-				if (mirror) 
-					result += conj(val)*w;
-				else
-					result += val*w;
+				if (mirror)  result += conj(val)*w;
+				else          result += val*w;
 			}
 		}
 	}
-	if (flip) 
-		result = conj(result)/static_cast<float>(wsum);
-	else
-		result /= static_cast<float>(wsum);
+	if (flip)  result = conj(result)/static_cast<float>(wsum);
+	else       result /= static_cast<float>(wsum);
 	delete [] wx0;
 	delete [] wy0;
 	return result;
@@ -2979,8 +2888,7 @@ void EMData::center_padded() {
 	int npad = get_attr("npad");
 	if (1 == npad) return;
 	int nxreal = nx;
-	if (is_fftpadded())
-		nxreal = nx - 2 + int(is_fftodd());
+	if (is_fftpadded()) nxreal = nx - 2 + int(is_fftodd());
 	EMData& self = *this;
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets();
@@ -3004,14 +2912,12 @@ void EMData::center_padded() {
 		case 3:
 			break;
 		default:
-			throw ImageDimensionException("center_padded needs a 1-,"
-					                      "2-, or 3-d image.");
+			throw ImageDimensionException("center_padded needs a 1-, 2-, or 3-d image.");
 	}
 	for (int iz = nzorig-1; iz >= 0; iz--)
 		for (int iy = nyorig-1; iy >= 0; iy--) 
 			for (int ix = nxorig-1; ix >= 0; ix--) 
-				std::swap(self(nxcorner+ix,nycorner+iy,nzcorner+iz),
-						  self(ix,iy,iz));
+				std::swap(self(nxcorner+ix,nycorner+iy,nzcorner+iz), self(ix,iy,iz));
 	set_array_offsets(saved_offsets);
 }
 
@@ -3348,139 +3254,212 @@ bool EMData::peakcmp(const Pixel& p1, const Pixel& p2) {
 }
 
 ostream& operator<< (ostream& os, const Pixel& peak) {
-    os <<  peak.x <<  peak.y << peak.z
-       << peak.value;
+    os <<  peak.x <<  peak.y << peak.z  << peak.value;
     return os;
 }
 
 vector<float> EMData::peak_search(int ml, float invert) {
-	
+
 	EMData& buf = *this;
 	vector<Pixel> peaks;
 	int img_dim;
-	int i,j,k,itx,ity,itz;
-	int i__1,i__2;
-	int j__1,j__2;
-	int k__1,k__2;
+	int i, j, k;
+	int i__1, i__2;
+	int j__1, j__2;
+	//int k__1, k__2;
  	bool peak_check;
  	img_dim=buf.get_ndim();
- 	vector<int>ix,jy,kz;
+ 	vector<int> ix, jy, kz;
 	vector<float>res;
  	int nx = buf.get_xsize();
  	int ny = buf.get_ysize();
  	int nz = buf.get_zsize();
-	if(invert <= 0) 
-	    { invert=-1.; }
-	else 
-	    { invert=1. ; }
+	if(invert <= 0.0f)  invert=-1.0f;
+	else                invert=1.0f ;
+	int count = 0;
  	switch (img_dim)  {
  	case(1):
-	       for(i=0;i<=nx-1;++i)
- 	       {
- 		       i__1=(i-1+nx)%nx;
- 		       i__2=(i+1)%nx;
-		       // Commented by Yang on 05/14/07
-		       // I changed the following line from > to >=, or in some rare cases (the peak happens to be flat), it will fail to find the peak.
- 	       	       // peak_check=buf(i)*invert>buf(i__1)*invert && buf(i)*invert>buf(i__2)*invert;
-		       peak_check=buf(i)*invert>=buf(i__1)*invert && buf(i)*invert>=buf(i__2)*invert;
-		       if(peak_check)
-	        	       {peaks.push_back(Pixel(i, 0, 0, buf(i)*invert));}  
-	       }
+		for(i=0;i<=nx-1;++i)  {
+ 		 	i__1 = (i-1+nx)%nx;
+ 		 	i__2 = (i+1)%nx;
+		 	// Commented by Yang on 05/14/07
+		 	// I changed the following line from > to >=, or in some rare cases (the peak happens to be flat), it will fail to find the peak.
+		 	//  03/07/08  I undid the change.  If you change the comparison, it changes the meaning of peak definition.
+			float qbf = buf(i)*invert;
+ 			peak_check = qbf > buf(i__1)*invert && qbf > buf(i__2)*invert;
+			if(peak_check) {
+	    			if(count < ml) {
+					count++;
+					peaks.push_back( Pixel(i, 0, 0, qbf) );
+					if(count == ml-1) sort(peaks.begin(), peaks.end(), peakcmp);
+				} else {
+					if( qbf > (peaks.back()).value ) {
+						//  do the switch and sort again
+						peaks.pop_back();
+						peaks.push_back( Pixel(i, 0, 0, qbf) );
+						if(ml > 1) sort(peaks.begin(), peaks.end(), peakcmp);
+					}
+				}
+			}
+		}
  	break;
  	case(2):
-	       for(j=0;j<=ny-1;++j)  {  
-	 	       j__1=(j-1+ny)%ny;
- 		       j__2=(j+1)%ny;
-	 	       for(i=0;i<=nx-1;++i) { 
-	        	       i__1=(i-1+nx)%nx;
-	        	       i__2=(i+1)%nx;
-	        	       peak_check=(buf(i,j)*invert>buf(i,j__1)*invert) && (buf(i,j)*invert>buf(i,j__2)*invert);
-	        	       peak_check=peak_check && (buf(i,j)*invert>buf(i__1,j)*invert) && (buf(i,j)*invert>buf(i__2,j)*invert);
-	        	       peak_check=peak_check && (buf(i,j)*invert>buf(i__1,j__1)*invert) && ((buf(i,j)*invert)> buf(i__1,j__2)*invert);
-	        	       peak_check=peak_check && (buf(i,j)*invert>buf(i__2,j__1)*invert) && (buf(i,j)*invert> buf(i__2,j__2)*invert);
-	        	       if(peak_check)
- 	        	   {peaks.push_back(Pixel(i, j, 0, buf(i,j)*invert));}
-	               }
- 	       }
+	/*  Removed boundary conditions, PAP 03/10/08
+		for(j=0;j<=ny-1;++j)  {
+	 		j__1 = (j-1+ny)%ny;
+ 			j__2 = (j+1)%ny;
+	 		for(i=0;i<=nx-1;++i) {
+	        		i__1 = (i-1+nx)%nx;
+	        		i__2 = (i+1)%nx;
+	*/
+		for(j=1;j<=ny-2;++j)  {
+	 		j__1 = j-1;
+ 			j__2 = j+1;
+	 		for(i=1;i<=nx-2;++i) {
+	        		i__1 = i-1;
+	        		i__2 = i+1;
+				float qbf = buf(i,j)*invert;
+	        		peak_check = (qbf > buf(i,j__1)*invert) && (qbf > buf(i,j__2)*invert);
+				if(peak_check) {
+					peak_check = (qbf > buf(i__1,j)*invert) && (qbf > buf(i__2,j)*invert);
+	        			if(peak_check) {
+						peak_check = (qbf > buf(i__1,j__1)*invert) && (qbf > buf(i__1,j__2)*invert);
+	        				if(peak_check) {
+							peak_check = (qbf > buf(i__2,j__1)*invert) && (qbf > buf(i__2,j__2)*invert);
+							if(peak_check) {
+	    							if(count < ml) {
+									count++;
+									peaks.push_back( Pixel(i, j, 0, qbf) );
+									if(count == ml-1) sort(peaks.begin(), peaks.end(), peakcmp);
+								} else {
+									if( qbf > (peaks.back()).value ) {
+										//  do the switch and sort again
+										peaks.pop_back();
+										peaks.push_back( Pixel(i, j, 0, qbf) );
+										if(ml > 1) sort(peaks.begin(), peaks.end(), peakcmp);
+									}
+								}
+							}
+						}
+					}
+				}
+	        	}
+		}
  	break;
- 	case(3):
-	       for(k=0;k<=nz-1;++k)
-	       {  
-		       kz.clear();
-	       k__1=(k-1+nz)%nz;
-	       k__2=(k+1)%nz;
-	       kz.push_back(k__1);
-	       kz.push_back(k);
-	       kz.push_back(k__2);
- 	       for(j=0;j<=ny-1;++j)
-	           {
-	               jy.clear();
-	               j__1=(j-1+ny)%ny;
- 		   j__2=(j+1)%ny;
-	               jy.push_back(j__1);
-	               jy.push_back(j);
-	               jy.push_back(j__2);
- 		   for(i=0;i<=nx-1;++i)
-	        	       { 
-	        		       ix.clear();
-	        	       i__1=(i-1+nx)%nx;
-	        	       i__2=(i+1)%nx;
-	        	       ix.push_back(i__1);
-	        	       ix.push_back(i);
-	        	       ix.push_back(i__2);
-	        	       peak_check=true ;
-	        		       for(itx=0;itx<= 2; ++itx)
-	        		   {  
-	        		       for(ity=0;ity<= 2; ++ity)
-	        			   {  
-	        			       for(itz=0;itz<= 2; ++itz) 
-	        				       { 
-	        					       if((buf(i,j,k)*invert<=buf(ix[itx],jy[ity],kz[itz])*invert) && i !=ix[itx] && j !=jy[ity] && k !=kz[itz])			       
-	        				       {peak_check=false;}						  
-	        				       }
-	        			    }		
-	        		       }
-	        		       if(peak_check)
-	        		   {
-	        			       peaks.push_back(Pixel(i, j, k, buf(i,j,k)*invert));
-	        		       } 
-	        	     }
-	        	  }
-	               }
-	       break;
+ 	case(3):  //looks ugly, but it is the best I can do,  PAP 03/07/08
+	/*  Removed boundary conditions, PAP 03/10/08
+		for(k=0;k<=nz-1;++k) {
+		 	kz.clear();
+			k__1 = (k-1+nz)%nz;
+			k__2 = (k+1)%nz;
+			kz.push_back(k__1);
+			kz.push_back(k);
+			kz.push_back(k__2);
+ 			for(j=0;j<=ny-1;++j) {
+				jy.clear();
+				j__1 = (j-1+ny)%ny;
+ 				j__2 = (j+1)%ny;
+				jy.push_back(j__1);
+				jy.push_back(j);
+				jy.push_back(j__2);
+ 				for(i=0;i<=nx-1;++i) {
+			        	ix.clear();
+			        	i__1 = (i-1+nx)%nx;
+			        	i__2 = (i+1)%nx;
+	*/
+		for(k=1;k<=nz-2;++k) {
+		 	kz.clear();
+			kz.push_back(k-1);
+			kz.push_back(k);
+			kz.push_back(k+1);
+ 			for(j=1;j<=ny-2;++j) {
+				jy.clear();
+				jy.push_back(j-1);
+				jy.push_back(j);
+				jy.push_back(j+1);
+ 				for(i=1;i<=nx-2;++i) {
+			        	ix.clear();
+			        	ix.push_back(i-1);
+			        	ix.push_back(i);
+			        	ix.push_back(i+1);
+					float qbf = buf(i,j,k)*invert;
+			        	peak_check = qbf > buf(ix[0],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1])*invert;
+					//if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2])*invert;
+					if(peak_check) {
+	    					if(count < ml) {
+							count++;
+							peaks.push_back( Pixel(i, j, k, qbf) );
+							if(count == ml-1) sort(peaks.begin(), peaks.end(), peakcmp);
+						} else {
+							if( qbf > (peaks.back()).value ) {
+								//  do the switch and sort again
+								//cout << qbf<<"   "<< (peaks.back()).value <<"   "<< (*peaks.begin()).value <<endl;
+								peaks.pop_back();
+								peaks.push_back( Pixel(i, j, k, qbf) );
+								if(ml > 1) sort(peaks.begin(), peaks.end(), peakcmp);
+							}
+						}
+					}
+					}}}}}}}}}}}}}}}}}}}}}}}}}
+				}
+			}
+		}
+		break;
 	}
-	
-	if (peaks.begin()!=peaks.end()) {
-		sort(peaks.begin(),peaks.end(), peakcmp);   
-		int count=0;
-		float xval=(*peaks.begin()).value;  
+	// 
+	if (peaks.begin() != peaks.end()) {
+		sort(peaks.begin(), peaks.end(), peakcmp);
+		int count = 0;
+		float xval = (*peaks.begin()).value;
 		for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++)  {
-			count=count+1;
-	    		if(count<=ml) {
+			count++;
+	    		if(count <= ml) {
 				res.push_back((*it).value);
 				res.push_back(static_cast<float>((*it).x));
-				if(img_dim!=1) res.push_back(static_cast<float>((*it).y));
-    			 
-				if(nz!=1) {res.push_back(static_cast<float>((*it).z));}   
-    			 
-				if(xval != 0.0)
-					{res.push_back((*it).value/xval);}
-				else
-					{res.push_back((*it).value);}
+				if(img_dim > 1) {
+					res.push_back(static_cast<float>((*it).y));
+					if(nz > 1) res.push_back(static_cast<float>((*it).z));
+				}
+
+				if(xval != 0.0) res.push_back((*it).value/xval);
+				else            res.push_back((*it).value);
 				res.push_back((*it).x-float(int(nx/2)));
-				if(img_dim!=1)
-					{res.push_back((*it).y-float(int(ny/2)));}
-				if(nz!=1)
-					{res.push_back((*it).z-float(nz/2));} 
-    		   
+				if(img_dim >1) {
+					res.push_back((*it).y-float(int(ny/2)));
+					if(nz>1)   res.push_back((*it).z-float(nz/2));
+				}
 			}
 		}
 		res.insert(res.begin(),1,img_dim);
-	} 
-	else {
+	} else {
 		res.push_back(buf(0,0,0));
-		res.insert(res.begin(),1,0.0);     
-	}	
+		res.insert(res.begin(),1,0.0);
+	}
 	return res;
 }	
 	  
@@ -3493,13 +3472,14 @@ vector<float> EMData::phase_cog()
 	vector<float> ph_cntog;
 	int i=1,j=1,k=1;
 	float C=0.f,S=0.f,P=0.f,F1=0.f,SNX;
-	if (get_ndim()==1)
-		{P = 8*atan(1.0f)/nx;
-		for (i=1;i<=nx;i++)
-			{C += cos(P * (i-1)) * rdata(i,j,k);
-		         S += sin(P * (i-1)) * rdata(i,j,k);}
+	if (get_ndim()==1) {
+		P = 8*atan(1.0f)/nx;
+		for (i=1;i<=nx;i++) {
+			C += cos(P * (i-1)) * rdata(i,j,k);
+			S += sin(P * (i-1)) * rdata(i,j,k);
+		}
 		F1 = atan2(S,C);
-		if (F1 < 0.0){ F1 += 8*atan(1.0f); }
+		if (F1 < 0.0)  F1 += 8*atan(1.0f);
 		SNX = F1/P +1.0f;
 		SNX = SNX - ((nx/2)+1);
 		ph_cntog.push_back(SNX);
@@ -3508,50 +3488,49 @@ vector<float> EMData::phase_cog()
 #else
 		ph_cntog.push_back(round(SNX));
 #endif //_WIN32
-		}
-	else if (get_ndim()==2)
+	} else if (get_ndim()==2)  {
 #ifdef _WIN32
-		{
 		float SNY;
 		float T=0.0f;
 		vector<float> X;
 		X.resize(nx);
 #else
-		{float SNY,X[nx],T=0.f;
+		float SNY,X[nx],T=0.f;
 #endif	//_WIN32
-		for ( i=1;i<=nx;i++)
-			{X(i)=0.0;}			
-                 P = 8*atan(1.0f)/ny;
-		 for(j=1;j<=ny;j++)
-			{T=0.f;
-			 for(i=1;i<=nx;i++)
-				{T += rdata(i,j,k);
-				 X(i)+=rdata(i,j,k);}
-			 C += cos(P*(j-1))*T;
-			 S += sin(P*(j-1))*T;}
-		 F1=atan2(S,C);
-		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNY = F1/P +1.0f;
-		 C=0.f;S=0.f;
-		 P = 8*atan(1.0f)/nx;
-		 for(i=1;i<=nx;i++)
-			{C += cos(P*(i-1))*X(i);
-			 S += sin(P*(i-1))*X(i);}
-	         F1=atan2(S,C);
-		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNX = F1/P +1.0f;
-		 SNX = SNX - ((nx/2)+1);
-		 SNY = SNY - ((ny/2)+1);
-		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);	
+		for ( i=1;i<=nx;i++) X(i)=0.0;			
+                P = 8*atan(1.0f)/ny;
+		for(j=1;j<=ny;j++) {
+			T=0.f;
+		        for(i=1;i<=nx;i++) {
+				T += rdata(i,j,k);
+		        	X(i)+=rdata(i,j,k);
+			}
+		        C += cos(P*(j-1))*T;
+		        S += sin(P*(j-1))*T;
+		}
+		F1=atan2(S,C);
+		if(F1<0.0)  F1 += 8*atan(1.0f);
+		SNY = F1/P +1.0f;
+		C=0.f;  S=0.f;
+		P = 8*atan(1.0f)/nx;
+		for(i=1;i<=nx;i++) {
+			C += cos(P*(i-1))*X(i);
+		        S += sin(P*(i-1))*X(i);
+		}
+	        F1=atan2(S,C);
+		if(F1<0.0) F1 += 8*atan(1.0f);
+		SNX = F1/P +1.0f;
+		SNX = SNX - ((nx/2)+1);
+		SNY = SNY - ((ny/2)+1);
+		ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);      
 #ifdef _WIN32
 		 ph_cntog.push_back((float)Util::round(SNX)); ph_cntog.push_back((float)Util::round(SNY));
 #else
 		 ph_cntog.push_back(round(SNX)); ph_cntog.push_back(round(SNY));
 #endif	//_WIN32
-		}
-	else
+	} else {
 #ifdef _WIN32
-		{float val=0.f,sum1=0.f, SNY,SNZ;
+		float val=0.f,sum1=0.f, SNY,SNZ;
 		vector<float> X;
 		X.resize(nx);
 		vector<float> Y;
@@ -3559,55 +3538,57 @@ vector<float> EMData::phase_cog()
 		vector<float> Z;
 		Z.resize(nz);
 #else
-		{float val=0.f,sum1=0.f,X[nx],Y[ny],Z[nz],SNY,SNZ;
+		float val=0.f, sum1=0.f, X[nx], Y[ny], Z[nz], SNY, SNZ;
 #endif	//_WIN32
-		 for (i=1;i<=nx;i++)
-			{X(i)=0.0;}
-		 for (j=1;j<=ny;j++)
-			{Y(j)=0.0;}
-		 for (k=1;k<=nz;k++)
-			{Z(k)=0.0;}
-		 for(k=1;k<=nz;k++)
-			{for(j=1;j<=ny;j++)
-				{sum1=0.f;
-				 for(i=1;i<=nx;i++)
-					{val = rdata(i,j,k);
-					 sum1 += val;
-					 X(i) += val;}
-				 Y(j) += sum1;
-				 Z(k) += sum1;}
+		 for (i=1;i<=nx;i++)  X(i)=0.0;
+		 for (j=1;j<=ny;j++)  Y(j)=0.0;
+		 for (k=1;k<=nz;k++)  Z(k)=0.0;
+		 for(k=1;k<=nz;k++)  {
+		 	for(j=1;j<=ny;j++) {
+				sum1=0.f;
+				for(i=1;i<=nx;i++)  {
+					val = rdata(i,j,k);
+					sum1 += val;
+					X(i) += val;
+				}
+				Y(j) += sum1;
+				Z(k) += sum1;
 			}
-		 P = 8*atan(1.0f)/nx;
-		 for (i=1;i<=nx;i++)
-			{C += cos(P*(i-1))*X(i);
-			 S += sin(P*(i-1))*X(i);}
-		 F1=atan2(S,C);
-		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNX = F1/P +1.0f;
-		 C=0.f;S=0.f;
-		 P = 8*atan(1.0f)/ny;
-		 for(j=1;j<=ny;j++)
-			{C += cos(P*(j-1))*Y(j);
-			 S += sin(P*(j-1))*Y(j);}
-		 F1=atan2(S,C);
-		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNY = F1/P +1.0f;
-		 C=0.f;S=0.f;
-		 P = 8*atan(1.0f)/nz;
-		 for(k=1;k<=nz;k++)
-			{C += cos(P*(k-1))*Z(k);
-		         S += sin(P*(k-1))*Z(k);}
-		 F1=atan2(S,C);
-		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNZ = F1/P +1.0f;	
-		 SNX = SNX - ((nx/2)+1);
-		 SNY = SNY - ((ny/2)+1);
-		 SNZ = SNZ - ((nz/2)+1);		
-		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY); ph_cntog.push_back(SNZ);
+		}
+		P = 8*atan(1.0f)/nx;
+		for (i=1;i<=nx;i++) {
+			C += cos(P*(i-1))*X(i);
+		        S += sin(P*(i-1))*X(i);
+		}
+		F1=atan2(S,C);
+		if(F1<0.0) F1 += 8*atan(1.0f);
+		SNX = F1/P +1.0f;
+		C=0.f;  S=0.f;
+		P = 8*atan(1.0f)/ny;
+		for(j=1;j<=ny;j++) {
+			C += cos(P*(j-1))*Y(j);
+		        S += sin(P*(j-1))*Y(j);
+		}
+		F1=atan2(S,C);
+		if(F1<0.0)  F1 += 8*atan(1.0f);
+		SNY = F1/P +1.0f;
+		C=0.f;  S=0.f;
+		P = 8*atan(1.0f)/nz;
+		for(k=1;k<=nz;k++) {
+			C += cos(P*(k-1))*Z(k);
+			S += sin(P*(k-1))*Z(k);
+		}
+		F1=atan2(S,C);
+		if(F1<0.0)  F1 += 8*atan(1.0f);
+		SNZ = F1/P +1.0f;      
+		SNX = SNX - ((nx/2)+1);
+		SNY = SNY - ((ny/2)+1);
+		SNZ = SNZ - ((nz/2)+1); 	       
+		ph_cntog.push_back(SNX); ph_cntog.push_back(SNY); ph_cntog.push_back(SNZ);
 #ifdef _WIN32
-		 ph_cntog.push_back((float)Util::round(SNX)); ph_cntog.push_back((float)Util::round(SNY)); ph_cntog.push_back((float)Util::round(SNZ));
+		ph_cntog.push_back((float)Util::round(SNX)); ph_cntog.push_back((float)Util::round(SNY)); ph_cntog.push_back((float)Util::round(SNZ));
 #else
-		 ph_cntog.push_back(round(SNX)); ph_cntog.push_back(round(SNY));ph_cntog.push_back(round(SNZ));
+		ph_cntog.push_back(round(SNX)); ph_cntog.push_back(round(SNY));ph_cntog.push_back(round(SNZ));
 #endif
 	}
 	return ph_cntog;
@@ -3650,8 +3631,8 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 		int ILE = std::min(nx*ny*nx,std::max(1,vol_voxels));
 	#endif	//_WIN32
 	
-	if (abs(thr3-thr2)>abs(thr2-thr1))
-	{	x1=thr2;
+	if (abs(thr3-thr2)>abs(thr2-thr1)) {
+		x1=thr2;
 		x2=thr2+C*(thr3-thr2);
 	} else {
 		x2=thr2;
@@ -3659,11 +3640,9 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	}
 		
 	int cnt1=0,cnt2=0;
-	for (int i=0;i<size;i++)
-	{	if(rdata[i]>=x1)
-			cnt1++;
-		if(rdata[i]>=x2)
-			cnt2++;
+	for (int i=0;i<size;i++) {
+		if(rdata[i]>=x1)  cnt1++;
+		if(rdata[i]>=x2)  cnt2++;
 	}
 	float LF1 = static_cast<float>( cnt1 - ILE );
 	float F1 = LF1*LF1;
@@ -3672,8 +3651,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	
 	while ((LF1 != 0 || LF2 != 0) && (fabs(LF1-LF2) >= 1.f) && (abs(x1-x2) > (double)pow(10.0,-5) && abs(x1-x3) > (double)pow(10.0,-5) && abs(x2-x3) > (double)pow(10.0,-5)))
 	{
-		if(F2 < F1)
-		{
+		if(F2 < F1) {
 			x0=x1;
 			x1=x2;
 			x2 = R*x1 + C*x3;
@@ -3698,8 +3676,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 		}
 	}
 	
-	if(F1 < F2)
-	{
+	if(F1 < F2) {
 		ILE = static_cast<int> (LF1 + ILE);
 		THR = x1;
 	} else {
@@ -3717,91 +3694,73 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 		
 vector<float> EMData::peak_ccf(float hf_p)
 {   
-    	 EMData & buf = *this;
-	 vector<Pixel> peaks;	 
-	 int half=int(hf_p);
-	 float hf_p2=hf_p*hf_p;
- 	 int i,j;
- 	 int i__1,i__2;
- 	 int j__1,j__2;
- 	 bool peak_found;
-	 bool not_overlap;
-	 vector<float>res;
- 	 int nx = buf.get_xsize()-half;
- 	 int ny = buf.get_ysize()-half; 
-	 int n_peak=0;
-	 for(i=half;i<=nx;++i)																																																													 
- 		{	
-			i__1=i-1;		
- 		  	i__2=i+1;	 																	 							    
-			for (j=half;j<=ny;++j)
-				{  
-			    	 	j__1=j-1;
-				 	j__2=j+1;   																      
-					peak_found=(buf(i,j)>buf(i,j__1)) && (buf(i,j)>buf(i,j__2));
-					peak_found=peak_found && (buf(i,j)>buf(i__1,j)) && (buf(i,j)>buf(i__2,j));
-					peak_found=peak_found && (buf(i,j)>buf(i__1,j__1)) && ((buf(i,j))> buf(i__1,j__2));
-					peak_found=peak_found && (buf(i,j)>buf(i__2,j__1)) && (buf(i,j)> buf(i__2,j__2));				
-			  		if(peak_found)
- 			       			{	
-							if (peaks.size()==0) 
-								{	 
-									peaks.push_back(Pixel(i,j,0,buf(i,j)));
-							 		n_peak=n_peak+1;
-								}
-							else									
-								{	
-									not_overlap=true;							
-									bool higher_peak=false;	
-						 			int size=peaks.size();
-						 			for ( int kk= 0; kk< size; kk++)								 
-										{	
-											vector<Pixel>::iterator it= peaks.begin()+kk;
-											float radius=((*it).x-float(i))*((*it).x-float(i))+((*it).y-float(j))*((*it).y-float(j));																	
-							  				if (radius <= hf_p2 )
-												{	
-													not_overlap=false;
-													if( buf(i,j) > (*it).value)
-														{	
-															peaks.erase(it);												 													 
-															higher_peak=true;																							
-														}																																	
-									      												
-													else
-														{	
-															higher_peak=false; 
-															break;
-														}
-												}
-																
-										}
-													
-									if(not_overlap|higher_peak)
-										{										
-											n_peak=n_peak+1;
-								 			peaks.push_back(Pixel(i,j,0,buf(i,j)));
-										}
-								}
-							                                
+	EMData & buf = *this;
+	vector<Pixel> peaks;	
+	int half=int(hf_p);
+	float hf_p2=hf_p*hf_p;
+	int i,j;
+	int i__1,i__2;
+	int j__1,j__2;
+	bool peak_found;
+	bool not_overlap;
+	vector<float>res;
+	int nx = buf.get_xsize()-half;
+	int ny = buf.get_ysize()-half; 
+	int n_peak=0;
+	for(i=half;i<=nx;++i) {        
+		i__1=i-1;		
+ 		i__2=i+1;	 																	 							    
+		for (j=half;j<=ny;++j) {  
+			j__1=j-1;
+			j__2=j+1;   																      
+			peak_found=(buf(i,j)>buf(i,j__1)) && (buf(i,j)>buf(i,j__2));
+			peak_found=peak_found && (buf(i,j)>buf(i__1,j)) && (buf(i,j)>buf(i__2,j));
+			peak_found=peak_found && (buf(i,j)>buf(i__1,j__1)) && ((buf(i,j))> buf(i__1,j__2));
+			peak_found=peak_found && (buf(i,j)>buf(i__2,j__1)) && (buf(i,j)> buf(i__2,j__2));				
+			if(peak_found) {	
+				if (peaks.size()==0) {	 
+					peaks.push_back(Pixel(i,j,0,buf(i,j)));
+					n_peak=n_peak+1;
+				} else {	
+					not_overlap=true;							
+					bool higher_peak=false;	
+					int size=peaks.size();
+					for ( int kk= 0; kk< size; kk++) {	
+						vector<Pixel>::iterator it= peaks.begin()+kk;
+						float radius=((*it).x-float(i))*((*it).x-float(i))+((*it).y-float(j))*((*it).y-float(j));																	
+						if (radius <= hf_p2 ) {	
+							not_overlap=false;
+							if( buf(i,j) > (*it).value) {	
+									peaks.erase(it);																								     
+									higher_peak=true;																						    
+							} else {	
+									higher_peak=false;
+									break;
+							}
+						}
+											
 					}
-			}						
+					if(not_overlap|higher_peak)	{										
+						n_peak=n_peak+1;
+						peaks.push_back(Pixel(i,j,0,buf(i,j)));
+					}
+				}
+				                                
+			}
+		}						
 	}	
-	if(peaks.size()>=1)
-   	     	    	 
-  		{	sort(peaks.begin(),peaks.end(), peakcmp); 
-			for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++) 
-				{
-					res.push_back((*it).value);
-					res.push_back(static_cast<float>((*it).x));
-					res.push_back(static_cast<float>((*it).y));			
+	if(peaks.size()>=1) {
+		sort(peaks.begin(),peaks.end(), peakcmp); 
+		for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++) {
+			res.push_back((*it).value);
+			res.push_back(static_cast<float>((*it).x));
+			res.push_back(static_cast<float>((*it).y));			
 			
-		 		}
 		}
-	else
-		{	
-			res.push_back(buf(0,0,0));
- 			res.insert(res.begin(),1,0.0); 	
-		}
+	} else {	
+		res.push_back(buf(0,0,0));
+ 		res.insert(res.begin(),1,0.0); 	
+	}
 	return res;
 }
 
@@ -4002,12 +3961,12 @@ EMData* EMData::ctf_img(int nx, int ny, int nz,float dz,float ps,float voltage,f
 	       }
 
 	}
-		ctf_img1->update();
+	ctf_img1->update();
 	//	ctf_img1->set_complex(true);//
-		ctf_img1->attr_dict["is_complex"] = 1;
-		ctf_img1->attr_dict["is_ri"] = 1;
-		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);		
-		return ctf_img1;
+	ctf_img1->attr_dict["is_complex"] = 1;
+	ctf_img1->attr_dict["is_ri"] = 1;
+	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);		
+	return ctf_img1;
 } 		
 
 

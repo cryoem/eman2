@@ -502,9 +502,10 @@ EMData* mult_radial(EMData* radial);
 		  2D: pixel value, x coord, y coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) 
 		  ...
 		  3D  pixel value, x coord, y coord, z coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) z coord(NZ/2 center)
-		  The function is supposed to return 0 dimension and first pixel value (0,0,0) when the image is contant.
+		  The function is supposed to return 0 dimension and first pixel value (0,0,0) when the image is constant.
 		  ...			*/
 		vector<float> peak_search(int ml, float invert);
+
 		/** Calculate the Phase approximation to center of gravity
 		 *  This operations works for 1-2-3-d images
 		 *  @returns both the center of gravity and the phase approximated center of gravity values.
