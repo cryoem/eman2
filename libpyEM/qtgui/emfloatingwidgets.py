@@ -2,7 +2,6 @@
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
-# Author: David Woolford Early 2008 woolford@bcm.edu
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -281,6 +280,59 @@ class ViewportDepthTools:
 			self.mc11 = [0,0,0]
 			self.mc01 = [0,0,0]
 	
+	def storeModel(self):
+		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
+	
+	def updateNoRot(self,cam):
+		
+		self.update()
+		width = self.parent.width()/2.0
+		height = self.parent.height()/2.0
+			
+		# now get the coordinates of the un-rotated coordinates
+		
+		glMatrixMode(GL_MODELVIEW)
+		glPushMatrix()
+		#position the camera without rotations
+		cam.undoRot()
+		self.wmodelnr= glGetDoublev(GL_MODELVIEW_MATRIX)
+		try:
+			self.mc00nr=gluProject(-width,-height,0.,self.wmodelnr,self.wproj,self.wview)
+			#self.mc10nr=gluProject( width,-height,0.,self.wmodelnr,self.wproj,self.wview)
+			self.mc11nr=gluProject( width, height,0.,self.wmodelnr,self.wproj,self.wview)
+			#self.mc01nr=gluProject(-width, height,0.,self.wmodelnr,self.wproj,self.wview)
+		except:
+			self.mc00nr = [0,0,0]
+			#self.mc10nr = [0,0,0]
+			self.mc11nr = [0,0,0]
+			#self.mc01nr = [0,0,0]
+		
+		glPopMatrix()
+	
+	def printUnproj(self,x,y):
+		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
+		if self.update_P_inv == True:
+			self.wproj= glGetDoublev(GL_PROJECTION_MATRIX)
+		self.wview= glGetIntegerv(GL_VIEWPORT)
+	
+		t = gluProject(x,y,0.,self.wmodel,self.wproj,self.wview)
+		print t[0],t[1],t[2]
+		
+	def norotHeight(self):
+		top = self.mc11nr[1] 
+		bot = self.mc00nr[1]
+		if top > self.parent.viewportHeight(): top = self.parent.viewportHeight()
+		if bot < 0: bot = 0
+		return int(top-bot)
+		
+	def norotWidth(self):
+		right = self.mc11nr[0]
+		left =  self.mc00nr[0]
+		if right > self.parent.viewportWidth() : right = self.parent.viewportWidth()
+		if left < 0 : left = 0
+		#print "norotWidth is", right-left, "other is ", self.mc11[0]-self.mc00[0]
+		return int(right-left)
+	
 	def isinwin(self,x,y):
 		# this function can be called to determine
 		# if the event at x,y (in terms of the viewport)
@@ -395,11 +447,17 @@ class EMGLDrawer2D:
 		self.cam = Camera2(self)
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
-		#self.image2dtex = EMImage2DTex(image,self)
 		self.image2dtex = EMImage2D(image,self)
-		self.image2dtex.depthtracking = False
-		self.image2dtex.cam.basicmapping = True
+		self.image2dtex.originshift = False
+		self.image2dtex.supressInspector = True
+		#self.image2dtex.updateOrigin(self.image2dtex.width(),self.image2dtex.height())
+		#self.cam.setCamTrans('x',-self.image2dtex.width()/2.0)
+		#self.cam.setCamTrans('y',-self.image2dtex.height()/2.0)
+		#self.image2dtex.depthtracking = False
+		#self.image2dtex.cam.basicmapping = True
 		self.vdtools = ViewportDepthTools(self)
+		
+		self.updateFlag = True
 		
 		self.drawFrame = True
 
@@ -410,9 +468,10 @@ class EMGLDrawer2D:
 		#FIXME - both of these objects updates and inverts the OpenGL
 		# projection matrix - they both have a copy - so it would be 
 		# more efficient if there were a common place where the matrix
-		# and its inverse are stored
+		# and its inverse are stored'
 		self.vdtools.set_update_P_inv(val)
-		self.image2dtex.set_update_P_inv(val)
+		self.updateFlag = True
+		#self.image2dtex.set_update_P_inv(val)
 	
 	def width(self):
 		try:
@@ -430,50 +489,56 @@ class EMGLDrawer2D:
 		self.image2dtex.setData(data)
 		
 	def initializeGL(self):
-		GL.glClearColor(0,0,0,0)
 		self.image2dtex.initializeGL()
 	
+	def drawHeight(self):
+		return self.vdtools.norotHeight()
+	
+	def drawWidth(self):
+		return self.vdtools.norotWidth()
+	
 	def viewportHeight(self):
-		return self.parent.height()
+		return self.parent.height()	
 	
 	def viewportWidth(self):
 		return self.parent.width()
 	
 	def paintGL(self):
+		
 		self.cam.position()
+		self.vdtools.updateNoRot(self.cam)
 		
+		print "draw Width"
+		self.vdtools.printUnproj(-self.drawWidth()/2.0,-self.drawHeight()/2.0)
+		self.vdtools.printUnproj(self.drawWidth()/2.0,self.drawHeight()/2.0)
+		print "self width"
+		self.vdtools.printUnproj(-self.width()/2.0,-self.height()/2.0)
+		self.vdtools.printUnproj(self.width()/2.0,self.height()/2.0)
+		
+
 		# make sure the vdtools store the current matrices
-		self.vdtools.update()
-		
-		clip_plane1 = [1.0,0.0,0.0,self.width()/2.0]
-		clip_plane2 = [-1.0,0.0,0.0,self.width()/2.0]
-		clip_plane3 = [0.0,1.0,0.0,self.height()/2.0]
-		clip_plane4 = [0.0,-1.0,0.0,self.height()/2.0]
-		glClipPlane(GL_CLIP_PLANE1,clip_plane1);
-		glClipPlane(GL_CLIP_PLANE2,clip_plane2);
-		glClipPlane(GL_CLIP_PLANE3,clip_plane3);
-		glClipPlane(GL_CLIP_PLANE4,clip_plane4);
-		glEnable(GL_CLIP_PLANE1)
-		glEnable(GL_CLIP_PLANE2)
-		glEnable(GL_CLIP_PLANE3)
-		glEnable(GL_CLIP_PLANE4)
-		
+		if (self.updateFlag):
+			self.image2dtex.updateOrigin(self.drawWidth(),self.drawHeight())
+			self.updateFlag = False
+			
 		glPushMatrix()
 		self.image2dtex.render()
 		glPopMatrix()
 		
-		glDisable(GL_CLIP_PLANE1)
-		glDisable(GL_CLIP_PLANE2)
-		glDisable(GL_CLIP_PLANE3)
-		glDisable(GL_CLIP_PLANE4)
+		self.cam.undoScale()
+		self.vdtools.storeModel()
+		
 		
 		if self.drawFrame: self.vdtools.drawFrame()
+	
+	def update(self):
+		self.parent.updateGL()
 	
 	def updateGL(self):
 		self.parent.updateGL()
 	
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):	
 			self.image2dtex.initInspector()
 			self.image2dtex.inspector.show()
 			self.image2dtex.inspector.hide()
@@ -487,15 +552,18 @@ class EMGLDrawer2D:
 			self.image2dtex.mousePressEvent(qme)
 			#self.image2dtex.mousePressEvent(event)
 		
-		self.updateGL()
+		#self.updateGL()
 			
 	def wheelEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.wheelEvent(event)
+			self.updateFlag = True
+			#print "updating",self.drawWidth(),self.drawHeight()
+			
 		else:
 			self.image2dtex.wheelEvent(event)
 			
-		self.updateGL()
+		#self.updateGL()
 	
 	def mouseMoveEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
@@ -506,7 +574,7 @@ class EMGLDrawer2D:
 			self.image2dtex.mouseMoveEvent(qme)
 			#self.image2dtex.mouseMoveEvent(event)
 		
-		self.updateGL()
+		#self.updateGL()
 
 	def mouseReleaseEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
@@ -515,12 +583,13 @@ class EMGLDrawer2D:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.image2dtex.mouseReleaseEvent(qme)
+			print 'sent release event'
 			#self.image2dtex.mouseReleaseEvent(event)
 
-		self.updateGL()
+		#self.updateGL()
 		
 	def leaveEvent(self):
-		pass
+		self.image2dtex.leaveEvent()
 	
 	def toolTipEvent(self,event):
 		pass
@@ -973,20 +1042,20 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		#print "file dialog finished with code",val
 		if ( val == 1 ):
 			for i in self.fd.selectedFiles():
-				try:
+				#try:
 					#print i,str(i)
 					a=EMData.read_images(str(i),[0])
 					#if len(a)==1 : a=a[0]
 					#w.setWindowTitle("EMImage (%s)"%f)
 					#w.show()
-					w = EMGLDrawer2D(self)
+					w = EMGLDrawer2D(self,a[0])
 					w.setData(a[0])
 					self.qwidgets.append(w)
 					
 					#self.qwidgets[0].cam.setCamX(100)
 					#self.initFlag = False
-				except:
-					print "error, could not open",i
+				#except:
+					#print "error, could not open",i
 			
 	def timer(self):
 		pass
@@ -1035,12 +1104,11 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				return
 		
 	def mouseReleaseEvent(self, event):
-		if event.button()==Qt.LeftButton:
-			for i in self.qwidgets:
-				if ( i.isinwin(event.x(),self.height()-event.y()) ):
-					i.mouseReleaseEvent(event)
-					self.updateGL()
-					return
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				i.mouseReleaseEvent(event)
+				self.updateGL()
+				return
 					
 		
 	def mouseDoubleClickEvent(self, event):

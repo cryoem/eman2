@@ -51,7 +51,7 @@ from pickle import dumps,loads
 
 MAG_INC = 1.1
 
-class EMImage2D(QtOpenGL.QGLWidget):
+class EMImage2D():
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
@@ -59,8 +59,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def __init__(self, image=None, parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		#QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImage2D.allim[self]=0
+		self.parent = parent
 		
 # 		try: 
 # 			if EMImage2D.gq : pass
@@ -96,25 +97,53 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		self.inspector=None			# set to inspector panel widget when exists
 		
-		self.setAcceptDrops(True)
-		self.resize(99,99)
+		self.init_size = True		# A flag used to set the initial origin offset
+		
+		self.shapelist = 0			# Something Steve must have been using?
+		
+		self.originshift = True
+		self.supressInspector = False
+		
+		try:
+			self.parent.setAcceptDrops(True)
+		except:
+			pass
+		#self.parent.resizeGL(99,99)
+		
 		self.tex_name = 0
 		
 		self.using_textures = True
 		self.power_of_two_init_check = True
 		
-		if image : 
+		if image :
 			self.setData(image)
-			self.show()
 	
 	def __del__(self):
 		GL.glDeleteLists(self.shapelist,1)
+		
+	def width(self):
+		try:
+			return self.data.get_xsize()
+		except:
+			return 0
+	
+	def height(self):
+		try:
+			return self.data.get_ysize()
+		except:
+			return 0
+	
+	def updateGL(self):
+		try:
+			self.parent.updateGL()
+		except:
+			pass
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
-		if not self.data and data and self.size().width()==99 and self.size().height()==99: 
-			if data.get_xsize()<1024 and data.get_ysize()<1024: self.resize(data.get_xsize(),data.get_ysize())
-			else: self.resize(800,800)
+		#if not self.data and data and self.parent.size().width()==99 and self.parent.size().height()==99: 
+			#if data.get_xsize()<1024 and data.get_ysize()<1024: self.parent.resize(data.get_xsize(),data.get_ysize())
+			#else: self.parent.resize(800,800)
 		self.data=data
 		if data==None:
 			self.updateGL()
@@ -164,12 +193,11 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	
 	def scrollTo(self,x,y):
 		"""center the point on the screen"""
-		self.setOrigin(x*self.scale-self.width()/2,y*self.scale-self.height()/2)
-	
-		
+		self.setOrigin(x*self.scale-self.parent.drawWidth()/2,y*self.scale-self.parent.drawHeight()/2)
+
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
-		self.origin=(newscale/self.scale*(self.width()/2.0+self.origin[0])-self.width()/2.0,newscale/self.scale*(self.height()/2.0+self.origin[1])-self.height()/2.0)
+		self.origin=(newscale/self.scale*(self.parent.drawWidth()/2.0+self.origin[0])-self.parent.drawWidth()/2.0,newscale/self.scale*(self.parent.drawHeight()/2.0+self.origin[1])-self.parent.drawHeight()/2.0)
 		self.scale=newscale
 		self.updateGL()
 		
@@ -220,15 +248,15 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.updateGL()
 
 	def initializeGL(self):
-		GL.glClearColor(0,0,0,0)
+		#GL.glClearColor(0,0,0,0)
 		emshape.initGL()
 		self.shapelist=GL.glGenLists(1)		# displaylist for shapes displayed over the image
-		#GL.glNewList(self.shapelist,GL.GL_COMPILE)
-		#GL.glEndList()
+		GL.glNewList(self.shapelist,GL.GL_COMPILE)
+		GL.glEndList()
 
-	def paintGL(self):
-		if not self.parentWidget(): return
-		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+	def render(self):
+		#if not self.parentWidget(): return
+		
 #		GL.glLoadIdentity()
 #		GL.glTranslated(0.0, 0.0, -10.0)
 		
@@ -240,16 +268,15 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
-		
 		if self.curfft==1 : 
-			a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
+			a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.drawWidth(),self.parent.drawHeight(),(self.parent.drawWidth()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
 			gl_render_type = GL_RGB
 			
 		elif self.curfft in (2,3) :
-			a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+			a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.drawWidth(),self.parent.drawHeight(),(self.parent.drawWidth()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 			gl_render_type = GL_LUMINANCE
 		else : 
-			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.drawWidth(),self.parent.drawHeight(),(self.parent.drawWidth()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 			gl_render_type = GL_LUMINANCE
 
 
@@ -263,13 +290,19 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			self.power_of_two_init_check = False
 
 		if ( self.using_textures ):
+			width = self.parent.width()/2.0
+			height = self.parent.height()/2.0
+			
+			if self.originshift :
+				glPushMatrix()
+				glTranslatef(width,height,0)
 			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
 			self.tex_name = GL.glGenTextures(1)
 			if ( self.tex_name <= 0 ):
 				raise("failed to generate texture name")
 			
 			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.width(),self.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.drawWidth(),self.parent.drawHeight(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 			
 			
 			glEnable(GL_TEXTURE_2D)
@@ -287,28 +320,29 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			# POSITIONING POLICY - the texture occupies the entire screen area
 			glBegin(GL_QUADS)
 			
-			width = self.width()/2.0
-			height = self.height()/2.0
-			
 			glTexCoord2f(0,0)
-			glVertex2f(0,self.height())
+			glVertex2f(-width,height)
 			
 			glTexCoord2f(1,0)
-			glVertex2f( self.width(),self.height())
+			glVertex2f(width,height)
 				
 			glTexCoord2f(1,1)
-			glVertex2f( self.width(),0)
+			glVertex2f(width,-height)
 			
 			glTexCoord2f(0,1)
-			glVertex2f(0, 0)
+			glVertex2f(-width,-height)
 				
 			glEnd()
 			
 			glDisable(GL_TEXTURE_2D)
+			
+			if self.originshift :
+				glPopMatrix()
 		else:
-			GL.glRasterPos(0,self.height()-1)
+			print "drawing pixels"
+			GL.glRasterPos(0,self.parent.drawHeight()-1)
 			GL.glPixelZoom(1.0,-1.0)
-			GL.glDrawPixels(self.width(),self.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
+			GL.glDrawPixels(self.parent.drawWidth(),self.parent.drawHeight(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
 
 #		hist=numpy.fromstring(a[-1024:],'i')
 		hist=struct.unpack('256i',a[-1024:])
@@ -316,43 +350,43 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			if self.invert: self.inspector.setHist(hist,self.maxden,self.minden) 
 			else: self.inspector.setHist(hist,self.minden,self.maxden)
 	
-		GL.glPushMatrix()
-		GL.glTranslate(-self.origin[0],-self.origin[1],0)
-		GL.glScalef(self.scale,self.scale,self.scale)
-		GL.glCallList(self.shapelist)
-		GL.glPopMatrix()
-		self.changec=self.data.get_attr("changecount")
+		#GL.glPushMatrix()
+		#GL.glTranslate(-self.origin[0],-self.origin[1],0)
+		#GL.glScalef(self.scale,self.scale,self.scale)
+		#GL.glCallList(self.shapelist)
+		#GL.glPopMatrix()
+		#self.changec=self.data.get_attr("changecount")
 				
-	def resizeGL(self, width, height):
-		if self.oldsize[0]<0 : self.oldsize=(width,height)
-		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
-	
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
-		self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.height()/2.0)
-		self.oldsize=(width,height)
-		
+
+	def updateOrigin(self,width,height):
+		if self.init_size :
+			self.origin = ((self.data.get_xsize() - self.parent.drawWidth())/2.0, (self.data.get_ysize() - self.parent.drawHeight())/2.0 )
+			self.oldsize=(width,height)
+			self.init_size = False
+		else:
+			self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.drawWidth()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.drawHeight()/2.0)
+			self.oldsize=(width,height)
+
 	def setupShapes(self):
 		# make our own cirle rather than use gluDisk or somesuch
-		
-		GL.glNewList(self.shapelist,GL.GL_COMPILE)
-		for k,s in self.shapes.items():
-			if self.active[0]==k: s.draw(None,self.active[1:])
-			else: s.draw()
+		pass
+		#glNewList(self.shapelist,GL_COMPILE)
+		#for k,s in self.shapes.items():
+			#if self.active[0]==k: s.draw(None,self.active[1:])
+			#else: s.draw()
 			
-		GL.glEndList()
+		#glEndList()
 	
 	def showInspector(self,force=0):
+		if (self.supressInspector): return
 		if not force and self.inspector==None : return
+		self.initInspector()
+		self.inspector.show()
 		
+	def initInspector(self):
 		if not self.inspector : self.inspector=EMImageInspector2D(self)
 		if self.fft : self.inspector.setLimits(self.fmindeng,self.fmaxdeng,self.fminden,self.fmaxden)
 		else : self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
-		self.inspector.show()
 	
 	def setMMode(self,m):
 		self.mmode=m
@@ -426,7 +460,6 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			self.setData(x)
 			event.acceptProposedAction()
 
-	
 	def mousePressEvent(self, event):
 		lc=self.scr2img(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
@@ -435,7 +468,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			self.rmousedrag=(event.x(),event.y() )
 		elif event.button()==Qt.LeftButton:
 			if self.mmode==0:
-				self.emit(QtCore.SIGNAL("mousedown"), event)
+				self.parent.emit(QtCore.SIGNAL("mousedown"), event)
 				return
 			elif self.mmode==1 :
 				try: 
@@ -450,7 +483,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 					self.drawr2=int(float(self.inspector.dtpen2.text()))
 					self.drawv2=float(self.inspector.dtpenv2.text())
 					self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
-					self.update()
+					self.parent.update()
 				#except:
 					#print "paint error"
 					#return
@@ -460,10 +493,10 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		if self.rmousedrag:
 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
-			self.update()
+			self.parent.update()
 		elif event.buttons()&Qt.LeftButton:
 			if self.mmode==0:
-				self.emit(QtCore.SIGNAL("mousedrag"), event)
+				self.parent.emit(QtCore.SIGNAL("mousedrag"), event)
 				return
 			elif self.mmode==1 :
 				self.addShape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
@@ -477,15 +510,19 @@ class EMImage2D(QtOpenGL.QGLWidget):
 					self.inspector.mtshowlen.setText("dx,dy (len): %1.2f , %1.2f (%1.3f)"%(dx*apix,dy*apix,hypot(dx,dy)*apix))
 			elif self.mmode==2 and self.inspector:
 				self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
-				self.update()
+				self.parent.update()
 				
+	def leaveEvent(self):
+		if self.rmousedrag:
+			self.rmousedrag=None
+
 	def mouseReleaseEvent(self, event):
 		lc=self.scr2img(event.x(),event.y())
 		if self.rmousedrag:
 			self.rmousedrag=None
 		elif event.button()==Qt.LeftButton:
 			if self.mmode==0:
-				self.emit(QtCore.SIGNAL("mouseup"), event)
+				self.parent.emit(QtCore.SIGNAL("mouseup"), event)
 				return
 			elif self.mmode==1 :
 				self.addShape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
@@ -499,6 +536,86 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			self.setScale(self.scale * 1.0/MAG_INC)
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.setScale(self.scale)
+
+class EMImage2DGLWidget(QtOpenGL.QGLWidget):
+	"""
+	This is the QtOpenGL Widget that instantiates and hands on events
+	to the EMAN2 2D OpenGL image
+	"""
+	allim=WeakKeyDictionary()
+	def __init__(self, image=None, parent=None):
+		
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		fmt.setDepth(1)
+		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		EMImage2DGLWidget.allim[self]=0
+		
+		self.image2d = EMImage2D(image,self)
+	def setData(self,data):
+		self.image2d.setData(data)
+		
+	def initializeGL(self):
+		GL.glClearColor(0,0,0,0)
+		self.image2d.initializeGL()
+	
+	def paintGL(self):
+		glClear(GL_COLOR_BUFFER_BIT)
+		if glIsEnabled(GL_DEPTH_TEST):
+			glClear(GL_DEPTH_BUFFER_BIT)
+		if glIsEnabled(GL_STENCIL_TEST):
+			glClear(GL_STENCIL_BUFFER_BIT)
+			
+		glClear(GL.GL_COLOR_BUFFER_BIT )
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		#self.cam.position()
+		
+		glPushMatrix()
+		self.image2d.render()
+		glPopMatrix()
+		
+	def resizeGL(self, width, height):
+		side = min(width, height)
+		GL.glViewport(0,0,self.width(),self.height())
+	
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+		
+		self.image2d.updateOrigin(width,height)
+
+	def mousePressEvent(self, event):
+		self.image2d.mousePressEvent(event)
+			
+	def wheelEvent(self,event):
+		self.image2d.wheelEvent(event)
+	
+	def mouseMoveEvent(self,event):
+		self.image2d.mouseMoveEvent(event)
+
+	def mouseReleaseEvent(self,event):
+		self.image2d.mouseReleaseEvent(event)
+		
+	def dropEvent(self,event):
+		self.image2d.dropEvent(event)
+		
+	def closeEvent(self,event) :
+		self.image2d.closeEvent(event)
+		
+	def dragEnterEvent(self,event):
+		self.image2d.dragEnterEvent(event)
+		
+	def drawHeight(self):
+		return self.height()
+	
+	def drawWidth(self):
+		return self.width()
+
 
 class EMImageInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
@@ -744,7 +861,7 @@ class EMImageInspector2D(QtGui.QWidget):
 if __name__ == '__main__':
 	GLUT.glutInit(sys.argv )
 	app = QtGui.QApplication(sys.argv)
-	window = EMImage2D()
+	window = EMImage2DGLWidget()
 	if len(sys.argv)==1 : 
 		window.setData(test_image(size=(512,512)))
 

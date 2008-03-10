@@ -206,7 +206,20 @@ class Camera2:
 		t3d = Transform3D()
 		t3d.to_identity()
 		self.t3d_stack.append(t3d)
-		
+	
+	def undoScale(self):
+		glScalef(1.0/self.scale,1.0/self.scale,1.0/self.scale)
+			
+	
+	def undoRot(self):
+		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+		if ( self.enablerotation ):
+			glRotate(-float(rot["az"]),0,0,1)
+			glRotate(-float(rot["alt"]),1,0,0)
+			glRotate(-float(rot["phi"]),0,0,1)
+			
+			
+	
 	def position(self):
 		# position the camera, regualar OpenGL movement.
 		if (self.debug):
