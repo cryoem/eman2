@@ -4690,7 +4690,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
-	/**Replace a source image as a uniform random noise, random number generated from rand(), the pixel value is from 0 to 1
+	/**Replace a source image as a uniform random noise, random number generated from gsl_rng_mt19937, 
+	 * the pixel value is from 0 to 1, [0, 1)
 	 */
 	class TestImageNoiseUniformRand : public TestImageProcessor
 	{
@@ -4704,7 +4705,7 @@ The basic design of EMAN Processors: <br>\
 		
 		string get_desc() const
 		{
-			return "Replace a source image as a uniform random noise, random number generated from rand(), the pixel value is from 0 to 1";
+			return "Replace a source image as a uniform random noise, random number generated from gsl_rng_mt19937, the pixel value is [0, 1)";
 		}
 		
 		static Processor * NEW()

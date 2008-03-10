@@ -39,8 +39,8 @@
 #include "xydata.h"
 #include "emdata.h"
 #include "emassert.h"
+#include "randnum.h"
 
-#include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_wavelet.h>
@@ -2784,19 +2784,9 @@ void AddNoiseProcessor::process_inplace(EMData * image)
 		return;
 	}
 
+	Randnum randnum = Randnum();
 	if(params.has_key("seed")) {
-#ifdef _WIN32
-		srand((int)params["seed"]);
-#else 
-		srandom((int)params["seed"]);
-#endif
-	}
-	else {
-#ifdef _WIN32
-		srand(time(0));
-#else
-		srandom(time(0));
-#endif
+		randnum.set_seed((int)params["seed"]);
 	}
 
 	float addnoise = params["noise"];
@@ -2805,7 +2795,7 @@ void AddNoiseProcessor::process_inplace(EMData * image)
 	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
 
 	for (size_t j = 0; j < size; j++) {
-		dat[j] += Util::get_gauss_rand(addnoise, addnoise / 2);
+		dat[j] += randnum.get_gauss_rand(addnoise, addnoise / 2);
 	}
 
 	image->update();
@@ -3799,20 +3789,10 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 	if (params.has_key("interpolation")) {
 		interpolation = params["interpolation"];
 	}
-
+	
+	Randnum randnum = Randnum();
 	if(params.has_key("seed")) {
-#ifdef _WIN32
-		srand((int)params["seed"]);
-#else
-		srandom((int)params["seed"]);
-#endif 
-	}
-	else {
-#ifdef _WIN32
-		srand(time(0));
-#else
-		srandom(time(0));
-#endif 
+		randnum.set_seed((int)params["seed"]);
 	}
 
 	int nx = image->get_xsize();
@@ -3858,8 +3838,8 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 						f = y[l];
 					}
 				}
-				f = Util::get_gauss_rand(sqrt(f), sqrt(f) / 3);
-				float a = Util::get_frand(0.0f, (float)(2 * M_PI));
+				f = randnum.get_gauss_rand(sqrt(f), sqrt(f) / 3);
+				float a = randnum.get_frand(0.0f, (float)(2 * M_PI));
 				if (i == 0) {
 					f *= sqrt_2;
 				}
@@ -5465,24 +5445,14 @@ void TestImageNoiseUniformRand::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
+	Randnum r = Randnum();
 	if(params.has_key("seed")) {
-#ifdef _WIN32
-		srand((int)params["seed"]);
-#else
-		srandom((int)params["seed"]);
-#endif 
-	}
-	else {
-#ifdef _WIN32
-		srand(time(0));
-#else 
-		srandom(time(0)); //generate a seed by current time
-#endif 
+		r.set_seed((int)params["seed"]);
 	}
 	
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
-		dat[i] = (float)rand()/(float)RAND_MAX;
+		dat[i] = r.get_frand();
 	}
 	
 	image->update();
@@ -5493,21 +5463,17 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 	preprocess(image);
 	
 	float sigma = params["sigma"];
-	if (sigma<=0) sigma = 1.0;
-
+	if (sigma<=0) { sigma = 1.0; }
 	float mean = params["mean"];
 	
+	Randnum r = Randnum();
 	if (params.has_key("seed")) {
-#ifdef _WIN32
-		srand((int)params["seed"]);
-#else
-		srandom((int)params["seed"]);
-#endif
+		r.set_seed((int)params["seed"]);
 	}
 	
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
-		dat[i] = Util::get_gauss_rand(mean, sigma);
+		dat[i] = r.get_gauss_rand(mean, sigma);
 	}
 	
 	image->update();

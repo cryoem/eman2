@@ -361,6 +361,7 @@ namespace EMAN
 
 		
 		/** Get an integer random number between low and high.
+		 * "deprecated, please use method in Randnum class instead. -Grant Tang"
 		 * @param[in] low The lower bound of the random number.
 		 * @param[in] high The upper bound of the random number.
 		 * @return The random number between low and high.
@@ -368,6 +369,7 @@ namespace EMAN
 		static int get_irand(int low, int high);
 		
 		/** Get a float random number between low and high.
+		 * "deprecated, please use method in Randnum class instead. -Grant Tang"
 		 * @param[in] low The lower bound of the random number.
 		 * @param[in] high The upper bound of the random number.
 		 * @return The random number between low and high.
@@ -375,6 +377,7 @@ namespace EMAN
 		static float get_frand(int low, int high);
 		
 		/** Get a float random number between low and high.
+		 * "deprecated, please use method in Randnum class instead. -Grant Tang"
 		 * @param[in] low The lower bound of the random number.
 		 * @param[in] high The upper bound of the random number.
 		 * @return The random number between low and high.
@@ -382,6 +385,7 @@ namespace EMAN
 		static float get_frand(float low, float high);
 
 		/** Get a float random number between low and high.
+		 * "deprecated, please use method in Randnum class instead. -Grant Tang"
 		 * @param[in] low The lower bound of the random number.
 		 * @param[in] high The upper bound of the random number.
 		 * @return The random number between low and high.
@@ -389,6 +393,7 @@ namespace EMAN
 		static float get_frand(double low, double high);
 
 		/** Get a Gaussian random number.
+		 * "deprecated, please use method in Randnum class instead. -Grant Tang"
 		 *
 		 * @param[in] mean The gaussian mean
 		 * @param[in] sigma The gaussian sigma
