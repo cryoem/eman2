@@ -14,6 +14,7 @@ LINK_LIBRARIES(EM2)
 #ADD_EXECUTABLE(projector_test projector_test.cpp)
 #ADD_EXECUTABLE(mem_test mem_test.cpp)
 #ADD_EXECUTABLE(storage_order_test storage_order_test.cpp)
+#ADD_EXECUTABLE(randnum_test randnum_test.cpp)
 # this test added by david woolford - it should be executed and results evaluated on every platform.
 ADD_EXECUTABLE(test_emobject_and_dict test_emobject.cpp)
 
