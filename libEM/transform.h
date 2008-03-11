@@ -337,7 +337,7 @@ namespace EMAN
 		
 		/** Ask the Symmetry3D object to generate a set of orientations in its asymmetric unit
 		 * using an OrientationGenerator constructed from the given parameters (using a Factory).
-		 * This is reminiscent of the visitor design pattern
+		 * This is reminiscent of the strategy design pattern
 		 * @param generatorname the string name of the OrientationGenerator, as accessed for the OrientationGenerator factory
 		 * @param parms the parameters handed to OrientationGenerator::set_params after initial construction
 		 * @return a set of orientations in the unit spher

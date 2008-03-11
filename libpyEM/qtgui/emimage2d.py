@@ -51,7 +51,7 @@ from pickle import dumps,loads
 
 MAG_INC = 1.1
 
-class EMImage2D():
+class EMImage2DGLComponent():
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
@@ -293,6 +293,11 @@ class EMImage2D():
 			width = self.parent.adjustedWidth()/2.0
 			height = self.parent.adjustedHeight()/2.0
 			
+			#print "widths",width,self.parent.drawWidth()
+			#print "heights",height,self.parent.drawHeight()
+			#width = self.parent.drawWidth()/2.0
+			#height = self.parent.drawHeight()/2.0
+			
 			if self.originshift :
 				glPushMatrix()
 				glTranslatef(width,height,0)
@@ -339,7 +344,6 @@ class EMImage2D():
 			if self.originshift :
 				glPopMatrix()
 		else:
-			print "drawing pixels"
 			GL.glRasterPos(0,self.parent.drawHeight()-1)
 			GL.glPixelZoom(1.0,-1.0)
 			GL.glDrawPixels(self.parent.drawWidth(),self.parent.drawHeight(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
@@ -537,27 +541,32 @@ class EMImage2D():
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.setScale(self.scale)
 
-class EMImage2DGLWidget(QtOpenGL.QGLWidget):
+class EMImage2D(QtOpenGL.QGLWidget):
 	"""
 	This is the QtOpenGL Widget that instantiates and hands on events
 	to the EMAN2 2D OpenGL image
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
+		self.image2d = EMImage2DGLComponent(image,self)
+		self.initimageflag = True
 		
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImage2DGLWidget.allim[self]=0
+		EMImage2D.allim[self]=0
 		
-		self.image2d = EMImage2D(image,self)
 	def setData(self,data):
 		self.image2d.setData(data)
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
-		self.image2d.initializeGL()
+		try:
+			self.image2d.initializeGL()
+			self.initimageflag = False
+		except:
+			pass
 	
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT)
@@ -572,6 +581,9 @@ class EMImage2DGLWidget(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 		
 		#self.cam.position()
+		if self.initimageflag == True:
+			self.image2d.initializeGL()
+			self.initimageflag = False
 		
 		glPushMatrix()
 		self.image2d.render()

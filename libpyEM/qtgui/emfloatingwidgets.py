@@ -323,7 +323,6 @@ class ViewportDepthTools:
 	def getHscale(self):
 		return self.hscale
 	
-		
 	def norotHeight(self):
 		top = self.mc11nr[1] 
 		bot = self.mc00nr[1]
