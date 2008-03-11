@@ -370,7 +370,7 @@ class TestHdfIO(unittest.TestCase):
 class TestMrcIO(unittest.TestCase):
     """mrc file IO test"""
     def test_negative_image_index(self):
-        """"test ignore negative image index ................"""
+        """test ignore negative image index ................."""
         filename = 'testimage.mrc'
         e = EMData()
         e.set_size(32,32)
