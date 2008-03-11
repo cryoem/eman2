@@ -2100,13 +2100,16 @@ class TestEMData(unittest.TestCase):
         e2 = EMData()
         e2.set_size(32,32,32)     
         e2.process_inplace("testimage.noise.uniform.rand")
-        e.cut_slice(e2, 10.5)    #default argument
-        e.cut_slice(e2, 11.6, None, False, 1, 1)
+        t = Transform3D(0,80,2)
+        t.set_posttrans(0,1,2)
+        t.set_pretrans(3,2,3)
+        e.cut_slice(e2, t)    #default argument
+        e.cut_slice(e2, t, False)
         
         e3 = None
-        self.assertRaises( RuntimeError, e.cut_slice, e3, 5.1)
+        self.assertRaises( RuntimeError, e.cut_slice, e3, t)
         try:
-            e.cut_slice(e3, 5.1)
+            e.cut_slice(e3, t)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "NullPointerException")
             
@@ -2118,8 +2121,11 @@ class TestEMData(unittest.TestCase):
         e2 = EMData()
         e2.set_size(32,32,32)     
         e2.process_inplace("testimage.noise.uniform.rand")
-        e.uncut_slice(e2, 10.0)
-        e.uncut_slice(e2, 10.0, None, 2, 3) #non-default argument
+        t = Transform3D(0,80,2)
+        t.set_posttrans(0,1,2)
+        t.set_pretrans(3,2,3)
+        e.uncut_slice(e2, t)
+        e.uncut_slice(e2, None) #non-default argument
         
     def test_calc_center_density(self):
         """test calc_center_density() function .............."""
