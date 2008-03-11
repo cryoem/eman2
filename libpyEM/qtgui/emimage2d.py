@@ -549,6 +549,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
 		self.image2d = EMImage2DGLComponent(image,self)
+		#self.resizeGL(self.image2d.width(),self.image2d.height)
 		self.initimageflag = True
 		
 		fmt=QtOpenGL.QGLFormat()
@@ -559,6 +560,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def setData(self,data):
 		self.image2d.setData(data)
+		#self.resizeGL(self.image2d.width(),self.image2d.height)
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -879,7 +881,7 @@ class EMImageInspector2D(QtGui.QWidget):
 if __name__ == '__main__':
 	GLUT.glutInit(sys.argv )
 	app = QtGui.QApplication(sys.argv)
-	window = EMImage2DGLWidget()
+	window = EMImage2D()
 	if len(sys.argv)==1 : 
 		window.setData(test_image(size=(512,512)))
 

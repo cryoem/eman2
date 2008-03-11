@@ -410,7 +410,7 @@ class ViewportDepthTools:
 		
 		return [ex2-ex1,ey2-ey1]
 
-	def mouseinwin(self,x,y,hscale=1.0,vscale=1.0):
+	def mouseinwin(self,x,y):
 		# to determine the mouse coordinates in the window we carefully perform
 		# linear algebra similar to what's done in gluUnProject
 
@@ -444,7 +444,7 @@ class ViewportDepthTools:
 		xcoord = zprime*(xNDC*PM_inv[0,0]+yNDC*PM_inv[1,0]+zNDC*PM_inv[2,0]+PM_inv[3,0])
 		ycoord = zprime*(xNDC*PM_inv[0,1]+yNDC*PM_inv[1,1]+zNDC*PM_inv[2,1]+PM_inv[3,1])
 
-		return (xcoord + hscale*self.parent.width()*0.5, vscale*0.5*self.parent.height()-ycoord)
+		return (xcoord + self.parent.width()*0.5, 0.5*self.parent.height()-ycoord)
 
 class EMGLDrawer2D:
 	"""
@@ -490,13 +490,13 @@ class EMGLDrawer2D:
 	
 	def width(self):
 		try:
-			return self.image2dtex.width()
+			return self.image2dtex.width()*self.cam.scale
 		except:
 			return 0
 	
 	def height(self):
 		try:
-			return self.image2dtex.height()
+			return self.image2dtex.height()*self.cam.scale
 		except:
 			return 0
 	
@@ -571,7 +571,7 @@ class EMGLDrawer2D:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(), self.vdtools.getHscale(), self.vdtools.getVscale())
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.image2dtex.mouseMoveEvent(qme)
 			#self.image2dtex.mouseMoveEvent(event)
@@ -585,11 +585,12 @@ class EMGLDrawer2D:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.image2dtex.mouseReleaseEvent(qme)
-			print 'sent release event'
 			#self.image2dtex.mouseReleaseEvent(event)
 
 		#self.updateGL()
-		
+	def emit(self, signal, event):
+		self.parent.emit(signal,event)
+	
 	def leaveEvent(self):
 		self.image2dtex.leaveEvent()
 	
