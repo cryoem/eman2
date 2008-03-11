@@ -410,7 +410,7 @@ class ViewportDepthTools:
 		
 		return [ex2-ex1,ey2-ey1]
 
-	def mouseinwin(self,x,y):
+	def mouseinwin(self,x,y,hscale=1.0,vscale=1.0):
 		# to determine the mouse coordinates in the window we carefully perform
 		# linear algebra similar to what's done in gluUnProject
 
@@ -444,7 +444,7 @@ class ViewportDepthTools:
 		xcoord = zprime*(xNDC*PM_inv[0,0]+yNDC*PM_inv[1,0]+zNDC*PM_inv[2,0]+PM_inv[3,0])
 		ycoord = zprime*(xNDC*PM_inv[0,1]+yNDC*PM_inv[1,1]+zNDC*PM_inv[2,1]+PM_inv[3,1])
 
-		return (xcoord + self.parent.width()*0.5, 0.5*self.parent.height()-ycoord)
+		return (xcoord + hscale*self.parent.width()*0.5, vscale*0.5*self.parent.height()-ycoord)
 
 class EMGLDrawer2D:
 	"""
@@ -456,7 +456,7 @@ class EMGLDrawer2D:
 		self.cam = Camera2(self)
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
-		self.image2dtex = EMImage2D(image,self)
+		self.image2dtex = EMImage2DGLComponent(image,self)
 		self.image2dtex.originshift = False
 		self.image2dtex.supressInspector = True
 		#self.image2dtex.updateOrigin(self.image2dtex.width(),self.image2dtex.height())
@@ -523,15 +523,6 @@ class EMGLDrawer2D:
 		self.cam.position()
 		self.vdtools.updateNoRot(self.cam)
 		
-		#print "draw Width"
-		#self.vdtools.printUnproj(-self.drawWidth()/2.0,-self.drawHeight()/2.0)
-		#self.vdtools.printUnproj(self.drawWidth()/2.0,self.drawHeight()/2.0)
-		#print "self width"
-		#self.vdtools.printUnproj(-self.width()/2.0,-self.height()/2.0)
-		#self.vdtools.printUnproj(self.width()/2.0,self.height()/2.0)
-		
-		self.image2dtex.updateOrigin(self.drawWidth(),self.drawHeight())
-		# make sure the vdtools store the current matrices
 		if (self.updateFlag):
 			self.image2dtex.updateOrigin(self.drawWidth(),self.drawHeight())
 			self.updateFlag = False
@@ -539,11 +530,7 @@ class EMGLDrawer2D:
 		glPushMatrix()
 		self.image2dtex.render()
 		glPopMatrix()
-		
-		self.cam.undoScale()
-		self.vdtools.storeModel()
-		
-		
+
 		if self.drawFrame: self.vdtools.drawFrame()
 	
 	def update(self):
@@ -584,7 +571,7 @@ class EMGLDrawer2D:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(), self.vdtools.getHscale(), self.vdtools.getVscale())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.image2dtex.mouseMoveEvent(qme)
 			#self.image2dtex.mouseMoveEvent(event)

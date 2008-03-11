@@ -51,7 +51,7 @@ from pickle import dumps,loads
 
 MAG_INC = 1.1
 
-class EMImage2DGLComponent():
+class EMImage2DGLComponent:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
