@@ -78,17 +78,18 @@ def display(img):
 	
 	win=[]
 	for f in img:
-		try:
+		#try:
 			a=EMData.read_images(f)
+			flag = False
 			if len(a)==1 : a=a[0]
 			w=EMImage(a)
 			w.setWindowTitle("EMImage (%s)"%f)
 			w.show()
 			win.append(w)
-		except:
-			if not plot : 
-				plot=EMPlot2D()
-			plot.setDataFromFile(f,f)
+		#except:
+			#if not plot : 
+				#plot=EMPlot2D()
+			#plot.setDataFromFile(f,f)
 	
 	if plot:
 		w=EMParentWin(plot)

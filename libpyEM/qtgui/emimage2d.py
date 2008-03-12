@@ -57,9 +57,7 @@ class EMImage2DGLComponent:
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
-		#QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		
 		EMImage2D.allim[self]=0
 		self.parent = parent
 		
@@ -98,6 +96,7 @@ class EMImage2DGLComponent:
 		self.inspector=None			# set to inspector panel widget when exists
 		
 		self.init_size = True		# A flag used to set the initial origin offset
+		self.init_size_foo = True		# A flag used to set the dimensions of the window
 		
 		self.shapelist = 0			# Something Steve must have been using?
 		
@@ -117,9 +116,11 @@ class EMImage2DGLComponent:
 		
 		if image :
 			self.setData(image)
+		
+		GLUT.glutInit("")
 	
 	def __del__(self):
-		GL.glDeleteLists(self.shapelist,1)
+		glDeleteLists(self.shapelist,1)
 		
 	def width(self):
 		try:
@@ -134,16 +135,11 @@ class EMImage2DGLComponent:
 			return 0
 	
 	def updateGL(self):
-		try:
-			self.parent.updateGL()
-		except:
-			pass
+		try: self.parent.updateGL()
+		except: pass
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
-		#if not self.data and data and self.parent.size().width()==99 and self.parent.size().height()==99: 
-			#if data.get_xsize()<1024 and data.get_ysize()<1024: self.parent.resize(data.get_xsize(),data.get_ysize())
-			#else: self.parent.resize(800,800)
 		self.data=data
 		if data==None:
 			self.updateGL()
@@ -166,6 +162,13 @@ class EMImage2DGLComponent:
 		
 		self.showInspector()		# shows the correct inspector if already open
 #		self.origin=(self.width()/2,self.height()/2)
+		
+		
+		try:
+			if self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
+			else: self.parent.resize(800,800)
+		except: pass
+		
 		self.updateGL()
 		
 	def setDenRange(self,x0,x1):
@@ -193,11 +196,11 @@ class EMImage2DGLComponent:
 	
 	def scrollTo(self,x,y):
 		"""center the point on the screen"""
-		self.setOrigin(x*self.scale-self.parent.drawWidth()/2,y*self.scale-self.parent.drawHeight()/2)
+		self.setOrigin(x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2)
 
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
-		self.origin=(newscale/self.scale*(self.parent.drawWidth()/2.0+self.origin[0])-self.parent.drawWidth()/2.0,newscale/self.scale*(self.parent.drawHeight()/2.0+self.origin[1])-self.parent.drawHeight()/2.0)
+		self.origin=(newscale/self.scale*(self.parent.width()/2.0+self.origin[0])-self.parent.width()/2.0,newscale/self.scale*(self.parent.height()/2.0+self.origin[1])-self.parent.height()/2.0)
 		self.scale=newscale
 		self.updateGL()
 		
@@ -255,13 +258,12 @@ class EMImage2DGLComponent:
 		GL.glEndList()
 
 	def render(self):
-		#if not self.parentWidget(): return
-		
-#		GL.glLoadIdentity()
-#		GL.glTranslated(0.0, 0.0, -10.0)
 		
 		if not self.data : return
 		
+		lighting = glIsEnabled(GL_LIGHTING)
+		glDisable(GL_LIGHTING)
+
 		if self.shapechange:
 			self.setupShapes()
 			self.shapechange=0
@@ -269,14 +271,14 @@ class EMImage2DGLComponent:
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		if self.curfft==1 : 
-			a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.drawWidth(),self.parent.drawHeight(),(self.parent.drawWidth()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
+			a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
 			gl_render_type = GL_RGB
 			
 		elif self.curfft in (2,3) :
-			a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.drawWidth(),self.parent.drawHeight(),(self.parent.drawWidth()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+			a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 			gl_render_type = GL_LUMINANCE
 		else : 
-			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.drawWidth(),self.parent.drawHeight(),(self.parent.drawWidth()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 			gl_render_type = GL_LUMINANCE
 
 
@@ -289,15 +291,9 @@ class EMImage2DGLComponent:
 				#print "EMAN(ALPHA) message: Support for non power of two textures detected"
 			self.power_of_two_init_check = False
 
+		width = self.parent.width()/2.0
+		height = self.parent.height()/2.0
 		if ( self.using_textures ):
-			width = self.parent.adjustedWidth()/2.0
-			height = self.parent.adjustedHeight()/2.0
-			
-			#print "widths",width,self.parent.drawWidth()
-			#print "heights",height,self.parent.drawHeight()
-			#width = self.parent.drawWidth()/2.0
-			#height = self.parent.drawHeight()/2.0
-			
 			if self.originshift :
 				glPushMatrix()
 				glTranslatef(width,height,0)
@@ -307,7 +303,7 @@ class EMImage2DGLComponent:
 				raise("failed to generate texture name")
 			
 			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.drawWidth(),self.parent.drawHeight(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 			
 			
 			glEnable(GL_TEXTURE_2D)
@@ -344,42 +340,47 @@ class EMImage2DGLComponent:
 			if self.originshift :
 				glPopMatrix()
 		else:
-			GL.glRasterPos(0,self.parent.drawHeight()-1)
+			GL.glRasterPos(0,self.parent.height()-1)
 			GL.glPixelZoom(1.0,-1.0)
-			GL.glDrawPixels(self.parent.drawWidth(),self.parent.drawHeight(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
+			GL.glDrawPixels(self.parent.width(),self.parent.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
 
 #		hist=numpy.fromstring(a[-1024:],'i')
 		hist=struct.unpack('256i',a[-1024:])
-		if self.inspector : 
+		if self.inspector :
 			if self.invert: self.inspector.setHist(hist,self.maxden,self.minden) 
 			else: self.inspector.setHist(hist,self.minden,self.maxden)
 	
-		#GL.glPushMatrix()
-		#GL.glTranslate(-self.origin[0],-self.origin[1],0)
-		#GL.glScalef(self.scale,self.scale,self.scale)
-		#GL.glCallList(self.shapelist)
-		#GL.glPopMatrix()
-		#self.changec=self.data.get_attr("changecount")
-				
+		GL.glPushMatrix()
+		if not self.originshift :
+			glTranslatef(-width,-height,0)
+		GL.glTranslate(-self.origin[0],-self.origin[1],0.01)
+		GL.glScalef(self.scale,self.scale,1.0)
+		GL.glCallList(self.shapelist)
+		GL.glPopMatrix()
+		self.changec=self.data.get_attr("changecount")
+		
+		if ( lighting ): glEnable(GL_LIGHTING)
 
 	def updateOrigin(self,width,height):
 		if self.init_size :
-			self.origin = ((self.data.get_xsize() - self.parent.drawWidth())/2.0, (self.data.get_ysize() - self.parent.drawHeight())/2.0 )
+			self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
 			self.oldsize=(width,height)
 			self.init_size = False
 		else:
-			self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.drawWidth()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.drawHeight()/2.0)
+			self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.height()/2.0)
 			self.oldsize=(width,height)
 
 	def setupShapes(self):
+		if self.shapelist != 0: glDeleteLists(self.shapelist,1)
+		
+		self.shapelist = glGenLists(1)
+		
 		# make our own cirle rather than use gluDisk or somesuch
-		pass
-		#glNewList(self.shapelist,GL_COMPILE)
-		#for k,s in self.shapes.items():
-			#if self.active[0]==k: s.draw(None,self.active[1:])
-			#else: s.draw()
-			
-		#glEndList()
+		glNewList(self.shapelist,GL_COMPILE)
+		for k,s in self.shapes.items():
+			if self.active[0]==k: s.draw(None,self.active[1:])
+			else: s.draw()
+		glEndList()
 	
 	def showInspector(self,force=0):
 		if (self.supressInspector): return
@@ -427,13 +428,13 @@ class EMImage2DGLComponent:
 		self.updateGL()
 	
 	def scr2img(self,v0,v1=None):
-		try: return ((v0+self.origin[0])/self.scale,(self.height()-(v1-self.origin[1]))/self.scale)
-		except: return ((v0[0]+self.origin[0])/self.scale,(self.height()-(v0[1]-self.origin[1]))/self.scale)
+		try: return ((v0+self.origin[0])/self.scale,(self.parent.height()-(v1-self.origin[1]))/self.scale)
+		except:	return ((v0[0]+self.origin[0])/self.scale,(self.parent.height()-(v0[1]-self.origin[1]))/self.scale)
 	
 	def img2scr(self,v0,v1=None):
-		try: return (v0*self.scale-self.origin[0],self.origin[1]+self.height()-v1*self.scale)
+		try: return (v0*self.scale-self.origin[0],self.origin[1]+self.parent.height()-v1*self.scale)
 		except: 
-			try: return (v0[0]*self.scale-self.origin[0],self.origin[1]+self.height()-v0[1]*self.scale)
+			try: return (v0[0]*self.scale-self.origin[0],self.origin[1]+self.parent.height()-v0[1]*self.scale)
 			except: print "ERROR ",v0,v1
 			
 	def img2gl(self,v0,v1=None):
@@ -548,19 +549,21 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
-		self.image2d = EMImage2DGLComponent(image,self)
-		#self.resizeGL(self.image2d.width(),self.image2d.height)
+		
+		self.image2d = None
 		self.initimageflag = True
 		
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		
+		self.image2d = EMImage2DGLComponent(image,self)
+		
 		EMImage2D.allim[self]=0
 		
 	def setData(self,data):
 		self.image2d.setData(data)
-		#self.resizeGL(self.image2d.width(),self.image2d.height)
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -571,6 +574,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			pass
 	
 	def paintGL(self):
+		if not self.image2d: return
+		
 		glClear(GL_COLOR_BUFFER_BIT)
 		if glIsEnabled(GL_DEPTH_TEST):
 			glClear(GL_DEPTH_BUFFER_BIT)
@@ -601,7 +606,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.image2d.updateOrigin(width,height)
+		try: self.image2d.updateOrigin(width,height)
+		except: pass
 
 	def mousePressEvent(self, event):
 		self.image2d.mousePressEvent(event)
@@ -623,18 +629,6 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def dragEnterEvent(self,event):
 		self.image2d.dragEnterEvent(event)
-		
-	def adjustedHeight(self):
-		return self.height()
-	
-	def adjustedWidth(self):
-		return self.width()
-		
-	def drawHeight(self):
-		return self.height()
-	
-	def drawWidth(self):
-		return self.width()
 
 
 class EMImageInspector2D(QtGui.QWidget):

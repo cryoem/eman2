@@ -135,8 +135,80 @@ class EMBasicOpenGLObjects:
 		""" Delegate access to implementation """
 		return setattr(self.__instance, attr, value)
 
+class EMGLProjViewMatrices:
+	"""
+	Controls a static single instance of OpenGL projection and view(port) matrices
+	Also stores a static single instance of the inverse of the projection matrix, which
+	is calculates using numpy/scipy. Other classes interface with this by calling
+	setUpdate when the viewport or projection matrix has changed (i.e., a resize event)
+	"""
+	class __impl:
+		""" Implementation of the singleton interface """
 
-class ViewportDepthTools:
+		def __init__(self):
+			self.update = True
+			self.proj_matrix = None
+			self.inv_proj_matrix = None
+			self.view_matrix = None
+		
+		def updateOpenGLMatrices(self, val=True):
+			self.updateViewMatrix()
+			self.updateProjectionMatrix()
+			self.updateProjectionInvMatrix()
+			
+		def setUpdate(self,val=True):
+			self.update = val
+		
+		def updateProjectionInvMatrix(self):
+			P = numpy.matrix(self.proj_matrix)
+			self.inv_proj_matrix = P.I
+			
+		def updateProjectionMatrix(self):
+			self.proj_matrix = glGetDoublev(GL_PROJECTION_MATRIX)
+		
+		def updateViewMatrix(self):
+			 self.view_matrix = glGetIntegerv(GL_VIEWPORT)
+		
+		def checkUpdate(self):
+			if (self.update):
+				self.updateOpenGLMatrices()
+				self.update = False
+		
+		def getViewMatrix(self):
+			self.checkUpdate()
+			return self.view_matrix
+		
+		def getProjMatrix(self):
+			self.checkUpdate()
+			return self.proj_matrix
+		
+		def getProjInvMatrix(self):
+			self.checkUpdate()
+			return self.inv_proj_matrix
+			
+		
+			
+
+	# storage for the instance reference
+	__instance = None
+
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if EMGLProjViewMatrices.__instance is None:
+			# Create and remember instance
+			EMGLProjViewMatrices.__instance = EMGLProjViewMatrices.__impl()
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+
+class EMViewportDepthTools:
 	"""
 	This class provides important tools for EMAN2 floating widgets -
 	these are either qt widgets that get mapped as textures to
@@ -173,17 +245,12 @@ class ViewportDepthTools:
 	def __init__(self, parent):
 		self.parent = parent
 		
-		# the first time update is called, the projection view matrix is stored
-		self.update_P_inv = True
+		self.glbasicobjects = EMBasicOpenGLObjects()		# need basic objects for drawing the frame
+		self.matrices = EMGLProjViewMatrices()				# an object that stores static instances of the important viewing matrices
+		self.borderwidth = 3.0								# effects the border width of the frame decoration
 		
-		# need basic objects for drawing the frame
-		self.glbasicobjects = EMBasicOpenGLObjects()
-		
-		
-		self.borderwidth = 3.0
-
 	def set_update_P_inv(self,val=True):
-		self.update_P_inv = val
+		self.matrices.setUpdate(val)
 	
 	def drawFrame(self):
 		glMatrixMode(GL_PROJECTION)
@@ -262,9 +329,8 @@ class ViewportDepthTools:
 	def update(self):
 		
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		if self.update_P_inv == True:
-			self.wproj= glGetDoublev(GL_PROJECTION_MATRIX)
-		self.wview= glGetIntegerv(GL_VIEWPORT)
+		self.wproj = self.matrices.getProjMatrix()
+		self.wview = self.matrices.getViewMatrix()
 	
 		width = self.parent.width()/2.0
 		height = self.parent.height()/2.0
@@ -274,73 +340,33 @@ class ViewportDepthTools:
 			self.mc10=gluProject( width,-height,0.,self.wmodel,self.wproj,self.wview)
 			self.mc11=gluProject( width, height,0.,self.wmodel,self.wproj,self.wview)
 			self.mc01=gluProject(-width, height,0.,self.wmodel,self.wproj,self.wview)
+			
 		except:
 			self.mc00 = [0,0,0]
 			self.mc10 = [0,0,0]
 			self.mc11 = [0,0,0]
 			self.mc01 = [0,0,0]
-	
+			
+	def getCorners(self):
+		return [self.mc00,self.mc10,self.mc11,self.mc01]
+		
 	def storeModel(self):
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
 	
-	def updateNoRot(self,cam):
-		
-		self.update()
-		width = self.parent.width()/2.0
-		height = self.parent.height()/2.0
-			
-		# now get the coordinates of the un-rotated coordinates
-		
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		#position the camera without rotations
-		cam.undoRot()
-		self.wmodelnr= glGetDoublev(GL_MODELVIEW_MATRIX)
-		try:
-			self.mc00nr=gluProject(-width,-height,0.,self.wmodelnr,self.wproj,self.wview)
-			#self.mc10nr=gluProject( width,-height,0.,self.wmodelnr,self.wproj,self.wview)
-			self.mc11nr=gluProject( width, height,0.,self.wmodelnr,self.wproj,self.wview)
-			#self.mc01nr=gluProject(-width, height,0.,self.wmodelnr,self.wproj,self.wview)
-		except:
-			self.mc00nr = [0,0,0]
-			#self.mc10nr = [0,0,0]
-			self.mc11nr = [0,0,0]
-			#self.mc01nr = [0,0,0]
-		
-		glPopMatrix()
-	
 	def printUnproj(self,x,y):
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		if self.update_P_inv == True:
-			self.wproj= glGetDoublev(GL_PROJECTION_MATRIX)
-		self.wview= glGetIntegerv(GL_VIEWPORT)
+		self.wproj = self.matrices.getProjMatrix()
+		self.wview = self.matrices.getViewMatrix()
 	
 		t = gluProject(x,y,0.,self.wmodel,self.wproj,self.wview)
 		print t[0],t[1],t[2]
 		
-	def getVscale(self):
-		return self.vscale
-	def getHscale(self):
-		return self.hscale
-	
-	def norotHeight(self):
-		top = self.mc11nr[1] 
-		bot = self.mc00nr[1]
-		if top > self.parent.viewportHeight(): top = self.parent.viewportHeight()
-		if bot < 0: bot = 0
-		height = top-bot
-		self.vscale = height/(self.mc11nr[1]-self.mc00nr[1])
-		return int(height)
 		
-	def norotWidth(self):
-		right = self.mc11nr[0]
-		left =  self.mc00nr[0]
-		if right > self.parent.viewportWidth() : right = self.parent.viewportWidth()
-		if left < 0 : left = 0
-		#print "norotWidth is", right-left, "other is ", self.mc11[0]-self.mc00[0]
-		width = right-left
-		self.hscale = width/(self.mc11nr[0]-self.mc00nr[0])
-		return int(width)
+	def getMappedWidth(self):
+		return int(self.mc11[0]-self.mc00[0])
+		
+	def getMappedHeight(self):
+		return int(self.mc11[1]-self.mc00[1])
 	
 	def isinwin(self,x,y):
 		# this function can be called to determine
@@ -377,13 +403,8 @@ class ViewportDepthTools:
 		xNDC2 = 2.0*(x2-self.wview[0])/self.wview[2] - 1
 		yNDC2 = 2.0*(y2-self.wview[1])/self.wview[3] - 1
 		
-		## invert the projection and model view matrices, they will be used shortly
-		## note the OpenGL returns matrices are in column major format -  the calculations below 
-		## are done with this in  mind - this saves the need to transpose the matrices
-		if ( self.update_P_inv == True ):
-			P = numpy.matrix(self.wproj)
-			self.update_P_inv = False
-			self.P_inv = P.I
+
+		self.P_inv = self.matrices.getProjInvMatrix()
 		M = numpy.matrix(self.wmodel)
 		M_inv = M.I
 		
@@ -424,10 +445,7 @@ class ViewportDepthTools:
 		# invert the projection and model view matrices, they will be used shortly
 		# note the OpenGL returns matrices are in column major format -  the calculations below 
 		# are done with this in  mind - this saves the need to transpose the matrices
-		if ( self.update_P_inv == True ):
-			P = numpy.matrix(self.wproj)
-			self.update_P_inv = False
-			self.P_inv = P.I
+		self.P_inv = self.matrices.getProjInvMatrix()
 		M = numpy.matrix(self.wmodel)
 		
 		M_inv = M.I
@@ -446,6 +464,24 @@ class ViewportDepthTools:
 
 		return (xcoord + self.parent.width()*0.5, 0.5*self.parent.height()-ycoord)
 
+class BoundaryMediator:
+	def __init__(self,drawer,depthtools):
+		self.drawer = drawer
+		self.depthtools = depthtools
+		
+	def checkBoundaryIssues(self):
+		corners = self.depthtools.getCorners()
+		for i in corners:
+			if i[0] < 0:
+				print "out to the left"
+			elif i[0] > self.drawer.viewportWidth():
+				print "out to the right"
+				
+			if i[1] < 0:
+				print "out below"
+			elif i[1] > self.drawer.viewportHeight():
+				print "out above"
+
 class EMGLDrawer2D:
 	"""
 	FIXME: insert comments
@@ -459,16 +495,20 @@ class EMGLDrawer2D:
 		self.image2dtex = EMImage2DGLComponent(image,self)
 		self.image2dtex.originshift = False
 		self.image2dtex.supressInspector = True
-		#self.image2dtex.updateOrigin(self.image2dtex.width(),self.image2dtex.height())
-		#self.cam.setCamTrans('x',-self.image2dtex.width()/2.0)
-		#self.cam.setCamTrans('y',-self.image2dtex.height()/2.0)
-		#self.image2dtex.depthtracking = False
-		#self.image2dtex.cam.basicmapping = True
-		self.vdtools = ViewportDepthTools(self)
+		self.w = image.get_xsize()
+		self.h = image.get_ysize()
+		self.initflag = True
+		self.vdtools = EMViewportDepthTools(self)
 		
 		self.updateFlag = True
 		
 		self.drawFrame = True
+		
+		self.sizescale = 1.0
+		self.changefactor = 1.1
+		self.invchangefactor = 1.0/self.changefactor
+		
+		self.mediator = BoundaryMediator(self,self.vdtools)
 
 	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
@@ -482,21 +522,15 @@ class EMGLDrawer2D:
 		self.updateFlag = True
 		#self.image2dtex.set_update_P_inv(val)
 	
-	def adjustedWidth(self):
-		return self.vdtools.getHscale()*self.width()
-	
-	def adjustedHeight(self):
-		return self.vdtools.getVscale()*self.height()
-	
 	def width(self):
 		try:
-			return self.image2dtex.width()*self.cam.scale
+			return int(self.sizescale*self.w)
 		except:
 			return 0
 	
 	def height(self):
 		try:
-			return self.image2dtex.height()*self.cam.scale
+			return int(self.sizescale*self.h)
 		except:
 			return 0
 	
@@ -506,33 +540,51 @@ class EMGLDrawer2D:
 	def initializeGL(self):
 		self.image2dtex.initializeGL()
 	
-	def drawHeight(self):
-		return self.vdtools.norotHeight()
-	
-	def drawWidth(self):
-		return self.vdtools.norotWidth()
-	
 	def viewportHeight(self):
 		return self.parent.height()	
 	
 	def viewportWidth(self):
 		return self.parent.width()
 	
-	def paintGL(self):
+	def testBoundaries(self):
+		'''
+		Called when the image is first drawn, this resets the dimensions of this object
+		if it is larger than the current size of the viewport. It's somewhat of a hack,
+		but it's early stages in the design
+		'''
 		
+		h = self.vdtools.getMappedHeight()
+		w = self.vdtools.getMappedWidth()
+		
+		if ( w > self.viewportWidth() ):
+			self.w = self.viewportWidth()/self.sizescale
+		if ( h > self.viewportHeight() ):
+			self.h = self.viewportHeight()/self.sizescale
+	
+	def paintGL(self):
 		self.cam.position()
-		self.vdtools.updateNoRot(self.cam)
+		self.vdtools.update()
+		
+		if (self.initflag == True):
+			self.testBoundaries()
+			self.initflag = False
+
+		
+		#self.mediator.checkBoundaryIssues()
 		
 		if (self.updateFlag):
-			self.image2dtex.updateOrigin(self.drawWidth(),self.drawHeight())
+			self.image2dtex.updateOrigin(self.width(),self.height())
 			self.updateFlag = False
 			
 		glPushMatrix()
 		self.image2dtex.render()
 		glPopMatrix()
-
+		
+		lighting = glIsEnabled(GL_LIGHTING)
+		glEnable(GL_LIGHTING)
 		if self.drawFrame: self.vdtools.drawFrame()
-	
+		if not lighting: glDisable(GL_LIGHTING)
+			
 	def update(self):
 		self.parent.updateGL()
 	
@@ -555,13 +607,19 @@ class EMGLDrawer2D:
 			#self.image2dtex.mousePressEvent(event)
 		
 		#self.updateGL()
-			
+	
+	def scaleEvent(self,delta):
+		if ( delta > 0 ):
+			self.sizescale *= self.changefactor
+		elif ( delta < 0 ):
+			self.sizescale *= self.invchangefactor
+	
 	def wheelEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
-			self.cam.wheelEvent(event)
+			self.scaleEvent(event.delta())
 			self.updateFlag = True
 			#print "updating",self.drawWidth(),self.drawHeight()
-			
+			self.updateGL()
 		else:
 			self.image2dtex.wheelEvent(event)
 			
@@ -626,7 +684,7 @@ class EMQtWidgetDrawer:
 		self.e2children = []
 		self.is_child = False
 		
-		self.vdtools = ViewportDepthTools(self)
+		self.vdtools = EMViewportDepthTools(self)
 		
 	def set_update_P_inv(self,val=True):
 		self.vdtools.set_update_P_inv(val)
@@ -697,9 +755,11 @@ class EMQtWidgetDrawer:
 		glDisable(GL_TEXTURE_2D)
 		glPopMatrix()
 	
+		lighting = glIsEnabled(GL_LIGHTING)
+		glEnable(GL_LIGHTING)
 		if self.drawFrame: self.vdtools.drawFrame()
+		if (not lighting): glDisable(GL_LIGHTING)
 		
-			
 		# now draw children if necessary - such as a qcombobox list view that has poppud up
 		for i in self.e2children:
 			glPushMatrix()
