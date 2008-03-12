@@ -341,7 +341,7 @@ class EMVolume(EMImage3DObject):
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.power_of_two_textures_unsupported()):
+		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.npt_textures_unsupported()):
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
 		else:
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
@@ -481,7 +481,7 @@ class EMVolume(EMImage3DObject):
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.power_of_two_textures_unsupported()):
+		if ( not data_dims_power_of(self.data_copy,2) and self.glflags.npt_textures_unsupported()):
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
 		else:
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) 

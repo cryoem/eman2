@@ -51,7 +51,97 @@ from pickle import dumps,loads
 
 MAG_INC = 1.1
 
-class EMImage2DGLComponent:
+from emimage3dobject import EMOpenGLFlagsAndTools
+
+class EMImage2D(QtOpenGL.QGLWidget):
+	"""
+	This is the QtOpenGL Widget that instantiates and hands on events
+	to the EMAN2 2D OpenGL image
+	"""
+	allim=WeakKeyDictionary()
+	def __init__(self, image=None, parent=None):
+		
+		self.image2d = None
+		self.initimageflag = True
+		
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		fmt.setDepth(1)
+		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		
+		self.image2d = EMImage2DCore(image,self)
+		
+		EMImage2D.allim[self]=0
+		
+	def setData(self,data):
+		self.image2d.setData(data)
+		
+	def initializeGL(self):
+		GL.glClearColor(0,0,0,0)
+		try:
+			self.image2d.initializeGL()
+			self.initimageflag = False
+		except:
+			pass
+	
+	def paintGL(self):
+		if not self.image2d: return
+		
+		glClear(GL_COLOR_BUFFER_BIT)
+		if glIsEnabled(GL_DEPTH_TEST):
+			glClear(GL_DEPTH_BUFFER_BIT)
+		if glIsEnabled(GL_STENCIL_TEST):
+			glClear(GL_STENCIL_BUFFER_BIT)
+			
+		glClear(GL.GL_COLOR_BUFFER_BIT )
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		#self.cam.position()
+		if self.initimageflag == True:
+			self.image2d.initializeGL()
+			self.initimageflag = False
+		
+		glPushMatrix()
+		self.image2d.render()
+		glPopMatrix()
+		
+	def resizeGL(self, width, height):
+		side = min(width, height)
+		GL.glViewport(0,0,self.width(),self.height())
+	
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+		
+		try: self.image2d.resizeEvent(width,height)
+		except: pass
+
+	def mousePressEvent(self, event):
+		self.image2d.mousePressEvent(event)
+			
+	def wheelEvent(self,event):
+		self.image2d.wheelEvent(event)
+	
+	def mouseMoveEvent(self,event):
+		self.image2d.mouseMoveEvent(event)
+
+	def mouseReleaseEvent(self,event):
+		self.image2d.mouseReleaseEvent(event)
+		
+	def dropEvent(self,event):
+		self.image2d.dropEvent(event)
+		
+	def closeEvent(self,event) :
+		self.image2d.closeEvent(event)
+		
+	def dragEnterEvent(self,event):
+		self.image2d.dragEnterEvent(event)
+
+class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
@@ -72,7 +162,6 @@ class EMImage2DGLComponent:
 # 			GLU.gluQuadricOrientation(EMImage2D.gq,GLU.GLU_INSIDE)
 # 			GLU.gluQuadricTexture(EMImage2D.gq,GL.GL_FALSE)
 
-		
 		self.data=None				# EMData object to display
 		self.oldsize=(-1,-1)
 		self.datasize=(1,1)			# Dimensions of current image
@@ -88,6 +177,8 @@ class EMImage2DGLComponent:
 		self.rmousedrag=None		# coordinates during a right-drag operation
 		self.mmode=0				# current mouse mode as selected by the inspector
 		self.curfft=0				# current FFT mode (when starting with real images only)
+		self.mag = 1.1				# magnification factor
+		self.invmag = 1.0/self.mag	# inverse magnification factor
 		
 		self.shapes={}				# dictionary of shapes to draw, see addShapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
@@ -96,31 +187,23 @@ class EMImage2DGLComponent:
 		self.inspector=None			# set to inspector panel widget when exists
 		
 		self.init_size = True		# A flag used to set the initial origin offset
-		self.init_size_foo = True		# A flag used to set the dimensions of the window
 		
-		self.shapelist = 0			# Something Steve must have been using?
+		self.shapelist = 0			# a display list identify
 		
-		self.originshift = True
-		self.supressInspector = False
+		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		
-		try:
-			self.parent.setAcceptDrops(True)
-		except:
-			pass
-		#self.parent.resizeGL(99,99)
-		
-		self.tex_name = 0
-		
-		self.using_textures = True
-		self.power_of_two_init_check = True
-		
+		self.supressInspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
+		self.tex_name = 0			# an OpenGL texture handle
+		try: self.parent.setAcceptDrops(True)
+		except:	pass
+
 		if image :
 			self.setData(image)
 		
 		GLUT.glutInit("")
-	
 	def __del__(self):
-		glDeleteLists(self.shapelist,1)
+		if (self.shapelist != 0):
+			glDeleteLists(self.shapelist,1)
 		
 	def width(self):
 		try:
@@ -141,6 +224,11 @@ class EMImage2DGLComponent:
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
 		self.data=data
+		try:
+			if self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
+			else: self.parent.resize(800,800)
+		except: pass
+		
 		if data==None:
 			self.updateGL()
 			return
@@ -162,12 +250,6 @@ class EMImage2DGLComponent:
 		
 		self.showInspector()		# shows the correct inspector if already open
 #		self.origin=(self.width()/2,self.height()/2)
-		
-		
-		try:
-			if self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
-			else: self.parent.resize(800,800)
-		except: pass
 		
 		self.updateGL()
 		
@@ -281,26 +363,16 @@ class EMImage2DGLComponent:
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 			gl_render_type = GL_LUMINANCE
 
-
-		if ( self.power_of_two_init_check and self.using_textures ):
-			if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
-				#print "EMAN(ALPHA) message: No support for non power of two texture detected. Using glDrawPixels"
-				self.using_textures = False
-			else:
-				pass
-				#print "EMAN(ALPHA) message: Support for non power of two textures detected"
-			self.power_of_two_init_check = False
-
 		width = self.parent.width()/2.0
 		height = self.parent.height()/2.0
-		if ( self.using_textures ):
-			if self.originshift :
-				glPushMatrix()
-				glTranslatef(width,height,0)
+		if not self.glflags.npt_textures_unsupported():
 			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
 			self.tex_name = GL.glGenTextures(1)
 			if ( self.tex_name <= 0 ):
 				raise("failed to generate texture name")
+			
+			glPushMatrix()
+			glTranslatef(width,height,0)
 			
 			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
@@ -337,8 +409,8 @@ class EMImage2DGLComponent:
 			
 			glDisable(GL_TEXTURE_2D)
 			
-			if self.originshift :
-				glPopMatrix()
+			glPopMatrix()
+
 		else:
 			GL.glRasterPos(0,self.parent.height()-1)
 			GL.glPixelZoom(1.0,-1.0)
@@ -351,8 +423,6 @@ class EMImage2DGLComponent:
 			else: self.inspector.setHist(hist,self.minden,self.maxden)
 	
 		GL.glPushMatrix()
-		if not self.originshift :
-			glTranslatef(-width,-height,0)
 		GL.glTranslate(-self.origin[0],-self.origin[1],0.01)
 		GL.glScalef(self.scale,self.scale,1.0)
 		GL.glCallList(self.shapelist)
@@ -361,7 +431,7 @@ class EMImage2DGLComponent:
 		
 		if ( lighting ): glEnable(GL_LIGHTING)
 
-	def updateOrigin(self,width,height):
+	def resizeEvent(self,width,height):
 		if self.init_size :
 			self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
 			self.oldsize=(width,height)
@@ -536,100 +606,11 @@ class EMImage2DGLComponent:
 
 	def wheelEvent(self, event):
 		if event.delta() > 0:
-			self.setScale( self.scale * MAG_INC )
+			self.setScale( self.scale * self.mag )
 		elif event.delta() < 0:
-			self.setScale(self.scale * 1.0/MAG_INC)
+			self.setScale(self.scale * self.invmag )
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.setScale(self.scale)
-
-class EMImage2D(QtOpenGL.QGLWidget):
-	"""
-	This is the QtOpenGL Widget that instantiates and hands on events
-	to the EMAN2 2D OpenGL image
-	"""
-	allim=WeakKeyDictionary()
-	def __init__(self, image=None, parent=None):
-		
-		self.image2d = None
-		self.initimageflag = True
-		
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		
-		self.image2d = EMImage2DGLComponent(image,self)
-		
-		EMImage2D.allim[self]=0
-		
-	def setData(self,data):
-		self.image2d.setData(data)
-		
-	def initializeGL(self):
-		GL.glClearColor(0,0,0,0)
-		try:
-			self.image2d.initializeGL()
-			self.initimageflag = False
-		except:
-			pass
-	
-	def paintGL(self):
-		if not self.image2d: return
-		
-		glClear(GL_COLOR_BUFFER_BIT)
-		if glIsEnabled(GL_DEPTH_TEST):
-			glClear(GL_DEPTH_BUFFER_BIT)
-		if glIsEnabled(GL_STENCIL_TEST):
-			glClear(GL_STENCIL_BUFFER_BIT)
-			
-		glClear(GL.GL_COLOR_BUFFER_BIT )
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		#self.cam.position()
-		if self.initimageflag == True:
-			self.image2d.initializeGL()
-			self.initimageflag = False
-		
-		glPushMatrix()
-		self.image2d.render()
-		glPopMatrix()
-		
-	def resizeGL(self, width, height):
-		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
-	
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
-		
-		try: self.image2d.updateOrigin(width,height)
-		except: pass
-
-	def mousePressEvent(self, event):
-		self.image2d.mousePressEvent(event)
-			
-	def wheelEvent(self,event):
-		self.image2d.wheelEvent(event)
-	
-	def mouseMoveEvent(self,event):
-		self.image2d.mouseMoveEvent(event)
-
-	def mouseReleaseEvent(self,event):
-		self.image2d.mouseReleaseEvent(event)
-		
-	def dropEvent(self,event):
-		self.image2d.dropEvent(event)
-		
-	def closeEvent(self,event) :
-		self.image2d.closeEvent(event)
-		
-	def dragEnterEvent(self,event):
-		self.image2d.dragEnterEvent(event)
-
 
 class EMImageInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
@@ -873,7 +854,6 @@ class EMImageInspector2D(QtGui.QWidget):
 
 # This is just for testing, of course
 if __name__ == '__main__':
-	GLUT.glutInit(sys.argv )
 	app = QtGui.QApplication(sys.argv)
 	window = EMImage2D()
 	if len(sys.argv)==1 : 

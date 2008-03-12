@@ -44,6 +44,7 @@ from valslider import ValSlider
 from EMAN2 import *
 from emimageutil import *
 from emimage2d import *
+from emimagemx import *
 from math import sqrt
 
 from emimage import EMImage
@@ -88,7 +89,12 @@ class EMBasicOpenGLObjects:
 			gluQuadricNormals(self.gq,GLU_SMOOTH)
 			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 			gluQuadricTexture(self.gq,GL_FALSE)
-			
+		
+		def __del__(self):
+			if self.cylinderdl != 0:
+				glDeleteLists(self.cylinderdl,1)
+			if self.spheredl != 0:
+				glDeleteLists(self.spheredl,1)
 			
 		def getSphereDL(self):
 			if ( self.spheredl == 0 ):
@@ -492,11 +498,17 @@ class EMGLDrawer2D:
 		self.cam = Camera2(self)
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
-		self.image2dtex = EMImage2DGLComponent(image,self)
-		self.image2dtex.originshift = False
-		self.image2dtex.supressInspector = True
-		self.w = image.get_xsize()
-		self.h = image.get_ysize()
+		
+		if isinstance(image,list):
+			if len(image) == 1:
+				self.become2DImage(image[0])
+			else:
+				self.drawable = EMImageMXCore(image,self)
+				self.w = image[0].get_xsize()
+				self.h = image[0].get_ysize()
+		elif isinstance(image,EMData):
+			self.become2DImage(image)
+		
 		self.initflag = True
 		self.vdtools = EMViewportDepthTools(self)
 		
@@ -509,7 +521,14 @@ class EMGLDrawer2D:
 		self.invchangefactor = 1.0/self.changefactor
 		
 		self.mediator = BoundaryMediator(self,self.vdtools)
-
+		
+	def become2DImage(self,a):
+		self.drawable = EMImage2DCore(a,self)
+		#self.drawable.originshift = False
+		self.drawable.supressInspector = True
+		self.w = a.get_xsize()
+		self.h = a.get_ysize()
+		
 	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
 	
@@ -520,7 +539,7 @@ class EMGLDrawer2D:
 		# and its inverse are stored'
 		self.vdtools.set_update_P_inv(val)
 		self.updateFlag = True
-		#self.image2dtex.set_update_P_inv(val)
+		#self.drawable.set_update_P_inv(val)
 	
 	def width(self):
 		try:
@@ -535,10 +554,10 @@ class EMGLDrawer2D:
 			return 0
 	
 	def setData(self,data):
-		self.image2dtex.setData(data)
+		self.drawable.setData(data)
 		
 	def initializeGL(self):
-		self.image2dtex.initializeGL()
+		self.drawable.initializeGL()
 	
 	def viewportHeight(self):
 		return self.parent.height()	
@@ -573,11 +592,13 @@ class EMGLDrawer2D:
 		#self.mediator.checkBoundaryIssues()
 		
 		if (self.updateFlag):
-			self.image2dtex.updateOrigin(self.width(),self.height())
+			self.drawable.resizeEvent(self.width(),self.height())
 			self.updateFlag = False
 			
 		glPushMatrix()
-		self.image2dtex.render()
+		glTranslatef(-self.width()/2.0,-self.height()/2.0,0)
+		try: self.drawable.render()
+		except:pass
 		glPopMatrix()
 		
 		lighting = glIsEnabled(GL_LIGHTING)
@@ -593,18 +614,18 @@ class EMGLDrawer2D:
 	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):	
-			self.image2dtex.initInspector()
-			self.image2dtex.inspector.show()
-			self.image2dtex.inspector.hide()
-			self.parent.addQtWidgetDrawer(self.image2dtex.inspector)
+			self.drawable.initInspector()
+			self.drawable.inspector.show()
+			self.drawable.inspector.hide()
+			self.parent.addQtWidgetDrawer(self.drawable.inspector)
 			
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mousePressEvent(event)
 		else:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.image2dtex.mousePressEvent(qme)
-			#self.image2dtex.mousePressEvent(event)
+			self.drawable.mousePressEvent(qme)
+			#self.drawable.mousePressEvent(event)
 		
 		#self.updateGL()
 	
@@ -621,7 +642,7 @@ class EMGLDrawer2D:
 			#print "updating",self.drawWidth(),self.drawHeight()
 			self.updateGL()
 		else:
-			self.image2dtex.wheelEvent(event)
+			self.drawable.wheelEvent(event)
 			
 		#self.updateGL()
 	
@@ -631,8 +652,8 @@ class EMGLDrawer2D:
 		else:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.image2dtex.mouseMoveEvent(qme)
-			#self.image2dtex.mouseMoveEvent(event)
+			self.drawable.mouseMoveEvent(qme)
+			#self.drawable.mouseMoveEvent(event)
 		
 		#self.updateGL()
 
@@ -642,15 +663,15 @@ class EMGLDrawer2D:
 		else:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.image2dtex.mouseReleaseEvent(qme)
-			#self.image2dtex.mouseReleaseEvent(event)
+			self.drawable.mouseReleaseEvent(qme)
+			#self.drawable.mouseReleaseEvent(event)
 
 		#self.updateGL()
 	def emit(self, signal, event):
 		self.parent.emit(signal,event)
 	
 	def leaveEvent(self):
-		self.image2dtex.leaveEvent()
+		self.drawable.leaveEvent()
 	
 	def toolTipEvent(self,event):
 		pass
@@ -674,7 +695,6 @@ class EMQtWidgetDrawer:
 		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.setQtWidget(qwidget)
 		self.P_inv = None
-		self.update_P_inv = True
 		self.childreceiver = None
 		self.widget_parent = widget_parent
 		
@@ -685,6 +705,10 @@ class EMQtWidgetDrawer:
 		self.is_child = False
 		
 		self.vdtools = EMViewportDepthTools(self)
+	
+	def __del__(self):
+		if (self.itex != 0 ):
+			self.parent.deleteTexture(self.itex)
 		
 	def set_update_P_inv(self,val=True):
 		self.vdtools.set_update_P_inv(val)
@@ -1107,11 +1131,11 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			for i in self.fd.selectedFiles():
 				#try:
 					#print i,str(i)
-					a=EMData.read_images(str(i),[0])
+					a=EMData.read_images(str(i))
 					#if len(a)==1 : a=a[0]
 					#w.setWindowTitle("EMImage (%s)"%f)
 					#w.show()
-					w = EMGLDrawer2D(self,a[0])
+					w = EMGLDrawer2D(self,a)
 					w.setData(a[0])
 					self.qwidgets.append(w)
 					

@@ -69,7 +69,8 @@ class EMOpenGLFlagsAndTools:
 			self.use_blend_equation = True			# an internal flag storing whether or not glBlendEquation is available
 			self.force_blend_equation_off = False	# This flag is toggled by the developer to forcibly stop apps from using glBlendEquation
 			
-		def power_of_two_textures_unsupported(self):
+		# non power of two
+		def npt_textures_unsupported(self):
 			if ( self.force_use_mipmaps ): return True
 			
 			if self.power_of_two_init_check == True:
@@ -114,7 +115,7 @@ class EMOpenGLFlagsAndTools:
 
 		
 		def genTextureName(self,data):
-			if ( not data_dims_power_of(data,2) and self.power_of_two_textures_unsupported()):
+			if ( not data_dims_power_of(data,2) and self.npt_textures_unsupported()):
 				return data.gen_glu_mipmaps()
 			else:
 				return data.gen_gl_texture() 

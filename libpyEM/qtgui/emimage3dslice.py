@@ -204,7 +204,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		if ( not data_dims_power_of(self.data,2) and self.glflags.power_of_two_textures_unsupported()):
+		if ( not data_dims_power_of(self.data,2) and self.glflags.npt_textures_unsupported()):
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
 		else:
 			glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
@@ -267,7 +267,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		if ( not data_dims_power_of(self.data,2) and self.glflags.power_of_two_textures_unsupported()):
+		if ( not data_dims_power_of(self.data,2) and self.glflags.npt_textures_unsupported()):
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
 		else:
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)

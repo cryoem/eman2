@@ -34,6 +34,7 @@
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
+from OpenGL.GL import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
@@ -46,6 +47,8 @@ from pickle import dumps,loads
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
+from emimage3dobject import EMOpenGLFlagsAndTools
+
 class EMImageMX(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
 	in 'matrix' form on the display. The middle mouse button will bring up a
@@ -54,15 +57,72 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
-#		GLUT.glutInit( len(sys.argv), sys.argv )
-#                print 'glutInit called'
+
+		self.imagemx = None
+		self.initflag = True
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImageMX.allim[self]=0
 		
+		self.imagemx = EMImageMXCore(data,self)
+		
+	def setData(self,data):
+		self.imagemx.setData(data)
+		
+	def initializeGL(self):
+		GL.glClearColor(0,0,0,0)
+		
+	def paintGL(self):
+		if not self.parentWidget() : return
+		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+		
+		if ( self.imagemx == None ): return
+		self.imagemx.render()
 
+	
+	def resizeGL(self, width, height):
+		GL.glViewport(0,0,self.width(),self.height())
+	
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+
+		try: self.imagemx.resizeEvent(width,height)
+		except: pass
+		
+	def mousePressEvent(self, event):
+		self.imagemx.mousePressEvent(event)
+			
+	def wheelEvent(self,event):
+		self.imagemx.wheelEvent(event)
+	
+	def mouseMoveEvent(self,event):
+		self.imagemx.mouseMoveEvent(event)
+
+	def mouseReleaseEvent(self,event):
+		self.imagemx.mouseReleaseEvent(event)
+		
+	def dropEvent(self,event):
+		self.imagemx.dropEvent(event)
+		
+	def closeEvent(self,event) :
+		self.imagemx.closeEvent(event)
+		
+	def dragEnterEvent(self,event):
+		self.imagemx.dragEnterEvent(event)
+
+	def dropEvent(self,event):
+		self.imagemx.dropEvent(event)
+		
+class EMImageMXCore:
+
+	allim=WeakKeyDictionary()
+	def __init__(self, data=None,parent=None):
+		self.parent = parent
 		self.data=None
 		self.datasize=(1,1)
 		self.scale=1.0
@@ -83,30 +143,39 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.selected=[]
 		self.targetorigin=None
 		self.targetspeed=20.0
+		self.mag = 1.1				# magnification factor
+		self.invmag = 1.0/self.mag	# inverse magnification factor
+		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
+		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
 		
 		self.coords=[]
 		self.nshown=0
 		self.valstodisp=["Img #"]
-		self.setAcceptDrops(True)
-		
+		try: self.parent.setAcceptDrops(True)
+		except:	pass
+
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
-		
-		self.resize(99,99)
+		self.initsizeflag = True
 		self.inspector=None
-		if data: 
+		if data:
 			self.setData(data)
-			self.show()
-			
-			
+	
+	def __del__(self):
+		glDeleteTextures(self.tex_names)
+		
 	def setData(self,data):
-		if not self.data and data and self.size().width()==99 and self.size().height()==99:
+		if data == None or not isinstance(data,list): return
+		
+		if self.initsizeflag and data:
 			try:
 				if len(data)<self.nperrow : w=len(data)*(data[0].get_xsize()+2)
 				else : w=self.nperrow*(data[0].get_xsize()+2)
-				if w>0 : self.resize(w,512)
+				if w>0 : self.parent.resize(w,512)
 			except: pass
+			initsizeflag = False
+
 		self.data=data
 		if data==None or len(data)==0:
 			self.updateGL()
@@ -138,6 +207,10 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.timer.start(25)
 		self.updateGL()
 		
+	def updateGL(self):
+		try: self.parent.updateGL()
+		except: pass
+		
 	def setDenRange(self,x0,x1):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
 		self.minden=x0
@@ -157,8 +230,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			self.origin=self.targetorigin
 			self.targetorigin=None
 			
-		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.height() or self.data[0].get_xsize()*newscale>self.width()):
-			newscale=min(float(self.height())/self.data[0].get_ysize(),float(self.width())/self.data[0].get_xsize())
+		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.parent.height() or self.data[0].get_xsize()*newscale>self.parent.width()):
+			newscale=min(float(self.parent.height())/self.data[0].get_ysize(),float(self.parent.width())/self.data[0].get_xsize())
 			if self.inspector: self.inspector.scale.setValue(newscale)
 			
 			
@@ -166,7 +239,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		yo=self.origin[1]
 #		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
 #		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(yo-self.height()/2)+self.height()/2)
-		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+self.origin[1])-self.height()/2)
+		self.origin=(newscale/self.scale*(self.parent.width()/2+self.origin[0])-self.parent.width()/2,newscale/self.scale*(self.parent.height()/2+self.origin[1])-self.parent.height()/2)
 #		print self.origin,newscale/self.scale,yo,self.height()/2+yo
 		
 		self.scale=newscale
@@ -203,9 +276,6 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		if val: self.invert=1
 		else : self.invert=0
 		self.updateGL()
-
-	def initializeGL(self):
-		GL.glClearColor(0,0,0,0)
 	
 	def timeout(self):
 		"""Called a few times each second when idle for things like automatic scrolling"""
@@ -221,9 +291,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			self.updateGL()
 		
 	
-	def paintGL(self):
-		if not self.parentWidget() : return
-		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+	def render(self):
 #		GL.glLoadIdentity()
 #		GL.glTranslated(0.0, 0.0, -10.0)
 		
@@ -250,63 +318,126 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			else : txtcol=(.8,.8,1.0)
 		except: txtcol=(1.0,1.0,1.0)
 
+		glDeleteTextures(self.tex_names)
+		self.tex_names = []
+
 		self.nshown=0
 		for i in range(n):
-			w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
-			h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
+			w=int(min(self.data[i].get_xsize()*self.scale,self.parent.width()))
+			h=int(min(self.data[i].get_ysize()*self.scale,self.parent.height()))
 			shown=False
-			if x<self.width() and y<self.height():
-				if x>=0 and y>=0:
-					shown=True
-					a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
-					GL.glRasterPos(x,y)
-					GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-					
-					# Selection box
-					if i in self.selected:
-						GL.glColor(0.5,0.5,1.0)
-						GL.glBegin(GL.GL_LINE_LOOP)
-						GL.glVertex(x,y)
-						GL.glVertex(x+w,y)
-						GL.glVertex(x+w,y+h)
-						GL.glVertex(x,y+h)
-						GL.glEnd()
-					hist2=numpy.fromstring(a[-1024:],'i')
-					hist+=hist2
-
-					# render labels
-					ty=y
-					GL.glColor(*txtcol)
-					for v in self.valstodisp:
-						if v=="Img #" : self.renderText(x,ty,"%d"%i)
-						else : 
-							av=self.data[i].get_attr(v)
-							if isinstance(av,float) : avs="%1.4g"%av
-							else: avs=str(av)
-							try: self.renderText(x,ty,str(avs))
-							except: self.renderText(x,ty,"------")
-						ty+=16
-				elif x+w>0 and y+h>0:
-					shown=True
-					tx=int(max(x,0))
-					ty=int(max(y,0))
+			if x<self.parent.width() and y<self.parent.height() and (x+w) > 0 and (y+h) > 0:
+				tx = x
+				ty = y
+				tw = w
+				th = h
+				rx = 0	#render x
+				ry = 0	#render y
+				#print "entry",tx,ty,tw,th,self.parent.width(),self.parent.width()
+				if x+tw > self.parent.width():
+					tw = int(self.parent.width()-x)
+				elif x<0:
+					rx = int(-x/self.scale)
+					tx = 0
 					tw=int(w-tx+x)
+					
+				if y+th > self.parent.height():
+					th = int(self.parent.height()-y)
+				elif y<0:
+					ry = int(-y/self.scale)
+					ty = 0
 					th=int(h-ty+y)
-					a=self.data[i].render_amp8(int(-min(x/self.scale,0)),int(-min(y/self.scale,0)),tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+	
+				shown = True
+				if not self.glflags.npt_textures_unsupported():
+					a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+					self.texture(a,tx,ty,tw,th)
+				else:
+					a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 					GL.glRasterPos(tx,ty)
 					GL.glDrawPixels(tw,th,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-					hist2=numpy.fromstring(a[-1024:],'i')
-					hist+=hist2
+				
+				if i in self.selected:
+					GL.glColor(0.5,0.5,1.0)
+					GL.glBegin(GL.GL_LINE_LOOP)
+					GL.glVertex(x,y)
+					GL.glVertex(x+w,y)
+					GL.glVertex(x+w,y+h)
+					GL.glVertex(x,y+h)
+					GL.glEnd()
+				hist2=numpy.fromstring(a[-1024:],'i')
+				hist+=hist2
+				# render labels
+
+				tagy = y
+				GL.glColor(*txtcol)
+				for v in self.valstodisp:
+					if v=="Img #" : self.renderText(x,tagy,"%d"%i)
+					else : 
+						av=self.data[i].get_attr(v)
+						if isinstance(av,float) : avs="%1.4g"%av7
+						else: avs=str(av)
+						try: self.renderText(x,tagy,str(avs))
+						except: self.renderText(x,tagy,"------")
+					tagy+=16
+				#if x>=0 and y>=0:
+					#shown=True
+					#a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+					#if not self.glflags.npt_textures_unsupported():
+						#self.texture(a,x,y,w,h)
+					#else:
+						#GL.glRasterPos(x,y)
+						#GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 					
 					# Selection box
-					if i in self.selected:
-						GL.glColor(0.5,0.5,1.0)
-						GL.glBegin(GL.GL_LINE_LOOP)
-						GL.glVertex(x,y)
-						GL.glVertex(x+w,y)
-						GL.glVertex(x+w,y+h)
-						GL.glVertex(x,y+h)
-						GL.glEnd()
+					#if i in self.selected:
+						#GL.glColor(0.5,0.5,1.0)
+						#GL.glBegin(GL.GL_LINE_LOOP)
+						#GL.glVertex(x,y)
+						#GL.glVertex(x+w,y)
+						#GL.glVertex(x+w,y+h)
+						#GL.glVertex(x,y+h)
+						#GL.glEnd()
+					#hist2=numpy.fromstring(a[-1024:],'i')
+					#hist+=hist2
+
+					## render labels
+					#ty=y
+					#GL.glColor(*txtcol)
+					#for v in self.valstodisp:
+						#if v=="Img #" : self.renderText(x,ty,"%d"%i)
+						#else : 
+							#av=self.data[i].get_attr(v)
+							#if isinstance(av,float) : avs="%1.4g"%av
+							#else: avs=str(av)
+							#try: self.renderText(x,ty,str(avs))
+							#except: self.renderText(x,ty,"------")
+						#ty+=16
+				#elif x+w>0 and y+h>0:
+					#shown=True
+					#tx=int(max(x,0))
+					#ty=int(max(y,0))
+					#tw=int(w-tx+x)
+					#th=int(h-ty+y)
+					#a=self.data[i].render_amp8(int(-min(x/self.scale,0)),int(-min(y/self.scale,0)),tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+					#if not self.glflags.npt_textures_unsupported():
+						#self.texture(a,tx,ty,tw,th)
+					#else:
+						#GL.glRasterPos(tx,ty)
+						#GL.glDrawPixels(tw,th,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+				
+					#hist2=numpy.fromstring(a[-1024:],'i')
+					#hist+=hist2
+					
+					## Selection box
+					#if i in self.selected:
+						#GL.glColor(0.5,0.5,1.0)
+						#GL.glBegin(GL.GL_LINE_LOOP)
+						#GL.glVertex(x,y)
+						#GL.glVertex(x+w,y)
+						#GL.glVertex(x+w,y+h)
+						#GL.glVertex(x,y+h)
+						#GL.glEnd()
 				
 			try: self.coords[i]=(x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
 			except: self.coords.append((x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
@@ -319,11 +450,61 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		
 		# If the user is lost, help him find himself again...
 		if self.nshown==0 : 
-			try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.height()/2+self.data[0].get_ysize()*self.scale/2)
+			try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
 			except: self.targetorigin=(0,0)
 			self.targetspeed=100.0
 		
 		if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
+	
+	def texture(self,a,x,y,w,h):
+		
+		tex_name = glGenTextures(1)
+		if ( tex_name <= 0 ):
+			raise("failed to generate texture name")
+		
+		width = w/2.0
+		height = h/2.0
+		
+		glPushMatrix()
+		glTranslatef(x+width,y+height,0)
+			
+		glBindTexture(GL.GL_TEXTURE_2D,tex_name)
+		glTexImage2D(GL.GL_TEXTURE_2D,0,GL_LUMINANCE,w,h,0,GL_LUMINANCE,GL_UNSIGNED_BYTE, a)
+		
+		glEnable(GL_TEXTURE_2D)
+		glBindTexture(GL_TEXTURE_2D, tex_name)
+		#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		# using GL_NEAREST ensures pixel granularity
+		# using GL_LINEAR blurs textures and makes them more difficult
+		# to interpret (in cryo-em)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		# this makes it so that the texture is impervious to lighting
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		
+		
+		# POSITIONING POLICY - the texture occupies the entire screen area
+		glBegin(GL_QUADS)
+		
+		glTexCoord2f(0,0)
+		glVertex2f(-width,height)
+		
+		glTexCoord2f(1,0)
+		glVertex2f(width,height)
+			
+		glTexCoord2f(1,1)
+		glVertex2f(width,-height)
+		
+		glTexCoord2f(0,1)
+		glVertex2f(-width,-height)
+			
+		glEnd()
+		
+		glDisable(GL_TEXTURE_2D)
+		
+		glPopMatrix()
+		self.tex_names.append(tex_name)
 	
 	def renderText(self,x,y,s):
 #	        print 'in render Text'
@@ -332,22 +513,14 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
 
 	
-	def resizeGL(self, width, height):
-		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
-	
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
+	def resizeEvent(self, width, height):
 		
 		#print width/(self.data[0].get_xsize()*self.scale)
 		if self.data and len(self.data)>0 : self.setNPerRow(int(width/(self.data[0].get_xsize()*self.scale)))
 		#except: pass
 		
-		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.height() or self.data[0].get_xsize()*self.scale>self.width()):
-			self.scale=min(float(self.height())/self.data[0].get_ysize(),float(self.width())/self.data[0].get_xsize())
+		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.parent.height() or self.data[0].get_xsize()*self.scale>self.parent.width()):
+			self.scale=min(float(self.parent.height())/self.data[0].get_ysize(),float(self.parent.width())/self.data[0].get_xsize())
 	
 	def isVisible(self,n):
 		try: return self.coords[n][4]
@@ -360,10 +533,10 @@ class EMImageMX(QtOpenGL.QGLWidget):
 #		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
 		if yonly :
 			try: 
-				self.targetorigin=(0,self.coords[n][1]-self.height()/2+self.data[0].get_ysize()*self.scale/2)
+				self.targetorigin=(0,self.coords[n][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
 			except: return
 		else:
-			try: self.targetorigin=(self.coords[n][0]-self.width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.height()/2+self.data[0].get_ysize()*self.scale/2)
+			try: self.targetorigin=(self.coords[n][0]-self.parent.width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
 			except: return
 		self.targetspeed=hypot(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1])/20.0
 #		print n,self.origin
@@ -385,15 +558,18 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	
 	def showInspector(self,force=0):
 		if not force and self.inspector==None : return
+		self.initInspector()
+		self.inspector.show()
+
+	def initInspector(self):
 		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
 		self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
-		self.inspector.show()
 
 	def scrtoimg(self,vec):
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
 		image from the matrix. Returns (image number,x,y) or None if the location is not within any
 		of the contained images. """
-		absloc=((vec[0]+self.origin[0]),(self.height()-(vec[1]-self.origin[1])))
+		absloc=((vec[0]+self.origin[0]),(self.parent.height()-(vec[1]-self.origin[1])))
 		for i,c in enumerate(self.coords):
 			if absloc[0]>c[0] and absloc[1]>c[1] and absloc[0]<c[0]+c[2] and absloc[1]<c[1]+c[3] :
 				return (i,(absloc[0]-c[0])/self.scale,(absloc[1]-c[1])/self.scale)
@@ -452,7 +628,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			if self.mmode=="drag" and lc:
 				xs=self.data[lc[0]].get_xsize()
 				ys=self.data[lc[0]].get_ysize()
-				drag = QtGui.QDrag(self)
+				drag = QtGui.QDrag(self.parent)
 				mimeData = QtCore.QMimeData()
 				mimeData.setData("application/x-eman", dumps(self.data[lc[0]]))
 				EMAN2.GUIbeingdragged=self.data[lc[0]]		# This deals with within-application dragging between windows
@@ -481,7 +657,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
 			self.mousedrag=(event.x(),event.y())
-			self.update()
+			self.parent.update()
 		elif event.buttons()&Qt.LeftButton and self.mmode=="app":
 			self.emit(QtCore.SIGNAL("mousedrag"),event)
 		
@@ -490,6 +666,18 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			self.mousedrag=None
 		elif event.button()==Qt.LeftButton and self.mmode=="app":
 			self.emit(QtCore.SIGNAL("mouseup"),event)
+			
+	def wheelEvent(self, event):
+		if event.delta() > 0:
+			self.setScale( self.scale * self.mag )
+		elif event.delta() < 0:
+			self.setScale(self.scale * self.invmag )
+		# The self.scale variable is updated now, so just update with that
+		if self.inspector: self.inspector.setScale(self.scale)
+		
+	def leaveEvent(self):
+		if self.mousedrag:
+			self.mousedrag=None
 
 class EMImageMxInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
@@ -637,6 +825,12 @@ class EMImageMxInspector2D(QtGui.QWidget):
 
 		QtCore.QObject.connect(self.bsavedata, QtCore.SIGNAL("clicked(bool)"), self.saveData)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
+	
+	def setScale(self,val):
+		if self.busy : return
+		self.busy=1
+		self.scale.setValue(val)
+		self.busy=0
 	
 	def saveData(self):
 		if self.target.data==None or len(self.target.data)==0: return
