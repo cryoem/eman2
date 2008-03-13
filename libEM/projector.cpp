@@ -526,17 +526,18 @@ EMData *PawelProjector::project3d(EMData * image) const
 	prepcubes(nx, ny, nz, ri, origin, nn, ipcube);
 
 	int nangles = 0;
+	vector<float> anglelist;
 	// Do we have a list of angles?
-	vector<float> anglelist = params["anglelist"];
-	if (anglelist.size() != 0)
+	if (params.has_key("anglelist")) {
+		anglelist = params["anglelist"];
 		nangles = anglelist.size() / 3;
-	else {
+	} else {
 		Transform3D* t3d = params["t3d"];
 		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
 	
 		// This part was modified by David Woolford -
 		// Before this the code worked only for SPIDER and EMAN angles,
-		// but the framework of the Transform3D allows for a generic implementation
+		// but the framework of the Transf 	orm3D allows for a generic implementation
 		// as specified here.
 		Dict p = t3d->get_rotation(Transform3D::SPIDER);
 		
@@ -914,13 +915,11 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 	// Do we have a list of angles?
 	int nangles = 0;
 	vector<float> anglelist;
+	// Do we have a list of angles?
 	if (params.has_key("anglelist")) {
 		anglelist = params["anglelist"];
 		nangles = anglelist.size() / 3;
-	}
-	else
-	{
-
+	} else {
 		// This part was modified by David Woolford -
 		// Before this the code worked only for SPIDER and EMAN angles,
 		// but the framework of the Transform3D allows for a generic implementation
@@ -1328,8 +1327,6 @@ void ChaoProjector::setdm(vector<float> anglelist, string const , float *dm) con
 // project from 3D to 2D (multiple projections)
 EMData *ChaoProjector::project3d(EMData * vol) const
 {
-	Transform3D* t3d = params["t3d"];
-	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
 	
 	int nrays, nnz, status, j;
 	float *dm;
@@ -1383,25 +1380,30 @@ EMData *ChaoProjector::project3d(EMData * vol) const
 	status = cb2sph(cube, volsize, ri, origin, nnz, ptrs, cord, sphere);
 	// check status
 
-	// Do we have a list of angles?
-	vector<float> anglelist = params["anglelist"];
-	int nangles = anglelist.size() / 3;
-
-	// This part was modified by David Woolford -
-	// Before this the code worked only for SPIDER and EMAN angles,
-	// but the framework of the Transform3D allows for a generic implementation
-	// as specified here.
-	Dict p = t3d->get_rotation(Transform3D::SPIDER);
-	
+	int nangles = 0;
+	vector<float> anglelist;
 	string angletype = "SPIDER";
-	float phi = p["phi"];
-	float theta = p["theta"];
-	float psi = p["psi"];
-	anglelist.push_back(phi);
-	anglelist.push_back(theta);
-	anglelist.push_back(psi);
-	nangles = 1;
-	
+	// Do we have a list of angles?
+	if (params.has_key("anglelist")) {
+		anglelist = params["anglelist"];
+		nangles = anglelist.size() / 3;
+	} else {
+		Transform3D* t3d = params["t3d"];
+		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+		// This part was modified by David Woolford -
+		// Before this the code worked only for SPIDER and EMAN angles,
+		// but the framework of the Transform3D allows for a generic implementation
+		// as specified here.
+		Dict p = t3d->get_rotation(Transform3D::SPIDER);
+		
+		float phi = p["phi"];
+		float theta = p["theta"];
+		float psi = p["psi"];
+		anglelist.push_back(phi);
+		anglelist.push_back(theta);
+		anglelist.push_back(psi);
+		nangles = 1;
+	}
 	// End David Woolford modifications
 
 	dm = new float[nangles*9];
@@ -1437,8 +1439,6 @@ EMData *ChaoProjector::project3d(EMData * vol) const
 // backproject from 2D to 3D (multiple images)
 EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 {
-	Transform3D* t3d = params["t3d"];
-	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
 	int nrays, nnz, status, j;
 	float *dm;
 	int   *ptrs, *cord;
@@ -1485,24 +1485,30 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 	for (int i = 0; i<nrays+1; i++) ptrs[i] = 0;
 	for (int i = 0; i<3*nrays; i++) cord[i] = 0;
 
-	// Do we have a list of angles?
-	vector<float> anglelist = params["anglelist"];
-	int nangles = anglelist.size() / 3;
-
-	// This part was modified by David Woolford -
-	// Before this the code worked only for SPIDER and EMAN angles,
-	// but the framework of the Transform3D allows for a generic implementation
-	// as specified here.
-	Dict p = t3d->get_rotation(Transform3D::SPIDER);
-	
+	int nangles = 0;
+	vector<float> anglelist;
 	string angletype = "SPIDER";
-	float phi = p["phi"];
-	float theta = p["theta"];
-	float psi = p["psi"];
-	anglelist.push_back(phi);
-	anglelist.push_back(theta);
-	anglelist.push_back(psi);
-	nangles = 1;
+	// Do we have a list of angles?
+	if (params.has_key("anglelist")) {
+		anglelist = params["anglelist"];
+		nangles = anglelist.size() / 3;
+	} else {
+		Transform3D* t3d = params["t3d"];
+		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+		// This part was modified by David Woolford -
+		// Before this the code worked only for SPIDER and EMAN angles,
+		// but the framework of the Transform3D allows for a generic implementation
+		// as specified here.
+		Dict p = t3d->get_rotation(Transform3D::SPIDER);
+		
+		float phi = p["phi"];
+		float theta = p["theta"];
+		float psi = p["psi"];
+		anglelist.push_back(phi);
+		anglelist.push_back(theta);
+		anglelist.push_back(psi);
+		nangles = 1;
+	}
 	
 	// End David Woolford modifications
 
@@ -1563,8 +1569,7 @@ EMData *GaussFFTProjector::backproject3d(EMData * ) const
 
 EMData *PawelProjector::backproject3d(EMData * imagestack) const
 {
-	Transform3D* t3d = params["t3d"];
-	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+	
     float *images;
 
     if (!imagestack) {
@@ -1598,24 +1603,30 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
     IPCube* ipcube = new IPCube[nn+1];
     prepcubes(nx, ny, dim, ri, origin, nn, ipcube);
 
-    // Do we have a list of angles?
-    vector<float> anglelist = params["anglelist"];
-    int nangles = anglelist.size() / 3;
-
-	// This part was modified by David Woolford -
-	// Before this the code worked only for SPIDER and EMAN angles,
-	// but the framework of the Transform3D allows for a generic implementation
-	// as specified here.
-	Dict p = t3d->get_rotation(Transform3D::SPIDER);
-	
-	string angletype = "SPIDER";
-	float phi = p["phi"];
-	float theta = p["theta"];
-	float psi = p["psi"];
-	anglelist.push_back(phi);
-	anglelist.push_back(theta);
-	anglelist.push_back(psi);
-	nangles = 1;
+	int nangles = 0;
+	vector<float> anglelist;
+	// Do we have a list of angles?
+	if (params.has_key("anglelist")) {
+		anglelist = params["anglelist"];
+		nangles = anglelist.size() / 3;
+	} else {
+		Transform3D* t3d = params["t3d"];
+		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+		// This part was modified by David Woolford -
+		// Before this the code worked only for SPIDER and EMAN angles,
+		// but the framework of the Transform3D allows for a generic implementation
+		// as specified here.
+		Dict p = t3d->get_rotation(Transform3D::SPIDER);
+		
+		string angletype = "SPIDER";
+		float phi = p["phi"];
+		float theta = p["theta"];
+		float psi = p["psi"];
+		anglelist.push_back(phi);
+		anglelist.push_back(theta);
+		anglelist.push_back(psi);
+		nangles = 1;
+	}
 	
 	// End David Woolford modifications
 
