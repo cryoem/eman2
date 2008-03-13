@@ -92,7 +92,10 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		GL.glLoadIdentity()
 
 		try: self.imagemx.resizeEvent(width,height)
-		except: pass
+		except Exception, inst:
+			print type(inst)     # the exception instance
+			print inst.args      # arguments stored in .args
+			print int
 		
 	def mousePressEvent(self, event):
 		self.imagemx.mousePressEvent(event)
@@ -147,6 +150,7 @@ class EMImageMXCore:
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
+		self.supressInspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		
 		self.coords=[]
 		self.nshown=0
@@ -294,7 +298,6 @@ class EMImageMXCore:
 	def render(self):
 #		GL.glLoadIdentity()
 #		GL.glTranslated(0.0, 0.0, -10.0)
-		
 		if not self.data : return
 		for i in self.data:
 			self.changec[i]=i.get_attr("changecount")
@@ -325,6 +328,8 @@ class EMImageMXCore:
 		for i in range(n):
 			w=int(min(self.data[i].get_xsize()*self.scale,self.parent.width()))
 			h=int(min(self.data[i].get_ysize()*self.scale,self.parent.height()))
+			#w = self.data[i].get_xsize()*self.scale
+			#h = self.data[i].get_ysize()*self.scale
 			shown=False
 			if x<self.parent.width() and y<self.parent.height() and (x+w) > 0 and (y+h) > 0:
 				tx = x
@@ -455,6 +460,7 @@ class EMImageMXCore:
 			self.targetspeed=100.0
 		
 		if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
+		
 	
 	def texture(self,a,x,y,w,h):
 		
@@ -557,6 +563,7 @@ class EMImageMXCore:
 		self.updateGL()
 	
 	def showInspector(self,force=0):
+		if (self.supressInspector): return
 		if not force and self.inspector==None : return
 		self.initInspector()
 		self.inspector.show()
@@ -626,8 +633,8 @@ class EMImageMXCore:
 			self.mousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
 			if self.mmode=="drag" and lc:
-				xs=self.data[lc[0]].get_xsize()
-				ys=self.data[lc[0]].get_ysize()
+				xs=int(self.data[lc[0]].get_xsize())
+				ys=int(self.data[lc[0]].get_ysize())
 				drag = QtGui.QDrag(self.parent)
 				mimeData = QtCore.QMimeData()
 				mimeData.setData("application/x-eman", dumps(self.data[lc[0]]))
@@ -672,6 +679,7 @@ class EMImageMXCore:
 			self.setScale( self.scale * self.mag )
 		elif event.delta() < 0:
 			self.setScale(self.scale * self.invmag )
+		self.resizeEvent(self.parent.width(),self.parent.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.setScale(self.scale)
 		
@@ -696,8 +704,10 @@ class EMImageMxInspector2D(QtGui.QWidget):
 				action=self.vals.addAction(i)
 				action.setCheckable(1)
 				action.setChecked(0)
-		except:
-			pass
+		except Exception, inst:
+			print type(inst)     # the exception instance
+			print inst.args      # arguments stored in .args
+			print int
 		
 		action=self.vals.addAction("Img #")
 		action.setCheckable(1)

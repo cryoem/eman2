@@ -509,6 +509,7 @@ class EMGLDrawer2D:
 		elif isinstance(image,EMData):
 			self.become2DImage(image)
 		
+		self.drawable.supressInspector = True
 		self.initflag = True
 		self.vdtools = EMViewportDepthTools(self)
 		
@@ -525,7 +526,6 @@ class EMGLDrawer2D:
 	def become2DImage(self,a):
 		self.drawable = EMImage2DCore(a,self)
 		#self.drawable.originshift = False
-		self.drawable.supressInspector = True
 		self.w = a.get_xsize()
 		self.h = a.get_ysize()
 		
@@ -583,29 +583,28 @@ class EMGLDrawer2D:
 	def paintGL(self):
 		self.cam.position()
 		self.vdtools.update()
-		
 		if (self.initflag == True):
 			self.testBoundaries()
 			self.initflag = False
 
 		
 		#self.mediator.checkBoundaryIssues()
-		
 		if (self.updateFlag):
 			self.drawable.resizeEvent(self.width(),self.height())
 			self.updateFlag = False
-			
 		glPushMatrix()
 		glTranslatef(-self.width()/2.0,-self.height()/2.0,0)
 		try: self.drawable.render()
-		except:pass
+		except Exception, inst:
+			print type(inst)     # the exception instance
+			print inst.args      # arguments stored in .args
+			print int
 		glPopMatrix()
-		
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
 		if self.drawFrame: self.vdtools.drawFrame()
 		if not lighting: glDisable(GL_LIGHTING)
-			
+		
 	def update(self):
 		self.parent.updateGL()
 	
@@ -634,11 +633,12 @@ class EMGLDrawer2D:
 			self.sizescale *= self.changefactor
 		elif ( delta < 0 ):
 			self.sizescale *= self.invchangefactor
+
+		self.drawable.resizeEvent(self.width(),self.height())
 	
 	def wheelEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
 			self.scaleEvent(event.delta())
-			self.updateFlag = True
 			#print "updating",self.drawWidth(),self.drawHeight()
 			self.updateGL()
 		else:
@@ -781,7 +781,12 @@ class EMQtWidgetDrawer:
 	
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
-		if self.drawFrame: self.vdtools.drawFrame()
+		if self.drawFrame:
+			try: self.vdtools.drawFrame()
+			except Exception, inst:
+				print type(inst)     # the exception instance
+				print inst.args      # arguments stored in .args
+				print int
 		if (not lighting): glDisable(GL_LIGHTING)
 		
 		# now draw children if necessary - such as a qcombobox list view that has poppud up
@@ -789,8 +794,10 @@ class EMQtWidgetDrawer:
 			glPushMatrix()
 			try:
 				i.paintGL()
-			except:
-				glPopMatrix()
+			except Exception, inst:
+				print type(inst)     # the exception instance
+				print inst.args      # arguments stored in .args
+				print int
 			glPopMatrix()
 	
 	def isinwin(self,x,y):
@@ -1117,7 +1124,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 	
 		for i in self.qwidgets:
-			#print "paint child"
 			#print "getting opengl matrices"
 			glPushMatrix()
 			i.paintGL()
