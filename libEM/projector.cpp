@@ -492,9 +492,6 @@ void PawelProjector::prepcubes(int, int ny, int nz, int ri, Vec3i origin,
 
 EMData *PawelProjector::project3d(EMData * image) const
 {
-	Transform3D* t3d = params["t3d"];
-	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
-	
 	if (!image) {
 		return 0;
 	}
@@ -528,24 +525,30 @@ EMData *PawelProjector::project3d(EMData * image) const
 	IPCube* ipcube = new IPCube[nn+1];
 	prepcubes(nx, ny, nz, ri, origin, nn, ipcube);
 
+	int nangles = 0;
 	// Do we have a list of angles?
 	vector<float> anglelist = params["anglelist"];
-	int nangles = anglelist.size() / 3;
+	if (anglelist.size() != 0)
+		nangles = anglelist.size() / 3;
+	else {
+		Transform3D* t3d = params["t3d"];
+		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
 	
-	// This part was modified by David Woolford -
-	// Before this the code worked only for SPIDER and EMAN angles,
-	// but the framework of the Transform3D allows for a generic implementation
-	// as specified here.
-	Dict p = t3d->get_rotation(Transform3D::SPIDER);
-	
-	string angletype = "SPIDER";
-	float phi = p["phi"];
-	float theta = p["theta"];
-	float psi = p["psi"];
-	anglelist.push_back(phi);
-	anglelist.push_back(theta);
-	anglelist.push_back(psi);
-	nangles = 1;
+		// This part was modified by David Woolford -
+		// Before this the code worked only for SPIDER and EMAN angles,
+		// but the framework of the Transform3D allows for a generic implementation
+		// as specified here.
+		Dict p = t3d->get_rotation(Transform3D::SPIDER);
+		
+		string angletype = "SPIDER";
+		float phi = p["phi"];
+		float theta = p["theta"];
+		float psi = p["psi"];
+		anglelist.push_back(phi);
+		anglelist.push_back(theta);
+		anglelist.push_back(psi);
+		nangles = 1;
+	}
 	
 	// End David Woolford modifications
 	

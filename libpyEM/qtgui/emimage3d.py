@@ -57,11 +57,12 @@ from time import *
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMImage3D(QtOpenGL.QGLWidget):
-	""" This class is not yet complete.
-	A QT widget for rendering 3D EMData objects.
+	""" 
+	A QT widget for rendering 3D EMData objects
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
+		self.image3d = None
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(True)
@@ -69,59 +70,42 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImage3D.allim[self]=0
 		
-		self.image = image
-		self.currentselection = -1
-		self.inspector = None
-		#self.isosurface = EMIsosurface(image,self)
-		#self.volume = EMVolume(image,self)
-		self.viewables = []
-		self.num_iso = 0
-		self.num_vol = 0
-		self.num_sli = 0
-		self.num_sym = 0
+		self.image3d = EMImage3DCore(image,self)
+		self.initGL = True
 		
-		self.timer = QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
 		
-		self.inspector=EMImageInspector3D(self)
-		#self.inspector.addSlices()
-	def timeout(self):
-		self.updateGL()
+	def setData(self,data):
+		self.image3d.setData(data)
 		
 	def initializeGL(self):
-		glEnable(GL_NORMALIZE)
-		
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		
-
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		
-		GL.glClearColor(0,0,0,0)
-		glPolygonMode(GL_FRONT,GL_FILL);
-		GL.glClearAccum(0,0,0,0)
+		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glClearStencil(0)
 		glEnable(GL_STENCIL_TEST)
+		glClearColor(0,0,0,0)
+		try:
+			self.image3d.initializeGL()
+			self.initGL = False
+		except:
+			pass
+		
+		
 	def paintGL(self):
 		glClear(GL_ACCUM_BUFFER_BIT)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 
-		for i in self.viewables:
-			glPushMatrix()
-			i.render()
-			glPopMatrix()
+		try: self.image3d.render()
+		except: pass
 
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
@@ -139,6 +123,86 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
+		if (self.image3d != None):
+			try: self.image3d.resizeEvent(width,height)
+			except: pass
+		
+	def get_render_dims_at_depth(self, depth):
+		# This function returns the width and height of the renderable 
+		# area at the origin of the data volume
+		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		width = self.aspect*height
+		
+		return [width,height]
+			
+	def mousePressEvent(self, event):
+		self.image3d.mousePressEvent(event)
+			
+	def wheelEvent(self,event):
+		self.image3d.wheelEvent(event)
+	
+	def mouseMoveEvent(self,event):
+		self.image3d.mouseMoveEvent(event)
+
+	def mouseReleaseEvent(self,event):
+		self.image3d.mouseReleaseEvent(event)
+		
+	#def dropEvent(self,event):
+		#self.image3d.dropEvent(event)
+		
+	def closeEvent(self,event) :
+		self.image3d.closeEvent(event)
+		
+	#def dragEnterEvent(self,event):
+		#self.image3d.dragEnterEvent(event)
+
+		
+class EMImage3DCore(QtOpenGL.QGLWidget):
+
+	def __init__(self, image=None, parent=None):
+		self.parent = parent
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		fmt.setDepth(True)
+		fmt.setStencil(True)
+		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		EMImage3D.allim[self]=0
+		
+		self.image = image
+		self.currentselection = -1
+		self.inspector = None
+		#self.isosurface = EMIsosurface(image,self)
+		#self.volume = EMVolume(image,self)
+		self.viewables = []
+		self.num_iso = 0
+		self.num_vol = 0
+		self.num_sli = 0
+		self.num_sym = 0
+		self.supressInspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
+		
+		self.timer = QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+
+		
+		self.inspector=EMImageInspector3D(self)
+		#self.inspector.addSlices()
+	def timeout(self):
+		self.updateGL()
+	
+	def updateGL(self):
+		try: self.parent.updateGL()
+		except: pass
+	
+	def initializeGL(self):
+		glEnable(GL_NORMALIZE)
+	
+	def render(self):
+		for i in self.viewables:
+			glPushMatrix()
+			i.render()
+			glPopMatrix()
+
+	def resizeEvent(self, width, height):
 		for i in self.viewables:
 			i.resizeEvent()
 			
@@ -146,9 +210,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.image = data
 		for i in self.viewables:
 			i.setData(data)
+			
+		self.resizeEvent(self.parent.width(),self.parent.height())
 		#self.volume.setData(data)
 	
 	def showInspector(self,force=0):
+		if self.supressInspector: return
 		if not force and self.inspector==None : return
 		
 		if not self.inspector : self.inspector=EMImageInspector3D(self)
@@ -167,26 +234,27 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		else:
 			for i in self.viewables:
 				i.mousePressEvent(event)
+				
+		self.updateGL()
 
 	def mouseMoveEvent(self, event):
 		for i in self.viewables:
 			i.mouseMoveEvent(event)
+		self.updateGL()
 	
 	def mouseReleaseEvent(self, event):
 		for i in self.viewables:
 			i.mouseReleaseEvent(event)
 			
+		self.updateGL()
+			
 	def wheelEvent(self, event):
 		for i in self.viewables:
 			i.wheelEvent(event)
-
-	def get_render_dims_at_depth(self, depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
+		self.updateGL()
 		
-		return [width,height]
+	def get_render_dims_at_depth(self, depth):
+		return self.parent.get_render_dims_at_depth(depth)
 
 	def getSundryInspector(self):
 		return self.viewables[self.currentselection].getInspector()

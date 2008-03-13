@@ -258,7 +258,15 @@ class EMViewportDepthTools:
 	def set_update_P_inv(self,val=True):
 		self.matrices.setUpdate(val)
 	
-	def drawFrame(self):
+	def drawFrame(self, ftest=False):
+		
+		if (ftest):
+			a = Vec3f(self.mc10[0]-self.mc00[0],self.mc10[1]-self.mc00[1],self.mc10[2]-self.mc00[2])
+			b = Vec3f(self.mc01[0]-self.mc00[0],self.mc01[1]-self.mc00[1],self.mc01[2]-self.mc00[2])
+			c = a.cross(b)
+			if ( c[2] < 0 ):
+				#print "facing backward"
+				return False
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
@@ -309,8 +317,11 @@ class EMViewportDepthTools:
 		# pop the temporary orthographic matrix from the GL_PROJECTION stack
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)
-			
+		
+		return True
 	def cylinderToFrom(self,To,From):
+		#print "To",To[0],To[1]
+		#print "From",From[0],From[1]
 		# draw a cylinder to To from From
 		dx = To[0] - From[0]
 		dy = To[1] - From[1]
@@ -332,15 +343,12 @@ class EMViewportDepthTools:
 		glScalef(3.0*self.borderwidth,3.0*self.borderwidth,3.0*self.borderwidth)
 		glCallList(self.glbasicobjects.getSphereDL())
 	
-	def update(self):
+	def update(self,width,height):
 		
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
 		self.wproj = self.matrices.getProjMatrix()
 		self.wview = self.matrices.getViewMatrix()
-	
-		width = self.parent.width()/2.0
-		height = self.parent.height()/2.0
-	
+
 		try:
 			self.mc00=gluProject(-width,-height,0.,self.wmodel,self.wproj,self.wview)
 			self.mc10=gluProject( width,-height,0.,self.wmodel,self.wproj,self.wview)
@@ -354,7 +362,19 @@ class EMViewportDepthTools:
 			self.mc01 = [0,0,0]
 			
 	def getCorners(self):
-		return [self.mc00,self.mc10,self.mc11,self.mc01]
+		return [self.mc00,self.mc01,self.mc11,self.mc10]
+	
+	def getModelMatrix(self):
+		return self.wmodel
+	
+	def setModelMatrix(self, model):
+		self.wmodel = model
+	
+	def setCorners(self,points):
+		self.mc00 = points[0]
+		self.mc01 = points[1]
+		self.mc11 = points[2]
+		self.mc10 = points[3]
 		
 	def storeModel(self):
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
@@ -373,6 +393,24 @@ class EMViewportDepthTools:
 		
 	def getMappedHeight(self):
 		return int(self.mc11[1]-self.mc00[1])
+	
+	def isinwinpoints(self,x,y,points):
+		try:
+			a = [points[0][0]-x, points[0][1]-y]
+			b = [points[1][0]-x, points[1][1]-y]
+			c = [points[2][0]-x, points[2][1]-y]
+			d = [points[3][0]-x, points[3][1]-y]
+			
+			aeb = self.getsubtendingangle(a,b)
+			bec = self.getsubtendingangle(b,c)
+			ced = self.getsubtendingangle(c,d)
+			dea = self.getsubtendingangle(d,a)
+			if abs(aeb + bec + ced + dea) > 0.1:
+				return True 
+			else:
+				return False
+		except:
+			return False
 	
 	def isinwin(self,x,y):
 		# this function can be called to determine
@@ -437,7 +475,7 @@ class EMViewportDepthTools:
 		
 		return [ex2-ex1,ey2-ey1]
 
-	def mouseinwin(self,x,y):
+	def mouseinwin(self,x,y,width,height):
 		# to determine the mouse coordinates in the window we carefully perform
 		# linear algebra similar to what's done in gluUnProject
 
@@ -468,7 +506,7 @@ class EMViewportDepthTools:
 		xcoord = zprime*(xNDC*PM_inv[0,0]+yNDC*PM_inv[1,0]+zNDC*PM_inv[2,0]+PM_inv[3,0])
 		ycoord = zprime*(xNDC*PM_inv[0,1]+yNDC*PM_inv[1,1]+zNDC*PM_inv[2,1]+PM_inv[3,1])
 
-		return (xcoord + self.parent.width()*0.5, 0.5*self.parent.height()-ycoord)
+		return (xcoord + width*0.5, 0.5*height-ycoord)
 
 class BoundaryMediator:
 	def __init__(self,drawer,depthtools):
@@ -488,12 +526,228 @@ class BoundaryMediator:
 			elif i[1] > self.drawer.viewportHeight():
 				print "out above"
 
-class EMGLDrawer2D:
+class EMGLView3D:
 	"""
-	FIXME: insert comments
+	A view of an EMAN2 3D type, such as an isosurface or a 
+	volume rendition, etc.
+	"""
+	def __init__(self, parent,image=None):
+		self.parent = parent
+		self.cam = Camera2(self)
+		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
+		
+		self.w = image.get_xsize()	# width of window
+		self.h = image.get_ysize()	# height of window
+		self.d = image.get_zsize()	# depth of the window
+		self.sizescale = 1.0		# scale/zoom factor
+		self.changefactor = 1.1		# used to zoom
+		self.invchangefactor = 1.0/self.changefactor # used to invert zoom
+		
+		self.drawable = None		# the object that is drawable (has a draw function)
+		
+		self.vdtools = EMViewportDepthTools(self)
+		
+		self.updateFlag = True
+		
+		self.drawFrame = True
+		
+		self.vdtools
+		
+		self.psets = []
+		self.modelmatrices = []
+		
+	def width(self):
+		try:
+			return int(self.sizescale*self.w)
+		except:
+			return 0
+	
+	def height(self):
+		try:
+			return int(self.sizescale*self.h)
+		except:
+			return 0
+	
+	def depth(self):
+		try:
+			return int(self.sizescale*self.d)
+		except:
+			return 0
+	
+	def setData(self,data):
+		try: self.drawable.setData(data)
+		except: pass
+		
+		
+	def paintGL(self):
+		self.psets = []
+		self.modelmatrices = []
+		self.cam.position()
+		lighting = glIsEnabled(GL_LIGHTING)
+		glEnable(GL_LIGHTING)
+		
+		glPushMatrix()
+		glTranslatef(-self.width()/2.0,0,0)
+		glRotatef(-90,0,1,0)
+		self.vdtools.update(self.depth()/2.0,self.height()/2.0)
+		if self.drawFrame: 
+			if self.vdtools.drawFrame(True): 
+				self.psets.append(self.vdtools.getCorners())
+				self.modelmatrices.append(self.vdtools.getModelMatrix())
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslatef(self.width()/2.0,0,0)
+		glRotatef(90,0,1,0)
+		self.vdtools.update(self.depth()/2.0,self.height()/2.0)
+		if self.drawFrame: 
+			if self.vdtools.drawFrame(True): 
+				self.psets.append(self.vdtools.getCorners())
+				self.modelmatrices.append(self.vdtools.getModelMatrix())
+				
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslatef(0,self.height()/2.0,0)
+		glRotatef(-90,1,0,0)
+		self.vdtools.update(self.width()/2.0,self.depth()/2.0)
+		if self.drawFrame: 
+			if self.vdtools.drawFrame(True): 
+				self.psets.append(self.vdtools.getCorners())
+				self.modelmatrices.append(self.vdtools.getModelMatrix())
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslatef(0,-self.height()/2.0,0)
+		glRotatef(90,1,0,0)
+		self.vdtools.update(self.width()/2.0,self.depth()/2.0)
+		if self.drawFrame: 
+			if self.vdtools.drawFrame(True): 
+				self.psets.append(self.vdtools.getCorners())
+				self.modelmatrices.append(self.vdtools.getModelMatrix())
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslatef(0,0,-self.depth()/2.0)
+		glRotatef(180,0,1,0)
+		self.vdtools.update(self.depth()/2.0,self.height()/2.0)
+		if self.drawFrame: 
+			if self.vdtools.drawFrame(True): 
+				self.psets.append(self.vdtools.getCorners())
+				self.modelmatrices.append(self.vdtools.getModelMatrix())
+		glPopMatrix()
+		
+		glPushMatrix()
+		glTranslatef(0,0,self.depth()/2.0)
+		self.vdtools.update(self.width()/2.0,self.height()/2.0)
+		if self.drawFrame: 
+			if self.vdtools.drawFrame(True): 
+				self.psets.append(self.vdtools.getCorners())
+				self.modelmatrices.append(self.vdtools.getModelMatrix())
+		glPopMatrix()
+		
+		if not lighting: glDisable(GL_LIGHTING)
+		
+	def viewportHeight(self):
+		return self.parent.height()
+	
+	def viewportWidth(self):
+		return self.parent.width()
+	
+	def mousePressEvent(self, event):
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):	
+			return
+			self.drawable.initInspector()
+			self.drawable.inspector.show()
+			self.drawable.inspector.hide()
+			self.parent.addQtWidgetDrawer(self.drawable.inspector)
+			
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.mousePressEvent(event)
+		else:
+			return
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.drawable.mousePressEvent(qme)
+			#self.drawable.mousePressEvent(event)
+		
+		#self.updateGL()
+	
+	def scaleEvent(self,delta):
+		if ( delta > 0 ):
+			self.sizescale *= self.changefactor
+		elif ( delta < 0 ):
+			self.sizescale *= self.invchangefactor
+
+		#self.drawable.resizeEvent(self.width(),self.height())
+	
+	def wheelEvent(self,event):
+		if event.modifiers() == Qt.ShiftModifier:
+			self.scaleEvent(event.delta())
+			#print "updating",self.drawWidth(),self.drawHeight()
+			self.updateGL()
+		else:
+			return
+			self.drawable.wheelEvent(event)
+			
+		#self.updateGL()
+	
+	def mouseMoveEvent(self,event):
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.mouseMoveEvent(event)
+		else:
+			return
+			#l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			#qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			#self.drawable.mouseMoveEvent(qme)
+			#self.drawable.mouseMoveEvent(event)
+		
+		#self.updateGL()
+
+	def mouseReleaseEvent(self,event):
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.mouseReleaseEvent(event)
+		else:
+			return
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.drawable.mouseReleaseEvent(qme)
+			#self.drawable.mouseReleaseEvent(event)
+	
+	def update(self):
+		self.parent.updateGL()
+	
+	def updateGL(self):
+		self.parent.updateGL()
+	
+	def isinwin(self,x,y):
+		val = False
+		for i,p in enumerate(self.psets):
+			if self.vdtools.isinwinpoints(x,y,p):
+				val = True
+				self.vdtools.setModelMatrix(self.modelmatrices[i])
+				break
+		return val
+	
+	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	
+	def leaveEvent(self):
+		return
+		self.drawable.leaveEvent()
+	
+	def toolTipEvent(self,event):
+		pass
+	
+	def set_update_P_inv(self,val=True):
+		self.vdtools.set_update_P_inv(val)
+	
+class EMGLView2D:
+	"""
+	A view of a 2D drawable type, such as a single 2D image or a matrix of 2D images
 	
 	"""
-	def __init__(self, parent=None,image=None):
+	def __init__(self, parent,image=None):
 		self.parent = parent
 		self.cam = Camera2(self)
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
@@ -533,13 +787,7 @@ class EMGLDrawer2D:
 		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
 	
 	def set_update_P_inv(self,val=True):
-		#FIXME - both of these objects updates and inverts the OpenGL
-		# projection matrix - they both have a copy - so it would be 
-		# more efficient if there were a common place where the matrix
-		# and its inverse are stored'
 		self.vdtools.set_update_P_inv(val)
-		self.updateFlag = True
-		#self.drawable.set_update_P_inv(val)
 	
 	def width(self):
 		try:
@@ -582,7 +830,7 @@ class EMGLDrawer2D:
 	
 	def paintGL(self):
 		self.cam.position()
-		self.vdtools.update()
+		self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		if (self.initflag == True):
 			self.testBoundaries()
 			self.initflag = False
@@ -621,7 +869,7 @@ class EMGLDrawer2D:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mousePressEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mousePressEvent(qme)
 			#self.drawable.mousePressEvent(event)
@@ -650,7 +898,7 @@ class EMGLDrawer2D:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseMoveEvent(qme)
 			#self.drawable.mouseMoveEvent(event)
@@ -661,7 +909,7 @@ class EMGLDrawer2D:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y())
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseReleaseEvent(qme)
 			#self.drawable.mouseReleaseEvent(event)
@@ -758,7 +1006,7 @@ class EMQtWidgetDrawer:
 		self.cam.position()
 		
 		# make sure the vdtools store the current matrices
-		self.vdtools.update()
+		self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		
 		glPushMatrix()
 		glEnable(GL_TEXTURE_2D)
@@ -811,8 +1059,8 @@ class EMQtWidgetDrawer:
 	def eyeCoordsDif(self,x1,y1,x2,y2):
 		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2)
 			
-	def mouseinwin(self,x,y):
-		return self.vdtools.mouseinwin(x,y)
+	def mouseinwin(self,x,y,width,height):
+		return self.vdtools.mouseinwin(x,y,width,height)
 
 	def toolTipEvent(self,event):
 		if ( self.childreceiver != None ):
@@ -821,7 +1069,7 @@ class EMQtWidgetDrawer:
 			self.childreceiver.toolTip(event)
 			self.childreceiver = None
 			return
-		l=self.mouseinwin(event.x(),self.parent.height()-event.y())
+		l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 		cw=self.qwidget.childAt(l[0],l[1])
 		if cw == None: 
 			QtGui.QToolTip.hideText()
@@ -848,7 +1096,7 @@ class EMQtWidgetDrawer:
 				if len(self.e2children) > 0:
 					self.e2children.pop()
 					return
-			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
+			l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
@@ -865,7 +1113,7 @@ class EMQtWidgetDrawer:
 			self.childreceiver.mouseDoubleClickEvent(event)
 			self.childreceiver = None
 			return
-		l=self.mouseinwin(event.x(),self.parent.height()-event.y())
+		l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 		cw=self.qwidget.childAt(l[0],l[1])
 		if cw == None: return
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
@@ -899,7 +1147,7 @@ class EMQtWidgetDrawer:
 					self.e2children.pop()
 					return
 				
-			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
+			l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
 			##print cw.objectName()
@@ -936,7 +1184,7 @@ class EMQtWidgetDrawer:
 				self.childreceiver = None
 				return
 			else:
-				l=self.mouseinwin(event.x(),self.parent.height()-event.y())
+				l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 				cw=self.qwidget.childAt(l[0],l[1])
 				self.current = cw
 				if ( self.current != self.previous ):
@@ -988,7 +1236,7 @@ class EMQtWidgetDrawer:
 					self.e2children.pop()
 					return
 			
-			l=self.mouseinwin(event.x(),self.parent.height()-event.y())
+			l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
@@ -1113,6 +1361,11 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.qwidgets[0].setQtWidget(self.fd)
 			self.qwidgets[0].cam.setCamX(-100)
 			self.initFlag = False
+			
+			e = EMData(256,256,256)
+			e.process_inplace("testimage.axes")
+			w = EMGLView3D(self,e)
+			self.qwidgets.append(w)
 		#print "paintGL"
 		glClear(GL_COLOR_BUFFER_BIT)
 		if glIsEnabled(GL_DEPTH_TEST):
@@ -1141,8 +1394,8 @@ class EMFXImage(QtOpenGL.QGLWidget):
 					#if len(a)==1 : a=a[0]
 					#w.setWindowTitle("EMImage (%s)"%f)
 					#w.show()
-					w = EMGLDrawer2D(self,a)
-					w.setData(a[0])
+					w = EMGLView2D(self,a)
+					#w.setData(a[0])
 					self.qwidgets.append(w)
 					
 					#self.qwidgets[0].cam.setCamX(100)
