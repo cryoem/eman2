@@ -60,6 +60,8 @@ def main():
 #	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
 #	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
 #	parser.add_option("--apix","-P",type="float",help="A/Pixel",default=1.0)
+	parser.add_option("--classmx",type="string",help="<classmx>,<#> Show particles in one class from a classification matrix")
+	parser.add_option("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -67,37 +69,46 @@ def main():
 	logid=E2init(sys.argv)
 #        GLUT.glutInit(sys.argv)
 
-	display(args)
+	global app,win
+	app = QtGui.QApplication(sys.argv)
+	win=[]
+
+	if options.plot:
+		plot(args)
+	elif options.classmx:
+		options.classmx=options.classmx.split(",")
+		clsnum=int(options.classmx[1])
+		mx=EMData(options.classmx[0],0)
+		imgs=[EMData(args[0],i) for i in range(mx.get_ysize()) if mx.get(0,i)==clsnum]
+		display(imgs)
+	else:
+		for i in args:
+			a=EMData.read_images(i)
+			display(a)
+			
+	sys.exit(app.exec_())
+
 	E2end(logid)
 
 def display(img):
-	if isinstance(img,str) : img=[img]
-	app = QtGui.QApplication(sys.argv)
+#	print img
 	
-	plot=None
+	if len(img)==1 : img=img[0]
+	w=EMImage(img)
+	w.setWindowTitle("EMImage")
+	w.show()
+	win.append(w)
+
+def plot(files):
+	plotw=EMPlot2D()
+	for f in files:
+		plotw.setDataFromFile(f,f)
+		
+	w=EMParentWin(plotw)
+	w.setWindowTitle("EMPlot2D")
+	w.show()
+	win.append(w)
 	
-	win=[]
-	for f in img:
-		#try:
-			a=EMData.read_images(f)
-			flag = False
-			if len(a)==1 : a=a[0]
-			w=EMImage(a)
-			w.setWindowTitle("EMImage (%s)"%f)
-			w.show()
-			win.append(w)
-		#except:
-			#if not plot : 
-				#plot=EMPlot2D()
-			#plot.setDataFromFile(f,f)
-	
-	if plot:
-		w=EMParentWin(plot)
-		w.setWindowTitle("EMPlot2D")
-		w.show()
-		win.append(w)
-	
-	sys.exit(app.exec_())
 
 # If executed as a program
 if __name__ == '__main__':

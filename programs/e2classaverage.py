@@ -56,7 +56,7 @@ def main():
 	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="dot:normalize=1")
 	parser.add_option("--averager",type="string",help="The type of average that will produce the class average.",default="image")
 	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes", default="dot:normalize=1")
-	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.", default=1.0)
+	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.")
 	parser.add_option("--keepsig", type=float, dest="keepsig", help="The standard deviation alternative to the --keep argument")
 	parser.add_option("--verbose","-v",action="store_true",help="Print useful information while the program is running. Default is off.",default=False)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
