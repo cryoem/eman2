@@ -50,9 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emimage3dobject import EMImage3DObject
-from emimage3dobject import Camera
-from emimage3dobject import EMOpenGLFlagsAndTools
+from emglobjects import EMImage3DObject, Camera, EMOpenGLFlagsAndTools
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -959,7 +957,7 @@ if __name__ == '__main__':
 	window = EMVolumeWidget()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(7,7,7)
+		e.set_size(128,128,128)
 		e.process_inplace('testimage.axes')
 		
 		window2=EMParentWin(window)

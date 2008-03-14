@@ -50,9 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emimage3dobject import EMImage3DObject
-from emimage3dobject import Camera
-from emimage3dobject import EMOpenGLFlagsAndTools
+from emglobjects import EMImage3DObject, Camera, EMOpenGLFlagsAndTools
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -102,7 +100,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support
 		
-	def setData(self,data):
+	def setData(self,data,fact=1.0):
 		"""Pass in a 3D EMData object"""
 		
 		if data==None:
@@ -324,7 +322,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		glLoadIdentity()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-1)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
-		self.draw_bc_screen()
+		#self.draw_bc_screen()
 		glPopMatrix()
 		
 		glStencilFunc(GL_ALWAYS,1,1)
@@ -411,7 +409,7 @@ class EM3DSliceViewer(EMImage3DObject):
 	def mouseMoveEvent(self, event):
 		if ( self.track ):
 			self.loadTrackAxis()
-			self.genCurrentDisplayList()
+		self.genCurrentDisplayList()
 		EMImage3DObject.mouseMoveEvent(self,event)
 		
 class EMSliceViewerWidget(QtOpenGL.QGLWidget):

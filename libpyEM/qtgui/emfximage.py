@@ -47,7 +47,7 @@ from emimageutil import *
 from emimage2d import *
 from math import sqrt
 
-from emimage3dobject import Camera2
+from emglobjects import Camera2
 
 import numpy
 import sys

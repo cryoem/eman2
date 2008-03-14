@@ -102,7 +102,9 @@ def main():
 		else:
 			if (options.verbose):
 				print "e2project3.py command line arguments test.... PASSED"
-			
+	
+	# returning a different error code is currently important to e2refine.py - returning 0 tells e2refine.py that it has enough
+	# information to execute this script
 	if error : exit(1)
 	if options.check: exit(0)
 	
@@ -140,48 +142,7 @@ def main():
 		#else:
 			#print "Warning: verify mirror only works when a symmetry has been specified. No action taken."
 
-# this actually doesn't work - the distribution is not uniform (FIXME)
-def get_random_orientations( totalprojections, nomirror ):
-		
-	i = 0
-	eulers = []
-	while ( i < totalprojections ):
-		#get a random 3D vector on [-1,1]
-		x = 2*random.random() - 1
-		y = 2*random.random() - 1
-		if nomirror:
-			# if no mirroring is specified, then only consider projections in positive z
-			print "no mirroring"
-			z = random.random()
-		else:
-			z = 2*random.random() - 1
-		
-		length = math.sqrt( x**2 + y**2 + z**2)
-		
-		#if the point is beyond the unit sphere then we should not 
-		#consider it, or else the sampling of Euler angles will be
-		#biased
-		if length > 1:
-			continue
-		
-		#normalize
-		x = x/length
-		y = y/length
-		z = z/length
-		
-		# because the point is randomly distributed over the unit sphere,
-		# its associated eulers will also be random.
-		# note that a point on the unit sphere only implies two angles:
-		az = math.atan2(y,x)
-		alt = math.acos(z)
-			
-		randomphi = random.random()*360.0
-		transform = Transform3D(EULER_EMAN,az*180.0/pi,alt*180.0/pi,randomphi)
-		eulers.append(transform)
-		
-		i += 1
-	
-	return eulers
+#
 
 def generate_and_save_projections(options, data, eulers, smear=0):
 	for i,euler in enumerate(eulers):

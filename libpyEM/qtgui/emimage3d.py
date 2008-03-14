@@ -52,8 +52,6 @@ from emimage3dvol import EMVolume
 from emimage3dslice import EM3DSliceViewer
 from emimage3dsym import EM3DSymViewer
 
-from time import *
-
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMImage3D(QtOpenGL.QGLWidget):
@@ -75,9 +73,10 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
-		
+		self.resize(640,640)
 	def setData(self,data):
 		self.image3d.setData(data)
+		self.resize(640,640)
 		
 	def initializeGL(self):
 		glEnable(GL_LIGHTING)
@@ -99,13 +98,17 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		
 	def paintGL(self):
-		glClear(GL_ACCUM_BUFFER_BIT)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 
-		try: self.image3d.render()
-		except: pass
+		if ( self.initGL ):
+			self.image3d.initializeGL()
+			self.initGL = False
+
+		if ( self.image3d != None ):
+			self.image3d.render()
+
 
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
@@ -132,7 +135,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		# area at the origin of the data volume
 		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
 		width = self.aspect*height
-		
 		return [width,height]
 			
 	def mousePressEvent(self, event):
@@ -161,13 +163,6 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 
 	def __init__(self, image=None, parent=None):
 		self.parent = parent
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(True)
-		fmt.setStencil(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImage3D.allim[self]=0
-		
 		self.image = image
 		self.currentselection = -1
 		self.inspector = None
@@ -180,14 +175,21 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 		self.num_sym = 0
 		self.supressInspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		
-		self.timer = QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+		#self.timer = QTimer()
+		#QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
 		
 		self.inspector=EMImageInspector3D(self)
 		#self.inspector.addSlices()
-	def timeout(self):
-		self.updateGL()
+	#def timeout(self):
+		#self.updateGL()
+	def width(self):
+		try: return self.parent.width()
+		except: return 0
+		
+	def height(self):
+		try: return self.parent.height()
+		except: return 0
 	
 	def updateGL(self):
 		try: self.parent.updateGL()
@@ -217,9 +219,11 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 	def showInspector(self,force=0):
 		if self.supressInspector: return
 		if not force and self.inspector==None : return
-		
-		if not self.inspector : self.inspector=EMImageInspector3D(self)
+		self.initInspector()
 		self.inspector.show()
+		
+	def initInspector(self):
+		if not self.inspector : self.inspector=EMImageInspector3D(self)
 	
 	def closeEvent(self,event) :
 		#for i in self.viewables:

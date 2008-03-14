@@ -47,7 +47,7 @@ from pickle import dumps,loads
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
-from emimage3dobject import EMOpenGLFlagsAndTools
+from emglobjects import EMOpenGLFlagsAndTools
 
 class EMImageMX(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images

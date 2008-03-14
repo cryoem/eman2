@@ -48,7 +48,7 @@ def main():
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 1.", default=1)
+	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 1.", default=0)
 	parser.add_option("--ref", type="string", help="The associated projections or classes that were used to for the classification that was calculated by e2classify.py. If specified, similarity scores are calculated in the first iteration and used to cull bad particles. If not specified, all particles are including in the first class average.", default=None)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
 	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="dot")
@@ -56,13 +56,14 @@ def main():
 	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="dot:normalize=1")
 	parser.add_option("--averager",type="string",help="The type of average that will produce the class average.",default="image")
 	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes", default="dot:normalize=1")
-	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.")
-	parser.add_option("--keepsig", type=float, dest="keepsig", help="The standard deviation alternative to the --keep argument")
+	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
+	parser.add_option("--keepsig", action="store_true", help="The standard deviation alternative to the --keep argument",default=False)
 	parser.add_option("--verbose","-v",action="store_true",help="Print useful information while the program is running. Default is off.",default=False)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_option("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
+	parser.add_option("--lowmem","-L",action="store_true",help="Causes images to be read from disk as they are needed, as opposed to being cached. Saves on memory but obviously causes more disk accesses.",default=False)
 
 	(options, args) = parser.parse_args()
 	
@@ -85,9 +86,10 @@ def main():
 		else:
 			print "e2classaverage.py command line arguments test.... PASSED"
 	
+	# returning a different error code is currently important to e2refine.py - returning 0 tells e2refine.py that it has enough
+	# information to execute this script
 	if error : exit(1)
 	if options.check: exit(0)
-	
 	
 	logger=E2init(sys.argv)
 	
@@ -98,13 +100,18 @@ def main():
 	
 	(num_classes, num_part ) = gimme_image_dimensions2D(args[1]);
 	
+	if ( not options.lowmem ) :
+		images = EMData.read_images(args[0])
+	
+	
 	if (options.verbose):
 		print "Classifications per particle %d, particles %d" %(num_classes, num_part)
 	
 	# classes contains the classifications - row is particle number, column data contains class numbers (could be greater than 1)
 	classes = EMData()
 	classes.read_image(args[1], 0)
-	num_proj_required = classes.get_attr("maximum") 
+	class_max = int(classes.get_attr("maximum"))
+	class_min = int(classes.get_attr("minimum"))
 	
 	# double check that the argument reference image makes sense
 	if (options.ref):
@@ -112,8 +119,8 @@ def main():
 			parser.error("File %s does not exist" %options.ref)
 			
 		num_ref= EMUtil.get_image_count(options.ref)
-		if ( num_proj_required > num_ref ):
-			print "Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(num_proj_required,num_ref,options.ref)
+		if ( class_max > num_ref ):
+			print "Error, the classification matrix refers to a class number (%d) that is beyond the number of images (%d) in the reference image (%s)." %(class_max,num_ref,options.ref)
 			exit(1)
 	
 	# double check that the number of particles in the particle image matches the rows in the classification matrix (image)
@@ -121,14 +128,6 @@ def main():
 	if ( num_part != num_part_check ):
 		print "Error, the number of rows (%d) in the classification matrix (image) does not match the number of particles (%d) in the input image." %(num_part,num_part_check)
 		exit(1)
-		
-	
-	
-	options.align=parsemodopt(options.align)
-	options.alicmp=parsemodopt(options.aligncmp)
-	# note the parsing of the options.ralign parameters is left for later
-	options.alircmp=parsemodopt(options.raligncmp)
-	options.cmp=parsemodopt(options.cmp)
 	
 	# weights contains the weighting of the classification scheme stored in the EMData object "classes" - above
 	# row is particle number, column data contains weights - rows should add to 1, but this is not checked.
@@ -147,77 +146,82 @@ def main():
 	da = EMData()
 	da.read_image(args[1],4)
 	
-	classification = {}
-	for i in range(num_part):
-		for j in range(num_classes):
-			try: classification[classes.get_value_at(j,i)].append([i,weights.get_value_at(j,i),0,dx.get_value_at(j,i),dy.get_value_at(j,i), da.get_value_at(j,i)])
-			except: classification[classes.get_value_at(j,i)] = [[i,weights.get_value_at(j,i),0,dx.get_value_at(j,i),dy.get_value_at(j,i), da.get_value_at(j,i)]]
+	if (options.iter > 0):
+		options.align=parsemodopt(options.align)
+		options.alicmp=parsemodopt(options.aligncmp)
+		# note the parsing of the options.ralign parameters is left for later
+		options.alircmp=parsemodopt(options.raligncmp)
+		options.cmp=parsemodopt(options.cmp)
 	
-	#if (options.debug):
-		#for i in classification.items():
-			#print "class %d has %d particles" %(i[0], len(i[1]))
-
-	classes = {}
-	
-	for it in range(0,options.iter+1):
-
-		#two temp EMData objects used at various locations below
-		tmp1 = EMData()
-		tmp2 = EMData()
+	for cl in range(class_min,class_max+1):
+		if (options.verbose):
+			ndata = []
 		
-		################################################################################
-		# OVERSEE THE GENERATION AND STORAGE OF THE QUALITY METRIC, AND POTENTIAL ALIGNMENT
-		################################################################################
-		if (it == 0):
-			# if this is the first iteration, and the user has specified the reference image
-			# then we calculate the quality metric. This is used to exclude particles from the
-			# class average.
-			if (options.ref ):
-				if options.verbose: 
-					print "Generating similarity metrics using reference images, iteration %d" %it
-				for i in classification.items():
-					if options.verbose: 
-						print "%d/%d\r"%(i[0],num_proj_required),
-						sys.stdout.flush()
-					for j in i[1]:
-						t3d = Transform3D(EULER_EMAN,j[5],0,0)
-						t3d.set_posttrans(j[3], j[4])
-						tmp1.read_image(args[0], j[0])
-						tmp1.rotate_translate(t3d)
-						
-						tmp2.read_image(options.ref, int(i[0]))
-						
-						# Generate the quality metric using the reference image
-						j[2] = tmp2.cmp(options.cmp[0],tmp1,options.cmp[1])
+		if (options.iter > 0 or options.verbose): ccache = [] # class cache
+		
+		averager_parms=parsemodopt(options.averager)
+		averager=Averagers.get(averager_parms[0], averager_parms[1])
+		# do the initial average, based on the program inputs
+		weightsum = 0 # used to normalize the average
+		np = 0 # number of particles in the average
+		for p in range(0,num_part):
+			for c in range(0,num_classes):
+				if classes.get(c,p) == cl:
+					# cache the hit if necessary
+					if (options.iter > 0 or options.verbose): ccache.append((p,c))
+					
+					# Position the image correctly
+					t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
+					t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
+					if (options.lowmem):
+						image = EMData.read_images(args[0],p)
+					else:
+						image = images[p].copy()
+					image.rotate_translate(t3d)
+					
+					np += 1
+					weight = weights(c,p)
+					weightsum += weight
+					image.mult(weight)
+					
+					# Add the image to the averager
+					averager.add_image(image)
+		
+		if options.verbose:
+			ndata.append(np)
+
+		if np == 0 or weightsum == 0:
+			if options.verbose:
+				print "Class",cl,"...no particles"
+			# FIXME
+			# write blank image? Write meta data?
+			continue
+		
+		average = averager.finish()
+		average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
+		average.mult(1.0/weightsum) # Do the correct division
+	
+		if (options.iter > 0):
+			options.cull = True
+			if ( options.keepsig == False and options.keep == 1.0 ) : options.cull = False
 			
-			if (options.debug):
-				if (options.ref ): print "Used reference to generate quality metrics on the first round"
-				else: print "Did not generate quality metrics in the first round"
-		else:
-			# if this is not the first iteration we compare the particles to the class average
-			# that was generated in the previous iteration to generate the quality metric, which
-			# is then used to exclude particles from the next class average. This includes
-			# an alignment step which can take time...
-			if options.verbose: 
-				print "Performing alignment to previous class average, generating similarity metrics, iteration %d" %it
-			for i in classification.items():
-				if options.verbose: 
-					print "%d/%d\r"%(i[0],num_proj_required),
-					sys.stdout.flush()
-				for j in i[1]:
-					tmp1 = EMData()
-					#tmp2 = EMData()
-					tmp1.read_image(args[0], j[0])
-					r = classes[i[0]]
-					# Align the particle to its class average
-					ta=tmp1.align(options.align[0],r,options.align[1],options.alicmp[0],options.alicmp[1])
+		for it in range(0,options.iter):
+			# do alignment
+			for d in ccache:
+				p = d[0]
+				c = d[1]
+				if (options.lowmem): image = EMData.read_images(args[0],p)
+				else: image = images[p]
 					
-					#ta=target.align(align[0],r,align[1],alicmp[0],alicmp[1])
-					#print "A Refine parms were %f %f %f" %(ta.get_attr_default("align.dx",0),ta.get_attr_default("align.dy",0),ta.get_attr_default("align.az",0))
+				# Align the particle to the average
+				ta=image.align(options.align[0],average,options.align[1],options.alicmp[0],options.alicmp[1])
+				
+				if ( options.ralign != None ): # potentially employ refine alignment
 					
-					if ( options.ralign != None ):
 						refineparms=parsemodopt(options.ralign)
 						
+						
+						# this parameters I think west best with the refine aligner, but they're not well tested
 						#refineparms[1]["az"] = ta.get_attr_default("align.az",0)-1
 						#refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)-1
 						#refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)-1
@@ -227,139 +231,104 @@ def main():
 						#refineparms[1]["stepaz"] = 5
 						#print refineparms[1]
 						
-						ta = tmp1.align(refineparms[0],r,refineparms[1],options.alircmp[0],options.alircmp[1])
-					
-						#print "done ref alignment"
-					#print "B Refine parms were %f %f %f" %(ta.get_attr_default("align.dx",0),ta.get_attr_default("align.dy",0),ta.get_attr_default("align.az",0))
-					# Store the quality metric and alignment parameters
-					# Note that ta could be the image aligned by the normal aligner, or the refine aligner,
-					# depending on the program arguments
-					#print "dx changed from %f to %f, dy %f %f, az %f %f" %(j[3],ta.get_attr_default("align.dx",0), j[4],ta.get_attr_default("align.dy",0),j[5],ta.get_attr_default("align.az",0))
-					j[3] = ta.get_attr_default("align.dx",0)
-					j[4] = ta.get_attr_default("align.dy",0)
-					j[5] = ta.get_attr_default("align.az",0)
-					j[2] = ta.cmp(options.cmp[0],r,options.cmp[1])
+						refineparms[1]["az"] = ta.get_attr_default("align.az",0)
+						refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)
+						refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)
+						
+						ta = image.align(refineparms[0],average,refineparms[1],options.alircmp[0],options.alircmp[1])
 				
-					
-			if (options.verbose):
-				if ( options.ralign != "" ): print "Performed refinement alignment"
-				else :  print "Did not perform refinement alignment"
-
-		################################################################################
-		# OVERSEE THE CALCULATION OF THE QUALITY METRIC THRESHOLD
-		################################################################################
-		# Should quality scores be calculated...?
-		do_qual = True
-		# Only if not the following
-		if ( it == 0 and not options.ref ): do_qual = False
-		
-		# Should the quality threshold be calculated?
-		do_thresh = True
-		# Only if not the following...
-		if ( options.keepsig == False and options.keep == 1.0 ): do_thresh = False
-		
-		qual_scores = {}
-		threshold = {}
-		
-		if do_qual and do_thresh:
-			if options.verbose: 
-				print "Calculating the similarity threshold, iteration %d" %it
-			# Note the the results of a comparitor are generated such that 
-			# smaller numbers are always better. E.G. If the comparison was based
-			# on FRC the comparitor would multiply its results by negative one.
-			# This enables the calculation of the quality metric threshold (here)
-			# to be uniform
-			for i in classification.items():
-				for j in i[1]:
-					try: qual_scores[i[0]].append(j[2])
-					except: qual_scores[i[0]] = [j[2]]
-		
-			for i in qual_scores.items():
+				# store the refined translational and rotational values
+				dx.set(c,p, ta.get_attr_default("align.dx",0))
+				dy.set(c,p, ta.get_attr_default("align.dy",0))
+				da.set(c,p, ta.get_attr_default("align.az",0))
+				# store the quality score on top of the weights, seeing as they're not needed any more
+				if (options.cull): # but only if we need to
+					weights.set(c,p, ta.cmp(options.cmp[0],average,options.cmp[1]))
+			
+			# get the culling threshold
+			if options.cull:
+				qual_scores = []
+				for d in ccache:
+					p = d[0]
+					c = d[1]
+					qual_scores.append(weights.get(c,p))
+				
 				if ( options.keepsig ):
-					a = Util.get_stats_cstyle(i[1])
+					a = Util.get_stats_cstyle(qual_scores)
 					mean = a["mean"]
 					std_dev = a["std_dev"]
-					threshold[i[0]] = [mean + options.keepsig*std_dev]
+					cullthresh = mean + options.keep*std_dev
 				else:
-					if ( len(i[1]) != 0 ):
-						b = deepcopy(i[1])
-						b.sort()
-						# The ceil reflects a conservative policy. If the user specified keep=0.93
-						# and there were 10 particles, then they would all be kept. If floor were
-						# used instead of ceil, the last particle would be thrown away (in the
-						# class average)
-						idx = int(ceil(options.keep*len(b))-1)
-						threshold[i[0]] = [b[idx]]
-					else:
-						threshold[i[0]] = 0
+					b = deepcopy(qual_scores)
+					b.sort()
+					# The ceil reflects a conservative policy. If the user specified keep=0.93
+					# and there were 10 particles, then they would all be kept. If floor were
+					# used instead of ceil, the last particle would be thrown away (in the
+					# class average)
+					idx = int(ceil(options.keep*len(b))-1)
+					cullthresh = b[idx]
+			
+			#finally average
+			averager=Averagers.get(averager_parms[0], averager_parms[1]) # need an empty averager
+			np = 0 # number of particles in the average
+			for d in ccache:
+				p = d[0]
+				c = d[1]
+				if (options.cull ):
+					if ( weights.get(c,p) > cullthresh ) :
+						weights.set(c,p,0)
+						continue
+					else: weights.set(c,p,1)
+				else: weights.set(c,p,1)
+				
+				t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
+				t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
+				
+				if (options.lowmem):
+					image = EMData.read_images(args[0],p)
+				else:
+					image = images[p].copy()
+				image.rotate_translate(t3d)
+				np += 1
+				averager.add_image(image)
+			
+			if options.verbose:
+				ndata.append(np)
 		
-		if (options.debug):
-			if ( do_qual and do_thresh ): print "Performed quality metric threshold calculation"
-			else :  print " Did not perform quality metric threshold calculation"
+			if np == 0:
+				if (options.verbose):
+					print "Class",cl,"...no particles on iteration",it
+				# FIXME
+				# write blank image? Write meta data?
+				continue
 		
-		################################################################################
-		# OVERSEE THE GENERATION OF THE CLASS AVERAGE
-		################################################################################
-		if options.verbose: 
-			print "Averaging classes, iteration %d" %it
+			average = averager.finish()
 			
-		for i in classification.items():
-			if options.verbose: 
-				print "%d/%d\r"%(i[0],num_proj_required),
-				sys.stdout.flush()
-	
-			# Get the averager, this will calculate the class average.
-			averager_parms=parsemodopt(options.averager)
-			averager=Averagers.get(averager_parms[0], averager_parms[1])
+		# now write to disk
 		
-			weight_sum = 0.0
-			ptcl_repr = 0
-			
-			for j in i[1]:
-				
-				# impose the fraction-based or sigma-based culling of the particles in the class average
-				# see arguments --keep and --keepsig
-				if ( do_thresh and do_qual):
-					if ( do_thresh and j[2] > threshold[i[0]][0] ): continue
-				
-				weight_sum += j[1]
-				ptcl_repr += 1
-				
-				# Position the image correctly
-				t3d = Transform3D(EULER_EMAN,j[5],0,0)
-				t3d.set_posttrans(j[3], j[4])
-				tmp1.read_image(args[0], j[0])
-				tmp1.rotate_translate(t3d)
-				
-				# Add the image to the averager
-				averager.add_image(tmp1)
-	
-			
-			if ( weight_sum != 0 ):
-				#Accomodate for non uniform weighting of particles in the class
-				if (weight_sum != 1 ): averager.mult(1.0/weight_sum)
-			
-			if ( ptcl_repr != 0 ):
-				# store the class to be used for comparison in the next iteration, or
-				# for writing the output
-				classes[i[0]] = averager.finish()
-				classes[i[0]].set_attr("ptcl_repr", ptcl_repr)
-	
-	################################################################################
-	# WRITE THE OUTPUT
-	################################################################################
-	tmp3 = EMData()
-	if options.verbose: 
-		print "Writing %s" %args[2]
-	for i in classes.items():
 		if ( options.ref  ):
-			tmp3.read_image(options.ref, int(i[0]), READ_HEADER_ONLY)
-			alt = tmp3.get_attr("euler_alt")
-			az = tmp3.get_attr("euler_az")
-			ph = tmp3.get_attr("euler_phi")
-			i[1].set_rotation(az,alt,ph)
+			e = EMData()
+			e.read_image(options.ref, cl, READ_HEADER_ONLY)
+			average.set_attr("euler_alt", e.get_attr("euler_alt"))
+			average.set_attr("euler_az",e.get_attr("euler_az"))
+			average.set_attr("euler_phi",e.get_attr("euler_phi"))
+			if options.verbose:
+				edata = []
+				edata.append(e.get_attr("euler_alt"))
+				edata.append(e.get_attr("euler_az"))
+				edata.append(e.get_attr("euler_phi"))
+			
+		average.write_image(args[2],-1)
 		
-		i[1].write_image(args[2],-1)
+		if options.verbose:
+			sys.stdout.write( "Class %d: particles..%d" %(cl,len(ccache)) )
+			for t in range(0,options.iter):
+				sys.stdout.write("..%d" %ndata[t] )
+			if ( options.ref  ):
+				sys.stdout.write(" : Eulers..")
+				for t in edata:
+					sys.stdout.write(" %f" %t)
+			sys.stdout.write("\n")
 		
 	E2end(logger)
 		
@@ -405,12 +374,12 @@ def check(options, verbose=False):
 						print "Error - the dimensions of the reference and particle images do not match"
 
 	
-	if ( options.keep and options.keepsig ):
-		error = True
-		if ( verbose ):
-			print "Error: --keep and --keepsig are mutually exclusive"
+	#if ( options.keep and options.keepsig ):
+		#error = True
+		#if ( verbose ):
+			#print "Error: --keep and --keepsig are mutually exclusive"
 	
-	if (options.keep and ( options.keep > 1 or options.keep <= 0)):
+	if ( options.keep > 1 or options.keep <= 0) and not options.keepsig :
 		error = True
 		if (verbose):
 			print "The --keep option is a percentage expressed as a fraction - it must be between 0 and 1"

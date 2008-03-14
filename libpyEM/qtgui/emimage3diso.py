@@ -50,11 +50,25 @@ from PyQt4.QtCore import QTimer
 from time import *
 
 from emimage3dobject import EMImage3DObject
-from emimage3dobject import Camera
+from emglobjects import Camera2, EMImage3DObject, EMViewportDepthTools, Camera
 
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMIsosurface(EMImage3DObject):
+	#def mousePressEvent(self,event):
+		#self.cam.mousePressEvent(event)
+	#def mouseMoveEvent(self, event):
+		#self.cam.mouseMoveEvent(event)
+		
+	#def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		#return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+
+	#def viewportHeight(self):
+		#return self.parent.height()
+	
+	#def viewportWidth(self):
+		#return self.parent.width()
+	
 	def __init__(self,image=None, parent=None):
 		EMImage3DObject.__init__(self)
 		self.parent = parent
@@ -74,6 +88,8 @@ class EMIsosurface(EMImage3DObject):
 		self.inspector=None
 		self.data = None
 		self.data_copy = None
+		
+		self.vdtools = EMViewportDepthTools(self)
 		
 		if image :
 			self.setData(image)
@@ -109,10 +125,11 @@ class EMIsosurface(EMImage3DObject):
 		cull = glIsEnabled(GL_CULL_FACE)
 		depth = glIsEnabled(GL_DEPTH_TEST)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
-
+		normalize = glIsEnabled(GL_NORMALIZE)
+		
 		glDisable(GL_CULL_FACE)
 		glEnable(GL_DEPTH_TEST)
-		
+		glEnable(GL_NORMALIZE)
 		if ( self.wire ):
 			glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 		else:
@@ -174,6 +191,8 @@ class EMIsosurface(EMImage3DObject):
 		else: glDisable(GL_CULL_FACE)
 		if ( depth ): glEnable(GL_DEPTH_TEST)
 		else : glDisable(GL_DEPTH_TEST)
+		
+		if ( not normalize ): glDisable(GL_NORMALIZE)
 		
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		else: glPolygonMode(GL_FRONT, GL_FILL)
@@ -470,7 +489,6 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		# area at the origin of the data volume
 		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
 		width = self.aspect*height
-		
 		return [width,height]
 
 class EMIsoInspector(QtGui.QWidget):
