@@ -60,7 +60,8 @@ def main():
 #	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
 #	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
 #	parser.add_option("--apix","-P",type="float",help="A/Pixel",default=1.0)
-	parser.add_option("--classmx",type="string",help="<classmx>,<#> Show particles in one class from a classification matrix")
+	parser.add_option("--classmx",type="string",help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
+	parser.add_option("--classes",type="string",help="<rawptcl>,<classmx> Show particles associated class-averages")
 	parser.add_option("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	
 	(options, args) = parser.parse_args()
@@ -75,11 +76,14 @@ def main():
 
 	if options.plot:
 		plot(args)
+	elif options.classes:
+		options.classes=options.classes.split(",")
+		imgs=EMData.read_images(args[0])
+		display(imgs)
 	elif options.classmx:
 		options.classmx=options.classmx.split(",")
 		clsnum=int(options.classmx[1])
-		mx=EMData(options.classmx[0],0)
-		imgs=[EMData(args[0],i) for i in range(mx.get_ysize()) if mx.get(0,i)==clsnum]
+		imgs=gemxim(args[0]options.classmx[0],clsnum)
 		display(imgs)
 	else:
 		for i in args:
@@ -89,6 +93,11 @@ def main():
 	sys.exit(app.exec_())
 
 	E2end(logid)
+
+def getmxim(fsp,fsp2,clsnum):
+	mx=EMData(fsp2,0)
+	imgs=[EMData(fsp,i) for i in range(mx.get_ysize()) if mx.get(0,i)==clsnum]
+	return imgs
 
 def display(img):
 #	print img

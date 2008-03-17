@@ -200,7 +200,6 @@ class EMImage2DCore:
 		if image :
 			self.setData(image)
 		
-		GLUT.glutInit("")
 	def __del__(self):
 		if (self.shapelist != 0):
 			glDeleteLists(self.shapelist,1)
@@ -855,6 +854,7 @@ class EMImageInspector2D(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
+	GLUT.glutInit("")
 	window = EMImage2D()
 	if len(sys.argv)==1 : 
 		window.setData(test_image(size=(512,512)))
