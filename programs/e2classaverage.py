@@ -44,26 +44,31 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog <input particles> <class mx> <output> [options]
 
-	Produces class averages """
-	
+	Produces class averages.
+	Can perform iterative alignment.
+	Provides bootstrapping functionality.
+	"""
+		
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 1.", default=0)
-	parser.add_option("--ref", type="string", help="The associated projections or classes that were used to for the classification that was calculated by e2classify.py. If specified, similarity scores are calculated in the first iteration and used to cull bad particles. If not specified, all particles are including in the first class average.", default=None)
+	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 0.", default=0)
+	parser.add_option("--ref", type="string", help="Reference image. If specified, the metadata in this image is used to assign euler angles to the generated classes. This is typically the projections that were used for the classification.", default=None)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
 	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="dot")
-	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment to sub pixel precision.", default=None)
+	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
 	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="dot:normalize=1")
-	parser.add_option("--averager",type="string",help="The type of average that will produce the class average.",default="image")
-	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes", default="dot:normalize=1")
+	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average.",default="image")
+	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="dot:normalize=1")
 	parser.add_option("--keep",type="float",help="The fraction of particles to keep in each class.",default=1.0)
-	parser.add_option("--keepsig", action="store_true", help="The standard deviation alternative to the --keep argument",default=False)
+	parser.add_option("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_option("--verbose","-v",action="store_true",help="Print useful information while the program is running. Default is off.",default=False)
-	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
 	parser.add_option("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
-	parser.add_option("--lowmem","-L",action="store_true",help="Causes images to be read from disk as they are needed, as opposed to being cached. Saves on memory but obviously causes more disk accesses.",default=False)
+	parser.add_option("--lowmem","-L",action="store_true",help="Causes images to be read from disk as they are needed, as opposed to having them all read from disk and stored in memory for the duration of the program. Saves on memory but causes more disk accesses.",default=False)
+	parser.add_option("--bootstrap",action="store_true",help="Bootstraps iterative alignment by using the first particle in each class to seed the iterative alignment. Only works if the number of iterations is greater than 0.")
+	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 
 	(options, args) = parser.parse_args()
 	
@@ -146,13 +151,10 @@ def main():
 	da = EMData()
 	da.read_image(args[1],4)
 	
-	if (options.iter > 0):
-		options.align=parsemodopt(options.align)
-		options.alicmp=parsemodopt(options.aligncmp)
-		# note the parsing of the options.ralign parameters is left for later
-		options.alircmp=parsemodopt(options.raligncmp)
-		options.cmp=parsemodopt(options.cmp)
+	if (options.iter > 0 or options.bootstrap):
+		setAlignOpts(options)
 	
+	# do one class at a time
 	for cl in range(class_min,class_max+1):
 		if (options.verbose):
 			ndata = []
@@ -160,46 +162,88 @@ def main():
 		if (options.iter > 0 or options.verbose): ccache = [] # class cache
 		
 		averager_parms=parsemodopt(options.averager)
-		averager=Averagers.get(averager_parms[0], averager_parms[1])
-		# do the initial average, based on the program inputs
-		weightsum = 0 # used to normalize the average
-		np = 0 # number of particles in the average
-		for p in range(0,num_part):
-			for c in range(0,num_classes):
-				if classes.get(c,p) == cl:
-					# cache the hit if necessary
-					if (options.iter > 0 or options.verbose): ccache.append((p,c))
-					
-					# Position the image correctly
-					t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
-					t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
-					if (options.lowmem):
-						image = EMData.read_images(args[0],p)
-					else:
-						image = images[p].copy()
-					image.rotate_translate(t3d)
-					
-					np += 1
-					weight = weights(c,p)
-					weightsum += weight
-					image.mult(weight)
-					
-					# Add the image to the averager
-					averager.add_image(image)
 		
-		if options.verbose:
-			ndata.append(np)
-
-		if np == 0 or weightsum == 0:
+		if ( not options.bootstrap ):
+			# generate the first class average by applying the transformations, adding and finally normalizing...
+			averager=Averagers.get(averager_parms[0], averager_parms[1])
+			# do the initial average, based on the program inputs
+			weightsum = 0 # used to normalize the average
+			np = 0 # number of particles in the average
+			for p in range(0,num_part):
+				for c in range(0,num_classes):
+					if classes.get(c,p) == cl:
+						# cache the hit if necessary
+						if (options.iter > 0 or options.verbose): ccache.append((p,c))
+						
+						# Position the image correctly
+						t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
+						t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
+						if (options.lowmem):
+							image = EMData()
+							image.read_image(args[0],p)
+						else:
+							image = images[p].copy()
+						image.rotate_translate(t3d)
+						
+						np += 1
+						weight = weights(c,p)
+						weightsum += weight
+						image.mult(weight)
+						
+						# Add the image to the averager
+						averager.add_image(image)
+	
+			if np == 0 or weightsum == 0:
+				if options.verbose:
+					print "Class",cl,"...no particles"
+				# FIXME
+				# write blank image? Write meta data?
+				continue
+				
+			average = averager.finish()
+			average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
+			average.mult(1.0/weightsum) # Do the correct division
+		else:
+			# generate a bootstrapped initial average. Do this 'inductively' by aligning the 2nd image to the first, then averaging.
+			# Then align the 3rd image to the average, and average again etc... until all the particles have been aligned and contribute
+			# to the (running) average.
+			average = None
+			np = 0
+			for p in range(0,num_part):
+				for c in range(0,num_classes):
+					if classes.get(c,p) == cl:
+						# cache the hit if necessary
+						if (options.iter > 0 or options.verbose): ccache.append((p,c))
+						
+						if (average == None):
+							if (options.lowmem):
+								average = EMData()
+								average.read_image(args[0],p)
+							else:
+								average = images[p].copy()
+							np = 1
+						else:
+							if (options.lowmem): 
+								image = EMData()
+								image.read_image(args[0],p)
+							else: image = images[p]
+					
+							ta = align(image,average,options)
+							
+							np += 1
+							frac = 1.0/float(np)
+							omfrac = 1.0 - frac
+							ta.mult(frac) # be careful about the weighting
+							average.mult(omfrac) # be carefult about the weighting
+							average.add(ta) # now add the image
+					
+		if np == 0:
 			if options.verbose:
 				print "Class",cl,"...no particles"
 			# FIXME
 			# write blank image? Write meta data?
 			continue
 		
-		average = averager.finish()
-		average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
-		average.mult(1.0/weightsum) # Do the correct division
 	
 		if (options.iter > 0):
 			options.cull = True
@@ -210,32 +254,12 @@ def main():
 			for d in ccache:
 				p = d[0]
 				c = d[1]
-				if (options.lowmem): image = EMData.read_images(args[0],p)
+				if (options.lowmem): 
+					image = EMData()
+					image.read_image(args[0],p)
 				else: image = images[p]
 					
-				# Align the particle to the average
-				ta=image.align(options.align[0],average,options.align[1],options.alicmp[0],options.alicmp[1])
-				
-				if ( options.ralign != None ): # potentially employ refine alignment
-					
-						refineparms=parsemodopt(options.ralign)
-						
-						
-						# this parameters I think west best with the refine aligner, but they're not well tested
-						#refineparms[1]["az"] = ta.get_attr_default("align.az",0)-1
-						#refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)-1
-						#refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)-1
-						#refineparms[1]["mode"] = 0
-						#refineparms[1]["stepx"] = 2
-						#refineparms[1]["stepy"] = 2
-						#refineparms[1]["stepaz"] = 5
-						#print refineparms[1]
-						
-						refineparms[1]["az"] = ta.get_attr_default("align.az",0)
-						refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)
-						refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)
-						
-						ta = image.align(refineparms[0],average,refineparms[1],options.alircmp[0],options.alircmp[1])
+				ta = align(image,average,options)
 				
 				# store the refined translational and rotational values
 				dx.set(c,p, ta.get_attr_default("align.dx",0))
@@ -285,7 +309,8 @@ def main():
 				t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
 				
 				if (options.lowmem):
-					image = EMData.read_images(args[0],p)
+					image = EMData()
+					image.read_image(args[0],p)
 				else:
 					image = images[p].copy()
 				image.rotate_translate(t3d)
@@ -304,8 +329,7 @@ def main():
 		
 			average = averager.finish()
 			
-		# now write to disk
-		
+		# extract euler data from the ref image, if it was specified
 		if ( options.ref  ):
 			e = EMData()
 			e.read_image(options.ref, cl, READ_HEADER_ONLY)
@@ -317,9 +341,10 @@ def main():
 				edata.append(e.get_attr("euler_alt"))
 				edata.append(e.get_attr("euler_az"))
 				edata.append(e.get_attr("euler_phi"))
-			
-		average.write_image(args[2],-1)
 		
+		# now write to disk
+		average.write_image(args[2],-1)
+			
 		if options.verbose:
 			sys.stdout.write( "Class %d: particles..%d" %(cl,len(ccache)) )
 			for t in range(0,options.iter):
@@ -330,7 +355,54 @@ def main():
 					sys.stdout.write(" %f" %t)
 			sys.stdout.write("\n")
 		
+	if (options.resultmx != None ):
+		if os.path.exists(options.resultmx):
+			remove_file(options.resultmx) #oooh not sure about this!
+		
+		# note the order is important!
+		classes.write_image(options.resultmx,-1)
+		weights.write_image(options.resultmx,-1)
+		dx.write_image(options.resultmx,-1)
+		dy.write_image(options.resultmx,-1)
+		da.write_image(options.resultmx,-1)
+		
+	
 	E2end(logger)
+
+def setAlignOpts(options):
+	'''
+	Call this before calling align
+	'''
+	options.align=parsemodopt(options.align)
+	options.alicmp=parsemodopt(options.aligncmp)
+	# note the parsing of the options.ralign parameters is left for later
+	options.alircmp=parsemodopt(options.raligncmp)
+	options.cmp=parsemodopt(options.cmp)
+
+def align(this,to,options):
+	# Align the particle to the average
+	ta=this.align(options.align[0],to,options.align[1],options.alicmp[0],options.alicmp[1])
+	
+	if ( options.ralign != None ): # potentially employ refine alignment
+		
+		refineparms=parsemodopt(options.ralign)
+		# this parameters I think west best with the refine aligner, but they're not well tested
+		# i.e. I need to do some rigorous testing before I can claim anything
+		#refineparms[1]["az"] = ta.get_attr_default("align.az",0)-1
+		#refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)-1
+		#refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)-1
+		#refineparms[1]["mode"] = 0
+		#refineparms[1]["stepx"] = 2
+		#refineparms[1]["stepy"] = 2
+		#refineparms[1]["stepaz"] = 5
+		
+		refineparms[1]["az"] = ta.get_attr_default("align.az",0)
+		refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)
+		refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)
+		
+		ta = this.align(refineparms[0],to,refineparms[1],options.alircmp[0],options.alircmp[1])
+	
+	return ta
 		
 def check(options, verbose=False):
 
