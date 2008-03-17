@@ -83,7 +83,7 @@ def main():
 	elif options.classmx:
 		options.classmx=options.classmx.split(",")
 		clsnum=int(options.classmx[1])
-		imgs=gemxim(args[0]options.classmx[0],clsnum)
+		imgs=getmxim(args[0],options.classmx[0],clsnum)
 		display(imgs)
 	else:
 		for i in args:
