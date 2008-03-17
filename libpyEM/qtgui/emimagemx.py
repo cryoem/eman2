@@ -167,7 +167,7 @@ class EMImageMXCore:
 			self.setData(data)
 	
 	def __del__(self):
-		glDeleteTextures(self.tex_names)
+		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 		
 	def setData(self,data):
 		if data == None or not isinstance(data,list): return
@@ -321,7 +321,7 @@ class EMImageMXCore:
 			else : txtcol=(.8,.8,1.0)
 		except: txtcol=(1.0,1.0,1.0)
 
-		glDeleteTextures(self.tex_names)
+		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 		self.tex_names = []
 
 		self.nshown=0
