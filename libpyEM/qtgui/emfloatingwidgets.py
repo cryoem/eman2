@@ -56,7 +56,6 @@ from emimage2dtex import *
 
 height_plane = 500
 
-
 class BoundaryMediator:
 	def __init__(self,drawer,depthtools):
 		self.drawer = drawer
@@ -94,7 +93,7 @@ class EMGLView3D:
 		
 		self.drawable = EMImage3DCore(image,self)		# the object that is drawable (has a draw function)
 		self.drawable.cam.basicmapping = True
-		self.drawable.cam.motiondull = 2.0
+		self.drawable.cam.motiondull = 3.0
 		self.vdtools = EMViewportDepthTools(self)
 		
 		self.updateFlag = True
@@ -911,9 +910,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.qwidgets[0].cam.setCamX(-100)
 			self.initFlag = False
 			
-			e = EMData("groel.mrc")
-			w = EMGLView3D(self,e)
-			self.qwidgets.append(w)
+
 		#print "paintGL"
 		glClear(GL_COLOR_BUFFER_BIT)
 		if glIsEnabled(GL_DEPTH_TEST):
@@ -939,12 +936,21 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				#try:
 					#print i,str(i)
 					a=EMData.read_images(str(i))
-					#if len(a)==1 : a=a[0]
-					#w.setWindowTitle("EMImage (%s)"%f)
-					#w.show()
-					w = EMGLView2D(self,a)
-					#w.setData(a[0])
-					self.qwidgets.append(w)
+					if len(a) == 1:
+						a = a[0]
+						if a.get_zsize() != 1:
+							w = EMGLView3D(self,a)
+							self.qwidgets.append(w)
+						else:
+							w = EMGLView2D(self,a)
+							self.qwidgets.append(w)
+					else:
+						#if len(a)==1 : a=a[0]
+						#w.setWindowTitle("EMImage (%s)"%f)
+						#w.show()
+						w = EMGLView2D(self,a)
+						#w.setData(a[0])
+						self.qwidgets.append(w)
 					
 					#self.qwidgets[0].cam.setCamX(100)
 					#self.initFlag = False
