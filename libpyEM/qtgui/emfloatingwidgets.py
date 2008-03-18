@@ -31,7 +31,7 @@
 #
 #
 
-# EMFXImage.py  Steve Ludtke  08/06/2006
+# EMFloatingWidgets.py  Steve Ludtke  08/06/2006
 # An experimental version of emimage.py that displays an image in a 3D context
 # using texture mapping. Not a fully fleshed out class at this point
 
@@ -55,24 +55,6 @@ from emimage2dtex import *
 
 
 height_plane = 500
-
-class BoundaryMediator:
-	def __init__(self,drawer,depthtools):
-		self.drawer = drawer
-		self.depthtools = depthtools
-		
-	def checkBoundaryIssues(self):
-		corners = self.depthtools.getCorners()
-		for i in corners:
-			if i[0] < 0:
-				print "out to the left"
-			elif i[0] > self.drawer.viewportWidth():
-				print "out to the right"
-				
-			if i[1] < 0:
-				print "out below"
-			elif i[1] > self.drawer.viewportHeight():
-				print "out above"
 
 class EMGLView3D:
 	"""
@@ -230,10 +212,7 @@ class EMGLView3D:
 	
 	def wheelEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
-			#self.scaleEvent(event.delta())
 			self.cam.wheelEvent(event)
-			#print "updating",self.drawWidth(),self.drawHeight()
-			self.updateGL()
 		else:
 			self.drawable.wheelEvent(event)
 			
@@ -323,8 +302,6 @@ class EMGLView2D:
 		self.sizescale = 1.0
 		self.changefactor = 1.1
 		self.invchangefactor = 1.0/self.changefactor
-		
-		self.mediator = BoundaryMediator(self,self.vdtools)
 		
 	def become2DImage(self,a):
 		self.drawable = EMImage2DCore(a,self)
@@ -436,7 +413,6 @@ class EMGLView2D:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.scaleEvent(event.delta())
 			#print "updating",self.drawWidth(),self.drawHeight()
-			self.updateGL()
 		else:
 			self.drawable.wheelEvent(event)
 			
@@ -475,7 +451,7 @@ class EMGLView2D:
 	def isinwin(self,x,y):
 		return self.vdtools.isinwin(x,y)
 
-class EMQtWidgetDrawer:
+class EMGLViewQtWidget:
 	def __init__(self, parent=None, qwidget=None, widget_parent=None):
 		self.parent = parent
 		self.qwidget = qwidget
@@ -704,7 +680,7 @@ class EMQtWidgetDrawer:
 			if (isinstance(cw,QtGui.QComboBox)):
 				cw.showPopup()
 				cw.hidePopup()
-				widget = EMQtWidgetDrawer(self.parent,None,cw);
+				widget = EMGLViewQtWidget(self.parent,None,cw);
 				widget.setQtWidget(cw.view())
 				widget.cam.loadIdentity()
 				widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
@@ -835,7 +811,7 @@ class EMQtWidgetDrawer:
 		#self.cam.motionRotate(.2,.2)
 
 
-class EMFXImage(QtOpenGL.QGLWidget):
+class EMFloatingWidgets(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
@@ -894,7 +870,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		if ( "GL_ARB_multisample" in glGetString(GL_EXTENSIONS) ): glEnable(GL_MULTISAMPLE)
 		else: glDisable(GL_MULTISAMPLE)
 	def addQtWidgetDrawer(self,widget):
-		w = EMQtWidgetDrawer(self)
+		w = EMGLViewQtWidget(self)
 		w.setQtWidget(widget)
 		self.qwidgets.append(w)
 		
@@ -905,7 +881,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
 			self.fd.show()
 			self.fd.hide()
-			self.qwidgets.append(EMQtWidgetDrawer(self))
+			self.qwidgets.append(EMGLViewQtWidget(self))
 			self.qwidgets[0].setQtWidget(self.fd)
 			self.qwidgets[0].cam.setCamX(-100)
 			self.initFlag = False
@@ -995,6 +971,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			if ( i.isinwin(event.x(),self.height()-event.y()) ):
 				i.mousePressEvent(event)
 				intercepted = True
+				self.updateGL()
 				return
 	
 	def mouseMoveEvent(self, event):
@@ -1081,7 +1058,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMFXImage()
+	window = EMFloatingWidgets()
 	window2 = EMParentWin(window)
 	window2.show()
 	

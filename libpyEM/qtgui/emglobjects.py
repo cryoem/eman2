@@ -249,6 +249,14 @@ class EMViewportDepthTools:
 			if ( c[2] < 0 ):
 				#print "facing backward"
 				return False
+			
+		glColor(.9,.2,.8)
+		# this is a nice light blue color (when lighting is on)
+		# and is the default color of the frame
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,50.0)
+		
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()

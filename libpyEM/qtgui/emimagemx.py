@@ -296,8 +296,7 @@ class EMImageMXCore:
 		
 	
 	def render(self):
-#		GL.glLoadIdentity()
-#		GL.glTranslated(0.0, 0.0, -10.0)
+
 		if not self.data : return
 		for i in self.data:
 			self.changec[i]=i.get_attr("changecount")
