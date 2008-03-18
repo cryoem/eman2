@@ -379,7 +379,7 @@ class EMImageMXCore:
 					if v=="Img #" : self.renderText(x,tagy,"%d"%i)
 					else : 
 						av=self.data[i].get_attr(v)
-						if isinstance(av,float) : avs="%1.4g"%av7
+						if isinstance(av,float) : avs="%1.4g"%av
 						else: avs=str(av)
 						try: self.renderText(x,tagy,str(avs))
 						except: self.renderText(x,tagy,"------")
