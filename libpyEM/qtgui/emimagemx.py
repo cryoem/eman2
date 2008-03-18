@@ -658,7 +658,7 @@ class EMImageMXCore:
 				del self.data[lc[0]]
 				self.setData(self.data)
 			elif self.mmode=="app" and lc:
-				self.emit(QtCore.SIGNAL("mousedown"),event,lc)
+				self.parent.emit(QtCore.SIGNAL("mousedown"),event,lc)
 	
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
@@ -666,13 +666,13 @@ class EMImageMXCore:
 			self.mousedrag=(event.x(),event.y())
 			self.parent.update()
 		elif event.buttons()&Qt.LeftButton and self.mmode=="app":
-			self.emit(QtCore.SIGNAL("mousedrag"),event)
+			self.parent.emit(QtCore.SIGNAL("mousedrag"),event)
 		
 	def mouseReleaseEvent(self, event):
 		if self.mousedrag:
 			self.mousedrag=None
 		elif event.button()==Qt.LeftButton and self.mmode=="app":
-			self.emit(QtCore.SIGNAL("mouseup"),event)
+			self.parent.emit(QtCore.SIGNAL("mouseup"),event)
 			
 	def wheelEvent(self, event):
 		if event.delta() > 0:

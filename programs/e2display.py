@@ -51,6 +51,7 @@ def main():
 	usage = """%prog [options] <image file> ...
 	
 """
+	global app,win,options
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -70,7 +71,6 @@ def main():
 	logid=E2init(sys.argv)
 #        GLUT.glutInit(sys.argv)
 
-	global app,win
 	app = QtGui.QApplication(sys.argv)
 	win=[]
 
@@ -80,6 +80,9 @@ def main():
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
 		display(imgs)
+		
+		QtCore.QObject.connect(win[0].child,QtCore.SIGNAL("mousedown"),lambda a,b:selectclass(options.classes[0],options.classes[1],a,b))
+		
 	elif options.classmx:
 		options.classmx=options.classmx.split(",")
 		clsnum=int(options.classmx[1])
@@ -94,7 +97,21 @@ def main():
 
 	E2end(logid)
 
+def selectclass(rawfsp,mxfsp,event,lc):
+	"""Used in 'classes' mode when the user selects a particular class-average"""
+	global win
+	
+	clsnum=lc[0]
+	ptcls=getmxim(rawfsp,mxfsp,clsnum)
+	if len(win)==1:
+		display(ptcls)
+	else:
+		win[1].child.setData(ptcls)
+	
+
 def getmxim(fsp,fsp2,clsnum):
+	"""reads the raw particles associated with a particular class.
+	fsp2 is the matrix file and fsp is the raw particle file"""
 	mx=EMData(fsp2,0)
 	imgs=[EMData(fsp,i) for i in range(mx.get_ysize()) if mx.get(0,i)==clsnum]
 	return imgs
