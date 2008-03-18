@@ -93,6 +93,8 @@ class EMGLView3D:
 		self.invchangefactor = 1.0/self.changefactor # used to invert zoom
 		
 		self.drawable = EMImage3DCore(image,self)		# the object that is drawable (has a draw function)
+		self.drawable.cam.basicmapping = True
+		self.drawable.cam.motiondull = 2.0
 		self.vdtools = EMViewportDepthTools(self)
 		
 		self.updateFlag = True
@@ -106,19 +108,19 @@ class EMGLView3D:
 		
 	def width(self):
 		try:
-			return int(self.sizescale*self.w)
+			return int(self.w)
 		except:
 			return 0
 	
 	def height(self):
 		try:
-			return int(self.sizescale*self.h)
+			return int(self.h)
 		except:
 			return 0
 	
 	def depth(self):
 		try:
-			return int(self.sizescale*self.d)
+			return int(self.d)
 		except:
 			return 0
 	
@@ -126,9 +128,9 @@ class EMGLView3D:
 		try: self.drawable.setData(data)
 		except: pass
 		
-		
 	def paintGL(self):
 		self.psets = []
+		self.planes = []
 		self.modelmatrices = []
 		self.cam.position()
 		lighting = glIsEnabled(GL_LIGHTING)
@@ -141,6 +143,7 @@ class EMGLView3D:
 		if self.drawFrame: 
 			if self.vdtools.drawFrame(True): 
 				self.psets.append(self.vdtools.getCorners())
+				self.planes.append(('zy'))
 				self.modelmatrices.append(self.vdtools.getModelMatrix())
 		glPopMatrix()
 		
@@ -150,6 +153,7 @@ class EMGLView3D:
 		self.vdtools.update(self.depth()/2.0,self.height()/2.0)
 		if self.drawFrame: 
 			if self.vdtools.drawFrame(True): 
+				self.planes.append(('yz'))
 				self.psets.append(self.vdtools.getCorners())
 				self.modelmatrices.append(self.vdtools.getModelMatrix())
 				
@@ -161,6 +165,7 @@ class EMGLView3D:
 		self.vdtools.update(self.width()/2.0,self.depth()/2.0)
 		if self.drawFrame: 
 			if self.vdtools.drawFrame(True): 
+				self.planes.append(('xz'))
 				self.psets.append(self.vdtools.getCorners())
 				self.modelmatrices.append(self.vdtools.getModelMatrix())
 		glPopMatrix()
@@ -171,6 +176,7 @@ class EMGLView3D:
 		self.vdtools.update(self.width()/2.0,self.depth()/2.0)
 		if self.drawFrame: 
 			if self.vdtools.drawFrame(True): 
+				self.planes.append(('zx'))
 				self.psets.append(self.vdtools.getCorners())
 				self.modelmatrices.append(self.vdtools.getModelMatrix())
 		glPopMatrix()
@@ -180,7 +186,8 @@ class EMGLView3D:
 		glRotatef(180,0,1,0)
 		self.vdtools.update(self.depth()/2.0,self.height()/2.0)
 		if self.drawFrame: 
-			if self.vdtools.drawFrame(True): 
+			if self.vdtools.drawFrame(True):
+				self.planes.append(('yx'))
 				self.psets.append(self.vdtools.getCorners())
 				self.modelmatrices.append(self.vdtools.getModelMatrix())
 		glPopMatrix()
@@ -190,10 +197,10 @@ class EMGLView3D:
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		if self.drawFrame: 
 			if self.vdtools.drawFrame(True): 
+				self.planes.append(('xy'))
 				self.psets.append(self.vdtools.getCorners())
 				self.modelmatrices.append(self.vdtools.getModelMatrix())
 		glPopMatrix()
-		
 		
 		glPushMatrix()
 		self.drawable.render()
@@ -220,21 +227,12 @@ class EMGLView3D:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mousePressEvent(qme)
-			#self.drawable.mousePressEvent(event)
-		
-		#self.updateGL()
-	
-	def scaleEvent(self,delta):
-		if ( delta > 0 ):
-			self.sizescale *= self.changefactor
-		elif ( delta < 0 ):
-			self.sizescale *= self.invchangefactor
 
-		#self.drawable.resizeEvent(self.width(),self.height())
 	
 	def wheelEvent(self,event):
 		if event.modifiers() == Qt.ShiftModifier:
-			self.scaleEvent(event.delta())
+			#self.scaleEvent(event.delta())
+			self.cam.wheelEvent(event)
 			#print "updating",self.drawWidth(),self.drawHeight()
 			self.updateGL()
 		else:
@@ -249,7 +247,7 @@ class EMGLView3D:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseMoveEvent(qme)
-			self.drawable.mouseMoveEvent(event)
+			#self.drawable.mouseMoveEvent(event)
 		
 		#self.updateGL()
 
@@ -260,9 +258,10 @@ class EMGLView3D:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseReleaseEvent(qme)
-			self.drawable.mouseReleaseEvent(event)
+			#self.drawable.mouseReleaseEvent(event)
 	
 	def update(self):
+		pass
 		self.parent.updateGL()
 	
 	def updateGL(self):
@@ -273,6 +272,7 @@ class EMGLView3D:
 		for i,p in enumerate(self.psets):
 			if self.vdtools.isinwinpoints(x,y,p):
 				val = True
+				self.drawable.cam.plane = self.planes[i]
 				self.vdtools.setModelMatrix(self.modelmatrices[i])
 				break
 		return val
@@ -369,7 +369,6 @@ class EMGLView2D:
 		if it is larger than the current size of the viewport. It's somewhat of a hack,
 		but it's early stages in the design
 		'''
-		
 		h = self.vdtools.getMappedHeight()
 		w = self.vdtools.getMappedWidth()
 		
@@ -912,8 +911,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.qwidgets[0].cam.setCamX(-100)
 			self.initFlag = False
 			
-			e = EMData(256,256,256)
-			e.process_inplace("testimage.axes")
+			e = EMData("groel.mrc")
 			w = EMGLView3D(self,e)
 			self.qwidgets.append(w)
 		#print "paintGL"

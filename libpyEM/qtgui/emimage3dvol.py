@@ -50,7 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DObject, Camera, EMOpenGLFlagsAndTools
+from emglobjects import EMImage3DObject, Camera2, EMOpenGLFlagsAndTools, Camera, EMViewportDepthTools
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -102,6 +102,19 @@ class EMVolume(EMImage3DObject):
 		v.normalize()
 		self.axes.append( v )
 	
+	def updateGL(self):
+		try: self.parent.updateGL()
+		except: pass
+	
+	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+
+	def viewportHeight(self):
+		return self.parent.height()
+	
+	def viewportWidth(self):
+		return self.parent.width()
+	
 	def getType(self):
 		return "Volume"
 
@@ -110,8 +123,10 @@ class EMVolume(EMImage3DObject):
 
 		self.mmode=0
 		
-		self.cam = Camera()
+		self.cam = Camera2(self)
 		self.cube = False
+		
+		self.vdtools = EMViewportDepthTools(self)
 		
 		self.contrast = 1.0
 		self.brightness = 0.0
@@ -142,9 +157,6 @@ class EMVolume(EMImage3DObject):
 	 	if (isinstance(data,EMData) and data.get_zsize()<=1) :
 			print "Error, the data is not 3D"
 			return
-		
-		self.cam.default_z = -1.25*data.get_zsize()
-		self.cam.cam_z = -1.25*data.get_zsize()
 		
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMVolumeInspector(self)
@@ -214,7 +226,14 @@ class EMVolume(EMImage3DObject):
 		
 		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 		
+		glPushMatrix()
+		self.cam.position(True)
+		# the ones are dummy variables atm... they don't do anything
+		self.vdtools.update(1,1)
+		glPopMatrix()
+		
 		self.cam.position()
+		self.vdtools.storeModel()
 
 		# here is where the correct display list (x,y or z direction) is determined
 		self.textureUpdateIfNecessary()
@@ -268,7 +287,7 @@ class EMVolume(EMImage3DObject):
 	
 	def textureUpdateIfNecessary(self):
 		
-		t3d = self.cam.t3d_stack[len(self.cam.t3d_stack)-1]
+		t3d = self.vdtools.getEmanMatrix()
 		
 		point = Vec3f(0,0,1)
 		
@@ -524,6 +543,34 @@ class EMVolume(EMImage3DObject):
 	def getInspector(self):
 		if not self.inspector : self.inspector=EMVolumeInspector(self)
 		return self.inspector
+		
+	def mousePressEvent(self, event):
+#		lc=self.scrtoimg((event.x(),event.y()))
+		if event.button()==Qt.MidButton:
+			if not self.inspector or self.inspector ==None:
+				return
+			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
+			self.resizeEvent()
+			self.showInspector(1)
+		else:
+			self.cam.mousePressEvent(event)
+		
+		self.updateGL()
+		
+	def mouseMoveEvent(self, event):
+		self.cam.mouseMoveEvent(event)
+		self.updateGL()
+	
+	def mouseReleaseEvent(self, event):
+		self.cam.mouseReleaseEvent(event)
+		self.updateGL()
+			
+	def wheelEvent(self, event):
+		self.cam.wheelEvent(event)
+		self.updateGL()
+		
+	def resizeEvent(self,width=0,height=0):
+		self.vdtools.set_update_P_inv()
 
 class EMVolumeWidget(QtOpenGL.QGLWidget):
 	
@@ -538,9 +585,14 @@ class EMVolumeWidget(QtOpenGL.QGLWidget):
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 
+		self.cam = Camera()
+		
 		self.volume = EMVolume(image,self)
 	def setData(self,data):
 		self.volume.setData(data)
+		self.cam.default_z = -1.25*data.get_zsize()
+		self.cam.cam_z = -1.25*data.get_zsize()
+		
 	def initializeGL(self):
 		
 		glEnable(GL_NORMALIZE)
@@ -563,6 +615,9 @@ class EMVolumeWidget(QtOpenGL.QGLWidget):
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
+		
+		self.cam.position()
+		
 		glPushMatrix()
 		self.volume.render()
 		glPopMatrix()

@@ -52,6 +52,8 @@ from emimage3dvol import EMVolume
 from emimage3dslice import EM3DSliceViewer
 from emimage3dsym import EM3DSymViewer
 
+from emglobjects import Camera2, EMViewportDepthTools, Camera
+
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMImage3D(QtOpenGL.QGLWidget):
@@ -70,12 +72,20 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.image3d = EMImage3DCore(image,self)
 		self.initGL = True
+		self.cam = Camera()
+		if ( image != None and isinstance(image,EMData)):
+			self.cam.default_z = -1.25*image.get_zsize()
+			self.cam.cam_z = -1.25*image.get_zsize()
 		
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.resize(640,640)
 	def setData(self,data):
 		self.image3d.setData(data)
+		if ( data != None and isinstance(data,EMData)):
+			self.cam.default_z = -1.25*data.get_zsize()
+			self.cam.cam_z = -1.25*data.get_zsize()
+			
 		self.resize(640,640)
 		
 	def initializeGL(self):
@@ -101,7 +111,9 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-
+		self.cam.position()
+		
+		
 		if ( self.initGL ):
 			self.image3d.initializeGL()
 			self.initGL = False
@@ -130,12 +142,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			try: self.image3d.resizeEvent(width,height)
 			except: pass
 		
-	def get_render_dims_at_depth(self, depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
-		return [width,height]
+	#def get_render_dims_at_depth(self, depth):
+		## This function returns the width and height of the renderable 
+		## area at the origin of the data volume
+		#height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		#width = self.aspect*height
+		#return [width,height]
 			
 	def mousePressEvent(self, event):
 		self.image3d.mousePressEvent(event)
@@ -159,7 +171,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		#self.image3d.dragEnterEvent(event)
 
 		
-class EMImage3DCore(QtOpenGL.QGLWidget):
+class EMImage3DCore:
 
 	def __init__(self, image=None, parent=None):
 		self.parent = parent
@@ -178,7 +190,8 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 		#self.timer = QTimer()
 		#QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
-		
+		self.cam = Camera2(self)
+		self.vdtools = EMViewportDepthTools(self)
 		self.inspector=EMImageInspector3D(self)
 		#self.inspector.addSlices()
 	#def timeout(self):
@@ -195,10 +208,27 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 		try: self.parent.updateGL()
 		except: pass
 	
+	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+
+	def viewportHeight(self):
+		return self.parent.height()
+	
+	def viewportWidth(self):
+		return self.parent.width()
+	
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
 	
 	def render(self):
+		glPushMatrix()
+		self.cam.position(True)
+		# the ones are dummy variables atm... they don't do anything
+		self.vdtools.update(1,1)
+		glPopMatrix()
+		
+		self.cam.position()
+		
 		for i in self.viewables:
 			glPushMatrix()
 			i.render()
@@ -230,33 +260,28 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 			#i.closeEvent(event)
 		if self.inspector: self.inspector.close()
 		
+	def mouseMoveEvent(self, event):
+		self.cam.mouseMoveEvent(event)
+		self.updateGL()
+	
+	def mouseReleaseEvent(self, event):
+		self.cam.mouseReleaseEvent(event)
+		self.updateGL()
+			
+	def wheelEvent(self, event):
+		self.cam.wheelEvent(event)
+		self.updateGL()
+	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
 			if not self.inspector or self.inspector ==None:
 				self.inspector=EMImageInspector3D(self)
 			self.showInspector(1)
 		else:
-			for i in self.viewables:
-				i.mousePressEvent(event)
+			self.cam.mousePressEvent(event)
 				
 		self.updateGL()
-
-	def mouseMoveEvent(self, event):
-		for i in self.viewables:
-			i.mouseMoveEvent(event)
-		self.updateGL()
 	
-	def mouseReleaseEvent(self, event):
-		for i in self.viewables:
-			i.mouseReleaseEvent(event)
-			
-		self.updateGL()
-			
-	def wheelEvent(self, event):
-		for i in self.viewables:
-			i.wheelEvent(event)
-		self.updateGL()
-		
 	def get_render_dims_at_depth(self, depth):
 		return self.parent.get_render_dims_at_depth(depth)
 
@@ -266,11 +291,12 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 	def addSym(self):
 		sym = EM3DSymViewer(self)
 		self.viewables.append(sym)
-		if (len(self.viewables)==1):
-			sym.cam.default_z = -1.25*self.image.get_zsize()
-			sym.cam.cam_z = -1.25*self.image.get_zsize()
-		else:
-			self.loadLastViewableCamera()
+		#if (len(self.viewables)==1):
+			#sym.cam.default_z = -1.25*self.image.get_zsize()
+			#sym.cam.cam_z = -1.25*self.image.get_zsize()
+		#else:
+			#pass
+			##self.loadLastViewableCamera()
 		sym.setRadius(self.image.get_zsize()/2.0)
 		self.num_sym += 1
 		name = "Sym " + str(self.num_sym)
@@ -281,7 +307,7 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 	
 	def addIsosurface(self):
 		self.viewables.append(EMIsosurface(self.image,self))
-		self.loadLastViewableCamera()
+		#self.loadLastViewableCamera()
 		self.num_iso += 1
 		name = "Isosurface " + str(self.num_iso)
 		self.viewables[len(self.viewables)-1].setName(name)
@@ -291,7 +317,7 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 		
 	def addVolume(self):
 		self.viewables.append(EMVolume(self.image,self))
-		self.loadLastViewableCamera()
+		#self.loadLastViewableCamera()
 		self.num_vol += 1
 		name = "Volume " + str(self.num_vol)
 		self.viewables[len(self.viewables)-1].setName(name)
@@ -301,7 +327,7 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 		
 	def addSliceViewer(self):
 		self.viewables.append(EM3DSliceViewer(self.image,self))
-		self.loadLastViewableCamera()
+		#self.loadLastViewableCamera()
 		self.num_sli += 1
 		name = "Slices " + str(self.num_sli)
 		self.viewables[len(self.viewables)-1].setName(name)
@@ -310,6 +336,7 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 		self.updateGL()
 		
 	def loadLastViewableCamera(self):
+		return
 		size = len(self.viewables)
 		if ( size <= 1 ): return
 		self.viewables[size-1].setCamera(self.viewables[0].getCurrentCamera())
@@ -346,6 +373,9 @@ class EMImage3DCore(QtOpenGL.QGLWidget):
 			self.viewables[i].setRank(i+1)
 		
 		self.updateGL()
+	
+	def resizeEvent(self,width=0,height=0):
+		self.vdtools.set_update_P_inv()
 	
 class EMImageInspector3D(QtGui.QWidget):
 	def __init__(self,target) :

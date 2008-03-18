@@ -50,24 +50,19 @@ from PyQt4.QtCore import QTimer
 from time import *
 
 from emimage3dobject import EMImage3DObject
-from emglobjects import Camera2, EMImage3DObject, EMViewportDepthTools, Camera
+from emglobjects import Camera2, EMImage3DObject, EMViewportDepthTools, Camera2, Camera
 
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMIsosurface(EMImage3DObject):
-	#def mousePressEvent(self,event):
-		#self.cam.mousePressEvent(event)
-	#def mouseMoveEvent(self, event):
-		#self.cam.mouseMoveEvent(event)
-		
-	#def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
-		#return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
 
-	#def viewportHeight(self):
-		#return self.parent.height()
+	def viewportHeight(self):
+		return self.parent.height()
 	
-	#def viewportWidth(self):
-		#return self.parent.width()
+	def viewportWidth(self):
+		return self.parent.width()
 	
 	def __init__(self,image=None, parent=None):
 		EMImage3DObject.__init__(self)
@@ -76,7 +71,7 @@ class EMIsosurface(EMImage3DObject):
 		self.init()
 		self.initialized = True
 		
-		self.cam=Camera()
+		self.cam=Camera2(self)
 		self.tex_name = 0
 		self.texture = False
 
@@ -117,6 +112,10 @@ class EMIsosurface(EMImage3DObject):
 			self.tex_name = self.data.gen_gl_texture()
 		else:
 			self.tex_name = self.data_copy.gen_gl_texture()
+			
+	def updateGL(self):
+		try: self.parent.updateGL()
+		except: pass
 	
 	def render(self):
 		if (not isinstance(self.data,EMData)): return
@@ -140,8 +139,14 @@ class EMIsosurface(EMImage3DObject):
 		else:
 			glDisable(GL_LIGHTING)
 
+		
+		glPushMatrix()
+		self.cam.position(True)
+		# the ones are dummy variables atm... they don't do anything
+		self.vdtools.update(1,1)
+		glPopMatrix()
+		
 		self.cam.position()
-			
 		glShadeModel(GL_SMOOTH)
 		if ( self.isodl == 0 ):
 			self.getIsoDL()
@@ -242,9 +247,6 @@ class EMIsosurface(EMImage3DObject):
 		self.maxden=data.get_attr("maximum")
 		mean=data.get_attr("mean")
 		sigma=data.get_attr("sigma")
-
-		self.cam.default_z = -1.25*data.get_zsize()
-		self.cam.cam_z = -1.25*data.get_zsize()
 		
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMIsoInspector(self)
@@ -263,70 +265,7 @@ class EMIsosurface(EMImage3DObject):
 		self.inspector.setColors(self.colors,self.isocolor)
 	
 	def loadColors(self):
-		ruby = {}
-		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
-		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
-		ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
-		ruby["shininess"] = 128.0
-		
-		emerald = {}
-		emerald["ambient"] = [0.0215, 0.1745, 0.0215,1.0]
-		emerald["diffuse"] = [0.07568, 0.61424,  0.07568,1.0]
-		emerald["specular"] = [0.833, 0.927811, 0.833,1.0]
-		emerald["shininess"] = 128.0
-		
-		pearl = {}
-		pearl["ambient"] = [0.25, 0.20725, 0.20725,1.0]
-		pearl["diffuse"] = [1.0, 0.829, 0.829,1.0]
-		pearl["specular"] = [0.296648, 0.296648, 0.296648,1.0]
-		pearl["shininess"] = 128.0
-		
-		silver = {}
-		silver["ambient"] = [0.25, 0.25, 0.25,1.0]
-		silver["diffuse"] = [0.4, 0.4, 0.4,1.0]
-		silver["specular"] = [0.974597, 0.974597, 0.974597,1.0]
-		silver["shininess"] = 128.0
-		
-		gold = {}
-		gold["ambient"] = [0.24725, 0.2245, 0.0645,1.0]
-		gold["diffuse"] = [0.34615, 0.3143, 0.0903,1.0]
-		gold["specular"] = [1.000, 0.9079885, 0.26086934,1.0]
-		gold["shininess"] = 128.0
-		
-		copper = {}
-		copper["ambient"] = [0.2295, 0.08825, 0.0275,1.0]
-		copper["diffuse"] = [0.5508, 0.2118, 0.066,1.0]
-		copper["specular"] = [0.9, 0.5, 0.2,1.0]
-		copper["shininess"] = 128.0
-		
-		obsidian = {}
-		obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
-		obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
-		obsidian["specular"] = [0.66, 0.65, 0.69]
-		obsidian["shininess"] = 128.0
-		
-		turquoise = {}
-		turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
-		turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
-		turquoise["specular"] = [0.297254, 0.30829, 0.306678]
-		turquoise["shininess"] = 128.0
-		
-		yellow = {}
-		yellow["ambient"] = [0.3, 0.3, 0.0,1]
-		yellow["diffuse"] = [0.5, 0.5, 0.0,1]
-		yellow["specular"] = [0.7, 0.7, 0.0,1]
-		yellow["shininess"] =  60
-		
-		self.colors = {}
-		self.colors["ruby"] = ruby
-		self.colors["emerald"] = emerald
-		self.colors["pearl"] = pearl
-		self.colors["silver"] = silver
-		self.colors["gold"] = gold
-		self.colors["copper"] = copper
-		self.colors["obsidian"] = obsidian
-		self.colors["turquoise"] = turquoise
-		self.colors["yellow"] = yellow
+		self.colors = getColors()
 		
 		self.isocolor = "ruby"
 	
@@ -350,19 +289,19 @@ class EMIsosurface(EMImage3DObject):
 	def setColor(self,val):
 		#print val
 		self.isocolor = str(val)
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def toggleCube(self):
 		self.cube = not self.cube
-		self.parent.updateGL()
+		self.updateGL()
 	
 	def toggleWire(self,val):
 		self.wire = not self.wire
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def toggleLight(self,val):
 		self.light = not self.light
-		self.parent.updateGL()
+		self.updateGL()
 	
 	def toggleTexture(self):
 		self.texture = not self.texture
@@ -370,7 +309,7 @@ class EMIsosurface(EMImage3DObject):
 			self.updateDataAndTexture()
 		
 		self.getIsoDL()
-		self.parent.updateGL()
+		self.updateGL()
 	
 	def updateInspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
@@ -384,12 +323,108 @@ class EMIsosurface(EMImage3DObject):
 	def setContrast(self,val):
 		self.contrast = val
 		self.updateDataAndTexture()
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def setBrightness(self,val):
 		self.brightness = val
 		self.updateDataAndTexture()
-		self.parent.updateGL()
+		self.updateGL()
+		
+	def mousePressEvent(self, event):
+#		lc=self.scrtoimg((event.x(),event.y()))
+		if event.button()==Qt.MidButton:
+			if not self.inspector or self.inspector ==None:
+				return
+			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
+			self.resizeEvent()
+			self.showInspector(1)
+		else:
+			self.cam.mousePressEvent(event)
+		
+		self.updateGL()
+		
+	def mouseMoveEvent(self, event):
+		self.cam.mouseMoveEvent(event)
+		self.updateGL()
+	
+	def mouseReleaseEvent(self, event):
+		self.cam.mouseReleaseEvent(event)
+		self.updateGL()
+			
+	def wheelEvent(self, event):
+		self.cam.wheelEvent(event)
+		self.updateGL()
+		
+	def resizeEvent(self,width=0,height=0):
+		self.vdtools.set_update_P_inv()
+
+def getColors():
+	ruby = {}
+	ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
+	ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
+	ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
+	ruby["shininess"] = 128.0
+	
+	emerald = {}
+	emerald["ambient"] = [0.0215, 0.1745, 0.0215,1.0]
+	emerald["diffuse"] = [0.07568, 0.61424,  0.07568,1.0]
+	emerald["specular"] = [0.833, 0.927811, 0.833,1.0]
+	emerald["shininess"] = 128.0
+	
+	pearl = {}
+	pearl["ambient"] = [0.25, 0.20725, 0.20725,1.0]
+	pearl["diffuse"] = [1.0, 0.829, 0.829,1.0]
+	pearl["specular"] = [0.296648, 0.296648, 0.296648,1.0]
+	pearl["shininess"] = 128.0
+	
+	silver = {}
+	silver["ambient"] = [0.25, 0.25, 0.25,1.0]
+	silver["diffuse"] = [0.4, 0.4, 0.4,1.0]
+	silver["specular"] = [0.974597, 0.974597, 0.974597,1.0]
+	silver["shininess"] = 128.0
+	
+	gold = {}
+	gold["ambient"] = [0.24725, 0.2245, 0.0645,1.0]
+	gold["diffuse"] = [0.34615, 0.3143, 0.0903,1.0]
+	gold["specular"] = [1.000, 0.9079885, 0.26086934,1.0]
+	gold["shininess"] = 128.0
+	
+	copper = {}
+	copper["ambient"] = [0.2295, 0.08825, 0.0275,1.0]
+	copper["diffuse"] = [0.5508, 0.2118, 0.066,1.0]
+	copper["specular"] = [0.9, 0.5, 0.2,1.0]
+	copper["shininess"] = 128.0
+	
+	obsidian = {}
+	obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
+	obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
+	obsidian["specular"] = [0.66, 0.65, 0.69]
+	obsidian["shininess"] = 128.0
+	
+	turquoise = {}
+	turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
+	turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
+	turquoise["specular"] = [0.297254, 0.30829, 0.306678]
+	turquoise["shininess"] = 128.0
+	
+	yellow = {}
+	yellow["ambient"] = [0.3, 0.3, 0.0,1]
+	yellow["diffuse"] = [0.5, 0.5, 0.0,1]
+	yellow["specular"] = [0.7, 0.7, 0.0,1]
+	yellow["shininess"] =  60
+	
+	colors = {}
+	colors["ruby"] = ruby
+	colors["emerald"] = emerald
+	colors["pearl"] = pearl
+	colors["silver"] = silver
+	colors["gold"] = gold
+	colors["copper"] = copper
+	colors["obsidian"] = obsidian
+	colors["turquoise"] = turquoise
+	colors["yellow"] = yellow
+	
+	return colors
 		
 class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
@@ -407,6 +442,7 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
+		self.cam = Camera()
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
 	def timeout(self):
@@ -437,6 +473,7 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
+		self.cam.position()
 		
 		glPushMatrix()
 		self.isosurface.render()
@@ -465,6 +502,8 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 
 	def setData(self,data):
 		self.isosurface.setData(data)
+		self.cam.default_z = -1.25*data.get_zsize()
+		self.cam.cam_z = -1.25*data.get_zsize()
 	
 	def showInspector(self,force=0):
 		self.isosurface.showInspector()

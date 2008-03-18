@@ -44,7 +44,7 @@ from weakref import WeakKeyDictionary
 from emimageutil import ImgHistogram,EMParentWin
 import copy
 
-from emimage3dobject import Camera2
+from emglobjects import Camera2, EMBrightContrastScreen
 
 # this class tracks depth in opengl
 class DepthTracker:
@@ -103,104 +103,6 @@ class DepthTracker:
 		
 		return [ex2-ex1,ey2-ey1]
 
-class BrightContrastScreen:
-	def __init__(self):
-		# this class draws a brightness/contrast screen on the zplane,
-		# on a square polygon from [0,0] to [1,1]
-		self.glcontrast = 1.0
-		self.glbrightness = 0.0
-
-	def setGLBrightness(self,val):
-		self.glbrightness = val
-		
-	def setGLContrast(self,val):
-		self.glcontrast = val
-
-	def draw_bc_screen(self):
-		if (self.glcontrast == 1 and self.glbrightness == 0 ): return
-		
-		lighting = glIsEnabled(GL_LIGHTING)
-		cull = glIsEnabled(GL_CULL_FACE)
-		depth = glIsEnabled(GL_DEPTH_TEST)
-		blend = glIsEnabled(GL_BLEND)
-		
-		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
-
-		glDisable(GL_LIGHTING)
-		glDisable(GL_CULL_FACE)
-		glDisable(GL_DEPTH_TEST)
-		
-		glShadeModel(GL_SMOOTH)
-
-		glEnable(GL_BLEND)
-		glDepthMask(GL_FALSE)
-		if ( self.glcontrast > 1 ):
-			glBlendFunc(GL_ONE, GL_ONE)
-			if self.glbrightness > 0 :
-				glBlendEquation(GL_FUNC_ADD);
-				glColor4f(self.glbrightness,self.glbrightness,self.glbrightness,1.0)
-			else:
-				glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-				glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
-			
-			glBegin( GL_QUADS )
-			glVertex(0, 0)
-			glVertex(1, 0)
-			glVertex2f(1, 1)
-			glVertex2f(0, 1)
-			glEnd()
-		
-			glBlendFunc(GL_DST_COLOR, GL_ONE)
-			glBlendEquation(GL_FUNC_ADD)
-			
-			tmpContrast = self.glcontrast
-	
-			while ( tmpContrast > 2 ):
-				glColor4f(1.0,1.0,1.0,1.0)
-				glBegin( GL_QUADS );
-				glVertex2f(0, 0)
-				glVertex2f(1, 0)
-				glVertex2f(1, 1)
-				glVertex2f(0, 1)
-				glEnd()
-				tmpContrast /= 2;
-			
-	
-			glBlendFunc(GL_DST_COLOR, GL_ONE)
-			glBlendEquation(GL_FUNC_ADD)
-			glColor4f(tmpContrast-1.0,tmpContrast-1.0,tmpContrast-1.0,1.0)
-			glBegin( GL_QUADS )
-			glVertex2f(0, 0)
-			glVertex2f(1, 0)
-			glVertex2f(1, 1)
-			glVertex2f(0, 1)
-			glEnd()
-		else:
-			if self.glbrightness > 0:
-				glBlendEquation(GL_FUNC_ADD)
-				glColor4f(self.glbrightness,self.glbrightness,self.glbrightness,self.glcontrast)
-			else:
-				glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-				glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness,self.glcontrast)
-				
-			glBlendFunc(GL_ONE, GL_SRC_ALPHA)
-
-			glBegin( GL_QUADS )
-			glVertex2f(0, 0)
-			glVertex2f(1, 0)
-			glVertex2f(1, 1)
-			glVertex2f(0, 1)
-			glEnd()
-		
-		glDepthMask(GL_TRUE)
-	
-		if ( lighting ): glEnable(GL_LIGHTING)
-		if ( cull ): glEnable(GL_CULL_FACE)
-		if ( depth ): glEnable(GL_DEPTH_TEST)
-		if ( not blend ): glDisable(GL_BLEND)
-		
-		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
-		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 
 class EMImage2DTexInspector(QtGui.QWidget):
 	def __init__(self,target) :
@@ -263,7 +165,7 @@ class EMImage2DTex:
 		self.rank = 1
 		
 		# we have a brightness contrast screen - it's used in render
-		self.bcscreen = BrightContrastScreen()
+		self.bcscreen = EMBrightContrastScreen()
 		
 		# need a corner mapper for accurate mouse movement
 		self.depthtracker = DepthTracker(self)

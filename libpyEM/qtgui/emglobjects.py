@@ -177,9 +177,6 @@ class EMGLProjViewMatrices:
 			self.checkUpdate()
 			return self.inv_proj_matrix
 			
-		
-			
-
 	# storage for the instance reference
 	__instance = None
 
@@ -348,6 +345,16 @@ class EMViewportDepthTools:
 			
 	def getCorners(self):
 		return [self.mc00,self.mc01,self.mc11,self.mc10]
+	
+	def getEmanMatrix(self):
+	
+		t = Transform3D(self.wmodel[0][0], self.wmodel[1][0], self.wmodel[2][0],
+						self.wmodel[0][1], self.wmodel[1][1], self.wmodel[2][1],
+						self.wmodel[0][2], self.wmodel[1][2], self.wmodel[2][2] )
+		return t
+	
+	def getCurrentScale(self):
+		return sqrt(self.wmodel[0][0]**2 + self.wmodel[0][1]**2 + self.wmodel[0][2]**2)
 	
 	def getModelMatrix(self):
 		return self.wmodel
@@ -645,7 +652,9 @@ class Camera2:
 		self.enablerotation = True
 		
 		self.basicmapping = False
+		self.plane = 'xy'
 		
+		self.motiondull = 8.0
 	def loadIdentity(self):
 		self.scale = 1.0
 		
@@ -675,19 +684,16 @@ class Camera2:
 			glRotate(-float(rot["alt"]),1,0,0)
 			glRotate(-float(rot["phi"]),0,0,1)
 			
-			
-	
-	def position(self):
+	def position(self,norot=False):
 		# position the camera, regualar OpenGL movement.
 		if (self.debug):
 			print "Camera translational position",self.cam_x,self.cam_y,self.cam_z
 		glTranslated(self.cam_x, self.cam_y, self.cam_z)
 		
-		
-		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-		if (self.debug):
-			print "Camera rotation ",float(rot["phi"]),float(rot["alt"]),float(rot["az"])
-		if ( self.enablerotation ):
+		if ( self.enablerotation and not norot):
+			rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+			if (self.debug):
+				print "Camera rotation ",float(rot["phi"]),float(rot["alt"]),float(rot["az"])
 			glRotate(float(rot["phi"]),0,0,1)
 			glRotate(float(rot["alt"]),1,0,0)
 			glRotate(float(rot["az"]),0,0,1)
@@ -729,7 +735,7 @@ class Camera2:
 	def setCamX(self,x):
 		self.cam_x = self.default_x + x
 
-	def motionRotate(self,x,y):
+	def motionRotate(self,x,y,fac=1.0):
 		# this function implements mouse interactive rotation
 		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
 		# Rotation occurs about the vector 90 degrees to [x,y,0]
@@ -739,15 +745,36 @@ class Camera2:
 		
 		theta = atan2(-y,x)
 
-		rotaxis_x = sin(theta)
-		rotaxis_y = cos(theta)
-		rotaxis_z = 0
+		plane = self.plane
+		if ( plane == 'xy' ):
+			rotaxis_x = sin(theta)
+			rotaxis_y = cos(theta)
+			rotaxis_z = 0
+		elif ( plane == 'yx' ):
+			rotaxis_x = -sin(theta)
+			rotaxis_y = cos(theta)
+			rotaxis_z = 0
+		elif ( plane == 'xz' ):
+			rotaxis_x = sin(theta)
+			rotaxis_y = 0
+			rotaxis_z = cos(theta)
+		elif ( plane == 'zx' ):
+			rotaxis_x = sin(theta)
+			rotaxis_y = 0
+			rotaxis_z = -cos(theta)
+		elif ( plane == 'yz' ):
+			rotaxis_x = 0
+			rotaxis_y = cos(theta)
+			rotaxis_z = -sin(theta)
+		elif ( plane == 'zy' ):
+			rotaxis_x = 0
+			rotaxis_y = cos(theta)
+			rotaxis_z = sin(theta)
 		
 		length = sqrt(x*x + y*y)
-		# 8.0 is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
-		# Or does it?
+		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
 		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
-		angle = length/8.0*pi
+		angle = fac*length/self.motiondull*pi
 		
 		t3d = Transform3D()
 		quaternion = {}
@@ -803,7 +830,8 @@ class Camera2:
 					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
 				else:
 					if self.enablerotation == False: return
-					self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y())
+					self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(1.0/self.scale))
+
 				self.mpressx = event.x()
 				self.mpressy = event.y()
 		elif event.buttons()&Qt.RightButton:
@@ -828,13 +856,9 @@ class Camera2:
 		self.scale_event(event.delta())
 	
 	def motionTranslateLA(self,prev_x,prev_y,event):
-		print "motion translate"
-
 		if (self.basicmapping == False):
-			print "non basic"
 			[dx,dy] = self.parent.eyeCoordsDif(prev_x,self.parent.viewportHeight()-prev_y,event.x(),self.parent.viewportHeight()-event.y())
 		else:
-			print "basic"
 			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
 
 		#[wx2,wy2,wz2] = self.parent.eyeCoords(event.x(),self.parent.parentHeight()-event.y())
@@ -842,8 +866,29 @@ class Camera2:
 		#self.parent.mouseViewportMovement(1,2,3,4)
 		#[wx1,wy1] = self.parent.mouseinwin(prev_x,self.parent.parentHeight()-prev_y)
 		#[wx2,wy2] = self.parent.mouseinwin(event.x(),self.parent.parentHeight()-event.y())
-		self.cam_x += dx
-		self.cam_y += dy
+		#self.cam_x += dx
+		#self.cam_y += dy
+
+		plane = self.plane
+		if ( plane == 'xy' ):
+			self.cam_x += dx
+			self.cam_y += dy
+		elif ( plane == 'yx' ):
+			self.cam_x -= dx
+			self.cam_y += dy
+		elif ( plane == 'xz' ):
+			self.cam_x += dx
+			self.cam_z -= dy
+		elif ( plane == 'zx' ):
+			self.cam_x += dx
+			self.cam_z += dy
+		elif ( plane == 'yz' ):
+			self.cam_y += dy
+			self.cam_z -= dx
+		elif ( plane == 'zy' ):
+			self.cam_y += dy
+			self.cam_z += dx
+		
 
 class Camera:
 	"""\brief A camera object encapsulates 6 degrees of freedom, and a scale factor
@@ -985,9 +1030,144 @@ class Camera:
 		
 		return cam
 
+class EMBrightContrastScreen:
+	def __init__(self):
+		# this class draws a brightness/contrast screen on the zplane,
+		# on a square polygon from [0,0] to [1,1]
+		self.glcontrast = 1.0
+		self.glbrightness = 0.0
+
+	def setGLBrightness(self,val):
+		self.glbrightness = val
+		
+	def setGLContrast(self,val):
+		self.glcontrast = val
+
+	def draw_bc_screen(self):
+		if (self.glcontrast == 1 and self.glbrightness == 0 ): return
+		
+		lighting = glIsEnabled(GL_LIGHTING)
+		cull = glIsEnabled(GL_CULL_FACE)
+		depth = glIsEnabled(GL_DEPTH_TEST)
+		blend = glIsEnabled(GL_BLEND)
+		
+		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
+
+		glDisable(GL_LIGHTING)
+		glDisable(GL_CULL_FACE)
+		glDisable(GL_DEPTH_TEST)
+		
+		glShadeModel(GL_SMOOTH)
+
+		glEnable(GL_BLEND)
+		glDepthMask(GL_FALSE)
+		if ( self.glcontrast > 1 ):
+			glBlendFunc(GL_ONE, GL_ONE)
+			if self.glbrightness > 0 :
+				glBlendEquation(GL_FUNC_ADD);
+				glColor4f(self.glbrightness,self.glbrightness,self.glbrightness,1.0)
+			else:
+				glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+				glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
+			
+			glBegin( GL_QUADS )
+			glVertex(0, 0)
+			glVertex(1, 0)
+			glVertex2f(1, 1)
+			glVertex2f(0, 1)
+			glEnd()
+		
+			glBlendFunc(GL_DST_COLOR, GL_ONE)
+			glBlendEquation(GL_FUNC_ADD)
+			
+			tmpContrast = self.glcontrast
+	
+			while ( tmpContrast > 2 ):
+				glColor4f(1.0,1.0,1.0,1.0)
+				glBegin( GL_QUADS );
+				glVertex2f(0, 0)
+				glVertex2f(1, 0)
+				glVertex2f(1, 1)
+				glVertex2f(0, 1)
+				glEnd()
+				tmpContrast /= 2;
+			
+	
+			glBlendFunc(GL_DST_COLOR, GL_ONE)
+			glBlendEquation(GL_FUNC_ADD)
+			glColor4f(tmpContrast-1.0,tmpContrast-1.0,tmpContrast-1.0,1.0)
+			glBegin( GL_QUADS )
+			glVertex2f(0, 0)
+			glVertex2f(1, 0)
+			glVertex2f(1, 1)
+			glVertex2f(0, 1)
+			glEnd()
+		else:
+			if self.glbrightness > 0:
+				glBlendEquation(GL_FUNC_ADD)
+				glColor4f(self.glbrightness,self.glbrightness,self.glbrightness,self.glcontrast)
+			else:
+				glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+				glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness,self.glcontrast)
+				
+			glBlendFunc(GL_ONE, GL_SRC_ALPHA)
+
+			glBegin( GL_QUADS )
+			glVertex2f(0, 0)
+			glVertex2f(1, 0)
+			glVertex2f(1, 1)
+			glVertex2f(0, 1)
+			glEnd()
+		
+		glDepthMask(GL_TRUE)
+	
+		if ( lighting ): glEnable(GL_LIGHTING)
+		if ( cull ): glEnable(GL_CULL_FACE)
+		if ( depth ): glEnable(GL_DEPTH_TEST)
+		if ( not blend ): glDisable(GL_BLEND)
+		
+		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
+		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
+
+def draw_volume_bounds(width,height,depth):
+	glLineWidth(0.2)
+	glNormal(0,1,0)
+	glColor(.2,.1,0.4,1.0)
+	glColor(1,1,1,1.0)
+	glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
+	glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
+	glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
+	glMaterial(GL_FRONT, GL_SHININESS, 128.0)
+
+	glBegin(GL_LINE_STRIP)
+	glVertex(0,0,0)
+	glVertex(width,0,0)
+	glVertex(width,0,depth)
+	glVertex(0,0,depth)
+	glVertex(0,0,0)
+	glVertex(0,height,0)
+	glVertex(width,height,0)
+	glVertex(width,height,depth)
+	glVertex(0,height,depth)
+	glVertex(0,height,0)
+	glEnd()
+	
+	glBegin(GL_LINES)
+	glVertex(width,height,depth)
+	glVertex(width,0,depth)
+	
+	glVertex(width,height,0)
+	glVertex(width,0,0)
+	
+	glVertex(0,height,depth)
+	glVertex(0,0,depth)
+	glEnd()
+
 class EMImage3DObject:
 	def __init__(self):
 		self.blendflags = EMOpenGLFlagsAndTools()
+		# we have a brightness contrast screen - it's used in render
+		self.bcscreen = EMBrightContrastScreen()
 		
 	def render(self):
 		pass
@@ -1035,70 +1215,6 @@ class EMImage3DObject:
 	def setCamera(self,camera):
 		self.cam = camera
 	
-	def mousePressEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
-		if event.button()==Qt.MidButton:
-			if not self.inspector or self.inspector ==None:
-				return
-			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
-			self.resizeEvent()
-			self.showInspector(1)
-		
-		elif event.button()==Qt.LeftButton:
-			if self.mmode==0:
-				self.mpressx = event.x()
-				self.mpressy = event.y()
-				
-				# this is just a way of duplicating the last copy
-				tmp = self.cam.t3d_stack.pop()
-				t3d = Transform3D(tmp)
-				self.cam.t3d_stack.append(tmp)
-				self.cam.t3d_stack.append(t3d)
-				self.updateInspector(t3d)
-				
-				return
-		elif event.button()==Qt.RightButton:
-			if self.mmode==0:
-				self.mpressx = event.x()
-				self.mpressy = event.y()
-				return
-		
-	def mouseMoveEvent(self, event):
-		if event.buttons()&Qt.LeftButton:
-			if self.mmode==0:
-				if event.modifiers() == Qt.ControlModifier:
-					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
-				else:
-					self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y())
-				self.parent.updateGL()
-				self.mpressx = event.x()
-				self.mpressy = event.y()
-				return
-		if event.buttons()&Qt.RightButton:
-			if self.mmode==0:
-				if event.modifiers() == Qt.ControlModifier:
-					self.scale_event(event.y()-self.mpressy)	
-				else:
-					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
-					
-				self.mpressx = event.x()
-				self.mpressy = event.y()
-				self.parent.updateGL()
-				return
-	
-	def mouseReleaseEvent(self, event):
-		if event.button()==Qt.LeftButton:
-			if self.mmode==0:
-				return
-		elif event.button()==Qt.RightButton:
-			if self.mmode==0:
-				return
-			
-	def wheelEvent(self, event):
-		self.scale_event(event.delta())
-		self.resizeEvent()
-		self.parent.updateGL()
-		
 	def scale_event(self,delta):
 		self.cam.scale_event(delta)
 		if self.inspector: self.inspector.setScale(self.cam.scale)
@@ -1151,113 +1267,23 @@ class EMImage3DObject:
 		else: self.inspector.setTranslateScale(xscale,yscale,xscale)
 		
 	def draw_bc_screen(self):
-		if (self.glcontrast == 1 and self.glbrightness == 0 ): return
-		
-		lighting = glIsEnabled(GL_LIGHTING)
-		cull = glIsEnabled(GL_CULL_FACE)
-		depth = glIsEnabled(GL_DEPTH_TEST)
-		blend = glIsEnabled(GL_BLEND)
-		
-		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
+		self.bcscreen.draw_bc_screen()
 
-		glDisable(GL_LIGHTING)
-		glDisable(GL_CULL_FACE)
-		glDisable(GL_DEPTH_TEST)
-		
-
-		glEnable(GL_BLEND)
-		glDepthMask(GL_FALSE)
-		if ( self.glcontrast > 1 ):
-			glBlendFunc(GL_ONE, GL_ONE)
-			if self.glbrightness > 0 :
-				if self.blendflags.blend_equation_supported():
-					glBlendEquation(GL_FUNC_ADD);
-				glColor4f(self.glbrightness,self.glbrightness,self.glbrightness,1.0)
-			else:
-				try:
-					if self.blendflags.blend_equation_supported():
-						glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-						glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
-				except:
-					print "EMAN(ALPHA) warning: GL_FUNC_REVERSE_SUBTRACT unsupported. No action taken"
-					pass
-			
-			glBegin( GL_QUADS )
-			glVertex(0, 0)
-			glVertex(1, 0)
-			glVertex2f(1, 1)
-			glVertex2f(0, 1)
-			glEnd()
-		
-			glBlendFunc(GL_DST_COLOR, GL_ONE)
-			if self.blendflags.blend_equation_supported():
-				glBlendEquation(GL_FUNC_ADD)
-			
-			tmpContrast = self.glcontrast
-	
-			while ( tmpContrast > 2 ):
-				glColor4f(1.0,1.0,1.0,1.0)
-				glBegin( GL_QUADS );
-				glVertex2f(0, 0)
-				glVertex2f(1, 0)
-				glVertex2f(1, 1)
-				glVertex2f(0, 1)
-				glEnd()
-				tmpContrast /= 2;
-			
-	
-			glBlendFunc(GL_DST_COLOR, GL_ONE)
-			if self.blendflags.blend_equation_supported():
-				glBlendEquation(GL_FUNC_ADD)
-			
-			glColor4f(tmpContrast-1.0,tmpContrast-1.0,tmpContrast-1.0,1.0)
-			glBegin( GL_QUADS )
-			glVertex2f(0, 0)
-			glVertex2f(1, 0)
-			glVertex2f(1, 1)
-			glVertex2f(0, 1)
-			glEnd()
-		else:
-			if self.glbrightness > 0:
-				if self.blendflags.blend_equation_supported():
-					glBlendEquation(GL_FUNC_ADD)
-				glColor4f(self.glbrightness,self.glbrightness,self.glbrightness,self.glcontrast)
-			else:
-				try:
-					# FIXME - look for GL_EXT_blend_subtract in glGetString(GL_EXTENSIONS)
-					if self.blendflags.blend_equation_supported():
-						glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-						glColor4f(-self.glbrightness,-self.glbrightness,-self.glbrightness, 1.0)
-				except:
-					print "EMAN(ALPHA) warning: GL_FUNC_REVERSE_SUBTRACT unsupported. No action taken"
-					pass
-				
-			glBlendFunc(GL_ONE, GL_SRC_ALPHA)
-
-			glBegin( GL_QUADS )
-			glVertex2f(0, 0)
-			glVertex2f(1, 0)
-			glVertex2f(1, 1)
-			glVertex2f(0, 1)
-			glEnd()
-		
-		glDepthMask(GL_TRUE)
-	
-		if ( lighting ): glEnable(GL_LIGHTING)
-		if ( cull ): glEnable(GL_CULL_FACE)
-		if ( depth ): glEnable(GL_DEPTH_TEST)
-		if ( not blend ): glDisable(GL_BLEND)
-		
-		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
-		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
+	def setGLContrast(self,val):
+		self.bcscreen.setGLContrast(val)
+		try:
+			self.parent.updateGL()
+		except:
+			# the parent may not have been set
+			pass
 	
 	def setGLBrightness(self,val):
-		self.glbrightness = val
-		self.parent.updateGL()
-		
-	def setGLContrast(self,val):
-		self.glcontrast = val
-		self.parent.updateGL()
+		self.bcscreen.setGLBrightness(val)
+		try:
+			self.parent.updateGL()
+		except:
+			# the parent may not have been set
+			pass
 		
 	def draw_volume_bounds(self):
 		# FIXME - should be a display list
@@ -1265,38 +1291,7 @@ class EMImage3DObject:
 		height = self.data.get_ysize()
 		depth = self.data.get_zsize()
 		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
-		glLineWidth(0.2)
-		glNormal(0,1,0)
-		glColor(.2,.1,0.4,1.0)
-		glColor(1,1,1,1.0)
-		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
-		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
-		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
-		glMaterial(GL_FRONT, GL_SHININESS, 128.0)
-
-		glBegin(GL_LINE_STRIP)
-		glVertex(0,0,0)
-		glVertex(width,0,0)
-		glVertex(width,0,depth)
-		glVertex(0,0,depth)
-		glVertex(0,0,0)
-		glVertex(0,height,0)
-		glVertex(width,height,0)
-		glVertex(width,height,depth)
-		glVertex(0,height,depth)
-		glVertex(0,height,0)
-		glEnd()
-		
-		glBegin(GL_LINES)
-		glVertex(width,height,depth)
-		glVertex(width,0,depth)
-		
-		glVertex(width,height,0)
-		glVertex(width,0,0)
-		
-		glVertex(0,height,depth)
-		glVertex(0,0,depth)
-		glEnd()
+		draw_volume_bounds(width,height,depth)
 	
 	def toggleCube(self):
 		self.cube = not self.cube

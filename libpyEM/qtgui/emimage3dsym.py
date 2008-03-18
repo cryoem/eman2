@@ -50,8 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emimage3dobject import EMImage3DObject
-from emimage3dobject import Camera
+from emglobjects import EMImage3DObject, Camera, Camera2, EMViewportDepthTools
 
 
 MAG_INCREMENT_FACTOR = 1.1
@@ -74,7 +73,8 @@ class EM3DSymViewer(EMImage3DObject):
 		self.data=None
 
 		self.mmode=0
-		self.cam = Camera()
+		self.cam = Camera2(self)
+		self.vdtools = EMViewportDepthTools(self)
 		
 		self.cube = False
 		self.inspector=None
@@ -115,7 +115,16 @@ class EM3DSymViewer(EMImage3DObject):
 		
 		#self.glbasicobjects = EMBasicOpenGLObjects()
 		#print self.glbasicobjects.getSphereDL()
-		
+	
+	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+
+	def viewportHeight(self):
+		return self.parent.height()
+	
+	def viewportWidth(self):
+		return self.parent.width()
+	
 	def setRadius(self,radius):
 		if ( radius > 0 ):
 			self.radius = radius
@@ -306,6 +315,12 @@ class EM3DSymViewer(EMImage3DObject):
 		
 		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 		
+		glPushMatrix()
+		self.cam.position(True)
+		# the ones are dummy variables atm... they don't do anything
+		self.vdtools.update(1,1)
+		glPopMatrix()
+		
 		self.cam.position()
 		
 		if ( self.sym_dl == 0 or self.force_update):
@@ -410,6 +425,34 @@ class EM3DSymViewer(EMImage3DObject):
 		
 	def updateGL(self,dummy=False):
 		self.parent.updateGL()
+		
+	def mousePressEvent(self, event):
+#		lc=self.scrtoimg((event.x(),event.y()))
+		if event.button()==Qt.MidButton:
+			if not self.inspector or self.inspector ==None:
+				return
+			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
+			self.resizeEvent()
+			self.showInspector(1)
+		else:
+			self.cam.mousePressEvent(event)
+		
+		self.updateGL()
+		
+	def mouseMoveEvent(self, event):
+		self.cam.mouseMoveEvent(event)
+		self.updateGL()
+	
+	def mouseReleaseEvent(self, event):
+		self.cam.mouseReleaseEvent(event)
+		self.updateGL()
+			
+	def wheelEvent(self, event):
+		self.cam.wheelEvent(event)
+		self.updateGL()
+
+	def resizeEvent(self,width=0,height=0):
+		self.vdtools.set_update_P_inv()
 
 class EMSymViewerWidget(QtOpenGL.QGLWidget):
 	
@@ -423,8 +466,9 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		
+		self.cam = Camera()
 		self.sliceviewer = EM3DSymViewer(self)
-		self.sliceviewer.cam.setCamTrans("default_z",-100)
+		self.cam.setCamTrans("default_z",-100)
 
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
@@ -453,6 +497,8 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 		#self.sliceviewer.cam.setCamTrans("default_z",-100)
 		#glTranslate(0,0,-100)
+		
+		self.cam.position()
 		
 		glPushMatrix()
 		self.sliceviewer.render()

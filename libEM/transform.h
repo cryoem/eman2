@@ -114,28 +114,28 @@ namespace EMAN
 			MATRIX
 		};
 		
-	     // C1
+		// C1
 		Transform3D();
 
-             // copy constructor
+		// copy constructor
 	    Transform3D( const Transform3D& rhs );
 
 	     // C2   
 		Transform3D(float az,float alt, float phi); // EMAN by default
 
 
-             //  C3  Usual Constructor: Post Trans, after appying Rot
+		//  C3  Usual Constructor: Post Trans, after appying Rot
 		Transform3D(float az, float alt, float phi, const Vec3f& posttrans);
  
- 	     // C4
+		// C4
 		Transform3D(EulerType euler_type, float a1, float a2, float a3) ; // only EMAN: az alt phi
 								                            // SPIDER     phi theta psi
 		
-	     // C5   First apply pretrans: Then rotation
+		// C5   First apply pretrans: Then rotation
 		Transform3D(EulerType euler_type, const Dict& rotation);
 		
 
-	     // C6   First apply pretrans: Then rotation: Then posttrans
+		// C6   First apply pretrans: Then rotation: Then posttrans
 		Transform3D(const Vec3f & pretrans, float az, float alt, float phi,  const Vec3f& posttrans);
 
 		Transform3D(float m11, float m12, float m13,

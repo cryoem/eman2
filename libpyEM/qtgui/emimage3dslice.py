@@ -50,7 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DObject, Camera, EMOpenGLFlagsAndTools
+from emglobjects import EMImage3DObject, Camera, EMOpenGLFlagsAndTools, Camera2, EMViewportDepthTools
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -85,7 +85,9 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.data=None
 
 		self.mmode=0
-		self.cam = Camera()
+		self.cam = Camera2(self)
+		
+		self.vdtools = EMViewportDepthTools(self)
 		
 		self.cube = False
 		self.inspector=None
@@ -99,7 +101,20 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.rank = 1
 		
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support
-		
+	
+	def updateGL(self):
+		try: self.parent.updateGL()
+		except: pass
+	
+	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+
+	def viewportHeight(self):
+		return self.parent.height()
+	
+	def viewportWidth(self):
+		return self.parent.width()
+	
 	def setData(self,data,fact=1.0):
 		"""Pass in a 3D EMData object"""
 		
@@ -118,9 +133,6 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		self.data.add(-min)
 		self.data.mult(1/(max-min))
-		
-		self.cam.default_z = -1.25*data.get_zsize()
-		self.cam.cam_z = -1.25*data.get_zsize()
 		
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMSlice3DInspector(self)
@@ -239,7 +251,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		glEndList()
 		
-	def gen2DTexture(self):		
+	def gen2DTexture(self):
 		glNewList(self.tex_dl,GL_COMPILE)
 		
 		n = self.getDimensionSize()
@@ -303,6 +315,12 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 		
+		glPushMatrix()
+		self.cam.position(True)
+		# the ones are dummy variables atm... they don't do anything
+		self.vdtools.update(1,1)
+		glPopMatrix()
+		
 		self.cam.position()
 		
 		if ( self.tex_dl == 0 ):
@@ -322,7 +340,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		glLoadIdentity()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-1)
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
-		#self.draw_bc_screen()
+		self.draw_bc_screen()
 		glPopMatrix()
 		
 		glStencilFunc(GL_ALWAYS,1,1)
@@ -406,11 +424,36 @@ class EM3DSliceViewer(EMImage3DObject):
 		else:
 			self.axes[3] = point
 	
+	def mousePressEvent(self, event):
+#		lc=self.scrtoimg((event.x(),event.y()))
+		if event.button()==Qt.MidButton:
+			if not self.inspector or self.inspector ==None:
+				return
+			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
+			self.resizeEvent()
+			self.showInspector(1)
+		else:
+			self.cam.mousePressEvent(event)
+		
+		self.updateGL()
+		
 	def mouseMoveEvent(self, event):
 		if ( self.track ):
 			self.loadTrackAxis()
-		self.genCurrentDisplayList()
-		EMImage3DObject.mouseMoveEvent(self,event)
+			self.genCurrentDisplayList()
+		self.cam.mouseMoveEvent(event)
+		self.updateGL()
+	
+	def mouseReleaseEvent(self, event):
+		self.cam.mouseReleaseEvent(event)
+		self.updateGL()
+			
+	def wheelEvent(self, event):
+		self.cam.wheelEvent(event)
+		self.updateGL()
+
+	def resizeEvent(self,width=0,height=0):
+		self.vdtools.set_update_P_inv()
 		
 class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 	
@@ -423,10 +466,13 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		EMSliceViewerWidget.allim[self]=0
 		
 		self.fov = 50 # field of view angle used by gluPerspective
-		
+		self.cam = Camera()
 		self.sliceviewer = EM3DSliceViewer(image,self)
 	def setData(self,data):
 		self.sliceviewer.setData(data)
+		self.cam.default_z = -1.25*data.get_zsize()
+		self.cam.cam_z = -1.25*data.get_zsize()
+		
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
 		glEnable(GL_LIGHT0)
@@ -452,6 +498,8 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
+		
+		self.cam.position()
 		
 		glPushMatrix()
 		self.sliceviewer.render()
@@ -507,7 +555,7 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		width = self.aspect*height
 		
 		return [width,height]
-		
+	
 
 class EMSlice3DInspector(QtGui.QWidget):
 	def __init__(self,target) :
