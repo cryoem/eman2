@@ -51,7 +51,7 @@ from pickle import dumps,loads
 
 MAG_INC = 1.1
 
-from emimage3dobject import EMOpenGLFlagsAndTools
+from emglobjects import EMOpenGLFlagsAndTools
 
 class EMImage2D(QtOpenGL.QGLWidget):
 	"""
