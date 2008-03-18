@@ -79,7 +79,7 @@ def main():
 	elif options.classes:
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
-		display(imgs)
+		display(imgs,args[0])
 		
 		QtCore.QObject.connect(win[0].child,QtCore.SIGNAL("mousedown"),lambda a,b:selectclass(options.classes[0],options.classes[1],a,b))
 		
@@ -87,11 +87,11 @@ def main():
 		options.classmx=options.classmx.split(",")
 		clsnum=int(options.classmx[1])
 		imgs=getmxim(args[0],options.classmx[0],clsnum)
-		display(imgs)
+		display(imgs,args[0])
 	else:
 		for i in args:
 			a=EMData.read_images(i)
-			display(a)
+			display(a,i)
 			
 	sys.exit(app.exec_())
 
@@ -116,12 +116,12 @@ def getmxim(fsp,fsp2,clsnum):
 	imgs=[EMData(fsp,i) for i in range(mx.get_ysize()) if mx.get(0,i)==clsnum]
 	return imgs
 
-def display(img):
+def display(img,title="EMImage"):
 #	print img
 	
 	if len(img)==1 : img=img[0]
 	w=EMImage(img)
-	w.setWindowTitle("EMImage")
+	w.setWindowTitle(title)
 	w.show()
 	win.append(w)
 
