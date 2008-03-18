@@ -49,7 +49,6 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emimage3dobject import EMImage3DObject
 from emglobjects import Camera2, EMImage3DObject, EMViewportDepthTools, Camera2, Camera
 
 MAG_INCREMENT_FACTOR = 1.1
