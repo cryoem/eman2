@@ -209,7 +209,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		glEnable(GL_TEXTURE_3D)
 		glBindTexture(GL_TEXTURE_3D, self.tex_name)
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		#glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP)
@@ -267,13 +267,14 @@ class EM3DSliceViewer(EMImage3DObject):
 		tmp.cut_slice(self.data,t,True)
 			
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
+		self.tex_name = 0
 		
 		self.tex_name = self.glflags.genTextureName(tmp)
 		
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D, self.tex_name)
 			
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		#glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
@@ -322,6 +323,11 @@ class EM3DSliceViewer(EMImage3DObject):
 		glPopMatrix()
 		
 		self.cam.position()
+		self.vdtools.storeModel()
+		
+		if ( self.track ):
+			self.loadTrackAxis()
+			self.genCurrentDisplayList()
 		
 		if ( self.tex_dl == 0 ):
 			self.genCurrentDisplayList()
@@ -412,12 +418,16 @@ class EM3DSliceViewer(EMImage3DObject):
 		return self.inspector
 
 	def loadTrackAxis(self):
-		t3d = self.cam.t3d_stack[len(self.cam.t3d_stack)-1]
+		t3d = self.vdtools.getEmanMatrix()
+		#at3d = self.cam.t3d_stack[len(self.cam.t3d_stack)-1]
 		
 		point = Vec3f(0,0,1)
 		
+		point *= 1.0/self.vdtools.getCurrentScale()
+		
 		point = point*t3d
-		if ( point[1] != 0 ): point[1] = -point[1]
+		
+		#if ( point[2] != 0 ): point[2] = -point[2]
 		
 		if len(self.axes) == 3 :
 			self.axes.append(point)
@@ -438,9 +448,6 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.updateGL()
 		
 	def mouseMoveEvent(self, event):
-		if ( self.track ):
-			self.loadTrackAxis()
-			self.genCurrentDisplayList()
 		self.cam.mouseMoveEvent(event)
 		self.updateGL()
 	

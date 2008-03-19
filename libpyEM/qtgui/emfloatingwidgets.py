@@ -64,6 +64,7 @@ class EMGLView3D:
 	def __init__(self, parent,image=None):
 		self.parent = parent
 		self.cam = Camera2(self)
+		self.cam.motiondull = 3.0
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
 		self.w = image.get_xsize()	# width of window
@@ -76,6 +77,7 @@ class EMGLView3D:
 		self.drawable = EMImage3DCore(image,self)		# the object that is drawable (has a draw function)
 		self.drawable.cam.basicmapping = True
 		self.drawable.cam.motiondull = 3.0
+		#self.drawable.supressInspector = True
 		self.vdtools = EMViewportDepthTools(self)
 		
 		self.updateFlag = True
@@ -516,7 +518,10 @@ class EMGLViewQtWidget:
 				self.parent.deleteTexture(self.itex)
 			self.genTexture = False
 			##print "binding texture"
+			#self.qwidget.setVisible(True)
+			#self.qwidget.repaint()
 			pixmap = QtGui.QPixmap.grabWidget(self.qwidget)
+			#self.qwidget.setVisible(False)
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
 			self.itex = self.parent.bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'

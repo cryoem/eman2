@@ -569,6 +569,10 @@ class EMOpenGLFlagsAndTools:
 				# sigh - I couldn't find an EXTENSION or simple way of testing for this,
 				# so I just did it this way. I am worried this approach may not work
 				# in all cases because it is not conventional
+				# FIXME - 3D textures were introduced in Version 1.2
+				# This problem is more convoluted then it seems. I think we may be having problems
+				# because of PyOpenGL problems, and/or possibly due to lack of accelerated drivers....
+				# needs more investigation.
 				try: glEnable(GL_TEXTURE_3D)
 				except:
 					disable = False

@@ -192,7 +192,6 @@ class EMImage3DCore:
 
 		self.cam = Camera2(self)
 		self.vdtools = EMViewportDepthTools(self)
-		self.inspector=EMImageInspector3D(self)
 		#self.inspector.addSlices()
 	#def timeout(self):
 		#self.updateGL()
@@ -274,8 +273,6 @@ class EMImage3DCore:
 	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
-			if not self.inspector or self.inspector ==None:
-				self.inspector=EMImageInspector3D(self)
 			self.showInspector(1)
 		else:
 			self.cam.mousePressEvent(event)
@@ -461,8 +458,12 @@ class EMImageInspector3D(QtGui.QWidget):
 	def updateSelection(self):
 		self.listwidget.addItem(self.target.getCurrentName())
 		self.listwidget.setCurrentRow(self.target.currentselection)
+		#print "entry",self.target.getCurrentInspector().layout().activate()
+		#self.tabwidget.layout().activate()
 		self.tabwidget.addTab(self.target.getCurrentInspector(), self.target.getCurrentName())
 		self.tabwidget.setCurrentIndex(self.target.currentselection)
+		#print self.tabwidget.layout().activate()
+		
 	
 	def addSlices(self):
 		self.target.addSliceViewer()

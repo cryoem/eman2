@@ -35,6 +35,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
+from OpenGL.GLU import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
@@ -72,24 +73,24 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.imagemx.setData(data)
 		
 	def initializeGL(self):
-		GL.glClearColor(0,0,0,0)
+		glClearColor(0,0,0,0)
 		
 	def paintGL(self):
 		if not self.parentWidget() : return
-		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
 		if ( self.imagemx == None ): return
 		self.imagemx.render()
 
 	
 	def resizeGL(self, width, height):
-		GL.glViewport(0,0,self.width(),self.height())
+		glViewport(0,0,self.width(),self.height())
 	
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		gluOrtho2D(0.0,self.width(),0.0,self.height())
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
 
 		try: self.imagemx.resizeEvent(width,height)
 		except Exception, inst:
@@ -292,7 +293,7 @@ class EMImageMXCore:
 			else :
 				vec=(vec[0]/h,vec[1]/h)
 				self.origin=(self.origin[0]+vec[0]*self.targetspeed,self.origin[1]+vec[1]*self.targetspeed)
-			self.updateGL()
+			#self.updateGL()
 		
 	
 	def render(self):
@@ -309,8 +310,8 @@ class EMImageMXCore:
 		x,y=-self.origin[0],-self.origin[1]
 		hist=numpy.zeros(256)
 		if len(self.coords)>n : self.coords=self.coords[:n]
-		GL.glColor(0.5,1.0,0.5)
-		GL.glLineWidth(2)
+		glColor(0.5,1.0,0.5)
+		glLineWidth(2)
 		try:
 			# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
 			# contrast the text labels...
@@ -358,23 +359,23 @@ class EMImageMXCore:
 					self.texture(a,tx,ty,tw,th)
 				else:
 					a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
-					GL.glRasterPos(tx,ty)
-					GL.glDrawPixels(tw,th,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-				
+					glRasterPos(tx,ty)
+					glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
+						
 				if i in self.selected:
-					GL.glColor(0.5,0.5,1.0)
-					GL.glBegin(GL.GL_LINE_LOOP)
-					GL.glVertex(x,y)
-					GL.glVertex(x+w,y)
-					GL.glVertex(x+w,y+h)
-					GL.glVertex(x,y+h)
-					GL.glEnd()
+					glColor(0.5,0.5,1.0)
+					glBegin(GL_LINE_LOOP)
+					glVertex(x,y)
+					glVertex(x+w,y)
+					glVertex(x+w,y+h)
+					glVertex(x,y+h)
+					glEnd()
 				hist2=numpy.fromstring(a[-1024:],'i')
 				hist+=hist2
 				# render labels
 
 				tagy = y
-				GL.glColor(*txtcol)
+				glColor(*txtcol)
 				for v in self.valstodisp:
 					if v=="Img #" : self.renderText(x,tagy,"%d"%i)
 					else : 
@@ -460,7 +461,6 @@ class EMImageMXCore:
 		
 		if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
 		
-	
 	def texture(self,a,x,y,w,h):
 		
 		tex_name = glGenTextures(1)
@@ -473,13 +473,13 @@ class EMImageMXCore:
 		glPushMatrix()
 		glTranslatef(x+width,y+height,0)
 			
-		glBindTexture(GL.GL_TEXTURE_2D,tex_name)
-		glTexImage2D(GL.GL_TEXTURE_2D,0,GL_LUMINANCE,w,h,0,GL_LUMINANCE,GL_UNSIGNED_BYTE, a)
+		glBindTexture(GL_TEXTURE_2D,tex_name)
+		glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,w,h,0,GL_LUMINANCE,GL_UNSIGNED_BYTE, a)
 		
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D, tex_name)
-		#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		# using GL_NEAREST ensures pixel granularity
 		# using GL_LINEAR blurs textures and makes them more difficult
 		# to interpret (in cryo-em)
@@ -513,7 +513,7 @@ class EMImageMXCore:
 	
 	def renderText(self,x,y,s):
 #	        print 'in render Text'
-		GL.glRasterPos(x+2,y+2)
+		glRasterPos(x+2,y+2)
 		for c in s:
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
 
