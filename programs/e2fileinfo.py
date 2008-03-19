@@ -43,7 +43,7 @@ ac_expressions = ["ac", "ampc", "ampcon", "ampcont", "ampcontrast", "acon", "aco
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <image file> ... """
+	usage = """%prog [options] <input file> <output file> ... """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -56,6 +56,9 @@ def main():
 	
 	parser.add_option("--getinfo",type="string",help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
 	parser.add_option("--remove",type="string",help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
+	parser.add_option("--op",type="string",help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
+	parser.add_option("--outfile",type="string",help="The output file name, may not be required",default="")
+	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -63,18 +66,127 @@ def main():
 	logid=E2init(sys.argv)
 
 	if ( options.remove != "" ):
+		checkoutput(options)
 		a = parsemodopt_logical( options.remove )
-		fileinfo_remove(args[0], a )
+		fileinfo_remove(args[0], a, options.outfile)
 		E2end(logid)
 		return
-	if ( options.getinfo != "" ):
+	elif ( options.op != "" ):
+		checkoutput(options)
+		a = parsemodopt_operation( options.op )
+		fileinfo_op(args[0], a, options.outfile)
+		E2end(logid)
+		return
+	elif ( options.getinfo != "" ):
 		fileinfo_output(args[0],options.getinfo)
 	else:
 		fileinfo(args[0])
 	
 	E2end(logid)
 
-def fileinfo_remove(filename, info):
+def checkoutput(options):
+	outfile = options.outfile
+	if outfile == '':
+		print "Error, must specify the --outfile argument"
+		exit(0)
+	if os.path.exists(outfile):
+		if not options.force:
+			print "Error, outfile",outfile, "already exists"
+			exit(0)
+		else:
+			remove_file(options.outfile)
+	
+def fileinfo_op(filename,info,outfile):
+	
+	print info
+	if ( len(info) != 3 ):
+		print "ERROR - logical expression must be a single expression"
+		print "Could not process the following: "
+		print info
+		exit(1)
+		
+	if ( info[1] not in ["+=", "-=", "*=", "/=", "%="]):
+		print "ERROR: could not extract logical expression"
+		print "Must be one of", "+=", "-=", "*=", "/=", "%="
+		print info
+		exit(1)
+	
+	if ( info[0] not in bfactor_expressions and info[0]  not in defocus_expressions and info[0]  not in ac_expressions ):
+		print "ERROR: left expression %s was not in the following" %info[0]
+		print bfactor_expressions
+		print defocus_expressions
+		print ac_expressions
+		exit(1)
+	
+	n=EMUtil.get_image_count(filename)
+
+	for i in xrange(0,n):
+		d=EMData()
+		d.read_image(filename,i)
+	
+		try:
+			expr = d.get_attr("IMAGIC.label")
+		except RuntimeError:
+			print "ERROR: the image has no \"IMAGIC.label\" attribute"
+			exit(1)
+			
+		#print expr
+		vals = re.findall("\S*[\w*]", expr)
+		
+		if ( len(vals) < 4 ):
+			print "ERROR: the CTF params were inconsistent with what was expected"
+			print "I am examining image number %d, and its ctf params are as follows:" %(i+1)
+			print vals
+			exit(1)
+		
+		idx = 0
+		if ( info[0] in defocus_expressions ):
+			f = re.findall("\d.*\d*", vals[0])
+			score = f[0]
+			idx = 0
+		elif ( info[0] in bfactor_expressions ):
+			score = vals[1]
+			idx = 1
+		elif ( info[0] in ac_expressions ):
+			score = vals[3]
+			idx = 3
+		else:
+			print "error, cannot handle", info[0]
+			exit(0)
+		
+		score = float(score)
+		
+		op_value = float(info[2])
+		
+		
+		if ( info[1] == "+=" ):
+			score += op_value
+		elif ( info[1] == "-=" ):
+			score -= op_value
+		elif ( info[1] == "*=" ):
+			score *= op_value
+		elif ( info[1] == "/=" ):
+			score /= op_value
+		elif ( info[1] == "%=" ):
+			score %= op_value
+				
+		
+		if idx != 0:
+			vals[idx] = str(score)
+		else:
+			vals[idx] = '!--'+str(score)
+			
+		n = len(vals)
+		ilabel = ''
+		for j in range(0,n):
+			ilabel += vals[j]
+			if j != n-1:
+				ilabel += ' '
+		
+		d.set_attr("IMAGIC.label",ilabel)
+		d.write_image(outfile,-1)
+
+def fileinfo_remove(filename, info,outfile):
 	
 	if ( len(info) != 3 ):
 		print "ERROR - logical expression must be a single expression"
@@ -158,7 +270,7 @@ def fileinfo_remove(filename, info):
 			dd=EMData()
 			# now read the image data as well as the header
 			dd.read_image(filename,i)
-			dd.write_image("cleaned.img", -1 )
+			dd.write_image(outfile, -1 )
 		else:
 			total_removed += 1
 	

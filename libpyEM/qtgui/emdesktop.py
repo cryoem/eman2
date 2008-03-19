@@ -48,6 +48,8 @@ from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtCore import QTimer
 
+from emfloatingwidgets import EMFloatingWidgetsCore
+
 
 class EMDesktop(QtOpenGL.QGLWidget):
 	"""An opengl windowing system, which can contain other EMAN2 widgets and 3-D objects.
@@ -158,7 +160,6 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		glPopMatrix()
 		glEndList()
 
-	
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 #		glLoadIdentity()
@@ -171,6 +172,13 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		glEnable(GL_LIGHT0)
 		glCallList(self.volcubedl)
 		
+		
+		glColor(.9,.2,.8)
+		# this is a nice light blue color (when lighting is on)
+		# and is the default color of the frame
+		glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,50.0)
 		if self.time>150 :
 			glPushMatrix()
 			glScalef(.25,.25,.25)

@@ -50,7 +50,7 @@ from math import sqrt
 
 from emimage import EMImage
 
-from emglobjects import EMViewportDepthTools, Camera2, EMBasicOpenGLObjects
+from emglobjects import EMViewportDepthTools, Camera2, EMBasicOpenGLObjects, Camera
 from emimage2dtex import *
 
 
@@ -687,7 +687,7 @@ class EMGLViewQtWidget:
 				cw.hidePopup()
 				widget = EMGLViewQtWidget(self.parent,None,cw);
 				widget.setQtWidget(cw.view())
-				widget.cam.loadIdentity()
+				widget.cam.loadIdentity()	
 				widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
 				widget.cam.setCamTrans("y",((self.height()/2.0-cw.geometry().y())-cw.view().height()/2.0))
 				widget.cam.setCamTrans("z",0.1)
@@ -817,11 +817,7 @@ class EMGLViewQtWidget:
 
 
 class EMFloatingWidgets(QtOpenGL.QGLWidget):
-	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
-	or sets of 2D images.
-	"""
-	def __init__(self, parent=None):
-		#print "init"
+	def __init__(self,parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		# enable multisampling to combat aliasing
@@ -830,25 +826,27 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		fmt.setStencil(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		
-		self.fov = 2*180*atan2(1,5)/pi
-		self.imtex=0
-		
 		self.setMouseTracking(True)
-		self.current = None
-		self.previous = None
-	
-		self.initFlag = True
-		self.qwidgets = []
+		self.fov = 2*180*atan2(1,5)/pi
 		
-		#print "init done"
-	
+		self.floatwidget = EMFloatingWidgetsCore(self)
+		
+		self.cam = Camera()
 		
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
 		depth = height/(2.0*tan(self.fov/2.0*pi/180.0))
 		return depth
-		
+	
+	def get_render_dims_at_depth(self, depth):
+		# This function returns the width and height of the renderable 
+		# area at the origin of the data volume
+		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		width = self.aspect*height
+		return [width,height]
+
+	
 	def initializeGL(self):
 		#print "initializeGL"
 		glClearColor(0,0,0,0)
@@ -874,24 +872,8 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		# enable multisampling to combat aliasing
 		if ( "GL_ARB_multisample" in glGetString(GL_EXTENSIONS) ): glEnable(GL_MULTISAMPLE)
 		else: glDisable(GL_MULTISAMPLE)
-	def addQtWidgetDrawer(self,widget):
-		w = EMGLViewQtWidget(self)
-		w.setQtWidget(widget)
-		self.qwidgets.append(w)
 		
-		#print "initializeGL done"
 	def paintGL(self):
-		if ( self.initFlag == True ):
-			self.fd = QtGui.QFileDialog(self,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
-			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
-			self.fd.show()
-			self.fd.hide()
-			self.qwidgets.append(EMGLViewQtWidget(self))
-			self.qwidgets[0].setQtWidget(self.fd)
-			self.qwidgets[0].cam.setCamX(-100)
-			self.initFlag = False
-			
-
 		#print "paintGL"
 		glClear(GL_COLOR_BUFFER_BIT)
 		if glIsEnabled(GL_DEPTH_TEST):
@@ -902,52 +884,8 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 	
-		for i in self.qwidgets:
-			#print "getting opengl matrices"
-			glPushMatrix()
-			i.paintGL()
-			glPopMatrix()
-			#print "paint child done"
+		self.floatwidget.render()
 		
-		#print "paintGL done"
-	def finished(self,val):
-		#print "file dialog finished with code",val
-		if ( val == 1 ):
-			for i in self.fd.selectedFiles():
-				#try:
-					#print i,str(i)
-					a=EMData.read_images(str(i))
-					if len(a) == 1:
-						a = a[0]
-						if a.get_zsize() != 1:
-							w = EMGLView3D(self,a)
-							self.qwidgets.append(w)
-						else:
-							w = EMGLView2D(self,a)
-							self.qwidgets.append(w)
-					else:
-						#if len(a)==1 : a=a[0]
-						#w.setWindowTitle("EMImage (%s)"%f)
-						#w.show()
-						w = EMGLView2D(self,a)
-						#w.setData(a[0])
-						self.qwidgets.append(w)
-					
-					#self.qwidgets[0].cam.setCamX(100)
-					#self.initFlag = False
-				#except:
-					#print "error, could not open",i
-			
-	def timer(self):
-		pass
-		#self.updateGL()
-		
-	def get_render_dims_at_depth(self, depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
-		return [width,height]
 	def resizeGL(self, width, height):
 		#print "resizeGL"
 		glViewport(0,0,self.width(),self.height())
@@ -962,14 +900,157 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		# this is the same as the glFrustum call above
 		depth = self.get_depth_for_height(height_plane)
 		gluPerspective(self.fov,self.aspect,depth-depth/4,depth+depth/4)
-		for i in self.qwidgets:
-			i.set_update_P_inv()
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		#self.updateGL()
-		#print "resizeGL done"
+		try: self.floatwidget.resizeEvent(width,height)
+		except: print "couldn't resize floatwidget"
+		
+	def mousePressEvent(self, event):
+		self.floatwidget.mousePressEvent(event)
 	
+	def mouseMoveEvent(self, event):
+		self.floatwidget.mouseMoveEvent(event)
+		
+	def mouseReleaseEvent(self, event):
+		self.floatwidget.mouseReleaseEvent(event)
+
+	def mouseDoubleClickEvent(self, event):
+		self.floatwidget.mouseDoubleClickEvent(event)
+
+	def wheelEvent(self, event):
+		self.floatwidget.wheelEvent(event)
+
+	def toolTipEvent(self, event):
+		self.floatwidget.wheelEvent(event)
+		QtGui.QToolTip.hideText()
+		
+
+	def dragMoveEvent(self,event):
+		print "received drag move event, but I don't do anything about it :("
+		
+	def event(self,event):
+		if event.type() == QtCore.QEvent.MouseButtonPress: 
+			self.mousePressEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.MouseButtonRelease:
+			self.mouseReleaseEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.MouseMove: 
+			self.mouseMoveEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.MouseButtonDblClick: 
+			self.mouseDoubleClickEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.Wheel: 
+			self.wheelEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.ToolTip: 
+			self.toolTipEvent(event)
+			return True
+		else: 
+			return QtOpenGL.QGLWidget.event(self,event)
+
+	def hoverEvent(self,event):
+		self.floatwidget.hoverEvent(event)
+
+class EMFloatingWidgetsCore:
+	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
+	or sets of 2D images.
+	"""
+	def __init__(self, parent=None):
+		#print "init"
+		self.parent = parent
+	
+		self.imtex=0
+		self.current = None
+		self.previous = None
+	
+		self.initFlag = True
+		self.qwidgets = []
+		
+		#print "init done"
+	
+		
+	def get_depth_for_height(self, height):
+		try: 
+			return self.parent.get_depth_for_height(height)
+		except:
+			print "parent can't get height for depth"
+			return 0
+
+	def height(self):
+		return self.parent.height()
+	
+	def width(self):
+		return self.parent.width()
+
+	def updateGL(self):
+		self.parent.updateGL()
+
+	def addQtWidgetDrawer(self,widget):
+		w = EMGLViewQtWidget(self)
+		w.setQtWidget(widget)
+		self.qwidgets.append(w)
+		
+		#print "initializeGL done"
+	def render(self):
+		
+		if ( self.initFlag == True ):
+			self.fd = QtGui.QFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
+			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
+			self.fd.show()
+			self.fd.hide()
+			self.qwidgets.append(EMGLViewQtWidget(self.parent))
+			self.qwidgets[0].setQtWidget(self.fd)
+			self.qwidgets[0].cam.setCamX(-100)
+			self.initFlag = False
+			
+
+		
+		for i in self.qwidgets:
+			#print "getting opengl matrices"
+			glPushMatrix()
+			i.paintGL()
+			glPopMatrix()
+			#print "paint child done"
+		
+		#print "paintGL done"
+	def finished(self,val):
+		if ( val == 1 ):
+			for i in self.fd.selectedFiles():
+				a=EMData.read_images(str(i))
+				if len(a) == 1:
+					a = a[0]
+					if a.get_zsize() != 1:
+						w = EMGLView3D(self,a)
+						self.qwidgets.append(w)
+					else:
+						w = EMGLView2D(self,a)
+						self.qwidgets.append(w)
+				else:
+					w = EMGLView2D(self,a)
+					self.qwidgets.append(w)
+					
+	def timer(self):
+		pass
+		#self.updateGL()
+		
+	def bindTexture(self,pixmap):
+		return self.parent.bindTexture(pixmap)
+	
+	def deleteTexture(self,val):
+		return self.parent.deleteTexture(val)
+	
+	def get_render_dims_at_depth(self, depth):
+		try: return self.parent.get_render_dims_at_depth(depth)
+		except:
+			print "parent can't get render dims at for depth"
+			return
+
+	def resizeEvent(self, width, height):
+		for i in self.qwidgets:
+			i.set_update_P_inv()
 	
 	def mousePressEvent(self, event):
 		for i in self.qwidgets:
