@@ -3306,9 +3306,8 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 
 // helper functions for ali2d_ra
 
-vector<float> Util::ener(EMData* ave, vector<int> numr) {
+float Util::ener(EMData* ave, vector<int> numr) {
 	ENTERFUNC;
-	vector<float> norm;
 	long double ener,en;	
 		
 	int nring = numr.size()/3;
@@ -3323,9 +3322,8 @@ vector<float> Util::ener(EMData* ave, vector<int> numr) {
 		for (int j=2; j<np+numr3i-1; j++) en += tq*aveptr[j]*aveptr[j];
 		ener += en/numr3i;
 	}            
-	norm.push_back(static_cast<float>(ener));
 	EXITFUNC;
-	return norm;
+	return static_cast<float>(ener);
 }
 
 void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int> numr){

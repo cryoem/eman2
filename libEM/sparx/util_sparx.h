@@ -405,7 +405,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void update_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
 	static void sub_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
 
-	static vector<float> ener(EMData* ave, vector<int> numr);
+	static float ener(EMData* ave, vector<int> numr);
 	
 	/* Decimates the image with respect to the image center.
 	 * (i.e) the center of the original image is kept the same 
