@@ -135,7 +135,12 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def dropEvent(self,event):
 		self.image2d.dropEvent(event)
 		
+	def close(self):
+		print "close received"
+		self.image2d.closeEvent(event)
+		
 	def closeEvent(self,event) :
+		print "close event received"
 		self.image2d.closeEvent(event)
 		
 	def dragEnterEvent(self,event):
