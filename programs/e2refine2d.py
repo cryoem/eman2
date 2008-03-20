@@ -35,7 +35,7 @@
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
-from os import system
+from os import system,remove
 import sys
 
 def main():
@@ -129,9 +129,11 @@ def main():
 			run("e2basis.py project %s %s %s"%(fpbasis,fpfile,inputproj))
 		
 		# classify the subspace vectors
+		remove("classmx.hdf")
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.hdf"%(inputproj,options.input,options.ncls))
 		
 		# make class-averages
+		remove("classes.hdf")
 		run("e2classaverage.py %s classmx.hdf classes.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
 		
 	# this is the main refinement loop
