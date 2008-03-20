@@ -54,6 +54,8 @@ def main():
 	parser.add_option("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_option("--verbose","-v", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	parser.add_option("--input", default="start.hdf",type="string", help="The name of the file containing the particle data")
+	parser.add_option("--ncls", default=32, type="int", help="Number of classes to generate")
+	parser.add_option("--iterclassav", default=2, type="int", help="Number of iterations when making class-averages")
 	
 	#options associated with generating initial class-averages
 	parser.add_option("--initial",type="string",default=None,help="File containing starting class-averages. If not specified, will generate starting averages automatically")
@@ -99,29 +101,32 @@ def main():
 	#if check_make3d_args(options,True) == True:
 		#error = True
 	
-	if error:
-		print "Error encountered while, bailing"
-		exit(1)
+#	if error:
+#		print "Error encountered while, bailing"
+#		exit(1)
 	
 	# if we aren't given starting class-averages, make some
 	if not options.initial :
 		# make footprint images (rotational/translational invariants)
-		fpfile=options.input[:options.input.rfind(".")]+".fp.hdf")
+		fpfile=options.input[:options.input.rfind(".")]+".fp.hdf"
 		if not os.access(fpfile,os.R_OK) :
-			system("e2proc2d.py %s %s --fp"%(options.input,fpfile)
+			system("e2proc2d.py %s %s --fp"%(options.input,fpfile))
 		
 		# MSA on the footprints
-		fpbasis=options.input[:options.input.rfind(".")]+".fp.basis.hdf")
+		fpbasis=options.input[:options.input.rfind(".")]+".fp.basis.hdf"
 		if not os.access(fpbasis,os.R_OK) :
 			system("e2msa.py %s %s --nbasis=%0d --varimax"%(fpfile,fpbasis,options.nbasisfp))
 	
 		# reproject the particle footprints into the basis subspace
-		inputproj=options.input[:options.input.rfind(".")]+".fp.proj.hdf")
+		inputproj=options.input[:options.input.rfind(".")]+".fp.proj.hdf"
 		if not os.access(inputproj,os.R_OK) :
 			system("e2basis.py project %s %s"%(fpbasis,inputproj))
 		
 		# classify the subspace vectors
+		system("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.hdf"%(inputproj,options.input,options.ncls))
 		
+		# make class-averages
+		system("e2classaverage.py %s classmx.hdf classes.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
 		
 	# this is the main refinement loop
 	for i in range(0,options.iter) :
