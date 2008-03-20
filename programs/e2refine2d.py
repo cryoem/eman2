@@ -129,11 +129,13 @@ def main():
 			run("e2basis.py project %s %s %s"%(fpbasis,fpfile,inputproj))
 		
 		# classify the subspace vectors
-		remove("classmx.hdf")
+		try: remove("classmx.hdf")
+		except: pass
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.hdf"%(inputproj,options.input,options.ncls))
 		
 		# make class-averages
-		remove("classes.hdf")
+		try: remove("classes.hdf")
+		except: pass
 		run("e2classaverage.py %s classmx.hdf classes.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
 		
 	# this is the main refinement loop
