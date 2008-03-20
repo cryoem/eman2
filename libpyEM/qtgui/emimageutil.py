@@ -54,7 +54,8 @@ class EMParentWin(QtGui.QWidget):
 
 	def closeEvent(self, e):
 		try:
-			self.child.inspector.close()
+			self.child.closeEvent(e)
+			#self.child.inspector.close()
 		except: pass
 		QtGui.QWidget.closeEvent(self,e)
 		
