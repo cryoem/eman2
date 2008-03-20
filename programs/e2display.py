@@ -103,11 +103,14 @@ def selectclass(rawfsp,mxfsp,event,lc):
 	
 	clsnum=lc[0]
 	ptcls=getmxim(rawfsp,mxfsp,clsnum)
-	if len(win)==1:
-		display(ptcls)
-	else:
-		win[1].child.setData(ptcls)
 	
+	if event.modifiers()==Qt.ShiftModifier :
+		for i in ptcls: i.write_image("selected.hdf",-1)
+	else:	
+		if len(win)==1:
+			display(ptcls)
+		else:
+			win[1].child.setData(ptcls)
 
 def getmxim(fsp,fsp2,clsnum):
 	"""reads the raw particles associated with a particular class.
