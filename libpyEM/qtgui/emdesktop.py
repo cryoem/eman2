@@ -48,7 +48,7 @@ from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtCore import QTimer
 
-from emfloatingwidgets import EMFloatingWidgetsCore
+#from emfloatingwidgets import EMFloatingWidgetsCore
 
 
 class EMDesktop(QtOpenGL.QGLWidget):
@@ -73,8 +73,8 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		self.sysdesktop=self.app.desktop()
 		self.appscreen=self.sysdesktop.screen(self.sysdesktop.primaryScreen())
 		self.aspect=float(self.appscreen.width())/self.appscreen.height()
-		self.bgob=ob2dimage(self,QtGui.QPixmap.grabWindow(self.appscreen.winId(),0.0,0.0,self.sysdesktop.width(),self.sysdesktop.height()-30),self.aspect)
-		
+		#self.bgob=ob2dimage(self,QtGui.QPixmap.grabWindow(self.appscreen.winId(),0.0,0.0,self.sysdesktop.width(),self.sysdesktop.height()-30),self.aspect)
+		self.bgob2=ob2dimage(self,self.readEMAN2Image(),self.aspect)
 #		self.setWindowFlags(Qt.FramelessWindowHint)
 #		print self.sysdesktop.primaryScreen(),self.sysdesktop.numScreens(),self.appscreen.size().width(),self.sysdesktop.screenGeometry(0).width(),self.sysdesktop.screenGeometry(1).width()
 		self.norender=1
@@ -87,6 +87,10 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 		self.timer.start(10)
 		self.time=0
+		
+	def readEMAN2Image(self):
+		p = QtGui.QPixmap("EMAN2.0.big.jpg")
+		return p
 	
 	def timeout(self):
 		self.time+=1
@@ -167,7 +171,8 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		if self.norender : return
 		
 		glDisable(GL_LIGHTING)
-		self.bgob.render()
+		#self.bgob.render()
+		self.bgob2.render()
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		glCallList(self.volcubedl)
@@ -184,39 +189,10 @@ class EMDesktop(QtOpenGL.QGLWidget):
 			glScalef(.25,.25,.25)
 			glTranslate(-2.5,0.0,2.0)
 			glRotate(self.time,1.0,-.2,0.0)
+			glScalef(self.bgob2.asp(),1.0,1.0)
 			glCallList(self.framedl)
+			self.bgob2.render2()
 			glPopMatrix()
-
-	def mouseinwin(self,x,y):
-		x00=self.mc00[0]
-		x01=self.mc01[0]-x00
-		x10=self.mc10[0]-x00
-		x11=self.mc11[0]-x00
-		y00=self.mc00[1]
-		y01=self.mc01[1]-y00
-		y10=self.mc10[1]-y00
-		y11=self.mc11[1]-y00
-		x-=x0015
-		y-=y00
-		
-# 		print "%f,%f  %f,%f  %f,%f  %f,%f"%(x00,y00,x01,y01,x11,y11,x10,y10)
-		
-		try: xx=(x01*y + x10*y - x11*y - x*y01 - x10*y01 - x*y10 + x01*y10 +
-		x*y11 + sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
-		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*((x01 - x11)*y10 + x10*(-y01 + y11)))
-		except: xx=x/x10
-			
-		try: yy=(x01*y + x10*y - x11*y - x*y01 + x10*y01 - x*y10 - x01*y10 +
-		x*y11 - sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
-		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*(x10*y01 - x11*y01 + x01*(-y10 + y11)))
-		except: yy=y/y01
-			
-		return (xx*self.inspector.width(),yy*self.inspector.height())
-		
-		
-# 		return (x01*y + x10*y - x11*y - x*y01 - x10*y01 - x*y10 + x01*y10 +
-# 		x*y11 + sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
-# 		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*((x01 - x11)*y10 + x10*(-y01 + y11)))
 
 	
 	def resizeGL(self, width, height):
@@ -242,58 +218,20 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 
 
-	
-# 		glMatrixMode(GL_PROJECTION)
-# 		glLoadIdentity()
-# 		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
-# 		glMatrixMode(GL_MODELVIEW)
-# 		glLoadIdentity()
-		
-#		glMatrixMode(GL_PROJECTION)
-#		glLoadIdentity()
-#		glOrtho(-0.5, +0.5, +0.5, -0.5, 4.0, 15.0)
-#		glMatrixMode(GL_MODELVIEW)
-		
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
 			self.showInspector(1)
 		elif event.button()==Qt.LeftButton:
-#			self.mousedrag=(event.x(),event.y())
 			app=QtGui.QApplication.instance()
-			#if self.inspector :
-				#l=self.mouseinwin(event.x(),event.y())
-				#cw=self.inspector.childAt(l[0],l[1])
-				#gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-				#qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
-##				self.inspector.mousePressEvent(qme)
-				#cw.mousePressEvent(qme)
-##				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
-				#print qme.x(),qme.y(),l,gp.x(),gp.y()
+			
 	
 	def mouseMoveEvent(self, event):
 		if event.buttons()==Qt.LeftButton:
 			pass
-#			self.mousedrag=(event.x(),event.y())
-			#if self.inspector :
-				#l=self.mouseinwin(event.x(),event.y())
-				#cw=self.inspector.childAt(l[0],l[1])
-				#gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-				#qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
-				#cw.mouseMoveEvent(qme)
-				#print qme.x(),qme.y(),l,gp.x(),gp.y()
-		
+
 	def mouseReleaseEvent(self, event):
 		if event.button()==Qt.LeftButton:
 			pass
-			#if self.inspector :
-				#l=self.mouseinwin(event.x(),event.y())
-				#cw=self.inspector.childAt(l[0],l[1])
-				#gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-				#qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
-##				self.inspector.mousePressEvent(qme)
-				#cw.mouseReleaseEvent(qme)
-##				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
-				#print qme.x(),qme.y(),l,gp.x(),gp.y()
 
 class ob2dimage:
 	def __init__(self,target,pixmap,aspect):
@@ -311,6 +249,36 @@ class ob2dimage:
 
 	def update(self):
 		return
+	
+	def width(self):
+		return self.pixmap.width()
+	
+	def height(self):
+		return self.pixmap.height()
+	
+	def asp(self):
+		return (1.0*self.width())/self.height()
+	
+	def render2(self):
+		if not self.pixmap : return
+		glPushMatrix()
+		#glScalef(self.pixmap.width()/2.0,self.pixmap.height()/2.0,1.0)
+		glColor(1.0,1.0,1.0)
+		glEnable(GL_TEXTURE_2D)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		glBindTexture(GL_TEXTURE_2D,self.itex)
+		glBegin(GL_QUADS)
+		glTexCoord2f(0.,0.)
+		glVertex(-1.0,-1.0)
+		glTexCoord2f(.999,0.)
+		glVertex( 1.0,-1.0)
+		glTexCoord2f(.999,0.999)
+		glVertex( 1.0, 1.0)
+		glTexCoord2f(0.,.999)
+		glVertex(-1.0, 1.0)
+		glEnd()
+		glPopMatrix()
+		glDisable(GL_TEXTURE_2D)
 	
 	def render(self):
 		if not self.pixmap : return
@@ -331,69 +299,10 @@ class ob2dimage:
 		glTexCoord2f(0.,.999)
 		glVertex(-self.aspect, 1.0)
 		glEnd()
-		
+		glDisable(GL_TEXTURE_2D)
 		#glPopMatrix()
 
 
-class ob2d:
-	def __init__(self,target):
-		self.mc00=(0,0,0)
-		self.mc10=(0,0,0)
-		self.mc11=(0,0,0)
-		self.mc01=(0,0,0)
-		self.pixmap=None
-		self.widget=None
-		self.target=target
-		self.itex=None
-
-	def __del__(self):
-		target.deleteTexture(self.itex)
-
-
-	def setWidget(self,widget,region=None):
-		self.widget=widget
-		self.region=region
-		self.update()
-
-	def update(self):
-#		self.pixmap=QtGui.QPixmap.grabWidget(self.widget)
-		if self.region : self.pixmap=QtGui.QPixmap.grabWindow(self.widget.winId(),self.region.x(),self.region.y(),self.region.width(),self.region.height())
-		else : self.pixmap=QtGui.QPixmap.grabWindow(self.widget.winId())
-		self.aspect=float(self.pixmap.width())/self.pixmap.height()
-#		self.pixmap.save("test.jpg")
-		self.target.makeCurrent()
-		self.itex=self.target.bindTexture(self.pixmap)
-		print "---> ",self.itex
-
-	def render(self):
-		if not self.pixmap : return
-		glPushMatrix()
-		#glTranslate(-2.5,0,0)
-		#glRotate(self.insang,0.1,1.0,0.0)
-		#glTranslate(2.5,0,0)
-		glColor(1.0,1.0,1.0)
-		glEnable(GL_TEXTURE_2D)
-		glBindTexture(GL_TEXTURE_2D,self.itex)
-		glBegin(GL_QUADS)
-		glTexCoord2f(0.,0.)
-		glVertex(-self.aspect,-1.0)
-		glTexCoord2f(.999,0.)
-		glVertex( self.aspect,-1.0)
-		glTexCoord2f(.999,0.999)
-		glVertex( self.aspect, 1.0)
-		glTexCoord2f(0.,.999)
-		glVertex(-self.aspect, 1.0)
-		glEnd()
-		
-		wmodel=glGetDoublev(GL_MODELVIEW_MATRIX)
-		wproj=glGetDoublev(GL_PROJECTION_MATRIX)
-		wview=glGetIntegerv(GL_VIEWPORT)
-
-		self.mc00=gluProject(-self.aspect,-1.0,0.0,wmodel,wproj,wview)
-		self.mc10=gluProject(self.aspect,-1.0,0.0,wmodel,wproj,wview)
-		self.mc11=gluProject(self.aspect, 1.0,0.0,wmodel,wproj,wview)
-		self.mc01=gluProject(-self.aspect, 1.0,0.0,wmodel,wproj,wview)
-		glPopMatrix()
 
 
 if __name__ == '__main__':
