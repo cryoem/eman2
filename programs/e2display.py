@@ -86,7 +86,7 @@ def main():
 			out=file("selected.lst","w")
 			out.write("#LST\n")
 			out.close()
-		
+		except: pass
 	elif options.classmx:
 		options.classmx=options.classmx.split(",")
 		clsnum=int(options.classmx[1])
