@@ -3315,8 +3315,8 @@ float Util::ener(EMData* ave, vector<int> numr) {
 
 	ener = 0.0;
 	for (int i=1; i<=nring; i++) {
-        int numr3i = numr(3,i);
-        int np     = numr(2,i)-1;
+		int numr3i = numr(3,i);
+		int np     = numr(2,i)-1;
 		float tq = static_cast<float>(PI2*numr(1,i)/numr3i);
 		en = tq*(aveptr[np]*aveptr[np]+aveptr[np+1]*aveptr[np+1])*0.5;
 		for (int j=2; j<np+numr3i-1; j++) en += tq*aveptr[j]*aveptr[j];
@@ -3326,7 +3326,7 @@ float Util::ener(EMData* ave, vector<int> numr) {
 	return static_cast<float>(ener);
 }
 
-void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int> numr){
+void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int> numr) {
 	int nring = numr.size()/3;
 	float *ave = avep->get_data();
 	float *dat = datp->get_data();
@@ -3335,8 +3335,8 @@ void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<i
 	int maxrin = numr(3,nring);
 	if(mirror == 1) { //for mirrored data has to be conjugated
 		for (i=1; i<=nring; i++) {
-            numr3i = numr(3,i);
-            np     = numr(2,i)-1;
+			numr3i = numr(3,i);
+			np     = numr(2,i)-1;
 			ave[np]   += dat[np];
 			ave[np+1] += static_cast<float>( dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin) );
 			for (j=2; j<numr3i; j=j+2) {
@@ -3350,8 +3350,8 @@ void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<i
 		}
 	} else {
 		for (i=1; i<=nring; i++) {
-            numr3i = numr(3,i);
-            np     = numr(2,i)-1;
+			numr3i = numr(3,i);
+			np     = numr(2,i)-1;
 			ave[np]   += dat[np];
 			ave[np+1] += static_cast<float>( dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin) );
 			for (j=2; j<numr3i; j=j+2) {
@@ -3368,7 +3368,7 @@ void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<i
 	EXITFUNC;
 }
 
-void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int> numr){
+void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int> numr) {
 	int nring = numr.size()/3;
 	float *ave = avep->get_data();
 	float *dat = datp->get_data();
@@ -3377,8 +3377,8 @@ void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int>
 	int maxrin = numr(3,nring);
 	if(mirror == 1) { //for mirrored data has to be conjugated
 		for (i=1; i<=nring; i++) {
-            numr3i = numr(3,i);
-            np     = numr(2,i)-1;
+			numr3i = numr(3,i);
+			np     = numr(2,i)-1;
 			ave[np]   -= dat[np];
 			ave[np+1] -= static_cast<float>( dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin) );
 			for (j=2; j<numr3i; j=j+2) {
@@ -3392,8 +3392,8 @@ void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int>
 		}
 	} else {
 		for (i=1; i<=nring; i++) {
-            numr3i = numr(3,i);
-            np     = numr(2,i)-1;
+			numr3i = numr(3,i);
+			np     = numr(2,i)-1;
 			ave[np]   -= dat[np];
 			ave[np+1] -= static_cast<float>( dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin) );
 			for (j=2; j<numr3i; j=j+2) {
