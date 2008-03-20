@@ -219,8 +219,9 @@ def main():
 	
 	for i in range(n0, n1+1):
 		if options.verbose >= 1:
-			sys.stdout.write("%d" %i)
-			sys.stdout.flush()
+			if i%100==0 or options.verbose>2 :
+				sys.stdout.write(" %7d\r" %i)
+				sys.stdout.flush()
 		
 		if imagelist and (not imagelist[i]):
 			continue

@@ -192,6 +192,33 @@ void EMData::write_image(const string & filename, int img_index,
 						lstdata = 0;
 					}
 				}
+				if (imgtype == EMUtil::IMAGE_LSTFAST) {
+					const char *reffile = attr_dict["LST.reffile"];
+					if (strcmp(reffile, "") == 0) {
+						reffile = path.c_str();
+					}
+					int refn = attr_dict["LST.refn"];
+					if (refn < 0) {
+						refn = pathnum;
+					}
+
+					const char *comment = attr_dict["LST.comment"];
+					char *lstdata = new char[1024];
+					sprintf(lstdata, "%d\t%s", refn, reffile);
+					if(strcmp(comment, "") != 0) {
+						sprintf(lstdata+strlen(lstdata), "\t%s\n", comment);
+					}
+					else {
+						strcat(lstdata, "\n");
+					}
+					err = imageio->write_data((float*)lstdata, img_index,
+											  region, filestoragetype, use_host_endian);
+					if( lstdata )
+					{
+						delete [] lstdata;
+						lstdata = 0;
+					}
+				}
 				else {
 					err = imageio->write_data(rdata, img_index, region, filestoragetype,
 											  use_host_endian);

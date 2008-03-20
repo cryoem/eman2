@@ -1,7 +1,7 @@
 /**
  * $Id$
  */
- 
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -32,52 +32,65 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  * 
  * */
- 
-#ifndef eman__ioioio_h__
-#define eman__ioioio_h__ 1
 
-// NOTE: for some reason unknown, hdfio.h must be behind pngio.h. 
+#ifndef eman__lstiofast_h__
+#define eman__lstiofast_h__ 1
 
-#include "mrcio.h"
+#include "imageio.h"
 
-#ifdef EM_PNG
-	#include "pngio.h"
-#endif	//EM_PNG
+namespace EMAN
+{
+	/** A LSX file is a high performance ASCII file that contains a list of image
+	 * numbers and file names. Each line of a LSX file has the following format:
+	 * after the #LSX magic number are 2 lines, the second line containing
+	 * # comment
+	 * # line-length
+	 * Denoting the length of each line in the file. If writing additional
+	 * lines to the file, this length must not be exceeded.
+	 *
+	 * Additional '#' comment lines are NOT permitted within the file
+	 *
+	 * lines have the form:
+	 * reference_image_index  reference-image-filename comments
+	 */
+		
+		
+	class LstFastIO:public ImageIO
+	{
+	  public:
+		LstFastIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		~LstFastIO();
 
-#ifdef EM_JPEG
-	#include "jpegio.h"
-#endif
+		DEFINE_IMAGEIO_FUNC;
+		static bool is_valid(const void *first_block);
 
-#include "dm3io.h"
+		bool is_single_image_format() const
+		{
+			return false;
+		}
+		int get_nimg();
+	  private:
+		string filename;
+		IOMode rw_mode;
+		FILE *lst_file;
 
-#ifdef EM_TIFF
-	#include "tifio.h"
-#endif	//EM_TIFF
+		bool is_big_endian;
+		bool initialized;
+		int nimg;
+		int line_length;
+		int head_length;
 
-#include "pifio.h"
-#include "vtkio.h"
-#include "sspiderio.h"
-#include "pgmio.h"
-#include "emimio.h"
-#include "icosio.h"
-#include "lstio.h"
-#include "lstfastio.h"
+		ImageIO *imageio;
+		string ref_filename;
 
-#ifdef EM_HDF5
-	#include "hdfio.h"
-	#include "hdfio2.h"
-#endif	//EM_HDF5
+		int last_lst_index;
+		int last_ref_index;
 
-#include "salio.h"
-#include "amiraio.h"
-#include "xplorio.h"
-#include "gatan2io.h"
-#include "emio.h"
-#include "imagicio.h"
-#include "fitsio.h"
+		int calc_ref_image_index(int image_index);
+		static const char *MAGIC;
+	};
 
-#ifdef ENABLE_V4L2
-	#include "v4l2io.h"
-#endif
+}
 
-#endif	//eman__ioioio_h__
+
+#endif	//eman__lstio_h__

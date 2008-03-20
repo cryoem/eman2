@@ -82,6 +82,10 @@ def main():
 		display(imgs,args[0])
 		
 		QtCore.QObject.connect(win[0].child,QtCore.SIGNAL("mousedown"),lambda a,b:selectclass(options.classes[0],options.classes[1],a,b))
+		try:
+			out=file("selected.lst","w")
+			out.write("#LST\n")
+			out.close()
 		
 	elif options.classmx:
 		options.classmx=options.classmx.split(",")
@@ -102,15 +106,25 @@ def selectclass(rawfsp,mxfsp,event,lc):
 	global win
 	
 	clsnum=lc[0]
-	ptcls=getmxim(rawfsp,mxfsp,clsnum)
 	
 	if event.modifiers()==Qt.ShiftModifier :
-		for i in ptcls: i.write_image("selected.hdf",-1)
+		ptcls=getmxinfo(rawfsp,mxfsp,clsnum)
+		out=file("selected.lst","a")
+		for i in ptcls: i.write("%d\t%s\n"%(i[1],i[0]))
+		out.close()
 	else:	
+		ptcls=getmxim(rawfsp,mxfsp,clsnum)
 		if len(win)==1:
 			display(ptcls)
 		else:
 			win[1].child.setData(ptcls)
+
+def getmxinfo(fsp,fsp2,clsnum):
+	"""reads particle references associated with a particular class.
+	fsp2 is the matrix file and fsp is the raw particle file"""
+	mx=EMData(fsp2,0)
+	imgs=[(fsp,i) for i in range(mx.get_ysize()) if mx.get(0,i)==clsnum]
+	return imgs
 
 def getmxim(fsp,fsp2,clsnum):
 	"""reads the raw particles associated with a particular class.

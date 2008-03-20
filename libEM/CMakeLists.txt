@@ -36,6 +36,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     emimio.cpp
     icosio.cpp
     lstio.cpp
+    lstfastio.cpp
     pngio.cpp
     salio.cpp
     amiraio.cpp

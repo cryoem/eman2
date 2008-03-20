@@ -390,7 +390,7 @@ class EM3DSymViewer(EMImage3DObject):
 		# FIXME the approach here is very inefficient
 		glLoadIdentity()
 		glTranslate(0,0,-2)
-		glScale(2*self.radius,2*self.radius,1)
+		glScalef(2*self.radius,2*self.radius,1)
 		glTranslate(-0.5,-0.5,0)
 		self.draw_bc_screen()
 		glPopMatrix()

@@ -91,6 +91,9 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		
 		imagetypes["lst"] = IMAGE_LST;
 		imagetypes["LST"] = IMAGE_LST;
+
+		imagetypes["lsx"] = IMAGE_LSTFAST;	// but .lst or another extension would also be ok
+		imagetypes["LSX"] = IMAGE_LSTFAST;
 		
 		imagetypes["pif"] = IMAGE_PIF;
 		imagetypes["PIF"] = IMAGE_PIF;
@@ -216,6 +219,11 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 	case IMAGE_LST:
 		if (LstIO::is_valid(first_block)) {
 			return IMAGE_LST;
+		}
+		break;
+	case IMAGE_LSTFAST:
+		if (LstFastIO::is_valid(first_block)) {
+			return IMAGE_LSTFAST;
 		}
 		break;
 #ifdef EM_TIFF
@@ -351,6 +359,9 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 #endif
 	else if (LstIO::is_valid(first_block)) {
 		image_type = IMAGE_LST;
+	}
+	else if (LstFastIO::is_valid(first_block)) {
+		image_type = IMAGE_LSTFAST;
 	}
 #ifdef EM_TIFF
 	else if (TiffIO::is_valid(first_block)) {
@@ -496,6 +507,9 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_LST:
 		imageio = new LstIO(filename, rw_mode);
 		break;
+	case IMAGE_LSTFAST:
+		imageio = new LstFastIO(filename, rw_mode);
+		break;
 	case IMAGE_PIF:
 		imageio = new PifIO(filename, rw_mode);
 		break;
@@ -574,6 +588,8 @@ const char *EMUtil::get_imagetype_name(ImageType t)
 		return "PGM";
 	case IMAGE_LST:
 		return "LST";
+	case IMAGE_LSTFAST:
+		return "Fast LST";
 	case IMAGE_PIF:
 		return "PIF";
 	case IMAGE_PNG:
