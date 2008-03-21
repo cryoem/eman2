@@ -300,6 +300,12 @@ class EMImage3DCore:
 			
 	def wheelEvent(self, event):
 		self.cam.wheelEvent(event)
+		if self.rottarget != None :
+				self.rottarget.setScale(self.cam.scale)
+		self.updateGL()
+	
+	def setScale(self,val):
+		self.cam.scale = val
 		self.updateGL()
 	
 	def mousePressEvent(self, event):
@@ -578,6 +584,10 @@ class EMRotateSliders:
 		self.phi.setObjectName("phi")
 		self.phi.setValue(0.0)
 		
+		self.scale = ValSlider(parent,(0.01,30.0),"Zoom:")
+		self.scale.setObjectName("scale")
+		self.scale.setValue(1.0)
+		
 		self.n3_showing = False
 		
 		self.current_src = EULER_EMAN
@@ -586,7 +596,8 @@ class EMRotateSliders:
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-	
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		
 	def sliderRotate(self):
 		self.target.loadRotation(self.getCurrentRotation())
 		
@@ -625,6 +636,7 @@ class EMRotateSliders:
 		self.hbl_src.addWidget(self.label_src)
 		self.hbl_src.addWidget(self.src)
 		
+		target.addWidget(self.scale)
 		target.addLayout(self.hbl_src)
 		target.addWidget(self.az)
 		target.addWidget(self.alt)
@@ -710,6 +722,9 @@ class EMRotateSliders:
 		self.az.setValue(rot[self.az.getLabel()],True)
 		self.alt.setValue(rot[self.alt.getLabel()],True)
 		self.phi.setValue(rot[self.phi.getLabel()],True)
+		
+	def setScale(self,newscale):
+		self.scale.setValue(newscale)
 	
 
 class EM3DSettingsInspector(QtGui.QWidget, ):
@@ -748,6 +763,9 @@ class EM3DSettingsInspector(QtGui.QWidget, ):
 		
 	def updateRotations(self,t3d):
 		self.rotsliders.updateRotations(t3d)
+		
+	def setScale(self,val):
+		self.rotsliders.setScale(val)
 	
 	def persClicked(self):
 		self.target.setPerspective(True)
