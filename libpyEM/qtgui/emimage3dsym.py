@@ -839,16 +839,19 @@ class EMSymInspector(QtGui.QWidget):
 		self.hbl_src.addWidget(self.src)
 		
 		# set default value -1 ensures that the val slider is updated the first time it is created
-		self.az = ValSlider(maintab,(-360.0,360.0),"az",-1)
+		self.az = ValSlider(self,(-360.0,360.0),"az",-1)
 		self.az.setObjectName("az")
+		self.az.setValue(0.0)
 		maintab.vbl.addWidget(self.az)
 		
-		self.alt = ValSlider(maintab,(-180.0,180.0),"alt",-1)
+		self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
 		self.alt.setObjectName("alt")
+		self.alt.setValue(0.0)
 		maintab.vbl.addWidget(self.alt)
 		
-		self.phi = ValSlider(maintab,(-360.0,360.0),"phi",-1)
+		self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
 		self.phi.setObjectName("phi")
+		self.phi.setValue(0.0)
 		maintab.vbl.addWidget(self.phi)
 		
 		return maintab

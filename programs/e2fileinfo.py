@@ -40,6 +40,8 @@ import os
 bfactor_expressions = ["bf", "bfactor", "bfactors", "bfac"]
 defocus_expressions = ["df", "def", "defocus"]
 ac_expressions = ["ac", "ampc", "ampcon", "ampcont", "ampcontrast", "acon", "acont", "acontrast" ]
+amp_expressions = ["amp", "A", "amplitude" ]
+ee_expressions = ["expenv","ee"]
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -95,10 +97,25 @@ def checkoutput(options):
 			exit(0)
 		else:
 			remove_file(options.outfile)
-	
+
+def getidx(paramstring):
+	if ( paramstring in defocus_expressions ):
+		idx = 0
+	elif ( paramstring in bfactor_expressions ):
+		idx = 1
+	elif ( paramstring in amp_expressions ):
+		idx = 2
+	elif ( paramstring in ac_expressions ):
+		idx = 3
+	elif (paramstring in ee_expressions ):
+		idx = 4
+	else:
+		print "error, cannot handle", paramstring
+		exit(0)
+
+	return idx
 def fileinfo_op(filename,info,outfile):
 	
-	print info
 	if ( len(info) != 3 ):
 		print "ERROR - logical expression must be a single expression"
 		print "Could not process the following: "
@@ -111,14 +128,11 @@ def fileinfo_op(filename,info,outfile):
 		print info
 		exit(1)
 	
-	if ( info[0] not in bfactor_expressions and info[0]  not in defocus_expressions and info[0]  not in ac_expressions ):
-		print "ERROR: left expression %s was not in the following" %info[0]
-		print bfactor_expressions
-		print defocus_expressions
-		print ac_expressions
-		exit(1)
+	checkInfoType(info[0])
 	
 	n=EMUtil.get_image_count(filename)
+
+	idx = getidx(info[0])
 
 	for i in xrange(0,n):
 		d=EMData()
@@ -139,25 +153,16 @@ def fileinfo_op(filename,info,outfile):
 			print vals
 			exit(1)
 		
-		idx = 0
-		if ( info[0] in defocus_expressions ):
+		
+		if ( idx == 0 ):
 			f = re.findall("\d.*\d*", vals[0])
 			score = f[0]
-			idx = 0
-		elif ( info[0] in bfactor_expressions ):
-			score = vals[1]
-			idx = 1
-		elif ( info[0] in ac_expressions ):
-			score = vals[3]
-			idx = 3
 		else:
-			print "error, cannot handle", info[0]
-			exit(0)
-		
+			score = vals[idx]
+
 		score = float(score)
 		
 		op_value = float(info[2])
-		
 		
 		if ( info[1] == "+=" ):
 			score += op_value
@@ -169,8 +174,7 @@ def fileinfo_op(filename,info,outfile):
 			score /= op_value
 		elif ( info[1] == "%=" ):
 			score %= op_value
-				
-		
+
 		if idx != 0:
 			vals[idx] = str(score)
 		else:
@@ -200,16 +204,11 @@ def fileinfo_remove(filename, info,outfile):
 		print info
 		exit(1)
 		
-	if ( info[0] not in bfactor_expressions and info[0]  not in defocus_expressions and info[0]  not in ac_expressions ):
-		print "ERROR: left expression %s was not in the following" %info[0]
-		print bfactor_expressions
-		print defocus_expressions
-		print ac_expressions
-		exit(1)
+	checkInfoType(infotype)
 		
 	n=EMUtil.get_image_count(filename)
 	t=EMUtil.get_imagetype_name(EMUtil.get_image_type(filename))
-	
+	idx = getidx(info[0])
 	#os.unlink("cleaned.hed")
 	#os.unlink("cleaned.img")
 
@@ -234,13 +233,12 @@ def fileinfo_remove(filename, info,outfile):
 			print vals
 			exit(1)
 			
-		if ( info[0] in defocus_expressions ):
+		if ( idx == 0 ):
 			f = re.findall("\d.*\d*", vals[0])
 			score = f[0]
-		if ( info[0] in bfactor_expressions ):
-			score = vals[1]
-		if ( info[0] in ac_expressions ):
-			score = vals[3]
+		else:
+			score = vals[idx]
+
 		
 		score = float(score)
 		comparison_value = float(info[2])
@@ -276,21 +274,27 @@ def fileinfo_remove(filename, info,outfile):
 	
 	print "Of a total of %d images %d were removed" %(n,total_removed)
 
-def fileinfo_output(filename, infotype):
-	
-	if ( infotype not in defocus_expressions and infotype not in bfactor_expressions and infotype not in ac_expressions ):
+def checkInfoType(infotype):
+	if ( infotype not in defocus_expressions and infotype not in bfactor_expressions and infotype not in ac_expressions and infotype not in amp_expressions and infotype not in ee_expressions):
 		print "Error, infotype %s must be in the following sets:" %infotype
 		print bfactor_expressions
 		print defocus_expressions
 		print ac_expressions
-		return
+		print amp_expressions
+		print ee_expressions
+		exit(1)
+
+def fileinfo_output(filename, infotype):
+	
+	checkInfoType(infotype)
 	
 	#l=[len(i) for i in filenames]
 	#l=max(l)
 	
 	n=EMUtil.get_image_count(filename)
 	t=EMUtil.get_imagetype_name(EMUtil.get_image_type(filename))
-
+	
+	idx = getidx(infotype)
 	for i in xrange(0,n):
 		d=EMData()
 		d.read_image(filename,i,True)
@@ -304,16 +308,13 @@ def fileinfo_output(filename, infotype):
 					#print expr
 		vals = re.findall("\S*[\w*]", expr)
 		
-		if ( infotype in defocus_expressions ):
+		if idx == 0:
 			f = re.findall("\d.*\d*", vals[0])
 			defocus = f[0]
 			print "%f" %float(defocus)
-		if ( infotype in bfactor_expressions ):
-			envelope = vals[1]
-			print "%f" %float(envelope)
-		if ( infotype in ac_expressions ):
-			ac = vals[3]
-			print "%f" %float(ac)
+		else:
+			print "%f" %float(vals[idx])
+
 
 def fileinfo(filenames):
 	if isinstance(filenames,str) : filenames=[filenames]

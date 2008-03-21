@@ -73,18 +73,31 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.image3d = EMImage3DCore(image,self)
 		self.initGL = True
 		self.cam = Camera()
-		if ( image != None and isinstance(image,EMData)):
-			self.cam.default_z = -1.25*image.get_zsize()
-			self.cam.cam_z = -1.25*image.get_zsize()
 		
 		self.aspect=1.0
-		self.fov = 50 # field of view angle used by gluPerspective
+		self.fov = 10 # field of view angle used by gluPerspective
+		self.d = 0
+		self.zwidth = 0
+		if ( image != None and isinstance(image,EMData)):
+			self.setCamZ(self.fov,image)
+		
 		self.resize(640,640)
+		
+		self.perspective = True
+		
+	def setCamZ(self,fov,image):
+		self.d = (image.get_ysize()/2.0)/tan(fov/2.0*pi/180.0)
+		self.zwidth = image.get_zsize()
+		self.ywidth = image.get_ysize()
+		self.xwidth = image.get_xsize()
+		self.cam.default_z = -self.d
+		self.cam.cam_z = -self.d
+	
+	
 	def setData(self,data):
 		self.image3d.setData(data)
 		if ( data != None and isinstance(data,EMData)):
-			self.cam.default_z = -1.25*data.get_zsize()
-			self.cam.cam_z = -1.25*data.get_zsize()
+			self.setCamZ(self.fov,data)
 			
 		self.resize(640,640)
 		
@@ -131,9 +144,17 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,1,5000)
-		
+		startz = self.d - 2.0*self.zwidth
+		endz = self.d + 2.0*self.zwidth
+		if self.perspective:
+			# using gluPerspective for simplicity
+			
+			if startz < 0: startz = 1
+			gluPerspective(self.fov,self.aspect,startz,endz)
+		else:
+			width = self.aspect*self.ywidth
+			glOrtho(-width/2.0,width/2.0,-self.ywidth/2.0,self.ywidth/2.0,startz,endz)
+			
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
@@ -141,6 +162,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if (self.image3d != None):
 			try: self.image3d.resizeEvent(width,height)
 			except: pass
+		
+		self.updateGL()
 		
 	#def get_render_dims_at_depth(self, depth):
 		## This function returns the width and height of the renderable 
@@ -158,6 +181,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def mouseMoveEvent(self,event):
 		self.image3d.mouseMoveEvent(event)
 
+		
 	def mouseReleaseEvent(self,event):
 		self.image3d.mouseReleaseEvent(event)
 		
@@ -166,11 +190,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 	def closeEvent(self,event) :
 		self.image3d.closeEvent(event)
-		
+	
+	def setPerspective(self,bool):
+		self.perspective = bool
+		self.resizeGL(self.width(),self.height())
 	#def dragEnterEvent(self,event):
 		#self.image3d.dragEnterEvent(event)
 
-		
 class EMImage3DCore:
 
 	def __init__(self, image=None, parent=None):
@@ -192,6 +218,8 @@ class EMImage3DCore:
 
 		self.cam = Camera2(self)
 		self.vdtools = EMViewportDepthTools(self)
+		
+		self.rottarget = None
 		#self.inspector.addSlices()
 	#def timeout(self):
 		#self.updateGL()
@@ -261,6 +289,9 @@ class EMImage3DCore:
 		
 	def mouseMoveEvent(self, event):
 		self.cam.mouseMoveEvent(event)
+		if self.rottarget != None :
+			if event.buttons()&Qt.LeftButton:
+				self.rottarget.updateRotations(self.getCurrentT3d())
 		self.updateGL()
 	
 	def mouseReleaseEvent(self, event):
@@ -343,12 +374,21 @@ class EMImage3DCore:
 		self.currentselection=row
 		self.updateGL()
 		
+	def getcuridx(self):
+		return self.currentselection
+		
 	def getCurrentName(self):
 		if self.currentselection == -1 : return ""
+		elif self.currentselection >= len(self.viewables):
+			print "error, current seletion too large", self.currentselection,len(self.viewables)
+			return ""
 		return self.viewables[self.currentselection].getName()
 	
 	def getCurrentInspector(self):
 		if self.currentselection == -1 : return None
+		elif self.currentselection >= len(self.viewables):
+			print "error, current seletion too large", self.currentselection,len(self.viewables)
+			return None
 		return self.viewables[self.currentselection].getInspector()
 	
 	def deleteCurrent(self, val):
@@ -361,7 +401,7 @@ class EMImage3DCore:
 			self.currentselection = 0
 		elif ( val == 0):
 			pass
-		else : 
+		else:
 			self.currentselection = val - 1
 		
 		
@@ -373,24 +413,50 @@ class EMImage3DCore:
 	
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
+		
+	def setPerspective(self,bool):
+		self.parent.setPerspective(bool)
+		
+	def loadRotation(self,t3d):
+		self.cam.loadRotation(t3d)
+		self.updateGL()
+
+	def getCurrentT3d(self):
+		size = len(self.cam.t3d_stack)
+		return self.cam.t3d_stack[size-1]
+	
+	def registerRotTarget(self, targ):
+		self.rottarget = targ
 	
 class EMImageInspector3D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		
-		self.hbl = QtGui.QHBoxLayout(self)
-		self.hbl.setMargin(2)
-		self.hbl.setSpacing(6)
-		self.hbl.setObjectName("hbl")
 		
-		self.vbl = QtGui.QVBoxLayout()
+		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.listwidget = QtGui.QListWidget(self)
-		self.vbl.addWidget(self.listwidget)
+		self.hbl = QtGui.QHBoxLayout()
+		self.hbl.setMargin(2)
+		self.hbl.setSpacing(6)
+		self.hbl.setObjectName("hbl")
+		
+		#self.listwidget = QtGui.QListWidget(self)
+		#self.vbl.addWidget(self.listwidget)
+		
+		self.tabwidget = QtGui.QTabWidget(self)
+		self.vbl.addWidget(self.tabwidget)
+		
+		self.hbl_check = QtGui.QHBoxLayout()
+		self.hbl_check.setMargin(0)
+		self.hbl_check.setSpacing(6)
+		self.hbl_check.setObjectName("hbl_check")
+		
+		self.setcheck = QtGui.QCheckBox("Properties",self)
+		self.hbl_check.addWidget(self.setcheck)
 		
 		self.hbl_buttons = QtGui.QHBoxLayout()
 		self.hbl_buttons.setMargin(0)
@@ -422,26 +488,42 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.hbl_buttons3.addWidget(self.delete)
 		self.vbl.addLayout(self.hbl_buttons3)
 		
-		self.tabwidget = QtGui.QTabWidget(self)
-		self.hbl.addLayout(self.vbl)
-		self.hbl.addWidget(self.tabwidget)
+		self.vbl.addLayout(self.hbl_check)
+		
+		self.setinspector = None
+		
+		self.currentselection = -1
+		self.settingsrow = -2
+		self.targetidxmap = {}
 		
 		QtCore.QObject.connect(self.addIso, QtCore.SIGNAL("clicked()"), self.addIsosurface)
 		QtCore.QObject.connect(self.addVol, QtCore.SIGNAL("clicked()"), self.addVolume)
 		QtCore.QObject.connect(self.addSli, QtCore.SIGNAL("clicked()"), self.addSlices)
 		QtCore.QObject.connect(self.addSym, QtCore.SIGNAL("clicked()"), self.addSymmetry)
 		QtCore.QObject.connect(self.delete, QtCore.SIGNAL("clicked()"), self.deleteSelection)
+		QtCore.QObject.connect(self.setcheck, QtCore.SIGNAL("stateChanged(int)"), self.setChanged)
 		
-		QtCore.QObject.connect(self.listwidget, QtCore.SIGNAL("currentRowChanged(int)"), self.rowChanged)
-		QtCore.QObject.connect(self.tabwidget, QtCore.SIGNAL("currentChanged(int)"), self.tabChanged)
+		#QtCore.QObject.connect(self.listwidget, QtCore.SIGNAL("currentRowChanged(int)"), self.rowChanged)
+		#QtCore.QObject.connect(self.tabwidget, QtCore.SIGNAL("currentChanged(int)"), self.tabChanged)
 		
-	def tabChanged(self,tab):
-		self.target.rowChanged(tab)
-		self.listwidget.setCurrentRow(self.target.currentselection)
 		
-	def rowChanged(self,row):
-		self.target.rowChanged(row)
-		self.tabwidget.setCurrentIndex(self.target.currentselection)
+	def setChanged(self, val):
+		if val > 0:
+			if self.setinspector == None:
+				self.setinspector = EM3DSettingsInspector(self.target, self)
+			
+			self.target.registerRotTarget(self.setinspector)
+			self.setinspector.updateRotations(self.target.getCurrentT3d())
+			self.tabwidget.addTab(self.setinspector,"Properties")
+			self.settingsrow = self.tabwidget.count()-1
+			self.targetidxmap[self.settingsrow] = -1
+			self.tabwidget.setCurrentIndex(self.settingsrow)
+		else:
+			self.tabwidget.removeTab(self.settingsrow)
+			self.target.registerRotTarget(None)
+			# this isn't -1, because self.tabwidget.currentIndex() will possibly return -1 if
+			# it has no tabs
+			self.settingsrow = -2
 
 	def addIsosurface(self):
 		self.target.addIsosurface()
@@ -456,26 +538,225 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.updateSelection()
 	
 	def updateSelection(self):
-		self.listwidget.addItem(self.target.getCurrentName())
-		self.listwidget.setCurrentRow(self.target.currentselection)
-		#print "entry",self.target.getCurrentInspector().layout().activate()
-		#self.tabwidget.layout().activate()
 		self.tabwidget.addTab(self.target.getCurrentInspector(), self.target.getCurrentName())
-		self.tabwidget.setCurrentIndex(self.target.currentselection)
-		#print self.tabwidget.layout().activate()
-		
-	
+		row = self.tabwidget.count()-1
+		self.targetidxmap[row] = self.target.currentselection
+		self.tabwidget.setCurrentIndex(row)
+
 	def addSlices(self):
 		self.target.addSliceViewer()
 		self.updateSelection()
 	
 	def deleteSelection(self):
-		tmp = self.target.currentselection
-		self.tabwidget.removeTab(tmp)
-		self.listwidget.takeItem(tmp)
-		self.target.deleteCurrent(tmp)
-		#self.tabChanged(tmp-1)
+		idx = self.tabwidget.currentIndex()
+		if ( idx == self.settingsrow ):
+			self.setcheck.setCheckState(Qt.Unchecked)
+			return
+		self.tabwidget.removeTab(idx)
+		self.target.deleteCurrent(self.targetidxmap[idx])
+
+class EMRotateSliders:
+	def __init__(self,target,parent):
+		self.target = target
+		self.parent = parent
 		
+		self.label_src = QtGui.QLabel(parent)
+		self.label_src.setText('Rotation Convention')
+		
+		self.src = QtGui.QComboBox(parent)
+		self.load_src_options(self.src)
+		
+		self.az = ValSlider(parent,(-360.0,360.0),"az",-1)
+		self.az.setObjectName("az")
+		self.az.setValue(0.0)
+		
+		self.alt = ValSlider(parent,(-180.0,180.0),"alt",-1)
+		self.alt.setObjectName("alt")
+		self.alt.setValue(0.0)
+		
+		self.phi = ValSlider(parent,(-360.0,360.0),"phi",-1)
+		self.phi.setObjectName("phi")
+		self.phi.setValue(0.0)
+		
+		self.n3_showing = False
+		
+		self.current_src = EULER_EMAN
+		
+		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
+	
+	def sliderRotate(self):
+		self.target.loadRotation(self.getCurrentRotation())
+		
+	def getCurrentRotation(self):
+		convention = self.src.currentText()
+		rot = {}
+		if ( self.current_src == EULER_SPIN ):
+			rot[self.az.getLabel()] = self.az.getValue()
+			
+			n1 = self.alt.getValue()
+			n2 = self.phi.getValue()
+			n3 = self.n3.getValue()
+			
+			norm = sqrt(n1*n1 + n2*n2 + n3*n3)
+			
+			n1 /= norm
+			n2 /= norm
+			n3 /= norm
+			
+			rot[self.alt.getLabel()] = n1
+			rot[self.phi.getLabel()] = n2
+			rot[self.n3.getLabel()] = n3
+			
+		else:
+			rot[self.az.getLabel()] = self.az.getValue()
+			rot[self.alt.getLabel()] = self.alt.getValue()
+			rot[self.phi.getLabel()] = self.phi.getValue()
+		
+		return Transform3D(self.current_src, rot)
+	
+	def addWidgets(self,target):
+		self.hbl_src = QtGui.QHBoxLayout()
+		self.hbl_src.setMargin(0)
+		self.hbl_src.setSpacing(6)
+		self.hbl_src.setObjectName("hbl")
+		self.hbl_src.addWidget(self.label_src)
+		self.hbl_src.addWidget(self.src)
+		
+		target.addLayout(self.hbl_src)
+		target.addWidget(self.az)
+		target.addWidget(self.alt)
+		target.addWidget(self.phi)
+	
+	def set_src(self, val):
+		t3d = self.getCurrentRotation()
+		
+		if (self.n3_showing) :
+			self.maintab.vbl.removeWidget(self.n3)
+			self.n3.deleteLater()
+			self.n3_showing = False
+			self.az.setRange(-360,360)
+			self.alt.setRange(-180,180)
+			self.phi.setRange(-360,660)
+		
+		if ( self.src_map[str(val)] == EULER_SPIDER ):
+			self.az.setLabel('phi')
+			self.alt.setLabel('theta')
+			self.phi.setLabel('psi')
+		elif ( self.src_map[str(val)] == EULER_EMAN ):
+			self.az.setLabel('az')
+			self.alt.setLabel('alt')
+			self.phi.setLabel('phi')
+		elif ( self.src_map[str(val)] == EULER_IMAGIC ):
+			self.az.setLabel('alpha')
+			self.alt.setLabel('beta')
+			self.phi.setLabel('gamma')
+		elif ( self.src_map[str(val)] == EULER_XYZ ):
+			self.az.setLabel('xtilt')
+			self.alt.setLabel('ytilt')
+			self.phi.setLabel('ztilt')
+		elif ( self.src_map[str(val)] == EULER_MRC ):
+			self.az.setLabel('phi')
+			self.alt.setLabel('theta')
+			self.phi.setLabel('omega')
+		elif ( self.src_map[str(val)] == EULER_SPIN ):
+			self.az.setLabel('Omega')
+			self.alt.setRange(-1,1)
+			self.phi.setRange(-1,1)
+			
+			self.alt.setLabel('n1')
+			self.phi.setLabel('n2')
+			
+			self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
+			self.n3.setRange(-1,1)
+			self.n3.setObjectName("n3")
+			self.maintab.vbl.addWidget(self.n3)
+			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+			self.n3_showing = True
+		
+		self.current_src = self.src_map[str(val)]
+		self.updateRotations(t3d)
+	
+	def load_src_options(self,widgit):
+		self.load_src()
+		for i in self.src_strings:
+			widgit.addItem(i)
+			
+	def load_src(self):
+		# supported_rot_conventions
+		src_flags = []
+		src_flags.append(EULER_EMAN)
+		src_flags.append(EULER_SPIDER)
+		src_flags.append(EULER_IMAGIC)
+		src_flags.append(EULER_MRC)
+		src_flags.append(EULER_SPIN)
+		src_flags.append(EULER_XYZ)
+		
+		self.src_strings = []
+		self.src_map = {}
+		for i in src_flags:
+			self.src_strings.append(str(i))
+			self.src_map[str(i)] = i
+			
+	def updateRotations(self,t3d):
+		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
+		
+		convention = self.src.currentText()
+		if ( self.src_map[str(convention)] == EULER_SPIN ):
+			self.n3.setValue(rot[self.n3.getLabel()],True)
+		
+		self.az.setValue(rot[self.az.getLabel()],True)
+		self.alt.setValue(rot[self.alt.getLabel()],True)
+		self.phi.setValue(rot[self.phi.getLabel()],True)
+	
+
+class EM3DSettingsInspector(QtGui.QWidget, ):
+	def __init__(self,target,parent=None):
+		QtGui.QWidget.__init__(self,None)
+		self.target=target
+		self.parent=parent
+		
+		self.rotsliders = EMRotateSliders(target,self)
+		
+		self.hbl = QtGui.QHBoxLayout()
+		self.hbl.setMargin(2)
+		self.hbl.setSpacing(6)
+		self.hbl.setObjectName("hbl")
+		
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+		
+		self.persbut = QtGui.QRadioButton("Perspective")
+		self.persbut.setChecked(True)
+		self.orthbut = QtGui.QRadioButton("Orthographic")
+		
+		self.groupbox = QtGui.QVBoxLayout()
+		self.groupbox.addWidget(self.persbut)
+		self.groupbox.addWidget(self.orthbut)
+		self.hbl.addLayout(self.groupbox)
+		
+		self.vbl.addLayout(self.hbl)
+		
+		self.rotsliders.addWidgets(self.vbl)
+		
+		QtCore.QObject.connect(self.persbut, QtCore.SIGNAL("pressed()"), self.persClicked)
+		QtCore.QObject.connect(self.orthbut, QtCore.SIGNAL("pressed()"), self.orthClicked)
+		
+	def updateRotations(self,t3d):
+		self.rotsliders.updateRotations(t3d)
+	
+	def persClicked(self):
+		self.target.setPerspective(True)
+		
+	def orthClicked(self):
+		self.target.setPerspective(False)
+		
+	
+	
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)

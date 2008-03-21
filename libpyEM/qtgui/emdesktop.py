@@ -302,9 +302,6 @@ class ob2dimage:
 		glDisable(GL_TEXTURE_2D)
 		#glPopMatrix()
 
-
-
-
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMDesktop()

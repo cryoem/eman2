@@ -762,14 +762,17 @@ class EMIsoInspector(QtGui.QWidget):
 			# set default value -1 ensures that the val slider is updated the first time it is created
 			self.az = ValSlider(self,(-360.0,360.0),"az",-1)
 			self.az.setObjectName("az")
+			self.az.setValue(0.0)
 			maintab.vbl.addWidget(self.az)
 			
 			self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
 			self.alt.setObjectName("alt")
+			self.alt.setValue(0.0)
 			maintab.vbl.addWidget(self.alt)
 			
 			self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
 			self.phi.setObjectName("phi")
+			self.phi.setValue(0.0)
 			maintab.vbl.addWidget(self.phi)
 		
 			self.current_src = EULER_EMAN
@@ -840,7 +843,7 @@ class EMIsoInspector(QtGui.QWidget):
 			self.az.setRange(-360,360)
 			self.alt.setRange(-180,180)
 			self.phi.setRange(-360,660)
-		
+			
 		if ( self.src_map[str(val)] == EULER_SPIDER ):
 			self.az.setLabel('phi')
 			self.alt.setLabel('theta')
