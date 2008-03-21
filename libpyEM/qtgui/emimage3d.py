@@ -292,6 +292,21 @@ class EMImage3DCore:
 		if self.rottarget != None :
 			if event.buttons()&Qt.LeftButton:
 				self.rottarget.updateRotations(self.getCurrentT3d())
+			elif event.buttons()&Qt.RightButton:
+				self.rottarget.setXYTrans(self.cam.cam_x, self.cam.cam_y)
+		self.updateGL()
+	
+			
+	def setCamZ(self,z):
+		self.cam.setCamZ( z )
+		self.updateGL()
+		
+	def setCamY(self,y):
+		self.cam.setCamY( y )
+		self.updateGL()
+		
+	def setCamX(self,x):
+		self.cam.setCamX( x )
 		self.updateGL()
 	
 	def mouseReleaseEvent(self, event):
@@ -573,6 +588,30 @@ class EMRotateSliders:
 		self.src = QtGui.QComboBox(parent)
 		self.load_src_options(self.src)
 		
+		self.x_label = QtGui.QLabel()
+		self.x_label.setText('x')
+		
+		self.x_trans = QtGui.QDoubleSpinBox(parent)
+		self.x_trans.setMinimum(-10000)
+		self.x_trans.setMaximum(10000)
+		self.x_trans.setValue(0.0)
+	
+		self.y_label = QtGui.QLabel()
+		self.y_label.setText('y')
+		
+		self.y_trans = QtGui.QDoubleSpinBox(parent)
+		self.y_trans.setMinimum(-10000)
+		self.y_trans.setMaximum(10000)
+		self.y_trans.setValue(0.0)
+		
+		self.z_label = QtGui.QLabel()
+		self.z_label.setText('z')
+		
+		self.z_trans = QtGui.QDoubleSpinBox(parent)
+		self.z_trans.setMinimum(-10000)
+		self.z_trans.setMaximum(10000)
+		self.z_trans.setValue(0.0)
+		
 		self.az = ValSlider(parent,(-360.0,360.0),"az",-1)
 		self.az.setObjectName("az")
 		self.az.setValue(0.0)
@@ -598,6 +637,9 @@ class EMRotateSliders:
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
+		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
+		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
 		
 	def sliderRotate(self):
 		self.target.loadRotation(self.getCurrentRotation())
@@ -630,6 +672,19 @@ class EMRotateSliders:
 		return Transform3D(self.current_src, rot)
 	
 	def addWidgets(self,target):
+		self.hbl_trans = QtGui.QHBoxLayout()
+		self.hbl_trans.setMargin(0)
+		self.hbl_trans.setSpacing(6)
+		self.hbl_trans.setObjectName("Trans")
+		self.hbl_trans.addWidget(self.x_label)
+		self.hbl_trans.addWidget(self.x_trans)
+		self.hbl_trans.addWidget(self.y_label)
+		self.hbl_trans.addWidget(self.y_trans)
+		self.hbl_trans.addWidget(self.z_label)
+		self.hbl_trans.addWidget(self.z_trans)
+		
+		target.addLayout(self.hbl_trans)
+		
 		self.hbl_src = QtGui.QHBoxLayout()
 		self.hbl_src.setMargin(0)
 		self.hbl_src.setSpacing(6)
@@ -726,6 +781,10 @@ class EMRotateSliders:
 		
 	def setScale(self,newscale):
 		self.scale.setValue(newscale)
+		
+	def setXYTrans(self, x, y):
+		self.x_trans.setValue(x)
+		self.y_trans.setValue(y)
 	
 
 class EM3DSettingsInspector(QtGui.QWidget, ):
@@ -768,6 +827,9 @@ class EM3DSettingsInspector(QtGui.QWidget, ):
 	def setScale(self,val):
 		self.rotsliders.setScale(val)
 	
+	def setXYTrans(self, x, y):
+		self.rotsliders.setXYTrans(x,y)
+		
 	def persClicked(self):
 		self.target.setPerspective(True)
 		
