@@ -520,6 +520,7 @@ class EMImageInspector3D(QtGui.QWidget):
 			
 			self.target.registerRotTarget(self.setinspector)
 			self.setinspector.updateRotations(self.target.getCurrentT3d())
+			self.setinspector.setScale(self.target.cam.scale)
 			self.tabwidget.addTab(self.setinspector,"Properties")
 			self.settingsrow = self.tabwidget.count()-1
 			self.targetidxmap[self.settingsrow] = -1
