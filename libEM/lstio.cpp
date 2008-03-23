@@ -70,6 +70,10 @@ LstIO::~LstIO()
 		lst_file = 0;
 	}
 	ref_filename = "";
+	if(imageio) {
+		delete imageio;
+		imageio = 0;
+	}
 }
 
 void LstIO::init()

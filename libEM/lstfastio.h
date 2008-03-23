@@ -77,8 +77,8 @@ namespace EMAN
 		bool is_big_endian;
 		bool initialized;
 		int nimg;
-		int line_length;
-		int head_length;
+		unsigned int line_length;
+		unsigned int head_length;
 
 		ImageIO *imageio;
 		string ref_filename;

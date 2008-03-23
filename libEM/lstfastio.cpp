@@ -70,6 +70,10 @@ LstFastIO::~LstFastIO()
 		lst_file = 0;
 	}
 	ref_filename = "";
+	if(imageio) {
+		delete imageio;
+		imageio = 0;
+	}
 }
 
 void LstFastIO::init()
@@ -223,7 +227,7 @@ int LstFastIO::write_data(float *data, int, const Region* , EMUtil::EMDataType, 
 	char *data2=(char*)data;
 	if (strlen(data2)>line_length-1) throw ImageWriteException("", "Comment too long for this LSX file");
 	fprintf(lst_file, "%s", (char*)data);	
-	for (int i=strlen(data2); i<line_length-1; i++) putc(' ',lst_file);
+	for (unsigned int i=strlen(data2); i<line_length-1; i++) putc(' ',lst_file);
 	putc('\n',lst_file);
 	
 	EXITFUNC;
