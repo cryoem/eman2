@@ -54,7 +54,7 @@ namespace EMAN
 	class IcosIO:public ImageIO
 	{
 	  public:
-		IcosIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit IcosIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~IcosIO();
 
 		DEFINE_IMAGEIO_FUNC;

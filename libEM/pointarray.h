@@ -62,7 +62,7 @@ namespace EMAN
 		
 		public:
 		PointArray();
-		PointArray(int nn);
+		explicit PointArray(int nn);
 		~PointArray();
 		void zero();
 		PointArray *copy();

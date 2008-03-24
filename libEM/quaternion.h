@@ -69,7 +69,7 @@ namespace EMAN
 		Quaternion(float e0, float e1, float e2, float e3);
 		Quaternion(float radians, const Vec3f &axis);
 		Quaternion(const Vec3f &axis, float radians);
-		Quaternion(const vector<float> & matrix3);
+		explicit Quaternion(const vector<float> & matrix3);
 		
 		~Quaternion()
 		{

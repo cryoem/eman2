@@ -50,7 +50,7 @@ namespace EMAN
 	class JpegIO:public ImageIO
 	{
 	  public:
-		JpegIO(const string & filename, IOMode rw_mode = WRITE_ONLY);
+		explicit JpegIO(const string & filename, IOMode rw_mode = WRITE_ONLY);
 		~JpegIO();
 
 		DEFINE_IMAGEIO_FUNC;

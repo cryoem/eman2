@@ -52,7 +52,7 @@ namespace EMAN
 	template < class T > class EMCache
 	{
 	  public:
-		EMCache(int cache_size)
+		explicit EMCache(int cache_size)
 		{
 			item_cache = new T *[cache_size];
 			name_cache = new string[cache_size];

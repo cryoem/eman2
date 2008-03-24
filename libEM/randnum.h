@@ -95,7 +95,7 @@ namespace EMAN
 		 * 
 		 * @param _t the random number generator type
 		 * */
-		Randnum(const gsl_rng_type * _t);
+		explicit Randnum(const gsl_rng_type * _t);
 		~Randnum();
 		
 		/** Set the seed for the random number generator. If the generator is 

@@ -53,7 +53,7 @@ namespace EMAN {
     class EMArray {
         public:
             /** Constructor */
-            EMArray(size_t xsize, size_t ysize=1, size_t zsize=1) 
+            explicit EMArray(size_t xsize, size_t ysize=1, size_t zsize=1) 
                 : nx(xsize),ny(ysize),nz(zsize),
                   xoff(0),yoff(0),zoff(0) {
                 size = nx*ny*nz;

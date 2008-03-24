@@ -53,7 +53,7 @@ namespace EMAN
 		 * @param yy The y direction size. Default is 0.
 		 * @param zz The z direction size. Default is 0.
 		 */
-		IntSize(int xx=0, int yy=0, int zz=0)
+		explicit IntSize(int xx=0, int yy=0, int zz=0)
 		{
 			data[0] = xx;
 			data[1] = yy;
@@ -109,7 +109,7 @@ namespace EMAN
 		 * @param yy The y direction size. Default is 0.
 		 * @param zz The z direction size. Default is 0.
 		 */
-		FloatSize(float xx=0, float yy=0, float zz=0)
+		explicit FloatSize(float xx=0, float yy=0, float zz=0)
 		{
 			data[0] = xx;
 			data[1] = yy;
@@ -193,7 +193,7 @@ namespace EMAN
 		/** Construct a 1D point.
 		 * @param xx The x coordinate value.
 		 */
-		IntPoint(int xx)
+		explicit IntPoint(int xx)
 		{
 			data[0] = xx;
 			data[1] = 0;
@@ -275,7 +275,7 @@ namespace EMAN
 		/** Construct a 1D point.
 		 * @param xx The x coordinate value.
 		 */
-		FloatPoint(float xx)
+		explicit FloatPoint(float xx)
 		{
 			data[0] = xx;
 			data[1] = 0;
@@ -311,7 +311,7 @@ namespace EMAN
 		/** Construct a 1D point.
 		 * @param xx The x coordinate value.
 		 */
-		FloatPoint(int xx)
+		explicit FloatPoint(int xx)
 		{
 			data[0] = (float)xx;
 			data[1] = 0;
@@ -347,7 +347,7 @@ namespace EMAN
 		/** Construct a 1D point.
 		 * @param xx The x coordinate value.
 		 */
-		FloatPoint(double xx)
+		explicit FloatPoint(double xx)
 		{
 			data[0] = (float)xx;
 			data[1] = 0;

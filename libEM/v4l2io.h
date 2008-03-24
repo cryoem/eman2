@@ -49,7 +49,7 @@ namespace EMAN
 	class V4L2IO:public ImageIO
 	{
 	public:
-		V4L2IO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit V4L2IO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~V4L2IO();
 
 		DEFINE_IMAGEIO_FUNC;

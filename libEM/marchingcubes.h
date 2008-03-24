@@ -32,7 +32,7 @@ namespace EMAN
 			/** Constructor
 			* @param starting_size the starting size of the underlying data
 			*/
-			CustomVector(int starting_size=1024) : data(0), size(0), elements(0)
+			explicit CustomVector(int starting_size=1024) : data(0), size(0), elements(0)
 			{
 				resize(starting_size);
 			}

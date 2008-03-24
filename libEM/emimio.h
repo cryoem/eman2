@@ -48,7 +48,7 @@ namespace EMAN
 	class EmimIO:public ImageIO
 	{
 	  public:
-		EmimIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit EmimIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~EmimIO();
 
 		DEFINE_IMAGEIO_FUNC;

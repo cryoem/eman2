@@ -51,7 +51,7 @@ namespace EMAN
 	class SalIO:public ImageIO
 	{
 	  public:
-		SalIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit SalIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~SalIO();
 
 		DEFINE_IMAGEIO_FUNC;

@@ -57,7 +57,7 @@ namespace EMAN
 	class HdfIO2:public ImageIO
 	{
 	  public:
-		HdfIO2(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit HdfIO2(const string & filename, IOMode rw_mode = READ_ONLY);
 		~HdfIO2();
 
 		DEFINE_IMAGEIO_FUNC;

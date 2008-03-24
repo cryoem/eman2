@@ -56,7 +56,7 @@ namespace EMAN
 	class PifIO:public ImageIO
 	{
 	  public:
-		PifIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit PifIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~PifIO();
 
 		DEFINE_IMAGEIO_FUNC;

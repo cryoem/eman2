@@ -48,7 +48,7 @@ namespace EMAN
 	class MrcIO:public ImageIO
 	{
 	public:
-		MrcIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit MrcIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~MrcIO();
 
 		DEFINE_IMAGEIO_FUNC;

@@ -75,7 +75,7 @@ namespace EMAN
 	class SpiderIO:public ImageIO
 	{
 	  public:
-		SpiderIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit SpiderIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~SpiderIO();
 
 		DEFINE_IMAGEIO_FUNC;

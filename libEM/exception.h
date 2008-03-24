@@ -78,7 +78,7 @@ namespace EMAN {
 		 * @param desc_str E2Exception description string.
 		 * @param objname_str E2Exception involved object name.
 		 */ 
-		E2Exception(const string& file = "", int line = 0,
+		explicit E2Exception(const string& file = "", int line = 0,
 				  const string& desc_str = "", const string& objname_str = "")
 			: filename(file), linenum(line), desc(desc_str), objname(objname_str)
 		{
