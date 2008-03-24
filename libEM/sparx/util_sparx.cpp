@@ -3301,7 +3301,7 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 #undef  t7
 
 
-#define    QUADPI      		        3.141592653589793238462643383279502884197
+#define    QUADPI      		    3.141592653589793238462643383279502884197
 #define    PI2                      2*QUADPI
 
 // helper functions for ali2d_ra
@@ -3319,14 +3319,15 @@ float Util::ener(EMData* ave, vector<int> numr) {
 		int np     = numr(2,i)-1;
 		float tq = static_cast<float>(PI2*numr(1,i)/numr3i);
 		en = tq*(aveptr[np]*aveptr[np]+aveptr[np+1]*aveptr[np+1])*0.5;
-		for (int j=2; j<np+numr3i-1; j++) en += tq*aveptr[j]*aveptr[j];
+		for (int j=np+2; j<np+numr3i-1; j++) en += tq*aveptr[j]*aveptr[j];
 		ener += en/numr3i;
 	}            
 	EXITFUNC;
 	return static_cast<float>(ener);
 }
 
-void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int> numr) {
+
+void Util::update_fav (EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
 	int nring = numr.size()/3;
 	float *ave = avep->get_data();
 	float *dat = datp->get_data();
@@ -3368,7 +3369,7 @@ void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<i
 	EXITFUNC;
 }
 
-void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int> numr) {
+void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
 	int nring = numr.size()/3;
 	float *ave = avep->get_data();
 	float *dat = datp->get_data();
