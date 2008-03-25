@@ -134,9 +134,10 @@ def main():
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.hdf"%(inputproj,options.input,options.ncls))
 		
 		# make class-averages
-		try: remove("classes.hdf")
+		try: remove("classes.init.hdf")
 		except: pass
-		run("e2classaverage.py %s classmx.hdf classes.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
+		run("e2classaverage.py %s classmx.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
+		options.initial="classes.init.hdf"
 		
 	# this is the main refinement loop
 	for i in range(0,options.iter) :

@@ -63,10 +63,12 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input_stack> <output_stack>
 	
-This program will sort a stack of images based on some similarity criterion"""
+This program will sort a stack of images based on some similarity criterion. """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
+	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the after optional alignment (default=dot:normalize=1)", default="dot:normalize=1")
+	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
 #	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
 #	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
 #	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
