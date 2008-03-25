@@ -152,6 +152,7 @@ namespace EMAN
 	 * For complex images, this routine currently bails.
 	 * @author Grant Goodyear (grant.goodyear@uth.tmc.edu) 
 	 * @date 2005-10-03
+	 * @param negative Returns -1 * ccc, default true
 	 */
 	class CccCmp:public Cmp
 	{
@@ -165,7 +166,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Cross-correlation coefficient";
+			return "Cross-correlation coefficient (default -1 * ccc)";
 		}
 
 		static Cmp *NEW()
@@ -177,6 +178,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("negative", EMObject::INT, "If set, returns -1 * ccc product. Set by default so smaller is better");
 			d.put("mask", EMObject::EMDATA, "image mask");
 			return d;
 		}

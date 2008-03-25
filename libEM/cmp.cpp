@@ -79,39 +79,41 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
 	if (image->is_complex() || with->is_complex())
-		throw ImageFormatException(
-				"Complex images not supported by CMP::CccCmp");
+		throw ImageFormatException( "Complex images not supported by CMP::CccCmp");
 	validate_input_args(image, with);
 
 	float *d1 = image->get_data();
 	float *d2 = with->get_data();
 
-	double avg1 = 0., var1 = 0., avg2 = 0., var2 = 0., ccc = 0.;
+	float negative = (float)params.set_default("negative", 1);
+	if (negative) negative=-1.0; else negative=1.0;
+
+	double avg1 = 0.0, var1 = 0.0, avg2 = 0.0, var2 = 0.0, ccc = 0.0;
 	long n = 0;
 	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
 	if (params.has_key("mask")) {
-	  EMData* mask;
-	  mask = params["mask"];
-	  float* dm = mask->get_data();
-	  for (long i = 0; i < totsize; i++) {
-	   if (dm[i] > 0.5) {
-	 	   avg1 += double(d1[i]);
-	 	   var1 += d1[i]*double(d1[i]);
-	 	   avg2 += double(d2[i]);
-	 	   var2 += d2[i]*double(d2[i]);
-	 	   ccc += d1[i]*double(d2[i]);
-	 	   n++;
-	   }
-	  }
+		EMData* mask;
+		mask = params["mask"];
+		float* dm = mask->get_data();
+		for (long i = 0; i < totsize; i++) {
+			if (dm[i] > 0.5) {
+				avg1 += double(d1[i]);
+				var1 += d1[i]*double(d1[i]);
+				avg2 += double(d2[i]);
+				var2 += d2[i]*double(d2[i]);
+				ccc += d1[i]*double(d2[i]);
+				n++;
+			}
+		}
 	} else {
-	  for (long i = 0; i < totsize; i++) {
-	  	   avg1 += double(d1[i]);
-	  	   var1 += d1[i]*double(d1[i]);
-	  	   avg2 += double(d2[i]);
-	  	   var2 += d2[i]*double(d2[i]);
-	  	   ccc += d1[i]*double(d2[i]);
-	   }
-	   n = totsize;
+		for (long i = 0; i < totsize; i++) {
+			avg1 += double(d1[i]);
+			var1 += d1[i]*double(d1[i]);
+			avg2 += double(d2[i]);
+			var2 += d2[i]*double(d2[i]);
+			ccc += d1[i]*double(d2[i]);
+		}
+		n = totsize;
 	}
 
 	avg1 /= double(n);
@@ -120,6 +122,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	var2 = var2/double(n) - avg2*avg2;
 	ccc = ccc/double(n) - avg1*avg2;
 	ccc /= sqrt(var1*var2);
+	ccc *= negative;
 	return static_cast<float>(ccc);
 	EXITFUNC;
 }
@@ -229,7 +232,6 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 	result/=n;
 	
 	EXITFUNC;
-	
 	return static_cast<float>(result);
 }
 
@@ -246,7 +248,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 
 	int normalize = params.set_default("normalize", 0);
 	float negative = (float)params.set_default("negative", 1);
-	
+
 	if (negative) negative=-1.0; else negative=1.0;
 	double result = 0.;
 	long n = 0;
@@ -267,8 +269,8 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			double part = 0.;
 			for ( int iy = 0; iy <= ny-1; iy++) {
 				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
-						int ii = ix + (iy  + iz * ny)* lsd2;
-						part += x_data[ii] * double(y_data[ii]);
+					int ii = ix + (iy  + iz * ny)* lsd2;
+					part += x_data[ii] * double(y_data[ii]);
 				}
 			}
 			for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
@@ -302,7 +304,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		}
 		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz;
 		
-		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
+		} else { //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 		int ky, kz;
 		int ny2 = ny/2; int nz2 = nz/2;
 		for ( int iz = 0; iz <= nz-1; iz++) {
@@ -310,8 +312,8 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			for ( int iy = 0; iy <= ny-1; iy++) {
 				if(iy>ny2) ky=iy-ny; else ky=iy;
 				for ( int ix = 0; ix <= lsd2-1; ix++) {
-				// Skip Friedel related values
-				if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+					// Skip Friedel related values
+					if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
 						int ii = ix + (iy  + iz * ny)* lsd2;
 						result += x_data[ii] * double(y_data[ii]);
 					}
@@ -402,8 +404,7 @@ float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
 	
 	if (normalize) {
 		for (i=0; i<4; i++) result[i]/=sqrt(sq1[i]*sq2[i]);
-	}
-	else {
+	} else {
 		for (i=0; i<4; i++) result[i]/=nx*ny/4;
 	}
 	
