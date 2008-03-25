@@ -787,7 +787,7 @@ class EMRotateSliders:
 		self.y_trans.setValue(y)
 	
 
-class EM3DSettingsInspector(QtGui.QWidget, ):
+class EM3DSettingsInspector(QtGui.QWidget):
 	def __init__(self,target,parent=None):
 		QtGui.QWidget.__init__(self,None)
 		self.target=target

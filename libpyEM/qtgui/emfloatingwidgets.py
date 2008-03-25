@@ -986,7 +986,8 @@ class EMFloatingWidgetsCore:
 		return self.parent.width()
 
 	def updateGL(self):
-		self.parent.updateGL()
+		pass
+		#self.parent.updateGL()
 
 	def addQtWidgetDrawer(self,widget):
 		w = EMGLViewQtWidget(self)
