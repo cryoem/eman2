@@ -48,7 +48,7 @@ from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtCore import QTimer
 
-from emfloatingwidgets import EMFloatingWidgetsCore, EMBasicOpenGLObjects
+from emfloatingwidgets import *
 from emglobjects import Camera
 
 
@@ -96,12 +96,23 @@ class EMDesktop(QtOpenGL.QGLWidget):
 	
 		self.setMouseTracking(True)
 		
-		self.floatwidget = EMFloatingWidgetsCore(self)
+		self.floatwidget = EMDesktopWidgets(self)
+		self.floatwidget.suppressUpdateGL = True
 		
 		self.glbasicobjects = EMBasicOpenGLObjects()
-		self.borderwidth=100.0
+		self.borderwidth=10.0
 		self.cam = Camera()
 		
+		#self.fd = EMDesktopFileDialog(self,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
+		#exit(1)
+		self.framedl = 0
+
+	def get_app_width(self):
+		return self.appwidth
+	
+	def get_app_height(self):
+		return self.appheight
+	
 	def get_depth_for_height(self, height):
 		return 0
 		# This function returns the width and height of the renderable 
@@ -117,70 +128,69 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		width = self.aspect*height
 		return [width,height]
 	
-	def cylinderToFrom(self,To,From):
-		#print "To",To[0],To[1]
-		#print "From",From[0],From[1]
-		# draw a cylinder to To from From
-		dx = To[0] - From[0]
-		dy = To[1] - From[1]
-		dz = To[2] - From[2]
+	def drawFrame(self):
+		if self.framedl == 0:
+			#print self.appwidth/2.0,self.appheight/2.0,self.zopt
+			glCallList(self.glbasicobjects.getCylinderDL())
+			length = self.zopt
+			self.framedl=glGenLists(1)
+			glNewList(self.framedl,GL_COMPILE)
+			glPushMatrix()
+			glTranslatef(-self.appwidth/2.0,-self.appheight/2.0,0.0)
+			glScaled(self.borderwidth,self.borderwidth,length)
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			glPushMatrix()
+			glTranslatef( self.appwidth/2.0,-self.appheight/2.0,0.0)
+			glScaled(self.borderwidth,self.borderwidth,length)
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslatef( self.appwidth/2.0, self.appheight/2.0,0.0)
+			glScaled(self.borderwidth,self.borderwidth,length)
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslatef(-self.appwidth/2.0, self.appheight/2.0,0.0)
+			glScaled(self.borderwidth,self.borderwidth,length)
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+			glEndList()
+			
+		if self.framedl == 0:
+			print "error, frame display list failed to compile"
+			exit(1)
+		glColor(.9,.2,.8)
+		## this is a nice light blue color (when lighting is on)
+		## and is the default color of the frame
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,128.0)
+		glCallList(self.framedl)
 		
-		length = sqrt(dx*dx+dy*dy+dz*dz)
-		
-		#angle = 180.0*atan2(dy,dx)/pi
-		print From[0],From[1],From[2]
-		glTranslatef(From[0],From[1],From[2])
-		#glRotated(90.0+angle,0.,0.,1.0)
-		#glRotated(90.,1.,0.,0.)
-		glTranslated(0.0,0.0,length/2.0)
-		glScaled(self.borderwidth,self.borderwidth,length)
-		glTranslated(0.0,0.0,-0.5)
-		glCallList(self.glbasicobjects.getCylinderDL())
-
-	
 	def readEMAN2Image(self):
 		self.p = QtGui.QPixmap("EMAN2.0.big.jpg")
 		return self.p
 	
 	def timeout(self):
 		self.time+=1
-		if (self.time<150) :
-			strat = 2
-			if ( strat == 1  ):
-				self.zNear = 15.-self.time/20.0
-				self.zFar = 15.0
-				self.fov = atan(2.0/self.zNear)*180.0/pi
-				self.makeCurrent()
-				glMatrixMode(GL_PROJECTION)
-				glLoadIdentity()
-				#glFrustum(-self.aspect,self.aspect, -1.,1., 15.-self.time/20.0,15.)
-				gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
-				self.updateGL()
-			else:
-				#self.zNear = 2*self.zopt - self.time/150.0*self.zopt
-				#self.zFar = 2*self.zopt
-				#glMatrixMode(GL_PROJECTION)
-				#glLoadIdentity()
-				#print self.zNear, self.zFar
-				#gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
-				#glMatrixMode(GL_MODELVIEW)
-				pass
-				self.updateGL()
-				
-				
-				
-		#elif (self.time<300) :
-			#self.fov =  atan(2.0/self.zNear)*180.0/pi + 100.0*(self.time-150.0)/150.
-			#gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
-			#self.updateGL()
-		else:
-			self.updateGL()
+		self.updateGL()
 		
-	
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
 		glEnable(GL_NORMALIZE)
-		
+				
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.,1,0.,0.])
+
 		# get a new Quadric object for drawing cylinders, spheres, etc
 		if not self.gq:
 			self.gq=gluNewQuadric()
@@ -188,66 +198,15 @@ class EMDesktop(QtOpenGL.QGLWidget):
 			gluQuadricNormals(self.gq,GLU_SMOOTH)
 			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 			gluQuadricTexture(self.gq,GL_FALSE)
-		
-		# Precompile a displaylist for a frame
-		self.framedl=glGenLists(1)
-		glNewList(self.framedl,GL_COMPILE)
-		glPushMatrix()
-		glRotate(90.,1.,0.,0.)
-		glTranslate(1.02,0.,-1.02)
-		gluCylinder(self.gq,.02,.02,2.04,12,2)
-		glTranslate(-2.04,0.,0.)
-		gluCylinder(self.gq,.02,.02,2.04,12,2)
-		glPopMatrix()
-		
-		glPushMatrix()
-		glRotate(90.,0.,1.,0.)
-		glTranslate(0.,1.02,-1.02)
-		gluCylinder(self.gq,.02,.02,2.04,12,2)
-		glTranslate(0.,-2.04,0.)
-		gluCylinder(self.gq,.02,.02,2.04,12,2)
-		glPopMatrix()
-		
-		glPushMatrix()
-		glTranslate(1.02,1.02,0.)
-		gluSphere(self.gq,.02,6,6)
-		glTranslate(-2.04,0.,0.)
-		gluSphere(self.gq,.02,6,6)
-		glTranslate(0.,-2.04,0.)
-		gluSphere(self.gq,.02,6,6)
-		glTranslate(2.04,0.,0.)
-		gluSphere(self.gq,.02,6,6)
-		glPopMatrix()
-		glEndList()
-
-		# Precompile a displaylist for the display volume border
-		self.volcubedl=glGenLists(1)
-		glNewList(self.volcubedl,GL_COMPILE)
-		glPushMatrix()
-		glColor(.7,.7,1.0)
-#		glRotate(90.,1.,0.,0.)
-		glTranslate(-self.aspect-.01,1.01,-4.0)
-		gluCylinder(self.gq,.01,.01,15.0,12,2)
-		glTranslate(self.aspect*2.0+.02,0.0,0.0)
-		gluCylinder(self.gq,.01,.01,15.0,12,2)
-		glTranslate(0.0,-2.02,0.0)
-		gluCylinder(self.gq,.01,.01,15.0,12,2)
-		glTranslate(-self.aspect*2.0-.02,0.0,0.0)
-		gluCylinder(self.gq,.01,.01,15.0,12,2)		
-		glPopMatrix()
-		glEndList()
-
+	
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 #		glLoadIdentity()
-#		glTranslated(0.0, 0.0, -10.0)
+#		glTranslatef(0.0, 0.0, -10.0)
 		if self.norender : return
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-	
-		glDisable(GL_LIGHTING)
-		
 		
 		#self.bgob.render()
 		glPushMatrix()
@@ -258,51 +217,43 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		else:
 			#print -2*self.zopt+0.1
 			glTranslatef(0.,0.,-2*self.zopt+0.1)
-		#print "translating back", -2*self.zopt+1
-		#glTranslatef(0,0,-16)
-		glScalef(self.appheight/2.0,self.appheight/2.0,1.0)
-		#print self.appheight
-		self.bgob2.render()
+			
+		glPushMatrix()
+		self.drawFrame()
 		glPopMatrix()
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
+		
+
 		glPushMatrix()
 		glScalef(self.appheight/2.0,self.appheight/2.0,1.0)
-		glCallList(self.volcubedl)
+		self.bgob2.render()
+		glPopMatrix()
 		glPopMatrix()
 		
-		
-		glColor(.9,.2,.8)
-		# this is a nice light blue color (when lighting is on)
-		# and is the default color of the frame
-		glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,50.0)
 		if self.time>150 :
 			dx = (self.appwidth - self.p.width())/2.0
 			dy = (self.appheight - self.p.height())/2.0
 			
 			
 			glPushMatrix()
-			glTranslatef(0.,0,-self.p.height())
-			glTranslatef(-dx,-dy, -self.zopt)
-			#glScalef(.25,.25,.25)
-			#glTranslate(5.5,-2.5,2.0)
+			glTranslatef(self.appwidth/2.0+self.p.width(),-dy, -1.8*self.zopt)
+			glScalef(.25,.25,.25)
 			glRotate(self.time,1.0,0.,0.0)
-			#glScalef(self.p.width(),self.p.height(),1.0)
-			#glScalef(self.bgob2.asp(),1.0,1.0)
 			self.bgob2.render2()
 			glPopMatrix()
 			
-			glPushMatrix()
-			glTranslatef(-dx, dy, -self.zopt)
-			self.bgob2.render2()
-			glPopMatrix()
+			#glPushMatrix()
+			#glTranslatef(-dx, dy, -self.zopt)
+			#self.bgob2.render2()
+			#glPopMatrix()
 
 			glPushMatrix()
 			dx = (self.appwidth - self.p.width())/2.0
 			dy = (self.appheight - self.p.height())/2.0
-			glTranslatef(dx,-dy, -3.0/2.0*self.zopt)
+			
+			dz = (self.time%10000)/5000.0
+			if ( dz > 1): dz = 2-dz
+			glTranslatef(self.appwidth/2.0,-dy, -self.zopt-self.p.width()/2.0-dz*(self.zopt-self.p.width()))
+			glRotatef(-90,0,1,0)
 			self.bgob2.render2()
 			glPopMatrix()
 
@@ -310,49 +261,16 @@ class EMDesktop(QtOpenGL.QGLWidget):
 			glTranslatef(0.,0.,-self.zopt)
 			self.floatwidget.render()
 			glPopMatrix()
-			
-			
-			glColor(.9,.2,.8)
-			# this is a nice light blue color (when lighting is on)
-			# and is the default color of the frame
-			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
-			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-			glMaterial(GL_FRONT,GL_SHININESS,50.0)
-			glPushMatrix()
-			to = [-dx,dy,-2*self.zopt]
-			f = [-dx,dy,-self.zopt]
-			self.cylinderToFrom(to,f)
-			glPopMatrix()
+
 	def resizeGL(self, width, height):
-	
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-
-
 		side = min(width, height)
-#		glViewport((width - side) / 2, (height - side) / 2, side, side)
 		glViewport(0,0,self.width(),self.height())
 		glMatrixMode(GL_PROJECTION)
-		#self.zNear = 7.5
-		#self.zFar = 15.0
-		#self.fov = atan(2.0/self.zNear)*180.0/pi
 		glLoadIdentity()
 		
 		self.zNear = self.zopt
 		self.zFar = 2*self.zopt
-				#glMatrixMode(GL_PROJECTION)
-				#glLoadIdentity()
-				#print self.zNear, self.zFar
-		gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
-				#glMatrixMode(GL_MODELVIEW)
-				#self.updateGL()
-		
-		#gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
+		gluPerspective(self.fov,self.aspect,self.zNear-500,self.zFar)
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
@@ -380,7 +298,6 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		self.floatwidget.wheelEvent(event)
 		QtGui.QToolTip.hideText()
 		
-
 	def dragMoveEvent(self,event):
 		print "received drag move event, but I don't do anything about it :("
 		
@@ -408,6 +325,325 @@ class EMDesktop(QtOpenGL.QGLWidget):
 
 	def hoverEvent(self,event):
 		self.floatwidget.hoverEvent(event)
+
+class EMDesktopFileDialog:
+	'''
+	This is just a wrapper for a QtGui Filedialog, that does some extra stuff...
+	'''
+	def __init__(self, parent,title,directory,wildcard):
+		#QtGui.QFileDialog.__init__(parent,message,directory,wildcard)
+		self.fd = QtGui.QFileDialog(parent,title,directory,wildcard)
+		self.fname = ''
+	def show(self):
+		self.fd.show()
+		
+	def hide(self):
+		self.fd.hide()
+		
+	def getfd(self):
+		return self.fd
+	
+	def width(self):
+		return self.fd.width()
+	
+	def height(self):
+		return self.fd.height()
+	
+	def selectedFiles(self):
+		return self.fd.selectedFiles()
+	
+	def deleteLater(self):
+		self.fd.deleteLater()
+		
+	def setEnabled(self,val=True):
+		self.fd.setEnabled(val)
+	
+	def widget(self):
+		return self.fd
+	
+	def childAt(self,x,y):
+		return self.fd.childAt(x,y)
+	
+	def mapToGlobal(self,p):
+		return self.fd.mapToGlobal(p)
+	
+	def currentIndex(self):
+		return self.fd.currentIndex()
+	
+	def mousePressEvent(self, event):
+		print "press event"
+		self.fd.mousePressEvent(event)
+		if event.button()==Qt.LeftButton:
+			self.fnames = self.fd.selectedFiles()
+			for i in self.fnames: print i
+			
+	def mouseReleaseEvent(self,event):
+		print "release"
+		self.fd.mouseReleaseEvent(event)
+		if event.button()==Qt.LeftButton:
+			self.fnames = self.fd.selectedFiles()
+			print "release"
+			for i in self.fnames: print i
+		
+	def mouseMoveEvent(self, event):
+		self.fd.mouseMoveEvent(event)
+		
+	def mouseReleaseEvent(self, event):
+		self.fd.mouseReleaseEvent(event)
+
+	def mouseDoubleClickEvent(self, event):
+		self.fd.mouseDoubleClickEvent(event)
+
+	def wheelEvent(self, event):
+		self.fd.wheelEvent(event)
+
+	def toolTipEvent(self, event):
+		self.fd.wheelEvent(event)
+		QtGui.QToolTip.hideText()
+		
+	def dragMoveEvent(self,event):
+		print "received drag move event, but I don't do anything about it :("
+		
+	#def __getattr__(self, attr):
+		#""" Delegate access to implementation """
+		#return getattr(self.fd, attr)
+
+	#def __setattr__(self, attr, value):
+		#""" Delegate access to implementation """
+		#return setattr(self.fd, attr, value)
+		
+	
+
+class EMDesktopWidgets:
+	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
+	or sets of 2D images.
+	"""
+	def __init__(self, parent=None):
+		#print "init"
+		self.parent = parent
+	
+		self.imtex=0
+		self.current = None
+		self.previous = None
+	
+		self.initFlag = True
+		self.qwidgets = []
+		self.imagewidgets = []
+		
+		self.suppressUpdateGL = False
+		
+		self.fdxpos = 0
+		self.fdypos = 0
+
+	def get_depth_for_height(self, height):
+		try: 
+			return self.parent.get_depth_for_height(height)
+		except:
+			print "parent can't get height for depth"
+			return 0
+
+	def height(self):
+		return self.parent.height()
+	
+	def width(self):
+		return self.parent.width()
+
+	def updateGL(self):
+		if not self.suppressUpdateGL:
+			try: self.parent.updateGL()
+			except: pass
+
+	def addQtWidgetDrawer(self,widget):
+		w = EMGLViewQtWidget(self)
+		w.setQtWidget(widget)
+		self.qwidgets.append(w)
+		
+		#print "initializeGL done"
+	def render(self):
+		
+		if ( self.initFlag == True ):
+			self.initFlag = False
+			self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
+			QtCore.QObject.connect(self.fd.getfd(), QtCore.SIGNAL("finished(int)"), self.finished)
+			QtCore.QObject.connect(self.fd.getfd(), QtCore.SIGNAL("currentChanged(QString)"), self.changed)
+			self.fd.show()
+			self.fd.hide()
+			self.fdwidget = EMGLViewQtWidget(self.parent)
+			self.fdwidget.cam.cam_x = -(self.parent.get_app_width() - self.fd.width())/2.0
+			self.fdwidget.cam.cam_y = (self.parent.get_app_height() - self.fd.height())/2.0
+			self.qwidgets.append(self.fdwidget)
+			self.qwidgets[0].setQtWidget(self.fd)
+			self.initFlag = False
+
+		for i in self.qwidgets:
+			glPushMatrix()
+			i.paintGL()
+			glPopMatrix()
+			
+		for i in self.imagewidgets:
+			glPushMatrix()
+			i.paintGL()
+			glPopMatrix()
+		
+	def changed(self,file):
+		print "changing to", file
+		# get the center coord for the next image to the right
+		x1 = -self.parent.get_app_width()/2.0 + self.fd.width()
+		xwidth = self.parent.get_app_width()/2.0  - self.fd.width()
+		
+		h = self.parent.get_app_height()
+		newposx = x1+xwidth/2.0
+		newposy = h/4.0
+		yheight = h/2.0
+		
+		try:
+			a=EMData.read_images(str(file))
+			if len(a) == 1:
+				a = a[0]
+				if a.get_zsize() != 1: w = EMGLView3D(self,a)
+				else: w = EMGLView2D(self,a)
+			else: w = EMGLView2D(self,a)
+			
+			self.imagewidgets = []
+			w.cam.cam_x = newposx
+			w.cam.cam_y = newposy
+			scalex = xwidth/w.width()
+			scaley = yheight/w.height()
+			if scalex > scaley: scalex = scaley
+			w.cam.scale = scalex
+			self.imagewidgets.append(w)
+		
+			newposy = -h/4.0
+		except:
+			print "could not open"
+			return
+		
+		
+		#print "paintGL done"
+	def finished(self,val):
+		if ( val == 1 ):
+			for i in self.fd.selectedFiles():
+				a=EMData.read_images(str(i))
+				if len(a) == 1:
+					a = a[0]
+					if a.get_zsize() != 1:
+						w = EMGLView3D(self,a)
+						self.qwidgets.append(w)
+					else:
+						w = EMGLView2D(self,a)
+						self.qwidgets.append(w)
+				else:
+					w = EMGLView2D(self,a)
+					self.qwidgets.append(w)
+					
+	def timer(self):
+		pass
+		#self.updateGL()
+		
+	def bindTexture(self,pixmap):
+		return self.parent.bindTexture(pixmap)
+	
+	def deleteTexture(self,val):
+		return self.parent.deleteTexture(val)
+	
+	def get_render_dims_at_depth(self, depth):
+		try: return self.parent.get_render_dims_at_depth(depth)
+		except:
+			print "parent can't get render dims at for depth"
+			return
+
+	def resizeEvent(self, width, height):
+		for i in self.qwidgets:
+			i.set_update_P_inv()
+	
+	def mousePressEvent(self, event):
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				i.mousePressEvent(event)
+				intercepted = True
+				self.updateGL()
+				return
+	
+	def mouseMoveEvent(self, event):
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				self.current = i
+				if (self.current != self.previous ):
+					if ( self.previous != None ):
+						self.previous.leaveEvent()
+				i.mouseMoveEvent(event)
+				self.previous = i
+				self.updateGL()
+				return
+		
+	def mouseReleaseEvent(self, event):
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				i.mouseReleaseEvent(event)
+				self.updateGL()
+				return
+					
+		
+	def mouseDoubleClickEvent(self, event):
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				i.mouseReleaseEvent(event)
+				self.updateGL()
+				return
+		
+		
+	def wheelEvent(self, event):
+		for i in self.qwidgets:
+				if ( i.isinwin(event.x(),self.height()-event.y()) ):
+					i.wheelEvent(event)
+					self.updateGL()
+					return
+
+	def toolTipEvent(self, event):
+		for i in self.qwidgets:
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				i.toolTipEvent(event)
+				self.updateGL()
+				return
+		
+		QtGui.QToolTip.hideText()
+		
+
+	def dragMoveEvent(self,event):
+		print "received drag move event"
+		
+	def event(self,event):
+		#print "event"
+		#QtGui.QToolTip.hideText()
+		if event.type() == QtCore.QEvent.MouseButtonPress: 
+			self.mousePressEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.MouseButtonRelease:
+			self.mouseReleaseEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.MouseMove: 
+			self.mouseMoveEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.MouseButtonDblClick: 
+			self.mouseDoubleClickEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.Wheel: 
+			self.wheelEvent(event)
+			return True
+		elif event.type() == QtCore.QEvent.ToolTip: 
+			self.toolTipEvent(event)
+			return True
+		else: 
+			return QtOpenGL.QGLWidget.event(self,event)
+
+	def hoverEvent(self,event):
+		#print "hoverEvent"
+		if self.inspector :
+			for i in self.qwidgets:
+				if ( i.isinwin(event.x(),self.height()-event.y()) ):
+					i.hoverEvent(event)
+					break
+		self.updateGL()
 
 class ob2dimage:
 	def __init__(self,target,pixmap,aspect):

@@ -70,20 +70,22 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImage3D.allim[self]=0
 		
-		self.image3d = EMImage3DCore(image,self)
-		self.initGL = True
-		self.cam = Camera()
-		
 		self.aspect=1.0
 		self.fov = 10 # field of view angle used by gluPerspective
 		self.d = 0
 		self.zwidth = 0
+		self.perspective = True
+		
+		self.image3d = EMImage3DCore(image,self)
+		self.initGL = True
+		self.cam = Camera()
+		
 		if ( image != None and isinstance(image,EMData)):
 			self.setCamZ(self.fov,image)
 		
 		self.resize(640,640)
 		
-		self.perspective = True
+		
 		
 	def setCamZ(self,fov,image):
 		self.d = (image.get_ysize()/2.0)/tan(fov/2.0*pi/180.0)
@@ -124,7 +126,10 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		self.cam.position()
+		try:
+			self.cam.position()
+		except:
+			return
 		
 		
 		if ( self.initGL ):
@@ -201,7 +206,7 @@ class EMImage3DCore:
 
 	def __init__(self, image=None, parent=None):
 		self.parent = parent
-		self.image = image
+		
 		self.currentselection = -1
 		self.inspector = None
 		#self.isosurface = EMIsosurface(image,self)
@@ -220,7 +225,8 @@ class EMImage3DCore:
 		self.vdtools = EMViewportDepthTools(self)
 		
 		self.rottarget = None
-		#self.inspector.addSlices()
+		self.setData(image)
+		#self.inspector.addIso()
 	#def timeout(self):
 		#self.updateGL()
 	def width(self):
@@ -266,12 +272,17 @@ class EMImage3DCore:
 			i.resizeEvent()
 			
 	def setData(self,data):
+		if data == None: return
 		self.image = data
 		for i in self.viewables:
 			i.setData(data)
 			
 		self.resizeEvent(self.parent.width(),self.parent.height())
 		#self.volume.setData(data)
+		
+		if self.inspector == None:
+			self.inspector=EMImageInspector3D(self)
+		self.inspector.addIsosurface()
 	
 	def showInspector(self,force=0):
 		if self.supressInspector: return

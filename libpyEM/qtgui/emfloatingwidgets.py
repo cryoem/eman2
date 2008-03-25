@@ -77,7 +77,7 @@ class EMGLView3D:
 		self.drawable = EMImage3DCore(image,self)		# the object that is drawable (has a draw function)
 		self.drawable.cam.basicmapping = True
 		self.drawable.cam.motiondull = 3.0
-		#self.drawable.supressInspector = True
+		#self.drawable.suppressInspector = True
 		self.vdtools = EMViewportDepthTools(self)
 		
 		self.updateFlag = True
@@ -293,7 +293,7 @@ class EMGLView2D:
 		elif isinstance(image,EMData):
 			self.become2DImage(image)
 		
-		self.drawable.supressInspector = True
+		self.drawable.suppressInspector = True
 		self.initflag = True
 		self.vdtools = EMViewportDepthTools(self)
 		
@@ -520,7 +520,10 @@ class EMGLViewQtWidget:
 			##print "binding texture"
 			#self.qwidget.setVisible(True)
 			#self.qwidget.repaint()
-			pixmap = QtGui.QPixmap.grabWidget(self.qwidget)
+			if ( isinstance(self.qwidget,QtGui.QWidget) ):
+				pixmap = QtGui.QPixmap.grabWidget(self.qwidget)
+			else:
+				pixmap = QtGui.QPixmap.grabWidget(self.qwidget.widget())
 			#self.qwidget.setVisible(False)
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
 			self.itex = self.parent.bindTexture(pixmap)
@@ -969,6 +972,7 @@ class EMFloatingWidgetsCore:
 		self.initFlag = True
 		self.qwidgets = []
 		
+		self.suppressUpdateGL = False
 		#print "init done"
 	
 		
@@ -986,8 +990,9 @@ class EMFloatingWidgetsCore:
 		return self.parent.width()
 
 	def updateGL(self):
-		pass
-		#self.parent.updateGL()
+		if not self.suppressUpdateGL:
+			try: self.parent.updateGL()
+			except: pass
 
 	def addQtWidgetDrawer(self,widget):
 		w = EMGLViewQtWidget(self)
