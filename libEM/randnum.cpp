@@ -38,17 +38,27 @@
 #include "randnum.h"
  
 using namespace EMAN;
+
+int myseed()
+{
+    static int seed = time(0);
+    seed++;
+    return seed;
+}
+
+
  
 Randnum::Randnum() : T(gsl_rng_default)
 {
 	r = gsl_rng_alloc (T);	
-	gsl_rng_set(r, time(0));
+	//gsl_rng_set(r, time(0));
+	gsl_rng_set(r, myseed() );	
 }
 
 Randnum::Randnum(const gsl_rng_type * _t) : T(_t)
 {
 	r = gsl_rng_alloc (T);	
-	gsl_rng_set(r, time(0));
+	gsl_rng_set(r, myseed() );
 }
 
 Randnum::~Randnum()
