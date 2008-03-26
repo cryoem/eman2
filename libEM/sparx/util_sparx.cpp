@@ -3326,6 +3326,44 @@ float Util::ener(EMData* ave, vector<int> numr) {
 	return static_cast<float>(ener);
 }
 
+float Util::ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float> tot) {
+	ENTERFUNC;
+	long double ener, en;
+	float arg, cs, si;
+	
+	int nima = data.size();	
+	int nring = numr.size()/3;
+	int maxrin = numr(3,nring);
+
+	ener = 0.0;
+	for (int i=1; i<=nring; i++) {
+		int numr3i = numr(3,i);
+		int np     = numr(2,i)-1;		
+		float tq = static_cast<float>(PI2*numr(1,i)/numr3i);
+		float temp1 = 0.0, temp2 = 0.0;
+		for (int kk=0; kk<nima; kk++) {
+			float *ptr = data[kk]->get_data();
+			temp1 += ptr[np];
+			temp2 += static_cast<float>(ptr[np+1]*cos(PI2*(tot[kk]-1.0f)/2.0f*numr3i/maxrin));
+		}
+		en = tq*(temp1*temp1+temp2*temp2)*0.5;
+		for (int j=2; j<numr3i; j+=2) {
+			float tempr = 0.0, tempi = 0.0;
+			for (int kk=0; kk<nima; kk++) {
+				float *ptr = data[kk]->get_data();		
+				arg = static_cast<float>( PI2*(tot[kk]-1.0)*(j/2)/maxrin );
+				cs = cos(arg);
+				si = sin(arg);
+				tempr += ptr[np + j]*cs - ptr[np + j +1]*si;
+				tempi += ptr[np + j]*si + ptr[np + j +1]*cs;
+			}
+			en += tq*(tempr*tempr+tempi*tempi);
+		} 
+		ener += en/numr3i;
+	}            
+	EXITFUNC;
+	return static_cast<float>(ener);
+}
 
 void Util::update_fav (EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
 	int nring = numr.size()/3;
