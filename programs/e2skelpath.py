@@ -51,49 +51,45 @@ def main():
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
-#	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid",default=[])
-#	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
 # 	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
 # 	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
  	parser.add_option("--apix","-P",type="float",help="A/Pixel",default=1.0)
-	
+
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 
 	logid=E2init(sys.argv)
-		
+
 	skeleton=EMData()
 	skeleton.read_image(args[0])
-	skeleton.set_attr("apix_x",1.06)
-	skeleton.set_attr("apix_y",1.06)
-	skeleton.set_attr("apix_z",1.06)
-	skeleton.set_attr("MRC.nxstart",1)
-	skeleton.set_attr("MRC.nystart",1)
-	skeleton.set_attr("MRC.nzstart",1)
-
-	dejavupoints=getPoints(args[1],options.apix)
+	
+	originX=0.5*skeleton.get_xsize()
+	originY=0.5*skeleton.get_ysize()
+	originZ=0.5*skeleton.get_zsize()
+	dejavupoints=getPoints(args[1],options.apix, originX,originY,originZ)
 	mappoints=[getNearest(i[:3],3,skeleton) for i in dejavupoints]
-	mappoints+=[getNearest(i[3:],3,skeleton) for i in dejavupoints]
-	
-# 	for s in mappoints:
-# 		print s[0],s[1],s[2],skeleton.get_value_at(*s)
-	
+	mappoints+=[getNearest(i[3:],3,skeleton) for i in dejavupoints]	
 
 	for i in range(len(mappoints)/2):
-		erasePairs(skeleton,mappoints[i+len(mappoints)/2],((mappoints[i],()),),i+2)
-	
-	skeleton.process_inplace("threshold.binary",{"value":0.5})
-	skeleton.write_image("skel.noh.mrc")
-# 	for s in mappoints:
-# 		print s[0],s[1],s[2],skeleton.get_value_at(*s)
+		print "Helix %d:  "%(i), mappoints[i+len(mappoints)/2], mappoints[i]
+		erasePairs(skeleton,mappoints[i+len(mappoints)/2],((mappoints[i],()),),i+2)		
 		
+		"""startpoint=mappoints[i+len(mappoints)/2]
+		endpoint=mappoints[i]
+		helixdistance=vecdist(startpoint,endpoint)
+		midpoint=(startpoint[0]+endpoint[0]/2,startpoint[1]+endpoint[1]/2,startpoint[2]+endpoint[2]/2)	
+		nearestmidpoint=getNearest(midpoint,3, skeleton)
+		removeHelix(mappoints[i+len(mappoints)/2], mappoints[i], skeleton, nearestmidpoint)
+		removeHelix(mappoints[i], mappoints[i+len(mappoints)/2], skeleton, nearestmidpoint)"""
+		
+	#skeleton.process_inplace("threshold.binary",{"value":0.5})
+	skeleton.write_image("skel.noh.mrc")
+	
 	pairlist=[]
 	for i,j in enumerate(mappoints):
 		findPath(skeleton,mappoints,[((j[0],j[1],j[2],0),[j[:3]])],1,pairlist,i+2)
 
 #	print pairlist
-	
 #	for i in pairlist:
 #		print i[0],i[1],mappoints[i[0]],mappoints[i[1]],vecdist(mappoints[i[0]],mappoints[i[1]]),i[2]
 	
@@ -111,14 +107,16 @@ def main():
 def vecdist(a,b):
 	return sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2)	
 
-def getPoints(dejavufile, apix):
+def getPoints(dejavufile, apix,originX,originY,originZ):
+	"""get the endpoint of the helices from a dejavu sse list. coordinates are in angstroms; origin is center of map"""
+	
 	pattern=re.compile(r"ALPHA\s'(?P<chain>[\w]+)'\s'(?P<startres>[\w]+)'\s'(?P<stopres>[\w]+)'\s(?P<reslength>[\d]+)\s(?P<x1>[\d.,-]+)\s(?P<y1>[\d.,-]+)\s(?P<z1>[\d.,-]+)\s(?P<x2>[\d.,-]+)\s(?P<y2>[\d.,-]+)\s(?P<z2>[\d.,-]+)")
 	endpoints=[]
-	#print dejavufile, apix
+	#print "in get points"
 	for line in file(dejavufile,"r").readlines():
 		result = pattern.search(line)
 		if result:
-			coord=[int(float(result.group('x1'))/apix), int(float(result.group('y1'))/apix), int(float(result.group('z1'))/apix), int(float(result.group('x2'))/apix), int(float(result.group('y2'))/apix), int(float(result.group('z2'))/apix)]
+			coord=[int(originX+(float(result.group('x1'))/apix)), int(originY+(float(result.group('y1'))/apix)), int(originZ+(float(result.group('z1'))/apix)), int(originX+(float(result.group('x2'))/apix)), int(originY+(float(result.group('y2'))/apix)), int(originZ+(float(result.group('z2'))/apix))]
 			endpoints.append(coord)
 	return(endpoints)
 	
@@ -135,66 +133,72 @@ def getNearest(coord, searchrange, skeleton):
 					if distance < maxdistance:
 						maxdistance=distance
 						bestcoord=(coord[0]+dx, coord[1]+dy, coord[2]+dz)
-	#print coord, bestcoord
 	return(bestcoord)
 
-def zapPairs(skeleton,mp):
-	"""Erases a path connecting the pairs of Helix endpoints, so no connectivities
-	following paths through helices will be considered. 'mp' is the mappoints array.
-	Doesn't work very well in most cases..."""
-	n=len(mp)/2
-	for i in range(n):
-		l=sqrt((mp[i][0]-mp[i+n][0])**2+(mp[i][1]-mp[i+n][1])**2+(mp[i][2]-mp[i+n][2])**2)
-		l=floor(l)
-		for f in [x/l for x in range(3,int(l)-2)]:
-			x=f*mp[i][0]+(1.0-f)*mp[i+n][0]
-			y=f*mp[i][1]+(1.0-f)*mp[i+n][1]
-			z=f*mp[i][2]+(1.0-f)*mp[i+n][2]
-			setbox(int(x),int(y),int(z),skeleton,0)
 
-def removeHelix(startpoint, endpoint, skeleton, maxdistance):
-	searchrange=range(-2,3)
-	STOPFLAG=0
-	if maxdistance<0: 
-		maxdistance=sqrt((startpoint[0]-endpoint[0])**2+(startpoint[1]-endpoint[1])**2+(startpoint[2]-endpoint[2])**2)
-	
+"""def removeHelix(startpoint, endpoint, skeleton, maxdistance):
+	searchrange=range(-1,2)
+	STOPFLAG=0	
 	newpoints=[startpoint,endpoint]
 	nmd=maxdistance
 	for dx in searchrange:
 		for dy in searchrange:
 			for dz in searchrange:
 				sp=[startpoint[0]+dx, startpoint[1]+dy, startpoint[2]+dz]
-				ep=[endpoint[0]+dx, endpoint[1]+dy, endpoint[2]+dz]
+				#ep=[endpoint[0]+dx, endpoint[1]+dy, endpoint[2]+dz]
+				if sp!=startpoint or  sp!=endpoint:
+					toep=vecdist(sp,endpoint)
+					if toep<maxdistance and skeleton.get_value_at(sp[0],sp[1],sp[2])!=0:
+						newpoints[0]=sp
+						nmd=min(nmd,toep)
+						skeleton.set_value_at(sp[0],sp[1],sp[2],0)
+						STOPFLAG=1
 
-				toep=sqrt((sp[0]-endpoint[0])**2+(sp[1]-endpoint[1])**2+(sp[2]-endpoint[2])**2)
-				if toep<maxdistance and skeleton.get_value_at(sp[0],sp[1],sp[2])!=0:
-					newpoints[0]=sp
-					nmd=min(nmd,toep)
-					skeleton.set_value_at(sp[0],sp[1],sp[2],0)
-					STOPFLAG=1
-
-				tosp=sqrt((startpoint[0]-ep[0])**2+(startpoint[1]-ep[1])**2+(startpoint[2]-ep[2])**2)
-				if tosp<maxdistance and skeleton.get_value_at(ep[0],ep[1],ep[2])!=0:
-					newpoints[1]=ep
-					nmd=min(nmd,tosp)
-					skeleton.set_value_at(ep[0],ep[1],ep[2],0)
-					STOPFLAG=1
+				#tosp=sqrt((startpoint[0]-ep[0])**2+(startpoint[1]-ep[1])**2+(startpoint[2]-ep[2])**2)
+				#if tosp<maxdistance and skeleton.get_value_at(ep[0],ep[1],ep[2])!=0:
+				#	newpoints[1]=ep
+				#	nmd=min(nmd,tosp)
+				#	skeleton.set_value_at(ep[0],ep[1],ep[2],0)
+				#	STOPFLAG=1
 	maxdistance=nmd
 	if STOPFLAG==1:
 		removeHelix(newpoints[0],newpoints[1], skeleton, maxdistance)
+		
+def removeHelix(startpoint, endpoint, skeleton, nearestmidpoint):
+	searchrange=range(-1,2)
+	STOPFLAG=0
+	maxdistance=max(vecdist(startpoint,nearestmidpoint),vecdist(endpoint,nearestmidpoint))
+	for dx in searchrange:
+		for dy in searchrange:
+			for dz in searchrange:
+				sp=[nearestmidpoint[0]+dx, nearestmidpoint[1]+dy, nearestmidpoint[2]+dz]
+				if sp!=startpoint or  sp!=endpoint:
+					print "yes"
+					toend=vecdist(sp,endpoint)
+					if toend<maxdistance and skeleton.get_value_at(sp[0],sp[1],sp[2])!=0:
+							print "dude"
+							nearestmidpoint=sp
+							maxdistance=toend
+							STOPFLAG=1
+				if STOPFLAG==1:
+					skeleton.set_value_at(nearestmidpoint[0],nearestmidpoint[1],nearestmidpoint[2],0)
+	if STOPFLAG==1:
+		removeHelix(startpoint,endpoint, skeleton, nearestmidpoint)"""					
+
 
 
 def erasePairs(skeleton,target,seeds,n):
 	"""Iteratively erases the shortest path connecting two points (inital seed and target)
 	seed must be passed as ((x,y,z),()),)"""
 	newseeds=[]
-	
-#	print n,len(seeds),seeds[0][0]
+
+	print n,len(seeds),seeds[0][0], skeleton.get_value_at(seeds[0][0][0],seeds[0][0][1],seeds[0][0][2])
 	for s in seeds:
 		if s[0]==target :
-#			print "trace ",len(s[1])
+			print "trace ",len(s[1])
 			for i in s[1][5:-5]:
 #				setbox(i[0],i[1],i[2],skeleton,0,1)
+				print "I am setting this point to zero: %d, %d, %d "%(i[0],i[1],i[2])
 				skeleton.set_value_at(i[0],i[1],i[2],0)
 			return
 
@@ -207,6 +211,7 @@ def erasePairs(skeleton,target,seeds,n):
 					
 					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
 						newseeds.append(((x,y,z),ss[1]+(ss[0],)))
+						print "Setting %d,%d,%d to %f"%(x,y,z,n)
 						skeleton.set_value_at(x,y,z,n)
 	if len(newseeds):
 		erasePairs(skeleton,target,newseeds,n)
