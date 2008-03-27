@@ -695,7 +695,8 @@ class Camera2:
 			glRotate(-float(rot["az"]),0,0,1)
 			glRotate(-float(rot["alt"]),1,0,0)
 			glRotate(-float(rot["phi"]),0,0,1)
-			
+		
+	
 	def position(self,norot=False):
 		# position the camera, regualar OpenGL movement.
 		if (self.debug):
@@ -942,6 +943,12 @@ class Camera:
 		# removed.
 		self.t3d_stack = []
 		self.t3d_stack.append(t3d)
+		
+	def printme(self):
+		print "translating to",self.cam_x, self.cam_y, self.cam_z
+		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+		print "rotatint",rot["phi"],rot["alt"],rot["az"]
+		print "scale",self.scale
 		
 	def position(self):
 		# position the camera, regular OpenGL movement.

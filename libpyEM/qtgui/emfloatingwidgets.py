@@ -84,10 +84,35 @@ class EMGLView3D:
 		
 		self.drawFrame = True
 		
+		self.inspector = None
+		
 		self.vdtools
 		
 		self.psets = []
 		self.modelmatrices = []
+	
+	def setOptScale(self):
+		dims = self.drawable.getDataDims()
+		
+		xscale = self.w/dims[0]
+		yscale = self.h/dims[1]
+		
+		if yscale < xscale: xscale = yscale
+		
+		print xscale
+		self.drawable.cam.scale = xscale
+	
+	def setWidth(self,w):
+		self.w = w
+		self.drawable.resizeEvent(self.width(),self.height())
+		
+	def setDepth(self,d):
+		self.d = d
+		self.drawable.resizeEvent(self.width(),self.height())
+		
+	def setHeight(self,h):
+		self.h = h
+		self.drawable.resizeEvent(self.width(),self.height())
 		
 	def width(self):
 		try:
@@ -115,9 +140,15 @@ class EMGLView3D:
 		self.psets = []
 		self.planes = []
 		self.modelmatrices = []
+		glTranslatef(0,0,-self.depth()/2.0)
 		self.cam.position()
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
+		
+		glPushMatrix()
+		
+		self.drawable.render()
+		glPopMatrix()
 		
 		glPushMatrix()
 		glTranslatef(-self.width()/2.0,0,0)
@@ -185,10 +216,6 @@ class EMGLView3D:
 				self.modelmatrices.append(self.vdtools.getModelMatrix())
 		glPopMatrix()
 		
-		glPushMatrix()
-		self.drawable.render()
-		glPopMatrix()
-		
 		if not lighting: glDisable(GL_LIGHTING)
 		
 	def viewportHeight(self):
@@ -197,12 +224,23 @@ class EMGLView3D:
 	def viewportWidth(self):
 		return self.parent.width()
 	
-	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):	
+	def getInspector(self):
+		if (self.inspector == None):
+			if self.drawable == None:
+				return None
 			self.drawable.initInspector()
 			self.drawable.inspector.show()
 			self.drawable.inspector.hide()
-			self.parent.addQtWidgetDrawer(self.drawable.inspector)
+			self.inspector = self.drawable.inspector
+			
+		return self.inspector
+	
+	def mousePressEvent(self, event):
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.inspector == None):	
+			self.drawable.initInspector()
+			self.drawable.inspector.show()
+			self.drawable.inspector.hide()
+			self.parent.addQtWidgetDrawer(self.getInspector())
 			
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mousePressEvent(event)
@@ -305,6 +343,8 @@ class EMGLView2D:
 		self.changefactor = 1.1
 		self.invchangefactor = 1.0/self.changefactor
 		
+		self.inspector = None
+		
 	def become2DImage(self,a):
 		self.drawable = EMImage2DCore(a,self)
 		#self.drawable.originshift = False
@@ -316,6 +356,15 @@ class EMGLView2D:
 	
 	def set_update_P_inv(self,val=True):
 		self.vdtools.set_update_P_inv(val)
+	
+	def setWidth(self,w):
+		self.w = w
+		self.drawable.resizeEvent(self.width(),self.height())
+		
+	def setHeight(self,h):
+		self.h = h
+		self.drawable.resizeEvent(self.width(),self.height())
+
 	
 	def width(self):
 		try:
@@ -386,12 +435,23 @@ class EMGLView2D:
 	def updateGL(self):
 		self.parent.updateGL()
 	
-	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):	
+	def getInspector(self):
+		if (self.inspector == None):
+			if self.drawable == None:
+				return None
 			self.drawable.initInspector()
 			self.drawable.inspector.show()
 			self.drawable.inspector.hide()
-			self.parent.addQtWidgetDrawer(self.drawable.inspector)
+			self.inspector = self.drawable.inspector
+			
+		return self.inspector
+	
+	def mousePressEvent(self, event):
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.inspector == None):	
+			self.drawable.initInspector()
+			self.drawable.inspector.show()
+			self.drawable.inspector.hide()
+			self.parent.addQtWidgetDrawer(self.getInspector())
 			
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mousePressEvent(event)

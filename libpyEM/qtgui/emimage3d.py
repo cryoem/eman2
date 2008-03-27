@@ -95,7 +95,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.cam.default_z = -self.d
 		self.cam.cam_z = -self.d
 	
-	
 	def setData(self,data):
 		self.image3d.setData(data)
 		if ( data != None and isinstance(data,EMData)):
@@ -270,7 +269,10 @@ class EMImage3DCore:
 	def resizeEvent(self, width, height):
 		for i in self.viewables:
 			i.resizeEvent()
-			
+	
+	def getDataDims(self):
+		return [self.image.get_xsize(),self.image.get_ysize(),self.image.get_zsize()]
+
 	def setData(self,data):
 		if data == None: return
 		self.image = data
