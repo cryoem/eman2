@@ -82,12 +82,14 @@ def imageupdate():
 		except:
 			pass
 		upd=0
-		for j in i.changec.keys():
-			try:
-				if j.get_attr("changecount")!=i.changec[j] :
-					upd=1
-					break
-			except: pass
+		try:
+			for j in i.changec.keys():
+				try:
+					if j.get_attr("changecount")!=i.changec[j] :
+						upd=1
+						break
+				except: pass
+		except: pass
 		if upd : i.setData(i.data)
 
 class EMImage(object):

@@ -102,10 +102,25 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		fw1.setCamPos(-self.appwidth/2.0,-self.appheight/2.0)
 		fw1.suppressUpdateGL = True
 		
+		fw4 = EMDesktopWidgets(self)
+		fw4.setDims(self.appwidth/2.0,self.appheight)
+		fw4.setCamPos(-self.appwidth/2.0,-self.appheight/2.0, -self.zopt/2.0)
+		fw4.suppressUpdateGL = True
+		
 		fw2 = EMDesktopWidgets(self)
 		fw2.setDims(self.appwidth/2.0,self.appheight)
-		fw2.setCamPos(0,-self.appheight/2.0)
+		fw2.setCamPos(0,-self.appheight/2.0, -self.zopt+10)
 		fw2.suppressUpdateGL = True
+		
+		fw5 = EMDesktopWidgets(self)
+		fw5.setDims(self.appwidth/2.0,self.appheight)
+		fw5.setCamPos(0,-self.appheight/2.0, -self.zopt/2.0)
+		fw5.suppressUpdateGL = True
+		
+		fw3 = EMDesktopWidgets(self)
+		fw3.setDims(self.appwidth/2.0,self.appheight)
+		fw3.setCamPos(0,-self.appheight/2.0)
+		fw3.suppressUpdateGL = True
 		
 		
 		self.timereceivers = []
@@ -113,6 +128,9 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		self.floatwidgets = []
 		self.floatwidgets.append(fw1)
 		self.floatwidgets.append(fw2)
+		self.floatwidgets.append(fw3)
+		self.floatwidgets.append(fw4)
+		self.floatwidgets.append(fw5)
 		
 		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.borderwidth=10.0
@@ -360,95 +378,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		#YUCK fixme soon
 		for i in self.floatwidgets:
 			i.hoverEvent(event)
-			
-	
 
-class EMDesktopFileDialog:
-	'''
-	This is just a wrapper for a QtGui Filedialog, that does some extra stuff...
-	'''
-	def __init__(self, parent,title,directory,wildcard):
-		#QtGui.QFileDialog.__init__(parent,message,directory,wildcard)
-		self.fd = QtGui.QFileDialog(parent,title,directory,wildcard)
-		self.fname = ''
-	def show(self):
-		self.fd.show()
-		
-	def hide(self):
-		self.fd.hide()
-		
-	def getfd(self):
-		return self.fd
-	
-	def width(self):
-		return self.fd.width()
-	
-	def height(self):
-		return self.fd.height()
-	
-	def selectedFiles(self):
-		return self.fd.selectedFiles()
-	
-	def deleteLater(self):
-		self.fd.deleteLater()
-		
-	def setEnabled(self,val=True):
-		self.fd.setEnabled(val)
-	
-	def widget(self):
-		return self.fd
-	
-	def childAt(self,x,y):
-		return self.fd.childAt(x,y)
-	
-	def mapToGlobal(self,p):
-		return self.fd.mapToGlobal(p)
-	
-	def currentIndex(self):
-		return self.fd.currentIndex()
-	
-	def mousePressEvent(self, event):
-		print "press event"
-		self.fd.mousePressEvent(event)
-		if event.button()==Qt.LeftButton:
-			self.fnames = self.fd.selectedFiles()
-			for i in self.fnames: print i
-			
-	def mouseReleaseEvent(self,event):
-		print "release"
-		self.fd.mouseReleaseEvent(event)
-		if event.button()==Qt.LeftButton:
-			self.fnames = self.fd.selectedFiles()
-			print "release"
-			for i in self.fnames: print i
-		
-	def mouseMoveEvent(self, event):
-		self.fd.mouseMoveEvent(event)
-		
-	def mouseReleaseEvent(self, event):
-		self.fd.mouseReleaseEvent(event)
-
-	def mouseDoubleClickEvent(self, event):
-		self.fd.mouseDoubleClickEvent(event)
-
-	def wheelEvent(self, event):
-		self.fd.wheelEvent(event)
-
-	def toolTipEvent(self, event):
-		self.fd.wheelEvent(event)
-		QtGui.QToolTip.hideText()
-		
-	def dragMoveEvent(self,event):
-		print "received drag move event, but I don't do anything about it :("
-		
-	#def __getattr__(self, attr):
-		#""" Delegate access to implementation """
-		#return getattr(self.fd, attr)
-
-	#def __setattr__(self, attr, value):
-		#""" Delegate access to implementation """
-		#return setattr(self.fd, attr, value)
-		
 class EMDesktopWidgets:
 	""" Something that organizes and display EMGLWidgets
 	"""
@@ -548,7 +478,7 @@ class EMDesktopWidgets:
 				dy += j.height()/2.0
 				j.cam.cam_y = dy
 				j.cam.cam_x = dx
-				print j.cam.cam_y,j.cam.cam_x
+				#print j.cam.cam_y,j.cam.cam_x
 				dy += j.height()/2.0
 				dy += dif
 			

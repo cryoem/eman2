@@ -344,8 +344,10 @@ class EM3DSliceViewer(EMImage3DObject):
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 		glPushMatrix()
 		glLoadIdentity()
-		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-1)
-		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
+		[width,height] = self.parent.getNearPlaneDims()
+		z = self.parent.getStartZ()
+		glTranslate(-width/2.0,-height/2.0,-z-0.01)
+		glScalef(width,height,1.0)
 		self.draw_bc_screen()
 		glPopMatrix()
 		
@@ -473,6 +475,8 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		EMSliceViewerWidget.allim[self]=0
 		
 		self.fov = 50 # field of view angle used by gluPerspective
+		self.startz = 1
+		self.endz = 5000
 		self.cam = Camera()
 		self.sliceviewer = EM3DSliceViewer(image,self)
 	def setData(self,data):
@@ -517,22 +521,34 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		#glAccum(GL_RETURN, 1.0)
 		
 	def resizeGL(self, width, height):
+		if width<=0 or height<=0 : 
+			print "bad size"
+			return
 		# just use the whole window for rendering
 		glViewport(0,0,self.width(),self.height())
 		
 		# maintain the aspect ratio of the window we have
-		self.aspect = float(width)/float(height)
+		self.aspect = float(self.width())/float(self.height())
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,1,5000)
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
 		
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
+		
 		self.sliceviewer.resizeEvent()
+
+	def getStartZ(self):
+		return self.startz
+	
+	def getNearPlaneDims(self):
+		height = 2.0 * self.startz*tan(self.fov/2.0*pi/180.0)
+		width = self.aspect * height
+		return [width,height]
 
 	def showInspector(self,force=0):
 		self.sliceviewer.showInspector(self,force)

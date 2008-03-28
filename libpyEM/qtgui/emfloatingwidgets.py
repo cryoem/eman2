@@ -251,6 +251,8 @@ class EMGLView3D:
 
 	
 	def wheelEvent(self,event):
+		try: e = event.modifiers()
+		except: return
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.wheelEvent(event)
 		else:

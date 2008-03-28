@@ -389,13 +389,12 @@ class EM3DSymViewer(EMImage3DObject):
 		glPushMatrix()
 		# FIXME the approach here is very inefficient
 		glLoadIdentity()
-		glTranslate(0,0,-2)
-		glScalef(2*self.radius,2*self.radius,1)
-		glTranslate(-0.5,-0.5,0)
+		[width,height] = self.parent.getNearPlaneDims()
+		z = self.parent.getStartZ()
+		glTranslate(-width/2.0,-height/2.0,-z-0.01)
+		glScalef(width,height,1.0)
 		self.draw_bc_screen()
 		glPopMatrix()
-		
-		
 		
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
@@ -465,7 +464,8 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		EMSymViewerWidget.allim[self]=0
 		
 		self.fov = 50 # field of view angle used by gluPerspective
-		
+		self.startz = 1
+		self.endz = 5000
 		self.cam = Camera()
 		self.sliceviewer = EM3DSymViewer(self)
 		self.cam.setCamTrans("default_z",-100)
@@ -495,8 +495,6 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		#self.sliceviewer.cam.setCamTrans("default_z",-100)
-		#glTranslate(0,0,-100)
 		
 		self.cam.position()
 		
@@ -504,27 +502,34 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		self.sliceviewer.render()
 		glPopMatrix()
 		
-		#glAccum(GL_ADD, self.sliceviewer.glbrightness)
-		#glAccum(GL_ACCUM, self.sliceviewer.glcontrast)
-		#glAccum(GL_RETURN, 1.0)
-		
 	def resizeGL(self, width, height):
+		if width<=0 or height<=0 : 
+			print "bad size"
+			return
 		# just use the whole window for rendering
 		glViewport(0,0,self.width(),self.height())
 		
 		# maintain the aspect ratio of the window we have
-		self.aspect = float(width)/float(height)
+		self.aspect = float(self.width())/float(self.height())
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,1,5000)
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
 		
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
 		self.sliceviewer.resizeEvent()
+
+	def getStartZ(self):
+		return self.startz
+	
+	def getNearPlaneDims(self):
+		height = 2.0 * self.getStartZ()*tan(self.fov/2.0*pi/180.0)
+		width = self.aspect * height
+		return [width,height]
 
 	def showInspector(self,force=0):
 		self.sliceviewer.showInspector(self,force)

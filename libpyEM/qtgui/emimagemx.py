@@ -122,6 +122,14 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	def dropEvent(self,event):
 		self.imagemx.dropEvent(event)
 		
+	def isVisible(self,n):
+		return self.imagemx.isVisible(n)
+	
+	def setSelected(self,n):
+		return self.imagemx.setSelected(n)
+	
+	def scrollTo(self,n,yonly):
+		return self.imagemx.scrollTo(n,yonly)
 class EMImageMXCore:
 
 	allim=WeakKeyDictionary()

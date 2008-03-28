@@ -90,7 +90,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def setCamZ(self,fov,image):
 		self.d = (image.get_ysize()/2.0)/tan(fov/2.0*pi/180.0)
 		self.zwidth = image.get_zsize()
-		self.ywidth = image.get_ysize()
+		self.yheight = image.get_ysize()
 		self.xwidth = image.get_xsize()
 		self.cam.default_z = -self.d
 		self.cam.cam_z = -self.d
@@ -148,16 +148,16 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		startz = self.d - 2.0*self.zwidth
-		endz = self.d + 2.0*self.zwidth
+		self.startz = self.d - 2.0*self.zwidth
+		self.endz = self.d + 2.0*self.zwidth
 		if self.perspective:
 			# using gluPerspective for simplicity
 			
-			if startz < 0: startz = 1
-			gluPerspective(self.fov,self.aspect,startz,endz)
+			if self.startz < 0: self.startz = 1
+			gluPerspective(self.fov,self.aspect,self.startz,self.endz)
 		else:
-			width = self.aspect*self.ywidth
-			glOrtho(-width/2.0,width/2.0,-self.ywidth/2.0,self.ywidth/2.0,startz,endz)
+			self.xwidth = self.aspect*self.yheight
+			glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
 			
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
@@ -198,6 +198,19 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def setPerspective(self,bool):
 		self.perspective = bool
 		self.resizeGL(self.width(),self.height())
+		
+		
+	def getStartZ(self):
+		return self.startz
+	
+	def getNearPlaneDims(self):
+		if self.perspective:
+			height = 2.0*self.startz * tan(self.fov/2.0*pi/180.0)
+			width = self.aspect * height
+			return [width,height]
+		else:
+			return [self.xwidth,self.yheight]
+		
 	#def dragEnterEvent(self,event):
 		#self.image3d.dragEnterEvent(event)
 
@@ -462,6 +475,12 @@ class EMImage3DCore:
 	def registerRotTarget(self, targ):
 		self.rottarget = targ
 	
+	def getStartZ(self):
+		return self.parent.getStartZ()
+	
+	def getNearPlaneDims(self):
+		return self.parent.getNearPlaneDims()
+	
 class EMImageInspector3D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
@@ -489,8 +508,8 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.hbl_check.setSpacing(6)
 		self.hbl_check.setObjectName("hbl_check")
 		
-		self.setcheck = QtGui.QCheckBox("Properties",self)
-		self.hbl_check.addWidget(self.setcheck)
+		#self.advancedcheck = QtGui.QCheckBox("Advanced",self)
+		#self.hbl_check.addWidget(self.advancedcheck)
 		
 		self.hbl_buttons = QtGui.QHBoxLayout()
 		self.hbl_buttons.setMargin(0)
@@ -530,35 +549,32 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.settingsrow = -2
 		self.targetidxmap = {}
 		
+		#self.advancedcheck.click()
+		self.insertAdvancedTab()
+		
 		QtCore.QObject.connect(self.addIso, QtCore.SIGNAL("clicked()"), self.addIsosurface)
 		QtCore.QObject.connect(self.addVol, QtCore.SIGNAL("clicked()"), self.addVolume)
 		QtCore.QObject.connect(self.addSli, QtCore.SIGNAL("clicked()"), self.addSlices)
 		QtCore.QObject.connect(self.addSym, QtCore.SIGNAL("clicked()"), self.addSymmetry)
 		QtCore.QObject.connect(self.delete, QtCore.SIGNAL("clicked()"), self.deleteSelection)
-		QtCore.QObject.connect(self.setcheck, QtCore.SIGNAL("stateChanged(int)"), self.setChanged)
+		#QtCore.QObject.connect(self.advancedcheck, QtCore.SIGNAL("stateChanged(int)"), self.advancedClicked)
 		
 		#QtCore.QObject.connect(self.listwidget, QtCore.SIGNAL("currentRowChanged(int)"), self.rowChanged)
 		#QtCore.QObject.connect(self.tabwidget, QtCore.SIGNAL("currentChanged(int)"), self.tabChanged)
 		
 		
-	def setChanged(self, val):
-		if val > 0:
-			if self.setinspector == None:
-				self.setinspector = EM3DSettingsInspector(self.target, self)
+	def insertAdvancedTab(self):
+		if self.setinspector == None:
+			self.setinspector = EM3DAdvancedInspector(self.target, self)
 			
-			self.target.registerRotTarget(self.setinspector)
-			self.setinspector.updateRotations(self.target.getCurrentT3d())
-			self.setinspector.setScale(self.target.cam.scale)
-			self.tabwidget.addTab(self.setinspector,"Properties")
-			self.settingsrow = self.tabwidget.count()-1
-			self.targetidxmap[self.settingsrow] = -1
-			self.tabwidget.setCurrentIndex(self.settingsrow)
-		else:
-			self.tabwidget.removeTab(self.settingsrow)
-			self.target.registerRotTarget(None)
-			# this isn't -1, because self.tabwidget.currentIndex() will possibly return -1 if
-			# it has no tabs
-			self.settingsrow = -2
+		self.target.registerRotTarget(self.setinspector)
+		self.setinspector.updateRotations(self.target.getCurrentT3d())
+		self.setinspector.setScale(self.target.cam.scale)
+		self.tabwidget.addTab(self.setinspector,"Advanced")
+		self.settingsrow = self.tabwidget.count()-1
+		self.targetidxmap[self.settingsrow] = -1
+		self.tabwidget.setCurrentIndex(self.settingsrow)
+	
 
 	def addIsosurface(self):
 		self.target.addIsosurface()
@@ -573,10 +589,11 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.updateSelection()
 	
 	def updateSelection(self):
-		self.tabwidget.addTab(self.target.getCurrentInspector(), self.target.getCurrentName())
-		row = self.tabwidget.count()-1
-		self.targetidxmap[row] = self.target.currentselection
-		self.tabwidget.setCurrentIndex(row)
+		n = self.tabwidget.count()
+		if n > 0: n = n - 1
+		self.tabwidget.insertTab(n, self.target.getCurrentInspector(), self.target.getCurrentName())
+		self.targetidxmap[n] = self.target.currentselection
+		self.tabwidget.setCurrentIndex(n)
 
 	def addSlices(self):
 		self.target.addSliceViewer()
@@ -584,9 +601,10 @@ class EMImageInspector3D(QtGui.QWidget):
 	
 	def deleteSelection(self):
 		idx = self.tabwidget.currentIndex()
-		if ( idx == self.settingsrow ):
-			self.setcheck.setCheckState(Qt.Unchecked)
-			return
+		n = self.tabwidget.count()
+		if n <= 1: return
+		if idx == n-1: return
+		
 		self.tabwidget.removeTab(idx)
 		self.target.deleteCurrent(self.targetidxmap[idx])
 
@@ -800,7 +818,7 @@ class EMRotateSliders:
 		self.y_trans.setValue(y)
 	
 
-class EM3DSettingsInspector(QtGui.QWidget):
+class EM3DAdvancedInspector(QtGui.QWidget):
 	def __init__(self,target,parent=None):
 		QtGui.QWidget.__init__(self,None)
 		self.target=target

@@ -140,7 +140,25 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def dragEnterEvent(self,event):
 		self.image2d.dragEnterEvent(event)
+		
+	def addShapes(self,s):
+		self.image2d.addShapes(s)
 
+	def addShape(self,name,shape):
+		return self.image2d.addShape(name,shape)
+
+	def scr2img(self,p):
+		return self.image2d.scr2img(p)
+	
+	def setActive(self,a,b,c,d):
+		return self.image2d.setActive(a,b,c,d)
+	
+	def getShapes(self):
+		return self.image2d.shapes
+	
+	def delShapes(self):
+		return self.image2d.delShapes()
+		
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.

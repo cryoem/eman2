@@ -155,6 +155,7 @@ class EMIsosurface(EMImage3DObject):
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
 		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
+		glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.isocolor]["emission"])
 		glColor(self.colors[self.isocolor]["ambient"])
 		glPushMatrix()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
@@ -167,8 +168,11 @@ class EMIsosurface(EMImage3DObject):
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 		glPushMatrix()
 		glLoadIdentity()
-		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-10)
-		glScalef(self.data.get_xsize(),self.data.get_ysize(),1)
+		[width,height] = self.parent.getNearPlaneDims()
+		z = self.parent.getStartZ()
+		
+		glTranslate(-width/2.0,-height/2.0,-z-0.01)
+		glScalef(width,height,1.0)
 		self.draw_bc_screen()
 		glPopMatrix()
 		
@@ -250,12 +254,15 @@ class EMIsosurface(EMImage3DObject):
 		self.inspector.setSamplingRange(self.isorender.get_sampling_range())
 		
 		self.loadColors()
-		self.inspector.setColors(self.colors,self.isocolor)
+		self.inspector.setMaterials(self.colors,self.isocolor)
 	
 	def loadColors(self):
 		self.colors = getColors()
 		
 		self.isocolor = "ruby"
+	
+	def getMaterial(self):
+		return self.colors[self.isocolor]
 	
 	def setThr(self,val):
 		if (self.isothr != val):
@@ -274,7 +281,7 @@ class EMIsosurface(EMImage3DObject):
 			self.getIsoDL()
 			self.parent.updateGL()
 	
-	def setColor(self,val):
+	def setMaterial(self,val):
 		#print val
 		self.isocolor = str(val)
 		self.updateGL()
@@ -351,55 +358,71 @@ def getColors():
 	ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
 	ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
 	ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
-	ruby["shininess"] = 128.0
+	ruby["shininess"] = 32
+	ruby["emission"] = [0,0,0]
 	
 	emerald = {}
 	emerald["ambient"] = [0.0215, 0.1745, 0.0215,1.0]
 	emerald["diffuse"] = [0.07568, 0.61424,  0.07568,1.0]
 	emerald["specular"] = [0.833, 0.927811, 0.833,1.0]
-	emerald["shininess"] = 128.0
+	emerald["shininess"] = 32
+	emerald["emission"] = [0,0,0]
 	
 	pearl = {}
 	pearl["ambient"] = [0.25, 0.20725, 0.20725,1.0]
 	pearl["diffuse"] = [1.0, 0.829, 0.829,1.0]
 	pearl["specular"] = [0.296648, 0.296648, 0.296648,1.0]
 	pearl["shininess"] = 128.0
+	pearl["emission"] = [0,0,0]
 	
 	silver = {}
 	silver["ambient"] = [0.25, 0.25, 0.25,1.0]
 	silver["diffuse"] = [0.4, 0.4, 0.4,1.0]
 	silver["specular"] = [0.974597, 0.974597, 0.974597,1.0]
-	silver["shininess"] = 128.0
+	silver["shininess"] = 4
+	silver["emission"] = [0.1,0.1,0.1]
 	
 	gold = {}
 	gold["ambient"] = [0.24725, 0.2245, 0.0645,1.0]
 	gold["diffuse"] = [0.34615, 0.3143, 0.0903,1.0]
 	gold["specular"] = [1.000, 0.9079885, 0.26086934,1.0]
-	gold["shininess"] = 128.0
+	gold["shininess"] = 4
+	gold["emission"] = [0,0,0]
 	
 	copper = {}
 	copper["ambient"] = [0.2295, 0.08825, 0.0275,1.0]
 	copper["diffuse"] = [0.5508, 0.2118, 0.066,1.0]
 	copper["specular"] = [0.9, 0.5, 0.2,1.0]
-	copper["shininess"] = 128.0
+	copper["shininess"] = 20.0
+	copper["emission"] = [0,0,0]
 	
 	obsidian = {}
 	obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
 	obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
 	obsidian["specular"] = [0.66, 0.65, 0.69]
 	obsidian["shininess"] = 128.0
+	obsidian["emission"] = [0,0,0]
 	
 	turquoise = {}
 	turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
 	turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
 	turquoise["specular"] = [0.297254, 0.30829, 0.306678]
 	turquoise["shininess"] = 128.0
+	turquoise["emission"] = [0,0,0]
 	
 	yellow = {}
 	yellow["ambient"] = [0.3, 0.3, 0.0,1]
 	yellow["diffuse"] = [0.5, 0.5, 0.0,1]
 	yellow["specular"] = [0.7, 0.7, 0.0,1]
 	yellow["shininess"] =  60
+	yellow["emission"] = [0,0,0]
+	
+	custom = {}
+	custom["custom"] = [0.3, 0.3, 0.0,1]
+	custom["custom"] = [0.5, 0.5, 0.0,1]
+	custom["custom"] = [0.7, 0.7, 0.0,1]
+	custom["custom"] =  60
+	custom["emission"] = [0,0,0]
 	
 	colors = {}
 	colors["ruby"] = ruby
@@ -411,6 +434,7 @@ def getColors():
 	colors["obsidian"] = obsidian
 	colors["turquoise"] = turquoise
 	colors["yellow"] = yellow
+	colors["custom"] = yellow
 	
 	return colors
 		
@@ -433,6 +457,8 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		self.cam = Camera()
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
+		self.startz = 1
+		self.endz = 5000
 	def timeout(self):
 		self.updateGL()
 		
@@ -480,13 +506,21 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,1,5000)
+		gluPerspective(self.fov,self.aspect,self.startz,self.end)
 		
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
 		self.isosurface.resizeEvent()
+	
+	def getStartZ(self):
+		return self.startz
+	
+	def getNearPlaneDims(self):
+		height = 2.0 * self.startz*tan(self.fov/2.0*pi/180.0)
+		width = self.aspect * height
+		return [width,height]
 
 	def setData(self,data):
 		self.isosurface.setData(data)
@@ -578,7 +612,7 @@ class EMIsoInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThrSlider)
 		QtCore.QObject.connect(self.contrast, QtCore.SIGNAL("valueChanged"), target.setContrast)
 		QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), target.setBrightness)
-		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
+		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), self.setMaterial)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
 		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setSample)
 		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
@@ -590,6 +624,82 @@ class EMIsoInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
+		
+		QtCore.QObject.connect(self.ambient_tab.r, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.ambient_tab.g, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.ambient_tab.b, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.diffuse_tab.r, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.diffuse_tab.g, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.diffuse_tab.b, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.specular_tab.r, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.specular_tab.g, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.specular_tab.b, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.emission_tab.r, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.emission_tab.g, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.emission_tab.b, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		QtCore.QObject.connect(self.shininess, QtCore.SIGNAL("valueChanged"), self.updateMaterial)
+		
+	def updateMaterial(self):
+		self.target.isocolor = "custom"
+		custom = {}
+		
+		custom["ambient"] = [self.ambient_tab.r.getValue(), self.ambient_tab.g.getValue(), self.ambient_tab.b.getValue(),1.0]
+		custom["diffuse"] = [self.diffuse_tab.r.getValue(), self.diffuse_tab.g.getValue(), self.diffuse_tab.b.getValue(),1.0]
+		custom["specular"] = [self.specular_tab.r.getValue(), self.specular_tab.g.getValue(), self.specular_tab.b.getValue(),1.0]
+		custom["emission"] = [self.emission_tab.r.getValue(), self.emission_tab.g.getValue(), self.emission_tab.b.getValue(),1.0]
+		custom["shininess"] = self.shininess.getValue()
+		self.target.colors["custom"] = custom
+		
+		n = self.cbb.findText(QtCore.QString("custom"))
+		if n < 0: return
+		self.cbb.setCurrentIndex(n)
+		self.target.updateGL()
+	
+	def setMaterial(self,color):
+		self.target.setMaterial(color)
+		material = self.target.getMaterial()
+		
+		self.ambient_tab.r.setValue(material["ambient"][0])
+		self.ambient_tab.g.setValue(material["ambient"][1])
+		self.ambient_tab.b.setValue(material["ambient"][2])
+		
+		self.diffuse_tab.r.setValue(material["diffuse"][0])
+		self.diffuse_tab.g.setValue(material["diffuse"][1])
+		self.diffuse_tab.b.setValue(material["diffuse"][2])
+		
+		self.specular_tab.r.setValue(material["specular"][0])
+		self.specular_tab.g.setValue(material["specular"][1])
+		self.specular_tab.b.setValue(material["specular"][2])
+		
+		self.emission_tab.r.setValue(material["emission"][0])
+		self.emission_tab.g.setValue(material["emission"][1])
+		self.emission_tab.b.setValue(material["emission"][2])
+		
+		self.shininess.setValue(material["shininess"])
+	
+	def getRGBTab(self, name=""):
+		rgbtab = QtGui.QWidget(self)
+		rgbtab.vbl = QtGui.QVBoxLayout(rgbtab)
+		rgbtab.vbl.setMargin(0)
+		rgbtab.vbl.setSpacing(6)
+		rgbtab.vbl.setObjectName(name)
+		
+		rgbtab.r = ValSlider(rgbtab,(0.0,1.0),"R:")
+		rgbtab.r.setObjectName("R")
+		rgbtab.r.setValue(0.5)
+		rgbtab.vbl.addWidget(rgbtab.r)
+		
+		rgbtab.g = ValSlider(rgbtab,(0.0,1.0),"G:")
+		rgbtab.g.setObjectName("G")
+		rgbtab.g.setValue(0.5)
+		rgbtab.vbl.addWidget(rgbtab.g)
+		
+		rgbtab.b = ValSlider(rgbtab,(0.0,1.0),"B:")
+		rgbtab.b.setObjectName("B")
+		rgbtab.b.setValue(0.5)
+		rgbtab.vbl.addWidget(rgbtab.b)
+		
+		return rgbtab
 	
 	def getGLTab(self):
 		self.gltab = QtGui.QWidget()
@@ -598,7 +708,8 @@ class EMIsoInspector(QtGui.QWidget):
 		gltab.vbl = QtGui.QVBoxLayout(self.gltab )
 		gltab.vbl.setMargin(0)
 		gltab.vbl.setSpacing(6)
-		gltab.vbl.setObjectName("Main")
+		gltab.vbl.setObjectName("GL")
+		
 		
 		self.glcontrast = ValSlider(gltab,(1.0,5.0),"GLShd:")
 		self.glcontrast.setObjectName("GLShade")
@@ -611,6 +722,39 @@ class EMIsoInspector(QtGui.QWidget):
 		self.glbrightness.setValue(0.0)
 		gltab.vbl.addWidget(self.glbrightness)
 	
+		self.material_tab_widget = QtGui.QTabWidget()
+		self.ambient_tab = self.getRGBTab("ambient")
+		self.material_tab_widget.addTab(self.ambient_tab, "Ambient")
+		
+		self.diffuse_tab = self.getRGBTab("diffuse")
+		self.material_tab_widget.addTab(self.diffuse_tab, "Diffuse")
+		
+		self.specular_tab = self.getRGBTab("specular")
+		self.material_tab_widget.addTab(self.specular_tab, "Specular")
+		
+		self.emission_tab = self.getRGBTab("emission")
+		self.material_tab_widget.addTab(self.emission_tab, "Emission")
+		
+		gltab.vbl.addWidget(self.material_tab_widget)
+
+		self.shininess = ValSlider(gltab,(0,128),"Shininess:")
+		self.shininess.setObjectName("Shininess")
+		self.shininess.setValue(64)
+		gltab.vbl.addWidget(self.shininess)
+
+		self.hbl_color = QtGui.QHBoxLayout()
+		self.hbl_color.setMargin(0)
+		self.hbl_color.setSpacing(6)
+		self.hbl_color.setObjectName("Material")
+		gltab.vbl.addLayout(self.hbl_color)
+		
+		self.color_label = QtGui.QLabel()
+		self.color_label.setText('Material')
+		self.hbl_color.addWidget(self.color_label)
+		
+		self.cbb = QtGui.QComboBox(gltab)
+		self.hbl_color.addWidget(self.cbb)
+		
 		return gltab
 	
 	def toggleTexture(self):
@@ -683,19 +827,6 @@ class EMIsoInspector(QtGui.QWidget):
 			self.smp = QtGui.QSpinBox(maintab)
 			self.smp.setValue(1)
 			self.hbl_smp.addWidget(self.smp)
-			
-			self.hbl_color = QtGui.QHBoxLayout()
-			self.hbl_color.setMargin(0)
-			self.hbl_color.setSpacing(6)
-			self.hbl_color.setObjectName("Material")
-			maintab.vbl.addLayout(self.hbl_color)
-			
-			self.color_label = QtGui.QLabel()
-			self.color_label.setText('Material')
-			self.hbl_color.addWidget(self.color_label)
-			
-			self.cbb = QtGui.QComboBox(maintab)
-			self.hbl_color.addWidget(self.cbb)
 	
 			self.hbl_trans = QtGui.QHBoxLayout()
 			self.hbl_trans.setMargin(0)
@@ -894,7 +1025,7 @@ class EMIsoInspector(QtGui.QWidget):
 			self.src_map[str(i)] = i
 		
 	
-	def setColors(self,colors,current_color):
+	def setMaterials(self,colors,current_color):
 		a = 0
 		for i in colors:
 			self.cbb.addItem(i)

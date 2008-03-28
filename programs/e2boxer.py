@@ -654,11 +654,11 @@ class GUIbox:
 		self.moving=None
 	
 	def delbox(self,i):
-		"Deletes the numbered box completely"
-		sh=self.guiim.shapes
+		#print "Deletes the numbered box completely"
+		sh=self.guiim.getShapes()
 		k=sh.keys()
 		k.sort()
-		del sh[i]
+		del sh[int(i)]
 		for j in k:
 			if isinstance(j,int):
 				if j>i :

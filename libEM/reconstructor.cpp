@@ -321,6 +321,9 @@ void FourierReconstructor::load_interpFRC_calculator()
 
 void FourierReconstructor::setup()
 {
+	// default setting behavior - does not override if the parameter is already set
+	params.set_default("mode",2);
+	
 	// Atm the reconstruction algorith works only for even dimensions, this has something to do xform.fourierorigin not
 	// working for images with odd dimensions - once we are certain the xform.fourierorigin has no problems with oddness
 	// then there could be bugs in the reconstructor itself - it needs testing.
