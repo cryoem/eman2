@@ -274,6 +274,21 @@ class TestUtils(unittest.TestCase):
         """test eman_erfc() function ........................"""
         a = 123.456
         e = Util.eman_erfc(a)
+    
+    def test_set_randnum_seed(self):
+        """test the set_randnum_seed() function ............."""
+        a = []
+        b = []
+        Util.set_randnum_seed(123456)
+        for i in xrange(10):
+            a.append(Util.get_irand(1,100))
+        
+        Util.set_randnum_seed(123456)
+        for i in xrange(10):
+            b.append(Util.get_irand(1,100))
+        
+        for i in xrange(10):
+            self.assertEqual(a[i], b[i])
    
     # no more voea() functions
     def no_test_voea(self):

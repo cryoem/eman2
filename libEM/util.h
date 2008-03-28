@@ -358,7 +358,12 @@ namespace EMAN
 		 */
 		static void sort_mat(float *left, float *right, int *leftPerm, 
 							 int *rightPerm);
-
+		
+		
+		/** Set the seed for Randnum class
+		 * @param[in]	seed 
+		 * */
+		static void set_randnum_seed(unsigned long int seed);
 		
 		/** Get an integer random number between low and high, [low, high]
 		 * @param[in] low The lower bound of the random number.

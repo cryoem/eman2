@@ -628,6 +628,12 @@ void Util::sort_mat(float *left, float *right, int *leftPerm, int *rightPerm)
 	}
 }
 
+void Util::set_randnum_seed(unsigned long int seed)
+{
+	Randnum* randnum = Randnum::Instance();
+	randnum->set_seed(seed);
+}
+
 int Util::get_irand(int lo, int hi)
 {
 	Randnum* randnum = Randnum::Instance();
