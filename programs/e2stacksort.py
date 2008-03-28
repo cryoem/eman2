@@ -41,7 +41,50 @@ from math import *
 import os
 import sys
 
-def sortstack(stack,cmptype,cmpopts):
+def main():
+	progname = os.path.basename(sys.argv[0])
+	usage = """%prog [options] <input_stack> <output_stack>
+	
+This program will sort a stack of images based on some similarity criterion. """
+
+	parser = OptionParser(usage=usage,version=EMANVERSION)
+
+	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the after optional alignment (default=optvariance:keepzero:1,matchfilt:1)", default="optvariance:keepzero:1,matchfilt:1")
+	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
+	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
+#	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
+#	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
+#	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
+	
+	(options, args) = parser.parse_args()
+	if len(args)<2 : parser.error("Input and output files required")
+	
+	if options.simalign : options.simalign=parsemodopt(options.simalign)
+	if options.simcmp : options.simcmp=parsemodopt(options.simcmp)
+	
+	a=EMData.read_images(args[0])
+	if options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1])
+	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1])
+	for i,im in enumerate(b): im.write_image(args[1],i)
+
+def sortstackrev(stack,cmptype,cmpopts,align,alignopts):
+	"""Sorts a list of images in order of LEAST similarity"""
+	
+	ret=[stack[0]]
+	del stack[0]
+	while (len(stack)>0) :
+		best=(1.0e38,-1)
+		for i,im in enumerate(stack):
+			if align : im=im.align(align,ret[-1],alignopts)
+			c=ret[-1].cmp(cmptype,im,cmpopts)+im.cmp(cmptype,ret[-1],cmpopts)	# symmetrize results
+			if c<best[0] or best[1]<0 : best=(c,i)
+		ret.append(stack[best[1]])
+		del stack[best[1]]
+		print "%d.\t%d  (%1.4f)"%(len(ret)-1,best[1],best[0])
+
+	return ret
+
+def sortstack(stack,cmptype,cmpopts,align,alignopts):
 	"""Sorts a list of images based on a standard 'cmp' metric. cmptype is the name
 	of a valid cmp type. cmpopts is a dictionary. Returns a new (sorted) stack.
 	The original stack is destroyed."""
@@ -51,6 +94,7 @@ def sortstack(stack,cmptype,cmpopts):
 	while (len(stack)>0) :
 		best=(1.0e38,-1)
 		for i,im in enumerate(stack):
+			if align : im=im.align(align,ret[-1],alignopts)
 			c=ret[-1].cmp(cmptype,im,cmpopts)+im.cmp(cmptype,ret[-1],cmpopts)	# symmetrize results
 			if c<best[0] or best[1]<0 : best=(c,i)
 		ret.append(stack[best[1]])
@@ -59,27 +103,6 @@ def sortstack(stack,cmptype,cmpopts):
 
 	return ret
 
-def main():
-	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <input_stack> <output_stack>
-	
-This program will sort a stack of images based on some similarity criterion. """
-
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-
-	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the after optional alignment (default=dot:normalize=1)", default="dot:normalize=1")
-	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
-#	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
-#	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
-#	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
-#	parser.add_option("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
-	
-	(options, args) = parser.parse_args()
-	if len(args)<2 : parser.error("Input and output files required")
-	
-	a=EMData.read_images(args[0])
-	b=sortstack(a,"optvariance",{"keepzero":1,"matchfilt":1})
-	for i,im in enumerate(b): im.write_image(args[1],i)
 
 if __name__ == "__main__":
     main()
