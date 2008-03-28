@@ -2784,9 +2784,9 @@ void AddNoiseProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	Randnum randnum = Randnum();
+	Randnum * randnum = Randnum::Instance();
 	if(params.has_key("seed")) {
-		randnum.set_seed((int)params["seed"]);
+		randnum->set_seed((int)params["seed"]);
 	}
 
 	float addnoise = params["noise"];
@@ -2795,7 +2795,7 @@ void AddNoiseProcessor::process_inplace(EMData * image)
 	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
 
 	for (size_t j = 0; j < size; j++) {
-		dat[j] += randnum.get_gauss_rand(addnoise, addnoise / 2);
+		dat[j] += randnum->get_gauss_rand(addnoise, addnoise / 2);
 	}
 
 	image->update();
@@ -3790,9 +3790,9 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 		interpolation = params["interpolation"];
 	}
 	
-	Randnum randnum = Randnum();
+	Randnum * randnum = Randnum::Instance();
 	if(params.has_key("seed")) {
-		randnum.set_seed((int)params["seed"]);
+		randnum->set_seed((int)params["seed"]);
 	}
 
 	int nx = image->get_xsize();
@@ -3838,8 +3838,8 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 						f = y[l];
 					}
 				}
-				f = randnum.get_gauss_rand(sqrt(f), sqrt(f) / 3);
-				float a = randnum.get_frand(0.0f, (float)(2 * M_PI));
+				f = randnum->get_gauss_rand(sqrt(f), sqrt(f) / 3);
+				float a = randnum->get_frand(0.0f, (float)(2 * M_PI));
 				if (i == 0) {
 					f *= sqrt_2;
 				}
@@ -5445,14 +5445,14 @@ void TestImageNoiseUniformRand::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	Randnum r = Randnum();
+	Randnum * r = Randnum::Instance();
 	if(params.has_key("seed")) {
-		r.set_seed((int)params["seed"]);
+		r->set_seed((int)params["seed"]);
 	}
 	
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
-		dat[i] = r.get_frand();
+		dat[i] = r->get_frand();
 	}
 	
 	image->update();
@@ -5466,14 +5466,14 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 	if (sigma<=0) { sigma = 1.0; }
 	float mean = params["mean"];
 	
-	Randnum r = Randnum();
+	Randnum * r = Randnum::Instance();
 	if (params.has_key("seed")) {
-		r.set_seed((int)params["seed"]);
+		r->set_seed((int)params["seed"]);
 	}
 	
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
-		dat[i] = r.get_gauss_rand(mean, sigma);
+		dat[i] = r->get_gauss_rand(mean, sigma);
 	}
 	
 	image->update();

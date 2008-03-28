@@ -35,35 +35,71 @@
 
 #include <cmath>
 #include <ctime>
+#include <cstdio>
+#include <sys/time.h>
 #include "randnum.h"
  
 using namespace EMAN;
 
-int myseed()
+Randnum * Randnum::_instance = 0;
+
+unsigned long int random_seed()
 {
-    static int seed = time(0);
-    seed++;
-    return seed;
+	unsigned int seed;
+	struct timeval tv;
+	FILE *devrandom;
+
+	if ((devrandom = fopen("/dev/random","r")) == NULL) {
+		gettimeofday(&tv,0);
+		seed = tv.tv_sec + tv.tv_usec;
+		//printf("Got seed %u from gettimeofday()\n",seed);
+	} 
+	else {
+		fread(&seed,sizeof(seed),1,devrandom);
+		//printf("Got seed %u from /dev/random\n",seed);
+		fclose(devrandom);
+	}
+
+	return seed;
 }
 
+Randnum * Randnum::Instance() {
+	if(_instance == 0) {
+		_instance = new Randnum();
+	}
+	
+	return _instance; 
+}
 
+//Randnum * Randnum::Instance(const gsl_rng_type * _t) {
+//	if(_instance == 0) {
+//		_instance = new Randnum(_t);
+//	}
+//	else if(_t != T) {
+//		gsl_rng_free (r);
+//		r = gsl_rng_alloc (_t);
+//		gsl_rng_set(r, myseed() );
+//	}
+//	
+//	return _instance;
+//}
  
 Randnum::Randnum() : T(gsl_rng_default)
 {
 	r = gsl_rng_alloc (T);	
 	//gsl_rng_set(r, time(0));
-	gsl_rng_set(r, myseed() );	
+	gsl_rng_set(r, random_seed() );	
 }
 
-Randnum::Randnum(const gsl_rng_type * _t) : T(_t)
-{
-	r = gsl_rng_alloc (T);	
-	gsl_rng_set(r, myseed() );
-}
+//Randnum::Randnum(const gsl_rng_type * _t) : T(_t)
+//{
+//	r = gsl_rng_alloc (T);	
+//	gsl_rng_set(r, myseed() );
+//}
 
 Randnum::~Randnum()
 {
-//	printf("deallocate the random number generator...\n");
+	//printf("deallocate the random number generator...\n");
 	gsl_rng_free (r);
 }
 

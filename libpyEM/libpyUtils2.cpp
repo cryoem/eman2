@@ -34,9 +34,9 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_pad_overloads_2_8, EMAN::Util::pad, 2,
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_tf_overloads_2_7, EMAN::Util::tf, 2, 7)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Randnum_get_frand_overloads_0_2, EMAN::Randnum::get_frand, 0, 2)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Randnum_get_frand_overloads_0_2, EMAN::Randnum::get_frand, 0, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Randnum_get_frand_pos_overloads_0_2, EMAN::Randnum::get_frand_pos, 0, 2)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Randnum_get_frand_pos_overloads_0_2, EMAN::Randnum::get_frand_pos, 0, 2)
 
 struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 {
@@ -624,13 +624,14 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("GetVal", &TFList::GetVal)
     ;
 
-	class_< EMAN::Randnum >("Randnum", init< >())
-		.def(init< const gsl_rng_type * >())
-		.def("set_seed", &EMAN::Randnum::set_seed)
-		.def("get_irand", &EMAN::Randnum::get_irand)
-		.def("get_frand", &EMAN::Randnum::get_frand, EMAN_Randnum_get_frand_overloads_0_2())
-		.def("get_frand_pos", &EMAN::Randnum::get_frand_pos, EMAN_Randnum_get_frand_pos_overloads_0_2())
-		.def("get_gauss_rand", &EMAN::Randnum::get_gauss_rand)
-	;
+//	class_< EMAN::Randnum, boost::noncopyable>("Randnum", no_init)
+//		.def("Instance", &EMAN::Randnum::Instance)
+//		.def("set_seed", &EMAN::Randnum::set_seed)
+//		.def("get_irand", &EMAN::Randnum::get_irand)
+//		.def("get_frand", &EMAN::Randnum::get_frand, EMAN_Randnum_get_frand_overloads_0_2())
+//		.def("get_frand_pos", &EMAN::Randnum::get_frand_pos, EMAN_Randnum_get_frand_pos_overloads_0_2())
+//		.def("get_gauss_rand", &EMAN::Randnum::get_gauss_rand)
+//		.staticmethod("Instance")
+//	;
 }
 
