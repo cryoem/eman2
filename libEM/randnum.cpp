@@ -42,6 +42,8 @@
 using namespace EMAN;
 
 Randnum * Randnum::_instance = 0;
+const gsl_rng_type * Randnum::T = gsl_rng_default;
+gsl_rng * Randnum::r = 0;
 
 unsigned long int random_seed()
 {
@@ -71,35 +73,33 @@ Randnum * Randnum::Instance() {
 	return _instance; 
 }
 
-//Randnum * Randnum::Instance(const gsl_rng_type * _t) {
-//	if(_instance == 0) {
-//		_instance = new Randnum(_t);
-//	}
-//	else if(_t != T) {
-//		gsl_rng_free (r);
-//		r = gsl_rng_alloc (_t);
-//		gsl_rng_set(r, myseed() );
-//	}
-//	
-//	return _instance;
-//}
- 
-Randnum::Randnum() : T(gsl_rng_default)
+Randnum * Randnum::Instance(const gsl_rng_type * _t) {
+	if(_instance == 0) {
+		_instance = new Randnum(_t);
+	}
+	else if(_t != _instance->T) {
+		gsl_rng_free (_instance->r);
+		_instance->r = gsl_rng_alloc (_t);
+		gsl_rng_set(_instance->r, random_seed() );
+	}
+	
+	return _instance;
+}
+
+Randnum::Randnum()
 {
 	r = gsl_rng_alloc (T);	
-	//gsl_rng_set(r, time(0));
 	gsl_rng_set(r, random_seed() );	
 }
 
-//Randnum::Randnum(const gsl_rng_type * _t) : T(_t)
-//{
-//	r = gsl_rng_alloc (T);	
-//	gsl_rng_set(r, myseed() );
-//}
+Randnum::Randnum(const gsl_rng_type * _t)
+{
+	r = gsl_rng_alloc (_t);	
+	gsl_rng_set(r, random_seed() );
+}
 
 Randnum::~Randnum()
 {
-	//printf("deallocate the random number generator...\n");
 	gsl_rng_free (r);
 }
 
@@ -143,4 +143,17 @@ float Randnum::get_gauss_rand(float mean, float sigma) const
 	float f = std::sqrt(-2.0f * std::log(r) / r);
 	float result = x * f * sigma + mean;
 	return result;
+}
+
+void Randnum::print_generator_type() const
+{
+	const gsl_rng_type **t, **t0;
+          
+	t0 = gsl_rng_types_setup ();
+          
+	printf ("Available generators:\n");
+          
+	for (t = t0; *t != 0; t++) {
+		printf ("%s\n", (*t)->name);
+	}	
 }

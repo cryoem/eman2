@@ -38,6 +38,7 @@
 #include "emdata.h"
 #include "util.h"
 #include "marchingcubes.h"
+#include "randnum.h"
 
 #include <fcntl.h>
 #include <iomanip>
@@ -629,9 +630,8 @@ void Util::sort_mat(float *left, float *right, int *leftPerm, int *rightPerm)
 
 int Util::get_irand(int lo, int hi)
 {
-
-	int r = (int)((0.999999f + hi - lo) * rand() / (RAND_MAX + 1.0f) + lo);
-	return r;
+	Randnum* randnum = Randnum::Instance();
+	return randnum->get_irand(lo, hi);
 }
 
 float Util::get_frand(int lo, int hi)
@@ -639,53 +639,22 @@ float Util::get_frand(int lo, int hi)
 	return get_frand((float)lo, (float)hi);
 }
 
-/*the static variable does not work well in Python call for this function*/
 float Util::get_frand(float lo, float hi)
 {
-/*	static bool inited = false;
-	if (!inited) {
-		std::cout << "(float)Not initiated..." << std::endl;
-		srand(time(0));
-		inited = true;
-	}
-*/
-	float r = (hi - lo) * rand() / (RAND_MAX + 1.0f) + lo;
-	return r;
+	Randnum* randnum = Randnum::Instance();
+	return randnum->get_frand(lo, hi);
 }
 
-/*the static variable does not work well in Python call for this function*/
 float Util::get_frand(double lo, double hi)
 {
-/*	static bool inited = false;
-	if (!inited) {
-		std::cout << "(double)Not initiated..." << std::endl;
-		srand(time(0));
-		inited = true;
-	}
-*/
-	double r = (hi - lo) * rand() / (RAND_MAX + 1.0) + lo;
-	return (float)r;
+	Randnum* randnum = Randnum::Instance();
+	return randnum->get_frand(lo, hi);
 }
 
 float Util::get_gauss_rand(float mean, float sigma)
 {
-	float x = 0;
-	float r = 0;
-	bool valid = true;
-
-	while (valid) {
-		x = get_frand(-1.0, 1.0);
-		float y = get_frand(-1.0, 1.0);
-		r = x * x + y * y;
-
-		if (r <= 1.0 && r > 0) {
-			valid = false;
-		}
-	}
-
-	float f = sqrt(-2.0f * log(r) / r);
-	float result = x * f * sigma + mean;
-	return result;
+	Randnum* randnum = Randnum::Instance();
+	return randnum->get_gauss_rand(mean, sigma);
 }
 
 void Util::find_max(const float *data, size_t nitems, float *max_val, int *max_index)

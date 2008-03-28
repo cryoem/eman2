@@ -40,49 +40,51 @@
  
 namespace EMAN
 {
-	/** The wrapper class for gsl's random number generater
-	 * the default random number generator engine is gsl default: gsl_rng_mt19937
-	 * the default seed is current time in second, time()
+	/** The wrapper class for gsl's random number generater.
+	 * This class is a singleton class.
+	 * the default random number generator engine is gsl default: gsl_rng_mt19937,
+	 * gsl_rng_mt19937 has a period 2^19937.
+	 * the default seed is from /dev/random or milli second of current time.
 	 * 
 	 *      - How to get a random integer in range [lo, hi]
      *@code
-     *      Randnum r = Randnum();
-     * 		int i = r.get_irand(lo, hi);
+     *      Randnum *r = Randnum::Instance();
+     * 		int i = r->get_irand(lo, hi);
      *@endcode
 	 *      - How to get a random float in range [0, 1)
      *@code
-     *      Random r = Random();
+     *      Random *r = Random::Instance();
      * 		float f = r.get_frand();
      *@endcode     
 	 *      - How to get a random float in range (0, 1)
      *@code
-     *      Randnum r = Randnum();
+     *      Randnum *r = Randnum::Instance();
      * 		float f = r.get_frand_pos();
      *@endcode     
 	 *      - How to get a random float in range [lo, hi)
      *@code
-     *      Randnum r = Randnum();
+     *      Randnum *r = Randnum::Instance();
      * 		float f = r.get_frand(lo, hi);
      *@endcode     
 	 *      - How to get a random float in range (lo, hi)
      *@code
-     *      Randnum r = Randnum();
+     *      Randnum *r = Randnum::Instance();
      * 		float f = r.get_frand_pos(lo, hi);
      *@endcode
 	 *      - How to get a gaussian distribution float with given mean and sigma
      *@code
-     *      Randnum r = Randnum();
+     *      Randnum *r = Randnum::Instance();
      * 		float f = r.get_gauss_rand(mean, sigma);
      *@endcode
 	 *      - How to set a seed for the random number generator
      *@code
-     *      Randnum r = Randnum();
+     *      Randnum *r = Randnum::Instance();
      * 		r.set_seed(12345);
      *@endcode
 	 *      - How to set a random number generator other than use the default
      *@code
-     *      Randnum r = Randnum(gsl_rng_rand);	//gsl version of rand()
-     * 		Randnum r = Randnum(gsl_rng_random128_libc5);	//gsl version of Linux's random()
+     *      Randnum *r = Randnum::Instance(gsl_rng_rand);	//gsl version of rand()
+     * 		Randnum *r = Randnum:;Instance(gsl_rng_random128_libc5);	//gsl version of Linux's random()
      *@endcode
 	 */
 	class Randnum {
@@ -135,6 +137,7 @@ namespace EMAN
 		 */
 		float get_gauss_rand(float mean, float sigma) const;
 	  
+	    void print_generator_type() const;
 	  
 	  protected:
 		/** The default constructor will use the gsl default random number 
@@ -150,15 +153,15 @@ namespace EMAN
 		 * 
 		 * @param _t the random number generator type
 		 * */
-		//explicit Randnum(const gsl_rng_type * _t);
+		explicit Randnum(const gsl_rng_type * _t);
 		
 		~Randnum();
 		
 		
 		
 	  private:
-		const gsl_rng_type * T;
-    	gsl_rng * r;
+		const static gsl_rng_type * T;
+    	static gsl_rng * r;
     	
     	static Randnum* _instance;
 	}; 
