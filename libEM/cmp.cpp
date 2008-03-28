@@ -264,7 +264,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		int iyb = ny%2;
 		// 
 		if(nz == 1) {
-		//  it looks like it could work in 3D, but it is not, really.
+		//  it looks like it could work in 3D, but does not
 		for ( int iz = 0; iz <= nz-1; iz++) {
 			double part = 0.;
 			for ( int iy = 0; iy <= ny-1; iy++) {
@@ -302,7 +302,56 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			}
 			result += part;
 		}
-		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz;
+		if( normalize ) {
+		//  it looks like it could work in 3D, but does not
+		double square_sum1 = 0., square_sum2 = 0.;
+		for ( int iz = 0; iz <= nz-1; iz++) {
+			for ( int iy = 0; iy <= ny-1; iy++) {
+				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
+					int ii = ix + (iy  + iz * ny)* lsd2;
+					square_sum1 += x_data[ii] * double(x_data[ii]);
+					square_sum2 += y_data[ii] * double(y_data[ii]);
+				}
+			}
+			for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+				int ii = (iy  + iz * ny)* lsd2;
+				square_sum1 += x_data[ii] * double(x_data[ii]);
+				square_sum1 += x_data[ii+1] * double(x_data[ii+1]);
+				square_sum2 += y_data[ii] * double(y_data[ii]);
+				square_sum2 += y_data[ii+1] * double(y_data[ii+1]);
+			}
+			if(nx%2 == 0) {
+				for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+					int ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+					square_sum1 += x_data[ii] * double(x_data[ii]);
+					square_sum1 += x_data[ii+1] * double(x_data[ii+1]);
+					square_sum2 += y_data[ii] * double(y_data[ii]);
+					square_sum2 += y_data[ii+1] * double(y_data[ii+1]);
+				}
+			
+			}
+			square_sum1 *= 2;
+			square_sum1 += x_data[0] * double(x_data[0]);
+			square_sum2 *= 2;
+			square_sum2 += y_data[0] * double(y_data[0]);
+			if(ny%2 == 0) {
+				int ii = (ny/2  + iz * ny)* lsd2;
+				square_sum1 += x_data[ii] * double(x_data[ii]);				
+				square_sum2 += y_data[ii] * double(y_data[ii]);				
+			}
+			if(nx%2 == 0) {
+				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
+				square_sum1 += x_data[ii] * double(x_data[ii]);				
+				square_sum2 += y_data[ii] * double(y_data[ii]);				
+				if(ny%2 == 0) {
+					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
+					square_sum1 += x_data[ii] * double(x_data[ii]);				
+					square_sum2 += y_data[ii] * double(y_data[ii]);				
+				}
+			}
+		}
+		result /= sqrt(square_sum1*square_sum2);
+		} else  result /= ((long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz);
 		
 		} else { //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 		int ky, kz;
@@ -320,9 +369,28 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 				}
 			}
 		}
-		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz/2;
+		if( normalize ) {
+		//  still incorrect
+		double square_sum1 = 0., square_sum2 = 0.;
+		int ky, kz;
+		int ny2 = ny/2; int nz2 = nz/2;
+		for ( int iz = 0; iz <= nz-1; iz++) {
+			if(iz>nz2) kz=iz-nz; else kz=iz;
+			for ( int iy = 0; iy <= ny-1; iy++) {
+				if(iy>ny2) ky=iy-ny; else ky=iy;
+				for ( int ix = 0; ix <= lsd2-1; ix++) {
+					// Skip Friedel related values
+					if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+						int ii = ix + (iy  + iz * ny)* lsd2;
+						square_sum1 += x_data[ii] * double(x_data[ii]);
+						square_sum2 += y_data[ii] * double(y_data[ii]);
+					}
+				}
+			}
 		}
-		result /= n;
+		result /= sqrt(square_sum1*square_sum2);
+		} else result /= ((long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz/2);
+		}
 	} else {
 		long totsize = (long int)image->get_xsize() * (long int)image->get_ysize() * (long int)image->get_zsize();
 
@@ -357,7 +425,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 				square_sum2 = with->get_attr("square_sum");
 			} else n = totsize;
 		}
-	if (normalize) result = result / (sqrt(square_sum1*square_sum2)); else result /= n;
+		if (normalize) result /= (sqrt(square_sum1*square_sum2)); else result /= n;
 	}
 	
 			
