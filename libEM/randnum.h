@@ -136,7 +136,8 @@ namespace EMAN
 		 * @return the gaussian random number in float.
 		 */
 		float get_gauss_rand(float mean, float sigma) const;
-	  
+	  	
+	  	/** print out all possible random number generator type in gsl*/
 	    void print_generator_type() const;
 	  
 	  protected:
