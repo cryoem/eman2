@@ -3521,9 +3521,7 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset, int y_offset, int z_offset)
 {
 	/* Exception Handle */
-	if (!img) {
-		throw NullPointerException("NULL input image");
-	}
+	if (!img) throw NullPointerException("NULL input image");
 	/* ============================== */
 	
 	// Get the size of the input image
@@ -3538,29 +3536,27 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 	if(x_offset>((nx-(nx/2))-(new_nx-(new_nx/2))) || y_offset>((ny-(ny/2))-(new_ny-(new_ny/2))) || z_offset>((nz-(nz/2))-(new_nz-(new_nz/2))))
 		throw ImageDimensionException("The offset inconsistent with the input image size.");
 	/* ============================== */
-	
-	EMData* wind= new EMData();
-	wind->set_size(new_nx, new_ny, new_nz);
-	float *outp=wind->get_data();
-	float *inp=img->get_data();
 
-	
 	/*    Calculation of the start point */
 	int  new_st_x = nx/2-new_nx/2 + x_offset,
 	    new_st_y = ny/2-new_ny/2 + y_offset,  
 	    new_st_z = nz/2-new_nz/2 + z_offset;
 	/* ============================== */
-	    
+
 	/* Exception Handle */
 	if (new_st_x<0 || new_st_y<0 || new_st_z<0)   //  WHAT HAPPENS WITH THE END POINT CHECK??  PAP
 		throw ImageDimensionException("The offset inconsistent with the input image size.");
 	/* ============================== */
-	
-	
+
+	EMData* wind = img->copy_head();
+	wind->set_size(new_nx, new_ny, new_nz);
+	float *outp=wind->get_data();
+	float *inp=img->get_data();
+
 	for (int k=0; k<new_nz; k++)
 		for(int j=0; j<new_ny; j++)
 			for(int i=0; i<new_nx; i++)
-				outp(i,j,k) = inp(i,j,k);		    
+				outp(i,j,k) = inp(i,j,k);
 	wind->update();
 	return wind;
 }
@@ -3571,68 +3567,60 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 #define outp(i,j,k) outp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*new_ny))*new_nx]
 EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset,char *params)
 {
-	
 	/* Exception Handle */
-	if (!img) {
-		throw NullPointerException("NULL input image");
-	}
+	if (!img)  throw NullPointerException("NULL input image");
 	/* ============================== */
-	
+
 	// Get the size of the input image
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	/* ============================== */
-	
+
 	/* Exception Handle */
 	if(new_nx<nx || new_ny<ny || new_nz<nz)
-		throw ImageDimensionException("The size of the padding image cannot be below the input image size.");
+		throw ImageDimensionException("The size of the padded image cannot be lower than the input image size.");
 	if((new_nx/2)-(nx/2)+x_offset<0 || (new_ny/2)-(ny/2)+y_offset<0 || (new_nz/2)-(nz/2)+z_offset<0)
 		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
 	if(x_offset>((new_nx-(new_nx/2))-(nx-(nx/2))) || y_offset>((new_ny-(new_ny/2))-(ny-(ny/2))) || z_offset>((new_nz-(new_nz/2))-(nz-(nz/2))))
 		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
 	/* ============================== */
-	
-	EMData* pading=new EMData();
-	pading->set_size(new_nx,new_ny,new_nz);
-	float *inp=img->get_data();
-	float *outp=pading->get_data();
-		
-	
+
+	EMData* pading = img->copy_head();
+	pading->set_size(new_nx, new_ny, new_nz);
+	float *inp  = img->get_data();
+	float *outp = pading->get_data();
+
+
 	/* Calculation of the average and the circumference values for background substitution 
 	=======================================================================================*/
 	float background;
 	
-	if (strcmp(params,"average")==0){
-		background = img->get_attr("mean");
-		}
-	else if (strcmp(params,"circumference")==0)
-	{
-		float sum1=0.f;
+	if (strcmp(params,"average")==0) background = img->get_attr("mean");
+	else if (strcmp(params,"circumference")==0) {
+		float sum1=0.0f;
 		int cnt=0;
-		for(int i=0;i<nx;i++){
+		for(int i=0;i<nx;i++) {
 			sum1 += inp(i,0,0) + inp(i,ny-1,nz-1);
-			cnt+=2;}
-		if(nz-1 == 0)
-		{
-			for (int j=1;j<ny-1;j++){
-				sum1 += inp(1,j,0) + inp(nx-1,j,0);
-				cnt+=2;}
+			cnt+=2;
 		}
-		else
-		{
-		for (int k=1;k<nz-1;k++){
-			for (int j=1;j<ny-1;j++){
+		if(nz-1 == 0) {
+			for (int j=1;j<ny-1;j++) {
 				sum1 += inp(1,j,0) + inp(nx-1,j,0);
-				cnt+=2;}
-		}
+				cnt+=2;
+			}
+		} else {
+			for (int k=1;k<nz-1;k++) {
+				for (int j=1;j<ny-1;j++) {
+					sum1 += inp(1,j,0) + inp(nx-1,j,0);
+					cnt+=2;
+				}
+			}
 		}
 		background = sum1/cnt;
-	}		
-	else{	
+	} else {	
 		background = static_cast<float>( atof( params ) );
 	}
 	/*=====================================================================================*/
-	
-	
+
 	 /*Initial Padding */
 	int new_st_x=0,new_st_y=0,new_st_z=0;
 	for (int k=0;k<new_nz;k++)
@@ -3640,7 +3628,6 @@ EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, 
 			for (int i=0;i<new_nx;i++)
 				outp(i,j,k)=background;
 	/*============================== */
-	
 
 	/*    Calculation of the start point */
 	new_st_x=int((new_nx/2-nx/2)  + x_offset);
@@ -3648,12 +3635,10 @@ EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, 
 	new_st_z=int((new_nz/2-nz/2)  + z_offset);
 	/* ============================== */					
 
-
 	for (int k=0;k<nz;k++)
-	    for(int j=0;j<ny;j++)
-	        for(int i=0;i<nx;i++){
-			outp(i,j,k)=inp(i,j,k); 
-			}
+		for(int j=0;j<ny;j++)
+			for(int i=0;i<nx;i++)
+				outp(i,j,k)=inp(i,j,k); 
 	pading->update();
 	return pading;
 }
@@ -3719,61 +3704,59 @@ void Util::cyclicshift(EMData *image, Dict params) {
     im1.peak_search(1,1)
 */
 
-if (image->is_complex())
-                throw ImageFormatException("Real image required for "
-                                                   "IntegerCyclicShift2DProcessor");
+	if (image->is_complex()) throw ImageFormatException("Real image required for IntegerCyclicShift2DProcessor");
  
-         int dx = params["dx"];
-         int dy = params["dy"];
-	 int dz = params["dz"];
- 
-         // The reverse trick we're using shifts to the left (a negative shift)
-         int nx = image->get_xsize();
-         dx %= nx;
-         if (dx < 0) dx += nx;
-         int ny = image->get_ysize();
-         dy %= ny;
-         if (dy < 0) dy += ny;
-	 int nz = image->get_zsize();
-         dz %= nz;
-         if (dz < 0) dz += nz;	 
+	int dx = params["dx"];
+	int dy = params["dy"];
+	int dz = params["dz"];
+
+	// The reverse trick we're using shifts to the left (a negative shift)
+	int nx = image->get_xsize();
+	dx %= nx;
+	if (dx < 0) dx += nx;
+	int ny = image->get_ysize();
+	dy %= ny;
+	if (dy < 0) dy += ny;
+	int nz = image->get_zsize();
+	dz %= nz;
+	if (dz < 0) dz += nz;	
 	 
 	 
  #ifdef DEBUG
-         std::cout << dx << std::endl;
-         std::cout << dy << std::endl;
-	 std::cout << dz << std::endl;
+	std::cout << dx << std::endl;
+	std::cout << dy << std::endl;
+	std::cout << dz << std::endl;
  #endif
-         int mx = -(dx - nx);
-         int my = -(dy - ny);
- 	 int mz = -(dz - nz);
-	 
-         float* data = image->get_data();
-         // x-reverses
-         if (mx != 0) {
-	         for (int iz = 0; iz < nz; iz++)
-		 	for (int iy = 0; iy < ny; iy++) {
-	                         // reverses for column iy
-        	                 int offset = nx*iy + nx*ny*iz; // starting location for column iy in slice iz
-                	         reverse(&data[offset],&data[offset+mx]);
-                        	 reverse(&data[offset+mx],&data[offset+nx]);
-                         	 reverse(&data[offset],&data[offset+nx]);
-		         }
-         }
-         // y-reverses
-         if (my != 0) {	 
-	         for (int iz = 0; iz < nz; iz++) {
-		 	int offset = nx*ny*iz;
-            	     	colreverse(&data[offset], &data[offset + my*nx], nx);
-                     	colreverse(&data[offset + my*nx], &data[offset + ny*nx], nx);
-                     	colreverse(&data[offset], &data[offset + ny*nx], nx);
+	int mx = -(dx - nx);
+	int my = -(dy - ny);
+	int mz = -(dz - nz);
+	
+	float* data = image->get_data();
+	// x-reverses
+	if (mx != 0) {
+		for (int iz = 0; iz < nz; iz++)
+	               for (int iy = 0; iy < ny; iy++) {
+				// reverses for column iy
+	        		int offset = nx*iy + nx*ny*iz; // starting location for column iy in slice iz
+				reverse(&data[offset],&data[offset+mx]);
+				reverse(&data[offset+mx],&data[offset+nx]);
+				reverse(&data[offset],&data[offset+nx]);
+	        	}
+	}
+	// y-reverses
+	if (my != 0) {  
+		for (int iz = 0; iz < nz; iz++) {
+	        	int offset = nx*ny*iz;
+			colreverse(&data[offset], &data[offset + my*nx], nx);
+			colreverse(&data[offset + my*nx], &data[offset + ny*nx], nx);
+			colreverse(&data[offset], &data[offset + ny*nx], nx);
 		}
-         }
-	 if (mz != 0) {
-                 slicereverse(&data[0], &data[mz*ny*nx], nx, ny);
-                 slicereverse(&data[mz*ny*nx], &data[nz*ny*nx], nx, ny);
-                 slicereverse(&data[0], &data[nz*ny*nx], nx ,ny);
-         }
+	}
+	if (mz != 0) {
+		slicereverse(&data[0], &data[mz*ny*nx], nx, ny);
+		slicereverse(&data[mz*ny*nx], &data[nz*ny*nx], nx, ny);
+		slicereverse(&data[0], &data[nz*ny*nx], nx ,ny);
+	}
 	image->update();	 
 }
 
@@ -3888,16 +3871,13 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	float *ref_freq_bin = new float[3*hist_len];
 
 	//initialize value in each bin to zero 
-	for (int i = 0;i < (3*hist_len);i++)
-		ref_freq_bin[i] = 0.f;
+	for (int i = 0;i < (3*hist_len);i++) ref_freq_bin[i] = 0.f;
 		
-	for (int i = 0;i < size_ref;i++)
-	{
+	for (int i = 0;i < size_ref;i++) {
 		int L = static_cast<int>(((ref_ptr[i] - ref_h_min)/ref_h_diff) * (hist_len-1) + hist_len+1);
 		ref_freq_bin[L]++;
 	}
-	for (int i = 0;i < (3*hist_len);i++)
-		ref_freq_bin[i] *= static_cast<float>(cnt)/static_cast<float>(size_ref);
+	for (int i = 0;i < (3*hist_len);i++) ref_freq_bin[i] *= static_cast<float>(cnt)/static_cast<float>(size_ref);
 		
 	//Parameters Calculation (i.e) 'A' x + 'B' 
 	float A = ref_h_sig/img_sig;
@@ -3912,8 +3892,7 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	scale.push_back(-1.e-7f*B);
 	
 	vector<float> ref_freq_hist;
-	for(int i = 0;i < (3*hist_len);i++)
-		ref_freq_hist.push_back((int)ref_freq_bin[i]);
+	for(int i = 0;i < (3*hist_len);i++) ref_freq_hist.push_back((int)ref_freq_bin[i]);
 		
 	vector<float> data;
 	data.push_back(ref_h_diff);
@@ -3940,23 +3919,17 @@ float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData 
 	float *mask_ptr = (mask == NULL)?img->get_data():mask->get_data();
 		
 	int *img_freq_bin = new int[3*hist_len];
-	for(int i = 0;i < (3*hist_len);i++)
-		img_freq_bin[i] = 0;
-	for(int i = 0;i < size_img;i++)
-	{
-		if(mask_ptr[i] > 0.5f)
-		{
+	for(int i = 0;i < (3*hist_len);i++) img_freq_bin[i] = 0;
+	for(int i = 0;i < size_img;i++) {
+		if(mask_ptr[i] > 0.5f) {
 			float img_xn = img_ptr[i]*PA + PB;
 			int L = static_cast<int>(((img_xn - ref_h_min)/ref_h_diff) * (hist_len-1) + hist_len+1);
-			if(L >= 0 && L < (3*hist_len))
-				img_freq_bin[L]++;
-			
+			if(L >= 0 && L < (3*hist_len)) img_freq_bin[L]++;
 		}
-	}; 
+	}
 	int freq_hist = 0;
 
-	for(int i = 0;i < (3*hist_len);i++)
-		freq_hist += (int)pow((float)((int)ref_freq_hist[i] - (int)img_freq_bin[i]),2.f);
+	for(int i = 0;i < (3*hist_len);i++) freq_hist += (int)pow((float)((int)ref_freq_hist[i] - (int)img_freq_bin[i]),2.f);
 	freq_hist = (-freq_hist);
 	return static_cast<float>(freq_hist);
 }
@@ -3967,44 +3940,42 @@ float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData 
 #define    SS(I)         		SS	    [I-1]
 Dict Util::CANG(float PHI,float THETA,float PSI)
 {
- double CPHI,SPHI,CTHE,STHE,CPSI,SPSI;
- vector<float>   DM,SS;
- 
- for(int i =0;i<9;i++)
-     DM.push_back(0);
-     
- for(int i =0;i<6;i++)
-     SS.push_back(0);   
-  
- CPHI = cos(double(PHI)*DGR_TO_RAD);
- SPHI = sin(double(PHI)*DGR_TO_RAD);
- CTHE = cos(double(THETA)*DGR_TO_RAD);
- STHE = sin(double(THETA)*DGR_TO_RAD);
- CPSI = cos(double(PSI)*DGR_TO_RAD);
- SPSI = sin(double(PSI)*DGR_TO_RAD);
-  
- SS(1) = float(CPHI);
- SS(2) = float(SPHI);
- SS(3) = float(CTHE);
- SS(4) = float(STHE);
- SS(5) = float(CPSI);
- SS(6) = float(SPSI);
-   
- DM(1) = float(CPHI*CTHE*CPSI-SPHI*SPSI);
- DM(2) = float(SPHI*CTHE*CPSI+CPHI*SPSI);
- DM(3) = float(-STHE*CPSI);
- DM(4) = float(-CPHI*CTHE*SPSI-SPHI*CPSI);
- DM(5) = float(-SPHI*CTHE*SPSI+CPHI*CPSI);
- DM(6) = float(STHE*SPSI);
- DM(7) = float(STHE*CPHI);
- DM(8) = float(STHE*SPHI);
- DM(9) = float(CTHE);
- 
- Dict DMnSS;
- DMnSS["DM"] = DM;
- DMnSS["SS"] = SS;
- 
- return(DMnSS);
+	double CPHI,SPHI,CTHE,STHE,CPSI,SPSI;
+	vector<float>	DM,SS;
+
+	for(int i =0;i<9;i++) DM.push_back(0);
+	    
+	for(int i =0;i<6;i++) SS.push_back(0);   
+	 
+	CPHI = cos(double(PHI)*DGR_TO_RAD);
+	SPHI = sin(double(PHI)*DGR_TO_RAD);
+	CTHE = cos(double(THETA)*DGR_TO_RAD);
+	STHE = sin(double(THETA)*DGR_TO_RAD);
+	CPSI = cos(double(PSI)*DGR_TO_RAD);
+	SPSI = sin(double(PSI)*DGR_TO_RAD);
+	 
+	SS(1) = float(CPHI);
+	SS(2) = float(SPHI);
+	SS(3) = float(CTHE);
+	SS(4) = float(STHE);
+	SS(5) = float(CPSI);
+	SS(6) = float(SPSI);
+	  
+	DM(1) = float(CPHI*CTHE*CPSI-SPHI*SPSI);
+	DM(2) = float(SPHI*CTHE*CPSI+CPHI*SPSI);
+	DM(3) = float(-STHE*CPSI);
+	DM(4) = float(-CPHI*CTHE*SPSI-SPHI*CPSI);
+	DM(5) = float(-SPHI*CTHE*SPSI+CPHI*CPSI);
+	DM(6) = float(STHE*SPSI);
+	DM(7) = float(STHE*CPHI);
+	DM(8) = float(STHE*SPHI);
+	DM(9) = float(CTHE);
+
+	Dict DMnSS;
+	DMnSS["DM"] = DM;
+	DMnSS["SS"] = SS;
+
+	return(DMnSS);
 } 
 #undef SS
 #undef DM
@@ -4018,54 +3989,48 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 {
 
- float  *Bptr = B->get_data(); 
- float  *CUBEptr = CUBE->get_data();
- 
- int NSAM,NROW,NX3D,NY3D,NZC,KZ,IQX,IQY,LDPX,LDPY,LDPZ,LDPNMX,LDPNMY,NZ1;
- float DIPX,DIPY,XB,YB,XBB,YBB;
- 
- float x_shift = B->get_attr( "s2x" );
- float y_shift = B->get_attr( "s2y" );
+	float  *Bptr = B->get_data(); 
+	float  *CUBEptr = CUBE->get_data();
 
- NSAM = B->get_xsize();
- NROW = B->get_ysize();
- NX3D = CUBE->get_xsize();
- NY3D = CUBE->get_ysize();
- NZC  = CUBE->get_zsize();
+	int NSAM,NROW,NX3D,NY3D,NZC,KZ,IQX,IQY,LDPX,LDPY,LDPZ,LDPNMX,LDPNMY,NZ1;
+	float DIPX,DIPY,XB,YB,XBB,YBB;
+
+	float x_shift = B->get_attr( "s2x" );
+	float y_shift = B->get_attr( "s2y" );
+
+	NSAM = B->get_xsize();
+	NROW = B->get_ysize();
+	NX3D = CUBE->get_xsize();
+	NY3D = CUBE->get_ysize();
+	NZC  = CUBE->get_zsize();
 
 
- LDPX   = NX3D/2 +1;
- LDPY   = NY3D/2 +1;
- LDPZ   = NZC/2 +1;
- LDPNMX = NSAM/2 +1;
- LDPNMY = NROW/2 +1;
- NZ1    = 1; 
-  
- for(int K=1;K<=NZC;K++)
-     {
-       KZ=K-1+NZ1;
-       for(int J=1;J<=NY3D;J++)
-           {
-	     XBB = (1-LDPX)*DM(1)+(J-LDPY)*DM(2)+(KZ-LDPZ)*DM(3);
-             YBB = (1-LDPX)*DM(4)+(J-LDPY)*DM(5)+(KZ-LDPZ)*DM(6);
-              for(int I=1;I<=NX3D;I++)
-	          {
-		   XB  = (I-1)*DM(1)+XBB-x_shift;
-		   IQX = int(XB+float(LDPNMX));
-                   if (IQX <1 || IQX >= NSAM) continue;
-		   YB  = (I-1)*DM(4)+YBB-y_shift;
-                   IQY = int(YB+float(LDPNMY));
-                   if (IQY<1 || IQY>=NROW)  continue;
-                   DIPX = XB+LDPNMX-IQX;
-		   DIPY = YB+LDPNMY-IQY;
- 
-                   CUBE(I,J,K) = CUBE(I,J,K)+B(IQX,IQY)+DIPY*(B(IQX,IQY+1)-B(IQX,IQY))+DIPX*(B(IQX+1,IQY)-B(IQX,IQY)+DIPY*(B(IQX+1,IQY+1)-B(IQX+1,IQY)-B(IQX,IQY+1)+B(IQX,IQY)));
- 	          }
-           } 
- 
-    } 
-    
-   
+	LDPX   = NX3D/2 +1;
+	LDPY   = NY3D/2 +1;
+	LDPZ   = NZC/2 +1;
+	LDPNMX = NSAM/2 +1;
+	LDPNMY = NROW/2 +1;
+	NZ1    = 1; 
+	 
+	for(int K=1;K<=NZC;K++) {
+		KZ=K-1+NZ1;
+		for(int J=1;J<=NY3D;J++) {
+			XBB = (1-LDPX)*DM(1)+(J-LDPY)*DM(2)+(KZ-LDPZ)*DM(3);
+			YBB = (1-LDPX)*DM(4)+(J-LDPY)*DM(5)+(KZ-LDPZ)*DM(6);
+			for(int I=1;I<=NX3D;I++) {
+				XB  = (I-1)*DM(1)+XBB-x_shift;
+				IQX = int(XB+float(LDPNMX));
+				if (IQX <1 || IQX >= NSAM) continue;
+				YB  = (I-1)*DM(4)+YBB-y_shift;
+				IQY = int(YB+float(LDPNMY));
+				if (IQY<1 || IQY>=NROW)  continue;
+				DIPX = XB+LDPNMX-IQX;
+				DIPY = YB+LDPNMY-IQY;
+
+				CUBE(I,J,K) = CUBE(I,J,K)+B(IQX,IQY)+DIPY*(B(IQX,IQY+1)-B(IQX,IQY))+DIPX*(B(IQX+1,IQY)-B(IQX,IQY)+DIPY*(B(IQX+1,IQY+1)-B(IQX+1,IQY)-B(IQX,IQY+1)+B(IQX,IQY)));
+			}
+		} 
+	} 
 } 
 
 #undef DM
@@ -4079,65 +4044,65 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> exptable)
 {
- int NSAM,NROW,NNNN,NR2,L,JY,KX,NANG;
- float WW,OX,OY,Y;
- 
- NSAM = PROJ->get_xsize();
- NROW = PROJ->get_ysize(); 
- NNNN   = NSAM+2-(NSAM%2);
- NR2 = NROW/2;
- 
- NANG = int(SS.size())/6; 
-  
- EMData* W = new EMData();
- int Wnx = NNNN/2;
- W->set_size(Wnx,NROW,1);
- W->to_zero();
- float *Wptr = W->get_data();
- float *PROJptr = PROJ->get_data(); 
- float indcnst = 1000/2.0;
- // we create look-up table for 1001 uniformly distributed samples [0,2];
- 
- for (L=1; L<=NANG; L++) {
-      OX = SS(6,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) + SS(5,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
-      OY = SS(5,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) - SS(6,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
+	int NSAM,NROW,NNNN,NR2,L,JY,KX,NANG;
+	float WW,OX,OY,Y;
 
-      if(OX != 0.0f || OY!=0.0f) { 
-	 //int count = 0;
-        for(int J=1;J<=NROW;J++) {
-	      JY = (J-1);
-	      if(JY > NR2) JY=JY-NROW;	       
-	      for(int I=1;I<=NNNN/2;I++) {
-		          Y =  fabs(OX * (I-1) + OY * JY);
-                  if(Y < 2.0f) W(I,J) += exptable[int(Y*indcnst)];//exp(-4*Y*Y);//
-		  //if(Y < 2.0f) Wptr[count++] += exp(-4*Y*Y);//exptable[int(Y*indcnst)];//
-		  }   
-	    }
-	  } else { 
-	    for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++)  W(I,J) += 1.0f;
- 	  }
- }
+	NSAM = PROJ->get_xsize();
+	NROW = PROJ->get_ysize(); 
+	NNNN   = NSAM+2-(NSAM%2);
+	NR2 = NROW/2;
 
- PROJ->pad_fft();
- PROJ->do_fft_inplace();
- PROJ->update();
- PROJptr = PROJ->get_data();
- 
- 
- float WNRMinv,temp;
- float osnr = 1.0f/SNR;
- WNRMinv = 1/W(1,1);
- for(int J=1;J<=NROW;J++)
-    for(int I=1;I<=NNNN;I+=2) {
-         KX          = (I+1)/2;
-	     temp        = W(KX,J)*WNRMinv;
-	     WW          = temp/(temp*temp + osnr);
-	     PROJ(I,J)   *= WW;
-         PROJ(I+1,J) *= WW;
-       }  
+	NANG = int(SS.size())/6; 
+	 
+	EMData* W = new EMData();
+	int Wnx = NNNN/2;
+	W->set_size(Wnx,NROW,1);
+	W->to_zero();
+	float *Wptr = W->get_data();
+	float *PROJptr = PROJ->get_data(); 
+	float indcnst = 1000/2.0;
+	// we create look-up table for 1001 uniformly distributed samples [0,2];
 
-PROJ->do_ift_inplace();
-PROJ->postift_depad_corner_inplace();
+	for (L=1; L<=NANG; L++) {
+		OX = SS(6,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) + SS(5,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
+		OY = SS(5,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) - SS(6,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
+
+		if(OX != 0.0f || OY!=0.0f) { 
+			//int count = 0;
+			for(int J=1;J<=NROW;J++) {
+				JY = (J-1);
+				if(JY > NR2) JY=JY-NROW;	 
+				for(int I=1;I<=NNNN/2;I++) {
+					Y =  fabs(OX * (I-1) + OY * JY);
+					if(Y < 2.0f) W(I,J) += exptable[int(Y*indcnst)];//exp(-4*Y*Y);//
+				    //if(Y < 2.0f) Wptr[count++] += exp(-4*Y*Y);//exptable[int(Y*indcnst)];//
+				}	
+			}
+		} else { 
+			for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++)  W(I,J) += 1.0f;
+		}
+	}
+
+	PROJ->pad_fft();
+	PROJ->do_fft_inplace();
+	PROJ->update();
+	PROJptr = PROJ->get_data();
+
+
+	float WNRMinv,temp;
+	float osnr = 1.0f/SNR;
+	WNRMinv = 1/W(1,1);
+	for(int J=1;J<=NROW;J++)
+		for(int I=1;I<=NNNN;I+=2) {
+			KX	    = (I+1)/2;
+			temp	= W(KX,J)*WNRMinv;
+			WW  	= temp/(temp*temp + osnr);
+			PROJ(I,J)	*= WW;
+			PROJ(I+1,J) *= WW;
+		}  
+
+	PROJ->do_ift_inplace();
+	PROJ->postift_depad_corner_inplace();
 }
 
 #undef PROJ
@@ -4203,33 +4168,33 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 			if(ALPHA<1.0E-6) {
 				for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++) W(I,J)+=1.0;
 			} else {
-			      FM=THICK/(fabs(sin(ALPHA*deg2rad)));
-			      CC(1)   = CC(1)/CCN;CC(2)   = CC(2)/CCN;CC(3)   = CC(3)/CCN;
-			      VV(1)= SS(2,L)*SS(4,L)*CC(3)-SS(3,L)*CC(2);
-			      VV(2)= SS(3,L)*CC(1)-SS(1,L)*SS(4,L)*CC(3);
-			      VV(3)= SS(1,L)*SS(4,L)*CC(2)-SS(2,L)*SS(4,L)*CC(1);
-			      CP(1)   = 0.0;CP(2) = 0.0;
-			      VP(1)   = 0.0;VP(2) = 0.0;
+				FM=THICK/(fabs(sin(ALPHA*deg2rad)));
+				CC(1)	= CC(1)/CCN;CC(2)   = CC(2)/CCN;CC(3)	= CC(3)/CCN;
+				VV(1)= SS(2,L)*SS(4,L)*CC(3)-SS(3,L)*CC(2);
+				VV(2)= SS(3,L)*CC(1)-SS(1,L)*SS(4,L)*CC(3);
+				VV(3)= SS(1,L)*SS(4,L)*CC(2)-SS(2,L)*SS(4,L)*CC(1);
+				CP(1)	= 0.0;CP(2) = 0.0;
+				VP(1)	= 0.0;VP(2) = 0.0;
 	
-			      CP(1) = CP(1) + RI(1,1)*CC(1) + RI(1,2)*CC(2) + RI(1,3)*CC(3);
-			      CP(2) = CP(2) + RI(2,1)*CC(1) + RI(2,2)*CC(2) + RI(2,3)*CC(3);
-			      VP(1) = VP(1) + RI(1,1)*VV(1) + RI(1,2)*VV(2) + RI(1,3)*VV(3);
-			      VP(2) = VP(2) + RI(2,1)*VV(1) + RI(2,2)*VV(2) + RI(2,3)*VV(3);						   
+				CP(1) = CP(1) + RI(1,1)*CC(1) + RI(1,2)*CC(2) + RI(1,3)*CC(3);
+				CP(2) = CP(2) + RI(2,1)*CC(1) + RI(2,2)*CC(2) + RI(2,3)*CC(3);
+				VP(1) = VP(1) + RI(1,1)*VV(1) + RI(1,2)*VV(2) + RI(1,3)*VV(3);
+				VP(2) = VP(2) + RI(2,1)*VV(1) + RI(2,2)*VV(2) + RI(2,3)*VV(3);  					     
 	
-			      TMP = CP(1)*VP(2)-CP(2)*VP(1);
+				TMP = CP(1)*VP(2)-CP(2)*VP(1);
 
-			      //     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
-			      TMP = AMAX1(1.0E-4f,fabs(TMP));
-			      float tmpinv = 1/TMP;   
-			      for(int J=1;J<=NROW;J++) {
-			              JY = (J-1);
-			              if (JY>NR2)  JY=JY-NROW;
-			              for(int I=1;I<=NNNN/2;I++) {
-			        	      FV     = fabs((JY*CP(1)-(I-1)*CP(2))*tmpinv);
-			        	      RT     = 1.0f-FV/FM;
-			        	      W(I,J) += ((RT>0.0f)*RT); 	       
-			              }
-			      }
+				//     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
+				TMP = AMAX1(1.0E-4f,fabs(TMP));
+				float tmpinv = 1/TMP;	
+				for(int J=1;J<=NROW;J++) {
+					JY = (J-1);
+					if (JY>NR2)  JY=JY-NROW;
+					for(int I=1;I<=NNNN/2;I++) {
+						FV     = fabs((JY*CP(1)-(I-1)*CP(2))*tmpinv);
+						RT     = 1.0f-FV/FM;
+						W(I,J) += ((RT>0.0f)*RT);		 
+					}
+				}
 			} 
 		}
 	}
@@ -4247,7 +4212,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 			WW	    =  1.0f/W(KX,J);
 			PROJ(I,J)   = PROJ(I,J)*WW;
 			PROJ(I+1,J) = PROJ(I+1,J)*WW;
-		} 
+		}
 
 	PROJ->do_ift_inplace();
 	PROJ->postift_depad_corner_inplace();  
