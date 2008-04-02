@@ -333,7 +333,7 @@ namespace EMAN
 		 * @param inc_mirror whether or not to include the mirror portion of the asymmetric unit
 		 * @return a vector or points which define a cyclic set of great arcs on the unit sphere. Each point may be connected to the point that proceeds it, and the last point may be connected to the first point, and this demarcates the asymmetric unit.
 		*/
-		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const { return vector<Vec3f>(); }
+		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const { (void)inc_mirror; return vector<Vec3f>(); }
 		
 		/** Ask the Symmetry3D object to generate a set of orientations in its asymmetric unit
 		 * using an OrientationGenerator constructed from the given parameters (using a Factory).
@@ -1178,7 +1178,7 @@ namespace EMAN
 		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
 		
-		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const { return 0; }
+		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const { (void)sym; (void)delta; return 0; }
 	};
 	
 	/**Sparx even orientation generator - see util_sparx.cpp - Util::even_angles(...)
