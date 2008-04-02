@@ -49,7 +49,7 @@ This program will sort a stack of images based on some similarity criterion. """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the after optional alignment (default=optvariance:keepzero:1,matchfilt:1)", default="optvariance:keepzero:1,matchfilt:1")
+	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the after optional alignment (default=optvariance:keepzero=1:matchfilt=1)", default="optvariance:keepzero=1:matchfilt=1")
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
 	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
 #	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
@@ -60,6 +60,7 @@ This program will sort a stack of images based on some similarity criterion. """
 	if len(args)<2 : parser.error("Input and output files required")
 	
 	if options.simalign : options.simalign=parsemodopt(options.simalign)
+	else: options.simalign=[None,None]
 	if options.simcmp : options.simcmp=parsemodopt(options.simcmp)
 	
 	a=EMData.read_images(args[0])
