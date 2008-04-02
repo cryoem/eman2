@@ -53,6 +53,11 @@ namespace EMAN
 	 * A HDF5 file may contains multiple 2D or 3D images.
 	 * 
 	 * Attribute name must be within 128 charaters, including string terminator '\0'. 
+	 * 
+	 * After you make change to this class, please check the HDF5 file created 
+	 * by EMAN2 with the h5check program from:
+	 * ftp:://ftp.hdfgroup.org/HDF5/special_tools/h5check/
+	 * to verify the HDF5 file is compliant with the HDF5 File Format Specification.
 	 */
 	class HdfIO2:public ImageIO
 	{
