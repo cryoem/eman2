@@ -361,12 +361,12 @@ namespace EMAN
 		
 		
 		/** Get the seed for Randnum class
-		 * @param[in]	seed 
+		 * @return 	the seed for current random number generator 
 		 * */
 		static unsigned long int get_randnum_seed();
 
 		/** Set the seed for Randnum class
-		 * @param[in]	seed 
+		 * @param[in]	the seed for current random number generator 
 		 * */
 		static void set_randnum_seed(unsigned long int seed);
 		

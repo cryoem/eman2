@@ -637,7 +637,7 @@ void Util::set_randnum_seed(unsigned long int seed)
 unsigned long int Util::get_randnum_seed()
 {
 	Randnum* randnum = Randnum::Instance();	
-	return	randnum->random_seed();
+	return	randnum->get_seed();
 }
 
 int Util::get_irand(int lo, int hi)

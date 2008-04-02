@@ -41,29 +41,35 @@
  
 using namespace EMAN;
 
+namespace {
+	/** Generate a random seed from /dev/random if available. 
+  	 * if no /dev/random, generate the seed from current time in milli-second
+  	 * @return a random number as candidate for seed*/
+	unsigned long int random_seed()
+	{
+		unsigned int seed;
+		struct timeval tv;
+		FILE *devrandom;
+	
+		if ((devrandom = fopen("/dev/random","r")) == NULL) {
+			gettimeofday(&tv,0);
+			seed = tv.tv_sec + tv.tv_usec;
+			//printf("Got seed %u from gettimeofday()\n",seed);
+		} 
+		else {
+			fread(&seed,sizeof(seed),1,devrandom);
+			//printf("Got seed %u from /dev/random\n",seed);
+			fclose(devrandom);
+		}
+	
+		return seed;
+	}
+}
+
 Randnum * Randnum::_instance = 0;
 const gsl_rng_type * Randnum::T = gsl_rng_default;
 gsl_rng * Randnum::r = 0;
-
-unsigned long int Randnum::random_seed()
-{
-	unsigned int seed;
-	struct timeval tv;
-	FILE *devrandom;
-
-	if ((devrandom = fopen("/dev/random","r")) == NULL) {
-		gettimeofday(&tv,0);
-		seed = tv.tv_sec + tv.tv_usec;
-		//printf("Got seed %u from gettimeofday()\n",seed);
-	} 
-	else {
-		fread(&seed,sizeof(seed),1,devrandom);
-		//printf("Got seed %u from /dev/random\n",seed);
-		fclose(devrandom);
-	}
-
-	return seed;
-}
+unsigned long int Randnum::_seed = random_seed();
 
 Randnum * Randnum::Instance() {
 	if(_instance == 0) {
@@ -80,23 +86,22 @@ Randnum * Randnum::Instance(const gsl_rng_type * _t) {
 	else if(_t != _instance->T) {
 		gsl_rng_free (_instance->r);
 		_instance->r = gsl_rng_alloc (_t);
-//		gsl_rng_set(_instance->r, random_seed() );
+		gsl_rng_set(_instance->r, _seed );
 	}
 	
 	return _instance;
 }
 
-Randnum::Randnum()
+Randnum::Randnum()  
 {
 	r = gsl_rng_alloc (T);	
-//	gsl_rng_set(r, random_seed() );	
-	gsl_rng_set(r, 0);
+	gsl_rng_set(r, _seed );	
 }
 
 Randnum::Randnum(const gsl_rng_type * _t)
 {
 	r = gsl_rng_alloc (_t);	
-//	gsl_rng_set(r, random_seed() );
+	gsl_rng_set(r, _seed );
 }
 
 Randnum::~Randnum()
@@ -106,7 +111,13 @@ Randnum::~Randnum()
 
 void Randnum::set_seed(unsigned long int seed)
 {
-	gsl_rng_set(r, seed);
+	_seed = seed;
+	gsl_rng_set(r, _seed);
+}
+
+unsigned long int Randnum::get_seed()
+{
+	return _seed;
 }
 
 long Randnum::get_irand(long lo, long hi) const
