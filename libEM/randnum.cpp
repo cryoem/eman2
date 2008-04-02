@@ -45,7 +45,7 @@ Randnum * Randnum::_instance = 0;
 const gsl_rng_type * Randnum::T = gsl_rng_default;
 gsl_rng * Randnum::r = 0;
 
-unsigned long int random_seed()
+unsigned long int Randnum::random_seed()
 {
 	unsigned int seed;
 	struct timeval tv;
@@ -80,7 +80,7 @@ Randnum * Randnum::Instance(const gsl_rng_type * _t) {
 	else if(_t != _instance->T) {
 		gsl_rng_free (_instance->r);
 		_instance->r = gsl_rng_alloc (_t);
-		gsl_rng_set(_instance->r, random_seed() );
+//		gsl_rng_set(_instance->r, random_seed() );
 	}
 	
 	return _instance;
@@ -89,13 +89,14 @@ Randnum * Randnum::Instance(const gsl_rng_type * _t) {
 Randnum::Randnum()
 {
 	r = gsl_rng_alloc (T);	
-	gsl_rng_set(r, random_seed() );	
+//	gsl_rng_set(r, random_seed() );	
+	gsl_rng_set(r, 0);
 }
 
 Randnum::Randnum(const gsl_rng_type * _t)
 {
 	r = gsl_rng_alloc (_t);	
-	gsl_rng_set(r, random_seed() );
+//	gsl_rng_set(r, random_seed() );
 }
 
 Randnum::~Randnum()

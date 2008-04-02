@@ -360,6 +360,11 @@ namespace EMAN
 							 int *rightPerm);
 		
 		
+		/** Get the seed for Randnum class
+		 * @param[in]	seed 
+		 * */
+		static unsigned long int get_randnum_seed();
+
 		/** Set the seed for Randnum class
 		 * @param[in]	seed 
 		 * */
