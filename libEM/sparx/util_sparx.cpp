@@ -16589,3 +16589,134 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 }
 #undef img_ptr
 #undef img2_ptr
+
+struct point3d_t
+{
+    point3d_t( int ix, int iy, int iz ): x(ix), y(iy), z(iz) {}
+
+    int x;
+    int y;
+    int z;
+};
+
+
+int find_group( int ix, int iy, int iz, int grpid, EMData* mg, EMData* visited )
+{
+    int offs[][3] = { {-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1} };
+    int noff = 6;
+
+    int nx = visited->get_xsize();
+    int ny = visited->get_ysize();
+    int nz = visited->get_zsize();
+
+    vector< point3d_t > pts;
+    pts.push_back( point3d_t(ix, iy, iz) );
+    visited->set_value_at( ix, iy, iz, grpid );
+
+    int start = 0;
+    int end = pts.size();
+
+    while( end > start )
+    {
+        for(int i=start; i < end; ++i )
+        {
+	    int ix = pts[i].x;
+	    int iy = pts[i].y;
+	    int iz = pts[i].z;
+
+            for( int j=0; j < noff; ++j )
+	    {
+	        int jx = ix + offs[j][0];
+		int jy = iy + offs[j][1];
+		int jz = iz + offs[j][2];
+
+		if( jx < 0 || jx >= nx ) continue;
+		if( jy < 0 || jy >= ny ) continue;
+		if( jz < 0 || jz >= nz ) continue;
+
+
+		if( (*mg)(jx, jy, jz)>0 && (*visited)(jx, jy, jz)==0.0 )
+		{
+		    pts.push_back( point3d_t(jx, jy, jz) );
+        	    visited->set_value_at( jx, jy, jz, grpid );
+		}
+
+	    }
+        }
+
+        start = end;
+	end = pts.size();
+    }
+
+    return pts.size();
+}
+
+
+EMData* Util::get_biggest_cluster( EMData* mg )
+{
+    int nx = mg->get_xsize();
+    int ny = mg->get_ysize();
+    int nz = mg->get_zsize();
+
+    EMData* visited = new EMData();
+    visited->set_size( nx, ny, nz );
+    visited->to_zero();
+    int grpid = 0;
+    int maxgrp = 0;
+    int maxsize = 0;
+    for( int iz=0; iz < nz; ++iz )
+    {
+        for( int iy=0; iy < ny; ++iy )
+	{
+	    for( int ix=0; ix < nx; ++ix )
+	    {
+                 if( (*mg)(ix, iy, iz)==0.0 )
+		     continue;
+
+                 if( (*visited)(ix, iy, iz) > 0.0 )
+		 {
+		     // visited before, must be in other group.
+		     continue;
+                 }
+
+                 grpid++;
+		 int grpsize = find_group( ix, iy, iz, grpid, mg, visited );
+		 if( grpsize > maxsize )
+		 {
+		     maxsize = grpsize;
+		     maxgrp = grpid;
+		 }
+
+		 std::cout << "grp #" << grpid << " size: " << grpsize << std::endl;
+	    }
+	}
+    }
+
+    assert( maxgrp > 0 );
+
+    int npoint = 0;
+    EMData* result = new EMData();
+    result->set_size( nx, ny, nz );
+    result->to_zero();
+
+    for( int iz=0; iz < nz; ++iz )
+    {
+        for( int iy=0; iy < ny; ++iy )
+	{
+	    for( int ix=0; ix < nx; ++ix )
+	    {
+	        if( (*visited)(ix, iy, iz)==maxgrp )
+		{
+		    (*result)(ix,iy,iz) = 1.0;
+		    npoint++;
+		}
+	    }
+	}
+    }
+
+    assert( npoint==maxsize );
+    delete visited;
+    return result;
+   
+}
+

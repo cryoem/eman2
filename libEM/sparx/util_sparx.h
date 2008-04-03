@@ -523,4 +523,6 @@ public:
 	
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 
+	static EMData* get_biggest_cluster( EMData* mg );
+
 #endif	//util__sparx_h__
