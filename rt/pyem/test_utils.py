@@ -279,16 +279,20 @@ class TestUtils(unittest.TestCase):
         """test the set_randnum_seed() function ............."""
         a = []
         b = []
-        Util.set_randnum_seed(123456)
+        SEED = 123456
+        Util.set_randnum_seed(SEED)
         for i in xrange(10):
             a.append(Util.get_irand(1,100))
         
-        Util.set_randnum_seed(123456)
+        Util.set_randnum_seed(SEED)
         for i in xrange(10):
             b.append(Util.get_irand(1,100))
         
         for i in xrange(10):
             self.assertEqual(a[i], b[i])
+            
+        seed = Util.get_randnum_seed()
+        self.assertEqual(seed, SEED)
    
     # no more voea() functions
     def no_test_voea(self):
