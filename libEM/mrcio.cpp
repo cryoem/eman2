@@ -258,6 +258,13 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 		sprintf(label, "MRC.label%d", i);
 		dict[string(label)] = mrch.labels[i];
 	}
+	
+	SimpleCtf ctf_;
+	if(read_ctf(ctf_) == 0) {
+		vector<float> vctf = ctf_.to_vector();
+		dict["ctf"] = vctf;
+	}
+	
 	EXITFUNC;
 	return 0;
 }
@@ -414,6 +421,14 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	mode_size = get_mode_size(mrch.mode);
 	is_new_file = false;
+	
+	if( dict.has_key("ctf") ) {
+		vector<float> vctf = dict["ctf"];
+		SimpleCtf ctf_;
+		ctf_.from_vector(vctf);
+		write_ctf(ctf_);
+	}
+	
 	EXITFUNC;
 	return 0;
 }
