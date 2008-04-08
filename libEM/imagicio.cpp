@@ -235,6 +235,13 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["IMAGIC.oldav"] = hed.oldav;
 	dict["IMAGIC.label"] = hed.label;
 	dict["ptcl_repr"] = hed.mrc2;			// raw images represented by this image
+	
+	SimpleCtf ctf_;
+	if(read_ctf(ctf_) == 0) {
+		vector<float> vctf = ctf_.to_vector();
+		dict["ctf"] = vctf;
+	}
+	
 	EXITFUNC;
 	return 0;
 }
@@ -388,6 +395,13 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	imagich=new_hed;
 	imagich.count=nimg;
 	is_new_hed = false;
+	
+	if( dict.has_key("ctf") ) {
+		vector<float> vctf = dict["ctf"];
+		SimpleCtf ctf_;
+		ctf_.from_vector(vctf);
+		write_ctf(ctf_);
+	}
 	
 	EXITFUNC;
 	return 0;
