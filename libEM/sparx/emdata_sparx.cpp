@@ -973,7 +973,8 @@ EMData* EMData::average_circ_sub() const
 	int ncz = nz/2 + 1;
 	int ncy = ny/2 + 1;
 	int ncx = nx/2 + 1;
-	for (int iz = 1; iz <= nz; iz++) { float yy = static_cast<float>( (iz-ncz)*(iz-ncz) );
+	for (int iz = 1; iz <= nz; iz++) { 
+		float yy = static_cast<float>( (iz-ncz)*(iz-ncz) );
 		for (int iy = 1; iy <=ny; iy++) { float xx = yy + (iy-ncy)*(iy-ncy);
 			for (int ix = 1; ix <= nx; ix++) {
 				if ( xx+float((ix-ncx)*(ix-ncx)) > r2 ) {
@@ -983,7 +984,10 @@ EMData* EMData::average_circ_sub() const
 			}
 		}
 	}
-	qs /= m;
+
+
+	if( m > 0 ) qs /= m;
+
 	for (int iz = 1; iz <= nz; iz++) 
 		for (int iy = 1; iy <= ny; iy++) 
 			for (int ix = 1; ix <= nx; ix++)
