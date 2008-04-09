@@ -1888,13 +1888,17 @@ EMData *BackProjectionReconstructor::finish()
 
 EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
 {
-	if ( slice->get_xsize() != slice->get_ysize() )
+        int nx = slice->get_xsize();
+	int ny = slice->get_ysize();
+        int ndim = (ny==1) ? 1 : 2;
+
+	if( ndim==2 && nx!=ny )
 	{
 		// FIXME: What kind of exception should we throw here?
-		throw std::logic_error("Tried to padfft a slice that is not square.");
+		throw std::runtime_error("Tried to padfft a 2D slice which is not square.");
 	}
 
-	// process 2-d slice -- subtract the average outside of the circle, zero-pad, fft extend, and fft
+	// process 2D slice or 1D line -- subtract the average outside of the circle, zero-pad, fft extend, and fft
 	EMData* temp = slice->average_circ_sub();
 
 	Assert( temp != NULL );
@@ -1905,22 +1909,22 @@ EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
 	EMData* zeropadded = temp->zeropad_ntimes(npad);
 	Assert( zeropadded != NULL );
 
+
 	checked_delete( temp );
 
 	EMData* padfftslice = zeropadded->do_fft();
 	checked_delete( zeropadded );
 
 	// shift the projection
-	float sx = slice->get_attr("s2x");
-	float sy = slice->get_attr("s2y");
+	float sx = (ndim==2) ? float( slice->get_attr("s2x") ) : float( slice->get_attr("s1x") );
+	float sy = (ndim==2) ? float( slice->get_attr("s2y") ) : 0.0f;
 	if(sx != 0.0f || sy != 0.0)
 		padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
 
         int remove = slice->get_attr_default("remove", 0);
         padfftslice->set_attr( "remove", remove );
-       
 
-	padfftslice->center_origin_fft();
+      	padfftslice->center_origin_fft();
 
 	return padfftslice;
 }
@@ -1938,7 +1942,6 @@ nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
     m_wptr   = NULL;
     m_result = NULL;
 	setup( symmetry, size, npad );
-	std::cout << "printing in constructor" << std::endl;
 	load_default_settings();
 	print_params();
 }
@@ -1982,6 +1985,7 @@ void nn4Reconstructor::setup()
     int size = params["size"];
     int npad = params["npad"];
 
+
     string symmetry;
     if( params.has_key("symmetry") )
     {
@@ -1992,6 +1996,15 @@ void nn4Reconstructor::setup()
 	    symmetry = "c1";
     }
 
+    if( params.has_key("ndim") )
+    {
+        m_ndim = params["ndim"];
+    }
+    else
+    {
+        m_ndim = 3;
+    }
+
 
     setup( symmetry, size, npad );
 }
@@ -2000,7 +2013,6 @@ void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 {
     m_weighting = ESTIMATE;
     m_wghta = 0.2f;
-    m_wghtb = 0.004f;
  
     m_symmetry = symmetry;
     m_npad = npad;
@@ -2008,15 +2020,15 @@ void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 
     m_vnx = size;
     m_vny = size;
-    m_vnz = size;
+    m_vnz = (m_ndim==3) ? size : 1;
 
     m_vnxp = size*npad;
     m_vnyp = size*npad;
-    m_vnzp = size*npad;
+    m_vnzp = (m_ndim==3) ? size*npad : 1;
 
     m_vnxc = m_vnxp/2;
     m_vnyc = m_vnyp/2;
-    m_vnzc = m_vnzp/2;
+    m_vnzc = (m_ndim==3) ? m_vnzp/2 : 1;
 
     buildFFTVolume();
     buildNormVolume();
@@ -2092,30 +2104,70 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 	}
 
         int padffted= slice->get_attr_default( "padffted", 0 );
-        
-	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
-        {
-		// FIXME: Why doesn't this throw an exception?
-		LOGERR("Tried to insert a slice that is the wrong size.");
-		return 1;
+        if( m_ndim==3 )
+	{
+		if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
+        	{
+			// FIXME: Why doesn't this throw an exception?
+			LOGERR("Tried to insert a slice that is the wrong size.");
+			return 1;
+		}
+        }
+	else
+	{
+		assert( m_ndim==2 );
+		if( slice->get_ysize() !=1 )
+		{
+			LOGERR( "for 2D reconstruction, a line is excepted" );
+        		return 1;
+		}
 	}
 
-    EMData* padfft = NULL;
+	EMData* padfft = NULL;
 
-    if( padffted != 0 )
-    {	   
-        padfft = new EMData(*slice);
-    }
-    else
-    {
-        padfft = padfft_slice( slice, m_npad );
-    }
+	if( padffted != 0 )
+	{	   
+		padfft = new EMData(*slice);
+	}
+	else
+	{
+		padfft = padfft_slice( slice, m_npad );
+	}
 
-    int mult= slice->get_attr_default( "mult", 1 );
+	int mult= slice->get_attr_default( "mult", 1 );
+	Assert( mult > 0 );
 
-        Assert( mult > 0 );
-	insert_padfft_slice( padfft, t, mult );
+        if( m_ndim==3 )
+	{
+		insert_padfft_slice( padfft, t, mult );
+	}
+	else
+	{
+		float alpha = padfft->get_attr( "alpha" );
+		for(int i=0; i < m_vnxc; ++i )
+		{
+			float xnew = i*cos(alpha);
+			float ynew = i*sin(alpha);
+			float btqr = padfft->get_value_at( 2*i, 0, 0 );
+			float btqi = padfft->get_value_at( 2*i+1, 0, 0 );
+			if( xnew < 0.0 )
+			{
+			    xnew *= -1;
+			    ynew *= -1;
+			    btqi *= -1;
+			}
 
+			int ixn = int(xnew+0.5+m_vnxp) - m_vnxp;
+			int iyn = int(ynew+0.5+m_vnyp) - m_vnyp;
+
+			if(iyn < 0 ) iyn += m_vnyp;
+
+			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr *float(mult);
+			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * float(mult);
+			(*m_wptr)(ixn,iyn+1, 1) += float(mult);
+		}
+	
+	}
 	checked_delete( padfft );
 	return 0;
 }
@@ -2135,8 +2187,7 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4Reconstructor::finish() 
 {
-
-	m_volume->symplane0(m_wptr);
+	//if( m_ndim==3 ) m_volume->symplane0(m_wptr);
 
 	int box = 7;
 	int vol = box*box*box;
@@ -2155,6 +2206,7 @@ EMData* nn4Reconstructor::finish()
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
 					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
+					
 					if( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
@@ -2185,8 +2237,8 @@ EMData* nn4Reconstructor::finish()
 							}
 						}
 						float wght = 1.0f / ( 1.0f - alpha * sum );
-						tmp = tmp * wght;
-					}
+						if(m_ndim==3) tmp = tmp * wght;
+					} 
 					(*m_volume)(2*ix,iy,iz) *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
@@ -2195,7 +2247,9 @@ EMData* nn4Reconstructor::finish()
 	}
 
 	// back fft
+	m_volume->set_array_offsets(0, 0, 0);
 	m_volume->do_ift_inplace();
+
 	EMData* win = m_volume->window_center(m_vnx);
 
 	float *tw = win->get_data();
@@ -2205,13 +2259,17 @@ EMData* nn4Reconstructor::finish()
 	iz = win->get_zsize();
 	int L2 = (ix/2)*(ix/2);
 	int L2P = (ix/2-1)*(ix/2-1);
+
 	int IP = ix/2+1;
+	int JP = iy/2+1;
+	int KP = iz/2+1;
+
 	float  TNR = 0.0f;
 	int m = 0;
 	for (int k = 1; k <= iz; k++) {
 		for (int j = 1; j <= iy; j++) {
 			for (int i = 1; i <= ix; i++) {
-				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
+				int LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
 				if (LR<=L2) {
 					if(LR >= L2P && LR <= L2) {
 						TNR += tw(i,j,k);
@@ -2226,7 +2284,7 @@ EMData* nn4Reconstructor::finish()
 	for (int k = 1; k <= iz; k++) {
 		for (int j = 1; j <= iy; j++) {
 			for (int i = 1; i <= ix; i++) {
-				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
+				int LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
 				if (LR<=L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
 			}
 		}

@@ -752,6 +752,7 @@ namespace EMAN
 			d.put("size",		EMObject::INT);
 			d.put("npad",		EMObject::INT);
 			d.put("sign",		EMObject::INT);
+			d.put("ndim",		EMObject::INT);
 			d.put("symmetry",	EMObject::STRING);
 			d.put("snr",		EMObject::FLOAT);
 			d.put("fftvol",		EMObject::EMDATA);
@@ -776,6 +777,7 @@ namespace EMAN
 		int m_vnx, m_vny, m_vnz;
 		int m_npad;
 		int m_nsym;
+		int m_ndim;
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnzc, m_vnyc, m_vnxc;
 		void buildFFTVolume();
