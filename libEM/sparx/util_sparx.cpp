@@ -16687,7 +16687,6 @@ EMData* Util::get_biggest_cluster( EMData* mg )
 		     maxgrp = grpid;
 		 }
 
-		 std::cout << "grp #" << grpid << " size: " << grpsize << std::endl;
 	    }
 	}
     }
