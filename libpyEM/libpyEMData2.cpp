@@ -118,7 +118,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_hist_overloads_0_3, calc
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_dist_overloads_1_2, calc_dist, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_flcf_overloads_1_3, calc_flcf, 1, 3)
+// BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_flcf_overloads_1_3, calc_flcf, 1, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_common_lines_overloads_2_5, common_lines, 2, 5)
 
@@ -396,7 +396,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("calc_hist", &EMAN::EMData::calc_hist, EMAN_EMData_calc_hist_overloads_0_3())
         .def("calc_az_dist", &EMAN::EMData::calc_az_dist)
         .def("calc_dist", &EMAN::EMData::calc_dist, EMAN_EMData_calc_dist_overloads_1_2())
-        .def("calc_flcf", &EMAN::EMData::calc_flcf, EMAN_EMData_calc_flcf_overloads_1_3()[ return_value_policy< manage_new_object >() ])
+		.def("calc_flcf", &EMAN::EMData::calc_flcf, return_value_policy< manage_new_object >())
         .def("convolute", &EMAN::EMData::convolute, return_value_policy< manage_new_object >())
         .def("common_lines", &EMAN::EMData::common_lines, EMAN_EMData_common_lines_overloads_2_5())
         .def("common_lines_real", &EMAN::EMData::common_lines_real, EMAN_EMData_common_lines_real_overloads_2_4())

@@ -3099,172 +3099,86 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 }
 
 
-#define TOL 0.0001
+EMData * EMData::calc_fast_sigma_image( EMData* mask, bool normalize)
+{
+	ENTERFUNC;
+	
+	if (get_ndim() != mask->get_ndim() ) throw ImageDimensionException("The dimensions do not match");
+	
+	int mnx = mask->get_xsize(); int mny = mask->get_ysize(); int mnz = mask->get_zsize();
+	
+	if ( mnx > nx || mny > ny || mnz > nz)
+		throw ImageDimensionException("Can not calculate variance map using an image that is larger than this image");
+			
+	
+	bool undoclip = false;
+	
+	if (normalize) mask->process_inplace("normalize.unitsum");
+	
+	if ( mnx < nx || mny < ny ) {
+		Region r((mnx-nx)/2, (mny-ny)/2,(mnz-nz)/2,nx,ny,nz);
+		mask->clip_inplace(r);
+		undoclip = true;
+	}
+	
+	Dict pow;
+	pow["pow"] = 2.0f;
+	EMData* squared = process("math.pow",pow);
+	// Here we generate the local average of the squares
+	EMData* s = squared->convolute(mask);
+
+	EMData* m = convolute(mask);
+	// Here we generate the square of the local mean
+	m->process_inplace("math.pow",pow);
+
+	s->sub(*m);
+	// Here we finally generate the standard deviation image
+	s->process_inplace("math.sqrt");
+	
+	if ( undoclip ) {
+		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
+		mask->clip_inplace(r);
+	}
+	
+	delete squared;
+	delete m;
+
+	EXITFUNC;
+	return s;
+	
+}
+
 //  The following code looks strange - does anybody know it?  Please let me know, pawel.a.penczek@uth.tmc.edu  04/09/06.
-// This is just an implementation of "Roseman's" fast normalized cross-correlation (Ultramicroscopy, 2003)
-EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
+// This is just an implementation of "Roseman's" fast normalized cross-correlation (Ultramicroscopy, 2003). But the contents of this function have changed dramatically since you wrote that comment (d.woolford).
+EMData *EMData::calc_flcf(EMData * with)
 {
 	ENTERFUNC;
 
-	if (!with) {
-		LOGERR("input image is NULL");
-		throw NullPointerException("input image is NULL");
-	}
+	// Ones is a circlular/spherical mask, consisting of 1s.
+	EMData* ones = new EMData(with->get_xsize(), with->get_ysize(),with->get_zsize());
+	ones->process_inplace("testimage.circlesphere");
+	
+	// Normalization is important.
+	EMData* with_resized = with->process("normalize");
+	// Circular/Spherical mask
+	with_resized->mult(*ones);
+	
+	// Get with_resized to the right size for the correlation
+	Region r((with->get_xsize()-nx)/2, (with->get_ysize()-ny)/2, (with->get_zsize()-nz)/2,nx,ny,nz);
+	with_resized->clip_inplace(r);
 
-	Dict filter_dict;
-	if (mask_filter == "mask.sharp") {
-		filter_dict["value"] = 0;
-		filter_dict["outer_radius"] = radius;
-	}
-
-	EMData *tplate = this->copy();
-	int size = nx * ny * nz;
-	
-	// Make the mask 
-	EMData *mask = this->copy();
-	mask->to_one();
-	mask->process_inplace(mask_filter, filter_dict);
-	
-	int num = 0;
-	float *mask_data = mask->get_data();
-	for (int i = 0; i < size; i++) 
-		if (mask_data[i] == 1) num++;
-	
-
-	filter_dict["outer_radius"] = radius;
-	EMData *conv1 = mask->convolute(with);
-	conv1->mult(1.0f/num);
-	
-	// Square the convoluted image - now it stores mean squared values
-	conv1->process_inplace("math.squared");
-	
-	// Now generate the image the stores the other part of the standard deviation calculation
-	EMData *img_copy = with->copy();
-	img_copy->process_inplace("math.squared");
-	EMData *conv2 = mask->convolute(img_copy);
-	conv2->mult(1.0f/num);
-	
-	// Now generate the standard deviations
-	EMData* ss = new EMData();
-	ss->set_size(nx,ny,nz);
-	for(int i = 0; i<size; ++i)
-	{
-		(*ss)(i) = (*conv2)(i)-(*conv1)(i);
+	// The correlation
+	EMData* corr = calc_ccf(with_resized);
+	// Get the local sigma image
+	EMData* s = calc_fast_sigma_image(ones);
+	// The local normalized correlation
+	corr->div(*s);
 		
-		// Tolerance here is to avoid division by very small numbers, when they should be 0
-		if ( (*ss)(i) < 0 ) 
-		{
-			if ( (*ss)(i) < -TOL ) throw InvalidValueException((*ss)(i),"Error - encountered a large negative number, was expecting -0 within tolerance of 0.0001");
-			(*ss)(i) = 0;
-		}
-		if ( (*ss)(i) < TOL ) (*ss)(i) = 0;
-		
-		(*tplate)(i) *= (*mask)(i);
-	}
-	ss->process_inplace("math.sqrt");
+	delete with_resized; delete ones;
+	delete s;
 	
-	// Get the cross correlation image
-	EMData* ccf = tplate->calc_ccf(with);
-	float *lcfd = ccf->get_data();
-	float *vdd = ss->get_data();
-
-	// The most important part - dividing by standard deviations calculated in ss
-	for (int i = 0; i < size; i++) {
-		if (vdd[i] > 0) {
-			lcfd[i] /= vdd[i];
-		}
-	}
 	EXITFUNC;
-	
-	delete mask;
-	delete img_copy;
-	delete tplate;
-	delete conv1;
-	delete conv2;
-	
-	return ccf;
-// 	EMData *mask = tplate->copy();
-// 	mask->to_one();
-// 	mask->process_inplace(mask_filter, filter_dict);
-// 
-// 	int num = 0;
-// 	float *mask_data = mask->get_data();
-// 	for (int i = 0; i < size; i++) 
-// 		if (mask_data[i] == 1) num++;
-// 
-// 	img->process_inplace(mask_filter, filter_dict);
-// 
-// 	float *img_data = img->get_data();
-// 	double lsum = 0;
-// 	double sumsq = 0;
-// 
-// 	for (int i = 0; i < size; i++) {
-// 		lsum += img_data[i];
-// 		sumsq += img_data[i] * img_data[i];
-// 	}
-// 
-// 	float sq = (float)((num * sumsq - lsum * lsum) / (num * num));
-// 	
-// 	if (sq < 0) {
-// 		LOGERR("sigma < 0");
-// 		throw ImageFormatException("image sigma < 0");
-// 	}
-// 
-// 	float mean = (float)lsum / num;
-// 	float sigma = std::sqrt(sq);
-// 	float th = 0.00001f;
-// 
-// 	if (sq > th) {
-// 		for (int i = 0; i < size; i++) {
-// 			img_data[i] = (img_data[i] - mean) / sigma;
-// 		}
-// 	}
-// 	else {
-// 		for (int i = 0; i < size; i++) {
-// 			img_data[i] -= mean;
-// 		}
-// 	}
-// 
-// 	img->update();
-// 	img->process_inplace(mask_filter, filter_dict);
-// 
-// 
-// 	EMData *tplate_copy = tplate->copy();
-// 	tplate_copy->process_inplace("math.squared");
-// 
-// 	EMData *ccf = img1->calc_ccf(img2_copy);
-// 	ccf->mult(img1_size);
-// 
-// 	EMData *conv1 = tplate->convolute(tplate_copy);
-// 	
-// 	conv1->mult(img1_size);
-// 	conv1->mult(1.0f / num);
-// 
-// 	EMData *conv2 = tplate_copy->convolute(tplate_copy);
-// 	
-// 	conv2->mult(img1_size);
-// 	conv1->process_inplace("math.squared");
-// 	conv1->mult(1.0f / (num * num));
-// 
-// 
-// 	conv2->mult(1.0f / num);
-// 	conv2->process_inplace("math.sqrt");
-// 
-// 	ccf->mult(1.0f / num);
-// 
-// 	float *lcfd = ccf->get_data();
-// 	float *vdd = conv2->get_data();
-// 
-// 	for (int i = 0; i < img1_size; i++) {
-// 		if (vdd[i] > 0) {
-// 			lcfd[i] /= vdd[i];
-// 		}
-// 	}
-// 
-// 	ccf->update();
-// 	
-// 	EXITFUNC;
-// 	return ccf;
+	return corr;
 }
 
 EMData *EMData::convolute(EMData * with)

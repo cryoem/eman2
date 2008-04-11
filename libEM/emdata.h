@@ -620,29 +620,43 @@ namespace EMAN
 		float calc_dist(EMData * second_img, int y_index = 0) const;
 
 		/** Calculates the cross correlation with local normalization
-		 * between 2 images. This is a fater version of local correlation.
+		 * between 2 images. This is a faster version of local correlation
+		 * that make use of Fourier convolution and correlation.
+		 * With is the template - the thing that you wish to find in the this image.
+		 * It should not be unecessarily padded. The function uses the size of with
+		 * to determine the extent of the local neighborhood used in the local 
+		 * normalization (for technical details, see calc_fast_sigma_image).
+		 * Note that this function circularly masks the template at its radius
+		 * so the calling function need not do this beforehand.
+		 * Works in 1,2 and 3D.
 		 *
-		 * This is the fast local correlation program based upon local
-		 * real space correlation. The traditional real-space technies
-		 * are know to be senisitve for finding small objects in a large
-		 * field due to local optimization of numerical
-		 * scaling. However, they are slow to compute. This technique is
-		 * based upon Fourier transform and claimed to be two times
-		 * faster than the explicit real-space formula.
-		 * 
-		 * Well, it was published much earlier by Marin van Heel...
-		 * The technique is published in Ultramicroscopy by Alan M. Roseman, 
-		 * MRC Cambridge.
-		 *
-		 * Imlemented by htet khant, 02-2003
-		 *
-		 * @param with The image used to calculate cross correlation.
-		 * @param radius
-		 * @param maskfilter
-		 * @return the cross correlation image.
+		 * @param with The image used to calculate cross correlation (the template)
+		 * @return the local normalized cross correlation image - the phase origin is at the corner of the image
+		 * @author David Woolford
+		 * @date April 2008
 		 */
-		EMData *calc_flcf(EMData * with, int radius = 100,
-						  const string & maskfilter = "mask.sharp");
+		EMData *calc_flcf(EMData * with);
+		
+		/** Calculates the local standard deviation (sigma) image using the given
+		 * mask image. The mask image is typically much smaller than this image,
+		 * and consists of ones, or is a small circle consisting of ones. The extent
+		 * of the non zero neighborhood explicitly defines the range over which
+		 * the local standard deviation is determined.
+		 * Fourier convolution is used to do the math, ala Roseman (2003, Ultramicroscopy)
+		 * However, Roseman was just working on methods Van Heel had presented earlier.
+		 * The normalize flag causes the mask image to be processed so that it has a 
+		 * unit sum.
+		 * Works in 1,2 and 3D
+		 *
+		 * @param mask the image that will be used to define the neighborhood for determine the local standard deviation
+		 * @param normalize whether the mask image should be normalized so that the sum of its pixels is one
+		 * @return the sigma image, the phase origin is at the corner (not the center)
+		 * @exception ImageDimensionException if the dimensions of with do not match those of this
+		 * @exception ImageDimensionException if any of the dimensions sizes of with exceed of this image's.
+		 * @author David Woolford
+		 * @date April 2008
+		*/
+		EMData *calc_fast_sigma_image( EMData* mask, bool normalize=true);
 
 		/** Convolutes 2 data sets. The 2 images must be of the same size.
 		 * @param with One data set. 'this' image is the other data set.

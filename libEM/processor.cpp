@@ -6377,7 +6377,12 @@ void ConvolutionProcessor::process_inplace(EMData* image)
 	if ( complexflag == false ) {
 		image->do_ift_inplace();
 		image->postift_depad_corner_inplace();
-		image->process_inplace("xform.phaseorigin.tocenter");
+		// I decided that the calling function should do the phase origin shift - d.woolford April 10 2008
+// 		image->process_inplace("xform.phaseorigin.tocenter");
+		with->do_ift_inplace();
+		with->postift_depad_corner_inplace();
+		with->process_inplace("xform.phaseorigin.tocenter");
+		
 	}
 	
 }
@@ -6442,6 +6447,7 @@ void XGradientProcessor::process_inplace( EMData* image )
 	Dict conv_parms;
 	conv_parms["with"] = e;
 	image->process_inplace("convolution", conv_parms);
+	image->process_inplace("xform.phaseorigin.tocenter");
 	
 	delete e;
 }

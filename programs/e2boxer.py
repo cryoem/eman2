@@ -672,6 +672,31 @@ class GUIbox:
 		del(self.ptcl[i])
 		self.guimx.setData(self.ptcl)
 	
+	def rot_aligned_average(self,images):
+		if len(images) <= 0: return None
+		
+		ave = images[0].copy()
+		for i in range(1,len(images)):
+			ave = ave+images[i]
+		
+		ave.mult(1.0/len(images))
+		ave.process_inplace("math.radialaverage")
+		
+		for n in range(0,3):
+			t = []
+			for i in images:
+				ta = i.align("rotate_translate",ave,{},"dot",{"normalize":1})
+				t.append(ta)
+		
+			ave = t[0].copy()
+			for i in range(1,len(images)):
+				ave = ave+t[i]
+				
+			ave.mult(1.0/len(t))
+			ave.process_inplace("math.radialaverage")
+		
+		return ave
+		
 	def boxupdate(self,force=False):
 		goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
 		if len(self.ptcl)>len(goodboxes) :
@@ -687,6 +712,9 @@ class GUIbox:
 			ns[j]=EMShape(["rect",.4,.9,.4,i[0],i[1],i[0]+i[2],i[1]+i[3],2.0])
 			if j>=len(self.ptcl) : self.ptcl.append(im)
 			else : self.ptcl[j]=im
+		
+		t = self.rot_aligned_average(self.ptcl)
+		if t != None: self.ptcl.append(t)
 
 		self.guiim.addShapes(ns)
 		self.guimx.setData(self.ptcl)
