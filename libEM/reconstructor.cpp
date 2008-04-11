@@ -409,7 +409,7 @@ void FourierReconstructor::setup()
 	}
 }
 
-EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const Transform3D transform )
+EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const Transform3D )
 {
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
 	EMData* return_slice = slice->process("xform.phaseorigin.tocorner");

@@ -443,7 +443,7 @@ void Wiener2DAutoAreaProcessor::process_inplace(EMData *image) {
 }
 
 
-EMData * Wiener2DFourierProcessor::process(const EMData * image)
+EMData * Wiener2DFourierProcessor::process(const EMData *)
 {
 	EMData *ret = NULL;
 /*	const EMData *fft;

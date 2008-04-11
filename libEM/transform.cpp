@@ -2091,7 +2091,7 @@ vector<Vec3f> DSym::get_asymm_unit_points(bool inc_mirror) const
 }
 
 // H symmetry stuff
-Dict HSym::get_delimiters(const bool inc_mirror) const {
+Dict HSym::get_delimiters(const bool) const {
 	Dict returnDict;
 	
 	// Get the parameters of interest

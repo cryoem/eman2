@@ -449,7 +449,7 @@ namespace EMAN
 				return "Fourier pixel insertion mode 8";
 			}
 		
-			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz) { throw; }
+			virtual bool effected_pixels_are_zero(const float&, const float&, const float&) { throw; }
 			
 			virtual void init();
 		private:

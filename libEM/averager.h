@@ -196,7 +196,7 @@ namespace EMAN
 			return d;
 		}
 		
-		virtual void mult(const float& s) { }
+		virtual void mult(const float&) { }
 
 	private:
 		EMData *sigma_image;
@@ -238,7 +238,7 @@ namespace EMAN
 			return d;
 		}
 		
-		virtual void mult(const float& s) { }
+		virtual void mult(const float&) { }
 
 	private:
 		int max;

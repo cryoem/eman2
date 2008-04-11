@@ -180,7 +180,7 @@ namespace EMAN
 	  	 * @param num_particles_in_slice
 	  	 * @exception 
 		 */
-		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice = 1)
+		virtual int determine_slice_agreement(const EMData* const, const Transform3D &, const unsigned int)
 		{  
 			cout << "You called determine slice agreement but nothing happened - there is no functionality for determing slice agreement using this " << get_name() << " reconstructor" << endl;
 			return 0;
@@ -208,12 +208,12 @@ namespace EMAN
 		EMObject& operator[]( const string& key ) { return params[key]; }
 
 		// A function used only by the Fourier reconstructor for testing and writing to std out purposes in e2make3d.py
-		virtual float get_score(const unsigned int idx) { return 0; }
+		virtual float get_score(const unsigned int) { return 0; }
 		// A function used only by the Fourier reconstructor for testing and writing to std out purposes in e2make3d.py
-		virtual float get_norm(const unsigned int idx) { return 0; }
+		virtual float get_norm(const unsigned int) { return 0; }
 
 		
-		virtual int insert_slice_weights(const Transform3D& t3d) {return 0;}
+		virtual int insert_slice_weights(const Transform3D&) {return 0;}
 		
 	  private:
 		// Disallow copy construction

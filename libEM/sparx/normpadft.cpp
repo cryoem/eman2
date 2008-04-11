@@ -698,7 +698,7 @@ EMData *EMData::Four_ds(int nxn, int nyni, int nzni, bool RetReal) {
 	return ret;
 }
 
-EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int nzni, bool RetReal) {
+EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int, bool RetReal) {
 
 	int nyn, nzn, lsd, lsdn, inx, iny, inz;
 	int i, j;

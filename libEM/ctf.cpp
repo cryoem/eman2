@@ -154,7 +154,7 @@ string SimpleCtf::to_string() const
 void SimpleCtf::copy_from(const Ctf * new_ctf)
 {
 	if (new_ctf) {
-		SimpleCtf *c = (SimpleCtf *) (new_ctf);
+		const SimpleCtf *c = static_cast<const SimpleCtf *>(new_ctf);
 		defocus = c->defocus;
 		bfactor = c->bfactor;
 		amplitude = c->amplitude;
@@ -481,8 +481,7 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 bool SimpleCtf::equal(const Ctf * ctf1) const
 {
 	if (ctf1) {
-		SimpleCtf *c = (SimpleCtf *) (ctf1);
-
+		const SimpleCtf *c = static_cast<const SimpleCtf *>(ctf1);
 		if (defocus == c->defocus &&
 			bfactor == c->bfactor &&
 			amplitude == c->amplitude &&
