@@ -145,6 +145,15 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 	//single image format, index can only be zero
 	img_index = 0;
 	check_read_access(img_index);
+	
+	//Only support greyscale TIFF image
+	uint16 photometric=0;	
+	if( TIFFGetField(tiff_file, TIFFTAG_PHOTOMETRIC, &photometric) ) {
+		if(!(photometric == 0 || photometric == 1)) {
+			fprintf(stderr,"Error: Only support greyscale TIFF image !!!\n");return (-1);
+		} 
+	}
+	
 	int nx = 0;
 	int ny = 0;
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
