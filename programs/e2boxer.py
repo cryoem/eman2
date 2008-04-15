@@ -554,6 +554,8 @@ class GUIbox:
 		self.boxes=boxes					# the list of box locations
 		self.threshold=thr					# Threshold to decide which boxes to use
 		self.ptcl=[]						# list of actual boxed out EMImages
+		self.rendcor = False				# a flag that enables the rendering of the correlation map
+		self.correlation = None				# something to store correlation maps, and positions, and renderable objects in
 		
 		self.moving=None					# Used during a user box drag
 		
@@ -565,9 +567,11 @@ class GUIbox:
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mousedown)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mousedrag)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.mouseup  )
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("keypress"),self.keypress)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.boxsel)
 		
-		self.guimx.mmode="app"
+		self.guiim.setmmode(0)
+		self.guimx.setmmode("app")
 		self.guictl=GUIboxPanel(self)
 		
 		try:
@@ -653,6 +657,16 @@ class GUIbox:
 		m=self.guiim.scr2img((event.x(),event.y()))
 		self.moving=None
 	
+	def keypress(self,event):
+		if event.key() == Qt.Key_Tab:
+			self.rendcor = not self.rendcor
+			if ( self.correlation != None ):
+				if self.rendcor == True:
+					self.image.insert_clip(self.correlation,self.correlationcoords)
+				else:
+					self.image.insert_clip(self.correlationsection,self.correlationcoords)
+		else: pass
+	
 	def delbox(self,i):
 		#print "Deletes the numbered box completely"
 		sh=self.guiim.getShapes()
@@ -675,26 +689,28 @@ class GUIbox:
 	def rot_aligned_average(self,images):
 		if len(images) <= 0: return None
 		
-		ave = images[0].copy()
-		for i in range(1,len(images)):
-			ave = ave+images[i]
+		images_copy = []
+		for i in images:
+			images_copy.append(i.process("normalize"))
 		
-		ave.mult(1.0/len(images))
+		ave = images_copy[0].copy()
+		for i in range(1,len(images_copy)):
+			ave = ave+images_copy[i]
+		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("math.radialaverage")
 		
 		for n in range(0,3):
 			t = []
-			for i in images:
+			for i in images_copy:
 				ta = i.align("rotate_translate",ave,{},"dot",{"normalize":1})
 				t.append(ta)
 		
 			ave = t[0].copy()
-			for i in range(1,len(images)):
+			for i in range(1,len(images_copy)):
 				ave = ave+t[i]
 				
 			ave.mult(1.0/len(t))
 			ave.process_inplace("math.radialaverage")
-		
 		return ave
 		
 	def boxupdate(self,force=False):
@@ -709,12 +725,10 @@ class GUIbox:
 			
 			self.boxes[j][-1]=0
 			im=self.image.get_clip(Region(i[0],i[1],i[2],i[3]))
+			im.process_inplace("normalize")
 			ns[j]=EMShape(["rect",.4,.9,.4,i[0],i[1],i[0]+i[2],i[1]+i[3],2.0])
 			if j>=len(self.ptcl) : self.ptcl.append(im)
 			else : self.ptcl[j]=im
-		
-		t = self.rot_aligned_average(self.ptcl)
-		if t != None: self.ptcl.append(t)
 
 		self.guiim.addShapes(ns)
 		self.guimx.setData(self.ptcl)
@@ -741,6 +755,57 @@ class GUIbox:
 		except : E2setappval("boxer","mxcontrol",False)
 		
 		return (self.boxes,self.threshold)
+	
+	def setrefs(self):
+		print "setting references"
+		t = self.rot_aligned_average(self.ptcl)
+		self.template = t
+		self.geninitcor()
+		
+		
+	def geninitcor(self):
+		l = 768
+		
+		if ( l > self.image.get_xsize() ):
+			l = self.image.get_xsize()
+			
+		if ( l > self.image.get_ysize() ):
+			l = self.image.get_ysize()
+		
+		goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
+		
+		if len(goodboxes) <= 0 : return
+		
+		x = 0.0
+		y = 0.0
+		for i in goodboxes:
+			x += i[0]+i[2]/2.0
+			y += i[1]+i[3]/2.0
+		
+		x /= len(goodboxes)
+		y /= len(goodboxes)
+		
+		if x + l/2.0 >= self.image.get_xsize():
+			x = self.image.get_xsize() - l/2.0 -1
+		elif x - l/2.0 < 0:
+			x = l/2.0
+		
+		if y + l/2.0 >= self.image.get_ysize():
+			y = self.image.get_ysize() - l/2.0 -1
+		elif y - l/2.0 < 0:
+			y = l/2.0
+
+		section = self.image.get_clip(Region(x-l/2.0,y-l/2.0,l,l))
+		
+		self.correlationcoords = [int(x-l/2.0),int(y-l/2.0)]
+		self.correlation = section.calc_flcf(self.template)
+		#self.template.write_image("template.mrc")
+		self.correlation.process_inplace("xform.phaseorigin.tocenter")
+		self.correlation.process_inplace("normalize")
+		#self.correlation.write_image("correlation.mrc")
+		self.correlationsection = section
+		self.correlationx = x
+		self.correlationy = y
 
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
@@ -779,9 +844,13 @@ class GUIboxPanel(QtGui.QWidget):
 		self.done=QtGui.QPushButton("Done")
 		self.vbl.addWidget(self.done)
 		
+		self.setref=QtGui.QPushButton("Set References")
+		self.vbl.addWidget(self.setref)
+		
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.app.quit)
+		self.connect(self.setref,QtCore.SIGNAL("clicked(bool)"),self.target.setrefs)
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
 		
 	def nboxesChanged(self,n):

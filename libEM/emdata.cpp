@@ -1592,6 +1592,7 @@ void EMData::zero_corner_circulant(const int radius)
 
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag)
 {
+	
 	if( with == 0 ) {
 		return autocorrelation(this,fpflag, false);
 	}
@@ -1599,8 +1600,27 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag)
 // 		return correlation(this, this, fpflag);
 // 	}
 	else {
-		return correlation(this, with, fpflag, false);
+		// If the argument EMData pointer is not the same size we automatically resize it
+		bool undoresize = false;
+		int wnx = with->get_xsize(); int wny = with->get_ysize(); int wnz = with->get_zsize();
+		if ( wnx != nx || wny != ny || wnz != nz ) {
+			Region r((wnx-nx)/2, (wny-ny)/2, (wnz-nz)/2,nx,ny,nz);
+			with->clip_inplace(r);
+			undoresize = true;
+		}
+		
+		EMData* cor = correlation(this, with, fpflag, false);
+		
+		// If the argument EMData pointer was resized, it is returned to its original dimensions
+		if ( undoresize ) {
+			Region r((nx-wnx)/2, (ny-wny)/2,(nz-wnz)/2,wnx,wny,wnz);
+			with->clip_inplace(r);
+		}
+		
+		return cor;
 	}
+
+	
 }
 
 EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)

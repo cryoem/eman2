@@ -61,6 +61,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 
 		self.imagemx = None
 		self.initflag = True
+		self.mmode = "drag"
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
@@ -97,7 +98,11 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			print type(inst)     # the exception instance
 			print inst.args      # arguments stored in .args
 			print int
-		
+	
+	def setmmode(self,mode):
+		self.mmode = mode
+		self.imagemx.mmode = mode
+	
 	def mousePressEvent(self, event):
 		self.imagemx.mousePressEvent(event)
 			
@@ -109,7 +114,12 @@ class EMImageMX(QtOpenGL.QGLWidget):
 
 	def mouseReleaseEvent(self,event):
 		self.imagemx.mouseReleaseEvent(event)
-		
+	
+	def keyPressEvent(self,event):
+		print "key press event"
+		if self.mmode == "app":
+			self.emit(QtCore.SIGNAL("keypress"),event)
+
 	def dropEvent(self,event):
 		self.imagemx.dropEvent(event)
 		

@@ -73,6 +73,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		EMImage2D.allim[self]=0
 		
+		self.setFocusPolicy(Qt.StrongFocus)
+		
 	def setData(self,data):
 		self.image2d.setData(data)
 		
@@ -119,7 +121,10 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		try: self.image2d.resizeEvent(width,height)
 		except: pass
-
+		
+	def setmmode(self,mode):
+		self.image2d.mmode = mode
+	
 	def mousePressEvent(self, event):
 		self.image2d.mousePressEvent(event)
 			
@@ -143,6 +148,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def addShapes(self,s):
 		self.image2d.addShapes(s)
+		
+	def keyPressEvent(self,event):
+		self.image2d.keyPressEvent(event)
 
 	def addShape(self,name,shape):
 		return self.image2d.addShape(name,shape)
@@ -201,6 +209,8 @@ class EMImage2DCore:
 		self.shapes={}				# dictionary of shapes to draw, see addShapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
 		self.active=(None,0,0,0)	# The active shape and a hilight color (n,r,g,b)
+		
+		self.extras = []			# an empty set of extras - other images that can be rendered over this one
 		
 		self.inspector=None			# set to inspector panel widget when exists
 		
@@ -603,7 +613,11 @@ class EMImage2DCore:
 			elif self.mmode==2 and self.inspector:
 				self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 				self.parent.update()
-				
+	
+	def keyPressEvent(self,event):
+		if self.mmode==0:
+			self.parent.emit(QtCore.SIGNAL("keypress"), event)
+	
 	def leaveEvent(self):
 		if self.rmousedrag:
 			self.rmousedrag=None
