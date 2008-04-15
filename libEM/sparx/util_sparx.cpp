@@ -4350,56 +4350,44 @@ vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p
 	int n1=peak1.size()/3;
 	float p_size2=p_size*p_size;
 	for (int i=0;i<n1;++i) {
-			vector<float>::iterator it2= peak1.begin()+3*i;
-			bool push_back1=true;
-			int n2=peak2.size()/3;
-			/*cout<<"peak2 size==="<<n2<<"i====="<<i<<endl;
-			cout<<"new peak size==="<<new_peak.size()/3<<endl;*/
-			
-			if(n2 ==0) {
-					new_peak.push_back(*it2);
-					new_peak.push_back(*(it2+1));
-					new_peak.push_back(*(it2+2));
-				
-			} else  {						
-					int j=0;					
-					while (j< n2-1 ) {								
-							vector<float>::iterator it3= peak2.begin()+3*j;
-							float d2=((*(it2+1))-(*(it3+1)))*((*(it2+1))-(*(it3+1)))+((*(it2+2))-(*(it3+2)))*((*(it2+2))-(*(it3+2)));							
-							if(d2< p_size2 )
-								{ 	
-									if( (*it2)<(*it3))
-										{	
-											new_peak.push_back(*it3);
-											new_peak.push_back(*(it3+1));
-											new_peak.push_back(*(it3+2));
-											peak2.erase(it3);
-											peak2.erase(it3);
-											peak2.erase(it3);
-											push_back1=false;
-										}
-									else
-										{
-											peak2.erase(it3);
-											peak2.erase(it3);
-											peak2.erase(it3);
-									
-										}	
-								}
-							else
-								{
-									j=j+1;
-								}
-								n2=peak2.size()/3;						
-						}
-					if(push_back1)
-						{
-							new_peak.push_back(*it2);
-							new_peak.push_back(*(it2+1));
-							new_peak.push_back(*(it2+2));
-						}
-				}
-		}				
+		vector<float>::iterator it2= peak1.begin()+3*i;
+		bool push_back1=true;
+		int n2=peak2.size()/3;
+		/*cout<<"peak2 size==="<<n2<<"i====="<<i<<endl;
+		       cout<<"new peak size==="<<new_peak.size()/3<<endl;*/
+		if(n2 ==0) {
+			new_peak.push_back(*it2);
+			new_peak.push_back(*(it2+1));
+			new_peak.push_back(*(it2+2));
+		} else  {						
+			int j=0;					
+			while (j< n2-1 ) {								
+				vector<float>::iterator it3= peak2.begin()+3*j;
+				float d2=((*(it2+1))-(*(it3+1)))*((*(it2+1))-(*(it3+1)))+((*(it2+2))-(*(it3+2)))*((*(it2+2))-(*(it3+2)));							
+				if(d2< p_size2 ) { 	
+					if( (*it2)<(*it3) ) {	
+						new_peak.push_back(*it3);
+						new_peak.push_back(*(it3+1));
+						new_peak.push_back(*(it3+2));
+						peak2.erase(it3);
+						peak2.erase(it3);
+						peak2.erase(it3);
+						push_back1=false;
+					} else {
+						peak2.erase(it3);
+						peak2.erase(it3);
+						peak2.erase(it3);
+					}	
+				} else  j=j+1;
+				n2=peak2.size()/3;						
+			}
+			if(push_back1) {
+				new_peak.push_back(*it2);
+				new_peak.push_back(*(it2+1));
+				new_peak.push_back(*(it2+2));
+			}
+		}
+	}				
 	return new_peak;
 }	
 
