@@ -556,6 +556,9 @@ class GUIbox:
 		self.ptcl=[]						# list of actual boxed out EMImages
 		self.rendcor = False				# a flag that enables the rendering of the correlation map
 		self.correlation = None				# something to store correlation maps, and positions, and renderable objects in
+		self.optprofile = None				# optimum peak profile
+		self.optpeakvalue = None			# an optimum picking parameter - the peak threshold
+		self.shrink = 1						# shrink value for correlation speed up
 		
 		self.moving=None					# Used during a user box drag
 		
@@ -659,12 +662,13 @@ class GUIbox:
 	
 	def keypress(self,event):
 		if event.key() == Qt.Key_Tab:
-			self.rendcor = not self.rendcor
-			if ( self.correlation != None ):
-				if self.rendcor == True:
-					self.image.insert_clip(self.correlation,self.correlationcoords)
-				else:
-					self.image.insert_clip(self.correlationsection,self.correlationcoords)
+			pass
+			#self.rendcor = not self.rendcor
+			#if ( self.correlation != None ):
+				#if self.rendcor == True:
+					#self.image.insert_clip(self.correlation,self.correlationcoords)
+				#else:
+					#self.image.insert_clip(self.correlationsection,self.correlationcoords)
 		else: pass
 	
 	def delbox(self,i):
@@ -698,11 +702,12 @@ class GUIbox:
 			ave = ave+images_copy[i]
 		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("math.radialaverage")
+		ave.write_image("ave.mrc")
 		
 		for n in range(0,3):
 			t = []
 			for i in images_copy:
-				ta = i.align("rotate_translate",ave,{},"dot",{"normalize":1})
+				ta = i.align("translational",ave,{},"dot",{"normalize":1})
 				t.append(ta)
 		
 			ave = t[0].copy()
@@ -762,9 +767,8 @@ class GUIbox:
 		self.template = t
 		self.geninitcor()
 		
-		
 	def geninitcor(self):
-		l = 768
+		l = 512
 		
 		if ( l > self.image.get_xsize() ):
 			l = self.image.get_xsize()
@@ -795,18 +799,241 @@ class GUIbox:
 		elif y - l/2.0 < 0:
 			y = l/2.0
 
+		
+		
+		shrink = 1
+		inx = self.image.get_xsize()/2
+		iny = self.image.get_ysize()/2
+		tn = self.boxsize/2
+		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
+			inx /= 2
+			iny /= 2
+			tn /= 2
+			shrink *= 2
+		self.shrink = shrink
+		
+		l *= self.shrink
+		
 		section = self.image.get_clip(Region(x-l/2.0,y-l/2.0,l,l))
+		section.mean_shrink(self.shrink)
+		template = self.template.copy()
+		template.mean_shrink(self.shrink)
 		
 		self.correlationcoords = [int(x-l/2.0),int(y-l/2.0)]
-		self.correlation = section.calc_flcf(self.template)
-		#self.template.write_image("template.mrc")
+		self.correlation = section.calc_flcf( template )
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
-		self.correlation.process_inplace("normalize")
-		#self.correlation.write_image("correlation.mrc")
+		self.correlation.write_image("correlation.mrc")
+		#self.correlation.process_inplace("normalize")
 		self.correlationsection = section
-		self.correlationx = x
-		self.correlationy = y
+		
+	def autocenter(self):
+		if self.correlation == None: return
+		
+		goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
+		
+		if len(goodboxes) <= 0 : return
+		
+		for i in goodboxes:
+			x = int(i[0]+i[2]/2.0-self.correlationcoords[0])/self.shrink
+			y = int(i[1]+i[3]/2.0-self.correlationcoords[1])/self.shrink
+			xsoln = 0
+			ysoln = 0
+			print x,y
+			
+			m = self.boxsize/4.0/self.shrink
+			maxval = self.correlation.get(x,y)
+			foundbetter = False
+			for k in range(0,m):
+				for j in range(0,m):
+					kk = int(k-m/2)
+					jj = int(j-m/2)
+					if x+jj >= self.correlation.get_xsize() or x+jj < 0:continue
+					if y+kk >= self.correlation.get_ysize() or y+kk < 0:continue
+					
+					val = self.correlation.get(x+jj,y+kk)
+					if ( val > maxval ):
+						foundbetter = True
+						maxval = val
+						xsoln = jj
+						ysoln = kk
+		
+			if foundbetter:
+				i[0] = (x+xsoln)*self.shrink-i[2]/2.0+self.correlationcoords[0]
+				i[1] = (y+ysoln)*self.shrink-i[3]/2.0+self.correlationcoords[1]
+				
+				
+			if len(i) < 7:
+				for k in range(len(i),7):
+					i.append(0)
+			i[5] = self.correlation.get(x+xsoln,y+ysoln)
+			#print "correlation max",i[5]
+			
+			i[6] = BoxingTools.get_min_delta_profile(self.correlation,x+xsoln,y+ysoln,(self.boxsize/2)/self.shrink)
+			#print "profile",i[6]
 
+		self.optprofile = []
+		self.optpeakvalue = 0
+		m = self.boxsize/self.shrink
+		pm = m/2
+		for p in range(0,pm): self.optprofile.append(0)
+		for i in goodboxes:
+			for k in range(0,len(i[6])):
+				if self.optprofile[k] > i[6][k] or self.optprofile[k] == 0:
+					self.optprofile[k] = i[6][k]
+			
+			if self.optpeakvalue > i[5] or self.optpeakvalue == 0:
+				self.optpeakvalue = i[5]
+		
+		print "optprofile", self.optprofile
+		print "optpeakvalue",self.optpeakvalue
+		self.boxupdate(True)
+		
+	def autopick(self):
+		if self.correlation == None: return
+		if self.optprofile == None: return
+		if self.optpeakvalue == None: return
+		
+		cx = self.correlation.get_xsize()
+		cy = self.correlation.get_ysize()
+		
+		radius = 0
+		tmp = self.optprofile[0]
+		for i in range(1,len(self.optprofile)):
+			if self.optprofile[i] > tmp and tmp > 0:
+				tmp = self.optprofile[i]
+				radius = i
+				#if ( i < len(self.optprofile)-1):
+					#if self.optprofile[i+1] < self.optprofile[i]:
+						#break
+					
+		print self.optprofile
+		print radius, "is the radius of the autopick"
+		
+		#exit(1)
+		
+		#if radius > 7:
+			#radius = 7
+			
+		efficiency = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
+		efficiency.to_one()
+			
+		self.boxes = []
+		self.ptcl = []
+		goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
+		for y in range(radius,cy-radius):
+			for x in range(radius,cx-radius):
+				if efficiency.get(x,y) == 0: continue
+				# potentially expensive peak searching
+				if self.correlation.get(x,y) > self.optpeakvalue:
+					if not BoxingTools.is_local_maximum(self.correlation,x,y,radius,efficiency): continue
+
+					# potentially expensive collision detection
+					xx = int(x*self.shrink+self.correlationcoords[0])
+					yy = int(y*self.shrink+self.correlationcoords[1])
+		
+					#print "found candidate"
+					profile = BoxingTools.get_min_delta_profile(self.correlation,x,y,radius+1)
+					if profile[radius] >= self.optprofile[radius]:
+						#print "and kept"
+						#print x,y
+						box = [0,0,0,0,0,0,[]]
+						box[5] = self.correlation.get(x,y)
+						
+						box[0] = xx-self.boxsize/2
+						box[1] = yy-self.boxsize/2 
+						box[2] = self.boxsize
+						box[3] = self.boxsize
+						box[6] = profile
+						self.boxes.append(box)
+						self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,xx,yy,xx+2,yy+2,1.0]))
+						
+						#print "added shape"
+				else: efficiency.set(x,y,0)
+		efficiency.write_image("efficiency.mrc")	
+		#print "done"
+		self.boxupdate(True)
+		
+	def fullautopick(self):
+		shrink = 1
+		inx = self.image.get_xsize()/2
+		iny = self.image.get_ysize()/2
+		tn = self.boxsize/2
+		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
+			inx /= 2
+			iny /= 2
+			tn /= 2
+			shrink *= 2
+		self.shrink = shrink
+		
+		
+		section = self.image.copy()
+		section.mean_shrink(self.shrink)
+		template = self.template.copy()
+		template.mean_shrink(self.shrink)
+		
+		print "doing flcf"
+		self.correlation = section.calc_flcf( template )
+		print "done"
+		self.correlation.process_inplace("xform.phaseorigin.tocenter")
+		#self.correlation.process_inplace("normalize")
+		self.correlation.write_image("correlation.mrc")
+		
+		
+		self.boxes = []
+		self.ptcl = []
+		
+		radius = 0
+		tmp = self.optprofile[0]
+		for i in range(1,len(self.optprofile)):
+			if self.optprofile[i] > tmp and tmp > 0:
+				tmp = self.optprofile[i]
+				radius = i
+				#if ( i < len(self.optprofile)-1):
+					#if self.optprofile[i+1] < self.optprofile[i]:
+						#break
+		#if radius > 7:
+			#radius = 7
+		
+		print self.optprofile
+		print "using",tmp,radius
+		
+		cx = self.correlation.get_xsize()
+		cy = self.correlation.get_ysize()
+		
+		efficiency = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
+		efficiency.to_one()
+		
+		for y in range(radius,cy-radius):
+			for x in range(radius,cx-radius):
+				if efficiency.get(x,y) == 0: continue
+				# potentially expensive peak searching
+				if self.correlation.get(x,y) > self.optpeakvalue:
+					if not BoxingTools.is_local_maximum(self.correlation,x,y,radius,efficiency): continue
+					
+					xx = int(x*self.shrink)
+					yy = int(y*self.shrink)
+					
+					#print "found candidate"
+					profile = BoxingTools.get_min_delta_profile(self.correlation,x,y,radius+1)
+					if profile[radius] >= self.optprofile[radius]:
+						#print "and kept"
+						#print x,y
+						#print profile
+						box = [0,0,0,0,0,0,[]]
+						box[5] = self.correlation.get(x,y)
+						
+						box[0] = xx-self.boxsize/2
+						box[1] = yy-self.boxsize/2 
+						box[2] = self.boxsize
+						box[3] = self.boxsize
+						box[6] = profile
+						self.boxes.append(box)
+						self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,xx,yy,xx+2,yy+2,1.0]))
+						
+						#print "added shape"
+				else: efficiency.set(x,y,0)
+		self.boxupdate(True)
+		
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
 		
@@ -847,10 +1074,22 @@ class GUIboxPanel(QtGui.QWidget):
 		self.setref=QtGui.QPushButton("Set References")
 		self.vbl.addWidget(self.setref)
 		
+		self.autocenter=QtGui.QPushButton("Auto Center")
+		self.vbl.addWidget(self.autocenter)
+		
+		self.autopick=QtGui.QPushButton("Auto Pick")
+		self.vbl.addWidget(self.autopick)
+		
+		self.fullautopick=QtGui.QPushButton("Full Auto Pick")
+		self.vbl.addWidget(self.fullautopick)
+		
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.app.quit)
 		self.connect(self.setref,QtCore.SIGNAL("clicked(bool)"),self.target.setrefs)
+		self.connect(self.autocenter,QtCore.SIGNAL("clicked(bool)"),self.target.autocenter)
+		self.connect(self.autopick,QtCore.SIGNAL("clicked(bool)"),self.target.autopick)
+		self.connect(self.fullautopick,QtCore.SIGNAL("clicked(bool)"),self.target.fullautopick)
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
 		
 	def nboxesChanged(self,n):

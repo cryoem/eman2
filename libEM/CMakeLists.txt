@@ -1,6 +1,7 @@
 SUBDIRS(sparx)
 
 SET(LIB_EM_SOURCE byteorder.cpp
+    boxingtools.cpp
     emobject.cpp
     emfft.cpp
     log.cpp

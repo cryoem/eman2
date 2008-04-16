@@ -60,11 +60,6 @@ def timer(fn,n=1):
 	print time.time()-a
 
 def E2init(argv) :
-#	THIS CANNOT GO HERE. GUI toolkits must ONLY
-#	be imported by GUI-dependent programs
-#        from OpenGL import GLUT
-#	GLUT.glutInit( argv )
-
 	"""E2init(argv)
 This function is called to log information about the current job to the local logfile"""
 	try:

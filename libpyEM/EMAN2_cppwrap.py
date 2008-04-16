@@ -32,6 +32,7 @@
 
 from libpyAligner2 import *
 from libpyAverager2 import *
+from libpyBoxingTools2 import *
 from libpyCmp2 import *
 from libpyProcessor2 import *
 from libpyReconstructor2 import * 
