@@ -273,6 +273,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("twoD_fine_ali_SD_G", &EMAN::Util::twoD_fine_ali_SD_G)
 		.def("twoD_to_3D_ali", &EMAN::Util::twoD_to_3D_ali)
 		.def("get_biggest_cluster", &EMAN::Util::get_biggest_cluster, return_value_policy< manage_new_object >())
+		.def("merge_peaks", &EMAN::Util::merge_peaks )
 	
 	//        .def("get_isosurface", &EMAN::Util::get_isosurface)
 		.staticmethod("CANG")
@@ -382,6 +383,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("twoD_fine_ali_SD_G")
 		.staticmethod("twoD_to_3D_ali")
 		.staticmethod("get_biggest_cluster")
+		.staticmethod("merge_peaks")
 //        .staticmethod("get_isosurface")
     );
 
