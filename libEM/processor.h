@@ -2701,6 +2701,43 @@ The basic design of EMAN Processors: <br>\
 		}	
 	};
 	
+	
+	/** Flattens the background by subtracting the local mean
+	 *@param map an EMData object that defines the extent of the local neighbourhood - will be used for convolution
+	 *@param radius exclusive of the mask parameter, this defines the radius of a circle/sphere that will be used for local mean subtraction
+	 *@author David Woolford 
+	 *@date April 2008
+	 */
+	class FlattenBackgroundProcessor:public Processor
+	{
+		public:
+			void process_inplace(EMData * image);
+		
+			string get_name() const
+			{
+				return "filter.flattenbackground";
+			}
+			
+			static Processor *NEW()
+			{
+				return new FlattenBackgroundProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Flattens the background by subtracting the local mean";
+			}
+		
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("mask", EMObject::EMDATA, "A mask the defines the local neighborhood that will be used to find the local mean. Exclusive of the radius argument");
+				d.put("radius", EMObject::INT, "The radius of circle/sphere that defines the local neighborhood. Exclusive of the mask argument");
+				return d;
+			}	
+	};
+	
+	
 	/**Ramp processor -- Fits a least-squares plane to the picture, and subtracts the plane from the picture.  A wedge-shaped overall density profile can thus be removed from the picture.
 	 */
 	class RampProcessor:public Processor

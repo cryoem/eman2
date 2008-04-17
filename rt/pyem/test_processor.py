@@ -44,14 +44,44 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 143)
+        self.assertEqual(len(processor_names), 144)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
         except RuntimeError, runtime_err:
             err_type = exception_type(runtime_err)
             self.assertEqual(err_type, "NotExistingObjectException")
-            
+    def test_flattenbackground(self):
+		"""test filter.flattenbackground processor .........."""
+		e = EMData(32,32,32)
+		e.process_inplace('testimage.noise.uniform.rand')
+		e.process_inplace('filter.flattenbackground',{"radius":8})
+		
+		mask = EMData(16,16,16)
+		mask.to_one()
+		e.process_inplace('filter.flattenbackground',{"mask":mask})
+		
+		# Check to make sure that when both the parameters are specified we throw
+		# an InvalidParameterException
+		try:
+			e2.process_inplace('filter.flattenbackground', {"radius":8,"mask":mask})
+		except RuntimeError, runtime_err:
+			self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
+		
+		# Check to make sure that atleast one parameter is specified
+		try:
+			e2.process_inplace('filter.flattenbackground', {})
+		except RuntimeError, runtime_err:
+			self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
+			
+		# make sure that we throw if the mask is to big
+		mask = EMData(33,32,32)
+		mask.to_one()
+		try:
+			e.process_inplace('filter.flattenbackground',{"mask":mask})
+		except RuntimeError, runtime_err:
+			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+		
     def test_filter_lowpass_tophat(self):
         """test filter.lowpass.tophat processor ............."""
         e = EMData()

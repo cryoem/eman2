@@ -3155,7 +3155,6 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 
 	EMData* m = convolute(mask);
 	m->mult(normfac);
-	// Here we generate the square of the local mean
 	m->process_inplace("math.pow",pow);
 
 	s->sub(*m);
@@ -3175,6 +3174,44 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	
 }
 
+EMData* EMData::get_local_mean_image(EMData* mask)
+{
+	ENTERFUNC;
+	if (get_ndim() != mask->get_ndim() ) throw ImageDimensionException("The dimensions do not match");
+	
+	int mnx = mask->get_xsize(); int mny = mask->get_ysize(); int mnz = mask->get_zsize();
+	
+	if ( mnx > nx || mny > ny || mnz > nz)
+		throw ImageDimensionException("Can not calculate variance map using an image that is larger than this image");
+		
+	int P = 0;
+	for(int i = 0; i < mask->get_xsize()*mask->get_ysize()*mask->get_zsize(); ++i){
+		if (mask->get_value_at(i) != 0){
+			P++;
+		}
+	}
+	float normfac = 1.0/(float)P;
+	
+	bool undoclip = false;
+	
+	if ( mnx < nx || mny < ny || mnz < nz) {
+		Region r((mnx-nx)/2, (mny-ny)/2,(mnz-nz)/2,nx,ny,nz);
+		mask->clip_inplace(r);
+		undoclip = true;
+	}
+	
+	EMData* m = convolute(mask);
+	m->mult(normfac);
+	
+	if ( undoclip ) {
+		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
+		mask->clip_inplace(r);
+	}
+	
+	EXITFUNC;
+	return m;
+}
+
 //  The following code looks strange - does anybody know it?  Please let me know, pawel.a.penczek@uth.tmc.edu  04/09/06.
 // This is just an implementation of "Roseman's" fast normalized cross-correlation (Ultramicroscopy, 2003). But the contents of this function have changed dramatically since you wrote that comment (d.woolford).
 EMData *EMData::calc_flcf(EMData * with)
@@ -3185,44 +3222,26 @@ EMData *EMData::calc_flcf(EMData * with)
 	EMData* ones = new EMData(with->get_xsize(), with->get_ysize(),with->get_zsize());
 	ones->process_inplace("testimage.circlesphere");
 	
+	EMData* mean = get_local_mean_image(ones);
+	mean->process_inplace("xform.phaseorigin.tocenter");
+	sub(*mean);
+	delete mean;
+	
 	// Get a copy of with, we will eventually resize it
 	EMData* with_resized = with->copy();
 	// Circular/Spherical mask
 	with_resized->mult(*ones);
-	
-	// It is important that the mean of the "search object" is zero, in terms of Equation 5 in 
-	// Roseman's paper. Here we find the mean and sigma inside the non zero area
-// 	float sum = 0;
-// 	float squared_sum = 0;
-// 	int P = 0;
-// 	for(int i = 0; i < with_resized->get_xsize()*with_resized->get_ysize()*with_resized->get_zsize(); ++i){
-// 		float val = with_resized->get_value_at(i);
-// 		if (val != 0){
-// 			sum += val;
-// 			squared_sum += val*val;
-// 			P++;
-// 		}
-// 	}
-// 	if (P == 0) throw;
-// 	
-// 	sum /= (float)P; // sum is now the mean
-// 	squared_sum = sqrtf( squared_sum/(float)P - sum*sum); // squared_sum is now sigma
 
-	// Now the non zero part of the template can be made to have 0 mean and 1 sigma
-// 	with_resized->sub(sum);
-// 	with_resized->mult(1.0f/squared_sum);
-	
 	// Get with_resized to the right size for the correlation
 	Region r((with->get_xsize()-nx)/2, (with->get_ysize()-ny)/2, (with->get_zsize()-nz)/2,nx,ny,nz);
 	with_resized->clip_inplace(r);
 
 	// The correlation
-	EMData* corr = calc_ccf(with_resized);
-	corr->write_image("corr.mrc");
 	// Get the local sigma image
 	EMData* s = calc_fast_sigma_image(ones);
-	s->write_image("local_correlation.mrc");
 	// The local normalized correlation
+	
+	EMData* corr = calc_ccf(with_resized);
 	corr->div(*s);
 		
 	delete with_resized; delete ones;

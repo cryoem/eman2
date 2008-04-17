@@ -117,6 +117,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&CutoffBlockProcessor::NEW);
 	force_add(&GradientRemoverProcessor::NEW);
 	force_add(&GradientPlaneRemoverProcessor::NEW);
+	force_add(&FlattenBackgroundProcessor::NEW);
 	force_add(&VerticalStripeProcessor::NEW);
 	force_add(&RealToFFTProcessor::NEW);
 	force_add(&SigmaZeroEdgeProcessor::NEW);
@@ -1345,6 +1346,80 @@ void GradientRemoverProcessor::process_inplace(EMData * image)
 	}
 
 	image->update();
+}
+
+void FlattenBackgroundProcessor::process_inplace(EMData * image)
+{
+	
+	EMData* mask = params.set_default("mask",(EMData*)0);
+	int radius = params.set_default("radius",0);
+	
+	if (radius != 0 && mask != 0) throw InvalidParameterException("Error - the mask and radius parameters are mutually exclusive.");
+	
+	if (mask == 0 && radius == 0) throw InvalidParameterException("Error - you must specify either the mask or the radius parameter.");
+	
+	// If the radius isn't 0, then turn the mask into the thing we want...
+	bool deletemask = false;
+	if (radius != 0) {
+		mask = new EMData;
+		int n = image->get_ndim();
+		if (n==1){
+			mask->set_size(2*radius+1);
+		} else if (n==2) {
+			mask->set_size(2*radius+1,2*radius+1);
+		}
+		else /*n==3*/ {
+			mask->set_size(2*radius+1,2*radius+1,2*radius+1);
+		}
+		// assuming default behavior is to make a circle/sphere with using the radius of the mask
+		mask->process_inplace("testimage.circlesphere");
+	}
+	
+	// Double check that that mask isn't too big
+	int mnx = mask->get_xsize(); int mny = mask->get_ysize(); int mnz = mask->get_zsize();
+	int nx = image->get_xsize(); int ny = image->get_ysize(); int nz = image->get_zsize();
+	if ( mnx > nx || mny > ny || mnz > nz)
+		throw ImageDimensionException("Can not flatten using a mask that is larger than the image.");
+	
+	// Get the normalization factor
+	float normfac = 0.0;
+	for (int i=0; i<mask->get_xsize()*mask->get_ysize()*mask->get_zsize(); ++i){
+		normfac += mask->get_value_at(i);
+	}
+	// If the sum is zero the user probably doesn't understand that determining a measure of the mean requires
+	// strictly positive numbers. The user has specified a mask that consists entirely of zeros, or the mask
+	// has a mean of zero.
+	if (normfac == 0) throw InvalidParameterException("Error - the pixels in the mask sum to zero. This breaks the flattening procedure");
+	normfac = 1.0/normfac;
+	
+	// The mask can now be automatically resized to the dimensions of the image
+	bool undoclip = false;
+	if ( mnx < nx || mny < ny || mnz < nz) {
+		Region r((mnx-nx)/2, (mny-ny)/2,(mnz-nz)/2,nx,ny,nz);
+		mask->clip_inplace(r);
+		undoclip = true;
+	}
+	
+	// Finally do the convolution
+	EMData* m = image->convolute(mask);
+	// Normalize so that m is truly the local mean
+	m->mult(normfac);
+	// Before we can subtract, the mean must be phase shifted
+	m->process_inplace("xform.phaseorigin.tocenter");
+	// Subtract the local mean
+	image->sub(*m); // WE'RE DONE!
+	
+	delete m;
+	
+	if (deletemask) {
+		delete mask;
+	}
+	
+	if ( undoclip ) {
+		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
+		mask->clip_inplace(r);
+	}
+	
 }
 
 #include <gsl/gsl_linalg.h>

@@ -333,8 +333,7 @@ namespace EMAN
 		 * @param inc_mirror whether or not to include the mirror portion of the asymmetric unit
 		 * @return a vector or points which define a cyclic set of great arcs on the unit sphere. Each point may be connected to the point that proceeds it, and the last point may be connected to the first point, and this demarcates the asymmetric unit.
 		*/
-		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const { (void)inc_mirror; return vector<Vec3f>(); }
-		
+		virtual vector<Vec3f> get_asymm_unit_points(bool) const = 0;
 		/** Ask the Symmetry3D object to generate a set of orientations in its asymmetric unit
 		 * using an OrientationGenerator constructed from the given parameters (using a Factory).
 		 * This is reminiscent of the strategy design pattern
