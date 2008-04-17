@@ -817,10 +817,12 @@ class GUIbox:
 		
 		l *= self.shrink
 		
-		section = self.image.get_clip(Region(x-l/2.0,y-l/2.0,l,l))
-		section.mean_shrink(self.shrink)
 		template = self.template.copy()
 		template.mean_shrink(self.shrink)
+		section = self.image.get_clip(Region(x-l/2.0,y-l/2.0,l,l))
+		section.mean_shrink(self.shrink)
+		section.process_inplace("filter.flattenbackground",{"radius":template.get_xsize()/2})
+		
 		
 		self.correlationcoords = [int(x-l/2.0),int(y-l/2.0)]
 		self.correlation = section.calc_flcf( template )
@@ -971,6 +973,7 @@ class GUIbox:
 		section.mean_shrink(self.shrink)
 		template = self.template.copy()
 		template.mean_shrink(self.shrink)
+		section.process_inplace("filter.flattenbackground",{"radius":template.get_xsize()/2})
 		
 		print "doing flcf"
 		self.correlation = section.calc_flcf( template )

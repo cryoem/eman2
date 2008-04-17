@@ -3174,44 +3174,6 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	
 }
 
-EMData* EMData::get_local_mean_image(EMData* mask)
-{
-	ENTERFUNC;
-	if (get_ndim() != mask->get_ndim() ) throw ImageDimensionException("The dimensions do not match");
-	
-	int mnx = mask->get_xsize(); int mny = mask->get_ysize(); int mnz = mask->get_zsize();
-	
-	if ( mnx > nx || mny > ny || mnz > nz)
-		throw ImageDimensionException("Can not calculate variance map using an image that is larger than this image");
-		
-	int P = 0;
-	for(int i = 0; i < mask->get_xsize()*mask->get_ysize()*mask->get_zsize(); ++i){
-		if (mask->get_value_at(i) != 0){
-			P++;
-		}
-	}
-	float normfac = 1.0/(float)P;
-	
-	bool undoclip = false;
-	
-	if ( mnx < nx || mny < ny || mnz < nz) {
-		Region r((mnx-nx)/2, (mny-ny)/2,(mnz-nz)/2,nx,ny,nz);
-		mask->clip_inplace(r);
-		undoclip = true;
-	}
-	
-	EMData* m = convolute(mask);
-	m->mult(normfac);
-	
-	if ( undoclip ) {
-		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
-		mask->clip_inplace(r);
-	}
-	
-	EXITFUNC;
-	return m;
-}
-
 //  The following code looks strange - does anybody know it?  Please let me know, pawel.a.penczek@uth.tmc.edu  04/09/06.
 // This is just an implementation of "Roseman's" fast normalized cross-correlation (Ultramicroscopy, 2003). But the contents of this function have changed dramatically since you wrote that comment (d.woolford).
 EMData *EMData::calc_flcf(EMData * with)
@@ -3221,11 +3183,6 @@ EMData *EMData::calc_flcf(EMData * with)
 	// Ones is a circlular/spherical mask, consisting of 1s.
 	EMData* ones = new EMData(with->get_xsize(), with->get_ysize(),with->get_zsize());
 	ones->process_inplace("testimage.circlesphere");
-	
-	EMData* mean = get_local_mean_image(ones);
-	mean->process_inplace("xform.phaseorigin.tocenter");
-	sub(*mean);
-	delete mean;
 	
 	// Get a copy of with, we will eventually resize it
 	EMData* with_resized = with->copy();

@@ -637,8 +637,6 @@ namespace EMAN
 		 */
 		EMData *calc_flcf(EMData * with);
 		
-		EMData *get_local_mean_image(EMData* mask);
-		
 		/** Calculates the local standard deviation (sigma) image using the given
 		 * mask image. The mask image is typically much smaller than this image,
 		 * and consists of ones, or is a small circle consisting of ones. The extent
