@@ -352,7 +352,7 @@ namespace EMAN {
 							  int line = 0, const string& desc_str = "")
 			: E2Exception(file, line, desc_str) {}
 		
-		const char *name() const { return "Invalid function call for this type"; }
+		const char *name() const { return "InvalidCallException"; }
 		
 	};
 #define InvalidCallException(desc) _InvalidCallException(__FILE__, __LINE__, desc)
@@ -366,7 +366,7 @@ namespace EMAN {
 									int line = 0, const string& desc_str = "")
 			: E2Exception(file, line, desc_str) {}
 		
-		const char *name() const { return "Invalid Parameter"; }
+		const char *name() const { return "InvalidParameterException"; }
 	};
 #define InvalidParameterException(desc) _InvalidParameterException(__FILE__, __LINE__, desc)
 
@@ -379,7 +379,7 @@ namespace EMAN {
 									   int line = 0, const string& desc_str = "")
 			: E2Exception(file, line, desc_str) {}
 		
-			const char *name() const { return "Empty container"; }
+			const char *name() const { return "EmptyContainerException"; }
 	};
 #define EmptyContainerException(desc) _EmptyContainerException(__FILE__, __LINE__, desc)
 	
@@ -392,7 +392,7 @@ namespace EMAN {
 									 int line = 0, const string& desc_str = "")
 			: E2Exception(file, line, desc_str) {}
 		
-			const char *name() const { return "Bad allocation"; }
+			const char *name() const { return "BadAllocException"; }
 	};
 #define BadAllocException(desc) _BadAllocException(__FILE__, __LINE__, desc)
 	/** Used when internal behavior is unexpected
@@ -405,7 +405,7 @@ namespace EMAN {
 							   int line = 0, const string& desc_str = "")
 			: E2Exception(file, line, desc_str) {}
 		
-			const char *name() const { return "Unexpected behavior"; }
+			const char *name() const { return "UnexpectedBehaviorException"; }
 	};
 #define UnexpectedBehaviorException(desc) _UnexpectedBehaviorException(__FILE__, __LINE__, desc)
 }
