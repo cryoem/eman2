@@ -69,6 +69,7 @@ namespace EMAN
 		IOMode rw_mode;
 		TIFF *tiff_file;
 		unsigned short bitspersample;
+		unsigned short photometric;
 		bool is_big_endian;
 		bool initialized;
 		

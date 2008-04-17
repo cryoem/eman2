@@ -42,8 +42,17 @@
 
 using namespace EMAN;
 
+namespace {
+	/* x% weighting -> fraction of full color */
+	#define PCT(x)	(((x)*255+127)/100)
+	const int RED = PCT(30);		/* 30% */
+	const int GREEN = PCT(59);		/* 59% */
+	const int BLUE = PCT(11);		/* 11% */
+}
+
 TiffIO::TiffIO(string tiff_filename, IOMode rw)
-:	filename(tiff_filename), rw_mode(rw), tiff_file(0), bitspersample(0), initialized(false)
+:	filename(tiff_filename), rw_mode(rw), tiff_file(0), 
+	bitspersample(0), photometric(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 }
@@ -146,14 +155,6 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 	img_index = 0;
 	check_read_access(img_index);
 	
-	//Only support greyscale TIFF image
-	uint16 photometric=0;	
-	if( TIFFGetField(tiff_file, TIFFTAG_PHOTOMETRIC, &photometric) ) {
-		if(!(photometric == 0 || photometric == 1)) {
-			fprintf(stderr,"Error: Only support greyscale TIFF image !!!\n");return (-1);
-		} 
-	}
-	
 	int nx = 0;
 	int ny = 0;
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
@@ -169,6 +170,8 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 
 	TIFFGetField(tiff_file, TIFFTAG_MINSAMPLEVALUE, &min);
 	TIFFGetField(tiff_file, TIFFTAG_MAXSAMPLEVALUE, &max);
+
+	TIFFGetField(tiff_file, TIFFTAG_PHOTOMETRIC, &photometric);
 
 	TIFFGetField(tiff_file, TIFFTAG_SAMPLEFORMAT, &data_type);
 	TIFFGetField(tiff_file, TIFFTAG_XRESOLUTION, &resolution_x);
@@ -212,120 +215,145 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
 
 	int err = 0;
-	unsigned char *cdata;	//buffer for strip or tile
 	
-	if(TIFFIsTiled(tiff_file)) {
-		tsize_t tileSize = TIFFTileSize(tiff_file);
-		tsize_t tileMax = TIFFNumberOfTiles(tiff_file);
-		tsize_t tileCount; 
+	/* for grey scale image, use TIFFReadEncodedStrip() and TIFFReadEncodedTile()
+	 * because the reading of strip image is twice time faster than TIFFReadRGBAImage -Grant*/
+	if(photometric == PHOTOMETRIC_MINISWHITE || photometric == PHOTOMETRIC_MINISBLACK) {
+		unsigned char *cdata;	//buffer for strip or tile
 		
-		uint32 tileWidth, tileLength;
-		TIFFGetField(tiff_file, TIFFTAG_TILEWIDTH, &tileWidth);
-		TIFFGetField(tiff_file, TIFFTAG_TILELENGTH, &tileLength);
-		
-		if((cdata=(unsigned char*)_TIFFmalloc(tileSize))==NULL){
-			fprintf(stderr,"Error: Could not allocate enough memory\n");
-			return(-1);
-		}
-		
-		int tilePerLine = nx/tileWidth + 1;
-		int NX, NY;	//(NX, NY) is the cordinates of tile
-		int xpos, ypos; //(xpos, ypos) is the actual coordinates of pixel (j,i) in image
-		
-		for(tileCount=0; tileCount<tileMax; tileCount++) {
-			if(TIFFReadEncodedTile(tiff_file, tileCount, cdata, tileSize) == -1) {
-				fprintf(stderr,"Error reading tiled image\n");return(-1);
+		if(TIFFIsTiled(tiff_file)) {
+			tsize_t tileSize = TIFFTileSize(tiff_file);
+			tsize_t tileMax = TIFFNumberOfTiles(tiff_file);
+			tsize_t tileCount; 
+			
+			uint32 tileWidth, tileLength;
+			TIFFGetField(tiff_file, TIFFTAG_TILEWIDTH, &tileWidth);
+			TIFFGetField(tiff_file, TIFFTAG_TILELENGTH, &tileLength);
+			
+			if((cdata=(unsigned char*)_TIFFmalloc(tileSize))==NULL){
+				fprintf(stderr,"Error: Could not allocate enough memory\n");
+				return(-1);
 			}
-			else {
-				NX = tileCount%tilePerLine;
-				NY = tileCount/tilePerLine;
-				uint32 i, j;
-				for(i=0; i<tileLength; i++) {
-					for(j=0; j<tileWidth; j++) {
-						xpos = NX*tileWidth + j;
-						ypos = NY*tileLength + i;
-									
-						if(bitspersample == CHAR_BIT) {
-							if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
-								rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned char*)cdata)[i*tileWidth+j];
+			
+			int tilePerLine = nx/tileWidth + 1;
+			int NX, NY;	//(NX, NY) is the cordinates of tile
+			int xpos, ypos; //(xpos, ypos) is the actual coordinates of pixel (j,i) in image
+			
+			for(tileCount=0; tileCount<tileMax; tileCount++) {
+				if(TIFFReadEncodedTile(tiff_file, tileCount, cdata, tileSize) == -1) {
+					fprintf(stderr,"Error reading tiled image\n");return(-1);
+				}
+				else {
+					NX = tileCount%tilePerLine;
+					NY = tileCount/tilePerLine;
+					uint32 i, j;
+					for(i=0; i<tileLength; i++) {
+						for(j=0; j<tileWidth; j++) {
+							xpos = NX*tileWidth + j;
+							ypos = NY*tileLength + i;
+										
+							if(bitspersample == CHAR_BIT) {
+								if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
+									rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned char*)cdata)[i*tileWidth+j];
+								}
 							}
-						}
-						else if(bitspersample == sizeof(unsigned short) * CHAR_BIT) {
-							if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
-								rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned short*)cdata)[i*tileWidth+j];
+							else if(bitspersample == sizeof(unsigned short) * CHAR_BIT) {
+								if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
+									rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned short*)cdata)[i*tileWidth+j];
+								}
 							}
-						}
-						else {
-							fprintf(stderr,"BAILING OUT:Allow only 8- or 16-bits image\n");
-							return(-1);
+							else {
+								fprintf(stderr,"BAILING OUT:Allow only 8- or 16-bits image\n");
+								return(-1);
+							}
 						}
 					}
 				}
 			}
+			
 		}
+		else {
+			check_region(area, IntSize(nx, ny));
+			int xlen = 0, ylen = 0, x0 = 0, y0 = 0;
+			EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
+			EMUtil::get_region_origins(area, &x0, &y0);
+			
+			int strip_size = TIFFStripSize(tiff_file);
+			uint32 num_strips = TIFFNumberOfStrips(tiff_file);
 		
-	}
-	else {
-		check_region(area, IntSize(nx, ny));
-		int xlen = 0, ylen = 0, x0 = 0, y0 = 0;
-		EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
-		EMUtil::get_region_origins(area, &x0, &y0);
-		
-		int strip_size = TIFFStripSize(tiff_file);
-		uint32 num_strips = TIFFNumberOfStrips(tiff_file);
-	
-		if((cdata = static_cast < unsigned char *>(_TIFFmalloc(strip_size)))==NULL) {
-			fprintf(stderr,"Error: Could not allocate enough memory\n");
-			return(-1);
-		}
-	
-		int k = 0;
-		int num_read = 0;
-		int mode_size = bitspersample / CHAR_BIT;
-		int total_rows = 0;
-	
-		for (uint32 i = 0; i < num_strips; i++) {
-			if ((num_read = TIFFReadEncodedStrip(tiff_file, i, cdata, strip_size)) == -1) {
-				LOGERR("reading stripped TiFF image '%s' failed", filename.c_str());
-				err = 1;
-				break;
+			if((cdata = static_cast < unsigned char *>(_TIFFmalloc(strip_size)))==NULL) {
+				fprintf(stderr,"Error: Could not allocate enough memory\n");
+				return(-1);
 			}
-	
-			int nitems = num_read / mode_size;
-			int nrows = nitems / nx;
-			total_rows += nrows;
-	
-			int y_start = 0;
-			int y_end = nrows;
-	
-			if (area) {
-				if (total_rows >= y0 && total_rows < y0 + nrows) {
-					y_start = nrows - (total_rows - y0);
-				}
-				else if (total_rows >= (y0 + ylen) && total_rows < (y0 + ylen + nrows)) {
-					y_end = y0 + ylen - total_rows + nrows;
-				}
-				else if (total_rows >= (y0 + ylen + nrows)) {
+		
+			int k = 0;
+			int num_read = 0;
+			int mode_size = bitspersample / CHAR_BIT;
+			int total_rows = 0;
+		
+			for (uint32 i = 0; i < num_strips; i++) {
+				if ((num_read = TIFFReadEncodedStrip(tiff_file, i, cdata, strip_size)) == -1) {
+					LOGERR("reading stripped TiFF image '%s' failed", filename.c_str());
+					err = 1;
 					break;
 				}
-			}
-	
-			for (int l = y_start; l < y_end; l++) {
-				for (int j = x0; j < x0 + xlen; j++) {
-					if (bitspersample == CHAR_BIT) {
-						rdata[k] = static_cast < float >(((unsigned char *)cdata)[l * nx + j]);
+		
+				int nitems = num_read / mode_size;
+				int nrows = nitems / nx;
+				total_rows += nrows;
+		
+				int y_start = 0;
+				int y_end = nrows;
+		
+				if (area) {
+					if (total_rows >= y0 && total_rows < y0 + nrows) {
+						y_start = nrows - (total_rows - y0);
 					}
-					else if (bitspersample == sizeof(unsigned short) * CHAR_BIT) {
-						rdata[k] = static_cast < float >(((unsigned short *) cdata)[l * nx + j]);
+					else if (total_rows >= (y0 + ylen) && total_rows < (y0 + ylen + nrows)) {
+						y_end = y0 + ylen - total_rows + nrows;
 					}
-					k++;
+					else if (total_rows >= (y0 + ylen + nrows)) {
+						break;
+					}
+				}
+		
+				for (int l = y_start; l < y_end; l++) {
+					for (int j = x0; j < x0 + xlen; j++) {
+						if (bitspersample == CHAR_BIT) {
+							rdata[k] = static_cast < float >(((unsigned char *)cdata)[l * nx + j]);
+						}
+						else if (bitspersample == sizeof(unsigned short) * CHAR_BIT) {
+							rdata[k] = static_cast < float >(((unsigned short *) cdata)[l * nx + j]);
+						}
+						k++;
+					}
 				}
 			}
+			Util::flip_image(rdata, xlen, ylen);
 		}
-		Util::flip_image(rdata, xlen, ylen);
+		_TIFFfree(cdata);
 	}
-
-	_TIFFfree(cdata);
+	else {	//process color image, convert to greyscale
+		size_t npixels = nx * ny;
+		uint32 * raster = (uint32*) _TIFFmalloc(npixels * sizeof(uint32));
+		if(raster != NULL) {
+			if(TIFFReadRGBAImage(tiff_file, nx, ny, raster, 0)) {
+				int abgr = 0;	//raw ABGR pixel value
+				int red=0, green=0, blue=0; 
+				for (int i=0; i<nx; ++i) {
+					for (int j=0; j<ny; ++j) {
+						abgr 	= raster[j+ny*i];
+						red 	= TIFFGetR(abgr);
+						green 	= TIFFGetG(abgr);
+						blue 	= TIFFGetB(abgr);
+						rdata[j+ny*i] = static_cast<float>(red*RED+green*GREEN+blue*BLUE);
+					}
+				}
+				_TIFFfree(raster);
+			}
+		}	
+	}
+		
 	EXITFUNC;
 	return err;
 }
