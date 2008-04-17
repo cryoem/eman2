@@ -3119,7 +3119,7 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 }
 
 
-EMData * EMData::calc_fast_sigma_image( EMData* mask, bool normalize)
+EMData * EMData::calc_fast_sigma_image( EMData* mask)
 {
 	ENTERFUNC;
 	
@@ -3129,13 +3129,18 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask, bool normalize)
 	
 	if ( mnx > nx || mny > ny || mnz > nz)
 		throw ImageDimensionException("Can not calculate variance map using an image that is larger than this image");
-			
+		
+	int P = 0;
+	for(int i = 0; i < mask->get_xsize()*mask->get_ysize()*mask->get_zsize(); ++i){
+		if (mask->get_value_at(i) != 0){
+			P++;
+		}
+	}
+	float normfac = 1.0/(float)P;
 	
 	bool undoclip = false;
 	
-	if (normalize) mask->process_inplace("normalize.unitsum");
-	
-	if ( mnx < nx || mny < ny ) {
+	if ( mnx < nx || mny < ny || mnz < nz) {
 		Region r((mnx-nx)/2, (mny-ny)/2,(mnz-nz)/2,nx,ny,nz);
 		mask->clip_inplace(r);
 		undoclip = true;
@@ -3146,8 +3151,10 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask, bool normalize)
 	EMData* squared = process("math.pow",pow);
 	// Here we generate the local average of the squares
 	EMData* s = squared->convolute(mask);
+	squared->mult(normfac);
 
 	EMData* m = convolute(mask);
+	m->mult(normfac);
 	// Here we generate the square of the local mean
 	m->process_inplace("math.pow",pow);
 
@@ -3178,10 +3185,32 @@ EMData *EMData::calc_flcf(EMData * with)
 	EMData* ones = new EMData(with->get_xsize(), with->get_ysize(),with->get_zsize());
 	ones->process_inplace("testimage.circlesphere");
 	
-	// Normalization is important.
-	EMData* with_resized = with->process("normalize");
+	// Get a copy of with, we will eventually resize it
+	EMData* with_resized = with->copy();
 	// Circular/Spherical mask
 	with_resized->mult(*ones);
+	
+	// It is important that the mean of the "search object" is zero, in terms of Equation 5 in 
+	// Roseman's paper. Here we find the mean and sigma inside the non zero area
+// 	float sum = 0;
+// 	float squared_sum = 0;
+// 	int P = 0;
+// 	for(int i = 0; i < with_resized->get_xsize()*with_resized->get_ysize()*with_resized->get_zsize(); ++i){
+// 		float val = with_resized->get_value_at(i);
+// 		if (val != 0){
+// 			sum += val;
+// 			squared_sum += val*val;
+// 			P++;
+// 		}
+// 	}
+// 	if (P == 0) throw;
+// 	
+// 	sum /= (float)P; // sum is now the mean
+// 	squared_sum = sqrtf( squared_sum/(float)P - sum*sum); // squared_sum is now sigma
+
+	// Now the non zero part of the template can be made to have 0 mean and 1 sigma
+// 	with_resized->sub(sum);
+// 	with_resized->mult(1.0f/squared_sum);
 	
 	// Get with_resized to the right size for the correlation
 	Region r((with->get_xsize()-nx)/2, (with->get_ysize()-ny)/2, (with->get_zsize()-nz)/2,nx,ny,nz);
@@ -3189,8 +3218,10 @@ EMData *EMData::calc_flcf(EMData * with)
 
 	// The correlation
 	EMData* corr = calc_ccf(with_resized);
+	corr->write_image("corr.mrc");
 	// Get the local sigma image
 	EMData* s = calc_fast_sigma_image(ones);
+	s->write_image("local_correlation.mrc");
 	// The local normalized correlation
 	corr->div(*s);
 		

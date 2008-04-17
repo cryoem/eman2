@@ -1953,6 +1953,14 @@ bool CSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 	if ( altitude <= alt_max && azimuth <= az_max ) return true;
 	return false;
 }
+// PRB see here
+// Transform3D CSym::reduce(const Transform3D& t3d, int n)
+// {
+// 	vector<Vec3f> points = get_asymm_unit_points(false);
+// 	Transform3D t = get_sym(n);
+// 	
+// 	points.size();
+// }
 
 vector<Vec3f> CSym::get_asymm_unit_points(bool inc_mirror) const
 {

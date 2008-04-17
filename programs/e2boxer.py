@@ -38,7 +38,7 @@ from EMAN2 import *
 from optparse import OptionParser
 from emshape import EMShape
 from math import *
-import time
+from time import *
 import os
 import sys
 
@@ -551,6 +551,9 @@ class GUIbox:
 		self.app=get_app()
 		self.image=EMData()					# the image to be boxed
 		self.image.read_image(imagefsp)
+		#if abs(self.image.get_attr("mean")) < 1:
+			#print "adding 10"
+			#self.image.add(10)
 		self.boxes=boxes					# the list of box locations
 		self.threshold=thr					# Threshold to decide which boxes to use
 		self.ptcl=[]						# list of actual boxed out EMImages
@@ -917,41 +920,39 @@ class GUIbox:
 		efficiency = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
 		efficiency.to_one()
 			
-		self.boxes = []
-		self.ptcl = []
-		goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
-		for y in range(radius,cy-radius):
-			for x in range(radius,cx-radius):
-				if efficiency.get(x,y) == 0: continue
-				# potentially expensive peak searching
-				if self.correlation.get(x,y) > self.optpeakvalue:
-					if not BoxingTools.is_local_maximum(self.correlation,x,y,radius,efficiency): continue
-
-					# potentially expensive collision detection
-					xx = int(x*self.shrink+self.correlationcoords[0])
-					yy = int(y*self.shrink+self.correlationcoords[1])
+		for box in self.boxes:
+			xx = box[0] + box[2]/2
+			yy = box[1] + box[3]/2
+			xx /= self.shrink
+			yy /= self.shrink
+			
+			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),radius)
+		#self.ptcl = []
+		t1 = time()
+		#goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
 		
-					#print "found candidate"
-					profile = BoxingTools.get_min_delta_profile(self.correlation,x,y,radius+1)
-					if profile[radius] >= self.optprofile[radius]:
-						#print "and kept"
-						#print x,y
-						box = [0,0,0,0,0,0,[]]
-						box[5] = self.correlation.get(x,y)
-						
-						box[0] = xx-self.boxsize/2
-						box[1] = yy-self.boxsize/2 
-						box[2] = self.boxsize
-						box[3] = self.boxsize
-						box[6] = profile
-						self.boxes.append(box)
-						self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,xx,yy,xx+2,yy+2,1.0]))
-						
-						#print "added shape"
-				else: efficiency.set(x,y,0)
-		efficiency.write_image("efficiency.mrc")	
-		#print "done"
+		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,radius,self.optprofile,efficiency)
+		print "boxed",len(soln)
+		for b in soln:
+			x = b[0]
+			y = b[1]
+			xx = int(x*self.shrink) + self.correlationcoords[0]
+			yy = int(y*self.shrink) + self.correlationcoords[1]
+			box = [0,0,0,0,0,0,[]]
+			box[5] = self.correlation.get(x,y)
+			
+			box[0] = xx-self.boxsize/2
+			box[1] = yy-self.boxsize/2 
+			box[2] = self.boxsize
+			box[3] = self.boxsize
+			#box[6] = profile
+			self.boxes.append(box)
+		dt = time() - t1
+		print "time take was",dt
+		efficiency.write_image("efficiency.mrc")
 		self.boxupdate(True)
+		print "done"
+		
 		
 	def fullautopick(self):
 		shrink = 1
@@ -978,10 +979,6 @@ class GUIbox:
 		#self.correlation.process_inplace("normalize")
 		self.correlation.write_image("correlation.mrc")
 		
-		
-		self.boxes = []
-		self.ptcl = []
-		
 		radius = 0
 		tmp = self.optprofile[0]
 		for i in range(1,len(self.optprofile)):
@@ -991,47 +988,36 @@ class GUIbox:
 				#if ( i < len(self.optprofile)-1):
 					#if self.optprofile[i+1] < self.optprofile[i]:
 						#break
-		#if radius > 7:
-			#radius = 7
-		
-		print self.optprofile
-		print "using",tmp,radius
-		
-		cx = self.correlation.get_xsize()
-		cy = self.correlation.get_ysize()
-		
+	
+		t1 = time()
+		#goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
 		efficiency = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
 		efficiency.to_one()
 		
-		for y in range(radius,cy-radius):
-			for x in range(radius,cx-radius):
-				if efficiency.get(x,y) == 0: continue
-				# potentially expensive peak searching
-				if self.correlation.get(x,y) > self.optpeakvalue:
-					if not BoxingTools.is_local_maximum(self.correlation,x,y,radius,efficiency): continue
-					
-					xx = int(x*self.shrink)
-					yy = int(y*self.shrink)
-					
-					#print "found candidate"
-					profile = BoxingTools.get_min_delta_profile(self.correlation,x,y,radius+1)
-					if profile[radius] >= self.optprofile[radius]:
-						#print "and kept"
-						#print x,y
-						#print profile
-						box = [0,0,0,0,0,0,[]]
-						box[5] = self.correlation.get(x,y)
-						
-						box[0] = xx-self.boxsize/2
-						box[1] = yy-self.boxsize/2 
-						box[2] = self.boxsize
-						box[3] = self.boxsize
-						box[6] = profile
-						self.boxes.append(box)
-						self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,xx,yy,xx+2,yy+2,1.0]))
-						
-						#print "added shape"
-				else: efficiency.set(x,y,0)
+		for box in self.boxes:
+			xx = box[0] + box[2]/2
+			yy = box[1] + box[3]/2
+			xx /= self.shrink
+			yy /= self.shrink
+			
+			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),radius)
+		
+		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,radius,self.optprofile,efficiency)
+		print "boxed",len(soln)
+		for b in soln:
+			x = b[0]
+			y = b[1]
+			xx = int(x*self.shrink)
+			yy = int(y*self.shrink)
+			box = [0,0,0,0,0,0,[]]
+			box[5] = self.correlation.get(x,y)
+			
+			box[0] = xx-self.boxsize/2
+			box[1] = yy-self.boxsize/2 
+			box[2] = self.boxsize
+			box[3] = self.boxsize
+			#box[6] = profile
+			self.boxes.append(box)
 		self.boxupdate(True)
 		
 class GUIboxPanel(QtGui.QWidget):

@@ -656,7 +656,7 @@ namespace EMAN
 		 * @author David Woolford
 		 * @date April 2008
 		*/
-		EMData *calc_fast_sigma_image( EMData* mask, bool normalize=true);
+		EMData *calc_fast_sigma_image( EMData* mask);
 
 		/** Convolutes 2 data sets. The 2 images must be of the same size.
 		 * @param with One data set. 'this' image is the other data set.

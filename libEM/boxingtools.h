@@ -33,7 +33,7 @@
 #define eman_boxingtools_h__ 1
 
 #include "emdata.h"
-
+#include "geometry.h"
 #include <vector>
 using std::vector;
 
@@ -61,8 +61,25 @@ namespace EMAN
 		*/
 		static vector<float> get_min_delta_profile(const EMData* const image, int x, int y, int radius);
 		
+		/** Determines if a given pixel is the maximum in local radial neighborhood
+		 * Useful for automated correlation-based boxing.
+		 *
+		 * @param image the image containing the interesting pixels values (typically a correlation image)
+		 * @param x the x coordinate of the candidate pixel maximum 
+		 * @param y the y coordinate of the candidate pixel maximum 
+		 * @param radius the constraining radius of the local neighborhood
+		 * @param efficiency an EMData object with the same dimensions as the main image. If a local maximum is found, the pixels in the radial neighborhood that was queried are set to 0. This can be exploited by the calling function to minimize queries. 
+		 * @author David Woolford
+		 * @date April 2008
+		 */
 		static bool is_local_maximum(const EMData* const image, int x, int y, int radius, EMData* const efficiency_map);
 		
+		
+		static vector<IntPoint> auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency);
+		
+		static bool hi_brid(const EMData* const image, int x, int y, int radius,EMData* const efficiency_map, vector<float>& profile);
+		
+		static void set_radial_zero(EMData* const efficiency, int x, int y, int radius);
 	private:
 		
 	};

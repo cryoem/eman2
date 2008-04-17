@@ -353,7 +353,8 @@ namespace EMAN
 		 * @return true or false, depending on whether or not the orientation is within the asymmetric unit
 		 */
 		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const = 0;
-
+//PRB see here
+// 		virtual Transform3D reduce(const Transform3D& t3d, int n=0) = 0;
 	};
 	
 	/** An encapsulation of cyclic 3D symmetry
@@ -444,6 +445,8 @@ namespace EMAN
 		 */
 		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const;
 
+// PRB see here
+// 		virtual Transform3D reduce(const Transform3D& t3d, int n=0);
 	};
 	
 	/** An encapsulation of dihedral 3D symmetry
