@@ -107,7 +107,7 @@ class TestReconstructor(unittest.TestCase):
 		e3.process_inplace('testimage.noise.uniform.rand')
 		#e3.do_fft_inplace()
 		
-		r = Reconstructors.get('fourier', {'x_in':n,'y_in':n, 'mode':2, 'weight':0.5, 'sym':'c1', 'quiet':1})
+		r = Reconstructors.get('fourier', {'x_in':n,'y_in':n, 'mode':2, 'sym':'c1', 'quiet':1})
 		r.setup()
 		r.insert_slice(e1, Transform3D(EULER_EMAN, 0,0,0))
 		r.insert_slice(e2, Transform3D(EULER_EMAN, 0,45,45))
@@ -137,7 +137,7 @@ class TestReconstructor(unittest.TestCase):
 		r.insert_slice(e3, Transform3D(EULER_EMAN, 0,0,0))
 		result = r.finish()
 		
-	def notest_BackProjectionReconstructor(self):
+	def test_BackProjectionReconstructor(self):
 		"""test BackProjectionReconstructor ................."""
 		e1 = EMData()
 		e1.set_size(32,32,1)
@@ -149,7 +149,7 @@ class TestReconstructor(unittest.TestCase):
 		e3.set_size(32,32,1)
 		e3.process_inplace('testimage.noise.uniform.rand')
 		
-		r = Reconstructors.get('back_projection', {'size':32, 'weight':0.8})
+		r = Reconstructors.get('back_projection', {'size':32, 'weight':0.8, 'sym':'c3'})
 		r.setup()
 		r.insert_slice(e1, Transform3D(EULER_EMAN, 0,0,0))
 		r.insert_slice(e2, Transform3D(EULER_EMAN, 0,0,0))

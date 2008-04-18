@@ -64,13 +64,13 @@ class TestProcessor(unittest.TestCase):
 		# Check to make sure that when both the parameters are specified we throw
 		# an InvalidParameterException
 		try:
-			e2.process_inplace('filter.flattenbackground', {"radius":8,"mask":mask})
+			e.process_inplace('filter.flattenbackground', {"radius":8,"mask":mask})
 		except RuntimeError, runtime_err:
 			self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
 		
 		# Check to make sure that atleast one parameter is specified
 		try:
-			e2.process_inplace('filter.flattenbackground', {})
+			e.process_inplace('filter.flattenbackground', {})
 		except RuntimeError, runtime_err:
 			self.assertEqual(exception_type(runtime_err), "InvalidParameterException")
 			
