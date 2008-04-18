@@ -46,34 +46,62 @@ import random
 
 CONTRIBUTING_PARTICLE_LIMIT = 1000000
 
-def print_usage():
+def get_usage():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " <inputfile> [options]"
+	usage = progname + """ <inputfile> [options]
+	Reconstructs 3D volumes using a set of 2D images. Euler angles are extracted from the 2D image headers and symmetry is imposed. Several reconstruction methods are available (see e2help.py reconstructors) - the fourier method is the default and recommended reconstructor.
 	
+	An simple example of usage is:
+	
+	e2make3d.py classes.img --sym=c3 --out=recon.mrc --pad=128
+	
+	Because there are several default settings, this is more or less equivalent to:
+	
+	e2make3d.py classes.img --sym=c3 --out=recon.mrc --pad=128 --keep=1 --recon=fourier --iter=3
+	
+	Because the padding is always done using zeroes it is best if your data (or preferably
+	the edge pixels of your data) have mean zero. If you are unsure whether your data are 
+	appropriately normalized you can add the --preprocess flag
+	
+	e2make3d.py classes.img --sym=c3 --out=recon.mrc --pad=128 --preprocess=normalize.edgemean
+	
+	You can add as many --preprocess arguments as you like, and they are applied in
+	the order in which they are specified, before padding occurs.
+	
+	If you specify a value of the keep parameter that is not one, i.e. --keep=0.9, it 
+	allows for the automatic exclusion of those images that agree poorly with the rest
+	of the data set.
+	
+	If constructing large volumes use the --lowmem option.
+	"""
+	return usage
+
+def print_usage():
+	
+	usage = get_usage()
 	print "usage " + usage;
 	print "Please run '" + progname + " -h' for detailed options"
 
 def main():
-
-	parser=OptionParser(usage="%prog <input file> [options]", version="%prog 2.0a")
-	parser.add_option("--out", dest="outfile", default="threed.mrc", help="Output 3D file")
-	parser.add_option("--sym", dest="sym", default="UNKNOWN", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct")
-	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
-	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
-	parser.add_option("--keep", type=float, dest="keep", help="The percentage of slices to keep, based on quality scores", default=1)
-	parser.add_option("--keepsig", type=float, dest="keepsig", help="The standard deviation alternative to the --keep argument")
+	parser=OptionParser(usage=get_usage())
+	parser.add_option("--out", dest="outfile", default="threed.mrc", help="Output reconstructed volume file name.")
+	parser.add_option("--sym", dest="sym", default="UNKNOWN", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
+	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v. Default is fourier using mode 2.")
+	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing.")
+	parser.add_option("--keep", type=float, dest="keep", help="The percentage of slices to keep, based on quality scores.")
+	parser.add_option("--keepsig", type=float, dest="keepsig", help="The standard deviation alternative to the --keep argument.")
 	
-	parser.add_option("--no_wt", action="store_true", dest="no_wt", default=False, help="Turn weighting off")
-	parser.add_option("--iter", type=int, dest="iter", default=3, help="Set the number of iterations (default is 3)")
-	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_option("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
+	parser.add_option("--iter", type=int, dest="iter", default=3, help="Set the number of iterations (default is 3). Iterative reconstruction improves the overall normalization of the 2D images as they are inserted into the reconstructed volume, and allows for the exclusion of the poorer quality images.")
+	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
-	parser.add_option("--lowmem",action="store_true",help="Causes images to be loaded as the are inserted into the 3D volume, as opposed to having them all read and stored in memory for the duration of the program",default=False)
+	parser.add_option("--lowmem",action="store_true",help="Causes images to be loaded as the are inserted into the 3D volume, as opposed to having them all read and stored in memory for the duration of the program.",default=False)
 
-	parser.add_option("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="preprocessor to be applied to the projections prior to 3D insertion")
-	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed")
+	parser.add_option("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="preprocessor to be applied to the projections prior to 3D insertion. There can be more than one preprocessor and they are applied in the order in which they are specifed. Applied before padding occurs. See e2help.py processors for a complete list of available processors.")
+	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	
-	parser.add_option("--pad", metavar="a single value, or a tuple of values", default=None,type="string", help="apply padding after processing")
+	parser.add_option("--pad", metavar="m or m,n", default=None,type="string", help="This can be a single value or two values. If a single value is specified (m) the input images are padded with zeroes uniformly in both directions so that the dimensions are mxm. If two values are specified (m,n) the images are padded with zeroes such that the dimension are mxn (in x and y, respectively). Padding occurs after preprocessing.")
 
 	(options, args) = parser.parse_args()
 	
@@ -86,6 +114,10 @@ def main():
 	
 	options.datafile = args[0]
 	options.input_file = args[0]
+	
+	if (not options.keep and not options.keepsig):
+		print "Warning, neither the keep nor the keepsig argument was specified. Setting keep=1 (keeping 100% of inserted slices)"
+		options.keep=1
 	
 	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
 	
