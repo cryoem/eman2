@@ -1959,6 +1959,21 @@ nn4Reconstructor::~nn4Reconstructor()
 
 enum weighting_method { NONE, ESTIMATE, VORONOI };
 
+float max2d( int kc, const vector<float>& pow_a )
+{
+	float max = 0.0;
+	for( int i=-kc; i <= kc; ++i ) {
+		for( int j=-kc; j <= kc; ++j ) {
+			if( i==0 && j==0 ) continue;
+			{
+				int c = 2*kc+1 - std::abs(i) - std::abs(j);
+				max = max + pow_a[c];
+			}
+		}
+	}
+	return max;
+}
+
 float max3d( int kc, const vector<float>& pow_a )
 {
 	float max = 0.0;
@@ -2096,6 +2111,26 @@ void nn4Reconstructor::buildNormVolume() {
     m_wptr->set_array_offsets(0,1,1);
 }
 
+void printImage( const EMData* line )
+{
+    assert( line->get_zsize()==1 );
+
+    
+    int nx = line->get_xsize();
+    int ny = line->get_ysize();
+    for( int j=0; j < ny; ++j )
+    {
+        for( int i=0; i < nx; ++i )
+        {
+            printf( "%10.3f ", line->get_value_at(i,j) );
+        }
+        
+	printf( "\n" );
+    }
+}
+
+
+
 int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D& t) {
 	// sanity checks
 	if (!slice) {
@@ -2144,10 +2179,11 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 	else
 	{
 		float alpha = padfft->get_attr( "alpha" );
-		for(int i=0; i < m_vnxc; ++i )
+		alpha = alpha/180.0*M_PI;
+		for(int i=0; i < m_vnxc+1; ++i )
 		{
 			float xnew = i*cos(alpha);
-			float ynew = i*sin(alpha);
+			float ynew = -i*sin(alpha);
 			float btqr = padfft->get_value_at( 2*i, 0, 0 );
 			float btqi = padfft->get_value_at( 2*i+1, 0, 0 );
 			if( xnew < 0.0 )
@@ -2166,7 +2202,7 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * float(mult);
 			(*m_wptr)(ixn,iyn+1, 1) += float(mult);
 		}
-	
+
 	}
 	checked_delete( padfft );
 	return 0;
@@ -2187,26 +2223,55 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4Reconstructor::finish() 
 {
-	//if( m_ndim==3 ) m_volume->symplane0(m_wptr);
-
+        if( m_ndim==3 )
+	{
+		m_volume->symplane0(m_wptr);
+	}
+	else
+	{
+		for( int i=1; i <= m_vnyp; ++i )
+		{
+		       
+			if( (*m_wptr)(0, i, 1)==0.0 )
+			{
+			     int j = m_vnyp + 1 - i;
+			     (*m_wptr)(0, i, 1) = (*m_wptr)(0, j, 1);
+			     (*m_volume)(0, i, 1) = (*m_volume)(0, j, 1);
+			     (*m_volume)(1, i, 1) = (*m_volume)(1, j, 1);
+			}
+		}
+	}
+	
+	
 	int box = 7;
-	int vol = box*box*box;
 	int kc = (box-1)/2;
-	vector< float > pow_a( 3*kc+1, 1.0 );
+	vector< float > pow_a( m_ndim*kc+1, 1.0 );
 	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
-	pow_a[3*kc] = 0.0;
+	pow_a.back()=0.0;
 
+	float alpha = 0.0;
+	if( m_ndim==3)
+	{
+	    int vol = box*box*box;
+	    float max = max3d( kc, pow_a );
+	    alpha = ( 1.0f - 1.0f/(float)vol ) / max;
+	}
+        else
+        {
+	    int ara = box*box;
+	    float max = max2d( kc, pow_a );
+	    alpha = ( 1.0f - 1.0f/(float)ara ) / max;
+	}
 
-	float max = max3d( kc, pow_a );
-	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	
 	int ix,iy,iz;
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
-					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
-					
+					float tmp;
+					tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
+
 					if( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
@@ -2218,8 +2283,10 @@ EMData* nn4Reconstructor::finish()
 							for( int jj= -kc; jj <= kc; ++jj ) {
 								int nbrcy = cy + jj;
 								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-								for( int kk = -kc; kk <= kc; ++kk ) {
-									int nbrcz = cz + jj;
+
+								int kcz = (m_ndim==3) ? kc : 0;
+								for( int kk = -kcz; kk <= kcz; ++kk ) {
+									int nbrcz = cz + kk;
 									if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
 									if( nbrcx < 0 ) {
 										nbrcx = -nbrcx;
@@ -2230,14 +2297,14 @@ EMData* nn4Reconstructor::finish()
 									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
 									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
 									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
-										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+										int c = m_ndim*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
 										sum = sum + pow_a[c];
 									}
 								}
 							}
 						}
 						float wght = 1.0f / ( 1.0f - alpha * sum );
-						if(m_ndim==3) tmp = tmp * wght;
+						tmp = tmp * wght;
 					} 
 					(*m_volume)(2*ix,iy,iz) *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
@@ -2246,9 +2313,13 @@ EMData* nn4Reconstructor::finish()
 		}
 	}
 
+	//if(m_ndim==2) printImage( m_volume );
+
 	// back fft
-	m_volume->set_array_offsets(0, 0, 0);
 	m_volume->do_ift_inplace();
+
+	//printf( "realvol:\n" );
+	//printImage( m_volume );
 
 	EMData* win = m_volume->window_center(m_vnx);
 
