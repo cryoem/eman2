@@ -827,7 +827,7 @@ class GUIbox:
 		self.correlationcoords = [int(x-l/2.0),int(y-l/2.0)]
 		self.correlation = section.calc_flcf( template )
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
-		self.correlation.write_image("correlation.mrc")
+		#self.correlation.write_image("correlation.mrc")
 		#self.correlation.process_inplace("normalize")
 		self.correlationsection = section
 		
@@ -929,12 +929,9 @@ class GUIbox:
 			yy /= self.shrink
 			
 			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),radius)
-		#self.ptcl = []
-		t1 = time()
-		#goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
+
 		
 		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,radius,self.optprofile,efficiency)
-		print "boxed",len(soln)
 		for b in soln:
 			x = b[0]
 			y = b[1]
@@ -949,11 +946,8 @@ class GUIbox:
 			box[3] = self.boxsize
 			#box[6] = profile
 			self.boxes.append(box)
-		dt = time() - t1
-		print "time take was",dt
-		efficiency.write_image("efficiency.mrc")
+			
 		self.boxupdate(True)
-		print "done"
 		
 		
 	def fullautopick(self):
@@ -974,13 +968,9 @@ class GUIbox:
 		template = self.template.copy()
 		template.mean_shrink(self.shrink)
 		section.process_inplace("filter.flattenbackground",{"radius":template.get_xsize()/2})
-		
-		print "doing flcf"
+
 		self.correlation = section.calc_flcf( template )
-		print "done"
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
-		#self.correlation.process_inplace("normalize")
-		self.correlation.write_image("correlation.mrc")
 		
 		radius = 0
 		tmp = self.optprofile[0]
@@ -1006,7 +996,7 @@ class GUIbox:
 			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),radius)
 		
 		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,radius,self.optprofile,efficiency)
-		print "boxed",len(soln)
+
 		for b in soln:
 			x = b[0]
 			y = b[1]

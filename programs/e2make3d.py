@@ -51,7 +51,7 @@ def get_usage():
 	usage = progname + """ <inputfile> [options]
 	Reconstructs 3D volumes using a set of 2D images. Euler angles are extracted from the 2D image headers and symmetry is imposed. Several reconstruction methods are available (see e2help.py reconstructors) - the fourier method is the default and recommended reconstructor.
 	
-	An simple example of usage is:
+	A simple example of usage is:
 	
 	e2make3d.py classes.img --sym=c3 --out=recon.mrc --pad=128
 	

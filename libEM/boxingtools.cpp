@@ -124,8 +124,6 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 			
 			if (hi_brid(image,k,j,r,efficiency,p)) {
 				if (p[radius] >= profile[radius]) {
-					cout << p[radius] << " " << profile[radius] << endl;
-					if (p[radius]-profile[radius] < 0.5) cout << "very close" << endl;
 					solution.push_back(IntPoint(k,j));
 				}
 			}
