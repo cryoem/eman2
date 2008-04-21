@@ -201,10 +201,6 @@ EMData* EMData::zeropad_ntimes_fft_shuffle(int npad) {
 	int ystart = ( ny == 1 || npad == 1 ) ? 0 : (nypad - ny)/2 + ny%2;
 	int zstart = ( nz == 1 || npad == 1 ) ? 0 : (nzpad - nz)/2 + nz%2;
 	
-	xstart -= xstart%2;
-	ystart -= ystart%2;
-	zstart -= ystart%2;
-	
 	for (int iz = 0; iz < nz; iz++) for (int iy = 0; iy < ny; iy++) memcpy( &(*newimg)(xstart,iy+ystart,iz+zstart), &(*this)(0,iy,iz), bytes);
 	newimg->update();
 	return newimg;
