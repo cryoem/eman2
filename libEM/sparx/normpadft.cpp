@@ -176,7 +176,8 @@ EMData* EMData::zeropad_ntimes_fft_shuffle(int npad) {
 		// 2-d image, don't want to pad along z
 		nzpad = nz;
 		// shuffle
-		for (int iy=1; iy<ny; iy+=2)
+		int ystart = (ny%4<2) ? 1 : 0;
+		for (int iy=ystart; iy<ny; iy+=2)
 			for (int ix=0; ix<nx; ix++)
 				(*this)(ix,iy,0) *= -1;
 	} else {
@@ -201,6 +202,8 @@ EMData* EMData::zeropad_ntimes_fft_shuffle(int npad) {
 	int ystart = ( ny == 1 || npad == 1 ) ? 0 : (nypad - ny)/2 + ny%2;
 	int zstart = ( nz == 1 || npad == 1 ) ? 0 : (nzpad - nz)/2 + nz%2;
 	
+
+
 	for (int iz = 0; iz < nz; iz++) for (int iy = 0; iy < ny; iy++) memcpy( &(*newimg)(xstart,iy+ystart,iz+zstart), &(*this)(0,iy,iz), bytes);
 	newimg->update();
 	return newimg;
