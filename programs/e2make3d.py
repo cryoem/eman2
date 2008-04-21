@@ -148,6 +148,8 @@ def main():
 	(xsize, ysize ) = gimme_image_dimensions2D( options.input_file );
 	options.xsize = xsize
 	options.ysize = ysize
+	options.zsize = xsize
+	if ( ysize < xsize ): options.zsize = ysize
 	if ysize == 1:
 		options.ndim = 1
 	else:
