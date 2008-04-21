@@ -188,7 +188,7 @@ void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& r
 #ifdef _WIN32
 	if (rendermax<=rendermin || _isnan(rendermin) || _isnan(rendermax)) {
 #else
-		if (rendermax<=rendermin || std::isnan(rendermin) || std::isnan(rendermax)) {
+	if (rendermax<=rendermin || std::isnan(rendermin) || std::isnan(rendermax)) {
 #endif
 		float m=0.0f,s=0.0f;
 			
