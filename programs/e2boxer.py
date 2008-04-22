@@ -608,7 +608,7 @@ class BoxSet:
 
 		self.correlation = section.calc_flcf( template )
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
-		self.correlation.write_image("correlation.mrc")
+		#self.correlation.write_image("correlation.mrc")
 		
 	def accrueparams(self,boxes,center=True):
 		if (self.correlation == None):
@@ -649,9 +649,9 @@ class BoxSet:
 				box[0] = box[7]*self.shrink-box[2]/2.0
 				box[1] = box[8]*self.shrink-box[2]/2.0
 			
-			l = self.searchradius 
-			im = self.correlation.get_clip(Region(box[7]-l/2.0,box[8]-l/2.0,l,l))
-			im.write_image(self.outfile,-1)
+			#l = self.searchradius 
+			#im = self.correlation.get_clip(Region(box[7]-l/2.0,box[8]-l/2.0,l,l))
+			#im.write_image(self.outfile,-1)
 			
 			#print box[9]
 			
@@ -966,7 +966,7 @@ class GUIbox:
 			ave = ave+images_copy[i]
 		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("math.radialaverage")
-		ave.write_image("ave.mrc")
+		#ave.write_image("ave.mrc")
 		
 		for n in range(0,3):
 			t = []
@@ -1069,7 +1069,7 @@ class GUIbox:
 		for boxset in self.boxsets:
 			boxset.updateefficiency(efficiency)
 			
-		efficiency.write_image("efficiency.mrc")
+		#efficiency.write_image("efficiency.mrc")
 		
 		self.boxsets[self.boxsetidx].autopick(efficiency);
 		self.boxsets.append(BoxSet(self.image,self))
