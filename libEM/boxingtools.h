@@ -80,6 +80,8 @@ namespace EMAN
 		static bool hi_brid(const EMData* const image, int x, int y, int radius,EMData* const efficiency_map, vector<float>& profile);
 		
 		static void set_radial_zero(EMData* const efficiency, int x, int y, int radius);
+		
+		static IntPoint find_radial_max(const EMData* const map, int x, int y, int radius);
 	private:
 		
 	};

@@ -22,10 +22,12 @@ namespace  {
 		.def("is_local_maximum", &EMAN::BoxingTools::is_local_maximum)
 		.def("auto_correlation_pick",&EMAN::BoxingTools::auto_correlation_pick)
 		.def("set_radial_zero",&EMAN::BoxingTools::set_radial_zero)
+		.def("find_radial_max",&EMAN::BoxingTools::find_radial_max)
 		.staticmethod("get_min_delta_profile")
 		.staticmethod("is_local_maximum")
 		.staticmethod("auto_correlation_pick")
 		.staticmethod("set_radial_zero")
+		.staticmethod("find_radial_max")
 		);
 		
 		delete EMAN_BoxingTools_scope;

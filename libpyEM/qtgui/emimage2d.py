@@ -166,6 +166,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	
 	def delShapes(self):
 		return self.image2d.delShapes()
+	
+	def scrollTo(self,x,y):
+		return self.image2d.scrollTo(x,y)
 		
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 

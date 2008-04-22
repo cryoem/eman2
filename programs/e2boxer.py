@@ -42,6 +42,8 @@ from time import *
 import os
 import sys
 
+from copy import *
+
 pl=()
 
 def main():
@@ -528,6 +530,218 @@ except:
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
+#class Box:
+	#def __init__(self,v1,v2,v3,v4,v5,v
+
+class BoxSet:
+	"""
+	boxes is a tuple of box-related information
+	[x0,y0,xsize,ysize,quality,changed,correlation threshold,peak x, peak y, correlation profile]
+	  0  1   2     3      4       5              6             7         8            9
+	"""
+	def __init__(self,image,parent=None):
+		self.image = image				# the image containing the boxes
+		self.parent = parent			# keep track of the parent in case we ever need it
+		self.boxes = []					# the list of boxes
+		self.paramboxes = []			# a list of boxes used to generate parameters
+		self.correlation = None			# something to store correlation maps, and positions, and renderable objects in
+		self.optprofile = None			# optimum peak profile
+		self.optpeakvalue = None		# an optimum picking parameter - the peak threshold
+		self.shrink = 1					# shrink value for correlation speed up
+		
+		self.template = None			# the template used to generate the correlation map
+		self.correlation = None			# the correlation image
+		
+		self.boxsize = -1				# boxsize, may not be necessary
+		
+		self.radius = 0
+		
+		self.searchradius = 0
+		
+		self.outfile = "correlation_clips.img"
+		
+	def addbox(self,box,):
+		self.boxes.append(box)
+		self.paramboxes.append(box)
+		#box[-2] = len(self.paramboxes)-1
+		
+	def delbox(self,i):
+		tmp = self.boxes.pop(i)
+		#if tmp[-2] >= 0:
+			#self.paramboxes.pop(tmp[-2])
+		# decrement the reference count by one - it could be a parambox also
+		#for j,box in enumerate(self.paramboxes):
+			#if box[0] == tmp[0] and box[1] == tmp[1]:
+				#self.paramboxes.pop(j)
+				#return
+		#else:
+			#print "error, didn't find that box"
+			#print "i have",len(self.paramboxes)
+	
+	def numboxes(self):
+		return len(self.boxes)
+	
+	def settemplate(self,template, store=True):
+		if (store):
+			self.template = template
+		
+		# and now generate the very small correlation map...
+		self.boxsize = template.get_xsize()
+		
+		shrink = 1
+		inx = self.image.get_xsize()/2
+		iny = self.image.get_ysize()/2
+		tn = self.boxsize/2
+		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
+			inx /= 2
+			iny /= 2
+			tn /= 2
+			shrink *= 2
+		self.shrink = shrink
+		
+		
+		section = self.image.copy()
+		section.mean_shrink(self.shrink)
+		template = template.copy()
+		template.mean_shrink(self.shrink)
+		section.process_inplace("filter.flattenbackground",{"radius":template.get_xsize()/2})
+
+		self.correlation = section.calc_flcf( template )
+		self.correlation.process_inplace("xform.phaseorigin.tocenter")
+		self.correlation.write_image("correlation.mrc")
+		
+	def accrueparams(self,boxes,center=True):
+		if (self.correlation == None):
+			#print "Error, can't accrue params if now correlation map exists"
+			return
+		if os.path.exists(self.outfile):
+				remove_file(self.outfile)
+		invshrink = 1.0/self.shrink
+		for box in boxes:
+			#make the boxes the right size
+			if len(box) < 10:
+				for i in range(len(box),10): box.append(None)
+			
+			# get the location of the nearest correlation peak
+			x = (box[0]+box[2]/2.0)*invshrink
+			y = (box[1]+box[3]/2.0)*invshrink
+			
+			self.searchradius = int((self.boxsize/2)/self.shrink)
+			
+			peak_location = BoxingTools.find_radial_max(self.correlation,int(x),int(y),int((self.boxsize/2)/self.shrink))
+			peak_location2 = BoxingTools.find_radial_max(self.correlation,peak_location[0],peak_location[1],self.searchradius )
+			if (peak_location != peak_location2):
+				print "Error, peak location unrefined"
+				
+			peask_location = peak_location2
+			
+			# store the peak location
+			box[7] = peak_location[0]
+			box[8] = peak_location[1]
+			
+			# store the correlation value
+			box[6] = self.correlation.get(box[7],box[8])
+			
+			# store the profile
+			box[9] = BoxingTools.get_min_delta_profile(self.correlation,box[7],box[8], self.searchradius )
+			
+			if (center):
+				box[0] = box[7]*self.shrink-box[2]/2.0
+				box[1] = box[8]*self.shrink-box[2]/2.0
+			
+			l = self.searchradius 
+			im = self.correlation.get_clip(Region(box[7]-l/2.0,box[8]-l/2.0,l,l))
+			im.write_image(self.outfile,-1)
+			
+			#print box[9]
+			
+	def updateboxsize(self,boxsize):
+		for i in self.boxes:
+			if i[2]!=boxsize or i[3]!=boxsize: i[5]=1
+			else: continue
+			i[0]-=(boxsize-i[2])/2
+			i[1]-=(boxsize-i[3])/2
+			i[2]=boxsize
+			i[3]=boxsize
+		
+		self.boxsize = boxsize
+		
+		if self.template != None:
+			oldx = self.template.get_xsize()
+			oldy = self.template.get_ysize()
+			newx = boxsize
+			newy = boxsize
+			template = self.template.get_clip(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
+			self.settemplate(template,False)
+			
+	def autopick(self,efficiency):
+		if (self.correlation == None):
+			print "Error, can't autopick of the correlation image doesn't exist"
+			return
+		
+		if len(self.paramboxes) == 0 :
+			print "Error, can't autopick if there are no selected boxes"
+			return
+		
+		self.accrueparams(self.paramboxes)
+		# get the optimum parameters
+		for i,box in enumerate(self.paramboxes):
+			if i == 0:
+				self.optprofile = box[9]
+				n = len(self.optprofile)
+				self.optpeakvalue = box[6]
+			else:
+				profile = box[9]
+				for j in range(0,n):
+					if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
+					
+				if box[6] < self.optpeakvalue: self.optpeakvalue = box[6]
+		
+		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
+		self.radius = 0
+		tmp = self.optprofile[0]
+		for i in range(1,len(self.optprofile)):
+			if self.optprofile[i] > tmp and tmp > 0:
+				tmp = self.optprofile[i]
+				self.radius = i
+		
+			
+		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,self.radius,self.optprofile,efficiency)
+
+		for b in soln:
+			x = b[0]
+			y = b[1]
+			xx = int(x*self.shrink)
+			yy = int(y*self.shrink)
+			box = [0,0,0,0,0,0,[]]
+			box[6] = self.correlation.get(x,y)
+			box[5] = 1
+			box[0] = xx-self.boxsize/2
+			box[1] = yy-self.boxsize/2 
+			box[2] = self.boxsize
+			box[3] = self.boxsize
+			#box[-2] = -1
+			#box[6] = profile
+			self.boxes.append(box)
+		self.parent.boxupdate()
+	
+	def autocenter(self):
+		self.accrueparams(self.paramboxes,center)
+		
+	def updateefficiency(self,efficiency):
+		
+		if self.searchradius == 0:
+			self.accrueparams(self.paramboxes)
+		
+		for box in self.boxes:
+			xx = box[0] + box[2]/2
+			yy = box[1] + box[3]/2
+			xx /= self.shrink
+			yy /= self.shrink
+			
+			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),self.searchradius)
+		
+			
 class GUIbox:
 	def __init__(self,imagefsp,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
@@ -555,13 +769,10 @@ class GUIbox:
 			#print "adding 10"
 			#self.image.add(10)
 		self.boxes=boxes					# the list of box locations
+		self.boxsets = [BoxSet(self.image,self)]	# a list of boxsets - start with one empty boxset
+		self.boxsetidx = 0					# the current boxsetidx
 		self.threshold=thr					# Threshold to decide which boxes to use
 		self.ptcl=[]						# list of actual boxed out EMImages
-		self.rendcor = False				# a flag that enables the rendering of the correlation map
-		self.correlation = None				# something to store correlation maps, and positions, and renderable objects in
-		self.optprofile = None				# optimum peak profile
-		self.optpeakvalue = None			# an optimum picking parameter - the peak threshold
-		self.shrink = 1						# shrink value for correlation speed up
 		
 		self.moving=None					# Used during a user box drag
 		
@@ -605,56 +816,104 @@ class GUIbox:
 		im=lc[0]
 		self.guiim.setActive(im,.9,.9,.4)
 		self.guimx.setSelected(im)
-		try: self.guiim.scrollTo(self.boxes[im][0]+self.boxes[im][2]/2,self.boxes[im][1]+self.boxes[im][3]/2)
+		boxes = self.getboxes()
+		try: self.guiim.scrollTo(boxes[im][0]+boxes[im][2]/2,boxes[im][1]+boxes[im][3]/2)
 		except: print "boxsel() scrolling error"
 
 	def mousedown(self,event) :
+		
 		m=self.guiim.scr2img((event.x(),event.y()))
-		print event.x(),event.y(),m[0],m[1]
-		for i,j in enumerate(self.boxes):
-			if m[0]<j[0] or m[0]>j[0]+j[2] or m[1]<j[1] or m[1]>j[1]+j[3] : continue
-			break
-		else: 
-			if event.modifiers()&Qt.ShiftModifier : return
+		collision = False
+		global_box_num = 0
+		# basic strategy is to detect if there was a collision with any other box
+		# do this by incrementing through all the box sets
+		for boxset in self.boxsets:
+			# get the boxes
+			boxes = boxset.boxes
+			
+			#print event.x(),event.y(),m[0],m[1]
+			# do collision detection
+			for boxnum,j in enumerate(boxes):
+				if m[0]<j[0] or m[0]>j[0]+j[2] or m[1]<j[1] or m[1]>j[1]+j[3] :
+					# no collision
+					continue
+				# if we make it here there has been a collision, the box already exists
+				collision = True
+				break
+			else:
+				global_box_num += len(boxes)
+			if collision:
+				global_box_num += boxnum+1
+				break
+		else:
+			#if the break statement in the for loop above is not encountered, then python executes from here
+			#if we make it here, that means the user has clicked on an area that is not in any box
+			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
 			# If we get here, we need to make a new box
-			self.boxes.append([m[0]-self.boxsize/2,m[1]-self.boxsize/2,self.boxsize,self.boxsize,0,1])
-			i=len(self.boxes)-1
+			boxset = self.boxsets[self.boxsetidx]
+			boxset.addbox([m[0]-self.boxsize/2,m[1]-self.boxsize/2,self.boxsize,self.boxsize,0,1])
+			boxes = boxset.boxes
+			boxnum = len(boxes)-1
+			global_box_num += boxnum+1
 			self.boxupdate()
+			
+		global_box_num -= 1
+	
 		# an existing box
 		if event.modifiers()&Qt.ShiftModifier :
 			# with shift, we delete
-			self.delbox(i)
-			return
-		self.moving=(i,m)
-		self.guiim.setActive(i,.9,.9,.4)
-		x0=self.boxes[i][0]+self.boxes[i][2]/2-1
-		y0=self.boxes[i][1]+self.boxes[i][3]/2-1
+			self.delbox(boxset,boxnum,global_box_num)
+			return 
+		
+		self.moving=[boxes,boxnum,m]
+		self.guiim.setActive(boxnum,.9,.9,.4)
+			
+		x0=boxes[boxnum][0]+boxes[boxnum][2]/2-1
+		y0=boxes[boxnum][1]+boxes[boxnum][3]/2-1
 		self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
-		if not self.guimx.isVisible(i) : self.guimx.scrollTo(i,yonly=1)
-		self.guimx.setSelected(i)
+		if not self.guimx.isVisible(global_box_num) : self.guimx.scrollTo(global_box_num,yonly=1)
+		self.guimx.setSelected(global_box_num)
 		
 	def mousedrag(self,event) :
 		m=self.guiim.scr2img((event.x(),event.y()))
 		
-		# box deletion when shift held down
 		if event.modifiers()&Qt.ShiftModifier:
-			for i,j in enumerate(self.boxes):
-				if m[0]<j[0] or m[0]>j[0]+j[2] or m[1]<j[1] or m[1]>j[1]+j[3] : continue
-				break
+			collision = False
+			globalboxnum = 0
+			for boxset in self.boxsets:
+				# get the boxes
+				boxes = boxset.boxes
+				for boxnum,j in enumerate(boxes):
+					if m[0]<j[0] or m[0]>j[0]+j[2] or m[1]<j[1] or m[1]>j[1]+j[3] : continue
+					collision = True
+					break
+				else: globalboxnum += len(boxes)
+				
+				if collision:
+					globalboxnum += boxnum+1
+					break
 			else: return
-			self.delbox(i)
+			
+			globalboxnum -= 1
+			
+			self.delbox(boxset,boxnum,globalboxnum)
 			return
 			
 		if self.moving:
-			self.boxes[self.moving[0]][0]+=m[0]-self.moving[1][0]
-			self.boxes[self.moving[0]][1]+=m[1]-self.moving[1][1]
-			self.boxes[self.moving[0]][-1]=1
-			self.moving=(self.moving[0],m)
+			# self.moving[0] is a reference to the boxes, self.moving[1] is the box number
+			box = self.moving[0][self.moving[1]]
+			# the old m in in self.moving[2]
+			oldm = self.moving[2]
+			box[0]+=m[0]-oldm[0]
+			box[1]+=m[1]-oldm[1]
+			box[-1]=1
+			self.moving[2] = m
 			
 			# update the center marker
-			i=self.moving[0]
-			x0=self.boxes[i][0]+self.boxes[i][2]/2-1
-			y0=self.boxes[i][1]+self.boxes[i][3]/2-1
+			#i=self.moving[3]
+			x0=box[0]+box[2]/2-1
+			y0=box[1]+box[3]/2-1
+			box[5] = 1
 			self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
 			self.boxupdate()
@@ -674,23 +933,25 @@ class GUIbox:
 					#self.image.insert_clip(self.correlationsection,self.correlationcoords)
 		else: pass
 	
-	def delbox(self,i):
-		#print "Deletes the numbered box completely"
+	def delbox(self,boxset,boxnum,globalboxnum):
+		"""
+		Deletes the numbered box completely
+		"""
 		sh=self.guiim.getShapes()
 		k=sh.keys()
 		k.sort()
-		del sh[int(i)]
+		del sh[int(globalboxnum)]
 		for j in k:
 			if isinstance(j,int):
-				if j>i :
+				if j>globalboxnum :
 					sh[j-1]=sh[j]
 					del sh[j]
 		self.guiim.delShapes()
 		self.guiim.addShapes(sh)
 		self.guiim.setActive(None,.9,.9,.4)
-		
-		del(self.boxes[i])
-		del(self.ptcl[i])
+
+		boxset.delbox(boxnum)
+		del(self.ptcl[boxnum])
 		self.guimx.setData(self.ptcl)
 	
 	def rot_aligned_average(self,images):
@@ -720,23 +981,46 @@ class GUIbox:
 			ave.mult(1.0/len(t))
 			ave.process_inplace("math.radialaverage")
 		return ave
-		
+	
+	def getboxes(self):
+		boxes = deepcopy(self.boxes)
+		for i in self.boxsets:
+			if len(i.boxes) != 0:
+				for j in i.boxes:
+					boxes.append(j)
+		#print boxes
+		return boxes
+	
+	def updateboxsize(self,boxsize):
+		for boxset in self.boxsets:
+			boxset.updateboxsize(boxsize)
+		self.boxsize=boxsize
+		self.boxupdate()
+	
 	def boxupdate(self,force=False):
-		goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
-		if len(self.ptcl)>len(goodboxes) :
-			del self.ptcl[len(goodboxes):]
-			self.guiim.delShapes()
-
-		ns={}
-		for j,i in enumerate(goodboxes):
-			if not i[5] and not force: continue
+		
+		ns = {}
+		idx = 0
+		for n,boxset in enumerate(self.boxsets):
+			# get the boxes
+			boxes = boxset.boxes
+			for j,box in enumerate(boxes):
+		
+				if not box[5] and not force: 
+					idx += 1
+					continue
+				
+				# what does this do?
+				box[-1]=0
 			
-			self.boxes[j][-1]=0
-			im=self.image.get_clip(Region(i[0],i[1],i[2],i[3]))
-			im.process_inplace("normalize")
-			ns[j]=EMShape(["rect",.4,.9,.4,i[0],i[1],i[0]+i[2],i[1]+i[3],2.0])
-			if j>=len(self.ptcl) : self.ptcl.append(im)
-			else : self.ptcl[j]=im
+				im=self.image.get_clip(Region(box[0],box[1],box[2],box[3]))
+				im.process_inplace("normalize")
+				ns[idx]=EMShape(["rect",.4-n*.05,.9-n*.1,.4+n*0.1,box[0],box[1],box[0]+box[2],box[1]+box[3],2.0])
+				if idx>=len(self.ptcl) : self.ptcl.append(im)
+				else : self.ptcl[idx]=im
+				idx += 1
+			
+				box[5] = 0
 
 		self.guiim.addShapes(ns)
 		self.guimx.setData(self.ptcl)
@@ -762,257 +1046,36 @@ class GUIbox:
 			if self.guimx.inspector.isVisible() : E2saveappwin("boxer","mxcontrolgeom",self.guimx.inspector)
 		except : E2setappval("boxer","mxcontrol",False)
 		
-		return (self.boxes,self.threshold)
+		return (self.getboxes(),self.threshold)
 	
 	def setrefs(self):
-		print "setting references"
-		t = self.rot_aligned_average(self.ptcl)
-		self.template = t
-		self.geninitcor()
 		
-	def geninitcor(self):
-		l = 512
+		offset = 0
+		for i in range(0,self.boxsetidx):
+			offset += self.boxsets[i].numboxes()
 		
-		if ( l > self.image.get_xsize() ):
-			l = self.image.get_xsize()
+		images = []
+		boxset = self.boxsets[self.boxsetidx]
+		boxes = boxset.boxes
+		for j in range(0,len(boxes)):
+			images.append(self.ptcl[j+offset])
 			
-		if ( l > self.image.get_ysize() ):
-			l = self.image.get_ysize()
-		
-		goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
-		
-		if len(goodboxes) <= 0 : return
-		
-		x = 0.0
-		y = 0.0
-		for i in goodboxes:
-			x += i[0]+i[2]/2.0
-			y += i[1]+i[3]/2.0
-		
-		x /= len(goodboxes)
-		y /= len(goodboxes)
-		
-		if x + l/2.0 >= self.image.get_xsize():
-			x = self.image.get_xsize() - l/2.0 -1
-		elif x - l/2.0 < 0:
-			x = l/2.0
-		
-		if y + l/2.0 >= self.image.get_ysize():
-			y = self.image.get_ysize() - l/2.0 -1
-		elif y - l/2.0 < 0:
-			y = l/2.0
-
-		
-		
-		shrink = 1
-		inx = self.image.get_xsize()/2
-		iny = self.image.get_ysize()/2
-		tn = self.boxsize/2
-		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
-			inx /= 2
-			iny /= 2
-			tn /= 2
-			shrink *= 2
-		self.shrink = shrink
-		
-		l *= self.shrink
-		
-		template = self.template.copy()
-		template.mean_shrink(self.shrink)
-		section = self.image.get_clip(Region(x-l/2.0,y-l/2.0,l,l))
-		section.mean_shrink(self.shrink)
-		section.process_inplace("filter.flattenbackground",{"radius":template.get_xsize()/2})
-		
-		
-		self.correlationcoords = [int(x-l/2.0),int(y-l/2.0)]
-		self.correlation = section.calc_flcf( template )
-		self.correlation.process_inplace("xform.phaseorigin.tocenter")
-		#self.correlation.write_image("correlation.mrc")
-		#self.correlation.process_inplace("normalize")
-		self.correlationsection = section
-		
-	def autocenter(self):
-		if self.correlation == None: return
-		
-		goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
-		
-		if len(goodboxes) <= 0 : return
-		
-		for i in goodboxes:
-			x = int(i[0]+i[2]/2.0-self.correlationcoords[0])/self.shrink
-			y = int(i[1]+i[3]/2.0-self.correlationcoords[1])/self.shrink
-			xsoln = 0
-			ysoln = 0
-			print x,y
-			
-			m = self.boxsize/4.0/self.shrink
-			maxval = self.correlation.get(x,y)
-			foundbetter = False
-			for k in range(0,m):
-				for j in range(0,m):
-					kk = int(k-m/2)
-					jj = int(j-m/2)
-					if x+jj >= self.correlation.get_xsize() or x+jj < 0:continue
-					if y+kk >= self.correlation.get_ysize() or y+kk < 0:continue
-					
-					val = self.correlation.get(x+jj,y+kk)
-					if ( val > maxval ):
-						foundbetter = True
-						maxval = val
-						xsoln = jj
-						ysoln = kk
-		
-			if foundbetter:
-				i[0] = (x+xsoln)*self.shrink-i[2]/2.0+self.correlationcoords[0]
-				i[1] = (y+ysoln)*self.shrink-i[3]/2.0+self.correlationcoords[1]
-				
-				
-			if len(i) < 7:
-				for k in range(len(i),7):
-					i.append(0)
-			i[5] = self.correlation.get(x+xsoln,y+ysoln)
-			#print "correlation max",i[5]
-			
-			i[6] = BoxingTools.get_min_delta_profile(self.correlation,x+xsoln,y+ysoln,(self.boxsize/2)/self.shrink)
-			#print "profile",i[6]
-
-		self.optprofile = []
-		self.optpeakvalue = 0
-		m = self.boxsize/self.shrink
-		pm = m/2
-		for p in range(0,pm): self.optprofile.append(0)
-		for i in goodboxes:
-			for k in range(0,len(i[6])):
-				if self.optprofile[k] > i[6][k] or self.optprofile[k] == 0:
-					self.optprofile[k] = i[6][k]
-			
-			if self.optpeakvalue > i[5] or self.optpeakvalue == 0:
-				self.optpeakvalue = i[5]
-		
-		print "optprofile", self.optprofile
-		print "optpeakvalue",self.optpeakvalue
-		self.boxupdate(True)
+		boxset.settemplate(self.rot_aligned_average(self.ptcl))
 		
 	def autopick(self):
-		if self.correlation == None: return
-		if self.optprofile == None: return
-		if self.optpeakvalue == None: return
-		
-		cx = self.correlation.get_xsize()
-		cy = self.correlation.get_ysize()
-		
-		radius = 0
-		tmp = self.optprofile[0]
-		for i in range(1,len(self.optprofile)):
-			if self.optprofile[i] > tmp and tmp > 0:
-				tmp = self.optprofile[i]
-				radius = i
-				#if ( i < len(self.optprofile)-1):
-					#if self.optprofile[i+1] < self.optprofile[i]:
-						#break
-					
-		print self.optprofile
-		print radius, "is the radius of the autopick"
-		
-		#exit(1)
-		
-		#if radius > 7:
-			#radius = 7
-			
-		efficiency = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
+		correlation = self.boxsets[0].correlation
+		efficiency = EMData(correlation.get_xsize(),correlation.get_ysize())
 		efficiency.to_one()
+		for boxset in self.boxsets:
+			boxset.updateefficiency(efficiency)
 			
-		for box in self.boxes:
-			xx = box[0] + box[2]/2
-			yy = box[1] + box[3]/2
-			xx /= self.shrink
-			yy /= self.shrink
-			
-			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),radius)
-
+		efficiency.write_image("efficiency.mrc")
 		
-		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,radius,self.optprofile,efficiency)
-		for b in soln:
-			x = b[0]
-			y = b[1]
-			xx = int(x*self.shrink) + self.correlationcoords[0]
-			yy = int(y*self.shrink) + self.correlationcoords[1]
-			box = [0,0,0,0,0,0,[]]
-			box[5] = self.correlation.get(x,y)
-			
-			box[0] = xx-self.boxsize/2
-			box[1] = yy-self.boxsize/2 
-			box[2] = self.boxsize
-			box[3] = self.boxsize
-			#box[6] = profile
-			self.boxes.append(box)
-			
-		self.boxupdate(True)
-		
-		
-	def fullautopick(self):
-		shrink = 1
-		inx = self.image.get_xsize()/2
-		iny = self.image.get_ysize()/2
-		tn = self.boxsize/2
-		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
-			inx /= 2
-			iny /= 2
-			tn /= 2
-			shrink *= 2
-		self.shrink = shrink
-		
-		
-		section = self.image.copy()
-		section.mean_shrink(self.shrink)
-		template = self.template.copy()
-		template.mean_shrink(self.shrink)
-		section.process_inplace("filter.flattenbackground",{"radius":template.get_xsize()/2})
-
-		self.correlation = section.calc_flcf( template )
-		self.correlation.process_inplace("xform.phaseorigin.tocenter")
-		
-		radius = 0
-		tmp = self.optprofile[0]
-		for i in range(1,len(self.optprofile)):
-			if self.optprofile[i] > tmp and tmp > 0:
-				tmp = self.optprofile[i]
-				radius = i
-				#if ( i < len(self.optprofile)-1):
-					#if self.optprofile[i+1] < self.optprofile[i]:
-						#break
+		self.boxsets[self.boxsetidx].autopick(efficiency);
+		self.boxsets.append(BoxSet(self.image,self))
+		self.boxsetidx += 1 
+		return
 	
-		t1 = time()
-		#goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
-		efficiency = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
-		efficiency.to_one()
-		
-		for box in self.boxes:
-			xx = box[0] + box[2]/2
-			yy = box[1] + box[3]/2
-			xx /= self.shrink
-			yy /= self.shrink
-			
-			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),radius)
-		
-		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,radius,self.optprofile,efficiency)
-
-		for b in soln:
-			x = b[0]
-			y = b[1]
-			xx = int(x*self.shrink)
-			yy = int(y*self.shrink)
-			box = [0,0,0,0,0,0,[]]
-			box[5] = self.correlation.get(x,y)
-			
-			box[0] = xx-self.boxsize/2
-			box[1] = yy-self.boxsize/2 
-			box[2] = self.boxsize
-			box[3] = self.boxsize
-			#box[6] = profile
-			self.boxes.append(box)
-		self.boxupdate(True)
-		
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
 		
@@ -1053,22 +1116,14 @@ class GUIboxPanel(QtGui.QWidget):
 		self.setref=QtGui.QPushButton("Set References")
 		self.vbl.addWidget(self.setref)
 		
-		self.autocenter=QtGui.QPushButton("Auto Center")
-		self.vbl.addWidget(self.autocenter)
-		
 		self.autopick=QtGui.QPushButton("Auto Pick")
 		self.vbl.addWidget(self.autopick)
-		
-		self.fullautopick=QtGui.QPushButton("Full Auto Pick")
-		self.vbl.addWidget(self.fullautopick)
 		
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.app.quit)
 		self.connect(self.setref,QtCore.SIGNAL("clicked(bool)"),self.target.setrefs)
-		self.connect(self.autocenter,QtCore.SIGNAL("clicked(bool)"),self.target.autocenter)
 		self.connect(self.autopick,QtCore.SIGNAL("clicked(bool)"),self.target.autopick)
-		self.connect(self.fullautopick,QtCore.SIGNAL("clicked(bool)"),self.target.fullautopick)
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
 		
 	def nboxesChanged(self,n):
@@ -1082,16 +1137,7 @@ class GUIboxPanel(QtGui.QWidget):
 			self.bs.setText(str(self.target.boxsize))
 			return
 		
-		for i in self.target.boxes:
-			if i[2]!=v or i[3]!=v : i[5]=1
-			else: continue
-			i[0]-=(v-i[2])/2
-			i[1]-=(v-i[3])/2
-			i[2]=v
-			i[3]=v
-		
-		self.target.boxsize=v
-		self.target.boxupdate()
+		self.target.updateboxsize(v)
 		
 	def newThresh(self,val):
 		self.target.threshold=val

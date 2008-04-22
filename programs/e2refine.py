@@ -109,7 +109,7 @@ def main():
 		error = True
 	
 	if error:
-		print "Error encountered while, bailing"
+		print "Error encountered while checking command line, bailing"
 		exit(1)
 	
 	if (options.check):

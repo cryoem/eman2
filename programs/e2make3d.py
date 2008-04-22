@@ -246,6 +246,7 @@ def main():
 
 	E2end(logger)
 	
+	exit(0)
 	print "Exiting"
 
 # this function will either read a particular image from disk, or return the image if it's stored in the options

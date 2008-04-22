@@ -109,8 +109,7 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 	int ny = image->get_ysize();
 	
 	vector<IntPoint> solution;
-	cout << solution.size() << endl;
-	
+
 	int r = radius+1;
 	
 	for(int j = r; j < ny-r;++j) {
@@ -198,4 +197,38 @@ void BoxingTools::set_radial_zero(EMData* const efficiency, int x, int y, int ra
 			efficiency->set_value_at(xx,yy,0);
 		}
 	}
+}
+
+IntPoint BoxingTools::find_radial_max(const EMData* const map, int x, int y, int radius)
+{
+	float currentmax = map->get_value_at(x,y);
+	
+	IntPoint soln(x,y);
+	
+	int radius_squared = radius*radius;
+	for(int k = -radius; k <= radius; ++k) {
+		for(int j = -radius; j <= radius; ++j) {
+			// Translate coordinates
+			int xx = x+j;
+			int yy = y+k;
+			
+			// Protect against accessing pixels out of bounds
+			if ( xx >= map->get_xsize() || xx < 0 ) continue;
+			if ( yy >= map->get_ysize() || yy < 0 ) continue;
+			
+			// Protect against vector accesses beyond the boundary
+			int square_length = k*k + j*j;
+			if (square_length > radius_squared ) continue;
+			
+			float val = map->get_value_at(xx,yy);
+			
+			if (val > currentmax) {
+				currentmax = val;
+				soln[0] = xx;
+				soln[1] = yy;
+			}
+		}
+	}
+	
+	return soln;
 }
