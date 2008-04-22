@@ -55,6 +55,7 @@ Various CTF-related operations on images."""
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
 	parser.add_option("--dbin",type="string",help="Box locations used when input is a whole micrograph")
 	parser.add_option("--powspec",action="store_true",help="Compute the power spectrum of the input image(s)",default=False)
+	parser.add_option("--bgedge",type="int",help="Compute the background power spectrum from the edge of the image, specify the edge width in pixels",default=0)
 	
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	#parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
@@ -75,6 +76,7 @@ Various CTF-related operations on images."""
 
 	logid=E2init(sys.argv)
 	
+	ps1d=[]
 	ps2d=[]
 	# This is for reading an entire micrograph
 	# and processing it two different ways from the box db
@@ -98,12 +100,24 @@ Various CTF-related operations on images."""
 		
 	# This reads already boxed images
 	else :
-		names=args
+		names=[]
 		for i in args:
 			ps2d.append(powspec(i))
-	
-		ps1d=[i.calc_radial_dist(i.get_ysize()/2,0.0,1.0,1) for i in ps2d]
-	
+			ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
+			names.append(i)
+			if options.bgedge>0 :
+				bg=bgedge1d(i,options.bgedge)
+				bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
+				mins=min(bgs)
+				print mins,bgs
+				bg=[ii*mins for ii in bg]
+				ps1d.append(bg)
+				ps2d.append(ps2d[-1])
+				names.append(i+"(bg)")
+
+
+			
+
 	if options.gui : 
 		gui=GUIctf(names,ps1d,ps2d)
 		gui.run()
@@ -210,6 +224,43 @@ def powspec(stackfile):
 	av.set_attr("is_intensity", 1)
 	return av
 
+def bgedge1d(stackfile,width):
+	"""This routine will read the images from the specified file, and compute the average
+	1-D power spectrum computed using lines taken from the edge of the image. Returns the
+	1-D power spectrum as a list of floats"""
+	
+	n=EMUtil.get_image_count(stackfile)
+	
+	for i in range(n):
+		im=EMData(stackfile,i)
+		if i==0 : 
+			xs=im.get_xsize()
+		
+			# values to cover a 25% border around the image
+			pos=range(width)+range(xs-width,xs)
+		
+			# avg will store the running sum of the 1D spectra
+			avg=EMData(xs+2,1,1)
+			avg.to_zero()
+			avg.set_complex(1)
+			avg.set_ri(1)
+		
+		for j in pos:
+			c=im.get_clip(Region(0,j,xs,1))
+			cf=c.do_fft()
+			cf.ri2inten()
+			avg+=cf
+			
+			c=im.get_clip(Region(j,0,1,xs))
+			c.set_size(xs,1,1)
+			cf=c.do_fft()
+			cf.ri2inten()
+			avg+=cf
+			
+	avg/=len(pos)*2*n
+	ret=[avg.get(v,0,0) for v in range(0,xs+2,2)]
+	
+	return ret
 
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
