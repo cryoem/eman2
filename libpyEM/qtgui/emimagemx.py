@@ -227,7 +227,7 @@ class EMImageMXCore:
 			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
 		
 		self.showInspector()		# shows the correct inspector if already open
-		self.timer.start(25)
+		#self.timer.start(25)
 		self.updateGL()
 		
 	def updateGL(self):
@@ -673,7 +673,8 @@ class EMImageMXCore:
 			
 			elif self.mmode=="del" and lc:
 				del self.data[lc[0]]
-				self.setData(self.data)
+				#self.setData(self.data)
+				self.updateGL()
 			elif self.mmode=="app" and lc:
 				self.parent.emit(QtCore.SIGNAL("mousedown"),event,lc)
 	

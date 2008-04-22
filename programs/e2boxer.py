@@ -567,13 +567,15 @@ class BoxSet:
 		
 	def delbox(self,i):
 		tmp = self.boxes.pop(i)
+		#del(tmp)
 		#if tmp[-2] >= 0:
 			#self.paramboxes.pop(tmp[-2])
 		# decrement the reference count by one - it could be a parambox also
-		#for j,box in enumerate(self.paramboxes):
-			#if box[0] == tmp[0] and box[1] == tmp[1]:
-				#self.paramboxes.pop(j)
-				#return
+		#yuck, this is horribly inefficient
+		for j,box in enumerate(self.paramboxes):
+			if box[0] == tmp[0] and box[1] == tmp[1]:
+				self.paramboxes.pop(j)
+				return
 		#else:
 			#print "error, didn't find that box"
 			#print "i have",len(self.paramboxes)
@@ -581,17 +583,17 @@ class BoxSet:
 	def numboxes(self):
 		return len(self.boxes)
 	
-	def settemplate(self,template, store=True):
+	def settemplate(self,template, boxsize, store=True):
 		if (store):
 			self.template = template
 		
 		# and now generate the very small correlation map...
-		self.boxsize = template.get_xsize()
+		self.boxsize = boxsize
 		
 		shrink = 1
 		inx = self.image.get_xsize()/2
 		iny = self.image.get_ysize()/2
-		tn = self.boxsize/2
+		tn = boxsize
 		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
 			inx /= 2
 			iny /= 2
@@ -602,8 +604,8 @@ class BoxSet:
 		
 		section = self.image.copy()
 		section.mean_shrink(self.shrink)
-		template = template.copy()
-		template.mean_shrink(self.shrink)
+		#template = template.copy()
+		#template.mean_shrink(self.shrink)
 		section.process_inplace("filter.flattenbackground",{"radius":template.get_xsize()/2})
 
 		self.correlation = section.calc_flcf( template )
@@ -666,13 +668,13 @@ class BoxSet:
 		
 		self.boxsize = boxsize
 		
-		if self.template != None:
-			oldx = self.template.get_xsize()
-			oldy = self.template.get_ysize()
-			newx = boxsize
-			newy = boxsize
-			template = self.template.get_clip(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
-			self.settemplate(template,False)
+		#if self.template != None:
+			#oldx = self.template.get_xsize()
+			#oldy = self.template.get_ysize()
+			#newx = boxsize
+			#newy = boxsize
+			#template = self.template.get_clip(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
+			#self.settemplate(template,boxsize,False)
 			
 	def autopick(self,efficiency):
 		if (self.correlation == None):
@@ -952,18 +954,41 @@ class GUIbox:
 
 		boxset.delbox(boxnum)
 		del(self.ptcl[boxnum])
-		self.guimx.setData(self.ptcl)
+		#del(self.guimx.data[globalboxnum])
+		self.guimx.updateGL()
+		#self.guimx.setData(self.ptcl)
 	
 	def rot_aligned_average(self,images):
 		if len(images) <= 0: return None
 		
+		shrink = 1
+		inx = self.image.get_xsize()/2
+		iny = self.image.get_ysize()/2
+		tn = self.boxsize/2
+		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
+			inx /= 2
+			iny /= 2
+			tn /= 2
+			shrink *= 2
 		images_copy = []
 		for i in images:
-			images_copy.append(i.process("normalize"))
+			e = i.copy()
+			e.mean_shrink(shrink)
+			nx = e.get_xsize()
+			ny = e.get_ysize()
+			# this guards against odd dimensions - the rotational aligner doesn't handle oddness
+			if ( nx % 2 or ny % 2 ):
+				nx += nx % 2
+				ny += ny % 2
+				e.clip_inplace(Region(0,0,nx,ny))
+				
+			images_copy.append(e)
 		
 		ave = images_copy[0].copy()
 		for i in range(1,len(images_copy)):
-			ave = ave+images_copy[i]
+			ta = images_copy[i].align("rotate_translate",ave,{},"dot",{"normalize":1})
+			ave = ave + images_copy[i]
+		#ave.write_image("alignedsum.mrc")
 		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("math.radialaverage")
 		#ave.write_image("ave.mrc")
@@ -980,8 +1005,8 @@ class GUIbox:
 				
 			ave.mult(1.0/len(t))
 			ave.process_inplace("math.radialaverage")
+		#ave.write_image("ave2.mrc")
 		return ave
-	
 	def getboxes(self):
 		boxes = deepcopy(self.boxes)
 		for i in self.boxsets:
@@ -1014,7 +1039,7 @@ class GUIbox:
 				box[-1]=0
 			
 				im=self.image.get_clip(Region(box[0],box[1],box[2],box[3]))
-				im.process_inplace("normalize")
+				im.process_inplace("normalize.edgemean")
 				ns[idx]=EMShape(["rect",.4-n*.05,.9-n*.1,.4+n*0.1,box[0],box[1],box[0]+box[2],box[1]+box[3],2.0])
 				if idx>=len(self.ptcl) : self.ptcl.append(im)
 				else : self.ptcl[idx]=im
@@ -1060,7 +1085,7 @@ class GUIbox:
 		for j in range(0,len(boxes)):
 			images.append(self.ptcl[j+offset])
 			
-		boxset.settemplate(self.rot_aligned_average(self.ptcl))
+		boxset.settemplate(self.rot_aligned_average(self.ptcl),self.boxsize)
 		
 	def autopick(self):
 		correlation = self.boxsets[0].correlation
