@@ -343,6 +343,7 @@ def main():
 				edata.append(e.get_attr("euler_phi"))
 		
 		# now write to disk
+		average.set_attr("ptcl_repr",np)
 		average.write_image(args[2],-1)
 			
 		if options.verbose:

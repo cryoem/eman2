@@ -499,7 +499,7 @@ class EMImage2DCore:
 	def setActive(self,n,r,g,b):
 		self.active=(n,r,g,b)
 		self.shapechange=1
-		self.updateGL()
+		#self.updateGL()
 	
 	def addShape(self,k,s):
 		"""Add an EMShape object to be overlaid on the image. Each shape is
@@ -509,12 +509,12 @@ class EMImage2DCore:
 		"""
 		self.shapes[k]=s
 		self.shapechange=1
-		self.updateGL()
+		#self.updateGL()
 	
 	def addShapes(self,d):
 		self.shapes.update(d)
 		self.shapechange=1
-		self.updateGL()
+		#self.updateGL()
 	
 	def delShapes(self,k=None):
 		if k:
@@ -525,7 +525,7 @@ class EMImage2DCore:
 		else:
 			self.shapes={}
 		self.shapechange=1
-		self.updateGL()
+		#self.updateGL()
 	
 	def scr2img(self,v0,v1=None):
 		try: return ((v0+self.origin[0])/self.scale,(self.parent.height()-(v1-self.origin[1]))/self.scale)
