@@ -97,7 +97,7 @@ bool BoxingTools::is_local_maximum(const EMData* const image, int x, int y, int 
 		}
 	}
 	
-	set_radial_zero(efficiency_map,x,y,radius);
+	set_radial_zero(efficiency_map,x,y,2*radius);
 	
 	return true;
 	
@@ -174,7 +174,7 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 		}
 	}
 	
-	set_radial_zero(efficiency_map,x,y,radius);
+	set_radial_zero(efficiency_map,x,y,2*radius);
 	
 	return true;
 }

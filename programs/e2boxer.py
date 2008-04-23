@@ -593,8 +593,8 @@ class BoxSet:
 		shrink = 1
 		inx = self.image.get_xsize()/2
 		iny = self.image.get_ysize()/2
-		tn = boxsize
-		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
+		tn = boxsize/2
+		while ( inx >= 512 and iny >= 512 and tn >= 24 ):
 			inx /= 2
 			iny /= 2
 			tn /= 2
@@ -603,15 +603,41 @@ class BoxSet:
 		
 		
 		section = self.image.copy()
-		section.mean_shrink(self.shrink)
-		#template = template.copy()
-		#template.mean_shrink(self.shrink)
-		section.process_inplace("filter.flattenbackground",{"radius":template.get_xsize()/2})
+		if (shrink != 1):
+			section.mean_shrink(self.shrink)
+		#t = template.copy()
+		#t.mean_shrink(self.shrink)
+		section.process_inplace("filter.flattenbackground",{"radius":template.get_xsize()})
 
 		self.correlation = section.calc_flcf( template )
+		#section.write_image("section.img")
+		#template.write_image("template.img")
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
-		#self.correlation.write_image("correlation.mrc")
+		t = self.correlation.copy()
+		t.write_image("correlation.hdf")
 		
+		#clips = []
+		#for box in self.paramboxes:
+			#invshrink = 1.0/self.shrink
+			#x = box[0]*invshrink
+			#width = box[2]*invshrink
+			#y = box[1]*invshrink
+			#height = box[3]*invshrink
+			#e = self.correlation.get_clip(Region(x,y,width,height))
+			#clips.append(e)
+			#e.write_image("clips.img",-1)
+		
+		
+		#ctemplate = self.parent.rot_aligned_average(clips,False)
+		#ctemplate.write_image("ctemplate.hdf")
+		
+		#cc = self.correlation.copy().calc_flcf(ctemplate)
+		#cc.process_inplace("xform.phaseorigin.tocenter")
+		#cc.write_image("cc.hdf")
+		
+		#self.correlation = cc
+			
+			
 	def accrueparams(self,boxes,center=True):
 		if (self.correlation == None):
 			#print "Error, can't accrue params if now correlation map exists"
@@ -630,7 +656,7 @@ class BoxSet:
 			
 			self.searchradius = int((self.boxsize/2)/self.shrink)
 			
-			peak_location = BoxingTools.find_radial_max(self.correlation,int(x),int(y),int((self.boxsize/2)/self.shrink))
+			peak_location = BoxingTools.find_radial_max(self.correlation,int(x),int(y), self.searchradius )
 			peak_location2 = BoxingTools.find_radial_max(self.correlation,peak_location[0],peak_location[1],self.searchradius )
 			if (peak_location != peak_location2):
 				print "Error, peak location unrefined"
@@ -707,6 +733,8 @@ class BoxSet:
 				tmp = self.optprofile[i]
 				self.radius = i
 		
+		print self.optprofile
+		print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
 			
 		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,self.radius,self.optprofile,efficiency)
 
@@ -741,7 +769,7 @@ class BoxSet:
 			xx /= self.shrink
 			yy /= self.shrink
 			
-			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),self.searchradius)
+			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),2*self.searchradius)
 		
 			
 class GUIbox:
@@ -792,6 +820,8 @@ class GUIbox:
 		self.guiim.setmmode(0)
 		self.guimx.setmmode("app")
 		self.guictl=GUIboxPanel(self)
+		
+		self.ap = False
 		
 		try:
 			E2loadappwin("boxer","imagegeom",self.guiimp)
@@ -857,7 +887,11 @@ class GUIbox:
 			boxes = boxset.boxes
 			boxnum = len(boxes)-1
 			global_box_num += boxnum+1
+			
 			self.boxupdate()
+			if self.ap:
+				self.setrefs()
+				self.autopick()
 			
 		global_box_num -= 1
 	
@@ -958,40 +992,46 @@ class GUIbox:
 		self.guimx.updateGL()
 		#self.guimx.setData(self.ptcl)
 	
-	def rot_aligned_average(self,images):
+	def rot_aligned_average(self,images, shrinkimages= True):
 		if len(images) <= 0: return None
 		
-		shrink = 1
-		inx = self.image.get_xsize()/2
-		iny = self.image.get_ysize()/2
-		tn = self.boxsize/2
-		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
-			inx /= 2
-			iny /= 2
-			tn /= 2
-			shrink *= 2
-		images_copy = []
-		for i in images:
-			e = i.copy()
-			e.mean_shrink(shrink)
-			nx = e.get_xsize()
-			ny = e.get_ysize()
-			# this guards against odd dimensions - the rotational aligner doesn't handle oddness
-			if ( nx % 2 or ny % 2 ):
-				nx += nx % 2
-				ny += ny % 2
-				e.clip_inplace(Region(0,0,nx,ny))
+		if shrinkimages:
+			shrink = 1
+			inx = self.image.get_xsize()/2
+			iny = self.image.get_ysize()/2
+			tn = self.boxsize/2
+			while ( inx >= 512 and iny >= 512 and tn >= 24 ):
+				inx /= 2
+				iny /= 2
+				tn /= 2
+				shrink *= 2
+			self.shrink = shrink
+			
+			images_copy = []
+			for i in images:
+				e = i.copy()
+				if (shrink != 1):
+					e.mean_shrink(shrink)
+				images_copy.append(e)
 				
-			images_copy.append(e)
-		
+		else:
+			images_copy = []
+			for i in images:
+				images_copy.append(i.copy())
+			
+			#i.write_image("realimages.img",-1)
+			
 		ave = images_copy[0].copy()
+		
+		
 		for i in range(1,len(images_copy)):
 			ta = images_copy[i].align("rotate_translate",ave,{},"dot",{"normalize":1})
-			ave = ave + images_copy[i]
-		#ave.write_image("alignedsum.mrc")
+			ave.add(ta)
+			
+		ave.write_image("prealigned.hdf")
 		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("math.radialaverage")
-		#ave.write_image("ave.mrc")
+		ave.write_image("ave.hdf")
 		
 		for n in range(0,3):
 			t = []
@@ -1001,11 +1041,11 @@ class GUIbox:
 		
 			ave = t[0].copy()
 			for i in range(1,len(images_copy)):
-				ave = ave+t[i]
+				ave.add(t[i])
 				
 			ave.mult(1.0/len(t))
 			ave.process_inplace("math.radialaverage")
-		#ave.write_image("ave2.mrc")
+		ave.write_image("ave2.hdf")
 		return ave
 	def getboxes(self):
 		boxes = deepcopy(self.boxes)
@@ -1075,16 +1115,17 @@ class GUIbox:
 	
 	def setrefs(self):
 		
+		print "setting refs"
 		offset = 0
 		for i in range(0,self.boxsetidx):
 			offset += self.boxsets[i].numboxes()
-		
 		images = []
 		boxset = self.boxsets[self.boxsetidx]
 		boxes = boxset.boxes
 		for j in range(0,len(boxes)):
 			images.append(self.ptcl[j+offset])
-			
+		
+		
 		boxset.settemplate(self.rot_aligned_average(self.ptcl),self.boxsize)
 		
 	def autopick(self):
@@ -1094,12 +1135,21 @@ class GUIbox:
 		for boxset in self.boxsets:
 			boxset.updateefficiency(efficiency)
 			
-		#efficiency.write_image("efficiency.mrc")
+		efficiency.write_image("efficiency.hdf")
 		
 		self.boxsets[self.boxsetidx].autopick(efficiency);
 		self.boxsets.append(BoxSet(self.image,self))
 		self.boxsetidx += 1 
 		return
+		
+	def dynapick(self):
+		self.ap = not self.ap
+		
+	def done(self):
+		for i in self.ptcl:
+			i.write_image("boxes.img",-1)
+			
+		self.app.quit
 	
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
@@ -1144,11 +1194,16 @@ class GUIboxPanel(QtGui.QWidget):
 		self.autopick=QtGui.QPushButton("Auto Pick")
 		self.vbl.addWidget(self.autopick)
 		
+		self.dynapick = QtGui.QPushButton("Dyna-pick")
+		self.dynapick.setCheckable(1)
+		self.vbl.addWidget(self.dynapick)
+		
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
-		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.app.quit)
+		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.done)
 		self.connect(self.setref,QtCore.SIGNAL("clicked(bool)"),self.target.setrefs)
 		self.connect(self.autopick,QtCore.SIGNAL("clicked(bool)"),self.target.autopick)
+		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.target.dynapick)
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
 		
 	def nboxesChanged(self,n):
