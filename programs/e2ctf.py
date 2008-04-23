@@ -104,13 +104,18 @@ Various CTF-related operations on images."""
 		for i in args:
 			ps2d.append(powspec(i))
 			ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
+#			xt=ps2d[-1].get_clip(Region(0,0,ps2d[-1].get_xsize(),1))
+#			xt.ri2inten()
+#			ps1d.append([xt.get(ii) for ii in range(0,xt.get_xsize(),2)])
 			names.append(i)
 			if options.bgedge>0 :
 				bg=bgedge1d(i,options.bgedge)
+#				for ii in range(1,len(bg)): bg[ii]/=sqrt(ii)
 				bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
 				mins=min(bgs)
-				print mins,bgs
+#				print mins,bgs
 				bg=[ii*mins for ii in bg]
+#				bg=[bg[ii]*mins/(ii+.0001) for ii in range(len(bg))]
 				ps1d.append(bg)
 				ps2d.append(ps2d[-1])
 				names.append(i+"(bg)")
@@ -248,15 +253,63 @@ def bgedge1d(stackfile,width):
 		for j in pos:
 			c=im.get_clip(Region(0,j,xs,1))
 			cf=c.do_fft()
-			cf.ri2inten()
+#			cf.ri2inten()
 			avg+=cf
 			
 			c=im.get_clip(Region(j,0,1,xs))
 			c.set_size(xs,1,1)
 			cf=c.do_fft()
-			cf.ri2inten()
+#			cf.ri2inten()
 			avg+=cf
 			
+	avg.ri2inten()
+	avg/=len(pos)*2*n
+	ret=[avg.get(v,0,0) for v in range(0,xs+2,2)]
+	
+	return ret
+
+def bgedge2d(stackfile,width):
+	"""This routine will read the images from the specified file, and compute the average
+	2-D power spectrum computed using boxes taken from the edge of the image. Returns the
+	1-D power spectrum as a list of floats"""
+	
+	n=EMUtil.get_image_count(stackfile)
+	
+	for i in range(n):
+		im=EMData(stackfile,i)
+		
+		xs=im.get_xsize()		# x size of image
+		xst=int(floor(xs/ceil(xs/width)))	# step to use so we cover xs with width sized blocks
+		
+		for x in range(0,xs-xst/2,xst):
+			for y in range(0,xs-xst/2,xst):
+				
+		
+		if i==0 : 
+			xs=im.get_xsize()
+		
+			# values to cover a 25% border around the image
+			pos=range(width)+range(xs-width,xs)
+		
+			# avg will store the running sum of the 1D spectra
+			avg=EMData(xs+2,1,1)
+			avg.to_zero()
+			avg.set_complex(1)
+			avg.set_ri(1)
+		
+		for j in pos:
+			c=im.get_clip(Region(0,j,xs,1))
+			cf=c.do_fft()
+#			cf.ri2inten()
+			avg+=cf
+			
+			c=im.get_clip(Region(j,0,1,xs))
+			c.set_size(xs,1,1)
+			cf=c.do_fft()
+#			cf.ri2inten()
+			avg+=cf
+			
+	avg.ri2inten()
 	avg/=len(pos)*2*n
 	ret=[avg.get(v,0,0) for v in range(0,xs+2,2)]
 	
