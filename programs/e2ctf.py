@@ -56,6 +56,7 @@ Various CTF-related operations on images."""
 	parser.add_option("--dbin",type="string",help="Box locations used when input is a whole micrograph")
 	parser.add_option("--powspec",action="store_true",help="Compute the power spectrum of the input image(s)",default=False)
 	parser.add_option("--bgedge",type="int",help="Compute the background power spectrum from the edge of the image, specify the edge width in pixels",default=0)
+	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=None)
 	
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	#parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
@@ -109,22 +110,30 @@ Various CTF-related operations on images."""
 #			ps1d.append([xt.get(ii) for ii in range(0,xt.get_xsize(),2)])
 			names.append(i)
 			if options.bgedge>0 :
-				bg=bgedge1d(i,options.bgedge)
-#				for ii in range(1,len(bg)): bg[ii]/=sqrt(ii)
-				bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
-				mins=min(bgs)
-#				print mins,bgs
-				bg=[ii*mins for ii in bg]
-#				bg=[bg[ii]*mins/(ii+.0001) for ii in range(len(bg))]
-				ps1d.append(bg)
-				ps2d.append(ps2d[-1])
+				bg=bgedge2d(i,options.bgedge)
+				ps2d.append(bg)
+				ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
 				names.append(i+"(bg)")
+
+			
+			#if options.bgedge>0 :
+				#bg=bgedge1d(i,options.bgedge)
+##				for ii in range(1,len(bg)): bg[ii]/=sqrt(ii)
+				#bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
+				#mins=min(bgs)
+##				print mins,bgs
+				#bg=[ii*mins for ii in bg]
+##				bg=[bg[ii]*mins/(ii+.0001) for ii in range(len(bg))]
+				#ps1d.append(bg)
+				#ps2d.append(ps2d[-1])
+				#names.append(i+"(bg)")
 
 
 			
 
 	if options.gui : 
 		gui=GUIctf(names,ps1d,ps2d)
+		gui.sapix.setValue(options.apix)
 		gui.run()
 
 def powspecbg(image,size):
@@ -274,6 +283,7 @@ def bgedge2d(stackfile,width):
 	1-D power spectrum as a list of floats"""
 	
 	n=EMUtil.get_image_count(stackfile)
+	av=None
 	
 	for i in range(n):
 		im=EMData(stackfile,i)
@@ -281,39 +291,28 @@ def bgedge2d(stackfile,width):
 		xs=im.get_xsize()		# x size of image
 		xst=int(floor(xs/ceil(xs/width)))	# step to use so we cover xs with width sized blocks
 		
-		for x in range(0,xs-xst/2,xst):
-			for y in range(0,xs-xst/2,xst):
-				
-		
-		if i==0 : 
-			xs=im.get_xsize()
-		
-			# values to cover a 25% border around the image
-			pos=range(width)+range(xs-width,xs)
-		
-			# avg will store the running sum of the 1D spectra
-			avg=EMData(xs+2,1,1)
-			avg.to_zero()
-			avg.set_complex(1)
-			avg.set_ri(1)
-		
-		for j in pos:
-			c=im.get_clip(Region(0,j,xs,1))
-			cf=c.do_fft()
-#			cf.ri2inten()
-			avg+=cf
+		# Build a list of all boxes around the edge
+		boxl=[]
+		for x in range(0,xs-xst/2,xst): 
+			boxl.append((x,0))
+			boxl.append((x,xs-xst))
+		for y in range(xst,xs-3*xst/2,xst):
+			boxl.append((0,y))
+			boxl.append((xs-xst,y))
 			
-			c=im.get_clip(Region(j,0,1,xs))
-			c.set_size(xs,1,1)
-			cf=c.do_fft()
-#			cf.ri2inten()
-			avg+=cf
-			
-	avg.ri2inten()
-	avg/=len(pos)*2*n
-	ret=[avg.get(v,0,0) for v in range(0,xs+2,2)]
+		for b in boxl:
+			r=im.get_clip(Region(b[0],b[1],width,width))
+			imf=r.do_fft()
+			imf.ri2inten()
+			if av : av+=imf
+			else: av=imf
 	
-	return ret
+	av/=(n*len(boxl)*width*width)
+	av.set_value_at(0,0,0.0)
+
+	av.set_complex(1)
+	av.set_attr("is_intensity", 1)
+	return av
 
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -413,9 +412,14 @@ class GUIctf(QtGui.QWidget):
 		self.sbfactor=ValSlider(self,(0,500),"B factor:",0)
 		self.vbl.addWidget(self.sbfactor)
 		
+		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2)
+		self.vbl.addWidget(self.sapix)
+
+		
 		QtCore.QObject.connect(self.samp, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 
 		self.updateData()
@@ -435,13 +439,17 @@ class GUIctf(QtGui.QWidget):
 		self.setlist.clear()
 		for i,j in enumerate(self.names):
 			self.setlist.addItem(j)
-			self.guiplot.setData(j,[self.pow1d[i]])
+			l=len(self.pow1d[i])
+			apix=self.sapix.value
+			self.guiplot.setData(j,[[ii/(l*2.0*apix) for ii in range(l)],self.pow1d[i]])
+
 
 	def newSet(self,val):
 		self.guiim.setData(self.pow2d[val])
 
 	def newCTF(self) :
 		df=self.sdefocus.value
+		self.updateData()
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))
