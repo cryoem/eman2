@@ -78,7 +78,7 @@ def read_listfile(listfile, excludefile, nimg):
 		imagelines = lfp.readlines()
 		for line in imagelines:
 			if line[0] != "#":
-				n = int(line)
+				n = int(line.split()[0])
 				if n >= 0 and n < nimg:
 					if excludefile:
 						imagelist[n] = 0
