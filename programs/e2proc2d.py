@@ -80,7 +80,7 @@ def read_listfile(listfile, excludefile, nimg):
 			if line[0] != "#":
 				n = int(line)
 				if n >= 0 and n < nimg:
-					if options.exclude:
+					if excludefile:
 						imagelist[n] = 0
 					else:
 						imagelist[n] = 1

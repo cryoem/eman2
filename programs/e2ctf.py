@@ -230,7 +230,7 @@ def powspec(stackfile):
 		if i==0: av=imf
 		else: av+=imf
 	
-	av/=(float(n)*av.get_xsize()*av.get_ysize())
+	av/=(float(n)*av.get_ysize()*av.get_ysize())
 	av.set_value_at(0,0,0.0)
 #	av.process_inplace("xform.fourierorigin.tocenter")
 	
