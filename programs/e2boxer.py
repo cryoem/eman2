@@ -44,6 +44,8 @@ import sys
 
 from copy import *
 
+from emglplot import *
+
 pl=()
 
 def main():
@@ -58,20 +60,15 @@ for single particle analysis."""
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid, pspec",default=[])
-	parser.add_option("--threshold","-T",type="float",help="(auto:ref) Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
+	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid",default=[])
+	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
 	parser.add_option("--refptcl","-R",type="string",help="(auto:ref) A stack of reference images. Must have the same scale as the image being boxed.",default=None)
 	parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
 	parser.add_option("--retestlist",type="string",help="(auto:ref) Comma separated list of image numbers for retest cycle",default="")
-	parser.add_option("--ptclsize","-P",type="int",help="(auto:circle) Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=0)
-	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
-#	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
-#	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
 	parser.add_option("--dbout",type="string",help="filename to write EMAN1 style box database file to",default=None)
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--ptclout",type="string",help="filename to write boxed out particles to",default=None)
-	parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -92,6 +89,7 @@ for single particle analysis."""
 	# read the image in, though it is likely to get destroyed/modified later
 	image=EMData()
 	image.read_image(initial)
+	# what is this attribute for?
 	image.set_attr("datatype",7)
 	
 	# Store this for later use, even if the image is later corrupted
@@ -131,10 +129,6 @@ for single particle analysis."""
 	# reference particles are, then we use the reference particle size
 	if options.boxsize<5 :
 		if options.refptcl : options.boxsize=refptcl[0].get_xsize()
-		elif options.ptclsize : 
-			pass
-			options.boxsize=options.ptclsize
-#			options.boxsize=good_boxsize(options.ptclsize*1.2)
 		else : parser.error("Please specify a box size")
 	else:
 		if not options.boxsize in good_box_sizes:
@@ -144,12 +138,11 @@ for single particle analysis."""
 	except: options.retestlist=[]
 			
 	shrinkfactor=int(ceil(options.boxsize/16))
-	if "pspec" in options.auto : shrinkfactor/=2
 	print "Shrink factor = ",shrinkfactor
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.boxsize/shrinkfactor<12 : shrinkfactor/=2
 	
-	image.process_inplace("normalize")
+	image.process_inplace("normalize.edgemean")
 	shrink=image
 	shrink.mean_shrink(shrinkfactor)		# shrunken original image
 	
@@ -425,18 +418,6 @@ for single particle analysis."""
 # 		for i in goodpks2: out.write("%f\n"%i[0])
 # 		out.close()
 	
-	if "pspec" in options.auto:
-		shrink.write_image("shr.mrc")
-		for y in range(0,image_size[1]-options.boxsize,options.boxsize/2):
-			for x in range(0,image_size[0]-options.boxsize,options.boxsize/2):
-				boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
-
-		for b in boxes:
-			cl=shrink.get_clip(Region(b[0]/shrinkfactor,b[1]/shrinkfactor,options.boxsize/shrinkfactor,options.boxsize/shrinkfactor))
-			f=cl.do_fft()
-			r=f.calc_radial_dist(options.boxsize/shrinkfactor/2-2,2.0,1.0,0)
-			plot(r,1)
-	
 	if "grid" in options.auto:
 		try:
 			dx=-options.overlap
@@ -452,33 +433,6 @@ for single particle analysis."""
 		for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
 			for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
 				boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
-				
-	if "circle" in options.auto:
-		shrinksq=shrink.copy()
-		shrinksq*=shrinksq			# shrunken original image squared
-		
-		# outer and inner ring mask
-		outer=EMData()
-		sbox=int(options.boxsize/shrinkfactor)
-		outer.set_size(shrink.get_xsize(),shrink.get_ysize(),1)
-		outer.to_one()
-		inner=outer.copy()
-		
-		outer.process_inplace("mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
-		inner.process_inplace("mask.sharp",{"outer_radius":sbox*2/5})
-		
-		outer.write_image("b_outer.hdf")
-		inner.write_image("b_inner.hdf")
-
-		ccf1=shrinksq.calc_ccf(inner,fp_flag.CIRCULANT)
-		ccf2=shrinksq.calc_ccf(outer,fp_flag.CIRCULANT)
-		
-		ccf1.write_image("b_ccf1.hdf")
-		ccf2.write_image("b_ccf2.hdf")
-		
-		ccf1/=ccf2
-		
-		ccf1.write_image("b_result.hdf")
 	
 	E2end(logid)
 
@@ -488,6 +442,7 @@ for single particle analysis."""
 		gui.run()
 
 	if options.dbout:
+		boxes = gui.getboxes()
 		# Write EMAN1 style box database
 		out=open(options.dbout,"w")
 		n=0
@@ -509,9 +464,6 @@ for single particle analysis."""
 #			print i[4]
 			b.write_image(options.ptclout,n)
 			n+=1
-			if options.savealiref:
-				refptcl[i[3]].write_image("boxali.hdf",-1)
-				b.write_image("boxali.hdf",-1)
 		print "Wrote %d/%d particles to %s"%(n,len(boxes),options.ptclout)
 				
 
@@ -568,19 +520,14 @@ class BoxSet:
 				box.append(1) #it's a reference box
 			else:
 				print "error, tried to append box that did not have the requisite position data"
+				# a box is supposed to have xcorner,ycorner,width,heigh... i.e. has length 4
 				exit(0)
 		
 		self.boxes.append(box)
-		
 		self.paramboxes.append(box)
-		#box[-2] = len(self.paramboxes)-1
 		
 	def delbox(self,i):
 		tmp = self.boxes.pop(i)
-		#del(tmp)
-		#if tmp[-2] >= 0:
-			#self.paramboxes.pop(tmp[-2])
-		# decrement the reference count by one - it could be a parambox also
 		#yuck, this is horribly inefficient
 		for j,box in enumerate(self.paramboxes):
 			if box[4] == 1 and box[0] == tmp[0] and box[1] == tmp[1]:
@@ -588,9 +535,6 @@ class BoxSet:
 				return True
 			
 		return False
-		#else:
-			#print "error, didn't find that box"
-			#print "i have",len(self.paramboxes)
 	
 	def numboxes(self):
 		return len(self.boxes)
@@ -627,29 +571,7 @@ class BoxSet:
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
 		t = self.correlation.copy()
 		t.write_image("correlation.hdf")
-		
-		#clips = []
-		#for box in self.paramboxes:
-			#invshrink = 1.0/self.shrink
-			#x = box[0]*invshrink
-			#width = box[2]*invshrink
-			#y = box[1]*invshrink
-			#height = box[3]*invshrink
-			#e = self.correlation.get_clip(Region(x,y,width,height))
-			#clips.append(e)
-			#e.write_image("clips.img",-1)
-		
-		
-		#ctemplate = self.parent.rot_aligned_average(clips,False)
-		#ctemplate.write_image("ctemplate.hdf")
-		
-		#cc = self.correlation.copy().calc_flcf(ctemplate)
-		#cc.process_inplace("xform.phaseorigin.tocenter")
-		#cc.write_image("cc.hdf")
-		
-		#self.correlation = cc
-			
-			
+
 	def accrueparams(self,boxes,center=True):
 		if (self.correlation == None):
 			#print "Error, can't accrue params if now correlation map exists"
@@ -668,16 +590,15 @@ class BoxSet:
 			x = (box[0]+box[2]/2.0)*invshrink
 			y = (box[1]+box[3]/2.0)*invshrink
 			
-			self.searchradius = int((self.boxsize/2)/self.shrink)
+			self.searchradius = int((self.boxsize)/self.shrink)
 			
 			peak_location = BoxingTools.find_radial_max(self.correlation,int(x),int(y), self.searchradius )
 			peak_location2 = BoxingTools.find_radial_max(self.correlation,peak_location[0],peak_location[1],self.searchradius )
 			if (peak_location != peak_location2):
+				# this represents a troubling condition
 				print "Error, peak location unrefined"
 				box[6] = 0
 				continue
-				
-			peask_location = peak_location2
 			
 			# store the peak location
 			box[7] = peak_location[0]
@@ -754,6 +675,8 @@ class BoxSet:
 				tmp = self.optprofile[i]
 				self.radius = i
 		
+		self.parent.updatedata(self.optprofile)
+		
 		print self.optprofile
 		print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
 		
@@ -820,8 +743,9 @@ class GUIbox:
 		#if abs(self.image.get_attr("mean")) < 1:
 			#print "adding 10"
 			#self.image.add(10)
-		self.boxes=boxes					# the list of box locations
+		self.boxes=[]					# the list of box locations
 		self.boxsets = [BoxSet(self.image,self)]	# a list of boxsets - start with one empty boxset
+		self.boxsets[0].boxes = boxes
 		self.boxsetidx = 0					# the current boxsetidx
 		self.threshold=thr					# Threshold to decide which boxes to use
 		self.ptcl=[]						# list of actual boxed out EMImages
@@ -1235,10 +1159,10 @@ class GUIbox:
 		self.ap = not self.ap
 		
 	def done(self):
-		for i in self.ptcl:
-			i.write_image("boxes.img",-1)
-			
 		self.app.quit
+		
+	def updatedata(self,data):
+		self.guictl.updatedata(data)
 	
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
@@ -1251,17 +1175,30 @@ class GUIboxPanel(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
+		self.window = EMGLPlotWidget(self)
+		self.window.setInit()
+		self.window.resize(100,100)
+		self.window2=EMParentWin(self.window)
+		self.window2.resize(100,100)
+		self.vbl.addWidget(self.window2)
+		
 		self.info = QtGui.QLabel("%d Boxes"%len(target.boxes),self)
 		self.vbl.addWidget(self.info)
 
 		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
 		self.thr.setValue(target.threshold)
 		self.vbl.addWidget(self.thr)
-
+		
+		
+		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2.setMargin(0)
+		self.vbl2.setSpacing(6)
+		self.vbl2.setObjectName("vbl")
+		
 		self.hbl1=QtGui.QHBoxLayout()
 		self.hbl1.setMargin(0)
 		self.hbl1.setSpacing(2)
-		self.vbl.addLayout(self.hbl1)
+		self.vbl2.addLayout(self.hbl1)
 		
 		self.lblbs=QtGui.QLabel("Box Size:",self)
 		self.hbl1.addWidget(self.lblbs)
@@ -1272,29 +1209,38 @@ class GUIboxPanel(QtGui.QWidget):
 		self.hbl2=QtGui.QHBoxLayout()
 		self.hbl2.setMargin(0)
 		self.hbl2.setSpacing(2)
-		self.vbl.addLayout(self.hbl2)
+		self.vbl2.addLayout(self.hbl2)
 
 		self.done=QtGui.QPushButton("Done")
-		self.vbl.addWidget(self.done)
+		self.vbl2.addWidget(self.done)
 		
 		self.setref=QtGui.QPushButton("Set References")
-		self.vbl.addWidget(self.setref)
+		self.vbl2.addWidget(self.setref)
 		
 		self.autopick=QtGui.QPushButton("Auto Pick")
-		self.vbl.addWidget(self.autopick)
+		self.vbl2.addWidget(self.autopick)
 		
 		self.dynapick = QtGui.QPushButton("Dynapix")
 		self.dynapick.setCheckable(1)
-		self.vbl.addWidget(self.dynapick)
+		self.vbl2.addWidget(self.dynapick)
+		
+		self.vbl.addLayout(self.vbl2)
 		
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
-		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.done)
+		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.app.quit)
 		self.connect(self.setref,QtCore.SIGNAL("clicked(bool)"),self.target.setrefs)
 		self.connect(self.autopick,QtCore.SIGNAL("clicked(bool)"),self.target.autopick)
 		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.target.dynapick)
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
+	
+	def updatedata(self,data):
+		print data
+		self.window.setData(data)
 		
+		self.resize(self.width(),self.height())
+		#self.window.resizeGL(self.window.width(),self.window.height())
+		#self.window.updateGL()
 	def nboxesChanged(self,n):
 		self.info.setText("%d Boxes"%n)
 	

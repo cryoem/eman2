@@ -51,6 +51,12 @@ def get_usage():
 	usage = progname + """ <inputfile> [options]
 	Reconstructs 3D volumes using a set of 2D images. Euler angles are extracted from the 2D image headers and symmetry is imposed. Several reconstruction methods are available (see e2help.py reconstructors) - the fourier method is the default and recommended reconstructor.
 	
+	WARNING - the icosahedral symmetry axes are aligned dirrently in eman1 and eman2 - that means
+	using this script to reconstruct icosahedral class averages from eman1 will give very bad results.
+	Contact the developers for the simple solution. This problem will probably disappear - eman2
+	will probably adopt the same symmetric axes as eman1, there needs to be some discussion before that
+	occurs. For the time being assume there is a problem.
+	
 	A simple example of usage is:
 	
 	e2make3d.py classes.img --sym=c3 --out=recon.mrc --pad=128
@@ -65,7 +71,7 @@ def get_usage():
 	
 	e2make3d.py classes.img --sym=c3 --out=recon.mrc --pad=128 --preprocess=normalize.edgemean
 	
-	You can add as many --preprocess arguments as you like, and they are applied in
+	You can add as many --preprocess arguments as you like, which are applied in
 	the order in which they are specified, before padding occurs.
 	
 	If you specify a value of the keep parameter that is not one, i.e. --keep=0.9, it 

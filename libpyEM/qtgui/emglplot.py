@@ -53,7 +53,7 @@ from emglobjects import EMImage3DObject, Camera2
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EM3DHelloWorld(EMImage3DObject):
+class EMGLPlot(EMImage3DObject):
 	def __init__(self, parent=None):
 		EMImage3DObject.__init__(self)
 		self.parent = parent
@@ -69,14 +69,71 @@ class EM3DHelloWorld(EMImage3DObject):
 		self.glbrightness = 0.0
 		self.rank = 1
 		self.inspector=None
+		
+		self.data = [1.0,0.93,0.64,0.94,0.30,0.2,0.12,-0.2]
+		
+		self.cylinderdl = 0
+		
+		self.gq=gluNewQuadric()
+		gluQuadricDrawStyle(self.gq,GLU_FILL)
+		gluQuadricNormals(self.gq,GLU_SMOOTH)
+		gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+		gluQuadricTexture(self.gq,GL_FALSE)
+		
+		self.marker = None
+		
+		self.moving = False
+		
+
+	def cylinderToFrom(self,next,prev,val=0.5):
+		dx = next[0] - prev[0]
+		dy = next[1] - prev[1]
+		dz = next[2] - prev[2]
+		
+		length = sqrt(dx**2 + dy**2 + dz**2)
+		
+		alt = acos(dz/length)*180.0/pi
+		phi = atan2(dy,dx)*180.0/pi
+		
+		glPushMatrix()
+		glTranslatef(prev[0],prev[1],prev[2] )
+		#print "positioned at", prev[0],prev[1],prev[2]
+		glRotatef(90+phi,0,0,1)
+		glRotatef(alt,1,0,0)
+		
+		glScalef(val,val,length)
+		glCallList(self.cylinderdl)
+		glPopMatrix()
 
 	def getType(self):
-		return "helloworld"
+		return "emglplot"
 	
 	def updateGL(self):
 		self.parent.updateGL()
-
+		
+	def unitcircle(self):
+		n = 12.0
+		for i in range(0,int(n)):
+			i = float(i)
+			a = sin(i*2.0*pi/n)
+			b = cos(i*2.0*pi/n)
+			c = sin((i+1)*2.0*pi/n)
+			d = cos((i+1)*2.0*pi/n)
+			
+			p1 = [a,b,0.]
+			p2 = [c,d,0.]
+			self.cylinderToFrom(p2,p1,0.3)
 	def render(self):
+		if ( self.cylinderdl == 0 ):
+			self.cylinderdl=glGenLists(1)
+				
+			glNewList(self.cylinderdl,GL_COMPILE)
+			glPushMatrix()
+			gluCylinder(self.gq,1.0,1.0,1.0,12,2)
+			glPopMatrix()
+				
+			glEndList()
+		
 		#if (not isinstance(self.data,EMData)): return
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
@@ -96,7 +153,6 @@ class EM3DHelloWorld(EMImage3DObject):
 		else:
 			glDisable(GL_LIGHTING)
 
-		self.cam.position()
 			
 		glShadeModel(GL_SMOOTH)
 
@@ -111,52 +167,21 @@ class EM3DHelloWorld(EMImage3DObject):
 		glEnable(GL_NORMALIZE)
 		#HERE
 		glPushMatrix()
-		glScalef(10,10,1)
 		
-		glBegin(GL_QUADS)
-		
-		n = 15.0
-		d = 2.0/(n+1)
-		for i in range(0,int(n)):
-			for j in range(0,int(n)):
-				
-				x1 = -1.0 + j*d
-				x2 = -1.0 + (j+1)*d
-				y1 = -1.0 + i*d
-				y2 = -1.0 + (i+1)*d
-				d1 = d*(j**2)
-				d2 = d*((j+1)**2)
-				glNormal(j*d,0,1)
-				#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
-				#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
-				#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-				#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
-				#glColor(self.colors[self.currentcolor]["ambient"])
-				glVertex(x1,y1,d1)
-				#self.currentcolor="turquoise"
-				#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
-				#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
-				#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-				#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
-				glNormal((j+1)*d,.01,1)
-				glVertex(x2,y1,d2)
-				#self.currentcolor="obsidian"
-				#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
-				#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
-				#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-				#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
-				glNormal((j+1)*d,.01,1)
-				glVertex(x2,y2,d2)
-				#self.currentcolor="obsidian"
-				#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
-				#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
-				#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-				#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
-				glNormal(j*d,-.01,1)
-				glVertex(x1,y2,d1)
-			
-		glEnd()
+		n = len(self.data)
+		for i in range(0,n-1):
+			p1 = [i,self.data[i],0]
+			p2 = [i+1,self.data[i+1],0]
+			self.cylinderToFrom(p2,p1,0.01)
+
 		glPopMatrix()
+		
+		if self.marker != None:
+			glPushMatrix()
+			glTranslate(self.marker[0],self.marker[1],0)
+			glScale(self.marker[2],self.marker[3],1.0)
+			self.unitcircle()
+			glPopMatrix()
 		
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
@@ -171,7 +196,7 @@ class EM3DHelloWorld(EMImage3DObject):
 
 			
 		if ( lighting ): glEnable(GL_LIGHTING)
-		else: glDisable(GL_LIGHTING)
+		else: glDisable(GL_LIGHTING)	
 		if ( cull ): glEnable(GL_CULL_FACE)
 		else: glDisable(GL_CULL_FACE)
 		if ( depth ): glEnable(GL_DEPTH_TEST)
@@ -193,7 +218,7 @@ class EM3DHelloWorld(EMImage3DObject):
 		self.cam.cam_z = -1.25*32
 		
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMHelloWorldInspector(self)
+			self.inspector=EMGLPlotInspector(self)
 		
 		self.loadColors()
 		self.inspector.setColors(self.colors,self.currentcolor)
@@ -280,11 +305,11 @@ class EM3DHelloWorld(EMImage3DObject):
 	
 	def updateInspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMHelloWorldInspector(self)
+			self.inspector=EMGLPlotInspector(self)
 		self.inspector.updateRotations(t3d)
 	
 	def getInspector(self):
-		if not self.inspector : self.inspector=EMHelloWorldInspector(self)
+		if not self.inspector : self.inspector=EMGLPlotInspector(self)
 		return self.inspector
 		
 	def mousePressEvent(self, event):
@@ -296,24 +321,86 @@ class EM3DHelloWorld(EMImage3DObject):
 			self.resizeEvent()
 			self.showInspector(1)
 		else:
-			self.cam.mousePressEvent(event)
+			if (self.marker != None ):
+				self.moving = True
+				self.mc = [event.x(),event.y()]
+			else :
+				self.moving = False
 		
 		self.updateGL()
 		
 	def mouseMoveEvent(self, event):
-		self.cam.mouseMoveEvent(event)
+		wr = float(self.width())/self.parent.width()
+		hr = float(self.height())/self.parent.height()
+		wx = wr*event.x()
+		wy = hr*(self.parent.height()-event.y())+min(self.data)
+		
+		ratio = hr/wr
+		pixelnearness = 200
+		
+		realx = sqrt((pixelnearness*wr*wr)/(ratio**2+1))
+		realy = ratio*realx
+		
+		if self.moving:
+			min1 = min(self.data)
+			max1 = max(self.data)
+			oldwy = hr*(self.parent.height()-self.mc[1])+min(self.data)
+			dy = wy-oldwy
+			self.mc[1] = event.y()
+			self.data[self.marker[4]] += dy
+			self.marker[1] =  self.data[self.marker[4]]
+			self.updateGL()
+			
+			min2 = min(self.data)
+			max2 = max(self.data)
+			if min2 < min1 or max2 > max1:
+				self.parent.resizeGL(self.parent.width(),self.parent.height())
+				
+			return
+
+		else:
+		
+			for i in range(0,len(self.data)):
+				x = i
+				y = self.data[i]
+				dx = abs(wx-x)
+				dy = abs(wy-y)
+				
+				dis = (dx/wr)**2+(dy/hr)**2
+				
+				if dis < pixelnearness:
+					self.marker = [x,y,realx,realy,i]
+					self.updateGL()
+					return
+		
+		self.marker = None
+		#self.cam.mouseMoveEvent(event)
 		self.updateGL()
 	
 	def mouseReleaseEvent(self, event):
-		self.cam.mouseReleaseEvent(event)
+		self.moving = False
 		self.updateGL()
 			
 	def wheelEvent(self, event):
 		self.cam.wheelEvent(event)
 		self.updateGL()
+	
+	def width(self):
+		range = self.xrange()
+		return range[1]-range[0]
+	
+	def height(self):
+		range = self.yrange()
+		return range[1]-range[0]
+	
+	def xrange(self):
+		return [0,len(self.data)-1]
+	
+	def yrange(self):
+		return [min(self.data),max(self.data)]
 		
 		
-class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
+class EMGLPlotWidget(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
 	A QT widget for rendering 3D EMData objects.
 	"""
@@ -325,10 +412,12 @@ class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		
 
-		EM3DHelloWorldWidget.allim[self]=0
-		self.helloworld = EM3DHelloWorld(self)
+		EMGLPlotWidget.allim[self]=0
+		self.plot = EMGLPlot(self)
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+
+		self.setMouseTracking(True)
 
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
@@ -357,12 +446,21 @@ class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		# using gluPerspective for simplicity
+		#gluPerspective(self.fov,self.aspect,1,5000)
+		
+		xr = self.plot.xrange()
+		yr = self.plot.yrange()
+		glOrtho(xr[0],xr[1],yr[0],yr[1],-1,1)
+		
+		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		
 		glPushMatrix()
-		self.helloworld.render()
+		self.plot.render()
 		glPopMatrix()
 
 	def resizeGL(self, width, height):
@@ -378,35 +476,45 @@ class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,1,5000)
+		#gluPerspective(self.fov,self.aspect,1,5000)
+		
+		xr = self.plot.xrange()
+		yr = self.plot.yrange()
+		glOrtho(xr[0],xr[1],yr[0],yr[1],-1,1)
 		
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.helloworld.resizeEvent()
+		self.plot.resizeEvent()
+		
+		self.updateGL()
+
+	def setData(self,data):
+		self.plot.data = data
+		self.updateGL()
 
 	def setInit(self):
-		self.helloworld.setInit()
+		self.plot.setInit()
 
 	def showInspector(self,force=0):
-		self.helloworld.showInspector()
+		self.plot.showInspector()
 	
 	def closeEvent(self,event) :
-		self.helloworld.closeEvent(event)
+		self.plot.closeEvent(event)
 		
 	def mousePressEvent(self, event):
-		self.helloworld.mousePressEvent(event)
+		self.plot.mousePressEvent(event)
 		self.updateGL()
 		
 	def mouseMoveEvent(self, event):
-		self.helloworld.mouseMoveEvent(event)
+		self.plot.mouseMoveEvent(event)
 	
 	def mouseReleaseEvent(self, event):
-		self.helloworld.mouseReleaseEvent(event)
+		self.plot.mouseReleaseEvent(event)
 		
 	def wheelEvent(self, event):
-		self.helloworld.wheelEvent(event)
+		self.plot.wheelEvent(event)
 
 	def get_render_dims_at_depth(self, depth):
 		# This function returns the width and height of the renderable 
@@ -416,7 +524,7 @@ class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
 		
 		return [width,height]
 
-class EMHelloWorldInspector(QtGui.QWidget):
+class EMGLPlotInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -724,7 +832,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EM3DHelloWorldWidget()
+	window = EMGLPlotWidget()
 	window.setInit()
 	window2=EMParentWin(window)
 	window2.show()

@@ -506,7 +506,7 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,self.startz,self.end)
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
 		
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
