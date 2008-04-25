@@ -639,7 +639,7 @@ class BoxSet:
 			#template = self.template.get_clip(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
 			#self.settemplate(template,boxsize,False)
 			
-	def autopick(self,efficiency):
+	def autopick(self,efficiency,optprofile=None):
 		if (self.correlation == None):
 			print "Error, can't autopick of the correlation image doesn't exist"
 			return
@@ -666,7 +666,12 @@ class BoxSet:
 					if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
 					
 				if box[6] < self.optpeakvalue: self.optpeakvalue = box[6]
-		
+				
+		# this is me hacking
+		if optprofile != None:
+			self.optprofile=optprofile
+		else:
+			self.parent.updatedata(self.optprofile)
 		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
 		self.radius = 0
 		tmp = self.optprofile[0]
@@ -674,8 +679,7 @@ class BoxSet:
 			if self.optprofile[i] > tmp and tmp > 0:
 				tmp = self.optprofile[i]
 				self.radius = i
-		
-		self.parent.updatedata(self.optprofile)
+			
 		
 		print self.optprofile
 		print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
@@ -743,7 +747,7 @@ class GUIbox:
 		#if abs(self.image.get_attr("mean")) < 1:
 			#print "adding 10"
 			#self.image.add(10)
-		self.boxes=[]					# the list of box locations
+		self.boxes=[]						# the list of box locations
 		self.boxsets = [BoxSet(self.image,self)]	# a list of boxsets - start with one empty boxset
 		self.boxsets[0].boxes = boxes
 		self.boxsetidx = 0					# the current boxsetidx
@@ -765,6 +769,8 @@ class GUIbox:
 		
 		self.guiim.setmmode(0)
 		self.guimx.setmmode("app")
+		self.ppc = 1.0
+		self.mouseclicks = 0
 		self.guictl=GUIboxPanel(self)
 		
 		self.ap = False
@@ -833,12 +839,14 @@ class GUIbox:
 			boxes = boxset.boxes
 			boxnum = len(boxes)-1
 			global_box_num += boxnum+1
-			
+			self.mouseclicks += 1
 			self.boxupdate()
 			if self.ap:
 				self.deletenonrefs()
 				self.setrefs()
 				self.autopick()
+				
+			self.updateppc()
 			
 			
 		global_box_num -= 1
@@ -846,8 +854,10 @@ class GUIbox:
 		# an existing box
 		if event.modifiers()&Qt.ShiftModifier :
 			# with shift, we delete
+			self.mouseclicks += 1
 			self.delbox(boxset,boxnum,global_box_num)
 			self.updateAllImageDisplay()
+			self.updateppc()
 			return 
 		
 		self.moving=[boxes,boxnum,m]
@@ -859,7 +869,10 @@ class GUIbox:
 		if not self.guimx.isVisible(global_box_num) : self.guimx.scrollTo(global_box_num,yonly=1)
 		self.guimx.setSelected(global_box_num)
 		self.updateAllImageDisplay()
-		
+	
+	def updateppc(self):
+		self.guictl.ppcChanged(len(self.boxsets[self.boxsetidx].boxes)/float(self.mouseclicks))
+	
 	def mousedrag(self,event) :
 		m=self.guiim.scr2img((event.x(),event.y()))
 		
@@ -1161,6 +1174,20 @@ class GUIbox:
 	def done(self):
 		self.app.quit
 		
+	def trydata(self,data):
+		self.deletenonrefs()
+		
+		correlation = self.boxsets[0].correlation
+		efficiency = EMData(correlation.get_xsize(),correlation.get_ysize())
+		efficiency.to_one()
+		for boxset in self.boxsets:
+			boxset.updateefficiency(efficiency)
+			
+		efficiency.write_image("efficiency.hdf")
+		
+		self.boxsets[self.boxsetidx].autopick(efficiency,data);
+		
+		
 	def updatedata(self,data):
 		self.guictl.updatedata(data)
 	
@@ -1175,15 +1202,34 @@ class GUIboxPanel(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
+		self.plothbl = QtGui.QHBoxLayout()
+		
 		self.window = EMGLPlotWidget(self)
 		self.window.setInit()
 		self.window.resize(100,100)
 		self.window2=EMParentWin(self.window)
 		self.window2.resize(100,100)
-		self.vbl.addWidget(self.window2)
 		
+		self.plothbl.addWidget(self.window2)
+		
+		self.plotbuttonvbl = QtGui.QVBoxLayout()
+		
+		self.trythat=QtGui.QPushButton("Try That")
+		self.plotbuttonvbl.addWidget(self.trythat)
+		
+		self.reset=QtGui.QPushButton("Reset")
+		self.plotbuttonvbl.addWidget(self.reset)
+		
+		self.plothbl.addLayout(self.plotbuttonvbl)
+		
+		self.vbl.addLayout(self.plothbl)
+		
+		self.infohbl = QtGui.QHBoxLayout()
 		self.info = QtGui.QLabel("%d Boxes"%len(target.boxes),self)
-		self.vbl.addWidget(self.info)
+		self.ppc = QtGui.QLabel("%f ppc"%0,self)
+		self.infohbl.addWidget(self.info)
+		self.infohbl.addWidget(self.ppc)
+		self.vbl.addLayout(self.infohbl)
 
 		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
 		self.thr.setValue(target.threshold)
@@ -1232,10 +1278,14 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.setref,QtCore.SIGNAL("clicked(bool)"),self.target.setrefs)
 		self.connect(self.autopick,QtCore.SIGNAL("clicked(bool)"),self.target.autopick)
 		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.target.dynapick)
+		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.trythatd)
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
 	
+	def trythatd(self):
+		self.target.trydata(self.window.getData())
+	
 	def updatedata(self,data):
-		print data
+		#print data
 		self.window.setData(data)
 		
 		self.resize(self.width(),self.height())
@@ -1243,6 +1293,9 @@ class GUIboxPanel(QtGui.QWidget):
 		#self.window.updateGL()
 	def nboxesChanged(self,n):
 		self.info.setText("%d Boxes"%n)
+		
+	def ppcChanged(self,f):
+		self.ppc.setText("%f ppc"%f)
 	
 	def newBoxSize(self):
 		try:

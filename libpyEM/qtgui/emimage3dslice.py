@@ -73,6 +73,9 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.axes.append( Vec3f(0,0,1) )
 		self.axes_idx = 2
 		
+		
+		self.forceuse2dtextures = True	# This placed here by David Woolford - we get better performance
+		
 		self.track = False
 		
 		if image :
@@ -164,11 +167,11 @@ class EM3DSliceViewer(EMImage3DObject):
 			
 	def getDimensionSize(self):
 		if ( self.axes_idx == 0 ):
-			return self.data.get_zsize()
+			return self.data.get_xsize()
 		elif ( self.axes_idx == 1 ):
 			return self.data.get_ysize()
 		elif ( self.axes_idx == 2 ):
-			return self.data.get_xsize()
+			return self.data.get_zsize()
 		else:
 			#print "unsupported axis"
 			# this is a hack and needs to be fixed eventually
@@ -176,11 +179,11 @@ class EM3DSliceViewer(EMImage3DObject):
 			#return 0
 	def getCorrectDims2DEMData(self):
 		if ( self.axes_idx == 0 ):
-			return EMData(self.data.get_xsize(),self.data.get_ysize())
+			return EMData(self.data.get_ysize(),self.data.get_zsize())
 		elif ( self.axes_idx == 1 ):
 			return EMData(self.data.get_xsize(),self.data.get_zsize())
 		elif ( self.axes_idx == 2 ):
-			return EMData(self.data.get_ysize(),self.data.get_zsize())
+			return EMData(self.data.get_xsize(),self.data.get_ysize())
 		else:
 			#print "unsupported axis"
 			# this is a hack and needs to be fixed eventually
@@ -194,7 +197,7 @@ class EM3DSliceViewer(EMImage3DObject):
 
 		if (self.tex_dl == 0): return #OpenGL is initialized yet
 		
-		if ( self.glflags.threed_texturing_supported()):
+		if ( self.glflags.threed_texturing_supported() and not self.forceuse2dtextures ):
 			self.gen3DTexture()
 		else:
 			self.gen2DTexture()
@@ -260,6 +263,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		[t,alt,phi] = self.getEmanTransform(v)
 			
 		nn = float(self.slice)/float(n)
+	
 		tmp = self.getCorrectDims2DEMData() 
 
 		trans = (nn-0.5)*v

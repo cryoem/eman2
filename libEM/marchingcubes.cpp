@@ -353,16 +353,22 @@ void MarchingCubes::draw_cube(const int x, const int y, const int z, const int c
 	{
 		EMData* e;
 		if ( cur_level > 0 ) {
-			
+			int xsize = minvals[cur_level-1]->get_xsize();
+			int ysize = minvals[cur_level-1]->get_ysize();
+			int zsize = minvals[cur_level-1]->get_zsize();
 			e = minvals[cur_level-1];
 			for(int i=0; i<8; ++i )	{
-				if ( 2*x+a2fVertexOffset[i][0] >= minvals[cur_level-1]->get_xsize() || 2*y+a2fVertexOffset[i][1] >= minvals[cur_level-1]->get_ysize() ||
-								 2*z+a2fVertexOffset[i][2] >=  minvals[cur_level-1]->get_ysize() ) continue;
+				int xx = 2*x+a2fVertexOffset[i][0];
+				if ( xx >= xsize ) continue;
+				int yy = 2*y+a2fVertexOffset[i][1];
+				if ( yy >= ysize ) continue;
+				int zz = 2*z+a2fVertexOffset[i][2];
+				if ( zz >= zsize ) continue;
 				
-				float min = minvals[cur_level-1]->get_value_at(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2]);
-				float max = maxvals[cur_level-1]->get_value_at(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2]);
+				float min = minvals[cur_level-1]->get_value_at(xx,yy,zz);
+				float max = maxvals[cur_level-1]->get_value_at(xx,yy,zz);
 				if ( min < _surf_value &&  max > _surf_value)
-					draw_cube(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2],cur_level-1);
+					draw_cube(xx,yy,zz,cur_level-1);
 			}
 		}
 		else {
@@ -371,6 +377,7 @@ void MarchingCubes::draw_cube(const int x, const int y, const int z, const int c
 					draw_cube(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2],cur_level-1);
 			}
 		}
+		
 		if ( x == (minvals[cur_level]->get_xsize()-1) ) {
 			if ( e->get_xsize() > 2*x ){
 				for(int i=0; i<4; ++i )	{

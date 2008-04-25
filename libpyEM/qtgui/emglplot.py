@@ -493,6 +493,9 @@ class EMGLPlotWidget(QtOpenGL.QGLWidget):
 	def setData(self,data):
 		self.plot.data = data
 		self.updateGL()
+		
+	def getData(self):
+		return self.plot.data
 
 	def setInit(self):
 		self.plot.setInit()

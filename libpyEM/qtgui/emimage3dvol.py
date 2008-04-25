@@ -149,6 +149,8 @@ class EMVolume(EMImage3DObject):
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
 		
+		data.process_inplace("normalize")
+		
 		self.data=data
 		if data==None:
 			print "Error, the data is empty"
@@ -310,7 +312,11 @@ class EMVolume(EMImage3DObject):
 		lp = point.length()
 		idx = 0
 		for i in self.axes:
-			angle = abs(acos(point.dot(i)))
+			try:
+				angle = abs(acos(point.dot(i)))
+			except: 
+				print 'warning, there is a bug in the volume render which may cause incorrect rendering'
+				return
 			if (angle < closest):
 				closest = angle
 				self.axes_idx = idx
@@ -328,7 +334,6 @@ class EMVolume(EMImage3DObject):
 			self.gen2DTexture()
 			
 	def gen3DTexture(self):
-	
 		if ( self.tex_dl != 0 ): glDeleteLists( self.tex_dl, 1)
 		
 		self.tex_dl = glGenLists(1)
@@ -408,28 +413,27 @@ class EMVolume(EMImage3DObject):
 			
 	def getDimensionSize(self):
 		if ( self.axes_idx == 0 ):
-			return self.data_copy.get_zsize()
+			return self.data.get_xsize()
 		elif ( self.axes_idx == 1 ):
-			return self.data_copy.get_ysize()
+			return self.data.get_ysize()
 		elif ( self.axes_idx == 2 ):
-			return self.data_copy.get_xsize()
+			return self.data.get_zsize()
 		else:
 			#print "unsupported axis"
 			# this is a hack and needs to be fixed eventually
-			return self.data_copy.get_xsize()
+			return self.data.get_xsize()
 			#return 0
-		
 	def getCorrectDims2DEMData(self):
 		if ( self.axes_idx == 0 ):
-			return EMData(self.data_copy.get_xsize(),self.data_copy.get_ysize())
+			return EMData(self.data.get_ysize(),self.data.get_zsize())
 		elif ( self.axes_idx == 1 ):
-			return EMData(self.data_copy.get_xsize(),self.data_copy.get_zsize())
+			return EMData(self.data.get_xsize(),self.data.get_zsize())
 		elif ( self.axes_idx == 2 ):
-			return EMData(self.data_copy.get_ysize(),self.data_copy.get_zsize())
+			return EMData(self.data.get_xsize(),self.data.get_ysize())
 		else:
 			#print "unsupported axis"
 			# this is a hack and needs to be fixed eventually
-			return EMData(self.data_copy.get_xsize(),self.data_copy.get_zsize())
+			return EMData(self.data.get_xsize(),self.data.get_zsize())
 
 	
 	def gen2DTexture(self):

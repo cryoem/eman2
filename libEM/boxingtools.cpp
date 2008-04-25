@@ -119,14 +119,16 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 			
 			if (image->get_value_at(k,j) < threshold) continue;
 			
-			vector<float> p(r,0);
-			
-			if (hi_brid(image,k,j,r,efficiency,p)) {
-				if (p[radius] >= profile[radius]) {
+// 			vector<float> p(r,0);
+// 			
+// 			if (hi_brid(image,k,j,r,efficiency,p)) {
+// 				if (p[radius] >= profile[radius]) {
 					solution.push_back(IntPoint(k,j));
-				}
-			}
-			
+// 				}
+// 			}
+					
+			// remove if smart is used
+			set_radial_zero(efficiency,k,j,2*radius);
 		}
 	}
 	
