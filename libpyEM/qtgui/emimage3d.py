@@ -148,6 +148,17 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
+		
+		if (self.zwidth == 0):
+			# We've received  a resize event but no data has been set
+			# in which case nothing is being rendered.
+			# Therefore just leave the identity as the projection matrix.
+			# This is an exceptional circumstance which probably 
+			# highlights the need for some redesigning (d.woolford)
+			glMatrixMode(GL_MODELVIEW)
+			#glLoadIdentity()
+			return
+		
 		self.startz = self.d - 2.0*self.zwidth
 		self.endz = self.d + 2.0*self.zwidth
 		if self.perspective:

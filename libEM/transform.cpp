@@ -1513,10 +1513,13 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 				
 			add_orientation(ret,az_soln,alt_soln);
 		
+			// Add helical symmetry orientations on the other side of the equator (if we're including
+			// mirror orientations) 
 			if ( sym->is_h_sym() && inc_mirror && alt_iterator != (float) delimiters["alt_min"] ) {
 				add_orientation(ret, az_soln,2.0f*(float)delimiters["alt_min"]-alt_soln);
 			}
 			az_iterator += h;
+			
 		}
 		alt_iterator += delta;
 	}
@@ -1607,7 +1610,7 @@ vector<Transform3D> EvenOrientationGenerator::gen_orientations(const Symmetry3D*
 	int n = params.set_default("n", 0);
 	
 	if ( delta <= 0 && n <= 0 ) throw InvalidParameterException("Error, you must specify a positive non-zero delta or n");
-	if ( delta > 0 && n > 0 ) throw InvalidParameterException("Error, the delta and the n arguments are mutually exclusive");
+	if ( delta > 0 && n > 0 ) throw InvalidParameterException("Error, the delta and the n arguments are mutually exzclusive");
 	
 	if ( n > 0 ) {
 		delta = get_optimal_delta(sym,n);
