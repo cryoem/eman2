@@ -207,7 +207,7 @@ class EM3DSymViewer(EMImage3DObject):
 		glRotatef(90+phi,0,0,1)
 		glRotatef(alt,1,0,0)
 		
-		glScalef(0.5,0.5,length)
+		glScalef(0.2,0.2,length)
 		glCallList(self.cylinderdl)
 		glPopMatrix()
 			
@@ -283,7 +283,7 @@ class EM3DSymViewer(EMImage3DObject):
 			eulers = self.sym_object.gen_orientations(og_name, og_args)
 		
 		else:
-			f = file("icos-asymunit-ang-1-step.txt")
+			f = file("angles.txt")
 			lines=f.readlines()
 			angles=[]
 			eulers = []
