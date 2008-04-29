@@ -173,6 +173,46 @@ class TestTransform(unittest.TestCase):
             for j in range(3):
                 if j==i:
                     self.assertAlmostEqual(col.at(j), 1.0, 3)
+    def no_test_sym_reduce(self):
+		"""test sym reduce ......................"""
+		syms = []
+		syms.append(Symmetries.get("icos",{}))
+		syms.append(Symmetries.get("oct",{}))
+		syms.append(Symmetries.get("tet",{}))
+		syms.append(Symmetries.get("c",{"nsym":2}))
+		syms.append(Symmetries.get("c",{"nsym":3}))
+		syms.append(Symmetries.get("c",{"nsym":4}))
+		syms.append(Symmetries.get("c",{"nsym":4}))
+		syms.append(Symmetries.get("c",{"nsym":5}))
+		syms.append(Symmetries.get("c",{"nsym":6}))
+		syms.append(Symmetries.get("c",{"nsym":7}))
+		syms.append(Symmetries.get("c",{"nsym":8}))
+		syms.append(Symmetries.get("c",{"nsym":9}))
+		syms.append(Symmetries.get("d",{"nsym":2}))
+		syms.append(Symmetries.get("d",{"nsym":3}))
+		syms.append(Symmetries.get("d",{"nsym":4}))
+		syms.append(Symmetries.get("d",{"nsym":4}))
+		syms.append(Symmetries.get("d",{"nsym":5}))
+		syms.append(Symmetries.get("d",{"nsym":6}))
+		syms.append(Symmetries.get("d",{"nsym":7}))
+		syms.append(Symmetries.get("d",{"nsym":8}))
+		syms.append(Symmetries.get("d",{"nsym":9}))
+		
+		for sym in syms:
+			n = sym.get_nsym()
+			az = 1
+			alt = 1
+			T = transform3D(az,alt,0)
+			for i in range(1,n):
+				T1 = sym.get_sym(i)
+				T2 = T1*T
+				
+				A = sym.reduce(T2,0)
+				result = A.get_rotation()
+				self.assertAlmostEqual(result["az"],result["alt"])
+				
+       
+        
         
     def no_test_angles2tfvec(self):    #no callable in Python
         """test angles2tfvec() function ....................."""

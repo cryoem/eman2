@@ -267,7 +267,7 @@ class EM3DSymViewer(EMImage3DObject):
 		
 		if mirror == True : val = 0
 		else: val = 1
-		self.traceGreatArcs(self.sym_object.get_asymm_unit_points(val))
+		self.traceGreatArcs(self.sym_object.get_asym_unit_points(val))
 		if ('inc_mirror' in parms):
 			og += ":inc_mirror=" + str(val)
 			
@@ -297,9 +297,9 @@ class EM3DSymViewer(EMImage3DObject):
 		for i in eulers:
 			d = i.get_rotation()
 			glPushMatrix()
-			glRotate(d["az"],0,0,1)
-			glRotate(d["alt"],1,0,0)
-			glRotate(d["phi"],0,0,1)
+			glRotate(d["az"],0,0,-1)
+			glRotate(d["alt"],-1,0,0)
+			glRotate(d["phi"],0,0,-1)
 			#print d["phi"],d["alt"],d["az"]
 			glTranslate(0,0,self.radius)
 			glCallList(self.spheredl)

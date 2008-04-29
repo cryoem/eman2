@@ -353,7 +353,7 @@ namespace EMAN
 		 * @param inc_mirror whether or not to include the mirror portion of the asymmetric unit
 		 * @return a vector or points which define a cyclic set of great arcs on the unit sphere. Each point may be connected to the point that proceeds it, and the last point may be connected to the first point, and this demarcates the asymmetric unit.
 		*/
-		virtual vector<Vec3f> get_asymm_unit_points(bool) const = 0;
+		virtual vector<Vec3f> get_asym_unit_points(bool) const = 0;
 		/** Ask the Symmetry3D object to generate a set of orientations in its asymmetric unit
 		 * using an OrientationGenerator constructed from the given parameters (using a Factory).
 		 * This is reminiscent of the strategy design pattern
@@ -375,6 +375,8 @@ namespace EMAN
 
 		
 		virtual Transform3D reduce(const Transform3D& t3d, int n=0);
+		
+		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const = 0;
 	};
 	
 	/** An encapsulation of cyclic 3D symmetry
@@ -453,7 +455,7 @@ namespace EMAN
 		 * @return a cyclic set of points which can be connected using great arcs on the unit sphere
 		 * to demarcate the asymmetric unit. The last should may be connected to the first.
 		 */
-		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
+		virtual vector<Vec3f> get_asym_unit_points(bool inc_mirror = false) const;
 		
 		/** A function to be used when generating orientations over portion of the unit sphere
 		 * defined by parameters returned by get_delimiters. In platonic symmetry altitude and azimuth
@@ -470,6 +472,8 @@ namespace EMAN
 		 */
 		virtual bool is_c_sym() const { return  true; }
 		
+		
+		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 		
 
 // PRB see here
@@ -550,7 +554,7 @@ namespace EMAN
 		 * @return a cyclic set of points which can be connected using great arcs on the unit sphere
 		 * to demarcate the asymmetric unit. The last should may be connected to the first.
 		 */
-		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
+		virtual vector<Vec3f> get_asym_unit_points(bool inc_mirror = false) const;
 		
 		/** A function to be used when generating orientations over portion of the unit sphere
 		 * defined by parameters returned by get_delimiters. In platonic symmetry altitude and azimuth
@@ -569,6 +573,8 @@ namespace EMAN
 		 * @return true - indicating that this is a c symmetry object
 		 */
 		virtual bool is_d_sym() const { return  true; }
+		
+		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	};
 	
 	/** An encapsulation of helical 3D symmetry
@@ -684,7 +690,9 @@ namespace EMAN
 			 * @return a cyclic set of points which can be connected using great arcs on the unit sphere
 			 * to demarcate the asymmetric unit. The last should may be connected to the first.
 			 */
-			virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
+			virtual vector<Vec3f> get_asym_unit_points(bool inc_mirror = false) const;
+			
+			virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	};
 	
 	/** A base (or parent) class for the Platonic symmetries. It cannot be instantieted on its own.
@@ -772,7 +780,9 @@ namespace EMAN
 		 * @return a cyclic set of points which can be connected using great arcs on the unit sphere
 		 * to demarcate the asymmetric unit. The last should may be connected to the first.
 		 */
-		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
+		virtual vector<Vec3f> get_asym_unit_points(bool inc_mirror = false) const;
+		
+		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	};
 	
 	/** An encapsulation of tetrahedral symmetry
@@ -861,7 +871,7 @@ namespace EMAN
 		 * @return a cyclic set of points which can be connected using great arcs on the unit sphere
 		 * to demarcate the asymmetric unit. The last should may be connected to the first.
 		 */
-		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
+		virtual vector<Vec3f> get_asym_unit_points(bool inc_mirror = false) const;
 		
 		/** A function that is used to determine if this is the tetrahedral symmetry object
 		 * @return true - indicating that this is not a tetrahedral symmetry object

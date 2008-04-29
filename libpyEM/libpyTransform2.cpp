@@ -48,8 +48,12 @@ struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
 		return call_method< EMAN::TypeDict >(py_self, "get_param_types");
 	}
 
-	std::vector<EMAN::Vec3f > get_asymm_unit_points(bool b) const {
-		return call_method< std::vector<EMAN::Vec3f > >(py_self, "get_asymm_unit_points", b);
+	std::vector<EMAN::Vec3f > get_asym_unit_points(bool b) const {
+		return call_method< std::vector<EMAN::Vec3f > >(py_self, "get_asym_unit_points", b);
+	}
+	
+	std::vector<std::vector<EMAN::Vec3f > > get_asym_unit_triangles(bool b) const {
+		return call_method< std::vector<std::vector<EMAN::Vec3f > > >(py_self, "get_asym_unit_triangles", b);
 	}
 	
 	void insert_params(const EMAN::Dict& d) {
@@ -100,7 +104,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_pretrans_overloads_2
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
 		
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Symmetry3D_get_asymm_unit_points_overloads_1_2, get_asymm_unit_points, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Symmetry3D_get_asym_unit_points_overloads_1_2, get_asym_unit_points, 1, 2)
 		
 }// namespace 
 
@@ -117,6 +121,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("get_delimiters", pure_virtual(&EMAN::Symmetry3D::get_delimiters))
 		.def("get_sym", pure_virtual(&EMAN::Symmetry3D::get_sym))
 		.def("is_in_asym_unit", pure_virtual(&EMAN::Symmetry3D::is_in_asym_unit))
+		.def("get_asym_unit_triangles", pure_virtual(&EMAN::Symmetry3D::get_asym_unit_triangles))	
 		.def("get_nsym",pure_virtual(&EMAN::Symmetry3D::get_nsym))
 		.def("get_name",pure_virtual(&EMAN::Symmetry3D::get_name))
 		.def("is_platonic",pure_virtual(&EMAN::Symmetry3D::is_platonic))
@@ -124,7 +129,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("is_h_sym", pure_virtual(&EMAN::Symmetry3D::is_h_sym))
 		.def("get_params", &EMAN::Symmetry3D::get_params)
 		.def("gen_orientations", &EMAN::Symmetry3D::gen_orientations)
-		.def("get_asymm_unit_points", pure_virtual(&EMAN::Symmetry3D::get_asymm_unit_points))
+		.def("get_asym_unit_points", pure_virtual(&EMAN::Symmetry3D::get_asym_unit_points))
 		.def("insert_params", pure_virtual(&EMAN::Symmetry3D::insert_params))
 		.def("get_params", &EMAN::Symmetry3D::get_params)
 		.def("reduce", &EMAN::Symmetry3D::reduce)

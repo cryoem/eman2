@@ -1960,78 +1960,139 @@ void equation_of_plane(const Vec3f& v1, const Vec3f& v2, const Vec3f& v3, float 
 {
 // 	float* plane = new float[4]; // A,B,C,D
 	int x=0,y=1,z=2;
+	//y1 (z2 - z3) + y2 (z3 - z1) + y3 (z1 - z2) 
 	plane[0] = v1[y]*(v2[z]-v3[z])+v2[y]*(v3[z]-v1[z])+v3[y]*(v1[z]-v2[z]);
+	//z1 (x2 - x3) + z2 (x3 - x1) + z3 (x1 - x2) 
 	plane[1] = v1[z]*(v2[x]-v3[x])+v2[z]*(v3[x]-v1[x])+v3[z]*(v1[x]-v2[x]);
-	plane[2] = v1[x]*(v2[y]-v3[y])+v2[y]*(v3[y]-v1[y])+v3[x]*(v1[y]-v2[y]);
+	//x1 (y2 - y3) + x2 (y3 - y1) + x3 (y1 - y2) 
+	plane[2] = v1[x]*(v2[y]-v3[y])+v2[x]*(v3[y]-v1[y])+v3[x]*(v1[y]-v2[y]);
+	//x1 (y2 z3 - y3 z2) + x2 (y3 z1 - y1 z3) + x3 (y1 z2 - y2 z1)	
 	plane[3] = v1[x]*(v2[y]*v3[z]-v3[y]*v2[z])+v2[x]*(v3[y]*v1[z]-v1[y]*v3[z])+v3[x]*(v1[y]*v2[z]-v2[y]*v1[z]);
 	plane[3] = -plane[3];
+}
+
+void verify(const Vec3f& tmp, float * plane, const string& message )
+{
+	cout << message << " residual " << plane[0]*tmp[0]+plane[1]*tmp[1]+plane[2]*tmp[2] + plane[3]  << endl;
 }
 
 Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 {
 	
 	Vec3f p(0,0,1);
-	p = t3d*p;
+	Dict rotation = t3d.get_rotation();
+	
+	float az = rotation["az"];
+	float alt = rotation["alt"];
+	float phi = rotation["phi"];
+
+	Transform3D o = Transform3D(az,0,0)*Transform3D(0,alt,0)*Transform3D(0,0,phi);
+	p = o*p;
+// 	cout << "Main point is " << p[0] << " " << p[1] << " " << p[2] << endl;
 	// First find which asymmetric unit the p is in
-// 	int soln = -1;
+	int soln = -1;
+	vector<Vec3f> points = get_asym_unit_points(true);
+// 	for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
+// // 		cout << "default asym unit " << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << " " << endl;
+// 	}
 	float* plane = new float[4];
 	for(int i = 0; i < get_nsym(); ++i) {
-		vector<Vec3f> points = get_asymm_unit_points(true);
 		
-		if ( i != 0 ) {
-			for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
-				*it = get_sym(i)*(*it); 
+		
+		vector<vector<Vec3f> >triangles = get_asym_unit_triangles(true);
+		typedef vector<vector<Vec3f> >::const_iterator cit;
+		
+		for( cit it = triangles.begin(); it != triangles.end(); ++it )
+		{
+			vector<Vec3f> points = *it;
+			if ( i != 0 ) {
+				for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
+					*it = get_sym(i)*(*it); 
+				}
 			}
-		}
-		
-		equation_of_plane(points[0],points[1],points[2],plane);
-		
-		Vec3f tmp = p;
-// 		tmp.normalize();
-// 		cout << "plane solution is " << plane[0] << " " << plane[1] << " " << plane[2] << " " << plane[3] << endl;
-		float eqn = plane[0]*tmp[0]+plane[1]*tmp[1]+plane[2]*tmp[2];
-		if ( eqn != 0 )
-			eqn = -plane[3]/eqn;
-		else throw;
-		
-		
-		
-// 		if (eqn <= 0) continue;
-// 		cout << "scale factor was " << eqn << endl;
-		
-		
-		
-		// This is the intersection point
-		Vec3f pp = tmp*eqn;
-		
-		Vec3f v = points[2]-points[1];
-		Vec3f u = points[0]-points[1];
-		Vec3f w = pp - points[1];
-// 		v.normalize(); u.normalize(); w.normalize();
-		
-		float udotu = u.dot(u);
-		float udotv = u.dot(v);
-		float udotw = u.dot(w);
-		float vdotv = v.dot(v);
-		float vdotw = v.dot(w);
-		
-		float d = 1.0/(udotv*udotv - udotu*vdotv);
-		float s = udotv*vdotw - vdotv*udotw;
-		s *= d;
-		
-		float t = udotv*udotw - udotu*vdotw;
-		t *= d;
-		cout << "At " << i << " t and s are " << t << " " << s << endl;
-		if ( s >= 0 && t >= 0 && (s+t) <= 1 ) {
-			cout << "Intersection detected with " << i << endl;
-			cout << "point is " << p[0] << " " << p[1] << " " << p[2] << endl;
+			
+			equation_of_plane(points[0],points[2],points[1],plane);
+			
+	// 		verify(points[0],plane, "p1");
+	// 		verify(points[1],plane, "p2");
+	// 		verify(points[2],plane, "p3");
+			
+			Vec3f tmp = p;
+	// 		tmp.normalize();
+	// 		cout << "plane solution is " << plane[0] << " " << plane[1] << " " << plane[2] << " " << plane[3] << endl;
+			float eqn = plane[0]*tmp[0]+plane[1]*tmp[1]+plane[2]*tmp[2];
+			if ( eqn != 0 )
+				eqn = -plane[3]/eqn;
+			else {
+				cout << "warning, had to continue on " << i << endl;
+				continue;
+			}
+			
+			
+			
+			if (eqn <= 0) continue;
+	// 		cout << "scale factor was " << eqn << endl;
+			
+			
+			
+			// This is the intersection point
+			Vec3f pp = tmp*eqn;
+	// 		verify(pp,plane, "pp");
+			
+			Vec3f v = points[2]-points[0];
+			Vec3f u = points[1]-points[0];
+			Vec3f w = pp - points[0];
+	// 		v.normalize(); u.normalize(); w.normalize();
+			
+			float udotu = u.dot(u);
+			float udotv = u.dot(v); 
+			float udotw = u.dot(w);
+			float vdotv = v.dot(v);
+			float vdotw = v.dot(w);
+			
+			float d = 1.0/(udotv*udotv - udotu*vdotv);
+			float s = udotv*vdotw - vdotv*udotw;
+			s *= d;
+			
+			float t = udotv*udotw - udotu*vdotw;
+			t *= d;
+	// 		cout << "At " << i << " t and s are " << t << " " << s << endl;
+			if ( s >= 0 && t >= 0 && (s+t) <= 1 ) {
+	// 			cout << "Intersection detected with " << i << endl;
+				soln = i;
+				break;
+	// 			cout << "point is " << pp[0] << " " << pp[1] << " " << pp[2] << " " << eqn << endl;
+	// 			for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
+	// 				cout << "asym unit " << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << " " << endl;
+	// 			}
+	// 			cout << "rotation " <<  (float) get_sym(i).get_rotation()["az"] << " " <<  (float) get_sym(i).get_rotation()["alt"] << " " <<  (float) get_sym(i).get_rotation()["phi"] << endl;
+			}
 		}
 	}
 	
+	if ( soln == -1 ) throw;
 	
+	Transform3D nt = get_sym(soln);
+	rotation = nt.get_rotation();
+	
+	az = rotation["az"];
+	alt = rotation["alt"];
+	phi = rotation["phi"];
+
+	Transform3D oo = Transform3D(-az,0,0)*Transform3D(0,-alt,0)*Transform3D(0,0,-phi);
+	
+	// Now map into the requested asymmunit
+	if ( n != 0 ) {
+		oo = get_sym(n)*oo;
+	}
+	
+	Vec3f psoln = oo*p;
+// 	cout << "The solution was " << psoln[0] << " " << psoln[1] << " " << psoln[2] << endl;
+	
+	Transform3D ret(atan2(psoln[0],psoln[1])*EMConsts::rad2deg, acos(psoln[2])*EMConsts::rad2deg, 0);
 	
 	delete [] plane;
-	return Transform3D();
+	return ret;
 	
 }
 
@@ -2066,13 +2127,101 @@ bool CSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 // PRB see here
 // Transform3D CSym::reduce(const Transform3D& t3d, int n)
 // {
-// 	vector<Vec3f> points = get_asymm_unit_points(false);
+// 	vector<Vec3f> points = get_asym_unit_points(false);
 // 	Transform3D t = get_sym(n);
 // 	
 // 	points.size();
 // }
+vector<vector<Vec3f> > CSym::get_asym_unit_triangles(bool inc_mirror ) const{
+	vector<Vec3f> v = get_asym_unit_points(inc_mirror);
+	int nsym = params.set_default("nsym",0);
+	
+	vector<vector<Vec3f> > ret;
+	if (v.size() == 0) return ret; // nsym == 1 and inc_mirror == true, this is the entire sphere!
+	if (nsym == 1 && !inc_mirror) {
+		Vec3f z(0,0,1);
+		vector<Vec3f> tmp;
+		tmp.push_back(z);
+		tmp.push_back(v[0]);
+		tmp.push_back(v[1]);
+		ret.push_back(tmp);
+		
+		vector<Vec3f> tmp2;
+		tmp2.push_back(z);
+		tmp2.push_back(v[1]);
+		tmp2.push_back(v[2]);
+		ret.push_back(tmp2);
+		
+		vector<Vec3f> tmp3;
+		tmp3.push_back(z);
+		tmp3.push_back(v[2]);
+		tmp3.push_back(v[3]);
+		ret.push_back(tmp3);
+		
+		vector<Vec3f> tmp4;
+		tmp4.push_back(z);
+		tmp4.push_back(v[3]);
+		tmp4.push_back(v[0]);
+		ret.push_back(tmp4);
+	}
+	else if (nsym == 2 && inc_mirror) {
+		Vec3f x(1,0,0);
+		vector<Vec3f> tmp;
+		tmp.push_back(v[0]);
+		tmp.push_back(v[1]);
+		tmp.push_back(x);
+		ret.push_back(tmp);
+		
+		vector<Vec3f> tmp2;
+		tmp2.push_back(v[1]);
+		tmp2.push_back(v[2]);
+		tmp2.push_back(x);
+		ret.push_back(tmp2);
+		
+		vector<Vec3f> tmp3;
+		tmp3.push_back(v[2]);
+		tmp3.push_back(v[3]);
+		tmp3.push_back(x);
+		ret.push_back(tmp3);
+		
+		vector<Vec3f> tmp4;
+		tmp4.push_back(v[3]);
+		tmp4.push_back(v[0]);
+		tmp4.push_back(x);
+		ret.push_back(tmp4);
+	}
+	else if (nsym == 2 && !inc_mirror) {
+		vector<Vec3f> tmp;
+		tmp.push_back(v[0]);
+		tmp.push_back(v[1]);
+		tmp.push_back(v[2]);
+		ret.push_back(tmp);
+		
+		vector<Vec3f> tmp2;
+		tmp2.push_back(v[2]);
+		tmp2.push_back(v[3]);
+		tmp2.push_back(v[0]);
+		ret.push_back(tmp2);
+	}
+	else if (v.size() == 3) ret.push_back(v);
+	else if (v.size() == 4) {
+		vector<Vec3f> tmp;
+		tmp.push_back(v[0]);
+		tmp.push_back(v[1]);
+		tmp.push_back(v[3]);
+		ret.push_back(tmp);
+		
+		vector<Vec3f> tmp2;
+		tmp2.push_back(v[1]);
+		tmp2.push_back(v[2]);
+		tmp2.push_back(v[3]);
+		ret.push_back(tmp2);
+	}
+	
+	return ret;
+}
 
-vector<Vec3f> CSym::get_asymm_unit_points(bool inc_mirror) const
+vector<Vec3f> CSym::get_asym_unit_points(bool inc_mirror) const
 {
 	Dict delim = get_delimiters(inc_mirror);
 	int nsym = params.set_default("nsym",0);
@@ -2080,27 +2229,27 @@ vector<Vec3f> CSym::get_asymm_unit_points(bool inc_mirror) const
 	
 	if ( nsym == 1 ) {
 		if (inc_mirror == false ) {
-			ret.push_back(Vec3f(0,-1,0));
-			ret.push_back(Vec3f(1,0,0));
 			ret.push_back(Vec3f(0,1,0));
+			ret.push_back(Vec3f(1,0,0));
+			ret.push_back(Vec3f(0,-1,0));
 			ret.push_back(Vec3f(-1,0,0));
 		}
 		// else return ret; // an empty vector! this is fine
 	}
 	else if (nsym == 2 && !inc_mirror) {
 		ret.push_back(Vec3f(0,0,1));
-		ret.push_back(Vec3f(0,-1,0));
-		ret.push_back(Vec3f(1,0,0));
 		ret.push_back(Vec3f(0,1,0));
+		ret.push_back(Vec3f(1,0,0));
+		ret.push_back(Vec3f(0,-1,0));
 	}
 	else {
 		ret.push_back(Vec3f(0,0,1));
-		ret.push_back(Vec3f(0,-1,0));
+		ret.push_back(Vec3f(0,1,0));
 		if (inc_mirror == true) {
 			ret.push_back(Vec3f(0,0,-1));
 		}
 		float angle = EMConsts::deg2rad*float(delim["az_max"]);
-		float y = -cos(angle);
+		float y = cos(angle);
 		float x = sin(angle);
 		ret.push_back(Vec3f(x,y,0));
 	}
@@ -2169,7 +2318,59 @@ Transform3D DSym::get_sym(int n) const
 	return ret;
 }
 
-vector<Vec3f> DSym::get_asymm_unit_points(bool inc_mirror) const
+vector<vector<Vec3f> > DSym::get_asym_unit_triangles(bool inc_mirror) const{
+	vector<Vec3f> v = get_asym_unit_points(inc_mirror);
+	int nsym = params.set_default("nsym",0);
+	vector<vector<Vec3f> > ret;
+	if ( nsym == 1 ) {
+		if ( (inc_mirror == false) || (nsym == 2 && inc_mirror) ) {
+			vector<Vec3f> tmp;
+			tmp.push_back(v[0]);
+			tmp.push_back(v[1]);
+			tmp.push_back(v[2]);
+			ret.push_back(tmp);
+		
+			vector<Vec3f> tmp2;
+			tmp2.push_back(v[2]);
+			tmp2.push_back(v[3]);
+			tmp2.push_back(v[0]);
+			ret.push_back(tmp2);
+		}
+		else {
+			Vec3f z(0,0,1);
+			vector<Vec3f> tmp;
+			tmp.push_back(z);
+			tmp.push_back(v[0]);
+			tmp.push_back(v[1]);
+			ret.push_back(tmp);
+		
+			vector<Vec3f> tmp2;
+			tmp2.push_back(z);
+			tmp2.push_back(v[1]);
+			tmp2.push_back(v[2]);
+			ret.push_back(tmp2);
+		
+			vector<Vec3f> tmp3;
+			tmp3.push_back(z);
+			tmp3.push_back(v[2]);
+			tmp3.push_back(v[3]);
+			ret.push_back(tmp3);
+		
+			vector<Vec3f> tmp4;
+			tmp4.push_back(z);
+			tmp4.push_back(v[3]);
+			tmp4.push_back(v[0]);
+			ret.push_back(tmp4);
+		}
+	}
+	else {
+		ret.push_back(v);
+	}
+	
+	return ret;
+}
+
+vector<Vec3f> DSym::get_asym_unit_points(bool inc_mirror) const
 {
 	Dict delim = get_delimiters(inc_mirror);
 	
@@ -2178,28 +2379,28 @@ vector<Vec3f> DSym::get_asymm_unit_points(bool inc_mirror) const
 	if ( nsym == 1 ) {
 		if (inc_mirror == false ) {
 			ret.push_back(Vec3f(0,0,1));
-			ret.push_back(Vec3f(0,-1,0));
-			ret.push_back(Vec3f(1,0,0));
 			ret.push_back(Vec3f(0,1,0));
+			ret.push_back(Vec3f(1,0,0));
+			ret.push_back(Vec3f(0,-1,0));
 		}
 		else {
-			ret.push_back(Vec3f(0,-1,0));
-			ret.push_back(Vec3f(1,0,0));
 			ret.push_back(Vec3f(0,1,0));
+			ret.push_back(Vec3f(1,0,0));
+			ret.push_back(Vec3f(0,-1,0));
 			ret.push_back(Vec3f(-1,0,0));
 		}
 	}
 	else if ( nsym == 2 && inc_mirror ) {
 		ret.push_back(Vec3f(0,0,1));
-		ret.push_back(Vec3f(0,-1,0));
-		ret.push_back(Vec3f(1,0,0));
 		ret.push_back(Vec3f(0,1,0));
+		ret.push_back(Vec3f(1,0,0));
+		ret.push_back(Vec3f(0,-1,0));
 	}
 	else {
 		float angle = EMConsts::deg2rad*float(delim["az_max"]);
 		ret.push_back(Vec3f(0,0,1));
-		ret.push_back(Vec3f(0,-1,0));
-		float y = -cos(angle);
+		ret.push_back(Vec3f(0,1,0));
+		float y = cos(angle);
 		float x = sin(angle);
 		ret.push_back(Vec3f(x,y,0));
 	}
@@ -2244,7 +2445,13 @@ bool HSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 	return false;
 }
 
-vector<Vec3f> HSym::get_asymm_unit_points(bool inc_mirror) const
+vector<vector<Vec3f> > HSym::get_asym_unit_triangles(bool inc_mirror) const{
+	
+	vector<vector<Vec3f> > ret;
+	return ret;
+}
+
+vector<Vec3f> HSym::get_asym_unit_points(bool inc_mirror) const
 {
 	vector<Vec3f> ret;
 	
@@ -2375,7 +2582,28 @@ float PlatonicSym::platonic_alt_lower_bound(const float& azimuth, const float& a
 	return baldwin_lower_alt_bound;
 }
 
-vector<Vec3f> PlatonicSym::get_asymm_unit_points(bool inc_mirror) const
+vector<vector<Vec3f> > PlatonicSym::get_asym_unit_triangles(bool inc_mirror) const{
+	vector<Vec3f> v = get_asym_unit_points(inc_mirror);
+	vector<vector<Vec3f> > ret;
+	if (v.size() == 3) ret.push_back(v);
+	else /* v.size() == 4*/ {
+		vector<Vec3f> tmp;
+		tmp.push_back(v[0]);
+		tmp.push_back(v[1]);
+		tmp.push_back(v[2]);
+		ret.push_back(tmp);
+		
+		vector<Vec3f> tmp2;
+		tmp2.push_back(v[0]);
+		tmp2.push_back(v[2]);
+		tmp2.push_back(v[3]);
+		ret.push_back(tmp2);
+	}
+	
+	return ret;
+}
+
+vector<Vec3f> PlatonicSym::get_asym_unit_points(bool inc_mirror) const
 {
 	vector<Vec3f> ret;
 	
@@ -2384,12 +2612,12 @@ vector<Vec3f> PlatonicSym::get_asymm_unit_points(bool inc_mirror) const
 	float theta_c_on_two = (float)platonic_params["theta_c_on_two"]; // already in radians
 	float theta_c = 2*theta_c_on_two;
 	
-	Vec3f c_on_two = Vec3f(0,-sin(theta_c_on_two),cos(theta_c_on_two));
-	Vec3f c = Vec3f(0,-sin(theta_c),cos(theta_c));
+	Vec3f c_on_two = Vec3f(0,sin(theta_c_on_two),cos(theta_c_on_two));
+	Vec3f c = Vec3f(0,sin(theta_c),cos(theta_c));
 	ret.push_back(c_on_two);
 	
 	float cap_sig = platonic_params["az_max"];
-	Vec3f a = Vec3f(sin(theta_c)*sin(cap_sig),-sin(theta_c)*cos(cap_sig),cos(theta_c));
+	Vec3f a = Vec3f(sin(theta_c)*sin(cap_sig),sin(theta_c)*cos(cap_sig),cos(theta_c));
 	
 	Vec3f f = a+b+c;
 	f.normalize();
@@ -2397,7 +2625,7 @@ vector<Vec3f> PlatonicSym::get_asymm_unit_points(bool inc_mirror) const
 	ret.push_back(f);
 	
 	if ( inc_mirror ) {
-		Vec3f a_on_two = Vec3f(sin(theta_c_on_two)*sin(cap_sig),-sin(theta_c_on_two)*cos(cap_sig),cos(theta_c_on_two));
+		Vec3f a_on_two = Vec3f(sin(theta_c_on_two)*sin(cap_sig),sin(theta_c_on_two)*cos(cap_sig),cos(theta_c_on_two));
 		ret.push_back(a_on_two);
 	}
 	
@@ -2526,7 +2754,7 @@ Transform3D TetrahedralSym::get_sym(int n) const
 }
 
 
-vector<Vec3f> TetrahedralSym::get_asymm_unit_points(bool inc_mirror) const
+vector<Vec3f> TetrahedralSym::get_asym_unit_points(bool inc_mirror) const
 {
 	vector<Vec3f> ret;
 	
@@ -2535,12 +2763,12 @@ vector<Vec3f> TetrahedralSym::get_asymm_unit_points(bool inc_mirror) const
 	float theta_c_on_two = (float)platonic_params["theta_c_on_two"]; // already in radians
 	float theta_c = 2*theta_c_on_two;
 	
-	Vec3f c_on_two = Vec3f(0,-sin(theta_c_on_two),cos(theta_c_on_two));
-	Vec3f c = Vec3f(0,-sin(theta_c),cos(theta_c));
+	Vec3f c_on_two = Vec3f(0,sin(theta_c_on_two),cos(theta_c_on_two));
+	Vec3f c = Vec3f(0,sin(theta_c),cos(theta_c));
 	ret.push_back(c_on_two);
 	float cap_sig = platonic_params["az_max"];
 	if ( inc_mirror ) {
-		Vec3f a = Vec3f(sin(theta_c)*sin(cap_sig),-sin(theta_c)*cos(cap_sig),cos(theta_c));
+		Vec3f a = Vec3f(sin(theta_c)*sin(cap_sig),sin(theta_c)*cos(cap_sig),cos(theta_c));
 		
 		Vec3f f = a+b+c;
 		f.normalize();
@@ -2548,7 +2776,7 @@ vector<Vec3f> TetrahedralSym::get_asymm_unit_points(bool inc_mirror) const
 		ret.push_back(f);
 	}
 	
-	Vec3f a_on_two = Vec3f(sin(theta_c_on_two)*sin(cap_sig),-sin(theta_c_on_two)*cos(cap_sig),cos(theta_c_on_two));
+	Vec3f a_on_two = Vec3f(sin(theta_c_on_two)*sin(cap_sig),sin(theta_c_on_two)*cos(cap_sig),cos(theta_c_on_two));
 	ret.push_back(a_on_two);
 
 	
