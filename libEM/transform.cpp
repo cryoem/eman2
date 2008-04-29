@@ -1486,12 +1486,38 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 		else if (alt_iterator == 0) h = azmax;
 			
 		float az_iterator = 0.0;
-		while ( az_iterator < azmax - h / 4.0 ) {
+		
+		float azmax_adjusted = azmax;
+		
+		// if this is odd c symmetry, and we're at the equator, and we're excluding the mirror then
+		// half the equator is redundant (it is the mirror of the other half)
+		if (sym->is_c_sym() && !inc_mirror && alt_iterator == altmax && (sym->get_nsym() % 2 == 1 ) ){
+			azmax_adjusted /= 2.0;
+		}
+		// at the azimuthal boundary in c symmetry and tetrahedral symmetry we have come
+		// full circle, we must not include it
+		else if (sym->is_c_sym() or sym->is_tet_sym() ) {
+			azmax_adjusted -=  h / 4.0;
+		}
+		// If we're including the mirror then in d and icos and oct symmetry the azimuthal
+		// boundary represents coming full circle, so must be careful to exclude it
+		else if (inc_mirror && ( sym->is_d_sym() or sym->is_platonic() ) )  {
+			azmax_adjusted -=  h / 4.0;
+		}
+		// else do nothing - this means that we're including the great arc traversing
+		// the full range of permissable altitude angles at azmax.
+		// This happens in d symmetry, and in the icos and oct symmetries, when the mirror
+		// portion of the asymmetric unit is being excluded
+		
+
+		while ( az_iterator <= azmax_adjusted ) {
 			// FIXME: add an intelligent comment - this was copied from old code	
-			if ( az_iterator > 180.0 && alt_iterator > 180.0/(2.0-0.001) && alt_iterator < 180.0/(2.0+0.001) ) {
-				az_iterator +=  h;
-				continue;
-			}
+// 			if ( az_iterator > 180.0 && alt_iterator > 180.0/(2.0-0.001) && alt_iterator < 180.0/(2.0+0.001) ) {
+// 				az_iterator +=  h;
+// 				continue;
+// 			}
+// 			// Now that I am handling the boundaries very specifically, I don't think we need
+			// the above if statement. But I am leaving it there in case I need to reconsider.
 			
 			float alt_soln = alt_iterator;
 			float az_soln = az_iterator;
@@ -1929,6 +1955,87 @@ vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Trans
 // 	
 // 	return ret;
 // }
+
+void equation_of_plane(const Vec3f& v1, const Vec3f& v2, const Vec3f& v3, float * plane )
+{
+// 	float* plane = new float[4]; // A,B,C,D
+	int x=0,y=1,z=2;
+	plane[0] = v1[y]*(v2[z]-v3[z])+v2[y]*(v3[z]-v1[z])+v3[y]*(v1[z]-v2[z]);
+	plane[1] = v1[z]*(v2[x]-v3[x])+v2[z]*(v3[x]-v1[x])+v3[z]*(v1[x]-v2[x]);
+	plane[2] = v1[x]*(v2[y]-v3[y])+v2[y]*(v3[y]-v1[y])+v3[x]*(v1[y]-v2[y]);
+	plane[3] = v1[x]*(v2[y]*v3[z]-v3[y]*v2[z])+v2[x]*(v3[y]*v1[z]-v1[y]*v3[z])+v3[x]*(v1[y]*v2[z]-v2[y]*v1[z]);
+	plane[3] = -plane[3];
+}
+
+Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
+{
+	
+	Vec3f p(0,0,1);
+	p = t3d*p;
+	// First find which asymmetric unit the p is in
+// 	int soln = -1;
+	float* plane = new float[4];
+	for(int i = 0; i < get_nsym(); ++i) {
+		vector<Vec3f> points = get_asymm_unit_points(true);
+		
+		if ( i != 0 ) {
+			for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
+				*it = get_sym(i)*(*it); 
+			}
+		}
+		
+		equation_of_plane(points[0],points[1],points[2],plane);
+		
+		Vec3f tmp = p;
+// 		tmp.normalize();
+// 		cout << "plane solution is " << plane[0] << " " << plane[1] << " " << plane[2] << " " << plane[3] << endl;
+		float eqn = plane[0]*tmp[0]+plane[1]*tmp[1]+plane[2]*tmp[2];
+		if ( eqn != 0 )
+			eqn = -plane[3]/eqn;
+		else throw;
+		
+		
+		
+// 		if (eqn <= 0) continue;
+// 		cout << "scale factor was " << eqn << endl;
+		
+		
+		
+		// This is the intersection point
+		Vec3f pp = tmp*eqn;
+		
+		Vec3f v = points[2]-points[1];
+		Vec3f u = points[0]-points[1];
+		Vec3f w = pp - points[1];
+// 		v.normalize(); u.normalize(); w.normalize();
+		
+		float udotu = u.dot(u);
+		float udotv = u.dot(v);
+		float udotw = u.dot(w);
+		float vdotv = v.dot(v);
+		float vdotw = v.dot(w);
+		
+		float d = 1.0/(udotv*udotv - udotu*vdotv);
+		float s = udotv*vdotw - vdotv*udotw;
+		s *= d;
+		
+		float t = udotv*udotw - udotu*vdotw;
+		t *= d;
+		cout << "At " << i << " t and s are " << t << " " << s << endl;
+		if ( s >= 0 && t >= 0 && (s+t) <= 1 ) {
+			cout << "Intersection detected with " << i << endl;
+			cout << "point is " << p[0] << " " << p[1] << " " << p[2] << endl;
+		}
+	}
+	
+	
+	
+	delete [] plane;
+	return Transform3D();
+	
+}
+
+
 
 // C Symmetry stuff 
 Dict CSym::get_delimiters(const bool inc_mirror) const {

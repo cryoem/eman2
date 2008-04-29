@@ -319,6 +319,26 @@ namespace EMAN
 		 */
 		virtual bool is_h_sym() const { return false; }
 		
+		/** A function that is used to determine if this is a c symmetry object
+		 * This function is only virtually overloaded by the CSym object, which returns true
+		 * @return false - indicating that this is not a helical symmetry object
+		 */
+		virtual bool is_c_sym() const { return false; }
+		
+		/** A function that is used to determine if this is a d symmetry object
+		 * This function is only virtually overloaded by the DSym object, which returns true
+		 * @return false - indicating that this is not a helical symmetry object
+		 */
+		virtual bool is_d_sym() const { return false; }
+		
+		/** A function that is used to determine if this is the tetrahedral symmetry object
+		 * This function is only virtually overloaded by the TetSym object, which returns true
+		 * @return false - indicating that this is not a tetrahedral symmetry object
+		 */
+		virtual bool is_tet_sym() const { return false; }
+		
+		
+		
 		/** The Symmetry3D object must return the maximum degree of symmetry it exhibits about any one axis.
 		 * This function is only called in the AsymmUnitOrientationGenerator.
 		 */
@@ -352,8 +372,9 @@ namespace EMAN
 		 * @return true or false, depending on whether or not the orientation is within the asymmetric unit
 		 */
 		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const = 0;
-//PRB see here
-// 		virtual Transform3D reduce(const Transform3D& t3d, int n=0) = 0;
+
+		
+		virtual Transform3D reduce(const Transform3D& t3d, int n=0);
 	};
 	
 	/** An encapsulation of cyclic 3D symmetry
@@ -443,6 +464,13 @@ namespace EMAN
 		 * @return true or false, depending on whether or not the orientation is within the asymmetric unit
 		 */
 		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const;
+		
+		/** Returns true - this is indeed a c symmetry object
+		 * @return true - indicating that this is a c symmetry object
+		 */
+		virtual bool is_c_sym() const { return  true; }
+		
+		
 
 // PRB see here
 // 		virtual Transform3D reduce(const Transform3D& t3d, int n=0);
@@ -536,6 +564,11 @@ namespace EMAN
 		
 		/// The name of this class - used to access it from factories etc. Should be "d"
 		static const string NAME;
+		
+		/** Returns true - this is indeed a c symmetry object
+		 * @return true - indicating that this is a c symmetry object
+		 */
+		virtual bool is_d_sym() const { return  true; }
 	};
 	
 	/** An encapsulation of helical 3D symmetry
@@ -829,6 +862,12 @@ namespace EMAN
 		 * to demarcate the asymmetric unit. The last should may be connected to the first.
 		 */
 		virtual vector<Vec3f> get_asymm_unit_points(bool inc_mirror = false) const;
+		
+		/** A function that is used to determine if this is the tetrahedral symmetry object
+		 * @return true - indicating that this is not a tetrahedral symmetry object
+		 */
+		virtual bool is_tet_sym() const { return true; }
+		
 		
 	};
 	
