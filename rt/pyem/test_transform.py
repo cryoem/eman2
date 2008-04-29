@@ -202,10 +202,10 @@ class TestTransform(unittest.TestCase):
 			n = sym.get_nsym()
 			az = 1
 			alt = 1
-			T = transform3D(az,alt,0)
+			T = Transform3D(az,alt,0)
 			for i in range(1,n):
 				T1 = sym.get_sym(i)
-				T2 = T1*T
+				T2 = T*T1
 				
 				A = sym.reduce(T2,0)
 				result = A.get_rotation()

@@ -2078,6 +2078,8 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 	az = rotation["az"];
 	alt = rotation["alt"];
 	phi = rotation["phi"];
+	
+	cout << "solution was " << soln << " angles are " << az << " " << alt << " " << phi << endl;
 
 	Transform3D oo = Transform3D(-az,0,0)*Transform3D(0,-alt,0)*Transform3D(0,0,-phi);
 	
