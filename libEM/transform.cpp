@@ -1986,7 +1986,7 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 	float alt = rotation["alt"];
 	float phi = rotation["phi"];
 
-	Transform3D o = Transform3D(az,0,0)*Transform3D(0,alt,0)*Transform3D(0,0,phi);
+	Transform3D o = Transform3D(0,0,phi)*Transform3D(0,alt,0)*Transform3D(0,0,az);
 	p = o*p;
 // 	cout << "Main point is " << p[0] << " " << p[1] << " " << p[2] << endl;
 	// First find which asymmetric unit the p is in
@@ -2081,7 +2081,7 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 	
 	cout << "solution was " << soln << " angles are " << az << " " << alt << " " << phi << endl;
 
-	Transform3D oo = Transform3D(-az,0,0)*Transform3D(0,-alt,0)*Transform3D(0,0,-phi);
+	Transform3D oo = Transform3D(0,0,-phi)*Transform3D(0,-alt,0)*Transform3D(-az,0,0);
 	
 	// Now map into the requested asymmunit
 	if ( n != 0 ) {
@@ -2102,7 +2102,7 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 
 // C Symmetry stuff 
 Dict CSym::get_delimiters(const bool inc_mirror) const {
-	Dict returnDict;		
+	Dict returnDict;
 	// Get the parameters of interest
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
