@@ -1986,8 +1986,8 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 	float alt = rotation["alt"];
 	float phi = rotation["phi"];
 
-	Transform3D o = Transform3D(0,0,phi)*Transform3D(0,alt,0)*Transform3D(0,0,az);
-	p = o*p;
+// 	Transform3D o = Transform3D(az,0,0)*Transform3D(0,alt,0)*Transform3D(0,0,phi);
+	p = t3d*p;
 // 	cout << "Main point is " << p[0] << " " << p[1] << " " << p[2] << endl;
 	// First find which asymmetric unit the p is in
 	int soln = -1;
@@ -2081,7 +2081,7 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 	
 	cout << "solution was " << soln << " angles are " << az << " " << alt << " " << phi << endl;
 
-	Transform3D oo = Transform3D(0,0,-phi)*Transform3D(0,-alt,0)*Transform3D(-az,0,0);
+	Transform3D oo = Transform3D(-az,0,0)*Transform3D(0,-alt,0)*Transform3D(0,0,-phi);
 	
 	// Now map into the requested asymmunit
 	if ( n != 0 ) {
