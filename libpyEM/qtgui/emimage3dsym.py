@@ -295,11 +295,18 @@ class EM3DSymViewer(EMImage3DObject):
 
 		glNewList(self.sym_dl,GL_COMPILE)
 		for i in eulers:
-			d = i.get_rotation()
+			
+			
 			glPushMatrix()
-			glRotate(d["az"],0,0,-1)
-			glRotate(d["alt"],-1,0,0)
-			glRotate(d["phi"],0,0,-1)
+			i.transpose()
+			d = i.get_rotation()
+			glRotate(-d["phi"],0,0,1)
+			glRotate(-d["alt"],1,0,0)
+			glRotate(-d["az"],0,0,1)
+			
+			#glRotate(-d["az"],0,0,1)
+			#glRotate(-d["alt"],1,0,0)
+			#glRotate(-d["phi"],0,0,1)
 			#print d["phi"],d["alt"],d["az"]
 			glTranslate(0,0,self.radius)
 			glCallList(self.spheredl)
@@ -352,9 +359,9 @@ class EM3DSymViewer(EMImage3DObject):
 					if ( self.sym_object.is_h_sym() ):
 						trans = t.get_posttrans()
 						glTranslatef(trans[0],trans[1],trans[2])
-					glRotate(d["az"],0,0,1)
-					glRotate(d["alt"],1,0,0)
-					glRotate(d["phi"],0,0,1)
+					glRotate(-d["phi"],0,0,1)
+					glRotate(-d["alt"],1,0,0)
+					glRotate(-d["az"],0,0,1)
 					glCallList(self.arc_dl)
 					glPopMatrix()
 			
