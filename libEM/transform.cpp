@@ -2072,7 +2072,10 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 		}
 	}
 	
-	if ( soln == -1 ) throw;
+	if ( soln == -1 ) {
+		cout << "error, no solution founud!" << endl;
+		throw;
+	}
 	
 	Transform3D nt = get_sym(soln);
 	rotation = nt.get_rotation();
