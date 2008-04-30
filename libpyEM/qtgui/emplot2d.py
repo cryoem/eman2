@@ -328,7 +328,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		elif event.buttons()&Qt.LeftButton:
 			self.addShape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.addShape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
-			self.addShape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),1.5,1)))
+			self.addShape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),120.0,-1)))
 #			self.addShape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 	
 	def mouseReleaseEvent(self, event):

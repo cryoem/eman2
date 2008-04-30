@@ -109,24 +109,22 @@ Various CTF-related operations on images."""
 #			xt.ri2inten()
 #			ps1d.append([xt.get(ii) for ii in range(0,xt.get_xsize(),2)])
 			names.append(i)
-			if options.bgedge>0 :
-				bg=bgedge2d(i,options.bgedge)
-				ps2d.append(bg)
-				ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
-				names.append(i+"(bg)")
+			#if options.bgedge>0 :
+				#bg=bgedge2d(i,options.bgedge)
+				#ps2d.append(bg)
+				#ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
+				#names.append(i+"(bg)")
 
 			
-			#if options.bgedge>0 :
-				#bg=bgedge1d(i,options.bgedge)
-##				for ii in range(1,len(bg)): bg[ii]/=sqrt(ii)
-				#bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
-				#mins=min(bgs)
-##				print mins,bgs
-				#bg=[ii*mins for ii in bg]
-##				bg=[bg[ii]*mins/(ii+.0001) for ii in range(len(bg))]
-				#ps1d.append(bg)
-				#ps2d.append(ps2d[-1])
-				#names.append(i+"(bg)")
+			if options.bgedge>0 :
+				bg=bgedge1d(i,options.bgedge)
+#				for ii in range(1,len(bg)): bg[ii]/=sqrt(ii)
+				bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
+				mins=min(bgs)
+#				bg=[ii*mins for ii in bg]
+				ps1d.append(bg)
+				ps2d.append(ps2d[-1])
+				names.append(i+"(bg)")
 
 
 			
@@ -250,7 +248,7 @@ def bgedge1d(stackfile,width):
 		if i==0 : 
 			xs=im.get_xsize()
 		
-			# values to cover a 25% border around the image
+			# values to cover a "width" border around the image
 			pos=range(width)+range(xs-width,xs)
 		
 			# avg will store the running sum of the 1D spectra
@@ -262,17 +260,19 @@ def bgedge1d(stackfile,width):
 		for j in pos:
 			c=im.get_clip(Region(0,j,xs,1))
 			cf=c.do_fft()
-#			cf.ri2inten()
+			cf.ri2inten()
 			avg+=cf
 			
 			c=im.get_clip(Region(j,0,1,xs))
 			c.set_size(xs,1,1)
 			cf=c.do_fft()
-#			cf.ri2inten()
+			cf.ri2inten()
 			avg+=cf
 			
-	avg.ri2inten()
+#	avg.ri2inten()
 	avg/=len(pos)*2*n
+	avg/=xs
+#	avg/=(xs+2)/4			# didn't work the math out for this, but seems to be correct
 	ret=[avg.get(v,0,0) for v in range(0,xs+2,2)]
 	
 	return ret
