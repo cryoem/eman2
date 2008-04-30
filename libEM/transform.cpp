@@ -1990,8 +1990,8 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 	Transform3D o(t3d);
 	o.transpose();
 	p = o*p;
-	cout << "Main point is " << p[0] << " " << p[1] << " " << p[2] << endl;
-	// First find which asymmetric unit the p is in
+// 	cout << "Main point is " << p[0] << " " << p[1] << " " << p[2] << endl;
+// 	// First find which asymmetric unit the p is in
 	int soln = -1;
 	vector<Vec3f> points = get_asym_unit_points(true);
 // 	for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
@@ -2009,7 +2009,7 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 			vector<Vec3f> points = *it;
 			if ( i != 0 ) {
 				for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
-					*it = get_sym(i)*(*it); 
+					*it = (*it)*get_sym(i); 
 				}
 			}
 			
@@ -2060,7 +2060,7 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 			t *= d;
 	// 		cout << "At " << i << " t and s are " << t << " " << s << endl;
 			if ( s >= 0 && t >= 0 && (s+t) <= 1 ) {
-				cout << "Intersection detected with " << i << endl;
+// 				cout << "Intersection detected with " << i << endl;
 				soln = i;
 				break;
 	// 			cout << "point is " << pp[0] << " " << pp[1] << " " << pp[2] << " " << eqn << endl;
@@ -2081,18 +2081,23 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 	alt = rotation["alt"];
 	phi = rotation["phi"];
 	
-	cout << "solution was " << soln << " angles are " << az << " " << alt << " " << phi << endl;
+// 	cout << "solution was " << soln << " angles are " << az << " " << alt << " " << phi << endl;
 
 	nt.transpose();
 	
-	nt  = nt*o;
+	nt  = t3d*nt;
+// 	nt.printme();
 	
 	// Now map into the requested asymmunit
 	if ( n != 0 ) {
-		nt = get_sym(n)*nt;
+		nt = nt*get_sym(n);
 	}
 	
-	nt.transpose();
+// 	Vec3f pp(0,0,1);
+// 	pp = nt*pp;
+// 	cout << "p returned to " << atan2(pp[0],pp[1])*EMConsts::rad2deg << " and " << acos(pp[2])*EMConsts::rad2deg << " checking " << atan2(pp[1],pp[0])*EMConsts::rad2deg << endl;
+	
+// 	nt.transpose();
 	
 	delete [] plane;
 	return nt;
