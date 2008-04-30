@@ -431,7 +431,7 @@ def fourier2D_reconstruction(options):
 		image = get_processed_image(options,i)
 	
 		transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
-		transform.transpose()
+		#transform.transpose()
 		failure = recon.insert_slice(image,transform)
 			
 		if (options.verbose):

@@ -1497,12 +1497,12 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 		// at the azimuthal boundary in c symmetry and tetrahedral symmetry we have come
 		// full circle, we must not include it
 		else if (sym->is_c_sym() or sym->is_tet_sym() ) {
-			azmax_adjusted -=  h / 4.0;
+			azmax_adjusted -=  h/4.0;
 		}
 		// If we're including the mirror then in d and icos and oct symmetry the azimuthal
 		// boundary represents coming full circle, so must be careful to exclude it
 		else if (inc_mirror && ( sym->is_d_sym() or sym->is_platonic() ) )  {
-			azmax_adjusted -=  h / 4.0;
+			azmax_adjusted -=  h/4.0;
 		}
 		// else do nothing - this means that we're including the great arc traversing
 		// the full range of permissable altitude angles at azmax.
@@ -1993,7 +1993,7 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 // 	cout << "Main point is " << p[0] << " " << p[1] << " " << p[2] << endl;
 // 	// First find which asymmetric unit the p is in
 	int soln = -1;
-	vector<Vec3f> points = get_asym_unit_points(true);
+// 	vector<Vec3f> points = get_asym_unit_points(true);
 // 	for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
 // // 		cout << "default asym unit " << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << " " << endl;
 // 	}
@@ -2026,13 +2026,14 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 			if ( eqn != 0 )
 				eqn = -plane[3]/eqn;
 			else {
-				cout << "warning, had to continue on " << i << endl;
+				// parralel lines!
+// 				cout << "warning, had to continue on " << i << endl;
 				continue;
 			}
 			
 			
 			
-			if (eqn <= 0) continue;
+			if (eqn <= 0) continue;	
 	// 		cout << "scale factor was " << eqn << endl;
 			
 			
@@ -2058,7 +2059,13 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 			
 			float t = udotv*udotw - udotu*vdotw;
 			t *= d;
-	// 		cout << "At " << i << " t and s are " << t << " " << s << endl;
+			
+			if (fabs(s) < Transform3D::ERR_LIMIT ) s = 0;
+			if (fabs(t) < Transform3D::ERR_LIMIT ) t = 0;
+			
+			if ( fabs((fabs(s)-1.0)) < Transform3D::ERR_LIMIT ) s = 1;
+			if ( fabs((fabs(t)-1.0)) < Transform3D::ERR_LIMIT ) t = 1;
+			
 			if ( s >= 0 && t >= 0 && (s+t) <= 1 ) {
 // 				cout << "Intersection detected with " << i << endl;
 				soln = i;
@@ -2333,8 +2340,7 @@ vector<vector<Vec3f> > DSym::get_asym_unit_triangles(bool inc_mirror) const{
 	vector<Vec3f> v = get_asym_unit_points(inc_mirror);
 	int nsym = params.set_default("nsym",0);
 	vector<vector<Vec3f> > ret;
-	if ( nsym == 1 ) {
-		if ( (inc_mirror == false) || (nsym == 2 && inc_mirror) ) {
+	if ( (nsym == 1 && inc_mirror == false) || (nsym == 2 && inc_mirror)) {
 			vector<Vec3f> tmp;
 			tmp.push_back(v[0]);
 			tmp.push_back(v[1]);
@@ -2346,33 +2352,32 @@ vector<vector<Vec3f> > DSym::get_asym_unit_triangles(bool inc_mirror) const{
 			tmp2.push_back(v[3]);
 			tmp2.push_back(v[0]);
 			ret.push_back(tmp2);
-		}
-		else {
-			Vec3f z(0,0,1);
-			vector<Vec3f> tmp;
-			tmp.push_back(z);
-			tmp.push_back(v[0]);
-			tmp.push_back(v[1]);
-			ret.push_back(tmp);
-		
-			vector<Vec3f> tmp2;
-			tmp2.push_back(z);
-			tmp2.push_back(v[1]);
-			tmp2.push_back(v[2]);
-			ret.push_back(tmp2);
-		
-			vector<Vec3f> tmp3;
-			tmp3.push_back(z);
-			tmp3.push_back(v[2]);
-			tmp3.push_back(v[3]);
-			ret.push_back(tmp3);
-		
-			vector<Vec3f> tmp4;
-			tmp4.push_back(z);
-			tmp4.push_back(v[3]);
-			tmp4.push_back(v[0]);
-			ret.push_back(tmp4);
-		}
+	}
+	else if (nsym == 1) {
+		Vec3f z(0,0,1);
+		vector<Vec3f> tmp;
+		tmp.push_back(z);
+		tmp.push_back(v[0]);
+		tmp.push_back(v[1]);
+		ret.push_back(tmp);
+	
+		vector<Vec3f> tmp2;
+		tmp2.push_back(z);
+		tmp2.push_back(v[1]);
+		tmp2.push_back(v[2]);
+		ret.push_back(tmp2);
+	
+		vector<Vec3f> tmp3;
+		tmp3.push_back(z);
+		tmp3.push_back(v[2]);
+		tmp3.push_back(v[3]);
+		ret.push_back(tmp3);
+	
+		vector<Vec3f> tmp4;
+		tmp4.push_back(z);
+		tmp4.push_back(v[3]);
+		tmp4.push_back(v[0]);
+		ret.push_back(tmp4);
 	}
 	else {
 		ret.push_back(v);
