@@ -2085,18 +2085,17 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 
 	nt.transpose();
 	
+	nt  = nt*o;
+	
 	// Now map into the requested asymmunit
 	if ( n != 0 ) {
 		nt = get_sym(n)*nt;
 	}
 	
-	Vec3f psoln = nt*p;
-// 	cout << "The solution was " << psoln[0] << " " << psoln[1] << " " << psoln[2] << endl;
-	
-	Transform3D ret(atan2(psoln[0],psoln[1])*EMConsts::rad2deg, acos(psoln[2])*EMConsts::rad2deg, 0);
+	nt.transpose();
 	
 	delete [] plane;
-	return ret;
+	return nt;
 	
 }
 
