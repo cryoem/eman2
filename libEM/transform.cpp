@@ -1282,6 +1282,8 @@ template <> Factory < Symmetry3D >::Factory()
 	force_add(&IcosahedralSym::NEW);
 }
 
+
+
 void EMAN::dump_symmetries()
 {
 	dump_factory < Symmetry3D > ();
@@ -1292,6 +1294,57 @@ map<string, vector<string> > EMAN::dump_symmetries_list()
 	return dump_factory_list < Symmetry3D > ();
 }
 
+template <>
+Symmetry3D* Factory < Symmetry3D >::get(const string & instancename)
+{
+	init();
+	
+	unsigned int n = instancename.size();
+	if ( n == 0 ) throw NotExistingObjectException(instancename, "Empty instance name!");
+	
+	char leadingchar = instancename[0];
+	if (leadingchar == 'c' || leadingchar == 'd' || leadingchar == 'h' ) {
+		Dict parms;
+		if (n > 1) {
+			int nsym = atoi(instancename.c_str() + 1);
+			parms["nsym"] = nsym;
+		}
+		
+		if (leadingchar == 'c') {
+			return get("c",parms);	
+		}
+		if (leadingchar == 'd') {
+			return get("d",parms);	
+		}
+		if (leadingchar == 'h') {
+			return get("h",parms);	
+		}
+		
+// 		delete lc;
+	}
+	else if ( instancename == "icos" || instancename == "oct" || instancename == "tet" )
+	{
+		map < string, InstanceType >::iterator fi =
+				my_instance->my_dict.find(instancename);
+		if (fi != my_instance->my_dict.end()) {
+			return my_instance->my_dict[instancename] ();
+		}
+	
+		string lower = instancename;
+		for (unsigned int i=0; i<lower.length(); i++) lower[i]=tolower(lower[i]);
+	
+		fi = my_instance->my_dict.find(lower);
+		if (fi != my_instance->my_dict.end()) {
+			return my_instance->my_dict[lower] ();
+		}
+		
+		throw NotExistingObjectException(instancename, "No such an instance existing");
+	}
+	else throw NotExistingObjectException(instancename, "No such an instance existing");
+	
+	throw NotExistingObjectException(instancename, "No such an instance existing");
+}
+
 template <> Factory < OrientationGenerator >::Factory()
 {
 	force_add(&EmanOrientationGenerator::NEW);
@@ -1300,6 +1353,8 @@ template <> Factory < OrientationGenerator >::Factory()
 	force_add(&SaffOrientationGenerator::NEW);
 	force_add(&OptimumOrientationGenerator::NEW);
 }
+
+
 
 void EMAN::dump_orientgens()
 {
@@ -1360,7 +1415,7 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 				continue;
 			}
 			
-			if (sym->is_platonic()) {
+			if (sym->is_platonic_sym()) {
 				if ( sym->is_in_asym_unit(alt_iterator, az_iterator,inc_mirror) == false ) {
 					az_iterator += h;
 					continue;
@@ -1501,7 +1556,7 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 		}
 		// If we're including the mirror then in d and icos and oct symmetry the azimuthal
 		// boundary represents coming full circle, so must be careful to exclude it
-		else if (inc_mirror && ( sym->is_d_sym() or sym->is_platonic() ) )  {
+		else if (inc_mirror && ( sym->is_d_sym() or sym->is_platonic_sym() ) )  {
 			azmax_adjusted -=  h/4.0;
 		}
 		// else do nothing - this means that we're including the great arc traversing
@@ -1522,7 +1577,7 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 			float alt_soln = alt_iterator;
 			float az_soln = az_iterator;
 			
-			if (sym->is_platonic()) {
+			if (sym->is_platonic_sym()) {
 				if ( sym->is_in_asym_unit(alt_soln, az_soln,inc_mirror) == false ) {
 					az_iterator += h;
 					continue;
@@ -1617,7 +1672,7 @@ int EvenOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 		}
 		for (int i = 0; i < lt; i++) {
 			float az = (float)i*detaz;
-			if (sym->is_platonic()) {
+			if (sym->is_platonic_sym()) {
 				if ( sym->is_in_asym_unit(alt, az,inc_mirror) == false ) continue;
 			}
 			tally++;
@@ -1668,7 +1723,7 @@ vector<Transform3D> EvenOrientationGenerator::gen_orientations(const Symmetry3D*
 		}
 		for (int i = 0; i < lt; i++) {
 			float az = (float)i*detaz;
-			if (sym->is_platonic()) {
+			if (sym->is_platonic_sym()) {
 				if ( sym->is_in_asym_unit(alt, az,inc_mirror) == false ) continue;
 			}
 			add_orientation(ret,az,alt);
@@ -1713,7 +1768,7 @@ int SaffOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 		float r= sqrt(1.0-z*z);
 		az = fmod(az + delta/r,azmax);
 		float alt = acos(z)*EMConsts::rad2deg;
-		if (sym->is_platonic()) {
+		if (sym->is_platonic_sym()) {
 			if ( sym->is_in_asym_unit(alt,az,inc_mirror) == false ) continue;
 		}
 		tally++;
@@ -1734,7 +1789,7 @@ vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D*
 		delta = get_optimal_delta(sym,n);
 	}
 	
-// 	if ( sym->is_platonic() ) return gen_platonic_orientations(sym, delta);
+// 	if ( sym->is_platonic_sym() ) return gen_platonic_orientations(sym, delta);
 	
 	bool inc_mirror = params.set_default("inc_mirror",false);
 	Dict delimiters = sym->get_delimiters(inc_mirror);
@@ -1767,7 +1822,7 @@ vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D*
 		float r= sqrt(1.0-z*z);
 		az = fmod(az + delta/r,azmax);
 		float alt = acos(z)*EMConsts::rad2deg;
-		if (sym->is_platonic()) {
+		if (sym->is_platonic_sym()) {
 			if ( sym->is_in_asym_unit(alt,az,inc_mirror) == false ) continue;
 		}
 		add_orientation(ret,az,alt);
@@ -2121,7 +2176,7 @@ Dict CSym::get_delimiters(const bool inc_mirror) const {
 	Dict returnDict;
 	// Get the parameters of interest
 	int nsym = params.set_default("nsym",0);
-	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
+	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero nsym");
 			
 	if ( inc_mirror ) returnDict["alt_max"] = 180.0;
 	else  returnDict["alt_max"] = 90.0;
@@ -2278,7 +2333,7 @@ vector<Vec3f> CSym::get_asym_unit_points(bool inc_mirror) const
 		
 Transform3D CSym::get_sym(int n) const {
 	int nsym = params.set_default("nsym",0);
-	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero n");
+	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero nsym");
 			
 	
 	Transform3D ret;
@@ -2293,7 +2348,7 @@ Dict DSym::get_delimiters(const bool inc_mirror) const {
 			
 	// Get the parameters of interest
 	int nsym = params.set_default("nsym",0);
-	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
+	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero nsym");
 			
 	returnDict["alt_max"] = 90.0;
 		
@@ -2323,7 +2378,7 @@ bool DSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 Transform3D DSym::get_sym(int n) const
 {
 	int nsym = 2*params.set_default("nsym",0);
-	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero n");
+	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero nsym");
 	
 	// courtesy of Phil Baldwin
 	Transform3D ret;
@@ -2431,7 +2486,7 @@ Dict HSym::get_delimiters(const bool) const {
 	
 	// Get the parameters of interest
 	int nsym = params.set_default("nsym",0);
-	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero n");
+	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero nsym");
 	
 	float equator_range = params.set_default("equator_range",5.0f);
 	

@@ -311,7 +311,7 @@ namespace EMAN
 		 * This function is only virtually overloaded by the PlatonicSym symmetry, which returns true, not false
 		 * @return false - indicating that this is not a platonic symmetry object
 		 */
-		virtual bool is_platonic() const { return false; }
+		virtual bool is_platonic_sym() const { return false; }
 		
 		/** A function that is used to determine if this is a Helical symmetry object
 		 * This function is only virtually overloaded by the HSym symmetry, which returns true, not false
@@ -754,7 +754,7 @@ namespace EMAN
 		/** Determines whether or not this Symmetry3D is the platonic type - returns true
 		 * @return true - indicating that this is a platonic symmetry object
 		 */
-		virtual bool is_platonic() const { return true; }
+		virtual bool is_platonic_sym() const { return true; }
 		
 		protected:
 		/// A dictionary that stores important angles, in radians
@@ -1021,6 +1021,7 @@ namespace EMAN
 	};
 	/// A template specialization for the Symmetry3D factory. Adds all of the symmetries
 	template <> Factory < Symmetry3D >::Factory();
+	template <> Symmetry3D* Factory < Symmetry3D >::get(const string & instancename);
 	/// dump symmetries, useful for obtaining symmetry information
 	void dump_symmetries();
 	/// dump_symmetries_list, useful for obtaining symmetry information

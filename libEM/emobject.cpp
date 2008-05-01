@@ -65,6 +65,7 @@ const double EMConsts::rad2deg = 180.0/pi;
 #include <sstream>
 using std::stringstream;
 
+
 // Static init
 map<EMObjectTypes::ObjectType, string> EMObjectTypes::type_registry;
 

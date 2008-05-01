@@ -4,10 +4,10 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
+#include <transform.h>
 #include <emdata.h>
 #include <emdata_pickle.h>
 #include <quaternion.h>
-#include <transform.h>
 #include <vec3.h>
 
 // Using =======================================================================
@@ -124,7 +124,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("get_asym_unit_triangles", pure_virtual(&EMAN::Symmetry3D::get_asym_unit_triangles))	
 		.def("get_nsym",pure_virtual(&EMAN::Symmetry3D::get_nsym))
 		.def("get_name",pure_virtual(&EMAN::Symmetry3D::get_name))
-		.def("is_platonic",pure_virtual(&EMAN::Symmetry3D::is_platonic))
+		.def("is_platonic_sym",pure_virtual(&EMAN::Symmetry3D::is_platonic_sym))
 		.def("get_az_alignment_offset", pure_virtual(&EMAN::Symmetry3D::get_az_alignment_offset))
 		.def("is_h_sym", pure_virtual(&EMAN::Symmetry3D::is_h_sym))
 		.def("get_params", &EMAN::Symmetry3D::get_params)
