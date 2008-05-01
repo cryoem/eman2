@@ -97,13 +97,13 @@ bool BoxingTools::is_local_maximum(const EMData* const image, int x, int y, int 
 		}
 	}
 	
-	set_radial_zero(efficiency_map,x,y,2*radius);
+	set_radial_zero(efficiency_map,x,y,radius);
 	
 	return true;
 	
 }
 
-vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency)
+vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency, const int cradius)
 {
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -122,7 +122,7 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 			vector<float> p(r,0);
 						
 			if (hi_brid(image,k,j,r,efficiency,p)) {
-				if (p[radius] >= profile[radius]) {
+				if (p[cradius] >= profile[cradius]) {
 					solution.push_back(IntPoint(k,j));
 				}
 			}
@@ -176,7 +176,7 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 		}
 	}
 	
-	set_radial_zero(efficiency_map,x,y,2*radius);
+	set_radial_zero(efficiency_map,x,y,radius);
 	
 	return true;
 }

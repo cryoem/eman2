@@ -42,6 +42,8 @@ namespace EMAN
 	/** BoxingTools is class for encapsulating common 
 	 * boxing operations that may become expensive if they are implemented in 
 	 * python.
+	 * @author David Woolford
+	 * @date April 2008
 	 */
 	class BoxingTools
 	{
@@ -75,7 +77,7 @@ namespace EMAN
 		static bool is_local_maximum(const EMData* const image, int x, int y, int radius, EMData* const efficiency_map);
 		
 		
-		static vector<IntPoint> auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency);
+		static vector<IntPoint> auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency,const int cradius);
 		
 		static bool hi_brid(const EMData* const image, int x, int y, int radius,EMData* const efficiency_map, vector<float>& profile);
 		

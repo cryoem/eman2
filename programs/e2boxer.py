@@ -570,7 +570,7 @@ class BoxSet:
 		#template.write_image("template.img")
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
 		t = self.correlation.copy()
-		t.write_image("correlation.hdf")
+		#t.write_image("correlation.hdf")
 
 	def accrueparams(self,boxes,center=True):
 		if (self.correlation == None):
@@ -580,7 +580,7 @@ class BoxSet:
 				remove_file(self.outfile)
 		invshrink = 1.0/self.shrink
 		
-		print "accruing params with a total",len(boxes),"boxes"
+		#print "accruing params with a total",len(boxes),"boxes"
 		for box in boxes:
 			#make the boxes the right size
 			if len(box) < 10:
@@ -590,7 +590,7 @@ class BoxSet:
 			x = (box[0]+box[2]/2.0)*invshrink
 			y = (box[1]+box[3]/2.0)*invshrink
 			
-			self.searchradius = int((self.boxsize)/self.shrink)
+			self.searchradius = int(0.5*(self.boxsize)/float(self.shrink))
 			
 			peak_location = BoxingTools.find_radial_max(self.correlation,int(x),int(y), self.searchradius )
 			peak_location2 = BoxingTools.find_radial_max(self.correlation,peak_location[0],peak_location[1],self.searchradius )
@@ -681,10 +681,10 @@ class BoxSet:
 				self.radius = i
 			
 		
-		print self.optprofile
-		print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
+		#print self.optprofile
+		#print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
 		
-		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,self.radius,self.optprofile,efficiency)
+		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,self.searchradius,self.optprofile,efficiency,self.radius)
 
 		for b in soln:
 			x = b[0]
@@ -933,7 +933,7 @@ class GUIbox:
 			boxset = self.boxsets[n-1]
 			boxes = boxset.boxes
 			
-			print "boxset had",len(boxes)
+			#print "boxset had",len(boxes)
 			
 			numboxes = len(boxes)
 			#print event.x(),event.y(),m[0],m[1]
@@ -944,7 +944,7 @@ class GUIbox:
 					self.delbox(boxset,m-1,global_box_num)
 				
 				global_box_num -= 1
-			print "boxset now has",len(boxes)
+			#print "boxset now has",len(boxes)
 	
 	
 	def mouseup(self,event) :
@@ -1036,10 +1036,10 @@ class GUIbox:
 			#ta = images_copy[i].align("rotate_translate",ave,{},"dot",{"normalize":1})
 			ave.add(images_copy[i])
 			
-		ave.write_image("prealigned.hdf")
+		#ave.write_image("prealigned.hdf")
 		ave.mult(1.0/len(images_copy))
-		ave.process_inplace("math.radialaverage")
-		ave.write_image("ave.hdf")
+		#ave.process_inplace("math.radialaverage")
+		#ave.write_image("ave.hdf")
 		
 		for n in range(0,3):
 			t = []
@@ -1053,7 +1053,7 @@ class GUIbox:
 				
 			ave.mult(1.0/len(t))
 			ave.process_inplace("math.radialaverage")
-		ave.write_image("ave2.hdf")
+		#ave.write_image("ave2.hdf")
 		return ave
 	def getboxes(self):
 		boxes = deepcopy(self.boxes)
@@ -1137,11 +1137,11 @@ class GUIbox:
 					images.append(self.ptcl[global_box_num])
 				
 				global_box_num += 1
-			print "there are",len(images),"refs"
+			#print "there are",len(images),"refs"
 			return images
 	def setrefs(self):
 		
-		print "setting refs"
+		#print "setting refs"
 		offset = 0
 		for i in range(0,self.boxsetidx):
 			offset += self.boxsets[i].numboxes()
@@ -1161,9 +1161,10 @@ class GUIbox:
 		for boxset in self.boxsets:
 			boxset.updateefficiency(efficiency)
 			
-		efficiency.write_image("efficiency.hdf")
+		
 		
 		self.boxsets[self.boxsetidx].autopick(efficiency);
+		#efficiency.write_image("efficiency.hdf")
 		#self.boxsets.append(BoxSet(self.image,self))
 		#self.boxsetidx += 1 
 		return
@@ -1183,7 +1184,7 @@ class GUIbox:
 		for boxset in self.boxsets:
 			boxset.updateefficiency(efficiency)
 			
-		efficiency.write_image("efficiency.hdf")
+		#efficiency.write_image("efficiency.hdf")
 		
 		self.boxsets[self.boxsetidx].autopick(efficiency,data);
 		
