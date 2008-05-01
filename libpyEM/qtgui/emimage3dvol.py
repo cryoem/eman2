@@ -145,13 +145,17 @@ class EMVolume(EMImage3DObject):
 		self.force_texture_update = False
 
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support
+	
+	def updateData(self,data):
+		self.setData(data)
+		self.parent.updateGL()
 		
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
 		
-		data.process_inplace("normalize")
 		
-		self.data=data
+		self.data=data.copy()
+		data.process_inplace("normalize")
 		if data==None:
 			print "Error, the data is empty"
 			return

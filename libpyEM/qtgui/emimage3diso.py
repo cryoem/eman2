@@ -227,13 +227,22 @@ class EMIsosurface(EMImage3DObject):
 		#dt1 = time2 - time1
 		#print "It took %f to render the isosurface" %dt1
 	
-	def setData(self,data):
-		"""Pass in a 3D EMData object"""
-		
-		self.data=data
+	def updateData(self,data):
 		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
 			print "Error, tried to set data that is invalid for EMIsosurface"
 			return
+		self.data=data
+		self.isorender=MarchingCubes(data)
+		self.getIsoDL()
+		self.parent.updateGL()
+	
+	def setData(self,data):
+		"""Pass in a 3D EMData object"""
+		
+		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
+			print "Error, tried to set data that is invalid for EMIsosurface"
+			return
+		self.data=data
 		
 		self.minden=data.get_attr("minimum")
 		self.maxden=data.get_attr("maximum")

@@ -68,6 +68,9 @@ class EM3DSymViewer(EMImage3DObject):
 	
 	def getType(self):
 		return "Symmetry Viewer"
+	
+	def updateData(self,data):
+		pass
 
 	def init(self):
 		self.data=None

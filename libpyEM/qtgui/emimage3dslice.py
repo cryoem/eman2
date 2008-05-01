@@ -118,6 +118,27 @@ class EM3DSliceViewer(EMImage3DObject):
 	def viewportWidth(self):
 		return self.parent.width()
 	
+	def updateData(self,data):
+		if data==None:
+			print "Error, the data is empty"
+			return
+		
+		if (isinstance(data,EMData) and data.get_zsize()<=1) :
+			print "Error, the data is not 3D"
+			return
+		
+		self.data = data.copy()
+		
+		min = self.data.get_attr("minimum")
+		max = self.data.get_attr("maximum")
+		
+		self.data.add(-min)
+		self.data.mult(1/(max-min))
+
+		self.genCurrentDisplayList()
+		self.parent.updateGL()
+		
+	
 	def setData(self,data,fact=1.0):
 		"""Pass in a 3D EMData object"""
 		

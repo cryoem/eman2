@@ -56,19 +56,19 @@ from emglobjects import Camera2, EMViewportDepthTools, Camera
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMImage3D(QtOpenGL.QGLWidget):
+class EMImageMorph3D(QtOpenGL.QGLWidget):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None, parent=None):
+	def __init__(self, image1=None,image2=None, parent=None):
 		self.image3d = None
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(True)
 		fmt.setStencil(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImage3D.allim[self]=0
+		EMImageMorph3D.allim[self]=0
 		
 		self.aspect=1.0
 		self.fov = 10 # field of view angle used by gluPerspective
@@ -76,12 +76,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.zwidth = 0
 		self.perspective = True
 		
-		self.image3d = EMImage3DCore(image,self)
+		self.image3d = EMImageMorph3DCore(image1,image2,self)
 		self.initGL = True
 		self.cam = Camera()
 		
-		if ( image != None and isinstance(image,EMData)):
-			self.setCamZ(self.fov,image)
+		if ( image1 != None and isinstance(image,EMData)):
+			self.setCamZ(self.fov,image1)
 		
 		self.resize(640,640)
 		self.startz = 0
@@ -96,10 +96,10 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.cam.default_z = -self.d
 		self.cam.cam_z = -self.d
 	
-	def setData(self,data):
-		self.image3d.setData(data)
-		if ( data != None and isinstance(data,EMData)):
-			self.setCamZ(self.fov,data)
+	def setData(self,dataA,dataB):
+		self.image3d.setData(dataA,dataB)
+		if ( dataA != None and dataB != None and isinstance(dataA,EMData) and isinstance(dataB,EMData)):
+			self.setCamZ(self.fov,dataA)
 			
 		self.resize(640,640)
 		
@@ -226,9 +226,9 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	#def dragEnterEvent(self,event):
 		#self.image3d.dragEnterEvent(event)
 
-class EMImage3DCore:
+class EMImageMorph3DCore:
 
-	def __init__(self, image=None, parent=None):
+	def __init__(self, image1=None,image2=None, parent=None):
 		self.parent = parent
 		
 		self.currentselection = -1
@@ -249,7 +249,8 @@ class EMImage3DCore:
 		self.vdtools = EMViewportDepthTools(self)
 		
 		self.rottarget = None
-		self.setData(image)
+		self.setData(image1,image2)
+		self.ratio = 0.5
 		#self.inspector.addIso()
 	#def timeout(self):
 		#self.updateGL()
@@ -298,9 +299,24 @@ class EMImage3DCore:
 	def getDataDims(self):
 		return [self.image.get_xsize(),self.image.get_ysize(),self.image.get_zsize()]
 
-	def setData(self,data):
-		if data == None: return
-		self.image = data
+	def updateRatio(self,ratio):
+		if ratio > 1:
+			self.ratio = 1
+		elif ratio < 0:
+			self.ratio = 0
+		else:
+			self.ratio = ratio
+		
+		self.image = self.ratio*self.data1 + (1.0 - self.ratio)*self.data2
+		for i in self.viewables:
+			i.updateData(self.image)
+		
+
+	def setData(self,dataA,dataB):
+		if dataA == None or dataB == None: return
+		self.data1 = dataA
+		self.data2 = dataB
+		self.image = self.ratio*self.data1 + (1.0 - self.ratio)*self.data2
 		for i in self.viewables:
 			i.setData(data)
 			
@@ -308,7 +324,7 @@ class EMImage3DCore:
 		#self.volume.setData(data)
 		
 		if self.inspector == None:
-			self.inspector=EMImageInspector3D(self)
+			self.inspector=EMImageMorphInspector3D(self)
 		self.inspector.addIsosurface()
 	
 	def showInspector(self,force=0):
@@ -318,7 +334,7 @@ class EMImage3DCore:
 		self.inspector.show()
 		
 	def initInspector(self):
-		if not self.inspector : self.inspector=EMImageInspector3D(self)
+		if not self.inspector : self.inspector=EMImageMorphInspector3D(self)
 	
 	def closeEvent(self,event) :
 		#for i in self.viewables:
@@ -493,7 +509,7 @@ class EMImage3DCore:
 	def getNearPlaneDims(self):
 		return self.parent.getNearPlaneDims()
 	
-class EMImageInspector3D(QtGui.QWidget):
+class EMImageMorphInspector3D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -514,6 +530,11 @@ class EMImageInspector3D(QtGui.QWidget):
 		
 		self.tabwidget = QtGui.QTabWidget(self)
 		self.vbl.addWidget(self.tabwidget)
+		
+		self.ratio = ValSlider(self,(0.0,1.0),"Ratio:")
+		self.ratio.setObjectName("ratio")
+		self.ratio.setValue(0.5)
+		self.vbl.addWidget(self.ratio)
 		
 		self.hbl_check = QtGui.QHBoxLayout()
 		self.hbl_check.setMargin(0)
@@ -569,6 +590,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.addSli, QtCore.SIGNAL("clicked()"), self.addSlices)
 		QtCore.QObject.connect(self.addSym, QtCore.SIGNAL("clicked()"), self.addSymmetry)
 		QtCore.QObject.connect(self.delete, QtCore.SIGNAL("clicked()"), self.deleteSelection)
+		QtCore.QObject.connect(self.ratio, QtCore.SIGNAL("valueChanged"), self.target.updateRatio)
 		#QtCore.QObject.connect(self.advancedcheck, QtCore.SIGNAL("stateChanged(int)"), self.advancedClicked)
 		
 		#QtCore.QObject.connect(self.listwidget, QtCore.SIGNAL("currentRowChanged(int)"), self.rowChanged)
@@ -884,7 +906,10 @@ class EM3DAdvancedInspector(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMImage3D()
+	window = EMImageMorph3D()
+	if len(sys.argv) != 3:
+		print "Error, you must specify two images"
+		exit(1)
  	if len(sys.argv)==1 : 
 		pass
 		e = EMData()
@@ -901,8 +926,12 @@ if __name__ == '__main__':
 		if not os.path.exists(sys.argv[1]):
 			print "Error, input file %s does not exist" %sys.argv[1]
 			exit(1)
+		if not os.path.exists(sys.argv[2]):
+			print "Error, input file %s does not exist" %sys.argv[2]
+			exit(1)
 		a=EMData.read_images(sys.argv[1],[0])
-		window.setData(a[0])
+		b=EMData.read_images(sys.argv[2],[0])
+		window.setData(a[0],b[0])
 	window2=EMParentWin(window)
 	window2.show()
 	
