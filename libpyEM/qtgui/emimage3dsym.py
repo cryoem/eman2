@@ -101,6 +101,8 @@ class EM3DSymViewer(EMImage3DObject):
 		self.angle_label = ''
 		self.strategy = ''
 		
+		self.display_sym = True
+		
 		self.sym_object = None
 		
 		self.radius = 50
@@ -109,6 +111,12 @@ class EM3DSymViewer(EMImage3DObject):
 		self.arc_dl = 0;
 		self.cylinderdl = 0
 		
+		
+		self.file = None
+		self.lr = -1
+		self.hr = -1
+		self.tracedata = []
+		self.trace_dl = 0
 		self.gq=gluNewQuadric()
 		gluQuadricDrawStyle(self.gq,GLU_FILL)
 		gluQuadricNormals(self.gq,GLU_SMOOTH)
@@ -200,6 +208,8 @@ class EM3DSymViewer(EMImage3DObject):
 		dz = next[2] - prev[2]
 		
 		length = sqrt(dx**2 + dy**2 + dz**2)
+		
+		if length == 0: return
 		
 		alt = acos(dz/length)*180.0/pi
 		phi = atan2(dy,dx)*180.0/pi
@@ -316,6 +326,73 @@ class EM3DSymViewer(EMImage3DObject):
 			glPopMatrix()
 		glEndList()
 		
+	def traceupdate(self,f,lr,hr):
+		if f != self.file:
+			try:
+				f=file(f,'r')
+			except:
+				print 'couldnt read',f 
+				return
+			lines=f.readlines()
+
+			self.tracedata = []
+			for line in lines:
+				s = str.split(str.strip(line))
+				n = len(self.tracedata)
+				if s[1] == '********':
+					self.tracedata.append([])
+				elif s[1] == '->':
+					idx = str.find(s[3],',')
+					alt = float(s[3][1:idx])
+					az = float(s[3][idx+1:len(s[3])-1])
+					self.tracedata[n-1].append([alt,az])
+					
+			self.file = f
+		self.lr = lr
+		self.hr = hr
+		
+		if ( self.trace_dl != 0 ): glDeleteLists(self.trace_dl, 1)
+		
+		self.trace_dl = glGenLists(1)
+		
+		glNewList( self.trace_dl,GL_COMPILE)
+		for i in range(self.lr,self.hr):
+			for j in range(0,len(self.tracedata[i])-1):
+				alt = self.tracedata[i][j][0]
+				az = self.tracedata[i][j][1]
+				#print "a",alt,az
+				T = Transform3D(az,alt,0.0)
+				T.transpose()
+				a = T*Vec3f(0,0,1)
+				
+				if (j == 0):
+					glPushMatrix()
+					d = T.get_rotation()
+					glRotate(-d["phi"],0,0,1)
+					glRotate(-d["alt"],1,0,0)
+					glRotate(-d["az"],0,0,1)
+					
+					glTranslate(0,0,self.radius)
+					glCallList(self.spheredl)
+					glPopMatrix()
+				
+				#print a[0],a[1],a[2]
+				alt = self.tracedata[i][j+1][0]
+				az = self.tracedata[i][j+1][1]
+				#print "b",alt,az
+				T = Transform3D(az,alt,0.0)
+				T.transpose()
+				b = T*Vec3f(0,0,1)
+				#print b[0],b[1],b[2]
+				##if a == b: continue
+				glPushMatrix()
+				self.cylinderToFrom(b*self.radius,a*self.radius)
+				glPopMatrix()
+				#print b,a
+		glEndList()
+	
+		self.updateGL()
+		
 	def render(self):
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
@@ -367,33 +444,48 @@ class EM3DSymViewer(EMImage3DObject):
 					glRotate(-d["az"],0,0,1)
 					glCallList(self.arc_dl)
 					glPopMatrix()
+		
+		if self.display_sym:
+			glColor(.9,.2,.8)
+			# this is a nice light blue color (when lighting is on)
+			# and is the default color of the frame
+			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+			glMaterial(GL_FRONT,GL_SHININESS,50.0)
+			glStencilFunc(GL_EQUAL,self.rank,0)
+			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
+			glPushMatrix()
+			glCallList(self.sym_dl)
+			glPopMatrix()
+		
+			if self.inspector.symtoggled():
+				for i in range(1,self.sym_object.get_nsym()):
+					t = self.sym_object.get_sym(i)
+					d = t.get_rotation()
+					glPushMatrix()
+					if ( self.sym_object.is_h_sym() ):
+						#trans = t.get_posttrans()
+						glTranslatef(trans[0],trans[1],trans[2])
+					glRotate(d["az"],0,0,1)
+					glRotate(d["alt"],1,0,0)
+					glRotate(d["phi"],0,0,1)
+					glCallList(self.sym_dl)
+					glPopMatrix()
 			
-		glColor(.9,.2,.8)
-		# this is a nice light blue color (when lighting is on)
-		# and is the default color of the frame
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,50.0)
-		glStencilFunc(GL_EQUAL,self.rank,0)
-		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
-		glPushMatrix()
-		glCallList(self.sym_dl)
-		glPopMatrix()
-		
-		if self.inspector.symtoggled():
-			for i in range(1,self.sym_object.get_nsym()):
-				t = self.sym_object.get_sym(i)
-				d = t.get_rotation()
-				glPushMatrix()
-				if ( self.sym_object.is_h_sym() ):
-					trans = t.get_posttrans()
-					glTranslatef(trans[0],trans[1],trans[2])
-				glRotate(d["az"],0,0,1)
-				glRotate(d["alt"],1,0,0)
-				glRotate(d["phi"],0,0,1)
-				glCallList(self.sym_dl)
-				glPopMatrix()
-		
+			
+		if self.trace_dl != 0:
+			glColor(.9,.2,.8)
+			# this is a nice light blue color (when lighting is on)
+			# and is the default color of the frame
+			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+			glMaterial(GL_FRONT,GL_SHININESS,50.0)
+			glStencilFunc(GL_EQUAL,self.rank,0)
+			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
+			#print "rendering trace"
+			glPushMatrix()
+			glCallList(self.trace_dl)
+			glPopMatrix()
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 		glPushMatrix()
@@ -462,6 +554,11 @@ class EM3DSymViewer(EMImage3DObject):
 
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
+		
+	def toggle_sym_display(self,bool):
+		self.display_sym = bool
+		self.updateGL()
+
 
 class EMSymViewerWidget(QtOpenGL.QGLWidget):
 	
@@ -569,8 +666,8 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		width = self.aspect*height
 		
 		return [width,height]
-		
-
+	
+	
 class EMSymInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
@@ -598,8 +695,10 @@ class EMSymInspector(QtGui.QWidget):
 		#self.cubetog.setCheckable(1)
 		#self.vbl2.addWidget(self.cubetog)
 		
-		self.defaults = QtGui.QPushButton("Defaults")
-		self.vbl2.addWidget(self.defaults)
+		self.symtogdisplay = QtGui.QPushButton("Display sym")
+		self.symtogdisplay.setCheckable(1)
+		self.symtogdisplay.setChecked(1)
+		self.vbl2.addWidget(self.symtogdisplay)
 		
 		self.symtog = QtGui.QPushButton("All syms")
 		self.symtog.setCheckable(1)
@@ -609,6 +708,10 @@ class EMSymInspector(QtGui.QWidget):
 		self.vbl.addWidget(self.getMainTab())
 		
 		self.n3_showing = False
+		
+		self.file = None
+		self.lr = -1
+		self.hr = -1
 		
 		self.current_src = EULER_EMAN
 		
@@ -629,7 +732,11 @@ class EMSymInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
 		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), target.updateGL)
-		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
+		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), target.toggle_sym_display)
+		QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
+		QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
+		QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
+		QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 		QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angleLabelChanged)
 		QtCore.QObject.connect(self.orient_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.orientLabelChanged)
@@ -694,6 +801,23 @@ class EMSymInspector(QtGui.QWidget):
 	
 	def getPerturb(self):
 		return self.perturbtog.isChecked()
+
+	def traceupdate(self):
+		lr = int(self.lowrange.displayText())
+		hr = int(self.highrange.displayText())
+		file = str(self.tracefile.displayText())
+		
+		if ( file != self.file or lr != self.lr or hr != self.hr ):
+			self.file = file
+			self.hr = hr
+			self.lr = lr
+			
+			self.target.traceupdate(file,lr,hr)
+
+	def toggle_trace(self,bool):
+		self.tracefile.setEnabled(bool)
+		self.lowrange.setEnabled(bool)
+		self.highrange.setEnabled(bool)
 
 	def getMainTab(self):
 	
@@ -780,6 +904,50 @@ class EMSymInspector(QtGui.QWidget):
 		
 		self.orient_label.setCurrentIndex(n-1)
 		self.hbl_sym2.addWidget(self.orient_label)
+
+		#here		
+		self.hbl_pt = QtGui.QHBoxLayout()
+		self.hbl_pt.setMargin(0)
+		self.hbl_pt.setSpacing(6)
+		self.hbl_pt.setObjectName("Ptl Trace")
+		
+		
+		self.tracetog = QtGui.QPushButton("Trace")
+		self.tracetog.setCheckable(1)
+		self.tracetog.setChecked(0)
+		self.hbl_pt.addWidget(self.tracetog)
+		
+		self.tracefile = QtGui.QLineEdit(self)
+		self.tracefile.setText("filename.txt")
+		self.tracefile.setFixedWidth(100)
+		self.hbl_pt.addWidget(self.tracefile)
+		self.tracefile.setEnabled(False)
+		
+		self.pt_label = QtGui.QLabel()
+		self.pt_label.setText('Range')
+		self.hbl_pt.addWidget(self.pt_label)
+		
+		self.pos_int_validator2 = QtGui.QIntValidator(self)
+		self.pos_int_validator2.setBottom(0)
+		self.lowrange = QtGui.QLineEdit(self)
+		self.lowrange.setValidator(self.pos_int_validator2)
+		self.lowrange.setText("1")
+		self.lowrange.setFixedWidth(50)
+		self.hbl_pt.addWidget(self.lowrange)
+		self.lowrange.setEnabled(False)
+		
+		self.pt_label_to = QtGui.QLabel()
+		self.pt_label_to.setText('to')
+		self.hbl_pt.addWidget(self.pt_label_to)
+		
+		self.highrange = QtGui.QLineEdit(self)
+		self.highrange.setValidator(self.pos_int_validator2)
+		self.highrange.setText("1")
+		self.highrange.setFixedWidth(50)
+		self.hbl_pt.addWidget(self.highrange)
+		self.highrange.setEnabled(False)
+		maintab.vbl.addLayout(self.hbl_pt)
+		#end here
 		
 		self.mirror_checkbox = QtGui.QCheckBox("Mirror")
 		self.hbl_sym2.addWidget(self.mirror_checkbox)
