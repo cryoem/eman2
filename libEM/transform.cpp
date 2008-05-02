@@ -2135,7 +2135,7 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
 	}
 	
 	if ( soln == -1 ) {
-		cout << "error, no solution founud!" << endl;
+		cout << "error, no solution found!" << endl;
 		throw;
 	}
 	
