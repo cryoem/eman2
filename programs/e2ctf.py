@@ -119,13 +119,15 @@ Various CTF-related operations on images."""
 			if options.bgedge>0 :
 				bg=bgedge1d(i,options.bgedge)
 #				for ii in range(1,len(bg)): bg[ii]/=sqrt(ii)
-				bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
-				mins=min(bgs)
+#				bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
+#				mins=min(bgs)
 #				bg=[ii*mins for ii in bg]
 				ps1d.append(bg)
 				ps2d.append(ps2d[-1])
 				names.append(i+"(bg)")
-
+				out=file("bg1d.txt","w")
+				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
+				out.close()
 
 			
 

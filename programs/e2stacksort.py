@@ -52,6 +52,8 @@ This program will sort a stack of images based on some similarity criterion. """
 	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the after optional alignment (default=optvariance:keepzero=1:matchfilt=1)", default="optvariance:keepzero=1:matchfilt=1")
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
 	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
+	parser.add_option("--nsort",type="int",help="Number of output particles to generate",default=0)
+	parser.add_option("--shrink",type="int",help="Reduce the particles for comparisons",default=2)
 #	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
 #	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
 #	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
@@ -64,42 +66,63 @@ This program will sort a stack of images based on some similarity criterion. """
 	if options.simcmp : options.simcmp=parsemodopt(options.simcmp)
 	
 	a=EMData.read_images(args[0])
-	if options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1])
-	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1])
+	if options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink)
+	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink)
 	for i,im in enumerate(b): im.write_image(args[1],i)
 
-def sortstackrev(stack,cmptype,cmpopts,align,alignopts):
+def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink):
 	"""Sorts a list of images in order of LEAST similarity"""
 	
+	stackshrink=[i.copy() for i in stack]
+	if (shrink>1) :
+		for i in stackshrink: i.mean_shrink(shrink)
+	
 	ret=[stack[0]]
+	rets=[stackshrink[0]]
 	del stack[0]
-	while (len(stack)>0) :
-		best=(1.0e38,-1)
-		for i,im in enumerate(stack):
-			if align : im=im.align(align,ret[-1],alignopts)
-			c=ret[-1].cmp(cmptype,im,cmpopts)+im.cmp(cmptype,ret[-1],cmpopts)	# symmetrize results
-			if c<best[0] or best[1]<0 : best=(c,i)
+	del stackshrink[0]
+	while (len(stack)>0 and len(ret)<nsort) :
+		best=(0,-1)
+		for i in range(len(stackshrink)):
+			c=1.0e38
+			cj=-1
+			for j,r in enumerate(rets):			# compare to all existing solutions, and use the MOST similar value
+				if align : ims=stackshrink[i].align(align,r,alignopts)
+				else : ims=stackshrink[i]
+				cc=r.cmp(cmptype,ims,cmpopts)
+				if cc<c : c,cj=cc,j
+#			print "\t%d. %1.3g (%d)"%(i,c,cj)
+			if c>best[0] or best[1]<0 : best=(c,i)
 		ret.append(stack[best[1]])
+		rets.append(stackshrink[best[1]])
 		del stack[best[1]]
+		del stackshrink[best[1]]
 		print "%d.\t%d  (%1.4f)"%(len(ret)-1,best[1],best[0])
 
 	return ret
 
-def sortstack(stack,cmptype,cmpopts,align,alignopts):
+def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink):
 	"""Sorts a list of images based on a standard 'cmp' metric. cmptype is the name
 	of a valid cmp type. cmpopts is a dictionary. Returns a new (sorted) stack.
 	The original stack is destroyed."""
 	
+	stackshrink=[i.copy() for i in stack]
+	if (shrink>1) :
+		for i in stackshrink: i.mean_shrink(shrink)
 	ret=[stack[0]]
+	rets=[stackshrink[0]]
 	del stack[0]
-	while (len(stack)>0) :
+	del stackshrink[0]
+	while (len(stack)>0 and len(ret)<nsort) :
 		best=(1.0e38,-1)
-		for i,im in enumerate(stack):
-			if align : im=im.align(align,ret[-1],alignopts)
-			c=ret[-1].cmp(cmptype,im,cmpopts)+im.cmp(cmptype,ret[-1],cmpopts)	# symmetrize results
+		for i,ims in enumerate(stackshrink):
+			if align : ims=ims.align(align,rets[-1],alignopts)
+			c=rets[-1].cmp(cmptype,ims,cmpopts)+ims.cmp(cmptype,rets[-1],cmpopts)	# symmetrize results
 			if c<best[0] or best[1]<0 : best=(c,i)
 		ret.append(stack[best[1]])
+		rets.append(stackshrink[best[1]])
 		del stack[best[1]]
+		del stackshrink[best[1]]
 		print "%d.\t%d  (%1.4f)"%(len(ret)-1,best[1],best[0])
 
 	return ret

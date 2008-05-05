@@ -56,6 +56,7 @@ def main():
 	parser.add_option("--input", default="start.hdf",type="string", help="The name of the file containing the particle data")
 	parser.add_option("--ncls", default=32, type="int", help="Number of classes to generate")
 	parser.add_option("--iterclassav", default=2, type="int", help="Number of iterations when making class-averages")
+	parser.add_option("--naliref", default=8, type="int", help="Number of alignment references to when determining particle orientations")
 	
 	#options associated with generating initial class-averages
 	parser.add_option("--initial",type="string",default=None,help="File containing starting class-averages. If not specified, will generate starting averages automatically")
@@ -141,6 +142,8 @@ def main():
 		
 	# this is the main refinement loop
 	for i in range(0,options.iter) :
+		options.naliref
+		
 		
 		if ( os.system(get_simmx_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_simmx_cmd(options)
