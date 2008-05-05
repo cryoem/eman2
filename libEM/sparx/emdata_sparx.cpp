@@ -499,8 +499,6 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 	return dist_r(lnlen, line_1, line_2);
 }
 
-
-
 EMData* EMData::rotavg() {
 
 	int rmax;
@@ -3930,49 +3928,6 @@ EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew)
 	res->set_array_offsets(0,0,0);
 	return res;
 }
-
-EMData* EMData::ctf_img(int nx, int ny, int nz,float dz,float ps,float voltage,float cs, float wgh,float b_factor,float dza, float azz, float sign)
-{               
-	int   lsm;
-	int   ix, iy, iz;
-	int   i,  j, k;    
-	int   nr2, nl2;
-	float  dzz, az, ak;
-	float  scx, scy, scz;
-	int offset = 2 - nx%2;  
-	lsm = nx + offset;		     	   
-	EMData* ctf_img1 = new EMData();
-	ctf_img1->set_size(lsm, ny, nz);
-	float freq=1.f/(2.f*ps);		    
-	scx=2.f/float(nx);
-	if(ny<=1) scy=2.f/ny; else scy=0.0f;
-	if(nz<=1) scz=2.f/nz; else scz=0.0f;
-	nr2 = ny/2 ;
-	nl2 = nz/2 ;
-	for ( k=0; k<nz;k++) {
-	       iz = k;  if(k>nl2) iz=k-nz;
-	       for ( j=0; j<ny;j++) { 
-	     	     iy = j;  if(j>nr2) iy=j - ny;
-	     	     for ( i=0; i<lsm/2; i++) {
-	     		   ix=i;
-	     		   ak=pow(ix*ix*scx*scx+iy*scy*iy*scy+iz*scz*iz*scz, 0.5f)*freq;
-	     		   if(ak!=0) az=0.0; else az=M_PI;
-	     		   dzz=dz+dza/2.f*sin(2*(az-azz*M_PI/180.f));
-			       (*ctf_img1) (i*2,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
-	     		   (*ctf_img1) (i*2+1,j,k) = 0.0f;
-	     	     }
-	     	     
-	       }
-
-	}
-	ctf_img1->update();
-	//	ctf_img1->set_complex(true);//
-	ctf_img1->attr_dict["is_complex"] = 1;
-	ctf_img1->attr_dict["is_ri"] = 1;
-	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);		
-	return ctf_img1;
-} 		
-
 
 EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
 	if (3 != get_ndim())

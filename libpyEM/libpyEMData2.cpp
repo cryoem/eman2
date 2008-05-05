@@ -80,8 +80,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_new_overloads_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_getconvpt2d_kbi0_overloads_3_4, getconvpt2d_kbi0, 3, 4)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_ctf_img_overloads_5_12, EMAN::EMData::ctf_img, 5, 12)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zeropad_ntimes_overloads_0_1, zeropad_ntimes, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zeropad_ntimes_fft_shuffle_overloads_0_1, zeropad_ntimes_fft_shuffle, 0, 1)
@@ -346,7 +344,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("get_pow", &EMAN::EMData::get_pow, return_value_policy< manage_new_object >())
         .def("conjg", &EMAN::EMData::conjg, return_value_policy< manage_new_object >())
         .def("extractline", &EMAN::EMData::extractline, return_value_policy< manage_new_object >())
-        .def("ctf_img", &EMAN::EMData::ctf_img, EMAN_EMData_ctf_img_overloads_5_12()[ return_value_policy< manage_new_object >() ])
         .def("center_origin", &EMAN::EMData::center_origin)
         .def("center_origin_yz", &EMAN::EMData::center_origin_yz)
         .def("center_origin_fft", &EMAN::EMData::center_origin_fft)
@@ -404,7 +401,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("uncut_slice", &EMAN::EMData::uncut_slice, EMAN_EMData_uncut_slice_overloads_1_2())
         .def("__getitem__", &emdata_getitem)
         .def("__setitem__", &emdata_setitem)
-        .staticmethod("ctf_img")
         .staticmethod("read_images_ext")
         .staticmethod("read_images")
 		.def("__add__", (EMAN::EMData* (*)(const EMAN::EMData&, const EMAN::EMData&) )&EMAN::operator+, return_value_policy< manage_new_object >() )

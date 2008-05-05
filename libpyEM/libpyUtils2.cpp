@@ -34,6 +34,8 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_pad_overloads_2_8, EMAN::Util::pad, 2,
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_tf_overloads_2_7, EMAN::Util::tf, 2, 7)
 
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_ctf_img_overloads_5_12, EMAN::Util::ctf_img, 5, 12)
+
 struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 {
     EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::KaiserBessel& p0):
@@ -216,6 +218,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("add_img2", &EMAN::Util::add_img2)
 		.def("sub_img", &EMAN::Util::sub_img)
 		.def("mul_img", &EMAN::Util::mul_img)
+		.def("ctf_img", &EMAN::Util::ctf_img, return_value_policy< manage_new_object >())
 		.def("pack_complex_to_real", &EMAN::Util::pack_complex_to_real, return_value_policy< manage_new_object >())
 		.def("histogram", &EMAN::Util::histogram)
 		.def("multiref_polar_ali_2d", &EMAN::Util::multiref_polar_ali_2d)
@@ -320,6 +323,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("addn_img")
 		.staticmethod("pw_extract")
 		.staticmethod("muln_img")
+		.staticmethod("ctf_img")
 		.staticmethod("pack_complex_to_real")
 		.staticmethod("fftc_q")
 		.staticmethod("remove_filename_ext")
