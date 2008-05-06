@@ -75,7 +75,7 @@ if system("which bjam") :
 # HDF5
 if not access("/usr/local/lib/libhdf5.dylib",R_OK):
 	system("tar xvzf "+fsp["hdf5"])
-	system("cd %s; ./configure --prefix=/usr/local; make; make install"%fsp["hdf5"][:-7])
+	system("cd %s; ./configure --prefix=/usr/local --with-default-api-version=v16; make; make install"%fsp["hdf5"][:-7])
 
 # cmake
 if not access("/usr/local/bin/cmake",R_OK):

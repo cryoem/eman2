@@ -167,6 +167,7 @@ SET(INCLUDE_DIRS
 	/usr/local/include/boost-1_31 
 	/usr/local/include/boost-1_32 
 	/usr/local/include/boost-1_33
+	/usr/local/include/boost-1_34_1
 	/Developer/SDKs/MacOSX10.5.sdk/usr/X11/include
 	/usr/include 
 	/sw/include
