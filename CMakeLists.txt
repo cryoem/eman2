@@ -167,6 +167,7 @@ SET(INCLUDE_DIRS
 	/usr/local/include/boost-1_31 
 	/usr/local/include/boost-1_32 
 	/usr/local/include/boost-1_33
+	/Developer/SDKs/MacOSX10.5.sdk/usr/X11/include
 	/usr/include 
 	/sw/include
 	)
@@ -376,6 +377,7 @@ ENDIF (ENABLE_OPENGL)
 
 INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR} 
 					${EMAN_SOURCE_DIR}/libEM 
+					${GL_INCLUDE_PATH}
 					${GSL_INCLUDE_PATH} 
 					${GSL_INCLUDE_PATH}/gsl 
 					${FFTW_INCLUDE_PATH} 
