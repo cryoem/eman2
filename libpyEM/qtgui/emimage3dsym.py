@@ -101,14 +101,18 @@ class EM3DSymViewer(EMImage3DObject):
 		self.angle_label = ''
 		self.strategy = ''
 		
-		self.display_sym = True
-		
+		self.display_euler = True
+		self.display_tri = False
+		self.display_arc = True
 		self.sym_object = None
 		
 		self.radius = 50
 		
 		self.arc_t = 16
-		self.arc_dl = 0;
+		self.arc_dl = 0
+		
+		self.tri_dl = 0
+		
 		self.cylinderdl = 0
 		
 		
@@ -144,6 +148,81 @@ class EM3DSymViewer(EMImage3DObject):
 		else:
 			print "Error, tried to set a zero or negative radius (",radius,")"
 			exit(1)
+	
+	def traceGreatTriangles(self,triangles):
+		if ( self.tri_dl != 0 ): glDeleteLists(self.tri_dl, 1)
+		
+		self.tri_dl=glGenLists(1)
+		
+		glNewList(self.tri_dl,GL_COMPILE)
+		
+		glPushMatrix()
+		glScalef(self.radius,self.radius,self.radius)
+		if ( self.sym_object.is_h_sym() ):
+			pass
+		else:
+			glBegin(GL_TRIANGLES)
+			l = len(triangles)
+			for i,t in enumerate(triangles):
+				p1 = t[0]-t[1]
+				p2 = t[1]-t[2]
+				n = p2.cross(p1)
+				n.normalize()
+				glNormal(n[0],n[1],n[2])
+				
+				for j,p in enumerate(t):
+					self.loadcolor(i,j,l)
+					glVertex(p[0],p[1],p[2])
+			glEnd()
+		glPopMatrix()
+		glEndList()
+		
+	def loadcolor(self,i,j,l):
+		if ( l == 1):
+			if (j == 0):
+				self.gold()
+			elif (j == 1):
+				self.red()
+			elif ( j == 2):
+				self.green()
+		elif ( l == 2):
+			if i == 0:
+				if (j == 0):
+					self.gold()
+				elif (j == 1):
+					self.red()
+				elif ( j == 2):
+					self.green()
+			elif i == 1:
+				if (j == 0):
+					self.gold()
+				elif (j == 1):
+					self.green()
+				elif ( j == 2):
+					self.red()
+		else:
+			self.gold()
+				
+		
+	def gold(self):
+		glMaterial(GL_FRONT,GL_AMBIENT,(0.24725, 0.2245, 0.0645,1.0))
+		glMaterial(GL_FRONT,GL_DIFFUSE,(0.34615, 0.3143, 0.0903,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(1.000, 0.9079885, 0.26086934,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,4.0)
+		
+	def green(self):
+		glColor(.2,.9,.2)
+		# this is a nice light blue color (when lighting is on)
+		# and is the default color of the frame
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.3,.1,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,32.0)
+		
+	def red(self):
+		glMaterial(GL_FRONT,GL_AMBIENT,(0.1745, 0.01175, 0.01175,1.0))
+		glMaterial(GL_FRONT,GL_DIFFUSE,(0.61424, 0.04136, 0.04136,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(0.927811, 0.826959, 0.826959,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,32.0)
 		
 	def traceGreatArcs(self, points):
 		# this functionality is momentarily disabled for the night
@@ -281,6 +360,7 @@ class EM3DSymViewer(EMImage3DObject):
 		if mirror == True : val = 0
 		else: val = 1
 		self.traceGreatArcs(self.sym_object.get_asym_unit_points(val))
+		self.traceGreatTriangles(self.sym_object.get_asym_unit_triangles(val))
 		if ('inc_mirror' in parms):
 			og += ":inc_mirror=" + str(val)
 			
@@ -417,7 +497,7 @@ class EM3DSymViewer(EMImage3DObject):
 				print "error, you can't draw an empty list"
 				return
 		
-		if ( self.arc_dl != 0 ):
+		if ( self.arc_dl != 0 and self.display_arc ):
 			glColor(.2,.9,.2)
 			# this is a nice light blue color (when lighting is on)
 			# and is the default color of the frame
@@ -425,6 +505,7 @@ class EM3DSymViewer(EMImage3DObject):
 			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 			glMaterial(GL_FRONT,GL_SHININESS,40.0)
 			glCallList(self.arc_dl)
+			
 			if ( self.sym_object.is_h_sym() ):
 				a = {}
 				a["daz"] = 60
@@ -434,6 +515,7 @@ class EM3DSymViewer(EMImage3DObject):
 			if self.inspector.symtoggled():
 				for i in range(1,self.sym_object.get_nsym()):
 					t = self.sym_object.get_sym(i)
+					t.transpose()
 					d = t.get_rotation()
 					glPushMatrix()
 					if ( self.sym_object.is_h_sym() ):
@@ -445,7 +527,26 @@ class EM3DSymViewer(EMImage3DObject):
 					glCallList(self.arc_dl)
 					glPopMatrix()
 		
-		if self.display_sym:
+		if ( self.tri_dl != 0 and self.display_tri ):
+			if ( self.sym_object.is_h_sym() != True ):
+				glCallList(self.tri_dl)
+			
+				if self.inspector.symtoggled():
+					for i in range(1,self.sym_object.get_nsym()):
+						t = self.sym_object.get_sym(i)
+						t.transpose()
+						d = t.get_rotation()
+						glPushMatrix()
+						if ( self.sym_object.is_h_sym() ):
+							trans = t.get_posttrans()
+							glTranslatef(trans[0],trans[1],trans[2])
+						glRotate(-d["phi"],0,0,1)
+						glRotate(-d["alt"],1,0,0)
+						glRotate(-d["az"],0,0,1)
+						glCallList(self.tri_dl)
+						glPopMatrix()
+	
+		if self.display_euler:
 			glColor(.9,.2,.8)
 			# this is a nice light blue color (when lighting is on)
 			# and is the default color of the frame
@@ -466,9 +567,9 @@ class EM3DSymViewer(EMImage3DObject):
 					if ( self.sym_object.is_h_sym() ):
 						#trans = t.get_posttrans()
 						glTranslatef(trans[0],trans[1],trans[2])
-					glRotate(d["az"],0,0,1)
-					glRotate(d["alt"],1,0,0)
-					glRotate(d["phi"],0,0,1)
+					glRotate(-d["phi"],0,0,1)
+					glRotate(-d["alt"],1,0,0)
+					glRotate(-d["az"],0,0,1)
 					glCallList(self.sym_dl)
 					glPopMatrix()
 			
@@ -556,7 +657,15 @@ class EM3DSymViewer(EMImage3DObject):
 		self.vdtools.set_update_P_inv()
 		
 	def toggle_sym_display(self,bool):
-		self.display_sym = bool
+		self.display_euler = bool
+		self.updateGL()
+		
+	def triangletog(self,bool):
+		self.display_tri = bool
+		self.updateGL()
+		
+	def arctog(self,bool):
+		self.display_arc = bool
 		self.updateGL()
 
 
@@ -695,10 +804,20 @@ class EMSymInspector(QtGui.QWidget):
 		#self.cubetog.setCheckable(1)
 		#self.vbl2.addWidget(self.cubetog)
 		
-		self.symtogdisplay = QtGui.QPushButton("Display sym")
+		self.symtogdisplay = QtGui.QPushButton("Display Eulers")
 		self.symtogdisplay.setCheckable(1)
 		self.symtogdisplay.setChecked(1)
 		self.vbl2.addWidget(self.symtogdisplay)
+		
+		self.triangletog = QtGui.QPushButton("Display Triangles")
+		self.triangletog.setCheckable(1)
+		self.triangletog.setChecked(0)
+		self.vbl2.addWidget(self.triangletog)
+		
+		self.arctog = QtGui.QPushButton("Display Arcs")
+		self.arctog.setCheckable(1)
+		self.arctog.setChecked(1)
+		self.vbl2.addWidget(self.arctog)
 		
 		self.symtog = QtGui.QPushButton("All syms")
 		self.symtog.setCheckable(1)
@@ -733,6 +852,8 @@ class EMSymInspector(QtGui.QWidget):
 		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), target.updateGL)
 		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), target.toggle_sym_display)
+		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), target.triangletog)
+		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), target.arctog)
 		QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
 		QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
 		QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.traceupdate)

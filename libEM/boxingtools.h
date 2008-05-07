@@ -37,6 +37,14 @@
 #include <vector>
 using std::vector;
 
+#include <vector>
+using std::vector;
+
+#include <map>
+using std::map;
+
+#include <gsl/gsl_matrix.h>
+
 namespace EMAN
 {
 	/** BoxingTools is class for encapsulating common 
@@ -77,15 +85,49 @@ namespace EMAN
 		static bool is_local_maximum(const EMData* const image, int x, int y, int radius, EMData* const efficiency_map);
 		
 		
-		static vector<IntPoint> auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency,const int cradius);
+		static vector<IntPoint> auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency,const int cradius, int mode=1);
 		
 		static bool hi_brid(const EMData* const image, int x, int y, int radius,EMData* const efficiency_map, vector<float>& profile);
 		
 		static void set_radial_zero(EMData* const efficiency, int x, int y, int radius);
 		
 		static IntPoint find_radial_max(const EMData* const map, int x, int y, int radius);
+		
+		static map<unsigned int, unsigned int> classify(const vector<vector<float> >& data, const unsigned int& classes = 4);
 	private:
 		
+	};
+	
+	class BoxSVDClassifier
+	{
+		public:
+			BoxSVDClassifier(const vector<vector<float> >& data, const unsigned int& classes = 4);
+
+			~BoxSVDClassifier();
+
+			map< unsigned int, unsigned int> go();
+
+	// Because the results of the classification always give a random class number, I thought it 
+	// be easier for the user if the classes with the greatest numbers always had the same colour.
+	//  This is achieved using this function
+			static map< unsigned int, unsigned int> colorMappingByClassSize( const map< unsigned int, unsigned int>& grouping );
+		private:
+			const vector<vector<float> >& mData;
+
+			unsigned int mColumns;
+			unsigned int mRows;
+
+			unsigned int mClasses;
+
+
+			map< unsigned int, unsigned int> randomSeedCluster(const gsl_matrix* const svd_coords, unsigned int matrix_dims);
+			map< unsigned int, unsigned int> getIterativeCluster(const gsl_matrix* const svd_coords, const map< unsigned int, unsigned int>& current_grouping);
+
+			bool setDims( const vector<vector<float> >& data );
+
+			vector<vector<float> > getDistances( const gsl_matrix* const svd_coords, const gsl_matrix* const ref_coords);
+
+			map< unsigned int, unsigned int> getMapping(const vector<vector<float> >& distances);
 	};
 
 } // namespace EMAN

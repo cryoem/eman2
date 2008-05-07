@@ -2215,79 +2215,85 @@ vector<vector<Vec3f> > CSym::get_asym_unit_triangles(bool inc_mirror ) const{
 		Vec3f z(0,0,1);
 		vector<Vec3f> tmp;
 		tmp.push_back(z);
-		tmp.push_back(v[0]);
 		tmp.push_back(v[1]);
+		tmp.push_back(v[0]);
 		ret.push_back(tmp);
 		
 		vector<Vec3f> tmp2;
 		tmp2.push_back(z);
-		tmp2.push_back(v[1]);
 		tmp2.push_back(v[2]);
+		tmp2.push_back(v[1]);
 		ret.push_back(tmp2);
 		
 		vector<Vec3f> tmp3;
 		tmp3.push_back(z);
-		tmp3.push_back(v[2]);
 		tmp3.push_back(v[3]);
+		tmp3.push_back(v[2]);
 		ret.push_back(tmp3);
 		
 		vector<Vec3f> tmp4;
 		tmp4.push_back(z);
-		tmp4.push_back(v[3]);
 		tmp4.push_back(v[0]);
+		tmp4.push_back(v[3]);
 		ret.push_back(tmp4);
 	}
 	else if (nsym == 2 && inc_mirror) {
 		Vec3f x(1,0,0);
 		vector<Vec3f> tmp;
-		tmp.push_back(v[0]);
 		tmp.push_back(v[1]);
+		tmp.push_back(v[0]);
 		tmp.push_back(x);
 		ret.push_back(tmp);
 		
 		vector<Vec3f> tmp2;
-		tmp2.push_back(v[1]);
 		tmp2.push_back(v[2]);
+		tmp2.push_back(v[1]);
 		tmp2.push_back(x);
 		ret.push_back(tmp2);
 		
 		vector<Vec3f> tmp3;
-		tmp3.push_back(v[2]);
 		tmp3.push_back(v[3]);
+		tmp3.push_back(v[2]);
 		tmp3.push_back(x);
 		ret.push_back(tmp3);
 		
 		vector<Vec3f> tmp4;
-		tmp4.push_back(v[3]);
 		tmp4.push_back(v[0]);
+		tmp4.push_back(v[3]);
 		tmp4.push_back(x);
 		ret.push_back(tmp4);
 	}
 	else if (nsym == 2 && !inc_mirror) {
 		vector<Vec3f> tmp;
 		tmp.push_back(v[0]);
-		tmp.push_back(v[1]);
 		tmp.push_back(v[2]);
+		tmp.push_back(v[1]);
 		ret.push_back(tmp);
 		
 		vector<Vec3f> tmp2;
 		tmp2.push_back(v[2]);
-		tmp2.push_back(v[3]);
 		tmp2.push_back(v[0]);
+		tmp2.push_back(v[3]);
 		ret.push_back(tmp2);
 	}
-	else if (v.size() == 3) ret.push_back(v);
+	else if (v.size() == 3) {
+			vector<Vec3f> tmp;
+			tmp.push_back(v[0]);
+			tmp.push_back(v[2]);
+			tmp.push_back(v[1]);
+			ret.push_back(tmp);
+	}
 	else if (v.size() == 4) {
 		vector<Vec3f> tmp;
 		tmp.push_back(v[0]);
-		tmp.push_back(v[1]);
 		tmp.push_back(v[3]);
+		tmp.push_back(v[1]);
 		ret.push_back(tmp);
 		
 		vector<Vec3f> tmp2;
 		tmp2.push_back(v[1]);
-		tmp2.push_back(v[2]);
 		tmp2.push_back(v[3]);
+		tmp2.push_back(v[2]);
 		ret.push_back(tmp2);
 	}
 	
@@ -2398,44 +2404,49 @@ vector<vector<Vec3f> > DSym::get_asym_unit_triangles(bool inc_mirror) const{
 	if ( (nsym == 1 && inc_mirror == false) || (nsym == 2 && inc_mirror)) {
 			vector<Vec3f> tmp;
 			tmp.push_back(v[0]);
-			tmp.push_back(v[1]);
 			tmp.push_back(v[2]);
+			tmp.push_back(v[1]);
 			ret.push_back(tmp);
 		
 			vector<Vec3f> tmp2;
 			tmp2.push_back(v[2]);
-			tmp2.push_back(v[3]);
 			tmp2.push_back(v[0]);
+			tmp2.push_back(v[3]);
 			ret.push_back(tmp2);
 	}
 	else if (nsym == 1) {
 		Vec3f z(0,0,1);
 		vector<Vec3f> tmp;
 		tmp.push_back(z);
-		tmp.push_back(v[0]);
 		tmp.push_back(v[1]);
+		tmp.push_back(v[0]);
 		ret.push_back(tmp);
 	
 		vector<Vec3f> tmp2;
 		tmp2.push_back(z);
-		tmp2.push_back(v[1]);
 		tmp2.push_back(v[2]);
+		tmp2.push_back(v[1]);
 		ret.push_back(tmp2);
 	
 		vector<Vec3f> tmp3;
 		tmp3.push_back(z);
-		tmp3.push_back(v[2]);
 		tmp3.push_back(v[3]);
+		tmp3.push_back(v[2]);
 		ret.push_back(tmp3);
 	
 		vector<Vec3f> tmp4;
 		tmp4.push_back(z);
-		tmp4.push_back(v[3]);
 		tmp4.push_back(v[0]);
+		tmp4.push_back(v[3]);
 		ret.push_back(tmp4);
 	}
 	else {
-		ret.push_back(v);
+// 		if v.size() == 3
+		vector<Vec3f> tmp;
+		tmp.push_back(v[0]);
+		tmp.push_back(v[2]);
+		tmp.push_back(v[1]);
+		ret.push_back(tmp);
 	}
 	
 	return ret;
@@ -2656,18 +2667,24 @@ float PlatonicSym::platonic_alt_lower_bound(const float& azimuth, const float& a
 vector<vector<Vec3f> > PlatonicSym::get_asym_unit_triangles(bool inc_mirror) const{
 	vector<Vec3f> v = get_asym_unit_points(inc_mirror);
 	vector<vector<Vec3f> > ret;
-	if (v.size() == 3) ret.push_back(v);
+	if (v.size() == 3) {
+		vector<Vec3f> tmp;
+		tmp.push_back(v[0]);
+		tmp.push_back(v[2]);
+		tmp.push_back(v[1]);
+		ret.push_back(tmp);
+	}
 	else /* v.size() == 4*/ {
 		vector<Vec3f> tmp;
 		tmp.push_back(v[0]);
-		tmp.push_back(v[1]);
 		tmp.push_back(v[2]);
+		tmp.push_back(v[1]);
 		ret.push_back(tmp);
 		
 		vector<Vec3f> tmp2;
 		tmp2.push_back(v[0]);
-		tmp2.push_back(v[2]);
 		tmp2.push_back(v[3]);
+		tmp2.push_back(v[2]);
 		ret.push_back(tmp2);
 	}
 	

@@ -48,6 +48,10 @@ from emglplot import *
 
 pl=()
 
+THRESHOLD = "Threshold"
+SELECTIVE = "Selective"
+MORESELECTIVE = "More Selective"
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image>
@@ -505,6 +509,9 @@ class BoxSet:
 		self.correlation = None			# the correlation image
 		
 		self.boxsize = -1				# boxsize, may not be necessary
+		self.autoboxmethod = SELECTIVE	# a string that stores the auto boxing method.
+		
+		self.correlationupdate = True		# forces correlation maps to be continuously updated when new references are add
 		
 		self.radius = 0
 		
@@ -540,6 +547,7 @@ class BoxSet:
 		return len(self.boxes)
 	
 	def settemplate(self,template, boxsize, store=True):
+		#print "setting template"
 		if (store):
 			self.template = template
 		
@@ -550,7 +558,7 @@ class BoxSet:
 		inx = self.image.get_xsize()/2
 		iny = self.image.get_ysize()/2
 		tn = boxsize/2
-		while ( inx >= 512 and iny >= 512 and tn >= 16 ):
+		while ( inx >= 256 and iny >= 256 and tn >= 16 ):
 			inx /= 2
 			iny /= 2
 			tn /= 2
@@ -639,39 +647,43 @@ class BoxSet:
 			#template = self.template.get_clip(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
 			#self.settemplate(template,boxsize,False)
 			
-	def autopick(self,efficiency,optprofile=None):
+	def autobox(self,efficiency,optprofile=None,thr=None):
 		if (self.correlation == None):
-			print "Error, can't autopick of the correlation image doesn't exist"
+			print "Error, can't autobox of the correlation image doesn't exist"
 			return
 		
 		if len(self.paramboxes) == 0 :
-			print "Error, can't autopick if there are no selected boxes"
+			print "Error, can't autobox if there are no selected boxes"
 			return
 		
-		self.accrueparams(self.paramboxes)
+		if ( optprofile == None or thr == None ):
+			self.accrueparams(self.paramboxes)
 		# get the optimum parameters
 		found = False
-		for i,box in enumerate(self.paramboxes):
-			if box[6] == 0: 
-				print "continuing on faulty"
-				continue
-			if found == False:
-				self.optprofile = box[9]
-				n = len(self.optprofile)
-				self.optpeakvalue = box[6]
-				found = True
-			else:
-				profile = box[9]
-				for j in range(0,n):
-					if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
-					
-				if box[6] < self.optpeakvalue: self.optpeakvalue = box[6]
+		if thr == None:
+			for i,box in enumerate(self.paramboxes):
+				if box[6] == 0:
+					print "continuing on faulty"
+					continue
+				if found == False:
+					self.optprofile = box[9]
+					n = len(self.optprofile)
+					self.optpeakvalue = box[6]
+					found = True
+				else:
+					profile = box[9]
+					for j in range(0,n):
+						if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
+						
+					if box[6] < self.optpeakvalue: self.optpeakvalue = box[6]
+		else:
+			self.optpeakvalue = thr
 				
 		# this is me hacking
 		if optprofile != None:
 			self.optprofile=optprofile
 		else:
-			self.parent.updatedata(self.optprofile)
+			self.parent.updatedata(self.optprofile,self.optpeakvalue)
 		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
 		self.radius = 0
 		tmp = self.optprofile[0]
@@ -683,8 +695,14 @@ class BoxSet:
 		
 		#print self.optprofile
 		#print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
+		if self.autoboxmethod == THRESHOLD:
+			mode = 0
+		elif self.autoboxmethod == SELECTIVE:
+			mode = 1
+		elif self.autoboxmethod == MORESELECTIVE:
+			mode = 2
 		
-		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,self.searchradius,self.optprofile,efficiency,self.radius)
+		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optpeakvalue,self.searchradius,self.optprofile,efficiency,self.radius,mode)
 
 		for b in soln:
 			x = b[0]
@@ -719,8 +737,15 @@ class BoxSet:
 			yy /= self.shrink
 			
 			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),2*self.searchradius)
-		
+	
+	def classify(self):
+		v = []
+		# accrue all params
+		self.accrueparams(self.boxes)
+		for box in self.boxes:
+			v.append(box[9])
 			
+		print BoxingTools.classify(v,4)
 class GUIbox:
 	def __init__(self,imagefsp,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
@@ -844,7 +869,7 @@ class GUIbox:
 			if self.ap:
 				self.deletenonrefs()
 				self.setrefs()
-				self.autopick()
+				self.autobox()
 				
 			self.updateppc()
 			
@@ -994,7 +1019,7 @@ class GUIbox:
 		if boxset.delbox(boxnum) and self.ap:
 			self.deletenonrefs()
 			self.setrefs()
-			self.autopick()
+			self.autobox()
 		#del(self.guimx.data[globalboxnum])
 		#self.guimx.updateGL()
 		#self.guimx.setData(self.ptcl)
@@ -1007,7 +1032,7 @@ class GUIbox:
 			inx = self.image.get_xsize()/2
 			iny = self.image.get_ysize()/2
 			tn = self.boxsize/2
-			while ( inx >= 512 and iny >= 512 and tn >= 16 ):
+			while ( inx >= 256 and iny >= 256 and tn >= 16 ):
 				inx /= 2
 				iny /= 2
 				tn /= 2
@@ -1140,8 +1165,6 @@ class GUIbox:
 			#print "there are",len(images),"refs"
 			return images
 	def setrefs(self):
-		
-		#print "setting refs"
 		offset = 0
 		for i in range(0,self.boxsetidx):
 			offset += self.boxsets[i].numboxes()
@@ -1151,10 +1174,16 @@ class GUIbox:
 		for j in range(0,len(boxes)):
 			images.append(self.ptcl[j+offset])
 		
+		if boxset.correlationupdate == True:
+			boxset.settemplate(self.rot_aligned_average(self.getrefimages()),self.boxsize)
+			
+	def autoboxbutton(self):
+		self.deletenonrefs()
+		self.setrefs()
+		self.autobox()
 		
-		boxset.settemplate(self.rot_aligned_average(self.getrefimages()),self.boxsize)
+	def autobox(self):
 		
-	def autopick(self):
 		correlation = self.boxsets[0].correlation
 		efficiency = EMData(correlation.get_xsize(),correlation.get_ysize())
 		efficiency.to_one()
@@ -1163,7 +1192,7 @@ class GUIbox:
 			
 		
 		
-		self.boxsets[self.boxsetidx].autopick(efficiency);
+		self.boxsets[self.boxsetidx].autobox(efficiency);
 		#efficiency.write_image("efficiency.hdf")
 		#self.boxsets.append(BoxSet(self.image,self))
 		#self.boxsetidx += 1 
@@ -1175,7 +1204,7 @@ class GUIbox:
 	def done(self):
 		self.app.quit
 		
-	def trydata(self,data):
+	def trydata(self,data,thr):
 		self.deletenonrefs()
 		
 		correlation = self.boxsets[0].correlation
@@ -1186,11 +1215,24 @@ class GUIbox:
 			
 		#efficiency.write_image("efficiency.hdf")
 		
-		self.boxsets[self.boxsetidx].autopick(efficiency,data);
+		self.boxsets[self.boxsetidx].autobox(efficiency,data,thr);
 		
+		self.updateAllImageDisplay()
 		
-	def updatedata(self,data):
-		self.guictl.updatedata(data)
+	def updatedata(self,data,thresh):
+		self.guictl.updatedata(data,thresh)
+		
+	def setautobox(self,s):
+		for boxset in self.boxsets:
+			boxset.autoboxmethod = s
+		print s
+	def nocupdate(self,bool):
+		for boxset in self.boxsets:
+			boxset.correlationupdate = not bool
+			
+	def classify(self,bool):
+		for boxset in self.boxsets:
+			boxset.classify()
 	
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
@@ -1223,72 +1265,114 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.plothbl.addLayout(self.plotbuttonvbl)
 		
-		self.vbl.addLayout(self.plothbl)
+		self.vbl2 = QtGui.QVBoxLayout()
+		
+		self.vbl2.addLayout(self.plothbl)
+		
+		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
+		self.thr.setValue(target.threshold)
+		self.vbl2.addWidget(self.thr)
+		
+		self.interbox = QtGui.QGroupBox("Interactive Parameters")
+		self.interbox.setLayout(self.vbl2)
+		self.vbl.addWidget(self.interbox)
+		
+		self.thrbut = QtGui.QRadioButton(THRESHOLD)
+		self.selbut = QtGui.QRadioButton(SELECTIVE)
+		self.selbut.setChecked(True)
+		self.morselbut = QtGui.QRadioButton(MORESELECTIVE)
+		
+		self.methodhbox = QtGui.QHBoxLayout()
+		self.methodhbox.addWidget(self.thrbut)
+		self.methodhbox.addWidget(self.selbut)
+		self.methodhbox.addWidget(self.morselbut)
+		
+		self.groupbox = QtGui.QGroupBox("Auto Box Method")
+		self.groupbox.setLayout(self.methodhbox)
+		
+		self.vbl.addWidget(self.groupbox)
+		
+		#self.vbl.addLayout(self.groupbox)
 		
 		self.infohbl = QtGui.QHBoxLayout()
 		self.info = QtGui.QLabel("%d Boxes"%len(target.boxes),self)
-		self.ppc = QtGui.QLabel("%f ppc"%0,self)
+		self.ppc = QtGui.QLabel("%f particles per click"%0,self)
 		self.infohbl.addWidget(self.info)
 		self.infohbl.addWidget(self.ppc)
-		self.vbl.addLayout(self.infohbl)
-
-		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
-		self.thr.setValue(target.threshold)
-		self.vbl.addWidget(self.thr)
 		
 		
-		self.vbl2 = QtGui.QVBoxLayout()
-		self.vbl2.setMargin(0)
-		self.vbl2.setSpacing(6)
-		self.vbl2.setObjectName("vbl")
+		self.statsbox = QtGui.QGroupBox("Stats")
+		self.statsbox.setLayout(self.infohbl)
+		self.vbl.addWidget(self.statsbox)
 		
 		self.hbl1=QtGui.QHBoxLayout()
 		self.hbl1.setMargin(0)
 		self.hbl1.setSpacing(2)
-		self.vbl2.addLayout(self.hbl1)
+		#self.vbl.addLayout(self.hbl1)
 		
 		self.lblbs=QtGui.QLabel("Box Size:",self)
 		self.hbl1.addWidget(self.lblbs)
 		
 		self.bs = QtGui.QLineEdit(str(target.boxsize),self)
 		self.hbl1.addWidget(self.bs)
-
-		self.hbl2=QtGui.QHBoxLayout()
-		self.hbl2.setMargin(0)
-		self.hbl2.setSpacing(2)
-		self.vbl2.addLayout(self.hbl2)
+		self.vbl.addLayout(self.hbl1)
+		
+		self.hbl3=QtGui.QHBoxLayout()
+		self.dynapick = QtGui.QRadioButton("Dynapix")
+		self.hbl3.addWidget(self.dynapick)
+		self.nocpick = QtGui.QRadioButton("No correlation update")
+		self.hbl3.addWidget(self.nocpick)
+		
+		self.vbl.addLayout(self.hbl3)
+		
+		self.autobox=QtGui.QPushButton("Auto Box")
+		self.vbl.addWidget(self.autobox)
 
 		self.done=QtGui.QPushButton("Done")
-		self.vbl2.addWidget(self.done)
-		
-		self.setref=QtGui.QPushButton("Set References")
-		self.vbl2.addWidget(self.setref)
-		
-		self.autopick=QtGui.QPushButton("Auto Pick")
-		self.vbl2.addWidget(self.autopick)
-		
-		self.dynapick = QtGui.QPushButton("Dynapix")
-		self.dynapick.setCheckable(1)
-		self.vbl2.addWidget(self.dynapick)
-		
-		self.vbl.addLayout(self.vbl2)
+		self.vbl.addWidget(self.done)
+
+		self.classifybut=QtGui.QPushButton("Classify")
+		self.vbl.addWidget(self.classifybut)
 		
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.app.quit)
-		self.connect(self.setref,QtCore.SIGNAL("clicked(bool)"),self.target.setrefs)
-		self.connect(self.autopick,QtCore.SIGNAL("clicked(bool)"),self.target.autopick)
-		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.target.dynapick)
+		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
+		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
+		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
 		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.trythatd)
+		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
+		self.connect(self.selbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
+		self.connect(self.morselbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
+		self.connect(self.nocpick, QtCore.SIGNAL("clicked(bool)"), self.target.nocupdate)
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
 	
-	def trythatd(self):
-		self.target.trydata(self.window.getData())
+	def dynapickd(self,bool):
+		if bool == True:
+			self.autobox.setEnabled(False)
+		else:
+			self.autobox.setEnabled(True)
+		self.target.dynapick()
 	
-	def updatedata(self,data):
+	def gboxclick(self,bool):
+		if self.thrbut.isChecked():
+			s = self.thrbut.text()
+		elif self.selbut.isChecked():
+			s = self.selbut.text()
+		elif self.morselbut.isChecked():
+			s = self.morselbut.text()
+		else:
+			print "Bug intercepted in e2boxer.py. Please email the development team."
+			
+		self.target.setautobox(str(s))
+	
+	def trythatd(self):
+		self.target.trydata(self.window.getData(),float(self.thr.getValue()))
+	
+	def updatedata(self,data,thresh):
 		#print data
 		self.window.setData(data)
-		
+		self.thr.setValue(thresh,True)
 		self.resize(self.width(),self.height())
 		#self.window.resizeGL(self.window.width(),self.window.height())
 		#self.window.updateGL()
@@ -1309,8 +1393,8 @@ class GUIboxPanel(QtGui.QWidget):
 		self.target.updateboxsize(v)
 		
 	def newThresh(self,val):
-		self.target.threshold=val
-		self.target.boxupdate(True)
+		#print "new threshold"
+		self.trythatd()
 
 
 if __name__ == "__main__":

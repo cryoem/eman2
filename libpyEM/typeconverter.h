@@ -119,6 +119,23 @@ namespace EMAN {
 		}
     };
 
+	template <class S,class T>
+	struct map_to_python_2 : python::to_python_converter<map<S, T>,
+ 													     map_to_python_2<S,T> >
+   {
+	   static PyObject* convert(map<S, T> const& d)
+	   {
+		   python::dict result;
+
+		   typedef typename map<S, T>::const_iterator MI;
+		   for (MI p = d.begin(); p != d.end(); p++) {
+			   result[p->first] = p->second;
+		   }
+	
+		   return python::incref(python::dict(result).ptr());
+	   }
+   };
+	
     struct Dict_to_python : python::to_python_converter<Dict, Dict_to_python>
     {
 		static PyObject* convert(Dict const& dd)

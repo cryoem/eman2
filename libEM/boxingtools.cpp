@@ -31,7 +31,464 @@
 
 
 #include "boxingtools.h"
+#include "exception.h"	
 using namespace EMAN;
+
+
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_linalg.h>
+
+// For random
+#include <cstdlib> 
+#include <ctime> 
+
+#include <iostream>
+using std::cerr;
+using std::cout;
+using std::endl;
+
+#include <string>
+using std::string;
+
+#include <algorithm>
+// find, min_element
+
+#define SVD_CLASSIFIER_DEBUG 0
+
+#if SVD_CLASSIFIER_DEBUG
+ void printMatrix( const gsl_matrix * const A, const unsigned int rows, const unsigned int cols, const string& title = "" )
+{
+	cout << "Printing matrix " << title << endl;
+	cout << "It has " << rows << " rows and " << cols << " columns " << endl;
+	for( unsigned int i = 0; i < rows; ++i )
+	{
+		for( unsigned int j = 0; j < cols; ++j )
+		{
+			cout << gsl_matrix_get(A,i,j) << " ";
+		}
+		cout << endl;
+	}
+
+}
+
+void printVector( const gsl_vector * const A, const unsigned int length, const string& title = "" )
+{
+	cout << "Printing vector " << title << endl;
+	for( unsigned int i = 0; i < length; ++i )
+	{
+		cout << gsl_vector_get(A,i) << " ";
+	}
+	cout << endl;
+}
+
+void print_map( const map<unsigned int, unsigned int>& mapping )
+{
+	for(map<unsigned int, unsigned int>::const_iterator it = mapping.begin(); it != mapping.end(); ++it)
+	{
+		cout << it->first << " " << it->second << endl;
+	}
+}
+#endif
+
+BoxSVDClassifier::BoxSVDClassifier(const vector<vector<float> >& data, const unsigned int& classes) :
+		mData(data), mClasses(classes)
+{
+	setDims( mData );
+}
+
+
+BoxSVDClassifier::~BoxSVDClassifier()
+{
+
+}
+
+bool BoxSVDClassifier::setDims( const vector<vector<float> >& data )
+{
+	mColumns = mData.size();
+	vector<vector<float> >::const_iterator it = data.begin();
+	mRows = it->size();
+	it++;
+	for( ; it != data.end(); ++it )
+	{
+		if ( it->size() != mRows )
+		{
+			cerr << "ERROR: can not initial the BoxSVDClassifier with vectors of un-equal lengths " << endl;
+			cerr << "The vector lengths that did not agree were " <<  mRows << " and " << it->size() << endl;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
+map< unsigned int, unsigned int> BoxSVDClassifier::go()
+{
+	//	This is done in the constructor
+	// 	setDims(mData);
+
+	
+	unsigned int local_columns = mColumns;
+	if ( mRows < mColumns )
+	{
+// 		cerr << "Warning: gsl SVD works only when m > n, you have m = " << mRows << " and n = " << mColumns << endl;
+		// This local adaptation means things will proceed the same way even if there are more columns in A then rows
+		// Every input data is still classified, just the SVD eigenvectors are found using a subset of all the data
+		local_columns = mRows;
+	}
+
+	gsl_matrix * U = gsl_matrix_calloc( mRows, local_columns );
+	gsl_matrix * A = gsl_matrix_calloc( mRows, mColumns );
+	for ( unsigned int i = 0; i < mRows; ++i )
+	{
+		for ( unsigned int j = 0; j < mColumns; ++j )
+		{
+			gsl_matrix_set( A, i, j, mData[j][i] );
+			if ( j < local_columns )
+				gsl_matrix_set( U, i, j, mData[j][i] );
+		}
+	}
+#if SVD_CLASSIFIER_DEBUG
+	printMatrix( A, mRows, mColumns, "A" );
+#endif
+
+	gsl_matrix * V = gsl_matrix_calloc( local_columns, local_columns );
+	gsl_vector * S = gsl_vector_calloc( local_columns );
+	gsl_vector * work = gsl_vector_calloc( local_columns );
+
+	if ( gsl_linalg_SV_decomp (U, V, S, work) )
+	{
+		cerr << "ERROR: gsl returned a non zero value on application of the SVD" << endl;
+	}
+
+#if SVD_CLASSIFIER_DEBUG
+	printMatrix( U, mRows, local_columns, "U" );
+	printVector( S, local_columns, "S" );
+	printMatrix( V, local_columns, local_columns, "V");
+#endif	
+
+	// normalize the columns of matrix A
+	for ( unsigned int j = 0; j < mColumns; ++j )
+	{
+		float norm = 0;
+		for ( unsigned int i = 0; i < mRows; ++i )
+		{
+			norm += gsl_matrix_get( A, i, j)*gsl_matrix_get( A, i, j);
+		}
+		norm = sqrtf(norm);
+		for ( unsigned int i = 0; i < mRows; ++i )
+		{
+			gsl_matrix_set( A, i, j, gsl_matrix_get(A,i,j)/norm);
+		}
+	}
+
+#if SVD_CLASSIFIER_DEBUG
+	for ( unsigned int j = 0; j < mColumns; ++j )
+	{
+		float norm = 0;
+		for ( unsigned int i = 0; i < mRows; ++i )
+		{
+			norm += gsl_matrix_get( A, i, j)*gsl_matrix_get( A, i, j);
+		}
+		cout << "For column " << j << " the squared norm is " << norm << endl;
+	}
+#endif	
+
+
+	gsl_matrix * svd_coords = gsl_matrix_calloc( mColumns, mColumns );	
+	// Correlate the columns of A with the columns of U and store the information in a martrix called svd_coords
+	for ( unsigned int i = 0; i < mColumns; ++i )
+	{
+		for ( unsigned int j = 0; j < local_columns; ++j )
+		{
+			float result = 0.0;
+			for ( unsigned int k = 0; k < mRows; ++k )
+			{
+				result += gsl_matrix_get(A,k,i)*gsl_matrix_get(U,k,j);
+			}
+			gsl_matrix_set( svd_coords, i, j, result);
+		}
+	}
+
+#if SVD_CLASSIFIER_DEBUG
+	printMatrix( svd_coords, mColumns, mColumns, "svd_coords" );
+#endif
+
+	map< unsigned int, unsigned int> grouping = randomSeedCluster(svd_coords, mColumns);
+		
+	for ( unsigned int i = 0; i < 10; ++ i )
+	{
+		grouping = getIterativeCluster(svd_coords, grouping);
+	}
+	
+	gsl_matrix_free(A);
+	gsl_matrix_free(U);
+	gsl_matrix_free(V);
+	gsl_vector_free(S);
+	gsl_vector_free(work);
+	gsl_matrix_free(svd_coords);
+
+	return grouping;
+}
+
+map< unsigned int, unsigned int> BoxSVDClassifier::getIterativeCluster(const gsl_matrix* const svd_coords, const map< unsigned int, unsigned int>& current_grouping)
+{
+	// Space to store the reference vectors
+	gsl_matrix * ref_coords = gsl_matrix_calloc( mClasses, mColumns );
+
+	// Assumes there are a total of mClasses in the current_groupings mapping
+	for(unsigned int i = 0; i < mClasses; ++i)
+	{
+		unsigned int tally = 0;
+		for (map< unsigned int, unsigned int>::const_iterator it = current_grouping.begin(); it != current_grouping.end(); ++it )
+		{
+			if ( it->second == i )
+			{
+				for( unsigned int j = 0; j < mColumns; ++j )
+				{
+					gsl_matrix_set(ref_coords, i, j, gsl_matrix_get( svd_coords, it->first, j ) + gsl_matrix_get( ref_coords, i, j));
+				}
+				++tally;
+			}
+			
+		}
+		// then normalize the the addition
+		if (tally != 0)
+			for( unsigned int j = 0; j < mColumns; ++j )
+		{
+			gsl_matrix_set(ref_coords, i, j, gsl_matrix_get( ref_coords, i, j )/((float) tally));
+		}
+	}
+
+	vector<vector<float> > distances = getDistances(svd_coords, ref_coords);
+
+#if SVD_CLASSIFIER_DEBUG
+	cout << "The distance matrix is " << endl;
+	for( unsigned int i = 0; i < distances.size(); ++i )
+	{
+		for( unsigned int j = 0; j < distances[i].size(); ++j )
+		{
+			cout << distances[i][j] << " ";
+		}
+		cout << endl;
+	}
+#endif	
+
+
+	// Finally decide which of the randomly chosen vectors is closest to each of the input vectors
+	// and use that as the basis of the grouping
+	map< unsigned int, unsigned int> return_map = getMapping(distances);
+
+#if SVD_CLASSIFIER_DEBUG
+	cout << "Printing classification map" << endl;
+	print_map(return_map);
+#endif	
+	
+	gsl_matrix_free(ref_coords);
+
+	return return_map;
+}
+
+
+map< unsigned int, unsigned int> BoxSVDClassifier::randomSeedCluster(const gsl_matrix* const svd_coords, unsigned int matrix_dims)
+{
+	// Seed the random number generator 
+	srand(static_cast<unsigned int>(time(0)));
+
+	vector<unsigned int> random_seed_indices;
+	while ( random_seed_indices.size() < mClasses )
+	{
+		unsigned int random_idx = static_cast<int>(((float)rand()/RAND_MAX)*matrix_dims);
+		if ( find( random_seed_indices.begin(), random_seed_indices.end(), random_idx ) == random_seed_indices.end() )
+		{
+			random_seed_indices.push_back( random_idx );
+		}
+	}
+
+	// Space to store the reference vectors
+	gsl_matrix * ref_coords = gsl_matrix_calloc( mClasses, mColumns );
+
+	// Put the reference vectors into a matrix to make the approach transparent to the reader
+	for(unsigned int i = 0; i < random_seed_indices.size(); ++i)
+	{
+		for( unsigned int j = 0; j < matrix_dims; ++j )
+		{
+			gsl_matrix_set(ref_coords, i, j, gsl_matrix_get( svd_coords, random_seed_indices[i], j ));
+		}
+	}
+
+#if SVD_CLASSIFIER_DEBUG
+	printMatrix( ref_coords, mClasses, matrix_dims, "Reference matrix in first grouping");
+#endif	
+
+	// accrue the distance data - this could be done more concisely, but there shouldn't be much cost
+	// because the data should be fairl small. By more concisely I mean, the distance data would not need
+	// to be stored, it could be determined without storing it in distances.
+	vector<vector<float> > distances = getDistances(svd_coords, ref_coords);
+
+#if SVD_CLASSIFIER_DEBUG
+	cout << "The distance matrix is " << endl;
+	for( unsigned int i = 0; i < distances.size(); ++i )
+	{
+		for( unsigned int j = 0; j < distances[i].size(); ++j )
+		{
+			cout << distances[i][j] << " ";
+		}
+		cout << endl;
+	}
+#endif	
+
+
+	// Finally decide which of the randomly chosen vectors is closest to each of the input vectors
+	// and use that as the basis of the grouping
+	map< unsigned int, unsigned int> return_map = getMapping(distances);
+
+#if SVD_CLASSIFIER_DEBUG
+	cout << "Printing classification map, randomly seeded" << endl;
+	print_map(return_map);
+#endif	
+	
+	gsl_matrix_free(ref_coords);
+
+	return return_map;
+}
+
+
+vector<vector<float> > BoxSVDClassifier::getDistances( const gsl_matrix* const svd_coords, const gsl_matrix* const ref_coords)
+{
+	// accrue the distance data - this could be done more concisely, but there shouldn't be much cost
+	// because the data should be fairl small. By more concisely I mean, the distance data would not need
+	// to be stored, it could be determined without storing it in distances.
+	vector<vector<float> > distances;
+	for (unsigned int i = 0; i < mColumns; ++i )
+	{
+		vector<float> ith_distances;
+		for( unsigned int random_seed_idx = 0; random_seed_idx < mClasses; ++random_seed_idx )
+		{
+			float distance = 0;
+			for (unsigned int j = 0; j < mColumns; ++j )
+			{
+				float value = (gsl_matrix_get( ref_coords, random_seed_idx, j) - gsl_matrix_get( svd_coords, i, j));
+				distance += value * value;
+			}
+			ith_distances.push_back(sqrtf(distance));
+		}
+		distances.push_back(ith_distances);
+	}
+
+	return distances;
+}
+
+map< unsigned int, unsigned int> BoxSVDClassifier::getMapping(const vector<vector<float> >& distances)
+{
+	// Finally decide which of the randomly chosen vectors is closest to each of the input vectors
+	// and use that as the basis of the grouping
+	map< unsigned int, unsigned int> return_map;
+	unsigned int vector_idx = 0;
+	for( vector<vector<float> >::const_iterator it = distances.begin(); it != distances.end(); ++it, ++vector_idx )
+	{
+		vector<float>::const_iterator mIt = it->begin();
+		float min = *mIt;
+		unsigned int min_idx = 0;
+		for ( unsigned int current_idx = 0; mIt != it->end(); ++mIt, ++current_idx )
+		{
+			if ( *mIt < min )
+			{
+				min = *mIt;
+				min_idx = current_idx;
+			}
+		}
+		return_map[vector_idx] = min_idx;
+	}
+
+	return return_map;
+}
+
+map< unsigned int, unsigned int> BoxSVDClassifier::colorMappingByClassSize( const map< unsigned int, unsigned int>& grouping )
+{
+
+	vector<unsigned int> current_mappings;
+	// Get the extent of the current mappings
+	for (map< unsigned int, unsigned int>::const_iterator it = grouping.begin(); it != grouping.end(); ++it )
+	{
+		if ( find( current_mappings.begin(), current_mappings.end(), it->second ) == current_mappings.end() )
+		{
+			current_mappings.push_back( it->second );
+		}
+	}
+	
+	if ( current_mappings.size() < 2 )
+	{
+		cerr << "Error, cannot call colMappingByClassSize when less than 2 classes have been specified, I think you created " << current_mappings.size() << " classes " << endl;
+		throw;
+	}
+
+	// Record how many data points are in each class.
+	map<unsigned int, unsigned int> mappings_tally;
+	for( vector<unsigned int>::const_iterator it = current_mappings.begin(); it != current_mappings.end(); ++it )
+	{
+		// First initialize each total to zero
+		mappings_tally[*it] = 0;
+	}
+
+	// Now do the actual counting
+	for (map< unsigned int, unsigned int>::const_iterator it = grouping.begin(); it != grouping.end(); ++it )
+	{
+		mappings_tally[it->second] += 1;
+	}
+
+	// find the largest tally
+	unsigned int current_mapping_idx = 0;
+	map< unsigned int, unsigned int> return_map;
+	while ( mappings_tally.size() > 0 )
+	{
+#if SVD_CLASSIFIER_DEBUG
+		cout << "Printing mappings_tally" << endl;
+		print_map(mappings_tally);
+#endif	
+
+		map< unsigned int, unsigned int>::iterator it = mappings_tally.begin();
+		map< unsigned int, unsigned int>::iterator track_it = mappings_tally.begin();
+		unsigned int current_max = it->second;
+		unsigned int current_idx = it->first;
+		++it;
+		for (; it != mappings_tally.end(); ++it )
+		{
+			if ( it->second > current_max )
+			{
+				current_max = it->second;
+				current_idx = it->first;
+				track_it = it;
+			}
+		}
+		
+#if SVD_CLASSIFIER_DEBUG
+		cout << "The mapping is " << current_idx << " to " << current_mapping_idx << endl;
+#endif	
+		for (map< unsigned int, unsigned int>::const_iterator group_it = grouping.begin(); group_it != grouping.end(); ++group_it )
+		{
+			if ( group_it->second == current_idx )
+			{
+				return_map[group_it->first] = current_mapping_idx;
+			}
+		}
+	
+		mappings_tally.erase( current_idx );
+		
+		current_mapping_idx++;
+	}
+
+			
+#if SVD_CLASSIFIER_DEBUG
+	cout << "Printing adjusted classification map" << endl;
+	print_map(return_map);
+#endif	
+
+
+	return return_map;
+}
+
 
 
 vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int x, int y, int radius)
@@ -103,14 +560,20 @@ bool BoxingTools::is_local_maximum(const EMData* const image, int x, int y, int 
 	
 }
 
-vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency, const int cradius)
+vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency, const int cradius, int mode)
 {
+	if (mode < 0 || mode > 2 ) {
+		throw InvalidValueException(mode,"Error, the mode can only be 0,1, or 2.");
+	}
+	
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	
 	vector<IntPoint> solution;
 
 	int r = radius+1;
+	
+	
 	
 	for(int j = r; j < ny-r;++j) {
 		for(int k = r; k < nx-r;++k) {
@@ -119,16 +582,36 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 			
 			if (image->get_value_at(k,j) < threshold) continue;
 			
+			if ( mode == 0 ) {
+				solution.push_back(IntPoint(k,j));
+				set_radial_zero(efficiency,k,j,radius);
+				continue;
+			}
+			
 			vector<float> p(r,0);
 						
 			if (hi_brid(image,k,j,r,efficiency,p)) {
-				if (p[cradius] >= profile[cradius]) {
-					solution.push_back(IntPoint(k,j));
+				if ( mode == 1 ) {
+					if (p[cradius] >= profile[cradius]) {
+						solution.push_back(IntPoint(k,j));
+						set_radial_zero(efficiency,k,j,radius);
+					}
 				}
-			}
+				else /* mode == 2 */{
+					bool bad = false;
+					for (int ii = 0; ii <= cradius; ++ii) {
+						if (p[ii] < profile[ii]) {
+							bad = true;
+							break;
+						}
+					}
+					if (bad) continue;
+					solution.push_back(IntPoint(k,j));
+					set_radial_zero(efficiency,k,j,radius);
+				}
 					
-			// remove if smart is used
-// 			set_radial_zero(efficiency,k,j,2*radius);
+			
+			}	
 		}
 	}
 	
@@ -138,6 +621,7 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 
 bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EMData* const efficiency_map, vector<float>& profile)
 {
+	
 	float peakval = image->get_value_at(x,y);
 	
 	int radius_squared = radius*radius;
@@ -233,4 +717,16 @@ IntPoint BoxingTools::find_radial_max(const EMData* const map, int x, int y, int
 	}
 	
 	return soln;
+}
+
+
+map<unsigned int, unsigned int> BoxingTools::classify(const vector<vector<float> >& data, const unsigned int& classes)
+{
+	BoxSVDClassifier classifier(data, classes);
+	map< unsigned int, unsigned int> mapping = classifier.go();
+	
+	mapping = BoxSVDClassifier::colorMappingByClassSize( mapping );
+	
+	return mapping;
+
 }
