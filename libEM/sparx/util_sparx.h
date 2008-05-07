@@ -479,6 +479,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	static EMData* subn_img(EMData* img, EMData* img1);
 	/* out = img * img1  */
 	static EMData* muln_img(EMData* img, EMData* img1);
+	/* out = img / img1  */
+	static EMData* divn_img(EMData* img, EMData* img1);
 
 	/* img += scalar * img1 */	
 	static void mad_scalar(EMData* img, EMData* img1, float scalar);
@@ -492,6 +494,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void sub_img(EMData* img, EMData* img1);
 	/* img *= img1  */
 	static void mul_img(EMData* img, EMData* img1);
+	/* img /= img1  */
+	static void div_img(EMData* img, EMData* img1);
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
 private:	

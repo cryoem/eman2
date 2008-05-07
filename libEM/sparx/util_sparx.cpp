@@ -15447,8 +15447,7 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
-	EMData * img2 = new EMData();
-	img2->set_size(nx,ny,nz);
+	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar;
@@ -15473,8 +15472,7 @@ EMData* Util::madn_scalar(EMData* img, EMData* img1, float scalar)
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
-	EMData * img2 = new EMData();
-	img2->set_size(nx,ny,nz);
+	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
@@ -15500,8 +15498,7 @@ EMData* Util::addn_img(EMData* img, EMData* img1)
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
-	EMData * img2 = new EMData();
-	img2->set_size(nx,ny,nz);
+	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
@@ -15527,8 +15524,7 @@ EMData* Util::subn_img(EMData* img, EMData* img1)
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
-	EMData * img2 = new EMData();
-	img2->set_size(nx,ny,nz);
+	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
@@ -15554,8 +15550,7 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
-	EMData * img2 = new EMData();
-	img2->set_size(nx,ny,nz);
+	EMData * img2 = img->copy_head();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
@@ -15568,6 +15563,39 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
 	} else {
 		for (int i=0; i<size; i++) img2_ptr[i] = img_ptr[i] * img1_ptr[i];
+		img2->update();
+	}
+	
+	EXITFUNC;
+	return img2;
+}
+
+EMData* Util::divn_img(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ==============   output = img / img1   ================ */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	EMData * img2 = img->copy_head();
+	float *img_ptr  =img->get_data();
+	float *img2_ptr = img2->get_data();
+	float *img1_ptr = img1->get_data();
+	if(img->is_complex()) {
+		float  sq2;
+		for (int i=0; i<size; i+=2) {
+			sq2 = 1.0f/(img1_ptr[i] * img1_ptr[i]   + img1_ptr[i+1] * img1_ptr[i+1]);
+			img2_ptr[i]   = sq2*(img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1]) ;
+			img2_ptr[i+1] = sq2*(img_ptr[i+1] * img1_ptr[i] - img_ptr[i] * img1_ptr[i+1]) ;
+		}
+		img2->set_complex(true);
+		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
+	} else {
+		for (int i=0; i<size; i++) img2_ptr[i] = img_ptr[i] / img1_ptr[i];
 		img2->update();
 	}
 	
@@ -15695,6 +15723,35 @@ void Util::mul_img(EMData* img, EMData* img1)
 		}
 	} else {
 		for (int i=0;i<size;i++) img_ptr[i] *= img1_ptr[i];
+	}
+	img->update();
+	
+	EXITFUNC;
+}
+
+void Util::div_img(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img /= img1 ===================== */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	if(img->is_complex()) {
+		float  sq2;
+		for (int i=0; i<size; i+=2) {
+			sq2 = 1.0f/(img1_ptr[i] * img1_ptr[i]   + img1_ptr[i+1] * img1_ptr[i+1]);
+			float tmp    = sq2*(img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1]) ;
+			img_ptr[i+1] = sq2*(img_ptr[i+1] * img1_ptr[i] - img_ptr[i] * img1_ptr[i+1]) ;
+			img_ptr[i]   = tmp;
+		}
+	} else {
+		for (int i=0; i<size; i++) img_ptr[i] /= img1_ptr[i];
 	}
 	img->update();
 	
