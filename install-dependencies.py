@@ -14,9 +14,10 @@
 from urllib import urlopen
 from os import *
 
-ftg={
-"setup":"http://peak.telecommunity.com/dist/ez_setup.py",
+ftg={ "setup":"http://peak.telecommunity.com/dist/ez_setup.py",
 #"png":"http://superb-east.dl.sourceforge.net/sourceforge/libpng/libpng-1.2.28.tar.bz2",
+"jpeg":"http://www.ijg.org/files/jpegsrc.v6b.tar.gz",
+"gpg":"ftp://ftp.gnupg.org/gcrypt/gnupg/gnupg-1.4.9.tar.bz2",
 "sip":"http://www.riverbankcomputing.co.uk/static/Downloads/sip4/sip-4.7.4.tar.gz",
 "pyqt":"http://www.riverbankcomputing.co.uk/static/Downloads/PyQt4/PyQt-mac-gpl-4.3.3.tar.gz",
 "fftw":"http://www.fftw.org/fftw-3.1.2.tar.gz",
@@ -34,6 +35,7 @@ for i in ftg: fsp[i]=ftg[i].split("/")[-1]
 path=getenv("HOME")+"/EMAN2/src"
 try: makedirs(path)
 except: pass
+system("chown -R %s ~/EMAN2"%getenv("SUDO_USER"))
 
 chdir(path)
 print "Running in ",path
@@ -58,6 +60,11 @@ if not access("/usr/local/lib/libfftw3f.3.dylib",R_OK) :
 if not access("/usr/local/lib/libgsl.dylib",R_OK):
 	system("tar xvzf "+fsp["gsl"])
 	system("cd %s; ./configure --prefix=/usr/local; make; make install"%fsp["gsl"][:-7])
+
+# jpg
+if not access("/usr/local/lib/libjpeg.a",R_OK):
+	system("tar xvzf "+fsp["jpeg"])
+	system("cd jpeg-6b; cp /usr/share/libtool/config.sub .; cp /usr/share/libtool/config.guess .; ./configure --enable-shared --enable-static --prefix=/usr/local; make; make install;ranlib /usr/local/lib/libjpeg.a")
 
 # tiff
 if not access("/usr/local/lib/libtiff.dylib",R_OK):
@@ -104,4 +111,8 @@ try: import matplotlib
 except:
 	system("easy_install matplotlib")
 
+# GPG
+if not access("/usr/local/bin/gpg",R_OK) :
+	system("tar xvjf "+fsp["gpg"])
+	system("cd %s; ./configure --prefix=/usr/local; make; make install"%fsp["gpg"][:-8])
 
