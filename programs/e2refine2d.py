@@ -148,7 +148,9 @@ def main():
 		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate --reverse --nsort=%d"%(options.initial,it+1,options.naliref))
 		
 		run(get_simmx_cmd(options,"aliref.%02d.hdf"%it))
-			
+		
+		# e2basis projectrot here
+		
 		if ( os.system(get_classify_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_classify_cmd(options)
 			exit(1)
@@ -173,7 +175,7 @@ def run(command):
 
 def get_simmx_cmd(options,refs,check=False,nofilecheck=False):
 	
-	e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(refs, options.startimg,options.simmxfile,options.simcmp,options.simalign,options.simaligncmp)
+	e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(refs, options.input,options.simmxfile,options.simcmp,options.simalign,options.simaligncmp)
 	
 	if ( options.simralign != None ):
 		e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)

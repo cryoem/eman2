@@ -51,7 +51,11 @@ varimax <basis input> <basis output>
 project <basis input> <image input> <projection output>
 	Projects a set of images into the input basis subspace. The default
 	is to normalize the individual basis vectors, but not the final resulting
-	projection. The projections are stored as a 1-D image stack."""
+	projection. The projections are stored as a 1-D image stack.
+	
+projectrot <basis input> <image input> <simmx input> <projection output>
+	Same as project, except it will rotate/translate the particles based on the
+	best match found in simmx before projection."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -83,6 +87,37 @@ project <basis input> <image input> <projection output>
 			proj=EMData(len(basis),1,1)
 		
 			# inner loop over the basis images
+			for j,b in enumerate(basis):
+				proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+				
+			proj.write_image(args[3],i)
+	
+	# Project rotated images into a basis subspace
+	if args[0]=="projectrot" :
+		# Just read the whole similarity matrix in, since it generally shouldn't be THAT big
+		simmx=EMData(args[3],0)
+		simdx=EMData(args[3],1)
+		simdy=EMData(args[3],2)
+		simda=EMData(args[3],3)
+		
+		# normalize the basis vectors to unit length
+#		for b in basis: b.process_inplace("normalize.unitlen")
+		
+		# outer loop over images to be projected
+		n=EMUtil.get_image_count(args[2])
+		for i in range(n):
+			im=EMData(args[2],i)
+			
+			# find the best orienteation from the similarity matrix
+			best=(1.0e23,0,0,0)
+			for j in range(simmx.get_ysize()): 
+				if simmx.get(i,j)<best[0] : best=(simmx.get(i,j),simdx.get(i,j),simdy.get(i,j))
+			im.rotate_translate(best[1],0,0,best[2],best[3],0)
+#			im.process_inplace("normalize.unitlen")
+			
+			proj=EMData(len(basis),1,1)
+		
+			# inner loop over the basis images to generate the components of the projection vector
 			for j,b in enumerate(basis):
 				proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
 				
