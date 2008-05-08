@@ -129,37 +129,43 @@ def main():
 			run("e2basis.py project %s %s %s"%(fpbasis,fpfile,inputproj))
 		
 		# classify the subspace vectors
-		try: remove("classmx.hdf")
+		try: remove("classmx.00.hdf")
 		except: pass
-		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.hdf"%(inputproj,options.input,options.ncls))
+		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.00.hdf"%(inputproj,options.input,options.ncls))
 		
 		# make class-averages
 		try: remove("classes.init.hdf")
 		except: pass
-		run("e2classaverage.py %s classmx.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
+		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
 		options.initial="classes.init.hdf"
 		
 	# this is the main refinement loop
-	for it in range(0,options.iter) :
+	for it in range(1,options.iter+1) :
 		# Compute a classification basis set
-		run("e2msa.py %s basis.%02d.hdf --nbasis=%d --varimax"%(options.initial,it+1,options.nbasisfp))
+		run("e2msa.py %s basis.%02d.hdf --nbasis=%d --varimax"%(options.initial,it,options.nbasisfp))
 		
 		# extract the most different references for alignment
-		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate --reverse --nsort=%d"%(options.initial,it+1,options.naliref))
+		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate --reverse --nsort=%d"%(options.initial,it,options.naliref))
 		
-		run(get_simmx_cmd(options,"aliref.%02d.hdf"%it))
+		# We use e2simmx to compute the optimal particle orientations
+		run(get_simmx_cmd(options,"aliref.%02d.hdf"%it,"simmx.%02d.hdf"%it))
 		
 		# e2basis projectrot here
+		inputproj=options.input[:options.input.rfind(".")]+".%02d.proj.hdf"%it
+		inputproj=inputproj.split("/")[-1]
+		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s"%(it,options.input,inputproj))
 		
-		if ( os.system(get_classify_cmd(options)) != 0 ):
-			print "Failed to execute %s" %get_classify_cmd(options)
-			exit(1)
-			
-		newclasses = 'e2classes.%d.img' %(i+1)
-		options.cafile = newclasses
-		if ( os.system(get_classaverage_cmd(options)) != 0 ):
-			print "Failed to execute %s" %get_classaverage_cmd(options)
-			exit(1)
+		# classify the subspace vectors
+		try: remove("classmx.%02d.hdf"%it)
+		except: pass
+		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.%02d.hdf"%(inputproj,options.input,options.ncls,it))
+		
+		# make class-averages
+		try: remove("classes.%02d.hdf"%id)
+		except: pass
+		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,it,it,options.iterclassav))
+		
+		options.initial="classes.%02d.hdf"%id
 			
 		
 def run(command):
@@ -173,15 +179,15 @@ def run(command):
 		print "Error running:\n%s"%command
 		exit(1)
 
-def get_simmx_cmd(options,refs,check=False,nofilecheck=False):
+def get_simmx_cmd(options,refs,simmx,check=False,nofilecheck=False):
 	
-	e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(refs, options.input,options.simmxfile,options.simcmp,options.simalign,options.simaligncmp)
+	e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(refs, options.input,simmx,options.simcmp,options.simalign,options.simaligncmp)
 	
 	if ( options.simralign != None ):
 		e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	
 	if (options.verbose):
-		e2simmxcmd += " --verbose=%d"%options.verbose-1
+		e2simmxcmd += " --verbose=%d"%(options.verbose-1)
 		
 	if ( check ):
 		e2simmxcmd += " --check"	

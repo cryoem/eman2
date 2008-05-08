@@ -185,7 +185,7 @@ int LstFastIO::calc_ref_image_index(int image_index)
 
 		last_ref_index = ref_image_index;
 	}
-	printf("%d\t%d\t%s\n",image_index,last_ref_index,ref_filename.c_str());
+//	printf("%d\t%d\t%s\n",image_index,last_ref_index,ref_filename.c_str());
 
 	last_lst_index = image_index;
 

@@ -179,7 +179,7 @@ class EMGLPlot(EMImage3DObject):
 		if self.marker != None:
 			glPushMatrix()
 			glTranslate(self.marker[0],self.marker[1],0)
-			glScale(self.marker[2],self.marker[3],1.0)
+			glScalef(self.marker[2],self.marker[3],1.0)
 			self.unitcircle()
 			glPopMatrix()
 		
