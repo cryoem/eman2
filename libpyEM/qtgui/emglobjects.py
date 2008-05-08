@@ -548,10 +548,10 @@ class EMOpenGLFlagsAndTools:
 				try:
 					if str("GL_ARB_texture_non_power_of_two") not in glGetString(GL_EXTENSIONS) :
 						self.use_mipmaps = True
-						print "EMAN(ALPHA) message: No support for non power of two textures detected. Using mipmaps."
+						#print "EMAN(ALPHA) message: No support for non power of two textures detected. Using mipmaps."
 					else:
 						self.use_mipmaps = False
-						print "EMAN(ALPHA) message: Support for non power of two textures detected."
+						#print "EMAN(ALPHA) message: Support for non power of two textures detected."
 				except:
 					print "error, OpenGL seems not to be initialized"
 					return False
@@ -576,13 +576,13 @@ class EMOpenGLFlagsAndTools:
 				try: glEnable(GL_TEXTURE_3D)
 				except:
 					disable = False
-					print "EMAN(ALPHA) message: disabling use of 3D textures"
+					#print "EMAN(ALPHA) message: disabling use of 3D textures"
 					self.use_3d_texture = False
 				
 				if (disable):
 					glDisable(GL_TEXTURE_3D)
 					self.use_3d_texture = True
-					print "EMAN(ALPHA) message: 3D texture support detected"
+					#print "EMAN(ALPHA) message: 3D texture support detected"
 				
 				self.threed_texture_check = False
 				

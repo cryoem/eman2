@@ -54,8 +54,11 @@ using std::string;
 #include <algorithm>
 // find, min_element
 
+vector<Vec3f> BoxingTools::colors = vector<Vec3f>(); // static init
+				 
 #define SVD_CLASSIFIER_DEBUG 0
 
+				 
 #if SVD_CLASSIFIER_DEBUG
  void printMatrix( const gsl_matrix * const A, const unsigned int rows, const unsigned int cols, const string& title = "" )
 {
@@ -186,7 +189,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::go()
 #if SVD_CLASSIFIER_DEBUG
 	for ( unsigned int j = 0; j < mColumns; ++j )
 	{
-		float norm = 0;
+		double norm = 0;
 		for ( unsigned int i = 0; i < mRows; ++i )
 		{
 			norm += gsl_matrix_get( A, i, j)*gsl_matrix_get( A, i, j);
@@ -202,7 +205,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::go()
 	{
 		for ( unsigned int j = 0; j < local_columns; ++j )
 		{
-			float result = 0.0;
+			double result = 0.0;
 			for ( unsigned int k = 0; k < mRows; ++k )
 			{
 				result += gsl_matrix_get(A,k,i)*gsl_matrix_get(U,k,j);
@@ -217,7 +220,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::go()
 
 	map< unsigned int, unsigned int> grouping = randomSeedCluster(svd_coords, mColumns);
 		
-	for ( unsigned int i = 0; i < 10; ++ i )
+	for ( unsigned int i = 0; i < 20; ++ i )
 	{
 		grouping = getIterativeCluster(svd_coords, grouping);
 	}
@@ -730,3 +733,43 @@ map<unsigned int, unsigned int> BoxingTools::classify(const vector<vector<float>
 	return mapping;
 
 }
+
+
+Vec3f BoxingTools::get_color( const unsigned int index )
+{
+	if ( colors.size() == 0 ) {
+		colors.push_back(Vec3f(0,0,0));
+		colors.push_back(Vec3f(1,0,0));
+		colors.push_back(Vec3f(0,1,0));
+		colors.push_back(Vec3f(0,0,1));
+		colors.push_back(Vec3f(1,1,0));
+		colors.push_back(Vec3f(1,0,1));
+		colors.push_back(Vec3f(0,1,1));
+		colors.push_back(Vec3f(1,1,1));
+	}
+	if ( index >= colors.size() )
+	{
+		while ( colors.size() <= index )
+		{
+			bool found = false;
+			while ( !found )
+			{
+				unsigned int random_idx = rand() % colors.size();
+				unsigned int random_idx2 = rand() % colors.size();
+				while ( random_idx2 == random_idx )
+				{
+					random_idx2 = rand() % colors.size();
+				}
+				
+				Vec3f result = (colors[random_idx] + colors[random_idx2])/2.0;
+				if ( find( colors.begin(), colors.end(), result ) == colors.end() )
+				{
+					colors.push_back( result );
+					found = true;
+				}
+			}
+		}
+	}
+	return colors[index];
+}
+

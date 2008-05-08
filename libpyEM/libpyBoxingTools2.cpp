@@ -24,12 +24,14 @@ namespace  {
 		.def("set_radial_zero",&EMAN::BoxingTools::set_radial_zero)
 		.def("find_radial_max",&EMAN::BoxingTools::find_radial_max)
 		.def("classify",&EMAN::BoxingTools::classify)
+		.def("get_color",&EMAN::BoxingTools::get_color)
 		.staticmethod("get_min_delta_profile")
 		.staticmethod("is_local_maximum")
 		.staticmethod("auto_correlation_pick")
 		.staticmethod("set_radial_zero")
 		.staticmethod("find_radial_max")
 		.staticmethod("classify")
+		.staticmethod("get_color")
 		);
 		
 		delete EMAN_BoxingTools_scope;

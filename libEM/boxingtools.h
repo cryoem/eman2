@@ -94,8 +94,12 @@ namespace EMAN
 		static IntPoint find_radial_max(const EMData* const map, int x, int y, int radius);
 		
 		static map<unsigned int, unsigned int> classify(const vector<vector<float> >& data, const unsigned int& classes = 4);
-	private:
 		
+		static Vec3f get_color( const unsigned int index );
+	private:
+		// A vector to store the "seed" starting colors, which exist at the corners of the cube.
+		// Then the vector is grown as more colours are asked for.
+		static vector<Vec3f> colors;
 	};
 	
 	class BoxSVDClassifier

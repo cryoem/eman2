@@ -44,6 +44,7 @@ import sys
 
 from copy import *
 
+
 from emglplot import *
 
 pl=()
@@ -444,6 +445,8 @@ for single particle analysis."""
 	if options.gui:
 		gui=GUIbox(args[0],boxes,boxthr,options.boxsize)
 		gui.run()
+		
+	print "finished running"
 
 	if options.dbout:
 		boxes = gui.getboxes()
@@ -486,8 +489,407 @@ except:
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
-#class Box:
-	#def __init__(self,v1,v2,v3,v4,v5,v
+class Box:
+	def __init__(self,xcorner=-1,ycorner=-1,xsize=-1,ysize=-1,isref=0,correlationscore=0):
+		self.xcorner = xcorner			# the xcorner - bottom left
+		self.ycorner = ycorner			# the ycorner - bottom left
+		self.xsize = xsize				# the xsize of the box
+		self.ysize = ysize				# the ysize of the box
+		self.isref = isref				# a flag that can be used to tell if the box is being used as a reference
+		self.correlationscore = correlationscore	# the correlation score
+		
+		self.optprofile = None			# a correlation worst-case profile, used for selective auto boxing
+		self.changed = False			# a flag signalling the box has changed and display needs updating
+		self.corx = -1			# stores the x coordinate of the correlation peak
+		self.cory = -1			# stores the y coordinate of the correlation peak
+		
+		# Experimental things that will probably be needed
+		self.image = None 		# stores the image itself, an emdata object
+		self.footprint = None	# stores the image footprint as an emdata object
+		self.color = None		# stores a color
+		self.group = None		# stores a group, typically an int
+		self.otheridx1 = -1		# stores a unique idx, for BoxSet convenience and efficiency
+		self.otheridx2 = -1		# stores a unique idx, for BoxSet convenience and efficiency
+	
+	def updateImage(self,image,norm=True):
+		#print "getting region",self.xcorner,self.ycorner,self.xsize,self.ysize
+		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
+		if norm:
+			self.image.process_inplace("normalize")
+			
+	def getBoxImage(self,image,norm=True,force=False):
+		if self.image == None or force:
+			self.updateImage(image,norm)
+		return self.image
+			
+
+class BoxSet2:
+	def __init__(self,image,parent=None):
+		self.image = image			# the image containing the boxes
+		self.parent = parent		# keep track of the parent in case we ever need it
+		self.boxes = []				# a list of boxes
+		self.refboxes = []			# a list of boxes
+		self.shrink = -1			# the amount by which the subject image is shrunken before the correlation image is generated. -1 means recalculate the shrink factor. This is an important parameter that speeds autoboxing significantly
+		self.boxsize = -1			#  the boxsize
+		self.smallimage = None		# a small copy of the image which has had its background flattened
+		self.flattenimager = -1		# the r value used to run the flatten image processor
+		self.searchradius = -1		# search radius in the correlation image. Important parameter
+		
+		self.optprofile = None		# An optimum correlation profile, used as the basis of selective autoboxing
+		self.optthreshold = None		# The correlation threshold, used for autoboxing
+		self.optprofileradius = None	# A point in the optprofile that is used for selective picking
+		self.autoboxmethod = SELECTIVE # The method of autoboxing
+		
+	def addbox(self,box):
+		if not isinstance(box,Box):
+			print "You can not add a box to this box set if it is not of type Box"
+			return;
+		
+		box.isref = True # make sure it knows that it's a reference box
+		box.otheridx1 = len(self.boxes) # store this, it's used when the user deletes the box, for efficiency
+		box.otheridx2 = len(self.refboxes) # store this, it's used when the user deletes the box, for efficiency
+		
+		#print "adding box",box.xcorner,box.ycorner,box.xsize,box.ysize
+		self.boxes.append(box)
+		self.refboxes.append(box)
+	
+	def delbox(self,i):
+		tmp = self.boxes.pop(i)
+		#yuck, this is horribly inefficient
+		for j,box in enumerate(self.refboxes):
+			if box.isref and box.xcorner == tmp.xcorner and box.ycorner == tmp.ycorner:
+				self.refboxes.pop(j)
+				return True
+			
+		return False
+		
+	def numboxes(self):
+		return len(self.boxes)
+	
+	def updateboxsize(self,boxsize):
+		'''
+		Updates only the box size and corner coordinates
+		Switches the changed flag to True to trigger redisplay (but the calling function
+		is responsible for knowing and testing for this)
+		'''
+		for box in self.boxes:
+			if box.xsize != boxsize:
+				box.xcorner -= (boxsize-box.xsize)/2
+				box.xsize = boxsize
+				box.changed = True
+			if box.ysize != boxsize:
+				box.ycorner -= (boxsize-box.ysize)/2
+				box.ysize = boxsize
+				box.changed = True
+
+		self.boxsize = boxsize
+		
+	def getbestshrink(self):
+		if self.image == None or self.boxsize == -1:
+			print "error - either the image is not set, or the boxsize is not set"
+			exit(1)
+		
+		if self.shrink == -1:
+			shrink = 1
+			inx = self.image.get_xsize()/2
+			iny = self.image.get_ysize()/2
+			tn = self.boxsize/2
+			while ( inx >= 256 and iny >= 256 and tn >= 16 ):
+				inx /= 2
+				iny /= 2
+				tn /= 2
+				shrink *= 2
+		
+			self.shrink=shrink
+		
+		return self.shrink
+	
+	def updatetemplate(self,boxsize=-1):
+		'''
+		update template implicitly updates the correlation image too.
+		It's generally called when you know that the reference images have changed
+		'''
+		print 'in update template'
+		# Warning - read the error statement I am printing
+		if boxsize != -1:
+			self.boxsize = boxsize
+		elif self.boxsize == -1:
+			print "error, the first time you call update you must specify the box size"
+			exit(1)
+		
+		# Update the template internally, this makes self.template
+		self.genrotalignedaverage()
+		if self.template == None:
+			print "Error, something went wrong with the template generation"
+			exit(1)
+		
+		# newr is the parameter that will potentially be used to run the flattenbackround processor
+		newr = self.template.get_xsize()/2.0
+		# now we only recalculate the small copy of the subject image if necessary
+		if self.smallimage == None or newr != self.flattenimager:
+			self.flattenimager = newr
+			#FIXME - we could avoid a deep copy by writing the meanshrink processor
+			# i.e. section = self.image.process("math.meanshrink",{"n":self.getbestshrink()}
+			self.smallimage = self.image.copy()
+			if (self.getbestshrink() != 1):
+				self.smallimage.mean_shrink(self.getbestshrink())
+			self.smallimage.process_inplace("filter.flattenbackground",{"radius":self.flattenimager})
+
+		self.correlation = self.smallimage.calc_flcf( self.template )
+		
+		# this may not be necessary if we ever want to be completely efficient
+		self.correlation.process_inplace("xform.phaseorigin.tocenter")
+		self.correlation.write_image("tttttt.hdf")
+	
+	def genrotalignedaverage(self):
+		# you can only generate a template if there are references
+		if len(self.refboxes) <= 0: 
+			print 'error, cant call genrotalignedaverage when there are no refboxes'
+			exit(1)
+		
+		images_copy = []
+		for i in self.refboxes:
+			e = i.getBoxImage(self.image).copy()
+			if (self.getbestshrink() != 1):
+				e.mean_shrink(self.getbestshrink())
+			images_copy.append(e)
+			
+		ave = images_copy[0].copy()
+		
+		for i in range(1,len(images_copy)):
+			#ta = images_copy[i].align("rotate_translate",ave,{},"dot",{"normalize":1})
+			ave.add(images_copy[i])
+			
+		#ave.write_image("prealigned.hdf")
+		ave.mult(1.0/len(images_copy))
+		ave.process_inplace("math.radialaverage")
+		#ave.write_image("ave.hdf")
+		
+		# 5 is a magic number
+		for n in range(0,5):
+			t = []
+			for i in images_copy:
+				ta = i.align("translational",ave,{},"dot",{"normalize":1})
+				t.append(ta)
+		
+			ave = t[0].copy()
+			for i in range(1,len(images_copy)):
+				ave.add(t[i])
+				
+			ave.mult(1.0/len(t))
+			ave.process_inplace("math.radialaverage")
+			
+		self.template = ave
+		self.template.write_image("template.hdf")
+	
+	def updateefficiency(self,efficiency):
+		'''
+		paints black circles in the efficiency - which is a binary EMData object
+		useful for making things efficient, should probably be called updateexclusions
+		'''
+		
+		oldsearchr = self.searchradius
+		self.searchradius = int(0.5*(self.boxsize)/float(self.getbestshrink()))
+		
+		if self.searchradius != oldsearchr and oldsearchr != -1:
+			print "warning, the search radius changed or. Take note david"
+		
+		for box in self.boxes:
+			xx = box.xcorner + box.xsize/2
+			yy = box.ycorner + box.ysize/2
+			xx /= self.getbestshrink()
+			yy /= self.getbestshrink()
+			
+			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),self.searchradius)
+			
+	def accrueparams(self,boxes,center=True):
+		if (self.correlation == None):
+			print "Error, can't accrue params if now correlation map exists"
+			exit(1)
+
+		invshrink = 1.0/self.getbestshrink()
+		
+		#print "accruing params with a total",len(boxes),"boxes"
+		for box in boxes:
+			
+			# the central coordinates of the box in terms of the shrunken correlation image
+			x = (box.xcorner+box.xsize/2.0)*invshrink
+			y = (box.ycorner+box.ysize/2.0)*invshrink
+			
+			#the search radius is used in correlation space - it limits the radial distance
+			# up to which 'profile' data can be accrued
+			# it is currently half the boxsize in terms of the correlation image's dimensions
+			self.searchradius = int(0.5*(self.boxsize)/float(self.getbestshrink()))
+			
+			peak_location = BoxingTools.find_radial_max(self.correlation,int(x),int(y), self.searchradius )
+			peak_location2 = BoxingTools.find_radial_max(self.correlation,peak_location[0],peak_location[1],self.searchradius )
+			if (peak_location != peak_location2):
+				# this represents a troubling condition
+				box.correlationscore = None
+				print "Error, peak location unrefined"
+				continue
+			
+			# store the peak location
+			box.corx = peak_location[0]
+			box.cory = peak_location[1]
+			
+			# store the correlation value at the correlation max
+			box.correlationscore = self.correlation.get(box.corx,box.cory)
+			
+			# store the profile
+			box.optprofile = BoxingTools.get_min_delta_profile(self.correlation,box.corx,box.cory, self.searchradius )
+			
+			# center on the correlation peak
+			if (center):
+				box.xcorner = box.corx*self.getbestshrink()-box.xsize/2.0
+				box.ycorner = box.cory*self.getbestshrink()-box.ysize/2.0
+			
+			#l = self.searchradius 
+			#im = self.correlation.get_clip(Region(box[7]-l/2.0,box[8]-l/2.0,l,l))
+			#im.write_image(self.outfile,-1)
+			
+	def autobox(self,optprofile=None,thr=None):
+		if (self.correlation == None):
+			print "Error, can't autobox of the correlation image doesn't exist"
+			exit(1)
+		
+		if len(self.refboxes) == 0 :
+			print "Error, can't autobox if there are no selected reference boxes"
+			exit(1)
+			
+		efficiency = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
+		efficiency.to_one()
+		self.updateefficiency(efficiency)
+		
+		# we must accrue the the parameters of the reference images if the optprofile
+		# or thr value has not been set in the function arguments
+		if ( optprofile == None or thr == None ):
+			self.accrueparams(self.refboxes)
+
+		
+		# Determine what will be the optimum correlation threshold
+		if thr == None:
+			# If we must determine the threshold from what we've got, iterate through all of the reference
+			# boxes and use the lowest correlation score as the correlation threshold
+			found = False
+			# POTENTIAL PROBLEM - i have hard coded the use of self.refboxes here for the optimum parameter generation
+			# we may want to be able to use other box sets for generating parameters
+			for i,box in enumerate(self.refboxes):
+				if box.correlationscore == None:
+					print "continuing on faulty"
+					continue
+				if found == False:
+					self.optthreshold = box.correlationscore
+					found = True
+				else:	
+					if box.correlationscore < self.optthreshold: self.optthreshold = box.correlationscore
+		else:
+			self.optthreshold = thr
+				
+		# Determine what to use as the optimum profile
+		if optprofile == None:
+			# Iterate through the reference boxes and accrue what you can think of
+			# as the worst case scenario, in terms of correlation profiles
+			found = False
+			# POTENTIAL PROBLEM - i have hard coded the use of self.refboxes here for the optimum parameter generation
+			# we may want to be able to use other box sets for generating parameters
+			for i,box in enumerate(self.refboxes):
+				if box.correlationscore == None:
+					##print "continuing on faulty" - this was already printed above
+					continue
+				if found == False:
+					self.optprofile = box.optprofile
+					n = len(self.optprofile)
+					found = True
+				else:
+					profile = box.optprofile
+					for j in range(0,n):
+						if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
+			# Tell the parent to update the data it is displaying to the user in a GUI somewhere
+			self.parent.updatedata(self.optprofile,self.optthreshold)
+		else:
+			self.optprofile=optprofile
+	
+	
+		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
+		self.optprofileradius = 0
+		tmp = self.optprofile[0]
+		for i in range(1,len(self.optprofile)):
+			if self.optprofile[i] > tmp and tmp > 0:
+				tmp = self.optprofile[i]
+				self.optprofileradius = i
+			
+		
+		#print self.optprofile
+		#print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
+		if self.autoboxmethod == THRESHOLD:
+			mode = 0
+		elif self.autoboxmethod == SELECTIVE:
+			mode = 1
+		elif self.autoboxmethod == MORESELECTIVE:
+			mode = 2
+		
+		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optthreshold,self.searchradius,self.optprofile,efficiency,self.optprofileradius,mode)
+
+		print "auto boxed",len(soln)
+		for b in soln:
+			x = b[0]
+			y = b[1]
+			xx = int(x*self.shrink)
+			yy = int(y*self.shrink)
+			box = Box(xx-self.boxsize/2,yy-self.boxsize/2,self.boxsize,self.boxsize,0)
+			box.correlationscore =  self.correlation.get(x,y)
+			box.corx = b[0]
+			box.cory = b[1]
+			box.changed = True
+			self.boxes.append(box)
+		self.parent.boxupdate()
+		
+	def classify(self):
+		v = []
+		# accrue all params
+		self.accrueparams(self.boxes)
+		
+		for box in self.boxes:
+			b = copy(box.optprofile[0:self.radius])
+			b.sort()
+			#for a in b:
+				#a = box[6]-a
+			#print b
+			v.append(b)
+			
+		cl = BoxingTools.classify(v,4)
+		self.parent.updateboxcolors(cl)
+	
+	def gen_ref_images(self):
+		tmpimage = "tmpparticles.img"
+		self.parent.write_boxes_to(tmpimage)
+		
+		self.process = QtCore.QProcess()
+
+		program = QtCore.QString("e2refine2d.py")
+		args = QtCore.QStringList()
+		args.append("--input="+tmpimage)
+		args.append("--ncls=15")
+		
+		QtCore.QObject.connect(self.process, QtCore.SIGNAL("finished(int)"), self.process_finished)
+		QtCore.QObject.connect(self.process, QtCore.SIGNAL("started()"), self.process_start)
+		print self.process.start(program,args)
+
+	def process_start(self):
+		print "received process start signal"
+	def process_finished(self,int):
+		try:
+			from emimage import EMImage
+		except:
+			print "Cannot import EMAN image GUI objects (emimage,etc.)"
+			sys.exit(1)
+		
+		e = EMData().read_images("classes.init.hdf")
+		self.imagemx2 = EMImage(e)
+		self.imagemx2.show()
+		
+		print "received finish signal"
 
 class BoxSet:
 	"""
@@ -742,10 +1144,48 @@ class BoxSet:
 		v = []
 		# accrue all params
 		self.accrueparams(self.boxes)
+		
 		for box in self.boxes:
-			v.append(box[9])
+			b = copy(box[9][0:self.radius])
+			b.sort()
+			#for a in b:
+				#a = box[6]-a
+			#print b
+			v.append(b)
 			
-		print BoxingTools.classify(v,4)
+		cl = BoxingTools.classify(v,4)
+		self.parent.updateboxcolors(cl)
+	
+	def gen_ref_images(self):
+		tmpimage = "tmpparticles.img"
+		self.parent.write_boxes_to(tmpimage)
+		
+		self.process = QtCore.QProcess()
+
+		program = QtCore.QString("e2refine2d.py")
+		args = QtCore.QStringList()
+		args.append("--input="+tmpimage)
+		args.append("--ncls=15")
+		
+		QtCore.QObject.connect(self.process, QtCore.SIGNAL("finished(int)"), self.process_finished)
+		QtCore.QObject.connect(self.process, QtCore.SIGNAL("started()"), self.process_start)
+		print self.process.start(program,args)
+
+	def process_start(self):
+		print "received process start signal"
+	def process_finished(self,int):
+		try:
+			from emimage import EMImage
+		except:
+			print "Cannot import EMAN image GUI objects (emimage,etc.)"
+			sys.exit(1)
+		
+		e = EMData().read_images("classes.init.hdf")
+		self.imagemx2 = EMImage(e)
+		self.imagemx2.show()
+		
+		print "received finish signal"
+
 class GUIbox:
 	def __init__(self,imagefsp,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
@@ -769,12 +1209,14 @@ class GUIbox:
 		self.app=get_app()
 		self.image=EMData()					# the image to be boxed
 		self.image.read_image(imagefsp)
+		self.imagefsp = imagefsp
 		#if abs(self.image.get_attr("mean")) < 1:
 			#print "adding 10"
 			#self.image.add(10)
 		self.boxes=[]						# the list of box locations
 		self.boxsets = [BoxSet(self.image,self)]	# a list of boxsets - start with one empty boxset
 		self.boxsets[0].boxes = boxes
+		self.boxset2 = BoxSet2(self.image,self)
 		self.boxsetidx = 0					# the current boxsetidx
 		self.threshold=thr					# Threshold to decide which boxes to use
 		self.ptcl=[]						# list of actual boxed out EMImages
@@ -820,6 +1262,20 @@ class GUIbox:
 		self.guictl.show()
 		
 		self.boxupdate()
+	def write_boxes_to(self,imagename,norm=True):
+		boxes = self.getboxes()
+		# Write EMAN1 style box database
+		b=EMData()
+		n = 0
+		for i in boxes:
+			try: b.read_image(self.imagefsp,0,0,Region(i[0],i[1],i[2],i[3]))
+			except: continue
+			if norm == True:
+				b.process_inplace("normalize.edgemean")
+#			print n,i
+#			print i[4]
+			b.write_image(imagename,n)
+			n += 1
 
 	def boxsel(self,event,lc):
 		im=lc[0]
@@ -861,6 +1317,9 @@ class GUIbox:
 			# If we get here, we need to make a new box
 			boxset = self.boxsets[self.boxsetidx]
 			boxset.addbox([m[0]-self.boxsize/2,m[1]-self.boxsize/2,self.boxsize,self.boxsize,0,1])
+			box = Box(m[0]-self.boxsize/2,m[1]-self.boxsize/2,self.boxsize,self.boxsize,True)
+			box.changed = True
+			self.boxset2.addbox(box)
 			boxes = boxset.boxes
 			boxnum = len(boxes)-1
 			global_box_num += boxnum+1
@@ -941,7 +1400,17 @@ class GUIbox:
 			self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
 			self.boxupdate()
-	
+	def updateboxcolors(self,classify):
+		sh=self.guiim.getShapes()
+		for i in classify.items():
+			color = BoxingTools.get_color(i[1])
+			
+			sh[int(i[0])].shape[1] = color[0]
+			sh[int(i[0])].shape[2] = color[1]
+			sh[int(i[0])].shape[3] = color[2]
+		
+		self.updateImageDisplay()
+
 	def deletenonrefs(self):
 		global_box_num = 0
 		
@@ -1016,10 +1485,12 @@ class GUIbox:
 
 		del(self.ptcl[boxnum])
 		
-		if boxset.delbox(boxnum) and self.ap:
+		if boxset.delbox(boxnum) and self.ap and self.boxset2.delbox(boxnum):
 			self.deletenonrefs()
 			self.setrefs()
 			self.autobox()
+			
+		
 		#del(self.guimx.data[globalboxnum])
 		#self.guimx.updateGL()
 		#self.guimx.setData(self.ptcl)
@@ -1099,26 +1570,23 @@ class GUIbox:
 		
 		ns = {}
 		idx = 0
-		for n,boxset in enumerate(self.boxsets):
 			# get the boxes
-			boxes = boxset.boxes
-			for j,box in enumerate(boxes):
-		
-				if not box[5] and not force: 
-					idx += 1
-					continue
-				
-				# what does this do?
-				box[5]=0
-			
-				im=self.image.get_clip(Region(box[0],box[1],box[2],box[3]))
-				im.process_inplace("normalize.edgemean")
-				ns[idx]=EMShape(["rect",.4-n*.05,.9-n*.1,.4+n*0.1,box[0],box[1],box[0]+box[2],box[1]+box[3],2.0])
-				if idx>=len(self.ptcl) : self.ptcl.append(im)
-				else : self.ptcl[idx]=im
+		boxes =self.boxset2.boxes
+		for j,box in enumerate(boxes):
+	
+			if not box.changed and not force:
 				idx += 1
+				continue
 			
-				box[5] = 0
+			# what does this do?
+			box.changed=False
+		
+			im=box.getBoxImage(self.image)
+			ns[idx]=EMShape(["rect",.4,.9,.4,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
+			if idx>=len(self.ptcl) : self.ptcl.append(im)
+			else : self.ptcl[idx]=im
+			idx += 1
+		
 
 		self.guiim.addShapes(ns)
 		self.guimx.setData(self.ptcl)
@@ -1165,17 +1633,7 @@ class GUIbox:
 			#print "there are",len(images),"refs"
 			return images
 	def setrefs(self):
-		offset = 0
-		for i in range(0,self.boxsetidx):
-			offset += self.boxsets[i].numboxes()
-		images = []
-		boxset = self.boxsets[self.boxsetidx]
-		boxes = boxset.boxes
-		for j in range(0,len(boxes)):
-			images.append(self.ptcl[j+offset])
-		
-		if boxset.correlationupdate == True:
-			boxset.settemplate(self.rot_aligned_average(self.getrefimages()),self.boxsize)
+		self.boxset2.updatetemplate(self.boxsize)
 			
 	def autoboxbutton(self):
 		self.deletenonrefs()
@@ -1184,20 +1642,8 @@ class GUIbox:
 		
 	def autobox(self):
 		
-		correlation = self.boxsets[0].correlation
-		efficiency = EMData(correlation.get_xsize(),correlation.get_ysize())
-		efficiency.to_one()
-		for boxset in self.boxsets:
-			boxset.updateefficiency(efficiency)
-			
-		
-		
-		self.boxsets[self.boxsetidx].autobox(efficiency);
-		#efficiency.write_image("efficiency.hdf")
-		#self.boxsets.append(BoxSet(self.image,self))
-		#self.boxsetidx += 1 
-		return
-		
+		self.boxset2.autobox()
+
 	def dynapick(self):
 		self.ap = not self.ap
 		
@@ -1232,7 +1678,7 @@ class GUIbox:
 			
 	def classify(self,bool):
 		for boxset in self.boxsets:
-			boxset.classify()
+			boxset.gen_ref_images()
 	
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :

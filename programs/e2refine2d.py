@@ -142,7 +142,7 @@ def main():
 	# this is the main refinement loop
 	for it in range(0,options.iter) :
 		# Compute a classification basis set
-		run("e2msa.py %s basis.%02d.hdf --nbasis=%d --varimax"%(options.initial,it+1,options.nbasisfp)
+		run("e2msa.py %s basis.%02d.hdf --nbasis=%d --varimax"%(options.initial,it+1,options.nbasisfp))
 		
 		# extract the most different references for alignment
 		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate --reverse --nsort=%d"%(options.initial,it+1,options.naliref))
