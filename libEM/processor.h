@@ -2636,7 +2636,7 @@ The basic design of EMAN Processors: <br>\
 		struct LessThan
 		{
 			inline bool operator()(float left,float right) const { return left < right; }
-			inline float get_start_val() { return 9999999999; }
+			inline float get_start_val() { return 9999999999.0f; }
 		};
 	};
 	
