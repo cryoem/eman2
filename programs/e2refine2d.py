@@ -153,7 +153,7 @@ def main():
 		# e2basis projectrot here
 		inputproj=options.input[:options.input.rfind(".")]+".%02d.proj.hdf"%it
 		inputproj=inputproj.split("/")[-1]
-		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s"%(it,options.input,inputproj))
+		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s"%(it,options.input,it,inputproj))
 		
 		# classify the subspace vectors
 		try: remove("classmx.%02d.hdf"%it)
