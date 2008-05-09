@@ -140,6 +140,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	
 	def scrollTo(self,n,yonly):
 		return self.imagemx.scrollTo(n,yonly)
+	
 class EMImageMXCore:
 
 	allim=WeakKeyDictionary()
@@ -684,7 +685,7 @@ class EMImageMXCore:
 			self.mousedrag=(event.x(),event.y())
 			self.parent.update()
 		elif event.buttons()&Qt.LeftButton and self.mmode=="app":
-			self.parent.emit(QtCore.SIGNAL("mousedrag"),event)
+			self.parent.emit(QtCore.SIGNAL("mousedrag"),event,self.scale)
 		
 	def mouseReleaseEvent(self, event):
 		if self.mousedrag:

@@ -69,6 +69,9 @@ class EMShape:
 		"""init is a list/tuple containing the above parameters describing the shape"""
 		if init : self.shape=list(init)
 		else : self.shape=["None",0,0,0,0,0,0,0,0]
+		self.blend = 1.0
+		self.blendinc = 0.2
+		self.isanimated = False
 	
 	dlists=-1
 	
@@ -87,8 +90,29 @@ class EMShape:
 		v=d2s(s[4],s[5])
 		v2=d2s(s[4]+1,s[5]+1)
 		sc=v2[0]-v[0]
+		
+		if  self.isanimated:
+			#print self.blend, "was the blend value"
+			GL.glEnable(GL.GL_BLEND);
+			depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
+			GL.glDisable(GL.GL_DEPTH_TEST);
+			GL.glBlendEquation(GL.GL_FUNC_ADD);
+			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
+			
+			col=[self.shape[1],self.shape[2],self.shape[3],self.blend]
+
 		if s[0]=="rect":
 			GL.glLineWidth(s[8])
+			#if  self.isanimated:
+				#v1 = d2s(s[4],s[5])
+				#v2 = d2s(s[6],s[7])
+				#dx = (v1[0]+v2[0])/2.0
+				#dy = (v1[1]+v2[1])/2.0
+				#GL.glPushMatrix()
+				#GL.glTranslate(dx,dy,0)
+				#GL.glScale(self.blend,self.blend,1)
+				#GL.glTranslate(-dx,-dy,0)
+				
 			GL.glBegin(GL.GL_LINE_LOOP)
 			GL.glColor(*col)
 			GL.glVertex(*d2s(s[4],s[5]))
@@ -96,6 +120,8 @@ class EMShape:
 			GL.glVertex(*d2s(s[6],s[7]))
 			GL.glVertex(*d2s(s[4],s[7]))
 			GL.glEnd()
+			#if self.isanimated:
+				#GL.glPopMatrix()
 		elif s[0]=="line":
 			GL.glColor(*col)
 			GL.glLineWidth(s[8])
@@ -189,6 +215,11 @@ class EMShape:
 				GL.glScalef(s[6],s[6],s[6])
 				GL.glCallList(EMShape.dlists)
 			GL.glLoadMatrixf(mx)
+		
+		if self.isanimated:
+			GL.glDisable( GL.GL_BLEND);
+			if (depth_testing_was_on):
+				GL.glEnable(GL.GL_DEPTH_TEST)
 
 	def setShape(self,shape):
 		"""sets the shape to a new tuple/list"""
@@ -216,4 +247,15 @@ class EMShape:
 		self.shape[5]=y0
 		if x1!=None : self.shape[6]=x1
 		if y1!=None : self.shape[7]=y1
+		
+	def incblend(self):
+		self.blend += self.blendinc
+		if self.blend >= 1:
+			self.isanimated = False
+			return 1
+		elif self.blend <= 0:
+			# remove me please
+			return 2
+		else: return 0
+	
 		

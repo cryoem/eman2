@@ -75,6 +75,17 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		self.setFocusPolicy(Qt.StrongFocus)
 		
+		self.timer = QtCore.QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+		self.timeinterval = 10
+		self.timer.start(10)
+		
+	def timeout(self):
+		if self.image2d.updateblend() :
+			self.image2d.shapechange = 1
+			self.updateGL()
+		#print "received timeout"
+	
 	def setData(self,data):
 		self.image2d.setData(data)
 		
@@ -145,7 +156,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def dragEnterEvent(self,event):
 		self.image2d.dragEnterEvent(event)
-		
+	
 	def addShapes(self,s):
 		self.image2d.addShapes(s)
 		
@@ -169,6 +180,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	
 	def scrollTo(self,x,y):
 		return self.image2d.scrollTo(x,y)
+	
 		
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -500,7 +512,19 @@ class EMImage2DCore:
 		self.active=(n,r,g,b)
 		self.shapechange=1
 		#self.updateGL()
-	
+
+	def updateblend(self):
+		ret = False
+		for shape in self.shapes.items():
+			s = shape[1]
+			if s.isanimated:
+				v = s.incblend()
+				if v == 2:
+					self.parent.emit(QtCore.SIGNAL("removeshape"), shape[0])
+				ret = True
+		
+		return ret
+
 	def addShape(self,k,s):
 		"""Add an EMShape object to be overlaid on the image. Each shape is
 		keyed into a dictionary, so different types of shapes for different
