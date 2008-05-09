@@ -110,8 +110,8 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 			
 			# find the best orienteation from the similarity matrix
 			best=(1.0e23,0,0,0)
-			for j in range(simmx.get_ysize()): 
-				if simmx.get(i,j)<best[0] : best=(simmx.get(i,j),simdx.get(i,j),simdy.get(i,j))
+			for j in range(simmx.get_xsize()): 
+				if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simdx.get(j,i),simdy.get(j,i))
 			im.rotate_translate(best[1],0,0,best[2],best[3],0)
 #			im.process_inplace("normalize.unitlen")
 			

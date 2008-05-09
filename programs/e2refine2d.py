@@ -110,6 +110,8 @@ def main():
 	
 	# if we aren't given starting class-averages, make some
 	if not options.initial :
+		print "Building initial averages"
+		
 		# make footprint images (rotational/translational invariants)
 		fpfile=options.input[:options.input.rfind(".")]+".fp.hdf"
 		fpfile=fpfile.split("/")[-1]
@@ -139,8 +141,9 @@ def main():
 		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
 		options.initial="classes.init.hdf"
 		
+	print "Using references from ",options.initial
 	# this is the main refinement loop
-	for it in range(1,options.iter+1) :
+	for it in range(1,options.iter+1) :		
 		# Compute a classification basis set
 		run("e2msa.py %s basis.%02d.hdf --nbasis=%d --varimax"%(options.initial,it,options.nbasisfp))
 		
@@ -161,11 +164,11 @@ def main():
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.%02d.hdf"%(inputproj,options.input,options.ncls,it))
 		
 		# make class-averages
-		try: remove("classes.%02d.hdf"%id)
+		try: remove("classes.%02d.hdf"%it)
 		except: pass
 		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,it,it,options.iterclassav))
 		
-		options.initial="classes.%02d.hdf"%id
+		options.initial="classes.%02d.hdf"%it
 			
 		
 def run(command):
@@ -174,7 +177,8 @@ def run(command):
 	if options.verbose : print "***************",command
 	error = system(command)
 	if error==11 :
-		print "Segfault running %s\nNormal on some platforms, ignoring"%command
+		pass
+#		print "Segfault running %s\nNormal on some platforms, ignoring"%command
 	elif error : 
 		print "Error running:\n%s"%command
 		exit(1)

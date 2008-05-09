@@ -125,10 +125,13 @@ def main():
 		rrange=[0,rlen]
 
 	# initialize output array
-	mxout=EMData()
-	if options.saveali : mxout.set_size(crange[1]-crange[0],rrange[1]-rrange[0],4)
-	else : mxout.set_size(crange[1]-crange[0],rrange[1]-rrange[0],1)
-	mxout.to_zero()
+	mxout=[EMData()]
+	mxout[0].set_size(crange[1]-crange[0],rrange[1]-rrange[0],1)
+	mxout[0].to_zero()
+	if options.saveali : 
+		mxout.append(mxout[0].copy())
+		mxout.append(mxout[0].copy())
+		mxout.append(mxout[0].copy())
 	if options.verbose: print "Computing Similarities"
 
 	# Read all c images, then read and compare one r image at a time
@@ -150,23 +153,22 @@ def main():
 		
 		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp)
 		for c,v in enumerate(row):
-			mxout.set_value_at(c,r,0,v[0])
+			mxout[0].set_value_at(c,r,0,v[0])
 		
 		if options.saveali :
 			for c,v in enumerate(row):
 				#print "%f %f %f " %(v[1],v[2],v[3])
-				mxout.set_value_at(c,r,1,v[1])
-				mxout.set_value_at(c,r,2,v[2])
-				mxout.set_value_at(c,r,3,v[3])
+				mxout[1].set_value_at(c,r,0,v[1])
+				mxout[2].set_value_at(c,r,0,v[2])
+				mxout[3].set_value_at(c,r,0,v[3])
 	
 	if options.verbose : print"\nSimilarity computation complete"
 	
 	# write the results into the full-sized matrix
 	if crange==[0,clen] and rrange==[0,rlen] :
-		mxout.write_image(args[2],0)
+		for i,j in enumerate(mxout) : j.write_image(args[2],i)
 	else :
-		if options.saveali : mxout.write_image(args[2],0,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],4))
-		else : mxout.write_image(args[2],0,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],crange[1]-crange[0],rrange[1]-rrange[0]))
+		for i,j in enumerate(mxout) : j.write_image(args[2],i,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],1))
 	
 	E2end(E2n)
 	
