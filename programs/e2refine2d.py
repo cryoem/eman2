@@ -88,7 +88,7 @@ def main():
 	(options, args) = parser.parse_args()
 	subverbose=options.verbose-1
 	if subverbose<0: subverbose=0
-	
+	#0
 	#error = False
 	#if check(options,True) == True : 
 		#error = True
@@ -107,6 +107,9 @@ def main():
 #	if error:
 #		print "Error encountered while, bailing"
 #		exit(1)
+	
+	logid=E2init(sys.argv)
+
 	
 	# if we aren't given starting class-averages, make some
 	if not options.initial :
@@ -136,7 +139,7 @@ def main():
 		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.00.hdf"%(inputproj,options.input,options.ncls))
 		
 		# make class-averages
-		try: remove("classes.init.hdf")
+		try: re0move("classes.init.hdf")
 		except: pass
 		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
 		options.initial="classes.init.hdf"
@@ -170,7 +173,9 @@ def main():
 		
 		options.initial="classes.%02d.hdf"%it
 			
-		
+	E2end(logid)
+	
+	
 def run(command):
 	"Execute a command with optional verbose output"
 	global options
@@ -230,55 +235,6 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
 	return e2cacmd
 
-
-
-def check(options,verbose=False):
-	if (verbose):
-		print ""
-		print "#### Testing directory contents and command line arguments for e2refine.py"
-	
-	error = False
-	if not file_exists(options.startimg):
-		print "Error: failed to find input file %s" %options.startimg
-		error = True
-			
-	if not options.iter:
-		print "Error: you must specify the --it argument"
-		error = True
-		
-	if ( file_exists(options.model) and file_exists(options.startimg)):
-		(xsize, ysize ) = gimme_image_dimensions2D(options.startimg);
-		(xsize3d,ysize3d,zsize3d) = gimme_image_dimensions3D(options.model)
-		
-		if (verbose):
-			print "%s contains %d images of dimensions %dx%d" %(options.startimg,EMUtil.get_image_count(options.startimg),xsize,ysize)
-			print "%s has dimensions %dx%dx%d" %(options.model,xsize3d,ysize3d,zsize3d)
-		
-		if ( xsize != ysize ):
-			if ( ysize == zsize3d and xsize == ysize3d and ysize3D == xsize3d ):
-				print "Error: it appears as though you are trying to do helical reconstruction. This is not supported"
-				error = True
-			else:
-				print "Error: images dimensions (%d x %d) of %s are not identical. This mode of operation is not supported" %(xsize,ysize,options.startimg)
-				error = True
-		
-		if ( xsize3d != ysize3d or ysize3d != zsize3d ):
-			print "Error: image dimensions (%dx%dx%d) of %s are not equal" %(xsize3d,ysize3d,zsize3d,options.model)
-			error = True
-			
-		if ( xsize3d != xsize ) :
-			print "Error: the dimensions of %s (%d) do not match the dimension of %s (%d)" %(options.startimg,xsize,options.model,xsize3d)
-			error = True
-	
-	if (verbose):
-		if (error):
-			s = "FAILED"
-		else:
-			s = "PASSED"
-			
-		print "e2refine.py test.... %s" %s
-
-	return error == True
 	
 if __name__ == "__main__":
     main()

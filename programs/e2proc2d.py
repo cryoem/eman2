@@ -179,8 +179,8 @@ def main():
 	if options.plt:
 		pltfp = open(options.plt, "wb")
 	
-	if options.verbose:
-		Log.logger().set_level(options.verbose)
+	if options.verbose>2:
+		Log.logger().set_level(options.verbose-2)
 	
 	d = EMData()
 	nimg = EMUtil.get_image_count(infile)

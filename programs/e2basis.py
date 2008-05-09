@@ -61,6 +61,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 	parser.add_option("--normproj",action="store_true",help="Normalize the projections resulting from 'project', such that the length of each vector is 1",default=False)
 	parser.add_option("--nbasis","-n",type="int",help="Will use the first n basis images from the input",default=-1)
+	parser.add_option("--verbose", metavar="n", type="int", help="Give verbose output, higher numbers = more detail")
 	
 	#parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
@@ -94,6 +95,8 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	
 	# Project rotated images into a basis subspace
 	if args[0]=="projectrot" :
+		if options.verbose>1 : print "Entering projectrot routine"
+		
 		# Just read the whole similarity matrix in, since it generally shouldn't be THAT big
 		simmx=EMData(args[3],0)
 		simdx=EMData(args[3],1)
@@ -106,12 +109,18 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		# outer loop over images to be projected
 		n=EMUtil.get_image_count(args[2])
 		for i in range(n):
+			if options.verbose >1 : 
+				print "  %5d\r"%i,
+				sys.stdout.flush()
+			elif options.verbose and i%100==0:
+				print "  %5d\r"%i,
+				sys.stdout.flush()
 			im=EMData(args[2],i)
 			
-			# find the best orienteation from the similarity matrix
+			# find the best orienteation from the similarity matrix, and apply the transformation
 			best=(1.0e23,0,0,0)
 			for j in range(simmx.get_xsize()): 
-				if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simdx.get(j,i),simdy.get(j,i))
+				if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simda.get(j,i),simdx.get(j,i),simdy.get(j,i))
 			im.rotate_translate(best[1],0,0,best[2],best[3],0)
 #			im.process_inplace("normalize.unitlen")
 			
