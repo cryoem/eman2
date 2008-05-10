@@ -194,6 +194,13 @@ float *EMData::get_data() const
 }
 
 
+const float * const EMData::get_const_data() const
+{
+	//flags |= EMDATA_BUSY;
+	return rdata;
+}
+
+
 float EMData::calc_center_density()
 {
 	ENTERFUNC;

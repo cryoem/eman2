@@ -81,9 +81,17 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.timer.start(10)
 		
 	def timeout(self):
+		update = False
 		if self.image2d.updateblend() :
 			self.image2d.shapechange = 1
+			update = True
+		
+		if self.image2d.updateanimation():
+			update = True
+		
+		if update:
 			self.updateGL()
+		
 		#print "received timeout"
 	
 	def setData(self,data):
@@ -181,6 +189,10 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def scrollTo(self,x,y):
 		return self.image2d.scrollTo(x,y)
 	
+	def registerScrollMotion(self,x,y):
+		return self.image2d.registerScrollMotion(x,y)
+	
+	
 		
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -226,6 +238,12 @@ class EMImage2DCore:
 		self.active=(None,0,0,0)	# The active shape and a hilight color (n,r,g,b)
 		
 		self.extras = []			# an empty set of extras - other images that can be rendered over this one
+		
+		self.startorigin = None
+		self.endorigin = None
+		self.isanimated = False
+		self.time = 1
+		self.timeinc = 0.04
 		
 		self.inspector=None			# set to inspector panel widget when exists
 		
@@ -321,6 +339,34 @@ class EMImage2DCore:
 	def scrollTo(self,x,y):
 		"""center the point on the screen"""
 		self.setOrigin(x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2)
+
+	def updateanimation(self):
+		if not self.isanimated:
+			return False
+		
+		self.time += self.timeinc
+		if self.time > 1:
+			self.time = 1
+			self.isanimated = False
+			self.setOrigin(self.endorigin[0],self.endorigin[1])
+			return True
+		
+		# get time squared
+		tinv = 1-self.time
+		t1 = tinv**2
+		t2 = 1-t1
+		
+		x = t1*self.startorigin[0] + t2*self.endorigin[0]
+		y = t1*self.startorigin[1] + t2*self.endorigin[1]
+		self.setOrigin(x,y)
+		return True
+		
+	def registerScrollMotion(self,x,y):
+		self.startorigin = self.origin
+		self.endorigin = (x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2)
+		self.isanimated = True
+		self.time = 0
+		return True
 
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""

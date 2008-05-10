@@ -760,6 +760,13 @@ namespace EMAN
 			}	
 			std::cout << "Done printing EMData params" << std::endl;
 		}
+		
+		/** Scale the angstrom per pixel of this image by a uniform amount
+		 * Alters the EMData metadata
+		 * I had to make this function public for access from the Processors (David Woolford)
+		 * @author Unknown
+		*/
+		void scale_pixel(float scale_factor) const;
 	private:
 		enum EMDataFlags {
 //			EMDATA_COMPLEX = 1 << 1,
@@ -777,7 +784,6 @@ namespace EMAN
 
 		void update_stat() const;
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
-		void scale_pixel(float scale_factor) const;
 		void save_byteorder_to_dict(ImageIO * imageio);
 
 	private:

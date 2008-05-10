@@ -602,10 +602,10 @@ class EMOpenGLFlagsAndTools:
 				try:
 					if str("GL_ARB_imaging") not in glGetString(GL_EXTENSIONS) :
 						self.use_blend_equation = False
-						print "EMAN(ALPHA) message: No support for glBlendEquation detected. Disabling."
+						#print "EMAN(ALPHA) message: No support for glBlendEquation detected. Disabling."
 					else:
 						self.use_blend_equation = True
-						print "EMAN(ALPHA) message: Support for glBlendEquation detected."
+						#print "EMAN(ALPHA) message: Support for glBlendEquation detected."
 				except:
 					print "error, OpenGL seems not to be initialized"
 					return False

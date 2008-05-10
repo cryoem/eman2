@@ -149,7 +149,7 @@ for single particle analysis."""
 	
 	image.process_inplace("normalize.edgemean")
 	shrink=image
-	shrink.mean_shrink(shrinkfactor)		# shrunken original image
+	shrink.process_inplace("math.meanshrink",{"n":shrinkfactor})		# shrunken original image
 	
 	# This confusing line insures the shrunken images have even dimensions
 	# since odd FFTs haven't been fixed yet
@@ -201,7 +201,7 @@ for single particle analysis."""
 						
 			ic=i.copy()
 			refptcls.append(ic)
-			ic.mean_shrink(shrinkfactor)
+			ic.process_inplace("math.meanshrink",{"n":shrinkfactor})
 			# make the unmasked portion mean -> 0
 			ic-=float(ic.get_attr("mean_nonzero"))
 			ic.process_inplace("normalize.unitlen")
@@ -512,6 +512,7 @@ class Box:
 		self.borig = 0.4			# RGB blue
 		self.footprint = None	# stores the image footprint as an emdata object
 		self.group = None		# stores a group, typically an int
+		self.footprintshrink = 1
 		
 		# Experimental things that will probably be needed
 		
@@ -535,13 +536,17 @@ class Box:
 		return self.image
 			
 
-	def getFootPrint(self):
-		if self.footprint == None:
+	def getFootPrint(self,shrink=1):
+		if self.footprint == None or shrink != self.footprintshrink:
+			self.footprintshrink = shrink
 			if self.image == None:
 				print "error, you can not make a footprint if there is no image"
 				exit(1)
-			self.footprint = self.image.make_footprint()
-		
+			if shrink == 1:
+				self.footprint = self.image.make_footprint()
+			else :
+				self.footprint = self.image.process("math.meanshrink",{"n":shrink}).make_footprint()
+				
 		return self.footprint
 			
 class BoxSet2:
@@ -561,6 +566,7 @@ class BoxSet2:
 		self.optprofileradius = None	# A point in the optprofile that is used for selective picking
 		self.autoboxmethod = SELECTIVE # The method of autoboxing
 		self.templateupdate = True	# When turned off, prevents the correlation map from being updated - this is useful the act of adding a ref only affects the optimum parameters, not the correlation map
+		self.fpshrink = -1
 		
 	def addbox(self,box):
 		if not isinstance(box,Box):
@@ -624,6 +630,17 @@ class BoxSet2:
 
 		self.boxsize = boxsize
 		
+	def getfootprintshrink(self):
+		if self.fpshrink == -1:
+			shrink = 1
+			tn = self.boxsize/2
+			while ( tn >= 32 ):
+				tn /= 2
+				shrink *= 2
+			self.fpshrink = shrink
+		
+		return self.fpshrink
+		
 	def getbestshrink(self):
 		if self.image == None or self.boxsize == -1:
 			print "error - either the image is not set, or the boxsize is not set"
@@ -634,7 +651,7 @@ class BoxSet2:
 			inx = self.image.get_xsize()/2
 			iny = self.image.get_ysize()/2
 			tn = self.boxsize/2
-			while ( inx >= 256 and iny >= 256 and tn >= 16 ):
+			while ( inx >= 512 and iny >= 512 and tn >= 16 ):
 				inx /= 2
 				iny /= 2
 				tn /= 2
@@ -677,9 +694,11 @@ class BoxSet2:
 			self.flattenimager = newr
 			#FIXME - we could avoid a deep copy by writing the meanshrink processor
 			# i.e. section = self.image.process("math.meanshrink",{"n":self.getbestshrink()}
-			self.smallimage = self.image.copy()
+			
 			if (self.getbestshrink() != 1):
-				self.smallimage.mean_shrink(self.getbestshrink())
+				self.smallimage = self.image.process("math.meanshrink",{"n":self.getbestshrink()})
+			else: self.smallimage = self.image.copy()
+			
 			self.smallimage.process_inplace("filter.flattenbackground",{"radius":self.flattenimager})
 
 		self.correlation = self.smallimage.calc_flcf( self.template )
@@ -696,9 +715,10 @@ class BoxSet2:
 		
 		images_copy = []
 		for i in self.refboxes:
-			e = i.getBoxImage(self.image).copy()
+			image = i.getBoxImage(self.image)
 			if (self.getbestshrink() != 1):
-				e.mean_shrink(self.getbestshrink())
+				e = image.process("math.meanshrink",{"n":self.getbestshrink()})
+			else : e = image.copy()
 			images_copy.append(e)
 			
 		ave = images_copy[0].copy()
@@ -710,6 +730,8 @@ class BoxSet2:
 		#ave.write_image("prealigned.hdf")
 		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("math.radialaverage")
+		ave.process_inplace("normalize.edgemean")
+		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		#ave.write_image("ave.hdf")
 		
 		# 5 is a magic number
@@ -727,6 +749,8 @@ class BoxSet2:
 				
 			ave.mult(1.0/len(t))
 			ave.process_inplace("math.radialaverage")
+			ave.process_inplace("normalize.edgemean")
+			ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		
 		self.template = ave
 		self.template.write_image("template.hdf")
@@ -929,7 +953,7 @@ class BoxSet2:
 		print "received process start signal"
 		
 	def boxsel(self,event,lc):
-		print "selected",lc[0]
+		#print "selected",lc[0]
 		for box in self.boxes:
 			if box.group == lc[0]:
 				box.r = 1
@@ -960,13 +984,15 @@ class BoxSet2:
 		ef = []
 		for image in e:
 			image.process_inplace("normalize.edgemean")
+			if self.getbestshrink() != 1:
+				image = image.process("math.meanshrink",{"n":self.getfootprintshrink()})	
 			ef.append(image.make_footprint())
 		
 		for box in self.boxes:
 			best = -1
 			group = -1
 			for i,g in enumerate(ef): 
-				s = g.cmp("dot",box.getFootPrint(),{"normalize":1})
+				s = box.getFootPrint(self.getfootprintshrink()).cmp("optvariance",g,{"matchfilt":1,"matchamp":1})
 				# REMEMBER - cmp returns values that have potentially been negated - a smaller value is better
 				if best == -1 or s < best:
 					group = i
@@ -1085,7 +1111,11 @@ class GUIbox:
 		self.guiim.setActive(im,.9,.9,.4)
 		self.guimx.setSelected(im)
 		boxes = self.getboxes()
-		try: self.guiim.scrollTo(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+		self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+		try:
+			#self.guiim.scrollTo(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+			pass
+			
 		except: print "boxsel() scrolling error"
 
 	def getboxes(self):

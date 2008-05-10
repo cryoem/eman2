@@ -1388,6 +1388,8 @@ vector<Transform3D> Symmetry3D::gen_orientations(const string& generatorname, co
 
 int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
 {
+	//FIXME THIS IS SO SIMILAR TO THE gen_orientations function that they should be probably use
+	// a common routine - SAME ISSUE FOR OTHER ORIENTATION GENERATORS
 	bool inc_mirror = params.set_default("inc_mirror",false);
 	Dict delimiters = sym->get_delimiters(inc_mirror);
 	float altmax = delimiters["alt_max"];
@@ -1404,11 +1406,35 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 		float h = get_az_delta(delta,alt_iterator, sym->get_max_csym() );
 
 		// not sure what this does code taken from EMAN1 - FIXME original author add comments
-		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8f) ) h = azmax / 2.1f;
+		if ( (alt_iterator > 0) && ( (azmax/h) < 2.8) ) h = azmax / 2.1f;
 		else if (alt_iterator == 0) h = azmax;
 			
 		float az_iterator = 0.0;
-		while ( az_iterator < azmax - h / 4.0 ) {
+		
+		float azmax_adjusted = azmax;
+		
+		// if this is odd c symmetry, and we're at the equator, and we're excluding the mirror then
+		// half the equator is redundant (it is the mirror of the other half)
+		if (sym->is_c_sym() && !inc_mirror && alt_iterator == altmax && (sym->get_nsym() % 2 == 1 ) ){
+			azmax_adjusted /= 2.0;
+		}
+		// at the azimuthal boundary in c symmetry and tetrahedral symmetry we have come
+		// full circle, we must not include it
+		else if (sym->is_c_sym() or sym->is_tet_sym() ) {
+			azmax_adjusted -=  h/4.0;
+		}
+		// If we're including the mirror then in d and icos and oct symmetry the azimuthal
+		// boundary represents coming full circle, so must be careful to exclude it
+		else if (inc_mirror && ( sym->is_d_sym() or sym->is_platonic_sym() ) )  {
+			azmax_adjusted -=  h/4.0;
+		}
+		// else do nothing - this means that we're including the great arc traversing
+		// the full range of permissable altitude angles at azmax.
+		// This happens in d symmetry, and in the icos and oct symmetries, when the mirror
+		// portion of the asymmetric unit is being excluded
+		
+
+		while ( az_iterator <= azmax_adjusted ) {
 			// FIXME: add an intelligent comment - this was copied from old code	
 			if ( az_iterator > 180.0 && alt_iterator > 180.0/(2.0-0.001) && alt_iterator < 180.0/(2.0+0.001) ) {
 				az_iterator +=  h;
@@ -1633,12 +1659,18 @@ vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3
 		float altitude = EMConsts::rad2deg*acos(z);
 		float azimuth = EMConsts::rad2deg*atan2(y,x);
 		
-		if ( !sym->is_in_asym_unit(altitude,azimuth,inc_mirror) ) continue;
-		
 		float phi = 0.0;
 		if ( phitoo ) phi = Util::get_frand(0.0,359.9999);
 		
-		ret.push_back(Transform3D(	azimuth, altitude, phi ) );
+		Transform3D t = Transform3D( azimuth, altitude, phi );
+		Transform3D r = sym->reduce(t);
+		
+		if ( !sym->is_in_asym_unit(altitude,azimuth,inc_mirror) ){
+			// is_in_asym_unit has returned the wrong value!
+			// FIXME
+// 			cout << "warning, there is an unresolved issue - email D Woolford" << endl;
+		}
+		ret.push_back(r);
 		i++;
 	}
 	return ret;
@@ -1945,7 +1977,7 @@ vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Trans
 	
 	return ret;
 }
-
+// THIS IS DWOOLFORDS FIRST SHOT AT EXTRACTING PHIL'S PLATONIC STUFF FROM SPARX
 // vector<Transform3D> SaffOrientationGenerator::gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const	
 // {
 // 	float scrunch = 0.9; //closeness factor to eliminate oversampling corners
@@ -2031,7 +2063,7 @@ void verify(const Vec3f& tmp, float * plane, const string& message )
 	cout << message << " residual " << plane[0]*tmp[0]+plane[1]*tmp[1]+plane[2]*tmp[2] + plane[3]  << endl;
 }
 
-Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n)
+Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n) const
 {
 	
 	Vec3f p(0,0,1);

@@ -115,8 +115,8 @@ both box sizes should be multiples of 8."""
 	if options.shrink>0 : sfac=options.shrink
 	else : sfac=int(floor(min(pdim)/12.0))
 	print "Shrink by %d"%sfac
-	target.mean_shrink(sfac)
-	probe.mean_shrink(sfac)
+	target.process_inplace("math.meanshrink",{"n":sfac})
+	probe.process_inplace("math.meanshrink",{"n":sfac})
 	tdim2=(target.get_xsize(),target.get_ysize(),target.get_zsize())
 	pdim2=(probe.get_xsize(),probe.get_ysize(),probe.get_zsize())
 #	print (pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]

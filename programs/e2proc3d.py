@@ -203,7 +203,7 @@ def main():
             elif option1 == "shrink":
                 shrink_f = options.shrink[index_d[option1]]
                 if shrink_f > 1:
-                    data.median_shrink(options.shrink)
+                    data.process_inplace("math.medianshrink",{"n":shrink_f})
                     nx = data.get_xsize()
                     ny = data.get_ysize()
                     nz = data.get_zsize()

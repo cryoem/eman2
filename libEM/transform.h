@@ -373,8 +373,8 @@ namespace EMAN
 		 */
 		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const = 0;
 
-		
-		virtual Transform3D reduce(const Transform3D& t3d, int n=0);
+		/** @ingroup tested3c */
+		virtual Transform3D reduce(const Transform3D& t3d, int n=0) const;
 		
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const = 0;
 	};
@@ -1227,7 +1227,7 @@ namespace EMAN
 		 */
 		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
 		
-		/// The name of this class - used to access it from factories etc. Should be "icos"
+		/// The name of this class - used to access it from factories etc.
 		static const string NAME;
 		
 		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const { (void)sym; (void)delta; return 0; }
@@ -1361,7 +1361,7 @@ namespace EMAN
 			
 			// This was a function that paid special considerations to the overall algorithm in the
 			// case of the Platonic symmetries, which have non trivial asymmetric units. But unfortunately
-			// it was bug-prone, and the approach in place seemed good enough
+			// it was bug-prone, and the approach in place already seemed good enough
 // 			vector<Transform3D> gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const;
 	};
 	

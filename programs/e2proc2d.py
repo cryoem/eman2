@@ -346,13 +346,13 @@ def main():
 			elif option1 == "shrink":
 				shrink_f = options.shrink[index_d[option1]]
 				if shrink_f > 1:
-					d.median_shrink(shrink_f)
+					d.process_inplace("math.medianshrink",{"n":shrink_f})
 				#index_d[option1] += 1
 
 			elif option1 == "meanshrink":
 				mshrink = options.meanshrink[index_d[option1]]
 				if mshrink > 1:
-					d.mean_shrink(mshrink)
+					d.process_inplace("math.meanshrink",{"n":mshrink})
 				#index_d[option1] += 1
 		
 			elif option1 == "selfcl":

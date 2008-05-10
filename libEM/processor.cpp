@@ -97,6 +97,8 @@ template <> Factory < Processor >::Factory()
 	
 	force_add(&MaxShrinkProcessor::NEW);
 	force_add(&MinShrinkProcessor::NEW);
+	force_add(&MeanShrinkProcessor::NEW);
+	force_add(&MedianShrinkProcessor::NEW);
 	
 	force_add(&MakeRadiusSquaredProcessor::NEW);
 	force_add(&MakeRadiusProcessor::NEW);
@@ -1067,6 +1069,367 @@ void CutoffBlockProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
+void MedianShrinkProcessor::process_inplace(EMData * image)
+{
+	if (image->is_complex()) throw ImageFormatException("Error, the median shrink processor does not work on complex images");
+	
+	int shrink_factor =  params.set_default("n",0);
+	if (shrink_factor <= 1) {
+		throw InvalidValueException(shrink_factor,
+									"median shrink: shrink factor must > 1");
+	}
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
+		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
+	}
+
+
+	int shrunken_nx = nx / shrink_factor;
+	int shrunken_ny = ny / shrink_factor;
+	int shrunken_nz = 1;
+	if (nz > 1) shrunken_nz = nz / shrink_factor;
+
+	EMData* copy = image->copy();
+	image->set_size(shrunken_nx, shrunken_ny, shrunken_nz);
+	accrue_median(image,copy,shrink_factor);
+	image->update();
+	if( copy )
+	{
+		delete copy;
+		copy = 0;
+	}
+}
+
+// 		
+EMData* MedianShrinkProcessor::process(const EMData *const image)
+{
+	if (image->is_complex()) throw ImageFormatException("Error, the median shrink processor does not work on complex images");
+	
+	int shrink_factor =  params.set_default("n",0);
+	if (shrink_factor <= 1) {
+		throw InvalidValueException(shrink_factor,
+									"median shrink: shrink factor must > 1");
+	}
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+		
+
+	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
+		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
+	}
+
+
+	int shrunken_nx = nx / shrink_factor;
+	int shrunken_ny = ny / shrink_factor;
+	int shrunken_nz = 1;
+	if (nz > 1) shrunken_nz = nz / shrink_factor;
+
+	EMData* ret = new EMData(shrunken_nx, shrunken_ny, shrunken_nz);
+	accrue_median(ret,image,shrink_factor);
+	ret->update();
+	return ret;
+}
+
+void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,const int shrink_factor)
+{
+
+	int nx_old = from->get_xsize();
+	int ny_old = from->get_ysize();
+	
+	int threed_shrink_factor = shrink_factor * shrink_factor;
+	int z_shrink_factor = 1;
+	if (from->get_zsize() > 1) {
+		threed_shrink_factor *= shrink_factor;
+		z_shrink_factor = shrink_factor;
+	}
+	
+	float *mbuf = new float[threed_shrink_factor];
+	
+	
+	int nxy_old = nx_old * ny_old;
+	
+	int nx = to->get_xsize();
+	int ny = to->get_ysize();
+	int nz = to->get_zsize();
+	int nxy_new = nx * ny;
+	
+	float * rdata = to->get_data();
+	const float *const data_copy = from->get_const_data();
+		
+	for (int l = 0; l < nz; l++) {
+		int l_min = l * shrink_factor;
+		int l_max = l * shrink_factor + z_shrink_factor;
+		int cur_l = l * nxy_new;
+	
+		for (int j = 0; j < ny; j++) {
+			int j_min = j * shrink_factor;
+			int j_max = (j + 1) * shrink_factor;
+			int cur_j = j * nx + cur_l;
+	
+			for (int i = 0; i < nx; i++) {
+				int i_min = i * shrink_factor;
+				int i_max = (i + 1) * shrink_factor;
+	
+				int k = 0;
+				for (int l2 = l_min; l2 < l_max; l2++) {
+					int cur_l2 = l2 * nxy_old;
+	
+					for (int j2 = j_min; j2 < j_max; j2++) {
+						int cur_j2 = j2 * nx_old + cur_l2;
+	
+						for (int i2 = i_min; i2 < i_max; i2++) {
+							mbuf[k] = data_copy[i2 + cur_j2];
+							k++;
+						}
+					}
+				}
+	
+				for (k = 0; k < threed_shrink_factor / 2 + 1; k++) {
+					for (int i2 = k + 1; i2 < threed_shrink_factor; i2++) {
+						if (mbuf[i2] < mbuf[k]) {
+							float f = mbuf[i2];
+							mbuf[i2] = mbuf[k];
+							mbuf[k] = f;
+						}
+					}
+				}
+	
+				rdata[i + cur_j] = mbuf[threed_shrink_factor / 2];
+			}
+		}
+	}
+	
+	if( mbuf )
+	{
+		delete[]mbuf;
+		mbuf = 0;
+	}
+	
+	to->scale_pixel((float)shrink_factor);
+}
+
+EMData* MeanShrinkProcessor::process(const EMData *const image)
+{
+	if (image->is_complex()) throw ImageFormatException("Error, the mean shrink processor does not work on complex images");
+	
+	if (image->get_ndim() == 1) { throw ImageDimensionException("Error, mean shrink works only for 2D & 3D images"); } 
+	
+	float shrink_factor0 = params.set_default("n",0.0f);
+	int shrink_factor = int(shrink_factor0);
+	if (shrink_factor0 <= 1.0F || ((shrink_factor0 != shrink_factor) && (shrink_factor0 != 1.5F) ) ) {
+		throw InvalidValueException(shrink_factor0,
+									"mean shrink: shrink factor must be >1 integer or 1.5");
+	}
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+
+	// here handle the special averaging by 1.5 for 2D case
+	if (shrink_factor0==1.5 ) {
+		if (nz > 1 ) throw InvalidValueException(shrink_factor0, "mean shrink: only support 2D images for shrink factor = 1.5");
+
+		int shrunken_nx = (int(nx / 1.5)+1)/2*2;	// make sure the output size is even
+		int shrunken_ny = (int(ny / 1.5)+1)/2*2;
+		EMData* result = new EMData(shrunken_nx,shrunken_ny,1);
+
+		accrue_mean_one_p_five(result,image);
+		result->update();
+
+		return result;
+	}
+	
+	int shrunken_nx = nx / shrink_factor;
+	int shrunken_ny = ny / shrink_factor;
+	int shrunken_nz = 1;
+
+	if (nz > 1) {
+		shrunken_nz = nz / shrink_factor;
+	}
+	
+	EMData* result = new EMData(shrunken_nx,shrunken_ny,shrunken_nz);
+
+	accrue_mean(result,image,shrink_factor);
+
+	result->update();
+	
+	return result;
+}
+
+void MeanShrinkProcessor::process_inplace(EMData * image)
+{
+	if (image->is_complex()) throw ImageFormatException("Error, the mean shrink processor does not work on complex images");
+	
+	if (image->get_ndim() == 1) { throw ImageDimensionException("Error, mean shrink works only for 2D & 3D images"); } 
+	
+	float shrink_factor0 = params.set_default("n",0.0f);
+	int shrink_factor = int(shrink_factor0);
+	if (shrink_factor0 <= 1.0F || ((shrink_factor0 != shrink_factor) && (shrink_factor0 != 1.5F) ) ) {
+		throw InvalidValueException(shrink_factor0,
+									"mean shrink: shrink factor must be >1 integer or 1.5");
+	}
+
+/*	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
+	(nz > 1 && (nz % shrink_factor != 0))) {
+	throw InvalidValueException(shrink_factor,
+	"Image size not divisible by shrink factor");
+}*/
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	// here handle the special averaging by 1.5 for 2D case
+	if (shrink_factor0==1.5 ) {
+		if (nz > 1 ) throw InvalidValueException(shrink_factor0, "mean shrink: only support 2D images for shrink factor = 1.5");
+
+		int shrunken_nx = (int(nx / 1.5)+1)/2*2;	// make sure the output size is even
+		int shrunken_ny = (int(ny / 1.5)+1)/2*2;
+
+		EMData* orig = image->copy();
+		image->set_size(shrunken_nx, shrunken_ny, 1);	// now nx = shrunken_nx, ny = shrunken_ny
+		image->to_zero();
+
+		accrue_mean_one_p_five(image,orig);
+	
+		if( orig ) {
+			delete orig;
+			orig = 0;
+		}
+		image->update();
+
+		return;
+	}
+
+	accrue_mean(image,image,shrink_factor);
+	
+	int shrunken_nx = nx / shrink_factor;
+	int shrunken_ny = ny / shrink_factor;
+	int shrunken_nz = 1;
+	if (nz > 1) shrunken_nz = nz / shrink_factor;
+	
+	image->update();
+	image->set_size(shrunken_nx, shrunken_ny, shrunken_nz);
+	image->scale_pixel((float)shrink_factor);
+}
+
+void MeanShrinkProcessor::accrue_mean(EMData* to, const EMData* const from,const int shrink_factor)
+{
+	const float * const data = from->get_const_data();
+	float* rdata = to->get_data();
+	
+	int nx = from->get_xsize();
+	int ny = from->get_ysize();
+	int nz = from->get_zsize();
+	int nxy = nx*ny;
+	
+	
+	int shrunken_nx = nx / shrink_factor;
+	int shrunken_ny = ny / shrink_factor;
+	int shrunken_nz = 1;
+	int shrunken_nxy = shrunken_nx * shrunken_ny;
+	
+	int normalize_shrink_factor = shrink_factor * shrink_factor;
+	int z_shrink_factor = 1;
+
+	if (nz > 1) {
+		shrunken_nz = nz / shrink_factor;
+		normalize_shrink_factor *= shrink_factor;
+		z_shrink_factor = shrink_factor;
+	}
+	
+	float invnormfactor = 1.0f/(float)normalize_shrink_factor;
+	
+	for (int k = 0; k < shrunken_nz; k++) {
+		int k_min = k * shrink_factor;
+		int k_max = k * shrink_factor + z_shrink_factor;
+		int cur_k = k * shrunken_nxy;
+
+		for (int j = 0; j < shrunken_ny; j++) {
+			int j_min = j * shrink_factor;
+			int j_max = j * shrink_factor + shrink_factor;
+			int cur_j = j * shrunken_nx + cur_k;
+
+			for (int i = 0; i < shrunken_nx; i++) {
+				int i_min = i * shrink_factor;
+				int i_max = i * shrink_factor + shrink_factor;
+
+				float sum = 0;
+				for (int kk = k_min; kk < k_max; kk++) {
+					int cur_kk = kk * nxy;
+
+					for (int jj = j_min; jj < j_max; jj++) {
+						int cur_jj = jj * nx + cur_kk;
+						for (int ii = i_min; ii < i_max; ii++) {
+							sum += data[ii + cur_jj];
+						}
+					}
+				}
+				rdata[i + cur_j] = sum * invnormfactor;
+			}
+		}
+	}
+	
+	to->scale_pixel((float)normalize_shrink_factor);
+}
+
+
+void MeanShrinkProcessor::accrue_mean_one_p_five(EMData* to, const EMData * const from)
+{
+	int nx0 = from->get_xsize(), ny0 = from->get_ysize();	// the original size
+	
+	int nx = to->get_xsize(), ny = to->get_ysize();
+
+	float *data = to->get_data();
+	const float * const data0 = from->get_const_data();
+
+	for (int j = 0; j < ny; j++) {
+		int jj = int(j * 1.5);
+		float jw0 = 1.0F, jw1 = 0.5F;	// 3x3 -> 2x2, so each new pixel should have 2.25 of the old pixels
+		if ( j%2 ) {
+			jw0 = 0.5F;
+			jw1 = 1.0F;
+		}
+		for (int i = 0; i < nx; i++) {
+			int ii = int(i * 1.5);
+			float iw0 = 1.0F, iw1 = 0.5F;
+			float w = 0.0F;
+
+			if ( i%2 ) {
+				iw0 = 0.5F;
+				iw1 = 1.0F;
+			}
+			if ( jj < ny0 ) {
+				if ( ii < nx0 ) {
+					data[j * nx + i] = data0[ jj * nx0 + ii ] * jw0 * iw0 ;
+					w += jw0 * iw0 ;
+					if ( ii+1 < nx0 ) {
+						data[j * nx + i] += data0[ jj * nx0 + ii + 1] * jw0 * iw1;
+						w += jw0 * iw1;
+					}
+				}
+				if ( jj +1 < ny0 ) {
+					if ( ii < nx0 ) {
+						data[j * nx + i] += data0[ (jj+1) * nx0 + ii ] * jw1 * iw0;
+						w += jw1 * iw0;
+						if ( ii+1 < nx0 ) {
+							data[j * nx + i] += data0[ (jj+1) * nx0 + ii + 1] * jw1 * iw1;
+							w += jw1 * iw1;
+						}
+					}
+				}
+			}
+			if ( w>0 ) data[j * nx + i] /= w;
+		}
+	}
+	
+	to->update();
+}
 
 template<class LogicOp>
 EMData* BooleanShrinkProcessor::process(const EMData *const image)
@@ -1079,7 +1442,7 @@ EMData* BooleanShrinkProcessor::process(const EMData *const image)
 	if (image->is_complex() ) throw ImageFormatException("Can not max shrink a complex image");
 	
 	
-	int shrink = params.set_default("shrink",2);
+	int shrink = params.set_default("n",2);
 	int search = params.set_default("search",2);
 	
 	if ( shrink < 0 ) throw InvalidValueException(shrink, "Can not shrink by a value less than 0");

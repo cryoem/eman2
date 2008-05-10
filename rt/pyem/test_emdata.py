@@ -1839,61 +1839,7 @@ class TestEMData(unittest.TestCase):
             e4.unwrap()
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-            
-    def test_mean_shrink(self):
-        """test mean_shrink() function ......................"""
-        e = EMData()
-        e.set_size(64,64,64)
-        e.process_inplace("testimage.noise.uniform.rand")
-        
-        e.mean_shrink(4)
-        self.assertEqual(e.get_xsize(), 16)
-        self.assertEqual(e.get_xsize(), 16)
-        self.assertEqual(e.get_xsize(), 16)
-        
-        e2 = EMData()
-        e2.set_size(30,30,1)
-        e2.process_inplace("testimage.noise.uniform.rand")
-        e2.mean_shrink(1.5)    
-        
-        #shrink factor 1.5 only support 2D image
-        self.assertRaises( RuntimeError, e.mean_shrink, 1.5)
-        try:
-            e.mean_shrink(1.5)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
-            
-        #shrink factor must be >1
-        self.assertRaises( RuntimeError, e.mean_shrink, 0)
-        try:
-            e.mean_shrink(0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
 
-    def test_median_shrink(self):
-        """test median_shrink() function ...................."""
-        e = EMData()
-        e.set_size(64,64,64)
-        e.process_inplace("testimage.noise.uniform.rand")
-        
-        e.median_shrink(4)
-        self.assertEqual(e.get_xsize(), 16)
-        self.assertEqual(e.get_xsize(), 16)
-        self.assertEqual(e.get_xsize(), 16)
-        
-        #shrink factor must be >1 
-        self.assertRaises( RuntimeError, e.median_shrink, 0)
-        try:
-            e.median_shrink(0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
-        
-        #image size must be divisible by shrink factor
-        self.assertRaises( RuntimeError, e.median_shrink, 5)
-        try:
-            e.median_shrink(5)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
 
     def test_apply_radial_func(self):
         """test apply_radial_func() functon ................."""

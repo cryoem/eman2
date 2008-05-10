@@ -76,7 +76,7 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 	
 	stackshrink=[i.copy() for i in stack]
 	if (shrink>1) :
-		for i in stackshrink: i.mean_shrink(shrink)
+		for i in stackshrink: i.process_inplace("math.meanshrink",{"n":shrink})
 	
 	ret=[stack[0]]
 	rets=[stackshrink[0]]
@@ -110,7 +110,7 @@ def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 	
 	stackshrink=[i.copy() for i in stack]
 	if (shrink>1) :
-		for i in stackshrink: i.mean_shrink(shrink)
+		for i in stackshrink: i.process_inplace("math.meanshrink",{"n":shrink})
 	ret=[stack[0]]
 	rets=[stackshrink[0]]
 	del stack[0]

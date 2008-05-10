@@ -984,7 +984,8 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,
 	int xst = (int) floor(2 * M_PI * ny);
 	xst = Util::calc_best_fft_size(xst);
 
-	to_copy->median_shrink(2);
+	Dict d("n",2);
+	to_copy->process_inplace("median_shrink",d);
 
 	int to_copy_r2 = to_copy->get_ysize() / 2 - 2 - maxshift / 2;
 	EMData *tmp = to_copy->unwrap(4, to_copy_r2, xst / 2, 0, 0, true);
@@ -1010,8 +1011,8 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,
 
 	EMData *dns = this_img->copy();
 	EMData *dfs = df->copy();
-	dns->median_shrink(2);
-	dfs->median_shrink(2);
+	dns->process_inplace("median_shrink",d);
+	dfs->process_inplace("median_shrink",d);
 
 	int dflip = 0;
 	float bestval = FLT_MAX;

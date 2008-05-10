@@ -143,7 +143,7 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 				sz=os.stat(fsp).st_size
 				tile_dict[(l,x/tilesize,y/tilesize)]=(pos,sz)
 				pos+=sz
-		img2.mean_shrink(2)
+		img2.process_inplace("math.meanshrink",{"n":2})
 	
 	# This will produce 2 power spectrum images in the tile file
 	# with scale factors -1 and -2

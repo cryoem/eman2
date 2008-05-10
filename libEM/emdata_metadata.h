@@ -68,6 +68,11 @@ EMData *get_fft_phase();
 float *get_data() const;
 
 
+/** Get the image pixel density data in a 1D float array - const version of get_data
+ * @return The image pixel density data.
+ */
+const float * const get_const_data() const;
+
 /** Mark EMData as changed, statistics, etc will be updated at need.*/
 inline void update()
 {

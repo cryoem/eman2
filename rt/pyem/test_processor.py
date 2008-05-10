@@ -44,7 +44,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 144)
+        self.assertEqual(len(processor_names), 146)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -360,7 +360,58 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), True)
         
         e.process_inplace('eman1.filter.ramp', {'intercept':0.25, 'slope':0.3})
+    
+	 def test_mean_shrink(self):
+        """test math.meanshrink processor ..................."""
+        e = EMData()
+        e.set_size(64,64,64)
+        e.process_inplace("testimage.noise.uniform.rand")
         
+        e.process_inplace("math.meanshrink",{"n":4})
+        self.assertEqual(e.get_xsize(), 16)
+        self.assertEqual(e.get_ysize(), 16)
+        self.assertEqual(e.get_zsize(), 16)
+        
+        e2 = EMData()
+        e2.set_size(30,30,1)
+        e2.process_inplace("testimage.noise.uniform.rand")
+		e2.process_inplace("math.meanshrink",{"n":1.5}) 
+        
+        #shrink factor 1.5 only support 2D image
+        try:
+           e.process_inplace("math.meanshrink",{"n":1.5})
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+            
+        #shrink factor must be >1
+        self.assertRaises( RuntimeError, e.mean_shrink, 0)
+        try:
+            e.process_inplace("math.meanshrink",{"n":0})
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+
+    def test_median_shrink(self):
+        """test math.medianshrink processor ................."""
+        e = EMData()
+        e.set_size(64,64,64)
+        e.process_inplace("testimage.noise.uniform.rand")
+        
+        e.process_inplace("math.medianshrink",{"n":4})
+        self.assertEqual(e.get_xsize(), 16)
+        self.assertEqual(e.get_ysize(), 16)
+        self.assertEqual(e.get_zsize(), 16)
+        
+        #shrink factor must be >1 
+        try:
+            e.process_inplace("math.medianshrink",{"n":0})
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+        
+        #image size must be divisible by shrink factor
+        try:
+            e.process_inplace("math.medianshrink",{"n":5})
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
     def test_eman1_math_absvalue(self):
         """test math.absvalue processor ....................."""
         e = EMData()
