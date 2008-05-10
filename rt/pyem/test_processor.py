@@ -361,7 +361,7 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('eman1.filter.ramp', {'intercept':0.25, 'slope':0.3})
     
-	 def test_mean_shrink(self):
+    def test_mean_shrink(self):
         """test math.meanshrink processor ..................."""
         e = EMData()
         e.set_size(64,64,64)
@@ -375,7 +375,7 @@ class TestProcessor(unittest.TestCase):
         e2 = EMData()
         e2.set_size(30,30,1)
         e2.process_inplace("testimage.noise.uniform.rand")
-		e2.process_inplace("math.meanshrink",{"n":1.5}) 
+        e2.process_inplace("math.meanshrink",{"n":1.5}) 
         
         #shrink factor 1.5 only support 2D image
         try:
