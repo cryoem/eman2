@@ -94,7 +94,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 			proj.write_image(args[3],i)
 	
 	# Project rotated images into a basis subspace
-	if args[0]=="projectrot" :
+	elif args[0]=="projectrot" :
 		if options.verbose>1 : print "Entering projectrot routine"
 		
 		# Just read the whole similarity matrix in, since it generally shouldn't be THAT big
@@ -147,7 +147,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		
 		results=pca.analyze()
 		for im in results: im.write_image(args[2],-1)
-	else: print "Valid commands are project and varimax"
+	else: print "Valid commands are project, varimax and projectrot"
 	
 	E2end(logid)
 

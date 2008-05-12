@@ -62,6 +62,7 @@ def main():
 	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_option("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 	
@@ -99,6 +100,14 @@ def main():
 	options.ralign=parsemodopt(options.ralign)
 	options.raligncmp=parsemodopt(options.raligncmp)
 	options.cmp=parsemodopt(options.cmp)
+
+	if options.exclude: 
+		try:
+			excl=file(options.exclude,"r").readlines()
+			excl=[int(i) for i in excl]
+			excl=set(excl)
+		except: print "Warning: exclude file failed"		# it's ok if this fails
+		
 
 	clen=EMUtil.get_image_count(args[0])
 	rlen=EMUtil.get_image_count(args[1])
@@ -142,6 +151,8 @@ def main():
 		rimages = EMData.read_images(args[1],range(*rrange))
 	
 	for r in range(*rrange):
+		if options.exclude and r in excl : continue
+		
 		if options.verbose: 
 			print "%d/%d\r"%(r,rrange[1]),
 			sys.stdout.flush()

@@ -135,7 +135,7 @@ def main():
 		inputproj=options.input[:options.input.rfind(".")]+".fp.proj.hdf"
 		inputproj=inputproj.split("/")[-1]
 		if not os.access(inputproj,os.R_OK) :
-			run("e2basis.py project %s %s %s"%(fpbasis,fpfile,inputproj))
+			run("e2basis.py project %s %s %s --verbose=%d"%(fpbasis,fpfile,inputproj,subverbose))
 		
 		# classify the subspace vectors
 		try: remove("classmx.00.hdf")
@@ -159,12 +159,14 @@ def main():
 		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate --reverse --useali --nsort=%d"%(options.initial,it,options.naliref))
 		
 		# We use e2simmx to compute the optimal particle orientations
-		run(get_simmx_cmd(options,"aliref.%02d.hdf"%it,"simmx.%02d.hdf"%it))
+		e2simmxcmd = "e2simmx.py aliref.%02d.hdf %s simmx.%02d.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"  %(it, options.input,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
+		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
+		run(e2simmxcmd)
 		
 		# e2basis projectrot here
 		inputproj=options.input[:options.input.rfind(".")]+".%02d.proj.hdf"%it
 		inputproj=inputproj.split("/")[-1]
-		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s"%(it,options.input,it,inputproj))
+		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s --verbose=%d"%(it,options.input,it,inputproj,subverbose))
 		
 		# classify the subspace vectors
 		try: remove("classmx.%02d.hdf"%it)
@@ -195,19 +197,6 @@ def run(command):
 
 def get_simmx_cmd(options,refs,simmx,check=False,nofilecheck=False):
 	
-	e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(refs, options.input,simmx,options.simcmp,options.simalign,options.simaligncmp)
-	
-	if ( options.simralign != None ):
-		e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
-	
-	if (options.verbose):
-		e2simmxcmd += " --verbose=%d"%(options.verbose-1)
-		
-	if ( check ):
-		e2simmxcmd += " --check"	
-			
-	if ( nofilecheck ):
-		e2simmxcmd += " --nofilecheck"
 		
 	
 	return e2simmxcmd
