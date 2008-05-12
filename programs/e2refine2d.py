@@ -57,6 +57,7 @@ def main():
 	parser.add_option("--ncls", default=32, type="int", help="Number of classes to generate")
 	parser.add_option("--iterclassav", default=2, type="int", help="Number of iterations when making class-averages")
 	parser.add_option("--naliref", default=8, type="int", help="Number of alignment references to when determining particle orientations")
+	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
 	
 	#options associated with generating initial class-averages
 	parser.add_option("--initial",type="string",default=None,help="File containing starting class-averages. If not specified, will generate starting averages automatically")
@@ -110,6 +111,8 @@ def main():
 	
 	logid=E2init(sys.argv)
 
+	if options.exclude : excludestr="exclude="+options.exclude
+	else: excludestr=""
 	
 	# if we aren't given starting class-averages, make some
 	if not options.initial :
@@ -125,6 +128,7 @@ def main():
 		fpbasis=options.input[:options.input.rfind(".")]+".fp.basis.hdf"
 		fpbasis=fpbasis.split("/")[-1]
 		if not os.access(fpbasis,os.R_OK) :
+#			run("e2msa.py %s %s --nbasis=%0d"%(fpfile,fpbasis,options.nbasisfp))
 			run("e2msa.py %s %s --nbasis=%0d --varimax"%(fpfile,fpbasis,options.nbasisfp))
 	
 		# reproject the particle footprints into the basis subspace
@@ -136,22 +140,23 @@ def main():
 		# classify the subspace vectors
 		try: remove("classmx.00.hdf")
 		except: pass
-		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.00.hdf"%(inputproj,options.input,options.ncls))
+		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.00.hdf %s"%(inputproj,options.input,options.ncls,excludestr))
 		
 		# make class-averages
 		try: re0move("classes.init.hdf")
 		except: pass
-		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip --averager=image -v"%(options.input,options.iterclassav))
+		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip --averager=image -vf"%(options.input,options.iterclassav))
 		options.initial="classes.init.hdf"
 		
 	print "Using references from ",options.initial
 	# this is the main refinement loop
 	for it in range(1,options.iter+1) :		
 		# Compute a classification basis set
+#		run("e2msa.py %s basis.%02d.hdf --nbasis=%d"%(options.initial,it,options.nbasisfp))
 		run("e2msa.py %s basis.%02d.hdf --nbasis=%d --varimax"%(options.initial,it,options.nbasisfp))
 		
 		# extract the most different references for alignment
-		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate --reverse --nsort=%d"%(options.initial,it,options.naliref))
+		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate --reverse --useali --nsort=%d"%(options.initial,it,options.naliref))
 		
 		# We use e2simmx to compute the optimal particle orientations
 		run(get_simmx_cmd(options,"aliref.%02d.hdf"%it,"simmx.%02d.hdf"%it))
@@ -164,7 +169,7 @@ def main():
 		# classify the subspace vectors
 		try: remove("classmx.%02d.hdf"%it)
 		except: pass
-		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.%02d.hdf"%(inputproj,options.input,options.ncls,it))
+		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.%02d.hdf %s"%(inputproj,options.input,options.ncls,it,excludestr))
 		
 		# make class-averages
 		try: remove("classes.%02d.hdf"%it)

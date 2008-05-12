@@ -63,6 +63,7 @@ be classified. """
 	parser.add_option("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
 	parser.add_option("--nosingle","-X",action="store_true",help="Try to eliminate classes with only 1 member",default=False)
 	parser.add_option("--original","-O",type="string",help="If the input stack was derived from another stack, you can provide the name of the original stack here",default=None)
+	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -70,6 +71,18 @@ be classified. """
 	logid=E2init(sys.argv)
 	
 	data=EMData.read_images(args[0])
+	nimg=len(data)						# we need this for the classification matrix when exclude is used
+	filen=range(len(data))				# when exclude is used, this will map to actual file image numbers
+
+	if options.exclude: 
+		try:
+			excl=file(options.exclude,"r").readlines()
+			excl=[int(i) for i in excl]
+			excl.sort(reverse=True)
+			for i in excl : 
+				del data[i]
+				del filen[i]
+		except: print "Warning: exclude file failed"		# it's ok if this fails
 
 	print len(data)," images to classify."
 
@@ -148,9 +161,9 @@ be classified. """
 			# if original images specified, also write those averages to avg.orig.hed
 			if options.original :
 				for j in range(len(classes)):
-					avg=EMData(options.original,classes[j][0])
+					avg=EMData(options.original,filen[classes[j][0]])
 					for i in range(1,len(classes[j])):
-						avg+=EMData(options.original,classes[j][i])
+						avg+=EMData(options.original,filen[classes[j][i]])
 					avg/=len(classes[j])
 					avg.write_image("avg.orig.hed",-1)
 		
@@ -162,15 +175,18 @@ be classified. """
 			out=open("cls%04d.lst"%j,"w")
 			out.write("#LST\n")
 			for i in range(len(classes[j])):
-				out.write("%d\t%s\n"%(classes[j][i],stackname))
+				out.write("%d\t%s\n"%(filen[classes[j][i]],stackname))
 			out.close()
 	
 	# Write an EMAN2 standard classification matrix. Particles run along y
 	# each class a particle is in takes a slot in x. There are then a set of
 	# 5 images containing class #, a weight, and dx,dy,dangle
 	if (options.clsmx) :
-		clsnum=EMData(1,len(data),1)
-		weight=EMData(1,len(data),1)
+		clsnum=EMData(1,nimg,1)
+		weight=EMData(1,nimg,1)
+		clsnum.to_zero
+		clsnum+= -1			# class numbers are initialized to -1 in case we're using exclude
+		
 		dx=EMData(1,len(data),1)
 		dy=dx		# we don't have alignment values, so...
 		dang=dx
@@ -178,7 +194,7 @@ be classified. """
 		weight.to_one()
 		dx.to_zero()
 		for n,i in enumerate(data):
-			clsnum[n]=float(i.get_attr("class_id"))
+			clsnum[filen[n]]=float(i.get_attr("class_id"))
 		
 		remove_image(options.clsmx)
 		clsnum.write_image(options.clsmx,0)

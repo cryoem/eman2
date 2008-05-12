@@ -110,7 +110,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		n=EMUtil.get_image_count(args[2])
 		for i in range(n):
 			if options.verbose >1 : 
-				print "  %5d\r"%i,
+				print "  %5d\r"%i
 				sys.stdout.flush()
 			elif options.verbose and i%100==0:
 				print "  %5d\r"%i,
@@ -119,9 +119,12 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 			
 			# find the best orienteation from the similarity matrix, and apply the transformation
 			best=(1.0e23,0,0,0)
+#			print "a"
 			for j in range(simmx.get_xsize()): 
 				if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simda.get(j,i),simdx.get(j,i),simdy.get(j,i))
+#			print "b",(best[1],0,0,best[2],best[3],0)
 			im.rotate_translate(best[1],0,0,best[2],best[3],0)
+#			print "c"
 #			im.process_inplace("normalize.unitlen")
 			
 			proj=EMData(len(basis),1,1)
@@ -130,7 +133,8 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 			for j,b in enumerate(basis):
 				proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
 				
-			proj.write_image(args[3],i)
+			proj.write_image(args[4],i)
+		if options.verbose>1 : print "Projectrot complete"
 	
 	# Apply the varimax rotation to a set of basis vectors
 	elif args[0]=="varimax" :

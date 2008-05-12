@@ -54,7 +54,7 @@ This program will sort a stack of images based on some similarity criterion. """
 	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
 	parser.add_option("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
 	parser.add_option("--nsort",type="int",help="Number of output particles to generate",default=0)
-	parser.add_option("--shrink",type="int",help="Reduce the particles for comparisons",default=2)
+	parser.add_option("--shrink",type="int",help="Reduce the particles for comparisons",default=1)
 #	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
 #	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
 #	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
@@ -62,6 +62,8 @@ This program will sort a stack of images based on some similarity criterion. """
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
 	
+	E2n=E2init(sys.argv)
+
 	if options.simalign : options.simalign=parsemodopt(options.simalign)
 	else: options.simalign=[None,None]
 	if options.simcmp : options.simcmp=parsemodopt(options.simcmp)
@@ -70,6 +72,8 @@ This program will sort a stack of images based on some similarity criterion. """
 	if options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali)
 	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali)
 	for i,im in enumerate(b): im.write_image(args[1],i)
+
+	E2end(E2n)
 
 def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 	"""Sorts a list of images in order of LEAST similarity"""
@@ -87,14 +91,15 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 		for i in range(len(stackshrink)):
 			c=1.0e38
 			cj=-1
+			ci=None
 			for j,r in enumerate(rets):			# compare to all existing solutions, and use the MOST similar value
 				if align : ims=stackshrink[i].align(align,r,alignopts)
 				else : ims=stackshrink[i]
 				cc=r.cmp(cmptype,ims,cmpopts)
-				if cc<c : c,cj=cc,j
+				if cc<c : c,cj,ci=cc,j,ims
 #			print "\t%d. %1.3g (%d)"%(i,c,cj)
-			if c>best[0] or best[1]<0 : best=(c,i)
-		if useali : ret.append(ims)
+			if c>best[0] or best[1]<0 : best=(c,i,ims)
+		if useali : ret.append(best[2])
 		else : ret.append(stack[best[1]])
 		rets.append(stackshrink[best[1]])
 		del stack[best[1]]

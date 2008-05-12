@@ -157,6 +157,7 @@ def main():
 		
 		if options.saveali :
 			for c,v in enumerate(row):
+#				print row
 				#print "%f %f %f " %(v[1],v[2],v[3])
 				mxout[1].set_value_at(c,r,0,v[1])
 				mxout[2].set_value_at(c,r,0,v[2])
