@@ -1922,10 +1922,10 @@ EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float sc
 		set_array_offsets(0,0,0);
 		if (0.f == scale) scale = 1.f; // silently fix common user error
 		EMData* ret = copy_head();
-		while ( delx >= (float)(nx) )  delx -= nx;
-		while ( delx < 0.0f )          delx += nx;
-		while ( dely >= (float)(ny) )  dely -= ny;
-		while ( dely < 0.0f )          dely += ny;
+		while ( delx >=  (float)(nx) )  delx -= nx;
+		while ( delx <= -(float)(nx) )  delx += nx;
+		while ( dely >=  (float)(ny) )  dely -= ny;
+		while ( dely <= -(float)(ny) )  dely += ny;
 		// center of image
 		int xc = nx/2;
 		int yc = ny/2;
@@ -1968,14 +1968,14 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	RAinv= RA.inverse();
 
 	if (1 >= ny)  throw ImageDimensionException("Can't rotate 1D image");
-	if (nz==1) { 
+	if (nz < 2) { 
 	float  p1, p2, p3, p4;
 	float delx = translations.at(0);
 	float dely = translations.at(1);
-	while ( delx >= (float)(nx) )  delx -= nx;
-	while ( delx < 0.0f )          delx += nx;
-	while ( dely >= (float)(ny) )  dely -= ny;
-	while ( dely < 0.0f )          dely += ny;
+	while ( delx >=  (float)(nx) )  delx -= nx;
+	while ( delx <= -(float)(nx) )  delx += nx;
+	while ( dely >=  (float)(ny) )  dely -= ny;
+	while ( dely <= -(float)(ny) )  dely += ny;
 	int xc = nx/2;
 	int yc = ny/2;
 //         shifted center for rotation
@@ -1990,10 +1990,6 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 				float xold = x*RAinv[0][0] + ysang;
 				float yold = x*RAinv[1][0] + ycang;
 
-				//if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
-				//else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-				//if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
-				//else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
 				while ( xold < 0.0f )          xold += nx;
 				while ( xold >= (float)(nx) )  xold -= nx;
 				while ( yold < 0.0f )          yold += ny;
@@ -2009,25 +2005,19 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 					p2 =in[ yfloor*ny];
 					p3 =in[0];
 					p4 =in[xfloor];
-				}
-
-				else if(xfloor == nx - 1) {
+				} else if(xfloor == nx - 1) {
 				
 					p1 =in[xfloor   + yfloor*ny];
 					p2 =in[           yfloor*ny];
 					p3 =in[          (yfloor+1)*ny];
 					p4 =in[xfloor   + (yfloor+1)*ny];
-				}
-
-				else if(yfloor == ny - 1) {
+				} else if(yfloor == ny - 1) {
 				
 					p1 =in[xfloor   + yfloor*ny];
 					p2 =in[xfloor+1 + yfloor*ny];
 					p3 =in[xfloor+1 ];
 					p4 =in[xfloor   ];
-				}
-				
-				else {
+				} else {
 					p1 =in[xfloor   + yfloor*ny];
 					p2 =in[xfloor+1 + yfloor*ny];
 					p3 =in[xfloor+1 + (yfloor+1)*ny];
@@ -2044,12 +2034,12 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	float delx = translations.at(0);
 	float dely = translations.at(1);
 	float delz = translations.at(2);
-	while ( delx >= (float)(nx) )  delx -= nx;
-	while ( delx < 0.0f )          delx += nx;
-	while ( dely >= (float)(ny) )  dely -= ny;
-	while ( dely < 0.0f )          dely += ny;
-	while ( delz >= (float)(nz) )  delz -= nz;
-	while ( delz < 0.0f )          delz += nz;
+	while ( delx >=  (float)(nx) )  delx -= nx;
+	while ( delx <= -(float)(nx) )  delx += nx;
+	while ( dely >=  (float)(ny) )  dely -= ny;
+	while ( dely <= -(float)(ny) )  dely += ny;
+	while ( delz >=  (float)(nz) )  delz -= nz;
+	while ( delz <= -(float)(nz) )  delz += nz;
 	int xc = nx/2;
 	int yc = ny/2;
 	int zc = nz/2;
@@ -2342,10 +2332,10 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32 
 	//ret->to_zero();  //we will leave margins zeroed.
-	while ( delx >= (float)(nx) )  delx -= nx;
-	while ( delx < 0.0f )          delx += nx;
-	while ( dely >= (float)(ny) )  dely -= ny;
-	while ( dely < 0.0f )          dely += ny;
+	while ( delx >=  (float)(nx) )  delx -= nx;
+	while ( delx <= -(float)(nx) )  delx += nx;
+	while ( dely >=  (float)(ny) )  dely -= ny;
+	while ( dely <= -(float)(ny) )  dely += ny;
 	// center of big image,
 	int xc = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images
@@ -2379,9 +2369,9 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
 			float yold = x*sang/scale + ycang-iys;
 
-			while ( xold < 0.0f )  xold += nx;
+			while ( xold < 0.0f )          xold += nx;
 			while ( xold >= (float)(nx) )  xold -= nx;
-			while ( yold < 0.0f )  yold += ny;
+			while ( yold < 0.0f )          yold += ny;
 			while ( yold >= (float)(ny) )  yold -= ny;
 
 			int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
@@ -2436,10 +2426,10 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32 
 	//ret->to_zero();  //we will leave margins zeroed.
-	while ( delx >= (float)(nx) )  delx -= nx;
-	while ( delx < 0.0f )  delx += nx;
-	while ( dely >= (float)(ny) )  dely -= ny;
-	while ( dely < 0.0f )  dely += ny;
+	while ( delx >=  (float)(nx) )  delx -= nx;
+	while ( delx <= -(float)(nx) )  delx += nx;
+	while ( dely >=  (float)(ny) )  dely -= ny;
+	while ( dely <= -(float)(ny) )  dely += ny;
 	// center of big image,
 	int xc = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images
@@ -2591,10 +2581,10 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32 
 	//ret->to_zero();  //we will leave margins zeroed.
-	while ( delx >= (float)(nx) )  delx -= nx;
-	while ( delx < 0.0f )          delx += nx;
-	while ( dely >= (float)(ny) )  dely -= ny;
-	while ( dely < 0.0f )          dely += ny;
+	while ( delx >=  (float)(nx) )  delx -= nx;
+	while ( delx <= -(float)(nx) )  delx += nx;
+	while ( dely >=  (float)(ny) )  dely -= ny;
+	while ( dely <= -(float)(ny) )  dely += ny;
 	// center of big image,
 	int xc = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images
@@ -2650,8 +2640,8 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	float pixel =0.0f;
 	float w=0.0f;
 	
-	while ( delx >= (float)(nx) )  delx -= nx;
-	while ( delx < 0.0f )          delx += nx;
+	while ( delx >=  (float)(nx) )  delx -= nx;
+	while ( delx <= -(float)(nx) )  delx += nx;
 	int inxold = int(Util::round(delx));
 	if(ny<2) {  //1D
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 )  {
@@ -2668,8 +2658,8 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	 	}
 	
 	} else if(nz<2) {  // 2D
-		while ( dely >= (float)(ny) )  dely -= ny;
-		while ( dely < 0.0f )          dely += ny;
+		while ( dely >=  (float)(ny) )  dely -= ny;
+		while ( dely <= -(float)(ny) )  dely += ny;
 		int inyold = int(Util::round(dely));
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
 	 		//  loop for strips
@@ -2684,11 +2674,11 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 			}
 	 	}
 	} else {  //  3D
-		while ( dely >= (float)(ny) )  dely -= ny;
-		while ( dely < 0.0f )          dely += ny;
+		while ( dely >=  (float)(ny) )  dely -= ny;
+		while ( dely <= -(float)(ny) )  dely += ny;
 		int inyold = int(Util::round(dely));
-		while ( delz >= (float)(nz) )  delz -= nz;
-		while ( delz < 0.0f )          delz += nz;
+		while ( delz >=  (float)(nz) )  delz -= nz;
+		while ( delz <= -(float)(nz) )  delz += nz;
 		int inzold = int(Util::round(delz));
 		    //cout << inxold<<"  "<< kbc<<"  "<< nx-kbc-2<<"  "<< endl;
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2  || inzold <= kbc || inzold >=nz-kbc-2 )  {

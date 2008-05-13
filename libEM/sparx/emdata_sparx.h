@@ -279,7 +279,7 @@ EMData* mult_radial(EMData* radial);
 		 *  @exception ImageDimensionException can not rotate 3 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		EMData* rot_scale_trans2D(float ang, float delx = 0.f, float dely = 0.f, float scale = 1.f);
+		EMData* rot_scale_trans2D(float ang, float delx = 0.0f, float dely = 0.0f, float scale = 1.0f);
 		
 
 		/** Rotate-Shift-Scale-Circulantly image 
