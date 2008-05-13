@@ -77,8 +77,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		self.timer = QtCore.QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-		self.timeinterval = 10
-		self.timer.start(10)
+		self.timeinterval = 50
+		self.timer.start(50)
 		
 	def timeout(self):
 		update = False
@@ -186,13 +186,19 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def delShapes(self):
 		return self.image2d.delShapes()
 	
+	def delShape(self,p):
+		return self.image2d.delShape(p)
+
 	def scrollTo(self,x,y):
 		return self.image2d.scrollTo(x,y)
 	
 	def registerScrollMotion(self,x,y):
 		return self.image2d.registerScrollMotion(x,y)
 	
-	
+	def setOtherData(self,data,scale,blend=False):
+		self.image2d.otherdata = data
+		self.image2d.otherdatascale = scale
+		self.image2d.otherdatablend = blend
 		
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -243,7 +249,7 @@ class EMImage2DCore:
 		self.endorigin = None
 		self.isanimated = False
 		self.time = 1
-		self.timeinc = 0.04
+		self.timeinc = 0.125
 		
 		self.inspector=None			# set to inspector panel widget when exists
 		
@@ -255,6 +261,11 @@ class EMImage2DCore:
 		
 		self.supressInspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		self.tex_name = 0			# an OpenGL texture handle
+		
+		self.otherdata = None
+		self.otherdatascale = -1
+		self.otherdatablend = False
+		self.other_tex_name = None
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
@@ -448,6 +459,7 @@ class EMImage2DCore:
 			a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 			gl_render_type = GL_LUMINANCE
 		else : 
+			#print "first origin",int(self.origin[0]/self.scale),int(self.origin[1]/self.scale)
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 			gl_render_type = GL_LUMINANCE
 
@@ -458,7 +470,6 @@ class EMImage2DCore:
 			self.tex_name = GL.glGenTextures(1)
 			if ( self.tex_name <= 0 ):
 				raise("failed to generate texture name")
-			
 			glPushMatrix()
 			glTranslatef(width,height,0)
 			
@@ -503,6 +514,72 @@ class EMImage2DCore:
 			GL.glRasterPos(0,self.parent.height()-1)
 			GL.glPixelZoom(1.0,-1.0)
 			GL.glDrawPixels(self.parent.width(),self.parent.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
+		
+		#tmp work by d.woolford
+		if self.otherdata != None and isinstance(self.otherdata,EMData):
+			scale = self.scale*self.otherdatascale
+			#print "second origin",int(self.origin[0]/scale),int(self.origin[1]/scale)
+			b=self.otherdata.render_amp8(int(self.origin[0]/scale),int(self.origin[1]/scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,scale,pixden[0],pixden[1],self.otherdata.get_attr("minimum"),self.otherdata.get_attr("maximum"),1,2)
+			gl_render_type = GL_LUMINANCE
+			if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
+			self.other_tex_name = GL.glGenTextures(1)
+			if ( self.other_tex_name <= 0 ):
+				raise("failed to generate texture name")
+			
+				
+			if self.otherdatablend:
+				GL.glEnable(GL.GL_BLEND);
+				depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
+				GL.glDisable(GL.GL_DEPTH_TEST);
+				GL.glBlendEquation(GL.GL_FUNC_ADD);
+				GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
+			
+			
+			glPushMatrix()
+			glTranslatef(width,height,0)
+			
+			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
+			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
+			
+			
+			glEnable(GL_TEXTURE_2D)
+			glBindTexture(GL_TEXTURE_2D, self.tex_name)
+			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+			# using GL_NEAREST ensures pixel granularity
+			# using GL_LINEAR blurs textures and makes them more difficult
+			# to interpret (in cryo-em)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			# this makes it so that the texture is impervious to lighting
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+			
+			# POSITIONING POLICY - the texture occupies the entire screen area
+			glBegin(GL_QUADS)
+			
+			glTexCoord2f(0,0)
+			glVertex2f(-width,height)
+			
+			glTexCoord2f(1,0)
+			glVertex2f(width,height)
+				
+			glTexCoord2f(1,1)
+			glVertex2f(width,-height)
+			
+			glTexCoord2f(0,1)
+			glVertex2f(-width,-height)
+				
+			glEnd()
+			
+			glDisable(GL_TEXTURE_2D)
+			
+			glPopMatrix()
+			
+			if self.isanimated:
+				GL.glDisable( GL.GL_BLEND);
+				if (depth_testing_was_on):
+					GL.glEnable(GL.GL_DEPTH_TEST)
+			
 
 #		hist=numpy.fromstring(a[-1024:],'i')
 		hist=struct.unpack('256i',a[-1024:])
@@ -585,6 +662,10 @@ class EMImage2DCore:
 		self.shapes.update(d)
 		self.shapechange=1
 		#self.updateGL()
+	
+	
+	def delShape(self,p):
+		self.shapes.pop(p)
 	
 	def delShapes(self,k=None):
 		if k:

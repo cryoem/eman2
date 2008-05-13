@@ -76,6 +76,163 @@ const int EMfft::EMAN2_COMPLEX_2_REAL = 2;
 const int EMfft::EMAN2_FFTW2_INPLACE = 1;
 const int EMfft::EMAN2_FFTW2_OUT_OF_PLACE=0;
 
+
+#ifdef CUDA_FFT
+// This is experimental code by d.woolford
+// it does not work. If it ends up that we do not incorporate CUDA based stuff I will remove this code.
+// That decision has not yet been made, so this code currently serves as a starting reference.
+// May 2008
+#include <iostream>
+using std::cerr;
+using std::endl;
+
+
+EMfft::EMcuda_fftw_cache::EMcuda_fftw_cache() :
+		num_plans(0)
+{
+// 	cuInit(0);
+// 	CUT_DEVICE_INIT();
+	int deviceCount;
+	CUDA_SAFE_CALL_NO_SYNC(cudaGetDeviceCount(&deviceCount));
+	if (deviceCount == 0) {
+		cerr << "There is no device" << endl;
+	}
+	int dev;
+	for (dev = 0; dev < deviceCount; ++dev) {
+		cudaDeviceProp deviceProp;
+		CUDA_SAFE_CALL_NO_SYNC(cudaGetDeviceProperties(&deviceProp, dev));
+		if (deviceProp.major >= 1)
+			break; 
+	}
+	if (dev == deviceCount) {
+		cerr << "There is no device supporting CUDA" << endl;
+	}
+	else CUDA_SAFE_CALL(cudaSetDevice(dev));                                  \
+	cout << "There were " << deviceCount << " devices, we're using " << dev << endl;
+
+	for(int i = 0; i < EMCUDA_FFTW_CACHE_SIZE; ++i)
+	{
+		rank[i] = 0;
+		plan_dims[i][0] = 0; plan_dims[i][1] = 0; plan_dims[i][2] = 0;
+		r2c[i] = -1;
+		ip[i] = -1;
+		cuda_fft_plans[i] = 0;
+	}
+}
+
+void EMfft::EMcuda_fftw_cache::debug_plans()
+{
+	for(int i = 0; i < EMCUDA_FFTW_CACHE_SIZE; ++i)
+	{
+		cout << "Plan " << i << " has dims " << plan_dims[i][0] << " " 
+				<< plan_dims[i][1] << " " << 
+				plan_dims[i][2] << ", rank " <<
+				rank[i] << ", rc flag " 
+				<< r2c[i] << ", ip flag " << ip[i] << endl;
+	}
+}
+
+EMfft::EMcuda_fftw_cache::~EMcuda_fftw_cache()
+{
+	for(int i = 0; i < EMCUDA_FFTW_CACHE_SIZE; ++i)
+	{
+		if (cuda_fft_plans[i] != 0)
+		{
+			cufftDestroy(cuda_fft_plans[i]);
+			cuda_fft_plans[i] = 0;
+		}
+	}
+}
+
+cufftHandle EMfft::EMcuda_fftw_cache::get_plan(const int rank_in, const int x, const int y, const int z, const int r2c_flag, const int ip_flag, cufftComplex* complex_data, cufftReal* real_data )
+{
+
+	if ( rank_in > 3 || rank_in < 1 ) throw InvalidValueException(rank_in, "Error, can not get an FFTW plan using rank out of the range [1,3]");
+	if ( r2c_flag != EMAN2_REAL_2_COMPLEX && r2c_flag != EMAN2_COMPLEX_2_REAL ) throw InvalidValueException(r2c_flag, "The real two complex flag is not supported");
+	
+// 	static int num_added = 0;
+// 	cout << "Was asked for " << rank_in << " " << x << " " << y << " " << z << " " << r2c_flag << endl;
+	
+	int dims[3];
+	dims[0] = z;
+	dims[1] = y;
+	dims[2] = x;
+	
+	// First check to see if we already have the plan
+	int i;
+	for (i=0; i<num_plans; i++) {
+		if (plan_dims[i][0]==x && plan_dims[i][1]==y && plan_dims[i][2]==z 
+				  && rank[i]==rank_in && r2c[i]==r2c_flag && ip[i]==ip_flag) return cuda_fft_plans[i];
+	}
+	
+	cufftHandle plan;
+	// Create the plan
+	if ( y == 1 && z == 1 )
+	{
+		if ( r2c_flag == EMAN2_REAL_2_COMPLEX )
+			plan = cufftPlan1d(&plan,x,CUFFT_R2C,1);
+		else // r2c_flag == EMAN2_COMPLEX_2_REAL, this is guaranteed by the error checking at the beginning of the function
+			plan = cufftPlan1d(&plan, x, CUFFT_C2R,1);
+	}
+	else if ( z == 1 )
+	{
+		if ( r2c_flag == EMAN2_REAL_2_COMPLEX ) {
+			cout << "Trying to create plan" << endl;
+			plan = CUFFT_SAFE_CALL(cufftPlan2d(&plan,x,y,CUFFT_R2C));
+			cout << "Created plan " << plan  << endl;
+		}
+		else // r2c_flag == EMAN2_COMPLEX_2_REAL, this is guaranteed by the error checking at the beginning of the function
+			plan = cufftPlan2d(&plan,x,y,CUFFT_C2R);
+	}
+	else /* 3D */ {
+		if ( r2c_flag == EMAN2_REAL_2_COMPLEX )
+			plan = cufftPlan3d(&plan,x,y,z,CUFFT_R2C);
+		else // r2c_flag == EMAN2_COMPLEX_2_REAL, this is guaranteed by the error checking at the beginning of the function
+			plan = cufftPlan3d(&plan,x,y,z,CUFFT_C2R);
+	}
+
+	if (cuda_fft_plans[EMCUDA_FFTW_CACHE_SIZE-1] != 0 )
+	{
+		cufftDestroy(cuda_fft_plans[EMCUDA_FFTW_CACHE_SIZE-1]);
+		cuda_fft_plans[EMCUDA_FFTW_CACHE_SIZE-1] = 0;
+	}
+				
+	int upper_limit = num_plans;
+	if ( upper_limit == EMCUDA_FFTW_CACHE_SIZE ) upper_limit -= 1;
+	for (int i=upper_limit-1; i>0; i--)
+	{
+		cuda_fft_plans[i]=cuda_fft_plans[i-1];
+		rank[i]=rank[i-1];
+		r2c[i]=r2c[i-1];
+		ip[i]=ip[i-1];
+		plan_dims[i][0]=plan_dims[i-1][0];
+		plan_dims[i][1]=plan_dims[i-1][1];
+		plan_dims[i][2]=plan_dims[i-1][2];
+	}
+		//dimplan[0]=-1;
+
+	plan_dims[0][0]=x;
+	plan_dims[0][1]=y;
+	plan_dims[0][2]=z;
+	r2c[0]=r2c_flag;
+	ip[0]=ip_flag;
+	cuda_fft_plans[0] = plan;
+	rank[0]=rank_in;
+	if (num_plans<EMCUDA_FFTW_CACHE_SIZE) num_plans++;
+	debug_plans();
+// 			cout << "Created plan 0" << endl;
+// 	++num_added;
+// 	cout << "I have created " << num_added << " plans" << endl;
+	cout << "Returning plan " << plan << endl;
+	return cuda_fft_plans[0];
+
+}
+
+// Static init
+EMfft::EMcuda_fftw_cache EMfft::plan_cache;
+
+#endif // CUDA_FFT
+
 #ifdef FFTW3
 EMfft::EMfftw3_cache::EMfftw3_cache() :
 		num_plans(0)
@@ -709,6 +866,134 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 	return 0;
 }
 #endif	//FFTW2
+
+#ifdef CUDA_FFT
+// This is experimental code by d.woolford
+// it does not work. If it ends up that we do not incorporate CUDA based stuff I will remove this code.
+// That decision has not yet been made, so this code currently serves as a starting reference.
+// May 2008
+
+int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
+{//cout<<"doing fftw3"<<endl;
+#ifdef FFTW_PLAN_CACHING
+	bool ip = ( complex_data == real_data );
+	cufftHandle plan = plan_cache.get_plan(1,n,1,1,EMAN2_REAL_2_COMPLEX,ip,(cufftComplex *) complex_data, (cufftReal*) real_data);
+	cufftExecR2C(plan, (cufftReal*)real_data,(cufftComplex *) complex_data);
+#else
+	cufftHandle plan;
+	cufftPlan1d(&plan,n,CUFFT_R2C,1);
+	cufftExecR2C(plan,(cufftReal*)real_data,(cufftComplex *) complex_data);
+	cufftDestroy(plan);
+#endif // FFTW_PLAN_CACHING
+	return 0;
+};
+
+int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
+{
+#ifdef FFTW_PLAN_CACHING
+	bool ip = ( complex_data == real_data );
+	cufftHandle plan = plan_cache.get_plan(1,n,1,1,EMAN2_COMPLEX_2_REAL,ip,(cufftComplex *) complex_data, (cufftReal*) real_data);
+	cufftExecC2R(plan, (cufftComplex *) complex_data, (cufftReal*) real_data);
+#else
+	cufftHandle plan;
+	cufftPlan1d(&plan,n,CUFFT_C2C,1);
+	cufftExecC2R(plan,(cufftComplex*)complex_data,(cufftReal *) real_data);
+	cufftDestroy(plan);
+#endif // FFTW_PLAN_CACHING
+	
+	return 0;
+}
+
+int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
+{
+	const int rank = get_rank(ny, nz);
+	int dims[3];
+	dims[0] = nz;
+	dims[1] = ny;
+	dims[2] = nx;
+	bool ip;
+	cufftHandle plan;
+	
+	switch(rank) {
+		case 1:
+			real_to_complex_1d(real_data, complex_data, nx);
+			break;
+		
+		
+#ifdef FFTW_PLAN_CACHING
+		case 2:
+		case 3:
+			ip = ( complex_data == real_data );
+			plan = plan_cache.get_plan(rank,nx,ny,nz,EMAN2_REAL_2_COMPLEX,ip,(cufftComplex *) complex_data, real_data);
+			cout << "Got plan " << plan << endl;
+			// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be re-used
+			cufftExecR2C(plan, (cufftReal*) real_data,(cufftComplex *) complex_data );
+		break;
+#else
+		case 2:
+			cufftPlan2d(&plan,nx,ny,CUFFT_R2C);
+			cufftExecR2C(plan, (cufftReal*)real_data,(cufftComplex *) complex_data);
+			cufftDestroy(plan);
+		break;
+		case 3:
+			cufftPlan3d(&plan,nx,ny,nz,CUFFT_R2C);
+			cufftExecR2C(plan, (cufftReal*)real_data,(cufftComplex *) complex_data);
+			cufftDestroy(plan);
+		break;
+#endif // FFTW_PLAN_CACHING
+		
+		default:
+			LOGERR("Should NEVER be here!!!");
+		break;
+	}
+	
+	return 0;
+}
+
+int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz)
+{
+	const int rank = get_rank(ny, nz);
+	int dims[3];
+	dims[0] = nz;
+	dims[1] = ny;
+	dims[2] = nx;
+	bool ip;
+	cufftHandle plan;
+	switch(rank) {
+		case 1:
+			complex_to_real_1d(complex_data, real_data, nx);
+			break;
+		
+#ifdef FFTW_PLAN_CACHING
+		case 2:
+		case 3:
+			ip = ( complex_data == real_data );
+			plan = plan_cache.get_plan(rank,nx,ny,nz,EMAN2_COMPLEX_2_REAL,ip,(cufftComplex *) complex_data, real_data);
+			// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be re-used
+			cufftExecC2R(plan, (cufftComplex*)complex_data,(cufftReal *) real_data);
+			break;
+#else
+		case 2:
+			cufftPlan2d(&plan,nx,ny,CUFFT_C2C);
+			cufftExecC2R(plan, (cufftComplex*)complex_data,(cufftReal *) real_data);
+			cufftDestroy(plan);
+			break;
+		case 3:
+			cufftPlan3d(&plan,nx,ny,nz,CUFFT_C2C);
+			cufftExecC2R(plan, (cufftComplex*)complex_data, (cufftReal *) real_data);
+			cufftDestroy(plan);
+			break;
+#endif // FFTW_PLAN_CACHING
+			
+		default:
+			LOGERR("Should NEVER be here!!!");
+			break;
+	}
+	
+	return 0;
+}
+
+#endif	//CUDA_FFT
 
 #ifdef FFTW3
 

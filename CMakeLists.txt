@@ -19,6 +19,7 @@ MARK_AS_ADVANCED(ENABLE_AUTODOC)
 
 OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF)
 OPTION(ENABLE_FFTW3 "enable fftw 3 support" ON)
+# OPTION(ENABLE_CUDA_FFT "enable cuda fftw support" OFF) Experimental
 OPTION(ENABLE_FFTW_PLAN_CACHING "enable fftw caching" ON)
 OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
 OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
@@ -164,6 +165,7 @@ SET(INCLUDE_DIRS
 	$ENV{FFTWDIR}/include 
 	$ENV{GSLDIR}/include 
 	/usr/local/include 
+	/usr/local/cuda/include
 	/usr/local/include/boost-1_31 
 	/usr/local/include/boost-1_32 
 	/usr/local/include/boost-1_33
@@ -180,6 +182,7 @@ SET(LIB_DIRS
 	$ENV{FFTWDIR}/lib 
 	$ENV{GSLDIR}/lib 
 	/usr/local/lib
+	/usr/local/cuda/lib
 	/usr/lib64 
 	/usr/lib 
 	/sw/lib
@@ -272,6 +275,7 @@ ENDMACRO(CHECK_PYTHON)
 IF(ENABLE_FFTW2)
     OPTION(ENABLE_NFFT "enable nfft support" OFF)
     OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF) 
+#     OPTION(ENABLE_CUDA_FFT "enable cuda fftw support" OFF)
     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 
@@ -298,6 +302,7 @@ ENDIF(ENABLE_FFTW2)
 IF(ENABLE_FFTW3)
     OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
     OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF) 
+#     OPTION(ENABLE_CUDA_FFT "enable cuda fftw support" OFF)
     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
     
@@ -313,6 +318,23 @@ IF(ENABLE_FFTW3)
 		INCLUDE_DIRECTORIES(${NFFT2_INCLUDE_PATH}) 
     ENDIF(ENABLE_NFFT2)
 ENDIF(ENABLE_FFTW3)
+
+# IF(ENABLE_CUDA_FFT)
+#     OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
+#     OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF) 
+#     OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF) 
+#     OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
+#     OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
+#    
+#     
+#     CHECK_REQUIRED_LIB(CUDA_FFT cufft cufft.h)
+#     CHECK_LIB_ONLY(CUDA_FFT_EMU cufftemu)
+# #     CHECK_LIB_ONLY(CUDA cuda)
+#     ADD_DEFINITIONS(-DCUDA_FFT)
+#    
+#     SET(FFTW_LIBRARIES ${CUDA_FFT_LIBRARY} ${CUDA_FFT_EMU_LIBRARY})
+#     SET(FFTW_INCLUDE_PATH ${CUDA_FFT_INCLUDE_PATH})
+# ENDIF(ENABLE_CUDA_FFT)
 
 IF(ENABLE_FFTW_PLAN_CACHING)
 	ADD_DEFINITIONS(-DFFTW_PLAN_CACHING)
@@ -381,7 +403,7 @@ INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR}
 					${GL_INCLUDE_PATH}
 					${GSL_INCLUDE_PATH} 
 					${GSL_INCLUDE_PATH}/gsl 
-					${FFTW_INCLUDE_PATH} 
+					${FFTW_INCLUDE_PATH}
 					${DJBFFT_INCLUDE_PATH} 
 					${ACML_INCLUDE_PATH}
 				   ) 
