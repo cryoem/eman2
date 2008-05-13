@@ -1917,13 +1917,25 @@ EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float sc
 	float ang=angDeg*M_PI/180.0f;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
-	if (nz==1) { 
+	if (nz<2) { 
 		vector<int> saved_offsets = get_array_offsets();
 		set_array_offsets(0,0,0);
 		if (0.f == scale) scale = 1.f; // silently fix common user error
 		EMData* ret = copy_head();
-		if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
-		if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+		if(delx >= 0.0f) {
+			while ( delx >= (float)(nx) )  delx -= nx;
+		} else {
+			delx = -delx;
+			while ( delx >= (float)(nx) )  delx -= nx;
+			delx = -delx;
+		}
+		if(dely >= 0.0f) {
+			while ( dely >= (float)(ny) )  dely -= ny;
+		} else {
+			dely = -dely;
+			while ( dely >= (float)(ny) )  dely -= ny;
+			dely = -dely;
+		}
 		// center of image
 		int xc = nx/2;
 		int yc = ny/2;
@@ -1976,8 +1988,20 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	float  p1, p2, p3, p4;
 	float delx = translations.at(0);
 	float dely = translations.at(1);
-	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
-	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+	if(delx >= 0.0f) {
+		while ( delx >= (float)(nx) )  delx -= nx;
+	} else {
+		delx = -delx;
+		while ( delx >= (float)(nx) )  delx -= nx;
+		delx = -delx;
+	}
+	if(dely >= 0.0f) {
+		while ( dely >= (float)(ny) )  dely -= ny;
+	} else {
+		dely = -dely;
+		while ( dely >= (float)(ny) )  dely -= ny;
+		dely = -dely;
+	}
 	int xc = nx/2;
 	int yc = ny/2;
 //         shifted center for rotation
@@ -2046,9 +2070,27 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	float delx = translations.at(0);
 	float dely = translations.at(1);
 	float delz = translations.at(2);
-	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
-	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
-	if(dely >= 0.0f) { delz = fmod(delz, float(nz));} else {delz = -fmod(-delz, float(nz));}
+	if(delx >= 0.0f) {
+		while ( delx >= (float)(nx) )  delx -= nx;
+	} else {
+		delx = -delx;
+		while ( delx >= (float)(nx) )  delx -= nx;
+		delx = -delx;
+	}
+	if(dely >= 0.0f) {
+		while ( dely >= (float)(ny) )  dely -= ny;
+	} else {
+		dely = -dely;
+		while ( dely >= (float)(ny) )  dely -= ny;
+		dely = -dely;
+	}
+	if(delz >= 0.0f) {
+		while ( delz >= (float)(nz) )  delz -= nz;
+	} else {
+		delz = -delz;
+		while ( delz >= (float)(nz) )  delz -= nz;
+		delz = -delz;
+	}
 	int xc = nx/2;
 	int yc = ny/2;
 	int zc = nz/2;
@@ -2341,8 +2383,20 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32 
 	//ret->to_zero();  //we will leave margins zeroed.
-	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
-	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+	if(delx >= 0.0f) {
+		while ( delx >= (float)(nx) )  delx -= nx;
+	} else {
+		delx = -delx;
+		while ( delx >= (float)(nx) )  delx -= nx;
+		delx = -delx;
+	}
+	if(dely >= 0.0f) {
+		while ( dely >= (float)(ny) )  dely -= ny;
+	} else {
+		dely = -dely;
+		while ( dely >= (float)(ny) )  dely -= ny;
+		dely = -dely;
+	}
 	// center of big image,
 	int xc = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images
@@ -2376,10 +2430,22 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
 			float yold = x*sang/scale + ycang-iys;
 
-			if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
-			else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-			if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
-			else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
+			//if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
+			//else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
+			//if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
+			//else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
+			if (xold < 0.0f) {
+				xold = -xold;
+				while ( xold >= (float)(nx) )  xold -= nx;
+				xold  = nx - xold;
+			}
+			while ( xold >= (float)(nx) )  xold -= nx;
+			if (yold < 0.0f) {
+				yold = -yold;
+				while ( yold >= (float)(ny) )  yold -= ny;
+				yold  = ny - yold;
+			}
+			while ( yold >= (float)(ny) )  yold -= ny;
 
 			int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 			sum=0.0f;    w=0.0f;
@@ -2433,8 +2499,22 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32 
 	//ret->to_zero();  //we will leave margins zeroed.
-	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
-	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+	//if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
+	//if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+	if(delx >= 0.0f) {
+		while ( delx >= (float)(nx) )  delx -= nx;
+	} else {
+		delx = -delx;
+		while ( delx >= (float)(nx) )  delx -= nx;
+		delx = -delx;
+	}
+	if(dely >= 0.0f) {
+		while ( dely >= (float)(ny) )  dely -= ny;
+	} else {
+		dely = -dely;
+		while ( dely >= (float)(ny) )  dely -= ny;
+		dely = -dely;
+	}
 	// center of big image,
 	int xc = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images
@@ -2468,16 +2548,18 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
 			float yold = x*sang/scale + ycang-iys;
 
-			if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
-			else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-			if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
-			else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
-			/*  should have the following instead
+			if (xold < 0.0f) {
+				xold = -xold;
 				while ( xold >= (float)(nx) )  xold -= nx;
-				while ( xold < 0.0f )         xold += nx;
+				xold  = nx - xold;
+			}
+			while ( xold >= (float)(nx) )  xold -= nx;
+			if (yold < 0.0f) {
+				yold = -yold;
 				while ( yold >= (float)(ny) )  yold -= ny;
-				while ( yold < 0.0f )         yold += ny;
-				*/
+				yold  = ny - yold;
+			}
+			while ( yold >= (float)(ny) )  yold -= ny;
 
 			int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 			sum=0.0f;    w=0.0f;
@@ -2592,8 +2674,20 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32 
 	//ret->to_zero();  //we will leave margins zeroed.
-	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
-	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+	if(delx >= 0.0f) {
+		while ( delx >= (float)(nx) )  delx -= nx;
+	} else {
+		delx = -delx;
+		while ( delx >= (float)(nx) )  delx -= nx;
+		delx = -delx;
+	}
+	if(dely >= 0.0f) {
+		while ( dely >= (float)(ny) )  dely -= ny;
+	} else {
+		dely = -dely;
+		while ( dely >= (float)(ny) )  dely -= ny;
+		dely = -dely;
+	}
 	// center of big image,
 	int xc = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images
@@ -2629,10 +2723,7 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
 			float yold = x*sang/scale + ycang-iys;
 			
-			xold = xold/2.0f;
-			yold = yold/2.0f;
 			(*ret)(ix,iy) = Util::get_pixel_conv_new(nx, ny, 1, xold, yold, 1, data, kb);
-			
 		}
 	}
 	if (t) free(t);
@@ -2652,7 +2743,13 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	float pixel =0.0f;
 	float w=0.0f;
 	
-	delx = fmod(2*delx, float(nx));
+	if(delx >= 0.0f) {
+		while ( delx >= (float)(nx) )  delx -= nx;
+	} else {
+		delx = -delx;
+		while ( delx >= (float)(nx) )  delx -= nx;
+		delx = -delx;
+	}
 	int inxold = int(Util::round(delx));
 	if(ny<2) {  //1D
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 )  {
@@ -2669,8 +2766,14 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	 	}
 	
 	} else if(nz<2) {  // 2D
-	dely = fmod(2*dely, float(ny));
-	int inyold = int(Util::round(dely));
+		if(dely >= 0.0f) {
+			while ( dely >= (float)(ny) )  dely -= ny;
+		} else {
+			dely = -dely;
+			while ( dely >= (float)(ny) )  dely -= ny;
+			dely = -dely;
+		}
+		int inyold = int(Util::round(dely));
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
 	 		//  loop for strips
          		for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
@@ -2684,10 +2787,22 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 			}
 	 	}
 	} else {  //  3D
-	dely = fmod(2*dely, float(ny));
-	int inyold = int(Util::round(dely));
-	delz = fmod(2*delz, float(nz));
-	int inzold = int(Util::round(delz));
+		if(dely >= 0.0f) {
+			while ( dely >= (float)(ny) )  dely -= ny;
+		} else {
+			dely = -dely;
+			while ( dely >= (float)(ny) )  dely -= ny;
+			dely = -dely;
+		}
+		int inyold = int(Util::round(dely));
+		if(delz >= 0.0f) {
+			while ( delz >= (float)(nz) )  delz -= nz;
+		} else {
+			delz = -delz;
+			while ( delz >= (float)(nz) )  delz -= nz;
+			delz = -delz;
+		}
+		int inzold = int(Util::round(delz));
 		    //cout << inxold<<"  "<< kbc<<"  "<< nx-kbc-2<<"  "<< endl;
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2  || inzold <= kbc || inzold >=nz-kbc-2 )  {
 	 		//  loop for strips

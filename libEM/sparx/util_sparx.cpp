@@ -726,7 +726,12 @@ size, say N=5, you can easily modify it by referring my code.
 	float pixel =0.0f;
 	float w=0.0f;
 	
-	delx = fmod(2*delx, float(nx));
+	if(delx >= 0.0f) {
+		while ( delx >= (float)(nx) )  delx -= nx;
+	} else {
+		delx = -delx;
+		while ( delx >= (float)(nx) )  delx -= nx;
+	}
 	int inxold = int(round(delx));
 	if ( ny < 2 ) {  //1D
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
@@ -774,7 +779,12 @@ size, say N=5, you can easily modify it by referring my code.
 	     	      }*/   
 		       
 	} else if ( nz < 2 ) {  // 2D
-		dely = fmod(2*dely, float(ny));
+		if(dely >= 0.0f) {
+			while ( dely >= (float)(ny) )  dely -= ny;
+		} else {
+			dely = -dely;
+			while ( dely >= (float)(ny) )  dely -= ny;
+		}
 		int inyold = int(round(dely));
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
 		float tablex2 = kb.i0win_tab(delx-inxold+2);
@@ -879,10 +889,20 @@ size, say N=5, you can easily modify it by referring my code.
 			}
 			delete tablex; */
 	} else {  //  3D
-		dely = fmod(2*dely, float(ny));
-		int inyold = int(round(dely));
-		delz = fmod(2*delz, float(nz));
-		int inzold = int(round(delz));
+		if(dely >= 0.0f) {
+			while ( dely >= (float)(ny) )  dely -= ny;
+		} else {
+			dely = -dely;
+			while ( dely >= (float)(ny) )  dely -= ny;
+		}
+		int inyold = int(Util::round(dely));
+		if(delz >= 0.0f) {
+			while ( delz >= (float)(nz) )  delz -= nz;
+		} else {
+			delz = -delz;
+			while ( delz >= (float)(nz) )  delz -= nz;
+		}
+		int inzold = int(Util::round(delz));
 		
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
 		float tablex2 = kb.i0win_tab(delx-inxold+2);
@@ -1787,23 +1807,23 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
       kcirc = numr(2,it);
       xold  = 0.0f;
       yold  = static_cast<float>(inr);
-      circ(kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+      circ(kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //      circ(kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
       
       xold  = static_cast<float>(inr);
       yold  = 0.0f;
-      circ(lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+      circ(lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //      circ(lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
       if ( mode == 'f' || mode == 'F' ) {
          xold = 0.0f;
          yold = static_cast<float>(-inr);
-         circ(lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+         circ(lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //         circ(lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
          xold = static_cast<float>(-inr);
          yold = 0.0f;
-         circ(lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+         circ(lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
       }
       
@@ -1814,24 +1834,24 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 
          xold = x;
          yold = y;
-         circ(jt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
-//         circ(jt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+         circ(jt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+//         circ(jt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
          xold = y;
          yold = -x;
-         circ(jt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
-//         circ(jt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+         circ(jt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+//         circ(jt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
          if ( mode == 'f' || mode == 'F' ) {
             xold = -x;
             yold = -y;
-            circ(jt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
-//            circ(jt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+            circ(jt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+//            circ(jt+lt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
             xold = -y;
             yold = x;
-            circ(jt+lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
-//            circ(jt+lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+            circ(jt+lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+//            circ(jt+lt+lt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
          }
       } // end for jt
    } //end for it
