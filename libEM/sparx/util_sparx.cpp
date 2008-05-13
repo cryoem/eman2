@@ -647,15 +647,10 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 	x = xx;
 	y = yy;
 	
-	// Commented by Zhengfan Yang on 12/18/07
-	// Do not change these two lines, please contact me if in doubt.
-	//if (x < 1.0) x += nxdata; if (x >= (float)(nxdata+1))  x -= nxdata;
-	//if (y < 1.0) y += nydata; if (y >= (float)(nydata+1))  y -= nydata;
-	//  Replaced by PAP on 12/29 in order to accelerate the code.  This way, the calling function can have
 	//                                                                        any xx and yy
-	while ( x < 1.0 ) x += nxdata; 
+	while ( x < 1.0 )                 x += nxdata; 
 	while ( x >= (float)(nxdata+1) )  x -= nxdata;
-	while ( y < 1.0 ) y += nydata;
+	while ( y < 1.0 )                 y += nydata;
 	while ( y >= (float)(nydata+1) )  y -= nydata;
 
 	i   = (int) x;
@@ -726,12 +721,8 @@ size, say N=5, you can easily modify it by referring my code.
 	float pixel =0.0f;
 	float w=0.0f;
 	
-	if(delx >= 0.0f) {
-		while ( delx >= (float)(nx) )  delx -= nx;
-	} else {
-		delx = -delx;
-		while ( delx >= (float)(nx) )  delx -= nx;
-	}
+	while ( delx >= (float)(nx) )  delx -= nx;
+	while ( delx < 0.0f )          delx += nx;
 	int inxold = int(round(delx));
 	if ( ny < 2 ) {  //1D
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
@@ -779,12 +770,8 @@ size, say N=5, you can easily modify it by referring my code.
 	     	      }*/   
 		       
 	} else if ( nz < 2 ) {  // 2D
-		if(dely >= 0.0f) {
-			while ( dely >= (float)(ny) )  dely -= ny;
-		} else {
-			dely = -dely;
-			while ( dely >= (float)(ny) )  dely -= ny;
-		}
+		while ( dely >= (float)(ny) )  dely -= ny;
+		while ( dely < 0.0f )          dely += ny;
 		int inyold = int(round(dely));
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
 		float tablex2 = kb.i0win_tab(delx-inxold+2);
@@ -889,19 +876,11 @@ size, say N=5, you can easily modify it by referring my code.
 			}
 			delete tablex; */
 	} else {  //  3D
-		if(dely >= 0.0f) {
-			while ( dely >= (float)(ny) )  dely -= ny;
-		} else {
-			dely = -dely;
-			while ( dely >= (float)(ny) )  dely -= ny;
-		}
+		while ( dely >= (float)(ny) )  dely -= ny;
+		while ( dely < 0.0f )          dely += ny;
 		int inyold = int(Util::round(dely));
-		if(delz >= 0.0f) {
-			while ( delz >= (float)(nz) )  delz -= nz;
-		} else {
-			delz = -delz;
-			while ( delz >= (float)(nz) )  delz -= nz;
-		}
+		while ( delz >= (float)(nz) )  delz -= nz;
+		while ( delz < 0.0f )          delz += nz;
 		int inzold = int(Util::round(delz));
 		
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
