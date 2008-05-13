@@ -1943,13 +1943,7 @@ EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float sc
 					float x = float(ix) - shiftxc;
 					float xold = x*cang/scale + ysang ;
 					float yold = x*sang/scale + ycang ;
-/*
-					if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
-					else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-					if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
-					else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
 					//  quadri is taking care of cyclic count
-*/
 					(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());
 					   //have to add one as quadri uses Fortran counting
 				}
@@ -2385,10 +2379,6 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
 			float yold = x*sang/scale + ycang-iys;
 
-			//if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
-			//else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-			//if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
-			//else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
 			while ( xold < 0.0f )  xold += nx;
 			while ( xold >= (float)(nx) )  xold -= nx;
 			while ( yold < 0.0f )  yold += ny;
@@ -2446,8 +2436,6 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32 
 	//ret->to_zero();  //we will leave margins zeroed.
-	//if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
-	//if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
 	while ( delx >= (float)(nx) )  delx -= nx;
 	while ( delx < 0.0f )  delx += nx;
 	while ( dely >= (float)(ny) )  dely -= ny;
