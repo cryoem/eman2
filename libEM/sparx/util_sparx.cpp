@@ -721,8 +721,7 @@ size, say N=5, you can easily modify it by referring my code.
 	float pixel =0.0f;
 	float w=0.0f;
 	
-	while ( delx >= (float)(nx) )  delx -= nx;
-	while ( delx < 0.0f )          delx += nx;
+	delx = restrict1(delx, nx);
 	int inxold = int(round(delx));
 	if ( ny < 2 ) {  //1D
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
@@ -758,20 +757,8 @@ size, say N=5, you can easily modify it by referring my code.
 			data[x7]*tablex7 ;
 			     
 		w = tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7;
-			
-	     	/*if ( inxold <= kbc || inxold >=nx-kbc-2 )  {
-			for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	     		  float q = kb.i0win_tab(delx - inxold-m1);
-	     		  pixel += data[(inxold+m1+nx)%nx]*q;w+=q;}
-	     	      }else{
-	     		for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	     		  float q = kb.i0win_tab(delx - inxold-m1);
-	     		  pixel += data[inxold+m1]*q;w+=q;}
-	     	      }*/   
-		       
 	} else if ( nz < 2 ) {  // 2D
-		while ( dely >= (float)(ny) )  dely -= ny;
-		while ( dely < 0.0f )          dely += ny;
+		dely = restrict1(dely, ny);
 		int inyold = int(round(dely));
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
 		float tablex2 = kb.i0win_tab(delx-inxold+2);
@@ -849,38 +836,10 @@ size, say N=5, you can easily modify it by referring my code.
 			     
 		w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
 		    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7);	
-		    
-/*			tablex = new float[K+1];
-			for (int i=kbmin; i<=kbmax; i++) {
-				tablex[i-kbmin] = kb.i0win_tab(delx-inxold-i);
-			}
-	 		if ( inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
-				for (int m2 =kbmin; m2 <=kbmax; m2++) {
-					float qy = kb.i0win_tab(dely-inyold-m2);
-					for (int m1 =kbmin; m1 <=kbmax; m1++) {
-			 			float q = tablex[m1-kbmin]*qy;
-	 		     			pixel += data[(inxold+m1+nx)%nx+((inyold+m2+ny)%ny)*nx]*q;
-						w += q;
-					}
-				}
-	 		} else {
-				for (int m2 =kbmin; m2 <=kbmax; m2++) { 
-					float qy = kb.i0win_tab(dely-inyold-m2);
-					for (int m1 =kbmin; m1 <=kbmax; m1++) {
-						//float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
-			 			float q = tablex[m1-kbmin]*qy;
-						pixel += data[inxold+m1+(inyold+m2)*nx]*q;
-						w += q;
-					}
-				}
-			}
-			delete tablex; */
 	} else {  //  3D
-		while ( dely >= (float)(ny) )  dely -= ny;
-		while ( dely < 0.0f )          dely += ny;
+		dely = restrict1(dely, ny);
 		int inyold = int(Util::round(dely));
-		while ( delz >= (float)(nz) )  delz -= nz;
-		while ( delz < 0.0f )          delz += nz;
+		delz = restrict1(delz, nz);
 		int inzold = int(Util::round(delz));
 		
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
@@ -1110,18 +1069,6 @@ size, say N=5, you can easily modify it by referring my code.
 		w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
 		    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7) *
 		    (tablez1+tablez2+tablez3+tablez4+tablez5+tablez6+tablez7);	
-		    
-	/* if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2  || inzold <= kbc || inzold >=nz-kbc-2 )  {
-         		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
-			     //cout << "BB  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)<< endl;
-	 		     pixel += data[(inxold+m1+nx)%nx+((inyold+m2+ny)%ny)*nx+((inzold+m3+nz)%nz)*nx*ny]*q;w+=q;}}}
-	 		 } else {
-         		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
-			     //cout << "OO  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)(inxold+m1,inyold+m2,inzold+m3)<< endl;
-	 		     pixel += data[inxold+m1+(inyold+m2)*nx+(inzold+m3)*nx*ny]*q;w+=q;}}}
-	 		 }*/
 	}
         return pixel/w;
 }
@@ -1754,20 +1701,6 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    //     no need to set to zero, all elements are defined
 
    dpi = 2*atan(1.0);
-   /*std::cout << lcirc << std::endl;
-   clock_t start_time, end_time;
-   xold = 0.0f+cns2-1.0f; yold = numr(1,1)+cnr2-1.0f;
-   float b = 0.0;
-   start_time = clock();
-   for (int iii=1; iii<=10000; iii++) {
-   	for (int jjj=1; jjj<=10000; jjj++) {
-		float a=get_pixel_conv_new(nx,ny,nz,xold,yold,0.0f,fimage,kb);
-		b = b + a + iii - jjj; 
-	}
-   }
-   end_time = clock();
-   std::cout << "Elapsed time for 10^8 get_pixel_conv_new is " << (double(end_time)-double(start_time))/CLOCKS_PER_SEC << " seconds. Result is " << b << std::endl;
-   exit(0);*/
    for (it=1;it<=nring;it++) {
       // radius of the ring
       inr = numr(1,it);
@@ -1787,23 +1720,23 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
       xold  = 0.0f;
       yold  = static_cast<float>(inr);
       circ(kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
-//      circ(kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+//      circ(kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
       
       xold  = static_cast<float>(inr);
       yold  = 0.0f;
       circ(lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
-//      circ(lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+//      circ(lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
       if ( mode == 'f' || mode == 'F' ) {
          xold = 0.0f;
          yold = static_cast<float>(-inr);
          circ(lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
-//         circ(lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+//         circ(lt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
          xold = static_cast<float>(-inr);
          yold = 0.0f;
          circ(lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
-//         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+//         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
       }
       
       for (jt=1;jt<=nsim;jt++) {

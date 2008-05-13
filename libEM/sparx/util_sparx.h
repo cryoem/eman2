@@ -531,5 +531,16 @@ public:
 
 	//static EMData* ctf_img(int nx, int ny, int nz, float dz, float ps, float voltage=300.0f,float cs=2.0f,float wgh=0.1f,float b_factor=0.0f,float dza=0.0f,float azz=0.0f,float sign=-1.0f);
 	static EMData* ctf_img(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
+	
+			
+		/*
+				To restrict the value to [0, nx)
+			*/
+		static inline float restrict1(float x, int nx) {
+			while ( x < 0.0f )        x += nx;
+			while ( x >= (float)(nx) )  x -= nx;
+			return x;
+		}
+
 
 #endif	//util__sparx_h__
