@@ -48,5 +48,6 @@ unsigned int gen_glu_mipmaps() const;
  * @return the texture id used in the call to glBindTextures
  */
 unsigned int gen_gl_texture() const;
-		
+
+Dict get_data_void_pointer() const;
 #endif	//emdata__gl_h__

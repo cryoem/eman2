@@ -516,8 +516,8 @@ class Box:
 		
 		# Experimental things that will probably be needed
 		
-		self.otheridx1 = -1		# stores a unique idx, for BoxSet convenience and efficiency
-		self.otheridx2 = -1		# stores a unique idx, for BoxSet convenience and efficiency
+		self.otheridx1 = -1		# stores a unique idx, for BoxSet convenience and exclusion
+		self.otheridx2 = -1		# stores a unique idx, for BoxSet convenience and exclusion
 		
 	
 	def updateBoxImage(self,image,norm=True):
@@ -576,8 +576,8 @@ class BoxSet2:
 			return;
 		
 		box.isref = True # make sure it knows that it's a reference box
-		box.otheridx1 = len(self.boxes) # store this, it's used when the user deletes the box, for efficiency
-		box.otheridx2 = len(self.refboxes) # store this, it's used when the user deletes the box, for efficiency
+		box.otheridx1 = len(self.boxes) # store this, it's used when the user deletes the box, for exclusion
+		box.otheridx2 = len(self.refboxes) # store this, it's used when the user deletes the box, for exclusion
 		
 		box.rorig = 0			# RGB red
 		box.gorig = 0			# RGB green
@@ -620,6 +620,9 @@ class BoxSet2:
 		Switches the changed flag to True to trigger redisplay (but the calling function
 		is responsible for knowing and testing for this)
 		'''
+		# do nothing if it's the same size as what we already have
+		if  boxsize == self.boxsize: return
+		
 		for box in self.boxes:
 			if box.xsize != boxsize:
 				box.xcorner -= (boxsize-box.xsize)/2
@@ -629,8 +632,16 @@ class BoxSet2:
 				box.ycorner -= (boxsize-box.ysize)/2
 				box.ysize = boxsize
 				box.changed = True
+			
+			box.image = None
+			box.footprint = None
 
+		self.fprink = -1
+		self.shrink = -1
+		self.searchradius = -1
+		self.flattenimager = -1
 		self.boxsize = boxsize
+		self.smallimage = None
 		
 	def getfootprintshrink(self):
 		if self.fpshrink == -1:
@@ -756,6 +767,22 @@ class BoxSet2:
 		
 		self.template = ave
 		self.template.write_image("template.hdf")
+		
+	def updateExcludedBoxes(self):
+		lostboxes = []
+		
+		invshrink = 1.0/self.getbestshrink()
+		exc = self.getExclusionImage()
+		n = len(self.boxes)
+		for i in range(n-1,-1,-1):
+			box = self.boxes[i]
+			x = int((box.xcorner+box.xsize/2.0)*invshrink)
+			y = int((box.ycorner+box.ysize/2.0)*invshrink)
+			
+			if ( exc.get(x,y) != 0):
+				lostboxes.append(i)
+	
+		return lostboxes
 	
 	def addExclusionArea(self, type,x,y,radius):
 		
@@ -779,20 +806,17 @@ class BoxSet2:
 				if jj >= ny or jj < 0:continue
 				if ii >= nx or ii < 0:continue
 				
-				self.exclusionimage.set(ii,jj,0)
-				self.excl2.set(ii,jj,0.1)
+				self.exclusionimage.set(ii,jj,0.1)
 	
 	def getExclusionImage(self):
 		if self.exclusionimage == None:
 			self.exclusionimage = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
-			self.exclusionimage.to_one()
-			self.excl2 = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
-			self.excl2.to_zero()
+			self.exclusionimage.to_zero()
 		return self.exclusionimage
 	
-	def updateefficiency(self,efficiency):
+	def updateexclusion(self,exclusion):
 		'''
-		paints black circles in the efficiency - which is a binary EMData object
+		paints black circles in the exclusion - which is a binary EMData object
 		useful for making things efficient, should probably be called updateexclusions
 		'''
 		
@@ -808,7 +832,7 @@ class BoxSet2:
 			xx /= self.getbestshrink()
 			yy /= self.getbestshrink()
 			
-			BoxingTools.set_radial_zero(efficiency,int(xx),int(yy),self.searchradius)
+			BoxingTools.set_radial_non_zero(exclusion,int(xx),int(yy),self.searchradius)
 			
 	def accrueparams(self,boxes,center=True):
 		if (self.correlation == None):
@@ -866,10 +890,9 @@ class BoxSet2:
 			print "Error, can't autobox if there are no selected reference boxes"
 			exit(1)
 			
-		efficiency = self.getExclusionImage().copy()
-		self.updateefficiency(efficiency)
-		efficiency.write_image("efficiency.mrc")
-		self.parent.guiim.setOtherData(self.excl2,self.getbestshrink(),True)
+		exclusion = self.getExclusionImage().copy()
+		self.updateexclusion(exclusion)
+		self.parent.guiim.setOtherData(self.getExclusionImage(),self.getbestshrink(),True)
 		
 		# we must accrue the the parameters of the reference images if the optprofile
 		# or thr value has not been set in the function arguments
@@ -894,6 +917,7 @@ class BoxSet2:
 				else:	
 					if box.correlationscore < self.optthreshold: self.optthreshold = box.correlationscore
 		else:
+			print "using manual threshold", thr
 			self.optthreshold = thr
 				
 		# Determine what to use as the optimum profile
@@ -918,6 +942,7 @@ class BoxSet2:
 			# Tell the parent to update the data it is displaying to the user in a GUI somewhere
 			self.parent.updatedata(self.optprofile,self.optthreshold)
 		else:
+			print "using manual profile"
 			self.optprofile=optprofile
 	
 	
@@ -939,8 +964,10 @@ class BoxSet2:
 		elif self.autoboxmethod == MORESELECTIVE:
 			mode = 2
 		
-		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optthreshold,self.searchradius,self.optprofile,efficiency,self.optprofileradius,mode)
+		print "auto picking with",self.optthreshold
+		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optthreshold,self.searchradius,self.optprofile,exclusion,self.optprofileradius,mode)
 
+		#print "number of autoboxed",len(soln)
 		for b in soln:
 			x = b[0]
 			y = b[1]
@@ -1061,7 +1088,7 @@ class GUIbox:
 		elif boxsize==-1: self.boxsize=128
 		else: self.boxsize=boxsize
 		
-		self.eraseradius = 50
+		self.eraseradius = 2*boxsize
 		
 		self.app=get_app()
 		self.image=EMData()					# the image to be boxed
@@ -1072,6 +1099,7 @@ class GUIbox:
 			#self.image.add(10)
 		self.boxset2 = BoxSet2(self.image,self)
 		self.boxset2.addnonrefs(boxes)
+		self.boxset2.boxsize = boxsize
 		self.threshold=thr					# Threshold to decide which boxes to use
 		self.ptcl=[]						# list of actual boxed out EMImages
 		self.boxm = None
@@ -1086,6 +1114,8 @@ class GUIbox:
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mousedrag)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.mouseup  )
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("keypress"),self.keypress)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousewheel"),self.mousewheel)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousemove"),self.mousemove)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.boxsel)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedrag"),self.boxmove)
@@ -1096,6 +1126,7 @@ class GUIbox:
 		self.guimx.setmmode("app")
 		self.ppc = 1.0
 		self.mouseclicks = 0
+		self.movingeraser = False
 		self.guictl=GUIboxPanel(self)
 		
 		
@@ -1161,6 +1192,24 @@ class GUIbox:
 	def getboxes(self):
 		return self.boxset2.boxes
 	
+	def mousemove(self,event):
+		if self.mmode == 1 and event.modifiers()&Qt.ShiftModifier:
+			m=self.guiim.scr2img((event.x(),event.y()))
+			self.guiim.addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+			self.updateImageDisplay()
+			self.movingeraser = True
+		else:
+			if (self.movingeraser):
+				self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+				self.updateImageDisplay()
+				self.movingeraser = False
+	def mousewheel(self,event):
+		if self.mmode == 1 and event.modifiers()&Qt.ShiftModifier:
+			self.guictl.adjustEraseRad(event.delta())
+			m=self.guiim.scr2img((event.x(),event.y()))
+			self.guiim.addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+			self.updateImageDisplay()
+	
 	def mousedown(self,event) :
 		if self.mmode == 0:
 			m=self.guiim.scr2img((event.x(),event.y()))
@@ -1195,7 +1244,6 @@ class GUIbox:
 			# Deleting a box happens here
 			if event.modifiers()&Qt.ShiftModifier :
 				# with shift, we delete
-				self.mouseclicks += 1
 				self.delbox(boxnum)
 				self.updateAllImageDisplay()
 				self.updateppc()
@@ -1214,9 +1262,9 @@ class GUIbox:
 			self.updateAllImageDisplay()
 		elif self.mmode == 1:
 			m=self.guiim.scr2img((event.x(),event.y()))
-			s = EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,5])
-			self.boxset2.addExclusionArea("circle",m[0],m[1],self.eraseradius)
-			self.guiim.addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,5]))
+			#self.boxset2.addExclusionArea("circle",m[0],m[1],self.eraseradius)
+			self.guiim.addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
+			self.updateAllImageDisplay()
 			
 	def updateppc(self):
 		self.guictl.ppcChanged(len(self.getboxes())/float(self.mouseclicks))
@@ -1304,6 +1352,12 @@ class GUIbox:
 			self.moving=None
 		elif self.mmode == 1:
 			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+			
+			lostboxes = self.boxset2.updateExcludedBoxes()
+			for n in lostboxes:
+				self.delbox(n)
+			self.mouseclicks += 1
+			self.updateppc()
 			self.updateImageDisplay()
 	
 	def keypress(self,event):
@@ -1361,7 +1415,8 @@ class GUIbox:
 
 		self.ptcl.pop(boxnum)
 		
-		if self.boxset2.delbox(boxnum) and self.ap: self.autobox()
+		if self.boxset2.delbox(boxnum) and self.ap:
+			self.autobox(True)
 			
 		
 		#del(self.guimx.data[globalboxnum])
@@ -1370,10 +1425,9 @@ class GUIbox:
 	
 
 	def updateboxsize(self,boxsize):
-		for boxset in self.boxsets:
-			boxset.updateboxsize(boxsize)
-		self.boxsize=boxsize
+		self.boxset2.updateboxsize(boxsize)
 		self.boxupdate()
+		self.boxsize = boxsize
 	
 	def boxupdate(self,force=False):
 		
@@ -1450,8 +1504,8 @@ class GUIbox:
 	def autoboxbutton(self):
 		self.autobox()
 		
-	def autobox(self):
-		if self.boxset2.templateupdate:
+	def autobox(self,force=False):
+		if self.boxset2.templateupdate or force:
 			self.deletenonrefs()
 		self.updatetemplate()
 		self.boxset2.autobox()
@@ -1464,8 +1518,7 @@ class GUIbox:
 		
 	def trydata(self,data,thr):
 		self.deletenonrefs()
-		
-		self.boxset2.autobox()
+		self.boxset2.autobox(data,thr)
 		
 	def updatedata(self,data,thresh):
 		self.guictl.updatedata(data,thresh)
@@ -1570,7 +1623,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.hbl3=QtGui.QHBoxLayout()
 		self.dynapick = QtGui.QRadioButton("Dynapix")
 		self.hbl3.addWidget(self.dynapick)
-		self.nocpick = QtGui.QRadioButton("No correlation update")
+		self.nocpick = QtGui.QRadioButton("Anchor")
 		self.hbl3.addWidget(self.nocpick)
 		
 		self.vbl.addLayout(self.hbl3)
@@ -1584,8 +1637,6 @@ class GUIboxPanel(QtGui.QWidget):
 		self.hbl2.setSpacing(6)
 		#self.vbl.addLayout(self.hbl1)
 		
-		
-		#try:
 		self.erasepic = QtGui.QIcon("/home/d.woolford/erase.png");
 		self.erase=QtGui.QPushButton(self.erasepic,"Erase")
 		self.erase.setCheckable(1)
@@ -1606,7 +1657,6 @@ class GUIboxPanel(QtGui.QWidget):
 
 		self.classifybut=QtGui.QPushButton("Classify")
 		self.vbl.addWidget(self.classifybut)
-		#except: pass
 		
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
 		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.updateEraseRad)
@@ -1625,6 +1675,7 @@ class GUIboxPanel(QtGui.QWidget):
 	
 	def erasetoggled(self,bool):
 		self.eraserad.setEnabled(bool)
+		self.target.guiim.setMouseTracking(bool)
 		self.target.erasetoggled(bool)
 	
 	def dynapickd(self,bool):
@@ -1662,6 +1713,19 @@ class GUIboxPanel(QtGui.QWidget):
 	def ppcChanged(self,f):
 		self.ppc.setText("%f ppc"%f)
 	
+	def adjustEraseRad(self,delta):
+		v = float(self.eraserad.text())
+		if delta > 0:
+			v = 1.1*v
+		if delta < 0:
+			v = 0.9*v
+			
+		self.eraserad.setText(str(int(v)))
+		# this makes sure the target updates itself 
+		# there may be a better approach, seeing as
+		# the target called this function
+		self.updateEraseRad()
+		
 	def updateEraseRad(self):
 		v = int(self.eraserad.text())
 		if ( v < 1 ): raise Exception

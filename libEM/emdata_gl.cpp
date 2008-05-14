@@ -107,6 +107,12 @@ unsigned int EMData::gen_gl_texture() const
 	return tex_name;
 }
 
+Dict EMData::get_data_void_pointer() const
+{
+	Dict d("data",(float*)get_data());
+	return d;
+}
+
 // undef GL_GLEXT_PROTOTYPES
 #ifdef GL_GLEXT_PROTOTYPES
 #undef GL_GLEXT_PROTOTYPES

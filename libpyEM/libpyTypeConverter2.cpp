@@ -92,6 +92,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	implicitly_convertible<float, EMAN::EMObject>();
 	implicitly_convertible<double, EMAN::EMObject>();
 	implicitly_convertible<const char*, EMAN::EMObject>();
+	implicitly_convertible<void*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::Transform3D*, EMAN::EMObject>();

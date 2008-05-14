@@ -465,74 +465,17 @@ class EMImage2DCore:
 
 		width = self.parent.width()/2.0
 		height = self.parent.height()/2.0
-		if not self.glflags.npt_textures_unsupported():
-			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
-			self.tex_name = GL.glGenTextures(1)
-			if ( self.tex_name <= 0 ):
-				raise("failed to generate texture name")
-			glPushMatrix()
-			glTranslatef(width,height,0)
-			
-			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
-			
-			
-			glEnable(GL_TEXTURE_2D)
-			glBindTexture(GL_TEXTURE_2D, self.tex_name)
-			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-			# using GL_NEAREST ensures pixel granularity
-			# using GL_LINEAR blurs textures and makes them more difficult
-			# to interpret (in cryo-em)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-			# this makes it so that the texture is impervious to lighting
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			
-			# POSITIONING POLICY - the texture occupies the entire screen area
-			glBegin(GL_QUADS)
-			
-			glTexCoord2f(0,0)
-			glVertex2f(-width,height)
-			
-			glTexCoord2f(1,0)
-			glVertex2f(width,height)
-				
-			glTexCoord2f(1,1)
-			glVertex2f(width,-height)
-			
-			glTexCoord2f(0,1)
-			glVertex2f(-width,-height)
-				
-			glEnd()
-			
-			glDisable(GL_TEXTURE_2D)
-			
-			glPopMatrix()
-
-		else:
-			GL.glRasterPos(0,self.parent.height()-1)
-			GL.glPixelZoom(1.0,-1.0)
-			GL.glDrawPixels(self.parent.width(),self.parent.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
 		
 		#tmp work by d.woolford
-		if self.otherdata != None and isinstance(self.otherdata,EMData):
+		if self.otherdata != None and isinstance(self.otherdata,EMData) and not self.glflags.npt_textures_unsupported():
 			scale = self.scale*self.otherdatascale
 			#print "second origin",int(self.origin[0]/scale),int(self.origin[1]/scale)
-			b=self.otherdata.render_amp8(int(self.origin[0]/scale),int(self.origin[1]/scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,scale,pixden[0],pixden[1],self.otherdata.get_attr("minimum"),self.otherdata.get_attr("maximum"),1,2)
+			b=self.otherdata.render_amp8(int(self.origin[0]/scale),int(self.origin[1]/scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
 			gl_render_type = GL_LUMINANCE
 			if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
 			self.other_tex_name = GL.glGenTextures(1)
 			if ( self.other_tex_name <= 0 ):
 				raise("failed to generate texture name")
-			
-				
-			if self.otherdatablend:
-				GL.glEnable(GL.GL_BLEND);
-				depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
-				GL.glDisable(GL.GL_DEPTH_TEST);
-				GL.glBlendEquation(GL.GL_FUNC_ADD);
-				GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
 			
 			
 			glPushMatrix()
@@ -552,6 +495,7 @@ class EMImage2DCore:
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 			# this makes it so that the texture is impervious to lighting
+			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, [0.2,0.4,0.8,0.5])
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			
 			# POSITIONING POLICY - the texture occupies the entire screen area
@@ -575,10 +519,74 @@ class EMImage2DCore:
 			
 			glPopMatrix()
 			
-			if self.isanimated:
+			
+					
+		if not self.glflags.npt_textures_unsupported():
+			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
+			self.tex_name = GL.glGenTextures(1)
+			if ( self.tex_name <= 0 ):
+				raise("failed to generate texture name")
+			glPushMatrix()
+			glTranslatef(width,height,0)
+			
+				
+			if self.otherdatablend:
+				GL.glEnable(GL.GL_BLEND);
+				depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
+				GL.glDisable(GL.GL_DEPTH_TEST);
+				GL.glBlendEquation(GL.GL_FUNC_SUBTRACT);
+				#GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
+				GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
+			
+			
+			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
+			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+			
+			
+			
+			glEnable(GL_TEXTURE_2D)
+			glBindTexture(GL_TEXTURE_2D, self.tex_name)
+			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+			# using GL_NEAREST ensures pixel granularity
+			# using GL_LINEAR blurs textures and makes them more difficult
+			# to interpret (in cryo-em)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			# this makes it so that the texture is impervious to lighting
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+			
+			# POSITIONING POLICY - the texture occupies the entire screen area
+			glBegin(GL_QUADS)
+			
+			glTexCoord2f(0,0)
+			glVertex2f(-width,height)
+			
+			glTexCoord2f(1,0)
+			glVertex2f(width,height)
+				
+			glTexCoord2f(1,1)
+			glVertex2f(width,-height)
+			
+			glTexCoord2f(0,1)
+			glVertex2f(-width,-height)
+				
+			glEnd()
+			
+			glDisable(GL_TEXTURE_2D)
+			
+			glPopMatrix()
+			
+			if self.otherdatablend:
 				GL.glDisable( GL.GL_BLEND);
 				if (depth_testing_was_on):
 					GL.glEnable(GL.GL_DEPTH_TEST)
+
+		else:
+			GL.glRasterPos(0,self.parent.height()-1)
+			GL.glPixelZoom(1.0,-1.0)
+			GL.glDrawPixels(self.parent.width(),self.parent.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
+		
 			
 
 #		hist=numpy.fromstring(a[-1024:],'i')
@@ -767,6 +775,8 @@ class EMImage2DCore:
 			elif self.mmode==2 and self.inspector:
 				self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 				self.parent.update()
+		elif self.mmode == 0:
+			self.parent.emit(QtCore.SIGNAL("mousemove"), event)
 	
 	def keyPressEvent(self,event):
 		if self.mmode==0:
@@ -790,13 +800,17 @@ class EMImage2DCore:
 				self.setData(self.data)
 
 	def wheelEvent(self, event):
+		if self.mmode==0 and event.modifiers()&Qt.ShiftModifier:
+			self.parent.emit(QtCore.SIGNAL("mousewheel"), event)
+			return
 		if event.delta() > 0:
 			self.setScale( self.scale * self.mag )
 		elif event.delta() < 0:
 			self.setScale(self.scale * self.invmag )
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.setScale(self.scale)
-
+		
+		
 class EMImageInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)

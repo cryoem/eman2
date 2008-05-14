@@ -156,7 +156,7 @@ bool MarchingCubes::calculate_min_max_vals()
 	int ny = _emdata->get_ysize();
 	int nz = _emdata->get_zsize();
 
-	// Create the binary tree
+	// Create the binary min max tree
 	while ( nx > 1 || ny > 1 || nz > 1 )
 	{
 		int size = minvals.size();

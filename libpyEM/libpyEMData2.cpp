@@ -176,6 +176,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 #ifdef EMAN2_USING_OPENGL
         .def("gen_glu_mipmaps", (unsigned int (EMAN::EMData::*)() const)&EMAN::EMData::gen_glu_mipmaps)
         .def("gen_gl_texture", (unsigned int (EMAN::EMData::*)() const)&EMAN::EMData::gen_gl_texture)
+		.def("get_data_void_pointer", (EMAN::Dict (EMAN::EMData::*)() const)&EMAN::EMData::get_data_void_pointer)
 #endif //EMAN2_USING_OPENGL
         .def("get_2dview", (EMAN::MArray2D (EMAN::EMData::*)() const)&EMAN::EMData::get_2dview)
         .def("get_3dview", (EMAN::MArray3D (EMAN::EMData::*)() const)&EMAN::EMData::get_3dview)
