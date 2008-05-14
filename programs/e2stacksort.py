@@ -99,9 +99,12 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 				if cc<c : c,cj,ci=cc,j,ims
 #			print "\t%d. %1.3g (%d)"%(i,c,cj)
 			if c>best[0] or best[1]<0 : best=(c,i,ims)
-		if useali : ret.append(best[2])
-		else : ret.append(stack[best[1]])
-		rets.append(stackshrink[best[1]])
+		if useali : 
+			ret.append(best[2])
+			rets.append(best[2])
+		else : 
+			ret.append(stack[best[1]])
+			rets.append(stackshrink[best[1]])
 		del stack[best[1]]
 		del stackshrink[best[1]]
 		print "%d.\t%d  (%1.4f)"%(len(ret)-1,best[1],best[0])
@@ -126,9 +129,12 @@ def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 			if align : ims=ims.align(align,rets[-1],alignopts)
 			c=rets[-1].cmp(cmptype,ims,cmpopts)+ims.cmp(cmptype,rets[-1],cmpopts)	# symmetrize results
 			if c<best[0] or best[1]<0 : best=(c,i,ims)
-		if useali : ret.append(best[2])
-		else : ret.append(stack[best[1]])
-		rets.append(stackshrink[best[1]])
+		if useali : 
+			ret.append(best[2])
+			rets.append(best[2])
+		else : 
+			ret.append(stack[best[1]])
+			rets.append(stackshrink[best[1]])
 		del stack[best[1]]
 		del stackshrink[best[1]]
 		print "%d.\t%d  (%1.4f)"%(len(ret)-1,best[1],best[0])
