@@ -125,8 +125,8 @@ def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 		for i,ims in enumerate(stackshrink):
 			if align : ims=ims.align(align,rets[-1],alignopts)
 			c=rets[-1].cmp(cmptype,ims,cmpopts)+ims.cmp(cmptype,rets[-1],cmpopts)	# symmetrize results
-			if c<best[0] or best[1]<0 : best=(c,i)
-		if useali : ret.append(ims)
+			if c<best[0] or best[1]<0 : best=(c,i,ims)
+		if useali : ret.append(best[2])
 		else : ret.append(stack[best[1]])
 		rets.append(stackshrink[best[1]])
 		del stack[best[1]]
