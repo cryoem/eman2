@@ -295,16 +295,16 @@ EMData* mult_radial(EMData* radial);
 		
 		/*
 				To restrict the value to [0, nx)
-			*/
+		*/
 		static inline float restrict1(float x, int nx) {
-			while ( x < 0.0f )        x += nx;
+			while ( x < 0.0f )          x += nx;
 			while ( x >= (float)(nx) )  x -= nx;
 			return x;
 		}
 			
 		/*
 				To restrict the value to (-nx, nx)
-			*/			
+		*/			
 		static inline float restrict2(float x, int nx) {
 			while ( x >=  (float)(nx) )  x -= nx;
 			while ( x <= -(float)(nx) )  x += nx;

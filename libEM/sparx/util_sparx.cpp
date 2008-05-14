@@ -647,7 +647,7 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 	x = xx;
 	y = yy;
 	
-	//                                                                        any xx and yy
+	//     any xx and yy
 	while ( x < 1.0 )                 x += nxdata; 
 	while ( x >= (float)(nxdata+1) )  x -= nxdata;
 	while ( y < 1.0 )                 y += nydata;
