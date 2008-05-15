@@ -400,7 +400,7 @@ class EM3DSymViewer(EMImage3DObject):
 			#glRotate(-d["az"],0,0,1)
 			#glRotate(-d["alt"],1,0,0)
 			#glRotate(-d["phi"],0,0,1)
-			#print d["phi"],d["alt"],d["az"]
+			#print -d["phi"],-d["alt"],-d["az"]
 			glTranslate(0,0,self.radius)
 			glCallList(self.spheredl)
 			glPopMatrix()

@@ -331,7 +331,8 @@ int main(int argc, char *argv[])
 	
 		for (int i = 0; i < NTT * 100; i++) {
 			EMData *cp = data[i % NTT]->copy();
-			cp->mean_shrink(2);
+			Dict d("n",2);
+			cp->process_inplace("math.meanshrink",d);
 			if( cp )
 			{
 				delete cp;

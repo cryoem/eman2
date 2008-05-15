@@ -503,22 +503,6 @@ namespace EMAN
 		 */		 
 		EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
 							   int dy = 0, bool do360 = false);
-							   
-		
-		/** Reduces the size of the image by a factor 
-		 * using the average value of the pixels in a block.
-		 * @param shrink_factor Image shrink factor.
-		 * @exception InvalidValueException If shrink factor is invalid.
-		 */
-		void mean_shrink(float shrink_factor);
-		
-				
-		/* Reduces the size of the image by a factor using a local median processor.
-		 *
-		 * @param shrink_factor Image shrink factor.
-		 * @exception InvalidValueException If shrink factor is invalid.
-		 */
-		void median_shrink(int shrink_factor);
 		
 		
 		/** multiplies by a radial function in fourier space.

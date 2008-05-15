@@ -802,6 +802,8 @@ EMData *FourierReconstructor::finish()
 		normalize_threed();
 	}
 	
+	tmp_data->write_image("density.mrc");
+	
 	// we may as well delete the tmp data now... it saves memory and the calling program might
 	// need memory after it gets the return volume.
 	// If this delete didn't happen now, it would happen when the deconstructor was called,
@@ -1875,6 +1877,7 @@ EMData *BackProjectionReconstructor::finish()
 	for ( int i = 1; i < Transform3D::get_nsym((string)params["sym"]); ++i)
 	{
 		Transform3D t3d = identity.get_sym((string) params["sym"], i);
+// 		t3d.transpose();
 		EMData* tmpcopy = new EMData(*image);
 		tmpcopy->rotate(t3d);
 		image->add(*tmpcopy);

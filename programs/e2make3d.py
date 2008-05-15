@@ -374,8 +374,10 @@ def back_projection_reconstruction(options):
 		print "Error, back space projection currently only works for images with uniform dimensions"
 		exit(1)
 		
+	print xsize
 	params["size"] = xsize;
 	params["sym"] = options.sym
+	recon.insert_params(params)
 	recon.setup()
 
 	total_images=EMUtil.get_image_count(options.input_file)
@@ -389,6 +391,7 @@ def back_projection_reconstruction(options):
 		else:
 			num_img = 1
 		
+		weight = 1
 		if ( options.no_wt == False ):
 			weight = float (num_img)
 		

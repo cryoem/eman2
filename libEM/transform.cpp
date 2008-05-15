@@ -1047,135 +1047,139 @@ Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
 
 Transform3D Transform3D::get_sym(const string & symname, int n) const
 {
-	int nsym = get_nsym(symname);
+// 	int nsym = get_nsym(symname);
 
-	Transform3D invalid;
-	invalid.set_rotation( -0.1f, -0.1f, -0.1f);
+// 	Transform3D invalid;
+// 	invalid.set_rotation( -0.1f, -0.1f, -0.1f);
 
-	if (n >= nsym) {
-		return invalid;
-	}
-	// see www.math.utah.edu/~alfeld/math/polyhedra/polyhedra.html for pictures
-	// By default we will put largest symmetry along z-axis.
-
-	// Each Platonic Solid has 2E symmetry elements.
-
-
-	// An icosahedron has   m=5, n=3, F=20 E=30=nF/2, V=12=nF/m,since vertices shared by 5 triangles;
-	// It is composed of 20 triangles. E=3*20/2;
-
-
-	// An dodecahedron has m=3, n=5   F=12 E=30  V=20
-	// It is composed of 12 pentagons. E=5*12/2;   V= 5*12/3, since vertices shared by 3 pentagons;
-
-
-
-    // The ICOS symmetry group has the face along z-axis
-
-	float lvl0=0;                             //  there is one pentagon on top; five-fold along z
-	float lvl1= 63.4349f; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
-	float lvl2=116.5651f; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
-	float lvl3=180.f;                           // there is one pentagon on the bottom
-             // Notice that 63.439 is the angle between two faces of the dual object
-
-	static double ICOS[180] = { // This is with a pentagon normal to z 
-		  0,lvl0,0,    0,lvl0,288,   0,lvl0,216,   0,lvl0,144,  0,lvl0,72,
-		  0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
-		 72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
-		144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
-		216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
-		288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
-		 36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
-		108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
-		180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
-		252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
-		324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
-   		  0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
-	};
-
-
-	// A cube has   m=3, n=4, F=6 E=12=nF/2, V=8=nF/m,since vertices shared by 3 squares;
-	// It is composed of 6 squares.
-
-
-	// An octahedron has   m=4, n=3, F=8 E=12=nF/2, V=6=nF/m,since vertices shared by 4 triangles;
-	// It is composed of 8 triangles.
-
-    // We have placed the OCT symmetry group with a face along the z-axis
-        lvl0=0;
-	lvl1=90;
-	lvl2=180;
-
-	static float OCT[72] = {// This is with a face of a cube along z 
-		      0,lvl0,0,   0,lvl0,90,    0,lvl0,180,    0,lvl0,270,
-		      0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
-		     90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
-		    180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
-		    270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
-		      0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
-	};
-	// B^4=A^3=1;  BABA=1; implies   AA=BAB, ABA=B^3 , AB^2A = BBBABBB and
-	//   20 words with at most a single A
-    //   1 B BB BBB A  BA AB BBA BAB ABB BBBA BBAB BABB ABBB BBBAB BBABB BABBB 
-    //                        BBBABB BBABBB BBBABBB 
-     // also     ABBBA is distinct yields 4 more words
-     //    ABBBA   BABBBA BBABBBA BBBABBBA
-     // for a total of 24 words
-     // Note A BBB A BBB A  reduces to BBABB
-     //  and  B A BBB A is the same as A BBB A BBB etc.
-
-    // The TET symmetry group has a face along the z-axis
-    // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
-        lvl0=0;         // There is a face along z
-	lvl1=109.4712f;  //  that is acos(-1/3)  // There  are 3 faces at this angle
-
-	static float TET[36] = {// This is with the face along z 
-	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
-	      0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
-	    120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
-	    240,lvl1,60, 240,lvl1,180,  240,lvl1,300
-	};
-	// B^3=A^3=1;  BABA=1; implies   A^2=BAB, ABA=B^2 , AB^2A = B^2AB^2 and
-	//   12 words with at most a single A
-    //   1 B BB  A  BA AB BBA BAB ABB BBAB BABB BBABB
-    // at most one A is necessary
-
-	Transform3D ret;
-	SymType type = get_sym_type(symname);
-
-	switch (type) {
-	case CSYM:
-		ret.set_rotation( n * 360.0f / nsym, 0, 0);
-		break;
-	case DSYM:
-		if (n >= nsym / 2) {
-			ret.set_rotation((n - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
-		}
-		else {
-			ret.set_rotation( n * 360.0f / (nsym / 2),0, 0);
-		}
-		break;
-	case ICOS_SYM:
-		ret.set_rotation((float)ICOS[n * 3 ],
-				 (float)ICOS[n * 3 + 1],
-				 (float)ICOS[n * 3 + 2] );
-		break;
-	case OCT_SYM:
-		ret.set_rotation((float)OCT[n * 3],
-				 (float)OCT[n * 3 + 1], 
-				 (float)OCT[n * 3 + 2] );
-		break;
-	case TET_SYM:
-		ret.set_rotation((float)TET[n * 3 ],
-				 (float)TET[n * 3 + 1] ,
-				 (float)TET[n * 3 + 2] );
-		break;
-	case ISYM:
-		ret.set_rotation(0, 0, 0);
-		break;
-	default:
-		throw InvalidValueException(type, symname);
-	}
+	Symmetry3D* sym = Factory<Symmetry3D>::get(symname);
+	
+	Transform3D ret = sym->get_sym(n);
+	delete sym;
+// 	if (n >= nsym) {
+// 		return invalid;
+// 	}
+// 	// see www.math.utah.edu/~alfeld/math/polyhedra/polyhedra.html for pictures
+// 	// By default we will put largest symmetry along z-axis.
+// 
+// 	// Each Platonic Solid has 2E symmetry elements.
+// 
+// 
+// 	// An icosahedron has   m=5, n=3, F=20 E=30=nF/2, V=12=nF/m,since vertices shared by 5 triangles;
+// 	// It is composed of 20 triangles. E=3*20/2;
+// 
+// 
+// 	// An dodecahedron has m=3, n=5   F=12 E=30  V=20
+// 	// It is composed of 12 pentagons. E=5*12/2;   V= 5*12/3, since vertices shared by 3 pentagons;
+// 
+// 
+// 
+//     // The ICOS symmetry group has the face along z-axis
+// 
+// 	float lvl0=0;                             //  there is one pentagon on top; five-fold along z
+// 	float lvl1= 63.4349f; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
+// 	float lvl2=116.5651f; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
+// 	float lvl3=180.f;                           // there is one pentagon on the bottom
+//              // Notice that 63.439 is the angle between two faces of the dual object
+// 
+// 	static double ICOS[180] = { // This is with a pentagon normal to z 
+// 		  0,lvl0,0,    0,lvl0,288,   0,lvl0,216,   0,lvl0,144,  0,lvl0,72,
+// 		  0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
+// 		 72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
+// 		144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
+// 		216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
+// 		288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
+// 		 36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
+// 		108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
+// 		180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
+// 		252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
+// 		324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
+//    		  0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
+// 	};
+// 
+// 
+// 	// A cube has   m=3, n=4, F=6 E=12=nF/2, V=8=nF/m,since vertices shared by 3 squares;
+// 	// It is composed of 6 squares.
+// 
+// 
+// 	// An octahedron has   m=4, n=3, F=8 E=12=nF/2, V=6=nF/m,since vertices shared by 4 triangles;
+// 	// It is composed of 8 triangles.
+// 
+//     // We have placed the OCT symmetry group with a face along the z-axis
+//         lvl0=0;
+// 	lvl1=90;
+// 	lvl2=180;
+// 
+// 	static float OCT[72] = {// This is with a face of a cube along z 
+// 		      0,lvl0,0,   0,lvl0,90,    0,lvl0,180,    0,lvl0,270,
+// 		      0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
+// 		     90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
+// 		    180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
+// 		    270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
+// 		      0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
+// 	};
+// 	// B^4=A^3=1;  BABA=1; implies   AA=BAB, ABA=B^3 , AB^2A = BBBABBB and
+// 	//   20 words with at most a single A
+//     //   1 B BB BBB A  BA AB BBA BAB ABB BBBA BBAB BABB ABBB BBBAB BBABB BABBB 
+//     //                        BBBABB BBABBB BBBABBB 
+//      // also     ABBBA is distinct yields 4 more words
+//      //    ABBBA   BABBBA BBABBBA BBBABBBA
+//      // for a total of 24 words
+//      // Note A BBB A BBB A  reduces to BBABB
+//      //  and  B A BBB A is the same as A BBB A BBB etc.
+// 
+//     // The TET symmetry group has a face along the z-axis
+//     // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
+//         lvl0=0;         // There is a face along z
+// 	lvl1=109.4712f;  //  that is acos(-1/3)  // There  are 3 faces at this angle
+// 
+// 	static float TET[36] = {// This is with the face along z 
+// 	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
+// 	      0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
+// 	    120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
+// 	    240,lvl1,60, 240,lvl1,180,  240,lvl1,300
+// 	};
+// 	// B^3=A^3=1;  BABA=1; implies   A^2=BAB, ABA=B^2 , AB^2A = B^2AB^2 and
+// 	//   12 words with at most a single A
+//     //   1 B BB  A  BA AB BBA BAB ABB BBAB BABB BBABB
+//     // at most one A is necessary
+// 
+// 	Transform3D ret;
+// 	SymType type = get_sym_type(symname);
+// 
+// 	switch (type) {
+// 	case CSYM:
+// 		ret.set_rotation( n * 360.0f / nsym, 0, 0);
+// 		break;
+// 	case DSYM:
+// 		if (n >= nsym / 2) {
+// 			ret.set_rotation((n - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
+// 		}
+// 		else {
+// 			ret.set_rotation( n * 360.0f / (nsym / 2),0, 0);
+// 		}
+// 		break;
+// 	case ICOS_SYM:
+// 		ret.set_rotation((float)ICOS[n * 3 ],
+// 				 (float)ICOS[n * 3 + 1],
+// 				 (float)ICOS[n * 3 + 2] );
+// 		break;
+// 	case OCT_SYM:
+// 		ret.set_rotation((float)OCT[n * 3],
+// 				 (float)OCT[n * 3 + 1], 
+// 				 (float)OCT[n * 3 + 2] );
+// 		break;
+// 	case TET_SYM:
+// 		ret.set_rotation((float)TET[n * 3 ],
+// 				 (float)TET[n * 3 + 1] ,
+// 				 (float)TET[n * 3 + 2] );
+// 		break;
+// 	case ISYM:
+// 		ret.set_rotation(0, 0, 0);
+// 		break;
+// 	default:
+// 		throw InvalidValueException(type, symname);
+// 	}
 
 	ret = (*this) * ret;
 
@@ -2750,7 +2754,7 @@ vector<Vec3f> PlatonicSym::get_asym_unit_points(bool inc_mirror) const
 	}
 	
 	if ( get_az_alignment_offset() != 0 ) {
-		Transform3D t(0,0,get_az_alignment_offset());
+		Transform3D t(get_az_alignment_offset(),0,0);
 		for (vector<Vec3f>::iterator it = ret.begin(); it != ret.end(); ++it )
 		{
 			*it = (*it)*t;
@@ -2761,7 +2765,7 @@ vector<Vec3f> PlatonicSym::get_asym_unit_points(bool inc_mirror) const
 	
 }
 
-float IcosahedralSym::get_az_alignment_offset() const { return 0.0; }
+float IcosahedralSym::get_az_alignment_offset() const { return 0.0; } // This offset positions a 3 fold axis on the positive x axis
 
 Transform3D IcosahedralSym::get_sym(int n) const
 {
@@ -2788,7 +2792,16 @@ Transform3D IcosahedralSym::get_sym(int n) const
 	
 	int idx = n % 60;
 	Transform3D ret;
-	ret.set_rotation((float)ICOS[idx * 3 ],(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]);
+	if (get_az_alignment_offset() == 234.0) {
+		ret.set_rotation((float)ICOS[idx * 3 ]+90,(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]-90);
+	}
+	else ret.set_rotation((float)ICOS[idx * 3 ],(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]);
+	
+// 	ret.set_rotation((float)ICOS[idx * 3 ],(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]);
+// 	if ( get_az_alignment_offset() != 0 ) {
+// 		Transform3D t(get_az_alignment_offset(),0,0);
+// 		ret = t*ret;
+// 	}
 	return ret;
 	
 }
@@ -2817,7 +2830,7 @@ Transform3D OctahedralSym::get_sym(int n) const
 	
 }
 
-float TetrahedralSym::get_az_alignment_offset() const { return  0.0; }
+float TetrahedralSym::get_az_alignment_offset() const { return  234.0; }
 
 bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const
 {
@@ -2860,12 +2873,12 @@ Transform3D TetrahedralSym::get_sym(int n) const
 	static double lvl1=109.4712;  //  that is acos(-1/3)  // There  are 3 faces at this angle
 
 	static double TET[36] = {// This is with the face along z 
-		0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
-		0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
-		120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
-		240,lvl1,60, 240,lvl1,180,  240,lvl1,300
+	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
+	      0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
+	    120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
+	    240,lvl1,60, 240,lvl1,180,  240,lvl1,300
 	};
-	
+// 	
 	int idx = n % 12;
 	Transform3D ret;
 	ret.set_rotation((float)TET[idx * 3 ],(float)TET[idx * 3 + 1], (float)TET[idx * 3 + 2] );
@@ -2901,7 +2914,7 @@ vector<Vec3f> TetrahedralSym::get_asym_unit_points(bool inc_mirror) const
 
 	
 	if ( get_az_alignment_offset() != 0 ) {
-		Transform3D t(0,0,get_az_alignment_offset());
+		Transform3D t(get_az_alignment_offset(),0,0);
 		for (vector<Vec3f>::iterator it = ret.begin(); it != ret.end(); ++it )
 		{
 			*it = (*it)*t;

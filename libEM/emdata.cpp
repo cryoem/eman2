@@ -2258,27 +2258,6 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 	return ret;
 }
 
-
-void EMData::mean_shrink(float shrink_factor0)
-{
-	ENTERFUNC;
-	Dict parms;
-	parms["n"] = shrink_factor0;
-	process_inplace("math.meanshrink",parms);
-	EXITFUNC;
-}
-
-
-void EMData::median_shrink(int shrink_factor)
-{
-	ENTERFUNC;
-	Dict parms;
-	parms["n"] = shrink_factor;
-	process_inplace("math.medianshrink",parms);
-	EXITFUNC;
-}
-
-
 // NOTE : x axis is from 0 to 0.5  (Nyquist), and thus properly handles non-square images
 // complex only
 void EMData::apply_radial_func(float x0, float step, vector < float >array, bool interp)
