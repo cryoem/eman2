@@ -2000,88 +2000,79 @@ float max3d( int kc, const vector<float>& pow_a )
 
 void nn4Reconstructor::setup() 
 {
-    int size = params["size"];
-    int npad = params["npad"];
+	int size = params["size"];
+	int npad = params["npad"];
 
 
-    string symmetry;
-    if( params.has_key("symmetry") )
-    {
-   	    symmetry = params["symmetry"].to_str();
-    }
-    else
-    {
-	    symmetry = "c1";
-    }
+	string symmetry;
+	if( params.has_key("symmetry") ) {
+		symmetry = params["symmetry"].to_str();
+	} else {
+		symmetry = "c1";
+	}
 
-    if( params.has_key("ndim") )
-    {
-        m_ndim = params["ndim"];
-    }
-    else
-    {
-        m_ndim = 3;
-    }
+	if( params.has_key("ndim") ) {
+	    m_ndim = params["ndim"];
+	} else {
+		m_ndim = 3;
+	}
 
 
-    setup( symmetry, size, npad );
+	setup( symmetry, size, npad );
 }
 
 void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 {
-    m_weighting = ESTIMATE;
-    m_wghta = 0.2f;
- 
-    m_symmetry = symmetry;
-    m_npad = npad;
-    m_nsym = Transform3D::get_nsym(m_symmetry);
+	m_weighting = ESTIMATE;
+	m_wghta = 0.2f;
 
-    m_vnx = size;
-    m_vny = size;
-    m_vnz = (m_ndim==3) ? size : 1;
+	m_symmetry = symmetry;
+	m_npad = npad;
+	m_nsym = Transform3D::get_nsym(m_symmetry);
 
-    m_vnxp = size*npad;
-    m_vnyp = size*npad;
-    m_vnzp = (m_ndim==3) ? size*npad : 1;
+	m_vnx = size;
+	m_vny = size;
+	m_vnz = (m_ndim==3) ? size : 1;
 
-    m_vnxc = m_vnxp/2;
-    m_vnyc = m_vnyp/2;
-    m_vnzc = (m_ndim==3) ? m_vnzp/2 : 1;
+	m_vnxp = size*npad;
+	m_vnyp = size*npad;
+	m_vnzp = (m_ndim==3) ? size*npad : 1;
 
-    buildFFTVolume();
-    buildNormVolume();
+	m_vnxc = m_vnxp/2;
+	m_vnyc = m_vnyp/2;
+	m_vnzc = (m_ndim==3) ? m_vnzp/2 : 1;
+
+	buildFFTVolume();
+	buildNormVolume();
 
 }
+
 
 void nn4Reconstructor::buildFFTVolume() {
 	int offset = 2 - m_vnxp%2;
 
-        if( params.has_key("fftvol") )
-        {
-            m_volume = params["fftvol"];
-            m_delete_volume = false;
-        }
-        else
-        {
-	    m_volume = new EMData();
-            m_delete_volume = true;
-        }
+	if( params.has_key("fftvol") ) {
+		m_volume = params["fftvol"];
+		m_delete_volume = false;
+	} else {
+		m_volume = new EMData();
+		m_delete_volume = true;
+	}
 
-        if( m_volume->get_xsize() != m_vnxp+offset &&
-            m_volume->get_ysize() != m_vnyp &&
-	    m_volume->get_zsize() != m_vnzp )
-        {
-            m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
-            m_volume->to_zero();
-        }
-        // ----------------------------------------------------------------
+	if( m_volume->get_xsize() != m_vnxp+offset &&
+	    m_volume->get_ysize() != m_vnyp &&
+	    m_volume->get_zsize() != m_vnzp ) {
+		m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+		m_volume->to_zero();
+	}
+	// ----------------------------------------------------------------
 	// Added by Zhengfan Yang on 03/15/07
 	// Original author: please check whether my revision is correct and 
 	// other Reconstructor need similiar revision.
 	if ( m_vnxp % 2 == 0 ) { m_volume->set_fftodd(0); }
 			else   { m_volume->set_fftodd(1); }
 	// ----------------------------------------------------------------
-	
+
 	m_volume->set_nxc(m_vnxp/2);
 	m_volume->set_complex(true);
 	m_volume->set_ri(true);
@@ -2092,44 +2083,35 @@ void nn4Reconstructor::buildFFTVolume() {
 
 void nn4Reconstructor::buildNormVolume() {
 
-    if( params.has_key("weight") )
-    {
-        m_wptr = params["weight"];
-        m_delete_weight = false;
-    }
-    else
-    {
-	m_wptr = new EMData();
-        m_delete_weight = true;
-    }
+	if( params.has_key("weight") ) {
+		m_wptr = params["weight"];
+		m_delete_weight = false;
+	} else {
+		m_wptr = new EMData();
+		m_delete_weight = true;
+	}
 
-    if( m_wptr->get_xsize() != m_vnxc+1 &&
-        m_wptr->get_ysize() != m_vnyp &&
-	m_wptr->get_zsize() != m_vnzp )
-    {
-	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
-	m_wptr->to_zero();
-    }
+	if( m_wptr->get_xsize() != m_vnxc+1 &&
+		m_wptr->get_ysize() != m_vnyp &&
+		m_wptr->get_zsize() != m_vnzp ) {
+		m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
+		m_wptr->to_zero();
+	}
 
-    m_wptr->set_array_offsets(0,1,1);
+	m_wptr->set_array_offsets(0,1,1);
 }
 
 void printImage( const EMData* line )
 {
-    assert( line->get_zsize()==1 );
+	assert( line->get_zsize()==1 );
 
-    
-    int nx = line->get_xsize();
-    int ny = line->get_ysize();
-    for( int j=0; j < ny; ++j )
-    {
-        for( int i=0; i < nx; ++i )
-        {
-            printf( "%10.3f ", line->get_value_at(i,j) );
-        }
-        
-	printf( "\n" );
-    }
+
+	int nx = line->get_xsize();
+	int ny = line->get_ysize();
+	for( int j=0; j < ny; ++j ) {
+		for( int i=0; i < nx; ++i )  printf( "%10.3f ", line->get_value_at(i,j) );
+		printf( "\n" );
+	}
 }
 
 
@@ -2142,20 +2124,15 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 	}
 
         int padffted= slice->get_attr_default( "padffted", 0 );
-        if( m_ndim==3 )
-	{
-		if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
-        	{
+        if( m_ndim==3 ) {
+		if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
 			// FIXME: Why doesn't this throw an exception?
 			LOGERR("Tried to insert a slice that is the wrong size.");
 			return 1;
 		}
-        }
-	else
-	{
+        } else {
 		assert( m_ndim==2 );
-		if( slice->get_ysize() !=1 )
-		{
+		if( slice->get_ysize() !=1 ) {
 			LOGERR( "for 2D reconstruction, a line is excepted" );
         		return 1;
 		}
@@ -2163,37 +2140,26 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 
 	EMData* padfft = NULL;
 
-	if( padffted != 0 )
-	{	   
-		padfft = new EMData(*slice);
-	}
-	else
-	{
-		padfft = padfft_slice( slice, m_npad );
-	}
+	if( padffted != 0 ) padfft = new EMData(*slice);
+	else                padfft = padfft_slice( slice, m_npad );
 
 	int mult= slice->get_attr_default( "mult", 1 );
 	Assert( mult > 0 );
 
-        if( m_ndim==3 )
-	{
+        if( m_ndim==3 ) {
 		insert_padfft_slice( padfft, t, mult );
-	}
-	else
-	{
+	} else {
 		float alpha = padfft->get_attr( "alpha" );
 		alpha = alpha/180.0*M_PI;
-		for(int i=0; i < m_vnxc+1; ++i )
-		{
+		for(int i=0; i < m_vnxc+1; ++i ) {
 			float xnew = i*cos(alpha);
 			float ynew = -i*sin(alpha);
 			float btqr = padfft->get_value_at( 2*i, 0, 0 );
 			float btqi = padfft->get_value_at( 2*i+1, 0, 0 );
-			if( xnew < 0.0 )
-			{
-			    xnew *= -1;
-			    ynew *= -1;
-			    btqi *= -1;
+			if( xnew < 0.0 ) {
+				xnew *= -1;
+				ynew *= -1;
+				btqi *= -1;
 			}
 
 			int ixn = int(xnew+0.5+m_vnxp) - m_vnxp;
@@ -2217,7 +2183,7 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform3D tsym = t.get_sym(m_symmetry, isym);
-		    m_volume->nn( m_wptr, padfft, tsym, mult);
+		m_volume->nn( m_wptr, padfft, tsym, mult);
         }
 	return 0;
 }
@@ -2226,21 +2192,16 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4Reconstructor::finish() 
 {
-        if( m_ndim==3 )
-	{
+        if( m_ndim==3 ) {
 		m_volume->symplane0(m_wptr);
-	}
-	else
-	{
-		for( int i=1; i <= m_vnyp; ++i )
-		{
+	} else {
+		for( int i=1; i <= m_vnyp; ++i ) {
 		       
-			if( (*m_wptr)(0, i, 1)==0.0 )
-			{
-			     int j = m_vnyp + 1 - i;
-			     (*m_wptr)(0, i, 1) = (*m_wptr)(0, j, 1);
-			     (*m_volume)(0, i, 1) = (*m_volume)(0, j, 1);
-			     (*m_volume)(1, i, 1) = (*m_volume)(1, j, 1);
+			if( (*m_wptr)(0, i, 1)==0.0 ) {
+				int j = m_vnyp + 1 - i;
+				(*m_wptr)(0, i, 1) = (*m_wptr)(0, j, 1);
+				(*m_volume)(0, i, 1) = (*m_volume)(0, j, 1);
+				(*m_volume)(1, i, 1) = (*m_volume)(1, j, 1);
 			}
 		}
 	}
@@ -2253,17 +2214,14 @@ EMData* nn4Reconstructor::finish()
 	pow_a.back()=0.0;
 
 	float alpha = 0.0;
-	if( m_ndim==3)
-	{
-	    int vol = box*box*box;
-	    float max = max3d( kc, pow_a );
-	    alpha = ( 1.0f - 1.0f/(float)vol ) / max;
-	}
-        else
-        {
-	    int ara = box*box;
-	    float max = max2d( kc, pow_a );
-	    alpha = ( 1.0f - 1.0f/(float)ara ) / max;
+	if( m_ndim==3) {
+		int vol = box*box*box;
+		float max = max3d( kc, pow_a );
+		alpha = ( 1.0f - 1.0f/(float)vol ) / max;
+	} else {
+		int ara = box*box;
+		float max = max2d( kc, pow_a );
+		alpha = ( 1.0f - 1.0f/(float)ara ) / max;
 	}
 
 	
@@ -2375,95 +2333,87 @@ EMData* nn4Reconstructor::finish()
 
 nnSSNR_Reconstructor::nnSSNR_Reconstructor() 
 {
-    m_volume = NULL; 
-    m_wptr   = NULL;
-    m_wptr2  = NULL;
-    m_result = NULL;
+	m_volume = NULL; 
+	m_wptr   = NULL;
+	m_wptr2  = NULL;
+	m_result = NULL;
 }
 
 nnSSNR_Reconstructor::nnSSNR_Reconstructor( const string& symmetry, int size, int npad)
 {
-    m_volume = NULL; 
-    m_wptr   = NULL;
-    m_wptr2  = NULL;
-    m_result = NULL;
+	m_volume = NULL; 
+	m_wptr   = NULL;
+	m_wptr2  = NULL;
+	m_result = NULL;
 
-    setup( symmetry, size, npad );
+	setup( symmetry, size, npad );
 }
 
 nnSSNR_Reconstructor::~nnSSNR_Reconstructor()
 {
-   if( m_delete_volume )
-        checked_delete(m_volume);
- 
-    if( m_delete_weight )
-        checked_delete( m_wptr );
-    
-    if ( m_delete_weight2 )
-        checked_delete( m_wptr2 );
+	if( m_delete_volume ) checked_delete(m_volume);
 
-    checked_delete( m_result );
+	if( m_delete_weight ) checked_delete( m_wptr );
+
+	if( m_delete_weight2 ) checked_delete( m_wptr2 );
+
+	checked_delete( m_result );
 }
 
 void nnSSNR_Reconstructor::setup() 
 {
-    int size = params["size"];
-    int npad = params["npad"];
+	int size = params["size"];
+	int npad = params["npad"];
 
-    string symmetry;
-    if( params.has_key("symmetry") )
-    {
-   	    symmetry = params["symmetry"].to_str();
-    } else {
-	    symmetry = "c1";
-    }
-    setup( symmetry, size, npad );
+	string symmetry;
+	if( params.has_key("symmetry") ) symmetry = params["symmetry"].to_str();
+	else				 symmetry = "c1";
+
+	setup( symmetry, size, npad );
 }
 
 void nnSSNR_Reconstructor::setup( const string& symmetry, int size, int npad )
 {
    
-    m_weighting = ESTIMATE;
-    m_wghta = 0.2f;
-    m_wghtb = 0.004f;
- 
-    m_symmetry = symmetry;
-    m_npad = npad;
-    m_nsym = Transform3D::get_nsym(m_symmetry);
+	m_weighting = ESTIMATE;
+	m_wghta = 0.2f;
+	m_wghtb = 0.004f;
 
-    m_vnx = size;
-    m_vny = size;
-    m_vnz = size;
+	m_symmetry = symmetry;
+	m_npad = npad;
+	m_nsym = Transform3D::get_nsym(m_symmetry);
 
-    m_vnxp = size*npad;
-    m_vnyp = size*npad;
-    m_vnzp = size*npad;
+	m_vnx = size;
+	m_vny = size;
+	m_vnz = size;
 
-    m_vnxc = m_vnxp/2;
-    m_vnyc = m_vnyp/2;
-    m_vnzc = m_vnzp/2;
+	m_vnxp = size*npad;
+	m_vnyp = size*npad;
+	m_vnzp = size*npad;
 
-    buildFFTVolume();
-    buildNormVolume();
-    buildNorm2Volume();
+	m_vnxc = m_vnxp/2;
+	m_vnyc = m_vnyp/2;
+	m_vnzc = m_vnzp/2;
+
+	buildFFTVolume();
+	buildNormVolume();
+	buildNorm2Volume();
 
 }
 
 void nnSSNR_Reconstructor::buildFFTVolume() {
-	
-	int offset = 2 - m_vnxp%2;
 	
 	if( params.has_key("fftvol") ) {
 		m_volume = params["fftvol"]; /* volume should be defined in python when PMI is turned on*/
 		m_delete_volume = false;
 	} else {
 		m_volume = new EMData();
-		m_delete_volume = true;	
+		m_delete_volume = true;
 	}
-	m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+	m_volume->set_size(m_vnxp+ 2 - m_vnxp%2,m_vnyp,m_vnzp);
 	m_volume->to_zero();
-	if ( m_vnxp % 2 == 0 ) { m_volume->set_fftodd(0); }
-	else   { m_volume->set_fftodd(1); }
+	if ( m_vnxp % 2 == 0 ) m_volume->set_fftodd(0);
+	else                   m_volume->set_fftodd(1);
 	
 	m_volume->set_nxc(m_vnxc);
 	m_volume->set_complex(true);
@@ -2518,15 +2468,12 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 		return 1;
 	}
 
-    EMData* padfft = NULL;
+	EMData* padfft = NULL;
 
-    if( padffted != 0 ) {
-        padfft = new EMData(*slice);
-    } else {
-        padfft = padfft_slice( slice, m_npad );
-    }
+	if( padffted != 0 ) padfft = new EMData(*slice);
+	else		    padfft = padfft_slice( slice, m_npad );
 
-    int mult = slice->get_attr_default("mult", 1);
+	int mult = slice->get_attr_default("mult", 1);
 
 	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
@@ -2550,17 +2497,35 @@ int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nnSSNR_Reconstructor::finish()
 {
-	int kz, ky, iix, iiy, iiz;
+/*
+  I changed the code on 05/15 so it only returns variance.
+  Lines commented out are marked by //#
+  The version prior to the currect changes is r1.190
+  PAP
+*/
+	int kz, ky;
+	//#int iix, iiy, iiz;
 	int box = 7;
 	int kc = (box-1)/2;
 	float alpha = 0.0;
 	float argx, argy, argz;
 	vector< float > pow_a( 3*kc+1, 1.0 );
 	float w = params["w"];
-	EMData* vol_ssnr = new EMData();
-	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
-	vol_ssnr->to_zero();
 	EMData* SSNR = params["SSNR"];
+	//#EMData* vol_ssnr = new EMData();
+	//#vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
+	//#vol_ssnr->to_zero();
+	//#  new linea follow
+	EMData* vol_ssnr = new EMData();
+	vol_ssnr->set_size(m_vnxp+ 2 - m_vnxp%2, m_vnyp ,m_vnzp);
+	vol_ssnr->to_zero();
+	if ( m_vnxp % 2 == 0 ) vol_ssnr->set_fftodd(0);
+	else                   vol_ssnr->set_fftodd(1);
+	vol_ssnr->set_nxc(m_vnxc);
+	vol_ssnr->set_complex(true);
+	vol_ssnr->set_ri(true);
+	vol_ssnr->set_fftpad(false);
+	//#
 
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
@@ -2648,10 +2613,11 @@ EMData* nnSSNR_Reconstructor::finish()
 							nn[r]    += 2;
 							ka[r]    += int(Kn);
 						}
+/*
 #ifdef	_WIN32
-						float  tmp = _cpp_max(nominator/denominator/Kn-1.0f,0.0f);
+						//#float  tmp = _cpp_max(nominator/denominator/Kn-1.0f,0.0f);
 #else
-						float  tmp = std::max(nominator/denominator/Kn-1.0f,0.0f);
+						//#float  tmp = std::max(nominator/denominator/Kn-1.0f,0.0f);
 #endif	//_WIN32
 						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
 						iix = m_vnxc + ix; iiy = m_vnyc + ky; iiz = m_vnzc + kz;
@@ -2661,7 +2627,10 @@ EMData* nnSSNR_Reconstructor::finish()
 						iix = m_vnxc - ix; iiy = m_vnyc - ky; iiz = m_vnzc - kz;
 						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
 							(*vol_ssnr)(iix, iiy, iiz) = tmp;
+*/
+
 					}
+					(*vol_ssnr)(2*ix, iy-1, iz-1) = denominator*wght;
 				} // end of Kn>4.5
 			}
 		}
@@ -2690,46 +2659,43 @@ bootstrap_nnReconstructor::bootstrap_nnReconstructor()
 
 bootstrap_nnReconstructor::~bootstrap_nnReconstructor()
 {
-    for_each( m_padffts.begin(), m_padffts.end(), boost::ptr_fun( checked_delete< EMData > ) );
-    for_each( m_transes.begin(), m_transes.end(), boost::ptr_fun( checked_delete< Transform3D > ) );
+	for_each( m_padffts.begin(), m_padffts.end(), boost::ptr_fun( checked_delete< EMData > ) );
+	for_each( m_transes.begin(), m_transes.end(), boost::ptr_fun( checked_delete< Transform3D > ) );
 }
 
 void bootstrap_nnReconstructor::setup()
 {
-    m_ctf  = params["ctf"].to_str();
-    m_npad = params["npad"];
-    m_size = params["size"];
-    m_media = params["media"].to_str();
+	m_ctf  = params["ctf"].to_str();
+	m_npad = params["npad"];
+	m_size = params["size"];
+	m_media = params["media"].to_str();
 
-    try {
-	m_symmetry = params["symmetry"].to_str();
-	if ("" == m_symmetry) m_symmetry = "c1";
-    }
-    catch(_NotExistingObjectException) {
-        m_symmetry = "c1";
-    }
-        
-    m_nsym = Transform3D::get_nsym(m_symmetry);
+	try {
+		m_symmetry = params["symmetry"].to_str();
+		if ("" == m_symmetry) m_symmetry = "c1";
+	}
+	catch(_NotExistingObjectException) {
+		m_symmetry = "c1";
+	}
+	    
+	m_nsym = Transform3D::get_nsym(m_symmetry);
 }
 
 int bootstrap_nnReconstructor::insert_slice(const EMData* const slice, const Transform3D& euler)
 {
-    EMData* padfft = padfft_slice( slice, m_npad );
-    Assert( padfft != NULL );
+	EMData* padfft = padfft_slice( slice, m_npad );
+	Assert( padfft != NULL );
 
-    if( m_media == "memory" )
-    {
-        m_padffts.push_back( padfft );
-    }
-    else
-    {
-        padfft->write_image( m_media, m_transes.size() );
-	checked_delete( padfft );
-    }
+	if( m_media == "memory" ) {
+		m_padffts.push_back( padfft );
+	} else {
+		padfft->write_image( m_media, m_transes.size() );
+		checked_delete( padfft );
+	}
 
-    Transform3D* trans = new Transform3D( euler );
-    m_transes.push_back( trans );
-    return 0;
+	Transform3D* trans = new Transform3D( euler );
+	m_transes.push_back( trans );
+	return 0;
 }
 
 EMData* bootstrap_nnReconstructor::finish()
@@ -2737,32 +2703,27 @@ EMData* bootstrap_nnReconstructor::finish()
     nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size, m_npad) );
     vector<int> mults = params["mult"];
 //    Assert( mults != NULL );
-    Assert( m_transes.size() == mults.size() );
+	Assert( m_transes.size() == mults.size() );
 
-    int total = 0;
-    for( unsigned int i=0; i < mults.size(); ++i )
-    {
-        int mult = mults.at(i);
-	if( mult > 0 )
-	{
-	    if( m_media == "memory" )
-	    {
-                r->insert_padfft_slice( m_padffts[i], *m_transes[i], mult );
-	    }
-	    else
-	    {
-	        EMData* padfft = new EMData();
-		padfft->read_image( m_media, i );
-		r->insert_padfft_slice( padfft, *m_transes[i], mult );
-		checked_delete( padfft );
-            }
+	int total = 0;
+	for( unsigned int i=0; i < mults.size(); ++i ) {
+		int mult = mults.at(i);
+		if( mult > 0 ) {
+			if( m_media == "memory" ) {
+				r->insert_padfft_slice( m_padffts[i], *m_transes[i], mult );
+			} else {
+				EMData* padfft = new EMData();
+				padfft->read_image( m_media, i );
+				r->insert_padfft_slice( padfft, *m_transes[i], mult );
+				checked_delete( padfft );
+			}
+		}
+		total += mult;
 	}
-	total += mult;
-    }
 
-    EMData* w = r->finish();
-    checked_delete(r);
-    return w;
+	EMData* w = r->finish();
+	checked_delete(r);
+	return w;
 }
 
 //####################################################################################
@@ -2770,93 +2731,83 @@ EMData* bootstrap_nnReconstructor::finish()
 
 nn4_ctfReconstructor::nn4_ctfReconstructor() 
 {
-    m_volume  = NULL;
-    m_wptr    = NULL;
-    m_result  = NULL;
+	m_volume  = NULL;
+	m_wptr    = NULL;
+	m_result  = NULL;
 }
 
 nn4_ctfReconstructor::nn4_ctfReconstructor( const string& symmetry, int size, int npad, float snr, int sign )
 {
-    setup( symmetry, size, npad, snr, sign );
+	setup( symmetry, size, npad, snr, sign );
 }
 
 nn4_ctfReconstructor::~nn4_ctfReconstructor()
 {
-    if( m_delete_volume )
-        checked_delete(m_volume);
+	if( m_delete_volume ) checked_delete(m_volume);
 
-    if( m_delete_weight )
-        checked_delete( m_wptr );
+	if( m_delete_weight ) checked_delete( m_wptr );
 
-    checked_delete( m_result );
+	checked_delete( m_result );
 }
 
 void nn4_ctfReconstructor::setup() 
 {
-    if( ! params.has_key("size") )
-    {
-        throw std::logic_error("Error: image size is not given");
-    }
+	if( ! params.has_key("size") ) throw std::logic_error("Error: image size is not given");
 
-    int size = params["size"];
+	int size = params["size"];
 
-    int npad = 4;
-    // int sign = params.has_key("sign") ? int(params["sign"]) : 1;
-    int sign = 1;
-    string symmetry = params.has_key("symmetry")? params["symmetry"].to_str() : "c1";
-    
-    float snr = params["snr"];
-    setup( symmetry, size, npad, snr, sign );
+	int npad = 4;
+	// int sign = params.has_key("sign") ? int(params["sign"]) : 1;
+	int sign = 1;
+	string symmetry = params.has_key("symmetry")? params["symmetry"].to_str() : "c1";
+
+	float snr = params["snr"];
+	setup( symmetry, size, npad, snr, sign );
 
 }
 
 void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, float snr, int sign )
 {
-    m_weighting = ESTIMATE;
-    if( params.has_key("weighting") )
-    {
-        int tmp = int( params["weighting"] );
-        if( tmp==0 )
-            m_weighting = NONE;
-    }
+	m_weighting = ESTIMATE;
+	if( params.has_key("weighting") ) {
+		int tmp = int( params["weighting"] );
+		if( tmp==0 ) m_weighting = NONE;
+	}
 
 
 
-    m_wghta = 0.2f;
-    m_wghtb = 0.004f;
- 
-    m_symmetry = symmetry;
-    m_npad = npad;
-    m_sign = sign;
-    m_nsym = Transform3D::get_nsym(m_symmetry);
+	m_wghta = 0.2f;
+	m_wghtb = 0.004f;
 
-    m_snr = snr;
+	m_symmetry = symmetry;
+	m_npad = npad;
+	m_sign = sign;
+	m_nsym = Transform3D::get_nsym(m_symmetry);
 
-    m_vnx = size;
-    m_vny = size;
-    m_vnz = size;
+	m_snr = snr;
 
-    m_vnxp = size*npad;
-    m_vnyp = size*npad;
-    m_vnzp = size*npad;
+	m_vnx = size;
+	m_vny = size;
+	m_vnz = size;
 
-    m_vnxc = m_vnxp/2;
-    m_vnyc = m_vnyp/2;
-    m_vnzc = m_vnzp/2;
+	m_vnxp = size*npad;
+	m_vnyp = size*npad;
+	m_vnzp = size*npad;
 
-    buildFFTVolume();
-    buildNormVolume();
+	m_vnxc = m_vnxp/2;
+	m_vnyc = m_vnyp/2;
+	m_vnzc = m_vnzp/2;
+
+	buildFFTVolume();
+	buildNormVolume();
 }
 
 void nn4_ctfReconstructor::buildFFTVolume() {
     int offset = 2 - m_vnxp%2;
-    if( params.has_key("fftvol") )
-    {
+    if( params.has_key("fftvol") ) {
         m_volume = params["fftvol"];
         m_delete_volume = false;
-    }
-    else
-    {
+    } else {
 	m_volume = new EMData();
         m_delete_volume = true;
     }
@@ -2922,14 +2873,8 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 
     EMData* padfft = NULL;
 
-    if( padffted != 0 )
-    {
-        padfft = new EMData(*slice);
-    }
-    else
-    {
-        padfft = padfft_slice( slice, m_npad );
-    }
+    if( padffted != 0 ) padfft = new EMData(*slice);
+    else                padfft = padfft_slice( slice, m_npad );
 
     int mult= slice->get_attr_default("mult", 1);
     
@@ -2943,25 +2888,18 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 
 int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
 {
-    Assert( padfft != NULL );
-    float tmp = padfft->get_attr("ctf_applied");
-    int   ctf_applied = (int) tmp;
-	
-    for( int isym=0; isym < m_nsym; isym++) 
-    {
-        Transform3D tsym = t.get_sym( m_symmetry, isym );
+	Assert( padfft != NULL );
+	float tmp = padfft->get_attr("ctf_applied");
+	int   ctf_applied = (int) tmp;
 
-	if(ctf_applied) 
-	{ 
-	    m_volume->nn_ctf_applied(m_wptr, padfft, tsym, mult);
-	}
-	else 
-	{
-	    m_volume->nn_ctf(m_wptr, padfft, tsym, mult);
-	}
-    }
+	for( int isym=0; isym < m_nsym; isym++) {
+		Transform3D tsym = t.get_sym( m_symmetry, isym );
 
-    return 0;
+		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym, mult);
+		else            m_volume->nn_ctf(m_wptr, padfft, tsym, mult);
+	}
+
+	return 0;
 
 }
 
@@ -3274,16 +3212,11 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
 {
 	Assert( padfft != NULL );
-	int   ctf_applied = (int) padfft->get_attr("ctf_applied");
 	
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform3D tsym = t.get_sym(m_symmetry, isym);
-		if (ctf_applied) {
-			m_volume->nn_SSNR_ctf_applied( m_wptr, m_wptr2, m_wptr3, padfft, tsym, mult);
-		} else {
-			m_volume->nn_SSNR_ctf(m_wptr, m_wptr2, m_wptr3, padfft, tsym, mult);		
-		}
+		m_volume->nn_SSNR_ctf(m_wptr, m_wptr2, m_wptr3, padfft, tsym, mult);		
 	}
 	
 	return 0;
@@ -3292,6 +3225,12 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nnSSNR_ctfReconstructor::finish() 
 {
+/*
+  I changed the code on 05/15 so it only returns variance.
+  Lines commented out are marked by //#
+  The version prior to the currect changes is r1.190
+  PAP
+*/
 	/***
 	    m_volume ctf*(P^2D->3D(F^3D))
 	    m_wptr   ctf^2
@@ -3317,11 +3256,22 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
 #endif	//_WIN32
 
-	EMData* vol_ssnr = new EMData();
-	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
-	vol_ssnr->to_zero();
 	EMData* SSNR = params["SSNR"];
 	SSNR->set_size(inc+1,4,1);
+	//#EMData* vol_ssnr = new EMData();
+	//#vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
+	//#vol_ssnr->to_zero();
+	//#  new linea follow
+	EMData* vol_ssnr = new EMData();
+	vol_ssnr->set_size(m_vnxp+ 2 - m_vnxp%2, m_vnyp ,m_vnzp);
+	vol_ssnr->to_zero();
+	if ( m_vnxp % 2 == 0 ) vol_ssnr->set_fftodd(0);
+	else                   vol_ssnr->set_fftodd(1);
+	vol_ssnr->set_nxc(m_vnxc);
+	vol_ssnr->set_complex(true);
+	vol_ssnr->set_ri(true);
+	vol_ssnr->set_fftpad(false);
+	//#
 	float *nom    = new float[inc+1];
 	float *denom  = new float[inc+1];
 	int  *ka     = new int[inc+1];
@@ -3385,7 +3335,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						wght = 1.0f / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator   = std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz);
-					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz)))/(Kn-1.0f);
+					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz))/(Kn-1.0f);
 					// Skip Friedel related values
 					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
 						if ( r <= inc ) {
@@ -3394,6 +3344,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 							nn[r]	 += 2;
 							ka[r]	 += int(Kn);
 						}
+/*
 #ifdef	_WIN32
 						float  tmp = _cpp_max(nominator/denominator/(*m_wptr)(ix,iy,iz)-1.0f,0.0f);
 #else
@@ -3407,7 +3358,9 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						iix = m_vnxc - ix; iiy = m_vnyc - ky; iiz = m_vnzc - kz;
 						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
 							(*vol_ssnr)(iix, iiy, iiz) = tmp;
+*/
 					}
+					(*vol_ssnr)(2*ix, iy-1, iz-1) = denominator*wght;
 				} // end of Kn>4.5 or whatever
 			}
 		}
@@ -3589,15 +3542,13 @@ void file_store::add_image(  EMData* emdata )
 
 void file_store::get_image( int id, EMData* padfft )
 {
-    if( m_defocuses.size() == 0 )
-    {
+    if( m_defocuses.size() == 0 ) {
         ifstream m_txt_ifs( m_txt_file.c_str() );
         m_txt_ifs.ignore( 4096, '\n' );
 
         float defocus, phi, theta, psi;
 
-        while( m_txt_ifs >> m_Cs )
-        {
+        while( m_txt_ifs >> m_Cs ) {
             m_txt_ifs >> m_pixel >> m_voltage;
             m_txt_ifs >> m_ctf_applied >> m_amp_contrast;
             m_txt_ifs >> defocus >> phi >> theta >> psi;
