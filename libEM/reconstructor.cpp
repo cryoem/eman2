@@ -2639,19 +2639,19 @@ EMData* nnSSNR_Reconstructor::finish()
 						wght = 1.0f / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
-					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
+					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn-1.0f);
 					// Skip Friedel related values
 					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
 						if ( r <= inc ) {
 							nom[r]   += nominator*wght;
-							denom[r] += denominator*wght;
+							denom[r] += denominator/Kn*wght;
 							nn[r]    += 2;
 							ka[r]    += int(Kn);
 						}
 #ifdef	_WIN32
-						float  tmp = _cpp_max(nominator/denominator-1.0f,0.0f);
+						float  tmp = _cpp_max(nominator/denominator/Kn-1.0f,0.0f);
 #else
-						float  tmp = std::max(nominator/denominator-1.0f,0.0f);
+						float  tmp = std::max(nominator/denominator/Kn-1.0f,0.0f);
 #endif	//_WIN32
 						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
 						iix = m_vnxc + ix; iiy = m_vnyc + ky; iiz = m_vnzc + kz;
@@ -3385,19 +3385,19 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						wght = 1.0f / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator   = std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz);
-					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz))/(Kn-1.0f);
+					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz)))/(Kn-1.0f);
 					// Skip Friedel related values
 					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
 						if ( r <= inc ) {
 							nom[r]   += nominator*wght;
-							denom[r] += denominator*wght;
+							denom[r] += denominator/(*m_wptr)(ix,iy,iz)*wght;
 							nn[r]	 += 2;
 							ka[r]	 += int(Kn);
 						}
 #ifdef	_WIN32
-						float  tmp = _cpp_max(nominator/denominator-1.0f,0.0f);
+						float  tmp = _cpp_max(nominator/denominator/(*m_wptr)(ix,iy,iz)-1.0f,0.0f);
 #else
-						float  tmp = std::max(nominator/denominator-1.0f,0.0f);
+						float  tmp = std::max(nominator/denominator/(*m_wptr)(ix,iy,iz)-1.0f,0.0f);
 #endif	//_WIN32
 						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
 						int iix = m_vnxc + ix; int iiy = m_vnyc + ky; int iiz = m_vnzc + kz;
