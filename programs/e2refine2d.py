@@ -151,12 +151,15 @@ def main():
 	print "Using references from ",options.initial
 	# this is the main refinement loop
 	for it in range(1,options.iter+1) :		
+		# first we sort and align the class-averages from the last step
+		run("e2stacksort.py %s %s --simcmp=sqeuclidean --simalign=rotate_translate --center --useali --nsort=%d"%(options.initial,options.initial,it,options.naliref))
+		
 		# Compute a classification basis set
 #		run("e2msa.py %s basis.%02d.hdf --nbasis=%d"%(options.initial,it,options.nbasisfp))
 		run("e2msa.py %s basis.%02d.hdf --nbasis=%d --varimax"%(options.initial,it,options.nbasisfp))
 		
 		# extract the most different references for alignment
-		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate --reverse --useali --nsort=%d"%(options.initial,it,options.naliref))
+		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
 		
 		# We use e2simmx to compute the optimal particle orientations
 		e2simmxcmd = "e2simmx.py aliref.%02d.hdf %s simmx.%02d.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"  %(it, options.input,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)

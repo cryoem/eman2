@@ -53,6 +53,7 @@ This program will sort a stack of images based on some similarity criterion. """
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
 	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
 	parser.add_option("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
+	parser.add_option("--center",action="store_true",default=False,help="After alignment, particles are centered via center of mass before comparison")
 	parser.add_option("--nsort",type="int",help="Number of output particles to generate",default=0)
 	parser.add_option("--shrink",type="int",help="Reduce the particles for comparisons",default=1)
 #	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
@@ -69,13 +70,13 @@ This program will sort a stack of images based on some similarity criterion. """
 	if options.simcmp : options.simcmp=parsemodopt(options.simcmp)
 	
 	a=EMData.read_images(args[0])
-	if options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali)
-	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali)
+	if options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
+	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
 	for i,im in enumerate(b): im.write_image(args[1],i)
 
 	E2end(E2n)
 
-def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
+def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):
 	"""Sorts a list of images in order of LEAST similarity"""
 	
 	stackshrink=[i.copy() for i in stack]
@@ -95,6 +96,7 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 			for j,r in enumerate(rets):			# compare to all existing solutions, and use the MOST similar value
 				if align : ims=stackshrink[i].align(align,r,alignopts)
 				else : ims=stackshrink[i]
+				if center : ims.process_inplace("xform.centerofmass")
 				cc=r.cmp(cmptype,ims,cmpopts)
 				if cc<c : c,cj,ci=cc,j,ims
 #			print "\t%d. %1.3g (%d)"%(i,c,cj)
@@ -111,7 +113,7 @@ def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 
 	return ret
 
-def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
+def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):
 	"""Sorts a list of images based on a standard 'cmp' metric. cmptype is the name
 	of a valid cmp type. cmpopts is a dictionary. Returns a new (sorted) stack.
 	The original stack is destroyed."""
@@ -127,6 +129,7 @@ def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali):
 		best=(1.0e38,-1)
 		for i,ims in enumerate(stackshrink):
 			if align : ims=ims.align(align,rets[-1],alignopts)
+			if center : ims.process_inplace("xform.centerofmass")
 			c=rets[-1].cmp(cmptype,ims,cmpopts)+ims.cmp(cmptype,rets[-1],cmpopts)	# symmetrize results
 			if c<best[0] or best[1]<0 : best=(c,i,ims)
 		if useali : 
