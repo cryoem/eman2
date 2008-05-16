@@ -70,6 +70,7 @@ This program will sort a stack of images based on some similarity criterion. """
 	if options.simcmp : options.simcmp=parsemodopt(options.simcmp)
 	
 	a=EMData.read_images(args[0])
+	if options.nsort<2 : options.nsort=len(a)
 	if options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
 	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
 	for i,im in enumerate(b): im.write_image(args[1],i)

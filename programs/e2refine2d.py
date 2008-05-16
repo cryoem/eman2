@@ -152,16 +152,20 @@ def main():
 	# this is the main refinement loop
 	for it in range(1,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py %s %s --simcmp=sqeuclidean --simalign=rotate_translate --center --useali --nsort=%d"%(options.initial,options.initial,it,options.naliref))
+		run("e2stacksort.py %s %s --simcmp=sqeuclidean --simalign=rotate_translate --center --useali"%(options.initial,options.initial))
 		
 		# Compute a classification basis set
 #		run("e2msa.py %s basis.%02d.hdf --nbasis=%d"%(options.initial,it,options.nbasisfp))
+		try: remove("basis.%02d.hdf"%it)
+		except: pass
 		run("e2msa.py %s basis.%02d.hdf --nbasis=%d --varimax"%(options.initial,it,options.nbasisfp))
 		
 		# extract the most different references for alignment
 		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
 		
 		# We use e2simmx to compute the optimal particle orientations
+		try: remove("simmx.%02d.hdf"%it)
+		except: pass
 		e2simmxcmd = "e2simmx.py aliref.%02d.hdf %s simmx.%02d.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"  %(it, options.input,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
 		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 		run(e2simmxcmd)
@@ -169,6 +173,8 @@ def main():
 		# e2basis projectrot here
 		inputproj=options.input[:options.input.rfind(".")]+".%02d.proj.hdf"%it
 		inputproj=inputproj.split("/")[-1]
+		try: remove(inputproj)
+		except: pass
 		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s --verbose=%d"%(it,options.input,it,inputproj,subverbose))
 		
 		# classify the subspace vectors
