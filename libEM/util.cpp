@@ -1009,15 +1009,26 @@ float* Util::getBaldwinGridWeights( const int& freq_cutoff, const float& P, cons
 	cout << endl;
 	return W;
 }
+
+void Util::equation_of_plane(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, float * plane )
+{
+	int x=0,y=1,z=2;
+	plane[0] = p1[y]*(p2[z]-p3[z])+p2[y]*(p3[z]-p1[z])+p3[y]*(p1[z]-p2[z]);
+	plane[1] = p1[z]*(p2[x]-p3[x])+p2[z]*(p3[x]-p1[x])+p3[z]*(p1[x]-p2[x]);
+	plane[2] = p1[x]*(p2[y]-p3[y])+p2[x]*(p3[y]-p1[y])+p3[x]*(p1[y]-p2[y]);
+	plane[3] = p1[x]*(p2[y]*p3[z]-p3[y]*p2[z])+p2[x]*(p3[y]*p1[z]-p1[y]*p3[z])+p3[x]*(p1[y]*p2[z]-p2[y]*p1[z]);
+	plane[3] = -plane[3];
+}
+
 /*
-Dict Util::get_isosurface(EMData * image, float surface_value, bool smooth)
+Dict Util::get_isosurface(EMData * image, float surface_palue, bool smooth)
 {
 	if (image->get_ndim() != 3) {
 		throw ImageDimensionException("3D only");
 	}
 	
 	MarchingCubes * mc = new MarchingCubes(image, smooth);
-	mc->set_surface_value(surface_value);
+	mc->set_surface_palue(surface_palue);
 	
 	Dict d;
 	if(smooth) {	

@@ -133,6 +133,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("insert_params", pure_virtual(&EMAN::Symmetry3D::insert_params))
 		.def("get_params", &EMAN::Symmetry3D::get_params)
 		.def("reduce", &EMAN::Symmetry3D::reduce)
+		.def("in_which_asym_unit", &EMAN::Symmetry3D::in_which_asym_unit)
 		;
 		
 

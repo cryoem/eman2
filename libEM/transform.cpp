@@ -2047,20 +2047,7 @@ vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Trans
 // 	return ret;
 // }
 
-void equation_of_plane(const Vec3f& v1, const Vec3f& v2, const Vec3f& v3, float * plane )
-{
-// 	float* plane = new float[4]; // A,B,C,D
-	int x=0,y=1,z=2;
-	//y1 (z2 - z3) + y2 (z3 - z1) + y3 (z1 - z2) 
-	plane[0] = v1[y]*(v2[z]-v3[z])+v2[y]*(v3[z]-v1[z])+v3[y]*(v1[z]-v2[z]);
-	//z1 (x2 - x3) + z2 (x3 - x1) + z3 (x1 - x2) 
-	plane[1] = v1[z]*(v2[x]-v3[x])+v2[z]*(v3[x]-v1[x])+v3[z]*(v1[x]-v2[x]);
-	//x1 (y2 - y3) + x2 (y3 - y1) + x3 (y1 - y2) 
-	plane[2] = v1[x]*(v2[y]-v3[y])+v2[x]*(v3[y]-v1[y])+v3[x]*(v1[y]-v2[y]);
-	//x1 (y2 z3 - y3 z2) + x2 (y3 z1 - y1 z3) + x3 (y1 z2 - y2 z1)	
-	plane[3] = v1[x]*(v2[y]*v3[z]-v3[y]*v2[z])+v2[x]*(v3[y]*v1[z]-v1[y]*v3[z])+v3[x]*(v1[y]*v2[z]-v2[y]*v1[z]);
-	plane[3] = -plane[3];
-}
+
 
 void verify(const Vec3f& tmp, float * plane, const string& message )
 {
@@ -2069,74 +2056,94 @@ void verify(const Vec3f& tmp, float * plane, const string& message )
 
 Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n) const
 {
+	// Determine which asym unit the given asym unit is in
+	int soln = in_which_asym_unit(t3d);
 	
-	Vec3f p(0,0,1);
-	Dict rotation = t3d.get_rotation();
+	// This should never happen
+	if ( soln == -1 ) {
+		cout << "error, no solution found!" << endl;
+		throw;
+	}
 	
-	float az = rotation["az"];
-	float alt = rotation["alt"];
-	float phi = rotation["phi"];
+	// Get the symmetry operation corresponding to the intersection asymmetric unit
+	Transform3D nt = get_sym(soln);
+	// Transpose it (invert it)
+	nt.transpose();
+	// Now we can transform the argument orientation into the default asymmetric unit
+	nt  = t3d*nt;
+	// Now that we're at the default asymmetric unit, we can map into the requested asymmunit by doing this
+	if ( n != 0 ) {
+		nt = nt*get_sym(n);
+	}
+	// Done!
+	return nt;
+	
+}
 
-// 	Transform3D o = Transform3D(-az,0,0)*Transform3D(0,-alt,0)*Transform3D(0,0,-phi);
+int Symmetry3D::in_which_asym_unit(const Transform3D& t3d) const
+{
+	// Here it is assumed that final destination of the orientation (as encapsulated in the t3d object) is
+	// in the z direction, so in essence we will start in the direction z and 'undo' the orientation to get the real
+	// direction
+	Vec3f p(0,0,1);
+	
 	Transform3D o(t3d);
+	// Orientations are alway transposed when dealing with asymmetric units, projections,etc
+	// We take the transpose to 'undo' the transform and get the true direction of the point.
 	o.transpose();
+	// Figure out where the point would end up. No we could just as easily not transpose and do
+	// left multiplation (as in what occurs in the FourierReconstructor during slice insertion)
 	p = o*p;
-// 	cout << "Main point is " << p[0] << " " << p[1] << " " << p[2] << endl;
-// 	// First find which asymmetric unit the p is in
-	int soln = -1;
-// 	vector<Vec3f> points = get_asym_unit_points(true);
-// 	for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
-// // 		cout << "default asym unit " << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << " " << endl;
-// 	}
+	
+	// This is empty space for storing the equation of a plane
 	float* plane = new float[4];
+	
+	// Get a set of triangles that, if projected through, covers the entire asymmetric unit.
+	// Sometimes this will only be one triangle, sometimes it's two, occassionally it's 4.
+	vector<vector<Vec3f> >triangles = get_asym_unit_triangles(true);
+	typedef vector<vector<Vec3f> >::const_iterator cit;
+	
 	for(int i = 0; i < get_nsym(); ++i) {
-		
-		
-		vector<vector<Vec3f> >triangles = get_asym_unit_triangles(true);
-		typedef vector<vector<Vec3f> >::const_iterator cit;
 		
 		for( cit it = triangles.begin(); it != triangles.end(); ++it )
 		{
+			// For each given triangle
 			vector<Vec3f> points = *it;
 			if ( i != 0 ) {
 				for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
+					// Rotate the points in the triangle so that the triangle occupies the
+					// space of the current asymmetric unit
 					*it = (*it)*get_sym(i); 
 				}
 			}
 			
-			equation_of_plane(points[0],points[2],points[1],plane);
-			
-	// 		verify(points[0],plane, "p1");
-	// 		verify(points[1],plane, "p2");
-	// 		verify(points[2],plane, "p3");
-			
+			// Determine the equation of the plane for the points, store it in plane
+			Util::equation_of_plane(points[0],points[2],points[1],plane);
+
 			Vec3f tmp = p;
-	// 		tmp.normalize();
-	// 		cout << "plane solution is " << plane[0] << " " << plane[1] << " " << plane[2] << " " << plane[3] << endl;
-			float eqn = plane[0]*tmp[0]+plane[1]*tmp[1]+plane[2]*tmp[2];
-			if ( eqn != 0 )
-				eqn = -plane[3]/eqn;
+	
+			// Determine the intersection of p with the plane - do this by finding out how much p should be scaled by
+			float scale = plane[0]*tmp[0]+plane[1]*tmp[1]+plane[2]*tmp[2];
+			if ( scale != 0 )
+				scale = -plane[3]/scale;
 			else {
-				// parralel lines!
-// 				cout << "warning, had to continue on " << i << endl;
+				// parralel!
 				continue;
 			}
 			
-			
-			
-			if (eqn <= 0) continue;	
-	// 		cout << "scale factor was " << eqn << endl;
-			
-			
+			// If the scale factor is less than zero, then p is definitely not in this asymmetric unit 
+			if (scale <= 0) continue;	
 			
 			// This is the intersection point
-			Vec3f pp = tmp*eqn;
-	// 		verify(pp,plane, "pp");
+			Vec3f pp = tmp*scale;
 			
+			// Now we have to see if the point p is inside the region bounded by the points, or if it is outside
+			// If it is inside the region then p is in this asymmetric unit.
+			
+			// This formula take from FIXME fill in once I get to work
 			Vec3f v = points[2]-points[0];
 			Vec3f u = points[1]-points[0];
 			Vec3f w = pp - points[0];
-	// 		v.normalize(); u.normalize(); w.normalize();
 			
 			float udotu = u.dot(u);
 			float udotv = u.dot(v); 
@@ -2151,60 +2158,25 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n) const
 			float t = udotv*udotw - udotu*vdotw;
 			t *= d;
 			
+			// We've done a few multiplications, so detect when there are tiny residuals that may throw off the final 
+			// decision
 			if (fabs(s) < Transform3D::ERR_LIMIT ) s = 0;
 			if (fabs(t) < Transform3D::ERR_LIMIT ) t = 0;
 			
 			if ( fabs((fabs(s)-1.0)) < Transform3D::ERR_LIMIT ) s = 1;
 			if ( fabs((fabs(t)-1.0)) < Transform3D::ERR_LIMIT ) t = 1;
 			
+			// The final decision, if this is true then we've hit the jackpot
 			if ( s >= 0 && t >= 0 && (s+t) <= 1 ) {
-// 				cout << "Intersection detected with " << i << endl;
-				soln = i;
-				break;
-	// 			cout << "point is " << pp[0] << " " << pp[1] << " " << pp[2] << " " << eqn << endl;
-	// 			for (vector<Vec3f>::iterator it = points.begin(); it != points.end(); ++it ) {
-	// 				cout << "asym unit " << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << " " << endl;
-	// 			}
-	// 			cout << "rotation " <<  (float) get_sym(i).get_rotation()["az"] << " " <<  (float) get_sym(i).get_rotation()["alt"] << " " <<  (float) get_sym(i).get_rotation()["phi"] << endl;
+				delete [] plane;
+				return i;
 			}
 		}
 	}
-	
-	if ( soln == -1 ) {
-		cout << "error, no solution found!" << endl;
-		throw;
-	}
-	
-	Transform3D nt = get_sym(soln);
-	rotation = nt.get_rotation();
-	
-	az = rotation["az"];
-	alt = rotation["alt"];
-	phi = rotation["phi"];
-	
-// 	cout << "solution was " << soln << " angles are " << az << " " << alt << " " << phi << endl;
 
-	nt.transpose();
-	
-	nt  = t3d*nt;
-// 	nt.printme();
-	
-	// Now map into the requested asymmunit
-	if ( n != 0 ) {
-		nt = nt*get_sym(n);
-	}
-	
-// 	Vec3f pp(0,0,1);
-// 	pp = nt*pp;
-// 	cout << "p returned to " << atan2(pp[0],pp[1])*EMConsts::rad2deg << " and " << acos(pp[2])*EMConsts::rad2deg << " checking " << atan2(pp[1],pp[0])*EMConsts::rad2deg << endl;
-	
-// 	nt.transpose();
-	
 	delete [] plane;
-	return nt;
-	
+	return -1;
 }
-
 
 
 // C Symmetry stuff 
@@ -2233,14 +2205,7 @@ bool CSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 	if ( altitude <= alt_max && azimuth <= az_max ) return true;
 	return false;
 }
-// PRB see here
-// Transform3D CSym::reduce(const Transform3D& t3d, int n)
-// {
-// 	vector<Vec3f> points = get_asym_unit_points(false);
-// 	Transform3D t = get_sym(n);
-// 	
-// 	points.size();
-// }
+
 vector<vector<Vec3f> > CSym::get_asym_unit_triangles(bool inc_mirror ) const{
 	vector<Vec3f> v = get_asym_unit_points(inc_mirror);
 	int nsym = params.set_default("nsym",0);
@@ -2765,7 +2730,7 @@ vector<Vec3f> PlatonicSym::get_asym_unit_points(bool inc_mirror) const
 	
 }
 
-float IcosahedralSym::get_az_alignment_offset() const { return 0.0; } // This offset positions a 3 fold axis on the positive x axis
+float IcosahedralSym::get_az_alignment_offset() const { return 234.0; } // This offset positions a 3 fold axis on the positive x axis
 
 Transform3D IcosahedralSym::get_sym(int n) const
 {
@@ -2830,7 +2795,7 @@ Transform3D OctahedralSym::get_sym(int n) const
 	
 }
 
-float TetrahedralSym::get_az_alignment_offset() const { return  234.0; }
+float TetrahedralSym::get_az_alignment_offset() const { return  0.0; }
 
 bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const
 {

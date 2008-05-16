@@ -373,9 +373,30 @@ namespace EMAN
 		 */
 		virtual bool is_in_asym_unit(const float& altitude, const float& azimuth, const bool inc_mirror) const = 0;
 
+		/** A function that will reduce an orientation, as characterized by Euler anges, into a specific asymmetric unit.
+		* Default behavior is to map the given orientation into the default asymmetric unit of the symmetry (n=0). This 
+		* is a concrete implementation that works for all symmetries, relying on a concrete instance of the get_asym_unit_triangles
+		* function
+		* @param t3d a transform3D characterizing an orientation
+		* @param n the number of the asymmetric unit you wish to map the given orientation into. There is a strong relationship between n and to Symmetry3D::get_sym
+		* @return the orientation the specified asymmetric unit (by default this is the default asymmetric unit of the symmetry)
+		*/
 		/** @ingroup tested3c */
 		virtual Transform3D reduce(const Transform3D& t3d, int n=0) const;
 		
+		
+		/** A function that will determine in which asymmetric unit a given orientation resides 
+		 * The asymmetric unit 'number' will depend entirely on the order in which different symmetry operations are return by the
+		 * Symmetry3D::get_sym function
+		 * @param t3d a transform3D characterizing an orientation
+		 * @return the asymmetric unit number the the orientation is in
+		 */
+		virtual int in_which_asym_unit(const Transform3D& t3d) const;
+		
+		/** Get triangles that precisely occlude the projection area of the default asymmetric unit. This will be used
+		 * for collision detection in Symmetry3D::reduce
+		 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
+		*/
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const = 0;
 	};
 	
@@ -473,6 +494,10 @@ namespace EMAN
 		virtual bool is_c_sym() const { return  true; }
 		
 		
+		/** Get triangles that precisely occlude the projection area of the default asymmetric unit. This is used
+		 * for collision detection in Symmetry3D::reduce
+		 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
+		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 		
 
@@ -574,6 +599,10 @@ namespace EMAN
 		 */
 		virtual bool is_d_sym() const { return  true; }
 		
+		/** Get triangles that precisely occlude the projection area of the default asymmetric unit. This is used
+		 * for collision detection in Symmetry3D::reduce
+		 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
+		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	};
 	
@@ -692,6 +721,10 @@ namespace EMAN
 			 */
 			virtual vector<Vec3f> get_asym_unit_points(bool inc_mirror = false) const;
 			
+			/** Get triangles that precisely occlude the projection area of the default asymmetric unit. This is used
+			 * for collision detection in Symmetry3D::reduce
+			 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
+			 */
 			virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	};
 	
@@ -782,6 +815,10 @@ namespace EMAN
 		 */
 		virtual vector<Vec3f> get_asym_unit_points(bool inc_mirror = false) const;
 		
+		/** Get triangles that precisely occlude the projection area of the default asymmetric unit. This is used
+		 * for collision detection in Symmetry3D::reduce
+		 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
+		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 	};
 	

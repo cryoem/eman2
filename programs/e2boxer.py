@@ -37,6 +37,7 @@
 from EMAN2 import *
 from optparse import OptionParser
 from emshape import EMShape
+from emimagemx import EMImageMX
 from math import *
 from time import *
 import os
@@ -141,287 +142,12 @@ for single particle analysis."""
 	
 	try: options.retestlist=[int(i) for i in options.retestlist.split(',')]
 	except: options.retestlist=[]
-			
-	shrinkfactor=int(ceil(options.boxsize/16))
-	print "Shrink factor = ",shrinkfactor
-	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
-	#if options.boxsize/shrinkfactor<12 : shrinkfactor/=2
+	
 	
 	image.process_inplace("normalize.edgemean")
-	shrink=image
-	shrink.process_inplace("math.meanshrink",{"n":shrinkfactor})		# shrunken original image
-	
-	# This confusing line insures the shrunken images have even dimensions
-	# since odd FFTs haven't been fixed yet
-	if shrink.get_xsize()&1 or shrink.get_ysize()&1 :
-		shrink=shrink.get_clip(Region(0,0,(shrink.get_xsize()|1)^1,(shrink.get_ysize()|1)^1))
 
-	# now we try to clean up long range density variations in the image
-	filtrad=options.boxsize*2/shrinkfactor
-	flt=EMData()
-	flt.set_size(shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4,1)
-	flt.to_one()
-	flt.process_inplace("mask.sharp",{"outer_radius":filtrad})
-	flt/=(float(flt.get_attr("mean"))*flt.get_xsize()*flt.get_ysize())
-	flt.process_inplace("xform.phaseorigin.tocorner")
-	a=shrink.get_clip(Region(-filtrad*2,-filtrad*2,shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4))
-	a.process_inplace("mask.zeroedgefill")
-#	a.write_image("q0.hdf",0)
-#	flt.write_image("q0.hdf",1)
-	a=a.convolute(flt)
-#	a.write_image("q0.hdf",2)
-	a=a.get_clip(Region(filtrad*2,filtrad*2,shrink.get_xsize(),shrink.get_ysize()))
-#	shrink.write_image("q1.hdf",0)
-#	a.write_image("q1.hdf",1)
-	shrink-=a
-#	shrink.write_image("q1.hdf",2)
-	a=None
-	
-	shrink2=shrink.copy()
-	shrink2.process_inplace("math.squared")
-#	image=EMData()
-#	image.read_image(args[0])
-#	shrink.write_image("e.mrc")
-#	shrink2.write_image("f.mrc")
 		
 	if len(options.auto)>0 : print "Autobox mode ",options.auto[0]
-	
-	
-	# Reference-based automatic particle picking
-	if "ref" in options.auto:
-		if not refptcl: error_exit("Reference particles required")
-		
-		print "Prepare references"
-		# refptcls will contain shrunken normalized reference particles
-		refptcls=[]
-		for n,i in enumerate(refptcl):
-			# first a circular mask
-			i.process_inplace("normalize.circlemean")
-			i.process_inplace("mask.sharp",{"outer_radius":i.get_xsize()/2-1})
-						
-			ic=i.copy()
-			refptcls.append(ic)
-			ic.process_inplace("math.meanshrink",{"n":shrinkfactor})
-			# make the unmasked portion mean -> 0
-			ic-=float(ic.get_attr("mean_nonzero"))
-			ic.process_inplace("normalize.unitlen")
-#			ic.write_image("scaled_refs.hdf",-1)
-
-		# prepare a mask to use for local sigma calculaton
-		circle=shrink.copy_head()
-		circle.to_one()
-		circle.process_inplace("mask.sharp",{"outer_radius":options.boxsize/(shrinkfactor*2)-1})
-		circle/=(float(circle.get_attr("mean"))*circle.get_xsize()*circle.get_ysize())
-		
-		ccfmean=shrink.calc_ccf(circle,fp_flag.CIRCULANT)
-#		circle.write_image("z0a.hdf")
-#		shrink2.write_image("z0b.hdf")
-		ccfsig=shrink2.calc_ccf(circle,fp_flag.CIRCULANT)
-		ccfmean.process_inplace("math.squared")
-		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
-		ccfsig.process_inplace("math.sqrt")
-#		shrink.write_image("z0.hdf")
-#		ccfsig.write_image("z1.hdf")
-		
-		print "Locating possible particles"
-		xs=shrink.get_xsize()
-		ys=shrink.get_ysize()
-		pks=[]
-		for n,i in enumerate(refptcls):
-			j=i.get_clip(Region(-(xs-i.get_xsize())/2,-(ys-i.get_ysize())/2,xs,ys))
-#			j.write_image("0.%0d.hdf"%n)
-			ccfone=shrink.calc_ccf(j,fp_flag.CIRCULANT)
-#			ccfone.write_image("a.%0d.hdf"%n)
-			ccfone/=ccfsig
-#			ccfone.write_image("b.%0d.hdf"%n)
-			sig=float(ccfone.get_attr("sigma"))
-			ccfone.process_inplace("mask.onlypeaks",{"npeaks":0})
-#			ccfone.write_image("c.%0d.hdf"%n)
-			pk=ccfone.calc_highest_locations(sig*3.5)
-			for m,p in enumerate(pk):
-				pk[m]=(-p.value,n,p.x,p.y)
-			pks+=pk
-			
-		pks.sort()		# an ordered list of the best particle locations
-		print "%d putative particles located"%len(pks)
-				
-		# this will produce a new list excluding any lower valued boxes within
-		# 1/2 a box size of a higher one. It also rescales the boxes.
-		# (ok, you could do this with clever syntax, but this is more readable)
-
-		# first we prepare a grid table of putative box locations for speed
-		grid={}
-		for n,i in enumerate(pks):
-			x=int(floor(i[2]*shrinkfactor/options.boxsize))
-			y=int(floor(i[3]*shrinkfactor/options.boxsize))
-			try: grid[(x,y)].append(n)
-			except: grid[(x,y)]=[n]
-
-		
-		goodpks=[]
-		bf=options.boxsize/(shrinkfactor*2)
-		for n,i in enumerate(pks):
-			if i[2]<bf or i[3]<bf or i[2]>xs-bf-1 or i[3]>ys-bf-1 : continue
-
-			# local is a list of putative peaks near the current peak
-                        x=int(floor(i[2]*shrinkfactor/options.boxsize))
-                        y=int(floor(i[3]*shrinkfactor/options.boxsize))
-			local=[]
-			for xx in range(x-1,x+2):
-				for yy in range(y-1,y+2):
-					try: local+=grid[(xx,yy)]
-					except: pass
-			local=filter(lambda x: x>n,local)
-
-			for nn in local:
-				ii=pks[nn]
-				if hypot(i[2]-ii[2],i[3]-ii[3])<bf*3/2 : break
-			else: goodpks.append([i[0],i[1],i[2]*shrinkfactor-options.boxsize/2,i[3]*shrinkfactor-options.boxsize/2])
-		
-		print "%d putative particles after local exclusion"%len(goodpks)
-		
-		print "refine particle locations"
-		# This will optimize the center location of each particle and improve
-		# the similarity calculation
-		goodpks2=[]
-		n=0
-		for i in goodpks:
-			b=EMData()
-			
-			# on the first pass, rather than just using the best reference determined using the shrunken images
-			# we also try a subset of the references to see which gives the best alignment/match
-			# refns is the list of ref image #'s to test against
-			if options.nretest>0 :
-				refns=[i[1]]+range(options.nretest)	# list of the ref numbers of the particles to use in the realignment
-			else :
-				refns=[i[1]]+options.retestlist
-			
-			# read in the area where we think a particle exists
-			try: b.read_image(initial,0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
-			except: continue
-			b.process_inplace("normalize.edgemean")
-			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
-#			ba=refptcl[i[1]].align("rotate_translate",b,{},"SqEuclidean")
-			
-			# we iterate over each reference then find the best, eventually recentering ( i[2-3] ) and
-			# updating the reference number for the second pass ( i[1] )
-			tsts=[]
-			for j in refns: 
-				ba=b.align("rotate_translate",refptcl[j],{},"optvariance",{"matchfilt":1})
-				tsts.append([ba.get_attr("align.score"),j,ba.get_attr("align.dx"),ba.get_attr("align.dy"),ba.get_attr("align.az")])
-			tsts.sort()
-#			if tsts[0][1]!=i[1] : print i[1]," -> ",tsts[0][1],"    %f,%f  %f"%(tsts[0][2],tsts[0][3],tsts[0][4])
-			i[1]=tsts[0][1]
-			i[2]-= cos(tsts[0][4])*tsts[0][2]+sin(tsts[0][4])*tsts[0][3]
-			i[3]-=-sin(tsts[0][4])*tsts[0][2]+cos(tsts[0][4])*tsts[0][3]
-
-# this code can be used to test alignment
-#			b.write_image("cmp.hdf",-1)
-#			refptcl[i[1]].write_image("cmp.hdf",-1)
-#			ba.write_image("cmp.hdf",-1)
-#			try: 
-#				b.read_image(args[0],0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
-#				b.write_image("cmp.hdf",-1)
-#			except: pass
-			
-			# now we refine this by doing a second pass with the best reference
-			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
-			except: continue
-			b.process_inplace("normalize.edgemean")
-			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
-#			ba=refptcl[i[1]].align("rotate_translate",b,{},"SqEuclidean")
-			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"matchfilt":1})
-			dx=ba.get_attr("align.dx")
-			dy=ba.get_attr("align.dy")
-			da=ba.get_attr("rotational")
-			i[2]-= cos(da)*dx+sin(da)*dy
-			i[3]-=-sin(da)*dx+cos(da)*dy
-			if hypot(dx,dy)>12.0 or ba.get_attr("ovcmp_m")<=0: 
-				print '****'
-				continue
-			
-#			refptcl[i[1]].write_image("at.hdf",-1)
-#			ba.write_image("at.hdf",-1)
-
-			# for testing, write out intermediate images 
-#			b.write_image("t2.hdf",-1)
-#			cc=refptcl[i[1]].rot_scale_trans2D(-da,1.0,-(cos(da)*dx+sin(da)*dy),-(-sin(da)*dx+cos(da)*dy))
-#			cc-=ba.get_attr("ovcmp_b")
-#			cc/=ba.get_attr("ovcmp_m")
-#			cc.write_image("t2.hdf",-1)
-#			b-=cc
-#			b.write_image("t2.hdf",-1)
-			
-			# now we calculate the particle quality using the final
-			# alignment parameters
-			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
-			except: continue
-			b.process_inplace("normalize.edgemean")
-#			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.05})
-#			print "%d ROT %f"%(n*2,da)
-			rr=refptcl[i[1]].rot_scale_trans2D(da,1.0,0,0)
-			rr.process_inplace("normalize")
-			
-#			b.cmp("optvariance",rr,{"keepzero":1})
-#			b*=b.get_attr("ovcmp_m")
-#			b+=b.get_attr("ovcmp_b")
-#			rr.write_image("a.hdf",-1)
-#			b.write_image("a.hdf",-1)
-
-#			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
-#			score=rr.cmp("phase",b,{})+rr.cmp("optvariance",b,{"radweight":1,"matchamp":1})/rr.get_xsize()
-			score=sqrt(rr.cmp("optvariance",b,{"matchfilt":1}))
-#			score=sqrt(b.cmp("optvariance",rr,{"matchfilt":1}))
-#			score=b.get_attr("ovcmp_m")*b.get_attr("sigma")
-#			if (score<=0) : continue
-
-			# now record the fixed up location
-#			goodpks2.append((ba.get_attr("align.score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
-			goodpks2.append((score,i[2],i[3],i[1],ba.get_attr("ovcmp_m"),ba.get_attr("ovcmp_b"),n,score))
-			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f\t%1.6f"%(n,ba.get_attr("align.dx"),ba.get_attr("align.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("ovcmp_m"),goodpks2[-1][0])
-#			ba.write_image("ttt.hdf",-1)
-			n+=1
-#			display([b,ba,refptcl[i[1]]])
-						
-		goodpks2.sort()
-		
-		# now we do 1-D k-means to split the data into 3 groups
-		pl=[(goodpks2[0][0],0),((goodpks2[0][0]+goodpks2[-1][0])/2.0,0),(goodpks2[-1][0],0)]
-		
-		for i in range(20):
-			pl2=[(0,0),(0,0),(0,0)]
-			for j in goodpks2:
-				if j[0]<(pl[0][0]+pl[1][0])/2.0 : pl2[0]=(pl2[0][0]+j[0],pl2[0][1]+1.0)
-				elif j[0]>(pl[1][0]+pl[2][0])/2.0 : pl2[2]=(pl2[2][0]+j[0],pl2[2][1]+1.0)
-				else : pl2[1]=(pl2[1][0]+j[0],pl2[1][1]+1.0)
-#			pl=[(pl2[0][0]/pl2[0][1],pl2[0][1]),(pl2[1][0]/pl2[1][1],pl2[1][1]),(pl2[2][0]/pl2[2][1],pl2[2][1])]
-			# complexity here is necessary to deal with empty sets in the k-means
-			if pl2[0][1]==0 : pl[0]=(goodpks2[0][0],0)
-			else : pl[0]=(pl2[0][0]/pl2[0][1],pl2[0][1])
-			if pl2[1][1]==0 : pl[1]=((goodpks2[0][0]+goodpks2[-1][0])/2.0,0)
-			else : pl[1]=(pl2[1][0]/pl2[1][1],pl2[1][1])
-			if pl2[2][1]==0 : pl[2]=(goodpks2[-1][0],0)
-			else : (pl2[2][0]/pl2[2][1],pl2[2][1])
-			print pl
-		
-		
-		
-		if   (options.threshold<1.0) : thr=pl[0][0]*options.threshold+goodpks2[0][0]*(1.0-options.threshold)
-		elif (options.threshold<2.0) : thr=pl[1][0]*(options.threshold-1.0)+pl[0][0]*(2.0-options.threshold)
-		elif (options.threshold<3.0) : thr=pl[2][0]*(options.threshold-2.0)+pl[1][0]*(3.0-options.threshold)
-		elif (options.threshold<4.0) : thr=goodpks2[-1][0]*(options.threshold-3.0)+pl[2][0]*(4.0-options.threshold)
-		else : thr=goodpks2[-1][0]
-		
-		print "Threshold : ",thr
-		boxthr=thr
-		
-		# put results in standard 'box' array so GUI can modify if desired
-		for i in goodpks2:
-			boxes.append([i[1],i[2],options.boxsize,options.boxsize,i[0],1])		# x,y,xsize,ysize,quality,changed
-			
-	# 		out=open("box.stats","w")
-# 		for i in goodpks2: out.write("%f\n"%i[0])
-# 		out.close()
 	
 	if "grid" in options.auto:
 		try:
@@ -568,7 +294,8 @@ class BoxSet2:
 		self.templateupdate = True	# When turned off, prevents the correlation map from being updated - this is useful the act of adding a ref only affects the optimum parameters, not the correlation map
 		self.fpshrink = -1
 		self.exclusionimage = None
-		
+		self.template = None
+		self.correlation = None
 		
 	def addbox(self,box):
 		if not isinstance(box,Box):
@@ -695,15 +422,25 @@ class BoxSet2:
 		
 		
 		# Update the template internally, this makes self.template
+		if len(self.refboxes) == 0 :
+			print "Error, can't update template if there are no selected reference boxes"
+			exit(1)
+		
 		self.genrotalignedaverage()
 		if self.template == None:
 			print "Error, something went wrong with the template generation"
 			exit(1)
 		
 		# newr is the parameter that will potentially be used to run the flattenbackround processor
+		
+		self.gencorrelation(self.template)
+
+	def gencorrelation(self,template,forceupdate=False):
+		
+		self.template = template
 		newr = self.template.get_xsize()/2.0
 		# now we only recalculate the small copy of the subject image if necessary
-		if self.smallimage == None or newr != self.flattenimager:
+		if self.smallimage == None or newr != self.flattenimager or forceupdate:
 			self.flattenimager = newr
 			#FIXME - we could avoid a deep copy by writing the meanshrink processor
 			# i.e. section = self.image.process("math.meanshrink",{"n":self.getbestshrink()}
@@ -713,12 +450,13 @@ class BoxSet2:
 			else: self.smallimage = self.image.copy()
 			
 			self.smallimage.process_inplace("filter.flattenbackground",{"radius":self.flattenimager})
+		
 
 		self.correlation = self.smallimage.calc_flcf( self.template )
 		
 		# this may not be necessary if we ever want to be completely efficient
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
-		self.correlation.write_image("tttttt.hdf")
+		#self.correlation.write_image("tttttt.hdf")
 	
 	def genrotalignedaverage(self):
 		# you can only generate a template if there are references
@@ -886,9 +624,7 @@ class BoxSet2:
 			print "Error, can't autobox of the correlation image doesn't exist"
 			exit(1)
 		
-		if len(self.refboxes) == 0 :
-			print "Error, can't autobox if there are no selected reference boxes"
-			exit(1)
+		
 			
 		exclusion = self.getExclusionImage().copy()
 		self.updateexclusion(exclusion)
@@ -1075,7 +811,6 @@ class GUIbox:
 		
 		'boxes' is a list of box locations:
 		[x0,y0,xsize,ysize,quality,changed]
-		quality is used in conjuntion with 'thr' to decide which
 		boxes are 'real'. 'changed' is used by the GUI to decide when
 		redrawing is necessary (should be set to 1 initially)."""
 		try:
@@ -1091,9 +826,14 @@ class GUIbox:
 		self.eraseradius = 2*boxsize
 		
 		self.app=get_app()
-		self.image=EMData()					# the image to be boxed
-		self.image.read_image(imagefsp)
+		self.image=EMData().read_images(imagefsp,[0])[0]					# original image to be boxed
 		self.imagefsp = imagefsp
+		self.currentimage = 0
+		self.boxsetcache = None
+		self.itshrink = -1 # image thumb shrink
+		self.imagethumbs = None # image thumbs
+		
+		
 		#if abs(self.image.get_attr("mean")) < 1:
 			#print "adding 10"
 			#self.image.add(10)
@@ -1107,8 +847,14 @@ class GUIbox:
 		
 		self.guiimp=EMImage(self.image)		# widget for displaying large image
 		self.guiim=self.guiimp.child
-		self.guimxp=EMImage(self.ptcl)		# widget for displaying matrix of smaller images
-		self.guimx=self.guimxp.child
+		self.guimxp= None # widget for displaying matrix of smaller images
+		self.guimx=EMImageMX()	
+		
+		self.guimxit=EMImageMX()		# widget for displaying image thumbs
+		self.genimagethumbnails(self.imagefsp)
+		self.guimxit.setData(self.imagethumbs)
+		self.guimxit.setmmode("app")
+		self.guimxitp = EMParentWin(self.guimxit)
 		
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mousedown)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mousedrag)
@@ -1120,6 +866,7 @@ class GUIbox:
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.boxsel)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedrag"),self.boxmove)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mouseup"),self.boxrelease)
+		self.guimx.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
 		
 		self.mmode = 0
 		self.guiim.setmmode(0)
@@ -1148,10 +895,93 @@ class GUIbox:
 			pass
 		
 		self.guiimp.show()
-		self.guimxp.show()
+		self.guimxitp.show()
 		self.guictl.show()
 		
 		self.boxupdate()
+		
+	def setPtclMxData(self,data=None):
+		'''
+		Call this to set the Ptcl Mx data 
+		'''
+		if data != None and len(data) != 0:
+			self.guimx.setData(data)
+			if self.guimxp == None:
+				self.guimxp = EMParentWin(self.guimx)
+				self.guimxp.show()
+	
+	def imagesel(self,event,lc):
+		im=lc[0]
+		if im != self.currentimage:
+			oldboxset  = self.boxsetcache[self.currentimage]
+			self.guimxit.setSelected(im)
+			self.image = EMData().read_images(self.imagefsp,[im])[0]
+			self.image.process_inplace("normalize.edgemean")
+			self.guiim.setData(self.image)
+			if self.boxsetcache[im] == None:
+				self.boxsetcache[im] = BoxSet2(self.image,self)
+				self.boxsetcache[im].boxsize = self.boxsize
+				
+			self.boxset2 = self.boxsetcache[im]
+			template = oldboxset.template
+			if template != None:
+				if self.boxset2.correlation == None:
+					self.boxset2.gencorrelation(oldboxset.template)
+					self.boxset2.autobox(oldboxset.optprofile,oldboxset.optthreshold)
+			for box in self.boxset2.boxes: box.changed = True
+			self.currentimage = im
+			self.ptcl = []
+			self.guiim.delShapes()
+			self.boxupdate()
+			self.updateAllImageDisplay()
+	
+	def genimagethumbnails(self,imagename):
+		print imagename
+		# warning, the imagename is invalid something could go wrong here
+		try: n = EMUtil.get_image_count(imagename)
+		except: 
+			# warning - bad hacking going on
+			print "the image name ", imagename, "probably doesn't exist"
+			raise Exception
+		
+		n = self.getimagethumbshrink()
+		self.imagethumbs = []
+		nim = EMUtil.get_image_count(imagename)
+		print 
+		for i in range(0,nim):
+			if i == 0 and self.boxsetcache == None:
+				self.boxsetcache = []
+				self.boxsetcache.append(self.boxset2)
+				image = self.image
+			else:
+				self.boxsetcache.append(None)
+				image = EMData().read_images(imagename,[i])[0]
+			# could save some time here by using self.image when i == 0
+			
+			i = image.process("math.meanshrink",{"n":n})
+			i.process_inplace("normalize.edgemean")
+			self.imagethumbs.append(i)
+			
+		
+		print "done image thumbs"
+		
+	def getimagethumbshrink(self):
+		if self.itshrink == -1:
+			if self.image == None:
+				print "error - the image is not set, I need it to calculate the image thumb shrink"
+				exit(1)
+			shrink = 1
+			inx = self.image.get_xsize()/2
+			iny = self.image.get_ysize()/2
+			while ( inx >= 128 and iny >= 128):
+				inx /= 2
+				iny /= 2
+				shrink *= 2
+		
+			self.itshrink=shrink
+		
+		return self.itshrink
+		
 	def write_boxes_to(self,imagename,norm=True):
 		boxes = self.getboxes()
 		
@@ -1171,11 +1001,12 @@ class GUIbox:
 		self.boxm[0] = event.x()
 		self.boxm[1] = event.y()
 		self.updateAllImageDisplay()
+		
 	def boxrelease(self,event):
 		if self.getboxes()[self.boxm[2]].isref :
 			self.autobox()
 		self.boxm = None
-
+		
 	def boxsel(self,event,lc):
 		im=lc[0]
 		self.boxm = [event.x(),event.y(),im]
@@ -1455,7 +1286,7 @@ class GUIbox:
 		
 
 		self.guiim.addShapes(ns)
-		self.guimx.setData(self.ptcl)
+		self.setPtclMxData(self.ptcl)
 		
 		self.guictl.nboxesChanged(len(self.ptcl))
 #		self.emit(QtCore.SIGNAL("nboxes"),len(self.ptcl))

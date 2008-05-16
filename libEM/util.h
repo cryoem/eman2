@@ -874,6 +874,19 @@ namespace EMAN
 			return (float)result;
 #endif
 		}
+		
+		/** Determine the equation of a plane that intersects 3 points in 3D space. 
+		* Required by Symmetry3D::reduce
+		* IMPORTANT - does no error checking, if the float pointer is less than 4 in size will get unknown behavior
+		* @param p1 point one
+		* @param p2 point two
+		* @param p3 point three
+		* @param plane a float pointer - should have room for 4 elements which will be A,B,C, and D (in that order) for the equation Ax+By+Cz+D=0
+		* @return there is no explicit return - data is implicitly returned in the plane pointer
+		* @author David Woolford
+		* @date May 2008
+		*/
+		static void equation_of_plane(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, float * plane );
 
 		/** Print a 3D integer matrix to a file stream (std out by default).
 		 *

@@ -1057,7 +1057,7 @@ if __name__ == '__main__':
 	GLUT.glutInit("")
 	window = EMImage2D()
 	if len(sys.argv)==1 : 
-		window.setData(test_image(size=(512,512)))
+		window.setData(test_image(size=(128,128)))
 
 		# these lines are for testing shape rendering
 # 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])

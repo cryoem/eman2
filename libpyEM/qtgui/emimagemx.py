@@ -60,13 +60,14 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	def __init__(self, data=None,parent=None):
 
 		self.imagemx = None
-		self.initflag = True
+		#self.initflag = True
 		self.mmode = "drag"
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImageMX.allim[self]=0
+		
 		
 		self.imagemx = EMImageMXCore(data,self)
 		
@@ -85,20 +86,17 @@ class EMImageMX(QtOpenGL.QGLWidget):
 
 	
 	def resizeGL(self, width, height):
-		glViewport(0,0,self.width(),self.height())
+		
+		GL.glViewport(0,0,width,height)
 	
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		gluOrtho2D(0.0,self.width(),0.0,self.height())
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GLU.gluOrtho2D(0.0,width,0.0,height)
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+		
 		try: self.imagemx.resizeEvent(width,height)
-		except Exception, inst:
-			print type(inst)     # the exception instance
-			print inst.args      # arguments stored in .args
-			print int
-	
+		except: pass
 	def setmmode(self,mode):
 		self.mmode = mode
 		self.imagemx.mmode = mode
@@ -190,15 +188,23 @@ class EMImageMXCore:
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 		
 	def setData(self,data):
-		if data == None or not isinstance(data,list): return
-		
-		if self.initsizeflag and data:
-			try:
-				if len(data)<self.nperrow : w=len(data)*(data[0].get_xsize()+2)
-				else : w=self.nperrow*(data[0].get_xsize()+2)
-				if w>0 : self.parent.resize(w,512)
-			except: pass
-			initsizeflag = False
+		if data == None or not isinstance(data,list) or len(data)==0: return
+
+		if (self.initsizeflag):
+			self.initsizeflag = False
+			if len(data)<self.nperrow :
+				w=len(data)*(data[0].get_xsize()+2)
+				hfac = 1
+			else : 
+				w=self.nperrow*(data[0].get_xsize()+2)
+				hfac = len(data)/self.nperrow+1
+			hfac *= data[0].get_ysize()
+			if hfac > 512:
+				hfac = 512
+			print w,hfac
+			self.parent.resize(int(w),int(hfac))
+			#self.parent.resizeGL(w,hfac)
+			
 
 		self.data=data
 		if data==None or len(data)==0:
@@ -229,7 +235,10 @@ class EMImageMXCore:
 		
 		self.showInspector()		# shows the correct inspector if already open
 		#self.timer.start(25)
+		
+
 		self.updateGL()
+			
 		
 	def updateGL(self):
 		try: self.parent.updateGL()
@@ -301,6 +310,7 @@ class EMImageMXCore:
 		else : self.invert=0
 		self.updateGL()
 	
+
 	def timeout(self):
 		"""Called a few times each second when idle for things like automatic scrolling"""
 		if self.targetorigin :
@@ -320,6 +330,9 @@ class EMImageMXCore:
 		if not self.data : return
 		for i in self.data:
 			self.changec[i]=i.get_attr("changecount")
+		
+		
+		
 		
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
@@ -373,6 +386,7 @@ class EMImageMXCore:
 					th=int(h-ty+y)
 	
 				shown = True
+				#print rx,ry,tw,th,self.parent.width(),self.parent.height()
 				if not self.glflags.npt_textures_unsupported():
 					a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 					self.texture(a,tx,ty,tw,th)
@@ -977,8 +991,8 @@ class EMImageMxInspector2D(QtGui.QWidget):
 
 # This is just for testing, of course
 if __name__ == '__main__':
-	GLUT.glutInit(sys.argv )
 	app = QtGui.QApplication(sys.argv)
+	GLUT.glutInit("")
 	window = EMImageMX()
 	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)])
 	else :
