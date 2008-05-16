@@ -33,6 +33,7 @@
  * 
  * */
 
+#include <cstring>
 #include "lstfastio.h"
 #include "util.h"
 

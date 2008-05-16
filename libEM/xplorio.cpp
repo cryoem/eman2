@@ -33,6 +33,7 @@
  * 
  * */
 
+#include <cstring>
 #include "xplorio.h"
 #include "util.h"
 #include "emassert.h"

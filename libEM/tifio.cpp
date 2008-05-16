@@ -39,6 +39,7 @@
 #include "util.h"
 #include "geometry.h"
 #include <tiffio.h>
+#include <climits>
 
 using namespace EMAN;
 

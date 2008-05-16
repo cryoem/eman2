@@ -35,6 +35,7 @@
 
 #include "pointarray.h"
 #include <vector>
+#include <cstring>
 
 using namespace EMAN;
 

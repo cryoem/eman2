@@ -41,6 +41,7 @@
 #include "emassert.h"
 #include "transform.h"
 #include <iostream>
+#include <cstring>
 
 #ifndef _WIN32
 	#include <sys/param.h>

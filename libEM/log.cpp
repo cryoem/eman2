@@ -35,7 +35,7 @@
 
 #include "log.h"
 #include "util.h"
-
+#include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
 

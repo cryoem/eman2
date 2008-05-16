@@ -41,6 +41,8 @@
 #include "geometry.h"
 
 #include <cfloat>
+#include <climits>
+#include <cstring>
 
 using std::vector;
 using std::map;

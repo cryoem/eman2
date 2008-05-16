@@ -33,6 +33,7 @@
  * 
  * */
 
+#include <cstring>
 #include "lstio.h"
 #include "util.h"
 

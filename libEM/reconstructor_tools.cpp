@@ -29,6 +29,7 @@
  * 
  * */
 
+#include <cstring>
 #include "reconstructor_tools.h"
 
 using namespace EMAN;

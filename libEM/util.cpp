@@ -44,7 +44,7 @@
 #include <iomanip>
 #include <sstream>
 
-#include <algorithm>
+#include <cstring>
 // using accumulate, inner_product, transform
 
 #include <sys/types.h>

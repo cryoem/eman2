@@ -29,6 +29,7 @@
  * 
  * */
 
+#include <cstring>
 #include "emdata.h"
 #include "ctf.h"
 

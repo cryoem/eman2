@@ -36,6 +36,7 @@
 #include "emdata.h"
 #include "ctf.h"
 
+#include <cstring>
 #include <sstream>
 using std::stringstream;
 

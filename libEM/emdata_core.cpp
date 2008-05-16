@@ -42,6 +42,7 @@ using namespace EMAN;
 
 // debug only
 #include <iostream>
+#include <cstring>
 using std::cout;
 using std::endl;
 

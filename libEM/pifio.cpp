@@ -37,6 +37,7 @@
 #include "portable_fileio.h"
 #include "geometry.h"
 #include "imageio.h"
+#include <cstring>
 
 #ifdef WIN32
 #include <time.h>

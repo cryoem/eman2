@@ -36,7 +36,8 @@
 #include "emdata.h"
 #include "emfft.h"
 
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #ifdef EMAN2_USING_OPENGL
 #include "GL/gl.h"

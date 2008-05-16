@@ -42,8 +42,8 @@
 #else
 #define  MAXPATHLEN (MAX_PATH * 4)
 #endif
-#include <limits.h>
-
+#include <climits>
+#include <cstring>
 
 using namespace EMAN;
 

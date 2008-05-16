@@ -33,6 +33,7 @@
  * 
  * */
 
+#include <cstring>
 #include "imagicio.h"
 #include "portable_fileio.h"
 #include "util.h"

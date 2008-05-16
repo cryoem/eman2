@@ -35,7 +35,8 @@
 
 #include "emdata.h"
 #include <iostream>
-#include "math.h"
+#include <cmath>
+#include <cstring>
  
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>

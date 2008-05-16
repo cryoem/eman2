@@ -35,6 +35,7 @@
 
 #ifdef EM_PNG
 
+#include <climits>
 #include "pngio.h"
 #include "geometry.h"
 #include "util.h"

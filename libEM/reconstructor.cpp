@@ -33,6 +33,7 @@
  * 
  * */
 
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <boost/bind.hpp>

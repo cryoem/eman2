@@ -33,6 +33,7 @@
  * 
  * */
 
+#include <cstring>
 #include "fitsio.h"
 #include "portable_fileio.h"
 #include "geometry.h"

@@ -33,6 +33,8 @@
  * 
  * */
 
+#include <cstring>
+
 #include "mrcio.h"
 #include "portable_fileio.h"
 #include "geometry.h"
