@@ -126,6 +126,7 @@ namespace EMAN
 			char map[4];		/* constant string "MAP "  */
 			int machinestamp;	/* machine stamp in CCP4 convention:
 								   big endian=0x11110000 little endian=0x44440000 */
+						/* There is an ambiguity in the specification, using 0x11111111 & 4 instead */
 
 			float rms;			/* rms deviation of map from mean density */
 

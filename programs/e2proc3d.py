@@ -97,6 +97,10 @@ def main():
     parser.add_option("--first", metavar="n", type="int", default=0, 
                                 help="the first image in the input to process [0 - n-1])")
 
+    parser.add_option("--trans", metavar="dx,dy,dz", type="string", default=0, help="Translate map by dx,dy,dz ")
+
+    parser.add_option("--rot", metavar="az,alt,phi or convention,a1,a2,a3,a4", type="string", default=0, help="Rotate map using EMAN Euler angles z,x,z' or an arbitrary convention")
+
     parser.add_option("--last", metavar="n", type="int", default=-1, 
                                 help="the last image in the input to process")
     
@@ -180,7 +184,16 @@ def main():
 
             elif option1 == "add":
                 data.add(options.add)
-
+            
+            elif option1 == "trans":
+		dx,dy,dz=options.trans.split(",")
+		data.translate(float(dx),float(dy),float(dz))
+		
+	    elif option1 == "rot":
+		parm=parsemodopt(options.rot)
+		
+		data.rotate(Transform3D(EULER[parm[0].lower()],parm[1]))
+		
             elif option1 == "clip":
                 ci = index_d[option1]
                 (nx, ny, nz, xc, yc, zc) = options.clip[ci]
