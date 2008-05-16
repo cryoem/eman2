@@ -38,6 +38,8 @@
 
 #ifdef EM_HDF5
 
+#define H5_USE_16_API
+
 #include "imageio.h"
 
 #include <hdf5.h>
