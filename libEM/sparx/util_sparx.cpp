@@ -15535,6 +15535,36 @@ EMData* Util::divn_img(EMData* img, EMData* img1)
 	return img2;
 }
 
+EMData* Util::divn_filter(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img /= img1 ===================== */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	EMData * img2 = img->copy_head();
+	float *img_ptr  =img->get_data();
+	float *img2_ptr = img2->get_data();
+	float *img1_ptr = img1->get_data();
+	if(img->is_complex()) {
+		for (int i=0; i<size; i+=2) {
+			if(img1_ptr[i] > 1.e-10f) {
+			img2_ptr[i]   = img_ptr[i]  /img1_ptr[i];
+			img2_ptr[i+1] = img_ptr[i+1]/img1_ptr[i];
+			} else img_ptr[i] = img_ptr[i+1] = 0.0f;
+		}
+	} else  throw ImageFormatException("Only Fourier image allowed");
+
+	img->update();
+	
+	EXITFUNC;
+	return img2;
+}
+
 void Util::mul_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;
@@ -15685,6 +15715,33 @@ void Util::div_img(EMData* img, EMData* img1)
 	} else {
 		for (int i=0; i<size; i++) img_ptr[i] /= img1_ptr[i];
 	}
+	img->update();
+	
+	EXITFUNC;
+}
+
+void Util::div_filter(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img /= img1 ===================== */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	if(img->is_complex()) {
+		for (int i=0; i<size; i+=2) {
+			if(img1_ptr[i] > 1.e-10f) {
+			img_ptr[i]   /= img1_ptr[i];
+			img_ptr[i+1] /= img1_ptr[i];
+			} else img_ptr[i] = img_ptr[i+1] = 0.0f;
+		}
+	} else throw ImageFormatException("Only Fourier image allowed");
+
 	img->update();
 	
 	EXITFUNC;
