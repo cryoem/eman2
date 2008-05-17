@@ -55,6 +55,7 @@ def main():
 	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output (1-9)")
 	parser.add_option("--input", default="start.hdf",type="string", help="The name of the file containing the particle data")
 	parser.add_option("--ncls", default=32, type="int", help="Number of classes to generate")
+	parser.add_option("--maxshift", default=-1, type="int", help="Maximum particle translation in x and y")
 	parser.add_option("--iterclassav", default=2, type="int", help="Number of iterations when making class-averages")
 	parser.add_option("--naliref", default=8, type="int", help="Number of alignment references to when determining particle orientations")
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
@@ -64,7 +65,7 @@ def main():
 	parser.add_option("--nbasisfp",type="int",default=5,help="Number of MSA basis vectors to use when classifiying based on invariants for making starting class-averages")
 
 	# options associated with e2simmx.py
-	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate")
+	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip")
 	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments",default="dot")
 	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
 	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
@@ -113,6 +114,10 @@ def main():
 
 	if options.exclude : excludestr="exclude="+options.exclude
 	else: excludestr=""
+
+	if options.maxshift<0 : 
+		tmp=EMData(options.input,0)
+		options.maxshift=tmp.get_xsize()/3	
 	
 	# if we aren't given starting class-averages, make some
 	if not options.initial :
@@ -145,14 +150,14 @@ def main():
 		# make class-averages
 		try: re0move("classes.init.hdf")
 		except: pass
-		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip --averager=image -vf --bootstrap"%(options.input,options.iterclassav))
+		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,options.iterclassav,options.maxshift))
 		options.initial="classes.init.hdf"
 		
 	print "Using references from ",options.initial
 	# this is the main refinement loop
 	for it in range(1,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py %s %s --simcmp=sqeuclidean --simalign=rotate_translate --center --useali"%(options.initial,options.initial))
+		run("e2stacksort.py %s %s --simcmp=sqeuclidean --simalign=rotate_translate_flip:maxshift==%d --center --useali"%(options.initial,options.initial,options.maxshift))
 		
 		# Compute a classification basis set
 #		run("e2msa.py %s basis.%02d.hdf --nbasis=%d"%(options.initial,it,options.nbasisfp))
@@ -185,7 +190,11 @@ def main():
 		# make class-averages
 		try: remove("classes.%02d.hdf"%it)
 		except: pass
+<<<<<<< e2refine2d.py
+		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=image -v"%(options.input,it,it,options.iterclassav,options.maxshift))
+=======
 		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate_flip --averager=image -v --bootstrap"%(options.input,it,it,options.iterclassav))
+>>>>>>> 1.21
 		
 		options.initial="classes.%02d.hdf"%it
 			

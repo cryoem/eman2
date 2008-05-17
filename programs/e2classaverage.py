@@ -180,7 +180,7 @@ def main():
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
 						
 						# Position the image correctly
-						print da.get(c,p)
+#						print da.get(c,p)
 						t3d = Transform3D(EULER_EMAN,-da.get(c,p),0,0)
 						t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
 						if (options.lowmem):
@@ -311,7 +311,7 @@ def main():
 					a = Util.get_stats_cstyle(qual_scores)
 					mean = a["mean"]
 					std_dev = a["std_dev"]
-					cullthresh = mean + (5.0*(1.0-itfrac)+itfrac*options.keepsig)*std_dev
+					cullthresh = mean + (5.0*(1.0-itfrac)+itfrac*options.keep)*std_dev
 				else:
 					b = deepcopy(qual_scores)
 					b.sort()
