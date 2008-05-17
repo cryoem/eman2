@@ -190,11 +190,7 @@ def main():
 		# make class-averages
 		try: remove("classes.%02d.hdf"%it)
 		except: pass
-<<<<<<< e2refine2d.py
-		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=image -v"%(options.input,it,it,options.iterclassav,options.maxshift))
-=======
-		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate_flip --averager=image -v --bootstrap"%(options.input,it,it,options.iterclassav))
->>>>>>> 1.21
+		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,it,it,options.iterclassav,options.maxshift))
 		
 		options.initial="classes.%02d.hdf"%it
 			
