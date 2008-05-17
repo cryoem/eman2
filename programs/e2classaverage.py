@@ -243,15 +243,16 @@ def main():
 							#ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 							
 							np += 1
-							frac = 1.0/float(np)
-							omfrac = 1.0 - frac
-							ta.mult(frac) # be careful about the weighting
-							average.mult(omfrac) # be carefult about the weighting
+							#frac = 1.0/float(np)
+							#omfrac = 1.0 - frac
+							#ta.mult(frac) # be careful about the weighting
+							#average.mult(omfrac) # be carefult about the weighting
 							average.add(ta) # now add the image
 							#if ta.get_attr('align.flip') != 0:
 								#image.process_inplace("xform.flip", {"axis":"x"});
 							#average.process_inplace("xform.centerofmass")
 			
+			average/=np
 			average.process_inplace("xform.centerofmass")
 			#average.write_image("avg.img",-1)
 			#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
