@@ -210,7 +210,7 @@ def main():
 			average = averager.finish()
 			average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
 			average.mult(1.0/weightsum) # Do the correct division
-			average.process_inplace("xform.centerofmass")
+			average.process_inplace("xform.centeracf")
 		else:
 			# generate a bootstrapped initial average. Do this 'inductively' by aligning the 2nd image to the first, then averaging.
 			# Then align the 3rd image to the average, and average again etc... until all the particles have been aligned and contribute
@@ -271,6 +271,7 @@ def main():
 			if ( options.keepsig == False and options.keep == 1.0 ) : options.cull = False
 		
 		for it in range(0,options.iter):
+			itfrac=it/float(options.iter)
 			# do alignment
 			for d in ccache:
 				p = d[0]
@@ -310,7 +311,7 @@ def main():
 					a = Util.get_stats_cstyle(qual_scores)
 					mean = a["mean"]
 					std_dev = a["std_dev"]
-					cullthresh = mean + options.keep*std_dev
+					cullthresh = mean + (5.0*(1.0-itfrac)+itfrac*options.keepsig)*std_dev
 				else:
 					b = deepcopy(qual_scores)
 					b.sort()
@@ -318,7 +319,7 @@ def main():
 					# and there were 10 particles, then they would all be kept. If floor were
 					# used instead of ceil, the last particle would be thrown away (in the
 					# class average)
-					idx = int(ceil(options.keep*len(b))-1)
+					idx = int(ceil(((1.0-itfrac)+itfrac*options.keep)*len(b))-1)
 					cullthresh = b[idx]
 			
 			#finally average
