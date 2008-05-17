@@ -481,7 +481,7 @@ class BoxSet2:
 		#ave.write_image("prealigned.hdf")
 		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("math.radialaverage")
-		ave.process_inplace("normalize.edgemean")
+		ave.process_inplace("xform.centerofmass")
 		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		#ave.write_image("ave.hdf")
 		
@@ -500,7 +500,7 @@ class BoxSet2:
 				
 			ave.mult(1.0/len(t))
 			ave.process_inplace("math.radialaverage")
-			ave.process_inplace("normalize.edgemean")
+			ave.process_inplace("xform.centerofmass")
 			ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		
 		self.template = ave
@@ -742,7 +742,7 @@ class BoxSet2:
 		program = QtCore.QString("e2refine2d.py")
 		args = QtCore.QStringList()
 		args.append("--input="+tmpimage)
-		args.append("--ncls=15")
+		args.append("--ncls=25")
 		
 		QtCore.QObject.connect(self.process, QtCore.SIGNAL("finished(int)"), self.process_finished)
 		QtCore.QObject.connect(self.process, QtCore.SIGNAL("started()"), self.process_start)
@@ -782,7 +782,7 @@ class BoxSet2:
 		
 		ef = []
 		for image in e:
-			#image.process_inplace("normalize.edgemean")
+			image.process_inplace("normalize.edgemean")
 			if self.getbestshrink() != 1:
 				image = image.process("math.meanshrink",{"n":self.getfootprintshrink()})	
 			ef.append(image.make_footprint())
@@ -791,7 +791,7 @@ class BoxSet2:
 			best = -1
 			group = -1
 			for i,g in enumerate(ef): 
-				s = box.getFootPrint(self.getfootprintshrink()).cmp("sqeuclidean",g,{})
+				s = box.getFootPrint(self.getfootprintshrink()).cmp("optvariance",g,{"matchfilt":1,"matchamp":1})
 				# REMEMBER - cmp returns values that have potentially been negated - a smaller value is better
 				if best == -1 or s < best:
 					group = i
