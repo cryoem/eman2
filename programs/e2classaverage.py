@@ -253,7 +253,7 @@ def main():
 							#average.process_inplace("xform.centerofmass")
 			
 			average.process_inplace("xform.centerofmass")
-			average.write_image("avg.img",-1)
+			#average.write_image("avg.img",-1)
 			#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.process_inplace("normalize.edgemean")
 					
@@ -280,7 +280,7 @@ def main():
 				else: image = images[p]
 					
 				ta = align(image,average,options)
-				ta.write_image("ta"+str(cl)+".img",-1)
+				#ta.write_image("ta"+str(cl)+".img",-1)
 				
 				# store the refined translational and rotational values
 				dx.set(c,p, ta.get_attr_default("align.dx",0))
