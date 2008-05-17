@@ -253,7 +253,7 @@ def main():
 							#average.process_inplace("xform.centerofmass")
 			
 			average/=np
-			average.process_inplace("xform.centerofmass")
+			average.process_inplace("xform.centeracf")
 			#average.write_image("avg.img",-1)
 			#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.process_inplace("normalize.edgemean")
