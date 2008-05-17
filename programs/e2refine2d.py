@@ -236,6 +236,10 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	if ( nofilecheck ):
 		e2cacmd += " --nofilecheck"
 	
+	# We need to tell e2classaverage.py to bootstrap the original class average, because there are is no alignment
+	print 'using bootstrap'
+	e2cacmd += " --bootstrap"	
+	
 	return e2cacmd
 
 	

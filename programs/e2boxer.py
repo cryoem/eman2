@@ -782,7 +782,7 @@ class BoxSet2:
 		
 		ef = []
 		for image in e:
-			image.process_inplace("normalize.edgemean")
+			#image.process_inplace("normalize.edgemean")
 			if self.getbestshrink() != 1:
 				image = image.process("math.meanshrink",{"n":self.getfootprintshrink()})	
 			ef.append(image.make_footprint())
@@ -791,7 +791,7 @@ class BoxSet2:
 			best = -1
 			group = -1
 			for i,g in enumerate(ef): 
-				s = box.getFootPrint(self.getfootprintshrink()).cmp("optvariance",g,{"matchfilt":1,"matchamp":1})
+				s = box.getFootPrint(self.getfootprintshrink()).cmp("sqeuclidean",g,{})
 				# REMEMBER - cmp returns values that have potentially been negated - a smaller value is better
 				if best == -1 or s < best:
 					group = i

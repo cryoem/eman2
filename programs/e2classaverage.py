@@ -54,7 +54,7 @@ def main():
 	parser.add_option("--iter", type="int", help="The number of iterations to perform. Default is 0.", default=0)
 	parser.add_option("--ref", type="string", help="Reference image. If specified, the metadata in this image is used to assign euler angles to the generated classes. This is typically the projections that were used for the classification.", default=None)
 	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
-	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="dot")
+	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="dot:normalize=1")
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
 	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="dot:normalize=1")
 	parser.add_option("--averager",type="string",help="The type of averager used to produce the class average.",default="image")
@@ -151,6 +151,10 @@ def main():
 	da = EMData()
 	da.read_image(args[1],4)
 	
+	# empty space for flipping data
+	dflip = EMData(da.get_xsize(),da.get_ysize())
+	dflip.to_zero()
+	
 	if (options.iter > 0 or options.bootstrap):
 		setAlignOpts(options)
 	
@@ -176,7 +180,8 @@ def main():
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
 						
 						# Position the image correctly
-						t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
+						print da.get(c,p)
+						t3d = Transform3D(EULER_EMAN,-da.get(c,p),0,0)
 						t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
 						if (options.lowmem):
 							image = EMData()
@@ -192,7 +197,9 @@ def main():
 						
 						# Add the image to the averager
 						averager.add_image(image)
-	
+						
+			
+			
 			if np == 0 or weightsum == 0:
 				if options.verbose:
 					print "Class",cl,"...no particles"
@@ -203,6 +210,7 @@ def main():
 			average = averager.finish()
 			average.mult(float(np)) # Undo the division of np by the averager - this was incorrect because the particles were weighted.
 			average.mult(1.0/weightsum) # Do the correct division
+			average.process_inplace("xform.centerofmass")
 		else:
 			# generate a bootstrapped initial average. Do this 'inductively' by aligning the 2nd image to the first, then averaging.
 			# Then align the 3rd image to the average, and average again etc... until all the particles have been aligned and contribute
@@ -221,6 +229,8 @@ def main():
 								average.read_image(args[0],p)
 							else:
 								average = images[p].copy()
+								#average.process_inplace("xform.centerofmass")
+								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							np = 1
 						else:
 							if (options.lowmem): 
@@ -230,12 +240,22 @@ def main():
 					
 							ta = align(image,average,options)
 							
+							#ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+							
 							np += 1
 							frac = 1.0/float(np)
 							omfrac = 1.0 - frac
 							ta.mult(frac) # be careful about the weighting
 							average.mult(omfrac) # be carefult about the weighting
 							average.add(ta) # now add the image
+							#if ta.get_attr('align.flip') != 0:
+								#image.process_inplace("xform.flip", {"axis":"x"});
+							#average.process_inplace("xform.centerofmass")
+			
+			average.process_inplace("xform.centerofmass")
+			average.write_image("avg.img",-1)
+			#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			#average.process_inplace("normalize.edgemean")
 					
 		if np == 0:
 			if options.verbose:
@@ -248,7 +268,7 @@ def main():
 		if (options.iter > 0):
 			options.cull = True
 			if ( options.keepsig == False and options.keep == 1.0 ) : options.cull = False
-			
+		
 		for it in range(0,options.iter):
 			# do alignment
 			for d in ccache:
@@ -260,12 +280,20 @@ def main():
 				else: image = images[p]
 					
 				ta = align(image,average,options)
+				ta.write_image("ta"+str(cl)+".img",-1)
 				
 				# store the refined translational and rotational values
 				dx.set(c,p, ta.get_attr_default("align.dx",0))
 				dy.set(c,p, ta.get_attr_default("align.dy",0))
 				da.set(c,p, ta.get_attr_default("align.az",0))
-				# store the quality score on top of the weights, seeing as they're not needed any more
+				try: dflip.set(c,p, ta.get_attr_default("align.flip",0))
+				except:pass
+				# store the quality score on top of the weights, seeing as the starting weights are no longer required
+				
+				try:
+					if ta.get_attr('align.flip') != 0:
+						image.process_inplace("xform.flip", {"axis":"x"});
+				except:pass
 				if (options.cull): # but only if we need to
 					weights.set(c,p, ta.cmp(options.cmp[0],average,options.cmp[1]))
 			
@@ -313,9 +341,18 @@ def main():
 					image.read_image(args[0],p)
 				else:
 					image = images[p].copy()
+				
+				try:
+					if dflip.get(c,p) != 0:
+						image.process_inplace("xform.flip", {"axis":"x"});
+				except:pass
+					
 				image.rotate_translate(t3d)
+				#image.process_inplace("mask.sharp",{"outer_radius":image.get_xsize()/2})
 				np += 1
 				averager.add_image(image)
+				
+				
 			
 			if options.verbose:
 				ndata.append(np)
@@ -328,6 +365,8 @@ def main():
 				continue
 		
 			average = averager.finish()
+			#average.write_image("avg.img",-1)
+			average.process_inplace("xform.centerofmass")
 			
 		# extract euler data from the ref image, if it was specified
 		if ( options.ref  ):
