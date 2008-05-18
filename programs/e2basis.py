@@ -132,7 +132,10 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 			# inner loop over the basis images to generate the components of the projection vector
 			for j,b in enumerate(basis):
 				proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
-				
+			
+			proj.set_attr("ref_da",best[1])
+			proj.set_attr("ref_dx",best[2])
+			proj.set_attr("ref_dy",best[3])
 			proj.write_image(args[4],i)
 		if options.verbose>1 : print "Projectrot complete"
 	

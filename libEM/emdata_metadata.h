@@ -835,9 +835,11 @@ inline int get_pathnum() const
 	return pathnum;
 }
 
-vector<float> get_data_pickle() const;
+//vector<float> get_data_pickle() const;
+std::string get_data_pickle() const;
 
-void set_data_pickle(const vector<float>& vf);
+//void set_data_pickle(const vector<float>& vf);
+void set_data_pickle(std::string vf);
 
 //we don't actually pickle supp, just a place holder to set supp to NULL
 int get_supp_pickle() const;

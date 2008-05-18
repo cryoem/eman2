@@ -65,7 +65,7 @@ def main():
 	parser.add_option("--nbasisfp",type="int",default=5,help="Number of MSA basis vectors to use when classifiying based on invariants for making starting class-averages")
 
 	# options associated with e2simmx.py
-	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip")
+	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate")
 	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments",default="dot")
 	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
 	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
@@ -157,7 +157,7 @@ def main():
 	# this is the main refinement loop
 	for it in range(1,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py %s %s --simcmp=sqeuclidean --simalign=rotate_translate_flip:maxshift==%d --center --useali"%(options.initial,options.initial,options.maxshift))
+		run("e2stacksort.py %s %s --simcmp=sqeuclidean --simalign=rotate_translate:maxshift==%d --center --useali"%(options.initial,options.initial,options.maxshift))
 		
 		# Compute a classification basis set
 #		run("e2msa.py %s basis.%02d.hdf --nbasis=%d"%(options.initial,it,options.nbasisfp))
@@ -190,7 +190,7 @@ def main():
 		# make class-averages
 		try: remove("classes.%02d.hdf"%it)
 		except: pass
-		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,it,it,options.iterclassav,options.maxshift))
+		run("e2classaverage.py %s classmx.%02d.hdf classes.%02d.hdf --iter=%d --align=rotate_translate:maxshift=%d --averager=image -vf  --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,it,it,options.iterclassav,options.maxshift))
 		
 		options.initial="classes.%02d.hdf"%it
 			

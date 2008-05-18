@@ -127,7 +127,8 @@ struct EMData_pickle_suite : boost::python::pickle_suite
 		EMAN::Vec3f all_translation = extract<EMAN::Vec3f>(state[12]);
 		em.set_translation(all_translation);
 		
-		vector<float> vf = extract< vector<float> >(state[13]);
+		//vector<float> vf = extract< vector<float> >(state[13]);
+		std::string vf = extract< std::string >(state[13]);
 		em.set_data_pickle(vf);
 		
 		int fake_supp = extract<int>(state[14]);

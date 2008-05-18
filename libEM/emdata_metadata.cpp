@@ -811,19 +811,26 @@ void EMData::del_attr_dict(const vector<string> & del_keys)
 	}
 }
 
-vector<float> EMData::get_data_pickle() const
+//vector<float> EMData::get_data_pickle() const
+std::string EMData::get_data_pickle() const
 {
-	vector<float> vf;
-	vf.resize(nx*ny*nz);
-	std::copy(rdata, rdata+nx*ny*nz, vf.begin());
+//	vector<float> vf;
+//	vf.resize(nx*ny*nz);
+//	std::copy(rdata, rdata+nx*ny*nz, vf.begin());
+
+	std::string vf((const char *)rdata,nx*ny*nz*sizeof(float));
 	
 	return vf;
 }
 
-void EMData::set_data_pickle(const vector<float>& vf)
+//void EMData::set_data_pickle(const vector<float>& vf)
+void EMData::set_data_pickle(std::string vf)
 {
-	rdata = (float *)malloc(nx*ny*nz*sizeof(float));
-	std::copy(vf.begin(), vf.end(), rdata);
+//	if (rdata) printf("rdata exists\n");
+//	rdata = (float *)malloc(nx*ny*nz*sizeof(float));
+//	std::copy(vf.begin(), vf.end(), rdata);
+	memcpy(rdata,vf.data(),nx*ny*nz*sizeof(float));
+	
 }
 
 int EMData::get_supp_pickle() const

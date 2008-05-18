@@ -188,13 +188,22 @@ be classified. """
 		clsnum+= -1			# class numbers are initialized to -1 in case we're using exclude
 		
 		dx=EMData(1,len(data),1)
-		dy=dx		# we don't have alignment values, so...
-		dang=dx
+		dy=EMData(1,len(data),1)
+		dang=EMData(1,len(data),1)
 	
 		weight.to_one()
 		dx.to_zero()
 		for n,i in enumerate(data):
 			clsnum[filen[n]]=float(i.get_attr("class_id"))
+			try :
+				dx[filen[n]]=float(i.get_attr("ref_dx"))
+				dy[filen[n]]=float(i.get_attr("ref_dy"))
+				da[filen[n]]=float(i.get_attr("ref_da"))
+			except:
+				dx[filen[n]]=0
+				dy[filen[n]]=0
+				da[filen[n]]=0
+				
 		
 		remove_image(options.clsmx)
 		clsnum.write_image(options.clsmx,0)
