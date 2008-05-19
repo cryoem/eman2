@@ -59,6 +59,7 @@ def main():
 	parser.add_option("--iterclassav", default=2, type="int", help="Number of iterations when making class-averages")
 	parser.add_option("--naliref", default=8, type="int", help="Number of alignment references to when determining particle orientations")
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
+	parser.add_option("--resume", default=False, action="store_true",help="This will cause a check of the files in the current directory, and the refinement will resume after the last completed iteration. It's ok to alter other parameters.")
 	
 	#options associated with generating initial class-averages
 	parser.add_option("--initial",type="string",default=None,help="File containing starting class-averages. If not specified, will generate starting averages automatically")
@@ -119,6 +120,14 @@ def main():
 		tmp=EMData(options.input,0)
 		options.maxshift=tmp.get_xsize()/3	
 	
+	first=1
+	if options.resume :
+		fit=1
+		while access("classes.%02d.hdf"%fit,F_OK): fit+=1
+		options.initial="classes.%02d.hdf"%fit
+		fit+=1
+		print "starting at iteration ",fit
+
 	# if we aren't given starting class-averages, make some
 	if not options.initial :
 		print "Building initial averages"
@@ -155,7 +164,7 @@ def main():
 		
 	print "Using references from ",options.initial
 	# this is the main refinement loop
-	for it in range(1,options.iter+1) :		
+	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
 		run("e2stacksort.py %s %s --simcmp=sqeuclidean --simalign=rotate_translate:maxshift==%d --center --useali"%(options.initial,options.initial,options.maxshift))
 		

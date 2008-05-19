@@ -87,8 +87,9 @@ namespace EMAN {
 			string line_str;
 			ss << line;
 			ss >> line_str;
-			string message = "File " + file + " line " + line_str + " description " + desc_str + " " + objname_str;
-			LOGERR( message.c_str() );
+// We shouldn't log all exceptions, since they are frequently used intentionally, with no implied error
+//			string message = "File " + file + " line " + line_str + " description " + desc_str + " " + objname_str;
+//			LOGERR( message.c_str() );
 		}
 		
 		virtual ~E2Exception() throw() {}

@@ -89,9 +89,9 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	int nozero = params["nozero"];
 	
 	if (maxshiftx <= 0) {
-		maxshiftx = nx / 8;
-		maxshifty = ny / 8;
-		maxshiftz = nz / 8;
+		maxshiftx = nx / 4;
+		maxshifty = ny / 4;
+		maxshiftz = nz / 4;
 	}
 	
 	if (maxshiftx > nx / 2 - 1) maxshiftx = nx / 2 - 1;

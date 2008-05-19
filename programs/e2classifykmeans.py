@@ -198,12 +198,11 @@ be classified. """
 			try :
 				dx[filen[n]]=float(i.get_attr("ref_dx"))
 				dy[filen[n]]=float(i.get_attr("ref_dy"))
-				da[filen[n]]=float(i.get_attr("ref_da"))
+				dang[filen[n]]=float(i.get_attr("ref_da"))
 			except:
 				dx[filen[n]]=0
 				dy[filen[n]]=0
-				da[filen[n]]=0
-				
+				dang[filen[n]]=0
 		
 		remove_image(options.clsmx)
 		clsnum.write_image(options.clsmx,0)

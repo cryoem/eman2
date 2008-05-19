@@ -110,7 +110,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		n=EMUtil.get_image_count(args[2])
 		for i in range(n):
 			if options.verbose >1 : 
-				print "  %5d\r"%i
+				print "  %5d\r"%i,
 				sys.stdout.flush()
 			elif options.verbose and i%100==0:
 				print "  %5d\r"%i,
