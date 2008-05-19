@@ -16647,7 +16647,7 @@ int find_group( int ix, int iy, int iz, int grpid, EMData* mg, EMData* visited )
 
 	vector< point3d_t > pts;
 	pts.push_back( point3d_t(ix, iy, iz) );
-	visited->set_value_at( ix, iy, iz, grpid );
+	visited->set_value_at( ix, iy, iz, (float)grpid );
 
 	int start = 0;
 	int end = pts.size();
@@ -16670,7 +16670,7 @@ int find_group( int ix, int iy, int iz, int grpid, EMData* mg, EMData* visited )
 
 				if( (*mg)(jx, jy, jz)>0 && (*visited)(jx, jy, jz)==0.0 ) {
 				    pts.push_back( point3d_t(jx, jy, jz) );
-				    visited->set_value_at( jx, jy, jz, grpid );
+				    visited->set_value_at( jx, jy, jz, (float)grpid );
 				}
 
 			}

@@ -34,6 +34,8 @@
  * 
  * */
 
+#include <ctime>
+#include <memory>
 #include "emdata.h"
 #include "analyzer.h"
 #include "sparx/analyzer_sparx.h"
@@ -80,7 +82,7 @@ void KMeansAnalyzer::set_params(const Dict & new_params)
 vector<EMData *> KMeansAnalyzer::analyze()
 {
 if (ncls<=1) return vector<EMData *>();
-srandom(time(0));
+//srandom(time(0));
 
 // These are the class centers, start each with a random image
 int nptcl=images.size();
@@ -102,7 +104,8 @@ return centers;
 
 void KMeansAnalyzer::update_centers() {
 int nptcl=images.size();
-int repr[ncls];
+//int repr[ncls];
+int * repr = new int[ncls];
 
 for (int i=0; i<ncls; i++) {
 	centers[i]->to_zero();
@@ -127,6 +130,7 @@ for (int i=0; i<ncls; i++) {
 }
 if (verbose>1) printf("\n");
 
+delete [] repr;
 }
 
 void KMeansAnalyzer::reclassify() {
@@ -134,7 +138,7 @@ int nptcl=images.size();
 
 Cmp *c = Factory < Cmp >::get("sqeuclidean");
 for (int i=0; i<nptcl; i++) {
-	float best=1.0e38;
+	float best=1.0e38f;
 	int bestn=0;
 	for (int j=0; j<ncls; j++) {
 		float d=c->cmp(images[i],centers[j]);
@@ -673,7 +677,7 @@ for (int k=0; k<nvec; k++) {
 	float  *d=img->get_data();
 	for (int i=0,j=0; i<totpix; i++) {
 		if (md[i]) {
-			d[i]=gsl_matrix_get(A,j,k);
+			d[i]=(float)gsl_matrix_get(A,j,k);
 			j++;
 		}
 	}

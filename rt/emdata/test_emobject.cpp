@@ -275,7 +275,7 @@ void test_emobject_conversion()
 	test_emobject_specific_conversion_vector( vector<int>(1000,123) );
 
 	cout << "Testing vector<float> conversion operator..... ";
-	test_emobject_specific_conversion_vector( vector<float>(20,23.23421) );
+	test_emobject_specific_conversion_vector( vector<float>(20,23.23421f) );
 
 	cout << "Testing vector<string> conversion operator..... ";
 	test_emobject_specific_conversion_vector( vector<string>(100,"empty") );
@@ -299,7 +299,7 @@ vector<EMObject> get_test_emobjects()
 	int i = 0;
 	objects.push_back(EMObject(i));
 	
-	float f = 12345.2124;
+	float f = 12345.2124f;
 	objects.push_back(EMObject(f));
 	
 	double d = .00002;

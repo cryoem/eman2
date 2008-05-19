@@ -1753,7 +1753,7 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 	// strictly positive numbers. The user has specified a mask that consists entirely of zeros, or the mask
 	// has a mean of zero.
 	if (normfac == 0) throw InvalidParameterException("Error - the pixels in the mask sum to zero. This breaks the flattening procedure");
-	normfac = 1.0/normfac;
+	normfac = 1.0f/normfac;
 	
 	// The mask can now be automatically resized to the dimensions of the image
 	bool undoclip = false;

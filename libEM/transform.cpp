@@ -1424,13 +1424,13 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 		}
 		// at the azimuthal boundary in c symmetry and tetrahedral symmetry we have come
 		// full circle, we must not include it
-		else if (sym->is_c_sym() or sym->is_tet_sym() ) {
-			azmax_adjusted -=  h/4.0;
+		else if (sym->is_c_sym() || sym->is_tet_sym() ) {
+			azmax_adjusted -=  h/4.0f;
 		}
 		// If we're including the mirror then in d and icos and oct symmetry the azimuthal
 		// boundary represents coming full circle, so must be careful to exclude it
-		else if (inc_mirror && ( sym->is_d_sym() or sym->is_platonic_sym() ) )  {
-			azmax_adjusted -=  h/4.0;
+		else if (inc_mirror && ( sym->is_d_sym() || sym->is_platonic_sym() ) )  {
+			azmax_adjusted -=  h/4.0f;
 		}
 		// else do nothing - this means that we're including the great arc traversing
 		// the full range of permissable altitude angles at azmax.
@@ -1466,7 +1466,7 @@ int EmanOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 float OrientationGenerator::get_optimal_delta(const Symmetry3D* const sym, const int& n) const
 {
 	
-	float delta_soln = 360.0/sym->get_max_csym();
+	float delta_soln = 360.0f/sym->get_max_csym();
 	float delta_upper_bound = delta_soln;
 	float delta_lower_bound = 0.0;
 	
@@ -1504,7 +1504,7 @@ bool OrientationGenerator::add_orientation(vector<Transform3D>& v, const float& 
 	bool randphi = params.set_default("random_phi",false);
 	float phi = 0.0;
 	if (randphi) phi = Util::get_frand(0.0f,359.99999f);
-	float phitoo = params.set_default("phitoo",0.0);
+	float phitoo = params.set_default("phitoo",0.0f);
 	if ( phitoo < 0 ) throw InvalidValueException(phitoo, "Error, if you specify phitoo is must be positive");
 	Transform3D t(az,alt,phi);
 	v.push_back(t);
@@ -1528,7 +1528,7 @@ float EmanOrientationGenerator::get_az_delta(const float& delta,const float& alt
 			
 	// This is taken from EMAN1 project3d.C
 	float h=floor(360.0f/(delta*1.1547f));	// the 1.1547 makes the overall distribution more like a hexagonal mesh
-	h=(int)floor(h*sin(tmp)+.5);
+	h=(int)floor(h*sin(tmp)+.5f);
 	if (h==0) h=1;
 	h=abs(maxcsym)*floor(h/(float)abs(maxcsym)+.5f);
 	if ( h == 0 ) h = (float)maxcsym;
@@ -1581,13 +1581,13 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 		}
 		// at the azimuthal boundary in c symmetry and tetrahedral symmetry we have come
 		// full circle, we must not include it
-		else if (sym->is_c_sym() or sym->is_tet_sym() ) {
-			azmax_adjusted -=  h/4.0;
+		else if (sym->is_c_sym() || sym->is_tet_sym() ) {
+			azmax_adjusted -=  h/4.0f;
 		}
 		// If we're including the mirror then in d and icos and oct symmetry the azimuthal
 		// boundary represents coming full circle, so must be careful to exclude it
-		else if (inc_mirror && ( sym->is_d_sym() or sym->is_platonic_sym() ) )  {
-			azmax_adjusted -=  h/4.0;
+		else if (inc_mirror && ( sym->is_d_sym() || sym->is_platonic_sym() ) )  {
+			azmax_adjusted -=  h/4.0f;
 		}
 		// else do nothing - this means that we're including the great arc traversing
 		// the full range of permissable altitude angles at azmax.
@@ -1651,17 +1651,17 @@ vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3
 	
 	int i = 0;
 	while ( i < n ){
-		float u1 =  Util::get_frand(-1.0,1.0);
-		float u2 =  Util::get_frand(-1.0,1.0);
+		float u1 =  Util::get_frand(-1.0f,1.0f);
+		float u2 =  Util::get_frand(-1.0f,1.0f);
 		float s = u1*u1 + u2*u2;
 		if ( s > 1.0 ) continue;
-		float alpha = 2.0*sqrtf(1.0-s);
+		float alpha = 2.0f*sqrtf(1.0f-s);
 		float x = alpha * u1;
 		float y = alpha * u2;
-		float z = 2.0*s-1.0;
+		float z = 2.0f*s-1.0f;
 		
-		float altitude = EMConsts::rad2deg*acos(z);
-		float azimuth = EMConsts::rad2deg*atan2(y,x);
+		float altitude = (float)EMConsts::rad2deg*acos(z);
+		float azimuth = (float)EMConsts::rad2deg*atan2(y,x);
 		
 		float phi = 0.0;
 		if ( phitoo ) phi = Util::get_frand(0.0,359.9999);
@@ -1701,7 +1701,7 @@ int EvenOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 			detaz = 360.0f;
 			lt = 1;
 		} else {
-			detaz = delta/sin(alt*EMConsts::deg2rad);
+			detaz = delta/(float)sin(alt*EMConsts::deg2rad);
 			lt = int(azmax/detaz)-1;
 			if (lt < 1) lt = 1;
 			detaz = azmax/(float)lt;
@@ -1752,7 +1752,7 @@ vector<Transform3D> EvenOrientationGenerator::gen_orientations(const Symmetry3D*
 			detaz = 360.0f;
 			lt = 1;
 		} else {
-			detaz = delta/sin(alt*EMConsts::deg2rad);
+			detaz = delta/(float)sin(alt*EMConsts::deg2rad);
 			lt = int(azmax/detaz)-1;
 			if (lt < 1) lt = 1;
 			detaz = azmax/(float)lt;
@@ -1789,21 +1789,21 @@ int SaffOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 		}
 	}
 	
-	float Deltaz = cos(altmax*EMConsts::deg2rad)-cos(altmin*EMConsts::deg2rad);
-	float s = delta*M_PI/180.0;
-	float NFactor = 3.6/s;
-	float wedgeFactor = fabs( Deltaz*(azmax)/720.0) ;
+	float Deltaz = (float)(cos(altmax*EMConsts::deg2rad)-cos(altmin*EMConsts::deg2rad));
+	float s = delta*M_PI/180.0f;
+	float NFactor = 3.6f/s;
+	float wedgeFactor = fabs( Deltaz*(azmax)/720.0f) ;
 	int NumPoints   =  static_cast<int> (NFactor*NFactor*wedgeFactor);
 	
 	int tally = 0;
 	if (!sym->is_h_sym()) ++tally;
-	float az = 0.0;
-	float dz = cos(altmin*EMConsts::deg2rad);
+	float az = 0.0f;
+	float dz = (float)cos(altmin*EMConsts::deg2rad);
 	for(int i = 1; i < NumPoints; ++i ){
 		float z = dz + Deltaz* (float)i/ float(NumPoints-1);
-		float r= sqrt(1.0-z*z);
+		float r= sqrt(1.0f-z*z);
 		az = fmod(az + delta/r,azmax);
-		float alt = acos(z)*EMConsts::rad2deg;
+		float alt = (float)(acos(z)*EMConsts::rad2deg);
 		if (sym->is_platonic_sym()) {
 			if ( sym->is_in_asym_unit(alt,az,inc_mirror) == false ) continue;
 		}
@@ -1842,22 +1842,22 @@ vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D*
 		}
 	}
 	
-	float Deltaz = cos(altmax*EMConsts::deg2rad)-cos(altmin*EMConsts::deg2rad);
-	float s = delta*M_PI/180.0;
-	float NFactor = 3.6/s;
-	float wedgeFactor = fabs( Deltaz*(azmax)/720.0) ;
+	float Deltaz = (float)(cos(altmax*EMConsts::deg2rad)-cos(altmin*EMConsts::deg2rad));
+	float s = delta*M_PI/180.0f;
+	float NFactor = 3.6f/s;
+	float wedgeFactor = fabs( Deltaz*(azmax)/720.0f) ;
 	int NumPoints   =  static_cast<int> (NFactor*NFactor*wedgeFactor);
 	
 	vector<Transform3D> ret;
 	
 	if (!sym->is_h_sym()) add_orientation(ret,0,0);
 	float az = 0.0;
-	float dz = cos(altmin*EMConsts::deg2rad);
+	float dz = (float)cos(altmin*EMConsts::deg2rad);
 	for(int i = 1; i < NumPoints; ++i ){
 		float z = dz + Deltaz* (float)i/ float(NumPoints-1);
-		float r= sqrt(1.0-z*z);
+		float r= sqrt(1.0f-z*z);
 		az = fmod(az + delta/r,azmax);
-		float alt = acos(z)*EMConsts::rad2deg;
+		float alt = (float)(acos(z)*EMConsts::rad2deg);
 		if (sym->is_platonic_sym()) {
 			if ( sym->is_in_asym_unit(alt,az,inc_mirror) == false ) continue;
 		}
@@ -1942,7 +1942,7 @@ vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Trans
 	
 	if ( points.size() >= 2 ) {
 		int max_it = 1000;
-		float percentage = 0.01;
+		float percentage = 0.01f;
 		
 		for ( int i = 0; i < max_it; ++i ){
 			unsigned int p1 = 0;
@@ -1974,9 +1974,9 @@ vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Trans
 	
 	vector<Vec3f> ret;
 	for (vector<Vec3f>::const_iterator it = points.begin(); it != points.end(); ++it ) {
-		float altitude = EMConsts::rad2deg*acos((*it)[2]);
-		float azimuth = EMConsts::rad2deg*atan2((*it)[1],(*it)[0]);
-		ret.push_back(Vec3f(90.0+azimuth,altitude,0));
+		float altitude = (float)(EMConsts::rad2deg*acos((*it)[2]));
+		float azimuth = (float)(EMConsts::rad2deg*atan2((*it)[1],(*it)[0]));
+		ret.push_back(Vec3f(90.0f+azimuth,altitude,0));
 	}
 	
 	return ret;
@@ -2151,7 +2151,7 @@ int Symmetry3D::in_which_asym_unit(const Transform3D& t3d) const
 			float vdotv = v.dot(v);
 			float vdotw = v.dot(w);
 			
-			float d = 1.0/(udotv*udotv - udotu*vdotv);
+			float d = 1.0f/(udotv*udotv - udotu*vdotv);
 			float s = udotv*vdotw - vdotv*udotw;
 			s *= d;
 			
@@ -2328,7 +2328,7 @@ vector<Vec3f> CSym::get_asym_unit_points(bool inc_mirror) const
 		if (inc_mirror == true) {
 			ret.push_back(Vec3f(0,0,-1));
 		}
-		float angle = EMConsts::deg2rad*float(delim["az_max"]);
+		float angle = (float)(EMConsts::deg2rad*float(delim["az_max"]));
 		float y = -cos(angle);
 		float x = sin(angle);
 		ret.push_back(Vec3f(x,y,0));
@@ -2480,7 +2480,7 @@ vector<Vec3f> DSym::get_asym_unit_points(bool inc_mirror) const
 		ret.push_back(Vec3f(0,1,0));
 	}
 	else {
-		float angle = EMConsts::deg2rad*float(delim["az_max"]);
+		float angle = (float)(EMConsts::deg2rad*float(delim["az_max"]));
 		ret.push_back(Vec3f(0,0,1));
 		ret.push_back(Vec3f(0,-1,0));
 		float y = -cos(angle);

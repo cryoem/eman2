@@ -36,12 +36,22 @@
 #include <cmath>
 #include <ctime>
 #include <cstdio>
-#include <sys/time.h>
+#ifndef _WIN32
+	#include <sys/time.h>
+#else
+	#include <Windows.h>
+	#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
+	  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
+	#else
+	  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+	#endif 
+#endif
 #include "randnum.h"
- 
+
 using namespace EMAN;
 
 namespace {
+#ifndef _WIN32	
 	/** Generate a random seed from /dev/random if available. 
   	 * if no /dev/random, generate the seed from current time in milli-second
   	 * @return a random number as candidate for seed*/
@@ -64,6 +74,30 @@ namespace {
 	
 		return seed;
 	}
+#else
+	/* this function works on Windows */
+	unsigned long int random_seed()
+	{
+		FILETIME ft;
+  		unsigned __int64 tmpres = 0;
+  		static int tzflag;	
+  		struct timeval tv;
+  		
+  		GetSystemTimeAsFileTime(&ft);
+  		tmpres |= ft.dwHighDateTime;
+    	tmpres <<= 32;
+    	tmpres |= ft.dwLowDateTime;
+    	
+    	/*converting file time to unix epoch*/
+    	tmpres /= 10;  /*convert into microseconds*/
+    	tmpres -= DELTA_EPOCH_IN_MICROSECS; 
+    	tv.tv_sec = (long)(tmpres / 1000000UL);
+    	tv.tv_usec = (long)(tmpres % 1000000UL);
+    	
+    	unsigned long seed = tv.tv_sec + tv.tv_usec;
+    	return seed;
+	}
+#endif
 }
 
 Randnum * Randnum::_instance = 0;

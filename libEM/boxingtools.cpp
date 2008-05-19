@@ -177,7 +177,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::go()
 		float norm = 0;
 		for ( unsigned int i = 0; i < mRows; ++i )
 		{
-			norm += gsl_matrix_get( A, i, j)*gsl_matrix_get( A, i, j);
+			norm += (float)(gsl_matrix_get( A, i, j)*gsl_matrix_get( A, i, j));
 		}
 		norm = sqrtf(norm);
 		for ( unsigned int i = 0; i < mRows; ++i )
@@ -372,7 +372,7 @@ vector<vector<float> > BoxSVDClassifier::getDistances( const gsl_matrix* const s
 			float distance = 0;
 			for (unsigned int j = 0; j < mColumns; ++j )
 			{
-				float value = (gsl_matrix_get( ref_coords, random_seed_idx, j) - gsl_matrix_get( svd_coords, i, j));
+				float value = (float)( (gsl_matrix_get( ref_coords, random_seed_idx, j) - gsl_matrix_get( svd_coords, i, j)) );
 				distance += value * value;
 			}
 			ith_distances.push_back(sqrtf(distance));
@@ -511,7 +511,7 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 			if ( yy >= image->get_ysize() || yy < 0 ) continue;
 			
 			// We don't need to pay attention to the origin
-			if ( xx == x and yy == y) continue;
+			if ( xx == x && yy == y) continue;
 			
 			// Protect against vector accesses beyond the boundary
 			int square_length = k*k + j*j;
@@ -549,7 +549,7 @@ bool BoxingTools::is_local_maximum(const EMData* const image, int x, int y, int 
 			if ( yy >= image->get_ysize() || yy < 0 ) continue;
 			
 			// We don't need to pay attention to the origin
-			if ( xx == x and yy == y) continue;
+			if ( xx == x && yy == y) continue;
 			
 			if ((k*k+j*j)>radius_squared) continue;
 			
@@ -639,7 +639,7 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 			if ( yy >= image->get_ysize() || yy < 0 ) continue;
 			
 			// We don't need to pay attention to the origin
-			if ( xx == x and yy == y) continue;
+			if ( xx == x && yy == y) continue;
 			
 			// Protect against vector accesses beyond the boundary
 			int square_length = k*k + j*j;

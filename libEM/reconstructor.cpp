@@ -2151,7 +2151,7 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 		insert_padfft_slice( padfft, t, mult );
 	} else {
 		float alpha = padfft->get_attr( "alpha" );
-		alpha = alpha/180.0*M_PI;
+		alpha = alpha/180.0f*M_PI;
 		for(int i=0; i < m_vnxc+1; ++i ) {
 			float xnew = i*cos(alpha);
 			float ynew = -i*sin(alpha);
