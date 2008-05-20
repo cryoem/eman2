@@ -93,9 +93,9 @@ namespace EMAN
 	 *           R * transpose(R) = 1.
 	 * All Real Orthogonal Matrices have eigenvalues with unit modulus and determinant
 	 *  therefore equal to  "\pm 1"
-	 *
+	 * @ingroup tested3c 
      */
-     /** @ingroup tested3c */
+    
 	class Transform3D
 	{
 	public:
@@ -260,8 +260,7 @@ namespace EMAN
 	Vec3f operator*(const Vec3f & v    , const Transform3D & M);
 	Vec3f operator*(const Transform3D & M, const Vec3f & v    );
 	
-	/** Symmetry3D 
-	* An abstract (meaning it has pure virtual functions) base class for Symmetry3D objects.
+	/** Symmetry3D - A base class for 3D Symmetry objects.
 	* Objects of this type must provide delimiters for the asymmetric unit (get_delimiters), and
 	* must also provide all of the rotational symmetric operations (get_sym(int n)). They must also
 	* provide the total number of unique symmetric operations with get_nsym (except in helical symmetry).
@@ -380,8 +379,8 @@ namespace EMAN
 		* @param t3d a transform3D characterizing an orientation
 		* @param n the number of the asymmetric unit you wish to map the given orientation into. There is a strong relationship between n and to Symmetry3D::get_sym
 		* @return the orientation the specified asymmetric unit (by default this is the default asymmetric unit of the symmetry)
+		* @ingroup tested3c 
 		*/
-		/** @ingroup tested3c */
 		virtual Transform3D reduce(const Transform3D& t3d, int n=0) const;
 		
 		

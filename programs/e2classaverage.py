@@ -151,7 +151,8 @@ def main():
 	da = EMData()
 	da.read_image(args[1],4)
 	
-	# empty space for flipping data
+	# empty space for storing x-flipping flags (0s or 1s, if a 1 is stored it will be used at the necessary point to flip prior to adding to the average)
+	# sometimes this will not be used at all (it depends on whether or not the aligners that the user has specified do flipping and set flip flags)
 	dflip = EMData(da.get_xsize(),da.get_ysize())
 	dflip.to_zero()
 	
@@ -165,6 +166,7 @@ def main():
 		
 		if (options.iter > 0 or options.verbose): ccache = [] # class cache
 		
+		# this should work, if it doesn't it should have been caught by check function
 		averager_parms=parsemodopt(options.averager)
 		
 		if ( not options.bootstrap ):
@@ -176,7 +178,8 @@ def main():
 			for p in range(0,num_part):
 				for c in range(0,num_classes):
 					if classes.get(c,p) == cl:
-						# cache the hit if necessary
+						# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
+						# latter case the class cache is used to print information
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
 						
 						# Position the image correctly
@@ -212,15 +215,14 @@ def main():
 			average.mult(1.0/weightsum) # Do the correct division
 			average.process_inplace("xform.centeracf")
 		else:
-			# generate a bootstrapped initial average. Do this 'inductively' by aligning the 2nd image to the first, then averaging.
-			# Then align the 3rd image to the average, and average again etc... until all the particles have been aligned and contribute
-			# to the (running) average.
+			# generate a bootstrapped initial average. Do this 'inductively' by aligning the 2nd image to the first, then adding. Continue until done...
 			average = None
 			np = 0
 			for p in range(0,num_part):
 				for c in range(0,num_classes):
 					if classes.get(c,p) == cl:
-						# cache the hit if necessary
+							# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
+						# latter case the class cache is used to print information
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
 						
 						if (average == None):
@@ -290,12 +292,12 @@ def main():
 				da.set(c,p, ta.get_attr_default("align.az",0))
 				try: dflip.set(c,p, ta.get_attr_default("align.flip",0))
 				except:pass
-				# store the quality score on top of the weights, seeing as the starting weights are no longer required
-				
 				try:
 					if ta.get_attr('align.flip') != 0:
 						image.process_inplace("xform.flip", {"axis":"x"});
 				except:pass
+				
+				# store the quality score on top of the weights, seeing as the starting weights are no longer required
 				if (options.cull): # but only if we need to
 					weights.set(c,p, ta.cmp(options.cmp[0],average,options.cmp[1]))
 			
@@ -329,6 +331,12 @@ def main():
 				p = d[0]
 				c = d[1]
 				if (options.cull ):
+					# if we're culling then find the bad particles here...
+					# Also store whether or not culling occured by placing 1s and 0s in the weights object
+					# This is in case users ever want to know which particles were excluded. This information
+					# is written to disk if the resultmx option is specfied
+					# FIXME setting the weights matrix to 1 and 0 should probably only occur if we're at the
+					# last iteration
 					if ( weights.get(c,p) > cullthresh ) :
 						weights.set(c,p,0)
 						continue

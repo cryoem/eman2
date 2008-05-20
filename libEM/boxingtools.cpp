@@ -534,7 +534,7 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 	return profile;
 }
 
-bool BoxingTools::is_local_maximum(const EMData* const image, int x, int y, int radius,EMData* efficiency_map)
+bool BoxingTools::is_local_maximum(const EMData* const image, int x, int y, int radius,EMData* exclusion_map)
 {
 	float peakval = image->get_value_at(x,y);
 	int radius_squared = radius*radius;
@@ -557,13 +557,13 @@ bool BoxingTools::is_local_maximum(const EMData* const image, int x, int y, int 
 		}
 	}
 	
-	set_radial_non_zero(efficiency_map,x,y,radius);
+	set_radial_non_zero(exclusion_map,x,y,radius);
 	
 	return true;
 	
 }
 
-vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency, const int cradius, int mode)
+vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const exclusion, const int cradius, int mode)
 {
 	if (mode < 0 || mode > 2 ) {
 		throw InvalidValueException(mode,"Error, the mode can only be 0,1, or 2.");
@@ -581,23 +581,23 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 	for(int j = r; j < ny-r;++j) {
 		for(int k = r; k < nx-r;++k) {
 			
-			if (efficiency->get_value_at(k,j) != 0 ) continue;
+			if (exclusion->get_value_at(k,j) != 0 ) continue;
 			
 			if (image->get_value_at(k,j) < threshold) continue;
 			
 			if ( mode == 0 ) {
 				solution.push_back(IntPoint(k,j));
-				set_radial_non_zero(efficiency,k,j,radius);
+				set_radial_non_zero(exclusion,k,j,radius);
 				continue;
 			}
 			
 			vector<float> p(r,0);
 						
-			if (hi_brid(image,k,j,r,efficiency,p)) {
+			if (hi_brid(image,k,j,r,exclusion,p)) {
 				if ( mode == 1 ) {
 					if (p[cradius] >= profile[cradius]) {
 						solution.push_back(IntPoint(k,j));
-						set_radial_non_zero(efficiency,k,j,radius);
+						set_radial_non_zero(exclusion,k,j,radius);
 						continue;
 					}
 				}
@@ -611,7 +611,7 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 					}
 					if (bad) continue;
 					solution.push_back(IntPoint(k,j));
-					set_radial_non_zero(efficiency,k,j,radius);
+					set_radial_non_zero(exclusion,k,j,radius);
 				}
 					
 			
@@ -622,7 +622,7 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 }
 
 
-bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EMData* const efficiency_map, vector<float>& profile)
+bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EMData* const exclusion_map, vector<float>& profile)
 {
 	
 	float peakval = image->get_value_at(x,y);
@@ -663,13 +663,13 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 		}
 	}
 	
-	set_radial_non_zero(efficiency_map,x,y,radius);
+	set_radial_non_zero(exclusion_map,x,y,radius);
 	
 	return true;
 }
 
 
-void BoxingTools::set_radial_non_zero(EMData* const efficiency, int x, int y, int radius)
+void BoxingTools::set_radial_non_zero(EMData* const exclusion, int x, int y, int radius)
 {
 	int radius_squared = radius*radius;
 	for(int k = -radius; k <= radius; ++k) {
@@ -680,10 +680,10 @@ void BoxingTools::set_radial_non_zero(EMData* const efficiency, int x, int y, in
 			
 			if ((k*k+j*j)>radius_squared) continue;
 			// Protect against accessing pixel out of bounds
-			if ( xx >= efficiency->get_xsize() || xx < 0 ) continue;
-			if ( yy >= efficiency->get_ysize() || yy < 0 ) continue;
+			if ( xx >= exclusion->get_xsize() || xx < 0 ) continue;
+			if ( yy >= exclusion->get_ysize() || yy < 0 ) continue;
 			
-			efficiency->set_value_at(xx,yy,1);
+			exclusion->set_value_at(xx,yy,1);
 		}
 	}
 }

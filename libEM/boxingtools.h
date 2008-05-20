@@ -78,18 +78,18 @@ namespace EMAN
 		 * @param x the x coordinate of the candidate pixel maximum 
 		 * @param y the y coordinate of the candidate pixel maximum 
 		 * @param radius the constraining radius of the local neighborhood
-		 * @param efficiency an EMData object with the same dimensions as the main image. If a local maximum is found, the pixels in the radial neighborhood that was queried are set to 0. This can be exploited by the calling function to minimize queries. 
+		 * @param exclusion an EMData object with the same dimensions as the main image. If a local maximum is found, the pixels in the radial neighborhood that was queried are set to 0. This can be exploited by the calling function to minimize queries. 
 		 * @author David Woolford
 		 * @date April 2008
 		 */
-		static bool is_local_maximum(const EMData* const image, int x, int y, int radius, EMData* const efficiency_map);
+		static bool is_local_maximum(const EMData* const image, int x, int y, int radius, EMData* const exclusion_map);
 		
 		
-		static vector<IntPoint> auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const efficiency,const int cradius, int mode=1);
+		static vector<IntPoint> auto_correlation_pick(const EMData* const image, float threshold, int radius, const vector<float>& profile, EMData* const exclusion,const int cradius, int mode=1);
 		
-		static bool hi_brid(const EMData* const image, int x, int y, int radius,EMData* const efficiency_map, vector<float>& profile);
+		static bool hi_brid(const EMData* const image, int x, int y, int radius,EMData* const exclusion_map, vector<float>& profile);
 		
-		static void set_radial_non_zero(EMData* const efficiency, int x, int y, int radius);
+		static void set_radial_non_zero(EMData* const exclusion, int x, int y, int radius);
 		
 		static IntPoint find_radial_max(const EMData* const map, int x, int y, int radius);
 		

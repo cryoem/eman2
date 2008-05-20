@@ -201,7 +201,6 @@ class EMImageMXCore:
 			hfac *= data[0].get_ysize()
 			if hfac > 512:
 				hfac = 512
-			print w,hfac
 			self.parent.resize(int(w),int(hfac))
 			#self.parent.resizeGL(w,hfac)
 			

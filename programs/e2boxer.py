@@ -239,13 +239,8 @@ class Box:
 		self.footprint = None	# stores the image footprint as an emdata object
 		self.group = None		# stores a group, typically an int
 		self.footprintshrink = 1
-		
-		# Experimental things that will probably be needed
-		
-		self.otheridx1 = -1		# stores a unique idx, for BoxSet convenience and exclusion
-		self.otheridx2 = -1		# stores a unique idx, for BoxSet convenience and exclusion
-		
-	
+		self.paramsonly = False		# A flag used by AutoBoxer routines that - if set to true the box will not be included in the generation the template) - This is specific to the SwarmPS autoboxer
+
 	def updateBoxImage(self,image,norm=True):
 		#print "getting region",self.xcorner,self.ycorner,self.xsize,self.ysize
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
@@ -256,8 +251,10 @@ class Box:
 		self.footprint = None
 		
 			
-	def getBoxImage(self,image,norm=True,force=False):
+	def getBoxImage(self,image=None,norm=True,force=False):
 		if self.image == None or force:
+			if image == None:
+				print 'error, need to specify the image argument when first calling getBoxImage'
 			self.updateBoxImage(image,norm)
 		return self.image
 			
@@ -286,16 +283,12 @@ class BoxSet2:
 		self.smallimage = None		# a small copy of the image which has had its background flattened
 		self.flattenimager = -1		# the r value used to run the flatten image processor
 		self.searchradius = -1		# search radius in the correlation image. Important parameter
-		
-		self.optprofile = None		# An optimum correlation profile, used as the basis of selective autoboxing
-		self.optthreshold = None		# The correlation threshold, used for autoboxing
-		self.optprofileradius = None	# A point in the optprofile that is used for selective picking
-		self.autoboxmethod = SELECTIVE # The method of autoboxing
-		self.templateupdate = True	# When turned off, prevents the correlation map from being updated - this is useful the act of adding a ref only affects the optimum parameters, not the correlation map
+	
 		self.fpshrink = -1
 		self.exclusionimage = None
 		self.template = None
 		self.correlation = None
+		self.refcache = []
 		
 	def addbox(self,box):
 		if not isinstance(box,Box):
@@ -387,53 +380,9 @@ class BoxSet2:
 			exit(1)
 		
 		if self.shrink == -1:
-			shrink = 1
-			inx = self.image.get_xsize()/2
-			iny = self.image.get_ysize()/2
-			tn = self.boxsize/2
-			while ( inx >= 512 and iny >= 512 and tn >= 16 ):
-				inx /= 2
-				iny /= 2
-				tn /= 2
-				shrink *= 2
-		
-			self.shrink=shrink
+			self.shrink = ceil(float(self.boxsize)/float(16))
 		
 		return self.shrink
-	
-	def updatetemplate(self,boxsize=-1):
-		'''
-		update template implicitly updates the correlation image too.
-		It's generally called when you know that the reference images have changed
-		'''
-		#print 'in update template'
-		# You can turn off template updating - but it only makes sense if there is
-		# not currently a store correlation map. You would do this is you were
-		# adding refs to changes the autoboxing parameters only, as opposed to doing that plus
-		# updating the correlation map
-		if self.templateupdate == False: return
-		
-		# Warning - read the error statement I am printing
-		if boxsize != -1:
-			self.boxsize = boxsize
-		elif self.boxsize == -1:
-			print "error, the first time you call update you must specify the box size"
-			exit(1)
-		
-		
-		# Update the template internally, this makes self.template
-		if len(self.refboxes) == 0 :
-			print "Error, can't update template if there are no selected reference boxes"
-			exit(1)
-		
-		self.genrotalignedaverage()
-		if self.template == None:
-			print "Error, something went wrong with the template generation"
-			exit(1)
-		
-		# newr is the parameter that will potentially be used to run the flattenbackround processor
-		
-		self.gencorrelation(self.template)
 
 	def gencorrelation(self,template,forceupdate=False):
 		
@@ -458,54 +407,7 @@ class BoxSet2:
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
 		#self.correlation.write_image("tttttt.hdf")
 	
-	def genrotalignedaverage(self):
-		# you can only generate a template if there are references
-		if len(self.refboxes) <= 0: 
-			print 'error, cant call genrotalignedaverage when there are no refboxes'
-			exit(1)
-		
-		images_copy = []
-		for i in self.refboxes:
-			image = i.getBoxImage(self.image)
-			if (self.getbestshrink() != 1):
-				e = image.process("math.meanshrink",{"n":self.getbestshrink()})
-			else : e = image.copy()
-			images_copy.append(e)
-			
-		ave = images_copy[0].copy()
-		
-		for i in range(1,len(images_copy)):
-			#ta = images_copy[i].align("rotate_translate",ave,{},"dot",{"normalize":1})
-			ave.add(images_copy[i])
-			
-		#ave.write_image("prealigned.hdf")
-		ave.mult(1.0/len(images_copy))
-		ave.process_inplace("math.radialaverage")
-		ave.process_inplace("xform.centerofmass")
-		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
-		#ave.write_image("ave.hdf")
-		
-		# 5 is a magic number
-		for n in range(0,5):
-			t = []
-			for i in images_copy:
-				#FIXME - make it so that a newly clipped portion of the original image
-				# is used as the 'aligned' image, to avoid zeroing effects at the edges
-				ta = i.align("translational",ave,{},"dot",{"normalize":1})
-				t.append(ta)
-		
-			ave = t[0].copy()
-			for i in range(1,len(images_copy)):
-				ave.add(t[i])
-				
-			ave.mult(1.0/len(t))
-			ave.process_inplace("math.radialaverage")
-			ave.process_inplace("xform.centerofmass")
-			ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
-		
-		self.template = ave
-		self.template.write_image("template.hdf")
-		
+
 	def updateExcludedBoxes(self):
 		lostboxes = []
 		
@@ -619,102 +521,45 @@ class BoxSet2:
 			#im = self.correlation.get_clip(Region(box[7]-l/2.0,box[8]-l/2.0,l,l))
 			#im.write_image(self.outfile,-1)
 			
-	def autobox(self,optprofile=None,thr=None):
+	def autobox(self,autoBoxer,optprofile=None,thr=None):
+		'''
+		FIXME - act on the argument optprofile and thr
+		'''
 		if (self.correlation == None):
-			print "Error, can't autobox of the correlation image doesn't exist"
-			exit(1)
-		
-		
+			self.refcache = autoBoxer.getReferences()
+			template = autoBoxer.getTemplate()
+			if template != None: self.gencorrelation(template)
+			else: 
+				print "Error, can't generate the correlation image, couldn't get a template"
+				return 0
+		else:
+			template = None
+			refcache = autoBoxer.getReferences()
+			if len(refcache) != len(self.refcache):
+				template = autoBoxer.getTemplate()
+			else:
+				for i in range(0,len(refcache)):
+					l = refcache[i]
+					r = self.refcache[i]
+					if l.xcorner != r.xcorner or l.ycorner != r.ycorner:
+						template = autoBoxer.getTemplate()
+						break
+			if template != None: self.gencorrelation(template)
+			# else the current correlation is fine!
 			
 		exclusion = self.getExclusionImage().copy()
+		# paint white exlclusion circles around the already selected and reference boxes
 		self.updateexclusion(exclusion)
+		# FIXME - this is not the best place to do this, why is it here?
 		self.parent.guiim.setOtherData(self.getExclusionImage(),self.getbestshrink(),True)
 		
-		# we must accrue the the parameters of the reference images if the optprofile
-		# or thr value has not been set in the function arguments
-		if ( optprofile == None or thr == None ):
-			self.accrueparams(self.refboxes)
+		self.accrueparams(self.refboxes)
+		
+		boxes = autoBoxer.autoBox(self.correlation,exclusion)
+		# autoBoxer should return 0 if there was a problem
+		if boxes != 0:
+			for box in boxes: self.boxes.append(box)
 
-		
-		# Determine what will be the optimum correlation threshold
-		if thr == None:
-			# If we must determine the threshold from what we've got, iterate through all of the reference
-			# boxes and use the lowest correlation score as the correlation threshold
-			found = False
-			# POTENTIAL PROBLEM - i have hard coded the use of self.refboxes here for the optimum parameter generation
-			# we may want to be able to use other box sets for generating parameters
-			for i,box in enumerate(self.refboxes):
-				if box.correlationscore == None:
-					print "continuing on faulty"
-					continue
-				if found == False:
-					self.optthreshold = box.correlationscore
-					found = True
-				else:	
-					if box.correlationscore < self.optthreshold: self.optthreshold = box.correlationscore
-		else:
-			print "using manual threshold", thr
-			self.optthreshold = thr
-				
-		# Determine what to use as the optimum profile
-		if optprofile == None:
-			# Iterate through the reference boxes and accrue what you can think of
-			# as the worst case scenario, in terms of correlation profiles
-			found = False
-			# POTENTIAL PROBLEM - i have hard coded the use of self.refboxes here for the optimum parameter generation
-			# we may want to be able to use other box sets for generating parameters
-			for i,box in enumerate(self.refboxes):
-				if box.correlationscore == None:
-					##print "continuing on faulty" - this was already printed above
-					continue
-				if found == False:
-					self.optprofile = box.optprofile
-					n = len(self.optprofile)
-					found = True
-				else:
-					profile = box.optprofile
-					for j in range(0,n):
-						if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
-			# Tell the parent to update the data it is displaying to the user in a GUI somewhere
-			self.parent.updatedata(self.optprofile,self.optthreshold)
-		else:
-			print "using manual profile"
-			self.optprofile=optprofile
-	
-	
-		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
-		self.optprofileradius = 0
-		tmp = self.optprofile[0]
-		for i in range(1,len(self.optprofile)):
-			if self.optprofile[i] > tmp and tmp > 0:
-				tmp = self.optprofile[i]
-				self.optprofileradius = i
-			
-		
-		#print self.optprofile
-		#print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
-		if self.autoboxmethod == THRESHOLD:
-			mode = 0
-		elif self.autoboxmethod == SELECTIVE:
-			mode = 1
-		elif self.autoboxmethod == MORESELECTIVE:
-			mode = 2
-		
-		print "auto picking with",self.optthreshold
-		soln = BoxingTools.auto_correlation_pick(self.correlation,self.optthreshold,self.searchradius,self.optprofile,exclusion,self.optprofileradius,mode)
-
-		#print "number of autoboxed",len(soln)
-		for b in soln:
-			x = b[0]
-			y = b[1]
-			xx = int(x*self.shrink)
-			yy = int(y*self.shrink)
-			box = Box(xx-self.boxsize/2,yy-self.boxsize/2,self.boxsize,self.boxsize,0)
-			box.correlationscore =  self.correlation.get(x,y)
-			box.corx = b[0]
-			box.cory = b[1]
-			box.changed = True
-			self.boxes.append(box)
 		self.parent.boxupdate()
 		
 	def classify(self):
@@ -804,6 +649,320 @@ class BoxSet2:
 		
 		print "received finish signal"
 
+class AutoBoxer:
+	'''
+	Base class design for auto boxers
+	'''
+	def __init__(self):
+		raise Exception
+
+	def getTemplate(self):
+		'''This should return a single template which is an EMData object'''
+		raise Exception
+	
+	def name(self):
+		'''
+		Every autoboxer should return a unique name
+		'''
+		raise Exception
+	
+	def addReference(self,box):
+		'''
+		add a reference box - the box should be in the format of a Box object, see above
+		Returns 0 if there is a problem, returns 1 if it's all good
+		Adds a reference to a list
+		'''
+		raise Exception
+	
+	def removeReference(self,box):
+		'''
+		Remove a reference box - the box should in the format of a Box object, see above
+		Pops a reference from a list
+		'''
+		raise Exception
+	
+	def getReferences(self):
+		'''
+		Return a list of the Boxes that are the current references
+		NOT SURE IF THIS WILL BE NECESSARY
+		'''
+		raise Exception
+
+	def getTemplate(self):
+		'''
+		Return the template that is being used. Returns None if there is not template
+		'''
+		raise Exception
+
+	def setBoxSize(self,boxsize):
+		'''
+		Hard set the boxsize. Note that nothing is done to the reference boxes. It is
+		assumed whichever part of the program calls this function also updates the Box objects
+		independently (which implicitly affects the boxes stored internally in the AutoBoxer
+		class, because it only ever stores programmatic references)
+		'''
+		raise Exception
+	
+	def autoBox(self,correlation,exclusion=None):
+		'''
+		The main autoBox routine. The calling program should pass in its own correlation map (EMData), and optionally
+		an exclusion map of ones and zeros (0 means include, non zero means exclude). The model of use here is that
+		the calling program should get the current template from the AutoBoxer to generate the correlation map. The
+		calling program should be able to cache the correlation map, so should be able to detect if there's been
+		a template update by asking for the current set of references (getReferences) and cross checking against a list of its own.
+		@Returns a list of Boxes
+		'''
+		raise Exception
+	
+class SwarmAutoBoxer(AutoBoxer):
+	'''
+	This is an autoboxer that encapsulates the boxing approach first developed in SwarmPS
+	'''
+	def __init__(self):
+		self.refboxes = []		# this will eventually be a list of Box objects
+		self.refupdate = False	# a reference update flag which cause the template to be regenerated
+		self.template = None	# an EMData object that is the template
+		self.boxsize = -1		# stores the global boxsize, this is the value being used by boxer in the main interface
+		self.shrink = -1
+		
+		# more privately stuff
+		self.templatedimmin = 16  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
+		self.optthreshold = -1	# the correlation threshold, used to as the basis of finding local maxima
+		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
+		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
+		self.autoboxmethod = SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
+		pass
+	
+	def name(self):
+		return 'swarmautoboxer'
+	
+	def addReference(self,box):
+		'''
+		 add a reference box - the box should be in the format of a Box, see above):
+		'''
+		if isinstance(box,Box):
+			if box.xsize != box.ysize:
+				print 'error, support for uneven box dimensions is not currently implemented'
+				return 0
+			self.refboxes.append(box)
+			self.refupdate = True	# now set the flag that will cause the template to be updated
+			# store the boxsize if we don't have one already
+			if self.boxsize == -1:
+				self.boxsize = box.xsize
+			# do a sanity check, this shouldn't happen if the program is managing everything carefully
+			elif self.boxsize != box.xsize:
+				print 'error, the currently stored box size does not match the boxsize of the reference that was just added'
+				return 0
+			
+			return 1
+			
+		else:
+			print "error, you cannot add a reference to the AutoBoxer if it is not in the format of a Box object"
+			return 0
+	
+	def removeReference(self,box):
+		for j,tmp in enumerate(self.refboxes):
+			if box.isref and box.xcorner == tmp.xcorner and box.ycorner == tmp.ycorner:
+				self.refboxes.pop(j)
+				if len(self.refboxes) == 0:
+					self.boxsize = -1 
+				return True
+		
+		return False
+	
+	def getReferences(self):
+		return self.refboxes
+		
+	def getTemplate(self):
+		if self.refupdate:
+			# if the ref update flag is set then we must generate the template (potentially again)
+			if not self.__genTemplate():
+				print 'error, couldnt generate template'
+				return None
+		
+		# accomodate for strange circumstances, this shouldn't happen in normal usage, but on the off chance that things go wrong at least
+		# we get a message
+		if self.template == None:
+			print 'error, you have either asked for the template without setting a reference, or you have added a reference and not set the refupdate flag'
+			return None
+		
+		return self.template
+		
+	def setBoxSize(self,boxsize):
+		if (boxsize < 6 ):
+			print 'error, a hard limit of 6 for the box size is currently enforced. Email developers if this is a problem'
+			return
+		self.boxsize = boxsize
+		# the refupdate will cause an automatic template update
+		self.refupdate = True
+		# setting shrink to negative one will cause a recalculation of this value, which is necessary if the boxsize changes
+		self.shrink = -1
+		
+		
+	def autoBox(self,correlation,exclusion=None):
+		'''
+		Does the autoboxing. Returns a list of Boxes
+		'''
+		if not isinstance(correlation,EMData):
+			print 'error, cannot autobox, the correlation argument is not an EMData object'
+			return 0
+			
+		# accrue optimum parameters, there may be ways to cache this operation, but the expense should be trivial
+		self.__accrueOptParams()
+		
+			#print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
+		if self.autoboxmethod == THRESHOLD:
+			mode = 0
+		elif self.autoboxmethod == SELECTIVE:
+			mode = 1
+		elif self.autoboxmethod == MORESELECTIVE:
+			mode = 2
+		
+		shrink = self.__getbestshrink()
+		# Warning, this search radius value should be the same as the one used by the BoxSets that contributed the reference boxes
+		# to this AutoBoxer object. There should be one place/function in the code where both parties access this value
+		searchradius = int(0.5*(self.boxsize)/float(shrink))
+		
+		soln = BoxingTools.auto_correlation_pick(correlation,self.optthreshold,searchradius,self.optprofile,exclusion,self.optprofileradius,mode)
+
+		boxes = []
+		
+		for b in soln:
+			x = b[0]
+			y = b[1]
+			xx = int(x*shrink)
+			yy = int(y*shrink)
+			box = Box(xx-self.boxsize/2,yy-self.boxsize/2,self.boxsize,self.boxsize,0)
+			box.correlationscore = correlation.get(x,y)
+			box.corx = b[0]
+			box.cory = b[1]
+			box.changed = True
+			boxes.append(box)
+	
+		return boxes
+		
+	#  PRIVATE
+	#  SWARMAUTOBOXER PRIVATE FUNCTIONS
+	#  PRIVATE
+	def __genTemplate(self):
+		'''
+		Returns 0 if there are errors
+		Return 1 if not
+		'''
+		# you can only generate a template if there are references
+		if len(self.refboxes) <= 0: 
+			print 'error, cant call private function genTemplate when there are no refboxes, this is an internal error'
+			return 0
+		
+		images_copy = []
+		for ref in self.refboxes:
+			# some references can be excluded from the template generation procedure
+			if ref.paramsonly == True:
+				continue
+			image = ref.getBoxImage()
+			if (self.__getbestshrink() != 1):
+				e = image.process("math.meanshrink",{"n":self.__getbestshrink()})
+			else : e = image.copy()
+			images_copy.append(e)
+			
+		if len(images_copy) == 0:
+			print 'error, you have probably set references that all have the paramsonly flag set to true, which exluded them all from the template making process'
+			print 'can not proceed without references to create template'
+			return 0
+			
+		ave = images_copy[0].copy()
+		
+		for i in range(1,len(images_copy)):
+			#ta = images_copy[i].align("rotate_translate",ave,{},"dot",{"normalize":1})
+			ave.add(images_copy[i])
+			
+		#ave.write_image("prealigned.hdf")
+		ave.mult(1.0/len(images_copy))
+		ave.process_inplace("math.radialaverage")
+		ave.process_inplace("xform.centerofmass")
+		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
+		#ave.write_image("ave.hdf")
+		
+		# 5 is a magic number
+		for n in range(0,5):
+			t = []
+			for i in images_copy:
+				#FIXME - make it so that a newly clipped portion of the original image
+				# is used as the 'aligned' image, to avoid zeroing effects at the edges
+				ta = i.align("translational",ave,{},"dot",{"normalize":1})
+				t.append(ta)
+		
+			ave = t[0].copy()
+			for i in range(1,len(images_copy)):
+				ave.add(t[i])
+				
+			ave.mult(1.0/len(t))
+			ave.process_inplace("math.radialaverage")
+			ave.process_inplace("xform.centerofmass")
+			ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
+		
+		self.template = ave
+		return 1
+	
+	def __getbestshrink(self):
+		if self.boxsize == -1:
+			print "error - the boxsize is currently -1 - I can't figure out the best value to shrink by"
+			exit(1)
+		
+		if self.shrink == -1:
+			self.shrink = ceil(float(self.boxsize)/float(self.templatedimmin))
+		
+		return self.shrink
+		
+	def __accrueOptParams(self):
+		'''
+		A function for accruing the parameters of the SwarmPSAutoBoxer autoboxing technique
+		'''
+		# Determine what will be the optimum correlation threshold
+
+		# If we must determine the threshold from what we've got, iterate through all of the reference
+		# boxes and use the lowest correlation score as the correlation threshold
+		found = False
+		for i,box in enumerate(self.refboxes):
+			if box.correlationscore == None:
+				# this is an error which probably means that the box, as created by the user, has a strong correlation maximum next to it which is disrupting the auto parameters
+				# this is mostly an error for dwoolfords attention
+				# FIXME
+				print "continuing on faulty"
+				continue
+			if found == False:
+				self.optthreshold = box.correlationscore
+				found = True
+			else:	
+				if box.correlationscore < self.optthreshold: self.optthreshold = box.correlationscore
+
+		# Iterate through the reference boxes and accrue what you can think of
+		# as the worst case scenario, in terms of correlation profiles
+		found = False
+		for i,box in enumerate(self.refboxes):
+			if box.correlationscore == None:
+				##print "continuing on faulty" - this was already printed above
+				continue
+			if found == False:
+				self.optprofile = box.optprofile
+				n = len(self.optprofile)
+				found = True
+			else:
+				profile = box.optprofile
+				for j in range(0,n):
+					if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
+		
+	
+		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
+		self.optprofileradius = -1
+		tmp = self.optprofile[0]
+		for i in range(1,len(self.optprofile)):
+			# the tmp > 0 is a
+			if self.optprofile[i] > tmp and tmp > 0:
+				tmp = self.optprofile[i]
+				self.optprofileradius = i
+		
+	
 class GUIbox:
 	def __init__(self,imagefsp,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
@@ -825,7 +984,7 @@ class GUIbox:
 		
 		self.eraseradius = 2*boxsize
 		
-		self.app=get_app()
+		self.dynapixp=get_app()
 		self.image=EMData().read_images(imagefsp,[0])[0]					# original image to be boxed
 		self.imagefsp = imagefsp
 		self.currentimage = 0
@@ -833,13 +992,13 @@ class GUIbox:
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
 		
-		
 		#if abs(self.image.get_attr("mean")) < 1:
 			#print "adding 10"
 			#self.image.add(10)
 		self.boxset2 = BoxSet2(self.image,self)
 		self.boxset2.addnonrefs(boxes)
 		self.boxset2.boxsize = boxsize
+		self.autoBoxer = SwarmAutoBoxer()
 		self.threshold=thr					# Threshold to decide which boxes to use
 		self.ptcl=[]						# list of actual boxed out EMImages
 		self.boxm = None
@@ -877,7 +1036,8 @@ class GUIbox:
 		self.guictl=GUIboxPanel(self)
 		
 		
-		self.ap = False
+		self.dynapix = False
+		self.anchortemplate = False
 		
 		try:
 			E2loadappwin("boxer","imagegeom",self.guiimp)
@@ -899,6 +1059,12 @@ class GUIbox:
 		self.guictl.show()
 		
 		self.boxupdate()
+		
+		#debug
+		
+		f = file('autoparams.eman2','r')
+		from pickle import load
+		self.autoBoxer = load(f)
 		
 	def setPtclMxData(self,data=None):
 		'''
@@ -923,11 +1089,7 @@ class GUIbox:
 				self.boxsetcache[im].boxsize = self.boxsize
 				
 			self.boxset2 = self.boxsetcache[im]
-			template = oldboxset.template
-			if template != None:
-				if self.boxset2.correlation == None:
-					self.boxset2.gencorrelation(oldboxset.template)
-					self.boxset2.autobox(oldboxset.optprofile,oldboxset.optthreshold)
+			self.boxset2.autobox(self.autoBoxer)
 			for box in self.boxset2.boxes: box.changed = True
 			self.currentimage = im
 			self.ptcl = []
@@ -936,7 +1098,6 @@ class GUIbox:
 			self.updateAllImageDisplay()
 	
 	def genimagethumbnails(self,imagename):
-		print imagename
 		# warning, the imagename is invalid something could go wrong here
 		try: n = EMUtil.get_image_count(imagename)
 		except: 
@@ -947,7 +1108,6 @@ class GUIbox:
 		n = self.getimagethumbshrink()
 		self.imagethumbs = []
 		nim = EMUtil.get_image_count(imagename)
-		print 
 		for i in range(0,nim):
 			if i == 0 and self.boxsetcache == None:
 				self.boxsetcache = []
@@ -962,8 +1122,6 @@ class GUIbox:
 			i.process_inplace("normalize.edgemean")
 			self.imagethumbs.append(i)
 			
-		
-		print "done image thumbs"
 		
 	def getimagethumbshrink(self):
 		if self.itshrink == -1:
@@ -1055,11 +1213,14 @@ class GUIbox:
 				if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
 				# If we get here, we need to make a new box
 				box = Box(m[0]-self.boxsize/2,m[1]-self.boxsize/2,self.boxsize,self.boxsize,True)
+				if self.anchortemplate:	box.paramsonly = True
+				else: box.paramsonly = False # this is the default behaviour 
 				box.changed = True
 				self.boxset2.addbox(box)
+				self.autoBoxer.addReference(box)
 				self.mouseclicks += 1
 				self.boxupdate()
-				if self.ap:	self.autobox()
+				if self.dynapix: self.autobox()
 				self.updateppc()
 				self.updateAllImageDisplay()
 				boxnum = len(self.getboxes())-1
@@ -1178,7 +1339,7 @@ class GUIbox:
 			m=self.guiim.scr2img((event.x(),event.y()))
 			if self.moving != None:
 				box = self.moving[0]
-				if box.isref and self.ap: self.autobox()
+				if box.isref and self.dynapix: self.autobox()
 			
 			self.moving=None
 		elif self.mmode == 1:
@@ -1244,16 +1405,12 @@ class GUIbox:
 		self.guiim.addShapes(sh)
 		self.guiim.setActive(None,.9,.9,.4)
 
+		box = self.getboxes()[boxnum]
 		self.ptcl.pop(boxnum)
 		
-		if self.boxset2.delbox(boxnum) and self.ap:
+		if self.boxset2.delbox(boxnum) and self.dynapix:
+			self.autoBoxer.removeReference(box)
 			self.autobox(True)
-			
-		
-		#del(self.guimx.data[globalboxnum])
-		#self.guimx.updateGL()
-		#self.guimx.setData(self.ptcl)
-	
 
 	def updateboxsize(self,boxsize):
 		self.boxset2.updateboxsize(boxsize)
@@ -1294,7 +1451,7 @@ class GUIbox:
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
-		self.app.exec_()
+		self.dynapixp.exec_()
 		
 		E2saveappwin("boxer","imagegeom",self.guiim)
 		E2saveappwin("boxer","matrixgeom",self.guimx)
@@ -1329,27 +1486,24 @@ class GUIbox:
 				global_box_num += 1
 			#print "there are",len(images),"refs"
 			return images
-	def updatetemplate(self):
-		self.boxset2.updatetemplate(self.boxsize)
-			
+
 	def autoboxbutton(self):
 		self.autobox()
 		
 	def autobox(self,force=False):
-		if self.boxset2.templateupdate or force:
+		if not self.anchortemplate or force:
 			self.deletenonrefs()
-		self.updatetemplate()
-		self.boxset2.autobox()
+		self.boxset2.autobox(self.autoBoxer)
 
 	def dynapick(self):
-		self.ap = not self.ap
+		self.dynapix = not self.dynapix
 		
 	def done(self):
-		self.app.quit
+		self.dynapixp.quit
 		
 	def trydata(self,data,thr):
 		self.deletenonrefs()
-		self.boxset2.autobox(data,thr)
+		self.boxset2.autobox(self.autoBoxer,data,thr)
 		
 	def updatedata(self,data,thresh):
 		self.guictl.updatedata(data,thresh)
@@ -1357,7 +1511,7 @@ class GUIbox:
 	def setautobox(self,s):
 		self.boxset2.autoboxmethod = s
 	def nocupdate(self,bool):
-		self.boxset2.templateupdate = not bool	
+		self.anchortemplate = bool	
 	def classify(self,bool):
 		self.boxset2.gen_ref_images()
 		
@@ -1368,6 +1522,20 @@ class GUIbox:
 	def updateEraseRad(self,rad):
 		self.eraseradius = rad
 
+	def quit(self):
+		self.app.quit()
+		
+	def saveparams(self):
+		name = QtGui.QFileDialog.getSaveFileName(None,'Save Autoboxing Params')
+		print name
+		if str(name) != '':
+			f = file(str(name),'w')
+		else: return
+		
+		from pickle import dump
+		dump(self.autoBoxer,f)
+		f.close()
+		
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
 		
@@ -1482,9 +1650,11 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.vbl.addLayout(self.hbl2)
 
-
 		self.done=QtGui.QPushButton("Done")
 		self.vbl.addWidget(self.done)
+		
+		self.saveparams = QtGui.QPushButton("Save Params")
+		self.vbl.addWidget(self.saveparams)
 
 		self.classifybut=QtGui.QPushButton("Classify")
 		self.vbl.addWidget(self.classifybut)
@@ -1492,7 +1662,8 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
 		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.updateEraseRad)
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
-		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.app.quit)
+		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
+		self.connect(self.saveparams,QtCore.SIGNAL("clicked(bool)"),self.target.saveparams)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
 		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
 		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
