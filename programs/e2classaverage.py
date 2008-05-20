@@ -376,6 +376,7 @@ def main():
 		
 			average = averager.finish()
 			#average.write_image("avg.img",-1)
+			#should this be centeracf?
 			average.process_inplace("xform.centerofmass")
 			
 		# extract euler data from the ref image, if it was specified

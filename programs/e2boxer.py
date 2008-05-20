@@ -380,7 +380,7 @@ class BoxSet2:
 			exit(1)
 		
 		if self.shrink == -1:
-			self.shrink = ceil(float(self.boxsize)/float(16))
+			self.shrink = ceil(float(self.boxsize)/float(32))
 		
 		return self.shrink
 
@@ -526,7 +526,7 @@ class BoxSet2:
 		FIXME - act on the argument optprofile and thr
 		'''
 		if (self.correlation == None):
-			self.refcache = autoBoxer.getReferences()
+			self.refcache = copy(autoBoxer.getReferences())
 			template = autoBoxer.getTemplate()
 			if template != None: self.gencorrelation(template)
 			else: 
@@ -534,7 +534,7 @@ class BoxSet2:
 				return 0
 		else:
 			template = None
-			refcache = autoBoxer.getReferences()
+			refcache = copy(autoBoxer.getReferences())
 			if len(refcache) != len(self.refcache):
 				template = autoBoxer.getTemplate()
 			else:
@@ -544,6 +544,7 @@ class BoxSet2:
 					if l.xcorner != r.xcorner or l.ycorner != r.ycorner:
 						template = autoBoxer.getTemplate()
 						break
+			self.refcache = refcache
 			if template != None: self.gencorrelation(template)
 			# else the current correlation is fine!
 			
@@ -649,12 +650,12 @@ class BoxSet2:
 		
 		print "received finish signal"
 
-class AutoBoxer:
+class AutoBoxer2:
 	'''
 	Base class design for auto boxers
 	'''
 	def __init__(self):
-		raise Exception
+		self.version = 1.0
 
 	def getTemplate(self):
 		'''This should return a single template which is an EMData object'''
@@ -719,6 +720,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	This is an autoboxer that encapsulates the boxing approach first developed in SwarmPS
 	'''
 	def __init__(self):
+		AutoBoxer.__init__(self)
 		self.refboxes = []		# this will eventually be a list of Box objects
 		self.refupdate = False	# a reference update flag which cause the template to be regenerated
 		self.template = None	# an EMData object that is the template
@@ -726,16 +728,17 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.shrink = -1
 		
 		# more privately stuff
-		self.templatedimmin = 16  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
+		self.templatedimmin = 32  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
 		self.optthreshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
 		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
 		self.autoboxmethod = SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
+		self.__shrink = -1
 		pass
 	
 	def name(self):
 		return 'swarmautoboxer'
-	
+		print self.version
 	def addReference(self,box):
 		'''
 		 add a reference box - the box should be in the format of a Box, see above):
@@ -745,6 +748,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				print 'error, support for uneven box dimensions is not currently implemented'
 				return 0
 			self.refboxes.append(box)
+			print "internally flagging a reference update"
 			self.refupdate = True	# now set the flag that will cause the template to be updated
 			# store the boxsize if we don't have one already
 			if self.boxsize == -1:
@@ -763,9 +767,11 @@ class SwarmAutoBoxer(AutoBoxer):
 	def removeReference(self,box):
 		for j,tmp in enumerate(self.refboxes):
 			if box.isref and box.xcorner == tmp.xcorner and box.ycorner == tmp.ycorner:
-				self.refboxes.pop(j)
+				tmp = self.refboxes.pop(j)
 				if len(self.refboxes) == 0:
 					self.boxsize = -1 
+				if not tmp.paramsonly:
+					self.refupdate = True # There should be a template regeneration if we remove a reference that was contributing toward the template
 				return True
 		
 		return False
@@ -775,16 +781,19 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 	def getTemplate(self):
 		if self.refupdate:
+			print "reference flag was set to update, returning a new template"
 			# if the ref update flag is set then we must generate the template (potentially again)
 			if not self.__genTemplate():
 				print 'error, couldnt generate template'
 				return None
-		
+		else: #debug
+			print "returning old template"
 		# accomodate for strange circumstances, this shouldn't happen in normal usage, but on the off chance that things go wrong at least
 		# we get a message
 		if self.template == None:
 			print 'error, you have either asked for the template without setting a reference, or you have added a reference and not set the refupdate flag'
 			return None
+				
 		
 		return self.template
 		
@@ -854,6 +863,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			print 'error, cant call private function genTemplate when there are no refboxes, this is an internal error'
 			return 0
 		
+		print "using",len(self.refboxes),"references"
 		images_copy = []
 		for ref in self.refboxes:
 			# some references can be excluded from the template generation procedure
@@ -879,7 +889,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		#ave.write_image("prealigned.hdf")
 		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("math.radialaverage")
-		ave.process_inplace("xform.centerofmass")
+		ave.process_inplace("xform.centeracf")
 		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		#ave.write_image("ave.hdf")
 		
@@ -898,8 +908,19 @@ class SwarmAutoBoxer(AutoBoxer):
 				
 			ave.mult(1.0/len(t))
 			ave.process_inplace("math.radialaverage")
-			ave.process_inplace("xform.centerofmass")
+			ave.process_inplace("xform.centeracf")
 			ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
+		
+		for image in t:
+			image.write_image("aligned_refs.img",-1)
+		
+		ave.write_image("aligned_refs.img",-1)
+		
+		black = EMData(image.get_xsize(),image.get_ysize())
+		black.to_zero()
+		black.write_image("aligned_refs.img",-1)
+		
+		
 		
 		self.template = ave
 		return 1
@@ -992,9 +1013,7 @@ class GUIbox:
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
 		
-		#if abs(self.image.get_attr("mean")) < 1:
-			#print "adding 10"
-			#self.image.add(10)
+
 		self.boxset2 = BoxSet2(self.image,self)
 		self.boxset2.addnonrefs(boxes)
 		self.boxset2.boxsize = boxsize
@@ -1009,11 +1028,9 @@ class GUIbox:
 		self.guimxp= None # widget for displaying matrix of smaller images
 		self.guimx=EMImageMX()	
 		
-		self.guimxit=EMImageMX()		# widget for displaying image thumbs
-		self.genimagethumbnails(self.imagefsp)
-		self.guimxit.setData(self.imagethumbs)
-		self.guimxit.setmmode("app")
-		self.guimxitp = EMParentWin(self.guimxit)
+		self.guimxitp = None
+		self.genImageThumbnailsWidget(self.imagefsp)
+			
 		
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mousedown)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mousedrag)
@@ -1021,11 +1038,11 @@ class GUIbox:
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("keypress"),self.keypress)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousewheel"),self.mousewheel)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousemove"),self.mousemove)
-		self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
+		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.boxsel)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedrag"),self.boxmove)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mouseup"),self.boxrelease)
-		self.guimx.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
+		
 		
 		self.mmode = 0
 		self.guiim.setmmode(0)
@@ -1034,7 +1051,6 @@ class GUIbox:
 		self.mouseclicks = 0
 		self.movingeraser = False
 		self.guictl=GUIboxPanel(self)
-		
 		
 		self.dynapix = False
 		self.anchortemplate = False
@@ -1055,17 +1071,20 @@ class GUIbox:
 			pass
 		
 		self.guiimp.show()
-		self.guimxitp.show()
+		if self.guimxitp != None:
+			self.guimxitp.show()
+			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
+			
 		self.guictl.show()
 		
 		self.boxupdate()
 		
 		#debug
 		
-		f = file('autoparams.eman2','r')
-		from pickle import load
-		self.autoBoxer = load(f)
-		
+		#f = file('autoparams.eman2','r')
+		#from pickle import load
+		#self.autoBoxer = load(f)
+			
 	def setPtclMxData(self,data=None):
 		'''
 		Call this to set the Ptcl Mx data 
@@ -1097,7 +1116,14 @@ class GUIbox:
 			self.boxupdate()
 			self.updateAllImageDisplay()
 	
-	def genimagethumbnails(self,imagename):
+	def genImageThumbnailsWidget(self,imagename):
+		'''
+		Generates image thumbnails for a single image name
+		if there is only one image in the image file on disk
+		this function returns 0 and does nothing.
+		Else thumbnails are generated, and image matrix is initialized (but not shown),
+		and 1 is returned
+		'''
 		# warning, the imagename is invalid something could go wrong here
 		try: n = EMUtil.get_image_count(imagename)
 		except: 
@@ -1105,9 +1131,12 @@ class GUIbox:
 			print "the image name ", imagename, "probably doesn't exist"
 			raise Exception
 		
+		nim = EMUtil.get_image_count(imagename)
+		if (nim == 1): return 0
+		
 		n = self.getimagethumbshrink()
 		self.imagethumbs = []
-		nim = EMUtil.get_image_count(imagename)
+		
 		for i in range(0,nim):
 			if i == 0 and self.boxsetcache == None:
 				self.boxsetcache = []
@@ -1121,7 +1150,13 @@ class GUIbox:
 			i = image.process("math.meanshrink",{"n":n})
 			i.process_inplace("normalize.edgemean")
 			self.imagethumbs.append(i)
-			
+		
+		
+		self.guimxit=EMImageMX()		# widget for displaying image thumbs
+		self.guimxit.setData(self.imagethumbs)
+		self.guimxit.setmmode("app")
+		self.guimxitp = EMParentWin(self.guimxit)
+		return 1
 		
 	def getimagethumbshrink(self):
 		if self.itshrink == -1:
@@ -1373,20 +1408,20 @@ class GUIbox:
 	def updateMXDisplay(self):
 		self.guimx.updateGL()
 	
-	def removeshape(self,boxnum):
-		print "removing shape",boxnum
-		sh=self.guiim.getShapes()
-		k=sh.keys()
-		k.sort()
-		del sh[int(boxnum)]
-		for j in k:
-			if isinstance(j,int):
-				if j>boxnum :
-					sh[j-1]=sh[j]
-					del sh[j]
-		self.guiim.delShapes()
-		self.guiim.addShapes(sh)
-		self.guiim.setActive(None,.9,.9,.4)
+	#def removeshape(self,boxnum):
+		#print "removing shape",boxnum
+		#sh=self.guiim.getShapes()
+		#k=sh.keys()
+		#k.sort()
+		#del sh[int(boxnum)]
+		#for j in k:
+			#if isinstance(j,int):
+				#if j>boxnum :
+					#sh[j-1]=sh[j]
+					#del sh[j]
+		#self.guiim.delShapes()
+		#self.guiim.addShapes(sh)
+		#self.guiim.setActive(None,.9,.9,.4)
 		
 	def delbox(self,boxnum):
 		"""
@@ -1421,7 +1456,7 @@ class GUIbox:
 		
 		ns = {}
 		idx = 0
-			# get the boxes
+		# get the boxes
 		boxes =self.getboxes()
 		for j,box in enumerate(boxes):
 	
@@ -1468,24 +1503,6 @@ class GUIbox:
 		
 		return (self.getboxes(),self.threshold)
 	
-	def getrefimages(self):
-		images = []
-		global_box_num = 0
-		# basic strategy is to detect if there was a collision with any other box
-		# do this by incrementing through all the box sets
-		for boxset in self.boxsets:
-			# get the boxes
-			boxes = boxset.boxes
-			
-			#print event.x(),event.y(),m[0],m[1]
-			# do collision detection
-			for boxnum,box in enumerate(boxes):
-				if box[4] == 1:
-					images.append(self.ptcl[global_box_num])
-				
-				global_box_num += 1
-			#print "there are",len(images),"refs"
-			return images
 
 	def autoboxbutton(self):
 		self.autobox()
@@ -1523,7 +1540,7 @@ class GUIbox:
 		self.eraseradius = rad
 
 	def quit(self):
-		self.app.quit()
+		self.dynapixp.quit()
 		
 	def saveparams(self):
 		name = QtGui.QFileDialog.getSaveFileName(None,'Save Autoboxing Params')
@@ -1533,7 +1550,7 @@ class GUIbox:
 		else: return
 		
 		from pickle import dump
-		dump(self.autoBoxer,f)
+		dump(self.autoBoxer,f) # use protocol-1
 		f.close()
 		
 class GUIboxPanel(QtGui.QWidget):
