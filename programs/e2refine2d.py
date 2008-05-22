@@ -120,9 +120,8 @@ def main():
 		tmp=EMData(options.input,0)
 		options.maxshift=tmp.get_xsize()/3	
 	
-	first=1
+	fit=1
 	if options.resume :
-		fit=1
 		while access("classes.%02d.hdf"%fit,F_OK): fit+=1
 		options.initial="classes.%02d.hdf"%fit
 		fit+=1
@@ -166,16 +165,19 @@ def main():
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py %s %s --simcmp=sqeuclidean --simalign=rotate_translate:maxshift==%d --center --useali"%(options.initial,options.initial,options.maxshift))
+		run("e2stacksort.py allrefs.%02d.hdf %s --simcmp=sqeuclidean --simalign=rotate_translate:maxshift==%d --center --useali"%(it,options.initial,options.maxshift))
 		
 		# Compute a classification basis set
 #		run("e2msa.py %s basis.%02d.hdf --nbasis=%d"%(options.initial,it,options.nbasisfp))
 		try: remove("basis.%02d.hdf"%it)
 		except: pass
-		run("e2msa.py %s basis.%02d.hdf --nbasis=%d --varimax"%(options.initial,it,options.nbasisfp))
+		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d --varimax"%(it,it,options.nbasisfp))
 		
 		# extract the most different references for alignment
-		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
+#		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
+
+		# extract the averages with the most particles
+		run("e2stacksort.py allrefs.%02d.hdf aliref.%02d.hdf --byptcl --nsort=%d"%(it,it,options.naliref))
 		
 		# We use e2simmx to compute the optimal particle orientations
 		try: remove("simmx.%02d.hdf"%it)

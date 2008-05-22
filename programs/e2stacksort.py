@@ -52,6 +52,7 @@ This program will sort a stack of images based on some similarity criterion. """
 	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the after optional alignment (default=optvariance:keepzero=1:matchfilt=1)", default="optvariance:keepzero=1:matchfilt=1")
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
 	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
+	parser.add_option("--byptcl",action="store_true",default=False,help="Sort in order of number of particles represented in each class-average. No alignment, shrinking, etc. is performed")
 	parser.add_option("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
 	parser.add_option("--center",action="store_true",default=False,help="After alignment, particles are centered via center of mass before comparison")
 	parser.add_option("--nsort",type="int",help="Number of output particles to generate",default=0)
@@ -71,7 +72,9 @@ This program will sort a stack of images based on some similarity criterion. """
 	
 	a=EMData.read_images(args[0])
 	if options.nsort<2 : options.nsort=len(a)
-	if options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
+	if options.byptcl : 
+		b=sortstackptcl(a,options.nsort)
+	elif options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
 	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
 	for i,im in enumerate(b): im.write_image(args[1],i)
 
@@ -145,6 +148,12 @@ def sortstack(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):
 
 	return ret
 
+def sortstackptcl(stack,nsort):
+	"""Sorts a list of images based on the number of particles each image represents"""
 
+	stack.sort(key=lambda B:B.get_attr("ptcl_repr"),reverse=True)
+
+	return stack[:nsort]
+	
 if __name__ == "__main__":
     main()
