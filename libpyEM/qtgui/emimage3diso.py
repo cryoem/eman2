@@ -1071,11 +1071,6 @@ if __name__ == '__main__':
 		e.process_inplace('testimage.axes')
  		window.setData(e)
 
-		# these lines are for testing shape rendering
-# 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
-# 		window.addShape("b",["circle",.5,.8,.2,120,50,30.0,2])
-# 		window.addShape("c",["line",.2,.8,.5,20,120,100,200,2])
-# 		window.addShape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
 	else :
 		if not os.path.exists(sys.argv[1]):
 			print "Error, input file %s does not exist" %sys.argv[1]
@@ -1084,12 +1079,5 @@ if __name__ == '__main__':
 		window.setData(a[0])
 	window2=EMParentWin(window)
 	window2.show()
-	
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
 	
 	sys.exit(app.exec_())

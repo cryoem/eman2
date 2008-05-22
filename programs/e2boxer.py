@@ -81,6 +81,10 @@ for single particle analysis."""
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
+	
+	imagenames = []
+	for i in range(0,len(args)):
+		imagenames.append(args[i])
 
 	logid=E2init(sys.argv)
 	
@@ -146,9 +150,6 @@ for single particle analysis."""
 	try: options.retestlist=[int(i) for i in options.retestlist.split(',')]
 	except: options.retestlist=[]
 	
-	
-	image.process_inplace("normalize.edgemean")
-
 		
 	if len(options.auto)>0 : print "Autobox mode ",options.auto[0]
 	
@@ -172,7 +173,7 @@ for single particle analysis."""
 
 	# invoke the GUI if requested
 	if options.gui:
-		gui=GUIbox(args[0],boxes,boxthr,options.boxsize)
+		gui=GUIbox(imagenames,boxes,boxthr,options.boxsize)
 		gui.run()
 		
 	print "finished running"
@@ -221,6 +222,15 @@ except:
 
 
 class Box:
+	def become(self,trimbox):
+		self.xcorner = trimbox.xcorner			# the xcorner - bottom left
+		self.ycorner = trimbox.ycorner			# the ycorner - bottom left
+		self.xsize = trimbox.xsize				# the xsize of the box
+		self.ysize = trimbox.ysize				# the ysize of the box
+		self.isref = trimbox.isref				# a flag that can be used to tell if the box is being used as a reference
+		self.changed = trimbox.changed			# a flag signalling the box has changed and display needs updatin
+		self.isanchor = trimbox.isanchor		# a flag signalling the box has changed and display needs updatin
+		
 	def __init__(self,xcorner=-1,ycorner=-1,xsize=-1,ysize=-1,isref=0,correlationscore=0):
 		self.xcorner = xcorner			# the xcorner - bottom left
 		self.ycorner = ycorner			# the ycorner - bottom left
@@ -246,7 +256,7 @@ class Box:
 		self.footprintshrink = 1
 		self.isanchor = True		# A flag used by AutoBoxer routines that - if set to true the box will not be included in the generation the template) - This is specific to the SwarmPS autoboxer
 		self.boxingobj = None
-
+		self.shape = None
 	def updateBoxImage(self,image,norm=True):
 		#print "getting region",self.xcorner,self.ycorner,self.xsize,self.ysize
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
@@ -334,10 +344,26 @@ class Box:
 		else:
 			print 'error, the autoBoxer you are using is not currently known by the Box class'
 			return 0
+		
+class TrimBox():
+	'''
+	A trimmed down version of a box
+	'''
+	def __init__(self,box):
+		self.xcorner = box.xcorner			# the xcorner - bottom left
+		self.ycorner = box.ycorner			# the ycorner - bottom left
+		self.xsize = box.xsize				# the xsize of the box
+		self.ysize = box.ysize				# the ysize of the box
+		self.isref = box.isref				# a flag that can be used to tell if the box is being used as a reference
+		self.changed = box.changed			# a flag signalling the box has changed and display needs updatin
+		self.isanchor = box.isanchor		# a flag signalling the box has changed and display needs updatin
+		
 class Reference(Box):
 	'''
-	A reference is a box, but with extra capabilities. It knows the Boxable from which it originated.
-	It can therefore tell 
+
+	A reference is a box, but with extra capabilities. It knows the BoxingObject from which it originated.
+	It can therefore tell ...
+	AM NOT SURE IF THIS IS NECESSARY YET
 	'''
 	def __init__(self):
 		Box.__init__(self)
@@ -345,7 +371,7 @@ class Reference(Box):
 	
 
 class Boxable:
-	def __init__(self,image,parent=None,autoBoxer=None):
+	def __init__(self,image,parent=None,autoBoxer=None,imagename=None,projectdb=None):
 		self.image = image			# the image containing the boxes
 		self.parent = parent		# keep track of the parent in case we ever need it
 		self.boxes = []				# a list of boxes
@@ -353,6 +379,7 @@ class Boxable:
 		self.boxsize = -1			#  the boxsize
 		self.smallimage = None		# a small copy of the image which has had its background flattened
 		self.flattenimager = -1		# the r value used to run the flatten image processor
+		self.imagename = imagename
 		
 		self.fpshrink = -1
 		self.exclusionimage = None
@@ -363,6 +390,7 @@ class Boxable:
 		self.templateTS = -1 # a template time stamp, used to avoid unecessarily regenerating the template in self.autoBox
 		self.autoBoxerTS = -1 # and autoBoxer time stamp, used to avoid unecessary autoboxing, and to force autoboxing when appropriate
 		
+		self.projectdb = projectdb
 		self.autoBoxer = autoBoxer
 	
 	def setAutoBoxer(self,autoBoxer):
@@ -370,6 +398,33 @@ class Boxable:
 		
 	def getCorrelation(self):
 		return self.correlation
+	
+	def extendBoxes(self,boxes):
+		self.boxes.extend(boxes)
+		
+	def boxesReady(self):
+		if self.projectdb == None:
+			print 'error, cannot access the database but received a message telling me my boxes are ready? confused'
+			return 0
+		
+		trimboxes = self.projectdb[self.imagename+"_boxes"]
+		for trimbox in trimboxes:
+			if trimbox.changed:
+				box = Box()
+				
+				# had to do conversion stuff so pickle would work
+				box.become(trimbox)
+				
+				if box.isref:
+					box.rorig = 0			# RGB red
+					box.gorig = 0			# RGB green
+					box.borig = 0			# RGB blue
+					box.r = 0
+					box.g = 0
+					box.b = 0
+				
+				self.boxes.append(box)
+		
 	
 	def addbox(self,box):
 		if not isinstance(box,Box):
@@ -401,6 +456,17 @@ class Boxable:
 				return True
 			
 		return False
+	
+	def deletenonrefs(self):
+		boxestodelete = []
+		n = len(self.boxes)
+		for m in range(n-1,-1,-1):
+			box = self.boxes[m]
+			if box.isref == False:
+				self.delbox(m)
+				boxestodelete.append(m)
+				
+		self.parent.deleteDisplayShapes(boxestodelete)
 	
 	def addnonrefs(self,boxes):
 		'''
@@ -497,7 +563,7 @@ class Boxable:
 			#FIXME - we could avoid a deep copy by writing the meanshrink processor
 			# i.e. section = self.image.process("math.meanshrink",{"n":self.getBestShrink()}
 			
-			if (self.getBestShrink() != 1):
+			if (autoBoxer.getBestShrink() != 1):
 				self.smallimage = self.image.process("math.meanshrink",{"n":autoBoxer.getBestShrink()})
 			else: self.smallimage = self.image.copy()
 			
@@ -511,47 +577,11 @@ class Boxable:
 		#self.correlation.write_image("tttttt.hdf")
 		print "generated correlation image" # DEBUG
 		
-		
-	#def autobox(self,autoBoxer,optprofile=None,thr=None):
-		#'''
-		#FIXME - act on the argument optprofile and thr
-		#'''
-		## sometimes the template would have been updated transparently via a reference update in the
-		## main interface.
-		
-		#print 'called autobox' # DEBUG
-		
-		#if self.templateTS == -1 or self.correlation == None or self.templateTS != autoBoxer.templateTS:
-			#print 'regenerating the correlation image' # DEBUG
-			#template = autoBoxer.getTemplate()
-			#self.templateTS = autoBoxer.templateTS
-			#if template != None: self.__genCorrelation(template,autoBoxer)
-			#else:
-				#print 'error, cant ask the autoBoxer for its template, it doesnt have one'
-				#return 0
-		#else : print 'using cached correlation image' # DEBUG
-
-		## auto boxing will only ever occur if the time stamp of the AutoBoxer is not the
-		## same as the time stamp cached by this object. -1 means it's the first time.
-		#if self.autoBoxerTS == -1 or self.autoBoxerTS != autoBoxer.stateTS:
-			#print 'auto boxing' # DEBUG
-			#exclusion = self.getExclusionImage().copy()
-			
-			## paint white exlclusion circles around the already selected and reference boxes
-			## this will save the autoBox time and prevent redundant boxing
-			#self.updateExclusion(exclusion)
-		
-			#boxes = autoBoxer.autoBox(self.correlation,self.boxes,exclusion)
-			#self.autoBoxerTS = autoBoxer.stateTS
-
-			## autoBoxer should return 0 if there was a problem
-			#if boxes != 0:
-				#for box in boxes: self.boxes.append(box)
-
-			#self.parent.boxupdate()
-		#else: print 'no auto boxing was necessary, up-2-date' # DEBUG
 
 	def updateExcludedBoxes(self):
+		'''
+		
+		'''
 		lostboxes = []
 		
 		invshrink = 1.0/self.getBestShrink()
@@ -564,6 +594,8 @@ class Boxable:
 			
 			if ( exc.get(x,y) != 0):
 				lostboxes.append(i)
+			
+			self.boxes.pop(i)
 	
 		return lostboxes
 	
@@ -598,29 +630,9 @@ class Boxable:
 		if self.exclusionimage == None:
 			self.exclusionimage = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
 			self.exclusionimage.to_zero()
+		
 		return self.exclusionimage
 	
-	def updateExclusion(self,exclusion):
-		'''
-		paints black circles in the exclusion - which is a binary EMData object
-		useful for making things efficient, should probably be called updateExclusions
-		'''
-		
-		if self.autoBoxer != None:
-			searchradius = self.autoBoxer.getSearchRadius()
-		else:
-			print 'warning, there is no autoboxer. Am unsure of how to update excluded zones - doing nothing. This may result in strange autoboxing results'
-			return
-		
-		for box in self.boxes:
-			xx = box.xcorner + box.xsize/2
-			yy = box.ycorner + box.ysize/2
-			xx /= self.getBestShrink()
-			yy /= self.getBestShrink()
-			
-			BoxingTools.set_radial_non_zero(exclusion,int(xx),int(yy),searchradius)
-			
-		
 	#def classify(self):
 		#v = []
 		## accrue all params
@@ -670,7 +682,7 @@ class Boxable:
 				box.b = box.borig
 				box.changed = True
 		self.imagemx2.setSelected(lc[0])
-		self.parent.boxupdate()
+		self.parent.boxDisplayUpdate()
 	def process_finished(self,int):
 		try:
 			from emimage import EMImage
@@ -774,6 +786,30 @@ class AutoBoxer:
 		@Returns a list of Boxes
 		'''
 		raise Exception
+
+class TrimSwarmAutoBoxer():
+	def __init__(self,swarmAutoBoxer):
+		self.trimrefboxes = []
+		for ref in swarmAutoBoxer.refboxes:
+			trimref = TrimBox(ref)
+			self.trimrefboxes.append(trimref)
+			
+		self.boxsize = swarmAutoBoxer.boxsize
+		self.shrink = swarmAutoBoxer.shrink
+		self.templatedimmin = swarmAutoBoxer.templatedimmin
+		
+		self.optthreshold = swarmAutoBoxer.optthreshold
+		self.optprofile = copy(swarmAutoBoxer.optprofile)
+		self.optprofileradius = swarmAutoBoxer.optprofileradius
+		self.autoboxmethod = swarmAutoBoxer.autoboxmethod
+		self.templateTS = swarmAutoBoxer.templateTS
+		self.stateTS = swarmAutoBoxer.stateTS
+		self.mode = swarmAutoBoxer.mode
+		self.refupdate = swarmAutoBoxer.refupdate
+		self.regressiveflag = swarmAutoBoxer.regressiveflag
+		
+		self.template = swarmAutoBoxer.template
+		
 	
 class SwarmAutoBoxer(AutoBoxer):
 	'''
@@ -782,8 +818,13 @@ class SwarmAutoBoxer(AutoBoxer):
 	DYNAPIX = 1
 	ANCHOREDDYNAPIX = 2
 	USERDRIVEN = 3
-	def __init__(self,boxable):
+	ANCHOREDUSERDRIVEN = 4
+	def __init__(self,boxable,projectdb=None):
 		AutoBoxer.__init__(self,boxable)
+		
+		self.boxable = boxable
+		self.projectdb = projectdb
+		
 		self.refboxes = []		# this will eventually be a list of Box objects
 		self.template = None	# an EMData object that is the template
 		self.boxsize = -1		# stores the global boxsize, this is the value being used by boxer in the main interface
@@ -800,19 +841,46 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.templateTS = -1 # a template time stamp to 
 		self.stateTS = -1 # the time stamp that records when the current template and parameters are completely up to date
 		
-		self.boxable = boxable
 		
 		self.mode = SwarmAutoBoxer.DYNAPIX
 		self.refupdate = False # this is a flag used when self.mode is USERDRIVEN
-		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN]  # if another mode is added you would have to find all places where self.mode is used to make decisions and alter
-	
+		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.ANCHOREDUSERDRIVEN]  # if another mode is added you would have to find all places where self.mode is used to make decisions and alter
+		self.regressiveflag = False	# flags a force removal of non references in the Boxable in autoBox
+		
+	def become(self,trimSwarmAutoBoxer):
+		self.refboxes = []
+		for ref in trimSwarmAutoBoxer.trimboxes:
+			ref = Box
+			ref.become(ref)
+			self.refboxes.append(ref)
+			
+		self.boxsize = trimSwarmAutoBoxer.boxsize
+		self.shrink = trimSwarmAutoBoxer.shrink
+		self.templatedimmin = trimSwarmAutoBoxer.templatedimmin
+		
+		self.optthreshold = trimSwarmAutoBoxer.optthreshold
+		self.optprofile = copy(trimSwarmAutoBoxer.optprofile)
+		self.optprofileradius = trimSwarmAutoBoxer.optprofileradius
+		self.autoboxmethod = trimSwarmAutoBoxer.autoboxmethod
+		self.templateTS = trimSwarmAutoBoxer.templateTS
+		self.stateTS = trimSwarmAutoBoxer.stateTS
+		self.mode = trimSwarmAutoBoxer.mode
+		self.refupdate = trimSwarmAutoBoxer.refupdate
+		self.regressiveflag = trimSwarmAutoBoxer.regressiveflag
+		self.template = trimSwarmAutoBoxer.template
+		
+		
 	def setBoxable(self,boxable):
 		self.boxable = boxable
 	
-	def setMode(self,mode):
-		if mode in self.permissablemodes: self.mode = mode
-		else: print 'error, unknow mode:',mode,'- no action taken'
-		
+	def setMode(self,dynapix,anchortemplate):
+		if dynapix:
+			if anchortemplate: self.mode = SwarmAutoBoxer.ANCHOREDDYNAPIX
+			else: self.mode = SwarmAutoBoxer.DYNAPIX
+		else:
+			if anchortemplate: self.mode = SwarmAutoBoxer.ANCHOREDUSERDRIVEN
+			else: self.mode = SwarmAutoBoxer.USERDRIVEN
+
 	def name(self):
 		return 'swarmautoboxer'
 
@@ -853,11 +921,16 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.refupdate = True
 				self.stateTS = -1
 				self.templateTS = -1
+			elif self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
+				box.updateParams(self)
+				self.__accrueOptParams()
+				self.stateTS = time()
 			else:
 				print 'error, unknown mode in SwarmAutoBoxer'
 				return 0
-			
+		
 			return 1
+	
 			
 		else:
 			print "error, you cannot add a reference to the AutoBoxer if it is not in the format of a Box object"
@@ -868,76 +941,71 @@ class SwarmAutoBoxer(AutoBoxer):
 			if box.isref and box.xcorner == tmp.xcorner and box.ycorner == tmp.ycorner:
 				tmp = self.refboxes.pop(j)
 				if len(self.refboxes) == 0:
-					self.boxsize = -1
-					
-				if self.mode == SwarmAutoBoxer.DYNAPIX:
-					if not box.isanchor:
-						print 'the box flag is internally inconsistent when using pure dynapix'
-						return 0
-					self.__fullUpdate()
-					self.autoBox(self.boxable)
-				elif self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-					if box.isanchor:
-						print 'the box flag is internally inconsistent when anchoring'
-						return 0
-					box.updateParams(self)
-					self.__accrueOptParams()
-					self.stateTS = time()
-					self.autoBox(self.boxable)
-				elif self.mode == SwarmAutoBoxer.USERDRIVEN:
-					self.refupdate = True
-					self.stateTS = -1
-					self.templateTS = -1
-				else:
-					print 'error, unknown mode in SwarmAutoBoxer'
+					self.__reset()
+					return 1
 				
-				return True
-		
-		return False
+				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
+					if box.isanchor:
+						self.__fullUpdate()
+						self.autoBox(self.boxable)
+					else:
+						self.__accrueOptParams()
+						self.stateTS = time()
+						self.regressiveflag = True
+						self.autoBox(self.boxable)
+					return 1
+				elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
+					if box.isanchor:
+						self.refupdate = True
+						self.stateTS = -1
+						self.templateTS = -1
+					else:
+						box.updateParams(self)
+						self.__accrueOptParams()
+						self.stateTS = time()
+						self.regressiveflag = True
+						
+					return 1
+		return 0
 	
-	def referenceMoved(self,ref):
+	def referenceMoved(self,box):
 		'''
 		If a reference was moved interactively in the interface this is the function that should be called
 		'''
-		if self.mode == SwarmAutoBoxer.DYNAPIX:
-			if not box.isanchor:
-				print 'the box flag is internally inconsistent when using pure dynapix'
-				return 0
-			self.__fullUpdate()
-			self.autoBox(self.boxable)
-		elif self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
+		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			if box.isanchor:
-				print 'the box flag is internally inconsistent when anchoring'
-				return 0
-			box.updateParams(self)
-			self.__accrueOptParams()
-			self.stateTS = time()
-			self.autoBox(self.boxable)
-		elif self.mode == SwarmAutoBoxer.USERDRIVEN:
-			self.refupdate = True
-			self.stateTS = -1
-			self.templateTS = -1
+				self.__fullUpdate()
+				self.autoBox(self.boxable)
+			else:
+				box.updateParams(self)
+				self.__accrueOptParams()
+				self.stateTS = time()
+				self.regressiveflag = True
+				self.autoBox(self.boxable)
+			return 1
+		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
+			if box.isanchor:
+				self.refupdate = True
+				self.stateTS = -1
+				self.templateTS = -1
+			else:
+				box.updateParams(self)
+				self.__accrueOptParams()
+				self.stateTS = time()
+				self.regressiveflag = True
+			return 1
 		else:
 			print 'error, unknown mode in SwarmAutoBoxer'
+			return 0
 		
 	def getTemplate(self):
-		if self.mode == SwarmAutoBoxer.USERDRIVEN:
-			# If it's user driven then the user has selected a bunch of references and then hit 'autobox'.
-			# In which case we do a complete reference update, which generates the template and the
-			# best autoboxing parameters
-			if len(self.refboxes) == 0:
-				print 'error, cant get template if there are no references'
-				return None
+		if self.refupdate:
+			self.__fullUpdate()
+			self.refupdate = False
 			
-			if self.refupdate:
-				self.__fullUpdate()
-				self.refupdate = False
-				
-		elif self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-			
-			if self.template == None:
-				print 'error, you have either asked for the template without setting a reference, or you have added a reference and not set the refupdate flag'
-				return None
+		if self.template == None:
+			print 'error, you have either asked for the template without setting a reference, or you have added a reference and not set the refupdate flag'
+			return None
 		
 		return self.template
 		
@@ -955,7 +1023,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			# update references
 			self.__fullUpdate()
 			self.autoBox(self.boxable)
-		elif self.mode == SwarmAutoBoxer.USERDRIVEN:
+		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN :
 			self.refupdate = True
 			self.stateTS = -1
 			self.templateTS = -1
@@ -977,89 +1045,81 @@ class SwarmAutoBoxer(AutoBoxer):
 		return self.shrink
 		
 	def autoBox(self,boxable):
-		if self.mode == SwarmAutoBoxer.USERDRIVEN:
-			# If it's user driven then the user has selected a bunch of references and then hit 'autobox'.
-			# In which case we do a complete reference update, which generates the template and the
-			# best autoboxing parameters
-			if len(self.refboxes) == 0:
-				print 'error, cant get template if there are no references'
-				return 0
+		# If it's user driven then the user has selected a bunch of references and then hit 'autobox'.
+		# In which case we do a complete reference update, which generates the template and the
+		# best autoboxing parameters
+		if len(self.refboxes) == 0:
+			print 'error, cant get template if there are no references'
+			return 0
 			
-			if self.refupdate:
-				self.__fullUpdate()
-				self.refupdate = False
-				
+
+		# ref update should only be toggled if we are in user driven mode
+		if self.refupdate:
+			self.__fullUpdate()
+			self.refupdate = False
+
+		templateTS = boxable.templateTS
+		correlation = boxable.correlation
+		
+		if templateTS == -1 or correlation == None or self.templateTS != templateTS:
+			print 'regenerating the correlation image' # DEBUG
+			if self.template != None:
 				boxable.allowcorrelationupdate = True
+				print 'told the boxable to update its template'
 				boxable.updateCorrelation(self.template,self.templateTS,self)
 				boxable.allowcorrelationupdate = False
 				
 				correlation = boxable.correlation
-				
-				# FIXME, this is a copy paste from below
-				exclusion = boxable.getExclusionImage().copy()
-				# paint white exlclusion circles around the already selected and reference boxes
-				# this will save the autoBox time and prevent redundant boxing
-				boxable.updateExclusion(exclusion)
-				
-				boxes = self.__autoBox(correlation,boxable.boxes,exclusion)
-				boxable.autoBoxerTS = self.stateTS
-				
-				# This shouldn't happen in the Database instance
-				if boxes != 0:
-					for box in boxes: boxable.boxes.append(box)
-					
-				return 1
-					
-				# end FIXME
-			else: 
-				# the user has not triggered any update flags
-				# this probably means the user has hit the autobox button twice in a row, or somesuch
+			else:
+				print 'error, cant ask the autoBoxer for its template, it doesnt have one'
 				return 0
-		elif self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-			templateTS = boxable.templateTS
-			correlation = boxable.correlation
+		else : print 'using cached correlation image' # DEBUG
+
+		autoBoxerTS = boxable.autoBoxerTS
+		# auto boxing will only ever occur if the time stamp of the AutoBoxer is not the
+		# same as the time stamp cached by the Boxable. -1 means it's the first time.
+		if autoBoxerTS == -1 or autoBoxerTS != self.stateTS:
+			print 'auto boxing' # DEBUG
+			
+			
+			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag:
+				# we must clear all non-refs if we're using dynapix
+				boxable.deletenonrefs()
+				self.regressiveflag = False
+			
+			exclusion = boxable.getExclusionImage().copy()
+			self.__paintExcludedBoxAreas(exclusion,boxable.boxes)
 		
-			if templateTS == -1 or correlation == None or self.templateTS != templateTS:
-				print 'regenerating the correlation image' # DEBUG
-				boxable.allowcorrelationupdate = True
-				if self.template != None:
-					boxable.allowcorrelationupdate = True
-					print 'told the boxable to update its template'
-					boxable.updateCorrelation(self.template,self.templateTS,self)
-					boxable.allowcorrelationupdate = False
-					
-					correlation = boxable.correlation
-				else:
-					print 'error, cant ask the autoBoxer for its template, it doesnt have one'
-					return 0
-			else : print 'using cached correlation image' # DEBUG
+			boxes = self.__autoBox(correlation,boxable.boxes,exclusion)
+			print "autoboxed",len(boxes)
+			boxable.autoBoxerTS = self.stateTS
 
-			autoBoxerTS = boxable.autoBoxerTS
-			# auto boxing will only ever occur if the time stamp of the AutoBoxer is not the
-			# same as the time stamp cached by the Boxable. -1 means it's the first time.
-			if autoBoxerTS == -1 or autoBoxerTS != self.stateTS:
-				print 'auto boxing' # DEBUG
-				exclusion = boxable.getExclusionImage().copy()
-				
-				if self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-					# we should remove non references here
-					pass
+			# This shouldn't happen in the Database instance
+			if boxes != 0:
+				if self.projectdb != None:
+					boxes.extend(boxable.boxes)
+					trimboxes = []
+					for  box in boxes: trimboxes.append(TrimBox(box))
 					
-				# paint white exlclusion circles around the already selected and reference boxes
-				# this will save the autoBox time and prevent redundant boxing
-				boxable.updateExclusion(exclusion)
-			
-				boxes = self.__autoBox(correlation,boxable.boxes,exclusion)
-				boxable.autoBoxerTS = self.stateTS
+					self.projectdb[boxable.imagename+"_boxes"] = trimboxes
+					trimSelf = TrimSwarmAutoBoxer(self)
 	
-				# This shouldn't happen in the Database instance
-				if boxes != 0:
-					for box in boxes: boxable.boxes.append(box)
+					self.projectdb[boxable.imagename+"_autoboxer"] = trimSelf
+					self.projectdb["currentautoboxer"] = trimSelf
 					
-				return 1
+					boxable.boxesReady()
+				else: 
+					boxable.extendboxes(boxes)
+				
+			return 1
 
-			else: print 'no auto boxing was necessary, up-2-date' # DEBUG
-			
+		else: print 'no auto boxing was necessary, up-2-date' # DEBUG
+		
+	def __reset(self):
+		self.boxsize = -1
+		self.stateTS = -1
+		self.templateTS = -1
+
 	def __autoBox(self,correlation,boxes=[],exclusion=None):
 		'''
 		Does the autoboxing. Returns a list of Boxes
@@ -1225,6 +1285,11 @@ class SwarmAutoBoxer(AutoBoxer):
 
 		# To determine the threshold from what we've got, iterate through all of the reference
 		# boxes and use the lowest correlation score as the correlation threshold
+		#print 'current params are, using a total of',len(self.refboxes),'references'
+		#print 'threshod:',self.optthreshold
+		#print 'profile:',self.optprofile
+		#print 'optrad:',self.optprofileradius
+		
 		found = False
 		for i,box in enumerate(self.refboxes):
 			if box.correlationscore == None:
@@ -1255,7 +1320,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				##print "continuing on faulty" - this was already printed above
 				continue
 			if found == False:
-				self.optprofile = box.optprofile
+				self.optprofile = copy(box.optprofile)
 				n = len(self.optprofile)
 				found = True
 			else:
@@ -1273,11 +1338,28 @@ class SwarmAutoBoxer(AutoBoxer):
 				tmp = self.optprofile[i]
 				self.optprofileradius = i
 				
+		#print 'NOW THEY ARE'
+		#print 'threshod:',self.optthreshold
+		#print 'profile:',self.optprofile
+		#print 'optrad:',self.optprofileradius
 		return True
-		
+	
+	def __paintExcludedBoxAreas(self,exclusionimage,boxes):
+	
+		searchradius = self.getSearchRadius()
+
+		for box in boxes:
+			# xx and yy are the centers of the image, but in real image coordinates
+			xx = box.xcorner + box.xsize/2
+			yy = box.ycorner + box.ysize/2
+			# shrink them to the small correlation image coordinates
+			xx /= self.getBestShrink()
+			yy /= self.getBestShrink()
+			# Set a positive circle into the exclusionimage
+			BoxingTools.set_radial_non_zero(exclusionimage,int(xx),int(yy),searchradius)
 	
 class GUIbox:
-	def __init__(self,imagefsp,boxes,thr,boxsize=-1):
+	def __init__(self,imagenames,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
 		to begin with. Modified boxes/thr are returned. 
 		
@@ -1291,6 +1373,9 @@ class GUIbox:
 			print "Cannot import EMAN image GUI objects (emimage,etc.)"
 			sys.exit(1)
 		
+		# -1 is for most efficient pickler, True is to enable write back
+		self.projectdb = shelve.open('.eman2projectdb','c',-1,True)
+		
 		if len(boxes)>0 and boxsize==-1: self.boxsize=boxes[0][2]
 		elif boxsize==-1: self.boxsize=128
 		else: self.boxsize=boxsize
@@ -1298,18 +1383,19 @@ class GUIbox:
 		self.eraseradius = 2*boxsize
 		
 		self.dynapixp=get_app()
-		self.image=EMData().read_images(imagefsp,[0])[0]					# original image to be boxed
-		self.imagefsp = imagefsp
+		self.imagenames = imagenames
+		self.image=EMData(self.imagenames[0])
+		self.image.process_inplace("normalize.edgemean")
 		self.currentimage = 0
 		self.boxsetcache = None
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
 		
-		self.boxable = Boxable(self.image,self,None)
+		self.boxable = Boxable(self.image,self,None,self.imagenames[0],self.projectdb)
 		self.boxable.addnonrefs(boxes)
 		self.boxable.boxsize = boxsize
 		
-		self.autoBoxer = SwarmAutoBoxer(self.boxable)
+		self.autoBoxer = SwarmAutoBoxer(self.boxable,self.projectdb)
 		self.autoBoxer.boxsize = boxsize
 		
 		self.boxable.setAutoBoxer(self.autoBoxer)
@@ -1326,7 +1412,7 @@ class GUIbox:
 		self.guimx=EMImageMX()	
 		
 		self.guimxitp = None
-		self.genImageThumbnailsWidget(self.imagefsp)
+		self.genImageThumbnailsWidget()
 			
 		
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mousedown)
@@ -1340,7 +1426,7 @@ class GUIbox:
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedrag"),self.boxmove)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mouseup"),self.boxrelease)
 		
-		
+		self.indisplaylimbo = False	# a flag I am using to solve a problem
 		self.mmode = 0
 		self.guiim.setmmode(0)
 		self.guimx.setmmode("app")
@@ -1374,14 +1460,8 @@ class GUIbox:
 			
 		self.guictl.show()
 		
-		self.boxupdate()
-		
-		#debug
-		
-		#f = file('autoparams.eman2','r')
-		#from pickle import load
-		#self.autoBoxer = load(f)
-			
+		self.boxDisplayUpdate()
+	
 	def setPtclMxData(self,data=None):
 		'''
 		Call this to set the Ptcl Mx data 
@@ -1397,25 +1477,29 @@ class GUIbox:
 		if im != self.currentimage:
 			oldboxset  = self.boxsetcache[self.currentimage]
 			self.guimxit.setSelected(im)
-			self.image = EMData().read_images(self.imagefsp,[im])[0]
+			self.image = EMData(self.imagenames[im])
 			self.image.process_inplace("normalize.edgemean")
 			self.guiim.setData(self.image)
 			if self.boxsetcache[im] == None:
-				self.boxsetcache[im] = Boxable(self.image,self,self.autoBoxer)
+				self.boxsetcache[im] = Boxable(self.image,self,self.autoBoxer,self.imagenames[im],self.projectdb)
 				self.boxsetcache[im].boxsize = self.boxsize
 				
 			self.boxable = self.boxsetcache[im]
 			self.autoBoxer.setBoxable(self.boxable)
-			if self.dynapix: self.boxable.autobox(self.autoBoxer)
+			
+			self.ptcl = []
+			self.guiim.delShapes()
+			self.indisplaylimbo = True
+			if self.dynapix: self.autoBoxer.autoBox(self.boxable)
+			self.indisplaylimbo = False
 
 			for box in self.boxable.boxes: box.changed = True
 			self.currentimage = im
-			self.ptcl = []
-			self.guiim.delShapes()
-			self.boxupdate()
+			
+			self.boxDisplayUpdate()
 			self.updateAllImageDisplay()
 	
-	def genImageThumbnailsWidget(self,imagename):
+	def genImageThumbnailsWidget(self):
 		'''
 		Generates image thumbnails for a single image name
 		if there is only one image in the image file on disk
@@ -1423,14 +1507,13 @@ class GUIbox:
 		Else thumbnails are generated, and image matrix is initialized (but not shown),
 		and 1 is returned
 		'''
-		# warning, the imagename is invalid something could go wrong here
-		try: n = EMUtil.get_image_count(imagename)
+		# warnilg here
+		try: nim = len(self.imagenames)
 		except: 
 			# warning - bad hacking going on
 			print "the image name ", imagename, "probably doesn't exist"
 			raise Exception
 		
-		nim = EMUtil.get_image_count(imagename)
 		if (nim == 1): return 0
 		
 		n = self.getImageThumbShrink()
@@ -1443,7 +1526,7 @@ class GUIbox:
 				image = self.image
 			else:
 				self.boxsetcache.append(None)
-				image = EMData().read_images(imagename,[i])[0]
+				image = EMData(self.imagenames[i])
 			# could save some time here by using self.image when i == 0
 			
 			i = image.process("math.meanshrink",{"n":n})
@@ -1555,7 +1638,6 @@ class GUIbox:
 				box.changed = True # this is so image2D nows to repaint the shape
 				self.boxable.addbox(box)
 				
-				
 				# autoBoxer will autobox depending on the state of its mode
 				self.autoBoxer.addReference(box)
 				
@@ -1566,7 +1648,7 @@ class GUIbox:
 				if not self.guimx.isVisible(boxnum) : self.guimx.scrollTo(boxnum,yonly=1)
 				self.guimx.setSelected(boxnum)
 				
-				self.boxupdate()
+				self.boxDisplayUpdate()
 				self.updateAllImageDisplay()
 				self.mouseclicks += 1
 				self.updateppc()
@@ -1578,10 +1660,10 @@ class GUIbox:
 			if event.modifiers()&Qt.ShiftModifier :
 				# with shift, we delete
 				self.delbox(boxnum)
+				self.boxDisplayUpdate()
 				self.updateAllImageDisplay()
 				self.updateppc()
 				return 
-			
 			
 			# if we make it here than the we're moving a box
 			self.moving=[boxes[boxnum],m,boxnum]
@@ -1664,17 +1746,6 @@ class GUIbox:
 		
 		self.updateImageDisplay()
 
-	def deletenonrefs(self):
-		#print event.x(),event.y(),m[0],m[1]
-		# do collision detection
-		boxes = self.getboxes()
-		for m in range(self.boxable.numboxes(),0,-1):
-			box = boxes[m-1]
-			if box.isref == False:
-				self.delbox(m-1)
-
-			#print "boxset now has",len(boxes)
-	
 	def mouseup(self,event) :
 		if self.mmode == 0:
 			m=self.guiim.scr2img((event.x(),event.y()))
@@ -1682,18 +1753,24 @@ class GUIbox:
 				box = self.moving[0]
 				if box.isref and self.dynapix:
 					self.autoBoxer.referenceMoved(box)
-					self.autobox()
+					self.boxDisplayUpdate()
+					self.updateAllImageDisplay()
 			
 			self.moving=None
 		elif self.mmode == 1:
+			# we have finished erasing
+			
+			# make the eraser shape non visible
 			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
 			
+			# tell the boxable to remove boxes (and return their number)
 			lostboxes = self.boxable.updateExcludedBoxes()
-			for n in lostboxes:
-				self.delbox(n)
+			# after this, make sure the display is correct.
+			self.deleteDisplayShapes(lostboxes)
+			
 			self.mouseclicks += 1
 			self.updateppc()
-			self.updateImageDisplay()
+			self.updateAllImageDisplay()
 	
 	def keypress(self,event):
 		if event.key() == Qt.Key_Tab:
@@ -1716,24 +1793,25 @@ class GUIbox:
 	def updateMXDisplay(self):
 		self.guimx.updateGL()
 	
-	#def removeshape(self,boxnum):
-		#print "removing shape",boxnum
-		#sh=self.guiim.getShapes()
-		#k=sh.keys()
-		#k.sort()
-		#del sh[int(boxnum)]
-		#for j in k:
-			#if isinstance(j,int):
-				#if j>boxnum :
-					#sh[j-1]=sh[j]
-					#del sh[j]
-		#self.guiim.delShapes()
-		#self.guiim.addShapes(sh)
-		#self.guiim.setActive(None,.9,.9,.4)
+	def deleteDisplayShapes(self,numbers):
+		'''
+		Warning - this won't work unless the numbers go from greatest to smallest- i.e. they are in reverse order
+		Deletes shapes displayed by the 2D image viewer
+		Pops boxed particles from the list used by the matrix image viewer (for boxes)
+		'''
+		if self.indisplaylimbo: return
+		
+		for num in numbers:
+			sh=self.guiim.getShapes()
+			del sh[int(num)]
+			self.ptcl.pop(num)
 		
 	def delbox(self,boxnum):
 		"""
 		Deletes the numbered box completely
+		Should only be called in the instance where a single box is being deleting - NOT when
+		you are deleting a list of boxes sequentially (for that you should use deleteDisplayShapes
+		and something to pop the box from the Boxable. See examples in this code)
 		"""
 		sh=self.guiim.getShapes()
 		k=sh.keys()
@@ -1747,22 +1825,23 @@ class GUIbox:
 		self.guiim.delShapes()
 		self.guiim.addShapes(sh)
 		self.guiim.setActive(None,.9,.9,.4)
-
-		box = self.getboxes()[boxnum]
 		self.ptcl.pop(boxnum)
 		
-		if self.boxable.delbox(boxnum) and self.dynapix:
+		box = self.boxable.boxes[boxnum]
+		self.boxable.delbox(boxnum)
+		# if the boxable was a reference then the autoboxer needs to be told. It will remove
+		# it from its own list and potentially do autoboxing
+		if box.isref:
 			print 'told autoboxer to remove reference'
 			self.autoBoxer.removeReference(box)
-
+	
 	def updateBoxSize(self,boxsize):
 		if boxsize != self.boxsize:
-			self.deletenonrefs()
 			self.boxsize = boxsize
 			self.boxable.updateBoxSize(boxsize)
 			self.autoBoxer.setBoxSize(boxsize)
 			
-	def boxupdate(self,force=False):
+	def boxDisplayUpdate(self,force=False):
 		
 		ns = {}
 		idx = 0
@@ -1797,7 +1876,9 @@ class GUIbox:
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
 		self.dynapixp.exec_()
-		
+		print "closing project db"
+		self.projectdb.close()
+
 		E2saveappwin("boxer","imagegeom",self.guiim)
 		E2saveappwin("boxer","matrixgeom",self.guimx)
 		E2saveappwin("boxer","controlgeom",self.guictl)
@@ -1812,24 +1893,18 @@ class GUIbox:
 		except : E2setappval("boxer","mxcontrol",False)
 		
 		return (self.getboxes(),self.threshold)
-	
 
 	def autoboxbutton(self):
-		print 'autobox button was pressed, this is currently disabled'
+		if self.autoBoxer.autoBox(self.boxable):
+			self.boxDisplayUpdate()
+			self.updateAllImageDisplay()
 
 	def toggleDynapix(self,bool):
-		if self.autoBoxer != None:
-			if bool == True:
-				print 'setting mode DYNAPIX'
-				self.autoBoxer.setMode(SwarmAutoBoxer.DYNAPIX)
-			else:
-				print 'setting mode USERDRIVEN'
-				self.autoBoxer.setMode(SwarmAutoBoxer.USERDRIVEN)
-		
 		self.dynapix = bool
-		print 'self.dynapix is', self.dynapix
+		self.autoBoxer.setMode(self.dynapix,self.anchortemplate)
 		
 	def done(self):
+	
 		self.dynapixp.quit
 		
 	def trydata(self,data,thr):
@@ -1843,14 +1918,8 @@ class GUIbox:
 		
 	def nocupdate(self,bool):
 		self.anchortemplate = bool
+		self.autoBoxer.setMode(self.dynapix,self.anchortemplate)
 		
-		if bool:
-			self.autoBoxer.setMode(SwarmAutoBoxer.ANCHOREDDYNAPIX)
-		else:
-			if self.dyanapix:
-				self.autoBoxer.setMode(SwarmAutoBoxer.DYNAPIX)	
-			else:
-				self.autoBoxer.setMode(SwarmAutoBoxer.USERDRIVEN)	
 	def classify(self,bool):
 		self.boxable.genRefImages()
 		
@@ -1964,12 +2033,9 @@ class GUIboxPanel(QtGui.QWidget):
 		self.hbl3.addWidget(self.dynapick)
 		self.nocpick = QtGui.QRadioButton("Anchor")
 		self.hbl3.addWidget(self.nocpick)
-		
-		self.vbl.addLayout(self.hbl3)
-		
 		self.autobox=QtGui.QPushButton("Auto Box")
-		self.vbl.addWidget(self.autobox)
-
+		self.hbl3.addWidget(self.autobox)
+		self.vbl.addLayout(self.hbl3)
 
 		self.hbl2=QtGui.QHBoxLayout()
 		self.hbl2.setMargin(2)
@@ -2021,10 +2087,6 @@ class GUIboxPanel(QtGui.QWidget):
 		self.target.erasetoggled(bool)
 	
 	def dynapickd(self,bool):
-		if bool == True:
-			self.autobox.setEnabled(False)
-		else:
-			self.autobox.setEnabled(True)
 		self.target.toggleDynapix(bool)
 	
 	def gboxclick(self,bool):
