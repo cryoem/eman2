@@ -184,7 +184,7 @@ def main():
 						
 						# Position the image correctly
 #						print da.get(c,p)
-						t3d = Transform3D(EULER_EMAN,-da.get(c,p),0,0)
+						t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
 						t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
 						if (options.lowmem):
 							image = EMData()

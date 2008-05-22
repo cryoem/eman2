@@ -122,13 +122,13 @@ def main():
 	
 	fit=1
 	if options.resume :
-		while access("classes.%02d.hdf"%fit,F_OK): fit+=1
+		while os.access("classes.%02d.hdf"%fit,os.F_OK): fit+=1
 		options.initial="classes.%02d.hdf"%fit
 		fit+=1
 		print "starting at iteration ",fit
 
 	# if we aren't given starting class-averages, make some
-	if not options.initial :
+	if not options.initial and not os.access("classes.init.hdf",os.R_OK):
 		print "Building initial averages"
 		
 		# make footprint images (rotational/translational invariants)
@@ -159,13 +159,13 @@ def main():
 		try: re0move("classes.init.hdf")
 		except: pass
 		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,options.iterclassav,options.maxshift))
-		options.initial="classes.init.hdf"
+	if not options.initial : options.initial="classes.init.hdf"
 		
 	print "Using references from ",options.initial
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py allrefs.%02d.hdf %s --simcmp=sqeuclidean --simalign=rotate_translate:maxshift==%d --center --useali"%(it,options.initial,options.maxshift))
+		run("e2stacksort.py %s allrefs.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate:maxshift==%d --center --useali"%(options.initial,it,options.maxshift))
 		
 		# Compute a classification basis set
 #		run("e2msa.py %s basis.%02d.hdf --nbasis=%d"%(options.initial,it,options.nbasisfp))
