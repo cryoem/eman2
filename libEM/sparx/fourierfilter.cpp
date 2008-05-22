@@ -577,7 +577,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
 							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							argx= sqrt(argx);
+							argx = sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 	0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega)));
 						}
 					}
@@ -590,7 +590,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
 							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							argx= sqrt(argx);
+							argx = sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 	1.0f-0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega)));
 						}
 					}
@@ -603,7 +603,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
 							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							argx= sqrt(argx);
+							argx = sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 1.0f-gamma*0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega)));
 						}
 					}
@@ -616,7 +616,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
 						for ( ix = 1; ix <= lsd2; ix++) {
 							jx=ix-1; argx = argy + float(jx*jx)*dx2;
-							argx= sqrt(argx); 
+							argx = sqrt(argx); 
 							fp->cmplx(ix,iy,iz) *= 0.5f*(tanh(cnstH*(argx+omegaH))-tanh(cnstH*(argx-omegaH))-tanh(cnstL*(argx+omegaL))+tanh(cnstL*(argx-omegaL)));
 						}
 					}

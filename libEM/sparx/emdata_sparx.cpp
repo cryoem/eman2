@@ -472,12 +472,8 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 {
     int lnlen = get_xsize();
 
-//#ifdef DEBUG
-    int nline = get_ysize();
-//#endif	//DEBUG
-
-	Assert( n1 >=0 && n1 < nline );
-	Assert( n2 >=0 && n2 < nline );
+	Assert( n1 >=0 && n1 < get_ysize() );
+	Assert( n2 >=0 && n2 < get_ysize() );
 	Assert( alpha1>=0.0 && alpha1 < 360.0 );
 	Assert( alpha2>=0.0 && alpha2 < 360.0 );
 
@@ -2124,6 +2120,7 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 */
 	}
 }
+#undef  in
 
 /*
 EMData*
