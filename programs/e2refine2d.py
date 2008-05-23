@@ -177,7 +177,8 @@ def main():
 #		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
 
 		# extract the averages with the most particles
-		run("e2stacksort.py allrefs.%02d.hdf aliref.%02d.hdf --byptcl --nsort=%d"%(it,it,options.naliref))
+#		run("e2stacksort.py allrefs.%02d.hdf aliref.%02d.hdf --byptcl --nsort=%d"%(it,it,options.naliref))
+		run("e2stacksort.py allrefs.%02d.hdf aliref.%02d.hdf --reverse --nsort=%d --simcmp=sqeuclidean"%(it,it,options.naliref))
 		
 		# We use e2simmx to compute the optimal particle orientations
 		try: remove("simmx.%02d.hdf"%it)
