@@ -48,7 +48,7 @@ using std::vector;
 
 namespace EMAN
 {
-	/** @file transform.h
+	/** Transform3D
 	 *   These are  a collection of transformation tools: rotation, translation,
 	 *            and construction of symmetric objects
          *  @author Philip Baldwin and Steve Ludtke
