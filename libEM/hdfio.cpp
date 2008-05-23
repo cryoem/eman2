@@ -364,6 +364,7 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area,
 			//string val_type = EMObject::get_object_type_name(attr_val.get_type());
 			EMObject::ObjectType t = attr_val.get_type();
 			switch(t) {
+				
 				case EMObject::INT:
 					write_int_attr(image_index, *iter, attr_val);
 					break;
@@ -690,6 +691,7 @@ int HdfIO::write_int_attr(int image_index, const string & attr_name, int value)
 	set_dataset(image_index);
 	return write_int_attr(attr_name, value);
 }
+
 
 int HdfIO::write_int_attr(const string & attr_name, int value)
 {
