@@ -1057,6 +1057,7 @@ namespace EMAN
 	};
 	/// A template specialization for the Symmetry3D factory. Adds all of the symmetries
 	template <> Factory < Symmetry3D >::Factory();
+	/// A template specialization for get - so people can call get with strings like "c1","d4" etc - this avoids have to use Dicts to specify the nsym
 	template <> Symmetry3D* Factory < Symmetry3D >::get(const string & instancename);
 	/// dump symmetries, useful for obtaining symmetry information
 	void dump_symmetries();

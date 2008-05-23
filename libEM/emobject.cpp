@@ -78,6 +78,7 @@ EMObjectTypes::EMObjectTypes()
 		// Initialize the the type registry once and for all
 		type_registry[BOOL] = "BOOL";
 		type_registry[INT] = "INT";
+		type_registry[UNSIGNEDINT] = "UNSIGNEDINT";
 		type_registry[FLOAT] = "FLOAT";
 		type_registry[DOUBLE] = "DOUBLE";
 		type_registry[STRING] = "STRING";
@@ -121,6 +122,11 @@ EMObject::EMObject(bool boolean) :
 
 EMObject::EMObject(int num) : 
 	EMObjectTypes(), n(num), type(INT)
+{
+}
+
+EMObject::EMObject(unsigned int num) : 
+		EMObjectTypes(), ui(num), type(UNSIGNEDINT)
 {
 }
 
@@ -197,6 +203,9 @@ EMObject::operator bool () const
 	else if (type == INT) {
 		return n != 0;
 	}
+	else if (type == UNSIGNEDINT) {
+		return ui != 0;
+	}
 	else if (type == FLOAT) {
 		return f != 0;
 	}
@@ -236,6 +245,9 @@ EMObject::operator int () const
 	if (type == INT) {
 		return n;
 	}
+	else if (type == UNSIGNEDINT) {
+		return (int) ui;
+	}
 	else if (type == FLOAT) {
 		return (int) f;
 	}
@@ -256,11 +268,17 @@ EMObject::operator int () const
 
 EMObject::operator float () const
 {
-	if (type == FLOAT) {
+	if (type == BOOL) {
+		return b?1.0f:0.0f;
+	}
+	else if (type == FLOAT) {
 		return f;
 	}
 	else if (type == INT) {
 		return (float) n;
+	}
+	else if (type == UNSIGNEDINT) {
+		return (float) ui;
 	}
 	else if (type == DOUBLE) {
 		return (float) d;
@@ -277,11 +295,17 @@ EMObject::operator float () const
 
 EMObject::operator double () const
 {
-	if (type == DOUBLE) {
+	if (type == BOOL) {
+	return b?1.0:0.0;
+	}
+	else if (type == DOUBLE) {
 		return d;
 	}
 	else if (type == INT) {
 		return (double) n;
+	}
+	else if (type == UNSIGNEDINT) {
+		return (double) ui;
 	}
 	else if (type == FLOAT) {
 		return (double) f;
@@ -343,6 +367,12 @@ EMObject::operator const char * () const
 		if ( type == INT )
 		{
 			ss << n;
+			ss >> return_string;
+			return return_string.c_str();
+		}
+		if ( type == UNSIGNEDINT )
+		{
+			ss << ui;
 			ss >> return_string;
 			return return_string.c_str();
 		}
@@ -467,6 +497,9 @@ string EMObject::to_str(ObjectType argtype) const
 		else if (argtype == INT) {
 			sprintf(tmp_str, "%d", n);
 		}
+		else if (argtype == UNSIGNEDINT) {
+			sprintf(tmp_str, "%d", ui);
+		}
 		else if (argtype == FLOAT) {
 			sprintf(tmp_str, "%f", f);
 		}
@@ -533,6 +566,9 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 	break;
 	case EMObjectTypes::INT:
 		return (e1.n == e2.n);
+	break;
+	case EMObjectTypes::UNSIGNEDINT:
+		return (e1.ui == e2.ui);
 	break;
 	case EMObjectTypes::FLOAT:
 		return (e1.f == e2.f);
@@ -640,6 +676,9 @@ EMObject& EMObject::operator=( const EMObject& that )
 		break;
 		case INT:
 			n = that.n;
+		break;
+		case UNSIGNEDINT:
+			ui = that.ui;
 		break;
 		case FLOAT:
 			f = that.f;

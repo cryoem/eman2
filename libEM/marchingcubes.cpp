@@ -196,9 +196,8 @@ Dict MarchingCubes::get_isosurface()
 	
 	Dict d;
 	d.put("points", (float*)pp.get_data());
-	for (int i = 0; i < ff.elem(); ++i )
-		ff[i] /= 3;
-	d.put("faces", (int*)ff.get_data());
+	for (unsigned int i = 0; i < ff.elem(); ++i ) ff[i] /= 3;
+	d.put("faces", (unsigned int*)ff.get_data());
 	d.put("normals", (float*)nn.get_data());
 	d.put("size", ff.elem());
 	return d;
@@ -227,7 +226,7 @@ unsigned long MarchingCubes::get_isosurface_dl(unsigned int tex_id)
 	cout << "Using OpenGL " << glGetString(GL_VERSION) << endl;
 #endif
 	
-	for (int i = 0; i < ff.elem(); ++i )
+	for (unsigned int i = 0; i < ff.elem(); ++i )
 		ff[i] /= 3;
 	
 	if ( maxf % 3 != 0 )
@@ -274,7 +273,7 @@ unsigned long MarchingCubes::get_isosurface_dl(unsigned int tex_id)
 	if ( drawRange == false ) {
 		glDrawElements(GL_TRIANGLES,ff.elem(),GL_UNSIGNED_INT,ff.get_data());
 	} else {
-		for(int i = 0; i < ff.elem(); i+=maxf)
+		for(unsigned int i = 0; i < ff.elem(); i+=maxf)
 		{
 			if ( (i+maxf) > ff.elem())
 				glDrawElements(GL_TRIANGLES,ff.elem()-i,GL_UNSIGNED_INT,&ff[i]);
@@ -867,6 +866,313 @@ int a2iTriangleConnectionTable[256][16] =
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
 
+
+U3DWriter::U3DWriter() : DIFFUSE_COLOR_COUNT(1),
+		SPECULAR_COLOR_COUNT(1)
+{
+}
+U3DWriter::~U3DWriter() {}
+
+using std::ofstream;
+
+int U3DWriter::write(const string& filename) {
+	// Must open the ofstream in binary mode
+	ofstream of(filename.c_str(), ofstream::binary);
+	write(of);
+	of.close();
+	
+	return 1;
+}
+
+ostream& U3DWriter::write(ostream& os) {
+	write_header(os);
+	return os;
+}
+
+unsigned int U3DWriter::size_of_in_bytes(){
+	// this is just the size in bytes of all of the entries in this object that are written to the binary
+	// output. This is based only on the behavior of write_header and needs to be udpated
+	unsigned size = 4+2+2+4+4+8+4+8; // 36 bytes
+	return size;
+}
+ostream& U3DWriter::write_header(ostream& os)
+{
+	// checks
+	test_type_sizes();
+	
+	U32 block_type_file_header = 0x00443355; // This is the block type tag of a file header, as taken form the ECMA spec
+	write( os, block_type_file_header);
+// 	
+	I16 major_version = -1; // Compliance has not been tested for this encoder, so we must specify a value less than 0
+	I16 minor_version =  0; // This is the version of this encoder, which we are calling '0'
+	write( os, major_version);
+	write( os, minor_version);
+	
+	U32 profile_identifier = 0x00000000; // Base profile - no optional features ares used
+	write( os, profile_identifier);
+	
+	U32 declaration_size = size_of_in_bytes(); // This will have to be addressed at a later point, this is the size if the declaration block in bytes
+	write( os, declaration_size);
+	
+	U64 file_size = size_of_in_bytes(); // This is the size of the file in bytes
+	write( os, file_size);
+	
+	U32 character_encoding = 106; // UTF-8 MIB from the IANA
+	write( os, character_encoding);
+	
+	F64 unit_scaling = 1.0; // This should eventually be the correct scaling of the objects
+	write( os, unit_scaling);
+	
+	
+	return os;
+}
+
+void U3DWriter::test_type_sizes()
+{
+	bool error = false;
+	if (sizeof(F64) != 8 ){
+		cout << "Error, size of double is not 64 bytes, it's " << sizeof(F64)*4 << endl;
+		error = true;
+	}
+	if (sizeof(F32) != 4 ){
+		cout << "Error, size of float is not 32 bytes, it's " << sizeof(F32)*4 << endl;
+		error = true;
+	}
+	if (sizeof(U64) != 8) {
+		cout << "Error, size of long unsigned int is not 64 bytes, it's " << sizeof(U64)*4 << endl;
+		error = true;
+	}
+	if (sizeof(U32) != 4) {
+		cout << "Error, size of unsigned int is not 32 bytes, it's " << sizeof(U32)*4 << endl;
+		error = true;
+	}
+	if (sizeof(I16) != 2) {
+		cout << "Error, size of short int is not 16 bytes, it's " << sizeof(I16)*4 << endl;
+		error = true;
+	}
+	if (sizeof(U16) != 2) {
+		cout << "Error, size of short unsigned int is not 16 bytes, it's " << sizeof(U16)*4 << endl;
+		error = true;
+	}
+	
+	if (error) {
+		throw;
+	}
+}
+
+ostream& U3DWriter::write_clod_mesh_generator_node(ostream& os)
+{
+	/*
+	CLOD Mesh Declaration
+	*/
+	U32 block_type_clod_mesh_generator = 0xFFFFFF31; // This is the block type tag of the continuous level of detail mesh generator, as taken form the ECMA spec
+	write( os, block_type_clod_mesh_generator);
+	
+	string name("testmesh"); // The unique name, we get to make this up ourselves. It could be an empty string, we'd still have to call write_string(os,"")
+	write(os,name);
+	
+	U32 chain_index = 0x00000000; // the value of Chain Index shall be zero for this type - as in the SPEC
+	write( os, chain_index);
+	
+	/*
+	Max Mesh Description 
+	*/
+	U32 mesh_attributes = 0x00000000; // Faces in the mesh have a normal index at each corner 0x00000001 is used to exlude normals POTENTIALLY USEFUL
+	write(os,mesh_attributes);
+	U32 face_count = ff.elem(); // The number of faces TO FILL IN LATER
+	write(os,face_count);
+	U32 position_count = pp.elem(); // The number of positions in the position array TO FILL IN LATER
+	write(os,position_count);
+	U32 normal_count = nn.elem(); // The number of normals in the normal array TO FILL IN LATER
+	write(os,normal_count);
+	U32 diffuse_color_count = DIFFUSE_COLOR_COUNT; // The number of colors in the diffuse color array TO FILL IN LATER
+	write(os,diffuse_color_count);
+	U32 specular_color_count = SPECULAR_COLOR_COUNT; // The number of colors in the specular color array TO FILL IN LATER
+	write(os,specular_color_count);
+	U32 texture_coord_count = 0x00000000; // The number of texture coordinates in teh texture coordinate array POTENTIALLY USEFUL
+	write(os,texture_coord_count);
+	U32 shading_count = 1; // The number of shading descriptions used in the mesh. This must correspond with the shader list in the shading group (see directly below we are using only one shader
+	write(os,shading_count);
+	
+	/*
+	Shading  Description
+	*/
+	U32 shading_attributes = 0x00000003; // 0 means use neither diffuse or specular colors, 1 means use per vertex diffuse, 2 means use per vertex specular, 3 means use both POTENTIALLY USEFUL
+	write(os,shading_attributes);
+	U32 texture_layout_count = 0x00000000; // The number of texture layers used by this shader list
+	write(os,texture_layout_count);
+	U32 texture_coord_dimensions = 0x00000002; // The number of dimensions in the texture coordinate vector. I chose default to be 2. No particular reason. POTENTIALLY USEFUL
+	write(os,texture_coord_dimensions);
+	U32 original_shading_id = 0; // Original shading index for this shader list. Informative parameter only. This is shader 0
+	write(os,original_shading_id);
+	
+	/*
+	CLOD Description - describes the range of resolutions available for the continuous level of detail mesh
+	If there were more than one level of detail than these two numbers would be different
+	*/
+	U32 minimum_resolution = position_count; // the number of positions in the base mesh
+	write(os,minimum_resolution);
+	U32 final_maximum_resolution = position_count; // the number of positions in the Max Mesh Description (by definition)
+	write(os,final_maximum_resolution);
+	
+	/*
+	Resource Description
+	*/
+	
+	/*
+	Quality Factors
+	for information only. Not used by the renderer. Helpful for conveying information to the user
+	*/
+	U32 position_quality_factor = 0x00000000; // position quality factor. Descriptive information only
+	write(os,position_quality_factor);
+	U32 normal_quality_factor = 0x00000000; // normal quality factor. Descriptive information only
+	write(os,normal_quality_factor);
+	U32 texture_coord_quality_factor = 0x00000000; // texture coordinate quality factor. Descriptive information only
+	write(os,texture_coord_quality_factor);
+	
+	/*
+	Inverse Quantization
+	used to reconstruct floating point values that have been quantized. 
+	*/
+	F32 postion_inverse_quant = 1.0; // inverse quantization factor used in the reconstruction of the position vectors
+	write(os,postion_inverse_quant);
+	F32 normal_inverse_quant = 1.0; // inverse quantization factor used in the reconstruction of the normal vectors
+	write(os,normal_inverse_quant);
+	F32 texture_coord_inverse_quant = 1.0; // inverse quantization factor used in the reconstruction of the texture coordinates
+	write(os,texture_coord_inverse_quant);
+	F32 diffuse_color_inverse_quant = 1.0; // inverse quantization factor used in the reconstruction of the diffuse colors
+	write(os,diffuse_color_inverse_quant);
+	F32 specular_color_inverse_quant = 1.0; // inverse quantization factor used in the reconstruction of the specular colors
+	write(os,specular_color_inverse_quant);
+	
+	/*
+	Resource Parameters
+	parameters that help to define the conversion from the Author Mesh format to the Render Mesh format
+	*/
+	
+	F32 normal_crease_parameter = 1.0; // A dot product value in the range -1 to 1, used to decide whether or not normals at the same position will be merged. 1.0 means never, -1.0 means always. 0 means the two normals must be separated by an angle no greater than 90 degrees to be merged. Think in angles.
+	write(os,normal_crease_parameter);
+	F32 normal_update_parameter = 0.0; // A strange a parameter that I couldn't make sense of - I think it means it will change the actual file itself if it encounters what it deems 'normal errors'
+	write(os,normal_update_parameter);
+	F32 normal_tolerance_parameter = 0.0; // Normals which are closer together than this value are considered equivalent in the Render Mesh. This is useful for compression
+	write(os,normal_tolerance_parameter);
+	
+	/*
+	Skeleton description
+	used in bones-based animation by the Animation Modifier
+	*/
+	U32 bone_count = 0x00000000; // The number of bones associated with this mesh. We will always have 0, but this could change (unlikely).
+	write(os,bone_count);
+	
+	// WARNING - if bone_count is ever greater than one, then more writing would have to occur here
+	
+	//// C.L.O.D. BASE MESH CONTINUATION BLOCK
+	/*
+	Base mesh is basically the minimum LOD mesh - it must exist
+	*/
+	{
+	U32 block_type_clod_base_mesh_continuation = 0xFFFFFF3B; // This is the block type tag of the CLOD Base Mesh Continuation, as taken form the ECMA spec
+	write( os, block_type_clod_base_mesh_continuation);
+	
+	write(os,name); // We use the same name as above
+	
+	U32 chain_index = 0x00000000; // the value of Chain Index shall be zero for this type - as in the SPEC
+	write( os, chain_index);
+	
+	/*
+	Base Mesh Description
+	*/
+	U32	base_face_count = ff.elem(); // The number of faces in the base mesh TO FILL IN LATER
+	write( os, base_face_count);
+	U32	base_position_count = pp.elem(); // The number of positions used by base mesh in the position array TO FILL IN LATER
+	write( os, base_position_count);
+	U32 base_normal_count = nn.elem(); // The number of normals used by the base mesh in the normal array TO FILL IN LATER
+	write( os, base_normal_count);
+	U32 base_diffuse_color_count = DIFFUSE_COLOR_COUNT; // The number of diffuse colors used by the base mesh in the diffuse color array TO FILL IN LATER
+	write( os, base_diffuse_color_count);
+	U32 base_specular_color_count = SPECULAR_COLOR_COUNT; // The number of specular colors used by the base mesh in the specular color array TO FILL IN LATER
+	write( os, base_specular_color_count);
+	U32 base_texture_coord_count = 0x00000000; // The number of texture coordinates used by the base mesh in texture coordinate array TO FILL IN LATER
+	write( os, base_texture_coord_count);
+	
+	/*
+	Base mesh data
+	*/
+	
+	// Write position data
+	F32* data = pp.get_data();
+	for(unsigned int i = 0; i < pp.elem(); ++i) {
+		write(os,data[i]);
+	}
+	
+	// Write normal data
+	data = nn.get_data();
+	for(unsigned int i = 0; i < nn.elem(); ++i) {
+		write(os,data[i]);
+	}
+	
+	// Write Diffuse color, this is in rgba format
+	F32 diffuse_rgba[4] = {1.0,0.0,0.0,1.0};
+	for (unsigned int i = 0; i < 4; ++i) {
+		write(os,diffuse_rgba[i]);
+	}
+	
+	// Write Specular color, this is in rgba format
+	F32 specular_rgba[4] = {1.0,0.0,0.0,1.0};
+	for (unsigned int i = 0; i < 4; ++i) {
+		write(os,specular_rgba[i]);
+	}
+	
+	// THERE ARE NO TEXTURE COORDINATES, BUT IF THERE WERE WE WOULD HAVE TO WRITE THEM HERE
+	// i.e. for i in range(0,base_texture_coord_count) write texture coords
+	
+	// Write normal data
+	U32* faces = ff.get_data();
+	for(unsigned int i = 0; i < pp.elem(); i = i+3) {
+		U32 shading_id = 0; // We only have one shader defined. This could could changed in future
+		write(os,shading_id);
+		
+		// write base corner info - there are always three corners
+		for (unsigned int j =0; j < 3; ++j){
+			U32 position_index = faces[i+j];
+			write(os,position_index); // Write the position index
+			
+			U32 normal_index = position_index;
+			write(os,normal_index); // Write the normal index, it is exactly the same as the normal index!
+			
+			U32 base_diffuse_color_index = 0; // only using one diffuse color
+			write(os,base_diffuse_color_index);
+			
+			U32 base_specular_color_index = 0; // only using one specular color 
+			write(os,base_specular_color_index);
+			
+			// Would need to write texture data here if we were doing that
+			
+		}
+		
+	}
+	
+	}
+	return os;
+}
+
+template<>
+ostream& U3DWriter::write(ostream& os, const string& s )
+{
+	// WARNING - I AM NOT SURE IF THIS APPROACH WILL PRESENT UTF8 PROBLEMS.
+	// See character_encoding in the file header writing module above
+	test_type_sizes();
+	
+	short unsigned int size = s.size(); // To write a string you must first place its 
+	write(os,size);
+	
+	// Write the characters
+	for(unsigned int i = 0; i<size; ++i) {
+		write(os,s[i]);
+	}
+		
+	return os;
+}
 /*
 #include <boost/python.hpp>
 using namespace boost::python;

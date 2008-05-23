@@ -2,6 +2,7 @@
 #define _MARCHING_CUBES_H_
 
 #include <vector>
+using std::vector;
 
 #include "vecmath.h"
 #include "isosurface.h"
@@ -9,7 +10,8 @@
 // Marching cubes debug will turn on debug and timing information
 #define MARCHING_CUBES_DEBUG 0
 
-using std::vector;
+#include <ostream>
+using std::ostream;
 
 namespace EMAN
 {
@@ -32,7 +34,7 @@ namespace EMAN
 			/** Constructor
 			* @param starting_size the starting size of the underlying data
 			*/
-			explicit CustomVector(int starting_size=1024) : data(0), size(0), elements(0)
+			explicit CustomVector(unsigned int starting_size=1024) : data(0), size(0), elements(0)
 			{
 				resize(starting_size);
 			}
@@ -41,7 +43,7 @@ namespace EMAN
 			* clears all data and resizes
 			* @param starting_size the starting size of the underlying data 
 			*/
-			inline void clear(int starting_size=1024)
+			inline void clear(unsigned int starting_size=1024)
 			{
 				if ( data != 0 )
 				{
@@ -59,11 +61,11 @@ namespace EMAN
 			* @param n the new size of the underlying data 
 			* 
 			*/
-			inline void resize(const int n)
+			inline void resize(const unsigned int n)
 			{
 				data = (type*)realloc(data, n*sizeof(type));
 				
-				for(int i = size; i < n; ++i) data[i] = 0;
+				for(unsigned int i = size; i < n; ++i) data[i] = 0;
 				size = n;
 			}
 			
@@ -93,7 +95,7 @@ namespace EMAN
 			 */
 			inline void mult3(const type& v1, const type& v2, const type& v3)
 			{
-				for(int i = 0; (i + 2) < elements; i += 3 ){
+				for(unsigned int i = 0; (i + 2) < elements; i += 3 ){
 					data[i] *= v1;
 					data[i+1] *= v2;
 					data[i+2] *= v3;
@@ -102,17 +104,19 @@ namespace EMAN
 			
 			/** The number of elements, is the same as STL::vector size()
 			* Should be called size() but oh well...
+			* This is the actual number of stored floating point numbers
+			* not the number of 'groups of 3'
 			* @return the number of elements stored by this object
 			*/
-			inline int elem() { return elements; }
+			inline unsigned int elem() { return elements; }
 			
 			/** Operator[] - provide convenient set functionality (note NOT get)
 			* @param idx the index to access for setting purposes
 			* potentially resizes
 			*/
-			inline type& operator[](const int idx)
+			inline type& operator[](const unsigned int idx)
 			{
-				int csize = size;
+				unsigned int csize = size;
 				while (idx >= csize ) {
 					csize *= 2;
 				}
@@ -129,9 +133,9 @@ namespace EMAN
 			/// The data pointer
 			type* data;
 			/// The size of the associated memory block
-			int size;
+			unsigned int size;
 			/// The number of stored elements.
-			int elements;
+			unsigned int elements;
 	};
 	
 	class MarchingCubes : public Isosurface {
@@ -275,8 +279,56 @@ namespace EMAN
 		///.Custom vectors for storing points, normals and faces
 		CustomVector<float> pp;
 		CustomVector<float> nn;
-		CustomVector<int> ff;
+		CustomVector<unsigned int> ff;
 	};
+	
+	/** A work in progress by David Woolford
+	*/
+	class U3DWriter{
+	public:
+		typedef unsigned int U32;
+		typedef long unsigned int U64;
+		typedef double F64;
+		typedef float F32;
+		typedef short int I16;
+		typedef short unsigned int U16;
+		
+		
+		
+		U3DWriter();
+		~U3DWriter();
+		
+		int write(const string& filename);
+		
+		ostream& write(ostream&);
+		
+	private:
+		unsigned int size_of_in_bytes();
+		
+		void test_type_sizes();
+		
+		ostream& write_header(ostream&);
+		ostream& write_clod_mesh_generator_node(ostream& os);
+		
+		
+		template<typename type>
+		ostream& write(ostream& os, const type& T) {
+			os.write( (char*)(&T), sizeof(type) );
+			return os;
+		}
+		
+		
+		U32 DIFFUSE_COLOR_COUNT;
+		U32 SPECULAR_COLOR_COUNT;
+		
+		
+		CustomVector<F32> pp;
+		CustomVector<F32> nn;
+		CustomVector<unsigned int> ff;
+	};
+	
+	// Template specialization. Have to be careful when dealing with strings
+	template<> ostream& U3DWriter::write(ostream& os, const string& );
 
 }
 
