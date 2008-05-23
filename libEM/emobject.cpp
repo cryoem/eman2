@@ -266,6 +266,20 @@ EMObject::operator int () const
 	return 0;
 }
 
+EMObject::operator unsigned int () const
+{
+	if (type == UNSIGNEDINT) {
+		return (unsigned int) ui;
+	}
+	else {
+		if (type != UNKNOWN) {
+			throw TypeException("Cannot convert to int this data type ",
+								get_object_type_name(type));
+		}
+	}
+	return 0;
+}
+
 EMObject::operator float () const
 {
 	if (type == BOOL) {

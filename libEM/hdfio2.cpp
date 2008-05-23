@@ -100,12 +100,15 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 
 	EMObject ret(0);
 	int i;
+//	unsigned int ui;
 	float f,*fa;
 	int * ia;
+//	unsigned int * uia;
 	double d;
 	char *s;
 	vector <float> fv(pts);
 	vector <int> iv(pts);
+//	vector <unsigned int> uiv(pts);
 	
 	float * trans3d;
 	Transform3D * trans;
@@ -125,6 +128,19 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 			ret=EMObject(iv);
 		}
 		break;
+// 	case H5T_UNSIGNED_INTEGER:
+// 		if(pts==1) {
+// 			H5Aread(attr,H5T_NATIVE_UINT,&ui);
+// 			ret=EMObject(ui);
+// 		}
+// 		else {
+// 			uia=(unsigned int *)malloc(pts*sizeof(unsigned int));
+// 			H5Aread(attr,H5T_NATIVE_UINT,uia);
+// 			for (i=0; i<pts; i++) uiv[i]=uia[i];
+// 			free(uia);
+// 			ret=EMObject(uiv);
+// 		}
+// 		break;
 	case H5T_FLOAT:
 		if (sz==4) {
 			if (pts==1) {
@@ -188,6 +204,10 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	case EMObject::BOOL: std::cout << "implement this later" << std::endl; break;
 	case EMObject::INT: 
 		type=H5Tcopy(H5T_STD_I32LE); 
+		spc=H5Scopy(simple_space); 
+		break;
+	case EMObject::UNSIGNEDINT: 
+		type=H5Tcopy(H5T_STD_U32LE); 
 		spc=H5Scopy(simple_space); 
 		break;
 	case EMObject::FLOAT:
@@ -267,6 +287,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	unsigned int i;
 	float f,*fa;
 	int * ia;
+	unsigned int ui;
 	double d;
 	const char *s;
 	Transform3D * tp;
@@ -274,6 +295,10 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	case EMObject::INT:
 		i=(int)obj;
 		H5Awrite(attr,H5T_NATIVE_INT,&i);
+		break;
+	case EMObject::UNSIGNEDINT:
+		ui=(unsigned int)obj;
+		H5Awrite(attr,H5T_NATIVE_UINT,&ui);
 		break;
 	case EMObject::FLOAT:
 		f=(float)obj;
