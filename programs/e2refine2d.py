@@ -158,7 +158,7 @@ def main():
 		# make class-averages
 		try: re0move("classes.init.hdf")
 		except: pass
-		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=%d --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,options.iterclassav,options.maxshift))
+		run("e2classaverage.py %s classmx.00.hdf classes.init.hdf --iter=3 --align=rotate_translate_flip:maxshift=%d --averager=image -vf --bootstrap --keep=.9 --cmp=optvariance --aligncmp=optvariance"%(options.input,options.maxshift))
 	if not options.initial : options.initial="classes.init.hdf"
 		
 	print "Using references from ",options.initial
