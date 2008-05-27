@@ -144,6 +144,9 @@ def main():
                       help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 
+	# Parallelism
+	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
+	
 	append_options = ["clip", "process", "meanshrink", "shrink", "scale"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
@@ -160,6 +163,11 @@ def main():
 	infile = args[0]
 	outfile = args[1]
 
+	if options.parallel : 
+		r=doparallel(sys.argv,options.parallel,args)
+		E2end(logid)
+		sys.exit(r)
+		
 	average = None
 	fftavg = None
 	
@@ -467,6 +475,9 @@ def main():
 		pass	
 	
 	E2end(logid)
-	
+
+def doparallel(argv,parallel,args):
+	pass
+
 if __name__ == "__main__":
 	main()

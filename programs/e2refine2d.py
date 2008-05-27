@@ -72,6 +72,9 @@ def main():
 	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	
+	# Parallelism
+	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
+	
 	## options associated with e2classify.py
 	#parser.add_option("--sep", type="int", help="The number of classes a particle can contribute towards (default is 2)", default=2)
 	#parser.add_option("--classifyfile", dest="classifyfile", type = "string", default="e2classify.img", help="The file that will store the classification matrix")
@@ -120,6 +123,10 @@ def main():
 		tmp=EMData(options.input,0)
 		options.maxshift=tmp.get_xsize()/3	
 	
+	if options.parallel :
+		parstr="--parallel="+options.parallel
+	else : parstr=""
+	
 	fit=1
 	if options.resume :
 		while os.access("classes.%02d.hdf"%fit,os.F_OK): fit+=1
@@ -135,7 +142,7 @@ def main():
 		fpfile=options.input[:options.input.rfind(".")]+".fp.hdf"
 		fpfile=fpfile.split("/")[-1]
 		if not os.access(fpfile,os.R_OK) :
-			run("e2proc2d.py %s %s --fp --verbose=%d"%(options.input,fpfile,subverbose))
+			run("e2proc2d.py %s %s --fp --verbose=%d %s"%(options.input,fpfile,subverbose,parstr))
 		
 		# MSA on the footprints
 		fpbasis=options.input[:options.input.rfind(".")]+".fp.basis.hdf"
@@ -183,7 +190,7 @@ def main():
 		# We use e2simmx to compute the optimal particle orientations
 		try: remove("simmx.%02d.hdf"%it)
 		except: pass
-		e2simmxcmd = "e2simmx.py aliref.%02d.hdf %s simmx.%02d.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"  %(it, options.input,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
+		e2simmxcmd = "e2simmx.py aliref.%02d.hdf %s simmx.%02d.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s %s"  %(it, options.input,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr,parstr)
 		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 		run(e2simmxcmd)
 		

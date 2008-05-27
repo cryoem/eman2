@@ -193,7 +193,7 @@ parseparmobj3=re.compile("[^:]\w*=*[-\w.]*") # This parses ("a:v1=2:v2=3") into 
 parseparmobj4=re.compile("\w*[^=][\w.]*") # This parses ("v1=2") into ("v1", "2")
 def parsemodopt(optstr):
 	"""This is used so the user can provide the name of a comparator, processor, etc. with options
-	in a convenient form. It will parse "dot(normalize=1,negative=0)" and return
+	in a convenient form. It will parse "dot:normalize=1:negative=0" and return
 	("dot",{"normalize":1,"negative":0})"""
 	
 	if not optstr or len(optstr)==0 : return (None,{})
