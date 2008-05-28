@@ -2178,6 +2178,74 @@ int Symmetry3D::in_which_asym_unit(const Transform3D& t3d) const
 	return -1;
 }
 
+vector<Transform3D> Symmetry3D::get_touching_au_transforms(bool inc_mirror) const
+{
+	vector<Transform3D>  ret;
+	vector<int> hit_cache;
+	
+	vector<Vec3f> points = get_asym_unit_points(inc_mirror);
+	// Warning, this is a gross hack because it is assuming that the asym_unit_points
+	// returned by DSym are in a particular orientation with respect to symmetric axes
+	// if the internals of DSym change it could change what we should do here...
+	// but for the time being it will do
+	if (inc_mirror && is_d_sym() && (get_nsym()/2 % 2 == 0)) {
+		Dict delim = get_delimiters(false);
+		float angle = (float)(EMConsts::deg2rad*float(delim["az_max"]));
+		float y = -cos(angle);
+		float x = sin(angle);
+		points.push_back(Vec3f(x,y,0));
+	}
+	else if ( is_d_sym() && (get_nsym()/2 % 2 == 1)) {
+		Dict delim = get_delimiters(false);
+		float angle = float(delim["az_max"])/2.0;
+// 		cout << "Odd dsym using " << angle << endl;
+		angle *= EMConsts::deg2rad;
+		float y = -cos(angle);
+		float x = sin(angle);
+		points.push_back(Vec3f(x,y,0));
+		
+		if ( inc_mirror ) {
+			angle = 3.0*(float(delim["az_max"]))/2.0;
+			angle *= EMConsts::deg2rad;
+			float y = -cos(angle);
+			float x = sin(angle);
+			points.push_back(Vec3f(x,y,0));
+		}
+	}
+	
+	typedef vector<Vec3f>::const_iterator const_point_it;
+	for(const_point_it point = points.begin(); point != points.end(); ++point ) {
+		
+		for(int i = 1; i < get_nsym(); ++i) {
+			
+			if ( find(hit_cache.begin(),hit_cache.end(),i) != hit_cache.end() ) continue;
+			Transform3D t = get_sym(i);
+			Vec3f result = (*point)*t;
+			
+			if (is_platonic_sym()) {
+				for(const_point_it tmp = points.begin(); tmp != points.end(); ++tmp ) {
+					Vec3f tt = result-(*tmp);
+					if (tt.squared_length() < 0.01) {
+						hit_cache.push_back(i);
+						ret.push_back(t);
+					}
+					
+				}
+			}
+			else {
+				result -= *point;
+				if (result.squared_length() < 0.05) {
+					hit_cache.push_back(i);
+					ret.push_back(t);
+				}
+			}
+		}
+		
+	}
+	
+	return ret;
+}
+
 
 // C Symmetry stuff 
 Dict CSym::get_delimiters(const bool inc_mirror) const {

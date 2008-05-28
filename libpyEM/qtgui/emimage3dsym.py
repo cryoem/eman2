@@ -116,6 +116,8 @@ class EM3DSymViewer(EMImage3DObject):
 		self.cylinderdl = 0
 		
 		
+		self.reduce = False
+		
 		self.file = None
 		self.lr = -1
 		self.hr = -1
@@ -405,6 +407,27 @@ class EM3DSymViewer(EMImage3DObject):
 			glCallList(self.spheredl)
 			glPopMatrix()
 		glEndList()
+	
+	def angular_deviation(self,t1,t2):
+
+		v1 = Vec3f([0,0,1]*t1)
+		v2 = Vec3f([0,0,1]*t2)
+		t = v2.dot(v1)
+		#print t
+		if t > 1: 
+			if t > 1.1:
+				print "error, the precision is a problem, are things normalized?"
+				exit(1)
+			t = 1
+		if t < -1:
+			if t < -1.1:
+				print "error, the precision is a problem, are things normalized?"
+				exit(1)
+			t = -1
+					
+		angle = acos(t)*180/pi
+		
+		return angle
 		
 	def traceupdate(self,f,lr,hr):
 		if f != self.file:
@@ -425,13 +448,51 @@ class EM3DSymViewer(EMImage3DObject):
 					idx = str.find(s[3],',')
 					alt = float(s[3][1:idx])
 					az = float(s[3][idx+1:len(s[3])-1])
-					self.tracedata[n-1].append([alt,az])
+					self.tracedata[n-1].append([alt,az,0])
 					
 			self.file = f
+		
 		self.lr = lr
 		self.hr = hr
 		
-		if ( self.trace_dl != 0 ): glDeleteLists(self.trace_dl, 1)
+		
+		if self.reduce:
+			
+			for k in range(lr,hr):
+				particle = self.tracedata[k]
+				for orient in particle:
+					t = Transform3D(orient[1],orient[0],orient[2])
+					t = self.sym_object.reduce(t,0)
+					d = t.get_rotation()
+					orient[1] = d["az"]
+					orient[0] = d["alt"]
+					orient[2] = d["phi"]
+					
+			touching = self.sym_object.get_touching_au_transforms(False)
+			for k in range(lr,hr):
+				particle = self.tracedata[k]
+				n = len(particle)
+				for i in range(1,n):
+					o1 = particle[i-1]
+					o2 = particle[i]
+					t1 = Transform3D(o1[1],o1[0],o1[2])
+					t2 = Transform3D(o2[1],o2[0],o2[2])
+				
+					angle = self.angular_deviation(t1,t2)
+					
+					for t in touching:
+						t2 = Transform3D(o2[1],o2[0],o2[2])*t
+						
+						tmp = self.angular_deviation(t1,t2)
+						
+						if tmp < angle:
+							angle = tmp
+							
+							d = t2.get_rotation()
+							particle[i][1] = d["az"]
+							particle[i][0] = d["alt"]
+							particle[i][2] = d["phi"]
+						
 		
 		self.trace_dl = glGenLists(1)
 		
@@ -440,6 +501,7 @@ class EM3DSymViewer(EMImage3DObject):
 			for j in range(0,len(self.tracedata[i])-1):
 				alt = self.tracedata[i][j][0]
 				az = self.tracedata[i][j][1]
+				phi = self.tracedata[i][j][2]
 				#print "a",alt,az
 				T = Transform3D(az,alt,0.0)
 				T.transpose()
@@ -560,8 +622,9 @@ class EM3DSymViewer(EMImage3DObject):
 			glPopMatrix()
 		
 			if self.inspector.symtoggled():
-				for i in range(1,self.sym_object.get_nsym()):
-					t = self.sym_object.get_sym(i)
+				#for i in range(1,self.sym_object.get_nsym()):
+					#t = self.sym_object.get_sym(i)
+				for t in self.sym_object.get_touching_au_transforms(not self.nomirror):
 					d = t.get_rotation()
 					glPushMatrix()
 					if ( self.sym_object.is_h_sym() ):
@@ -668,6 +731,8 @@ class EM3DSymViewer(EMImage3DObject):
 		self.display_arc = bool
 		self.updateGL()
 
+	def reducetog(self,bool):
+		self.reduce = bool
 
 class EMSymViewerWidget(QtOpenGL.QGLWidget):
 	
@@ -855,6 +920,7 @@ class EMSymInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), target.triangletog)
 		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), target.arctog)
 		QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
+		QtCore.QObject.connect(self.reducetog, QtCore.SIGNAL("clicked(bool)"), self.target.reducetog)
 		QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
 		QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
 		QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
@@ -1067,6 +1133,12 @@ class EMSymInspector(QtGui.QWidget):
 		self.highrange.setFixedWidth(50)
 		self.hbl_pt.addWidget(self.highrange)
 		self.highrange.setEnabled(False)
+		
+		self.reducetog = QtGui.QPushButton("Reduce")
+		self.reducetog.setCheckable(1)
+		self.reducetog.setChecked(0)
+		self.hbl_pt.addWidget(self.reducetog)
+		
 		maintab.vbl.addLayout(self.hbl_pt)
 		#end here
 		

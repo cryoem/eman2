@@ -954,6 +954,10 @@ void U3DWriter::test_type_sizes()
 		cout << "Error, size of short unsigned int is not 16 bytes, it's " << sizeof(U16)*4 << endl;
 		error = true;
 	}
+	if (sizeof(U8) != 1) {
+		cout << "Error, size of unsigned char is not  bytes, it's " << sizeof(U8)*4 << endl;
+		error = true;
+	}
 	
 	if (error) {
 		throw;

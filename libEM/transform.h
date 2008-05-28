@@ -271,7 +271,7 @@ namespace EMAN
 	* see http://blake.bcm.edu/emanwiki/EMAN2/Symmetry for figures and description of what we're doing
 	* here, for all the symmetries, and look in the comments of the PlatonicSym classes themselves.
 	* It inherits from a factory base, making it amenable to incorporation in EMAN2 style factories
-	* @author David Woolford
+	* @author David Woolford with Phil Baldwin and Steven Ludkte
 	* @date Feb 2008
 	*/
 	class Symmetry3D : public FactoryBase
@@ -397,6 +397,17 @@ namespace EMAN
 		 * @param inc_mirror whether to include the mirror portion of the asymmetric unit
 		*/
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const = 0;
+		
+		/** Gets a vector of Transfor3D objects that define the set of asymmetric units that touch the default	
+		 * asymmetric unit. The 'default asymmetric unit' is defined by the results of Symmetry3d::get_asym_unit_points
+		 * and is sensitive to whether or not you want to include the mirror part of the asymmetric unit.
+		 * This function is useful when used in conjunction with Symmetry3D::reduce, and particularly when finding
+		 * the angular deviation of particles through different stages of iterative Single Particle Reconstruction
+		 * This function could be expanded to work for an asymmetric unit number supplied by the user.
+		 * @param inc_mirror whether or not to include the mirror portion of the asymmetric unit
+		 * @return a vector of Transform3D objects that map the default asymmetric unit to the neighboring asymmetric unit
+		 */
+		virtual vector<Transform3D> get_touching_au_transforms(bool inc_mirror = true) const;
 	};
 	
 	/** An encapsulation of cyclic 3D symmetry
@@ -499,9 +510,6 @@ namespace EMAN
 		 */
 		virtual vector<vector<Vec3f> > get_asym_unit_triangles(bool inc_mirror) const;
 		
-
-// PRB see here
-// 		virtual Transform3D reduce(const Transform3D& t3d, int n=0);
 	};
 	
 	/** An encapsulation of dihedral 3D symmetry

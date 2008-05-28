@@ -13,6 +13,9 @@ using std::vector;
 #include <ostream>
 using std::ostream;
 
+#include <climits>
+// for CHAR_BIT
+		 
 namespace EMAN
 {
 	/** CustomVector has some trivial optimizations of the STL vector.
@@ -292,6 +295,7 @@ namespace EMAN
 		typedef float F32;
 		typedef short int I16;
 		typedef short unsigned int U16;
+		typedef unsigned char U8;
 		
 		
 		
@@ -318,6 +322,75 @@ namespace EMAN
 		}
 		
 		
+// 		U8 reverse_bits_3d( U8 val ) {
+// 			U8 ret = 0;
+// 			U8 n_bits = sizeof ( val ) * CHAR_BIT;
+// 
+// 			for ( unsigned i = 0; i < n_bits; ++i ) {
+// 				ret = ( ret << 1 ) | ( val & 1 );
+// 				val >>= 1;
+// 			}
+// 
+// 			return ret;
+// 		}
+		
+// 		U16 reverse_bits_u3d( U16 val ) {
+// 			bool is_big_endian = ByteOrder::is_host_big_endian();
+// 			
+// 			U16 ret = 0;
+// 			
+// 			U8* pu8 = (U8*)&val;
+// 			U8* pu8ret = (U8*)&ret;
+// 			U8 high_order = 0;
+// 			U8 low_order = 0;
+// 			if (is_big_endian) {
+// 				high_order = pu8[0];
+// 				low_order = pu8[1];
+// 			}
+// 			else {
+// 				high_order = pu8[1];
+// 				low_order = pu8[0];
+// 			}
+// 			
+// 			pu8ret[0] = low_order;
+// 			pu8ret[1] = higher_order;
+// 			
+// 			high_order = reverse_bits_u3d(high_order);
+// 			low_order = reverse_bits_u3d(low_order);
+// 			
+// 			return ret;
+// 			
+// 		}
+// 		
+// 		U32 reverse_bits_u3d( U32 val ) {
+// 			bool is_big_endian = ByteOrder::is_host_big_endian();
+// 			
+// 			U32 ret = 0;
+// 			
+// 			U16 * pu16 = (U16*)&val;
+// 			U16* pu16ret = (U16*)&ret;
+// 			U16 high_order = 0;
+// 			U16 low_order = 0;
+// 			if (is_big_endian) {
+// 				high_order = pu16[0];
+// 				low_order = pu16[1];
+// 			}
+// 			else {
+// 				high_order = pu16[1];
+// 				low_order = pu16[0];
+// 			}
+// 			
+// 			high_order = reverse_bits_u3d(high_order);
+// 			low_order = reverse_bits_u3d(low_order);
+// 			
+// 			pu16ret[0] = low_order;
+// 			pu16ret[1] = higher_order;
+// 			
+// 			return ret;
+// 			
+// 		}
+// 		
+		
 		U32 DIFFUSE_COLOR_COUNT;
 		U32 SPECULAR_COLOR_COUNT;
 		
@@ -329,6 +402,39 @@ namespace EMAN
 	
 	// Template specialization. Have to be careful when dealing with strings
 	template<> ostream& U3DWriter::write(ostream& os, const string& );
+	
+// 	class U3DBitStreamWriter {
+// 	public:
+// 		typedef unsigned int U32;
+// 		typedef long unsigned int U64;
+// 		typedef double F64;
+// 		typedef float F32;
+// 		typedef short int I16;
+// 		typedef short unsigned int U16;
+// 		typedef unsigned char U8;
+// 		
+// 		
+// 		U3D_BitStreamWriter();
+// 		~U3D_BitStreamWriter();
+// 		
+// 		// We could do this kind of thing with templates,  but
+// 		// we would have to specialize each function anyhow, 
+// 		// so it makes sense just to do it the C way.
+// 		void writeU8( U8 value );
+// 		void writeU16( U16 value );
+// 		void writeU32( U32 value );
+// 		void writeU64( U64 value );
+// 		void writeI32( I32 value );
+// 		void writeF32( F32 value );
+// 		void writeF64( F64 value );
+// 		
+// 		void WriteCompressedU32( U32 context, U32 value );
+// 		void WriteCompressedU16( U32 context, U32 value );
+// 		void WriteCompressedU8( U32 context, U32 value );
+// 		
+// 	};
+	
+	
 
 }
 
