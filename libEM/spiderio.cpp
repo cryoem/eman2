@@ -324,12 +324,12 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 
 
 int SpiderIO::write_header(const Dict & dict, int image_index, const Region* area,
-						   EMUtil::EMDataType, bool)
+						   EMUtil::EMDataType, bool use_host_endian)
 {
 	ENTERFUNC;
 
 	if(is_new_file) {	//for a new file write overall header first
-		write_single_header(dict, area, image_index, 0, first_h, OVERALL_STACK_HEADER, 1, 0);
+		write_single_header(dict, area, image_index, 0, first_h, OVERALL_STACK_HEADER, 1, 0, use_host_endian);
 	}
 	else {
 		swap_header(first_h);
@@ -368,18 +368,18 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	//update overall header
 	if(MAXIM > (int)first_h->maxim) {	
 		portable_fseek(spider_file, 0, SEEK_SET);
-		write_single_header(dict, area, image_index, 0, first_h, OVERALL_STACK_HEADER, MAXIM, 0);
+		write_single_header(dict, area, image_index, 0, first_h, OVERALL_STACK_HEADER, MAXIM, 0, use_host_endian);
 	}
 	
 	portable_fseek(spider_file, offset, SEEK_SET);
-	write_single_header(dict, area, image_index, offset, cur_h, SINGLE_IMAGE_HEADER, 0, image_index+1);
+	write_single_header(dict, area, image_index, offset, cur_h, SINGLE_IMAGE_HEADER, 0, image_index+1, use_host_endian);
 		
 	EXITFUNC;
 	return 0;
 }
 
 int SpiderIO::write_single_header(const Dict & dict, const Region *area, int image_index, size_t offset,
-					SpiderHeader *& hp, int ISTACK, int MAXIM, int IMGNUM)
+					SpiderHeader *& hp, int ISTACK, int MAXIM, int IMGNUM, bool use_host_endian)
 {
 	ENTERFUNC;
 
@@ -454,8 +454,18 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 
 	portable_fseek(spider_file, offset, SEEK_SET);
 
-	if (fwrite(hp, header_size, 1, spider_file) != 1) {
-		throw ImageWriteException(filename, "write spider header failed");
+	if(use_host_endian) {
+		if (fwrite(hp, header_size, 1, spider_file) != 1) {
+			throw ImageWriteException(filename, "write spider header failed");
+		}
+	}
+	else {	//swap byte order
+		SpiderHeader * hp2 = new SpiderHeader(*hp);
+		ByteOrder::swap_bytes((float *) hp2, NUM_FLOATS_IN_HEADER);
+		if (fwrite(hp2, header_size, 1, spider_file) != 1) {
+			throw ImageWriteException(filename, "write spider header failed");
+		}
+		if(hp2) {delete hp2; hp2=0;}
 	}
 
 	size_t pad_size = header_length - header_size;
@@ -526,7 +536,7 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 }
 
 int SpiderIO::write_data(float *data, int image_index, const Region* area,
-						 EMUtil::EMDataType, bool)
+						 EMUtil::EMDataType, bool use_host_endian)
 {
 	ENTERFUNC;
 
@@ -545,7 +555,7 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area,
 	
 	swap_data(data, (size_t)size);
 	
-	write_single_data(data, area, cur_h, offset, image_index, (int)first_h->maxim+1);
+	write_single_data(data, area, cur_h, offset, image_index, (int)first_h->maxim+1, use_host_endian);
 	
 	EXITFUNC;
 	return 0;
@@ -558,7 +568,7 @@ void SpiderIO::flush()
 }
 
 int SpiderIO::write_single_data(float *data, const Region * area, SpiderHeader *& hp, 
-								size_t offset, int img_index, int max_nimg)
+								size_t offset, int img_index, int max_nimg, bool use_host_endian)
 {
 	ENTERFUNC;
 	
@@ -573,7 +583,12 @@ int SpiderIO::write_single_data(float *data, const Region * area, SpiderHeader *
 	}
 	
 	portable_fseek(spider_file, offset, SEEK_SET);
-
+	
+	int size = hp->nsam * hp->nrow * hp->nslice;
+	if(!use_host_endian) {
+		ByteOrder::swap_bytes(data, size);
+	}
+	
 	// remove the stuff in #if 0 ... #endif if the following works.
 	EMUtil::process_region_io(data, spider_file, WRITE_ONLY,0, sizeof(float), 
 							  (int) hp->nsam, (int) hp->nrow, 

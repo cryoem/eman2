@@ -208,12 +208,13 @@ namespace EMAN
 		 * @param ISTACK the istack field for SPIDER's header, 0 for dingle image, 2 for stacked image
 		 * @param MAXIM maxim field for header, only used for overall header
 		 * @param IMGNUM imgnum for header, only used for stacked image header
+		 * @param use_host_endian use host machine's endian, set to false will swap the byte order
 		 * @exception ImageWriteException
 		 * @return 0 for sucess
 		 * */
 		//ISTACK, MAXIM, IMGNUM only useful for overall stack header
 		int write_single_header(const Dict & dict, const Region* area, int image_index, size_t offset,
-								SpiderHeader *& hp,	int ISTACK, int MAXIM=1, int IMGNUM=1);	
+								SpiderHeader *& hp,	int ISTACK, int MAXIM=1, int IMGNUM=1, bool use_host_endian=true);	
 		
 		/** write a single image data
 		 * @param data the data block to be written
@@ -222,11 +223,12 @@ namespace EMAN
 		 * @param offset the offset in the spider_file
 		 * @param img_index the image index inthe stack, it's 0-indexed
 		 * @param max_nimg max image number in a stack
+		 * @param use_host_endian use host machine's endian, set to false will swap the byte order
 		 * @exception ImageWriteException
 		 * @return 0 for success
 		 * */
 		int write_single_data(float *data, const Region * area, SpiderHeader *& hp,
-								size_t offset, int img_index, int max_nimg);
+								size_t offset, int img_index, int max_nimg, bool use_host_endian=true);
 		
 		/**check the data block to see if it represents valid stacked SPIDER image file header
 		 * @param first_block the pointer to first block of the file

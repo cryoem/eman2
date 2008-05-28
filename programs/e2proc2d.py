@@ -143,6 +143,7 @@ def main():
 	parser.add_option("--plane", metavar=threedplanes, type="string", default='xy',
                       help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
+	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)	
 
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
@@ -455,7 +456,7 @@ def main():
 						outfile = outfile + "%04d" % i + ".lst"
 						options.outtype = "lst"
 				
-				d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype))
+				d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 				
 	#end of image loop
 

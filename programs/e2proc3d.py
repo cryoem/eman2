@@ -104,6 +104,8 @@ def main():
     parser.add_option("--last", metavar="n", type="int", default=-1, 
                                 help="the last image in the input to process")
     
+    parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)	
+    
     append_options = ["clip", "fftclip", "filter", "shrink", "scale"]
     
     optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
@@ -159,6 +161,9 @@ def main():
             data.set_xpixel(apix)
             data.set_ypixel(apix)
             data.set_zpixel(apix)
+
+    if not "outtype" in optionlist:
+	    optionlist.append("outtype")
 
     print "%d images, processing %d-%d......"%(nimg, n0, n1)
     #print 'start.....'
@@ -236,10 +241,14 @@ def main():
             elif option1 == "tophalf":
                 half = data.get_top_half()
                 data = half
+                
+            elif option1 == "outtype":
+				if not options.outtype:
+					options.outtype = "unknown"
 
         #print_iminfo(data, "Final")
-
-    	data.write_image(outfile, -1)
+        
+    	data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 
 #parse_file() wil read the input image file and return a list of EMData() object
 def parse_infile(infile, first, last):

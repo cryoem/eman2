@@ -53,19 +53,22 @@ SingleSpiderIO::~SingleSpiderIO()
 
 
 int SingleSpiderIO::write_header(const Dict & dict, int , const Region* area,
-								 EMUtil::EMDataType, bool)
+								 EMUtil::EMDataType, bool use_host_endian)
 {
 	size_t offset = 0;
 	int image_index = 0;
-	return write_single_header(dict, area, image_index, offset, first_h, SINGLE_IMAGE_HEADER);
+//	if(!use_host_endian) {
+//		ByteOrder::swap_bytes((float*)first_h, NUM_FLOATS_IN_HEADER);
+//	}
+	return write_single_header(dict, area, image_index, offset, first_h, SINGLE_IMAGE_HEADER, use_host_endian);
 }
 
 
 int SingleSpiderIO::write_data(float *data, int , const Region* area,
-							   EMUtil::EMDataType, bool)
+							   EMUtil::EMDataType, bool use_host_endian)
 {
 	size_t offset = (int) first_h->headlen;
-	return write_single_data(data, area, first_h, offset, 0, 1);
+	return write_single_data(data, area, first_h, offset, 0, 1, use_host_endian);
 }
 
 
