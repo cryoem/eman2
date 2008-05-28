@@ -60,6 +60,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--normproj",action="store_true",help="Normalize the projections resulting from 'project', such that the length of each vector is 1",default=False)
+	parser.add_option("--oneout",action="store_true",help="Output is a single 2-D image rather than a set of 1-D images",default=False)
 	parser.add_option("--nbasis","-n",type="int",help="Will use the first n basis images from the input",default=-1)
 	parser.add_option("--verbose", metavar="n", type="int", help="Give verbose output, higher numbers = more detail")
 	
@@ -83,15 +84,28 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		
 		# outer loop over images to be projected
 		n=EMUtil.get_image_count(args[2])
-		for i in range(n):
-			im=EMData(args[2],i)
-			proj=EMData(len(basis),1,1)
 		
-			# inner loop over the basis images
-			for j,b in enumerate(basis):
-				proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
-				
-			proj.write_image(args[3],i)
+		if options.oneout: 
+			proj=EMData(len(basis),n,1)
+			
+			for i in range(n):
+				im=EMData(args[2],i)
+			
+				# inner loop over the basis images
+				for j,b in enumerate(basis):
+					proj.set_value_at(j,i,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+					
+			proj.write_image(args[3],0)
+		else:
+			for i in range(n):
+				im=EMData(args[2],i)
+				proj=EMData(len(basis),1,1)
+			
+				# inner loop over the basis images
+				for j,b in enumerate(basis):
+					proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+					
+				proj.write_image(args[3],i)
 	
 	# Project rotated images into a basis subspace
 	elif args[0]=="projectrot" :
@@ -103,40 +117,64 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		simdy=EMData(args[3],2)
 		simda=EMData(args[3],3)
 		
-		# normalize the basis vectors to unit length
-#		for b in basis: b.process_inplace("normalize.unitlen")
-		
 		# outer loop over images to be projected
 		n=EMUtil.get_image_count(args[2])
-		for i in range(n):
-			if options.verbose >1 : 
-				print "  %5d\r"%i,
-				sys.stdout.flush()
-			elif options.verbose and i%100==0:
-				print "  %5d\r"%i,
-				sys.stdout.flush()
-			im=EMData(args[2],i)
+		if options.oneout:
+			proj=EMData(len(basis)+3,n,1)
+			for i in range(n):
+				if options.verbose >1 : 
+					print "  %5d\r"%i,
+					sys.stdout.flush()
+				elif options.verbose and i%100==0:
+					print "  %5d\r"%i,
+					sys.stdout.flush()
+				im=EMData(args[2],i)
+				
+				# find the best orienteation from the similarity matrix, and apply the transformation
+				best=(1.0e23,0,0,0)
+				
+				for j in range(simmx.get_xsize()): 
+					if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simda.get(j,i),simdx.get(j,i),simdy.get(j,i))
+				
+				im.rotate_translate(best[1],0,0,best[2],best[3],0)
+				
+				# inner loop over the basis images to generate the components of the projection vector
+				for j,b in enumerate(basis):
+					proj.set_value_at(j+3,i,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+				
+				proj.set_value_at(0,best[1])
+				proj.set_value_at(1,best[2])
+				proj.set_value_at(2,best[3])
+				
+				proj.write_image(args[4],0)
+		else:
+			for i in range(n):
+				if options.verbose >1 : 
+					print "  %5d\r"%i,
+					sys.stdout.flush()
+				elif options.verbose and i%100==0:
+					print "  %5d\r"%i,
+					sys.stdout.flush()
+				im=EMData(args[2],i)
+				
+				# find the best orienteation from the similarity matrix, and apply the transformation
+				best=(1.0e23,0,0,0)
+				
+				for j in range(simmx.get_xsize()): 
+					if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simda.get(j,i),simdx.get(j,i),simdy.get(j,i))
+				
+				im.rotate_translate(best[1],0,0,best[2],best[3],0)
+				
+				proj=EMData(len(basis),1,1)
 			
-			# find the best orienteation from the similarity matrix, and apply the transformation
-			best=(1.0e23,0,0,0)
-#			print "a"
-			for j in range(simmx.get_xsize()): 
-				if simmx.get(i,j)<best[0] : best=(simmx.get(j,i),simda.get(j,i),simdx.get(j,i),simdy.get(j,i))
-#			print "b",(best[1],0,0,best[2],best[3],0)
-			im.rotate_translate(best[1],0,0,best[2],best[3],0)
-#			print "c"
-#			im.process_inplace("normalize.unitlen")
-			
-			proj=EMData(len(basis),1,1)
-		
-			# inner loop over the basis images to generate the components of the projection vector
-			for j,b in enumerate(basis):
-				proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
-			
-			proj.set_attr("ref_da",best[1])
-			proj.set_attr("ref_dx",best[2])
-			proj.set_attr("ref_dy",best[3])
-			proj.write_image(args[4],i)
+				# inner loop over the basis images to generate the components of the projection vector
+				for j,b in enumerate(basis):
+					proj.set_value_at(j,0,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
+				
+				proj.set_attr("ref_da",best[1])
+				proj.set_attr("ref_dx",best[2])
+				proj.set_attr("ref_dy",best[3])
+				proj.write_image(args[4],i)
 		if options.verbose>1 : print "Projectrot complete"
 	
 	# Apply the varimax rotation to a set of basis vectors
