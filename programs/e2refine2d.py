@@ -71,7 +71,10 @@ def main():
 	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
 	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
-	
+
+	# options associated with e2basis.py
+	parser.add_option("--normproj", default=False, action="store_true",help="Normalizes each projection vector. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image")
+
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 	
@@ -126,6 +129,10 @@ def main():
 	if options.parallel :
 		parstr="--parallel="+options.parallel
 	else : parstr=""
+
+	if options.normproj :
+		options.normproj="--normproj"
+	else : options.normproj=""
 	
 	fit=1
 	if options.resume :
@@ -148,14 +155,14 @@ def main():
 		fpbasis=options.input[:options.input.rfind(".")]+".fp.basis.hdf"
 		fpbasis=fpbasis.split("/")[-1]
 		if not os.access(fpbasis,os.R_OK) :
-#			run("e2msa.py %s %s --nbasis=%0d"%(fpfile,fpbasis,options.nbasisfp))
-			run("e2msa.py %s %s --nbasis=%0d --varimax"%(fpfile,fpbasis,options.nbasisfp))
+			run("e2msa.py %s %s --nbasis=%0d"%(fpfile,fpbasis,options.nbasisfp))
+#			run("e2msa.py %s %s --nbasis=%0d --varimax"%(fpfile,fpbasis,options.nbasisfp))
 	
 		# reproject the particle footprints into the basis subspace
 		inputproj=options.input[:options.input.rfind(".")]+".fp.proj.hdf"
 		inputproj=inputproj.split("/")[-1]
 		if not os.access(inputproj,os.R_OK) :
-			run("e2basis.py project %s %s %s --oneout --verbose=%d"%(fpbasis,fpfile,inputproj,subverbose))
+			run("e2basis.py project %s %s %s --oneout --verbose=%d %s"%(fpbasis,fpfile,inputproj,subverbose,options.normproj))
 		
 		# classify the subspace vectors
 		try: remove("classmx.00.hdf")
@@ -175,10 +182,10 @@ def main():
 		run("e2stacksort.py %s allrefs.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate:maxshift==%d --center --useali"%(options.initial,it,options.maxshift))
 		
 		# Compute a classification basis set
-#		run("e2msa.py %s basis.%02d.hdf --nbasis=%d"%(options.initial,it,options.nbasisfp))
 		try: remove("basis.%02d.hdf"%it)
 		except: pass
-		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d --varimax"%(it,it,options.nbasisfp))
+		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d"%(it,it,options.nbasisfp))
+#		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d --varimax"%(it,it,options.nbasisfp))
 		
 		# extract the most different references for alignment
 #		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
@@ -199,7 +206,7 @@ def main():
 		inputproj=inputproj.split("/")[-1]
 		try: remove(inputproj)
 		except: pass
-		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s --oneout --verbose=%d"%(it,options.input,it,inputproj,subverbose))
+		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s --oneout --verbose=%d %s"%(it,options.input,it,inputproj,subverbose,options.normproj))
 		
 		# classify the subspace vectors
 		try: remove("classmx.%02d.hdf"%it)
