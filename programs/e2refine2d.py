@@ -155,12 +155,12 @@ def main():
 		inputproj=options.input[:options.input.rfind(".")]+".fp.proj.hdf"
 		inputproj=inputproj.split("/")[-1]
 		if not os.access(inputproj,os.R_OK) :
-			run("e2basis.py project %s %s %s --verbose=%d"%(fpbasis,fpfile,inputproj,subverbose))
+			run("e2basis.py project %s %s %s --oneout --verbose=%d"%(fpbasis,fpfile,inputproj,subverbose))
 		
 		# classify the subspace vectors
 		try: remove("classmx.00.hdf")
 		except: pass
-		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.00.hdf %s"%(inputproj,options.input,options.ncls,excludestr))
+		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.00.hdf --onein %s"%(inputproj,options.input,options.ncls,excludestr))
 		
 		# make class-averages
 		try: re0move("classes.init.hdf")
@@ -199,12 +199,12 @@ def main():
 		inputproj=inputproj.split("/")[-1]
 		try: remove(inputproj)
 		except: pass
-		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s --verbose=%d"%(it,options.input,it,inputproj,subverbose))
+		run("e2basis.py projectrot basis.%02d.hdf %s simmx.%02d.hdf %s --oneout --verbose=%d"%(it,options.input,it,inputproj,subverbose))
 		
 		# classify the subspace vectors
 		try: remove("classmx.%02d.hdf"%it)
 		except: pass
-		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.%02d.hdf %s"%(inputproj,options.input,options.ncls,it,excludestr))
+		run("e2classifykmeans.py %s --original=%s --ncls=%d --clsmx=classmx.%02d.hdf --oneinali %s"%(inputproj,options.input,options.ncls,it,excludestr))
 		
 		# make class-averages
 		try: remove("classes.%02d.hdf"%it)
