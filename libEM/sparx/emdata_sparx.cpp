@@ -3872,8 +3872,8 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 							float cphi = ist*dphi*DGR_TO_RAD;
 							float ca = cos(cphi);
 							float sa = sin(cphi);
-							float xold = ix*ca + jy*sa + nxc;
-							float yold = -ix*sa + jy*ca + nyc;
+							float xold = ix*ca - jy*sa + nxc;
+							float yold = ix*sa + jy*ca + nyc;
 							nq++;
 
 
@@ -3881,7 +3881,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 					int IOX = int(xold);
 					int IOY = int(yold);
 					//int IOZ = int(zold);
-		
+
 					#ifdef _WIN32
 					int IOXp1 = _MIN( nx-1 ,IOX+1);
 					#else
@@ -3914,10 +3914,9 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 					float a8 = (*this)(IOXp1,IOY,IOZ) + (*this)(IOX,IOYp1,IOZ)+ (*this)(IOX,IOY,IOZp1) 
 							- (*this)(IOX,IOY,IOZ)- (*this)(IOXp1,IOYp1,IOZ) - (*this)(IOXp1,IOY,IOZp1)
 							- (*this)(IOX,IOYp1,IOZp1) + (*this)(IOXp1,IOYp1,IOZp1);
-					(*result)(i,j,k) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+					(*result)(i,j,k) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
 
-
-							//(*result)(i,j,k) += (*this)(int(hx), int(hy), npoz);
+							//(*result)(i,j,k) += (*this)(IOX, IOY, IOZ);
 							if(nq == numst) break;
 						}
 					}
@@ -3927,7 +3926,8 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 			}
 		}
 	}
-				
+	for (int k = 0; k<nz; k++) for (int j = 0; j<ny; j++) for (int i = 0; i<nx; i++) (*result)(i,j,k) /= numst ;
+
 	result->update();
 	return result;
 }
