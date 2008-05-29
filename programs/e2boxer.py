@@ -69,7 +69,9 @@ for single particle analysis."""
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid",default=[])
+	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db",default=[])
+	parser.add_option("--writedb",action="store_true",help="Write data box files",default=False)
+	parser.add_option("--writeboximages",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
 	parser.add_option("--refptcl","-R",type="string",help="(auto:ref) A stack of reference images. Must have the same scale as the image being boxed.",default=None)
 	parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
@@ -137,6 +139,30 @@ for single particle analysis."""
 				i[1]-=(options.boxsize-i[2])/2
 				i[2]=options.boxsize
 				i[3]=options.boxsize
+				
+	if "db" in options.auto:
+		print "auto data base boxing"
+		projectdb = shelve.open('.eman2projectdb','c',-1,True)
+	
+		trimAutoBoxer = projectdb["currentautoboxer"]
+		autoBoxer = SwarmAutoBoxer(None,projectdb)
+		autoBoxer.become(trimAutoBoxer)
+		autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+		for imagename in imagenames:
+			exists = True
+			try:
+				oldAutoBoxer = projectdb[imagename+"_autoboxer"]	
+			except: exists = False 	
+			if exists and autoBoxer.stateTS == oldAutoBoxer.stateTS:
+				print "up2date"
+				continue
+			else:
+				print "not up2date"
+				image = EMData(imagename)
+				boxable = Boxable(image,None,autoBoxer,imagename,projectdb)
+				autoBoxer.setBoxable(boxable)
+				autoBoxer.autoBox(boxable)
+				
 
 	# we need to know how big to make the boxes. If nothing is specified, but
 	# reference particles are, then we use the reference particle size
@@ -168,6 +194,8 @@ for single particle analysis."""
 		for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
 			for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
 				boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
+	
+	
 	
 	E2end(logid)
 
@@ -838,6 +866,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	ANCHOREDDYNAPIX = 2
 	USERDRIVEN = 3
 	ANCHOREDUSERDRIVEN = 4
+	COMMANDLINE = 5
 	def __init__(self,boxable,projectdb=None):
 		AutoBoxer.__init__(self,boxable)
 		
@@ -850,7 +879,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.shrink = -1
 		
 		# more privately stuff
-		self.templatedimmin = 20  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
+		self.templatedimmin = 24  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
 		self.optthreshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
 		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
@@ -863,13 +892,13 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		self.mode = SwarmAutoBoxer.DYNAPIX
 		self.refupdate = False # this is a flag used when self.mode is USERDRIVEN
-		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.ANCHOREDUSERDRIVEN]  # if another mode is added you would have to find all places where self.mode is used to make decisions and alter
+		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.ANCHOREDUSERDRIVEN,SwarmAutoBoxer.COMMANDLINE]  # if another mode is added you would have to find all places where self.mode is used to make decisions and alter
 		self.regressiveflag = False	# flags a force removal of non references in the Boxable in autoBox
 		
 	def become(self,trimSwarmAutoBoxer):
 		self.refboxes = []
-		for ref in trimSwarmAutoBoxer.trimboxes:
-			ref = Box
+		for ref in trimSwarmAutoBoxer.trimrefboxes:
+			ref = Box()
 			ref.become(ref)
 			self.refboxes.append(ref)
 			
@@ -892,6 +921,12 @@ class SwarmAutoBoxer(AutoBoxer):
 	def setBoxable(self,boxable):
 		self.boxable = boxable
 	
+	def setModeExplicit(self,mode):
+		if mode in self.permissablemodes:
+			self.mode = mode
+		else:
+			print "error, that mode:", mode, "was not in the list of permissable modes"
+			exit(1)
 	def setMode(self,dynapix,anchortemplate):
 		if dynapix:
 			if anchortemplate: self.mode = SwarmAutoBoxer.ANCHOREDDYNAPIX
@@ -1987,16 +2022,11 @@ class GUIbox:
 	def quit(self):
 		self.dynapixp.quit()
 		
-	def saveparams(self):
-		name = QtGui.QFileDialog.getSaveFileName(None,'Save Autoboxing Params')
-		print name
-		if str(name) != '':
-			f = file(str(name),'w')
-		else: return
-		
-		from pickle import dump
-		dump(self.autoBoxer,f,-1) # -1 forces the use of the HIGHEST_PROTOCOL, which is presumable for efficient
-		f.close()
+	def writeboxesimages(self):
+		print "I am writing images"
+	
+	def writeboxesdbs(self):
+		print "I am writing box dbs"
 		
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
@@ -2113,8 +2143,11 @@ class GUIboxPanel(QtGui.QWidget):
 		self.done=QtGui.QPushButton("Done")
 		self.vbl.addWidget(self.done)
 		
-		self.saveparams = QtGui.QPushButton("Save Params")
-		self.vbl.addWidget(self.saveparams)
+		self.writeboxesimages = QtGui.QPushButton("Write Box Images")
+		self.vbl.addWidget(self.writeboxesimages)
+		
+		self.writeboxesdbs = QtGui.QPushButton("Write DB Files")
+		self.vbl.addWidget(self.writeboxesdbs)
 
 		self.classifybut=QtGui.QPushButton("Classify")
 		self.vbl.addWidget(self.classifybut)
@@ -2123,7 +2156,8 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.updateEraseRad)
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
-		self.connect(self.saveparams,QtCore.SIGNAL("clicked(bool)"),self.target.saveparams)
+		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesimages)
+		self.connect(self.writeboxesdbs,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesdbs)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
 		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
 		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
