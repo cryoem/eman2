@@ -3865,17 +3865,59 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 				if(d2 <= r2) {
 					int nq = 1;
 					for ( int ist = -nst; ist <= nst; ist++) {
-						float poz = k*pixel_size + ist*dp;
-						int npoz = int(poz/pixel_size);
-						if(npoz >= nb && npoz <= ne) {
+						float zold = (k*pixel_size + ist*dp)/pixel_size;
+						int IOZ = int(zold);
+						if(IOZ >= nb && IOZ <= ne) {
 							// now x-y position
 							float cphi = ist*dphi*DGR_TO_RAD;
 							float ca = cos(cphi);
 							float sa = sin(cphi);
-							float hx = ix*ca + jy*sa + nxc;
-							float hy = -ix*sa + jy*ca + nyc;
+							float xold = ix*ca + jy*sa + nxc;
+							float yold = -ix*sa + jy*ca + nyc;
 							nq++;
-							(*result)(i,j,k) += (*this)(int(hx), int(hy), npoz);
+
+
+					//  Do tri-linear interpolation
+					int IOX = int(xold);
+					int IOY = int(yold);
+					//int IOZ = int(zold);
+		
+					#ifdef _WIN32
+					int IOXp1 = _MIN( nx-1 ,IOX+1);
+					#else
+					int IOXp1 = std::min( nx-1 ,IOX+1);
+					#endif  //_WIN32
+		
+					#ifdef _WIN32
+					int IOYp1 = _MIN( ny-1 ,IOY+1);
+					#else
+					int IOYp1 = std::min( ny-1 ,IOY+1);
+					#endif  //_WIN32
+		
+					#ifdef _WIN32
+					int IOZp1 = _MIN( nz-1 ,IOZ+1);
+					#else
+					int IOZp1 = std::min( nz-1 ,IOZ+1);
+					#endif  //_WIN32
+
+					float dx = xold-IOX;
+					float dy = yold-IOY;
+					float dz = zold-IOZ;
+						
+					float a1 = (*this)(IOX,IOY,IOZ);
+					float a2 = (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZ);
+					float a3 = (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZ);
+					float a4 = (*this)(IOX,IOY,IOZp1) - (*this)(IOX,IOY,IOZ);
+					float a5 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) + (*this)(IOXp1,IOYp1,IOZ);
+					float a6 = (*this)(IOX,IOY,IOZ) - (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOXp1,IOY,IOZp1);
+					float a7 = (*this)(IOX,IOY,IOZ) - (*this)(IOX,IOYp1,IOZ) - (*this)(IOX,IOY,IOZp1) + (*this)(IOX,IOYp1,IOZp1);
+					float a8 = (*this)(IOXp1,IOY,IOZ) + (*this)(IOX,IOYp1,IOZ)+ (*this)(IOX,IOY,IOZp1) 
+							- (*this)(IOX,IOY,IOZ)- (*this)(IOXp1,IOYp1,IOZ) - (*this)(IOXp1,IOY,IOZp1)
+							- (*this)(IOX,IOYp1,IOZp1) + (*this)(IOXp1,IOYp1,IOZp1);
+					(*result)(i,j,k) = a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
+
+
+							//(*result)(i,j,k) += (*this)(int(hx), int(hy), npoz);
 							if(nq == numst) break;
 						}
 					}

@@ -569,7 +569,7 @@ EMData* mult_radial(EMData* radial);
 		 *  @param[in] dp: repeat in z direction in Angstroms.
 		 *  @param[in] dphi: angular repeat in degrees.
 		 *  @param[in] section_use: how much of z section to use for symmetrization (between zero and one).
-		 *  @param[in] radius: radius of the structure (default nx2).
+		 *  @param[in] radius: radius of the structure (default nx/2-1).
 		 *  @return New image
 		 */
 		EMData* helicise(float pixel_size, float dp, float dphi, float section_use = 1.0f, float radius = -1.0f);
