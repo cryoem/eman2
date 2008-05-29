@@ -879,7 +879,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.shrink = -1
 		
 		# more privately stuff
-		self.templatedimmin = 24  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
+		self.templatedimmin = 20  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
 		self.optthreshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
 		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
@@ -1269,14 +1269,14 @@ class SwarmAutoBoxer(AutoBoxer):
 		ave.process_inplace("xform.centeracf")
 		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		
-		for image in images_copy:
-			image.write_image("aligned_refs.img",-1)
-		
-		ave.write_image("aligned_refs.img",-1)
-		
-		black = EMData(image.get_xsize(),image.get_ysize())
-		black.to_zero()
-		black.write_image("aligned_refs.img",-1)
+		#for image in images_copy:
+		#	image.write_image("aligned_refs.img",-1)
+		#
+		#ave.write_image("aligned_refs.img",-1)
+		#
+		#black = EMData(image.get_xsize(),image.get_ysize())
+		#black.to_zero()
+		#black.write_image("aligned_refs.img",-1)
 		
 		#ave.write_image("ave.hdf")
 		shrink = self.getBestShrink()
@@ -1308,14 +1308,14 @@ class SwarmAutoBoxer(AutoBoxer):
 			ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		
 		#debug, un-comment to see the aligned refs and the final template
-		for image in t:
-			image.write_image("aligned_refs.img",-1)
+		#for image in t:
+		#	image.write_image("aligned_refs.img",-1)
 		
-		ave.write_image("aligned_refs.img",-1)
+		#ave.write_image("aligned_refs.img",-1)
 		
-		black = EMData(image.get_xsize(),image.get_ysize())
-		black.to_zero()
-		black.write_image("aligned_refs.img",-1)
+		#black = EMData(image.get_xsize(),image.get_ysize())
+		#black.to_zero()
+		#black.write_image("aligned_refs.img",-1)
 		#END uncomment block
 		self.template = ave
 		self.templateTS = time()

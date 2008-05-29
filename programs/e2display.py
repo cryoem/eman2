@@ -33,7 +33,9 @@
 
 from EMAN2 import *
 from emimage import EMImage
-from emplot2d import EMPlot2D,NewPlot2DWin
+try: from emplot2d import EMPlot2D,NewPlot2DWin
+except: pass
+
 from emimageutil import EMParentWin
 import sys
 from optparse import OptionParser
