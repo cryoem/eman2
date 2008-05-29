@@ -230,6 +230,7 @@ class Box:
 		self.isref = trimbox.isref				# a flag that can be used to tell if the box is being used as a reference
 		self.changed = trimbox.changed			# a flag signalling the box has changed and display needs updatin
 		self.isanchor = trimbox.isanchor		# a flag signalling the box has changed and display needs updatin
+		self.TS = trimbox.TS
 		
 	def __init__(self,xcorner=-1,ycorner=-1,xsize=-1,ysize=-1,isref=0,correlationscore=0):
 		self.xcorner = xcorner			# the xcorner - bottom left
@@ -257,6 +258,7 @@ class Box:
 		self.isanchor = True		# A flag used by AutoBoxer routines that - if set to true the box will not be included in the generation the template) - This is specific to the SwarmPS autoboxer
 		self.boxingobj = None
 		self.shape = None
+		self.TS = None
 	def updateBoxImage(self,image,norm=True):
 		#print "getting region",self.xcorner,self.ycorner,self.xsize,self.ysize
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
@@ -288,7 +290,7 @@ class Box:
 				
 		return self.footprint
 			
-	def updateParams(self,autoBoxer,center=True):
+	def updateParams(self,autoBoxer,center=False):
 		'''
 		Updates internally stored parameters, currently works only for SwarmAutoBoxer, but
 		have attempted to lay basic framework if in future we use a different autoBoxer which
@@ -357,6 +359,7 @@ class TrimBox():
 		self.isref = box.isref				# a flag that can be used to tell if the box is being used as a reference
 		self.changed = box.changed			# a flag signalling the box has changed and display needs updatin
 		self.isanchor = box.isanchor		# a flag signalling the box has changed and display needs updatin
+		self.TS = box.TS					# a time stamp flag
 		
 class Reference(Box):
 	'''
@@ -416,13 +419,15 @@ class Boxable:
 				box.become(trimbox)
 				
 				if box.isref:
-					box.rorig = 0			# RGB red
-					box.gorig = 0			# RGB green
-					box.borig = 0			# RGB blue
-					box.r = 0
-					box.g = 0
-					box.b = 0
+					continue;
+					#box.rorig = 0			# RGB red
+					#box.gorig = 0			# RGB green
+					#box.borig = 0			# RGB blue
+					#box.r = 0
+					#box.g = 0
+					#box.b = 0
 				
+				box.boxingobject=self
 				self.boxes.append(box)
 		
 	
@@ -432,9 +437,8 @@ class Boxable:
 			return;
 		
 		box.isref = True # make sure it knows that it's a reference box
+		box.TS = time()
 		box.boxingobj = self
-		box.otheridx1 = len(self.boxes) # store this, it's used when the user deletes the box, for exclusion
-		box.otheridx2 = len(self.refboxes) # store this, it's used when the user deletes the box, for exclusion
 		
 		box.rorig = 0			# RGB red
 		box.gorig = 0			# RGB green
@@ -451,7 +455,7 @@ class Boxable:
 		tmp = self.boxes.pop(i)
 		#yuck, this is horribly inefficient
 		for j,box in enumerate(self.refboxes):
-			if box.isref and box.xcorner == tmp.xcorner and box.ycorner == tmp.ycorner:
+			if box.isref and box.TS == tmp.TS:
 				self.refboxes.pop(j)
 				return True
 			
@@ -532,7 +536,7 @@ class Boxable:
 			print 'warning, there is not autoboxer set, am not sure how to shrink, returning 1 as the shrink factor'
 			return 1
 		
-	def updateCorrelation(self,template,templateTS,autoBoxer):
+	def updateCorrelation(self,template,templateTS):
 		'''
 		A function that will update the correlation image if the correlationupdate flag is set to true
 		Useful if a template has been updated somewhere, yet many references originate from this BoxingOject -
@@ -544,39 +548,51 @@ class Boxable:
 		'''
 		if self.allowcorrelationupdate:
 			self.templateTS = templateTS # Time Stamp, used for efficiency in autoBox to save an unecessary correlation update
-			self.__genCorrelation(template,autoBoxer)
+			self.__genCorrelation(template)
 			
 			# I made a conscientious decision to leave the responsibility of turning this flag off
 			# to that of the calling program/function. This uncommented line is left only for documentation purposes
 			#self.allowcorrelationupdate = False
 
-	def __genCorrelation(self,template,autoBoxer,forceupdate=False):
+	def __genCorrelation(self,template,forceupdate=False):
 		'''
 		The force update flag is only meant to be used if the box size has changed - this changes 
 		the shrink factor, and also affects the background flattening process.
 		'''
 		self.template = template
-		newr = self.template.get_xsize()/2.0
-		# now we only recalculate the small copy of the subject image if necessary
-		if self.smallimage == None or newr != self.flattenimager or forceupdate:
-			self.flattenimager = newr
-			#FIXME - we could avoid a deep copy by writing the meanshrink processor
-			# i.e. section = self.image.process("math.meanshrink",{"n":self.getBestShrink()}
-			
-			if (autoBoxer.getBestShrink() != 1):
-				self.smallimage = self.image.process("math.meanshrink",{"n":autoBoxer.getBestShrink()})
-			else: self.smallimage = self.image.copy()
-			
-			self.smallimage.process_inplace("filter.flattenbackground",{"radius":self.flattenimager})
-			print "generated shrunken image" # DEBUG
-
+		templateradius = self.template.get_xsize()/2
+		
+		if templateradius != self.autoBoxer.getTemplateRadius():
+			print "error, template radius values do not match",templateradius,self.autoBoxer.getTemplateRadius()
+			return 0
+		
+		# this make sure that the small image exists.... generates it if it has to
+		self.getSmallImage(forceupdate)
+	
 		self.correlation = self.smallimage.calc_flcf( self.template )
 		
 		# this may not be necessary if we ever want to be completely efficient
 		self.correlation.process_inplace("xform.phaseorigin.tocenter")
 		#self.correlation.write_image("tttttt.hdf")
 		print "generated correlation image" # DEBUG
+	
+	def getSmallImage(self,forceupdate=False):
+		templateradius =  self.autoBoxer.getTemplateRadius()
 		
+		if self.smallimage == None or templateradius != self.flattenimager or forceupdate:
+			self.flattenimager = templateradius
+			#FIXME - we could avoid a deep copy by writing the meanshrink processor
+			# i.e. section = self.image.process("math.meanshrink",{"n":self.getBestShrink()}
+			
+			if (self.autoBoxer.getBestShrink() != 1):
+				self.smallimage = self.image.process("math.meanshrink",{"n":self.autoBoxer.getBestShrink()})
+			else: self.smallimage = self.image.copy()
+			
+			self.smallimage.process_inplace("filter.flattenbackground",{"radius":self.flattenimager})
+			print "generated shrunken image" # DEBUG
+			
+		return self.smallimage
+
 
 	def updateExcludedBoxes(self):
 		'''
@@ -595,7 +611,7 @@ class Boxable:
 			if ( exc.get(x,y) != 0):
 				lostboxes.append(i)
 			
-			self.boxes.pop(i)
+				self.boxes.pop(i)
 	
 		return lostboxes
 	
@@ -611,8 +627,8 @@ class Boxable:
 		# this does implicit initialization
 		self.getExclusionImage()
 		
-		ny = self.correlation.get_ysize()
-		nx = self.correlation.get_xsize()
+		ny = self.smallimage.get_ysize()
+		nx = self.smallimage.get_xsize()
 		for j in range(-rr,rr):
 			for i in range(-rr,rr):
 				if (i**2 + j**2) > rrs: continue
@@ -626,9 +642,12 @@ class Boxable:
 		# FIXME - is this the best place for this?
 		self.parent.guiim.setOtherData(self.getExclusionImage(),self.getBestShrink(),True)
 	
-	def getExclusionImage(self):
-		if self.exclusionimage == None:
-			self.exclusionimage = EMData(self.correlation.get_xsize(),self.correlation.get_ysize())
+	def getExclusionImage(self,force=True):
+		if self.exclusionimage == None and force:
+			if self.smallimage == None:
+				self.getSmallImage()
+				
+			self.exclusionimage = EMData(self.smallimage.get_xsize(),self.smallimage.get_ysize())
 			self.exclusionimage.to_zero()
 		
 		return self.exclusionimage
@@ -831,7 +850,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.shrink = -1
 		
 		# more privately stuff
-		self.templatedimmin = 24  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
+		self.templatedimmin = 20  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
 		self.optthreshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
 		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
@@ -938,7 +957,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	
 	def removeReference(self,box):
 		for j,tmp in enumerate(self.refboxes):
-			if box.isref and box.xcorner == tmp.xcorner and box.ycorner == tmp.ycorner:
+			if box.isref and box.TS == tmp.TS:
 				tmp = self.refboxes.pop(j)
 				if len(self.refboxes) == 0:
 					self.__reset()
@@ -947,6 +966,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 					if box.isanchor:
 						self.__fullUpdate()
+						self.regressiveflag = True
 						self.autoBox(self.boxable)
 					else:
 						self.__accrueOptParams()
@@ -968,6 +988,12 @@ class SwarmAutoBoxer(AutoBoxer):
 					return 1
 		return 0
 	
+	def getTemplateRadius(self):
+		'''
+		Returns what will be or is the template radius
+		'''
+		return int(self.boxsize/2/self.getBestShrink())
+	
 	def referenceMoved(self,box):
 		'''
 		If a reference was moved interactively in the interface this is the function that should be called
@@ -975,6 +1001,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			if box.isanchor:
 				self.__fullUpdate()
+				self.regressiveflag = True
 				self.autoBox(self.boxable)
 			else:
 				box.updateParams(self)
@@ -1066,7 +1093,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			if self.template != None:
 				boxable.allowcorrelationupdate = True
 				print 'told the boxable to update its template'
-				boxable.updateCorrelation(self.template,self.templateTS,self)
+				boxable.updateCorrelation(self.template,self.templateTS)
 				boxable.allowcorrelationupdate = False
 				
 				correlation = boxable.correlation
@@ -1089,6 +1116,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 			exclusion = boxable.getExclusionImage().copy()
 			self.__paintExcludedBoxAreas(exclusion,boxable.boxes)
+			exclusion.write_image("exclusion.hdf")
 		
 			boxes = self.__autoBox(correlation,boxable.boxes,exclusion)
 			print "autoboxed",len(boxes)
@@ -1140,7 +1168,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		# Warning, this search radius value should be the same as the one used by the BoxSets that contributed the reference boxes
 		# to this AutoBoxer object. There should be one place/function in the code where both parties access this value
 		searchradius = self.getSearchRadius()
-		
 		soln = BoxingTools.auto_correlation_pick(correlation,self.optthreshold,searchradius,self.optprofile,exclusion,self.optprofileradius,mode)
 
 		# This is what should be written to the database
@@ -1200,22 +1227,41 @@ class SwarmAutoBoxer(AutoBoxer):
 		for i in range(1,len(images_copy)):
 			#ta = images_copy[i].align("rotate_translate",ave,{},"dot",{"normalize":1})
 			ave.add(images_copy[i])
-			
+		
 		#ave.write_image("prealigned.hdf")
 		ave.mult(1.0/len(images_copy))
 		ave.process_inplace("math.radialaverage")
 		ave.process_inplace("xform.centeracf")
 		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
-		#ave.write_image("ave.hdf")
 		
-		# 5 is a magic number
-		for n in range(0,5):
+		for image in images_copy:
+			image.write_image("aligned_refs.img",-1)
+		
+		ave.write_image("aligned_refs.img",-1)
+		
+		black = EMData(image.get_xsize(),image.get_ysize())
+		black.to_zero()
+		black.write_image("aligned_refs.img",-1)
+		
+		#ave.write_image("ave.hdf")
+		shrink = self.getBestShrink()
+		# 4 is a magic number
+		for n in range(0,4):
 			t = []
-			for i in images_copy:
+			for idx,i in enumerate(images_copy):
 				#FIXME - make it so that a newly clipped portion of the original image
 				# is used as the 'aligned' image, to avoid zeroing effects at the edges
 				ta = i.align("translational",ave,{},"dot",{"normalize":1})
-				t.append(ta)
+				dx = ta.get_attr("align.dx")
+				dy = ta.get_attr("align.dy")
+				box = self.refboxes[idx]
+				size = ta.get_xsize()
+				image = box.boxingobj.getSmallImage()
+				a = image.get_clip(Region(box.xcorner/shrink-dx,box.ycorner/shrink-dy,size,size))
+				a.process_inplace("normalize.edgemean")
+				
+				t.append(a)
+				#t.append(ta)
 		
 			ave = t[0].copy()
 			for i in range(1,len(images_copy)):
@@ -1226,16 +1272,16 @@ class SwarmAutoBoxer(AutoBoxer):
 			ave.process_inplace("xform.centeracf")
 			ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
 		
-		# debug, un-comment to see the aligned refs and the final template
-		#for image in t:
-			#image.write_image("aligned_refs.img",-1)
+		#debug, un-comment to see the aligned refs and the final template
+		for image in t:
+			image.write_image("aligned_refs.img",-1)
 		
-		#ave.write_image("aligned_refs.img",-1)
+		ave.write_image("aligned_refs.img",-1)
 		
-		#black = EMData(image.get_xsize(),image.get_ysize())
-		#black.to_zero()
-		#black.write_image("aligned_refs.img",-1)
-		
+		black = EMData(image.get_xsize(),image.get_ysize())
+		black.to_zero()
+		black.write_image("aligned_refs.img",-1)
+		#END uncomment block
 		self.template = ave
 		self.templateTS = time()
 		return 1
@@ -1263,7 +1309,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		# Now iterate through and force the correlation update
 		# the boxing Boxables 
 		for ref in self.refboxes:
-			ref.boxingobj.updateCorrelation(self.template,self.templateTS,self)
+			ref.boxingobj.updateCorrelation(self.template,self.templateTS)
 			ref.boxingobj.allowcorrelationupdate = False
 			
 		for ref in self.refboxes:
@@ -1488,16 +1534,24 @@ class GUIbox:
 			self.autoBoxer.setBoxable(self.boxable)
 			
 			self.ptcl = []
+			
 			self.guiim.delShapes()
 			self.indisplaylimbo = True
-			if self.dynapix: self.autoBoxer.autoBox(self.boxable)
+			if self.dynapix:
+				self.autoBoxer.regressiveflag = True
+				self.autoBoxer.autoBox(self.boxable)
+				
 			self.indisplaylimbo = False
-
+			
 			for box in self.boxable.boxes: box.changed = True
+			
 			self.currentimage = im
+			
+			self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 			
 			self.boxDisplayUpdate()
 			self.updateAllImageDisplay()
+			
 	
 	def genImageThumbnailsWidget(self):
 		'''

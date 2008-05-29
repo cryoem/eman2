@@ -266,6 +266,7 @@ class EMImage2DCore:
 		self.otherdatascale = -1
 		self.otherdatablend = False
 		self.other_tex_name = None
+		self.init_size_flag = True
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
@@ -295,10 +296,12 @@ class EMImage2DCore:
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
 		self.data=data
-		try:
-			if self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
-			else: self.parent.resize(800,800)
-		except: pass
+		if self.init_size_flag:
+			try:
+				if self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
+				else: self.parent.resize(800,800)
+				self.init_size_flag = False
+			except: pass
 		
 		if data==None:
 			self.updateGL()
@@ -530,7 +533,7 @@ class EMImage2DCore:
 			glTranslatef(width,height,0)
 			
 				
-			if self.otherdatablend:
+			if self.otherdatablend and self.otherdata != None:
 				GL.glEnable(GL.GL_BLEND);
 				depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
 				GL.glDisable(GL.GL_DEPTH_TEST);
@@ -577,7 +580,7 @@ class EMImage2DCore:
 			
 			glPopMatrix()
 			
-			if self.otherdatablend:
+			if self.otherdatablend and self.otherdata != None:
 				GL.glDisable( GL.GL_BLEND);
 				if (depth_testing_was_on):
 					GL.glEnable(GL.GL_DEPTH_TEST)
