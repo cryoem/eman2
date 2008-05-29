@@ -3834,3 +3834,60 @@ EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
 	result->update();
 	return result;
 }
+
+#define    QUADPI      		        3.141592653589793238462643383279502884197
+#define    DGR_TO_RAD    		QUADPI/180
+EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_use, float radius) {
+	if (3 != get_ndim())
+		throw ImageDimensionException("helicise needs a 3-D image.");
+	if (is_complex()) 
+		throw ImageFormatException("helicise requires a real image");
+
+	EMData* result = this->copy_head();
+	result->to_zero();
+	int nyc = ny/2;
+	int nxc = nx/2;
+	int nb = int(nx*(1.0f - section_use)/2.);
+	int ne = nx - nb -1;
+	int numst = int((ne - nb)/dp*pixel_size + 0.5);
+	// how many steps needed
+	int nst = int(nz*pixel_size/dp+0.5);
+	float r2;
+	if(radius < 0.0f) r2 = (nxc-1)*(nxc-1);
+	else r2 = radius*radius;
+	for (int k = 0; k<nz; k++) {
+		for (int j = 0; j<ny; j++) {
+			int jy = j - nyc;
+			int jj = jy*jy;
+			for (int i = 0; i<nx; i++) {
+				int ix = i - nxc;
+				float d2 = ix*ix + jj;
+				if(d2 <= r2) {
+					int nq = 1;
+					for ( int ist = -nst; ist <= nst; ist++) {
+						float poz = k*pixel_size + ist*dp;
+						int npoz = int(poz/pixel_size);
+						if(npoz >= nb && npoz <= ne) {
+							// now x-y position
+							float cphi = ist*dphi*DGR_TO_RAD;
+							float ca = cos(cphi);
+							float sa = sin(cphi);
+							float hx = ix*ca + jy*sa + nxc;
+							float hy = -ix*sa + jy*ca + nyc;
+							nq++;
+							(*result)(i,j,k) += (*this)(int(hx), int(hy), npoz);
+							if(nq == numst) break;
+						}
+					}
+					if(nq != numst)
+						throw InvalidValueException(nq, "incorrect number of repeats encoutered.");
+				}
+			}
+		}
+	}
+				
+	result->update();
+	return result;
+}
+#undef QUADPI
+#undef DGR_TO_RAD

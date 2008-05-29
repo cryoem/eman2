@@ -558,6 +558,20 @@ EMData* mult_radial(EMData* radial);
 		 *  @param[in] iz: z coordinate (with respect to the center) from which the search of the compact region begins.
 		 *  @return New binary image
 		 */
+		 
 		EMData* delete_disconnected_regions(int ix=0, int iy=0, int iz=0);
+
+		/** Apply helical symmetry 
+		 *
+		 *  Works only for a volume.
+		 *  
+		 *  @param[in] pixel_size: pixel size in Angstroms.
+		 *  @param[in] dp: repeat in z direction in Angstroms.
+		 *  @param[in] dphi: angular repeat in degrees.
+		 *  @param[in] section_use: how much of z section to use for symmetrization (between zero and one).
+		 *  @param[in] radius: radius of the structure (default nx2).
+		 *  @return New image
+		 */
+		EMData* helicise(float pixel_size, float dp, float dphi, float section_use = 1.0f, float radius = -1.0f);
 
 #endif	//emdata__sparx_h__
