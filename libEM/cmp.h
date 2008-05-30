@@ -336,11 +336,11 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("invert", EMObject::INT, "If set, 'with' is rescaled rather than 'this'. 'this' should still be the noisier image.");
-			d.put("keepzero", EMObject::INT, "If set, zero pixels will not be adjusted in the linear density optimization");
-			d.put("matchfilt", EMObject::INT, "If set, with will be filtered so its radial power spectrum matches 'this' before density optimization of this");
-			d.put("matchamp", EMObject::INT, "Expert please add comment");
-			d.put("radweight", EMObject::INT, "upweight variances closer to the edge of the image");
+			d.put("invert", EMObject::INT, "If set, 'with' is rescaled rather than 'this'. 'this' should still be the noisier image. (default=0)");
+			d.put("keepzero", EMObject::INT, "If set, zero pixels will not be adjusted in the linear density optimization. (default=0)");
+			d.put("matchfilt", EMObject::INT, "If set, with will be filtered so its radial power spectrum matches 'this' before density optimization of this. (default=0)");
+			d.put("matchamp", EMObject::INT, "Takes per-pixel Fourier amplitudes from self and imposes them on the target, but leaves the phases alone. (default=0)");
+			d.put("radweight", EMObject::INT, "Upweight variances closer to the edge of the image. (default=0)");
 			d.put("debug", EMObject::INT, "Performs various debugging actions if set.");
 			return d;
 		}

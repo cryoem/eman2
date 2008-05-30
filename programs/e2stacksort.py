@@ -40,12 +40,14 @@ from optparse import OptionParser
 from math import *
 import os
 import sys
+from time import time
+import random
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input_stack> <output_stack>
 	
-This program will sort a stack of images based on some similarity criterion. """
+This program will sort a stack of images based on some similarity criterion. Note that byptcl, iterative and reverse are mutually exclusive. """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -53,9 +55,10 @@ This program will sort a stack of images based on some similarity criterion. """
 	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
 	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
 	parser.add_option("--byptcl",action="store_true",default=False,help="Sort in order of number of particles represented in each class-average. No alignment, shrinking, etc. is performed")
+	parser.add_option("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles") 
 	parser.add_option("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
 	parser.add_option("--center",action="store_true",default=False,help="After alignment, particles are centered via center of mass before comparison")
-	parser.add_option("--nsort",type="int",help="Number of output particles to generate",default=0)
+	parser.add_option("--nsort",type="int",help="Number of output particles to generate (mainly for reverse mode)",default=0)
 	parser.add_option("--shrink",type="int",help="Reduce the particles for comparisons",default=1)
 #	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
 #	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
@@ -63,6 +66,9 @@ This program will sort a stack of images based on some similarity criterion. """
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
+	
+	if options.iterative+options.byptcl+options.reverse>1 :
+		parser.error("byptcl, iterative and reverse are mututally exclusive")
 	
 	E2n=E2init(sys.argv)
 
@@ -74,11 +80,105 @@ This program will sort a stack of images based on some similarity criterion. """
 	if options.nsort<2 : options.nsort=len(a)
 	if options.byptcl : 
 		b=sortstackptcl(a,options.nsort)
+	elif options.iterative: b=sortstackiter(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
 	elif options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
 	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center)
 	for i,im in enumerate(b): im.write_image(args[1],i)
 
 	E2end(E2n)
+
+def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):
+	"""The goal here is to provide a "consensus orientation" for each particle, despite the impossibility
+	of this task for a distribution of projections on a sphere. Since in most cases a "perfect" answer is
+	impossible anyway, we avoid computing the full similarity matrix and use this iterative technique
+	to get a decent result. """
+	stackshrink=[i.copy() for i in stack]
+	if (shrink>1) :
+		for i in stackshrink: i.process_inplace("math.meanshrink",{"n":shrink})
+		if center : 
+			for i in stackshrink: i.process_inplace("xform.centerofmass")
+
+	# initialize the connectivity with a random linear chain
+	for i,im in enumerate(stack): 
+		im.set_attr("align_target",(i+1)%len(stack))
+		ima=stackshrink[i].align(align,stackshrink[(i+1)%len(stack)],alignopts)
+		c=stackshrink[i].cmp(cmptype,ima,cmpopts)
+		im.set_attr("align_qual",c)
+		im.set_attr("aligned",0)
+		
+	# now we iterate to improve the similarity of each particle to the reference its being aligned to
+	changes=1
+	while (changes) :
+		changes=0
+		for i,im in enumerate(stack):
+			# first we try comparing to the reference of the particle we are currently linked to
+			at=stack[im.get_attr("align_target")].get_attr("align_target")
+			if at!=i :
+				ima=stackshrink[i].align(align,stackshrink[at],alignopts)
+#				c=ima.cmp(cmptype,stackshrink[at],cmpopts)
+				c=stackshrink[at].cmp(cmptype,ima,cmpopts)
+				if c<im.get_attr("align_qual") :
+					im.set_attr("align_qual",c)
+					im.set_attr("align_target",at)
+					changes+=1
+				
+			# then we also try a random particle from the list
+			at=i
+			while at==i or at==im.get_attr("align_target") : at=random.randint(0,len(stack)-1)
+			ima=stackshrink[i].align(align,stackshrink[at],alignopts)
+#			c=ima.cmp(cmptype,stackshrink[at],cmpopts)
+			c=stackshrink[at].cmp(cmptype,ima,cmpopts)
+			if c<im.get_attr("align_qual"):
+				im.set_attr("align_qual",c)
+				im.set_attr("align_target",at)
+				changes+=1
+				
+		print changes, "changed"
+
+	# a list for each particle of particles aligning to this particle
+	br=[[] for i in stack]
+	for i,im in enumerate(stack):
+		br[im.get_attr("align_target")].append(i)
+
+	# tack the length in as the first element of the list and sort so the most 'aligned to' particles are first
+	bn=[(len(j),i,j) for i,j in enumerate(br)]
+	bn.sort(reverse=1)
+
+	# a single particle can stay in its original orientation. We will use the most referenced particle for this
+	stack[bn[0][1]].set_attr("aligned",1)
+
+	ret=[stack[bn[0][1]]]
+	# now align the particles in the order we find them in the referenced sublists
+	for i in bn:
+		for j in i[2]:
+			recursealign(stack,j,align,alignopts,ret)
+
+	# This is for debugging. Write out 'clusters' of aligned image matches
+	c=0
+	for i in bn:
+		if len(i[2])>1 :
+			stack[i[1]].write_image("cluster.%d.hdf"%c,-1)
+			for j in i[2]: stack[j].write_image("cluster.%d.hdf"%c,-1)
+			c+=1
+
+	# sort in order of the number of particles aligned to this one
+	return ret
+	
+
+def recursealign(stack,src,align,alignopts,ret):
+	"""This is used to align one particle in stack to another, specified by the "align_target" attribute.
+ If the target of 'src' is not already aligned ("aligned" attribute set), recursealign will be called on it first.
+ ret is an empty or almost empty list which will be built with aligned particles in order of alignment  """
+	if stack[src].get_attr("aligned") : return
+	else : stack[src].set_attr("aligned",1)		# we set aligned now to prevent infinite recursion if there is a loop
+
+	trg=stack[src].get_attr("align_target")
+	if not stack[trg].get_attr("aligned") : recursealign(stack,trg,align,alignopts,ret)
+	
+	stack[src]=stack[src].align(align,stack[trg],alignopts)
+	stack[src].set_attr("aligned",1)
+	print "aligned", src
+	ret.append(stack[src])
 
 def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):
 	"""Sorts a list of images in order of LEAST similarity"""
