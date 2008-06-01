@@ -154,12 +154,12 @@ def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,cent
 			recursealign(stack,j,align,alignopts,ret)
 
 	# This is for debugging. Write out 'clusters' of aligned image matches
-	c=0
-	for i in bn:
-		if len(i[2])>1 :
-			stack[i[1]].write_image("cluster.%d.hdf"%c,-1)
-			for j in i[2]: stack[j].write_image("cluster.%d.hdf"%c,-1)
-			c+=1
+#	c=0
+#	for i in bn:
+#		if len(i[2])>1 :
+#			stack[i[1]].write_image("cluster.%d.hdf"%c,-1)
+#			for j in i[2]: stack[j].write_image("cluster.%d.hdf"%c,-1)
+#			c+=1
 
 	# sort in order of the number of particles aligned to this one
 	return ret
@@ -177,7 +177,7 @@ def recursealign(stack,src,align,alignopts,ret):
 	
 	stack[src]=stack[src].align(align,stack[trg],alignopts)
 	stack[src].set_attr("aligned",1)
-	print "aligned", src
+#	print "aligned", src
 	ret.append(stack[src])
 
 def sortstackrev(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center):

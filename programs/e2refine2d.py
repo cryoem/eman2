@@ -179,7 +179,7 @@ def main():
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2stacksort.py %s allrefs.%02d.hdf --simcmp=sqeuclidean --simalign=rotate_translate:maxshift==%d --center --useali"%(options.initial,it,options.maxshift))
+		run("e2stacksort.py %s allrefs.%02d.hdf --simcmp=optvariance:matchfilt=1 --simalign=rotate_translate:maxshift==%d --center --useali --iterative"%(options.initial,it,options.maxshift))
 		
 		# Compute a classification basis set
 		try: remove("basis.%02d.hdf"%it)
