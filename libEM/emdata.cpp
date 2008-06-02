@@ -2959,7 +2959,6 @@ EMData *EMData::calc_flcf(EMData * with)
 	// Get the local sigma image
 	EMData* s = calc_fast_sigma_image(ones);
 	// The local normalized correlation
-	
 	EMData* corr = calc_ccf(with_resized);
 	corr->div(*s);
 		

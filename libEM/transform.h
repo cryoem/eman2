@@ -262,7 +262,7 @@ namespace EMAN
 	
 	/** Symmetry3D - A base class for 3D Symmetry objects.
 	* Objects of this type must provide delimiters for the asymmetric unit (get_delimiters), and
-	* must also provide all of the rotational symmetric operations (get_sym(int n)). They must also
+	* must also provide all of the rotational symmetric operations (get_sym(const int n)). They must also
 	* provide the total number of unique symmetric operations with get_nsym (except in helical symmetry).
 	* get_delimiter returns a dictionary with "alt_max" and "az_max" keys, which correspond to the
 	* encompassing azimuth and altitude angles of the asymmetric unit. These can be interpreted in a
@@ -292,7 +292,7 @@ namespace EMAN
 		 * @param n the symmetry operator number
 		 * @return a Transform3D object describing the symmetry operation
 		 */
-		virtual Transform3D get_sym(int n) const = 0;
+		virtual Transform3D get_sym(const int n) const = 0;
 		
 		/** The total number of unique symmetry operations that will be return by this object when
 		 * a calling program access Symmetry3D::get_sym. However in the case of HSym, this is really something else.
@@ -464,7 +464,7 @@ namespace EMAN
 		 * @return a transform3d containing the correct rotational symmetric operation.
 		 * @exception InvalidValueException if nsym is less than or equal to zero
 		 */
-		virtual Transform3D get_sym(int n) const;
+		virtual Transform3D get_sym(const int n) const;
 
 		/** Gets the total number of unique roational symmetry operations associated with this symmetry
 		* For C symmetry, this is simply nsym
@@ -567,7 +567,7 @@ namespace EMAN
 		 * @return a transform3d containing the correct rotational symmetric operation.
 		 * @exception InvalidValueException if nsym is less than or equal to zero
 		 */
-		virtual Transform3D get_sym(int n) const;
+		virtual Transform3D get_sym(const int n) const;
 		
 		/** Gets the total number of unique roational symmetry operations associated with this symmetry
 		 * For D symmetry, this is simply 2*nsym
@@ -681,7 +681,7 @@ namespace EMAN
 			 * @param n the helical symmetry operation number.
 			 * @return a transform3d containing the correct rotational and translational symmetry operation.
 			 */
-			virtual Transform3D get_sym(int n) const;
+			virtual Transform3D get_sym(const int n) const;
 	
 			/** For symmetries in general this function is supposed to return the number
 			 * of unique symmetric operations that can be applied for the given Symmetry3D object.
@@ -882,7 +882,7 @@ namespace EMAN
 		 * @param n the symmetric operation number
 		 * @return a transform3d containing the correct rotational symmetry operation.
 		*/
-		virtual Transform3D get_sym(int n) const;
+		virtual Transform3D get_sym(const int n) const;
 		
 		/** In tetrahedral symmetry special consideration must be taken when generating orientations 
 		 * in the asymmetric unit. This function is a specialization of the functionality in 
@@ -984,7 +984,7 @@ namespace EMAN
 		 * @param n the symmetric operation number. 
 		 * @return a transform3d containing the correct rotational symmetry operation.
 		 */
-		virtual Transform3D get_sym(int n) const;
+		virtual Transform3D get_sym(const int n) const;
 		
 		/** Gets the total number of unique roational symmetry operations associated with this symmetry
 		 * For octahedral symmetry this is 24
@@ -1044,7 +1044,7 @@ namespace EMAN
 		 * @param n the symmetric operation number. 
 		 * @return a transform3d containing the correct rotational symmetry operation.
 		 */
-		virtual Transform3D get_sym(int n) const;
+		virtual Transform3D get_sym(const int n) const;
 		
 		/** Gets the total number of unique roational symmetry operations associated with this symmetry
 		 * For icosahedral symmetry, this is 60

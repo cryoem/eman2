@@ -2406,7 +2406,7 @@ vector<Vec3f> CSym::get_asym_unit_points(bool inc_mirror) const
 	
 }
 		
-Transform3D CSym::get_sym(int n) const {
+Transform3D CSym::get_sym(const int n) const {
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero nsym");
 			
@@ -2450,7 +2450,7 @@ bool DSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 	return false;
 }
 
-Transform3D DSym::get_sym(int n) const
+Transform3D DSym::get_sym(const int n) const
 {
 	int nsym = 2*params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero nsym");
@@ -2637,7 +2637,7 @@ vector<Vec3f> HSym::get_asym_unit_points(bool inc_mirror) const
 	
 }
 
-Transform3D HSym::get_sym(int n) const
+Transform3D HSym::get_sym(const int n) const
 {
 	float daz = params.set_default("daz",0.0f);
 	float apix = params.set_default("apix",1.0f);
@@ -2800,7 +2800,7 @@ vector<Vec3f> PlatonicSym::get_asym_unit_points(bool inc_mirror) const
 
 float IcosahedralSym::get_az_alignment_offset() const { return 234.0; } // This offset positions a 3 fold axis on the positive x axis
 
-Transform3D IcosahedralSym::get_sym(int n) const
+Transform3D IcosahedralSym::get_sym(const int n) const
 {
 	// These rotations courtesy of Phil Baldwin
 	static double  lvl0=0.; //  there is one pentagon on top; five-fold along z
@@ -2839,7 +2839,7 @@ Transform3D IcosahedralSym::get_sym(int n) const
 	
 }
 
-Transform3D OctahedralSym::get_sym(int n) const
+Transform3D OctahedralSym::get_sym(const int n) const
 {
 	// These rotations courtesy of Phil Baldwin
 	// We have placed the OCT symmetry group with a face along the z-axis
@@ -2898,7 +2898,7 @@ bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth
 }
 
 
-Transform3D TetrahedralSym::get_sym(int n) const
+Transform3D TetrahedralSym::get_sym(const int n) const
 {
 	// These rotations courtesy of Phil Baldwin
 	 // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
