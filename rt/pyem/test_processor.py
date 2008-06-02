@@ -384,7 +384,6 @@ class TestProcessor(unittest.TestCase):
             self.assertEqual(exception_type(runtime_err), "InvalidValueException")
             
         #shrink factor must be >1
-        self.assertRaises( RuntimeError, e.mean_shrink, 0)
         try:
             e.process_inplace("math.meanshrink",{"n":0})
         except RuntimeError, runtime_err:

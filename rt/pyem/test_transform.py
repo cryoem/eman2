@@ -147,7 +147,7 @@ class TestTransform(unittest.TestCase):
         phi = 0
         t = Transform3D((1.0,2.0,3.0), az, alt, phi, (4.0,5.0,6.0))
         
-        tt = t.get_sym('CSYM', 1)
+        tt = t.get_sym('c1', 1)
     
     def test_set_center(self):
         """test set_center/pretrans() function .............."""
