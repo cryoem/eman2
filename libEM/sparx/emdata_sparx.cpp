@@ -1820,7 +1820,7 @@ EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float sc
 	if (nz<2) { 
 		vector<int> saved_offsets = get_array_offsets();
 		set_array_offsets(0,0,0);
-		if (0.f == scale) scale = 1.f; // silently fix common user error
+		if (0.0f == scale) scale = 1.0f; // silently fix common user error
 		EMData* ret = copy_head();
 		delx = restrict2(delx, nx);
 		dely = restrict2(dely, ny);
@@ -2653,19 +2653,16 @@ std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::Kaise
 	// be correct.
 	int ixn = int(Util::round(nuxnew));
 	int iyn = int(Util::round(nuynew));
-	// displacements of (xnew,ynew) from the grid
-	float nuxdispl = nuxnew - ixn;
-	float nuydispl = nuynew - iyn;
 	// set up some temporary weighting arrays
 	float* wy0 = new float[kbmax - kbmin + 1];
 	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
 	float* wx0 = new float[kbmax - kbmin + 1];
 	float* wx = wx0 - kbmin;
 	for (int i = kbmin; i <= kbmax; i++) {
-		wy[i] = kb.i0win_tab(nuydispl - i);
-		//wy[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
-		wx[i] = kb.i0win_tab(nuxdispl - i);
-		//wx[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
+			int iyp = iyn + i;
+			wy[i] = kb.i0win_tab(nuynew - iyp);
+			int ixp = ixn + i;
+			wx[i] = kb.i0win_tab(nuxnew - ixp);
 	}
 	// restrict loops to non-zero elements
 	int iymin = 0;
@@ -2696,7 +2693,7 @@ std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::Kaise
 			break;
 		}
 	}
-	double wsum = 0.f;
+	float wsum = 0.0f;
 	for (int iy = iymin; iy <= iymax; iy++)
 		for (int ix = ixmin; ix <= ixmax; ix++)
 			wsum += wx[ix]*wy[iy];
@@ -2720,26 +2717,6 @@ std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::Kaise
 				int ixp = ixn + ix;
 				bool mirror = false;
 				int ixt= ixp, iyt= iyp;
-				/*if ((ixt > nhalf) || (ixt < -nhalf)) {
-					ixt = Util::sgn(ixt)*(nxreal - abs(ixt));
-					iyt *= -1;
-					mirror = !mirror;
-				}
-				if ((iyt >= nhalf) || (iyt < -nhalf)) {
-					if (ixt != 0) {
-						ixt = -ixt;
-						iyt = Util::sgn(iyt)*(nxreal-abs(iyt));
-						mirror = !mirror;
-					} else {
-						iyt -= Util::sgn(iyt)*nxreal;
-					}
-				}
-				if (ixt < 0) {
-					ixt = -ixt;
-					iyt = -iyt;
-					mirror = !mirror;
-				}
-				if (iyt == nhalf) iyt = -nhalf;*/
 				if (ixt < 0) {
 					ixt = -ixt;
 					iyt = -iyt;
@@ -2755,15 +2732,156 @@ std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::Kaise
 				float w = wx[ix]*wy[iy];
 				std::complex<float> val = this->cmplx(ixt,iyt);
 				if (mirror)  result += conj(val)*w;
-				else          result += val*w;
+				else         result += val*w;
 			}
 		}
 	}
-	if (flip)  result = conj(result)/static_cast<float>(wsum);
-	else       result /= static_cast<float>(wsum);
+	if (flip)  result = conj(result)/wsum;
+	else       result /= wsum;
 	delete [] wx0;
 	delete [] wy0;
 	return result;
+}
+
+EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew) 
+{
+	if (!is_complex()) 
+		throw ImageFormatException("extractline requires a fourier image");
+	if (nx%2 != 0)
+		throw ImageDimensionException("extractline requires nx to be even");
+	int nxreal = nx - 2; 
+	if (nxreal != ny)
+		throw ImageDimensionException("extractline requires ny == nx");
+	// build complex result image
+	EMData* res = new EMData();
+	res->set_size(nx,1,1);
+	res->to_zero();
+	res->set_complex(true);
+	res->set_fftodd(false);
+	res->set_fftpad(true);
+	res->set_ri(true);
+	// Array offsets: (0..nhalf,-nhalf..nhalf-1)
+	int n = nxreal;
+	int nhalf = n/2;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,-nhalf,-nhalf);
+
+	// set up some temporary weighting arrays
+	int kbsize = kb.get_window_size();
+	int kbmin = -kbsize/2;
+	int kbmax = -kbmin;
+	float* wy0 = new float[kbmax - kbmin + 1];
+	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
+	float* wx0 = new float[kbmax - kbmin + 1];
+	float* wx = wx0 - kbmin;
+
+	int   count = 0;
+	float wsum = 0.f;
+	bool  flip = (nuxnew < 0.f);
+
+	for (int jx = 0; jx <= nhalf; jx++) {
+		float xnew = jx*nuxnew, ynew = jx*nuynew;
+		count++;
+		std::complex<float> btq(0.f,0.f);
+		if (flip) {
+			xnew = -xnew;
+			ynew = -ynew;
+		}
+		int ixn = int(Util::round(xnew));
+		int iyn = int(Util::round(ynew));
+		// populate weight arrays
+		for (int i=kbmin; i <= kbmax; i++) {
+			int iyp = iyn + i;
+			wy[i] = kb.i0win_tab(ynew - iyp);
+			int ixp = ixn + i;
+			wx[i] = kb.i0win_tab(xnew - ixp);
+		}
+		// restrict weight arrays to non-zero elements
+
+		int lnby = 0;
+		for (int iy = kbmin; iy <= -1; iy++) {
+			if (wy[iy] != 0.f) {
+				lnby = iy;
+				break;
+			}
+		}
+		int lney = 0;
+		for (int iy = kbmax; iy >= 1; iy--) {
+			if (wy[iy] != 0.f) {
+				lney = iy;
+				break;
+			}
+		}
+		int lnbx = 0;
+		for (int ix = kbmin; ix <= -1; ix++) {
+			if (wx[ix] != 0.f) {
+				lnbx = ix;
+				break;
+			}
+		}
+		int lnex = 0;
+		for (int ix = kbmax; ix >= 1; ix--) {
+			if (wx[ix] != 0.f) {
+				lnex = ix;
+				break;
+			}
+		}
+		if (ixn >= -kbmin && ixn <= nhalf-1-kbmax
+				&& iyn >= -nhalf-kbmin && iyn <= nhalf-1-kbmax) {
+			// interior points
+			for (int ly=lnby; ly<=lney; ly++) {
+				int iyp = iyn + ly;
+				for (int lx=lnbx; lx<=lnex; lx++) {
+					int ixp = ixn + lx;
+					float wg = wx[lx]*wy[ly];
+					btq += cmplx(ixp,iyp)*wg;
+					wsum += wg;
+				}
+			}
+		} else {
+			// points "sticking out"
+			for (int ly=lnby; ly<=lney; ly++) {
+				int iyp = iyn + ly;
+				for (int lx=lnbx; lx<=lnex; lx++) {
+					int ixp = ixn + lx;
+					float wg = wx[lx]*wy[ly];
+					bool mirror = false;
+					int ixt(ixp), iyt(iyp);
+					if (ixt > nhalf || ixt < -nhalf) {
+						ixt = Util::sgn(ixt)*(n - abs(ixt));
+						iyt = -iyt;
+						mirror = !mirror;
+					}
+					if (iyt >= nhalf || iyt < -nhalf) {
+						if (ixt != 0) {
+							ixt = -ixt;
+							iyt = Util::sgn(iyt)*(n - abs(iyt));
+							mirror = !mirror;
+						} else {
+							iyt -= n*Util::sgn(iyt);
+						}
+					}
+					if (ixt < 0) {
+						ixt = -ixt;
+						iyt = -iyt;
+						mirror = !mirror;
+					}
+					if (iyt == nhalf) iyt = -nhalf;
+					if (mirror) btq += conj(cmplx(ixt,iyt))*wg;
+					else        btq += cmplx(ixt,iyt)*wg;
+					wsum += wg;
+				}
+			}
+		}
+		if (flip) res->cmplx(jx) = conj(btq);
+		else      res->cmplx(jx) = btq;
+	}
+	for (int jx = 0; jx <= nhalf; jx++)  res->cmplx(jx) *= count/wsum;
+	
+	delete[] wx0; delete[] wy0;
+	set_array_offsets(saved_offsets);
+	res->set_array_offsets(0,0,0);
+	return res;
 }
 
 void EMData::center_padded() {
@@ -2833,8 +2951,9 @@ void EMData::fft_shuffle() {
 	update();
 	delete[] temp;
 }
-
-EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
+#define    QUADPI      		        3.141592653589793238462643383279502884197
+#define    DGR_TO_RAD    		QUADPI/180
+EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("fouriergridrot2d needs a 2-D image.");
 	if (!is_complex()) 
@@ -2844,6 +2963,7 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 		throw ImageDimensionException("fouriergridrot2d requires ny == nx(real)");
 	if (0 != nxreal%2)
 		throw ImageDimensionException("fouriergridrot2d needs an even image.");
+	if (scale == 0.0f) scale = 1.0f;
 	int nxhalf = nxreal/2;
 	//cmplx(0,0) = 0.;
 	if (!is_shuffled()) 
@@ -2855,28 +2975,16 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	set_array_offsets(0,-nyhalf);
 	result->set_array_offsets(0,-nyhalf);
 	
-	ang = ang/180.0*pi;
+	ang = ang*DGR_TO_RAD;
 	float cang = cos(ang);
 	float sang = -sin(ang);
 	for (int iy = -nyhalf; iy < nyhalf; iy++) {
 		float ycang = iy*cang;
-		//float ysang = -iy*sang;
 		float ysang = iy*sang;
-		//float iy2 = iy*float(iy);
 		for (int ix = 0; ix <= nxhalf; ix++) {
-			//float ix2 = ix*float(ix);
-#if 0 // old version
-			if (ix2 + iy2 <= nxhalf2) {
-				float nuyold = ix*sang + ycang;
-				float nuxold = ix*cang + ysang;
-//				result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
-			} else {
-//				result->cmplx(ix,iy) = complex<float>(0.f,0.f);
-			}
-#endif // 0
-			float nuyold = -ix*sang + ycang;
-			float nuxold = ix*cang + ysang;
-			result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
+			float nuyold = (-ix*sang + ycang)*scale;
+			float nuxold =  (ix*cang + ysang)*scale;
+			result->cmplx(ix,iy) = extractpoint(nuxold, nuyold, kb);
 		}
 	}
 	result->set_array_offsets();
@@ -2884,9 +2992,10 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	result->update();
 	set_array_offsets();
 	fft_shuffle(); // reset to an unshuffled complex image
-	//result->cmplx(0,0) = 0.;
 	return result;
 }
+#undef QUADPI
+#undef DGR_TO_RAD
 
 void EMData::divkbsinh(const Util::KaiserBessel& kb) {
 	if (is_complex())
@@ -3666,149 +3775,6 @@ EMData* EMData::conjg()
 		for(int i=0; i<nx*ny*nz; i+=2) {out[i] = in[i]; out[i+1] = -in[i+1];}
 		return buf_new;
 	} else throw ImageFormatException("image has to be complex");
-}
-
-EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew) 
-{
-	if (!is_complex()) 
-		throw ImageFormatException("extractline requires a fourier image");
-	if (nx%2 != 0)
-		throw ImageDimensionException("extractline requires nx to be even");
-	int nxreal = nx - 2; 
-	if (nxreal != ny)
-		throw ImageDimensionException("extractline requires ny == nx");
-	// build complex result image
-	EMData* res = new EMData();
-	res->set_size(nx,1,1);
-	res->to_zero();
-	res->set_complex(true);
-	res->set_fftodd(false);
-	res->set_fftpad(true);
-	res->set_ri(true);
-	// Array offsets: (0..nhalf,-nhalf..nhalf-1)
-	int n = nxreal;
-	int nhalf = n/2;
-	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(0,-nhalf,-nhalf);
-
-	// set up some temporary weighting arrays
-	int kbsize = kb.get_window_size();
-	int kbmin = -kbsize/2;
-	int kbmax = -kbmin;
-	float* wy0 = new float[kbmax - kbmin + 1];
-	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
-	float* wx0 = new float[kbmax - kbmin + 1];
-	float* wx = wx0 - kbmin;
-
-	int count = 0;
-	float wsum = 0.f;
-	bool flip = (nuxnew < 0.f);
-
-	for (int jx = 0; jx <= nhalf; jx++) {
-		float xnew = jx*nuxnew, ynew = jx*nuynew;
-		count++;
-		std::complex<float> btq(0.f,0.f);
-		if (flip) {
-			xnew = -xnew;
-			ynew = -ynew;
-		}
-		int ixn = int(Util::round(xnew));
-		int iyn = int(Util::round(ynew));
-		// populate weight arrays
-		for (int i=kbmin; i <= kbmax; i++) {
-			int iyp = iyn + i;
-			wy[i] = kb.i0win_tab(ynew - iyp);
-			int ixp = ixn + i;
-			wx[i] = kb.i0win_tab(xnew - ixp);
-		}
-		// restrict weight arrays to non-zero elements
-
-		int lnby = 0;
-		for (int iy = kbmin; iy <= -1; iy++) {
-			if (wy[iy] != 0.f) {
-				lnby = iy;
-				break;
-			}
-		}
-		int lney = 0;
-		for (int iy = kbmax; iy >= 1; iy--) {
-			if (wy[iy] != 0.f) {
-				lney = iy;
-				break;
-			}
-		}
-		int lnbx = 0;
-		for (int ix = kbmin; ix <= -1; ix++) {
-			if (wx[ix] != 0.f) {
-				lnbx = ix;
-				break;
-			}
-		}
-		int lnex = 0;
-		for (int ix = kbmax; ix >= 1; ix--) {
-			if (wx[ix] != 0.f) {
-				lnex = ix;
-				break;
-			}
-		}
-		if (ixn >= -kbmin && ixn <= nhalf-1-kbmax
-				&& iyn >= -nhalf-kbmin && iyn <= nhalf-1-kbmax) {
-			// interior points
-			for (int ly=lnby; ly<=lney; ly++) {
-				int iyp = iyn + ly;
-				for (int lx=lnbx; lx<=lnex; lx++) {
-					int ixp = ixn + lx;
-					float wg = wx[lx]*wy[ly];
-					btq += cmplx(ixp,iyp)*wg;
-					wsum += wg;
-				}
-			}
-		} else {
-			// points "sticking out"
-			for (int ly=lnby; ly<=lney; ly++) {
-				int iyp = iyn + ly;
-				for (int lx=lnbx; lx<=lnex; lx++) {
-					int ixp = ixn + lx;
-					float wg = wx[lx]*wy[ly];
-					bool mirror = false;
-					int ixt(ixp), iyt(iyp);
-					if (ixt > nhalf || ixt < -nhalf) {
-						ixt = Util::sgn(ixt)*(n - abs(ixt));
-						iyt = -iyt;
-						mirror = !mirror;
-					}
-					if (iyt >= nhalf || iyt < -nhalf) {
-						if (ixt != 0) {
-							ixt = -ixt;
-							iyt = Util::sgn(iyt)
-								  *(n - abs(iyt));
-							mirror = !mirror;
-						} else {
-							iyt -= n*Util::sgn(iyt);
-						}
-					}
-					if (ixt < 0) {
-						ixt = -ixt;
-						iyt = -iyt;
-						mirror = !mirror;
-					}
-					if (iyt == nhalf) iyt = -nhalf;
-					if (mirror) btq += conj(cmplx(ixt,iyt))*wg;
-					else         btq += cmplx(ixt,iyt)*wg;
-					wsum += wg;
-				}
-			}
-		}
-		if (flip) res->cmplx(jx) = conj(btq);
-		else      res->cmplx(jx) = btq;
-	}
-	for (int jx = 0; jx <= nhalf; jx++) 
-		res->cmplx(jx) *= count/wsum;
-	
-	delete[] wx0; delete[] wy0;
-	set_array_offsets(saved_offsets);
-	res->set_array_offsets(0,0,0);
-	return res;
 }
 
 EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
