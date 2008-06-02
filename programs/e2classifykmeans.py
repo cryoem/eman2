@@ -58,7 +58,7 @@ be classified. """
 	parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
 	parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 	parser.add_option("--onein",action="store_true",help="Read 1-d input images from a single 2-D image (oneout in e2basis.py)",default=False)
-	parser.add_option("--oneinali",action="store_true",help="Read 1-d input images from a single 2-D image where the first 3 elements on each row are da,dx,dy",default=True)
+	parser.add_option("--oneinali",action="store_true",help="Read 1-d input images from a single 2-D image where the first 3 elements on each row are da,dx,dy",default=False)
 	parser.add_option("--normavg",action="store_true",help="Normalize averages",default=False)
 	parser.add_option("--clsmx",type="string",default=None,help="Standard EMAN2 output suitable for use with e2classaverage, etc.")
 	parser.add_option("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
@@ -84,9 +84,9 @@ be classified. """
 		data=[]
 		for i in range(d.get_ysize()):
 			data.append(d.get_clip(Region(3,i,xs,1)))
-			data[-1].set_attr("ref_da",d.get_value_at(0,i))
-			data[-1].set_attr("ref_dx",d.get_value_at(1,i))
-			data[-1].set_attr("ref_dy",d.get_value_at(2,i))
+			data[-1].set_attr("ref_dx",d.get_value_at(0,i))
+			data[-1].set_attr("ref_dy",d.get_value_at(1,i))
+			data[-1].set_attr("ref_da",d.get_value_at(2,i))
 	else :data=EMData.read_images(args[0])
 	nimg=len(data)						# we need this for the classification matrix when exclude is used
 	filen=range(len(data))				# when exclude is used, this will map to actual file image numbers

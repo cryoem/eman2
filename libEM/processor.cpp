@@ -4371,7 +4371,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	}
 
 	int int_shift_only = params["int_shift_only"];
-	image->process_inplace("normalize");
+//	image->process_inplace("normalize");
 
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
