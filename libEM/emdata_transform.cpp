@@ -509,6 +509,14 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 			remy = 10;
 			int l = x0 + y0 * nx;
 			for (int j = ymax; j >= ymin; j--) {
+				int addj = addi;
+				// There seems to be some overflow issue happening
+				// where the statement if (l > lmax) break (below) doesn't work
+				// because the loop that iterates jjj can inadvertantly go out of bounds
+				if (( l + addi*nx ) >= nxy ) {
+					addj = (nxy-l)/nx;
+					if (addj <= 0) continue;
+				}
 				int br = l;
 				remx = 10;
 				for (int i = xmin; i < xsize; i++) {
@@ -519,8 +527,8 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					if (addi<=1) t = rdata[l];
 					else {						// This block does local pixel averaging for nicer reduced views
 						t=0;
-						for (int iii=0; iii<addi; iii++) {
-							for (int jjj=0; jjj<addi; jjj++) {
+						for (int jjj=0; jjj<addj; jjj++) {
+							for (int iii=0; iii<addi; iii++) {
 								t+=rdata[l+iii+jjj*nx];
 							}
 						}

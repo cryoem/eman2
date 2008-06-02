@@ -755,7 +755,6 @@ class GUIbox:
 		idx = 0
 		# get the boxes
 		boxes =self.getboxes()
-		print "there was a total of",len(boxes),"before updateing shapess"
 		for j,box in enumerate(boxes):
 	
 			if not box.changed and not force:
@@ -775,7 +774,6 @@ class GUIbox:
 			idx += 1
 		
 
-		print "there are",len(ns),"shapes"
 		self.guiim.addShapes(ns)
 		self.setPtclMxData(self.ptcl)
 		
