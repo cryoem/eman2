@@ -2720,7 +2720,7 @@ std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::Kaise
 				int ixp = ixn + ix;
 				bool mirror = false;
 				int ixt= ixp, iyt= iyp;
-				if ((ixt > nhalf) || (ixt < -nhalf)) {
+				/*if ((ixt > nhalf) || (ixt < -nhalf)) {
 					ixt = Util::sgn(ixt)*(nxreal - abs(ixt));
 					iyt *= -1;
 					mirror = !mirror;
@@ -2739,7 +2739,19 @@ std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::Kaise
 					iyt = -iyt;
 					mirror = !mirror;
 				}
-				if (iyt == nhalf) iyt = -nhalf;
+				if (iyt == nhalf) iyt = -nhalf;*/
+				if (ixt < 0) {
+					ixt = -ixt;
+					iyt = -iyt;
+					mirror = !mirror;
+				}
+				if (ixt > nhalf) {
+					ixt = nxreal - ixt;
+					iyt = -iyt;
+					mirror = !mirror;
+				}
+				if (iyt > nhalf-1)  iyt -= nxreal;
+				if (iyt < -nhalf)   iyt += nxreal;
 				float w = wx[ix]*wy[iy];
 				std::complex<float> val = this->cmplx(ixt,iyt);
 				if (mirror)  result += conj(val)*w;
