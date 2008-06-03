@@ -408,6 +408,9 @@ class FakeKaiserBessel : public KaiserBessel {
 	static float ener(EMData* ave, vector<int> numr);
 	
 	static float ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float> tot);
+
+        static Dict min_dist(EMData* im, const vector<EMData*>& data);        
+        
 	/* Decimates the image with respect to the image center.
 	 * (i.e) the center of the original image is kept the same 
 	 * and then the initial start pixel is calculated with respect to the 

@@ -2511,7 +2511,7 @@ c       automatic arrays
    for (i=1;i<=nring;i++) {
       numr3i = numr(3,i);
       numr2i = numr(2,i);
-
+      
       t(1) = circ1(numr2i) * circ2(numr2i);
 
       if (numr3i != maxrin) {
@@ -2558,23 +2558,29 @@ c       automatic arrays
 
    qn = -1.0e20;
    for (j=1;j<=maxrin;j++) {
+       //cout << j << "  " << q(j) << endl;
       if (q(j) >= qn) {  qn = q(j); jtot = j; }
    } 
 
    for (k=-3;k<=3;k++) {
       j = (jtot+k+maxrin-1)%maxrin + 1; t7(k+4) = q(j);
    }
-
+   
    prb1d(t7,7,&pos);
 
    tot = (float)jtot + pos;
-
-   if (q) free(q);
+   
+   //if (q) free(q);
    if (t) free(t);
 
    Dict retvals;
+   //tot = 1;
+   //qn = q(1);
    retvals["qn"] = qn;
    retvals["tot"] = tot;
+   
+   if (q) free(q);
+   
    return  retvals;
 }
 
@@ -3387,8 +3393,132 @@ void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int
 #undef    QUADPI
 #undef    PI2
 
-
 #undef  numr
+
+// helper function for k-means
+Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {
+	ENTERFUNC;
+
+	int nima = data.size();	
+	double result = 0.;
+	double valmin = 1.0e20;
+	int valpos = -1;
+
+	for (int kk=0; kk<nima; kk++){
+	result = 0;
+	//validate_input_args(image, data[kk]);
+
+	float *y_data = data[kk]->get_data();
+	float *x_data = image->get_data();
+	long n = 0;
+	if(image->is_complex() && data[kk]->is_complex()) {
+	// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
+		int nx  = data[kk]->get_xsize();
+		int ny  = data[kk]->get_ysize();
+		int nz  = data[kk]->get_zsize();
+		nx = (nx - 2 + data[kk]->is_fftodd()); // nx is the real-space size of the input image
+		int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
+
+		int ixb = 2*((nx+1)%2);
+		int iyb = ny%2;
+		// 
+		if(nz == 1) {
+		//  it looks like it could work in 3D, but it is not, really.
+		for ( int iz = 0; iz <= nz-1; iz++) {
+			double part = 0.;
+			for ( int iy = 0; iy <= ny-1; iy++) {
+				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
+						int ii = ix + (iy  + iz * ny)* lsd2;
+						part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+				}
+			}
+			for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+				int ii = (iy  + iz * ny)* lsd2;
+				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+				part += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
+			}
+			if(nx%2 == 0) {
+				for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+					int ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+					part += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
+				}
+			
+			}
+			part *= 2;
+			part += (x_data[0] - y_data[0])*double(x_data[0] - y_data[0]);
+			if(ny%2 == 0) {
+				int ii = (ny/2  + iz * ny)* lsd2;
+				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+			}
+			if(nx%2 == 0) {
+				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
+				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+				if(ny%2 == 0) {
+					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
+					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+				}
+			}
+			result += part;
+		}
+		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz;
+		
+		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
+		int ky, kz;
+		int ny2 = ny/2; int nz2 = nz/2;
+		for ( int iz = 0; iz <= nz-1; iz++) {
+			if(iz>nz2) kz=iz-nz; else kz=iz;
+			for ( int iy = 0; iy <= ny-1; iy++) {
+				if(iy>ny2) ky=iy-ny; else ky=iy;
+				for ( int ix = 0; ix <= lsd2-1; ix++) {
+				// Skip Friedel related values
+				if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+						int ii = ix + (iy  + iz * ny)* lsd2;
+						result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+					}
+				}
+			}
+		}
+		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz/2;
+		}
+	} else {
+		long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
+		/*
+		if (params.has_key("mask")) {
+		  EMData* mask;
+		  mask = params["mask"];
+  		  float* dm = mask->get_data();
+		  for (long i = 0; i < totsize; i++) {
+			   if (dm[i] > 0.5) {
+				double temp = x_data[i]- y_data[i];
+				result += temp*temp;
+				n++;
+			   }
+		  }
+		} else {
+		*/
+		  for (long i = 0; i < totsize; i++) {
+				double temp = x_data[i]- y_data[i];
+				result += temp*temp;
+		 // }
+		   n = totsize;
+		}
+	}
+	result/=n;
+
+	if(result<valmin) {valmin = result; valpos = kk;}
+
+	}
+
+	Dict retvals;
+	retvals["dist"] = valmin;
+	retvals["pos"]  = valpos;  
+
+            
+	EXITFUNC;
+	return retvals;
+	//return static_cast<float>(valmin);
+}
 
 
 
@@ -5664,7 +5794,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	    }
 
 	    Util::disorder2(x, y, key, n);
-
+	   
 	    // check if the first three angles are not close, else shuffle
 	    double val;
             for(k=0; k<2; k++){
@@ -5693,9 +5823,12 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	        }
 	        dupnode = false;
 	    }
+
 	    
        	    ier = 0;
+	   
 	    status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew, indx, lcnt, iwk, good, ds, &ier);
+	    
 	    
 	    if (status != 0) {
 	 	printf(" error in trmsh3 \n");
@@ -6172,7 +6305,7 @@ int i_dnnt(double *x)
 /*   set are initially ordered by increasing indexes (which */
 /*   maximizes efficiency) but that ordering is not main- */
 /*   tained as the data structure is updated. */
-
+    
 /* Initialize the data structure for the single triangle. */
 
     near__[1] = 0;
@@ -6233,7 +6366,6 @@ L2:
 	    ++lcnt[nku];
 	    goto L6;
 	}
-
 
 /* Add a new triangulation node KT with LCNT(KT) = 1. */
 
