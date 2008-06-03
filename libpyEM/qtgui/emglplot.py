@@ -58,6 +58,7 @@ class EMGLPlot(EMImage3DObject):
 		EMImage3DObject.__init__(self)
 		self.parent = parent
 		self.data = [1.0,0.93,0.64,0.94,0.30,0.2,0.12,-0.2]
+		self.datar = 0
 		self.init()
 		self.initialized = True
 		
@@ -162,6 +163,7 @@ class EMGLPlot(EMImage3DObject):
 
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
+		self.currentcolor = "obsidian"
 		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
@@ -175,14 +177,78 @@ class EMGLPlot(EMImage3DObject):
 		for i in range(0,n-1):
 			p1 = [i,self.data[i],0]
 			p2 = [i+1,self.data[i+1],0]
-			self.cylinderToFrom(p2,p1,0.01)
+			self.cylinderToFrom(p2,p1,0.1)
+		
+		self.currentcolor = "turquoise"
+		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
+		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
+		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
+		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
+		glColor(self.colors[self.currentcolor]["ambient"])
+		glNormal(0,0,1)
+		yrange = self.yrange()
+		ymin = yrange[0]
+		if self.datar == 0:
+			glBegin(GL_QUADS)
+			glVertex(self.datar,ymin,0)
+			glVertex(self.datar+0.5,ymin,0)
+			top = (self.data[self.datar]+self.data[self.datar+1])/2.0
+			glVertex(self.datar+0.5,top,0)
+			glVertex(self.datar,top,0)
+			glEnd()
+			
+			glBegin(GL_TRIANGLES)
+			glVertex(self.datar,top,0)
+			glVertex(self.datar+0.5,top,0)
+			glVertex(self.datar,self.data[self.datar],0)
+			glEnd()
+			
+			
+		elif self.datar == len(self.data)-1:
+			glBegin(GL_QUADS)
+			glVertex(self.datar-0.5,ymin,0)
+			glVertex(self.datar,ymin,0)
+			top = (self.data[self.datar-1]+self.data[self.datar])/2.0
+			glVertex(self.datar,top,0)
+			glVertex(self.datar-0.5,top,0)
+			glEnd()
+			
+			glBegin(GL_TRIANGLES)
+			glVertex(self.datar-0.5,top,0)
+			glVertex(self.datar,top,0)
+			glVertex(self.datar,self.data[self.datar],0)
+			glEnd()
+			
+		else:
+			glBegin(GL_QUADS)
+			glVertex(self.datar-0.5,ymin,0)
+			glVertex(self.datar,ymin,0)
+			top = (self.data[self.datar-1]+self.data[self.datar])/2.0
+			glVertex(self.datar,top,0)
+			glVertex(self.datar-0.5,top,0)
+			glEnd()
+			glBegin(GL_QUADS)
+			glVertex(self.datar,ymin,0)
+			glVertex(self.datar+0.5,ymin,0)
+			#top = (self.data[self.datar]+self.data[self.datar+1])/2.0
+			glVertex(self.datar+0.5,top,0)
+			glVertex(self.datar,top,0)
+			glEnd()
 
+			glBegin(GL_TRIANGLES)
+			glVertex(self.datar-0.5,top,0)
+			glVertex(self.datar,top,0)
+			glVertex(self.datar,self.data[self.datar],0)
+			glVertex(self.datar,top,0)
+			glVertex(self.datar+0.5,top,0)
+			glVertex(self.datar,self.data[self.datar],0)
+			glEnd()
 		glPopMatrix()
 		
 		if self.marker != None:
 			glPushMatrix()
 			glTranslate(self.marker[0],self.marker[1],0)
-			glScalef(self.marker[2],self.marker[3],1.0)
+			glScalef(self.marker[2]/2,self.marker[3]/2,1.0)
 			self.unitcircle()
 			glPopMatrix()
 		
@@ -485,8 +551,9 @@ class EMGLPlotWidget(QtOpenGL.QGLWidget):
 		
 		self.updateGL()
 
-	def setData(self,data):
+	def setData(self,data,datar):
 		self.plot.data = data
+		self.plot.datar = datar
 		self.updateGL()
 		
 	def getData(self):

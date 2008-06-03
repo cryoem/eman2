@@ -820,7 +820,7 @@ class GUIbox:
 		
 	def optparamsupdate(self,thresh,profile,radius):
 		print "updateing "
-		self.guictl.updatedata(thresh,profile)
+		self.guictl.updatedata(thresh,profile,radius)
 		
 	def setautobox(self,s):
 		self.boxable.autoboxmethod = s
@@ -1013,9 +1013,9 @@ class GUIboxPanel(QtGui.QWidget):
 	def trythatd(self):
 		self.target.trydata(self.window.getData(),float(self.thr.getValue()))
 	
-	def updatedata(self,thresh,data):
+	def updatedata(self,thresh,data,datar):
 		#print data
-		self.window.setData(data)
+		self.window.setData(data,datar)
 		self.thr.setValue(thresh,True)
 		self.resize(self.width(),self.height())
 		#self.window.resizeGL(self.window.width(),self.window.height())
