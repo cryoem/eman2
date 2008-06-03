@@ -46,7 +46,7 @@ from emimageutil import ImgHistogram,EMParentWin
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
-
+from OpenGL import GL,GLU,GLUT
 from time import *
 
 from emglobjects import EMImage3DObject, Camera2
@@ -57,7 +57,7 @@ class EMGLPlot(EMImage3DObject):
 	def __init__(self, parent=None):
 		EMImage3DObject.__init__(self)
 		self.parent = parent
-		
+		self.data = [1.0,0.93,0.64,0.94,0.30,0.2,0.12,-0.2]
 		self.init()
 		self.initialized = True
 		
@@ -69,9 +69,7 @@ class EMGLPlot(EMImage3DObject):
 		self.glbrightness = 0.0
 		self.rank = 1
 		self.inspector=None
-		
-		self.data = [1.0,0.93,0.64,0.94,0.30,0.2,0.12,-0.2]
-		
+
 		self.cylinderdl = 0
 		
 		self.gq=gluNewQuadric()
@@ -125,6 +123,12 @@ class EMGLPlot(EMImage3DObject):
 			self.cylinderToFrom(p2,p1,0.3)
 	def render(self):
 		if ( self.cylinderdl == 0 ):
+			self.gq=gluNewQuadric()
+			gluQuadricDrawStyle(self.gq,GLU_FILL)
+			gluQuadricNormals(self.gq,GLU_SMOOTH)
+			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+			gluQuadricTexture(self.gq,GL_FALSE)
+
 			self.cylinderdl=glGenLists(1)
 				
 			glNewList(self.cylinderdl,GL_COMPILE)
@@ -165,7 +169,6 @@ class EMGLPlot(EMImage3DObject):
 		glColor(self.colors[self.currentcolor]["ambient"])
 		
 		glEnable(GL_NORMALIZE)
-		#HERE
 		glPushMatrix()
 		
 		n = len(self.data)
@@ -354,8 +357,7 @@ class EMGLPlot(EMImage3DObject):
 			min2 = min(self.data)
 			max2 = max(self.data)
 			if min2 < min1 or max2 > max1:
-				self.parent.resizeGL(self.parent.width(),self.parent.height())
-				
+				self.parent.resizeGL(self.parent.width(),self.parent.height())	
 			return
 
 		else:
@@ -410,20 +412,15 @@ class EMGLPlotWidget(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		
-
+	
 		EMGLPlotWidget.allim[self]=0
 		self.plot = EMGLPlot(self)
-		self.timer = QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-
+		
 		self.setMouseTracking(True)
 
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
-	def timeout(self):
-		self.updateGL()
-		
+
 	def initializeGL(self):
 		
 		glEnable(GL_NORMALIZE)
@@ -485,8 +482,6 @@ class EMGLPlotWidget(QtOpenGL.QGLWidget):
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		
-		self.plot.resizeEvent()
 		
 		self.updateGL()
 
@@ -836,8 +831,8 @@ class EMGLPlotInspector(QtGui.QWidget):
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMGLPlotWidget()
-	window.setInit()
 	window2=EMParentWin(window)
+	window.setInit()
 	window2.show()
 	
 	sys.exit(app.exec_())

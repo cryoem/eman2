@@ -1267,7 +1267,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			print 'error, unknown mode in SwarmAutoBoxer'
 	
 	def getSearchRadius(self):
-		return int(0.5*(self.boxsize)/float(self.getBestShrink()))
+		return int(0.75*(self.boxsize)/float(self.getBestShrink()))
 	
 	
 	def getBestShrink(self,force=True):	
