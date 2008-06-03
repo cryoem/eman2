@@ -142,9 +142,9 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				for j,b in enumerate(basis):
 					proj.set_value_at(j+3,i,0,im.cmp("dot",b,{"normalize":options.normproj,"negative":0}))
 				
-				proj.set_value_at(0,best[1])
-				proj.set_value_at(1,best[2])
-				proj.set_value_at(2,best[3])
+				proj.set_value_at(0,i,best[1])
+				proj.set_value_at(1,i,best[2])
+				proj.set_value_at(2,i,best[3])
 				
 				proj.write_image(args[4],0)
 		else:
