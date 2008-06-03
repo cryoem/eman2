@@ -1042,7 +1042,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	USERDRIVEN = 3
 	ANCHOREDUSERDRIVEN = 4
 	COMMANDLINE = 5
-	def __init__(self,boxable):
+	def __init__(self,boxable,parent=None):
 		AutoBoxer.__init__(self,boxable)
 		
 		self.boxable = boxable
@@ -1070,6 +1070,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.regressiveflag = False	# flags a force removal of non references in the Boxable in autoBox
 		
 		
+		self.parent = parent
 	def become(self,trimSwarmAutoBoxer):			
 		self.boxsize = trimSwarmAutoBoxer.boxsize
 		self.shrink = trimSwarmAutoBoxer.shrink
@@ -1296,10 +1297,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		correlation = boxable.getCorrelationImage()
 		
 		if templateTS == -1 or correlation == None or self.template.getTemplateTS() != templateTS:
-			print 'regenerating the correlation image' # DEBUG
 			if self.template != None:
 				boxable.allowcorrelationupdate = True
-				print 'told the boxable to update its template'
 				boxable.updateCorrelation(self.template)
 				boxable.allowcorrelationupdate = False
 				
@@ -1307,7 +1306,6 @@ class SwarmAutoBoxer(AutoBoxer):
 			else:
 				print 'error, cant ask the autoBoxer for its template, it doesnt have one'
 				return 0
-		else : print 'using cached correlation image' # DEBUG
 
 		autoBoxerTS = boxable.autoBoxerTS
 		# auto boxing will only ever occur if the time stamp of the AutoBoxer is not the
@@ -1487,7 +1485,10 @@ class SwarmAutoBoxer(AutoBoxer):
 			if self.optprofile[i] > tmp and tmp > 0:
 				tmp = self.optprofile[i]
 				self.optprofileradius = i
-				
+		
+		try:
+			self.parent.optparamsupdate(self.optthreshold,self.optprofile,self.optprofileradius)
+		except: pass
 		#print 'NOW THEY ARE'
 		#print 'threshod:',self.optthreshold
 		#print 'profile:',self.optprofile

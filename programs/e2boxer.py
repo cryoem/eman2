@@ -286,12 +286,12 @@ class GUIbox:
 		try:
 			projectdb = EMProjectDB()
 			trimAutoBoxer = projectdb["currentautoboxer"]
-			self.autoBoxer = SwarmAutoBoxer(self.boxable)
+			self.autoBoxer = SwarmAutoBoxer(self.boxable,self)
 			self.autoBoxer.become(trimAutoBoxer)
 			print 'using cached autoboxer db'
 		except:
 			print 'constructed new autoboxer'
-			self.autoBoxer = SwarmAutoBoxer(self.boxable)
+			self.autoBoxer = SwarmAutoBoxer(self.boxable,self)
 			self.autoBoxer.boxsize = boxsize
 			self.autoBoxer.setMode(self.dynapix,self.anchortemplate)
 		
@@ -818,8 +818,9 @@ class GUIbox:
 	def trydata(self,data,thr):
 		print 'trydata was pressed, this feature is currently disabled'
 		
-	def updatedata(self,data,thresh):
-		self.guictl.updatedata(data,thresh)
+	def optparamsupdate(self,thresh,profile,radius):
+		print "updateing "
+		self.guictl.updatedata(thresh,profile)
 		
 	def setautobox(self,s):
 		self.boxable.autoboxmethod = s
@@ -1012,7 +1013,7 @@ class GUIboxPanel(QtGui.QWidget):
 	def trythatd(self):
 		self.target.trydata(self.window.getData(),float(self.thr.getValue()))
 	
-	def updatedata(self,data,thresh):
+	def updatedata(self,thresh,data):
 		#print data
 		self.window.setData(data)
 		self.thr.setValue(thresh,True)
