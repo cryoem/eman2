@@ -248,7 +248,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 }
 
 int ImagicIO::write_header(const Dict & dict, int image_index,
-						   const Region * area, EMUtil::EMDataType, bool)
+						   const Region * area, EMUtil::EMDataType, bool use_host_endian)
 {
 	ENTERFUNC;
 
@@ -354,7 +354,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 
 
 	// header in file order
-	if (is_big_endian != ByteOrder::is_host_big_endian())  swap_header(new_hed);
+	if ( (is_big_endian != ByteOrder::is_host_big_endian()) || !use_host_endian)  swap_header(new_hed);
 
 	// overwrite existing header if necessary
 	if (image_index>=0 && image_index<nimg) {
@@ -392,7 +392,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	fwrite(&nimg, sizeof(int), 1, hed_file);
 	
 	// header in machine order
-	if (is_big_endian != ByteOrder::is_host_big_endian())  swap_header(new_hed);
+	if ( (is_big_endian != ByteOrder::is_host_big_endian()) || !use_host_endian)  swap_header(new_hed);
 	imagich=new_hed;
 	imagich.count=nimg;
 	is_new_hed = false;
@@ -471,7 +471,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 }
 
 int ImagicIO::write_data(float *data, int image_index, const Region* area,
-						 EMUtil::EMDataType, bool)
+						 EMUtil::EMDataType, bool use_host_endian)
 {
 	ENTERFUNC;
 
@@ -488,8 +488,14 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area,
 			portable_fseek(img_file, ((off_t) sec_size) * image_index, SEEK_SET);
 		}
 	}
-
-	if (!is_new_img && (is_big_endian != ByteOrder::is_host_big_endian())) {
+	
+	if(is_new_img) {
+		if(!use_host_endian) {
+			std::cout << "need swap" << std::endl; 
+			ByteOrder::swap_bytes(data, imagich.nx * imagich.ny * nz);
+		}
+	}
+	else if (is_big_endian != ByteOrder::is_host_big_endian()) {
 		ByteOrder::swap_bytes(data, imagich.nx * imagich.ny * nz);
 	}
 #if 0
