@@ -272,7 +272,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 }
 
 int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
-						EMUtil::EMDataType, bool)
+						EMUtil::EMDataType, bool use_host_endian)
 {
 	ENTERFUNC;
 	
@@ -413,7 +413,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	MrcHeader mrch2 = mrch;
 	
-	if (opposite_endian) {
+	if (opposite_endian || !use_host_endian) {
 		swap_header(mrch2);
 	}
 	
@@ -496,7 +496,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 }
 
 int MrcIO::write_data(float *data, int image_index, const Region* area,
-					  EMUtil::EMDataType, bool)
+					  EMUtil::EMDataType, bool use_host_endian)
 {
 	ENTERFUNC;
 	//single image format, index can only be zero
@@ -521,7 +521,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
 
 
-	if (is_big_endian != ByteOrder::is_host_big_endian()) {
+	if ( (is_big_endian != ByteOrder::is_host_big_endian()) || !use_host_endian) {
 		if (mrch.mode != MRC_UCHAR) {
 			size_t size = nz * nx * ny;
 			if (mode_size == sizeof(short)) {
