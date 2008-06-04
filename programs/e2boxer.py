@@ -69,6 +69,7 @@ for single particle analysis."""
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db",default=[])
 	parser.add_option("--writedb",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--writeboximages",action="store_true",help="Write data box files",default=False)
+	parser.add_option("--force",action="store_true",help="Force overwrites old files",default=False)
 	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
 	parser.add_option("--refptcl","-R",type="string",help="(auto:ref) A stack of reference images. Must have the same scale as the image being boxed.",default=None)
 	parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
@@ -77,6 +78,7 @@ for single particle analysis."""
 	parser.add_option("--dbout",type="string",help="filename to write EMAN1 style box database file to",default=None)
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--ptclout",type="string",help="filename to write boxed out particles to",default=None)
+	parser.add_option("--parallel",type="int",help="specify more than one processor",default=None)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -159,6 +161,11 @@ for single particle analysis."""
 				boxable = Boxable(image,imagename,None,autoBoxer)
 				autoBoxer.setBoxable(boxable)
 				autoBoxer.autoBox(boxable)
+				if options.writedb:
+					boxable.writedb(options.force)
+				if options.writeboximages:
+					boxalbe.writeboximages(options.force)
+					
 				
 
 	# we need to know how big to make the boxes. If nothing is specified, but
@@ -428,10 +435,13 @@ class GUIbox:
 				image = self.image
 			else:
 				self.boxsetcache.append(None)
+				print "reading image"
 				image = EMData(self.imagenames[i])
 			# could save some time here by using self.image when i == 0
 			
+			print "shrinking and appending thumbnail for",self.imagenames[i]
 			i = image.process("math.meanshrink",{"n":n})
+			print 'using shrink',n
 			i.process_inplace("normalize.edgemean")
 			self.imagethumbs.append(i)
 		
@@ -646,7 +656,9 @@ class GUIbox:
 			sh[int(i[0])].shape[1] = color[0]
 			sh[int(i[0])].shape[2] = color[1]
 			sh[int(i[0])].shape[3] = color[2]
-		
+			sh[int(i[0])].changed=True
+			
+		self.boxDisplayUpdate()
 		self.updateImageDisplay()
 
 	def mouseup(self,event) :
@@ -822,15 +834,23 @@ class GUIbox:
 		print "updateing "
 		self.guictl.updatedata(thresh,profile,radius)
 		
-	def setautobox(self,s):
-		self.boxable.autoboxmethod = s
+	def setautobox(self,selmode):
+		if self.autoBoxer.setSelectionMode(selmode):
+			self.boxDisplayUpdate()
+			self.updateAllImageDisplay()
+		
+	def setprofilecmp(self,cmpmode):
+		if self.autoBoxer.setCmpMode(cmpmode):
+			self.boxDisplayUpdate()
+			self.updateAllImageDisplay()
 		
 	def nocupdate(self,bool):
 		self.anchortemplate = bool
 		self.autoBoxer.setMode(self.dynapix,self.anchortemplate)
 		
 	def classify(self,bool):
-		self.boxable.genRefImages()
+		self.boxable.classify()
+		
 		
 	def erasetoggled(self,bool):
 		# for the time being there are only two mouse modes
@@ -841,12 +861,30 @@ class GUIbox:
 
 	def quit(self):
 		self.dynapixp.quit()
+	
+	def setdummybox(self,box):
+		self.autoBoxer.setDummyBox(box)
+		self.boxDisplayUpdate()
+		self.updateAllImageDisplay()
+		
+	def setnonedummy(self):
+		self.autoBoxer.setDummyBox(None)
+		self.boxDisplayUpdate()
+		self.updateAllImageDisplay()
 		
 	def writeboxesimages(self):
-		print "I am writing images"
+		for boxset in self.boxsetcache:
+			if boxset == None: continue
+			else:
+				boxset.writeboximages()
 	
 	def writeboxesdbs(self):
-		print "I am writing box dbs"
+		for boxset in self.boxsetcache:
+			if boxset == None: continue
+			else:
+				boxset.writedb()
+
+					
 		
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
@@ -859,6 +897,114 @@ class GUIboxPanel(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
+		self.tabwidget = QtGui.QTabWidget(self)
+		self.insertMainTab()
+		self.insertAdvancedTab()
+		self.vbl.addWidget(self.tabwidget)
+		
+		self.dummybox = Box()
+		self.dummybox.isanchor = False
+		self.dummybox.isdummy = True
+		
+		
+		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
+		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.updateEraseRad)
+		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
+		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
+		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesimages)
+		self.connect(self.writeboxesdbs,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesdbs)
+		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
+		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
+		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
+		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.trythatd)
+		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.setnonedummy)
+		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
+		self.connect(self.selbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
+		self.connect(self.morselbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
+		self.connect(self.ratiobut, QtCore.SIGNAL("clicked(bool)"), self.cmpboxclick)
+		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmpboxclick)
+		self.connect(self.nocpick, QtCore.SIGNAL("clicked(bool)"), self.target.nocupdate)
+		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erasetoggled)
+#		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
+	
+	def insertMainTab(self):
+		# this is the box layout that will store everything
+		self.main_inspector = QtGui.QWidget()
+		self.main_vbl =  QtGui.QVBoxLayout(self.main_inspector)
+		
+		self.infohbl = QtGui.QHBoxLayout()
+		self.info = QtGui.QLabel("%d Boxes"%len(self.target.getboxes()),self)
+		self.ppc = QtGui.QLabel("%f particles per click"%0,self)
+		self.infohbl.addWidget(self.info)
+		self.infohbl.addWidget(self.ppc)
+		
+		
+		self.statsbox = QtGui.QGroupBox("Stats")
+		self.statsbox.setLayout(self.infohbl)
+		self.main_vbl.addWidget(self.statsbox)
+		
+		self.hbl1=QtGui.QHBoxLayout()
+		self.hbl1.setMargin(0)
+		self.hbl1.setSpacing(2)
+		
+		self.lblbs=QtGui.QLabel("Box Size:",self)
+		self.hbl1.addWidget(self.lblbs)
+		
+		self.bs = QtGui.QLineEdit(str(self.target.boxsize),self)
+		self.hbl1.addWidget(self.bs)
+		self.main_vbl.addLayout(self.hbl1)
+		
+		self.hbl3=QtGui.QHBoxLayout()
+		self.dynapick = QtGui.QCheckBox("Dynapix")
+		self.dynapick.setChecked(self.target.dynapix)
+		self.hbl3.addWidget(self.dynapick)
+		self.nocpick = QtGui.QCheckBox("Anchor")
+		self.nocpick.setChecked(self.target.anchortemplate)
+		self.hbl3.addWidget(self.nocpick)
+		self.autobox=QtGui.QPushButton("Auto Box")
+		self.hbl3.addWidget(self.autobox)
+		self.main_vbl.addLayout(self.hbl3)
+
+		self.hbl2=QtGui.QHBoxLayout()
+		self.hbl2.setMargin(2)
+		self.hbl2.setSpacing(6)
+		#self.vbl.addLayout(self.hbl1)
+		
+		self.erasepic = QtGui.QIcon("/home/d.woolford/erase.png");
+		self.erase=QtGui.QPushButton(self.erasepic,"Erase")
+		self.erase.setCheckable(1)
+		self.hbl2.addWidget(self.erase)
+		
+		self.eraseradtext=QtGui.QLabel("Circle radius",self)
+		self.hbl2.addWidget(self.eraseradtext)
+		
+		self.eraserad = QtGui.QLineEdit(str(self.target.eraseradius),self)
+		self.hbl2.addWidget(self.eraserad)
+		self.eraserad.setEnabled(False)
+		
+		self.main_vbl.addLayout(self.hbl2)
+
+		
+		self.writeboxesimages = QtGui.QPushButton("Write Box Images")
+		self.main_vbl.addWidget(self.writeboxesimages)
+		
+		self.writeboxesdbs = QtGui.QPushButton("Write DB Files")
+		self.main_vbl.addWidget(self.writeboxesdbs)
+
+		self.classifybut=QtGui.QPushButton("Classify")
+		self.main_vbl.addWidget(self.classifybut)
+		
+		self.done=QtGui.QPushButton("Done")
+		self.main_vbl.addWidget(self.done)
+		
+		self.tabwidget.addTab(self.main_inspector,"Main")
+		
+	def insertAdvancedTab(self):
+		# this is the box layout that will store everything
+		self.adv_inspector = QtGui.QWidget()
+		self.advanced_vbl =  QtGui.QVBoxLayout(self.adv_inspector)
+		
+		#  Insert the plot widget
 		self.plothbl = QtGui.QHBoxLayout()
 		
 		self.window = EMGLPlotWidget(self)
@@ -879,17 +1025,18 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.plothbl.addLayout(self.plotbuttonvbl)
 		
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.advanced_vbl2 = QtGui.QVBoxLayout()
 		
-		self.vbl2.addLayout(self.plothbl)
+		self.advanced_vbl2.addLayout(self.plothbl)
 		
 		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
-		self.thr.setValue(target.threshold)
-		self.vbl2.addWidget(self.thr)
+		self.thr.setValue(self.target.threshold)
+		self.advanced_vbl2.addWidget(self.thr)
+		
 		
 		self.interbox = QtGui.QGroupBox("Interactive Parameters")
-		self.interbox.setLayout(self.vbl2)
-		self.vbl.addWidget(self.interbox)
+		self.interbox.setLayout(self.advanced_vbl2)
+		self.advanced_vbl.addWidget(self.interbox)
 		
 		self.thrbut = QtGui.QRadioButton(SwarmAutoBoxer.THRESHOLD)
 		self.selbut = QtGui.QRadioButton(SwarmAutoBoxer.SELECTIVE)
@@ -904,92 +1051,24 @@ class GUIboxPanel(QtGui.QWidget):
 		self.groupbox = QtGui.QGroupBox("Auto Box Method")
 		self.groupbox.setLayout(self.methodhbox)
 		
-		self.vbl.addWidget(self.groupbox)
-		
-		#self.vbl.addLayout(self.groupbox)
-		
-		self.infohbl = QtGui.QHBoxLayout()
-		self.info = QtGui.QLabel("%d Boxes"%len(target.getboxes()),self)
-		self.ppc = QtGui.QLabel("%f particles per click"%0,self)
-		self.infohbl.addWidget(self.info)
-		self.infohbl.addWidget(self.ppc)
-		
-		
-		self.statsbox = QtGui.QGroupBox("Stats")
-		self.statsbox.setLayout(self.infohbl)
-		self.vbl.addWidget(self.statsbox)
-		
-		self.hbl1=QtGui.QHBoxLayout()
-		self.hbl1.setMargin(0)
-		self.hbl1.setSpacing(2)
-		#self.vbl.addLayout(self.hbl1)
-		
-		self.lblbs=QtGui.QLabel("Box Size:",self)
-		self.hbl1.addWidget(self.lblbs)
-		
-		self.bs = QtGui.QLineEdit(str(target.boxsize),self)
-		self.hbl1.addWidget(self.bs)
-		self.vbl.addLayout(self.hbl1)
-		
-		self.hbl3=QtGui.QHBoxLayout()
-		self.dynapick = QtGui.QRadioButton("Dynapix")
-		self.dynapick.setChecked(self.target.dynapix)
-		self.hbl3.addWidget(self.dynapick)
-		self.nocpick = QtGui.QRadioButton("Anchor")
-		self.nocpick.setChecked(self.target.anchortemplate)
-		self.hbl3.addWidget(self.nocpick)
-		self.autobox=QtGui.QPushButton("Auto Box")
-		self.hbl3.addWidget(self.autobox)
-		self.vbl.addLayout(self.hbl3)
+		self.advanced_vbl.addWidget(self.groupbox)
 
-		self.hbl2=QtGui.QHBoxLayout()
-		self.hbl2.setMargin(2)
-		self.hbl2.setSpacing(6)
-		#self.vbl.addLayout(self.hbl1)
+		self.ratiobut = QtGui.QRadioButton("Ratio")
+		self.ratiobut.setChecked(True)
+		self.difbut = QtGui.QRadioButton("Difference")
 		
-		self.erasepic = QtGui.QIcon("/home/d.woolford/erase.png");
-		self.erase=QtGui.QPushButton(self.erasepic,"Erase")
-		self.erase.setCheckable(1)
-		self.hbl2.addWidget(self.erase)
+		self.cmpmethodhbox = QtGui.QHBoxLayout()
+		self.cmpmethodhbox.addWidget(self.ratiobut)
+		self.cmpmethodhbox.addWidget(self.difbut)
 		
-		self.eraseradtext=QtGui.QLabel("Circle radius",self)
-		self.hbl2.addWidget(self.eraseradtext)
+		self.cmpgroupbox = QtGui.QGroupBox("Peak Profile Comparitor")
+		self.cmpgroupbox.setLayout(self.cmpmethodhbox)
 		
-		self.eraserad = QtGui.QLineEdit(str(self.target.eraseradius),self)
-		self.hbl2.addWidget(self.eraserad)
-		self.eraserad.setEnabled(False)
-		
-		self.vbl.addLayout(self.hbl2)
+		self.advanced_vbl.addWidget(self.cmpgroupbox)
 
-		self.done=QtGui.QPushButton("Done")
-		self.vbl.addWidget(self.done)
 		
-		self.writeboxesimages = QtGui.QPushButton("Write Box Images")
-		self.vbl.addWidget(self.writeboxesimages)
-		
-		self.writeboxesdbs = QtGui.QPushButton("Write DB Files")
-		self.vbl.addWidget(self.writeboxesdbs)
+		self.tabwidget.addTab(self.adv_inspector,"Advanced")
 
-		self.classifybut=QtGui.QPushButton("Classify")
-		self.vbl.addWidget(self.classifybut)
-		
-		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
-		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.updateEraseRad)
-		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
-		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
-		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesimages)
-		self.connect(self.writeboxesdbs,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesdbs)
-		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
-		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
-		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
-		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.trythatd)
-		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
-		self.connect(self.selbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
-		self.connect(self.morselbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
-		self.connect(self.nocpick, QtCore.SIGNAL("clicked(bool)"), self.target.nocupdate)
-		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erasetoggled)
-#		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
-	
 	def erasetoggled(self,bool):
 		self.eraserad.setEnabled(bool)
 		self.target.guiim.setMouseTracking(bool)
@@ -998,7 +1077,17 @@ class GUIboxPanel(QtGui.QWidget):
 	def dynapickd(self,bool):
 		self.target.toggleDynapix(bool)
 	
-	def gboxclick(self,bool):
+	def cmpboxclick(self,unusedbool):
+		if self.ratiobut.isChecked():
+			s = BoxingTools.CmpMode.RATIO
+		elif self.difbut.isChecked():
+			s = BoxingTools.CmpMode.DIFFERENCE
+		else:
+			print "Bug intercepted in e2boxer.py. Please email the development team."
+			
+		self.target.setprofilecmp(s)
+	
+	def gboxclick(self,unusedbool):
 		if self.thrbut.isChecked():
 			s = self.thrbut.text()
 		elif self.selbut.isChecked():
@@ -1011,7 +1100,9 @@ class GUIboxPanel(QtGui.QWidget):
 		self.target.setautobox(str(s))
 	
 	def trythatd(self):
-		self.target.trydata(self.window.getData(),float(self.thr.getValue()))
+		self.dummybox.optprofile = self.window.getData()
+		self.dummybox.correlationscore = float(self.thr.getValue())
+		self.target.setdummybox(self.dummybox)
 	
 	def updatedata(self,thresh,data,datar):
 		#print data

@@ -114,6 +114,8 @@ class Box:
 		self.boxingobj = None
 		self.shape = None
 		self.TS = None
+		
+		self.isdummy = False # this can be used to avoid parameters updates - i.e. when the user interactively changes parameters forcefully
 
 		self.flcf = None
 		self.imagename = imagename
@@ -211,6 +213,9 @@ class Box:
 		have attempted to lay basic framework if in future we use a different autoBoxer which
 		requires its own parameters
 		'''
+		
+		if self.isdummy: return 0
+		
 		correlation = self.getFLCFImage(autoBoxer.getTemplateRadius(),autoBoxer.getBestShrink(),autoBoxer.getTemplateObject())
 		if correlation == None:
 			print 'error, can not update the parameters of a Box because the Boxable has no correlation image'
@@ -462,6 +467,47 @@ class Boxable:
 				
 				box.boxingobject=self
 				self.boxes.append(box)
+	
+	def writedb(self,force=False):
+		if len(self.boxes) == 0:
+			print "no boxes to write, doing nothing. Image name is",self.imagename
+		else:
+			boxname = strip_file_tag(self.imagename)+".box"
+			if file_exists(boxname):
+				if not force:
+					f=file(boxname,'r')
+					boxname_backup =  strip_file_tag(self.imagename)+str(time()) + ".box.bak"
+					print "warning, found box name",boxname,"- am renaming it to", boxname_backup
+					fbak=file(boxname_backup,'w')
+					fbak.writelines(f.readlines())
+					fbak.close()
+					f.close()
+				else:
+					remove_file(boxname)
+				
+			f=file(boxname,'w')
+				
+			for box in self.boxes:
+				f.write(str(box.xcorner)+'\t'+str(box.ycorner)+'\t'+str(box.xsize)+'\t'+str(box.ysize)+'\n')
+				
+			f.close()
+
+	def writeboximages(self,force=False):
+		if len(self.boxes) == 0:
+			print "no boxes to write, doing nothing. Image name is",self.imagename
+		else:
+			boxname = strip_file_tag(self.imagename)+".img"
+			if file_exists(boxname):
+				if not force:
+					print "warning, file already exists - ", boxname, " doing nothing. Use force to override this behavior"
+					return
+				else:
+					remove_file(boxname)
+				
+			for box in self.boxes:
+				image = box.getBoxImage(self.image)
+				image.write_image(boxname,-1)
+
 
 	def addbox(self,box):
 		if not isinstance(box,Box):
@@ -695,22 +741,23 @@ class Boxable:
 		
 		return self.exclusionimage
 	
-	#def classify(self):
-		#v = []
-		## accrue all params
-		#for box in self.boxes:
-		#self.accrueparams(self.boxes)
+	def classify(self):
 		
-		#for box in self.boxes:
-			#b = copy(box.optprofile[0:self.radius])
-			#b.sort()
-			##for a in b:
-				##a = box[6]-a
-			##print b
-			#v.append(b)
+		# accrue all params
+		n = self.autoBoxer.optprofileradius+1
+		for box in self.boxes:
+			box.updateParams(self.autoBoxer)
+		
+		v = []
+		for box in self.boxes:
+			b = copy(box.optprofile[0:n])
+			#for a in b: 
+				#a = box[6]-a
+			#print b
+			v.append(b)
 			
-		#cl = BoxingTools.classify(v,4)
-		#self.parent.updateboxcolors(cl)
+		cl = BoxingTools.classify(v,4)
+		self.parent.updateboxcolors(cl)
 	
 	def genRefImages(self):
 		tmpimage = "tmpparticles.img"
@@ -1020,7 +1067,7 @@ class TrimSwarmAutoBoxer():
 		self.optthreshold = swarmAutoBoxer.optthreshold
 		self.optprofile = copy(swarmAutoBoxer.optprofile)
 		self.optprofileradius = swarmAutoBoxer.optprofileradius
-		self.autoboxmethod = swarmAutoBoxer.autoboxmethod
+		self.selmode = swarmAutoBoxer.selmode
 		self.templateTS = swarmAutoBoxer.templateTS
 		self.stateTS = swarmAutoBoxer.stateTS
 		self.mode = swarmAutoBoxer.mode
@@ -1057,7 +1104,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.optthreshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
 		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
-		self.autoboxmethod = SwarmAutoBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
+		self.selmode = SwarmAutoBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
+		self.cmpmode = BoxingTools.CmpMode.RATIO
+		BoxingTools.set_mode(self.cmpmode)
 		self.__shrink = -1
 		
 		self.templateTS = -1 # a template time stamp to 
@@ -1066,10 +1115,12 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		self.mode = SwarmAutoBoxer.DYNAPIX
 		self.refupdate = False # this is a flag used when self.mode is USERDRIVEN
-		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.ANCHOREDUSERDRIVEN,SwarmAutoBoxer.COMMANDLINE]  # if another mode is added you would have to find all places where self.mode is used to make decisions and alter
+		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.ANCHOREDUSERDRIVEN,SwarmAutoBoxer.COMMANDLINE]
+		self.permissablecmpmodes = [BoxingTools.CmpMode.RATIO,BoxingTools.CmpMode.DIFFERENCE]  # the permissiable peak profile comparitor modes - for convenience when double
+		self.permissableselmodes = [SwarmAutoBoxer.THRESHOLD,SwarmAutoBoxer.SELECTIVE,SwarmAutoBoxer.MORESELECTIVE]  # the permissiable selection modes - for convenience when double checking the calling program is setting the selectionmode explicitly (through setSelectionMode )
 		self.regressiveflag = False	# flags a force removal of non references in the Boxable in autoBox
 		
-		
+		self.dummybox = None
 		self.parent = parent
 	def become(self,trimSwarmAutoBoxer):			
 		self.boxsize = trimSwarmAutoBoxer.boxsize
@@ -1079,7 +1130,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.optthreshold = trimSwarmAutoBoxer.optthreshold
 		self.optprofile = copy(trimSwarmAutoBoxer.optprofile)
 		self.optprofileradius = trimSwarmAutoBoxer.optprofileradius
-		self.autoboxmethod = trimSwarmAutoBoxer.autoboxmethod
+		self.selmode = trimSwarmAutoBoxer.selmode
 		self.templateTS = trimSwarmAutoBoxer.templateTS
 		self.stateTS = trimSwarmAutoBoxer.stateTS
 		self.mode = trimSwarmAutoBoxer.mode
@@ -1090,6 +1141,24 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 	def getTemplate(self):
 		return self.template
+	
+	def setDummyBox(self,box):
+		if not box==None and not box.isdummy:
+			print "you can never set a dummy box unless the isdummy flag is true"
+			return 0
+		
+		if box != None:
+			for i,ref in enumerate(self.refboxes):
+				if ref.isdummy:
+					self.refboxes.pop(i)
+					break
+			self.addReference(box)
+		else:
+			if self.dummybox != None:
+				self.removeReference(self.dummybox)
+			
+		self.dummybox = box
+			
 	
 	def setBoxable(self,boxable):
 		self.boxable = boxable
@@ -1108,6 +1177,44 @@ class SwarmAutoBoxer(AutoBoxer):
 			if anchortemplate: self.mode = SwarmAutoBoxer.ANCHOREDUSERDRIVEN
 			else: self.mode = SwarmAutoBoxer.USERDRIVEN
 
+	def setCmpMode(self,cmpmode):
+		if cmpmode in self.permissablecmpmodes:
+			if self.cmpmode != cmpmode:
+				self.cmpmode = cmpmode
+				BoxingTools.set_mode(self.cmpmode)
+				self.__fullUpdate()
+				self.regressiveflag = True
+				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
+					self.autoBox(self.boxable)
+				elif self.mode == SwarmAutoBoxer.COMMANDLINE:
+					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in setCmpMode"
+				return 1
+			else:
+				print "warning, attempted to set the cmpmode to that which was already stored, no action taken"
+				return 0
+		else:
+			print "the peak profile comparitor mode you specified:", cmpmode,"was not recognized, no action was taken"
+			return 0
+	
+	def setSelectionMode(self,selmode):
+		if selmode in self.permissableselmodes:
+			if self.selmode != selmode:
+				self.selmode = selmode
+				self.__plotUpdate()
+				self.stateTS = time()
+				self.regressiveflag = True
+				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
+					self.autoBox(self.boxable)
+				elif self.mode == SwarmAutoBoxer.COMMANDLINE:
+					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in setSelectionMode"
+				return 1
+			else:
+				print "warning, attempted to set the selmode to that which was already stored, no action taken"
+				return 0
+		else:
+			print "the selection mode you specified:", selmode,"was not recognized, no action was taken"
+			return 0
+
 	def name(self):
 		return 'swarmautoboxer'
 
@@ -1121,23 +1228,23 @@ class SwarmAutoBoxer(AutoBoxer):
 				return 0
 		
 			# store the boxsize if we don't have one already
-			if self.boxsize == -1:
+			if self.boxsize == -1 and not box.isdummy:
 				self.boxsize = box.xsize
 			# do a sanity check, this shouldn't happen if the program is managing everything carefully
-			elif self.boxsize != box.xsize:
+			elif self.boxsize != box.xsize and not box.isdummy:
 				print 'error, the currently stored box size does not match the boxsize of the reference that was just added'
 				return 0
 			
 			self.template.appendReference(box)
 		
 			if self.mode == SwarmAutoBoxer.DYNAPIX:
-				if not box.isanchor:
+				if not box.isanchor and not box.isdummy:
 					print 'the box flag is internally inconsistent when using pure dynapix'
 					return 0
 				self.__fullUpdate()
 				self.autoBox(self.boxable)
 			elif self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-				if box.isanchor:
+				if box.isanchor and not box.isdummy:
 					print 'the box flag is internally inconsistent when anchoring'
 					return 0
 				box.updateParams(self)
@@ -1164,34 +1271,36 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 0
 	
 	def removeReference(self,box):
-		if self.template.removeReference(box):
-			if len(self.template.refboxes) == 0:
-				self.__reset()
-				return 1
+		self.template.removeReference(box)
+		
+		if len(self.template.refboxes) == 0:
+			self.__reset()
+			return 1
 			
-			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-				if box.isanchor:
-					self.__fullUpdate()
-					self.regressiveflag = True
-					self.autoBox(self.boxable)
-				else:
-					self.__accrueOptParams()
-					self.stateTS = time()
-					self.regressiveflag = True
-					self.autoBox(self.boxable)
-				return 1
-			elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
-				if box.isanchor:
-					self.refupdate = True
-					self.stateTS = -1
-					self.templateTS = -1
-				else:
-					box.updateParams(self)
-					self.__accrueOptParams()
-					self.stateTS = time()
-					self.regressiveflag = True
-					
-				return 1
+		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
+			if box.isanchor:
+				self.__fullUpdate()
+				self.regressiveflag = True
+				self.autoBox(self.boxable)
+			else:
+				self.__accrueOptParams()
+				self.stateTS = time()
+				self.regressiveflag = True
+				self.autoBox(self.boxable)
+			return 1
+		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
+			if box.isanchor:
+				self.refupdate = True
+				self.stateTS = -1
+				self.templateTS = -1
+			else:
+				box.updateParams(self)
+				self.__accrueOptParams()
+				self.stateTS = time()
+				self.regressiveflag = True
+				
+			return 1
+		
 		return 0
 	
 	def getTemplateRadius(self):
@@ -1268,6 +1377,9 @@ class SwarmAutoBoxer(AutoBoxer):
 	
 	def getSearchRadius(self):
 		return int(0.75*(self.boxsize)/float(self.getBestShrink()))
+	
+	def getConstrainingRadius(self):
+		return int(0.5*(self.boxsize)/float(self.getBestShrink()))
 	
 	
 	def getBestShrink(self,force=True):	
@@ -1360,11 +1472,11 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 0
 			
 			#print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
-		if self.autoboxmethod == SwarmAutoBoxer.THRESHOLD:
+		if self.selmode == SwarmAutoBoxer.THRESHOLD:
 			mode = 0
-		elif self.autoboxmethod == SwarmAutoBoxer.SELECTIVE:
+		elif self.selmode == SwarmAutoBoxer.SELECTIVE:
 			mode = 1
-		elif self.autoboxmethod == SwarmAutoBoxer.MORESELECTIVE:
+		elif self.selmode == SwarmAutoBoxer.MORESELECTIVE:
 			mode = 2
 		
 		shrink = self.getBestShrink()
@@ -1438,62 +1550,75 @@ class SwarmAutoBoxer(AutoBoxer):
 		#print 'profile:',self.optprofile
 		#print 'optrad:',self.optprofileradius
 		
-		found = False
-		for i,box in enumerate(self.getRefBoxes()):
-			if box.correlationscore == None:
-				# this is an error which probably means that the box, as created by the user, has a strong correlation maximum next to it which is disrupting the auto parameters
-				# this is mostly an error for dwoolfords attention
-				# for the time being just ignoring it  probably suffices
-				# FIXME
-				print "continuing on faulty"
-				continue
-			if found == False:
-				self.optthreshold = box.correlationscore
-				found = True
-			else:	
-				if box.correlationscore < self.optthreshold: self.optthreshold = box.correlationscore
-
-		# catch the circumstance where for some strange reason things just didn't work
-		# probably the user has some strange data and the rotational template isn't responding normally. 
-		# correlation peaks aren't where the user thinks they are.
-		if not found:
-			print 'error, there were no parameter data that I could inspect. I cant make the optimal parameters'
-			return False
-		
-		# Iterate through the reference boxes and accrue what you can think of
-		# as the worst case scenario, in terms of correlation profiles
-		found = False
-		for i,box in enumerate(self.getRefBoxes()):
-			if box.correlationscore == None:
-				##print "continuing on faulty" - this was already printed above
-				continue
-			if found == False:
-				self.optprofile = copy(box.optprofile)
-				n = len(self.optprofile)
-				found = True
-			else:
-				profile = box.optprofile
-				for j in range(0,n):
-					if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
+		if self.dummybox == None:
+			found = False
+			for i,box in enumerate(self.getRefBoxes()):
+				if box.correlationscore == None:
+					# this is an error which probably means that the box, as created by the user, has a strong correlation maximum next to it which is disrupting the auto parameters
+					# this is mostly an error for dwoolfords attention
+					# for the time being just ignoring it  probably suffices
+					# FIXME
+					print "continuing on faulty"
+					continue
+				if found == False:
+					self.optthreshold = box.correlationscore
+					found = True
+				else:	
+					if box.correlationscore < self.optthreshold: self.optthreshold = box.correlationscore
+	
+			# catch the circumstance where for some strange reason things just didn't work
+			# probably the user has some strange data and the rotational template isn't responding normally. 
+			# correlation peaks aren't where the user thinks they are.
+			if not found:
+				print 'error, there were no parameter data that I could inspect. I cant make the optimal parameters'
+				return False
+			
+			# Iterate through the reference boxes and accrue what you can think of
+			# as the worst case scenario, in terms of correlation profiles
+			found = False
+			for i,box in enumerate(self.getRefBoxes()):
+				if box.correlationscore == None:
+					##print "continuing on faulty" - this was already printed above
+					continue
+				if found == False:
+					self.optprofile = copy(box.optprofile)
+					n = len(self.optprofile)
+					found = True
+				else:
+					profile = box.optprofile
+					for j in range(0,n):
+						if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
+		else:
+			self.optprofile = self.dummybox.optprofile
+			self.optthreshold = self.dummybox.correlationscore
 		
 	
 		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
 		self.optprofileradius = -1
 		tmp = self.optprofile[0]
-		for i in range(1,len(self.optprofile)):
+		for i in range(1,self.getConstrainingRadius()):
 			# the tmp > 0 is a
 			if self.optprofile[i] > tmp and tmp > 0:
 				tmp = self.optprofile[i]
 				self.optprofileradius = i
 		
-		try:
-			self.parent.optparamsupdate(self.optthreshold,self.optprofile,self.optprofileradius)
-		except: pass
+		self.__plotUpdate()
 		#print 'NOW THEY ARE'
-		#print 'threshod:',self.optthreshold
-		#print 'profile:',self.optprofile
-		#print 'optrad:',self.optprofileradius
+		print 'threshod:',self.optthreshold
+		print 'profile:',self.optprofile
+		print 'optrad:',self.optprofileradius
 		return True
+	
+	def __plotUpdate(self):
+		prof = [] # self.selfmod == SwarmAutoBoxer.THRESHOLD (nothing is the right setting in this case)
+		if self.selmode == SwarmAutoBoxer.SELECTIVE:
+			prof = [self.optprofileradius]
+		elif self.selmode == SwarmAutoBoxer.MORESELECTIVE:
+			for i in range(0,self.optprofileradius+1): prof.append(i)
+		
+		try:
+			self.parent.optparamsupdate(self.optthreshold,self.optprofile,prof)
+		except: pass
 	
 	def __paintExcludedBoxAreas(self,exclusionimage,boxes):
 	

@@ -96,10 +96,20 @@ namespace EMAN
 		static map<unsigned int, unsigned int> classify(const vector<vector<float> >& data, const unsigned int& classes = 4);
 		
 		static Vec3f get_color( const unsigned int index );
+		
+		
+		
+		enum CmpMode {
+			DIFFERENCE,
+			RATIO
+		};
+		
+		static void set_mode( const CmpMode m ) { mode = m; }
 	private:
 		// A vector to store the "seed" starting colors, which exist at the corners of the cube.
 		// Then the vector is grown as more colours are asked for.
 		static vector<Vec3f> colors;
+		static CmpMode mode;
 	};
 	
 	class BoxSVDClassifier

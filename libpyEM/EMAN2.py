@@ -178,7 +178,7 @@ def remove_image(fsp):
 	except: pass
 
 def parsesym(optstr):
-	
+	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
 	[sym, dict] = parsemodopt(optstr)
 	if sym[0] in ['c','d','h']:
 		dict["nsym"] = int(sym[1:])
@@ -425,6 +425,21 @@ def file_exists( file_name ):
 		
 	else:
 		return False
+	
+# a function for stripping a the file tag from the end of a string.
+# is if given image.mrc this functions strips the '.mrc' and returns 'image'
+def strip_file_tag(file_name):
+	# FIXME it's probably easiest to do this with regular expressions...
+	for i in range(len(file_name)-1,-1,-1):
+		if file_name[i] == '.':
+			break
+	else:
+		print "never found the full stop in", file_name
+		return None
+	
+	return file_name[0:i]
+	
+	
 
 # a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
 # can be created from the command line string. Returns false if there are problems

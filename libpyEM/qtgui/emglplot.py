@@ -58,7 +58,7 @@ class EMGLPlot(EMImage3DObject):
 		EMImage3DObject.__init__(self)
 		self.parent = parent
 		self.data = [1.0,0.93,0.64,0.94,0.30,0.2,0.12,-0.2]
-		self.datar = 0
+		self.datar = [0,1,2,3]
 		self.init()
 		self.initialized = True
 		
@@ -179,70 +179,73 @@ class EMGLPlot(EMImage3DObject):
 			p2 = [i+1,self.data[i+1],0]
 			self.cylinderToFrom(p2,p1,0.1)
 		
-		self.currentcolor = "turquoise"
+		self.currentcolor = "emerald"
 		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
 		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
 		glColor(self.colors[self.currentcolor]["ambient"])
-		glNormal(0,0,1)
+		glNormal(0,-0.1,1)
 		yrange = self.yrange()
 		ymin = yrange[0]
-		if self.datar == 0:
-			glBegin(GL_QUADS)
-			glVertex(self.datar,ymin,0)
-			glVertex(self.datar+0.5,ymin,0)
-			top = (self.data[self.datar]+self.data[self.datar+1])/2.0
-			glVertex(self.datar+0.5,top,0)
-			glVertex(self.datar,top,0)
-			glEnd()
+		for datar in self.datar:
 			
-			glBegin(GL_TRIANGLES)
-			glVertex(self.datar,top,0)
-			glVertex(self.datar+0.5,top,0)
-			glVertex(self.datar,self.data[self.datar],0)
-			glEnd()
-			
-			
-		elif self.datar == len(self.data)-1:
-			glBegin(GL_QUADS)
-			glVertex(self.datar-0.5,ymin,0)
-			glVertex(self.datar,ymin,0)
-			top = (self.data[self.datar-1]+self.data[self.datar])/2.0
-			glVertex(self.datar,top,0)
-			glVertex(self.datar-0.5,top,0)
-			glEnd()
-			
-			glBegin(GL_TRIANGLES)
-			glVertex(self.datar-0.5,top,0)
-			glVertex(self.datar,top,0)
-			glVertex(self.datar,self.data[self.datar],0)
-			glEnd()
-			
-		else:
-			glBegin(GL_QUADS)
-			glVertex(self.datar-0.5,ymin,0)
-			glVertex(self.datar,ymin,0)
-			top = (self.data[self.datar-1]+self.data[self.datar])/2.0
-			glVertex(self.datar,top,0)
-			glVertex(self.datar-0.5,top,0)
-			glEnd()
-			glBegin(GL_QUADS)
-			glVertex(self.datar,ymin,0)
-			glVertex(self.datar+0.5,ymin,0)
-			#top = (self.data[self.datar]+self.data[self.datar+1])/2.0
-			glVertex(self.datar+0.5,top,0)
-			glVertex(self.datar,top,0)
-			glEnd()
-
-			glBegin(GL_TRIANGLES)
-			glVertex(self.datar-0.5,top,0)
-			glVertex(self.datar,top,0)
-			glVertex(self.datar,self.data[self.datar],0)
-			glVertex(self.datar,top,0)
-			glVertex(self.datar+0.5,top,0)
-			glVertex(self.datar,self.data[self.datar],0)
-			glEnd()
+			if datar == 0:
+				glBegin(GL_QUADS)
+				glVertex(datar,ymin,0)
+				glVertex(datar+0.5,ymin,0)
+				top = (self.data[datar]+self.data[datar+1])/2.0
+				glVertex(datar+0.5,top,0)
+				glVertex(datar,top,0)
+				glEnd()
+				
+				glBegin(GL_TRIANGLES)
+				glVertex(datar,top,0)
+				glVertex(datar+0.5,top,0)
+				glVertex(datar,self.data[datar],0)
+				glEnd()
+				
+				
+			elif datar == len(self.data)-1:
+				glBegin(GL_QUADS)
+				glVertex(datar-0.5,ymin,0)
+				glVertex(datar,ymin,0)
+				top = (self.data[datar-1]+self.data[datar])/2.0
+				glVertex(datar,top,0)
+				glVertex(datar-0.5,top,0)
+				glEnd()
+				
+				glBegin(GL_TRIANGLES)
+				glVertex(datar-0.5,top,0)
+				glVertex(datar,top,0)
+				glVertex(datar,self.data[self.datar],0)
+				glEnd()
+				
+			else:
+				glBegin(GL_QUADS)
+				glVertex(datar-0.5,ymin,0)
+				glVertex(datar,ymin,0)
+				top = (self.data[datar-1]+self.data[datar])/2.0
+				glVertex(datar,top,0)
+				glVertex(datar-0.5,top,0)
+				glEnd()
+				glBegin(GL_QUADS)
+				glVertex(datar,ymin,0)
+				glVertex(datar+0.5,ymin,0)
+				#top = (self.data[self.datar]+self.data[self.datar+1])/2.0
+				glVertex(datar+0.5,top,0)
+				glVertex(datar,top,0)
+				glEnd()
+	
+				glBegin(GL_TRIANGLES)
+				glVertex(datar-0.5,top,0)
+				glVertex(datar,top,0)
+				glVertex(datar,self.data[datar],0)
+				glVertex(datar,top,0)
+				glVertex(datar+0.5,top,0)
+				glVertex(datar,self.data[datar],0)
+				glEnd()
+				
 		glPopMatrix()
 		
 		if self.marker != None:

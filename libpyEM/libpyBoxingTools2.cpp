@@ -25,6 +25,7 @@ namespace  {
 		.def("find_radial_max",&EMAN::BoxingTools::find_radial_max)
 		.def("classify",&EMAN::BoxingTools::classify)
 		.def("get_color",&EMAN::BoxingTools::get_color)
+		.def("set_mode",&EMAN::BoxingTools::set_mode)
 		.staticmethod("get_min_delta_profile")
 		.staticmethod("is_local_maximum")
 		.staticmethod("auto_correlation_pick")
@@ -32,7 +33,14 @@ namespace  {
 		.staticmethod("find_radial_max")
 		.staticmethod("classify")
 		.staticmethod("get_color")
+		.staticmethod("set_mode")
 		);
+		
+		
+		enum_< EMAN::BoxingTools::CmpMode >("CmpMode")
+			.value("DIFFERENCE", EMAN::BoxingTools::DIFFERENCE)
+			.value("RATIO", EMAN::BoxingTools::RATIO)
+		;
 		
 		delete EMAN_BoxingTools_scope;
 	}

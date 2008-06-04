@@ -513,7 +513,6 @@ class EMImageInspector3D(QtGui.QWidget):
 		#self.vbl.addWidget(self.listwidget)
 		
 		self.tabwidget = QtGui.QTabWidget(self)
-		self.vbl.addWidget(self.tabwidget)
 		
 		self.hbl_check = QtGui.QHBoxLayout()
 		self.hbl_check.setMargin(0)
@@ -554,6 +553,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.vbl.addLayout(self.hbl_buttons3)
 		
 		self.vbl.addLayout(self.hbl_check)
+		self.vbl.addWidget(self.tabwidget)
 		
 		self.setinspector = None
 		
