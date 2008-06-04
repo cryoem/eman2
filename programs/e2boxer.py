@@ -358,8 +358,7 @@ class GUIbox:
 		if self.guimxitp != None:
 			self.guimxitp.show()
 			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
-			
-		self.guictl.show()
+
 		
 		self.boxDisplayUpdate()
 	
@@ -429,28 +428,31 @@ class GUIbox:
 		self.imagethumbs = []
 		
 		for i in range(0,nim):
-			if i == 0 and self.boxsetcache == None:
-				self.boxsetcache = []
-				self.boxsetcache.append(self.boxable)
-				image = self.image
-			else:
-				self.boxsetcache.append(None)
-				print "reading image"
-				image = EMData(self.imagenames[i])
-			# could save some time here by using self.image when i == 0
-			
-			print "shrinking and appending thumbnail for",self.imagenames[i]
-			i = image.process("math.meanshrink",{"n":n})
-			print 'using shrink',n
-			i.process_inplace("normalize.edgemean")
-			self.imagethumbs.append(i)
+			thumb = self.getImageThumb(i)
+			self.imagethumbs.append(thumb)
 		
 		
 		self.guimxit=EMImageMX()		# widget for displaying image thumbs
 		self.guimxit.setData(self.imagethumbs)
 		self.guimxit.setmmode("app")
 		self.guimxitp = EMParentWin(self.guimxit)
+		
 		return 1
+		
+	def getImageThumb(self,i):
+		n = self.getImageThumbShrink()
+		if i == 0 and self.boxsetcache == None:
+			self.boxsetcache = []
+			self.boxsetcache.append(self.boxable)
+			image = self.image
+		else:
+			self.boxsetcache.append(None)
+			print "reading image"
+			image = EMData(self.imagenames[i])
+		thumb = image.process("math.meanshrink",{"n":n})
+		print 'using shrink',n
+		thumb.process_inplace("normalize.edgemean")
+		return thumb
 		
 	def getImageThumbShrink(self):
 		if self.itshrink == -1:
