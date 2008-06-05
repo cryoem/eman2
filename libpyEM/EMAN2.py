@@ -31,7 +31,6 @@
 #
 
 from EMAN2_cppwrap import *
-from bisect import bisect_left
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
 #from Sparx import *

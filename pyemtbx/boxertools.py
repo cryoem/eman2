@@ -127,7 +127,9 @@ class Box:
 	def getImageName(self):
 		return self.imagename
 	
-	def updateBoxImage(self,image,norm=True):
+	def updateBoxImage(self,norm=True):
+		bic = BigImageCache()
+		image = bic.getImage(self.imagename)
 		#print "getting region",self.xcorner,self.ycorner,self.xsize,self.ysize
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
 		if norm:
@@ -137,11 +139,14 @@ class Box:
 		self.footprint = None
 		
 			
-	def getBoxImage(self,image=None,norm=True,force=False):
+	def getBoxImage(self,norm=True,force=False):
+		bic = BigImageCache()
+		image = bic.getImage(self.imagename)
+		
 		if self.image == None or force:
 			if image == None:
 				print 'error, need to specify the image argument when first calling getBoxImage'
-			self.updateBoxImage(image,norm)
+			self.updateBoxImage(norm)
 		return self.image
 	
 	def getSmallBoxImage(self,flattenradius,shrink):
@@ -157,41 +162,15 @@ class Box:
 		
 	def getSmallImage(self,flattenradius,shrink):
 		
-		doit = True
-		try:
-			cfimage = EMData(self.imagename+".cf.hdf")
-		except:
-			doit = False
-			
-		if doit:
-			fr = cfimage.get_attr("flatten_radius")
-			shr = cfimage.get_attr("shrink")
-			if fr == flattenradius and shr == shrink:
-				return cfimage
-	
-		
-		cfimage = CoarsenedFlattenedImage(self.imagename)
-		cfimage.updateImage(self.boxingobj.image,flattenradius,shrink)
-		return cfimage.getImage()
+		cfImageCache = CFImageCache()
+		return  cfImageCache.getImage(self.imagename, flattenradius,shrink)
 		
 	def getFLCFImage(self,flattenradius,shrink,template):
+		
 		cfimage = self.getSmallImage(flattenradius,shrink)
-		foundflcf = False
-		try:
-			flcfimage = EMData(self.imagename+".flcf.hdf")
-			foundflcf = True
-		except:
-			pass
-	
-		if foundflcf:
-			if flcfimage.get_attr("template_time_stamp") == template.getTemplateTS() and flcfimage.get_attr("data_image_time_stamp") == cfimage.get_attr("creation_time_stamp"):
-				self.correlation = flcfimage
-				return flcfimage
-			
-		flcfimage = FLCFImage(self.imagename)
-		flcfimage.updateImage(cfimage,template)
-
-		return flcfimage.getImage()
+		cache = FLCFImageCache()
+		
+		return cache.getImage(self.imagename,cfimage,template)
 
 	
 	def getFootPrint(self,shrink=1):
@@ -281,105 +260,139 @@ class TrimBox():
 		self.TS = box.TS					# a time stamp flag
 		self.imagename = box.imagename
 		
-class Reference(Box):
-	'''
 
-	A reference is a box, but with extra capabilities. It knows the BoxingObject from which it originated.
-	It can therefore tell ...
-	AM NOT SURE IF THIS IS NECESSARY YET
+class Cache:
+	'''
+	Provides a cache of static size (as defined by self.maxsize)
+	As the cache grows objects are popped off the end of the self.cache tuple
+	
+	get the cache via getCache - iterate through it to find your object
+	add to the cache via addToCache
+	reset the size of the cache using setMaxSize
 	'''
 	def __init__(self):
-		Box.__init__(self)
-		self.boxingobj = None
+		self.maxsize = 10
+		self.cache = []
 
+	def setMaxSize(self,size):
+		'''
+		Will resize the cache if it is current larger than the new maxsize
+		'''
+		if len(self.cache) > size:
+			self.cache = self.cache[0:size]
 
-class FLCFImage:
-	def __init__(self,imagename):
-		self.templateTS = -1 	# this is the time stamp of the template used to generate this correlation map
-		self.imageTS = -1		# this is the time stamp of the image used to generate the correlation map
-		self.flcfimage = None	# this is the flcf image
-		self.imagename=imagename # we must store this
+		self.maxsize = size
 		
-	def paramsMatch(self,cfimage,template):
-		if cfimage.getTS() != self.imageTS or template.getTemplateTS() != self.templateTS:
-			return False
-		else: return True
-		
-	def getTemplateTS(self):
-		return self.templateTS
-	def updateImage(self,cfimage,template):
-		if not isinstance(cfimage,EMData):
-			print "you can't call genFLCF on the cfimage is not an EMData"
-			return 0
-			
-		if not isinstance(template,SwarmTemplate) and not isinstance(template,TrimSwarmTemplate):
-			print "you can't call genFLCF on an object that is not a SwarmTemplate"
-			return 0
-			
-		if template.getTemplateTS() != self.templateTS or cfimage.get_attr("creation_time_stamp") != self.imageTS or self.templateTS == -1 or self.imageTS == -1:
-			self.templateTS = template.getTemplateTS()
-			self.imageTS =cfimage.get_attr("creation_time_stamp")
-			smallimage = cfimage
-			
-			self.flcfimage = smallimage.calc_flcf( template.getTemplate() )
-			self.flcfimage.process_inplace("xform.phaseorigin.tocenter")
-			self.flcfimage.set_attr("template_time_stamp",template.getTemplateTS())
-			self.flcfimage.set_attr("data_image_time_stamp",cfimage.get_attr("creation_time_stamp"))
-			self.flcfimage.write_image(self.imagename+".flcf.hdf")
+	def addToCache(self,object):
+		'''
+		Add 
+		'''
+		oldcache = self.cache
+		self.cache = [object]
+		self.cache.extend(oldcache)
+		if len(self.cache) > self.maxsize:
+			self.cache.pop(self.maxsize)
+			if len(self.cache) != self.maxsize:
+				print "error, the caching mechanism is not working correctly"
+				
+	def getCache(self):
+		return self.cache
 
+class CFImageCache:
+	'''
+	A singleton - usef for caching coarsened-flattened images
+	'''
+	class __impl(Cache):
+		""" Implementation of the singleton interface """
+
+		def __init__(self):
+			Cache.__init__(self)
 			
-			return 1
+		def getImage(self,imagename,flattenradius,shrink):
+			cfImage = None
+			# first see if the object is already stored
+			for object in self.getCache():
+				if object.getInputImageName() == imagename:
+					cfImage = object
+					break;
+				
+				
+			if cfImage == None:
+				# if we make it here the cfimage is not cached
+				#print "had to cache a cf image for",imagename
+				cfImage = CoarsenedFlattenedImage(imagename)
+				self.addToCache(cfImage)
+			#else: print "found a cached cf image for",imagename
+				
+			
+			image = cfImage.getImageCarefully(flattenradius,shrink)
+			if image != None:
+				return image
+			else:
+				print "there was an error getting the image in CFImageCache"
+				return None
 		
-		return 0
 		
-	def getImage(self):
-		return self.flcfimage
+	# storage for the instance reference	
+	__instance = None
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if CFImageCache.__instance is None:
+			# Create and remember instance
+			CFImageCache.__instance = CFImageCache.__impl()
 	
-	
-	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+
 class CoarsenedFlattenedImage:
 	def __init__(self,imagename):
-		self.flattenradius = -1		# the r value used to run the flatten image processor
-		self.shrink = -1			# the value used to shrink the image
 		self.smallimage = None		# a small copy of an image which has had its background flattened
-		self.TS = -1
 		self.imagename = imagename
+		self.ouputimagename = strip_file_tag(self.imagename)+".cf.hdf"
 		
-	def getTS(self):
+		try:
+			# we may have the image already on disk, if so parse it
+			# the image on disk is likely up to date but not necessarily so
+			self.smallimage = EMData(self.ouputimagename)
+			#print "I read the image",self.ouputimagename
+		except:
+			#print "could not read", self.ouputimagename 
+			pass
+		
+	def getInputImageName(self):
+		return self.imagename
+		
+	def getCreationTS(self):
 		return	self.smallimage.get_attr("creation_time_stamp")
-		
-	def updateImage(self,image,flattenradius,shrink,forceupdate=False):
+	
+	def getFlattenRadius(self):
+		return self.smallimage.get_attr("flatten_radius")
+	
+	def getShrinkFactor(self):
+		return self.smallimage.get_attr("shrink_factor")
+	
+	def __updateImage(self,flattenradius,shrink):
 		'''
 		Updates the image using the function arguments
 		If they match current parameters than nothing happens - the correct image is already cached
 		'''
-		
-		if self.smallimage == None or flattenradius != self.flattenradius or self.shrink != shrink or forceupdate:
+		bic = BigImageCache()
+		image = bic.getImage(self.imagename)
+
+		self.smallimage = image.process("math.meanshrink",{"n":shrink})
+		self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
 			
-			if (self.shrink != shrink or forceupdate or self.smallimage == None):
-				self.shrink = shrink
-				if self.shrink != 1:
-					self.smallimage = image.process("math.meanshrink",{"n":self.shrink})
-				else: self.smallimage = image.copy()
-			
-				# if we redid the shrink we definitely have to redo the background flattening
-				self.flattenradius = flattenradius
-				self.smallimage.process_inplace("filter.flattenbackground",{"radius":self.flattenradius})
-			
-			elif flattenradius != self.flattenradius:
-				# if we make it here all that has changed is the flattenradius parameter
-				self.flattenradius = flattenradius
-				self.smallimage.process_inplace("filter.flattenbackground",{"radius":self.flattenradius})
-				
-			# store the time stamp for persistence
-			self.TS = time()
-			
-			# now put the results in the database
-			
-			self.smallimage.set_attr("flatten_radius",self.flattenradius)
-			self.smallimage.set_attr("shrink",self.shrink)
-			self.smallimage.set_attr("creation_time_stamp",self.TS)
-			self.smallimage.write_image(self.imagename+".cf.hdf")
+		self.smallimage.set_attr("flatten_radius",flattenradius)
+		self.smallimage.set_attr("shrink_factor",shrink)
+		self.smallimage.set_attr("creation_time_stamp",time())
+		self.smallimage.write_image(self.ouputimagename)
 				
 		#else:
 			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
@@ -390,30 +403,238 @@ class CoarsenedFlattenedImage:
 		'''
 		return self.smallimage
 	
-	def reset(self):
-		'''
-		Sets member variables to their default starting values
-		This will force an update next time updateImage is called.
-		'''
-		self.flattenradius = -1		# the r value used to run the flatten image processor
-		self.shrink = -1			# the value used to shrink the image
-		self.smallimage = None		# a small copy of an image which has had its background flattened
+	
+	def getImageCarefully(self,flattenradius,shrink):
 		
+		if self.smallimage == None or not self.paramsMatch(flattenradius,shrink):
+			#print "regenerating cf image"
+			self.__updateImage(flattenradius,shrink)
+		#else: print "cf image is up to date"
+		
+		return self.getImage()
+	
 	def paramsMatch(self,flattenradius,shrink):
-		if flattenradius != self.flattenradius or self.shrink != shrink:
-			return False
-		else:
-			return True
+		try:
+			if flattenradius != self.getFlattenRadius() or shrink != self.getShrinkFactor():
+				return False
+			else: return True
+		except: return False # exception will be thrown if self.smallimage = None
 
+
+class BigImageCache:
+	class __impl(Cache):
+		""" A cache for storing big images """
+
+		def __init__(self):
+			Cache.__init__(self)
+			self.setMaxSize(2)
+
+	
+		def getImage(self,imagename):
+			# this loop takes care of things if the image is cached
+			object = None
+			for bigImage in self.getCache():
+				if bigImage.getImageName() == imagename:
+					object = bigImage
+					break
+				
+			
+			# if we make it here the image is not cached
+			if object == None:
+				#print "I am generating a big image in the cache for",imagename
+				object = BigImage(imagename)
+				self.addToCache(object)
+			#else: print "I am returning a big image from the cache"
+				
+			return object.getImage()
+			
+	# storage for the instance reference
+	__instance = None
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if BigImageCache.__instance is None:
+			# Create and remember instance
+			BigImageCache.__instance = BigImageCache.__impl()
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+	
+class BigImage:
+	def __init__(self,imagename):
+		self.imagename = imagename
+		self.image = None
+	
+	def getImageName(self):
+		return self.imagename
+	
+	def getImage(self):
+		if self.image == None:
+			self.image = EMData(self.imagename)
+			self.image.process_inplace("normalize.edgemean") # this seams to be the normal behavior
+			
+		return self.image
+
+class FLCFImageCache:
+	'''
+	A singleton - used for caching flcf images
+	'''
+	class __impl(Cache):
+		""" Implementation of the singleton interface """
+
+		def __init__(self):
+			Cache.__init__(self)
+
+
+		def getImage(self,imagename,cfimage,template):
+			
+			flcfImage = None
+			# first see if the object is already stored
+			for object in self.getCache():
+				if object.getInputImageName() == imagename:
+					flcfImage = object
+					break;
+				
+				
+			if flcfImage == None:
+				# if we make it here the flcfimage is not cached
+				#print "generated flcf for",imagename
+				flcfImage = FLCFImage(imagename)
+				self.addToCache(flcfImage)
+			#else: print "found flcf for",imagename
+				
+			
+			image = flcfImage.getImageCarefully(cfimage,template)
+			if image != None:
+				return image
+			else:
+				print "there was an error getting the image"
+				return None
+		
+		# storage for the instance reference	
+	__instance = None
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if FLCFImageCache.__instance is None:
+			# Create and remember instance
+			FLCFImageCache.__instance = FLCFImageCache.__impl()
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+
+
+
+class FLCFImage:
+	def __init__(self,imagename):
+		self.flcfimage = None	# this is the flcf image
+		self.imagename=imagename # we must store this it's used externally to determine if the FLCFImage is cached
+		self.outputimagename = strip_file_tag(imagename)+".flcf.hdf"
+		
+		
+		try: # try to read the image from disk - it may already exist and save us lots of time
+			self.flcfimage = EMData(self.outputimagename)
+		except:
+			# the image doesn't exist, that's okay
+			pass
+		
+	def paramsMatch(self,cfimage,template):
+		#print cfimage.get_attr("creation_time_stamp"), self.getCfiTS(),"template",template.getTemplateTS(),self.getTemplateTS()
+		try:
+			if cfimage.get_attr("creation_time_stamp") != self.getCfiTS() or template.getTemplateTS() != self.getTemplateTS():
+				#print "params did not match"
+				return False
+			else: return True
+		except: return False
+	
+	def getInputImageName(self):
+		return self.imagename
+	
+	def getOutputImageName(self):
+		return self.outputimagename
+	
+	def getTemplateTS(self):
+		'''
+		get template time stamp
+		'''
+		return self.flcfimage.get_attr("template_time_stamp")
+	def getCfiTS(self):
+		'''
+		get cfi time stamp
+		Cfi = coarsened flattened image
+		'''
+		return self.flcfimage.get_attr("data_image_time_stamp")
+		
+	def getImage(self):
+		'''
+		Returns the currently stored flcfimage
+		'''
+		return self.flcfimage
+	
+	def __updateImage(self,cfimage,template):
+
+		self.flcfimage = cfimage.calc_flcf( template.getTemplate() )
+		self.flcfimage.process_inplace("xform.phaseorigin.tocenter")
+		self.flcfimage.set_attr("template_time_stamp",template.getTemplateTS())
+		val = cfimage.get_attr("creation_time_stamp")
+		self.flcfimage.set_attr("data_image_time_stamp",val)
+		self.flcfimage.write_image(self.outputimagename)
+		
+		
+	def getImage(self):
+		return self.flcfimage
+	
+	def getImageCarefully(self,cfimage,template):
+		'''
+		Checks to see if the arguments are the right types
+		Then checks to see if the currently store correlation image is up to date
+		If it's not up to date or it doesn't exist then it is (re)generated
+		Then it is returned
+		'''
+		
+		if not isinstance(cfimage,EMData):
+			print "you can't call genFLCF on the cfimage is not an EMData"
+			return None
+			
+		if not isinstance(template,SwarmTemplate) and not isinstance(template,TrimSwarmTemplate):
+			print "you can't call genFLCF on an object that is not a SwarmTemplate"
+			return None
+		
+		action = False
+		if self.flcfimage != None:
+			if not self.paramsMatch(cfimage,template):
+				action = True
+		else: action = True
+		
+		if action:
+			#print "generating correlation image"
+			self.__updateImage(cfimage,template)
+		#else: print "returning cached image"
+		return self.getImage()
 
 class Boxable:
-	def __init__(self,image,imagename,parent=None,autoBoxer=None):
-		self.image = image			# the image containing the boxes
+	CENTERACF = "centeracf"
+	CENTERALIGNINT = "cenlignint"
+	CENTEROFMASS = "centerofmass"
+	CENTEROFMASSINV = "centerofmassinv"
+	def __init__(self,imagename,parent=None,autoBoxer=None):
+		print "in boxable constructor"
 		self.parent = parent		# keep track of the parent in case we ever need it
 		self.boxes = []				# a list of boxes
 		self.refboxes = []			# a list of boxes
 		self.boxsize = -1			#  the boxsize
-		self.cfimage = CoarsenedFlattenedImage(imagename)	# a small copy of the image which has had its background flattened
 		self.imagename = imagename
 		
 		self.fpshrink = -1
@@ -427,9 +648,21 @@ class Boxable:
 		
 		self.autoBoxer = autoBoxer
 		
+		
+		
+		try:
+			excimagename = strip_file_tag(self.imagename)+".exc.hdf"
+			self.exclusionimage = EMData(excimagename)
+		except: pass
+		
 		try: self.boxesReady(True)
 		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
 	
+	def cacheExcToDisk(self):
+		if self.exclusionimage != None:
+			excimagename = strip_file_tag(self.imagename)+".exc.hdf"
+			self.exclusionimage.write_image(excimagename)
+
 	def getImageName(self):
 		return self.imagename
 	
@@ -467,6 +700,9 @@ class Boxable:
 				
 				box.boxingobject=self
 				self.boxes.append(box)
+				
+		print "exiting boxesReady"
+		self.updateExcludedBoxes()
 	
 	def writedb(self,force=False):
 		if len(self.boxes) == 0:
@@ -505,7 +741,8 @@ class Boxable:
 					remove_file(boxname)
 				
 			for box in self.boxes:
-				image = box.getBoxImage(self.image)
+				
+				image = box.getBoxImage()
 				image.write_image(boxname,-1)
 
 
@@ -591,7 +828,6 @@ class Boxable:
 		self.fprink = -1
 		self.flattenimager = -1
 		self.boxsize = boxsize
-		self.cfimage.reset()
 		self.correlation = None
 		
 	def getfootprintshrink(self):
@@ -613,7 +849,7 @@ class Boxable:
 		if self.autoBoxer != None:
 			return self.autoBoxer.getBestShrink()
 		else:
-			print 'warning, there is not autoboxer set, am not sure how to shrink, returning 1 as the shrink factor'
+			print 'warning, there is no autoboxer set, am not sure how to shrink, returning 1 as the shrink factor'
 			return 1
 		
 	def updateCorrelation(self,template):
@@ -642,64 +878,39 @@ class Boxable:
 		'''
 		cfimage = self.getSmallImage()
 		
-		foundflcf = False
-		try:
-			flcfimage = EMData(self.imagename+".flcf.hdf")
-			foundflcf = True
-		except:
-			pass
-	
-		if foundflcf:
-			if flcfimage.get_attr("template_time_stamp") == template.getTemplateTS() and flcfimage.get_attr("data_image_time_stamp") == cfimage.get_attr("creation_time_stamp"):
-				self.correlation = flcfimage
-				return flcfimage
-			#else: 
-				#print flcfimage.get_attr("template_time_stamp"),template.getTemplateTS(),flcfimage.get_attr("data_image_time_stamp"),cfimage.get_attr("creation_time_stamp")
-				#print 'bummer'
-			
-		flcfimage = FLCFImage(self.imagename)
-		flcfimage.updateImage(cfimage,template)
-		self.correlation = flcfimage.getImage()
-		self.templateTS = flcfimage.getImage().get_attr("template_time_stamp")
+		cache = FLCFImageCache()
+		self.correlation = cache.getImage(self.imagename,cfimage,template)
 		
-		return flcfimage.getImage()
+		return self.correlation
 	
 	def getCorrelationImage(self):
 		return self.correlation
 	
 	
 	def getSmallImage(self):
-		
-		doit = True
-		try:
-			cfimage = EMData(self.imagename+".cf.hdf")
-		except:
-			doit = False
-			
-		if doit:
-			flatten_radius = cfimage.get_attr("flatten_radius")
-			shrink = cfimage.get_attr("shrink")
-			if flatten_radius == self.autoBoxer.getTemplateRadius() and shrink == self.autoBoxer.getBestShrink():
-				return cfimage
-
-		self.cfimage.updateImage(self.image,self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
-		return self.cfimage.getImage()
+		cfImageCache = CFImageCache()
+		return  cfImageCache.getImage(self.imagename,self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
 	
-	def updateExcludedBoxes(self):
+	def updateExcludedBoxes(self, useinternal=True,exclusionimage= None):
 		'''
 		
 		'''
+		if useinternal:
+			exclusionimage = self.getExclusionImage()
+		
+			
+		
 		lostboxes = []
 		
+			
 		invshrink = 1.0/self.getBestShrink()
-		exc = self.getExclusionImage()
 		n = len(self.boxes)
 		for i in range(n-1,-1,-1):
 			box = self.boxes[i]
 			x = int((box.xcorner+box.xsize/2.0)*invshrink)
 			y = int((box.ycorner+box.ysize/2.0)*invshrink)
 			
-			if ( exc.get(x,y) != 0):
+			if ( exclusionimage.get(x,y) != 0):
 				lostboxes.append(i)
 			
 				self.boxes.pop(i)
@@ -834,7 +1045,7 @@ class AutoBoxer:
 	'''
 	Base class design for auto boxers
 	'''
-	def __init__(self,boxable=None):
+	def __init__(self):
 		self.version = 1.0
 
 	def getTemplate(self):
@@ -1089,10 +1300,8 @@ class SwarmAutoBoxer(AutoBoxer):
 	USERDRIVEN = 3
 	ANCHOREDUSERDRIVEN = 4
 	COMMANDLINE = 5
-	def __init__(self,boxable,parent=None):
-		AutoBoxer.__init__(self,boxable)
-		
-		self.boxable = boxable
+	def __init__(self,parent):
+		AutoBoxer.__init__(self)
 		
 		self.refboxes = []		# this will eventually be a list of Box objects
 		self.template = SwarmTemplate(self)	# an EMData object that is the template
@@ -1139,6 +1348,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.template = SwarmTemplate(self)
 		self.template.become(trimSwarmAutoBoxer.template)
 		
+	def getBoxable(self):
+		return self.parent.getBoxable()
+	
 	def getTemplate(self):
 		return self.template
 	
@@ -1158,10 +1370,6 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.removeReference(self.dummybox)
 			
 		self.dummybox = box
-			
-	
-	def setBoxable(self,boxable):
-		self.boxable = boxable
 	
 	def setModeExplicit(self,mode):
 		if mode in self.permissablemodes:
@@ -1185,7 +1393,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.__fullUpdate()
 				self.regressiveflag = True
 				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-					self.autoBox(self.boxable)
+					self.autoBox(self.getBoxable())
 				elif self.mode == SwarmAutoBoxer.COMMANDLINE:
 					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in setCmpMode"
 				return 1
@@ -1204,7 +1412,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.stateTS = time()
 				self.regressiveflag = True
 				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-					self.autoBox(self.boxable)
+					self.autoBox(self.getBoxable())
 				elif self.mode == SwarmAutoBoxer.COMMANDLINE:
 					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in setSelectionMode"
 				return 1
@@ -1242,7 +1450,7 @@ class SwarmAutoBoxer(AutoBoxer):
 					print 'the box flag is internally inconsistent when using pure dynapix'
 					return 0
 				self.__fullUpdate()
-				self.autoBox(self.boxable)
+				self.autoBox(self.getBoxable())
 			elif self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 				if box.isanchor and not box.isdummy:
 					print 'the box flag is internally inconsistent when anchoring'
@@ -1250,7 +1458,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				box.updateParams(self)
 				self.__accrueOptParams()
 				self.stateTS = time()
-				self.autoBox(self.boxable)
+				self.autoBox(self.getBoxable())
 			elif self.mode == SwarmAutoBoxer.USERDRIVEN:
 				self.refupdate = True
 				self.stateTS = -1
@@ -1281,12 +1489,12 @@ class SwarmAutoBoxer(AutoBoxer):
 			if box.isanchor:
 				self.__fullUpdate()
 				self.regressiveflag = True
-				self.autoBox(self.boxable)
+				self.autoBox(self.getBoxable())
 			else:
 				self.__accrueOptParams()
 				self.stateTS = time()
 				self.regressiveflag = True
-				self.autoBox(self.boxable)
+				self.autoBox(self.getBoxable())
 			return 1
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
 			if box.isanchor:
@@ -1317,13 +1525,13 @@ class SwarmAutoBoxer(AutoBoxer):
 			if box.isanchor:
 				self.__fullUpdate()
 				self.regressiveflag = True
-				self.autoBox(self.boxable)
+				self.autoBox(self.getBoxable())
 			else:
 				box.updateParams(self)
 				self.__accrueOptParams()
 				self.stateTS = time()
 				self.regressiveflag = True
-				self.autoBox(self.boxable)
+				self.autoBox(self.getBoxable())
 			return 1
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
 			if box.isanchor:
@@ -1367,7 +1575,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			# update references
 			self.__fullUpdate()
-			self.autoBox(self.boxable)
+			self.autoBox(self.getBoxable())
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN :
 			self.refupdate = True
 			self.stateTS = -1
@@ -1605,9 +1813,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		self.__plotUpdate()
 		#print 'NOW THEY ARE'
-		print 'threshod:',self.optthreshold
-		print 'profile:',self.optprofile
-		print 'optrad:',self.optprofileradius
+		#print 'threshod:',self.optthreshold
+		#print 'profile:',self.optprofile
+		#print 'optrad:',self.optprofileradius
 		return True
 	
 	def __plotUpdate(self):

@@ -224,9 +224,7 @@ for single particle analysis."""
 		for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
 			for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
 				boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
-	
-	
-	
+
 	E2end(logid)
 
 	# invoke the GUI if requested
@@ -379,29 +377,25 @@ class GUIbox:
 		
 		self.dynapixp=get_app()
 		self.imagenames = imagenames
-		self.image=EMData(self.imagenames[0])
-		self.image.process_inplace("normalize.edgemean")
 		self.currentimage = 0
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
 		
-		
-		self.boxable = Boxable(self.image,self.imagenames[0],self,None)
-		self.boxable.addnonrefs(boxes)
-		self.boxable.boxsize = boxsize
-
 		try:
 			projectdb = EMProjectDB()
 			trimAutoBoxer = projectdb["currentautoboxer"]
-			self.autoBoxer = SwarmAutoBoxer(self.boxable,self)
+			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.become(trimAutoBoxer)
 			print 'using cached autoboxer db'
 		except:
 			print 'constructed new autoboxer'
-			self.autoBoxer = SwarmAutoBoxer(self.boxable,self)
+			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.boxsize = boxsize
 			self.autoBoxer.setMode(self.dynapix,self.anchortemplate)
 		
+		self.boxable = Boxable(self.imagenames[0],self,self.autoBoxer)
+		self.boxable.addnonrefs(boxes)
+		self.boxable.boxsize = boxsize
 		self.boxable.setAutoBoxer(self.autoBoxer)
 		
 		
@@ -410,7 +404,9 @@ class GUIbox:
 		self.boxm = None
 		self.moving=None					# Used during a user box drag
 		
-		self.guiimp=EMImage(self.image)		# widget for displaying large image
+		bic = BigImageCache()
+		image=bic.getImage(self.imagenames[0])
+		self.guiimp=EMImage(image)		# widget for displaying large image
 		self.guiim=self.guiimp.child
 		self.guimxp= None # widget for displaying matrix of smaller images
 		self.guimx=EMImageMX()	
@@ -461,6 +457,9 @@ class GUIbox:
 
 		self.guictl.show()
 		self.boxDisplayUpdate()
+		
+	def getBoxable(self):
+		return self.boxable
 	
 	def setPtclMxData(self,data=None):
 		'''
@@ -473,23 +472,21 @@ class GUIbox:
 				self.guimxp.show()
 	
 	def imagesel(self,event,lc):
+		#print 'in image select'
 		im=lc[0]
 		if im != self.currentimage:
+			#print 'changing images'
 			self.guimxit.setSelected(im)
-			image = self.image
-			print "a current image has refs",getrefcount(image)
-			self.image = EMData(self.imagenames[im])
-			print "b current image has refs",getrefcount(image)
-			self.image.process_inplace("normalize.edgemean")
-			self.guiim.setData(self.image)
-				
-			self.boxable = Boxable(self.image,self.imagenames[im],self,self.autoBoxer)
-			self.autoBoxer.setBoxable(self.boxable)
+			
+			bic = BigImageCache()
+			image=bic.getImage(self.imagenames[im])
+			self.guiim.setData(image)
+			
+			self.boxable.cacheExcToDisk()
+			self.boxable = Boxable(self.imagenames[im],self,self.autoBoxer)
 			
 			self.ptcl = []
-			print "c current image has refs",getrefcount(image)
 			self.guiim.delShapes()
-			print "d current image has refs",getrefcount(image)
 			self.indisplaylimbo = True
 			if self.dynapix:
 				self.autoBoxer.regressiveflag = True
@@ -505,9 +502,7 @@ class GUIbox:
 			
 			self.boxDisplayUpdate()
 			self.updateAllImageDisplay()
-			e = test_image()
-			print "e current image has refs",getrefcount(image)
-			print "testimage has this many refs",getrefcount(e)
+			
 	
 	def genImageThumbnailsWidget(self):
 		'''
@@ -531,6 +526,7 @@ class GUIbox:
 		
 		for i in range(0,nim):
 			thumb = self.getImageThumb(i)
+			#print "got thumb",i
 			self.imagethumbs.append(thumb)
 		
 		
@@ -543,24 +539,24 @@ class GUIbox:
 		
 	def getImageThumb(self,i):
 		n = self.getImageThumbShrink()
-		if i == 0 :
-			image = self.image
-		else:
-			print "reading image"
-			image = EMData(self.imagenames[i])
+		
+		bic = BigImageCache()
+		image=bic.getImage(self.imagenames[i])
+		
 		thumb = image.process("math.meanshrink",{"n":n})
-		print 'using shrink',n
 		thumb.process_inplace("normalize.edgemean")
 		return thumb
 		
 	def getImageThumbShrink(self):
 		if self.itshrink == -1:
-			if self.image == None:
+			bic = BigImageCache()
+			image=bic.getImage(self.imagenames[self.currentimage])
+			if image == None:
 				print "error - the image is not set, I need it to calculate the image thumb shrink"
 				exit(1)
 			shrink = 1
-			inx = self.image.get_xsize()/2
-			iny = self.image.get_ysize()/2
+			inx =  image.get_xsize()/2
+			iny =  image.get_ysize()/2
 			while ( inx >= 128 and iny >= 128):
 				inx /= 2
 				iny /= 2
@@ -576,7 +572,7 @@ class GUIbox:
 		# Write EMAN1 style box database
 		n = 0
 		for box in boxes:
-			image = box.getBoxImage(self.image)
+			image = box.getBoxImage()
 #			print n,i
 #			print i[4]
 			image.write_image(imagename,n)
@@ -739,9 +735,9 @@ class GUIbox:
 		box = self.getboxes()[boxnum]
 		box.xcorner += dx
 		box.ycorner += dy
-		box.updateBoxImage(self.image)
+		box.updateBoxImage()
 			# we have to update the reference also
-		self.ptcl[boxnum] = box.getBoxImage(self.image)
+		self.ptcl[boxnum] = box.getBoxImage()
 			
 		x0=box.xcorner+box.xsize/2-1
 		y0=box.ycorner+box.ysize/2-1
@@ -782,11 +778,14 @@ class GUIbox:
 			# tell the boxable to remove boxes (and return their number)
 			lostboxes = self.boxable.updateExcludedBoxes()
 			# after this, make sure the display is correct.
-			self.deleteDisplayShapes(lostboxes)
-			
-			self.mouseclicks += 1
-			self.updateppc()
-			self.updateAllImageDisplay()
+			if len(lostboxes) != 0:
+				
+				self.deleteDisplayShapes(lostboxes)
+				
+				self.mouseclicks += 1
+				self.updateppc()
+				#self.boxDisplayUpdate()
+				self.updateAllImageDisplay()
 	
 	def keypress(self,event):
 		if event.key() == Qt.Key_Tab:
@@ -815,16 +814,31 @@ class GUIbox:
 		Deletes shapes displayed by the 2D image viewer
 		Pops boxed particles from the list used by the matrix image viewer (for boxes)
 		'''
-		print "called delete display shapesS"
+		#print "called delete display shapesS"
 		if self.indisplaylimbo: return
+		
+		sh=self.guiim.getShapes()
 		
 		for num in numbers:
 			sh=self.guiim.getShapes()
+			k=sh.keys()
+			k.sort()
 			del sh[int(num)]
-			self.ptcl.pop(num)
+			for j in k:
+				if isinstance(j,int):
+					if j>num :
+						sh[j-1]=sh[j]
+						del sh[j]
 			
-		sh = self.guiim.getShapes()
-		print "now there are",len(sh),"shapes"
+			self.ptcl.pop(num)
+						
+		self.guiim.delShapes()
+		self.guiim.addShapes(sh)
+
+			
+		#self.guiim.delShapes()
+		#self.guiim.addShapes(sh)
+		#print "now there are",len(sh),"shapes"
 		
 		
 	def delbox(self,boxnum):
@@ -876,7 +890,7 @@ class GUIbox:
 			
 			box.changed=False
 		
-			im=box.getBoxImage(self.image)
+			im=box.getBoxImage()
 			box.shape = EMShape(["rect",box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
 			if not box.isref:
 				box.shape.isanimated = True
@@ -926,13 +940,13 @@ class GUIbox:
 		self.autoBoxer.setMode(self.dynapix,self.anchortemplate)
 		
 	def done(self):
+		self.boxable.cacheExcToDisk()
 		self.dynapixp.quit
 		
 	def trydata(self,data,thr):
 		print 'trydata was pressed, this feature is currently disabled'
 		
 	def optparamsupdate(self,thresh,profile,radius):
-		print "updateing "
 		self.guictl.updatedata(thresh,profile,radius)
 		
 	def setautobox(self,selmode):
@@ -986,7 +1000,9 @@ class GUIbox:
 			#if boxset == None: continue
 			#else:
 				#boxset.writedb()
-
+	
+	def center(self,technique):
+		print 'technique',technique,'is unsupported - check back tomorrow'
 					
 		
 class GUIboxPanel(QtGui.QWidget):
@@ -1025,10 +1041,14 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.selbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
 		self.connect(self.morselbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
 		self.connect(self.ratiobut, QtCore.SIGNAL("clicked(bool)"), self.cmpboxclick)
+		self.connect(self.centerbutton,QtCore.SIGNAL("clicked(bool)"),self.centerpushed)
 		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmpboxclick)
 		self.connect(self.nocpick, QtCore.SIGNAL("clicked(bool)"), self.target.nocupdate)
 		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erasetoggled)
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
+	
+	def centerpushed(self,unused):
+		self.target.center(str(self.centerooptions.currentText()))
 	
 	def insertMainTab(self):
 		# this is the box layout that will store everything
@@ -1056,6 +1076,23 @@ class GUIboxPanel(QtGui.QWidget):
 		self.bs = QtGui.QLineEdit(str(self.target.boxsize),self)
 		self.hbl1.addWidget(self.bs)
 		self.main_vbl.addLayout(self.hbl1)
+		
+		
+		self.hbl3=QtGui.QHBoxLayout()
+		
+		self.centerooptions = QtGui.QComboBox(self.main_inspector)
+		self.centerooptions.addItem(Boxable.CENTERACF)
+		self.centerooptions.addItem(Boxable.CENTERALIGNINT)
+		self.centerooptions.addItem(Boxable.CENTEROFMASS)
+		self.centerooptions.addItem(Boxable.CENTEROFMASSINV)
+		
+		self.centerbutton = QtGui.QPushButton("Center")
+		self.usingtext = QtGui.QLabel("using",self)
+		self.hbl3.addWidget(self.centerbutton)
+		self.hbl3.addWidget(self.usingtext)
+		self.hbl3.addWidget(self.centerooptions)
+		
+		self.main_vbl.addLayout(self.hbl3)
 		
 		self.hbl3=QtGui.QHBoxLayout()
 		self.dynapick = QtGui.QCheckBox("Dynapix")

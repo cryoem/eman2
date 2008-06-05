@@ -29,6 +29,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from bisect import bisect_left
 
 # These are particle box sizes which have only 2,3,5 and 7 as prime factors, 
 # and are all divisible by 4
