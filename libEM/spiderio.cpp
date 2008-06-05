@@ -584,7 +584,7 @@ int SpiderIO::write_single_data(float *data, const Region * area, SpiderHeader *
 	
 	portable_fseek(spider_file, offset, SEEK_SET);
 	
-	int size = hp->nsam * hp->nrow * hp->nslice;
+	int size = (int)(hp->nsam * hp->nrow * hp->nslice);
 	if(!use_host_endian) {
 		ByteOrder::swap_bytes(data, size);
 	}
