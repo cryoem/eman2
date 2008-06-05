@@ -35,7 +35,7 @@
 # This program is used to box out particles from micrographs/CCD frames
 
 from EMAN2 import *
-from boxertools import *
+from pyemtbx.boxertools import *
 from optparse import OptionParser
 from emshape import EMShape
 from emimagemx import EMImageMX
@@ -43,14 +43,18 @@ from math import *
 from time import *
 import os
 import sys
-
+import signal
 from copy import *
 
 from emglplot import *
 
 from shelve import open
 
-from time import time
+from time import time,sleep
+
+from sys import getrefcount
+
+from os import kill
 
 pl=()
 
@@ -69,7 +73,7 @@ for single particle analysis."""
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db",default=[])
 	parser.add_option("--writedb",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--writeboximages",action="store_true",help="Write data box files",default=False)
-	parser.add_option("--force",action="store_true",help="Force overwrites old files",default=False)
+	parser.add_option("--force","-f",action="store_true",help="Force overwrites old files",default=False)
 	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
 	parser.add_option("--refptcl","-R",type="string",help="(auto:ref) A stack of reference images. Must have the same scale as the image being boxed.",default=None)
 	parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
@@ -78,7 +82,7 @@ for single particle analysis."""
 	parser.add_option("--dbout",type="string",help="filename to write EMAN1 style box database file to",default=None)
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--ptclout",type="string",help="filename to write boxed out particles to",default=None)
-	parser.add_option("--parallel",type="int",help="specify more than one processor",default=None)
+	parser.add_option("--parallel",type="int",help="specify more than one processor",default=1)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -141,22 +145,24 @@ for single particle analysis."""
 				
 	if "db" in options.auto:
 		print "auto data base boxing"
-		projectdb = EMProjectDB()
 	
-		trimAutoBoxer = projectdb["currentautoboxer"]
-		autoBoxer = SwarmAutoBoxer(None)
-		autoBoxer.become(trimAutoBoxer)
-		autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-		for imagename in imagenames:
+		if len(imagenames) == 1:
+			projectdb = EMProjectDB()
+	
+			trimAutoBoxer = projectdb["currentautoboxer"]
+			autoBoxer = SwarmAutoBoxer(None)
+			autoBoxer.become(trimAutoBoxer)
+			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+			imagename = imagenames[0]
 			exists = True
 			try:
 				oldAutoBoxer = projectdb[imagename+"_autoboxer"]	
 			except: exists = False 	
 			if exists and autoBoxer.stateTS == oldAutoBoxer.stateTS:
-				print "up2date"
-				continue
+				print "The content in the project data base for",imagename,"is up2date"
+				exit(1)
 			else:
-				print "not up2date"
+				print "Auto boxing",imagename
 				image = EMData(imagename)
 				boxable = Boxable(image,imagename,None,autoBoxer)
 				autoBoxer.setBoxable(boxable)
@@ -165,8 +171,28 @@ for single particle analysis."""
 					boxable.writedb(options.force)
 				if options.writeboximages:
 					boxalbe.writeboximages(options.force)
-					
+				exit(1)
+		else:
+			print "autoboxing using parallel stuff"
+			autoboxer = AutoDBBoxer(imagenames,options.parallel,options.force)
+			try:
+				from emimage import EMImage,get_app
+			except: 
+				print "error"
+				exit(1)
 				
+			a = get_app()
+			autoboxer.go(a)
+			a.exec_()
+			print "done"
+				
+			exit(1)
+			#while autoboxer.working:
+				#sleep(1)
+				#autoboxer.printcpstatus()
+				
+				
+			#exit(1)
 
 	# we need to know how big to make the boxes. If nothing is specified, but
 	# reference particles are, then we use the reference particle size
@@ -251,7 +277,82 @@ except:
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
+
+class AutoDBBoxer(QtCore.QObject):
+	def __init__(self,imagenames,nproc,force=False):
+		QtCore.QObject.__init__(self)
+		self.nproc = nproc
+		self.imagenames = imagenames
+		self.currentidx = 0	
+		self.force = force
+		self.working = True
+		self.processes = []
+		self.jobsdone = 0
+		self.cps = []
+		self.app = None
+		for i in range(0,nproc):
+			self.cps.append(None)
+		
+		for i in range(0,len(self.imagenames)):
+			self.processes.append(QtCore.QProcess(self))
+			
+	def printcpstatus(self):
+		for i in self.cps:
+			print i.state(),
+			print i.pid()
+			print kill(i.pid(),signal.SIG_IGN)
+			
+		print ''
+	def go(self,app):
+		self.app = app
+		
+		for i in range(0,self.nproc):
+			self.spawn_process()
+			self.cps[i] = self.processes[i]
+			self.currentidx += 1
+			
+		
+			
+	def spawn_process(self):
+		if self.currentidx >= len(self.imagenames) :
+			return
+			
+		#process = self.processes[self.currentidx]
+			
+		program = QtCore.QString("e2boxer.py")
+		args = QtCore.QStringList()
+		args.append(self.imagenames[self.currentidx])
+		args.append("--auto=db")
+		
+		if self.force:	args.append("-f")
+		
+		QtCore.QObject.connect(self.processes[self.currentidx], QtCore.SIGNAL("finished(int)"), self.process_finished)
+		#QtCore.QObject.connect(self.processes[self.currentidx], QtCore.SIGNAL("finished(int,QProcess.ExitStatus)"), self.process_finished_status)
+		#QtCore.QObject.connect(self.processes[self.currentidx], QtCore.SIGNAL("error(QProcess.ProcessError)"), self.process_error)
+		#QtCore.QObject.connect(self.processes[self.currentidx], QtCore.SIGNAL("started()"), self.process_start)
+		
+		#self.processes[self.currentidx].setProcessChannelMode(QtCore.QProcess.ForwardedChannels)
+		self.processes[self.currentidx].start(program,args)
+		
+		
+		#self.processes[self.currentidx].waitForStarted()
+		print "executing",
+		for arg in args: print arg,
+		print ''
 	
+	def process_finished(self,int):
+		#print "process finished"
+		self.jobsdone += 1
+		if self.jobsdone == len(self.imagenames):
+			self.app.quit()
+		self.spawn_process()
+		self.currentidx += 1
+		
+		
+	#def process_start(self):
+		#print "process started"
+		
+
 class GUIbox:
 	def __init__(self,imagenames,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
@@ -281,7 +382,6 @@ class GUIbox:
 		self.image=EMData(self.imagenames[0])
 		self.image.process_inplace("normalize.edgemean")
 		self.currentimage = 0
-		self.boxsetcache = None
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
 		
@@ -359,7 +459,7 @@ class GUIbox:
 			self.guimxitp.show()
 			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
 
-		
+		self.guictl.show()
 		self.boxDisplayUpdate()
 	
 	def setPtclMxData(self,data=None):
@@ -375,21 +475,21 @@ class GUIbox:
 	def imagesel(self,event,lc):
 		im=lc[0]
 		if im != self.currentimage:
-			oldboxset  = self.boxsetcache[self.currentimage]
 			self.guimxit.setSelected(im)
+			image = self.image
+			print "a current image has refs",getrefcount(image)
 			self.image = EMData(self.imagenames[im])
+			print "b current image has refs",getrefcount(image)
 			self.image.process_inplace("normalize.edgemean")
 			self.guiim.setData(self.image)
-			if self.boxsetcache[im] == None:
-				self.boxsetcache[im] = Boxable(self.image,self.imagenames[im],self,self.autoBoxer)
-				self.boxsetcache[im].boxsize = self.boxsize
 				
-			self.boxable = self.boxsetcache[im]
+			self.boxable = Boxable(self.image,self.imagenames[im],self,self.autoBoxer)
 			self.autoBoxer.setBoxable(self.boxable)
 			
 			self.ptcl = []
-			
+			print "c current image has refs",getrefcount(image)
 			self.guiim.delShapes()
+			print "d current image has refs",getrefcount(image)
 			self.indisplaylimbo = True
 			if self.dynapix:
 				self.autoBoxer.regressiveflag = True
@@ -405,7 +505,9 @@ class GUIbox:
 			
 			self.boxDisplayUpdate()
 			self.updateAllImageDisplay()
-			
+			e = test_image()
+			print "e current image has refs",getrefcount(image)
+			print "testimage has this many refs",getrefcount(e)
 	
 	def genImageThumbnailsWidget(self):
 		'''
@@ -441,12 +543,9 @@ class GUIbox:
 		
 	def getImageThumb(self,i):
 		n = self.getImageThumbShrink()
-		if i == 0 and self.boxsetcache == None:
-			self.boxsetcache = []
-			self.boxsetcache.append(self.boxable)
+		if i == 0 :
 			image = self.image
 		else:
-			self.boxsetcache.append(None)
 			print "reading image"
 			image = EMData(self.imagenames[i])
 		thumb = image.process("math.meanshrink",{"n":n})
@@ -875,16 +974,18 @@ class GUIbox:
 		self.updateAllImageDisplay()
 		
 	def writeboxesimages(self):
-		for boxset in self.boxsetcache:
-			if boxset == None: continue
-			else:
-				boxset.writeboximages()
+		print 'write images not yet supported'
+		#for boxset in self.boxsetcache:
+			#if boxset == None: continue
+			#else:
+				#boxset.writeboximages()
 	
 	def writeboxesdbs(self):
-		for boxset in self.boxsetcache:
-			if boxset == None: continue
-			else:
-				boxset.writedb()
+		print 'write dbs not yet suppored'
+		#for boxset in self.boxsetcache:
+			#if boxset == None: continue
+			#else:
+				#boxset.writedb()
 
 					
 		

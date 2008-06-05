@@ -429,7 +429,7 @@ class Boxable:
 		
 		try: self.boxesReady(True)
 		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
-			
+	
 	def getImageName(self):
 		return self.imagename
 	
@@ -1448,7 +1448,8 @@ class SwarmAutoBoxer(AutoBoxer):
 				trimSelf = TrimSwarmAutoBoxer(self)
 
 				projectdb[boxable.getImageName()+"_autoboxer"] = trimSelf
-				projectdb["currentautoboxer"] = trimSelf
+				if self.mode != SwarmAutoBoxer.COMMANDLINE:
+					projectdb["currentautoboxer"] = trimSelf
 				
 				boxable.boxesReady()
 				#else: 

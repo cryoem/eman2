@@ -232,15 +232,17 @@ class EMGLPlot(EMImage3DObject):
 				glBegin(GL_QUADS)
 				glVertex(datar,ymin,0)
 				glVertex(datar+0.5,ymin,0)
-				#top = (self.data[self.datar]+self.data[self.datar+1])/2.0
+				top = (self.data[datar]+self.data[datar+1])/2.0
 				glVertex(datar+0.5,top,0)
 				glVertex(datar,top,0)
 				glEnd()
 	
 				glBegin(GL_TRIANGLES)
+				top = (self.data[datar-1]+self.data[datar])/2.0
 				glVertex(datar-0.5,top,0)
 				glVertex(datar,top,0)
 				glVertex(datar,self.data[datar],0)
+				top = (self.data[datar]+self.data[datar+1])/2.0
 				glVertex(datar,top,0)
 				glVertex(datar+0.5,top,0)
 				glVertex(datar,self.data[datar],0)
