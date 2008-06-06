@@ -32,6 +32,7 @@
 #include "emdata.h"
 
 using namespace EMAN;
+using std::complex;
 
 namespace EMAN {
 
@@ -255,7 +256,7 @@ Output: 1-2-3D real image with the result
 								for (int ix = 1; ix <= lsd2; ix++) {
 									float fpr = real(fp->cmplx(ix,iy,iz));
 									float fpi = imag(fp->cmplx(ix,iy,iz));
-									fp->cmplx(ix,iy,iz)= (fpr*fpr + fpi*fpi);
+									fp->cmplx(ix,iy,iz) = complex<float>(fpr*fpr+fpi*fpi, 0.0f);
 								}
 							}
 						}
@@ -266,7 +267,7 @@ Output: 1-2-3D real image with the result
 						for (int iz = 1; iz <= nzp; iz++) {
 							for (int iy = 1; iy <= nyp; iy++) {
 								for (int ix = 1; ix <= lsd2; ix++) {
-									fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz));
+									fp->cmplx(ix,iy,iz) = complex<float>(abs(fp->cmplx(ix,iy,iz)), 0.0f);
 								}
 							}
 						}
@@ -381,8 +382,7 @@ Output: 1-2-3D real image with the result
 							for (int ix = 1; ix <= lsd2; ix++) {
 								float fpr = real(fp->cmplx(ix,iy,iz));
 								float fpi = imag(fp->cmplx(ix,iy,iz));
-								fp->cmplx(ix,iy,iz) = (fpr*fpr + fpi*fpi);
-// 								fp->cmplx(ix,iy,iz) = fp->cmplx(ix,iy,iz)*fp->cmplx(ix,iy,iz);
+								fp->cmplx(ix,iy,iz) = complex<float>(fpr*fpr+fpi*fpi, 0.0f);
 							}
 						}
 					}
@@ -391,7 +391,7 @@ Output: 1-2-3D real image with the result
 					for (int iz = 1; iz <= nzp; iz++) {
 						for (int iy = 1; iy <= nyp; iy++) {
 							for (int ix = 1; ix <= lsd2; ix++) {
-								fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz));
+								fp->cmplx(ix,iy,iz) = complex<float>(abs(fp->cmplx(ix,iy,iz)), 0.0f);
 							}
 						}
 					}
