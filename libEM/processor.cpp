@@ -4373,62 +4373,31 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	int int_shift_only = params["int_shift_only"];
 //	image->process_inplace("normalize");
 
-	float *rdata = image->get_data();
+	FloatPoint com = image->calc_center_of_mass();
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-
-	float sigma = image->get_attr("sigma");
-	float mean = image->get_attr("mean");
-	float xm = 0;
-	float ym = 0;
-	float zm = 0;
-	float m = 0;
-	int nxy = nx * ny;
-
-	for (int i = 0; i < nx; i++) {
-		for (int j = 0; j < ny; j++) {
-			int j2 = nx * j;
-			for (int k = 0; k < nz; k++) {
-				int l = i + j2 + k * nxy;
-				if (rdata[l] >= sigma * .75 + mean) {
-					xm += i * rdata[l];
-					ym += j * rdata[l];
-					zm += k * rdata[l];
-					m += rdata[l];
-				}
-			}
-		}
-	}
-
-	image->update();
-
-	xm /= m;
-	ym /= m;
-	zm /= m;
-
-	float dx = 0;
-	float dy = 0;
-	float dz = 0;
-
+	
 	if (int_shift_only) {
-		dx = -(floor(xm + 0.5f) - nx / 2);
-		dy = -(floor(ym + 0.5f) - ny / 2);
-		dz = 0;
+		int dx = -(int)(floor(com[0] + 0.5f) - nx / 2);
+		int dy = -(int)(floor(com[1] + 0.5f) - ny / 2);
+		int dz = 0;
 		if (nz > 1) {
-			dz = -(floor(zm + 0.5f) - nz / 2);
+			dz = -(int)(floor(com[1] + 0.5f) - nz / 2);
 		}
+		image->translate(dx, dy, dz);
 
 	}
 	else {
-		dx = -(xm - nx / 2);
-		dy = -(ym - ny / 2);
+		float dx = -(com[0] - nx / 2);
+		float dy = -(com[1] - ny / 2);
+		float dz = 0;
 		if (nz > 1) {
-			dz = -(zm - nz / 2);
+			dz = -(com[2] - nz / 2);
 		}
+		image->translate(dx, dy, dz);
 	}
-
-	image->translate(dx, dy, dz);
 }
 
 void ACFCenterProcessor::process_inplace(EMData * image)
@@ -4441,7 +4410,14 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 	Dict params1;
 	params1["intonly"] = 1;
 	params1["maxshift"] = image->get_xsize() / 4;
-	image->align("translational", 0, params1);
+	EMData* aligned = image->align("translational", 0, params1);
+	int alix = -(int)aligned->get_attr_default("align.dx",0);
+	int aliy = -(int)aligned->get_attr_default("align.dy",0);
+	int aliz = -(int)aligned->get_attr_default("align.dz",0);
+	cout << "Translating " << alix << " " << aliy << " " << aliz << endl;
+	image->translate(alix,aliy,aliz);
+	
+	delete aligned;
 
 }
 

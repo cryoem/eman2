@@ -382,6 +382,7 @@ Output: 1-2-3D real image with the result
 								float fpr = real(fp->cmplx(ix,iy,iz));
 								float fpi = imag(fp->cmplx(ix,iy,iz));
 								fp->cmplx(ix,iy,iz) = (fpr*fpr + fpi*fpi);
+// 								fp->cmplx(ix,iy,iz) = fp->cmplx(ix,iy,iz)*fp->cmplx(ix,iy,iz);
 							}
 						}
 					}

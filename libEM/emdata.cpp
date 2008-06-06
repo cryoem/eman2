@@ -1596,9 +1596,9 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag)
 	if( with == 0 ) {
 		return autocorrelation(this,fpflag, false);
 	}
-// 	else if ( with == this ){ // this if statement is not necessary, the correlation function tests to see if with == this
-// 		return correlation(this, this, fpflag);
-// 	}
+	else if ( with == this ){ // this if statement is not necessary, the correlation function tests to see if with == this
+		return correlation(this, this, fpflag,false);
+	}
 	else {
 		// If the argument EMData pointer is not the same size we automatically resize it
 		bool undoresize = false;
@@ -2885,6 +2885,13 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 {
 	ENTERFUNC;
 	
+	bool maskflag = false;
+	if (mask == 0) {
+		mask = new EMData(nx,ny,nz);
+		mask->process_inplace("testimage.circlesphere");
+		maskflag = true;
+	}
+	
 	if (get_ndim() != mask->get_ndim() ) throw ImageDimensionException("The dimensions do not match");
 	
 	int mnx = mask->get_xsize(); int mny = mask->get_ysize(); int mnz = mask->get_zsize();
@@ -2926,6 +2933,11 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 	if ( undoclip ) {
 		Region r((nx-mnx)/2, (ny-mny)/2, (nz-mnz)/2,mnx,mny,mnz);
 		mask->clip_inplace(r);
+	}
+	
+	if (maskflag) {
+		delete mask;
+		mask = 0;
 	}
 	
 	delete squared;

@@ -119,6 +119,20 @@ IntPoint calc_min_location() const;
  */
 IntPoint calc_max_location() const;
 
+/** Calculates the wrapped coordinates of the maximum value
+ * This function is useful in the context of Fourier correlation
+ * you can call this function to find the correct translational shift when using calc_ccf etc
+ * @return the wrapped coordinates of the maximum
+ * @author David Woolford
+ * @date Fri Jun 6th 2008
+ */
+IntPoint calc_max_location_wrap(const int maxshiftx=-1, const int maxshifty=-1, const int maxshiftz=-1);
+
+/** Calculate the center of mass using an algorithm written by S Ludtke
+ * @author David Woolford
+ * @date Fri Jun 6th 2008
+ */
+FloatPoint calc_center_of_mass();
 
 /** Calculates the index of minimum-value pixel when assuming
  * all pixels are in a 1D array.

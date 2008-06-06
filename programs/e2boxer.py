@@ -1002,12 +1002,12 @@ class GUIbox:
 				#boxset.writedb()
 	
 	def center(self,technique):
-		self.boxable.center(technique)
-		self.boxDisplayUpdate()
-		self.updateImageDisplay()
-
-		print "i tried to center"
-		print 'technique',technique,'is unsupported - check back tomorrow'
+		
+		if self.boxable.center(technique):
+			self.boxDisplayUpdate()
+			self.updateImageDisplay()
+		else:
+			print 'technique',technique,'is unsupported - check back tomorrow'
 					
 		
 class GUIboxPanel(QtGui.QWidget):

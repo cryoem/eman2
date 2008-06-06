@@ -667,53 +667,51 @@ class Boxable:
 	def center(self,method):
 		if method not in Boxable.permissablecenteringmodes:
 			print "error, that method:",method,"was unknown."
-			return
+			return 0
 			
 		if method == Boxable.CENTEROFMASS:
 			for box in self.boxes:
 				image = box.getBoxImage()
-				image = image.copy()
-				#image.add(2.0*image.get_attr("minimum"))
-				cog = image.cog()
-				#print cog,image.get_xsize(),image.get_ysize(),image.get_attr("minimum")
-				box.xcorner += int(cog[0]+0.5)
-				box.ycorner += int(cog[1]+0.5)
+				ali = image.calc_center_of_mass()
+				dx = int((ali[0]+0.5-image.get_xsize()/2))
+				dy = int((ali[1]+0.5-image.get_ysize()/2))
+				box.xcorner += dx
+				box.ycorner += dy
 				box.updateBoxImage()
 				box.changed = True
-		if method == Boxable.CENTEROFMASSINV:
+			return 1
+		elif method == Boxable.CENTEROFMASSINV:
 			for box in self.boxes:
 				image = box.getBoxImage()
 				image = image.copy()
 				image.mult(-1)
-				image.add(2.0*image.get_attr("minimum"))
-				cog = image.cog()
-				#print cog,image.get_xsize(),image.get_ysize(),image.get_attr("minimum")
-				box.xcorner += int(cog[0]+0.5)
-				box.ycorner += int(cog[1]+0.5)
+				ali = image.calc_center_of_mass()
+				dx = int((ali[0]+0.5-image.get_xsize()/2))
+				dy = int((ali[1]+0.5-image.get_ysize()/2))
+				box.xcorner += dx
+				box.ycorner += dy
+				box.updateBoxImage()
+				box.changed = True
+			
+			return 1
+		elif method == Boxable.CENTERACF:
+			for box in self.boxes:
+				image = box.getBoxImage()
+				ccf  = image.calc_ccf(None)
+				sig = image.calc_fast_sigma_image(None)
+				ccf.div(sig)
+				trans = ccf.calc_max_location_wrap(-1,-1,-1)
+				box.xcorner += trans[0]/2
+				box.ycorner += trans[1]/2
+				#print "python translating",box.xcorner,box.ycorner
 				box.updateBoxImage()
 				box.changed = True
 				
-		if method == Boxable.CENTERACF:
-			for box in self.boxes:
-				image = box.getBoxImage()
-				mirrorimage = image.copy()
-				mirrorimage.rotate_180()
-				cf = image.calc_ccf(mirrorimage)
-				coords = cf.calc_max_location()
-				x = coords[0]
-				y = coords[1]
-				if x > image.get_xsize()/2:
-					x = x - image.get_xsize()
-				if y > image.get_ysize()/2:
-					y = y - image.get_ysize()
-				box.xcorner += x/2
-				box.ycorner += y/2
-				box.updateBoxImage()
-				box.changed = True	
-				
-			
-
-
+			return 1
+		
+		else:
+			return 0
+		
 	def getImageName(self):
 		return self.imagename
 	

@@ -105,37 +105,16 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	// If nozero the portion of the image in the center (and its 8-connected neighborhood) is zeroed
 	if (nozero) cf->zero_corner_circulant(1);
 	
-	int peak_x = 0;
-	int peak_y = 0;
-	int peak_z = 0;
 	
-	float max_value = -FLT_MAX;
-	float min_value = FLT_MAX;
-	
-	for (int k = -maxshiftz; k <= maxshiftz; k++) {
-		for (int j = -maxshifty; j <= maxshifty; j++) {
-			for (int i = -maxshiftx; i <= maxshiftx; i++) {
-				
-				float value = cf->get_value_at_wrap(i,j,k);
-	
-				if (value > max_value) {
-					max_value = value;
-					peak_x = i;
-					peak_y = j;
-					peak_z = k;
-				}
-				
-				if ( value < min_value) {
-					min_value = value;
-				}
-			}
-		}
-	}
-	
+	IntPoint peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
+	float maxscore = cf->get_value_at_wrap(peak[0],peak[1],peak[2]);
 // 	Vec3f pre_trans = this_img->get_translation();
-	Vec3f cur_trans = Vec3f ( (float)-peak_x, (float)-peak_y, (float)-peak_z);
+	Vec3f cur_trans = Vec3f ( (float)-peak[0], (float)-peak[1], (float)-peak[2]);
 
-	if (!to) cur_trans /= 2.0f; // If aligning the image to itself then only go half way - 
+	if (!to) {
+		cur_trans /= 2.0f; // If aligning the image to itself then only go half way - 
+		cout << "dividing the translation by 2" << endl;
+	}
 
 	int intonly = params["intonly"];
 
@@ -150,12 +129,11 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		delete cf;
 		cf = 0;
 	}
-
 	cf=this_img->copy();
 	cf->translate(cur_trans[0],cur_trans[1],cur_trans[2]);
 	cf->update();
 	
-	cf->set_attr("align.score", max_value);
+	cf->set_attr("align.score", maxscore);
 	cf->set_attr("align.dx",cur_trans[0]);
 	cf->set_attr("align.dy",cur_trans[1]);
 	cf->set_attr("align.dz",cur_trans[2]);

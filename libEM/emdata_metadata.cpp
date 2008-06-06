@@ -351,6 +351,67 @@ IntPoint EMData::calc_max_location() const
 }
 
 
+IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const int maxdz) 
+{
+	int maxshiftx = maxdx, maxshifty = maxdy, maxshiftz = maxdz;
+	if (maxdx == -1) maxshiftx = get_xsize()/4;
+	if (maxdy == -1) maxshifty = get_ysize()/4;
+	if (maxdz == -1) maxshiftz = get_zsize()/4;
+	
+	float max_value = -FLT_MAX;
+	
+	IntPoint peak(0,0,0);
+	for (int k = -maxshiftz; k <= maxshiftz; k++) {
+		for (int j = -maxshifty; j <= maxshifty; j++) {
+			for (int i = -maxshiftx; i <= maxshiftx; i++) {
+				
+				float value = get_value_at_wrap(i,j,k);
+	
+				if (value > max_value) {
+					max_value = value;
+					peak[0] = i;
+					peak[1] = j;
+					peak[2] = k;
+				}
+			}
+		}
+	}
+	
+	return peak;
+}
+
+FloatPoint EMData::calc_center_of_mass()
+{
+	float *rdata = get_data();
+	
+	float sigma = get_attr("sigma");
+	float mean = get_attr("mean");
+	float m = 0;
+	
+	FloatPoint com(0,0,0);
+	for (int i = 0; i < nx; i++) {
+		for (int j = 0; j < ny; j++) {
+			int j2 = nx * j;
+			for (int k = 0; k < nz; k++) {
+				int l = i + j2 + k * nxy;
+				if (rdata[l] >= sigma * .75 + mean) {
+					com[0] += i * rdata[l];
+					com[1] += j * rdata[l];
+					com[2] += k * rdata[l];
+					m += rdata[l];
+				}
+			}
+		}
+	}
+
+	com[0] /= m;
+	com[1] /= m;
+	com[2] /= m;
+
+	return com;
+}
+
+
 int EMData::calc_min_index() const
 {
 	IntPoint min_location = calc_min_location();
