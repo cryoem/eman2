@@ -137,7 +137,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 	float *y_data = with->get_data();
 	float *x_data = image->get_data();
 	double result = 0.;
-	long n = 0;
+	float n = 0;
 	if(image->is_complex() && with->is_complex()) {
 	// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
 		int nx  = with->get_xsize();
@@ -188,7 +188,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 			}
 			result += part;
 		}
-		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz;
+		n = (float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz;
 		
 		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 		int ky, kz;
@@ -206,7 +206,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 				}
 			}
 		}
-		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz/2;
+		n = ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz)/2.0;
 		}
 	} else {
 		long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
@@ -351,7 +351,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			}
 		}
 		result /= sqrt(square_sum1*square_sum2);
-		} else  result /= ((long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz);
+		} else  result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz);
 		
 		} else { //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 		int ky, kz;
@@ -389,7 +389,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			}
 		}
 		result /= sqrt(square_sum1*square_sum2);
-		} else result /= ((long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz/2);
+		} else result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz/2);
 		}
 	} else {
 		long totsize = (long int)image->get_xsize() * (long int)image->get_ysize() * (long int)image->get_zsize();
