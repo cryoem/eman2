@@ -629,6 +629,7 @@ class Boxable:
 	CENTERALIGNINT = "cenlignint"
 	CENTEROFMASS = "centerofmass"
 	CENTEROFMASSINV = "centerofmassinv"
+	permissablecenteringmodes = [CENTERACF,CENTERALIGNINT,CENTEROFMASS,CENTEROFMASSINV]
 	def __init__(self,imagename,parent=None,autoBoxer=None):
 		print "in boxable constructor"
 		self.parent = parent		# keep track of the parent in case we ever need it
@@ -662,6 +663,56 @@ class Boxable:
 		if self.exclusionimage != None:
 			excimagename = strip_file_tag(self.imagename)+".exc.hdf"
 			self.exclusionimage.write_image(excimagename)
+
+	def center(self,method):
+		if method not in Boxable.permissablecenteringmodes:
+			print "error, that method:",method,"was unknown."
+			return
+			
+		if method == Boxable.CENTEROFMASS:
+			for box in self.boxes:
+				image = box.getBoxImage()
+				image = image.copy()
+				#image.add(2.0*image.get_attr("minimum"))
+				cog = image.cog()
+				#print cog,image.get_xsize(),image.get_ysize(),image.get_attr("minimum")
+				box.xcorner += int(cog[0]+0.5)
+				box.ycorner += int(cog[1]+0.5)
+				box.updateBoxImage()
+				box.changed = True
+		if method == Boxable.CENTEROFMASSINV:
+			for box in self.boxes:
+				image = box.getBoxImage()
+				image = image.copy()
+				image.mult(-1)
+				image.add(2.0*image.get_attr("minimum"))
+				cog = image.cog()
+				#print cog,image.get_xsize(),image.get_ysize(),image.get_attr("minimum")
+				box.xcorner += int(cog[0]+0.5)
+				box.ycorner += int(cog[1]+0.5)
+				box.updateBoxImage()
+				box.changed = True
+				
+		if method == Boxable.CENTERACF:
+			for box in self.boxes:
+				image = box.getBoxImage()
+				mirrorimage = image.copy()
+				mirrorimage.rotate_180()
+				cf = image.calc_ccf(mirrorimage)
+				coords = cf.calc_max_location()
+				x = coords[0]
+				y = coords[1]
+				if x > image.get_xsize()/2:
+					x = x - image.get_xsize()
+				if y > image.get_ysize()/2:
+					y = y - image.get_ysize()
+				box.xcorner += x/2
+				box.ycorner += y/2
+				box.updateBoxImage()
+				box.changed = True	
+				
+			
+
 
 	def getImageName(self):
 		return self.imagename
