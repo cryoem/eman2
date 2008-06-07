@@ -676,7 +676,7 @@ class Boxable:
 				dx = int((ali[0]+0.5-image.get_xsize()/2))
 				dy = int((ali[1]+0.5-image.get_ysize()/2))
 				box.xcorner += dx*self.autoBoxer.getBestShrink()
-				box.ycorner += dy*self.autoBoxer.getBestShrink()
+				box.ycorner += (dy+1)*self.autoBoxer.getBestShrink()
 				box.updateBoxImage()
 				box.changed = True
 			return 1
@@ -689,7 +689,7 @@ class Boxable:
 				dx = int((ali[0]+0.5-image.get_xsize()/2))
 				dy = int((ali[1]+0.5-image.get_ysize()/2))
 				box.xcorner += dx*self.autoBoxer.getBestShrink()
-				box.ycorner += dy*self.autoBoxer.getBestShrink()
+				box.ycorner += (dy+1)*self.autoBoxer.getBestShrink()
 				box.updateBoxImage()
 				box.changed = True
 			
@@ -702,7 +702,7 @@ class Boxable:
 				#ccf.div(sig)
 				trans = ccf.calc_max_location_wrap(-1,-1,-1)
 				box.xcorner += trans[0]/2*self.autoBoxer.getBestShrink()
-				box.ycorner += trans[1]/2*self.autoBoxer.getBestShrink()
+				box.ycorner += (trans[1]/2+1)*self.autoBoxer.getBestShrink()
 				#print trans[0]/2.0,trans[1]/2.0
 				#print "python translating",box.xcorner,box.ycorner
 				box.updateBoxImage()
