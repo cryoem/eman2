@@ -671,38 +671,39 @@ class Boxable:
 			
 		if method == Boxable.CENTEROFMASS:
 			for box in self.boxes:
-				image = box.getBoxImage()
+				image = box.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
 				ali = image.calc_center_of_mass()
 				dx = int((ali[0]+0.5-image.get_xsize()/2))
 				dy = int((ali[1]+0.5-image.get_ysize()/2))
-				box.xcorner += dx
-				box.ycorner += dy
+				box.xcorner += dx*self.autoBoxer.getBestShrink()
+				box.ycorner += dy*self.autoBoxer.getBestShrink()
 				box.updateBoxImage()
 				box.changed = True
 			return 1
 		elif method == Boxable.CENTEROFMASSINV:
 			for box in self.boxes:
-				image = box.getBoxImage()
+				image = box.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
 				image = image.copy()
 				image.mult(-1)
 				ali = image.calc_center_of_mass()
 				dx = int((ali[0]+0.5-image.get_xsize()/2))
 				dy = int((ali[1]+0.5-image.get_ysize()/2))
-				box.xcorner += dx
-				box.ycorner += dy
+				box.xcorner += dx*self.autoBoxer.getBestShrink()
+				box.ycorner += dy*self.autoBoxer.getBestShrink()
 				box.updateBoxImage()
 				box.changed = True
 			
 			return 1
 		elif method == Boxable.CENTERACF:
 			for box in self.boxes:
-				image = box.getBoxImage()
-				ccf  = image.calc_ccf(None)
-				sig = image.calc_fast_sigma_image(None)
-				ccf.div(sig)
+				image = box.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
+				ccf  = image.calc_ccf(image)
+				#sig = image.calc_fast_sigma_image(None)
+				#ccf.div(sig)
 				trans = ccf.calc_max_location_wrap(-1,-1,-1)
-				box.xcorner += trans[0]/2
-				box.ycorner += trans[1]/2
+				box.xcorner += trans[0]/2*self.autoBoxer.getBestShrink()
+				box.ycorner += trans[1]/2*self.autoBoxer.getBestShrink()
+				#print trans[0]/2.0,trans[1]/2.0
 				#print "python translating",box.xcorner,box.ycorner
 				box.updateBoxImage()
 				box.changed = True
@@ -946,11 +947,8 @@ class Boxable:
 		'''
 		if useinternal:
 			exclusionimage = self.getExclusionImage()
-		
-			
-		
+
 		lostboxes = []
-		
 			
 		invshrink = 1.0/self.getBestShrink()
 		n = len(self.boxes)
@@ -965,6 +963,12 @@ class Boxable:
 				self.boxes.pop(i)
 	
 		return lostboxes
+	
+	def addExclusionParticle(self,box):
+		xx = box.xcorner+box.xsize/2
+		yy = box.ycorner+box.ysize/2
+		
+		self.addExclusionArea(None,xx,yy,box.xsize/2)
 	
 	def addExclusionArea(self, type,x,y,radius):
 		
@@ -1452,6 +1456,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		else:
 			print "the peak profile comparitor mode you specified:", cmpmode,"was not recognized, no action was taken"
 			return 0
+	def getMode(self):
+		return self.mode
 	
 	def setSelectionMode(self,selmode):
 		if selmode in self.permissableselmodes:

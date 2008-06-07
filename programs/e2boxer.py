@@ -669,7 +669,8 @@ class GUIbox:
 			# Deleting a box happens here
 			if event.modifiers()&Qt.ShiftModifier :
 				# with shift, we delete
-				self.delbox(boxnum)
+				box = self.delbox(boxnum)
+				self.boxable.addExclusionParticle(box)
 				self.boxDisplayUpdate()
 				self.updateAllImageDisplay()
 				self.updateppc()
@@ -713,7 +714,10 @@ class GUIbox:
 				boxnum = self.collisiondetect(m,self.getboxes())
 				
 				if ( boxnum != -1):
-					self.delbox(boxnum)
+					box = self.delbox(boxnum)
+					self.boxable.addExclusionParticle(box)
+					self.updateAllImageDisplay()
+					self.updateppc()
 				return
 				
 			if self.moving:
@@ -869,6 +873,8 @@ class GUIbox:
 		if box.isref:
 			print 'told autoboxer to remove reference'
 			self.autoBoxer.removeReference(box)
+			
+		return box
 	
 	def updateBoxSize(self,boxsize):
 		if boxsize != self.boxsize:
@@ -988,18 +994,29 @@ class GUIbox:
 		self.updateAllImageDisplay()
 		
 	def writeboxesimages(self):
-		print 'write images not yet supported'
-		#for boxset in self.boxsetcache:
-			#if boxset == None: continue
-			#else:
-				#boxset.writeboximages()
+		for imagename in self.imagenames:
+			
+			
+			boxable = Boxable(imagename,self,self.autoBoxer)
+		
+			mode = self.autoBoxer.getMode()
+			self.autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+			self.autoBoxer.autoBox(boxable)
+			self.autoBoxer.setModeExplicit(mode)
+			
+			boxable.writeboximages()
 	
 	def writeboxesdbs(self):
-		print 'write dbs not yet suppored'
-		#for boxset in self.boxsetcache:
-			#if boxset == None: continue
-			#else:
-				#boxset.writedb()
+		for imagename in self.imagenames:
+			
+			boxable = Boxable(imagename,self,self.autoBoxer)
+			
+			mode = self.autoBoxer.getMode()
+			self.autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+			self.autoBoxer.autoBox(boxable)
+			self.autoBoxer.setModeExplicit(mode)
+			
+			boxable.writedb()
 	
 	def center(self,technique):
 		

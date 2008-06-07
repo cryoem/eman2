@@ -1597,7 +1597,7 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag)
 		return autocorrelation(this,fpflag, false);
 	}
 	else if ( with == this ){ // this if statement is not necessary, the correlation function tests to see if with == this
-		return correlation(this, this, fpflag,false);
+		return convolution(this, this, fpflag,false);
 	}
 	else {
 		// If the argument EMData pointer is not the same size we automatically resize it

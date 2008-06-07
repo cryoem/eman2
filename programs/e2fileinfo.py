@@ -45,7 +45,7 @@ ee_expressions = ["expenv","ee"]
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <input file> <output file> ... """
+	usage = """%prog [options] <input file> """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
