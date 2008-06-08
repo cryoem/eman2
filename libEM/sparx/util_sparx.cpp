@@ -16930,23 +16930,24 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 		assign(i) = assign(j);
 		assign(j) = temp;
 	}
-	for(int k=0; k<K; k++) cent(k) = assign(k);
-	for(int k=0; k<K; k++) cout<<cent(k)<<"    ";cout<<endl;
+	for(int k=0; k<K; k++) cent(k) = float(assign(k));
+	//for(int k=0; k<K; k++) cout<<cent(k)<<"    ";cout<<endl;
 	//
 	for(int i=0; i<N; i++) assign(i) = 0.0f;
-	float qm, disp, na=0.0f;
+	float qm, dispold = 1.1e22, disp = 1.0e22, na=0.0f;
 	bool change = true;
 	int it = -1;
-	while(change) {
+	while(change and disp < dispold) {
 		change = false;
+		dispold = disp;
 		it++;
-		cout<<"Iteration:  "<<it<<endl;
+		//cout<<"Iteration:  "<<it<<endl;
 		// dispersion is a sum of distance from objects to object center
 		disp = 0.0f;
 		for(int i=0; i<N; i++) {
 			qm = 1.0e23;
 			for(int k=0; k<K; k++) {
-				if(i == cent(k)) {
+				if(float(i) == cent(k)) {
 					qm = 0.0f;
 					na = k;
 				} else {
@@ -16963,7 +16964,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 				change = true;
 			}
 		}
-	for(int k=0; k<N; k++) cout<<assign(k)<<"    ";cout<<endl;
+	//for(int k=0; k<N; k++) cout<<assign(k)<<"    ";cout<<endl;
 		//print disp
 		//print  assign
 		// find centers
@@ -16972,146 +16973,26 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 			for(int i=0; i<N; i++) {
 				if(assign(i) == float(k)) {
 					float q = 0.0;
-					for(int j=0; i<N; i++) {
+					for(int j=0; j<N; j++) {
 						if(assign(j) == float(k)) {
 								//it cannot be the same object
-							if(i != j)  {q += (*d)(mono(i,j));
-							cout<<q<<"   "<<i<<"   "<<j<<"   "<<k<<endl;}
+							if(i != j)  q += (*d)(mono(i,j));
+							//cout<<q<<"   "<<i<<"   "<<j<<"   "<<k<<endl;}
 						}
 					}
 					if(q < qm) {
-						cout<<qm<<"   "<<q<<"   "<<i<<"   "<<k<<endl;
+						//cout<<qm<<"   "<<q<<"   "<<i<<"   "<<k<<endl;
 						qm = q;
 						cent(k) = float(i);
 					}
 				}
 			}
 		}
-	for(int k=0; k<K; k++) cout<<cent(k)<<"    ";cout<<endl;
+	//for(int k=0; k<K; k++) cout<<cent(k)<<"    ";cout<<endl;cout<<disp<<endl;
 	}
-	out[N+K+1] = disp;
+	out[N+K] = disp;
 	out[N+K+1] = float(it);
 	return  out;
-	}
-/*
-	vector<int> cen(K)a
-	vector<int> assign(N);
-	shuffle(assign)
-	for k in xrange(K):  cent[k] = assign[k]
-	# assign
-	assign = [0]*N
-	change = True
-	it = -1
-	while(change):
-		change = False
-		it += 1
-		#print  "Iteration  ", it
-		# dispersion is a sum of distance from objects to object center
-		disp = 0.0
-		for i in xrange(N):
-			qm = 1.0e23
-			for k in xrange(K):
-				if(i == cent[k]):
-					qm = 0.0
-					na = k
-				else:
-					dt = d[mono(i,cent[k])]
-					if(dt < qm):
-						qm = dt
-						na = k
-			disp += qm
-			if(na != assign[i]):
-				assign[i] = na
-				change = True
-		#print disp
-		#print  assign
-		# find centers
-		for k in xrange(K):
-			qm = 1.0e23
-			for i in xrange(N):
-				if(assign[i] == k):
-					q = 0.0
-					for j in xrange(N):
-						if(assign[j] == k):
-							if(i != j):
-								#it cannot be the same object
-								q += d[mono(i,j)]
-					if(q < qm):
-						qm = q
-						cent[k] = i
-	return  assign,cent,disp,it
-
-
-	size_t crefim_len = crefim.size();
-	const float qv = static_cast<float>( pi/180.0 );
-	float phi = image->get_attr("phi");
-	float theta = image->get_attr("theta");
-	int   ky = int(2*yrng/step+0.5)/2; 
-	int   kx = int(2*xrng/step+0.5)/2;
-	int   iref, nref=0, mirror=0; 
-	float iy, ix, sx=0, sy=0;
-	float peak = -1.0E23f;
-	float ang=0.0f;
-	float imn1 = sin(theta*qv)*cos(phi*qv);
-	float imn2 = sin(theta*qv)*sin(phi*qv);
-	float imn3 = cos(theta*qv);
-	vector<float> n1(crefim_len);
-	vector<float> n2(crefim_len);
-	vector<float> n3(crefim_len);
-	for ( iref = 0; iref < (int)crefim_len; iref++) {
-			n1[iref] = crefim[iref]->get_attr("n1");
-			n2[iref] = crefim[iref]->get_attr("n2");
-			n3[iref] = crefim[iref]->get_attr("n3");
-	}
-	for (int i = -ky; i <= ky; i++) {
-	    iy = i * step ;
-	    for (int j = -kx; j <= kx; j++) {
-		ix = j*step;
-		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-		Frngs(cimage, numr);
-		//  compare with all reference images
-		// for iref in xrange(len(crefim)):
-		for ( iref = 0; iref < (int)crefim_len; iref++) {
-			if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
-		    		Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
-		    		double qn = retvals["qn"];
-		    		double qm = retvals["qm"];
-		    		if(qn >= peak || qm >= peak) {
-					sx = -ix;
-					sy = -iy;
-					nref = iref;
-					if (qn >= qm) {
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qn );
-						mirror = 0;
-					} else {
-						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qm );
-						mirror = 1;
-					}
-				}
-		    	}
-		}  delete cimage; cimage = 0;
-	    }
-	}
-	float co, so, sxs, sys;
-	if(peak == -1.0E23) {
-		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
-		nref = -1;
-	} else {
-		co =  cos(ang*qv);
-		so = -sin(ang*qv);
-		sxs = sx*co - sy*so;
-		sys = sx*so + sy*co;
-	}
-	vector<float> res;
-	res.push_back(ang);
-	res.push_back(sxs);
-	res.push_back(sys);
-	res.push_back(static_cast<float>(mirror));
-	res.push_back(static_cast<float>(nref));
-	res.push_back(peak);
-	return res;
 }
-*/
 #undef  cent
+#undef  assign
