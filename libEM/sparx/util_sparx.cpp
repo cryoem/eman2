@@ -536,7 +536,7 @@ Util::even_angles(float delta, float t1, float t2, float p1, float p2)
 }
 
 
-#define  fdata(i,j)      fdata  [ i-1 + (j-1)*nxdata ]
+#define  fdata(i,j)      fdata[ i-1 + (j-1)*nxdata ]
 /*float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 {
 
@@ -1287,9 +1287,9 @@ float Util::FakeKaiserBessel::sinhwin(float x) const {
 
 
 
-#define  circ(i)         circ   [i-1]
-#define  numr(i,j)       numr   [(j-1)*3 + i-1]
-#define  xim(i,j)        xim    [(j-1)*nsam + i-1]
+#define  circ(i)         circ[i-1]
+#define  numr(i,j)       numr[(j-1)*3 + i-1]
+#define  xim(i,j)        xim[(j-1)*nsam + i-1]
 
 EMData* Util::Polar2D(EMData* image, vector<int> numr, string cmode){
    int nsam = image->get_xsize();
@@ -1797,8 +1797,8 @@ fftr_d(xcmplx,nv)
 */
 #define  tab1(i)      tab1[i-1]
 #define  xcmplx(i,j)  xcmplx [(j-1)*2 + i-1]
-#define  br(i)        br     [i-1]
-#define  bi(i)        bi     [i-1]
+#define  br(i)        br[i-1]
+#define  bi(i)        bi[i-1]
 //-----------------------------------------
 void Util::fftc_d(double *br, double *bi, int ln, int ks)
 {
@@ -2362,12 +2362,12 @@ void Util::prb1d(double *b, int npoint, float *pos)
 }
 #undef  b
 
-#define  circ1(i)        circ1  [i-1]
-#define  circ2(i)        circ2  [i-1]
-#define  t(i)            t      [i-1]
-#define  q(i)            q      [i-1]
-#define  b(i)            b      [i-1]
-#define  t7(i)           t7     [i-1]
+#define  circ1(i)        circ1[i-1]
+#define  circ2(i)        circ2[i-1]
+#define  t(i)            t[i-1]
+#define  q(i)            q[i-1]
+#define  b(i)            b[i-1]
+#define  t7(i)           t7[i-1]
 Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg) {
    //  neg = 0 straight,  neg = 1 mirrored
    int nring = numr.size()/3;
@@ -16911,15 +16911,90 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	return ctf_img1;
 } 		
 
-/*
+#define  cent(i)     out[i+N]
+#define  assign(i)   out[i]
 vector<float> Util::cluster_pairwise(EMData* d, int K) {
 
-	int nx = d.get_xsize();
-	N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0)
+	int nx = d->get_xsize();
+	int N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0);
+	vector<float> out(N+K+2);
 	if(N*(N-1)/2 != nx) {
 		//print  "  incorrect dimension"
-		return;}
-	vector<int> cen(K);
+		return out;}
+	//  assign random objects as centers
+	for(int i=0; i<N; i++) assign(i) = float(i);
+	// shuffle
+	for(int i=0; i<N; i++) {
+		int j = Util::get_irand(0,N-1);
+		float temp = assign(i);
+		assign(i) = assign(j);
+		assign(j) = temp;
+	}
+	for(int k=0; k<K; k++) cent(k) = assign(k);
+	for(int k=0; k<K; k++) cout<<cent(k)<<"    ";cout<<endl;
+	//
+	for(int i=0; i<N; i++) assign(i) = 0.0f;
+	float qm, disp, na=0.0f;
+	bool change = true;
+	int it = -1;
+	while(change) {
+		change = false;
+		it++;
+		cout<<"Iteration:  "<<it<<endl;
+		// dispersion is a sum of distance from objects to object center
+		disp = 0.0f;
+		for(int i=0; i<N; i++) {
+			qm = 1.0e23;
+			for(int k=0; k<K; k++) {
+				if(i == cent(k)) {
+					qm = 0.0f;
+					na = k;
+				} else {
+					float dt = (*d)(mono(i,int(cent(k))));
+					if(dt < qm) {
+						qm = dt;
+						na = k;
+					}
+				}
+			}
+			disp += qm;
+			if(na != assign(i)) {
+				assign(i) = na;
+				change = true;
+			}
+		}
+	for(int k=0; k<N; k++) cout<<assign(k)<<"    ";cout<<endl;
+		//print disp
+		//print  assign
+		// find centers
+		for(int k=0; k<K; k++) {
+			qm = 1.0e23;
+			for(int i=0; i<N; i++) {
+				if(assign(i) == float(k)) {
+					float q = 0.0;
+					for(int j=0; i<N; i++) {
+						if(assign(j) == float(k)) {
+								//it cannot be the same object
+							if(i != j)  {q += (*d)(mono(i,j));
+							cout<<q<<"   "<<i<<"   "<<j<<"   "<<k<<endl;}
+						}
+					}
+					if(q < qm) {
+						cout<<qm<<"   "<<q<<"   "<<i<<"   "<<k<<endl;
+						qm = q;
+						cent(k) = float(i);
+					}
+				}
+			}
+		}
+	for(int k=0; k<K; k++) cout<<cent(k)<<"    ";cout<<endl;
+	}
+	out[N+K+1] = disp;
+	out[N+K+1] = float(it);
+	return  out;
+	}
+/*
+	vector<int> cen(K)a
 	vector<int> assign(N);
 	shuffle(assign)
 	for k in xrange(K):  cent[k] = assign[k]
@@ -17039,3 +17114,4 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 	return res;
 }
 */
+#undef  cent
