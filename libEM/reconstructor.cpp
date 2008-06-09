@@ -40,6 +40,7 @@
 #include <boost/format.hpp>
 #include "reconstructor.h"
 #include "ctf.h"
+#include "emassert.h"
 
 #include <gsl_statistics_double.h>
 #include <gsl_fit.h>
@@ -2104,7 +2105,7 @@ void nn4Reconstructor::buildNormVolume() {
 
 void printImage( const EMData* line )
 {
-	assert( line->get_zsize()==1 );
+	Assert( line->get_zsize()==1 );
 
 
 	int nx = line->get_xsize();
@@ -2132,7 +2133,7 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 			return 1;
 		}
         } else {
-		assert( m_ndim==2 );
+		Assert( m_ndim==2 );
 		if( slice->get_ysize() !=1 ) {
 			LOGERR( "for 2D reconstruction, a line is excepted" );
         		return 1;

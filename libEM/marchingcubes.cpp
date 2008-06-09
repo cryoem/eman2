@@ -214,11 +214,11 @@ unsigned long MarchingCubes::get_isosurface_dl(unsigned int tex_id)
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
 #endif
 	int maxf;
-#ifdef	_WIN32
-	glGetIntegerv(GL_MAX_ELEMENTS_INDICES_WIN,&maxf);
-#else
+//#ifdef	_WIN32
+//	glGetIntegerv(GL_MAX_ELEMENTS_INDICES_WIN,&maxf);
+//#else
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
-#endif	//_WIN32
+//#endif	//_WIN32
 #if MARCHING_CUBES_DEBUG
 	int maxv;
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,&maxv);
