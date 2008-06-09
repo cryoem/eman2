@@ -111,7 +111,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 // 	Vec3f pre_trans = this_img->get_translation();
 	Vec3f cur_trans = Vec3f ( (float)-peak[0], (float)-peak[1], (float)-peak[2]);
 
-	if (this_img == to) {
+	if (!to) {
 		cur_trans /= 2.0f; // If aligning the image to itself then only go half way - 
 	}
 

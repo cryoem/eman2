@@ -55,7 +55,7 @@ using std::string;
 // find, min_element
 
 vector<Vec3f> BoxingTools::colors = vector<Vec3f>(); // static init
-BoxingTools::CmpMode BoxingTools::mode = RATIO;
+BoxingTools::CmpMode BoxingTools::mode = SWARM_RATIO;
 				 
 #define SVD_CLASSIFIER_DEBUG 0
 
@@ -524,14 +524,14 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 			// decrement the idx, because the origin information is redundant
 			idx -= 1;
 			
-			if ( mode == DIFFERENCE ) {
+			if ( mode == SWARM_DIFFERENCE ) {
 				// Finally, get the drop relative to the origin
 				float val = peakval - image->get_value_at(xx,yy);
 					
 				// Store it if the drop is smaller than the current value (or if there is no value)
 				if ( profile[idx] > val || profile[idx] == 0 ) profile[idx] = val;
 			}
-			else if (mode == RATIO) {
+			else if (mode == SWARM_RATIO) {
 				// Finally, get the drop relative to the origin
 				float val =  (peakval - image->get_value_at(xx,yy) ) / peakval;
 					
@@ -664,14 +664,14 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 			// decrement the idx, because the origin information is redundant
 			idx -= 1;
 			
-			if (mode == DIFFERENCE) {
+			if (mode == SWARM_DIFFERENCE) {
 				// Finally, get the drop relative to the origin
 				float val = peakval - image->get_value_at(xx,yy);
 				
 				// Store it if the drop is smaller than the current value (or if there is no value)
 				if ( profile[idx] > val || profile[idx] == 0 ) profile[idx] = val;
 			}
-			else if (mode == RATIO) {
+			else if (mode == SWARM_RATIO) {
 				// Finally, get the drop relative to the origin
 				float val =  (peakval - image->get_value_at(xx,yy) ) / peakval;
 				

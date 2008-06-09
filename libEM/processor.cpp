@@ -4410,7 +4410,7 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 	Dict params1;
 	params1["intonly"] = 1;
 	params1["maxshift"] = image->get_xsize() / 4;
-	EMData* aligned = image->align("translational", image, params1);
+	EMData* aligned = image->align("translational", 0, params1);
 	int alix = (int)aligned->get_attr_default("align.dx",0);
 	int aliy = (int)aligned->get_attr_default("align.dy",0);
 	int aliz = (int)aligned->get_attr_default("align.dz",0);

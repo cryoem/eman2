@@ -697,7 +697,7 @@ class Boxable:
 		elif method == Boxable.CENTERACF:
 			for box in self.boxes:
 				image = box.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
-				ccf  = image.calc_ccf(image)
+				ccf  = image.calc_ccf(None)
 				#sig = image.calc_fast_sigma_image(None)
 				#ccf.div(sig)
 				trans = ccf.calc_max_location_wrap(-1,-1,-1)
@@ -1367,7 +1367,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
 		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
 		self.selmode = SwarmAutoBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
-		self.cmpmode = BoxingTools.CmpMode.RATIO
+		self.cmpmode = BoxingTools.CmpMode.SWARM_RATIO
 		BoxingTools.set_mode(self.cmpmode)
 		self.__shrink = -1
 		
@@ -1378,7 +1378,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.mode = SwarmAutoBoxer.DYNAPIX
 		self.refupdate = False # this is a flag used when self.mode is USERDRIVEN
 		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.ANCHOREDUSERDRIVEN,SwarmAutoBoxer.COMMANDLINE]
-		self.permissablecmpmodes = [BoxingTools.CmpMode.RATIO,BoxingTools.CmpMode.DIFFERENCE]  # the permissiable peak profile comparitor modes - for convenience when double
+		self.permissablecmpmodes = [BoxingTools.CmpMode.SWARM_RATIO,BoxingTools.CmpMode.SWARM_DIFFERENCE]  # the permissiable peak profile comparitor modes - for convenience when double
 		self.permissableselmodes = [SwarmAutoBoxer.THRESHOLD,SwarmAutoBoxer.SELECTIVE,SwarmAutoBoxer.MORESELECTIVE]  # the permissiable selection modes - for convenience when double checking the calling program is setting the selectionmode explicitly (through setSelectionMode )
 		self.regressiveflag = False	# flags a force removal of non references in the Boxable in autoBox
 		

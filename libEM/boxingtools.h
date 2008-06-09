@@ -100,8 +100,8 @@ namespace EMAN
 		
 		
 		enum CmpMode {
-			DIFFERENCE,
-			RATIO
+			SWARM_DIFFERENCE,
+			SWARM_RATIO
 		};
 		
 		static void set_mode( const CmpMode m ) { mode = m; }

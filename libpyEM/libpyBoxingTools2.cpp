@@ -38,8 +38,8 @@ namespace  {
 		
 		
 		enum_< EMAN::BoxingTools::CmpMode >("CmpMode")
-			.value("DIFFERENCE", EMAN::BoxingTools::DIFFERENCE)
-			.value("RATIO", EMAN::BoxingTools::RATIO)
+		.value("SWARM_DIFFERENCE", EMAN::BoxingTools::SWARM_DIFFERENCE)
+		.value("SWARM_RATIO", EMAN::BoxingTools::SWARM_RATIO)
 		;
 		
 		delete EMAN_BoxingTools_scope;

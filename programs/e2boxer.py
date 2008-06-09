@@ -1241,9 +1241,9 @@ class GUIboxPanel(QtGui.QWidget):
 	
 	def cmpboxclick(self,unusedbool):
 		if self.ratiobut.isChecked():
-			s = BoxingTools.CmpMode.RATIO
+			s = BoxingTools.CmpMode.SWARM_RATIO
 		elif self.difbut.isChecked():
-			s = BoxingTools.CmpMode.DIFFERENCE
+			s = BoxingTools.CmpMode.SWARM_DIFFERENCE
 		else:
 			print "Bug intercepted in e2boxer.py. Please email the development team."
 			
