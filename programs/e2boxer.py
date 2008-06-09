@@ -1063,14 +1063,14 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.selbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
 		self.connect(self.morselbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
 		self.connect(self.ratiobut, QtCore.SIGNAL("clicked(bool)"), self.cmpboxclick)
-		self.connect(self.centerbutton,QtCore.SIGNAL("clicked(bool)"),self.centerpushed)
+		#self.connect(self.centerbutton,QtCore.SIGNAL("clicked(bool)"),self.centerpushed)
 		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmpboxclick)
 		self.connect(self.nocpick, QtCore.SIGNAL("clicked(bool)"), self.target.nocupdate)
 		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erasetoggled)
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
 	
-	def centerpushed(self,unused):
-		self.target.center(str(self.centerooptions.currentText()))
+	#def centerpushed(self,unused):
+		#self.target.center(str(self.centerooptions.currentText()))
 	
 	def insertMainTab(self):
 		# this is the box layout that will store everything
@@ -1100,21 +1100,20 @@ class GUIboxPanel(QtGui.QWidget):
 		self.main_vbl.addLayout(self.hbl1)
 		
 		
-		self.hbl3=QtGui.QHBoxLayout()
+		#self.hbl3=QtGui.QHBoxLayout()
 		
-		self.centerooptions = QtGui.QComboBox(self.main_inspector)
-		self.centerooptions.addItem(Boxable.CENTERACF)
-		self.centerooptions.addItem(Boxable.CENTERALIGNINT)
-		self.centerooptions.addItem(Boxable.CENTEROFMASS)
-		self.centerooptions.addItem(Boxable.CENTEROFMASSINV)
+		#self.centerooptions = QtGui.QComboBox(self.main_inspector)
+		#self.centerooptions.addItem(Box.CENTERACF)
+		#self.centerooptions.addItem(Box.CENTERPROPAGATE)
+		#self.centerooptions.addItem(Box.CENTEROFMASS)
 		
-		self.centerbutton = QtGui.QPushButton("Center")
-		self.usingtext = QtGui.QLabel("using",self)
-		self.hbl3.addWidget(self.centerbutton)
-		self.hbl3.addWidget(self.usingtext)
-		self.hbl3.addWidget(self.centerooptions)
+		#self.centerbutton = QtGui.QPushButton("Center")
+		#self.usingtext = QtGui.QLabel("using",self)
+		#self.hbl3.addWidget(self.centerbutton)
+		#self.hbl3.addWidget(self.usingtext)
+		#self.hbl3.addWidget(self.centerooptions)
 		
-		self.main_vbl.addLayout(self.hbl3)
+		#self.main_vbl.addLayout(self.hbl3)
 		
 		self.hbl3=QtGui.QHBoxLayout()
 		self.dynapick = QtGui.QCheckBox("Dynapix")

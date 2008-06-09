@@ -73,6 +73,11 @@ class EMProjectDB:
 
 
 class Box:
+	CENTERACF = "centeracf"
+	#CENTERALIGNINT = "cenlignint"
+	CENTEROFMASS = "centerofmass"
+	CENTERPROPAGATE = "centerpropagate"
+	CENTERMETHODS = [CENTERACF,CENTERPROPAGATE,CENTEROFMASS]
 	def become(self,trimbox):
 		'''
 		This is like a copy constructor
@@ -185,6 +190,85 @@ class Box:
 				self.footprint = self.image.process("math.meanshrink",{"n":shrink}).make_footprint()
 				
 		return self.footprint
+			
+	def center(self,method,extrasomething,low_res=False):
+		'''
+		Ask the box to center itself using one of the available methods (as stored in Box.CENTERMETHODS
+		extrasomething has to be an AutoBoxer if using CENTEROFMASS or CENTERACF (it's asked for getBestShrink)
+		extrasomething has to be the template image and have the same dimensions as the results of getBoxImage if using 
+		CENTERPROPOGATE
+		'''
+		if method not in Box.CENTERMETHODS:
+			print "error, you called center using an unknown method:",method
+			return 0
+		
+			
+		if method == Box.CENTEROFMASS:
+			if low_res == True:
+				image = self.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
+				ali = image.calc_center_of_mass()
+				dx = -int((ali[0]+0.5-image.get_xsize()/2))*extrasomething.getBestShrink()
+				dy = -int((ali[1]+0.5-image.get_ysize()/2))*extrasomething.getBestShrink()
+			else:
+				image = self.getBoxImage()
+				ali = image.calc_center_of_mass()
+				dx = -int((ali[0]+0.5-image.get_xsize()/2))
+				dy = -int((ali[1]+0.5-image.get_ysize()/2))
+
+		elif method == Box.CENTERACF:
+			if low_res == True:
+				image = self.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
+				ccf  = image.calc_ccf(None)
+				trans = ccf.calc_max_location_wrap(-1,-1,-1)
+				dx = trans[0]/2*extrasomething.getBestShrink()
+				dy = trans[1]/2*extrasomething.getBestShrink()
+			else:
+				image = self.getBoxImage()
+				ccf  = image.calc_ccf(None)
+				trans = ccf.calc_max_location_wrap(-1,-1,-1)
+				dx = trans[0]/2
+				dy = trans[1]/2
+		
+		elif method == Box.CENTERPROPAGATE:
+			template = extrasomething
+			image =self.getBoxImage()
+			ccf  = image.calc_ccf(template)
+			#sig = image.calc_fast_sigma_image(None)
+			#ccf.div(sig)
+			trans = ccf.calc_max_location_wrap(-1,-1,-1)
+			dx = trans[0]
+			dy = trans[1]
+			
+		#print "here we are",dx,dy
+		
+		self.xcorner += dx
+		self.ycorner += dy
+				
+		# have to calculate offsets here
+		if low_res == True and not method == Box.CENTERPROPAGATE:
+			self.correctResolutionCentering(extrasomething.getBestShrink(),False)
+	
+		self.updateBoxImage()
+		self.changed = True
+		
+		return 1
+		
+	def correctResolutionCentering(self,shrink,update=True):
+		nx = self.getBoxImage().get_xsize()
+		smallx = int(nx)/shrink
+		ny = self.getBoxImage().get_ysize()
+		smally = int(ny)/shrink
+			
+		difx = int(shrink*int(smallx/2.0+0.5)-int(nx/2.0+0.5))
+		dify = int(shrink*int(smally/2.0+0.5)-int(ny/2.0+0.5))
+		self.xcorner -= difx
+		self.ycorner -= dify
+		
+		#print "correction",difx,dify
+		
+		if update and (difx != 0 or dify != 0):
+			self.updateBoxImage()
+			self.changed = True
 			
 	def updateParams(self,autoBoxer,center=False):
 		'''
@@ -625,11 +709,6 @@ class FLCFImage:
 		return self.getImage()
 
 class Boxable:
-	CENTERACF = "centeracf"
-	CENTERALIGNINT = "cenlignint"
-	CENTEROFMASS = "centerofmass"
-	CENTEROFMASSINV = "centerofmassinv"
-	permissablecenteringmodes = [CENTERACF,CENTERALIGNINT,CENTEROFMASS,CENTEROFMASSINV]
 	def __init__(self,imagename,parent=None,autoBoxer=None):
 		print "in boxable constructor"
 		self.parent = parent		# keep track of the parent in case we ever need it
@@ -649,8 +728,6 @@ class Boxable:
 		
 		self.autoBoxer = autoBoxer
 		
-		
-		
 		try:
 			excimagename = strip_file_tag(self.imagename)+".exc.hdf"
 			self.exclusionimage = EMData(excimagename)
@@ -665,53 +742,19 @@ class Boxable:
 			self.exclusionimage.write_image(excimagename)
 
 	def center(self,method):
-		if method not in Boxable.permissablecenteringmodes:
-			print "error, that method:",method,"was unknown."
-			return 0
-			
-		if method == Boxable.CENTEROFMASS:
-			for box in self.boxes:
-				image = box.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
-				ali = image.calc_center_of_mass()
-				dx = int((ali[0]+0.5-image.get_xsize()/2))
-				dy = int((ali[1]+0.5-image.get_ysize()/2))
-				box.xcorner += dx*self.autoBoxer.getBestShrink()
-				box.ycorner += (dy+1)*self.autoBoxer.getBestShrink()
-				box.updateBoxImage()
-				box.changed = True
-			return 1
-		elif method == Boxable.CENTEROFMASSINV:
-			for box in self.boxes:
-				image = box.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
-				image = image.copy()
-				image.mult(-1)
-				ali = image.calc_center_of_mass()
-				dx = int((ali[0]+0.5-image.get_xsize()/2))
-				dy = int((ali[1]+0.5-image.get_ysize()/2))
-				box.xcorner += dx*self.autoBoxer.getBestShrink()
-				box.ycorner += (dy+1)*self.autoBoxer.getBestShrink()
-				box.updateBoxImage()
-				box.changed = True
-			
-			return 1
-		elif method == Boxable.CENTERACF:
-			for box in self.boxes:
-				image = box.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
-				ccf  = image.calc_ccf(None)
-				#sig = image.calc_fast_sigma_image(None)
-				#ccf.div(sig)
-				trans = ccf.calc_max_location_wrap(-1,-1,-1)
-				box.xcorner += trans[0]/2*self.autoBoxer.getBestShrink()
-				box.ycorner += (trans[1]/2+1)*self.autoBoxer.getBestShrink()
-				#print trans[0]/2.0,trans[1]/2.0
-				#print "python translating",box.xcorner,box.ycorner
-				box.updateBoxImage()
-				box.changed = True
-				
-			return 1
-		
+		if method == Box.CENTERACF or method == Box.CENTEROFMASS:
+			extrasomething = self.autoBoxer
+		elif method == Box.CENTERPROPAGATE:
+			extrasomething = self.autoBoxer.getHighResTemplateImage()
 		else:
-			return 0
+			print "error, the method you specified is unsupported in Boxable:",method
+		
+		for box in self.boxes:
+			if not box.center(method,extrasomething,False):
+				print "there was an error boxing"
+				return 0
+				
+		return 1
 		
 	def getImageName(self):
 		return self.imagename
@@ -1056,6 +1099,7 @@ class Boxable:
 				box.changed = True
 		self.imagemx2.setSelected(lc[0])
 		self.parent.boxDisplayUpdate()
+		
 	def process_finished(self,int):
 		try:
 			from emimage import EMImage
@@ -1193,6 +1237,10 @@ class SwarmTemplate:
 				self.refboxes.append(b)
 			
 	def getTemplate(self):
+		return self.template
+	
+	def getImage(self):
+		# FIXME - getTemplate should be replaced with this function
 		return self.template
 	
 	def getTemplateTS(self):
@@ -1384,6 +1432,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		self.dummybox = None
 		self.parent = parent
+		
 	def become(self,trimSwarmAutoBoxer):			
 		self.boxsize = trimSwarmAutoBoxer.boxsize
 		self.shrink = trimSwarmAutoBoxer.shrink
@@ -1749,6 +1798,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		searchradius = self.getSearchRadius()
 		soln = BoxingTools.auto_correlation_pick(correlation,self.optthreshold,searchradius,self.optprofile,exclusion,self.optprofileradius,mode)
 
+
+		template = self.getHighResTemplateImage()
+
 		# This is what should be written to the database
 		boxes = []
 		
@@ -1763,11 +1815,24 @@ class SwarmAutoBoxer(AutoBoxer):
 			box.corx = b[0]
 			box.cory = b[1]
 			box.changed = True
+			box.correctResolutionCentering(self.getBestShrink(),False)
+			box.center(Box.CENTERPROPAGATE,template,False)
 			boxes.append(box)
 	
 		return boxes
 		
-	
+	def getHighResTemplateImage(self):
+		t = self.getTemplateObject() # this is the template object
+		template = t.getTemplate() # this is the image
+		template = template.copy()
+		newx = self.boxsize
+		newy = self.boxsize
+		oldx = template.get_xsize()
+		oldy = template.get_ysize()
+		template.clip_inplace(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
+		scale = float(newx)/float(oldx)
+		template.scale(scale)
+		return template
 	
 	def __fullUpdate(self):
 		'''
