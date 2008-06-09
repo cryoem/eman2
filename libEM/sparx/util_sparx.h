@@ -540,8 +540,13 @@ public:
 	static EMData* ctf_img(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	
 	static inline int mono(int k1, int k2) {
+#ifdef _WIN32
+		int  mk = _cpp_max(k1,k2);
+		return  _cpp_min(k1,k2) + mk*(mk-1)/2;
+#else
 		int  mk = std::max(k1,k2);
 		return  std::min(k1,k2) + mk*(mk-1)/2;
+#endif	//_WIN32	
 	}
 	static vector<float> cluster_pairwise(EMData* d, int K);
 		

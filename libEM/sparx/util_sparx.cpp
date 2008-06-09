@@ -36,8 +36,8 @@
 #include <cstring>
 #include <ctime>
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include "emdata.h"
 #include "util.h"
 #include "fundamentals.h"
@@ -45,10 +45,11 @@
 #include "lbfgsb.h"
 using namespace EMAN;
 #include "steepest.h"
+#include "emassert.h"
 
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
-#include <math.h>
+#include <cmath>
 using namespace std;
 
 vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
@@ -16847,7 +16848,7 @@ EMData* Util::get_biggest_cluster( EMData* mg )
 		}
 	}
 
-	assert( maxgrp > 0 );
+	Assert( maxgrp > 0 );
 
 	int npoint = 0;
 	EMData* result = new EMData();
@@ -16865,7 +16866,7 @@ EMData* Util::get_biggest_cluster( EMData* mg )
 		}
 	}
 
-	assert( npoint==maxsize );
+	Assert( npoint==maxsize );
 	delete visited;
 	return result;
    
@@ -16934,10 +16935,10 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 	//for(int k=0; k<K; k++) cout<<cent(k)<<"    ";cout<<endl;
 	//
 	for(int i=0; i<N; i++) assign(i) = 0.0f;
-	float qm, dispold = 1.1e22, disp = 1.0e22, na=0.0f;
+	float qm, dispold = 1.1e22f, disp = 1.0e22f, na=0.0f;
 	bool change = true;
 	int it = -1;
-	while(change and disp < dispold) {
+	while(change && disp < dispold) {
 		change = false;
 		dispold = disp;
 		it++;
@@ -16945,16 +16946,16 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 		// dispersion is a sum of distance from objects to object center
 		disp = 0.0f;
 		for(int i=0; i<N; i++) {
-			qm = 1.0e23;
+			qm = 1.0e23f;
 			for(int k=0; k<K; k++) {
 				if(float(i) == cent(k)) {
 					qm = 0.0f;
-					na = k;
+					na = (float)k;
 				} else {
 					float dt = (*d)(mono(i,int(cent(k))));
 					if(dt < qm) {
 						qm = dt;
-						na = k;
+						na = (float)k;
 					}
 				}
 			}
@@ -16969,7 +16970,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 		//print  assign
 		// find centers
 		for(int k=0; k<K; k++) {
-			qm = 1.0e23;
+			qm = 1.0e23f;
 			for(int i=0; i<N; i++) {
 				if(assign(i) == float(k)) {
 					float q = 0.0;
