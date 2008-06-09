@@ -283,7 +283,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("twoD_to_3D_ali", &EMAN::Util::twoD_to_3D_ali)
 		.def("get_biggest_cluster", &EMAN::Util::get_biggest_cluster, return_value_policy< manage_new_object >())
 		.def("merge_peaks", &EMAN::Util::merge_peaks )
-
+		
+		.staticmethod("infomask")
 		.staticmethod("CANG")
 		.staticmethod("ener")
 		.staticmethod("ener_tot")
