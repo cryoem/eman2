@@ -71,6 +71,23 @@ class EMProjectDB:
 		self.__instance.projectdb.close()
 
 
+class TrimBox():
+	'''
+	A trimmed down version of a box
+	'''
+	def __init__(self,box):
+		self.xcorner = box.xcorner			# the xcorner - bottom left
+		self.ycorner = box.ycorner			# the ycorner - bottom left
+		self.xsize = box.xsize				# the xsize of the box
+		self.ysize = box.ysize				# the ysize of the box
+		self.isref = box.isref				# a flag that can be used to tell if the box is being used as a reference
+		self.changed = box.changed			# a flag signalling the box has changed and display needs updatin
+		self.isanchor = box.isanchor		# a flag signalling the box has changed and display needs updatin
+		self.TS = box.TS					# a time stamp flag
+		self.imagename = box.imagename
+		self.moved = trimbox.moved
+		self.origxcorner = box.origxcorner
+		self.origycorner = box.origycorner
 
 class Box:
 	CENTERACF = "centeracf"
@@ -91,6 +108,10 @@ class Box:
 		self.isanchor = trimbox.isanchor		# a flag signalling the box has changed and display needs updatin
 		self.TS = trimbox.TS
 		self.imagename = trimbox.imagename
+		
+		self.moved = trimbox.moved
+		self.origxcorner = trimbox.origxcorner
+		self.origycorner = trimbox.origycorner
 		
 	def __init__(self,xcorner=-1,ycorner=-1,xsize=-1,ysize=-1,isref=0,correlationscore=0,imagename=None):
 		self.xcorner = xcorner			# the xcorner - bottom left
@@ -116,14 +137,14 @@ class Box:
 		self.group = None		# stores a group, typically an int
 		self.footprintshrink = 1
 		self.isanchor = True		# A flag used by AutoBoxer routines that - if set to true the box will not be included in the generation the template) - This is specific to the SwarmPS autoboxer
-		self.boxingobj = None
-		self.shape = None
 		self.TS = None
 		
 		self.isdummy = False # this can be used to avoid parameters updates - i.e. when the user interactively changes parameters forcefully
-
-		self.flcf = None
 		self.imagename = imagename
+		
+		self.moved = False
+		self.origxcorner = -1
+		self.origycorner = -1
 		
 	
 	def setImageName(self,imagename):
@@ -131,6 +152,62 @@ class Box:
 		
 	def getImageName(self):
 		return self.imagename
+	
+	def move(self,dx,dy):
+		if self.moved == False:
+			self.origxcorner = self.xcorner
+			self.origycorner = self.ycorner
+			self.moved = True
+		
+		self.xcorner += dx
+		self.ycorner += dy
+		
+		projectdb = EMProjectDB()
+		try:
+			movedboxes = projectdb[self.imagename+"_movedboxes"]
+		except:
+			movedboxes = []
+		
+		found = False
+		for data in movedboxes:
+			if data[0] == self.origxcorner and data[1] == self.origycorner:
+				data[2] = self.xcorner
+				data[3] = self.ycorner
+				found = True
+				break
+				
+		if not found:
+			movedboxes.append([self.origxcorner,self.origycorner,self.xcorner,self.xcorner])
+					
+		projectdb[self.imagename+"_movedboxes"] = movedboxes
+		
+		self.changed = True
+		self.updateBoxImage()
+		
+	def updatePositionFromDB(self):
+		try:
+			projectdb = EMProjectDB()
+			movedboxes = projectdb[self.imagename+"_movedboxes"]
+		except:
+			#print "error, could not get movedboxes from DB"
+			return 0
+		
+		# 0.0064 = 0.08*0.08, then divided by two to make in terms of the radius
+		# ... so the proximity limit is 8% of the radius
+		sq_size_limit = (self.xsize**2 + self.ysize**2)*0.0032
+		
+		for data in movedboxes:
+			sq_dif = (data[0] - self.xcorner)**2 + (data[1] - self.ycorner)**2
+			if sq_dif < sq_size_limit:
+				self.origxcorner = self.xcorner
+				self.origycorner = self.ycorner
+				self.xcorner = data[2]
+				self.ycorner = data[3]
+				self.changed = True
+				print "moved box using movedbox cache"
+				self.updateBoxImage()
+				break
+					
 	
 	def updateBoxImage(self,norm=True):
 		bic = BigImageCache()
@@ -343,7 +420,9 @@ class TrimBox():
 		self.isanchor = box.isanchor		# a flag signalling the box has changed and display needs updatin
 		self.TS = box.TS					# a time stamp flag
 		self.imagename = box.imagename
-		
+		self.moved = box.moved
+		self.origxcorner = box.origxcorner
+		self.origycorner = box.origycorner
 
 class Cache:
 	'''
@@ -733,8 +812,11 @@ class Boxable:
 			self.exclusionimage = EMData(excimagename)
 		except: pass
 		
-		try: self.boxesReady(True)
+		try: 
+			self.boxesReady(True)
+			self.getDBTimeStamps()
 		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
+		
 	
 	def cacheExcToDisk(self):
 		if self.exclusionimage != None:
@@ -768,6 +850,12 @@ class Boxable:
 	def extendBoxes(self,boxes):
 		self.boxes.extend(boxes)
 		
+	def getDBTimeStamps(self):
+		projectdb = EMProjectDB()
+		autoBoxer = projectdb[self.imagename+"_autoboxer"]
+		self.autoBoxerTS = autoBoxer.getStateTS()
+		self.templateTS = autoBoxer.getTemplateTS()
+		
 	def boxesReady(self,forcereadall=False):
 		projectdb = EMProjectDB()
 		
@@ -791,10 +879,9 @@ class Boxable:
 					box.g = 0
 					box.b = 0
 				
-				box.boxingobject=self
+				box.updatePositionFromDB()
 				self.boxes.append(box)
 				
-		print "exiting boxesReady"
 		self.updateExcludedBoxes()
 	
 	def writedb(self,force=False):
@@ -1387,7 +1474,12 @@ class TrimSwarmAutoBoxer():
 		self.regressiveflag = swarmAutoBoxer.regressiveflag
 		
 		self.template = TrimSwarmTemplate(swarmAutoBoxer.template)
-		
+	
+	def getStateTS(self):
+		return self.stateTS
+	
+	def getTemplateTS(self):
+		return self.template.getTemplateTS()
 	
 class SwarmAutoBoxer(AutoBoxer):
 	'''
@@ -1452,6 +1544,12 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 	def getBoxable(self):
 		return self.parent.getBoxable()
+	
+	def getStateTS(self):
+		return self.stateTS
+	
+	def getTemplateTS(self):
+		return self.template.getTemplateTS()
 	
 	def getTemplate(self):
 		return self.template
@@ -1735,6 +1833,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		# auto boxing will only ever occur if the time stamp of the AutoBoxer is not the
 		# same as the time stamp cached by the Boxable. -1 means it's the first time.
 		if autoBoxerTS == -1 or autoBoxerTS != self.stateTS:
+			print "autoboxing",autoBoxerTS,self.stateTS
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag:
 				# we must clear all non-refs if we're using dynapix
@@ -1759,6 +1858,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				projectdb[boxable.getImageName()+"_boxes"] = trimboxes
 				trimSelf = TrimSwarmAutoBoxer(self)
 
+				print "wrote",boxable.getImageName()+"_autoboxer"
 				projectdb[boxable.getImageName()+"_autoboxer"] = trimSelf
 				if self.mode != SwarmAutoBoxer.COMMANDLINE:
 					projectdb["currentautoboxer"] = trimSelf

@@ -408,7 +408,9 @@ class GUIbox:
 		image=bic.getImage(self.imagenames[0])
 		self.guiimp=EMImage(image)		# widget for displaying large image
 		self.guiim=self.guiimp.child
-		self.guimxp= None # widget for displaying matrix of smaller images
+		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
+		
+		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		self.guimx=EMImageMX()	
 		
 		self.guimxitp = None
@@ -737,9 +739,7 @@ class GUIbox:
 			
 	def movebox(self,boxnum,dx,dy):
 		box = self.getboxes()[boxnum]
-		box.xcorner += dx
-		box.ycorner += dy
-		box.updateBoxImage()
+		box.move(dx,dy)
 			# we have to update the reference also
 		self.ptcl[boxnum] = box.getBoxImage()
 			
