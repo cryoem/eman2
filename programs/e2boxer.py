@@ -360,11 +360,11 @@ class GUIbox:
 		[x0,y0,xsize,ysize,quality,changed]
 		boxes are 'real'. 'changed' is used by the GUI to decide when
 		redrawing is necessary (should be set to 1 initially)."""
-		try:
-			from emimage import EMImage,get_app
-		except:
-			print "Cannot import EMAN image GUI objects (emimage,etc.)"
-			sys.exit(1)
+		#try:
+		from emimage import EMImage,get_app
+		#except:
+			#print "Cannot import EMAN image GUI objects (emimage,etc.)"
+			#sys.exit(1)
 
 		self.dynapix = False
 		self.anchortemplate = False
@@ -374,7 +374,7 @@ class GUIbox:
 		else: self.boxsize=boxsize
 		
 		self.eraseradius = 2*boxsize
-		
+		self.erasemode = None
 		self.dynapixp=get_app()
 		self.imagenames = imagenames
 		self.currentimage = 0
@@ -409,6 +409,7 @@ class GUIbox:
 		self.guiimp=EMImage(image)		# widget for displaying large image
 		self.guiim=self.guiimp.child
 		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
+		self.guiim.setFrozen(self.boxable.isFrozen())
 		
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		self.guimx=EMImageMX()	
@@ -502,7 +503,7 @@ class GUIbox:
 			self.currentimage = im
 			
 			self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-			
+			self.guiim.setFrozen(self.boxable.isFrozen())
 			self.boxDisplayUpdate()
 			self.updateAllImageDisplay()
 			
@@ -611,7 +612,7 @@ class GUIbox:
 		return self.boxable.boxes
 	
 	def mousemove(self,event):
-		if self.mmode == 1 and event.modifiers()&Qt.ShiftModifier:
+		if self.mmode == 1:
 			m=self.guiim.scr2img((event.x(),event.y()))
 			self.guiim.addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
 			self.updateImageDisplay()
@@ -735,7 +736,7 @@ class GUIbox:
 		elif self.mmode == 1:
 			m=self.guiim.scr2img((event.x(),event.y()))
 			self.guiim.addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
-			self.boxable.addExclusionArea("circle",m[0],m[1],self.eraseradius)
+			self.boxable.addExclusionArea("circle",m[0],m[1],self.eraseradius,self.erasemode)
 			self.updateImageDisplay()
 			
 	def movebox(self,boxnum,dx,dy):
@@ -981,7 +982,20 @@ class GUIbox:
 	def erasetoggled(self,bool):
 		# for the time being there are only two mouse modes
 		self.mmode = bool
+		self.erasemode = Boxable.ERASE
 		
+		if self.mmode == False:
+			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+			self.updateImageDisplay()
+	
+	def unerasetoggled(self,bool):
+		self.mmode = bool
+		self.erasemode = Boxable.UNERASE
+		
+		if self.mmode == False:
+			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+			self.updateImageDisplay()
+	
 	def updateEraseRad(self,rad):
 		self.eraseradius = rad
 
@@ -1030,7 +1044,12 @@ class GUIbox:
 			self.updateImageDisplay()
 		else:
 			print 'technique',technique,'is unsupported - check back tomorrow'
-					
+			
+	def toggleFrozen(self,unusedbool):
+		self.boxable.toggleFrozen()
+		self.guiim.setFrozen(self.boxable.isFrozen())
+		self.updateImageDisplay()
+
 		
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
@@ -1054,7 +1073,7 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
-		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.updateEraseRad)
+	
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
 		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesimages)
@@ -1071,7 +1090,7 @@ class GUIboxPanel(QtGui.QWidget):
 		#self.connect(self.centerbutton,QtCore.SIGNAL("clicked(bool)"),self.centerpushed)
 		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmpboxclick)
 		self.connect(self.nocpick, QtCore.SIGNAL("clicked(bool)"), self.target.nocupdate)
-		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erasetoggled)
+		
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
 	
 	#def centerpushed(self,unused):
@@ -1129,6 +1148,8 @@ class GUIboxPanel(QtGui.QWidget):
 		self.hbl3.addWidget(self.nocpick)
 		self.autobox=QtGui.QPushButton("Auto Box")
 		self.hbl3.addWidget(self.autobox)
+		self.togfreeze=QtGui.QPushButton("Toggle Freeze")
+		self.hbl3.addWidget(self.togfreeze)
 		self.main_vbl.addLayout(self.hbl3)
 
 		self.hbl2=QtGui.QHBoxLayout()
@@ -1137,9 +1158,14 @@ class GUIboxPanel(QtGui.QWidget):
 		#self.vbl.addLayout(self.hbl1)
 		
 		self.erasepic = QtGui.QIcon("/home/d.woolford/erase.png");
-		self.erase=QtGui.QPushButton(self.erasepic,"Erase")
+		self.erase=QtGui.QPushButton(self.erasepic,Boxable.ERASE)
 		self.erase.setCheckable(1)
 		self.hbl2.addWidget(self.erase)
+		
+		self.unerasepic = QtGui.QIcon("/home/d.woolford/erase.png");
+		self.unerase=QtGui.QPushButton(self.unerasepic,Boxable.UNERASE)
+		self.unerase.setCheckable(1)
+		self.hbl2.addWidget(self.unerase)
 		
 		self.eraseradtext=QtGui.QLabel("Circle radius",self)
 		self.hbl2.addWidget(self.eraseradtext)
@@ -1164,6 +1190,12 @@ class GUIboxPanel(QtGui.QWidget):
 		self.main_vbl.addWidget(self.done)
 		
 		self.tabwidget.addTab(self.main_inspector,"Main")
+		
+		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.updateEraseRad)
+		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erasetoggled)
+		self.connect(self.unerase, QtCore.SIGNAL("clicked(bool)"), self.unerasetoggled)
+		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
+		self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.target.toggleFrozen)
 		
 	def insertAdvancedTab(self):
 		# this is the box layout that will store everything
@@ -1236,10 +1268,17 @@ class GUIboxPanel(QtGui.QWidget):
 		self.tabwidget.addTab(self.adv_inspector,"Advanced")
 
 	def erasetoggled(self,bool):
+		self.unerase.setChecked(False)
 		self.eraserad.setEnabled(bool)
 		self.target.guiim.setMouseTracking(bool)
 		self.target.erasetoggled(bool)
-	
+		
+	def unerasetoggled(self,bool):
+		self.erase.setChecked(False)
+		self.eraserad.setEnabled(bool)
+		self.target.guiim.setMouseTracking(bool)
+		self.target.unerasetoggled(bool)
+		
 	def dynapickd(self,bool):
 		self.target.toggleDynapix(bool)
 	

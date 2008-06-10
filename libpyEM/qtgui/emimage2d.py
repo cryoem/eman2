@@ -52,6 +52,7 @@ from pickle import dumps,loads
 MAG_INC = 1.1
 
 from emglobjects import EMOpenGLFlagsAndTools
+#from emfloatingwidgets import *
 
 class EMImage2D(QtOpenGL.QGLWidget):
 	"""
@@ -200,6 +201,12 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.image2d.otherdatascale = scale
 		self.image2d.otherdatablend = blend
 		
+	def get_depth_for_height(self, height):
+		return 0
+	
+	def setFrozen(self,frozen):
+		print "setting frozen",frozen
+		self.image2d.setFrozen(frozen)
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
@@ -267,6 +274,10 @@ class EMImage2DCore:
 		self.otherdatablend = False
 		self.other_tex_name = None
 		self.init_size_flag = True
+		self.sundry_inspector = None
+		self.frozen = False
+		#self.integratedwidget = None
+		#self.toggleFrozen()
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
@@ -292,6 +303,9 @@ class EMImage2DCore:
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
+		
+	def setFrozen(self,frozen):
+		self.frozen = frozen
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
@@ -498,7 +512,7 @@ class EMImage2DCore:
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 			# this makes it so that the texture is impervious to lighting
-			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, [0.2,0.4,0.8,0.5])
+			#glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, [0.2,0.4,0.8,0.5])
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			
 			# POSITIONING POLICY - the texture occupies the entire screen area
@@ -590,7 +604,43 @@ class EMImage2DCore:
 			GL.glPixelZoom(1.0,-1.0)
 			GL.glDrawPixels(self.parent.width(),self.parent.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
 		
+		if self.frozen:
 			
+			
+			glPushMatrix()
+			glTranslatef(width,height,0)
+			
+			GL.glEnable(GL.GL_BLEND);
+			depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
+			GL.glDisable(GL.GL_DEPTH_TEST);
+			GL.glBlendEquation(GL.GL_FUNC_ADD);
+			#GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
+			GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
+			
+			
+			# POSITIONING POLICY - the texture occupies the entire screen area
+			
+			glColor(0,0,0.1,1)
+			glBegin(GL_QUADS)
+			
+			glVertex2f(-width,height)
+
+			glVertex2f(width,height)
+				
+			glVertex2f(width,-height)
+
+			glVertex2f(-width,-height)
+				
+			glEnd()
+			
+			glDisable(GL_TEXTURE_2D)
+			
+			glPopMatrix()
+			
+			glDisable( GL.GL_BLEND)
+			if (depth_testing_was_on):
+				GL.glEnable(GL.GL_DEPTH_TEST)
+		
 
 #		hist=numpy.fromstring(a[-1024:],'i')
 		hist=struct.unpack('256i',a[-1024:])
@@ -604,6 +654,15 @@ class EMImage2DCore:
 		GL.glCallList(self.shapelist)
 		GL.glPopMatrix()
 		self.changec=self.data.get_attr("changecount")
+		
+		#if self.integratedwidget  != None:
+			#print "drawing integrated"
+			#glPushMatrix()
+			#glTranslate(100,100,0)
+			#glDisable(GL_LIGHTING)
+			#glDisable( GL.GL_BLEND)
+			#self.integratedwidget.paintGL()
+			#glPopMatrix()
 		
 		if ( lighting ): glEnable(GL_LIGHTING)
 
@@ -1053,6 +1112,21 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.maxs.setRange(lowlim,highlim)
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
+		
+class SundryWidget(QtGui.QWidget):
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=target
+		
+		
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+		
+		self.frozen = QtGui.QCheckBox("Frozen")
+		self.frozen.setChecked(False)
+		self.vbl.addWidget(self.frozen)
 
 # This is just for testing, of course
 if __name__ == '__main__':

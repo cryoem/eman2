@@ -686,9 +686,12 @@ class EMImageMXCore:
 #				print dropAction
 			
 			elif self.mmode=="del" and lc:
-				del self.data[lc[0]]
-				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
-				#self.setData(self.data)
+				
+				try:
+					self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
+				except:
+					del self.data[lc[0]]
+					#self.setData(self.data)
 				self.updateGL()
 			elif self.mmode=="app" and lc:
 				self.parent.emit(QtCore.SIGNAL("mousedown"),event,lc)

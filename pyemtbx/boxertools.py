@@ -204,7 +204,7 @@ class Box:
 				self.xcorner = data[2]
 				self.ycorner = data[3]
 				self.changed = True
-				print "moved box using movedbox cache"
+				#print "moved box using movedbox cache"
 				self.updateBoxImage()
 				break
 					
@@ -347,7 +347,7 @@ class Box:
 			self.updateBoxImage()
 			self.changed = True
 			
-	def updateParams(self,autoBoxer,center=False):
+	def updateParams(self,autoBoxer,center=False,force=False):
 		'''
 		Updates internally stored parameters, currently works only for SwarmAutoBoxer, but
 		have attempted to lay basic framework if in future we use a different autoBoxer which
@@ -382,7 +382,8 @@ class Box:
 				# this box from consideration
 				self.correlationscore = None
 				print "Error, peak location unrefined"
-				return 0
+				if not force :
+					return 0
 		
 			# store the peak location
 			self.corx = peak_location[0]
@@ -584,6 +585,85 @@ class CoarsenedFlattenedImage:
 		except: return False # exception will be thrown if self.smallimage = None
 
 
+class SigmaImageCache:
+	class __impl(Cache):
+		""" A cache for storing big images """
+
+		def __init__(self):
+			Cache.__init__(self)
+
+	
+		def getImage(self,imagename,flattenradius,shrinkfactor,forceupdate=False):
+			# this loop takes care of things if the image is cached
+			object = None
+			for sigmaImage in self.getCache():
+				if sigmaImage.getImageName() == imagename:
+					object = sigmaImage
+					break
+				
+			
+			# if we make it here the image is not cached
+			if object == None:
+				#print "I am generating a big image in the cache for",imagename
+				object = SigmaImage(imagename)
+				self.addToCache(object)
+			#else: print "I am returning a big image from the cache"
+				
+			return object.getImageCarefully(flattenradius,shrinkfactor,forceupdate)
+			
+	# storage for the instance reference
+	__instance = None
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if SigmaImageCache.__instance is None:
+			# Create and remember instance
+			SigmaImageCache.__instance = SigmaImageCache.__impl()
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+	
+class SigmaImage:
+	def __init__(self,imagename):
+		self.imagename = imagename
+		self.image = None
+	
+	def getImageName(self):
+		return self.imagename
+	
+	def getFlattenRadius(self):
+		return self.image.get_attr("flatten_radius")
+	
+	def getShrinkFactor(self):
+		return self.image.get_attr("shrink_factor")
+	
+	def __updateImage(self,flattenradius,shrinkfactor):
+	
+		cficache= CFImageCache()
+		image = cficache.getImage(self.imagename,flattenradius,shrinkfactor)
+		self.image = image.calc_fast_sigma_image(None)
+		self.image.set_attr("flatten_radius",flattenradius)
+		self.image.set_attr("shrink_factor",shrinkfactor)
+		
+		return self.image
+	
+	def getImageCarefully(self,flattenradius,shrinkfactor,forceupdate=False):
+		
+		action = False
+		if forceupdate == True: action = True
+		elif self.image == None: action = True
+		elif flattenradius != self.getFlattenRadius() or shrinkfactor != self.getShrinkFactor(): action = True
+		
+		if action: self.__updateImage(flattenradius,shrinkfactor)
+		
+		return self.image
+		
 class BigImageCache:
 	class __impl(Cache):
 		""" A cache for storing big images """
@@ -748,7 +828,11 @@ class FLCFImage:
 	
 	def __updateImage(self,cfimage,template):
 
-		self.flcfimage = cfimage.calc_flcf( template.getTemplate() )
+		sicache = SigmaImageCache()
+		sigmaImage = sicache.getImage(self.imagename,cfimage.get_attr("flatten_radius"),cfimage.get_attr("shrink_factor"))
+		
+		self.flcfimage = cfimage.calc_ccf( template.getTemplate() )
+		self.flcfimage.div(sigmaImage)
 		self.flcfimage.process_inplace("xform.phaseorigin.tocenter")
 		self.flcfimage.set_attr("template_time_stamp",template.getTemplateTS())
 		val = cfimage.get_attr("creation_time_stamp")
@@ -788,8 +872,9 @@ class FLCFImage:
 		return self.getImage()
 
 class Boxable:
+	UNERASE = 'Unerase'
+	ERASE = 'Erase'
 	def __init__(self,imagename,parent=None,autoBoxer=None):
-		print "in boxable constructor"
 		self.parent = parent		# keep track of the parent in case we ever need it
 		self.boxes = []				# a list of boxes
 		self.refboxes = []			# a list of boxes
@@ -806,7 +891,7 @@ class Boxable:
 		self.autoBoxerTS = -1 # and autoBoxer time stamp, used to avoid unecessary autoboxing, and to force autoboxing when appropriate
 		
 		self.autoBoxer = autoBoxer
-		
+		self.frozen = False
 		try:
 			excimagename = strip_file_tag(self.imagename)+".exc.hdf"
 			self.exclusionimage = EMData(excimagename)
@@ -814,9 +899,13 @@ class Boxable:
 		
 		try: 
 			self.boxesReady(True)
-			self.getDBTimeStamps()
 		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
-		
+		try:
+			self.getDBTimeStamps()
+		except: pass
+		try:
+			self.getFrozenFromDB()	
+		except: pass
 	
 	def cacheExcToDisk(self):
 		if self.exclusionimage != None:
@@ -849,6 +938,18 @@ class Boxable:
 	
 	def extendBoxes(self,boxes):
 		self.boxes.extend(boxes)
+		
+	def isFrozen(self):
+		return self.frozen
+		
+	def toggleFrozen(self):
+		self.frozen = not self.frozen
+		projectdb = EMProjectDB()
+		projectdb[self.imagename+"_frozen"] = self.frozen
+	
+	def getFrozenFromDB(self):
+		projectdb = EMProjectDB()
+		self.frozen = projectdb[self.imagename+"_frozen"]
 		
 	def getDBTimeStamps(self):
 		projectdb = EMProjectDB()
@@ -904,7 +1005,7 @@ class Boxable:
 			f=file(boxname,'w')
 				
 			for box in self.boxes:
-				f.write(str(box.xcorner)+'\t'+str(box.ycorner)+'\t'+str(box.xsize)+'\t'+str(box.ysize)+'\n')
+				f.write(str(int(box.xcorner))+'\t'+str(int(box.ycorner))+'\t'+str(box.xsize)+'\t'+str(box.ysize)+'\n')
 				
 			f.close()
 
@@ -1095,13 +1196,17 @@ class Boxable:
 		return lostboxes
 	
 	def addExclusionParticle(self,box):
+		
 		xx = box.xcorner+box.xsize/2
 		yy = box.ycorner+box.ysize/2
 		
 		self.addExclusionArea(None,xx,yy,box.xsize/2)
 	
-	def addExclusionArea(self, type,x,y,radius):
-		
+	def addExclusionArea(self,UNUSEDtype,x,y,radius,flag=ERASE):
+		'''
+		UNUSEDtype was meant to be a flag for adding other exclusion areas like squares
+		At the moment only circular exclusion areas can be written
+		'''
 		xx = int(x/self.getBestShrink())
 		yy = int(y/self.getBestShrink())
 		
@@ -1111,6 +1216,14 @@ class Boxable:
 		
 		# this does implicit initialization
 		self.getExclusionImage()
+		
+		if flag == Boxable.ERASE:
+			val = 0.1
+		elif flag == Boxable.UNERASE:
+			val = 0
+		else:
+			print "error - unknow flag:",flag,"doing nothing"
+			return
 		
 		ny = self.getSmallImage().get_ysize()
 		nx = self.getSmallImage().get_xsize()
@@ -1122,10 +1235,7 @@ class Boxable:
 				if jj >= ny or jj < 0:continue
 				if ii >= nx or ii < 0:continue
 				
-				self.exclusionimage.set(ii,jj,0.1)
-				
-		# FIXME - is this the best place for this?
-		self.parent.guiim.setOtherData(self.getExclusionImage(),self.getBestShrink(),True)
+				self.exclusionimage.set(ii,jj,val)
 	
 	def getExclusionImage(self,force=True):
 		if self.exclusionimage == None and force:
@@ -1140,7 +1250,8 @@ class Boxable:
 		# accrue all params
 		n = self.autoBoxer.optprofileradius+1
 		for box in self.boxes:
-			box.updateParams(self.autoBoxer)
+			# set the force flag true or else the optprofile won't be set when the peak is 'faulty'
+			box.updateParams(self.autoBoxer,False,True)
 		
 		v = []
 		for box in self.boxes:
@@ -1806,6 +1917,12 @@ class SwarmAutoBoxer(AutoBoxer):
 		# If it's user driven then the user has selected a bunch of references and then hit 'autobox'.
 		# In which case we do a complete reference update, which generates the template and the
 		# best autoboxing parameters
+		
+		# this is fine - if a boxable is frozen this is more or less a flag for the autoboxer not
+		# to autobox it...
+		if boxable.isFrozen():
+			return 0
+		
 		if len(self.getRefBoxes()) == 0:
 			print 'error, cant get template if there are no references'
 			return 0
@@ -1833,7 +1950,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		# auto boxing will only ever occur if the time stamp of the AutoBoxer is not the
 		# same as the time stamp cached by the Boxable. -1 means it's the first time.
 		if autoBoxerTS == -1 or autoBoxerTS != self.stateTS:
-			print "autoboxing",autoBoxerTS,self.stateTS
+			#print "autoboxing",autoBoxerTS,self.stateTS
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag:
 				# we must clear all non-refs if we're using dynapix
@@ -1845,7 +1962,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			exclusion.write_image("exclusion.hdf")
 		
 			boxes = self.__autoBox(correlation,boxable,boxable.boxes,exclusion)
-			print "autoboxed",len(boxes)
+			#print "autoboxed",len(boxes)
 			boxable.autoBoxerTS = self.stateTS
 
 			# This shouldn't happen in the Database instance
@@ -1869,7 +1986,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				
 			return 1
 
-		else: print 'no auto boxing was necessary, up-2-date' # DEBUG
+		#else: print 'no auto boxing was necessary, up-2-date' # DEBUG
 		
 	def __reset(self):
 		self.boxsize = -1
