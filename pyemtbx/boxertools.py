@@ -338,8 +338,8 @@ class Box:
 			
 		difx = int(shrink*int(smallx/2.0+0.5)-int(nx/2.0+0.5))
 		dify = int(shrink*int(smally/2.0+0.5)-int(ny/2.0+0.5))
-		self.xcorner -= difx
-		self.ycorner -= dify
+		self.xcorner += difx
+		self.ycorner += dify
 		
 		#print "correction",difx,dify
 		
