@@ -687,6 +687,7 @@ class EMImageMXCore:
 			
 			elif self.mmode=="del" and lc:
 				del self.data[lc[0]]
+				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
 				#self.setData(self.data)
 				self.updateGL()
 			elif self.mmode=="app" and lc:

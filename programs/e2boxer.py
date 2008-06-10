@@ -427,6 +427,7 @@ class GUIbox:
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.boxsel)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedrag"),self.boxmove)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mouseup"),self.boxrelease)
+		self.guimx.connect(self.guimx,QtCore.SIGNAL("boxdeleted"),self.boximagedeleted)
 		
 		self.indisplaylimbo = False	# a flag I am using to solve a problem
 		self.mmode = 0
@@ -844,7 +845,11 @@ class GUIbox:
 		#self.guiim.addShapes(sh)
 		#print "now there are",len(sh),"shapes"
 		
-		
+	def boximagedeleted(self,event,lc):
+		box = self.delbox(lc[0])
+		self.boxable.addExclusionParticle(box)
+		self.updateAllImageDisplay()
+		self.updateppc()
 	def delbox(self,boxnum):
 		"""
 		Deletes the numbered box completely
