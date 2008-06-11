@@ -16910,12 +16910,97 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	//ctf_img1->attr_dict["is_ri"] = 1;
 	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);		
 	return ctf_img1;
-} 		
-
+}
+/*
 #define  cent(i)     out[i+N]
 #define  assign(i)   out[i]
-vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
-       
+vector<float> Util::cluster_pairwise(EMData* d, int K) {
+
+	int nx = d->get_xsize();
+	int N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0);
+	vector<float> out(N+K+2);
+	if(N*(N-1)/2 != nx) {
+		//print  "  incorrect dimension"
+		return out;}
+	//  assign random objects as centers
+	for(int i=0; i<N; i++) assign(i) = float(i);
+	// shuffle
+	for(int i=0; i<N; i++) {
+		int j = Util::get_irand(0,N-1);
+		float temp = assign(i);
+		assign(i) = assign(j);
+		assign(j) = temp;
+	}
+	for(int k=0; k<K; k++) cent(k) = float(assign(k));
+	//for(int k=0; k<K; k++) cout<<cent(k)<<"    ";cout<<endl;
+	//
+	for(int i=0; i<N; i++) assign(i) = 0.0f;
+	float qm, dispold = 1.1e22f, disp = 1.0e22f, na=0.0f;
+	bool change = true;
+	int it = -1;
+	while(change && disp < dispold) {
+		change = false;
+		dispold = disp;
+		it++;
+		//cout<<"Iteration:  "<<it<<endl;
+		// dispersion is a sum of distance from objects to object center
+		disp = 0.0f;
+		for(int i=0; i<N; i++) {
+			qm = 1.0e23f;
+			for(int k=0; k<K; k++) {
+				if(float(i) == cent(k)) {
+					qm = 0.0f;
+					na = (float)k;
+				} else {
+					float dt = (*d)(mono(i,int(cent(k))));
+					if(dt < qm) {
+						qm = dt;
+						na = (float)k;
+					}
+				}
+			}
+			disp += qm;
+			if(na != assign(i)) {
+				assign(i) = na;
+				change = true;
+			}
+		}
+	//for(int k=0; k<N; k++) cout<<assign(k)<<"    ";cout<<endl;
+		//print disp
+		//print  assign
+		// find centers
+		for(int k=0; k<K; k++) {
+			qm = 1.0e23f;
+			for(int i=0; i<N; i++) {
+				if(assign(i) == float(k)) {
+					float q = 0.0;
+					for(int j=0; j<N; j++) {
+						if(assign(j) == float(k)) {
+								//it cannot be the same object
+							if(i != j)  q += (*d)(mono(i,j));
+							//cout<<q<<"   "<<i<<"   "<<j<<"   "<<k<<endl;}
+						}
+					}
+					if(q < qm) {
+						//cout<<qm<<"   "<<q<<"   "<<i<<"   "<<k<<endl;
+						qm = q;
+						cent(k) = float(i);
+					}
+				}
+			}
+		}
+	//for(int k=0; k<K; k++) cout<<cent(k)<<"    ";cout<<endl;cout<<disp<<endl;
+	}
+	out[N+K] = disp;
+	out[N+K+1] = float(it);
+	return  out;
+}
+#undef  cent
+#undef  assign
+*/
+#define  cent(i)     out[i+N]
+#define  assign(i)   out[i]
+vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {     
 	int nx = d->get_xsize();
 	int N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0);
 	vector<float> out(N+K+2);
@@ -17014,3 +17099,102 @@ vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 }
 #undef  cent
 #undef  assign
+
+#define  groupping(i,k)   group[i + k*m]
+vector<float> Util::cluster_equalsize(EMData* d, int m) {
+	int nx = d->get_xsize();
+	int N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0);
+	int K = N/m;
+	vector<float> group(N+1);
+	if(N*(N-1)/2 != nx) {
+		//print  "  incorrect dimension"
+		return group;}
+	bool active[N];
+	//  assign random objects as centers
+	for(int i=0; i<N; i++) active[i] = true;
+
+	float dm, qd;
+	int   ppi, ppj;
+	for(int k=0; k<K; k++) {
+		// find two most similiar objects among active
+		dm = 1.0e23;
+		for(int i=1; i<N; i++) {
+			if(active[i]) {
+				for(int j=0; j<i; j++) {
+					if(active[j]) {
+						qd = (*d)(mono(i,j));
+						if(qd < dm) {
+							dm = qd;
+							ppi = i;
+							ppj = j;
+						}
+					}
+				}
+			}
+		}
+		groupping(0,k) = float(ppi);
+		groupping(1,k) = float(ppi);
+		active[ppi] = false;
+		active[ppj] = false;
+
+		// find progressively objects most similar to those in the current list
+		for(int l=2; l<m; l++) {
+			dm = 1.0e23;
+			for(int i=0; i<N; i++) {
+				if(active[i]) {
+					qd = 0.0;
+					for(int j; j<l; j++) { //j in groupping[k]:
+						int jj = int(groupping(j,k));
+						qd += (*d)(mono(i,jj));
+					}
+					if(qd < dm) {
+						dm = qd;
+						ppi = i;
+					}
+				}
+			}
+			groupping(l,k) = float(ppi);
+			active[ppi] = false;
+		}
+	}
+	// there might be remaining objects when N is not divisible by m, simply put them in one group
+	if(N%m != 0) {
+		K++;
+		int j = 0;
+		for(int i=0; i<N; i++) {
+			if(active[i]) {
+				groupping(j,K-1) = float(i);
+				j++;
+			}
+		}
+	}
+
+	int  cent[K];
+	 // find centers
+	for(int k=0; k<K; k++) {
+		float qm = 1.0e23f;
+		for(int i=0; i<N; i++) {
+			if(group[i] == float(k)) {
+				qd = 0.0;
+				for(int j=0; j<N; j++) {
+					if(group[j] == float(k)) {
+						//it cannot be the same object
+						if(i != j)  qd += (*d)(mono(i,j));
+					}
+				}
+				if(qd < qm) {
+					qm = qd;
+					cent[k] = i;
+				}
+			}
+		}
+	}
+	// dispersion is a sum of distances from objects to object center
+	float disp = 0.0f;
+	for(int i=0; i<N; i++) {
+		for(int k=0; k<K; k++) if(i == cent[k]) disp += (*d)(mono(i,cent[k]));
+	}
+	group[N] = disp;
+	return  group;
+}
+#undef  groupping
