@@ -548,7 +548,7 @@ public:
 		return  std::min(k1,k2) + mk*(mk-1)/2;
 #endif	//_WIN32	
 	}
-	static vector<float> cluster_pairwise(EMData* d, int K);
+	static vector<float> cluster_pairwise(EMData* d, int K, float T, float F);
 		
 	/*
 			To restrict the value to [0, nx)

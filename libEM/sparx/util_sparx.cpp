@@ -16914,8 +16914,8 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 
 #define  cent(i)     out[i+N]
 #define  assign(i)   out[i]
-vector<float> Util::cluster_pairwise(EMData* d, int K) {
-
+vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
+       
 	int nx = d->get_xsize();
 	int N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0);
 	vector<float> out(N+K+2);
@@ -16938,13 +16938,16 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 	float qm, dispold = 1.1e22f, disp = 1.0e22f, na=0.0f;
 	bool change = true;
 	int it = -1;
-	while(change && disp < dispold) {
+	int ct = -1;
+	while(change and disp < dispold or ct > 0) {
+
 		change = false;
 		dispold = disp;
 		it++;
-		//cout<<"Iteration:  "<<it<<endl;
+		
 		// dispersion is a sum of distance from objects to object center
 		disp = 0.0f;
+		ct = 0;
 		for(int i=0; i<N; i++) {
 			qm = 1.0e23f;
 			for(int k=0; k<K; k++) {
@@ -16959,12 +16962,26 @@ vector<float> Util::cluster_pairwise(EMData* d, int K) {
 					}
 				}
 			}
+			
+
+			// Simulated annealing
+			if(exp(-1/float(T)) > Util::get_irand(1,1000)/1000.0) {
+			    na = Util::get_irand(0, K);
+			    qm = (*d)(mono(i,int(na)));
+			    ct++;
+			}
+
 			disp += qm;
+			
 			if(na != assign(i)) {
 				assign(i) = na;
 				change = true;
 			}
 		}
+
+		//cout<<"Iteration:  "<<it<< " disp " <<disp << " T " << T << " disturb " << ct << endl;
+		T = T*F;
+
 	//for(int k=0; k<N; k++) cout<<assign(k)<<"    ";cout<<endl;
 		//print disp
 		//print  assign
