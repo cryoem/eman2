@@ -98,39 +98,39 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		
 		# this float widget has half of the screen (the left)
 		fw1 = EMDesktopWidgets(self)
-		fw1.setDims(self.appwidth/2.0,self.appheight)
+		fw1.setDims(self.appwidth,self.appheight)
 		fw1.setCamPos(-self.appwidth/2.0,-self.appheight/2.0)
 		fw1.suppressUpdateGL = True
 		
-		fw4 = EMDesktopWidgets(self)
-		fw4.setDims(self.appwidth/2.0,self.appheight)
-		fw4.setCamPos(-self.appwidth/2.0,-self.appheight/2.0, -self.zopt/2.0)
-		fw4.suppressUpdateGL = True
+		#fw4 = EMDesktopWidgets(self)
+		#fw4.setDims(self.appwidth/2.0,self.appheight)
+		#fw4.setCamPos(-self.appwidth/2.0,-self.appheight/2.0, -self.zopt/2.0)
+		#fw4.suppressUpdateGL = True
 		
-		fw2 = EMDesktopWidgets(self)
-		fw2.setDims(self.appwidth/2.0,self.appheight)
-		fw2.setCamPos(0,-self.appheight/2.0, -self.zopt+10)
-		fw2.suppressUpdateGL = True
+		#fw2 = EMDesktopWidgets(self)
+		#fw2.setDims(self.appwidth/2.0,self.appheight)
+		#fw2.setCamPos(0,-self.appheight/2.0, -self.zopt+10)
+		#fw2.suppressUpdateGL = True
 		
-		fw5 = EMDesktopWidgets(self)
-		fw5.setDims(self.appwidth/2.0,self.appheight)
-		fw5.setCamPos(0,-self.appheight/2.0, -self.zopt/2.0)
-		fw5.suppressUpdateGL = True
+		#fw5 = EMDesktopWidgets(self)
+		#fw5.setDims(self.appwidth/2.0,self.appheight)
+		#fw5.setCamPos(0,-self.appheight/2.0, -self.zopt/2.0)
+		#fw5.suppressUpdateGL = True
 		
-		fw3 = EMDesktopWidgets(self)
-		fw3.setDims(self.appwidth/2.0,self.appheight)
-		fw3.setCamPos(0,-self.appheight/2.0)
-		fw3.suppressUpdateGL = True
+		#fw3 = EMDesktopWidgets(self)
+		#fw3.setDims(self.appwidth/2.0,self.appheight)
+		#fw3.setCamPos(0,-self.appheight/2.0)
+		#fw3.suppressUpdateGL = True
 		
 		
 		self.timereceivers = []
 		
 		self.floatwidgets = []
 		self.floatwidgets.append(fw1)
-		self.floatwidgets.append(fw2)
-		self.floatwidgets.append(fw3)
-		self.floatwidgets.append(fw4)
-		self.floatwidgets.append(fw5)
+		#self.floatwidgets.append(fw2)
+		#self.floatwidgets.append(fw3)
+		#self.floatwidgets.append(fw4)
+		#self.floatwidgets.append(fw5)
 		
 		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.borderwidth=10.0
@@ -456,6 +456,7 @@ class EMDesktopWidgets:
 		return float(self.h)
 	
 	def layout(self):
+		print "in layout"
 		numcols = len(self.cols)
 		if numcols == 0: return
 		

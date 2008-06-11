@@ -510,7 +510,7 @@ class EMGLView2D:
 
 		#self.updateGL()
 	def emit(self, signal, event):
-		self.parent.emit(signal,event)
+		QtCore.QObject.emit(signal,event)
 	
 	def leaveEvent(self):
 		self.drawable.leaveEvent()
@@ -682,9 +682,13 @@ class EMGLViewQtWidget:
 		QtGui.QToolTip.showText(p2,cw.toolTip())
 	
 	def wheelEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
-			self.cam.wheelEvent(event)
-		else:
+		doElse = True
+		try:
+			if event.modifiers() == Qt.ShiftModifier:
+				self.cam.wheelEvent(event)
+				doElse = False
+		except: pass
+		if doElse:
 			if ( self.childreceiver != None ):
 				# this means this class already knows that the mouse event is in the child
 				# that is being displayed
