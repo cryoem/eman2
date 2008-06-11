@@ -17105,6 +17105,7 @@ vector<float> Util::cluster_equalsize(EMData* d, int m) {
 	int nx = d->get_xsize();
 	int N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0);
 	int K = N/m;
+	//cout<<"  K  "<<K<<endl;
 	vector<float> group(N+1);
 	if(N*(N-1)/2 != nx) {
 		//print  "  incorrect dimension"
@@ -17117,6 +17118,7 @@ vector<float> Util::cluster_equalsize(EMData* d, int m) {
 	int   ppi, ppj;
 	for(int k=0; k<K; k++) {
 		// find two most similiar objects among active
+		cout<<"  k  "<<k<<endl;
 		dm = 1.0e23;
 		for(int i=1; i<N; i++) {
 			if(active[i]) {
@@ -17133,18 +17135,21 @@ vector<float> Util::cluster_equalsize(EMData* d, int m) {
 			}
 		}
 		groupping(0,k) = float(ppi);
-		groupping(1,k) = float(ppi);
+		groupping(1,k) = float(ppj);
 		active[ppi] = false;
 		active[ppj] = false;
 
 		// find progressively objects most similar to those in the current list
 		for(int l=2; l<m; l++) {
+			//cout<<"  l  "<<l<<endl;
 			dm = 1.0e23;
 			for(int i=0; i<N; i++) {
 				if(active[i]) {
 					qd = 0.0;
-					for(int j; j<l; j++) { //j in groupping[k]:
+					for(int j=0; j<l; j++) { //j in groupping[k]:
+			//cout<<"  groupping(j,k)  "<<groupping(j,k)<<"   "<<j<<endl;
 						int jj = int(groupping(j,k));
+			//cout<<"   "<<jj<<endl;
 						qd += (*d)(mono(i,jj));
 					}
 					if(qd < dm) {
@@ -17155,15 +17160,19 @@ vector<float> Util::cluster_equalsize(EMData* d, int m) {
 			}
 			groupping(l,k) = float(ppi);
 			active[ppi] = false;
+			//cout<<"  k  "<<k<<"  l  "<<l<<"  ppi  "<<ppi<<"  dm  "<<dm<<endl;
 		}
+		//for(int j=k*m; j<(k+1)*m; j++) cout<<group[j]<<endl;
 	}
 	// there might be remaining objects when N is not divisible by m, simply put them in one group
 	if(N%m != 0) {
+		int j = K*m;
 		K++;
-		int j = 0;
+		//cout<<"  N%m  "<<N%m<<"   "<<K<<endl;
 		for(int i=0; i<N; i++) {
 			if(active[i]) {
-				groupping(j,K-1) = float(i);
+				group[j] = float(i);
+		//cout<<"  j,i  "<<j<<"   "<<i<<"   "<<K-1 <<"   "<< group[j]<<endl;
 				j++;
 			}
 		}
