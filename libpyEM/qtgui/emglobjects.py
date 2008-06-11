@@ -667,6 +667,11 @@ class Camera2:
 		self.plane = 'xy'
 		
 		self.motiondull = 8.0
+		
+		self.mpressx = -1
+		self.mpressy = -1
+
+		
 	def loadIdentity(self):
 		self.scale = 1.0
 		

@@ -312,6 +312,12 @@ class EMGLView3D:
 	def get_render_dims_at_depth(self, depth):
 		return self.parent.get_render_dims_at_depth(depth)
 	
+	def getNearPlaneDims(self):
+		return self.parent.getNearPlaneDims()
+		
+	def getStartZ(self):
+		return self.parent.getStartZ()
+	
 class EMGLView2D:
 	"""
 	A view of a 2D drawable type, such as a single 2D image or a matrix of 2D images

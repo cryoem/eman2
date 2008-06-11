@@ -737,6 +737,7 @@ class GUIbox:
 			m=self.guiim.scr2img((event.x(),event.y()))
 			self.guiim.addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
 			self.boxable.addExclusionArea("circle",m[0],m[1],self.eraseradius,self.erasemode)
+			self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 			self.updateImageDisplay()
 			
 	def movebox(self,boxnum,dx,dy):

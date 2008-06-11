@@ -379,6 +379,14 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		for i in self.floatwidgets:
 			i.hoverEvent(event)
 
+	def getNearPlaneDims(self):
+		height = 2.0*self.zNear * tan(self.fov/2.0*pi/180.0)
+		width = self.aspect * height
+		return [width,height]
+		
+	def getStartZ(self):
+		return self.zNear
+
 class EMDesktopWidgets:
 	""" Something that organizes and display EMGLWidgets
 	"""
@@ -724,6 +732,11 @@ class EMDesktopWidgets:
 		self.cols = [[self.desktopwidget]]
 		self.layout()
 	
+	def getNearPlaneDims(self):
+		return self.parent.getNearPlaneDims()
+		
+	def getStartZ(self):
+		return self.parent.getStartZ()
 		
 class ob2dimage:
 	def __init__(self,target,pixmap,aspect):
