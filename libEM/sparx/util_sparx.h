@@ -550,7 +550,8 @@ public:
 	}
 
 	static vector<float> cluster_pairwise(EMData* d, int K, float T, float F);
-	static vector<float> cluster_equalsize(EMData* d, int m);
+	//static vector<float> cluster_equalsize(EMData* d, int m);
+	static vector<float> cluster_equalsize(EMData* d);
 		
 	/*
 			To restrict the value to [0, nx)

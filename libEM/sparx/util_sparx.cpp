@@ -17099,7 +17099,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 }
 #undef  cent
 #undef  assign
-
+/*
 #define  groupping(i,k)   group[i + k*m]
 vector<float> Util::cluster_equalsize(EMData* d, int m) {
 	int nx = d->get_xsize();
@@ -17111,7 +17111,6 @@ vector<float> Util::cluster_equalsize(EMData* d, int m) {
 		//print  "  incorrect dimension"
 		return group;}
 	bool active[N];
-	//  assign random objects as centers
 	for(int i=0; i<N; i++) active[i] = true;
 
 	float dm, qd;
@@ -17207,3 +17206,43 @@ vector<float> Util::cluster_equalsize(EMData* d, int m) {
 	return  group;
 }
 #undef  groupping
+*/
+vector<float> Util::cluster_equalsize(EMData* d) {
+	//  WORKS ONLY FOR NUMBER OF OBJECTS N=l^2   !!
+	int nx = d->get_xsize();
+	int N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0);
+	int K = N/2;
+	vector<float> group(N);
+	if(N*(N-1)/2 != nx) {
+		//print  "  incorrect dimension"
+		return group;}
+	bool active[N];
+	for(int i=0; i<N; i++) active[i] = true;
+
+	float dm, qd;
+	int   ppi = 0, ppj = 0;
+	for(int k=0; k<K; k++) {
+		// find pairs of most similiar objects among active
+		cout<<"  k  "<<k<<endl;
+		dm = 1.0e23;
+		for(int i=1; i<N; i++) {
+			if(active[i]) {
+				for(int j=0; j<i; j++) {
+					if(active[j]) {
+						qd = (*d)(mono(i,j));
+						if(qd < dm) {
+							dm = qd;
+							ppi = i;
+							ppj = j;
+						}
+					}
+				}
+			}
+		}
+		group[2*k] = float(ppi);
+		group[1+2*k] = float(ppj);
+		active[ppi] = false;
+		active[ppj] = false;
+	}
+	return  group;
+}
