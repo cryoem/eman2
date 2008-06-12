@@ -17047,7 +17047,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 			
 
 			// Simulated annealing
-			if(exp(-1/float(T)) > Util::get_irand(1,1000)/1000.0) {
+			if(exp(-1.0/float(T)) > Util::get_irand(1,1000)/1000.0) {
 			    na = Util::get_irand(0, K);
 			    qm = (*d)(mono(i,int(na)));
 			    ct++;
@@ -17204,7 +17204,7 @@ vector<float> Util::cluster_equalsize(EMData* d, int m) {
 }
 #undef  groupping
 */
-/*
+
 vector<float> Util::cluster_equalsize(EMData* d) {
 	//  WORKS ONLY FOR NUMBER OF OBJECTS N=l^2   !!
 	int nx = d->get_xsize();
@@ -17221,13 +17221,13 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 	int   ppi = 0, ppj = 0;
 	for(int k=0; k<K; k++) {
 		// find pairs of most similiar objects among active
-		cout<<"  k  "<<k<<endl;
+		//cout<<"  k  "<<k<<endl;
 		dm = 1.0e23;
 		for(int i=1; i<N; i++) {
 			if(active[i]) {
 				for(int j=0; j<i; j++) {
 					if(active[j]) {
-						qd = (*d)(mono(i,j));
+						qd = (*d)(i*(i - 1)/2 + j);
 						if(qd < dm) {
 							dm = qd;
 							ppi = i;
@@ -17244,7 +17244,7 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 	}
 	return  group;
 }
-*/
+/*
 #define son(i,j)=i*(i-1)/2+j
 vector<float> Util::cluster_equalsize(EMData* d) {
 	//  WORKS ONLY FOR NUMBER OF OBJECTS N=l^2   !!
@@ -17296,3 +17296,5 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 	}
 	return  group;
 }
+
+*/
