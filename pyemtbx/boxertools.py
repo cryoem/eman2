@@ -647,7 +647,9 @@ class SigmaImage:
 	
 		cficache= CFImageCache()
 		image = cficache.getImage(self.imagename,flattenradius,shrinkfactor)
-		self.image = image.calc_fast_sigma_image(None)
+		tmp = EMData(flattenradius*2,flattenradius*2)
+		tmp.process_inplace("testimage.circlesphere")
+		self.image = image.calc_fast_sigma_image(tmp)
 		self.image.set_attr("flatten_radius",flattenradius)
 		self.image.set_attr("shrink_factor",shrinkfactor)
 		
