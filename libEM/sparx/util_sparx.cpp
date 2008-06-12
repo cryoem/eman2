@@ -17263,7 +17263,7 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 	int   ppi = 0, ppj = 0, ln = N;
 	for(int k=0; k<K; k++) {
 		// find pairs of most similiar objects among active
-		cout<<"  k:  "<<k<<endl;
+		//cout<<"  k:  "<<k<<endl;
 		dm = 1.0e23;
 		for(int i=1; i<ln; i++) {
 			for(int j=0; j<i; j++) {
