@@ -190,12 +190,9 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	      }
 	}       
 	 
-	if ((nvox*S1 - S3*S4) == 0. || (nvox*S2 - S4*S4) == 0)  
-	{ 		
+	if ((nvox*S1 - S3*S4) == 0. || (nvox*S2 - S4*S4) == 0) { 		
 		A =1.0f ;
-	}
-	else 
-	{ 
+	} else { 
 		A = static_cast<float>( (nvox*S1 - S3*S4)/(nvox*S2 - S4*S4) );
 	}		
 	B = static_cast<float> (A*S4  -  S3)/nvox;
@@ -332,8 +329,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
    		EMData* OutFT= TwoDTestFunc(Size, p, q, a, b, 1);
    		EMData* TryFH= OutFT -> real2FH(4.0);
    		return TryFH;
-   	} 
-	else {
+   	} else {
     		cout <<" flag must be 0,1,2,3, or 4";
     	}
 	
@@ -375,7 +371,7 @@ void Util::spline(float *x, float *y, int n, float yp1, float ypn, float *y2) //
 
 	if (yp1 > .99e30){
 		y2[0]=u[0]=0.0;
-	}else{
+	} else {
 		y2[0]=-.5f;
 		u[0] =(3.0f/ (x[1] -x[0]))*( (y[1]-y[0])/(x[1]-x[0]) -yp1);
 	}
@@ -449,7 +445,8 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 			if (jky!=0)  { weightMat[Count] *=2;}
 			if (jkx!=jky){ weightMat[Count] *=2;}
 			PermMat[Count]=Count+1;
-	}}
+		}
+	}
 
 	int lkVals = Count+1;
 //	printf("Cc \n");fflush(stdout);
@@ -17207,6 +17204,7 @@ vector<float> Util::cluster_equalsize(EMData* d, int m) {
 }
 #undef  groupping
 */
+/*
 vector<float> Util::cluster_equalsize(EMData* d) {
 	//  WORKS ONLY FOR NUMBER OF OBJECTS N=l^2   !!
 	int nx = d->get_xsize();
@@ -17243,6 +17241,56 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 		group[1+2*k] = float(ppj);
 		active[ppi] = false;
 		active[ppj] = false;
+	}
+	return  group;
+}
+*/
+vector<float> Util::cluster_equalsize(EMData* d) {
+	//  WORKS ONLY FOR NUMBER OF OBJECTS N=l^2   !!
+	int nx = d->get_xsize();
+	int N = 1 + int((sqrt(1.0 + 8.0*nx)-1.0)/2.0);
+	int K = N/2;
+	vector<float> group(N);
+	if(N*(N-1)/2 != nx) {
+		//print  "  incorrect dimension"
+		return group;}
+	//bool active[N];
+	int  active[N];
+	for(int i=0; i<N; i++) active[i] = i;
+
+	float dm, qd;
+	int   ppi = 0, ppj = 0, ln = N;
+	for(int k=0; k<K; k++) {
+		// find pairs of most similiar objects among active
+		cout<<"  k  "<<k<<endl;
+		dm = 1.0e23;
+		for(int i=1; i<ln; i++) {
+			for(int j=0; j<i; j++) {
+				qd = (*d)(mono(active[i],active[j]));
+				if(qd < dm) {
+					dm = qd;
+					ppi = i;
+					ppj = j;
+				}
+			}
+		}
+		group[2*k]   = float(active[ppi]);
+		group[1+2*k] = float(active[ppj]);
+		//  Shorten the list
+		if(ppi > ln-3 || ppj > ln - 3) {
+			if(ppi > ln-3 && ppj > ln - 3) {
+			} else if(ppi > ln-3) {
+				if(ppi == ln -1) active[ppj] = active[ln-2];
+				else             active[ppj] = active[ln-1];
+			} else { // ppj>ln-3
+				if(ppj == ln -1) active[ppi] = active[ln-2];
+				else             active[ppi] = active[ln-1];
+			}
+		} else {
+			active[ppi] = active[ln-1];
+			active[ppj] = active[ln-2];
+		}
+		ln = ln - 2;
 	}
 	return  group;
 }
