@@ -2977,13 +2977,13 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	
 	ang = ang*DGR_TO_RAD;
 	float cang = cos(ang);
-	float sang = -sin(ang);
+	float sang = sin(ang);
 	for (int iy = -nyhalf; iy < nyhalf; iy++) {
 		float ycang = iy*cang;
 		float ysang = iy*sang;
 		for (int ix = 0; ix <= nxhalf; ix++) {
-			float nuyold = (-ix*sang + ycang)*scale;
-			float nuxold =  (ix*cang + ysang)*scale;
+			float nuxold = (ix*cang - ysang)*scale;
+			float nuyold = (ix*sang + ycang)*scale;
 			result->cmplx(ix,iy) = extractpoint(nuxold, nuyold, kb);
 		}
 	}
