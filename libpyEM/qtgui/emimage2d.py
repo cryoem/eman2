@@ -205,8 +205,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		return 0
 	
 	def setFrozen(self,frozen):
-		print "setting frozen",frozen
 		self.image2d.setFrozen(frozen)
+		
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.

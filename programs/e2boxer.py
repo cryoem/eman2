@@ -235,7 +235,7 @@ for single particle analysis."""
 	print "finished running"
 
 	if options.dbout:
-		boxes = gui.getboxes()
+		boxes = gui.getBoxes()
 		# Write EMAN1 style box database
 		out=open(options.dbout,"w")
 		n=0
@@ -351,7 +351,252 @@ class AutoDBBoxer(QtCore.QObject):
 		#print "process started"
 		
 
+class GUIboxMouseEventsObject:
+	'''
+	a base class for objects that handle mouse events in the GUIbox
+	'''
+	def __init__(self,mediator):
+		if not isinstance(mediator,GUIboxEventsMediator):
+			print "error, the mediator should be a GUIboxEventsMediator"
+			return
+		
+		self.mediator = mediator
+		
+	def get2DGuiImage(self):
+		return self.mediator.get2DGuiImage()
+	
+	def getGuiCtl(self):
+		return self.mediator.getGuiCtl()
+	
+	def getMXGuiImage(self):
+		return self.mediator.getMXGuiImage()
+	
+	def mouseup(self,event):
+		pass
+
+	def mousedown(self,event):
+		pass
+		
+	def mousedrag(self,event):
+		pass
+	
+	def mousemove(self,event):
+		pass
+
+	def mousewheel(self,event):
+		pass
+	
+
+class GUIboxMouseEraseEvents(GUIboxMouseEventsObject):
+	'''
+	A class that knows how to handle mouse erase events for a GUIBox
+	'''
+	def __init__(self,mediator,eraseradius=-1):
+		GUIboxMouseEventsObject.__init__(self,mediator)
+		
+		self.eraseradius=eraseradius	# This is a circular radius 
+		self.erasemode = None			# erase mode can be either Boxable.ERASE or Boxable.UNERASE
+		
+	def setmode(self,mode):
+		self.erasemode = mode
+		
+	def setEraseRadius(self,radius):
+		self.eraseradius = radius
+	
+	def mousemove(self,event):
+		m = self.get2DGuiImage().scr2img((event.x(),event.y()))
+		self.get2DGuiImage().addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+		self.mediator.updateImageDisplay()
+		
+	def mousewheel(self,event):
+		if event.modifiers()&Qt.ShiftModifier:
+			self.getGuiCtl().adjustEraseRad(event.delta())
+			m= self.get2DGuiImage().scr2img((event.x(),event.y()))
+			self.get2DGuiImage().addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+			self.mediator.updateImageDisplay()
+	
+	def mousedown(self,event) :
+		m=self.get2DGuiImage().scr2img((event.x(),event.y()))
+		#self.boxable.addExclusionArea("circle",m[0],m[1],self.eraseradius)
+		self.get2DGuiImage().addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
+		self.mediator.exclusionAreaAdded("circle",m[0],m[1],self.eraseradius,self.erasemode)	
+
+	def mousedrag(self,event) :
+		m=self.get2DGuiImage().scr2img((event.x(),event.y()))
+		self.get2DGuiImage().addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
+		self.mediator.exclusionAreaAdded("circle",m[0],m[1],self.eraseradius,self.erasemode)
+		# exclusionAreaAdded does the OpenGL update calls, so there is no need to do so here
+		
+	def mouseup(self,event) :
+		# we have finished erasing
+		
+		# make the eraser shape non visible
+		self.get2DGuiImage().addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+		self.mediator.erasingDone()
+	
+class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
+	'''
+	A class that knows how to add and remove reference and non reference boxes
+	'''
+	def __init__(self,mediator):
+		GUIboxMouseEventsObject.__init__(self,mediator)
+		self.mode =  GUIbox.REFERENCE_ADDING
+		self.anchoring = False
+		self.moving = None
+		self.dynapix = False
+		
+	def setAnchoring(self,bool):
+		self.anchoring = bool
+		
+	def setmode(self,mode):
+		if mode not in [GUIbox.REFERENCE_ADDING,GUIbox.MANUALLY_ADDING]:
+			print 'error, that is  an illegal mode'
+			return
+		
+		self.mode = mode
+		
+	def mousedown(self,event) :
+		m= self.get2DGuiImage().scr2img((event.x(),event.y()))
+		boxnum = self.mediator.detectBoxCollision(m)
+		if boxnum == -1:
+			#if we make it here, that means the user has clicked on an area that is not in any box
+			
+			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
+			
+			# If we get here, we need to add a new reference
+			boxsize = self.mediator.getBoxSize()
+			
+			box = Box(m[0]-boxsize/2,m[1]-boxsize/2,boxsize,boxsize,True)
+			box.setImageName(self.mediator.getCurrentImageName())
+			
+			if self.anchoring:	box.isanchor = False
+			else: box.isanchor = True # this is the default behaviour 
+			box.changed = True # this is so image2D nows to repaint the shape
+			
+			if self.mode == GUIbox.REFERENCE_ADDING:
+				box.isref = True
+				box.ismanual = False
+				
+			elif self.mode == GUIbox.MANUALLY_ADDING:
+				box.isref = False
+				box.ismanual = True
+			else:
+				print 'error, unknown error in mousedown, boxing mode'
+			
+			x0=box.xcorner+box.xsize/2-1
+			y0=box.ycorner+box.ysize/2-1
+			self.get2DGuiImage().addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			
+			self.mediator.storeBox(box)
+			self.mediator.mouseClickUpdatePPC()
+		
+		elif event.modifiers()&Qt.ShiftModifier :
+			# remove the box
+			self.mediator.removeBox(boxnum)
+			self.mediator.mouseClickUpdatePPC()
+			
+		else:
+			# if we make it here than the we're moving a box
+			box = self.mediator.getBox(boxnum)
+			self.moving=[box,m,boxnum]
+			self.get2DGuiImage().setActive(boxnum,.9,.9,.4)
+				
+			x0=box.xcorner+box.xsize/2-1
+			y0=box.ycorner+box.ysize/2-1
+			self.get2DGuiImage().addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			if not self.getMXGuiImage().isVisible(boxnum) : self.getMXGuiImage().scrollTo(boxnum,yonly=1)
+			self.getMXGuiImage().setSelected(boxnum)
+			self.mediator.updateAllImageDisplay()
+		
+	def mousedrag(self,event) :
+		
+		m=self.get2DGuiImage().scr2img((event.x(),event.y()))
+		
+		if event.modifiers()&Qt.ShiftModifier:
+			boxnum = self.mediator.detectBoxCollision(m)
+			if ( boxnum != -1):
+				self.mediator.removeBox(boxnum)
+				self.mediator.mouseClickUpdatePPC()
+			
+		elif self.moving != None:
+			# self.moving[0] is the box, self.moving[1] are the mouse coordinates
+			box = self.moving[0]
+			# the old m in in self.moving[2]
+			oldm = self.moving[1]
+			
+			self.mediator.moveBox(self.moving[2],m[0]-oldm[0],m[1]-oldm[1])
+			self.moving[1] = m
+	
+	def mouseup(self,event) :
+		if self.moving != None:
+			box = self.moving[0]
+			if box.isref: self.mediator.referenceMoved(box)
+			
+		self.moving=None
+
+class GUIboxEventsMediator:
+	def __init__(self,parent):
+		if not isinstance(parent,GUIbox):
+			print "error, the parent of a GUIboxMouseEraseEvents must be a GUIbox"
+			return
+		
+		self.parent = parent	# need a referene to the parent to send it events
+
+	def get2DGuiImage(self):
+		return self.parent.get2DGuiImage()
+	
+	def getGuiCtl(self):
+		return self.parent.getGuiCtl()
+	
+	def getMXGuiImage(self):
+		return self.parent.getMXGuiImage()
+	
+	def updateImageDisplay(self):
+		self.parent.updateImageDisplay()
+		
+	def updateAllImageDisplay(self):
+		self.parent.updateAllImageDisplay()
+		
+	def exclusionAreaAdded(self,typeofexclusion,x,y,radius,mode):
+		self.parent.exclusionAreaAdded(typeofexclusion,x,y,radius,mode)
+
+	def erasingDone(self):
+		self.parent.erasingDone()
+		
+	def detectBoxCollision(self,coords):
+		return self.parent.detectBoxCollision(coords)
+	
+	def getCurrentImageName(self):
+		return self.parent.getCurrentImageName()
+
+	def getBoxSize(self):
+		return self.parent.getBoxSize()
+	
+	def storeBox(self,box):
+		self.parent.storeBox(box)
+	
+	def boxDisplayUpdate(self):
+		self.parent.boxDisplayUpdate()
+		
+	def mouseClickUpdatePPC(self):
+		self.parent.mouseClickUpdatePPC()
+	
+	def removeBox(self,boxnum):
+		self.parent.removeBox(boxnum)
+		
+	def getBox(self,boxnum):
+		return self.parent.getBox(boxnum)
+	
+	def moveBox(self,boxnum,dx,dy):
+		self.parent.moveBox(boxnum,dx,dy)
+	
+	def referenceMoved(self,box):
+		self.parent.referenceMoved(box)
+	
 class GUIbox:
+	REFERENCE_ADDING = 0
+	ERASING = 1
+	MANUALLY_ADDING = 2
 	def __init__(self,imagenames,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
 		to begin with. Modified boxes/thr are returned. 
@@ -367,7 +612,7 @@ class GUIbox:
 			#sys.exit(1)
 
 		self.dynapix = False
-		self.anchortemplate = False
+		self.anchoring = False
 				
 		if len(boxes)>0 and boxsize==-1: self.boxsize=boxes[0][2]
 		elif boxsize==-1: self.boxsize=128
@@ -380,7 +625,6 @@ class GUIbox:
 		self.currentimage = 0
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
-		
 		try:
 			projectdb = EMProjectDB()
 			trimAutoBoxer = projectdb["currentautoboxer"]
@@ -388,16 +632,20 @@ class GUIbox:
 			self.autoBoxer.become(trimAutoBoxer)
 			print 'using cached autoboxer db'
 		except:
-			print 'constructed new autoboxer'
 			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.boxsize = boxsize
-			self.autoBoxer.setMode(self.dynapix,self.anchortemplate)
+			self.autoBoxer.setMode(self.dynapix,self.anchoring)
 		
 		self.boxable = Boxable(self.imagenames[0],self,self.autoBoxer)
 		self.boxable.addnonrefs(boxes)
 		self.boxable.boxsize = boxsize
 		self.boxable.setAutoBoxer(self.autoBoxer)
 		
+		self.eventsmediator = GUIboxEventsMediator(self)
+		self.mousehandlers = {}
+		self.mousehandlers["boxing"] = GUIboxParticleManipEvents(self.eventsmediator)
+		self.mousehandlers["erasing"] = GUIboxMouseEraseEvents(self.eventsmediator,self.eraseradius)
+		self.mousehandler = self.mousehandlers["boxing"]
 		
 		self.threshold=thr					# Threshold to decide which boxes to use
 		self.ptcl=[]						# list of actual boxed out EMImages
@@ -431,12 +679,11 @@ class GUIbox:
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("boxdeleted"),self.boximagedeleted)
 		
 		self.indisplaylimbo = False	# a flag I am using to solve a problem
-		self.mmode = 0
+		self.mmode = GUIbox.REFERENCE_ADDING
 		self.guiim.setmmode(0)
 		self.guimx.setmmode("app")
 		self.ppc = 1.0
 		self.mouseclicks = 0
-		self.movingeraser = False
 		self.guictl=GUIboxPanel(self)
 		
 		try:
@@ -461,9 +708,83 @@ class GUIbox:
 
 		self.guictl.show()
 		self.boxDisplayUpdate()
-		
+	
+	
+	def get2DGuiImage(self):
+		return self.guiim
+	
+	def getGuiCtl(self):
+		return self.guictl
+	
+	def getMXGuiImage(self):
+		return self.guimx
+	
 	def getBoxable(self):
 		return self.boxable
+		
+	def exclusionAreaAdded(self,typeofexclusion,x,y,radius,mode):
+		self.boxable.addExclusionArea(typeofexclusion,x,y,radius,mode)
+		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
+		self.updateImageDisplay()
+		
+	def erasingDone(self):
+		'''
+		Call this function after erasing has occured to remove all boxes in the
+		erased regions
+		'''
+		
+		# tell the boxable to remove boxes (and return their number)
+		lostboxes = self.boxable.updateExcludedBoxes()
+		# after this, make sure the display is correct.
+		if len(lostboxes) != 0:
+			self.deleteDisplayShapes(lostboxes)
+			self.mouseclicks += 1
+			self.updateppc()
+			self.updateAllImageDisplay()
+			
+		else: self.updateImageDisplay()
+	
+	def detectBoxCollision(self,coords):
+		'''
+		Detects a collision of the coordinates with any of the boxes in the current image
+		stored in guiim. coords need to be in the image coordinates
+		'''
+		return  self.collisiondetect(coords,self.getBoxes())
+	
+	def getCurrentImageName(self):
+		return self.boxable.getImageName()
+	
+	def getBoxSize(self):
+		return self.boxsize
+	
+	def storeBox(self,box):
+		self.boxable.addbox(box)
+		
+		# Should this be here?
+		boxnum = len(self.getBoxes())
+		if not self.guimx.isVisible(boxnum) : self.guimx.scrollTo(boxnum,yonly=1)
+		self.guimx.setSelected(boxnum)
+		
+		# autoBoxer will autobox depending on the state of its mode
+		if box.isref : self.autoBoxer.addReference(box)
+		
+		self.boxDisplayUpdate()
+		
+	def getBox(self,boxnum):
+		boxes = self.getBoxes()
+		return boxes[boxnum]
+		
+	def removeBox(self,boxnum):
+		box = self.delbox(boxnum)
+		self.boxable.addExclusionParticle(box)
+		self.boxDisplayUpdate()
+		
+	def referenceMoved(self,box):
+		self.autoBoxer.referenceMoved(box)
+		
+	def mouseClickUpdatePPC(self):
+		self.mouseclicks += 1
+		self.updateppc()
 	
 	def setPtclMxData(self,data=None):
 		'''
@@ -505,7 +826,7 @@ class GUIbox:
 			self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 			self.guiim.setFrozen(self.boxable.isFrozen())
 			self.boxDisplayUpdate()
-			self.updateAllImageDisplay()
+			
 			
 	
 	def genImageThumbnailsWidget(self):
@@ -571,7 +892,7 @@ class GUIbox:
 		return self.itshrink
 		
 	def writeBoxesTo(self,imagename,norm=True):
-		boxes = self.getboxes()
+		boxes = self.getBoxes()
 		
 		# Write EMAN1 style box database
 		n = 0
@@ -585,13 +906,13 @@ class GUIbox:
 	def boxmove(self,event,scale):
 		dx = (self.boxm[0] - event.x())/scale
 		dy = (event.y() - self.boxm[1])/scale
-		self.movebox(self.boxm[2],dx,dy)
+		self.moveBox(self.boxm[2],dx,dy)
 		self.boxm[0] = event.x()
 		self.boxm[1] = event.y()
 		self.updateAllImageDisplay()
 		
 	def boxrelease(self,event):
-		if self.getboxes()[self.boxm[2]].isref :
+		if self.getBoxes()[self.boxm[2]].isref :
 			self.autobox()
 		self.boxm = None
 		
@@ -600,7 +921,7 @@ class GUIbox:
 		self.boxm = [event.x(),event.y(),im]
 		self.guiim.setActive(im,.9,.9,.4)
 		self.guimx.setSelected(im)
-		boxes = self.getboxes()
+		boxes = self.getBoxes()
 		self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		try:
 			#self.guiim.scrollTo(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
@@ -608,96 +929,26 @@ class GUIbox:
 			
 		except: print "boxsel() scrolling error"
 
-	def getboxes(self):
+	def getBoxes(self):
 		return self.boxable.boxes
 	
 	def mousemove(self,event):
-		if self.mmode == 1:
-			m=self.guiim.scr2img((event.x(),event.y()))
-			self.guiim.addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
-			self.updateImageDisplay()
-			self.movingeraser = True
-		else:
-			if (self.movingeraser):
-				self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
-				self.updateImageDisplay()
-				self.movingeraser = False
+		self.mousehandler.mousemove(event)
+
 	def mousewheel(self,event):
-		if self.mmode == 1 and event.modifiers()&Qt.ShiftModifier:
-			self.guictl.adjustEraseRad(event.delta())
-			m=self.guiim.scr2img((event.x(),event.y()))
-			self.guiim.addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
-			self.updateImageDisplay()
-	
+		self.mousehandler.mousewheel(event)
+		
 	def mousedown(self,event) :
-		if self.mmode == 0:
-			m=self.guiim.scr2img((event.x(),event.y()))
-			collision = False
-			# basic strategy is to detect if there was a collision with any other box
-			# do this by incrementing through all the box sets
-			boxes = self.getboxes()
-			
-			boxnum = self.collisiondetect(m,boxes)
-			if boxnum == -1:
-				#if we make it here, that means the user has clicked on an area that is not in any box
-				
-				if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
-				
-				# If we get here, we need to add a new reference 
-				box = Box(m[0]-self.boxsize/2,m[1]-self.boxsize/2,self.boxsize,self.boxsize,True)
-				box.setImageName(self.boxable.getImageName())
-				
-				if self.anchortemplate:	box.isanchor = False
-				else: box.isanchor = True # this is the default behaviour 
-				box.changed = True # this is so image2D nows to repaint the shape
-				self.boxable.addbox(box)
-				
-				# autoBoxer will autobox depending on the state of its mode
-				self.autoBoxer.addReference(box)
-				
-				boxnum = len(self.getboxes())-1
-				x0=boxes[boxnum].xcorner+boxes[boxnum].xsize/2-1
-				y0=boxes[boxnum].ycorner+boxes[boxnum].ysize/2-1
-				self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
-				if not self.guimx.isVisible(boxnum) : self.guimx.scrollTo(boxnum,yonly=1)
-				self.guimx.setSelected(boxnum)
-				
-				self.boxDisplayUpdate()
-				self.updateAllImageDisplay()
-				self.mouseclicks += 1
-				self.updateppc()
-				return
-				
-				
-			self.mouseclicks += 1
-			# Deleting a box happens here
-			if event.modifiers()&Qt.ShiftModifier :
-				# with shift, we delete
-				box = self.delbox(boxnum)
-				self.boxable.addExclusionParticle(box)
-				self.boxDisplayUpdate()
-				self.updateAllImageDisplay()
-				self.updateppc()
-				return 
-			
-			# if we make it here than the we're moving a box
-			self.moving=[boxes[boxnum],m,boxnum]
-			self.guiim.setActive(boxnum,.9,.9,.4)
-				
-			x0=boxes[boxnum].xcorner+boxes[boxnum].xsize/2-1
-			y0=boxes[boxnum].ycorner+boxes[boxnum].ysize/2-1
-			self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
-			if not self.guimx.isVisible(boxnum) : self.guimx.scrollTo(boxnum,yonly=1)
-			self.guimx.setSelected(boxnum)
-			self.updateAllImageDisplay()
-		elif self.mmode == 1:
-			m=self.guiim.scr2img((event.x(),event.y()))
-			#self.boxable.addExclusionArea("circle",m[0],m[1],self.eraseradius)
-			self.guiim.addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
-			self.updateAllImageDisplay()
-			
+		self.mousehandler.mousedown(event)
+		
+	def mouseup(self,event) :
+		self.mousehandler.mouseup(event)
+	
+	def mousedrag(self,event) :
+		self.mousehandler.mousedrag(event)
+	
 	def updateppc(self):
-		self.guictl.ppcChanged(len(self.getboxes())/float(self.mouseclicks))
+		self.guictl.ppcChanged(len(self.getBoxes())/float(self.mouseclicks))
 	
 	def collisiondetect(self,m,boxes):
 			
@@ -709,39 +960,9 @@ class GUIbox:
 			return boxnum
 		
 		return -1
-	
-	def mousedrag(self,event) :
-		if self.mmode == 0:
-			m=self.guiim.scr2img((event.x(),event.y()))
-			
-			if event.modifiers()&Qt.ShiftModifier:
-				boxnum = self.collisiondetect(m,self.getboxes())
-				
-				if ( boxnum != -1):
-					box = self.delbox(boxnum)
-					self.boxable.addExclusionParticle(box)
-					self.updateAllImageDisplay()
-					self.updateppc()
-				return
-				
-			if self.moving:
-				# self.moving[0] is the box, self.moving[1] are the mouse coordinates
-				box = self.moving[0]
-				# the old m in in self.moving[2]
-				oldm = self.moving[1]
-				
-				self.movebox(self.moving[2],m[0]-oldm[0],m[1]-oldm[1])
-				self.moving[1] = m
-				self.updateAllImageDisplay()
-		elif self.mmode == 1:
-			m=self.guiim.scr2img((event.x(),event.y()))
-			self.guiim.addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
-			self.boxable.addExclusionArea("circle",m[0],m[1],self.eraseradius,self.erasemode)
-			self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-			self.updateImageDisplay()
-			
-	def movebox(self,boxnum,dx,dy):
-		box = self.getboxes()[boxnum]
+
+	def moveBox(self,boxnum,dx,dy):
+		box = self.getBoxes()[boxnum]
 		box.move(dx,dy)
 			# we have to update the reference also
 		self.ptcl[boxnum] = box.getBoxImage()
@@ -751,6 +972,7 @@ class GUIbox:
 		self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 		box.shape = EMShape(["rect",box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
 		self.guiim.addShape(boxnum,box.shape)
+		self.updateAllImageDisplay()
 		
 	def updateboxcolors(self,classify):
 		sh=self.guiim.getShapes()
@@ -763,37 +985,7 @@ class GUIbox:
 			sh[int(i[0])].changed=True
 			
 		self.boxDisplayUpdate()
-		self.updateImageDisplay()
 
-	def mouseup(self,event) :
-		if self.mmode == 0:
-			m=self.guiim.scr2img((event.x(),event.y()))
-			if self.moving != None:
-				box = self.moving[0]
-				if box.isref and self.dynapix:
-					self.autoBoxer.referenceMoved(box)
-					self.boxDisplayUpdate()
-					self.updateAllImageDisplay()
-			
-			self.moving=None
-		elif self.mmode == 1:
-			# we have finished erasing
-			
-			# make the eraser shape non visible
-			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
-			
-			# tell the boxable to remove boxes (and return their number)
-			lostboxes = self.boxable.updateExcludedBoxes()
-			# after this, make sure the display is correct.
-			if len(lostboxes) != 0:
-				
-				self.deleteDisplayShapes(lostboxes)
-				
-				self.mouseclicks += 1
-				self.updateppc()
-				#self.boxDisplayUpdate()
-				self.updateAllImageDisplay()
-	
 	def keypress(self,event):
 		if event.key() == Qt.Key_Tab:
 			pass
@@ -878,7 +1070,6 @@ class GUIbox:
 		# if the boxable was a reference then the autoboxer needs to be told. It will remove
 		# it from its own list and potentially do autoboxing
 		if box.isref:
-			print 'told autoboxer to remove reference'
 			self.autoBoxer.removeReference(box)
 			
 		return box
@@ -894,7 +1085,7 @@ class GUIbox:
 		ns = {}
 		idx = 0
 		# get the boxes
-		boxes =self.getboxes()
+		boxes =self.getBoxes()
 		for j,box in enumerate(boxes):
 	
 			if not box.changed and not force:
@@ -920,13 +1111,17 @@ class GUIbox:
 		self.guictl.nboxesChanged(len(self.ptcl))
 #		self.emit(QtCore.SIGNAL("nboxes"),len(self.ptcl))
 
+		self.updateAllImageDisplay()
+
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
 		self.dynapixp.exec_()
 		
+		self.boxable.cacheExcToDisk()
 		projectdb = EMProjectDB()
 		projectdb.close()
+		
 
 		E2saveappwin("boxer","imagegeom",self.guiim)
 		E2saveappwin("boxer","matrixgeom",self.guimx)
@@ -941,16 +1136,15 @@ class GUIbox:
 			if self.guimx.inspector.isVisible() : E2saveappwin("boxer","mxcontrolgeom",self.guimx.inspector)
 		except : E2setappval("boxer","mxcontrol",False)
 		
-		return (self.getboxes(),self.threshold)
+		return (self.getBoxes(),self.threshold)
 
 	def autoboxbutton(self):
 		if self.autoBoxer.autoBox(self.boxable):
 			self.boxDisplayUpdate()
-			self.updateAllImageDisplay()
 
 	def toggleDynapix(self,bool):
 		self.dynapix = bool
-		self.autoBoxer.setMode(self.dynapix,self.anchortemplate)
+		self.autoBoxer.setMode(self.dynapix,self.anchoring)
 		
 	def done(self):
 		self.boxable.cacheExcToDisk()
@@ -965,40 +1159,43 @@ class GUIbox:
 	def setautobox(self,selmode):
 		if self.autoBoxer.setSelectionMode(selmode):
 			self.boxDisplayUpdate()
-			self.updateAllImageDisplay()
 		
 	def setprofilecmp(self,cmpmode):
 		if self.autoBoxer.setCmpMode(cmpmode):
 			self.boxDisplayUpdate()
-			self.updateAllImageDisplay()
+			
 		
 	def nocupdate(self,bool):
-		self.anchortemplate = bool
-		self.autoBoxer.setMode(self.dynapix,self.anchortemplate)
+		self.anchoring = bool
+		self.mousehandlers["boxing"].setAnchoring(bool)
+		self.autoBoxer.setMode(self.dynapix,self.anchoring)
 		
 	def classify(self,bool):
 		self.boxable.classify()
 		
-		
 	def erasetoggled(self,bool):
 		# for the time being there are only two mouse modes
-		self.mmode = bool
-		self.erasemode = Boxable.ERASE
 		
-		if self.mmode == False:
+		if bool == True:
+			self.mousehandlers["erasing"].setmode(Boxable.ERASE)
+			self.mousehandler = self.mousehandlers["erasing"]
+		else:
 			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
 			self.updateImageDisplay()
+			self.mousehandler = self.mousehandlers["boxing"]
+			
 	
 	def unerasetoggled(self,bool):
-		self.mmode = bool
-		self.erasemode = Boxable.UNERASE
-		
-		if self.mmode == False:
+		if bool == True:
+			self.mousehandlers["erasing"].setmode(Boxable.UNERASE)
+			self.mousehandler = self.mousehandlers["erasing"]
+		else:
 			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
 			self.updateImageDisplay()
+			self.mousehandler = self.mousehandlers["boxing"]
 	
 	def updateEraseRad(self,rad):
-		self.eraseradius = rad
+		self.mousehandlers["erasing"].setEraseRadius(rad)
 
 	def quit(self):
 		self.dynapixp.quit()
@@ -1006,14 +1203,13 @@ class GUIbox:
 	def setdummybox(self,box):
 		self.autoBoxer.setDummyBox(box)
 		self.boxDisplayUpdate()
-		self.updateAllImageDisplay()
 		
 	def setnonedummy(self):
 		self.autoBoxer.setDummyBox(None)
 		self.boxDisplayUpdate()
-		self.updateAllImageDisplay()
 		
 	def writeboxesimages(self):
+		self.boxable.cacheExcToDisk()
 		for imagename in self.imagenames:
 			
 			
@@ -1027,6 +1223,7 @@ class GUIbox:
 			boxable.writeboximages()
 	
 	def writeboxesdbs(self):
+		self.boxable.cacheExcToDisk()
 		for imagename in self.imagenames:
 			
 			boxable = Boxable(imagename,self,self.autoBoxer)
@@ -1042,7 +1239,6 @@ class GUIbox:
 		
 		if self.boxable.center(technique):
 			self.boxDisplayUpdate()
-			self.updateImageDisplay()
 		else:
 			print 'technique',technique,'is unsupported - check back tomorrow'
 			
@@ -1051,6 +1247,18 @@ class GUIbox:
 		self.guiim.setFrozen(self.boxable.isFrozen())
 		self.updateImageDisplay()
 
+	def setBoxingMethod(self,ref,manual):
+		'''
+		Okay could do it with one argument but leaving it this way makes it obvious
+		'''
+		
+		if ref and manual:
+			print 'error, you cant set both ref and manual'
+			
+		if ref:
+			self.mousehandlers["boxing"].setmode(GUIbox.REFERENCE_ADDING)
+		elif manual:
+			self.mousehandlers["boxing"].setmode(GUIbox.MANUALLY_ADDING)
 		
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
@@ -1103,7 +1311,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.main_vbl =  QtGui.QVBoxLayout(self.main_inspector)
 		
 		self.infohbl = QtGui.QHBoxLayout()
-		self.info = QtGui.QLabel("%d Boxes"%len(self.target.getboxes()),self)
+		self.info = QtGui.QLabel("%d Boxes"%len(self.target.getBoxes()),self)
 		self.ppc = QtGui.QLabel("%f particles per click"%0,self)
 		self.infohbl.addWidget(self.info)
 		self.infohbl.addWidget(self.ppc)
@@ -1116,6 +1324,16 @@ class GUIboxPanel(QtGui.QWidget):
 		self.hbl1=QtGui.QHBoxLayout()
 		self.hbl1.setMargin(0)
 		self.hbl1.setSpacing(2)
+		
+		self.refbutton=QtGui.QPushButton("Reference")
+		self.refbutton.setCheckable(1)
+		self.refbutton.setChecked(True)
+		self.hbl1.addWidget(self.refbutton)
+		
+		self.manualbutton=QtGui.QPushButton("Manual")
+		self.manualbutton.setCheckable(1)
+		self.manualbutton.setChecked(False)
+		self.hbl1.addWidget(self.manualbutton)
 		
 		self.lblbs=QtGui.QLabel("Box Size:",self)
 		self.hbl1.addWidget(self.lblbs)
@@ -1145,7 +1363,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.dynapick.setChecked(self.target.dynapix)
 		self.hbl3.addWidget(self.dynapick)
 		self.nocpick = QtGui.QCheckBox("Anchor")
-		self.nocpick.setChecked(self.target.anchortemplate)
+		self.nocpick.setChecked(self.target.anchoring)
 		self.hbl3.addWidget(self.nocpick)
 		self.autobox=QtGui.QPushButton("Auto Box")
 		self.hbl3.addWidget(self.autobox)
@@ -1197,6 +1415,9 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.unerase, QtCore.SIGNAL("clicked(bool)"), self.unerasetoggled)
 		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
 		self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.target.toggleFrozen)
+		
+		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.refbuttontoggled)
+		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manualbuttontoggled)
 		
 	def insertAdvancedTab(self):
 		# this is the box layout that will store everything
@@ -1267,6 +1488,25 @@ class GUIboxPanel(QtGui.QWidget):
 
 		
 		self.tabwidget.addTab(self.adv_inspector,"Advanced")
+
+	def refbuttontoggled(self,bool):
+		
+		if self.refbutton.isChecked():
+			self.manualbutton.setChecked(False)
+		
+		if not self.refbutton.isChecked():
+			self.manualbutton.setChecked(True)
+
+		self.target.setBoxingMethod(self.refbutton.isChecked(),self.manualbutton.isChecked())
+		
+	def manualbuttontoggled(self,bool):
+		if self.manualbutton.isChecked():
+			self.refbutton.setChecked(False)
+		
+		if not self.manualbutton.isChecked():
+			self.refbutton.setChecked(True)
+			
+		self.target.setBoxingMethod(self.refbutton.isChecked(),self.manualbutton.isChecked())
 
 	def erasetoggled(self,bool):
 		self.unerase.setChecked(False)

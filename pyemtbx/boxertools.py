@@ -70,25 +70,6 @@ class EMProjectDB:
 	def close(self):
 		self.__instance.projectdb.close()
 
-
-class TrimBox():
-	'''
-	A trimmed down version of a box
-	'''
-	def __init__(self,box):
-		self.xcorner = box.xcorner			# the xcorner - bottom left
-		self.ycorner = box.ycorner			# the ycorner - bottom left
-		self.xsize = box.xsize				# the xsize of the box
-		self.ysize = box.ysize				# the ysize of the box
-		self.isref = box.isref				# a flag that can be used to tell if the box is being used as a reference
-		self.changed = box.changed			# a flag signalling the box has changed and display needs updatin
-		self.isanchor = box.isanchor		# a flag signalling the box has changed and display needs updatin
-		self.TS = box.TS					# a time stamp flag
-		self.imagename = box.imagename
-		self.moved = trimbox.moved
-		self.origxcorner = box.origxcorner
-		self.origycorner = box.origycorner
-
 class Box:
 	CENTERACF = "centeracf"
 	#CENTERALIGNINT = "cenlignint"
@@ -108,6 +89,7 @@ class Box:
 		self.isanchor = trimbox.isanchor		# a flag signalling the box has changed and display needs updatin
 		self.TS = trimbox.TS
 		self.imagename = trimbox.imagename
+		self.ismanual = trimbox.ismanual
 		
 		self.moved = trimbox.moved
 		self.origxcorner = trimbox.origxcorner
@@ -120,6 +102,7 @@ class Box:
 		self.ysize = ysize				# the ysize of the box
 		self.isref = isref				# a flag that can be used to tell if the box is being used as a reference
 		self.correlationscore = correlationscore	# the correlation score
+		self.ismanual = False			# a flag to store whether or this box was manually added by the user and was not a reference. It's just a plain box
 		
 		self.optprofile = None			# a correlation worst-case profile, used for selective auto boxing
 		self.changed = False			# a flag signalling the box has changed and display needs updating
@@ -424,6 +407,7 @@ class TrimBox():
 		self.moved = box.moved
 		self.origxcorner = box.origxcorner
 		self.origycorner = box.origycorner
+		self.ismanual = box.ismanual
 
 class Cache:
 	'''
@@ -906,8 +890,13 @@ class Boxable:
 			self.getDBTimeStamps()
 		except: pass
 		try:
+			self.getManualFromDB()	
+		except: pass
+		try:
 			self.getFrozenFromDB()	
 		except: pass
+		
+		
 	
 	def cacheExcToDisk(self):
 		if self.exclusionimage != None:
@@ -959,6 +948,25 @@ class Boxable:
 		self.autoBoxerTS = autoBoxer.getStateTS()
 		self.templateTS = autoBoxer.getTemplateTS()
 		
+	def getManualFromDB(self):
+		projectdb = EMProjectDB()
+		manualboxes = projectdb[self.imagename+"_manualboxes"]
+		for trimbox in manualboxes:
+			box = Box()
+			
+			# had to do conversion stuff so pickle would work
+			box.become(trimbox)
+			box.setImageName(self.imagename)
+			box.changed = True
+			box.rorig = 1			# RGB red
+			box.gorig = 1			# RGB green
+			box.borig = 1			# RGB blue
+			box.r = 1
+			box.g = 1
+			box.b = 1
+			box.updatePositionFromDB()
+			self.boxes.append(box)
+
 	def boxesReady(self,forcereadall=False):
 		projectdb = EMProjectDB()
 		
@@ -1033,21 +1041,39 @@ class Boxable:
 		if not isinstance(box,Box):
 			print "You can not add a box to this box set if it is not of type Box"
 			return;
-		
-		box.isref = True # make sure it knows that it's a reference box
+
 		box.TS = time()
 		box.boxingobj = self
 		
-		box.rorig = 0			# RGB red
-		box.gorig = 0			# RGB green
-		box.borig = 0			# RGB blue
-		box.r = 0
-		box.g = 0
-		box.b = 0
+		if box.isref:
+			box.rorig = 0			# RGB red
+			box.gorig = 0			# RGB green
+			box.borig = 0			# RGB blue
+			box.r = 0
+			box.g = 0
+			box.b = 0
+		else: # box.ismanual = True
+			box.rorig = 1			# RGB red
+			box.gorig = 1			# RGB green
+			box.borig = 1			# RGB blue
+			box.r = 1
+			box.g = 1
+			box.b = 1
+			self.cacheManualBox(box)
 		
 		#print "adding box",box.xcorner,box.ycorner,box.xsize,box.ysize
 		self.boxes.append(box)
 		self.refboxes.append(box)
+	
+	def cacheManualBox(self,box):
+		projectdb = EMProjectDB()
+		try:
+			manualboxes = projectdb[self.imagename+"_manualboxes"]
+		except:
+			manualboxes = []
+	
+		manualboxes.append(TrimBox(box))
+		projectdb[self.imagename+"_manualboxes"] = manualboxes
 	
 	def delbox(self,i):
 		tmp = self.boxes.pop(i)
@@ -1064,7 +1090,7 @@ class Boxable:
 		n = len(self.boxes)
 		for m in range(n-1,-1,-1):
 			box = self.boxes[m]
-			if box.isref == False:
+			if box.isref == False and box.ismanual == False:
 				self.delbox(m)
 				boxestodelete.append(m)
 
@@ -1972,12 +1998,13 @@ class SwarmAutoBoxer(AutoBoxer):
 				projectdb = EMProjectDB()
 				boxes.extend(boxable.boxes)
 				trimboxes = []
-				for  box in boxes: trimboxes.append(TrimBox(box))
+				for  box in boxes:
+					t = TrimBox(box)
+					trimboxes.append(t)
 				
 				projectdb[boxable.getImageName()+"_boxes"] = trimboxes
 				trimSelf = TrimSwarmAutoBoxer(self)
 
-				print "wrote",boxable.getImageName()+"_autoboxer"
 				projectdb[boxable.getImageName()+"_autoboxer"] = trimSelf
 				if self.mode != SwarmAutoBoxer.COMMANDLINE:
 					projectdb["currentautoboxer"] = trimSelf
