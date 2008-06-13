@@ -49,5 +49,10 @@ unsigned int gen_glu_mipmaps() const;
  */
 unsigned int gen_gl_texture() const;
 
-Dict get_data_void_pointer() const;
+/** create an OpenGL texture using render_amp8
+ * @return the texture id used in the call to glBindTextures
+ */
+unsigned int render_amp8_gl_texture(int x0, int y0, int ixsize, int iysize, int bpl, float scale, int mingray, int maxgray,	float render_min, float render_max,float gamma,int flags);
+
+// Dict get_data_void_pointer() const;
 #endif	//emdata__gl_h__

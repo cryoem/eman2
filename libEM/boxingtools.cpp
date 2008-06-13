@@ -743,6 +743,7 @@ IntPoint BoxingTools::find_radial_max(const EMData* const map, int x, int y, int
 
 
 void BoxingTools::set_region( EMData* const image, const EMData* const mask, const int x, const int y, const float& val) {
+	
 	// Works only in 2D 
 	int inx = image->get_xsize();
 	int iny = image->get_ysize();

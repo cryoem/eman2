@@ -536,8 +536,6 @@ class EMImage2DCore:
 			
 			glPopMatrix()
 			
-			
-					
 		if not self.glflags.npt_textures_unsupported():
 			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
 			self.tex_name = GL.glGenTextures(1)
@@ -554,11 +552,9 @@ class EMImage2DCore:
 				GL.glBlendEquation(GL.GL_FUNC_SUBTRACT);
 				#GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 				GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
-			
-			
+
 			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
-			
 			
 			
 			glEnable(GL_TEXTURE_2D)

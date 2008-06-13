@@ -83,15 +83,21 @@ for single particle analysis."""
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--ptclout",type="string",help="filename to write boxed out particles to",default=None)
 	parser.add_option("--parallel",type="int",help="specify more than one processor",default=1)
+	parser.add_option("--mergedb",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 	
-	imagenames = []
+	filenames = []
 	for i in range(0,len(args)):
-		imagenames.append(args[i])
+		filenames.append(args[i])
 
 	logid=E2init(sys.argv)
+	
+	
+	if options.mergedb == True:
+		mergedb(filenames)
+		sys.exit(1)
 	
 	if (options.farfocus==None): initial=args[0]
 	elif (options.farfocus=="next") : 
@@ -146,14 +152,14 @@ for single particle analysis."""
 	if "db" in options.auto:
 		print "auto data base boxing"
 	
-		if len(imagenames) == 1:
+		if len(filenames) == 1:
 			projectdb = EMProjectDB()
 	
 			trimAutoBoxer = projectdb["currentautoboxer"]
 			autoBoxer = SwarmAutoBoxer(None)
 			autoBoxer.become(trimAutoBoxer)
 			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-			imagename = imagenames[0]
+			imagename = filenames[0]
 			exists = True
 			try:
 				oldAutoBoxer = projectdb[imagename+"_autoboxer"]	
@@ -174,7 +180,7 @@ for single particle analysis."""
 				exit(1)
 		else:
 			print "autoboxing using parallel stuff"
-			autoboxer = AutoDBBoxer(imagenames,options.parallel,options.force)
+			autoboxer = AutoDBBoxer(filenames,options.parallel,options.force)
 			try:
 				from emimage import EMImage,get_app
 			except: 
@@ -229,7 +235,7 @@ for single particle analysis."""
 
 	# invoke the GUI if requested
 	if options.gui:
-		gui=GUIbox(imagenames,boxes,boxthr,options.boxsize)
+		gui=GUIbox(filenames,boxes,boxthr,options.boxsize)
 		gui.run()
 		
 	print "finished running"
@@ -275,6 +281,29 @@ except:
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
+
+def mergedb(filenames):
+	projectdb = EMProjectDB()
+	for filename in filenames:
+		f=file(filename,'r')
+		lines=f.readlines()
+		boxes = []
+		for line in lines:
+			data = str.split(line)
+			b = Box(int(data[0]),int(data[1]),int(data[2]),int(data[3]),False)
+			b.ismanual = True
+			boxes.append(TrimBox(b))
+	
+		try:
+			manualboxes = projectdb[strip_file_tag(filename)+"_manualboxes"]
+		except:
+			manualboxes = []
+	
+		manualboxes.extend(boxes)
+		projectdb[strip_file_tag(filename)+"_manualboxes"] = manualboxes
+		
+	projectdb.close()
+		
 
 class AutoDBBoxer(QtCore.QObject):
 	def __init__(self,imagenames,nproc,force=False):
@@ -714,18 +743,13 @@ class GUIbox:
 	ERASING = 1
 	MANUALLY_ADDING = 2
 	def __init__(self,imagenames,boxes,thr,boxsize=-1):
-		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
-		to begin with. Modified boxes/thr are returned. 
+		"""Implements the 'boxer' GUI."""
 		
-		'boxes' is a list of box locations:
-		[x0,y0,xsize,ysize,quality,changed]
-		boxes are 'real'. 'changed' is used by the GUI to decide when
-		redrawing is necessary (should be set to 1 initially)."""
-		#try:
-		from emimage import EMImage,get_app
-		#except:
-			#print "Cannot import EMAN image GUI objects (emimage,etc.)"
-			#sys.exit(1)
+		try:
+			from emimage import EMImage,get_app
+		except:
+			print "Cannot import EMAN image GUI objects (emimage,etc.)"
+			sys.exit(1)
 
 		self.dynapix = False
 		self.anchoring = False
@@ -893,6 +917,7 @@ class GUIbox:
 	def removeBox(self,boxnum):
 		box = self.delbox(boxnum)
 		self.boxable.addExclusionParticle(box)
+		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 		self.boxDisplayUpdate()
 		
 	def referenceMoved(self,box):
@@ -943,8 +968,7 @@ class GUIbox:
 			self.guiim.setFrozen(self.boxable.isFrozen())
 			self.boxDisplayUpdate()
 			
-			
-	
+
 	def genImageThumbnailsWidget(self):
 		'''
 		Generates image thumbnails for a single image name
@@ -1163,8 +1187,10 @@ class GUIbox:
 	def boximagedeleted(self,event,lc):
 		box = self.delbox(lc[0])
 		self.boxable.addExclusionParticle(box)
+		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 		self.updateAllImageDisplay()
 		self.updateppc()
+		
 	def delbox(self,boxnum):
 		"""
 		Deletes the numbered box completely

@@ -107,10 +107,23 @@ unsigned int EMData::gen_gl_texture() const
 	return tex_name;
 }
 
-Dict EMData::get_data_void_pointer() const
-{
-	Dict d("data",(float*)get_data());
-	return d;
+// Dict EMData::get_data_void_pointer() const
+// {
+// 	Dict d("data",(float*)get_data());
+// 	return d;
+// }
+
+unsigned int EMData::render_amp8_gl_texture(int x0, int y0, int ixsize, int iysize, int bpl, float scale, int mingray, int maxgray,	float render_min, float render_max,float gamma,int flags) {
+	
+	string pixels = render_amp8(x0, y0, ixsize,iysize, bpl, scale, mingray, maxgray, render_min, render_max, gamma,flags);
+	
+	unsigned int tex_name;
+	glGenTextures(1, &tex_name);
+	
+	glBindTexture(GL_TEXTURE_2D,tex_name);
+	glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,ixsize,iysize,0,GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels.c_str() );
+	
+	return tex_name;
 }
 
 // undef GL_GLEXT_PROTOTYPES

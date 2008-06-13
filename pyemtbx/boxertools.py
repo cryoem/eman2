@@ -957,8 +957,6 @@ class Boxable:
 			self.getFrozenFromDB()	
 		except: pass
 		
-		
-	
 	def cacheExcToDisk(self):
 		if self.exclusionimage != None:
 			excimagename = strip_file_tag(self.imagename)+".exc.hdf"
@@ -1011,7 +1009,7 @@ class Boxable:
 		
 	def getManualFromDB(self):
 		projectdb = EMProjectDB()
-		manualboxes = projectdb[self.imagename+"_manualboxes"]
+		manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
 		for trimbox in manualboxes:
 			box = Box()
 			
@@ -1129,12 +1127,12 @@ class Boxable:
 	def cacheManualBox(self,box):
 		projectdb = EMProjectDB()
 		try:
-			manualboxes = projectdb[self.imagename+"_manualboxes"]
+			manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
 		except:
 			manualboxes = []
 	
 		manualboxes.append(TrimBox(box))
-		projectdb[self.imagename+"_manualboxes"] = manualboxes
+		projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
 	
 	def delbox(self,i):
 		tmp = self.boxes.pop(i)
