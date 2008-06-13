@@ -191,13 +191,12 @@ def main():
                 data.add(options.add)
             
             elif option1 == "trans":
-		dx,dy,dz=options.trans.split(",")
-		data.translate(float(dx),float(dy),float(dz))
-		
-	    elif option1 == "rot":
-		parm=parsemodopt(options.rot)
-		
-		data.rotate(Transform3D(EULER[parm[0].lower()],parm[1]))
+            	dx,dy,dz=options.trans.split(",")
+            	data.translate(float(dx),float(dy),float(dz))
+            
+            elif option1 == "rot":
+            	parm=parsemodopt(options.rot)
+            	data.rotate(Transform3D(EULER[parm[0].lower()],parm[1]))
 		
             elif option1 == "clip":
                 ci = index_d[option1]
@@ -207,10 +206,10 @@ def main():
                     xc = x/2
                     yc = y/2
                     zc = z/2
-
-                    if x != nx or y != ny or z != nz:
-                        data = data.get_clip(Region(xc-nx/2, yc-ny/2, zc-nz/2, nx, ny, nz))
-                    index_d[option1] += 1
+                    
+                if x != nx or y != ny or z != nz:
+                	data = data.get_clip(Region(xc-nx/2, yc-ny/2, zc-nz/2, nx, ny, nz))
+                	index_d[option1] += 1
 
             elif option1 == "scale":
                 scale_f = options.scale[index_d[option1]]
