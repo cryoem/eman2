@@ -649,7 +649,68 @@ class SigmaImage:
 		if action: self.__updateImage(flattenradius,shrinkfactor)
 		
 		return self.image
+
+class BinaryCircleImageCache:
+	'''
+	A cache of white binary circles of a certain radius - used to make erasing fast
+	Only ever stores these images in memory
+	'''
+	class __impl(Cache):
+		""" A cache for storing big images """
+
+		def __init__(self):
+			Cache.__init__(self)
+
+	
+		def getImage(self,circleradius):
+			# this loop takes care of things if the image is cached
+			object = None
+			for circleImage in self.getCache():
+				if circleImage.getCircleRadius() == circleradius :
+					object = circleImage
+					break
+
+			# if we make it here the image is not cached
+			if object == None:
+				#print "I am generating a big image in the cache for",imagename
+				object = BinaryCircleImage(circleradius)
+				self.addToCache(object)
+			#else: print "I am returning a big image from the cache"
+				
+			return object.getImage()
+			
+	# storage for the instance reference
+	__instance = None
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if BinaryCircleImageCache.__instance is None:
+			# Create and remember instance
+			BinaryCircleImageCache.__instance = BinaryCircleImageCache.__impl()
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
 		
+
+class BinaryCircleImage:
+	def __init__(self,circleradius):
+		self.image = EMData(2*circleradius+1,2*circleradius+1)
+		self.image.process_inplace("testimage.circlesphere")
+		self.image.set_attr("circle_radius",circleradius)
+		self.image.write_image("circle"+str(circleradius)+".hdf")
+
+	def getCircleRadius(self):
+		return self.image.get_attr("circle_radius")
+	
+	def getImage(self):
+		return self.image
+
 class BigImageCache:
 	class __impl(Cache):
 		""" A cache for storing big images """
@@ -1239,11 +1300,9 @@ class Boxable:
 		yy = int(y/self.getBestShrink())
 		
 		rr = int(radius/self.getBestShrink())
-		rrs = rr**2
-		#print xx,yy,rr
+		bciCache = BinaryCircleImageCache()
+		mask = bciCache.getImage(rr)
 		
-		# this does implicit initialization
-		self.getExclusionImage()
 		
 		if flag == Boxable.ERASE:
 			val = 0.1
@@ -1252,18 +1311,8 @@ class Boxable:
 		else:
 			print "error - unknow flag:",flag,"doing nothing"
 			return
+		BoxingTools.set_region(self.getExclusionImage(),mask,xx,yy,val)
 		
-		ny = self.getSmallImage().get_ysize()
-		nx = self.getSmallImage().get_xsize()
-		for j in range(-rr,rr):
-			for i in range(-rr,rr):
-				if (i**2 + j**2) > rrs: continue
-				jj = j+yy
-				ii = i+xx
-				if jj >= ny or jj < 0:continue
-				if ii >= nx or ii < 0:continue
-				
-				self.exclusionimage.set(ii,jj,val)
 	
 	def getExclusionImage(self,force=True):
 		if self.exclusionimage == None and force:

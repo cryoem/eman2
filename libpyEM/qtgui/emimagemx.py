@@ -232,7 +232,7 @@ class EMImageMXCore:
 			self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
 			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
 		
-		self.showInspector()		# shows the correct inspector if already open
+		#self.showInspector()		# shows the correct inspector if already open
 		#self.timer.start(25)
 		
 
@@ -687,15 +687,12 @@ class EMImageMXCore:
 			
 			elif self.mmode=="del" and lc:
 				
-				try:
-					self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
-				except:
-					del self.data[lc[0]]
+				del self.data[lc[0]]
 					#self.setData(self.data)
 				self.updateGL()
 			elif self.mmode=="app" and lc:
 				self.parent.emit(QtCore.SIGNAL("mousedown"),event,lc)
-	
+					
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
@@ -708,7 +705,12 @@ class EMImageMXCore:
 		if self.mousedrag:
 			self.mousedrag=None
 		elif event.button()==Qt.LeftButton and self.mmode=="app":
-			self.parent.emit(QtCore.SIGNAL("mouseup"),event)
+			if  not event.modifiers()&Qt.ShiftModifier:
+				self.parent.emit(QtCore.SIGNAL("mouseup"),event)
+			else:
+				lc=self.scrtoimg((event.x(),event.y()))
+				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
+		
 			
 	def wheelEvent(self, event):
 		if event.delta() > 0:

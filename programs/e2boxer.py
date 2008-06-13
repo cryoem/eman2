@@ -353,9 +353,26 @@ class AutoDBBoxer(QtCore.QObject):
 
 class GUIboxMouseEventsObject:
 	'''
-	a base class for objects that handle mouse events in the GUIbox
+	A base class for objects that handle mouse events in the GUIbox
+	
+	Inheriting objects are concerned with supplying their own definitions of 
+	the functions mouseup, mousedown, mousedrag, mousemove and mousewheel. 
+	They do not have to supply their own definition for all of these functions,
+	but it would not make sense to inherit from this class unless the child class
+	did not atleast supply one of them.
+	
+	Also stores a reference to the mediator object which coordinates the requests and signals
+	of subclassing objects to the GUIbox class. Modify the mediator class if you ever need
+	to extend the scope of the messaging/signaling/requesting system between GUIboxMouseEventsObjects
+	and the GUIbox.
+	
+	The mediator object could be replaced with a direct reference to the GUIbox class, but
+	this is not recommended - for documentation and clarity of code purposes.
 	'''
 	def __init__(self,mediator):
+		'''
+		Stores only a reference to the mediator
+		'''
 		if not isinstance(mediator,GUIboxEventsMediator):
 			print "error, the mediator should be a GUIboxEventsMediator"
 			return
@@ -363,27 +380,51 @@ class GUIboxMouseEventsObject:
 		self.mediator = mediator
 		
 	def get2DGuiImage(self):
+		'''
+		Ask the mediator to for the EMImage2D object
+		'''
 		return self.mediator.get2DGuiImage()
 	
 	def getGuiCtl(self):
+		'''
+		Ask the mediator to for the main GUI controller
+		'''
 		return self.mediator.getGuiCtl()
 	
 	def getMXGuiImage(self):
+		'''
+		Ask the mediator to for the EMImageMX object
+		'''
 		return self.mediator.getMXGuiImage()
 	
 	def mouseup(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
 		pass
 
 	def mousedown(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
 		pass
 		
 	def mousedrag(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
 		pass
 	
 	def mousemove(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
 		pass
 
 	def mousewheel(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
 		pass
 	
 
@@ -436,7 +477,7 @@ class GUIboxMouseEraseEvents(GUIboxMouseEventsObject):
 	
 class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 	'''
-	A class that knows how to add and remove reference and non reference boxes
+	A class that knows how to add and remove reference and non reference boxes 
 	'''
 	def __init__(self,mediator):
 		GUIboxMouseEventsObject.__init__(self,mediator)
@@ -535,7 +576,26 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 		self.moving=None
 
 class GUIboxEventsMediator:
+	'''
+	This class coordinates all the requests and 'signals' of the GUIboxMouseEventsObject classes so that they
+	are connected to the correct 'slots' and getter functions  in the GUIbox class. This behavior is analogous to the 
+	Qt signal/slot mechanism, but no Qt signals/slots are actually used. Instead this class
+	supplies a bunch of public functions that accept the requests and signals from the GUIboxMouseEventsObject
+	and send them on to the 'slots' and getter functions of the the GUIbox - using basic function interfacing. This
+	is also motivated by the Mediator concept in the Gang of Four.
+	
+	This class could just as easily not exist - however it remains in use for documentation
+	purposes. If it was removed, the GUIboxMouseEventsObjects could have a reference to the GUIbox
+	class instead of this one and the code would still work. But without this class it would be difficult to
+	disentangle the relationship between the GUIboxMouseEventsObjects and the GUIbox.
+	
+	All things considered, the class remains for documentation purposes. It should only be removed if 
+	it poses a significant performance hit
+	'''
 	def __init__(self,parent):
+		'''
+		Stores only a reference to the parent
+		'''
 		if not isinstance(parent,GUIbox):
 			print "error, the parent of a GUIboxMouseEraseEvents must be a GUIbox"
 			return
@@ -543,54 +603,110 @@ class GUIboxEventsMediator:
 		self.parent = parent	# need a referene to the parent to send it events
 
 	def get2DGuiImage(self):
+		'''
+		Return the parent's EMImage2D object
+		'''
 		return self.parent.get2DGuiImage()
 	
 	def getGuiCtl(self):
+		'''
+		Return the parent's Controller widgit object
+		'''
 		return self.parent.getGuiCtl()
 	
 	def getMXGuiImage(self):
+		'''
+		Return the parent's EMImageMX object
+		'''
 		return self.parent.getMXGuiImage()
 	
 	def updateImageDisplay(self):
+		'''
+		Send an event to the parent that the EMImage2D should update its display
+		'''
 		self.parent.updateImageDisplay()
 		
 	def updateAllImageDisplay(self):
+		'''
+		Send an event to the parent that the EMImage2D and EMImageMX objects should
+		update their displays
+		'''
 		self.parent.updateAllImageDisplay()
 		
 	def exclusionAreaAdded(self,typeofexclusion,x,y,radius,mode):
+		'''
+		Send an event to the parent that an exclusion area was added.
+		The parameters define the type of exclusion area. In future the exclusion area
+		should probably just be its own class.
+		'''
 		self.parent.exclusionAreaAdded(typeofexclusion,x,y,radius,mode)
 
 	def erasingDone(self):
+		'''
+		Send an event to the parent letting it know that the user has stopped adding
+		erased area
+		'''
 		self.parent.erasingDone()
 		
 	def detectBoxCollision(self,coords):
+		'''
+		Ask the parent to detect a collision between a resident box and the given coordinates.
+		This is in terms of the EMImage2D 
+		'''
 		return self.parent.detectBoxCollision(coords)
 	
 	def getCurrentImageName(self):
+		'''
+		Ask the parent for the current name of the image in the large image view...
+		'''
 		return self.parent.getCurrentImageName()
 
 	def getBoxSize(self):
+		'''
+		Ask the parent for the current project boxsize
+		'''
 		return self.parent.getBoxSize()
 	
 	def storeBox(self,box):
+		'''
+		Tell the parent to store a box
+		'''
 		self.parent.storeBox(box)
 	
 	def boxDisplayUpdate(self):
+		'''
+		Tell the parent the a general box display update needs to occur
+		'''
 		self.parent.boxDisplayUpdate()
 		
 	def mouseClickUpdatePPC(self):
+		'''
+		Tell the parent that a mouse click occured and that the PPC metric should be updated
+		'''
 		self.parent.mouseClickUpdatePPC()
 	
 	def removeBox(self,boxnum):
+		'''
+		Tell the parent to remove a box, as given by the boxnum
+		'''
 		self.parent.removeBox(boxnum)
 		
 	def getBox(self,boxnum):
+		'''
+		Ask the parent for the box, as given by the boxnum
+		'''
 		return self.parent.getBox(boxnum)
 	
 	def moveBox(self,boxnum,dx,dy):
+		'''
+		Tell the parent to handle the movement of a box
+		'''
 		self.parent.moveBox(boxnum,dx,dy)
 	
 	def referenceMoved(self,box):
+		'''
+		Tell the parent that a reference was moved - this could trigger automatic boxing
+		'''
 		self.parent.referenceMoved(box)
 	
 class GUIbox:
@@ -912,7 +1028,9 @@ class GUIbox:
 		self.updateAllImageDisplay()
 		
 	def boxrelease(self,event):
-		if self.getBoxes()[self.boxm[2]].isref :
+		boxes = self.getBoxes()
+		#print boxes
+		if boxes[self.boxm[2]].isref :
 			self.autobox()
 		self.boxm = None
 		
@@ -948,7 +1066,10 @@ class GUIbox:
 		self.mousehandler.mousedrag(event)
 	
 	def updateppc(self):
-		self.guictl.ppcChanged(len(self.getBoxes())/float(self.mouseclicks))
+		if self.mouseclicks > 0:
+			self.guictl.ppcChanged(len(self.getBoxes())/float(self.mouseclicks))
+		else:
+			self.guictl.ppcChanged(0)
 	
 	def collisiondetect(self,m,boxes):
 			

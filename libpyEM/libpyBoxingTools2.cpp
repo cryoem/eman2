@@ -26,6 +26,7 @@ namespace  {
 		.def("classify",&EMAN::BoxingTools::classify)
 		.def("get_color",&EMAN::BoxingTools::get_color)
 		.def("set_mode",&EMAN::BoxingTools::set_mode)
+		.def("set_region",&EMAN::BoxingTools::set_region)
 		.staticmethod("get_min_delta_profile")
 		.staticmethod("is_local_maximum")
 		.staticmethod("auto_correlation_pick")
@@ -34,6 +35,7 @@ namespace  {
 		.staticmethod("classify")
 		.staticmethod("get_color")
 		.staticmethod("set_mode")
+		.staticmethod("set_region")
 		);
 		
 		

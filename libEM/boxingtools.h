@@ -97,8 +97,8 @@ namespace EMAN
 		
 		static Vec3f get_color( const unsigned int index );
 		
-		
-		
+		static void set_region( EMData* const image, const EMData* const mask, const int x, const int y, const float& val );
+		 	
 		enum CmpMode {
 			SWARM_DIFFERENCE,
 			SWARM_RATIO

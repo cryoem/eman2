@@ -742,6 +742,41 @@ IntPoint BoxingTools::find_radial_max(const EMData* const map, int x, int y, int
 }
 
 
+void BoxingTools::set_region( EMData* const image, const EMData* const mask, const int x, const int y, const float& val) {
+	// Works only in 2D 
+	int inx = image->get_xsize();
+	int iny = image->get_ysize();
+	int mnx = mask->get_xsize();
+	int mny = mask->get_ysize();
+	
+	int startx = x-mnx/2;
+	int endx =startx + mnx;
+	int xoffset = 0;
+	if (startx < 0) {
+		xoffset = abs(startx);
+		startx = 0;
+	}
+	if (endx > inx) endx = inx;
+	
+	int starty = y-mny/2;
+	int endy =starty + mny;
+	int yoffset = 0;
+	if (starty < 0) {
+		yoffset = abs(starty);
+		starty = 0;
+	}
+	if (endy > iny) endy = iny;
+
+
+	for (int j = starty; j < endy; ++j ) {
+		for (int i = startx; i < endx; ++i) {
+			if (mask->get_value_at(xoffset+i-startx,yoffset+j-starty) != 0 ) {
+				image->set_value_at(i,j,val);
+			}
+		}
+	}
+}
+
 map<unsigned int, unsigned int> BoxingTools::classify(const vector<vector<float> >& data, const unsigned int& classes)
 {
 	BoxSVDClassifier classifier(data, classes);
