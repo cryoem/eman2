@@ -148,6 +148,10 @@ def display(img,title="EMImage"):
 	if len(img)==1 : img=img[0]
 	w=EMImage(img)
 	w.setWindowTitle(title)
+	try:
+		if file_exists(title):
+			w.child.setImageFileName(title)
+	except: pass
 	w.show()
 	win.append(w)
 

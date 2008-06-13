@@ -71,9 +71,18 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		
 		self.imagemx = EMImageMXCore(data,self)
 		
+		self.imagefilename = None
+		
 	def setData(self,data):
 		self.imagemx.setData(data)
+	
+	def setImageFileName(self,name):
+		print "set image file name",name
+		self.imagefilename = name
 		
+	def getImageFileName(self):
+		return self.imagefilename
+	
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
 		
@@ -184,6 +193,11 @@ class EMImageMXCore:
 		if data:
 			self.setData(data)
 	
+	def getImageFileName(self):
+		''' warning - could return none in some circumstances'''
+		try: return self.parent.getImageFileName()
+		except: return None
+	
 	def __del__(self):
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 		
@@ -235,6 +249,9 @@ class EMImageMXCore:
 		#self.showInspector()		# shows the correct inspector if already open
 		#self.timer.start(25)
 		
+		# experimental for lst file writing
+		for i,d in enumerate(data):
+			d.set_attr("original_number",i)
 
 		self.updateGL()
 			
@@ -774,6 +791,10 @@ class EMImageMxInspector2D(QtGui.QWidget):
 
 		self.bsavedata = QtGui.QPushButton("Save")
 		self.vbl2.addWidget(self.bsavedata)
+		
+		self.bsavelst = QtGui.QPushButton("Save Lst")
+		self.vbl2.addWidget(self.bsavelst)
+
 
 		self.bsnapshot = QtGui.QPushButton("Snap")
 		self.vbl2.addWidget(self.bsnapshot)
@@ -872,6 +893,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.setDragMode)
 
 		QtCore.QObject.connect(self.bsavedata, QtCore.SIGNAL("clicked(bool)"), self.saveData)
+		QtCore.QObject.connect(self.bsavelst, QtCore.SIGNAL("clicked(bool)"), self.saveLst)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
 	
 	def setScale(self,val):
@@ -887,25 +909,29 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select File","","","",QtGui.QFileDialog.DontConfirmOverwrite)
 		fsp=str(fsp)
 		
-		# if the file exists, ask the user what to do
-		if QtCore.QFile.exists(fsp) :
-			ow = QtGui.QMessageBox.question(self,"Overwrite or Append","Do you wish to overwrite\nthe existing file (Discard) or\nappend images to the end (Ok)  ?",
-				QtGui.QMessageBox.Discard,QtGui.QMessageBox.Ok,QtGui.QMessageBox.Cancel)
-			if ow == QtGui.QMessageBox.Cancel : return
-			if ow == QtGui.QMessageBox.Discard :
-				QtCore.QFile.remove(fsp)
-				# for IMAGIC files, make sure we remove the image data and the header
-				if fsp[-4:]==".hed" : QtCore.QFile.remove(fsp[:-4]+".img")
-				if fsp[-4:]==".HED" : QtCore.QFile.remove(fsp[:-4]+".IMG")
-				if fsp[-4:]==".img" : QtCore.QFile.remove(fsp[:-4]+".hed")
-				if fsp[-4:]==".IMG" : QtCore.QFile.remove(fsp[:-4]+".HED")
+	def saveLst(self):
+		if self.target.data==None or len(self.target.data)==0: return
 		
-		for i in self.target.data:
-#			try:
-				i.write_image(fsp,-1)
-#			except:
-#				QtGui.QMessageBox.warning ( self, "File write error", "One or more images were not sucessfully written to '%s'"%fsp)
-#				break
+		origname = self.target.getImageFileName()
+		if origname == None:
+			print "error, origname is none. Either the data is not already on disk or there is a bug"
+			return
+
+		# Get the output filespec
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Specify lst file to save","","","")
+		fsp=str(fsp)
+		
+		if fsp != '':
+			f = file(fsp,'w')
+			f.write('#LST\n')
+			
+			for d in self.target.data:
+				#try:
+					f.write(str(d.get_attr('original_number')) +'\t'+origname+'\n')
+				#except:
+					#pass
+						
+			f.close()
 			
 	def snapShot(self):
 		"Save a screenshot of the current image display"
@@ -1002,6 +1028,7 @@ if __name__ == '__main__':
 	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)])
 	else :
 		a=EMData.read_images(sys.argv[1])
+		window.setImageFileName(sys.argv[1])
 		window.setData(a)
 	window2=EMParentWin(window)
 	window2.show()
