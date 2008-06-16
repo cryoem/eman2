@@ -39,8 +39,10 @@ import os
 import time
 import shelve
 import re
+import cPickle
+import zlib
 
-EMANVERSION="EMAN2 v1.90"
+EMANVERSION="EMAN2 v1.95"
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
@@ -52,6 +54,19 @@ GUIbeingdragged=None
 # Aliases
 EMData.get=EMData.get_value_at
 EMData.set=EMData.set_value_at
+
+def emdata_to_string(self):
+	"""This returns a compressed string representation of the EMData object, suitable for storage
+	or network communication. The EMData object is pickled, then compressed wth zlib. Restore with
+	static method from_string()."""
+	return zlib.compress(cPickle.dumps(self,-1),3)	# we use a lower compression mode for speed
+	
+def emdata_from_string(s):
+	"""This will restore a serialized compressed EMData object as prepared by as_string()"""
+	return cPickle.loads(zlib.decompress(s))
+
+EMData.from_string=emdata_from_string
+EMData.to_string=emdata_to_string
 
 def timer(fn,n=1):
 	a=time.time()
