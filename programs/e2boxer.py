@@ -54,7 +54,14 @@ from time import time,sleep
 
 from sys import getrefcount
 
-from os import kill
+if os.name == 'nt':
+	def kill(pid):
+		"""kill function for Win32"""
+		import win32api
+		handle = win32api.OpenProcess(1, 0, pid)
+		return (0 != win32api.TerminateProcess(handle, 0))
+else:
+	from os import kill
 
 pl=()
 
