@@ -135,7 +135,7 @@ namespace EMAN
 		 */
 		float squared_length() const
 		{
-			float t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+			float t = static_cast<float>( vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] );
 			return t;
 		}
 		

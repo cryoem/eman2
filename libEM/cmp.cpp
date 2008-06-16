@@ -206,7 +206,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 				}
 			}
 		}
-		n = ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz)/2.0;
+		n = ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz)/2.0f;
 		}
 	} else {
 		long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
@@ -226,7 +226,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 				double temp = x_data[i]- y_data[i];
 				result += temp*temp;
 		   }
-		   n = totsize;
+		   n = (float)totsize;
 		}
 	}
 	result/=n;
