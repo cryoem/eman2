@@ -95,7 +95,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 
 	
 	def resizeGL(self, width, height):
-		
+		if width <= 0 or height <= 0: return None
 		GL.glViewport(0,0,width,height)
 	
 		GL.glMatrixMode(GL.GL_PROJECTION)
@@ -375,12 +375,10 @@ class EMImageMXCore:
 		
 		yoff = 0
 		if y < 0:
-			ybelow = ceil(-y/(h+2))
+			ybelow = floor(-y/(h+2))
 			yoff = ybelow*(h+2)+y
-			#print "yoff is",yoff,"ybelow is",ybelow
-			visiblerows = int(ceil(float(self.parent.height()-yoff)/(h+2)))+1
+			visiblerows = int(ceil(float(self.parent.height()-yoff)/(h+2)))
 		else: visiblerows = int(ceil(float(self.parent.height()-y)/(h+2)))
-		#print "There are",visiblerows,"visible rows"
 				
 		maxrow = int(ceil(float(n)/self.nperrow))
 		ystart = self.origin[1]/(h+2)
@@ -392,18 +390,20 @@ class EMImageMXCore:
 
 		xoff = 0
 		if x < 0:
-			xbelow = ceil(-x/(w+2))
+			xbelow = floor(-x/(w+2))
 			xoff = xbelow*(w+2)+x
 			visiblecols =  int(ceil(float(self.parent.width()-xoff)/(w+2)))+1
 		else: visiblecols =  int(ceil(float(self.parent.width()-x)/(w+2)))
 
 		xstart = self.origin[0]/(w+2)
 		if xstart < 0:
-			#
 			xstart = 0
 		else:
 			xstart = int(xstart)
-			visiblecols = visiblecols+xstart
+			
+			if xstart > 1:
+				visiblecols = visiblecols + xstart -1
+
 			
 		if visiblecols > self.nperrow:
 			visiblecols = self.nperrow
