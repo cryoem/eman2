@@ -339,7 +339,47 @@ class EMImageMXCore:
 				vec=(vec[0]/h,vec[1]/h)
 				self.origin=(self.origin[0]+vec[0]*self.targetspeed,self.origin[1]+vec[1]*self.targetspeed)
 			#self.updateGL()
+	
+	def getMaxMatrixRanges(self):
+		return getMatrixRanges(0,0)
+	
+	def getMatrixRanges(self,x,y):
+		n=len(self.data)
+		w=int(min(self.data[0].get_xsize()*self.scale,self.parent.width()))
+		h=int(min(self.data[0].get_ysize()*self.scale,self.parent.height()))
 		
+		yoff = 0
+		if y < 0:
+			ybelow = floor(-y/(h+2))
+			yoff = ybelow*(h+2)+y
+			visiblerows = int(ceil(float(self.parent.height()-yoff)/(h+2)))
+		else: visiblerows = int(ceil(float(self.parent.height()-y)/(h+2)))
+				
+		maxrow = int(ceil(float(n)/self.nperrow))
+		ystart =-y/(h+2)
+		if ystart < 0: ystart = 0
+		elif ystart > 0:
+			ystart = int(ystart)
+			visiblerows = visiblerows + ystart
+		if visiblerows > maxrow: visiblerows = maxrow
+
+		xoff = 0
+		if x < 0:
+			xbelow = floor(-x/(w+2))
+			xoff = xbelow*(w+2)+x
+			visiblecols =  int(ceil(float(self.parent.width()-xoff)/(w+2)))
+		else: visiblecols =  int(ceil(float(self.parent.width()-x)/(w+2)))
+
+		xstart =-x/(w+2)
+		if xstart < 0:
+			xstart = 0
+		else:
+			xstart = int(xstart)
+			visiblecols = visiblecols + xstart
+		if visiblecols > self.nperrow:
+			visiblecols = self.nperrow
+	
+		return [xstart,visiblecols,ystart,visiblerows]
 	
 	def render(self):
 
@@ -373,36 +413,7 @@ class EMImageMXCore:
 		w=int(min(self.data[0].get_xsize()*self.scale,self.parent.width()))
 		h=int(min(self.data[0].get_ysize()*self.scale,self.parent.height()))
 		
-		yoff = 0
-		if y < 0:
-			ybelow = floor(-y/(h+2))
-			yoff = ybelow*(h+2)+y
-			visiblerows = int(ceil(float(self.parent.height()-yoff)/(h+2)))
-		else: visiblerows = int(ceil(float(self.parent.height()-y)/(h+2)))
-				
-		maxrow = int(ceil(float(n)/self.nperrow))
-		ystart = self.origin[1]/(h+2)
-		if ystart < 0: ystart = 0
-		elif ystart > 0:
-			ystart = int(ystart)
-			visiblerows = visiblerows + ystart
-		if visiblerows > maxrow: visiblerows = maxrow
-
-		xoff = 0
-		if x < 0:
-			xbelow = floor(-x/(w+2))
-			xoff = xbelow*(w+2)+x
-			visiblecols =  int(ceil(float(self.parent.width()-xoff)/(w+2)))
-		else: visiblecols =  int(ceil(float(self.parent.width()-x)/(w+2)))
-
-		xstart = self.origin[0]/(w+2)
-		if xstart < 0:
-			xstart = 0
-		else:
-			xstart = int(xstart)
-			visiblecols = visiblecols + xstart
-		if visiblecols > self.nperrow:
-			visiblecols = self.nperrow
+		[xstart,visiblecols,ystart,visiblerows] = self.getMatrixRanges(x,y)
 			
 		#print "rows",visiblerows-ystart,"cols",visiblecols-xstart
 		#print "yoffset",yoff,"xoffset",xoff
@@ -719,11 +730,11 @@ class EMImageMXCore:
 			else:
 				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
 		elif self.mmode=="del" and lc:
-			try: self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
-			except:
-				del self.data[lc[0]]
-				self.updateGL()
-		
+			del self.data[lc[0]]
+			try: self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
+			except: pass
+			# redundancy here - the parent may call updateGL...
+			self.updateGL()
 			
 	def wheelEvent(self, event):
 		if event.delta() > 0:
