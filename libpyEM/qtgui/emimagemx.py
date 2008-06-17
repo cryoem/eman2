@@ -378,8 +378,7 @@ class EMImageMXCore:
 			ybelow = ceil(-y/(h+2))
 			yoff = ybelow*(h+2)+y
 			#print "yoff is",yoff,"ybelow is",ybelow
-		
-			visiblerows = int(ceil(float(self.parent.height()-yoff)/(h+2)))
+			visiblerows = int(ceil(float(self.parent.height()-yoff)/(h+2)))+1
 		else: visiblerows = int(ceil(float(self.parent.height()-y)/(h+2)))
 		#print "There are",visiblerows,"visible rows"
 				
@@ -395,7 +394,7 @@ class EMImageMXCore:
 		if x < 0:
 			xbelow = ceil(-x/(w+2))
 			xoff = xbelow*(w+2)+x
-			visiblecols =  int(ceil(float(self.parent.width()-xoff)/(w+2)))
+			visiblecols =  int(ceil(float(self.parent.width()-xoff)/(w+2)))+1
 		else: visiblecols =  int(ceil(float(self.parent.width()-x)/(w+2)))
 
 		xstart = self.origin[0]/(w+2)
@@ -425,15 +424,16 @@ class EMImageMXCore:
 				th = h
 				rx = 0	#render x
 				ry = 0	#render y
-				#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
+				#print "Prior",i,':',row,col,tx,ty,tw,th,y,x
 				drawlabel = True
 				if (tx+tw) > self.parent.width():
 					tw = int(self.parent.width()-tx)
 				elif tx<0:
 					drawlabel=False
 					rx = int(ceil(-tx*invscale))
+					tw=int(w+tx)
 					tx = 0
-					tw=int(w-tx)
+					
 
 				#print h,row,y
 				#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
@@ -443,8 +443,9 @@ class EMImageMXCore:
 				elif ty<0:
 					drawlabel = False
 					ry = int(ceil(-ty*invscale))
+					th=int(h+ty)
 					ty = 0
-					th=int(h-ty)
+					
 				#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
 				if th < 0 or tw < 0:
 					#weird += 1
@@ -452,7 +453,7 @@ class EMImageMXCore:
 					print col,row,
 					continue
 				#i = (row+yoffset)*self.nperrow+col+xoffset
-				#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
+				#print i,':',row,col,tx,ty,tw,th
 				shown = True
 				#print rx,ry,tw,th,self.parent.width(),self.parent.height()
 				if not self.glflags.npt_textures_unsupported():
@@ -463,14 +464,7 @@ class EMImageMXCore:
 					glRasterPos(tx,ty)
 					glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
 						
-				if i in self.selected:
-					glColor(0.5,0.5,1.0)
-					glBegin(GL_LINE_LOOP)
-					glVertex(x,y)
-					glVertex(x+w,y)
-					glVertex(x+w,y+h)
-					glVertex(x,y+h)
-					glEnd()
+				
 				hist2=numpy.fromstring(a[-1024:],'i')
 				hist+=hist2
 				# render labels
@@ -493,6 +487,20 @@ class EMImageMXCore:
 				#try: self.coords[i]=(tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
 				#except: self.coords.append((tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
 				if shown : self.nshown+=1
+		
+		for i in self.selected:
+			try:
+				data = self.coords[i]	
+				glColor(0.5,0.5,1.0)
+				glBegin(GL_LINE_LOOP)
+				glVertex(data[0],data[1])
+				glVertex(data[0]+data[2],data[1])
+				glVertex(data[0]+data[2],data[1]+data[3])
+				glVertex(data[0],data[1]+data[3])
+				glEnd()
+			except:
+				# this means the box isn't visible!
+				pass
 		
 			#if (i+1)%self.nperrow==0 : 
 				#y+=h+2.0

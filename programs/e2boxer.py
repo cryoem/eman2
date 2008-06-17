@@ -607,23 +607,25 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 	def mouseup(self,event) :
 		if self.moving != None:
 			box = self.moving[0]
-			if box.isref: self.mediator.referenceMoved(box)
+			if box.isref:
+				print "calling reference moved"
+				self.mediator.referenceMoved(box)
 			
 		self.moving=None
 
 class GUIboxEventsMediator:
 	'''
+	This class could just as easily not exist - however it remains in use for documentation
+	purposes. If it was removed, the GUIboxMouseEventsObjects could have a reference to the GUIbox
+	class instead of this one and the code would still work. But without this class it would be difficult to
+	disentangle the relationship between the GUIboxMouseEventsObjects and the GUIbox.
+	
 	This class coordinates all the requests and 'signals' of the GUIboxMouseEventsObject classes so that they
 	are connected to the correct 'slots' and getter functions  in the GUIbox class. This behavior is analogous to the 
 	Qt signal/slot mechanism, but no Qt signals/slots are actually used. Instead this class
 	supplies a bunch of public functions that accept the requests and signals from the GUIboxMouseEventsObject
 	and send them on to the 'slots' and getter functions of the the GUIbox - using basic function interfacing. This
 	is also motivated by the Mediator concept in the Gang of Four.
-	
-	This class could just as easily not exist - however it remains in use for documentation
-	purposes. If it was removed, the GUIboxMouseEventsObjects could have a reference to the GUIbox
-	class instead of this one and the code would still work. But without this class it would be difficult to
-	disentangle the relationship between the GUIboxMouseEventsObjects and the GUIbox.
 	
 	All things considered, the class remains for documentation purposes. It should only be removed if 
 	it poses a significant performance hit
@@ -758,9 +760,12 @@ class GUIbox:
 			print "Cannot import EMAN image GUI objects (emimage,etc.)"
 			sys.exit(1)
 
+		try:
+			os.mkdir(EMProjectDB.outputdir)
+		except: pass
 		self.dynapix = False
 		self.anchoring = False
-				
+		
 		if len(boxes)>0 and boxsize==-1: self.boxsize=boxes[0][2]
 		elif boxsize==-1: self.boxsize=128
 		else: self.boxsize=boxsize
@@ -852,6 +857,7 @@ class GUIbox:
 		if self.guimxitp != None:
 			self.guimxitp.show()
 			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
+			self.guimxit.setSelected(0)
 
 		self.guictl.show()
 		self.boxDisplayUpdate()
@@ -881,8 +887,12 @@ class GUIbox:
 		'''
 		
 		# tell the boxable to remove boxes (and return their number)
-		lostboxes = self.boxable.updateExcludedBoxes()
+		[lostboxes,refboxes] = self.boxable.updateExcludedBoxes()
 		# after this, make sure the display is correct.
+		
+		# If any of the boxes are references the autoBoxer needs to know about it...
+		# this could potentially trigger auto boxer 
+			
 		if len(lostboxes) != 0:
 			self.deleteDisplayShapes(lostboxes)
 			self.mouseclicks += 1
@@ -890,6 +900,9 @@ class GUIbox:
 			self.updateAllImageDisplay()
 			
 		else: self.updateImageDisplay()
+		
+		if len(refboxes) != 0: self.autoBoxer.removeReference(refboxes)
+		self.boxDisplayUpdate()
 	
 	def detectBoxCollision(self,coords):
 		'''
@@ -928,7 +941,8 @@ class GUIbox:
 		self.boxDisplayUpdate()
 		
 	def referenceMoved(self,box):
-		self.autoBoxer.referenceMoved(box)
+		if (self.autoBoxer.referenceMoved(box)):
+			self.boxDisplayUpdate()
 		
 	def mouseClickUpdatePPC(self):
 		self.mouseclicks += 1
@@ -943,6 +957,7 @@ class GUIbox:
 			if self.guimxp == None:
 				self.guimxp = EMParentWin(self.guimx)
 				self.guimxp.show()
+				self.guimx.setSelected(0)
 	
 	def imagesel(self,event,lc):
 		#print 'in image select'

@@ -39,6 +39,9 @@ class EMProjectDB:
 	"""
 	It's implemented as a singleton
 	"""
+	outputdir = "Boxerscratch"
+	boxersdir = outputdir+"/"
+	
 	class __impl:
 		""" Implementation of the singleton interface """
 
@@ -503,7 +506,7 @@ class CoarsenedFlattenedImage:
 	def __init__(self,imagename):
 		self.smallimage = None		# a small copy of an image which has had its background flattened
 		self.imagename = imagename
-		self.ouputimagename = strip_file_tag(self.imagename)+".cf.hdf"
+		self.ouputimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".cf.hdf"
 		
 		try:
 			# we may have the image already on disk, if so parse it
@@ -703,7 +706,7 @@ class BinaryCircleImage:
 		self.image = EMData(2*circleradius+1,2*circleradius+1)
 		self.image.process_inplace("testimage.circlesphere")
 		self.image.set_attr("circle_radius",circleradius)
-		self.image.write_image("circle"+str(circleradius)+".hdf")
+		self.image.write_image(EMProjectDB.boxersdir +"circle"+str(circleradius)+".hdf")
 
 	def getCircleRadius(self):
 		return self.image.get_attr("circle_radius")
@@ -831,7 +834,7 @@ class FLCFImage:
 	def __init__(self,imagename):
 		self.flcfimage = None	# this is the flcf image
 		self.imagename=imagename # we must store this it's used externally to determine if the FLCFImage is cached
-		self.outputimagename = strip_file_tag(imagename)+".flcf.hdf"
+		self.outputimagename = EMProjectDB.boxersdir + strip_file_tag(imagename)+".flcf.hdf"
 		
 		
 		try: # try to read the image from disk - it may already exist and save us lots of time
@@ -940,7 +943,7 @@ class Boxable:
 		self.autoBoxer = autoBoxer
 		self.frozen = False
 		try:
-			excimagename = strip_file_tag(self.imagename)+".exc.hdf"
+			excimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".exc.hdf"
 			self.exclusionimage = EMData(excimagename)
 		except: pass
 		
@@ -959,7 +962,7 @@ class Boxable:
 		
 	def cacheExcToDisk(self):
 		if self.exclusionimage != None:
-			excimagename = strip_file_tag(self.imagename)+".exc.hdf"
+			excimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".exc.hdf"
 			self.exclusionimage.write_image(excimagename)
 
 	def center(self,method):
@@ -1082,7 +1085,7 @@ class Boxable:
 		if len(self.boxes) == 0:
 			print "no boxes to write, doing nothing. Image name is",self.imagename
 		else:
-			boxname = strip_file_tag(self.imagename)+".img"
+			boxname = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".img"
 			if file_exists(boxname):
 				if not force:
 					print "warning, file already exists - ", boxname, " doing nothing. Use force to override this behavior"
@@ -1270,6 +1273,7 @@ class Boxable:
 			
 		invshrink = 1.0/self.getBestShrink()
 		n = len(self.boxes)
+		refs = []
 		for i in range(n-1,-1,-1):
 			box = self.boxes[i]
 			x = int((box.xcorner+box.xsize/2.0)*invshrink)
@@ -1277,15 +1281,16 @@ class Boxable:
 			
 			if ( exclusionimage.get(x,y) != 0):
 				lostboxes.append(i)
-			
-				self.boxes.pop(i)
+
+				box = self.boxes.pop(i)
+				if box.isref: refs.append(box)
 	
-		return lostboxes
+		return [lostboxes,refs]
 	
 	def addExclusionParticle(self,box):
 		
-		xx = box.xcorner+box.xsize/2
-		yy = box.ycorner+box.ysize/2
+		xx = box.xcorner+box.xsize/2-1
+		yy = box.ycorner+box.ysize/2-1
 		
 		self.addExclusionArea(None,xx,yy,box.xsize/2)
 	
@@ -1309,6 +1314,7 @@ class Boxable:
 		else:
 			print "error - unknow flag:",flag,"doing nothing"
 			return
+		
 		BoxingTools.set_region(self.getExclusionImage(),mask,xx,yy,val)
 		
 	
@@ -1866,15 +1872,31 @@ class SwarmAutoBoxer(AutoBoxer):
 			print "error, you cannot add a reference to the AutoBoxer if it is not in the format of a Box object"
 			return 0
 	
-	def removeReference(self,box):
-		self.template.removeReference(box)
+	
+	def removeReference(self,boxes):
+		'''
+		Should potentially be called removeReferences
+		This is somewhat of a hack - the function should be called removeReferences because
+		it works if the calling function supplies a list of boxes...
+		'''
 		
+		try:
+			isanchor = False
+			for box in boxes:
+				self.template.removeReference(box)
+				if box.isanchor: isanchor = True
+		except:
+			# there is only one box
+			box = boxes
+			self.template.removeReference(box)
+			isanchor = box.isanchor
+			
 		if len(self.template.refboxes) == 0:
 			self.__reset()
 			return 1
 			
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-			if box.isanchor:
+			if isanchor:
 				self.__fullUpdate()
 				self.regressiveflag = True
 				self.autoBox(self.getBoxable())
@@ -1885,7 +1907,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.autoBox(self.getBoxable())
 			return 1
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
-			if box.isanchor:
+			if isanchor:
 				self.refupdate = True
 				self.stateTS = -1
 				self.templateTS = -1
@@ -1908,6 +1930,8 @@ class SwarmAutoBoxer(AutoBoxer):
 	def referenceMoved(self,box):
 		'''
 		If a reference was moved interactively in the interface this is the function that should be called
+		The return value is whether or not autoboxing occured and hence whether or not display should be updated
+		A -1 is returned if an error occured
 		'''
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			if box.isanchor:
@@ -1931,10 +1955,10 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.__accrueOptParams()
 				self.stateTS = time()
 				self.regressiveflag = True
-			return 1
+			return 0
 		else:
 			print 'error, unknown mode in SwarmAutoBoxer'
-			return 0
+			return -1
 		
 	def getTemplateObject(self):
 		return self.template
@@ -1995,6 +2019,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		# this is fine - if a boxable is frozen this is more or less a flag for the autoboxer not
 		# to autobox it...
+		#print "in autobox"
 		if boxable.isFrozen():
 			return 0
 		
@@ -2009,7 +2034,6 @@ class SwarmAutoBoxer(AutoBoxer):
 
 		templateTS = boxable.templateTS
 		correlation = boxable.getCorrelationImage()
-		
 		if templateTS == -1 or correlation == None or self.template.getTemplateTS() != templateTS:
 			if self.template != None:
 				boxable.allowcorrelationupdate = True
@@ -2034,8 +2058,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 			exclusion = boxable.getExclusionImage().copy()
 			self.__paintExcludedBoxAreas(exclusion,boxable.boxes)
-			exclusion.write_image("exclusion.hdf")
-		
+
 			boxes = self.__autoBox(correlation,boxable,boxable.boxes,exclusion)
 			#print "autoboxed",len(boxes)
 			boxable.autoBoxerTS = self.stateTS
