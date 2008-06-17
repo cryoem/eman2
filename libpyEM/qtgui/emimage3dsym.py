@@ -437,7 +437,6 @@ class EM3DSymViewer(EMImage3DObject):
 				print 'couldnt read',f 
 				return
 			lines=f.readlines()
-
 			self.tracedata = []
 			for line in lines:
 				s = str.split(str.strip(line))
@@ -447,9 +446,15 @@ class EM3DSymViewer(EMImage3DObject):
 				elif s[1] == '->':
 					idx = str.find(s[3],',')
 					alt = float(s[3][1:idx])
-					az = float(s[3][idx+1:len(s[3])-1])
+					rem = s[3][idx+1:len(s[3])-1]
+					idx = str.find(rem,',')
+					val = rem[0:idx]
+					if val[idx-1] == ')':
+						val = rem[0:idx-1]
+					az = float(val)
+					#print [alt,az,0]
 					self.tracedata[n-1].append([alt,az,0])
-					
+			
 			self.file = f
 		
 		self.lr = lr
@@ -497,12 +502,14 @@ class EM3DSymViewer(EMImage3DObject):
 		self.trace_dl = glGenLists(1)
 		
 		glNewList( self.trace_dl,GL_COMPILE)
+		print "in range",self.lr,self.hr
 		for i in range(self.lr,self.hr):
+			print len(self.tracedata[i])-1
 			for j in range(0,len(self.tracedata[i])-1):
 				alt = self.tracedata[i][j][0]
 				az = self.tracedata[i][j][1]
 				phi = self.tracedata[i][j][2]
-				#print "a",alt,az
+				print "a",alt,az
 				T = Transform3D(az,alt,0.0)
 				T.transpose()
 				a = T*Vec3f(0,0,1)

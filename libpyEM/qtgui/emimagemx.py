@@ -392,7 +392,7 @@ class EMImageMXCore:
 		if x < 0:
 			xbelow = floor(-x/(w+2))
 			xoff = xbelow*(w+2)+x
-			visiblecols =  int(ceil(float(self.parent.width()-xoff)/(w+2)))+1
+			visiblecols =  int(ceil(float(self.parent.width()-xoff)/(w+2)))
 		else: visiblecols =  int(ceil(float(self.parent.width()-x)/(w+2)))
 
 		xstart = self.origin[0]/(w+2)
@@ -400,11 +400,7 @@ class EMImageMXCore:
 			xstart = 0
 		else:
 			xstart = int(xstart)
-			
-			if xstart > 1:
-				visiblecols = visiblecols + xstart -1
-
-			
+			visiblecols = visiblecols + xstart
 		if visiblecols > self.nperrow:
 			visiblecols = self.nperrow
 			
@@ -431,7 +427,7 @@ class EMImageMXCore:
 				elif tx<0:
 					drawlabel=False
 					rx = int(ceil(-tx*invscale))
-					tw=int(w+tx)
+					tw=int(w+2+tx)
 					tx = 0
 					
 
@@ -443,7 +439,7 @@ class EMImageMXCore:
 				elif ty<0:
 					drawlabel = False
 					ry = int(ceil(-ty*invscale))
-					th=int(h+ty)
+					th=int(h+2+ty)
 					ty = 0
 					
 				#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
@@ -501,141 +497,7 @@ class EMImageMXCore:
 			except:
 				# this means the box isn't visible!
 				pass
-		
-			#if (i+1)%self.nperrow==0 : 
-				#y+=h+2.0
-				#x=-self.origin[0]
-			#else: x+=w+2.0
-					
-		#for i in range(n):
-			##w = self.data[i].get_xsize()*self.scale
-			##h = self.data[i].get_ysize()*self.scale
-			#shown=False
-				
-			#if x<self.parent.width() and y<self.parent.height() and (x+w) > 0 and (y+h) > 0:
-				#tx = x
-				#ty = y
-				#tw = w
-				#th = h
-				#rx = 0	#render x
-				#ry = 0	#render y
-				##print "entry",tx,ty,tw,th,self.parent.width(),self.parent.width()
-				#if x+tw > self.parent.width():
-					#tw = int(self.parent.width()-x)
-				#elif x<0:
-					#rx = int(-x/self.scale)
-					#tx = 0
-					#tw=int(w-tx+x)
-					
-				#if y+th > self.parent.height():
-					#th = int(self.parent.height()-y)
-				#elif y<0:
-					#ry = int(-y/self.scale)
-					#ty = 0
-					#th=int(h-ty+y)
-	
-				#shown = True
-				##print rx,ry,tw,th,self.parent.width(),self.parent.height()
-				#if not self.glflags.npt_textures_unsupported() and False:
-					#a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-					#self.texture(a,tx,ty,tw,th)
-				#else:
-					#a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
-					#glRasterPos(tx,ty)
-					#glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
-						
-				#if i in self.selected:
-					#glColor(0.5,0.5,1.0)
-					#glBegin(GL_LINE_LOOP)
-					#glVertex(x,y)
-					#glVertex(x+w,y)
-					#glVertex(x+w,y+h)
-					#glVertex(x,y+h)
-					#glEnd()
-				#hist2=numpy.fromstring(a[-1024:],'i')
-				#hist+=hist2
-				## render labels
 
-				#tagy = y
-				#glColor(*txtcol)
-				#for v in self.valstodisp:
-					#if v=="Img #" : self.renderText(x,tagy,"%d"%i)
-					#else : 
-						#av=self.data[i].get_attr(v)
-						#if isinstance(av,float) : avs="%1.4g"%av
-						#else: avs=str(av)
-						#try: self.renderText(x,tagy,str(avs))
-						#except: self.renderText(x,tagy,"------")
-					#tagy+=16
-				#if x>=0 and y>=0:
-					#shown=True
-					#a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
-					#if not self.glflags.npt_textures_unsupported():
-						#self.texture(a,x,y,w,h)
-					#else:
-						#GL.glRasterPos(x,y)
-						#GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-					
-					# Selection box
-					#if i in self.selected:
-						#GL.glColor(0.5,0.5,1.0)
-						#GL.glBegin(GL.GL_LINE_LOOP)
-						#GL.glVertex(x,y)
-						#GL.glVertex(x+w,y)
-						#GL.glVertex(x+w,y+h)
-						#GL.glVertex(x,y+h)
-						#GL.glEnd()
-					#hist2=numpy.fromstring(a[-1024:],'i')
-					#hist+=hist2
-
-					## render labels
-					#ty=y
-					#GL.glColor(*txtcol)
-					#for v in self.valstodisp:
-						#if v=="Img #" : self.renderText(x,ty,"%d"%i)
-						#else : 
-							#av=self.data[i].get_attr(v)
-							#if isinstance(av,float) : avs="%1.4g"%av
-							#else: avs=str(av)
-							#try: self.renderText(x,ty,str(avs))
-							#except: self.renderText(x,ty,"------")
-						#ty+=16
-				#elif x+w>0 and y+h>0:
-					#shown=True
-					#tx=int(max(x,0))
-					#ty=int(max(y,0))
-					#tw=int(w-tx+x)
-					#th=int(h-ty+y)
-					#a=self.data[i].render_amp8(int(-min(x/self.scale,0)),int(-min(y/self.scale,0)),tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
-					#if not self.glflags.npt_textures_unsupported():
-						#self.texture(a,tx,ty,tw,th)
-					#else:
-						#GL.glRasterPos(tx,ty)
-						#GL.glDrawPixels(tw,th,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-				
-					#hist2=numpy.fromstring(a[-1024:],'i')
-					#hist+=hist2
-					
-					## Selection box
-					#if i in self.selected:
-						#GL.glColor(0.5,0.5,1.0)
-						#GL.glBegin(GL.GL_LINE_LOOP)
-						#GL.glVertex(x,y)
-						#GL.glVertex(x+w,y)
-						#GL.glVertex(x+w,y+h)
-						#GL.glVertex(x,y+h)
-						#GL.glEnd()
-				
-			#try: self.coords[i]=(x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
-			#except: self.coords.append((x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
-			#if shown : self.nshown+=1
-			
-			#if (i+1)%self.nperrow==0 : 
-				#y+=h+2.0
-				#x=-self.origin[0]
-			#else: x+=w+2.0
-		
-		#print "i show",self.nshown
 		# If the user is lost, help him find himself again...
 		if self.nshown==0 : 
 			try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
@@ -836,12 +698,6 @@ class EMImageMXCore:
 				
 				dropAction = drag.start()
 #				print dropAction
-			
-			elif self.mmode=="del" and lc:
-				#print "removing",lc[0]
-				del self.data[lc[0]]
-					#self.setData(self.data)
-				self.updateGL()
 			elif self.mmode=="app" and lc:
 				self.parent.emit(QtCore.SIGNAL("mousedown"),event,lc)
 					
@@ -854,14 +710,19 @@ class EMImageMXCore:
 			self.parent.emit(QtCore.SIGNAL("mousedrag"),event,self.scale)
 		
 	def mouseReleaseEvent(self, event):
+		lc=self.scrtoimg((event.x(),event.y()))
 		if self.mousedrag:
 			self.mousedrag=None
 		elif event.button()==Qt.LeftButton and self.mmode=="app":
 			if  not event.modifiers()&Qt.ShiftModifier:
 				self.parent.emit(QtCore.SIGNAL("mouseup"),event)
 			else:
-				lc=self.scrtoimg((event.x(),event.y()))
 				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
+		elif self.mmode=="del" and lc:
+			try: self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
+			except:
+				del self.data[lc[0]]
+				self.updateGL()
 		
 			
 	def wheelEvent(self, event):
