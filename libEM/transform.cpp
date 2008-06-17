@@ -2197,7 +2197,7 @@ vector<Transform3D> Symmetry3D::get_touching_au_transforms(bool inc_mirror) cons
 	}
 	else if ( is_d_sym() && (get_nsym()/2 % 2 == 1)) {
 		Dict delim = get_delimiters(false);
-		float angle = float(delim["az_max"])/2.0;
+		float angle = float(delim["az_max"])/2.0f;
 // 		cout << "Odd dsym using " << angle << endl;
 		angle *= EMConsts::deg2rad;
 		float y = -cos(angle);
@@ -2205,7 +2205,7 @@ vector<Transform3D> Symmetry3D::get_touching_au_transforms(bool inc_mirror) cons
 		points.push_back(Vec3f(x,y,0));
 		
 		if ( inc_mirror ) {
-			angle = 3.0*(float(delim["az_max"]))/2.0;
+			angle = 3.0*(float(delim["az_max"]))/2.0f;
 			angle *= EMConsts::deg2rad;
 			float y = -cos(angle);
 			float x = sin(angle);

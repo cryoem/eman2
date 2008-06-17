@@ -17021,7 +17021,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 	bool change = true;
 	int it = -1;
 	int ct = -1;
-	while(change and disp < dispold or ct > 0) {
+	while(change && disp < dispold || ct > 0) {
 
 		change = false;
 		dispold = disp;
@@ -17214,7 +17214,8 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 	if(N*(N-1)/2 != nx) {
 		//print  "  incorrect dimension"
 		return group;}
-	bool active[N];
+	//bool active[N];	//this does not compile in VS2005. --Grant Tang
+	bool * active = new bool[N];
 	for(int i=0; i<N; i++) active[i] = true;
 
 	float dm, qd;
@@ -17222,7 +17223,7 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 	for(int k=0; k<K; k++) {
 		// find pairs of most similiar objects among active
 		//cout<<"  k  "<<k<<endl;
-		dm = 1.0e23;
+		dm = 1.0e23f;
 		for(int i=1; i<N; i++) {
 			if(active[i]) {
 				for(int j=0; j<i; j++) {
@@ -17242,6 +17243,9 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 		active[ppi] = false;
 		active[ppj] = false;
 	}
+
+	delete [] active;
+	active = NULL;
 	return  group;
 }
 /*
