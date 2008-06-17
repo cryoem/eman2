@@ -1206,14 +1206,14 @@ class GUIbox:
 		#self.guiim.addShapes(sh)
 		#print "now there are",len(sh),"shapes"
 		
-	def boximagedeleted(self,event,lc):
-		box = self.delbox(lc[0])
+	def boximagedeleted(self,event,lc,forceimagemxremove=True):
+		box = self.delbox(lc[0],forceimagemxremove)
 		self.boxable.addExclusionParticle(box)
 		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 		self.updateAllImageDisplay()
 		self.updateppc()
 		
-	def delbox(self,boxnum):
+	def delbox(self,boxnum,forceimagemxremove=True):
 		"""
 		Deletes the numbered box completely
 		Should only be called in the instance where a single box is being deleting - NOT when
@@ -1232,7 +1232,7 @@ class GUIbox:
 		self.guiim.delShapes()
 		self.guiim.addShapes(sh)
 		self.guiim.setActive(None,.9,.9,.4)
-		self.ptcl.pop(boxnum)
+		if forceimagemxremove: self.ptcl.pop(boxnum)
 		
 		box = self.boxable.boxes[boxnum]
 		self.boxable.delbox(boxnum)

@@ -730,7 +730,7 @@ class EMImageMXCore:
 			else:
 				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
 		elif self.mmode=="del" and lc:
-			del self.data[lc[0]]
+			self.data.pop(lc[0])
 			try: self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
 			except: pass
 			# redundancy here - the parent may call updateGL...
