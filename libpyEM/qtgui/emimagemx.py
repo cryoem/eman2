@@ -77,7 +77,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.imagemx.setData(data)
 	
 	def setImageFileName(self,name):
-		print "set image file name",name
+		#print "set image file name",name
 		self.imagefilename = name
 		
 	def getImageFileName(self):
@@ -179,7 +179,7 @@ class EMImageMXCore:
 		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
 		self.supressInspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		
-		self.coords=[]
+		self.coords={}
 		self.nshown=0
 		self.valstodisp=["Img #"]
 		try: self.parent.setAcceptDrops(True)
@@ -347,17 +347,12 @@ class EMImageMXCore:
 		for i in self.data:
 			self.changec[i]=i.get_attr("changecount")
 		
-		
-		
-		
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		
-#		GL.glPixelZoom(1.0,-1.0)
 		n=len(self.data)
-		x,y=-self.origin[0],-self.origin[1]
 		hist=numpy.zeros(256)
-		if len(self.coords)>n : self.coords=self.coords[:n]
+		#if len(self.coords)>n : self.coords=self.coords[:n] # dont know what this does? Had to comment out, changing from a list to a dictionary
 		glColor(0.5,1.0,0.5)
 		glLineWidth(2)
 		try:
@@ -373,34 +368,91 @@ class EMImageMXCore:
 		self.tex_names = []
 
 		self.nshown=0
-		for i in range(n):
-			w=int(min(self.data[i].get_xsize()*self.scale,self.parent.width()))
-			h=int(min(self.data[i].get_ysize()*self.scale,self.parent.height()))
-			#w = self.data[i].get_xsize()*self.scale
-			#h = self.data[i].get_ysize()*self.scale
-			shown=False
-			if x<self.parent.width() and y<self.parent.height() and (x+w) > 0 and (y+h) > 0:
-				tx = x
-				ty = y
+		
+		x,y=-self.origin[0],-self.origin[1]
+		w=int(min(self.data[0].get_xsize()*self.scale,self.parent.width()))
+		h=int(min(self.data[0].get_ysize()*self.scale,self.parent.height()))
+		
+		yoff = 0
+		if y < 0:
+			ybelow = ceil(-y/(h+2))
+			yoff = ybelow*(h+2)+y
+			#print "yoff is",yoff,"ybelow is",ybelow
+		
+			visiblerows = int(ceil(float(self.parent.height()-yoff)/(h+2)))
+		else: visiblerows = int(ceil(float(self.parent.height()-y)/(h+2)))
+		#print "There are",visiblerows,"visible rows"
+				
+		maxrow = int(ceil(float(n)/self.nperrow))
+		ystart = self.origin[1]/(h+2)
+		if ystart < 0: ystart = 0
+		elif ystart > 0:
+			ystart = int(ystart)
+			visiblerows = visiblerows + ystart
+		if visiblerows > maxrow: visiblerows = maxrow
+
+		xoff = 0
+		if x < 0:
+			xbelow = ceil(-x/(w+2))
+			xoff = xbelow*(w+2)+x
+			visiblecols =  int(ceil(float(self.parent.width()-xoff)/(w+2)))
+		else: visiblecols =  int(ceil(float(self.parent.width()-x)/(w+2)))
+
+		xstart = self.origin[0]/(w+2)
+		if xstart < 0:
+			#
+			xstart = 0
+		else:
+			xstart = int(xstart)
+			visiblecols = visiblecols+xstart
+			
+		if visiblecols > self.nperrow:
+			visiblecols = self.nperrow
+			
+		#print "rows",visiblerows-ystart,"cols",visiblecols-xstart
+		#print "yoffset",yoff,"xoffset",xoff
+		#print (visiblerows-ystart)*(h+2)+yoff,self.parent.height(),"height",(visiblecols-xstart)*(w+2)+xoff,self.parent.width()		
+		invscale=1.0/self.scale
+		self.coords = {}
+		for row in range(ystart,visiblerows):
+			for col in range(xstart,visiblecols):
+				i = (row)*self.nperrow+col
+				#print i,n
+				if i >= n : break
+				tx = int((w+2)*(col) + x)
+				ty = int((h+2)*(row) + y)
 				tw = w
 				th = h
 				rx = 0	#render x
 				ry = 0	#render y
-				#print "entry",tx,ty,tw,th,self.parent.width(),self.parent.width()
-				if x+tw > self.parent.width():
-					tw = int(self.parent.width()-x)
-				elif x<0:
-					rx = int(-x/self.scale)
+				#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
+				drawlabel = True
+				if (tx+tw) > self.parent.width():
+					tw = int(self.parent.width()-tx)
+				elif tx<0:
+					drawlabel=False
+					rx = int(ceil(-tx*invscale))
 					tx = 0
-					tw=int(w-tx+x)
-					
-				if y+th > self.parent.height():
-					th = int(self.parent.height()-y)
-				elif y<0:
-					ry = int(-y/self.scale)
+					tw=int(w-tx)
+
+				#print h,row,y
+				#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
+				if (ty+th) > self.parent.height():
+					#print "ty + th was greater than",self.parent.height()
+					th = int(self.parent.height()-ty)
+				elif ty<0:
+					drawlabel = False
+					ry = int(ceil(-ty*invscale))
 					ty = 0
-					th=int(h-ty+y)
-	
+					th=int(h-ty)
+				#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
+				if th < 0 or tw < 0:
+					#weird += 1
+					print "weirdness"
+					print col,row,
+					continue
+				#i = (row+yoffset)*self.nperrow+col+xoffset
+				#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
 				shown = True
 				#print rx,ry,tw,th,self.parent.width(),self.parent.height()
 				if not self.glflags.npt_textures_unsupported():
@@ -423,17 +475,90 @@ class EMImageMXCore:
 				hist+=hist2
 				# render labels
 
-				tagy = y
-				glColor(*txtcol)
-				for v in self.valstodisp:
-					if v=="Img #" : self.renderText(x,tagy,"%d"%i)
-					else : 
-						av=self.data[i].get_attr(v)
-						if isinstance(av,float) : avs="%1.4g"%av
-						else: avs=str(av)
-						try: self.renderText(x,tagy,str(avs))
-						except: self.renderText(x,tagy,"------")
-					tagy+=16
+				if drawlabel:
+					tagy = ty
+					glColor(*txtcol)
+					for v in self.valstodisp:
+						if v=="Img #" : self.renderText(tx,tagy,"%d"%i)
+						else : 
+							av=self.data[i].get_attr(v)
+							if isinstance(av,float) : avs="%1.4g"%av
+							else: avs=str(av)
+							try: self.renderText(tx,tagy,str(avs))
+							except: self.renderText(tx,tagy,"------")
+						tagy+=16
+				
+				self.coords[i]=(tx,ty,tw,th)
+				
+				#try: self.coords[i]=(tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
+				#except: self.coords.append((tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
+				if shown : self.nshown+=1
+		
+			#if (i+1)%self.nperrow==0 : 
+				#y+=h+2.0
+				#x=-self.origin[0]
+			#else: x+=w+2.0
+					
+		#for i in range(n):
+			##w = self.data[i].get_xsize()*self.scale
+			##h = self.data[i].get_ysize()*self.scale
+			#shown=False
+				
+			#if x<self.parent.width() and y<self.parent.height() and (x+w) > 0 and (y+h) > 0:
+				#tx = x
+				#ty = y
+				#tw = w
+				#th = h
+				#rx = 0	#render x
+				#ry = 0	#render y
+				##print "entry",tx,ty,tw,th,self.parent.width(),self.parent.width()
+				#if x+tw > self.parent.width():
+					#tw = int(self.parent.width()-x)
+				#elif x<0:
+					#rx = int(-x/self.scale)
+					#tx = 0
+					#tw=int(w-tx+x)
+					
+				#if y+th > self.parent.height():
+					#th = int(self.parent.height()-y)
+				#elif y<0:
+					#ry = int(-y/self.scale)
+					#ty = 0
+					#th=int(h-ty+y)
+	
+				#shown = True
+				##print rx,ry,tw,th,self.parent.width(),self.parent.height()
+				#if not self.glflags.npt_textures_unsupported() and False:
+					#a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+					#self.texture(a,tx,ty,tw,th)
+				#else:
+					#a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+					#glRasterPos(tx,ty)
+					#glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
+						
+				#if i in self.selected:
+					#glColor(0.5,0.5,1.0)
+					#glBegin(GL_LINE_LOOP)
+					#glVertex(x,y)
+					#glVertex(x+w,y)
+					#glVertex(x+w,y+h)
+					#glVertex(x,y+h)
+					#glEnd()
+				#hist2=numpy.fromstring(a[-1024:],'i')
+				#hist+=hist2
+				## render labels
+
+				#tagy = y
+				#glColor(*txtcol)
+				#for v in self.valstodisp:
+					#if v=="Img #" : self.renderText(x,tagy,"%d"%i)
+					#else : 
+						#av=self.data[i].get_attr(v)
+						#if isinstance(av,float) : avs="%1.4g"%av
+						#else: avs=str(av)
+						#try: self.renderText(x,tagy,str(avs))
+						#except: self.renderText(x,tagy,"------")
+					#tagy+=16
 				#if x>=0 and y>=0:
 					#shown=True
 					#a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
@@ -493,15 +618,16 @@ class EMImageMXCore:
 						#GL.glVertex(x,y+h)
 						#GL.glEnd()
 				
-			try: self.coords[i]=(x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
-			except: self.coords.append((x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
-			if shown : self.nshown+=1
+			#try: self.coords[i]=(x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
+			#except: self.coords.append((x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
+			#if shown : self.nshown+=1
 			
-			if (i+1)%self.nperrow==0 : 
-				y+=h+2.0
-				x=-self.origin[0]
-			else: x+=w+2.0
+			#if (i+1)%self.nperrow==0 : 
+				#y+=h+2.0
+				#x=-self.origin[0]
+			#else: x+=w+2.0
 		
+		#print "i show",self.nshown
 		# If the user is lost, help him find himself again...
 		if self.nshown==0 : 
 			try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
@@ -566,7 +692,6 @@ class EMImageMXCore:
 		for c in s:
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
 
-	
 	def resizeEvent(self, width, height):
 		
 		#print width/(self.data[0].get_xsize()*self.scale)
@@ -624,10 +749,12 @@ class EMImageMXCore:
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
 		image from the matrix. Returns (image number,x,y) or None if the location is not within any
 		of the contained images. """
-		absloc=((vec[0]+self.origin[0]),(self.parent.height()-(vec[1]-self.origin[1])))
-		for i,c in enumerate(self.coords):
-			if absloc[0]>c[0] and absloc[1]>c[1] and absloc[0]<c[0]+c[2] and absloc[1]<c[1]+c[3] :
-				return (i,(absloc[0]-c[0])/self.scale,(absloc[1]-c[1])/self.scale)
+		absloc=((vec[0]),(self.parent.height()-(vec[1])))
+		for item in self.coords.items():
+			index = item[0]
+			data = item[1]
+			if absloc[0]>data[0] and absloc[1]>data[1] and absloc[0]<data[0]+data[2] and absloc[1]<data[1]+data[3] :
+				return (index,(absloc[0]-data[0])/self.scale,(absloc[1]-data[1])/self.scale)
 		return None
 	
 	def closeEvent(self,event) :
@@ -703,7 +830,7 @@ class EMImageMXCore:
 #				print dropAction
 			
 			elif self.mmode=="del" and lc:
-				
+				#print "removing",lc[0]
 				del self.data[lc[0]]
 					#self.setData(self.data)
 				self.updateGL()
