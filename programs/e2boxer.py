@@ -1130,7 +1130,7 @@ class GUIbox:
 
 	def moveBox(self,boxnum,dx,dy):
 		box = self.getBoxes()[boxnum]
-		box.move(dx,dy)
+		self.boxable.moveBox(box,dx,dy,boxnum)
 			# we have to update the reference also
 		self.ptcl[boxnum] = box.getBoxImage()
 			
@@ -1139,7 +1139,8 @@ class GUIbox:
 		self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 		box.shape = EMShape(["rect",box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
 		self.guiim.addShape(boxnum,box.shape)
-		self.updateAllImageDisplay()
+		self.boxDisplayUpdate()
+		#self.updateAllImageDisplay()
 		
 	def updateboxcolors(self,classify):
 		sh=self.guiim.getShapes()
@@ -1240,7 +1241,7 @@ class GUIbox:
 		# it from its own list and potentially do autoboxing
 		if box.isref:
 			self.autoBoxer.removeReference(box)
-			
+		
 		return box
 	
 	def updateBoxSize(self,boxsize):

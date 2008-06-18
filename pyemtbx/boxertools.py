@@ -1026,7 +1026,6 @@ class Boxable:
 			box.r = 1
 			box.g = 1
 			box.b = 1
-			box.updatePositionFromDB()
 			self.boxes.append(box)
 
 	def boxesReady(self,forcereadall=False):
@@ -1051,6 +1050,7 @@ class Boxable:
 					box.r = 0
 					box.g = 0
 					box.b = 0
+				
 				
 				box.updatePositionFromDB()
 				self.boxes.append(box)
@@ -1098,6 +1098,11 @@ class Boxable:
 				image = box.getBoxImage()
 				image.write_image(boxname,-1)
 
+	def moveBox(self,box,dx,dy,boxnum):
+		if box.ismanual:
+			self.moveManualBox(box,dx,dy)
+		
+		box.move(dx,dy)
 
 	def addbox(self,box):
 		if not isinstance(box,Box):
@@ -1137,8 +1142,93 @@ class Boxable:
 		manualboxes.append(TrimBox(box))
 		projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
 	
+	def deleteManualBox(self,box):
+		projectdb = EMProjectDB()
+		try:
+			manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
+		except:
+			print "error, you can't delete a manual box if there are none!"
+			return
+		
+		found = False
+		for j,b in enumerate(manualboxes):
+			if b.xcorner == box.xcorner and b.ycorner == box.ycorner:
+				manualboxes.pop(j)
+				projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
+				found = True
+				break
+		
+		if not found:
+			#remove this code once the Sissel problem no longer exists
+			# find the nearest box
+			smallest_diff = 0
+			idx = -1
+			for j,b in enumerate(manualboxes):
+				diff = (b.xcorner - box.xcorner)**2 + (b.ycorner - box.ycorner)**2
+				if j == 0:
+					idx = j
+					smallest_diff = diff
+				else:
+					if diff < smallest_diff:
+						idx = j
+						smallest_diff = diff
+			
+			if idx >=0 :
+				print "am removing manual box",idx,"it was",smallest_diff,"squared units away"
+				print "this functionality is temporary for backwards compatibility"
+				manualboxes.pop(idx)
+			else: print "There were no boxes"	
+			# uncomment this code once the Sissel problem no longer exists
+			#print "error, couldn't find the manual box you tried to delete, nothing happened"
+			#return
+		
+	
+	def moveManualBox(self,box,dx,dy):
+		projectdb = EMProjectDB()
+		try:
+			manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
+		except:
+			print "error, you can't move a manual box if there are none!"
+			return
+		
+		found = False
+		for j,b in enumerate(manualboxes):
+			if b.xcorner == box.xcorner and b.ycorner == box.ycorner:
+				b.xcorner += dx
+				b.ycorner += dy
+				found = True
+				projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
+				break
+		
+		if not found:
+			# remove this code once the Sissel problem no longer exists
+			## find the nearest box
+			#smallest_diff = 0
+			#idx = -1
+			#for j,b in enumerate(manualboxes):
+				#diff = (b.xcorner - box.xcorner)**2 + (b.ycorner - box.ycorner)**2
+				#if j == 0:
+					#idx = j
+					#smallest_diff = diff
+				#else:
+					#if diff < smallest_diff:
+						#idx = j
+						#smallest_diff = diff
+			
+			#if idx >=0 :
+				#print "am removing manual box",idx,"it was",smallest_diff,"squared units away"
+				#print "this functionality is temporary for backwards compatibility"
+				#manualboxes.pop(idx)
+			#else: print "There were no boxes"	
+			# uncomment this code once the Sissel problem no longer exists
+			print "error, couldn't find the manual box you tried to move, nothing happened"
+			return
+		
+	
 	def delbox(self,i):
 		tmp = self.boxes.pop(i)
+		if tmp.ismanual:
+			self.deleteManualBox(tmp)
 		#yuck, this is horribly inefficient
 		for j,box in enumerate(self.refboxes):
 			if box.isref and box.TS == tmp.TS:
