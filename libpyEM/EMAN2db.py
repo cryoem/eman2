@@ -32,18 +32,11 @@
 
 from EMAN2 import *
 
-"""
-self.path=path
-self.logfile=path+"/"+logfile
-self.lastctxclean=time.time()
-self.__importmode=importmode
+envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
+dbopenflags=db.DB_CREATE
+#if recover: xtraflags=db.DB_RECOVER
 
-xtraflags=0
-if recover: xtraflags=db.DB_RECOVER
-
-# This sets up a DB environment, which allows multithreaded access, transactions, etc.
-if not os.access(path+"/home",os.F_OK) : os.makedirs(path+"/home")
-self.LOG(4,"Database initialization started")
+if not os.access("./dbcache",os.F_OK) : os.makedirs("./dbcache")
 self.__dbenv=db.DBEnv()
 self.__dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
 self.__dbenv.set_data_dir(path)
@@ -55,7 +48,6 @@ self.__dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
 self.__dbenv.open(path+"/home",envopenflags|xtraflags)
 global globalenv
 globalenv = self.__dbenv
-"""
 
 
 __doc__ = \
