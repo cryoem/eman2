@@ -409,6 +409,19 @@ def remove_file( file_name ):
 		print "Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name
 		return False
 
+# returns gm time as a string. For example if it's 11:13 pm on the 18th of June 2008 this will return something like
+# '23:13:25.14 18/6/2008'
+def gm_time_string():
+	
+	from time import gmtime,time
+	a = time()
+	b = gmtime(a)
+	astr = str(a)
+	idx = str.find(astr,'.')
+	decimalseconds = astr[idx:len(astr)]
+	
+	val = str(b[3])+':'+str(b[4])+':'+str(b[5])+decimalseconds +' '+str(b[2])+'/'+str(b[1])+'/'+str(b[0])
+	return val
 # A function for checking if a file exists
 # basically wraps os.path.exists, but when an img or hed file is the argument, it
 # checks for the existence of both images

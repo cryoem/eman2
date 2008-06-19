@@ -777,9 +777,14 @@ class GUIbox:
 		self.currentimage = 0
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
+		
+		
+		self.autoboxername = "Current"
 		try:
 			projectdb = EMProjectDB()
-			trimAutoBoxer = projectdb["currentautoboxer"]
+			data = projectdb[self.imagenames[0]+"_autoboxer"]
+			trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
+			self.autoboxername = data["auto_boxer_unique_id"] 
 			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.become(trimAutoBoxer)
 			print 'using cached autoboxer db'
@@ -799,7 +804,6 @@ class GUIbox:
 		self.mousehandlers["erasing"] = GUIboxMouseEraseEvents(self.eventsmediator,self.eraseradius)
 		self.mousehandler = self.mousehandlers["boxing"]
 		
-		self.threshold=thr					# Threshold to decide which boxes to use
 		self.ptcl=[]						# list of actual boxed out EMImages
 		self.boxm = None
 		self.moving=None					# Used during a user box drag
@@ -816,8 +820,7 @@ class GUIbox:
 		
 		self.guimxitp = None
 		self.genImageThumbnailsWidget()
-			
-		
+
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mousedown)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mousedrag)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.mouseup  )
@@ -836,7 +839,9 @@ class GUIbox:
 		self.guimx.setmmode("app")
 		self.ppc = 1.0
 		self.mouseclicks = 0
-		self.guictl=GUIboxPanel(self)
+		
+		self.abselmediator = AutoBoxerSelectionsMediator(self)
+		self.guictl=GUIboxPanel(self,self.abselmediator)
 		
 		try:
 			E2loadappwin("boxer","imagegeom",self.guiimp)
@@ -862,7 +867,17 @@ class GUIbox:
 		self.guictl.show()
 		self.boxDisplayUpdate()
 	
-	
+	def changeCurrentAutoBoxer(self, timestamp):
+		print "here we are using timestamp",timestamp
+		projectdb = EMProjectDB()
+		trimAutoBoxer = projectdb["autoboxer_"+timestamp]
+		print trimAutoBoxer.getCreationTS(), "is the actual ts"
+		self.autoBoxer = SwarmAutoBoxer(self)
+		self.autoBoxer.become(trimAutoBoxer)
+		self.boxable.setAutoBoxer(self.autoBoxer)
+		if self.autoBoxer.autoBox(self.boxable):
+			self.boxDisplayUpdate()
+		
 	def get2DGuiImage(self):
 		return self.guiim
 	
@@ -911,8 +926,14 @@ class GUIbox:
 		'''
 		return  self.collisiondetect(coords,self.getBoxes())
 	
+	def getCurrentAutoBoxerTS(self):
+		return self.autoBoxer.getCreationTS()
+	
 	def getCurrentImageName(self):
-		return self.boxable.getImageName()
+		return self.imagenames[self.currentimage]
+	
+	def getImageNames(self):
+		return self.imagenames
 	
 	def getBoxSize(self):
 		return self.boxsize
@@ -1306,9 +1327,9 @@ class GUIbox:
 			if self.guimx.inspector.isVisible() : E2saveappwin("boxer","mxcontrolgeom",self.guimx.inspector)
 		except : E2setappval("boxer","mxcontrol",False)
 		
-		return (self.getBoxes(),self.threshold)
+		return (self.getBoxes())
 
-	def autoboxbutton(self):
+	def autoboxbutton(self,bool):
 		if self.autoBoxer.autoBox(self.boxable):
 			self.boxDisplayUpdate()
 
@@ -1429,12 +1450,89 @@ class GUIbox:
 			self.mousehandlers["boxing"].setmode(GUIbox.REFERENCE_ADDING)
 		elif manual:
 			self.mousehandlers["boxing"].setmode(GUIbox.MANUALLY_ADDING)
+	
+	def autoBoxerDBChanged(self):
+		return
+		self.guictl.updateABTable()
+
+	def addNewAutoBoxerDB(self):
+		autoBoxer = SwarmAutoBoxer(self)
+		autoBoxer.boxsize = self.boxsize
+		autoBoxer.setMode(self.dynapix,self.anchoring)
+		autoboxerdbstring = "autoboxer_"+autoBoxer.getCreationTS()
+		trimAutoBoxer = TrimSwarmAutoBoxer(autoBoxer)
+		projectdb = EMProjectDB()
+		projectdb[autoboxerdbstring] = trimAutoBoxer
+	
+	def addCopyAutoBoxerDB(self,timestamp):
+		print "adding a copy of the ab with ts",timestamp
+		projectdb = EMProjectDB()
+		trimAutoBoxer = projectdb["autoboxer_"+timestamp]
+		trimAutoBoxer.setCreationTS(gm_time_string())
+		autoboxerdbstring = "autoboxer_"+trimAutoBoxer.getCreationTS()
+		print "adding string to db",autoboxerdbstring
+		projectdb[autoboxerdbstring] = trimAutoBoxer
+
+class AutoBoxerSelectionsMediator:
+	'''
+	A class for coordinating the GUIboxPanel and the the GUIbox in relation
+	to adding and removing AutoBoxers, and changing which Boxables use which
+	AutoBoxer etc
+	'''
+	def __init__(self,parent):
+		if not isinstance(parent,GUIbox):
+			print "error, the AutoBoxerSelectionsMediator must be initialized with a GUIbox type as its first constructor argument"
+			return
+		self.parent=parent
+		self.currentimagename = None
+		self.imagenames = []
+		
+		self.setCurrentImageName(parent.getCurrentImageName())
+		self.setImageNames(parent.getImageNames())
+		
+	def setCurrentImageName(self,imagename):
+		self.currentimagename = imagename
+		
+	def setImageNames(self,imagenames):
+		self.imagenames = imagenames
+		
+	def getAutoBoxerData(self):
+		projectdb = EMProjectDB()
+		dictdata = {}
+		
+		for i in projectdb.items():
+			if i[0][0:10] == "autoboxer_":
+				dictdata[i[0]] = []
+		
+		for imagename in self.imagenames:
+			found = False
+			try:
+				data = projectdb[imagename+"_autoboxer"]
+				#trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
+				found = True
+			except: pass
+			
+			if found:
+				dictdata[data["auto_boxer_db_name"]].append(imagename)
+		
+		return dictdata
+	
+	def getCurrentAutoBoxerTS(self):
+		return self.parent.getCurrentAutoBoxerTS()
+
+	def addNewAutoBoxer(self):
+		self.parent.addNewAutoBoxerDB()
+
+	def addCopyAutoBoxer(self,timestamp):
+		self.parent.addCopyAutoBoxerDB(timestamp)
+		
 		
 class GUIboxPanel(QtGui.QWidget):
-	def __init__(self,target) :
+	def __init__(self,target,abselmediator) :
 		
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
+		self.abselmediator = abselmediator
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -1449,8 +1547,9 @@ class GUIboxPanel(QtGui.QWidget):
 		self.dummybox = Box()
 		self.dummybox.isanchor = False
 		self.dummybox.isdummy = True
+		self.currentlyselected = -1 # used in the abtable
 		
-		
+		self.lock = False
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
 	
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
@@ -1458,7 +1557,6 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesimages)
 		self.connect(self.writeboxesdbs,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesdbs)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
-		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
 		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
 		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.trythatd)
 		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.setnonedummy)
@@ -1491,86 +1589,116 @@ class GUIboxPanel(QtGui.QWidget):
 		self.statsbox.setLayout(self.infohbl)
 		self.main_vbl.addWidget(self.statsbox)
 		
-		self.hbl1=QtGui.QHBoxLayout()
-		self.hbl1.setMargin(0)
-		self.hbl1.setSpacing(2)
+		self.boxingvbl = QtGui.QVBoxLayout()
+		
+		self.boxinghbl1=QtGui.QHBoxLayout()
+		self.boxinghbl1.setMargin(0)
+		self.boxinghbl1.setSpacing(2)
 		
 		self.refbutton=QtGui.QPushButton("Reference")
 		self.refbutton.setCheckable(1)
 		self.refbutton.setChecked(True)
-		self.hbl1.addWidget(self.refbutton)
+		self.boxinghbl1.addWidget(self.refbutton)
 		
 		self.manualbutton=QtGui.QPushButton("Manual")
 		self.manualbutton.setCheckable(1)
 		self.manualbutton.setChecked(False)
-		self.hbl1.addWidget(self.manualbutton)
+		self.boxinghbl1.addWidget(self.manualbutton)
 		
 		self.lblbs=QtGui.QLabel("Box Size:",self)
-		self.hbl1.addWidget(self.lblbs)
-		
+		self.boxinghbl1.addWidget(self.lblbs)
 		self.bs = QtGui.QLineEdit(str(self.target.boxsize),self)
-		self.hbl1.addWidget(self.bs)
-		self.main_vbl.addLayout(self.hbl1)
+		self.boxinghbl1.addWidget(self.bs)
 		
-		
-		#self.hbl3=QtGui.QHBoxLayout()
-		
-		#self.centerooptions = QtGui.QComboBox(self.main_inspector)
-		#self.centerooptions.addItem(Box.CENTERACF)
-		#self.centerooptions.addItem(Box.CENTERPROPAGATE)
-		#self.centerooptions.addItem(Box.CENTEROFMASS)
-		
-		#self.centerbutton = QtGui.QPushButton("Center")
-		#self.usingtext = QtGui.QLabel("using",self)
-		#self.hbl3.addWidget(self.centerbutton)
-		#self.hbl3.addWidget(self.usingtext)
-		#self.hbl3.addWidget(self.centerooptions)
-		
-		#self.main_vbl.addLayout(self.hbl3)
-		
-		self.hbl3=QtGui.QHBoxLayout()
+		self.boxingvbl.addLayout(self.boxinghbl1)
+	
+		self.boxinghbl3=QtGui.QHBoxLayout()
 		self.dynapick = QtGui.QCheckBox("Dynapix")
 		self.dynapick.setChecked(self.target.dynapix)
-		self.hbl3.addWidget(self.dynapick)
+		self.boxinghbl3.addWidget(self.dynapick)
 		self.nocpick = QtGui.QCheckBox("Anchor")
 		self.nocpick.setChecked(self.target.anchoring)
-		self.hbl3.addWidget(self.nocpick)
+		self.boxinghbl3.addWidget(self.nocpick)
 		self.autobox=QtGui.QPushButton("Auto Box")
-		self.hbl3.addWidget(self.autobox)
+		self.boxinghbl3.addWidget(self.autobox)
 		self.togfreeze=QtGui.QPushButton("Toggle Freeze")
-		self.hbl3.addWidget(self.togfreeze)
-		self.main_vbl.addLayout(self.hbl3)
-
-		self.hbl2=QtGui.QHBoxLayout()
-		self.hbl2.setMargin(2)
-		self.hbl2.setSpacing(6)
+		self.boxinghbl3.addWidget(self.togfreeze)
+		self.boxingvbl.addLayout(self.boxinghbl3)
+	
+		self.boxinghbl2=QtGui.QHBoxLayout()
+		self.boxinghbl2.setMargin(2)
+		self.boxinghbl2.setSpacing(6)
 		#self.vbl.addLayout(self.hbl1)
 		
 		self.erasepic = QtGui.QIcon("/home/d.woolford/erase.png");
 		self.erase=QtGui.QPushButton(self.erasepic,Boxable.ERASE)
 		self.erase.setCheckable(1)
-		self.hbl2.addWidget(self.erase)
+		self.boxinghbl2.addWidget(self.erase)
 		
 		self.unerasepic = QtGui.QIcon("/home/d.woolford/erase.png");
 		self.unerase=QtGui.QPushButton(self.unerasepic,Boxable.UNERASE)
 		self.unerase.setCheckable(1)
-		self.hbl2.addWidget(self.unerase)
+		self.boxinghbl2.addWidget(self.unerase)
 		
-		self.eraseradtext=QtGui.QLabel("Circle radius",self)
-		self.hbl2.addWidget(self.eraseradtext)
+		self.eraseradtext=QtGui.QLabel("Erase Radius",self)
+		self.boxinghbl2.addWidget(self.eraseradtext)
 		
 		self.eraserad = QtGui.QLineEdit(str(self.target.eraseradius),self)
-		self.hbl2.addWidget(self.eraserad)
+		self.boxinghbl2.addWidget(self.eraserad)
 		self.eraserad.setEnabled(False)
 		
-		self.main_vbl.addLayout(self.hbl2)
-
+		self.boxingvbl.addLayout(self.boxinghbl2)
 		
+		self.interactiveboxing = QtGui.QGroupBox("Interactive Boxing")
+		self.interactiveboxing.setLayout(self.boxingvbl)
+		self.main_vbl.addWidget(self.interactiveboxing)
+		
+		#self.lock = True
+		#self.autoboxerhdbl = QtGui.QHBoxLayout()
+		## ab means autoboxer
+		#self.abtable = QtGui.QTableWidget(1,2,self)
+		#self.abtable.setColumnWidth(1,150)
+		#self.abcol0title = QtGui.QTableWidgetItem("Autoboxer ID")
+		#self.abcol1title = QtGui.QTableWidgetItem("Associated Images")
+		#self.updateABTable()
+		#self.lock = True
+		#self.abtable.setHorizontalHeaderItem(0,self.abcol0title)
+		#self.abtable.setHorizontalHeaderItem(1,self.abcol1title)
+		#self.autoboxerhdbl.addWidget(self.abtable)
+		#self.lock = False
+		
+		#self.autoboxervbl1 = QtGui.QVBoxLayout()
+		#self.abcopy = QtGui.QPushButton("Copy")
+		#self.autoboxervbl1.addWidget(self.abcopy)
+		#self.abnew = QtGui.QPushButton("New")
+		#self.autoboxervbl1.addWidget(self.abnew)
+		#self.abdelete = QtGui.QPushButton("Delete")
+		#self.autoboxervbl1.addWidget(self.abdelete)
+		#self.autoboxerhdbl.addLayout(self.autoboxervbl1)
+		
+		#self.abmanagement = QtGui.QGroupBox("Auto Boxer Management")
+		#self.abmanagement.setLayout(self.autoboxerhdbl)
+		#self.main_vbl.addWidget(self.abmanagement)
+		
+		# output
+		self.outputvbl = QtGui.QVBoxLayout()
+		self.outputhbl1=QtGui.QHBoxLayout()
 		self.writeboxesimages = QtGui.QPushButton("Write Box Images")
-		self.main_vbl.addWidget(self.writeboxesimages)
+		self.outputhbl1.addWidget(self.writeboxesimages)
+		self.writeboxesdbs = QtGui.QPushButton("Write Coord Files")
+		self.outputhbl1.addWidget(self.writeboxesdbs)
+		self.outputvbl.addLayout(self.outputhbl1)
 		
-		self.writeboxesdbs = QtGui.QPushButton("Write DB Files")
-		self.main_vbl.addWidget(self.writeboxesdbs)
+		self.outputhbl2=QtGui.QHBoxLayout()
+		self.usingboxsizetext=QtGui.QLabel("Using Box Size:",self)
+		self.outputhbl2.addWidget(self.usingboxsizetext)
+		self.usingboxsize = QtGui.QLineEdit(str(self.target.boxsize),self)
+		self.outputhbl2.addWidget(self.usingboxsize)
+		self.outputvbl.addLayout(self.outputhbl2)
+		
+		self.outputbox = QtGui.QGroupBox("Output")
+		self.outputbox.setLayout(self.outputvbl)
+		self.main_vbl.addWidget(self.outputbox)
 
 		self.classifybut=QtGui.QPushButton("Classify")
 		self.main_vbl.addWidget(self.classifybut)
@@ -1589,6 +1717,102 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.refbuttontoggled)
 		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manualbuttontoggled)
 		
+		#self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.addNewAutoBoxer)
+		#self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.addCopyAutoBoxer)
+		#self.connect(self.abtable, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.abtableItemChanged)
+		#self.connect(self.abtable, QtCore.SIGNAL("cellChanged(int,int)"), self.abtableCellChanged)
+	
+	def abtableCellChanged(self,i,j):
+		print i,j
+		if self.lock:
+			#print "locked,returning"
+			return
+		if j == 0: # we're in the first row, something happened, maybe a check change
+			self.lock = True
+			try:
+				if i == self.currentlychecked:
+					# just make sure the check stays on
+					self.col1[self.currentlychecked].setCheckState(Qt.Checked)
+				elif self.col1[i].checkState() == Qt.Checked:
+					# uncheck the previously selected one
+					self.col1[self.currentlychecked].setCheckState(Qt.Unchecked)
+					self.col1[i].setCheckState(Qt.Checked)
+					self.currentlychecked = i
+					self.target.changeCurrentAutoBoxer(str(self.col1[i].text()))
+				else:
+					print "error, I don't know what's happening"
+			except: pass
+			self.lock = False
+				
+	def abtableItemChanged(self,item):
+		print "item changed"
+	
+	def updateABTable(self):
+		self.lock = True
+		data = self.abselmediator.getAutoBoxerData()
+		self.col1 = []
+		self.col2 = []
+		idx = 0
+		for d in data.items():
+			if idx >= self.abtable.rowCount():
+				self.abtable.insertRow(idx)
+			col1 = QtGui.QTableWidgetItem(d[0][10:])
+			qstr =''
+			for i,s in enumerate(d[1]):
+				qstr += s
+				if i != len(d[1])-1:
+					qstr += ', '
+			col2 = QtGui.QTableWidgetItem(qstr)
+			
+			flag1 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
+			flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+			flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+			flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+			#flags = flags.
+			col1.setFlags(flag1|flag2|flag3|flag4) #Qt.ItemIsEnabled+Qt.ItemIsUserCheckable)) #&Qt.ItemIsSelectable))
+			col1.setCheckState( Qt.Unchecked)
+			col2.setFlags(flag3)
+			self.abtable.setItem(idx,0,col1)
+			self.abtable.setItem(idx,1,col2)
+			self.col1.append(col1)
+			self.col2.append(col2)
+			idx += 1
+		
+		# remove any overhanging columns if they already existed
+		while (len(data) < self.abtable.rowCount()):
+			self.abtable.removeRow(self.abtable.rowCount()-1)
+	
+		currentsel = self.abselmediator.getCurrentAutoBoxerTS()
+		self.currentlychecked = -1
+		for i,col in enumerate(self.col1):
+			if str(col.text()) == currentsel:
+				col.setCheckState( Qt.Checked)
+				self.currentlychecked = i
+				break
+		
+		self.lock = False
+	
+	def addNewAutoBoxer(self,bool):
+		self.abselmediator.addNewAutoBoxer()
+		self.updateABTable()
+		
+	def addCopyAutoBoxer(self,bool):
+		numsel = 0
+		selected = ""
+		for col in self.col1:
+			if self.abtable.isItemSelected(col):
+				numsel += 1
+				selected = str(col.text())
+				if numsel > 1:
+					print "error, more than one autoboxer is selected. Please choose only one"
+					return
+		if numsel == 0:
+			print "no autoboxers were selected, doing nothing"
+			return
+		else:
+			self.abselmediator.addCopyAutoBoxer(selected)
+			self.updateABTable()
+	
 	def insertAdvancedTab(self):
 		# this is the box layout that will store everything
 		self.adv_inspector = QtGui.QWidget()
@@ -1620,7 +1844,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.advanced_vbl2.addLayout(self.plothbl)
 		
 		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
-		self.thr.setValue(self.target.threshold)
+		self.thr.setValue(1.0)
 		self.advanced_vbl2.addWidget(self.thr)
 		
 		

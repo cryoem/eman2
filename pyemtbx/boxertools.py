@@ -542,7 +542,7 @@ class CoarsenedFlattenedImage:
 			
 		self.smallimage.set_attr("flatten_radius",flattenradius)
 		self.smallimage.set_attr("shrink_factor",shrink)
-		self.smallimage.set_attr("creation_time_stamp",time())
+		self.smallimage.set_attr("creation_time_stamp",gm_time_string())
 		self.smallimage.write_image(self.ouputimagename)
 				
 		#else:
@@ -939,6 +939,7 @@ class Boxable:
 		self.allowcorrelationupdate = False	# a temporary flag that can be used by externally objects, for instance a reference box, which is forcing an update for example
 		self.templateTS = -1 # a template time stamp, used to avoid unecessarily regenerating the template in self.autoBox
 		self.autoBoxerTS = -1 # and autoBoxer time stamp, used to avoid unecessary autoboxing, and to force autoboxing when appropriate
+		self.autoBoxerID = -1 # Stores the unique ID of the autoboxer - this is to facilitate having many autoboxers in the project data base
 		
 		self.autoBoxer = autoBoxer
 		self.frozen = False
@@ -979,7 +980,13 @@ class Boxable:
 				return 0
 				
 		return 1
-		
+	
+	def getAutoBoxerID(self):
+		return self.autoBoxerID
+	
+	def setAutoBoxerID(self,identification):
+		self.autoBoxerID = identification
+	
 	def getImageName(self):
 		return self.imagename
 	
@@ -1006,9 +1013,10 @@ class Boxable:
 		
 	def getDBTimeStamps(self):
 		projectdb = EMProjectDB()
-		autoBoxer = projectdb[self.imagename+"_autoboxer"]
-		self.autoBoxerTS = autoBoxer.getStateTS()
-		self.templateTS = autoBoxer.getTemplateTS()
+		data = projectdb[self.imagename+"_autoboxer"]
+		self.autoBoxerTS = data["auto_boxer_state_TS"]
+		self.templateTS = data["templateTS"] 
+		self.autoBoxerID = data["auto_boxer_unique_id"]
 		
 	def getManualFromDB(self):
 		projectdb = EMProjectDB()
@@ -1065,7 +1073,7 @@ class Boxable:
 			if file_exists(boxname):
 				if not force:
 					f=file(boxname,'r')
-					boxname_backup =  strip_file_tag(self.imagename)+str(time()) + ".box.bak"
+					boxname_backup =  strip_file_tag(self.imagename)+gm_time_string() + ".box.bak"
 					print "warning, found box name",boxname,"- am renaming it to", boxname_backup
 					fbak=file(boxname_backup,'w')
 					fbak.writelines(f.readlines())
@@ -1109,7 +1117,6 @@ class Boxable:
 			print "You can not add a box to this box set if it is not of type Box"
 			return;
 
-		box.TS = time()
 		box.boxingobj = self
 		
 		if box.isref:
@@ -1509,6 +1516,7 @@ class Boxable:
 
 class AutoBoxer:
 	'''
+	FIXME - ALL COMMENTS IN THIS CLASS ARE LIABLE TO BE OUTDATED
 	Base class design for auto boxers
 	'''
 	def __init__(self):
@@ -1732,7 +1740,7 @@ class SwarmTemplate:
 		#END uncomment block
 		self.template = ave
 		
-		self.templateTS = time()
+		self.templateTS = gm_time_string()
 		self.template.set_attr("template_time_stamp",self.templateTS)
 		return 1
 	
@@ -1756,6 +1764,18 @@ class TrimSwarmAutoBoxer():
 		self.regressiveflag = swarmAutoBoxer.regressiveflag
 		
 		self.template = TrimSwarmTemplate(swarmAutoBoxer.template)
+		self.creationTS = swarmAutoBoxer.creationTS
+		
+	def setCreationTS(self,TS):
+		''' 
+		This function is used when creating a fresh copy of this autoboxer and placing it
+		in the database in GUIbox
+		'''
+		print "setting creationTS",TS
+		self.creationTS = TS
+		
+	def getCreationTS(self):
+		return self.creationTS
 	
 	def getStateTS(self):
 		return self.stateTS
@@ -1807,6 +1827,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.dummybox = None
 		self.parent = parent
 		
+		self.creationTS = gm_time_string()
+		
 	def become(self,trimSwarmAutoBoxer):			
 		self.boxsize = trimSwarmAutoBoxer.boxsize
 		self.shrink = trimSwarmAutoBoxer.shrink
@@ -1818,11 +1840,13 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.selmode = trimSwarmAutoBoxer.selmode
 		self.templateTS = trimSwarmAutoBoxer.templateTS
 		self.stateTS = trimSwarmAutoBoxer.stateTS
+		self.creationTS = trimSwarmAutoBoxer.creationTS
 		self.mode = trimSwarmAutoBoxer.mode
 		self.refupdate = trimSwarmAutoBoxer.refupdate
 		self.regressiveflag = trimSwarmAutoBoxer.regressiveflag
 		self.template = SwarmTemplate(self)
 		self.template.become(trimSwarmAutoBoxer.template)
+		
 		
 	def getBoxable(self):
 		return self.parent.getBoxable()
@@ -1832,6 +1856,9 @@ class SwarmAutoBoxer(AutoBoxer):
 	
 	def getTemplateTS(self):
 		return self.template.getTemplateTS()
+	
+	def getCreationTS(self):
+		return self.creationTS
 	
 	def getTemplate(self):
 		return self.template
@@ -1893,7 +1920,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			if self.selmode != selmode:
 				self.selmode = selmode
 				self.__plotUpdate()
-				self.stateTS = time()
+				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 					self.autoBox(self.getBoxable())
@@ -1941,7 +1968,7 @@ class SwarmAutoBoxer(AutoBoxer):
 					return 0
 				box.updateParams(self)
 				self.__accrueOptParams()
-				self.stateTS = time()
+				self.stateTS = gm_time_string()
 				self.autoBox(self.getBoxable())
 			elif self.mode == SwarmAutoBoxer.USERDRIVEN:
 				self.refupdate = True
@@ -1950,7 +1977,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			elif self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
 				box.updateParams(self)
 				self.__accrueOptParams()
-				self.stateTS = time()
+				self.stateTS = gm_time_string()
 			else:
 				print 'error, unknown mode in SwarmAutoBoxer'
 				return 0
@@ -1992,7 +2019,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.autoBox(self.getBoxable())
 			else:
 				self.__accrueOptParams()
-				self.stateTS = time()
+				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 				self.autoBox(self.getBoxable())
 			return 1
@@ -2004,7 +2031,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			else:
 				box.updateParams(self)
 				self.__accrueOptParams()
-				self.stateTS = time()
+				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 				
 			return 1
@@ -2031,7 +2058,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			else:
 				box.updateParams(self)
 				self.__accrueOptParams()
-				self.stateTS = time()
+				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 				self.autoBox(self.getBoxable())
 			return 1
@@ -2043,7 +2070,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			else:
 				box.updateParams(self)
 				self.__accrueOptParams()
-				self.stateTS = time()
+				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 			return 0
 		else:
@@ -2091,7 +2118,6 @@ class SwarmAutoBoxer(AutoBoxer):
 	def getConstrainingRadius(self):
 		return int(0.5*(self.boxsize)/float(self.getBestShrink()))
 	
-	
 	def getBestShrink(self,force=True):	
 		if self.boxsize == -1:	
 			print "error - the boxsize is currently -1 - I can't figure out the best value to shrink by"	
@@ -2136,10 +2162,13 @@ class SwarmAutoBoxer(AutoBoxer):
 				return 0
 
 		autoBoxerTS = boxable.autoBoxerTS
-		# auto boxing will only ever occur if the time stamp of the AutoBoxer is not the
+		# auto boxing will occur if the time stamp of the AutoBoxer is not the
 		# same as the time stamp cached by the Boxable. -1 means it's the first time.
-		if autoBoxerTS == -1 or autoBoxerTS != self.stateTS:
-			#print "autoboxing",autoBoxerTS,self.stateTS
+		# Auto boxing will also occur if the autoboxer id of the boxable does not match the creation time stamp of this object
+		# the creation time stamp of this object is persistent, even it was recovered from the data base
+		print "timestamps are",boxable.getAutoBoxerID(),self.getCreationTS()
+		if autoBoxerTS == -1 or autoBoxerTS != self.stateTS or boxable.getAutoBoxerID() != self.getCreationTS():
+			print "autoboxing",autoBoxerTS,self.stateTS
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag:
 				# we must clear all non-refs if we're using dynapix
@@ -2150,8 +2179,8 @@ class SwarmAutoBoxer(AutoBoxer):
 			self.__paintExcludedBoxAreas(exclusion,boxable.boxes)
 
 			boxes = self.__autoBox(correlation,boxable,boxable.boxes,exclusion)
-			#print "autoboxed",len(boxes)
-			boxable.autoBoxerTS = self.stateTS
+			print "autoboxed",len(boxes)
+			boxable.autoBoxerTS = self.getStateTS()
 
 			# This shouldn't happen in the Database instance
 			if boxes != 0:
@@ -2163,19 +2192,30 @@ class SwarmAutoBoxer(AutoBoxer):
 					trimboxes.append(t)
 				
 				projectdb[boxable.getImageName()+"_boxes"] = trimboxes
-				trimSelf = TrimSwarmAutoBoxer(self)
-
-				projectdb[boxable.getImageName()+"_autoboxer"] = trimSelf
+				data = {}
+				data["auto_boxer_state_TS"] = self.getStateTS()
+				data["templateTS"] = self.getTemplateTS()
+				data["auto_boxer_unique_id"] = self.getCreationTS()
+				autoboxerdbstring = "autoboxer_"+self.getCreationTS()
+				data["auto_boxer_db_name"] = autoboxerdbstring
+				projectdb[boxable.getImageName()+"_autoboxer"] = data
+				
 				if self.mode != SwarmAutoBoxer.COMMANDLINE:
-					projectdb["currentautoboxer"] = trimSelf
+					trimself = TrimSwarmAutoBoxer(self)
+					projectdb["currentautoboxer"] = trimself
+					projectdb[autoboxerdbstring] = trimself
 				
 				boxable.boxesReady()
-				#else: 
-					#boxable.extendboxes(boxes)
+				
+				if boxable.getAutoBoxerID() != self.getCreationTS():
+					boxable.setAutoBoxerID(self.getCreationTS())
+					self.parent.autoBoxerDBChanged()
+				print "set boxer id",self.getCreationTS()
+			
 				
 			return 1
 
-		#else: print 'no auto boxing was necessary, up-2-date' # DEBUG
+		else: print 'no auto boxing was necessary, up-2-date' # DEBUG
 		
 	def __reset(self):
 		self.boxsize = -1
@@ -2265,7 +2305,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		# it's important that the BoxingObjext.updateCorrelation updated the parameters stored in the boxes
 		self.__accrueOptParams()
 		
-		self.stateTS = time()
+		self.stateTS = gm_time_string()
 
 	
 	def getRefBoxes(self):
