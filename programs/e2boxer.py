@@ -778,8 +778,6 @@ class GUIbox:
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
 		
-		
-		self.autoboxername = "Current"
 		try:
 			projectdb = EMProjectDB()
 			data = projectdb[self.imagenames[0]+"_autoboxer"]
@@ -787,11 +785,14 @@ class GUIbox:
 			self.autoboxername = data["auto_boxer_unique_id"] 
 			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.become(trimAutoBoxer)
+			self.autoBoxer.setMode(self.dynapix,self.anchoring)
 			print 'using cached autoboxer db'
 		except:
 			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.boxsize = boxsize
 			self.autoBoxer.setMode(self.dynapix,self.anchoring)
+			print self.autoBoxer.boxsize,"in constructor"
+			print "loaded a new autoboxer"
 		
 		self.boxable = Boxable(self.imagenames[0],self,self.autoBoxer)
 		self.boxable.addnonrefs(boxes)
@@ -868,15 +869,25 @@ class GUIbox:
 		self.boxDisplayUpdate()
 	
 	def changeCurrentAutoBoxer(self, timestamp):
-		print "here we are using timestamp",timestamp
+		#print "change current autoboxer"
 		projectdb = EMProjectDB()
 		trimAutoBoxer = projectdb["autoboxer_"+timestamp]
-		print trimAutoBoxer.getCreationTS(), "is the actual ts"
+		#print "changing autoboxer to autoboxer_",timestamp,"and its stamp in the db is",trimAutoBoxer.getCreationTS()
 		self.autoBoxer = SwarmAutoBoxer(self)
 		self.autoBoxer.become(trimAutoBoxer)
+		self.autoBoxer.writeSpecificReferencesToDB(self.boxable.getImageName())
+		
+		self.ptcl = []
+		self.guiim.delShapes()
+		
 		self.boxable.setAutoBoxer(self.autoBoxer)
-		if self.autoBoxer.autoBox(self.boxable):
-			self.boxDisplayUpdate()
+		self.boxable.clearAndReloadImages()
+		self.indisplaylimbo = True
+		self.autoBoxer.regressiveflag = True
+		self.autoBoxer.autoBox(self.boxable)
+		self.indisplaylimbo = False
+
+		self.boxDisplayUpdate()
 		
 	def get2DGuiImage(self):
 		return self.guiim
@@ -907,7 +918,6 @@ class GUIbox:
 		
 		# If any of the boxes are references the autoBoxer needs to know about it...
 		# this could potentially trigger auto boxer 
-			
 		if len(lostboxes) != 0:
 			self.deleteDisplayShapes(lostboxes)
 			self.mouseclicks += 1
@@ -957,7 +967,8 @@ class GUIbox:
 		
 	def removeBox(self,boxnum):
 		box = self.delbox(boxnum)
-		self.boxable.addExclusionParticle(box)
+		if (not box.isref or box.ismanual):
+			self.boxable.addExclusionParticle(box)
 		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 		self.boxDisplayUpdate()
 		
@@ -997,10 +1008,20 @@ class GUIbox:
 			self.ptcl = []
 			self.guiim.delShapes()
 			self.indisplaylimbo = True
-			if self.dynapix:
-				self.autoBoxer.regressiveflag = True
-				self.autoBoxer.autoBox(self.boxable)
-				
+			
+			try:
+				projectdb = EMProjectDB()
+				data = projectdb[self.imagenames[im]+"_autoboxer"]
+				trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
+				self.autoboxername = data["auto_boxer_unique_id"] 
+				self.autoBoxer = SwarmAutoBoxer(self)
+				self.autoBoxer.become(trimAutoBoxer)
+			except: pass
+			
+			self.autoBoxer.regressiveflag = True
+			self.autoBoxer.autoBox(self.boxable)
+			self.autoBoxerDBChanged()
+			
 			self.indisplaylimbo = False
 			
 			for box in self.boxable.boxes: box.changed = True
@@ -1097,8 +1118,9 @@ class GUIbox:
 	def boxrelease(self,event):
 		boxes = self.getBoxes()
 		#print boxes
-		if boxes[self.boxm[2]].isref :
-			self.autobox()
+		box =  boxes[self.boxm[2]]
+		if box.isref :
+			self.autoBoxer.referenceMoved(box)
 		self.boxm = None
 		
 	def boxsel(self,event,lc):
@@ -1217,7 +1239,6 @@ class GUIbox:
 					if j>num :
 						sh[j-1]=sh[j]
 						del sh[j]
-			
 			self.ptcl.pop(num)
 						
 		self.guiim.delShapes()
@@ -1275,6 +1296,7 @@ class GUIbox:
 		
 		ns = {}
 		idx = 0
+		#self.ptcl = []
 		# get the boxes
 		boxes =self.getBoxes()
 		for j,box in enumerate(boxes):
@@ -1295,7 +1317,6 @@ class GUIbox:
 			else : self.ptcl[idx]=im
 			idx += 1
 		
-
 		self.guiim.addShapes(ns)
 		self.setPtclMxData(self.ptcl)
 		
@@ -1417,12 +1438,22 @@ class GUIbox:
 		self.boxable.cacheExcToDisk()
 		for imagename in self.imagenames:
 			
-			boxable = Boxable(imagename,self,self.autoBoxer)
+			try:
+				projectdb = EMProjectDB()
+				data = projectdb[imagename+"_autoboxer"]
+				trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
+				autoBoxer = SwarmAutoBoxer(self)
+				autoBoxer.become(trimAutoBoxer)
+				print "writing box coordinates for",imagename,"using",data["auto_boxer_db_name"]
+			except:
+				autoBoxer = self.autoBoxer
+				print "writing box coordinates for",imagename,"using currently stored autoboxer"
+			boxable = Boxable(imagename,self,autoBoxer)
 			
-			mode = self.autoBoxer.getMode()
-			self.autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-			self.autoBoxer.autoBox(boxable)
-			self.autoBoxer.setModeExplicit(mode)
+			mode = autoBoxer.getMode()
+			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+			autoBoxer.autoBox(boxable)
+			autoBoxer.setModeExplicit(mode)
 			
 			boxable.writedb()
 	
@@ -1452,7 +1483,6 @@ class GUIbox:
 			self.mousehandlers["boxing"].setmode(GUIbox.MANUALLY_ADDING)
 	
 	def autoBoxerDBChanged(self):
-		return
 		self.guictl.updateABTable()
 
 	def addNewAutoBoxerDB(self):
@@ -1465,12 +1495,12 @@ class GUIbox:
 		projectdb[autoboxerdbstring] = trimAutoBoxer
 	
 	def addCopyAutoBoxerDB(self,timestamp):
-		print "adding a copy of the ab with ts",timestamp
+		#print "adding a copy of the ab with ts",timestamp
 		projectdb = EMProjectDB()
-		trimAutoBoxer = projectdb["autoboxer_"+timestamp]
+		trimAutoBoxer = copy(projectdb["autoboxer_"+timestamp])
 		trimAutoBoxer.setCreationTS(gm_time_string())
 		autoboxerdbstring = "autoboxer_"+trimAutoBoxer.getCreationTS()
-		print "adding string to db",autoboxerdbstring
+		#print "adding string to db",autoboxerdbstring
 		projectdb[autoboxerdbstring] = trimAutoBoxer
 
 class AutoBoxerSelectionsMediator:
@@ -1653,32 +1683,32 @@ class GUIboxPanel(QtGui.QWidget):
 		self.interactiveboxing.setLayout(self.boxingvbl)
 		self.main_vbl.addWidget(self.interactiveboxing)
 		
-		#self.lock = True
-		#self.autoboxerhdbl = QtGui.QHBoxLayout()
-		## ab means autoboxer
-		#self.abtable = QtGui.QTableWidget(1,2,self)
-		#self.abtable.setColumnWidth(1,150)
-		#self.abcol0title = QtGui.QTableWidgetItem("Autoboxer ID")
-		#self.abcol1title = QtGui.QTableWidgetItem("Associated Images")
-		#self.updateABTable()
-		#self.lock = True
-		#self.abtable.setHorizontalHeaderItem(0,self.abcol0title)
-		#self.abtable.setHorizontalHeaderItem(1,self.abcol1title)
-		#self.autoboxerhdbl.addWidget(self.abtable)
-		#self.lock = False
+		self.lock = True
+		self.autoboxerhdbl = QtGui.QHBoxLayout()
+		# ab means autoboxer
+		self.abtable = QtGui.QTableWidget(1,2,self)
+		self.abtable.setColumnWidth(1,150)
+		self.abcol0title = QtGui.QTableWidgetItem("Autoboxer ID")
+		self.abcol1title = QtGui.QTableWidgetItem("Associated Images")
+		self.updateABTable()
+		self.lock = True
+		self.abtable.setHorizontalHeaderItem(0,self.abcol0title)
+		self.abtable.setHorizontalHeaderItem(1,self.abcol1title)
+		self.autoboxerhdbl.addWidget(self.abtable)
+		self.lock = False
 		
-		#self.autoboxervbl1 = QtGui.QVBoxLayout()
-		#self.abcopy = QtGui.QPushButton("Copy")
-		#self.autoboxervbl1.addWidget(self.abcopy)
-		#self.abnew = QtGui.QPushButton("New")
-		#self.autoboxervbl1.addWidget(self.abnew)
-		#self.abdelete = QtGui.QPushButton("Delete")
-		#self.autoboxervbl1.addWidget(self.abdelete)
-		#self.autoboxerhdbl.addLayout(self.autoboxervbl1)
+		self.autoboxervbl1 = QtGui.QVBoxLayout()
+		self.abcopy = QtGui.QPushButton("Copy")
+		self.autoboxervbl1.addWidget(self.abcopy)
+		self.abnew = QtGui.QPushButton("New")
+		self.autoboxervbl1.addWidget(self.abnew)
+		self.abdelete = QtGui.QPushButton("Delete")
+		self.autoboxervbl1.addWidget(self.abdelete)
+		self.autoboxerhdbl.addLayout(self.autoboxervbl1)
 		
-		#self.abmanagement = QtGui.QGroupBox("Auto Boxer Management")
-		#self.abmanagement.setLayout(self.autoboxerhdbl)
-		#self.main_vbl.addWidget(self.abmanagement)
+		self.abmanagement = QtGui.QGroupBox("Auto Boxer Management")
+		self.abmanagement.setLayout(self.autoboxerhdbl)
+		self.main_vbl.addWidget(self.abmanagement)
 		
 		# output
 		self.outputvbl = QtGui.QVBoxLayout()
@@ -1716,32 +1746,31 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.refbuttontoggled)
 		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manualbuttontoggled)
-		
-		#self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.addNewAutoBoxer)
-		#self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.addCopyAutoBoxer)
-		#self.connect(self.abtable, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.abtableItemChanged)
-		#self.connect(self.abtable, QtCore.SIGNAL("cellChanged(int,int)"), self.abtableCellChanged)
+		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.addNewAutoBoxer)
+		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.addCopyAutoBoxer)
+		self.connect(self.abtable, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.abtableItemChanged)
+		self.connect(self.abtable, QtCore.SIGNAL("cellChanged(int,int)"), self.abtableCellChanged)
 	
 	def abtableCellChanged(self,i,j):
-		print i,j
+		#print i,j
 		if self.lock:
 			#print "locked,returning"
 			return
 		if j == 0: # we're in the first row, something happened, maybe a check change
 			self.lock = True
-			try:
-				if i == self.currentlychecked:
-					# just make sure the check stays on
-					self.col1[self.currentlychecked].setCheckState(Qt.Checked)
-				elif self.col1[i].checkState() == Qt.Checked:
-					# uncheck the previously selected one
-					self.col1[self.currentlychecked].setCheckState(Qt.Unchecked)
-					self.col1[i].setCheckState(Qt.Checked)
-					self.currentlychecked = i
-					self.target.changeCurrentAutoBoxer(str(self.col1[i].text()))
-				else:
-					print "error, I don't know what's happening"
-			except: pass
+			#try:
+			if i == self.currentlychecked:
+				# just make sure the check stays on
+				self.col1[self.currentlychecked].setCheckState(Qt.Checked)
+			elif self.col1[i].checkState() == Qt.Checked:
+				# uncheck the previously selected one
+				self.col1[self.currentlychecked].setCheckState(Qt.Unchecked)
+				self.col1[i].setCheckState(Qt.Checked)
+				self.currentlychecked = i
+				self.target.changeCurrentAutoBoxer(str(self.col1[i].text()))
+			else:
+				print "error, I don't know what's happening"
+			#except: pass
 			self.lock = False
 				
 	def abtableItemChanged(self,item):

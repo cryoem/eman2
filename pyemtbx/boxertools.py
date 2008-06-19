@@ -260,6 +260,7 @@ class Box:
 		extrasomething has to be an AutoBoxer if using CENTEROFMASS or CENTERACF (it's asked for getBestShrink)
 		extrasomething has to be the template image and have the same dimensions as the results of getBoxImage if using 
 		CENTERPROPOGATE
+		The low_res argument has no effect on the CENTERPROPOGATE option
 		'''
 		if method not in Box.CENTERMETHODS:
 			print "error, you called center using an unknown method:",method
@@ -924,7 +925,7 @@ class FLCFImage:
 class Boxable:
 	UNERASE = 'Unerase'
 	ERASE = 'Erase'
-	def __init__(self,imagename,parent=None,autoBoxer=None):
+	def __init__(self,imagename,parent,autoBoxer=None):
 		self.parent = parent		# keep track of the parent in case we ever need it
 		self.boxes = []				# a list of boxes
 		self.refboxes = []			# a list of boxes
@@ -949,7 +950,7 @@ class Boxable:
 		except: pass
 		
 		try: 
-			self.boxesReady(True)
+			self.getAutoSelectedFromDB(True)
 		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
 		try:
 			self.getDBTimeStamps()
@@ -958,7 +959,26 @@ class Boxable:
 			self.getManualFromDB()	
 		except: pass
 		try:
+			self.getReferencesFromDB()	
+		except: pass
+		try:
 			self.getFrozenFromDB()	
+		except: pass
+		try:
+			if autoBoxer == None:
+				self.getAutoBoxerFromDB()
+		except: pass
+		
+	def clearAndReloadImages(self):
+		self.boxes = []
+		try: 
+			self.getAutoSelectedFromDB(True)
+		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
+		try:
+			self.getManualFromDB()	
+		except: pass
+		try:
+			self.getReferencesFromDB()	
 		except: pass
 		
 	def cacheExcToDisk(self):
@@ -1007,40 +1027,49 @@ class Boxable:
 		projectdb = EMProjectDB()
 		projectdb[self.imagename+"_frozen"] = self.frozen
 	
+	def getAutoBoxerFromDB(self):
+		
+		projectdb = EMProjectDB()
+		data = projectdb[self.imagename+"_autoboxer"]
+		self.autoBoxerID = data["auto_boxer_unique_id"]
+		trimAutoBoxer = projectdb[self.autoBoxerID]
+		self.autoBoxer = SwarmAutoBoxer(self.parent)
+		self.autoBoxer.become(trimAutoBoxer)
+		
 	def getFrozenFromDB(self):
 		projectdb = EMProjectDB()
 		self.frozen = projectdb[self.imagename+"_frozen"]
 		
 	def getDBTimeStamps(self):
+		
 		projectdb = EMProjectDB()
 		data = projectdb[self.imagename+"_autoboxer"]
 		self.autoBoxerTS = data["auto_boxer_state_TS"]
 		self.templateTS = data["templateTS"] 
 		self.autoBoxerID = data["auto_boxer_unique_id"]
+	
+	def appendStoredAutoBoxes(self,trimboxes):
+		'''
+		Sometimes this functionality is needed when the currently stored auto-selected
+		boxes are not removed prior to the execution of autoboxing - in this case 
+		the autoboxes stored in the database need to include what was already stored...
+		'''
+		for box in self.boxes:
+			if not (box.ismanual or box.isref):
+				trimboxes.append(TrimBox(box))
+	
+	def getAutoSelectedFromDB(self,forcereadall=False):
 		
-	def getManualFromDB(self):
 		projectdb = EMProjectDB()
-		manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
-		for trimbox in manualboxes:
-			box = Box()
-			
-			# had to do conversion stuff so pickle would work
-			box.become(trimbox)
-			box.setImageName(self.imagename)
-			box.changed = True
-			box.rorig = 1			# RGB red
-			box.gorig = 1			# RGB green
-			box.borig = 1			# RGB blue
-			box.r = 1
-			box.g = 1
-			box.b = 1
-			self.boxes.append(box)
-
-	def boxesReady(self,forcereadall=False):
-		projectdb = EMProjectDB()
+		trimboxes = projectdb[self.imagename+"_autoboxes"]
 		
-		trimboxes = projectdb[self.imagename+"_boxes"]
+		#debug
+		#a = len(self.boxes)
+		
 		for trimbox in trimboxes:
+			if trimbox.ismanual or trimbox.isref:
+				print "error, the box was manual or it was a reference"
+				continue
 			if trimbox.changed or forcereadall:
 				box = Box()
 				
@@ -1059,12 +1088,59 @@ class Boxable:
 					box.g = 0
 					box.b = 0
 				
-				
+				# The box may have a more correct centering
 				box.updatePositionFromDB()
 				self.boxes.append(box)
-				
-		self.updateExcludedBoxes()
+		
+		# Sometimes an exclusion area is added after the autoboxing has occured, in which case
+		# autoboxes in the db will be in the excluded area and hence we have to make sure they 
+		# are not included
+		self.updateExcludedBoxes()	
+		#print "Added",len(self.boxes)-a," autoboxes"
 	
+	def getReferencesFromDB(self):
+		#debug
+		#a = len(self.boxes)
+		
+		projectdb = EMProjectDB()
+		manualboxes = projectdb[self.imagename+"_references"]
+		for trimbox in manualboxes:
+			box = Box()
+			
+			# had to do conversion stuff so pickle would work
+			box.become(trimbox)
+			box.setImageName(self.imagename)
+			box.changed = True
+			box.rorig = 0			# RGB red
+			box.gorig = 0			# RGB green
+			box.borig = 0			# RGB blue
+			box.r = 0
+			box.g = 0
+			box.b = 0
+			
+			self.boxes.append(box)
+
+		#print "Added",len(self.boxes)-a," references"
+	def getManualFromDB(self):
+		#a = len(self.boxes) # debug		
+		projectdb = EMProjectDB()
+		manualboxes = projectdb[self.imagename+"_manualboxes"]
+		for trimbox in manualboxes:
+			box = Box()
+			
+			# had to do conversion stuff so pickle would work
+			box.become(trimbox)
+			box.setImageName(self.imagename)
+			box.changed = True
+			box.rorig = 1			# RGB red
+			box.gorig = 1			# RGB green
+			box.borig = 1			# RGB blue
+			box.r = 1
+			box.g = 1
+			box.b = 1
+			self.boxes.append(box)
+		#print "Added",len(self.boxes)-a," manual boxes"
+
 	def writedb(self,force=False):
 		if len(self.boxes) == 0:
 			print "no boxes to write, doing nothing. Image name is",self.imagename
@@ -1073,7 +1149,7 @@ class Boxable:
 			if file_exists(boxname):
 				if not force:
 					f=file(boxname,'r')
-					boxname_backup =  strip_file_tag(self.imagename)+gm_time_string() + ".box.bak"
+					boxname_backup =  strip_file_tag(self.imagename)+str(time()) + ".box.bak"
 					print "warning, found box name",boxname,"- am renaming it to", boxname_backup
 					fbak=file(boxname_backup,'w')
 					fbak.writelines(f.readlines())
@@ -1142,17 +1218,17 @@ class Boxable:
 	def cacheManualBox(self,box):
 		projectdb = EMProjectDB()
 		try:
-			manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
+			manualboxes = projectdb[self.imagename+"_manualboxes"]
 		except:
 			manualboxes = []
 	
 		manualboxes.append(TrimBox(box))
-		projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
+		projectdb[self.imagename+"_manualboxes"] = manualboxes
 	
 	def deleteManualBox(self,box):
 		projectdb = EMProjectDB()
 		try:
-			manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
+			manualboxes = projectdb[self.imagename+"_manualboxes"]
 		except:
 			print "error, you can't delete a manual box if there are none!"
 			return
@@ -1161,7 +1237,7 @@ class Boxable:
 		for j,b in enumerate(manualboxes):
 			if b.xcorner == box.xcorner and b.ycorner == box.ycorner:
 				manualboxes.pop(j)
-				projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
+				projectdb[self.imagename+"_manualboxes"] = manualboxes
 				found = True
 				break
 		
@@ -1193,7 +1269,7 @@ class Boxable:
 	def moveManualBox(self,box,dx,dy):
 		projectdb = EMProjectDB()
 		try:
-			manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
+			manualboxes = projectdb[self.imagename+"_manualboxes"]
 		except:
 			print "error, you can't move a manual box if there are none!"
 			return
@@ -1204,7 +1280,7 @@ class Boxable:
 				b.xcorner += dx
 				b.ycorner += dy
 				found = True
-				projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
+				projectdb[self.imagename+"_manualboxes"] = manualboxes
 				break
 		
 		if not found:
@@ -1955,7 +2031,9 @@ class SwarmAutoBoxer(AutoBoxer):
 				return 0
 			
 			self.template.appendReference(box)
-		
+			# update the data base
+			self.writeSpecificReferencesToDB(self.getBoxable().getImageName())
+			
 			if self.mode == SwarmAutoBoxer.DYNAPIX:
 				if not box.isanchor and not box.isdummy:
 					print 'the box flag is internally inconsistent when using pure dynapix'
@@ -2007,6 +2085,9 @@ class SwarmAutoBoxer(AutoBoxer):
 			box = boxes
 			self.template.removeReference(box)
 			isanchor = box.isanchor
+		
+		# update the data base
+		self.writeSpecificReferencesToDB(self.getBoxable().getImageName())
 			
 		if len(self.template.refboxes) == 0:
 			self.__reset()
@@ -2061,6 +2142,9 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 				self.autoBox(self.getBoxable())
+			
+			# update the data base
+			self.writeSpecificReferencesToDB(self.getBoxable().getImageName())
 			return 1
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
 			if box.isanchor:
@@ -2072,6 +2156,9 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.__accrueOptParams()
 				self.stateTS = gm_time_string()
 				self.regressiveflag = True
+				
+			# update the data base
+			self.writeSpecificReferencesToDB(self.getBoxable().getImageName())
 			return 0
 		else:
 			print 'error, unknown mode in SwarmAutoBoxer'
@@ -2091,11 +2178,18 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		return self.template
 		
+	def getBoxSize(self):
+		return self.boxsize
+		
 	def setBoxSize(self,boxsize):
 		if (boxsize < 6 ):
 			print 'error, a hard limit of 6 for the box size is currently enforced. Email developers if this is a problem'
 			return
 		if self.boxsize == boxsize:	return
+		
+		# FIXME - how should we deal with this?
+		# update the data base
+		#self.writeSpecificReferencesToDB(self.boxable.getImageName())
 		
 		self.boxsize = boxsize
 		# make sure the shrink value is updated - use the force flag to do it
@@ -2119,7 +2213,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		return int(0.5*(self.boxsize)/float(self.getBestShrink()))
 	
 	def getBestShrink(self,force=True):	
-		if self.boxsize == -1:	
+		if self.boxsize == -1:
 			print "error - the boxsize is currently -1 - I can't figure out the best value to shrink by"	
 			return -1
 			
@@ -2139,9 +2233,22 @@ class SwarmAutoBoxer(AutoBoxer):
 		if boxable.isFrozen():
 			return 0
 		
+		# the projectdb is used at various points in this function
+		projectdb = EMProjectDB()
+		
 		if len(self.getRefBoxes()) == 0:
-			print 'error, cant get template if there are no references'
-			return 0
+			boxable.deletenonrefs()
+			projectdb[boxable.getImageName()+"_autoboxes"] = []
+			self.writeToDB(True)
+				
+			if boxable.getAutoBoxerID() != self.getCreationTS():
+				boxable.setAutoBoxerID(self.getCreationTS())
+				self.parent.autoBoxerDBChanged()
+					
+			self.writeSpecificReferencesToDB(boxable.getImageName())
+				
+			#print 'error, cant get template if there are no references'
+			return 1
 
 		# ref update should only be toggled if we are in user driven mode
 		if self.refupdate:
@@ -2166,9 +2273,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		# same as the time stamp cached by the Boxable. -1 means it's the first time.
 		# Auto boxing will also occur if the autoboxer id of the boxable does not match the creation time stamp of this object
 		# the creation time stamp of this object is persistent, even it was recovered from the data base
-		print "timestamps are",boxable.getAutoBoxerID(),self.getCreationTS()
+		
 		if autoBoxerTS == -1 or autoBoxerTS != self.stateTS or boxable.getAutoBoxerID() != self.getCreationTS():
-			print "autoboxing",autoBoxerTS,self.stateTS
+			#print "autoboxing",autoBoxerTS,self.stateTS
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag:
 				# we must clear all non-refs if we're using dynapix
@@ -2177,21 +2284,29 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 			exclusion = boxable.getExclusionImage().copy()
 			self.__paintExcludedBoxAreas(exclusion,boxable.boxes)
+			exclusion.write_image("exclusion.hdf")
 
-			boxes = self.__autoBox(correlation,boxable,boxable.boxes,exclusion)
+			boxes = self.__autoBox(correlation,boxable,exclusion)
 			print "autoboxed",len(boxes)
 			boxable.autoBoxerTS = self.getStateTS()
 
 			# This shouldn't happen in the Database instance
 			if boxes != 0:
-				projectdb = EMProjectDB()
-				boxes.extend(boxable.boxes)
+				
+				
 				trimboxes = []
-				for  box in boxes:
+				# if anchoring is on we need to store the auto boxes that were not removed 
+				# This is because the boxable didn't remove it's autoboxed particles prior to autoboxing
+				# And we need to make the database complete for persistence
+				boxable.appendStoredAutoBoxes(trimboxes)
+				for box in boxes:
+					#if box.ismanual: print "I added a manual box"
 					t = TrimBox(box)
 					trimboxes.append(t)
 				
-				projectdb[boxable.getImageName()+"_boxes"] = trimboxes
+				projectdb[boxable.getImageName()+"_autoboxes"] = trimboxes
+				
+				
 				data = {}
 				data["auto_boxer_state_TS"] = self.getStateTS()
 				data["templateTS"] = self.getTemplateTS()
@@ -2201,28 +2316,60 @@ class SwarmAutoBoxer(AutoBoxer):
 				projectdb[boxable.getImageName()+"_autoboxer"] = data
 				
 				if self.mode != SwarmAutoBoxer.COMMANDLINE:
-					trimself = TrimSwarmAutoBoxer(self)
-					projectdb["currentautoboxer"] = trimself
-					projectdb[autoboxerdbstring] = trimself
-				
-				boxable.boxesReady()
+					self.writeToDB(True)
 				
 				if boxable.getAutoBoxerID() != self.getCreationTS():
 					boxable.setAutoBoxerID(self.getCreationTS())
 					self.parent.autoBoxerDBChanged()
-				print "set boxer id",self.getCreationTS()
+					
+				self.writeSpecificReferencesToDB(boxable.getImageName())
+				#print "set boxer id",self.getCreationTS()
+				
+				# finally tell the boxable to read the results from the database
+				# the False argument tells the boxable not to re-read those
+				# boxes stored by the call to appendStoredAutoBoxes above
+				boxable.getAutoSelectedFromDB(False)
 			
 				
 			return 1
 
 		else: print 'no auto boxing was necessary, up-2-date' # DEBUG
+	def writeToDB(self,writecurrent=False):
+		'''
+		Writes this object to the DB using its time stamp
+		If writecurrent is True then this SwarmAutoBoxer is also written to the DB as the "currentautobxer",
+		meaning it is the most recently added autoboxer
+		'''
+		projectdb = EMProjectDB()
+		autoboxerdbstring = "autoboxer_"+self.getCreationTS()
+		trimself = TrimSwarmAutoBoxer(self)
+		projectdb[autoboxerdbstring] = trimself
 		
+		if writecurrent:
+			projectdb["currentautoboxer"] = trimself
+		
+	def writeSpecificReferencesToDB(self,imagename):
+		'''
+		Writes the references originating in the image given by imagename
+		to the database.
+		
+		This is called in autoBox 
+		'''
+		projectdb = EMProjectDB()
+		refs = self.template.getReferences()
+		refs_to_write = []
+		for ref in refs:
+			if ref.getImageName() == imagename:
+				refs_to_write.append(TrimBox(ref))
+				
+		projectdb[imagename+"_references"] = refs_to_write
+	
 	def __reset(self):
-		self.boxsize = -1
+		#self.boxsize = -1
 		self.stateTS = -1
 		self.templateTS = -1
 
-	def __autoBox(self,correlation,boxable,boxes=[],exclusion=None):
+	def __autoBox(self,correlation,boxable,exclusion=None):
 		'''
 		Does the autoboxing. Returns a list of Boxes
 		'''
