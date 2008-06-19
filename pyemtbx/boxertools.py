@@ -52,9 +52,20 @@ class EMProjectDB:
 			#print "closing projectdb"
 			#self.projectdb.close()
 	# storage for the instance reference
+		#def getAutoBoxers(self):
+			#autoboxers = []
+			#for i in self.projectdb.items():
+				#if i[0][0:10] == "autoboxer_":
+					#ab = self.projectdb[i[0]]
+					#swarmAutoBoxer = SwarmAutoBoxer(None)
+					#swarmAutoBoxer.become(ab)
+					#autoboxers.append(
+			
+		def close(self):
+			self.projectdb.close()
+			
 	__instance = None
-
-
+	
 	def __init__(self):
 		""" Create singleton instance """
 		# Check whether we already have an instance
@@ -70,8 +81,8 @@ class EMProjectDB:
 		""" Delegate access to implementation """
 		return setattr(self.__instance.projectdb, attr, value)
 	
-	def close(self):
-		self.__instance.projectdb.close()
+	
+		
 
 class Box:
 	CENTERACF = "centeracf"
@@ -1180,6 +1191,11 @@ class Boxable:
 			for box in self.boxes:
 				
 				image = box.getBoxImage()
+				
+				#image.set_attr("originalboxxcorner",box.xcorner)
+				#image.set_attr("originalboxycorner",box.ycorner)
+				#image.set_attr("originalimagename",self.getImageName())
+				
 				image.write_image(boxname,-1)
 
 	def moveBox(self,box,dx,dy,boxnum):
@@ -1242,28 +1258,8 @@ class Boxable:
 				break
 		
 		if not found:
-			#remove this code once the Sissel problem no longer exists
-			# find the nearest box
-			smallest_diff = 0
-			idx = -1
-			for j,b in enumerate(manualboxes):
-				diff = (b.xcorner - box.xcorner)**2 + (b.ycorner - box.ycorner)**2
-				if j == 0:
-					idx = j
-					smallest_diff = diff
-				else:
-					if diff < smallest_diff:
-						idx = j
-						smallest_diff = diff
-			
-			if idx >=0 :
-				print "am removing manual box",idx,"it was",smallest_diff,"squared units away"
-				print "this functionality is temporary for backwards compatibility"
-				manualboxes.pop(idx)
-			else: print "There were no boxes"	
-			# uncomment this code once the Sissel problem no longer exists
-			#print "error, couldn't find the manual box you tried to delete, nothing happened"
-			#return
+			print "error, couldn't find the manual box you tried to delete, nothing happened"
+			return
 		
 	
 	def moveManualBox(self,box,dx,dy):
@@ -1284,26 +1280,6 @@ class Boxable:
 				break
 		
 		if not found:
-			# remove this code once the Sissel problem no longer exists
-			## find the nearest box
-			#smallest_diff = 0
-			#idx = -1
-			#for j,b in enumerate(manualboxes):
-				#diff = (b.xcorner - box.xcorner)**2 + (b.ycorner - box.ycorner)**2
-				#if j == 0:
-					#idx = j
-					#smallest_diff = diff
-				#else:
-					#if diff < smallest_diff:
-						#idx = j
-						#smallest_diff = diff
-			
-			#if idx >=0 :
-				#print "am removing manual box",idx,"it was",smallest_diff,"squared units away"
-				#print "this functionality is temporary for backwards compatibility"
-				#manualboxes.pop(idx)
-			#else: print "There were no boxes"	
-			# uncomment this code once the Sissel problem no longer exists
 			print "error, couldn't find the manual box you tried to move, nothing happened"
 			return
 		
@@ -1841,7 +1817,20 @@ class TrimSwarmAutoBoxer():
 		
 		self.template = TrimSwarmTemplate(swarmAutoBoxer.template)
 		self.creationTS = swarmAutoBoxer.creationTS
-		
+		self.dbuserstring = swarmAutoBoxer.dbuserstring
+	
+	def getUniqueStamp(self):
+		return "autoboxer_" + self.creationTS
+	
+	def setDBUserString(self,string):
+		self.dbuserstring = string
+		projectdb = EMProjectDB()
+		projectdb[self.dbuserstring] = 	self.getUniqueStamp()
+		print "set db string",self.getUniqueStamp()
+	
+	def getDBUserString(self):
+		return self.dbuserstring
+	
 	def setCreationTS(self,TS):
 		''' 
 		This function is used when creating a fresh copy of this autoboxer and placing it
@@ -1904,7 +1893,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.parent = parent
 		
 		self.creationTS = gm_time_string()
-		
+		self.dbuserstring = ""
+		self.setDBUserString(self.creationTS) # this string is the string that users will use to name this autoBoxer in the GUIboxCtrl
+
 	def become(self,trimSwarmAutoBoxer):			
 		self.boxsize = trimSwarmAutoBoxer.boxsize
 		self.shrink = trimSwarmAutoBoxer.shrink
@@ -1922,8 +1913,16 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.regressiveflag = trimSwarmAutoBoxer.regressiveflag
 		self.template = SwarmTemplate(self)
 		self.template.become(trimSwarmAutoBoxer.template)
+		self.dbuserstring = trimSwarmAutoBoxer.dbuserstring
 		
-		
+	def setDBUserString(self,string):
+		self.dbuserstring = string
+		projectdb = EMProjectDB()
+		projectdb[self.dbuserstring] = 	self.getUniqueStamp()
+		print "set db string",self.getUniqueStamp()
+	def getDBUserString(self):
+		return self.dbuserstring
+	
 	def getBoxable(self):
 		return self.parent.getBoxable()
 	
@@ -2232,7 +2231,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		#print "in autobox"
 		if boxable.isFrozen():
 			return 0
-		
 		# the projectdb is used at various points in this function
 		projectdb = EMProjectDB()
 		
@@ -2246,7 +2244,17 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.parent.autoBoxerDBChanged()
 					
 			self.writeSpecificReferencesToDB(boxable.getImageName())
-				
+			data = {}
+			data["auto_boxer_state_TS"] = self.getStateTS()
+			data["templateTS"] = -1
+			data["auto_boxer_unique_id"] = self.getCreationTS()
+			autoboxerdbstring = "autoboxer_"+self.getCreationTS()
+			data["auto_boxer_db_name"] = autoboxerdbstring
+			projectdb[boxable.getImageName()+"_autoboxer"] = data
+			# These two lines are a hack because it may not need to happen (redundancy)
+			boxable.setAutoBoxerID(self.getCreationTS())
+			self.parent.autoBoxerDBChanged()
+			
 			#print 'error, cant get template if there are no references'
 			return 1
 
@@ -2314,13 +2322,16 @@ class SwarmAutoBoxer(AutoBoxer):
 				autoboxerdbstring = "autoboxer_"+self.getCreationTS()
 				data["auto_boxer_db_name"] = autoboxerdbstring
 				projectdb[boxable.getImageName()+"_autoboxer"] = data
+				print "wrote",boxable.getImageName()+"_autoboxer"
 				
 				if self.mode != SwarmAutoBoxer.COMMANDLINE:
 					self.writeToDB(True)
 				
-				if boxable.getAutoBoxerID() != self.getCreationTS():
-					boxable.setAutoBoxerID(self.getCreationTS())
-					self.parent.autoBoxerDBChanged()
+				print boxable.getAutoBoxerID(),self.getCreationTS()
+				#if boxable.getAutoBoxerID() != self.getCreationTS():
+				# These two lines are a hack because it may not need to happen (redundancy)
+				boxable.setAutoBoxerID(self.getCreationTS())
+				self.parent.autoBoxerDBChanged()
 					
 				self.writeSpecificReferencesToDB(boxable.getImageName())
 				#print "set boxer id",self.getCreationTS()
@@ -2334,6 +2345,8 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 1
 
 		else: print 'no auto boxing was necessary, up-2-date' # DEBUG
+	def getUniqueStamp(self):
+		return "autoboxer_"+self.getCreationTS()
 	def writeToDB(self,writecurrent=False):
 		'''
 		Writes this object to the DB using its time stamp
@@ -2341,7 +2354,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		meaning it is the most recently added autoboxer
 		'''
 		projectdb = EMProjectDB()
-		autoboxerdbstring = "autoboxer_"+self.getCreationTS()
+		autoboxerdbstring = self.getUniqueStamp()
+		
 		trimself = TrimSwarmAutoBoxer(self)
 		projectdb[autoboxerdbstring] = trimself
 		

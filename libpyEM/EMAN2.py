@@ -466,8 +466,14 @@ def strip_file_tag(file_name):
 	
 	return file_name[0:i]
 	
+# a function for stripping the contents of a filename so that all
+# that remains is up to the first '.'
+# eg if given image.sh4. mrc this functions strips the 'sh4.mrc' and returns 'image'	
+def strip_after_dot(file_name):
+	# FIXME it's probably easiest to do this with regular expressions...
+	idx = str.find(file_name,'.')
+	return file_name[0:idx]
 	
-
 # a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
 # can be created from the command line string. Returns false if there are problems
 # examples

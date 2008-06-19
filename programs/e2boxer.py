@@ -867,11 +867,12 @@ class GUIbox:
 
 		self.guictl.show()
 		self.boxDisplayUpdate()
+		
 	
-	def changeCurrentAutoBoxer(self, timestamp):
+	def changeCurrentAutoBoxer(self, autoboxerid):
 		#print "change current autoboxer"
 		projectdb = EMProjectDB()
-		trimAutoBoxer = projectdb["autoboxer_"+timestamp]
+		trimAutoBoxer = projectdb[autoboxerid]
 		#print "changing autoboxer to autoboxer_",timestamp,"and its stamp in the db is",trimAutoBoxer.getCreationTS()
 		self.autoBoxer = SwarmAutoBoxer(self)
 		self.autoBoxer.become(trimAutoBoxer)
@@ -1485,23 +1486,28 @@ class GUIbox:
 	def autoBoxerDBChanged(self):
 		self.guictl.updateABTable()
 
-	def addNewAutoBoxerDB(self):
+	def addNewAutoBoxerDB(self, n):
 		autoBoxer = SwarmAutoBoxer(self)
 		autoBoxer.boxsize = self.boxsize
 		autoBoxer.setMode(self.dynapix,self.anchoring)
 		autoboxerdbstring = "autoboxer_"+autoBoxer.getCreationTS()
 		trimAutoBoxer = TrimSwarmAutoBoxer(autoBoxer)
+		trimAutoBoxer.setDBUserString("New " + str(n))
 		projectdb = EMProjectDB()
 		projectdb[autoboxerdbstring] = trimAutoBoxer
 	
-	def addCopyAutoBoxerDB(self,timestamp):
-		#print "adding a copy of the ab with ts",timestamp
+	def addCopyAutoBoxerDB(self,autoboxerid,n):
+		#print "adding a copy of the ab with id is",autoboxerid
 		projectdb = EMProjectDB()
-		trimAutoBoxer = copy(projectdb["autoboxer_"+timestamp])
+		trimAutoBoxer = copy(projectdb[autoboxerid])
 		trimAutoBoxer.setCreationTS(gm_time_string())
+		trimAutoBoxer.setDBUserString("Copy " + str(n))
 		autoboxerdbstring = "autoboxer_"+trimAutoBoxer.getCreationTS()
 		#print "adding string to db",autoboxerdbstring
 		projectdb[autoboxerdbstring] = trimAutoBoxer
+		
+		projectdb = EMProjectDB()
+		#print "done"
 
 class AutoBoxerSelectionsMediator:
 	'''
@@ -1516,7 +1522,7 @@ class AutoBoxerSelectionsMediator:
 		self.parent=parent
 		self.currentimagename = None
 		self.imagenames = []
-		
+		self.namemap = {}
 		self.setCurrentImageName(parent.getCurrentImageName())
 		self.setImageNames(parent.getImageNames())
 		
@@ -1529,10 +1535,13 @@ class AutoBoxerSelectionsMediator:
 	def getAutoBoxerData(self):
 		projectdb = EMProjectDB()
 		dictdata = {}
-		
+		self.namemap = {}
 		for i in projectdb.items():
 			if i[0][0:10] == "autoboxer_":
-				dictdata[i[0]] = []
+				a = i[1] # a trimSwarmAutoBoxe
+				tag = a.getDBUserString()
+				dictdata[tag] = []
+				self.namemap[i[0]] = tag
 		
 		for imagename in self.imagenames:
 			found = False
@@ -1543,18 +1552,71 @@ class AutoBoxerSelectionsMediator:
 			except: pass
 			
 			if found:
-				dictdata[data["auto_boxer_db_name"]].append(imagename)
+				dictdata[self.namemap[data["auto_boxer_db_name"]]].append(strip_after_dot(imagename))
 		
 		return dictdata
 	
 	def getCurrentAutoBoxerTS(self):
-		return self.parent.getCurrentAutoBoxerTS()
+		try:
+			return self.namemap["autoboxer_"+self.parent.getCurrentAutoBoxerTS()]
+		except:
+			return None
 
 	def addNewAutoBoxer(self):
-		self.parent.addNewAutoBoxerDB()
+		self.parent.addNewAutoBoxerDB(self.getTotalAutoBoxers())
 
-	def addCopyAutoBoxer(self,timestamp):
-		self.parent.addCopyAutoBoxerDB(timestamp)
+	def addCopyAutoBoxer(self,tag):
+		autoboxerid = self.__getAutoBoxerIDFromTag(tag)
+		if autoboxerid != None:
+			self.parent.addCopyAutoBoxerDB(autoboxerid,self.getTotalAutoBoxers())
+		else:
+			print "error, couldn't find autoboxer from tag",tag
+	
+	def changeCurrentAutoBoxer(self,tag):
+		# FIXME - is there any way to use a bidirectional map?pyt
+		autoboxerid = self.__getAutoBoxerIDFromTag(tag)
+		if autoboxerid != None:
+			self.parent.changeCurrentAutoBoxer(autoboxerid)
+		else:
+			print "error, couldn't get autoboxerid"
+				
+	def updateDBUserString(self,newname,oldname):
+		'''
+		Updates the unique name of the autoboxer in the DB
+		if the name is already used then False is returned
+		and the calling function should act on this to stop the
+		name change, for example within a widget
+		'''
+		projectdb = EMProjectDB()
+		autoboxerid = self.__getAutoBoxerIDFromTag(oldname)
+		if autoboxerid != None:
+			self.namemap.pop(autoboxerid)
+			if self.__nameNotAlreadyPresent(newname):
+				self.namemap[autoboxerid] = newname
+				autoBoxer = projectdb[autoboxerid]
+				autoBoxer.setDBUserString(newname)
+				return True
+			else:
+				self.namemap[autoboxerid] = oldname
+				return False
+					
+	def getTotalAutoBoxers(self):
+		return len(self.namemap)
+	
+	def __nameNotAlreadyPresent(self,name):
+		for names in self.namemap.items():
+			if names[1] == name:
+			 	return False
+		
+		return True
+	
+	def __getAutoBoxerIDFromTag(self,tag):
+		for names in self.namemap.items():
+			if names[1] == tag:
+				return names[0]
+			
+		print "error, couldn't find",tag,"in the namemap"
+		return None
 		
 		
 class GUIboxPanel(QtGui.QWidget):
@@ -1752,10 +1814,19 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.abtable, QtCore.SIGNAL("cellChanged(int,int)"), self.abtableCellChanged)
 	
 	def abtableCellChanged(self,i,j):
-		#print i,j
+		if i >= len(self.col1): return
 		if self.lock:
-			#print "locked,returning"
 			return
+		data = self.abselmediator.getAutoBoxerData()
+		data = data.items()
+		if str(self.col1[i].text()) != self.colnames[i]:
+			if not self.abselmediator.updateDBUserString(str(self.col1[i].text()),self.colnames[i]):
+				self.col1[i].setText(self.colnames[i])
+			self.lock = False
+			return
+		
+		self.lock = False
+		
 		if j == 0: # we're in the first row, something happened, maybe a check change
 			self.lock = True
 			#try:
@@ -1767,25 +1838,31 @@ class GUIboxPanel(QtGui.QWidget):
 				self.col1[self.currentlychecked].setCheckState(Qt.Unchecked)
 				self.col1[i].setCheckState(Qt.Checked)
 				self.currentlychecked = i
-				self.target.changeCurrentAutoBoxer(str(self.col1[i].text()))
+				self.abselmediator.changeCurrentAutoBoxer(str(self.col1[i].text()))
 			else:
 				print "error, I don't know what's happening"
 			#except: pass
-			self.lock = False
+		
+		self.lock = False
 				
 	def abtableItemChanged(self,item):
 		print "item changed"
 	
 	def updateABTable(self):
-		self.lock = True
+		
 		data = self.abselmediator.getAutoBoxerData()
 		self.col1 = []
 		self.col2 = []
+		self.colnames = []
+		if len(data) == 0:
+			return
+			
+		self.lock = True
 		idx = 0
 		for d in data.items():
 			if idx >= self.abtable.rowCount():
 				self.abtable.insertRow(idx)
-			col1 = QtGui.QTableWidgetItem(d[0][10:])
+			col1 = QtGui.QTableWidgetItem(d[0])
 			qstr =''
 			for i,s in enumerate(d[1]):
 				qstr += s
@@ -1805,6 +1882,7 @@ class GUIboxPanel(QtGui.QWidget):
 			self.abtable.setItem(idx,1,col2)
 			self.col1.append(col1)
 			self.col2.append(col2)
+			self.colnames.append(col1.text())
 			idx += 1
 		
 		# remove any overhanging columns if they already existed
@@ -1815,7 +1893,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.currentlychecked = -1
 		for i,col in enumerate(self.col1):
 			if str(col.text()) == currentsel:
-				col.setCheckState( Qt.Checked)
+				col.setCheckState(Qt.Checked)
 				self.currentlychecked = i
 				break
 		
@@ -1840,6 +1918,7 @@ class GUIboxPanel(QtGui.QWidget):
 			return
 		else:
 			self.abselmediator.addCopyAutoBoxer(selected)
+			self.lock=False
 			self.updateABTable()
 	
 	def insertAdvancedTab(self):
@@ -1909,7 +1988,6 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.advanced_vbl.addWidget(self.cmpgroupbox)
 
-		
 		self.tabwidget.addTab(self.adv_inspector,"Advanced")
 
 	def refbuttontoggled(self,bool):
