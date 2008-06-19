@@ -31,23 +31,56 @@
 #
 
 from EMAN2 import *
+import atexit
+try:
+	from bsddb3 import db
+except:
+	from bsddb import db
 
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
 dbopenflags=db.DB_CREATE
-#if recover: xtraflags=db.DB_RECOVER
+cachesize=100000000
 
-if not os.access("./dbcache",os.F_OK) : os.makedirs("./dbcache")
-self.__dbenv=db.DBEnv()
-self.__dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
-self.__dbenv.set_data_dir(path)
-self.__dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
-#if self.__dbenv.DBfailchk(flags=0) :
-	#self.LOG(1,"Database recovery required")
-	#sys.exit(1)
+class EMAN2DB:
+	"""This class implements a local database of data and metadata for EMAN2"""
 	
-self.__dbenv.open(path+"/home",envopenflags|xtraflags)
-global globalenv
-globalenv = self.__dbenv
+	def __init__(self):
+		#if recover: xtraflags=db.DB_RECOVER
+		if not os.access("EMAN2DB/dbcache",os.F_OK) : os.makedirs("EMAN2DB/dbcache")
+		self.dbenv=db.DBEnv()
+		self.dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
+		self.dbenv.set_data_dir("EMAN2DB")
+		self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
+		#if self.__dbenv.DBfailchk(flags=0) :
+			#self.LOG(1,"Database recovery required")
+			#sys.exit(1)
+			
+		self.__dbenv.open("EMAN2DB",envopenflags|xtraflags)
+
+#def DB_cleanup():
+	#"""This does at_exit cleanup. It would be nice if this were always called, but if python is killed
+	#with a signal, it isn't. This tries to nicely close everything in the database so no recovery is
+	#necessary at the next restart"""
+	#sys.stdout.flush()
+	#print >>sys.stderr, "Closing %d BDB databases"%(len(BTree.alltrees)+len(IntBTree.alltrees)+len(FieldBTree.alltrees))
+	#if DEBUG>2: print >>sys.stderr, len(BTree.alltrees), 'BTrees'
+	#for i in BTree.alltrees.keys():
+		#if DEBUG>2: sys.stderr.write('closing %s\n' % str(i))
+		#i.close()
+		#if DEBUG>2: sys.stderr.write('%s closed\n' % str(i))
+	#if DEBUG>2: print >>sys.stderr, '\n', len(IntBTree.alltrees), 'IntBTrees'
+	#for i in IntBTree.alltrees.keys():
+		#i.close()
+		#if DEBUG>2: sys.stderr.write('.')
+	#if DEBUG>2: print >>sys.stderr, '\n', len(FieldBTree.alltrees), 'FieldBTrees'
+	#for i in FieldBTree.alltrees.keys():
+		#i.close()
+		#if DEBUG>2: sys.stderr.write('.')
+	#if DEBUG>2: sys.stderr.write('\n')
+## This rmakes sure the database gets closed properly at exit
+#atexit.register(DB_cleanup)
+
+
 
 
 __doc__ = \
