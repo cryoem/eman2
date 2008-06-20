@@ -508,7 +508,6 @@ class EMImageMXCore:
 			except:
 				# this means the box isn't visible!
 				pass
-
 		# If the user is lost, help him find himself again...
 		if self.nshown==0 : 
 			try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)

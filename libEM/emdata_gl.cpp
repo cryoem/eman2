@@ -34,8 +34,6 @@
 
 #include "emdata.h"
 
-
-
 #ifdef __APPLE__
 //need GL_GLEXT_PROTOTYPES for glTexImage3D 
 #ifndef GL_GLEXT_PROTOTYPES
