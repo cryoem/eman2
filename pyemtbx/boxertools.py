@@ -1181,7 +1181,7 @@ class Boxable:
 				if not force:
 					f=file(boxname,'r')
 					boxname_backup =  strip_file_tag(self.imagename)+str(time()) + ".box.bak"
-					print "warning, found box name",boxname,"- am renaming it to", boxname_backup
+					print "warning, found box name",boxname,"- am renaming it to", boxname_backup, "- use force to overwrite this behavior"
 					fbak=file(boxname_backup,'w')
 					fbak.writelines(f.readlines())
 					fbak.close()
@@ -1345,7 +1345,7 @@ class Boxable:
 			
 		return False
 	
-	def deletenonrefs(self):
+	def deletenonrefs(self,updatedisplay=True):
 		boxestodelete = []
 		n = len(self.boxes)
 		for m in range(n-1,-1,-1):
@@ -1354,8 +1354,8 @@ class Boxable:
 				self.delbox(m)
 				boxestodelete.append(m)
 
-				
-		self.parent.deleteDisplayShapes(boxestodelete)
+		if updatedisplay:
+			self.parent.deleteDisplayShapes(boxestodelete)
 	
 	def addnonrefs(self,boxes):
 		'''
@@ -2380,7 +2380,8 @@ class SwarmAutoBoxer(AutoBoxer):
 				#if boxable.getAutoBoxerID() != self.getCreationTS():
 				# These two lines are a hack because it may not need to happen (redundancy)
 				boxable.setAutoBoxerID(self.getCreationTS())
-				self.parent.autoBoxerDBChanged()
+				if not (self.mode != SwarmAutoBoxer.COMMANDLINE or self.parent==None):
+					self.parent.autoBoxerDBChanged()
 					
 				self.writeSpecificReferencesToDB(boxable.getImageName())
 				#print "set boxer id",self.getCreationTS()

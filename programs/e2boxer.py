@@ -162,31 +162,42 @@ for single particle analysis."""
 		if len(filenames) == 1:
 			projectdb = EMProjectDB()
 	
-			trimAutoBoxer = projectdb["currentautoboxer"]
-			autoBoxer = SwarmAutoBoxer(None)
-			autoBoxer.become(trimAutoBoxer)
-			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-			imagename = filenames[0]
-			exists = True
+	
 			try:
-				oldAutoBoxer = projectdb[imagename+"_autoboxer"]	
-			except: exists = False 	
-			if exists and autoBoxer.stateTS == oldAutoBoxer.stateTS:
-				print "The content in the project data base for",imagename,"is up2date"
-				exit(1)
-			else:
-				print "Auto boxing",imagename
-				image = EMData(imagename)
-				boxable = Boxable(image,imagename,None,autoBoxer)
-				autoBoxer.setBoxable(boxable)
-				autoBoxer.autoBox(boxable)
-				if options.writedb:
-					boxable.writedb(options.force)
-				if options.writeboximages:
-					boxalbe.writeboximages(options.force)
-				exit(1)
+				projectdb = EMProjectDB()
+				data = projectdb[filenames[0]+"_autoboxer"]
+				trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
+				autoboxername = data["auto_boxer_unique_id"] 
+				autoBoxer = SwarmAutoBoxer(None)
+				autoBoxer.become(trimAutoBoxer)
+				autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+				print 'using cached autoboxer db'
+			except:
+				try:
+					trimAutoBoxer = projectdb["currentautoboxer"]
+					autoBoxer = SwarmAutoBoxer(None)
+					autoBoxer.become(trimAutoBoxer)
+					autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+				except:
+					print "Error - there seems to be no autoboxing information in the database - bailing"
+					projectdb.close()
+					exit(1)
+				
+			boxable = Boxable(filenames[0],None,autoBoxer)
+			# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
+			boxable.deletenonrefs(False)
+			autoBoxer.autoBox(boxable)
+			if options.writedb:
+				print "writing box coordinates"
+				boxable.writedb(-1,options.force)
+			if options.writeboximages:
+				print "writing boxed images"
+				boxable.writeboximages(-1,options.force)
+			
+			projectdb.close()
+			exit(1)
 		else:
-			print "autoboxing using parallel stuff"
+			print "autoboxing using parallelelism - you specified",options.parallel,"processors"
 			autoboxer = AutoDBBoxer(filenames,options.parallel,options.force)
 			try:
 				from emimage import EMImage,get_app
