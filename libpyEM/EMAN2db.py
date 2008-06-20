@@ -32,10 +32,14 @@
 
 from EMAN2 import *
 import atexit
+import weakref
+from cPickle import loads,dumps
+from zlib import compress,decompress
 try:
 	from bsddb3 import db
 except:
 	from bsddb import db
+	
 
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
 dbopenflags=db.DB_CREATE
@@ -46,16 +50,105 @@ class EMAN2DB:
 	
 	def __init__(self):
 		#if recover: xtraflags=db.DB_RECOVER
-		if not os.access("EMAN2DB/dbcache",os.F_OK) : os.makedirs("EMAN2DB/dbcache")
+		if not os.access("./EMAN2DB/cache",os.F_OK) : os.makedirs("./EMAN2DB/cache")
 		self.dbenv=db.DBEnv()
 		self.dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
-		self.dbenv.set_data_dir("EMAN2DB")
+		self.dbenv.set_data_dir("./EMAN2DB")
 		self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
 		#if self.__dbenv.DBfailchk(flags=0) :
 			#self.LOG(1,"Database recovery required")
 			#sys.exit(1)
 			
-		self.__dbenv.open("EMAN2DB",envopenflags|xtraflags)
+		self.dbenv.open("./EMAN2DB/cache",envopenflags)
+
+	def __del__(self):
+		self.dbenv=None
+
+class DBHash:
+	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,
+	keys and data may be arbitrary pickleable types"""
+	
+	allhashes=weakref.WeakKeyDictionary()
+	def __init__(self,name,file=None,dbenv=None,nelem=0):
+		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
+		name is required, and will also be used as a filename if none is
+		specified. """
+		
+		global dbopenflags
+		DBHash.allhashes[self]=1		# we keep a running list of all trees so we can close everything properly
+		self.name = name
+		self.txn=None	# current transaction used for all database operations
+		self.bdb=db.DB(dbenv)
+		if file==None : file=name+".bdb"
+#		self.bdb.open(file,name,db.DB_BTREE,dbopenflags)
+		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
+
+	def __str__(self): return "<EMAN2db DBHash instance: %s>" % self.name
+
+	def __del__(self):
+		self.close()
+
+	def close(self):
+		if self.bdb == None: return
+		self.bdb.close()
+		self.bdb=None
+	
+	def sync(self):
+		if self.bdb : self.bdb.sync()
+		
+	def set_txn(self,txn):
+		"""sets the current transaction. Note that other python threads will not be able to use this
+		Hash until it is 'released' by setting the txn back to None"""
+		if txn==None: 
+			self.txn=None
+			return
+		
+		while self.txn :
+			time.sleep(.1)
+		self.txn=txn
+
+	def __len__(self):
+		return len(self.bdb)
+
+	def __setitem__(self,key,val):
+		if (val==None) :
+			self.__delitem__(key)
+		else : self.bdb.put(dumps(key,-1),compress(dumps(val,-1),4),txn=self.txn)
+
+	def __getitem__(self,key):
+		return loads(decompress(self.bdb.get(dumps(key,-1),txn=self.txn)))
+
+	def __delitem__(self,key):
+		self.bdb.delete(dumps(key,-1),txn=self.txn)
+
+	def __contains__(self,key):
+		return self.bdb.has_key(dumps(key,-1),txn=self.txn)
+
+	def keys(self):
+		return map(lambda x:loads(x),self.bdb.keys())
+
+	def values(self):
+		return map(lambda x:loads(decompress(x)),self.bdb.values())
+
+	def items(self):
+		return map(lambda x:(loads(x[0]),loads(decompress(x[1]))),self.bdb.items())
+
+	def has_key(self,key,txn=None):
+		if not txn : txn=self.txn
+		return self.bdb.has_key(dumps(key,-1),txn=txn)
+
+	def get(self,key,txn=None):
+		return loads(decompress(self.bdb.get(dumps(key,-1),txn=txn)))
+	
+	def set(self,key,val,txn=None):
+		"Alternative to x[key]=val with transaction set"
+		if (val==None) :
+			self.bdb.delete(dumps(key,-1),txn=txn)
+		else : self.bdb.put(dumps(key,-1),compress(dumps(val,-1)),txn=txn)
+
+	def update(self,dict):
+		for i,j in dict.items(): self[i]=j
+
 
 #def DB_cleanup():
 	#"""This does at_exit cleanup. It would be nice if this were always called, but if python is killed
@@ -84,9 +177,8 @@ class EMAN2DB:
 
 
 __doc__ = \
-"This module supports the concept of a local database for storing data and
+"""This module supports the concept of a local database for storing data and
 metadata associated with a particular EMAN2 refinement. Data stored in this
 database may be extracted into standard flat-files, but use of a database
 with standard naming conventions, etc. helps provide the capability to log
-the entire refinement process. 
-"
+the entire refinement process."""
