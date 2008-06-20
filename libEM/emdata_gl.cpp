@@ -34,6 +34,15 @@
 
 #include "emdata.h"
 
+#ifdef _WIN32
+	PFNGLTEXIMAGE3DPROC glTexImage3D;
+#else
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
+#endif	//GL_GLEXT_PROTOTYPES
+#endif	//_WIN32
+
+
 #ifdef __APPLE__
 	#include "OpenGL/gl.h"
 	#include "OpenGL/glu.h"
@@ -44,16 +53,19 @@
 	#include "GL/glext.h"
 #endif	//__APPLE__
 
-#ifdef _WIN32
-	PFNGLTEXIMAGE3DPROC glTexImage3D;
-#else
-	#ifndef GL_GLEXT_PROTOTYPES
-		#define GL_GLEXT_PROTOTYPES
-	#endif	//GL_GLEXT_PROTOTYPES
-#endif	//_WIN32
+// #ifdef _WIN32
+// 	PFNGLTEXIMAGE3DPROC glTexImage3D;
+// #else
+// 	#ifndef GL_GLEXT_PROTOTYPES
+// 	#define GL_GLEXT_PROTOTYPES
+// 	#endif	//GL_GLEXT_PROTOTYPES
+// #endif	//_WIN32
 
 using namespace EMAN;
 
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
+#endif	//GL_GLEXT_PROTOTYPES
 
 unsigned int EMData::gen_glu_mipmaps() const
 {
