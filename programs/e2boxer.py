@@ -797,7 +797,6 @@ class GUIbox:
 		self.boxable = Boxable(self.imagenames[0],self,self.autoBoxer)
 		self.boxable.addnonrefs(boxes)
 		self.boxable.boxsize = boxsize
-		self.boxable.setAutoBoxer(self.autoBoxer)
 		
 		self.eventsmediator = GUIboxEventsMediator(self)
 		self.mousehandlers = {}
@@ -866,6 +865,7 @@ class GUIbox:
 			self.guimxit.setSelected(0)
 
 		self.guictl.show()
+		self.autoBoxer.autoBox(self.boxable)
 		self.boxDisplayUpdate()
 		
 	
@@ -968,7 +968,7 @@ class GUIbox:
 		
 	def removeBox(self,boxnum):
 		box = self.delbox(boxnum)
-		if (not box.isref or box.ismanual):
+		if not (box.isref or box.ismanual):
 			self.boxable.addExclusionParticle(box)
 		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 		self.boxDisplayUpdate()
@@ -1421,21 +1421,31 @@ class GUIbox:
 		self.autoBoxer.setDummyBox(None)
 		self.boxDisplayUpdate()
 		
-	def writeboxesimages(self):
+	def writeboxesimages(self,boxsize,forceoverwrite=False,imageformat="hdf"):
 		self.boxable.cacheExcToDisk()
 		for imagename in self.imagenames:
 			
 			
-			boxable = Boxable(imagename,self,self.autoBoxer)
-		
+			try:
+				projectdb = EMProjectDB()
+				data = projectdb[imagename+"_autoboxer"]
+				trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
+				autoBoxer = SwarmAutoBoxer(self)
+				autoBoxer.become(trimAutoBoxer)
+				#print "writing box images for",imagename,"using",data["auto_boxer_db_name"]
+			except:
+				autoBoxer = self.autoBoxer
+				#print "writing box images or",imagename,"using currently stored autoboxer"
+				
+			boxable = Boxable(imagename,self,autoBoxer)
 			mode = self.autoBoxer.getMode()
-			self.autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-			self.autoBoxer.autoBox(boxable)
-			self.autoBoxer.setModeExplicit(mode)
+			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+			autoBoxer.autoBox(boxable)
+			autoBoxer.setModeExplicit(mode)
 			
-			boxable.writeboximages()
+			boxable.writeboximages(boxsize,forceoverwrite,imageformat)
 	
-	def writeboxesdbs(self):
+	def writeboxesdbs(self,boxsize,forceoverwrite=False):
 		self.boxable.cacheExcToDisk()
 		for imagename in self.imagenames:
 			
@@ -1445,10 +1455,10 @@ class GUIbox:
 				trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
 				autoBoxer = SwarmAutoBoxer(self)
 				autoBoxer.become(trimAutoBoxer)
-				print "writing box coordinates for",imagename,"using",data["auto_boxer_db_name"]
+				#print "writing box coordinates for",imagename,"using",data["auto_boxer_db_name"]
 			except:
 				autoBoxer = self.autoBoxer
-				print "writing box coordinates for",imagename,"using currently stored autoboxer"
+				#print "writing box coordinates for",imagename,"using currently stored autoboxer"
 			boxable = Boxable(imagename,self,autoBoxer)
 			
 			mode = autoBoxer.getMode()
@@ -1456,7 +1466,7 @@ class GUIbox:
 			autoBoxer.autoBox(boxable)
 			autoBoxer.setModeExplicit(mode)
 			
-			boxable.writedb()
+			boxable.writedb(boxsize,forceoverwrite)
 	
 	def center(self,technique):
 		
@@ -1523,6 +1533,7 @@ class AutoBoxerSelectionsMediator:
 		self.currentimagename = None
 		self.imagenames = []
 		self.namemap = {}
+		self.dictdata = {}
 		self.setCurrentImageName(parent.getCurrentImageName())
 		self.setImageNames(parent.getImageNames())
 		
@@ -1534,13 +1545,13 @@ class AutoBoxerSelectionsMediator:
 		
 	def getAutoBoxerData(self):
 		projectdb = EMProjectDB()
-		dictdata = {}
+		self.dictdata = {}
 		self.namemap = {}
 		for i in projectdb.items():
 			if i[0][0:10] == "autoboxer_":
 				a = i[1] # a trimSwarmAutoBoxe
 				tag = a.getDBUserString()
-				dictdata[tag] = []
+				self.dictdata[tag] = []
 				self.namemap[i[0]] = tag
 		
 		for imagename in self.imagenames:
@@ -1552,9 +1563,9 @@ class AutoBoxerSelectionsMediator:
 			except: pass
 			
 			if found:
-				dictdata[self.namemap[data["auto_boxer_db_name"]]].append(strip_after_dot(imagename))
+				self.dictdata[self.namemap[data["auto_boxer_db_name"]]].append(strip_after_dot(imagename))
 		
-		return dictdata
+		return self.dictdata
 	
 	def getCurrentAutoBoxerTS(self):
 		try:
@@ -1603,6 +1614,15 @@ class AutoBoxerSelectionsMediator:
 	def getTotalAutoBoxers(self):
 		return len(self.namemap)
 	
+	def associatedImages(self,tag):
+		return self.dictdata[tag]
+	
+	def remove(self,tag):
+		autoboxerid = self.__getAutoBoxerIDFromTag(tag)
+		projectdb = EMProjectDB()
+		projectdb.pop(autoboxerid)
+		self.dictdata.pop(tag)
+	
 	def __nameNotAlreadyPresent(self,name):
 		for names in self.namemap.items():
 			if names[1] == name:
@@ -1646,8 +1666,6 @@ class GUIboxPanel(QtGui.QWidget):
 	
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
-		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesimages)
-		self.connect(self.writeboxesdbs,QtCore.SIGNAL("clicked(bool)"),self.target.writeboxesdbs)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
 		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
 		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.trythatd)
@@ -1699,7 +1717,10 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.lblbs=QtGui.QLabel("Box Size:",self)
 		self.boxinghbl1.addWidget(self.lblbs)
+		self.pos_int_validator = QtGui.QIntValidator(self)
+		self.pos_int_validator.setBottom(1)
 		self.bs = QtGui.QLineEdit(str(self.target.boxsize),self)
+		self.bs.setValidator(self.pos_int_validator)
 		self.boxinghbl1.addWidget(self.bs)
 		
 		self.boxingvbl.addLayout(self.boxinghbl1)
@@ -1713,8 +1734,8 @@ class GUIboxPanel(QtGui.QWidget):
 		self.boxinghbl3.addWidget(self.nocpick)
 		self.autobox=QtGui.QPushButton("Auto Box")
 		self.boxinghbl3.addWidget(self.autobox)
-		self.togfreeze=QtGui.QPushButton("Toggle Freeze")
-		self.boxinghbl3.addWidget(self.togfreeze)
+		#self.togfreeze=QtGui.QPushButton("Toggle Freeze")
+		#self.boxinghbl3.addWidget(self.togfreeze)
 		self.boxingvbl.addLayout(self.boxinghbl3)
 	
 		self.boxinghbl2=QtGui.QHBoxLayout()
@@ -1783,10 +1804,30 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.outputhbl2=QtGui.QHBoxLayout()
 		self.usingboxsizetext=QtGui.QLabel("Using Box Size:",self)
+		
 		self.outputhbl2.addWidget(self.usingboxsizetext)
 		self.usingboxsize = QtGui.QLineEdit(str(self.target.boxsize),self)
+		self.usingboxsize.setValidator(self.pos_int_validator)
 		self.outputhbl2.addWidget(self.usingboxsize)
+		
 		self.outputvbl.addLayout(self.outputhbl2)
+		
+		self.outputhbl3=QtGui.QHBoxLayout()
+		
+		self.outputformat=QtGui.QLabel("Image Format:",self)
+		self.outputhbl3.addWidget(self.outputformat)
+		
+		self.outputformats = QtGui.QComboBox(self)
+		self.outputformats.addItem("hdf")
+		self.outputformats.addItem("img")
+		self.outputhbl3.addWidget(self.outputformats)
+		
+		
+		self.outputforceoverwrite = QtGui.QCheckBox("Force Overwrite")
+		self.outputforceoverwrite.setChecked(False)
+		self.outputhbl3.addWidget(self.outputforceoverwrite)
+		
+		self.outputvbl.addLayout(self.outputhbl3)
 		
 		self.outputbox = QtGui.QGroupBox("Output")
 		self.outputbox.setLayout(self.outputvbl)
@@ -1804,21 +1845,40 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erasetoggled)
 		self.connect(self.unerase, QtCore.SIGNAL("clicked(bool)"), self.unerasetoggled)
 		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
-		self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.target.toggleFrozen)
+		#self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.target.toggleFrozen)
 		
 		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.refbuttontoggled)
 		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manualbuttontoggled)
 		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.addNewAutoBoxer)
 		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.addCopyAutoBoxer)
+		self.connect(self.abdelete, QtCore.SIGNAL("clicked(bool)"), self.deleteAutoBoxer)
 		self.connect(self.abtable, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.abtableItemChanged)
 		self.connect(self.abtable, QtCore.SIGNAL("cellChanged(int,int)"), self.abtableCellChanged)
+		
+		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.writebimages)
+		self.connect(self.writeboxesdbs,QtCore.SIGNAL("clicked(bool)"),self.writebcoords)
+	
+	def writebimages(self,unused):
+		print 
+		boxsize = int(str(self.usingboxsize.text()))
+		realboxsize = int(str(self.bs.text()))
+		if realboxsize == boxsize:
+			boxsize = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
+		self.target.writeboxesimages(boxsize,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()))
+		
+	def writebcoords(self,unused):
+		boxsize = int(str(self.usingboxsize.text()))
+		realboxsize = int(str(self.bs.text()))
+		if realboxsize == boxsize:
+			boxsize = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
+		self.target.writeboxesdbs(boxsize,self.outputforceoverwrite.isChecked())
 	
 	def abtableCellChanged(self,i,j):
 		if i >= len(self.col1): return
 		if self.lock:
 			return
-		data = self.abselmediator.getAutoBoxerData()
-		data = data.items()
+		#data = self.abselmediator.getAutoBoxerData()
+		#data = data.items()
 		if str(self.col1[i].text()) != self.colnames[i]:
 			if not self.abselmediator.updateDBUserString(str(self.col1[i].text()),self.colnames[i]):
 				self.col1[i].setText(self.colnames[i])
@@ -1840,7 +1900,7 @@ class GUIboxPanel(QtGui.QWidget):
 				self.currentlychecked = i
 				self.abselmediator.changeCurrentAutoBoxer(str(self.col1[i].text()))
 			else:
-				print "error, I don't know what's happening"
+				print "error, unforeseen checkstate circumstance. Nothing done"
 			#except: pass
 		
 		self.lock = False
@@ -1898,6 +1958,21 @@ class GUIboxPanel(QtGui.QWidget):
 				break
 		
 		self.lock = False
+	
+	def deleteAutoBoxer(self,unused):
+		items = self.abtable.selectedItems()
+		data = self.abselmediator.getAutoBoxerData()
+		update = False
+		for item in items:
+			if item.column() == 0:
+				if len(self.abselmediator.associatedImages(str(item.text()))) != 0:
+					print "can't delete an autoboxer unless it has no images associated with it"
+				else:
+					self.abselmediator.remove(str(item.text()))
+					update = True
+					
+		if update:
+			self.updateABTable()
 	
 	def addNewAutoBoxer(self,bool):
 		self.abselmediator.addNewAutoBoxer()

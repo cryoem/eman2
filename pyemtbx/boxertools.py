@@ -217,6 +217,20 @@ class Box:
 		# make sure there are no out of date footprints hanging around
 		self.footprint = None
 		
+	def changeBoxSize(self,boxsize):
+		'''
+			Changes the boxsize if it really is different to that which is currently stored
+			Release references to self.image and self.footprint so that they are generated next time
+			they are asked for	
+		'''
+		if boxsize != self.xsize or boxsize != self.ysize:
+			self.xcorner -= (boxsize-self.xsize)/2
+			self.xsize = boxsize
+			self.ycorner -= (boxsize-self.ysize)/2
+			self.ysize = boxsize
+			
+			self.image = None
+			self.footprint = None
 			
 	def getBoxImage(self,norm=True,force=False):
 		bic = BigImageCache()
@@ -1129,13 +1143,14 @@ class Boxable:
 			box.g = 0
 			box.b = 0
 			
+			box.updatePositionFromDB()
 			self.boxes.append(box)
 
 		#print "Added",len(self.boxes)-a," references"
 	def getManualFromDB(self):
 		#a = len(self.boxes) # debug		
 		projectdb = EMProjectDB()
-		manualboxes = projectdb[self.imagename+"_manualboxes"]
+		manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
 		for trimbox in manualboxes:
 			box = Box()
 			
@@ -1152,7 +1167,12 @@ class Boxable:
 			self.boxes.append(box)
 		#print "Added",len(self.boxes)-a," manual boxes"
 
-	def writedb(self,force=False):
+	def writedb(self,boxsize=-1,force=False):
+		'''
+		If boxsize is -1 then the current boxsize is used to write output
+		If force is True then the old file with the same name is written over (as opposed to backed up)
+		
+		'''
 		if len(self.boxes) == 0:
 			print "no boxes to write, doing nothing. Image name is",self.imagename
 		else:
@@ -1170,17 +1190,33 @@ class Boxable:
 					remove_file(boxname)
 				
 			f=file(boxname,'w')
-				
+			
 			for box in self.boxes:
+				if boxsize != -1:
+					# FOO - this will not work if the box dimensions are not equal...
+					origboxsize = box.xsize
+					if origboxsize != box.ysize:
+						print "error, uniform box dimensions are not supported"
+						return
+					box.changeBoxSize(boxsize)
+						
 				f.write(str(int(box.xcorner))+'\t'+str(int(box.ycorner))+'\t'+str(box.xsize)+'\t'+str(box.ysize)+'\n')
 				
+				if boxsize != -1:
+					box.changeBoxSize(origboxsize)
+
 			f.close()
 
-	def writeboximages(self,force=False):
+	def writeboximages(self,boxsize=-1,force=False,imageformat="hdf"):
+		'''
+		If boxsize is -1 then the current boxsize is used to write output
+		If force is True then output is written over (if it already exists) - else an error is printed and nothing happens
+		
+		'''
 		if len(self.boxes) == 0:
 			print "no boxes to write, doing nothing. Image name is",self.imagename
 		else:
-			boxname = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".img"
+			boxname = strip_file_tag(self.imagename)+"." + imageformat
 			if file_exists(boxname):
 				if not force:
 					print "warning, file already exists - ", boxname, " doing nothing. Use force to override this behavior"
@@ -1189,14 +1225,27 @@ class Boxable:
 					remove_file(boxname)
 				
 			for box in self.boxes:
-				
+				if boxsize != -1:
+					# FOO - this will not work if the box dimensions are not equal...
+					origboxsize = box.xsize
+					if origboxsize != box.ysize:
+						print "error, uniform box dimensions are not supported"
+						return
+					box.changeBoxSize(boxsize)
+						
 				image = box.getBoxImage()
 				
-				#image.set_attr("originalboxxcorner",box.xcorner)
-				#image.set_attr("originalboxycorner",box.ycorner)
-				#image.set_attr("originalimagename",self.getImageName())
+				image.set_attr("original_x_corner",box.xcorner)
+				image.set_attr("original_y_corner",box.ycorner)
+				image.set_attr("original_x_size",box.xsize)
+				image.set_attr("original_y_size",box.ysize)
+				
+				image.set_attr("originating_imagename",self.getImageName())
 				
 				image.write_image(boxname,-1)
+				
+				if boxsize != -1:
+					box.changeBoxSize(origboxsize)
 
 	def moveBox(self,box,dx,dy,boxnum):
 		if box.ismanual:
@@ -1234,17 +1283,17 @@ class Boxable:
 	def cacheManualBox(self,box):
 		projectdb = EMProjectDB()
 		try:
-			manualboxes = projectdb[self.imagename+"_manualboxes"]
+			manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
 		except:
 			manualboxes = []
 	
 		manualboxes.append(TrimBox(box))
-		projectdb[self.imagename+"_manualboxes"] = manualboxes
+		projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
 	
 	def deleteManualBox(self,box):
 		projectdb = EMProjectDB()
 		try:
-			manualboxes = projectdb[self.imagename+"_manualboxes"]
+			manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
 		except:
 			print "error, you can't delete a manual box if there are none!"
 			return
@@ -1253,7 +1302,7 @@ class Boxable:
 		for j,b in enumerate(manualboxes):
 			if b.xcorner == box.xcorner and b.ycorner == box.ycorner:
 				manualboxes.pop(j)
-				projectdb[self.imagename+"_manualboxes"] = manualboxes
+				projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
 				found = True
 				break
 		
@@ -1265,7 +1314,7 @@ class Boxable:
 	def moveManualBox(self,box,dx,dy):
 		projectdb = EMProjectDB()
 		try:
-			manualboxes = projectdb[self.imagename+"_manualboxes"]
+			manualboxes = projectdb[strip_file_tag(self.imagename)+"_manualboxes"]
 		except:
 			print "error, you can't move a manual box if there are none!"
 			return
@@ -1276,7 +1325,7 @@ class Boxable:
 				b.xcorner += dx
 				b.ycorner += dy
 				found = True
-				projectdb[self.imagename+"_manualboxes"] = manualboxes
+				projectdb[strip_file_tag(self.imagename)+"_manualboxes"] = manualboxes
 				break
 		
 		if not found:
@@ -1826,7 +1875,7 @@ class TrimSwarmAutoBoxer():
 		self.dbuserstring = string
 		projectdb = EMProjectDB()
 		projectdb[self.dbuserstring] = 	self.getUniqueStamp()
-		print "set db string",self.getUniqueStamp()
+		#print "set db string",self.getUniqueStamp()
 	
 	def getDBUserString(self):
 		return self.dbuserstring
@@ -1836,7 +1885,7 @@ class TrimSwarmAutoBoxer():
 		This function is used when creating a fresh copy of this autoboxer and placing it
 		in the database in GUIbox
 		'''
-		print "setting creationTS",TS
+		#print "setting creationTS",TS
 		self.creationTS = TS
 		
 	def getCreationTS(self):
@@ -1919,7 +1968,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.dbuserstring = string
 		projectdb = EMProjectDB()
 		projectdb[self.dbuserstring] = 	self.getUniqueStamp()
-		print "set db string",self.getUniqueStamp()
+		#print "set db string",self.getUniqueStamp()
 	def getDBUserString(self):
 		return self.dbuserstring
 	
@@ -2322,12 +2371,12 @@ class SwarmAutoBoxer(AutoBoxer):
 				autoboxerdbstring = "autoboxer_"+self.getCreationTS()
 				data["auto_boxer_db_name"] = autoboxerdbstring
 				projectdb[boxable.getImageName()+"_autoboxer"] = data
-				print "wrote",boxable.getImageName()+"_autoboxer"
+				#print "wrote",boxable.getImageName()+"_autoboxer"
 				
 				if self.mode != SwarmAutoBoxer.COMMANDLINE:
 					self.writeToDB(True)
 				
-				print boxable.getAutoBoxerID(),self.getCreationTS()
+				#print boxable.getAutoBoxerID(),self.getCreationTS()
 				#if boxable.getAutoBoxerID() != self.getCreationTS():
 				# These two lines are a hack because it may not need to happen (redundancy)
 				boxable.setAutoBoxerID(self.getCreationTS())

@@ -221,7 +221,7 @@ map< unsigned int, unsigned int> BoxSVDClassifier::go()
 
 	map< unsigned int, unsigned int> grouping = randomSeedCluster(svd_coords, mColumns);
 		
-	for ( unsigned int i = 0; i < 8; ++ i )
+	for ( unsigned int i = 0; i < 20; ++ i )
 	{
 		grouping = getIterativeCluster(svd_coords, grouping);
 	}
@@ -376,7 +376,7 @@ vector<vector<float> > BoxSVDClassifier::getDistances( const gsl_matrix* const s
 				float value = (float)( (gsl_matrix_get( ref_coords, random_seed_idx, j) - gsl_matrix_get( svd_coords, i, j)) );
 				distance += value * value;
 			}
-			ith_distances.push_back(sqrtf(distance));
+			ith_distances.push_back(distance);
 		}
 		distances.push_back(ith_distances);
 	}
