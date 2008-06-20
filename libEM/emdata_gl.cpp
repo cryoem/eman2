@@ -35,23 +35,24 @@
 #include "emdata.h"
 
 #ifdef __APPLE__
-//need GL_GLEXT_PROTOTYPES for glTexImage3D 
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES
-#endif
-#include "OpenGL/gl.h"
-#include "OpenGL/glu.h"
-#include "OpenGL/glext.h"
+	#include "OpenGL/gl.h"
+	#include "OpenGL/glu.h"
+	#include "OpenGL/glext.h"
 #else // WIN32, LINUX
+	#include "GL/gl.h"
+	#include "GL/glu.h"
+	#include "GL/glext.h"
+#endif	//__APPLE__
 
-#include "GL/gl.h"
-#include "GL/glu.h"
-#include "GL/glext.h"
-PFNGLTEXIMAGE3DPROC glTexImage3D;
-#endif
+#ifdef _WIN32
+	PFNGLTEXIMAGE3DPROC glTexImage3D;
+#else
+	#ifndef GL_GLEXT_PROTOTYPES
+		#define GL_GLEXT_PROTOTYPES
+	#endif	//GL_GLEXT_PROTOTYPES
+#endif	//_WIN32
 
 using namespace EMAN;
-
 
 
 unsigned int EMData::gen_glu_mipmaps() const
