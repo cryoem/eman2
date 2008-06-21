@@ -35,6 +35,7 @@ import atexit
 import weakref
 from cPickle import loads,dumps
 from zlib import compress,decompress
+import os
 try:
 	from bsddb3 import db
 except:
@@ -48,25 +49,42 @@ cachesize=100000000
 class EMAN2DB:
 	"""This class implements a local database of data and metadata for EMAN2"""
 	
-	def __init__(self):
+	def __init__(self,path=None):
+		"""path points to the directory containin the EMAN2DB subdirectory. None implies the current working directory"""
 		#if recover: xtraflags=db.DB_RECOVER
+		if not path : path=os.getcwd()
+		self.path=path
+		
 		if not os.access("./EMAN2DB/cache",os.F_OK) : os.makedirs("./EMAN2DB/cache")
 		self.dbenv=db.DBEnv()
 		self.dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
-		self.dbenv.set_data_dir("./EMAN2DB")
+		self.dbenv.set_data_dir("%s/EMAN2DB"%self.path)
 		self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
+		self.dicts=[]
 		#if self.__dbenv.DBfailchk(flags=0) :
 			#self.LOG(1,"Database recovery required")
 			#sys.exit(1)
 			
-		self.dbenv.open("./EMAN2DB/cache",envopenflags)
+		self.dbenv.open("%s/EMAN2DB/cache"%self.path,envopenflags)
 
 	def __del__(self):
 		self.dbenv=None
+		for i in self.dicts : self.close_dict(i)
+
+	def open_dict(self,name):
+		self.__dict__[name]=DBHash(name,dbenv=self.dbenv)
+		self.dicts.append(name)
+	
+	def close_dict(self,name):
+		self.__dict__[name].close()
+		del(self.__dict__[name])
+		self.dicts.remove(name)
 
 class DBHash:
 	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,
-	keys and data may be arbitrary pickleable types"""
+	keys and data may be arbitrary pickleable types, however, additional functionality is provided
+	for EMData objects. Specifically, if integer keys are used, set_attr and get_attr may be used
+	to efficiently get and set attributes for images with reduced i/o requirements (in certain cases)."""
 	
 	allhashes=weakref.WeakKeyDictionary()
 	def __init__(self,name,file=None,dbenv=None,nelem=0):
@@ -107,16 +125,51 @@ class DBHash:
 			time.sleep(.1)
 		self.txn=txn
 
+	def get_attr(self,n,attr):
+		"""This works only for values which are EMData objects and integer keys. It allows attributes to be 
+		read without reading the full image in some cases"""
+		try:
+			a=self["%d_attr"%n]
+			return a[attr]
+		except:
+			im=self[n]
+			return im.get_attr(attr)
+		
+	def set_attr(self,n,attr,val):
+		"""This works only for values which are EMData objects and integer keys. It allows attributes to be 
+		awr without reading/writing the full image"""
+		try:
+			a=self["%d_attr"%n]
+			a[attr]=val
+			self["%d_attr"%n]=a
+		except:
+			a={attr:val}
+			self["%d_attr"%n]=a
+
 	def __len__(self):
-		return len(self.bdb)
+		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
+#		return len(self.bdb)
 
 	def __setitem__(self,key,val):
 		if (val==None) :
 			self.__delitem__(key)
-		else : self.bdb.put(dumps(key,-1),compress(dumps(val,-1),4),txn=self.txn)
-
+		else : 
+			self.bdb.put(dumps(key,-1),compress(dumps(val,-1),1),txn=self.txn)
+			if type(key)==int :
+				if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
+				try: del(self["%d_attr"%key])
+				except: pass
+				
 	def __getitem__(self,key):
-		return loads(decompress(self.bdb.get(dumps(key,-1),txn=self.txn)))
+		ret=loads(decompress(self.bdb.get(dumps(key,-1),txn=self.txn)))
+		if isinstance(ret,EMData) and type(key)==int :
+			try: 
+				a=self["%d_attr"%key]
+				for k,v in a.items():
+					ret.set_attr(k,v)
+			except: pass
+		
+		return ret
 
 	def __delitem__(self,key):
 		self.bdb.delete(dumps(key,-1),txn=self.txn)
@@ -133,18 +186,29 @@ class DBHash:
 	def items(self):
 		return map(lambda x:(loads(x[0]),loads(decompress(x[1]))),self.bdb.items())
 
-	def has_key(self,key,txn=None):
-		if not txn : txn=self.txn
-		return self.bdb.has_key(dumps(key,-1),txn=txn)
+	def has_key(self,key):
+		return self.bdb.has_key(dumps(key,-1))
 
 	def get(self,key,txn=None):
-		return loads(decompress(self.bdb.get(dumps(key,-1),txn=txn)))
-	
+		ret=loads(decompress(self.bdb.get(dumps(key,-1),txn=txn)))
+		if isinstance(ret,EMData) and type(key)==int :
+			try: 
+				a=self["%d_attr"%key]
+				for k,v in a.items():
+					ret.set_attr(k,v)
+			except: pass
+		return ret
+
 	def set(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
 		if (val==None) :
 			self.bdb.delete(dumps(key,-1),txn=txn)
-		else : self.bdb.put(dumps(key,-1),compress(dumps(val,-1)),txn=txn)
+		else : 
+			self.bdb.put(dumps(key,-1),compress(dumps(val,-1),1),txn=txn)
+			if type(key)==int :
+				if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
+				try: del(self["%d_attr"%key])
+				except: pass
 
 	def update(self,dict):
 		for i,j in dict.items(): self[i]=j
