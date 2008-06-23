@@ -872,6 +872,32 @@ void EMData::del_attr_dict(const vector<string> & del_keys)
 	}
 }
 
+void EMData::set_attr(const string & key, EMObject val)
+{
+	attr_dict[key] = val;
+	
+	if(rdata != 0) { /* reset attribute nx, ny, nz will resize the image */
+		int nd = (int) val;
+		EMData * new_image =0;
+		if( key == "nx" && nx != (int)val ) {
+			new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
+		} 
+		else if( key == "ny" && ny != (int)val ){
+			new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
+		} 
+		else if( key == "nz" && nz != (int)val ) {
+			new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
+		}
+		
+		if(new_image) {
+			this->operator=(*new_image);
+		}
+		
+		delete new_image; 
+	}
+}
+
+
 //vector<float> EMData::get_data_pickle() const
 std::string EMData::get_data_pickle() const
 {

@@ -441,10 +441,7 @@ EMObject get_attr_default(const string & attr_name, const EMObject & em_obj = EM
  * @param key The header attribute name.
  * @param val The attribute value.
  */
-inline void set_attr(const string & key, EMObject val)
-{
-	attr_dict[key] = val;
-}
+void set_attr(const string & key, EMObject val);
 
 
 /** Get the image attribute dictionary containing all the
