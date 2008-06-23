@@ -2752,6 +2752,16 @@ class TestEMData(unittest.TestCase):
         d = e.get_attr_dict()
         self.assertEqual(d.has_key('is_complex'), False)
         
+        e.set_attr('nx', 100)
+        self.assertEqual(e.get_xsize(), 100)
+        self.assertEqual(e.get_attr('nx'), 100)
+        e.set_attr('ny', 200)
+        self.assertEqual(e.get_ysize(), 200)
+        self.assertEqual(e.get_attr('ny'), 200)
+        e.set_attr('nz', 300)
+        self.assertEqual(e.get_zsize(), 300)
+        self.assertEqual(e.get_attr('nz'), 300)
+        
     def test_boolean_check(self):
         """test some boolean check in EMData ................"""
         e = EMData()
