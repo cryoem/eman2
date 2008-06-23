@@ -44,7 +44,7 @@ except:
 
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
 dbopenflags=db.DB_CREATE
-cachesize=100000000
+cachesize=10000000
 
 class EMAN2DB:
 	"""This class implements a local database of data and metadata for EMAN2"""
@@ -58,6 +58,7 @@ class EMAN2DB:
 		if not os.access("./EMAN2DB/cache",os.F_OK) : os.makedirs("./EMAN2DB/cache")
 		self.dbenv=db.DBEnv()
 		self.dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
+#		self.dbenv.set_cachesize(1,0,8)		# gbytes, bytes, ncache (splits into groups)
 		self.dbenv.set_data_dir("%s/EMAN2DB"%self.path)
 		self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
 		self.dicts=[]
@@ -72,13 +73,132 @@ class EMAN2DB:
 		for i in self.dicts : self.close_dict(i)
 
 	def open_dict(self,name):
-		self.__dict__[name]=DBHash(name,dbenv=self.dbenv)
+		self.__dict__[name]=DBHashMeta(name,dbenv=self.dbenv)
 		self.dicts.append(name)
 	
 	def close_dict(self,name):
 		self.__dict__[name].close()
 		del(self.__dict__[name])
 		self.dicts.remove(name)
+
+class DBHashMeta:
+	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,
+	keys and data may be arbitrary pickleable types, however, additional functionality is provided
+	for EMData objects. Specifically, if integer keys are used, set_attr and get_attr may be used
+	to efficiently get and set attributes for images with reduced i/o requirements (in certain cases)."""
+	
+	allhashes=weakref.WeakKeyDictionary()
+	fixedkeys=frozenset(("nx","ny","nz","minimum","maximum","mean","sigma","square_sum","mean_nonzero","sigma_nonzero"))
+	def __init__(self,name,file=None,dbenv=None,nelem=0):
+		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
+		name is required, and will also be used as a filename if none is
+		specified. """
+		
+		global dbopenflags
+		DBHashMeta.allhashes[self]=1		# we keep a running list of all trees so we can close everything properly
+		self.name = name
+		self.txn=None	# current transaction used for all database operations
+		self.bdb=db.DB(dbenv)
+		if file==None : file=name+".bdb"
+		self.bdb.open(file,name,db.DB_BTREE,dbopenflags)
+#		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
+
+	def __str__(self): return "<EMAN2db DBHash instance: %s>" % self.name
+
+	def __del__(self):
+		self.close()
+
+	def close(self):
+		if self.bdb == None: return
+		self.bdb.close()
+		self.bdb=None
+	
+	def sync(self):
+		if self.bdb : self.bdb.sync()
+		
+	def set_txn(self,txn):
+		"""sets the current transaction. Note that other python threads will not be able to use this
+		Hash until it is 'released' by setting the txn back to None"""
+		if txn==None: 
+			self.txn=None
+			return
+		
+		while self.txn :
+			time.sleep(.1)
+		self.txn=txn
+
+	def get_attr(self,n,attr):
+		return loads(self.bdb.get(dumps(n,-1),txn=self.txn))[attr]
+		
+	def set_attr(self,n,attr,val):
+		a=loads(self.bdb.get(dumps(n,-1),txn=self.txn))
+		a[attr]=val
+		self[n]=a
+
+	def __len__(self):
+		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
+#		return len(self.bdb)
+
+	def __setitem__(self,key,val):
+		if (val==None) :
+			self.__delitem__(key)
+		elif isinstance(val,EMData) : 
+			self.bdb.put(dumps(key,-1),dumps(val.get_attr_dict(),-1),txn=self.txn)
+			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
+		else :
+			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
+				
+	def __getitem__(self,key):
+		r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
+		if isinstance(r,dict) and r.has_key("nx") :
+			ret=EMData(r["nx"],r["ny"],r["nz"])
+			k=set(r.keys())
+			k-=DBHashMeta.fixedkeys
+			for i in k: ret.set_attr(i,r[i])
+			return ret
+		return r
+
+	def __delitem__(self,key):
+		self.bdb.delete(dumps(key,-1),txn=self.txn)
+
+	def __contains__(self,key):
+		return self.bdb.has_key(dumps(key,-1),txn=self.txn)
+
+	def keys(self):
+		return map(lambda x:loads(x),self.bdb.keys())
+
+	def values(self):
+		return map(lambda x:loads(decompress(x)),self.bdb.values())
+
+	def items(self):
+		return map(lambda x:(loads(x[0]),loads(decompress(x[1]))),self.bdb.items())
+
+	def has_key(self,key):
+		return self.bdb.has_key(dumps(key,-1))
+
+	def get(self,key,txn=None):
+		r=loads(self.bdb.get(dumps(key,-1),txn=txn))
+		if isinstance(r,dict) and r.has_key("nx") :
+			ret=EMData(r["nx"],r["ny"],r["nz"])
+			k=set(r.keys())
+			k-=DBHashMeta.fixedkeys
+			for i in k: ret.set_attr(i,r[i])
+			return ret
+		return r
+
+	def set(self,key,val,txn=None):
+		"Alternative to x[key]=val with transaction set"
+		if (val==None) :
+			self.__delitem__(key)
+		elif isinstance(val,EMData) : 
+			self.bdb.put(dumps(key,-1),dumps(val.get_attr_dict(),-1),txn=txn)
+			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
+		else :
+			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
+
+	def update(self,dict):
+		for i,j in dict.items(): self[i]=j
+
 
 class DBHash:
 	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,
