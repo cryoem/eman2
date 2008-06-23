@@ -586,7 +586,7 @@ namespace EMAN
 		 */
 		int get_ndim() const
 		{
-			return origin.get_ndim();
+			return size.get_ndim();
 		}
 
 		/** Get the description of this region in a string.
