@@ -877,16 +877,25 @@ void EMData::set_attr(const string & key, EMObject val)
 	attr_dict[key] = val;
 	
 	if(rdata != 0) { /* reset attribute nx, ny, nz will resize the image */
-		int nd = (int) val;
+		
 		EMData * new_image =0;
-		if( key == "nx" && nx != (int)val ) {
-			new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
-		} 
-		else if( key == "ny" && ny != (int)val ){
-			new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
-		} 
-		else if( key == "nz" && nz != (int)val ) {
-			new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
+		if( key == "nx" ) {
+			int nd = (int) val;		
+			if( nx != (int)val ) {
+				new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
+			} 
+		}
+		else if( key == "ny" ) {
+			int nd = (int) val;
+			if( ny != (int)val ) {
+				new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
+			} 
+		}
+		else if( key == "nz" ) {
+			int nd = (int) val;
+			if( nz != (int)val ) {
+				new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
+			}
 		}
 		
 		if(new_image) {
