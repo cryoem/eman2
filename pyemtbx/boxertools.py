@@ -1090,6 +1090,9 @@ class Boxable:
 	def toggleFrozen(self):
 		self.frozen = not self.frozen
 		
+	def setFrozen(self,frozen):
+		self.frozen = frozen
+		
 	def getAutoBoxerFromDB(self):
 		
 		projectdb = EMProjectDB()
@@ -1298,7 +1301,7 @@ class Boxable:
 		
 		box.move(dx,dy)
 
-	def addbox(self,box):
+	def addbox(self,box):	
 		if not isinstance(box,Box):
 			print "You can not add a box to this box set if it is not of type Box"
 			return;

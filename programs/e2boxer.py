@@ -933,6 +933,9 @@ class GUIbox:
 		return self.boxsize
 	
 	def storeBox(self,box):
+		if self.boxable.isFrozen():
+			return
+		
 		self.boxable.addbox(box)
 		
 		# Should this be here?
@@ -950,6 +953,8 @@ class GUIbox:
 		return boxes[boxnum]
 		
 	def removeBox(self,boxnum):
+		if self.boxable.isFrozen():return
+		
 		box = self.delbox(boxnum)
 		if not (box.isref or box.ismanual):
 			self.boxable.addExclusionParticle(box)
@@ -1165,6 +1170,9 @@ class GUIbox:
 
 	def moveBox(self,boxnum,dx,dy):
 		box = self.getBoxes()[boxnum]
+		if self.boxable.isFrozen():
+			return
+		
 		self.boxable.moveBox(box,dx,dy,boxnum)
 			# we have to update the reference also
 		self.ptcl[boxnum] = box.getBoxImage()
@@ -1270,6 +1278,7 @@ class GUIbox:
 		if forceimagemxremove: self.ptcl.pop(boxnum)
 		
 		box = self.boxable.boxes[boxnum]
+		
 		self.boxable.delbox(boxnum)
 		# if the boxable was a reference then the autoboxer needs to be told. It will remove
 		# it from its own list and potentially do autoboxing
@@ -1467,9 +1476,10 @@ class GUIbox:
 			print 'technique',technique,'is unsupported - check back tomorrow'
 			
 	def toggleFrozen(self,unusedbool):
-		self.boxable.toggleFrozen()
-		self.boxable.writeToDB()
 		self.guiim.setFrozen(self.boxable.isFrozen())
+		if not self.boxable.isFrozen():
+			self.changeCurrentAutoBoxer(self.boxable.getAutoBoxerID())
+			
 		self.updateImageDisplay()
 
 	def setBoxingMethod(self,ref,manual):
@@ -1545,7 +1555,8 @@ class AutoBoxerSelectionsMediator:
 				tag = i[1]["convenience_name"]
 				self.dictdata[tag] = []
 				self.namemap[i[0]] = tag
-		
+		print self.dictdata
+		print self.namemap
 		for imagename in self.imagenames:
 			found = False
 			try:
@@ -1635,13 +1646,19 @@ class AutoBoxerSelectionsMediator:
 		return None
 	
 	def toggleFrozen(self,tag,bool):
-		new_name = self.addCopyAutoBoxer(tag)
-		self.getAutoBoxerData() # FIXME this is inefficient, could just add to self.dictdata etc
-		autoboxerid = self.__getAutoBoxerIDFromTag(new_name)
 		boxable = self.parent.getBoxable()
-		boxable.setAutoBoxerID(autoboxerid)
+		boxable.toggleFrozen()
+		
+		frozen = boxable.isFrozen()
+		if frozen:
+			new_name = self.addCopyAutoBoxer(tag)
+			self.getAutoBoxerData() # FIXME this is inefficient, could just add to self.dictdata etc
+			autoboxerid = self.__getAutoBoxerIDFromTag(new_name)
+			
+			boxable.setAutoBoxerID(autoboxerid)
+			boxable.writeToDB()
 		boxable.writeToDB()
-		self.parent.toggleFrozen(bool)
+		self.parent.toggleFrozen(frozen)
 		
 	def clearCurrent(self):
 		new_name = self.addNewAutoBoxer()
