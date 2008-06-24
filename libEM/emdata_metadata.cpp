@@ -35,6 +35,7 @@
  
 #include "emdata.h"
 #include "ctf.h"
+#include "portable_fileio.h"
 
 #include <cstring>
 #include <sstream>
