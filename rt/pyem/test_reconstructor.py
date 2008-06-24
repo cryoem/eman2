@@ -113,6 +113,8 @@ class TestReconstructor(unittest.TestCase):
 		r.insert_slice(e2, Transform3D(EULER_EMAN, 0,45,45))
 		r.insert_slice(e3, Transform3D(EULER_EMAN, 10,0,54))
 		result = r.finish()
+		
+		testlib.safe_unlink('density.mrc')
 	
 	def test_WienerFourierReconstructor(self):
 		"""test WienerFourierReconstructor .................."""
