@@ -151,7 +151,12 @@ namespace EMAN
 			else if (data[1] > 1) {
 				return 2;
 			}
-			return 1;
+			else if (data[0] > 1) {
+				return 1;
+			}
+			else {
+				return 0;
+			}
 		}
 		
 		/** Get the ith direction's size. Used as a rvalue.
