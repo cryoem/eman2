@@ -207,7 +207,7 @@ void EMData::write_data(string fsp,size_t loc) {
 	f=fopen(fsp.c_str(), "wb");
 	if (!f) throw FileAccessException(fsp);
 	portable_fseek(f,loc,SEEK_SET);
-	if (fwrite(rdata,nx*ny,nz*4,f)!=nz*4) throw FileAccessException(fsp);
+	if (fwrite(rdata,nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
 	fclose(f);
 }
 
@@ -216,7 +216,7 @@ void EMData::read_data(string fsp,size_t loc) {
 	f=fopen(fsp.c_str(), "rb");
 	if (!f) throw FileAccessException(fsp);
 	portable_fseek(f,loc,SEEK_SET);
-	if (fread(rdata,nx*ny,nz*4,f)!=nz*4) throw FileAccessException(fsp);
+	if (fread(rdata,nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
 	fclose(f);
 }
 
@@ -869,7 +869,25 @@ Dict EMData::get_attr_dict() const
 }
 
 void EMData::set_attr_dict(const Dict & new_dict)
-{
+{	
+	/*set nx, ny nz may resize the image*/
+	if( ( new_dict.has_key("nx") && nx!=(int)new_dict["nx"] ) 
+		|| ( new_dict.has_key("ny") && ny!=(int)new_dict["ny"] )
+		|| ( new_dict.has_key("nz") && nz!=(int)new_dict["nz"] ) ) {
+
+		int newx, newy, newz;
+		newx = new_dict.has_key("nx") ? (int)new_dict["nx"] : nx;
+		newy = new_dict.has_key("ny") ? (int)new_dict["ny"] : ny;
+		newz = new_dict.has_key("nz") ? (int)new_dict["nz"] : nz;
+		
+		EMData * new_image = get_clip(Region((nx-newx)/2, (ny-newy)/2, (nz=newz)/2, newx, newy, newz));
+		if(new_image) {
+			this->operator=(*new_image);
+			delete new_image;
+			new_image = 0;
+		}
+	}
+	
 	vector<string> new_keys = new_dict.keys();
 	vector<string>::const_iterator it;
 	for(it = new_keys.begin(); it!=new_keys.end(); ++it) {
@@ -918,9 +936,9 @@ void EMData::set_attr(const string & key, EMObject val)
 		
 		if(new_image) {
 			this->operator=(*new_image);
+			delete new_image; 
+			new_image = 0;
 		}
-		
-		delete new_image; 
 	}
 }
 
