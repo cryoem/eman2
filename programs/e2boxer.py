@@ -1555,8 +1555,8 @@ class AutoBoxerSelectionsMediator:
 				tag = i[1]["convenience_name"]
 				self.dictdata[tag] = []
 				self.namemap[i[0]] = tag
-		print self.dictdata
-		print self.namemap
+		#print self.dictdata
+		#print self.namemap
 		for imagename in self.imagenames:
 			found = False
 			try:
@@ -1582,7 +1582,6 @@ class AutoBoxerSelectionsMediator:
 	def addCopyAutoBoxer(self,tag):
 		autoboxerid = self.__getAutoBoxerIDFromTag(tag)
 		if autoboxerid != None:
-			print "asking parent to add copy"
 			return self.parent.addCopyAutoBoxerDB(autoboxerid,self.getTotalAutoBoxers())
 		else:
 			print "error, couldn't find autoboxer from tag",tag
@@ -1926,6 +1925,7 @@ class GUIboxPanel(QtGui.QWidget):
 				self.col1[i].setCheckState(Qt.Checked)
 				self.currentlychecked = i
 				self.abselmediator.changeCurrentAutoBoxer(str(self.col1[i].text()))
+				self.updateABTable()
 			else:
 				print "error, unforeseen checkstate circumstance. Nothing done"
 			#except: pass
