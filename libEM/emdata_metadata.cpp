@@ -201,6 +201,23 @@ const float * const EMData::get_const_data() const
 	return rdata;
 }
 
+void EMData::write_data(string fsp,size_t loc) {
+	FILE *f = 0;
+	f=fopen(fsp.c_str(), "wb");
+	if (!f) throw FileAccessException(fsp);
+	portable_fseek(f,loc,SEEK_SET);
+	if (fwrite(rdata,nx*ny,nz*4,f)!=nz*4) throw FileAccessException(fsp);
+	fclose(f);
+}
+
+void EMData::read_data(string fsp,size_t loc) {
+	FILE *f = 0;
+	f=fopen(fsp.c_str(), "rb");
+	if (!f) throw FileAccessException(fsp);
+	portable_fseek(f,loc,SEEK_SET);
+	if (fread(rdata,nx*ny,nz*4,f)!=nz*4) throw FileAccessException(fsp);
+	fclose(f);
+}
 
 float EMData::calc_center_density()
 {

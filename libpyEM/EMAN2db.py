@@ -73,7 +73,7 @@ class EMAN2DB:
 		for i in self.dicts : self.close_dict(i)
 
 	def open_dict(self,name):
-		self.__dict__[name]=DBHashMeta(name,dbenv=self.dbenv)
+		self.__dict__[name]=DBHash(name,dbenv=self.dbenv)
 		self.dicts.append(name)
 	
 	def close_dict(self,name):

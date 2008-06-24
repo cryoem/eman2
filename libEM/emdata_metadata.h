@@ -67,6 +67,23 @@ EMData *get_fft_phase();
  */
 float *get_data() const;
 
+/** Dump the image pixel data in native byte order to a disk file.
+ * @param fsp The filename to write the image data to
+ * @param loc Location to seek to in the file before writing (size_t)
+ * @author Steve Ludtke
+ * @date Mon Jun 23, 2008
+*/
+void write_data(string fsp,size_t loc);
+
+/** Read the image pixel data in native byte order from a disk file.
+ * The image should already have the correct dimensions.
+ * @param fsp The filename to write the image data to
+ * @param loc Location to seek to in the file before writing (size_t)
+ * @author Steve Ludtke
+ * @date Mon Jun 23, 2008
+*/
+void read_data(string fsp,size_t loc);
+ 
 
 /** Get the image pixel density data in a 1D float array - const version of get_data
  * @return The image pixel density data.
