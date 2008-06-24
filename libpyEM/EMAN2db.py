@@ -73,7 +73,7 @@ class EMAN2DB:
 		for i in self.dicts : self.close_dict(i)
 
 	def open_dict(self,name):
-		self.__dict__[name]=DBHash(name,dbenv=self.dbenv)
+		self.__dict__[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB")
 		self.dicts.append(name)
 	
 	def close_dict(self,name):
@@ -81,7 +81,7 @@ class EMAN2DB:
 		del(self.__dict__[name])
 		self.dicts.remove(name)
 
-class DBHashMeta:
+class DBDict:
 	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,
 	keys and data may be arbitrary pickleable types, however, additional functionality is provided
 	for EMData objects. Specifically, if integer keys are used, set_attr and get_attr may be used
@@ -89,14 +89,16 @@ class DBHashMeta:
 	
 	allhashes=weakref.WeakKeyDictionary()
 	fixedkeys=frozenset(("nx","ny","nz","minimum","maximum","mean","sigma","square_sum","mean_nonzero","sigma_nonzero"))
-	def __init__(self,name,file=None,dbenv=None,nelem=0):
+	def __init__(self,name,file=None,dbenv=None,path=None):
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
 		name is required, and will also be used as a filename if none is
 		specified. """
 		
 		global dbopenflags
-		DBHashMeta.allhashes[self]=1		# we keep a running list of all trees so we can close everything properly
+		DBDict.allhashes[self]=1		# we keep a running list of all trees so we can close everything properly
 		self.name = name
+		if path : self.path = path
+		else : self.path=os.getcwd()
 		self.txn=None	# current transaction used for all database operations
 		self.bdb=db.DB(dbenv)
 		if file==None : file=name+".bdb"
@@ -143,8 +145,21 @@ class DBHashMeta:
 		if (val==None) :
 			self.__delitem__(key)
 		elif isinstance(val,EMData) : 
-			self.bdb.put(dumps(key,-1),dumps(val.get_attr_dict(),-1),txn=self.txn)
+			# decide where to put the binary data
+			ad=val.get_attr_dict()
+			key="%s%dx%dx%d"%(self.name,ad["nx"],ad["ny"],ad["nz"])
+			if not self.has_key(key) : n=0
+			else: n=self[key]+1
+			ad["binary"]=n
+			
+			# write the metadata
+			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
+			
+			# write the binary data
+			val.write_data(key,n*ad["nx"]*ad["ny"]*ad["nz"])
+			self[key]=n
+			
 		else :
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
 				
@@ -153,7 +168,7 @@ class DBHashMeta:
 		if isinstance(r,dict) and r.has_key("nx") :
 			ret=EMData(r["nx"],r["ny"],r["nz"])
 			k=set(r.keys())
-			k-=DBHashMeta.fixedkeys
+			k-=DBDict.fixedkeys
 			for i in k: ret.set_attr(i,r[i])
 			return ret
 		return r
