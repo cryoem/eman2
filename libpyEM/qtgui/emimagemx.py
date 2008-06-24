@@ -202,7 +202,9 @@ class EMImageMXCore:
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 		
 	def setData(self,data):
-		if data == None or not isinstance(data,list) or len(data)==0: return
+		if data == None or not isinstance(data,list) or len(data)==0:
+			self.data = [] 
+			return
 
 		if (self.initsizeflag):
 			self.initsizeflag = False
@@ -379,7 +381,7 @@ class EMImageMXCore:
 		if visiblecols > self.nperrow:
 			visiblecols = self.nperrow
 	
-		return [xstart,visiblecols,ystart,visiblerows]
+		return [int(xstart),int(visiblecols),int(ystart),int(visiblerows)]
 	
 	def render(self):
 

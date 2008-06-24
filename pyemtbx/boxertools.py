@@ -178,7 +178,7 @@ class Box:
 					
 		projectdb[self.imagename+"_movedboxes"] = movedboxes
 		
-		self.changed = True
+		self.changed = False
 		self.updateBoxImage()
 		
 	def updatePositionFromDB(self):
@@ -192,15 +192,16 @@ class Box:
 		# 0.0064 = 0.08*0.08, then divided by two to make in terms of the radius
 		# ... so the proximity limit is 8% of the radius
 		sq_size_limit = (self.xsize**2 + self.ysize**2)*0.0032
-		
+
 		for data in movedboxes:
 			sq_dif = (data[0] - self.xcorner)**2 + (data[1] - self.ycorner)**2
 			if sq_dif < sq_size_limit:
-				self.origxcorner = self.xcorner
-				self.origycorner = self.ycorner
+				self.origxcorner = data[0]
+				self.origycorner = data[1]
 				self.xcorner = data[2]
 				self.ycorner = data[3]
 				self.changed = True
+				self.moved = True
 				#print "moved box using movedbox cache"
 				self.updateBoxImage()
 				break
@@ -365,8 +366,8 @@ class Box:
 		have attempted to lay basic framework if in future we use a different autoBoxer which
 		requires its own parameters
 		'''
-		
-		if self.isdummy: return 0
+		if self.isdummy:
+			return 0
 		
 		correlation = self.getFLCFImage(autoBoxer.getTemplateRadius(),autoBoxer.getBestShrink(),autoBoxer.getTemplateObject())
 		if correlation == None:
@@ -393,8 +394,8 @@ class Box:
 				# setting box.correlationscore is the flag that other functions can act on in order to exclude
 				# this box from consideration
 				self.correlationscore = None
-				print "Error, peak location unrefined"
 				if not force :
+					print "Error, peak location unrefined"
 					return 0
 		
 			# store the peak location
@@ -406,7 +407,6 @@ class Box:
 		
 			# store the profile
 			self.optprofile = BoxingTools.get_min_delta_profile(correlation,self.corx,self.cory, searchradius )
-			
 			# center on the correlation peak
 			if (center):
 				self.xcorner = self.corx*shrink-self.xsize/2.0
@@ -964,7 +964,7 @@ class Boxable:
 		self.refcache = []
 		self.allowcorrelationupdate = False	# a temporary flag that can be used by externally objects, for instance a reference box, which is forcing an update for example
 		self.templateTS = -1 # a template time stamp, used to avoid unecessarily regenerating the template in self.autoBox
-		self.autoBoxerTS = -1 # and autoBoxer time stamp, used to avoid unecessary autoboxing, and to force autoboxing when appropriate
+		self.autoBoxerStateTS = -1 # and autoBoxer time stamp, used to avoid unecessary autoboxing, and to force autoboxing when appropriate
 		self.autoBoxerID = -1 # Stores the unique ID of the autoboxer - this is to facilitate having many autoboxers in the project data base
 		
 		self.autoBoxer = autoBoxer
@@ -993,7 +993,13 @@ class Boxable:
 			if autoBoxer == None:
 				self.getAutoBoxerFromDB()
 		except: pass
+	
+	def clear(self):
+		self.boxes = []
 		
+		projectdb = EMProjectDB()
+		projectdb[self.imagename+"_references"] = []
+	
 	def clearAndReloadImages(self):
 		self.boxes = []
 		try: 
@@ -1025,13 +1031,47 @@ class Boxable:
 				return 0
 				
 		return 1
+
+	def setStamps(self,autoBoxerStateTS,templateTS,autoboxer_unique_id):
+		'''
+		A convenience function for setting all three important time stamps/ids at once
+		
+		'''
+		self.setAutoBoxerStateTS(autoBoxerStateTS)
+		self.setTemplateTS(templateTS)
+		self.setAutoBoxerID(autoboxer_unique_id)
+
+	def getAutoBoxerStateTS(self):
+		return self.autoBoxerStateTS
 	
+	def setAutoBoxerStateTS(self,autoBoxerStateTS):
+		self.autoBoxerStateTS = autoBoxerStateTS
+	
+	def getTemplateTS(self):
+		return self.templateTS
+	
+	def setTemplateTS(self,templateTS):
+		self.templateTS = templateTS
+
 	def getAutoBoxerID(self):
 		return self.autoBoxerID
 	
-	def setAutoBoxerID(self,identification):
-		self.autoBoxerID = identification
+	def setAutoBoxerID(self,autoboxer_unique_id):
+		self.autoBoxerID = autoboxer_unique_id
 	
+	def writeToDB(self):
+		'''
+		Writes fundamentally important information to the database
+		'''
+		data = {}
+		data["auto_boxer_state_TS"] = self.getAutoBoxerStateTS()
+		data["template_TS"] = self.getTemplateTS()
+		data["frozen_state"] = self.frozen
+		data["auto_boxer_unique_id"] = self.getAutoBoxerID()
+		
+		projectdb = EMProjectDB()
+		projectdb[self.getImageName()+"_autoboxer"] = data
+
 	def getImageName(self):
 		return self.imagename
 	
@@ -1049,9 +1089,7 @@ class Boxable:
 		
 	def toggleFrozen(self):
 		self.frozen = not self.frozen
-		projectdb = EMProjectDB()
-		projectdb[self.imagename+"_frozen"] = self.frozen
-	
+		
 	def getAutoBoxerFromDB(self):
 		
 		projectdb = EMProjectDB()
@@ -1063,14 +1101,15 @@ class Boxable:
 		
 	def getFrozenFromDB(self):
 		projectdb = EMProjectDB()
-		self.frozen = projectdb[self.imagename+"_frozen"]
+		data = projectdb[self.imagename+"_autoboxer"]
+		self.frozen = data["frozen_state"]
 		
 	def getDBTimeStamps(self):
 		
 		projectdb = EMProjectDB()
 		data = projectdb[self.imagename+"_autoboxer"]
-		self.autoBoxerTS = data["auto_boxer_state_TS"]
-		self.templateTS = data["templateTS"] 
+		self.autoBoxerStateTS = data["auto_boxer_state_TS"]
+		self.templateTS = data["template_TS"] 
 		self.autoBoxerID = data["auto_boxer_unique_id"]
 	
 	def appendStoredAutoBoxes(self,trimboxes):
@@ -1128,8 +1167,8 @@ class Boxable:
 		#a = len(self.boxes)
 		
 		projectdb = EMProjectDB()
-		manualboxes = projectdb[self.imagename+"_references"]
-		for trimbox in manualboxes:
+		refboxes = projectdb[self.imagename+"_references"]
+		for trimbox in refboxes:
 			box = Box()
 			
 			# had to do conversion stuff so pickle would work
@@ -1167,7 +1206,10 @@ class Boxable:
 			self.boxes.append(box)
 		#print "Added",len(self.boxes)-a," manual boxes"
 
-	def writedb(self,boxsize=-1,force=False):
+	def getCoordFileName(self):
+		return strip_file_tag(self.imagename)+".box"
+		
+	def writecoords(self,boxsize=-1,force=False):
 		'''
 		If boxsize is -1 then the current boxsize is used to write output
 		If force is True then the old file with the same name is written over (as opposed to backed up)
@@ -1206,6 +1248,9 @@ class Boxable:
 					box.changeBoxSize(origboxsize)
 
 			f.close()
+			
+	def getImageFileName(self,imageformat="hdf"):
+		return strip_file_tag(self.imagename)+"."+imageformat
 
 	def writeboximages(self,boxsize=-1,force=False,imageformat="hdf"):
 		'''
@@ -1369,7 +1414,7 @@ class Boxable:
 			b.changed = True
 			self.boxes.append(b)
 
-	def numboxes(self):
+	def numBoxes(self):
 		return len(self.boxes)
 	
 	def updateBoxSize(self,boxsize):
@@ -1534,7 +1579,8 @@ class Boxable:
 		
 		v = []
 		for box in self.boxes:
-			b = copy(box.optprofile[0:n])
+			#b = copy(box.optprofile[0:n])
+			b = copy(box.optprofile)
 			#for a in b: 
 				#a = box[6]-a
 			#print b
@@ -1725,6 +1771,7 @@ class SwarmTemplate:
 		return self.template.get_attr("template_time_stamp")
 	
 	def getReferences(self):
+		#print "asking template for references, there are ",len(self.refboxes)
 		return self.refboxes
 	
 	def appendReference(self,ref):
@@ -1866,19 +1913,17 @@ class TrimSwarmAutoBoxer():
 		
 		self.template = TrimSwarmTemplate(swarmAutoBoxer.template)
 		self.creationTS = swarmAutoBoxer.creationTS
-		self.dbuserstring = swarmAutoBoxer.dbuserstring
+		self.convenienceString = swarmAutoBoxer.convenienceString
 	
 	def getUniqueStamp(self):
 		return "autoboxer_" + self.creationTS
 	
-	def setDBUserString(self,string):
-		self.dbuserstring = string
-		projectdb = EMProjectDB()
-		projectdb[self.dbuserstring] = 	self.getUniqueStamp()
+	def setConvenienceName(self,string):
+		self.convenienceString = string
 		#print "set db string",self.getUniqueStamp()
 	
-	def getDBUserString(self):
-		return self.dbuserstring
+	def getConvenienceName(self):
+		return self.convenienceString
 	
 	def setCreationTS(self,TS):
 		''' 
@@ -1897,6 +1942,14 @@ class TrimSwarmAutoBoxer():
 	def getTemplateTS(self):
 		return self.template.getTemplateTS()
 	
+	def writeToDB(self):
+		data = {}
+		data["autoboxer"] = self
+		data["convenience_name"] = self.getConvenienceName()
+		
+		projectdb = EMProjectDB()
+		projectdb[self.getUniqueStamp()] = data
+	
 class SwarmAutoBoxer(AutoBoxer):
 	'''
 	This is an autoboxer that encapsulates the boxing approach first developed in SwarmPS
@@ -1911,8 +1964,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	COMMANDLINE = 5
 	def __init__(self,parent):
 		AutoBoxer.__init__(self)
-		
-		self.refboxes = []		# this will eventually be a list of Box objects
+
 		self.template = SwarmTemplate(self)	# an EMData object that is the template
 		self.boxsize = -1		# stores the global boxsize, this is the value being used by boxer in the main interface
 		self.shrink = -1
@@ -1942,8 +1994,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.parent = parent
 		
 		self.creationTS = gm_time_string()
-		self.dbuserstring = ""
-		self.setDBUserString(self.creationTS) # this string is the string that users will use to name this autoBoxer in the GUIboxCtrl
+		self.convenienceString = ""
+		self.setConvenienceName(self.getCreationTS()) # this string is the string that users will use to name this autoBoxer in the GUIboxCtrl
 
 	def become(self,trimSwarmAutoBoxer):			
 		self.boxsize = trimSwarmAutoBoxer.boxsize
@@ -1960,17 +2012,19 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.mode = trimSwarmAutoBoxer.mode
 		self.refupdate = trimSwarmAutoBoxer.refupdate
 		self.regressiveflag = trimSwarmAutoBoxer.regressiveflag
+		self.convenienceString = trimSwarmAutoBoxer.convenienceString
 		self.template = SwarmTemplate(self)
 		self.template.become(trimSwarmAutoBoxer.template)
-		self.dbuserstring = trimSwarmAutoBoxer.dbuserstring
 		
-	def setDBUserString(self,string):
-		self.dbuserstring = string
-		projectdb = EMProjectDB()
-		projectdb[self.dbuserstring] = 	self.getUniqueStamp()
-		#print "set db string",self.getUniqueStamp()
-	def getDBUserString(self):
-		return self.dbuserstring
+		# Things that only the SwarmAutoBoxer (not necessary for the TrimSwarmAutoBoxer to do this in its constructor
+		self.__updateRefParams()
+		
+		
+	def setConvenienceName(self,string):
+		self.convenienceString = string
+		
+	def getConvenienceName(self):
+		return self.convenienceString
 	
 	def getBoxable(self):
 		return self.parent.getBoxable()
@@ -1993,10 +2047,10 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 0
 		
 		if box != None:
-			for i,ref in enumerate(self.refboxes):
+			for i,ref in enumerate(self.getRefBoxes()):
 				if ref.isdummy:
-					self.refboxes.pop(i)
-					break
+					self.removeReference(ref)
+				break
 			self.addReference(box)
 		else:
 			if self.dummybox != None:
@@ -2270,7 +2324,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 		return self.shrink
 		
-	def autoBox(self,boxable):
+	def autoBox(self,boxable,updatedisplay=True):
 		# If it's user driven then the user has selected a bunch of references and then hit 'autobox'.
 		# In which case we do a complete reference update, which generates the template and the
 		# best autoboxing parameters
@@ -2284,24 +2338,20 @@ class SwarmAutoBoxer(AutoBoxer):
 		projectdb = EMProjectDB()
 		
 		if len(self.getRefBoxes()) == 0:
-			boxable.deletenonrefs()
+			boxable.deletenonrefs(updatedisplay)
 			projectdb[boxable.getImageName()+"_autoboxes"] = []
 			self.writeToDB(True)
 				
 			if boxable.getAutoBoxerID() != self.getCreationTS():
 				boxable.setAutoBoxerID(self.getCreationTS())
 				self.parent.autoBoxerDBChanged()
-					
+				
+			# this ensures there are no references associated with the current boxable
 			self.writeSpecificReferencesToDB(boxable.getImageName())
-			data = {}
-			data["auto_boxer_state_TS"] = self.getStateTS()
-			data["templateTS"] = -1
-			data["auto_boxer_unique_id"] = self.getCreationTS()
-			autoboxerdbstring = "autoboxer_"+self.getCreationTS()
-			data["auto_boxer_db_name"] = autoboxerdbstring
-			projectdb[boxable.getImageName()+"_autoboxer"] = data
-			# These two lines are a hack because it may not need to happen (redundancy)
-			boxable.setAutoBoxerID(self.getCreationTS())
+			# FIXME - debug/double check this functionality
+			boxable.setStamps(self.getStateTS(),-1,self.getUniqueStamp())
+			boxable.writeToDB()
+			projectdb[boxable.getImageName()+"_autoboxes"] = []
 			self.parent.autoBoxerDBChanged()
 			
 			#print 'error, cant get template if there are no references'
@@ -2325,18 +2375,17 @@ class SwarmAutoBoxer(AutoBoxer):
 				print 'error, cant ask the autoBoxer for its template, it doesnt have one'
 				return 0
 
-		autoBoxerTS = boxable.autoBoxerTS
+		autoBoxerStateTS = boxable.autoBoxerStateTS
 		# auto boxing will occur if the time stamp of the AutoBoxer is not the
 		# same as the time stamp cached by the Boxable. -1 means it's the first time.
 		# Auto boxing will also occur if the autoboxer id of the boxable does not match the creation time stamp of this object
 		# the creation time stamp of this object is persistent, even it was recovered from the data base
 		
-		if autoBoxerTS == -1 or autoBoxerTS != self.stateTS or boxable.getAutoBoxerID() != self.getCreationTS():
-			#print "autoboxing",autoBoxerTS,self.stateTS
+		if autoBoxerStateTS == -1 or autoBoxerStateTS != self.stateTS or boxable.getAutoBoxerID() != self.getUniqueStamp():
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag:
 				# we must clear all non-refs if we're using dynapix
-				boxable.deletenonrefs()
+				boxable.deletenonrefs(updatedisplay)
 				self.regressiveflag = False
 			
 			exclusion = boxable.getExclusionImage().copy()
@@ -2345,51 +2394,37 @@ class SwarmAutoBoxer(AutoBoxer):
 
 			boxes = self.__autoBox(correlation,boxable,exclusion)
 			print "autoboxed",len(boxes)
-			boxable.autoBoxerTS = self.getStateTS()
 
-			# This shouldn't happen in the Database instance
-			if boxes != 0:
+			trimboxes = []
+			# if anchoring is on we need to store the auto boxes that were not removed 
+			# This is because the boxable didn't remove it's autoboxed particles prior to autoboxing
+			# And we need to make the database complete for persistence
+			boxable.appendStoredAutoBoxes(trimboxes)
+			for box in boxes:
+				#if box.ismanual: print "I added a manual box"
+				t = TrimBox(box)
+				trimboxes.append(t)
+			
+			projectdb[boxable.getImageName()+"_autoboxes"] = trimboxes
+			
+			boxable.setStamps(self.getStateTS(),self.getTemplateTS(),self.getUniqueStamp())
+			boxable.writeToDB()
+			
+			if self.mode != SwarmAutoBoxer.COMMANDLINE:
+				self.writeToDB(True)
+		
+			# These two lines are a hack because it may not need to happen (redundancy)
+			boxable.setAutoBoxerID(self.getCreationTS())
+			if not (self.mode != SwarmAutoBoxer.COMMANDLINE or self.parent==None):
+				self.parent.autoBoxerDBChanged()
 				
-				
-				trimboxes = []
-				# if anchoring is on we need to store the auto boxes that were not removed 
-				# This is because the boxable didn't remove it's autoboxed particles prior to autoboxing
-				# And we need to make the database complete for persistence
-				boxable.appendStoredAutoBoxes(trimboxes)
-				for box in boxes:
-					#if box.ismanual: print "I added a manual box"
-					t = TrimBox(box)
-					trimboxes.append(t)
-				
-				projectdb[boxable.getImageName()+"_autoboxes"] = trimboxes
-				
-				
-				data = {}
-				data["auto_boxer_state_TS"] = self.getStateTS()
-				data["templateTS"] = self.getTemplateTS()
-				data["auto_boxer_unique_id"] = self.getCreationTS()
-				autoboxerdbstring = "autoboxer_"+self.getCreationTS()
-				data["auto_boxer_db_name"] = autoboxerdbstring
-				projectdb[boxable.getImageName()+"_autoboxer"] = data
-				#print "wrote",boxable.getImageName()+"_autoboxer"
-				
-				if self.mode != SwarmAutoBoxer.COMMANDLINE:
-					self.writeToDB(True)
-				
-				#print boxable.getAutoBoxerID(),self.getCreationTS()
-				#if boxable.getAutoBoxerID() != self.getCreationTS():
-				# These two lines are a hack because it may not need to happen (redundancy)
-				boxable.setAutoBoxerID(self.getCreationTS())
-				if not (self.mode != SwarmAutoBoxer.COMMANDLINE or self.parent==None):
-					self.parent.autoBoxerDBChanged()
-					
-				self.writeSpecificReferencesToDB(boxable.getImageName())
-				#print "set boxer id",self.getCreationTS()
-				
-				# finally tell the boxable to read the results from the database
-				# the False argument tells the boxable not to re-read those
-				# boxes stored by the call to appendStoredAutoBoxes above
-				boxable.getAutoSelectedFromDB(False)
+			self.writeSpecificReferencesToDB(boxable.getImageName())
+			#print "set boxer id",self.getCreationTS()
+			
+			# finally tell the boxable to read the results from the database
+			# the False argument tells the boxable not to re-read those
+			# boxes stored by the call to appendStoredAutoBoxes above
+			boxable.getAutoSelectedFromDB(False)
 			
 				
 			return 1
@@ -2407,7 +2442,11 @@ class SwarmAutoBoxer(AutoBoxer):
 		autoboxerdbstring = self.getUniqueStamp()
 		
 		trimself = TrimSwarmAutoBoxer(self)
-		projectdb[autoboxerdbstring] = trimself
+		data = {}	
+		data["autoboxer"] = trimself
+		data["convenience_name"] = self.getConvenienceName()
+		
+		projectdb[autoboxerdbstring] = data
 		
 		if writecurrent:
 			projectdb["currentautoboxer"] = trimself
@@ -2490,6 +2529,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		scale = float(newx)/float(oldx)
 		template.scale(scale)
 		return template
+		
 	
 	def __fullUpdate(self):
 		'''
@@ -2509,9 +2549,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		# First tell all references' associated boxing objects to be open to the prospect 
 		# if update their correlation images
 		
-		for ref in self.getRefBoxes():
-			ref.updateParams(self)
-	
+		self.__updateRefParams()
+
 		# parameters should be updated now
 		# it's important that the BoxingObjext.updateCorrelation updated the parameters stored in the boxes
 		self.__accrueOptParams()
@@ -2519,6 +2558,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.stateTS = gm_time_string()
 
 	
+	def __updateRefParams(self):
+		for ref in self.getRefBoxes():
+			ref.updateParams(self)
 	def getRefBoxes(self):
 		return self.template.getReferences()
 	
@@ -2561,6 +2603,8 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 			# Iterate through the reference boxes and accrue what you can think of
 			# as the worst case scenario, in terms of correlation profiles
+			
+			
 			found = False
 			for i,box in enumerate(self.getRefBoxes()):
 				if box.correlationscore == None:

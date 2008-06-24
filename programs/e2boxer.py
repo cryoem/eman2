@@ -76,24 +76,23 @@ for single particle analysis."""
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db",default=[])
-	parser.add_option("--writedb",action="store_true",help="Write data box files",default=False)
+	parser.add_option("--writecoords",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--writeboximages",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--force","-f",action="store_true",help="Force overwrites old files",default=False)
 	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
-	parser.add_option("--refptcl","-R",type="string",help="(auto:ref) A stack of reference images. Must have the same scale as the image being boxed.",default=None)
 	parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
-	parser.add_option("--retestlist",type="string",help="(auto:ref) Comma separated list of image numbers for retest cycle",default="")
-	parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
-	parser.add_option("--dbout",type="string",help="filename to write EMAN1 style box database file to",default=None)
-	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
-	parser.add_option("--ptclout",type="string",help="filename to write boxed out particles to",default=None)
+	#parser.add_option("--retestlist",type="string",help="(auto:ref) Comma separated list of image numbers for retest cycle",default="")
+	#parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
 	parser.add_option("--parallel",type="int",help="specify more than one processor",default=1)
 	parser.add_option("--mergedb",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
+	
+	if not options.gui and not options.auto:
+		parser.error("Atleast one of the --gui or --auto arguments are required.")
+		exit(1)
 	
 	filenames = []
 	for i in range(0,len(args)):
@@ -103,187 +102,71 @@ for single particle analysis."""
 	
 	
 	if options.mergedb == True:
+		#The user wants to add some boxes to the database
 		mergedb(filenames)
 		sys.exit(1)
 	
-	if (options.farfocus==None): initial=args[0]
-	elif (options.farfocus=="next") : 
-		initial=str(int(args[0].split('.')[0])+1)+'.'+args[0].split('.')[1]
-		if not os.access(initial,os.R_OK) :
-			print "No such file: ",initial
-			sys.exit(1)
-		print "Using initial file: ",initial
-	else: initial=options.farfocus
-	
-	if not options.dbout and not options.ptclout : print "WARNING : No output files specified"
-	
-	# read the image in, though it is likely to get destroyed/modified later
-	image=EMData()
-	image.read_image(initial)
-	# what is this attribute for?
-	image.set_attr("datatype",7)
-	
-	# Store this for later use, even if the image is later corrupted
-	image_size=(image.get_xsize(),image.get_ysize())
-	
-	# read in the reference particles if provided, these could be used
-	# by different autoboxing algorithms
-	refptcl=None
-	if options.refptcl :
-		print options.refptcl
-		refptcl=EMData.read_images(options.refptcl)
-		refbox=refptcl[0].get_xsize()
-		print "%d reference particles read (%d x %d)"%(len(refptcl),refbox,refbox)
-	
-	boxes=[]
-	boxthr=1.0
-	
-	# Read box database from a file
-	if options.dbin:
-		# x,y,xsize,ysize,quality,changed
-		boxes=[[int(j) for j in i.split()] for i in file(options.dbin,"r").readlines() if i[0]!="#"]	# this reads the whole box db file
-		
-		for i in boxes: 
-			try: i[4]=1.0		# all qualities set to 1
-			except: i.append(1.0)
-			i.append(1)		# 'changed' flag initially set to 1
-
-		if options.boxsize<5 : options.boxsize=boxes[0][2]
-		else :
-			for i in boxes:
-				i[0]-=(options.boxsize-i[2])/2
-				i[1]-=(options.boxsize-i[2])/2
-				i[2]=options.boxsize
-				i[3]=options.boxsize
-				
-	if "db" in options.auto:
-		print "auto data base boxing"
-	
-		if len(filenames) == 1:
-			projectdb = EMProjectDB()
-	
-	
-			try:
-				projectdb = EMProjectDB()
-				data = projectdb[filenames[0]+"_autoboxer"]
-				trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
-				autoboxername = data["auto_boxer_unique_id"] 
-				autoBoxer = SwarmAutoBoxer(None)
-				autoBoxer.become(trimAutoBoxer)
-				autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-				print 'using cached autoboxer db'
-			except:
-				try:
-					trimAutoBoxer = projectdb["currentautoboxer"]
-					autoBoxer = SwarmAutoBoxer(None)
-					autoBoxer.become(trimAutoBoxer)
-					autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-				except:
-					print "Error - there seems to be no autoboxing information in the database - bailing"
-					projectdb.close()
-					exit(1)
-				
-			boxable = Boxable(filenames[0],None,autoBoxer)
-			# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
-			boxable.deletenonrefs(False)
-			autoBoxer.autoBox(boxable)
-			if options.writedb:
-				print "writing box coordinates"
-				boxable.writedb(-1,options.force)
-			if options.writeboximages:
-				print "writing boxed images"
-				boxable.writeboximages(-1,options.force)
-			
-			projectdb.close()
-			exit(1)
-		else:
-			print "autoboxing using parallelelism - you specified",options.parallel,"processors"
-			autoboxer = AutoDBBoxer(filenames,options.parallel,options.force)
-			try:
-				from emimage import EMImage,get_app
-			except: 
-				print "error"
-				exit(1)
-				
-			a = get_app()
-			autoboxer.go(a)
-			a.exec_()
-			print "done"
-				
-			exit(1)
-			#while autoboxer.working:
-				#sleep(1)
-				#autoboxer.printcpstatus()
-				
-				
-			#exit(1)
-
 	# we need to know how big to make the boxes. If nothing is specified, but
 	# reference particles are, then we use the reference particle size
 	if options.boxsize<5 :
-		if options.refptcl : options.boxsize=refptcl[0].get_xsize()
-		else : parser.error("Please specify a box size")
-	else:
 		if not options.boxsize in good_box_sizes:
 			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.boxsize)
 	
-	try: options.retestlist=[int(i) for i in options.retestlist.split(',')]
-	except: options.retestlist=[]
+	boxes=[]
+	if len(options.auto)>0 :
+		print "Autobox mode ",options.auto[0]
 	
+		if "db" in options.auto:
+			print "auto data base boxing"
 		
-	if len(options.auto)>0 : print "Autobox mode ",options.auto[0]
-	
-	if "grid" in options.auto:
-		try:
-			dx=-options.overlap
-			if dx+options.boxsize<=0 : dx=0.0
-			dy=dx
-		except:
-			dy=(image_size[1]%options.boxsize)*options.boxsize/image_size[1]-1
-			dx=(image_size[0]%options.boxsize)*options.boxsize/image_size[0]-1
-			if dy<=0 : dy=((image_size[1]-1)%options.boxsize)*options.boxsize/image_size[1]-1
-			if dx<=0 : dx=((image_size[0]-1)%options.boxsize)*options.boxsize/image_size[0]-1
-		
-#		print image_size,dx,dy,options.boxsize
-		for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
-			for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
-				boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
+			autoboxmulti(filenames,options)
+			#if len(filenames) == 1:
+				#autoboxsingle(filenames[0],options)
+				#exit(1)
+			#else:
+				#print "autoboxing using parallelism - you specified",options.parallel,"processors"
+				#autoboxer = AutoDBBoxer(filenames,options.parallel,options,options.force)
+				#try:
+					#from emimage import get_app
+				#except: 
+					#print "error, can't import get_app"
+					#exit(1)
+					
+				#a = get_app()
+				#autoboxer.go(a)
+				#a.exec_()
+				#print "done"
+					
+			exit(1)
+		elif "grid" in options.auto:
+			image_size=gimme_image_dimensions2D(filenames[0])
+			try:
+				dx=-options.overlap
+				if dx+options.boxsize<=0 : dx=0.0
+				dy=dx
+			except:
+				dy=(image_size[1]%options.boxsize)*options.boxsize/image_size[1]-1
+				dx=(image_size[0]%options.boxsize)*options.boxsize/image_size[0]-1
+				if dy<=0 : dy=((image_size[1]-1)%options.boxsize)*options.boxsize/image_size[1]-1
+				if dx<=0 : dx=((image_size[0]-1)%options.boxsize)*options.boxsize/image_size[0]-1
+			
+	#		print image_size,dx,dy,options.boxsize
+			for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
+				for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
+					boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
+		else:
+			print "unknown autoboxing method:",options.auto
+			exit(1)
 
 	E2end(logid)
 
 	# invoke the GUI if requested
 	if options.gui:
-		gui=GUIbox(filenames,boxes,boxthr,options.boxsize)
+		gui=GUIbox(filenames,boxes,options.boxsize)
 		gui.run()
 		
-	print "finished running"
-
-	if options.dbout:
-		boxes = gui.getBoxes()
-		# Write EMAN1 style box database
-		out=open(options.dbout,"w")
-		n=0
-		for i in boxes:
-			if i[4]>boxthr : continue
-			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[0],i[1],i[2],i[3]))		
-		out.close()
-
-	if options.ptclout:
-		# write boxed particles
-		n=0
-		b=EMData()
-		for i in boxes:
-			if i[4]>boxthr : continue
-			try: b.read_image(args[0],0,0,Region(i[0],i[1],i[2],i[3]))
-			except: continue
-			if options.norm: b.process_inplace("normalize.edgemean")
-#			print n,i
-#			print i[4]
-			b.write_image(options.ptclout,n)
-			n+=1
-		print "Wrote %d/%d particles to %s"%(n,len(boxes),options.ptclout)
-				
-
+	print "Exiting e2boxer"
+	
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
@@ -301,6 +184,9 @@ except:
 
 
 def mergedb(filenames):
+	'''
+	Merges a set of .box files into the local database - stores them as manual boxes
+	'''
 	projectdb = EMProjectDB()
 	for filename in filenames:
 		f=file(filename,'r')
@@ -323,8 +209,83 @@ def mergedb(filenames):
 	projectdb.close()
 		
 
+
+def autoboxmulti(imagenames,options):
+	projectdb = EMProjectDB()
+	for imagename in imagenames:
+		print "autoboxing",imagename
+		
+		try:
+			data = projectdb[imagename+"_autoboxer"]
+			trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
+			autoBoxer = SwarmAutoBoxer(self)
+			autoBoxer.become(trimAutoBoxer)
+			print 'using cached autoboxer db'
+		except:
+			try:
+				trimAutoBoxer = projectdb["currentautoboxer"]
+				autoBoxer = SwarmAutoBoxer(None)
+				autoBoxer.become(trimAutoBoxer)
+			except:
+				print "Error - there seems to be no autoboxing information in the database - bailing"
+				projectdb.close()
+		
+		boxable = Boxable(imagename,None,autoBoxer)
+		autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
+		#boxable.deletenonrefs(False)
+		autoBoxer.autoBox(boxable)
+		if options.writecoords:
+			print "writing",boxable.numBoxes(),"box coordinates to file",boxable.getCoordFileName()
+			boxable.writecoords(-1,options.force)
+		if options.writeboximages:
+			print "writing",boxable.numBoxes(),"boxed images",boxable.getImageFileName()
+			boxable.writeboximages(-1,options.force)
+	
+	
+	projectdb.close()
+
+def autoboxsingle(imagename,options):
+	
+	projectdb = EMProjectDB()
+	try:
+		data = projectdb[imagename+"_autoboxer"]
+		trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
+		autoBoxer = SwarmAutoBoxer(self)
+		autoBoxer.become(trimAutoBoxer)
+		print 'using cached autoboxer db'
+	except:
+		try:
+			trimAutoBoxer = projectdb["currentautoboxer"]
+			autoBoxer = SwarmAutoBoxer(None)
+			autoBoxer.become(trimAutoBoxer)
+		except:
+			print "Error - there seems to be no autoboxing information in the database - bailing"
+			projectdb.close()
+			return 0
+	
+	boxable = Boxable(imagename,None,autoBoxer)
+	autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
+	# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
+	#boxable.deletenonrefs(False)
+	autoBoxer.autoBox(boxable)
+	if options.writecoords:
+		print "writing box coordinates"
+		boxable.writecoords(-1,options.force)
+	if options.writeboximages:
+		print "writing boxed images"
+		boxable.writeboximages(-1,options.force)
+	
+	projectdb.close()
+	return 1
+	
 class AutoDBBoxer(QtCore.QObject):
-	def __init__(self,imagenames,nproc,force=False):
+	'''
+	A class for managing the process of spawning many instances of e2boxer singlefile.mrc --auto=db, using parallelism
+	If one CPU is specified then it still works. Basically the approach is to spawn the number of the processors, then once
+	the process is finished the signal is intercepted and a new process is executed etc.
+	'''
+	def __init__(self,imagenames,nproc,options,force=False):
 		QtCore.QObject.__init__(self)
 		self.nproc = nproc
 		self.imagenames = imagenames
@@ -335,6 +296,7 @@ class AutoDBBoxer(QtCore.QObject):
 		self.jobsdone = 0
 		self.cps = []
 		self.app = None
+		self.options = options
 		for i in range(0,nproc):
 			self.cps.append(None)
 		
@@ -368,6 +330,13 @@ class AutoDBBoxer(QtCore.QObject):
 		args = QtCore.QStringList()
 		args.append(self.imagenames[self.currentidx])
 		args.append("--auto=db")
+		if self.options.writecoords != False:
+			args.append("--writecoords")
+		if self.options.writeboximages != False:
+			args.append("--writeboximages")
+		if self.options.force != False:
+			args.append("--force")
+			
 		
 		if self.force:	args.append("-f")
 		
@@ -524,7 +493,7 @@ class GUIboxMouseEraseEvents(GUIboxMouseEventsObject):
 	
 class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 	'''
-	A class that knows how to add and remove reference and non reference boxes 
+	A class that knows how to add, move and remove reference and non reference boxes 
 	'''
 	def __init__(self,mediator):
 		GUIboxMouseEventsObject.__init__(self,mediator)
@@ -619,7 +588,6 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 		if self.moving != None:
 			box = self.moving[0]
 			if box.isref:
-				print "calling reference moved"
 				self.mediator.referenceMoved(box)
 			
 		self.moving=None
@@ -759,10 +727,13 @@ class GUIboxEventsMediator:
 		self.parent.referenceMoved(box)
 	
 class GUIbox:
+	'''
+	This class needs a clean up and needs some comments to be inserted
+	'''
 	REFERENCE_ADDING = 0
 	ERASING = 1
 	MANUALLY_ADDING = 2
-	def __init__(self,imagenames,boxes,thr,boxsize=-1):
+	def __init__(self,imagenames,boxes,boxsize=-1):
 		"""Implements the 'boxer' GUI."""
 		
 		try:
@@ -792,8 +763,9 @@ class GUIbox:
 		try:
 			projectdb = EMProjectDB()
 			data = projectdb[self.imagenames[0]+"_autoboxer"]
-			trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
-			self.autoboxername = data["auto_boxer_unique_id"] 
+			autoBoxerID = data["auto_boxer_unique_id"]
+			trimAutoBoxer = projectdb[autoBoxerID]["autoboxer"]
+			self.autoboxername = autoBoxerID
 			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.become(trimAutoBoxer)
 			self.autoBoxer.setMode(self.dynapix,self.anchoring)
@@ -802,7 +774,6 @@ class GUIbox:
 			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.boxsize = boxsize
 			self.autoBoxer.setMode(self.dynapix,self.anchoring)
-			print self.autoBoxer.boxsize,"in constructor"
 			print "loaded a new autoboxer"
 		
 		self.boxable = Boxable(self.imagenames[0],self,self.autoBoxer)
@@ -876,18 +847,19 @@ class GUIbox:
 			self.guimxit.setSelected(0)
 
 		self.guictl.show()
-		self.autoBoxer.autoBox(self.boxable)
+		self.autoBoxer.autoBox(self.boxable,False)
 		self.boxDisplayUpdate()
 		
 	
 	def changeCurrentAutoBoxer(self, autoboxerid):
 		#print "change current autoboxer"
 		projectdb = EMProjectDB()
-		trimAutoBoxer = projectdb[autoboxerid]
+		trimAutoBoxer = projectdb[autoboxerid]["autoboxer"]
 		#print "changing autoboxer to autoboxer_",timestamp,"and its stamp in the db is",trimAutoBoxer.getCreationTS()
 		self.autoBoxer = SwarmAutoBoxer(self)
 		self.autoBoxer.become(trimAutoBoxer)
 		self.autoBoxer.writeSpecificReferencesToDB(self.boxable.getImageName())
+		self.autoBoxer.setMode(self.dynapix,self.anchoring)
 		
 		self.ptcl = []
 		self.guiim.delShapes()
@@ -996,12 +968,19 @@ class GUIbox:
 		'''
 		Call this to set the Ptcl Mx data 
 		'''
-		if data != None and len(data) != 0:
+		if data != None:
 			self.guimx.setData(data)
-			if self.guimxp == None:
-				self.guimxp = EMParentWin(self.guimx)
-				self.guimxp.show()
-				self.guimx.setSelected(0)
+			if len(data) != 0:
+				if self.guimxp == None:
+					self.guimxp = EMParentWin(self.guimx)
+					self.guimxp.show()
+					self.guimx.setSelected(0)
+	
+	def clearDisplays(self):
+		self.ptcl = []
+		self.guiim.delShapes()
+		self.guimx.setData([])
+		self.updateAllImageDisplay()
 	
 	def imagesel(self,event,lc):
 		#print 'in image select'
@@ -1024,8 +1003,9 @@ class GUIbox:
 			try:
 				projectdb = EMProjectDB()
 				data = projectdb[self.imagenames[im]+"_autoboxer"]
-				trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
-				self.autoboxername = data["auto_boxer_unique_id"] 
+				autoBoxerID = data["auto_boxer_unique_id"]
+				trimAutoBoxer = projectdb[autoBoxerID]["autoboxer"]
+				self.autoboxername = autoBoxerID
 				self.autoBoxer = SwarmAutoBoxer(self)
 				self.autoBoxer.become(trimAutoBoxer)
 			except: pass
@@ -1440,10 +1420,10 @@ class GUIbox:
 			try:
 				projectdb = EMProjectDB()
 				data = projectdb[imagename+"_autoboxer"]
-				trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
+				trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
 				autoBoxer = SwarmAutoBoxer(self)
 				autoBoxer.become(trimAutoBoxer)
-				#print "writing box images for",imagename,"using",data["auto_boxer_db_name"]
+				#print "writing box images for",imagename,"using",data["auto_boxer_unique_id"]
 			except:
 				autoBoxer = self.autoBoxer
 				#print "writing box images or",imagename,"using currently stored autoboxer"
@@ -1463,10 +1443,10 @@ class GUIbox:
 			try:
 				projectdb = EMProjectDB()
 				data = projectdb[imagename+"_autoboxer"]
-				trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
+				trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
 				autoBoxer = SwarmAutoBoxer(self)
 				autoBoxer.become(trimAutoBoxer)
-				#print "writing box coordinates for",imagename,"using",data["auto_boxer_db_name"]
+				#print "writing box coordinates for",imagename,"using",data["auto_boxer_unique_id"]
 			except:
 				autoBoxer = self.autoBoxer
 				#print "writing box coordinates for",imagename,"using currently stored autoboxer"
@@ -1477,7 +1457,7 @@ class GUIbox:
 			autoBoxer.autoBox(boxable)
 			autoBoxer.setModeExplicit(mode)
 			
-			boxable.writedb(boxsize,forceoverwrite)
+			boxable.writecoords(boxsize,forceoverwrite)
 	
 	def center(self,technique):
 		
@@ -1488,6 +1468,7 @@ class GUIbox:
 			
 	def toggleFrozen(self,unusedbool):
 		self.boxable.toggleFrozen()
+		self.boxable.writeToDB()
 		self.guiim.setFrozen(self.boxable.isFrozen())
 		self.updateImageDisplay()
 
@@ -1513,21 +1494,22 @@ class GUIbox:
 		autoBoxer.setMode(self.dynapix,self.anchoring)
 		autoboxerdbstring = "autoboxer_"+autoBoxer.getCreationTS()
 		trimAutoBoxer = TrimSwarmAutoBoxer(autoBoxer)
-		trimAutoBoxer.setDBUserString("New " + str(n))
-		projectdb = EMProjectDB()
-		projectdb[autoboxerdbstring] = trimAutoBoxer
+		convenience_name = "New " + str(n)
+		trimAutoBoxer.setConvenienceName(convenience_name)
+		trimAutoBoxer.writeToDB()
+		return convenience_name
 	
 	def addCopyAutoBoxerDB(self,autoboxerid,n):
 		#print "adding a copy of the ab with id is",autoboxerid
 		projectdb = EMProjectDB()
-		trimAutoBoxer = copy(projectdb[autoboxerid])
+		trimAutoBoxer = copy(projectdb[autoboxerid]["autoboxer"])
 		trimAutoBoxer.setCreationTS(gm_time_string())
-		trimAutoBoxer.setDBUserString("Copy " + str(n))
-		autoboxerdbstring = "autoboxer_"+trimAutoBoxer.getCreationTS()
-		#print "adding string to db",autoboxerdbstring
-		projectdb[autoboxerdbstring] = trimAutoBoxer
+		convenience_name = "Copy " + str(n)
+		trimAutoBoxer.setConvenienceName(convenience_name)
+		trimAutoBoxer.writeToDB()
+		print "returning",convenience_name
+		return convenience_name
 		
-		projectdb = EMProjectDB()
 		#print "done"
 
 class AutoBoxerSelectionsMediator:
@@ -1560,8 +1542,7 @@ class AutoBoxerSelectionsMediator:
 		self.namemap = {}
 		for i in projectdb.items():
 			if i[0][0:10] == "autoboxer_":
-				a = i[1] # a trimSwarmAutoBoxe
-				tag = a.getDBUserString()
+				tag = i[1]["convenience_name"]
 				self.dictdata[tag] = []
 				self.namemap[i[0]] = tag
 		
@@ -1569,12 +1550,12 @@ class AutoBoxerSelectionsMediator:
 			found = False
 			try:
 				data = projectdb[imagename+"_autoboxer"]
-				#trimAutoBoxer = projectdb[data["auto_boxer_db_name"]]
+				#trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]
 				found = True
 			except: pass
 			
 			if found:
-				self.dictdata[self.namemap[data["auto_boxer_db_name"]]].append(strip_after_dot(imagename))
+				self.dictdata[self.namemap[data["auto_boxer_unique_id"]]].append(strip_after_dot(imagename))
 		
 		return self.dictdata
 	
@@ -1585,24 +1566,27 @@ class AutoBoxerSelectionsMediator:
 			return None
 
 	def addNewAutoBoxer(self):
-		self.parent.addNewAutoBoxerDB(self.getTotalAutoBoxers())
+		return self.parent.addNewAutoBoxerDB(self.getTotalAutoBoxers())
 
 	def addCopyAutoBoxer(self,tag):
 		autoboxerid = self.__getAutoBoxerIDFromTag(tag)
 		if autoboxerid != None:
-			self.parent.addCopyAutoBoxerDB(autoboxerid,self.getTotalAutoBoxers())
+			print "asking parent to add copy"
+			return self.parent.addCopyAutoBoxerDB(autoboxerid,self.getTotalAutoBoxers())
 		else:
 			print "error, couldn't find autoboxer from tag",tag
+			return None
 	
 	def changeCurrentAutoBoxer(self,tag):
 		# FIXME - is there any way to use a bidirectional map?pyt
 		autoboxerid = self.__getAutoBoxerIDFromTag(tag)
 		if autoboxerid != None:
-			self.parent.changeCurrentAutoBoxer(autoboxerid)
+			return self.parent.changeCurrentAutoBoxer(autoboxerid)
 		else:
 			print "error, couldn't get autoboxerid"
+			return None
 				
-	def updateDBUserString(self,newname,oldname):
+	def updateDBConvenienceName(self,newname,oldname):
 		'''
 		Updates the unique name of the autoboxer in the DB
 		if the name is already used then False is returned
@@ -1615,11 +1599,12 @@ class AutoBoxerSelectionsMediator:
 			self.namemap.pop(autoboxerid)
 			if self.__nameNotAlreadyPresent(newname):
 				self.namemap[autoboxerid] = newname
-				autoBoxer = projectdb[autoboxerid]
-				autoBoxer.setDBUserString(newname)
+				autoBoxer = projectdb[autoboxerid]["autoboxer"]
+				autoBoxer.setConvenienceName(newname)
+				autoBoxer.writeToDB()
 				return True
 			else:
-				self.namemap[autoboxerid] = oldname
+				self.namemap[autoboxerid]["convenience_name"] = oldname
 				return False
 					
 	def getTotalAutoBoxers(self):
@@ -1648,7 +1633,26 @@ class AutoBoxerSelectionsMediator:
 			
 		print "error, couldn't find",tag,"in the namemap"
 		return None
+	
+	def toggleFrozen(self,tag,bool):
+		new_name = self.addCopyAutoBoxer(tag)
+		self.getAutoBoxerData() # FIXME this is inefficient, could just add to self.dictdata etc
+		autoboxerid = self.__getAutoBoxerIDFromTag(new_name)
+		boxable = self.parent.getBoxable()
+		boxable.setAutoBoxerID(autoboxerid)
+		boxable.writeToDB()
+		self.parent.toggleFrozen(bool)
 		
+	def clearCurrent(self):
+		new_name = self.addNewAutoBoxer()
+		self.getAutoBoxerData() # FIXME this is inefficient, could just add to self.dictdata etc
+		autoboxerid = self.__getAutoBoxerIDFromTag(new_name)
+		boxable = self.parent.getBoxable()
+		boxable.setAutoBoxerID(autoboxerid)
+		boxable.writeToDB()
+		boxable.clear()
+		self.parent.clearDisplays()
+		return new_name
 		
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target,abselmediator) :
@@ -1745,8 +1749,6 @@ class GUIboxPanel(QtGui.QWidget):
 		self.boxinghbl3.addWidget(self.nocpick)
 		self.autobox=QtGui.QPushButton("Auto Box")
 		self.boxinghbl3.addWidget(self.autobox)
-		#self.togfreeze=QtGui.QPushButton("Toggle Freeze")
-		#self.boxinghbl3.addWidget(self.togfreeze)
 		self.boxingvbl.addLayout(self.boxinghbl3)
 	
 		self.boxinghbl2=QtGui.QHBoxLayout()
@@ -1773,36 +1775,17 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.boxingvbl.addLayout(self.boxinghbl2)
 		
+		self.boxinghbl4=QtGui.QHBoxLayout()
+		self.togfreeze=QtGui.QPushButton("Toggle Freeze")
+		self.boxinghbl4.addWidget(self.togfreeze)
+		self.clear=QtGui.QPushButton("Clear")
+		self.boxinghbl4.addWidget(self.clear)
+		
+		self.boxingvbl.addLayout(self.boxinghbl4)
+		
 		self.interactiveboxing = QtGui.QGroupBox("Interactive Boxing")
 		self.interactiveboxing.setLayout(self.boxingvbl)
 		self.main_vbl.addWidget(self.interactiveboxing)
-		
-		self.lock = True
-		self.autoboxerhdbl = QtGui.QHBoxLayout()
-		# ab means autoboxer
-		self.abtable = QtGui.QTableWidget(1,2,self)
-		self.abtable.setColumnWidth(1,150)
-		self.abcol0title = QtGui.QTableWidgetItem("Autoboxer ID")
-		self.abcol1title = QtGui.QTableWidgetItem("Associated Images")
-		self.updateABTable()
-		self.lock = True
-		self.abtable.setHorizontalHeaderItem(0,self.abcol0title)
-		self.abtable.setHorizontalHeaderItem(1,self.abcol1title)
-		self.autoboxerhdbl.addWidget(self.abtable)
-		self.lock = False
-		
-		self.autoboxervbl1 = QtGui.QVBoxLayout()
-		self.abcopy = QtGui.QPushButton("Copy")
-		self.autoboxervbl1.addWidget(self.abcopy)
-		self.abnew = QtGui.QPushButton("New")
-		self.autoboxervbl1.addWidget(self.abnew)
-		self.abdelete = QtGui.QPushButton("Delete")
-		self.autoboxervbl1.addWidget(self.abdelete)
-		self.autoboxerhdbl.addLayout(self.autoboxervbl1)
-		
-		self.abmanagement = QtGui.QGroupBox("Auto Boxer Management")
-		self.abmanagement.setLayout(self.autoboxerhdbl)
-		self.main_vbl.addWidget(self.abmanagement)
 		
 		# output
 		self.outputvbl = QtGui.QVBoxLayout()
@@ -1856,21 +1839,29 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erasetoggled)
 		self.connect(self.unerase, QtCore.SIGNAL("clicked(bool)"), self.unerasetoggled)
 		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
-		#self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.target.toggleFrozen)
+		self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.toggleFrozen)
+		self.connect(self.clear,QtCore.SIGNAL("clicked(bool)"),self.clearCurrent)
 		
 		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.refbuttontoggled)
 		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manualbuttontoggled)
-		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.addNewAutoBoxer)
-		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.addCopyAutoBoxer)
-		self.connect(self.abdelete, QtCore.SIGNAL("clicked(bool)"), self.deleteAutoBoxer)
-		self.connect(self.abtable, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.abtableItemChanged)
-		self.connect(self.abtable, QtCore.SIGNAL("cellChanged(int,int)"), self.abtableCellChanged)
-		
+
 		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.writebimages)
 		self.connect(self.writeboxesdbs,QtCore.SIGNAL("clicked(bool)"),self.writebcoords)
+
+	def clearCurrent(self,unused):
+		self.lock = True
+		new_name = self.abselmediator.clearCurrent()
+		self.lock = False
+		self.updateABTable()
+		self.setChecked(new_name)
+		
+	def toggleFrozen(self,bool):
+		self.lock = True
+		self.abselmediator.toggleFrozen(self.col1[self.currentlyselected].text(),bool)
+		self.lock = False
+		self.updateABTable()
 	
 	def writebimages(self,unused):
-		print 
 		boxsize = int(str(self.usingboxsize.text()))
 		realboxsize = int(str(self.bs.text()))
 		if realboxsize == boxsize:
@@ -1884,6 +1875,14 @@ class GUIboxPanel(QtGui.QWidget):
 			boxsize = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
 		self.target.writeboxesdbs(boxsize,self.outputforceoverwrite.isChecked())
 	
+	def setChecked(self,tag):
+		
+		for i,col in enumerate(self.col1):
+			if str(col.text()) == tag:
+				col.setCheckState(Qt.Checked)
+				self.currentlychecked = i
+				break
+	
 	def abtableCellChanged(self,i,j):
 		if i >= len(self.col1): return
 		if self.lock:
@@ -1891,7 +1890,7 @@ class GUIboxPanel(QtGui.QWidget):
 		#data = self.abselmediator.getAutoBoxerData()
 		#data = data.items()
 		if str(self.col1[i].text()) != self.colnames[i]:
-			if not self.abselmediator.updateDBUserString(str(self.col1[i].text()),self.colnames[i]):
+			if not self.abselmediator.updateDBConvenienceName(str(self.col1[i].text()),self.colnames[i]):
 				self.col1[i].setText(self.colnames[i])
 			self.lock = False
 			return
@@ -1962,12 +1961,8 @@ class GUIboxPanel(QtGui.QWidget):
 	
 		currentsel = self.abselmediator.getCurrentAutoBoxerTS()
 		self.currentlychecked = -1
-		for i,col in enumerate(self.col1):
-			if str(col.text()) == currentsel:
-				col.setCheckState(Qt.Checked)
-				self.currentlychecked = i
-				break
 		
+		self.setChecked(currentsel)
 		self.lock = False
 	
 	def deleteAutoBoxer(self,unused):
@@ -2074,7 +2069,44 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.advanced_vbl.addWidget(self.cmpgroupbox)
 
+		self.lock = True
+		self.autoboxerhdbl = QtGui.QHBoxLayout()
+		# ab means autoboxer
+		self.abtable = QtGui.QTableWidget(1,2,self)
+		self.abtable.setColumnWidth(1,150)
+		self.abcol0title = QtGui.QTableWidgetItem("Autoboxer ID")
+		self.abcol1title = QtGui.QTableWidgetItem("Associated Images")
+		self.updateABTable()
+		self.lock = True
+		self.abtable.setHorizontalHeaderItem(0,self.abcol0title)
+		self.abtable.setHorizontalHeaderItem(1,self.abcol1title)
+		self.autoboxerhdbl.addWidget(self.abtable)
+		self.lock = False
+		
+		self.autoboxervbl1 = QtGui.QVBoxLayout()
+		self.abcopy = QtGui.QPushButton("Copy")
+		self.autoboxervbl1.addWidget(self.abcopy)
+		self.abnew = QtGui.QPushButton("New")
+		self.autoboxervbl1.addWidget(self.abnew)
+		self.abdelete = QtGui.QPushButton("Delete")
+		self.autoboxervbl1.addWidget(self.abdelete)
+		self.autoboxerhdbl.addLayout(self.autoboxervbl1)
+		
+		self.abmanagement = QtGui.QGroupBox("Auto Boxer Management")
+		self.abmanagement.setLayout(self.autoboxerhdbl)
+		self.advanced_vbl.addWidget(self.abmanagement)
+		
+		
+		
 		self.tabwidget.addTab(self.adv_inspector,"Advanced")
+		
+		
+		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.addNewAutoBoxer)
+		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.addCopyAutoBoxer)
+		self.connect(self.abdelete, QtCore.SIGNAL("clicked(bool)"), self.deleteAutoBoxer)
+		self.connect(self.abtable, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.abtableItemChanged)
+		self.connect(self.abtable, QtCore.SIGNAL("cellChanged(int,int)"), self.abtableCellChanged)
+		
 
 	def refbuttontoggled(self,bool):
 		
