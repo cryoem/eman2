@@ -147,9 +147,15 @@ class DBDict:
 		elif isinstance(val,EMData) : 
 			# decide where to put the binary data
 			ad=val.get_attr_dict()
-			key="%s%dx%dx%d"%(self.name,ad["nx"],ad["ny"],ad["nz"])
-			if not self.has_key(key) : n=0
-			else: n=self[key]+1
+			fkey="%s/%s%dx%dx%d"%(self.path,self.name,ad["nx"],ad["ny"],ad["nz"])
+#			print "w",fkey
+			try :
+				o=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
+				n=o["binary"]
+			except:
+				if not self.has_key(fkey) : self[fkey]=0
+				else: self[fkey]+=1 
+				n=self[fkey]
 			ad["binary"]=n
 			
 			# write the metadata
@@ -157,16 +163,18 @@ class DBDict:
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			
 			# write the binary data
-			val.write_data(key,n*ad["nx"]*ad["ny"]*ad["nz"])
-			self[key]=n
+			val.write_data(fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
 				
 	def __getitem__(self,key):
 		r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
-		if isinstance(r,dict) and r.has_key("nx") :
+		if isinstance(r,dict) and r.has_key("binary") :
+			fkey="%s/%s%dx%dx%d"%(self.path,self.name,r["nx"],r["ny"],r["nz"])
+#			print "r",fkey
 			ret=EMData(r["nx"],r["ny"],r["nz"])
+			ret.read_data(fkey,r["binary"]*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
 			for i in k: ret.set_attr(i,r[i])

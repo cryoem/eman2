@@ -204,7 +204,8 @@ const float * const EMData::get_const_data() const
 
 void EMData::write_data(string fsp,size_t loc) {
 	FILE *f = 0;
-	f=fopen(fsp.c_str(), "wb");
+	f=fopen(fsp.c_str(), "rb+");
+	if (!f) f=fopen(fsp.c_str(), "wb");
 	if (!f) throw FileAccessException(fsp);
 	portable_fseek(f,loc,SEEK_SET);
 	if (fwrite(rdata,nx*ny,nz*4,f)!=(size_t)(nz*4)) throw FileAccessException(fsp);
