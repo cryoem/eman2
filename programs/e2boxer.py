@@ -212,19 +212,20 @@ def autoboxmulti(imagenames,options):
 		print "autoboxing",imagename
 		
 		try:
-			data = projectdb[getIDDKey(imagname)]
+			data = projectdb[getIDDKey(imagename)]
 			trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
-			autoBoxer = SwarmAutoBoxer(self)
+			autoBoxer = SwarmAutoBoxer(None)
 			autoBoxer.become(trimAutoBoxer)
 			print 'using cached autoboxer db'
 		except:
 			try:
+				print "using most recent autoboxer"
 				trimAutoBoxer = projectdb["currentautoboxer"]
 				autoBoxer = SwarmAutoBoxer(None)
 				autoBoxer.become(trimAutoBoxer)
 			except:
-				print "Error - there seems to be no autoboxing information in the database - bailing"
-				projectdb.close()
+				print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
+				continue
 		
 		boxable = Boxable(imagename,None,autoBoxer)
 		
@@ -234,13 +235,10 @@ def autoboxmulti(imagenames,options):
 		
 		autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
-		#boxable.deletenonrefs(False)
-		autoBoxer.autoBox(boxable)
+		autoBoxer.autoBox(boxable,False)
 		if options.writecoords:
-			print "writing",boxable.numBoxes(),"box coordinates to file",boxable.getCoordFileName()
 			boxable.writecoords(-1,options.force)
 		if options.writeboximages:
-			print "writing",boxable.numBoxes(),"boxed images",boxable.getImageFileName()
 			boxable.writeboximages(-1,options.force)
 	
 	
@@ -252,7 +250,7 @@ def autoboxsingle(imagename,options):
 	try:
 		data = projectdb[getIDDKey(imagename)]
 		trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
-		autoBoxer = SwarmAutoBoxer(self)
+		autoBoxer = SwarmAutoBoxer(None)
 		autoBoxer.become(trimAutoBoxer)
 		print 'using cached autoboxer db'
 	except:
@@ -261,7 +259,7 @@ def autoboxsingle(imagename,options):
 			autoBoxer = SwarmAutoBoxer(None)
 			autoBoxer.become(trimAutoBoxer)
 		except:
-			print "Error - there seems to be no autoboxing information in the database - bailing"
+			print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
 			projectdb.close()
 			return 0
 	
@@ -272,8 +270,7 @@ def autoboxsingle(imagename,options):
 	
 	autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
 	# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
-	#boxable.deletenonrefs(False)
-	autoBoxer.autoBox(boxable)
+	autoBoxer.autoBox(boxable,False)
 	if options.writecoords:
 		print "writing box coordinates"
 		boxable.writecoords(-1,options.force)

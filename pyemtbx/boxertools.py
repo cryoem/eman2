@@ -1263,10 +1263,10 @@ class Boxable:
 		#print "Added",len(self.boxes)-a," references"
 	def getManualFromDB(self):
 		#a = len(self.boxes) # debug		
-		projectdb = EMProjectDB()
-		data = projectdb[self.getDDKey()]
-		
-		manualboxes = data["manualboxes"]
+		manualboxes = getKeyEntryIDD(self.imagename,"manual")
+		if manualboxes == None or len(manualboxes) == 0:
+			return 0
+	
 		for trimbox in manualboxes:
 			box = Box()
 			
@@ -1286,7 +1286,7 @@ class Boxable:
 	def getCoordFileName(self):
 		return strip_file_tag(self.imagename)+".box"
 		
-	def writecoords(self,boxsize=-1,force=False):
+	def writecoords(self,boxsize=-1,force=False,verbose=True):
 		'''
 		If boxsize is -1 then the current boxsize is used to write output
 		If force is True then the old file with the same name is written over (as opposed to backed up)
@@ -1295,7 +1295,7 @@ class Boxable:
 		if len(self.boxes) == 0:
 			print "no boxes to write, doing nothing. Image name is",self.imagename
 		else:
-			boxname = strip_file_tag(self.imagename)+".box"
+			boxname = self.getCoordFileName()
 			if file_exists(boxname):
 				if not force:
 					f=file(boxname,'r')
@@ -1309,6 +1309,8 @@ class Boxable:
 					remove_file(boxname)
 				
 			f=file(boxname,'w')
+			
+			if verbose: print "writing",self.numBoxes(),"box coordinates to file",boxname
 			
 			for box in self.boxes:
 				if boxsize != -1:
@@ -1329,7 +1331,7 @@ class Boxable:
 	def getImageFileName(self,imageformat="hdf"):
 		return strip_file_tag(self.imagename)+"."+imageformat
 
-	def writeboximages(self,boxsize=-1,force=False,imageformat="hdf"):
+	def writeboximages(self,boxsize=-1,force=False,imageformat="hdf",verbose=True):
 		'''
 		If boxsize is -1 then the current boxsize is used to write output
 		If force is True then output is written over (if it already exists) - else an error is printed and nothing happens
@@ -1338,14 +1340,17 @@ class Boxable:
 		if len(self.boxes) == 0:
 			print "no boxes to write, doing nothing. Image name is",self.imagename
 		else:
-			boxname = strip_file_tag(self.imagename)+"." + imageformat
-			if file_exists(boxname):
+			imagename = self.getImageFileName(imageformat)
+			
+			if file_exists(imagename):
 				if not force:
-					print "warning, file already exists - ", boxname, " doing nothing. Use force to override this behavior"
+					print "warning, file already exists - ", imagename, " doing nothing. Use force to override this behavior"
 					return
 				else:
-					remove_file(boxname)
-				
+					remove_file(imagename)
+			
+			if verbose:	print "writing",self.numBoxes(),"boxed images to", imagename
+			
 			for box in self.boxes:
 				if boxsize != -1:
 					# FOO - this will not work if the box dimensions are not equal...
@@ -1364,7 +1369,7 @@ class Boxable:
 				
 				image.set_attr("originating_imagename",self.getImageName())
 				
-				image.write_image(boxname,-1)
+				image.write_image(imagename,-1)
 				
 				if boxsize != -1:
 					box.changeBoxSize(origboxsize)
@@ -2445,7 +2450,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 		return self.shrink
 		
-	def autoBox(self,boxable,updatedisplay=True,force=True):
+	def autoBox(self,boxable,updatedisplay=True,force=False):
 		# If it's user driven then the user has selected a bunch of references and then hit 'autobox'.
 		# In which case we do a complete reference update, which generates the template and the
 		# best autoboxing parameters
@@ -2505,7 +2510,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		if autoBoxerStateTS == -1 or autoBoxerStateTS != self.stateTS or boxable.getAutoBoxerID() != self.getUniqueStamp() or force:
 			
-			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag:
+			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag or self.mode == SwarmAutoBoxer.COMMANDLINE:
 				# we must clear all non-refs if we're using dynapix
 				boxable.deletenonrefs(updatedisplay)
 				self.regressiveflag = False
