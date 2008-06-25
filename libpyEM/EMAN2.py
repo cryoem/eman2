@@ -465,7 +465,16 @@ def strip_file_tag(file_name):
 		return None
 	
 	return file_name[0:i]
+
+def get_file_tag(file_name):
+	for i in range(len(file_name)-1,-1,-1):
+		if file_name[i] == '.':
+			break
+	else:
+		print "never found the full stop in", file_name
+		return None
 	
+	return file_name[i+1:]	
 # a function for stripping the contents of a filename so that all
 # that remains is up to the first '.'
 # eg if given image.sh4. mrc this functions strips the 'sh4.mrc' and returns 'image'	

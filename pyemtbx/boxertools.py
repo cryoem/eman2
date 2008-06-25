@@ -158,7 +158,7 @@ class Box:
 		
 		projectdb = EMProjectDB()
 		try:
-			movedboxes = getKeyEntryIDD(self.imagename,"movedboxes")
+			movedboxes = getKeyEntryIDD(self.imagename,"moved_boxes")
 			if movedboxes == None: movedboxes = []
 		except:
 			movedboxes = []
@@ -175,7 +175,7 @@ class Box:
 			movedboxes.append([self.origxcorner,self.origycorner,self.xcorner,self.xcorner])
 		
 		
-		setKeyEntryIDD(self.imagename,"movedboxes",movedboxes)
+		setKeyEntryIDD(self.imagename,"moved_boxes",movedboxes)
 		
 		self.changed = False
 		self.updateBoxImage()
@@ -1002,6 +1002,9 @@ class Boxable:
 			self.getQualityFromDB()	
 		except: pass
 		try:
+			self.checkAndStoreImageTagInDB()	
+		except: pass
+		try:
 			if autoBoxer == None:
 				self.getAutoBoxerFromDB()
 		except: pass
@@ -1015,14 +1018,14 @@ class Boxable:
 		except:
 			data = {}
 		
-		data["references"] = []
+		data["reference_boxes"] = []
 		data["autoboxed"] = []
 		
 		
 		if keepmanual:
 			self.getManualFromDB()
 		else :
-			data["manualboxes"] = []
+			data["manual_boxes"] = []
 	
 	
 		projectdb[self.getDDKey()] = data
@@ -1161,6 +1164,18 @@ class Boxable:
 	def getQuality(self):
 		return self.__quality
 		
+	def checkAndStoreImageTagInDB(self):
+		projectdb = EMProjectDB()
+		data = projectdb[self.getDDKey()]
+		newimagetag = get_file_tag(sel.imagename)
+		oldimagetag = data["image_tag"]
+		if oldimagetag != newimagetag:
+			print "warning with respect to",self.imagename,"- you are using information in the database that was generated using an image of type",newimagetag,"on an image of type",oldimagetag,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
+		else:
+			print "storing image tag"
+			data["image_tag"] = newimagetag
+			projectdb[self.getDDKey()] = newimagetag
+		
 	def getQualityFromDB(self):
 		projectdb = EMProjectDB()
 		data = projectdb[self.getDDKey()]
@@ -1191,11 +1206,11 @@ class Boxable:
 	
 	def getAutoSelectedFromDB(self,forcereadall=False):	
 		
-		trimboxes = getKeyEntryIDD(self.imagename,"autoboxes")
+		trimboxes = getKeyEntryIDD(self.imagename,"auto_boxes")
 		if trimboxes == None or len(trimboxes) == 0:
 			return 0
 		
-		movedboxes = getKeyEntryIDD(self.imagename,"movedboxes") # this may potentially be None
+		movedboxes = getKeyEntryIDD(self.imagename,"moved_boxes") # this may potentially be None
 		
 		for trimbox in trimboxes:
 			if trimbox.ismanual or trimbox.isref:
@@ -1235,11 +1250,11 @@ class Boxable:
 		#debug
 		#a = len(self.boxes)
 		
-		refboxes = getKeyEntryIDD(self.imagename,"references")
+		refboxes = getKeyEntryIDD(self.imagename,"reference_boxes")
 		if refboxes == None or len(refboxes) == 0:
 			return 0
 		
-		movedboxes = getKeyEntryIDD(self.imagename,"movedboxes") # movedboxes is potentially None
+		movedboxes = getKeyEntryIDD(self.imagename,"moved_boxes") # movedboxes is potentially None
 		
 		for trimbox in refboxes:
 			box = Box()
@@ -1263,7 +1278,7 @@ class Boxable:
 		#print "Added",len(self.boxes)-a," references"
 	def getManualFromDB(self):
 		#a = len(self.boxes) # debug		
-		manualboxes = getKeyEntryIDD(self.imagename,"manual")
+		manualboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
 		if manualboxes == None or len(manualboxes) == 0:
 			return 0
 	
@@ -1417,12 +1432,12 @@ class Boxable:
 			data = {}
 		
 		try:
-			manualboxes = data["manualboxes"]
+			manualboxes = data["manual_boxes"]
 		except:
 			manualboxes = []
 	
 		manualboxes.append(TrimBox(box))
-		data["manualboxes"] = manualboxes
+		data["manual_boxes"] = manualboxes
 		projectdb[self.getDDKey()] = data
 	
 	def deleteManualBox(self,box):
@@ -1430,7 +1445,7 @@ class Boxable:
 		data = projectdb[self.getDDKey()]
 		
 		try:
-			manualboxes = data["manualboxes"]
+			manualboxes = data["manual_boxes"]
 		except:
 			print "error, you can't delete a manual box if there are none!"
 			return
@@ -1439,7 +1454,7 @@ class Boxable:
 		for j,b in enumerate(manualboxes):
 			if b.xcorner == box.xcorner and b.ycorner == box.ycorner:
 				manualboxes.pop(j)
-				data["manualboxes"] = manualboxes
+				data["manual_boxes"] = manualboxes
 				projectdb[self.getDDKey()] = data
 				found = True
 				break
@@ -1454,7 +1469,7 @@ class Boxable:
 		data = projectdb[self.getDDKey()]
 		
 		try:
-			manualboxes = data["manualboxes"]
+			manualboxes = data["manual_boxes"]
 		except:
 			print "error, you can't move a manual box if there are none!"
 			return
@@ -1465,7 +1480,7 @@ class Boxable:
 				b.xcorner += dx
 				b.ycorner += dy
 				found = True
-				data["manualboxes"] = manualboxes
+				data["manual_boxes"] = manualboxes
 				projectdb[self.getDDKey()] = data
 				break
 		
@@ -2533,7 +2548,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				t = TrimBox(box)
 				trimboxes.append(t)
 			
-			boxable.setKeyEntryToIDD("autoboxes",trimboxes)
+			boxable.setKeyEntryToIDD("auto_boxes",trimboxes)
 			
 			boxable.setStamps(self.getStateTS(),self.getTemplateTS(),self.getUniqueStamp())
 			boxable.writeToDB()
@@ -2593,7 +2608,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			if ref.getImageName() == imagename:
 				refs_to_write.append(TrimBox(ref))
 
-		setKeyEntryIDD(imagename,"references",refs_to_write)
+		setKeyEntryIDD(imagename,"reference_boxes",refs_to_write)
 	
 	def __reset(self):
 		#self.boxsize = -1
