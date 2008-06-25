@@ -207,6 +207,12 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def setFrozen(self,frozen):
 		self.image2d.setFrozen(frozen)
 		
+	def setExcluded(self,isexcluded):
+		'''
+		The return values is whether or not the display should be updated
+		'''
+		return self.image2d.setExcluded(isexcluded)
+		
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
@@ -276,6 +282,7 @@ class EMImage2DCore:
 		self.init_size_flag = True
 		self.sundry_inspector = None
 		self.frozen = False
+		self.isexcluded = False
 		#self.integratedwidget = None
 		#self.toggleFrozen()
 		try: self.parent.setAcceptDrops(True)
@@ -306,6 +313,14 @@ class EMImage2DCore:
 		
 	def setFrozen(self,frozen):
 		self.frozen = frozen
+		
+	def setExcluded(self,isexcluded):
+		wasexcluded = self.isexcluded
+		
+		self.isexcluded = isexcluded
+		
+		if wasexcluded or self.isexcluded: return True
+		else: return False
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
@@ -600,7 +615,7 @@ class EMImage2DCore:
 			GL.glPixelZoom(1.0,-1.0)
 			GL.glDrawPixels(self.parent.width(),self.parent.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
 		
-		if self.frozen:
+		if self.frozen or self.isexcluded:
 			
 			
 			glPushMatrix()
@@ -616,7 +631,11 @@ class EMImage2DCore:
 			
 			# POSITIONING POLICY - the texture occupies the entire screen area
 			
-			glColor(0,0,0.1,1)
+			if self.isexcluded:
+				glColor(0,0.1,0,1)
+			else:
+				glColor(0,0,0.1,1)
+				
 			glBegin(GL_QUADS)
 			
 			glVertex2f(-width,height)

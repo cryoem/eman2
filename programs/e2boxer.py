@@ -187,7 +187,6 @@ def mergedb(filenames):
 	'''
 	Merges a set of .box files into the local database - stores them as manual boxes
 	'''
-	projectdb = EMProjectDB()
 	for filename in filenames:
 		f=file(filename,'r')
 		lines=f.readlines()
@@ -199,15 +198,12 @@ def mergedb(filenames):
 			boxes.append(TrimBox(b))
 	
 		try:
-			manualboxes = projectdb[strip_file_tag(filename)+"_manualboxes"]
+			manualboxes = getKeyEntryIDD(filename,"manualboxes")
 		except:
 			manualboxes = []
 	
 		manualboxes.extend(boxes)
-		projectdb[strip_file_tag(filename)+"_manualboxes"] = manualboxes
-		
-	projectdb.close()
-		
+		setKeyEntryIDD(filename,"manualboxes",manualboxes)
 
 
 def autoboxmulti(imagenames,options):
@@ -216,7 +212,7 @@ def autoboxmulti(imagenames,options):
 		print "autoboxing",imagename
 		
 		try:
-			data = projectdb[imagename+"_autoboxer"]
+			data = projectdb[getIDDKey(imagname)]
 			trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
 			autoBoxer = SwarmAutoBoxer(self)
 			autoBoxer.become(trimAutoBoxer)
@@ -231,6 +227,11 @@ def autoboxmulti(imagenames,options):
 				projectdb.close()
 		
 		boxable = Boxable(imagename,None,autoBoxer)
+		
+		if boxable.isExcluded():
+			print "Image",imagename,"is excluded and being ignored"
+			continue
+		
 		autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
 		#boxable.deletenonrefs(False)
@@ -249,7 +250,7 @@ def autoboxsingle(imagename,options):
 	
 	projectdb = EMProjectDB()
 	try:
-		data = projectdb[imagename+"_autoboxer"]
+		data = projectdb[getIDDKey(imagename)]
 		trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
 		autoBoxer = SwarmAutoBoxer(self)
 		autoBoxer.become(trimAutoBoxer)
@@ -265,6 +266,10 @@ def autoboxsingle(imagename,options):
 			return 0
 	
 	boxable = Boxable(imagename,None,autoBoxer)
+	if boxable.isExcluded():
+		print "Image",imagename,"is excluded and being ignored"
+		return
+	
 	autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
 	# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
 	#boxable.deletenonrefs(False)
@@ -762,7 +767,7 @@ class GUIbox:
 		
 		try:
 			projectdb = EMProjectDB()
-			data = projectdb[self.imagenames[0]+"_autoboxer"]
+			data = projectdb[getIDDKey(self.imagenames[0])]
 			autoBoxerID = data["auto_boxer_unique_id"]
 			trimAutoBoxer = projectdb[autoBoxerID]["autoboxer"]
 			self.autoboxername = autoBoxerID
@@ -796,6 +801,7 @@ class GUIbox:
 		self.guiim=self.guiimp.child
 		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 		self.guiim.setFrozen(self.boxable.isFrozen())
+		self.guiim.setExcluded(self.boxable.isExcluded())
 		
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		self.guimx=EMImageMX()	
@@ -824,6 +830,7 @@ class GUIbox:
 		
 		self.abselmediator = AutoBoxerSelectionsMediator(self)
 		self.guictl=GUIboxPanel(self,self.abselmediator)
+		self.guictl.setImageQuality(self.boxable.getQuality())
 		
 		try:
 			E2loadappwin("boxer","imagegeom",self.guiimp)
@@ -851,7 +858,7 @@ class GUIbox:
 		self.boxDisplayUpdate()
 		
 	
-	def changeCurrentAutoBoxer(self, autoboxerid):
+	def changeCurrentAutoBoxer(self, autoboxerid,autobox=True):
 		#print "change current autoboxer"
 		projectdb = EMProjectDB()
 		trimAutoBoxer = projectdb[autoboxerid]["autoboxer"]
@@ -860,19 +867,19 @@ class GUIbox:
 		self.autoBoxer.become(trimAutoBoxer)
 		self.autoBoxer.writeSpecificReferencesToDB(self.boxable.getImageName())
 		self.autoBoxer.setMode(self.dynapix,self.anchoring)
-		
-		self.ptcl = []
-		self.guiim.delShapes()
-		
-		self.boxable.setAutoBoxer(self.autoBoxer)
-		self.boxable.clearAndReloadImages()
-		self.indisplaylimbo = True
-		self.autoBoxer.regressiveflag = True
-		self.autoBoxer.autoBox(self.boxable)
-		self.indisplaylimbo = False
 
-		self.boxDisplayUpdate()
+		self.boxable.setAutoBoxer(self.autoBoxer)
+		if autobox:
+			print "change current plus autobox"
+			self.ptcl = []
+			self.guiim.delShapes()
+			self.boxable.clearAndReloadImages()
+			self.indisplaylimbo = True
+			self.autoBoxer.regressiveflag = True
+			self.autoBoxer.autoBox(self.boxable)
+			self.indisplaylimbo = False
 		
+		self.boxDisplayUpdate()	
 	def get2DGuiImage(self):
 		return self.guiim
 	
@@ -933,7 +940,7 @@ class GUIbox:
 		return self.boxsize
 	
 	def storeBox(self,box):
-		if self.boxable.isFrozen():
+		if not self.boxable.isInteractive():
 			return
 		
 		self.boxable.addbox(box)
@@ -953,7 +960,7 @@ class GUIbox:
 		return boxes[boxnum]
 		
 	def removeBox(self,boxnum):
-		if self.boxable.isFrozen():return
+		if not self.boxable.isInteractive(): return
 		
 		box = self.delbox(boxnum)
 		if not (box.isref or box.ismanual):
@@ -985,7 +992,7 @@ class GUIbox:
 		self.ptcl = []
 		self.guiim.delShapes()
 		self.guimx.setData([])
-		self.updateAllImageDisplay()
+		self.boxDisplayUpdate() # - the user may still have some manual boxes...
 	
 	def imagesel(self,event,lc):
 		#print 'in image select'
@@ -1007,7 +1014,7 @@ class GUIbox:
 			
 			try:
 				projectdb = EMProjectDB()
-				data = projectdb[self.imagenames[im]+"_autoboxer"]
+				data = projectdb[getIDDKey(self.imagenames[im])]
 				autoBoxerID = data["auto_boxer_unique_id"]
 				trimAutoBoxer = projectdb[autoBoxerID]["autoboxer"]
 				self.autoboxername = autoBoxerID
@@ -1027,6 +1034,8 @@ class GUIbox:
 			
 			self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
 			self.guiim.setFrozen(self.boxable.isFrozen())
+			self.guiim.setExcluded(self.boxable.isExcluded())
+			self.guictl.setImageQuality(self.boxable.getQuality())
 			self.boxDisplayUpdate()
 			
 
@@ -1170,7 +1179,7 @@ class GUIbox:
 
 	def moveBox(self,boxnum,dx,dy):
 		box = self.getBoxes()[boxnum]
-		if self.boxable.isFrozen():
+		if not self.boxable.isInteractive():
 			return
 		
 		self.boxable.moveBox(box,dx,dy,boxnum)
@@ -1352,8 +1361,14 @@ class GUIbox:
 		return (self.getBoxes())
 
 	def autoboxbutton(self,bool):
-		if self.autoBoxer.autoBox(self.boxable):
-			self.boxDisplayUpdate()
+		'''
+		Hit the autobox is like hitting refresh - everything is updated
+		'''
+		self.boxable.clearAndCache(True)
+		self.autoBoxer.writeSpecificReferencesToDB(self.boxable.getImageName())
+		self.boxable.getReferencesFromDB()
+		self.autoBoxer.autoBox(self.boxable, True,True)
+		self.boxDisplayUpdate()
 
 	def toggleDynapix(self,bool):
 		self.dynapix = bool
@@ -1428,7 +1443,7 @@ class GUIbox:
 			
 			try:
 				projectdb = EMProjectDB()
-				data = projectdb[imagename+"_autoboxer"]
+				data = projectdb[getIDDKey(imagename)]
 				trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
 				autoBoxer = SwarmAutoBoxer(self)
 				autoBoxer.become(trimAutoBoxer)
@@ -1438,6 +1453,10 @@ class GUIbox:
 				#print "writing box images or",imagename,"using currently stored autoboxer"
 				
 			boxable = Boxable(imagename,self,autoBoxer)
+			if boxable.isExcluded():
+				print "Image",imagename,"is excluded and being ignored"
+				continue
+			
 			mode = self.autoBoxer.getMode()
 			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
 			autoBoxer.autoBox(boxable)
@@ -1451,7 +1470,7 @@ class GUIbox:
 			
 			try:
 				projectdb = EMProjectDB()
-				data = projectdb[imagename+"_autoboxer"]
+				data = projectdb[getIDDKey(imagename)]
 				trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
 				autoBoxer = SwarmAutoBoxer(self)
 				autoBoxer.become(trimAutoBoxer)
@@ -1460,6 +1479,10 @@ class GUIbox:
 				autoBoxer = self.autoBoxer
 				#print "writing box coordinates for",imagename,"using currently stored autoboxer"
 			boxable = Boxable(imagename,self,autoBoxer)
+			
+			if boxable.isExcluded():
+				print "Image",imagename,"is excluded and being ignored"
+				continue
 			
 			mode = autoBoxer.getMode()
 			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
@@ -1475,12 +1498,29 @@ class GUIbox:
 		else:
 			print 'technique',technique,'is unsupported - check back tomorrow'
 			
-	def toggleFrozen(self,unusedbool):
+	def toggleFrozen(self):
+		if self.boxable.isExcluded() : return
+		self.boxable.toggleFrozen()
+		self.boxable.writeToDB()
 		self.guiim.setFrozen(self.boxable.isFrozen())
 		if not self.boxable.isFrozen():
-			self.changeCurrentAutoBoxer(self.boxable.getAutoBoxerID())
+			self.changeCurrentAutoBoxer(self.boxable.getAutoBoxerID(),False)
+		else:	
+			self.updateImageDisplay()
+		
+	def changeImageQuality(self,val):
+		self.boxable.setQuality(val)
+		if val == Boxable.EXCLUDE:
+			self.boxable.setFrozen(False) # If it was already frozen then setting to excluded overrides this
+			self.guiim.setExcluded(True)
+			self.guiim.setFrozen(False)
+			self.boxable.clearAndCache(True) # tell boxable to clear its autoboxes and references -
+			self.clearDisplays() # tell the display to clear itself
+		elif self.guiim.setExcluded(False):
+			self.updateImageDisplay()
 			
-		self.updateImageDisplay()
+		self.boxable.writeToDB() # make sure the infromation changes that just occured are written to the DB
+		
 
 	def setBoxingMethod(self,ref,manual):
 		'''
@@ -1499,6 +1539,8 @@ class GUIbox:
 		self.guictl.updateABTable()
 
 	def addNewAutoBoxerDB(self, n):
+		if not self.boxable.isInteractive():
+			return None
 		autoBoxer = SwarmAutoBoxer(self)
 		autoBoxer.boxsize = self.boxsize
 		autoBoxer.setMode(self.dynapix,self.anchoring)
@@ -1517,7 +1559,6 @@ class GUIbox:
 		convenience_name = "Copy " + str(n)
 		trimAutoBoxer.setConvenienceName(convenience_name)
 		trimAutoBoxer.writeToDB()
-		print "returning",convenience_name
 		return convenience_name
 		
 		#print "done"
@@ -1555,12 +1596,10 @@ class AutoBoxerSelectionsMediator:
 				tag = i[1]["convenience_name"]
 				self.dictdata[tag] = []
 				self.namemap[i[0]] = tag
-		#print self.dictdata
-		#print self.namemap
 		for imagename in self.imagenames:
 			found = False
 			try:
-				data = projectdb[imagename+"_autoboxer"]
+				data = projectdb[getIDDKey(imagename)]
 				#trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]
 				found = True
 			except: pass
@@ -1645,28 +1684,29 @@ class AutoBoxerSelectionsMediator:
 		return None
 	
 	def toggleFrozen(self,tag,bool):
-		boxable = self.parent.getBoxable()
-		boxable.toggleFrozen()
-		
-		frozen = boxable.isFrozen()
-		if frozen:
-			new_name = self.addCopyAutoBoxer(tag)
-			self.getAutoBoxerData() # FIXME this is inefficient, could just add to self.dictdata etc
-			autoboxerid = self.__getAutoBoxerIDFromTag(new_name)
+		#frozen = boxable.isFrozen()
+		#if frozen:
+			#new_name = self.addCopyAutoBoxer(tag)
+			#self.getAutoBoxerData() # FIXME this is inefficient, could just add to self.dictdata etc
+			#autoboxerid = self.__getAutoBoxerIDFromTag(new_name)
 			
-			boxable.setAutoBoxerID(autoboxerid)
-			boxable.writeToDB()
-		boxable.writeToDB()
-		self.parent.toggleFrozen(frozen)
+			#boxable.setAutoBoxerID(autoboxerid)
+			#boxable.writeToDB()
+		#boxable.writeToDB()
+		self.parent.toggleFrozen()
 		
 	def clearCurrent(self):
 		new_name = self.addNewAutoBoxer()
+		
+		# if the new_name is none then the current Boxable is frozen!
+		if new_name == None: return new_name
+		
 		self.getAutoBoxerData() # FIXME this is inefficient, could just add to self.dictdata etc
 		autoboxerid = self.__getAutoBoxerIDFromTag(new_name)
 		boxable = self.parent.getBoxable()
 		boxable.setAutoBoxerID(autoboxerid)
 		boxable.writeToDB()
-		boxable.clear()
+		boxable.clearAndCache(True)
 		self.parent.clearDisplays()
 		return new_name
 		
@@ -1797,6 +1837,16 @@ class GUIboxPanel(QtGui.QWidget):
 		self.clear=QtGui.QPushButton("Clear")
 		self.boxinghbl4.addWidget(self.clear)
 		
+		self.imagequality=QtGui.QLabel("Image Quality:",self)
+		self.boxinghbl4.addWidget(self.imagequality)
+		
+		self.imagequalities = QtGui.QComboBox(self)
+		for metadata in Boxable.QUALITY_META_DATA:
+			self.imagequalities.addItem(metadata)
+		#self.imagequalities.setSelection(Boxable.AVERAGE)
+		self.imagequalities.setCurrentIndex(Boxable.QUALITY_META_DATA_MAP[Boxable.AVERAGE])
+		self.boxinghbl4.addWidget(self.imagequalities)
+		
 		self.boxingvbl.addLayout(self.boxinghbl4)
 		
 		self.interactiveboxing = QtGui.QGroupBox("Interactive Boxing")
@@ -1863,19 +1913,29 @@ class GUIboxPanel(QtGui.QWidget):
 
 		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.writebimages)
 		self.connect(self.writeboxesdbs,QtCore.SIGNAL("clicked(bool)"),self.writebcoords)
+		
+		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.imageQualityChanged)
+
+	def setImageQuality(self,integer):
+		self.lock = True
+		self.imagequalities.setCurrentIndex(integer)
+		self.lock = False
+	def imageQualityChanged(self,val):
+		if self.lock == False:
+			self.target.changeImageQuality(str(val))
 
 	def clearCurrent(self,unused):
 		self.lock = True
 		new_name = self.abselmediator.clearCurrent()
 		self.lock = False
-		self.updateABTable()
-		self.setChecked(new_name)
+		if new_name != None: # if the boxable wasn't frozen...
+			self.updateABTable()
+			self.setChecked(new_name)
 		
 	def toggleFrozen(self,bool):
 		self.lock = True
 		self.abselmediator.toggleFrozen(self.col1[self.currentlyselected].text(),bool)
 		self.lock = False
-		self.updateABTable()
 	
 	def writebimages(self,unused):
 		boxsize = int(str(self.usingboxsize.text()))
