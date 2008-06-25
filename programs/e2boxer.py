@@ -914,7 +914,13 @@ class GUIbox:
 			
 		else: self.updateImageDisplay()
 		
-		if len(refboxes) != 0: self.autoBoxer.removeReference(refboxes)
+		if len(refboxes) != 0: 
+			val = self.autoBoxer.removeReference(refboxes)
+			if val == 2:
+				self.boxable.clearAndCache(True)
+				self.clearDisplays()
+				return # avoid unecessary display update below
+			
 		self.boxDisplayUpdate()
 	
 	def detectBoxCollision(self,coords):
@@ -1289,8 +1295,11 @@ class GUIbox:
 		# if the boxable was a reference then the autoboxer needs to be told. It will remove
 		# it from its own list and potentially do autoboxing
 		if box.isref:
-			self.autoBoxer.removeReference(box)
-		
+			val = self.autoBoxer.removeReference(box)
+			if val == 2:
+				self.boxable.clearAndCache(True)
+				self.clearDisplays()
+				
 		return box
 	
 	def updateBoxSize(self,boxsize):

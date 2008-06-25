@@ -937,7 +937,7 @@ class FLCFImage:
 		if action:
 			#print "generating correlation image"
 			self.__updateImage(cfimage,template)
-		#else: print "returning cached image"
+		#else: print "returning cached correlation image"
 		return self.getImage()
 
 class Boxable:
@@ -1916,8 +1916,8 @@ class SwarmTemplate:
 			return 0
 		
 		for j,tmp in enumerate(self.refboxes):
-			if box.isref and box.TS == tmp.TS:
-				tmp = self.refboxes.pop(j)
+			if box.xcorner == tmp.xcorner and box.ycorner == tmp.ycorner:
+				t = self.refboxes.pop(j)
 				return 1	
 				
 		return 0
@@ -1939,6 +1939,7 @@ class SwarmTemplate:
 			if ref.isanchor == False:
 				continue
 			image = ref.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
+			image.write_image("refs.hdf",-1)
 			images_copy.append(image)
 		if len(images_copy) == 0:
 			print 'error, you have probably set references that all have the isanchor flag set to false, which exluded them all from the template making process'
@@ -2319,7 +2320,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 		if len(self.template.refboxes) == 0:
 			self.__reset()
-			return 1
+			return 2
 			
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			if isanchor:
@@ -2469,6 +2470,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		projectdb = EMProjectDB()
 		
 		if len(self.getRefBoxes()) == 0:
+			print "there are 0 references"
 			boxable.clearAndCache(True)
 			# FIXME - debug/double check this functionality
 			boxable.setStamps(self.getStateTS(),-1,self.getUniqueStamp())
@@ -2590,7 +2592,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		for ref in refs:
 			if ref.getImageName() == imagename:
 				refs_to_write.append(TrimBox(ref))
-		
+
 		setKeyEntryIDD(imagename,"references",refs_to_write)
 	
 	def __reset(self):
@@ -2687,6 +2689,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	def __updateRefParams(self):
 		for ref in self.getRefBoxes():
 			ref.updateParams(self)
+			
 	def getRefBoxes(self):
 		return self.template.getReferences()
 	
@@ -2736,6 +2739,8 @@ class SwarmAutoBoxer(AutoBoxer):
 				if box.correlationscore == None:
 					##print "continuing on faulty" - this was already printed above
 					continue
+				
+				#print i,box.optprofile
 				if found == False:
 					self.optprofile = copy(box.optprofile)
 					n = len(self.optprofile)
