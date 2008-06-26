@@ -1403,6 +1403,7 @@ class Boxable:
 	def moveBox(self,box,dx,dy,boxnum):
 		if box.ismanual:
 			self.moveManualBox(box,dx,dy)
+			return
 		
 		box.move(dx,dy)
 

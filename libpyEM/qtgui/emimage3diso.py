@@ -119,15 +119,18 @@ class EMIsosurface(EMImage3DObject):
 	def render(self):
 		if (not isinstance(self.data,EMData)): return
 		
+		#a = time()
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
 		depth = glIsEnabled(GL_DEPTH_TEST)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
 		normalize = glIsEnabled(GL_NORMALIZE)
 		
+		
 		glDisable(GL_CULL_FACE)
 		glEnable(GL_DEPTH_TEST)
 		glEnable(GL_NORMALIZE)
+		#glDisable(GL_NORMALIZE)
 		if ( self.wire ):
 			glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 		else:
@@ -195,6 +198,8 @@ class EMIsosurface(EMImage3DObject):
 		else: glPolygonMode(GL_FRONT, GL_FILL)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 		else: glPolygonMode(GL_BACK, GL_FILL)
+		
+		#print "total time is", time()-a
 			
 	def init(self):
 		self.mmode = 0

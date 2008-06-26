@@ -13,9 +13,11 @@
 
 #ifdef __APPLE__
 #include "OpenGL/gl.h"
+// #include "OpenGL/glu.h"
+#include "OpenGL/glext.h"
 #else // _WIN32, LINUX
 #include "GL/gl.h"
-#include "GL/glu.h"
+// #include "GL/glu.h"
 #include "GL/glext.h"
 #endif
 #endif
@@ -225,9 +227,8 @@ unsigned long MarchingCubes::get_isosurface_dl(unsigned int tex_id)
 	cout << "Max vertices is " << maxv << " max indices is " << maxf << endl;
 	cout << "Using OpenGL " << glGetString(GL_VERSION) << endl;
 #endif
-	
-	for (unsigned int i = 0; i < ff.elem(); ++i )
-		ff[i] /= 3;
+
+	for (unsigned int i = 0; i < ff.elem(); ++i ) ff[i] /= 3;
 	
 	if ( maxf % 3 != 0 )
 	{
@@ -552,6 +553,14 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 		
 		for(iCorner = 0; iCorner < 3; iCorner++)
 		{
+			// Without vertex normalization
+// 			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+// 			int ss = pp.elem();
+// 			pp.push_back_3(&pts[iCorner][0]);
+// 			nn.push_back_3(&n[0]);
+// 			ff.push_back(ss);
+
+//			With vertex normalization
 			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
 			map<int,int>::iterator it = point_map.find(pointIndex[iVertex]);
 			if ( it == point_map.end() ){
