@@ -867,7 +867,6 @@ class GUIbox:
 
 		self.boxable.setAutoBoxer(self.autoBoxer)
 		if autobox:
-			print "change current plus autobox"
 			self.ptcl = []
 			self.guiim.delShapes()
 			self.boxable.clearAndReloadImages()
@@ -1465,7 +1464,7 @@ class GUIbox:
 			
 			mode = self.autoBoxer.getMode()
 			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-			autoBoxer.autoBox(boxable)
+			autoBoxer.autoBox(boxable,False)
 			autoBoxer.setModeExplicit(mode)
 			
 			boxable.writeboximages(boxsize,forceoverwrite,imageformat)
@@ -1492,7 +1491,7 @@ class GUIbox:
 			
 			mode = autoBoxer.getMode()
 			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-			autoBoxer.autoBox(boxable)
+			autoBoxer.autoBox(boxable,False)
 			autoBoxer.setModeExplicit(mode)
 			
 			boxable.writecoords(boxsize,forceoverwrite)
@@ -1598,18 +1597,13 @@ class AutoBoxerSelectionsMediator:
 		self.dictdata = {}
 		self.namemap = {}
 		for i in projectdb:
-			print i
-		print 'DONE'
-		for i in projectdb:
 			try:
 				if i[0:10] == "autoboxer_":
 					tag = projectdb[i]["convenience_name"]
 					self.dictdata[tag] = []
 					self.namemap[i] = tag
 			except:
-				print "couldn't handle",i
-		print self.dictdata
-		print self.namemap
+				print "error couldn't handle",i
 		
 		for imagename in self.imagenames:
 			found = False
@@ -1623,6 +1617,7 @@ class AutoBoxerSelectionsMediator:
 				try:
 					self.dictdata[self.namemap[data["auto_boxer_unique_id"]]].append(strip_after_dot(imagename))
 				except:
+					print data
 					print "error, an autoboxer has been lost, its stamp is",data["auto_boxer_unique_id"]
 		return self.dictdata
 	

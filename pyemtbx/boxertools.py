@@ -1165,16 +1165,27 @@ class Boxable:
 		return self.__quality
 		
 	def checkAndStoreImageTagInDB(self):
+		#print "in cheack and Store image tag in db"
 		projectdb = EMProjectDB()
 		data = projectdb[self.getDDKey()]
-		newimagetag = get_file_tag(sel.imagename)
-		oldimagetag = data["image_tag"]
-		if oldimagetag != newimagetag:
-			print "warning with respect to",self.imagename,"- you are using information in the database that was generated using an image of type",newimagetag,"on an image of type",oldimagetag,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
-		else:
-			print "storing image tag"
+		newimagetag = get_file_tag(self.imagename)
+		try:
+			oldimagetag = data["image_tag"]
+		except:
+			#print "stored image tag for first time"
 			data["image_tag"] = newimagetag
-			projectdb[self.getDDKey()] = newimagetag
+			projectdb[self.getDDKey()] = data
+			return
+		
+		if oldimagetag != newimagetag:
+			#print "warning with respect to",self.imagename,"- you are using information in the database that was generated using an image of type",newimagetag,"on an image of type",oldimagetag,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
+			return
+		else:
+			#print "storing image tag"
+			data["image_tag"] = newimagetag
+			projectdb[self.getDDKey()] = data
+			
+	
 		
 	def getQualityFromDB(self):
 		projectdb = EMProjectDB()
@@ -2219,7 +2230,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			if self.cmpmode != cmpmode:
 				self.cmpmode = cmpmode
 				BoxingTools.set_mode(self.cmpmode)
-				self.__fullUpdate()
+				if not self.__fullUpdate(): return 0
 				self.regressiveflag = True
 				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 					self.autoBox(self.getBoxable())
@@ -2282,14 +2293,17 @@ class SwarmAutoBoxer(AutoBoxer):
 				if not box.isanchor and not box.isdummy:
 					print 'the box flag is internally inconsistent when using pure dynapix'
 					return 0
-				self.__fullUpdate()
+				if not self.__fullUpdate() : return 0
 				self.autoBox(self.getBoxable())
 			elif self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 				if box.isanchor and not box.isdummy:
 					print 'the box flag is internally inconsistent when anchoring'
 					return 0
 				box.updateParams(self)
-				self.__accrueOptParams()
+				if not self.__accrueOptParams() :
+					self.stateTS = gm_time_string()
+					print "there is a problem with the references"
+					return 0
 				self.stateTS = gm_time_string()
 				self.autoBox(self.getBoxable())
 			elif self.mode == SwarmAutoBoxer.USERDRIVEN:
@@ -2298,7 +2312,10 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.templateTS = -1
 			elif self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
 				box.updateParams(self)
-				self.__accrueOptParams()
+				if not self.__accrueOptParams() :
+					self.stateTS = gm_time_string()
+					print "there is a problem with the references"
+					return 0
 				self.stateTS = gm_time_string()
 			else:
 				print 'error, unknown mode in SwarmAutoBoxer'
@@ -2339,11 +2356,14 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			if isanchor:
-				self.__fullUpdate()
+				if not self.__fullUpdate(): return 0
 				self.regressiveflag = True
 				self.autoBox(self.getBoxable())
 			else:
-				self.__accrueOptParams()
+				if not self.__accrueOptParams() :
+					self.stateTS = gm_time_string()
+					print "there is a problem with the references"
+					return 0
 				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 				self.autoBox(self.getBoxable())
@@ -2355,7 +2375,10 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.templateTS = -1
 			else:
 				box.updateParams(self)
-				self.__accrueOptParams()
+				if not self.__accrueOptParams() :
+					self.stateTS = gm_time_string()
+					print "there is a problem with the references"
+					return 0
 				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 				
@@ -2377,12 +2400,15 @@ class SwarmAutoBoxer(AutoBoxer):
 		'''
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			if box.isanchor:
-				self.__fullUpdate()
+				if not self.__fullUpdate() : return 0
 				self.regressiveflag = True
 				self.autoBox(self.getBoxable())
 			else:
 				box.updateParams(self)
-				self.__accrueOptParams()
+				if not self.__accrueOptParams() :
+					self.stateTS = gm_time_string()
+					print "there is a problem with the references"
+					return 0
 				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 				self.autoBox(self.getBoxable())
@@ -2397,7 +2423,10 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.templateTS = -1
 			else:
 				box.updateParams(self)
-				self.__accrueOptParams()
+				if not self.__accrueOptParams() :
+					self.stateTS = gm_time_string()
+					print "there is a problem with the references"
+					return 0
 				self.stateTS = gm_time_string()
 				self.regressiveflag = True
 				
@@ -2413,7 +2442,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 	def getTemplate(self):
 		if self.refupdate:
-			self.__fullUpdate()
+			if not self.__fullUpdate(): return None
 			self.refupdate = False
 			
 		if self.template == None:
@@ -2441,7 +2470,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			# update references
-			self.__fullUpdate()
+			if not self.__fullUpdate(): 
+				print "box size change failed, can't full update"
+				return
 			self.autoBox(self.getBoxable())
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN :
 			self.refupdate = True
@@ -2485,7 +2516,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		projectdb = EMProjectDB()
 		
 		if len(self.getRefBoxes()) == 0:
-			print "there are 0 references"
 			boxable.clearAndCache(True)
 			# FIXME - debug/double check this functionality
 			boxable.setStamps(self.getStateTS(),-1,self.getUniqueStamp())
@@ -2503,7 +2533,7 @@ class SwarmAutoBoxer(AutoBoxer):
 
 		# ref update should only be toggled if we are in user driven mode
 		if self.refupdate:
-			self.__fullUpdate()
+			if not self.__fullUpdate(): return 0
 			self.refupdate = False
 
 		templateTS = boxable.templateTS
@@ -2560,6 +2590,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			boxable.setAutoBoxerID(self.getUniqueStamp())
 			if not (self.mode != SwarmAutoBoxer.COMMANDLINE or self.parent==None):
 				self.parent.autoBoxerDBChanged()
+				#self.__plotUpdate() # this is inefficent because it may have already happened FIXME
 				
 			self.writeSpecificReferencesToDB(boxable.getImageName())
 			#print "set boxer id",self.getCreationTS()
@@ -2696,10 +2727,11 @@ class SwarmAutoBoxer(AutoBoxer):
 
 		# parameters should be updated now
 		# it's important that the BoxingObjext.updateCorrelation updated the parameters stored in the boxes
-		self.__accrueOptParams()
+		if not self.__accrueOptParams(): return 0
 		
 		self.stateTS = gm_time_string()
 
+		return 1
 	
 	def __updateRefParams(self):
 		for ref in self.getRefBoxes():
