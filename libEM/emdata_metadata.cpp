@@ -911,10 +911,26 @@ void EMData::del_attr_dict(const vector<string> & del_keys)
 
 void EMData::set_attr(const string & key, EMObject val)
 {
+	/* Ignore 'read only' attribute. */
+	if(key == "sigma" ||
+		key == "sigma_nonzero" || 
+		key == "square_sum" ||
+		key == "maximum" ||
+		key == "minimum" ||
+		key == "mean" ||
+		key == "mean_nonzero" ||
+		key == "is_complex" ||
+		key == "is_complex_ri" ||
+		key == "is_complex_x" ) 
+	{
+		LOGWARN("Ignore setting read only attribute %s", key.c_str());
+		return;
+	}
+			
 	attr_dict[key] = val;
 	
-	if(rdata != 0) { /* reset attribute nx, ny, nz will resize the image */
-		
+	/* reset attribute nx, ny, nz will resize the image */	
+	if(rdata != 0) { 	
 		EMData * new_image =0;
 		if( key == "nx" ) {
 			int nd = (int) val;		
