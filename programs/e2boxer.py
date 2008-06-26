@@ -1597,11 +1597,20 @@ class AutoBoxerSelectionsMediator:
 		projectdb = EMProjectDB()
 		self.dictdata = {}
 		self.namemap = {}
-		for i in projectdb.items():
-			if i[0][0:10] == "autoboxer_":
-				tag = i[1]["convenience_name"]
-				self.dictdata[tag] = []
-				self.namemap[i[0]] = tag
+		for i in projectdb:
+			print i
+		print 'DONE'
+		for i in projectdb:
+			try:
+				if i[0:10] == "autoboxer_":
+					tag = projectdb[i]["convenience_name"]
+					self.dictdata[tag] = []
+					self.namemap[i] = tag
+			except:
+				print "couldn't handle",i
+		print self.dictdata
+		print self.namemap
+		
 		for imagename in self.imagenames:
 			found = False
 			try:
@@ -1611,8 +1620,10 @@ class AutoBoxerSelectionsMediator:
 			except: pass
 			
 			if found:
-				self.dictdata[self.namemap[data["auto_boxer_unique_id"]]].append(strip_after_dot(imagename))
-		
+				try:
+					self.dictdata[self.namemap[data["auto_boxer_unique_id"]]].append(strip_after_dot(imagename))
+				except:
+					print "error, an autoboxer has been lost, its stamp is",data["auto_boxer_unique_id"]
 		return self.dictdata
 	
 	def getCurrentAutoBoxerTS(self):
