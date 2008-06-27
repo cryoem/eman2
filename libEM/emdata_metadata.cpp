@@ -918,10 +918,7 @@ void EMData::set_attr(const string & key, EMObject val)
 		key == "maximum" ||
 		key == "minimum" ||
 		key == "mean" ||
-		key == "mean_nonzero" ||
-		key == "is_complex" ||
-		key == "is_complex_ri" ||
-		key == "is_complex_x" ) 
+		key == "mean_nonzero" ) 
 	{
 		LOGWARN("Ignore setting read only attribute %s", key.c_str());
 		return;
