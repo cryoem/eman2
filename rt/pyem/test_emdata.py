@@ -2175,10 +2175,10 @@ class TestEMData(unittest.TestCase):
         e.process_inplace("testimage.noise.uniform.rand")
         d = e.get_attr_dict()
         self.assertEqual(d['is_complex'], False)
-        d['is_complex'] = True
+        d['test'] = True
         e.set_attr_dict(d)
         d2 = e.get_attr_dict()
-        self.assertEqual(d2['is_complex'], True)
+        self.assertEqual(d2['test'], True)
         
         e.set_attr('name1', 'Grant')
         e.set_attr('int1', 1000)
@@ -2745,8 +2745,8 @@ class TestEMData(unittest.TestCase):
         e.set_size(32, 32, 32)
         e.process_inplace("testimage.noise.uniform.rand")
         self.assertEqual(e.get_attr("is_complex"), False)
-        e.set_attr("is_complex", True)
-        self.assertEqual(e.get_attr("is_complex"), True)
+        e.set_attr("test", True)
+        self.assertEqual(e.get_attr("test"), True)
         
         e.del_attr('is_complex')
         d = e.get_attr_dict()

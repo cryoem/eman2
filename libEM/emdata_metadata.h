@@ -630,10 +630,10 @@ inline void set_FH(bool is_FH)
 inline void set_complex(bool is_complex)
 {
 	if (is_complex) {
-		set_attr("is_complex", int(1));
+		attr_dict["is_complex"] = int(1);
 	}
 	else {
-		set_attr("is_complex", int(0));
+		attr_dict["is_complex"] = int(0);
 	}
 }
 
@@ -665,10 +665,10 @@ inline bool is_complex_x() const
 inline void set_complex_x(bool is_complex_x)
 {
 	if (is_complex_x) {
-		set_attr("is_complex_x", int(1));
+		attr_dict["is_complex_x"] = int(1);
 	}
 	else {
-		set_attr("is_complex_x", int(0));
+		attr_dict["is_complex_x"] = int(0);
 	}
 }
 
@@ -729,10 +729,10 @@ inline bool is_ri() const
 inline void set_ri(bool is_ri)
 {
 	if (is_ri) {
-		set_attr("is_complex_ri", int(1));
+		attr_dict["is_complex_ri"] = int(1);
 	}
 	else {
-		set_attr("is_complex_ri", int(0));
+		attr_dict["is_complex_ri"] = int(0);
 	}
 }
 
