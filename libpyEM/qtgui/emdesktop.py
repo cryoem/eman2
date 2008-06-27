@@ -51,13 +51,54 @@ from PyQt4.QtCore import QTimer
 from emfloatingwidgets import *
 from emglobjects import Camera
 
-
-class EMDesktop(QtOpenGL.QGLWidget):
-	"""An opengl windowing system, which can contain other EMAN2 widgets and 3-D objects.
+class EMDesktopScreens():
+	"""
+	A class the figures out how many screen the user has, whether or they are running a virtual desktop etc.
+	
+	 
 	"""
 	def __init__(self):
+		pass
+
+class EMDesktop(QtOpenGL.QGLWidget):
+	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
+	"""
+	def screen_info(self):
+		app=QtGui.QApplication.instance()
+		sys_desktop = app.desktop()
+		num_screens = sys_desktop.numScreens() 
+		print "there are",num_screens,"screen is and the primary screen is", sys_desktop.primaryScreen()
+		if sys_desktop.isVirtualDesktop():
+			print "user is running a virtual desktop"
+			print "now trying to figure out the dimensions of each desktop"
+			if num_screens == 1:
+				app_screen = sys_desktop.screen(0)
+				print "there is only one screen its dimensions are",app_screen.width(),app_screen.height()
+			else:
+				x=0
+				y=0
+				for i in range(num_screens):				
+					geom = sys_desktop.availableGeometry(QtCore.QPoint(x,y))
+					print "\t  printing available geometry information it is",geom.left(),geom.right(),geom.top(),geom.bottom()
+					print "\t geometry starts at",geom.left(),geom.top()," and has dimensions", geom.right()-geom.left()+1,geom.bottom()-geom.top()+1
+					x = geom.right()+1
+					y = geom.top()
+					
+				
+#		else: print "User is not running a virtual desktop"
+#		
+#		print "now printing information for each screen"
+#		for i in range(num_screens):
+#			app_screen = sys_desktop.screen(i)
+#			print "\t screen",i,"has dimensions",app_screen.width(),app_screen.height()
+#			print "\t now printing geometry information"
+#			geom = sys_desktop.screenGeometry(app_screen)
+#			print "\t now printing screen geometry information it is",geom.left(),geom.right(),geom.top(),geom.bottom()
+#			geom = sys_desktop.availableGeometry(QtCore.QPoint(0,0))
+#			print "\t now printing available geometry information it is",geom.left(),geom.right(),geom.top(),geom.bottom()
+	def __init__(self):
 		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
+		fmt.setDoubleBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt,None)
 		
 		self.imtex=0
@@ -70,6 +111,8 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		self.obs2d=[]
 		self.obs3d=[]
 		
+		self.screen_info()
+		exit(1)
 		self.app=QtGui.QApplication.instance()
 		self.sysdesktop=self.app.desktop()
 		self.appscreen=self.sysdesktop.screen(self.sysdesktop.primaryScreen())
