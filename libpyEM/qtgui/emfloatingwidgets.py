@@ -510,7 +510,10 @@ class EMGLView2D:
 
 		#self.updateGL()
 	def emit(self, signal, event):
-		QtCore.QObject.emit(signal,event)
+		try:
+			QtCore.QObject.emit(signal,event)
+		except:
+			print "unknown signal", signal, "or unknown event",event
 	
 	def leaveEvent(self):
 		self.drawable.leaveEvent()

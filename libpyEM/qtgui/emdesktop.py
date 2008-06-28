@@ -51,14 +51,45 @@ from PyQt4.QtCore import QTimer
 from emfloatingwidgets import *
 from emglobjects import Camera
 
-class EMDesktopScreens():
+class EMDesktopScreenInfo():
 	"""
 	A class the figures out how many screen the user has, whether or they are running a virtual desktop etc.
 	
 	 
 	"""
+	
 	def __init__(self):
-		pass
+		app=QtGui.QApplication.instance()
+		sys_desktop = app.desktop()
+		self.__num_screens = sys_desktop.numScreens()
+		self.__screens = [] # This will be a list of QtCore.QGeometry objects
+		
+		print "there are",self.__num_screens,"screen is and the primary screen is", sys_desktop.primaryScreen()
+		if sys_desktop.isVirtualDesktop():
+			print "user is running a virtual desktop"
+			#print "now trying to figure out the dimensions of each desktop"
+			if self.__num_screens == 1:
+				app_screen = sys_desktop.screen(0)
+				self.__screens.append(sys_desktop.screenGeometry(app_screen))
+				print "there is only one screen its dimensions are",app_screen.width(),app_screen.height()
+			else:
+				x=0
+				y=0
+				for i in range( self.__num_screens):				
+					self.__screens.append(sys_desktop.availableGeometry(QtCore.QPoint(x,y)))
+					#print "\t  printing available geometry information it is",geom.left(),geom.right(),geom.top(),geom.bottom()
+					print "\t geometry starts at",geom.left(),geom.top()," and has dimensions", geom.right()-geom.left()+1,geom.bottom()-geom.top()+1
+					x = geom.right()+1
+					y = geom.top()
+		else:
+			print "non virtual desktops are not yet supported"
+
+	def get_num_screens():
+		return self.__num_screens
+	
+	def get_screens():
+		return self.__screens
+	
 
 class EMDesktop(QtOpenGL.QGLWidget):
 	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
@@ -111,15 +142,14 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		self.obs2d=[]
 		self.obs3d=[]
 		
-		self.screen_info()
-		exit(1)
+		self.screen_info = EMDesktopScreenInfo()
 		self.app=QtGui.QApplication.instance()
 		self.sysdesktop=self.app.desktop()
 		self.appscreen=self.sysdesktop.screen(self.sysdesktop.primaryScreen())
 		self.aspect=float(self.appscreen.width())/self.appscreen.height()
 		self.appwidth = self.appscreen.width()
 		self.appheight = self.appscreen.height()
-		self.fov = 2
+		self.fov = 30
 		self.zopt = (1.0/tan(self.fov/2.0*pi/180.0))*self.appheight/2.0
 		self.resizeGL(self.appwidth,self.appheight)
 		#self.bgob=ob2dimage(self,QtGui.QPixmap.grabWindow(self.appscreen.winId(),0.0,0.0,self.sysdesktop.width(),self.sysdesktop.height()-30),self.aspect)
@@ -389,7 +419,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 	def toolTipEvent(self, event):
 		#YUCK fixme soon
 		for i in self.floatwidgets:
-			i.wheelEvent(event)
+			i.toolTipEvent(event)
 		QtGui.QToolTip.hideText()
 		
 	def dragMoveEvent(self,event):
@@ -520,7 +550,9 @@ class EMDesktopWidgets:
 			dif = float(self.h - ch)
 			if dif < 0:
 				print "error, can't handle negative diffs atm", dif, colidx, n
-				exit(1)
+				dif = 0
+				##exit(1)
+			
 			
 			dif /= float(n)
 			dy = dif/2.0
@@ -562,7 +594,7 @@ class EMDesktopWidgets:
 		
 	def changed(self,file):
 	
-		try:
+		#try:
 			a=EMData.read_images(str(file))
 			if len(a) == 1:
 				a = a[0]
@@ -594,9 +626,9 @@ class EMDesktopWidgets:
 			
 			self.layout()
 			
-		except:
-			print "could not open"
-			return
+		#except:
+			#print "could not open"
+			#return
 		
 		
 		#print "paintGL done"
@@ -689,10 +721,10 @@ class EMDesktopWidgets:
 	def wheelEvent(self, event):
 		widgets = self.getWidgets()
 		for i in widgets:
-				if ( i.isinwin(event.x(),self.height()-event.y()) ):
-					i.wheelEvent(event)
-					self.updateGL()
-					return
+			if ( i.isinwin(event.x(),self.height()-event.y()) ):
+				i.wheelEvent(event)
+				self.updateGL()
+				return
 
 	def toolTipEvent(self, event):
 		widgets = self.getWidgets()
@@ -746,7 +778,7 @@ class EMDesktopWidgets:
 
 	def getfd(self):
 		if self.fd == None:
-			self.fd = QtGui.QFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
+			self.fd = QtGui.QFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
 			#self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
 			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
 			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("currentChanged(QString)"), self.changed)

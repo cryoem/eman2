@@ -484,7 +484,6 @@ class EMImage2DCore:
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		if self.curfft==1 :
-			self.fft.write_image("fft.hdf")
 			if self.fft.is_complex() == False:
 				print "error, the fft is not complex, internal error"
 				return

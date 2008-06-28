@@ -544,6 +544,32 @@ def test_image(type=0,size=(128,128)):
 		ret.process_inplace("testimage.sinewave.circular")
 	
 	return ret
+	
+def test_image_3d(type=0,size=(128,128,128)):
+	"""Returns a simple standard test image
+	type=0  axes
+	type=1	gaussian noise, 0 mean, sigma 1
+	type=2  gradient
+	type=3  hollow square
+	type=4  sphere
+	size=(128,128,128) """
+	ret=EMData()
+	if len(size) != 3:
+		print "error, you can't create a 3d test image if there are not 3 dimensions in the size parameter"
+		return None
+	ret.set_size(*size)
+	if type==0 :
+		ret.process_inplace("testimage.axes")
+	elif type==1 :
+		ret.process_inplace("testimage.noise.gauss")
+	elif type==2:
+		ret.process_inplace("testimage.gradient",{"axis":"y"})
+	elif type==3:
+		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":size[0]/2})
+	elif type==4:
+		ret.process_inplace("testimage.circlesphere")
+	
+	return ret
 
 def isosurface(marchingcubes, threshhold, smooth=False):
 	"""Return the Isosurface points, triangles, normals(smooth=True), normalsSm(smooth=False)"""
