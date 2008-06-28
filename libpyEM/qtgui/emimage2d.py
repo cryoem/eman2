@@ -483,7 +483,11 @@ class EMImage2DCore:
 		
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
-		if self.curfft==1 : 
+		if self.curfft==1 :
+			self.fft.write_image("fft.hdf")
+			if self.fft.is_complex() == False:
+				print "error, the fft is not complex, internal error"
+				return
 			a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
 			gl_render_type = GL_RGB
 			
