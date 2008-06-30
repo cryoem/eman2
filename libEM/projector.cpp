@@ -807,16 +807,18 @@ EMData *StandardProjector::project3d(EMData * image) const
 					float x = (float)Util::fast_floor(x2);
 					float y = (float)Util::fast_floor(y2);
 					float z = (float)Util::fast_floor(z2);
+					
 	
 					float t = x2 - x;
 					float u = y2 - y;
 					float v = z2 - z;
 	
 					int ii = (int) (x + y * nx + z * xy);
-	
 					
-					if (x2 >= 0 && y2 >= 0 && z2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1)
-						&& z2 < (nz - 1)) {
+					if (x2 < 0 || y2 < 0 || z2 < 0 ) continue;
+					if 	(x2 > (nx-1) || y2  > (ny-1) || z2 > (nz-1) ) continue;
+					
+					if (x2 < (nx - 1) && y2 < (ny - 1) && z2 < (nz - 1)) {
 						
 						ddata[l] +=
 							Util::trilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],
@@ -832,7 +834,6 @@ EMData *StandardProjector::project3d(EMData * image) const
 					}
 					else if ( x2 == (nx - 1) && z2 == (nz - 1) ) {
 						ddata[l] += Util::linear_interpolate(sdata[ii], sdata[ii + nx],u);
-						
 					}
 					else if ( y2 == (ny - 1) && z2 == (nz - 1) ) {
 						ddata[l] += Util::linear_interpolate(sdata[ii], sdata[ii + 1],t);
@@ -841,7 +842,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + nx], sdata[ii + xy], sdata[ii + xy + nx],u,v);
 					}
 					else if ( y2 == (ny - 1) ) {
-						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + xy], sdata[ii + xy + 1],u,v);
+						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + xy], sdata[ii + xy + 1],t,v);
 					}
 					else if ( z2 == (nz - 1) ) {
 						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx], sdata[ii + nx + 1],t,u);
@@ -884,16 +885,19 @@ EMData *StandardProjector::project3d(EMData * image) const
 				float u = x2 - x;
 				float v = y2 - y;
 				
-				if ( x2 >= 0 && y2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1) ) {
+				if (x2 < 0 || y2 < 0 ) continue;
+				if 	(x2 > (nx-1) || y2  > (ny-1) ) continue;
+				
+				if (  x2 < (nx - 1) && y2 < (ny - 1) ) {
 					ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],sdata[ii + nx + 1], u, v);
 				}
 				else if (x2 == (nx-1) && y2 == (ny-1) ) {
 					ddata[l] += sdata[ii];
 				}
-				else if (x2 == (nx-1)) {
+				else if (x2 == (nx-1) ) {
 					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + nx], v);
 				}
-				else if (y2 == (ny-1)) {
+				else if (y2 == (ny-1) ) {
 					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + 1], u);
 				}
 			}
