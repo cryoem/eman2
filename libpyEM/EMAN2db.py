@@ -102,11 +102,7 @@ class DBDict:
 		self.txn=None	# current transaction used for all database operations
 		self.bdb=db.DB(dbenv)
 		if file==None : file=name+".bdb"
-		try: self.bdb.open(file,name,db.DB_BTREE,0)
-		except: 
-			self.bdb.open(file,name,db.DB_BTREE,db.DB_CREATE)
-			self.bdb.put(dumps("_freebinary",-1),dumps([],-1),txn=self.txn)
-			print "new db created"
+		self.bdb.open(file,name,db.DB_BTREE,db.DB_CREATE)
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
 
 	def __str__(self): return "<EMAN2db DBHash instance: %s>" % self.name
@@ -147,28 +143,29 @@ class DBDict:
 
 	def __setitem__(self,key,val):
 		if (val==None) :
-			try: self.__delitem__(key)
+			try:
+				self.__delitem__(key)
 			except: return
 		elif isinstance(val,EMData) : 
 			# decide where to put the binary data
 			ad=val.get_attr_dict()
-			fkey="%s/%s%dx%dx%d"%(self.path,self.name,ad["nx"],ad["ny"],ad["nz"])
+			pkey="%s/%s"%(self.path,self.name)
+			fkey="%dx%dx%d"%(ad["nx"],ad["ny"],ad["nz"])
 #			print "w",fkey
 			try :
-				o=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
-				n=o["binary"]
+				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=self.txn))
 			except:
 				if not self.has_key(fkey) : self[fkey]=0
 				else: self[fkey]+=1 
 				n=self[fkey]
-			ad["binary"]=n
+			self.bdb.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
 			
 			# write the metadata
 			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			
 			# write the binary data
-			val.write_data(fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
+			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
@@ -176,11 +173,13 @@ class DBDict:
 	def __getitem__(self,key):
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
-		if isinstance(r,dict) and r.has_key("binary") :
-			fkey="%s/%s%dx%dx%d"%(self.path,self.name,r["nx"],r["ny"],r["nz"])
+		if isinstance(r,dict) and r.has_key("nx") :
+			pkey="%s/%s"%(self.path,self.name)
+			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
 			ret=EMData(r["nx"],r["ny"],r["nz"])
-			ret.read_data(fkey,r["binary"]*4*r["nx"]*r["ny"]*r["nz"])
+			n=loads(self.bdb.get(fkey+dumps(key,-1)))
+			ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
 			for i in k: ret.set_attr(i,r[i])
