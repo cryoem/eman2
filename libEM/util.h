@@ -429,6 +429,17 @@ namespace EMAN
 			}
 			return (int) (x + 0.5);
 		}
+		
+		/** Calculate linear interpolation.
+		 * @param[in] p1 The first number. corresponding to (x0,y0).
+		 * @param[in] p2 The second number. corresponding to (x1,y0).
+		 * @param[in] t the distance the separates the interpolated point from p1
+		 * @return The bilinear interpolation value.
+		 */
+		static inline float linear_interpolate(float p1, float p2, float t)
+		{
+			return (1-t) * p1 + t  * p2;
+		}
 
 		/** Calculate bilinear interpolation.
 		 * @param[in] p1 The first number. corresponding to (x0,y0).

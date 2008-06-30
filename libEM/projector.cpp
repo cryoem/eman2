@@ -804,23 +804,47 @@ EMData *StandardProjector::project3d(EMData * image) const
 					float y2 = (float)(r[1][0] * i + r[1][1] * j + r[1][2] * k + ny / 2);
 					float z2 = (float)(r[2][0] * i + r[2][1] * j + r[2][2] * k + nz / 2);
 	
+					float x = (float)Util::fast_floor(x2);
+					float y = (float)Util::fast_floor(y2);
+					float z = (float)Util::fast_floor(z2);
+	
+					float t = x2 - x;
+					float u = y2 - y;
+					float v = z2 - z;
+	
+					int ii = (int) (x + y * nx + z * xy);
+	
+					
 					if (x2 >= 0 && y2 >= 0 && z2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1)
 						&& z2 < (nz - 1)) {
-						float x = (float)Util::fast_floor(x2);
-						float y = (float)Util::fast_floor(y2);
-						float z = (float)Util::fast_floor(z2);
-	
-						float t = x2 - x;
-						float u = y2 - y;
-						float v = z2 - z;
-	
-						int ii = (int) (x + y * nx + z * xy);
-	
+						
 						ddata[l] +=
 							Util::trilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],
-														sdata[ii + nx + 1], sdata[ii + nx * ny],
+														sdata[ii + nx + 1], sdata[ii + xy],
 														sdata[ii + xy + 1], sdata[ii + xy + nx],
 														sdata[ii + xy + nx + 1], t, u, v);
+					}
+					else if ( x2 == (nx - 1) && y2 == (ny - 1) && z2 == (nz - 1) ) {
+						ddata[l] += sdata[ii];
+					}
+					else if ( x2 == (nx - 1) && y2 == (ny - 1) ) {
+						ddata[l] +=	Util::linear_interpolate(sdata[ii], sdata[ii + xy],v);
+					}
+					else if ( x2 == (nx - 1) && z2 == (nz - 1) ) {
+						ddata[l] += Util::linear_interpolate(sdata[ii], sdata[ii + nx],u);
+						
+					}
+					else if ( y2 == (ny - 1) && z2 == (nz - 1) ) {
+						ddata[l] += Util::linear_interpolate(sdata[ii], sdata[ii + 1],t);
+					}
+					else if ( x2 == (nx - 1) ) {
+						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + nx], sdata[ii + xy], sdata[ii + xy + nx],u,v);
+					}
+					else if ( y2 == (ny - 1) ) {
+						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + xy], sdata[ii + xy + 1],u,v);
+					}
+					else if ( z2 == (nz - 1) ) {
+						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx], sdata[ii + nx + 1],t,u);
 					}
 				}
 			}
@@ -847,25 +871,33 @@ EMData *StandardProjector::project3d(EMData * image) const
 		float *sdata = image->get_data();
 		float *ddata = proj->get_data();
 		
-		for (int j = -ny / 2; j < ny - ny / 2; j++) {
+		for (int j = -ny / 2; j < ny - ny / 2; j++) { // j represents a column of pixels in the direction of the angle
 			int l = 0;
 			for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
 				float x2 = cosalt*i-sinalt*j + nx/2;
 				float y2 = sinalt*i+cosalt*j + ny/2;
 
+				float x = (float)Util::fast_floor(x2);
+				float y = (float)Util::fast_floor(y2);
+				
+				int ii = (int) (x + y * nx);
+				float u = x2 - x;
+				float v = y2 - y;
+				
 				if ( x2 >= 0 && y2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1) ) {
-					float x = (float)Util::fast_floor(x2);
-					float y = (float)Util::fast_floor(y2);
-
-					float u = x2 - x;
-					float v = y2 - y;
-
-					int ii = (int) (x + y * nx);
-
-					ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],
-							sdata[ii + nx + 1], u, v);
+					ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],sdata[ii + nx + 1], u, v);
+				}
+				else if (x2 == (nx-1) && y2 == (ny-1) ) {
+					ddata[l] += sdata[ii];
+				}
+				else if (x2 == (nx-1)) {
+					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + nx], v);
+				}
+				else if (y2 == (ny-1)) {
+					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + 1], u);
 				}
 			}
+			cout << endl;
 		}
 		image->update();
 		proj->update();

@@ -2675,7 +2675,7 @@ The basic design of EMAN Processors: <br>\
 			
 			string get_desc() const
 			{
-				return "Shrink an image by a given amount (default 2), using the mean value found in the pixel neighborhood.";
+				return "Shrink an image by a given amount , using the mean value found in the pixel neighborhood.";
 			}
 			
 			string get_name() const
@@ -2713,64 +2713,110 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 
-		/** MeanShrinkProcessor shrinks an image by in an integer amount
-		* taking the median of the pixel neighbourhood
-		* @author David Woolford (But is basically a copy of the old EMData::median_shrink, probably written by Steven Ludtke )
-		* @date May 2008
+	/** MeanShrinkProcessor shrinks an image by in an integer amount
+	* taking the median of the pixel neighbourhood
+	* @author David Woolford (But is basically a copy of the old EMData::median_shrink, probably written by Steven Ludtke )
+	* @date May 2008
+	*/
+	class MedianShrinkProcessor : public Processor
+	{
+	public:
+		/** The medianshrink processor has its own process function
+		* to minise memory usage - if this function was not over written
+		* the base Processor class would create copy of the input image
+		* and hand it to the process_inplace function. This latter approach
+		* mallocs and copies more memory than necessary
+		* @param image the image that will be used to generate a 'median shrunken' image
+		* @exception ImageFormatException  if the image is complex
+		* @exception InvalidValueException if the shrink amount is not a non zero, positive integer
+		* @exception InvalidValueException if any of the image dimensions are not divisible by the the shrink amount 
 		*/
-		class MedianShrinkProcessor : public Processor
+		virtual EMData* process(const EMData *const image);
+			
+		/** Median shrink the image
+		* @param image the image the image that will be 'median shrunken' inplace
+		* @exception ImageFormatException  if the image is complex
+		* @exception InvalidValueException if the shrink amount is not a non zero, positive integer
+		* @exception InvalidValueException if any of the image dimensions are not divisible by the the shrink amount 
+		*/
+		virtual void process_inplace(EMData * image);
+			
+		string get_desc() const
 		{
+			return "Shrink an image by a given amount , using the median value found in the pixel neighborhood.";
+		}
+			
+		string get_name() const
+		{
+			return "math.medianshrink";
+		}
+		static Processor *NEW()
+		{
+			return new MedianShrinkProcessor();
+		}
+			
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("n", EMObject::INT, "The shrink factor");
+			return d;
+		}
+	private:
+		/** Accrue the local median in the image 'from' to the image 'to' using the given shrinkfactor
+		* An internal function that encapsulates a routine common to both process and 
+		* process inplace
+		* @param to the smaller image that will store the calculated median values
+		* @param from the larger image that will be used to calculate the median values
+		* @param shrinkfactor the shrink amount
+			*/
+		void accrue_median(EMData* to, const EMData* const from,const int shrink_factor);
+	};
+	
+	
+	/** FFTShrinkProcessor shrinks an image by a floating point amount by clipping the Fourier Transform
+	 * This is the same as multipyling the FT by a box window, in real space this is a convolution that will induce rippling.
+	 * Hence it is not recommended to be used for scientific processing - rather, it can be used to rapidly generate shrunken
+	 * images for display purposes
+	 * @author David Woolford
+	 * @date June 2008
+	 */
+	class FFTShrinkProcessor : public Processor
+	{
 		public:
-			/** The medianshrink processor has its own process function
-			* to minise memory usage - if this function was not over written
-			* the base Processor class would create copy of the input image
-			* and hand it to the process_inplace function. This latter approach
-			* mallocs and copies more memory than necessary
-			* @param image the image that will be used to generate a 'median shrunken' image
-		 	* @exception ImageFormatException  if the image is complex
-			* @exception InvalidValueException if the shrink amount is not a non zero, positive integer
-			* @exception InvalidValueException if any of the image dimensions are not divisible by the the shrink amount 
-			*/
 			virtual EMData* process(const EMData *const image);
-				
-			/** Median shrink the image
-			* @param image the image the image that will be 'median shrunken' inplace
-			* @exception ImageFormatException  if the image is complex
-			* @exception InvalidValueException if the shrink amount is not a non zero, positive integer
-			* @exception InvalidValueException if any of the image dimensions are not divisible by the the shrink amount 
-			*/
+			
 			virtual void process_inplace(EMData * image);
-				
+			
 			string get_desc() const
 			{
-				return "Shrink an image by a given amount (default 2), using the median value found in the pixel neighborhood.";
+				return "Shrink an image by a floating point amount by clipping the Fourier transform.";
 			}
-				
+			
 			string get_name() const
 			{
-				return "math.medianshrink";
+				return "math.fftshrink";
 			}
 			static Processor *NEW()
 			{
-				return new MedianShrinkProcessor();
+				return new FFTShrinkProcessor();
 			}
-				
+			
 			TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("n", EMObject::INT, "The shrink factor");
+				d.put("n", EMObject::FLOAT, "The shrink factor");
 				return d;
 			}
 		private:
-			/** Accrue the local median in the image 'from' to the image 'to' using the given shrinkfactor
-			* An internal function that encapsulates a routine common to both process and 
+			/** An internal function that encapsulates a routine common to both process and 
 			* process inplace
-			* @param to the smaller image that will store the calculated median values
-			* @param from the larger image that will be used to calculate the median values
+			* @param to the smaller image that will store the shrunken values
+			* @param from the larger image that will be used to calculate the shrunken values
 			* @param shrinkfactor the shrink amount
 			 */
-			void accrue_median(EMData* to, const EMData* const from,const int shrink_factor);
-		};
+			void fft_shrink(EMData* to, const EMData *const from, const float& shrinkfactor);
+			
+	};
 	
 	
 	/**Gradient remover, does a rough plane fit to find linear gradients.

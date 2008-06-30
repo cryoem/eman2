@@ -99,6 +99,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&MinShrinkProcessor::NEW);
 	force_add(&MeanShrinkProcessor::NEW);
 	force_add(&MedianShrinkProcessor::NEW);
+	force_add(&FFTShrinkProcessor::NEW);
 	
 	force_add(&MakeRadiusSquaredProcessor::NEW);
 	force_add(&MakeRadiusProcessor::NEW);
@@ -1212,6 +1213,70 @@ void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,c
 	
 	to->scale_pixel((float)shrink_factor);
 }
+
+EMData* FFTShrinkProcessor::process(const EMData *const image)
+{
+	if (image->is_complex()) throw ImageFormatException("Error, the fft shrink processor does not work on complex images");
+	
+	
+	float shrink_factor = params.set_default("n",0.0f);
+	if (shrink_factor <= 1.0F  )  {
+		throw InvalidValueException(shrink_factor,	"mean shrink: shrink factor must be >1 ");
+	}
+
+	EMData* result = image->copy();
+	fft_shrink(result,image,shrink_factor);
+	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
+	result->update();
+	
+	return result;
+}
+
+void FFTShrinkProcessor::process_inplace(EMData * image)
+{
+	if (image->is_complex()) throw ImageFormatException("Error, the fft shrink processor does not work on complex images");
+	
+	
+	float shrink_factor = params.set_default("n",0.0f);
+	if (shrink_factor <= 1.0F  )  {
+		throw InvalidValueException(shrink_factor,	"mean shrink: shrink factor must be >1 ");
+	}
+
+	fft_shrink(image,image,shrink_factor);
+	// The image may have been padded - we should shift it so that the phase origin is where FFTW expects it
+	image->update();
+	
+}
+
+void FFTShrinkProcessor::fft_shrink(EMData* to, const EMData *const from, const float& shrink_factor) {
+	int nx = from->get_xsize();
+	int ny = from->get_ysize();
+	int nz = from->get_zsize();
+	
+	int shrunken_nx = static_cast<int>( static_cast<float> (nx) / shrink_factor);
+	int shrunken_ny = static_cast<int>( static_cast<float> (ny) / shrink_factor);
+	int shrunken_nz = static_cast<int>( static_cast<float> (nz) / shrink_factor);
+	
+	if (shrunken_nx == 0) throw UnexpectedBehaviorException("The shrink factor cause the pixel dimensions in the x direction to go to zero");
+	if (shrunken_ny == 0) shrunken_ny = 1;
+	if (shrunken_nz == 0) shrunken_nz = 1;
+	
+	to->process_inplace("xform.phaseorigin.tocorner");
+	
+	to->do_fft_inplace();
+	
+	to->process_inplace("xform.fourierorigin.tocenter");
+	
+	Region clip((nx-shrunken_nx)/2,(ny-shrunken_ny)/2,(nz-shrunken_nz)/2,shrunken_nx,shrunken_ny,shrunken_nz);
+	to->clip_inplace(clip);
+	
+	to->process_inplace("xform.fourierorigin.tocorner");
+	to->do_ift_inplace();
+	to->postift_depad_corner_inplace();
+	to->process_inplace("xform.phaseorigin.tocenter");
+	
+}
+
 
 EMData* MeanShrinkProcessor::process(const EMData *const image)
 {

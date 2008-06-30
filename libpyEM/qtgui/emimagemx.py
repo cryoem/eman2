@@ -730,7 +730,7 @@ class EMImageMXCore:
 			self.mousedrag=None
 		elif event.button()==Qt.LeftButton and self.mmode=="app":
 			if  not event.modifiers()&Qt.ShiftModifier:
-				self.parent.emit(QtCore.SIGNAL("mouseup"),event)
+				self.parent.emit(QtCore.SIGNAL("mouseup"),event,lc)
 			else:
 				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
 		elif self.mmode=="del" and lc:

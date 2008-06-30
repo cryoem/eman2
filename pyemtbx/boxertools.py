@@ -64,6 +64,10 @@ class EMProjectDB:
 		def close(self):
 			self.projectdb.close()
 			
+		def setKeyEntry(self,key,entry):
+			self.projectdb[key]= entry
+			self.projectdb.sync()
+			
 	__instance = None
 	
 	def __init__(self):
@@ -79,7 +83,10 @@ class EMProjectDB:
 
 	def __setattr__(self, attr, value):
 		""" Delegate access to implementation """
-		return setattr(self.__instance.projectdb, attr, value)
+		return setattr(self.__instance, attr, value)
+	
+	def setKeyEntry(self,key,entry):
+		return self.__instance.setKeyEntry(key,entry)
 	
 class Box:
 	CENTERACF = "centeracf"
@@ -156,26 +163,25 @@ class Box:
 		self.xcorner += dx
 		self.ycorner += dy
 		
-		projectdb = EMProjectDB()
-		try:
-			movedboxes = getKeyEntryIDD(self.imagename,"moved_boxes")
-			if movedboxes == None: movedboxes = []
-		except:
-			movedboxes = []
-		
-		found = False
-		for data in movedboxes:
-			if data[0] == self.origxcorner and data[1] == self.origycorner:
-				data[2] = self.xcorner
-				data[3] = self.ycorner
-				found = True
-				break
-				
-		if not found:
-			movedboxes.append([self.origxcorner,self.origycorner,self.xcorner,self.xcorner])
-		
-		
-		setKeyEntryIDD(self.imagename,"moved_boxes",movedboxes)
+		if not self.ismanual:
+			movedboxes = getKeyEntryIDD(self.imagename,"moved_boxes") # this may potentially be None
+			
+			if movedboxes == None:
+				movedboxes = []
+			
+			found = False
+			for data in movedboxes:
+				if data[0] == self.origxcorner and data[1] == self.origycorner:
+					data[2] = self.xcorner
+					data[3] = self.ycorner
+					found = True
+					break
+					
+			if not found:
+				movedboxes.append([self.origxcorner,self.origycorner,self.xcorner,self.xcorner])
+			
+			
+			setKeyEntryIDD(self.imagename,"moved_boxes",movedboxes)
 		
 		self.changed = False
 		self.updateBoxImage()
@@ -337,6 +343,7 @@ class Box:
 		return 1
 		
 	def correctResolutionCentering(self,shrink,update=True):
+		
 		nx = self.getBoxImage().get_xsize()
 		smallx = int(nx)/shrink
 		ny = self.getBoxImage().get_ysize()
@@ -617,6 +624,7 @@ class SigmaImageCache:
 				
 			return object.getImageCarefully(flattenradius,shrinkfactor,forceupdate)
 			
+			
 	# storage for the instance reference
 	__instance = None
 
@@ -634,6 +642,7 @@ class SigmaImageCache:
 	def __setattr__(self, attr, value):
 		""" Delegate access to implementation """
 		return setattr(self.__instance, attr, value)
+	
 	
 class SigmaImage:
 	def __init__(self,imagename):
@@ -739,7 +748,7 @@ class BigImageCache:
 
 		def __init__(self):
 			Cache.__init__(self)
-			self.setMaxSize(2)
+			self.setMaxSize(4)
 
 	
 		def getImage(self,imagename):
@@ -1028,7 +1037,7 @@ class Boxable:
 			data["manual_boxes"] = []
 	
 	
-		projectdb[self.getDDKey()] = data
+		projectdb.setKeyEntry(self.getDDKey(),data)
 	def clearAndReloadImages(self):
 		self.boxes = []
 		try: 
@@ -1105,8 +1114,7 @@ class Boxable:
 		data["quality"] = self.__quality
 		data["auto_boxer_unique_id"] = self.getAutoBoxerID()
 		
-		projectdb = EMProjectDB()
-		projectdb[self.getDDKey()] = data
+		projectdb.setKeyEntry(self.getDDKey(),data)
 	
 	def setKeyEntryToIDD(self,key,object):
 		setKeyEntryIDD(self.imagename,key,object)
@@ -1174,7 +1182,7 @@ class Boxable:
 		except:
 			#print "stored image tag for first time"
 			data["image_tag"] = newimagetag
-			projectdb[self.getDDKey()] = data
+			projectdb.setKeyEntry(self.getDDKey(),data)
 			return
 		
 		if oldimagetag != newimagetag:
@@ -1183,9 +1191,8 @@ class Boxable:
 		else:
 			#print "storing image tag"
 			data["image_tag"] = newimagetag
-			projectdb[self.getDDKey()] = data
-			
-	
+			projectdb.setKeyEntry(self.getDDKey(),data)
+
 		
 	def getQualityFromDB(self):
 		projectdb = EMProjectDB()
@@ -1403,7 +1410,6 @@ class Boxable:
 	def moveBox(self,box,dx,dy,boxnum):
 		if box.ismanual:
 			self.moveManualBox(box,dx,dy)
-			return
 		
 		box.move(dx,dy)
 
@@ -1435,39 +1441,29 @@ class Boxable:
 		self.refboxes.append(box)
 	
 	def cacheManualBox(self,box):
+		print "caching manual boxes"
+		manualboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
 		
-		projectdb = EMProjectDB()
-		try:
-			data = projectdb[self.getDDKey()]
-		except:
-			projectdb[self.getDDKey()] = {}
-			data = {}
-		
-		try:
-			manualboxes = data["manual_boxes"]
-		except:
+		if manualboxes == None:
 			manualboxes = []
-	
+		print "there are",len(manualboxes)
 		manualboxes.append(TrimBox(box))
-		data["manual_boxes"] = manualboxes
-		projectdb[self.getDDKey()] = data
-	
+		print "there are",len(manualboxes)
+		setKeyEntryIDD(self.imagename,"manual_boxes",manualboxes)
+
 	def deleteManualBox(self,box):
-		projectdb = EMProjectDB()
-		data = projectdb[self.getDDKey()]
 		
-		try:
-			manualboxes = data["manual_boxes"]
-		except:
-			print "error, you can't delete a manual box if there are none!"
+		manualboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
+		
+		if manualboxes == None or len(manualboxes) == 0:
+			print "error, you can't move a manual box if there are none!"
 			return
 		
 		found = False
 		for j,b in enumerate(manualboxes):
 			if b.xcorner == box.xcorner and b.ycorner == box.ycorner:
 				manualboxes.pop(j)
-				data["manual_boxes"] = manualboxes
-				projectdb[self.getDDKey()] = data
+				setKeyEntryIDD(self.imagename,"manual_boxes",manualboxes)
 				found = True
 				break
 		
@@ -1477,12 +1473,9 @@ class Boxable:
 		
 	
 	def moveManualBox(self,box,dx,dy):
-		projectdb = EMProjectDB()
-		data = projectdb[self.getDDKey()]
+		manualboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
 		
-		try:
-			manualboxes = data["manual_boxes"]
-		except:
+		if manualboxes == None or len(manualboxes) == 0:
 			print "error, you can't move a manual box if there are none!"
 			return
 		
@@ -1492,8 +1485,7 @@ class Boxable:
 				b.xcorner += dx
 				b.ycorner += dy
 				found = True
-				data["manual_boxes"] = manualboxes
-				projectdb[self.getDDKey()] = data
+				setKeyEntryIDD(self.imagename,"manual_boxes",manualboxes)
 				break
 		
 		if not found:
@@ -1800,7 +1792,9 @@ def setKeyEntryIDD(imagename,key,object):
 		data = {}
 		
 	data[key] = object
-	projectdb[dbkey] = data
+	#projectdb[self.getDDKey()] = data
+		#projectdb.sync()
+	projectdb.setKeyEntry(dbkey,data)
 
 
 def getKeyEntryIDD(imagename,key):
@@ -2102,7 +2096,7 @@ class TrimSwarmAutoBoxer():
 		data["convenience_name"] = self.getConvenienceName()
 		
 		projectdb = EMProjectDB()
-		projectdb[self.getUniqueStamp()] = data
+		projectdb.setKeyEntry(self.getUniqueStamp(),data)
 	
 class SwarmAutoBoxer(AutoBoxer):
 	'''
@@ -2621,10 +2615,10 @@ class SwarmAutoBoxer(AutoBoxer):
 		data["autoboxer"] = trimself
 		data["convenience_name"] = self.getConvenienceName()
 		
-		projectdb[autoboxerdbstring] = data
+		projectdb.setKeyEntry(autoboxerdbstring,data)
 		
 		if writecurrent:
-			projectdb["currentautoboxer"] = trimself
+			projectdb.setKeyEntry("currentautoboxer",trimself)
 		
 	def writeSpecificReferencesToDB(self,imagename):
 		'''

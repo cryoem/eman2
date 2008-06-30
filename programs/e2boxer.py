@@ -1061,11 +1061,12 @@ class GUIbox:
 		n = self.getImageThumbShrink()
 		self.imagethumbs = []
 		
-		for i in range(0,nim):
+		a = time()
+		for i in range(nim-1,-1,-1):
 			thumb = self.getImageThumb(i)
 			#print "got thumb",i
 			self.imagethumbs.append(thumb)
-		
+		print "it took",time()-a,"seconds to generate thumbs"
 		
 		self.guimxit=EMImageMX()		# widget for displaying image thumbs
 		self.guimxit.setData(self.imagethumbs)
@@ -1080,9 +1081,11 @@ class GUIbox:
 		bic = BigImageCache()
 		image=bic.getImage(self.imagenames[i])
 		
-		thumb = image.process("math.meanshrink",{"n":n})
-		thumb.process_inplace("normalize.edgemean")
-		return thumb
+		#while n > 1:
+			#image = image.process("math.meanshrink",{"n":2})
+			#n /= 2
+		image = image.process("math.meanshrink",{"n":n})
+		return image
 		
 	def getImageThumbShrink(self):
 		if self.itshrink == -1:
@@ -1123,12 +1126,23 @@ class GUIbox:
 		self.boxm[1] = event.y()
 		self.updateAllImageDisplay()
 		
-	def boxrelease(self,event):
+	def boxrelease(self,event,lc):
 		boxes = self.getBoxes()
 		#print boxes
-		box =  boxes[self.boxm[2]]
+		try: box =  boxes[self.boxm[2]]
+		except: return # The user clicked on black
+		
 		if box.isref :
-			self.autoBoxer.referenceMoved(box)
+			self.referenceMoved(box)
+		
+		
+		im=lc[0]
+		self.boxm = [event.x(),event.y(),im]
+		self.guiim.setActive(im,.9,.9,.4)
+		self.guimx.setSelected(im)
+		boxes = self.getBoxes()
+		self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+		
 		self.boxm = None
 		
 	def boxsel(self,event,lc):
@@ -1137,12 +1151,12 @@ class GUIbox:
 		self.guiim.setActive(im,.9,.9,.4)
 		self.guimx.setSelected(im)
 		boxes = self.getBoxes()
-		self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
-		try:
-			#self.guiim.scrollTo(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
-			pass
+		#self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+		#try:
+			##self.guiim.scrollTo(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+			#pass
 			
-		except: print "boxsel() scrolling error"
+		#except: print "boxsel() scrolling error"
 
 	def getBoxes(self):
 		return self.boxable.boxes
@@ -1932,6 +1946,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.lock = True
 		self.imagequalities.setCurrentIndex(integer)
 		self.lock = False
+		
 	def imageQualityChanged(self,val):
 		if self.lock == False:
 			self.target.changeImageQuality(str(val))
