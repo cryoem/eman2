@@ -457,6 +457,9 @@ def file_exists( file_name ):
 # is if given image.mrc this functions strips the '.mrc' and returns 'image'
 def strip_file_tag(file_name):
 	# FIXME it's probably easiest to do this with regular expressions...
+	'''
+	FIXME - could replace with Util.remove_filename_ext()
+	'''
 	for i in range(len(file_name)-1,-1,-1):
 		if file_name[i] == '.':
 			break
@@ -467,6 +470,9 @@ def strip_file_tag(file_name):
 	return file_name[0:i]
 
 def get_file_tag(file_name):
+	'''
+	FIXME - could replace with Util.get_filename_ext()
+	'''
 	for i in range(len(file_name)-1,-1,-1):
 		if file_name[i] == '.':
 			break

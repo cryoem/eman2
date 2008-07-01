@@ -437,6 +437,17 @@ class TrimBox():
 		self.origxcorner = box.origxcorner
 		self.origycorner = box.origycorner
 		self.ismanual = box.ismanual
+		
+	def changeBoxSize(self,boxsize):
+		'''
+		Fixme, this is just a copy of Box.changeBoxSize
+		'''
+		if boxsize != self.xsize or boxsize != self.ysize:
+			self.xcorner -= (boxsize-self.xsize)/2
+			self.xsize = boxsize
+			self.ycorner -= (boxsize-self.ysize)/2
+			self.ysize = boxsize
+			self.changed = True
 
 class Cache:
 	'''
@@ -992,17 +1003,10 @@ class Boxable:
 			self.exclusionimage = EMData(excimagename)
 		except: pass
 		
-		try: 
-			self.getAutoSelectedFromDB(True)
-		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
 		try:
 			self.getDBTimeStamps()
 		except: pass
-		try:
-			self.getManualFromDB()	
-		except: pass
-		try:
-			self.getReferencesFromDB()	
+		try: self.reloadBoxes()
 		except: pass
 		try:
 			self.getFrozenFromDB()	
@@ -1017,6 +1021,66 @@ class Boxable:
 			if autoBoxer == None:
 				self.getAutoBoxerFromDB()
 		except: pass
+		
+	def reloadBoxes(self):
+		'''
+		You might call this if the box size was changed in the main interface, or in the constructor
+		'''
+		self.boxes = []
+		try: 
+			self.getAutoSelectedFromDB(True)
+		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
+		try:
+			self.getManualFromDB()	
+		except: pass
+		try:
+			self.getReferencesFromDB()	
+		except: pass
+		
+	def resizeBoxes(self,boxes,boxsize):
+		if boxes == None:
+			return
+		for box in boxes:
+			box.changeBoxSize(boxsize)
+	def resizeMovedBoxes(self,data,boxsize,oldboxsize):
+		adj = (boxsize-oldboxsize)/2
+		for d in data:
+			d[0] += adj
+			d[1] += adj
+			d[2] += adj
+			d[3] += adj
+			
+	def changeBoxSize(self,boxsize):
+
+		b  = None
+		autoboxes = getKeyEntryIDD(self.imagename,"auto_boxes")
+		if b == None and autoboxes != None and len(autoboxes) != 0:
+			b = autoboxes[0]
+		self.resizeBoxes(autoboxes,boxsize)
+		setKeyEntryIDD(self.imagename,"auto_boxes",autoboxes)
+		
+		manboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
+		if b == None and manboxes != None and len(manboxes) != 0:
+			b = manboxes[0]
+		self.resizeBoxes(manboxes,boxsize)
+		setKeyEntryIDD(self.imagename,"auto_boxes",manboxes)
+		
+		refboxes = getKeyEntryIDD(self.imagename,"reference_boxes")
+		if b == None and refboxes != None and len(refboxes) != 0:
+			b = refboxes[0]
+		self.resizeBoxes(refboxes,boxsize)
+		setKeyEntryIDD(self.imagename,"reference_boxes",refboxes)
+		
+		
+		movedboxes =  getKeyEntryIDD(self.imagename,"moved_boxes")
+		if movedboxes == None: return
+		if b == None and movedboxes != None and len(movedboxes) != 0:
+			print "warning, changing box sizes, old movement information has been lost"
+			movedboxes = []
+		else:
+			oldboxsize = b.xsize
+			self.resizeMovedBoxes(movedboxes,boxsize,oldboxsize)
+		setKeyEntryIDD(self.imagename,"moved_boxes",movedboxes)
 	
 	def clearAndCache(self,keepmanual=False):
 		self.boxes = []
@@ -1028,7 +1092,7 @@ class Boxable:
 			data = {}
 		
 		data["reference_boxes"] = []
-		data["autoboxed"] = []
+		data["auto_boxes"] = []
 		
 		
 		if keepmanual:
@@ -1926,7 +1990,14 @@ class SwarmTemplate:
 			self.refboxes.append(ref)
 		else:
 			print "error, can't append that reference, it's not of type Box"
-		
+	
+	def changeBoxSize(self,boxsize):
+		if len(self.refboxes) == 0: return
+		elif boxsize == self.refboxes[0].xsize: return
+		else:
+			for box in self.refboxes:
+				box.changeBoxSize(boxsize)
+	
 	def removeReference(self,box):
 		'''
 		Returns 1 if the reference was removed
@@ -2449,7 +2520,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	def getBoxSize(self):
 		return self.boxsize
 		
-	def setBoxSize(self,boxsize):
+	def setBoxSize(self,boxsize,imagenames):
 		if (boxsize < 6 ):
 			print 'error, a hard limit of 6 for the box size is currently enforced. Email developers if this is a problem'
 			return
@@ -2460,7 +2531,29 @@ class SwarmAutoBoxer(AutoBoxer):
 		#self.writeSpecificReferencesToDB(self.boxable.getImageName())
 		
 		self.boxsize = boxsize
+		
+		# changing the box size of all assocated Boxables should change the box size of the references
+		self.template.changeBoxSize(boxsize)
+		
+		projectdb = EMProjectDB()
+		for imagename in imagenames:
+			print "analyzing",imagename
+			found = False
+			try:
+				data = projectdb[getIDDKey(imagename)]
+				#trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]
+				found = True
+			except: pass
+			
+			if found:
+				print data["auto_boxer_unique_id"],self.getUniqueStamp()
+				if data["auto_boxer_unique_id"] == self.getUniqueStamp():
+					print "we have an associated image"
+					boxable = Boxable(imagename,None,self)
+					boxable.changeBoxSize(boxsize)
+			
 		# make sure the shrink value is updated - use the force flag to do it
+		
 		self.getBestShrink(True)
 		
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:

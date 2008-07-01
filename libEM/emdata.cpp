@@ -2633,7 +2633,10 @@ void EMData::update_stat() const
 
 	flags &= ~EMDATA_NEEDUPD;
 	
-	delete rot_fp; rot_fp = NULL;
+	if (rot_fp != 0)
+	{
+		delete rot_fp; rot_fp = NULL;
+	}
 	
 	EXITFUNC;
 }

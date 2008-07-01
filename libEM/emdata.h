@@ -798,7 +798,7 @@ namespace EMAN
 		string path;
 		int pathnum;
 		
-		/** This is a dictionary the oversees the caching of the */
+		/** This is a cached rotational footprint, can save much time */
 		mutable EMData* rot_fp;
 	};
 

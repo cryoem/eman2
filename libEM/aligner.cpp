@@ -233,7 +233,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 
 	Util::find_max(data, this_img2_nx, &peak, &peak_index);
 	
-	cf->update();
+// 	cf->update();
 	if( cf )
 	{
 		delete cf;

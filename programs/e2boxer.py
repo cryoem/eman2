@@ -749,18 +749,10 @@ class GUIbox:
 		except: pass
 		self.dynapix = False
 		self.anchoring = False
+		self.imagenames = imagenames
 		
 		if len(boxes)>0 and boxsize==-1: self.boxsize=boxes[0][2]
-		elif boxsize==-1: self.boxsize=128
-		else: self.boxsize=boxsize
-		
-		self.eraseradius = 2*boxsize
-		self.erasemode = None
-		self.dynapixp=get_app()
-		self.imagenames = imagenames
-		self.currentimage = 0
-		self.itshrink = -1 # image thumb shrink
-		self.imagethumbs = None # image thumbs
+		else : self.boxsize = -1
 		
 		try:
 			projectdb = EMProjectDB()
@@ -771,16 +763,27 @@ class GUIbox:
 			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.become(trimAutoBoxer)
 			self.autoBoxer.setMode(self.dynapix,self.anchoring)
-			print 'using cached autoboxer db'
+			if boxsize==-1: self.boxsize=self.autoBoxer.getBoxSize()
 		except:
+			if self.boxsize == -1:
+				if boxsize == -1: self.boxsize = 128
+				else: self.boxsize = boxsize
 			self.autoBoxer = SwarmAutoBoxer(self)
-			self.autoBoxer.boxsize = boxsize
+			self.autoBoxer.boxsize = self.boxsize
 			self.autoBoxer.setMode(self.dynapix,self.anchoring)
 			print "loaded a new autoboxer"
 		
+		
+		self.eraseradius = 2*self.boxsize
+		self.erasemode = None
+		self.dynapixp=get_app()
+		self.currentimage = 0
+		self.itshrink = -1 # image thumb shrink
+		self.imagethumbs = None # image thumbs
+		
 		self.boxable = Boxable(self.imagenames[0],self,self.autoBoxer)
 		self.boxable.addnonrefs(boxes)
-		self.boxable.boxsize = boxsize
+		self.boxable.boxsize = self.boxsize
 		
 		self.eventsmediator = GUIboxEventsMediator(self)
 		self.mousehandlers = {}
@@ -1318,8 +1321,10 @@ class GUIbox:
 	def updateBoxSize(self,boxsize):
 		if boxsize != self.boxsize:
 			self.boxsize = boxsize
-			self.boxable.updateBoxSize(boxsize)
-			self.autoBoxer.setBoxSize(boxsize)
+			self.autoBoxer.setBoxSize(boxsize,self.imagenames)
+			self.boxable.reloadBoxes() # this may be inefficient
+			self.clearDisplays()
+			self.boxDisplayUpdate()
 			
 	def boxDisplayUpdate(self,force=False):
 		
