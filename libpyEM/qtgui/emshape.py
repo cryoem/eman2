@@ -120,8 +120,52 @@ class EMShape:
 			GL.glVertex(*d2s(s[6],s[7]))
 			GL.glVertex(*d2s(s[4],s[7]))
 			GL.glEnd()
-			#if self.isanimated:
-				#GL.glPopMatrix()
+		
+		elif s[0]=="rectpoint":
+			GL.glLineWidth(s[8])
+			GL.glPointSize(s[8])
+			
+			GL.glBegin(GL.GL_LINE_LOOP)
+			GL.glColor(*col)
+			GL.glVertex(*d2s(s[4],s[5]))
+			GL.glVertex(*d2s(s[6],s[5]))
+			GL.glVertex(*d2s(s[6],s[7]))
+			GL.glVertex(*d2s(s[4],s[7]))
+			GL.glEnd()
+			
+			GL.glBegin(GL.GL_POINTS)
+			p1 = d2s(s[4],s[5])
+			p2 = d2s(s[6],s[7])
+			GL.glVertex((p1[0]+p2[0])/2,(p1[1]+p2[1])/2)
+			GL.glEnd()
+			
+			
+		elif s[0]=="rectcirclepoint":
+			GL.glLineWidth(s[8])
+			GL.glPointSize(s[8])
+				
+			GL.glBegin(GL.GL_LINE_LOOP)
+			GL.glColor(*col)
+			GL.glVertex(*d2s(s[4],s[5]))
+			GL.glVertex(*d2s(s[6],s[5]))
+			GL.glVertex(*d2s(s[6],s[7]))
+			GL.glVertex(*d2s(s[4],s[7]))
+			GL.glEnd()
+			
+			GL.glBegin(GL.GL_POINTS)
+			p1 = d2s(s[4],s[5])
+			p2 = d2s(s[6],s[7])
+			GL.glVertex((p1[0]+p2[0])/2,(p1[1]+p2[1])/2)
+			GL.glEnd()
+			
+			v2=d2s(s[6],s[7])
+			GL.glPushMatrix()
+			GL.glColor(*col)
+			
+			GL.glTranslate((v[0]+v2[0])/2.0,(v[1]+v2[1])/2.0,0)
+			GL.glScalef((v2[0]-v[0])/2.0,(v2[1]-v[1])/2.0,1.0)
+			GL.glCallList(EMShape.dlists)
+			GL.glPopMatrix()
 		elif s[0]=="line":
 			GL.glColor(*col)
 			GL.glLineWidth(s[8])

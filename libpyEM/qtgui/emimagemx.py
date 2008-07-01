@@ -690,6 +690,8 @@ class EMImageMXCore:
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+			app =  QtGui.QApplication.instance()
+			app.setOverrideCursor(Qt.ClosedHandCursor)
 			self.mousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
 			if self.mmode=="drag" and lc:
@@ -725,6 +727,8 @@ class EMImageMXCore:
 			self.parent.emit(QtCore.SIGNAL("mousedrag"),event,self.scale)
 		
 	def mouseReleaseEvent(self, event):
+		app =  QtGui.QApplication.instance()
+		app.setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scrtoimg((event.x(),event.y()))
 		if self.mousedrag:
 			self.mousedrag=None

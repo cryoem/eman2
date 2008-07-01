@@ -210,6 +210,9 @@ class Box:
 		bic = BigImageCache()
 		image = bic.getImage(self.imagename)
 		#print "getting region",self.xcorner,self.ycorner,self.xsize,self.ysize
+		if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
+		if self.ycorner + self.ysize > image.get_ysize(): self.ycorner = image.get_ysize()-self.ysize
+		
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
 		if norm:
 			self.image.process_inplace("normalize.edgemean")
@@ -395,7 +398,7 @@ class Box:
 				# this box from consideration
 				self.correlationscore = None
 				if not force :
-					print "Error, peak location unrefined"
+					#print "Error, peak location unrefined"
 					return 0
 		
 			# store the peak location
@@ -485,6 +488,138 @@ class Cache:
 				
 	def getCache(self):
 		return self.cache
+	
+class ExclusionImageCache:
+	'''
+	A singleton - usef for caching coarsened-flattened images
+	'''
+	class __impl(Cache):
+		""" Implementation of the singleton interface """
+
+		def __init__(self):
+			Cache.__init__(self)
+			
+		def getImage(self,imagename,xsize,ysize):
+			excImage = None
+			# first see if the object is already stored
+			for object in self.getCache():
+				if object.getInputImageName() == imagename:
+					excImage = object
+					break;
+				
+				
+			if excImage == None:
+				#if we make it here the cfimage is not cached
+				#print "had to cache a cf image for",imagename
+				excImage = ExclusionImage(imagename)
+				self.addToCache(excImage)
+			#else: print "found a cached cf image for",imagename
+				
+			
+			image = excImage.getImageCarefully(xsize,ysize)
+			if image != None:
+				return image
+			else:
+				print "there was an error getting the image in ExclusionImageCache"
+				return None
+		
+		
+	# storage for the instance reference	
+	__instance = None
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if ExclusionImageCache.__instance is None:
+			# Create and remember instance
+			ExclusionImageCache.__instance = ExclusionImageCache.__impl()
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+	
+class ExclusionImage:
+	def __init__(self,imagename):
+		self.imagename = imagename
+		self.image = None
+		self.ouputimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".exc.hdf"
+		
+		try:
+			# we may have the image already on disk, if so parse it
+			# the image on disk is likely up to date but not necessarily so
+			self.image = EMData(self.ouputimagename)
+			#print "I read the image",self.ouputimagename
+		except:
+			#print "could not read", self.ouputimagename 
+			pass
+		
+	def getInputImageName(self):
+		return self.imagename
+		
+	def get_xsize(self):
+		if self.image != None: return self.image.get_xsize()
+		else: return 0
+		
+	def get_ysize(self):
+		if self.image != None: return self.image.get_ysize()
+		else: return 0
+	
+	def __updateImage(self,xsize,ysize):
+		'''
+		Updates the image using the function arguments
+		If they match current parameters than nothing happens - the correct image is already cached
+		'''
+		
+		if self.image == None:
+			self.image = EMData(xsize,ysize)
+		else:
+			# if the image already exists then we must retain the information in it by scaling and resizing it
+			oldxsize = self.get_xsize()
+			oldysize = self.get_ysize()
+			r = Region( (oldxsize-xsize)/2, (oldysize-ysize)/2,xsize,ysize )
+			#print "clipping to",(oldxsize-xsize)/2, (oldysize-ysize)/2,xsize,ysize
+			scale = float(xsize)/float(oldxsize)
+			
+			# the order in which you clip and scale is dependent on whether or not scale is > 1
+			if scale > 1:
+				# if it's greater than one than clip (enlargen the image) first
+				self.image.clip_inplace(r)
+				# then scale the pixels
+				self.image.scale(float(xsize)/float(oldxsize))
+			else:
+				# if it's less than one scale first so that we retain the maximum amount of the pixel information
+				self.image.scale(float(xsize)/float(oldxsize))
+				self.image.clip_inplace(r)
+				
+		#else:
+			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
+			
+	def getImage(self):
+		'''
+		Should only be called if you know the stored image is up to date
+		'''
+		return self.image
+	
+	
+	def getImageCarefully(self,xsize,ysize):
+		
+		if self.image == None or not self.paramsMatch(xsize,ysize):
+			#print "regenerating cf image"
+			self.__updateImage(xsize,ysize)
+		#else: print "cf image is up to date"
+		
+		return self.getImage()
+	
+	def paramsMatch(self,flattenradius,shrink):
+		try:
+			if xsize != self.get_xsize() or ysize != self.get_ysize():
+				return False
+			else: return True
+		except: return False # exception will be thrown if self.smallimage = None
 
 class CFImageCache:
 	'''
@@ -506,7 +641,7 @@ class CFImageCache:
 				
 				
 			if cfImage == None:
-				# if we make it here the cfimage is not cached
+				#if we make it here the cfimage is not cached
 				#print "had to cache a cf image for",imagename
 				cfImage = CoarsenedFlattenedImage(imagename)
 				self.addToCache(cfImage)
@@ -999,8 +1134,10 @@ class Boxable:
 		self.__quality = Boxable.QUALITY_META_DATA_MAP[Boxable.AVERAGE] # this makes it the number, not the string
 		
 		try:
-			excimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".exc.hdf"
-			self.exclusionimage = EMData(excimagename)
+			eicache = ExclusionImageCache
+			#excimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".exc.hdf"
+			#print "reading exclusion image",excimagename
+			self.exclusionimage = eicache.getImage(self.imagename,self.getSmallImage().get_xsize(),self.getSmallImage().get_ysize())
 		except: pass
 		
 		try:
@@ -1030,56 +1167,59 @@ class Boxable:
 		try: 
 			self.getAutoSelectedFromDB(True)
 		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
+		#print "got auto, now have", len(self.boxes)
 		try:
 			self.getManualFromDB()	
 		except: pass
+		#print "got manual, now have", len(self.boxes)
 		try:
 			self.getReferencesFromDB()	
 		except: pass
+		#print "got references, now have", len(self.boxes)
 		
 	def resizeBoxes(self,boxes,boxsize):
 		if boxes == None:
 			return
 		for box in boxes:
 			box.changeBoxSize(boxsize)
+		
 	def resizeMovedBoxes(self,data,boxsize,oldboxsize):
 		adj = (boxsize-oldboxsize)/2
 		for d in data:
-			d[0] += adj
-			d[1] += adj
-			d[2] += adj
-			d[3] += adj
+			d[0] -= adj
+			d[1] -= adj
+			d[2] -= adj
+			d[3] -= adj
 			
 	def changeBoxSize(self,boxsize):
-
-		b  = None
+		self.boxsize = boxsize
+		oldxsize  = None
 		autoboxes = getKeyEntryIDD(self.imagename,"auto_boxes")
-		if b == None and autoboxes != None and len(autoboxes) != 0:
-			b = autoboxes[0]
+		if oldxsize == None and autoboxes != None and len(autoboxes) != 0:
+			oldxsize = autoboxes[0].xsize
 		self.resizeBoxes(autoboxes,boxsize)
 		setKeyEntryIDD(self.imagename,"auto_boxes",autoboxes)
 		
 		manboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
-		if b == None and manboxes != None and len(manboxes) != 0:
-			b = manboxes[0]
+		if oldxsize == None and manboxes != None and len(manboxes) != 0:
+			oldxsize = manboxes[0].xsize
 		self.resizeBoxes(manboxes,boxsize)
-		setKeyEntryIDD(self.imagename,"auto_boxes",manboxes)
+		setKeyEntryIDD(self.imagename,"manual_boxes",manboxes)
 		
 		refboxes = getKeyEntryIDD(self.imagename,"reference_boxes")
-		if b == None and refboxes != None and len(refboxes) != 0:
-			b = refboxes[0]
+		if oldxsize == None and refboxes != None and len(refboxes) != 0:
+			oldxsize = refboxes[0].xsize
 		self.resizeBoxes(refboxes,boxsize)
 		setKeyEntryIDD(self.imagename,"reference_boxes",refboxes)
 		
 		
 		movedboxes =  getKeyEntryIDD(self.imagename,"moved_boxes")
 		if movedboxes == None: return
-		if b == None and movedboxes != None and len(movedboxes) != 0:
+		if oldxsize == None and movedboxes != None and len(movedboxes) != 0:
 			print "warning, changing box sizes, old movement information has been lost"
 			movedboxes = []
 		else:
-			oldboxsize = b.xsize
-			self.resizeMovedBoxes(movedboxes,boxsize,oldboxsize)
+			self.resizeMovedBoxes(movedboxes,boxsize,oldxsize)
 		setKeyEntryIDD(self.imagename,"moved_boxes",movedboxes)
 	
 	def clearAndCache(self,keepmanual=False):
@@ -1102,6 +1242,7 @@ class Boxable:
 	
 	
 		projectdb.setKeyEntry(self.getDDKey(),data)
+		
 	def clearAndReloadImages(self):
 		self.boxes = []
 		try: 
@@ -1421,6 +1562,7 @@ class Boxable:
 				f.write(str(int(box.xcorner))+'\t'+str(int(box.ycorner))+'\t'+str(box.xsize)+'\t'+str(box.ysize)+'\n')
 				
 				if boxsize != -1:
+					# change it back
 					box.changeBoxSize(origboxsize)
 
 			f.close()
@@ -1505,14 +1647,11 @@ class Boxable:
 		self.refboxes.append(box)
 	
 	def cacheManualBox(self,box):
-		print "caching manual boxes"
 		manualboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
 		
 		if manualboxes == None:
 			manualboxes = []
-		print "there are",len(manualboxes)
 		manualboxes.append(TrimBox(box))
-		print "there are",len(manualboxes)
 		setKeyEntryIDD(self.imagename,"manual_boxes",manualboxes)
 
 	def deleteManualBox(self,box):
@@ -1721,6 +1860,7 @@ class Boxable:
 		UNUSEDtype was meant to be a flag for adding other exclusion areas like squares
 		At the moment only circular exclusion areas can be written
 		'''
+		#print "Add exclusion area using",self.getBestShrink()
 		xx = int(x/self.getBestShrink())
 		yy = int(y/self.getBestShrink())
 		
@@ -1740,12 +1880,14 @@ class Boxable:
 		BoxingTools.set_region(self.getExclusionImage(),mask,xx,yy,val)
 		
 	
-	def getExclusionImage(self,force=True):
-		if self.exclusionimage == None and force:
-				
-			self.exclusionimage = EMData(self.getSmallImage().get_xsize(),self.getSmallImage().get_ysize())
-			self.exclusionimage.to_zero()
+	def getExclusionImage(self,force=False):
 		
+		if self.exclusionimage == None or force:
+			
+			si = self.getSmallImage()
+			eicache = ExclusionImageCache()
+			self.exclusionimage = eicache.getImage(self.imagename,si.get_xsize(),si.get_ysize())
+	
 		return self.exclusionimage
 	
 	def classify(self):
@@ -2531,13 +2673,13 @@ class SwarmAutoBoxer(AutoBoxer):
 		#self.writeSpecificReferencesToDB(self.boxable.getImageName())
 		
 		self.boxsize = boxsize
+		self.getBestShrink(True)
 		
 		# changing the box size of all assocated Boxables should change the box size of the references
 		self.template.changeBoxSize(boxsize)
 		
 		projectdb = EMProjectDB()
 		for imagename in imagenames:
-			print "analyzing",imagename
 			found = False
 			try:
 				data = projectdb[getIDDKey(imagename)]
@@ -2546,19 +2688,17 @@ class SwarmAutoBoxer(AutoBoxer):
 			except: pass
 			
 			if found:
-				print data["auto_boxer_unique_id"],self.getUniqueStamp()
 				if data["auto_boxer_unique_id"] == self.getUniqueStamp():
-					print "we have an associated image"
+					#print "we have an associated image"
 					boxable = Boxable(imagename,None,self)
 					boxable.changeBoxSize(boxsize)
 					boxable.getExclusionImage(True)
+			#else:
+				#print "image is not associated",imagename
 			
 		# make sure the shrink value is updated - use the force flag to do it
 		
-		self.getBestShrink(True)
-		
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-			# update references
 			if not self.__fullUpdate(): 
 				print "box size change failed, can't full update"
 				return
@@ -2851,7 +2991,7 @@ class SwarmAutoBoxer(AutoBoxer):
 					# this is mostly an error for dwoolfords attention
 					# for the time being just ignoring it  probably suffices
 					# FIXME
-					print "continuing on faulty"
+					#print "continuing on faulty"
 					continue
 				if found == False:
 					self.optthreshold = box.correlationscore

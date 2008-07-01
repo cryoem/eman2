@@ -351,7 +351,7 @@ class EMImage2DCore:
 		if self.curfft : 
 			self.setFFT(self.curfft)
 		
-		self.showInspector()		# shows the correct inspector if already open
+		#self.showInspector()		# shows the correct inspector if already open
 #		self.origin=(self.width()/2,self.height()/2)
 		
 		self.updateGL()
@@ -809,6 +809,8 @@ class EMImage2DCore:
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+			app =  QtGui.QApplication.instance()
+			app.setOverrideCursor(Qt.ClosedHandCursor)
 			self.rmousedrag=(event.x(),event.y() )
 		elif event.button()==Qt.LeftButton:
 			if self.mmode==0:
@@ -867,6 +869,8 @@ class EMImage2DCore:
 			self.rmousedrag=None
 
 	def mouseReleaseEvent(self, event):
+		app =  QtGui.QApplication.instance()
+		app.setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr2img(event.x(),event.y())
 		if self.rmousedrag:
 			self.rmousedrag=None

@@ -81,7 +81,7 @@ for single particle analysis."""
 	parser.add_option("--writeboximages",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--force","-f",action="store_true",help="Force overwrites old files",default=False)
 	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
-	parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
+	#parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
 	#parser.add_option("--retestlist",type="string",help="(auto:ref) Comma separated list of image numbers for retest cycle",default="")
 	#parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
 	parser.add_option("--parallel",type="int",help="specify more than one processor",default=1)
@@ -108,9 +108,9 @@ for single particle analysis."""
 	
 	# we need to know how big to make the boxes. If nothing is specified, but
 	# reference particles are, then we use the reference particle size
-	if options.boxsize<5 :
-		if not options.boxsize in good_box_sizes:
-			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.boxsize)
+	#if options.boxsize<5 :
+		#if not options.boxsize in good_box_sizes:
+			#print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.boxsize)
 	
 	boxes=[]
 	if len(options.auto)>0 :
@@ -320,8 +320,6 @@ class AutoDBBoxer(QtCore.QObject):
 			self.cps[i] = self.processes[i]
 			self.currentidx += 1
 			
-		
-			
 	def spawn_process(self):
 		if self.currentidx >= len(self.imagenames) :
 			return
@@ -515,9 +513,10 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 		self.mode = mode
 		
 	def mousedown(self,event) :
-		m= self.get2DGuiImage().scr2img((event.x(),event.y()))
+		m = self.get2DGuiImage().scr2img((event.x(),event.y()))
 		boxnum = self.mediator.detectBoxCollision(m)
 		if boxnum == -1:
+			if not self.mediator.withinMainImageBounds(m):	return
 			#if we make it here, that means the user has clicked on an area that is not in any box
 			
 			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
@@ -544,7 +543,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get2DGuiImage().addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			self.get2DGuiImage().addShape("cen",EMShape(["rectpoint",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
 			self.mediator.storeBox(box)
 			self.mediator.mouseClickUpdatePPC()
@@ -562,7 +561,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 				
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get2DGuiImage().addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			self.get2DGuiImage().addShape("cen",EMShape(["rectpoint",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			if not self.getMXGuiImage().isVisible(boxnum) : self.getMXGuiImage().scrollTo(boxnum,yonly=1)
 			self.getMXGuiImage().setSelected(boxnum)
 			self.mediator.updateAllImageDisplay()
@@ -727,6 +726,12 @@ class GUIboxEventsMediator:
 		Tell the parent that a reference was moved - this could trigger automatic boxing
 		'''
 		self.parent.referenceMoved(box)
+		
+	def withinMainImageBounds(self,coords):
+		'''
+		Ask the parent to determine if the coords are within the currently display image boundaries
+		'''
+		return self.parent.withinMainImageBounds(coords)
 	
 class GUIbox:
 	'''
@@ -772,9 +777,7 @@ class GUIbox:
 			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.boxsize = self.boxsize
 			self.autoBoxer.setMode(self.dynapix,self.anchoring)
-			print "loaded a new autoboxer"
-		
-		print self.boxsize
+			##print "loaded a new autoboxer"
 		
 		self.eraseradius = 2*self.boxsize
 		self.erasemode = None
@@ -859,7 +862,19 @@ class GUIbox:
 		self.autoBoxer.autoBox(self.boxable,False)
 		self.boxDisplayUpdate()
 		
-	
+	def withinMainImageBounds(self,coords):
+		x = coords[0]
+		y = coords[1]
+		if x < 0 or y < 0:
+			return False
+		
+		main_image = self.getCurrentImage()
+		
+		if x >= main_image.get_xsize() or y >= main_image.get_ysize():
+			return False
+		
+		return True
+		
 	def changeCurrentAutoBoxer(self, autoboxerid,autobox=True):
 		#print "change current autoboxer"
 		projectdb = EMProjectDB()
@@ -871,6 +886,11 @@ class GUIbox:
 		self.autoBoxer.setMode(self.dynapix,self.anchoring)
 
 		self.boxable.setAutoBoxer(self.autoBoxer)
+		
+		if self.boxsize != self.autoBoxer.getBoxSize():
+			self.updateBoxSize(self.autoBoxer.getBoxSize())
+			#print "box display update"
+		
 		if autobox:
 			self.ptcl = []
 			self.guiim.delShapes()
@@ -881,6 +901,29 @@ class GUIbox:
 			self.indisplaylimbo = False
 		
 		self.boxDisplayUpdate()	
+		
+	def updateBoxSize(self,boxsize,mode=0):
+		if boxsize != self.boxsize:
+			if mode == 0:
+				self.boxsize = boxsize
+				self.boxable.changeBoxSize(self.boxsize)
+				self.guictl.setBoxSize(self.boxsize)
+				self.boxable.getExclusionImage(True)
+				self.boxable.reloadBoxes() # this may be inefficient
+				#print "clearing displays"
+				self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
+				self.clearDisplays()
+			elif mode == 1:
+				self.boxsize = boxsize
+				self.autoBoxer.setBoxSize(self.boxsize,self.imagenames)
+				self.boxable.reloadBoxes() # this may be inefficient
+				#print "clearing displays"
+				self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
+				self.clearDisplays()
+				
+			else:
+				print "error, unknown mode in updateBoxSize"
+		
 	def get2DGuiImage(self):
 		return self.guiim
 	
@@ -939,6 +982,10 @@ class GUIbox:
 	
 	def getCurrentImageName(self):
 		return self.imagenames[self.currentimage]
+	
+	def getCurrentImage(self):
+		bic = BigImageCache()
+		return bic.getImage(self.getCurrentImageName())
 	
 	def getImageNames(self):
 		return self.imagenames
@@ -1003,47 +1050,57 @@ class GUIbox:
 	
 	def imagesel(self,event,lc):
 		#print 'in image select'
-		im=lc[0]
-		if im != self.currentimage:
-			#print 'changing images'
-			self.guimxit.setSelected(im)
+		app = QtGui.QApplication.instance()
+		app.setOverrideCursor(Qt.BusyCursor)
+		try:
+			im=lc[0]
+			if im != self.currentimage:
+				#print 'changing images'
+				self.guimxit.setSelected(im)
+				
+				bic = BigImageCache()
+				image=bic.getImage(self.imagenames[im])
+				self.guiim.setData(image)
+				
+				self.boxable.cacheExcToDisk()
+				self.boxable = Boxable(self.imagenames[im],self,self.autoBoxer)
+				
+				self.ptcl = []
+				self.guiim.delShapes()
+				self.indisplaylimbo = True
+				
+				try:
+					projectdb = EMProjectDB()
+					data = projectdb[getIDDKey(self.imagenames[im])]
+					autoBoxerID = data["auto_boxer_unique_id"]
+					trimAutoBoxer = projectdb[autoBoxerID]["autoboxer"]
+					self.autoboxername = autoBoxerID
+					self.autoBoxer = SwarmAutoBoxer(self)
+					self.autoBoxer.become(trimAutoBoxer)
+				except: pass
+				
+				self.autoBoxer.regressiveflag = True
+				self.autoBoxer.autoBox(self.boxable)
+				self.boxable.setAutoBoxer(self.autoBoxer)
+				self.autoBoxerDBChanged()
+				
+				if self.boxsize != self.autoBoxer.getBoxSize():
+					self.updateBoxSize(self.autoBoxer.getBoxSize())
+	
+				self.indisplaylimbo = False
+				
+				for box in self.boxable.boxes: box.changed = True
+				
+				self.currentimage = im
+				
+				self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
+				self.guiim.setFrozen(self.boxable.isFrozen())
+				self.guiim.setExcluded(self.boxable.isExcluded())
+				self.guictl.setImageQuality(self.boxable.getQuality())
+				self.boxDisplayUpdate()
+		except: pass
 			
-			bic = BigImageCache()
-			image=bic.getImage(self.imagenames[im])
-			self.guiim.setData(image)
-			
-			self.boxable.cacheExcToDisk()
-			self.boxable = Boxable(self.imagenames[im],self,self.autoBoxer)
-			
-			self.ptcl = []
-			self.guiim.delShapes()
-			self.indisplaylimbo = True
-			
-			try:
-				projectdb = EMProjectDB()
-				data = projectdb[getIDDKey(self.imagenames[im])]
-				autoBoxerID = data["auto_boxer_unique_id"]
-				trimAutoBoxer = projectdb[autoBoxerID]["autoboxer"]
-				self.autoboxername = autoBoxerID
-				self.autoBoxer = SwarmAutoBoxer(self)
-				self.autoBoxer.become(trimAutoBoxer)
-			except: pass
-			
-			self.autoBoxer.regressiveflag = True
-			self.autoBoxer.autoBox(self.boxable)
-			self.autoBoxerDBChanged()
-			
-			self.indisplaylimbo = False
-			
-			for box in self.boxable.boxes: box.changed = True
-			
-			self.currentimage = im
-			
-			self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-			self.guiim.setFrozen(self.boxable.isFrozen())
-			self.guiim.setExcluded(self.boxable.isExcluded())
-			self.guictl.setImageQuality(self.boxable.getQuality())
-			self.boxDisplayUpdate()
+		app.setOverrideCursor(Qt.ArrowCursor)
 			
 
 	def genImageThumbnailsWidget(self):
@@ -1060,24 +1117,35 @@ class GUIbox:
 			# warning - bad hacking going on
 			print "the image name ", imagename, "probably doesn't exist"
 			raise Exception
-		
+	
 		if (nim == 1): return 0
 		
-		n = self.getImageThumbShrink()
-		self.imagethumbs = []
+		app = QtGui.QApplication.instance()
+		app.setOverrideCursor(Qt.BusyCursor)
+	
+		try:
+			n = self.getImageThumbShrink()
+			self.imagethumbs = []
+			
+			a = time()
+			for i in range(0,nim):
+				thumb = self.getImageThumb(i)
+				#print "got thumb",i
+				self.imagethumbs.append(thumb)
+			
+			self.guimxit=EMImageMX()		# widget for displaying image thumbs
+			self.guimxit.setData(self.imagethumbs)
+			self.guimxit.setmmode("app")
+			self.guimxitp = EMParentWin(self.guimxit)
+			
+			app = QtGui.QApplication.instance()
+			app.setOverrideCursor(Qt.BusyCursor)
+		except: 
+			app.setOverrideCursor(Qt.ArrowCursor)
+			return 0
+			pass
 		
-		a = time()
-		for i in range(nim-1,-1,-1):
-			thumb = self.getImageThumb(i)
-			#print "got thumb",i
-			self.imagethumbs.append(thumb)
-		print "it took",time()-a,"seconds to generate thumbs"
-		
-		self.guimxit=EMImageMX()		# widget for displaying image thumbs
-		self.guimxit.setData(self.imagethumbs)
-		self.guimxit.setmmode("app")
-		self.guimxitp = EMParentWin(self.guimxit)
-		
+		app.setOverrideCursor(Qt.ArrowCursor)
 		return 1
 		
 	def getImageThumb(self,i):
@@ -1124,12 +1192,14 @@ class GUIbox:
 			n += 1
 
 	def boxmove(self,event,scale):
-		dx = (self.boxm[0] - event.x())/scale
-		dy = (event.y() - self.boxm[1])/scale
-		self.moveBox(self.boxm[2],dx,dy)
-		self.boxm[0] = event.x()
-		self.boxm[1] = event.y()
-		self.updateAllImageDisplay()
+		try:
+			dx = (self.boxm[0] - event.x())/scale
+			dy = (event.y() - self.boxm[1])/scale
+			self.moveBox(self.boxm[2],dx,dy)
+			self.boxm[0] = event.x()
+			self.boxm[1] = event.y()
+			self.updateAllImageDisplay()
+		except: pass
 		
 	def boxrelease(self,event,lc):
 		boxes = self.getBoxes()
@@ -1209,8 +1279,8 @@ class GUIbox:
 			
 		x0=box.xcorner+box.xsize/2-1
 		y0=box.ycorner+box.ysize/2-1
-		self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
-		box.shape = EMShape(["rect",box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
+		self.guiim.addShape("cen",EMShape(["rectpoint",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+		box.shape = EMShape(["rectpoint",box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
 		self.guiim.addShape(boxnum,box.shape)
 		self.boxDisplayUpdate()
 		#self.updateAllImageDisplay()
@@ -1320,19 +1390,6 @@ class GUIbox:
 				
 		return box
 	
-	def updateBoxSize(self,boxsize):
-		if boxsize != self.boxsize:
-			self.boxsize = boxsize
-			print "setting autoboxer size"
-			self.autoBoxer.setBoxSize(boxsize,self.imagenames)
-			print "reloading boxes in boxable"
-			self.boxable.reloadBoxes() # this may be inefficient
-			print "clearing displays"
-			self.clearDisplays()
-			print "box display update"
-			self.boxDisplayUpdate()
-			print "done"
-			
 	def boxDisplayUpdate(self,force=False):
 		
 		ns = {}
@@ -1349,8 +1406,8 @@ class GUIbox:
 			box.changed=False
 		
 			im=box.getBoxImage()
-			box.shape = EMShape(["rect",box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
-			if not box.isref:
+			box.shape = EMShape(["rectpoint",box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
+			if not box.isref and not box.ismanual:
 				box.shape.isanimated = True
 				box.shape.blend = 0
 			ns[idx]=box.shape
@@ -2324,8 +2381,17 @@ class GUIboxPanel(QtGui.QWidget):
 			self.bs.setText(str(self.target.boxsize))
 			return
 		
-		self.target.updateBoxSize(v)
 		
+		self.usingboxsize.setText(self.bs.text())
+		app = QtGui.QApplication.instance()
+		app.setOverrideCursor(Qt.BusyCursor)
+		self.target.updateBoxSize(v,1)
+		app.setOverrideCursor(Qt.ArrowCursor)
+	
+	def setBoxSize(self,boxsize):
+		self.bs.setText(str(boxsize))
+		self.usingboxsize.setText(str(boxsize))
+	
 	def newThresh(self,val):
 		#print "new threshold"
 		self.trythatd()
