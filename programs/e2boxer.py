@@ -751,7 +751,8 @@ class GUIbox:
 		self.anchoring = False
 		self.imagenames = imagenames
 		
-		if len(boxes)>0 and boxsize==-1: self.boxsize=boxes[0][2]
+		self.boxsize = boxsize
+		if len(boxes)>0 and self.boxsize==-1: self.boxsize=boxes[0][2]
 		else : self.boxsize = -1
 		
 		try:
@@ -763,7 +764,7 @@ class GUIbox:
 			self.autoBoxer = SwarmAutoBoxer(self)
 			self.autoBoxer.become(trimAutoBoxer)
 			self.autoBoxer.setMode(self.dynapix,self.anchoring)
-			if boxsize==-1: self.boxsize=self.autoBoxer.getBoxSize()
+			if self.boxsize==-1: self.boxsize = self.autoBoxer.getBoxSize()
 		except:
 			if self.boxsize == -1:
 				if boxsize == -1: self.boxsize = 128
@@ -773,6 +774,7 @@ class GUIbox:
 			self.autoBoxer.setMode(self.dynapix,self.anchoring)
 			print "loaded a new autoboxer"
 		
+		print self.boxsize
 		
 		self.eraseradius = 2*self.boxsize
 		self.erasemode = None
@@ -1321,10 +1323,15 @@ class GUIbox:
 	def updateBoxSize(self,boxsize):
 		if boxsize != self.boxsize:
 			self.boxsize = boxsize
+			print "setting autoboxer size"
 			self.autoBoxer.setBoxSize(boxsize,self.imagenames)
+			print "reloading boxes in boxable"
 			self.boxable.reloadBoxes() # this may be inefficient
+			print "clearing displays"
 			self.clearDisplays()
+			print "box display update"
 			self.boxDisplayUpdate()
+			print "done"
 			
 	def boxDisplayUpdate(self,force=False):
 		

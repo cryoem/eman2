@@ -2551,6 +2551,7 @@ class SwarmAutoBoxer(AutoBoxer):
 					print "we have an associated image"
 					boxable = Boxable(imagename,None,self)
 					boxable.changeBoxSize(boxsize)
+					boxable.getExclusionImage(True)
 			
 		# make sure the shrink value is updated - use the force flag to do it
 		
