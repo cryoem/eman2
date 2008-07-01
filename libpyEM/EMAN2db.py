@@ -138,7 +138,8 @@ class DBDict:
 		self[n]=a
 
 	def __len__(self):
-		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
+		return self["maxrec"]+1
+#		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
 #		return len(self.bdb)
 
 	def __setitem__(self,key,val):
@@ -193,13 +194,13 @@ class DBDict:
 		return self.bdb.has_key(dumps(key,-1),txn=self.txn)
 
 	def keys(self):
-		return map(lambda x:loads(x),self.bdb.keys())
+		return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
 
 	def values(self):
-		return map(lambda x:loads(decompress(x)),self.bdb.values())
+		return [self[k] for k in self.keys()]
 
 	def items(self):
-		return map(lambda x:(loads(x[0]),loads(decompress(x[1]))),self.bdb.items())
+		return [(k,self[k]) for k in self.keys()]
 
 	def has_key(self,key):
 		return self.bdb.has_key(dumps(key,-1))
@@ -207,11 +208,13 @@ class DBDict:
 	def get(self,key,txn=None):
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
-		if isinstance(r,dict) and r.has_key("binary") :
-			fkey="%s/%s%dx%dx%d"%(self.path,self.name,r["nx"],r["ny"],r["nz"])
+		if isinstance(r,dict) and r.has_key("nx") :
+			pkey="%s/%s"%(self.path,self.name)
+			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
 			ret=EMData(r["nx"],r["ny"],r["nz"])
-			ret.read_data(fkey,r["binary"]*4*r["nx"]*r["ny"]*r["nz"])
+			n=loads(self.bdb.get(fkey+dumps(key,-1)))
+			ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
 			for i in k: ret.set_attr(i,r[i])
@@ -221,28 +224,29 @@ class DBDict:
 	def set(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
 		if (val==None) :
-			try: self.__delitem__(key)
+			try:
+				self.__delitem__(key)
 			except: return
 		elif isinstance(val,EMData) : 
 			# decide where to put the binary data
 			ad=val.get_attr_dict()
-			fkey="%s/%s%dx%dx%d"%(self.path,self.name,ad["nx"],ad["ny"],ad["nz"])
+			pkey="%s/%s"%(self.path,self.name)
+			fkey="%dx%dx%d"%(ad["nx"],ad["ny"],ad["nz"])
 #			print "w",fkey
 			try :
-				o=loads(self.bdb.get(dumps(key,-1),txn=txn))
-				n=o["binary"]
+				n=loads(self.bdb.get(fkey+dumps(key,-1),txn=txn))
 			except:
 				if not self.has_key(fkey) : self[fkey]=0
 				else: self[fkey]+=1 
 				n=self[fkey]
-			ad["binary"]=n
+			self.bdb.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
 			
 			# write the metadata
 			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			
 			# write the binary data
-			val.write_data(fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
+			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
