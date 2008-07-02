@@ -691,7 +691,11 @@ class EMImageMXCore:
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
-			app.setOverrideCursor(Qt.ClosedHandCursor)
+			try:
+				app.setOverrideCursor(Qt.ClosedHandCursor)
+			except: # if we're using a version of qt older than 4.2 than we have to use this...
+				app.setOverrideCursor(Qt.SizeAllCursor)
+				
 			self.mousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
 			if self.mmode=="drag" and lc:
