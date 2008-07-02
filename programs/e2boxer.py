@@ -543,7 +543,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get2DGuiImage().addShape("cen",EMShape(["rectpoint",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			self.get2DGuiImage().addShape("cen",EMShape([self.shape_string,.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
 			self.mediator.storeBox(box)
 			self.mediator.mouseClickUpdatePPC()
@@ -561,7 +561,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 				
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get2DGuiImage().addShape("cen",EMShape(["rectpoint",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			self.get2DGuiImage().addShape("cen",EMShape([self.shape_string,.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			if not self.getMXGuiImage().isVisible(boxnum) : self.getMXGuiImage().scrollTo(boxnum,yonly=1)
 			self.getMXGuiImage().setSelected(boxnum)
 			self.mediator.updateAllImageDisplay()
@@ -786,6 +786,8 @@ class GUIbox:
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
 		
+		self.shape_string = "rectpoint"
+		
 		self.boxable = Boxable(self.imagenames[0],self,self.autoBoxer)
 		self.boxable.addnonrefs(boxes)
 		self.boxable.boxsize = self.boxsize
@@ -833,10 +835,6 @@ class GUIbox:
 		self.ppc = 1.0
 		self.mouseclicks = 0
 		
-		self.abselmediator = AutoBoxerSelectionsMediator(self)
-		self.guictl=GUIboxPanel(self,self.abselmediator)
-		self.guictl.setImageQuality(self.boxable.getQuality())
-		
 		try:
 			E2loadappwin("boxer","imagegeom",self.guiimp)
 			E2loadappwin("boxer","matrixgeom",self.guimxp)
@@ -858,10 +856,36 @@ class GUIbox:
 			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
 			self.guimxit.setSelected(0)
 
+		self.abselmediator = AutoBoxerSelectionsMediator(self)
+		self.guictl=GUIboxPanel(self,self.abselmediator)
+		self.guictl.setImageQuality(self.boxable.getQuality())
 		self.guictl.show()
 		self.autoBoxer.autoBox(self.boxable,False)
 		self.boxDisplayUpdate()
-		
+	
+	def has_thumbnails(self):
+		return self.guimxitp != None
+	
+	def view_boxes_clicked(self,bool):
+		if bool:
+			self.guimxp.show()
+		else:
+			self.guimxp.hide()
+			
+	def view_image_clicked(self,bool):
+		print self.guiimp
+		if bool:
+			self.guiimp.show()
+		else:
+			self.guiimp.hide()
+			
+	def view_thumbs_clicked(self,bool):
+		if self.guimxitp == None: return
+		if bool:
+			self.guimxitp.show()
+		else:
+			self.guimxitp.hide()
+			
 	def withinMainImageBounds(self,coords):
 		x = coords[0]
 		y = coords[1]
@@ -1279,12 +1303,19 @@ class GUIbox:
 			
 		x0=box.xcorner+box.xsize/2-1
 		y0=box.ycorner+box.ysize/2-1
-		self.guiim.addShape("cen",EMShape(["rectpoint",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
-		box.shape = EMShape(["rectpoint",box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
+		self.guiim.addShape("cen",EMShape([self.shape_string,.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+		box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
 		self.guiim.addShape(boxnum,box.shape)
 		self.boxDisplayUpdate()
 		#self.updateAllImageDisplay()
-		
+	
+	def change_shapes(self,shape_string):
+		if shape_string in ["rectpoint","rect","rcircle","rcirclepoint"]:
+			self.shape_string = shape_string
+			self.boxDisplayUpdate(True)
+		else:
+			print "unknown shape string", shapestring
+	
 	def updateboxcolors(self,classify):
 		sh=self.guiim.getShapes()
 		for i in classify.items():
@@ -1406,8 +1437,9 @@ class GUIbox:
 			box.changed=False
 		
 			im=box.getBoxImage()
-			box.shape = EMShape(["rectpoint",box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
-			if not box.isref and not box.ismanual:
+			box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
+			
+			if not force and not box.isref and not box.ismanual:
 				box.shape.isanimated = True
 				box.shape.blend = 0
 			ns[idx]=box.shape
@@ -1820,6 +1852,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.tabwidget = QtGui.QTabWidget(self)
 		self.insertMainTab()
 		self.insertAdvancedTab()
+		self.insertViewTab()
 		self.vbl.addWidget(self.tabwidget)
 		
 		self.dummybox = Box()
@@ -1833,7 +1866,6 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
-		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
 		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.trythatd)
 		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.setnonedummy)
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
@@ -2002,6 +2034,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
 		self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.toggleFrozen)
 		self.connect(self.clear,QtCore.SIGNAL("clicked(bool)"),self.clearCurrent)
+		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
 		
 		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.refbuttontoggled)
 		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manualbuttontoggled)
@@ -2174,6 +2207,70 @@ class GUIboxPanel(QtGui.QWidget):
 			self.abselmediator.addCopyAutoBoxer(selected)
 			self.lock=False
 			self.updateABTable()
+			
+	def insertViewTab(self):
+		# this is the box layout that will store everything
+		self.view_inspector = QtGui.QWidget()
+		self.view_vbl =  QtGui.QVBoxLayout(self.view_inspector)
+		
+		#  Insert the plot widget
+		self.viewhbl = QtGui.QHBoxLayout()
+		
+		self.viewboxes = QtGui.QCheckBox("Boxed Particle Window")
+		self.viewboxes.setChecked(True)
+		self.viewimage = QtGui.QCheckBox("Main Image Window")
+		self.viewimage.setChecked(True)
+		
+		self.viewhbl.addWidget(self.viewboxes)
+		self.viewhbl.addWidget(self.viewimage)
+		
+		if self.target.has_thumbnails():
+			self.viewthumbs = QtGui.QCheckBox("Image Thumbnails Window")
+			self.viewthumbs.setChecked(True)
+			self.viewhbl.addWidget(self.viewthumbs)
+		
+		self.viewmanagement = QtGui.QGroupBox("Displayed Windows")
+		self.viewmanagement.setLayout(self.viewhbl)
+		self.view_vbl.addWidget(self.viewmanagement)
+		
+			
+		self.viewhbl2 = QtGui.QHBoxLayout()
+		self.boxdisplay =QtGui.QLabel("Box Display Object:",self)
+		self.viewhbl2.addWidget(self.boxdisplay)
+		
+		self.boxformats = QtGui.QComboBox(self)
+		self.boxformats.addItem("square with central dot")
+		self.boxformats.addItem("square")
+		self.boxformats.addItem("circle with central dot")
+		self.boxformats.addItem("circle")
+		self.viewhbl2.addWidget(self.boxformats)
+		
+		self.displayboxes = QtGui.QGroupBox("Displayed Boxes")
+		self.displayboxes.setLayout(self.viewhbl2)
+		self.view_vbl.addWidget(self.displayboxes)
+
+		
+		self.tabwidget.addTab(self.view_inspector,"Display Options")
+		
+		self.connect(self.viewboxes,QtCore.SIGNAL("clicked(bool)"),self.target.view_boxes_clicked)
+		self.connect(self.viewimage,QtCore.SIGNAL("clicked(bool)"),self.target.view_image_clicked)
+		if self.target.has_thumbnails():
+			self.connect(self.viewthumbs,QtCore.SIGNAL("clicked(bool)"),self.target.view_thumbs_clicked)
+			
+		QtCore.QObject.connect(self.boxformats, QtCore.SIGNAL("currentIndexChanged(QString)"), self.box_format_changed)
+	
+	def box_format_changed(self,new_format):
+		format = str(new_format)
+		if format == "square with central dot": format = "rectpoint"
+		elif format == "square": format = "rect"
+		elif format == "circle with central dot": format = "rcirclepoint"
+		elif format == "circle": format = "rcircle"
+		else: 
+			print "errror, unknown format" 
+			return
+		
+		self.target.change_shapes(format)
+
 	
 	def insertAdvancedTab(self):
 		# this is the box layout that will store everything
@@ -2268,11 +2365,8 @@ class GUIboxPanel(QtGui.QWidget):
 		self.abmanagement = QtGui.QGroupBox("Auto Boxer Management")
 		self.abmanagement.setLayout(self.autoboxerhdbl)
 		self.advanced_vbl.addWidget(self.abmanagement)
-		
-		
-		
+			
 		self.tabwidget.addTab(self.adv_inspector,"Advanced")
-		
 		
 		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.addNewAutoBoxer)
 		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.addCopyAutoBoxer)
@@ -2338,6 +2432,8 @@ class GUIboxPanel(QtGui.QWidget):
 		self.target.setautobox(str(s))
 	
 	def trythatd(self):
+		print "option currently disabled"
+		return
 		self.dummybox.optprofile = self.window.getData()
 		self.dummybox.correlationscore = float(self.thr.getValue())
 		self.target.setdummybox(self.dummybox)
