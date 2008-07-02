@@ -41,8 +41,19 @@ import shelve
 import re
 import cPickle
 import zlib
+import socket
 
-EMANVERSION="EMAN2 v1.95"
+EMANVERSION="EMAN2 v1.96"
+
+# This block attempts to open the standard EMAN2 database interface
+# if it fails, it sets db to None. Applications can then alter their
+# behavior appropriately
+try:
+	import EMAN2db
+	db=EMAN2db.EMAN2DB()
+	db.open_dict("history")
+except:
+	db=None
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
@@ -76,30 +87,45 @@ def timer(fn,n=1):
 def E2init(argv) :
 	"""E2init(argv)
 This function is called to log information about the current job to the local logfile"""
-	try:
-		db=shelve.open(".eman2log")
-	except:
-		return -1
+	global db
+	if db :
+		if not db.history.has_key("count") : db.history["count"]=1
+		else : db.history["count"]+=1
+		n=db.history["count"]
+		db.history[n]={"host":socket.gethostname(),"pid":os.getpid(),"start":time.time(),"args":argv}
+	else:
+		try:
+			sdb=shelve.open(".eman2log")
+		except:
+			return -1
 		
-	try:
-		n=db["count"]
-		db["count"]=n+1
-	except:
-		n=1
-		db["count"]=n
-	db[str(n)]={"pid":os.getpid(),"start":time.time(),"args":argv}
-	db.close()
+		try:
+			n=sdb["count"]
+			sdb["count"]=n+1
+		except:
+			n=1
+			sdb["count"]=n
+		sdb[str(n)]={"pid":os.getpid(),"start":time.time(),"args":argv}
+		sdb.close()
 
 	return n
 
 def E2end(n):
 	"""E2end(n)
 This function is called to log the end of the current job. n is returned by E2init"""
-	db=shelve.open(".eman2log")
-	d=db[str(n)]
-	d["end"]=time.time()
-	db[str(n)]=d
-	db.close()
+	global db
+	
+	if db :
+		d=db.history[n]
+		d["end"]=time.time()
+		db.history[n]=d
+		db.close_dict("history")
+	else :
+		db=shelve.open(".eman2log")
+		d=db[str(n)]
+		d["end"]=time.time()
+		db[str(n)]=d
+		db.close()
 	
 	return n
 

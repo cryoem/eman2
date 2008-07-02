@@ -38,12 +38,29 @@
 import shelve
 import sys
 
-db=shelve.open(".eman2log")
 try:
-	n=int(db["count"])
+	import EMAN2db
+	db=EMAN2db.EMAN2DB()
+	db.open_dict("history")
 except:
-	print "no logfile"
-	sys.exit(0)
+	db=None
 
-for i in range(n-1):
-	print " ".join(db[str(i+1)]["args"])
+if db:
+	try:
+		n=int(db.history["count"])
+	except:
+		print "no logfile"
+		sys.exit(0)
+	
+	for i in range(n):
+		print " ".join(db.history[i+1]["args"])
+else:
+	db=shelve.open(".eman2log")
+	try:
+		n=int(db["count"])
+	except:
+		print "no logfile"
+		sys.exit(0)
+	
+	for i in range(n-1):
+		print " ".join(db[str(i+1)]["args"])

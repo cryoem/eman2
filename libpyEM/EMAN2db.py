@@ -36,15 +36,48 @@ import weakref
 from cPickle import loads,dumps
 from zlib import compress,decompress
 import os
+import signal
+import sys
 try:
 	from bsddb3 import db
 except:
 	from bsddb import db
-	
+
+def DB_cleanup(a1=None,a2=None):
+	if a1==2 :
+		print "Program interrupted, closing databases, please wait (%d)"%os.getpid() 
+	for d in DBDict.alldicts.keys(): d.close()
+	if a1==2 :
+		print "Databases closed, program exiting" 
+		sys.exit(1)
+
+# if the program exits nicely, close all of the databases
+atexit.register(DB_cleanup)
+
+# if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
+signal.signal(2,DB_cleanup)
 
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
 #dbopenflags=db.DB_CREATE
 cachesize=10000000
+
+class TaskMgr:
+	"""This class is used to manage active and completed tasks through an
+	EMAN2DB object. Pass it an initialized EMAN2DB instance. Tasks are each
+	assigned a number unique in the local database. The active task 'max'
+	keeps increasing. When a task is complete, it is shifted to the 
+	tasks_done list, and the 'max' value is increased if necessary. There is
+	no guarantee in either list that all keys less than 'max' will exist."""
+	
+	def __init__(self,db):
+		self.db=db
+		db.open_dict('tasks_active')
+		if not db.tasks_active.has_key("max") : db.tasks_active["max"]=0
+		
+		db.open_dict('tasks_done')
+		if not db.tasks_done.has_key("max") : db.tasks_done["max"]=0
+		
+		
 
 class EMAN2DB:
 	"""This class implements a local database of data and metadata for EMAN2"""
@@ -87,7 +120,7 @@ class DBDict:
 	for EMData objects. Specifically, if integer keys are used, set_attr and get_attr may be used
 	to efficiently get and set attributes for images with reduced i/o requirements (in certain cases)."""
 	
-	allhashes=weakref.WeakKeyDictionary()
+	alldicts=weakref.WeakKeyDictionary()
 	fixedkeys=frozenset(("nx","ny","nz","minimum","maximum","mean","sigma","square_sum","mean_nonzero","sigma_nonzero"))
 	def __init__(self,name,file=None,dbenv=None,path=None):
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
@@ -95,7 +128,7 @@ class DBDict:
 		specified. """
 		
 		global dbopenflags
-		DBDict.allhashes[self]=1		# we keep a running list of all trees so we can close everything properly
+		DBDict.alldicts[self]=1		# we keep a running list of all trees so we can close everything properly
 		self.name = name
 		if path : self.path = path
 		else : self.path=os.getcwd()
