@@ -543,7 +543,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get2DGuiImage().addShape("cen",EMShape([self.shape_string,.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			self.get2DGuiImage().addShape("cen",EMShape([self.mediator.getShapeString(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
 			self.mediator.storeBox(box)
 			self.mediator.mouseClickUpdatePPC()
@@ -561,7 +561,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 				
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get2DGuiImage().addShape("cen",EMShape([self.shape_string,.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			self.get2DGuiImage().addShape("cen",EMShape([self.mediator.getShapeString(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			if not self.getMXGuiImage().isVisible(boxnum) : self.getMXGuiImage().scrollTo(boxnum,yonly=1)
 			self.getMXGuiImage().setSelected(boxnum)
 			self.mediator.updateAllImageDisplay()
@@ -733,6 +733,12 @@ class GUIboxEventsMediator:
 		'''
 		return self.parent.withinMainImageBounds(coords)
 	
+	def getShapeString(self):
+		'''
+		Gets the shape string currently used for creating shapes for the 2D image
+		'''
+		return self.parent.getShapeString()
+	
 class GUIbox:
 	'''
 	This class needs a clean up and needs some comments to be inserted
@@ -862,6 +868,9 @@ class GUIbox:
 		self.guictl.show()
 		self.autoBoxer.autoBox(self.boxable,False)
 		self.boxDisplayUpdate()
+	
+	def getShapeString(self):
+		return self.shape_string
 	
 	def has_thumbnails(self):
 		return self.guimxitp != None
