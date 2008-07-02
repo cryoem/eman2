@@ -158,9 +158,9 @@ def main():
     if options.apix:
         apix = options.apix
         for data in datlst:
-            data.set_xpixel(apix)
-            data.set_ypixel(apix)
-            data.set_zpixel(apix)
+            data.set_attr('apix_x', apix)
+            data.set_attr('apix_y', apix)
+            data.set_attr('apix_z', apix)
 
     if not "outtype" in optionlist:
 	    optionlist.append("outtype")

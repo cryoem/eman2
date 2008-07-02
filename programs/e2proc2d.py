@@ -279,7 +279,13 @@ def main():
 			optionlist.append("outtype")
 
 		for option1 in optionlist:
-
+			
+			if option1 == "apix":
+				apix = options.apix
+				d.set_attr('apix_x', apix)
+				d.set_attr('apix_y', apix)
+				d.set_attr('apix_z', apix)
+			
 			if option1 == "process":
 				fi = index_d[option1]
 				(processorname, param_dict) = parsemodopt(options.process[fi])
