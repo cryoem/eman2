@@ -46,27 +46,27 @@ class EMProjectDB:
 		""" Implementation of the singleton interface """
 
 		def __init__(self):
-			self.projectdb = shelve.open('.eman2projectdb','c',-1,True)
+			self.project_db = shelve.open('.eman2project_db','c',-1,True)
 
 		#def __del__(self):
-			#print "closing projectdb"
-			#self.projectdb.close()
+			#print "closing project_db"
+			#self.project_db.close()
 	# storage for the instance reference
 		#def getAutoBoxers(self):
 			#autoboxers = []
-			#for i in self.projectdb.items():
+			#for i in self.project_db.items():
 				#if i[0][0:10] == "autoboxer_":
-					#ab = self.projectdb[i[0]]
+					#ab = self.project_db[i[0]]
 					#swarmAutoBoxer = SwarmAutoBoxer(None)
 					#swarmAutoBoxer.become(ab)
 					#autoboxers.append(
 			
 		def close(self):
-			self.projectdb.close()
+			self.project_db.close()
 			
-		def setKeyEntry(self,key,entry):
-			self.projectdb[key]= entry
-			self.projectdb.sync()
+		def set_key_entry(self,key,entry):
+			self.project_db[key]= entry
+			self.project_db.sync()
 			
 	__instance = None
 	
@@ -79,14 +79,14 @@ class EMProjectDB:
 	
 	def __getattr__(self, attr):
 		""" Delegate access to implementation """
-		return getattr(self.__instance.projectdb, attr)
+		return getattr(self.__instance.project_db, attr)
 
 	def __setattr__(self, attr, value):
 		""" Delegate access to implementation """
 		return setattr(self.__instance, attr, value)
 	
-	def setKeyEntry(self,key,entry):
-		return self.__instance.setKeyEntry(key,entry)
+	def set_key_entry(self,key,entry):
+		return self.__instance.set_key_entry(key,entry)
 	
 class Box:
 	CENTERACF = "centeracf"
@@ -106,14 +106,14 @@ class Box:
 		self.changed = trimbox.changed			# a flag signalling the box has changed and display needs updatin
 		self.isanchor = trimbox.isanchor		# a flag signalling the box has changed and display needs updatin
 		self.TS = trimbox.TS
-		self.imagename = trimbox.imagename
+		self.image_name = trimbox.image_name
 		self.ismanual = trimbox.ismanual
 		
 		self.moved = trimbox.moved
 		self.origxcorner = trimbox.origxcorner
 		self.origycorner = trimbox.origycorner
 		
-	def __init__(self,xcorner=-1,ycorner=-1,xsize=-1,ysize=-1,isref=0,correlationscore=0,imagename=None):
+	def __init__(self,xcorner=-1,ycorner=-1,xsize=-1,ysize=-1,isref=0,correlationscore=0,image_name=None):
 		self.xcorner = xcorner			# the xcorner - bottom left
 		self.ycorner = ycorner			# the ycorner - bottom left
 		self.xsize = xsize				# the xsize of the box
@@ -141,18 +141,18 @@ class Box:
 		self.TS = None
 		
 		self.isdummy = False # this can be used to avoid parameters updates - i.e. when the user interactively changes parameters forcefully
-		self.imagename = imagename
+		self.image_name = image_name
 		
 		self.moved = False
 		self.origxcorner = -1
 		self.origycorner = -1
 		
 	
-	def setImageName(self,imagename):
-		self.imagename = imagename
+	def set_image_name(self,image_name):
+		self.image_name = image_name
 		
-	def getImageName(self):
-		return self.imagename
+	def get_image_name(self):
+		return self.image_name
 	
 	def move(self,dx,dy):
 		if self.moved == False:
@@ -164,7 +164,7 @@ class Box:
 		self.ycorner += dy
 		
 		if not self.ismanual:
-			movedboxes = getKeyEntryIDD(self.imagename,"moved_boxes") # this may potentially be None
+			movedboxes = get_idd_key_entry(self.image_name,"moved_boxes") # this may potentially be None
 			
 			if movedboxes == None:
 				movedboxes = []
@@ -181,12 +181,12 @@ class Box:
 				movedboxes.append([self.origxcorner,self.origycorner,self.xcorner,self.xcorner])
 			
 			
-			setKeyEntryIDD(self.imagename,"moved_boxes",movedboxes)
+			set_idd_key_entry(self.image_name,"moved_boxes",movedboxes)
 		
 		self.changed = False
-		self.updateBoxImage()
+		self.update_box_image()
 
-	def updatePositionFromDB(self,movedboxes):
+	def update_position_from_data(self,movedboxes):
 		
 		# 0.0064 = 0.08*0.08, then divided by two to make in terms of the radius
 		# ... so the proximity limit is 8% of the radius
@@ -201,14 +201,14 @@ class Box:
 				self.ycorner = data[3]
 				self.changed = True
 				self.moved = True
-				self.updateBoxImage()
+				self.update_box_image()
 				return 1
 		
 		return 0
 	
-	def updateBoxImage(self,norm=True):
+	def update_box_image(self,norm=True):
 		bic = BigImageCache()
-		image = bic.getImage(self.imagename)
+		image = bic.get_image(self.image_name)
 		#print "getting region",self.xcorner,self.ycorner,self.xsize,self.ysize
 		if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
 		if self.ycorner + self.ysize > image.get_ysize(): self.ycorner = image.get_ysize()-self.ysize
@@ -220,56 +220,56 @@ class Box:
 		# make sure there are no out of date footprints hanging around
 		self.footprint = None
 		
-	def changeBoxSize(self,boxsize):
+	def change_box_size(self,box_size):
 		'''
-			Changes the boxsize if it really is different to that which is currently stored
+			Changes the box_size if it really is different to that which is currently stored
 			Release references to self.image and self.footprint so that they are generated next time
 			they are asked for	
 		'''
-		if boxsize != self.xsize or boxsize != self.ysize:
-			self.xcorner -= (boxsize-self.xsize)/2
-			self.xsize = boxsize
-			self.ycorner -= (boxsize-self.ysize)/2
-			self.ysize = boxsize
+		if box_size != self.xsize or box_size != self.ysize:
+			self.xcorner -= (box_size-self.xsize)/2
+			self.xsize = box_size
+			self.ycorner -= (box_size-self.ysize)/2
+			self.ysize = box_size
 			
 			self.image = None
 			self.footprint = None
 			
-	def getBoxImage(self,norm=True,force=False):
+	def get_box_image(self,norm=True,force=False):
 		bic = BigImageCache()
-		image = bic.getImage(self.imagename)
+		image = bic.get_image(self.image_name)
 		
 		if self.image == None or force:
 			if image == None:
-				print 'error, need to specify the image argument when first calling getBoxImage'
-			self.updateBoxImage(norm)
+				print 'error, need to specify the image argument when first calling get_box_image'
+			self.update_box_image(norm)
 		return self.image
 	
-	def getSmallBoxImage(self,flattenradius,shrink):
+	def get_small_box_image(self,flattenradius,shrink):
 		'''
 		gets a shrunken version of the box by asking the database if the shrunken (entire) image
 		exists and then clipping out from it
 		'''
-		image = self.getSmallImage(flattenradius,shrink)
+		image = self.get_small_image(flattenradius,shrink)
 		if image == None:
 			return None
 		else:
 			return image.get_clip(Region(int(self.xcorner/shrink),int(self.ycorner/shrink),int(self.xsize/shrink),int(self.ysize/shrink)))
 		
-	def getSmallImage(self,flattenradius,shrink):
+	def get_small_image(self,flattenradius,shrink):
 		
 		cfImageCache = CFImageCache()
-		return  cfImageCache.getImage(self.imagename, flattenradius,shrink)
+		return  cfImageCache.get_image(self.image_name, flattenradius,shrink)
 		
-	def getFLCFImage(self,flattenradius,shrink,template):
+	def get_flcf_image(self,flattenradius,shrink,template):
 		
-		cfimage = self.getSmallImage(flattenradius,shrink)
+		cfimage = self.get_small_image(flattenradius,shrink)
 		cache = FLCFImageCache()
 		
-		return cache.getImage(self.imagename,cfimage,template)
+		return cache.get_image(self.image_name,cfimage,template)
 
 	
-	def getFootPrint(self,shrink=1):
+	def get_foot_print(self,shrink=1):
 		if self.footprint == None or shrink != self.footprintshrink:
 			self.footprintshrink = shrink
 			if self.image == None:
@@ -285,8 +285,8 @@ class Box:
 	def center(self,method,extrasomething,low_res=False):
 		'''
 		Ask the box to center itself using one of the available methods (as stored in Box.CENTERMETHODS
-		extrasomething has to be an AutoBoxer if using CENTEROFMASS or CENTERACF (it's asked for getBestShrink)
-		extrasomething has to be the template image and have the same dimensions as the results of getBoxImage if using 
+		extrasomething has to be an AutoBoxer if using CENTEROFMASS or CENTERACF (it's asked for get_best_shrink)
+		extrasomething has to be the template image and have the same dimensions as the results of get_box_image if using 
 		CENTERPROPOGATE
 		The low_res argument has no effect on the CENTERPROPOGATE option
 		'''
@@ -297,25 +297,25 @@ class Box:
 			
 		if method == Box.CENTEROFMASS:
 			if low_res == True:
-				image = self.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
+				image = self.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
 				ali = image.calc_center_of_mass()
-				dx = -int((ali[0]+0.5-image.get_xsize()/2))*extrasomething.getBestShrink()
-				dy = -int((ali[1]+0.5-image.get_ysize()/2))*extrasomething.getBestShrink()
+				dx = -int((ali[0]+0.5-image.get_xsize()/2))*extrasomething.get_best_shrink()
+				dy = -int((ali[1]+0.5-image.get_ysize()/2))*extrasomething.get_best_shrink()
 			else:
-				image = self.getBoxImage()
+				image = self.get_box_image()
 				ali = image.calc_center_of_mass()
 				dx = -int((ali[0]+0.5-image.get_xsize()/2))
 				dy = -int((ali[1]+0.5-image.get_ysize()/2))
 
 		elif method == Box.CENTERACF:
 			if low_res == True:
-				image = self.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
+				image = self.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
 				ccf  = image.calc_ccf(None)
 				trans = ccf.calc_max_location_wrap(-1,-1,-1)
-				dx = trans[0]/2*extrasomething.getBestShrink()
-				dy = trans[1]/2*extrasomething.getBestShrink()
+				dx = trans[0]/2*extrasomething.get_best_shrink()
+				dy = trans[1]/2*extrasomething.get_best_shrink()
 			else:
-				image = self.getBoxImage()
+				image = self.get_box_image()
 				ccf  = image.calc_ccf(None)
 				trans = ccf.calc_max_location_wrap(-1,-1,-1)
 				dx = trans[0]/2
@@ -323,7 +323,7 @@ class Box:
 		
 		elif method == Box.CENTERPROPAGATE:
 			template = extrasomething
-			image =self.getBoxImage()
+			image =self.get_box_image()
 			ccf  = image.calc_ccf(template)
 			#sig = image.calc_fast_sigma_image(None)
 			#ccf.div(sig)
@@ -338,18 +338,18 @@ class Box:
 				
 		# have to calculate offsets here
 		if low_res == True and not method == Box.CENTERPROPAGATE:
-			self.correctResolutionCentering(extrasomething.getBestShrink(),False)
+			self.correct_resolution_centering(extrasomething.get_best_shrink(),False)
 	
-		self.updateBoxImage()
+		self.update_box_image()
 		self.changed = True
 		
 		return 1
 		
-	def correctResolutionCentering(self,shrink,update=True):
+	def correct_resolution_centering(self,shrink,update=True):
 		
-		nx = self.getBoxImage().get_xsize()
+		nx = self.get_box_image().get_xsize()
 		smallx = int(nx)/shrink
-		ny = self.getBoxImage().get_ysize()
+		ny = self.get_box_image().get_ysize()
 		smally = int(ny)/shrink
 			
 		difx = int(shrink*int(smallx/2.0+0.5)-int(nx/2.0+0.5))
@@ -360,25 +360,25 @@ class Box:
 		#print "correction",difx,dify
 		
 		if update and (difx != 0 or dify != 0):
-			self.updateBoxImage()
+			self.update_box_image()
 			self.changed = True
 			
-	def updateParams(self,autoBoxer,center=False,force=False):
+	def update_params(self,autoboxer,center=False,force=False):
 		'''
 		Updates internally stored parameters, currently works only for SwarmAutoBoxer, but
-		have attempted to lay basic framework if in future we use a different autoBoxer which
+		have attempted to lay basic framework if in future we use a different autoboxer which
 		requires its own parameters
 		'''
 		if self.isdummy:
 			return 0
 		
-		correlation = self.getFLCFImage(autoBoxer.getTemplateRadius(),autoBoxer.getBestShrink(),autoBoxer.getTemplateObject())
+		correlation = self.get_flcf_image(autoboxer.get_template_radius(),autoboxer.get_best_shrink(),autoboxer.get_template_object())
 		if correlation == None:
 			print 'error, can not update the parameters of a Box because the Boxable has no correlation image'
 			return 0
 		
-		if isinstance(autoBoxer,SwarmAutoBoxer):
-			shrink = autoBoxer.getBestShrink()
+		if isinstance(autoboxer,SwarmAutoBoxer):
+			shrink = autoboxer.get_best_shrink()
 			invshrink = 1/shrink
 	
 			# the central coordinates of the box in terms of the shrunken correlation image
@@ -387,8 +387,8 @@ class Box:
 			
 			#the search radius is used in correlation space - it limits the radial distance
 			# up to which 'profile' data can be accrued
-			# it is currently half the boxsize in terms of the correlation image's dimensions
-			searchradius = autoBoxer.getSearchRadius()
+			# it is currently half the box_size in terms of the correlation image's dimensions
+			searchradius = autoboxer.get_search_radius()
 		
 			peak_location = BoxingTools.find_radial_max(correlation,int(x),int(y),searchradius )
 			peak_location2 = BoxingTools.find_radial_max(correlation,peak_location[0],peak_location[1],searchradius )
@@ -419,7 +419,7 @@ class Box:
 			return 1
 			
 		else:
-			print 'error, the autoBoxer you are using is not currently known by the Box class'
+			print 'error, the autoboxer you are using is not currently known by the Box class'
 			return 0
 		
 class TrimBox():
@@ -435,21 +435,21 @@ class TrimBox():
 		self.changed = box.changed			# a flag signalling the box has changed and display needs updatin
 		self.isanchor = box.isanchor		# a flag signalling the box has changed and display needs updatin
 		self.TS = box.TS					# a time stamp flag
-		self.imagename = box.imagename
+		self.image_name = box.image_name
 		self.moved = box.moved
 		self.origxcorner = box.origxcorner
 		self.origycorner = box.origycorner
 		self.ismanual = box.ismanual
 		
-	def changeBoxSize(self,boxsize):
+	def change_box_size(self,box_size):
 		'''
-		Fixme, this is just a copy of Box.changeBoxSize
+		Fixme, this is just a copy of Box.change_box_size
 		'''
-		if boxsize != self.xsize or boxsize != self.ysize:
-			self.xcorner -= (boxsize-self.xsize)/2
-			self.xsize = boxsize
-			self.ycorner -= (boxsize-self.ysize)/2
-			self.ysize = boxsize
+		if box_size != self.xsize or box_size != self.ysize:
+			self.xcorner -= (box_size-self.xsize)/2
+			self.xsize = box_size
+			self.ycorner -= (box_size-self.ysize)/2
+			self.ysize = box_size
 			self.changed = True
 
 class Cache:
@@ -458,14 +458,14 @@ class Cache:
 	As the cache grows objects are popped off the end of the self.cache tuple
 	
 	get the cache via getCache - iterate through it to find your object
-	add to the cache via addToCache
-	reset the size of the cache using setMaxSize
+	add to the cache via add_to_cache
+	reset the size of the cache using set_max_size
 	'''
 	def __init__(self):
 		self.maxsize = 10
 		self.cache = []
 
-	def setMaxSize(self,size):
+	def set_max_size(self,size):
 		'''
 		Will resize the cache if it is current larger than the new maxsize
 		'''
@@ -474,7 +474,7 @@ class Cache:
 
 		self.maxsize = size
 		
-	def addToCache(self,object):
+	def add_to_cache(self,object):
 		'''
 		Add 
 		'''
@@ -499,24 +499,24 @@ class ExclusionImageCache:
 		def __init__(self):
 			Cache.__init__(self)
 			
-		def getImage(self,imagename,xsize,ysize):
+		def get_image(self,image_name,xsize,ysize):
 			excImage = None
 			# first see if the object is already stored
 			for object in self.getCache():
-				if object.getInputImageName() == imagename:
+				if object.get_input_image_name() == image_name:
 					excImage = object
 					break;
 				
 				
 			if excImage == None:
 				#if we make it here the cfimage is not cached
-				#print "had to cache a cf image for",imagename
-				excImage = ExclusionImage(imagename)
-				self.addToCache(excImage)
-			#else: print "found a cached cf image for",imagename
+				#print "had to cache a cf image for",image_name
+				excImage = ExclusionImage(image_name)
+				self.add_to_cache(excImage)
+			#else: print "found a cached cf image for",image_name
 				
 			
-			image = excImage.getImageCarefully(xsize,ysize)
+			image = excImage.get_image_carefully(xsize,ysize)
 			if image != None:
 				return image
 			else:
@@ -543,22 +543,22 @@ class ExclusionImageCache:
 		return setattr(self.__instance, attr, value)
 	
 class ExclusionImage:
-	def __init__(self,imagename):
-		self.imagename = imagename
+	def __init__(self,image_name):
+		self.image_name = image_name
 		self.image = None
-		self.ouputimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".exc.hdf"
+		self.ouputimage_name = EMProjectDB.boxersdir + strip_file_tag(self.image_name)+".exc.hdf"
 		
 		try:
 			# we may have the image already on disk, if so parse it
 			# the image on disk is likely up to date but not necessarily so
-			self.image = EMData(self.ouputimagename)
-			#print "I read the image",self.ouputimagename
+			self.image = EMData(self.ouputimage_name)
+			#print "I read the image",self.ouputimage_name
 		except:
-			#print "could not read", self.ouputimagename 
+			#print "could not read", self.ouputimage_name 
 			pass
 		
-	def getInputImageName(self):
-		return self.imagename
+	def get_input_image_name(self):
+		return self.image_name
 		
 	def get_xsize(self):
 		if self.image != None: return self.image.get_xsize()
@@ -568,7 +568,7 @@ class ExclusionImage:
 		if self.image != None: return self.image.get_ysize()
 		else: return 0
 	
-	def __updateImage(self,xsize,ysize):
+	def __update_image(self,xsize,ysize):
 		'''
 		Updates the image using the function arguments
 		If they match current parameters than nothing happens - the correct image is already cached
@@ -598,23 +598,23 @@ class ExclusionImage:
 		#else:
 			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
 			
-	def getImage(self):
+	def get_image(self):
 		'''
 		Should only be called if you know the stored image is up to date
 		'''
 		return self.image
 	
 	
-	def getImageCarefully(self,xsize,ysize):
+	def get_image_carefully(self,xsize,ysize):
 		
-		if self.image == None or not self.paramsMatch(xsize,ysize):
+		if self.image == None or not self.query_params_match(xsize,ysize):
 			#print "regenerating cf image"
-			self.__updateImage(xsize,ysize)
+			self.__update_image(xsize,ysize)
 		#else: print "cf image is up to date"
 		
-		return self.getImage()
+		return self.get_image()
 	
-	def paramsMatch(self,flattenradius,shrink):
+	def query_params_match(self,flattenradius,shrink):
 		try:
 			if xsize != self.get_xsize() or ysize != self.get_ysize():
 				return False
@@ -631,24 +631,24 @@ class CFImageCache:
 		def __init__(self):
 			Cache.__init__(self)
 			
-		def getImage(self,imagename,flattenradius,shrink):
+		def get_image(self,image_name,flattenradius,shrink):
 			cfImage = None
 			# first see if the object is already stored
 			for object in self.getCache():
-				if object.getInputImageName() == imagename:
+				if object.get_input_image_name() == image_name:
 					cfImage = object
 					break;
 				
 				
 			if cfImage == None:
 				#if we make it here the cfimage is not cached
-				#print "had to cache a cf image for",imagename
-				cfImage = CoarsenedFlattenedImage(imagename)
-				self.addToCache(cfImage)
-			#else: print "found a cached cf image for",imagename
+				#print "had to cache a cf image for",image_name
+				cfImage = CoarsenedFlattenedImage(image_name)
+				self.add_to_cache(cfImage)
+			#else: print "found a cached cf image for",image_name
 				
 			
-			image = cfImage.getImageCarefully(flattenradius,shrink)
+			image = cfImage.get_image_carefully(flattenradius,shrink)
 			if image != None:
 				return image
 			else:
@@ -675,39 +675,39 @@ class CFImageCache:
 		return setattr(self.__instance, attr, value)
 
 class CoarsenedFlattenedImage:
-	def __init__(self,imagename):
+	def __init__(self,image_name):
 		self.smallimage = None		# a small copy of an image which has had its background flattened
-		self.imagename = imagename
-		self.ouputimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".cf.hdf"
+		self.image_name = image_name
+		self.ouputimage_name = EMProjectDB.boxersdir + strip_file_tag(self.image_name)+".cf.hdf"
 		
 		try:
 			# we may have the image already on disk, if so parse it
 			# the image on disk is likely up to date but not necessarily so
-			self.smallimage = EMData(self.ouputimagename)
-			#print "I read the image",self.ouputimagename
+			self.smallimage = EMData(self.ouputimage_name)
+			#print "I read the image",self.ouputimage_name
 		except:
-			#print "could not read", self.ouputimagename 
+			#print "could not read", self.ouputimage_name 
 			pass
 		
-	def getInputImageName(self):
-		return self.imagename
+	def get_input_image_name(self):
+		return self.image_name
 		
-	def getCreationTS(self):
+	def get_creation_ts(self):
 		return	self.smallimage.get_attr("creation_time_stamp")
 	
-	def getFlattenRadius(self):
+	def get_flatten_radius(self):
 		return self.smallimage.get_attr("flatten_radius")
 	
-	def getShrinkFactor(self):
+	def get_shrink_factor(self):
 		return self.smallimage.get_attr("shrink_factor")
 	
-	def __updateImage(self,flattenradius,shrink):
+	def __update_image(self,flattenradius,shrink):
 		'''
 		Updates the image using the function arguments
 		If they match current parameters than nothing happens - the correct image is already cached
 		'''
 		bic = BigImageCache()
-		image = bic.getImage(self.imagename)
+		image = bic.get_image(self.image_name)
 
 		self.smallimage = image.process("math.meanshrink",{"n":shrink})
 		self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
@@ -715,30 +715,30 @@ class CoarsenedFlattenedImage:
 		self.smallimage.set_attr("flatten_radius",flattenradius)
 		self.smallimage.set_attr("shrink_factor",shrink)
 		self.smallimage.set_attr("creation_time_stamp",gm_time_string())
-		self.smallimage.write_image(self.ouputimagename)
+		self.smallimage.write_image(self.ouputimage_name)
 				
 		#else:
 			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
 			
-	def getImage(self):
+	def get_image(self):
 		'''
 		Should only be called if you know the stored image is up to date
 		'''
 		return self.smallimage
 	
 	
-	def getImageCarefully(self,flattenradius,shrink):
+	def get_image_carefully(self,flattenradius,shrink):
 		
-		if self.smallimage == None or not self.paramsMatch(flattenradius,shrink):
+		if self.smallimage == None or not self.query_params_match(flattenradius,shrink):
 			#print "regenerating cf image"
-			self.__updateImage(flattenradius,shrink)
+			self.__update_image(flattenradius,shrink)
 		#else: print "cf image is up to date"
 		
-		return self.getImage()
+		return self.get_image()
 	
-	def paramsMatch(self,flattenradius,shrink):
+	def query_params_match(self,flattenradius,shrink):
 		try:
-			if flattenradius != self.getFlattenRadius() or shrink != self.getShrinkFactor():
+			if flattenradius != self.get_flatten_radius() or shrink != self.get_shrink_factor():
 				return False
 			else: return True
 		except: return False # exception will be thrown if self.smallimage = None
@@ -752,23 +752,23 @@ class SigmaImageCache:
 			Cache.__init__(self)
 
 	
-		def getImage(self,imagename,flattenradius,shrinkfactor,forceupdate=False):
+		def get_image(self,image_name,flattenradius,shrinkfactor,forceupdate=False):
 			# this loop takes care of things if the image is cached
 			object = None
 			for sigmaImage in self.getCache():
-				if sigmaImage.getImageName() == imagename:
+				if sigmaImage.get_image_name() == image_name:
 					object = sigmaImage
 					break
 				
 			
 			# if we make it here the image is not cached
 			if object == None:
-				#print "I am generating a big image in the cache for",imagename
-				object = SigmaImage(imagename)
-				self.addToCache(object)
+				#print "I am generating a big image in the cache for",image_name
+				object = SigmaImage(image_name)
+				self.add_to_cache(object)
 			#else: print "I am returning a big image from the cache"
 				
-			return object.getImageCarefully(flattenradius,shrinkfactor,forceupdate)
+			return object.get_image_carefully(flattenradius,shrinkfactor,forceupdate)
 			
 			
 	# storage for the instance reference
@@ -791,23 +791,23 @@ class SigmaImageCache:
 	
 	
 class SigmaImage:
-	def __init__(self,imagename):
-		self.imagename = imagename
+	def __init__(self,image_name):
+		self.image_name = image_name
 		self.image = None
 	
-	def getImageName(self):
-		return self.imagename
+	def get_image_name(self):
+		return self.image_name
 	
-	def getFlattenRadius(self):
+	def get_flatten_radius(self):
 		return self.image.get_attr("flatten_radius")
 	
-	def getShrinkFactor(self):
+	def get_shrink_factor(self):
 		return self.image.get_attr("shrink_factor")
 	
-	def __updateImage(self,flattenradius,shrinkfactor):
+	def __update_image(self,flattenradius,shrinkfactor):
 	
 		cficache= CFImageCache()
-		image = cficache.getImage(self.imagename,flattenradius,shrinkfactor)
+		image = cficache.get_image(self.image_name,flattenradius,shrinkfactor)
 		tmp = EMData(flattenradius*2,flattenradius*2)
 		tmp.process_inplace("testimage.circlesphere")
 		self.image = image.calc_fast_sigma_image(tmp)
@@ -816,14 +816,14 @@ class SigmaImage:
 		
 		return self.image
 	
-	def getImageCarefully(self,flattenradius,shrinkfactor,forceupdate=False):
+	def get_image_carefully(self,flattenradius,shrinkfactor,forceupdate=False):
 		
 		action = False
 		if forceupdate == True: action = True
 		elif self.image == None: action = True
-		elif flattenradius != self.getFlattenRadius() or shrinkfactor != self.getShrinkFactor(): action = True
+		elif flattenradius != self.get_flatten_radius() or shrinkfactor != self.get_shrink_factor(): action = True
 		
-		if action: self.__updateImage(flattenradius,shrinkfactor)
+		if action: self.__update_image(flattenradius,shrinkfactor)
 		
 		return self.image
 
@@ -839,22 +839,22 @@ class BinaryCircleImageCache:
 			Cache.__init__(self)
 
 	
-		def getImage(self,circleradius):
+		def get_image(self,circleradius):
 			# this loop takes care of things if the image is cached
 			object = None
 			for circleImage in self.getCache():
-				if circleImage.getCircleRadius() == circleradius :
+				if circleImage.get_circle_radius() == circleradius :
 					object = circleImage
 					break
 
 			# if we make it here the image is not cached
 			if object == None:
-				#print "I am generating a big image in the cache for",imagename
+				#print "I am generating a big image in the cache for",image_name
 				object = BinaryCircleImage(circleradius)
-				self.addToCache(object)
+				self.add_to_cache(object)
 			#else: print "I am returning a big image from the cache"
 				
-			return object.getImage()
+			return object.get_image()
 			
 	# storage for the instance reference
 	__instance = None
@@ -882,10 +882,10 @@ class BinaryCircleImage:
 		self.image.set_attr("circle_radius",circleradius)
 		self.image.write_image(EMProjectDB.boxersdir +"circle"+str(circleradius)+".hdf")
 
-	def getCircleRadius(self):
+	def get_circle_radius(self):
 		return self.image.get_attr("circle_radius")
 	
-	def getImage(self):
+	def get_image(self):
 		return self.image
 
 class BigImageCache:
@@ -894,26 +894,26 @@ class BigImageCache:
 
 		def __init__(self):
 			Cache.__init__(self)
-			self.setMaxSize(4)
+			self.set_max_size(4)
 
 	
-		def getImage(self,imagename):
+		def get_image(self,image_name):
 			# this loop takes care of things if the image is cached
 			object = None
 			for bigImage in self.getCache():
-				if bigImage.getImageName() == imagename:
+				if bigImage.get_image_name() == image_name:
 					object = bigImage
 					break
 				
 			
 			# if we make it here the image is not cached
 			if object == None:
-				#print "I am generating a big image in the cache for",imagename
-				object = BigImage(imagename)
-				self.addToCache(object)
+				#print "I am generating a big image in the cache for",image_name
+				object = BigImage(image_name)
+				self.add_to_cache(object)
 			#else: print "I am returning a big image from the cache"
 				
-			return object.getImage()
+			return object.get_image()
 			
 	# storage for the instance reference
 	__instance = None
@@ -934,16 +934,16 @@ class BigImageCache:
 		return setattr(self.__instance, attr, value)
 	
 class BigImage:
-	def __init__(self,imagename):
-		self.imagename = imagename
+	def __init__(self,image_name):
+		self.image_name = image_name
 		self.image = None
 	
-	def getImageName(self):
-		return self.imagename
+	def get_image_name(self):
+		return self.image_name
 	
-	def getImage(self):
+	def get_image(self):
 		if self.image == None:
-			self.image = EMData(self.imagename)
+			self.image = EMData(self.image_name)
 			self.image.process_inplace("normalize.edgemean") # this seams to be the normal behavior
 			
 		return self.image
@@ -959,25 +959,25 @@ class FLCFImageCache:
 			Cache.__init__(self)
 
 
-		def getImage(self,imagename,cfimage,template):
+		def get_image(self,image_name,cfimage,template):
 			
 			flcfImage = None
 			# first see if the object is already stored
 			for object in self.getCache():
-				if object.getInputImageName() == imagename:
+				if object.get_input_image_name() == image_name:
 					flcfImage = object
 					break;
 				
 				
 			if flcfImage == None:
 				# if we make it here the flcfimage is not cached
-				#print "generated flcf for",imagename
-				flcfImage = FLCFImage(imagename)
-				self.addToCache(flcfImage)
-			#else: print "found flcf for",imagename
+				#print "generated flcf for",image_name
+				flcfImage = FLCFImage(image_name)
+				self.add_to_cache(flcfImage)
+			#else: print "found flcf for",image_name
 				
 			
-			image = flcfImage.getImageCarefully(cfimage,template)
+			image = flcfImage.get_image_carefully(cfimage,template)
 			if image != None:
 				return image
 			else:
@@ -1005,69 +1005,70 @@ class FLCFImageCache:
 
 
 class FLCFImage:
-	def __init__(self,imagename):
+	def __init__(self,image_name):
 		self.flcfimage = None	# this is the flcf image
-		self.imagename=imagename # we must store this it's used externally to determine if the FLCFImage is cached
-		self.outputimagename = EMProjectDB.boxersdir + strip_file_tag(imagename)+".flcf.hdf"
+		self.image_name=image_name # we must store this it's used externally to determine if the FLCFImage is cached
+		self.outputimage_name = EMProjectDB.boxersdir + strip_file_tag(image_name)+".flcf.hdf"
 		
 		
 		try: # try to read the image from disk - it may already exist and save us lots of time
-			self.flcfimage = EMData(self.outputimagename)
+			self.flcfimage = EMData(self.outputimage_name)
 		except:
 			# the image doesn't exist, that's okay
 			pass
 		
-	def paramsMatch(self,cfimage,template):
-		#print cfimage.get_attr("creation_time_stamp"), self.getCfiTS(),"template",template.getTemplateTS(),self.getTemplateTS()
+	def query_params_match(self,cfimage,template):
+		#print cfimage.get_attr("creation_time_stamp"), self.get_cfi_ts(),"template",template.get_template_ts(),self.get_template_ts()
 		try:
-			if cfimage.get_attr("creation_time_stamp") != self.getCfiTS() or template.getTemplateTS() != self.getTemplateTS():
+			if cfimage.get_attr("creation_time_stamp") != self.get_cfi_ts() or template.get_template_ts() != self.get_template_ts():
 				#print "params did not match"
 				return False
 			else: return True
 		except: return False
 	
-	def getInputImageName(self):
-		return self.imagename
+	def get_input_image_name(self):
+		return self.image_name
 	
-	def getOutputImageName(self):
-		return self.outputimagename
+	def get_output_image_name(self):
+		return self.outputimage_name
 	
-	def getTemplateTS(self):
+	def get_template_ts(self):
 		'''
 		get template time stamp
 		'''
 		return self.flcfimage.get_attr("template_time_stamp")
-	def getCfiTS(self):
+        
+	def get_cfi_ts(self):
 		'''
 		get cfi time stamp
 		Cfi = coarsened flattened image
 		'''
 		return self.flcfimage.get_attr("data_image_time_stamp")
 		
-	def getImage(self):
+	def get_image(self):
 		'''
 		Returns the currently stored flcfimage
 		'''
 		return self.flcfimage
 	
-	def __updateImage(self,cfimage,template):
+	def __update_image(self,cfimage,template):
 
 		sicache = SigmaImageCache()
-		sigmaImage = sicache.getImage(self.imagename,cfimage.get_attr("flatten_radius"),cfimage.get_attr("shrink_factor"))
+		sigmaImage = sicache.get_image(self.image_name,cfimage.get_attr("flatten_radius"),cfimage.get_attr("shrink_factor"))
 		
-		self.flcfimage = cfimage.calc_ccf( template.getTemplate() )
+		self.flcfimage = cfimage.calc_ccf( template.get_template() )
 		self.flcfimage.div(sigmaImage)
 		self.flcfimage.process_inplace("xform.phaseorigin.tocenter")
-		self.flcfimage.set_attr("template_time_stamp",template.getTemplateTS())
+		self.flcfimage.set_attr("template_time_stamp",template.get_template_ts())
 		val = cfimage.get_attr("creation_time_stamp")
 		self.flcfimage.set_attr("data_image_time_stamp",val)
-		self.flcfimage.write_image(self.outputimagename)
+		self.flcfimage.write_image(self.outputimage_name)
 		
 		
-	def getImage(self):
+	def get_image(self):
 		return self.flcfimage
 	
-	def getImageCarefully(self,cfimage,template):
+	def get_image_carefully(self,cfimage,template):
 		'''
 		Checks to see if the arguments are the right types
 		Then checks to see if the currently store correlation image is up to date
@@ -1085,15 +1086,15 @@ class FLCFImage:
 		
 		action = False
 		if self.flcfimage != None:
-			if not self.paramsMatch(cfimage,template):
+			if not self.query_params_match(cfimage,template):
 				action = True
 		else: action = True
 		
 		if action:
 			#print "generating correlation image"
-			self.__updateImage(cfimage,template)
+			self.__update_image(cfimage,template)
 		#else: print "returning cached correlation image"
-		return self.getImage()
+		return self.get_image()
 
 class Boxable:
 	UNERASE = 'Unerase'
@@ -1112,122 +1113,110 @@ class Boxable:
 	QUALITY_META_DATA_MAP[GOOD] = 3
 	QUALITY_META_DATA_MAP[GREAT] =  4
 	
-	def __init__(self,imagename,parent,autoBoxer=None):
+	def __init__(self,image_name,parent,autoboxer=None):
 		self.parent = parent		# keep track of the parent in case we ever need it
 		self.boxes = []				# a list of boxes
 		self.refboxes = []			# a list of boxes
-		self.boxsize = -1			#  the boxsize
-		self.imagename = imagename
+		self.box_size = -1			#  the box_size
+		self.image_name = image_name
 		
 		self.fpshrink = -1
 		self.exclusionimage = None
 		self.template = None
-		self.correlation = None
 		self.refcache = []
-		self.allowcorrelationupdate = False	# a temporary flag that can be used by externally objects, for instance a reference box, which is forcing an update for example
-		self.templateTS = -1 # a template time stamp, used to avoid unecessarily regenerating the template in self.autoBox
-		self.autoBoxerStateTS = -1 # and autoBoxer time stamp, used to avoid unecessary autoboxing, and to force autoboxing when appropriate
-		self.autoBoxerID = -1 # Stores the unique ID of the autoboxer - this is to facilitate having many autoboxers in the project data base
+		self.template_ts = -1 # a template time stamp, used to avoid unecessarily regenerating the template in self.auto_box
+		self.autoboxer_state_ts = -1 # and autoboxer time stamp, used to avoid unecessary autoboxing, and to force autoboxing when appropriate
+		self.autoboxer_id = -1 # Stores the unique ID of the autoboxer - this is to facilitate having many autoboxers in the project data base
 		
-		self.autoBoxer = autoBoxer
+		self.autoboxer = autoboxer
 		self.__frozen = False
 		self.__quality = Boxable.QUALITY_META_DATA_MAP[Boxable.AVERAGE] # this makes it the number, not the string
 		
 		try:
-			eicache = ExclusionImageCache
-			#excimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".exc.hdf"
-			#print "reading exclusion image",excimagename
-			self.exclusionimage = eicache.getImage(self.imagename,self.getSmallImage().get_xsize(),self.getSmallImage().get_ysize())
+			eicache = ExclusionImageCache()
+			#excimage_name = EMProjectDB.boxersdir + strip_file_tag(self.image_name)+".exc.hdf"
+			#print "reading exclusion image",excimage_name
+			self.exclusionimage = eicache.get_image(self.image_name,self.get_small_image().get_xsize(),self.get_small_image().get_ysize())
 		except: pass
 		
+		self.get_db_stamps()
+		self.reload_boxes()
+		self.get_frozen_from_db()	
+		self.get_quality_from_db()
 		try:
-			self.getDBTimeStamps()
+			self.check_store_image_tag_db()	
 		except: pass
-		try: self.reloadBoxes()
-		except: pass
-		try:
-			self.getFrozenFromDB()	
-		except: pass
-		try:
-			self.getQualityFromDB()	
-		except: pass
-		try:
-			self.checkAndStoreImageTagInDB()	
-		except: pass
-		try:
-			if autoBoxer == None:
-				self.getAutoBoxerFromDB()
-		except: pass
-		
-	def reloadBoxes(self):
+		if autoboxer == None: self.get_auto_boxer_from_db()
+    
+	def reload_boxes(self):
 		'''
 		You might call this if the box size was changed in the main interface, or in the constructor
 		'''
 		self.boxes = []
 		try: 
-			self.getAutoSelectedFromDB(True)
-		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
+			self.get_auto_selected_from_db(True)
+		except: pass # this probably means there is a project_db but it doesn't store any autoboxing results from this image
 		#print "got auto, now have", len(self.boxes)
 		try:
-			self.getManualFromDB()	
+			self.get_manual_boxes_from_db()	
 		except: pass
 		#print "got manual, now have", len(self.boxes)
 		try:
-			self.getReferencesFromDB()	
+			self.get_references_from_db()	
 		except: pass
 		#print "got references, now have", len(self.boxes)
 		
-	def resizeBoxes(self,boxes,boxsize):
+	def resizeBoxes(self,boxes,box_size):
 		if boxes == None:
 			return
 		for box in boxes:
-			box.changeBoxSize(boxsize)
+			box.change_box_size(box_size)
 		
-	def resizeMovedBoxes(self,data,boxsize,oldboxsize):
-		adj = (boxsize-oldboxsize)/2
+	def resize_moved_box_data(self,data,box_size,oldbox_size):
+		adj = (box_size-oldbox_size)/2
 		for d in data:
 			d[0] -= adj
 			d[1] -= adj
 			d[2] -= adj
 			d[3] -= adj
 			
-	def changeBoxSize(self,boxsize):
-		self.boxsize = boxsize
+	def change_box_size(self,box_size):
+		self.box_size = box_size
 		oldxsize  = None
-		autoboxes = getKeyEntryIDD(self.imagename,"auto_boxes")
+		autoboxes = get_idd_key_entry(self.image_name,"auto_boxes")
 		if oldxsize == None and autoboxes != None and len(autoboxes) != 0:
 			oldxsize = autoboxes[0].xsize
-		self.resizeBoxes(autoboxes,boxsize)
-		setKeyEntryIDD(self.imagename,"auto_boxes",autoboxes)
+		self.resizeBoxes(autoboxes,box_size)
+		set_idd_key_entry(self.image_name,"auto_boxes",autoboxes)
 		
-		manboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
+		manboxes = get_idd_key_entry(self.image_name,"manual_boxes")
 		if oldxsize == None and manboxes != None and len(manboxes) != 0:
 			oldxsize = manboxes[0].xsize
-		self.resizeBoxes(manboxes,boxsize)
-		setKeyEntryIDD(self.imagename,"manual_boxes",manboxes)
+		self.resizeBoxes(manboxes,box_size)
+		set_idd_key_entry(self.image_name,"manual_boxes",manboxes)
 		
-		refboxes = getKeyEntryIDD(self.imagename,"reference_boxes")
+		refboxes = get_idd_key_entry(self.image_name,"reference_boxes")
 		if oldxsize == None and refboxes != None and len(refboxes) != 0:
 			oldxsize = refboxes[0].xsize
-		self.resizeBoxes(refboxes,boxsize)
-		setKeyEntryIDD(self.imagename,"reference_boxes",refboxes)
+		self.resizeBoxes(refboxes,box_size)
+		set_idd_key_entry(self.image_name,"reference_boxes",refboxes)
 		
 		
-		movedboxes =  getKeyEntryIDD(self.imagename,"moved_boxes")
+		movedboxes =  get_idd_key_entry(self.image_name,"moved_boxes")
 		if movedboxes == None: return
 		if oldxsize == None and movedboxes != None and len(movedboxes) != 0:
 			print "warning, changing box sizes, old movement information has been lost"
 			movedboxes = []
 		else:
-			self.resizeMovedBoxes(movedboxes,boxsize,oldxsize)
-		setKeyEntryIDD(self.imagename,"moved_boxes",movedboxes)
+			self.resize_moved_box_data(movedboxes,box_size,oldxsize)
+		set_idd_key_entry(self.image_name,"moved_boxes",movedboxes)
 	
-	def clearAndCache(self,keepmanual=False):
+	def clear_and_cache(self,keepmanual=False):
 		self.boxes = []
 		
-		projectdb = EMProjectDB()
+		project_db = EMProjectDB()
 		try:
-			data = projectdb[self.getDDKey()]
+			data = project_db[self.get_dd_key()]
 		except:
 			data = {}
 		
@@ -1236,35 +1225,35 @@ class Boxable:
 		
 		
 		if keepmanual:
-			self.getManualFromDB()
+			self.get_manual_boxes_from_db()
 		else :
 			data["manual_boxes"] = []
 	
 	
-		projectdb.setKeyEntry(self.getDDKey(),data)
+		project_db.set_key_entry(self.get_dd_key(),data)
 		
-	def clearAndReloadImages(self):
+	def clear_and_reload_images(self):
 		self.boxes = []
 		try: 
-			self.getAutoSelectedFromDB(True)
-		except: pass # this probably means there is a projectdb but it doesn't store any autoboxing results from this image
+			self.get_auto_selected_from_db(True)
+		except: pass # this probably means there is a project_db but it doesn't store any autoboxing results from this image
 		try:
-			self.getManualFromDB()	
+			self.get_manual_boxes_from_db()	
 		except: pass
 		try:
-			self.getReferencesFromDB()	
+			self.get_references_from_db()	
 		except: pass
 		
-	def cacheExcToDisk(self):
+	def cache_exc_to_disk(self):
 		if self.exclusionimage != None:
-			excimagename = EMProjectDB.boxersdir + strip_file_tag(self.imagename)+".exc.hdf"
-			self.exclusionimage.write_image(excimagename)
+			excimage_name = EMProjectDB.boxersdir + strip_file_tag(self.image_name)+".exc.hdf"
+			self.exclusionimage.write_image(excimage_name)
 
 	def center(self,method):
 		if method == Box.CENTERACF or method == Box.CENTEROFMASS:
-			extrasomething = self.autoBoxer
+			extrasomething = self.autoboxer
 		elif method == Box.CENTERPROPAGATE:
-			extrasomething = self.autoBoxer.getHighResTemplateImage()
+			extrasomething = self.autoboxer.get_high_res_template_image()
 		else:
 			print "error, the method you specified is unsupported in Boxable:",method
 		
@@ -1275,149 +1264,143 @@ class Boxable:
 				
 		return 1
 
-	def setStamps(self,autoBoxerStateTS,templateTS,autoboxer_unique_id):
+	def set_stamps(self,autoboxer_state_ts,template_ts,autoboxer_unique_id):
 		'''
 		A convenience function for setting all three important time stamps/ids at once
 		
 		'''
-		self.setAutoBoxerStateTS(autoBoxerStateTS)
-		self.setTemplateTS(templateTS)
-		self.setAutoBoxerID(autoboxer_unique_id)
+		self.set_autoboxer_state_ts(autoboxer_state_ts)
+		self.set_template_ts(template_ts)
+		self.set_autoboxer_id(autoboxer_unique_id)
 
-	def getAutoBoxerStateTS(self):
-		return self.autoBoxerStateTS
+	def get_auto_boxer_state_ts(self):
+		return self.autoboxer_state_ts
 	
-	def setAutoBoxerStateTS(self,autoBoxerStateTS):
-		self.autoBoxerStateTS = autoBoxerStateTS
+	def set_autoboxer_state_ts(self,autoboxer_state_ts):
+		self.autoboxer_state_ts = autoboxer_state_ts
 	
-	def getTemplateTS(self):
-		return self.templateTS
+	def get_template_ts(self):
+		return self.template_ts
 	
-	def setTemplateTS(self,templateTS):
-		self.templateTS = templateTS
+	def set_template_ts(self,template_ts):
+		self.template_ts = template_ts
 
-	def getAutoBoxerID(self):
-		return self.autoBoxerID
+	def get_autoboxer_id(self):
+		return self.autoboxer_id
 	
-	def setAutoBoxerID(self,autoboxer_unique_id):
-		self.autoBoxerID = autoboxer_unique_id
+	def set_autoboxer_id(self,autoboxer_unique_id):
+		self.autoboxer_id = autoboxer_unique_id
 	
-	def writeToDB(self):
+	def write_to_db(self):
 		'''
 		Writes fundamentally important information to the database
 		'''
-		projectdb = EMProjectDB()
+		project_db = EMProjectDB()
 		
 		try:
-			data = projectdb[self.getDDKey()]
+			data = project_db[self.get_dd_key()]
 		except:
 			data = {}
 			
-		data["auto_boxer_state_TS"] = self.getAutoBoxerStateTS()
-		data["template_TS"] = self.getTemplateTS()
+		data["autoboxer_state_TS"] = self.get_auto_boxer_state_ts()
+		data["template_TS"] = self.get_template_ts()
 		data["frozen_state"] = self.__frozen
 		data["quality"] = self.__quality
-		data["auto_boxer_unique_id"] = self.getAutoBoxerID()
+		data["autoboxer_unique_id"] = self.get_autoboxer_id()
 		
-		projectdb.setKeyEntry(self.getDDKey(),data)
+		project_db.set_key_entry(self.get_dd_key(),data)
 	
-	def setKeyEntryToIDD(self,key,object):
-		setKeyEntryIDD(self.imagename,key,object)
+	def set_key_entryToIDD(self,key,object):
+		set_idd_key_entry(self.image_name,key,object)
 		
-	def getImageName(self):
-		return self.imagename
+	def get_image_name(self):
+		return self.image_name
 	
-	def setAutoBoxer(self,autoBoxer):
-		self.autoBoxer = autoBoxer
-		
-	def getCorrelation(self):
-		return self.correlation
+	def set_autoboxer(self,autoboxer):
+		self.autoboxer = autoboxer
 	
-	def extendBoxes(self,boxes):
+	def extend_boxes(self,boxes):
 		self.boxes.extend(boxes)
 		
-	def isFrozen(self):
+	def is_frozen(self):
 		return self.__frozen
 	
-	def isInteractive(self):
-		return not (self.isFrozen() or self.isExcluded())
+	def is_interactive(self):
+		return not (self.is_frozen() or self.is_excluded())
 	
-	def toggleFrozen(self):
+	def toggle_frozen(self):
 		self.__frozen = not self.__frozen
 		
-	def setFrozen(self,frozen):
+	def set_frozen(self,frozen):
 		self.__frozen = frozen
-	
-	
-	def getDDKey(self):
+
+	def get_dd_key(self):
 		'''
 		Get Database Dictionary Key
 		'''
-		return getIDDKey(self.imagename)
+		return get_idd_key(self.image_name)
 	
-	def getAutoBoxerFromDB(self):
+	def get_auto_boxer_from_db(self):
 		
-		projectdb = EMProjectDB()
-		data = projectdb[self.getDDKey()]
-		self.autoBoxerID = data["auto_boxer_unique_id"]
-		trimAutoBoxer = projectdb[self.autoBoxerID]
-		self.autoBoxer = SwarmAutoBoxer(self.parent)
-		self.autoBoxer.become(trimAutoBoxer)
+		project_db = EMProjectDB()
+		data = project_db[self.get_dd_key()]
+		self.autoboxer_id = data["autoboxer_unique_id"]
+		trim_autoboxer = project_db[self.autoboxer_id]
+		self.autoboxer = SwarmAutoBoxer(self.parent)
+		self.autoboxer.become(trim_autoboxer)
 		
-	def setQuality(self,quality):
+	def set_quality(self,quality):
 		if quality not in Boxable.QUALITY_META_DATA:
 			print "error",quality,"is not in",Boxable.QUALITY_META_DATA,"can't do anything"
 			return
 		else:
 			self.__quality =  Boxable.QUALITY_META_DATA_MAP[quality]
 	
-	def isExcluded(self):
+	def is_excluded(self):
 		return self.__quality == Boxable.QUALITY_META_DATA_MAP[Boxable.EXCLUDE]
 	
-	def getQuality(self):
+	def get_quality(self):
 		return self.__quality
 		
-	def checkAndStoreImageTagInDB(self):
+	def check_store_image_tag_db(self):
 		#print "in cheack and Store image tag in db"
-		projectdb = EMProjectDB()
-		data = projectdb[self.getDDKey()]
-		newimagetag = get_file_tag(self.imagename)
+		project_db = EMProjectDB()
+		data = project_db[self.get_dd_key()]
+		newimagetag = get_file_tag(self.image_name)
 		try:
 			oldimagetag = data["image_tag"]
 		except:
 			#print "stored image tag for first time"
 			data["image_tag"] = newimagetag
-			projectdb.setKeyEntry(self.getDDKey(),data)
+			project_db.set_key_entry(self.get_dd_key(),data)
 			return
 		
 		if oldimagetag != newimagetag:
-			#print "warning with respect to",self.imagename,"- you are using information in the database that was generated using an image of type",newimagetag,"on an image of type",oldimagetag,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
+			#print "warning with respect to",self.image_name,"- you are using information in the database that was generated using an image of type",newimagetag,"on an image of type",oldimagetag,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
 			return
 		else:
 			#print "storing image tag"
 			data["image_tag"] = newimagetag
-			projectdb.setKeyEntry(self.getDDKey(),data)
+			project_db.set_key_entry(self.get_dd_key(),data)
 
 		
-	def getQualityFromDB(self):
-		projectdb = EMProjectDB()
-		data = projectdb[self.getDDKey()]
-		self.__quality = data["quality"]
+	def get_quality_from_db(self):
+		self.__quality = get_idd_key_entry(self.image_name,"quality")
 		
-	def getFrozenFromDB(self):
-		projectdb = EMProjectDB()
-		data = projectdb[self.getDDKey()]
-		self.__frozen = data["frozen_state"]
+		if self.__quality == None:
+			self.__quality = Boxable.QUALITY_META_DATA_MAP[Boxable.AVERAGE]
 		
-	def getDBTimeStamps(self):
+	def get_frozen_from_db(self):
+		self.__frozen = get_idd_key_entry(self.image_name,"frozen_state")
+		if self.__frozen == None:
+			self.__frozen = False
 		
-		projectdb = EMProjectDB()
-		data = projectdb[self.getDDKey()]
-		self.autoBoxerStateTS = data["auto_boxer_state_TS"]
-		self.templateTS = data["template_TS"] 
-		self.autoBoxerID = data["auto_boxer_unique_id"]
+	def get_db_stamps(self):
+		self.autoboxer_state_ts = get_idd_key_entry(self.image_name,"autoboxer_state_TS")
+		self.template_ts = get_idd_key_entry(self.image_name,"template_ts")
+		self.autoboxer_id = get_idd_key_entry(self.image_name,"autoboxer_unique_id")
 	
-	def appendStoredAutoBoxes(self,trimboxes):
+	def append_stored_auto_boxes(self,trimboxes):
 		'''
 		Sometimes this functionality is needed when the currently stored auto-selected
 		boxes are not removed prior to the execution of autoboxing - in this case 
@@ -1427,13 +1410,13 @@ class Boxable:
 			if not (box.ismanual or box.isref):
 				trimboxes.append(TrimBox(box))
 	
-	def getAutoSelectedFromDB(self,forcereadall=False):	
+	def get_auto_selected_from_db(self,forcereadall=False):	
 		
-		trimboxes = getKeyEntryIDD(self.imagename,"auto_boxes")
+		trimboxes = get_idd_key_entry(self.image_name,"auto_boxes")
 		if trimboxes == None or len(trimboxes) == 0:
 			return 0
 		
-		movedboxes = getKeyEntryIDD(self.imagename,"moved_boxes") # this may potentially be None
+		movedboxes = get_idd_key_entry(self.image_name,"moved_boxes") # this may potentially be None
 		
 		for trimbox in trimboxes:
 			if trimbox.ismanual or trimbox.isref:
@@ -1444,7 +1427,7 @@ class Boxable:
 				
 				# had to do conversion stuff so pickle would work
 				box.become(trimbox)
-				box.setImageName(self.imagename)
+				box.set_image_name(self.image_name)
 				if forcereadall:
 					box.changed = True
 				if box.isref and not forcereadall:
@@ -1459,32 +1442,32 @@ class Boxable:
 				
 				# The box may have a more correct centering
 				if movedboxes != None and len(movedboxes) != 0:
-					box.updatePositionFromDB(movedboxes)
+					box.update_position_from_data(movedboxes)
 				self.boxes.append(box)
 		
 		# Sometimes an exclusion area is added after the autoboxing has occured, in which case
 		# autoboxes in the db will be in the excluded area and hence we have to make sure they 
 		# are not included
-		self.updateExcludedBoxes()	
+		self.update_excluded_boxes()	
 		
 		#print "Added",len(self.boxes)-a," autoboxes"
 	
-	def getReferencesFromDB(self):
+	def get_references_from_db(self):
 		#debug
 		#a = len(self.boxes)
 		
-		refboxes = getKeyEntryIDD(self.imagename,"reference_boxes")
+		refboxes = get_idd_key_entry(self.image_name,"reference_boxes")
 		if refboxes == None or len(refboxes) == 0:
 			return 0
 		
-		movedboxes = getKeyEntryIDD(self.imagename,"moved_boxes") # movedboxes is potentially None
+		movedboxes = get_idd_key_entry(self.image_name,"moved_boxes") # movedboxes is potentially None
 		
 		for trimbox in refboxes:
 			box = Box()
 			
 			# had to do conversion stuff so pickle would work
 			box.become(trimbox)
-			box.setImageName(self.imagename)
+			box.set_image_name(self.image_name)
 			box.changed = True
 			box.rorig = 0			# RGB red
 			box.gorig = 0			# RGB green
@@ -1495,13 +1478,13 @@ class Boxable:
 			
 			# The box may have a more correct centering
 			if movedboxes != None and len(movedboxes) != 0:
-				box.updatePositionFromDB(movedboxes)
+				box.update_position_from_data(movedboxes)
 			self.boxes.append(box)
 
 		#print "Added",len(self.boxes)-a," references"
-	def getManualFromDB(self):
+	def get_manual_boxes_from_db(self):
 		#a = len(self.boxes) # debug		
-		manualboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
+		manualboxes = get_idd_key_entry(self.image_name,"manual_boxes")
 		if manualboxes == None or len(manualboxes) == 0:
 			return 0
 	
@@ -1510,7 +1493,7 @@ class Boxable:
 			
 			# had to do conversion stuff so pickle would work
 			box.become(trimbox)
-			box.setImageName(self.imagename)
+			box.set_image_name(self.image_name)
 			box.changed = True
 			box.rorig = 1			# RGB red
 			box.gorig = 1			# RGB green
@@ -1521,23 +1504,23 @@ class Boxable:
 			self.boxes.append(box)
 		#print "Added",len(self.boxes)-a," manual boxes"
 
-	def getCoordFileName(self):
-		return strip_file_tag(self.imagename)+".box"
+	def get_coord_file_name(self):
+		return strip_file_tag(self.image_name)+".box"
 		
-	def writecoords(self,boxsize=-1,force=False,verbose=True):
+	def write_coord_file(self,box_size=-1,force=False,verbose=True):
 		'''
-		If boxsize is -1 then the current boxsize is used to write output
+		If box_size is -1 then the current box_size is used to write output
 		If force is True then the old file with the same name is written over (as opposed to backed up)
 		
 		'''
 		if len(self.boxes) == 0:
-			print "no boxes to write, doing nothing. Image name is",self.imagename
+			print "no boxes to write, doing nothing. Image name is",self.image_name
 		else:
-			boxname = self.getCoordFileName()
+			boxname = self.get_coord_file_name()
 			if file_exists(boxname):
 				if not force:
 					f=file(boxname,'r')
-					boxname_backup =  strip_file_tag(self.imagename)+str(time()) + ".box.bak"
+					boxname_backup =  strip_file_tag(self.image_name)+str(time()) + ".box.bak"
 					print "warning, found box name",boxname,"- am renaming it to", boxname_backup, "- use force to overwrite this behavior"
 					fbak=file(boxname_backup,'w')
 					fbak.writelines(f.readlines())
@@ -1548,78 +1531,78 @@ class Boxable:
 				
 			f=file(boxname,'w')
 			
-			if verbose: print "writing",self.numBoxes(),"box coordinates to file",boxname
+			if verbose: print "writing",self.num_boxes(),"box coordinates to file",boxname
 			
 			for box in self.boxes:
-				if boxsize != -1:
+				if box_size != -1:
 					# FOO - this will not work if the box dimensions are not equal...
-					origboxsize = box.xsize
-					if origboxsize != box.ysize:
+					origbox_size = box.xsize
+					if origbox_size != box.ysize:
 						print "error, uniform box dimensions are not supported"
 						return
-					box.changeBoxSize(boxsize)
+					box.change_box_size(box_size)
 						
 				f.write(str(int(box.xcorner))+'\t'+str(int(box.ycorner))+'\t'+str(box.xsize)+'\t'+str(box.ysize)+'\n')
 				
-				if boxsize != -1:
+				if box_size != -1:
 					# change it back
-					box.changeBoxSize(origboxsize)
+					box.change_box_size(origbox_size)
 
 			f.close()
 			
-	def getImageFileName(self,imageformat="hdf"):
-		return strip_file_tag(self.imagename)+"."+imageformat
+	def get_image_file_name(self,imageformat="hdf"):
+		return strip_file_tag(self.image_name)+"."+imageformat
 
-	def writeboximages(self,boxsize=-1,force=False,imageformat="hdf",verbose=True):
+	def write_box_images(self,box_size=-1,force=False,imageformat="hdf",verbose=True):
 		'''
-		If boxsize is -1 then the current boxsize is used to write output
+		If box_size is -1 then the current box_size is used to write output
 		If force is True then output is written over (if it already exists) - else an error is printed and nothing happens
 		
 		'''
 		if len(self.boxes) == 0:
-			print "no boxes to write, doing nothing. Image name is",self.imagename
+			print "no boxes to write, doing nothing. Image name is",self.image_name
 		else:
-			imagename = self.getImageFileName(imageformat)
+			image_name = self.get_image_file_name(imageformat)
 			
-			if file_exists(imagename):
+			if file_exists(image_name):
 				if not force:
-					print "warning, file already exists - ", imagename, " doing nothing. Use force to override this behavior"
+					print "warning, file already exists - ", image_name, " doing nothing. Use force to override this behavior"
 					return
 				else:
-					remove_file(imagename)
+					remove_file(image_name)
 			
-			if verbose:	print "writing",self.numBoxes(),"boxed images to", imagename
+			if verbose:	print "writing",self.num_boxes(),"boxed images to", image_name
 			
 			for box in self.boxes:
-				if boxsize != -1:
+				if box_size != -1:
 					# FOO - this will not work if the box dimensions are not equal...
-					origboxsize = box.xsize
-					if origboxsize != box.ysize:
+					origbox_size = box.xsize
+					if origbox_size != box.ysize:
 						print "error, uniform box dimensions are not supported"
 						return
-					box.changeBoxSize(boxsize)
+					box.change_box_size(box_size)
 						
-				image = box.getBoxImage()
+				image = box.get_box_image()
 				
 				image.set_attr("original_x_corner",box.xcorner)
 				image.set_attr("original_y_corner",box.ycorner)
 				image.set_attr("original_x_size",box.xsize)
 				image.set_attr("original_y_size",box.ysize)
 				
-				image.set_attr("originating_imagename",self.getImageName())
+				image.set_attr("originating_image_name",self.get_image_name())
 				
-				image.write_image(imagename,-1)
+				image.write_image(image_name,-1)
 				
-				if boxsize != -1:
-					box.changeBoxSize(origboxsize)
+				if box_size != -1:
+					box.change_box_size(origbox_size)
 
-	def moveBox(self,box,dx,dy,boxnum):
+	def move_box(self,box,dx,dy,box_num):
 		if box.ismanual:
-			self.moveManualBox(box,dx,dy)
+			self.move_manual_box(box,dx,dy)
 		
 		box.move(dx,dy)
 
-	def addbox(self,box):	
+	def add_box(self,box):	
 		if not isinstance(box,Box):
 			print "You can not add a box to this box set if it is not of type Box"
 			return;
@@ -1640,23 +1623,23 @@ class Boxable:
 			box.r = 1
 			box.g = 1
 			box.b = 1
-			self.cacheManualBox(box)
+			self.cache_manual_box(box)
 		
 		#print "adding box",box.xcorner,box.ycorner,box.xsize,box.ysize
 		self.boxes.append(box)
 		self.refboxes.append(box)
 	
-	def cacheManualBox(self,box):
-		manualboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
+	def cache_manual_box(self,box):
+		manualboxes = get_idd_key_entry(self.image_name,"manual_boxes")
 		
 		if manualboxes == None:
 			manualboxes = []
 		manualboxes.append(TrimBox(box))
-		setKeyEntryIDD(self.imagename,"manual_boxes",manualboxes)
+		set_idd_key_entry(self.image_name,"manual_boxes",manualboxes)
 
-	def deleteManualBox(self,box):
+	def delete_manual_box(self,box):
 		
-		manualboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
+		manualboxes = get_idd_key_entry(self.image_name,"manual_boxes")
 		
 		if manualboxes == None or len(manualboxes) == 0:
 			print "error, you can't move a manual box if there are none!"
@@ -1666,7 +1649,7 @@ class Boxable:
 		for j,b in enumerate(manualboxes):
 			if b.xcorner == box.xcorner and b.ycorner == box.ycorner:
 				manualboxes.pop(j)
-				setKeyEntryIDD(self.imagename,"manual_boxes",manualboxes)
+				set_idd_key_entry(self.image_name,"manual_boxes",manualboxes)
 				found = True
 				break
 		
@@ -1675,8 +1658,8 @@ class Boxable:
 			return
 		
 	
-	def moveManualBox(self,box,dx,dy):
-		manualboxes = getKeyEntryIDD(self.imagename,"manual_boxes")
+	def move_manual_box(self,box,dx,dy):
+		manualboxes = get_idd_key_entry(self.image_name,"manual_boxes")
 		
 		if manualboxes == None or len(manualboxes) == 0:
 			print "error, you can't move a manual box if there are none!"
@@ -1688,7 +1671,7 @@ class Boxable:
 				b.xcorner += dx
 				b.ycorner += dy
 				found = True
-				setKeyEntryIDD(self.imagename,"manual_boxes",manualboxes)
+				set_idd_key_entry(self.image_name,"manual_boxes",manualboxes)
 				break
 		
 		if not found:
@@ -1696,10 +1679,10 @@ class Boxable:
 			return
 		
 	
-	def delbox(self,i):
+	def delete_box(self,i):
 		tmp = self.boxes.pop(i)
 		if tmp.ismanual:
-			self.deleteManualBox(tmp)
+			self.delete_manual_box(tmp)
 		#yuck, this is horribly inefficient
 		for j,box in enumerate(self.refboxes):
 			if box.isref and box.TS == tmp.TS:
@@ -1708,50 +1691,50 @@ class Boxable:
 			
 		return False
 	
-	def deletenonrefs(self,updatedisplay=True):
+	def delete_non_refs(self,updatedisplay=True):
 		boxestodelete = []
 		n = len(self.boxes)
 		for m in range(n-1,-1,-1):
 			box = self.boxes[m]
 			if box.isref == False and box.ismanual == False:
-				self.delbox(m)
+				self.delete_box(m)
 				boxestodelete.append(m)
 
 		if updatedisplay:
-			self.parent.deleteDisplayShapes(boxestodelete)
+			self.parent.delete_display_shapes(boxestodelete)
 	
-	def addnonrefs(self,boxes):
+	def add_non_refs(self,boxes):
 		'''
 		Add boxes that are stored in eman1 format
 		box[0] = xnorner, box[1] = ycorner, box[2] = xsize, box[3] = ysize
 		'''
 		for box in boxes:
 			b = Box(box[0],box[1],box[2],box[3])
-			b.setImageName(self.imagename)
+			b.set_image_name(self.image_name)
 			b.isref = False
 			b.changed = True
 			self.boxes.append(b)
 
-	def numBoxes(self):
+	def num_boxes(self):
 		return len(self.boxes)
 	
-	def updateBoxSize(self,boxsize):
+	def update_box_size(self,box_size):
 		'''
 		Updates only the box size and corner coordinates
 		Switches the changed flag to True to trigger redisplay (but the calling function
 		is responsible for knowing and testing for this)
 		'''
 		# do nothing if it's the same size as what we already have
-		if  boxsize == self.boxsize: return
+		if  box_size == self.box_size: return
 		
 		for box in self.boxes:
-			if box.xsize != boxsize:
-				box.xcorner -= (boxsize-box.xsize)/2
-				box.xsize = boxsize
+			if box.xsize != box_size:
+				box.xcorner -= (box_size-box.xsize)/2
+				box.xsize = box_size
 				box.changed = True
-			if box.ysize != boxsize:
-				box.ycorner -= (boxsize-box.ysize)/2
-				box.ysize = boxsize
+			if box.ysize != box_size:
+				box.ycorner -= (box_size-box.ysize)/2
+				box.ysize = box_size
 				box.changed = True
 			
 			box.image = None
@@ -1759,13 +1742,12 @@ class Boxable:
 
 		self.fprink = -1
 		self.flattenimager = -1
-		self.boxsize = boxsize
-		self.correlation = None
+		self.box_size = box_size
 		
-	def getfootprintshrink(self):
+	def get_footprint_shrink(self):
 		if self.fpshrink == -1:
 			shrink = 1
-			tn = self.boxsize/2
+			tn = self.box_size/2
 			while ( tn >= 32 ):
 				tn /= 2
 				shrink *= 2
@@ -1773,66 +1755,46 @@ class Boxable:
 		
 		return self.fpshrink
 		
-	def getBestShrink(self):
+	def get_best_shrink(self):
 		'''
 		FIXME - there should probably be a more well established framework for doing this
 		At the moment it is possible that the self.autBoxer is actually None, which isn't good.	
 		'''
-		if self.autoBoxer != None:
-			return self.autoBoxer.getBestShrink()
+		if self.autoboxer != None:
+			return self.autoboxer.get_best_shrink()
 		else:
 			print 'warning, there is no autoboxer set, am not sure how to shrink, returning 1 as the shrink factor'
 			return 1
 		
-	def updateCorrelation(self,template):
-		'''
-		A function that will update the correlation image if the correlationupdate flag is set to true
-		Useful if a template has been updated somewhere, yet many references originate from this BoxingOject -
-		All the references will call this function, but we only need to act the first time it happens
-		
-		Be warned - whoever opens the gate by setting self.allowcorrelationupdate to True should set it 
-		to False once their done with the specialized operation
-		
-		'''
-		if self.allowcorrelationupdate:
-			self.templateTS = template.getTemplateTS() # Time Stamp, used for efficiency in autoBox to save an unecessary correlation update
-			self.__genCorrelation(template)
-			
-			# I made a conscientious decision to leave the responsibility of turning this flag off
-			# to that of the calling program/function. This uncommented line is left only for documentation purposes
-			#self.allowcorrelationupdate = False
-
-
-	def __genCorrelation(self,template):
-		'''
-		The force update flag is only meant to be used if the box size has changed - this changes 
-		the shrink factor, and also affects the background flattening process.
-		'''
-		cfimage = self.getSmallImage()
-		
+	def get_correlation_image(self,template):
 		cache = FLCFImageCache()
-		self.correlation = cache.getImage(self.imagename,cfimage,template)
+		cfimage = self.get_small_image()
+		correlation = cache.get_image(self.image_name,cfimage,template)
 		
-		return self.correlation
+		
+		# the template time stamp may not be necessary ultimately, seeing as the correlation image
+		# (which has its own template time stamp) is tied to this Boxable by the image_name itself
+		template_ts = get_idd_key_entry(self.image_name,"template_ts")
+		if template_ts != template.get_template_ts():    
+			set_idd_key_entry(self.image_name,"template_ts",template.get_template_ts())
+			self.template_ts = template.get_template_ts() # this shouldn't be necessary in future
+			
+		return correlation
 	
-	def getCorrelationImage(self):
-		return self.correlation
-	
-	
-	def getSmallImage(self):
+	def get_small_image(self):
 		cfImageCache = CFImageCache()
-		return  cfImageCache.getImage(self.imagename,self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
+		return  cfImageCache.get_image(self.image_name,self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
 	
-	def updateExcludedBoxes(self, useinternal=True,exclusionimage= None):
+	def update_excluded_boxes(self, useinternal=True,exclusionimage= None):
 		'''
 		
 		'''
 		if useinternal:
-			exclusionimage = self.getExclusionImage()
+			exclusionimage = self.get_exclusion_image()
 
 		lostboxes = []
 			
-		invshrink = 1.0/self.getBestShrink()
+		invshrink = 1.0/self.get_best_shrink()
 		n = len(self.boxes)
 		refs = []
 		for i in range(n-1,-1,-1):
@@ -1848,25 +1810,25 @@ class Boxable:
 	
 		return [lostboxes,refs]
 	
-	def addExclusionParticle(self,box):
+	def add_exclusion_particle(self,box):
 		
 		xx = box.xcorner+box.xsize/2-1
 		yy = box.ycorner+box.ysize/2-1
 		
-		self.addExclusionArea(None,xx,yy,box.xsize/2)
+		self.add_exclusion_area(None,xx,yy,box.xsize/2)
 	
-	def addExclusionArea(self,UNUSEDtype,x,y,radius,flag=ERASE):
+	def add_exclusion_area(self,UNUSEDtype,x,y,radius,flag=ERASE):
 		'''
 		UNUSEDtype was meant to be a flag for adding other exclusion areas like squares
 		At the moment only circular exclusion areas can be written
 		'''
-		#print "Add exclusion area using",self.getBestShrink()
-		xx = int(x/self.getBestShrink())
-		yy = int(y/self.getBestShrink())
+		#print "Add exclusion area using",self.get_best_shrink()
+		xx = int(x/self.get_best_shrink())
+		yy = int(y/self.get_best_shrink())
 		
-		rr = int(radius/self.getBestShrink())
+		rr = int(radius/self.get_best_shrink())
 		bciCache = BinaryCircleImageCache()
-		mask = bciCache.getImage(rr)
+		mask = bciCache.get_image(rr)
 		
 		
 		if flag == Boxable.ERASE:
@@ -1877,26 +1839,26 @@ class Boxable:
 			print "error - unknow flag:",flag,"doing nothing"
 			return
 		
-		BoxingTools.set_region(self.getExclusionImage(),mask,xx,yy,val)
+		BoxingTools.set_region(self.get_exclusion_image(),mask,xx,yy,val)
 		
 	
-	def getExclusionImage(self,force=False):
+	def get_exclusion_image(self,force=False):
 		
 		if self.exclusionimage == None or force:
 			
-			si = self.getSmallImage()
+			si = self.get_small_image()
 			eicache = ExclusionImageCache()
-			self.exclusionimage = eicache.getImage(self.imagename,si.get_xsize(),si.get_ysize())
+			self.exclusionimage = eicache.get_image(self.image_name,si.get_xsize(),si.get_ysize())
 	
 		return self.exclusionimage
 	
 	def classify(self):
 		
 		# accrue all params
-		n = self.autoBoxer.optprofileradius+1
+		n = self.autoboxer.optprofileradius+1
 		for box in self.boxes:
 			# set the force flag true or else the optprofile won't be set when the peak is 'faulty'
-			box.updateParams(self.autoBoxer,False,True)
+			box.update_params(self.autoboxer,False,True)
 		
 		v = []
 		for box in self.boxes:
@@ -1908,9 +1870,9 @@ class Boxable:
 			v.append(b)
 			
 		cl = BoxingTools.classify(v,4)
-		self.parent.updateboxcolors(cl)
+		self.parent.update_box_colors(cl)
 	
-	def genRefImages(self):
+	def gen_ref_images(self):
 		tmpimage = "tmpparticles.img"
 		self.parent.writeBoxesTo(tmpimage)
 		
@@ -1928,7 +1890,7 @@ class Boxable:
 	def process_start(self):
 		print "received process start signal"
 		
-	def boxsel(self,event,lc):
+	def box_selected(self,event,lc):
 		#print "selected",lc[0]
 		for box in self.boxes:
 			if box.group == lc[0]:
@@ -1942,7 +1904,7 @@ class Boxable:
 				box.b = box.borig
 				box.changed = True
 		self.imagemx2.setSelected(lc[0])
-		self.parent.boxDisplayUpdate()
+		self.parent.box_display_update()
 		
 	def process_finished(self,int):
 		try:
@@ -1955,21 +1917,21 @@ class Boxable:
 		self.imagemx2p = EMImage(e)
 		self.imagemx2 = self.imagemx2p.child
 		self.imagemx2.setmmode("app")
-		QtCore.QObject.connect(self.imagemx2,QtCore.SIGNAL("mousedown"),self.boxsel)
+		QtCore.QObject.connect(self.imagemx2,QtCore.SIGNAL("mousedown"),self.box_selected)
 		self.imagemx2p.show()
 		
 		ef = []
 		for image in e:
 			image.process_inplace("normalize.edgemean")
-			if self.getBestShrink() != 1:
-				image = image.process("math.meanshrink",{"n":self.getfootprintshrink()})	
+			if self.get_best_shrink() != 1:
+				image = image.process("math.meanshrink",{"n":self.get_footprint_shrink()})	
 			ef.append(image.make_footprint())
 		
 		for box in self.boxes:
 			best = -1
 			group = -1
 			for i,g in enumerate(ef): 
-				s = box.getFootPrint(self.getfootprintshrink()).cmp("optvariance",g,{"matchfilt":1,"matchamp":1})
+				s = box.get_foot_print(self.get_footprint_shrink()).cmp("optvariance",g,{"matchfilt":1,"matchamp":1})
 				# REMEMBER - cmp returns values that have potentially been negated - a smaller value is better
 				if best == -1 or s < best:
 					group = i
@@ -1982,33 +1944,33 @@ class Boxable:
 		
 		print "received finish signal"
 
-def getIDDKey(imagename):
-	return strip_file_tag(imagename)+"_DD"
+def get_idd_key(image_name):
+	return strip_file_tag(image_name)+"_DD"
 
-def setKeyEntryIDD(imagename,key,object):
+def set_idd_key_entry(image_name,key,object):
 	'''
 	write a key/object pair to the Image Database Dictionary associat
 	'''
-	dbkey = getIDDKey(imagename)
+	dbkey = get_idd_key(image_name)
 	
-	projectdb = EMProjectDB()
+	project_db = EMProjectDB()
 	try:
-		data = projectdb[dbkey]
+		data = project_db[dbkey]
 	except:
 		data = {}
 		
 	data[key] = object
-	#projectdb[self.getDDKey()] = data
-		#projectdb.sync()
-	projectdb.setKeyEntry(dbkey,data)
+	#project_db[self.get_dd_key()] = data
+		#project_db.sync()
+	project_db.set_key_entry(dbkey,data)
 
 
-def getKeyEntryIDD(imagename,key):
-	dbkey = getIDDKey(imagename)
+def get_idd_key_entry(image_name,key):
+	dbkey = get_idd_key(image_name)
 	
-	projectdb = EMProjectDB()
+	project_db = EMProjectDB()
 	try:
-		data = projectdb[dbkey]
+		data = project_db[dbkey]
 		return data[key] 
 	except:
 		return None
@@ -2022,7 +1984,7 @@ class AutoBoxer:
 	def __init__(self):
 		self.version = 1.0
 
-	def getTemplate(self):
+	def get_template(self):
 		'''This should return a single template which is an EMData object'''
 		raise Exception
 	
@@ -2032,7 +1994,7 @@ class AutoBoxer:
 		'''
 		raise Exception
 	
-	def addReference(self,box):
+	def add_reference(self,box):
 		'''
 		add a reference box - the box should be in the format of a Box object, see above
 		Returns 0 if there is a problem, returns 1 if it's all good
@@ -2040,43 +2002,43 @@ class AutoBoxer:
 		'''
 		raise Exception
 	
-	def removeReference(self,box):
+	def remove_reference(self,box):
 		'''
 		Remove a reference box - the box should in the format of a Box object, see above
 		Pops a reference from a list
 		'''
 		raise Exception
 	
-	def referenceMoved(self,ref):
+	def reference_moved(self,ref):
 		'''
 		If a reference was moved interactively in the interface this is the function that should be called
 		'''
 		raise Exception
 
-	def getTemplate(self):
+	def get_template(self):
 		'''
 		Return the template that is being used. Returns None if there is not template
 		'''
 		raise Exception
 
-	def setBoxSize(self,boxsize):
+	def set_box_size(self,box_size):
 		'''
-		Hard set the boxsize. Note that nothing is done to the reference boxes. It is
+		Hard set the box_size. Note that nothing is done to the reference boxes. It is
 		assumed whichever part of the program calls this function also updates the Box objects
 		independently (which implicitly affects the boxes stored internally in the AutoBoxer
 		class, because it only ever stores programmatic references)
 		'''
 		raise Exception
 	
-	def autoBox(self,correlation,boxes=[],exclusion=None):
+	def auto_box(self,correlation,boxes=[],exclusion=None):
 		'''
-		The main autoBox routine. The calling program should pass in its own correlation map (EMData), and optionally
+		The main auto_box routine. The calling program should pass in its own correlation map (EMData), and optionally
 		an exclusion map of ones and zeros (0 means include, non zero means exclude). Also a list of boxes that will
-		not be removed prior to the autoBoxing (and hence probably have associated excluded regions in the exlcusion
+		not be removed prior to the auto_boxing (and hence probably have associated excluded regions in the exlcusion
 		image, but this is beside the point), The model of use here is that
 		the calling program should get the current template from the AutoBoxer to generate the correlation map. The
 		calling program should be able to cache the correlation map, so should be able to detect if there's been
-		a template update by asking for the current set of references (getReferences) and cross checking against a list of its own.
+		a template update by asking for the current set of references (get_references) and cross checking against a list of its own.
 		@Returns a list of Boxes
 		'''
 		raise Exception
@@ -2090,14 +2052,14 @@ class TrimSwarmTemplate:
 		for ref in swarmTemplate.refboxes:
 			self.refboxes.append(TrimBox(ref))
 		self.template = swarmTemplate.template	# an EMData object that is the template
-		self.templateTS = swarmTemplate.templateTS 	# a time stamp that records when the template was generate
+		self.template_ts = swarmTemplate.template_ts 	# a time stamp that records when the template was generate
 
 class SwarmTemplate:
-	def __init__(self,autoBoxer):
+	def __init__(self,autoboxer):
 		self.refboxes = []		# this will eventually be a list of Box objects
 		self.template = None	# an EMData object that is the template
-		self.templateTS = -1 	# a time stamp that records when the template was generate
-		self.autoBoxer = autoBoxer
+		self.template_ts = -1 	# a time stamp that records when the template was generate
+		self.autoboxer = autoboxer
 	
 	def become(self,trimSwarmTemplate):
 		if not isinstance(trimSwarmTemplate,TrimSwarmTemplate):
@@ -2106,41 +2068,41 @@ class SwarmTemplate:
 		else:
 			
 			self.template = trimSwarmTemplate.template	# an EMData object that is the template
-			self.templateTS = trimSwarmTemplate.templateTS 	# a time stamp that records when the template was generate
+			self.template_ts = trimSwarmTemplate.template_ts 	# a time stamp that records when the template was generate
 			self.refboxes = []		# this will eventually be a list of Box objects
 			for ref in trimSwarmTemplate.refboxes:
 				b = Box()
 				b.become(ref)
 				self.refboxes.append(b)
 			
-	def getTemplate(self):
+	def get_template(self):
 		return self.template
 	
-	def getImage(self):
-		# FIXME - getTemplate should be replaced with this function
+	def get_image(self):
+		# FIXME - get_template should be replaced with this function
 		return self.template
 	
-	def getTemplateTS(self):
+	def get_template_ts(self):
 		return self.template.get_attr("template_time_stamp")
 	
-	def getReferences(self):
+	def get_references(self):
 		#print "asking template for references, there are ",len(self.refboxes)
 		return self.refboxes
 	
-	def appendReference(self,ref):
+	def append_reference(self,ref):
 		if isinstance(ref,Box):
 			self.refboxes.append(ref)
 		else:
 			print "error, can't append that reference, it's not of type Box"
 	
-	def changeBoxSize(self,boxsize):
+	def change_box_size(self,box_size):
 		if len(self.refboxes) == 0: return
-		elif boxsize == self.refboxes[0].xsize: return
+		elif box_size == self.refboxes[0].xsize: return
 		else:
 			for box in self.refboxes:
-				box.changeBoxSize(boxsize)
+				box.change_box_size(box_size)
 	
-	def removeReference(self,box):
+	def remove_reference(self,box):
 		'''
 		Returns 1 if the reference was removed
 		Returns 0 if it wasn't found
@@ -2156,14 +2118,14 @@ class SwarmTemplate:
 				
 		return 0
 	
-	def genTemplate(self):
+	def gen_template(self):
 		'''
 		Returns 0 if there are errors
 		Return 1 if not
 		'''
 		# you can only generate a template if there are references
 		if len(self.refboxes) <= 0: 
-			print 'error, cant call private function genTemplate when there are no refboxes, this is an internal error'
+			print 'error, cant call private function gen_template when there are no refboxes, this is an internal error'
 			return 0
 		
 		images_copy = []
@@ -2172,7 +2134,7 @@ class SwarmTemplate:
 			# by the isanchor flag
 			if ref.isanchor == False:
 				continue
-			image = ref.getSmallBoxImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
+			image = ref.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
 			image.write_image("refs.hdf",-1)
 			images_copy.append(image)
 		if len(images_copy) == 0:
@@ -2202,7 +2164,7 @@ class SwarmTemplate:
 		#black.write_image("aligned_refs.img",-1)
 		
 		#ave.write_image("ave.hdf")
-		shrink = self.autoBoxer.getBestShrink()
+		shrink = self.autoboxer.get_best_shrink()
 		# 4 is a magic number
 		for n in range(0,4):
 			t = []
@@ -2219,7 +2181,7 @@ class SwarmTemplate:
 				dy = ta.get_attr("align.dy")
 				box = self.refboxes[idx]
 				size = ta.get_xsize()
-				image = box.getSmallImage(self.autoBoxer.getTemplateRadius(),self.autoBoxer.getBestShrink())
+				image = box.get_small_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
 				a = image.get_clip(Region(int(box.xcorner/shrink-dx),int(box.ycorner/shrink-dy),size,size))
 				a.process_inplace("normalize.edgemean")
 				
@@ -2249,8 +2211,8 @@ class SwarmTemplate:
 		#END uncomment block
 		self.template = ave
 		
-		self.templateTS = gm_time_string()
-		self.template.set_attr("template_time_stamp",self.templateTS)
+		self.template_ts = gm_time_string()
+		self.template.set_attr("template_time_stamp",self.template_ts)
 		return 1
 	
 	
@@ -2258,16 +2220,16 @@ class SwarmTemplate:
 class TrimSwarmAutoBoxer():
 	def __init__(self,swarmAutoBoxer):
 			
-		self.boxsize = swarmAutoBoxer.boxsize
+		self.box_size = swarmAutoBoxer.box_size
 		self.shrink = swarmAutoBoxer.shrink
 		self.templatedimmin = swarmAutoBoxer.templatedimmin
 		
 		self.optthreshold = swarmAutoBoxer.optthreshold
 		self.optprofile = copy(swarmAutoBoxer.optprofile)
 		self.optprofileradius = swarmAutoBoxer.optprofileradius
-		self.selmode = swarmAutoBoxer.selmode
-		self.templateTS = swarmAutoBoxer.templateTS
-		self.stateTS = swarmAutoBoxer.stateTS
+		self.selection_mode = swarmAutoBoxer.selection_mode
+		self.template_ts = swarmAutoBoxer.template_ts
+		self.state_ts = swarmAutoBoxer.state_ts
 		self.mode = swarmAutoBoxer.mode
 		self.refupdate = swarmAutoBoxer.refupdate
 		self.regressiveflag = swarmAutoBoxer.regressiveflag
@@ -2276,17 +2238,17 @@ class TrimSwarmAutoBoxer():
 		self.creationTS = swarmAutoBoxer.creationTS
 		self.convenienceString = swarmAutoBoxer.convenienceString
 	
-	def getUniqueStamp(self):
+	def get_unique_stamp(self):
 		return "autoboxer_" + self.creationTS
 	
-	def setConvenienceName(self,string):
+	def set_convenience_name(self,string):
 		self.convenienceString = string
-		#print "set db string",self.getUniqueStamp()
+		#print "set db string",self.get_unique_stamp()
 	
-	def getConvenienceName(self):
+	def get_convenience_name(self):
 		return self.convenienceString
 	
-	def setCreationTS(self,TS):
+	def set_creation_ts(self,TS):
 		''' 
 		This function is used when creating a fresh copy of this autoboxer and placing it
 		in the database in GUIbox
@@ -2294,22 +2256,22 @@ class TrimSwarmAutoBoxer():
 		#print "setting creationTS",TS
 		self.creationTS = TS
 		
-	def getCreationTS(self):
+	def get_creation_ts(self):
 		return self.creationTS
 	
-	def getStateTS(self):
-		return self.stateTS
+	def get_state_ts(self):
+		return self.state_ts
 	
-	def getTemplateTS(self):
-		return self.template.getTemplateTS()
+	def get_template_ts(self):
+		return self.template.get_template_ts()
 	
-	def writeToDB(self):
+	def write_to_db(self):
 		data = {}
 		data["autoboxer"] = self
-		data["convenience_name"] = self.getConvenienceName()
+		data["convenience_name"] = self.get_convenience_name()
 		
-		projectdb = EMProjectDB()
-		projectdb.setKeyEntry(self.getUniqueStamp(),data)
+		project_db = EMProjectDB()
+		project_db.set_key_entry(self.get_unique_stamp(),data)
 	
 class SwarmAutoBoxer(AutoBoxer):
 	'''
@@ -2327,7 +2289,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		AutoBoxer.__init__(self)
 
 		self.template = SwarmTemplate(self)	# an EMData object that is the template
-		self.boxsize = -1		# stores the global boxsize, this is the value being used by boxer in the main interface
+		self.box_size = -1		# stores the global box_size, this is the value being used by boxer in the main interface
 		self.shrink = -1
 		
 		# more privately stuff
@@ -2335,40 +2297,40 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.optthreshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
 		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
-		self.selmode = SwarmAutoBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
-		self.cmpmode = BoxingTools.CmpMode.SWARM_RATIO
-		BoxingTools.set_mode(self.cmpmode)
+		self.selection_mode = SwarmAutoBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
+		self.cmp_mode = BoxingTools.CmpMode.SWARM_RATIO
+		BoxingTools.set_mode(self.cmp_mode)
 		self.__shrink = -1
 		
-		self.templateTS = -1 # a template time stamp to 
-		self.stateTS = -1 # the time stamp that records when the current template and parameters are completely up to date
+		self.template_ts = -1 # a template time stamp to 
+		self.state_ts = -1 # the time stamp that records when the current template and parameters are completely up to date
 		
 		
 		self.mode = SwarmAutoBoxer.DYNAPIX
 		self.refupdate = False # this is a flag used when self.mode is USERDRIVEN
 		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.ANCHOREDUSERDRIVEN,SwarmAutoBoxer.COMMANDLINE]
-		self.permissablecmpmodes = [BoxingTools.CmpMode.SWARM_RATIO,BoxingTools.CmpMode.SWARM_DIFFERENCE]  # the permissiable peak profile comparitor modes - for convenience when double
-		self.permissableselmodes = [SwarmAutoBoxer.THRESHOLD,SwarmAutoBoxer.SELECTIVE,SwarmAutoBoxer.MORESELECTIVE]  # the permissiable selection modes - for convenience when double checking the calling program is setting the selectionmode explicitly (through setSelectionMode )
-		self.regressiveflag = False	# flags a force removal of non references in the Boxable in autoBox
+		self.permissablecmp_modes = [BoxingTools.CmpMode.SWARM_RATIO,BoxingTools.CmpMode.SWARM_DIFFERENCE]  # the permissiable peak profile comparitor modes - for convenience when double
+		self.permissableselection_modes = [SwarmAutoBoxer.THRESHOLD,SwarmAutoBoxer.SELECTIVE,SwarmAutoBoxer.MORESELECTIVE]  # the permissiable selection modes - for convenience when double checking the calling program is setting the selectionmode explicitly (through set_selection_mode )
+		self.regressiveflag = False	# flags a force removal of non references in the Boxable in auto_box
 		
 		self.dummybox = None
 		self.parent = parent
 		
 		self.creationTS = gm_time_string()
 		self.convenienceString = ""
-		self.setConvenienceName(self.getCreationTS()) # this string is the string that users will use to name this autoBoxer in the GUIboxCtrl
+		self.set_convenience_name(self.get_creation_ts()) # this string is the string that users will use to name this autoboxer in the GUIboxCtrl
 
 	def become(self,trimSwarmAutoBoxer):			
-		self.boxsize = trimSwarmAutoBoxer.boxsize
+		self.box_size = trimSwarmAutoBoxer.box_size
 		self.shrink = trimSwarmAutoBoxer.shrink
 		self.templatedimmin = trimSwarmAutoBoxer.templatedimmin
 		
 		self.optthreshold = trimSwarmAutoBoxer.optthreshold
 		self.optprofile = copy(trimSwarmAutoBoxer.optprofile)
 		self.optprofileradius = trimSwarmAutoBoxer.optprofileradius
-		self.selmode = trimSwarmAutoBoxer.selmode
-		self.templateTS = trimSwarmAutoBoxer.templateTS
-		self.stateTS = trimSwarmAutoBoxer.stateTS
+		self.selection_mode = trimSwarmAutoBoxer.selection_mode
+		self.template_ts = trimSwarmAutoBoxer.template_ts
+		self.state_ts = trimSwarmAutoBoxer.state_ts
 		self.creationTS = trimSwarmAutoBoxer.creationTS
 		self.mode = trimSwarmAutoBoxer.mode
 		self.refupdate = trimSwarmAutoBoxer.refupdate
@@ -2378,54 +2340,54 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.template.become(trimSwarmAutoBoxer.template)
 		
 		# Things that only the SwarmAutoBoxer (not necessary for the TrimSwarmAutoBoxer to do this in its constructor
-		self.__updateRefParams()
+		self.__update_ref_params()
 		
 		
-	def setConvenienceName(self,string):
+	def set_convenience_name(self,string):
 		self.convenienceString = string
 		
-	def getConvenienceName(self):
+	def get_convenience_name(self):
 		return self.convenienceString
 	
-	def getBoxable(self):
-		return self.parent.getBoxable()
+	def get_boxable(self):
+		return self.parent.get_boxable()
 	
-	def getStateTS(self):
-		return self.stateTS
+	def get_state_ts(self):
+		return self.state_ts
 	
-	def getTemplateTS(self):
-		return self.template.getTemplateTS()
+	def get_template_ts(self):
+		return self.template.get_template_ts()
 	
-	def getCreationTS(self):
+	def get_creation_ts(self):
 		return self.creationTS
 	
-	def getTemplate(self):
+	def get_template(self):
 		return self.template
 	
-	def setDummyBox(self,box):
+	def set_dummy_box(self,box):
 		if not box==None and not box.isdummy:
 			print "you can never set a dummy box unless the isdummy flag is true"
 			return 0
 		
 		if box != None:
-			for i,ref in enumerate(self.getRefBoxes()):
+			for i,ref in enumerate(self.get_ref_boxes()):
 				if ref.isdummy:
-					self.removeReference(ref)
+					self.remove_reference(ref)
 				break
-			self.addReference(box)
+			self.add_reference(box)
 		else:
 			if self.dummybox != None:
-				self.removeReference(self.dummybox)
+				self.remove_reference(self.dummybox)
 			
 		self.dummybox = box
 	
-	def setModeExplicit(self,mode):
+	def set_mode_explicit(self,mode):
 		if mode in self.permissablemodes:
 			self.mode = mode
 		else:
 			print "error, that mode:", mode, "was not in the list of permissable modes"
 			exit(1)
-	def setMode(self,dynapix,anchortemplate):
+	def set_mode(self,dynapix,anchortemplate):
 		if dynapix:
 			if anchortemplate: self.mode = SwarmAutoBoxer.ANCHOREDDYNAPIX
 			else: self.mode = SwarmAutoBoxer.DYNAPIX
@@ -2433,50 +2395,50 @@ class SwarmAutoBoxer(AutoBoxer):
 			if anchortemplate: self.mode = SwarmAutoBoxer.ANCHOREDUSERDRIVEN
 			else: self.mode = SwarmAutoBoxer.USERDRIVEN
 
-	def setCmpMode(self,cmpmode):
-		if cmpmode in self.permissablecmpmodes:
-			if self.cmpmode != cmpmode:
-				self.cmpmode = cmpmode
-				BoxingTools.set_mode(self.cmpmode)
-				if not self.__fullUpdate(): return 0
+	def set_cmp_mode(self,cmp_mode):
+		if cmp_mode in self.permissablecmp_modes:
+			if self.cmp_mode != cmp_mode:
+				self.cmp_mode = cmp_mode
+				BoxingTools.set_mode(self.cmp_mode)
+				if not self.__full_update(): return 0
 				self.regressiveflag = True
 				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-					self.autoBox(self.getBoxable())
+					self.auto_box(self.get_boxable())
 				elif self.mode == SwarmAutoBoxer.COMMANDLINE:
-					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in setCmpMode"
+					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in set_cmp_mode"
 				return 1
 			else:
-				print "warning, attempted to set the cmpmode to that which was already stored, no action taken"
+				print "warning, attempted to set the cmp_mode to that which was already stored, no action taken"
 				return 0
 		else:
-			print "the peak profile comparitor mode you specified:", cmpmode,"was not recognized, no action was taken"
+			print "the peak profile comparitor mode you specified:", cmp_mode,"was not recognized, no action was taken"
 			return 0
-	def getMode(self):
+	def get_mode(self):
 		return self.mode
 	
-	def setSelectionMode(self,selmode):
-		if selmode in self.permissableselmodes:
-			if self.selmode != selmode:
-				self.selmode = selmode
-				self.__plotUpdate()
-				self.stateTS = gm_time_string()
+	def set_selection_mode(self,selection_mode):
+		if selection_mode in self.permissableselection_modes:
+			if self.selection_mode != selection_mode:
+				self.selection_mode = selection_mode
+				self.__plot_update()
+				self.state_ts = gm_time_string()
 				self.regressiveflag = True
 				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-					self.autoBox(self.getBoxable())
+					self.auto_box(self.get_boxable())
 				elif self.mode == SwarmAutoBoxer.COMMANDLINE:
-					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in setSelectionMode"
+					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in set_selection_mode"
 				return 1
 			else:
-				print "warning, attempted to set the selmode to that which was already stored, no action taken"
+				print "warning, attempted to set the selection_mode to that which was already stored, no action taken"
 				return 0
 		else:
-			print "the selection mode you specified:", selmode,"was not recognized, no action was taken"
+			print "the selection mode you specified:", selection_mode,"was not recognized, no action was taken"
 			return 0
 
 	def name(self):
 		return 'swarmautoboxer'
 
-	def addReference(self,box):
+	def add_reference(self,box):
 		'''
 		 add a reference box - the box should be in the format of a Box, see above):
 		'''
@@ -2485,46 +2447,46 @@ class SwarmAutoBoxer(AutoBoxer):
 				print 'error, support for uneven box dimensions is not currently implemented'
 				return 0
 		
-			# store the boxsize if we don't have one already
-			if self.boxsize == -1 and not box.isdummy:
-				self.boxsize = box.xsize
+			# store the box_size if we don't have one already
+			if self.box_size == -1 and not box.isdummy:
+				self.box_size = box.xsize
 			# do a sanity check, this shouldn't happen if the program is managing everything carefully
-			elif self.boxsize != box.xsize and not box.isdummy:
-				print 'error, the currently stored box size does not match the boxsize of the reference that was just added'
+			elif self.box_size != box.xsize and not box.isdummy:
+				print 'error, the currently stored box size does not match the box_size of the reference that was just added'
 				return 0
 			
-			self.template.appendReference(box)
+			self.template.append_reference(box)
 			# update the data base
-			self.writeSpecificReferencesToDB(self.getBoxable().getImageName())
+			self.write_specific_references_to_db(self.get_boxable().get_image_name())
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX:
 				if not box.isanchor and not box.isdummy:
 					print 'the box flag is internally inconsistent when using pure dynapix'
 					return 0
-				if not self.__fullUpdate() : return 0
-				self.autoBox(self.getBoxable())
+				if not self.__full_update() : return 0
+				self.auto_box(self.get_boxable())
 			elif self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 				if box.isanchor and not box.isdummy:
 					print 'the box flag is internally inconsistent when anchoring'
 					return 0
-				box.updateParams(self)
-				if not self.__accrueOptParams() :
-					self.stateTS = gm_time_string()
+				box.update_params(self)
+				if not self.__accrue_opt_params() :
+					self.state_ts = gm_time_string()
 					print "there is a problem with the references"
 					return 0
-				self.stateTS = gm_time_string()
-				self.autoBox(self.getBoxable())
+				self.state_ts = gm_time_string()
+				self.auto_box(self.get_boxable())
 			elif self.mode == SwarmAutoBoxer.USERDRIVEN:
 				self.refupdate = True
-				self.stateTS = -1
-				self.templateTS = -1
+				self.state_ts = -1
+				self.template_ts = -1
 			elif self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
-				box.updateParams(self)
-				if not self.__accrueOptParams() :
-					self.stateTS = gm_time_string()
+				box.update_params(self)
+				if not self.__accrue_opt_params() :
+					self.state_ts = gm_time_string()
 					print "there is a problem with the references"
 					return 0
-				self.stateTS = gm_time_string()
+				self.state_ts = gm_time_string()
 			else:
 				print 'error, unknown mode in SwarmAutoBoxer'
 				return 0
@@ -2537,26 +2499,26 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 0
 	
 	
-	def removeReference(self,boxes):
+	def remove_reference(self,boxes):
 		'''
-		Should potentially be called removeReferences
-		This is somewhat of a hack - the function should be called removeReferences because
+		Should potentially be called remove_references
+		This is somewhat of a hack - the function should be called remove_references because
 		it works if the calling function supplies a list of boxes...
 		'''
 		
 		try:
 			isanchor = False
 			for box in boxes:
-				self.template.removeReference(box)
+				self.template.remove_reference(box)
 				if box.isanchor: isanchor = True
 		except:
 			# there is only one box
 			box = boxes
-			self.template.removeReference(box)
+			self.template.remove_reference(box)
 			isanchor = box.isanchor
 		
 		# update the data base
-		self.writeSpecificReferencesToDB(self.getBoxable().getImageName())
+		self.write_specific_references_to_db(self.get_boxable().get_image_name())
 			
 		if len(self.template.refboxes) == 0:
 			self.__reset()
@@ -2564,43 +2526,43 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			if isanchor:
-				if not self.__fullUpdate(): return 0
+				if not self.__full_update(): return 0
 				self.regressiveflag = True
-				self.autoBox(self.getBoxable())
+				self.auto_box(self.get_boxable())
 			else:
-				if not self.__accrueOptParams() :
-					self.stateTS = gm_time_string()
+				if not self.__accrue_opt_params() :
+					self.state_ts = gm_time_string()
 					print "there is a problem with the references"
 					return 0
-				self.stateTS = gm_time_string()
+				self.state_ts = gm_time_string()
 				self.regressiveflag = True
-				self.autoBox(self.getBoxable())
+				self.auto_box(self.get_boxable())
 			return 1
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
 			if isanchor:
 				self.refupdate = True
-				self.stateTS = -1
-				self.templateTS = -1
+				self.state_ts = -1
+				self.template_ts = -1
 			else:
-				box.updateParams(self)
-				if not self.__accrueOptParams() :
-					self.stateTS = gm_time_string()
+				box.update_params(self)
+				if not self.__accrue_opt_params() :
+					self.state_ts = gm_time_string()
 					print "there is a problem with the references"
 					return 0
-				self.stateTS = gm_time_string()
+				self.state_ts = gm_time_string()
 				self.regressiveflag = True
 				
 			return 1
 		
 		return 0
 	
-	def getTemplateRadius(self):
+	def get_template_radius(self):
 		'''
 		Returns what will be or is the template radius
 		'''
-		return int(self.boxsize/2/self.getBestShrink())
+		return int(self.box_size/2/self.get_best_shrink())
 	
-	def referenceMoved(self,box):
+	def reference_moved(self,box):
 		'''
 		If a reference was moved interactively in the interface this is the function that should be called
 		The return value is whether or not autoboxing occured and hence whether or not display should be updated
@@ -2608,49 +2570,49 @@ class SwarmAutoBoxer(AutoBoxer):
 		'''
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
 			if box.isanchor:
-				if not self.__fullUpdate() : return 0
+				if not self.__full_update() : return 0
 				self.regressiveflag = True
-				self.autoBox(self.getBoxable())
+				self.auto_box(self.get_boxable())
 			else:
-				box.updateParams(self)
-				if not self.__accrueOptParams() :
-					self.stateTS = gm_time_string()
+				box.update_params(self)
+				if not self.__accrue_opt_params() :
+					self.state_ts = gm_time_string()
 					print "there is a problem with the references"
 					return 0
-				self.stateTS = gm_time_string()
+				self.state_ts = gm_time_string()
 				self.regressiveflag = True
-				self.autoBox(self.getBoxable())
+				self.auto_box(self.get_boxable())
 			
 			# update the data base
-			self.writeSpecificReferencesToDB(self.getBoxable().getImageName())
+			self.write_specific_references_to_db(self.get_boxable().get_image_name())
 			return 1
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
 			if box.isanchor:
 				self.refupdate = True
-				self.stateTS = -1
-				self.templateTS = -1
+				self.state_ts = -1
+				self.template_ts = -1
 			else:
-				box.updateParams(self)
-				if not self.__accrueOptParams() :
-					self.stateTS = gm_time_string()
+				box.update_params(self)
+				if not self.__accrue_opt_params() :
+					self.state_ts = gm_time_string()
 					print "there is a problem with the references"
 					return 0
-				self.stateTS = gm_time_string()
+				self.state_ts = gm_time_string()
 				self.regressiveflag = True
 				
 			# update the data base
-			self.writeSpecificReferencesToDB(self.getBoxable().getImageName())
+			self.write_specific_references_to_db(self.get_boxable().get_image_name())
 			return 0
 		else:
 			print 'error, unknown mode in SwarmAutoBoxer'
 			return -1
 		
-	def getTemplateObject(self):
+	def get_template_object(self):
 		return self.template
 		
-	def getTemplate(self):
+	def get_template(self):
 		if self.refupdate:
-			if not self.__fullUpdate(): return None
+			if not self.__full_update(): return None
 			self.refupdate = False
 			
 		if self.template == None:
@@ -2659,74 +2621,74 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		return self.template
 		
-	def getBoxSize(self):
-		return self.boxsize
+	def get_box_size(self):
+		return self.box_size
 		
-	def setBoxSize(self,boxsize,imagenames):
-		if (boxsize < 6 ):
+	def set_box_size(self,box_size,image_names):
+		if (box_size < 6 ):
 			print 'error, a hard limit of 6 for the box size is currently enforced. Email developers if this is a problem'
 			return
-		if self.boxsize == boxsize:	return
+		if self.box_size == box_size:	return
 		
 		# FIXME - how should we deal with this?
 		# update the data base
-		#self.writeSpecificReferencesToDB(self.boxable.getImageName())
+		#self.write_specific_references_to_db(self.boxable.get_image_name())
 		
-		self.boxsize = boxsize
-		self.getBestShrink(True)
+		self.box_size = box_size
+		self.get_best_shrink(True)
 		
 		# changing the box size of all assocated Boxables should change the box size of the references
-		self.template.changeBoxSize(boxsize)
+		self.template.change_box_size(box_size)
 		
-		projectdb = EMProjectDB()
-		for imagename in imagenames:
+		project_db = EMProjectDB()
+		for image_name in image_names:
 			found = False
 			try:
-				data = projectdb[getIDDKey(imagename)]
-				#trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]
+				data = project_db[get_idd_key(image_name)]
+				#trim_autoboxer = project_db[data["autoboxer_unique_id"]]
 				found = True
 			except: pass
 			
 			if found:
-				if data["auto_boxer_unique_id"] == self.getUniqueStamp():
+				if data["autoboxer_unique_id"] == self.get_unique_stamp():
 					#print "we have an associated image"
-					boxable = Boxable(imagename,None,self)
-					boxable.changeBoxSize(boxsize)
-					boxable.getExclusionImage(True)
+					boxable = Boxable(image_name,None,self)
+					boxable.change_box_size(box_size)
+					boxable.get_exclusion_image(True)
 			#else:
-				#print "image is not associated",imagename
+				#print "image is not associated",image_name
 			
 		# make sure the shrink value is updated - use the force flag to do it
 		
 		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-			if not self.__fullUpdate(): 
+			if not self.__full_update(): 
 				print "box size change failed, can't full update"
 				return
-			self.autoBox(self.getBoxable())
+			self.auto_box(self.get_boxable())
 		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN :
 			self.refupdate = True
-			self.stateTS = -1
-			self.templateTS = -1
+			self.state_ts = -1
+			self.template_ts = -1
 		else:
 			print 'error, unknown mode in SwarmAutoBoxer'
 	
-	def getSearchRadius(self):
-		return int(0.75*(self.boxsize)/float(self.getBestShrink()))
+	def get_search_radius(self):
+		return int(0.75*(self.box_size)/float(self.get_best_shrink()))
 	
-	def getConstrainingRadius(self):
-		return int(0.5*(self.boxsize)/float(self.getBestShrink()))
+	def get_constraining_radius(self):
+		return int(0.5*(self.box_size)/float(self.get_best_shrink()))
 	
-	def getBestShrink(self,force=True):	
-		if self.boxsize == -1:
-			print "error - the boxsize is currently -1 - I can't figure out the best value to shrink by"	
+	def get_best_shrink(self,force=True):	
+		if self.box_size == -1:
+			print "error - the box_size is currently -1 - I can't figure out the best value to shrink by"	
 			return -1
 			
 		if self.shrink == -1 or force:	
-			self.shrink = ceil(float(self.boxsize)/float(self.templatedimmin))	
+			self.shrink = ceil(float(self.box_size)/float(self.templatedimmin))	
 			
 		return self.shrink
 		
-	def autoBox(self,boxable,updatedisplay=True,force=False):
+	def auto_box(self,boxable,updatedisplay=True,force=False):
 		# If it's user driven then the user has selected a bunch of references and then hit 'autobox'.
 		# In which case we do a complete reference update, which generates the template and the
 		# best autoboxing parameters
@@ -2734,148 +2696,137 @@ class SwarmAutoBoxer(AutoBoxer):
 		# this is fine - if a boxable is frozen this is more or less a flag for the autoboxer not
 		# to autobox it...
 		#print "in autobox"
-		if boxable.isExcluded():
+		if boxable.is_excluded():
 			print "Image is excluded, doing nothing"
 			return 0
 		
-		if boxable.isFrozen():
+		if boxable.is_frozen():
 			print "Image is frozen, maintaining current state"
 			return 0
-		# the projectdb is used at various points in this function
-		projectdb = EMProjectDB()
+		# the project_db is used at various points in this function
+		project_db = EMProjectDB()
 		
-		if len(self.getRefBoxes()) == 0:
-			boxable.clearAndCache(True)
+		if len(self.get_ref_boxes()) == 0:
+			boxable.clear_and_cache(True)
 			# FIXME - debug/double check this functionality
-			boxable.setStamps(self.getStateTS(),-1,self.getUniqueStamp())
-			boxable.writeToDB()
+			boxable.set_stamps(self.get_state_ts(),-1,self.get_unique_stamp())
+			boxable.write_to_db()
 
-			self.writeToDB(True)
+			self.write_to_db(True)
 			
-			self.parent.autoBoxerDBChanged()
-			#if boxable.getAutoBoxerID() != self.getCreationTS():
-				#boxable.setAutoBoxerID(self.getUniqueStamp())
-				#self.parent.autoBoxerDBChanged()
+			self.parent.autoboxer_db_changed()
+			#if boxable.get_autoboxer_id() != self.get_creation_ts():
+				#boxable.set_autoboxer_id(self.get_unique_stamp())
+				#self.parent.autoboxer_db_changed()
 
 			#print 'error, cant get template if there are no references'
 			return 1
 
 		# ref update should only be toggled if we are in user driven mode
 		if self.refupdate:
-			if not self.__fullUpdate(): return 0
+			if not self.__full_update(): return 0
 			self.refupdate = False
 
-		templateTS = boxable.templateTS
-		correlation = boxable.getCorrelationImage()
-		if templateTS == -1 or correlation == None or self.template.getTemplateTS() != templateTS:
-			if self.template != None:
-				boxable.allowcorrelationupdate = True
-				boxable.updateCorrelation(self.template)
-				boxable.allowcorrelationupdate = False
-				
-				correlation = boxable.correlation
-			else:
-				print 'error, cant ask the autoBoxer for its template, it doesnt have one'
-				return 0
+		correlation = boxable.get_correlation_image(self.get_template())
 
-		autoBoxerStateTS = boxable.autoBoxerStateTS
+		autoboxer_state_ts = boxable.autoboxer_state_ts
 		# auto boxing will occur if the time stamp of the AutoBoxer is not the
 		# same as the time stamp cached by the Boxable. -1 means it's the first time.
 		# Auto boxing will also occur if the autoboxer id of the boxable does not match the creation time stamp of this object
 		# the creation time stamp of this object is persistent, even it was recovered from the data base
 		
-		if autoBoxerStateTS == -1 or autoBoxerStateTS != self.stateTS or boxable.getAutoBoxerID() != self.getUniqueStamp() or force:
+		if autoboxer_state_ts == -1 or autoboxer_state_ts != self.state_ts or boxable.get_autoboxer_id() != self.get_unique_stamp() or force:
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag or self.mode == SwarmAutoBoxer.COMMANDLINE:
 				# we must clear all non-refs if we're using dynapix
-				boxable.deletenonrefs(updatedisplay)
+				boxable.delete_non_refs(updatedisplay)
 				self.regressiveflag = False
 			
-			exclusion = boxable.getExclusionImage().copy()
-			self.__paintExcludedBoxAreas(exclusion,boxable.boxes)
+			exclusion = boxable.get_exclusion_image().copy()
+			self.__paint_excluded_box_areas(exclusion,boxable.boxes)
 
-			boxes = self.__autoBox(correlation,boxable,exclusion)
+			boxes = self.__auto_box(correlation,boxable,exclusion)
 			print "autoboxed",len(boxes)
 
 			trimboxes = []
 			# if anchoring is on we need to store the auto boxes that were not removed 
 			# This is because the boxable didn't remove it's autoboxed particles prior to autoboxing
 			# And we need to make the database complete for persistence
-			boxable.appendStoredAutoBoxes(trimboxes)
+			boxable.append_stored_auto_boxes(trimboxes)
 			for box in boxes:
 				#if box.ismanual: print "I added a manual box"
 				t = TrimBox(box)
 				trimboxes.append(t)
 			
-			boxable.setKeyEntryToIDD("auto_boxes",trimboxes)
+			boxable.set_key_entryToIDD("auto_boxes",trimboxes)
 			
-			boxable.setStamps(self.getStateTS(),self.getTemplateTS(),self.getUniqueStamp())
-			boxable.writeToDB()
+			boxable.set_stamps(self.get_state_ts(),self.get_template_ts(),self.get_unique_stamp())
+			boxable.write_to_db()
 			
 			if self.mode != SwarmAutoBoxer.COMMANDLINE:
-				self.writeToDB(True)
+				self.write_to_db(True)
 		
 			# These two lines are a hack because it may not need to happen (redundancy)
-			boxable.setAutoBoxerID(self.getUniqueStamp())
+			boxable.set_autoboxer_id(self.get_unique_stamp())
 			if not (self.mode != SwarmAutoBoxer.COMMANDLINE or self.parent==None):
-				self.parent.autoBoxerDBChanged()
-				#self.__plotUpdate() # this is inefficent because it may have already happened FIXME
+				self.parent.autoboxer_db_changed()
+				#self.__plot_update() # this is inefficent because it may have already happened FIXME
 				
-			self.writeSpecificReferencesToDB(boxable.getImageName())
-			#print "set boxer id",self.getCreationTS()
+			self.write_specific_references_to_db(boxable.get_image_name())
+			#print "set boxer id",self.get_creation_ts()
 			
 			# finally tell the boxable to read the results from the database
 			# the False argument tells the boxable not to re-read those
-			# boxes stored by the call to appendStoredAutoBoxes above
-			boxable.getAutoSelectedFromDB(False)
+			# boxes stored by the call to append_stored_auto_boxes above
+			boxable.get_auto_selected_from_db(False)
 				
 			return 1
 
 		else: print 'no auto boxing was necessary, up-2-date' # DEBUG
-	def getUniqueStamp(self):
-		return "autoboxer_"+self.getCreationTS()
+	def get_unique_stamp(self):
+		return "autoboxer_"+self.get_creation_ts()
 	
-	def writeToDB(self,writecurrent=False):
+	def write_to_db(self,writecurrent=False):
 		'''
 		Writes this object to the DB using its time stamp
 		If writecurrent is True then this SwarmAutoBoxer is also written to the DB as the "currentautobxer",
 		meaning it is the most recently added autoboxer
 		'''
-		projectdb = EMProjectDB()
-		autoboxerdbstring = self.getUniqueStamp()
+		project_db = EMProjectDB()
+		autoboxer_db_string = self.get_unique_stamp()
 		
 		trimself = TrimSwarmAutoBoxer(self)
 		data = {}	
 		data["autoboxer"] = trimself
-		data["convenience_name"] = self.getConvenienceName()
+		data["convenience_name"] = self.get_convenience_name()
 		
-		projectdb.setKeyEntry(autoboxerdbstring,data)
+		project_db.set_key_entry(autoboxer_db_string,data)
 		
 		if writecurrent:
-			projectdb.setKeyEntry("currentautoboxer",trimself)
+			project_db.set_key_entry("current_autoboxer",trimself)
 		
-	def writeSpecificReferencesToDB(self,imagename):
+	def write_specific_references_to_db(self,image_name):
 		'''
-		Writes the references originating in the image given by imagename
+		Writes the references originating in the image given by image_name
 		to the database.
 		
-		This is called in autoBox 
+		This is called in auto_box 
 		'''
 		
-		refs = self.template.getReferences()
+		refs = self.template.get_references()
 		refs_to_write = []
 		for ref in refs:
-			if ref.getImageName() == imagename:
+			if ref.get_image_name() == image_name:
 				refs_to_write.append(TrimBox(ref))
 
-		setKeyEntryIDD(imagename,"reference_boxes",refs_to_write)
+		set_idd_key_entry(image_name,"reference_boxes",refs_to_write)
 	
 	def __reset(self):
-		#self.boxsize = -1
-		self.stateTS = -1
-		self.templateTS = -1
+		#self.box_size = -1
+		self.state_ts = -1
+		self.template_ts = -1
 
-	def __autoBox(self,correlation,boxable,exclusion=None):
+	def __auto_box(self,correlation,boxable,exclusion=None):
 		'''
 		Does the autoboxing. Returns a list of Boxes
 		'''
@@ -2884,21 +2835,21 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 0
 			
 			#print "using opt radius",self.radius, "which has value",tmp,"shrink was",self.shrink
-		if self.selmode == SwarmAutoBoxer.THRESHOLD:
+		if self.selection_mode == SwarmAutoBoxer.THRESHOLD:
 			mode = 0
-		elif self.selmode == SwarmAutoBoxer.SELECTIVE:
+		elif self.selection_mode == SwarmAutoBoxer.SELECTIVE:
 			mode = 1
-		elif self.selmode == SwarmAutoBoxer.MORESELECTIVE:
+		elif self.selection_mode == SwarmAutoBoxer.MORESELECTIVE:
 			mode = 2
 		
-		shrink = self.getBestShrink()
+		shrink = self.get_best_shrink()
 		# Warning, this search radius value should be the same as the one used by the BoxSets that contributed the reference boxes
 		# to this AutoBoxer object. There should be one place/function in the code where both parties access this value
-		searchradius = self.getSearchRadius()
+		searchradius = self.get_search_radius()
 		soln = BoxingTools.auto_correlation_pick(correlation,self.optthreshold,searchradius,self.optprofile,exclusion,self.optprofileradius,mode)
 
 
-		template = self.getHighResTemplateImage()
+		template = self.get_high_res_template_image()
 
 		# This is what should be written to the database
 		boxes = []
@@ -2908,24 +2859,24 @@ class SwarmAutoBoxer(AutoBoxer):
 			y = b[1]
 			xx = int(x*shrink)
 			yy = int(y*shrink)
-			box = Box(xx-self.boxsize/2,yy-self.boxsize/2,self.boxsize,self.boxsize,0)
-			box.setImageName(boxable.getImageName())
+			box = Box(xx-self.box_size/2,yy-self.box_size/2,self.box_size,self.box_size,0)
+			box.set_image_name(boxable.get_image_name())
 			box.correlationscore = correlation.get(x,y)
 			box.corx = b[0]
 			box.cory = b[1]
 			box.changed = True
-			box.correctResolutionCentering(self.getBestShrink(),False)
+			box.correct_resolution_centering(self.get_best_shrink(),False)
 			box.center(Box.CENTERPROPAGATE,template,False)
 			boxes.append(box)
 	
 		return boxes
 		
-	def getHighResTemplateImage(self):
-		t = self.getTemplateObject() # this is the template object
-		template = t.getTemplate() # this is the image
+	def get_high_res_template_image(self):
+		t = self.get_template_object() # this is the template object
+		template = t.get_template() # this is the image
 		template = template.copy()
-		newx = self.boxsize
-		newy = self.boxsize
+		newx = self.box_size
+		newy = self.box_size
 		oldx = template.get_xsize()
 		oldy = template.get_ysize()
 		template.clip_inplace(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
@@ -2934,7 +2885,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		return template
 		
 	
-	def __fullUpdate(self):
+	def __full_update(self):
 		'''
 		Forces a template update, then updates all correlation images
 		that the references come from, then does a parameters update.
@@ -2945,31 +2896,31 @@ class SwarmAutoBoxer(AutoBoxer):
 		consistently (from a correlation image generated by a universal template)
 		'''
 		
-		if not self.template.genTemplate():
+		if not self.template.gen_template():
 			print 'error, couldnt generate template'
 			return 0
 		
 		# First tell all references' associated boxing objects to be open to the prospect 
 		# if update their correlation images
 		
-		self.__updateRefParams()
+		self.__update_ref_params()
 
 		# parameters should be updated now
-		# it's important that the BoxingObjext.updateCorrelation updated the parameters stored in the boxes
-		if not self.__accrueOptParams(): return 0
+		# it's important that the BoxingObjext.update_correlation updated the parameters stored in the boxes
+		if not self.__accrue_opt_params(): return 0
 		
-		self.stateTS = gm_time_string()
+		self.state_ts = gm_time_string()
 
 		return 1
 	
-	def __updateRefParams(self):
-		for ref in self.getRefBoxes():
-			ref.updateParams(self)
+	def __update_ref_params(self):
+		for ref in self.get_ref_boxes():
+			ref.update_params(self)
 			
-	def getRefBoxes(self):
-		return self.template.getReferences()
+	def get_ref_boxes(self):
+		return self.template.get_references()
 	
-	def __accrueOptParams(self):
+	def __accrue_opt_params(self):
 		'''
 		A function for accruing the parameters of the SwarmPSAutoBoxer autoboxing technique
 		returns True if optimal parameters were accrued
@@ -2985,7 +2936,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		if self.dummybox == None:
 			found = False
-			for i,box in enumerate(self.getRefBoxes()):
+			for i,box in enumerate(self.get_ref_boxes()):
 				if box.correlationscore == None:
 					# this is an error which probably means that the box, as created by the user, has a strong correlation maximum next to it which is disrupting the auto parameters
 					# this is mostly an error for dwoolfords attention
@@ -3011,7 +2962,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 			
 			found = False
-			for i,box in enumerate(self.getRefBoxes()):
+			for i,box in enumerate(self.get_ref_boxes()):
 				if box.correlationscore == None:
 					##print "continuing on faulty" - this was already printed above
 					continue
@@ -3033,41 +2984,41 @@ class SwarmAutoBoxer(AutoBoxer):
 		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
 		self.optprofileradius = -1
 		tmp = self.optprofile[0]
-		for i in range(1,self.getConstrainingRadius()):
+		for i in range(1,self.get_constraining_radius()):
 			# the tmp > 0 is a
 			if self.optprofile[i] > tmp and tmp > 0:
 				tmp = self.optprofile[i]
 				self.optprofileradius = i
 		
-		self.__plotUpdate()
+		self.__plot_update()
 		#print 'NOW THEY ARE'
 		#print 'threshod:',self.optthreshold
-		#print 'profile:',self.optprofile
+		#print 'profile:',self.optprofile            
 		#print 'optrad:',self.optprofileradius
 		return True
 	
-	def __plotUpdate(self):
+	def __plot_update(self):
 		prof = [] # self.selfmod == SwarmAutoBoxer.THRESHOLD (nothing is the right setting in this case)
-		if self.selmode == SwarmAutoBoxer.SELECTIVE:
+		if self.selection_mode == SwarmAutoBoxer.SELECTIVE:
 			prof = [self.optprofileradius]
-		elif self.selmode == SwarmAutoBoxer.MORESELECTIVE:
+		elif self.selection_mode == SwarmAutoBoxer.MORESELECTIVE:
 			for i in range(0,self.optprofileradius+1): prof.append(i)
 		
 		try:
-			self.parent.optparamsupdate(self.optthreshold,self.optprofile,prof)
+			self.parent.opt_params_updated(self.optthreshold,self.optprofile,prof)
 		except: pass
 	
-	def __paintExcludedBoxAreas(self,exclusionimage,boxes):
+	def __paint_excluded_box_areas(self,exclusionimage,boxes):
 	
-		searchradius = self.getSearchRadius()
+		searchradius = self.get_search_radius()
 
 		for box in boxes:
 			# xx and yy are the centers of the image, but in real image coordinates
 			xx = box.xcorner + box.xsize/2
 			yy = box.ycorner + box.ysize/2
 			# shrink them to the small correlation image coordinates
-			xx /= self.getBestShrink()
-			yy /= self.getBestShrink()
+			xx /= self.get_best_shrink()
+			yy /= self.get_best_shrink()
 			# Set a positive circle into the exclusionimage
 			BoxingTools.set_radial_non_zero(exclusionimage,int(xx),int(yy),searchradius)
 			

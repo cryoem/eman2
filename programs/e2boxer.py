@@ -77,15 +77,15 @@ for single particle analysis."""
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db",default=[])
-	parser.add_option("--writecoords",action="store_true",help="Write data box files",default=False)
-	parser.add_option("--writeboximages",action="store_true",help="Write data box files",default=False)
+	parser.add_option("--write_coord_file",action="store_true",help="Write data box files",default=False)
+	parser.add_option("--write_box_images",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--force","-f",action="store_true",help="Force overwrites old files",default=False)
 	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
 	#parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
 	#parser.add_option("--retestlist",type="string",help="(auto:ref) Comma separated list of image numbers for retest cycle",default="")
 	#parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
 	parser.add_option("--parallel",type="int",help="specify more than one processor",default=1)
-	parser.add_option("--mergedb",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
+	parser.add_option("--merge_boxes_to_db",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -101,16 +101,16 @@ for single particle analysis."""
 	logid=E2init(sys.argv)
 	
 	
-	if options.mergedb == True:
+	if options.merge_boxes_to_db == True:
 		#The user wants to add some boxes to the database
-		mergedb(filenames)
+		merge_boxes_as_manual_to_db(filenames)
 		sys.exit(1)
 	
 	# we need to know how big to make the boxes. If nothing is specified, but
 	# reference particles are, then we use the reference particle size
 	#if options.boxsize<5 :
 		#if not options.boxsize in good_box_sizes:
-			#print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.boxsize)
+			#print "Note: EMAN2 processing would be more efficient with a box_size of %d"%good_box_size(options.boxsize)
 	
 	boxes=[]
 	if len(options.auto)>0 :
@@ -119,9 +119,9 @@ for single particle analysis."""
 		if "db" in options.auto:
 			print "auto data base boxing"
 		
-			autoboxmulti(filenames,options)
+			autobox_multi(filenames,options)
 			#if len(filenames) == 1:
-				#autoboxsingle(filenames[0],options)
+				#autobox_single(filenames[0],options)
 				#exit(1)
 			#else:
 				#print "autoboxing using parallelism - you specified",options.parallel,"processors"
@@ -183,7 +183,7 @@ except:
 	QtGui.QWidget=QWidget
 
 
-def mergedb(filenames):
+def merge_boxes_as_manual_to_db(filenames):
 	'''
 	Merges a set of .box files into the local database - stores them as manual boxes
 	'''
@@ -198,87 +198,87 @@ def mergedb(filenames):
 			boxes.append(TrimBox(b))
 	
 		try:
-			manualboxes = getKeyEntryIDD(filename,"manualboxes")
+			manualboxes = get_idd_key_entry(filename,"manual_boxes")
 		except:
 			manualboxes = []
 	
 		manualboxes.extend(boxes)
-		setKeyEntryIDD(filename,"manualboxes",manualboxes)
+		set_idd_key_entry(filename,"manual_boxes",manualboxes)
 
 
-def autoboxmulti(imagenames,options):
-	projectdb = EMProjectDB()
-	for imagename in imagenames:
-		print "autoboxing",imagename
+def autobox_multi(image_names,options):
+	project_db = EMProjectDB()
+	for image_name in image_names:
+		print "autoboxing",image_name
 		
 		try:
-			data = projectdb[getIDDKey(imagename)]
-			trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
-			autoBoxer = SwarmAutoBoxer(None)
-			autoBoxer.become(trimAutoBoxer)
+			data = project_db[get_idd_key(image_name)]
+			trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+			autoboxer = SwarmAutoBoxer(None)
+			autoboxer.become(trim_autoboxer)
 			print 'using cached autoboxer db'
 		except:
 			try:
 				print "using most recent autoboxer"
-				trimAutoBoxer = projectdb["currentautoboxer"]
-				autoBoxer = SwarmAutoBoxer(None)
-				autoBoxer.become(trimAutoBoxer)
+				trim_autoboxer = project_db["current_autoboxer"]
+				autoboxer = SwarmAutoBoxer(None)
+				autoboxer.become(trim_autoboxer)
 			except:
 				print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
 				continue
 		
-		boxable = Boxable(imagename,None,autoBoxer)
+		boxable = Boxable(image_name,None,autoboxer)
 		
-		if boxable.isExcluded():
-			print "Image",imagename,"is excluded and being ignored"
+		if boxable.is_excluded():
+			print "Image",image_name,"is excluded and being ignored"
 			continue
 		
-		autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
-		autoBoxer.autoBox(boxable,False)
-		if options.writecoords:
-			boxable.writecoords(-1,options.force)
-		if options.writeboximages:
-			boxable.writeboximages(-1,options.force)
+		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
+		autoboxer.auto_box(boxable,False)
+		if options.write_coord_file:
+			boxable.write_coord_file(-1,options.force)
+		if options.write_box_images:
+			boxable.write_box_images(-1,options.force)
 	
 	
-	projectdb.close()
+	project_db.close()
 
-def autoboxsingle(imagename,options):
+def autobox_single(image_name,options):
 	
-	projectdb = EMProjectDB()
+	project_db = EMProjectDB()
 	try:
-		data = projectdb[getIDDKey(imagename)]
-		trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
-		autoBoxer = SwarmAutoBoxer(None)
-		autoBoxer.become(trimAutoBoxer)
+		data = project_db[get_idd_key(image_name)]
+		trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+		autoboxer = SwarmAutoBoxer(None)
+		autoboxer.become(trim_autoboxer)
 		print 'using cached autoboxer db'
 	except:
 		try:
-			trimAutoBoxer = projectdb["currentautoboxer"]
-			autoBoxer = SwarmAutoBoxer(None)
-			autoBoxer.become(trimAutoBoxer)
+			trim_autoboxer = project_db["current_autoboxer"]
+			autoboxer = SwarmAutoBoxer(None)
+			autoboxer.become(trim_autoboxer)
 		except:
 			print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-			projectdb.close()
+			project_db.close()
 			return 0
 	
-	boxable = Boxable(imagename,None,autoBoxer)
-	if boxable.isExcluded():
-		print "Image",imagename,"is excluded and being ignored"
+	boxable = Boxable(image_name,None,autoboxer)
+	if boxable.is_excluded():
+		print "Image",image_name,"is excluded and being ignored"
 		return
 	
-	autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-	# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.autoBox
-	autoBoxer.autoBox(boxable,False)
-	if options.writecoords:
+	autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+	# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
+	autoboxer.auto_box(boxable,False)
+	if options.write_coord_file:
 		print "writing box coordinates"
-		boxable.writecoords(-1,options.force)
-	if options.writeboximages:
+		boxable.write_coord_file(-1,options.force)
+	if options.write_box_images:
 		print "writing boxed images"
-		boxable.writeboximages(-1,options.force)
+		boxable.write_box_images(-1,options.force)
 	
-	projectdb.close()
+	project_db.close()
 	return 1
 	
 class AutoDBBoxer(QtCore.QObject):
@@ -287,10 +287,10 @@ class AutoDBBoxer(QtCore.QObject):
 	If one CPU is specified then it still works. Basically the approach is to spawn the number of the processors, then once
 	the process is finished the signal is intercepted and a new process is executed etc.
 	'''
-	def __init__(self,imagenames,nproc,options,force=False):
+	def __init__(self,image_names,nproc,options,force=False):
 		QtCore.QObject.__init__(self)
 		self.nproc = nproc
-		self.imagenames = imagenames
+		self.image_names = image_names
 		self.currentidx = 0	
 		self.force = force
 		self.working = True
@@ -302,10 +302,10 @@ class AutoDBBoxer(QtCore.QObject):
 		for i in range(0,nproc):
 			self.cps.append(None)
 		
-		for i in range(0,len(self.imagenames)):
+		for i in range(0,len(self.image_names)):
 			self.processes.append(QtCore.QProcess(self))
 			
-	def printcpstatus(self):
+	def print_cp_status(self):
 		for i in self.cps:
 			print i.state(),
 			print i.pid()
@@ -321,19 +321,19 @@ class AutoDBBoxer(QtCore.QObject):
 			self.currentidx += 1
 			
 	def spawn_process(self):
-		if self.currentidx >= len(self.imagenames) :
+		if self.currentidx >= len(self.image_names) :
 			return
 			
 		#process = self.processes[self.currentidx]
 			
 		program = QtCore.QString("e2boxer.py")
 		args = QtCore.QStringList()
-		args.append(self.imagenames[self.currentidx])
+		args.append(self.image_names[self.currentidx])
 		args.append("--auto=db")
-		if self.options.writecoords != False:
-			args.append("--writecoords")
-		if self.options.writeboximages != False:
-			args.append("--writeboximages")
+		if self.options.write_coord_file != False:
+			args.append("--write_coord_file")
+		if self.options.write_box_images != False:
+			args.append("--write_box_images")
 		if self.options.force != False:
 			args.append("--force")
 			
@@ -357,7 +357,7 @@ class AutoDBBoxer(QtCore.QObject):
 	def process_finished(self,int):
 		#print "process finished"
 		self.jobsdone += 1
-		if self.jobsdone == len(self.imagenames):
+		if self.jobsdone == len(self.image_names):
 			self.app.quit()
 		self.spawn_process()
 		self.currentidx += 1
@@ -372,7 +372,7 @@ class GUIboxMouseEventsObject:
 	A base class for objects that handle mouse events in the GUIbox
 	
 	Inheriting objects are concerned with supplying their own definitions of 
-	the functions mouseup, mousedown, mousedrag, mousemove and mousewheel. 
+	the functions mouse_up, mouse_down, mouse_drag, mouse_move and mouse_wheel. 
 	They do not have to supply their own definition for all of these functions,
 	but it would not make sense to inherit from this class unless the child class
 	did not atleast supply one of them.
@@ -395,49 +395,49 @@ class GUIboxMouseEventsObject:
 		
 		self.mediator = mediator
 		
-	def get2DGuiImage(self):
+	def get_2d_gui_image(self):
 		'''
 		Ask the mediator to for the EMImage2D object
 		'''
-		return self.mediator.get2DGuiImage()
+		return self.mediator.get_2d_gui_image()
 	
-	def getGuiCtl(self):
+	def get_gui_ctl(self):
 		'''
 		Ask the mediator to for the main GUI controller
 		'''
-		return self.mediator.getGuiCtl()
+		return self.mediator.get_gui_ctl()
 	
-	def getMXGuiImage(self):
+	def get_mx_gui_image(self):
 		'''
 		Ask the mediator to for the EMImageMX object
 		'''
-		return self.mediator.getMXGuiImage()
+		return self.mediator.get_mx_gui_image()
 	
-	def mouseup(self,event):
+	def mouse_up(self,event):
 		'''
 		Inheriting classes to potentially define this function
 		'''
 		pass
 
-	def mousedown(self,event):
+	def mouse_down(self,event):
 		'''
 		Inheriting classes to potentially define this function
 		'''
 		pass
 		
-	def mousedrag(self,event):
+	def mouse_drag(self,event):
 		'''
 		Inheriting classes to potentially define this function
 		'''
 		pass
 	
-	def mousemove(self,event):
+	def mouse_move(self,event):
 		'''
 		Inheriting classes to potentially define this function
 		'''
 		pass
 
-	def mousewheel(self,event):
+	def mouse_wheel(self,event):
 		'''
 		Inheriting classes to potentially define this function
 		'''
@@ -454,42 +454,42 @@ class GUIboxMouseEraseEvents(GUIboxMouseEventsObject):
 		self.eraseradius=eraseradius	# This is a circular radius 
 		self.erasemode = None			# erase mode can be either Boxable.ERASE or Boxable.UNERASE
 		
-	def setmode(self,mode):
+	def set_mode(self,mode):
 		self.erasemode = mode
 		
-	def setEraseRadius(self,radius):
+	def set_erase_radius(self,radius):
 		self.eraseradius = radius
 	
-	def mousemove(self,event):
-		m = self.get2DGuiImage().scr2img((event.x(),event.y()))
-		self.get2DGuiImage().addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
-		self.mediator.updateImageDisplay()
+	def mouse_move(self,event):
+		m = self.get_2d_gui_image().scr2img((event.x(),event.y()))
+		self.get_2d_gui_image().addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+		self.mediator.update_image_display()
 		
-	def mousewheel(self,event):
+	def mouse_wheel(self,event):
 		if event.modifiers()&Qt.ShiftModifier:
-			self.getGuiCtl().adjustEraseRad(event.delta())
-			m= self.get2DGuiImage().scr2img((event.x(),event.y()))
-			self.get2DGuiImage().addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
-			self.mediator.updateImageDisplay()
+			self.get_gui_ctl().adjust_erase_rad(event.delta())
+			m= self.get_2d_gui_image().scr2img((event.x(),event.y()))
+			self.get_2d_gui_image().addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+			self.mediator.update_image_display()
 	
-	def mousedown(self,event) :
-		m=self.get2DGuiImage().scr2img((event.x(),event.y()))
-		#self.boxable.addExclusionArea("circle",m[0],m[1],self.eraseradius)
-		self.get2DGuiImage().addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
-		self.mediator.exclusionAreaAdded("circle",m[0],m[1],self.eraseradius,self.erasemode)	
+	def mouse_down(self,event) :
+		m=self.get_2d_gui_image().scr2img((event.x(),event.y()))
+		#self.boxable.add_exclusion_area("circle",m[0],m[1],self.eraseradius)
+		self.get_2d_gui_image().addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
+		self.mediator.exclusion_area_added("circle",m[0],m[1],self.eraseradius,self.erasemode)	
 
-	def mousedrag(self,event) :
-		m=self.get2DGuiImage().scr2img((event.x(),event.y()))
-		self.get2DGuiImage().addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
-		self.mediator.exclusionAreaAdded("circle",m[0],m[1],self.eraseradius,self.erasemode)
-		# exclusionAreaAdded does the OpenGL update calls, so there is no need to do so here
+	def mouse_drag(self,event) :
+		m=self.get_2d_gui_image().scr2img((event.x(),event.y()))
+		self.get_2d_gui_image().addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
+		self.mediator.exclusion_area_added("circle",m[0],m[1],self.eraseradius,self.erasemode)
+		# exclusion_area_added does the OpenGL update calls, so there is no need to do so here
 		
-	def mouseup(self,event) :
+	def mouse_up(self,event) :
 		# we have finished erasing
 		
 		# make the eraser shape non visible
-		self.get2DGuiImage().addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
-		self.mediator.erasingDone()
+		self.get_2d_gui_image().addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+		self.mediator.erasing_done()
 	
 class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 	'''
@@ -502,30 +502,30 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 		self.moving = None
 		self.dynapix = False
 		
-	def setAnchoring(self,bool):
+	def set_anchoring(self,bool):
 		self.anchoring = bool
 		
-	def setmode(self,mode):
+	def set_mode(self,mode):
 		if mode not in [GUIbox.REFERENCE_ADDING,GUIbox.MANUALLY_ADDING]:
 			print 'error, that is  an illegal mode'
 			return
 		
 		self.mode = mode
 		
-	def mousedown(self,event) :
-		m = self.get2DGuiImage().scr2img((event.x(),event.y()))
-		boxnum = self.mediator.detectBoxCollision(m)
-		if boxnum == -1:
-			if not self.mediator.withinMainImageBounds(m):	return
+	def mouse_down(self,event) :
+		m = self.get_2d_gui_image().scr2img((event.x(),event.y()))
+		box_num = self.mediator.detect_box_collision(m)
+		if box_num == -1:
+			if not self.mediator.within_main_image_bounds(m):	return
 			#if we make it here, that means the user has clicked on an area that is not in any box
 			
 			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
 			
 			# If we get here, we need to add a new reference
-			boxsize = self.mediator.getBoxSize()
+			box_size = self.mediator.get_box_size()
 			
-			box = Box(m[0]-boxsize/2,m[1]-boxsize/2,boxsize,boxsize,True)
-			box.setImageName(self.mediator.getCurrentImageName())
+			box = Box(m[0]-box_size/2,m[1]-box_size/2,box_size,box_size,True)
+			box.set_image_name(self.mediator.get_current_image_name())
 			
 			if self.anchoring:	box.isanchor = False
 			else: box.isanchor = True # this is the default behaviour 
@@ -539,42 +539,42 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 				box.isref = False
 				box.ismanual = True
 			else:
-				print 'error, unknown error in mousedown, boxing mode'
+				print 'error, unknown error in mouse_down, boxing mode'
 			
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get2DGuiImage().addShape("cen",EMShape([self.mediator.getShapeString(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			self.get_2d_gui_image().addShape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
-			self.mediator.storeBox(box)
-			self.mediator.mouseClickUpdatePPC()
+			self.mediator.add_box(box)
+			self.mediator.mouse_click_update_ppc()
 		
 		elif event.modifiers()&Qt.ShiftModifier :
 			# remove the box
-			self.mediator.removeBox(boxnum)
-			self.mediator.mouseClickUpdatePPC()
+			self.mediator.remove_box(box_num)
+			self.mediator.mouse_click_update_ppc()
 			
 		else:
 			# if we make it here than the we're moving a box
-			box = self.mediator.getBox(boxnum)
-			self.moving=[box,m,boxnum]
-			self.get2DGuiImage().setActive(boxnum,.9,.9,.4)
+			box = self.mediator.get_box(box_num)
+			self.moving=[box,m,box_num]
+			self.get_2d_gui_image().setActive(box_num,.9,.9,.4)
 				
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get2DGuiImage().addShape("cen",EMShape([self.mediator.getShapeString(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
-			if not self.getMXGuiImage().isVisible(boxnum) : self.getMXGuiImage().scrollTo(boxnum,yonly=1)
-			self.getMXGuiImage().setSelected(boxnum)
-			self.mediator.updateAllImageDisplay()
+			self.get_2d_gui_image().addShape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			if not self.get_mx_gui_image().isVisible(box_num) : self.get_mx_gui_image().scrollTo(box_num,yonly=1)
+			self.get_mx_gui_image().setSelected(box_num)
+			self.mediator.update_all_image_displays()
+
+	def mouse_drag(self,event) :
 		
-	def mousedrag(self,event) :
-		
-		m=self.get2DGuiImage().scr2img((event.x(),event.y()))
+		m=self.get_2d_gui_image().scr2img((event.x(),event.y()))
 		
 		if event.modifiers()&Qt.ShiftModifier:
-			boxnum = self.mediator.detectBoxCollision(m)
-			if ( boxnum != -1):
-				self.mediator.removeBox(boxnum)
-				self.mediator.mouseClickUpdatePPC()
+			box_num = self.mediator.detect_box_collision(m)
+			if ( box_num != -1):
+				self.mediator.remove_box(box_num)
+				self.mediator.mouse_click_update_ppc()
 			
 		elif self.moving != None:
 			# self.moving[0] is the box, self.moving[1] are the mouse coordinates
@@ -582,14 +582,14 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			# the old m in in self.moving[2]
 			oldm = self.moving[1]
 			
-			self.mediator.moveBox(self.moving[2],m[0]-oldm[0],m[1]-oldm[1])
+			self.mediator.move_box(self.moving[2],m[0]-oldm[0],m[1]-oldm[1])
 			self.moving[1] = m
 	
-	def mouseup(self,event) :
+	def mouse_up(self,event) :
 		if self.moving != None:
 			box = self.moving[0]
 			if box.isref:
-				self.mediator.referenceMoved(box)
+				self.mediator.reference_moved(box)
 			
 		self.moving=None
 
@@ -620,124 +620,125 @@ class GUIboxEventsMediator:
 		
 		self.parent = parent	# need a referene to the parent to send it events
 
-	def get2DGuiImage(self):
+	def get_2d_gui_image(self):
 		'''
 		Return the parent's EMImage2D object
 		'''
-		return self.parent.get2DGuiImage()
+		return self.parent.get_2d_gui_image()
 	
-	def getGuiCtl(self):
+	def get_gui_ctl(self):
 		'''
 		Return the parent's Controller widgit object
 		'''
-		return self.parent.getGuiCtl()
+		return self.parent.get_gui_ctl()
 	
-	def getMXGuiImage(self):
+	def get_mx_gui_image(self):
 		'''
 		Return the parent's EMImageMX object
 		'''
-		return self.parent.getMXGuiImage()
+		return self.parent.get_mx_gui_image()
 	
-	def updateImageDisplay(self):
+	def update_image_display(self):
 		'''
 		Send an event to the parent that the EMImage2D should update its display
 		'''
-		self.parent.updateImageDisplay()
+		self.parent.update_image_display()
 		
-	def updateAllImageDisplay(self):
+	def update_all_image_displays(self):
 		'''
 		Send an event to the parent that the EMImage2D and EMImageMX objects should
 		update their displays
 		'''
-		self.parent.updateAllImageDisplay()
+		self.parent.update_all_image_displays()
 		
-	def exclusionAreaAdded(self,typeofexclusion,x,y,radius,mode):
+	def exclusion_area_added(self,typeofexclusion,x,y,radius,mode):
 		'''
 		Send an event to the parent that an exclusion area was added.
 		The parameters define the type of exclusion area. In future the exclusion area
 		should probably just be its own class.
 		'''
-		self.parent.exclusionAreaAdded(typeofexclusion,x,y,radius,mode)
+		self.parent.exclusion_area_added(typeofexclusion,x,y,radius,mode)
 
-	def erasingDone(self):
+	def erasing_done(self):
 		'''
 		Send an event to the parent letting it know that the user has stopped adding
 		erased area
 		'''
-		self.parent.erasingDone()
+		self.parent.erasing_done()
 		
-	def detectBoxCollision(self,coords):
+	def detect_box_collision(self,coords):
 		'''
 		Ask the parent to detect a collision between a resident box and the given coordinates.
 		This is in terms of the EMImage2D 
 		'''
-		return self.parent.detectBoxCollision(coords)
+		return self.parent.detect_box_collision(coords)
 	
-	def getCurrentImageName(self):
+	def get_current_image_name(self):
 		'''
 		Ask the parent for the current name of the image in the large image view...
 		'''
-		return self.parent.getCurrentImageName()
+		return self.parent.get_current_image_name()
 
-	def getBoxSize(self):
+	def get_box_size(self):
 		'''
-		Ask the parent for the current project boxsize
+		Ask the parent for the current project box_size
 		'''
-		return self.parent.getBoxSize()
+		return self.parent.get_box_size()
 	
-	def storeBox(self,box):
+	def add_box(self,box):
 		'''
 		Tell the parent to store a box
 		'''
-		self.parent.storeBox(box)
+		self.parent.add_box(box)
 	
-	def boxDisplayUpdate(self):
+	def box_display_update(self):
 		'''
 		Tell the parent the a general box display update needs to occur
 		'''
-		self.parent.boxDisplayUpdate()
+		self.parent.box_display_update()
 		
-	def mouseClickUpdatePPC(self):
+	def mouse_click_update_ppc(self):
 		'''
 		Tell the parent that a mouse click occured and that the PPC metric should be updated
 		'''
-		self.parent.mouseClickUpdatePPC()
+		self.parent.mouse_click_update_ppc()
 	
-	def removeBox(self,boxnum):
+	def remove_box(self,box_num):
 		'''
-		Tell the parent to remove a box, as given by the boxnum
+		Tell the parent to remove a box, as given by the box_num
 		'''
-		self.parent.removeBox(boxnum)
+		self.parent.remove_box(box_num)
 		
-	def getBox(self,boxnum):
+	def get_box(self,box_num):
 		'''
-		Ask the parent for the box, as given by the boxnum
+		Ask the parent for the box, as given by the box_num
 		'''
-		return self.parent.getBox(boxnum)
+		return self.parent.get_box(box_num)
 	
-	def moveBox(self,boxnum,dx,dy):
+	def move_box(self,box_num,dx,dy):
 		'''
 		Tell the parent to handle the movement of a box
 		'''
-		self.parent.moveBox(boxnum,dx,dy)
+		self.parent.move_box(box_num,dx,dy)
 	
-	def referenceMoved(self,box):
+	def reference_moved(self,box):
 		'''
 		Tell the parent that a reference was moved - this could trigger automatic boxing
 		'''
-		self.parent.referenceMoved(box)
+		self.parent.reference_moved(box)
 		
-	def withinMainImageBounds(self,coords):
+	def within_main_image_bounds(self,coords):
 		'''
 		Ask the parent to determine if the coords are within the currently display image boundaries
 		'''
-		return self.parent.withinMainImageBounds(coords)
+		return self.parent.within_main_image_bounds(coords)
 	
-	def getShapeString(self):
+	def get_shape_string(self):
 		'''
 		Gets the shape string currently used for creating shapes for the 2D image
 		'''
-		return self.parent.getShapeString()
+		return self.parent.get_shape_string()
+	
 	
 class GUIbox:
 	'''
@@ -746,7 +747,7 @@ class GUIbox:
 	REFERENCE_ADDING = 0
 	ERASING = 1
 	MANUALLY_ADDING = 2
-	def __init__(self,imagenames,boxes,boxsize=-1):
+	def __init__(self,image_names,boxes,box_size=-1):
 		"""Implements the 'boxer' GUI."""
 		
 		try:
@@ -760,81 +761,81 @@ class GUIbox:
 		except: pass
 		self.dynapix = False
 		self.anchoring = False
-		self.imagenames = imagenames
+		self.image_names = image_names
 		
-		self.boxsize = boxsize
-		if len(boxes)>0 and self.boxsize==-1: self.boxsize=boxes[0][2]
-		else : self.boxsize = -1
+		self.box_size = box_size
+		if len(boxes)>0 and self.box_size==-1: self.box_size=boxes[0][2]
+		else : self.box_size = -1
 		
 		try:
-			projectdb = EMProjectDB()
-			data = projectdb[getIDDKey(self.imagenames[0])]
-			autoBoxerID = data["auto_boxer_unique_id"]
-			trimAutoBoxer = projectdb[autoBoxerID]["autoboxer"]
-			self.autoboxername = autoBoxerID
-			self.autoBoxer = SwarmAutoBoxer(self)
-			self.autoBoxer.become(trimAutoBoxer)
-			self.autoBoxer.setMode(self.dynapix,self.anchoring)
-			if self.boxsize==-1: self.boxsize = self.autoBoxer.getBoxSize()
+			project_db = EMProjectDB()
+			data = project_db[get_idd_key(self.image_names[0])]
+			autoboxer_id = data["autoboxer_unique_id"]
+			trim_autoboxer = project_db[autoboxer_id]["autoboxer"]
+			self.autoboxer_name = autoboxer_id
+			self.autoboxer = SwarmAutoBoxer(self)
+			self.autoboxer.become(trim_autoboxer)
+			self.autoboxer.set_mode(self.dynapix,self.anchoring)
+			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
 		except:
-			if self.boxsize == -1:
-				if boxsize == -1: self.boxsize = 128
-				else: self.boxsize = boxsize
-			self.autoBoxer = SwarmAutoBoxer(self)
-			self.autoBoxer.boxsize = self.boxsize
-			self.autoBoxer.setMode(self.dynapix,self.anchoring)
+			if self.box_size == -1:
+				if box_size == -1: self.box_size = 128
+				else: self.box_size = box_size
+			self.autoboxer = SwarmAutoBoxer(self)
+			self.autoboxer.box_size = self.box_size
+			self.autoboxer.set_mode(self.dynapix,self.anchoring)
 			##print "loaded a new autoboxer"
 		
-		self.eraseradius = 2*self.boxsize
+		self.eraseradius = 2*self.box_size
 		self.erasemode = None
 		self.dynapixp=get_app()
-		self.currentimage = 0
+		self.current_image = 0
 		self.itshrink = -1 # image thumb shrink
 		self.imagethumbs = None # image thumbs
 		
 		self.shape_string = "rectpoint"
 		
-		self.boxable = Boxable(self.imagenames[0],self,self.autoBoxer)
-		self.boxable.addnonrefs(boxes)
-		self.boxable.boxsize = self.boxsize
+		self.boxable = Boxable(self.image_names[0],self,self.autoboxer)
+		self.boxable.add_non_refs(boxes)
+		self.boxable.box_size = self.box_size
 		
 		self.eventsmediator = GUIboxEventsMediator(self)
-		self.mousehandlers = {}
-		self.mousehandlers["boxing"] = GUIboxParticleManipEvents(self.eventsmediator)
-		self.mousehandlers["erasing"] = GUIboxMouseEraseEvents(self.eventsmediator,self.eraseradius)
-		self.mousehandler = self.mousehandlers["boxing"]
+		self.mouse_handlers = {}
+		self.mouse_handlers["boxing"] = GUIboxParticleManipEvents(self.eventsmediator)
+		self.mouse_handlers["erasing"] = GUIboxMouseEraseEvents(self.eventsmediator,self.eraseradius)
+		self.mousehandler = self.mouse_handlers["boxing"]
 		
 		self.ptcl=[]						# list of actual boxed out EMImages
 		self.boxm = None
 		self.moving=None					# Used during a user box drag
 		
 		bic = BigImageCache()
-		image=bic.getImage(self.imagenames[0])
+		image=bic.get_image(self.image_names[0])
 		self.guiimp=EMImage(image)		# widget for displaying large image
 		self.guiim=self.guiimp.child
-		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-		self.guiim.setFrozen(self.boxable.isFrozen())
-		self.guiim.setExcluded(self.boxable.isExcluded())
+		self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+		self.guiim.setFrozen(self.boxable.is_frozen())
+		self.guiim.setExcluded(self.boxable.is_excluded())
 		
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		self.guimx=EMImageMX()	
 		
 		self.guimxitp = None
-		self.genImageThumbnailsWidget()
+		self.gen_image_thumbnails_widget()
 
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mousedown)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mousedrag)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.mouseup  )
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mouse_down)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("keypress"),self.keypress)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousewheel"),self.mousewheel)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousemove"),self.mousemove)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousemove"),self.mouse_move)
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
-		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.boxsel)
-		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedrag"),self.boxmove)
-		self.guimx.connect(self.guimx,QtCore.SIGNAL("mouseup"),self.boxrelease)
-		self.guimx.connect(self.guimx,QtCore.SIGNAL("boxdeleted"),self.boximagedeleted)
+		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.box_selected)
+		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedrag"),self.box_moved)
+		self.guimx.connect(self.guimx,QtCore.SIGNAL("mouseup"),self.box_released)
+		self.guimx.connect(self.guimx,QtCore.SIGNAL("boxdeleted"),self.box_image_deleted)
 		
-		self.indisplaylimbo = False	# a flag I am using to solve a problem
+		self.in_display_limbo = False	# a flag I am using to solve a problem
 		self.mmode = GUIbox.REFERENCE_ADDING
 		self.guiim.setmmode(0)
 		self.guimx.setmmode("app")
@@ -862,14 +863,14 @@ class GUIbox:
 			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
 			self.guimxit.setSelected(0)
 
-		self.abselmediator = AutoBoxerSelectionsMediator(self)
-		self.guictl=GUIboxPanel(self,self.abselmediator)
-		self.guictl.setImageQuality(self.boxable.getQuality())
+		self.ab_sel_mediator = AutoBoxerSelectionsMediator(self)
+		self.guictl=GUIboxPanel(self,self.ab_sel_mediator)
+		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.show()
-		self.autoBoxer.autoBox(self.boxable,False)
-		self.boxDisplayUpdate()
+		self.autoboxer.auto_box(self.boxable,False)
+		self.box_display_update()
 	
-	def getShapeString(self):
+	def get_shape_string(self):
 		return self.shape_string
 	
 	def has_thumbnails(self):
@@ -895,175 +896,175 @@ class GUIbox:
 		else:
 			self.guimxitp.hide()
 			
-	def withinMainImageBounds(self,coords):
+	def within_main_image_bounds(self,coords):
 		x = coords[0]
 		y = coords[1]
 		if x < 0 or y < 0:
 			return False
 		
-		main_image = self.getCurrentImage()
+		main_image = self.get_current_image()
 		
 		if x >= main_image.get_xsize() or y >= main_image.get_ysize():
 			return False
 		
 		return True
 		
-	def changeCurrentAutoBoxer(self, autoboxerid,autobox=True):
+	def change_current_autoboxer(self, autoboxer_id,autobox=True):
 		#print "change current autoboxer"
-		projectdb = EMProjectDB()
-		trimAutoBoxer = projectdb[autoboxerid]["autoboxer"]
-		#print "changing autoboxer to autoboxer_",timestamp,"and its stamp in the db is",trimAutoBoxer.getCreationTS()
-		self.autoBoxer = SwarmAutoBoxer(self)
-		self.autoBoxer.become(trimAutoBoxer)
-		self.autoBoxer.writeSpecificReferencesToDB(self.boxable.getImageName())
-		self.autoBoxer.setMode(self.dynapix,self.anchoring)
+		project_db = EMProjectDB()
+		trim_autoboxer = project_db[autoboxer_id]["autoboxer"]
+		#print "changing autoboxer to autoboxer_",timestamp,"and its stamp in the db is",trim_autoboxer.get_creation_ts()
+		self.autoboxer = SwarmAutoBoxer(self)
+		self.autoboxer.become(trim_autoboxer)
+		self.autoboxer.write_specific_references_to_db(self.boxable.get_image_name())
+		self.autoboxer.set_mode(self.dynapix,self.anchoring)
 
-		self.boxable.setAutoBoxer(self.autoBoxer)
+		self.boxable.set_autoboxer(self.autoboxer)
 		
-		if self.boxsize != self.autoBoxer.getBoxSize():
-			self.updateBoxSize(self.autoBoxer.getBoxSize())
+		if self.box_size != self.autoboxer.get_box_size():
+			self.update_box_size(self.autoboxer.get_box_size())
 			#print "box display update"
 		
 		if autobox:
 			self.ptcl = []
 			self.guiim.delShapes()
-			self.boxable.clearAndReloadImages()
-			self.indisplaylimbo = True
-			self.autoBoxer.regressiveflag = True
-			self.autoBoxer.autoBox(self.boxable)
-			self.indisplaylimbo = False
+			self.boxable.clear_and_reload_images()
+			self.in_display_limbo = True
+			self.autoboxer.regressiveflag = True
+			self.autoboxer.auto_box(self.boxable)
+			self.in_display_limbo = False
 		
-		self.boxDisplayUpdate()	
+		self.box_display_update()	
 		
-	def updateBoxSize(self,boxsize,mode=0):
-		if boxsize != self.boxsize:
+	def update_box_size(self,box_size,mode=0):
+		if box_size != self.box_size:
 			if mode == 0:
-				self.boxsize = boxsize
-				self.boxable.changeBoxSize(self.boxsize)
-				self.guictl.setBoxSize(self.boxsize)
-				self.boxable.getExclusionImage(True)
-				self.boxable.reloadBoxes() # this may be inefficient
+				self.box_size = box_size
+				self.boxable.change_box_size(self.box_size)
+				self.guictl.set_box_size(self.box_size)
+				self.boxable.get_exclusion_image(True)
+				self.boxable.reload_boxes() # this may be inefficient
 				#print "clearing displays"
-				self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-				self.clearDisplays()
+				self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+				self.clear_displays()
 			elif mode == 1:
-				self.boxsize = boxsize
-				self.autoBoxer.setBoxSize(self.boxsize,self.imagenames)
-				self.boxable.reloadBoxes() # this may be inefficient
+				self.box_size = box_size
+				self.autoboxer.set_box_size(self.box_size,self.image_names)
+				self.boxable.reload_boxes() # this may be inefficient
 				#print "clearing displays"
-				self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-				self.clearDisplays()
+				self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+				self.clear_displays()
 				
 			else:
-				print "error, unknown mode in updateBoxSize"
+				print "error, unknown mode in update_box_size"
 		
-	def get2DGuiImage(self):
+	def get_2d_gui_image(self):
 		return self.guiim
 	
-	def getGuiCtl(self):
+	def get_gui_ctl(self):
 		return self.guictl
 	
-	def getMXGuiImage(self):
+	def get_mx_gui_image(self):
 		return self.guimx
 	
-	def getBoxable(self):
+	def get_boxable(self):
 		return self.boxable
 		
-	def exclusionAreaAdded(self,typeofexclusion,x,y,radius,mode):
-		self.boxable.addExclusionArea(typeofexclusion,x,y,radius,mode)
-		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-		self.updateImageDisplay()
+	def exclusion_area_added(self,typeofexclusion,x,y,radius,mode):
+		self.boxable.add_exclusion_area(typeofexclusion,x,y,radius,mode)
+		self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+		self.update_image_display()
 		
-	def erasingDone(self):
+	def erasing_done(self):
 		'''
 		Call this function after erasing has occured to remove all boxes in the
 		erased regions
 		'''
 		
 		# tell the boxable to remove boxes (and return their number)
-		[lostboxes,refboxes] = self.boxable.updateExcludedBoxes()
+		[lostboxes,refboxes] = self.boxable.update_excluded_boxes()
 		# after this, make sure the display is correct.
 		
-		# If any of the boxes are references the autoBoxer needs to know about it...
+		# If any of the boxes are references the autoboxer needs to know about it...
 		# this could potentially trigger auto boxer 
 		if len(lostboxes) != 0:
-			self.deleteDisplayShapes(lostboxes)
+			self.delete_display_shapes(lostboxes)
 			self.mouseclicks += 1
-			self.updateppc()
-			self.updateAllImageDisplay()
+			self.update_ppc()
+			self.update_all_image_displays()
 			
-		else: self.updateImageDisplay()
+		else: self.update_image_display()
 		
 		if len(refboxes) != 0: 
-			val = self.autoBoxer.removeReference(refboxes)
+			val = self.autoboxer.remove_reference(refboxes)
 			if val == 2:
-				self.boxable.clearAndCache(True)
-				self.clearDisplays()
+				self.boxable.clear_and_cache(True)
+				self.clear_displays()
 				return # avoid unecessary display update below
 			
-		self.boxDisplayUpdate()
+		self.box_display_update()
 	
-	def detectBoxCollision(self,coords):
+	def detect_box_collision(self,coords):
 		'''
 		Detects a collision of the coordinates with any of the boxes in the current image
 		stored in guiim. coords need to be in the image coordinates
 		'''
-		return  self.collisiondetect(coords,self.getBoxes())
+		return  self.collision_detect(coords,self.get_boxes())
 	
-	def getCurrentAutoBoxerTS(self):
-		return self.autoBoxer.getCreationTS()
+	def get_current_autoboxer_ts(self):
+		return self.autoboxer.get_creation_ts()
 	
-	def getCurrentImageName(self):
-		return self.imagenames[self.currentimage]
+	def get_current_image_name(self):
+		return self.image_names[self.current_image]
 	
-	def getCurrentImage(self):
+	def get_current_image(self):
 		bic = BigImageCache()
-		return bic.getImage(self.getCurrentImageName())
+		return bic.get_image(self.get_current_image_name())
 	
-	def getImageNames(self):
-		return self.imagenames
+	def get_image_names(self):
+		return self.image_names
 	
-	def getBoxSize(self):
-		return self.boxsize
+	def get_box_size(self):
+		return self.box_size
 	
-	def storeBox(self,box):
-		if not self.boxable.isInteractive():
+	def add_box(self,box):
+		if not self.boxable.is_interactive():
 			return
 		
-		self.boxable.addbox(box)
+		self.boxable.add_box(box)
 		
 		# Should this be here?
-		boxnum = len(self.getBoxes())
-		if not self.guimx.isVisible(boxnum) : self.guimx.scrollTo(boxnum,yonly=1)
-		self.guimx.setSelected(boxnum)
+		box_num = len(self.get_boxes())
+		if not self.guimx.isVisible(box_num) : self.guimx.scrollTo(box_num,yonly=1)
+		self.guimx.setSelected(box_num)
 		
-		# autoBoxer will autobox depending on the state of its mode
-		if box.isref : self.autoBoxer.addReference(box)
+		# autoboxer will autobox depending on the state of its mode
+		if box.isref : self.autoboxer.add_reference(box)
 		
-		self.boxDisplayUpdate()
+		self.box_display_update()
 		
-	def getBox(self,boxnum):
-		boxes = self.getBoxes()
-		return boxes[boxnum]
+	def get_box(self,box_num):
+		boxes = self.get_boxes()
+		return boxes[box_num]
 		
-	def removeBox(self,boxnum):
-		if not self.boxable.isInteractive(): return
+	def remove_box(self,box_num):
+		if not self.boxable.is_interactive(): return
 		
-		box = self.delbox(boxnum)
+		box = self.delete_box(box_num)
 		if not (box.isref or box.ismanual):
-			self.boxable.addExclusionParticle(box)
-		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-		self.boxDisplayUpdate()
+			self.boxable.add_exclusion_particle(box)
+		self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+		self.box_display_update()
 		
-	def referenceMoved(self,box):
-		if (self.autoBoxer.referenceMoved(box)):
-			self.boxDisplayUpdate()
+	def reference_moved(self,box):
+		if (self.autoboxer.reference_moved(box)):
+			self.box_display_update()
 		
-	def mouseClickUpdatePPC(self):
+	def mouse_click_update_ppc(self):
 		self.mouseclicks += 1
-		self.updateppc()
+		self.update_ppc()
 	
-	def setPtclMxData(self,data=None):
+	def set_ptcl_mx_data(self,data=None):
 		'''
 		Call this to set the Ptcl Mx data 
 		'''
@@ -1075,11 +1076,11 @@ class GUIbox:
 					self.guimxp.show()
 					self.guimx.setSelected(0)
 	
-	def clearDisplays(self):
+	def clear_displays(self):
 		self.ptcl = []
 		self.guiim.delShapes()
 		self.guimx.setData([])
-		self.boxDisplayUpdate() # - the user may still have some manual boxes...
+		self.box_display_update() # - the user may still have some manual boxes...
 	
 	def imagesel(self,event,lc):
 		#print 'in image select'
@@ -1087,56 +1088,58 @@ class GUIbox:
 		app.setOverrideCursor(Qt.BusyCursor)
 		try:
 			im=lc[0]
-			if im != self.currentimage:
+			if im != self.current_image:
 				#print 'changing images'
 				self.guimxit.setSelected(im)
 				
 				bic = BigImageCache()
-				image=bic.getImage(self.imagenames[im])
+				image=bic.get_image(self.image_names[im])
 				self.guiim.setData(image)
 				
-				self.boxable.cacheExcToDisk()
-				self.boxable = Boxable(self.imagenames[im],self,self.autoBoxer)
+				self.boxable.cache_exc_to_disk()
+				self.boxable = Boxable(self.image_names[im],self,self.autoboxer)
 				
 				self.ptcl = []
 				self.guiim.delShapes()
-				self.indisplaylimbo = True
+				self.in_display_limbo = True
 				
 				try:
-					projectdb = EMProjectDB()
-					data = projectdb[getIDDKey(self.imagenames[im])]
-					autoBoxerID = data["auto_boxer_unique_id"]
-					trimAutoBoxer = projectdb[autoBoxerID]["autoboxer"]
-					self.autoboxername = autoBoxerID
-					self.autoBoxer = SwarmAutoBoxer(self)
-					self.autoBoxer.become(trimAutoBoxer)
+					project_db = EMProjectDB()
+					data = project_db[get_idd_key(self.image_names[im])]
+					autoboxer_id = data["autoboxer_unique_id"]
+					trim_autoboxer = project_db[autoboxer_id]["autoboxer"]
+					self.autoboxer_name = autoboxer_id
+					self.autoboxer = SwarmAutoBoxer(self)
+					self.autoboxer.become(trim_autoboxer)
 				except: pass
 				
-				self.autoBoxer.regressiveflag = True
-				self.autoBoxer.autoBox(self.boxable)
-				self.boxable.setAutoBoxer(self.autoBoxer)
-				self.autoBoxerDBChanged()
+				self.autoboxer.regressiveflag = True
+				self.autoboxer.auto_box(self.boxable)
+				self.boxable.set_autoboxer(self.autoboxer)
+				self.autoboxer_db_changed()
 				
-				if self.boxsize != self.autoBoxer.getBoxSize():
-					self.updateBoxSize(self.autoBoxer.getBoxSize())
+				if self.box_size != self.autoboxer.get_box_size():
+					self.update_box_size(self.autoboxer.get_box_size())
 	
-				self.indisplaylimbo = False
+				self.in_display_limbo = False
 				
 				for box in self.boxable.boxes: box.changed = True
 				
-				self.currentimage = im
+				self.current_image = im
 				
-				self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-				self.guiim.setFrozen(self.boxable.isFrozen())
-				self.guiim.setExcluded(self.boxable.isExcluded())
-				self.guictl.setImageQuality(self.boxable.getQuality())
-				self.boxDisplayUpdate()
+				self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+				self.guiim.setFrozen(self.boxable.is_frozen())
+				self.guiim.setExcluded(self.boxable.is_excluded())
+				self.guictl.set_image_quality(self.boxable.get_quality())
+				self.box_display_update()
+				
+				self.update_all_image_displays()
 		except: pass
 			
 		app.setOverrideCursor(Qt.ArrowCursor)
 			
 
-	def genImageThumbnailsWidget(self):
+	def gen_image_thumbnails_widget(self):
 		'''
 		Generates image thumbnails for a single image name
 		if there is only one image in the image file on disk
@@ -1145,10 +1148,10 @@ class GUIbox:
 		and 1 is returned
 		'''
 		# warnilg here
-		try: nim = len(self.imagenames)
+		try: nim = len(self.image_names)
 		except: 
 			# warning - bad hacking going on
-			print "the image name ", imagename, "probably doesn't exist"
+			print "the image name ", image_name, "probably doesn't exist"
 			raise Exception
 	
 		if (nim == 1): return 0
@@ -1157,12 +1160,12 @@ class GUIbox:
 		app.setOverrideCursor(Qt.BusyCursor)
 	
 		try:
-			n = self.getImageThumbShrink()
+			n = self.get_image_thumb_shrink()
 			self.imagethumbs = []
 			
 			a = time()
 			for i in range(0,nim):
-				thumb = self.getImageThumb(i)
+				thumb = self.get_image_thumb(i)
 				#print "got thumb",i
 				self.imagethumbs.append(thumb)
 			
@@ -1181,11 +1184,11 @@ class GUIbox:
 		app.setOverrideCursor(Qt.ArrowCursor)
 		return 1
 		
-	def getImageThumb(self,i):
-		n = self.getImageThumbShrink()
+	def get_image_thumb(self,i):
+		n = self.get_image_thumb_shrink()
 		
 		bic = BigImageCache()
-		image=bic.getImage(self.imagenames[i])
+		image=bic.get_image(self.image_names[i])
 		
 		#while n > 1:
 			#image = image.process("math.meanshrink",{"n":2})
@@ -1193,10 +1196,10 @@ class GUIbox:
 		image = image.process("math.meanshrink",{"n":n})
 		return image
 		
-	def getImageThumbShrink(self):
+	def get_image_thumb_shrink(self):
 		if self.itshrink == -1:
 			bic = BigImageCache()
-			image=bic.getImage(self.imagenames[self.currentimage])
+			image=bic.get_image(self.image_names[self.current_image])
 			if image == None:
 				print "error - the image is not set, I need it to calculate the image thumb shrink"
 				exit(1)
@@ -1212,120 +1215,107 @@ class GUIbox:
 		
 		return self.itshrink
 		
-	def writeBoxesTo(self,imagename,norm=True):
-		boxes = self.getBoxes()
-		
-		# Write EMAN1 style box database
-		n = 0
-		for box in boxes:
-			image = box.getBoxImage()
-#			print n,i
-#			print i[4]
-			image.write_image(imagename,n)
-			n += 1
-
-	def boxmove(self,event,scale):
+	def box_moved(self,event,scale):
 		try:
 			dx = (self.boxm[0] - event.x())/scale
 			dy = (event.y() - self.boxm[1])/scale
-			self.moveBox(self.boxm[2],dx,dy)
+			self.move_box(self.boxm[2],dx,dy)
 			self.boxm[0] = event.x()
 			self.boxm[1] = event.y()
-			self.updateAllImageDisplay()
+			self.update_all_image_displays()
 		except: pass
 		
-	def boxrelease(self,event,lc):
-		boxes = self.getBoxes()
+	def box_released(self,event,lc):
+		boxes = self.get_boxes()
 		#print boxes
 		try: box =  boxes[self.boxm[2]]
 		except: return # The user clicked on black
 		
 		if box.isref :
-			self.referenceMoved(box)
-		
-		
+			self.reference_moved(box)
+
 		im=lc[0]
 		self.boxm = [event.x(),event.y(),im]
 		self.guiim.setActive(im,.9,.9,.4)
 		self.guimx.setSelected(im)
-		boxes = self.getBoxes()
+		boxes = self.get_boxes()
 		self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		
 		self.boxm = None
 		
-	def boxsel(self,event,lc):
+	def box_selected(self,event,lc):
 		im=lc[0]
 		self.boxm = [event.x(),event.y(),im]
 		self.guiim.setActive(im,.9,.9,.4)
 		self.guimx.setSelected(im)
-		boxes = self.getBoxes()
+		boxes = self.get_boxes()
 		#self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		#try:
 			##self.guiim.scrollTo(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 			#pass
 			
-		#except: print "boxsel() scrolling error"
+		#except: print "box_selected() scrolling error"
 
-	def getBoxes(self):
+	def get_boxes(self):
 		return self.boxable.boxes
 	
-	def mousemove(self,event):
-		self.mousehandler.mousemove(event)
+	def mouse_move(self,event):
+		self.mousehandler.mouse_move(event)
 
-	def mousewheel(self,event):
-		self.mousehandler.mousewheel(event)
+	def mouse_wheel(self,event):
+		self.mousehandler.mouse_wheel(event)
 		
-	def mousedown(self,event) :
-		self.mousehandler.mousedown(event)
+	def mouse_down(self,event) :
+		self.mousehandler.mouse_down(event)
 		
-	def mouseup(self,event) :
-		self.mousehandler.mouseup(event)
+	def mouse_up(self,event) :
+		self.mousehandler.mouse_up(event)
 	
-	def mousedrag(self,event) :
-		self.mousehandler.mousedrag(event)
+	def mouse_drag(self,event) :
+		self.mousehandler.mouse_drag(event)
 	
-	def updateppc(self):
+	def update_ppc(self):
 		if self.mouseclicks > 0:
-			self.guictl.ppcChanged(len(self.getBoxes())/float(self.mouseclicks))
+			self.guictl.ppc_changed(len(self.get_boxes())/float(self.mouseclicks))
 		else:
-			self.guictl.ppcChanged(0)
+			self.guictl.ppc_changed(0)
 	
-	def collisiondetect(self,m,boxes):
+	def collision_detect(self,m,boxes):
 			
-		for boxnum,box in enumerate(boxes):
+		for box_num,box in enumerate(boxes):
 			if m[0]<box.xcorner or m[0]>(box.xcorner +box.xsize) or m[1]<box.ycorner or m[1]>(box.ycorner +box.ysize) :
 				# no collision
 				continue
 			# if we make it here there has been a collision, the box already exists
-			return boxnum
+			return box_num
 		
 		return -1
 
-	def moveBox(self,boxnum,dx,dy):
-		box = self.getBoxes()[boxnum]
-		if not self.boxable.isInteractive():
+	def move_box(self,box_num,dx,dy):
+		box = self.get_boxes()[box_num]
+		if not self.boxable.is_interactive():
 			return
 		
-		self.boxable.moveBox(box,dx,dy,boxnum)
+		self.boxable.move_box(box,dx,dy,box_num)
 			# we have to update the reference also
-		self.ptcl[boxnum] = box.getBoxImage()
+		self.ptcl[box_num] = box.get_box_image()
 			
 		x0=box.xcorner+box.xsize/2-1
 		y0=box.ycorner+box.ysize/2-1
 		self.guiim.addShape("cen",EMShape([self.shape_string,.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 		box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
-		self.guiim.addShape(boxnum,box.shape)
-		self.boxDisplayUpdate()
-		#self.updateAllImageDisplay()
+		self.guiim.addShape(box_num,box.shape)
+		self.box_display_update()
+		#self.update_all_image_displays()
 	
 	def change_shapes(self,shape_string):
 		if shape_string in ["rectpoint","rect","rcircle","rcirclepoint"]:
 			self.shape_string = shape_string
-			self.boxDisplayUpdate(True)
+			self.box_display_update(True)
 		else:
 			print "unknown shape string", shapestring
 	
-	def updateboxcolors(self,classify):
+	def update_box_colors(self,classify):
 		sh=self.guiim.getShapes()
 		for i in classify.items():
 			color = BoxingTools.get_color(i[1])
@@ -1335,7 +1325,7 @@ class GUIbox:
 			sh[int(i[0])].shape[3] = color[2]
 			sh[int(i[0])].changed=True
 			
-		self.boxDisplayUpdate()
+		self.box_display_update()
 
 	def keypress(self,event):
 		if event.key() == Qt.Key_Tab:
@@ -1348,24 +1338,24 @@ class GUIbox:
 					#self.image.insert_clip(self.correlationsection,self.correlationcoords)
 		else: pass
 	
-	def updateAllImageDisplay(self):
-		self.updateImageDisplay()
-		self.updateMXDisplay()
+	def update_all_image_displays(self):
+		self.update_image_display()
+		self.update_mx_display()
 	
-	def updateImageDisplay(self):
+	def update_image_display(self):
 		self.guiim.updateGL()
 		
-	def updateMXDisplay(self):
+	def update_mx_display(self):
 		self.guimx.updateGL()
 	
-	def deleteDisplayShapes(self,numbers):
+	def delete_display_shapes(self,numbers):
 		'''
 		Warning - this won't work unless the numbers go from greatest to smallest- i.e. they are in reverse order
 		Deletes shapes displayed by the 2D image viewer
 		Pops boxed particles from the list used by the matrix image viewer (for boxes)
 		'''
 		#print "called delete display shapesS"
-		if self.indisplaylimbo: return
+		if self.in_display_limbo: return
 		
 		sh=self.guiim.getShapes()
 		
@@ -1389,54 +1379,54 @@ class GUIbox:
 		#self.guiim.addShapes(sh)
 		#print "now there are",len(sh),"shapes"
 		
-	def boximagedeleted(self,event,lc,forceimagemxremove=True):
-		box = self.delbox(lc[0],forceimagemxremove)
-		self.boxable.addExclusionParticle(box)
-		self.guiim.setOtherData(self.boxable.getExclusionImage(False),self.autoBoxer.getBestShrink(),True)
-		self.updateAllImageDisplay()
-		self.updateppc()
+	def box_image_deleted(self,event,lc,force_image_mx_remove=True):
+		box = self.delete_box(lc[0],force_image_mx_remove)
+		self.boxable.add_exclusion_particle(box)
+		self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+		self.update_all_image_displays()
+		self.update_ppc()
 		
-	def delbox(self,boxnum,forceimagemxremove=True):
+	def delete_box(self,box_num,force_image_mx_remove=True):
 		"""
 		Deletes the numbered box completely
 		Should only be called in the instance where a single box is being deleting - NOT when
-		you are deleting a list of boxes sequentially (for that you should use deleteDisplayShapes
+		you are deleting a list of boxes sequentially (for that you should use delete_display_shapes
 		and something to pop the box from the Boxable. See examples in this code)
 		"""
 		sh=self.guiim.getShapes()
 		k=sh.keys()
 		k.sort()
-		del sh[int(boxnum)]
+		del sh[int(box_num)]
 		for j in k:
 			if isinstance(j,int):
-				if j>boxnum :
+				if j>box_num :
 					sh[j-1]=sh[j]
 					del sh[j]
 		self.guiim.delShapes()
 		self.guiim.addShapes(sh)
 		self.guiim.setActive(None,.9,.9,.4)
-		if forceimagemxremove: self.ptcl.pop(boxnum)
+		if force_image_mx_remove: self.ptcl.pop(box_num)
 		
-		box = self.boxable.boxes[boxnum]
+		box = self.boxable.boxes[box_num]
 		
-		self.boxable.delbox(boxnum)
+		self.boxable.delete_box(box_num)
 		# if the boxable was a reference then the autoboxer needs to be told. It will remove
 		# it from its own list and potentially do autoboxing
 		if box.isref:
-			val = self.autoBoxer.removeReference(box)
+			val = self.autoboxer.remove_reference(box)
 			if val == 2:
-				self.boxable.clearAndCache(True)
-				self.clearDisplays()
+				self.boxable.clear_and_cache(True)
+				self.clear_displays()
 				
 		return box
 	
-	def boxDisplayUpdate(self,force=False):
+	def box_display_update(self,force=False):
 		
 		ns = {}
 		idx = 0
 		#self.ptcl = []
 		# get the boxes
-		boxes =self.getBoxes()
+		boxes =self.get_boxes()
 		for j,box in enumerate(boxes):
 	
 			if not box.changed and not force:
@@ -1445,7 +1435,7 @@ class GUIbox:
 			
 			box.changed=False
 		
-			im=box.getBoxImage()
+			im=box.get_box_image()
 			box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
 			
 			if not force and not box.isref and not box.ismanual:
@@ -1457,21 +1447,21 @@ class GUIbox:
 			idx += 1
 		
 		self.guiim.addShapes(ns)
-		self.setPtclMxData(self.ptcl)
+		self.set_ptcl_mx_data(self.ptcl)
 		
-		self.guictl.nboxesChanged(len(self.ptcl))
+		self.guictl.num_boxes_changed(len(self.ptcl))
 #		self.emit(QtCore.SIGNAL("nboxes"),len(self.ptcl))
 
-		self.updateAllImageDisplay()
+		self.update_all_image_displays()
 
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
 		self.dynapixp.exec_()
 		
-		self.boxable.cacheExcToDisk()
-		projectdb = EMProjectDB()
-		projectdb.close()
+		self.boxable.cache_exc_to_disk()
+		project_db = EMProjectDB()
+		project_db.close()
 		
 
 		E2saveappwin("boxer","imagegeom",self.guiim)
@@ -1487,171 +1477,171 @@ class GUIbox:
 			if self.guimx.inspector.isVisible() : E2saveappwin("boxer","mxcontrolgeom",self.guimx.inspector)
 		except : E2setappval("boxer","mxcontrol",False)
 		
-		return (self.getBoxes())
+		return (self.get_boxes())
 
-	def autoboxbutton(self,bool):
+	def force_autobox(self,bool):
 		'''
-		Hit the autobox is like hitting refresh - everything is updated
+		like hitting refresh - everything is updated
 		'''
-		self.boxable.clearAndCache(True)
-		self.autoBoxer.writeSpecificReferencesToDB(self.boxable.getImageName())
-		self.boxable.getReferencesFromDB()
-		self.autoBoxer.autoBox(self.boxable, True,True)
-		self.boxDisplayUpdate()
+		self.boxable.clear_and_cache(True)
+		self.autoboxer.write_specific_references_to_db(self.boxable.get_image_name())
+		self.boxable.get_references_from_db()
+		self.autoboxer.auto_box(self.boxable, True,True)
+		self.box_display_update()
 
-	def toggleDynapix(self,bool):
+	def toggle_dynapix(self,bool):
 		self.dynapix = bool
-		self.autoBoxer.setMode(self.dynapix,self.anchoring)
+		self.autoboxer.set_mode(self.dynapix,self.anchoring)
 		
 	def done(self):
-		self.boxable.cacheExcToDisk()
+		self.boxable.cache_exc_to_disk()
 		self.dynapixp.quit
 		
-	def trydata(self,data,thr):
-		print 'trydata was pressed, this feature is currently disabled'
+	def try_data(self,data,thr):
+		print 'try that was pressed, this feature is currently disabled'
 		
-	def optparamsupdate(self,thresh,profile,radius):
-		self.guictl.updatedata(thresh,profile,radius)
+	def opt_params_updated(self,thresh,profile,radius):
+		self.guictl.update_data(thresh,profile,radius)
 		
-	def setautobox(self,selmode):
-		if self.autoBoxer.setSelectionMode(selmode):
-			self.boxDisplayUpdate()
+	def set_selection_mode(self,selmode):
+		if self.autoboxer.set_selection_mode(selmode):
+			self.box_display_update()
 		
-	def setprofilecmp(self,cmpmode):
-		if self.autoBoxer.setCmpMode(cmpmode):
-			self.boxDisplayUpdate()
+	def set_profile_comparitor(self,cmp_mode):
+		if self.autoboxer.set_cmp_mode(cmp_mode):
+			self.box_display_update()
 			
 		
-	def nocupdate(self,bool):
+	def set_anchoring(self,bool):
 		self.anchoring = bool
-		self.mousehandlers["boxing"].setAnchoring(bool)
-		self.autoBoxer.setMode(self.dynapix,self.anchoring)
+		self.mouse_handlers["boxing"].set_anchoring(bool)
+		self.autoboxer.set_mode(self.dynapix,self.anchoring)
 		
 	def classify(self,bool):
 		self.boxable.classify()
 		
-	def erasetoggled(self,bool):
+	def erase_toggled(self,bool):
 		# for the time being there are only two mouse modes
 		
 		if bool == True:
-			self.mousehandlers["erasing"].setmode(Boxable.ERASE)
-			self.mousehandler = self.mousehandlers["erasing"]
+			self.mouse_handlers["erasing"].set_mode(Boxable.ERASE)
+			self.mousehandler = self.mouse_handlers["erasing"]
 		else:
 			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
-			self.updateImageDisplay()
-			self.mousehandler = self.mousehandlers["boxing"]
+			self.update_image_display()
+			self.mousehandler = self.mouse_handlers["boxing"]
 			
 	
-	def unerasetoggled(self,bool):
+	def unerase_toggled(self,bool):
 		if bool == True:
-			self.mousehandlers["erasing"].setmode(Boxable.UNERASE)
-			self.mousehandler = self.mousehandlers["erasing"]
+			self.mouse_handlers["erasing"].set_mode(Boxable.UNERASE)
+			self.mousehandler = self.mouse_handlers["erasing"]
 		else:
 			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
-			self.updateImageDisplay()
-			self.mousehandler = self.mousehandlers["boxing"]
+			self.update_image_display()
+			self.mousehandler = self.mouse_handlers["boxing"]
 	
-	def updateEraseRad(self,rad):
-		self.mousehandlers["erasing"].setEraseRadius(rad)
+	def update_erase_rad(self,rad):
+		self.mouse_handlers["erasing"].set_erase_radius(rad)
 
 	def quit(self):
 		self.dynapixp.quit()
 	
-	def setdummybox(self,box):
-		self.autoBoxer.setDummyBox(box)
-		self.boxDisplayUpdate()
+	def set_dummy_box(self,box):
+		self.autoboxer.set_dummy_box(box)
+		self.box_display_update()
 		
-	def setnonedummy(self):
-		self.autoBoxer.setDummyBox(None)
-		self.boxDisplayUpdate()
+	def remove_dummy(self):
+		self.autoboxer.set_dummy_box(None)
+		self.box_display_update()
 		
-	def writeboxesimages(self,boxsize,forceoverwrite=False,imageformat="hdf"):
-		self.boxable.cacheExcToDisk()
-		for imagename in self.imagenames:
+	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf"):
+		self.boxable.cache_exc_to_disk()
+		for image_name in self.image_names:
 			
 			
 			try:
-				projectdb = EMProjectDB()
-				data = projectdb[getIDDKey(imagename)]
-				trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
-				autoBoxer = SwarmAutoBoxer(self)
-				autoBoxer.become(trimAutoBoxer)
-				#print "writing box images for",imagename,"using",data["auto_boxer_unique_id"]
+				project_db = EMProjectDB()
+				data = project_db[get_idd_key(image_name)]
+				trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+				autoboxer = SwarmAutoBoxer(self)
+				autoboxer.become(trim_autoboxer)
+				#print "writing box images for",image_name,"using",data["autoboxer_unique_id"]
 			except:
-				autoBoxer = self.autoBoxer
-				#print "writing box images or",imagename,"using currently stored autoboxer"
+				autoboxer = self.autoboxer
+				#print "writing box images or",image_name,"using currently stored autoboxer"
 				
-			boxable = Boxable(imagename,self,autoBoxer)
-			if boxable.isExcluded():
-				print "Image",imagename,"is excluded and being ignored"
+			boxable = Boxable(image_name,self,autoboxer)
+			if boxable.is_excluded():
+				print "Image",image_name,"is excluded and being ignored"
 				continue
 			
-			mode = self.autoBoxer.getMode()
-			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-			autoBoxer.autoBox(boxable,False)
-			autoBoxer.setModeExplicit(mode)
+			mode = self.autoboxer.get_mode()
+			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			autoboxer.auto_box(boxable,False)
+			autoboxer.set_mode_explicit(mode)
 			
-			boxable.writeboximages(boxsize,forceoverwrite,imageformat)
+			boxable.write_box_images(box_size,forceoverwrite,imageformat)
 	
-	def writeboxesdbs(self,boxsize,forceoverwrite=False):
-		self.boxable.cacheExcToDisk()
-		for imagename in self.imagenames:
+	def write_all_coord_files(self,box_size,forceoverwrite=False):
+		self.boxable.cache_exc_to_disk()
+		for image_name in self.image_names:
 			
 			try:
-				projectdb = EMProjectDB()
-				data = projectdb[getIDDKey(imagename)]
-				trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]["autoboxer"]
-				autoBoxer = SwarmAutoBoxer(self)
-				autoBoxer.become(trimAutoBoxer)
-				#print "writing box coordinates for",imagename,"using",data["auto_boxer_unique_id"]
+				project_db = EMProjectDB()
+				data = project_db[get_idd_key(image_name)]
+				trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+				autoboxer = SwarmAutoBoxer(self)
+				autoboxer.become(trim_autoboxer)
+				#print "writing box coordinates for",image_name,"using",data["autoboxer_unique_id"]
 			except:
-				autoBoxer = self.autoBoxer
-				#print "writing box coordinates for",imagename,"using currently stored autoboxer"
-			boxable = Boxable(imagename,self,autoBoxer)
+				autoboxer = self.autoboxer
+				#print "writing box coordinates for",image_name,"using currently stored autoboxer"
+			boxable = Boxable(image_name,self,autoboxer)
 			
-			if boxable.isExcluded():
-				print "Image",imagename,"is excluded and being ignored"
+			if boxable.is_excluded():
+				print "Image",image_name,"is excluded and being ignored"
 				continue
 			
-			mode = autoBoxer.getMode()
-			autoBoxer.setModeExplicit(SwarmAutoBoxer.COMMANDLINE)
-			autoBoxer.autoBox(boxable,False)
-			autoBoxer.setModeExplicit(mode)
+			mode = autoboxer.get_mode()
+			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			autoboxer.auto_box(boxable,False)
+			autoboxer.set_mode_explicit(mode)
 			
-			boxable.writecoords(boxsize,forceoverwrite)
+			boxable.write_coord_file(box_size,forceoverwrite)
 	
 	def center(self,technique):
 		
 		if self.boxable.center(technique):
-			self.boxDisplayUpdate()
+			self.box_display_update()
 		else:
 			print 'technique',technique,'is unsupported - check back tomorrow'
 			
-	def toggleFrozen(self):
-		if self.boxable.isExcluded() : return
-		self.boxable.toggleFrozen()
-		self.boxable.writeToDB()
-		self.guiim.setFrozen(self.boxable.isFrozen())
-		if not self.boxable.isFrozen():
-			self.changeCurrentAutoBoxer(self.boxable.getAutoBoxerID(),False)
+	def toggle_frozen(self):
+		if self.boxable.is_excluded() : return
+		self.boxable.toggle_frozen()
+		self.boxable.write_to_db()
+		self.guiim.setFrozen(self.boxable.is_frozen())
+		if not self.boxable.is_frozen():
+			self.change_current_autoboxer(self.boxable.get_autoboxer_id(),False)
 		else:	
-			self.updateImageDisplay()
+			self.update_image_display()
 		
-	def changeImageQuality(self,val):
-		self.boxable.setQuality(val)
+	def change_image_quality(self,val):
+		self.boxable.set_quality(val)
 		if val == Boxable.EXCLUDE:
-			self.boxable.setFrozen(False) # If it was already frozen then setting to excluded overrides this
+			self.boxable.set_frozen(False) # If it was already frozen then setting to excluded overrides this
 			self.guiim.setExcluded(True)
 			self.guiim.setFrozen(False)
-			self.boxable.clearAndCache(True) # tell boxable to clear its autoboxes and references -
-			self.clearDisplays() # tell the display to clear itself
+			self.boxable.clear_and_cache(True) # tell boxable to clear its autoboxes and references -
+			self.clear_displays() # tell the display to clear itself
 		elif self.guiim.setExcluded(False):
-			self.updateImageDisplay()
+			self.update_image_display()
 			
-		self.boxable.writeToDB() # make sure the infromation changes that just occured are written to the DB
+		self.boxable.write_to_db() # make sure the infromation changes that just occured are written to the DB
 		
 
-	def setBoxingMethod(self,ref,manual):
+	def set_boxing_method(self,ref,manual):
 		'''
 		Okay could do it with one argument but leaving it this way makes it obvious
 		'''
@@ -1660,34 +1650,34 @@ class GUIbox:
 			print 'error, you cant set both ref and manual'
 			
 		if ref:
-			self.mousehandlers["boxing"].setmode(GUIbox.REFERENCE_ADDING)
+			self.mouse_handlers["boxing"].set_mode(GUIbox.REFERENCE_ADDING)
 		elif manual:
-			self.mousehandlers["boxing"].setmode(GUIbox.MANUALLY_ADDING)
+			self.mouse_handlers["boxing"].set_mode(GUIbox.MANUALLY_ADDING)
 	
-	def autoBoxerDBChanged(self):
-		self.guictl.updateABTable()
+	def autoboxer_db_changed(self):
+		self.guictl.update_ab_table()
 
-	def addNewAutoBoxerDB(self, n):
-		if not self.boxable.isInteractive():
+	def add_new_autoboxer_db(self, n):
+		if not self.boxable.is_interactive():
 			return None
-		autoBoxer = SwarmAutoBoxer(self)
-		autoBoxer.boxsize = self.boxsize
-		autoBoxer.setMode(self.dynapix,self.anchoring)
-		autoboxerdbstring = "autoboxer_"+autoBoxer.getCreationTS()
-		trimAutoBoxer = TrimSwarmAutoBoxer(autoBoxer)
+		autoboxer = SwarmAutoBoxer(self)
+		autoboxer.box_size = self.box_size
+		autoboxer.set_mode(self.dynapix,self.anchoring)
+		autoboxer_db_string = "autoboxer_"+autoboxer.get_creation_ts()
+		trim_autoboxer = TrimSwarmAutoBoxer(autoboxer)
 		convenience_name = "New " + str(n)
-		trimAutoBoxer.setConvenienceName(convenience_name)
-		trimAutoBoxer.writeToDB()
+		trim_autoboxer.set_convenience_name(convenience_name)
+		trim_autoboxer.write_to_db()
 		return convenience_name
 	
-	def addCopyAutoBoxerDB(self,autoboxerid,n):
-		#print "adding a copy of the ab with id is",autoboxerid
-		projectdb = EMProjectDB()
-		trimAutoBoxer = copy(projectdb[autoboxerid]["autoboxer"])
-		trimAutoBoxer.setCreationTS(gm_time_string())
+	def add_copy_autoboxer_db(self,autoboxer_id,n):
+		#print "adding a copy of the ab with id is",autoboxer_id
+		project_db = EMProjectDB()
+		trim_autoboxer = copy(project_db[autoboxer_id]["autoboxer"])
+		trim_autoboxer.set_creation_ts(gm_time_string())
 		convenience_name = "Copy " + str(n)
-		trimAutoBoxer.setConvenienceName(convenience_name)
-		trimAutoBoxer.writeToDB()
+		trim_autoboxer.set_convenience_name(convenience_name)
+		trim_autoboxer.write_to_db()
 		return convenience_name
 		
 		#print "done"
@@ -1703,155 +1693,155 @@ class AutoBoxerSelectionsMediator:
 			print "error, the AutoBoxerSelectionsMediator must be initialized with a GUIbox type as its first constructor argument"
 			return
 		self.parent=parent
-		self.currentimagename = None
-		self.imagenames = []
-		self.namemap = {}
-		self.dictdata = {}
-		self.setCurrentImageName(parent.getCurrentImageName())
-		self.setImageNames(parent.getImageNames())
+		self.current_image_name = None
+		self.image_names = []
+		self.name_map = {}
+		self.dict_data = {}
+		self.set_current_image_name(parent.get_current_image_name())
+		self.set_image_names(parent.get_image_names())
 		
-	def setCurrentImageName(self,imagename):
-		self.currentimagename = imagename
+	def set_current_image_name(self,image_name):
+		self.current_image_name = image_name
 		
-	def setImageNames(self,imagenames):
-		self.imagenames = imagenames
+	def set_image_names(self,image_names):
+		self.image_names = image_names
 		
-	def getAutoBoxerData(self):
-		projectdb = EMProjectDB()
-		self.dictdata = {}
-		self.namemap = {}
-		for i in projectdb:
+	def get_autoboxer_data(self):
+		project_db = EMProjectDB()
+		self.dict_data = {}
+		self.name_map = {}
+		for i in project_db:
 			try:
 				if i[0:10] == "autoboxer_":
-					tag = projectdb[i]["convenience_name"]
-					self.dictdata[tag] = []
-					self.namemap[i] = tag
+					tag = project_db[i]["convenience_name"]
+					self.dict_data[tag] = []
+					self.name_map[i] = tag
 			except:
 				print "error couldn't handle",i
 		
-		for imagename in self.imagenames:
+		for image_name in self.image_names:
 			found = False
 			try:
-				data = projectdb[getIDDKey(imagename)]
-				#trimAutoBoxer = projectdb[data["auto_boxer_unique_id"]]
+				data = project_db[get_idd_key(image_name)]
+				#trim_autoboxer = project_db[data["autoboxer_unique_id"]]
 				found = True
 			except: pass
 			
 			if found:
 				try:
-					self.dictdata[self.namemap[data["auto_boxer_unique_id"]]].append(strip_after_dot(imagename))
+					self.dict_data[self.name_map[data["autoboxer_unique_id"]]].append(strip_after_dot(image_name))
 				except:
 					print data
-					print "error, an autoboxer has been lost, its stamp is",data["auto_boxer_unique_id"]
-		return self.dictdata
+					print "error, an autoboxer has been lost, its stamp is",data["autoboxer_unique_id"]
+		return self.dict_data
 	
-	def getCurrentAutoBoxerTS(self):
+	def get_current_autoboxer_ts(self):
 		try:
-			return self.namemap["autoboxer_"+self.parent.getCurrentAutoBoxerTS()]
+			return self.name_map["autoboxer_"+self.parent.get_current_autoboxer_ts()]
 		except:
 			return None
 
-	def addNewAutoBoxer(self):
-		return self.parent.addNewAutoBoxerDB(self.getTotalAutoBoxers())
+	def add_new_autoboxer(self):
+		return self.parent.add_new_autoboxer_db(self.get_total_autoboxers())
 
-	def addCopyAutoBoxer(self,tag):
-		autoboxerid = self.__getAutoBoxerIDFromTag(tag)
-		if autoboxerid != None:
-			return self.parent.addCopyAutoBoxerDB(autoboxerid,self.getTotalAutoBoxers())
+	def add_copy_autoboxer(self,tag):
+		autoboxer_id = self.__get_autoboxer_id_from_tag(tag)
+		if autoboxer_id != None:
+			return self.parent.add_copy_autoboxer_db(autoboxer_id,self.get_total_autoboxers())
 		else:
 			print "error, couldn't find autoboxer from tag",tag
 			return None
 	
-	def changeCurrentAutoBoxer(self,tag):
+	def change_current_autoboxer(self,tag):
 		# FIXME - is there any way to use a bidirectional map?pyt
-		autoboxerid = self.__getAutoBoxerIDFromTag(tag)
-		if autoboxerid != None:
-			return self.parent.changeCurrentAutoBoxer(autoboxerid)
+		autoboxer_id = self.__get_autoboxer_id_from_tag(tag)
+		if autoboxer_id != None:
+			return self.parent.change_current_autoboxer(autoboxer_id)
 		else:
-			print "error, couldn't get autoboxerid"
+			print "error, couldn't get autoboxer_id"
 			return None
 				
-	def updateDBConvenienceName(self,newname,oldname):
+	def update_db_convenience_name(self,newname,oldname):
 		'''
 		Updates the unique name of the autoboxer in the DB
 		if the name is already used then False is returned
 		and the calling function should act on this to stop the
 		name change, for example within a widget
 		'''
-		projectdb = EMProjectDB()
-		autoboxerid = self.__getAutoBoxerIDFromTag(oldname)
-		if autoboxerid != None:
-			self.namemap.pop(autoboxerid)
-			if self.__nameNotAlreadyPresent(newname):
-				self.namemap[autoboxerid] = newname
-				autoBoxer = projectdb[autoboxerid]["autoboxer"]
-				autoBoxer.setConvenienceName(newname)
-				autoBoxer.writeToDB()
+		project_db = EMProjectDB()
+		autoboxer_id = self.__get_autoboxer_id_from_tag(oldname)
+		if autoboxer_id != None:
+			self.name_map.pop(autoboxer_id)
+			if self.__name_not_already_present(newname):
+				self.name_map[autoboxer_id] = newname
+				autoboxer = project_db[autoboxer_id]["autoboxer"]
+				autoboxer.set_convenience_name(newname)
+				autoboxer.write_to_db()
 				return True
 			else:
-				self.namemap[autoboxerid]["convenience_name"] = oldname
+				self.name_map[autoboxer_id]["convenience_name"] = oldname
 				return False
 					
-	def getTotalAutoBoxers(self):
-		return len(self.namemap)
+	def get_total_autoboxers(self):
+		return len(self.name_map)
 	
-	def associatedImages(self,tag):
-		return self.dictdata[tag]
+	def associated_images(self,tag):
+		return self.dict_data[tag]
 	
 	def remove(self,tag):
-		autoboxerid = self.__getAutoBoxerIDFromTag(tag)
-		projectdb = EMProjectDB()
-		projectdb.pop(autoboxerid)
-		self.dictdata.pop(tag)
+		autoboxer_id = self.__get_autoboxer_id_from_tag(tag)
+		project_db = EMProjectDB()
+		project_db.pop(autoboxer_id)
+		self.dict_data.pop(tag)
 	
-	def __nameNotAlreadyPresent(self,name):
-		for names in self.namemap.items():
+	def __name_not_already_present(self,name):
+		for names in self.name_map.items():
 			if names[1] == name:
 			 	return False
 		
 		return True
 	
-	def __getAutoBoxerIDFromTag(self,tag):
-		for names in self.namemap.items():
+	def __get_autoboxer_id_from_tag(self,tag):
+		for names in self.name_map.items():
 			if names[1] == tag:
 				return names[0]
 			
 		print "error, couldn't find",tag,"in the namemap"
 		return None
 	
-	def toggleFrozen(self,tag,bool):
-		#frozen = boxable.isFrozen()
+	def toggle_frozen(self,tag,bool):
+		#frozen = boxable.is_frozen()
 		#if frozen:
-			#new_name = self.addCopyAutoBoxer(tag)
-			#self.getAutoBoxerData() # FIXME this is inefficient, could just add to self.dictdata etc
-			#autoboxerid = self.__getAutoBoxerIDFromTag(new_name)
+			#new_name = self.add_copy_autoboxer(tag)
+			#self.get_autoboxer_data() # FIXME this is inefficient, could just add to self.dict_data etc
+			#autoboxer_id = self.__get_autoboxer_id_from_tag(new_name)
 			
-			#boxable.setAutoBoxerID(autoboxerid)
-			#boxable.writeToDB()
-		#boxable.writeToDB()
-		self.parent.toggleFrozen()
+			#boxable.set_autoboxer_id(autoboxer_id)
+			#boxable.write_to_db()
+		#boxable.write_to_db()
+		self.parent.toggle_frozen()
 		
-	def clearCurrent(self):
-		new_name = self.addNewAutoBoxer()
+	def clear_current(self):
+		new_name = self.add_new_autoboxer()
 		
 		# if the new_name is none then the current Boxable is frozen!
 		if new_name == None: return new_name
 		
-		self.getAutoBoxerData() # FIXME this is inefficient, could just add to self.dictdata etc
-		autoboxerid = self.__getAutoBoxerIDFromTag(new_name)
-		boxable = self.parent.getBoxable()
-		boxable.setAutoBoxerID(autoboxerid)
-		boxable.writeToDB()
-		boxable.clearAndCache(True)
-		self.parent.clearDisplays()
+		self.get_autoboxer_data() # FIXME this is inefficient, could just add to self.dict_data etc
+		autoboxer_id = self.__get_autoboxer_id_from_tag(new_name)
+		boxable = self.parent.get_boxable()
+		boxable.set_autoboxer_id(autoboxer_id)
+		boxable.write_to_db()
+		boxable.clear_and_cache(True)
+		self.parent.clear_displays()
 		return new_name
 		
 class GUIboxPanel(QtGui.QWidget):
-	def __init__(self,target,abselmediator) :
+	def __init__(self,target,ab_sel_mediator) :
 		
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
-		self.abselmediator = abselmediator
+		self.ab_sel_mediator = ab_sel_mediator
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -1859,44 +1849,44 @@ class GUIboxPanel(QtGui.QWidget):
 		self.vbl.setObjectName("vbl")
 		
 		self.tabwidget = QtGui.QTabWidget(self)
-		self.insertMainTab()
-		self.insertAdvancedTab()
-		self.insertViewTab()
+		self.insert_main_tab()
+		self.insert_advanced_tab()
+		self.insert_view_tab()
 		self.vbl.addWidget(self.tabwidget)
 		
 		self.dummybox = Box()
 		self.dummybox.isanchor = False
 		self.dummybox.isdummy = True
-		self.currentlyselected = -1 # used in the abtable
+		self.currentlyselected = -1 # used in the ab_table
 		
 		self.lock = False
-		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
+		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
 	
-		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
+		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.new_threshold)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
-		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.trythatd)
-		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.setnonedummy)
-		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
-		self.connect(self.selbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
-		self.connect(self.morselbut, QtCore.SIGNAL("clicked(bool)"), self.gboxclick)
-		self.connect(self.ratiobut, QtCore.SIGNAL("clicked(bool)"), self.cmpboxclick)
+		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
+		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
+		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
+		self.connect(self.selbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
+		self.connect(self.morselbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
+		self.connect(self.ratiobut, QtCore.SIGNAL("clicked(bool)"), self.cmp_box_changed)
 		#self.connect(self.centerbutton,QtCore.SIGNAL("clicked(bool)"),self.centerpushed)
-		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmpboxclick)
-		self.connect(self.nocpick, QtCore.SIGNAL("clicked(bool)"), self.target.nocupdate)
+		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmp_box_changed)
+		self.connect(self.anchoring, QtCore.SIGNAL("clicked(bool)"), self.target.set_anchoring)
 		
-#		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
+#		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.num_boxes_changed)
 	
 	#def centerpushed(self,unused):
 		#self.target.center(str(self.centerooptions.currentText()))
 	
-	def insertMainTab(self):
+	def insert_main_tab(self):
 		# this is the box layout that will store everything
 		self.main_inspector = QtGui.QWidget()
 		self.main_vbl =  QtGui.QVBoxLayout(self.main_inspector)
 		
 		self.infohbl = QtGui.QHBoxLayout()
-		self.info = QtGui.QLabel("%d Boxes"%len(self.target.getBoxes()),self)
+		self.info = QtGui.QLabel("%d Boxes"%len(self.target.get_boxes()),self)
 		self.ppc = QtGui.QLabel("%f particles per click"%0,self)
 		self.infohbl.addWidget(self.info)
 		self.infohbl.addWidget(self.ppc)
@@ -1926,19 +1916,19 @@ class GUIboxPanel(QtGui.QWidget):
 		self.boxinghbl1.addWidget(self.lblbs)
 		self.pos_int_validator = QtGui.QIntValidator(self)
 		self.pos_int_validator.setBottom(1)
-		self.bs = QtGui.QLineEdit(str(self.target.boxsize),self)
+		self.bs = QtGui.QLineEdit(str(self.target.box_size),self)
 		self.bs.setValidator(self.pos_int_validator)
 		self.boxinghbl1.addWidget(self.bs)
 		
 		self.boxingvbl.addLayout(self.boxinghbl1)
 	
 		self.boxinghbl3=QtGui.QHBoxLayout()
-		self.dynapick = QtGui.QCheckBox("Dynapix")
-		self.dynapick.setChecked(self.target.dynapix)
-		self.boxinghbl3.addWidget(self.dynapick)
-		self.nocpick = QtGui.QCheckBox("Anchor")
-		self.nocpick.setChecked(self.target.anchoring)
-		self.boxinghbl3.addWidget(self.nocpick)
+		self.dynapix = QtGui.QCheckBox("Dynapix")
+		self.dynapix.setChecked(self.target.dynapix)
+		self.boxinghbl3.addWidget(self.dynapix)
+		self.anchoring = QtGui.QCheckBox("Anchor")
+		self.anchoring.setChecked(self.target.anchoring)
+		self.boxinghbl3.addWidget(self.anchoring)
 		self.autobox=QtGui.QPushButton("Auto Box")
 		self.boxinghbl3.addWidget(self.autobox)
 		self.boxingvbl.addLayout(self.boxinghbl3)
@@ -1992,19 +1982,19 @@ class GUIboxPanel(QtGui.QWidget):
 		# output
 		self.outputvbl = QtGui.QVBoxLayout()
 		self.outputhbl1=QtGui.QHBoxLayout()
-		self.writeboxesimages = QtGui.QPushButton("Write Box Images")
-		self.outputhbl1.addWidget(self.writeboxesimages)
-		self.writeboxesdbs = QtGui.QPushButton("Write Coord Files")
-		self.outputhbl1.addWidget(self.writeboxesdbs)
+		self.write_all_box_image_files = QtGui.QPushButton("Write Box Images")
+		self.outputhbl1.addWidget(self.write_all_box_image_files)
+		self.write_all_coord_files = QtGui.QPushButton("Write Coord Files")
+		self.outputhbl1.addWidget(self.write_all_coord_files)
 		self.outputvbl.addLayout(self.outputhbl1)
 		
 		self.outputhbl2=QtGui.QHBoxLayout()
-		self.usingboxsizetext=QtGui.QLabel("Using Box Size:",self)
+		self.usingbox_sizetext=QtGui.QLabel("Using Box Size:",self)
 		
-		self.outputhbl2.addWidget(self.usingboxsizetext)
-		self.usingboxsize = QtGui.QLineEdit(str(self.target.boxsize),self)
-		self.usingboxsize.setValidator(self.pos_int_validator)
-		self.outputhbl2.addWidget(self.usingboxsize)
+		self.outputhbl2.addWidget(self.usingbox_sizetext)
+		self.usingbox_size = QtGui.QLineEdit(str(self.target.box_size),self)
+		self.usingbox_size.setValidator(self.pos_int_validator)
+		self.outputhbl2.addWidget(self.usingbox_size)
 		
 		self.outputvbl.addLayout(self.outputhbl2)
 		
@@ -2037,57 +2027,57 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.tabwidget.addTab(self.main_inspector,"Main")
 		
-		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.updateEraseRad)
-		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erasetoggled)
-		self.connect(self.unerase, QtCore.SIGNAL("clicked(bool)"), self.unerasetoggled)
-		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.autoboxbutton)
-		self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.toggleFrozen)
-		self.connect(self.clear,QtCore.SIGNAL("clicked(bool)"),self.clearCurrent)
-		self.connect(self.dynapick,QtCore.SIGNAL("clicked(bool)"),self.dynapickd)
+		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.update_erase_rad)
+		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erase_toggled)
+		self.connect(self.unerase, QtCore.SIGNAL("clicked(bool)"), self.unerase_toggled)
+		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.force_autobox)
+		self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.toggle_frozen)
+		self.connect(self.clear,QtCore.SIGNAL("clicked(bool)"),self.clear_current)
+		self.connect(self.dynapix,QtCore.SIGNAL("clicked(bool)"),self.dynapix_toggled)
 		
-		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.refbuttontoggled)
-		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manualbuttontoggled)
+		self.connect(self.refbutton, QtCore.SIGNAL("clicked(bool)"), self.ref_button_toggled)
+		self.connect(self.manualbutton, QtCore.SIGNAL("clicked(bool)"), self.manual_button_toggled)
 
-		self.connect(self.writeboxesimages,QtCore.SIGNAL("clicked(bool)"),self.writebimages)
-		self.connect(self.writeboxesdbs,QtCore.SIGNAL("clicked(bool)"),self.writebcoords)
+		self.connect(self.write_all_box_image_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_images)
+		self.connect(self.write_all_coord_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_coords)
 		
-		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.imageQualityChanged)
+		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
 
-	def setImageQuality(self,integer):
+	def set_image_quality(self,integer):
 		self.lock = True
-		self.imagequalities.setCurrentIndex(integer)
+		self.imagequalities.setCurrentIndex(int(integer))
 		self.lock = False
 		
-	def imageQualityChanged(self,val):
+	def image_quality_changed(self,val):
 		if self.lock == False:
-			self.target.changeImageQuality(str(val))
+			self.target.change_image_quality(str(val))
 
-	def clearCurrent(self,unused):
+	def clear_current(self,unused):
 		self.lock = True
-		new_name = self.abselmediator.clearCurrent()
+		new_name = self.ab_sel_mediator.clear_current()
 		self.lock = False
 		if new_name != None: # if the boxable wasn't frozen...
-			self.updateABTable()
+			self.update_ab_table()
 			self.setChecked(new_name)
 		
-	def toggleFrozen(self,bool):
+	def toggle_frozen(self,bool):
 		self.lock = True
-		self.abselmediator.toggleFrozen(self.col1[self.currentlyselected].text(),bool)
+		self.ab_sel_mediator.toggle_frozen(self.col1[self.currentlyselected].text(),bool)
 		self.lock = False
 	
-	def writebimages(self,unused):
-		boxsize = int(str(self.usingboxsize.text()))
-		realboxsize = int(str(self.bs.text()))
-		if realboxsize == boxsize:
-			boxsize = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-		self.target.writeboxesimages(boxsize,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()))
+	def write_box_images(self,unused):
+		box_size = int(str(self.usingbox_size.text()))
+		realbox_size = int(str(self.bs.text()))
+		if realbox_size == box_size:
+			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
+		self.target.write_all_box_image_files(box_size,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()))
 		
-	def writebcoords(self,unused):
-		boxsize = int(str(self.usingboxsize.text()))
-		realboxsize = int(str(self.bs.text()))
-		if realboxsize == boxsize:
-			boxsize = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-		self.target.writeboxesdbs(boxsize,self.outputforceoverwrite.isChecked())
+	def write_box_coords(self,unused):
+		box_size = int(str(self.usingbox_size.text()))
+		realbox_size = int(str(self.bs.text()))
+		if realbox_size == box_size:
+			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
+		self.target.write_all_coord_files(box_size,self.outputforceoverwrite.isChecked())
 	
 	def setChecked(self,tag):
 		
@@ -2097,14 +2087,14 @@ class GUIboxPanel(QtGui.QWidget):
 				self.currentlychecked = i
 				break
 	
-	def abtableCellChanged(self,i,j):
+	def ab_table_cell_changed(self,i,j):
 		if i >= len(self.col1): return
 		if self.lock:
 			return
-		#data = self.abselmediator.getAutoBoxerData()
+		#data = self.ab_sel_mediator.get_autoboxer_data()
 		#data = data.items()
 		if str(self.col1[i].text()) != self.colnames[i]:
-			if not self.abselmediator.updateDBConvenienceName(str(self.col1[i].text()),self.colnames[i]):
+			if not self.ab_sel_mediator.update_db_convenience_name(str(self.col1[i].text()),self.colnames[i]):
 				self.col1[i].setText(self.colnames[i])
 			self.lock = False
 			return
@@ -2122,20 +2112,20 @@ class GUIboxPanel(QtGui.QWidget):
 				self.col1[self.currentlychecked].setCheckState(Qt.Unchecked)
 				self.col1[i].setCheckState(Qt.Checked)
 				self.currentlychecked = i
-				self.abselmediator.changeCurrentAutoBoxer(str(self.col1[i].text()))
-				self.updateABTable()
+				self.ab_sel_mediator.change_current_autoboxer(str(self.col1[i].text()))
+				self.update_ab_table()
 			else:
 				print "error, unforeseen checkstate circumstance. Nothing done"
 			#except: pass
 		
 		self.lock = False
 				
-	def abtableItemChanged(self,item):
+	def ab_table_item_changed(self,item):
 		print "item changed"
 	
-	def updateABTable(self):
+	def update_ab_table(self):
 		
-		data = self.abselmediator.getAutoBoxerData()
+		data = self.ab_sel_mediator.get_autoboxer_data()
 		self.col1 = []
 		self.col2 = []
 		self.colnames = []
@@ -2145,8 +2135,8 @@ class GUIboxPanel(QtGui.QWidget):
 		self.lock = True
 		idx = 0
 		for d in data.items():
-			if idx >= self.abtable.rowCount():
-				self.abtable.insertRow(idx)
+			if idx >= self.ab_table.rowCount():
+				self.ab_table.insertRow(idx)
 			col1 = QtGui.QTableWidgetItem(d[0])
 			qstr =''
 			for i,s in enumerate(d[1]):
@@ -2163,47 +2153,47 @@ class GUIboxPanel(QtGui.QWidget):
 			col1.setFlags(flag1|flag2|flag3|flag4) #Qt.ItemIsEnabled+Qt.ItemIsUserCheckable)) #&Qt.ItemIsSelectable))
 			col1.setCheckState( Qt.Unchecked)
 			col2.setFlags(flag3)
-			self.abtable.setItem(idx,0,col1)
-			self.abtable.setItem(idx,1,col2)
+			self.ab_table.setItem(idx,0,col1)
+			self.ab_table.setItem(idx,1,col2)
 			self.col1.append(col1)
 			self.col2.append(col2)
 			self.colnames.append(col1.text())
 			idx += 1
 		
 		# remove any overhanging columns if they already existed
-		while (len(data) < self.abtable.rowCount()):
-			self.abtable.removeRow(self.abtable.rowCount()-1)
+		while (len(data) < self.ab_table.rowCount()):
+			self.ab_table.removeRow(self.ab_table.rowCount()-1)
 	
-		currentsel = self.abselmediator.getCurrentAutoBoxerTS()
+		currentsel = self.ab_sel_mediator.get_current_autoboxer_ts()
 		self.currentlychecked = -1
 		
 		self.setChecked(currentsel)
 		self.lock = False
 	
-	def deleteAutoBoxer(self,unused):
-		items = self.abtable.selectedItems()
-		data = self.abselmediator.getAutoBoxerData()
+	def delete_autoboxer(self,unused):
+		items = self.ab_table.selectedItems()
+		data = self.ab_sel_mediator.get_autoboxer_data()
 		update = False
 		for item in items:
 			if item.column() == 0:
-				if len(self.abselmediator.associatedImages(str(item.text()))) != 0:
+				if len(self.ab_sel_mediator.associated_images(str(item.text()))) != 0:
 					print "can't delete an autoboxer unless it has no images associated with it"
 				else:
-					self.abselmediator.remove(str(item.text()))
+					self.ab_sel_mediator.remove(str(item.text()))
 					update = True
 					
 		if update:
-			self.updateABTable()
+			self.update_ab_table()
 	
-	def addNewAutoBoxer(self,bool):
-		self.abselmediator.addNewAutoBoxer()
-		self.updateABTable()
+	def add_new_autoboxer(self,bool):
+		self.ab_sel_mediator.add_new_autoboxer()
+		self.update_ab_table()
 		
-	def addCopyAutoBoxer(self,bool):
+	def add_copy_autoboxer(self,bool):
 		numsel = 0
 		selected = ""
 		for col in self.col1:
-			if self.abtable.isItemSelected(col):
+			if self.ab_table.isItemSelected(col):
 				numsel += 1
 				selected = str(col.text())
 				if numsel > 1:
@@ -2213,11 +2203,11 @@ class GUIboxPanel(QtGui.QWidget):
 			print "no autoboxers were selected, doing nothing"
 			return
 		else:
-			self.abselmediator.addCopyAutoBoxer(selected)
+			self.ab_sel_mediator.add_copy_autoboxer(selected)
 			self.lock=False
-			self.updateABTable()
+			self.update_ab_table()
 			
-	def insertViewTab(self):
+	def insert_view_tab(self):
 		# this is the box layout that will store everything
 		self.view_inspector = QtGui.QWidget()
 		self.view_vbl =  QtGui.QVBoxLayout(self.view_inspector)
@@ -2257,7 +2247,6 @@ class GUIboxPanel(QtGui.QWidget):
 		self.displayboxes = QtGui.QGroupBox("Displayed Boxes")
 		self.displayboxes.setLayout(self.viewhbl2)
 		self.view_vbl.addWidget(self.displayboxes)
-
 		
 		self.tabwidget.addTab(self.view_inspector,"Display Options")
 		
@@ -2281,7 +2270,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.target.change_shapes(format)
 
 	
-	def insertAdvancedTab(self):
+	def insert_advanced_tab(self):
 		# this is the box layout that will store everything
 		self.adv_inspector = QtGui.QWidget()
 		self.advanced_vbl =  QtGui.QVBoxLayout(self.adv_inspector)
@@ -2351,15 +2340,15 @@ class GUIboxPanel(QtGui.QWidget):
 		self.lock = True
 		self.autoboxerhdbl = QtGui.QHBoxLayout()
 		# ab means autoboxer
-		self.abtable = QtGui.QTableWidget(1,2,self)
-		self.abtable.setColumnWidth(1,150)
+		self.ab_table = QtGui.QTableWidget(1,2,self)
+		self.ab_table.setColumnWidth(1,150)
 		self.abcol0title = QtGui.QTableWidgetItem("Autoboxer ID")
 		self.abcol1title = QtGui.QTableWidgetItem("Associated Images")
-		self.updateABTable()
+		self.update_ab_table()
 		self.lock = True
-		self.abtable.setHorizontalHeaderItem(0,self.abcol0title)
-		self.abtable.setHorizontalHeaderItem(1,self.abcol1title)
-		self.autoboxerhdbl.addWidget(self.abtable)
+		self.ab_table.setHorizontalHeaderItem(0,self.abcol0title)
+		self.ab_table.setHorizontalHeaderItem(1,self.abcol1title)
+		self.autoboxerhdbl.addWidget(self.ab_table)
 		self.lock = False
 		
 		self.autoboxervbl1 = QtGui.QVBoxLayout()
@@ -2377,14 +2366,14 @@ class GUIboxPanel(QtGui.QWidget):
 			
 		self.tabwidget.addTab(self.adv_inspector,"Advanced")
 		
-		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.addNewAutoBoxer)
-		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.addCopyAutoBoxer)
-		self.connect(self.abdelete, QtCore.SIGNAL("clicked(bool)"), self.deleteAutoBoxer)
-		self.connect(self.abtable, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.abtableItemChanged)
-		self.connect(self.abtable, QtCore.SIGNAL("cellChanged(int,int)"), self.abtableCellChanged)
+		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.add_new_autoboxer)
+		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.add_copy_autoboxer)
+		self.connect(self.abdelete, QtCore.SIGNAL("clicked(bool)"), self.delete_autoboxer)
+		self.connect(self.ab_table, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.ab_table_item_changed)
+		self.connect(self.ab_table, QtCore.SIGNAL("cellChanged(int,int)"), self.ab_table_cell_changed)
 		
 
-	def refbuttontoggled(self,bool):
+	def ref_button_toggled(self,bool):
 		
 		if self.refbutton.isChecked():
 			self.manualbutton.setChecked(False)
@@ -2392,33 +2381,33 @@ class GUIboxPanel(QtGui.QWidget):
 		if not self.refbutton.isChecked():
 			self.manualbutton.setChecked(True)
 
-		self.target.setBoxingMethod(self.refbutton.isChecked(),self.manualbutton.isChecked())
+		self.target.set_boxing_method(self.refbutton.isChecked(),self.manualbutton.isChecked())
 		
-	def manualbuttontoggled(self,bool):
+	def manual_button_toggled(self,bool):
 		if self.manualbutton.isChecked():
 			self.refbutton.setChecked(False)
 		
 		if not self.manualbutton.isChecked():
 			self.refbutton.setChecked(True)
 			
-		self.target.setBoxingMethod(self.refbutton.isChecked(),self.manualbutton.isChecked())
+		self.target.set_boxing_method(self.refbutton.isChecked(),self.manualbutton.isChecked())
 
-	def erasetoggled(self,bool):
+	def erase_toggled(self,bool):
 		self.unerase.setChecked(False)
 		self.eraserad.setEnabled(bool)
 		self.target.guiim.setMouseTracking(bool)
-		self.target.erasetoggled(bool)
+		self.target.erase_toggled(bool)
 		
-	def unerasetoggled(self,bool):
+	def unerase_toggled(self,bool):
 		self.erase.setChecked(False)
 		self.eraserad.setEnabled(bool)
 		self.target.guiim.setMouseTracking(bool)
-		self.target.unerasetoggled(bool)
+		self.target.unerase_toggled(bool)
 		
-	def dynapickd(self,bool):
-		self.target.toggleDynapix(bool)
+	def dynapix_toggled(self,bool):
+		self.target.toggle_dynapix(bool)
 	
-	def cmpboxclick(self,unusedbool):
+	def cmp_box_changed(self,unusedbool):
 		if self.ratiobut.isChecked():
 			s = BoxingTools.CmpMode.SWARM_RATIO
 		elif self.difbut.isChecked():
@@ -2426,9 +2415,9 @@ class GUIboxPanel(QtGui.QWidget):
 		else:
 			print "Bug intercepted in e2boxer.py. Please email the development team."
 			
-		self.target.setprofilecmp(s)
+		self.target.set_profile_comparitor(s)
 	
-	def gboxclick(self,unusedbool):
+	def selection_mode_changed(self,unusedbool):
 		if self.thrbut.isChecked():
 			s = self.thrbut.text()
 		elif self.selbut.isChecked():
@@ -2438,29 +2427,29 @@ class GUIboxPanel(QtGui.QWidget):
 		else:
 			print "Bug intercepted in e2boxer.py. Please email the development team."
 			
-		self.target.setautobox(str(s))
+		self.target.set_selection_mode(str(s))
 	
-	def trythatd(self):
+	def try_dummy_parameters(self):
 		print "option currently disabled"
 		return
 		self.dummybox.optprofile = self.window.getData()
 		self.dummybox.correlationscore = float(self.thr.getValue())
-		self.target.setdummybox(self.dummybox)
+		self.target.set_dummy_box(self.dummybox)
 	
-	def updatedata(self,thresh,data,datar):
+	def update_data(self,thresh,data,datar):
 		#print data
 		self.window.setData(data,datar)
 		self.thr.setValue(thresh,True)
 		self.resize(self.width(),self.height())
 		#self.window.resizeGL(self.window.width(),self.window.height())
 		#self.window.updateGL()
-	def nboxesChanged(self,n):
+	def num_boxes_changed(self,n):
 		self.info.setText("%d Boxes"%n)
 		
-	def ppcChanged(self,f):
+	def ppc_changed(self,f):
 		self.ppc.setText("%f ppc"%f)
 	
-	def adjustEraseRad(self,delta):
+	def adjust_erase_rad(self,delta):
 		v = float(self.eraserad.text())
 		if delta > 0:
 			v = 1.1*v
@@ -2471,35 +2460,35 @@ class GUIboxPanel(QtGui.QWidget):
 		# this makes sure the target updates itself 
 		# there may be a better approach, seeing as
 		# the target called this function
-		self.updateEraseRad()
+		self.update_erase_rad()
 		
-	def updateEraseRad(self):
+	def update_erase_rad(self):
 		v = int(self.eraserad.text())
 		if ( v < 1 ): raise Exception
-		self.target.updateEraseRad(v)
+		self.target.update_erase_rad(v)
 	
-	def newBoxSize(self):
+	def new_box_size(self):
 		try:
 			v=int(self.bs.text())
 			if v<12 : raise Exception
 		except:
-			self.bs.setText(str(self.target.boxsize))
+			self.bs.setText(str(self.target.box_size))
 			return
 		
 		
-		self.usingboxsize.setText(self.bs.text())
+		self.usingbox_size.setText(self.bs.text())
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.BusyCursor)
-		self.target.updateBoxSize(v,1)
+		self.target.update_box_size(v,1)
 		app.setOverrideCursor(Qt.ArrowCursor)
 	
-	def setBoxSize(self,boxsize):
-		self.bs.setText(str(boxsize))
-		self.usingboxsize.setText(str(boxsize))
+	def set_box_size(self,box_size):
+		self.bs.setText(str(box_size))
+		self.usingbox_size.setText(str(box_size))
 	
-	def newThresh(self,val):
+	def new_threshold(self,val):
 		#print "new threshold"
-		self.trythatd()
+		self.try_dummy_parameters()
 
 
 if __name__ == "__main__":
