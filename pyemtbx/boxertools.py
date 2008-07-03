@@ -422,7 +422,7 @@ class Box:
 			print 'error, the autoboxer you are using is not currently known by the Box class'
 			return 0
 		
-class TrimBox():
+class TrimBox:
 	'''
 	A trimmed down version of a box
 	'''
