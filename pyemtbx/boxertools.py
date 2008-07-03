@@ -2217,7 +2217,7 @@ class SwarmTemplate:
 	
 	
 
-class TrimSwarmAutoBoxer():
+class TrimSwarmAutoBoxer:
 	def __init__(self,swarmAutoBoxer):
 			
 		self.box_size = swarmAutoBoxer.box_size
