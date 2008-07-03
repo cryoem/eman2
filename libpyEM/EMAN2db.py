@@ -48,7 +48,7 @@ def DB_cleanup(a1=None,a2=None):
 		print "Program interrupted, closing databases, please wait (%d)"%os.getpid() 
 	for d in DBDict.alldicts.keys(): d.close()
 	if a1==2 :
-		print "Databases closed, program exiting" 
+		print "Databases closed, exiting" 
 		sys.exit(1)
 
 # if the program exits nicely, close all of the databases
@@ -56,6 +56,45 @@ atexit.register(DB_cleanup)
 
 # if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
 signal.signal(2,DB_cleanup)
+
+# replace a few EMData methods with python versions to intercept 'db:' filenames
+def db_read_image(self,fsp,*parms):
+	if fsp[:3].lower()=="db:" :
+		print "Attempt DB read",fsp,parms
+		return 0
+	return self.read_image_c(fsp,*parms)
+
+EMData.read_image_c=EMData.read_image
+EMData.read_image=db_read_image
+
+def db_read_images(fsp,*parms):
+	if fsp[:3].lower()=="db:" :
+		print "Attempt DB read",fsp,parms
+		return []
+	return EMData.read_images_c(fsp,*parms)
+
+EMData.read_images_c=staticmethod(EMData.read_images)
+EMData.read_images=staticmethod(db_read_images)
+
+
+def db_write_image(self,fsp,*parms):
+	if fsp[:3].lower()=="db:" :
+		print "Attempt DB read",fsp,parms
+		return 0
+	return self.write_image_c(fsp,*parms)
+
+EMData.write_image_c=EMData.write_image
+EMData.write_image=db_write_image
+
+def db_get_image_count(fsp):
+	if fsp[:3].lower()=="db:" :
+		print "Attempt DB count",fsp
+		return 0
+	return EMUtil.get_image_count_c(fsp)
+
+
+EMUtil.get_image_count_c=staticmethod(EMUtil.get_image_count)
+EMUtil.get_image_count=staticmethod(db_get_image_count)
 
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
 #dbopenflags=db.DB_CREATE
@@ -238,14 +277,19 @@ class DBDict:
 	def has_key(self,key):
 		return self.bdb.has_key(dumps(key,-1))
 
-	def get(self,key,txn=None):
+	def get(self,key,txn=None,target=None):
+		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
+		object in which to place the read object"""
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
 		if isinstance(r,dict) and r.has_key("nx") :
 			pkey="%s/%s"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
-			ret=EMData(r["nx"],r["ny"],r["nz"])
+			if target :
+				target.set_size(r["nx"],r["ny"],r["nz"])
+				ret=target
+			else: ret=EMData(r["nx"],r["ny"],r["nz"])
 			n=loads(self.bdb.get(fkey+dumps(key,-1)))
 			ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
