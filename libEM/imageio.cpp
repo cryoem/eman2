@@ -183,7 +183,7 @@ int ImageIO::get_nimg()
 	return 1;
 }
 
-void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& rendermin, float& rendermax)
+void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& rendermin, float& rendermax, const int nz)
 {
 #ifdef _WIN32
 	if (rendermax<=rendermin || _isnan(rendermin) || _isnan(rendermax)) {
@@ -191,10 +191,11 @@ void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& r
 	if (rendermax<=rendermin || std::isnan(rendermin) || std::isnan(rendermax)) {
 #endif
 		float m=0.0f,s=0.0f;
-			
-		for (int i=0; i<nx*ny; i++) { m+=data[i]; s+=data[i]*data[i]; }
-		m/=(float)(nx*ny);
-		s=sqrt(s/(float)(nx*ny)-m*m);
+		
+		int size = nx*ny*nz;
+		for (int i=0; i<size; ++i) { m+=data[i]; s+=data[i]*data[i]; }
+		m/=(float)(size);
+		s=sqrt(s/(float)(size)-m*m);
 #ifdef _WIN32
 		if (s<=0 || _isnan(s)) s=1.0;	// this means all data values are the same
 #else

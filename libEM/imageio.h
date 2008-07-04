@@ -339,7 +339,7 @@ namespace EMAN
 		 * @param[in] ny y dimension size
 		 * @param[out] rendermin the minmal value for normalization
 		 * @param[out] rendermax the maximum value for normalization*/
-		void getRenderMinMax(float * data, const int nx, const int ny, float& rendermin, float& rendermax);
+		void getRenderMinMax(float * data, const int nx, const int ny, float& rendermin, float& rendermax, const int nz = 1);
 	};
 
 	/** DEFINE_IMAGEIO_FUNC declares the functions that needs to
