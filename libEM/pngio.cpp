@@ -324,7 +324,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 					cdata[x] = 0;
 				}
 				else if(data[y * nx + x] > rendermax) {
-					cdata[x] = 255;
+					cdata[x] = UCHAR_MAX;
 				}
 				else {
 					cdata[x] = (unsigned char)((data[y * nx + x] - rendermin) / (rendermax - rendermin) * 256);
@@ -348,7 +348,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 					sdata[x] = 0;
 				}
 				else if(data[y * nx + x] > rendermax) {
-					sdata[x] = 65535;
+					sdata[x] = USHRT_MAX;
 				}
 				else {
 					sdata[x] = (unsigned short)((data[y * nx + x] - rendermin) / (rendermax - rendermin) * 65536);

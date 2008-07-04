@@ -432,7 +432,7 @@ int TiffIO::write_data(float * data, int, const Region* , EMUtil::EMDataType, bo
 					cdata[dst_idx] = 0;
 				}
 				else if(data[src_idx] > rendermax) {
-					cdata[dst_idx] = 255;
+					cdata[dst_idx] = UCHAR_MAX;
 				}
 				else {
 					cdata[dst_idx] = (unsigned char)((data[src_idx] - rendermin) / (rendermax - rendermin) * 256);
@@ -457,7 +457,7 @@ int TiffIO::write_data(float * data, int, const Region* , EMUtil::EMDataType, bo
 					sdata[dst_idx] = 0;
 				}
 				else if(data[src_idx] > rendermax) {
-					sdata[dst_idx] = 65535;
+					sdata[dst_idx] = USHRT_MAX;
 				}
 				else {
 					sdata[dst_idx] = (unsigned short)((data[src_idx] - rendermin) / (rendermax - rendermin) * 65536);
