@@ -38,6 +38,7 @@ from zlib import compress,decompress
 import os
 import signal
 import sys
+import fnmatch
 try:
 	from bsddb3 import db
 except:
@@ -153,6 +154,18 @@ class EMAN2DB:
 		del(self.__dict__[name])
 		self.dicts.remove(name)
 
+	def remove_dict(self,name):
+		if name in self.dicts:
+			self.__dict__[name].close()
+			del(self.__dict__[name])
+			self.dicts.remove(name)
+		os.unlink(self.path+"/EMAN2DB/"+name+".bdb")
+		for f in os.listdir(self.path+"/EMAN2DB"):
+			if fnmatch.fnmatch(f, name+'_*'):
+				os.unlink(self.path+"/EMAN2DB/"+f)
+
+		
+	
 class DBDict:
 	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,
 	keys and data may be arbitrary pickleable types, however, additional functionality is provided
@@ -222,7 +235,7 @@ class DBDict:
 		elif isinstance(val,EMData) : 
 			# decide where to put the binary data
 			ad=val.get_attr_dict()
-			pkey="%s/%s"%(self.path,self.name)
+			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(ad["nx"],ad["ny"],ad["nz"])
 #			print "w",fkey
 			try :
@@ -247,7 +260,7 @@ class DBDict:
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
 		if isinstance(r,dict) and r.has_key("nx") :
-			pkey="%s/%s"%(self.path,self.name)
+			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
 			ret=EMData(r["nx"],r["ny"],r["nz"])
@@ -283,7 +296,7 @@ class DBDict:
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
 		if isinstance(r,dict) and r.has_key("nx") :
-			pkey="%s/%s"%(self.path,self.name)
+			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
 			if target :
@@ -307,7 +320,7 @@ class DBDict:
 		elif isinstance(val,EMData) : 
 			# decide where to put the binary data
 			ad=val.get_attr_dict()
-			pkey="%s/%s"%(self.path,self.name)
+			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(ad["nx"],ad["ny"],ad["nz"])
 #			print "w",fkey
 			try :
