@@ -39,14 +39,15 @@ class EMProjectDB:
 	"""
 	It's implemented as a singleton
 	"""
-	outputdir = "Boxerscratch"
-	boxersdir = outputdir+"/"
 	
 	class __impl:
 		""" Implementation of the singleton interface """
 
 		def __init__(self):
-			self.project_db = shelve.open('.eman2project_db','c',-1,True)
+			global db
+			db.open_dict("boxer_cache")
+			self.project_db = db.boxer_cache
+			#self.project_db = shelve.open('.eman2project_db','c',-1,True)
 
 		#def __del__(self):
 			#print "closing project_db"
@@ -62,11 +63,12 @@ class EMProjectDB:
 					#autoboxers.append(
 			
 		def close(self):
-			self.project_db.close()
+			#self.project_db.close()
+			db.close_dict("boxer_cache")
 			
 		def set_key_entry(self,key,entry):
 			self.project_db[key]= entry
-			self.project_db.sync()
+			#self.project_db.sync()
 			
 	__instance = None
 	
@@ -546,12 +548,12 @@ class ExclusionImage:
 	def __init__(self,image_name):
 		self.image_name = image_name
 		self.image = None
-		self.ouputimage_name = EMProjectDB.boxersdir + strip_file_tag(self.image_name)+".exc.hdf"
 		
 		try:
 			# we may have the image already on disk, if so parse it
 			# the image on disk is likely up to date but not necessarily so
-			self.image = EMData(self.ouputimage_name)
+			self.image = get_idd_key_entry(self.image_name,"exclusion_image")
+			#self.image = EMData(self.ouputimage_name)
 			#print "I read the image",self.ouputimage_name
 		except:
 			#print "could not read", self.ouputimage_name 
@@ -594,7 +596,8 @@ class ExclusionImage:
 				# if it's less than one scale first so that we retain the maximum amount of the pixel information
 				self.image.scale(float(xsize)/float(oldxsize))
 				self.image.clip_inplace(r)
-				
+			
+			set_idd_key_entry(self.image_name,"exclusion_image",self.image) # not sure if this is necessary
 		#else:
 			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
 			
@@ -678,12 +681,11 @@ class CoarsenedFlattenedImage:
 	def __init__(self,image_name):
 		self.smallimage = None		# a small copy of an image which has had its background flattened
 		self.image_name = image_name
-		self.ouputimage_name = EMProjectDB.boxersdir + strip_file_tag(self.image_name)+".cf.hdf"
 		
 		try:
 			# we may have the image already on disk, if so parse it
 			# the image on disk is likely up to date but not necessarily so
-			self.smallimage = EMData(self.ouputimage_name)
+			self.smallimage = get_idd_key_entry(self.image_name,"coarse_flat_image")
 			#print "I read the image",self.ouputimage_name
 		except:
 			#print "could not read", self.ouputimage_name 
@@ -715,7 +717,8 @@ class CoarsenedFlattenedImage:
 		self.smallimage.set_attr("flatten_radius",flattenradius)
 		self.smallimage.set_attr("shrink_factor",shrink)
 		self.smallimage.set_attr("creation_time_stamp",gm_time_string())
-		self.smallimage.write_image(self.ouputimage_name)
+		
+		set_idd_key_entry(self.image_name,"coarse_flat_image",self.smallimage)
 				
 		#else:
 			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
@@ -794,6 +797,16 @@ class SigmaImage:
 	def __init__(self,image_name):
 		self.image_name = image_name
 		self.image = None
+		
+		#try:
+			## we may have the image already on disk, if so parse it
+			## the image on disk is likely up to date but not necessarily so
+			#self.image = get_idd_key_entry(self.image_name,"coarse_sigma_image")
+			##print "I read the image",self.ouputimage_name
+		#except:
+			##print "could not read", self.ouputimage_name 
+			#pass
+		
 	
 	def get_image_name(self):
 		return self.image_name
@@ -813,6 +826,8 @@ class SigmaImage:
 		self.image = image.calc_fast_sigma_image(tmp)
 		self.image.set_attr("flatten_radius",flattenradius)
 		self.image.set_attr("shrink_factor",shrinkfactor)
+		
+		#set_idd_key_entry(self.image_name,"coarse_sigma_image",self.image)
 		
 		return self.image
 	
@@ -880,7 +895,6 @@ class BinaryCircleImage:
 		self.image = EMData(2*circleradius+1,2*circleradius+1)
 		self.image.process_inplace("testimage.circlesphere")
 		self.image.set_attr("circle_radius",circleradius)
-		self.image.write_image(EMProjectDB.boxersdir +"circle"+str(circleradius)+".hdf")
 
 	def get_circle_radius(self):
 		return self.image.get_attr("circle_radius")
@@ -1008,11 +1022,9 @@ class FLCFImage:
 	def __init__(self,image_name):
 		self.flcfimage = None	# this is the flcf image
 		self.image_name=image_name # we must store this it's used externally to determine if the FLCFImage is cached
-		self.outputimage_name = EMProjectDB.boxersdir + strip_file_tag(image_name)+".flcf.hdf"
-		
 		
 		try: # try to read the image from disk - it may already exist and save us lots of time
-			self.flcfimage = EMData(self.outputimage_name)
+			self.flcfimage = get_idd_key_entry(self.image_name,"flcf_image")
 		except:
 			# the image doesn't exist, that's okay
 			pass
@@ -1062,8 +1074,7 @@ class FLCFImage:
 		self.flcfimage.set_attr("template_time_stamp",template.get_template_ts())
 		val = cfimage.get_attr("creation_time_stamp")
 		self.flcfimage.set_attr("data_image_time_stamp",val)
-		self.flcfimage.write_image(self.outputimage_name)
-		
+		set_idd_key_entry(self.image_name,"flcf_image",self.flcfimage)
 		
 	def get_image(self):
 		return self.flcfimage
@@ -1134,7 +1145,6 @@ class Boxable:
 		
 		try:
 			eicache = ExclusionImageCache()
-			#excimage_name = EMProjectDB.boxersdir + strip_file_tag(self.image_name)+".exc.hdf"
 			#print "reading exclusion image",excimage_name
 			self.exclusionimage = eicache.get_image(self.image_name,self.get_small_image().get_xsize(),self.get_small_image().get_ysize())
 		except: pass
@@ -1219,6 +1229,9 @@ class Boxable:
 			data = project_db[self.get_dd_key()]
 		except:
 			data = {}
+			
+		if data == None:
+			data = {}
 		
 		data["reference_boxes"] = []
 		data["auto_boxes"] = []
@@ -1244,10 +1257,9 @@ class Boxable:
 			self.get_references_from_db()	
 		except: pass
 		
-	def cache_exc_to_disk(self):
+	def cache_exc_to_db(self):
 		if self.exclusionimage != None:
-			excimage_name = EMProjectDB.boxersdir + strip_file_tag(self.image_name)+".exc.hdf"
-			self.exclusionimage.write_image(excimage_name)
+			set_idd_key_entry(self.image_name,"exclusion_image",self.exclusionimage)
 
 	def center(self,method):
 		if method == Box.CENTERACF or method == Box.CENTEROFMASS:
@@ -1300,6 +1312,9 @@ class Boxable:
 		try:
 			data = project_db[self.get_dd_key()]
 		except:
+			data = {}
+		
+		if data == None:
 			data = {}
 			
 		data["autoboxer_state_TS"] = self.get_auto_boxer_state_ts()
@@ -1959,6 +1974,8 @@ def set_idd_key_entry(image_name,key,object):
 	except:
 		data = {}
 		
+	if data == None: data = {}
+	
 	data[key] = object
 	#project_db[self.get_dd_key()] = data
 		#project_db.sync()
@@ -1971,7 +1988,8 @@ def get_idd_key_entry(image_name,key):
 	project_db = EMProjectDB()
 	try:
 		data = project_db[dbkey]
-		return data[key] 
+		if data == None: return None
+		else: return data[key] 
 	except:
 		return None
 
@@ -2135,7 +2153,6 @@ class SwarmTemplate:
 			if ref.isanchor == False:
 				continue
 			image = ref.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
-			image.write_image("refs.hdf",-1)
 			images_copy.append(image)
 		if len(images_copy) == 0:
 			print 'error, you have probably set references that all have the isanchor flag set to false, which exluded them all from the template making process'
@@ -2646,8 +2663,9 @@ class SwarmAutoBoxer(AutoBoxer):
 			try:
 				data = project_db[get_idd_key(image_name)]
 				#trim_autoboxer = project_db[data["autoboxer_unique_id"]]
-				found = True
+				if data != None:found = True
 			except: pass
+			
 			
 			if found:
 				if data["autoboxer_unique_id"] == self.get_unique_stamp():

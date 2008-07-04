@@ -755,10 +755,6 @@ class GUIbox:
 		except:
 			print "Cannot import EMAN image GUI objects (emimage,etc.)"
 			sys.exit(1)
-
-		try:
-			os.mkdir(EMProjectDB.outputdir)
-		except: pass
 		self.dynapix = False
 		self.anchoring = False
 		self.image_names = image_names
@@ -912,6 +908,8 @@ class GUIbox:
 	def change_current_autoboxer(self, autoboxer_id,autobox=True):
 		#print "change current autoboxer"
 		project_db = EMProjectDB()
+		if project_db[autoboxer_id] == None:
+			project_db[autoboxer_id] = {}
 		trim_autoboxer = project_db[autoboxer_id]["autoboxer"]
 		#print "changing autoboxer to autoboxer_",timestamp,"and its stamp in the db is",trim_autoboxer.get_creation_ts()
 		self.autoboxer = SwarmAutoBoxer(self)
@@ -1086,55 +1084,58 @@ class GUIbox:
 		#print 'in image select'
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.BusyCursor)
-		try:
-			im=lc[0]
-			if im != self.current_image:
+		#try:
+		im=lc[0]
+		#try:
+		if im != self.current_image:
 				#print 'changing images'
-				self.guimxit.setSelected(im)
-				
-				bic = BigImageCache()
-				image=bic.get_image(self.image_names[im])
-				self.guiim.setData(image)
-				
-				self.boxable.cache_exc_to_disk()
-				self.boxable = Boxable(self.image_names[im],self,self.autoboxer)
-				
-				self.ptcl = []
-				self.guiim.delShapes()
-				self.in_display_limbo = True
-				
+			self.guimxit.setSelected(im)
+		
+			bic = BigImageCache()
+			image=bic.get_image(self.image_names[im])
+			self.guiim.setData(image)
+			
+			self.boxable.cache_exc_to_db()
+			self.boxable = Boxable(self.image_names[im],self,self.autoboxer)
+			
+			self.ptcl = []
+			self.guiim.delShapes()
+			self.in_display_limbo = True
+			
+
+			project_db = EMProjectDB()
+			data = project_db[get_idd_key(self.image_names[im])]
+			if data != None:
 				try:
-					project_db = EMProjectDB()
-					data = project_db[get_idd_key(self.image_names[im])]
 					autoboxer_id = data["autoboxer_unique_id"]
 					trim_autoboxer = project_db[autoboxer_id]["autoboxer"]
 					self.autoboxer_name = autoboxer_id
 					self.autoboxer = SwarmAutoBoxer(self)
 					self.autoboxer.become(trim_autoboxer)
 				except: pass
-				
-				self.autoboxer.regressiveflag = True
-				self.autoboxer.auto_box(self.boxable)
-				self.boxable.set_autoboxer(self.autoboxer)
-				self.autoboxer_db_changed()
-				
-				if self.box_size != self.autoboxer.get_box_size():
-					self.update_box_size(self.autoboxer.get_box_size())
-	
-				self.in_display_limbo = False
-				
-				for box in self.boxable.boxes: box.changed = True
-				
-				self.current_image = im
-				
-				self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
-				self.guiim.setFrozen(self.boxable.is_frozen())
-				self.guiim.setExcluded(self.boxable.is_excluded())
-				self.guictl.set_image_quality(self.boxable.get_quality())
-				self.box_display_update()
-				
-				self.update_all_image_displays()
-		except: pass
+			
+			self.autoboxer.regressiveflag = True
+			self.autoboxer.auto_box(self.boxable)
+			self.boxable.set_autoboxer(self.autoboxer)
+			self.autoboxer_db_changed()
+			
+			if self.box_size != self.autoboxer.get_box_size():
+				self.update_box_size(self.autoboxer.get_box_size())
+
+			self.in_display_limbo = False
+			
+			for box in self.boxable.boxes: box.changed = True
+			
+			self.current_image = im
+			
+			self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+			self.guiim.setFrozen(self.boxable.is_frozen())
+			self.guiim.setExcluded(self.boxable.is_excluded())
+			self.guictl.set_image_quality(self.boxable.get_quality())
+			self.box_display_update()
+			
+			self.update_all_image_displays()
+		#except: pass
 			
 		app.setOverrideCursor(Qt.ArrowCursor)
 			
@@ -1459,7 +1460,7 @@ class GUIbox:
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
 		self.dynapixp.exec_()
 		
-		self.boxable.cache_exc_to_disk()
+		self.boxable.cache_exc_to_db()
 		project_db = EMProjectDB()
 		project_db.close()
 		
@@ -1494,7 +1495,7 @@ class GUIbox:
 		self.autoboxer.set_mode(self.dynapix,self.anchoring)
 		
 	def done(self):
-		self.boxable.cache_exc_to_disk()
+		self.boxable.cache_exc_to_db()
 		self.dynapixp.quit
 		
 	def try_data(self,data,thr):
@@ -1556,7 +1557,7 @@ class GUIbox:
 		self.box_display_update()
 		
 	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf"):
-		self.boxable.cache_exc_to_disk()
+		self.boxable.cache_exc_to_db()
 		for image_name in self.image_names:
 			
 			
@@ -1584,7 +1585,7 @@ class GUIbox:
 			boxable.write_box_images(box_size,forceoverwrite,imageformat)
 	
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
-		self.boxable.cache_exc_to_disk()
+		self.boxable.cache_exc_to_db()
 		for image_name in self.image_names:
 			
 			try:
@@ -1710,7 +1711,7 @@ class AutoBoxerSelectionsMediator:
 		project_db = EMProjectDB()
 		self.dict_data = {}
 		self.name_map = {}
-		for i in project_db:
+		for i in project_db.keys():
 			try:
 				if i[0:10] == "autoboxer_":
 					tag = project_db[i]["convenience_name"]
@@ -1724,15 +1725,17 @@ class AutoBoxerSelectionsMediator:
 			try:
 				data = project_db[get_idd_key(image_name)]
 				#trim_autoboxer = project_db[data["autoboxer_unique_id"]]
-				found = True
+				if data != None: found = True
 			except: pass
 			
 			if found:
 				try:
 					self.dict_data[self.name_map[data["autoboxer_unique_id"]]].append(strip_after_dot(image_name))
-				except:
-					print data
-					print "error, an autoboxer has been lost, its stamp is",data["autoboxer_unique_id"]
+				except: pass
+					#print data
+					#try:
+						#print "error, an autoboxer has been lost, its stamp is",data["autoboxer_unique_id"]
+					#except: pass
 		return self.dict_data
 	
 	def get_current_autoboxer_ts(self):
