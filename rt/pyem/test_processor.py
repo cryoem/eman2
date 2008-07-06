@@ -1188,8 +1188,18 @@ class TestProcessor(unittest.TestCase):
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
-        
+                
         e.process_inplace('normalize')
+        sigma = e.get_attr('sigma')
+        self.assertAlmostEqual(sigma, 1, 3)
+        
+        e2 = EMData(32,32)
+        e2.process_inplace('testimage.noise.uniform.rand')
+        self.assertEqual(e2.is_complex(), False)
+        e2.process_inplace('normalize')
+        sigma = e2.get_attr('sigma')
+        self.assertAlmostEqual(sigma, 1, 3)
+        
         
     def test_normalize_mask(self):
         """test normalize.mask processor ...................."""
