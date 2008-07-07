@@ -58,11 +58,24 @@ atexit.register(DB_cleanup)
 # if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
 signal.signal(2,DB_cleanup)
 
+def db_open_env(url):
+	"opens a DB through an environment from a db:/path/to/db/dbname string"
+	if url[:3].lower()!="db:": return None
+	sln=url.rfind("/")
+	if sln==0 :
+		db=EMAN2DB()
+		db.open_dict(url[3:])
+		return db.__dict__[url[3:]]
+	db=EMAN2DB(url[3:sln])
+	name=url[sln+1:]
+	db.open_dict(name)
+	return db.__dict__[name]
+
 # replace a few EMData methods with python versions to intercept 'db:' filenames
 def db_read_image(self,fsp,*parms):
 	if fsp[:3].lower()=="db:" :
-		print "Attempt DB read",fsp,parms
-		return 0
+		db=db_open_env(fsp)
+		return db[parms[1]]
 	return self.read_image_c(fsp,*parms)
 
 EMData.read_image_c=EMData.read_image
@@ -215,13 +228,19 @@ class EMTask:
 class EMAN2DB:
 	"""This class implements a local database of data and metadata for EMAN2"""
 	
+	opendbs={}
+	
 	def __init__(self,path=None):
 		"""path points to the directory containin the EMAN2DB subdirectory. None implies the current working directory"""
 		#if recover: xtraflags=db.DB_RECOVER
 		if not path : path=os.getcwd()
 		self.path=path
 		
-		if not os.access("./EMAN2DB/cache",os.F_OK) : os.makedirs("./EMAN2DB/cache")
+		# Keep a cache of opened database environments
+		if EMAN2DB.opendbs.has_key(self.path) : return EMAN2DB.opendbs[self.path]
+		EMAN2DB.opendbs[self.path]=self
+		
+		if not os.access("%s/EMAN2DB/cache"%self.path,os.F_OK) : os.makedirs("%s/EMAN2DB/cache"%self.path)
 		self.dbenv=db.DBEnv()
 		self.dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
 #		self.dbenv.set_cachesize(1,0,8)		# gbytes, bytes, ncache (splits into groups)
@@ -233,6 +252,7 @@ class EMAN2DB:
 			#sys.exit(1)
 			
 		self.dbenv.open("%s/EMAN2DB/cache"%self.path,envopenflags)
+		
 
 	def __del__(self):
 		self.dbenv=None
