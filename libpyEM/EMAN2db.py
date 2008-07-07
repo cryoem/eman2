@@ -113,11 +113,104 @@ class TaskMgr:
 		self.db=db
 		db.open_dict('tasks_active')
 		if not db.tasks_active.has_key("max") : db.tasks_active["max"]=0
+		if not db.tasks_active.has_key("min") : db.tasks_active["min"]=1
 		
-		db.open_dict('tasks_done')
+		db.open_dict('tasks_complete')
 		if not db.tasks_done.has_key("max") : db.tasks_done["max"]=0
+	
+	def get_task(self):
+		"""This will return the next task waiting for execution"""
+		
+	
+	def add_task(self,task,parentid=None):
+		"""Adds a new task to the active queue, scheduling it for execution. If parentid is
+		specified, a doubly linked list is established. parentid MUST be the id of a task
+		currently in the active queue."""
+		if not isinstance(task,EMTask) : raise Exception,"Invalid Task"
+		self.db.tasks_active["max"]+=1
+		tid=self.db.tasks_active["max"]
+		task.taskid=tid
+		if parentid:
+			task.parent=parentid
+			t2=self.db.tasks_active[parentid]
+			if t2.children : t2.children.append(tid)
+			else : t2.children=[tid]
+			self.db.tasks_active[parentid]=t2
+		task.queuetime=time.time()
+		self.db.tasks_active[tid]=task
+		
+	def task_wait(self,taskid,wait_for=None):
+		"""Permits deferred execution. The task remains in the execution queue, but will
+		not be executed again until all of the 'wait_for' tasks have been completed or aborted.
+		all wait_for tasks should be children of taskid. If wait_for is not specified, will wait
+		for all children to complete"""
+		
+		task=db.tasks_active[taskid]
+		if not wait_for : task.wait_for=task.children
+		else : task.wait_for=wait_for
 		
 		
+	def task_done(self, taskid):
+		"""Mark a Task as complete, by shifting a task to the tasks_complete queue"""
+		try:
+			task=db.tasks_active[tid]
+		except:
+			return
+		
+		task.endtime=time.time()
+		if db.tasks_active["min"]==taskid : db.tasks_active["min"]=min(db.tasks_active.keys())
+		self.db.tasks_complete[tid]=task
+		self.db,tasks_active[tid]=None
+		
+		# if our parent is waiting for us
+		if task.parent :
+			try: 
+				t2=self.db.tasks_active[task.parent]
+				if taskid in t2.wait_for : 
+					t2.wait_for.remove(taskid)
+					self.db.tasks_active[task.parent]=t2
+			except:
+				pass
+		
+	def task_aborted(self, taskid):
+		"""Mark a Task as being aborted, by shifting a task to the tasks_complete queue"""
+		try:
+			task=db.tasks_active[tid]
+		except:
+			return
+		
+		if db.tasks_active["min"]==taskid : db.tasks_active["min"]=min(db.tasks_active.keys())
+		self.db.tasks_complete[tid]=task
+		self.db.tasks_active[tid]=None
+		
+		# if our parent is waiting for us
+		if task.parent :
+			try: 
+				t2=self.db.tasks_active[task.parent]
+				if taskid in t2.wait_for : 
+					t2.wait_for.remove(taskid)
+					self.db.tasks_active[task.parent]=t2
+			except:
+				pass
+
+		
+	
+class EMTask:
+	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
+	an abstract superclass to define common member variables and methods"""
+	def __init__(self,data=None,module=None,command=None,options=None):
+		self.taskid=None		# unique task identifier (in this directory)
+		self.queuetime=None		# Time (as returned by time.time()) when task queued began
+		self.starttime=None		# Time when execution began
+		self.endtime=None		# Time when task completed
+		self.exechost=None		# hostname where task was executed
+		self.children=None		# list of child task ids
+		self.parent=None		# single parent id
+		self.module=module		# module to import to execute this task
+		self.command=command	# name of a function in module
+		self.data=data			# dictionary of named data specifiers (ie - filenames, db access, etc)
+		self.options=options	# dictionary of options
+		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 
 class EMAN2DB:
 	"""This class implements a local database of data and metadata for EMAN2"""
