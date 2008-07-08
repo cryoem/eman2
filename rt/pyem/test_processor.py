@@ -377,7 +377,8 @@ class TestProcessor(unittest.TestCase):
         e2.process_inplace("testimage.noise.uniform.rand")
         e2.process_inplace("math.meanshrink",{"n":1.5}) 
         
-        #shrink factor 1.5 only support 2D image
+        ##shrink factor 1.5 only support 2D image
+        #self.assertRaises( InvalidValueException, e.process_inplace, 'math.meanshrink', {"n":1.5} )
         try:
            e.process_inplace("math.meanshrink",{"n":1.5})
         except RuntimeError, runtime_err:
@@ -1318,23 +1319,73 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('normalize.toimage.lsq', {'to':e2, 'low_threshold':0.2, 'high_threshold':0.8})
         
     def test_math_radialaverage(self):
-        """test math.radialaverage processor ................"""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e.is_complex(), False)
-        
-        e.process_inplace('math.radialaverage')
-        
+		"""test math.radialaverage processor ................"""
+		e = EMData()
+		e.set_size(32,32,32)
+		e.process_inplace('testimage.noise.uniform.rand')
+		self.assertEqual(e.is_complex(), False)
+		
+		e.process_inplace('math.radialaverage')
+		
+		# test to make sure radial average is centered correctly for 2D
+		# the 4 pixels that are exactly one pixel away from the center should be equal...
+		# odd images
+		e = EMData(5,5)
+		#e.set(2,2,2)
+		e.set(2,3,1)
+		e.process_inplace("math.radialaverage")
+		self.assertEqual(e.get(2,3), e.get(2,1))
+		self.assertEqual(e.get(2,3), e.get(3,2))
+		self.assertEqual(e.get(2,3), e.get(1,2))
+		
+		# even images
+		e = EMData(4,4)
+		#e.set(2,2,2)
+		e.set(2,3,1)
+		e.process_inplace("math.radialaverage")
+		self.assertEqual(e.get(2,3), e.get(2,1))
+		self.assertEqual(e.get(2,3), e.get(3,2))
+		self.assertEqual(e.get(2,3), e.get(1,2))
+		
+		# test to make sure radial average is centered correctly for 3D
+		# the 6 pixels that are exactly one pixel away from the center should be equal...
+		e = EMData(5,5,5)
+        #e.set(2,2,2,2)
+		e.set(2,2,3,1)
+		e.process_inplace("math.radialaverage")
+		self.assertEqual(e.get(2,2,3), e.get(2,2,1))
+		self.assertEqual(e.get(2,2,3), e.get(2,3,2))
+		self.assertEqual(e.get(2,2,3), e.get(2,1,2))
+		self.assertEqual(e.get(2,2,3), e.get(3,2,2))
+		self.assertEqual(e.get(2,2,3), e.get(1,2,2))
+		
+		e = EMData(4,4,4)
+        #e.set(2,2,2,2)
+		e.set(2,2,3,1)
+		e.process_inplace("math.radialaverage")
+		self.assertEqual(e.get(2,2,3), e.get(2,2,1))
+		self.assertEqual(e.get(2,2,3), e.get(2,3,2))
+		self.assertEqual(e.get(2,2,3), e.get(2,1,2))
+		self.assertEqual(e.get(2,2,3), e.get(3,2,2))
+		self.assertEqual(e.get(2,2,3), e.get(1,2,2))
+		
+		
     def test_math_radialsubtract(self):
-        """test math.radialsubtract processor ..............."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e.is_complex(), False)
-        
-        e.process_inplace('math.radialsubtract')
-        
+		"""test math.radialsubtract processor ..............."""	
+		e = EMData()
+		e.set_size(32,32)
+		e.process_inplace('testimage.noise.uniform.rand')
+		self.assertEqual(e.is_complex(), False)
+		
+		e.process_inplace('math.radialsubtract')
+		
+		e.set_size(32,32,32)
+		e.process_inplace('testimage.noise.uniform.rand')
+		# It only currently works for 3D - if that ever changes this test should be updated
+		try: e.process_inplace('testimage.noise.uniform.rand')
+		except RuntimeError, runtime_err:
+			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+		
     def test_xform_flip(self):
         """test xform.flip processor ........................"""
         e = EMData()
@@ -1550,14 +1601,41 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('xform.centerofmass', {'int_shift_only':2})
         
     def test_xform_centeracf(self):
-        """test xform.centeracf processor ..................."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e.is_complex(), False)
-        
-        e.process_inplace('xform.centeracf', {'is3d':1})
-        
+		"""test xform.centeracf processor ..................."""
+		e = EMData()
+		e.set_size(32,32,32)
+		e.process_inplace('testimage.noise.uniform.rand')
+		self.assertEqual(e.is_complex(), False)
+		
+		e.process_inplace('xform.centeracf', {'is3d':1})
+		
+		# 2D alignment
+		# this test translates the 2d 'scurve' image, centers it using the acf method, and correlates
+		# the result with the original image - The peak in the correlation image must be within
+		# 1 pixel of the origin for this test to pass
+		e = test_image()
+		e.translate(10,10,0)
+		e.process_inplace('xform.centeracf')
+		f = e.calc_ccf(test_image())
+		coords = f.calc_max_location_wrap(-1,-1,-1)
+		
+		self.failIf(coords[0] > 1)
+		self.failIf(coords[1] > 1)
+		
+		# 3D alignment
+		# this test translates the 3d 'axes' image, centers it using the acf method, and correlates
+		# the result with the original image - The peak in the correlation image must be within
+		# 1 pixel of the origin for this test to pass
+		e = test_image_3d()
+		e.translate(10,10,10)
+		e.process_inplace('xform.centeracf')
+		f = e.calc_ccf(test_image_3d())
+		coords = f.calc_max_location_wrap(-1,-1,-1)
+		self.failIf(coords[0] > 1)
+		self.failIf(coords[1] > 1)
+		self.failIf(coords[2] > 1)
+		
+
     def no_test_eman1_filter_snr(self):
         """test eman1.filter.snr processor .................."""
         e = EMData()

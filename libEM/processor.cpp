@@ -3162,7 +3162,7 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	if (image->get_ndim() != 2)	throw ImageDimensionException("radial average processor only works for 2D images");
+	if (image->get_ndim() <= 0 || image->get_ndim() > 3)	throw ImageDimensionException("radial average processor only works for 2D and 3D images");
 	
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
@@ -3174,25 +3174,51 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 	float midy = (float)((int)ny/2);
 
 	int c = 0;
-	for (int y = 0; y < ny; y++) {
-		for (int x = 0; x < nx; x++, c++) {
-#ifdef	_WIN32
-			float r = (float) _hypot(x - midx, y - midy);
-#else
-			float r = (float) hypot(x - midx, y - midy);
-#endif	//_WIN32
+	if (image->get_ndim() == 2) {
+		for (int y = 0; y < ny; y++) {
+			for (int x = 0; x < nx; x++, c++) {
+	#ifdef	_WIN32
+				float r = (float) _hypot(x - midx, y - midy);
+	#else
+				float r = (float) hypot(x - midx, y - midy);
+	#endif	//_WIN32
+	
+				
+				int i = (int) floor(r);
+				r -= i;
+				if (i >= 0 && i < nx / 2 - 1) {
+					rdata[c] = dist[i] * (1.0f - r) + dist[i + 1] * r;
+				}
+				else if (i < 0) {
+					rdata[c] = dist[0];
+				}
+				else {
+					rdata[c] = 0;
+				}
+			}
+		}
+	}
+	else if (image->get_ndim() == 3) {
+		int nz = image->get_zsize();
+		float midz = (float)((int)nz/2);
+		for (int z = 0; z < nz; z++) {
+			for (int y = 0; y < ny; y++) {
+				for (int x = 0; x < nx; x++, c++) {
 
-			
-			int i = (int) floor(r);
-			r -= i;
-			if (i >= 0 && i < nx / 2 - 1) {
-				rdata[c] = dist[i] * (1.0f - r) + dist[i + 1] * r;
-			}
-			else if (i < 0) {
-				rdata[c] = dist[0];
-			}
-			else {
-				rdata[c] = 0;
+					float r = (float) Util::hypot3(x - midx, y - midy, z - midz);
+
+					int i = (int) floor(r);
+					r -= i;
+					if (i >= 0 && i < nx / 2 - 1) {
+						rdata[c] = dist[i] * (1.0f - r) + dist[i + 1] * r;
+					}
+					else if (i < 0) {
+						rdata[c] = dist[0];
+					}
+					else {
+						rdata[c] = 0;
+					}
+				}
 			}
 		}
 	}
@@ -3209,6 +3235,8 @@ void RadialSubstractProcessor::process_inplace(EMData * image)
 		return;
 	}
 
+	if (image->get_ndim() != 2) throw ImageDimensionException("This processor works only for 2D images");
+	
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
