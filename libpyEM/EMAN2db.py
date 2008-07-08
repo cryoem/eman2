@@ -62,11 +62,11 @@ def db_open_env(url):
 	"opens a DB through an environment from a db:/path/to/db/dbname string"
 	if url[:3].lower()!="db:": return None
 	sln=url.rfind("/")
-	if sln==0 :
-		db=EMAN2DB()
+	if sln<0 :
+		db=EMAN2DB.open_db()
 		db.open_dict(url[3:])
 		return db.__dict__[url[3:]]
-	db=EMAN2DB(url[3:sln])
+	db=EMAN2DB.open_db(url[3:sln])
 	name=url[sln+1:]
 	db.open_dict(name)
 	return db.__dict__[name]
@@ -75,7 +75,7 @@ def db_open_env(url):
 def db_read_image(self,fsp,*parms):
 	if fsp[:3].lower()=="db:" :
 		db=db_open_env(fsp)
-		return db[parms[1]]
+		return db.get(parms[0],target=self)
 	return self.read_image_c(fsp,*parms)
 
 EMData.read_image_c=EMData.read_image
@@ -83,8 +83,8 @@ EMData.read_image=db_read_image
 
 def db_read_images(fsp,*parms):
 	if fsp[:3].lower()=="db:" :
-		print "Attempt DB read",fsp,parms
-		return []
+		db=db_open_env(fsp)
+		return [db.get(i) for i in range(parms[0][0],parms[0][1])]
 	return EMData.read_images_c(fsp,*parms)
 
 EMData.read_images_c=staticmethod(EMData.read_images)
@@ -93,7 +93,8 @@ EMData.read_images=staticmethod(db_read_images)
 
 def db_write_image(self,fsp,*parms):
 	if fsp[:3].lower()=="db:" :
-		print "Attempt DB read",fsp,parms
+		db=db_open_env(fsp)
+		db[parms[0]]=self
 		return 0
 	return self.write_image_c(fsp,*parms)
 
@@ -102,8 +103,8 @@ EMData.write_image=db_write_image
 
 def db_get_image_count(fsp):
 	if fsp[:3].lower()=="db:" :
-		print "Attempt DB count",fsp
-		return 0
+		db=db_open_env(fsp)
+		return len(db)
 	return EMUtil.get_image_count_c(fsp)
 
 
@@ -230,6 +231,16 @@ class EMAN2DB:
 	
 	opendbs={}
 	
+	def open_db(path=None):
+		"""This is an alternate constructor which may return a cached (already open)
+		EMAN2DB instance"""
+		# check the cache of opened dbs first
+		if not path : path=os.getcwd()
+		if EMAN2DB.opendbs.has_key(path) : return EMAN2DB.opendbs[path]
+		return EMAN2DB(path)
+	
+	open_db=staticmethod(open_db)
+	
 	def __init__(self,path=None):
 		"""path points to the directory containin the EMAN2DB subdirectory. None implies the current working directory"""
 		#if recover: xtraflags=db.DB_RECOVER
@@ -237,7 +248,6 @@ class EMAN2DB:
 		self.path=path
 		
 		# Keep a cache of opened database environments
-		if EMAN2DB.opendbs.has_key(self.path) : return EMAN2DB.opendbs[self.path]
 		EMAN2DB.opendbs[self.path]=self
 		
 		if not os.access("%s/EMAN2DB/cache"%self.path,os.F_OK) : os.makedirs("%s/EMAN2DB/cache"%self.path)
