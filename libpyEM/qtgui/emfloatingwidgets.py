@@ -302,10 +302,10 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		return 1 if a redraw is necessary
 		return 0 if a redraw is not necessary 
 		'''
-		if not isinstance(widget,EMGLViewQtWidget):
-			print "error, can only add instances of EMGLViewQtWidget to the EMGLRotaryWidget"
-			return 0
-		else:
+		#if not isinstance(widget,EMGLViewQtWidget):
+			#print "error, can only add instances of EMGLViewQtWidget to the EMGLRotaryWidget"
+			#return 0
+		#else:
 			self.widgets.append(widget)
 			self.update_dims = True
 			if set_current == True and self.is_animated == False:
@@ -1636,6 +1636,9 @@ class EMFloatingWidgetsCore:
 			g = EMGLViewQtWidget(self.parent)
 			g.setQtWidget(insp3)
 			rotary.add_widget(g)
+			
+			rotary.add_widget(w)
+			
 			#rotary.add_widget(b)
 			#rotary.add_widget(b)
 			#rotary.add_widget(b)
