@@ -279,6 +279,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.widgets = []	# the list of widgets to display
 		self.displayed_widget = -1 # the index of the currently displayed widget in self.widgets
 		self.target_displayed_widget = -1 # the index of a target displayed widget, used for animation purposes
+		self.rotations = -1
 		
 		# elliptical parameters
 		self.ellipse_a = 40 # x direction - widgets displayed in position 0 will be a distance of 20 away from the center
@@ -291,8 +292,11 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.time_interval = .5 # 0.5 seconds for the animation to complete
 		self.time_begin = 0 # records the time at which the animation was begun
 		self.is_animated = False
+		self.angle_information = None # will eventually be list used for both static display and animation
 		
 		self.dtheta_animations = None  # an array for dtheta animations
+		
+		self.animation_queue = []
 
 	def add_widget(self,widget,set_current=False):
 		'''
@@ -309,11 +313,9 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			self.widgets.append(widget)
 			self.update_dims = True
 			if set_current == True and self.is_animated == False:
-				self.is_animated = True
 				self.target_displayed_widget =  len(self.widgets)-1
-				self.__gen_animation_dthetas()
-				self.parent.register_animatable(self)
-			
+				self.__start_animation()
+
 			return 1
 		
 	def animate(self,time):
@@ -327,21 +329,30 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			self.time = 0
 			self.is_animated = False
 			self.dtheta_animations = None
+			self.rotations = 0
 			return 0
-		
+		else:
+			for i in range(len(self.widgets)):
+				dt = self.__get_dt()
+				dtheta = self.angle_information[i][2]
+				self.angle_information[i][0] = self.angle_information[i][1]+dt*dtheta
 		return 1
 	
 	def render(self):
 		dtheta = self.__get_current_dtheta()
 		
-		if self.is_animated: dt = sin(self.time/self.time_interval*pi/2)
+		if self.angle_information == None:
+			self.angle_information = []
+			for i in range(len(self.widgets)):
+				angle = i*dtheta
+				self.angle_information.append([angle,angle,0])
+		
+		if self.is_animated: dt = self.__get_dt()
 		
 		for i,widget in enumerate(self.widgets):
-			n = i*dtheta
-			if self.is_animated:n += dt*self.dtheta_animations[i]
-				
+			n = self.angle_information[i][0]
 			n_rad = n*pi/180.0
-			#if i == 0: continue
+
 			dx = self.ellipse_a*cos(n_rad)*self.cos_rot-self.ellipse_b*sin(n_rad)*self.sin_rot
 			dz = -(self.ellipse_b*sin(n_rad)*self.cos_rot+self.ellipse_a*cos(n_rad)*self.sin_rot)
 			h_width = widget.width()/2
@@ -352,16 +363,33 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			glTranslate(h_width,0,0)
 			widget.paintGL()
 			glPopMatrix()
-	
-	def wheelEvent(self,event):
-		if event.delta() > 0:
-			self.target_displayed_widget =  len(self.widgets)-1
-		else:
-			self.target_displayed_widget =  1
-		
+			
+	def __start_animation(self,counter_clockwise=True):
 		self.is_animated = True
-		self.__gen_animation_dthetas()
+		self.__gen_animation_dthetas(counter_clockwise)
 		self.parent.register_animatable(self)
+		
+	def wheelEvent(self,event):
+		if not self.is_animated: 
+			if event.delta() > 0:
+				self.target_displayed_widget =  len(self.widgets)-1
+			else:
+				self.target_displayed_widget = 0
+		else:
+			if event.delta() > 0:
+				if self.target_displayed_widget == 0:
+					self.target_displayed_widget =  len(self.widgets)-1
+				else: 
+					self.target_displayed_widget -= 1
+			else:
+				if self.target_displayed_widget == len(self.widgets)-1:
+					self.target_displayed_widget = 0
+				else:
+					self.target_displayed_widget += 1
+		#print self.target_displayed_widget
+		if not self.is_animated: 
+			self.__start_animation(event.delta()> 0)
+		else: self.__update_animation_dthetas(event.delta() > 0)
 	
 	def determine_dimensions(self):
 		# first determine the ellipse offset - this is related to the inplane rotation of the ellipse. We want the back point corresponding to
@@ -393,35 +421,90 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	# PRIVATE 
 	
 	def __get_current_dtheta(self):
-		if len(self.widgets) == 1: return 90
+		if len(self.widgets) == 1: return 0
 		else: return 90/(len(self.widgets)-1)
 
-	def __gen_animation_dthetas(self):
+	def __get_dt(self):
+		return sin(self.time/self.time_interval*pi/2)
+
+	def __update_animation_dthetas(self,counter_clockwise=True):
+		if not counter_clockwise: #clockwise OpenGL rotations are negative
+			self.rotations -= 1
+			rotations = -1
+		else: # counter clockwise OpenGL rotations are positive
+			self.rotations += 1
+			rotations = 1
+		
+		
+		n = len(self.widgets)
+		dtheta = self.__get_current_dtheta()
+		dt = self.__get_dt()
+		current_thetas = []
+		for i in range(n): 
+			current_thetas.append(i*dtheta)
+		
+		if rotations == -1: # clockwise
+			for i in range(n):
+				for rot in range(self.rotations,self.rotations-1,-1):
+					idx1 = (i+rot+1)%n
+					idx2 = (i+rot)%n
+					self.angle_information[i][1] =  self.angle_information[i][0]
+					if idx2 != (n-1):
+						self.angle_information[i][2] +=  current_thetas[idx2] - current_thetas[idx1]
+					else:
+						self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
+		elif rotations >= 1: # counterclockwise
+			for i in range(len(self.widgets)):
+				for rot in range(self.rotations,self.rotations+1):
+					idx1 = (i+rot-1)%n
+					idx2 = (i+rot)%n
+					self.angle_information[i][1] =  self.angle_information[i][0]
+					if idx1 != (n-1):
+						self.angle_information[i][2] +=  current_thetas[idx2] - current_thetas[idx1]
+					else:
+						self.angle_information[i][2] +=  360-(current_thetas[idx1] - current_thetas[idx2])
+
+	def __gen_animation_dthetas(self,counter_clockwise=True):
 		# find the shortest path from the currently displayed to the target displayed widget
 				
-		c_distance = self.target_displayed_widget # clockwise distance, looking down -y
-		cc_distance = len(self.widgets) - self.target_displayed_widget #conterclockwise distance, looking down -y
+		#c_distance = self.target_displayed_widget # clockwise distance, looking down -y
+		#cc_distance = len(self.widgets) - self.target_displayed_widget #conterclockwise distance, looking down -y
 		
+		n = len(self.widgets)
 		dtheta = self.__get_current_dtheta()
+		self.angle_information = []
 		current_thetas = []
-		for i in range(len(self.widgets)): current_thetas.append(i*dtheta)
-			
-		self.dtheta_animations = []
-		if c_distance <= cc_distance: #clockwise OpenGL rotations are negative
-			for i in range(len(self.widgets)):
-				if i == 0:
-					self.dtheta_animations.append( -(360.0 - (current_thetas[len(self.widgets)-1] - current_thetas[i])) )
-				else:
-					self.dtheta_animations.append(current_thetas[i-1] - current_thetas[i])
-		else: # counter clockwise OpenGL rotations are positive
-			for i in range(len(self.widgets)):
-				if i == len(self.widgets)-1:
-					self.dtheta_animations.append(360 - (current_thetas[len(self.widgets)-1] - current_thetas[0]))
-				else:
-					self.dtheta_animations.append(current_thetas[i+1] - current_thetas[i])
+		for i in range(n): 
+			# information stored in current, start, end format
+			current_thetas.append(i*dtheta)
+			self.angle_information.append([i*dtheta,i*dtheta,0])
 	
+		if not counter_clockwise: #clockwise OpenGL rotations are negative
+			self.rotations = -1
+		else: # counter clockwise OpenGL rotations are positive
+			self.rotations = 1
 		
 		
+		if self.rotations <= -1: # clockwise
+			for i in range(n):
+				for rot in range(-1,self.rotations-1,-1):
+					idx1 = (i+rot+1)%n
+					idx2 = (i+rot)%n
+					if idx2 != (n-1):
+						self.angle_information[i][2] +=  current_thetas[idx2] - current_thetas[idx1]
+					else:
+						self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
+		elif self.rotations >= 1: # counterclockwise
+			for i in range(len(self.widgets)):
+				for rot in range(1,self.rotations+1):
+					idx1 = (i+rot-1)%n
+					idx2 = (i+rot)%n
+					if idx1 != (n-1):
+						self.angle_information[i][2] +=  current_thetas[idx2] - current_thetas[idx1]
+					else:
+						self.angle_information[i][2] +=  360-(current_thetas[idx1] - current_thetas[idx2])
+		else:
+			print "error - can't rotate when rotations are set to 0"
 
 class EMGLView3D:
 	"""
@@ -1499,7 +1582,7 @@ class EMFloatingWidgetsCore:
 			rotary.add_widget(b)
 			rotary.add_widget(b)
 			rotary.add_widget(a)
-			rotary.add_widget(a,True)
+			rotary.add_widget(a)
 			
 			self.qwidgets.append(EM3DWidget(self,rotary))
 			#self.rotary.add_widget(self.qwidgets[1])
