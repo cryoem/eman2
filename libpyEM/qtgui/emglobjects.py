@@ -450,6 +450,10 @@ class EMViewportDepthTools:
 		# this function can be called to determine
 		# if the event at x,y (in terms of the viewport)
 		# was within the frame of the object being drawn
+		
+		#print x,y
+		#print self.mc00,self.mc11
+		
 		try:
 			a = [self.mc00[0]-x, self.mc00[1]-y]
 			b = [self.mc01[0]-x, self.mc01[1]-y]

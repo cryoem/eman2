@@ -215,10 +215,7 @@ class EM3DWidget:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mousePressEvent(event)
 		else:
-			pass
-			#l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
-			#qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			#self.drawable.mousePressEvent(qme)
+			self.target.mousePressEvent(event)
 
 	
 	def wheelEvent(self,event):
@@ -235,11 +232,7 @@ class EM3DWidget:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			pass
-			#l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
-			#qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			#self.drawable.mouseMoveEvent(qme)
-			#self.drawable.mouseMoveEvent(event)
+			self.target.mouseMoveEvent(event)
 		
 		#self.updateGL()
 
@@ -247,11 +240,10 @@ class EM3DWidget:
 		if event.modifiers() == Qt.ShiftModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
-			pass
-			#l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
-			#qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			#self.drawable.mouseReleaseEvent(qme)
-			#self.drawable.mouseReleaseEvent(event)
+			self.target.mouseReleaseEvent(event)
+	
+	def toolTipEvent(self,event):
+		self.target.toolTipEvent(event)
 	
 	def isinwin(self,x,y):
 		val = False
@@ -282,7 +274,8 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.widgets = []	# the list of widgets to display
 		self.displayed_widget = -1 # the index of the currently displayed widget in self.widgets
 		self.target_displayed_widget = -1 # the index of a target displayed widget, used for animation purposes
-		self.rotations = -1
+		self.rotations = 0 # an index
+		self.anim_rotations = 0
 		
 		# elliptical parameters
 		self.ellipse_a = 40 # x direction - widgets displayed in position 0 will be a distance of 20 away from the center
@@ -331,8 +324,8 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			self.time_begin = 0
 			self.time = 0
 			self.is_animated = False
-			self.dtheta_animations = None
-			self.rotations = 0
+			self.angle_information = None
+			self.rotations += self.anim_rotations
 			return 0
 		else:
 			for i in range(len(self.widgets)):
@@ -351,22 +344,40 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 				self.angle_information.append([angle,angle,0])
 		
 		if self.is_animated: dt = self.__get_dt()
+		size = len(self.widgets)
+		if size == 0:
+			return
 		
-		for i,widget in enumerate(self.widgets):
+		for i in range(size):
 			n = self.angle_information[i][0]
 			n_rad = n*pi/180.0
 
+			idx = i-self.rotations
+			if idx != 0:
+				idx = idx % size
+			#print idx,
+			widget = self.widgets[idx]
 			dx = self.ellipse_a*cos(n_rad)*self.cos_rot-self.ellipse_b*sin(n_rad)*self.sin_rot
 			dz = -(self.ellipse_b*sin(n_rad)*self.cos_rot+self.ellipse_a*cos(n_rad)*self.sin_rot)
 			h_width = widget.width()/2
-			#print "positioning at",dx,dz," angle is", n
+			#print "positioning",i,"at",dx,dz," angle is", n, "idx is ", idx
 			glPushMatrix()
 			glTranslate(dx,0,dz)
 			glRotate(n,0,1,0)
 			glTranslate(h_width,0,0)
 			widget.paintGL()
 			glPopMatrix()
-			
+		
+		#print self.rotations % (len(self.widgets))
+	
+	def __get_visible(self):
+		'''
+		returns the visible widget
+		'''
+		idx =  (-self.rotations) % (len(self.widgets))
+		#print idx,self.rotations
+		return self.widgets[idx]
+	
 	def __start_animation(self,counter_clockwise=True):
 		self.is_animated = True
 		self.__gen_animation_dthetas(counter_clockwise)
@@ -393,6 +404,28 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		if not self.is_animated: 
 			self.__start_animation(event.delta()> 0)
 		else: self.__update_animation_dthetas(event.delta() > 0)
+		
+	
+	def mousePressEvent(self,event):
+		if self.is_animated: return
+		if self.__get_visible().isinwin(event.x(),event.y()) :
+			self.__get_visible().mousePressEvent(event)
+	
+	def mouseReleaseEvent(self,event):
+		if self.is_animated: return
+		if self.__get_visible().isinwin(event.x(),event.y()) :
+			self.__get_visible().mouseReleaseEvent(event)
+	
+	def mouseMoveEvent(self,event):
+		if self.is_animated: return
+		if self.__get_visible().isinwin(event.x(),event.y()) :
+			self.__get_visible().mouseMoveEvent(event)
+	
+	def toolTipEvent(self,event):
+		if self.is_animated: return
+		if self.__get_visible().isinwin(event.x(),event.y()) :
+			self.__get_visible().toolTipEvent(event)
+	
 	
 	def determine_dimensions(self):
 		# first determine the ellipse offset - this is related to the inplane rotation of the ellipse. We want the back point corresponding to
@@ -432,10 +465,12 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 
 	def __update_animation_dthetas(self,counter_clockwise=True):
 		if not counter_clockwise: #clockwise OpenGL rotations are negative
-			self.rotations -= 1
+			#self.rotations -= 1
+			self.anim_rotations -= 1
 			rotations = -1
 		else: # counter clockwise OpenGL rotations are positive
-			self.rotations += 1
+			#self.rotations += 1
+			self.anim_rotations += 1
 			rotations = 1
 		
 		self.time_begin = time.time()
@@ -448,7 +483,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		
 		if rotations == -1: # clockwise
 			for i in range(n):
-				for rot in range(self.rotations,self.rotations-1,-1):
+				for rot in range(self.anim_rotations,self.anim_rotations-1,-1):
 					idx1 = (i+rot+1)%n
 					idx2 = (i+rot)%n
 					self.angle_information[i][1] =  self.angle_information[i][0]
@@ -458,7 +493,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 						self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
 		elif rotations >= 1: # counterclockwise
 			for i in range(len(self.widgets)):
-				for rot in range(self.rotations,self.rotations+1):
+				for rot in range(self.anim_rotations,self.anim_rotations+1):
 					idx1 = (i+rot-1)%n
 					idx2 = (i+rot)%n
 					self.angle_information[i][1] =  self.angle_information[i][0]
@@ -483,23 +518,27 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			self.angle_information.append([i*dtheta,i*dtheta,i*dtheta])
 	
 		if not counter_clockwise: #clockwise OpenGL rotations are negative
-			self.rotations = -1
+			#self.rotations -= 1
+			self.anim_rotations = -1
+			rotations = -1
 		else: # counter clockwise OpenGL rotations are positive
-			self.rotations = 1
+			#self.rotations += 1
+			self.anim_rotations = 1
+			rotations = 1
 		
 		
-		if self.rotations <= -1: # clockwise
+		if rotations <= -1: # clockwise
 			for i in range(n):
-				for rot in range(-1,self.rotations-1,-1):
+				for rot in range(-1,rotations-1,-1):
 					idx1 = (i+rot+1)%n
 					idx2 = (i+rot)%n
 					if idx2 != (n-1):
 						self.angle_information[i][2] +=  current_thetas[idx2] - current_thetas[idx1]
 					else:
 						self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
-		elif self.rotations >= 1: # counterclockwise
+		elif rotations >= 1: # counterclockwise
 			for i in range(len(self.widgets)):
-				for rot in range(1,self.rotations+1):
+				for rot in range(1,rotations+1):
 					idx1 = (i+rot-1)%n
 					idx2 = (i+rot)%n
 					if idx1 != (n-1):
@@ -984,13 +1023,13 @@ class EMGLViewQtWidget:
 	def __init__(self, parent=None, qwidget=None, widget_parent=None):
 		self.parent = parent
 		self.qwidget = qwidget
-		self.drawFrame = True
+		self.drawFrame = False
 		self.mapcoords = True
 		self.itex = 0
 		self.genTexture = True
 		self.click_debug = False
 		self.cam = Camera2(self)
-		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
+		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		self.cam.motionRotate(0,0)
 		self.borderwidth = 3.0
 		self.glbasicobjects = EMBasicOpenGLObjects()
@@ -1062,8 +1101,8 @@ class EMGLViewQtWidget:
 			#print "no widget - paintGL children return" 
 			return
 		
-		self.cam.debug = True
-		#self.cam.position()
+		#self.cam.debug = True
+		self.cam.position()
 		
 		# make sure the vdtools store the current matrices
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
@@ -1455,7 +1494,7 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		# this is the same as the glFrustum call above
 		depth = self.get_depth_for_height(height_plane)
 		#gluPerspective(self.fov,self.aspect,depth-depth/4,depth+depth/4)
-		gluPerspective(self.fov,self.aspect,1,10000)
+		gluPerspective(self.fov,self.aspect,1000,3000)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
@@ -1478,7 +1517,7 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		self.floatwidget.wheelEvent(event)
 
 	def toolTipEvent(self, event):
-		self.floatwidget.wheelEvent(event)
+		self.floatwidget.toolTipEvent(event)
 		QtGui.QToolTip.hideText()
 		
 
@@ -1569,28 +1608,44 @@ class EMFloatingWidgetsCore:
 			##self.qwidgets[0].cam.setCamX(-100)
 			
 			
-			
-			self.fd2 = QtGui.QFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
-			QtCore.QObject.connect(self.fd2, QtCore.SIGNAL("finished(int)"), self.finished)
-			self.fd2.show()
-			self.fd2.hide()
 			#self.qwidgets.append(EMGLViewQtWidget(self.parent))
 			#self.qwidgets[1].setQtWidget(self.fd2)
 			#self.qwidgets[1].cam.setCamX(-200)
 			
 			a = EMGLViewQtWidget(self.parent)
-			a.setQtWidget(self.fd2)
-			b = EMGLViewQtWidget(self.parent)
-			b.setQtWidget(self.fd)
+			a.setQtWidget(self.fd)
 			rotary = EMGLRotaryWidget(self)
-			rotary.add_widget(b)
-			rotary.add_widget(b)
-			rotary.add_widget(b)
-			rotary.add_widget(b)
-			rotary.add_widget(b)
-			rotary.add_widget(b)
 			rotary.add_widget(a)
-			rotary.add_widget(a)
+			#rotary.add_widget(d)
+			
+			
+			w = EMGLView2D(self,test_image())
+			insp = w.getInspector()
+			e = EMGLViewQtWidget(self.parent)
+			e.setQtWidget(insp)
+			rotary.add_widget(e)
+			
+			w2 = EMGLView2D(self,[test_image(),test_image()])
+			insp2 = w2.getInspector()
+			f = EMGLViewQtWidget(self.parent)
+			f.setQtWidget(insp2)
+			rotary.add_widget(f)
+			
+			w3 = EMGLView3D(self,test_image_3d())
+			insp3 = w3.getInspector()
+			g = EMGLViewQtWidget(self.parent)
+			g.setQtWidget(insp3)
+			rotary.add_widget(g)
+			#rotary.add_widget(b)
+			#rotary.add_widget(b)
+			#rotary.add_widget(b)
+			#rotary.add_widget(a)
+			#rotary.add_widget(a)
+			#rotary.add_widget(b)
+			#rotary.add_widget(b)
+			#rotary.add_widget(b)
+			#rotary.add_widget(a)
+			#rotary.add_widget(a)
 			
 			self.qwidgets.append(EM3DWidget(self,rotary))
 			#self.rotary.add_widget(self.qwidgets[1])
@@ -1724,7 +1779,7 @@ class EMFloatingWidgetsCore:
 			return QtOpenGL.QGLWidget.event(self,event)
 
 	def hoverEvent(self,event):
-		#print "hoverEvent"
+		print "hoverEvent"
 		if self.inspector :
 			for i in self.qwidgets:
 				if ( i.isinwin(event.x(),self.height()-event.y()) ):
