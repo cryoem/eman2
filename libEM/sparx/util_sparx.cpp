@@ -5311,6 +5311,9 @@ vector<double> Util::vrdg(const vector<float>& ph, const vector<float>& th)
 		LOGERR("images not same size");
 		throw ImageFormatException( "images not same size");
 	}
+
+	// rand_seed
+	srand(10);
 	
 	int i,*key;
 	int len = th.size();
@@ -5792,7 +5795,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	    }
 
 	    Util::disorder2(x, y, key, n);
-	   
+	  
 	    // check if the first three angles are not close, else shuffle
 	    double val;
             for(k=0; k<2; k++){
@@ -5826,8 +5829,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
        	    ier = 0;
 	   
 	    status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew, indx, lcnt, iwk, good, ds, &ier);
-	    
-	    
+	 	 	    
 	    if (status != 0) {
 	 	printf(" error in trmsh3 \n");
 		exit(1);
@@ -5840,7 +5842,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 
 	    mdup=n-nout;
 	    if (ier == -2) {
-		printf("in TRMESH:the first three nodes are colinear*** disorder again\n");
+		//printf("in TRMESH:the first three nodes are colinear*** disorder again\n");
 	    }
 	    else 
 	    {
@@ -5859,7 +5861,6 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 			good[nd-1]=k;
 		}
 	}
-
 
 //
 // *** Compute the Voronoi region areas.
@@ -6254,6 +6255,7 @@ int i_dnnt(double *x)
 	lptr[6] = 5;
 	lend[3] = 6;
 
+	
     } else {
 
 /*   The first three nodes are collinear. */
@@ -6356,7 +6358,7 @@ L2:
 	    next[i0] = next[ku];
 	}
 	near__[ku] = 0;
-
+	
 /* Bypass duplicate nodes. */
 
 	if (dist[ku] <= *tol - 1.) {
@@ -6365,8 +6367,8 @@ L2:
 	    goto L6;
 	}
 
-/* Add a new triangulation node KT with LCNT(KT) = 1. */
 
+/* Add a new triangulation node KT with LCNT(KT) = 1. */
 	++kt;
 	x[kt] = x[ku];
 	y[kt] = y[ku];
@@ -6380,7 +6382,7 @@ L2:
 	    *ier = -3;
 	    return 0;
 	}
-
+	
 /* Loop on neighbors J of node KT. */
 
 	lpl = lend[kt];
@@ -6587,12 +6589,10 @@ L6:
 
     kk = *k;
     if (kk < 4) {
-	printf("goto L3\n");
 	goto L3;
     }
 
 /* Initialization: */
-
     km1 = kk - 1;
     ist = *nst;
     if (ist < 1) {
@@ -6605,8 +6605,7 @@ L6:
 /* Find a triangle (I1,I2,I3) containing K or the rightmost */
 /*   (I1) and leftmost (I2) visible boundary nodes as viewed */
 /*   from node K. */
-
-    trfind_(&ist, p, &km1, &x[1], &y[1], &z__[1], &list[1], &lptr[1], &lend[1]
+    trfind_(&ist, p, &km1, &x[1], &y[1], &z__[1], &list[1], &lptr[1], &lend[1]  
 	    , &b1, &b2, &b3, &i1, &i2, &i3);
 
 /*   Test for collinear or (nearly) duplicate nodes. */
@@ -6639,7 +6638,6 @@ L6:
 
 /* Initialize variables for optimization of the */
 /*   triangulation. */
-
     lp = lend[kk];
     lpf = lptr[lp];
     io2 = list[lpf];
@@ -11299,7 +11297,9 @@ long int left_(double *x1, double *y1, double *z1, double *x2,
 /* LEFT = TRUE iff <N0,N1 X N2> = det(N0,N1,N2) .GE. 0. */
 
     ret_val = *x0 * (*y1 * *z2 - *y2 * *z1) - *y0 * (*x1 * *z2 - *x2 * *z1) + 
-	    *z0 * (*x1 * *y2 - *x2 * *y1) >= 0.;
+    	    *z0 * (*x1 * *y2 - *x2 * *y1) >= -0.000001;
+
+ 
     return ret_val;
 } /* left_ */
 
@@ -12804,7 +12804,7 @@ L2:
 L3:
 	if (xp * (y[n0] * z__[n1] - y[n1] * z__[n0]) - yp * (x[n0] * z__[n1] 
 		- x[n1] * z__[n0]) + zp * (x[n0] * y[n1] - x[n1] * y[n0]) < 
-		0.) {
+		-1e-10) {
 	    lp = lptr[lp];
 	    n1 = list[lp];
 	    if (n1 == nl) {
@@ -12819,7 +12819,7 @@ L3:
 	nl = -nl;
 	if (xp * (y[n0] * z__[nf] - y[nf] * z__[n0]) - yp * (x[n0] * z__[nf] 
 		- x[nf] * z__[n0]) + zp * (x[n0] * y[nf] - x[nf] * y[n0]) < 
-		0.) {
+		-1e-10) {
 
 /*   P is to the right of the boundary edge N0->NF. */
 
@@ -12829,7 +12829,7 @@ L3:
 	}
 	if (xp * (y[nl] * z__[n0] - y[n0] * z__[nl]) - yp * (x[nl] * z__[n0] 
 		- x[n0] * z__[nl]) + zp * (x[nl] * y[n0] - x[n0] * y[nl]) < 
-		0.) {
+		-1e-10) {
 
 /*   P is to the right of the boundary edge NL->N0. */
 
@@ -12846,7 +12846,7 @@ L4:
     lp = lptr[lp];
     n2 = (i__1 = list[lp], abs(i__1));
     if (xp * (y[n0] * z__[n2] - y[n2] * z__[n0]) - yp * (x[n0] * z__[n2] - x[
-	    n2] * z__[n0]) + zp * (x[n0] * y[n2] - x[n2] * y[n0]) < 0.) {
+	    n2] * z__[n0]) + zp * (x[n0] * y[n2] - x[n2] * y[n0]) < -1e-10) {
 	goto L7;
     }
     n1 = n2;
@@ -12854,7 +12854,7 @@ L4:
 	goto L4;
     }
     if (xp * (y[n0] * z__[nf] - y[nf] * z__[n0]) - yp * (x[n0] * z__[nf] - x[
-	    nf] * z__[n0]) + zp * (x[n0] * y[nf] - x[nf] * y[n0]) < 0.) {
+	    nf] * z__[n0]) + zp * (x[n0] * y[nf] - x[nf] * y[n0]) < -1e-10) {
 	goto L6;
     }
 
@@ -12870,8 +12870,8 @@ L4:
 
 L5:
 	if (xp * (y[n1] * z__[n0] - y[n0] * z__[n1]) - yp * (x[n1] * z__[n0] 
-		- x[n0] * z__[n1]) + zp * (x[n1] * y[n0] - x[n0] * y[n1]) >= 
-		0.) {
+		- x[n0] * z__[n1]) + zp * (x[n1] * y[n0] - x[n0] * y[n1]) > 
+		-1e-10) {
 	    lp = lptr[lp];
 	    n1 = (i__1 = list[lp], abs(i__1));
 	    if (n1 == nl) {
@@ -12904,9 +12904,10 @@ L7:
 /* Top of edge-hopping loop: */
 
 L8:
+    
     *b3 = xp * (y[n1] * z__[n2] - y[n2] * z__[n1]) - yp * (x[n1] * z__[n2] - 
 	    x[n2] * z__[n1]) + zp * (x[n1] * y[n2] - x[n2] * y[n1]);
-    if (*b3 < 0.) {
+     if (*b3 < -1e-10) {
 
 /*   Set N4 to the first neighbor of N2 following N1 (the */
 /*     node opposite N2->N1) unless N1->N2 is a boundary arc. */
@@ -12920,10 +12921,9 @@ L8:
 
 /*   Define a new arc N1->N2 which intersects the geodesic */
 /*     N0-P. */
-
 	if (xp * (y[n0] * z__[n4] - y[n4] * z__[n0]) - yp * (x[n0] * z__[n4] 
 		- x[n4] * z__[n0]) + zp * (x[n0] * y[n4] - x[n4] * y[n0]) < 
-		0.) {
+		-1e-10) {
 	    n3 = n2;
 	    n2 = n4;
 	    n1s = n1;
@@ -13010,12 +13010,13 @@ L9:
 /*           Counterclockwise Boundary Traversal: */
 
 L10:
+    
     lp = lend[n2];
     lp = lptr[lp];
     next = list[lp];
-    if (xp * (y[n2] * z__[next] - y[next] * z__[n2]) - yp * (x[n2] * z__[next]
+     if (xp * (y[n2] * z__[next] - y[next] * z__[n2]) - yp * (x[n2] * z__[next]
 	     - x[next] * z__[n2]) + zp * (x[n2] * y[next] - x[next] * y[n2]) 
-	    >= 0.) {
+	    >= -1e-10) {
 
 /*   N2 is the rightmost visible node if P Forward N2->N1 */
 /*     or NEXT Forward N2->N1.  Set Q to (N2 X N1) X N2. */
@@ -13071,7 +13072,7 @@ L12:
 	next = -list[lp];
 	if (xp * (y[next] * z__[n1] - y[n1] * z__[next]) - yp * (x[next] * 
 		z__[n1] - x[n1] * z__[next]) + zp * (x[next] * y[n1] - x[n1] *
-		 y[next]) >= 0.) {
+		 y[next]) >= -1e-10) {
 
 /*   N1 is the leftmost visible node if P or NEXT is */
 /*     forward of N1->N2.  Compute Q = N1 X (N2 X N1). */
