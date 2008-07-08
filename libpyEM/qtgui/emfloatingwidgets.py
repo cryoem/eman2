@@ -334,7 +334,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		else:
 			for i in range(len(self.widgets)):
 				dt = self.__get_dt()
-				dtheta = self.angle_information[i][2]
+				dtheta = self.angle_information[i][2]-self.angle_information[i][1]
 				self.angle_information[i][0] = self.angle_information[i][1]+dt*dtheta
 		return 1
 	
@@ -435,7 +435,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			self.rotations += 1
 			rotations = 1
 		
-		
+		self.time_begin = time.time()
 		n = len(self.widgets)
 		dtheta = self.__get_current_dtheta()
 		dt = self.__get_dt()
@@ -477,7 +477,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		for i in range(n): 
 			# information stored in current, start, end format
 			current_thetas.append(i*dtheta)
-			self.angle_information.append([i*dtheta,i*dtheta,0])
+			self.angle_information.append([i*dtheta,i*dtheta,i*dtheta])
 	
 		if not counter_clockwise: #clockwise OpenGL rotations are negative
 			self.rotations = -1
