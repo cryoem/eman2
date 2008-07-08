@@ -3162,21 +3162,27 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 		return;
 	}
 
+	if (image->get_ndim() != 2)	throw ImageDimensionException("radial average processor only works for 2D images");
+	
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
 	vector < float >dist = image->calc_radial_dist(nx / 2, 0, 1,0);
 
+	float midx = (float)((int)nx/2);
+	float midy = (float)((int)ny/2);
+
 	int c = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx; x++, c++) {
 #ifdef	_WIN32
-			float r = (float) _hypot(x - nx / 2.0f, y - ny / 2.0f);
+			float r = (float) _hypot(x - midx, y - midy);
 #else
-			float r = (float) hypot(x - nx / 2.0f, y - ny / 2.0f);
+			float r = (float) hypot(x - midx, y - midy);
 #endif	//_WIN32
 
+			
 			int i = (int) floor(r);
 			r -= i;
 			if (i >= 0 && i < nx / 2 - 1) {

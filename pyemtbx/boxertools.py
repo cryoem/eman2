@@ -359,7 +359,7 @@ class Box:
 		self.xcorner += difx
 		self.ycorner += dify
 		
-		#print "correction",difx,dify
+		print "correction",difx,dify
 		
 		if update and (difx != 0 or dify != 0):
 			self.update_box_image()
@@ -2868,7 +2868,7 @@ class SwarmAutoBoxer(AutoBoxer):
 
 
 		template = self.get_high_res_template_image()
-
+		template.write_image("template.hdf")
 		# This is what should be written to the database
 		boxes = []
 		
@@ -2883,7 +2883,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			box.corx = b[0]
 			box.cory = b[1]
 			box.changed = True
-			box.correct_resolution_centering(self.get_best_shrink(),False)
+			#box.correct_resolution_centering(self.get_best_shrink(),False)
 			box.center(Box.CENTERPROPAGATE,template,False)
 			boxes.append(box)
 	
@@ -2897,9 +2897,18 @@ class SwarmAutoBoxer(AutoBoxer):
 		newy = self.box_size
 		oldx = template.get_xsize()
 		oldy = template.get_ysize()
-		template.clip_inplace(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
+		
 		scale = float(newx)/float(oldx)
+		
+		new_center = [newx/2.0,newy/2.0]
+		scale_center = [scale*oldx/2.0,scale*oldy/2.0]
+
+		template.clip_inplace(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
+		
 		template.scale(scale)
+		# sometimes centers could be off... FIXME double check
+		template.translate(new_center[0]-scale_center[0],new_center[1]-scale_center[1],0)
+		
 		return template
 		
 	

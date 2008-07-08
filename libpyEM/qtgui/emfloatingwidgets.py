@@ -266,6 +266,9 @@ class EM3DWidget:
 	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
 	
+	def set_update_P_inv(self,val=True):
+		self.target.set_update_P_inv(val)
+	
 class EMGLRotaryWidget(EM3DWidgetVolume):
 	'''
 	A display rotary widget - consists of an ellipse  with widgets 'attached' to it.
@@ -284,7 +287,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		# elliptical parameters
 		self.ellipse_a = 40 # x direction - widgets displayed in position 0 will be a distance of 20 away from the center
 		self.ellipse_b = 400 # y direction - widgets at 90 degrees will be a distance of 100 into the screen, away from the elliptical center
-		self.rot = 20*pi/180.0 # this is how much the ellipse should be rotated about the y axis - makes it so that the ellipse isn't 'head on' to the viewer, for visual effects. The orientation of the widgets is not affected (they are always oriented as though the ellipse is not rotated in plane.
+		self.rot = 15*pi/180.0 # this is how much the ellipse should be rotated about the y axis - makes it so that the ellipse isn't 'head on' to the viewer, for visual effects. The orientation of the widgets is not affected (they are always oriented as though the ellipse is not rotated in plane.
 		self.cos_rot = cos(self.rot)
 		self.sin_rot = sin(self.rot)
 		
@@ -505,6 +508,11 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 						self.angle_information[i][2] +=  360-(current_thetas[idx1] - current_thetas[idx2])
 		else:
 			print "error - can't rotate when rotations are set to 0"
+
+	
+	def set_update_P_inv(self,val=True):
+		for widget in self.widgets:
+			widget.set_update_P_inv(val)
 
 class EMGLView3D:
 	"""
