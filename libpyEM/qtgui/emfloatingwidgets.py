@@ -302,17 +302,17 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		return 1 if a redraw is necessary
 		return 0 if a redraw is not necessary 
 		'''
-		#if not isinstance(widget,EMGLViewQtWidget):
-			#print "error, can only add instances of EMGLViewQtWidget to the EMGLRotaryWidget"
-			#return 0
-		#else:
+		if not isinstance(widget,EMGLViewQtWidget) and not isinstance(widget,EMGLView2D) and not isinstance(widget,EMGLView3D) :
+			print "error, can only add instances of EMGLViewQtWidget to the EMGLRotaryWidget"
+			return 0
+		else:
 			self.widgets.append(widget)
 			self.update_dims = True
 			if set_current == True and self.is_animated == False:
 				self.target_displayed_widget =  len(self.widgets)-1
 				self.__start_animation()
 
-			return 1
+		return 1
 		
 	def animate(self,time):
 		if self.time_begin == 0:
@@ -384,22 +384,23 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.parent.register_animatable(self)
 		
 	def wheelEvent(self,event):
+		
 		if not self.is_animated: 
-			if event.delta() > 0:
+			if self.__get_visible().isinwin(event.x(),event.y()) :
+				self.__get_visible().wheelEvent(event)
+				return
+		
+
+		if event.delta() > 0:
+			if self.target_displayed_widget == 0:
 				self.target_displayed_widget =  len(self.widgets)-1
-			else:
-				self.target_displayed_widget = 0
+			else: 
+				self.target_displayed_widget -= 1
 		else:
-			if event.delta() > 0:
-				if self.target_displayed_widget == 0:
-					self.target_displayed_widget =  len(self.widgets)-1
-				else: 
-					self.target_displayed_widget -= 1
+			if self.target_displayed_widget == len(self.widgets)-1:
+				self.target_displayed_widget = 0
 			else:
-				if self.target_displayed_widget == len(self.widgets)-1:
-					self.target_displayed_widget = 0
-				else:
-					self.target_displayed_widget += 1
+				self.target_displayed_widget += 1
 		#print self.target_displayed_widget
 		if not self.is_animated: 
 			self.__start_animation(event.delta()> 0)
@@ -562,7 +563,7 @@ class EMGLView3D:
 		self.parent = parent
 		self.cam = Camera2(self)
 		self.cam.motiondull = 3.0
-		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
+		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
 		self.w = image.get_xsize()	# width of window
 		self.h = image.get_ysize()	# height of window
@@ -579,7 +580,7 @@ class EMGLView3D:
 		
 		self.updateFlag = True
 		
-		self.drawFrame = True
+		self.drawFrame = False
 		
 		self.inspector = None
 		
@@ -821,7 +822,7 @@ class EMGLView2D:
 	def __init__(self, parent,image=None):
 		self.parent = parent
 		self.cam = Camera2(self)
-		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
+		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
 		
 		if isinstance(image,list):
@@ -840,7 +841,7 @@ class EMGLView2D:
 		
 		self.updateFlag = True
 		
-		self.drawFrame = True
+		self.drawFrame = False
 		
 		self.sizescale = 1.0
 		self.changefactor = 1.1
@@ -1007,8 +1008,8 @@ class EMGLView2D:
 	def emit(self, signal, event):
 		try:
 			QtCore.QObject.emit(signal,event)
-		except:
-			print "unknown signal", signal, "or unknown event",event
+		except: pass
+			#print "unknown signal", signal, "or unknown event",event
 	
 	def leaveEvent(self):
 		self.drawable.leaveEvent()
@@ -1402,7 +1403,8 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		
 		self.setMouseTracking(True)
 		self.fov = 2*180*atan2(1,5)/pi
-		
+		self.zNear=1000
+		self.zFar = 3000
 		self.floatwidget = EMFloatingWidgetsCore(self)
 		
 		self.cam = Camera()
@@ -1493,8 +1495,9 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		self.aspect = float(self.width())/float(self.height())
 		# this is the same as the glFrustum call above
 		depth = self.get_depth_for_height(height_plane)
+		
 		#gluPerspective(self.fov,self.aspect,depth-depth/4,depth+depth/4)
-		gluPerspective(self.fov,self.aspect,1000,3000)
+		gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
@@ -1548,6 +1551,15 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 
 	def hoverEvent(self,event):
 		self.floatwidget.hoverEvent(event)
+
+	
+	def getNearPlaneDims(self):
+		height = 2.0*self.zNear * tan(self.fov/2.0*pi/180.0)
+		width = self.aspect * height
+		return [width,height]
+	
+	def getStartZ(self):
+		return self.zNear
 
 class EMFloatingWidgetsCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -1619,40 +1631,29 @@ class EMFloatingWidgetsCore:
 			#rotary.add_widget(d)
 			
 			
-			w = EMGLView2D(self,test_image())
+			w = EMGLView2D(self,test_image(0,size=(256,256)))
+			rotary.add_widget(w)
 			insp = w.getInspector()
 			e = EMGLViewQtWidget(self.parent)
 			e.setQtWidget(insp)
 			rotary.add_widget(e)
 			
-			w2 = EMGLView2D(self,[test_image(),test_image()])
+			w2 = EMGLView2D(self,[test_image(0,size=(512,512)),test_image(1,size=(512,512))]*4)
+			rotary.add_widget(w2)
 			insp2 = w2.getInspector()
 			f = EMGLViewQtWidget(self.parent)
 			f.setQtWidget(insp2)
 			rotary.add_widget(f)
 			
-			w3 = EMGLView3D(self,test_image_3d())
+			w3 = EMGLView3D(self,test_image_3d(3))
+			rotary.add_widget(w3)
 			insp3 = w3.getInspector()
 			g = EMGLViewQtWidget(self.parent)
 			g.setQtWidget(insp3)
 			rotary.add_widget(g)
-			
-			rotary.add_widget(w)
-			
-			#rotary.add_widget(b)
-			#rotary.add_widget(b)
-			#rotary.add_widget(b)
-			#rotary.add_widget(a)
-			#rotary.add_widget(a)
-			#rotary.add_widget(b)
-			#rotary.add_widget(b)
-			#rotary.add_widget(b)
-			#rotary.add_widget(a)
-			#rotary.add_widget(a)
-			
+		
 			self.qwidgets.append(EM3DWidget(self,rotary))
-			#self.rotary.add_widget(self.qwidgets[1])
-			#self.rotary.add_widget(self.qwidgets[1])
+
 		glPushMatrix()
 		glTranslate(-100,0,-1250)
 		for i in self.qwidgets:
@@ -1789,6 +1790,12 @@ class EMFloatingWidgetsCore:
 					i.hoverEvent(event)
 					break
 		self.updateGL()
+	
+	def getNearPlaneDims(self):
+		return self.parent.getNearPlaneDims()
+	
+	def getStartZ(self):
+		return self.parent.getStartZ()
 
 # This is just for testing, of course
 if __name__ == '__main__':
