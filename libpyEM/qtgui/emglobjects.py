@@ -350,6 +350,40 @@ class EMViewportDepthTools:
 			self.mc10 = [0,0,0]
 			self.mc11 = [0,0,0]
 			self.mc01 = [0,0,0]
+	
+	def unproject_points(self,points):
+		unprojected = []
+		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
+		self.wproj = self.matrices.getProjMatrix()
+		self.wview = self.matrices.getViewMatrix()
+		for p in points:
+			unprojected.append(gluProject(p[0],p[1],p[2],self.wmodel,self.wproj,self.wview))
+			
+		return unprojected
+	
+	def set_mouse_coords(self,mc00,mc10,mc11,mc01):
+		self.mc00 = mc00
+		self.mc10 = mc10
+		self.mc11 = mc11
+		self.mc01 = mc01
+	
+	def update_points(self,p1,p2,p3,p4):
+		
+		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
+		self.wproj = self.matrices.getProjMatrix()
+		self.wview = self.matrices.getViewMatrix()
+
+		try:
+			self.mc00=gluProject(p1[0],p1[1],p1[2],self.wmodel,self.wproj,self.wview)
+			self.mc10=gluProject(p2[0],p2[1],p2[2],self.wmodel,self.wproj,self.wview)
+			self.mc11=gluProject(p3[0],p3[1],p3[2],self.wmodel,self.wproj,self.wview)
+			self.mc01=gluProject(p4[0],p4[1],p4[2],self.wmodel,self.wproj,self.wview)
+			
+		except:
+			self.mc00 = [0,0,0]
+			self.mc10 = [0,0,0]
+			self.mc11 = [0,0,0]
+			self.mc01 = [0,0,0]
 			
 	def getCorners(self):
 		return [self.mc00,self.mc01,self.mc11,self.mc10]

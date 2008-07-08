@@ -56,6 +56,373 @@ from emimage2dtex import *
 
 height_plane = 500
 
+class EM3DWidgetVolume:
+	'''
+	a EM3DWidgetVolume has width(), height(), and depth() functions, and the associated private variables
+	Inheriting functions should define the __determine_dimensions function which will be called implicitly if the update_dims flag is true
+	In it they should define the member variables left,right,bottom,top,near and far.
+	'''
+	def __init__(self):
+		self.left = 0
+		self.right = 0
+		self.bottom = 0
+		self.top = 0
+		self.near = 0
+		self.far = 0
+
+		self.update_dims = True # a flag, when set, cause this widget to re-evaluate its maximum dimensions
+	
+	def update(self):
+		self.update_dims = True
+		
+	def width(self):
+		if self.update_dims:
+			self.determine_dimensions()
+			
+		return int(self.right -self.left)
+		
+	def height(self):
+		if self.update_dims:
+			self.determine_dimensions()
+			
+		return int(self.top - self.bottom)
+		
+	def depth(self):
+		if self.update_dims:
+			self.determine_dimensions()
+			
+		return int(self.near - self.far)
+	
+	def get_lr_bt_nf(self):
+		'''
+		get left-right bottom-top near-far
+		'''
+		if self.update_dims:
+			self.determine_dimensions()
+			
+		return [self.left,self.right,self.bottom,self.top,self.near,self.far]
+		
+class EM3DWidget:
+	'''
+	A class for managing a 3D object as an interactive widget
+	'''
+	def __init__(self,parent,target):
+		self.parent = parent
+		self.target = target
+		
+		self.cam = Camera2(self) # a camera/orientation/postion object
+		self.vdtools = EMViewportDepthTools(self) # viewport depth tools - essential for rerouting mouse events correctly
+		
+		self.corner_sets = [] # corner index sets of the 3D volume (?)
+		self.planes = []	# string names for visible planes, used in paintGL
+		self.model_matrices = [] # stores up to 3 OpenGL model view matrices (4x4 lists or tuples)
+		
+		self.draw_frame = True
+		
+	
+	def viewportHeight(self):
+		return self.parent.height()
+	
+	def viewportWidth(self):
+		return self.parent.width()
+	
+	def width(self):
+		return self.target.width()
+		
+	def height(self):
+		return self.target.height()
+	
+	def depth(self):
+		return self.target.depth()
+	
+	def get_lr_bt_nf(self):
+		return self.target.get_lr_bt_nf()
+	
+	def __atomic_draw_frame(self,plane_string):
+		
+		if self.vdtools.drawFrame(True):
+			self.corner_sets.append(self.vdtools.getCorners())
+			self.planes.append((plane_string))
+			self.model_matrices.append(self.vdtools.getModelMatrix())
+	
+	def paintGL(self):
+		#clear everything
+		self.corner_sets = []
+		self.planes = []
+		self.model_matrices = []
+		
+		glTranslatef(0,0,-self.depth()/2.0) # is this necessary?
+		self.cam.position()
+		
+		lighting = glIsEnabled(GL_LIGHTING)
+		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
+		
+		glPushMatrix()
+		self.target.render()
+		glPopMatrix()
+		
+		if self.draw_frame:
+			p = self.get_lr_bt_nf()
+			points = []
+			points.append((p[0],p[2],p[5]))
+			points.append((p[0],p[2],p[4]))
+			points.append((p[0],p[3],p[4]))
+			points.append((p[0],p[3],p[5]))
+			points.append((p[1],p[2],p[5]))
+			points.append((p[1],p[2],p[4]))
+			points.append((p[1],p[3],p[4]))
+			points.append((p[1],p[3],p[5]))
+			unprojected = self.vdtools.unproject_points(points)
+			
+			# left zy plane
+			glPushMatrix()
+			self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
+			self.__atomic_draw_frame('zy')
+			glPopMatrix()
+			
+			glPushMatrix()
+			self.vdtools.set_mouse_coords(unprojected[5],unprojected[4],unprojected[7],unprojected[6])
+			self.__atomic_draw_frame('yz')
+			glPopMatrix()
+			
+			glPushMatrix()
+			self.vdtools.set_mouse_coords(unprojected[0],unprojected[4],unprojected[5],unprojected[1])
+			self.__atomic_draw_frame('xz')
+			glPopMatrix()
+			
+			glPushMatrix()
+			self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[6],unprojected[7])
+			self.__atomic_draw_frame('zx')
+			glPopMatrix()
+			
+			glPushMatrix()
+			self.vdtools.set_mouse_coords(unprojected[0],unprojected[3],unprojected[7],unprojected[4])
+			self.__atomic_draw_frame('yx')
+			glPopMatrix()
+			
+			glPushMatrix()
+			self.vdtools.set_mouse_coords(unprojected[1],unprojected[5],unprojected[6],unprojected[2])
+			self.__atomic_draw_frame('xy')
+			glPopMatrix()
+	
+	def mousePressEvent(self, event):
+		#if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.inspector == None):	
+			#self.drawable.initInspector()
+			#self.drawable.inspector.show()
+			#self.drawable.inspector.hide()
+			#self.parent.addQtWidgetDrawer(self.getInspector())
+			
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.mousePressEvent(event)
+		else:
+			pass
+			#l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			#qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			#self.drawable.mousePressEvent(qme)
+
+	
+	def wheelEvent(self,event):
+		try: e = event.modifiers()
+		except: return
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.wheelEvent(event)
+		else:
+			self.target.wheelEvent(event)
+			
+		#self.updateGL()
+	
+	def mouseMoveEvent(self,event):
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.mouseMoveEvent(event)
+		else:
+			pass
+			#l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			#qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			#self.drawable.mouseMoveEvent(qme)
+			#self.drawable.mouseMoveEvent(event)
+		
+		#self.updateGL()
+
+	def mouseReleaseEvent(self,event):
+		if event.modifiers() == Qt.ShiftModifier:
+			self.cam.mouseReleaseEvent(event)
+		else:
+			pass
+			#l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			#qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			#self.drawable.mouseReleaseEvent(qme)
+			#self.drawable.mouseReleaseEvent(event)
+	
+	def isinwin(self,x,y):
+		val = False
+		for i,p in enumerate(self.corner_sets):
+			if self.vdtools.isinwinpoints(x,y,p):
+				val = True
+				#self.target.cam.plane = self.planes[i]
+				self.vdtools.setModelMatrix(self.model_matrices[i])
+				break
+		return val
+	
+	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	
+class EMGLRotaryWidget(EM3DWidgetVolume):
+	'''
+	A display rotary widget - consists of an ellipse  with widgets 'attached' to it.
+	Visually, the ellipse would lay in the plane perpendicular to the screen, and the widgets would be display in the plane
+	of the screen and be attached to the ellipse and rotate around it interactively
+	
+	'''
+	def __init__(self,parent):
+		EM3DWidgetVolume.__init__(self)
+		self.parent = parent
+		self.widgets = []	# the list of widgets to display
+		self.displayed_widget = -1 # the index of the currently displayed widget in self.widgets
+		self.target_displayed_widget = -1 # the index of a target displayed widget, used for animation purposes
+		
+		# elliptical parameters
+		self.ellipse_a = 40 # x direction - widgets displayed in position 0 will be a distance of 20 away from the center
+		self.ellipse_b = 400 # y direction - widgets at 90 degrees will be a distance of 100 into the screen, away from the elliptical center
+		self.rot = 20*pi/180.0 # this is how much the ellipse should be rotated about the y axis - makes it so that the ellipse isn't 'head on' to the viewer, for visual effects. The orientation of the widgets is not affected (they are always oriented as though the ellipse is not rotated in plane.
+		self.cos_rot = cos(self.rot)
+		self.sin_rot = sin(self.rot)
+		
+		self.time = 0		# time indicates the current time used for the basis of animation.
+		self.time_interval = .5 # 0.5 seconds for the animation to complete
+		self.time_begin = 0 # records the time at which the animation was begun
+		self.is_animated = False
+		
+		self.dtheta_animations = None  # an array for dtheta animations
+
+	def add_widget(self,widget,set_current=False):
+		'''
+		adds a widget to those that already in the rotary
+		if set_current is true will also make it so that the newly added widget has the focus of the rotary
+		
+		return 1 if a redraw is necessary
+		return 0 if a redraw is not necessary 
+		'''
+		if not isinstance(widget,EMGLViewQtWidget):
+			print "error, can only add instances of EMGLViewQtWidget to the EMGLRotaryWidget"
+			return 0
+		else:
+			self.widgets.append(widget)
+			self.update_dims = True
+			if set_current == True and self.is_animated == False:
+				self.is_animated = True
+				self.target_displayed_widget =  len(self.widgets)-1
+				self.__gen_animation_dthetas()
+				self.parent.register_animatable(self)
+			
+			return 1
+		
+	def animate(self,time):
+		if self.time_begin == 0:
+			self.time_begin = time
+			
+		self.time = time -self.time_begin
+
+		if self.time > self.time_interval:
+			self.time_begin = 0
+			self.time = 0
+			self.is_animated = False
+			self.dtheta_animations = None
+			return 0
+		
+		return 1
+	
+	def render(self):
+		dtheta = self.__get_current_dtheta()
+		
+		if self.is_animated: dt = sin(self.time/self.time_interval*pi/2)
+		
+		for i,widget in enumerate(self.widgets):
+			n = i*dtheta
+			if self.is_animated:n += dt*self.dtheta_animations[i]
+				
+			n_rad = n*pi/180.0
+			#if i == 0: continue
+			dx = self.ellipse_a*cos(n_rad)*self.cos_rot-self.ellipse_b*sin(n_rad)*self.sin_rot
+			dz = -(self.ellipse_b*sin(n_rad)*self.cos_rot+self.ellipse_a*cos(n_rad)*self.sin_rot)
+			h_width = widget.width()/2
+			#print "positioning at",dx,dz," angle is", n
+			glPushMatrix()
+			glTranslate(dx,0,dz)
+			glRotate(n,0,1,0)
+			glTranslate(h_width,0,0)
+			widget.paintGL()
+			glPopMatrix()
+	
+	def wheelEvent(self,event):
+		if event.delta() > 0:
+			self.target_displayed_widget =  len(self.widgets)-1
+		else:
+			self.target_displayed_widget =  1
+		
+		self.is_animated = True
+		self.__gen_animation_dthetas()
+		self.parent.register_animatable(self)
+	
+	def determine_dimensions(self):
+		# first determine the ellipse offset - this is related to the inplane rotation of the ellipse. We want the back point corresponding to
+		# a rotation of 90 degrees around the boundary of the ellipse (starting at [ellipse_a/2,0,0]) to be visible
+		
+		xoffset = -self.sin_rot*self.ellipse_b
+		yoffset = self.cos_rot*self.ellipse_b
+		
+		self.left = xoffset
+		
+		height = -1
+		width = -1
+		for i in self.widgets:
+			if i.width() > width: width = i.width()
+			if i.height() > height: height = i.height()
+		
+		self.right = self.ellipse_a*self.cos_rot+width
+		self.bottom = -height/2
+		self.top = height/2
+		
+		self.far = -yoffset -width
+		self.near = yoffset + width
+		
+		self.update_dims = False
+		
+	def set_update_P_inv(self,val=True):
+		self.vdtools.set_update_P_inv(val)
+	
+	# PRIVATE 
+	
+	def __get_current_dtheta(self):
+		if len(self.widgets) == 1: return 90
+		else: return 90/(len(self.widgets)-1)
+
+	def __gen_animation_dthetas(self):
+		# find the shortest path from the currently displayed to the target displayed widget
+				
+		c_distance = self.target_displayed_widget # clockwise distance, looking down -y
+		cc_distance = len(self.widgets) - self.target_displayed_widget #conterclockwise distance, looking down -y
+		
+		dtheta = self.__get_current_dtheta()
+		current_thetas = []
+		for i in range(len(self.widgets)): current_thetas.append(i*dtheta)
+			
+		self.dtheta_animations = []
+		if c_distance <= cc_distance: #clockwise OpenGL rotations are negative
+			for i in range(len(self.widgets)):
+				if i == 0:
+					self.dtheta_animations.append( -(360.0 - (current_thetas[len(self.widgets)-1] - current_thetas[i])) )
+				else:
+					self.dtheta_animations.append(current_thetas[i-1] - current_thetas[i])
+		else: # counter clockwise OpenGL rotations are positive
+			for i in range(len(self.widgets)):
+				if i == len(self.widgets)-1:
+					self.dtheta_animations.append(360 - (current_thetas[len(self.widgets)-1] - current_thetas[0]))
+				else:
+					self.dtheta_animations.append(current_thetas[i+1] - current_thetas[i])
+	
+		
+		
+
 class EMGLView3D:
 	"""
 	A view of an EMAN2 3D type, such as an isosurface or a 
@@ -85,8 +452,6 @@ class EMGLView3D:
 		self.drawFrame = True
 		
 		self.inspector = None
-		
-		self.vdtools
 		
 		self.psets = []
 		self.modelmatrices = []
@@ -606,7 +971,8 @@ class EMGLViewQtWidget:
 			#print "no widget - paintGL children return" 
 			return
 		
-		self.cam.position()
+		self.cam.debug = True
+		#self.cam.position()
 		
 		# make sure the vdtools store the current matrices
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
@@ -911,11 +1277,31 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		
 		self.cam = Camera()
 		
+		self.animatables = [] # an array of animatable objects - must have the animate(time) function
+		
+		self.timer = QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+		self.timer.start(10)
+		
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
 		depth = height/(2.0*tan(self.fov/2.0*pi/180.0))
 		return depth
+	
+	def timeout(self):
+		
+		if len(self.animatables) == 0: return
+		
+		for i,animatable in enumerate(self.animatables):
+			if not animatable.animate(time.time()):
+				# this could be dangerous
+				self.animatables.pop(i)
+		
+		self.updateGL()
+	
+	def register_animatable(self,animatable):
+		self.animatables.append(animatable)
 	
 	def get_render_dims_at_depth(self, depth):
 		# This function returns the width and height of the renderable 
@@ -977,7 +1363,8 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		self.aspect = float(self.width())/float(self.height())
 		# this is the same as the glFrustum call above
 		depth = self.get_depth_for_height(height_plane)
-		gluPerspective(self.fov,self.aspect,depth-depth/4,depth+depth/4)
+		#gluPerspective(self.fov,self.aspect,depth-depth/4,depth+depth/4)
+		gluPerspective(self.fov,self.aspect,1,10000)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
@@ -1048,8 +1435,11 @@ class EMFloatingWidgetsCore:
 		self.qwidgets = []
 		
 		self.suppressUpdateGL = False
+		self.rotary = None
 		#print "init done"
 	
+	def register_animatable(self,animatable):
+		self.parent.register_animatable(animatable)
 		
 	def get_depth_for_height(self, height):
 		try: 
@@ -1078,17 +1468,44 @@ class EMFloatingWidgetsCore:
 	def render(self):
 		
 		if ( self.initFlag == True ):
+			self.initFlag = False
 			self.fd = QtGui.QFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
 			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
 			self.fd.show()
 			self.fd.hide()
-			self.qwidgets.append(EMGLViewQtWidget(self.parent))
-			self.qwidgets[0].setQtWidget(self.fd)
-			self.qwidgets[0].cam.setCamX(-100)
-			self.initFlag = False
+			#self.qwidgets.append(EMGLViewQtWidget(self.parent))
+			#self.qwidgets[0].setQtWidget(self.fd)
+			##self.qwidgets[0].cam.setCamX(-100)
 			
-
-		
+			
+			
+			self.fd2 = QtGui.QFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
+			QtCore.QObject.connect(self.fd2, QtCore.SIGNAL("finished(int)"), self.finished)
+			self.fd2.show()
+			self.fd2.hide()
+			#self.qwidgets.append(EMGLViewQtWidget(self.parent))
+			#self.qwidgets[1].setQtWidget(self.fd2)
+			#self.qwidgets[1].cam.setCamX(-200)
+			
+			a = EMGLViewQtWidget(self.parent)
+			a.setQtWidget(self.fd2)
+			b = EMGLViewQtWidget(self.parent)
+			b.setQtWidget(self.fd)
+			rotary = EMGLRotaryWidget(self)
+			rotary.add_widget(b)
+			rotary.add_widget(b)
+			rotary.add_widget(b)
+			rotary.add_widget(b)
+			rotary.add_widget(b)
+			rotary.add_widget(b)
+			rotary.add_widget(a)
+			rotary.add_widget(a,True)
+			
+			self.qwidgets.append(EM3DWidget(self,rotary))
+			#self.rotary.add_widget(self.qwidgets[1])
+			#self.rotary.add_widget(self.qwidgets[1])
+		glPushMatrix()
+		glTranslate(-100,0,-1250)
 		for i in self.qwidgets:
 			#print "getting opengl matrices"
 			glPushMatrix()
@@ -1096,6 +1513,8 @@ class EMFloatingWidgetsCore:
 			glPopMatrix()
 			#print "paint child done"
 		
+		
+		glPopMatrix()
 		#print "paintGL done"
 	def finished(self,val):
 		if ( val == 1 ):
