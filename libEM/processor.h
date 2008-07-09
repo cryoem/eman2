@@ -4136,7 +4136,6 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**Center image using CCF with 180 degree rotation.
-	 * @param is3d 
 	 */
 	class ACFCenterProcessor:public Processor
 	{
@@ -4155,13 +4154,12 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Center image using CCF with 180 degree rotation.";
+			return "Center image using self-convolution.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("is3d", EMObject::INT);
 			return d;
 		}
 	};

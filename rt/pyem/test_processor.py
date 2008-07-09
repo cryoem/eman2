@@ -1331,7 +1331,6 @@ class TestProcessor(unittest.TestCase):
 		# the 4 pixels that are exactly one pixel away from the center should be equal...
 		# odd images
 		e = EMData(5,5)
-		#e.set(2,2,2)
 		e.set(2,3,1)
 		e.process_inplace("math.radialaverage")
 		self.assertEqual(e.get(2,3), e.get(2,1))
@@ -1340,7 +1339,6 @@ class TestProcessor(unittest.TestCase):
 		
 		# even images
 		e = EMData(4,4)
-		#e.set(2,2,2)
 		e.set(2,3,1)
 		e.process_inplace("math.radialaverage")
 		self.assertEqual(e.get(2,3), e.get(2,1))
@@ -1350,7 +1348,6 @@ class TestProcessor(unittest.TestCase):
 		# test to make sure radial average is centered correctly for 3D
 		# the 6 pixels that are exactly one pixel away from the center should be equal...
 		e = EMData(5,5,5)
-        #e.set(2,2,2,2)
 		e.set(2,2,3,1)
 		e.process_inplace("math.radialaverage")
 		self.assertEqual(e.get(2,2,3), e.get(2,2,1))
@@ -1360,7 +1357,6 @@ class TestProcessor(unittest.TestCase):
 		self.assertEqual(e.get(2,2,3), e.get(1,2,2))
 		
 		e = EMData(4,4,4)
-        #e.set(2,2,2,2)
 		e.set(2,2,3,1)
 		e.process_inplace("math.radialaverage")
 		self.assertEqual(e.get(2,2,3), e.get(2,2,1))
