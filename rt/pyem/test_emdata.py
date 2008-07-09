@@ -2861,7 +2861,7 @@ class TestEMData(unittest.TestCase):
         try:
             ee = e.imag()
         except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "Invalid")
+            self.assertEqual(exception_type(runtime_err), "InvalidCallException")
                     
         e5 = e.real2complex()    #test default argument
         e6 = e.real2complex(1.0)    #test non-default argument

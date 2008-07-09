@@ -1603,7 +1603,7 @@ class TestProcessor(unittest.TestCase):
 		e.process_inplace('testimage.noise.uniform.rand')
 		self.assertEqual(e.is_complex(), False)
 		
-		e.process_inplace('xform.centeracf', {'is3d':1})
+		e.process_inplace('xform.centeracf', {})
 		
 		# 2D alignment
 		# this test translates the 2d 'scurve' image, centers it using the acf method, and correlates
