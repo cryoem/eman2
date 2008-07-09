@@ -386,7 +386,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	def wheelEvent(self,event):
 		
 		if not self.is_animated: 
-			if self.__get_visible().isinwin(event.x(),event.y()) :
+			if self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
 				self.__get_visible().wheelEvent(event)
 				return
 		
@@ -409,22 +409,22 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	
 	def mousePressEvent(self,event):
 		if self.is_animated: return
-		if self.__get_visible().isinwin(event.x(),event.y()) :
+		if self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
 			self.__get_visible().mousePressEvent(event)
 	
 	def mouseReleaseEvent(self,event):
 		if self.is_animated: return
-		if self.__get_visible().isinwin(event.x(),event.y()) :
+		if self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
 			self.__get_visible().mouseReleaseEvent(event)
 	
 	def mouseMoveEvent(self,event):
 		if self.is_animated: return
-		if self.__get_visible().isinwin(event.x(),event.y()) :
+		if self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
 			self.__get_visible().mouseMoveEvent(event)
 	
 	def toolTipEvent(self,event):
 		if self.is_animated: return
-		if self.__get_visible().isinwin(event.x(),event.y()) :
+		if self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
 			self.__get_visible().toolTipEvent(event)
 	
 	
