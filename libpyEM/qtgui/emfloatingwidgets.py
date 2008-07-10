@@ -546,6 +546,9 @@ class EM3DWidget:
 	def set_update_P_inv(self,val=True):
 		self.target.set_update_P_inv(val)
 	
+	
+	def leaveEvent(self):
+		pass
 class EMGLRotaryWidget(EM3DWidgetVolume):
 	'''
 	A display rotary widget - consists of an ellipse  with widgets 'attached' to it.
@@ -553,7 +556,11 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	of the screen and be attached to the ellipse and rotate around it interactively
 	
 	'''
-	def __init__(self,parent):
+	LEFT_ROTARY = "left_rotary"
+	RIGHT_ROTARY = "right_rotary"
+	TOP_ROTARY = "top_rotary"
+	BOTTOM_ROTARY = "bottom_rotary"
+	def __init__(self,parent,y_rot=15,z_rot=70,x_rot=-45,rotary_type=RIGHT_ROTARY,ellipse_a=200,ellipse_b=400):
 		EM3DWidgetVolume.__init__(self)
 		self.parent = parent
 		self.widgets = []	# the list of widgets to display
@@ -563,11 +570,19 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.anim_rotations = 0
 		
 		# elliptical parameters
-		self.ellipse_a = 40 # x direction - widgets displayed in position 0 will be a distance of 20 away from the center
-		self.ellipse_b = 400 # y direction - widgets at 90 degrees will be a distance of 100 into the screen, away from the elliptical center
-		self.rot = 15*pi/180.0 # this is how much the ellipse should be rotated about the y axis - makes it so that the ellipse isn't 'head on' to the viewer, for visual effects. The orientation of the widgets is not affected (they are always oriented as though the ellipse is not rotated in plane.
-		self.cos_rot = cos(self.rot)
-		self.sin_rot = sin(self.rot)
+		self.ellipse_a = ellipse_a # x direction - widgets displayed in position 0 will be a distance of 20 away from the center
+		self.ellipse_b = ellipse_b # y direction - widgets at 90 degrees will be a distance of 100 into the screen, away from the elliptical center
+		self.y_rot = y_rot*pi/180.0 # this is how much the ellipse should be rotated about the y axis - makes it so that the ellipse isn't 'head on' to the viewer, for visual effects. The orientation of the widgets is not affected (they are always oriented as though the ellipse is not rotated in plane.
+		self.cos_y_rot = cos(self.y_rot)
+		self.sin_y_rot = sin(self.y_rot)
+		
+		self.z_rot = z_rot*pi/180.0 # this is how much the ellipse should be rotated about the Z axis - makes it so that the ellipse isn't 'head on' to the viewer, for visual effects. The orientation of the widgets is not affected (they are always oriented as though the ellipse is not rotated in plane.
+		self.cos_z_rot = cos(self.z_rot)
+		self.sin_z_rot = sin(self.z_rot)
+		
+		self.x_rot = x_rot*pi/180.0 # this is how much the ellipse should be rotated about the Z axis - makes it so that the ellipse isn't 'head on' to the viewer, for visual effects. The orientation of the widgets is not affected (they are always oriented as though the ellipse is not rotated in plane.
+		self.cos_x_rot = cos(self.x_rot)
+		self.sin_x_rot = sin(self.x_rot)
 		
 		self.time = 0		# time indicates the current time used for the basis of animation.
 		self.time_interval = .5 # 0.5 seconds for the animation to complete
@@ -578,6 +593,8 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.dtheta_animations = None  # an array for dtheta animations
 		
 		self.animation_queue = []
+		
+		self.rotary_type = rotary_type
 
 		self.decoration = EM3DPlainBorderDecoration(self)
 	def add_widget(self,widget,set_current=False):
@@ -636,23 +653,68 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		
 		self.decoration.draw()
 		
+		points = []
 		for i in range(size):
 			n = self.angle_information[i][0]
 			n_rad = n*pi/180.0
+			if self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY:
+				dx = self.ellipse_a*cos(n_rad)
+				dy = 0
+				dz = -self.ellipse_b*sin(n_rad)
+				rot_v = [0,1,0]
+			elif self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY:
+				dx = -self.ellipse_a*cos(n_rad)
+				dy = 0
+				dz = self.ellipse_b*sin(n_rad)
+				rot_v = [0,1,0]
+			elif self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
+				dx = 0
+				dy = self.ellipse_a*cos(n_rad)
+				dz = self.ellipse_b*sin(n_rad)
+				rot_v = [1,0,0]
+			elif self.rotary_type == EMGLRotaryWidget.TOP_ROTARY:
+				dx = 0
+				dy = -self.ellipse_a*cos(n_rad)
+				dz = -self.ellipse_b*sin(n_rad)
+				rot_v = [1,0,0]
+			else:
+				print "unsupported"
+				return
+			points.append([dx,dy,dz])
+		
+		self.__rotate_elliptical_points(points)
+			
+		for i in range(size):
+			n = self.angle_information[i][0]
 
 			idx = i-self.rotations
 			if idx != 0:
 				idx = idx % size
 			#print idx,
 			widget = self.widgets[idx]
-			dx = self.ellipse_a*cos(n_rad)*self.cos_rot-self.ellipse_b*sin(n_rad)*self.sin_rot
-			dz = -(self.ellipse_b*sin(n_rad)*self.cos_rot+self.ellipse_a*cos(n_rad)*self.sin_rot)
-			h_width = widget.width()/2
-			#print "positioning",i,"at",dx,dz," angle is", n, "idx is ", idx
+			
+			if self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY:
+				h_width = widget.width()*0.5
+				h_height = 0
+			elif self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY:
+				h_width = -widget.width()*0.5
+				h_height = 0
+			elif self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
+				h_width = 0
+				h_height =  widget.height()*0.5
+			elif self.rotary_type == EMGLRotaryWidget.TOP_ROTARY:
+				h_width = 0
+				h_height =  -widget.height()*0.5
+			else:
+				print "unsupported"
+				return
+
 			glPushMatrix()
-			glTranslate(dx,0,dz)
-			glRotate(n,0,1,0)
-			glTranslate(h_width,0,0)
+			glTranslate(points[i][0],points[i][1],points[i][2])
+			#glRotate(n,-1,1,1)
+			#glRotate(n,1,1,-1)
+			glRotate(n,*rot_v)
+			glTranslate(h_width,h_height,0)
 			widget.paintGL()
 			glPopMatrix()
 		
@@ -677,7 +739,6 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			if self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
 				self.__get_visible().wheelEvent(event)
 				return
-		
 
 		if event.delta() > 0:
 			if self.target_displayed_widget == 0:
@@ -720,10 +781,27 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		# first determine the ellipse offset - this is related to the inplane rotation of the ellipse. We want the back point corresponding to
 		# a rotation of 90 degrees around the boundary of the ellipse (starting at [ellipse_a/2,0,0]) to be visible
 		
-		xoffset = -self.sin_rot*self.ellipse_b
-		yoffset = self.cos_rot*self.ellipse_b
+		if self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY or self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY :
+			interesting_points = [[-self.ellipse_a,0,0],[self.ellipse_a,0,0],[0,0,-self.ellipse_b],[0,0,self.ellipse_b]]
+		elif self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY or self.rotary_type == EMGLRotaryWidget.TOP_ROTARY :	
+			interesting_points = [[0,-self.ellipse_a,0],[0,self.ellipse_a,0],[0,0,-self.ellipse_b],[0,0,self.ellipse_b]]
+		else:
+			print "unsupported"
 		
-		self.left = xoffset
+		self.__rotate_elliptical_points(interesting_points)
+			
+		
+		max_z = interesting_points[0][2]
+		min_z = interesting_points[0][2]
+		min_y = interesting_points[0][1]
+		max_y = interesting_points[0][1]
+		min_x = interesting_points[0][0]
+		max_x = interesting_points[0][0]
+		
+		for n in range(1,len(interesting_points)):
+			val = interesting_points[n][2]
+			if val > max_z: max_z = val
+			if val < min_z: min_z = val
 		
 		height = -1
 		width = -1
@@ -731,24 +809,118 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			if i.width() > width: width = i.width()
 			if i.height() > height: height = i.height()
 		
-		self.right = self.ellipse_a*self.cos_rot+width
-		self.bottom = -height/2
-		self.top = height/2
+		if self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY:
+			
+			self.bottom = -height/2.0 + min_z
+			self.top = height/2.0 + max_z
+
+			if self.y_rot < 0:
+				self.left  = interesting_points[1][0]
+			elif self.y_rot >= 0:
+				self.left = interesting_points[2][0]
+			self.right = interesting_points[1][0]+width
+	
+			self.far = -interesting_points[3][1] -width
+			self.near = interesting_points[3][1] + width
+			
+		elif self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY:
+			
+			self.bottom = -height/2.0 + min_z
+			self.top = height/2.0 + max_z
+			
+			if self.y_rot < 0:
+				self.right = interesting_points[2][0]
+			elif self.y_rot >= 0:
+				self.right = interesting_points[0][0]
+			self.left = interesting_points[0][0] - width
+
+			self.far = -interesting_points[3][1] - width
+			self.near = interesting_points[3][1] + width
+			
+		elif self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
+			
+			self.left = -width/2 + min_x
+			self.right = width/2 + max_x
+			
+			if self.x_rot < 0:
+				self.bottom = -interesting_points[3][1]
+			elif self.x_rot >= 0:
+				self.bottom = interesting_points[2][1]
+				
+			self.top = height + interesting_points[1][1]
+			
+			self.near = interesting_points[3][2]+height
+			self.far =  -interesting_points[3][2] -height
+			
+		elif self.rotary_type == EMGLRotaryWidget.TOP_ROTARY:
+			
+			self.left = -width/2 + min_x
+			self.right = width/2 + max_x
+			
+			if self.x_rot < 0:
+				self.top =  interesting_points[2][1]
+			elif self.x_rot >= 0:
+				self.top = -interesting_points[3][1]
+				
+			self.bottom = -height + interesting_points[0][1]
+			
+			self.near = interesting_points[3][2] + height
+			self.far =  -interesting_points[3][2] - height
 		
-		self.far = -yoffset -width
-		self.near = yoffset + width
+		else:
+			print "unsupported"
+			return
 		
 		self.update_dims = False
-		
+
 	def set_update_P_inv(self,val=True):
-		self.vdtools.set_update_P_inv(val)
+		for widget in self.widgets:
+			widget.set_update_P_inv(val)
 	
 	# PRIVATE 
 	
+	def __rotate_elliptical_points(self,points):
+		
+		if self.z_rot != 0:
+			for p in points:
+				x = p[0]
+				y = p[1]
+				p[0] = self.cos_z_rot*x - self.sin_z_rot*y
+				p[1] = -self.sin_z_rot*x + self.cos_z_rot*y
+		
+		if self.y_rot != 0:
+			for p in points:
+				x = p[0]
+				z = p[2]
+				p[0] = self.cos_y_rot*x + self.sin_y_rot*z
+				p[2] = -self.sin_y_rot*x +self.cos_y_rot*z
+		
+		if self.x_rot != 0:
+			for p in points:
+				y = p[1]
+				z = p[2]
+				p[1] = self.cos_x_rot*y + self.sin_x_rot*z
+				p[2] = -self.sin_x_rot*y +self.cos_x_rot*z
+			
+	def __get_current_dtheta_range(self):
+		if len(self.widgets) == 1: return [0,0]
+		elif self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY or self.rotary_type == EMGLRotaryWidget.TOP_ROTARY: 
+			return [90.0/(len(self.widgets)-1),-90.0/(len(self.widgets)-1)]
+		elif self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY or self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
+			 return [-90.0/(len(self.widgets)-1),90.0/(len(self.widgets)-1)]
+		else: 
+			print "unsupported"
+			return 0
+		
 	def __get_current_dtheta(self):
 		if len(self.widgets) == 1: return 0
-		else: return 90/(len(self.widgets)-1)
-
+		elif self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY or self.rotary_type == EMGLRotaryWidget.TOP_ROTARY: 
+			return 90/(len(self.widgets)-1)
+		elif self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY or self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
+			return -90/(len(self.widgets)-1)
+		else: 
+			print "unsupported"
+			return 0
 	def __get_dt(self):
 		return sin(self.time/self.time_interval*pi/2)
 
@@ -779,7 +951,10 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 					if idx2 != (n-1):
 						self.angle_information[i][2] +=  current_thetas[idx2] - current_thetas[idx1]
 					else:
-						self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
+						if self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY or self.rotary_type == EMGLRotaryWidget.TOP_ROTARY:
+							self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
+						elif  self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY  or self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
+							self.angle_information[i][2] +=  360-(current_thetas[idx1] - current_thetas[idx2])
 		elif rotations >= 1: # counterclockwise
 			for i in range(len(self.widgets)):
 				for rot in range(self.anim_rotations,self.anim_rotations+1):
@@ -789,7 +964,11 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 					if idx1 != (n-1):
 						self.angle_information[i][2] +=  current_thetas[idx2] - current_thetas[idx1]
 					else:
-						self.angle_information[i][2] +=  360-(current_thetas[idx1] - current_thetas[idx2])
+						if self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY or self.rotary_type == EMGLRotaryWidget.TOP_ROTARY:
+							self.angle_information[i][2] +=  360-(current_thetas[idx1] - current_thetas[idx2])
+						elif  self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY or self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
+							self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
+						
 
 	def __gen_animation_dthetas(self,counter_clockwise=True):
 		# find the shortest path from the currently displayed to the target displayed widget
@@ -824,7 +1003,10 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 					if idx2 != (n-1):
 						self.angle_information[i][2] +=  current_thetas[idx2] - current_thetas[idx1]
 					else:
-						self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
+						if self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY or self.rotary_type == EMGLRotaryWidget.TOP_ROTARY:
+							self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
+						elif  self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY or self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
+							self.angle_information[i][2] +=   360-(current_thetas[idx1] - current_thetas[idx2])
 		elif rotations >= 1: # counterclockwise
 			for i in range(len(self.widgets)):
 				for rot in range(1,rotations+1):
@@ -833,14 +1015,15 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 					if idx1 != (n-1):
 						self.angle_information[i][2] +=  current_thetas[idx2] - current_thetas[idx1]
 					else:
-						self.angle_information[i][2] +=  360-(current_thetas[idx1] - current_thetas[idx2])
+						if self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY or self.rotary_type == EMGLRotaryWidget.TOP_ROTARY:
+							self.angle_information[i][2] +=  360-(current_thetas[idx1] - current_thetas[idx2])
+						elif  self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY or self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
+							self.angle_information[i][2] +=   -( 360-(current_thetas[idx2] - current_thetas[idx1]))
+						
 		else:
 			print "error - can't rotate when rotations are set to 0"
 
-	
-	def set_update_P_inv(self,val=True):
-		for widget in self.widgets:
-			widget.set_update_P_inv(val)
+
 
 class EMGLView3D(EM3DWidgetVolume):
 	"""
@@ -1720,7 +1903,7 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		
 		self.setMouseTracking(True)
 		self.fov = 2*180*atan2(1,5)/pi
-		self.zNear=1000
+		self.zNear= 1000
 		self.zFar = 3000
 		self.floatwidget = EMFloatingWidgetsCore(self)
 		
@@ -1970,7 +2153,23 @@ class EMFloatingWidgetsCore:
 			rotary.add_widget(g)
 		
 			self.qwidgets.append(EM3DWidget(self,rotary))
-
+			
+			rotary2 = EMGLRotaryWidget(self,0,50,15,EMGLRotaryWidget.BOTTOM_ROTARY,60)
+			rotary2.add_widget(a)
+			rotary2.add_widget(e)
+			rotary2.add_widget(g)
+			rotary2.add_widget(w2)
+			
+			self.qwidgets.append(EM3DWidget(self,rotary2))
+			
+			rotary3 = EMGLRotaryWidget(self,0,50,-15,EMGLRotaryWidget.TOP_ROTARY,60)
+			rotary3.add_widget(w)
+			rotary3.add_widget(e)
+			rotary3.add_widget(f)
+			rotary3.add_widget(w2)
+			
+			self.qwidgets.append(EM3DWidget(self,rotary3))
+			
 		glPushMatrix()
 		glTranslate(-100,0,-1250)
 		for i in self.qwidgets:
