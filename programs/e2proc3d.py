@@ -79,6 +79,9 @@ def main():
     parser.add_option("--mult", metavar="f", type="float", 
                                 help="Scales the densities by 'f' in the output")
     
+    parser.add_option("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
+    parser.add_option("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
+    
     parser.add_option("--add", metavar="f", type="float", 
                                 help="Adds a constant 'f' to the densities")
     
@@ -247,7 +250,12 @@ def main():
 
         #print_iminfo(data, "Final")
         
-    	data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+        if 'mrc8bit' in optionlist:
+        	data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+        elif 'mrc16bit' in optionlist:
+        	data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_USHORT, not(options.swap))
+        else:
+    	    data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 
 #parse_file() wil read the input image file and return a list of EMData() object
 def parse_infile(infile, first, last):
