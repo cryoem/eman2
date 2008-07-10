@@ -111,6 +111,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	const int nzp = (nz > 1) ? npad*nz : 1;
 
 	int lsd2 = (nxp + 2 - nxp%2) / 2; // Extended x-dimension of the complex image
+	int lsd3 = lsd2 - 1;
 
 	//  Perform padding (if necessary) and fft, if the image is not already an fft image 
 	EMData* fp = NULL; // workspace image
@@ -645,10 +646,10 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
 						for ( ix = 1; ix <= lsd2; ix++) {
 							jx=ix-1; 
-							if(ny>1 && nz<=1 ) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
+							if(ny>1 && nz<=1 ) ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3 +
 			        						     static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
-							else if(ny<=1) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2)/ps/2.0f;						  	    
-							else if(nz>1)  ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
+							else if(ny<=1) ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3)/ps/2.0f;						  	    
+							else if(nz>1)  ak=sqrt(static_cast<float>(jx)/lsd3*static_cast<float>(jx)/lsd3 +
 						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
 				      					    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
 									float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
