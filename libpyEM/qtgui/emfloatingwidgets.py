@@ -2154,7 +2154,7 @@ class EMFloatingWidgetsCore:
 		
 			self.qwidgets.append(EM3DWidget(self,rotary))
 			
-			rotary2 = EMGLRotaryWidget(self,0,50,15,EMGLRotaryWidget.BOTTOM_ROTARY,60)
+			rotary2 = EMGLRotaryWidget(self,45,50,15,EMGLRotaryWidget.BOTTOM_ROTARY,60)
 			rotary2.add_widget(a)
 			rotary2.add_widget(e)
 			rotary2.add_widget(g)
@@ -2162,13 +2162,21 @@ class EMFloatingWidgetsCore:
 			
 			self.qwidgets.append(EM3DWidget(self,rotary2))
 			
-			rotary3 = EMGLRotaryWidget(self,0,50,-15,EMGLRotaryWidget.TOP_ROTARY,60)
+			rotary3 = EMGLRotaryWidget(self,-15,50,-15,EMGLRotaryWidget.TOP_ROTARY,60)
 			rotary3.add_widget(w)
 			rotary3.add_widget(e)
 			rotary3.add_widget(f)
 			rotary3.add_widget(w2)
 			
 			self.qwidgets.append(EM3DWidget(self,rotary3))
+			
+			rotary4 = EMGLRotaryWidget(self,-25,10,40,EMGLRotaryWidget.LEFT_ROTARY)
+			rotary4.add_widget(w2)
+			rotary4.add_widget(e)
+			rotary4.add_widget(g)
+			rotary4.add_widget(w3)
+			
+			self.qwidgets.append(EM3DWidget(self,rotary4))
 			
 		glPushMatrix()
 		glTranslate(-100,0,-1250)
