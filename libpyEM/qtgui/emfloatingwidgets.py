@@ -56,6 +56,291 @@ from emimage2dtex import *
 
 height_plane = 500
 
+class EM3DBorderDecoration:
+	'''
+	An class for drawing borders around widgets
+	The implementation of border decorations in EMAN2 floating widgets is based on the 
+	Decorator pattern in the Gang of Four. Inheriting classes should provide draw(object)
+	which draws a border around the given object.
+	'''
+	def __init__(self):
+		pass
+	
+	def draw(self,object):
+		pass
+
+class EM3DPlainBorderDecoration(EM3DBorderDecoration):
+	'''
+	A plain border decoration
+	'''
+	def __init__(self, object):
+		EM3DBorderDecoration.__init__(self)
+		self.border_width = 6
+		self.border_height = 6
+		self.border_depth = 6
+		
+		self.display_list = None
+		
+		self.faulty = False
+		if not isinstance(object,EMGLView3D) and not isinstance(object,EMGLView2D) and not isinstance(object,EMGLViewQtWidget) and not isinstance(object,EM3DWidgetVolume):
+			print "error, border construction works only for EMGLView3D, EMGLView2D, EM3DWidgetVolume, and EMGLViewQtWidget objects"
+			self.faulty = True
+			return
+		else: self.object = object
+	def __del__(self):
+		self.__delete_list()
+	
+	def draw(self):
+		if self.display_list == None:
+			if isinstance(self.object,EMGLView3D) or isinstance(self.object,EM3DWidgetVolume):
+				self.__gen_3d_object_border_list()
+			elif isinstance(self.object,EMGLView2D) or isinstance(self.object,EMGLViewQtWidget):
+				self.__gen_2d_object_border_list()
+			else:
+				print "error, border decoration works only for EMGLView3D, EMGLView2D and EMGLViewQtWidget objects"
+				return
+		
+		if self.display_list == None: 
+			return
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,100.0)
+		
+		glCallList(self.display_list)
+	
+	def __delete_list(self):
+		if self.display_list != None:
+			glDeleteLists(self.display_list,1)
+			self.display_list = None
+	
+	
+	def __gen_2d_object_border_list(self):
+		
+		self.__delete_list()
+		
+		if self.display_list == None:
+			
+			width = self.object.width()
+			height = self.object.height()
+			
+			# plus, i.e. plus the border
+			left = -width/2.0
+			left_plus = left-self.border_width
+			right = -left
+			right_plus = -left_plus
+			
+			bottom = -height/2.0
+			bottom_plus = bottom - self.border_height
+			top = -bottom
+			top_plus = -bottom_plus
+			
+			front = self.border_depth/2.0
+			back = -self.border_depth/2.0
+			
+			self.display_list=glGenLists(1)
+				
+			glNewList(self.display_list,GL_COMPILE)
+	
+			# All triangles are drawn in counter clockwise direction
+			# Do the front facing strip first
+			glPushMatrix()
+			glTranslate(0,0,front)
+			self.__frame_face(left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus)
+			glPopMatrix()
+			
+			# Do the back facing part
+			glPushMatrix()
+			glTranslate(0,0,back)
+			glRotate(180,0,1,0)
+			self.__frame_face(left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus)
+			glPopMatrix()
+			
+			# Now do the border around the edges
+			glPushMatrix()
+			self.__frame_outer_shell(left_plus,right_plus,bottom_plus,top_plus,front,back)
+			glPopMatrix()
+			
+			# Now do the border around the inside edges
+			glPushMatrix()
+			self.__frame_inner_shell(left,right,bottom,top,front,back)
+			glPopMatrix()
+			
+			glEndList()
+			
+		else: print "error, the delete list operation failed"
+	
+	def __gen_3d_object_border_list(self):
+		self.__delete_list()
+	
+		if self.display_list == None:
+			thick_front = 0
+			thick_back = -self.border_depth
+			
+			
+			dims = self.object.get_lr_bt_nf()
+			# plus, i.e. plus the border
+			left =  dims[0]
+			left_plus = left-self.border_width
+			right = dims[1]
+			right_plus = right + self.border_width
+			
+			bottom = dims[2]
+			bottom_plus = bottom - self.border_height
+			top =  dims[3]
+			top_plus = top + self.border_height
+			
+			front =  dims[4]
+			front_plus = front + self.border_depth
+			back = dims[5]
+			back_plus = back - self.border_depth
+
+			self.display_list=glGenLists(1)
+				
+			glNewList(self.display_list,GL_COMPILE)
+			
+			glPushMatrix()
+			glTranslate(0,0,front_plus)
+			self.__frame_inner_shell(left,right,bottom,top,thick_front,thick_back)
+			self.__frame_face(left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus)
+			glPopMatrix()
+			
+			
+			glPushMatrix()
+			glTranslate(0,0,back_plus)
+			glRotate(180,0,1,0)
+			self.__frame_inner_shell(-left,-right,bottom,top,thick_front,thick_back)
+			self.__frame_face(-left,-left_plus,-right,-right_plus,bottom,bottom_plus,top,top_plus)
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslate(right_plus,0,0)
+			glRotate(90,0,1,0)
+			self.__frame_inner_shell(back,front,bottom,top,thick_front,thick_back)
+			self.__frame_face(back,back_plus,front,front_plus,bottom,bottom_plus,top,top_plus)
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslate(left_plus,0,0)
+			glRotate(270,0,1,0)
+			self.__frame_inner_shell(back,front,bottom,top,thick_front,thick_back)
+			self.__frame_face(back,back_plus,front,front_plus,bottom,bottom_plus,top,top_plus)
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslate(0,bottom_plus,0)
+			glRotate(90,1,0,0)
+			self.__frame_inner_shell(left,right,back,front,thick_front,thick_back)
+			self.__frame_face(left,left_plus,right,right_plus,back,back_plus,front,front_plus)
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslate(0,top_plus,0)
+			glRotate(270,1,0,0)
+			self.__frame_inner_shell(left,right,back,front,thick_front,thick_back)
+			self.__frame_face(left,left_plus,right,right_plus,back,back_plus,front,front_plus)
+			glPopMatrix()
+			
+			glEndList()
+		else: print "error, the delete list operation failed"
+			
+	
+	def __frame_face(self,left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus):
+		glNormal(0,0,1)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left_plus,bottom_plus,0)
+		glVertex(left,bottom_plus,0)
+		glVertex(left_plus,top_plus,0)
+		glVertex(left,top_plus,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left_plus,top_plus,0)
+		glVertex(left,top,0)
+		glVertex(right,top_plus,0)
+		glVertex(right,top,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right_plus,top_plus,0)
+		glVertex(right,top_plus,0)
+		glVertex(right_plus,bottom_plus,0)
+		glVertex(right,bottom_plus,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right,bottom,0)
+		glVertex(right,bottom_plus,0)
+		glVertex(left,bottom,0)
+		glVertex(left,bottom_plus,0)
+		glEnd()
+	
+	def __frame_outer_shell(self,left_plus,right_plus,bottom_plus,top_plus,front,back):
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glNormal(-1,0,0)
+		glVertex(left_plus,bottom_plus,back)
+		glVertex(left_plus,bottom_plus,front)
+		glVertex(left_plus,top_plus,back)
+		glVertex(left_plus,top_plus,front)
+		glEnd()
+		
+		glNormal(0,1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left_plus,top_plus,back)
+		glVertex(left_plus,top_plus,front)
+		glVertex(right_plus,top_plus,back)
+		glVertex(right_plus,top_plus,front)
+		glEnd()
+		
+		glNormal(1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right_plus,top_plus,back)
+		glVertex(right_plus,top_plus,front)
+		glVertex(right_plus,bottom_plus,back)
+		glVertex(right_plus,bottom_plus,front)
+		glEnd()
+		
+		glNormal(0,-1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right_plus,bottom_plus,back)
+		glVertex(right_plus,bottom_plus,front)
+		glVertex(left_plus,bottom_plus,back)
+		glVertex(left_plus,bottom_plus,front)
+		glEnd()
+		
+	def __frame_inner_shell(self,left,right,bottom,top,front,back):
+		glBegin(GL_TRIANGLE_STRIP)
+		glNormal(-1,0,0)
+		glVertex(right,bottom,back)
+		glVertex(right,bottom,front)
+		glVertex(right,top,back)
+		glVertex(right,top,front)
+		glEnd()
+		
+		glNormal(0,-1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right,top,back)
+		glVertex(right,top,front)
+		glVertex(left,top,back)
+		glVertex(left,top,front)
+		glEnd()
+		
+		glNormal(1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left,top,back)
+		glVertex(left,top,front)
+		glVertex(left,bottom,back)
+		glVertex(left,bottom,front)
+		glEnd()
+		
+		glNormal(0,1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left,bottom,back)
+		glVertex(left,bottom,front)
+		glVertex(right,bottom,back)
+		glVertex(right,bottom,front)
+		glEnd()
+	
 class EM3DWidgetVolume:
 	'''
 	a EM3DWidgetVolume has width(), height(), and depth() functions, and the associated private variables
@@ -140,10 +425,10 @@ class EM3DWidget:
 	
 	def __atomic_draw_frame(self,plane_string):
 		
-		if self.vdtools.drawFrame(True):
-			self.corner_sets.append(self.vdtools.getCorners())
-			self.planes.append((plane_string))
-			self.model_matrices.append(self.vdtools.getModelMatrix())
+		#if self.vdtools.drawFrame(True):
+		self.corner_sets.append(self.vdtools.getCorners())
+		self.planes.append((plane_string))
+		self.model_matrices.append(self.vdtools.getModelMatrix())
 	
 	def paintGL(self):
 		#clear everything
@@ -294,6 +579,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		
 		self.animation_queue = []
 
+		self.decoration = EM3DPlainBorderDecoration(self)
 	def add_widget(self,widget,set_current=False):
 		'''
 		adds a widget to those that already in the rotary
@@ -347,6 +633,8 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		size = len(self.widgets)
 		if size == 0:
 			return
+		
+		self.decoration.draw()
 		
 		for i in range(size):
 			n = self.angle_information[i][0]
@@ -554,12 +842,13 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		for widget in self.widgets:
 			widget.set_update_P_inv(val)
 
-class EMGLView3D:
+class EMGLView3D(EM3DWidgetVolume):
 	"""
 	A view of an EMAN2 3D type, such as an isosurface or a 
 	volume rendition, etc.
 	"""
 	def __init__(self, parent,image=None):
+		EM3DWidgetVolume.__init__(self)
 		self.parent = parent
 		self.cam = Camera2(self)
 		self.cam.motiondull = 3.0
@@ -568,6 +857,7 @@ class EMGLView3D:
 		self.w = image.get_xsize()	# width of window
 		self.h = image.get_ysize()	# height of window
 		self.d = image.get_zsize()	# depth of the window
+		self.image = image # FIXME is this allright?
 		self.sizescale = 1.0		# scale/zoom factor
 		self.changefactor = 1.1		# used to zoom
 		self.invchangefactor = 1.0/self.changefactor # used to invert zoom
@@ -587,6 +877,8 @@ class EMGLView3D:
 		self.psets = []
 		self.modelmatrices = []
 	
+	
+		self.decoration = EM3DPlainBorderDecoration(self)
 	def setOptScale(self):
 		dims = self.drawable.getDataDims()
 		
@@ -598,6 +890,20 @@ class EMGLView3D:
 		print xscale
 		self.drawable.cam.scale = xscale
 	
+	def determine_dimensions(self):
+		width = self.image.get_xsize()
+		height= self.image.get_ysize()
+		depth= self.image.get_zsize()
+		
+		self.left = -width/2.0
+		self.right = width/2.0
+		self.bottom = -height/2.0
+		self.top =  height/2.0
+		self.near = depth/2.0
+		self.far =  -depth/2.0
+		
+		self.update_dims = False
+
 	def setWidth(self,w):
 		self.w = w
 		self.drawable.resizeEvent(self.width(),self.height())
@@ -610,26 +916,29 @@ class EMGLView3D:
 		self.h = h
 		self.drawable.resizeEvent(self.width(),self.height())
 		
-	def width(self):
-		try:
-			return int(self.w)
-		except:
-			return 0
+	#def width(self):
+		#try:
+			#return int(self.w)
+		#except:
+			#return 0
 	
-	def height(self):
-		try:
-			return int(self.h)
-		except:
-			return 0
+	#def height(self):
+		#try:
+			#return int(self.h)
+		#except:
+			#return 0
 	
-	def depth(self):
-		try:
-			return int(self.d)
-		except:
-			return 0
+	#def depth(self):
+		#try:
+			#return int(self.d)
+		#except:
+			#return 0
 	
 	def setData(self,data):
-		try: self.drawable.setData(data)
+		try:
+			self.drawable.setData(data)
+			self.image = image
+			self.update()
 		except: pass
 		
 	def paintGL(self):
@@ -650,6 +959,8 @@ class EMGLView3D:
 		glTranslatef(-self.width()/2.0,0,0)
 		glRotatef(-90,0,1,0)
 		self.vdtools.update(self.depth()/2.0,self.height()/2.0)
+		
+		self.decoration.draw()
 		if self.drawFrame: 
 			if self.vdtools.drawFrame(True): 
 				self.psets.append(self.vdtools.getCorners())
@@ -849,6 +1160,8 @@ class EMGLView2D:
 		
 		self.inspector = None
 		
+		self.decoration = EM3DPlainBorderDecoration(self)
+		
 	def become2DImage(self,a):
 		self.drawable = EMImage2DCore(a,self)
 		#self.drawable.originshift = False
@@ -930,6 +1243,7 @@ class EMGLView2D:
 		glPopMatrix()
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
+		self.decoration.draw()
 		if self.drawFrame: self.vdtools.drawFrame()
 		if not lighting: glDisable(GL_LIGHTING)
 		
@@ -1047,6 +1361,8 @@ class EMGLViewQtWidget:
 		
 		self.vdtools = EMViewportDepthTools(self)
 	
+	
+		self.decoration = EM3DPlainBorderDecoration(self)
 	def __del__(self):
 		if (self.itex != 0 ):
 			self.parent.deleteTexture(self.itex)
@@ -1129,6 +1445,7 @@ class EMGLViewQtWidget:
 	
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
+		self.decoration.draw()
 		if self.drawFrame:
 			try: self.vdtools.drawFrame()
 			except Exception, inst:
