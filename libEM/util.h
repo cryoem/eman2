@@ -453,7 +453,7 @@ namespace EMAN
 		static inline float bilinear_interpolate(float p1, float p2, float p3,
 												 float p4, float t, float u)
 		{
-			return (1-t) * (1-u) * p1 + t * (1-u) * p2 + t * u * p3 + (1-t) * u * p4;
+			return (1-t) * (1-u) * p1 + t * (1-u) * p2 + (1-t) * u * p3 + t * u * p4;
 		}
 
 		/** Calculate trilinear interpolation.

@@ -551,9 +551,9 @@ float EMData::sget_value_at_interp(float xx, float yy) const
 
 	float p1 = sget_value_at(x, y);
 	float p2 = sget_value_at(x + 1, y);
-	float p3 = sget_value_at(x + 1, y + 1);
-	float p4 = sget_value_at(x, y + 1);
-
+	float p3 = sget_value_at(x, y + 1);
+	float p4 = sget_value_at(x + 1, y + 1);
+	
 	float result = Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);
 	return result;
 }

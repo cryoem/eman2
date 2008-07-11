@@ -1118,9 +1118,6 @@ void EMData::rotate_translate(const Transform3D & RA)
 		std::cout << *it << " : " << (float)rotation.get(*it) << std::endl;
 	} 
 #endif
-
-	int nx2 = nx;
-	int ny2 = ny;
 	float inv_scale = 1.0f;
 
 	if (scale != 0) {
@@ -1142,9 +1139,8 @@ void EMData::rotate_translate(const Transform3D & RA)
 			for (int i = 0; i < nx; i++, x += 1.0f) {
 				float x2 = RAInv[0][0]*x + RAInv[0][1]*y + x2c;
 				float y2 = RAInv[1][0]*x + RAInv[1][1]*y + y2c;
-//  		                printf("x2=%f \t y2=%f \t x=%f  \t y=%f \n", x2 ,y2, x, y );
 
-				if (x2 < 0 || x2 >= nx2 - 1 || y2 < 0 || y2 >= ny2 - 1) {
+				if (x2 < 0 || x2 >= nx || y2 < 0 || y2 >= ny ) {
 					des_data[i + j * nx] = 0;
 				}
 				else {
@@ -1152,30 +1148,22 @@ void EMData::rotate_translate(const Transform3D & RA)
 					int jj = Util::fast_floor(y2);
 					int k0 = ii + jj * nx;
 					int k1 = k0 + 1;
-					int k2 = k0 + nx + 1;
-					int k3 = k0 + nx;
+					int k2 = k0 + nx;
+					int k3 = k0 + nx + 1;
 
-					if (ii == nx2 - 1) {
+					if (ii == nx - 1) {
 						k1--;
 						k2--;
 					}
-					if (jj == ny2 - 1) {
-						k2 -= nx2;
-						k3 -= nx2;
+					if (jj == ny - 1) {
+						k2 -= nx;
+						k3 -= nx;
 					}
 
 					float t = x2 - ii;
 					float u = y2 - jj;
-					float tt = 1 - t;
-					float uu = 1 - u;
 
-					float p0 = src_data[k0] * tt * uu;
-					float p1 = src_data[k1] * t * uu;
-					float p3 = src_data[k3] * tt * u;
-					float p2 = src_data[k2] * t * u;
-
-					des_data[i + j * nx] = p0 + p1 + p2 + p3; // This is essentially linear interpolation
- //  		        printf("x2=%f \t y2=%f \t x=%f  \t y=%f \t val=%f \n", x2 ,y2, x, y, p0+p1+p2+p3 );
+					des_data[i + j * nx] =Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u); // This is essentially 
 				}
 			}
 		}
@@ -1214,7 +1202,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 
 
 					if (x2 < 0 || y2 < 0 || z2 < 0 ||
-						x2 >= nx-1  || y2 >= ny-1  || z2>= nz-1 ) {
+						x2 >= nx  || y2 >= ny  || z2>= nz ) {
 						des_data[l] = 0;
 					}
 					else {
@@ -1226,6 +1214,34 @@ void EMData::rotate_translate(const Transform3D & RA)
 						float tuvz = z2-iz;
 						int ii = ix + iy * nx + iz * nxy;
 
+						int k0 = ii;
+						int k1 = k0 + 1;
+						int k2 = k0 + nx;
+						int k3 = k0 + nx+1;
+						int k4 = k0 + nxy;
+						int k5 = k1 + nxy;
+						int k6 = k2 + nxy;
+						int k7 = k3 + nxy;
+						
+						if (ix == nx - 1) {
+							k1--;
+							k3--;
+							k5--;
+							k7--;
+						}
+						if (iy == ny - 1) {
+							k2 -= nx;
+							k3 -= nx;
+							k6 -= nx;
+							k7 -= nx;
+						}
+						if (iz == nz - 1) {
+							k4 -= nxy;
+							k5 -= nxy;
+							k6 -= nxy;
+							k7 -= nxy;
+						}
+						
 						des_data[l] = Util::trilinear_interpolate(src_data[ii],
 							  src_data[ii + 1],
 							  src_data[ii + nx],
@@ -2251,7 +2267,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 			float u = yy - Util::fast_floor(yy);
 			int k = (int) Util::fast_floor(xx) + (int) (Util::fast_floor(yy)) * nx;
 			dd[x + y * xs] =
-				Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx + 1], d[k + nx], t,u) * (y + r1);
+				Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx], d[k + nx+1], t,u) * (y + r1);
 		}
 	}
 	update();
@@ -3117,25 +3133,25 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 
 			im1[l] = Util::bilinear_interpolate(image1_data[k],
 												image1_data[k + 2],
-												image1_data[k + 2 + image2_nx],
-												image1_data[k + image2_nx], x2, y2);
+												image1_data[k + image2_nx],
+												image1_data[k + 2 + image2_nx], x2, y2);
 
 			im2[l] = Util::bilinear_interpolate(image2_data[k],
 												image2_data[k + 2],
-												image2_data[k + 2 + image2_nx],
-												image2_data[k + image2_nx], x2, y2);
+												image2_data[k + image2_nx],
+												image2_data[k + 2 + image2_nx], x2, y2);
 
 			k++;
 
 			im1[l + 1] = Util::bilinear_interpolate(image1_data[k],
 													image1_data[k + 2],
-													image1_data[k + 2 + image2_nx],
-													image1_data[k + image2_nx], x2, y2);
+													image1_data[k + image2_nx],
+													image1_data[k + 2 + image2_nx], x2, y2);
 
 			im2[l + 1] = Util::bilinear_interpolate(image2_data[k],
 													image2_data[k + 2],
-													image2_data[k + 2 + image2_nx],
-													image2_data[k + image2_nx], x2, y2);
+													image2_data[k + image2_nx],
+													image2_data[k + 2 + image2_nx], x2, y2);
 
 			s1 += Util::square_sum(im1[l], im1[l + 1]);
 			s2 += Util::square_sum(im2[l], im2[l + 1]);
