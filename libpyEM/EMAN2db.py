@@ -60,30 +60,33 @@ signal.signal(2,DB_cleanup)
 
 def db_open_env(url):
 	"opens a DB through an environment from a db:/path/to/db/dbname string"
-	if url[:3].lower()!="db:": return None
+	if url[:4].lower()!="bdb:": return None
 	sln=url.rfind("/")
 	if sln<0 :
 		db=EMAN2DB.open_db()
-		db.open_dict(url[3:])
-		return db.__dict__[url[3:]]
-	db=EMAN2DB.open_db(url[3:sln])
+		db.open_dict(url[4:])
+		return db.__dict__[url[4:]]
+	db=EMAN2DB.open_db(url[4:sln])
 	name=url[sln+1:]
 	db.open_dict(name)
 	return db.__dict__[name]
 
-# replace a few EMData methods with python versions to intercept 'db:' filenames
+# replace a few EMData methods with python versions to intercept 'bdb:' filenames
 def db_read_image(self,fsp,*parms):
-	if fsp[:3].lower()=="db:" :
+	if fsp[:4].lower()=="bdb:" :
 		db=db_open_env(fsp)
-		return db.get(parms[0],target=self)
+		x=db.get(parms[0],target=self)
+		if not x : raise Exception("Could not access "+str(fsp)+" "+str(parms))
+		return None
 	return self.read_image_c(fsp,*parms)
 
 EMData.read_image_c=EMData.read_image
 EMData.read_image=db_read_image
 
 def db_read_images(fsp,*parms):
-	if fsp[:3].lower()=="db:" :
+	if fsp[:4].lower()=="bdb:" :
 		db=db_open_env(fsp)
+		if len(parms)==0 : parms=[(0,len(db))]
 		return [db.get(i) for i in range(parms[0][0],parms[0][1])]
 	return EMData.read_images_c(fsp,*parms)
 
@@ -92,8 +95,9 @@ EMData.read_images=staticmethod(db_read_images)
 
 
 def db_write_image(self,fsp,*parms):
-	if fsp[:3].lower()=="db:" :
+	if fsp[:4].lower()=="bdb:" :
 		db=db_open_env(fsp)
+		if parms[0]<0 : parms=(len(db),)+parms[1:]
 		db[parms[0]]=self
 		return 0
 	return self.write_image_c(fsp,*parms)
@@ -102,7 +106,7 @@ EMData.write_image_c=EMData.write_image
 EMData.write_image=db_write_image
 
 def db_get_image_count(fsp):
-	if fsp[:3].lower()=="db:" :
+	if fsp[:4].lower()=="bdb:" :
 		db=db_open_env(fsp)
 		return len(db)
 	return EMUtil.get_image_count_c(fsp)
@@ -346,7 +350,8 @@ class DBDict:
 		self[n]=a
 
 	def __len__(self):
-		return self["maxrec"]+1
+		try: return self["maxrec"]+1
+		except: return 0
 #		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
 #		return len(self.bdb)
 
