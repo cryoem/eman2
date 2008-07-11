@@ -53,7 +53,6 @@ from emimage import EMImage
 from emglobjects import EMViewportDepthTools, Camera2, EMBasicOpenGLObjects, Camera
 from emimage2dtex import *
 
-
 height_plane = 500
 
 class EM3DBorderDecoration:
@@ -597,6 +596,10 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.rotary_type = rotary_type
 
 		self.decoration = EM3DPlainBorderDecoration(self)
+	
+	def clear_widgets(self):
+		self.widgets = []
+	
 	def add_widget(self,widget,set_current=False):
 		'''
 		adds a widget to those that already in the rotary
