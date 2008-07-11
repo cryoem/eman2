@@ -39,6 +39,7 @@ from pyemtbx.boxertools import *
 from optparse import OptionParser
 from emshape import EMShape
 from emimagemx import EMImageMX
+#from emimagemxrotary import EMImageMXRotary
 from math import *
 from time import *
 import os

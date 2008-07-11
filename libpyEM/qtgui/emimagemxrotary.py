@@ -61,13 +61,14 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
-
+		print "In Rotary Widget constructor"
 		self.imagemx = None
 		#self.initflag = True
 		self.mmode = "drag"
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
+		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImageMXRotary.allim[self]=0
 		
@@ -76,13 +77,34 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		
 		self.imagefilename = None
 		
-		self.fov = 50
+		self.fov = 20
 		self.aspect = 1.0
-		self.zNear = .1
-		self.zFar = 1000
+		self.zNear = 1
+		self.zFar = 5000
 		
+		self.animatables = []
+		
+		self.timer = QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+		self.timer.start(10)
+		
+		print "leave Rotary Widget constructor"
 	def setData(self,data):
 		self.imagemx.setData(data)
+		
+	def timeout(self):
+		
+		if len(self.animatables) == 0: return
+		
+		for i,animatable in enumerate(self.animatables):
+			if not animatable.animate(time.time()):
+				# this could be dangerous
+				self.animatables.pop(i)
+		
+		self.updateGL()
+		
+	def register_animatable(self,animatable):
+		self.animatables.append(animatable)
 	
 	def setImageFileName(self,name):
 		#print "set image file name",name
@@ -107,15 +129,12 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		GL.glViewport(0,0,width,height)
 	
 		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
 		self.aspect = float(width)/float(height)
 		GLU.gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
-		print self.fov,self.aspect,self.zNear,self.zFar
 		#GL.glOrtho(0.0,width,0.0,height,-width,width)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
-		
-		try: self.imagemx.resizeEvent(width,height)
-		except: pass
 		
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
@@ -169,6 +188,7 @@ class EMImageMXRotaryCore:
 
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
+		print "enter RotaryCore constructor"
 		self.parent = parent
 		self.data=None
 		self.datasize=(1,1)
@@ -210,8 +230,12 @@ class EMImageMXRotaryCore:
 		if data:
 			self.setData(data)
 		
-		self.rotary = EMGLRotaryWidget(self,0,0,15,EMGLRotaryWidget.BOTTOM_ROTARY,40)
-
+		self.rotary = EMGLRotaryWidget(self,-25,10,40,EMGLRotaryWidget.LEFT_ROTARY)
+		  
+		print "leave RotaryCore constructor"
+	def register_animatable(self,animatable):
+		self.parent.register_animatable(animatable)
+		
 	def width(self):
 		return self.parent.width()
 	
@@ -429,11 +453,15 @@ class EMImageMXRotaryCore:
 		else: pixden=(255,0)
 		
 		GL.glEnable(GL.GL_DEPTH_TEST)
+		GL.glEnable(GL.GL_LIGHTING)
 		#print self.parent.get_depth_for_height(self.height())
-		glTranslate(0,0,-self.parent.get_depth_for_height(100))
+		lr = self.rotary.get_lr_bt_nf()
+		
+		GL.glPushMatrix()
+		glTranslate(lr[0]-lr[1],0,-self.parent.get_depth_for_height(1500))
 		self.rotary.render()
-		#GL.glPopMatrix()
-		#return
+		GL.glPopMatrix()
+		return
 		
 		n=len(self.data)
 		hist=numpy.zeros(256)
@@ -725,81 +753,25 @@ class EMImageMXRotaryCore:
 
 
 	def mousePressEvent(self, event):
-		lc=self.scrtoimg((event.x(),event.y()))
-#		print lc
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
-			self.showInspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
-			app =  QtGui.QApplication.instance()
-			try:
-				app.setOverrideCursor(Qt.ClosedHandCursor)
-			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				app.setOverrideCursor(Qt.SizeAllCursor)
-				
-			self.mousedrag=(event.x(),event.y())
-		elif event.button()==Qt.LeftButton:
-			if self.mmode=="drag" and lc:
-				xs=int(self.data[lc[0]].get_xsize())
-				ys=int(self.data[lc[0]].get_ysize())
-				drag = QtGui.QDrag(self.parent)
-				mimeData = QtCore.QMimeData()
-				mimeData.setData("application/x-eman", dumps(self.data[lc[0]]))
-				EMAN2.GUIbeingdragged=self.data[lc[0]]		# This deals with within-application dragging between windows
-				mimeData.setText( str(lc[0])+"\n")
-				di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,1.0,14),xs,ys,QImage.Format_RGB32)
-				mimeData.setImageData(QtCore.QVariant(di))
-				drag.setMimeData(mimeData)
-
-# This (mini image drag) looks cool, but seems to cause crashing sometimes in the pixmap creation process  :^(
-				#di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
-				#if xs>64 : pm=QtGui.QPixmap.fromImage(di).scaledToWidth(64)
-				#else: pm=QtGui.QPixmap.fromImage(di)
-				#drag.setPixmap(pm)
-				#drag.setHotSpot(QtCore.QPoint(12,12))
-				
-				dropAction = drag.start()
-#				print dropAction
-			elif self.mmode=="app" and lc:
-				self.parent.emit(QtCore.SIGNAL("mousedown"),event,lc)
-					
+		self.rotary.mousePressEvent(event)
 	def mouseMoveEvent(self, event):
-		if self.mousedrag:
-			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
-			self.mousedrag=(event.x(),event.y())
-			self.parent.update()
-		elif event.buttons()&Qt.LeftButton and self.mmode=="app":
-			self.parent.emit(QtCore.SIGNAL("mousedrag"),event,self.scale)
+		self.rotary.mouseMoveEvent(event)
 		
 	def mouseReleaseEvent(self, event):
-		app =  QtGui.QApplication.instance()
-		app.setOverrideCursor(Qt.ArrowCursor)
-		lc=self.scrtoimg((event.x(),event.y()))
-		if self.mousedrag:
-			self.mousedrag=None
-		elif event.button()==Qt.LeftButton and self.mmode=="app":
-			if  not event.modifiers()&Qt.ShiftModifier:
-				self.parent.emit(QtCore.SIGNAL("mouseup"),event,lc)
-			else:
-				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
-		elif self.mmode=="del" and lc:
-			self.data.pop(lc[0])
-			try: self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
-			except: pass
-			# redundancy here - the parent may call updateGL...
-			self.updateGL()
+		self.rotary.mouseReleaseEvent(event)
 			
 	def wheelEvent(self, event):
-		if event.delta() > 0:
-			self.setScale( self.scale * self.mag )
-		elif event.delta() < 0:
-			self.setScale(self.scale * self.invmag )
-		self.resizeEvent(self.parent.width(),self.parent.height())
-		# The self.scale variable is updated now, so just update with that
-		if self.inspector: self.inspector.setScale(self.scale)
+#		if event.delta() > 0:
+#			self.setScale( self.scale * self.mag )
+#		elif event.delta() < 0:
+#			self.setScale(self.scale * self.invmag )
+#		self.resizeEvent(self.parent.width(),self.parent.height())
+#		# The self.scale variable is updated now, so just update with that
+#		if self.inspector: self.inspector.setScale(self.scale)
+            self.rotary.wheelEvent(event)
 		
 	def leaveEvent(self):
-		if self.mousedrag:
-			self.mousedrag=None
+		pass
 
 class EMImageMxInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
@@ -1083,15 +1055,18 @@ class EMImageMxInspector2D(QtGui.QWidget):
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	GLUT.glutInit("")
+	print "a"
 	window = EMImageMXRotary()
-	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)])
+	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)]*4)
 	else :
 		a=EMData.read_images(sys.argv[1])
 		window.setImageFileName(sys.argv[1])
 		window.setData(a)
+	print "x"
 	window2=EMParentWin(window)
+	print "y"
 	window2.show()
-	
+	print "z"
 #	w2=QtGui.QWidget()
 #	w2.resize(256,128)
 	
