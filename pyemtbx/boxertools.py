@@ -1128,6 +1128,12 @@ class Boxable:
 		self.parent = parent		# keep track of the parent in case we ever need it
 		self.boxes = []				# a list of boxes
 		self.refboxes = []			# a list of boxes
+		
+		# a list of deleted auto boxes - should be cleared everytime an autobox occurs, and store interactively deleted boxes
+		# This is because when the user unerases things the design of e2boxer demands that boxes in unerased regions should 
+		# return...
+		self.deleted_auto_boxes = [] 
+		
 		self.box_size = -1			#  the box_size
 		self.image_name = image_name
 		
@@ -1163,6 +1169,7 @@ class Boxable:
 		You might call this if the box size was changed in the main interface, or in the constructor
 		'''
 		self.boxes = []
+		self.deleted_auto_boxes = []
 		try: 
 			self.get_auto_selected_from_db(True)
 		except: pass # this probably means there is a project_db but it doesn't store any autoboxing results from this image
@@ -1192,6 +1199,7 @@ class Boxable:
 			
 	def change_box_size(self,box_size):
 		self.box_size = box_size
+		self.deleted_auto_boxes = []
 		oldxsize  = None
 		autoboxes = get_idd_key_entry(self.image_name,"auto_boxes")
 		if oldxsize == None and autoboxes != None and len(autoboxes) != 0:
@@ -1223,6 +1231,7 @@ class Boxable:
 	
 	def clear_and_cache(self,keepmanual=False):
 		self.boxes = []
+		self.deleted_auto_boxes = []
 		
 		project_db = EMProjectDB()
 		try:
@@ -1247,6 +1256,7 @@ class Boxable:
 		
 	def clear_and_reload_images(self):
 		self.boxes = []
+		self.deleted_auto_boxes = []
 		try: 
 			self.get_auto_selected_from_db(True)
 		except: pass # this probably means there is a project_db but it doesn't store any autoboxing results from this image
@@ -1421,11 +1431,14 @@ class Boxable:
 		boxes are not removed prior to the execution of autoboxing - in this case 
 		the autoboxes stored in the database need to include what was already stored...
 		'''
+		self.deleted_auto_boxes = []
 		for box in self.boxes:
 			if not (box.ismanual or box.isref):
 				trimboxes.append(TrimBox(box))
 	
 	def get_auto_selected_from_db(self,forcereadall=False):	
+		
+		self.deleted_auto_boxes = []
 		
 		trimboxes = get_idd_key_entry(self.image_name,"auto_boxes")
 		if trimboxes == None or len(trimboxes) == 0:
@@ -1696,6 +1709,7 @@ class Boxable:
 	
 	def delete_box(self,i):
 		tmp = self.boxes.pop(i)
+		self.deleted_auto_boxes.append(tmp)
 		if tmp.ismanual:
 			self.delete_manual_box(tmp)
 		#yuck, this is horribly inefficient
@@ -1703,11 +1717,13 @@ class Boxable:
 			if box.isref and box.TS == tmp.TS:
 				self.refboxes.pop(j)
 				return True
-			
+		
+		
 		return False
 	
 	def delete_non_refs(self,updatedisplay=True):
 		boxestodelete = []
+		self.deleted_auto_boxes = []
 		n = len(self.boxes)
 		for m in range(n-1,-1,-1):
 			box = self.boxes[m]
@@ -1716,7 +1732,7 @@ class Boxable:
 				boxestodelete.append(m)
 
 		if updatedisplay:
-			self.parent.delete_display_shapes(boxestodelete)
+			self.parent.delete_display_boxes(boxestodelete)
 	
 	def add_non_refs(self,boxes):
 		'''
@@ -1800,6 +1816,27 @@ class Boxable:
 		cfImageCache = CFImageCache()
 		return  cfImageCache.get_image(self.image_name,self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
 	
+	def update_included_boxes(self):
+		added_boxes = []
+		added_ref_boxes = []
+		invshrink = 1.0/self.get_best_shrink()
+		exclusionimage = self.get_exclusion_image()
+		n = len(self.deleted_auto_boxes)
+		for i in range(n-1,-1,-1):
+			box = self.deleted_auto_boxes[i]
+			x = int((box.xcorner+box.xsize/2.0)*invshrink)
+			y = int((box.ycorner+box.ysize/2.0)*invshrink)
+			
+			if ( exclusionimage.get(x,y) == 0):
+				box.changed = True
+				added_boxes.append(box)
+				self.boxes.append(box)
+				self.deleted_auto_boxes.pop(i)
+
+				if box.isref: added_ref_boxes.append(box)
+				
+		return [added_boxes,added_ref_boxes]
+	
 	def update_excluded_boxes(self, useinternal=True,exclusionimage= None):
 		'''
 		
@@ -1821,6 +1858,7 @@ class Boxable:
 				lostboxes.append(i)
 
 				box = self.boxes.pop(i)
+				self.deleted_auto_boxes.append(box)
 				if box.isref: refs.append(box)
 	
 		return [lostboxes,refs]
@@ -2455,10 +2493,20 @@ class SwarmAutoBoxer(AutoBoxer):
 	def name(self):
 		return 'swarmautoboxer'
 
-	def add_reference(self,box):
+	def add_reference(self,boxes):
 		'''
 		 add a reference box - the box should be in the format of a Box, see above):
 		'''
+		isanchor = False
+		try:
+			for box in boxes:
+				self.template.append_reference(box)
+				if box.isanchor: isanchor = True
+		except:
+			box = boxes	
+			isanchor = box.isanchor
+			
+		
 		if isinstance(box,Box):
 			if box.xsize != box.ysize:
 				print 'error, support for uneven box dimensions is not currently implemented'

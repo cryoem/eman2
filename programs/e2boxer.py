@@ -489,7 +489,7 @@ class GUIboxMouseEraseEvents(GUIboxMouseEventsObject):
 		
 		# make the eraser shape non visible
 		self.get_2d_gui_image().addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
-		self.mediator.erasing_done()
+		self.mediator.erasing_done(self.erasemode)
 	
 class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 	'''
@@ -659,12 +659,12 @@ class GUIboxEventsMediator:
 		'''
 		self.parent.exclusion_area_added(typeofexclusion,x,y,radius,mode)
 
-	def erasing_done(self):
+	def erasing_done(self,erase_mode):
 		'''
 		Send an event to the parent letting it know that the user has stopped adding
 		erased area
 		'''
-		self.parent.erasing_done()
+		self.parent.erasing_done(erase_mode)
 		
 	def detect_box_collision(self,coords):
 		'''
@@ -973,35 +973,47 @@ class GUIbox:
 		self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
 		self.update_image_display()
 		
-	def erasing_done(self):
+	def erasing_done(self,erase_mode):
 		'''
 		Call this function after erasing has occured to remove all boxes in the
 		erased regions
 		'''
 		
-		# tell the boxable to remove boxes (and return their number)
-		[lostboxes,refboxes] = self.boxable.update_excluded_boxes()
-		# after this, make sure the display is correct.
-		
-		# If any of the boxes are references the autoboxer needs to know about it...
-		# this could potentially trigger auto boxer 
-		if len(lostboxes) != 0:
-			self.delete_display_shapes(lostboxes)
-			self.mouseclicks += 1
-			self.update_ppc()
-			self.update_all_image_displays()
+		if erase_mode == Boxable.ERASE:
+			# tell the boxable to remove boxes (and return their number)
+			[lostboxes,refboxes] = self.boxable.update_excluded_boxes()
+			# after this, make sure the display is correct.
 			
-		else: self.update_image_display()
-		
-		if len(refboxes) != 0: 
-			val = self.autoboxer.remove_reference(refboxes)
-			if val == 2:
-				self.boxable.clear_and_cache(True)
-				self.clear_displays()
-				return # avoid unecessary display update below
+			# If any of the boxes are references the autoboxer needs to know about it...
+			# this could potentially trigger auto boxer 
+			if len(lostboxes) != 0:
+				self.delete_display_boxes(lostboxes)
+				self.mouseclicks += 1
+				self.update_ppc()
+				self.update_all_image_displays()
+				
+			else: self.update_image_display()
 			
-		self.box_display_update()
-	
+			if len(refboxes) != 0: 
+				val = self.autoboxer.remove_reference(refboxes)
+				if val == 2:
+					self.boxable.clear_and_cache(True)
+					self.clear_displays()
+					return # avoid unecessary display update below
+			
+			self.box_display_update()
+			
+		elif erase_mode == Boxable.UNERASE:
+			[added_boxes,added_refboxes] = self.boxable.update_included_boxes()
+			
+			# len(added_boxes) is always <= len(added_refboxes)
+			if len(added_boxes) != 0:
+				self.box_display_update()
+				
+				if len(added_refboxes) != 0:
+					val = self.autoboxer.add_reference(add_refboxes)
+
+				
 	def detect_box_collision(self,coords):
 		'''
 		Detects a collision of the coordinates with any of the boxes in the current image
@@ -1348,8 +1360,8 @@ class GUIbox:
 		
 	def update_mx_display(self):
 		self.guimx.updateGL()
-	
-	def delete_display_shapes(self,numbers):
+
+	def delete_display_boxes(self,numbers):
 		'''
 		Warning - this won't work unless the numbers go from greatest to smallest- i.e. they are in reverse order
 		Deletes shapes displayed by the 2D image viewer
@@ -1391,7 +1403,7 @@ class GUIbox:
 		"""
 		Deletes the numbered box completely
 		Should only be called in the instance where a single box is being deleting - NOT when
-		you are deleting a list of boxes sequentially (for that you should use delete_display_shapes
+		you are deleting a list of boxes sequentially (for that you should use delete_display_boxes
 		and something to pop the box from the Boxable. See examples in this code)
 		"""
 		sh=self.guiim.getShapes()
