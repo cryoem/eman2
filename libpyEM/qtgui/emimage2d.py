@@ -213,6 +213,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		'''
 		return self.image2d.setExcluded(isexcluded)
 		
+	def getShapes(self):
+		return self.image2d.getShapes()
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
@@ -285,6 +287,7 @@ class EMImage2DCore:
 		self.isexcluded = False
 		#self.integratedwidget = None
 		#self.toggleFrozen()
+		self.hack_shrink = 1
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
@@ -382,6 +385,11 @@ class EMImage2DCore:
 	def scrollTo(self,x,y):
 		"""center the point on the screen"""
 		self.setOrigin(x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2)
+
+	def set_shapes(self,shapes,shrink):
+		self.hack_shrink = shrink
+		self.shapes = shapes
+		self.setupShapes()
 
 	def updateanimation(self):
 		if not self.isanimated:
@@ -669,6 +677,11 @@ class EMImage2DCore:
 		GL.glPushMatrix()
 		GL.glTranslate(-self.origin[0],-self.origin[1],0.01)
 		GL.glScalef(self.scale,self.scale,1.0)
+		if self.hack_shrink != 1:
+			print self.shapelist
+			print self.hack_shrink
+			GL.glScale(1.0/self.hack_shrink,1.0/self.hack_shrink,1.0)
+		#print self.shapelist
 		GL.glCallList(self.shapelist)
 		GL.glPopMatrix()
 		self.changec=self.data.get_attr("changecount")
@@ -693,6 +706,8 @@ class EMImage2DCore:
 			self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.height()/2.0)
 			self.oldsize=(width,height)
 
+	def getShapes(self):
+		return self.shapes
 	def setupShapes(self):
 		if self.shapelist != 0: glDeleteLists(self.shapelist,1)
 		

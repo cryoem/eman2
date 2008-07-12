@@ -314,6 +314,10 @@ class EMDesktop(QtOpenGL.QGLWidget):
 			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
 			gluQuadricTexture(self.gq,GL_FALSE)
 	
+		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
+		glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST)
+	
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 #		glLoadIdentity()

@@ -884,80 +884,79 @@ EMData *StandardProjector::project3d(EMData * image) const
 	}
 	else if ( image->get_ndim() == 2 ) {
 		
-		EMData* copy = image->copy();
-		copy->rotate(*t3d);
-		
-		int nx = copy->get_xsize();
-		int ny = copy->get_ysize();
-
-		EMData *proj = new EMData();
-		proj->set_size(nx, 1, 1);
-		proj->to_zero();
-		
-		float *sdata = copy->get_data();
-		float *ddata = proj->get_data();
-		
-		for (int j = 0; j < ny; j++) { // j represents a column of pixels in the direction of the angle
-			int l = 0;
-			for (int i = 0; i < nx ; i++,l++) {
-				
-				int ii = (int) (i + j * nx);
-				ddata[l] += sdata[ii];
-			}
-		}
-		proj->update();
-		delete copy;
-		return proj;
-		
-		
-// 		float alt = p["alt"];
-// 		alt = -(alt*M_PI/180.0f);
+// 		EMData* copy = image->copy();
+// 		copy->rotate(*t3d);
 // 		
-// 		float cosalt = cos(alt);
-// 		float sinalt = sin(alt);
-// 		
-// 		int nx = image->get_xsize();
-// 		int ny = image->get_ysize();
-// 		
+// 		int nx = copy->get_xsize();
+// 		int ny = copy->get_ysize();
+// 
 // 		EMData *proj = new EMData();
 // 		proj->set_size(nx, 1, 1);
 // 		proj->to_zero();
 // 		
-// 		float *sdata = image->get_data();
+// 		float *sdata = copy->get_data();
 // 		float *ddata = proj->get_data();
 // 		
-// 		for (int j = -ny / 2; j < ny - ny / 2; j++) { // j represents a column of pixels in the direction of the angle
+// 		for (int j = 0; j < ny; j++) { // j represents a column of pixels in the direction of the angle
 // 			int l = 0;
-// 			for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
-// 				float x2 = cosalt*i-sinalt*j + nx/2;
-// 				float y2 = sinalt*i+cosalt*j + ny/2;
-// 
-// 				float x = (float)Util::fast_floor(x2);
-// 				float y = (float)Util::fast_floor(y2);
+// 			for (int i = 0; i < nx ; i++,l++) {
 // 				
-// 				int ii = (int) (x + y * nx);
-// 				float u = x2 - x;
-// 				float v = y2 - y;
-// 				
-// 				if (x2 < 0 || y2 < 0 ) continue;
-// 				if 	(x2 > (nx-1) || y2  > (ny-1) ) continue;
-// 				
-// 				if (  x2 < (nx - 1) && y2 < (ny - 1) ) {
-// 					ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],sdata[ii + nx + 1], u, v);
-// 				}
-// 				else if (x2 == (nx-1) && y2 == (ny-1) ) {
-// 					ddata[l] += sdata[ii];
-// 				}
-// 				else if (x2 == (nx-1) ) {
-// 					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + nx], v);
-// 				}
-// 				else if (y2 == (ny-1) ) {
-// 					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + 1], u);
-// 				}
+// 				int ii = (int) (i + j * nx);
+// 				ddata[l] += sdata[ii];
 // 			}
 // 		}
 // 		proj->update();
+// 		delete copy;
 // 		return proj;
+// 		
+		
+		float alt = p["phi"];
+		alt = (alt*M_PI/180.);
+		float cosalt = cos(alt);
+		float sinalt = sin(alt);
+		
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+		
+		EMData *proj = new EMData();
+		proj->set_size(nx, 1, 1);
+		proj->to_zero();
+		
+		float *sdata = image->get_data();
+		float *ddata = proj->get_data();
+		
+		for (int j = -ny / 2; j < ny - ny / 2; j++) { // j represents a column of pixels in the direction of the angle
+			int l = 0;
+			for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
+				float x2 = cosalt*i-sinalt*j + nx/2;
+				float y2 = sinalt*i+cosalt*j + ny/2;
+
+				float x = (float)Util::fast_floor(x2);
+				float y = (float)Util::fast_floor(y2);
+				
+				int ii = (int) (x + y * nx);
+				float u = x2 - x;
+				float v = y2 - y;
+				
+				if (x2 < 0 || y2 < 0 ) continue;
+				if 	(x2 > (nx-1) || y2  > (ny-1) ) continue;
+				
+				if (  x2 < (nx - 1) && y2 < (ny - 1) ) {
+					ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],sdata[ii + nx + 1], u, v);
+				}
+				else if (x2 == (nx-1) && y2 == (ny-1) ) {
+					ddata[l] += sdata[ii];
+				}
+				else if (x2 == (nx-1) ) {
+					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + nx], v);
+				}
+				else if (y2 == (ny-1) ) {
+					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + 1], u);
+				}
+			}
+		}
+		proj->update();
+		return proj;
 	}
 	else throw ImageDimensionException("Standard projection works only for 2D and 3D images");
 }

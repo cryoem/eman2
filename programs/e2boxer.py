@@ -39,7 +39,7 @@ from pyemtbx.boxertools import *
 from optparse import OptionParser
 from emshape import EMShape
 from emimagemx import EMImageMX
-#from emimagemxrotary import EMImageMXRotary
+from emimagemxrotary import EMImageMXRotary
 from math import *
 from time import *
 import os
@@ -809,6 +809,7 @@ class GUIbox:
 		bic = BigImageCache()
 		image=bic.get_image(self.image_names[0])
 		self.guiimp=EMImage(image)		# widget for displaying large image
+		self.guiimp.setWindowTitle(self.image_names[0])
 		self.guiim=self.guiimp.child
 		self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
 		self.guiim.setFrozen(self.boxable.is_frozen())
@@ -853,16 +854,19 @@ class GUIbox:
 				E2loadappwin("boxer","mxcontrolgeom",self.guimx.inspector)
 		except:
 			pass
-		
+			
 		self.guiimp.show()
+		
 		if self.guimxitp != None:
 			self.guimxitp.show()
+			self.guimxitp.resize(*self.guimxit.get_optimal_size())
 			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
 			self.guimxit.setSelected(0)
 
 		self.ab_sel_mediator = AutoBoxerSelectionsMediator(self)
 		self.guictl=GUIboxPanel(self,self.ab_sel_mediator)
 		self.guictl.set_image_quality(self.boxable.get_quality())
+		self.guictl.setWindowTitle("e2boxer Controller")
 		self.guictl.show()
 		self.autoboxer.auto_box(self.boxable,False)
 		self.box_display_update()
@@ -1084,6 +1088,7 @@ class GUIbox:
 			if len(data) != 0:
 				if self.guimxp == None:
 					self.guimxp = EMParentWin(self.guimx)
+					self.guimxp.setWindowTitle("Particles")
 					self.guimxp.show()
 					self.guimx.setSelected(0)
 	
@@ -1094,7 +1099,6 @@ class GUIbox:
 		self.box_display_update() # - the user may still have some manual boxes...
 	
 	def imagesel(self,event,lc):
-		#print 'in image select'
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.BusyCursor)
 		#try:
@@ -1106,6 +1110,7 @@ class GUIbox:
 		
 			bic = BigImageCache()
 			image=bic.get_image(self.image_names[im])
+			self.guiimp.setWindowTitle(self.image_names[im])
 			self.guiim.setData(image)
 			
 			self.boxable.cache_exc_to_db()
@@ -1183,11 +1188,12 @@ class GUIbox:
 				#print "got thumb",i
 				self.imagethumbs.append(thumb)
 			
-			self.guimxit=EMImageMX()		# widget for displaying image thumbs
+			self.guimxit=EMImageMXRotary()		# widget for displaying image thumbs
 			self.guimxit.setData(self.imagethumbs)
-			self.guimxit.setmmode("app")
 			self.guimxitp = EMParentWin(self.guimxit)
+			self.guimxitp.setWindowTitle("Image Thumbs")
 			
+			self.guimxit.set_mmode("app")
 			app = QtGui.QApplication.instance()
 			app.setOverrideCursor(Qt.BusyCursor)
 		except: 
@@ -1467,6 +1473,9 @@ class GUIbox:
 #		self.emit(QtCore.SIGNAL("nboxes"),len(self.ptcl))
 
 		self.update_all_image_displays()
+		
+		if self.guimxitp !=None:
+			self.guimxit.set_shapes(self.guiim.getShapes(),self.get_image_thumb_shrink())
 
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use

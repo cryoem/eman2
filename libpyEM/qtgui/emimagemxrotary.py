@@ -50,7 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
 
-from emfloatingwidgets import EMGLRotaryWidget, EMGLView2D
+from emfloatingwidgets import EMGLRotaryWidget, EMGLView2D,EM3DWidget
 
 
 class EMImageMXRotary(QtOpenGL.QGLWidget):
@@ -61,8 +61,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
-		print "In Rotary Widget constructor"
-		self.imagemx = None
+		self.image_rotary = None
 		#self.initflag = True
 		self.mmode = "drag"
 
@@ -73,7 +72,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		EMImageMXRotary.allim[self]=0
 		
 		
-		self.imagemx = EMImageMXRotaryCore(data,self)
+		self.image_rotary = EMImageMXRotaryCore(data,self)
 		
 		self.imagefilename = None
 		
@@ -88,10 +87,15 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 		self.timer.start(10)
 		
-		print "leave Rotary Widget constructor"
 	def setData(self,data):
-		self.imagemx.setData(data)
-		
+		self.image_rotary.setData(data)
+	
+	def get_optimal_size(self):
+		lr = self.image_rotary.rotary.get_suggested_lr_bt_nf()
+		width = lr[1] - lr[0]
+		height = lr[3] - lr[2]
+		return [width+80,height+20]
+	
 	def timeout(self):
 		
 		if len(self.animatables) == 0: return
@@ -116,12 +120,28 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
 		
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
+	
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		
+		glEnable(GL_DEPTH_TEST)
+		
+		glEnable(GL_NORMALIZE)
+		
+		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
+		glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST)
+		
 	def paintGL(self):
 		if not self.parentWidget() : return
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
-		if ( self.imagemx == None ): return
-		self.imagemx.render()
+		if ( self.image_rotary == None ): return
+		self.image_rotary.render()
 
 	
 	def resizeGL(self, width, height):
@@ -142,53 +162,55 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		depth = height/(2.0*tan(self.fov/2.0*pi/180.0))
 	
 		return depth
-	def setmmode(self,mode):
+	def set_mmode(self,mode):
+		print "in normal set"
 		self.mmode = mode
-		self.imagemx.mmode = mode
+		self.image_rotary.set_mmode(mode)
 	
 	def mousePressEvent(self, event):
-		self.imagemx.mousePressEvent(event)
+		self.image_rotary.mousePressEvent(event)
 			
 	def wheelEvent(self,event):
-		self.imagemx.wheelEvent(event)
+		self.image_rotary.wheelEvent(event)
 	
 	def mouseMoveEvent(self,event):
-		self.imagemx.mouseMoveEvent(event)
+		self.image_rotary.mouseMoveEvent(event)
 
 	def mouseReleaseEvent(self,event):
-		self.imagemx.mouseReleaseEvent(event)
+		self.image_rotary.mouseReleaseEvent(event)
 	
 	def keyPressEvent(self,event):
-		print "key press event"
 		if self.mmode == "app":
 			self.emit(QtCore.SIGNAL("keypress"),event)
 
 	def dropEvent(self,event):
-		self.imagemx.dropEvent(event)
+		self.image_rotary.dropEvent(event)
 		
 	def closeEvent(self,event) :
-		self.imagemx.closeEvent(event)
+		self.image_rotary.closeEvent(event)
 		
 	def dragEnterEvent(self,event):
-		self.imagemx.dragEnterEvent(event)
+		self.image_rotary.dragEnterEvent(event)
 
 	def dropEvent(self,event):
-		self.imagemx.dropEvent(event)
+		self.image_rotary.dropEvent(event)
 		
 	def isVisible(self,n):
-		return self.imagemx.isVisible(n)
+		return self.image_rotary.isVisible(n)
 	
 	def setSelected(self,n):
-		return self.imagemx.setSelected(n)
+		return self.image_rotary.setSelected(n)
 	
 	def scrollTo(self,n,yonly):
-		return self.imagemx.scrollTo(n,yonly)
+		return self.image_rotary.scrollTo(n,yonly)
 	
+	def set_shapes(self,shapes,shrink):
+		self.image_rotary.set_shapes(shapes,shrink)
+		
 class EMImageMXRotaryCore:
 
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
-		print "enter RotaryCore constructor"
 		self.parent = parent
 		self.data=None
 		self.datasize=(1,1)
@@ -231,8 +253,21 @@ class EMImageMXRotaryCore:
 			self.setData(data)
 		
 		self.rotary = EMGLRotaryWidget(self,-25,10,40,EMGLRotaryWidget.LEFT_ROTARY)
-		  
-		print "leave RotaryCore constructor"
+		self.widget = EM3DWidget(self,self.rotary)
+		self.widget.set_draw_frame(False)
+	
+	def emit(self,signal,event,integer=None):
+		if integer != None:
+			self.parent.emit(signal,event,integer)
+		else:
+			self.parent.emit(signal,event)	
+	def set_mmode(self,mode):
+		self.mmode = mode
+		self.rotary.set_mmode(mode)
+
+	def set_shapes(self,shapes,shrink):
+		self.rotary.set_shapes(shapes,shrink)
+
 	def register_animatable(self,animatable):
 		self.parent.register_animatable(animatable)
 		
@@ -313,9 +348,6 @@ class EMImageMXRotaryCore:
 		for i,d in enumerate(data):
 			d.set_attr("original_number",i)
 
-		self.updateGL()
-			
-		
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
@@ -451,15 +483,16 @@ class EMImageMXRotaryCore:
 		
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
-		
+		lr = self.rotary.get_suggested_lr_bt_nf()
+		#print lr
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
 		#print self.parent.get_depth_for_height(self.height())
-		lr = self.rotary.get_lr_bt_nf()
+		#lr = self.rotary.get_lr_bt_nf()
 		
 		GL.glPushMatrix()
-		glTranslate(lr[0]-lr[1],0,-self.parent.get_depth_for_height(1500))
-		self.rotary.render()
+		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2])))
+		self.widget.paintGL()
 		GL.glPopMatrix()
 		return
 		
@@ -753,13 +786,17 @@ class EMImageMXRotaryCore:
 
 
 	def mousePressEvent(self, event):
-		self.rotary.mousePressEvent(event)
+		self.widget.mousePressEvent(event)
+		self.updateGL()
+	
 	def mouseMoveEvent(self, event):
-		self.rotary.mouseMoveEvent(event)
+		self.widget.mouseMoveEvent(event)
+		self.updateGL()
 		
 	def mouseReleaseEvent(self, event):
-		self.rotary.mouseReleaseEvent(event)
-			
+		self.widget.mouseReleaseEvent(event)
+		self.updateGL()
+		
 	def wheelEvent(self, event):
 #		if event.delta() > 0:
 #			self.setScale( self.scale * self.mag )
@@ -768,8 +805,8 @@ class EMImageMXRotaryCore:
 #		self.resizeEvent(self.parent.width(),self.parent.height())
 #		# The self.scale variable is updated now, so just update with that
 #		if self.inspector: self.inspector.setScale(self.scale)
-            self.rotary.wheelEvent(event)
-		
+		self.widget.wheelEvent(event)
+		self.updateGL()
 	def leaveEvent(self):
 		pass
 
@@ -1062,11 +1099,9 @@ if __name__ == '__main__':
 		a=EMData.read_images(sys.argv[1])
 		window.setImageFileName(sys.argv[1])
 		window.setData(a)
-	print "x"
 	window2=EMParentWin(window)
-	print "y"
 	window2.show()
-	print "z"
+	window2.resize(*window.get_optimal_size())
 #	w2=QtGui.QWidget()
 #	w2.resize(256,128)
 	
