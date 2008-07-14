@@ -59,23 +59,37 @@ atexit.register(DB_cleanup)
 signal.signal(2,DB_cleanup)
 
 def db_open_env(url):
-	"opens a DB through an environment from a db:/path/to/db/dbname string"
+	"""opens a DB through an environment from a db:/path/to/db/dbname string. If you want to specify a specific image by key,
+	you can specify the key as:  db:/path/to/db/dbname?key
+	If key is an integer, it will be converted to an integer before lookup. Thus it is impossible to access data items
+	with keys like '1' instead of (int)1 using this mechanism."""
 	if url[:4].lower()!="bdb:": return None
 	sln=url.rfind("/")
+	qun=url.rfind("?")
+	if qun<0 : qun=len(url)
 	if sln<0 :
-		db=EMAN2DB.open_db()
-		db.open_dict(url[4:])
-		return db.__dict__[url[4:]]
-	db=EMAN2DB.open_db(url[4:sln])
+		ddb=EMAN2DB.open_db()
+		ddb.open_dict(url[4:qun])	# strip the ?xyz from the end if present
+		return ddb.__dict__[url[4:qun]]
+	ddb=EMAN2DB.open_db(url[4:sln])
 	name=url[sln+1:]
-	db.open_dict(name)
-	return db.__dict__[name]
+	ddb.open_dict(name)
+	return ddb.__dict__[name]
 
-# replace a few EMData methods with python versions to intercept 'bdb:' filenames
+##########
+#### replace a few EMData methods with python versions to intercept 'bdb:' filenames
+##########
 def db_read_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
 		db=db_open_env(fsp)
-		x=db.get(parms[0],target=self)
+		if "?" in fsp:
+			keys=fsp[fsp.rfind("?")+1:].split(",")
+			for i in range(len(keys)):
+				try: keys[i]=int(keys[i])
+				except: pass
+			key=keys[parms[0]]
+		else: key=parms[0]
+		x=db.get(key,target=self)
 		if not x : raise Exception("Could not access "+str(fsp)+" "+str(parms))
 		return None
 	return self.read_image_c(fsp,*parms)
@@ -86,8 +100,16 @@ EMData.read_image=db_read_image
 def db_read_images(fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
 		db=db_open_env(fsp)
-		if len(parms)==0 : parms=[(0,len(db))]
-		return [db.get(i) for i in range(parms[0][0],parms[0][1])]
+		if "?" in fsp:
+			keys=fsp[fsp.rfind("?")+1:].split(",")
+			for i in range(len(keys)):
+				try: keys[i]=int(keys[i])
+				except: pass
+			return [db.get(i) for i in keys]
+		else :
+			if len(parms)==0 : keys=range(0,len(db))
+			else : keys=range(parms[0][0],parms[0][1])
+		return [db.get(i) for i in keys]
 	return EMData.read_images_c(fsp,*parms)
 
 EMData.read_images_c=staticmethod(EMData.read_images)
@@ -97,6 +119,12 @@ EMData.read_images=staticmethod(db_read_images)
 def db_write_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
 		db=db_open_env(fsp)
+		if "?" in fsp :			# if the user specifies the key in fsp, we ignore parms
+			key=fsp[fsp.rfind("?")+1:]
+			try : key=int(key)
+			except: pass
+			db[key]=self
+			return 0
 		if parms[0]<0 : parms=(len(db),)+parms[1:]
 		db[parms[0]]=self
 		return 0
@@ -108,6 +136,12 @@ EMData.write_image=db_write_image
 def db_get_image_count(fsp):
 	if fsp[:4].lower()=="bdb:" :
 		db=db_open_env(fsp)
+		if "?" in fsp :			# if the user specifies the key in fsp, we ignore parms
+			key=fsp[fsp.rfind("?")+1:]
+			try : key=int(key)
+			except: pass
+			if db.has_key(key) : return 1
+			return 0
 		return len(db)
 	return EMUtil.get_image_count_c(fsp)
 
@@ -118,6 +152,10 @@ EMUtil.get_image_count=staticmethod(db_get_image_count)
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
 #dbopenflags=db.DB_CREATE
 cachesize=10000000
+
+#############
+###  Task Management classes
+#############
 
 class TaskMgr:
 	"""This class is used to manage active and completed tasks through an
@@ -230,6 +268,10 @@ class EMTask:
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 
+##########
+### This is the 'database' object, representing a BerkeleyDB environment
+##########
+
 class EMAN2DB:
 	"""This class implements a local database of data and metadata for EMAN2"""
 	
@@ -291,7 +333,9 @@ class EMAN2DB:
 			if fnmatch.fnmatch(f, name+'_*'):
 				os.unlink(self.path+"/EMAN2DB/"+f)
 
-		
+##########
+### This represents a 'dictionary' within a 'database', in BerkeleyDB parlance this is a B-tree (though it could also be a Hash)
+##########	
 	
 class DBDict:
 	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,

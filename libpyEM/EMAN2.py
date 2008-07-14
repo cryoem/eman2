@@ -50,10 +50,10 @@ EMANVERSION="EMAN2 v1.96"
 # behavior appropriately
 try:
 	import EMAN2db
-	db=EMAN2db.EMAN2DB.open_db()
-	db.open_dict("history")
+	DB=EMAN2db.EMAN2DB.open_db()
+	DB.open_dict("history")
 except:
-	db=None
+	DB=None
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
@@ -87,12 +87,12 @@ def timer(fn,n=1):
 def E2init(argv) :
 	"""E2init(argv)
 This function is called to log information about the current job to the local logfile"""
-	global db
-	if db :
-		if not db.history.has_key("count") : db.history["count"]=1
-		else : db.history["count"]+=1
-		n=db.history["count"]
-		db.history[n]={"host":socket.gethostname(),"pid":os.getpid(),"start":time.time(),"args":argv}
+	global DB
+	if DB :
+		if not DB.history.has_key("count") : DB.history["count"]=1
+		else : DB.history["count"]+=1
+		n=DB.history["count"]
+		DB.history[n]={"host":socket.gethostname(),"pid":os.getpid(),"start":time.time(),"args":argv}
 	else:
 		try:
 			sdb=shelve.open(".eman2log")
@@ -113,19 +113,19 @@ This function is called to log information about the current job to the local lo
 def E2end(n):
 	"""E2end(n)
 This function is called to log the end of the current job. n is returned by E2init"""
-	global db
+	global DB
 	
-	if db :
-		d=db.history[n]
+	if DB :
+		d=DB.history[n]
 		d["end"]=time.time()
-		db.history[n]=d
-		db.close_dict("history")
+		DB.history[n]=d
+		DB.close_dict("history")
 	else :
-		db=shelve.open(".eman2log")
-		d=db[str(n)]
+		DB=shelve.open(".eman2log")
+		d=DB[str(n)]
 		d["end"]=time.time()
-		db[str(n)]=d
-		db.close()
+		DB[str(n)]=d
+		DB.close()
 	
 	return n
 
