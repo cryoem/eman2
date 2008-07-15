@@ -1361,6 +1361,8 @@ class GUIbox:
 	def update_all_image_displays(self):
 		self.update_image_display()
 		self.update_mx_display()
+		self.guimxit.paintGL()
+		
 	
 	def update_image_display(self):
 		self.guiim.updateGL()
@@ -1472,10 +1474,12 @@ class GUIbox:
 		self.guictl.num_boxes_changed(len(self.ptcl))
 #		self.emit(QtCore.SIGNAL("nboxes"),len(self.ptcl))
 
+#		if self.guimxitp !=None:
+#			self.guimxit.set_shapes(self.guiim.getShapes(),self.get_image_thumb_shrink())
+
 		self.update_all_image_displays()
 		
-		if self.guimxitp !=None:
-			self.guimxit.set_shapes(self.guiim.getShapes(),self.get_image_thumb_shrink())
+
 
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use

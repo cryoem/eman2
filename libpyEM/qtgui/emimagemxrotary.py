@@ -137,7 +137,6 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST)
 		
 	def paintGL(self):
-		if not self.parentWidget() : return
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
 		if ( self.image_rotary == None ): return
@@ -151,7 +150,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
 		self.aspect = float(width)/float(height)
-		GLU.gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
+		GLU.gluPerspective(self.fov,self.aspect,1,2000)
 		#GL.glOrtho(0.0,width,0.0,height,-width,width)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
@@ -255,7 +254,7 @@ class EMImageMXRotaryCore:
 		self.rotary = EMGLRotaryWidget(self,-25,10,40,EMGLRotaryWidget.LEFT_ROTARY)
 		self.widget = EM3DWidget(self,self.rotary)
 		self.widget.set_draw_frame(False)
-	
+#		self.rotary.set_shapes([],1.01)
 	def emit(self,signal,event,integer=None):
 		if integer != None:
 			self.parent.emit(signal,event,integer)
@@ -341,6 +340,7 @@ class EMImageMXRotaryCore:
 		for d in self.data:
 			w = EMGLView2D(self,d)
 			self.rotary.add_widget(w)
+			
 		#self.showInspector()		# shows the correct inspector if already open
 		#self.timer.start(25)
 		

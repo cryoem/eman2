@@ -44,9 +44,10 @@ class EMProjectDB:
 		""" Implementation of the singleton interface """
 
 		def __init__(self):
-			global db
-			db.open_dict("boxer_cache")
-			self.project_db = db.boxer_cache
+			global DB
+			DB.open_dict("boxer_cache")
+			self.project_db = DB.boxer_cache
+			self.memory_db = {}
 			#self.project_db = shelve.open('.eman2project_db','c',-1,True)
 
 		#def __del__(self):
@@ -64,10 +65,23 @@ class EMProjectDB:
 			
 		def close(self):
 			#self.project_db.close()
-			db.close_dict("boxer_cache")
+			DB.close_dict("boxer_cache")
 			
 		def set_key_entry(self,key,entry):
 			self.project_db[key]= entry
+			
+		def get_key_entry(self,key):
+			return self.project_db[key]
+			
+		def set_key_entry_in_memory(self,key,entry):
+			self.memory_db[key] = entry
+		
+		def get_key_entry_in_memory(self,key):
+			try:
+				
+				return self.memory_db[key]
+			except:
+				return self.project_db[key]
 			#self.project_db.sync()
 			
 	__instance = None
@@ -89,6 +103,18 @@ class EMProjectDB:
 	
 	def set_key_entry(self,key,entry):
 		return self.__instance.set_key_entry(key,entry)
+	
+	def get_key_entry(self,key):
+		return self.__instance.get_key_entry(key)
+	
+	def get_key_entry_in_memory(self,key):
+		return self.__instance.get_key_entry_in_memory(key)
+	
+	def set_key_entry_in_memory(self,key,entry):
+		return self.__instance.set_key_entry_in_memory(key,entry)
+	
+#	def cache_key_entry_from_memory_to_disk(self,key,entry):
+#		return self.__instance.set_key_entry_in_memory(key,entry)
 	
 class Box:
 	CENTERACF = "centeracf"
@@ -166,7 +192,7 @@ class Box:
 		self.ycorner += dy
 		
 		if not self.ismanual:
-			movedboxes = get_idd_key_entry(self.image_name,"moved_boxes") # this may potentially be None
+			movedboxes = get_idd_key_entry_in_memory(self.image_name,"moved_boxes") # this may potentially be None
 			
 			if movedboxes == None:
 				movedboxes = []
@@ -183,7 +209,7 @@ class Box:
 				movedboxes.append([self.origxcorner,self.origycorner,self.xcorner,self.xcorner])
 			
 			
-			set_idd_key_entry(self.image_name,"moved_boxes",movedboxes)
+			set_idd_key_entry_in_memory(self.image_name,"moved_boxes",movedboxes)
 		
 		self.changed = False
 		self.update_box_image()
@@ -490,10 +516,11 @@ class Cache:
 				
 	def getCache(self):
 		return self.cache
+
 	
 class ExclusionImageCache:
 	'''
-	A singleton - usef for caching coarsened-flattened images
+	A singleton - used for caching exclusion images
 	'''
 	class __impl(Cache):
 		""" Implementation of the singleton interface """
@@ -597,7 +624,8 @@ class ExclusionImage:
 				self.image.scale(float(xsize)/float(oldxsize))
 				self.image.clip_inplace(r)
 			
-			set_idd_key_entry(self.image_name,"exclusion_image",self.image) # not sure if this is necessary
+			#set_idd_key_entry(self.image_name,"exclusion_image",self.image) # not sure if this is necessary
+			
 		#else:
 			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
 			
@@ -1049,7 +1077,7 @@ class FLCFImage:
 		get template time stamp
 		'''
 		return self.flcfimage.get_attr("template_time_stamp")
-        
+		
 	def get_cfi_ts(self):
 		'''
 		get cfi time stamp
@@ -1163,7 +1191,7 @@ class Boxable:
 			self.check_store_image_tag_db()	
 		except: pass
 		if autoboxer == None: self.get_auto_boxer_from_db()
-    
+	
 	def reload_boxes(self):
 		'''
 		You might call this if the box size was changed in the main interface, or in the constructor
@@ -1220,14 +1248,14 @@ class Boxable:
 		set_idd_key_entry(self.image_name,"reference_boxes",refboxes)
 		
 		
-		movedboxes =  get_idd_key_entry(self.image_name,"moved_boxes")
+		movedboxes =  get_idd_key_entry_in_memory(self.image_name,"moved_boxes")
 		if movedboxes == None: return
 		if oldxsize == None and movedboxes != None and len(movedboxes) != 0:
 			print "warning, changing box sizes, old movement information has been lost"
 			movedboxes = []
 		else:
 			self.resize_moved_box_data(movedboxes,box_size,oldxsize)
-		set_idd_key_entry(self.image_name,"moved_boxes",movedboxes)
+		set_idd_key_entry_in_memory(self.image_name,"moved_boxes",movedboxes)
 	
 	def clear_and_cache(self,keepmanual=False):
 		self.boxes = []
@@ -1270,6 +1298,7 @@ class Boxable:
 	def cache_exc_to_db(self):
 		if self.exclusionimage != None:
 			set_idd_key_entry(self.image_name,"exclusion_image",self.exclusionimage)
+			merge_idd_key_entry_memory_to_disk(self.image_name,"moved_boxes")
 
 	def center(self,method):
 		if method == Box.CENTERACF or method == Box.CENTEROFMASS:
@@ -1444,7 +1473,7 @@ class Boxable:
 		if trimboxes == None or len(trimboxes) == 0:
 			return 0
 		
-		movedboxes = get_idd_key_entry(self.image_name,"moved_boxes") # this may potentially be None
+		movedboxes = get_idd_key_entry_in_memory(self.image_name,"moved_boxes") # this may potentially be None
 		
 		for trimbox in trimboxes:
 			if trimbox.ismanual or trimbox.isref:
@@ -1488,7 +1517,7 @@ class Boxable:
 		if refboxes == None or len(refboxes) == 0:
 			return 0
 		
-		movedboxes = get_idd_key_entry(self.image_name,"moved_boxes") # movedboxes is potentially None
+		movedboxes = get_idd_key_entry_in_memory(self.image_name,"moved_boxes")# movedboxes is potentially None
 		
 		for trimbox in refboxes:
 			box = Box()
@@ -1806,7 +1835,7 @@ class Boxable:
 		# the template time stamp may not be necessary ultimately, seeing as the correlation image
 		# (which has its own template time stamp) is tied to this Boxable by the image_name itself
 		template_ts = get_idd_key_entry(self.image_name,"template_ts")
-		if template_ts != template.get_template_ts():    
+		if template_ts != template.get_template_ts():	
 			set_idd_key_entry(self.image_name,"template_ts",template.get_template_ts())
 			self.template_ts = template.get_template_ts() # this shouldn't be necessary in future
 			
@@ -1992,13 +2021,58 @@ class Boxable:
 			
 			box.group = group
 					
-		
 		#print scores
 		
 		print "received finish signal"
 
+def merge_idd_key_entry_memory_to_disk(image_name,key):
+	dbkey = get_idd_key(image_name)
+	
+	project_db = EMProjectDB()
+	try:
+		data_in_memory = project_db.get_key_entry_in_memory(dbkey)
+	except:
+#		print "cannot merge data from memory, it's not there :",image_name
+		return
+	
+	try: data_in_memory[key]
+	except:
+#		print "data in memory didn't have key moved boxes"
+		return
+	
+	try:
+		data = project_db[dbkey]
+	except:
+		data = {}
+		
+	if data == None: data = {}
+	
+	try: data[key] = data_in_memory[key]
+	except:
+#		print "data in memory didn't have key moved boxes"
+		return
+	#project_db[self.get_dd_key()] = data
+		#project_db.sync()
+	project_db.set_key_entry(dbkey,data)
+	
 def get_idd_key(image_name):
 	return strip_file_tag(image_name)+"_DD"
+
+def set_idd_key_entry_in_memory(image_name,key,object):
+	dbkey = get_idd_key(image_name)
+	
+	project_db = EMProjectDB()
+	try:
+		data = project_db.get_key_entry_in_memory(dbkey)
+	except:
+#		print "there was no data in memory so i am setting a new one",image_name,key
+		data = None
+		
+	if data == None: data = {}
+	
+	data[key] = object
+	project_db.set_key_entry_in_memory(dbkey,data)
+	
 
 def set_idd_key_entry(image_name,key,object):
 	'''
@@ -2019,7 +2093,17 @@ def set_idd_key_entry(image_name,key,object):
 		#project_db.sync()
 	project_db.set_key_entry(dbkey,data)
 
-
+def get_idd_key_entry_in_memory(image_name,key):
+	
+	dbkey = get_idd_key(image_name)
+	project_db = EMProjectDB()
+	try:
+		data = project_db.get_key_entry_in_memory(dbkey)
+		if data == None: return None
+		else: return data[key]
+	except: return None
+	
+	
 def get_idd_key_entry(image_name,key):
 	dbkey = get_idd_key(image_name)
 	
@@ -2028,8 +2112,7 @@ def get_idd_key_entry(image_name,key):
 		data = project_db[dbkey]
 		if data == None: return None
 		else: return data[key] 
-	except:
-		return None
+	except: return None
 
 
 class AutoBoxer:
@@ -3068,7 +3151,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.__plot_update()
 		#print 'NOW THEY ARE'
 		#print 'threshod:',self.optthreshold
-		#print 'profile:',self.optprofile            
+		#print 'profile:',self.optprofile			
 		#print 'optrad:',self.optprofileradius
 		return True
 	

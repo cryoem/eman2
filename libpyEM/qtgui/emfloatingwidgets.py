@@ -613,19 +613,13 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		
 		self.rotary_type = rotary_type
 	
-		self.mmode = None	# mouse mode - used for potentially emitting signals
-	
-		self.shape_lists = [] # a list of display_lists
-		self.shrink = 1
+		self.mmode = None	# mouse mode - used for potentially emitting signal
 		
 	def set_shapes(self,shapes,shrink):
-		return
-		#print "here we are"
-		pass
-		try:
+#		try:
 			idx = (-self.rotations)%len(self.widgets)
 			self.widgets[idx].set_shapes(shapes,shrink)
-		except: print "failed"
+#		except: print "failed"
 		#print "setting display list",(-self.rotations)%len(self.widgets)
 		#display_list = self.shape_lists[(-self.rotations)%len(self.widgets)] 
 
@@ -641,7 +635,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		
 		#self.shape_lists[(-self.rotations)%len(self.widgets)] = display_list
 	
-		self.shrink = shrink
+#		self.shrink = shrink
 	def set_mmode(self,mode):
 		self.mmode = mode
 	
@@ -661,7 +655,6 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			return 0
 		else:
 			self.widgets.append(widget)
-			self.shape_lists.append(0)
 			self.update_dims = True
 			if set_current == True and self.is_animated == False:
 				self.target_displayed_widget =  len(self.widgets)-1
@@ -771,24 +764,8 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			glTranslate(h_width,h_height,0)
 			widget.paintGL()
 			glPopMatrix()
-			#if self.shape_lists[idx] != 0:
-				#glDisable(GL_LIGHTING)
-				##glLineWidth(5)
-				#glPushMatrix()
-				##print "drawing with shrink",1.0/self.shrink
-				#glTranslate(0,0,0.01)
-				#glTranslate(points[i][0],points[i][1],points[i][2])
-				#glRotate(n,*rot_v)
-				#glTranslate(h_width,h_height,0)
-				#glScale(1.0/self.shrink,1.0/self.shrink,1)
-				#glCallList(self.shape_lists[idx])
-				#glPopMatrix()
-				#glEnable(GL_LIGHTING)
-			#glPopMatrix()
-			
-			
-				
-		
+#			glPopMatrix()
+
 		#print self.rotations % (len(self.widgets))
 	
 	def __get_visible(self):

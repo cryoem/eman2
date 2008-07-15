@@ -357,7 +357,7 @@ class EMImage2DCore:
 		#self.showInspector()		# shows the correct inspector if already open
 #		self.origin=(self.width()/2,self.height()/2)
 		
-		self.updateGL()
+#		self.updateGL()
 		
 	def setDenRange(self,x0,x1):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
@@ -389,7 +389,9 @@ class EMImage2DCore:
 	def set_shapes(self,shapes,shrink):
 		self.hack_shrink = shrink
 		self.shapes = shapes
-		self.setupShapes()
+		
+#		self.shapes["extra"] = EMShape(["rectpoint",.9,.9,.4,self.width()/4.0,self.height()/4.0,self.width()/2,self.height()/2,8.0])
+		self.shapechange=1
 
 	def updateanimation(self):
 		if not self.isanimated:
@@ -678,11 +680,15 @@ class EMImage2DCore:
 		GL.glTranslate(-self.origin[0],-self.origin[1],0.01)
 		GL.glScalef(self.scale,self.scale,1.0)
 		if self.hack_shrink != 1:
-			print self.shapelist
-			print self.hack_shrink
+#			print len(self.shapes),self.hack_shrink
+#			print self.hack_shrink
 			GL.glScale(1.0/self.hack_shrink,1.0/self.hack_shrink,1.0)
+			for k,s in self.shapes.items():
+				if self.active[0]==k: s.draw(None,self.active[1:])
+				else: s.draw()
+		else:
 		#print self.shapelist
-		GL.glCallList(self.shapelist)
+		  GL.glCallList(self.shapelist)
 		GL.glPopMatrix()
 		self.changec=self.data.get_attr("changecount")
 		
