@@ -302,7 +302,7 @@ class EMAN2DB:
 #		self.dbenv.set_cachesize(1,0,8)		# gbytes, bytes, ncache (splits into groups)
 		self.dbenv.set_data_dir("%s/EMAN2DB"%self.path)
 		self.dbenv.set_lk_detect(db.DB_LOCK_DEFAULT)	# internal deadlock detection
-		self.dicts=[]
+		self.dicts={}
 		#if self.__dbenv.DBfailchk(flags=0) :
 			#self.LOG(1,"Database recovery required")
 			#sys.exit(1)
@@ -312,22 +312,25 @@ class EMAN2DB:
 
 	def __del__(self):
 		self.dbenv=None
-		for i in self.dicts : self.close_dict(i)
+		for i in self.dicts.keys() : self.close_dict(i)
+
+	def __getitem__(self,key):
+		return self.dicts[key]
 
 	def open_dict(self,name):
-		self.__dict__[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB")
-		self.dicts.append(name)
+		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB")
+		self.__dict__[name]=self.dicts[name]
 	
 	def close_dict(self,name):
 		self.__dict__[name].close()
 		del(self.__dict__[name])
-		self.dicts.remove(name)
+		del self.dicts[name]
 
 	def remove_dict(self,name):
-		if name in self.dicts:
+		if name in self.dicts.keys():
 			self.__dict__[name].close()
 			del(self.__dict__[name])
-			self.dicts.remove(name)
+			del self.dicts[name]
 		os.unlink(self.path+"/EMAN2DB/"+name+".bdb")
 		for f in os.listdir(self.path+"/EMAN2DB"):
 			if fnmatch.fnmatch(f, name+'_*'):
@@ -467,7 +470,7 @@ class DBDict:
 		object in which to place the read object"""
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
-		if isinstance(r,dict) and r.has_key("nx") :
+		if isinstance(r,dict) and r.has_key("is_complex_ri") :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
@@ -482,6 +485,11 @@ class DBDict:
 			for i in k: ret.set_attr(i,r[i])
 			return ret
 		return r
+		
+	def get_header(self,key,txn=None,target=None):
+		"""Alternate method for retrieving metadata for EMData records."""
+		try: return loads(self.bdb.get(dumps(key,-1),txn=txn))
+		except: return None
 
 	def set(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
@@ -512,6 +520,24 @@ class DBDict:
 			
 		else :
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
+
+	def set_header(self,key,val,txn=None):
+		"Alternative to x[key]=val with transaction set"
+		# make sure the object exists and is an EMData object
+		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
+		except: raise Exception,"set_header can only be used to update existing EMData objects"
+		if not isinstance(r,dict) or not r.has_key("is_complex_ri") : 
+			raise Exception,"set_header can only be used to update existing EMData objects"
+
+		if (val==None) : raise Exception,"You cannot delete an EMData object header" 
+		elif isinstance(val,EMData) : 
+			# write the metadata
+			ad=val.get_attr_dict()
+			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
+		elif isinstance(val,dict) :
+			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
+		else : raise Exception,"set_header is only valid for EMData objects or dictionaries"
+			
 
 	def update(self,dict):
 		for i,j in dict.items(): self[i]=j
