@@ -39,13 +39,14 @@ from pyemtbx.boxertools import *
 from optparse import OptionParser
 from emshape import EMShape
 from emimagemx import EMImageMX
-from emimagemxrotary import EMImageMXRotary
+from emimagerotary import EMImageRotary
 from math import *
 from time import *
 import os
 import sys
 import signal
 from copy import *
+from OpenGL import contextdata
 
 from emglplot import *
 
@@ -812,8 +813,8 @@ class GUIbox:
 		self.guiimp.setWindowTitle(self.image_names[0])
 		self.guiim=self.guiimp.child
 		self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
-		self.guiim.setFrozen(self.boxable.is_frozen())
-		self.guiim.setExcluded(self.boxable.is_excluded())
+		self.guiim.set_frozen(self.boxable.is_frozen())
+		self.guiim.set_excluded(self.boxable.is_excluded())
 		
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		self.guimx=EMImageMX()	
@@ -861,7 +862,7 @@ class GUIbox:
 			self.guimxitp.show()
 			self.guimxitp.resize(*self.guimxit.get_optimal_size())
 			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
-			self.guimxit.setSelected(0)
+			self.guimxit.set_frozen(self.boxable.is_frozen())
 
 		self.ab_sel_mediator = AutoBoxerSelectionsMediator(self)
 		self.guictl=GUIboxPanel(self,self.ab_sel_mediator)
@@ -1105,14 +1106,11 @@ class GUIbox:
 		im=lc[0]
 		#try:
 		if im != self.current_image:
-				#print 'changing images'
-			self.guimxit.setSelected(im)
-		
+				#print 'changing images'		
 			bic = BigImageCache()
 			image=bic.get_image(self.image_names[im])
 			self.guiimp.setWindowTitle(self.image_names[im])
 			self.guiim.setData(image)
-			
 			self.boxable.cache_exc_to_db()
 			self.boxable = Boxable(self.image_names[im],self,self.autoboxer)
 			
@@ -1147,12 +1145,12 @@ class GUIbox:
 			self.current_image = im
 			
 			self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
-			self.guiim.setFrozen(self.boxable.is_frozen())
-			self.guiim.setExcluded(self.boxable.is_excluded())
+			self.guiim.set_frozen(self.boxable.is_frozen())
+			if self.guimxitp != None: self.guimxit.set_frozen(self.boxable.is_frozen())
+			self.guiim.set_excluded(self.boxable.is_excluded())
 			self.guictl.set_image_quality(self.boxable.get_quality())
 			self.box_display_update()
 			
-			self.update_all_image_displays()
 		#except: pass
 			
 		app.setOverrideCursor(Qt.ArrowCursor)
@@ -1183,12 +1181,17 @@ class GUIbox:
 			self.imagethumbs = []
 			
 			a = time()
+			self.imagethumbs = []
 			for i in range(0,nim):
+				self.imagethumbs.append(None)
+			
+			for i in range(nim-1,-1,-1):
+				
 				thumb = self.get_image_thumb(i)
 				#print "got thumb",i
-				self.imagethumbs.append(thumb)
+				self.imagethumbs[i] = thumb
 			
-			self.guimxit=EMImageMXRotary()		# widget for displaying image thumbs
+			self.guimxit=EMImageRotary()		# widget for displaying image thumbs
 			self.guimxit.setData(self.imagethumbs)
 			self.guimxitp = EMParentWin(self.guimxit)
 			self.guimxitp.setWindowTitle("Image Thumbs")
@@ -1326,8 +1329,7 @@ class GUIbox:
 		box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
 		self.guiim.addShape(box_num,box.shape)
 		self.box_display_update()
-		#self.update_all_image_displays()
-	
+
 	def change_shapes(self,shape_string):
 		if shape_string in ["rectpoint","rect","rcircle","rcirclepoint"]:
 			self.shape_string = shape_string
@@ -1361,11 +1363,14 @@ class GUIbox:
 	def update_all_image_displays(self):
 		self.update_image_display()
 		self.update_mx_display()
-		self.guimxit.paintGL()
+		self.guimxit.updateGL()
 		
-	
+		#context = contextdata.getContext(None)
+		#print context
+		
 	def update_image_display(self):
 		self.guiim.updateGL()
+		self.guimxit.updateGL()
 		
 	def update_mx_display(self):
 		self.guimx.updateGL()
@@ -1441,7 +1446,8 @@ class GUIbox:
 				self.clear_displays()
 				
 		return box
-	
+		
+		
 	def box_display_update(self,force=False):
 		
 		ns = {}
@@ -1472,10 +1478,14 @@ class GUIbox:
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
-#		self.emit(QtCore.SIGNAL("nboxes"),len(self.ptcl))
 
-#		if self.guimxitp !=None:
-#			self.guimxit.set_shapes(self.guiim.getShapes(),self.get_image_thumb_shrink())
+		if self.guimxitp !=None:
+			othershapes = {}
+			for shape in ns:
+				s = ns[shape].getShape()
+				othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
+	
+			self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink())
 
 		self.update_all_image_displays()
 		
@@ -1648,7 +1658,8 @@ class GUIbox:
 		if self.boxable.is_excluded() : return
 		self.boxable.toggle_frozen()
 		self.boxable.write_to_db()
-		self.guiim.setFrozen(self.boxable.is_frozen())
+		self.guiim.set_frozen(self.boxable.is_frozen())
+		if self.guimxitp != None: self.guimxit.set_frozen(self.boxable.is_frozen())
 		if not self.boxable.is_frozen():
 			self.change_current_autoboxer(self.boxable.get_autoboxer_id(),False)
 		else:	
@@ -1658,11 +1669,12 @@ class GUIbox:
 		self.boxable.set_quality(val)
 		if val == Boxable.EXCLUDE:
 			self.boxable.set_frozen(False) # If it was already frozen then setting to excluded overrides this
-			self.guiim.setExcluded(True)
-			self.guiim.setFrozen(False)
+			self.guiim.set_excluded(True)
+			self.guiim.set_frozen(False)
+			if self.guimxitp != None: self.guimxit.set_frozen(False)
 			self.boxable.clear_and_cache(True) # tell boxable to clear its autoboxes and references -
 			self.clear_displays() # tell the display to clear itself
-		elif self.guiim.setExcluded(False):
+		elif self.guiim.set_excluded(False):
 			self.update_image_display()
 			
 		self.boxable.write_to_db() # make sure the infromation changes that just occured are written to the DB

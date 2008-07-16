@@ -72,7 +72,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		self.image2d = EMImage2DCore(image,self)
 		
-		EMImage2D.allim[self]=0
+		#EMImage2D.allim[self]=0
 		
 		self.setFocusPolicy(Qt.StrongFocus)
 		
@@ -124,7 +124,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		if self.initimageflag == True:
 			self.image2d.initializeGL()
 			self.initimageflag = False
-		
+		#context = OpenGL.contextdata.getContext(None)
+		#print "Image2D context is", context
 		glPushMatrix()
 		self.image2d.render()
 		glPopMatrix()
@@ -181,8 +182,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def setActive(self,a,b,c,d):
 		return self.image2d.setActive(a,b,c,d)
 	
-	def getShapes(self):
-		return self.image2d.shapes
+	#def getShapes(self):
+		#return self.image2d.shapes
 	
 	def delShapes(self):
 		return self.image2d.delShapes()
@@ -204,17 +205,18 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def get_depth_for_height(self, height):
 		return 0
 	
-	def setFrozen(self,frozen):
-		self.image2d.setFrozen(frozen)
+	def set_frozen(self,frozen):
+		self.image2d.set_frozen(frozen)
 		
-	def setExcluded(self,isexcluded):
+	def set_excluded(self,isexcluded):
 		'''
 		The return values is whether or not the display should be updated
 		'''
-		return self.image2d.setExcluded(isexcluded)
+		return self.image2d.set_excluded(isexcluded)
 		
 	def getShapes(self):
 		return self.image2d.getShapes()
+
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
@@ -222,20 +224,7 @@ class EMImage2DCore:
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
 		
-		EMImage2D.allim[self]=0
 		self.parent = parent
-		
-# 		try: 
-# 			if EMImage2D.gq : pass
-# 		except:
-# 			EMImage2D.gq=GLU.gluNewQuadric()
-# 			GLU.gluQuadricDrawStyle(EMImage2D.gq,GLU.GLU_FILL)
-# 			GLU.gluQuadricNormals(EMImage2D.gq,GLU.GLU_SMOOTH)
-# 			GLU.gluQuadricNormals(EMImage2D.gq,GLU.GLU_NONE)
-# 			GLU.gluQuadricOrientation(EMImage2D.gq,GLU.GLU_OUTSIDE)
-# 			GLU.gluQuadricOrientation(EMImage2D.gq,GLU.GLU_INSIDE)
-# 			GLU.gluQuadricTexture(EMImage2D.gq,GL.GL_FALSE)
-
 		self.data=None				# EMData object to display
 		self.oldsize=(-1,-1)
 		self.datasize=(1,1)			# Dimensions of current image
@@ -282,11 +271,8 @@ class EMImage2DCore:
 		self.otherdatablend = False
 		self.other_tex_name = None
 		self.init_size_flag = True
-		self.sundry_inspector = None
 		self.frozen = False
 		self.isexcluded = False
-		#self.integratedwidget = None
-		#self.toggleFrozen()
 		self.hack_shrink = 1
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
@@ -314,10 +300,10 @@ class EMImage2DCore:
 		try: self.parent.updateGL()
 		except: pass
 		
-	def setFrozen(self,frozen):
+	def set_frozen(self,frozen):
 		self.frozen = frozen
 		
-	def setExcluded(self,isexcluded):
+	def set_excluded(self,isexcluded):
 		wasexcluded = self.isexcluded
 		
 		self.isexcluded = isexcluded
@@ -676,20 +662,21 @@ class EMImage2DCore:
 			if self.invert: self.inspector.setHist(hist,self.maxden,self.minden) 
 			else: self.inspector.setHist(hist,self.minden,self.maxden)
 	
-		GL.glPushMatrix()
-		GL.glTranslate(-self.origin[0],-self.origin[1],0.01)
-		GL.glScalef(self.scale,self.scale,1.0)
-		if self.hack_shrink != 1:
-#			print len(self.shapes),self.hack_shrink
-#			print self.hack_shrink
-			GL.glScale(1.0/self.hack_shrink,1.0/self.hack_shrink,1.0)
-			for k,s in self.shapes.items():
-				if self.active[0]==k: s.draw(None,self.active[1:])
-				else: s.draw()
-		else:
-		#print self.shapelist
-		  GL.glCallList(self.shapelist)
-		GL.glPopMatrix()
+		if self.shapelist != 0:
+			GL.glPushMatrix()
+			GL.glTranslate(-self.origin[0],-self.origin[1],0.1)
+			GL.glScalef(self.scale,self.scale,1.0)
+			if self.hack_shrink != 1:
+	#			print len(self.shapes),self.hack_shrink
+	#			print self.hack_shrink
+				GL.glScale(1.0/self.hack_shrink,1.0/self.hack_shrink,1.0)
+				#for k,s in self.shapes.items():
+					#if self.active[0]==k: s.draw(None,self.active[1:])
+					#else: s.draw()
+			#else:
+				##print self.shapelist
+			GL.glCallList(self.shapelist)
+			GL.glPopMatrix()
 		self.changec=self.data.get_attr("changecount")
 		
 		#if self.integratedwidget  != None:
@@ -714,17 +701,21 @@ class EMImage2DCore:
 
 	def getShapes(self):
 		return self.shapes
+	
 	def setupShapes(self):
-		if self.shapelist != 0: glDeleteLists(self.shapelist,1)
+		if self.shapelist != 0: GL.glDeleteLists(self.shapelist,1)
 		
-		self.shapelist = glGenLists(1)
+		self.shapelist = GL.glGenLists(1)
+		
+		#context = OpenGL.contextdata.getContext(None)
+		#print "Image2D context is", context,"display list is",self.shapelist
 		
 		# make our own cirle rather than use gluDisk or somesuch
-		glNewList(self.shapelist,GL_COMPILE)
+		GL.glNewList(self.shapelist,GL.GL_COMPILE)
 		for k,s in self.shapes.items():
 			if self.active[0]==k: s.draw(None,self.active[1:])
 			else: s.draw()
-		glEndList()
+		GL.glEndList()
 	
 	def showInspector(self,force=0):
 		if (self.supressInspector): return

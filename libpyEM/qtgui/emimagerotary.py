@@ -53,7 +53,7 @@ from emglobjects import EMOpenGLFlagsAndTools
 from emfloatingwidgets import EMGLRotaryWidget, EMGLView2D,EM3DWidget
 
 
-class EMImageMXRotary(QtOpenGL.QGLWidget):
+class EMImageRotary(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
 	in 'matrix' form on the display. The middle mouse button will bring up a
 	control-panel. The QT event loop must be running for this object to function
@@ -69,17 +69,17 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True);
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImageMXRotary.allim[self]=0
+		EMImageRotary.allim[self]=0
 		
 		
-		self.image_rotary = EMImageMXRotaryCore(data,self)
+		self.image_rotary = EMImageRotaryCore(data,self)
 		
 		self.imagefilename = None
 		
 		self.fov = 20
 		self.aspect = 1.0
-		self.zNear = 2000
-		self.zFar = 10000
+		self.zNear = 1
+		self.zFar = 5000
 		
 		self.animatables = []
 		
@@ -110,12 +110,11 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	def register_animatable(self,animatable):
 		self.animatables.append(animatable)
 	
-	def set_image_file_name(self,name):
+	def setImageFileName(self,name):
 		#print "set image file name",name
 		self.imagefilename = name
-		self.image_rotary.set_image_file_name(name)
 		
-	def get_image_file_name(self):
+	def getImageFileName(self):
 		return self.imagefilename
 	
 	def initializeGL(self):
@@ -151,7 +150,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
 		self.aspect = float(width)/float(height)
-		GLU.gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
+		GLU.gluPerspective(self.fov,self.aspect,1,2000)
 		#GL.glOrtho(0.0,width,0.0,height,-width,width)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
@@ -201,7 +200,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	def set_frozen(self,frozen):
 		self.image_rotary.set_frozen(frozen)
 	
-class EMImageMXRotaryCore:
+class EMImageRotaryCore:
 
 	#allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
@@ -215,18 +214,10 @@ class EMImageMXRotaryCore:
 			self.setData(data)
 		
 		self.rotary = EMGLRotaryWidget(self,-25,10,40,EMGLRotaryWidget.LEFT_ROTARY)
-		self.rotary.set_mmode("mxrotary")
 		self.widget = EM3DWidget(self,self.rotary)
 		self.widget.set_draw_frame(False)
 		
-		self.image_file_name = None	# keeps track of the image file name (if any) - book keeping purposes only
-		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via setData or set_image_file_name
-		
-		self.visible_mxs = 2	# the number of visible imagemxs in the rotary
-		self.mx_rows = 8	# the number of rows in any given imagemx
-		self.mx_cols = 8 # the number of columns in any given imagemx
-		self.start_mx = 0 # the starting index for the currently visible set of imagemxs
-
+		#self.rotary.set_shapes([],1.01)
 	def context(self):
 		# asking for the OpenGL context from the parent
 		return self.parent.context()
@@ -234,34 +225,8 @@ class EMImageMXRotaryCore:
 	def emit(self,signal,event,integer=None):
 		if integer != None:
 			self.parent.emit(signal,event,integer)
-		else:pass
-				
-	def update_rotary_position(self,inc):
-		self.start_mx += inc
-		num_per_view = self.mx_rows*self.mx_cols
-		
-		if inc > 0:
-			end_changed = self.visible_mxs
-			start_changed = self.visible_mxs-inc
-			
-			#print start_changed,end_changed
-			#for idx in range(start_changed,end_changed):
-			
-		elif inc < 0:
-			
-			end_changed = -inc
-			start_changed = 0
-			
-		else: return
-		
-		for idx in range(start_changed,end_changed):
-			n = idx + self.start_mx
-			start_idx = n*num_per_view
-			d = []
-			for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
-				
-			self.rotary[idx].setData(d)
-
+		else:
+			self.parent.emit(signal,event)	
 	def set_mmode(self,mode):
 		self.mmode = mode
 		self.rotary.set_mmode(mode)
@@ -281,15 +246,9 @@ class EMImageMXRotaryCore:
 	def height(self):
 		return self.parent.height()
 
-	def viewport_width(self):
-		return self.parent.width()
-	
-	def viewport_height(self):
-		return self.parent.height()
-	
-	def get_image_file_name(self):
+	def getImageFileName(self):
 		''' warning - could return none in some circumstances'''
-		try: return self.parent.get_image_file_name()
+		try: return self.parent.getImageFileName()
 		except: return None
 		
 	def setData(self,data):
@@ -297,26 +256,19 @@ class EMImageMXRotaryCore:
 			self.data = [] 
 			return
 		
-		self.emdata_list_cache = EMDataListCache(data)
-		self.__refresh_rotary()
-	
-	def set_image_file_name(self,name):
-		#print "set image file name",name
-		self.image_file_name = name
-		self.emdata_list_cache = EMDataListCache(name)
-		self.__refresh_rotary()
-	
-	def __refresh_rotary(self):
+		self.data = data
+		
 		self.rotary.clear_widgets()
-		num_per_view = self.mx_rows*self.mx_cols
-		for idx in range(self.start_mx,self.visible_mxs+self.start_mx):
-			start_idx = idx*num_per_view
-			d = []
-			for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
-			e = EMGLView2D(self,d)
-			e.setWidth(self.mx_rows*d[0].get_xsize())
-			e.setHeight(self.mx_cols*d[0].get_ysize())
-			self.rotary.add_widget(e)
+		for d in self.data:
+			w = EMGLView2D(self,d)
+			self.rotary.add_widget(w)
+			
+		#self.showInspector()		# shows the correct inspector if already open
+		#self.timer.start(25)
+		
+		# experimental for lst file writing
+		for i,d in enumerate(data):
+			d.set_attr("original_number",i)
 
 	def updateGL(self):
 		try: self.parent.updateGL()
@@ -324,6 +276,7 @@ class EMImageMXRotaryCore:
 
 
 	def render(self):
+		if not self.data : return
 		
 		glLoadIdentity()
 		
@@ -335,7 +288,6 @@ class EMImageMXRotaryCore:
 		#lr = self.rotary.get_lr_bt_nf()
 
 		GL.glPushMatrix()
-		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
 		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2])))
 		self.widget.paintGL()
 		GL.glPopMatrix()
@@ -374,86 +326,17 @@ class EMImageMXRotaryCore:
 		pass
 
 
-class EMDataListCache:
-	'''
-	This class designed primarily for memory management in the context of large lists of EMData objects.
-	
-	The main public interface is to acquired a list of EMData objects in a specific range
-	'''
-	#LIST_MODE = 'list_mode'
-	#FILE_MODE = 'file_mode'
-	def __init__(self,object,cache_size=100,start_idx=0):
-		if isinstance(object,list):
-			# in list mode there is no real caching
-			#self.mode = EMDataListCache.LIST_MODE
-			self.max_idx = len(object)
-			self.cache_size = self.max_idx
-			self.images = object
-			self.start_idx = 0
-		elif isinstance(object,str):
-			print "file mode"
-			#self.mode = EMDataListCache.FILE_MODE
-			if not os.path.exists(object):
-				print "error, the file you specified does not exist:",object
-				return
-			self.file_name = object
-			self.max_idx = EMUtil.get_image_count(self.file_name)
-			self.images = {}
-			self.start_idx = start_idx
-			if self.max_idx < cache_size:
-				self.cache_size = self.max_idx
-			else:
-				self.cache_size = cache_size
-			self.__refresh_cache()
-		else:
-			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
-			return
-	
-	def set_cache_size(self,cache_size):
-		self.cache_size = cache_size
-		if refresh: self.__refresh_cache()
-		
-	def set_start_idx(self,start_idx,refresh=True):
-		self.start_idx = start_idx
-		if refresh: self.__refresh_cache()
-	
-	def __refresh_cache(self):
-		cache = {}
-		for i in range(self.start_idx,self.start_idx+self.cache_size,1):
-			if i != 0:
-				idx = i % self.max_idx
-			else: idx = 0
-			try: 
-				cache[i] = self.images[idx]
-			except:
-				cache[i] = EMData(self.file_name,idx)
-				
-		self.images = cache
-	
-	def __getitem__(self,idx):
-		i = 0
-		if idx != 0: i = idx%self.max_idx
-		try:
-			return self.images[i]
-		except:
-			self.start_idx = idx - self.cache_size/2
-			#if self.start_idx < 0: 
-				#self.start_idx = self.start_idx % self.max_idx
-			self.__refresh_cache()
-		
-			
-			return self.images[i]
-			
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	GLUT.glutInit("")
-	window = EMImageMXRotary()
-	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3),test_image(2),test_image(1),test_image()]*50)
+	print "a"
+	window = EMImageRotary()
+	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)]*4)
 	else :
-		print "reading image"
-		#a=EMData.read_images(sys.argv[1])
-		window.set_image_file_name(sys.argv[1])
+		a=EMData.read_images(sys.argv[1])
+		window.setImageFileName(sys.argv[1])
+		window.setData(a)
 	window2=EMParentWin(window)
 	window2.show()
 	window2.resize(*window.get_optimal_size())

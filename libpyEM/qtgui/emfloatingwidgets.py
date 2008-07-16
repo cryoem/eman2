@@ -104,7 +104,6 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,100.0)
-		
 		glCallList(self.display_list)
 	
 	def __delete_list(self):
@@ -113,6 +112,10 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			self.display_list = None
 	
 	def __gen_2d_object_border_list(self):
+		
+		#context = self.object.context()
+		#context.makeCurrent()
+		#print "made",context,"current"
 		
 		self.__delete_list()
 		
@@ -411,6 +414,9 @@ class EM3DWidget:
 		self.draw_frame = True
 		
 		self.decoration = EM3DPlainBorderDecoration(self)
+		
+	def context(self):
+		return self.parent.context()
 	
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
@@ -615,6 +621,29 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	
 		self.mmode = None	# mouse mode - used for potentially emitting signal
 		
+		self.limits = None # Potentially a tuple of 2 values denoting rotation limits
+	
+	def __getitem__(self,idx):
+		i = idx-self.rotations
+		if i != 0:
+			i = i % len(self.widgets)
+		return self.widgets[i]
+	
+	def set_limits(self,limits):
+		
+		if len(limits) != 2:
+			print "error, the limits are supposed to consist of 2 values"
+			self.limits = None
+		else:
+			self.limits = limits
+		
+	def context(self):
+		return self.parent.context()
+	
+	def set_frozen(self,frozen):
+		idx = (-self.rotations)%len(self.widgets)
+		self.widgets[idx].set_frozen(frozen)
+	
 	def set_shapes(self,shapes,shrink):
 #		try:
 			idx = (-self.rotations)%len(self.widgets)
@@ -676,7 +705,10 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			self.rotations += self.anim_rotations
 			if self.mmode=="app":
 				self.parent.emit(QtCore.SIGNAL("mousedown"),None,[(-self.rotations)%len(self.widgets)])
+			elif self.mmode == "mxrotary":
+				self.parent.update_rotary_position(-self.anim_rotations)
 			return 0
+			
 		else:
 			for i in range(len(self.widgets)):
 				dt = self.__get_dt()
@@ -687,18 +719,18 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		return 1
 	
 	def render(self):
-		dtheta = self.__get_current_dtheta()
 		
-		if self.angle_information == None:
+		size = len(self.widgets)
+		if size == 0:
+			return
+		dtheta = self.__get_current_dtheta()
+		if self.angle_information == None or  size > len(self.angle_information):
 			self.angle_information = []
 			for i in range(len(self.widgets)):
 				angle = i*dtheta
 				self.angle_information.append([angle,angle,0])
 		
 		if self.is_animated: dt = self.__get_dt()
-		size = len(self.widgets)
-		if size == 0:
-			return
 		
 		points = []
 		for i in range(size):
@@ -755,7 +787,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			else:
 				print "unsupported"
 				return
-
+		
 			glPushMatrix()
 			glTranslate(points[i][0],points[i][1],points[i][2])
 			#glRotate(n,-1,1,1)
@@ -1450,6 +1482,13 @@ class EMGLView2D:
 		
 		self.decoration = EM3DPlainBorderDecoration(self)
 	
+	def set_frozen(self,frozen):
+		self.drawable.set_frozen(frozen)
+	
+	def context(self):
+		# asking for the OpenGL context from the parent
+		return self.parent.context()
+	
 	def set_shapes(self,shapes,shrink):
 		self.drawable.set_shapes(shapes,shrink)
 		
@@ -1473,7 +1512,6 @@ class EMGLView2D:
 		self.h = h
 		self.drawable.resizeEvent(self.width(),self.height())
 
-	
 	def width(self):
 		try:
 			return int(self.sizescale*self.w)

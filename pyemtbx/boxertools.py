@@ -485,7 +485,7 @@ class Cache:
 	Provides a cache of static size (as defined by self.maxsize)
 	As the cache grows objects are popped off the end of the self.cache tuple
 	
-	get the cache via getCache - iterate through it to find your object
+	get the cache via get_cache - iterate through it to find your object
 	add to the cache via add_to_cache
 	reset the size of the cache using set_max_size
 	'''
@@ -514,7 +514,7 @@ class Cache:
 			if len(self.cache) != self.maxsize:
 				print "error, the caching mechanism is not working correctly"
 				
-	def getCache(self):
+	def get_cache(self):
 		return self.cache
 
 	
@@ -531,7 +531,7 @@ class ExclusionImageCache:
 		def get_image(self,image_name,xsize,ysize):
 			excImage = None
 			# first see if the object is already stored
-			for object in self.getCache():
+			for object in self.get_cache():
 				if object.get_input_image_name() == image_name:
 					excImage = object
 					break;
@@ -665,7 +665,7 @@ class CFImageCache:
 		def get_image(self,image_name,flattenradius,shrink):
 			cfImage = None
 			# first see if the object is already stored
-			for object in self.getCache():
+			for object in self.get_cache():
 				if object.get_input_image_name() == image_name:
 					cfImage = object
 					break;
@@ -786,7 +786,7 @@ class SigmaImageCache:
 		def get_image(self,image_name,flattenradius,shrinkfactor,forceupdate=False):
 			# this loop takes care of things if the image is cached
 			object = None
-			for sigmaImage in self.getCache():
+			for sigmaImage in self.get_cache():
 				if sigmaImage.get_image_name() == image_name:
 					object = sigmaImage
 					break
@@ -885,7 +885,7 @@ class BinaryCircleImageCache:
 		def get_image(self,circleradius):
 			# this loop takes care of things if the image is cached
 			object = None
-			for circleImage in self.getCache():
+			for circleImage in self.get_cache():
 				if circleImage.get_circle_radius() == circleradius :
 					object = circleImage
 					break
@@ -936,13 +936,13 @@ class BigImageCache:
 
 		def __init__(self):
 			Cache.__init__(self)
-			self.set_max_size(4)
+			self.set_max_size(1)
 
 	
 		def get_image(self,image_name):
 			# this loop takes care of things if the image is cached
 			object = None
-			for bigImage in self.getCache():
+			for bigImage in self.get_cache():
 				if bigImage.get_image_name() == image_name:
 					object = bigImage
 					break
@@ -1005,7 +1005,7 @@ class FLCFImageCache:
 			
 			flcfImage = None
 			# first see if the object is already stored
-			for object in self.getCache():
+			for object in self.get_cache():
 				if object.get_input_image_name() == image_name:
 					flcfImage = object
 					break;

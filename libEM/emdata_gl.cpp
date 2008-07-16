@@ -53,6 +53,8 @@
 	#include "GL/glext.h"
 #endif	//__APPLE__
 
+
+					 
 // #ifdef _WIN32
 // 	PFNGLTEXIMAGE3DPROC glTexImage3D;
 // #else
@@ -128,6 +130,7 @@ unsigned int EMData::gen_gl_texture() const
 // 	return d;
 // }
 
+
 unsigned int EMData::render_amp8_gl_texture(int x0, int y0, int ixsize, int iysize, int bpl, float scale, int mingray, int maxgray,	float render_min, float render_max,float gamma,int flags) {
 	
 	string pixels = render_amp8(x0, y0, ixsize,iysize, bpl, scale, mingray, maxgray, render_min, render_max, gamma,flags);
@@ -140,6 +143,12 @@ unsigned int EMData::render_amp8_gl_texture(int x0, int y0, int ixsize, int iysi
 	
 	return tex_name;
 }
+
+// #include <FTGL/FTGL.h>
+// #include <FTGL/FTFont.h>
+// void render_font(const string& message) {
+// 	FTGLfont *font = ftglCreatePixmapFont( "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf" );
+// }
 
 // undef GL_GLEXT_PROTOTYPES
 #ifdef GL_GLEXT_PROTOTYPES

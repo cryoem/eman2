@@ -64,6 +64,7 @@ class EMShape:
 		"scrline"    R  G  B  x0 y0    x1    y1    linew
 		"scrlabel"   R  G  B  x0 y0    text  size	linew
 		"scrcircle"  R  G  B  x0 y0    r     linew
+		"point"  R  G  B  x0 y0 r
 """
 	def __init__(self,init=None) :
 		"""init is a list/tuple containing the above parameters describing the shape"""
@@ -158,6 +159,7 @@ class EMShape:
 			GL.glScalef((v2[0]-v[0])/2.0,(v2[1]-v[1])/2.0,1.0)
 			GL.glCallList(EMShape.dlists)
 			GL.glPopMatrix()
+			
 		elif s[0]=="rcircle":
 			v2=d2s(s[6],s[7])
 			GL.glLineWidth(s[8])
@@ -169,6 +171,15 @@ class EMShape:
 			GL.glScalef((v2[0]-v[0])/2.0,(v2[1]-v[1])/2.0,1.0)
 			GL.glCallList(EMShape.dlists)
 			GL.glPopMatrix()
+		
+		elif s[0]=="point":
+			GL.glColor(*col)
+			GL.glPointSize(s[6])
+			p1 = d2s(s[4],s[5])
+			GL.glBegin(GL.GL_POINTS)
+			GL.glVertex(p1[0],p1[1])
+			GL.glEnd()
+			
 		elif s[0]=="line":
 			GL.glColor(*col)
 			GL.glLineWidth(s[8])
@@ -176,6 +187,7 @@ class EMShape:
 			GL.glVertex(*d2s(s[4],s[5]))
 			GL.glVertex(*d2s(s[6],s[7]))
 			GL.glEnd()
+		
 		elif s[0]=="label":
 			GL.glPushMatrix()
 			if s[8]<0 :
@@ -268,6 +280,9 @@ class EMShape:
 			if (depth_testing_was_on):
 				GL.glEnable(GL.GL_DEPTH_TEST)
 
+	def getShape(self):
+		return self.shape
+	
 	def setShape(self,shape):
 		"""sets the shape to a new tuple/list"""
 		self.shape=list(shape)

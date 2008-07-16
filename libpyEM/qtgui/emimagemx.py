@@ -91,6 +91,9 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
 		if ( self.imagemx == None ): return
+		
+		#context = OpenGL.contextdata.getContext(None)
+		#print "Matrix context is", context
 		self.imagemx.render()
 
 	
@@ -185,8 +188,8 @@ class EMImageMXCore:
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
-		self.timer = QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+		#self.timer = QTimer()
+		#QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
 		self.initsizeflag = True
 		self.inspector=None
@@ -579,13 +582,12 @@ class EMImageMXCore:
 
 	def resizeEvent(self, width, height):
 		
-		#print width/(self.data[0].get_xsize()*self.scale)
 		if self.data and len(self.data)>0 : self.setNPerRow(int(width/(self.data[0].get_xsize()*self.scale)))
 		#except: pass
 		
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.parent.height() or self.data[0].get_xsize()*self.scale>self.parent.width()):
 			self.scale=min(float(self.parent.height())/self.data[0].get_ysize(),float(self.parent.width())/self.data[0].get_xsize())
-	
+
 	def isVisible(self,n):
 		try: return self.coords[n][4]
 		except: return False
