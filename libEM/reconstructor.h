@@ -222,12 +222,12 @@ namespace EMAN
 	
 	};
 
-	class FourierReconstructor2D : public Reconstructor
+	class FourierReconstructorSimple2D : public Reconstructor
 	{
 		public:
-			FourierReconstructor2D() {}
+			FourierReconstructorSimple2D() {}
 
-			virtual ~FourierReconstructor2D() { }
+			virtual ~FourierReconstructorSimple2D() { }
 			
 			virtual void setup();
 			
@@ -235,13 +235,13 @@ namespace EMAN
 		
 			virtual EMData *finish();
 
-			virtual string get_name() const { return "fourier2D"; }
+			virtual string get_name() const { return "fouriersimple2D"; }
 
 			virtual string get_desc() const { return "performs 2D reconstruction"; }
 			
 			static Reconstructor *NEW()
 			{
-				return new FourierReconstructor2D();
+				return new FourierReconstructorSimple2D();
 			}
 
 			

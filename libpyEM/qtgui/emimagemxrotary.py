@@ -52,6 +52,8 @@ from emglobjects import EMOpenGLFlagsAndTools
 
 from emfloatingwidgets import EMGLRotaryWidget, EMGLView2D,EM3DWidget
 
+from emimagemx import EMImageMxInspector2D
+
 
 class EMImageMXRotary(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
@@ -165,6 +167,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		depth = height/(2.0*tan(self.fov/2.0*pi/180.0))
 	
 		return depth
+	
 	def set_mmode(self,mode):
 		self.mmode = mode
 		self.image_rotary.set_mmode(mode)
@@ -226,14 +229,35 @@ class EMImageMXRotaryCore:
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via setData or set_image_file_name
 		
 		self.visible_mxs = 5	# the number of visible imagemxs in the rotary
-		self.mx_rows = 9	# the number of rows in any given imagemx
+		self.mx_rows = 9
 		self.mx_cols = 8 # the number of columns in any given imagemx
 		self.start_mx = 0 # the starting index for the currently visible set of imagemxs
+		
+		self.inspector = None
+		self.minden=0
+		self.maxden=1.0
+		self.mindeng=0
+		self.maxdeng=1.0
 
 	def context(self):
 		# asking for the OpenGL context from the parent
 		return self.parent.context()
 	
+	def set_mx_cols(self,cols):
+		self.mx_cols = cols
+		
+	def set_scale(self,scale):
+		pass
+	
+	def set_density_max(self,val):
+		self.maxden=val
+	
+	def set_density_min(self,val):
+		self.maxden=val
+
+	def set_gamma(self,val):
+		self.gamma=val
+
 	def emit(self,signal,event,integer=None):
 		if integer != None:
 			self.parent.emit(signal,event,integer)
@@ -358,10 +382,21 @@ class EMImageMXRotaryCore:
 	def dropEvent(self,event):
 		pass
 
+	def show_inspector(self,force=False):
+		if not force and self.inspector==None : return
+		self.init_inspector()
+		self.inspector.show()
+
+	def init_inspector(self):
+		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
+		self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def mousePressEvent(self, event):
-		self.widget.mousePressEvent(event)
-		self.updateGL()
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+			self.show_inspector(True)
+		else:
+			self.widget.mousePressEvent(event)
+			self.updateGL()
 	
 	def mouseMoveEvent(self, event):
 		self.widget.mouseMoveEvent(event)

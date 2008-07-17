@@ -180,7 +180,7 @@ class EMImageMXCore:
 		self.maxdeng=1.0
 		self.gamma=1.0
 		self.origin=(0,0)
-		self.nperrow=8
+		self.mx_cols=8
 		self.nshow=-1
 		self.mousedrag=None
 		self.nimg=0
@@ -264,12 +264,12 @@ class EMImageMXCore:
 
 		if (self.initsizeflag):
 			self.initsizeflag = False
-			if len(data)<self.nperrow :
+			if len(data)<self.mx_cols :
 				w=len(data)*(data[0].get_xsize()+2)
 				hfac = 1
 			else : 
-				w=self.nperrow*(data[0].get_xsize()+2)
-				hfac = len(data)/self.nperrow+1
+				w=self.mx_cols*(data[0].get_xsize()+2)
+				hfac = len(data)/self.mx_cols+1
 			hfac *= data[0].get_ysize()
 			if hfac > 512:
 				hfac = 512
@@ -333,7 +333,7 @@ class EMImageMXCore:
 		self.targetorigin=None
 		self.updateGL()
 		
-	def setScale(self,newscale):
+	def set_scale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		
 		if self.targetorigin : 
@@ -355,23 +355,26 @@ class EMImageMXCore:
 		self.scale=newscale
 		self.updateGL()
 		
-	def setDenMin(self,val):
+	def set_density_min(self,val):
 		self.minden=val
 		self.updateGL()
 		
-	def setDenMax(self,val):
+	def set_density_max(self,val):
 		self.maxden=val
 		self.updateGL()
 
-	def setGamma(self,val):
+	def set_mmode(self,mode):
+		self.mmode = mode
+
+	def set_gamma(self,val):
 		self.gamma=val
 		self.updateGL()
 	
-	def setNPerRow(self,val):
-		if self.nperrow==val: return
+	def set_mx_cols(self,val):
+		if self.mx_cols==val: return
 		if val<1 : val=1
 		
-		self.nperrow=val
+		self.mx_cols=val
 		self.updateGL()
 		try:
 			if self.inspector.nrow.value!=val :
@@ -416,7 +419,7 @@ class EMImageMXCore:
 			visiblerows = int(ceil(float(self.parent.height()-yoff)/(h+2)))
 		else: visiblerows = int(ceil(float(self.parent.height()-y)/(h+2)))
 				
-		maxrow = int(ceil(float(n)/self.nperrow))
+		maxrow = int(ceil(float(n)/self.mx_cols))
 		ystart =-y/(h+2)
 		if ystart < 0: ystart = 0
 		elif ystart > 0:
@@ -437,8 +440,8 @@ class EMImageMXCore:
 		else:
 			xstart = int(xstart)
 			visiblecols = visiblecols + xstart
-		if visiblecols > self.nperrow:
-			visiblecols = self.nperrow
+		if visiblecols > self.mx_cols:
+			visiblecols = self.mx_cols
 	
 		return [int(xstart),int(visiblecols),int(ystart),int(visiblerows)]
 	
@@ -453,7 +456,7 @@ class EMImageMXCore:
 		display_states.append(self.minden)
 		display_states.append(self.maxden)
 		display_states.append(self.gamma)
-		display_states.append(self.nperrow)
+		display_states.append(self.mx_cols)
 		display_states.append(self.draw_background)
 		display_states.append(self.img_num_offset)
 		if len(self.display_states) == 0:
@@ -545,7 +548,7 @@ class EMImageMXCore:
 			self.coords = {}
 			for row in range(ystart,visiblerows):
 				for col in range(xstart,visiblecols):
-					i = (row)*self.nperrow+col
+					i = (row)*self.mx_cols+col
 					#print i,n
 					if i >= n : break
 					tx = int((w+2)*(col) + x)
@@ -582,7 +585,7 @@ class EMImageMXCore:
 						print "weirdness"
 						print col,row,
 						continue
-					#i = (row+yoffset)*self.nperrow+col+xoffset
+					#i = (row+yoffset)*self.mx_cols+col+xoffset
 					#print i,':',row,col,tx,ty,tw,th
 					shown = True
 					#print rx,ry,tw,th,self.parent.width(),self.parent.height()
@@ -746,7 +749,7 @@ class EMImageMXCore:
 
 	def resizeEvent(self, width, height):
 		
-		if self.data and len(self.data)>0 : self.setNPerRow(int(width/(self.data[0].get_xsize()*self.scale)))
+		if self.data and len(self.data)>0 : self.set_mx_cols(int(width/(self.data[0].get_xsize()*self.scale)))
 		#except: pass
 		
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.parent.height() or self.data[0].get_xsize()*self.scale>self.parent.width()):
@@ -916,12 +919,12 @@ class EMImageMXCore:
 			
 	def wheelEvent(self, event):
 		if event.delta() > 0:
-			self.setScale( self.scale * self.mag )
+			self.set_scale( self.scale * self.mag )
 		elif event.delta() < 0:
-			self.setScale(self.scale * self.invmag )
+			self.set_scale(self.scale * self.invmag )
 		self.resizeEvent(self.parent.width(),self.parent.height())
 		# The self.scale variable is updated now, so just update with that
-		if self.inspector: self.inspector.setScale(self.scale)
+		if self.inspector: self.inspector.set_scale(self.scale)
 		
 	def leaveEvent(self):
 		if self.mousedrag:
@@ -1030,7 +1033,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.nrow = QtGui.QSpinBox(self)
 		self.nrow.setObjectName("nrow")
 		self.nrow.setRange(1,50)
-		self.nrow.setValue(self.target.nperrow)
+		self.nrow.setValue(self.target.mx_cols)
 		self.hbl.addWidget(self.nrow)
 		
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
@@ -1064,8 +1067,8 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.busy=0
 		
 		QtCore.QObject.connect(self.vals, QtCore.SIGNAL("triggered(QAction*)"), self.newValDisp)
-		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), target.setNPerRow)
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), target.set_mx_cols)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
@@ -1081,7 +1084,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.bsavelst, QtCore.SIGNAL("clicked(bool)"), self.saveLst)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
 	
-	def setScale(self,val):
+	def set_scale(self,val):
 		if self.busy : return
 		self.busy=1
 		self.scale.setValue(val)
@@ -1137,21 +1140,21 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.target.setValDisp(v2d)
 
 	def setAppMode(self,i):
-		self.target.mmode="app"
+		self.target.set_mmode("app")
 	
 	def setMeasMode(self,i):
-		self.target.mmode="meas"
+		self.target.set_mmode("meas")
 	
 	def setDelMode(self,i):
-		self.target.mmode="del"
+		self.target.set_mmode("del")
 	
 	def setDragMode(self,i):
-		self.target.mmode="drag"
+		self.target.set_mmode("drag")
 
 	def newMin(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.setDenMin(val)
+		self.target.set_density_min(val)
 
 		self.updBC()
 		self.busy=0
@@ -1159,7 +1162,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 	def newMax(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.setDenMax(val)
+		self.target.set_density_max(val)
 		self.updBC()
 		self.busy=0
 	
@@ -1178,7 +1181,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 	def newGamma(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.setGamma(val)
+		self.target.set_gamma(val)
 		self.busy=0
 
 	def updBC(self):

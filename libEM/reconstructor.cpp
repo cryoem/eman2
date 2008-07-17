@@ -74,7 +74,7 @@ template < typename T > void checked_delete( T*& x )
 template <> Factory < Reconstructor >::Factory()
 {
 	force_add(&FourierReconstructor::NEW);
-	force_add(&FourierReconstructor2D::NEW);
+	force_add(&FourierReconstructorSimple2D::NEW);
 	force_add(&BaldwinWoolfordReconstructor::NEW);
 	force_add(&WienerFourierReconstructor::NEW);
 	force_add(&BackProjectionReconstructor::NEW);
@@ -86,7 +86,7 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&bootstrap_nnctfReconstructor::NEW); 
 }
 
-void FourierReconstructor2D::setup()
+void FourierReconstructorSimple2D::setup()
 {
 	nx = params.set_default("nx",0);
 	
@@ -107,7 +107,7 @@ void FourierReconstructor2D::setup()
 	tmp_data->set_size(nx/2, nx);
 }
 			
-int FourierReconstructor2D::insert_slice(const EMData* const slice, const Transform3D & euler)
+int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const Transform3D & euler)
 {
 	
 	// Are these exceptions really necessary? (d.woolford)
@@ -229,7 +229,7 @@ int FourierReconstructor2D::insert_slice(const EMData* const slice, const Transf
 	
 }
 		
-EMData *FourierReconstructor2D::finish()
+EMData *FourierReconstructorSimple2D::finish()
 {
 	normalize_threed();
 	
