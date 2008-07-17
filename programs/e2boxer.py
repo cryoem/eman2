@@ -56,6 +56,8 @@ from time import time,sleep
 
 from sys import getrefcount
 
+from emglobjects import EMOpenGLFlagsAndTools
+
 if os.name == 'nt':
 	def kill(pid):
 		"""kill function for Win32"""
@@ -565,7 +567,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			y0=box.ycorner+box.ysize/2-1
 			self.get_2d_gui_image().addShape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			if not self.get_mx_gui_image().isVisible(box_num) : self.get_mx_gui_image().scrollTo(box_num,yonly=1)
-			self.get_mx_gui_image().setSelected(box_num)
+			self.get_mx_gui_image().set_selected(box_num)
 			self.mediator.update_all_image_displays()
 
 	def mouse_drag(self,event) :
@@ -820,6 +822,7 @@ class GUIbox:
 		self.guimx=EMImageMX()	
 		
 		self.guimxitp = None
+		self.guimxit = None
 		self.gen_image_thumbnails_widget()
 
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mouse_down)
@@ -836,11 +839,11 @@ class GUIbox:
 		
 		self.in_display_limbo = False	# a flag I am using to solve a problem
 		self.mmode = GUIbox.REFERENCE_ADDING
-		self.guiim.setmmode(0)
-		self.guimx.setmmode("app")
+		self.guiim.set_mmode(0)
+		self.guimx.set_mmode("app")
 		self.ppc = 1.0
 		self.mouseclicks = 0
-		
+
 		try:
 			E2loadappwin("boxer","imagegeom",self.guiimp)
 			E2loadappwin("boxer","matrixgeom",self.guimxp)
@@ -857,12 +860,11 @@ class GUIbox:
 			pass
 			
 		self.guiimp.show()
-		
 		if self.guimxitp != None:
 			self.guimxitp.show()
-			self.guimxitp.resize(*self.guimxit.get_optimal_size())
+			if isinstance(self.guimxit,EMImageRotary):	self.guimxitp.resize(*self.guimxit.get_optimal_size())
 			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
-			self.guimxit.set_frozen(self.boxable.is_frozen())
+			if isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(self.boxable.is_frozen())
 
 		self.ab_sel_mediator = AutoBoxerSelectionsMediator(self)
 		self.guictl=GUIboxPanel(self,self.ab_sel_mediator)
@@ -1052,7 +1054,7 @@ class GUIbox:
 		# Should this be here?
 		box_num = len(self.get_boxes())
 		if not self.guimx.isVisible(box_num) : self.guimx.scrollTo(box_num,yonly=1)
-		self.guimx.setSelected(box_num)
+		self.guimx.set_selected(box_num)
 		
 		# autoboxer will autobox depending on the state of its mode
 		if box.isref : self.autoboxer.add_reference(box)
@@ -1091,7 +1093,7 @@ class GUIbox:
 					self.guimxp = EMParentWin(self.guimx)
 					self.guimxp.setWindowTitle("Particles")
 					self.guimxp.show()
-					self.guimx.setSelected(0)
+					self.guimx.set_selected(0)
 	
 	def clear_displays(self):
 		self.ptcl = []
@@ -1146,7 +1148,7 @@ class GUIbox:
 			
 			self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
 			self.guiim.set_frozen(self.boxable.is_frozen())
-			if self.guimxitp != None: self.guimxit.set_frozen(self.boxable.is_frozen())
+			if self.guimxitp != None and isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(self.boxable.is_frozen())
 			self.guiim.set_excluded(self.boxable.is_excluded())
 			self.guictl.set_image_quality(self.boxable.get_quality())
 			self.box_display_update()
@@ -1190,13 +1192,19 @@ class GUIbox:
 				thumb = self.get_image_thumb(i)
 				#print "got thumb",i
 				self.imagethumbs[i] = thumb
-			
-			self.guimxit=EMImageRotary()		# widget for displaying image thumbs
+			glflags = EMOpenGLFlagsAndTools()
+			if not glflags.npt_textures_unsupported():
+				self.guimxit=EMImageRotary()		# widget for displaying image thumbs
+			else:
+				self.guimxit=EMImageMX()
+				
 			self.guimxit.setData(self.imagethumbs)
 			self.guimxitp = EMParentWin(self.guimxit)
 			self.guimxitp.setWindowTitle("Image Thumbs")
 			
+			print "set mouse mode..."
 			self.guimxit.set_mmode("app")
+			print "done"
 			app = QtGui.QApplication.instance()
 			app.setOverrideCursor(Qt.BusyCursor)
 		except: 
@@ -1260,7 +1268,7 @@ class GUIbox:
 		im=lc[0]
 		self.boxm = [event.x(),event.y(),im]
 		self.guiim.setActive(im,.9,.9,.4)
-		self.guimx.setSelected(im)
+		self.guimx.set_selected(im)
 		boxes = self.get_boxes()
 		self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		
@@ -1270,7 +1278,7 @@ class GUIbox:
 		im=lc[0]
 		self.boxm = [event.x(),event.y(),im]
 		self.guiim.setActive(im,.9,.9,.4)
-		self.guimx.setSelected(im)
+		#self.guimx.set_selected(im)
 		boxes = self.get_boxes()
 		#self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		#try:
@@ -1363,14 +1371,14 @@ class GUIbox:
 	def update_all_image_displays(self):
 		self.update_image_display()
 		self.update_mx_display()
-		self.guimxit.updateGL()
+		if self.guimxit != None: self.guimxit.updateGL()
 		
 		#context = contextdata.getContext(None)
 		#print context
 		
 	def update_image_display(self):
 		self.guiim.updateGL()
-		self.guimxit.updateGL()
+		if self.guimxit != None: self.guimxit.updateGL()
 		
 	def update_mx_display(self):
 		self.guimx.updateGL()
@@ -1485,7 +1493,7 @@ class GUIbox:
 				s = ns[shape].getShape()
 				othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
 	
-			self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink())
+			if isinstance(self.guimxit,EMImageRotary): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink())
 
 		self.update_all_image_displays()
 		
@@ -1671,7 +1679,7 @@ class GUIbox:
 			self.boxable.set_frozen(False) # If it was already frozen then setting to excluded overrides this
 			self.guiim.set_excluded(True)
 			self.guiim.set_frozen(False)
-			if self.guimxitp != None: self.guimxit.set_frozen(False)
+			if self.guimxitp != None and isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(False)
 			self.boxable.clear_and_cache(True) # tell boxable to clear its autoboxes and references -
 			self.clear_displays() # tell the display to clear itself
 		elif self.guiim.set_excluded(False):

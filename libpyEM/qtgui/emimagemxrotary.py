@@ -229,7 +229,7 @@ class EMImageMXRotaryCore:
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via setData or set_image_file_name
 		
 		self.visible_mxs = 5	# the number of visible imagemxs in the rotary
-		self.mx_rows = 9
+		self.mx_rows = 8 # the number of rows in any given imagemx
 		self.mx_cols = 8 # the number of columns in any given imagemx
 		self.start_mx = 0 # the starting index for the currently visible set of imagemxs
 		
@@ -238,6 +238,7 @@ class EMImageMXRotaryCore:
 		self.maxden=1.0
 		self.mindeng=0
 		self.maxdeng=1.0
+		self.gamma=1.0
 
 	def context(self):
 		# asking for the OpenGL context from the parent
@@ -251,13 +252,30 @@ class EMImageMXRotaryCore:
 	
 	def set_density_max(self,val):
 		self.maxden=val
+		self.update_min_max_gamma()
 	
 	def set_density_min(self,val):
-		self.maxden=val
-
+		self.minden=val
+		self.update_min_max_gamma()
+		
 	def set_gamma(self,val):
 		self.gamma=val
-
+		self.update_min_max_gamma()
+		
+	def update_min_max_gamma(self):
+		for i in range(self.visible_mxs):
+			w = self.rotary[i].get_drawable()
+			w.set_min_max_gamma(self.minden,self.maxden,self.gamma)
+			if  i == 0 and  self.inspector != None:	
+				self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
+		
+		self.updateGL()
+	
+	def set_den_range(self,minden,maxden):
+		self.minden=minden
+		self.maxden=maxden
+		self.update_min_max_gamma()
+		
 	def emit(self,signal,event,integer=None):
 		if integer != None:
 			self.parent.emit(signal,event,integer)
@@ -291,8 +309,13 @@ class EMImageMXRotaryCore:
 			for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 				
 			w.setData(d)
+			w.set_min_max_gamma(self.minden,self.maxden,self.gamma)
 			w.set_max_idx(self.emdata_list_cache.get_max_idx())
-		
+			
+			
+		w = self.rotary[idx].get_drawable()
+		self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
+
 	def set_mmode(self,mode):
 		self.mmode = mode
 		self.rotary.set_mmode(mode)
@@ -353,6 +376,13 @@ class EMImageMXRotaryCore:
 			e.get_drawable().set_draw_background(True) # saves HEAPS of time, makes interaction much smoother
 			self.rotary.add_widget(e)
 
+		w = self.rotary[0].get_drawable()
+		self.minden = w.get_density_min()
+		self.maxden = w.get_density_max()
+		self.mindeng = self.minden
+		self.maxdeng = self.maxden
+		self.gamma = w.get_gamma()
+		
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
@@ -389,7 +419,7 @@ class EMImageMXRotaryCore:
 
 	def init_inspector(self):
 		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
-		self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):

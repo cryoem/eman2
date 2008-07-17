@@ -143,7 +143,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		try: self.image2d.resizeEvent(width,height)
 		except: pass
 		
-	def setmmode(self,mode):
+	def set_mmode(self,mode):
 		self.image2d.mmode = mode
 	
 	def mousePressEvent(self, event):

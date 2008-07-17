@@ -120,7 +120,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		
 		try: self.imagemx.resizeEvent(width,height)
 		except: pass
-	def setmmode(self,mode):
+	def set_mmode(self,mode):
 		self.mmode = mode
 		self.imagemx.mmode = mode
 	
@@ -156,8 +156,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	def isVisible(self,n):
 		return self.imagemx.isVisible(n)
 	
-	def setSelected(self,n):
-		return self.imagemx.setSelected(n)
+	def set_selected(self,n):
+		return self.imagemx.set_selected(n)
 	
 	def scrollTo(self,n,yonly):
 		return self.imagemx.scrollTo(n,yonly)
@@ -187,6 +187,7 @@ class EMImageMXCore:
 		self.changec={}
 		self.mmode="drag"
 		self.selected=[]
+		self.hist = []
 		self.targetorigin=None
 		self.targetspeed=20.0
 		self.mag = 1.1				# magnification factor
@@ -248,6 +249,14 @@ class EMImageMXCore:
 	def set_max_idx(self,n):
 		self.display_states = []# empty display lists causes an automatic regeneration of the display list
 		self.max_idx = n
+		
+	def set_min_max_gamma(self,minden,maxden,gamma):
+		self.minden= minden
+		self.maxden= maxden
+		self.gamma = gamma
+		
+	def get_hist(self):
+		return self.hist
 	
 	def getImageFileName(self):
 		''' warning - could return none in some circumstances'''
@@ -257,7 +266,7 @@ class EMImageMXCore:
 	def __del__(self):
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 		
-	def setData(self,data):
+	def setData(self,data,data_only=False):
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return
@@ -321,11 +330,20 @@ class EMImageMXCore:
 		try: self.parent.updateGL()
 		except: pass
 		
-	def setDenRange(self,x0,x1):
+	def set_den_range(self,x0,x1):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
 		self.minden=x0
 		self.maxden=x1
 		self.updateGL()
+	
+	def get_density_min(self):
+		return self.minden
+	
+	def get_density_max(self):
+		return self.maxden
+	
+	def get_gamma(self):
+		return self.gamma
 	
 	def setOrigin(self,x,y):
 		"""Set the display origin within the image"""
@@ -381,11 +399,11 @@ class EMImageMXCore:
 				self.inspector.nrow.setValue(val)
 		except: pass
 		
-	def setNShow(self,val):
+	def set_n_show(self,val):
 		self.nshow=val
 		self.updateGL()
 
-	def setInvert(self,val):
+	def set_invert(self,val):
 		if val: self.invert=1
 		else : self.invert=0
 		self.updateGL()
@@ -404,10 +422,10 @@ class EMImageMXCore:
 				self.origin=(self.origin[0]+vec[0]*self.targetspeed,self.origin[1]+vec[1]*self.targetspeed)
 			#self.updateGL()
 	
-	def getMaxMatrixRanges(self):
-		return getMatrixRanges(0,0)
+	def get_max_matrix_ranges(self):
+		return get_matrix_ranges(0,0)
 	
-	def getMatrixRanges(self,x,y):
+	def get_matrix_ranges(self,x,y):
 		n=len(self.data)
 		w=int(min(self.data[0].get_xsize()*self.scale,self.parent.width()))
 		h=int(min(self.data[0].get_ysize()*self.scale,self.parent.height()))
@@ -466,6 +484,7 @@ class EMImageMXCore:
 			for i in range(len(display_states)):
 				
 				if display_states[i] != self.display_states[i]:
+					self.display_states = display_states
 					return True
 		
 		return False
@@ -517,7 +536,7 @@ class EMImageMXCore:
 			else: pixden=(255,0)
 			
 			n=len(self.data)
-			hist=numpy.zeros(256)
+			self.hist=numpy.zeros(256)
 			#if len(self.coords)>n : self.coords=self.coords[:n] # dont know what this does? Had to comment out, changing from a list to a dictionary
 			glColor(0.5,1.0,0.5)
 			glLineWidth(2)
@@ -539,7 +558,7 @@ class EMImageMXCore:
 			w=int(min(self.data[0].get_xsize()*self.scale,self.parent.width()))
 			h=int(min(self.data[0].get_ysize()*self.scale,self.parent.height()))
 			
-			[xstart,visiblecols,ystart,visiblerows] = self.getMatrixRanges(x,y)
+			[xstart,visiblecols,ystart,visiblerows] = self.get_matrix_ranges(x,y)
 				
 			#print "rows",visiblerows-ystart,"cols",visiblecols-xstart
 			#print "yoffset",yoff,"xoffset",xoff
@@ -599,7 +618,7 @@ class EMImageMXCore:
 							
 					
 					hist2=numpy.fromstring(a[-1024:],'i')
-					hist+=hist2
+					self.hist+=hist2
 					# render labels		
 					if drawlabel:
 						if self.render_mode == EMImageMXCore.FTGL:
@@ -677,7 +696,7 @@ class EMImageMXCore:
 				except: self.targetorigin=(0,0)
 				self.targetspeed=100.0
 			
-			if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
+			if self.inspector : self.inspector.set_hist(self.hist,self.minden,self.maxden)
 		else:
 			glCallList(self.main_display_list)
 		
@@ -775,12 +794,13 @@ class EMImageMXCore:
 #		print n,self.origin
 #		self.updateGL()
 	
-	def setSelected(self,numlist):
+	def set_selected(self,numlist):
 		"""pass an integer or a list/tuple of integers which should be marked as 'selected' in the
 		display"""
 		if isinstance(numlist,int) : numlist=[numlist]
 		if isinstance(numlist,list) or isinstance(numlist,tuple) : self.selected=numlist
 		else : self.selected=[]
+		self.display_states = []
 		self.updateGL()
 	
 	def setValDisp(self,v2d):
@@ -792,12 +812,12 @@ class EMImageMXCore:
 	def showInspector(self,force=0):
 		if (self.supressInspector): return
 		if not force and self.inspector==None : return
-		self.initInspector()
+		self.init_inspector()
 		self.inspector.show()
 
-	def initInspector(self):
+	def init_inspector(self):
 		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
-		self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def scrtoimg(self,vec):
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
@@ -890,6 +910,7 @@ class EMImageMXCore:
 #				print dropAction
 			elif self.mmode=="app" and lc:
 				self.parent.emit(QtCore.SIGNAL("mousedown"),event,lc)
+				self.set_selected(lc)
 					
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
@@ -1195,12 +1216,12 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0)
 		self.maxs.setValue(x1)
-		self.target.setDenRange(x0,x1)
+		self.target.set_den_range(x0,x1)
 		
-	def setHist(self,hist,minden,maxden):
+	def set_hist(self,hist,minden,maxden):
 		self.hist.setData(hist,minden,maxden)
 
-	def setLimits(self,lowlim,highlim,curmin,curmax):
+	def set_limits(self,lowlim,highlim,curmin,curmax):
 		self.lowlim=lowlim
 		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)
