@@ -6,7 +6,9 @@
 // Includes ====================================================================
 #include <emdata.h>
 #include <emutil.h>
+#ifdef EMAN2_USING_FTGL
 #include <emftgl.h>
+#endif
 #include <imageio.h>
 #include <sparx/SparxIO.h>
 #include <testutil.h>
