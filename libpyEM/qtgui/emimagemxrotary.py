@@ -225,7 +225,7 @@ class EMImageMXRotaryCore:
 		self.image_file_name = None	# keeps track of the image file name (if any) - book keeping purposes only
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via setData or set_image_file_name
 		
-		self.visible_mxs = 2	# the number of visible imagemxs in the rotary
+		self.visible_mxs = 4	# the number of visible imagemxs in the rotary
 		self.mx_rows = 8	# the number of rows in any given imagemx
 		self.mx_cols = 8 # the number of columns in any given imagemx
 		self.start_mx = 0 # the starting index for the currently visible set of imagemxs

@@ -18,15 +18,19 @@ namespace EMAN {
 class EMFTGL
 {
 	public:
-#ifdef LINUX
-		EMFTGL() : font_file_name("/usr/share/fonts/liberation/LiberationSans-Regular.ttf" ), face_size(32), depth(32), use_display_lists(true), mode(TEXTURE) {};
-#endif
 #ifdef __APPLE__
 		EMFTGL() : font_file_name("/Library/Fonts/Arial.ttf" ), face_size(32), depth(32), use_display_lists(true), mode(TEXTURE) {};
-#endif 
+#else
 #ifdef WIN32
 		EMFTGL() : font_file_name("" ), face_size(32), depth(32), use_display_lists(true), mode(TEXTURE) {};
+#else
+		EMFTGL() : font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf"), face_size(32), depth(32), use_display_lists(true), mode(TEXTURE) {};
 #endif
+
+
+#endif 
+
+
 		~EMFTGL() {};
 		
 		
