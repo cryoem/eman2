@@ -86,6 +86,16 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
 		
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		#glEnable(GL_DEPTH_TEST)
+		#print "Initializing"
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+
+		
 	def paintGL(self):
 		if not self.parentWidget() : return
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -103,7 +113,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,width,0.0,height)
+		GL.glOrtho(0.0,width,0.0,height,-50,50)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
@@ -154,6 +164,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 class EMImageMXCore:
 
 	allim=WeakKeyDictionary()
+	FTGL = "ftgl"
+	GLUT = "glut"
 	def __init__(self, data=None,parent=None):
 		self.parent = parent
 		self.data=None
@@ -195,6 +207,17 @@ class EMImageMXCore:
 		self.inspector=None
 		if data:
 			self.setData(data)
+			
+		self.text_dls = {} # a map of display lists for single characters
+		self.text_bbs = {}
+		
+		try:
+			e = EMFTGL()
+			self.render_mode = EMImageMXCore.FTGL
+			EMFTGL.set_face_size(16)
+			#EMFTGL.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
+		except:
+			self.render_mode = EMImageMXCore.GLUT
 	
 	def getImageFileName(self):
 		''' warning - could return none in some circumstances'''
@@ -262,8 +285,7 @@ class EMImageMXCore:
 			d.set_attr("original_number",i)
 
 		self.updateGL()
-			
-		
+	
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
@@ -390,7 +412,12 @@ class EMImageMXCore:
 		return [int(xstart),int(visiblecols),int(ystart),int(visiblerows)]
 	
 	def render(self):
-
+		
+		
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,100.0)
+		
 		if not self.data : return
 		for i in self.data:
 			self.changec[i]=i.get_attr("changecount")
@@ -482,21 +509,55 @@ class EMImageMXCore:
 				
 				hist2=numpy.fromstring(a[-1024:],'i')
 				hist+=hist2
-				# render labels
-
+				# render labels		
 				if drawlabel:
-					tagy = ty
-					glColor(*txtcol)
-					for v in self.valstodisp:
-						if v=="Img #" : self.renderText(tx,tagy,"%d"%i)
-						else : 
-							av=self.data[i].get_attr(v)
-							if isinstance(av,float) : avs="%1.4g"%av
-							else: avs=str(av)
-							try: self.renderText(tx,tagy,str(avs))
-							except: self.renderText(tx,tagy,"------")
-						tagy+=16
-				
+					if self.render_mode == EMImageMXCore.FTGL:
+						
+						glEnable(GL_TEXTURE_2D)
+						lighting = glIsEnabled(GL_LIGHTING)
+						glEnable(GL_LIGHTING)
+						glEnable(GL_NORMALIZE)
+						tagy = ty
+						glColor(*txtcol)
+						glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
+						glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
+						glMaterial(GL_FRONT,GL_SHININESS,100.0)
+						for v in self.valstodisp:
+							glPushMatrix()
+							glTranslate(tx,tagy,0)
+							bbox = self.bounding_box(str(i))
+							glScale(self.scale,self.scale,self.scale)
+							glTranslate(-bbox[0]+2,-bbox[1]+2,-bbox[2]+2)
+							glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
+							glRotate(-10,1,0,0)
+							glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
+							
+							if v=="Img #" : EMFTGL.render_string(str(i))
+							else : 
+								av=self.data[i].get_attr(v)
+								if isinstance(av,float) : avs="%1.4g"%av
+								else: avs=str(av)
+								try: EMFTGL.render_string(str(avs))
+								except:	EMFTGL.render_string("------")
+							tagy+=16
+							glPopMatrix()
+						if not lighting:
+							glDisable(GL_LIGHTING)
+						glDisable(GL_TEXTURE_2D)
+					elif self.render_mode == EMImageMXCore.GLUT:
+						tagy = ty
+						glColor(*txtcol)
+						for v in self.valstodisp:
+							if v=="Img #" : self.renderText(tx,tagy,"%d"%i)
+							else : 
+								av=self.data[i].get_attr(v)
+								if isinstance(av,float) : avs="%1.4g"%av
+								else: avs=str(av)
+								try: self.renderText(tx,tagy,str(avs))
+								except:	self.renderText(tx,tagy,"------")
+							tagy+=16
+							
+					
 				self.coords[i]=(tx,ty,tw,th)
 				
 				#try: self.coords[i]=(tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
@@ -523,7 +584,28 @@ class EMImageMXCore:
 			self.targetspeed=100.0
 		
 		if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
+	
+	def bounding_box(self,character):
+		try: self.text_bbs[character]
+		except:
+			 self.text_bbs[character] = EMFTGL.bounding_box(character)
+			 
+		return self.text_bbs[character]
+			
+	def render_character(self,character):
+		#EMFTGL.render_string(character)
+		try: self.text_dls[character]
+		except:
+			char = str(character)
+			dl = glGenLists(1)
+			glNewList(dl,GL_COMPILE)
+			EMFTGL.render_string(char)
+			glEndList()
 		
+			self.text_dls[character] = dl
+		
+		glCallList(self.text_dls[character])
+	
 	def texture(self,a,x,y,w,h):
 		
 		tex_name = glGenTextures(1)

@@ -49,18 +49,19 @@ from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DObject, Camera
+from emglobjects import EMImage3DObject, Camera2,EMViewportDepthTools
 
 MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DFont(EMImage3DObject):
 	def __init__(self, parent=None):
+		EMImage3DObject.__init__(self)
 		self.parent = parent
 		
 		self.init()
 		self.initialized = True
 		
-		self.cam=Camera()
+		self.cam=Camera2(self)
 		
 		self.brightness = 0
 		self.contrast = 10
@@ -68,14 +69,30 @@ class EM3DFont(EMImage3DObject):
 		self.glbrightness = 0.0
 		self.rank = 1
 		self.inspector=None
-
+		
+		self.vdtools = EMViewportDepthTools(self)
+		self.font_renderer = EMFTGL()
+		self.font_renderer.set_face_size(32)
+		self.font_renderer.set_depth(2)
+		self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
+		
 	def getType(self):
 		return "Font"
 	
+	def updateGL(self):
+		self.parent.updateGL()
+
+	def viewportHeight(self):
+		return self.parent.height()
+	
+	def veiwportWidth(self):
+		return self.parent.width()
 
 	def render(self):
 		#if (not isinstance(self.data,EMData)): return
 		
+		
+		glEnable(GL_NORMALIZE)
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
 		depth = glIsEnabled(GL_DEPTH_TEST)
@@ -94,6 +111,12 @@ class EM3DFont(EMImage3DObject):
 		else:
 			glDisable(GL_LIGHTING)
 
+		glPushMatrix()
+		self.cam.position(True)
+		# the ones are dummy variables atm... they don't do anything
+		self.vdtools.update(1,1)
+		glPopMatrix()
+
 		self.cam.position()
 			
 		glShadeModel(GL_SMOOTH)
@@ -109,18 +132,23 @@ class EM3DFont(EMImage3DObject):
 		glEnable(GL_NORMALIZE)
 		#HERE
 		glPushMatrix()
-		glScalef(10,10,1)
+		glEnable(GL_TEXTURE_2D)
+		bbox = self.font_renderer.bounding_box("hello world")
+		glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
+		self.font_renderer.render_string("hello world");
 		
-		glBegin(GL_QUADS)
-		glNormal(-1,-1,1)
-		glVertex(-0.5,-0.5,0)
-		glNormal(-1,1,1)
-		glVertex( 0.5,-0.5,0)
-		glNormal(1,1,1)
-		glVertex( 0.5, 0.5,0)
-		glNormal(1,-1,1)
-		glVertex(-0.5, 0.5,0)
-		glEnd()
+		#glScalef(10,10,1)
+		
+		#glBegin(GL_QUADS)
+		#glNormal(-1,-1,1)
+		#glVertex(-0.5,-0.5,0)
+		#glNormal(-1,1,1)
+		#glVertex( 0.5,-0.5,0)
+		#glNormal(1,1,1)
+		#glVertex( 0.5, 0.5,0)
+		#glNormal(1,-1,1)
+		#glVertex(-0.5, 0.5,0)
+		#glEnd()
 		glPopMatrix()
 		
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
@@ -252,6 +280,34 @@ class EM3DFont(EMImage3DObject):
 		if not self.inspector : self.inspector=EMFontInspector(self)
 		return self.inspector
 		
+	def mousePressEvent(self, event):
+#		lc=self.scrtoimg((event.x(),event.y()))
+		if event.button()==Qt.MidButton:
+			if not self.inspector or self.inspector ==None:
+				return
+			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
+			self.resizeEvent()
+			self.showInspector(1)
+		else:
+			self.cam.mousePressEvent(event)
+		
+		self.updateGL()
+		
+	def mouseMoveEvent(self, event):
+		self.cam.mouseMoveEvent(event)
+		self.updateGL()
+	
+	def mouseReleaseEvent(self, event):
+		self.cam.mouseReleaseEvent(event)
+		self.updateGL()
+			
+	def wheelEvent(self, event):
+		self.cam.wheelEvent(event)
+		self.updateGL()
+		
+	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+		
 class EM3DFontWidget(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
 	A QT widget for rendering 3D EMData objects.
@@ -264,7 +320,7 @@ class EM3DFontWidget(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 
 		EM3DFontWidget.allim[self]=0
-		self.isosurface = EM3DFont(self)
+		self.font_renderer = EM3DFont(self)
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
@@ -300,7 +356,7 @@ class EM3DFontWidget(QtOpenGL.QGLWidget):
 		
 		
 		glPushMatrix()
-		self.isosurface.render()
+		self.font_renderer.render()
 		glPopMatrix()
 
 	def resizeGL(self, width, height):
@@ -322,28 +378,28 @@ class EM3DFontWidget(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.isosurface.resizeEvent()
+		self.font_renderer.resizeEvent()
 
 	def setInit(self):
-		self.isosurface.setInit()
+		self.font_renderer.setInit()
 
 	def showInspector(self,force=0):
-		self.isosurface.showInspector()
+		self.font_renderer.showInspector()
 	
 	def closeEvent(self,event) :
-		self.isosurface.closeEvent(event)
+		self.font_renderer.closeEvent(event)
 		
 	def mousePressEvent(self, event):
-		self.isosurface.mousePressEvent(event)
+		self.font_renderer.mousePressEvent(event)
 		
 	def mouseMoveEvent(self, event):
-		self.isosurface.mouseMoveEvent(event)
+		self.font_renderer.mouseMoveEvent(event)
 	
 	def mouseReleaseEvent(self, event):
-		self.isosurface.mouseReleaseEvent(event)
+		self.font_renderer.mouseReleaseEvent(event)
 			
 	def wheelEvent(self, event):
-		self.isosurface.wheelEvent(event)
+		self.font_renderer.wheelEvent(event)
 
 	def get_render_dims_at_depth(self, depth):
 		# This function returns the width and height of the renderable 

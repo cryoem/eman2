@@ -144,12 +144,6 @@ unsigned int EMData::render_amp8_gl_texture(int x0, int y0, int ixsize, int iysi
 	return tex_name;
 }
 
-// #include <FTGL/FTGL.h>
-// #include <FTGL/FTFont.h>
-// void render_font(const string& message) {
-// 	FTGLfont *font = ftglCreatePixmapFont( "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf" );
-// }
-
 // undef GL_GLEXT_PROTOTYPES
 #ifdef GL_GLEXT_PROTOTYPES
 #undef GL_GLEXT_PROTOTYPES

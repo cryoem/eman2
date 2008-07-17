@@ -288,7 +288,12 @@ class EMImageRotaryCore:
 		#lr = self.rotary.get_lr_bt_nf()
 
 		GL.glPushMatrix()
+		#FTGL.print_message("hello world",36);
 		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2])))
+		glPushMatrix()
+		glTranslate(160,0,0);
+		#FTGL.print_message("hello hello",36);
+		glPopMatrix()
 		self.widget.paintGL()
 		GL.glPopMatrix()
 	

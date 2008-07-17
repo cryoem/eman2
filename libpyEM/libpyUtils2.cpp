@@ -6,6 +6,7 @@
 // Includes ====================================================================
 #include <emdata.h>
 #include <emutil.h>
+#include <emftgl.h>
 #include <imageio.h>
 #include <sparx/SparxIO.h>
 #include <testutil.h>
@@ -401,7 +402,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("twoD_to_3D_ali")
 		.staticmethod("get_biggest_cluster")
 		.staticmethod("merge_peaks")
-);
+	);
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(
     class_< EMAN::Util::KaiserBessel, EMAN_Util_KaiserBessel_Wrapper >("KaiserBessel", init< const EMAN::Util::KaiserBessel& >())
@@ -644,5 +645,31 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("SetVal", &TFList::SetVal)
         .def("GetVal", &TFList::GetVal)
     ;
+#ifdef EMAN2_USING_FTGL
+	scope* EMAN_FTGL_scope = new scope(
+	class_< EMAN::EMFTGL>("EMFTGL", init<  >())
+	.def("render_string", &EMAN::EMFTGL::render_string)
+	.def("bounding_box", &EMAN::EMFTGL::bounding_box)
+	.def("set_font_file_name",&EMAN::EMFTGL::set_font_file_name)
+	.def("get_font_file_name",&EMAN::EMFTGL::get_font_file_name)
+	.def("set_face_size",&EMAN::EMFTGL::set_face_size)
+	.def("get_face_size",&EMAN::EMFTGL::get_face_size)
+	.def("set_depth",&EMAN::EMFTGL::set_depth)
+	.def("get_depth",&EMAN::EMFTGL::get_depth)
+	.def("set_using_display_lists",&EMAN::EMFTGL::set_using_display_lists)
+	.def("get_using_display_lists",&EMAN::EMFTGL::get_using_display_lists)
+	
+// 	.staticmethod("render_string")
+// 	.staticmethod("bounding_box")
+// 	.staticmethod("set_font_file_name")
+// 	.staticmethod("get_font_file_name")
+// 	.staticmethod("set_face_size")
+// 	.staticmethod("get_face_size")
+// 	.staticmethod("set_depth")
+// 	.staticmethod("get_depth")
+			
+	);
+	delete EMAN_FTGL_scope;
+#endif
 }
 
