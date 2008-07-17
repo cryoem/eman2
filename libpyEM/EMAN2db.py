@@ -82,6 +82,8 @@ def db_open_env(url):
 def db_read_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
 		db=db_open_env(fsp)
+		if len(parms)>1 and parms[1] : nodata=1
+		else: nodata=0
 		if "?" in fsp:
 			keys=fsp[fsp.rfind("?")+1:].split(",")
 			for i in range(len(keys)):
@@ -89,7 +91,7 @@ def db_read_image(self,fsp,*parms):
 				except: pass
 			key=keys[parms[0]]
 		else: key=parms[0]
-		x=db.get(key,target=self)
+		x=db.get(key,target=self,nodata=nodata)
 		if not x : raise Exception("Could not access "+str(fsp)+" "+str(parms))
 		return None
 	return self.read_image_c(fsp,*parms)
@@ -465,7 +467,7 @@ class DBDict:
 	def has_key(self,key):
 		return self.bdb.has_key(dumps(key,-1))
 
-	def get(self,key,txn=None,target=None):
+	def get(self,key,txn=None,target=None,nodata=0):
 		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
 		object in which to place the read object"""
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
@@ -478,11 +480,15 @@ class DBDict:
 				target.set_size(r["nx"],r["ny"],r["nz"])
 				ret=target
 			else: ret=EMData(r["nx"],r["ny"],r["nz"])
+			# metadata
 			n=loads(self.bdb.get(fkey+dumps(key,-1)))
-			ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
 			for i in k: ret.set_attr(i,r[i])
+
+			# binary data
+			if not nodata: 
+				ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			return ret
 		return r
 		
