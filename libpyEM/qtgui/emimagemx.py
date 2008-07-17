@@ -235,6 +235,10 @@ class EMImageMXCore:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 	
+	def force_update(self):
+		''' If display lists are being used this will force a regeneration'''
+		self.display_states = []
+	
 	def set_img_num_offset(self,n):
 		self.display_states = [] # empty display lists causes an automatic regeneration of the display list
 		self.img_num_offset = n
@@ -930,11 +934,13 @@ class EMImageMXCore:
 			if  not event.modifiers()&Qt.ShiftModifier:
 				self.parent.emit(QtCore.SIGNAL("mouseup"),event,lc)
 			else:
+				self.display_states = []
 				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
 		elif self.mmode=="del" and lc:
 			self.data.pop(lc[0])
 			try: self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
 			except: pass
+			self.display_states = []
 			# redundancy here - the parent may call updateGL...
 			self.updateGL()
 			
