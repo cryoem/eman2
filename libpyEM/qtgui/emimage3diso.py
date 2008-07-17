@@ -127,14 +127,15 @@ class EMIsosurface(EMImage3DObject):
 		normalize = glIsEnabled(GL_NORMALIZE)
 		
 		
-		glDisable(GL_CULL_FACE)
+		glEnable(GL_CULL_FACE)
+		glCullFace(GL_BACK)
 		glEnable(GL_DEPTH_TEST)
 		glEnable(GL_NORMALIZE)
 		#glDisable(GL_NORMALIZE)
 		if ( self.wire ):
-			glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+			glPolygonMode(GL_FRONT,GL_LINE);
 		else:
-			glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+			glPolygonMode(GL_FRONT,GL_FILL);
 		
 		if self.light:
 			glEnable(GL_LIGHTING)
@@ -187,7 +188,7 @@ class EMIsosurface(EMImage3DObject):
 			
 		if ( lighting ): glEnable(GL_LIGHTING)
 		else: glDisable(GL_LIGHTING)
-		if ( cull ): glEnable(GL_CULL_FACE)
+		if ( not cull ): glDisable(GL_CULL_FACE)
 		else: glDisable(GL_CULL_FACE)
 		if ( depth ): glEnable(GL_DEPTH_TEST)
 		else : glDisable(GL_DEPTH_TEST)
@@ -196,8 +197,8 @@ class EMIsosurface(EMImage3DObject):
 		
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		else: glPolygonMode(GL_FRONT, GL_FILL)
-		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
-		else: glPolygonMode(GL_BACK, GL_FILL)
+		#if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
+		#else: glPolygonMode(GL_BACK, GL_FILL)
 		
 		#print "total time is", time()-a
 			
@@ -492,7 +493,8 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		
 		GL.glClearColor(0,0,0,0)
-		
+		glEnable(GL_CULL_FACE)
+		glCullFace(GL_BACK)
 		# For the time being
 		
 	def paintGL(self):

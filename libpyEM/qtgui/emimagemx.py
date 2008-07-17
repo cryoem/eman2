@@ -95,7 +95,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
 
-		
+		glEnable(GL_CULL_FACE)
+		glCullFace(GL_BACK)
 	def paintGL(self):
 		if not self.parentWidget() : return
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -210,9 +211,12 @@ class EMImageMXCore:
 		if data:
 			self.setData(data)
 			
-		self.text_dls = {} # a map of display lists for single characters
-		self.text_bbs = {}
+		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a 
 		
+		self.use_display_list = True # whether or not a display list should be used to render the main view - if on, this will save on time if the view is unchanged
+		self.main_display_list = 0	# if using display lists, the stores the display list
+		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
+		self.draw_background = False # if true  will paint the background behind the images black using a polygon - useful in 3D contexts, ie i the emimagemxrotary
 		try:
 			e = EMFTGL()
 			self.render_mode = EMImageMXCore.FTGL
@@ -221,14 +225,28 @@ class EMImageMXCore:
 			self.font_renderer.set_using_display_lists(True)
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 			
-			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
+			#self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
 		except:
 			self.render_mode = EMImageMXCore.GLUT
+			
+	def __del__(self):
+		if self.main_display_list != 0:
+			glDeleteLists(self.main_display_list,1)
+			self.main_display_list = 0
 	
 	def set_img_num_offset(self,n):
+		self.display_states = [] # empty display lists causes an automatic regeneration of the display list
 		self.img_num_offset = n
 		
+	def set_draw_background(self,bool):
+		self.display_states = []# empty display lists causes an automatic regeneration of the display list
+		self.draw_background = bool
+		
+	def set_use_display_list(self,bool):
+		self.use_display_list = bool
+		
 	def set_max_idx(self,n):
+		self.display_states = []# empty display lists causes an automatic regeneration of the display list
 		self.max_idx = n
 	
 	def getImageFileName(self):
@@ -267,6 +285,7 @@ class EMImageMXCore:
 			self.updateGL()
 			return
 		
+		self.display_states = []
 		self.nimg=len(data)
 		
 		self.minden=data[0].get_attr("mean")
@@ -296,7 +315,7 @@ class EMImageMXCore:
 		for i,d in enumerate(data):
 			d.set_attr("original_number",i)
 
-		self.updateGL()
+		#self.updateGL()
 	
 	def updateGL(self):
 		try: self.parent.updateGL()
@@ -423,179 +442,245 @@ class EMImageMXCore:
 	
 		return [int(xstart),int(visiblecols),int(ystart),int(visiblerows)]
 	
-	def render(self):
+	def display_state_changed(self):
+		display_states = []
+		display_states.append(self.parent.width())
+		display_states.append(self.parent.height())
+		display_states.append(self.origin[0])
+		display_states.append(self.origin[1])
+		display_states.append(self.scale)
+		display_states.append(self.invert)
+		display_states.append(self.minden)
+		display_states.append(self.maxden)
+		display_states.append(self.gamma)
+		display_states.append(self.nperrow)
+		display_states.append(self.draw_background)
+		display_states.append(self.img_num_offset)
+		if len(self.display_states) == 0:
+			self.display_states = display_states
+			return True
+		else:
+			for i in range(len(display_states)):
+				
+				if display_states[i] != self.display_states[i]:
+					return True
 		
-		
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,100.0)
-		
-		if not self.data : return
-		for i in self.data:
-			self.changec[i]=i.get_attr("changecount")
-		
-		if not self.invert : pixden=(0,255)
-		else: pixden=(255,0)
-		
-		n=len(self.data)
-		hist=numpy.zeros(256)
-		#if len(self.coords)>n : self.coords=self.coords[:n] # dont know what this does? Had to comment out, changing from a list to a dictionary
-		glColor(0.5,1.0,0.5)
-		glLineWidth(2)
-		try:
-			# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
-			# contrast the text labels...
-			a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
-			ims=[ord(pv) for pv in a]
-			if sum(ims)>32768 : txtcol=(0.0,0.0,0.2)
-			else : txtcol=(.8,.8,1.0)
-		except: txtcol=(1.0,1.0,1.0)
-
-		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
-		self.tex_names = []
-
-		self.nshown=0
-		
-		x,y=-self.origin[0],-self.origin[1]
-		w=int(min(self.data[0].get_xsize()*self.scale,self.parent.width()))
-		h=int(min(self.data[0].get_ysize()*self.scale,self.parent.height()))
-		
-		[xstart,visiblecols,ystart,visiblerows] = self.getMatrixRanges(x,y)
+		return False
 			
-		#print "rows",visiblerows-ystart,"cols",visiblecols-xstart
-		#print "yoffset",yoff,"xoffset",xoff
-		#print (visiblerows-ystart)*(h+2)+yoff,self.parent.height(),"height",(visiblecols-xstart)*(w+2)+xoff,self.parent.width()		
-		invscale=1.0/self.scale
-		self.coords = {}
-		for row in range(ystart,visiblerows):
-			for col in range(xstart,visiblecols):
-				i = (row)*self.nperrow+col
-				#print i,n
-				if i >= n : break
-				tx = int((w+2)*(col) + x)
-				ty = int((h+2)*(row) + y)
-				tw = w
-				th = h
-				rx = 0	#render x
-				ry = 0	#render y
-				#print "Prior",i,':',row,col,tx,ty,tw,th,y,x
-				drawlabel = True
-				if (tx+tw) > self.parent.width():
-					tw = int(self.parent.width()-tx)
-				elif tx<0:
-					drawlabel=False
-					rx = int(ceil(-tx*invscale))
-					tw=int(w+2+tx)
-					tx = 0
-					
+	
+	def render(self):
+		if not self.data : return
+		
+		render = False
+		if self.use_display_list:
+			
+			if self.display_state_changed():
+				if self.main_display_list != 0:
+					glDeleteLists(self.main_display_list,1)
+					self.main_display_list = 0
 
-				#print h,row,y
-				#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
-				if (ty+th) > self.parent.height():
-					#print "ty + th was greater than",self.parent.height()
-					th = int(self.parent.height()-ty)
-				elif ty<0:
-					drawlabel = False
-					ry = int(ceil(-ty*invscale))
-					th=int(h+2+ty)
-					ty = 0
-					
-				#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
-				if th < 0 or tw < 0:
-					#weird += 1
-					print "weirdness"
-					print col,row,
-					continue
-				#i = (row+yoffset)*self.nperrow+col+xoffset
-				#print i,':',row,col,tx,ty,tw,th
-				shown = True
-				#print rx,ry,tw,th,self.parent.width(),self.parent.height()
-				if not self.glflags.npt_textures_unsupported():
-					a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-					self.texture(a,tx,ty,tw,th)
-				else:
-					a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
-					glRasterPos(tx,ty)
-					glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
-						
-				
-				hist2=numpy.fromstring(a[-1024:],'i')
-				hist+=hist2
-				# render labels		
-				if drawlabel:
-					if self.render_mode == EMImageMXCore.FTGL:
-						
-						glEnable(GL_TEXTURE_2D)
-						lighting = glIsEnabled(GL_LIGHTING)
-						glEnable(GL_LIGHTING)
-						glEnable(GL_NORMALIZE)
-						tagy = ty
-						glColor(*txtcol)
-						glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
-						glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
-						glMaterial(GL_FRONT,GL_SHININESS,100.0)
-						for v in self.valstodisp:
-							glPushMatrix()
-							glTranslate(tx,tagy,0)
-							bbox = self.bounding_box(str(i))
-							glScale(self.scale,self.scale,self.scale)
-							glTranslate(-bbox[0]+2,-bbox[1]+2,-bbox[2]+2)
-							glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
-							glRotate(-10,1,0,0)
-							glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
-							
-							if v=="Img #" : self.font_renderer.render_string(str((i+self.img_num_offset)%self.max_idx))
-							else : 
-								av=self.data[i].get_attr(v)
-								if isinstance(av,float) : avs="%1.4g"%av
-								else: avs=str(av)
-								try: self.font_renderer.render_string(str(avs))
-								except:	self.font_renderer.render_string("------")
-							tagy+=16
-							glPopMatrix()
-						if not lighting:
-							glDisable(GL_LIGHTING)
-						glDisable(GL_TEXTURE_2D)
-					elif self.render_mode == EMImageMXCore.GLUT:
-						tagy = ty
-						glColor(*txtcol)
-						for v in self.valstodisp:
-							if v=="Img #" : self.renderText(tx,tagy,"%d"%( (i+self.img_num_offset)%self.max_idx))
-							else : 
-								av=self.data[i].get_attr(v)
-								if isinstance(av,float) : avs="%1.4g"%av
-								else: avs=str(av)
-								try: self.renderText(tx,tagy,str(avs))
-								except:	self.renderText(tx,tagy,"------")
-							tagy+=16
-							
-					
-				self.coords[i]=(tx,ty,tw,th)
-				
-				#try: self.coords[i]=(tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
-				#except: self.coords.append((tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
-				if shown : self.nshown+=1
+			if self.main_display_list == 0:
+				self.main_display_list = glGenLists(1)
+				glNewList(self.main_display_list,GL_COMPILE)
+				render = True
+		else: render = True
 		
-		for i in self.selected:
-			try:
-				data = self.coords[i]	
-				glColor(0.5,0.5,1.0)
-				glBegin(GL_LINE_LOOP)
-				glVertex(data[0],data[1])
-				glVertex(data[0]+data[2],data[1])
-				glVertex(data[0]+data[2],data[1]+data[3])
-				glVertex(data[0],data[1]+data[3])
+		if render: 
+			if self.draw_background:
+				light = glIsEnabled(GL_LIGHTING)
+				glDisable(GL_LIGHTING)
+				
+				glColor(.9,.9,.9)
+				glBegin(GL_QUADS)
+				glVertex(0,0,-0.01)
+				glColor(.9,.9,.9)
+				glVertex(self.parent.width(),0,-0.01)
+				glColor(.9,.9,.9)
+				glVertex(self.parent.width(),self.parent.height(),-0.01)
+				glColor(.9,.9,.9)
+				glVertex(0,self.parent.height(),-0.01)
 				glEnd()
-			except:
-				# this means the box isn't visible!
-				pass
-		# If the user is lost, help him find himself again...
-		if self.nshown==0 : 
-			try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
-			except: self.targetorigin=(0,0)
-			self.targetspeed=100.0
+				if light: glEnable(GL_LIGHTING)
+			
+			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+			glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
+			glMaterial(GL_FRONT,GL_SHININESS,100.0)
+			
+			
+			for i in self.data:
+				self.changec[i]=i.get_attr("changecount")
+			
+			if not self.invert : pixden=(0,255)
+			else: pixden=(255,0)
+			
+			n=len(self.data)
+			hist=numpy.zeros(256)
+			#if len(self.coords)>n : self.coords=self.coords[:n] # dont know what this does? Had to comment out, changing from a list to a dictionary
+			glColor(0.5,1.0,0.5)
+			glLineWidth(2)
+			try:
+				# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
+				# contrast the text labels...
+				a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
+				ims=[ord(pv) for pv in a]
+				if sum(ims)>32768 : txtcol=(0.0,0.0,0.2)
+				else : txtcol=(.8,.8,1.0)
+			except: txtcol=(1.0,1.0,1.0)
+	
+			if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
+			self.tex_names = []
+	
+			self.nshown=0
+			
+			x,y=-self.origin[0],-self.origin[1]
+			w=int(min(self.data[0].get_xsize()*self.scale,self.parent.width()))
+			h=int(min(self.data[0].get_ysize()*self.scale,self.parent.height()))
+			
+			[xstart,visiblecols,ystart,visiblerows] = self.getMatrixRanges(x,y)
+				
+			#print "rows",visiblerows-ystart,"cols",visiblecols-xstart
+			#print "yoffset",yoff,"xoffset",xoff
+			#print (visiblerows-ystart)*(h+2)+yoff,self.parent.height(),"height",(visiblecols-xstart)*(w+2)+xoff,self.parent.width()		
+			invscale=1.0/self.scale
+			self.coords = {}
+			for row in range(ystart,visiblerows):
+				for col in range(xstart,visiblecols):
+					i = (row)*self.nperrow+col
+					#print i,n
+					if i >= n : break
+					tx = int((w+2)*(col) + x)
+					ty = int((h+2)*(row) + y)
+					tw = w
+					th = h
+					rx = 0	#render x
+					ry = 0	#render y
+					#print "Prior",i,':',row,col,tx,ty,tw,th,y,x
+					drawlabel = True
+					if (tx+tw) > self.parent.width():
+						tw = int(self.parent.width()-tx)
+					elif tx<0:
+						drawlabel=False
+						rx = int(ceil(-tx*invscale))
+						tw=int(w+2+tx)
+						tx = 0
+						
+	
+					#print h,row,y
+					#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
+					if (ty+th) > self.parent.height():
+						#print "ty + th was greater than",self.parent.height()
+						th = int(self.parent.height()-ty)
+					elif ty<0:
+						drawlabel = False
+						ry = int(ceil(-ty*invscale))
+						th=int(h+2+ty)
+						ty = 0
+						
+					#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
+					if th < 0 or tw < 0:
+						#weird += 1
+						print "weirdness"
+						print col,row,
+						continue
+					#i = (row+yoffset)*self.nperrow+col+xoffset
+					#print i,':',row,col,tx,ty,tw,th
+					shown = True
+					#print rx,ry,tw,th,self.parent.width(),self.parent.height()
+					if not self.glflags.npt_textures_unsupported():
+						a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+						self.texture(a,tx,ty,tw,th)
+					else:
+						a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+						glRasterPos(tx,ty)
+						glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
+							
+					
+					hist2=numpy.fromstring(a[-1024:],'i')
+					hist+=hist2
+					# render labels		
+					if drawlabel:
+						if self.render_mode == EMImageMXCore.FTGL:
+							
+							glEnable(GL_TEXTURE_2D)
+							lighting = glIsEnabled(GL_LIGHTING)
+							glEnable(GL_LIGHTING)
+							glEnable(GL_NORMALIZE)
+							tagy = ty
+							glColor(*txtcol)
+							glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
+							glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
+							glMaterial(GL_FRONT,GL_SHININESS,100.0)
+							for v in self.valstodisp:
+								glPushMatrix()
+								glTranslate(tx,tagy,0)
+								bbox = self.bounding_box(str(i))
+								glScale(self.scale,self.scale,self.scale)
+								glTranslate(-bbox[0]+2,-bbox[1]+2,-bbox[2]+2)
+								glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
+								glRotate(-10,1,0,0)
+								glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
+								
+								
+								if v=="Img #" : 
+									#print i,self.img_num_offset,self.max_idx,(i+self.img_num_offset)%self.max_idx,
+									self.font_renderer.render_string(str((i+self.img_num_offset)%self.max_idx))
+								else : 
+									av=self.data[i].get_attr(v)
+									if isinstance(av,float) : avs="%1.4g"%av
+									else: avs=str(av)
+									try: self.font_renderer.render_string(str(avs))
+									except:	self.font_renderer.render_string("------")
+								tagy+=16
+								glPopMatrix()
+							if not lighting:
+								glDisable(GL_LIGHTING)
+							glDisable(GL_TEXTURE_2D)
+						elif self.render_mode == EMImageMXCore.GLUT:
+							tagy = ty
+							glColor(*txtcol)
+							for v in self.valstodisp:
+								if v=="Img #" : self.renderText(tx,tagy,"%d"%( (i+self.img_num_offset)%self.max_idx))
+								else : 
+									av=self.data[i].get_attr(v)
+									if isinstance(av,float) : avs="%1.4g"%av
+									else: avs=str(av)
+									try: self.renderText(tx,tagy,str(avs))
+									except:	self.renderText(tx,tagy,"------")
+								tagy+=16
+								
+						
+					self.coords[i]=(tx,ty,tw,th)
+					
+					#try: self.coords[i]=(tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
+					#except: self.coords.append((tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
+					if shown : self.nshown+=1
+			
+			for i in self.selected:
+				try:
+					data = self.coords[i]	
+					glColor(0.5,0.5,1.0)
+					glBegin(GL_LINE_LOOP)
+					glVertex(data[0],data[1])
+					glVertex(data[0]+data[2],data[1])
+					glVertex(data[0]+data[2],data[1]+data[3])
+					glVertex(data[0],data[1]+data[3])
+					glEnd()
+				except:
+					# this means the box isn't visible!
+					pass
+			# If the user is lost, help him find himself again...
+			if self.nshown==0 : 
+				try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
+				except: self.targetorigin=(0,0)
+				self.targetspeed=100.0
+			
+			if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
+		else:
+			glCallList(self.main_display_list)
 		
-		if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
+		if self.use_display_list and render :
+			glEndList()
+			glCallList(self.main_display_list)
 	
 	def bounding_box(self,character):
 		try: self.text_bbs[character]
@@ -603,20 +688,6 @@ class EMImageMXCore:
 			 self.text_bbs[character] = self.font_renderer.bounding_box(character)
 			 
 		return self.text_bbs[character]
-			
-	#def render_character(self,character):
-		##EMFTGL.render_string(character)
-		#try: self.text_dls[character]
-		#except:
-			#char = str(character)
-			#dl = glGenLists(1)
-			#glNewList(dl,GL_COMPILE)
-			#self.font_renderer.render_string(char)
-			#glEndList()
-		
-			#self.text_dls[character] = dl
-		
-		#glCallList(self.text_dls[character])
 	
 	def texture(self,a,x,y,w,h):
 		
@@ -651,16 +722,15 @@ class EMImageMXCore:
 		
 		glTexCoord2f(0,0)
 		glVertex2f(-width,height)
-		
-		glTexCoord2f(1,0)
-		glVertex2f(width,height)
+				
+		glTexCoord2f(0,1)
+		glVertex2f(-width,-height)
 			
 		glTexCoord2f(1,1)
 		glVertex2f(width,-height)
 		
-		glTexCoord2f(0,1)
-		glVertex2f(-width,-height)
-			
+		glTexCoord2f(1,0)
+		glVertex2f(width,height)
 		glEnd()
 		
 		glDisable(GL_TEXTURE_2D)
@@ -669,7 +739,7 @@ class EMImageMXCore:
 		self.tex_names.append(tex_name)
 	
 	def renderText(self,x,y,s):
-#	        print 'in render Text'
+#	     print 'in render Text'
 		glRasterPos(x+2,y+2)
 		for c in s:
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))

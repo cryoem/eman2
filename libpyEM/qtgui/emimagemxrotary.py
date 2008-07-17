@@ -225,8 +225,8 @@ class EMImageMXRotaryCore:
 		self.image_file_name = None	# keeps track of the image file name (if any) - book keeping purposes only
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via setData or set_image_file_name
 		
-		self.visible_mxs = 4	# the number of visible imagemxs in the rotary
-		self.mx_rows = 8	# the number of rows in any given imagemx
+		self.visible_mxs = 5	# the number of visible imagemxs in the rotary
+		self.mx_rows = 9	# the number of rows in any given imagemx
 		self.mx_cols = 8 # the number of columns in any given imagemx
 		self.start_mx = 0 # the starting index for the currently visible set of imagemxs
 
@@ -260,14 +260,14 @@ class EMImageMXRotaryCore:
 		for idx in range(start_changed,end_changed):
 			n = idx + self.start_mx
 			start_idx = n*num_per_view
+			w = self.rotary[idx].get_drawable()
+			w.set_img_num_offset(start_idx%self.emdata_list_cache.get_max_idx())
+			
 			d = []
 			for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 				
-			self.rotary[idx].setData(d)
-			w = self.rotary[idx].get_drawable()
-			#print start_idx%self.emdata_list_cache.get_max_idx()
-			
-			w.set_img_num_offset(start_idx%self.emdata_list_cache.get_max_idx())
+			w.setData(d)
+			w.set_max_idx(self.emdata_list_cache.get_max_idx())
 		
 	def set_mmode(self,mode):
 		self.mmode = mode
@@ -325,6 +325,8 @@ class EMImageMXRotaryCore:
 			e.setHeight(self.mx_cols*d[0].get_ysize())
 			e.get_drawable().set_img_num_offset(start_idx%self.emdata_list_cache.get_max_idx())
 			e.get_drawable().set_max_idx(self.emdata_list_cache.get_max_idx())
+			e.get_drawable().set_use_display_list(True) # saves HEAPS of time, makes interaction much smoother
+			e.get_drawable().set_draw_background(True) # saves HEAPS of time, makes interaction much smoother
 			self.rotary.add_widget(e)
 
 	def updateGL(self):
@@ -391,7 +393,7 @@ class EMDataListCache:
 	'''
 	#LIST_MODE = 'list_mode'
 	#FILE_MODE = 'file_mode'
-	def __init__(self,object,cache_size=100,start_idx=0):
+	def __init__(self,object,cache_size=1000,start_idx=0):
 		if isinstance(object,list):
 			# in list mode there is no real caching
 			#self.mode = EMDataListCache.LIST_MODE
@@ -400,7 +402,7 @@ class EMDataListCache:
 			self.images = object
 			self.start_idx = 0
 		elif isinstance(object,str):
-			print "file mode"
+			#print "file mode"
 			#self.mode = EMDataListCache.FILE_MODE
 			if not os.path.exists(object):
 				print "error, the file you specified does not exist:",object
@@ -430,6 +432,7 @@ class EMDataListCache:
 		if refresh: self.__refresh_cache()
 	
 	def __refresh_cache(self):
+		#print "regenerating CACHE"
 		cache = {}
 		for i in range(self.start_idx,self.start_idx+self.cache_size,1):
 			if i != 0:
