@@ -197,6 +197,8 @@ class EMImageMXCore:
 		self.coords={}
 		self.nshown=0
 		self.valstodisp=["Img #"]
+		self.img_num_offset = 0		# used by emimagemxrotary for display correct image numbers
+		self.max_idx = 0		# used by emimagemxrotary for display correct image numbers
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
@@ -212,12 +214,22 @@ class EMImageMXCore:
 		self.text_bbs = {}
 		
 		try:
-			e = EMFTGL()
+			e = adsEMFTGL()
 			self.render_mode = EMImageMXCore.FTGL
-			EMFTGL.set_face_size(16)
-			#EMFTGL.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
+			self.font_renderer = EMFTGL()
+			self.font_renderer.set_face_size(16)
+			self.font_renderer.set_using_display_lists(True)
+			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+			
+			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
 		except:
 			self.render_mode = EMImageMXCore.GLUT
+	
+	def set_img_num_offset(self,n):
+		self.img_num_offset = n
+		
+	def set_max_idx(self,n):
+		self.max_idx = n
 	
 	def getImageFileName(self):
 		''' warning - could return none in some circumstances'''
@@ -279,7 +291,7 @@ class EMImageMXCore:
 		
 		#self.showInspector()		# shows the correct inspector if already open
 		#self.timer.start(25)
-		
+		self.max_idx = len(data)
 		# experimental for lst file writing
 		for i,d in enumerate(data):
 			d.set_attr("original_number",i)
@@ -532,13 +544,13 @@ class EMImageMXCore:
 							glRotate(-10,1,0,0)
 							glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
 							
-							if v=="Img #" : EMFTGL.render_string(str(i))
+							if v=="Img #" : self.font_renderer.render_string(str((i+self.img_num_offset)%self.max_idx))
 							else : 
 								av=self.data[i].get_attr(v)
 								if isinstance(av,float) : avs="%1.4g"%av
 								else: avs=str(av)
-								try: EMFTGL.render_string(str(avs))
-								except:	EMFTGL.render_string("------")
+								try: self.font_renderer.render_string(str(avs))
+								except:	self.font_renderer.render_string("------")
 							tagy+=16
 							glPopMatrix()
 						if not lighting:
@@ -548,7 +560,7 @@ class EMImageMXCore:
 						tagy = ty
 						glColor(*txtcol)
 						for v in self.valstodisp:
-							if v=="Img #" : self.renderText(tx,tagy,"%d"%i)
+							if v=="Img #" : self.renderText(tx,tagy,"%d"%( (i+self.img_num_offset)%self.max_idx))
 							else : 
 								av=self.data[i].get_attr(v)
 								if isinstance(av,float) : avs="%1.4g"%av
@@ -588,23 +600,23 @@ class EMImageMXCore:
 	def bounding_box(self,character):
 		try: self.text_bbs[character]
 		except:
-			 self.text_bbs[character] = EMFTGL.bounding_box(character)
+			 self.text_bbs[character] = self.font_renderer.bounding_box(character)
 			 
 		return self.text_bbs[character]
 			
-	def render_character(self,character):
-		#EMFTGL.render_string(character)
-		try: self.text_dls[character]
-		except:
-			char = str(character)
-			dl = glGenLists(1)
-			glNewList(dl,GL_COMPILE)
-			EMFTGL.render_string(char)
-			glEndList()
+	#def render_character(self,character):
+		##EMFTGL.render_string(character)
+		#try: self.text_dls[character]
+		#except:
+			#char = str(character)
+			#dl = glGenLists(1)
+			#glNewList(dl,GL_COMPILE)
+			#self.font_renderer.render_string(char)
+			#glEndList()
 		
-			self.text_dls[character] = dl
+			#self.text_dls[character] = dl
 		
-		glCallList(self.text_dls[character])
+		#glCallList(self.text_dls[character])
 	
 	def texture(self,a,x,y,w,h):
 		
