@@ -12,9 +12,7 @@ using std::vector;
 using std::map;
 
 #include <FTGL/FTGL.h>
-#include <FTGL/FTGLExtrdFont.h>
-#include <FTGL/FTGLPixmapFont.h>
-#include <FTGL/FTGLTextureFont.h>
+#include <FTGL/FTFont.h>
 namespace EMAN {
 
 class EMFTGL
@@ -31,6 +29,16 @@ class EMFTGL
 #endif
 		~EMFTGL() {};
 		
+		
+		enum FontMode {
+			EXTRUDE,
+			PIXMAP,
+			TEXTURE,
+			BITMAP,
+			OUTLINE,
+			POLYGON
+		};
+		
 		void render_string(const string& message);
 		vector<float> bounding_box(const string& message);
 				
@@ -38,17 +46,15 @@ class EMFTGL
 		void set_face_size(const unsigned int size) { face_size = size; }
 		void set_depth(const unsigned int d ) { depth = d; }
 		void set_using_display_lists(const bool b) { use_display_lists = b; }
+		void set_font_mode(const FontMode m ) { mode = m; }
 		
 		string get_font_file_name() { return font_file_name; }
 		unsigned int get_face_size() {return face_size; }
 		unsigned int get_depth() { return depth; }
 		bool get_using_display_lists() { return use_display_lists; }
+		FontMode get_font_mode() { return mode; }
 		
-		enum FontMode {
-			EXTRUDE,
-			PIXMAP,
-			TEXTURE
-		};
+		
 		
 	private:
 		

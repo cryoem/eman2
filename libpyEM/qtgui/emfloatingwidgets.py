@@ -1482,6 +1482,9 @@ class EMGLView2D:
 		
 		self.decoration = EM3DPlainBorderDecoration(self)
 	
+	def get_drawable(self):
+		return self.drawable
+	
 	def set_frozen(self,frozen):
 		self.drawable.set_frozen(frozen)
 	

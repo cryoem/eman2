@@ -214,14 +214,14 @@ class EMImageMXCore:
 		self.text_bbs = {}
 		
 		try:
-			e = adsEMFTGL()
+			e = EMFTGL()
 			self.render_mode = EMImageMXCore.FTGL
 			self.font_renderer = EMFTGL()
 			self.font_renderer.set_face_size(16)
 			self.font_renderer.set_using_display_lists(True)
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 			
-			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
+			#self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
 		except:
 			self.render_mode = EMImageMXCore.GLUT
 	

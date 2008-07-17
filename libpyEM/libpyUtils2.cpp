@@ -658,18 +658,20 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 	.def("get_depth",&EMAN::EMFTGL::get_depth)
 	.def("set_using_display_lists",&EMAN::EMFTGL::set_using_display_lists)
 	.def("get_using_display_lists",&EMAN::EMFTGL::get_using_display_lists)
+	.def("set_font_mode",&EMAN::EMFTGL::set_font_mode)
+	.def("get_font_mode",&EMAN::EMFTGL::get_font_mode)
 	
-// 	.staticmethod("render_string")
-// 	.staticmethod("bounding_box")
-// 	.staticmethod("set_font_file_name")
-// 	.staticmethod("get_font_file_name")
-// 	.staticmethod("set_face_size")
-// 	.staticmethod("get_face_size")
-// 	.staticmethod("set_depth")
-// 	.staticmethod("get_depth")
-			
 	);
 	delete EMAN_FTGL_scope;
+	
+	enum_< EMAN::EMFTGL::FontMode >("FTGLFontMode")
+		.value("EXTRUDE", EMAN::EMFTGL::EXTRUDE)
+		.value("TEXTURE", EMAN::EMFTGL::TEXTURE)
+		.value("PIXMAP", EMAN::EMFTGL::PIXMAP)
+		.value("BITMAP", EMAN::EMFTGL::BITMAP)
+		.value("OUTLINE", EMAN::EMFTGL::OUTLINE)
+		.value("POLYGON", EMAN::EMFTGL::POLYGON)
+	;
 #endif
 }
 

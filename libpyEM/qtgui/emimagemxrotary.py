@@ -99,10 +99,13 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	def timeout(self):
 		
 		if len(self.animatables) == 0: return
-		
 		for i,animatable in enumerate(self.animatables):
-			if not animatable.animate(time.time()):
-				# this could be dangerous
+			try:
+				if not animatable.animate(time.time()):
+					# this could be dangerous
+					self.animatables.pop(i)
+			
+			except:
 				self.animatables.pop(i)
 		
 		self.updateGL()
@@ -261,7 +264,11 @@ class EMImageMXRotaryCore:
 			for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 				
 			self.rotary[idx].setData(d)
-
+			w = self.rotary[idx].get_drawable()
+			#print start_idx%self.emdata_list_cache.get_max_idx()
+			
+			w.set_img_num_offset(start_idx%self.emdata_list_cache.get_max_idx())
+		
 	def set_mmode(self,mode):
 		self.mmode = mode
 		self.rotary.set_mmode(mode)
@@ -316,6 +323,8 @@ class EMImageMXRotaryCore:
 			e = EMGLView2D(self,d)
 			e.setWidth(self.mx_rows*d[0].get_xsize())
 			e.setHeight(self.mx_cols*d[0].get_ysize())
+			e.get_drawable().set_img_num_offset(start_idx%self.emdata_list_cache.get_max_idx())
+			e.get_drawable().set_max_idx(self.emdata_list_cache.get_max_idx())
 			self.rotary.add_widget(e)
 
 	def updateGL(self):
@@ -409,6 +418,9 @@ class EMDataListCache:
 			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
 			return
 	
+	def get_max_idx(self):
+		return self.max_idx
+	
 	def set_cache_size(self,cache_size):
 		self.cache_size = cache_size
 		if refresh: self.__refresh_cache()
@@ -424,13 +436,15 @@ class EMDataListCache:
 				idx = i % self.max_idx
 			else: idx = 0
 			try: 
-				cache[i] = self.images[idx]
+				cache[idx] = self.images[idx]
 			except:
-				cache[i] = EMData(self.file_name,idx)
+				cache[idx] = EMData(self.file_name,idx)
+			#print i,idx
 				
 		self.images = cache
 	
 	def __getitem__(self,idx):
+		
 		i = 0
 		if idx != 0: i = idx%self.max_idx
 		try:
@@ -439,10 +453,17 @@ class EMDataListCache:
 			self.start_idx = idx - self.cache_size/2
 			#if self.start_idx < 0: 
 				#self.start_idx = self.start_idx % self.max_idx
+			#elif self.start_idx+self.cache_size >= self.max_idx:
+				#self.start_idx =  self.max_idx - self.cache_size/2 -1
 			self.__refresh_cache()
 		
-			
-			return self.images[i]
+			try:
+				return self.images[i]
+			except:
+				print "error, could get image",i,self.start_idx,self.max_idx
+				for i in self.images:
+					print i,
+				print ''
 			
 # This is just for testing, of course
 if __name__ == '__main__':

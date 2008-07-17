@@ -11,7 +11,12 @@ using std::cout;
 using std::endl;
 
 #include <algorithm>
-
+#include <FTGL/FTGLExtrdFont.h>
+#include <FTGL/FTGLPixmapFont.h>
+#include <FTGL/FTGLTextureFont.h>
+#include <FTGL/FTGLBitmapFont.h>
+#include <FTGL/FTGLOutlineFont.h>
+#include <FTGL/FTGLPolygonFont.h>
 //static init
 // string  EMFTGL::font_file_name = "/usr/share/fonts/liberation/LiberationSans-Regular.ttf";
 // unsigned int EMFTGL::face_size = 32;
@@ -65,12 +70,10 @@ FTFont* EMFTGL::EMFTGLManager::get_font(EMFTGL::FontMode mode, const string& fil
 {
 	for (vector<EMFTGLFontInstance*>::const_iterator it = font_instances.begin(); it != font_instances.end(); ++it ) {
 		if ((*it)->params_match(mode,file_name,face_size,depth,use_dl)) {
-			cout << "found match!" << endl;
 			return (*it)->get_font();
 		}
 	}
 	// If we make it here there was no match
-	cout << "constructing new font" << endl;
 	EMFTGLFontInstance* fi = new EMFTGLFontInstance(mode,file_name,face_size,depth,use_dl);
 	font_instances.push_back(fi);
 	return fi->get_font();
@@ -94,6 +97,18 @@ EMFTGL::EMFTGLFontInstance::EMFTGLFontInstance(EMFTGL::FontMode mode, const stri
 	}
 	else if ( mode == EMFTGL::EXTRUDE ) {
 		font = new FTGLExtrdFont(font_file_name.c_str());
+		font->Depth(depth);
+	}
+	else if ( mode == EMFTGL::BITMAP ) {
+		font = new FTGLBitmapFont(font_file_name.c_str());
+		font->Depth(depth);
+	}
+	else if ( mode == EMFTGL::POLYGON ) {
+		font = new FTGLPolygonFont(font_file_name.c_str());
+		font->Depth(depth);
+	}
+	else if ( mode == EMFTGL::OUTLINE ) {
+		font = new FTGLOutlineFont(font_file_name.c_str());
 		font->Depth(depth);
 	}
 	else {
