@@ -94,21 +94,20 @@ for single particle analysis."""
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 	
-	if not options.gui and not options.auto:
-		parser.error("Atleast one of the --gui or --auto arguments are required.")
-		exit(1)
-	
 	filenames = []
 	for i in range(0,len(args)):
 		filenames.append(args[i])
 
 	logid=E2init(sys.argv)
 	
-	
 	if options.merge_boxes_to_db == True:
 		#The user wants to add some boxes to the database
 		merge_boxes_as_manual_to_db(filenames)
 		sys.exit(1)
+		
+	if not options.gui and not options.auto:
+		parser.error("Atleast one of the --gui or --auto arguments are required.")
+		exit(1)
 	
 	# we need to know how big to make the boxes. If nothing is specified, but
 	# reference particles are, then we use the reference particle size
@@ -206,6 +205,7 @@ def merge_boxes_as_manual_to_db(filenames):
 		except:
 			manualboxes = []
 	
+		if manualboxes == None: manualboxes = []
 		manualboxes.extend(boxes)
 		set_idd_key_entry(filename,"manual_boxes",manualboxes)
 
