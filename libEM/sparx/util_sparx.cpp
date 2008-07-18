@@ -3398,6 +3398,7 @@ Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {
 	ENTERFUNC;
 
 	int nima = data.size();	
+	vector<float> res(nima);
 	double result = 0.;
 	double valmin = 1.0e20;
 	int valpos = -1;
@@ -3502,14 +3503,15 @@ Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {
 		   n = totsize;
 		}
 	}
-	result/=n;
+	result /= n;
+	res[kk] = result;
 
 	if(result<valmin) {valmin = result; valpos = kk;}
 
 	}
 
 	Dict retvals;
-	retvals["dist"] = valmin;
+	retvals["dist"] = res;
 	retvals["pos"]  = valpos;  
 
             
