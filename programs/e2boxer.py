@@ -1202,9 +1202,7 @@ class GUIbox:
 			self.guimxitp = EMParentWin(self.guimxit)
 			self.guimxitp.setWindowTitle("Image Thumbs")
 			
-			print "set mouse mode..."
 			self.guimxit.set_mmode("app")
-			print "done"
 			app = QtGui.QApplication.instance()
 			app.setOverrideCursor(Qt.BusyCursor)
 		except: 

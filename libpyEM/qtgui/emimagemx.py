@@ -121,9 +121,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		try: self.imagemx.resizeEvent(width,height)
 		except: pass
 	def set_mmode(self,mode):
-		print "setting mode",mode
 		self.mmode = mode
-		self.imagemx.mmode = mode
+		self.imagemx.set_mmode(mode)
 	
 	def mousePressEvent(self, event):
 		self.imagemx.mousePressEvent(event)
