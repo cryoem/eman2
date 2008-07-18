@@ -905,8 +905,7 @@ class EMImageMXCore:
 								if v=="Img #" : 
 									idx = i+self.img_num_offset
 									if idx != 0: idx = idx%self.max_idx
-									self.font_renderer.render_string(str(idx))
-									elf.renderText(tx,tagy,"%d"%idx)
+									self.renderText(tx,tagy,"%d"%idx)
 								else : 
 									av=self.data[i].get_attr(v)
 									if isinstance(av,float) : avs="%1.4g"%av
