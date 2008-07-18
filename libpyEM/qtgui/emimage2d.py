@@ -720,10 +720,10 @@ class EMImage2DCore:
 	def showInspector(self,force=0):
 		if (self.supressInspector): return
 		if not force and self.inspector==None : return
-		self.initInspector()
+		self.init_inspector()
 		self.inspector.show()
 		
-	def initInspector(self):
+	def init_inspector(self):
 		if not self.inspector : self.inspector=EMImageInspector2D(self)
 		if self.fft : self.inspector.setLimits(self.fmindeng,self.fmaxdeng,self.fminden,self.fmaxden)
 		else : self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)

@@ -161,6 +161,8 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
+		self.image_rotary.resize_event(width,height)
+		
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
@@ -239,6 +241,16 @@ class EMImageMXRotaryCore:
 		self.mindeng=0
 		self.maxdeng=1.0
 		self.gamma=1.0
+		self.mmode = 'app'
+		self.rot_mode = 'app'
+	def get_rows(self):
+		return self.mx_rows
+	
+	def get_cols(self):
+		return self.mx_cols
+	
+	def get_mxs(self):
+		return self.visible_mxs
 
 	def context(self):
 		# asking for the OpenGL context from the parent
@@ -246,7 +258,25 @@ class EMImageMXRotaryCore:
 	
 	def set_mx_cols(self,cols):
 		self.mx_cols = cols
+		self.__regenerate_rotary()
+		self.updateGL()
 		
+	def set_mx_rows(self,rows):
+		self.mx_rows = rows
+		self.__regenerate_rotary()
+		self.updateGL()
+	
+	def set_mxs(self,mxs):
+		self.visible_mxs = mxs
+		self.__regenerate_rotary()
+		self.updateGL()
+	
+	def set_mmode(self,mode):
+		print mode
+		for i in range(self.visible_mxs):
+			w = self.rotary[i].get_drawable()
+			w.set_mmode(mode)
+	
 	def set_scale(self,scale):
 		pass
 	
@@ -261,6 +291,19 @@ class EMImageMXRotaryCore:
 	def set_gamma(self,val):
 		self.gamma=val
 		self.update_min_max_gamma()
+	
+	def pop_box_image(self,idx):
+		val = self.emdata_list_cache.delete_box(idx)
+		if val == 1:
+			self.max_idx = self.emdata_list_cache.get_max_idx()
+			
+			self.__refresh_rotary()
+		elif val == 2:
+			w = self.rotary[0].get_drawable()
+			w.force_dl_update()
+		else:
+			print 'failed to delete box image'
+		
 		
 	def update_min_max_gamma(self):
 		for i in range(self.visible_mxs):
@@ -316,8 +359,8 @@ class EMImageMXRotaryCore:
 		w = self.rotary[idx].get_drawable()
 		self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
 
-	def set_mmode(self,mode):
-		self.mmode = mode
+	def set_rotary_mode(self,mode):
+		self.rot_mode = mode
 		self.rotary.set_mmode(mode)
 
 	def set_frozen(self,frozen):
@@ -352,15 +395,34 @@ class EMImageMXRotaryCore:
 			return
 		
 		self.emdata_list_cache = EMDataListCache(data)
-		self.__refresh_rotary()
+		self.__regenerate_rotary()
 	
 	def set_image_file_name(self,name):
 		#print "set image file name",name
 		self.image_file_name = name
 		self.emdata_list_cache = EMDataListCache(name)
-		self.__refresh_rotary()
+		self.__regenerate_rotary()
 	
 	def __refresh_rotary(self):
+		num_per_view = self.mx_rows*self.mx_cols
+		for idx in range(0,self.visible_mxs):
+			n = idx + self.start_mx
+			start_idx = n*num_per_view
+			
+			e = self.rotary[idx]
+			w = e.get_drawable()
+			w.set_img_num_offset(start_idx%self.emdata_list_cache.get_max_idx())
+			
+			d = []
+			for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
+			e.setWidth(self.mx_rows*d[0].get_xsize())
+			e.setHeight(self.mx_cols*d[0].get_ysize())
+			
+			w.setData(d)
+			w.set_min_max_gamma(self.minden,self.maxden,self.gamma)
+			w.set_max_idx(self.emdata_list_cache.get_max_idx())
+
+	def __regenerate_rotary(self):
 		self.rotary.clear_widgets()
 		num_per_view = self.mx_rows*self.mx_cols
 		for idx in range(self.start_mx,self.visible_mxs+self.start_mx):
@@ -370,10 +432,12 @@ class EMImageMXRotaryCore:
 			e = EMGLView2D(self,d)
 			e.setWidth(self.mx_rows*d[0].get_xsize())
 			e.setHeight(self.mx_cols*d[0].get_ysize())
-			e.get_drawable().set_img_num_offset(start_idx%self.emdata_list_cache.get_max_idx())
-			e.get_drawable().set_max_idx(self.emdata_list_cache.get_max_idx())
-			e.get_drawable().set_use_display_list(True) # saves HEAPS of time, makes interaction much smoother
-			e.get_drawable().set_draw_background(True) # saves HEAPS of time, makes interaction much smoother
+			w = e.get_drawable()
+			w.set_img_num_offset(start_idx%self.emdata_list_cache.get_max_idx())
+			w.set_max_idx(self.emdata_list_cache.get_max_idx())
+			w.set_use_display_list(True) # saves HEAPS of time, makes interaction much smoother
+			w.set_draw_background(True) # saves HEAPS of time, makes interaction much smoother
+			w.set_reroute_delete_target(self)
 			self.rotary.add_widget(e)
 
 		w = self.rotary[0].get_drawable()
@@ -418,7 +482,9 @@ class EMImageMXRotaryCore:
 		self.inspector.show()
 
 	def init_inspector(self):
-		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
+		allow_col_variation = True
+		allow_mx_variation = True
+		if not self.inspector : self.inspector=EMImageMxInspector2D(self,allow_col_variation,allow_mx_variation)
 		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def mousePressEvent(self, event):
@@ -448,6 +514,10 @@ class EMImageMXRotaryCore:
 		self.updateGL()
 	def leaveEvent(self):
 		pass
+	
+	
+	def resize_event(self, width, height):
+		self.rotary.resize_event(width,height)
 
 
 class EMDataListCache:
@@ -456,19 +526,19 @@ class EMDataListCache:
 	
 	The main public interface is to acquired a list of EMData objects in a specific range
 	'''
-	#LIST_MODE = 'list_mode'
-	#FILE_MODE = 'file_mode'
+	LIST_MODE = 'list_mode'
+	FILE_MODE = 'file_mode'
 	def __init__(self,object,cache_size=1000,start_idx=0):
 		if isinstance(object,list):
 			# in list mode there is no real caching
-			#self.mode = EMDataListCache.LIST_MODE
+			self.mode = EMDataListCache.LIST_MODE
 			self.max_idx = len(object)
 			self.cache_size = self.max_idx
 			self.images = object
 			self.start_idx = 0
 		elif isinstance(object,str):
 			#print "file mode"
-			#self.mode = EMDataListCache.FILE_MODE
+			self.mode = EMDataListCache.FILE_MODE
 			if not os.path.exists(object):
 				print "error, the file you specified does not exist:",object
 				return
@@ -484,7 +554,29 @@ class EMDataListCache:
 		else:
 			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
 			return
+		
+		self.soft_delete = True # toggle to prevent permanent deletion of particles
 	
+	def delete_box(self,idx):
+		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
+			# we can actually delete the emdata object
+			image = self.images.pop(idx)
+			self.max_idx = len(self.images)
+			self.cache_size = self.max_idx
+			#self.__refresh_cache()
+			return 1
+		elif self.mode == EMDataListCache.FILE_MODE or self.soft_delete:
+			im = self.images[idx]
+			try:
+				val = im.get_attr("excluded")
+				if val == True:	im.set_attr("excluded",False)
+				else: im.set_attr("excluded",True)
+			except: im.set_attr("excluded",True)
+			if self.mode == EMDataListCache.FILE_MODE: im.write_image(self.file_name,idx)
+			return 2
+		
+		return 0
+			
 	def get_max_idx(self):
 		return self.max_idx
 	
@@ -506,7 +598,8 @@ class EMDataListCache:
 			try: 
 				cache[idx] = self.images[idx]
 			except:
-				cache[idx] = EMData(self.file_name,idx)
+				try: cache[idx] = EMData(self.file_name,idx)
+				except: print "couldn't access",idx
 			#print i,idx
 				
 		self.images = cache
@@ -538,7 +631,13 @@ if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	GLUT.glutInit("")
 	window = EMImageMXRotary()
-	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3),test_image(2),test_image(1),test_image()]*50)
+	if len(sys.argv)==1 : 
+		data = []
+		for i in range(500):
+			data.append(test_image(Util.get_irand(0,3)))
+		
+		
+		window.setData(data)
 	else :
 		print "reading image"
 		#a=EMData.read_images(sys.argv[1])

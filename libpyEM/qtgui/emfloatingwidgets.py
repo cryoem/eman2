@@ -90,6 +90,7 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		self.__delete_list()
 	
 	def draw(self):
+
 		if self.display_list == None:
 			if isinstance(self.object,EMGLView3D) or isinstance(self.object,EM3DWidgetVolume) or isinstance(self.object,EM3DWidget):
 				self.__gen_3d_object_border_list()
@@ -104,7 +105,9 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,100.0)
-		glCallList(self.display_list)
+		if self.display_list != None and self.display_list != 0:
+			glCallList(self.display_list)
+		else: print "weird"
 	
 	def __delete_list(self):
 		if self.display_list != None:
@@ -118,7 +121,6 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		#print "made",context,"current"
 		
 		self.__delete_list()
-		
 		if self.display_list == None:
 			
 			width = self.object.width()
@@ -139,7 +141,9 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			back = -self.border_depth/2.0
 			
 			self.display_list=glGenLists(1)
-				
+			
+			if self.display_list == 0:
+				return
 			glNewList(self.display_list,GL_COMPILE)
 	
 			# All triangles are drawn in counter clockwise direction
@@ -515,7 +519,7 @@ class EM3DWidget:
 	
 	def mousePressEvent(self, event):
 		#if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.inspector == None):	
-			#self.drawable.initInspector()
+			#self.drawable.init_inspector()
 			#self.drawable.inspector.show()
 			#self.drawable.inspector.hide()
 			#self.parent.addQtWidgetDrawer(self.getInspector())
@@ -670,6 +674,12 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	
 	def clear_widgets(self):
 		self.widgets = []
+		self.time = 0		# time indicates the current time used for the basis of animation.
+		self.time_begin = 0 # records the time at which the animation was begun
+		self.is_animated = False
+		self.angle_information = None # will eventually be list used for both static display and animation
+		self.dtheta_animations = None  # an array for dtheta animations
+		self.animation_queue = []
 	
 	def add_widget(self,widget,set_current=False):
 		'''
@@ -790,13 +800,10 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		
 			glPushMatrix()
 			glTranslate(points[i][0],points[i][1],points[i][2])
-			#glRotate(n,-1,1,1)
-			#glRotate(n,1,1,-1)
 			glRotate(n,*rot_v)
 			glTranslate(h_width,h_height,0)
 			widget.paintGL()
 			glPopMatrix()
-#			glPopMatrix()
 
 		#print self.rotations % (len(self.widgets))
 	
@@ -1011,6 +1018,10 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		else:
 			error_string = "error"
 			raise error_string
+		
+	def resize_event(self,width,height):
+		self.set_update_P_inv(True)
+		
 	def set_update_P_inv(self,val=True):
 		for widget in self.widgets:
 			widget.set_update_P_inv(val)
@@ -1354,7 +1365,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		if (self.inspector == None):
 			if self.drawable == None:
 				return None
-			self.drawable.initInspector()
+			self.drawable.init_inspector()
 			self.drawable.inspector.show()
 			self.drawable.inspector.hide()
 			self.inspector = self.drawable.inspector
@@ -1363,7 +1374,7 @@ class EMGLView3D(EM3DWidgetVolume):
 	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.inspector == None):	
-			self.drawable.initInspector()
+			self.drawable.init_inspector()
 			self.drawable.inspector.show()
 			self.drawable.inspector.hide()
 			self.parent.addQtWidgetDrawer(self.getInspector())
@@ -1520,12 +1531,14 @@ class EMGLView2D:
 			return int(self.sizescale*self.w)
 		except:
 			return 0
+		#return self.drawable.width()
 	
 	def height(self):
 		try:
 			return int(self.sizescale*self.h)
 		except:
 			return 0
+		#return self.drawable.height()
 	
 	def setData(self,data):
 		self.drawable.setData(data)
@@ -1554,7 +1567,9 @@ class EMGLView2D:
 			self.h = self.viewportHeight()/self.sizescale
 	
 	def paintGL(self):
+		
 		self.cam.position()
+		
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		if (self.initflag == True):
 			self.testBoundaries()
@@ -1589,7 +1604,7 @@ class EMGLView2D:
 		if (self.inspector == None):
 			if self.drawable == None:
 				return None
-			self.drawable.initInspector()
+			self.drawable.init_inspector()
 			self.drawable.inspector.show()
 			self.drawable.inspector.hide()
 			self.inspector = self.drawable.inspector
@@ -1598,7 +1613,7 @@ class EMGLView2D:
 	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.inspector == None):	
-			self.drawable.initInspector()
+			self.drawable.init_inspector()
 			self.drawable.inspector.show()
 			self.drawable.inspector.hide()
 			self.parent.addQtWidgetDrawer(self.getInspector())
@@ -1651,9 +1666,14 @@ class EMGLView2D:
 			#self.drawable.mouseReleaseEvent(event)
 
 		#self.updateGL()
-	def emit(self, signal, event):
+	def emit(self, signal, event, a=None,b=None):
 		try:
-			QtCore.QObject.emit(signal,event)
+			if a == None:
+				QtCore.QObject.emit(signal,event)
+			elif b == None:
+				QtCore.QObject.emit(signal,event,a)
+			else:
+				QtCore.QObject.emit(signal,event,a,b) 
 		except: pass
 			#print "unknown signal", signal, "or unknown event",event
 	
@@ -2316,12 +2336,12 @@ class EMFloatingWidgetsCore:
 			rotary3.add_widget(w)
 			rotary3.add_widget(e)
 			rotary3.add_widget(f)
-			rotary3.add_widget(w2)
+			#rotary3.add_widget(w2)
 			
 			self.qwidgets.append(EM3DWidget(self,rotary3))
 			
 			rotary4 = EMGLRotaryWidget(self,-25,10,40,EMGLRotaryWidget.LEFT_ROTARY)
-			rotary4.add_widget(w2)
+			#rotary4.add_widget(w2)
 			rotary4.add_widget(e)
 			rotary4.add_widget(g)
 			#rotary4.add_widget(ww)

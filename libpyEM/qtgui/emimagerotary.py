@@ -155,6 +155,8 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
+		self.image_rotary.resize_event(width,height)
+		
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
@@ -329,6 +331,9 @@ class EMImageRotaryCore:
 		self.updateGL()
 	def leaveEvent(self):
 		pass
+	
+	def resize_event(self, width, height):
+		self.rotary.resize_event(width,height)
 
 
 # This is just for testing, of course

@@ -121,6 +121,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		try: self.imagemx.resizeEvent(width,height)
 		except: pass
 	def set_mmode(self,mode):
+		print "setting mode",mode
 		self.mmode = mode
 		self.imagemx.mmode = mode
 	
@@ -161,7 +162,170 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	
 	def scrollTo(self,n,yonly):
 		return self.imagemx.scrollTo(n,yonly)
+
+class EMMXCoreMouseEvents:
+	'''
+	A base class for objects that handle mouse events in the EMImageMXCore
+	'''
+	def __init__(self,mediator):
+		'''
+		Stores only a reference to the mediator
+		'''
+		if not isinstance(mediator,EMMXCoreMouseEventsMediator):
+			print "error, the mediator should be a EMMXCoreMouseEventsMediator"
+			return
+		self.mediator = mediator
+		
+	def mouse_up(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
+		pass
+
+	def mouse_down(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
+		pass
+		
+	def mouse_drag(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
+		pass
 	
+	def mouse_move(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
+		pass
+
+	def mouse_wheel(self,event):
+		'''
+		Inheriting classes to potentially define this function
+		'''
+		pass
+
+class EMMXCoreMouseEventsMediator:
+	def __init__(self,target):
+		if not isinstance(target,EMImageMXCore):
+			print "error, the target should be a EMImageMXCore"
+			return
+		
+		self.target = target
+		
+	def scr_to_img(self,vec):
+		return self.target.scr_to_img(vec)
+	
+	def get_parent(self):
+		return self.target.get_parent()
+
+	def get_box_image(self,idx):
+		return self.target.get_box_image(idx)
+	
+	def pop_box_image(self,idx,redraw=False):
+		self.target.pop_box_image(idx,redraw)
+	
+	def get_density_max(self):
+		return self.target.get_density_max()
+	
+	def get_density_min(self):
+		return self.target.get_density_max()
+	
+	def emit(self,signal,event,data,bool=None):
+		self.target.emit(signal,event,data,bool)
+
+	def set_selected(self,selected):
+		self.target.set_selected(selected)
+		
+	def force_dl_update(self):
+		self.target.force_dl_update() 
+		
+	def get_scale(self):
+		return self.target.get_scale()
+
+class EMMXDelMouseEvents(EMMXCoreMouseEvents):
+	def __init__(self,mediator):
+		EMMXCoreMouseEvents.__init__(self,mediator)
+		
+	def mouse_up(self,event):
+		if event.button()==Qt.LeftButton:
+			lc=self.mediator.scr_to_img((event.x(),event.y()))
+			if lc != None:
+				self.mediator.pop_box_image(lc[0],True)
+				self.mediator.force_dl_update()
+				self.mediator.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
+
+
+class EMMXDragMouseEvents(EMMXCoreMouseEvents):
+	def __init__(self,mediator):
+		EMMXCoreMouseEvents.__init__(self,mediator)
+	
+	def mouse_down(self,event):
+		if event.button()==Qt.LeftButton:
+			lc= self.mediator.scr_to_img((event.x(),event.y()))
+			box_image = self.mediator.get_box_image(lc[0])
+			xs=int(box_image.get_xsize())
+			ys=int(box_image.get_ysize())
+			drag = QtGui.QDrag(self.mediator.get_parent())
+			mime_data = QtCore.QMimeData()
+			
+			mime_data.setData("application/x-eman", dumps(box_image))
+			
+			EMAN2.GUIbeingdragged= box_image	# This deals with within-application dragging between windows
+			mime_data.setText( str(lc[0])+"\n")
+			di=QImage(box_image.render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.mediator.get_density_min(),self.mediator.get_density_max(),1.0,14),xs,ys,QImage.Format_RGB32)
+			mime_data.setImageData(QtCore.QVariant(di))
+			drag.setMimeData(mime_data)
+	
+			# This (mini image drag) looks cool, but seems to cause crashing sometimes in the pixmap creation process  :^(
+			#di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
+			#if xs>64 : pm=QtGui.QPixmap.fromImage(di).scaledToWidth(64)
+			#else: pm=QtGui.QPixmap.fromImage(di)
+			#drag.setPixmap(pm)
+			#drag.setHotSpot(QtCore.QPoint(12,12))
+					
+			dropAction = drag.start()
+		
+class EMMAppMouseEvents(EMMXCoreMouseEvents):
+	def __init__(self,mediator):
+		EMMXCoreMouseEvents.__init__(self,mediator)
+	
+	def mouse_down(self,event):
+		if event.button()==Qt.LeftButton:
+			lc=self.mediator.scr_to_img((event.x(),event.y()))
+			if lc:
+				self.mediator.emit(QtCore.SIGNAL("mousedown"),event,lc)
+				self.mediator.set_selected(lc)
+			
+	def mouse_move(self,event):
+		if event.buttons()&Qt.LeftButton:
+			self.mediator.emit(QtCore.SIGNAL("mousedrag"),event,self.mediator.get_scale())
+	
+	def mouse_up(self,event):
+		if event.button()==Qt.LeftButton:
+			lc=self.mediator.scr_to_img((event.x(),event.y()))
+		
+			if  not event.modifiers()&Qt.ShiftModifier:
+				self.mediator.emit(QtCore.SIGNAL("mouseup"),event,lc)
+			else:
+				self.mediator.force_dl_update()
+				self.mediator.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
+	
+	def mousePressEvent(self, event):
+		lc=self.scr_to_img((event.x(),event.y()))
+#		print lc
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+			self.showInspector(1)
+		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+			app =  QtGui.QApplication.instance()
+			try:
+				app.setOverrideCursor(Qt.ClosedHandCursor)
+			except: # if we're using a version of qt older than 4.2 than we have to use this...
+				app.setOverrideCursor(Qt.SizeAllCursor)
+				
+			self.mousedrag=(event.x(),event.y())
+
 class EMImageMXCore:
 
 	allim=WeakKeyDictionary()
@@ -194,18 +358,14 @@ class EMImageMXCore:
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
-		self.supressInspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
+		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		
 		self.coords={}
 		self.nshown=0
 		self.valstodisp=["Img #"]
-		self.img_num_offset = 0		# used by emimagemxrotary for display correct image numbers
-		self.max_idx = 0		# used by emimagemxrotary for display correct image numbers
+		
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
-
-		#self.timer = QTimer()
-		#QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
 		self.initsizeflag = True
 		self.inspector=None
@@ -216,8 +376,22 @@ class EMImageMXCore:
 		
 		self.use_display_list = True # whether or not a display list should be used to render the main view - if on, this will save on time if the view is unchanged
 		self.main_display_list = 0	# if using display lists, the stores the display list
-		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
+		self.force_dl_update() # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
 		self.draw_background = False # if true  will paint the background behind the images black using a polygon - useful in 3D contexts, ie i the emimagemxrotary
+		
+		
+		self.img_num_offset = 0		# used by emimagemxrotary for display correct image numbers
+		self.max_idx = 99999999		# used by emimagemxrotary for display correct image numbers
+		
+		self.mouse_events_mediator = EMMXCoreMouseEventsMediator(self)
+		self.mouse_event_handlers = {}
+		self.mouse_event_handlers["app"] = EMMAppMouseEvents(self.mouse_events_mediator)
+		self.mouse_event_handlers["del"] = EMMXDelMouseEvents(self.mouse_events_mediator)
+		self.mouse_event_handlers["drag"] = EMMXDragMouseEvents(self.mouse_events_mediator)
+		self.mouse_event_handler = self.mouse_event_handlers[self.mmode]
+		
+		self.reroute_delete_target = None
+
 		try:
 			e = EMFTGL()
 			self.render_mode = EMImageMXCore.FTGL
@@ -229,29 +403,65 @@ class EMImageMXCore:
 			#self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
 		except:
 			self.render_mode = EMImageMXCore.GLUT
-			
+	
+	def set_reroute_delete_target(self,target):
+		self.reroute_delete_target = target
+	
+	def get_scale(self):
+		return self.scale
+	
+	def get_parent(self):
+		return self.parent
+	
+	def pop_box_image(self,idx,redraw=False):
+		if self.reroute_delete_target  == None:
+			d = self.data.pop(idx)
+			if redraw:
+				self.display_states = [] 
+				self.updateGL()
+			return d
+		else:
+			i = idx+self.img_num_offset
+			if i != 0: i = i%self.max_idx
+			self.reroute_delete_target.pop_box_image(i)
+
+	def get_box_image(self,idx):
+		return self.data[idx]
+
+	def emit(self,signal,event,data,bool=None):
+		if bool==None:
+			self.parent.emit(signal,event,data)
+		else:
+			self.parent.emit(signal,event,data,bool)
+
 	def __del__(self):
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 	
-	def force_update(self):
+	def get_cols(self):
+		return self.mx_cols
+	
+	def force_dl_update(self):
 		''' If display lists are being used this will force a regeneration'''
 		self.display_states = []
 	
 	def set_img_num_offset(self,n):
-		self.display_states = [] # empty display lists causes an automatic regeneration of the display list
+		self.force_dl_update() # empty display lists causes an automatic regeneration of the display list
 		self.img_num_offset = n
-		
+	
+	def get_img_num_offset(self):
+		return self.img_num_offset
+	
 	def set_draw_background(self,bool):
-		self.display_states = []# empty display lists causes an automatic regeneration of the display list
+		self.force_dl_update()# empty display lists causes an automatic regeneration of the display list
 		self.draw_background = bool
 		
 	def set_use_display_list(self,bool):
 		self.use_display_list = bool
 		
 	def set_max_idx(self,n):
-		self.display_states = []# empty display lists causes an automatic regeneration of the display list
+		self.force_dl_update()# empty display lists causes an automatic regeneration of the display list
 		self.max_idx = n
 		
 	def set_min_max_gamma(self,minden,maxden,gamma):
@@ -298,7 +508,7 @@ class EMImageMXCore:
 			self.updateGL()
 			return
 		
-		self.display_states = []
+		self.force_dl_update()
 		self.nimg=len(data)
 		
 		self.minden=data[0].get_attr("mean")
@@ -387,7 +597,8 @@ class EMImageMXCore:
 
 	def set_mmode(self,mode):
 		self.mmode = mode
-
+		self.mouse_event_handler = self.mouse_event_handlers[self.mmode]
+		
 	def set_gamma(self,val):
 		self.gamma=val
 		self.updateGL()
@@ -411,7 +622,6 @@ class EMImageMXCore:
 		if val: self.invert=1
 		else : self.invert=0
 		self.updateGL()
-	
 
 	def timeout(self):
 		"""Called a few times each second when idle for things like automatic scrolling"""
@@ -533,8 +743,8 @@ class EMImageMXCore:
 			glMaterial(GL_FRONT,GL_SHININESS,100.0)
 			
 			
-			for i in self.data:
-				self.changec[i]=i.get_attr("changecount")
+			#for i in self.data:
+				#self.changec[i]=i.get_attr("changecount")
 			
 			if not self.invert : pixden=(0,255)
 			else: pixden=(255,0)
@@ -608,6 +818,31 @@ class EMImageMXCore:
 						print "weirdness"
 						print col,row,
 						continue
+					
+					try:
+						exc = self.data[i].get_attr("excluded")
+						if exc == True:
+							width = tw/2.0
+							height = th/2.0
+		
+							light = glIsEnabled(GL_LIGHTING)
+							glDisable(GL_LIGHTING)
+							glPushMatrix()
+							glTranslatef(tx+width,ty+height,0)
+							glBegin(GL_QUADS)
+							glColor(0,0,0)
+							glVertex2f(-width,height)
+							glColor(0.15,0.15,0.15)
+							glVertex2f(-width,-height)	
+							glColor(0.3,0.3,0.3)
+							glVertex2f(width,-height)
+							glColor(0.22,0.22,0.22)
+							glVertex2f(width,height)
+							glEnd()
+							glPopMatrix()
+							if light: glEnable(GL_LIGHTING)
+						else: raise
+					except: pass
 					#i = (row+yoffset)*self.mx_cols+col+xoffset
 					#print i,':',row,col,tx,ty,tw,th
 					shown = True
@@ -649,7 +884,9 @@ class EMImageMXCore:
 								
 								if v=="Img #" : 
 									#print i,self.img_num_offset,self.max_idx,(i+self.img_num_offset)%self.max_idx,
-									self.font_renderer.render_string(str((i+self.img_num_offset)%self.max_idx))
+									idx = i+self.img_num_offset
+									if idx != 0: idx = idx%self.max_idx
+									self.font_renderer.render_string(str(idx))
 								else : 
 									av=self.data[i].get_attr(v)
 									if isinstance(av,float) : avs="%1.4g"%av
@@ -665,7 +902,11 @@ class EMImageMXCore:
 							tagy = ty
 							glColor(*txtcol)
 							for v in self.valstodisp:
-								if v=="Img #" : self.renderText(tx,tagy,"%d"%( (i+self.img_num_offset)%self.max_idx))
+								if v=="Img #" : 
+									idx = i+self.img_num_offset
+									if idx != 0: idx = idx%self.max_idx
+									self.font_renderer.render_string(str(idx))
+									elf.renderText(tx,tagy,"%d"%idx)
 								else : 
 									av=self.data[i].get_attr(v)
 									if isinstance(av,float) : avs="%1.4g"%av
@@ -804,7 +1045,7 @@ class EMImageMXCore:
 		if isinstance(numlist,int) : numlist=[numlist]
 		if isinstance(numlist,list) or isinstance(numlist,tuple) : self.selected=numlist
 		else : self.selected=[]
-		self.display_states = []
+		self.force_dl_update()
 		self.updateGL()
 	
 	def setValDisp(self,v2d):
@@ -814,7 +1055,7 @@ class EMImageMXCore:
 		self.updateGL()
 	
 	def showInspector(self,force=0):
-		if (self.supressInspector): return
+		if (self.suppress_inspector): return
 		if not force and self.inspector==None : return
 		self.init_inspector()
 		self.inspector.show()
@@ -823,7 +1064,7 @@ class EMImageMXCore:
 		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
 		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
-	def scrtoimg(self,vec):
+	def scr_to_img(self,vec):
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
 		image from the matrix. Returns (image number,x,y) or None if the location is not within any
 		of the contained images. """
@@ -839,7 +1080,7 @@ class EMImageMXCore:
 		if self.inspector: self.inspector.close()
 		
 	def dragEnterEvent(self,event):
-#		f=event.mimeData().formats()
+#		f=event.mime_data().formats()
 #		for i in f:
 #			print str(i)
 		
@@ -852,10 +1093,10 @@ class EMImageMXCore:
 
 	
 	def dropEvent(self,event):
-		lc=self.scrtoimg((event.pos().x(),event.pos().y()))
+		lc=self.scr_to_img((event.pos().x(),event.pos().y()))
 		if event.source()==self:
 #			print lc
-			n=int(event.mimeData().text())
+			n=int(event.mime_data().text())
 			if not lc : lc=[len(self.data)]
 			if n>lc[0] : 
 				self.data.insert(lc[0],self.data[n])
@@ -870,7 +1111,7 @@ class EMImageMXCore:
 			self.setData(self.data)
 			EMAN2.GUIbeingdragged=None
 		elif event.provides("application/x-eman"):
-			x=loads(event.mimeData().data("application/x-eman"))
+			x=loads(event.mime_data().data("application/x-eman"))
 			if not lc : self.data.append(x)
 			else : self.data.insert(lc[0],x)
 			self.setData(self.data)
@@ -878,8 +1119,6 @@ class EMImageMXCore:
 
 
 	def mousePressEvent(self, event):
-		lc=self.scrtoimg((event.x(),event.y()))
-#		print lc
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
@@ -890,59 +1129,24 @@ class EMImageMXCore:
 				app.setOverrideCursor(Qt.SizeAllCursor)
 				
 			self.mousedrag=(event.x(),event.y())
-		elif event.button()==Qt.LeftButton:
-			if self.mmode=="drag" and lc:
-				xs=int(self.data[lc[0]].get_xsize())
-				ys=int(self.data[lc[0]].get_ysize())
-				drag = QtGui.QDrag(self.parent)
-				mimeData = QtCore.QMimeData()
-				mimeData.setData("application/x-eman", dumps(self.data[lc[0]]))
-				EMAN2.GUIbeingdragged=self.data[lc[0]]		# This deals with within-application dragging between windows
-				mimeData.setText( str(lc[0])+"\n")
-				di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,1.0,14),xs,ys,QImage.Format_RGB32)
-				mimeData.setImageData(QtCore.QVariant(di))
-				drag.setMimeData(mimeData)
+		else: self.mouse_event_handler.mouse_down(event)
 
-# This (mini image drag) looks cool, but seems to cause crashing sometimes in the pixmap creation process  :^(
-				#di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
-				#if xs>64 : pm=QtGui.QPixmap.fromImage(di).scaledToWidth(64)
-				#else: pm=QtGui.QPixmap.fromImage(di)
-				#drag.setPixmap(pm)
-				#drag.setHotSpot(QtCore.QPoint(12,12))
-				
-				dropAction = drag.start()
-#				print dropAction
-			elif self.mmode=="app" and lc:
-				self.parent.emit(QtCore.SIGNAL("mousedown"),event,lc)
-				self.set_selected(lc)
 					
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
 			self.mousedrag=(event.x(),event.y())
 			self.parent.update()
-		elif event.buttons()&Qt.LeftButton and self.mmode=="app":
-			self.parent.emit(QtCore.SIGNAL("mousedrag"),event,self.scale)
+		else: self.mouse_event_handler.mouse_move(event)
 		
 	def mouseReleaseEvent(self, event):
 		app =  QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.ArrowCursor)
-		lc=self.scrtoimg((event.x(),event.y()))
+		lc=self.scr_to_img((event.x(),event.y()))
 		if self.mousedrag:
 			self.mousedrag=None
-		elif event.button()==Qt.LeftButton and self.mmode=="app":
-			if  not event.modifiers()&Qt.ShiftModifier:
-				self.parent.emit(QtCore.SIGNAL("mouseup"),event,lc)
-			else:
-				self.display_states = []
-				self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
-		elif self.mmode=="del" and lc:
-			self.data.pop(lc[0])
-			try: self.parent.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
-			except: pass
-			self.display_states = []
-			# redundancy here - the parent may call updateGL...
-			self.updateGL()
+		else: self.mouse_event_handler.mouse_up(event)
+	
 			
 	def wheelEvent(self, event):
 		if event.delta() > 0:
@@ -958,7 +1162,7 @@ class EMImageMXCore:
 			self.mousedrag=None
 
 class EMImageMxInspector2D(QtGui.QWidget):
-	def __init__(self,target) :
+	def __init__(self,target,allow_col_variation=False,allow_window_variation=False) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		
@@ -1053,6 +1257,17 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		
 		self.hbl.addWidget(self.valsbut)
 		
+		if allow_col_variation:
+			self.lbl2 = QtGui.QLabel("#/col:")
+			self.lbl2.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
+			self.hbl.addWidget(self.lbl2)
+			
+			self.ncol = QtGui.QSpinBox(self)
+			self.ncol.setObjectName("ncol")
+			self.ncol.setRange(1,50)
+			self.ncol.setValue(self.target.get_rows())
+			self.hbl.addWidget(self.ncol)
+			
 		self.lbl = QtGui.QLabel("#/row:")
 		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
 		self.hbl.addWidget(self.lbl)
@@ -1060,8 +1275,19 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.nrow = QtGui.QSpinBox(self)
 		self.nrow.setObjectName("nrow")
 		self.nrow.setRange(1,50)
-		self.nrow.setValue(self.target.mx_cols)
+		self.nrow.setValue(self.target.get_cols())
 		self.hbl.addWidget(self.nrow)
+		
+		if allow_window_variation:
+			self.lbl3 = QtGui.QLabel("#/mx:")
+			self.lbl3.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
+			self.hbl.addWidget(self.lbl3)
+			
+			self.nmx = QtGui.QSpinBox(self)
+			self.nmx.setObjectName("ncol")
+			self.nmx.setRange(1,50)
+			self.nmx.setValue(self.target.get_mxs())
+			self.hbl.addWidget(self.nmx)
 		
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")
@@ -1095,6 +1321,11 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.vals, QtCore.SIGNAL("triggered(QAction*)"), self.newValDisp)
 		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), target.set_mx_cols)
+		if allow_col_variation:
+			QtCore.QObject.connect(self.ncol, QtCore.SIGNAL("valueChanged(int)"), target.set_mx_rows)
+		if allow_window_variation:
+			QtCore.QObject.connect(self.nmx, QtCore.SIGNAL("valueChanged(int)"), target.set_mxs)
+		
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
@@ -1169,8 +1400,8 @@ class EMImageMxInspector2D(QtGui.QWidget):
 	def setAppMode(self,i):
 		self.target.set_mmode("app")
 	
-	def setMeasMode(self,i):
-		self.target.set_mmode("meas")
+	#def setMeasMode(self,i):
+		#self.target.set_mmode("meas")
 	
 	def setDelMode(self,i):
 		self.target.set_mmode("del")

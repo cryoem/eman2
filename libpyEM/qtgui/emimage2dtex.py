@@ -272,7 +272,7 @@ class EMImage2DTex:
 		glClearStencil(0)
 		glEnable(GL_STENCIL_TEST)
 	
-	def initInspector(self):
+	def init_inspector(self):
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMImage2DTexInspector(self)
 
@@ -302,7 +302,7 @@ class EMImage2DTex:
 			self.inspector.show()
 		except:
 			if force:
-				self.initInspector()
+				self.init_inspector()
 				try:
 					self.inspector.show()
 				except:

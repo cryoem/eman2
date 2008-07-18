@@ -314,10 +314,10 @@ class EMImage3DCore:
 	def showInspector(self,force=0):
 		if self.supressInspector: return
 		if not force and self.inspector==None : return
-		self.initInspector()
+		self.init_inspector()
 		self.inspector.show()
 		
-	def initInspector(self):
+	def init_inspector(self):
 		if not self.inspector : self.inspector=EMImageInspector3D(self)
 	
 	def closeEvent(self,event) :
