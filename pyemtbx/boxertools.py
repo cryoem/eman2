@@ -2458,6 +2458,12 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.convenienceString = ""
 		self.set_convenience_name(self.get_creation_ts()) # this string is the string that users will use to name this autoboxer in the GUIboxCtrl
 
+	def dynapix_on(self):
+		return (self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX)
+	
+	def anchor_on(self):
+		return (self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX)
+
 	def become(self,trimSwarmAutoBoxer):			
 		self.box_size = trimSwarmAutoBoxer.box_size
 		self.shrink = trimSwarmAutoBoxer.shrink
@@ -2868,7 +2874,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				#boxable.set_autoboxer_id(self.get_unique_stamp())
 				#self.parent.autoboxer_db_changed()
 
-			#print 'error, cant get template if there are no references'
+			print 'error, cant get template if there are no references'
 			return 1
 
 		# ref update should only be toggled if we are in user driven mode

@@ -775,7 +775,8 @@ class GUIbox:
 			self.autoboxer_name = autoboxer_id
 			self.autoboxer = SwarmAutoBoxer(self)
 			self.autoboxer.become(trim_autoboxer)
-			self.autoboxer.set_mode(self.dynapix,self.anchoring)
+			self.dynapix = self.autoboxer.dynapix_on()
+			self.anchoring = self.autoboxer.anchor_on()
 			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
 		except:
 			if self.box_size == -1:
@@ -870,6 +871,8 @@ class GUIbox:
 		self.guictl=GUIboxPanel(self,self.ab_sel_mediator)
 		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.setWindowTitle("e2boxer Controller")
+		self.guictl.set_dynapix(self.dynapix)
+		self.guictl.set_anchor(self.anchoring)
 		self.guictl.show()
 		self.autoboxer.auto_box(self.boxable,False)
 		self.box_display_update()
@@ -915,6 +918,7 @@ class GUIbox:
 		
 	def change_current_autoboxer(self, autoboxer_id,autobox=True):
 		#print "change current autoboxer"
+		self.autoboxer.write_to_db()
 		project_db = EMProjectDB()
 		if project_db[autoboxer_id] == None:
 			project_db[autoboxer_id] = {}
@@ -923,8 +927,11 @@ class GUIbox:
 		self.autoboxer = SwarmAutoBoxer(self)
 		self.autoboxer.become(trim_autoboxer)
 		self.autoboxer.write_specific_references_to_db(self.boxable.get_image_name())
-		self.autoboxer.set_mode(self.dynapix,self.anchoring)
-
+		self.dynapix = self.autoboxer.dynapix_on()
+		self.anchoring = self.autoboxer.anchor_on()
+		self.guictl.set_dynapix(self.dynapix)
+		self.guictl.set_anchor(self.anchoring)
+		
 		self.boxable.set_autoboxer(self.autoboxer)
 		
 		if self.box_size != self.autoboxer.get_box_size():
@@ -1123,6 +1130,7 @@ class GUIbox:
 
 			project_db = EMProjectDB()
 			data = project_db[get_idd_key(self.image_names[im])]
+			ab_failure = self.autoboxer
 			if data != None:
 				try:
 					autoboxer_id = data["autoboxer_unique_id"]
@@ -1130,13 +1138,22 @@ class GUIbox:
 					self.autoboxer_name = autoboxer_id
 					self.autoboxer = SwarmAutoBoxer(self)
 					self.autoboxer.become(trim_autoboxer)
-				except: pass
-			
-			self.autoboxer.regressiveflag = True
-			self.autoboxer.auto_box(self.boxable)
+					self.dynapix = self.autoboxer.dynapix_on()
+					self.anchoring = self.autoboxer.anchor_on()
+					self.guictl.set_dynapix(self.dynapix)
+					self.guictl.set_anchor(self.anchoring)
+				except:
+					self.autoboxer = ab_failure
+					
+			if self.dynapix:
+				self.autoboxer.regressiveflag = True
+				self.autoboxer.auto_box(self.boxable)
+				
 			self.boxable.set_autoboxer(self.autoboxer)
+			
 			self.autoboxer_db_changed()
 			
+		
 			if self.box_size != self.autoboxer.get_box_size():
 				self.update_box_size(self.autoboxer.get_box_size())
 
@@ -1665,7 +1682,7 @@ class GUIbox:
 		self.boxable.toggle_frozen()
 		self.boxable.write_to_db()
 		self.guiim.set_frozen(self.boxable.is_frozen())
-		if self.guimxitp != None: self.guimxit.set_frozen(self.boxable.is_frozen())
+		if self.guimxitp != None  and isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(self.boxable.is_frozen())
 		if not self.boxable.is_frozen():
 			self.change_current_autoboxer(self.boxable.get_autoboxer_id(),False)
 		else:	
@@ -2419,6 +2436,12 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.ab_table, QtCore.SIGNAL("itemChanged(QtGui.QTableWidgetItem)"), self.ab_table_item_changed)
 		self.connect(self.ab_table, QtCore.SIGNAL("cellChanged(int,int)"), self.ab_table_cell_changed)
 		
+
+	def set_dynapix(self,bool):
+		self.dynapix.setChecked(bool)
+		
+	def set_anchor(self,bool):
+		self.anchoring.setChecked(bool)
 
 	def ref_button_toggled(self,bool):
 		

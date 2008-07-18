@@ -50,7 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
 
-from emfloatingwidgets import EMGLRotaryWidget, EMGLView2D,EM3DWidget
+from emfloatingwidgets import EMGLRotaryWidget, EMGLView2D, EM3DWidget
 
 from emimagemx import EMImageMxInspector2D
 
@@ -80,8 +80,8 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		
 		self.fov = 20
 		self.aspect = 1.0
-		self.zNear = 2000
-		self.zFar = 10000
+		self.zNear = 10000
+		self.zFar = 20000
 		
 		self.animatables = []
 		
@@ -230,9 +230,9 @@ class EMImageMXRotaryCore:
 		self.image_file_name = None	# keeps track of the image file name (if any) - book keeping purposes only
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via setData or set_image_file_name
 		
-		self.visible_mxs = 5	# the number of visible imagemxs in the rotary
-		self.mx_rows = 8 # the number of rows in any given imagemx
-		self.mx_cols = 8 # the number of columns in any given imagemx
+		self.visible_mxs = 3	# the number of visible imagemxs in the rotary
+		self.mx_rows = 4 # the number of rows in any given imagemx
+		self.mx_cols = 4 # the number of columns in any given imagemx
 		self.start_mx = 0 # the starting index for the currently visible set of imagemxs
 		
 		self.inspector = None
@@ -243,6 +243,7 @@ class EMImageMXRotaryCore:
 		self.gamma=1.0
 		self.mmode = 'app'
 		self.rot_mode = 'app'
+		
 	def get_rows(self):
 		return self.mx_rows
 	
@@ -457,14 +458,14 @@ class EMImageMXRotaryCore:
 		glLoadIdentity()
 		
 		lr = self.rotary.get_suggested_lr_bt_nf()
-		#print lr
+		print lr
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
 		#print self.parent.get_depth_for_height(self.height())
 		#lr = self.rotary.get_lr_bt_nf()
 
 		GL.glPushMatrix()
-		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
+		print -self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
 		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2])))
 		self.widget.paintGL()
 		GL.glPopMatrix()
@@ -514,11 +515,9 @@ class EMImageMXRotaryCore:
 		self.updateGL()
 	def leaveEvent(self):
 		pass
-	
-	
+
 	def resize_event(self, width, height):
 		self.rotary.resize_event(width,height)
-
 
 class EMDataListCache:
 	'''
@@ -528,7 +527,7 @@ class EMDataListCache:
 	'''
 	LIST_MODE = 'list_mode'
 	FILE_MODE = 'file_mode'
-	def __init__(self,object,cache_size=1000,start_idx=0):
+	def __init__(self,object,cache_size=100,start_idx=0):
 		if isinstance(object,list):
 			# in list mode there is no real caching
 			self.mode = EMDataListCache.LIST_MODE

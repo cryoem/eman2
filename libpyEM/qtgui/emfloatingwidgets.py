@@ -2191,7 +2191,6 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 	def toolTipEvent(self, event):
 		self.floatwidget.toolTipEvent(event)
 		QtGui.QToolTip.hideText()
-		
 
 	def dragMoveEvent(self,event):
 		print "received drag move event, but I don't do anything about it :("

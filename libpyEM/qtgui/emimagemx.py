@@ -862,6 +862,7 @@ class EMImageMXCore:
 						if self.render_mode == EMImageMXCore.FTGL:
 							
 							glEnable(GL_TEXTURE_2D)
+							glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 							lighting = glIsEnabled(GL_LIGHTING)
 							glEnable(GL_LIGHTING)
 							glEnable(GL_NORMALIZE)
