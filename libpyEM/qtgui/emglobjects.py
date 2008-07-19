@@ -385,7 +385,7 @@ class EMViewportDepthTools:
 			self.mc11 = [0,0,0]
 			self.mc01 = [0,0,0]
 			
-	def getCorners(self):
+	def get_corners(self):
 		return [self.mc00,self.mc01,self.mc11,self.mc10]
 	
 	def getEmanMatrix(self):

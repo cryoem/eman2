@@ -89,8 +89,10 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 	def __del__(self):
 		self.__delete_list()
 	
-	def draw(self):
-
+	def draw(self,force_update=False):
+		
+		if force_update : self.__delete_list()
+		
 		if self.display_list == None:
 			if isinstance(self.object,EMGLView3D) or isinstance(self.object,EM3DWidgetVolume) or isinstance(self.object,EM3DWidget):
 				self.__gen_3d_object_border_list()
@@ -100,8 +102,8 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 				print "error, border decoration works only for EMGLView3D, EMGLView2D and EMGLViewQtWidget objects"
 				return
 		
-		if self.display_list == None: 
-			return
+		if self.display_list == None: return
+		
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,100.0)
@@ -282,7 +284,7 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 	def __frame_outer_shell(self,left_plus,right_plus,bottom_plus,top_plus,front,back):
 		
 		glBegin(GL_TRIANGLE_STRIP)
-		glNormal(-1,0,0)
+		glNormal(-1,-1,0)
 		glVertex(left_plus,bottom_plus,back)
 		glVertex(left_plus,bottom_plus,front)
 		glVertex(left_plus,top_plus,back)
@@ -446,15 +448,15 @@ class EM3DWidget:
 	def __atomic_draw_frame(self,plane_string):
 		
 		#if self.vdtools.drawFrame(True):
-		self.corner_sets.append(self.vdtools.getCorners())
+		self.corner_sets.append(self.vdtools.get_corners())
 		self.planes.append((plane_string))
 		self.model_matrices.append(self.vdtools.getModelMatrix())
 	
 	#HACK ALERT
-	def render(self):
-		self.paintGL()
+	def render(self,pretend=False):
+		self.paintGL(pretend)
 	
-	def paintGL(self):
+	def paintGL(self,pretend=False):
 		#clear everything
 		self.corner_sets = []
 		self.planes = []
@@ -466,12 +468,7 @@ class EM3DWidget:
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
 		
-		glPushMatrix()
-		self.target.render()
-		glPopMatrix()
-		
-		if self.draw_frame:
-			self.decoration.draw()
+	
 		
 		
 		p = self.get_lr_bt_nf()
@@ -516,6 +513,15 @@ class EM3DWidget:
 		self.vdtools.set_mouse_coords(unprojected[1],unprojected[5],unprojected[6],unprojected[2])
 		self.__atomic_draw_frame('xy')
 		glPopMatrix()
+	
+		glPushMatrix()
+		self.target.render(pretend)
+		glPopMatrix()
+		
+		if pretend: return 
+
+		if self.draw_frame:
+			self.decoration.draw()
 	
 	def mousePressEvent(self, event):
 		#if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.inspector == None):	
@@ -633,6 +639,9 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			i = i % len(self.widgets)
 		return self.widgets[i]
 	
+	def __len__(self):
+		return len(self.widgets)
+	
 	def set_limits(self,limits):
 		
 		if len(limits) != 2:
@@ -701,6 +710,13 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 
 		return 1
 		
+	def is_flat(self):
+		'''
+		A hack - used by the calling function to determine if the first object in the rotary is flat against the screen.
+		At the moment all that is returned is whether or not this object is animated, and this indeed indicates the we have
+		'flatness', but only if the rotary is not rotated out of its original position by the user
+		'''
+		return not self.is_animated
 	def animate(self,time):
 		if self.time_begin == 0:
 			self.time_begin = time
@@ -728,7 +744,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			
 		return 1
 	
-	def render(self):
+	def render(self,pretend=False):
 		
 		size = len(self.widgets)
 		if size == 0:
@@ -802,7 +818,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			glTranslate(points[i][0],points[i][1],points[i][2])
 			glRotate(n,*rot_v)
 			glTranslate(h_width,h_height,0)
-			widget.paintGL()
+			widget.paintGL(pretend)
 			glPopMatrix()
 
 		#print self.rotations % (len(self.widgets))
@@ -998,11 +1014,11 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			if interesting_points[3][2] > 0:
 				# the 40 is a really rough guess - the back of the viewing cube is probably about this number of pixesl
 				# from the base
-				bottom = -height/2.0 + min_z + 100
+				bottom = -height/2.0 + min_z 
 				top = height/2.0
 			else:
 				bottom = -height/2.0
-				top = height/2.0 + max_z - 40
+				top = height/2.0 + max_z
 
 			if self.y_rot < 0:
 				left  = interesting_points[1][0]
@@ -1200,7 +1216,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		#self.drawable.suppressInspector = True
 		self.vdtools = EMViewportDepthTools(self)
 		
-		self.updateFlag = True
+		self.update_flag = True
 		
 		self.inspector = None
 		
@@ -1232,7 +1248,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		
 		self.update_dims = False
 
-	def setWidth(self,w):
+	def set_width(self,w):
 		self.w = w
 		self.drawable.resizeEvent(self.width(),self.height())
 		
@@ -1240,7 +1256,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		self.d = d
 		self.drawable.resizeEvent(self.width(),self.height())
 		
-	def setHeight(self,h):
+	def set_height(self,h):
 		self.h = h
 		self.drawable.resizeEvent(self.width(),self.height())
 		
@@ -1269,10 +1285,10 @@ class EMGLView3D(EM3DWidgetVolume):
 			self.update()
 		except: pass
 	
-	def render(self):
-		self.paintGL()
+	def render(self,pretend=False):
+		self.paintGL(pretend)
 	
-	def paintGL(self):
+	def paintGL(self,pretend=False):
 		self.psets = []
 		self.planes = []
 		self.modelmatrices = []
@@ -1283,7 +1299,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		
 		glPushMatrix()
 		
-		self.drawable.render()
+		self.drawable.render(pretend)
 		glPopMatrix()
 		
 		#glPushMatrix()
@@ -1293,7 +1309,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		
 		#if self.drawFrame: 
 			#if self.vdtools.drawFrame(True): 
-				#self.psets.append(self.vdtools.getCorners())
+				#self.psets.append(self.vdtools.get_corners())
 				#self.planes.append(('zy'))
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
 		#glPopMatrix()
@@ -1305,7 +1321,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		#if self.drawFrame: 
 			#if self.vdtools.drawFrame(True): 
 				#self.planes.append(('yz'))
-				#self.psets.append(self.vdtools.getCorners())
+				#self.psets.append(self.vdtools.get_corners())
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
 				
 		#glPopMatrix()
@@ -1317,7 +1333,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		#if self.drawFrame: 
 			#if self.vdtools.drawFrame(True): 
 				#self.planes.append(('xz'))
-				#self.psets.append(self.vdtools.getCorners())
+				#self.psets.append(self.vdtools.get_corners())
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
 		#glPopMatrix()
 		
@@ -1328,7 +1344,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		#if self.drawFrame: 
 			#if self.vdtools.drawFrame(True): 
 				#self.planes.append(('zx'))
-				#self.psets.append(self.vdtools.getCorners())
+				#self.psets.append(self.vdtools.get_corners())
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
 		#glPopMatrix()
 		
@@ -1339,7 +1355,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		#if self.drawFrame: 
 			#if self.vdtools.drawFrame(True):
 				#self.planes.append(('yx'))
-				#self.psets.append(self.vdtools.getCorners())
+				#self.psets.append(self.vdtools.get_corners())
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
 		#glPopMatrix()
 		
@@ -1349,7 +1365,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		#if self.drawFrame: 
 			#if self.vdtools.drawFrame(True): 
 				#self.planes.append(('xy'))
-				#self.psets.append(self.vdtools.getCorners())
+				#self.psets.append(self.vdtools.get_corners())
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
 		#glPopMatrix()
 		
@@ -1480,7 +1496,7 @@ class EMGLView2D:
 		self.initflag = True
 		self.vdtools = EMViewportDepthTools(self)
 		
-		self.updateFlag = True
+		self.update_flag = True
 		
 		self.drawFrame = False
 		
@@ -1490,8 +1506,12 @@ class EMGLView2D:
 		
 		self.inspector = None
 		
+		self.update_border_flag = False
 		
 		self.decoration = EM3DPlainBorderDecoration(self)
+	
+	def set_sizescale(self,scale):
+		self.sizescale = scale
 	
 	def get_drawable(self):
 		return self.drawable
@@ -1518,13 +1538,15 @@ class EMGLView2D:
 	def set_update_P_inv(self,val=True):
 		self.vdtools.set_update_P_inv(val)
 	
-	def setWidth(self,w):
+	def set_width(self,w):
 		self.w = w
 		self.drawable.resizeEvent(self.width(),self.height())
+		self.update_border_flag = True
 		
-	def setHeight(self,h):
+	def set_height(self,h):
 		self.h = h
 		self.drawable.resizeEvent(self.width(),self.height())
+		self.update_border_flag = True
 
 	def width(self):
 		try:
@@ -1539,6 +1561,9 @@ class EMGLView2D:
 		except:
 			return 0
 		#return self.drawable.height()
+	
+	def get_render_area_coords(self):
+		return self.vdtools.get_corners()
 	
 	def setData(self,data):
 		self.drawable.setData(data)
@@ -1566,20 +1591,24 @@ class EMGLView2D:
 		if ( h > self.viewportHeight() ):
 			self.h = self.viewportHeight()/self.sizescale
 	
-	def paintGL(self):
+	def paintGL(self,pretend=False):
 		
 		self.cam.position()
 		
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
+		
+		if pretend: return
+		
 		if (self.initflag == True):
 			self.testBoundaries()
 			self.initflag = False
 
 		
 		#self.mediator.checkBoundaryIssues()
-		if (self.updateFlag):
+		if (self.update_flag):
 			self.drawable.resizeEvent(self.width(),self.height())
-			self.updateFlag = False
+			self.update_flag = False
+			
 		glPushMatrix()
 		glTranslatef(-self.width()/2.0,-self.height()/2.0,0)
 		try: self.drawable.render()
@@ -1588,9 +1617,12 @@ class EMGLView2D:
 			print inst.args      # arguments stored in .args
 			print int
 		glPopMatrix()
+		
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
-		self.decoration.draw()
+		self.decoration.draw(self.update_border_flag)
+		self.update_border_flag = False
+		
 		if self.drawFrame: self.vdtools.drawFrame()
 		if not lighting: glDisable(GL_LIGHTING)
 		
@@ -1764,7 +1796,7 @@ class EMGLViewQtWidget:
 			self.itex = self.parent.bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 		
-	def paintGL(self):
+	def paintGL(self,pretend=False):
 		#print "paintGL children"
 		if (self.qwidget == None or self.itex == 0) :
 			#print "no widget - paintGL children return" 
@@ -1776,41 +1808,43 @@ class EMGLViewQtWidget:
 		# make sure the vdtools store the current matrices
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		
-		glPushMatrix()
-		glEnable(GL_TEXTURE_2D)
-		glBindTexture(GL_TEXTURE_2D,self.itex)
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
-		glBegin(GL_QUADS)
-		glTexCoord2f(0.,0.)
-		glVertex(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
-		glTexCoord2f(1.,0.)
-		glVertex( self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
-		glTexCoord2f(1.,1.)
-		glVertex( self.qwidget.width()/2.0, self.qwidget.height()/2.0)
-		glTexCoord2f(0.,1.)
-		glVertex( -self.qwidget.width()/2.0,self.qwidget.height()/2.0)
-		glEnd()
-		glDisable(GL_TEXTURE_2D)
-		glPopMatrix()
-	
-		lighting = glIsEnabled(GL_LIGHTING)
-		glEnable(GL_LIGHTING)
-		self.decoration.draw()
-		if self.drawFrame:
-			try: self.vdtools.drawFrame()
-			except Exception, inst:
-				print type(inst)     # the exception instance
-				print inst.args      # arguments stored in .args
-				print int
-		if (not lighting): glDisable(GL_LIGHTING)
+		if not pretend:
+		
+			glPushMatrix()
+			glEnable(GL_TEXTURE_2D)
+			glBindTexture(GL_TEXTURE_2D,self.itex)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
+			glBegin(GL_QUADS)
+			glTexCoord2f(0.,0.)
+			glVertex(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
+			glTexCoord2f(1.,0.)
+			glVertex( self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
+			glTexCoord2f(1.,1.)
+			glVertex( self.qwidget.width()/2.0, self.qwidget.height()/2.0)
+			glTexCoord2f(0.,1.)
+			glVertex( -self.qwidget.width()/2.0,self.qwidget.height()/2.0)
+			glEnd()
+			glDisable(GL_TEXTURE_2D)
+			glPopMatrix()
+		
+			lighting = glIsEnabled(GL_LIGHTING)
+			glEnable(GL_LIGHTING)
+			self.decoration.draw()
+			if self.drawFrame:
+				try: self.vdtools.drawFrame()
+				except Exception, inst:
+					print type(inst)     # the exception instance
+					print inst.args      # arguments stored in .args
+					print int
+			if (not lighting): glDisable(GL_LIGHTING)
 		
 		# now draw children if necessary - such as a qcombobox list view that has poppud up
 		for i in self.e2children:
 			glPushMatrix()
 			try:
-				i.paintGL()
+				i.paintGL(pretend)
 			except Exception, inst:
 				print type(inst)     # the exception instance
 				print inst.args      # arguments stored in .args
@@ -2138,7 +2172,7 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		if ( "GL_ARB_multisample" in glGetString(GL_EXTENSIONS) ): glEnable(GL_MULTISAMPLE)
 		else: glDisable(GL_MULTISAMPLE)
 		
-	def paintGL(self):
+	def paintGL(self,pretend=False):
 		#print "paintGL"
 		glClear(GL_COLOR_BUFFER_BIT)
 		if glIsEnabled(GL_DEPTH_TEST):
@@ -2149,7 +2183,7 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 	
-		self.floatwidget.render()
+		self.floatwidget.render(pretend)
 		
 	def resizeGL(self, width, height):
 		#print "resizeGL"
@@ -2275,7 +2309,7 @@ class EMFloatingWidgetsCore:
 		self.qwidgets.append(w)
 		
 		#print "initializeGL done"
-	def render(self):
+	def render(self,pretend=False):
 		
 		if ( self.initFlag == True ):
 			self.initFlag = False
@@ -2352,7 +2386,7 @@ class EMFloatingWidgetsCore:
 		for i in self.qwidgets:
 			#print "getting opengl matrices"
 			glPushMatrix()
-			i.paintGL()
+			i.paintGL(pretend)
 			glPopMatrix()
 			#print "paint child done"
 		

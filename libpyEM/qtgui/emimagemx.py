@@ -366,6 +366,18 @@ class EMImageMXCore:
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
+		try:
+			e = EMFTGL()
+			self.render_mode = EMImageMXCore.FTGL
+			self.font_renderer = EMFTGL()
+			self.font_renderer.set_face_size(16)
+			self.font_renderer.set_using_display_lists(True)
+			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+			
+			#self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
+		except:
+			self.render_mode = EMImageMXCore.GLUT
+
 		self.initsizeflag = True
 		self.inspector=None
 		if data:
@@ -391,17 +403,6 @@ class EMImageMXCore:
 		
 		self.reroute_delete_target = None
 
-		try:
-			e = EMFTGL()
-			self.render_mode = EMImageMXCore.FTGL
-			self.font_renderer = EMFTGL()
-			self.font_renderer.set_face_size(16)
-			self.font_renderer.set_using_display_lists(True)
-			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-			
-			#self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
-		except:
-			self.render_mode = EMImageMXCore.GLUT
 	
 	def set_reroute_delete_target(self,target):
 		self.reroute_delete_target = target
@@ -534,6 +535,8 @@ class EMImageMXCore:
 		#self.timer.start(25)
 		self.max_idx = len(data)
 		# experimental for lst file writing
+		if self.render_mode == EMImageMXCore.FTGL:
+			self.font_renderer.set_face_size(data[0].get_xsize()/8)
 		for i,d in enumerate(data):
 			d.set_attr("original_number",i)
 
@@ -564,7 +567,7 @@ class EMImageMXCore:
 		self.targetorigin=None
 		self.updateGL()
 		
-	def set_scale(self,newscale):
+	def set_scale(self,newscale,adjust=True):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		
 		if self.targetorigin : 
@@ -580,7 +583,8 @@ class EMImageMXCore:
 		yo=self.origin[1]
 #		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
 #		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(yo-self.height()/2)+self.height()/2)
-		self.origin=(newscale/self.scale*(self.parent.width()/2+self.origin[0])-self.parent.width()/2,newscale/self.scale*(self.parent.height()/2+self.origin[1])-self.parent.height()/2)
+		if adjust:
+			self.origin=(newscale/self.scale*(self.parent.width()/2+self.origin[0])-self.parent.width()/2,newscale/self.scale*(self.parent.height()/2+self.origin[1])-self.parent.height()/2)
 #		print self.origin,newscale/self.scale,yo,self.height()/2+yo
 		
 		self.scale=newscale
@@ -758,8 +762,8 @@ class EMImageMXCore:
 				# contrast the text labels...
 				a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
 				ims=[ord(pv) for pv in a]
-				if sum(ims)>32768 : txtcol=(0.0,0.0,0.2)
-				else : txtcol=(.8,.8,1.0)
+				if sum(ims)>32768 : txtcol=(0.0,0.0,0.0)
+				else : txtcol=(1,1,1.0)
 			except: txtcol=(1.0,1.0,1.0)
 	
 			if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
@@ -825,21 +829,29 @@ class EMImageMXCore:
 							height = th/2.0
 		
 							light = glIsEnabled(GL_LIGHTING)
-							glDisable(GL_LIGHTING)
+							glEnable(GL_LIGHTING)
 							glPushMatrix()
 							glTranslatef(tx+width,ty+height,0)
 							glBegin(GL_QUADS)
+							
 							glColor(0,0,0)
+							glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+							glMaterial(GL_FRONT,GL_SPECULAR,(.2,.4,.2,1.0))
+							glMaterial(GL_FRONT,GL_SHININESS,20.0)
+							glNormal(-.1,.1,1)
 							glVertex2f(-width,height)
 							glColor(0.15,0.15,0.15)
+							glNormal(-1,1,-0.1)
 							glVertex2f(-width,-height)	
 							glColor(0.3,0.3,0.3)
+							glNormal(.1,-.1,1)
 							glVertex2f(width,-height)
 							glColor(0.22,0.22,0.22)
+							glNormal(1,-1,0.1)
 							glVertex2f(width,height)
 							glEnd()
 							glPopMatrix()
-							if light: glEnable(GL_LIGHTING)
+							if not light: glEnable(GL_LIGHTING)
 						else: raise
 					except: pass
 					#i = (row+yoffset)*self.mx_cols+col+xoffset
@@ -864,24 +876,24 @@ class EMImageMXCore:
 							glEnable(GL_TEXTURE_2D)
 							glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 							lighting = glIsEnabled(GL_LIGHTING)
-							glEnable(GL_LIGHTING)
+							glDisable(GL_LIGHTING)
 							glEnable(GL_NORMALIZE)
 							tagy = ty
 							glColor(*txtcol)
-							glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
-							glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
-							glMaterial(GL_FRONT,GL_SHININESS,100.0)
+							#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
+							#glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
+							#glMaterial(GL_FRONT,GL_SHININESS,100.0)
 							for v in self.valstodisp:
 								glPushMatrix()
 								glTranslate(tx,tagy,0)
 								bbox = self.bounding_box(str(i))
-								glScale(self.scale,self.scale,self.scale)
-								glTranslate(-bbox[0]+2,-bbox[1]+2,-bbox[2]+2)
-								glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
-								glRotate(-10,1,0,0)
-								glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
 								
 								
+								#glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
+								#glRotate(-10,1,0,0)
+								#glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
+								glTranslate(4,4,0.1)
+								glScale(self.scale,self.scale,1)
 								if v=="Img #" : 
 									#print i,self.img_num_offset,self.max_idx,(i+self.img_num_offset)%self.max_idx,
 									idx = i+self.img_num_offset
@@ -1012,7 +1024,11 @@ class EMImageMXCore:
 
 	def resizeEvent(self, width, height):
 		
-		if self.data and len(self.data)>0 : self.set_mx_cols(int(width/(self.data[0].get_xsize()*self.scale)))
+		if self.data and len(self.data)>0 :
+			if self.data[0].get_xsize()*self.scale != 0:
+				self.set_mx_cols(int(width/(self.data[0].get_xsize()*self.scale)))
+			else:
+				print "error", self.data[0].get_xsize(),self.scale
 		#except: pass
 		
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.parent.height() or self.data[0].get_xsize()*self.scale>self.parent.width()):
@@ -1161,7 +1177,7 @@ class EMImageMXCore:
 			self.mousedrag=None
 
 class EMImageMxInspector2D(QtGui.QWidget):
-	def __init__(self,target,allow_col_variation=False,allow_window_variation=False) :
+	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		
@@ -1213,6 +1229,9 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.bsavelst = QtGui.QPushButton("Save Lst")
 		self.vbl2.addWidget(self.bsavelst)
 
+		if allow_opt_button:
+			self.opt_fit = QtGui.QPushButton("Opt. Fit")
+			self.vbl2.addWidget(self.opt_fit)
 
 		self.bsnapshot = QtGui.QPushButton("Snap")
 		self.vbl2.addWidget(self.bsnapshot)
@@ -1338,6 +1357,8 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.setDragMode)
 
 		QtCore.QObject.connect(self.bsavedata, QtCore.SIGNAL("clicked(bool)"), self.saveData)
+		if allow_opt_button:
+			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target.optimize_fit)
 		QtCore.QObject.connect(self.bsavelst, QtCore.SIGNAL("clicked(bool)"), self.saveLst)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
 	
@@ -1346,6 +1367,15 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.busy=1
 		self.scale.setValue(val)
 		self.busy=0
+		
+	def set_n_cols(self,val):
+		self.nrow.setValue(val)
+		
+	def set_n_rows(self,val):
+		self.ncol.setValue(val)
+		
+	def set_mxs(self,val):
+		self.nmx = val
 	
 	def saveData(self):
 		if self.target.data==None or len(self.target.data)==0: return

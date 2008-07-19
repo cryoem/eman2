@@ -73,15 +73,14 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImageMXRotary.allim[self]=0
 		
-		
 		self.image_rotary = EMImageMXRotaryCore(data,self)
 		
 		self.imagefilename = None
 		
 		self.fov = 20
 		self.aspect = 1.0
-		self.zNear = 10000
-		self.zFar = 20000
+		self.z_near = 6000
+		self.z_far = 13000
 		
 		self.animatables = []
 		
@@ -156,13 +155,26 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
 		self.aspect = float(width)/float(height)
-		GLU.gluPerspective(self.fov,self.aspect,self.zNear,self.zFar)
+		GLU.gluPerspective(self.fov,self.aspect,self.z_near,self.z_far)
 		#GL.glOrtho(0.0,width,0.0,height,-width,width)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
 		self.image_rotary.resize_event(width,height)
+	
+	def set_near_far(self,near,far):
+		self.z_near = near
+		self.z_far = far
 		
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GLU.gluPerspective(self.fov,self.aspect,self.z_near,self.z_far)
+		#GL.glOrtho(0.0,width,0.0,height,-width,width)
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+		
+	
+		self.image_rotary.resize_event(-1,-1)
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
@@ -244,6 +256,11 @@ class EMImageMXRotaryCore:
 		self.mmode = 'app'
 		self.rot_mode = 'app'
 		
+		self.z_near = 0
+		self.z_far = 0
+		
+		self.s_flag = False
+		
 	def get_rows(self):
 		return self.mx_rows
 	
@@ -259,17 +276,17 @@ class EMImageMXRotaryCore:
 	
 	def set_mx_cols(self,cols):
 		self.mx_cols = cols
-		self.__regenerate_rotary()
+		self.__refresh_rotary(True)
 		self.updateGL()
 		
 	def set_mx_rows(self,rows):
 		self.mx_rows = rows
-		self.__regenerate_rotary()
+		self.__refresh_rotary(True)
 		self.updateGL()
 	
 	def set_mxs(self,mxs):
 		self.visible_mxs = mxs
-		self.__regenerate_rotary()
+		self.__regenerate_rotary() # this could be done more efficiently
 		self.updateGL()
 	
 	def set_mmode(self,mode):
@@ -364,6 +381,18 @@ class EMImageMXRotaryCore:
 		self.rot_mode = mode
 		self.rotary.set_mmode(mode)
 
+	def optimize_fit(self):
+		render_width = self.parent.width()
+		render_height = self.parent.height()
+		
+		self.mx_rows = render_width/self.emdata_list_cache.get_image_width()
+		self.mx_cols = render_height/self.emdata_list_cache.get_image_height()
+		
+		self.inspector.set_n_cols(self.mx_cols)
+		self.inspector.set_n_rows(self.mx_rows)
+
+		self.__refresh_rotary(True)
+		self.updateGL()
 	def set_frozen(self,frozen):
 		self.rotary.set_frozen(frozen)
 
@@ -404,8 +433,9 @@ class EMImageMXRotaryCore:
 		self.emdata_list_cache = EMDataListCache(name)
 		self.__regenerate_rotary()
 	
-	def __refresh_rotary(self):
+	def __refresh_rotary(self,inc_size=False):
 		num_per_view = self.mx_rows*self.mx_cols
+		
 		for idx in range(0,self.visible_mxs):
 			n = idx + self.start_mx
 			start_idx = n*num_per_view
@@ -416,12 +446,42 @@ class EMImageMXRotaryCore:
 			
 			d = []
 			for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
-			e.setWidth(self.mx_rows*d[0].get_xsize())
-			e.setHeight(self.mx_cols*d[0].get_ysize())
 			
 			w.setData(d)
+				
+				
 			w.set_min_max_gamma(self.minden,self.maxden,self.gamma)
 			w.set_max_idx(self.emdata_list_cache.get_max_idx())
+			
+		if inc_size:
+			self.__refresh_rotary_size()
+
+	def __refresh_rotary_size(self):
+		if len(self.rotary) == 0: return
+		
+		self.render_width = self.parent.width()
+		self.render_height = self.parent.height()
+		width = self.mx_rows*self.emdata_list_cache.get_image_width()
+		height = self.mx_cols*self.emdata_list_cache.get_image_height()
+		scale1 = self.render_height/float(height)
+		scale2 = self.render_width/float(width)
+		
+		if self.render_width > self.render_height:
+			self.render_height =float(height)/width*self.render_width
+			scale = scale2
+		else:
+			self.render_width =float(width)/height*self.render_height
+			scale = scale1
+		
+		for idx in range(0,self.visible_mxs):
+			e = self.rotary[idx]
+			w = e.get_drawable()
+
+			w.set_scale(scale,False)
+			e.set_width(self.render_width)
+			e.set_height(self.render_height)
+			
+		self.rotary.update()
 
 	def __regenerate_rotary(self):
 		self.rotary.clear_widgets()
@@ -431,8 +491,6 @@ class EMImageMXRotaryCore:
 			d = []
 			for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 			e = EMGLView2D(self,d)
-			e.setWidth(self.mx_rows*d[0].get_xsize())
-			e.setHeight(self.mx_cols*d[0].get_ysize())
 			w = e.get_drawable()
 			w.set_img_num_offset(start_idx%self.emdata_list_cache.get_max_idx())
 			w.set_max_idx(self.emdata_list_cache.get_max_idx())
@@ -441,6 +499,8 @@ class EMImageMXRotaryCore:
 			w.set_reroute_delete_target(self)
 			self.rotary.add_widget(e)
 
+		self.__refresh_rotary_size()
+		
 		w = self.rotary[0].get_drawable()
 		self.minden = w.get_density_min()
 		self.maxden = w.get_density_max()
@@ -455,18 +515,35 @@ class EMImageMXRotaryCore:
 
 	def render(self):
 		
+		if not self.parent.isVisible(): return
+		if self.emdata_list_cache == None: return
+	
 		glLoadIdentity()
 		
 		lr = self.rotary.get_suggested_lr_bt_nf()
-		print lr
+		suppress = False
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
-		#print self.parent.get_depth_for_height(self.height())
-		#lr = self.rotary.get_lr_bt_nf()
-
+		z = self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
+		lrt = self.widget.get_lr_bt_nf()
+		z_near = z-lrt[4]
+		z_trans = 0
+		z_far = z-lrt[5]
+		if z_near < 0:
+			z_trans = z_near
+			z_near = 0.1
+			z_far -= z_trans
+		if z_far < 0: z_far = 0.1 # hacking alert
+		if self.z_near != z_near or self.z_far != z_far:
+			self.z_near = z_near
+			self.z_far = z_far
+			self.parent.set_near_far(self.z_near,self.z_far)
+			suppress = True
+		
+		
 		GL.glPushMatrix()
-		print -self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
-		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2])))
+		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
+		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans+abs(lr[3]-lr[2]))
 		self.widget.paintGL()
 		GL.glPopMatrix()
 	
@@ -485,7 +562,8 @@ class EMImageMXRotaryCore:
 	def init_inspector(self):
 		allow_col_variation = True
 		allow_mx_variation = True
-		if not self.inspector : self.inspector=EMImageMxInspector2D(self,allow_col_variation,allow_mx_variation)
+		opt_fit_button_on = True
+		if not self.inspector : self.inspector=EMImageMxInspector2D(self,allow_col_variation,allow_mx_variation,opt_fit_button_on)
 		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def mousePressEvent(self, event):
@@ -518,7 +596,9 @@ class EMImageMXRotaryCore:
 
 	def resize_event(self, width, height):
 		self.rotary.resize_event(width,height)
-
+		self.__refresh_rotary_size()
+		
+	
 class EMDataListCache:
 	'''
 	This class designed primarily for memory management in the context of large lists of EMData objects.
@@ -527,7 +607,7 @@ class EMDataListCache:
 	'''
 	LIST_MODE = 'list_mode'
 	FILE_MODE = 'file_mode'
-	def __init__(self,object,cache_size=100,start_idx=0):
+	def __init__(self,object,cache_size=200,start_idx=0):
 		if isinstance(object,list):
 			# in list mode there is no real caching
 			self.mode = EMDataListCache.LIST_MODE
@@ -544,18 +624,30 @@ class EMDataListCache:
 			self.file_name = object
 			self.max_idx = EMUtil.get_image_count(self.file_name)
 			self.images = {}
-			self.start_idx = start_idx
 			if self.max_idx < cache_size:
 				self.cache_size = self.max_idx
 			else:
 				self.cache_size = cache_size
+			self.start_idx = start_idx - self.cache_size/2
 			self.__refresh_cache()
 		else:
 			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
 			return
 		
 		self.soft_delete = True # toggle to prevent permanent deletion of particles
+		self.image_width = -1
+		self.image_height = -1
+		
+	def get_image_width(self):
+		idx = self.start_idx
+		if idx != 0: idx = idx % self.max_idx
+		return self.images[idx].get_xsize()
 	
+	def get_image_height(self):
+		idx = self.start_idx
+		if idx != 0: idx = idx % self.max_idx
+		return self.images[idx].get_ysize()
+		
 	def delete_box(self,idx):
 		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
 			# we can actually delete the emdata object
@@ -642,8 +734,8 @@ if __name__ == '__main__':
 		#a=EMData.read_images(sys.argv[1])
 		window.set_image_file_name(sys.argv[1])
 	window2=EMParentWin(window)
-	window2.show()
 	window2.resize(*window.get_optimal_size())
+	window2.show()
 #	w2=QtGui.QWidget()
 #	w2.resize(256,128)
 	
