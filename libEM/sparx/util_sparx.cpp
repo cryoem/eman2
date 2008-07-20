@@ -1683,48 +1683,47 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 
 EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode, Util::KaiserBessel& kb){
 // input image is twice the size of the original image
-   int nring = numr.size()/3;
-   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   EMData* out = new EMData();
-   out->set_size(lcirc,1,1);
-   char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
-   float *circ = out->get_data();
-   float *fimage = image->get_data();
-   int nx = image->get_xsize();
-   int ny = image->get_ysize();
-   int nz = image->get_zsize();
-   double dpi, dfi;
-   int    it, jt, inr, l, nsim, kcirc, lt;
-   float  yq, xold, yold, fi, x, y;
+	int nring = numr.size()/3;
+	int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	EMData* out = new EMData();
+	out->set_size(lcirc,1,1);
+	char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
+	float *circ = out->get_data();
+	float *fimage = image->get_data();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	double dpi, dfi;
+	int    it, jt, inr, l, nsim, kcirc, lt;
+	float  yq, xold, yold, fi, x, y;
 
-   //     cns2 and cnr2 are predefined centers
-   //     no need to set to zero, all elements are defined
+	//     cns2 and cnr2 are predefined centers
+	//     no need to set to zero, all elements are defined
 
-   dpi = 2*atan(1.0);
-   for (it=1;it<=nring;it++) {
-      // radius of the ring
-      inr = numr(1,it);
-      yq  = static_cast<float>(inr);
+	dpi = 2*atan(1.0);
+	for (it=1;it<=nring;it++) {
+		// radius of the ring
+		inr = numr(1,it);
+		yq  = static_cast<float>(inr);
 
-      l = numr(3,it);
-      if ( mode == 'h' || mode == 'H' ) { 
-         lt = l / 2;
-      }
-      else { // if ( mode == 'f' || mode == 'F' )
-         lt = l / 4;
-      } 
+		l = numr(3,it);
+		if ( mode == 'h' || mode == 'H' ) { 
+			lt = l / 2;
+		} else { // if ( mode == 'f' || mode == 'F' )
+			lt = l / 4;
+		} 
 
-      nsim  = lt - 1;
-      dfi   = dpi / (nsim+1);
-      kcirc = numr(2,it);
-      xold  = 0.0f;
-      yold  = static_cast<float>(inr);
-      circ(kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+		nsim  = lt - 1;
+		dfi   = dpi / (nsim+1);
+		kcirc = numr(2,it);
+		xold  = 0.0f;
+		yold  = static_cast<float>(inr);
+		circ(kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //      circ(kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
       
-      xold  = static_cast<float>(inr);
-      yold  = 0.0f;
-      circ(lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+		xold  = static_cast<float>(inr);
+		yold  = 0.0f;
+		circ(lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //      circ(lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
       if ( mode == 'f' || mode == 'F' ) {
@@ -1800,49 +1799,48 @@ fftr_d(xcmplx,nv)
 //-----------------------------------------
 void Util::fftc_d(double *br, double *bi, int ln, int ks)
 {
-   double rni,sgn,tr1,tr2,ti1,ti2;
-   double cc,c,ss,s,t,x2,x3,x4,x5;
-   int    b3,b4,b5,b6,b7,b56;
-   int    n, k, l, j, i, ix0, ix1, status=0;
+	double rni,sgn,tr1,tr2,ti1,ti2;
+	double cc,c,ss,s,t,x2,x3,x4,x5;
+	int    b3,b4,b5,b6,b7,b56;
+	int    n, k, l, j, i, ix0, ix1, status=0;
 
-   const double tab1[] = {
-   9.58737990959775e-5,
-   1.91747597310703e-4,
-   3.83495187571395e-4,
-   7.66990318742704e-4,
-   1.53398018628476e-3,
-   3.06795676296598e-3,
-   6.13588464915449e-3,
-   1.22715382857199e-2,
-   2.45412285229123e-2,
-   4.90676743274181e-2,
-   9.80171403295604e-2,
-   1.95090322016128e-1,
-   3.82683432365090e-1,
-   7.07106781186546e-1,
-   1.00000000000000,
-   };
+	const double tab1[] = {
+		9.58737990959775e-5,
+		1.91747597310703e-4,
+		3.83495187571395e-4,
+		7.66990318742704e-4,
+		1.53398018628476e-3,
+		3.06795676296598e-3,
+		6.13588464915449e-3,
+		1.22715382857199e-2,
+		2.45412285229123e-2,
+		4.90676743274181e-2,
+		9.80171403295604e-2,
+		1.95090322016128e-1,
+		3.82683432365090e-1,
+		7.07106781186546e-1,
+		1.00000000000000,
+	};
 
-   n=(int)pow(2.f,ln);
+	n=(int)pow(2.f,ln);
 
-   k=abs(ks);
-   l=16-ln;
-   b3=n*k;
-   b6=b3;
-   b7=k;
-   if (ks > 0) {
-      sgn=1.0;
-   }
-   else {
-      sgn=-1.0;
-      rni=1.0/(float)(n);
-      j=1;
-      for (i=1;i<=n;i++) {
-         br(j)=br(j)*rni;
-         bi(j)=bi(j)*rni;
-         j=j+k;
-      }
-   }
+	k=abs(ks);
+	l=16-ln;
+	b3=n*k;
+	b6=b3;
+	b7=k;
+	if (ks > 0) {
+		sgn=1.0;
+	} else {
+		sgn=-1.0;
+		rni=1.0/(float)(n);
+		j=1;
+		for (i=1;i<=n;i++) {
+			br(j)=br(j)*rni;
+			bi(j)=bi(j)*rni;
+			j=j+k;
+		}
+	}
 
 L12:
    b6=b6/2;
@@ -1958,51 +1956,50 @@ EXIT:
 // -----------------------------------------------------------------
 void Util::fftc_q(float *br, float *bi, int ln, int ks)
 {
-   //  dimension  br(1),bi(1)
+	//  dimension  br(1),bi(1)
 
-   int b3,b4,b5,b6,b7,b56;
-   int n, k, l, j, i, ix0, ix1; 
-   float rni, tr1, ti1, tr2, ti2, cc, c, ss, s, t, x2, x3, x4, x5, sgn;
-   int status=0;
+	int b3,b4,b5,b6,b7,b56;
+	int n, k, l, j, i, ix0, ix1; 
+	float rni, tr1, ti1, tr2, ti2, cc, c, ss, s, t, x2, x3, x4, x5, sgn;
+	int status=0;
 
-   const float tab1[] = {
-   9.58737990959775e-5f,
-   1.91747597310703e-4f,
-   3.83495187571395e-4f,
-   7.66990318742704e-4f,
-   1.53398018628476e-3f,
-   3.06795676296598e-3f,
-   6.13588464915449e-3f,
-   1.22715382857199e-2f,
-   2.45412285229123e-2f,
-   4.90676743274181e-2f,
-   9.80171403295604e-2f,
-   1.95090322016128e-1f,
-   3.82683432365090e-1f,
-   7.07106781186546e-1f,
-   1.00000000000000f,
-   };
+	const float tab1[] = {
+		9.58737990959775e-5f,
+		1.91747597310703e-4f,
+		3.83495187571395e-4f,
+		7.66990318742704e-4f,
+		1.53398018628476e-3f,
+		3.06795676296598e-3f,
+		6.13588464915449e-3f,
+		1.22715382857199e-2f,
+		2.45412285229123e-2f,
+		4.90676743274181e-2f,
+		9.80171403295604e-2f,
+		1.95090322016128e-1f,
+		3.82683432365090e-1f,
+		7.07106781186546e-1f,
+		1.00000000000000f,
+	};
 
-   n=(int)pow(2.f,ln);
+	n=(int)pow(2.f,ln);
 
-   k=abs(ks);
-   l=16-ln;
-   b3=n*k;
-   b6=b3;
-   b7=k;
-   if( ks > 0 ) {
-      sgn=1.0f;
-   } 
-   else {
-      sgn=-1.0f;
-      rni=1.0f/(float)n;
-      j=1;
-      for (i=1; i<=n;i++) {
-         br(j)=br(j)*rni;
-         bi(j)=bi(j)*rni;
-         j=j+k;
-      }
-   }
+	k=abs(ks);
+	l=16-ln;
+	b3=n*k;
+	b6=b3;
+	b7=k;
+	if( ks > 0 ) {
+	   sgn=1.0f;
+	} else {
+		sgn=-1.0f;
+		rni=1.0f/(float)n;
+		j=1;
+		for (i=1; i<=n;i++) {
+			br(j)=br(j)*rni;
+			bi(j)=bi(j)*rni;
+			j=j+k;
+		}
+	}
 L12:
    b6=b6/2;
    b5=b6;
@@ -2111,108 +2108,108 @@ void  Util::fftr_q(float *xcmplx, int nv)
 {
    // dimension xcmplx(2,1); xcmplx(1,i) --- real, xcmplx(2,i) --- imaginary
 
-   int nu, inv, nu1, n, isub, n2, i1, i2, i;
-   float ss, cc, c, s, tr, ti, tr1, tr2, ti1, ti2, t;
+	int nu, inv, nu1, n, isub, n2, i1, i2, i;
+	float ss, cc, c, s, tr, ti, tr1, tr2, ti1, ti2, t;
 
-   const float tab1[] = {
-   9.58737990959775e-5f,
-   1.91747597310703e-4f,
-   3.83495187571395e-4f,
-   7.66990318742704e-4f,
-   1.53398018628476e-3f,
-   3.06795676296598e-3f,
-   6.13588464915449e-3f,
-   1.22715382857199e-2f,
-   2.45412285229123e-2f,
-   4.90676743274181e-2f,
-   9.80171403295604e-2f,
-   1.95090322016128e-1f,
-   3.82683432365090e-1f,
-   7.07106781186546e-1f,
-   1.00000000000000f,
-   };
+	const float tab1[] = {
+		9.58737990959775e-5f,
+		1.91747597310703e-4f,
+		3.83495187571395e-4f,
+		7.66990318742704e-4f,
+		1.53398018628476e-3f,
+		3.06795676296598e-3f,
+		6.13588464915449e-3f,
+		1.22715382857199e-2f,
+		2.45412285229123e-2f,
+		4.90676743274181e-2f,
+		9.80171403295604e-2f,
+		1.95090322016128e-1f,
+		3.82683432365090e-1f,
+		7.07106781186546e-1f,
+		1.00000000000000f,
+	};
 
-   nu=abs(nv);
-   inv=nv/nu;
-   nu1=nu-1;
-   n=(int)pow(2.f,nu1);
-   isub=16-nu1;
+	nu=abs(nv);
+	inv=nv/nu;
+	nu1=nu-1;
+	n=(int)pow(2.f,nu1);
+	isub=16-nu1;
 
-   ss=-tab1(isub);
-   cc=-2.0f*pow(tab1(isub-1),2.f);
-   c=1.0f;
-   s=0.0f;
-   n2=n/2;
-   if ( inv > 0) {
-      fftc_q(&xcmplx(1,1),&xcmplx(2,1),nu1,2);
-      tr=xcmplx(1,1);
-      ti=xcmplx(2,1);
-      xcmplx(1,1)=tr+ti;
-      xcmplx(2,1)=tr-ti;
-      for (i=1;i<=n2;i++) {
-         i1=i+1;
-         i2=n-i+1;
-         tr1=xcmplx(1,i1);
-         tr2=xcmplx(1,i2);
-         ti1=xcmplx(2,i1);
-         ti2=xcmplx(2,i2);
-         t=(cc*c-ss*s)+c;
-         s=(cc*s+ss*c)+s;
-         c=t;
-         xcmplx(1,i1)=0.5f*((tr1+tr2)+(ti1+ti2)*c-(tr1-tr2)*s);
-         xcmplx(1,i2)=0.5f*((tr1+tr2)-(ti1+ti2)*c+(tr1-tr2)*s);
-         xcmplx(2,i1)=0.5f*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
-         xcmplx(2,i2)=0.5f*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
-     }
-   }
-   else {
-     tr=xcmplx(1,1);
-     ti=xcmplx(2,1);
-     xcmplx(1,1)=0.5f*(tr+ti);
-     xcmplx(2,1)=0.5f*(tr-ti);
-     for (i=1; i<=n2; i++) {
-        i1=i+1;
-        i2=n-i+1;
-        tr1=xcmplx(1,i1);
-        tr2=xcmplx(1,i2);
-        ti1=xcmplx(2,i1);
-        ti2=xcmplx(2,i2);
-        t=(cc*c-ss*s)+c;
-        s=(cc*s+ss*c)+s;
-        c=t;
-        xcmplx(1,i1)=0.5f*((tr1+tr2)-(tr1-tr2)*s-(ti1+ti2)*c);
-        xcmplx(1,i2)=0.5f*((tr1+tr2)+(tr1-tr2)*s+(ti1+ti2)*c);
-        xcmplx(2,i1)=0.5f*((ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
-        xcmplx(2,i2)=0.5f*(-(ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
-     }
-     fftc_q(&xcmplx(1,1),&xcmplx(2,1),nu1,-2);
-   }
+	ss=-tab1(isub);
+	cc=-2.0f*pow(tab1(isub-1),2.f);
+	c=1.0f;
+	s=0.0f;
+	n2=n/2;
+	if ( inv > 0) {
+		fftc_q(&xcmplx(1,1),&xcmplx(2,1),nu1,2);
+		tr=xcmplx(1,1);
+		ti=xcmplx(2,1);
+		xcmplx(1,1)=tr+ti;
+		xcmplx(2,1)=tr-ti;
+		for (i=1;i<=n2;i++) {
+			i1=i+1;
+			i2=n-i+1;
+			tr1=xcmplx(1,i1);
+			tr2=xcmplx(1,i2);
+			ti1=xcmplx(2,i1);
+			ti2=xcmplx(2,i2);
+			t=(cc*c-ss*s)+c;
+			s=(cc*s+ss*c)+s;
+			c=t;
+			xcmplx(1,i1)=0.5f*((tr1+tr2)+(ti1+ti2)*c-(tr1-tr2)*s);
+			xcmplx(1,i2)=0.5f*((tr1+tr2)-(ti1+ti2)*c+(tr1-tr2)*s);
+			xcmplx(2,i1)=0.5f*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+			xcmplx(2,i2)=0.5f*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+		}
+	}
+	else {
+		tr=xcmplx(1,1);
+		ti=xcmplx(2,1);
+		xcmplx(1,1)=0.5f*(tr+ti);
+		xcmplx(2,1)=0.5f*(tr-ti);
+		for (i=1; i<=n2; i++) {
+			i1=i+1;
+			i2=n-i+1;
+			tr1=xcmplx(1,i1);
+			tr2=xcmplx(1,i2);
+			ti1=xcmplx(2,i1);
+			ti2=xcmplx(2,i2);
+			t=(cc*c-ss*s)+c;
+			s=(cc*s+ss*c)+s;
+			c=t;
+			xcmplx(1,i1)=0.5f*((tr1+tr2)-(tr1-tr2)*s-(ti1+ti2)*c);
+			xcmplx(1,i2)=0.5f*((tr1+tr2)+(tr1-tr2)*s+(ti1+ti2)*c);
+			xcmplx(2,i1)=0.5f*((ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+			xcmplx(2,i2)=0.5f*(-(ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+		}
+		fftc_q(&xcmplx(1,1),&xcmplx(2,1),nu1,-2);
+	}
 }
 
 // -------------------------------------------
 void  Util::fftr_d(double *xcmplx, int nv) 
 {
-   // double precision  x(2,1)
-   int    i1, i2,  nu, inv, nu1, n, isub, n2, i;
-   double tr1,tr2,ti1,ti2,tr,ti;
-   double cc,c,ss,s,t;
-   const double tab1[] = {
-   9.58737990959775e-5,
-   1.91747597310703e-4,
-   3.83495187571395e-4,
-   7.66990318742704e-4,
-   1.53398018628476e-3,
-   3.06795676296598e-3,
-   6.13588464915449e-3,
-   1.22715382857199e-2,
-   2.45412285229123e-2,
-   4.90676743274181e-2,
-   9.80171403295604e-2,
-   1.95090322016128e-1,
-   3.82683432365090e-1,
-   7.07106781186546e-1,
-   1.00000000000000,
-   };
+	// double precision  x(2,1)
+	int    i1, i2,  nu, inv, nu1, n, isub, n2, i;
+	double tr1,tr2,ti1,ti2,tr,ti;
+	double cc,c,ss,s,t;
+	const double tab1[] = {
+		9.58737990959775e-5,
+		1.91747597310703e-4,
+		3.83495187571395e-4,
+		7.66990318742704e-4,
+		1.53398018628476e-3,
+		3.06795676296598e-3,
+		6.13588464915449e-3,
+		1.22715382857199e-2,
+		2.45412285229123e-2,
+		4.90676743274181e-2,
+		9.80171403295604e-2,
+		1.95090322016128e-1,
+		3.82683432365090e-1,
+		7.07106781186546e-1,
+		1.00000000000000,
+	};
 /*
    tab1(1)=9.58737990959775e-5;
    tab1(2)=1.91747597310703e-4;
@@ -2230,61 +2227,61 @@ void  Util::fftr_d(double *xcmplx, int nv)
    tab1(14)=7.07106781186546e-1;
    tab1(15)=1.00000000000000;
 */
-   nu=abs(nv);
-   inv=nv/nu;
-   nu1=nu-1;
-   n=(int)pow(2.f,nu1);
-   isub=16-nu1;
-   ss=-tab1(isub);
-   cc=-2.0*pow(tab1(isub-1),2);
-   c=1.0;
-   s=0.0;
-   n2=n/2;
+	nu=abs(nv);
+	inv=nv/nu;
+	nu1=nu-1;
+	n=(int)pow(2.f,nu1);
+	isub=16-nu1;
+	ss=-tab1(isub);
+	cc=-2.0*pow(tab1(isub-1),2);
+	c=1.0;
+	s=0.0;
+	n2=n/2;
 
-   if ( inv > 0 ) {
-      fftc_d(&xcmplx(1,1),&xcmplx(2,1),nu1,2);
-      tr=xcmplx(1,1);
-      ti=xcmplx(2,1);
-      xcmplx(1,1)=tr+ti;
-      xcmplx(2,1)=tr-ti;
-      for (i=1;i<=n2;i++) {
-         i1=i+1;
-         i2=n-i+1;
-         tr1=xcmplx(1,i1);
-         tr2=xcmplx(1,i2);
-         ti1=xcmplx(2,i1);
-         ti2=xcmplx(2,i2);
-         t=(cc*c-ss*s)+c;
-         s=(cc*s+ss*c)+s;
-         c=t;
-         xcmplx(1,i1)=0.5*((tr1+tr2)+(ti1+ti2)*c-(tr1-tr2)*s);
-         xcmplx(1,i2)=0.5*((tr1+tr2)-(ti1+ti2)*c+(tr1-tr2)*s);
-         xcmplx(2,i1)=0.5*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
-         xcmplx(2,i2)=0.5*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
-      }
-   }
-   else {
-      tr=xcmplx(1,1);
-      ti=xcmplx(2,1);
-      xcmplx(1,1)=0.5*(tr+ti);
-      xcmplx(2,1)=0.5*(tr-ti);
-      for (i=1;i<=n2;i++) {
-         i1=i+1;
-         i2=n-i+1;
-         tr1=xcmplx(1,i1);
-         tr2=xcmplx(1,i2);
-         ti1=xcmplx(2,i1);
-         ti2=xcmplx(2,i2);
-         t=(cc*c-ss*s)+c;
-         s=(cc*s+ss*c)+s;
-         c=t;
-         xcmplx(1,i1)=0.5*((tr1+tr2)-(tr1-tr2)*s-(ti1+ti2)*c);
-         xcmplx(1,i2)=0.5*((tr1+tr2)+(tr1-tr2)*s+(ti1+ti2)*c);
-         xcmplx(2,i1)=0.5*((ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
-         xcmplx(2,i2)=0.5*(-(ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
-      } 
-      fftc_d(&xcmplx(1,1),&xcmplx(2,1),nu1,-2);
-   } 
+	if ( inv > 0 ) {
+		fftc_d(&xcmplx(1,1),&xcmplx(2,1),nu1,2);
+		tr=xcmplx(1,1);
+		ti=xcmplx(2,1);
+		xcmplx(1,1)=tr+ti;
+		xcmplx(2,1)=tr-ti;
+		for (i=1;i<=n2;i++) {
+			i1=i+1;
+			i2=n-i+1;
+			tr1=xcmplx(1,i1);
+			tr2=xcmplx(1,i2);
+			ti1=xcmplx(2,i1);
+			ti2=xcmplx(2,i2);
+			t=(cc*c-ss*s)+c;
+			s=(cc*s+ss*c)+s;
+			c=t;
+			xcmplx(1,i1)=0.5*((tr1+tr2)+(ti1+ti2)*c-(tr1-tr2)*s);
+			xcmplx(1,i2)=0.5*((tr1+tr2)-(ti1+ti2)*c+(tr1-tr2)*s);
+			xcmplx(2,i1)=0.5*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+			xcmplx(2,i2)=0.5*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+		}
+	}
+	else {
+		tr=xcmplx(1,1);
+		ti=xcmplx(2,1);
+		xcmplx(1,1)=0.5*(tr+ti);
+		xcmplx(2,1)=0.5*(tr-ti);
+		for (i=1;i<=n2;i++) {
+			i1=i+1;
+			i2=n-i+1;
+			tr1=xcmplx(1,i1);
+			tr2=xcmplx(1,i2);
+			ti1=xcmplx(2,i1);
+			ti2=xcmplx(2,i2);
+			t=(cc*c-ss*s)+c;
+			s=(cc*s+ss*c)+s;
+			c=t;
+			xcmplx(1,i1)=0.5*((tr1+tr2)-(tr1-tr2)*s-(ti1+ti2)*c);
+			xcmplx(1,i2)=0.5*((tr1+tr2)+(tr1-tr2)*s+(ti1+ti2)*c);
+			xcmplx(2,i1)=0.5*((ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+			xcmplx(2,i2)=0.5*(-(ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+		} 
+		fftc_d(&xcmplx(1,1),&xcmplx(2,1),nu1,-2);
+	} 
 } 
 #undef  tab1
 #undef  xcmplx
@@ -2293,10 +2290,10 @@ void  Util::fftr_d(double *xcmplx, int nv)
 
 // This function conducts the Fourier Transform for a set of rings
 void Util::Frngs(EMData* circp, vector<int> numr){
-   int nring = numr.size()/3;
-   float *circ = circp->get_data();
-   int i, l; 
-   for (i=1; i<=nring;i++) {
+	int nring = numr.size()/3;
+	float *circ = circp->get_data();
+	int i, l; 
+	for (i=1; i<=nring;i++) {
 
 #ifdef _WIN32
 	l = (int)( log((float)numr(3,i))/log(2.0f) );
@@ -2305,14 +2302,14 @@ void Util::Frngs(EMData* circp, vector<int> numr){
 #endif	//_WIN32
 
 	fftr_q(&circ(numr(2,i)),l);
-   }
+	}
 }
 // This function conducts the Inverse Fourier Transform for a set of rings
 void Util::Frngs_inv(EMData* circp, vector<int> numr){
-   int nring = numr.size()/3;
-   float *circ = circp->get_data();
-   int i, l; 
-   for (i=1; i<=nring;i++) {
+	int nring = numr.size()/3;
+	float *circ = circp->get_data();
+	int i, l; 
+	for (i=1; i<=nring;i++) {
 
 #ifdef _WIN32
 	l = (int)( log((float)numr(3,i))/log(2.0f) );
@@ -2321,42 +2318,42 @@ void Util::Frngs_inv(EMData* circp, vector<int> numr){
 #endif	//_WIN32
 
 	fftr_q(&circ(numr(2,i)),-l);
-   }
+	}
 }
 #undef  circ
 
 #define  b(i)            b[i-1]
 void Util::prb1d(double *b, int npoint, float *pos)
 {
-   double  c2,c3;
-   int     nhalf;
+	double  c2,c3;
+	int 	nhalf;
 
-   nhalf = npoint/2 + 1;
-   *pos  = 0.0;
+	nhalf = npoint/2 + 1;
+	*pos  = 0.0;
 
-   if (npoint == 7) {
-      c2 = 49.*b(1) + 6.*b(2) - 21.*b(3) - 32.*b(4) - 27.*b(5)
-         - 6.*b(6) + 31.*b(7);
-      c3 = 5.*b(1) - 3.*b(3) - 4.*b(4) - 3.*b(5) + 5.*b(7);
-   } 
-   else if (npoint == 5) {
-      c2 = (74.*b(1) - 23.*b(2) - 60.*b(3) - 37.*b(4)
-         + 46.*b(5) ) / (-70.);
-      c3 = (2.*b(1) - b(2) - 2.*b(3) - b(4) + 2.*b(5) ) / 14.0;
-   }
-   else if (npoint == 3) {
-      c2 = (5.*b(1) - 8.*b(2) + 3.*b(3) ) / (-2.0);
-      c3 = (b(1) - 2.*b(2) + b(3) ) / 2.0;
-   }
-   //else if (npoint == 9) {
-   else  { // at least one has to be true!!
-      c2 = (1708.*b(1) + 581.*b(2) - 246.*b(3) - 773.*b(4)
-         - 1000.*b(5) - 927.*b(6) - 554.*b(7) + 119.*b(8)
-         + 1092.*b(9) ) / (-4620.);
-      c3 = (28.*b(1) + 7.*b(2) - 8.*b(3) - 17.*b(4) - 20.*b(5)
-         - 17.*b(6) - 8.*b(7) + 7.*b(8) + 28.*b(9) ) / 924.0;
-   }
-   if (c3 != 0.0)  *pos = static_cast<float>(c2/(2.0*c3) - nhalf);
+	if (npoint == 7) {
+		c2 = 49.*b(1) + 6.*b(2) - 21.*b(3) - 32.*b(4) - 27.*b(5)
+		     - 6.*b(6) + 31.*b(7);
+		c3 = 5.*b(1) - 3.*b(3) - 4.*b(4) - 3.*b(5) + 5.*b(7);
+	} 
+	else if (npoint == 5) {
+		c2 = (74.*b(1) - 23.*b(2) - 60.*b(3) - 37.*b(4)
+		   + 46.*b(5) ) / (-70.);
+		c3 = (2.*b(1) - b(2) - 2.*b(3) - b(4) + 2.*b(5) ) / 14.0;
+	}
+	else if (npoint == 3) {
+		c2 = (5.*b(1) - 8.*b(2) + 3.*b(3) ) / (-2.0);
+		c3 = (b(1) - 2.*b(2) + b(3) ) / 2.0;
+	}
+	//else if (npoint == 9) {
+	else  { // at least one has to be true!!
+		c2 = (1708.*b(1) + 581.*b(2) - 246.*b(3) - 773.*b(4)
+		     - 1000.*b(5) - 927.*b(6) - 554.*b(7) + 119.*b(8)
+		     + 1092.*b(9) ) / (-4620.);
+		c3 = (28.*b(1) + 7.*b(2) - 8.*b(3) - 17.*b(4) - 20.*b(5)
+		     - 17.*b(6) - 8.*b(7) + 7.*b(8) + 28.*b(9) ) / 924.0;
+	}
+	if (c3 != 0.0)  *pos = static_cast<float>(c2/(2.0*c3) - nhalf);
 }
 #undef  b
 
@@ -2367,13 +2364,13 @@ void Util::prb1d(double *b, int npoint, float *pos)
 #define  b(i)            b[i-1]
 #define  t7(i)           t7[i-1]
 Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg) {
-   //  neg = 0 straight,  neg = 1 mirrored
-   int nring = numr.size()/3;
-   //int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   int maxrin = numr[numr.size()-1];
-   double qn;   float  tot;
-   float *circ1 = circ1p->get_data();
-   float *circ2 = circ2p->get_data();
+	//  neg = 0 straight,  neg = 1 mirrored
+	int nring = numr.size()/3;
+	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
+	double qn;   float  tot;
+	float *circ1 = circ1p->get_data();
+	float *circ2 = circ2p->get_data();
 /*
 c checks single position, neg is flag for checking mirrored position
 c
@@ -2385,10 +2382,10 @@ c       automatic arrays
 	double precision  q(maxrin)
 	double precision  t7(-3:3)
 */
-   float *t;
-   double t7[7], *q;
-   int    i, j, k, ip, jc, numr3i, numr2i, jtot = 0;
-   float  pos;
+	float *t;
+	double t7[7], *q;
+	int    i, j, k, ip, jc, numr3i, numr2i, jtot = 0;
+	float  pos;
 
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
@@ -2396,90 +2393,90 @@ c       automatic arrays
    ip = -(int) (log2(maxrin));
 #endif	//_WIN32
 
-   q = (double*)calloc(maxrin, sizeof(double));
-   t = (float*)calloc(maxrin, sizeof(float));
+	q = (double*)calloc(maxrin, sizeof(double));
+	t = (float*)calloc(maxrin, sizeof(float));
      
 //   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
-   for (i=1;i<=nring;i++) {
-      numr3i = numr(3,i);
-      numr2i = numr(2,i);
+	for (i=1;i<=nring;i++) {
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
 
-      t(1) = (circ1(numr2i)) * circ2(numr2i);
+		t(1) = (circ1(numr2i)) * circ2(numr2i);
 
-      if (numr3i != maxrin) {
-         // test .ne. first for speed on some compilers
-		t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
-		t(2)        = 0.0;
+		if (numr3i != maxrin) {
+			 // test .ne. first for speed on some compilers
+			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
+			t(2)		= 0.0;
 
-         if (neg) {
-            // first set is conjugated (mirrored)
-	    	for (j=3;j<=numr3i;j=j+2) {
-	      		jc = j+numr2i-1;
-	      		t(j) =(circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
-	      		t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
-	    	} 
-         } else {
-	    	for (j=3;j<=numr3i;j=j+2) {
-	      		jc = j+numr2i-1;
-				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
-				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
-	    	}
-         }
-         for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
-      } else {
-	 	t(2) = circ1(numr2i+1) * circ2(numr2i+1);
-        if (neg) {
-            // first set is conjugated (mirrored)
-	    	for (j=3;j<=maxrin;j=j+2) {
-				jc = j+numr2i-1;
-				t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
-				t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
-	    	}
-         } else {
-			for (j=3;j<=maxrin;j=j+2) {
-				jc = j+numr2i-1;
-				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
-				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
-			} 
-         }
-         for (j = 1; j <= maxrin; j++) q(j) += t(j);
-      }
-   }
+			if (neg) {
+				// first set is conjugated (mirrored)
+				for (j=3;j<=numr3i;j=j+2) {
+					jc = j+numr2i-1;
+					t(j) =(circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
+				} 
+			} else {
+				for (j=3;j<=numr3i;j=j+2) {
+					jc = j+numr2i-1;
+					t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+				}
+			}
+			for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
+		} else {
+			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
+			if (neg) {
+				// first set is conjugated (mirrored)
+				for (j=3;j<=maxrin;j=j+2) {
+					jc = j+numr2i-1;
+					t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+				}
+			} else {
+				for (j=3;j<=maxrin;j=j+2) {
+					jc = j+numr2i-1;
+					t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+				} 
+			}
+			for (j = 1; j <= maxrin; j++) q(j) += t(j);
+		}
+	}
 
-   fftr_d(q,ip);
+	fftr_d(q,ip);
 
-   qn = -1.0e20;
-   for (j=1;j<=maxrin;j++) {
-      if (q(j) >= qn) {
-         qn = q(j); jtot = j;
-      }
-   } 
+	qn = -1.0e20;
+	for (j=1;j<=maxrin;j++) {
+	   if (q(j) >= qn) {
+		  qn = q(j); jtot = j;
+	   }
+	} 
 
-   for (k=-3;k<=3;k++) {
-      j = (jtot+k+maxrin-1)%maxrin + 1; t7(k+4) = q(j);
-   }
+	for (k=-3;k<=3;k++) {
+	   j = (jtot+k+maxrin-1)%maxrin + 1; t7(k+4) = q(j);
+	}
 
-   prb1d(t7,7,&pos);
+	prb1d(t7,7,&pos);
 
-   tot = (float)jtot + pos;
+	tot = (float)jtot + pos;
 
-   if (q) free(q);
-   if (t) free(t);
-   
-   Dict retvals;
-   retvals["qn"] = qn;
-   retvals["tot"] = tot;
-   return  retvals;
+	if (q) free(q);
+	if (t) free(t);
+
+	Dict retvals;
+	retvals["qn"] = qn;
+	retvals["tot"] = tot;
+	return  retvals;
 }
 
 Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<float> w, int neg) {
    //  neg = 0 straight,  neg = 1 mirrored
-   int nring = numr.size()/3;
-   //int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   int maxrin = numr[numr.size()-1];
-   double qn;   float  tot;
-   float *circ1 = circ1p->get_data();
-   float *circ2 = circ2p->get_data();
+	int nring = numr.size()/3;
+	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
+	double qn;   float  tot;
+	float *circ1 = circ1p->get_data();
+	float *circ2 = circ2p->get_data();
 /*
 c checks single position, neg is flag for checking mirrored position
 c
@@ -2491,95 +2488,99 @@ c       automatic arrays
 	double precision  q(maxrin)
 	double precision  t7(-3:3)
 */
-   float *t;
-   double t7[7], *q;
-   int    i, j, k, ip, jc, numr3i, numr2i, jtot = 0;
-   float  pos;
+	float *t;
+	double t7[7], *q;
+	int    i, j, k, ip, jc, numr3i, numr2i, jtot = 0;
+	float  pos;
 
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
-   ip = -(int) (log2(maxrin));
+	ip = -(int) (log2(maxrin));
 #endif	//_WIN32
 
-   q = (double*)calloc(maxrin, sizeof(double));
-   t = (float*)calloc(maxrin, sizeof(float));
+	q = (double*)calloc(maxrin, sizeof(double));
+	t = (float*)calloc(maxrin, sizeof(float));
      
 //   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
-   for (i=1;i<=nring;i++) {
-      numr3i = numr(3,i);
-      numr2i = numr(2,i);
-      
-      t(1) = circ1(numr2i) * circ2(numr2i);
+	for (i=1;i<=nring;i++) {
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
+	
+		t(1) = circ1(numr2i) * circ2(numr2i);
 
-      if (numr3i != maxrin) {
-         // test .ne. first for speed on some compilers
-		t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
-		t(2)        = 0.0;
+		if (numr3i != maxrin) {
+			// test .ne. first for speed on some compilers
+			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
+			t(2)  	  = 0.0;
 
-         if (neg) {
-            // first set is conjugated (mirrored)
-	    	for (j=3; j<=numr3i; j=j+2) {
-	      		jc = j+numr2i-1;
-	      		t(j)   =  (circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
-	      		t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
-	    	} 
-         } else {
-	    	for (j=3; j<=numr3i; j=j+2) {
-	      		jc = j+numr2i-1;
-			t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
-			t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
-	    	}
-         }
-         for (j=1;j<=numr3i+1;j++) q(j) += t(j)*w[i-1];
-      } else {
-	 	t(2) = circ1(numr2i+1) * circ2(numr2i+1);
-        if (neg) {
-            // first set is conjugated (mirrored)
-	    	for (j=3; j<=maxrin; j=j+2) {
-			jc = j+numr2i-1;
-			t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
-			t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
-	    	}
-         } else {
-		for (j=3; j<=maxrin; j=j+2) {
-			jc = j+numr2i-1;
-			t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
-			t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
-		} 
-         }
-         for (j = 1; j <= maxrin; j++) q(j) += t(j)*w[i-1];
-      }
-   }
+			if (neg) {
+				// first set is conjugated (mirrored)
+				for (j=3; j<=numr3i; j=j+2) {
+					jc = j+numr2i-1;
+					t(j)   =  (circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
+				}
+			} else {
+				for (j=3; j<=numr3i; j=j+2) {
+					jc = j+numr2i-1;
+					t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+				}
+			}
+			for (j=1;j<=numr3i+1;j++) q(j) += t(j)*w[i-1];
+		} else {
+			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
+			if (neg) {
+				// first set is conjugated (mirrored)
+				for (j=3; j<=maxrin; j=j+2) {
+					jc = j+numr2i-1;
+					t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+				}
+			} else {
+				for (j=3; j<=maxrin; j=j+2) {
+			    	jc = j+numr2i-1;
+			    	t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+			    	t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+				} 
+			}
+			for (j = 1; j <= maxrin; j++) q(j) += t(j)*w[i-1];
+		}
+	}
 
-   fftr_d(q,ip);
+	fftr_d(q,ip);
 
-   qn = -1.0e20;
-   for (j=1;j<=maxrin;j++) {
-       //cout << j << "  " << q(j) << endl;
-      if (q(j) >= qn) {  qn = q(j); jtot = j; }
-   } 
+	qn = -1.0e20;
+	for (j=1;j<=maxrin;j++) {
+		//cout << j << "  " << q(j) << endl;
+		if (q(j) >= qn) {
+			qn = q(j);
+			jtot = j;
+		}
+	} 
 
-   for (k=-3;k<=3;k++) {
-      j = (jtot+k+maxrin-1)%maxrin + 1; t7(k+4) = q(j);
-   }
-   
-   prb1d(t7,7,&pos);
+	for (k=-3;k<=3;k++) {
+		j = (jtot+k+maxrin-1)%maxrin + 1;
+		t7(k+4) = q(j);
+	}
 
-   tot = (float)jtot + pos;
-   
-   //if (q) free(q);
-   if (t) free(t);
+	prb1d(t7,7,&pos);
 
-   Dict retvals;
-   //tot = 1;
-   //qn = q(1);
-   retvals["qn"] = qn;
-   retvals["tot"] = tot;
-   
-   if (q) free(q);
-   
-   return  retvals;
+	tot = (float)jtot + pos;
+
+	//if (q) free(q);
+	if (t) free(t);
+
+	Dict retvals;
+	//tot = 1;
+	//qn = q(1);
+	retvals["qn"] = qn;
+	retvals["tot"] = tot;
+
+	if (q) free(q);
+
+	return  retvals;
 }
 
 Dict Util::Crosrng_ms(EMData* circ1p, EMData* circ2p, vector<int> numr) {
@@ -2598,54 +2599,54 @@ c  circ1 already multiplied by weights!
 c
 */
 
-   // dimension         circ1(lcirc),circ2(lcirc)
+	// dimension		 circ1(lcirc),circ2(lcirc)
 
-   // t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
-   double *t, *q, t7[7];
+	// t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
+	double *t, *q, t7[7];
 
-   int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
-   float t1, t2, t3, t4, c1, c2, d1, d2, pos;
+	int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
+	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
 
-   qn  = 0.0;
-   qm  = 0.0;
-   tot = 0.0;
-   tmt = 0.0;
+	qn  = 0.0;
+	qm  = 0.0;
+	tot = 0.0;
+	tmt = 0.0;
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
-   ip = -(int)(log2(maxrin));
+ 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
   //for (j=1; j<=maxrin;j++) cout <<"  "<<j<<"   "<<circ1(j)<<"   "<<circ2(j) <<endl;
 
-   //  c - straight  = circ1 * conjg(circ2)
-   //  zero q array
-  
-   q = (double*)calloc(maxrin,sizeof(double));  
+	//  c - straight  = circ1 * conjg(circ2)
+	//  zero q array
 
-   //   t - mirrored  = conjg(circ1) * conjg(circ2)
-   //   zero t array
-   t = (double*)calloc(maxrin,sizeof(double));
+	q = (double*)calloc(maxrin,sizeof(double));  
+
+	//   t - mirrored  = conjg(circ1) * conjg(circ2)
+	//   zero t array
+	t = (double*)calloc(maxrin,sizeof(double));
 
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
-      for (i=1; i<=nring; i++) {
+	for (i=1; i<=nring; i++) {
 
-      numr3i = numr(3,i);	// Number of samples of this ring 
-      numr2i = numr(2,i);	// The beginning point of this ring
+		numr3i = numr(3,i);   // Number of samples of this ring 
+		numr2i = numr(2,i);   // The beginning point of this ring
 
-      t1   = circ1(numr2i) * circ2(numr2i);
-      q(1) += t1;
-      t(1) += t1;
+		t1   = circ1(numr2i) * circ2(numr2i);
+		q(1) += t1;
+		t(1) += t1;
 
-      if (numr3i == maxrin)  {
-		t1   = circ1(numr2i+1) * circ2(numr2i+1);
-		q(2) += t1;
-		t(2) += t1;
-      } else {
-		q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
-      }
+		if (numr3i == maxrin)  {
+			t1   = circ1(numr2i+1) * circ2(numr2i+1);
+			q(2) += t1;
+			t(2) += t1;
+		} else {
+			q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
+		}
 
-	for (j=3; j<=numr3i; j += 2) {
-		jc     = j+numr2i-1;
+		for (j=3; j<=numr3i; j += 2) {
+			jc     = j+numr2i-1;
 
 // Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
 //   			          ----- -----    ----- -----
@@ -2654,59 +2655,63 @@ c
 //     		                      ----- -----    ----- -----
 //     			               t1    t2       t3    t4 	
 
-		c1     = circ1(jc);
-		c2     = circ1(jc+1);
-		d1     = circ2(jc);
-		d2     = circ2(jc+1);
+			c1     = circ1(jc);
+			c2     = circ1(jc+1);
+			d1     = circ2(jc);
+			d2     = circ2(jc+1);
 
-		t1     = c1 * d1;
-		t3     = c1 * d2;
-		t2     = c2 * d2;
-		t4     = c2 * d1;
+			t1     = c1 * d1;
+			t3     = c1 * d2;
+			t2     = c2 * d2;
+			t4     = c2 * d1;
 
-		q(j)   += t1 + t2;
-		q(j+1) += -t3 + t4;
-		t(j)   += t1 - t2;
-		t(j+1) += -t3 - t4;
-      } 
-  }
+			q(j)   += t1 + t2;
+			q(j+1) += -t3 + t4;
+			t(j)   += t1 - t2;
+			t(j+1) += -t3 - t4;
+		} 
+	}
 //for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<endl;
-  fftr_d(q,ip);
+	fftr_d(q,ip);
 
-  qn  = -1.0e20;
-  for (j=1; j<=maxrin; j++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
-     if (q(j) >= qn) { qn  = q(j); jtot = j; }
-  }
+	qn  = -1.0e20;
+	for (j=1; j<=maxrin; j++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
+		if (q(j) >= qn) {
+			qn  = q(j);
+			jtot = j;
+		}
+	}
 
-  for (k=-3;k<=3;k++) {
-    j = ((jtot+k+maxrin-1)%maxrin)+1; t7(k+4) = q(j);
-  }
+	for (k=-3;k<=3;k++) {
+		j = ((jtot+k+maxrin-1)%maxrin)+1; t7(k+4) = q(j);
+	}
 
-  // interpolate
-  prb1d(t7,7,&pos);
-  tot = (float)(jtot)+pos;
-  // Do not interpolate
-  //*tot = (float)(jtot);
+	// interpolate
+	prb1d(t7,7,&pos);
+	tot = (float)(jtot)+pos;
+	// Do not interpolate
+	//*tot = (float)(jtot);
 
-  // mirrored
-  fftr_d(t,ip);
+	// mirrored
+	fftr_d(t,ip);
 
-  // find angle
-  qm = -1.0e20;
-  for (j=1; j<=maxrin;j++) {//cout <<"  "<<j<<"   "<<t(j) <<endl;
-     if ( t(j) >= qm ) { qm   = t(j); jtot = j; }
-  }
+	// find angle
+	qm = -1.0e20;
+	for (j=1; j<=maxrin;j++) {//cout <<"  "<<j<<"	"<<t(j) <<endl;
+		if ( t(j) >= qm ) {
+			qm	= t(j);
+			jtot = j;
+		}
+	}
 
-  for (k=-3;k<=3;k++) {
-    j = ((jtot+k+maxrin-1)%maxrin) + 1; t7(k+4) = t(j);
-  }
+	for (k=-3;k<=3;k++)  j = ((jtot+k+maxrin-1)%maxrin) + 1; t7(k+4) = t(j);
 
-  // interpolate
+	// interpolate
 
-  prb1d(t7,7,&pos);
-  tmt = float(jtot) + pos;
-  // Do not interpolate
-  //*tmt = float(jtot);
+	prb1d(t7,7,&pos);
+	tmt = float(jtot) + pos;
+	// Do not interpolate
+	//*tmt = float(jtot);
 
 	free(t);
 	free(q);
@@ -2720,12 +2725,12 @@ c
 }
 
 Dict Util::Crosrng_ns(EMData* circ1p, EMData* circ2p, vector<int> numr) {
-   int nring = numr.size()/3;
-   //int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   int maxrin = numr[numr.size()-1];
-   double qn; float tot;
-   float *circ1 = circ1p->get_data();
-   float *circ2 = circ2p->get_data();
+	int nring = numr.size()/3;
+	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
+	double qn; float tot;
+	float *circ1 = circ1p->get_data();
+	float *circ2 = circ2p->get_data();
 /*
 c
 c  checks only straight position
@@ -2735,75 +2740,73 @@ c  circ1 already multiplied by weights!
 c
 */
 
-   // dimension         circ1(lcirc),circ2(lcirc)
+	// dimension		 circ1(lcirc),circ2(lcirc)
 
-   // q(maxrin), t7(-3:3)  //maxrin+2 removed
-   double *q, t7[7];
+	// q(maxrin), t7(-3:3)  //maxrin+2 removed
+	double *q, t7[7];
 
-   int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
-   float c1, c2, d1, d2, pos;
+	int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
+	float c1, c2, d1, d2, pos;
 
-   qn  = 0.0;
-   tot = 0.0;
+	qn  = 0.0;
+	tot = 0.0;
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
    ip = -(int)(log2(maxrin));
 #endif	//_WIN32
-  //for (j=1; j<=maxrin;j++) cout <<"  "<<j<<"   "<<circ1(j)<<"   "<<circ2(j) <<endl;
+	//for (j=1; j<=maxrin;j++) cout <<"  "<<j<<"   "<<circ1(j)<<"	"<<circ2(j) <<endl;
 
-   //  c - straight  = circ1 * conjg(circ2)
-   //  zero q array
-  
-   q = (double*)calloc(maxrin,sizeof(double));  
+	//  c - straight  = circ1 * conjg(circ2)
+	//  zero q array
 
-   //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
-      for (i=1; i<=nring; i++) {
+	q = (double*)calloc(maxrin,sizeof(double));  
 
-      numr3i = numr(3,i);	// Number of samples of this ring 
-      numr2i = numr(2,i);	// The beginning point of this ring
+			//   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+	for (i=1; i<=nring; i++) {
 
-      q(1) += circ1(numr2i) * circ2(numr2i);
+		numr3i = numr(3,i);   // Number of samples of this ring 
+		numr2i = numr(2,i);   // The beginning point of this ring
 
-      if (numr3i == maxrin)  {
-		q(2) += circ1(numr2i+1) * circ2(numr2i+1);
-      } else {
-		q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
-      }
+		q(1) += circ1(numr2i) * circ2(numr2i);
 
-	for (j=3; j<=numr3i; j += 2) {
-		jc     = j+numr2i-1;
+		if (numr3i == maxrin)   q(2) += circ1(numr2i+1) * circ2(numr2i+1);
+		else  q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
+
+		for (j=3; j<=numr3i; j += 2) {
+			jc     = j+numr2i-1;
 
 // Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
 //   			          ----- -----    ----- -----
 //      			   t1     t2      t3    t4 	
+	
+			c1     = circ1(jc);
+			c2     = circ1(jc+1);
+			d1     = circ2(jc);
+			d2     = circ2(jc+1);
 
-		c1     = circ1(jc);
-		c2     = circ1(jc+1);
-		d1     = circ2(jc);
-		d2     = circ2(jc+1);
-
-		q(j)   += c1 * d1 + c2 * d2;
-		q(j+1) += -c1 * d2 + c2 * d1;
-      } 
-  }
+			q(j)   += c1 * d1 + c2 * d2;
+			q(j+1) += -c1 * d2 + c2 * d1;
+		}
+	}
 //for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<endl;
-  fftr_d(q,ip);
+	fftr_d(q,ip);
 
-  qn  = -1.0e20;
-  for (j=1; j<=maxrin; j++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
-     if (q(j) >= qn) { qn  = q(j); jtot = j; }
-  }
+	qn  = -1.0e20;
+	for (j=1; j<=maxrin; j++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
+		if (q(j) >= qn) {
+			qn  = q(j);
+			jtot = j;
+		}
+	}
 
-  for (k=-3;k<=3;k++) {
-    j = ((jtot+k+maxrin-1)%maxrin)+1; t7(k+4) = q(j);
-  }
+	for (k=-3;k<=3;k++)  j = ((jtot+k+maxrin-1)%maxrin)+1; t7(k+4) = q(j);
 
-  // interpolate
-  prb1d(t7,7,&pos);
-  tot = (float)(jtot)+pos;
-  // Do not interpolate
-  //*tot = (float)(jtot);
+	// interpolate
+	prb1d(t7,7,&pos);
+	tot = (float)(jtot)+pos;
+	// Do not interpolate
+	//*tot = (float)(jtot);
 
 	free(q);
 
@@ -2815,17 +2818,17 @@ c
 //  Try rotational gridding
 
 Dict Util::Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr) {
-   int nring = numr.size()/3;
-   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   int maxrin = numr[numr.size()-1];
-   float qn; float tot; float qm; float tmt;
-   crosrng_msr(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], &qn, &tot, &qm, &tmt);
-   Dict retvals;
-   retvals["qn"] = qn;
-   retvals["tot"] = tot;
-   retvals["qm"] = qm;
-   retvals["tmt"] = tmt;
-   return retvals;
+	int nring = numr.size()/3;
+	int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
+	float qn; float tot; float qm; float tmt;
+	crosrng_msr(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], &qn, &tot, &qm, &tmt);
+	Dict retvals;
+	retvals["qn"] = qn;
+	retvals["tot"] = tot;
+	retvals["qm"] = qm;
+	retvals["tmt"] = tmt;
+	return retvals;
 }
 #define  temp(i)            temp[i-1]
 
@@ -2843,129 +2846,128 @@ c  circ1 already multiplied by weights!
 c
 */
 
-   // dimension         circ1(lcirc),circ2(lcirc)
+	// dimension		 circ1(lcirc),circ2(lcirc)
 
-   // t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
-   double *t, *q, t7[7];
-   float *temp;
+	// t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
+	double *t, *q, t7[7];
+	float *temp;
 
-   int   ip, jc, numr3i, numr2i, i, j, k, jtot;
-   float t1, t2, t3, t4, c1, c2, d1, d2, pos;
+	int   ip, jc, numr3i, numr2i, i, j, k, jtot;
+	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
 
-   *qn  = 0.0;
-   *qm  = 0.0;
-   *tot = 0.0;
-   *tmt = 0.0; 
+	*qn  = 0.0;
+	*qm  = 0.0;
+	*tot = 0.0;
+	*tmt = 0.0; 
 
 #ifdef WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
    ip = -(int)(log2(maxrin));
 #endif	//WIN32
+	
+	 //  c - straight  = circ1 * conjg(circ2)
+	 //  zero q array
 
-   //  c - straight  = circ1 * conjg(circ2)
-   //  zero q array
-  
-   q = (double*)calloc(maxrin,sizeof(double));  
+	 q = (double*)calloc(maxrin,sizeof(double));  
 
-   //   t - mirrored  = conjg(circ1) * conjg(circ2)
-   //   zero t array
-   t = (double*)calloc(maxrin,sizeof(double));
+	 //   t - mirrored  = conjg(circ1) * conjg(circ2)
+	 //   zero t array
+	 t = (double*)calloc(maxrin,sizeof(double));
 
 
-   temp = (float*)calloc(maxrin,sizeof(float));
+	 temp = (float*)calloc(maxrin,sizeof(float));
 
-   //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+	 //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
 
-   for (i=1;i<=nring;i++) {
+	 for (i=1;i<=nring;i++) {
 
-      numr3i = numr(3,i);
-      numr2i = numr(2,i);
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
 
-      t1   = circ1(numr2i) * circ2(numr2i);
-      q(1) = q(1)+t1;
-      t(1) = t(1)+t1;
+		t1   = circ1(numr2i) * circ2(numr2i);
+		q(1) = q(1)+t1;
+		t(1) = t(1)+t1;
 
-      if (numr3i == maxrin)  {
-         t1   = circ1(numr2i+1) * circ2(numr2i+1);
-         q(2) = q(2)+t1;
-         t(2) = t(2)+t1;
-      }
-      else {
-	 t1          = circ1(numr2i+1) * circ2(numr2i+1);
-	 q(numr3i+1) = q(numr3i+1)+t1;
-      }
+		if (numr3i == maxrin)  {
+			t1   = circ1(numr2i+1) * circ2(numr2i+1);
+			q(2) = q(2)+t1;
+			t(2) = t(2)+t1;
+		} else {
+			t1  		= circ1(numr2i+1) * circ2(numr2i+1);
+			q(numr3i+1) = q(numr3i+1)+t1;
+		}
 
-      for (j=3;j<=numr3i;j=j+2) {
-	 jc     = j+numr2i-1;
+		for (j=3;j<=numr3i;j=j+2) {
+			jc     = j+numr2i-1;
 
- 	 c1     = circ1(jc);
- 	 c2     = circ1(jc+1);
-     d1     = circ2(jc);
-     d2     = circ2(jc+1);
+			c1     = circ1(jc);
+			c2     = circ1(jc+1);
+			d1     = circ2(jc);
+			d2     = circ2(jc+1);
 
-  	 t1     = c1 * d1;
- 	 t3     = c1 * d2;
- 	 t2     = c2 * d2;
- 	 t4     = c2 * d1;
+			t1     = c1 * d1;
+			t3     = c1 * d2;
+			t2     = c2 * d2;
+			t4     = c2 * d1;
 
-	 q(j)   = q(j)   + t1 + t2;
-	 q(j+1) = q(j+1) - t3 + t4;
-	 t(j)   = t(j)   + t1 - t2;
-	 t(j+1) = t(j+1) - t3 - t4;
-      } 
-  }
+			q(j)   = q(j)	+ t1 + t2;
+			q(j+1) = q(j+1) - t3 + t4;
+			t(j)   = t(j)	+ t1 - t2;
+			t(j+1) = t(j+1) - t3 - t4;
+		} 
+	}
 
-  // straight
-  for (i=1; i<=maxrin; i++) {temp(i)=static_cast<float>(q(i));}
-  fftr_q(temp,ip);
+	// straight
+	for (i=1; i<=maxrin; i++) {temp(i)=static_cast<float>(q(i));}
+	fftr_q(temp,ip);
 
-  jtot = 0;
-  *qn  = -1.0e20f;
-  for (j=1; j<=maxrin; j++) {
-     if (temp(j) >= *qn) {
-        *qn  = temp(j);
-        jtot = j;
-     }
-  }
-  
- 
-  for (k=-3;k<=3;k++) {
-    j = ((jtot+k+maxrin-1)%maxrin)+1;
-    t7(k+4) = temp(j);
-  }
+	jtot = 0;
+	*qn  = -1.0e20f;
+	for (j=1; j<=maxrin; j++) {
+		if (temp(j) >= *qn) {
+			*qn  = temp(j);
+			jtot = j;
+		}
+	}
+
+
+	for (k=-3;k<=3;k++) {
+		j = ((jtot+k+maxrin-1)%maxrin)+1;
+		t7(k+4) = temp(j);
+	}
+
+	// interpolate
+	prb1d(t7,7,&pos);
+	*tot = (float)(jtot)+pos;
+
+	// mirrored
+	for (i=1; i<=maxrin; i++) {temp(i)=static_cast<float>(t(i));}
+	fftr_q(temp,ip);
+
+	// find angle
+	*qm = -1.0e20f;
+	for (j=1; j<=maxrin;j++) {
+		if ( temp(j) >= *qm ) {
+			*qm   = temp(j);
+			jtot = j;
+		}
+	}
+
+	// find angle
+	for (k=-3;k<=3;k++) {
+		j		= ((jtot+k+maxrin-1)%maxrin) + 1;
+		t7(k+4) = t(j);
+	}
 
   // interpolate
-  prb1d(t7,7,&pos);
-  *tot = (float)(jtot)+pos;
 
-  // mirrored
-  for (i=1; i<=maxrin; i++) {temp(i)=static_cast<float>(t(i));}
-  fftr_q(temp,ip);
+	prb1d(t7,7,&pos);
+	*tmt = float(jtot) + pos;
 
-  // find angle
-  *qm = -1.0e20f;
-  for (j=1; j<=maxrin;j++) {
-     if ( temp(j) >= *qm ) {
-        *qm   = temp(j);
-        jtot = j;
-     }
-  }
-
-  // find angle
-  for (k=-3;k<=3;k++) {
-    j       = ((jtot+k+maxrin-1)%maxrin) + 1;
-    t7(k+4) = t(j);
-  }
-
-  // interpolate
-
-  prb1d(t7,7,&pos);
-  *tmt = float(jtot) + pos;
-
-  free(t);
-  free(q);
-  free(temp);
+	free(t);
+	free(q);
+	free(temp);
 }
 #undef temp
 
@@ -2983,94 +2985,94 @@ c
 c  input - fourier transforms of rings!!
 c  circ1 already multiplied by weights!
 c
+  returns EM object with 1D ccf
 
 */
 
    // dimension         circ1(lcirc),circ2(lcirc)
 
-   int   ip, jc, numr3i, numr2i, i, j;
-   float t1, t2, t3, t4, c1, c2, d1, d2;
+	int   ip, jc, numr3i, numr2i, i, j;
+	float t1, t2, t3, t4, c1, c2, d1, d2;
 
-   int nring = numr.size()/3;
-   //int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   int maxrin = numr[numr.size()-1];
+	int nring = numr.size()/3;
+	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
 
-   float* circ1b = circ1->get_data();
-   float* circ2b = circ2->get_data();
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
 
-   // t(maxrin), q(maxrin)  // removed +2
-   double *t, *q;
+	// t(maxrin), q(maxrin)  // removed +2
+	double *t, *q;
 
-   q = (double*)calloc(maxrin,sizeof(double));
-   t = (double*)calloc(maxrin,sizeof(double));
+	q = (double*)calloc(maxrin,sizeof(double));
+	t = (double*)calloc(maxrin,sizeof(double));
 
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
+	
+	//  q - straight  = circ1 * conjg(circ2)
 
-   //  q - straight  = circ1 * conjg(circ2)
+	//   t - mirrored  = conjg(circ1) * conjg(circ2)
 
-   //   t - mirrored  = conjg(circ1) * conjg(circ2)
+	//   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
 
-   //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+	for (i=1;i<=nring;i++) {
+	
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
 
-   for (i=1;i<=nring;i++) {
+		t1   = circ1b(numr2i) * circ2b(numr2i);
+		q(1) = q(1)+t1;
+		t(1) = t(1)+t1;
 
-      numr3i = numr(3,i);
-      numr2i = numr(2,i);
+		if (numr3i == maxrin)  {
+			t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
+			q(2) = q(2)+t1;
+			t(2) = t(2)+t1;
+		} else {
+			t1  		= circ1b(numr2i+1) * circ2b(numr2i+1);
+			q(numr3i+1) = q(numr3i+1)+t1;
+		}
 
-      t1   = circ1b(numr2i) * circ2b(numr2i);
-      q(1) = q(1)+t1;
-      t(1) = t(1)+t1;
+		for (j=3;j<=numr3i;j=j+2) {
+			jc     = j+numr2i-1;
 
-      if (numr3i == maxrin)  {
-         t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
-         q(2) = q(2)+t1;
-         t(2) = t(2)+t1;
-      }
-      else {
-	 t1          = circ1b(numr2i+1) * circ2b(numr2i+1);
-	 q(numr3i+1) = q(numr3i+1)+t1;
-      }
+			c1     = circ1b(jc);
+			c2     = circ1b(jc+1);
+			d1     = circ2b(jc);
+			d2     = circ2b(jc+1);
 
-      for (j=3;j<=numr3i;j=j+2) {
-	 jc     = j+numr2i-1;
+			t1     = c1 * d1;
+			t3     = c1 * d2;
+			t2     = c2 * d2;
+			t4     = c2 * d1;
 
- 	 c1     = circ1b(jc);
- 	 c2     = circ1b(jc+1);
-	 d1     = circ2b(jc);
-	 d2     = circ2b(jc+1);
+			q(j)   = q(j)	+ t1 + t2;
+			q(j+1) = q(j+1) - t3 + t4;
+			t(j)   = t(j)	+ t1 - t2;
+			t(j+1) = t(j+1) - t3 - t4;
+		} 
+	}
+	
+	// straight
+	fftr_d(q,ip);
 
-  	 t1     = c1 * d1;
- 	 t3     = c1 * d2;
- 	 t2     = c2 * d2;
- 	 t4     = c2 * d1;
+	// mirrored
+	fftr_d(t,ip);
 
-	 q(j)   = q(j)   + t1 + t2;
-	 q(j+1) = q(j+1) - t3 + t4;
-	 t(j)   = t(j)   + t1 - t2;
-	 t(j+1) = t(j+1) - t3 - t4;
-      } 
-  }
-  
-  // straight
-  fftr_d(q,ip);
-
-  // mirrored
-  fftr_d(t,ip);
-
-  EMData* out = new EMData();
-  out->set_size(maxrin,2,1);
-  float *dout = out->get_data();
-  for (int i=0; i<maxrin; i++) {dout(i,0)=static_cast<float>(q[i]); dout(i,1)=static_cast<float>(t[i]);}
-  //out->set_size(maxrin,1,1);
-  //float *dout = out->get_data();
-  //for (int i=0; i<maxrin; i++) {dout(i,0)=q[i];}
-  free(t);
-  free(q);
-  return out;
+	EMData* out = new EMData();
+	out->set_size(maxrin,2,1);
+	float *dout = out->get_data();
+	for (int i=0; i<maxrin; i++) {dout(i,0)=static_cast<float>(q[i]); dout(i,1)=static_cast<float>(t[i]);}
+	//out->set_size(maxrin,1,1);
+	//float *dout = out->get_data();
+	//for (int i=0; i<maxrin; i++) {dout(i,0)=q[i];}
+	free(t);
+	free(q);
+	return out;
 }
 
 EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
@@ -3080,74 +3082,74 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 
   input - fourier transforms of rings!!
   circ1 already multiplied by weights!
+  returns EM object with 1D ccf
 
 */
 
-   int   ip, jc, numr3i, numr2i, i, j;
-   float t1, t2, t3, t4, c1, c2, d1, d2;
+	int   ip, jc, numr3i, numr2i, i, j;
+	float t1, t2, t3, t4, c1, c2, d1, d2;
 
-   int nring = numr.size()/3;
-   int maxrin = numr[numr.size()-1];
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
 
-   float* circ1b = circ1->get_data();
-   float* circ2b = circ2->get_data();
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
 
-   double *q;
+	double *q;
 
-   q = (double*)calloc(maxrin,sizeof(double));
+	q = (double*)calloc(maxrin,sizeof(double));
 
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
+	
+	 //  q - straight  = circ1 * conjg(circ2)
 
-   //  q - straight  = circ1 * conjg(circ2)
+	for (i=1;i<=nring;i++) {
+		 
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
 
-   for (i=1;i<=nring;i++) {
+		t1   = circ1b(numr2i) * circ2b(numr2i);
+		q(1) = q(1)+t1;
 
-   	   numr3i = numr(3,i);
-   	   numr2i = numr(2,i);
+		if (numr3i == maxrin)  {
+			t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
+			q(2) = q(2)+t1;
+		} else {
+			t1  		= circ1b(numr2i+1) * circ2b(numr2i+1);
+			q(numr3i+1) = q(numr3i+1)+t1;
+		}
 
-   	   t1	= circ1b(numr2i) * circ2b(numr2i);
-   	   q(1) = q(1)+t1;
- 
-   	   if (numr3i == maxrin)  {
-   	   	   t1	= circ1b(numr2i+1) * circ2b(numr2i+1);
-   	   	   q(2) = q(2)+t1;
-   	   }
-   	   else {
-   	   	   t1	       = circ1b(numr2i+1) * circ2b(numr2i+1);
-   	   	   q(numr3i+1) = q(numr3i+1)+t1;
-   	   }
+		for (j=3;j<=numr3i;j=j+2) {
+			jc     = j+numr2i-1;
 
-   	   for (j=3;j<=numr3i;j=j+2) {
-   	   	   jc	  = j+numr2i-1;
+			c1     = circ1b(jc);
+			c2     = circ1b(jc+1);
+			d1     = circ2b(jc);
+			d2     = circ2b(jc+1);
 
-   	   	   c1	  = circ1b(jc);
-   	   	   c2	  = circ1b(jc+1);
-   	   	   d1	  = circ2b(jc);
-   	   	   d2	  = circ2b(jc+1);
+			t1     = c1 * d1;
+			t3     = c1 * d2;
+			t2     = c2 * d2;
+			t4     = c2 * d1;
 
-   	   	   t1	  = c1 * d1;
-   	   	   t3	  = c1 * d2;
-   	   	   t2	  = c2 * d2;
-   	   	   t4	  = c2 * d1;
+			q(j)   = q(j)	+ t1 + t2;
+			q(j+1) = q(j+1) - t3 + t4;
+		} 
+	}
 
-   	   	   q(j)   = q(j)   + t1 + t2;
-   	   	   q(j+1) = q(j+1) - t3 + t4;
-   	   } 
-  }
-  
-  // straight
-  fftr_d(q,ip);
+	// straight
+	fftr_d(q,ip);
 
-  EMData* out = new EMData();
-  out->set_size(maxrin,1,1);
-  float *dout = out->get_data();
-  for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(q[i]);
-  free(q);
-  return out;
+	EMData* out = new EMData();
+	out->set_size(maxrin,1,1);
+	float *dout = out->get_data();
+	for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(q[i]);
+	free(q);
+	return out;
 
 }
 
@@ -3160,70 +3162,71 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 
   input - fourier transforms of rings!!
   circ1 already multiplied by weights!
+  returns EM object with 1D ccf
 
 */
 
-   int   ip, jc, numr3i, numr2i, i, j;
-   float t1, t2, t3, t4, c1, c2, d1, d2;
+	int   ip, jc, numr3i, numr2i, i, j;
+	float t1, t2, t3, t4, c1, c2, d1, d2;
 
-   int nring = numr.size()/3;
-   int maxrin = numr[numr.size()-1];
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
 
-   float* circ1b = circ1->get_data();
-   float* circ2b = circ2->get_data();
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
 
-   double *t;
+	double *t;
 
-   t = (double*)calloc(maxrin,sizeof(double));
+	t = (double*)calloc(maxrin,sizeof(double));
 
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
+	
+	 //   t - mirrored  = conjg(circ1) * conjg(circ2)
 
-   //   t - mirrored  = conjg(circ1) * conjg(circ2)
+	for (i=1;i<=nring;i++) {
+		
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
 
-  for (i=1;i<=nring;i++) {
+		t1   = circ1b(numr2i) * circ2b(numr2i);
+		t(1) = t(1)+t1;
 
-      numr3i = numr(3,i);
-      numr2i = numr(2,i);
+		if (numr3i == maxrin)  {
+			t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
+			t(2) = t(2)+t1;
+		}
 
-      t1   = circ1b(numr2i) * circ2b(numr2i);
-      t(1) = t(1)+t1;
+		for (j=3;j<=numr3i;j=j+2) {
+			jc     = j+numr2i-1;
 
-      if (numr3i == maxrin)  {
-         t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
-         t(2) = t(2)+t1;
-      }
+			c1     = circ1b(jc);
+			c2     = circ1b(jc+1);
+			d1     = circ2b(jc);
+			d2     = circ2b(jc+1);
 
-      for (j=3;j<=numr3i;j=j+2) {
-	 jc     = j+numr2i-1;
+			t1     = c1 * d1;
+			t3     = c1 * d2;
+			t2     = c2 * d2;
+			t4     = c2 * d1;
 
- 	 c1     = circ1b(jc);
- 	 c2     = circ1b(jc+1);
-	 d1     = circ2b(jc);
-	 d2     = circ2b(jc+1);
+			t(j)   = t(j)	+ t1 - t2;
+			t(j+1) = t(j+1) - t3 - t4;
+		} 
+	}
 
-  	 t1     = c1 * d1;
- 	 t3     = c1 * d2;
- 	 t2     = c2 * d2;
- 	 t4     = c2 * d1;
+	// mirrored
+	fftr_d(t,ip);
 
-	 t(j)   = t(j)   + t1 - t2;
-	 t(j+1) = t(j+1) - t3 - t4;
-      } 
-  }
-  
-  // mirrored
-  fftr_d(t,ip);
-
-  EMData* out = new EMData();
-  out->set_size(maxrin,1,1);
-  float *dout = out->get_data();
-  for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(t[i]);
-  free(t);
-  return out;
+	EMData* out = new EMData();
+	out->set_size(maxrin,1,1);
+	float *dout = out->get_data();
+	for (int i=0; i<maxrin; i++) dout[i]=static_cast<float>(t[i]);
+	free(t);
+	return out;
 
 }
 
