@@ -517,6 +517,11 @@ public:
 	static vector<float> multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
+
+	static vector<float> multiref_peaks_ali2d(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, string mode,
+                vector< int >numr, float cnx, float cny);
+
 		
 	static vector<float> twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys);
 	
