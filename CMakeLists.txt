@@ -413,6 +413,7 @@ INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR}
 					${FFTW_INCLUDE_PATH}
 					${DJBFFT_INCLUDE_PATH} 
 					${ACML_INCLUDE_PATH}
+					/usr/include/freetype2
 				   ) 
 
 
