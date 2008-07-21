@@ -354,19 +354,19 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.mx = dict["MRC.mx"]; 
 	}
 	else {
-		mrch.mx = nx - 1;
+		mrch.mx = nx;
 	}
 	if(dict.has_key("MRC.my")) {
 		mrch.my = dict["MRC.my"];
 	}	
 	else {
-		mrch.my = ny - 1;
+		mrch.my = ny;
 	}
 	if(dict.has_key("MRC.mz")) {
 		mrch.mz = dict["MRC.mz"];	
 	}	
 	else {
-		mrch.mz = nz - 1;
+		mrch.mz = nz;
 	}
 
 	mrch.xlen = nx * (float) dict["apix_x"];
