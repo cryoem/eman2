@@ -1290,15 +1290,15 @@ float Util::FakeKaiserBessel::sinhwin(float x) const {
 #define  xim(i,j)        xim[(j-1)*nsam + i-1]
 
 EMData* Util::Polar2D(EMData* image, vector<int> numr, string cmode){
-   int nsam = image->get_xsize();
-   int nrow = image->get_ysize();
-   int nring = numr.size()/3;
-   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   EMData* out = new EMData();
-   out->set_size(lcirc,1,1);
-   char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
-   float *xim  = image->get_data();
-   float *circ = out->get_data();
+	int nsam = image->get_xsize();
+	int nrow = image->get_ysize();
+	int nring = numr.size()/3;
+	int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	EMData* out = new EMData();
+	out->set_size(lcirc,1,1);
+	char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
+	float *xim  = image->get_data();
+	float *circ = out->get_data();
 /*   alrq(image->get_data(), nsam, nrow, &numr[0], out->get_data(), lcirc, nring, cmode);
    return out;
 }
@@ -1312,175 +1312,165 @@ c
 c  resmaple to polar coordinates
 c                                                                  
 */
-   //  dimension         xim(nsam,nrow),circ(lcirc)
-   //  integer           numr(3,nring)
+	//  dimension	      xim(nsam,nrow),circ(lcirc)
+	//  integer	      numr(3,nring)
 
-   double dfi, dpi;
-   int    ns2, nr2, i, inr, l, nsim, kcirc, lt, j;
-   float  yq, xold, yold, fi, x, y;
+	double dfi, dpi;
+	int    ns2, nr2, i, inr, l, nsim, kcirc, lt, j;
+	float  yq, xold, yold, fi, x, y;
 
-   ns2 = nsam/2+1;
-   nr2 = nrow/2+1;
-   dpi = 2.0*atan(1.0);
+	ns2 = nsam/2+1;
+	nr2 = nrow/2+1;
+	dpi = 2.0*atan(1.0);
 
-   for (i=1;i<=nring;i++) {
-     // radius of the ring
-     inr = numr(1,i);
-     yq  = static_cast<float>(inr);
-     l   = numr(3,i);
-     if (mode == 'h' || mode == 'H') {
-        lt = l/2;
-     }
-     else  {    //if (mode == 'f' || mode == 'F' )
-        lt = l/4;
-     }
+	for (i=1;i<=nring;i++) {
+		// radius of the ring
+		inr = numr(1,i);
+		yq  = static_cast<float>(inr);
+		l   = numr(3,i);
+		if (mode == 'h' || mode == 'H')  lt = l/2;
+		else                             lt = l/4;
 
-     nsim           = lt-1;
-     dfi            = dpi/(nsim+1);
-     kcirc          = numr(2,i);
-     xold           = 0.0f;
-     yold           = static_cast<float>(inr);
-     circ(kcirc)    = quadri(xold+(float)ns2,yold+(float)nr2,nsam,nrow,xim);
-     xold           = static_cast<float>(inr);
-     yold           = 0.0f;
-     circ(lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+		nsim	       = lt-1;
+		dfi	       = dpi/(nsim+1);
+		kcirc	       = numr(2,i);
+		xold	       = 0.0f;
+		yold	       = static_cast<float>(inr);
+		circ(kcirc)    = quadri(xold+(float)ns2,yold+(float)nr2,nsam,nrow,xim);
+		xold	       = static_cast<float>(inr);
+		yold	       = 0.0f;
+		circ(lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
 
-     if (mode == 'f' || mode == 'F') {
-        xold              = 0.0f;
-        yold              = static_cast<float>(-inr);
-        circ(lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
-        xold              = static_cast<float>(-inr);
-        yold              = 0.0f;
-        circ(lt+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
-     }
+		if (mode == 'f' || mode == 'F') {
+			xold		  = 0.0f;
+			yold		  = static_cast<float>(-inr);
+			circ(lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+			xold		  = static_cast<float>(-inr);
+			yold		  = 0.0f;
+			circ(lt+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+		}
 
-     for (j=1;j<=nsim;j++) {
-        fi               = static_cast<float>(dfi*j);
-        x                = sin(fi)*yq;
-        y                = cos(fi)*yq;
-        xold             = x;
-        yold             = y;
-        circ(j+kcirc)    = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
-        xold             =  y;
-        yold             = -x;
-        circ(j+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+		for (j=1;j<=nsim;j++) {
+			fi		 = static_cast<float>(dfi*j);
+			x		 = sin(fi)*yq;
+			y		 = cos(fi)*yq;
+			xold		 = x;
+			yold		 = y;
+			circ(j+kcirc)	 = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+			xold		 =  y;
+			yold		 = -x;
+			circ(j+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
 
-        if (mode == 'f' || mode == 'F')  {
-           xold                = -x;
-           yold                = -y;
-           circ(j+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
-           xold                = -y;
-           yold                =  x;
-           circ(j+lt+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
-        };
-     }
-   }
-   return  out;
+			if (mode == 'f' || mode == 'F')  {
+				xold		    = -x;
+				yold		    = -y;
+				circ(j+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+				xold		    = -y;
+				yold		    =  x;
+				circ(j+lt+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+			}
+		}
+	}
+	return  out;
 }
-
-
-
 
 EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode){
-   int nsam = image->get_xsize();
-   int nrow = image->get_ysize();
-   int nring = numr.size()/3;
-   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   EMData* out = new EMData();
-   out->set_size(lcirc,1,1);
-   char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
-   float *xim  = image->get_data();
-   float *circ = out->get_data();
-   double dpi, dfi;
-   int    it, jt, inr, l, nsim, kcirc, lt;
-   float  xold, yold, fi, x, y;
+	int nsam = image->get_xsize();
+	int nrow = image->get_ysize();
+	int nring = numr.size()/3;
+	int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	EMData* out = new EMData();
+	out->set_size(lcirc,1,1);
+	char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
+	float *xim  = image->get_data();
+	float *circ = out->get_data();
+	double dpi, dfi;
+	int    it, jt, inr, l, nsim, kcirc, lt;
+	float  xold, yold, fi, x, y;
 
-   //     cns2 and cnr2 are predefined centers
-   //     no need to set to zero, all elements are defined
+	//     cns2 and cnr2 are predefined centers
+	//     no need to set to zero, all elements are defined
 
-   dpi = 2*atan(1.0);
-   /*std::cout << lcirc << std::endl;
-   clock_t start_time, end_time;
-   it = 10; inr = numr(1,it); l = numr(3,it); lt = l / 4; std::cout << inr << " " << l << std::endl;
-   dfi = dpi / lt; jt = 1;
-   fi = dfi * jt;
-   inr = numr(1,1);
-   x = sin(fi)* inr; y = cos(fi)*inr;
-   xold = x+cns2;    yold = y+cnr2;
-   start_time = clock();
-   float b = 0.0;
-   for (int iii=1; iii<=100000; iii++) {
-   	for (int jjj=1; jjj<=100000; jjj++) {
-		float a=quadri(xold,yold,nsam,nrow,xim);
-		b = b + a + iii - jjj;
-	}
-   } 
-   end_time = clock();
-   std::cout << "Elapsed time for 10^10 quadri is " << (double(end_time)-double(start_time))/CLOCKS_PER_SEC << " seconds. Results is " << b << std::endl;
-   exit(0); */
-   for (it=1; it<=nring; it++) {
-      // radius of the ring
-      inr = numr(1,it);
+	dpi = 2*atan(1.0);
+	/*std::cout << lcirc << std::endl;
+	clock_t start_time, end_time;
+	it = 10; inr = numr(1,it); l = numr(3,it); lt = l / 4; std::cout << inr << " " << l << std::endl;
+	dfi = dpi / lt; jt = 1;
+	fi = dfi * jt;
+	inr = numr(1,1);
+	x = sin(fi)* inr; y = cos(fi)*inr;
+	xold = x+cns2;    yold = y+cnr2;
+	start_time = clock();
+	float b = 0.0;
+	for (int iii=1; iii<=100000; iii++) {
+	     for (int jjj=1; jjj<=100000; jjj++) {
+	     	     float a=quadri(xold,yold,nsam,nrow,xim);
+	     	     b = b + a + iii - jjj;
+	     }
+	} 
+	end_time = clock();
+	std::cout << "Elapsed time for 10^10 quadri is " << (double(end_time)-double(start_time))/CLOCKS_PER_SEC << " seconds. Results is " << b << std::endl;
+	exit(0); */
+	for (it=1; it<=nring; it++) {
+		// radius of the ring
+		inr = numr(1,it);
 
-      // "F" means a full circle interpolation
-      // "H" means a half circle interpolation
-       
-      l = numr(3,it);
-      if ( mode == 'h' || mode == 'H' ) { 
-         lt = l / 2;
-      }
-      else { // if ( mode == 'f' || mode == 'F' )
-         lt = l / 4;
-      } 
+		// "F" means a full circle interpolation
+		// "H" means a half circle interpolation
+		 
+		l = numr(3,it);
+		if ( mode == 'h' || mode == 'H' ) lt = l / 2;
+		else                              lt = l / 4;
 
-      nsim  = lt - 1;
-      dfi   = dpi / (nsim+1);
-      kcirc = numr(2,it);
-      xold  = 0.0f+cns2;
-      yold  = inr+cnr2;
+		nsim  = lt - 1;
+		dfi   = dpi / (nsim+1);
+		kcirc = numr(2,it);
+		xold  = 0.0f+cns2;
+		yold  = inr+cnr2;
 
-      circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on 90 degree
+		circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);    // Sampling on 90 degree
 
-      xold  = inr+cns2;
-      yold  = 0.0f+cnr2;
-      circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 0 degree
+		xold  = inr+cns2;
+		yold  = 0.0f+cnr2;
+		circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 0 degree
 
-      if ( mode == 'f' || mode == 'F' ) {
-         xold = 0.0f+cns2;
-         yold = -inr+cnr2;
-         circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 270 degree
+		if ( mode == 'f' || mode == 'F' ) {
+			xold = 0.0f+cns2;
+			yold = -inr+cnr2;
+			circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 270 degree
 
-         xold = -inr+cns2;
-         yold = 0.0f+cnr2;
-         circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on 180 degree
-      }
-      
-      for (jt=1; jt<=nsim; jt++) {
-         fi   = static_cast<float>(dfi * jt);
-         x    = sin(fi) * inr;
-         y    = cos(fi) * inr;
+			xold = -inr+cns2;
+			yold = 0.0f+cnr2;
+			circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on 180 degree
+		}
+	
+		for (jt=1; jt<=nsim; jt++) {
+			fi   = static_cast<float>(dfi * jt);
+			x    = sin(fi) * inr;
+			y    = cos(fi) * inr;
 
-         xold = x+cns2;
-         yold = y+cnr2;
-         circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on the first 
+			xold = x+cns2;
+			yold = y+cnr2;
+			circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);      // Sampling on the first 
 
-         xold = y+cns2;
-         yold = -x+cnr2;
-         circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);    // Sampling on the second
+			xold = y+cns2;
+			yold = -x+cnr2;
+			circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on the second
 
-         if ( mode == 'f' || mode == 'F' ) {
-            xold = -x+cns2;
-            yold = -y+cnr2;
-            circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on the third
+			if ( mode == 'f' || mode == 'F' ) {
+				xold = -x+cns2;
+				yold = -y+cnr2;
+				circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on the third
 
-            xold = -y+cns2;
-            yold = x+cnr2;
-            circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on the fourth
-         }
-      } // end for jt
-   } //end for it
-   return out;
+				xold = -y+cns2;
+				yold = x+cnr2;
+				circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on the fourth
+			}
+		} // end for jt
+	} //end for it
+	return out;
 }
+
 float Util::bilinear(float xold, float yold, int nsam, int, float* xim)
 {
 /*
@@ -1528,80 +1518,75 @@ c  purpose: linear interpolation
 			   ydif* (xim(ixold+1,iyold+1) - xim(ixold+1,iyold) -
 			         (xim(ixold,iyold+1) - xim(ixold,iyold)) ));
 
-    return bilinear;
+	return bilinear;
 }
 
 void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
-             int  *numr, float *circ, int , int  nring, char  mode)
-{
-   double dpi, dfi;
-   int    it, jt, inr, l, nsim, kcirc, lt;
-   float   xold, yold, fi, x, y;
+             int  *numr, float *circ, int , int  nring, char  mode) {
+	double dpi, dfi;
+	int    it, jt, inr, l, nsim, kcirc, lt;
+	float	xold, yold, fi, x, y;
 
-   //     cns2 and cnr2 are predefined centers
-   //     no need to set to zero, all elements are defined
+	//     cns2 and cnr2 are predefined centers
+	//     no need to set to zero, all elements are defined
 
-   dpi = 2*atan(1.0);
-   for (it=1; it<=nring; it++) {
-      // radius of the ring
-      inr = numr(1,it);
+	dpi = 2*atan(1.0);
+	for (it=1; it<=nring; it++) {
+		// radius of the ring
+		inr = numr(1,it);
 
-      l = numr(3,it);
-      if ( mode == 'h' || mode == 'H' ) { 
-         lt = l / 2;
-      }
-      else { // if ( mode == 'f' || mode == 'F' )
-         lt = l / 4;
-      } 
+		l = numr(3,it);
+		if ( mode == 'h' || mode == 'H' ) lt = l / 2;
+		else				  lt = l / 4;
 
-      nsim  = lt - 1;
-      dfi   = dpi / (nsim+1);
-      kcirc = numr(2,it);
-	  
-	  
-	xold  = 0.0f+cns2;
-	yold  = inr+cnr2;
+		nsim  = lt - 1;
+		dfi   = dpi / (nsim+1);
+		kcirc = numr(2,it);
+		    
+		    
+		xold  = 0.0f+cns2;
+		yold  = inr+cnr2;
 
-	circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);
+		circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
-      xold  = inr+cns2;
-      yold  = 0.0f+cnr2;
-      circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+		xold  = inr+cns2;
+		yold  = 0.0f+cnr2;
+		circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
-      if ( mode == 'f' || mode == 'F' ) {
-         xold = 0.0f+cns2;
-         yold = -inr+cnr2;
-         circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+		if ( mode == 'f' || mode == 'F' ) {
+			xold = 0.0f+cns2;
+			yold = -inr+cnr2;
+			circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
-         xold = -inr+cns2;
-         yold = 0.0f+cnr2;
-         circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
-      }
-      
-      for (jt=1; jt<=nsim; jt++) {
-         fi   = static_cast<float>(dfi * jt);
-         x    = sin(fi) * inr;
-         y    = cos(fi) * inr;
+			xold = -inr+cns2;
+			yold = 0.0f+cnr2;
+			circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+		}
 
-         xold = x+cns2;
-         yold = y+cnr2;
-         circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+		for (jt=1; jt<=nsim; jt++) {
+			fi   = static_cast<float>(dfi * jt);
+			x    = sin(fi) * inr;
+			y    = cos(fi) * inr;
 
-         xold = y+cns2;
-         yold = -x+cnr2;
-         circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+			xold = x+cns2;
+			yold = y+cnr2;
+			circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
-         if ( mode == 'f' || mode == 'F' ) {
-            xold = -x+cns2;
-            yold = -y+cnr2;
-            circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+			xold = y+cns2;
+			yold = -x+cnr2;
+			circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
-            xold = -y+cns2;
-            yold = x+cnr2;
-            circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  
-         }
-      } // end for jt
-   } //end for it
+			if ( mode == 'f' || mode == 'F' ) {
+				xold = -x+cns2;
+				yold = -y+cnr2;
+				circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+
+				xold = -y+cns2;
+				yold = x+cnr2;
+				circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  
+			}
+		} // end for jt
+	} //end for it
 }
 /*
 void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
@@ -1707,11 +1692,8 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 		yq  = static_cast<float>(inr);
 
 		l = numr(3,it);
-		if ( mode == 'h' || mode == 'H' ) { 
-			lt = l / 2;
-		} else { // if ( mode == 'f' || mode == 'F' )
-			lt = l / 4;
-		} 
+		if ( mode == 'h' || mode == 'H' )  lt = l / 2;
+		else                               lt = l / 4;
 
 		nsim  = lt - 1;
 		dfi   = dpi / (nsim+1);
@@ -1726,47 +1708,47 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 		circ(lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //      circ(lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
-      if ( mode == 'f' || mode == 'F' ) {
-         xold = 0.0f;
-         yold = static_cast<float>(-inr);
-         circ(lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+	if ( mode == 'f' || mode == 'F' ) {
+		xold = 0.0f;
+		yold = static_cast<float>(-inr);
+		circ(lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //         circ(lt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
-         xold = static_cast<float>(-inr);
-         yold = 0.0f;
-         circ(lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+		xold = static_cast<float>(-inr);
+		yold = 0.0f;
+		circ(lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
-      }
+	}
       
-      for (jt=1;jt<=nsim;jt++) {
-         fi   = static_cast<float>(dfi * jt);
-         x    = sin(fi) * yq;
-         y    = cos(fi) * yq;
+	for (jt=1;jt<=nsim;jt++) {
+		fi   = static_cast<float>(dfi * jt);
+		x    = sin(fi) * yq;
+		y    = cos(fi) * yq;
 
-         xold = x;
-         yold = y;
-         circ(jt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+		xold = x;
+		yold = y;
+		circ(jt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //         circ(jt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
-         xold = y;
-         yold = -x;
-         circ(jt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+		xold = y;
+		yold = -x;
+		circ(jt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //         circ(jt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
-         if ( mode == 'f' || mode == 'F' ) {
-            xold = -x;
-            yold = -y;
-            circ(jt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+	if ( mode == 'f' || mode == 'F' ) {
+		xold = -x;
+		yold = -y;
+		circ(jt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //            circ(jt+lt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
 
-            xold = -y;
-            yold = x;
-            circ(jt+lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
+		xold = -y;
+		yold = x;
+		circ(jt+lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,fimage,kb);
 //            circ(jt+lt+lt+lt+kcirc) = image->get_pixel_conv(2*(xold+cns2-1.0f),2*(yold+cnr2-1.0f),0,kb);
-         }
-      } // end for jt
-   } //end for it
-   return  out;
+	}
+	} // end for jt
+	} //end for it
+	return  out;
 }
 
 /*
@@ -1822,7 +1804,7 @@ void Util::fftc_d(double *br, double *bi, int ln, int ks)
 		1.00000000000000,
 	};
 
-	n=(int)pow(2.f,ln);
+	n=(int)pow(2.0f,ln);
 
 	k=abs(ks);
 	l=16-ln;
@@ -1830,12 +1812,12 @@ void Util::fftc_d(double *br, double *bi, int ln, int ks)
 	b6=b3;
 	b7=k;
 	if (ks > 0) {
-		sgn=1.0;
+		sgn=1.0f;
 	} else {
-		sgn=-1.0;
-		rni=1.0/(float)(n);
+		sgn=-1.0f;
+		rni=1.0f/(float)(n);
 		j=1;
-		for (i=1;i<=n;i++) {
+		for (i=1; i<=n; i++) {
 			br(j)=br(j)*rni;
 			bi(j)=bi(j)*rni;
 			j=j+k;
@@ -1865,8 +1847,8 @@ L14:
    if ( b6 == b7 )  goto  L20;
 
    b4=b7;
-   cc=2.0*pow(tab1(l),2);
-   c=1.0-cc;
+   cc=2.0f*pow(tab1(l),2);
+   c=1.0f-cc;
    l++;
    ss=sgn*tab1(l);
    s=ss;
@@ -1981,7 +1963,7 @@ void Util::fftc_q(float *br, float *bi, int ln, int ks)
 		1.00000000000000f,
 	};
 
-	n=(int)pow(2.f,ln);
+	n=(int)pow(2.0f,ln);
 
 	k=abs(ks);
 	l=16-ln;
@@ -1989,12 +1971,12 @@ void Util::fftc_q(float *br, float *bi, int ln, int ks)
 	b6=b3;
 	b7=k;
 	if( ks > 0 ) {
-	   sgn=1.0f;
+		sgn=1.0f;
 	} else {
 		sgn=-1.0f;
 		rni=1.0f/(float)n;
 		j=1;
-		for (i=1; i<=n;i++) {
+		for (i=1; i<=n; i++) {
 			br(j)=br(j)*rni;
 			bi(j)=bi(j)*rni;
 			j=j+k;
@@ -2019,13 +2001,13 @@ L14:
 
    b5=b5+b4;
    b56=b5-b6;
-   if (b5 <= b3)  goto  L14;
-   if (b6 == b7)  goto  L20;
+   if ( b5 <= b3 )  goto  L14;
+   if ( b6 == b7 )  goto  L20;
 
    b4=b7;
    cc=2.0f*pow(tab1(l),2);
    c=1.0f-cc;
-   l=l+1;
+   l++;
    ss=sgn*tab1(l);
    s=ss;
 L16: 
@@ -2161,8 +2143,7 @@ void  Util::fftr_q(float *xcmplx, int nv)
 			xcmplx(2,i1)=0.5f*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
 			xcmplx(2,i2)=0.5f*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
 		}
-	}
-	else {
+	} else {
 		tr=xcmplx(1,1);
 		ti=xcmplx(2,1);
 		xcmplx(1,1)=0.5f*(tr+ti);
@@ -2210,32 +2191,16 @@ void  Util::fftr_d(double *xcmplx, int nv)
 		7.07106781186546e-1,
 		1.00000000000000,
 	};
-/*
-   tab1(1)=9.58737990959775e-5;
-   tab1(2)=1.91747597310703e-4;
-   tab1(3)=3.83495187571395e-4;
-   tab1(4)=7.66990318742704e-4;
-   tab1(5)=1.53398018628476e-3;
-   tab1(6)=3.06795676296598e-3;
-   tab1(7)=6.13588464915449e-3;
-   tab1(8)=1.22715382857199e-2;
-   tab1(9)=2.45412285229123e-2;
-   tab1(10)=4.90676743274181e-2;
-   tab1(11)=9.80171403295604e-2;
-   tab1(12)=1.95090322016128e-1;
-   tab1(13)=3.82683432365090e-1;
-   tab1(14)=7.07106781186546e-1;
-   tab1(15)=1.00000000000000;
-*/
+
 	nu=abs(nv);
 	inv=nv/nu;
 	nu1=nu-1;
-	n=(int)pow(2.f,nu1);
+	n=(int)pow(2.0f,nu1);
 	isub=16-nu1;
 	ss=-tab1(isub);
 	cc=-2.0*pow(tab1(isub-1),2);
-	c=1.0;
-	s=0.0;
+	c=1.0f;
+	s=0.0f;
 	n2=n/2;
 
 	if ( inv > 0 ) {
@@ -2259,13 +2224,12 @@ void  Util::fftr_d(double *xcmplx, int nv)
 			xcmplx(2,i1)=0.5*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
 			xcmplx(2,i2)=0.5*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
 		}
-	}
-	else {
+	} else {
 		tr=xcmplx(1,1);
 		ti=xcmplx(2,1);
 		xcmplx(1,1)=0.5*(tr+ti);
 		xcmplx(2,1)=0.5*(tr-ti);
-		for (i=1;i<=n2;i++) {
+		for (i=1; i<=n2; i++) {
 			i1=i+1;
 			i2=n-i+1;
 			tr1=xcmplx(1,i1);
@@ -2288,7 +2252,7 @@ void  Util::fftr_d(double *xcmplx, int nv)
 #undef  br
 #undef  bi
 
-// This function conducts the Fourier Transform for a set of rings
+// This function conducts the Single Precision Fourier Transform for a set of rings
 void Util::Frngs(EMData* circp, vector<int> numr){
 	int nring = numr.size()/3;
 	float *circ = circp->get_data();
@@ -2296,15 +2260,15 @@ void Util::Frngs(EMData* circp, vector<int> numr){
 	for (i=1; i<=nring;i++) {
 
 #ifdef _WIN32
-	l = (int)( log((float)numr(3,i))/log(2.0f) );
+		l = (int)( log((float)numr(3,i))/log(2.0f) );
 #else
-	l=(int)(log2(numr(3,i)));
+		l=(int)(log2(numr(3,i)));
 #endif	//_WIN32
 
-	fftr_q(&circ(numr(2,i)),l);
+		fftr_q(&circ(numr(2,i)),l);
 	}
 }
-// This function conducts the Inverse Fourier Transform for a set of rings
+// This function conducts the Single Precision Inverse Fourier Transform for a set of rings
 void Util::Frngs_inv(EMData* circp, vector<int> numr){
 	int nring = numr.size()/3;
 	float *circ = circp->get_data();
@@ -2312,12 +2276,12 @@ void Util::Frngs_inv(EMData* circp, vector<int> numr){
 	for (i=1; i<=nring;i++) {
 
 #ifdef _WIN32
-	l = (int)( log((float)numr(3,i))/log(2.0f) );
+		l = (int)( log((float)numr(3,i))/log(2.0f) );
 #else
-	l=(int)(log2(numr(3,i)));
+		l=(int)(log2(numr(3,i)));
 #endif	//_WIN32
 
-	fftr_q(&circ(numr(2,i)),-l);
+		fftr_q(&circ(numr(2,i)),-l);
 	}
 }
 #undef  circ
@@ -2389,14 +2353,14 @@ c       automatic arrays
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
-   ip = -(int) (log2(maxrin));
+	ip = -(int) (log2(maxrin));
 #endif	//_WIN32
 
 	q = (double*)calloc(maxrin, sizeof(double));
 	t = (float*)calloc(maxrin, sizeof(float));
      
 //   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
-	for (i=1;i<=nring;i++) {
+	for (i=1; i<=nring; i++) {
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
 
@@ -2451,8 +2415,9 @@ c       automatic arrays
 	   }
 	} 
 
-	for (k=-3;k<=3;k++) {
-	   j = (jtot+k+maxrin-1)%maxrin + 1; t7(k+4) = q(j);
+	for (k=-3; k<=3; k++) {
+		j = (jtot+k+maxrin-1)%maxrin + 1;
+		t7(k+4) = q(j);
 	}
 
 	prb1d(t7,7,&pos);
@@ -2559,7 +2524,7 @@ c       automatic arrays
 		}
 	} 
 
-	for (k=-3;k<=3;k++) {
+	for (k=-3; k<=3; k++) {
 		j = (jtot+k+maxrin-1)%maxrin + 1;
 		t7(k+4) = q(j);
 	}
@@ -2606,10 +2571,10 @@ c
 	int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
 	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
 
-	qn  = 0.0;
-	qm  = 0.0;
-	tot = 0.0;
-	tmt = 0.0;
+	qn  = 0.0f;
+	qm  = 0.0f;
+	tot = 0.0f;
+	tmt = 0.0f;
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
@@ -2636,12 +2601,13 @@ c
 		q(1) += t1;
 		t(1) += t1;
 
+		t1   = circ1(numr2i+1) * circ2(numr2i+1);
 		if (numr3i == maxrin)  {
-			t1   = circ1(numr2i+1) * circ2(numr2i+1);
 			q(2) += t1;
 			t(2) += t1;
 		} else {
-			q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
+			q(numr3i+1) += t1;
+			t(numr3i+1) += t1;
 		}
 
 		for (j=3; j<=numr3i; j += 2) {
@@ -2670,7 +2636,7 @@ c
 			t(j+1) += -t3 - t4;
 		} 
 	}
-//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<endl;
+	//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<"   "<<t(j) <<endl;
 	fftr_d(q,ip);
 
 	qn  = -1.0e20;
@@ -2681,8 +2647,9 @@ c
 		}
 	}
 
-	for (k=-3;k<=3;k++) {
-		j = ((jtot+k+maxrin-1)%maxrin)+1; t7(k+4) = q(j);
+	for (k=-3; k<=3; k++) {
+		j = ((jtot+k+maxrin-1)%maxrin)+1;
+		t7(k+4) = q(j);
 	}
 
 	// interpolate
@@ -2698,12 +2665,15 @@ c
 	qm = -1.0e20;
 	for (j=1; j<=maxrin;j++) {//cout <<"  "<<j<<"	"<<t(j) <<endl;
 		if ( t(j) >= qm ) {
-			qm	= t(j);
+			qm   = t(j);
 			jtot = j;
 		}
 	}
 
-	for (k=-3;k<=3;k++)  j = ((jtot+k+maxrin-1)%maxrin) + 1; t7(k+4) = t(j);
+	for (k=-3; k<=3; k++)  {
+		j = ((jtot+k+maxrin-1)%maxrin) + 1;
+		t7(k+4) = t(j);
+	}
 
 	// interpolate
 
@@ -2799,7 +2769,10 @@ c
 		}
 	}
 
-	for (k=-3;k<=3;k++)  j = ((jtot+k+maxrin-1)%maxrin)+1; t7(k+4) = q(j);
+	for (k=-3; k<=3; k++)  {
+		j = ((jtot+k+maxrin-1)%maxrin)+1;
+		t7(k+4) = q(j);
+	}
 
 	// interpolate
 	prb1d(t7,7,&pos);
@@ -2814,162 +2787,6 @@ c
 	retvals["tot"] = tot;
 	return retvals;
 }
-//  Try rotational gridding
-
-Dict Util::Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr) {
-	int nring = numr.size()/3;
-	int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-	int maxrin = numr[numr.size()-1];
-	float qn; float tot; float qm; float tmt;
-	crosrng_msr(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], &qn, &tot, &qm, &tmt);
-	Dict retvals;
-	retvals["qn"] = qn;
-	retvals["tot"] = tot;
-	retvals["qm"] = qm;
-	retvals["tmt"] = tmt;
-	return retvals;
-}
-#define  temp(i)            temp[i-1]
-
-//---------------------------------------------------
-void Util::crosrng_msr(float *circ1, float *circ2, int , int  nring,
-                      int   maxrin, int   *numr , float *qn, float *tot,
-                      float   *qm, float *tmt)
-{
-/*
-c
-c  checks both straight & mirrored positions
-c
-c  input - fourier transforms of rings!!
-c  circ1 already multiplied by weights!
-c
-*/
-
-	// dimension		 circ1(lcirc),circ2(lcirc)
-
-	// t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
-	double *t, *q, t7[7];
-	float *temp;
-
-	int   ip, jc, numr3i, numr2i, i, j, k, jtot;
-	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
-
-	*qn  = 0.0;
-	*qm  = 0.0;
-	*tot = 0.0;
-	*tmt = 0.0; 
-
-#ifdef WIN32
-	ip = -(int)(log((float)maxrin)/log(2.0f));
-#else
-	ip = -(int)(log2(maxrin));
-#endif	//WIN32
-	
-	 //  c - straight  = circ1 * conjg(circ2)
-	 //  zero q array
-
-	 q = (double*)calloc(maxrin,sizeof(double));  
-
-	 //   t - mirrored  = conjg(circ1) * conjg(circ2)
-	 //   zero t array
-	 t = (double*)calloc(maxrin,sizeof(double));
-
-
-	 temp = (float*)calloc(maxrin,sizeof(float));
-
-	 //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
-
-	 for (i=1;i<=nring;i++) {
-
-		numr3i = numr(3,i);
-		numr2i = numr(2,i);
-
-		t1   = circ1(numr2i) * circ2(numr2i);
-		q(1) = q(1)+t1;
-		t(1) = t(1)+t1;
-
-		if (numr3i == maxrin)  {
-			t1   = circ1(numr2i+1) * circ2(numr2i+1);
-			q(2) = q(2)+t1;
-			t(2) = t(2)+t1;
-		} else {
-			t1  		= circ1(numr2i+1) * circ2(numr2i+1);
-			q(numr3i+1) = q(numr3i+1)+t1;
-		}
-
-		for (j=3;j<=numr3i;j=j+2) {
-			jc     = j+numr2i-1;
-
-			c1     = circ1(jc);
-			c2     = circ1(jc+1);
-			d1     = circ2(jc);
-			d2     = circ2(jc+1);
-
-			t1     = c1 * d1;
-			t3     = c1 * d2;
-			t2     = c2 * d2;
-			t4     = c2 * d1;
-
-			q(j)   = q(j)	+ t1 + t2;
-			q(j+1) = q(j+1) - t3 + t4;
-			t(j)   = t(j)	+ t1 - t2;
-			t(j+1) = t(j+1) - t3 - t4;
-		} 
-	}
-
-	// straight
-	for (i=1; i<=maxrin; i++) {temp(i)=static_cast<float>(q(i));}
-	fftr_q(temp,ip);
-
-	jtot = 0;
-	*qn  = -1.0e20f;
-	for (j=1; j<=maxrin; j++) {
-		if (temp(j) >= *qn) {
-			*qn  = temp(j);
-			jtot = j;
-		}
-	}
-
-
-	for (k=-3;k<=3;k++) {
-		j = ((jtot+k+maxrin-1)%maxrin)+1;
-		t7(k+4) = temp(j);
-	}
-
-	// interpolate
-	prb1d(t7,7,&pos);
-	*tot = (float)(jtot)+pos;
-
-	// mirrored
-	for (i=1; i<=maxrin; i++) {temp(i)=static_cast<float>(t(i));}
-	fftr_q(temp,ip);
-
-	// find angle
-	*qm = -1.0e20f;
-	for (j=1; j<=maxrin;j++) {
-		if ( temp(j) >= *qm ) {
-			*qm   = temp(j);
-			jtot = j;
-		}
-	}
-
-	// find angle
-	for (k=-3;k<=3;k++) {
-		j		= ((jtot+k+maxrin-1)%maxrin) + 1;
-		t7(k+4) = t(j);
-	}
-
-  // interpolate
-
-	prb1d(t7,7,&pos);
-	*tmt = float(jtot) + pos;
-
-	free(t);
-	free(q);
-	free(temp);
-}
-#undef temp
-
 
 #define  dout(i,j)        dout[i+maxrin*j]
 #define  circ1b(i)        circ1b[i-1]
@@ -3017,7 +2834,7 @@ c
 
 	//   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
 
-	for (i=1;i<=nring;i++) {
+	for (i=1; i<=nring; i++) {
 	
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
@@ -3026,16 +2843,16 @@ c
 		q(1) = q(1)+t1;
 		t(1) = t(1)+t1;
 
+		t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
 		if (numr3i == maxrin)  {
-			t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
-			q(2) = q(2)+t1;
-			t(2) = t(2)+t1;
+			q(2) += t1;
+			t(2) += t1;
 		} else {
-			t1  		= circ1b(numr2i+1) * circ2b(numr2i+1);
-			q(numr3i+1) = q(numr3i+1)+t1;
+			q(numr3i+1) += t1;
+			t(numr3i+1) += t1;
 		}
 
-		for (j=3;j<=numr3i;j=j+2) {
+		for (j=3; j<=numr3i; j=j+2) {
 			jc     = j+numr2i-1;
 
 			c1     = circ1b(jc);
@@ -3048,10 +2865,10 @@ c
 			t2     = c2 * d2;
 			t4     = c2 * d1;
 
-			q(j)   = q(j)	+ t1 + t2;
-			q(j+1) = q(j+1) - t3 + t4;
-			t(j)   = t(j)	+ t1 - t2;
-			t(j+1) = t(j+1) - t3 - t4;
+			q(j)   += t1 + t2;
+			q(j+1) += - t3 + t4;
+			t(j)   += t1 - t2;
+			t(j+1) += - t3 - t4;
 		} 
 	}
 	
@@ -3107,32 +2924,34 @@ c
 #else
 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
+	for (int i=1; i<=maxrin; i++)  {q(i) = 0.0f; t(i) = 0.0;}
 	
 	//  q - straight  = circ1 * conjg(circ2)
 
 	//   t - mirrored  = conjg(circ1) * conjg(circ2)
 
 	//   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+	for (int i=0; i<maxrin; i++) cout<<i<<"   I   "<<circ1b[i]<<"       "<<circ2b[i]<<endl;
 
-	for (i=1;i<=nring;i++) {
+	for (i=1; i<=nring; i++) {
 	
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
 
 		t1   = circ1b(numr2i) * circ2b(numr2i);
-		q(1) = q(1)+t1;
-		t(1) = t(1)+t1;
+		q(1) += t1;
+		t(1) += t1;
 
+		t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
 		if (numr3i == maxrin)  {
-			t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
-			q(2) = q(2)+t1;
-			t(2) = t(2)+t1;
+			q(2) += t1;
+			t(2) += t1;
 		} else {
-			t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
-			q(numr3i+1) = q(numr3i+1)+t1;
+			q(numr3i+1) += t1;
+			t(numr3i+1) += t1;
 		}
 
-		for (j=3;j<=numr3i;j=j+2) {
+		for (j=3; j<=numr3i; j=j+2) {
 			jc     = j+numr2i-1;
 
 			c1     = circ1b(jc);
@@ -3145,18 +2964,32 @@ c
 			t2     = c2 * d2;
 			t4     = c2 * d1;
 
-			q(j)   = q(j)	+ t1 + t2;
-			q(j+1) = q(j+1) - t3 + t4;
-			t(j)   = t(j)	+ t1 - t2;
-			t(j+1) = t(j+1) - t3 - t4;
+			q(j)   += t1 + t2;
+			q(j+1) += -t3 + t4;
+			t(j)   += t1 - t2;
+			t(j+1) += -t3 - t4;
 		} 
 	}
+	double *qq, *tt;
+	qq = (double*)calloc(maxrin,sizeof(double));
+	tt = (double*)calloc(maxrin,sizeof(double));
+	for (int i=0; i<maxrin; i++) {qq[i] = q[i];tt[i] = t[i];}
 	
+	for (int i=0; i<maxrin; i++) cout<<i<<"   A   "<<q[i]<<"       "<<t[i]<<endl;
 	// straight
 	fftr_q(q,ip);
+	for (int i=0; i<maxrin; i++) cout<<i<<"  B    "<<q[i]<<"       "<<t[i]<<endl;
 
 	// mirrored
 	fftr_q(t,ip);
+	for (int i=0; i<maxrin; i++) cout<<i<<"  C    "<<q[i]<<"       "<<t[i]<<endl;
+
+	fftr_d(qq,ip);
+	for (int i=0; i<maxrin; i++) cout<<i<<"  D    "<<qq[i]<<"       "<<tt[i]<<endl;
+
+	// mirrored
+	fftr_d(tt,ip);
+	for (int i=0; i<maxrin; i++) cout<<i<<"  E    "<<qq[i]<<"       "<<tt[i]<<endl;
 
 }
 
@@ -3482,6 +3315,7 @@ void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int
 #undef    PI2
 
 #undef  numr
+#undef  circ
 
 // helper function for k-means
 Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {
@@ -16292,19 +16126,19 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 
 //  ccf1d keeps 1d ccfs stored as (maxrin, -kx-1:kx+1, -ky-1:ky+1)
 //  margin is needed for peak search and both arrays are initialized with -1.0e20
-#define p_ccf1ds(i,j,k)  p_ccf1ds[i + (j + ((k)*(2*kx+3)))*maxrin]
-#define p_ccf1dm(i,j,k)  p_ccf1dm[i + (j + ((k)*(2*kx+3)))*maxrin]
+#define p_ccf1ds(i,j,k)  p_ccf1ds[i + (j + (k*(2*kx+3)))*maxrin]
+#define p_ccf1dm(i,j,k)  p_ccf1dm[i + (j + (k*(2*kx+3)))*maxrin]
 vector<EMData *>  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
-                float xrng, float yrng, float step, string mode,
-                vector< int >numr, float cnx, float cny) {
+			float xrng, float yrng, float step, string mode,
+			vector< int >numr, float cnx, float cny) {
 
     // Determine shift and rotation between image and many reference
     // images (crefim, weights have to be applied) quadratic
     // interpolation
     
     // return a list of peaks  PAP  07/21/08
-    
-    
+
+
     // Manually extract.
 /*    vector< EMAN::EMData* > crefim;
     std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
@@ -16340,11 +16174,12 @@ vector<EMData *>  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 			ix = j*step ; 
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Frngs(cimage, numr);
-			Crosrng_msg_vec(crefim, cimage, numr, &(p_ccf1ds(0,
-			j+kx+1, i+ky+1)), &(p_ccf1dm(0, j+kx+1, i+ky+1)));
-			delete cimage; 
+			Crosrng_msg_vec(crefim, cimage, numr, 
+			  &(p_ccf1ds(0, j+kx+1, i+ky+1)), &(p_ccf1dm(0, j+kx+1, i+ky+1)));
+			delete cimage;
 		}
 	}
+	for ( int i = 0; i<maxrin; i++) cout<<p_ccf1ds(i, 1, 1)<<"   "<<p_ccf1ds(i, 1, 1)<<endl;
 	vector<EMData *> res;
 	res.push_back(ccf1ds);
 	res.push_back(ccf1dm);
