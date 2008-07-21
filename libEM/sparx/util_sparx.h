@@ -397,6 +397,7 @@ class FakeKaiserBessel : public KaiserBessel {
 				float	*qm, float *tmt);
 	    		    
 	static EMData* Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr);
+	static void Crosrng_msg_vec(EMData* circ1, EMData* circ2, vector<int> numr, float *q, float *t);
 	static EMData* Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr);
 	static EMData* Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr);
 
@@ -518,7 +519,7 @@ public:
                 float xrng, float yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
 
-	static vector<float> multiref_peaks_ali2d(EMData* image, const vector< EMData* >& crefim,
+	static vector<EMData *>  multiref_peaks_ali2d(EMData* image, EMData* crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny);
 
