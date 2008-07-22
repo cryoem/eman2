@@ -16172,8 +16172,8 @@ vector<EMData *>  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Frngs(cimage, numr);
 			Crosrng_msg_vec(crefim, cimage, numr,
-			  &(p_ccf1ds[(j+kx+1 + ((i+ky+1)*(2*kx+3)))*maxrin]),
-			  &(p_ccf1dm[(j+kx+1 + ((i+ky+1)*(2*kx+3)))*maxrin]) );
+			  p_ccf1ds+(j+kx+1 + ((i+ky+1)*(2*kx+3)))*maxrin,
+			  p_ccf1dm+(j+kx+1 + ((i+ky+1)*(2*kx+3)))*maxrin);
 			delete cimage;
 		}
 	}
