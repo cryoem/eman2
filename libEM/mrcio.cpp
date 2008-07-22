@@ -350,24 +350,26 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mrch.amax = dict["maximum"];
 	mrch.amean = dict["mean"];
 
-	if(dict.has_key("MRC.mx")) {
-		mrch.mx = dict["MRC.mx"]; 
-	}
-	else {
+	/** the folowing lines are commented out. 
+	 * To make EMAN2 consistent with IMOD. Especially "header" command in IMOD. */
+//	if(dict.has_key("MRC.mx")) {
+//		mrch.mx = dict["MRC.mx"]; 
+//	}
+//	else {
 		mrch.mx = nx;
-	}
-	if(dict.has_key("MRC.my")) {
-		mrch.my = dict["MRC.my"];
-	}	
-	else {
+//	}
+//	if(dict.has_key("MRC.my")) {
+//		mrch.my = dict["MRC.my"];
+//	}	
+//	else {
 		mrch.my = ny;
-	}
-	if(dict.has_key("MRC.mz")) {
-		mrch.mz = dict["MRC.mz"];	
-	}	
-	else {
+//	}
+//	if(dict.has_key("MRC.mz")) {
+//		mrch.mz = dict["MRC.mz"];	
+//	}	
+//	else {
 		mrch.mz = nz;
-	}
+//	}
 
 	mrch.xlen = nx * (float) dict["apix_x"];
 	mrch.ylen = ny * (float) dict["apix_y"];
