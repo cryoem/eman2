@@ -146,6 +146,7 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			
 			if self.display_list == 0:
 				return
+			
 			glNewList(self.display_list,GL_COMPILE)
 	
 			# All triangles are drawn in counter clockwise direction
@@ -182,8 +183,7 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		if self.display_list == None:
 			thick_front = 0
 			thick_back = -self.border_depth
-			
-			
+				
 			dims = self.object.get_lr_bt_nf()
 			# plus, i.e. plus the border
 			left =  dims[0]
@@ -640,6 +640,9 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	
 		self.allow_child_mouse_events = True # turn off if you dont want the widgets in the rotary to receive event
 	
+	
+	def set_rotations(self,r):
+		self.rotations = r	
 	def __getitem__(self,idx):
 		i = idx-self.rotations
 		if i != 0:
@@ -699,6 +702,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.angle_information = None # will eventually be list used for both static display and animation
 		self.dtheta_animations = None  # an array for dtheta animations
 		self.animation_queue = []
+		self.rotations = 0
 	
 	def add_widget(self,widget,set_current=False):
 		'''
@@ -727,6 +731,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		'flatness', but only if the rotary is not rotated out of its original position by the user
 		'''
 		return not self.is_animated
+	
 	def animate(self,time):
 		if self.time_begin == 0:
 			self.time_begin = time
@@ -1497,11 +1502,10 @@ class EMGLView2D:
 	A view of a 2D drawable type, such as a single 2D image or a matrix of 2D images
 	
 	"""
-	def __init__(self, parent,image=None):
+	def __init__(self, parent,image):
 		self.parent = parent
 		self.cam = Camera2(self)
 		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
-		
 		
 		if isinstance(image,list):
 			if len(image) == 1:
@@ -1512,6 +1516,9 @@ class EMGLView2D:
 				self.h = image[0].get_ysize()
 		elif isinstance(image,EMData):
 			self.become_2d_image(image)
+		else:
+			print "error, the EMGLView2D class must be initialized with data"
+			return
 		
 		self.drawable.suppressInspector = True
 		self.initflag = True

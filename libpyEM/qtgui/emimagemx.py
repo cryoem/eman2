@@ -454,15 +454,15 @@ class EMImageMXCore:
 		self.display_states = []
 	
 	def set_img_num_offset(self,n):
-		self.force_dl_update() # empty display lists causes an automatic regeneration of the display list
 		self.img_num_offset = n
+		self.force_dl_update() # empty display lists causes an automatic regeneration of the display list
 	
 	def get_img_num_offset(self):
 		return self.img_num_offset
 	
 	def set_draw_background(self,bool):
-		self.force_dl_update()# empty display lists causes an automatic regeneration of the display list
 		self.draw_background = bool
+		self.force_dl_update()# empty display lists causes an automatic regeneration of the display list
 		
 	def set_use_display_list(self,bool):
 		self.use_display_list = bool
@@ -528,6 +528,7 @@ class EMImageMXCore:
 		self.maxdeng=self.minden
 		
 		for i in data:
+			if i == None: continue
 			if i.get_zsize()!=1 :
 				self.data=None
 				if update_gl: self.updateGL()
@@ -541,7 +542,7 @@ class EMImageMXCore:
 			self.maxden=max(self.maxden,min(m1,mean+3.0*sigma))
 			self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
 			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
-		
+
 		#self.showInspector()		# shows the correct inspector if already open
 		#self.timer.start(25)
 		self.max_idx = len(data)
@@ -549,10 +550,11 @@ class EMImageMXCore:
 		if self.font_render_mode == EMImageMXCore.FTGL:
 			self.font_renderer.set_face_size(data[0].get_xsize()/6	)
 		for i,d in enumerate(data):
-			d.set_attr("original_number",i)
+			try:
+				d.set_attr("original_number",i)
+			except:pass
 
 		if update_gl: self.updateGL()
-	
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
@@ -609,6 +611,9 @@ class EMImageMXCore:
 		self.maxden=val
 		if update_gl: self.updateGL()
 
+	def get_mmode(self):
+		return self.mmode
+	
 	def set_mmode(self,mode):
 		self.mmode = mode
 		meh  = self.mouse_event_handler

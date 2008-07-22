@@ -355,16 +355,19 @@ class EMImageMXRotaryCore:
 			w.force_dl_update()
 		else:
 			print 'failed to delete box image'
-		
-		
-	def update_min_max_gamma(self):
+			
+	def update_min_max_gamma(self,update_gl=True):
 		for i in range(self.visible_mxs):
 			w = self.rotary[i].get_drawable()
-			w.set_min_max_gamma(self.minden,self.maxden,self.gamma)
+			w.set_min_max_gamma(self.minden,self.maxden,self.gamma,False)
 			if  i == 0 and  self.inspector != None:	
-				self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
+				try:
+					self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
+				except:
+					# the histogram isn't created yet - this is a FIXME
+					pass
 		
-		self.updateGL()
+		if update_gl: self.updateGL()
 	
 	def set_den_range(self,minden,maxden):
 		self.minden=minden
@@ -395,42 +398,41 @@ class EMImageMXRotaryCore:
 		
 		#print "iterating through",start_changed,end_changed,"start_mx is",self.start_mx
 		
-		self.__update_rotary_range(start_changed,end_changed)
+		self.__update_rotary_range(start_changed ,end_changed)
 		
 		w = self.rotary[idx].get_drawable()
 		self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
 	
 	def __update_rotary_range(self,start_changed,end_changed):
+		
 		num_per_view = self.mx_rows*self.mx_cols
+		
 		for idx in range(start_changed,end_changed):
-			n = idx + self.start_mx
+			n = idx+ self.start_mx
 			
 			panel = n
 			if panel != 0: panel %= self.get_num_panels()
 			
 			start_idx = panel*num_per_view
-			w = self.rotary[idx].get_drawable()
-			
 			image_offset = start_idx 
 			if image_offset != 0: image_offset %= self.emdata_list_cache.get_max_idx()
-			#d = []
-			#for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 			
 			d = []
 			if image_offset > (self.emdata_list_cache.get_max_idx()-num_per_view):
 				num_visible = self.emdata_list_cache.get_max_idx() - image_offset
 				num_none = num_per_view - num_visible
-				print num_visible,num_none
 				for i in range(start_idx,start_idx+num_visible): d.append(self.emdata_list_cache[i])
 				for i in range(num_none): d.append(None)
 			else:
 				for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
-				
-			w.set_img_num_offset(image_offset)	
-			w.setData(d,False)
-			w.set_min_max_gamma(self.minden,self.maxden,self.gamma)
-			w.set_max_idx(self.emdata_list_cache.get_max_idx())
 			
+
+			w = self.rotary[idx].get_drawable()
+			w.setData(d,False)
+
+			w.set_img_num_offset(image_offset)
+			w.set_max_idx(self.emdata_list_cache.get_max_idx())
+			w.set_min_max_gamma(self.minden,self.maxden,self.gamma,False)
 	
 	def get_num_panels(self):
 		return int(ceil(float(self.emdata_list_cache.get_max_idx())/ (self.mx_rows*self.mx_cols)))
@@ -481,7 +483,7 @@ class EMImageMXRotaryCore:
 	def get_image(self,idx):
 		return self.emdata_list_cache[idx]
 	
-	def setData(self,data):
+	def setData(self,dataa):
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return
@@ -496,37 +498,9 @@ class EMImageMXRotaryCore:
 		self.__regenerate_rotary()
 	
 	def __refresh_rotary(self,inc_size=False):
-		
-		
+			
 		self.__update_rotary_range(0,self.visible_mxs)
-		#for idx in range(0,self.visible_mxs):
-			
-			#panel = idx
-			#if panel != 0: panel %= self.get_num_panels()		
-			#start_idx = panel*num_per_view
-
-			#e = self.rotary[idx]
-			#w = e.get_drawable()
-
-			#image_offset = start_idx
-			#if image_offset != 0: image_offset %= self.emdata_list_cache.get_max_idx()
-			#w.set_img_num_offset(image_offset)
-			#d = []
-			#if image_offset > (self.emdata_list_cache.get_max_idx()-num_per_view):
-				#num_visible = self.emdata_list_cache.get_max_idx() - image_offset
-				#num_none = num_per_view - num_visible
-				#print num_visible,num_none
-				#for i in range(start_idx,start_idx+num_visible): d.append(self.emdata_list_cache[i])
-				#for i in range(num_none): d.append(None)
-			#else:
-				#for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
-
-			#w.setData(d,False)
-
-			#w.set_min_max_gamma(self.minden,self.maxden,self.gamma,False)
-			#w.set_max_idx(self.emdata_list_cache.get_max_idx())
-			#w.set_display_values(self.vals_to_display,False)
-			
+		
 		if inc_size:
 			self.__refresh_rotary_size()
 
@@ -560,46 +534,55 @@ class EMImageMXRotaryCore:
 
 	def __regenerate_rotary(self):
 		self.rotary.clear_widgets()
+		self.parent.updateGL()
 		num_per_view = self.mx_rows*self.mx_cols
 		
-		for idx in range(self.start_mx,self.visible_mxs+self.start_mx):
-			panel = idx
-			if panel != 0: panel %= self.get_num_panels()		
+		for idx in range(self.start_mx,self.start_mx+self.visible_mxs):
+			n = idx
+			
+			panel = n
+			if panel != 0: panel %= self.get_num_panels()
+			
 			start_idx = panel*num_per_view
-
-
-			image_offset = start_idx
+		
+			image_offset = start_idx 
 			if image_offset != 0: image_offset %= self.emdata_list_cache.get_max_idx()
+			#print idx,panel,image_offset
 			
 			d = []
 			if image_offset > (self.emdata_list_cache.get_max_idx()-num_per_view):
 				num_visible = self.emdata_list_cache.get_max_idx() - image_offset
 				num_none = num_per_view - num_visible
-				print num_visible,num_none
+				#print num_visible,num_none
 				for i in range(start_idx,start_idx+num_visible): d.append(self.emdata_list_cache[i])
 				for i in range(num_none): d.append(None)
 			else:
 				for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
+
 			e = EMGLView2D(self,d)
+			self.rotary.add_widget(e)
 			w = e.get_drawable()
+	
+			w.set_use_display_list(True) # saves HEAPS of time, makes interaction much smoother
+			w.set_reroute_delete_target(self)
+			w.set_draw_background(True)
+			w.set_mmode(self.mmode)
+			w.set_display_values(self.vals_to_display,False)	
+
 			w.set_img_num_offset(image_offset)
 			w.set_max_idx(self.emdata_list_cache.get_max_idx())
-			w.set_use_display_list(True) # saves HEAPS of time, makes interaction much smoother
-			w.set_draw_background(True)
-			w.set_reroute_delete_target(self)
-			w.set_mmode(self.mmode)
-			w.set_display_values(self.vals_to_display,False)
-			self.rotary.add_widget(e)
 
-		self.__refresh_rotary_size()
-		
-		w = self.rotary[0].get_drawable()
+		e = self.rotary[0]
+		w = e.get_drawable()
 		self.minden = w.get_density_min()
 		self.maxden = w.get_density_max()
 		self.mindeng = self.minden
 		self.maxdeng = self.maxden
 		self.gamma = w.get_gamma()
+		self.update_min_max_gamma(False)
 		
+		self.__refresh_rotary_size()
+
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
@@ -630,7 +613,6 @@ class EMImageMXRotaryCore:
 			self.z_far = z_far
 			self.parent.set_near_far(self.z_near,self.z_far)
 			suppress = True
-		
 		
 		GL.glPushMatrix()
 		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
@@ -757,8 +739,8 @@ class EMDataListCache:
 			self.db[self.exclusions_key] = []
 			self.exclusions = self.db["interactive_exclusions"]
 			
-			for i,d in enumerate(data):
-				d.set_attr("original_number",i)
+			for i,d in enumerate(self.images):	d.set_attr("original_number",i)
+
 		elif isinstance(object,str):
 			#print "file mode"
 			self.mode = EMDataListCache.FILE_MODE
@@ -809,6 +791,7 @@ class EMDataListCache:
 	def delete_box(self,idx):
 		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
 			# we can actually delete the emdata object
+			print "popping image",idx
 			image = self.images.pop(idx)
 			self.max_idx = len(self.images)
 			self.cache_size = self.max_idx
@@ -879,10 +862,15 @@ class EMDataListCache:
 		return self.max_idx
 	
 	def set_cache_size(self,cache_size,refresh=True):
-		if cache_size > self.max_idx: self.cache_size = self.max_idx
-		else: self.cache_size = cache_size
-		if refresh: self.__refresh_cache()
-		
+		if self.mode != EMDataListCache.LIST_MODE:
+			if cache_size > self.max_idx: self.cache_size = self.max_idx
+			else: self.cache_size = cache_size
+			self.start_idx = self.start_idx - self.cache_size/2
+			if refresh: self.__refresh_cache()
+		else:
+			if self.cache_size != self.max_idx:
+				print "error, in list mode the cache size is always equal to the max idx"
+				return
 	def set_start_idx(self,start_idx,refresh=True):
 		self.start_idx = start_idx
 		if refresh: self.__refresh_cache()
@@ -909,7 +897,7 @@ class EMDataListCache:
 						else:
 							print "data has been lost"
 							raise
-					except: print "couldn't access",idx	
+					except: print "couldn't access",idx,"the max idx was",self.max_idx,"i was",i,"start idx",self.start_idx,"cache size",self.cache_size,len(self.images)
 				#print i,idx
 					
 			self.images = cache
@@ -924,7 +912,7 @@ class EMDataListCache:
 		try:
 			return self.images[i]
 		except:
-			self.start_idx = idx - self.cache_size/2
+			self.start_idx = i - self.cache_size/2
 			#if self.start_idx < 0: 
 				#self.start_idx = self.start_idx % self.max_idx
 			#elif self.start_idx+self.cache_size >= self.max_idx:
@@ -934,9 +922,9 @@ class EMDataListCache:
 				return self.images[i]
 			except:
 				print "error, couldn't get image",i,self.start_idx,self.max_idx,self.cache_size
-				for i in self.images:
-					print i,
-				print ''
+				#for i in self.images:
+					#print i,
+				#print ''
 			
 # This is just for testing, of course
 if __name__ == '__main__':
@@ -946,7 +934,14 @@ if __name__ == '__main__':
 	if len(sys.argv)==1 : 
 		data = []
 		for i in range(500):
+			#if i == 0: idx = 0
+			#else: idx = i%64
+			#e = EMData(64,64)
+			#e.set_size(64,64,1)
+			#e.to_zero()
+			#e.add(sin( (i/10.0) % (pi/2)))
 			data.append(test_image(Util.get_irand(0,3)))
+			#data.append(e)
 		
 		
 		window.setData(data)
