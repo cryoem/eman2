@@ -2930,8 +2930,7 @@ c
 
 	//   t - mirrored  = conjg(circ1) * conjg(circ2)
 
-	//   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
-	for (int i=0; i<maxrin; i++) cout<<i<<"   I   "<<circ1b[i]<<"       "<<circ2b[i]<<endl;
+	//for (int i=0; i<maxrin; i++) cout<<i<<"   I   "<<circ1b[i]<<"       "<<circ2b[i]<<endl;
 
 	for (i=1; i<=nring; i++) {
 	
@@ -2970,27 +2969,28 @@ c
 			t(j+1) += -t3 - t4;
 		} 
 	}
+	/*
 	double *qq, *tt;
 	qq = (double*)calloc(maxrin,sizeof(double));
 	tt = (double*)calloc(maxrin,sizeof(double));
 	for (int i=0; i<maxrin; i++) {qq[i] = q[i];tt[i] = t[i];}
-	
-	for (int i=0; i<maxrin; i++) cout<<i<<"   A   "<<q[i]<<"       "<<t[i]<<endl;
+	*/
+	//for (int i=0; i<maxrin; i++) cout<<i<<"   A   "<<q[i]<<"       "<<t[i]<<endl;
 	// straight
 	fftr_q(q,ip);
-	for (int i=0; i<maxrin; i++) cout<<i<<"  B    "<<q[i]<<"       "<<t[i]<<endl;
+	//for (int i=0; i<maxrin; i++) cout<<i<<"  B    "<<q[i]<<"       "<<t[i]<<endl;
 
 	// mirrored
 	fftr_q(t,ip);
-	for (int i=0; i<maxrin; i++) cout<<i<<"  C    "<<q[i]<<"       "<<t[i]<<endl;
-
+	//for (int i=0; i<maxrin; i++) cout<<i<<"  C    "<<q[i]<<"       "<<t[i]<<endl;
+	/*
 	fftr_d(qq,ip);
 	for (int i=0; i<maxrin; i++) cout<<i<<"  D    "<<qq[i]<<"       "<<tt[i]<<endl;
 
 	// mirrored
 	fftr_d(tt,ip);
 	for (int i=0; i<maxrin; i++) cout<<i<<"  E    "<<qq[i]<<"       "<<tt[i]<<endl;
-
+	*/
 }
 
 
@@ -16126,8 +16126,6 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 
 //  ccf1d keeps 1d ccfs stored as (maxrin, -kx-1:kx+1, -ky-1:ky+1)
 //  margin is needed for peak search and both arrays are initialized with -1.0e20
-#define p_ccf1ds(i,j,k)  p_ccf1ds[i + (j + (k*(2*kx+3)))*maxrin]
-#define p_ccf1dm(i,j,k)  p_ccf1dm[i + (j + (k*(2*kx+3)))*maxrin]
 vector<EMData *>  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 			float xrng, float yrng, float step, string mode,
 			vector< int >numr, float cnx, float cny) {
@@ -16167,26 +16165,24 @@ vector<EMData *>  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 		p_ccf1dm[i] = -1.e20;
 	}
 
-	float iy, ix;
 	for (int i = -ky; i <= ky; i++) {
-		iy = i * step ;
+		float iy = i * step;
 		for (int j = -kx; j <= kx; j++) {
-			ix = j*step ; 
+			float ix = j*step;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Frngs(cimage, numr);
-			Crosrng_msg_vec(crefim, cimage, numr, 
-			  &(p_ccf1ds(0, j+kx+1, i+ky+1)), &(p_ccf1dm(0, j+kx+1, i+ky+1)));
+			Crosrng_msg_vec(crefim, cimage, numr,
+			  &(p_ccf1ds[(j+kx+1 + ((i+ky+1)*(2*kx+3)))*maxrin]),
+			  &(p_ccf1dm[(j+kx+1 + ((i+ky+1)*(2*kx+3)))*maxrin]) );
 			delete cimage;
 		}
 	}
-	for ( int i = 0; i<maxrin; i++) cout<<p_ccf1ds(i, 1, 1)<<"   "<<p_ccf1ds(i, 1, 1)<<endl;
+	//for ( int i = 0; i<maxrin; i++) cout<<p_ccf1ds(i, 4, 4)<<"   "<<p_ccf1ds(i, 1, 1)<<endl;
 	vector<EMData *> res;
 	res.push_back(ccf1ds);
 	res.push_back(ccf1dm);
 	return res;
 }
-#undef p_ccf1ds(i,j,k)  
-#undef p_ccf1dm(i,j,k)  
 
 vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys) {
 	

@@ -3360,17 +3360,17 @@ vector<float> EMData::peak_search(int ml, float invert) {
 			        	i__1 = (i-1+nx)%nx;
 			        	i__2 = (i+1)%nx;
 	*/
-		for(k=1;k<=nz-2;++k) {
+		for(k=1; k<=nz-2; ++k) {
 		 	kz.clear();
 			kz.push_back(k-1);
 			kz.push_back(k);
 			kz.push_back(k+1);
- 			for(j=1;j<=ny-2;++j) {
+ 			for(j=1; j<=ny-2; ++j) {
 				jy.clear();
 				jy.push_back(j-1);
 				jy.push_back(j);
 				jy.push_back(j+1);
- 				for(i=1;i<=nx-2;++i) {
+ 				for(i=1; i<=nx-2; ++i) {
 			        	ix.clear();
 			        	ix.push_back(i-1);
 			        	ix.push_back(i);
@@ -3422,7 +3422,121 @@ vector<float> EMData::peak_search(int ml, float invert) {
 				}
 			}
 		}
-		break;
+		//  Add circular closure for x direction: needed for circular ccf,
+		//  should not have adverse impact on other code.  PAP -7/22/08
+		for(k=1; k<=nz-2; ++k) {
+		 	kz.clear();
+			kz.push_back(k-1);
+			kz.push_back(k);
+			kz.push_back(k+1);
+ 			for(j=1; j<=ny-2; ++j) {
+				jy.clear();
+				jy.push_back(j-1);
+				jy.push_back(j);
+				jy.push_back(j+1);
+ 				for(i=0; i<=0; ++i) {
+			        	ix.clear();
+			        	ix.push_back(nx-1);
+			        	ix.push_back(i);
+			        	ix.push_back(i+1);
+					float qbf = buf(i,j,k)*invert;
+			        	peak_check = qbf > buf(ix[0],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1])*invert;
+					//if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2])*invert;
+					if(peak_check) {
+	    					if(count < ml) {
+							count++;
+							peaks.push_back( Pixel(i, j, k, qbf) );
+							if(count == ml-1) sort(peaks.begin(), peaks.end(), peakcmp);
+						} else {
+							if( qbf > (peaks.back()).value ) {
+								//  do the switch and sort again
+								//cout << qbf<<"   "<< (peaks.back()).value <<"   "<< (*peaks.begin()).value <<endl;
+								peaks.pop_back();
+								peaks.push_back( Pixel(i, j, k, qbf) );
+								if(ml > 1) sort(peaks.begin(), peaks.end(), peakcmp);
+							}
+						}
+					}
+					}}}}}}}}}}}}}}}}}}}}}}}}}
+				}
+ 				for(i=nx-1; i<=nx-1; ++i) {
+			        	ix.clear();
+			        	ix.push_back(i-1);
+			        	ix.push_back(i);
+			        	ix.push_back(0);
+					float qbf = buf(i,j,k)*invert;
+			        	peak_check = qbf > buf(ix[0],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1])*invert;
+					//if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2])*invert;
+					if(peak_check) {
+	    					if(count < ml) {
+							count++;
+							peaks.push_back( Pixel(i, j, k, qbf) );
+							if(count == ml-1) sort(peaks.begin(), peaks.end(), peakcmp);
+						} else {
+							if( qbf > (peaks.back()).value ) {
+								//  do the switch and sort again
+								//cout << qbf<<"   "<< (peaks.back()).value <<"   "<< (*peaks.begin()).value <<endl;
+								peaks.pop_back();
+								peaks.push_back( Pixel(i, j, k, qbf) );
+								if(ml > 1) sort(peaks.begin(), peaks.end(), peakcmp);
+							}
+						}
+					}
+					}}}}}}}}}}}}}}}}}}}}}}}}}
+				}
+			}
+		}
+	break;
 	}
 	// 
 	if (peaks.begin() != peaks.end()) {
