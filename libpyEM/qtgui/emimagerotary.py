@@ -51,6 +51,7 @@ from PyQt4.QtCore import QTimer
 from emglobjects import EMOpenGLFlagsAndTools
 
 from emfloatingwidgets import EMGLRotaryWidget, EMGLView2D,EM3DWidget
+from emimagemx import EMImageMXCore
 
 
 class EMImageRotary(QtOpenGL.QGLWidget):
@@ -78,14 +79,18 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 		
 		self.fov = 20
 		self.aspect = 1.0
-		self.zNear = 1
-		self.zFar = 5000
+		self.z_near = 1
+		self.z_far = 2000
 		
 		self.animatables = []
 		
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 		self.timer.start(10)
+	
+		
+	def get_target(self):
+		return self.image_rotary
 		
 	def setData(self,data):
 		self.image_rotary.setData(data)
@@ -150,13 +155,25 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
 		self.aspect = float(width)/float(height)
-		GLU.gluPerspective(self.fov,self.aspect,1,2000)
+		GLU.gluPerspective(self.fov,self.aspect,self.z_near,self.z_far)
 		#GL.glOrtho(0.0,width,0.0,height,-width,width)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
 		self.image_rotary.resize_event(width,height)
+	
+	
+	def set_near_far(self,near,far):
+		self.z_near = near
+		self.z_far = far
 		
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GLU.gluPerspective(self.fov,self.aspect,self.z_near,self.z_far)
+		#GL.glOrtho(0.0,width,0.0,height,-width,width)
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+	
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
@@ -196,11 +213,11 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 		self.image_rotary.dropEvent(event)
 	
 	
-	def set_shapes(self,shapes,shrink):
-		self.image_rotary.set_shapes(shapes,shrink)
+	def set_shapes(self,shapes,shrink,idx=0):
+		self.image_rotary.set_shapes(shapes,shrink,idx)
 	
-	def set_frozen(self,frozen):
-		self.image_rotary.set_frozen(frozen)
+	def set_frozen(self,frozen,idx=0):
+		self.image_rotary.set_frozen(frozen,idx)
 	
 class EMImageRotaryCore:
 
@@ -219,6 +236,27 @@ class EMImageRotaryCore:
 		self.widget = EM3DWidget(self,self.rotary)
 		self.widget.set_draw_frame(False)
 		
+		
+		self.z_near = 0
+		self.z_far = 0
+		
+		self.hud_data = [] # a list of strings to be rendered to the heads up display (hud)
+		
+		try:
+			self.font_renderer = EMFTGL()
+			self.font_renderer.set_face_size(20)
+			self.font_renderer.set_depth(4)
+			self.font_renderer.set_using_display_lists(True)
+			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
+			
+#			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
+			self.font_render_mode = EMImageMXCore.FTGL
+		except:
+			self.font_render_mode = EMImageMXCore.GLUT
+		
+	def set_extra_hud_data(self,hud_data):
+		self.hud_data = hud_data
+	
 		#self.rotary.set_shapes([],1.01)
 	def context(self):
 		# asking for the OpenGL context from the parent
@@ -233,11 +271,11 @@ class EMImageRotaryCore:
 		self.mmode = mode
 		self.rotary.set_mmode(mode)
 
-	def set_frozen(self,frozen):
-		self.rotary.set_frozen(frozen)
+	def set_frozen(self,frozen,idx=0):
+		self.rotary.set_frozen(frozen,idx)
 
-	def set_shapes(self,shapes,shrink):
-		self.rotary.set_shapes(shapes,shrink)
+	def set_shapes(self,shapes,shrink,idx=0):
+		self.rotary.set_shapes(shapes,shrink,idx)
 
 	def register_animatable(self,animatable):
 		self.parent.register_animatable(animatable)
@@ -281,23 +319,40 @@ class EMImageRotaryCore:
 		if not self.data : return
 		
 		glLoadIdentity()
-		
-		lr = self.rotary.get_suggested_lr_bt_nf()
-		#print lr
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
-		#print self.parent.get_depth_for_height(self.height())
-		#lr = self.rotary.get_lr_bt_nf()
+		
+		lr = self.rotary.get_suggested_lr_bt_nf()
+		lrt = lr
+		#lr = self.widget.get_lr_bt_nf()
+		
+		z = self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
+		
+		z_near = z-lrt[4]
+		z_trans = 0
+		z_far = z-lrt[5]
+		if z_near < 0:
+			z_trans = z_near
+			z_near = 0.1
+			z_far -= z_trans
+		if z_far < 0: z_far = 0.1 # hacking alert
+		if self.z_near != z_near or self.z_far != z_far:
+			self.z_near = z_near
+			self.z_far = z_far
+			self.parent.set_near_far(self.z_near,self.z_far)
 
-		GL.glPushMatrix()
 		#FTGL.print_message("hello world",36);
-		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2])))
+		
+		#print self.z_near,self.z_far,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans
+		
 		glPushMatrix()
-		glTranslate(160,0,0);
+		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-z+z_trans+abs(lr[3]-lr[2]))
+		glTranslate(0,-75,0) # This number is a FIXME issue
 		#FTGL.print_message("hello hello",36);
-		glPopMatrix()
 		self.widget.paintGL()
-		GL.glPopMatrix()
+		glPopMatrix()
+		
+		self.draw_hud()
 	
 	def dragEnterEvent(self,event):
 		pass
@@ -336,6 +391,58 @@ class EMImageRotaryCore:
 		self.rotary.resize_event(width,height)
 
 
+	def draw_hud(self):
+		width = self.parent.width()
+		height = self.parent.height()
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		glOrtho(0,width,0,height,-100,100)
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		glEnable(GL_LIGHTING)
+		glEnable(GL_NORMALIZE)
+		glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 1.0, 0.2,1.0))
+		glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 1.0, 0.9,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(1.0	, 0.5, 0.2,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,20.0)
+		
+		glDisable(GL_DEPTH_TEST)
+		glColor(1.0,1.0,1.0)
+		
+		
+		if self.font_render_mode == EMImageMXCore.FTGL:
+			panels = len(self.rotary)
+			idx = self.rotary.current_index()
+			string = str(idx+1) + ' / ' + str(panels)
+			bbox = self.font_renderer.bounding_box(string)
+			x_offset = width-(bbox[3]-bbox[0]) - 10
+			y_offset = 10
+			
+			glPushMatrix()
+			glTranslate(x_offset,y_offset,0)
+			glRotate(20,0,1,0)
+			self.font_renderer.render_string(string)
+			glPopMatrix()
+			y_offset += bbox[4]-bbox[1]
+			for s in self.hud_data:
+				string = str(s)
+				bbox = self.font_renderer.bounding_box(string)
+				x_offset = width-(bbox[3]-bbox[0]) - 10
+				y_offset += 10
+				glPushMatrix()
+				glTranslate(x_offset,y_offset,0)
+				glRotate(20,0,1,0)
+				self.font_renderer.render_string(string)
+				glPopMatrix()
+				y_offset += bbox[4]-bbox[1]
+		else:
+			pass
+		
+		glMatrixMode(GL_PROJECTION)
+		glPopMatrix()
+		glMatrixMode(GL_MODELVIEW)
+		
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)

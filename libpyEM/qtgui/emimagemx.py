@@ -73,6 +73,9 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		
 		self.imagefilename = None
 		
+	def get_target(self):
+		return self.imagemx
+	
 	def setData(self,data):
 		self.imagemx.setData(data)
 	
@@ -409,7 +412,9 @@ class EMImageMXCore:
 		self.mouse_event_handler = self.mouse_event_handlers[self.mmode]
 		
 		self.reroute_delete_target = None
-
+		
+	def set_extra_hud_data(self,hud_data):
+		pass
 	
 	def set_reroute_delete_target(self,target):
 		self.reroute_delete_target = target
@@ -436,10 +441,7 @@ class EMImageMXCore:
 		return self.data[idx]
 
 	def emit(self,signal,event,data,bool=None):
-		if bool==None:
-			self.parent.emit(signal,event,data)
-		else:
-			self.parent.emit(signal,event,data,bool)
+		self.parent.emit(signal,event,data,bool)
 
 	def __del__(self):
 		if self.main_display_list != 0:
@@ -813,7 +815,9 @@ class EMImageMXCore:
 			for row in range(ystart,visiblerows):
 				for col in range(xstart,visiblecols):
 					i = (row)*self.mx_cols+col
-					if self.data[i] == None: continue
+					try:
+						if self.data[i] == None: continue
+					except: continue
 					#print i,n
 					if i >= n : break
 					tx = int((w+2)*(col) + x)
@@ -1115,7 +1119,8 @@ class EMImageMXCore:
 		of the contained images. """
 		absloc=((vec[0]),(self.parent.height()-(vec[1])))
 		for item in self.coords.items():
-			index = item[0]
+			index = item[0]+self.img_num_offset
+			if index != 0: index %= self.max_idx
 			data = item[1]
 			if absloc[0]>data[0] and absloc[1]>data[1] and absloc[0]<data[0]+data[2] and absloc[1]<data[1]+data[3] :
 				return (index,(absloc[0]-data[0])/self.scale,(absloc[1]-data[1])/self.scale)

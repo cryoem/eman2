@@ -40,6 +40,7 @@ from optparse import OptionParser
 from emshape import EMShape
 from emimagemx import EMImageMX
 from emimagerotary import EMImageRotary
+from emimagemxrotary import EMImageMXRotary
 from math import *
 from time import *
 import os
@@ -820,7 +821,12 @@ class GUIbox:
 		self.guiim.set_excluded(self.boxable.is_excluded())
 		
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
-		self.guimx=EMImageMX()	
+		glflags = EMOpenGLFlagsAndTools()
+		if not glflags.npt_textures_unsupported():
+			self.guimx=EMImageMXRotary()		# widget for displaying image thumbs
+		else:
+			self.guimx=EMImageMX()	
+		
 		
 		self.guimxitp = None
 		self.guimxit = None
@@ -865,7 +871,7 @@ class GUIbox:
 			self.guimxitp.show()
 			if isinstance(self.guimxit,EMImageRotary):	self.guimxitp.resize(*self.guimxit.get_optimal_size())
 			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.imagesel)
-			if isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(self.boxable.is_frozen())
+			if isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image)
 
 		self.ab_sel_mediator = AutoBoxerSelectionsMediator(self)
 		self.guictl=GUIboxPanel(self,self.ab_sel_mediator)
@@ -1060,7 +1066,7 @@ class GUIbox:
 		
 		# Should this be here?
 		box_num = len(self.get_boxes())
-		if not self.guimx.isVisible(box_num) : self.guimx.scrollTo(box_num,yonly=1)
+		#if not self.guimx.isVisible(box_num) : self.guimx.scrollTo(box_num,yonly=1)
 		self.guimx.set_selected(box_num)
 		
 		# autoboxer will autobox depending on the state of its mode
@@ -1165,7 +1171,7 @@ class GUIbox:
 			
 			self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
 			self.guiim.set_frozen(self.boxable.is_frozen())
-			if self.guimxitp != None and isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(self.boxable.is_frozen())
+			if self.guimxitp != None and isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image)
 			self.guiim.set_excluded(self.boxable.is_excluded())
 			self.guictl.set_image_quality(self.boxable.get_quality())
 			self.box_display_update()
@@ -1201,6 +1207,7 @@ class GUIbox:
 			
 			a = time()
 			self.imagethumbs = []
+			
 			for i in range(0,nim):
 				self.imagethumbs.append(None)
 			
@@ -1216,6 +1223,15 @@ class GUIbox:
 				self.guimxit=EMImageMX()
 				
 			self.guimxit.setData(self.imagethumbs)
+			
+			try:
+				for i in range(0,nim):
+					print i
+					frozen = get_idd_key_entry(self.image_names[i],"frozen_state")
+					if frozen != None:
+						self.guimxit.set_frozen(frozen,i)
+			except: print "setting frozen failed"
+					
 			self.guimxitp = EMParentWin(self.guimxit)
 			self.guimxitp.setWindowTitle("Image Thumbs")
 			
@@ -1501,6 +1517,8 @@ class GUIbox:
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
+		if self.guimxit != None:
+			self.guimxit.get_target().set_extra_hud_data([len(self.ptcl)])
 
 		if self.guimxitp !=None:
 			othershapes = {}
@@ -1508,12 +1526,10 @@ class GUIbox:
 				s = ns[shape].getShape()
 				othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
 	
-			if isinstance(self.guimxit,EMImageRotary): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink())
+			if isinstance(self.guimxit,EMImageRotary): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image)
 
 		self.update_all_image_displays()
 		
-
-
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
@@ -1682,7 +1698,7 @@ class GUIbox:
 		self.boxable.toggle_frozen()
 		self.boxable.write_to_db()
 		self.guiim.set_frozen(self.boxable.is_frozen())
-		if self.guimxitp != None  and isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(self.boxable.is_frozen())
+		if self.guimxitp != None  and isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image)
 		if not self.boxable.is_frozen():
 			self.change_current_autoboxer(self.boxable.get_autoboxer_id(),False)
 		else:	
@@ -1694,7 +1710,7 @@ class GUIbox:
 			self.boxable.set_frozen(False) # If it was already frozen then setting to excluded overrides this
 			self.guiim.set_excluded(True)
 			self.guiim.set_frozen(False)
-			if self.guimxitp != None and isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(False)
+			if self.guimxitp != None and isinstance(self.guimxit,EMImageRotary): self.guimxit.set_frozen(False,self.current_image)
 			self.boxable.clear_and_cache(True) # tell boxable to clear its autoboxes and references -
 			self.clear_displays() # tell the display to clear itself
 		elif self.guiim.set_excluded(False):

@@ -228,6 +228,9 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		# trying to stop.
 		return self.renderPixmap(0,0,True)
 		# to get around it we would have to render everything without display lists (a supreme pain).
+		
+	def set_selected(self,n):
+		return self.image_rotary.set_selected(n)
 	
 class EMImageMXRotaryCore:
 
@@ -284,6 +287,17 @@ class EMImageMXRotaryCore:
 		except:
 			self.font_render_mode = EMImageMXCore.GLUT
 	
+	def emit(self,signal,event,data,bool=None):
+		print "in emit"
+		if bool==None:
+			self.parent.emit(signal,event,data)
+		else:
+			self.parent.emit(signal,event,data,bool)
+
+	
+	def set_selected(self,n):
+		print "set selected doesn't do anything yet",n
+	
 	def get_qt_parent(self):
 		return self.parent
 	
@@ -325,10 +339,11 @@ class EMImageMXRotaryCore:
 	
 	def set_mmode(self,mode):
 		self.mmode = mode
-		for i in range(self.visible_mxs):
-			w = self.rotary[i].get_drawable()
-			w.set_mmode(self.mmode)
-	
+		try:
+			for i in range(self.visible_mxs):
+				w = self.rotary[i].get_drawable()
+				w.set_mmode(self.mmode)
+		except: pass
 	def set_scale(self,scale):
 		pass
 	
@@ -346,6 +361,7 @@ class EMImageMXRotaryCore:
 	
 	def pop_box_image(self,idx):
 		val = self.emdata_list_cache.delete_box(idx)
+		#self.parent.emit(QtCore.SIGNAL("boxdeleted"),None,[idx])
 		if val == 1:
 			self.max_idx = self.emdata_list_cache.get_max_idx()
 			
@@ -483,7 +499,7 @@ class EMImageMXRotaryCore:
 	def get_image(self,idx):
 		return self.emdata_list_cache[idx]
 	
-	def setData(self,dataa):
+	def setData(self,data):
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return
@@ -534,7 +550,7 @@ class EMImageMXRotaryCore:
 
 	def __regenerate_rotary(self):
 		self.rotary.clear_widgets()
-		self.parent.updateGL()
+		self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
 		num_per_view = self.mx_rows*self.mx_cols
 		
 		for idx in range(self.start_mx,self.start_mx+self.visible_mxs):
@@ -692,8 +708,8 @@ class EMImageMXRotaryCore:
 		glLoadIdentity()
 		glEnable(GL_LIGHTING)
 		glEnable(GL_NORMALIZE)
-		glMaterial(GL_FRONT,GL_AMBIENT,(0.9, 0.5, 0.2,1.0))
-		glMaterial(GL_FRONT,GL_DIFFUSE,(0.9, 0.5, 0.2,1.0))
+		glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 0.9, 0.2,1.0))
+		glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 0.9, 0.9,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(0.9, 0.5, 0.2,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,20.0)
 		
@@ -766,16 +782,14 @@ class EMDataListCache:
 			print "the object used to construct the EMDataListCache is not a string (filename) or a list (of EMData objects). Can't proceed"
 			return
 		
-		self.soft_delete = True # toggle to prevent permanent deletion of particles
+		self.soft_delete = False # toggle to prevent permanent deletion of particles
 		self.image_width = -1
 		self.image_height = -1
 	
 	def __del__(self):
 		global DB
 		try:
-			print "closign dict"
 			DB.close_dict("emimage_mx_rotary_cache")
-			print "dict closed"
 		except: pass
 	
 	def get_image_width(self):

@@ -72,6 +72,10 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 	'''
 	A plain border decoration
 	'''
+	
+	FROZEN_COLOR = "frozen"
+	DEFAULT_COLOR = "default"
+	PERMISSABLE_COLOR_FLAGS = [FROZEN_COLOR,DEFAULT_COLOR]
 	def __init__(self, object):
 		EM3DBorderDecoration.__init__(self)
 		self.border_width = 6
@@ -86,8 +90,16 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			self.faulty = True
 			return
 		else: self.object = object
+		
+		self.color_flag = EM3DPlainBorderDecoration.DEFAULT_COLOR
 	def __del__(self):
 		self.__delete_list()
+	
+	def set_color_flag(self,flag):
+		if flag not in EM3DPlainBorderDecoration.PERMISSABLE_COLOR_FLAGS:
+			print 'unknown color flag'
+		else:
+			self.color_flag = flag
 	
 	def draw(self,force_update=False):
 		
@@ -104,9 +116,22 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		
 		if self.display_list == None: return
 		
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,100.0)
+		if self.color_flag ==  EM3DPlainBorderDecoration.DEFAULT_COLOR:
+			white = (.8,.8,.8,1.0)
+			redish = (.8,.2,.2,1.0)
+			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,white)
+			glMaterial(GL_FRONT,GL_SPECULAR,redish)
+			glMaterial(GL_FRONT,GL_SHININESS,20.0)
+			glColor(*white)
+		elif self.color_flag ==  EM3DPlainBorderDecoration.FROZEN_COLOR:
+			light_bluish = (.2,.2,.6,1.0)
+			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,light_bluish)
+			glMaterial(GL_FRONT,GL_SPECULAR,light_bluish)
+			glMaterial(GL_FRONT,GL_SHININESS,100.0)
+			glColor(*light_bluish)
+		else:
+			print "warning, unknown color flag, coloring failed"
+			
 		if self.display_list != None and self.display_list != 0:
 			glCallList(self.display_list)
 		else: print "weird"
@@ -402,6 +427,9 @@ class EM3DWidgetVolume:
 		try: return self.nice_lr_bt_nf()
 		except: return self.get_lr_bt_nf()
 		
+	def emit(self,signal,event,a,b):
+		self.parent.emit(signal,event,a,b)
+		
 class EM3DWidget:
 	'''
 	A class for managing a 3D object as an interactive widget
@@ -643,11 +671,18 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	
 	def set_rotations(self,r):
 		self.rotations = r	
+	
 	def __getitem__(self,idx):
 		i = idx-self.rotations
 		if i != 0:
 			i = i % len(self.widgets)
 		return self.widgets[i]
+	
+	def current_index(self):
+		i = -self.rotations
+		if i != 0:
+			i = i % len(self.widgets)
+		return i
 	
 	def __len__(self):
 		return len(self.widgets)
@@ -666,31 +701,15 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	def context(self):
 		return self.parent.context()
 	
-	def set_frozen(self,frozen):
-		idx = (-self.rotations)%len(self.widgets)
+	def set_frozen(self,frozen,idx=0):
+		'''
+		default is for the leading image to get the signal (idx=0)
+		'''
 		self.widgets[idx].set_frozen(frozen)
 	
-	def set_shapes(self,shapes,shrink):
-#		try:
-			idx = (-self.rotations)%len(self.widgets)
-			self.widgets[idx].set_shapes(shapes,shrink)
-#		except: print "failed"
-		#print "setting display list",(-self.rotations)%len(self.widgets)
-		#display_list = self.shape_lists[(-self.rotations)%len(self.widgets)] 
+	def set_shapes(self,shapes,shrink,idx=0):
+		self.widgets[idx].set_shapes(shapes,shrink)
 
-		#if display_list != 0: glDeleteLists(display_list,1)
-		
-		#display_list = glGenLists(1)
-		
-		## make our own cirle rather than use gluDisk or somesuch
-		#glNewList(display_list,GL_COMPILE)
-		#for k,s in shapes.items():
-			#s.draw()
-		#glEndList()
-		
-		#self.shape_lists[(-self.rotations)%len(self.widgets)] = display_list
-	
-#		self.shrink = shrink
 	def set_mmode(self,mode):
 		self.mmode = mode
 	
@@ -1027,10 +1046,10 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		
 		if self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY:
 			if interesting_points[3][2] > 0:
-				bottom = -height/2.0 + min_z 
+				bottom = -height/2.0 + min_z
 				top = height/2.0
 			else:
-				bottom = -height/2.0
+				bottom = -height/2.0 
 				top = height/2.0 + max_z
 
 			if self.y_rot < 0:
@@ -1545,7 +1564,9 @@ class EMGLView2D:
 		return self.drawable
 	
 	def set_frozen(self,frozen):
-		self.drawable.set_frozen(frozen)
+		#self.drawable.set_frozen(frozen)
+		if frozen: self.decoration.set_color_flag(EM3DPlainBorderDecoration.FROZEN_COLOR)
+		else : self.decoration.set_color_flag(EM3DPlainBorderDecoration.DEFAULT_COLOR)
 	
 	def context(self):
 		# asking for the OpenGL context from the parent
@@ -1725,15 +1746,12 @@ class EMGLView2D:
 
 		#self.updateGL()
 	def emit(self, signal, event, a=None,b=None):
-		try:
-			if a == None:
-				QtCore.QObject.emit(signal,event)
-			elif b == None:
-				QtCore.QObject.emit(signal,event,a)
-			else:
-				QtCore.QObject.emit(signal,event,a,b) 
-		except: pass
-			#print "unknown signal", signal, "or unknown event",event
+		#try:
+		self.parent.emit(signal,event,a)
+		#except: 
+			#print "fail"	
+			#pass
+			##print "unknown signal", signal, "or unknown event",event
 	
 	def leaveEvent(self):
 		self.drawable.leaveEvent()

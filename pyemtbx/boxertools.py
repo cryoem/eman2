@@ -1430,7 +1430,7 @@ class Boxable:
 			return
 		
 		if oldimagetag != newimagetag:
-			#print "warning with respect to",self.image_name,"- you are using information in the database that was generated using an image of type",newimagetag,"on an image of type",oldimagetag,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
+			print "warning with respect to",self.image_name,"- you are using information in the database that was generated using an image of type",newimagetag,"on an image of type",oldimagetag,". This will potentially cause problems if the images are not equivalent. Suggest renaming the image or boxing it in a separate directory"
 			return
 		else:
 			#print "storing image tag"
