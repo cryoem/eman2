@@ -51,7 +51,7 @@ class EMFTGL
 #ifdef WIN32
 		EMFTGL() : font_file_name("" ), face_size(32), depth(32), use_display_lists(true), mode(TEXTURE) {};
 #else
-		EMFTGL() : font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf"), face_size(32), depth(32), use_display_lists(true), mode(TEXTURE) {};
+		EMFTGL() : font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf"), face_size(32), depth(32), use_display_lists(true), mode(TEXTURE) {};
 #endif
 
 

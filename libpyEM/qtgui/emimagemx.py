@@ -80,7 +80,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		#print "set image file name",name
 		self.imagefilename = name
 		
-	def getImageFileName(self):
+	def get_image_file_name(self):
 		return self.imagefilename
 	
 	def initializeGL(self):
@@ -161,6 +161,14 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	
 	def scrollTo(self,n,yonly):
 		return self.imagemx.scrollTo(n,yonly)
+	
+	def get_frame_buffer(self):
+		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
+		# (because display lists are involved)
+		return self.renderPixmap(0,0,True)
+	
+	def get_qt_parent(self):
+		return self
 
 class EMMXCoreMouseEvents:
 	'''
@@ -367,21 +375,20 @@ class EMImageMXCore:
 		except:	pass
 
 		try:
-			e = EMFTGL()
-			self.render_mode = EMImageMXCore.FTGL
+			self.font_render_mode = EMImageMXCore.FTGL
 			self.font_renderer = EMFTGL()
 			self.font_renderer.set_face_size(16)
 			self.font_renderer.set_using_display_lists(True)
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 			
-			#self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
+			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
 		except:
-			self.render_mode = EMImageMXCore.GLUT
+			self.font_render_mode = EMImageMXCore.GLUT
 
 		self.initsizeflag = True
 		self.inspector=None
 		if data:
-			self.setData(data)
+			self.setData(data,False)
 			
 		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a 
 		
@@ -411,12 +418,12 @@ class EMImageMXCore:
 		return self.scale
 	
 	def get_parent(self):
-		return self.parent
+		return self.parent.get_qt_parent()
 	
-	def pop_box_image(self,idx,redraw=False):
+	def pop_box_image(self,idx,update_gl=False):
 		if self.reroute_delete_target  == None:
 			d = self.data.pop(idx)
-			if redraw:
+			if update_gl:
 				self.display_states = [] 
 				self.updateGL()
 			return d
@@ -464,23 +471,27 @@ class EMImageMXCore:
 		self.force_dl_update()# empty display lists causes an automatic regeneration of the display list
 		self.max_idx = n
 		
-	def set_min_max_gamma(self,minden,maxden,gamma):
+	def set_min_max_gamma(self,minden,maxden,gamma,update_gl=True):
 		self.minden= minden
 		self.maxden= maxden
 		self.gamma = gamma
+		if update_gl: self.updateGL()
 		
 	def get_hist(self):
 		return self.hist
 	
-	def getImageFileName(self):
+	def get_image(self,idx):
+		return self.data[idx]
+	
+	def get_image_file_name(self):
 		''' warning - could return none in some circumstances'''
-		try: return self.parent.getImageFileName()
+		try: return self.parent.get_image_file_name()
 		except: return None
 	
 	def __del__(self):
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 		
-	def setData(self,data,data_only=False):
+	def setData(self,data,update_gl=True):
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return
@@ -505,7 +516,7 @@ class EMImageMXCore:
 
 		self.data=data
 		if data==None or len(data)==0:
-			self.updateGL()
+			if update_gl: self.updateGL()
 			return
 		
 		self.force_dl_update()
@@ -519,7 +530,7 @@ class EMImageMXCore:
 		for i in data:
 			if i.get_zsize()!=1 :
 				self.data=None
-				self.updateGL()
+				if update_gl: self.updateGL()
 				return
 			mean=i.get_attr("mean")
 			sigma=i.get_attr("sigma")
@@ -535,22 +546,22 @@ class EMImageMXCore:
 		#self.timer.start(25)
 		self.max_idx = len(data)
 		# experimental for lst file writing
-		if self.render_mode == EMImageMXCore.FTGL:
-			self.font_renderer.set_face_size(data[0].get_xsize()/8)
+		if self.font_render_mode == EMImageMXCore.FTGL:
+			self.font_renderer.set_face_size(data[0].get_xsize()/6	)
 		for i,d in enumerate(data):
 			d.set_attr("original_number",i)
 
-		#self.updateGL()
+		if update_gl: self.updateGL()
 	
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
 		
-	def set_den_range(self,x0,x1):
+	def set_den_range(self,x0,x1,update_gl=True):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
 		self.minden=x0
 		self.maxden=x1
-		self.updateGL()
+		if update_gl: self.updateGL()
 	
 	def get_density_min(self):
 		return self.minden
@@ -561,13 +572,13 @@ class EMImageMXCore:
 	def get_gamma(self):
 		return self.gamma
 	
-	def setOrigin(self,x,y):
+	def setOrigin(self,x,y,update_gl=True):
 		"""Set the display origin within the image"""
 		self.origin=(x,y)
 		self.targetorigin=None
-		self.updateGL()
+		if update_gl: self.updateGL()
 		
-	def set_scale(self,newscale,adjust=True):
+	def set_scale(self,newscale,adjust=True,update_gl=True):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		
 		if self.targetorigin : 
@@ -588,43 +599,48 @@ class EMImageMXCore:
 #		print self.origin,newscale/self.scale,yo,self.height()/2+yo
 		
 		self.scale=newscale
-		self.updateGL()
+		if update_gl: self.updateGL()
 		
-	def set_density_min(self,val):
+	def set_density_min(self,val,update_gl=True):
 		self.minden=val
-		self.updateGL()
+		if update_gl: self.updateGL()
 		
-	def set_density_max(self,val):
+	def set_density_max(self,val,update_gl=True):
 		self.maxden=val
-		self.updateGL()
+		if update_gl: self.updateGL()
 
 	def set_mmode(self,mode):
 		self.mmode = mode
-		self.mouse_event_handler = self.mouse_event_handlers[self.mmode]
+		meh  = self.mouse_event_handler
+		try:
+			self.mouse_event_handler = self.mouse_event_handlers[self.mmode]
+		except:
+			print "unknown mode:",mode
+			self.mouse_event_handler = meh # just keep the old one
 		
-	def set_gamma(self,val):
+	def set_gamma(self,val,update_gl=True):
 		self.gamma=val
-		self.updateGL()
+		if update_gl:self.updateGL()
 	
-	def set_mx_cols(self,val):
+	def set_mx_cols(self,val,update_gl=True):
 		if self.mx_cols==val: return
 		if val<1 : val=1
 		
 		self.mx_cols=val
-		self.updateGL()
+		if update_gl: self.updateGL()
 		try:
 			if self.inspector.nrow.value!=val :
 				self.inspector.nrow.setValue(val)
 		except: pass
 		
-	def set_n_show(self,val):
+	def set_n_show(self,val,update_gl=True):
 		self.nshow=val
-		self.updateGL()
+		if update_gl: self.updateGL()
 
-	def set_invert(self,val):
+	def set_invert(self,val,update_gl=True):
 		if val: self.invert=1
 		else : self.invert=0
-		self.updateGL()
+		if update_gl: self.updateGL()
 
 	def timeout(self):
 		"""Called a few times each second when idle for things like automatic scrolling"""
@@ -707,9 +723,16 @@ class EMImageMXCore:
 		return False
 			
 	
+	def set_font_render_resolution(self):
+		if self.font_render_mode != EMImageMXCore.FTGL:
+			print "error, can't call set_font_render_resolution if the mode isn't FTGL"
+			
+		#self.font_renderer.set_face_size(int(self.parent.height()*0.015))
+		#print "scale is",self.scale
+	
 	def render(self):
 		if not self.data : return
-		
+		if self.font_render_mode == EMImageMXCore.FTGL: self.set_font_render_resolution()
 		render = False
 		if self.use_display_list:
 			
@@ -785,6 +808,7 @@ class EMImageMXCore:
 			for row in range(ystart,visiblerows):
 				for col in range(xstart,visiblecols):
 					i = (row)*self.mx_cols+col
+					if self.data[i] == None: continue
 					#print i,n
 					if i >= n : break
 					tx = int((w+2)*(col) + x)
@@ -871,7 +895,7 @@ class EMImageMXCore:
 					self.hist+=hist2
 					# render labels		
 					if drawlabel:
-						if self.render_mode == EMImageMXCore.FTGL:
+						if self.font_render_mode == EMImageMXCore.FTGL:
 							
 							glEnable(GL_TEXTURE_2D)
 							glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
@@ -886,14 +910,14 @@ class EMImageMXCore:
 							for v in self.valstodisp:
 								glPushMatrix()
 								glTranslate(tx,tagy,0)
-								bbox = self.bounding_box(str(i))
-								
-								
+								#bbox = self.bounding_box(str(i))
+								glTranslate(4,4,0.2)
+
 								#glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
 								#glRotate(-10,1,0,0)
 								#glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
-								glTranslate(4,4,0.1)
-								glScale(self.scale,self.scale,1)
+								
+								glScale(self.scale/2.0,self.scale/2.0,1)
 								if v=="Img #" : 
 									#print i,self.img_num_offset,self.max_idx,(i+self.img_num_offset)%self.max_idx,
 									idx = i+self.img_num_offset
@@ -905,16 +929,16 @@ class EMImageMXCore:
 									else: avs=str(av)
 									try: self.font_renderer.render_string(str(avs))
 									except:	self.font_renderer.render_string("------")
-								tagy+=16
+								tagy+=self.font_renderer.get_face_size()*self.scale/2.0
 								glPopMatrix()
 							if not lighting:
 								glDisable(GL_LIGHTING)
 							glDisable(GL_TEXTURE_2D)
-						elif self.render_mode == EMImageMXCore.GLUT:
+						elif self.font_render_mode == EMImageMXCore.GLUT:
 							tagy = ty
 							glColor(*txtcol)
 							for v in self.valstodisp:
-								if v=="Img #" : 
+								if v=="Img #" :
 									idx = i+self.img_num_offset
 									if idx != 0: idx = idx%self.max_idx
 									self.renderText(tx,tagy,"%d"%idx)
@@ -1054,20 +1078,21 @@ class EMImageMXCore:
 #		print n,self.origin
 #		self.updateGL()
 	
-	def set_selected(self,numlist):
+	def set_selected(self,numlist,update_gl=True):
 		"""pass an integer or a list/tuple of integers which should be marked as 'selected' in the
 		display"""
 		if isinstance(numlist,int) : numlist=[numlist]
 		if isinstance(numlist,list) or isinstance(numlist,tuple) : self.selected=numlist
 		else : self.selected=[]
 		self.force_dl_update()
-		self.updateGL()
+		if update_gl: self.updateGL()
 	
-	def setValDisp(self,v2d):
+	def set_display_values(self,v2d,update_gl=True):
 		"""Pass in a list of strings describing image attributes to overlay on the image, in order of display"""
 		v2d.reverse()
 		self.valstodisp=v2d
-		self.updateGL()
+		self.display_states = []
+		if update_gl: self.updateGL()
 	
 	def showInspector(self,force=0):
 		if (self.suppress_inspector): return
@@ -1106,6 +1131,44 @@ class EMImageMXCore:
 			event.setDropAction(Qt.CopyAction)
 			event.accept()
 
+	def save_data(self):
+		if self.data==None or len(self.data)==0:
+			print "there is no data to save"
+			return
+
+		# Get the output filespec
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select File","","","")
+		fsp=str(fsp)
+		
+		if fsp != '':
+			for d in self.data:
+				d.write_image(fsp,-1)
+		
+	def save_lst(self):
+		if self.data==None or len(self.data)==0:
+			print "there is not data to write"
+			return
+		
+		origname = self.get_image_file_name()
+		if origname == None:
+			print "error, origname is none. Either the data is not already on disk or there is a bug"
+			return
+
+		# Get the output filespec
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Specify lst file to save","","","")
+		fsp=str(fsp)
+		
+		if fsp != '':
+			f = file(fsp,'w')
+			f.write('#LST\n')
+			
+			for d in self.data:
+				#try:
+					f.write(str(d.get_attr('original_number')) +'\t'+origname+'\n')
+				#except:
+					#pass
+						
+			f.close()
 	
 	def dropEvent(self,event):
 		lc=self.scr_to_img((event.pos().x(),event.pos().y()))
@@ -1151,7 +1214,8 @@ class EMImageMXCore:
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
 			self.mousedrag=(event.x(),event.y())
-			self.parent.update()
+			try:self.parent.update()
+			except: pass
 		else: self.mouse_event_handler.mouse_move(event)
 		
 	def mouseReleaseEvent(self, event):
@@ -1175,6 +1239,9 @@ class EMImageMXCore:
 	def leaveEvent(self):
 		if self.mousedrag:
 			self.mousedrag=None
+			
+	def get_frame_buffer(self):
+		return self.parent.get_frame_buffer()
 
 class EMImageMxInspector2D(QtGui.QWidget):
 	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False) :
@@ -1187,7 +1254,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		
 		try:
 			self.vals.clear()
-			vn=self.target.data[0].get_attr_dict().keys()
+			vn=self.target.get_image(0).get_attr_dict().keys()
 			vn.sort()
 			for i in vn:
 				action=self.vals.addAction(i)
@@ -1356,10 +1423,10 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.mdel, QtCore.SIGNAL("clicked(bool)"), self.setDelMode)
 		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.setDragMode)
 
-		QtCore.QObject.connect(self.bsavedata, QtCore.SIGNAL("clicked(bool)"), self.saveData)
+		QtCore.QObject.connect(self.bsavedata, QtCore.SIGNAL("clicked(bool)"), self.save_data)
 		if allow_opt_button:
 			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target.optimize_fit)
-		QtCore.QObject.connect(self.bsavelst, QtCore.SIGNAL("clicked(bool)"), self.saveLst)
+		QtCore.QObject.connect(self.bsavelst, QtCore.SIGNAL("clicked(bool)"), self.save_lst)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
 	
 	def set_scale(self,val):
@@ -1377,44 +1444,19 @@ class EMImageMxInspector2D(QtGui.QWidget):
 	def set_mxs(self,val):
 		self.nmx = val
 	
-	def saveData(self):
-		if self.target.data==None or len(self.target.data)==0: return
-
-		# Get the output filespec
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select File","","","",QtGui.QFileDialog.DontConfirmOverwrite)
-		fsp=str(fsp)
+	def save_data(self):
+		self.target.save_data()
 		
-	def saveLst(self):
-		if self.target.data==None or len(self.target.data)==0: return
-		
-		origname = self.target.getImageFileName()
-		if origname == None:
-			print "error, origname is none. Either the data is not already on disk or there is a bug"
-			return
-
-		# Get the output filespec
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Specify lst file to save","","","")
-		fsp=str(fsp)
-		
-		if fsp != '':
-			f = file(fsp,'w')
-			f.write('#LST\n')
-			
-			for d in self.target.data:
-				#try:
-					f.write(str(d.get_attr('original_number')) +'\t'+origname+'\n')
-				#except:
-					#pass
-						
-			f.close()
+	def save_lst(self):
+		self.target.save_lst()
 			
 	def snapShot(self):
 		"Save a screenshot of the current image display"
 		
-		try:
-			qim=self.target.grabFrameBuffer()
-		except:
-			QtGui.QMessageBox.warning ( self, "Framebuffer ?", "Could not read framebuffer")
+		#try:
+		qim=self.target.get_frame_buffer()
+		#except:
+			#QtGui.QMessageBox.warning ( self, "Framebuffer ?", "Could not read framebuffer")
 		
 		# Get the output filespec
 		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select File")
@@ -1424,7 +1466,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		
 	def newValDisp(self):
 		v2d=[str(i.text()) for i in self.vals.actions() if i.isChecked()]
-		self.target.setValDisp(v2d)
+		self.target.set_display_values(v2d)
 
 	def setAppMode(self,i):
 		self.target.set_mmode("app")
