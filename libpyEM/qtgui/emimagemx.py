@@ -381,7 +381,7 @@ class EMImageMXCore:
 			self.font_renderer.set_using_display_lists(True)
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 			
-			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
+#			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
 		except:
 			self.font_render_mode = EMImageMXCore.GLUT
 

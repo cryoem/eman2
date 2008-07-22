@@ -279,7 +279,7 @@ class EMImageMXRotaryCore:
 			self.font_renderer.set_using_display_lists(True)
 			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
 			
-			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
+#			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
 			self.font_render_mode = EMImageMXCore.FTGL
 		except:
 			self.font_render_mode = EMImageMXCore.GLUT
