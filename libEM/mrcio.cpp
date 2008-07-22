@@ -182,9 +182,9 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	check_read_access(image_index);	
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 
-	dict["apix_x"] = mrch.xlen / mrch.nx;
-	dict["apix_y"] = mrch.ylen / mrch.ny;
-	dict["apix_z"] = mrch.zlen / mrch.nz;
+	dict["apix_x"] = mrch.xlen / mrch.mx;
+	dict["apix_y"] = mrch.ylen / mrch.my;
+	dict["apix_z"] = mrch.zlen / mrch.mz;
 
 	dict["minimum"] = mrch.amin;
 	dict["maximum"] = mrch.amax;
@@ -371,9 +371,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.mz = nz;
 //	}
 
-	mrch.xlen = nx * (float) dict["apix_x"];
-	mrch.ylen = ny * (float) dict["apix_y"];
-	mrch.zlen = nz * (float) dict["apix_z"];
+	mrch.xlen = mrch.mx * (float) dict["apix_x"];
+	mrch.ylen = mrch.my * (float) dict["apix_y"];
+	mrch.zlen = mrch.mz * (float) dict["apix_z"];
 
 	if(dict.has_key("MRC.nxstart")) {
 		mrch.nxstart = dict["MRC.nxstart"];
