@@ -822,10 +822,10 @@ class GUIbox:
 		
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		glflags = EMOpenGLFlagsAndTools()
-		if not glflags.npt_textures_unsupported():
-			self.guimx=EMImageMXRotary()		# widget for displaying image thumbs
-		else:
-			self.guimx=EMImageMX()	
+#		if not glflags.npt_textures_unsupported():
+#			self.guimx=EMImageMXRotary()		# widget for displaying image thumbs
+#		else:
+		self.guimx=EMImageMX()	
 		
 		
 		self.guimxitp = None
