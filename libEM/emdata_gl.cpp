@@ -34,14 +34,11 @@
 
 #include "emdata.h"
 
-#ifdef _WIN32
-	PFNGLTEXIMAGE3DPROC glTexImage3D;
-#else
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES
-#endif	//GL_GLEXT_PROTOTYPES
+#ifndef _WIN32
+	#ifndef GL_GLEXT_PROTOTYPES
+		#define GL_GLEXT_PROTOTYPES
+	#endif	//GL_GLEXT_PROTOTYPES
 #endif	//_WIN32
-
 
 #ifdef __APPLE__
 	#include "OpenGL/gl.h"
@@ -53,21 +50,7 @@
 	#include "GL/glext.h"
 #endif	//__APPLE__
 
-
-					 
-// #ifdef _WIN32
-// 	PFNGLTEXIMAGE3DPROC glTexImage3D;
-// #else
-// 	#ifndef GL_GLEXT_PROTOTYPES
-// 	#define GL_GLEXT_PROTOTYPES
-// 	#endif	//GL_GLEXT_PROTOTYPES
-// #endif	//_WIN32
-
 using namespace EMAN;
-
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES
-#endif	//GL_GLEXT_PROTOTYPES
 
 unsigned int EMData::gen_glu_mipmaps() const
 {
@@ -117,6 +100,9 @@ unsigned int EMData::gen_gl_texture() const
 	}
 	else {
 		glBindTexture(GL_TEXTURE_3D, tex_name);
+#ifdef _WIN32
+	PFNGLTEXIMAGE3DPROC glTexImage3D;
+#endif
 		glTexImage3D(GL_TEXTURE_3D,0, GL_LUMINANCE,nx,ny,nz,0,GL_LUMINANCE, GL_FLOAT, (void*)get_data());
 	}
 	
