@@ -131,11 +131,15 @@ class TestUtils(unittest.TestCase):
         """test sbasename() function ........................"""
         b1 = Util.sbasename("hello.c")
         self.assertEqual(b1, "hello.c")
-
-        b2 = Util.sbasename("/tmp/hello.mrc")
+        
+        import os
+        if os.sys.platform == 'win32':
+            b2 = Util.sbasename("\tmp\hello.mrc")
+            b3 = Util.sbasename(".\test\hello")
+        else:    
+            b2 = Util.sbasename("/tmp/hello.mrc")
+            b3 = Util.sbasename("./test/hello")
         self.assertEqual(b2, "hello.mrc")
-
-        b3 = Util.sbasename("./test/hello")
         self.assertEqual(b3, "hello")
 
     def test_get_frand(self):
