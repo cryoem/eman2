@@ -2656,7 +2656,7 @@ c
 	prb1d(t7,7,&pos);
 	tot = (float)(jtot)+pos;
 	// Do not interpolate
-	//*tot = (float)(jtot);
+	// tot = (float)(jtot);
 
 	// mirrored
 	fftr_d(t,ip);
@@ -2680,7 +2680,7 @@ c
 	prb1d(t7,7,&pos);
 	tmt = float(jtot) + pos;
 	// Do not interpolate
-	//*tmt = float(jtot);
+	// tmt = float(jtot);
 
 	free(t);
 	free(q);
@@ -2924,13 +2924,11 @@ c
 #else
 	ip = -(int)(log2(maxrin));
 #endif	//_WIN32
-	for (int i=1; i<=maxrin; i++)  {q(i) = 0.0f; t(i) = 0.0;}
+	for (int i=1; i<=maxrin; i++)  {q(i) = 0.0f; t(i) = 0.0f;}
 	
 	//  q - straight  = circ1 * conjg(circ2)
 
 	//   t - mirrored  = conjg(circ1) * conjg(circ2)
-
-	//for (int i=0; i<maxrin; i++) cout<<i<<"   I   "<<circ1b[i]<<"       "<<circ2b[i]<<endl;
 
 	for (i=1; i<=nring; i++) {
 	
@@ -2969,28 +2967,12 @@ c
 			t(j+1) += -t3 - t4;
 		} 
 	}
-	/*
-	double *qq, *tt;
-	qq = (double*)calloc(maxrin,sizeof(double));
-	tt = (double*)calloc(maxrin,sizeof(double));
-	for (int i=0; i<maxrin; i++) {qq[i] = q[i];tt[i] = t[i];}
-	*/
-	//for (int i=0; i<maxrin; i++) cout<<i<<"   A   "<<q[i]<<"       "<<t[i]<<endl;
 	// straight
 	fftr_q(q,ip);
 	//for (int i=0; i<maxrin; i++) cout<<i<<"  B    "<<q[i]<<"       "<<t[i]<<endl;
 
 	// mirrored
 	fftr_q(t,ip);
-	//for (int i=0; i<maxrin; i++) cout<<i<<"  C    "<<q[i]<<"       "<<t[i]<<endl;
-	/*
-	fftr_d(qq,ip);
-	for (int i=0; i<maxrin; i++) cout<<i<<"  D    "<<qq[i]<<"       "<<tt[i]<<endl;
-
-	// mirrored
-	fftr_d(tt,ip);
-	for (int i=0; i<maxrin; i++) cout<<i<<"  E    "<<qq[i]<<"       "<<tt[i]<<endl;
-	*/
 }
 
 
