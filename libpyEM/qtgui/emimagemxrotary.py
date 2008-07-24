@@ -257,7 +257,8 @@ class EMImageMXRotaryCore:
 		self.image_file_name = None	# keeps track of the image file name (if any) - book keeping purposes only
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via setData or set_image_file_name
 		
-		self.visible_mxs = 3	# the number of visible imagemxs in the rotary
+		self.default_mxs = 3
+		self.visible_mxs = self.default_mxs	# the number of visible imagemxs in the rotary
 		self.mx_rows = 4 # the number of rows in any given imagemx
 		self.mx_cols = 4 # the number of columns in any given imagemx
 		self.start_mx = 0 # the starting index for the currently visible set of imagemxs
@@ -335,6 +336,7 @@ class EMImageMXRotaryCore:
 		self.visible_mxs = mxs
 		self.emdata_list_cache.set_cache_size(8*self.visible_mxs*self.mx_rows*self.mx_cols)
 		self.__regenerate_rotary() # this could be done more efficiently
+		self.__refresh_rotary_size()
 		self.updateGL()
 	
 	def set_mmode(self,mode):
@@ -496,8 +498,8 @@ class EMImageMXRotaryCore:
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return
-		fac = ceil(float(len(data))/(self.mx_rows*self.mx_cols))
-		print fac
+		fac = int(ceil(float(len(data))/(self.mx_rows*self.mx_cols)))
+		if fac == 0: fac = 1
 		self.emdata_list_cache = EMDataListCache(data,8*self.visible_mxs*self.mx_rows*self.mx_cols)
 		if self.init_flag:
 			if fac < self.visible_mxs:
@@ -505,11 +507,22 @@ class EMImageMXRotaryCore:
 			self.__regenerate_rotary()
 			self.init_flag = False
 		else:
+#			print "here we are", fac,self.visible_mxs,self.default_mxs
 			if fac < self.visible_mxs:
 				self.visible_mxs = fac
 				self.__regenerate_rotary()
+				self.__refresh_rotary_size()
+			elif self.visible_mxs < self.default_mxs and fac >= self.default_mxs:
+#				print "setting visible mxs"
+				self.visible_mxs = self.default_mxs
+				self.__regenerate_rotary()
+				self.__refresh_rotary_size()
+			elif fac > self.visible_mxs and self.visible_mxs < self.default_mxs:
+				self.visible_mxs = fac
+				self.__regenerate_rotary()
+				self.__refresh_rotary_size()
 			else:
-				self.__refresh_rotary()
+				self.__refresh_rotary(True)
 			
 	
 	def set_image_file_name(self,name):
@@ -555,9 +568,9 @@ class EMImageMXRotaryCore:
 
 	def __regenerate_rotary(self):
 		self.rotary.clear_widgets()
-		#self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
+#		self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
 		num_per_view = self.mx_rows*self.mx_cols
-		
+		print "regenerate rotary with",self.start_mx,self.visible_mxs
 		for idx in range(self.start_mx,self.start_mx+self.visible_mxs):
 			n = idx
 			

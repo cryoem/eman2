@@ -3020,7 +3020,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			box.corx = b[0]
 			box.cory = b[1]
 			box.changed = True
-			#box.correct_resolution_centering(self.get_best_shrink(),False)
+#			box.correct_resolution_centering(self.get_best_shrink(),False)
 			box.center(Box.CENTERPROPAGATE,template,False)
 			boxes.append(box)
 	
@@ -3029,6 +3029,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	def get_high_res_template_image(self):
 		t = self.get_template_object() # this is the template object
 		template = t.get_template() # this is the image
+		template.write_image('template_low_res.hdf')
 		template = template.copy()
 		newx = self.box_size
 		newy = self.box_size
@@ -3045,7 +3046,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		template.scale(scale)
 		# sometimes centers could be off... FIXME double check
 		template.translate(new_center[0]-scale_center[0],new_center[1]-scale_center[1],0)
-		
+		template.process_inplace("xform.centeracf") # fixes a big problem
 		return template
 		
 	

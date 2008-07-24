@@ -51,8 +51,6 @@ from OpenGL import contextdata
 
 from emglplot import *
 
-from shelve import open
-
 from time import time,sleep
 
 from sys import getrefcount
@@ -822,10 +820,9 @@ class GUIbox:
 		
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		glflags = EMOpenGLFlagsAndTools()
-#		if not glflags.npt_textures_unsupported():
-#			self.guimx=EMImageMXRotary()		# widget for displaying image thumbs
-#		else:
-		self.guimx=EMImageMX()	
+		if False and not glflags.npt_textures_unsupported():
+			self.guimx=EMImageMXRotary()		# widget for displaying image thumbs
+		else: self.guimx=EMImageMX()	
 		
 		
 		self.guimxitp = None

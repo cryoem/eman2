@@ -586,6 +586,7 @@ class EMImage2DCore:
 				glNewList(self.main_display_list,GL_COMPILE)
 				render = True
 		else: render = True
+		
 		if render:
 			if self.curfft==1 :
 				if self.fft.is_complex() == False:
