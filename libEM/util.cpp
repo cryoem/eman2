@@ -428,7 +428,7 @@ string Util::sbasename(const string & filename)
     }
 
 	char s = '/';
-#ifdef WIN32
+#ifdef _WIN32
 	s = '\\';
 #endif
 	const char * c = strrchr(filename.c_str(), s);
