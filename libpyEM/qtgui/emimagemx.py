@@ -262,7 +262,7 @@ class EMMXDelMouseEvents(EMMXCoreMouseEvents):
 		if event.button()==Qt.LeftButton:
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 			if lc != None:
-				self.mediator.pop_box_image(lc[0],True)
+				self.mediator.pop_box_image(lc[0],False)
 				self.mediator.force_dl_update()
 				self.mediator.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
 
@@ -319,8 +319,10 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 			if  not event.modifiers()&Qt.ShiftModifier:
 				self.mediator.emit(QtCore.SIGNAL("mouseup"),event,lc)
 			else:
-				self.mediator.force_dl_update()
-				self.mediator.emit(QtCore.SIGNAL("boxdeleted"),event,lc)
+				if lc != None:
+					self.mediator.pop_box_image(lc[0],False)
+					self.mediator.force_dl_update()
+					self.mediator.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
 	
 	def mousePressEvent(self, event):
 		lc=self.scr_to_img((event.x(),event.y()))
@@ -397,7 +399,7 @@ class EMImageMXCore:
 		
 		self.use_display_list = True # whether or not a display list should be used to render the main view - if on, this will save on time if the view is unchanged
 		self.main_display_list = 0	# if using display lists, the stores the display list
-		self.force_dl_update() # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
+		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
 		self.draw_background = False # if true  will paint the background behind the images black using a polygon - useful in 3D contexts, ie i the emimagemxrotary
 		
 		
@@ -433,9 +435,8 @@ class EMImageMXCore:
 				self.updateGL()
 			return d
 		else:
-			i = idx+self.img_num_offset
-			if i != 0: i = i%self.max_idx
-			self.reroute_delete_target.pop_box_image(i)
+			print "rerouted delete"
+			self.reroute_delete_target.pop_box_image(idx)
 
 	def get_box_image(self,idx):
 		return self.data[idx]
@@ -557,6 +558,7 @@ class EMImageMXCore:
 			except:pass
 
 		if update_gl: self.updateGL()
+
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
@@ -761,13 +763,13 @@ class EMImageMXCore:
 				
 				glColor(.9,.9,.9)
 				glBegin(GL_QUADS)
-				glVertex(0,0,-0.01)
+				glVertex(0,0,-1)
 				glColor(.9,.9,.9)
-				glVertex(self.parent.width(),0,-0.01)
+				glVertex(self.parent.width(),0,-1)
 				glColor(.9,.9,.9)
-				glVertex(self.parent.width(),self.parent.height(),-0.01)
+				glVertex(self.parent.width(),self.parent.height(),-1)
 				glColor(.9,.9,.9)
-				glVertex(0,self.parent.height(),-0.01)
+				glVertex(0,self.parent.height(),-1)
 				glEnd()
 				if light: glEnable(GL_LIGHTING)
 			
@@ -950,13 +952,13 @@ class EMImageMXCore:
 								if v=="Img #" :
 									idx = i+self.img_num_offset
 									if idx != 0: idx = idx%self.max_idx
-									self.renderText(tx,tagy,"%d"%idx)
+									self.render_text(tx,tagy,"%d"%idx)
 								else : 
 									av=self.data[i].get_attr(v)
 									if isinstance(av,float) : avs="%1.4g"%av
 									else: avs=str(av)
-									try: self.renderText(tx,tagy,str(avs))
-									except:	self.renderText(tx,tagy,"------")
+									try: self.render_text(tx,tagy,str(avs))
+									except:	self.render_text(tx,tagy,"------")
 								tagy+=16
 								
 						
@@ -1049,7 +1051,7 @@ class EMImageMXCore:
 		glPopMatrix()
 		self.tex_names.append(tex_name)
 	
-	def renderText(self,x,y,s):
+	def render_text(self,x,y,s):
 #	     print 'in render Text'
 		glRasterPos(x+2,y+2)
 		for c in s:
@@ -1116,7 +1118,7 @@ class EMImageMXCore:
 	def scr_to_img(self,vec):
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
 		image from the matrix. Returns (image number,x,y) or None if the location is not within any
-		of the contained images. """
+		of the contained images. """ 
 		absloc=((vec[0]),(self.parent.height()-(vec[1])))
 		for item in self.coords.items():
 			index = item[0]+self.img_num_offset
@@ -1125,6 +1127,7 @@ class EMImageMXCore:
 			if absloc[0]>data[0] and absloc[1]>data[1] and absloc[0]<data[0]+data[2] and absloc[1]<data[1]+data[3] :
 				return (index,(absloc[0]-data[0])/self.scale,(absloc[1]-data[1])/self.scale)
 		return None
+			
 	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
@@ -1218,8 +1221,7 @@ class EMImageMXCore:
 				
 			self.mousedrag=(event.x(),event.y())
 		else: self.mouse_event_handler.mouse_down(event)
-
-					
+		
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
@@ -1235,7 +1237,6 @@ class EMImageMXCore:
 		if self.mousedrag:
 			self.mousedrag=None
 		else: self.mouse_event_handler.mouse_up(event)
-	
 			
 	def wheelEvent(self, event):
 		if event.delta() > 0:
@@ -1254,7 +1255,7 @@ class EMImageMXCore:
 		return self.parent.get_frame_buffer()
 
 class EMImageMxInspector2D(QtGui.QWidget):
-	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False) :
+	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		

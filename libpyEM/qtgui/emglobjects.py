@@ -131,7 +131,7 @@ class EMGLProjViewMatrices:
 	Controls a static single instance of OpenGL projection and view(port) matrices
 	Also stores a static single instance of the inverse of the projection matrix, which
 	is calculates using numpy/scipy. Other classes interface with this by calling
-	setUpdate when the viewport or projection matrix has changed (i.e., a resize event)
+	set_update when the viewport or projection matrix has changed (i.e., a resize event)
 	"""
 	class __impl:
 		""" Implementation of the singleton interface """
@@ -142,40 +142,41 @@ class EMGLProjViewMatrices:
 			self.inv_proj_matrix = None
 			self.view_matrix = None
 		
-		def updateOpenGLMatrices(self, val=True):
-			self.updateViewMatrix()
-			self.updateProjectionMatrix()
-			self.updateProjectionInvMatrix()
+		def update_opengl_matrices(self, val=True):
+			self.update_viewport_matrix()
+			self.update_projection_matrix()
+			self.update_projection_inv_matrix()
 			
-		def setUpdate(self,val=True):
+		def set_update(self,val=True):
 			self.update = val
 		
-		def updateProjectionInvMatrix(self):
+		def update_projection_inv_matrix(self):
 			P = numpy.matrix(self.proj_matrix)
 			self.inv_proj_matrix = P.I
 			
-		def updateProjectionMatrix(self):
+		def update_projection_matrix(self):
 			self.proj_matrix = glGetDoublev(GL_PROJECTION_MATRIX)
 		
-		def updateViewMatrix(self):
+		def update_viewport_matrix(self):
 			 self.view_matrix = glGetIntegerv(GL_VIEWPORT)
 		
-		def checkUpdate(self):
+		def check_update(self):
 			if (self.update):
-				self.updateOpenGLMatrices()
+				self.update_opengl_matrices()
 				self.update = False
 		
-		def getViewMatrix(self):
-			self.checkUpdate()
+		def get_viewport_matrix(self):
+			self.check_update()
 			return self.view_matrix
 		
-		def getProjMatrix(self):
-			self.checkUpdate()
+		def get_proj_matrix(self):
+			self.check_update()
 			return self.proj_matrix
 		
-		def getProjInvMatrix(self):
-			self.checkUpdate()
+		def get_proj_inv_matrix(self):
+			self.check_update()
 			return self.inv_proj_matrix
+
 			
 	# storage for the instance reference
 	__instance = None
@@ -238,7 +239,11 @@ class EMViewportDepthTools:
 		self.borderwidth = 3.0								# effects the border width of the frame decoration
 		
 	def set_update_P_inv(self,val=True):
-		self.matrices.setUpdate(val)
+		self.matrices.set_update(val)
+	
+	
+	def get_viewport_dimensions(self):
+		return self.matrices.get_viewport_matrix()
 	
 	def drawFrame(self, ftest=False):
 		
@@ -336,8 +341,8 @@ class EMViewportDepthTools:
 	def update(self,width,height):
 		
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		self.wproj = self.matrices.getProjMatrix()
-		self.wview = self.matrices.getViewMatrix()
+		self.wproj = self.matrices.get_proj_matrix()
+		self.wview = self.matrices.get_viewport_matrix()
 
 		try:
 			self.mc00=gluProject(-width,-height,0.,self.wmodel,self.wproj,self.wview)
@@ -354,8 +359,8 @@ class EMViewportDepthTools:
 	def unproject_points(self,points):
 		unprojected = []
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		self.wproj = self.matrices.getProjMatrix()
-		self.wview = self.matrices.getViewMatrix()
+		self.wproj = self.matrices.get_proj_matrix()
+		self.wview = self.matrices.get_viewport_matrix()
 		for p in points:
 			unprojected.append(gluProject(p[0],p[1],p[2],self.wmodel,self.wproj,self.wview))
 			
@@ -370,8 +375,8 @@ class EMViewportDepthTools:
 	def update_points(self,p1,p2,p3,p4):
 		
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		self.wproj = self.matrices.getProjMatrix()
-		self.wview = self.matrices.getViewMatrix()
+		self.wproj = self.matrices.get_proj_matrix()
+		self.wview = self.matrices.get_viewport_matrix()
 
 		try:
 			self.mc00=gluProject(p1[0],p1[1],p1[2],self.wmodel,self.wproj,self.wview)
@@ -415,8 +420,8 @@ class EMViewportDepthTools:
 	
 	def printUnproj(self,x,y):
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		self.wproj = self.matrices.getProjMatrix()
-		self.wview = self.matrices.getViewMatrix()
+		self.wproj = self.matrices.get_proj_matrix()
+		self.wview = self.matrices.get_viewport_matrix()
 	
 		t = gluProject(x,y,0.,self.wmodel,self.wproj,self.wview)
 		print t[0],t[1],t[2]
@@ -478,7 +483,7 @@ class EMViewportDepthTools:
 		return atan2(sinaeb,cosaeb)
 	
 	def eyeCoordsDif(self,x1,y1,x2,y2,maintaindepth=True):
-		self.wview = self.matrices.getViewMatrix()
+		self.wview = self.matrices.get_viewport_matrix()
 		# get x and y normalized device coordinates
 		xNDC1 = 2.0*(x1-self.wview[0])/self.wview[2] - 1
 		yNDC1 = 2.0*(y1-self.wview[1])/self.wview[3] - 1
@@ -487,7 +492,7 @@ class EMViewportDepthTools:
 		yNDC2 = 2.0*(y2-self.wview[1])/self.wview[3] - 1
 		
 
-		self.P_inv = self.matrices.getProjInvMatrix()
+		self.P_inv = self.matrices.get_proj_inv_matrix()
 		M = numpy.matrix(self.wmodel)
 		M_inv = M.I
 		
@@ -515,7 +520,7 @@ class EMViewportDepthTools:
 		return [ex2-ex1,ey2-ey1]
 
 	def mouseinwin(self,x,y,width,height):
-		self.wview = self.matrices.getViewMatrix()
+		self.wview = self.matrices.get_viewport_matrix()
 		# to determine the mouse coordinates in the window we carefully perform
 		# linear algebra similar to what's done in gluUnProject
 
@@ -529,7 +534,7 @@ class EMViewportDepthTools:
 		# invert the projection and model view matrices, they will be used shortly
 		# note the OpenGL returns matrices are in column major format -  the calculations below 
 		# are done with this in  mind - this saves the need to transpose the matrices
-		self.P_inv = self.matrices.getProjInvMatrix()
+		self.P_inv = self.matrices.get_proj_inv_matrix()
 		M = numpy.matrix(self.wmodel)
 		
 		M_inv = M.I
@@ -882,20 +887,17 @@ class Camera2:
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton:
 			if self.mmode==0:
-				if event.modifiers() == Qt.ControlModifier:
-					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
-				else:
-					if self.enablerotation == False: return
-					self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(1.0/self.scale))
+				#if event.modifiers() == Qt.ControlModifier:
+					#self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
+				#else:
+				if self.enablerotation == False: return
+				self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(1.0/self.scale))
 
 				self.mpressx = event.x()
 				self.mpressy = event.y()
 		elif event.buttons()&Qt.RightButton:
 			if self.mmode==0:
-				if event.modifiers() == Qt.ControlModifier:
-					self.scale_event(event.y()-self.mpressy)	
-				else:
-					self.motionTranslateLA(self.mpressx, self.mpressy,event)
+				self.motionTranslateLA(self.mpressx, self.mpressy,event)
 					
 				self.mpressx = event.x()
 				self.mpressy = event.y()

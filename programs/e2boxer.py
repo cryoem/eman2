@@ -1449,6 +1449,7 @@ class GUIbox:
 		box = self.delete_box(lc[0],force_image_mx_remove)
 		self.boxable.add_exclusion_particle(box)
 		self.guiim.setOtherData(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+		self.guictl.num_boxes_changed(len(self.ptcl))
 		self.update_all_image_displays()
 		self.update_ppc()
 		
@@ -1471,8 +1472,11 @@ class GUIbox:
 		self.guiim.delShapes()
 		self.guiim.addShapes(sh)
 		self.guiim.setActive(None,.9,.9,.4)
-		if force_image_mx_remove: self.ptcl.pop(box_num)
 		
+		if force_image_mx_remove: 
+			self.ptcl.pop(box_num)
+			self.guimx.setData(self.ptcl)
+
 		box = self.boxable.boxes[box_num]
 		
 		self.boxable.delete_box(box_num)

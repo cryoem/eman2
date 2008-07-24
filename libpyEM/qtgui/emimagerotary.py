@@ -262,11 +262,14 @@ class EMImageRotaryCore:
 		# asking for the OpenGL context from the parent
 		return self.parent.context()
 	
-	def emit(self,signal,event,integer=None):
-		if integer != None:
-			self.parent.emit(signal,event,integer)
+	def emit(self,signal,event,a=None,b=None):
+		if b != None:
+			self.parent.emit(signal,event,a,b)
+		elif a != None:
+			self.parent.emit(signal,event,a)
 		else:
-			self.parent.emit(signal,event)	
+			self.parent.emit(signal,event)
+
 	def set_mmode(self,mode):
 		self.mmode = mode
 		self.rotary.set_mmode(mode)
@@ -447,7 +450,6 @@ class EMImageRotaryCore:
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	GLUT.glutInit("")
-	print "a"
 	window = EMImageRotary()
 	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)]*4)
 	else :

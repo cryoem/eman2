@@ -216,7 +216,6 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	def dropEvent(self,event):
 		self.image_rotary.dropEvent(event)
 	
-	
 	def set_shapes(self,shapes,shrink):
 		self.image_rotary.set_shapes(shapes,shrink)
 	
@@ -232,6 +231,9 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	def set_selected(self,n):
 		return self.image_rotary.set_selected(n)
 	
+	def get_core_object(self):
+		return self.image_rotary
+	
 class EMImageMXRotaryCore:
 
 	#allim=WeakKeyDictionary()
@@ -245,7 +247,8 @@ class EMImageMXRotaryCore:
 		if data:
 			self.setData(data)
 		
-		self.rotary = EMGLRotaryWidget(self,-15,50,-15,EMGLRotaryWidget.TOP_ROTARY,60)
+		self.rotary = EMGLRotaryWidget(self,-15,-50,15,EMGLRotaryWidget.TOP_ROTARY,100)
+		self.rotary.set_angle_range(110.0)
 		#self.rotary.set_child_mouse_events(False)
 		self.rotary.set_mmode("mxrotary")
 		self.widget = EM3DWidget(self,self.rotary)
@@ -272,9 +275,8 @@ class EMImageMXRotaryCore:
 		
 		self.z_near = 0
 		self.z_far = 0
-		
-		self.s_flag = False
-	
+
+		self.init_flag = True
 		try:
 			self.font_renderer = EMFTGL()
 			self.font_renderer.set_face_size(32)
@@ -288,12 +290,10 @@ class EMImageMXRotaryCore:
 			self.font_render_mode = EMImageMXCore.GLUT
 	
 	def emit(self,signal,event,data,bool=None):
-		print "in emit"
 		if bool==None:
 			self.parent.emit(signal,event,data)
 		else:
 			self.parent.emit(signal,event,data,bool)
-
 	
 	def set_selected(self,n):
 		print "set selected doesn't do anything yet",n
@@ -361,17 +361,15 @@ class EMImageMXRotaryCore:
 	
 	def pop_box_image(self,idx):
 		val = self.emdata_list_cache.delete_box(idx)
-		#self.parent.emit(QtCore.SIGNAL("boxdeleted"),None,[idx])
 		if val == 1:
 			self.max_idx = self.emdata_list_cache.get_max_idx()
-			
 			self.__refresh_rotary()
 		elif val == 2:
 			w = self.rotary[0].get_drawable()
 			w.force_dl_update()
 		else:
 			print 'failed to delete box image'
-			
+		
 	def update_min_max_gamma(self,update_gl=True):
 		for i in range(self.visible_mxs):
 			w = self.rotary[i].get_drawable()
@@ -389,11 +387,6 @@ class EMImageMXRotaryCore:
 		self.minden=minden
 		self.maxden=maxden
 		self.update_min_max_gamma()
-		
-	def emit(self,signal,event,integer=None):
-		if integer != None:
-			self.parent.emit(signal,event,integer)
-		else:pass
 				
 	def update_rotary_position(self,inc):
 		self.start_mx += inc
@@ -503,9 +496,21 @@ class EMImageMXRotaryCore:
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return
-		
+		fac = ceil(float(len(data))/(self.mx_rows*self.mx_cols))
+		print fac
 		self.emdata_list_cache = EMDataListCache(data,8*self.visible_mxs*self.mx_rows*self.mx_cols)
-		self.__regenerate_rotary()
+		if self.init_flag:
+			if fac < self.visible_mxs:
+				self.visible_mxs = fac
+			self.__regenerate_rotary()
+			self.init_flag = False
+		else:
+			if fac < self.visible_mxs:
+				self.visible_mxs = fac
+				self.__regenerate_rotary()
+			else:
+				self.__refresh_rotary()
+			
 	
 	def set_image_file_name(self,name):
 		#print "set image file name",name
@@ -550,7 +555,7 @@ class EMImageMXRotaryCore:
 
 	def __regenerate_rotary(self):
 		self.rotary.clear_widgets()
-		self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
+		#self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
 		num_per_view = self.mx_rows*self.mx_cols
 		
 		for idx in range(self.start_mx,self.start_mx+self.visible_mxs):
@@ -611,19 +616,22 @@ class EMImageMXRotaryCore:
 		glLoadIdentity()
 		
 		lr = self.rotary.get_suggested_lr_bt_nf()
+		
 		suppress = False
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
 		z = self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
 		lrt = self.widget.get_lr_bt_nf()
+		
 		z_near = z-lrt[4]
 		z_trans = 0
 		z_far = z-lrt[5]
 		if z_near < 0:
 			z_trans = z_near
-			z_near = 0.1
+			z_near = 1
 			z_far -= z_trans
 		if z_far < 0: z_far = 0.1 # hacking alert
+		z_far += abs(lr[3]-lr[2]) # hacking alert
 		if self.z_near != z_near or self.z_far != z_far:
 			self.z_near = z_near
 			self.z_far = z_far
@@ -657,7 +665,7 @@ class EMImageMXRotaryCore:
 		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+		if event.button()==Qt.MidButton:
 			self.show_inspector(True)
 		else:
 			self.widget.mousePressEvent(event)
@@ -805,11 +813,9 @@ class EMDataListCache:
 	def delete_box(self,idx):
 		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
 			# we can actually delete the emdata object
-			print "popping image",idx
 			image = self.images.pop(idx)
 			self.max_idx = len(self.images)
 			self.cache_size = self.max_idx
-			#self.__refresh_cache()
 			return 1
 		elif self.mode == EMDataListCache.FILE_MODE or self.soft_delete:
 			im = self.images[idx]
@@ -874,6 +880,9 @@ class EMDataListCache:
 
 	def get_max_idx(self):
 		return self.max_idx
+	
+	def get_num_images(self):
+		return len(self.images)
 	
 	def set_cache_size(self,cache_size,refresh=True):
 		if self.mode != EMDataListCache.LIST_MODE:

@@ -274,6 +274,12 @@ class EMImage2DCore:
 		self.frozen = False
 		self.isexcluded = False
 		self.hack_shrink = 1
+		
+		self.use_display_list = True # whether or not a display list should be used to render the image pixelsw - if on, this will save on time if the view of the image is unchanged, which can quite often be the case
+		self.main_display_list = 0	# if using display lists, the stores the display list
+		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
+		self.hist = []
+		
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
@@ -283,6 +289,10 @@ class EMImage2DCore:
 	def __del__(self):
 		if (self.shapelist != 0):
 			glDeleteLists(self.shapelist,1)
+			self.shapelist = 0
+		if self.main_display_list != 0:
+			glDeleteLists(self.main_display_list,1)
+			self.main_display_list = 0
 		
 	def width(self):
 		try:
@@ -466,6 +476,31 @@ class EMImage2DCore:
 		GL.glNewList(self.shapelist,GL.GL_COMPILE)
 		GL.glEndList()
 
+
+	def display_state_changed(self):
+		display_states = []
+		display_states.append(self.parent.width())
+		display_states.append(self.parent.height())
+		display_states.append(self.origin[0])
+		display_states.append(self.origin[1])
+		display_states.append(self.scale)
+		display_states.append(self.invert)
+		display_states.append(self.minden)
+		display_states.append(self.maxden)
+		display_states.append(self.gamma)
+		display_states.append(self.curfft)
+		if len(self.display_states) == 0:
+			self.display_states = display_states
+			return True
+		else:
+			for i in range(len(display_states)):
+				
+				if display_states[i] != self.display_states[i]:
+					self.display_states = display_states
+					return True
+		
+		return False
+
 	def render(self):
 		
 		if not self.data : return
@@ -476,26 +511,12 @@ class EMImage2DCore:
 		if self.shapechange:
 			self.setupShapes()
 			self.shapechange=0
-		
-		if not self.invert : pixden=(0,255)
-		else: pixden=(255,0)
-		if self.curfft==1 :
-			if self.fft.is_complex() == False:
-				print "error, the fft is not complex, internal error"
-				return
-			a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
-			gl_render_type = GL_RGB
-			
-		elif self.curfft in (2,3) :
-			a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-			gl_render_type = GL_LUMINANCE
-		else : 
-			#print "first origin",int(self.origin[0]/self.scale),int(self.origin[1]/self.scale)
-			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-			gl_render_type = GL_LUMINANCE
 
 		width = self.parent.width()/2.0
 		height = self.parent.height()/2.0
+		
+		if not self.invert : pixden=(0,255)
+		else: pixden=(255,0)
 		
 		#tmp work by d.woolford
 		if self.otherdata != None and isinstance(self.otherdata,EMData) and not self.glflags.npt_textures_unsupported():
@@ -550,69 +571,110 @@ class EMImage2DCore:
 			
 			glPopMatrix()
 			
-		if not self.glflags.npt_textures_unsupported():
-			if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
-			self.tex_name = GL.glGenTextures(1)
-			if ( self.tex_name <= 0 ):
-				raise("failed to generate texture name")
-			glPushMatrix()
-			glTranslatef(width,height,0)
 			
-				
-			if self.otherdatablend and self.otherdata != None:
-				GL.glEnable(GL.GL_BLEND);
-				depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
-				GL.glDisable(GL.GL_DEPTH_TEST);
-				GL.glBlendEquation(GL.GL_FUNC_SUBTRACT);
-				#GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
-				GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
+			
+		render = False
+		if self.use_display_list:
+		
+			if self.display_state_changed():
+				if self.main_display_list != 0:
+					glDeleteLists(self.main_display_list,1)
+					self.main_display_list = 0
 
-			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
-			
-			
-			glEnable(GL_TEXTURE_2D)
-			glBindTexture(GL_TEXTURE_2D, self.tex_name)
-			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-			# using GL_NEAREST ensures pixel granularity
-			# using GL_LINEAR blurs textures and makes them more difficult
-			# to interpret (in cryo-em)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-			# this makes it so that the texture is impervious to lighting
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			
-			# POSITIONING POLICY - the texture occupies the entire screen area
-			glBegin(GL_QUADS)
-			
-			glTexCoord2f(0,0)
-			glVertex2f(-width,height)
-			
-			glTexCoord2f(1,0)
-			glVertex2f(width,height)
+			if self.main_display_list == 0:
+				self.main_display_list = glGenLists(1)
+				glNewList(self.main_display_list,GL_COMPILE)
+				render = True
+		else: render = True
+		if render:
+			if self.curfft==1 :
+				if self.fft.is_complex() == False:
+					print "error, the fft is not complex, internal error"
+					return
+				a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
+				gl_render_type = GL_RGB
 				
-			glTexCoord2f(1,1)
-			glVertex2f(width,-height)
-			
-			glTexCoord2f(0,1)
-			glVertex2f(-width,-height)
+			elif self.curfft in (2,3) :
+				a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+				gl_render_type = GL_LUMINANCE
+			else : 
+				#print "first origin",int(self.origin[0]/self.scale),int(self.origin[1]/self.scale)
+				a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+				gl_render_type = GL_LUMINANCE
+			if  not self.glflags.npt_textures_unsupported():
 				
-			glEnd()
 			
-			glDisable(GL_TEXTURE_2D)
+				self.hist=struct.unpack('256i',a[-1024:])
 			
-			glPopMatrix()
+				if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
+				self.tex_name = GL.glGenTextures(1)
+				if ( self.tex_name <= 0 ):
+					raise("failed to generate texture name")
+				glPushMatrix()
+				glTranslatef(width,height,0)
+				
+					
+				if self.otherdatablend and self.otherdata != None:
+					GL.glEnable(GL.GL_BLEND);
+					depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
+					GL.glDisable(GL.GL_DEPTH_TEST);
+					GL.glBlendEquation(GL.GL_FUNC_SUBTRACT);
+					#GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
+					GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
+	
+				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
+				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+				
+				
+				glEnable(GL_TEXTURE_2D)
+				glBindTexture(GL_TEXTURE_2D, self.tex_name)
+				#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+				#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+				# using GL_NEAREST ensures pixel granularity
+				# using GL_LINEAR blurs textures and makes them more difficult
+				# to interpret (in cryo-em)
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+				# this makes it so that the texture is impervious to lighting
+				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+				
+				# POSITIONING POLICY - the texture occupies the entire screen area
+				glBegin(GL_QUADS)
+				
+				glTexCoord2f(0,0)
+				glVertex2f(-width,height)
+				
+				glTexCoord2f(1,0)
+				glVertex2f(width,height)
+					
+				glTexCoord2f(1,1)
+				glVertex2f(width,-height)
+				
+				glTexCoord2f(0,1)
+				glVertex2f(-width,-height)
+					
+				glEnd()
+				
+				glDisable(GL_TEXTURE_2D)
+				
+				glPopMatrix()
+				
+				if self.otherdatablend and self.otherdata != None:
+					GL.glDisable( GL.GL_BLEND);
+					#if (depth_testing_was_on):
+				GL.glEnable(GL.GL_DEPTH_TEST)
 			
-			if self.otherdatablend and self.otherdata != None:
-				GL.glDisable( GL.GL_BLEND);
-				if (depth_testing_was_on):
-					GL.glEnable(GL.GL_DEPTH_TEST)
 
+			else:
+				GL.glRasterPos(0,self.parent.height()-1)
+				GL.glPixelZoom(1.0,-1.0)
+				GL.glDrawPixels(self.parent.width(),self.parent.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
 		else:
-			GL.glRasterPos(0,self.parent.height()-1)
-			GL.glPixelZoom(1.0,-1.0)
-			GL.glDrawPixels(self.parent.width(),self.parent.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
+			glCallList(self.main_display_list)
+		
+		if self.use_display_list and render :
+			glEndList()
+			glCallList(self.main_display_list)
 		
 		if self.frozen or self.isexcluded:
 			
@@ -656,11 +718,9 @@ class EMImage2DCore:
 				GL.glEnable(GL.GL_DEPTH_TEST)
 		
 
-#		hist=numpy.fromstring(a[-1024:],'i')
-		hist=struct.unpack('256i',a[-1024:])
 		if self.inspector :
-			if self.invert: self.inspector.setHist(hist,self.maxden,self.minden) 
-			else: self.inspector.setHist(hist,self.minden,self.maxden)
+			if self.invert: self.inspector.setHist(self.hist,self.maxden,self.minden) 
+			else: self.inspector.setHist(self.hist,self.minden,self.maxden)
 	
 		if self.shapelist != 0:
 			GL.glPushMatrix()

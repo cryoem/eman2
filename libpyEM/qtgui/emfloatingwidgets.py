@@ -55,6 +55,18 @@ from emimage2dtex import *
 
 height_plane = 500
 
+white = (1.0,1.0,1.0,1.0)
+yellow = (1.0,1.0,0.0,1.0)
+red = (1.0,1.0,1.0,1.0)
+blue = (0.0,0.0,1.0,1.0)
+black = (0.0,0.0,0.0,0.0)
+grey = (0.6,0.6,0.6,0.0)
+green = (0.0,1.0,0.0,1.0)
+purple = (1.0,0.0,1.0,1.0)
+black = (0.0,0.0,0.0,1.0)
+dark_purple = (0.4,0.0,0.4,1.0)
+light_blue = (.2,.2,.6,1.0)
+
 class EM3DBorderDecoration:
 	'''
 	An class for drawing borders around widgets
@@ -117,18 +129,17 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		if self.display_list == None: return
 		
 		if self.color_flag ==  EM3DPlainBorderDecoration.DEFAULT_COLOR:
-			white = (.8,.8,.8,1.0)
-			redish = (.8,.2,.2,1.0)
-			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,white)
-			glMaterial(GL_FRONT,GL_SPECULAR,redish)
+			glMaterial(GL_FRONT,GL_AMBIENT,green)
+			glMaterial(GL_FRONT,GL_DIFFUSE,black)
+			glMaterial(GL_FRONT,GL_SPECULAR,grey)
 			glMaterial(GL_FRONT,GL_SHININESS,20.0)
 			glColor(*white)
 		elif self.color_flag ==  EM3DPlainBorderDecoration.FROZEN_COLOR:
-			light_bluish = (.2,.2,.6,1.0)
-			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,light_bluish)
-			glMaterial(GL_FRONT,GL_SPECULAR,light_bluish)
-			glMaterial(GL_FRONT,GL_SHININESS,100.0)
-			glColor(*light_bluish)
+			glMaterial(GL_FRONT,GL_AMBIENT,dark_purple)
+			glMaterial(GL_FRONT,GL_DIFFUSE,blue)
+			glMaterial(GL_FRONT,GL_SPECULAR,light_blue)
+			glMaterial(GL_FRONT,GL_SHININESS,20.0)
+			glColor(*blue)
 		else:
 			print "warning, unknown color flag, coloring failed"
 			
@@ -427,9 +438,6 @@ class EM3DWidgetVolume:
 		try: return self.nice_lr_bt_nf()
 		except: return self.get_lr_bt_nf()
 		
-	def emit(self,signal,event,a,b):
-		self.parent.emit(signal,event,a,b)
-		
 class EM3DWidget:
 	'''
 	A class for managing a 3D object as an interactive widget
@@ -553,7 +561,7 @@ class EM3DWidget:
 			#self.drawable.inspector.hide()
 			#self.parent.addQtWidgetDrawer(self.getInspector())
 			
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mousePressEvent(event)
 		else:
 			self.target.mousePressEvent(event)
@@ -562,7 +570,7 @@ class EM3DWidget:
 	def wheelEvent(self,event):
 		try: e = event.modifiers()
 		except: return
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.wheelEvent(event)
 		else:
 			self.target.wheelEvent(event)
@@ -570,7 +578,7 @@ class EM3DWidget:
 		#self.updateGL()
 	
 	def mouseMoveEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
 			self.target.mouseMoveEvent(event)
@@ -578,7 +586,7 @@ class EM3DWidget:
 		#self.updateGL()
 
 	def mouseReleaseEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
 			self.target.mouseReleaseEvent(event)
@@ -604,6 +612,10 @@ class EM3DWidget:
 	
 	def leaveEvent(self):
 		pass
+	
+	def say_something(self):
+		print "hello from EM3DWidgetVolume"
+		
 
 class EMGLRotaryWidget(EM3DWidgetVolume):
 	'''
@@ -651,7 +663,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.sin_x_rot = sin(self.x_rot)
 		
 		self.time = 0		# time indicates the current time used for the basis of animation.
-		self.time_interval = .5 # 0.5 seconds for the animation to complete
+		self.time_interval = .4 # 0.5 seconds for the animation to complete
 		self.time_begin = 0 # records the time at which the animation was begun
 		self.is_animated = False
 		self.angle_information = None # will eventually be list used for both static display and animation
@@ -667,7 +679,14 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.limits = None # Potentially a tuple of 2 values denoting rotation limits
 	
 		self.allow_child_mouse_events = True # turn off if you dont want the widgets in the rotary to receive event
+		
+		self.angle_range = 90.0	# the angular amount of the ellipse that is occupied by resident widgets
+		
+	#def emit(self,signal,event,a,b):
+		#self.parent.emit(signal,event,a,b)
 	
+	def set_angle_range(self,angle_range):
+		self.angle_range = angle_range
 	
 	def set_rotations(self,r):
 		self.rotations = r	
@@ -854,7 +873,45 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 			glTranslate(h_width,h_height,0)
 			widget.paintGL()
 			glPopMatrix()
-
+			
+			#if self.is_animated:
+				#GL.glEnable(GL.GL_BLEND)
+				#glDisable(GL_LIGHTING)
+				#depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
+				#GL.glDisable(GL.GL_DEPTH_TEST);
+				#GL.glBlendEquation(GL.GL_FUNC_ADD);
+				#GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE_MINUS_SRC_ALPHA);
+				
+				#vdtools = EMViewportDepthTools(self)
+				#vp = vdtools.get_viewport_dimensions()
+				
+				#glMatrixMode(GL_PROJECTION)
+				#glPushMatrix()
+				#glLoadIdentity()
+				#glOrtho(vp[0],vp[2],vp[1],vp[3],-100,100)
+				
+				#glMatrixMode(GL_MODELVIEW)
+				#glPushMatrix()
+				#glLoadIdentity()
+				#dt = self.__get_dt_2()
+				##print dt
+				#glColor(0,0,0,1-dt)
+				##print vp,dt
+				#glBegin(GL_QUADS)
+				#glVertex(vp[0],vp[1],0)
+				#glVertex(vp[2],vp[1],0)
+				#glVertex(vp[2],vp[3],0)
+				#glVertex(vp[0],vp[3],0)
+				#glEnd()
+				#glPopMatrix()
+				
+				#glMatrixMode(GL_PROJECTION)
+				#glPopMatrix()
+				
+				#glMatrixMode(GL_MODELVIEW)
+		
+				#GL.glDisable( GL.GL_BLEND);
+				#if (depth_testing_was_on): GL.glEnable(GL.GL_DEPTH_TEST)
 		#print self.rotations % (len(self.widgets))
 	
 	def __get_visible(self):
@@ -1116,9 +1173,9 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	def __get_current_dtheta_range(self):
 		if len(self.widgets) == 1: return [0,0]
 		elif self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY or self.rotary_type == EMGLRotaryWidget.TOP_ROTARY: 
-			return [90.0/(len(self.widgets)-1),-90.0/(len(self.widgets)-1)]
+			return [self.angle_range/(len(self.widgets)-1),-self.angle_range/(len(self.widgets)-1)]
 		elif self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY or self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
-			 return [-90.0/(len(self.widgets)-1),90.0/(len(self.widgets)-1)]
+			 return [-self.angle_range/(len(self.widgets)-1),self.angle_range/(len(self.widgets)-1)]
 		else: 
 			print "unsupported"
 			return 0
@@ -1126,14 +1183,17 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	def __get_current_dtheta(self):
 		if len(self.widgets) == 1: return 0
 		elif self.rotary_type == EMGLRotaryWidget.LEFT_ROTARY or self.rotary_type == EMGLRotaryWidget.TOP_ROTARY: 
-			return 90/(len(self.widgets)-1)
+			return self.angle_range/(len(self.widgets)-1)
 		elif self.rotary_type == EMGLRotaryWidget.RIGHT_ROTARY or self.rotary_type == EMGLRotaryWidget.BOTTOM_ROTARY:
-			return -90/(len(self.widgets)-1)
+			return -self.angle_range/(len(self.widgets)-1)
 		else: 
 			print "unsupported"
 			return 0
 	def __get_dt(self):
 		return sin(self.time/self.time_interval*pi/2)
+	
+	def __get_dt_2(self):
+		return (cos(2*pi*self.time/self.time_interval) + 1)/32.0 + 15.0/16.0
 
 	def __update_animation_dthetas(self,counter_clockwise=True):
 		if not counter_clockwise: #clockwise OpenGL rotations are negative
@@ -1435,13 +1495,13 @@ class EMGLView3D(EM3DWidgetVolume):
 		return self.inspector
 	
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.inspector == None):	
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and self.inspector == None):	
 			self.drawable.init_inspector()
 			self.drawable.inspector.show()
 			self.drawable.inspector.hide()
 			self.parent.addQtWidgetDrawer(self.getInspector())
 			
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mousePressEvent(event)
 		else:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
@@ -1452,7 +1512,7 @@ class EMGLView3D(EM3DWidgetVolume):
 	def wheelEvent(self,event):
 		try: e = event.modifiers()
 		except: return
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.wheelEvent(event)
 		else:
 			self.drawable.wheelEvent(event)
@@ -1460,7 +1520,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		#self.updateGL()
 	
 	def mouseMoveEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
@@ -1471,7 +1531,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		#self.updateGL()
 
 	def mouseReleaseEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
@@ -1691,13 +1751,17 @@ class EMGLView2D:
 		return self.inspector
 	
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and self.inspector == None):	
-			self.drawable.init_inspector()
-			self.drawable.inspector.show()
-			self.drawable.inspector.hide()
-			self.parent.addQtWidgetDrawer(self.getInspector())
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and self.inspector == None):
+			try:	
+				self.drawable.init_inspector()
+				self.drawable.inspector.show()
+				self.drawable.inspector.hide()
+				self.parent.addQtWidgetDrawer(self.getInspector())
+			except:
+				pass
+				#print "the mouse event had no effect"
 			
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mousePressEvent(event)
 		else:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
@@ -1716,7 +1780,7 @@ class EMGLView2D:
 		self.drawable.resizeEvent(self.width(),self.height())
 	
 	def wheelEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.scaleEvent(event.delta())
 			#print "updating",self.drawWidth(),self.drawHeight()
 		else:
@@ -1725,7 +1789,7 @@ class EMGLView2D:
 		#self.updateGL()
 	
 	def mouseMoveEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
@@ -1736,7 +1800,7 @@ class EMGLView2D:
 		#self.updateGL()
 
 	def mouseReleaseEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
 			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
@@ -1746,13 +1810,8 @@ class EMGLView2D:
 
 		#self.updateGL()
 	def emit(self, signal, event, a=None,b=None):
-		#try:
-		self.parent.emit(signal,event,a)
-		#except: 
-			#print "fail"	
-			#pass
-			##print "unknown signal", signal, "or unknown event",event
-	
+		self.parent.emit(signal,event,a,b)
+
 	def leaveEvent(self):
 		self.drawable.leaveEvent()
 	
@@ -1930,7 +1989,7 @@ class EMGLViewQtWidget:
 	def wheelEvent(self,event):
 		doElse = True
 		try:
-			if event.modifiers() == Qt.ShiftModifier:
+			if event.modifiers() == Qt.ControlModifier:
 				self.cam.wheelEvent(event)
 				doElse = False
 		except: pass
@@ -1982,7 +2041,7 @@ class EMGLViewQtWidget:
 		return self.parent.get_depth_for_height(height_plane)
 	
 	def mousePressEvent(self, event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mousePressEvent(event)
 		else:
 			if ( self.childreceiver != None ):
@@ -2024,7 +2083,7 @@ class EMGLViewQtWidget:
 			self.updateTexture()
 		
 	def mouseMoveEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
 			if ( self.childreceiver != None ):
@@ -2069,7 +2128,7 @@ class EMGLViewQtWidget:
 			self.updateTexture()
 
 	def mouseReleaseEvent(self,event):
-		if event.modifiers() == Qt.ShiftModifier:
+		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
 			if ( self.childreceiver != None ):
