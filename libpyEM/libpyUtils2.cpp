@@ -12,7 +12,6 @@
 #include <imageio.h>
 #include <sparx/SparxIO.h>
 #include <testutil.h>
-#include <util_wrapitems.h>
 #include <xydata.h>
 #include <emobject.h>
 #include <randnum.h>
