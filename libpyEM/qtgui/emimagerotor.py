@@ -50,11 +50,11 @@ from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
 
-from emfloatingwidgets import EMGLRotaryWidget, EMGLView2D,EM3DWidget
+from emfloatingwidgets import EMGLRotorWidget, EMGLView2D,EM3DWidget
 from emimagemx import EMImageMXCore
 
 
-class EMImageRotary(QtOpenGL.QGLWidget):
+class EMImageRotor(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
 	in 'matrix' form on the display. The middle mouse button will bring up a
 	control-panel. The QT event loop must be running for this object to function
@@ -62,7 +62,7 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
-		self.image_rotary = None
+		self.image_rotor = None
 		#self.initflag = True
 		self.mmode = "drag"
 
@@ -70,10 +70,10 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True);
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImageRotary.allim[self]=0
+		EMImageRotor.allim[self]=0
 		
 		
-		self.image_rotary = EMImageRotaryCore(data,self)
+		self.image_rotor = EMImageRotorCore(data,self)
 		
 		self.imagefilename = None
 		
@@ -90,13 +90,13 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 	
 		
 	def get_target(self):
-		return self.image_rotary
+		return self.image_rotor
 		
 	def setData(self,data):
-		self.image_rotary.setData(data)
+		self.image_rotor.setData(data)
 	
 	def get_optimal_size(self):
-		lr = self.image_rotary.rotary.get_suggested_lr_bt_nf()
+		lr = self.image_rotor.rotor.get_suggested_lr_bt_nf()
 		width = lr[1] - lr[0]
 		height = lr[3] - lr[2]
 		return [width+80,height+20]
@@ -144,8 +144,8 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
-		if ( self.image_rotary == None ): return
-		self.image_rotary.render()
+		if ( self.image_rotor == None ): return
+		self.image_rotor.render()
 
 	
 	def resizeGL(self, width, height):
@@ -160,7 +160,7 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.image_rotary.resize_event(width,height)
+		self.image_rotor.resize_event(width,height)
 	
 	
 	def set_near_far(self,near,far):
@@ -182,44 +182,44 @@ class EMImageRotary(QtOpenGL.QGLWidget):
 		return depth
 	def set_mmode(self,mode):
 		self.mmode = mode
-		self.image_rotary.set_mmode(mode)
+		self.image_rotor.set_mmode(mode)
 	
 	def mousePressEvent(self, event):
-		self.image_rotary.mousePressEvent(event)
+		self.image_rotor.mousePressEvent(event)
 			
 	def wheelEvent(self,event):
-		self.image_rotary.wheelEvent(event)
+		self.image_rotor.wheelEvent(event)
 	
 	def mouseMoveEvent(self,event):
-		self.image_rotary.mouseMoveEvent(event)
+		self.image_rotor.mouseMoveEvent(event)
 
 	def mouseReleaseEvent(self,event):
-		self.image_rotary.mouseReleaseEvent(event)
+		self.image_rotor.mouseReleaseEvent(event)
 	
 	def keyPressEvent(self,event):
 		if self.mmode == "app":
 			self.emit(QtCore.SIGNAL("keypress"),event)
 
 	def dropEvent(self,event):
-		self.image_rotary.dropEvent(event)
+		self.image_rotor.dropEvent(event)
 		
 	def closeEvent(self,event) :
-		self.image_rotary.closeEvent(event)
+		self.image_rotor.closeEvent(event)
 		
 	def dragEnterEvent(self,event):
-		self.image_rotary.dragEnterEvent(event)
+		self.image_rotor.dragEnterEvent(event)
 
 	def dropEvent(self,event):
-		self.image_rotary.dropEvent(event)
+		self.image_rotor.dropEvent(event)
 	
 	
 	def set_shapes(self,shapes,shrink,idx=0):
-		self.image_rotary.set_shapes(shapes,shrink,idx)
+		self.image_rotor.set_shapes(shapes,shrink,idx)
 	
 	def set_frozen(self,frozen,idx=0):
-		self.image_rotary.set_frozen(frozen,idx)
+		self.image_rotor.set_frozen(frozen,idx)
 	
-class EMImageRotaryCore:
+class EMImageRotorCore:
 
 	#allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
@@ -232,8 +232,8 @@ class EMImageRotaryCore:
 		if data:
 			self.setData(data)
 		
-		self.rotary = EMGLRotaryWidget(self,-25,10,40,EMGLRotaryWidget.LEFT_ROTARY)
-		self.widget = EM3DWidget(self,self.rotary)
+		self.rotor = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
+		self.widget = EM3DWidget(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		
 		
@@ -257,7 +257,7 @@ class EMImageRotaryCore:
 	def set_extra_hud_data(self,hud_data):
 		self.hud_data = hud_data
 	
-		#self.rotary.set_shapes([],1.01)
+		#self.rotor.set_shapes([],1.01)
 	def context(self):
 		# asking for the OpenGL context from the parent
 		return self.parent.context()
@@ -272,13 +272,13 @@ class EMImageRotaryCore:
 
 	def set_mmode(self,mode):
 		self.mmode = mode
-		self.rotary.set_mmode(mode)
+		self.rotor.set_mmode(mode)
 
 	def set_frozen(self,frozen,idx=0):
-		self.rotary.set_frozen(frozen,idx)
+		self.rotor.set_frozen(frozen,idx)
 
 	def set_shapes(self,shapes,shrink,idx=0):
-		self.rotary.set_shapes(shapes,shrink,idx)
+		self.rotor.set_shapes(shapes,shrink,idx)
 
 	def register_animatable(self,animatable):
 		self.parent.register_animatable(animatable)
@@ -301,10 +301,10 @@ class EMImageRotaryCore:
 		
 		self.data = data
 		
-		self.rotary.clear_widgets()
+		self.rotor.clear_widgets()
 		for d in self.data:
 			w = EMGLView2D(self,d)
-			self.rotary.add_widget(w)
+			self.rotor.add_widget(w)
 			
 		#self.showInspector()		# shows the correct inspector if already open
 		#self.timer.start(25)
@@ -325,7 +325,7 @@ class EMImageRotaryCore:
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
 		
-		lr = self.rotary.get_suggested_lr_bt_nf()
+		lr = self.rotor.get_suggested_lr_bt_nf()
 		lrt = lr
 		#lr = self.widget.get_lr_bt_nf()
 		
@@ -391,7 +391,7 @@ class EMImageRotaryCore:
 		pass
 	
 	def resize_event(self, width, height):
-		self.rotary.resize_event(width,height)
+		self.rotor.resize_event(width,height)
 
 
 	def draw_hud(self):
@@ -415,8 +415,8 @@ class EMImageRotaryCore:
 		
 		
 		if self.font_render_mode == EMImageMXCore.FTGL:
-			panels = len(self.rotary)
-			idx = self.rotary.current_index()
+			panels = len(self.rotor)
+			idx = self.rotor.current_index()
 			string = str(idx+1) + ' / ' + str(panels)
 			bbox = self.font_renderer.bounding_box(string)
 			x_offset = width-(bbox[3]-bbox[0]) - 10
@@ -450,7 +450,7 @@ class EMImageRotaryCore:
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	GLUT.glutInit("")
-	window = EMImageRotary()
+	window = EMImageRotor()
 	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)]*4)
 	else :
 		a=EMData.read_images(sys.argv[1])

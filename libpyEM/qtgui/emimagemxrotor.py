@@ -46,11 +46,11 @@ from pickle import dumps,loads
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 from emglobjects import EMOpenGLFlagsAndTools
-from emfloatingwidgets import EMGLRotaryWidget, EMGLView2D, EM3DWidget
+from emfloatingwidgets import EMGLRotorWidget, EMGLView2D, EM3DWidget
 from emimagemx import EMImageMxInspector2D,EMImageMXCore
 from EMAN2db import EMAN2DB
 
-class EMImageMXRotary(QtOpenGL.QGLWidget):
+class EMImageMXRotor(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
 	in 'matrix' form on the display. The middle mouse button will bring up a
 	control-panel. The QT event loop must be running for this object to function
@@ -58,7 +58,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
-		self.image_rotary = None
+		self.image_rotor = None
 		#self.initflag = True
 		self.mmode = "drag"
 
@@ -66,11 +66,11 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True);
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImageMXRotary.allim[self]=0
+		EMImageMXRotor.allim[self]=0
 		
 		self.setFocusPolicy(Qt.StrongFocus)
 		
-		self.image_rotary = EMImageMXRotaryCore(data,self)
+		self.image_rotor = EMImageMXRotorCore(data,self)
 		
 		self.imagefilename = None
 		
@@ -88,10 +88,10 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		self.light_0_pos = [0.1,.1,1.,0.]
 		
 	def setData(self,data):
-		self.image_rotary.setData(data)
+		self.image_rotor.setData(data)
 	
 	def get_optimal_size(self):
-		lr = self.image_rotary.rotary.get_suggested_lr_bt_nf()
+		lr = self.image_rotor.rotor.get_suggested_lr_bt_nf()
 		width = lr[1] - lr[0]
 		height = lr[3] - lr[2]
 		return [width+80,height+20]
@@ -121,7 +121,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	def set_image_file_name(self,name):
 		#print "set image file name",name
 		self.imagefilename = name
-		self.image_rotary.set_image_file_name(name)
+		self.image_rotor.set_image_file_name(name)
 		
 	def get_image_file_name(self):
 		return self.imagefilename
@@ -148,8 +148,8 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
-		if ( self.image_rotary == None ): return
-		self.image_rotary.render()
+		if ( self.image_rotor == None ): return
+		self.image_rotor.render()
 
 	
 	def resizeGL(self, width, height):
@@ -164,7 +164,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.image_rotary.resize_event(width,height)
+		self.image_rotor.resize_event(width,height)
 	
 	def set_near_far(self,near,far):
 		self.z_near = near
@@ -178,7 +178,7 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		GL.glLoadIdentity()
 		
 	
-		self.image_rotary.projection_or_viewport_changed()
+		self.image_rotor.projection_or_viewport_changed()
 		
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
@@ -189,41 +189,41 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	
 	def set_mmode(self,mode):
 		self.mmode = mode
-		self.image_rotary.set_mmode(mode)
+		self.image_rotor.set_mmode(mode)
 	
 	def mousePressEvent(self, event):
-		self.image_rotary.mousePressEvent(event)
+		self.image_rotor.mousePressEvent(event)
 			
 	def wheelEvent(self,event):
-		self.image_rotary.wheelEvent(event)
+		self.image_rotor.wheelEvent(event)
 	
 	def mouseMoveEvent(self,event):
-		self.image_rotary.mouseMoveEvent(event)
+		self.image_rotor.mouseMoveEvent(event)
 
 	def mouseReleaseEvent(self,event):
-		self.image_rotary.mouseReleaseEvent(event)
+		self.image_rotor.mouseReleaseEvent(event)
 	
 	def keyPressEvent(self,event):
 		if self.mmode == "app":
 			self.emit(QtCore.SIGNAL("keypress"),event)
 
 	def dropEvent(self,event):
-		self.image_rotary.dropEvent(event)
+		self.image_rotor.dropEvent(event)
 		
 	def closeEvent(self,event) :
-		self.image_rotary.closeEvent(event)
+		self.image_rotor.closeEvent(event)
 		
 	def dragEnterEvent(self,event):
-		self.image_rotary.dragEnterEvent(event)
+		self.image_rotor.dragEnterEvent(event)
 
 	def dropEvent(self,event):
-		self.image_rotary.dropEvent(event)
+		self.image_rotor.dropEvent(event)
 	
 	def set_shapes(self,shapes,shrink):
-		self.image_rotary.set_shapes(shapes,shrink)
+		self.image_rotor.set_shapes(shapes,shrink)
 	
 	def set_frozen(self,frozen):
-		self.image_rotary.set_frozen(frozen)
+		self.image_rotor.set_frozen(frozen)
 	
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context to be created and this is what the True flag
@@ -234,15 +234,15 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		# to get around it we would have to render everything without display lists (a supreme pain).
 		
 	def set_selected(self,n):
-		return self.image_rotary.set_selected(n)
+		return self.image_rotor.set_selected(n)
 	
 	def get_core_object(self):
-		return self.image_rotary
+		return self.image_rotor
 	
 	def keyPressEvent(self,event):
-		self.image_rotary.keyPressEvent(event)
+		self.image_rotor.keyPressEvent(event)
 	
-class EMImageMXRotaryCore:
+class EMImageMXRotorCore:
 
 	#allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
@@ -255,18 +255,18 @@ class EMImageMXRotaryCore:
 		if data:
 			self.setData(data)
 		
-		self.rotary = EMGLRotaryWidget(self,0,-70,-15,EMGLRotaryWidget.TOP_ROTARY,100)
-		self.rotary.set_angle_range(110.0)
-		#self.rotary.set_child_mouse_events(False)
-		self.rotary.set_mmode("mxrotary")
-		self.widget = EM3DWidget(self,self.rotary)
+		self.rotor = EMGLRotorWidget(self,0,-70,-15,EMGLRotorWidget.TOP_ROTARY,100)
+		self.rotor.set_angle_range(110.0)
+		#self.rotor.set_child_mouse_events(False)
+		self.rotor.set_mmode("mxrotor")
+		self.widget = EM3DWidget(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		
 		self.image_file_name = None	# keeps track of the image file name (if any) - book keeping purposes only
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via setData or set_image_file_name
 		
 		self.default_mxs = 3
-		self.visible_mxs = self.default_mxs	# the number of visible imagemxs in the rotary
+		self.visible_mxs = self.default_mxs	# the number of visible imagemxs in the rotor
 		self.mx_rows = 4 # the number of rows in any given imagemx
 		self.mx_cols = 4 # the number of columns in any given imagemx
 		self.start_mx = 0 # the starting index for the currently visible set of imagemxs
@@ -311,7 +311,7 @@ class EMImageMXRotaryCore:
 			self.parent.emit(signal,event,data,bool)
 	
 	def set_selected(self,n,update_gl=True):
-		self.rotary[0].get_drawable().set_selected(n,update_gl)
+		self.rotor[0].get_drawable().set_selected(n,update_gl)
 	
 	
 	def get_qt_parent(self):
@@ -331,45 +331,45 @@ class EMImageMXRotaryCore:
 		return self.parent.context()
 	
 	def is_visible(self,n):
-		img_offset = self.rotary[0].get_drawable().get_img_num_offset()
+		img_offset = self.rotor[0].get_drawable().get_img_num_offset()
 		if n >= img_offset and n < (img_offset+self.mx_rows*self.mx_cols):
 			return True
 		else: return False
 	
 	def scroll_to(self,n,unused):
-		img_offset = self.rotary[0].get_drawable().get_img_num_offset()
+		img_offset = self.rotor[0].get_drawable().get_img_num_offset()
 		scroll = (n-img_offset)/(self.mx_rows*self.mx_cols)
-		self.rotary.explicit_animation(-scroll)
+		self.rotor.explicit_animation(-scroll)
 	
 	def set_mx_cols(self,cols):
 		self.mx_cols = cols
 		self.emdata_list_cache.set_cache_size(8*self.visible_mxs*self.mx_rows*self.mx_cols)
-		self.__refresh_rotary(True)
+		self.__refresh_rotor(True)
 		self.updateGL()
 		
 	def set_mx_rows(self,rows):
 		self.mx_rows = rows
 		self.emdata_list_cache.set_cache_size(8*self.visible_mxs*self.mx_rows*self.mx_cols)
-		self.__refresh_rotary(True)
+		self.__refresh_rotor(True)
 		self.updateGL()
 	
 	def set_display_values(self,v2d):
 		self.vals_to_display = v2d
-		self.__refresh_rotary(False)
+		self.__refresh_rotor(False)
 		self.updateGL()
 
 	def set_mxs(self,mxs):
 		self.visible_mxs = mxs
 		self.emdata_list_cache.set_cache_size(8*self.visible_mxs*self.mx_rows*self.mx_cols)
-		self.__regenerate_rotary() # this could be done more efficiently
-		self.__refresh_rotary_size()
+		self.__regenerate_rotor() # this could be done more efficiently
+		self.__refresh_rotor_size()
 		self.updateGL()
 	
 	def set_mmode(self,mode):
 		self.mmode = mode
 		try:
 			for i in range(self.visible_mxs):
-				w = self.rotary[i].get_drawable()
+				w = self.rotor[i].get_drawable()
 				w.set_mmode(self.mmode)
 		except: pass
 	def set_scale(self,scale):
@@ -391,7 +391,7 @@ class EMImageMXRotaryCore:
 		'''
 		Disable mx zoom.
 		'''
-		self.rotary.target_zoom_events_allowed(False)
+		self.rotor.target_zoom_events_allowed(False)
 		
 	def disable_mx_translate(self):
 		self.widget.target_translations_allowed(False)
@@ -403,16 +403,16 @@ class EMImageMXRotaryCore:
 		val = self.emdata_list_cache.delete_box(idx)
 		if val == 1:
 			self.max_idx = self.emdata_list_cache.get_max_idx()
-			self.__refresh_rotary()
+			self.__refresh_rotor()
 		elif val == 2:
-			w = self.rotary[0].get_drawable()
+			w = self.rotor[0].get_drawable()
 			w.force_dl_update()
 		else:
 			print 'failed to delete box image'
 		
 	def update_min_max_gamma(self,update_gl=True):
 		for i in range(self.visible_mxs):
-			w = self.rotary[i].get_drawable()
+			w = self.rotor[i].get_drawable()
 			w.set_min_max_gamma(self.minden,self.maxden,self.gamma,False)
 			if  i == 0 and  self.inspector != None:	
 				try:
@@ -428,7 +428,7 @@ class EMImageMXRotaryCore:
 		self.maxden=maxden
 		self.update_min_max_gamma()
 				
-	def update_rotary_position(self,inc):
+	def update_rotor_position(self,inc):
 		self.start_mx += inc
 	
 		if inc > 0:
@@ -447,12 +447,12 @@ class EMImageMXRotaryCore:
 		
 		#print "iterating through",start_changed,end_changed,"start_mx is",self.start_mx
 		
-		self.__update_rotary_range(start_changed ,end_changed)
+		self.__update_rotor_range(start_changed ,end_changed)
 		
-		w = self.rotary[idx].get_drawable()
+		w = self.rotor[idx].get_drawable()
 		self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
 	
-	def __update_rotary_range(self,start_changed,end_changed):
+	def __update_rotor_range(self,start_changed,end_changed):
 		
 		num_per_view = self.mx_rows*self.mx_cols
 		
@@ -476,7 +476,7 @@ class EMImageMXRotaryCore:
 				for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 			
 
-			w = self.rotary[idx].get_drawable()
+			w = self.rotor[idx].get_drawable()
 			w.setData(d,False)
 
 			w.set_img_num_offset(image_offset)
@@ -486,9 +486,9 @@ class EMImageMXRotaryCore:
 	def get_num_panels(self):
 		return int(ceil(float(self.emdata_list_cache.get_max_idx())/ (self.mx_rows*self.mx_cols)))
 
-	def set_rotary_mode(self,mode):
+	def set_rotor_mode(self,mode):
 		self.rot_mode = mode
-		self.rotary.set_mmode(mode)
+		self.rotor.set_mmode(mode)
 
 	def optimize_fit(self,update_gl=True):
 		render_width = self.parent.width()
@@ -505,14 +505,14 @@ class EMImageMXRotaryCore:
 			self.inspector.set_n_rows(self.mx_rows)
 		except: pass
 
-		self.__refresh_rotary(True)
+		self.__refresh_rotor(True)
 		if update_gl: self.updateGL()
 		
 	def set_frozen(self,frozen):
-		self.rotary.set_frozen(frozen)
+		self.rotor.set_frozen(frozen)
 
 	def set_shapes(self,shapes,shrink):
-		self.rotary.set_shapes(shapes,shrink)
+		self.rotor.set_shapes(shapes,shrink)
 
 	def register_animatable(self,animatable):
 		self.parent.register_animatable(animatable)
@@ -547,42 +547,42 @@ class EMImageMXRotaryCore:
 		if self.init_flag:
 			if fac < self.visible_mxs:
 				self.visible_mxs = fac
-			self.__regenerate_rotary()
+			self.__regenerate_rotor()
 			self.init_flag = False
 		else:
 #			print "here we are", fac,self.visible_mxs,self.default_mxs
 			if fac < self.visible_mxs:
 				self.visible_mxs = fac
-				self.__regenerate_rotary()
-				self.__refresh_rotary_size()
+				self.__regenerate_rotor()
+				self.__refresh_rotor_size()
 			elif self.visible_mxs < self.default_mxs and fac >= self.default_mxs:
 #				print "setting visible mxs"
 				self.visible_mxs = self.default_mxs
-				self.__regenerate_rotary()
-				self.__refresh_rotary_size()
+				self.__regenerate_rotor()
+				self.__refresh_rotor_size()
 			elif fac > self.visible_mxs and self.visible_mxs < self.default_mxs:
 				self.visible_mxs = fac
-				self.__regenerate_rotary()
-				self.__refresh_rotary_size()
+				self.__regenerate_rotor()
+				self.__refresh_rotor_size()
 			else:
-				self.__refresh_rotary(True)
+				self.__refresh_rotor(True)
 			
 	
 	def set_image_file_name(self,name):
 		#print "set image file name",name
 		self.image_file_name = name
 		self.emdata_list_cache = EMDataListCache(name)
-		self.__regenerate_rotary()
+		self.__regenerate_rotor()
 	
-	def __refresh_rotary(self,inc_size=False):
+	def __refresh_rotor(self,inc_size=False):
 			
-		self.__update_rotary_range(0,self.visible_mxs)
+		self.__update_rotor_range(0,self.visible_mxs)
 		
 		if inc_size:
-			self.__refresh_rotary_size()
+			self.__refresh_rotor_size()
 
-	def __refresh_rotary_size(self):
-		if len(self.rotary) == 0: return
+	def __refresh_rotor_size(self):
+		if len(self.rotor) == 0: return
 		
 		self.render_width = self.parent.width()
 		self.render_height = self.parent.height()
@@ -599,7 +599,7 @@ class EMImageMXRotaryCore:
 			scale = scale1
 		
 		for idx in range(0,self.visible_mxs):
-			e = self.rotary[idx]
+			e = self.rotor[idx]
 			w = e.get_drawable()
 
 			w.set_scale(scale,False,False)
@@ -607,10 +607,10 @@ class EMImageMXRotaryCore:
 			e.set_height(self.render_height,False)
 			w.set_mx_cols(self.mx_rows,False)
 			
-		self.rotary.update()
+		self.rotor.update()
 
-	def __regenerate_rotary(self):
-		self.rotary.clear_widgets()
+	def __regenerate_rotor(self):
+		self.rotor.clear_widgets()
 #		self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
 		num_per_view = self.mx_rows*self.mx_cols
 		for idx in range(self.start_mx,self.start_mx+self.visible_mxs):
@@ -636,7 +636,7 @@ class EMImageMXRotaryCore:
 				for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 
 			e = EMGLView2D(self,d)
-			self.rotary.add_widget(e)
+			self.rotor.add_widget(e)
 			w = e.get_drawable()
 	
 			w.set_use_display_list(True) # saves HEAPS of time, makes interaction much smoother
@@ -648,7 +648,7 @@ class EMImageMXRotaryCore:
 			w.set_img_num_offset(image_offset)
 			w.set_max_idx(self.emdata_list_cache.get_max_idx())
 
-		e = self.rotary[0]
+		e = self.rotor[0]
 		w = e.get_drawable()
 		self.minden = w.get_density_min()
 		self.maxden = w.get_density_max()
@@ -657,7 +657,7 @@ class EMImageMXRotaryCore:
 		self.gamma = w.get_gamma()
 		self.update_min_max_gamma(False)
 		
-		self.__refresh_rotary_size()
+		self.__refresh_rotor_size()
 
 	def updateGL(self):
 		try: self.parent.updateGL()
@@ -670,7 +670,7 @@ class EMImageMXRotaryCore:
 	
 		glLoadIdentity()
 		
-		lr = self.rotary.get_suggested_lr_bt_nf()
+		lr = self.rotor.get_suggested_lr_bt_nf()
 		
 		suppress = False
 		GL.glEnable(GL.GL_DEPTH_TEST)
@@ -753,11 +753,11 @@ class EMImageMXRotaryCore:
 			self.updateGL()
 
 	def resize_event(self, width, height):
-		self.rotary.resize_event(width,height)
+		self.rotor.resize_event(width,height)
 		self.optimize_fit(False)
 	
 	def projection_or_viewport_changed(self):
-		self.rotary.resize_event(-1,1)
+		self.rotor.resize_event(-1,1)
 	
 	def save_lst(self):
 		self.emdata_list_cache.save_lst()
@@ -840,8 +840,8 @@ class EMDataListCache:
 			self.cache_size = self.max_idx
 			self.images = object
 			self.start_idx = 0
-			DB.open_dict("emimage_mx_rotary_cache")
-			self.db = DB.emimage_mx_rotary_cache
+			DB.open_dict("emimage_mx_rotor_cache")
+			self.db = DB.emimage_mx_rotor_cache
 			self.exclusions_key = "interactive_exclusions"
 			self.db[self.exclusions_key] = []
 			self.exclusions = self.db["interactive_exclusions"]
@@ -863,8 +863,8 @@ class EMDataListCache:
 				self.cache_size = cache_size
 			self.start_idx = start_idx - self.cache_size/2
 			
-			DB.open_dict("emimage_mx_rotary_cache")
-			self.db = DB.emimage_mx_rotary_cache
+			DB.open_dict("emimage_mx_rotor_cache")
+			self.db = DB.emimage_mx_rotor_cache
 			self.exclusions_key = self.file_name+"_interactive_exclusions"
 			self.exclusions  = self.db[self.exclusions_key]
 			if self.exclusions == None: self.exclusions = []
@@ -880,7 +880,7 @@ class EMDataListCache:
 	def __del__(self):
 		DB = EMAN2db.EMAN2DB.open_db(".")
 		try:
-			DB.close_dict("emimage_mx_rotary_cache")
+			DB.close_dict("emimage_mx_rotor_cache")
 		except: pass
 	
 	def get_image_width(self):
@@ -1060,7 +1060,7 @@ class EMDataListCache:
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	GLUT.glutInit("")
-	window = EMImageMXRotary()
+	window = EMImageMXRotor()
 	if len(sys.argv)==1 : 
 		data = []
 		for i in range(500):
