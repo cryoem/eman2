@@ -67,6 +67,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
+		fmt.setSampleBuffers(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		

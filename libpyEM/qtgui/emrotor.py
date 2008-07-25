@@ -56,6 +56,7 @@ class EMRotor(QtOpenGL.QGLWidget):
 		
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
+		fmt.setSampleBuffers(True)
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMRotor.allim[self]=0
@@ -118,7 +119,8 @@ class EMRotor(QtOpenGL.QGLWidget):
 		glEnable(GL_POLYGON_SMOOTH)
 		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
 		
-		if ( "GL_ARB_multisample" in glGetString(GL_EXTENSIONS) ): glEnable(GL_MULTISAMPLE)
+		if ( "GL_ARB_multisample" in glGetString(GL_EXTENSIONS) ):
+			glEnable(GL_MULTISAMPLE)
 		else: glDisable(GL_MULTISAMPLE)
 		
 	def paintGL(self):
@@ -128,7 +130,7 @@ class EMRotor(QtOpenGL.QGLWidget):
 			print "There is an error with opengl, not doing anything"
 			return
 		
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT )
 		glLoadIdentity()
 		if ( self.rotor == None ): return
 		try:
@@ -244,7 +246,6 @@ class EMRotorCore:
 			self.parent.set_near_far(self.z_near,self.z_far)
 
 		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
-		
 		glPushMatrix()
 		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans+abs(lr[3]-lr[2]))
 		self.widget.paintGL()

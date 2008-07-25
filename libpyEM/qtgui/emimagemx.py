@@ -64,7 +64,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.mmode = "drag"
 
 		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
+		fmt.setDoubleBuffer(True)
+		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImageMX.allim[self]=0
 		

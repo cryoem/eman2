@@ -60,6 +60,7 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
+		fmt.setSampleBuffers(True)
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImageMXRotor.allim[self]=0
