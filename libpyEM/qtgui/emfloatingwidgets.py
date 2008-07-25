@@ -578,7 +578,6 @@ class EM3DWidget:
 		else:
 			self.target.mousePressEvent(event)
 
-	
 	def wheelEvent(self,event):
 		try: e = event.modifiers()
 		except: return
@@ -2411,6 +2410,9 @@ class EMFloatingWidgetsCore:
 		self.rotor = None
 		#print "init done"
 	
+	def emit(self,signal,event,a=None,b=None):
+		pass
+	
 	def register_animatable(self,animatable):
 		self.parent.register_animatable(animatable)
 		
@@ -2486,29 +2488,29 @@ class EMFloatingWidgetsCore:
 		
 			self.qwidgets.append(EM3DWidget(self,rotor))
 			
-			rotor2 = EMGLRotorWidget(self,45,50,15,EMGLRotorWidget.BOTTOM_ROTARY,60)
-			rotor2.add_widget(a)
-			rotor2.add_widget(e)
-			rotor2.add_widget(g)
-			rotor2.add_widget(w2)
+			#rotor2 = EMGLRotorWidget(self,45,50,15,EMGLRotorWidget.BOTTOM_ROTARY,60)
+			#rotor2.add_widget(a)
+			#rotor2.add_widget(e)
+			#rotor2.add_widget(g)
+			#rotor2.add_widget(w2)
 			
-			self.qwidgets.append(EM3DWidget(self,rotor2))
+			#self.qwidgets.append(EM3DWidget(self,rotor2))
 			
-			rotor3 = EMGLRotorWidget(self,-15,50,-15,EMGLRotorWidget.TOP_ROTARY,60)
-			rotor3.add_widget(w)
-			rotor3.add_widget(e)
-			rotor3.add_widget(f)
-			#rotor3.add_widget(w2)
+			#rotor3 = EMGLRotorWidget(self,-15,50,-15,EMGLRotorWidget.TOP_ROTARY,60)
+			#rotor3.add_widget(w)
+			#rotor3.add_widget(e)
+			#rotor3.add_widget(f)
+			##rotor3.add_widget(w2)
 			
-			self.qwidgets.append(EM3DWidget(self,rotor3))
+			#self.qwidgets.append(EM3DWidget(self,rotor3))
 			
-			rotor4 = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
-			#rotor4.add_widget(w2)
-			rotor4.add_widget(e)
-			rotor4.add_widget(g)
-			#rotor4.add_widget(ww)
+			#rotor4 = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
+			##rotor4.add_widget(w2)
+			#rotor4.add_widget(e)
+			#rotor4.add_widget(g)
+			##rotor4.add_widget(ww)
 			
-			self.qwidgets.append(EM3DWidget(self,rotor4))
+			#self.qwidgets.append(EM3DWidget(self,rotor4))
 			
 		glPushMatrix()
 		glTranslate(-100,0,-1250)

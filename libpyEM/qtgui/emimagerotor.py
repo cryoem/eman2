@@ -36,20 +36,16 @@ from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from valslider import ValSlider
-from math import *
-from EMAN2 import *
-import EMAN2
+
+from math import tan,pi
 import sys
+import time
 import numpy
-from emimageutil import ImgHistogram,EMParentWin
 from weakref import WeakKeyDictionary
-from pickle import dumps,loads
-from PyQt4.QtGui import QImage
-from PyQt4.QtCore import QTimer
 
+from EMAN2 import *
+from emimageutil import EMParentWin
 from emglobjects import EMOpenGLFlagsAndTools
-
 from emfloatingwidgets import EMGLRotorWidget, EMGLView2D,EM3DWidget
 from emimagemx import EMImageMXCore
 
@@ -84,7 +80,7 @@ class EMImageRotor(QtOpenGL.QGLWidget):
 		
 		self.animatables = []
 		
-		self.timer = QTimer()
+		self.timer = QtCore.QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 		self.timer.start(10)
 	
@@ -143,7 +139,7 @@ class EMImageRotor(QtOpenGL.QGLWidget):
 		
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		
+		glLoadIdentity()
 		if ( self.image_rotor == None ): return
 		self.image_rotor.render()
 
@@ -195,13 +191,6 @@ class EMImageRotor(QtOpenGL.QGLWidget):
 
 	def mouseReleaseEvent(self,event):
 		self.image_rotor.mouseReleaseEvent(event)
-	
-	def keyPressEvent(self,event):
-		if self.mmode == "app":
-			self.emit(QtCore.SIGNAL("keypress"),event)
-
-	def dropEvent(self,event):
-		self.image_rotor.dropEvent(event)
 		
 	def closeEvent(self,event) :
 		self.image_rotor.closeEvent(event)
@@ -321,7 +310,7 @@ class EMImageRotorCore:
 	def render(self):
 		if not self.data : return
 		
-		glLoadIdentity()
+		#glLoadIdentity()
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
 		
@@ -459,11 +448,6 @@ if __name__ == '__main__':
 	window2=EMParentWin(window)
 	window2.show()
 	window2.resize(*window.get_optimal_size())
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
+
 	
 	sys.exit(app.exec_())

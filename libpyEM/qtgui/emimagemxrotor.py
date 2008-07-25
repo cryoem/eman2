@@ -30,31 +30,27 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
-from EMAN2 import *
+
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from valslider import ValSlider
-from math import *
+
+from math import ceil,tan,pi
 import sys
-import numpy
-from emimageutil import ImgHistogram,EMParentWin
+import time
 from weakref import WeakKeyDictionary
-from pickle import dumps,loads
-from PyQt4.QtGui import QImage
-from PyQt4.QtCore import QTimer
+
+from EMAN2 import *
+from emimageutil import EMParentWin
 from emglobjects import EMOpenGLFlagsAndTools
 from emfloatingwidgets import EMGLRotorWidget, EMGLView2D, EM3DWidget
-from emimagemx import EMImageMxInspector2D,EMImageMXCore
+from emimagemx import EMImageMxInspector2D, EMImageMXCore
 from EMAN2db import EMAN2DB
 
 class EMImageMXRotor(QtOpenGL.QGLWidget):
-	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
-	in 'matrix' form on the display. The middle mouse button will bring up a
-	control-panel. The QT event loop must be running for this object to function
-	properly.
+	"""
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
@@ -81,7 +77,7 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 		
 		self.animatables = []
 		
-		self.timer = QTimer()
+		self.timer = QtCore.QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 		self.timer.start(10)
 		
@@ -147,7 +143,7 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 		
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		
+		#glLoadIdentity()
 		if ( self.image_rotor == None ): return
 		self.image_rotor.render()
 
@@ -193,22 +189,19 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 	
 	def mousePressEvent(self, event):
 		self.image_rotor.mousePressEvent(event)
-			
+		self.updateGL()
+		
 	def wheelEvent(self,event):
 		self.image_rotor.wheelEvent(event)
-	
+		self.updateGL()
+		
 	def mouseMoveEvent(self,event):
 		self.image_rotor.mouseMoveEvent(event)
-
+		self.updateGL()
+		
 	def mouseReleaseEvent(self,event):
 		self.image_rotor.mouseReleaseEvent(event)
-	
-	def keyPressEvent(self,event):
-		if self.mmode == "app":
-			self.emit(QtCore.SIGNAL("keypress"),event)
-
-	def dropEvent(self,event):
-		self.image_rotor.dropEvent(event)
+		self.updateGL()
 		
 	def closeEvent(self,event) :
 		self.image_rotor.closeEvent(event)
@@ -243,8 +236,6 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 		self.image_rotor.keyPressEvent(event)
 	
 class EMImageMXRotorCore:
-
-	#allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
 		self.parent = parent
 		self.data=None
@@ -667,12 +658,9 @@ class EMImageMXRotorCore:
 	def render(self):
 		if not self.parent.isVisible(): return
 		if self.emdata_list_cache == None: return
-	
-		glLoadIdentity()
 		
 		lr = self.rotor.get_suggested_lr_bt_nf()
 		
-		suppress = False
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
 		z = self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
@@ -691,8 +679,7 @@ class EMImageMXRotorCore:
 			self.z_near = z_near
 			self.z_far = z_far
 			self.parent.set_near_far(self.z_near,self.z_far)
-			suppress = True
-		
+
 		GL.glPushMatrix()
 		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
 		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans+abs(lr[3]-lr[2]))
@@ -724,26 +711,17 @@ class EMImageMXRotorCore:
 			self.show_inspector(True)
 		else:
 			self.widget.mousePressEvent(event)
-			self.updateGL()
+			
 	
 	def mouseMoveEvent(self, event):
 		self.widget.mouseMoveEvent(event)
-		self.updateGL()
 		
 	def mouseReleaseEvent(self, event):
 		self.widget.mouseReleaseEvent(event)
-		self.updateGL()
 		
 	def wheelEvent(self, event):
-#		if event.delta() > 0:
-#			self.setScale( self.scale * self.mag )
-#		elif event.delta() < 0:
-#			self.setScale(self.scale * self.invmag )
-#		self.resizeEvent(self.parent.width(),self.parent.height())
-#		# The self.scale variable is updated now, so just update with that
-#		if self.inspector: self.inspector.setScale(self.scale)
 		self.widget.wheelEvent(event)
-		self.updateGL()
+		
 	def leaveEvent(self):
 		pass
 	
@@ -1082,11 +1060,6 @@ if __name__ == '__main__':
 	window2=EMParentWin(window)
 	window2.resize(*window.get_optimal_size())
 	window2.show()
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
+
 	
 	sys.exit(app.exec_())

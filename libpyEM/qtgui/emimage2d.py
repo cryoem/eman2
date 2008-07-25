@@ -915,7 +915,8 @@ class EMImage2DCore:
 		if self.rmousedrag:
 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
-			self.parent.update()
+			try: self.parent.update()
+			except: pass
 		elif event.buttons()&Qt.LeftButton:
 			if self.mmode==0:
 				self.parent.emit(QtCore.SIGNAL("mousedrag"), event)
