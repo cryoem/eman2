@@ -217,6 +217,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def getShapes(self):
 		return self.image2d.getShapes()
+	
+	def get_core_object(self):
+		return self.image2d
 
 class EMImage2DCore:
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -294,7 +297,10 @@ class EMImage2DCore:
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
-		
+	
+	def get_inspector(self):
+		return self.inspector
+	
 	def width(self):
 		try:
 			return self.data.get_xsize()
@@ -882,6 +888,7 @@ class EMImage2DCore:
 		lc=self.scr2img(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.showInspector(1)
+			self.parent.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
 			try:

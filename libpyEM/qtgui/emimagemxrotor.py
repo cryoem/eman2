@@ -296,9 +296,14 @@ class EMImageMXRotorCore:
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
 	
-	def emit(self,signal,event,data,bool=None):
+	def get_inspector(self):
+		return self.inspector
+	
+	def emit(self,signal,event,data=None,bool=None):
 		if bool==None:
 			self.parent.emit(signal,event,data)
+		elif data == None:
+			self.parent.emit(signal,event)
 		else:
 			self.parent.emit(signal,event,data,bool)
 	
@@ -710,6 +715,7 @@ class EMImageMXRotorCore:
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
 			self.show_inspector(True)
+			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		else:
 			self.widget.mousePressEvent(event)
 			

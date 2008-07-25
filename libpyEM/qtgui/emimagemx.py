@@ -412,6 +412,9 @@ class EMImageMXCore:
 	def set_extra_hud_data(self,hud_data):
 		pass
 	
+	def get_inspector(self):
+		return self.inspector
+	
 	def set_reroute_delete_target(self,target):
 		self.reroute_delete_target = target
 	
@@ -1215,6 +1218,7 @@ class EMImageMXCore:
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.showInspector(1)
+			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
 			try:

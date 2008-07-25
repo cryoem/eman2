@@ -41,6 +41,7 @@ from emshape import EMShape
 from emimagemx import EMImageMX
 from emimagerotor import EMImageRotor
 from emimagemxrotor import EMImageMXRotor
+from emrotor import EMRotor
 from math import *
 from time import *
 import os
@@ -758,6 +759,8 @@ class GUIbox:
 	REFERENCE_ADDING = 0
 	ERASING = 1
 	MANUALLY_ADDING = 2
+	FANCY_MODE = 'fancy'
+	PLAIN_MODE = 'plain'
 	def __init__(self,image_names,boxes,box_size=-1):
 		"""Implements the 'boxer' GUI."""
 		
@@ -816,12 +819,8 @@ class GUIbox:
 		self.boxable.add_non_refs(boxes)
 		self.boxable.box_size = self.box_size
 		
-		self.eventsmediator = GUIboxEventsMediator(self)
-		self.mouse_handlers = {}
-		self.mouse_handlers["boxing"] = GUIboxParticleManipEvents(self.eventsmediator)
-		self.mouse_handlers["erasing"] = GUIboxMouseEraseEvents(self.eventsmediator,self.eraseradius)
-		self.mousehandler = self.mouse_handlers["boxing"]
-		
+		self.initialize_mouse_event_handlers()
+
 		self.ptcl=[]						# list of actual boxed out EMImages
 		self.boxm = None
 		self.moving=None					# Used during a user box drag
@@ -842,7 +841,10 @@ class GUIbox:
 			self.guimx.get_core_object().disable_mx_zoom()
 			self.guimx.get_core_object().allow_camera_rotations(False)
 			self.guimx.get_core_object().disable_mx_translate()
-		else: self.guimx=EMImageMX()	
+			self.fancy_mode = GUIbox.FANCY_MODE
+		else:
+			self.guimx=EMImageMX()	
+			self.fancy_mode = GUIbox.PLAIN_MODE
 		
 		self.guimxitp = None
 		self.guimxit = None
@@ -854,19 +856,20 @@ class GUIbox:
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("keypress"),self.keypress)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousemove"),self.mouse_move)
+		if self.fancy_mode == GUIbox.FANCY_MODE: self.guimx.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.box_selected)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedrag"),self.box_moved)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("mouseup"),self.box_released)
 		self.guimx.connect(self.guimx,QtCore.SIGNAL("boxdeleted"),self.box_image_deleted)
-		
+		if self.fancy_mode == GUIbox.FANCY_MODE: self.guimx.connect(self.guimx,QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
 		self.in_display_limbo = False	# a flag I am using to solve a problem
 		self.mmode = GUIbox.REFERENCE_ADDING
 		self.guiim.set_mmode(0)
 		self.guimx.set_mmode("app")
 		self.ppc = 1.0
 		self.mouseclicks = 0
-
+	
 		try:
 			E2loadappwin("boxer","imagegeom",self.guiimp)
 			E2loadappwin("boxer","matrixgeom",self.guimxp)
@@ -896,8 +899,29 @@ class GUIbox:
 		self.guictl.set_dynapix(self.dynapix)
 		self.guictl.set_anchor(self.anchoring)
 		self.guictl.show()
+		if self.fancy_mode == GUIbox.FANCY_MODE: self.guictl.hide()
 		self.autoboxer.auto_box(self.boxable,False)
 		self.box_display_update()
+		
+		if self.fancy_mode == GUIbox.FANCY_MODE: 
+			self.ctl_rotor = EMRotor()
+			self.ctl_rotor.get_core_object().add_qt_widget(self.guictl)
+			self.guictlrotor = EMParentWin(self.ctl_rotor)
+			self.guictlrotor.setWindowTitle("e2boxer Controllers")
+			self.guictlrotor.show()
+	
+	def guiim_inspector_requested(self,event):
+		self.ctl_rotor.get_core_object().add_qt_widget(self.guiim.get_core_object().get_inspector())
+	
+	def guimx_inspector_requested(self,event):
+		self.ctl_rotor.get_core_object().add_qt_widget(self.guimx.get_core_object().get_inspector())
+	
+	def initialize_mouse_event_handlers(self):
+		self.eventsmediator = GUIboxEventsMediator(self)
+		self.mouse_handlers = {}
+		self.mouse_handlers["boxing"] = GUIboxParticleManipEvents(self.eventsmediator)
+		self.mouse_handlers["erasing"] = GUIboxMouseEraseEvents(self.eventsmediator,self.eraseradius)
+		self.mousehandler = self.mouse_handlers["boxing"]
 	
 	def get_shape_string(self):
 		return self.shape_string

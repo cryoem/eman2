@@ -151,7 +151,7 @@ class EMRotor(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-	
+		self.rotor.projection_or_viewport_changed()
 	def set_near_far(self,near,far):
 		self.z_near = near
 		self.z_far = far
@@ -225,7 +225,6 @@ class EMRotorCore:
 		
 		self.inspector = None
 		
-		self.add_file_dialog()
 	def render(self):
 		lr = self.rotor.get_suggested_lr_bt_nf()
 		z = self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
@@ -288,12 +287,15 @@ class EMRotorCore:
 		fd.show()
 		fd.hide()
 
-		a = EMGLViewQtWidget(self.parent)
-		a.setQtWidget(fd)
-		self.rotor.add_widget(a)
+		self.add_qt_widget(fd)
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_0:
 			self.add_file_dialog()
+			
+	def add_qt_widget(self,qt_widget):
+		a = EMGLViewQtWidget(self.parent)
+		a.setQtWidget(qt_widget)
+		self.rotor.add_widget(a)
 			
 	def width(self):
 		return self.parent.width()
@@ -304,11 +306,16 @@ class EMRotorCore:
 	def register_animatable(self,animatable):
 		self.parent.register_animatable(animatable)
 	
+	def projection_or_viewport_changed(self):
+		self.rotor.resize_event(-1,1)
+	
+	
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	GLUT.glutInit("")
 	window = EMRotor()
+	window.get_core_object().add_file_dialog()
 	window2=EMParentWin(window)
 	window2.show()
 	sys.exit(app.exec_())
