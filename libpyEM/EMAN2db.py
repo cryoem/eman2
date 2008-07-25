@@ -416,6 +416,12 @@ class DBDict:
 					except: pass
 			return ret
 		except:
+			if getattr(attr, '__iter__', False):
+				d=loads(self.bdb.get(dumps(n,-1),txn=self.txn))
+				ret={}
+				for a in attr:
+					if a in d : ret[a]=d[a]
+				return ret
 			return loads(self.bdb.get(dumps(n,-1),txn=self.txn))[attr]
 		
 	def set_attr(self,n,attr,val=None):
