@@ -1,3 +1,7 @@
+/**
+ * $Id$
+ */
+
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine

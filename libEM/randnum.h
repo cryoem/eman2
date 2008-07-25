@@ -3,7 +3,7 @@
  */
  
 /*
- * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+ * Author: Grant Tang, 03/10/2008 (gtang@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
  * 
  * This software is issued under a joint BSD/GNU license. You may use the
