@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steve Ludtke, 1/18/2008
+# Author: Steve Ludtke, 1/18/2008 (sludtke@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the

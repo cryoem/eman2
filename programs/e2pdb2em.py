@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# Author: Pawel Penczek, 4/4/2007 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
