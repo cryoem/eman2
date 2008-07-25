@@ -44,7 +44,7 @@ class EMProjectDB:
 		""" Implementation of the singleton interface """
 
 		def __init__(self):
-			global DB
+			DB = EMAN2db.EMAN2DB.open_db(".")
 			DB.open_dict("boxer_cache")
 			self.project_db = DB.boxer_cache
 			self.memory_db = {}
@@ -65,6 +65,7 @@ class EMProjectDB:
 			
 		def close(self):
 			#self.project_db.close()
+			DB = EMAN2db.EMAN2DB.open_db(".")
 			DB.close_dict("boxer_cache")
 			
 		def set_key_entry(self,key,entry):

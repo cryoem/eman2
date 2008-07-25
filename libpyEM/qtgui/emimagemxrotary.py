@@ -832,7 +832,7 @@ class EMDataListCache:
 	LIST_MODE = 'list_mode'
 	FILE_MODE = 'file_mode'
 	def __init__(self,object,cache_size=256,start_idx=0):
-		global DB
+		DB = EMAN2db.EMAN2DB.open_db(".")
 		if isinstance(object,list):
 			# in list mode there is no real caching
 			self.mode = EMDataListCache.LIST_MODE
@@ -878,7 +878,7 @@ class EMDataListCache:
 		self.image_height = -1
 	
 	def __del__(self):
-		global DB
+		DB = EMAN2db.EMAN2DB.open_db(".")
 		try:
 			DB.close_dict("emimage_mx_rotary_cache")
 		except: pass
