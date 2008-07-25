@@ -76,7 +76,7 @@ class EMRotor(QtOpenGL.QGLWidget):
 		
 		self.light_0_pos = [0.1,.1,1.,0.]
 		
-	
+		self.polygon_smooth = True	
 	def get_optimal_size(self):
 		lr = self.rotor.get_suggested_lr_bt_nf()
 		width = lr[1] - lr[0]
@@ -113,14 +113,29 @@ class EMRotor(QtOpenGL.QGLWidget):
 		glEnable(GL_NORMALIZE)
 		
 		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
 		glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST)
 		
+		glEnable(GL_POLYGON_SMOOTH)
+		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
+		
+		if ( "GL_ARB_multisample" in glGetString(GL_EXTENSIONS) ): glEnable(GL_MULTISAMPLE)
+		else: glDisable(GL_MULTISAMPLE)
+		
 	def paintGL(self):
+		
+		error = glGetError()
+		if error != GL.GL_NO_ERROR:
+			print "There is an error with opengl, not doing anything"
+			return
+		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glLoadIdentity()
 		if ( self.rotor == None ): return
-		self.rotor.render()
+		try:
+			self.rotor.render()
+		except: 
+			print "render error"
+			self.animatables = []
 
 	
 	def resizeGL(self, width, height):
@@ -182,7 +197,12 @@ class EMRotor(QtOpenGL.QGLWidget):
 		return self.rotor
 	
 	def keyPressEvent(self,event):
-		self.rotor.keyPressEvent(event)
+		if event.key() == Qt.Key_1:
+			self.polygon_smooth = not self.polygon_smooth
+			if self.polygon_smooth: glEnable(GL_POLYGON_SMOOTH)
+			else: glDisable(GL_POLYGON_SMOOTH)
+			print "toggled polygon smooth"
+		else: self.rotor.keyPressEvent(event)
 		self.updateGL()
 
 class EMRotorCore:
@@ -223,12 +243,16 @@ class EMRotorCore:
 			self.z_far = z_far
 			self.parent.set_near_far(self.z_near,self.z_far)
 
-		GL.glPushMatrix()
 		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
-		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans+abs(lr[3]-lr[2]))
+		
 		glPushMatrix()
+		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans+abs(lr[3]-lr[2]))
 		self.widget.paintGL()
 		glPopMatrix()
+	
+	def updateGL(self):
+		try: self.parent.updateGL()
+		except: pass
 		
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:

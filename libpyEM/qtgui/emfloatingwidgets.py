@@ -889,7 +889,8 @@ class EMGLRotorWidget(EM3DWidgetVolume):
 			glTranslate(points[i][0],points[i][1],points[i][2])
 			glRotate(n,*rot_v)
 			glTranslate(h_width,h_height,0)
-			widget.paintGL()
+			try: widget.paintGL()
+			except: pass
 			glPopMatrix()
 			
 			#if self.is_animated:
@@ -1937,7 +1938,6 @@ class EMGLViewQtWidget:
 		# make sure the vdtools store the current matrices
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		
-		
 		glPushMatrix()
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D,self.itex)
@@ -1978,7 +1978,7 @@ class EMGLViewQtWidget:
 				print inst.args      # arguments stored in .args
 				print int
 			glPopMatrix()
-	
+
 	def isinwin(self,x,y):
 		for i in self.e2children:
 			if i.isinwin(x,y):
@@ -2382,7 +2382,6 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 	def hoverEvent(self,event):
 		self.floatwidget.hoverEvent(event)
 
-	
 	def getNearPlaneDims(self):
 		height = 2.0*self.zNear * tan(self.fov/2.0*pi/180.0)
 		width = self.aspect * height
@@ -2441,7 +2440,6 @@ class EMFloatingWidgetsCore:
 		
 		#print "initializeGL done"
 	def render(self):
-		
 		if ( self.initFlag == True ):
 			self.initFlag = False
 			self.fd = QtGui.QFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
