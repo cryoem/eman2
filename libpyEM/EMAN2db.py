@@ -48,6 +48,7 @@ def DB_cleanup(a1=None,a2=None):
 	if a1==2 :
 		print "Program interrupted, closing databases, please wait (%d)"%os.getpid() 
 	for d in DBDict.alldicts.keys(): d.close()
+	for e in EMAN2DB.opendbs.values(): e.close()
 	if a1==2 :
 		print "Databases closed, exiting" 
 		sys.exit(1)
@@ -68,7 +69,7 @@ def db_open_env(url):
 	qun=url.rfind("?")
 	if qun<0 : qun=len(url)
 	if sln<0 :
-		ddb=EMAN2DB.open_db()
+		ddb=EMAN2DB.open_db(".")
 		ddb.open_dict(url[4:qun])	# strip the ?xyz from the end if present
 		return ddb.__dict__[url[4:qun]]
 	ddb=EMAN2DB.open_db(url[4:sln])
@@ -283,7 +284,9 @@ class EMAN2DB:
 		"""This is an alternate constructor which may return a cached (already open)
 		EMAN2DB instance"""
 		# check the cache of opened dbs first
-		if not path : path=os.getcwd()
+#		if not path : path=os.getcwd()
+		if not path : path=os.getenv("HOME")+"/.eman2"
+		if path=="." or path=="./" : path=os.getcwd()
 		if EMAN2DB.opendbs.has_key(path) : return EMAN2DB.opendbs[path]
 		return EMAN2DB(path)
 	
@@ -292,7 +295,9 @@ class EMAN2DB:
 	def __init__(self,path=None):
 		"""path points to the directory containin the EMAN2DB subdirectory. None implies the current working directory"""
 		#if recover: xtraflags=db.DB_RECOVER
-		if not path : path=os.getcwd()
+#		if not path : path=os.getcwd()
+		if not path : path=os.getenv("HOME")+"/.eman2"
+		if path=="." or path=="./" : path=os.getcwd()
 		self.path=path
 		
 		# Keep a cache of opened database environments
@@ -311,10 +316,15 @@ class EMAN2DB:
 			
 		self.dbenv.open("%s/EMAN2DB/cache"%self.path,envopenflags)
 		
+	def close(self):
+		"""close the environment associated with this object"""
+		self.dbenv.close()
+		self.dbenv=None
 
 	def __del__(self):
-		self.dbenv=None
+		if not self.dbenv: return
 		for i in self.dicts.keys() : self.close_dict(i)
+		self.close()
 
 	def __getitem__(self,key):
 		return self.dicts[key]
@@ -391,11 +401,30 @@ class DBDict:
 		self.txn=txn
 
 	def get_attr(self,n,attr):
-		return loads(self.bdb.get(dumps(n,-1),txn=self.txn))[attr]
+		"""Returns an attribute or set of attributes for an image or set of images. n may be a single key or a list/tuple/set of keys,
+		and attr may be a single attribute or a list/tuple/set. Returns the attribute, a dict of attributes or a image keyed dict of dicts keyed by attribute"""
+		try :
+			ret={}
+			for i in n:
+				d=loads(self.bdb.get(dumps(i,-1),txn=self.txn))
+				if getattr(attr, '__iter__', False):
+					ret[i]={}
+					for a in attr:
+						if a in d : ret[i][a]=d[a]
+				else:
+					try: ret[i]=d[attr]
+					except: pass
+			return ret
+		except:
+			return loads(self.bdb.get(dumps(n,-1),txn=self.txn))[attr]
 		
-	def set_attr(self,n,attr,val):
+	def set_attr(self,n,attr,val=None):
+		"""Sets an attribute to val in EMData object 'n'. Alternatively, attr may be a dictionary containing multiple key/value pairs
+		to be updated in the EMData object. Unlike with get_attr, n must always refer to a single EMData object in the database."""
 		a=loads(self.bdb.get(dumps(n,-1),txn=self.txn))
-		a[attr]=val
+		if isinstance(attr,dict) :
+			a.update(attr)
+		else: a[attr]=val
 		self[n]=a
 
 	def __len__(self):

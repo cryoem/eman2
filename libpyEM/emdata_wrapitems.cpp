@@ -74,6 +74,10 @@ object emdata_getitem(object self, object key) {
             throw ImageDimensionException("Need 1, 2, or 3 indices.");
         }
     }
+	// If we got a string, then we'll check the metadata dictionary
+	extract<string> k(key);
+	if (k.check()) return object(s.get_attr(k));
+
     // not a tuple or an int, so bail
     throw TypeException("Expected 1, 2, or 3 *integer* indices", "");
 }
@@ -120,6 +124,12 @@ void emdata_setitem(object self, object key, object val) {
             throw ImageDimensionException("Need 1, 2, or 3 indices.");
         }
     }
+	extract<string> k(key);
+	extract<EMAN::EMObject> v(val);
+	if (k.check() && v.check()) 
+		s.set_attr(k,v);
+		return;
+
     throw TypeException("Expected 1, 2, or 3 integer indices", "");
 }
 

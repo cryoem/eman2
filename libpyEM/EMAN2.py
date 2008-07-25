@@ -50,10 +50,10 @@ EMANVERSION="EMAN2 v1.96"
 # behavior appropriately
 try:
 	import EMAN2db
-	DB=EMAN2db.EMAN2DB.open_db()
-	DB.open_dict("history")
+	HOMEDB=EMAN2db.EMAN2DB.open_db()
+	HOMEDB.open_dict("history")
 except:
-	DB=None
+	HOMEDB=None
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
@@ -87,13 +87,14 @@ def timer(fn,n=1):
 def E2init(argv) :
 	"""E2init(argv)
 This function is called to log information about the current job to the local logfile"""
-	global DB
-	if DB :
-		if not DB.history.has_key("count") : DB.history["count"]=1
-		else : DB.history["count"]+=1
-		n=DB.history["count"]
-		DB.history[n]={"host":socket.gethostname(),"pid":os.getpid(),"start":time.time(),"args":argv}
+	global HOMEDB
+	if HOMEDB :
+		if not HOMEDB.history.has_key("count") : HOMEDB.history["count"]=1
+		else : HOMEDB.history["count"]+=1
+		n=HOMEDB.history["count"]
+		HOMEDB.history[n]={"host":socket.gethostname(),"pid":os.getpid(),"start":time.time(),"args":argv,"path":os.getcwd()}
 	else:
+		print "Warning: EMAN2 missing BDB support"
 		try:
 			sdb=shelve.open(".eman2log")
 		except:
@@ -113,19 +114,19 @@ This function is called to log information about the current job to the local lo
 def E2end(n):
 	"""E2end(n)
 This function is called to log the end of the current job. n is returned by E2init"""
-	global DB
+	global HOMEDB
 	
-	if DB :
-		d=DB.history[n]
+	if HOMEDB :
+		d=HOMEDB.history[n]
 		d["end"]=time.time()
-		DB.history[n]=d
-		DB.close_dict("history")
+		HOMEDB.history[n]=d
+		HOMEDB.close_dict("history")
 	else :
-		DB=shelve.open(".eman2log")
-		d=DB[str(n)]
+		db=shelve.open(".eman2log")
+		d=db[str(n)]
 		d["end"]=time.time()
-		DB[str(n)]=d
-		DB.close()
+		db[str(n)]=d
+		db.close()
 	
 	return n
 

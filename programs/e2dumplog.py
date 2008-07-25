@@ -36,11 +36,15 @@
 # directory. The file is stored as a python 'shelve' file
 
 import shelve
-import sys
+import sys,os,time
+
+if len(sys.argv)>1 and sys.argv[1]=="--help" :
+	print "Usage:\ne2dumplog [--all]\n"
+	sys.exit(1)
 
 try:
 	import EMAN2db
-	db=EMAN2db.EMAN2DB()
+	db=EMAN2db.EMAN2DB.open_db()
 	db.open_dict("history")
 except:
 	db=None
@@ -52,8 +56,22 @@ if db:
 		print "no logfile"
 		sys.exit(0)
 	
-	for i in range(n):
-		print " ".join(db.history[i+1]["args"])
+	if len(sys.argv)>1 and (sys.argv[1]=="--all" or sys.argv[1]=="-A") :
+		ah={}
+		for i in range(n):
+			try: h=db.history[i+1]
+			except: print "Entry ",i," missing"
+			ah.setdefault(h["path"],[]).append(h)
+		for k in ah.keys():
+			print "---------- ",k
+			for i in ah[k]:
+				print time.ctime(i["start"]),"\t"," ".join(i["args"])
+	else:
+		for i in range(n):
+			try: h=db.history[i+1]
+			except: print "Entry ",i," missing"
+			if h["path"]==os.getcwd():
+				print time.ctime(h["start"]),"\t"," ".join(h["args"])
 else:
 	db=shelve.open(".eman2log")
 	try:
