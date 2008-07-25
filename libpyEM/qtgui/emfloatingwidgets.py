@@ -457,6 +457,19 @@ class EM3DWidget:
 		
 		self.decoration = EM3DPlainBorderDecoration(self)
 		
+		self.allow_target_wheel_events = True
+		
+		self.allow_target_translations = True
+		
+	def target_wheel_events_allowed(self,bool):
+		self.allow_target_wheel_events = bool
+	
+	def target_translations_allowed(self,bool):
+		self.allow_target_translations = bool
+	
+	def allow_camera_rotations(self,bool):
+		self.cam.allow_camera_rotations(bool)
+	
 	def context(self):
 		return self.parent.context()
 	
@@ -560,8 +573,7 @@ class EM3DWidget:
 			#self.drawable.inspector.show()
 			#self.drawable.inspector.hide()
 			#self.parent.addQtWidgetDrawer(self.getInspector())
-			
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.ControlModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
 			self.cam.mousePressEvent(event)
 		else:
 			self.target.mousePressEvent(event)
@@ -573,7 +585,8 @@ class EM3DWidget:
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.wheelEvent(event)
 		else:
-			self.target.wheelEvent(event)
+			if self.allow_target_wheel_events:
+				self.target.wheelEvent(event)
 			
 		#self.updateGL()
 	
@@ -681,9 +694,15 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		self.allow_child_mouse_events = True # turn off if you dont want the widgets in the rotary to receive event
 		
 		self.angle_range = 90.0	# the angular amount of the ellipse that is occupied by resident widgets
-		
+		self.allow_target_wheel_events = True
+		self.allow_target_translation = True
 	#def emit(self,signal,event,a,b):
 		#self.parent.emit(signal,event,a,b)
+	def target_zoom_events_allowed(self,bool):
+		self.allow_target_wheel_events = bool
+	
+	def target_translations_allowed(self,bool):
+		self.allow_target_translation = bool
 	
 	def set_angle_range(self,angle_range):
 		self.angle_range = angle_range
@@ -929,7 +948,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 		
 	def wheelEvent(self,event):
 		
-		if not self.is_animated and self.allow_child_mouse_events: 
+		if not self.is_animated and self.allow_child_mouse_events and self.allow_target_wheel_events: 
 			if self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
 				self.__get_visible().wheelEvent(event)
 				return
@@ -1194,16 +1213,24 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	
 	def __get_dt_2(self):
 		return (cos(2*pi*self.time/self.time_interval) + 1)/32.0 + 15.0/16.0
+	
+	def explicit_animation(self,rotations):
+		if self.is_animated == False: 
+			self.is_animated = True
+			self.__gen_animation_dthetas(True,rotations)
+			self.parent.register_animatable(self)
+		else:
+			self.__update_animation_dthetas(True,rotations)
 
-	def __update_animation_dthetas(self,counter_clockwise=True):
+	def __update_animation_dthetas(self,counter_clockwise=True,rotations=1):
 		if not counter_clockwise: #clockwise OpenGL rotations are negative
 			#self.rotations -= 1
-			self.anim_rotations -= 1
-			rotations = -1
+			self.anim_rotations -= rotations
+			rotations = -rotations
 		else: # counter clockwise OpenGL rotations are positive
 			#self.rotations += 1
-			self.anim_rotations += 1
-			rotations = 1
+			self.anim_rotations += rotations
+			rotations = rotations
 		
 		self.time_begin = time.time()
 		n = len(self.widgets)
@@ -1241,7 +1268,7 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 							self.angle_information[i][2] +=  -( 360-(current_thetas[idx2] - current_thetas[idx1]))
 						
 
-	def __gen_animation_dthetas(self,counter_clockwise=True):
+	def __gen_animation_dthetas(self,counter_clockwise=True,rotations=1):
 		# find the shortest path from the currently displayed to the target displayed widget
 				
 		#c_distance = self.target_displayed_widget # clockwise distance, looking down -y
@@ -1258,12 +1285,12 @@ class EMGLRotaryWidget(EM3DWidgetVolume):
 	
 		if not counter_clockwise: #clockwise OpenGL rotations are negative
 			#self.rotations -= 1
-			self.anim_rotations = -1
-			rotations = -1
+			self.anim_rotations = -rotations
+			rotations = -rotations
 		else: # counter clockwise OpenGL rotations are positive
 			#self.rotations += 1
-			self.anim_rotations = 1
-			rotations = 1
+			self.anim_rotations = rotations
+			rotations = rotations
 		
 		
 		if rotations <= -1: # clockwise

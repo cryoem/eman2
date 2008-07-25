@@ -4106,6 +4106,39 @@ The basic design of EMAN Processors: <br>\
 
 	/**ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.
 	 * @param int_shift_only 
+	 * @ingroup tested3c
+	 */
+	class PhaseToMassCenterProcessor:public Processor
+	{
+		public:
+			void process_inplace(EMData * image);
+
+			string get_name() const
+			{
+				return "xform.phasecenterofmass";
+			}
+
+			static Processor *NEW()
+			{
+				return new PhaseToMassCenterProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "centers the image the center of mass, which is calculated using Fourier phases, ignores old dx, dy.";
+			}
+		
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("int_shift_only", EMObject::INT);
+				return d;
+			}
+	};
+	
+	/**ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.
+	 * @param int_shift_only 
+	 * @ingroup tested3c
 	 */
 	class ToMassCenterProcessor:public Processor
 	{
@@ -4135,7 +4168,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
-	/**Center image using CCF with 180 degree rotation.
+	/**Center image using auto convolution with 180 degree rotation.
+	 * @ingroup tested3c
 	 */
 	class ACFCenterProcessor:public Processor
 	{

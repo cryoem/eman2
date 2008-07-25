@@ -68,6 +68,8 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImageMXRotary.allim[self]=0
 		
+		self.setFocusPolicy(Qt.StrongFocus)
+		
 		self.image_rotary = EMImageMXRotaryCore(data,self)
 		
 		self.imagefilename = None
@@ -176,7 +178,8 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 		GL.glLoadIdentity()
 		
 	
-		self.image_rotary.resize_event(-1,-1)
+		self.image_rotary.projection_or_viewport_changed()
+		
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
@@ -225,6 +228,8 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context to be created and this is what the True flag
 		# trying to stop.
+		return None
+	
 		return self.renderPixmap(0,0,True)
 		# to get around it we would have to render everything without display lists (a supreme pain).
 		
@@ -233,6 +238,9 @@ class EMImageMXRotary(QtOpenGL.QGLWidget):
 	
 	def get_core_object(self):
 		return self.image_rotary
+	
+	def keyPressEvent(self,event):
+		self.image_rotary.keyPressEvent(event)
 	
 class EMImageMXRotaryCore:
 
@@ -247,7 +255,7 @@ class EMImageMXRotaryCore:
 		if data:
 			self.setData(data)
 		
-		self.rotary = EMGLRotaryWidget(self,-15,-50,15,EMGLRotaryWidget.TOP_ROTARY,100)
+		self.rotary = EMGLRotaryWidget(self,0,-70,-15,EMGLRotaryWidget.TOP_ROTARY,100)
 		self.rotary.set_angle_range(110.0)
 		#self.rotary.set_child_mouse_events(False)
 		self.rotary.set_mmode("mxrotary")
@@ -272,6 +280,9 @@ class EMImageMXRotaryCore:
 		self.mmode = 'app'
 		self.rot_mode = 'app'
 		
+		self.display_help_hud = False
+		self.display_help = ["Wheel - Rotor Rotate","Ctrl+Wheel - Zoom", "Ctrl+Right Click - Move Rotor","Shift+Left Click - Delete Box"] 
+		
 		self.vals_to_display = ["Img #"]
 		
 		self.z_near = 0
@@ -290,14 +301,18 @@ class EMImageMXRotaryCore:
 		except:
 			self.font_render_mode = EMImageMXCore.GLUT
 	
+		self.disable_mx_zoom()
+		self.disable_mx_translate()
+	
 	def emit(self,signal,event,data,bool=None):
 		if bool==None:
 			self.parent.emit(signal,event,data)
 		else:
 			self.parent.emit(signal,event,data,bool)
 	
-	def set_selected(self,n):
-		print "set selected doesn't do anything yet",n
+	def set_selected(self,n,update_gl=True):
+		self.rotary[0].get_drawable().set_selected(n,update_gl)
+	
 	
 	def get_qt_parent(self):
 		return self.parent
@@ -314,6 +329,17 @@ class EMImageMXRotaryCore:
 	def context(self):
 		# asking for the OpenGL context from the parent
 		return self.parent.context()
+	
+	def is_visible(self,n):
+		img_offset = self.rotary[0].get_drawable().get_img_num_offset()
+		if n >= img_offset and n < (img_offset+self.mx_rows*self.mx_cols):
+			return True
+		else: return False
+	
+	def scroll_to(self,n,unused):
+		img_offset = self.rotary[0].get_drawable().get_img_num_offset()
+		scroll = (n-img_offset)/(self.mx_rows*self.mx_cols)
+		self.rotary.explicit_animation(-scroll)
 	
 	def set_mx_cols(self,cols):
 		self.mx_cols = cols
@@ -360,6 +386,18 @@ class EMImageMXRotaryCore:
 	def set_gamma(self,val):
 		self.gamma=val
 		self.update_min_max_gamma()
+	
+	def disable_mx_zoom(self):
+		'''
+		Disable mx zoom.
+		'''
+		self.rotary.target_zoom_events_allowed(False)
+		
+	def disable_mx_translate(self):
+		self.widget.target_translations_allowed(False)
+	
+	def allow_camera_rotations(self,bool=False):
+		self.widget.allow_camera_rotations(bool)
 	
 	def pop_box_image(self,idx):
 		val = self.emdata_list_cache.delete_box(idx)
@@ -452,18 +490,23 @@ class EMImageMXRotaryCore:
 		self.rot_mode = mode
 		self.rotary.set_mmode(mode)
 
-	def optimize_fit(self):
+	def optimize_fit(self,update_gl=True):
 		render_width = self.parent.width()
 		render_height = self.parent.height()
+		try:
+			self.mx_rows = render_width/self.emdata_list_cache.get_image_width()
+			self.mx_cols = render_height/self.emdata_list_cache.get_image_height()
+			if self.mx_rows == 0: self.mx_rows = 1
+			if self.mx_cols == 0: self.mx_cols = 1
+		except: return
 		
-		self.mx_rows = render_width/self.emdata_list_cache.get_image_width()
-		self.mx_cols = render_height/self.emdata_list_cache.get_image_height()
-		
-		self.inspector.set_n_cols(self.mx_cols)
-		self.inspector.set_n_rows(self.mx_rows)
+		try:
+			self.inspector.set_n_cols(self.mx_cols)
+			self.inspector.set_n_rows(self.mx_rows)
+		except: pass
 
 		self.__refresh_rotary(True)
-		self.updateGL()
+		if update_gl: self.updateGL()
 		
 	def set_frozen(self,frozen):
 		self.rotary.set_frozen(frozen)
@@ -543,8 +586,8 @@ class EMImageMXRotaryCore:
 		
 		self.render_width = self.parent.width()
 		self.render_height = self.parent.height()
-		width = self.mx_rows*self.emdata_list_cache.get_image_width()
-		height = self.mx_cols*self.emdata_list_cache.get_image_height()
+		width = self.mx_rows*(self.emdata_list_cache.get_image_width()+2)-2
+		height = self.mx_cols*(self.emdata_list_cache.get_image_height()+2)-2
 		scale1 = self.render_height/float(height)
 		scale2 = self.render_width/float(width)
 		
@@ -570,7 +613,6 @@ class EMImageMXRotaryCore:
 		self.rotary.clear_widgets()
 #		self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
 		num_per_view = self.mx_rows*self.mx_cols
-		print "regenerate rotary with",self.start_mx,self.visible_mxs
 		for idx in range(self.start_mx,self.start_mx+self.visible_mxs):
 			n = idx
 			
@@ -704,10 +746,18 @@ class EMImageMXRotaryCore:
 		self.updateGL()
 	def leaveEvent(self):
 		pass
+	
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_F1:
+			self.display_help_hud = not self.display_help_hud
+			self.updateGL()
 
 	def resize_event(self, width, height):
 		self.rotary.resize_event(width,height)
-		self.__refresh_rotary_size()
+		self.optimize_fit(False)
+	
+	def projection_or_viewport_changed(self):
+		self.rotary.resize_event(-1,1)
 	
 	def save_lst(self):
 		self.emdata_list_cache.save_lst()
@@ -724,7 +774,7 @@ class EMImageMXRotaryCore:
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		glOrtho(0,width,0,height,-100,100)
+		glOrtho(0,width,0,height,-200,200)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		glEnable(GL_LIGHTING)
@@ -737,14 +787,34 @@ class EMImageMXRotaryCore:
 		glDisable(GL_DEPTH_TEST)
 		glColor(1.0,1.0,1.0)
 		
-		glTranslate(10,height-1.2*self.font_renderer.get_face_size(),0)
-		glRotate(20,0,1,0)
+		
 		if self.font_render_mode == EMImageMXCore.FTGL:
 			panels = self.get_num_panels()
 			idx = self.start_mx
 			if idx != 0: idx %= panels
 			string = str(idx+1) + ' / ' + str(panels)
+			glPushMatrix()
+			glTranslate(10,height-1.2*self.font_renderer.get_face_size(),0)
+			glRotate(20,0,1,0)
 			self.font_renderer.render_string(string)
+			glPopMatrix()
+			if self.display_help_hud:
+				for i,s in enumerate(self.display_help):
+					glPushMatrix()
+					glTranslate(10,height-(i+2)*1.2*self.font_renderer.get_face_size(),0)
+					glRotate(20,0,1,0)
+					self.font_renderer.render_string(s)
+					glPopMatrix()
+					#string = str(s)
+					#bbox = self.font_renderer.bounding_box(string)
+					#x_offset = width-(bbox[3]-bbox[0]) - 10
+					#y_offset += 10
+					#glPushMatrix()
+					#glTranslate(x_offset,y_offset,0)
+					#glRotate(20,0,1,0)
+					#self.font_renderer.render_string(string)
+					#glPopMatrix()
+					#y_offset += bbox[4]-bbox[1]
 		else:
 			pass
 		
@@ -814,14 +884,38 @@ class EMDataListCache:
 		except: pass
 	
 	def get_image_width(self):
-		idx = self.start_idx
-		if idx != 0: idx = idx % self.max_idx
-		return self.images[idx].get_xsize()
+		if self.mode == EMDataListCache.FILE_MODE:
+			for i in self.images:
+				try:
+					if self.images[i] != None:
+						return self.images[i].get_xsize()
+				except: pass
+				
+			return 0
+		elif self.mode == EMDataListCache.LIST_MODE:
+			for i in self.images:
+				try: return i.get_xsize()
+				except: pass
+				
+				
+			return 0
 		
 	def get_image_height(self):
-		idx = self.start_idx
-		if idx != 0: idx = idx % self.max_idx
-		return self.images[idx].get_ysize()
+		if self.mode == EMDataListCache.FILE_MODE:
+			for i in self.images:
+				try:
+					if self.images[i] != None:
+						return self.images[i].get_ysize()
+				except: pass
+				
+			return 0
+		elif self.mode == EMDataListCache.LIST_MODE:
+			for i in self.images:
+				try: return i.get_ysize()
+				except: pass
+				
+				
+			return 0
 		
 	def delete_box(self,idx):
 		if self.mode == EMDataListCache.LIST_MODE and not self.soft_delete:
@@ -897,7 +991,7 @@ class EMDataListCache:
 	def get_num_images(self):
 		return len(self.images)
 	
-	def set_cache_size(self,cache_size,refresh=True):
+	def set_cache_size(self,cache_size,refresh=False):
 		if self.mode != EMDataListCache.LIST_MODE:
 			if cache_size > self.max_idx: self.cache_size = self.max_idx
 			else: self.cache_size = cache_size

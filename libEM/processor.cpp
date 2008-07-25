@@ -173,6 +173,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&AddMaskShellProcessor::NEW);
 
 	force_add(&ToMassCenterProcessor::NEW);
+	force_add(&PhaseToMassCenterProcessor::NEW);
 	force_add(&ACFCenterProcessor::NEW);
 	force_add(&SNRProcessor::NEW);
 
@@ -4499,6 +4500,32 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	}
 }
 
+void PhaseToMassCenterProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	int int_shift_only = params["int_shift_only"];
+
+	vector<float> pcog = image->phase_cog();
+
+	int dims = image->get_ndim();
+	
+	if (int_shift_only) {
+		int dx=-int(pcog[0]+0.5f),dy=0,dz=0;
+		if ( dims >= 2 ) dy = -int(pcog[1]+0.5);
+		if ( dims == 3 ) dz = -int(pcog[2]+0.5);
+		image->translate(dx,dy,dz);	
+	} else  {
+		float dx=-pcog[0],dy=0.0,dz=0.0;
+		if ( dims >= 2 ) dy = -pcog[1];
+		if ( dims == 3 ) dz = -pcog[2];
+		image->translate(dx,dy,dz);	
+	}
+}
+
 void ACFCenterProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -4508,8 +4535,11 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 	
 	Dict params1;
 	params1["intonly"] = 1;
-	params1["maxshift"] = image->get_xsize() / 4;
+	params1["maxshift"] = image->get_xsize() / 2;
+	// phaseorigin shift only needs to be used until P.Penczek resolves convolution issues relating to odd dimensions. This is as of July 24th 2008
+	image->process_inplace("xform.phaseorigin.tocorner");
 	EMData* aligned = image->align("translational", 0, params1);
+	image->process_inplace("xform.phaseorigin.tocenter");
 	int alix = (int)aligned->get_attr_default("align.dx",0);
 	int aliy = (int)aligned->get_attr_default("align.dy",0);
 	int aliz = (int)aligned->get_attr_default("align.dz",0);

@@ -114,7 +114,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	if (!to) {
 		cur_trans /= 2.0f; // If aligning the image to itself then only go half way - 
 	}
-
+	
 	int intonly = params["intonly"];
 
 	if (intonly) {

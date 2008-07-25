@@ -565,9 +565,10 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
 			self.get_2d_gui_image().addShape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
-			if not self.get_mx_gui_image().isVisible(box_num) : self.get_mx_gui_image().scrollTo(box_num,yonly=1)
-			self.get_mx_gui_image().set_selected(box_num)
+			object = self.get_mx_gui_image().get_core_object()
+			if object.is_visible(box_num) or True : self.get_mx_gui_image().get_core_object().set_selected([box_num],True)
 			self.mediator.update_all_image_displays()
+			
 
 	def mouse_drag(self,event) :
 		
@@ -593,8 +594,15 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			box = self.moving[0]
 			if box.isref:
 				self.mediator.reference_moved(box)
-			
-		self.moving=None
+			self.moving=None
+		
+		m = self.get_2d_gui_image().scr2img((event.x(),event.y()))
+		box_num = self.mediator.detect_box_collision(m)
+		if box_num != -1 and not event.modifiers()&Qt.ShiftModifier:
+			object = self.get_mx_gui_image().get_core_object()
+			if not object.is_visible(box_num) : object.scroll_to(box_num,True)
+			self.get_mx_gui_image().get_core_object().set_selected([box_num],True)
+			self.mediator.update_all_image_displays()
 
 class GUIboxEventsMediator:
 	'''
@@ -778,12 +786,21 @@ class GUIbox:
 			self.anchoring = self.autoboxer.anchor_on()
 			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
 		except:
-			if self.box_size == -1:
-				if box_size == -1: self.box_size = 128
-				else: self.box_size = box_size
-			self.autoboxer = SwarmAutoBoxer(self)
-			self.autoboxer.box_size = self.box_size
-			self.autoboxer.set_mode(self.dynapix,self.anchoring)
+			try:
+				trim_autoboxer = project_db["current_autoboxer"]
+				self.autoboxer = SwarmAutoBoxer(None)
+				self.autoboxer.become(trim_autoboxer)
+				self.autoboxer_name = self.autoboxer.get_unique_stamp()
+				self.dynapix = self.autoboxer.dynapix_on()
+				self.anchoring = self.autoboxer.anchor_on()
+				if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
+			except:	
+				if self.box_size == -1:
+					if box_size == -1: self.box_size = 128
+					else: self.box_size = box_size
+				self.autoboxer = SwarmAutoBoxer(self)
+				self.autoboxer.box_size = self.box_size
+				self.autoboxer.set_mode(self.dynapix,self.anchoring)
 			##print "loaded a new autoboxer"
 		
 		self.eraseradius = 2*self.box_size
@@ -820,8 +837,11 @@ class GUIbox:
 		
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		glflags = EMOpenGLFlagsAndTools()
-		if False and not glflags.npt_textures_unsupported():
+		if not glflags.npt_textures_unsupported():
 			self.guimx=EMImageMXRotary()		# widget for displaying image thumbs
+			self.guimx.get_core_object().disable_mx_zoom()
+			self.guimx.get_core_object().allow_camera_rotations(False)
+			self.guimx.get_core_object().disable_mx_translate()
 		else: self.guimx=EMImageMX()	
 		
 		
@@ -1063,8 +1083,7 @@ class GUIbox:
 		
 		# Should this be here?
 		box_num = len(self.get_boxes())
-		#if not self.guimx.isVisible(box_num) : self.guimx.scrollTo(box_num,yonly=1)
-		self.guimx.set_selected(box_num)
+		#self.guimx.get_core_object().set_selected([box_num])
 		
 		# autoboxer will autobox depending on the state of its mode
 		if box.isref : self.autoboxer.add_reference(box)
@@ -1103,7 +1122,7 @@ class GUIbox:
 					self.guimxp = EMParentWin(self.guimx)
 					self.guimxp.setWindowTitle("Particles")
 					self.guimxp.show()
-					self.guimx.set_selected(0)
+					#self.guimx.get_core_object().set_selected([0])
 	
 	def clear_displays(self):
 		self.ptcl = []
@@ -1146,7 +1165,17 @@ class GUIbox:
 					self.guictl.set_dynapix(self.dynapix)
 					self.guictl.set_anchor(self.anchoring)
 				except:
-					self.autoboxer = ab_failure
+					try:
+						trim_autoboxer = project_db["current_autoboxer"]
+						self.autoboxer = SwarmAutoBoxer(None)
+						self.autoboxer.become(trim_autoboxer)
+						self.autoboxer_name = self.autoboxer.get_unique_stamp()
+						self.dynapix = self.autoboxer.dynapix_on()
+						self.anchoring = self.autoboxer.anchor_on()
+						self.guictl.set_dynapix(self.dynapix)
+						self.guictl.set_anchor(self.anchoring)
+					except:
+						self.autoboxer = ab_failure
 					
 			if self.dynapix:
 				self.autoboxer.regressiveflag = True
@@ -1244,15 +1273,19 @@ class GUIbox:
 		return 1
 		
 	def get_image_thumb(self,i):
-		n = self.get_image_thumb_shrink()
 		
-		bic = BigImageCache()
-		image=bic.get_image(self.image_names[i])
-		
-		#while n > 1:
-			#image = image.process("math.meanshrink",{"n":2})
-			#n /= 2
-		image = image.process("math.meanshrink",{"n":n})
+		image = get_idd_key_entry(self.image_names[i],"e2boxer_image_thumb")
+		if image == None:
+			n = self.get_image_thumb_shrink()
+			
+			bic = BigImageCache()
+			image=bic.get_image(self.image_names[i])
+			
+			#while n > 1:
+				#image = image.process("math.meanshrink",{"n":2})
+				#n /= 2
+			image = image.process("math.meanshrink",{"n":n})
+			set_idd_key_entry(self.image_names[i],"e2boxer_image_thumb",image)
 		return image
 		
 	def get_image_thumb_shrink(self):
@@ -1296,7 +1329,7 @@ class GUIbox:
 		im=lc[0]
 		self.boxm = [event.x(),event.y(),im]
 		self.guiim.setActive(im,.9,.9,.4)
-		self.guimx.set_selected(im)
+		#self.guimx.get_core_object.set_selected(im)
 		boxes = self.get_boxes()
 		self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		
@@ -1306,7 +1339,9 @@ class GUIbox:
 		im=lc[0]
 		self.boxm = [event.x(),event.y(),im]
 		self.guiim.setActive(im,.9,.9,.4)
-		#self.guimx.set_selected(im)
+		#object = self.guimx.get_core_object()
+		#if not object.is_visible(lc[0]) : object.scroll_to(lc[0],True)
+		#self.get_mx_gui_image().get_core_object().set_selected([lc[0]],True)
 		boxes = self.get_boxes()
 		#self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		#try:
@@ -1471,8 +1506,9 @@ class GUIbox:
 		self.guiim.setActive(None,.9,.9,.4)
 		
 		if force_image_mx_remove: 
-			self.ptcl.pop(box_num)
-			self.guimx.setData(self.ptcl)
+			#self.ptcl.pop(box_num)
+			#self.guimx.setData(self.ptcl)
+			self.guimx.get_core_object().pop_box_image(box_num)
 
 		box = self.boxable.boxes[box_num]
 		

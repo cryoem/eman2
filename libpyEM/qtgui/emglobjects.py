@@ -715,6 +715,10 @@ class Camera2:
 		self.mpressy = -1
 
 		
+	def allow_camera_rotations(self,bool=True):
+		self.enablerotation = bool
+
+		
 	def loadIdentity(self):
 		self.scale = 1.0
 		

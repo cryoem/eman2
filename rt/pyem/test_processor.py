@@ -44,7 +44,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 147)
+        self.assertEqual(len(processor_names), 148)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -1587,51 +1587,44 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('mask.addshells', {'nshells':3})
         
+    def test_xform_phasecenterofmass(self):
+		"""test xform.phasecenterofmass processor ..........."""
+		self.centring_test("xform.phasecenterofmass",1)
     def test_xform_centerofmass(self):
-        """test xform.centerofmass processor ................"""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e.is_complex(), False)
-        
-        e.process_inplace('xform.centerofmass', {'int_shift_only':2})
-        
+		"""test xform.centerofmass processor ................"""
+		self.centring_test("xform.centerofmass",1)
+    def centring_test(self,processor_string,val=1):
+		# 2D and 3D alignment test using a pixel value (val arg) offset one positive pixel from the origin in all directions
+		# process_string should be either 
+		if val == 0:
+			print  "error, you can't use 0 as the value, the function is not capable of handling it"
+			return
+		for z in 1,8,9:
+			for y in 8,9:
+				for x in 8,9:
+					
+					e = EMData(x,y,z)
+					if z != 1:
+						e.set(x/2+1,y/2+1,z/2+1,val)
+					else:
+						e.set(x/2+1,y/2+1,val)
+				
+					e.process_inplace(processor_string)
+					if val > 0:
+						mx = e.calc_max_location()
+					elif val < 0:
+						mx = e.calc_min_location()
+					
+					self.failIf(mx[0] != x/2)
+					self.failIf(mx[1] != y/2)
+					
+					if z != 1:
+						self.failIf(mx[2] != z/2)
+
     def test_xform_centeracf(self):
 		"""test xform.centeracf processor ..................."""
-		e = EMData()
-		e.set_size(32,32,32)
-		e.process_inplace('testimage.noise.uniform.rand')
-		self.assertEqual(e.is_complex(), False)
-		
-		e.process_inplace('xform.centeracf', {})
-		
-		# 2D alignment
-		# this test translates the 2d 'scurve' image, centers it using the acf method, and correlates
-		# the result with the original image - The peak in the correlation image must be within
-		# 1 pixel of the origin for this test to pass
-		e = test_image()
-		e.translate(10,10,0)
-		e.process_inplace('xform.centeracf')
-		f = e.calc_ccf(test_image())
-		coords = f.calc_max_location_wrap(-1,-1,-1)
-		
-		self.failIf(coords[0] > 1)
-		self.failIf(coords[1] > 1)
-		
-		# 3D alignment
-		# this test translates the 3d 'axes' image, centers it using the acf method, and correlates
-		# the result with the original image - The peak in the correlation image must be within
-		# 1 pixel of the origin for this test to pass
-		e = test_image_3d()
-		e.translate(10,10,10)
-		e.process_inplace('xform.centeracf')
-		f = e.calc_ccf(test_image_3d())
-		coords = f.calc_max_location_wrap(-1,-1,-1)
-		self.failIf(coords[0] > 1)
-		self.failIf(coords[1] > 1)
-		self.failIf(coords[2] > 1)
-		
-
+		self.centring_test("xform.centeracf",1)
+		self.centring_test("xform.centeracf",-1)
     def no_test_eman1_filter_snr(self):
         """test eman1.filter.snr processor .................."""
         e = EMData()

@@ -155,15 +155,6 @@ class EMImageMX(QtOpenGL.QGLWidget):
 
 	def dropEvent(self,event):
 		self.imagemx.dropEvent(event)
-		
-	def isVisible(self,n):
-		return self.imagemx.isVisible(n)
-	
-	def set_selected(self,n):
-		return self.imagemx.set_selected(n)
-	
-	def scrollTo(self,n,yonly):
-		return self.imagemx.scrollTo(n,yonly)
 	
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
@@ -172,6 +163,9 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	
 	def get_qt_parent(self):
 		return self
+	
+	def get_core_object(self):
+		return self.imagemx
 
 class EMMXCoreMouseEvents:
 	'''
@@ -233,8 +227,8 @@ class EMMXCoreMouseEventsMediator:
 	def get_box_image(self,idx):
 		return self.target.get_box_image(idx)
 	
-	def pop_box_image(self,idx,redraw=False):
-		self.target.pop_box_image(idx,redraw)
+	def pop_box_image(self,idx,event=None,redraw=False):
+		self.target.pop_box_image(idx,event,redraw)
 	
 	def get_density_max(self):
 		return self.target.get_density_max()
@@ -245,8 +239,8 @@ class EMMXCoreMouseEventsMediator:
 	def emit(self,signal,event,data,bool=None):
 		self.target.emit(signal,event,data,bool)
 
-	def set_selected(self,selected):
-		self.target.set_selected(selected)
+	def set_selected(self,selected,update_gl=True):
+		self.target.set_selected(selected,update_gl)
 		
 	def force_dl_update(self):
 		self.target.force_dl_update() 
@@ -262,9 +256,8 @@ class EMMXDelMouseEvents(EMMXCoreMouseEvents):
 		if event.button()==Qt.LeftButton:
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 			if lc != None:
-				self.mediator.pop_box_image(lc[0],False)
+				self.mediator.pop_box_image(lc[0],event,False)
 				self.mediator.force_dl_update()
-				self.mediator.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
 
 
 class EMMXDragMouseEvents(EMMXCoreMouseEvents):
@@ -306,7 +299,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 			if lc:
 				self.mediator.emit(QtCore.SIGNAL("mousedown"),event,lc)
-				self.mediator.set_selected(lc)
+				self.mediator.set_selected([lc[0]],True)
 			
 	def mouse_move(self,event):
 		if event.buttons()&Qt.LeftButton:
@@ -320,9 +313,9 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				self.mediator.emit(QtCore.SIGNAL("mouseup"),event,lc)
 			else:
 				if lc != None:
-					self.mediator.pop_box_image(lc[0],False)
+					self.mediator.pop_box_image(lc[0],event,False)
 					self.mediator.force_dl_update()
-					self.mediator.emit(QtCore.SIGNAL("boxdeleted"),event,lc,False)
+					
 	
 	def mousePressEvent(self, event):
 		lc=self.scr_to_img((event.x(),event.y()))
@@ -427,16 +420,18 @@ class EMImageMXCore:
 	def get_parent(self):
 		return self.parent.get_qt_parent()
 	
-	def pop_box_image(self,idx,update_gl=False):
+	def pop_box_image(self,idx,event=None,update_gl=False):
 		if self.reroute_delete_target  == None:
 			d = self.data.pop(idx)
+			self.display_states = []
+			if event != None: self.emit(QtCore.SIGNAL("boxdeleted"),event,[idx],False)
 			if update_gl:
 				self.display_states = [] 
 				self.updateGL()
 			return d
 		else:
-			print "rerouted delete"
 			self.reroute_delete_target.pop_box_image(idx)
+			if event != None: self.emit(QtCore.SIGNAL("boxdeleted"),event,[idx],False)
 
 	def get_box_image(self,idx):
 		return self.data[idx]
@@ -1069,11 +1064,11 @@ class EMImageMXCore:
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.parent.height() or self.data[0].get_xsize()*self.scale>self.parent.width()):
 			self.scale=min(float(self.parent.height())/self.data[0].get_ysize(),float(self.parent.width())/self.data[0].get_xsize())
 
-	def isVisible(self,n):
+	def is_visible(self,n):
 		try: return self.coords[n][4]
 		except: return False
 	
-	def scrollTo(self,n,yonly=0):
+	def scroll_to(self,n,yonly=0):
 		"""Moves image 'n' to the center of the display"""
 #		print self.origin,self.coords[0],self.coords[1]
 #		try: self.origin=(self.coords[n][0]-self.width()/2,self.coords[n][1]+self.height()/2)
@@ -1092,8 +1087,15 @@ class EMImageMXCore:
 	def set_selected(self,numlist,update_gl=True):
 		"""pass an integer or a list/tuple of integers which should be marked as 'selected' in the
 		display"""
-		if isinstance(numlist,int) : numlist=[numlist]
-		if isinstance(numlist,list) or isinstance(numlist,tuple) : self.selected=numlist
+		real_numlist = []
+		for i in numlist:
+			t = i-self.get_img_num_offset()
+			if t != 0:
+				t %= len(self.data)
+			real_numlist.append(t)
+
+		if isinstance(numlist,int) : numlist=[real_numlist]
+		if isinstance(numlist,list) or isinstance(real_numlist,tuple) : self.selected=real_numlist
 		else : self.selected=[]
 		self.force_dl_update()
 		if update_gl: self.updateGL()
