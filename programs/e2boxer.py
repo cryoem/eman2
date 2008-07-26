@@ -841,7 +841,8 @@ class GUIbox:
 			self.guimx.get_core_object().disable_mx_zoom()
 			self.guimx.get_core_object().allow_camera_rotations(False)
 			self.guimx.get_core_object().disable_mx_translate()
-			self.fancy_mode = GUIbox.FANCY_MODE
+			#self.fancy_mode = GUIbox.FANCY_MODE
+			self.fancy_mode = GUIbox.PLAIN_MODE # for now just make sure the fancy stuff isn't used
 		else:
 			self.guimx=EMImageMX()	
 			self.fancy_mode = GUIbox.PLAIN_MODE
