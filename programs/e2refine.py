@@ -61,7 +61,7 @@ def main():
 	parser.add_option("--projfile", dest = "projfile", type = "string", default="e2proj.img", help="The file that will contain the projection images")
 	
 	# options associated with e2simmx.py
-	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate")
+	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip")
 	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments",default="dot")
 	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
 	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
