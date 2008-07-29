@@ -35,6 +35,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from emimage2d import *
 from emimagemx import *
+from emimagemxrotor import *
 from emimage3d import *
 from emimageutil import EMParentWin
 from OpenGL import GL,GLU,GLUT

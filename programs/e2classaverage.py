@@ -170,6 +170,7 @@ def main():
 		averager_parms=parsemodopt(options.averager)
 		
 		if ( not options.bootstrap ):
+			if options.verbose: print "generating the original class average using alignment parameters in the classification matrix"
 			# generate the first class average by applying the transformations, adding and finally normalizing...
 			averager=Averagers.get(averager_parms[0], averager_parms[1])
 			# do the initial average, based on the program inputs
@@ -216,6 +217,7 @@ def main():
 			average.process_inplace("xform.centeracf")
 		else:
 			# generate a bootstrapped initial average. Do this 'inductively' by aligning the 2nd image to the first, then adding. Continue until done...
+			if options.verbose: print "bootstrapping the original class average"
 			average = None
 			np = 0
 			for p in range(0,num_part):
@@ -233,6 +235,7 @@ def main():
 								average = images[p].copy()
 								#average.process_inplace("xform.centerofmass")
 								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+							#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							np = 1
 						else:
 							if (options.lowmem): 
@@ -244,19 +247,23 @@ def main():
 							
 							#ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 							
+							#g = ta.calc_ccf(average)
+							#d = g.calc_max_location_wrap(-1,-1,1)
+							#if d[0] != 0 or d[1] != 0:
+								#display(ta)
+								#display(average)
+							
 							np += 1
 							#frac = 1.0/float(np)
 							#omfrac = 1.0 - frac
 							#ta.mult(frac) # be careful about the weighting
 							#average.mult(omfrac) # be carefult about the weighting
 							average.add(ta) # now add the image
-							#if ta.get_attr('align.flip') != 0:
-								#image.process_inplace("xform.flip", {"axis":"x"});
-							#average.process_inplace("xform.centerofmass")
+
 			
 			average/=np
 			average.process_inplace("xform.centeracf")
-			#average.write_image("avg.img",-1)
+			average.write_image("avg.hdf",-1)
 			#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.process_inplace("normalize.edgemean")
 					
@@ -283,18 +290,20 @@ def main():
 					image.read_image(args[0],p)
 				else: image = images[p]
 					
-				ta = align(image,average,options)
+				ta = align(image,average.copy(),options)
 				#ta.write_image("ta"+str(cl)+".img",-1)
+				#g = ta.calc_ccf(average)
+				#d = g.calc_max_location_wrap(-1,-1,1)
+				#if d[0] != 0 or d[1] != 0:
+					#ta.translate(-d[0],-d[1],0)
+					#print "origin off",d
+				
 				
 				# store the refined translational and rotational values
 				dx.set(c,p, ta.get_attr_default("align.dx",0))
 				dy.set(c,p, ta.get_attr_default("align.dy",0))
 				da.set(c,p, ta.get_attr_default("align.az",0))
 				try: dflip.set(c,p, ta.get_attr_default("align.flip",0))
-				except:pass
-				try:
-					if ta.get_attr('align.flip') != 0:
-						image.process_inplace("xform.flip", {"axis":"x"});
 				except:pass
 				
 				# store the quality score on top of the weights, seeing as the starting weights are no longer required
@@ -343,9 +352,6 @@ def main():
 					else: weights.set(c,p,1)
 				else: weights.set(c,p,1)
 				
-				t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
-				t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
-				
 				if (options.lowmem):
 					image = EMData()
 					image.read_image(args[0],p)
@@ -354,16 +360,25 @@ def main():
 				
 				try:
 					if dflip.get(c,p) != 0:
-						image.process_inplace("xform.flip", {"axis":"x"});
+						image.process_inplace("xform.flip", {"axis":"y"});
 				except:pass
 					
+					
+				t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
+				t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
+				
 				image.rotate_translate(t3d)
+				#image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+				#image.rotate(da.get(c,p),0,0)
 				#image.process_inplace("mask.sharp",{"outer_radius":image.get_xsize()/2})
+				#g = image.calc_ccf(average)
+				#d = g.calc_max_location_wrap(-1,-1,1)
+				#if d[0] != 0 or d[1] != 0:
+					#print "origin off",d
+					#image.translate(d[0],d[1],0)
 				np += 1
 				averager.add_image(image)
-				
-				
-			
+
 			if options.verbose:
 				ndata.append(np)
 		
@@ -378,6 +393,7 @@ def main():
 			#average.write_image("avg.img",-1)
 			#should this be centeracf?
 			average.process_inplace("xform.centerofmass")
+			#image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 			
 		# extract euler data from the ref image, if it was specified
 		if ( options.ref  ):
@@ -496,7 +512,9 @@ def check(options, verbose=False):
 					if (verbose):
 						print "Error - the dimensions of the reference and particle images do not match"
 
-	
+	if options.align == None:
+		print "Error: you must specify the align argument"
+		error = True
 	#if ( options.keep and options.keepsig ):
 		#error = True
 		#if ( verbose ):

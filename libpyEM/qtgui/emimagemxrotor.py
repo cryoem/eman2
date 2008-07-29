@@ -244,8 +244,7 @@ class EMImageMXRotorCore:
 		except:	pass
 
 		self.initsizeflag = True
-		if data:
-			self.setData(data)
+	
 		
 		self.rotor = EMGLRotorWidget(self,0,-70,-15,EMGLRotorWidget.TOP_ROTARY,100)
 		self.rotor.set_angle_range(110.0)
@@ -295,7 +294,8 @@ class EMImageMXRotorCore:
 	
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
-	
+		if data:
+			self.setData(data)
 	def get_inspector(self):
 		return self.inspector
 	

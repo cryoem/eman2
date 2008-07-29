@@ -48,7 +48,8 @@ from emimage3d import *
 from emimagemx import *
 from math import sqrt
 
-from emimage import EMImage
+try: from emimage import EMImage
+except: pass
 
 from emglobjects import EMViewportDepthTools, Camera2, EMBasicOpenGLObjects, Camera
 from emimage2dtex import *

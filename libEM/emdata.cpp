@@ -1242,14 +1242,14 @@ void EMData::rotate_translate(const Transform3D & RA)
 							k7 -= nxy;
 						}
 						
-						des_data[l] = Util::trilinear_interpolate(src_data[ii],
-							  src_data[ii + 1],
-							  src_data[ii + nx],
-							  src_data[ii + nx + 1],
-							  src_data[ii + nx * ny],
-							  src_data[ii + nxy + 1],
-							  src_data[ii + nxy + nx],
-							  src_data[ii + nxy + nx + 1],
+						des_data[l] = Util::trilinear_interpolate(src_data[k0],
+							  src_data[k1],
+							  src_data[k2],
+							  src_data[k3],
+							  src_data[k4],
+							  src_data[k5],
+							  src_data[k6],
+							  src_data[k7],
 							  tuvx, tuvy, tuvz);
 #if EMDATA_EMAN2_DEBUG
 						printf(" ix=%d \t iy=%d \t iz=%d \t value=%f \n", ix ,iy, iz, des_data[l] );
