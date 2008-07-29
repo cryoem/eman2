@@ -753,11 +753,12 @@ namespace EMAN
 			d.put("npad",		EMObject::INT);
 			d.put("sign",		EMObject::INT);
 			d.put("ndim",		EMObject::INT);
+			d.put("snr",		EMObject::FLOAT);
 			d.put("symmetry",	EMObject::STRING);
 			d.put("snr",		EMObject::FLOAT);
 			d.put("fftvol",		EMObject::EMDATA);
 			d.put("weight",		EMObject::EMDATA);
-            d.put("weighting",      EMObject::INT);
+			d.put("weighting",      EMObject::INT);
 			return d;
 		}
 
@@ -784,7 +785,7 @@ namespace EMAN
 		void buildNormVolume();
 		float m_wghta;
 		float m_wghtb;
-
+		float m_osnr;
 		void load_default_settings()
 		{
 			//params["use_weights"] = false;
@@ -844,7 +845,6 @@ namespace EMAN
 		void setup( const string& symmetry, int size, int npad);
 
 		int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
-
 
 	  private:
 		EMData* m_volume;
@@ -972,6 +972,7 @@ namespace EMAN
 
 		int insert_padfft_slice( EMData* padfft, const Transform3D& trans, int mult=1);
 
+		int insert_buffed_slice( const EMData* buffer, int mult );
 	  private:
 		EMData* m_volume;
 		EMData* m_result;
@@ -1138,6 +1139,32 @@ namespace EMAN
 
 	void dump_reconstructors();
 	map<string, vector<string> > dump_reconstructors_list();
+
+
+        class newfile_store
+        {
+        public:
+		newfile_store( const string& prefix, int npad );
+
+		virtual ~newfile_store();
+
+		void add_image( EMData* data );
+
+		void get_image( int id, EMData* buf );
+
+		void restart( );
+
+	private:
+		int m_npad;
+
+		string m_bin_file;
+		string m_txt_file;
+
+		shared_ptr<std::ofstream> m_bin_of;
+		shared_ptr<std::ofstream> m_txt_of;
+		shared_ptr<std::ifstream> m_bin_if;
+		vector< std::istream::off_type > m_offsets;
+	};
 
 	class file_store
 	{

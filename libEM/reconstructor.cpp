@@ -2019,6 +2019,14 @@ void nn4Reconstructor::setup()
 		m_ndim = 3;
 	}
 
+    if( params.has_key( "snr" ) )
+    {
+        m_osnr = 1.0/float( params["snr"] );
+    }
+    else
+    {
+        m_osnr = 0.0;
+    }
 
 	setup( symmetry, size, npad );
 }
@@ -2226,14 +2234,13 @@ EMData* nn4Reconstructor::finish()
 		alpha = ( 1.0f - 1.0f/(float)ara ) / max;
 	}
 
-	
 	int ix,iy,iz;
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
 					float tmp;
-					tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
+					tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+m_osnr);
 
 					if( m_weighting == ESTIMATE ) {
 						int cx = ix;
@@ -2863,22 +2870,28 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 		return 1;
 	}
 
-    int padffted= slice->get_attr_default("padffted", 0);
-    
+	int buffed = slice->get_attr_default( "buffed", 0 );
+        if( buffed > 0 )
+        {
+            int mult = slice->get_attr_default( "mult", 1 );
+            insert_buffed_slice( slice, mult );
+            return 0;
+        }
 
-	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
+	int padffted= slice->get_attr_default("padffted", 0);
+	if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
         {
 		// FIXME: Why doesn't this throw an exception?
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
 	}
 
-    EMData* padfft = NULL;
+	EMData* padfft = NULL;
 
-    if( padffted != 0 ) padfft = new EMData(*slice);
-    else                padfft = padfft_slice( slice, m_npad );
+	if( padffted != 0 ) padfft = new EMData(*slice);
+	else                padfft = padfft_slice( slice, m_npad );
 
-    int mult= slice->get_attr_default("mult", 1);
+	int mult= slice->get_attr_default("mult", 1);
     
 	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
@@ -2886,6 +2899,30 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 	checked_delete( padfft );
 
 	return 0;
+}
+
+int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, int mult )
+{
+    const float* bufdata = buffed->get_data();
+    float* cdata = m_volume->get_data();
+    float* wdata = m_wptr->get_data();
+
+    int npoint = buffed->get_xsize()/4;
+    for( int i=0; i < npoint; ++i )
+    {
+
+        int pos2 = int( bufdata[4*i] );
+        int pos1 = pos2 * 2;
+        cdata[pos1  ] += bufdata[4*i+1]*mult;
+        cdata[pos1+1] += bufdata[4*i+2]*mult;
+        wdata[pos2  ] += bufdata[4*i+3]*mult;
+/*
+        std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
+        std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
+        std::cout << pos2 << " " << bufdata[5*i+4] << std::endl;
+ */
+    }
+    return 0;
 }
 
 int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
@@ -3476,6 +3513,199 @@ map<string, vector<string> > EMAN::dump_reconstructors_list()
 	return dump_factory_list < Reconstructor > ();
 }
 
+
+float get_ctf( int winsize, float voltage, float pixel, float Cs, float amp_contrast, float b_factor, float defocus, int r2 )
+{
+	Cs      = Cs * 1.0e7f;
+        float winsize2= winsize*winsize;
+        float wgh=atan( amp_contrast/(1.0f-amp_contrast) );
+	float lambda = 12.398f/std::sqrt(voltage*(1022.f+voltage));
+	float ak = std::sqrt( r2/float(winsize2) )/pixel;
+	float a = lambda*ak*ak;
+	float b = lambda*a*a;
+	float ctf = -sin(-M_PI*(defocus*a-Cs*b/2.0f)-wgh);
+        return ctf;
+}
+
+
+using std::ofstream;
+using std::ifstream;
+
+
+newfile_store::newfile_store( const string& filename, int npad )
+    : m_bin_file( filename + ".bin" ),
+      m_txt_file( filename + ".txt" )
+{
+    m_npad = npad;
+}
+
+newfile_store::~newfile_store( )
+{  
+}
+
+void newfile_store::add_image( EMData* emdata )
+{
+    if( m_bin_of == NULL )
+    {
+        m_bin_of = shared_ptr<ofstream>( new ofstream(m_bin_file.c_str(), std::ios::out|std::ios::binary) );
+        m_txt_of = shared_ptr<ofstream>( new ofstream(m_txt_file.c_str()) );
+    }
+
+    EMData* padfft = padfft_slice( emdata, m_npad );
+
+    int nx = padfft->get_xsize();
+    int ny = padfft->get_ysize();
+    int n2 = ny / 2;
+    int n = ny;
+
+    float defocus = emdata->get_attr( "defocus" );
+    float voltage = emdata->get_attr( "voltage" );
+    float pixel = emdata->get_attr( "Pixel_size" );
+    float amp_contrast = emdata->get_attr( "amp_contrast" );
+    float Cs = emdata->get_attr( "Cs" );
+    float b_factor = 0.0;
+    float phi = emdata->get_attr( "phi" );
+    float tht = emdata->get_attr( "theta" );
+    float psi = emdata->get_attr( "psi" );
+    Transform3D tf( Transform3D::SPIDER, phi, tht, psi );
+
+    vector<float> points;
+
+    for( int j=-ny/2+1; j <= ny/2; j++ )
+    {
+        int jp = (j>=0) ? j+1 : ny+j+1;
+        for( int i=0; i <= n2; ++i )
+        {
+            int r2 = i*i + j*j;
+            if( (r2<ny*ny/4) && !( (i==0) && (j<0) ) ) 
+            {
+                float ctf = get_ctf( ny, voltage, pixel, Cs, amp_contrast, b_factor, defocus, r2);
+                float xnew = i*tf[0][0] + j*tf[1][0];
+                float ynew = i*tf[0][1] + j*tf[1][1];
+                float znew = i*tf[0][2] + j*tf[1][2];
+		std::complex<float> btq;
+		if (xnew < 0.) 
+                {
+                    xnew = -xnew;
+                    ynew = -ynew;
+                    znew = -znew;
+                    btq = conj(padfft->cmplx(i,jp-1));
+                } 
+                else  
+                {
+                    btq = padfft->cmplx(i,jp-1);
+                }
+
+                int ixn = int(xnew + 0.5 + n) - n;
+                int iyn = int(ynew + 0.5 + n) - n;
+                int izn = int(znew + 0.5 + n) - n;
+                if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) 
+                {
+                    int ixf, iyf, izf;
+                    if (ixn >= 0) 
+                    {
+                        int iza, iya;
+                        if (izn >= 0)  
+                            iza = izn + 1;
+                        else           
+                            iza = n + izn + 1;
+
+                        if (iyn >= 0) 
+                            iya = iyn + 1;
+                        else          
+                            iya = n + iyn + 1;
+                    
+                        ixf = ixn;
+                        iyf = iya;
+                        izf = iza;
+                    } 
+                    else 
+                    {
+                        int izt, iyt;
+                        if (izn > 0) 
+                            izt = n - izn + 1;
+                        else         
+                            izt = -izn + 1;
+
+                        if (iyn > 0) 
+                            iyt = n - iyn + 1;
+                        else         
+                            iyt = -iyn + 1;
+
+                        ixf = -ixn;
+                        iyf = iyt;
+                        izf = izt;
+                    }
+
+
+                    int pos2 = ixf + (iyf-1)*nx/2 + (izf-1)*ny*nx/2;
+                    float ctfv1 = btq.real() * ctf;
+                    float ctfv2 = btq.imag() * ctf;
+                    float ctf2 = ctf*ctf;
+
+                    points.push_back( float(pos2) );
+                    points.push_back( ctfv1 );
+                    points.push_back( ctfv2 );
+                    points.push_back( ctf2 );
+                }
+	    }
+        }
+    }
+
+
+    int nfloat = points.size();
+    std::istream::off_type offset = (m_offsets.size()==0) ? 0 : m_offsets.back();
+    offset += nfloat*sizeof(float);
+    m_offsets.push_back( offset );
+
+    *m_txt_of << m_offsets.back() << std::endl;
+    m_bin_of->write( (char*)(&points[0]), sizeof(float)*nfloat );
+    checked_delete( padfft );
+}
+
+void newfile_store::get_image( int id, EMData* buf )
+{
+    if( m_offsets.size()==0 )
+    {
+        ifstream is( m_txt_file.c_str() );
+        std::istream::off_type off;
+        while( is >> off )
+        {
+            m_offsets.push_back( off );
+        }
+
+        m_bin_if = shared_ptr<std::ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
+    }
+
+    assert( m_bin_if != NULL );
+
+    std::istream::off_type offset = (id==0) ? 0 : m_offsets[id-1];
+    Assert( offset >= 0 );
+    m_bin_if->seekg( offset, std::ios::beg );
+
+
+    if( m_bin_if->bad() || m_bin_if->fail() || m_bin_if->eof() )
+    {
+        std::cout << "bad or fail or eof while fetching id, offset: " << id << " " << offset << std::endl;
+        throw std::logic_error( "bad happen" );
+    }
+
+    int bufsize = (m_offsets[id] - offset)/sizeof(float);
+    if( buf->get_xsize() != bufsize )
+    {
+        buf->set_size( bufsize, 1, 1 );
+    }
+
+    char* data = (char*)(buf->get_data());
+    m_bin_if->read( data, sizeof(float)*bufsize );
+    buf->update();
+}
+
+void newfile_store::restart()
+{
+    m_bin_if = shared_ptr<std::ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
+} 
+                
 file_store::file_store(const string& filename, int npad, int write)
     : m_bin_file(filename + ".bin"), 
       m_txt_file(filename + ".txt")
@@ -3488,9 +3718,6 @@ file_store::file_store(const string& filename, int npad, int write)
 file_store::~file_store()
 {
 }
-
-using std::ofstream;
-using std::ifstream;
 
 void file_store::add_image(  EMData* emdata )
 {
@@ -3509,7 +3736,6 @@ void file_store::add_image(  EMData* emdata )
     m_y_out = padfft->get_ysize();
     m_z_out = padfft->get_zsize();
     m_totsize = m_x_out*m_y_out*m_z_out;  
-
     m_Cs = padfft->get_attr( "Cs" );
     m_pixel = padfft->get_attr( "Pixel_size" );
     m_voltage = padfft->get_attr( "voltage" );
@@ -3520,10 +3746,10 @@ void file_store::add_image(  EMData* emdata )
     m_thetas.push_back( (float)(padfft->get_attr( "theta" )) );
     m_psis.push_back( (float)(padfft->get_attr( "psi" )) );
 
-
     if( m_write )
     {
         m_bin_ohandle->write( (char*)data, sizeof(float)*m_totsize );
+
         *m_txt_ohandle << m_Cs << " ";
         *m_txt_ohandle << m_pixel << " ";
         *m_txt_ohandle << m_voltage << " ";
