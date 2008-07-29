@@ -235,7 +235,7 @@ def main():
 								average = images[p].copy()
 								#average.process_inplace("xform.centerofmass")
 								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-							#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+							average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							np = 1
 						else:
 							if (options.lowmem): 
@@ -245,7 +245,7 @@ def main():
 					
 							ta = align(image,average,options)
 							
-							#ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 							
 							#g = ta.calc_ccf(average)
 							#d = g.calc_max_location_wrap(-1,-1,1)
@@ -263,7 +263,7 @@ def main():
 			
 			average/=np
 			average.process_inplace("xform.centeracf")
-			average.write_image("avg.hdf",-1)
+			#average.write_image("avg.hdf",-1)
 			#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.process_inplace("normalize.edgemean")
 					
@@ -290,7 +290,7 @@ def main():
 					image.read_image(args[0],p)
 				else: image = images[p]
 					
-				ta = align(image,average.copy(),options)
+				ta = align(image,average,options)
 				#ta.write_image("ta"+str(cl)+".img",-1)
 				#g = ta.calc_ccf(average)
 				#d = g.calc_max_location_wrap(-1,-1,1)
@@ -346,7 +346,7 @@ def main():
 					# is written to disk if the resultmx option is specfied
 					# FIXME setting the weights matrix to 1 and 0 should probably only occur if we're at the
 					# last iteration
-					if ( weights.get(c,p) > cullthresh ) :
+					if ( weights.get(c,p) >= cullthresh ) :
 						weights.set(c,p,0)
 						continue
 					else: weights.set(c,p,1)
@@ -360,7 +360,7 @@ def main():
 				
 				try:
 					if dflip.get(c,p) != 0:
-						image.process_inplace("xform.flip", {"axis":"y"});
+						image.process_inplace("xform.flip", {"axis":"x"});
 				except:pass
 					
 					
@@ -368,7 +368,8 @@ def main():
 				t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
 				
 				image.rotate_translate(t3d)
-				#image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+				if it != (options.iter-1):
+					image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 				#image.rotate(da.get(c,p),0,0)
 				#image.process_inplace("mask.sharp",{"outer_radius":image.get_xsize()/2})
 				#g = image.calc_ccf(average)

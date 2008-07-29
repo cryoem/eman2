@@ -817,7 +817,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 	EMData *r1 = this_img->align("rotational", to, Dict(),cmp_name, cmp_params);
 	float dot1 = r1->cmp(cmp_name, to, cmp_params);
 
-	EMData* flip_copy=this_img->process("xform.flip", Dict("axis", "y"));
+	EMData* flip_copy=this_img->process("xform.flip", Dict("axis", "x"));
 	EMData *r2 = flip_copy->align("rotational", to,Dict(), cmp_name, cmp_params);
 	delete flip_copy;
 	float dot2 = r2->cmp(cmp_name, to, cmp_params);
@@ -863,7 +863,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 // 		this_copy2 = flip->align("rotate_translate", to, Dict("maxshift", params["maxshift"]));
 // 	}
 // 	else {
-	EMData* flipped = this_img->process("xform.flip", Dict("axis", "y"));
+	EMData* flipped = this_img->process("xform.flip", Dict("axis", "x"));
 	EMData * this_copy2 = flipped->align("rotate_translate", to, Dict("maxshift", params["maxshift"]), cmp_name, cmp_params);
 	delete flipped;
 // 	}
@@ -880,6 +880,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	float dot1 = 0;
 	float dot2 = 0;
 
+	
 // 	if (usedot) {
 // 		dot1 = this_copy->cmp(cmp_name, to, cmp_params);
 // 		dot2 = this_copy2->cmp(cmp_name, to, cmp_params);
@@ -967,7 +968,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,
 	}
 	else {
 		df = this_img->copy();
-		df->process_inplace("xform.flip", Dict("axis", "y"));
+		df->process_inplace("xform.flip", Dict("axis", "x"));
 	}
 
 	EMData *dns = this_img->copy();
@@ -1175,7 +1176,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,
 	}
 	else {
 		df = this_img->copy();
-		df->process_inplace("xform.flip", Dict("axis", "y"));
+		df->process_inplace("xform.flip", Dict("axis", "x"));
 		df = df->copy();
 	}
 
@@ -1336,7 +1337,7 @@ EMData *RTFBestAligner::align(EMData * this_img, EMData *to,
 	EMData *flip_copy = 0;
 
 	if (!flip) {
-		this_img->process_inplace("xform.flip", Dict("axis", "y"));
+		this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		flip_copy = this_img->align("rotate_translate_best", to, rtb_params, cmp_name, cmp_params);
 	}
 	else {
@@ -1361,7 +1362,7 @@ EMData *RTFBestAligner::align(EMData * this_img, EMData *to,
 	if (this_cmp < flip_cmp) {
 		this_copy->set_flipped(0);
 		if (!flip) {
-			this_img->process_inplace("xform.flip", Dict("axis", "y"));
+			this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		}
 		if( flip_copy )
 		{
@@ -1409,9 +1410,9 @@ EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,
 	EMData *r2 = 0;
 
 	if (!thisf) {
-		this_img->process_inplace("xform.flip", Dict("axis", "y"));
+		this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		r2 = this_img->align("rtf_radon", to, params, cmp_name, cmp_params);
-		this_img->process_inplace("xform.flip", Dict("axis", "y"));
+		this_img->process_inplace("xform.flip", Dict("axis", "x"));
 	}
 	else {
 		r2 = thisf->align("rtf_radon", to, params, cmp_name, cmp_params);
@@ -1437,7 +1438,7 @@ EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,
 		}
 
 		if (!thisf) {
-			this_img->process_inplace("xform.flip", Dict("axis", "y"));
+			this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		}
 		result = r2;
 	}
