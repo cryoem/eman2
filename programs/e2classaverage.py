@@ -191,7 +191,7 @@ def main():
 							image = EMData()
 							image.read_image(args[0],p)
 						else:
-							image = images[p]
+							image = images[p].copy()
 						image.rotate_translate(t3d)
 						
 						np += 1
@@ -201,8 +201,6 @@ def main():
 						
 						# Add the image to the averager
 						averager.add_image(image)
-						
-			
 			
 			if np == 0 or weightsum == 0:
 				if options.verbose:
@@ -232,9 +230,10 @@ def main():
 								average = EMData()
 								average.read_image(args[0],p)
 							else:
-								average = images[p]
+								average = images[p].copy()
 								#average.process_inplace("xform.centerofmass")
 								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+
 							average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							#average.write_image("ave_.hdf",-1)
 							np = 1
@@ -245,7 +244,6 @@ def main():
 							else: image = images[p]
 					
 							ta = align(image,average,options)
-							
 							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 							
 							#g = ta.calc_ccf(average)
@@ -265,10 +263,12 @@ def main():
 							#tmp.write_image("ave_.hdf",-1)
 
 			
-			average/=np
+			#average/=np
+			
+			average.process_inplace("normalize.edgemean")
 			average.process_inplace("xform.centeracf")
 			#average.write_image("avg.hdf",-1)
-			#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.process_inplace("normalize.edgemean")
 					
 		if np == 0:
@@ -339,6 +339,7 @@ def main():
 			
 			#finally average
 			averager=Averagers.get(averager_parms[0], averager_parms[1]) # need an empty averager
+			#avg = None
 			np = 0 # number of particles in the average
 			for d in ccache:
 				p = d[0]
@@ -357,8 +358,8 @@ def main():
 				else: weights.set(c,p,1)
 				
 				if (options.lowmem):
-					image = EMData()
-					image.read_image(args[0],p)
+					image = EMData(args[0],p)
+					#image.read_image(args[0],p)
 				else:
 					image = images[p].copy()
 				
@@ -383,6 +384,10 @@ def main():
 					#image.translate(d[0],d[1],0)
 				np += 1
 				averager.add_image(image)
+				#if avg == None:
+					#avg = image.copy()
+				#else: avg.add(image)
+				
 				#try:
 					#if dflip.get(c,p) != 0:
 						#image.process_inplace("xform.flip", {"axis":"x"});
@@ -399,10 +404,14 @@ def main():
 				continue
 		
 			average = averager.finish()
-			#average.write_image("avg.img",-1)
 			#should this be centeracf?
+			average.process_inplace("normalize.edgemean")
 			average.process_inplace("xform.centerofmass")
-			#image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+			average.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+			
+			#avg.process_inplace("normalize.edgemean")
+			#avg.process_inplace("xform.centerofmass")
+			#avg.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 			
 		# extract euler data from the ref image, if it was specified
 		if ( options.ref  ):
