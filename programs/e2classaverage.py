@@ -191,7 +191,7 @@ def main():
 							image = EMData()
 							image.read_image(args[0],p)
 						else:
-							image = images[p].copy()
+							image = images[p]
 						image.rotate_translate(t3d)
 						
 						np += 1
@@ -356,7 +356,7 @@ def main():
 					image = EMData()
 					image.read_image(args[0],p)
 				else:
-					image = images[p].copy()
+					image = images[p]
 				
 				try:
 					if dflip.get(c,p) != 0:
@@ -379,7 +379,11 @@ def main():
 					#image.translate(d[0],d[1],0)
 				np += 1
 				averager.add_image(image)
-
+				try:
+					if dflip.get(c,p) != 0:
+						image.process_inplace("xform.flip", {"axis":"x"});
+				except:pass
+				
 			if options.verbose:
 				ndata.append(np)
 		

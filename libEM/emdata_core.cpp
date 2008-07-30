@@ -153,7 +153,7 @@ void EMData::add(float f,int keepzero)
 	{
 		throw ImageFormatException("This image is neither a real nor a complex image.");
 	}
-
+	update();
 	EXITFUNC;
 }
 
@@ -162,6 +162,7 @@ void EMData::add(float f,int keepzero)
 void EMData::add(const EMData & image)
 {
 	ENTERFUNC;
+	cout << "Adding image" << endl;
 
 	if (nx != image.get_xsize() || ny != image.get_ysize() || nz != image.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
@@ -171,13 +172,14 @@ void EMData::add(const EMData & image)
 		throw ImageFormatException( "not support add between real image and complex image");
 	}
 	else {
-		update();
+		
 		const float *src_data = image.get_data();
 		int size = nxy * nz;
 
 		for (int i = 0; i < size; i++) {
 			rdata[i] += src_data[i];
 		}
+		update();
 	}
 	EXITFUNC;
 }

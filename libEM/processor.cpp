@@ -71,6 +71,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&ValuePowProcessor::NEW);
 	force_add(&ValueSquaredProcessor::NEW);
 	force_add(&ValueSqrtProcessor::NEW);
+	force_add(&Rotate180Processor::NEW);
 
 	force_add(&ClampingProcessor::NEW);
 	force_add(&NSigmaClampingProcessor::NEW);
@@ -206,6 +207,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageCylinder::NEW);
 	force_add(&TestImageGradient::NEW);
 	force_add(&TestTomoImage::NEW);
+	force_add(&TestImageLineWave::NEW);
 	
 	force_add(&TomoTiltEdgeMaskProcessor::NEW);
 	force_add(&TomoTiltAngleWeightProcessor::NEW);
@@ -5460,6 +5462,22 @@ void TestImageProcessor::preprocess(const EMData * const image)
 	nz = image->get_zsize();
 }
 
+
+void TestImageLineWave::process_inplace(EMData * image)
+{
+	preprocess(image);
+	
+	float period = params.set_default("period",10.0);
+	int n = image->get_xsize()*image->get_ysize()*image->get_zsize();
+	
+	for(int i = 0; i < n; ++i) {
+		float x = fmod((float)i,period);
+		x /= period;
+		x = sin(x*EMConsts::pi*2.0);
+		image->set_value_at_fast(i,x);
+	}
+}
+
 void TestImageGaussian::process_inplace(EMData * image)
 {
 	preprocess(image);
@@ -6474,6 +6492,68 @@ int EMAN::multi_processors(EMData * image, vector < string > processornames)
 		image->process_inplace(processornames[i]);
 	}
 	return 0;
+}
+
+void Rotate180Processor::process_inplace(EMData* image) {
+	ENTERFUNC;
+
+	if (image->get_ndim() != 2) {
+		throw ImageDimensionException("2D only");
+	}
+
+	float *d = image->get_data();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	
+	// x and y offsets are used to handle even vs odd cases
+	int x_offset = 0;
+	if (nx % 2 == 1) x_offset=1;
+	int y_offset = 0;
+	if (ny % 2 == 1) y_offset=1;
+	
+	bool stop = false;
+	for (int x = 1; x <= (nx/2+x_offset); x++) {
+		int y = 0;
+		for (y = 1; y < (ny+y_offset); y++) {
+			if (x == (nx / 2+x_offset) && y == (ny / 2+y_offset)) {
+				stop = true;
+				break;
+			}
+			int i = (x-x_offset) + (y-y_offset) * nx;
+			int k = nx - x + (ny - y) * nx;
+
+			float t = d[i];
+			d[i] = d[k];
+			d[k] = t;
+		}
+		if (stop) break;
+	}
+
+	/* Here we guard against irregularites that occur at the boundaries
+	 * of even dimensioned images. The basic policy is to replace the pixel
+	 * in row 0 and/or column 0 with those in row 1 and/or column 1, respectively.
+	 * The pixel at 0,0 is replaced with the pixel at 1,1 if both image dimensions
+	 * are even. FIXME - it may be better to use an average at the corner, in
+	 * this latter case, using pixels (1,1), (0,1) and (1,0). I am not sure. (dsawoolford)
+	*/
+	if (x_offset == 0) {
+		for (int y = 0; y < ny; y++) {
+			image->set_value_at_fast(0,y,image->get_value_at(1,y));
+		}
+	}
+	
+	if (y_offset == 0) {
+		for (int x = 0; x < nx; x++) {
+			image->set_value_at_fast(x,0,image->get_value_at(x,1));
+		}
+	}
+	
+	if (y_offset == 0 && x_offset == 0) {
+		image->set_value_at_fast(0,0,image->get_value_at(1,1));
+	}
+	
+	image->update();
+	EXITFUNC;
 }
 
 

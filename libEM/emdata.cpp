@@ -1314,36 +1314,7 @@ void EMData::rotate_x(int dx)
 void EMData::rotate_180()
 {
 	ENTERFUNC;
-
-	if (nx != ny) {
-		throw ImageFormatException("non-square image");
-	}
-
-	if (get_ndim() != 2) {
-		throw ImageDimensionException("2D only");
-	}
-
-	float *d = get_data();
-
-	for (int x = 1; x < nx; x++) {
-		int y = 0;
-		for (y = 1; y < ny; y++) {
-			if (x == nx / 2 && y == ny / 2) {
-				break;
-			}
-			int i = x + y * nx;
-			int k = nx - x + (ny - y) * nx;
-
-			float t = d[i];
-			d[i] = d[k];
-			d[k] = t;
-		}
-		if (x == nx / 2 && y == ny / 2) {
-			break;
-		}
-	}
-
-	update();
+	process_inplace("math.rotate.180",Dict());
 	EXITFUNC;
 }
 
@@ -1806,8 +1777,7 @@ EMData *EMData::make_rotational_footprint( bool unwrap)
 	filt->set_complex(true);
 
 	if (nx & 1) {
-		LOGERR("even image xsize only");
-		throw ImageFormatException("even image xsize only");
+		LOGERR("even image xsize only");		throw ImageFormatException("even image xsize only");
 	}
 
 	int cs = (((nx * 7 / 4) & 0xfffff8) - nx) / 2;

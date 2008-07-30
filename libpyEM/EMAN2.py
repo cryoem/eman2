@@ -575,6 +575,20 @@ def test_image(type=0,size=(128,128)):
 		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":size[0]/2})
 	elif type==4:
 		ret.process_inplace("testimage.sinewave.circular")
+	elif type==5:
+		ret.process_inplace("testimage.axes")
+	elif type==6:
+		ret.process_inplace("testimage.linewave")
+	elif type==7:
+		ret.process_inplace("testimage.scurve")
+		ret.mult(10)
+		tmp = EMData(*size)
+		tmp.process_inplace("testimage.gradient")
+		ret.add(tmp)
+		tmp.process_inplace("testimage.gradient",{"axis":"y"})
+		ret.add(tmp)
+		ret.process_inplace("normalize.edgemean")
+		
 	
 	return ret
 	

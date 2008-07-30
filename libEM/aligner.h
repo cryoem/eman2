@@ -140,7 +140,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+						const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -178,7 +178,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name = "", const Dict& cmp_params = Dict()) const;
+						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -199,6 +199,8 @@ namespace EMAN
 		{
 			return new RotationalAligner();
 		}
+		
+		static EMData * align_180_amgiguous(EMData * this_img, EMData * to_img);
 
 		TypeDict get_param_types() const
 		{
@@ -213,7 +215,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name = "", const Dict& cmp_params = Dict()) const;
+						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -248,7 +250,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params = Dict()) const;
+						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -286,7 +288,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -324,7 +326,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -361,7 +363,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "", Dict());
@@ -398,7 +400,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "", Dict());
@@ -434,7 +436,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
@@ -472,7 +474,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
@@ -547,7 +549,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -586,7 +588,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
 			return align(this_img, to_img, "sqeuclidean", Dict());
@@ -625,7 +627,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{

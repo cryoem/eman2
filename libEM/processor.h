@@ -1122,6 +1122,33 @@ The basic design of EMAN Processors: <br>\
 				}
 			}
 	};
+	
+	/**Rotate by 180 using pixel swapping, works for 2D only
+	 * @author David Woolford
+	 * @date July 29th 2008
+	 */
+	class Rotate180Processor:public Processor
+	{
+		public:
+			string get_name() const
+			{
+				return "math.rotate.180";
+			}
+			static Processor *NEW()
+			{
+				return new Rotate180Processor();
+			}
+			
+			/**
+			 * @exception ImageDimensionException if the image dimensions are not 2D
+			 */
+			void process_inplace(EMData* image);
+
+			string get_desc() const
+			{
+				return "The 2D image is rotated by 180 degree by carefully swapping image pixel values. No explicit matrix multiplication is performed. If image dimensions are even will change pixels along x=0 and y=0. Works for all combinations of even and oddness.";
+			}
+	};
 
 	/**f(x) = maxval if f(x) > maxval;
 	  * f(x) = minval if f(x) < minval
@@ -4608,6 +4635,41 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 	};
+	
+	
+		
+	/** Treats the pixels as though they are 1D (even if the image is 2D or 3D),
+	 * inserting a sine wave of pixel period extracted from the parameters (default is 10)
+	 *@param period the period of the sine wave
+	 */
+	class TestImageLineWave : public TestImageProcessor
+	{
+		public:
+			void process_inplace(EMData * image);
+		
+			string get_name() const
+			{
+				return "testimage.linewave";
+			}
+		
+			string get_desc() const
+			{
+				return "Insert an oscillating sine wave into the pixel data";
+			}
+		
+			static Processor * NEW()
+			{
+				return new TestImageLineWave();
+			}
+		
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("period", EMObject::FLOAT, "The period of the oscillating sine wave. Default 10.");
+				return d;
+			}
+	};
+	
 	
 	/**Make an image useful for tomographic reconstruction testing
 	 * this is a 3D phantom image based on the 2D phantom described in

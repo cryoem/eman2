@@ -89,7 +89,7 @@ float cmp(const string & cmpname, EMData * with, const Dict & params = Dict());
  * @return The result image.
  */
 EMData *align(const string & aligner_name, EMData * to_img,
-			  const Dict & params = Dict(), const string & comp_name = "", 
+			  const Dict & params = Dict(), const string & comp_name = "dot", 
 			  const Dict& cmp_params = Dict());
 
 /** Calculate the projection of this image and return the result.

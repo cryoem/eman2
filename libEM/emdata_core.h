@@ -417,6 +417,20 @@ inline void set_value_at(int x, float v)
 	}
 }
 
+/** Set the pixel density value at coordinate (x).
+ * 1D image only. 
+ *
+ * @param x The x cooridinate.
+ * @param v The pixel density value at coordinate (x).
+ */
+inline void set_value_at_fast(int x, float v)
+{
+	rdata[x] = v;
+	flags |= EMDATA_NEEDUPD;
+	changecount++;
+}
+
+
 /** Free memory associated with this EMData
  * Called in destructor and in assignment operator
  */
