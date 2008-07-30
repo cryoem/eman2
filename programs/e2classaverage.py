@@ -232,10 +232,11 @@ def main():
 								average = EMData()
 								average.read_image(args[0],p)
 							else:
-								average = images[p].copy()
+								average = images[p]
 								#average.process_inplace("xform.centerofmass")
 								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
+							#average.write_image("ave_.hdf",-1)
 							np = 1
 						else:
 							if (options.lowmem): 
@@ -259,6 +260,9 @@ def main():
 							#ta.mult(frac) # be careful about the weighting
 							#average.mult(omfrac) # be carefult about the weighting
 							average.add(ta) # now add the image
+							#tmp = average.copy()
+							#tmp.mult(1.0/np)
+							#tmp.write_image("ave_.hdf",-1)
 
 			
 			average/=np
@@ -356,7 +360,7 @@ def main():
 					image = EMData()
 					image.read_image(args[0],p)
 				else:
-					image = images[p]
+					image = images[p].copy()
 				
 				try:
 					if dflip.get(c,p) != 0:
@@ -364,12 +368,12 @@ def main():
 				except:pass
 					
 					
-				t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
+				t3d = Transform3D(da.get(c,p),0,0)
 				t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
 				
 				image.rotate_translate(t3d)
-				if it != (options.iter-1):
-					image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+				#if it != (options.iter-1):
+				image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 				#image.rotate(da.get(c,p),0,0)
 				#image.process_inplace("mask.sharp",{"outer_radius":image.get_xsize()/2})
 				#g = image.calc_ccf(average)
@@ -379,10 +383,10 @@ def main():
 					#image.translate(d[0],d[1],0)
 				np += 1
 				averager.add_image(image)
-				try:
-					if dflip.get(c,p) != 0:
-						image.process_inplace("xform.flip", {"axis":"x"});
-				except:pass
+				#try:
+					#if dflip.get(c,p) != 0:
+						#image.process_inplace("xform.flip", {"axis":"x"});
+				#except:pass
 				
 			if options.verbose:
 				ndata.append(np)

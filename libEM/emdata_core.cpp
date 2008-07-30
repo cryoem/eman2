@@ -162,8 +162,6 @@ void EMData::add(float f,int keepzero)
 void EMData::add(const EMData & image)
 {
 	ENTERFUNC;
-	cout << "Adding image" << endl;
-
 	if (nx != image.get_xsize() || ny != image.get_ysize() || nz != image.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
