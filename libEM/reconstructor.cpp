@@ -2021,7 +2021,7 @@ void nn4Reconstructor::setup()
 
     if( params.has_key( "snr" ) )
     {
-        m_osnr = 1.0/float( params["snr"] );
+        m_osnr = 1.0f/float( params["snr"] );
     }
     else
     {
@@ -3517,14 +3517,14 @@ map<string, vector<string> > EMAN::dump_reconstructors_list()
 float get_ctf( int winsize, float voltage, float pixel, float Cs, float amp_contrast, float b_factor, float defocus, int r2 )
 {
 	Cs      = Cs * 1.0e7f;
-        float winsize2= winsize*winsize;
-        float wgh=atan( amp_contrast/(1.0f-amp_contrast) );
+	float winsize2= (float)(winsize*winsize);
+	float wgh=atan( amp_contrast/(1.0f-amp_contrast) );
 	float lambda = 12.398f/std::sqrt(voltage*(1022.f+voltage));
 	float ak = std::sqrt( r2/float(winsize2) )/pixel;
 	float a = lambda*ak*ak;
 	float b = lambda*a*a;
 	float ctf = -sin(-M_PI*(defocus*a-Cs*b/2.0f)-wgh);
-        return ctf;
+	return ctf;
 }
 
 
@@ -3677,7 +3677,7 @@ void newfile_store::get_image( int id, EMData* buf )
         m_bin_if = shared_ptr<std::ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
     }
 
-    assert( m_bin_if != NULL );
+    Assert( m_bin_if != NULL );
 
     std::istream::off_type offset = (id==0) ? 0 : m_offsets[id-1];
     Assert( offset >= 0 );
