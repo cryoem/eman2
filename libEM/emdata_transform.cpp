@@ -62,10 +62,8 @@ EMData *EMData::do_fft() const
 	EMData* dat = copy_head();
 	dat->set_size(nx2, ny, nz);
 	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
-	if (offset == 1)  
-	    dat->set_fftodd(true);
-	else
-	    dat->set_fftodd(false);
+	if (offset == 1) dat->set_fftodd(true);
+	else             dat->set_fftodd(false);
 
 	float *d = dat->get_data();
 	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
@@ -118,9 +116,7 @@ EMData *EMData::do_fft_inplace()
 	EMfft::real_to_complex_nd(rdata, rdata, nxreal, ny, nz);
 
 	set_complex(true);
-	if(ny==1 && nz==1) {
-		set_complex_x(true);
-	}
+	if(ny==1 && nz==1)  set_complex_x(true);
 	set_ri(true);
 
 	update();
@@ -174,9 +170,7 @@ EMData *EMData::do_ift()
 #endif	//FFTW2 || FFTW3
 	dat->set_fftpad(false);
 	dat->set_complex(false);
-	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
-		dat->set_complex_x(false);
-	}
+	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
 	dat->set_ri(false);
 	dat->update();
 	
@@ -210,35 +204,12 @@ EMData *EMData::do_ift_inplace()
 	// SCALE the inverse FFT
 	int nxo = nx - offset;
 	float scale = 1.0f / (nxo * ny * nz);
-	mult(scale);  // this is wasteful, but I do not know how to make the next block work!
-	/*std::cout << " normalize "<<scale<<" "<<nxo<<" "<<nx<<" "<<ny<<" "<<nz<<std::endl;
-	for (int k=1; k<=nz; k++)  {
-		for (int j=1; j<=ny; j++)  {
-			for (int i=1; i<=nxo; i++) {
-				size_t pos = i-1 + (j-1+(k-1)*ny)*nz;
-				(*this)(pos)*=scale;
-			}
-		}
-	}*/
+	mult(scale);
 #endif //FFTW2 || FFTW3
 
-
-//  THIS IS A MISTAKE, SHOULD NOT REMOVE THE PADDING
-/*
-	if(get_ndim() >= 2) {
-		size_t row_size = (nx - offset) * sizeof(float);
-		for (int i = 1; i < ny * nz; i++) {
-			memmove((char *) &rdata[i * (nx - offset)], (char *) &rdata[i * nx], row_size);
-		}
-	}
-	this->set_size(nx - offset, ny, nz);	//remove the paddin
-	set_fftpad(false);
-	*/
 	set_fftpad(true);
 	set_complex(false);
-	if(ny==1 && nz==1) {
-		set_complex_x(false);
-	}
+	if(ny==1 && nz==1) set_complex_x(false);
 	set_ri(false);
 	update();
 
