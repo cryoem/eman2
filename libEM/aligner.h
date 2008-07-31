@@ -200,11 +200,12 @@ namespace EMAN
 			return new RotationalAligner();
 		}
 		
-		static EMData * align_180_ambiguous(EMData * this_img, EMData * to_img);
+		static EMData * align_180_ambiguous(EMData * this_img, EMData * to_img, int rfp_mode = 0);
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print. O is the original eman1 way. 1 is just using calc_ccf without padding. 2 is using calc_mutual_correlation without padding.");
 			return d;
 		}
 	};
@@ -316,6 +317,7 @@ namespace EMAN
 			//d.put("usedot", EMObject::INT);
 			d.put("maxshift", EMObject::INT);
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
+			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
 		}
 	};
@@ -426,6 +428,7 @@ namespace EMAN
 			
 			d.put("flip", EMObject::EMDATA);
 			d.put("imask", EMObject::INT);
+			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
 		}
 	};
@@ -464,6 +467,7 @@ namespace EMAN
 			d.put("flip", EMObject::EMDATA);
 			d.put("usedot", EMObject::INT);
 			d.put("maxshift", EMObject::INT);
+			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
 		}
 	};

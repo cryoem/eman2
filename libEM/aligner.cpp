@@ -214,11 +214,23 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	
 }
 
-EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to) {
+EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, int rfp_mode) {
 	
 	// Make translationally invariant rotational footprints
-	EMData* this_img_rfp = this_img->make_rotational_footprint();
-	EMData *to_rfp = to->make_rotational_footprint();
+	
+	EMData* this_img_rfp, * to_rfp;
+	if (rfp_mode == 0) {
+		this_img_rfp = this_img->make_rotational_footprint_e1();
+		to_rfp = to->make_rotational_footprint_e1();
+	} else if (rfp_mode == 1) {
+		this_img_rfp = this_img->make_rotational_footprint();
+		to_rfp = to->make_rotational_footprint();
+	} else if (rfp_mode == 2) {
+		this_img_rfp = this_img->make_rotational_footprint_cmc();
+		to_rfp = to->make_rotational_footprint_cmc();
+	} else {
+		throw InvalidParameterException("rfp_mode must be 0,1 or 2");
+	}
 	
 	int this_img_rfp_nx = this_img_rfp->get_xsize();
 
@@ -254,7 +266,8 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	if (!to) throw InvalidParameterException("Can not rotational align - the image to align to is NULL");
 	
 	// Perform 180 ambiguous alignment
-	EMData* rot_aligned = RotationalAligner::align_180_ambiguous(this_img,to);
+	int rfp_mode = params.set_default("rfp_mode",0);
+	EMData* rot_aligned = RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
 	float rotate_angle_solution = rot_aligned->get_attr("align.az");
 	
 	// Make a copy of the rotationally aligned image and then rotate it 180
@@ -494,7 +507,8 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 {
 	
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
-	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to);
+	int rfp_mode = params.set_default("rfp_mode",0);
+	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
 	EMData *rot_align_180 = rot_align->copy(); 
 	rot_align_180->process_inplace("math.rotate.180"); 
 	rot_align_180->set_attr("align.az",(float)rot_align->get_attr("align.az")+180.0);
@@ -625,7 +639,8 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
 {
 	// Get the non flipped rotational, tranlsationally aligned image
-	EMData *rot_trans_align = this_img->align("rotate_translate", to, Dict("maxshift", params["maxshift"]),cmp_name, cmp_params);
+	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0));
+	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
 
 	// Do the same alignment, but using the flipped version of the image
 	EMData *flipped = params.set_default("flip", (EMData *) 0);
@@ -634,7 +649,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		flipped = this_img->process("xform.flip", Dict("axis", "x"));
 		delete_flag = true;
 	}
-	EMData * rot_trans_align_flip = flipped->align("rotate_translate", to, Dict("maxshift", params["maxshift"]), cmp_name, cmp_params);
+	EMData * rot_trans_align_flip = flipped->align("rotate_translate", to, rt_params, cmp_name, cmp_params);
 		
 	if (delete_flag){
 		 delete flipped;
@@ -862,11 +877,12 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,  
 			const string& cmp_name, const Dict& cmp_params) const
 {
-	EMData *r1 = this_img->align("rotational", to, Dict(),cmp_name, cmp_params);
+	Dict rot_params("rfp_mode",params.set_default("rfp_mode",0));
+	EMData *r1 = this_img->align("rotational", to, rot_params,cmp_name, cmp_params);
 	float dot1 = r1->cmp(cmp_name, to, cmp_params);
 
 	EMData* flip_copy=this_img->process("xform.flip", Dict("axis", "x"));
-	EMData *r2 = flip_copy->align("rotational", to,Dict(), cmp_name, cmp_params);
+	EMData *r2 = flip_copy->align("rotational", to,rot_params, cmp_name, cmp_params);
 	delete flip_copy;
 	float dot2 = r2->cmp(cmp_name, to, cmp_params);
 

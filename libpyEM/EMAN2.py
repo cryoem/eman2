@@ -588,6 +588,9 @@ def test_image(type=0,size=(128,128)):
 		tmp.process_inplace("testimage.gradient",{"axis":"y"})
 		ret.add(tmp)
 		ret.process_inplace("normalize.edgemean")
+	elif type==8:
+		ret.process_inplace("testimage.scurve")
+		ret.translate(int(size[0]/10),int(size[1]/10),0)
 		
 	
 	return ret

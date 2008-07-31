@@ -461,7 +461,8 @@ namespace EMAN
 		 * @return The rotaional footprint image.
 		 */
 		EMData *make_rotational_footprint(bool unwrap = true);
-		
+		EMData *make_rotational_footprint_e1(bool unwrap = true);
+		EMData *make_rotational_footprint_cmc(bool unwrap = true);
 		
 		/** Makes a 'footprint' for the current image. This is another
 		 * image constructed from the 'rotational footprint' to produce
