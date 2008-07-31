@@ -880,7 +880,7 @@ L950:
 
 L998:
     *isn = 0;
-    return status; 
+    return status;
 } /* fftmcf_ */
 
 #define work(i)  work[(i)-1]
@@ -890,73 +890,71 @@ L998:
 // 1d inplace FFT
 int Nativefft::fmrs_1rf(float *x, float *work, int nsam)
 {
-   // input : x(nsam+2-nsam%2), work(nsam+2-nsam%2)
-   // output: x(nsam+2-nsam%2), overwritten by Fourier coefficients
+	// input : x(nsam+2-nsam%2), work(nsam+2-nsam%2)
+	// output: x(nsam+2-nsam%2), overwritten by Fourier coefficients
 
-   int i, n, status;
-   int inv=1;
+	int i, n, status;
+	int inv=1;
 
-   n = nsam;
+	n = nsam;
 
-   for (i=1; i<=n; i++) {
-      work(i) = 0.0;
-   }
-   status = fftmcf_(x,work,&n,&n,&n,&inv);
-   // should put in appropriate exception handling here
-   if (status == -1) {
-       fprintf(stderr, "Native FFT cannot be performed on images with one of ");
-       fprintf(stderr, "the dimensions set to n = %d\n", nsam);  
-       exit(1); 
-   }
+	for (i=1; i<=n; i++)  work(i) = 0.0;
+	status = fftmcf_(x,work,&n,&n,&n,&inv);
+	// should put in appropriate exception handling here
+	if (status == -1) {
+		fprintf(stderr, "Native FFT cannot be performed on images with one of ");
+		fprintf(stderr, "the dimensions set to n = %d\n", nsam);  
+		exit(1); 
+	}
 
-   // check even/odd
-   if (n%2 == 0) {
-      for (i=n+1;i>=3;i=i-2) {
-         x(i)   = x((i+1)/2);
-         x(i+1) = work((i+1)/2);
-      }
-      x(2)   = 0.0;
-      x(n+2) = 0.0;
-   }
-   else {
-      for (i=n;i>=3;i=i-2) {
-         x(i)   = x(i/2+1);
-         x(i+1) = work(i/2+1);
-      }
-      x(2)=0.0;
-   }
-   return status;
+	// check even/odd
+	if (n%2 == 0) {
+		for (i=n+1;i>=3;i=i-2) {
+			x(i)   = x((i+1)/2);
+			x(i+1) = work((i+1)/2);
+		}
+		x(2)   = 0.0;
+		x(n+2) = 0.0;
+	}
+	else {
+		for (i=n;i>=3;i=i-2) {
+			x(i)   = x(i/2+1);
+			x(i+1) = work(i/2+1);
+		}
+		x(2)=0.0;
+	}
+	return status;
 }
 
 // 1d inplace IFFT
 int Nativefft::fmrs_1rb(float *x, float *work, int nsam)
 {
-    // input:  x(nsam+2-nsam%2), work(nsam+2-nsam%2)
-    // output: x(nsam+2-nsam%2), overwritten with Fourier coefficients
+	// input:  x(nsam+2-nsam%2), work(nsam+2-nsam%2)
+	// output: x(nsam+2-nsam%2), overwritten with Fourier coefficients
 
-    int i, n, status;
-    int inv=-1;
+	int i, n, status;
+	int inv=-1;
 
-    n = nsam; 
+	n = nsam; 
 
-    for (i=2;i<=n/2+1;i++) {
-	work(i)     = x(2*i)/n;
-	work(n-i+2) = -work(i);
-    }
-    work(1) = 0.0;
+	for (i=2;i<=n/2+1;i++) {
+		work(i)     = x(2*i)/n;
+		work(n-i+2) = -work(i);
+	}
+	work(1) = 0.0;
 
-    for (i=1;i<=n/2+1;i++)  x(i) = x(2*i-1)/n;
-    for (i=n;i>=n/2+2;i--)  x(i) = x(n-i+2);
+	for (i=1;i<=n/2+1;i++)  x(i) = x(2*i-1)/n;
+	for (i=n;i>=n/2+2;i--)  x(i) = x(n-i+2);
 
-    status = fftmcf_(x,work,&n,&n,&n,&inv);
-   // should put in appropriate exception handling here
-    if (status == -1) {
-       fprintf(stderr, "Native IFT cannot be performed on images with one of ");
-       fprintf(stderr, "the dimensions set to n = %d\n", nsam);  
-       exit(1); 
-    }
+	status = fftmcf_(x,work,&n,&n,&n,&inv);
+	/ should put in appropriate exception handling here
+	if (status == -1) {
+		fprintf(stderr, "Native IFT cannot be performed on images with one of ");
+		fprintf(stderr, "the dimensions set to n = %d\n", nsam);  
+		exit(1); 
+	}
 
-    return status;
+	return status;
 }
 
 #undef x
@@ -972,60 +970,62 @@ int Nativefft::fmrs_1rb(float *x, float *work, int nsam)
 // 2d inplace fft
 int Nativefft::fmrs_2rf(float *x, float *work, int lda, int nsam, int nrow)
 {
-   // input:  x(lda,nrow), work(lda)
-   // output: x(lda,nrow) overwritten with Fourier coefficients
+	// input:  x(lda,nrow), work(lda)
+	// output: x(lda,nrow) overwritten with Fourier coefficients
 
-   int   ins, status=0, i, j;
- 
-   ins = lda;
-   //int  l;
-   //l=(int)(log2(nsam));
-   for (j=1;j<=nrow;j++) {
-     		//Util::fftr_q(&x(1,j),l);
-       //status = fmrs_1rf(&x(1,j), work, nsam);
-   }
+	int   ins, status=0, i, j;
 
-   for (i=1;i<=lda;i=i+2){
-      status = fftmcf_(&x(i,1),&x(i+1,1),&nrow,&nrow,&nrow,&ins);
-      if (status == -1) {
-         fprintf(stderr, "Native FFT cannot be performed on images with one of ");
-         fprintf(stderr, "the dimensions set to n = %d\n", nrow);
-         exit(1); 
-      }
-   }
+	ins = lda;
+	/*
+	int  l;
+	l=(int)(log2(nsam));
+	for (j=1;j<=nrow;j++) {
+		Util::fftr_q(&x(1,j),l);
+		status = fmrs_1rf(&x(1,j), work, nsam);
+	}
+	*/
 
-   return status;
+	for (i=1;i<=lda;i=i+2){
+		status = fftmcf_(&x(i,1),&x(i+1,1),&nrow,&nrow,&nrow,&ins);
+		if (status == -1) {
+			fprintf(stderr, "Native FFT cannot be performed on images with one of ");
+			fprintf(stderr, "the dimensions set to n = %d\n", nrow);
+			exit(1); 
+		}
+	}
+
+	return status;
 }
 
 
 // 2d inplace IFFT
 int Nativefft::fmrs_2rb(float *y, float *work, int lda, int nsam, int nrow)
 {
-   // input:  y(lda,nrow), work(lda)
-   // output: y(lda,nrow), overwritten with Fourier coefficients
+	// input:  y(lda,nrow), work(lda)
+	// output: y(lda,nrow), overwritten with Fourier coefficients
 
-   int   ins, status=0, i, j;
-   float q;
+	int   ins, status=0, i, j;
+	float q;
 
-   ins=-lda;
+	ins=-lda;
 
-   for (i=1; i<=lda; i=i+2) {
-      fftmcf_(&y(i,1),&y(i+1,1),&nrow,&nrow,&nrow,&ins);
-      if (status == -1) {
-         fprintf(stderr, "Native IFT cannot be performed on images with one of ");
-         fprintf(stderr, "the dimensions set to n = %d\n", nrow);
-         exit(1); 
-      }
-   }
-    
-   // normalize for inverse
-   q = 1.0/(float)(nrow);
-   for (j=1; j<=nrow; j++)  for (i=1; i<=lda; i++) y(i,j)*=q;
- 
-   // need an inplace 1d ifft 
-   for (j=1; j<=nrow; j++) status = fmrs_1rb(&y(1,j), work, nsam);
+	for (i=1; i<=lda; i=i+2) {
+		fftmcf_(&y(i,1),&y(i+1,1),&nrow,&nrow,&nrow,&ins);
+		if (status == -1) {
+			fprintf(stderr, "Native IFT cannot be performed on images with one of ");
+			fprintf(stderr, "the dimensions set to n = %d\n", nrow);
+			exit(1); 
+		}
+	}
+	 
+	// normalize for inverse
+	q = 1.0/(float)(nrow);
+	for (j=1; j<=nrow; j++)  for (i=1; i<=lda; i++) y(i,j)*=q;
 
-   return status;
+	// need an inplace 1d ifft 
+	for (j=1; j<=nrow; j++) status = fmrs_1rb(&y(1,j), work, nsam);
+
+	return status;
 }
 #undef x
 #undef y
@@ -1038,9 +1038,9 @@ int Nativefft::fmrs_2rb(float *y, float *work, int lda, int nsam, int nrow)
 // 2D out of place fft
 int Nativefft::ftp_2rf(float *reald, float *complexd, int lda, int nsam, int nrow)
 {
-   // input:  reald(nsam,nrow), 
-   //  work(2*nsam+15)
-   // output: complexd(lda,nrow) Fourier coefficients
+	// input:  reald(nsam,nrow), 
+	//  work(2*nsam+15)
+	// output: complexd(lda,nrow) Fourier coefficients
 
 	int   ins, status=0, i, j;
 
@@ -1079,28 +1079,28 @@ int Nativefft::ftp_2rf(float *reald, float *complexd, int lda, int nsam, int nro
 
 int Nativefft::ftp_2rb(float *complexd, int lda, int nsam, int nrow)
 {
-   // input:  complexd(lsd,nrow), 
-   //  work(2*nsam+15)
-   // output: complexd(lda,nrow) Fourier coefficients
+	// input:  complexd(lsd,nrow), 
+	//  work(2*nsam+15)
+	// output: complexd(lda,nrow) Fourier coefficients
 
 	int   ins, status=0, i, j;
 
 	ins = -lda;
 
 	for (i=1; i<=lda; i=i+2) {
-	   status = fftmcf_(&complexd(i,1),&complexd(i+1,1),&nrow,&nrow,&nrow,&ins);
-	   if (status == -1) {
-		  fprintf(stderr, "Native FFT cannot be performed on images with one of ");
-		  fprintf(stderr, "the dimensions set to n = %d\n", nrow);
-		  exit(1); 
-	   }
+		status = fftmcf_(&complexd(i,1),&complexd(i+1,1),&nrow,&nrow,&nrow,&ins);
+		if (status == -1) {
+			fprintf(stderr, "Native FFT cannot be performed on images with one of ");
+			fprintf(stderr, "the dimensions set to n = %d\n", nrow);
+			exit(1); 
+		}
 	}
 
 
 	float * work = (float*) malloc((2*nsam+15)*sizeof(float));
 	if (!work) {
-	 	 fprintf(stderr,"real_to_complex_nd(2df): failed to allocate work\n");
-	 	 LOGERR("real_to_complex_nd(2df): failed to allocate work\n");
+		fprintf(stderr,"real_to_complex_nd(2df): failed to allocate work\n");
+		LOGERR("real_to_complex_nd(2df): failed to allocate work\n");
 	}
 	//  Do inv columns with fftpack	
 	rffti(nsam, work);
@@ -1124,61 +1124,59 @@ int Nativefft::ftp_2rb(float *complexd, int lda, int nsam, int nrow)
 // 3D out of place FFT
 int Nativefft::ftp_3rf(float *reald, float *complexd, int lda, int nsam, int nrow, int nslice)
 {
-    // input :  reald(nsam,nrow,nslice)
-    // output:  complexd(lda,nrow,nslice), overwritten with Fourier coefficients
+	// input :  reald(nsam,nrow,nslice)
+	// output:  complexd(lda,nrow,nslice), overwritten with Fourier coefficients
 
-    int ndr, i, j, k, status=0;
+	int ndr, i, j, k, status=0;
 
-    for (k=1; k<=nslice;k ++) status = ftp_2rf(&reald(1,1,k), &complexd(1,1,k), lda, nsam, nrow);
+	for (k=1; k<=nslice;k ++) status = ftp_2rf(&reald(1,1,k), &complexd(1,1,k), lda, nsam, nrow);
 
-    ndr=lda*nrow;
+	ndr=lda*nrow;
 
-    for (j=1; j<=nrow; j++) {
-       for (i=1; i<=lda-1; i=i+2) {
-          status = fftmcf_(&complexd(i,j,1),&complexd(i+1,j,1),&nslice,&nslice,&nslice,&ndr);
-          if (status == -1) {
-             fprintf(stderr, "Native FFT cannot be performed on images with one of ");
-             fprintf(stderr, "the dimensions set to n = %d\n", nslice);
-             exit(1); 
-          }
+	for (j=1; j<=nrow; j++) {
+		for (i=1; i<=lda-1; i=i+2) {
+			status = fftmcf_(&complexd(i,j,1),&complexd(i+1,j,1),&nslice,&nslice,&nslice,&ndr);
+			if (status == -1) {
+				fprintf(stderr, "Native FFT cannot be performed on images with one of ");
+				fprintf(stderr, "the dimensions set to n = %d\n", nslice);
+				exit(1); 
+			}
+		}
+	}
 
-       }
-    }
-
-    return status;
+	return status;
 }
 #undef reald
 
 // 3d out of place IFFT
 int Nativefft::ftp_3rb(float *complexd, int lda, int nsam, int nrow, int nslice)
 {
-    // input:  complexd(lda,nrow,nslice)
-    // output: complexd(lda,nrow,nslice), with Fourier coefficients 
+	// input:  complexd(lda,nrow,nslice)
+	// output: complexd(lda,nrow,nslice), with Fourier coefficients 
 
-    int ndr, i, j, k, status=0;
-    float q;
+	int ndr, i, j, k, status=0;
+	float q;
 
-    ndr=-lda*nrow;
+	ndr=-lda*nrow;
 
-    for (j=1; j<=nrow; j++) {
-       for (i=1; i<=lda-1; i=i+2) {
-          status = fftmcf_(&complexd(i,j,1),&complexd(i+1,j,1),&nslice,&nslice,&nslice,&ndr);
-          if (status == -1) {
-             fprintf(stderr, "Native IFT cannot be performed on images with one of ");
-             fprintf(stderr, "the dimensions set to n = %d\n", nslice);
-             exit(1); 
-          }
+	for (j=1; j<=nrow; j++) {
+		for (i=1; i<=lda-1; i=i+2) {
+			status = fftmcf_(&complexd(i,j,1),&complexd(i+1,j,1),&nslice,&nslice,&nslice,&ndr);
+			if (status == -1) {
+				fprintf(stderr, "Native IFT cannot be performed on images with one of ");
+				fprintf(stderr, "the dimensions set to n = %d\n", nslice);
+				exit(1); 
+			}
+		}
+	}
 
-       }
-    }
+	// normalize for inverse
+	q=1.0/(float)(nslice);
+	for (k=1; k<=nslice; k++) for (j=1;j<=nrow;j++) for (i=1;i<=lda;i++) complexd(i,j,k) *= q;
 
-    // normalize for inverse
-    q=1.0/(float)(nslice);
-    for (k=1; k<=nslice; k++) for (j=1;j<=nrow;j++) for (i=1;i<=lda;i++) complexd(i,j,k) *= q;
+	for (k=1; k<=nslice; k++) status = ftp_2rb(&complexd(1,1,k), lda, nsam, nrow);
 
-    for (k=1; k<=nslice; k++) status = ftp_2rb(&complexd(1,1,k), lda, nsam, nrow);
-
-    return status;
+	return status;
 }
 #undef complexd
 
@@ -1188,62 +1186,60 @@ int Nativefft::ftp_3rb(float *complexd, int lda, int nsam, int nrow, int nslice)
 // 3d inplace FFT
 int Nativefft::fmrs_3rf(float *b, float *work, int lda, int nsam, int nrow, int nslice)
 {
-    // input :  b(lda,nrow,nslice), work(lda)
-    // output:  b(lda,nrow,nslice), overwritten with Fourier coefficients
+	// input :  b(lda,nrow,nslice), work(lda)
+	// output:  b(lda,nrow,nslice), overwritten with Fourier coefficients
 
-    int ndr, i, j, k, status=0;
+	int ndr, i, j, k, status=0;
 
-    ndr=lda*nrow;
+	ndr=lda*nrow;
 
-    for (k=1; k<=nslice; k++) status = fmrs_2rf(&b(1,1,k), work, lda, nsam, nrow);
+	for (k=1; k<=nslice; k++) status = fmrs_2rf(&b(1,1,k), work, lda, nsam, nrow);
 
-    for (j=1; j<=nrow; j++) {
-       for (i=1; i<=lda-1; i=i+2) {
-          status = fftmcf_(&b(i,j,1),&b(i+1,j,1),&nslice,&nslice,&nslice,&ndr);
-          if (status == -1) {
-             fprintf(stderr, "Native FFT cannot be performed on images with one of ");
-             fprintf(stderr, "the dimensions set to n = %d\n", nslice);
-             exit(1); 
-          }
+	for (j=1; j<=nrow; j++) {
+		for (i=1; i<=lda-1; i=i+2) {
+			status = fftmcf_(&b(i,j,1),&b(i+1,j,1),&nslice,&nslice,&nslice,&ndr);
+			if (status == -1) {
+				fprintf(stderr, "Native FFT cannot be performed on images with one of ");
+				fprintf(stderr, "the dimensions set to n = %d\n", nslice);
+				exit(1); 
+			}
+		}
+	}
+	// should check for error here by looking at ndrt
 
-       }
-    }
-    // should check for error here by looking at ndrt
-
-    return status;
+	return status;
 }
 
 // 3d inplace IFFT
 int Nativefft::fmrs_3rb(float *b, float *work, int lda, int nsam, int nrow, int nslice)
 {
-    // input:  b(lda,nrow,nslice), work(lda)
-    // output: b(lda,nrow,nslice), overwritten with Fourier coefficients 
+	// input:  b(lda,nrow,nslice), work(lda)
+	// output: b(lda,nrow,nslice), overwritten with Fourier coefficients 
 
-    int ndr, i, j, k, status=0;
-    float q;
+	int ndr, i, j, k, status=0;
+	float q;
 
-    ndr=-lda*nrow;
+	ndr=-lda*nrow;
 
-    for (j=1;j<=nrow;j++) {
-       for (i=1;i<=lda-1;i=i+2) {
-          status = fftmcf_(&b(i,j,1),&b(i+1,j,1),&nslice,&nslice,&nslice,&ndr);
-          if (status == -1) {
-             fprintf(stderr, "Native IFT cannot be performed on images with one of ");
-             fprintf(stderr, "the dimensions set to n = %d\n", nslice);
-             exit(1); 
-          }
+	for (j=1;j<=nrow;j++) {
+		for (i=1;i<=lda-1;i=i+2) {
+			status = fftmcf_(&b(i,j,1),&b(i+1,j,1),&nslice,&nslice,&nslice,&ndr);
+			if (status == -1) {
+				fprintf(stderr, "Native IFT cannot be performed on images with one of ");
+				fprintf(stderr, "the dimensions set to n = %d\n", nslice);
+				exit(1); 
+			}
+		}
+	}
 
-       }
-    }
+	// should check for error here by looking at ndrt
 
-    // should check for error here by looking at ndrt
+	// normalize for inverse
+	q=1.0/(float)(nslice);
+	for (k=1;k<=nslice;k++) for (j=1;j<=nrow;j++) for (i=1;i<=lda;i++) b(i,j,k)*=q;
 
-    // normalize for inverse
-    q=1.0/(float)(nslice);
-    for (k=1;k<=nslice;k++) for (j=1;j<=nrow;j++) for (i=1;i<=lda;i++) b(i,j,k)*=q;
-
-    for (k=1; k<=nslice; k++) status = fmrs_2rb(&b(1,1,k), work, lda, nsam, nrow);
-    return status;
+	for (k=1; k<=nslice; k++) status = fmrs_2rb(&b(1,1,k), work, lda, nsam, nrow);
+	return status;
 }
 #undef b
 
@@ -1286,31 +1282,31 @@ Algorithmically based on Fortran-77 FFTPACK by Paul N. Swarztrauber (Version 4, 
 static void passf2(int ido, int l1, const Treal cc[], Treal ch[], const Treal wa1[], int isign)
   /* isign==+1 for backward transform */
   {
-    int i, k, ah, ac;
-    Treal ti2, tr2;
-    if (ido <= 2) {
-      for (k=0; k<l1; k++) {
-        ah = k*ido;
-        ac = 2*k*ido;
-        ch[ah]              = ref(cc,ac) + ref(cc,ac + ido);
-        ch[ah + ido*l1]     = ref(cc,ac) - ref(cc,ac + ido);
-        ch[ah+1]            = ref(cc,ac+1) + ref(cc,ac + ido + 1);
-        ch[ah + ido*l1 + 1] = ref(cc,ac+1) - ref(cc,ac + ido + 1);
-      }
-    } else {
-      for (k=0; k<l1; k++) {
-        for (i=0; i<ido-1; i+=2) {
-          ah = i + k*ido;
-          ac = i + 2*k*ido;
-          ch[ah]   = ref(cc,ac) + ref(cc,ac + ido);
-          tr2      = ref(cc,ac) - ref(cc,ac + ido);
-          ch[ah+1] = ref(cc,ac+1) + ref(cc,ac + 1 + ido);
-          ti2      = ref(cc,ac+1) - ref(cc,ac + 1 + ido);
-          ch[ah+l1*ido+1] = wa1[i]*ti2 + isign*wa1[i+1]*tr2;
-          ch[ah+l1*ido]   = wa1[i]*tr2 - isign*wa1[i+1]*ti2;
-        }
-      }
-    }
+	int i, k, ah, ac;
+	Treal ti2, tr2;
+	if (ido <= 2) {
+		for (k=0; k<l1; k++) {
+			ah = k*ido;
+			ac = 2*k*ido;
+			ch[ah]  	    = ref(cc,ac) + ref(cc,ac + ido);
+			ch[ah + ido*l1]     = ref(cc,ac) - ref(cc,ac + ido);
+			ch[ah+1]	    = ref(cc,ac+1) + ref(cc,ac + ido + 1);
+			ch[ah + ido*l1 + 1] = ref(cc,ac+1) - ref(cc,ac + ido + 1);
+		}
+	} else {
+		for (k=0; k<l1; k++) {
+			for (i=0; i<ido-1; i+=2) {
+				ah = i + k*ido;
+				ac = i + 2*k*ido;
+				ch[ah]   = ref(cc,ac) + ref(cc,ac + ido);
+				tr2	 = ref(cc,ac) - ref(cc,ac + ido);
+				ch[ah+1] = ref(cc,ac+1) + ref(cc,ac + 1 + ido);
+				ti2	 = ref(cc,ac+1) - ref(cc,ac + 1 + ido);
+				ch[ah+l1*ido+1] = wa1[i]*ti2 + isign*wa1[i+1]*tr2;
+				ch[ah+l1*ido]	= wa1[i]*tr2 - isign*wa1[i+1]*ti2;
+			}
+		}
+	}
   } /* passf2 */
 
 
@@ -2744,8 +2740,8 @@ static void rffti1(int n, Treal wa[], int ifac[MAXFAC+2])
 
 void EMAN::rffti(int n, Treal wsave[])
   {
-    if (n == 1) return;
-    rffti1(n, wsave+n, (int*)(wsave+2*n));
+	if (n == 1) return;
+	rffti1(n, wsave+n, (int*)(wsave+2*n));
   } /* rffti */
 
 //#ifdef __cplusplus
