@@ -41,6 +41,8 @@ OPTION(ENABLE_PYTHON "enable boost python support" ON)
 
 OPTION(ENABLE_OPENGL "enable EMAN2 OpenGL usage" ON)
 OPTION(ENABLE_FTGL "enable EMAN2 FTGL (3D fonts) usage" OFF)
+OPTION(ENABLE_STATIC_FTGL "If build EMAN with libftgl.a" OFF)
+MARK_AS_ADVANCED(ENABLE_STATIC_FTGL)
 
 OPTION(ENABLE_DEBUG "enable debug support" OFF)
 OPTION(ENABLE_MEMDEBUG "enable memory debug support" OFF)
