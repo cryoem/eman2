@@ -1773,7 +1773,6 @@ EMData *EMData::make_rotational_footprint( bool unwrap)
 	}
 	
 	static EMData obj_filt;
-	EMData *rfp=NULL;
 	EMData* filt = &obj_filt;
 	filt->set_complex(true);
 
@@ -1781,9 +1780,8 @@ EMData *EMData::make_rotational_footprint( bool unwrap)
 		LOGERR("even image xsize only");		throw ImageFormatException("even image xsize only");
 	}
 
-	int cs = (((nx * 7 / 4) & 0xfffff8) - nx) / 2;
+	int cs = (((nx * 7 / 4) & 0xfffff8) - nx) / 2; // this pads the image to 1 3/4 * size with result divis. by 8
 
-	EMData *tmp2 = 0;
 	Region r1;
 	if (nz == 1) {
 		r1 = Region(-cs, -cs, nx + 2 * cs, ny + 2 * cs);
@@ -1791,24 +1789,30 @@ EMData *EMData::make_rotational_footprint( bool unwrap)
 	else {
 		r1 = Region(-cs, -cs, -cs, nx + 2 * cs, ny + 2 * cs, nz + 2 * cs);
 	}
-	tmp2->process_inplace("normalize.edgemean");
-	tmp2 = get_clip(r1);
-// 	tmp2->process_inplace("mask.sharp",Dict("outer_radius",nx/2,"value",get_attr("mean")));
-	tmp2->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
-// 	if (filt->get_xsize() != tmp2->get_xsize() +2 || filt->get_ysize() != tmp2->get_ysize() ||
-// 		filt->get_zsize() != tmp2->get_zsize()) {
-// 		filt->set_size(tmp2->get_xsize() + 2, tmp2->get_ysize(), tmp2->get_zsize());
-// 		filt->to_one();
-// 
-// 		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
-// 	}
+	
+	// It is important to set all newly established pixels around the boundaries to the mean
+	// If this is not done then the associated rotational alignment routine breaks, in fact
+	// everythin just goes foo. 
+	EMData *clipped = get_clip(r1,get_attr("mean"));
+// 	EMData *clipped = copy()
+	
+	// The filter object is nothing more than a cached high pass filter
+	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool)) 
+	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication 
+	// set to true, which is used for speed reasons. 
+	if (filt->get_xsize() != clipped->get_xsize() +2 || filt->get_ysize() != clipped->get_ysize() ||
+		   filt->get_zsize() != clipped->get_zsize()) {
+		filt->set_size(clipped->get_xsize() + 2, clipped->get_ysize(), clipped->get_zsize());
+		filt->to_one();
 
-	EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true);
-
-	if( tmp2 )
-	{
-		delete tmp2;
-		tmp2 = 0;
+		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
+	}
+	
+	EMData *mc = clipped->calc_mutual_correlation(clipped, true,filt);
+	
+	if( clipped ) {
+		delete clipped;
+		clipped = 0;
 	}
 
 	Region r2;
@@ -1818,32 +1822,32 @@ EMData *EMData::make_rotational_footprint( bool unwrap)
 	else {
 		r2 = Region(cs - nx / 4, cs - ny / 4, cs - nz / 4, nx * 3 / 2, ny * 3 / 2, nz * 3 / 2);
 	}
-	tmp2 = tmp->get_clip(r2);
-	rfp = tmp2;
-
-	if( tmp )
-	{
-		delete tmp;
-		tmp = 0;
+	
+	EMData* clipped_mc = mc->get_clip(r2);
+	if( mc ) {
+		delete mc;
+		mc = 0;
 	}
-
-	EMData * result = rfp;
+	
+	EMData * result = NULL;
 
 	if (nz == 1) {
 		if (!unwrap) {
-			tmp2->process_inplace("mask.sharp", Dict("outer_radius", -1, "value", 0));
-			rfp = 0;
-			result = tmp2;
+			clipped_mc->process_inplace("mask.sharp", Dict("outer_radius", -1, "value", 0));
+			result = clipped_mc;
 		}
 		else {
-			rfp = tmp2->unwrap();
-			if( tmp2 )
-			{
-				delete tmp2;
-				tmp2 = 0;
+			result = clipped_mc->unwrap();
+			if( clipped_mc ) {
+				delete clipped_mc;
+				clipped_mc = 0;
 			}
-			result = rfp;
 		}
+	}
+	else {
+		// I am not sure why there is any consideration of non 2D images, but it was here
+		// in the first port so I kept when I cleaned this function up (d.woolford)
+		result = clipped_mc;
 	}
 
 	EXITFUNC;
@@ -1920,8 +1924,8 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 			throw ImageFormatException("improperly sized filter");
 		}
 
-		cf->mult(*filter);
-		this_fft->mult(*filter);
+		cf->mult(*filter,true);
+		this_fft->mult(*filter,true);
 	}
 
 	float *rdata1 = this_fft->get_data();

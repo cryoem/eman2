@@ -214,68 +214,72 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	
 }
 
-EMData * RotationalAligner::align_180_amgiguous(EMData * this_img, EMData * to) {
+EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to) {
 	
-	EMData *this_img2 = this_img->make_rotational_footprint();
-	EMData *to2 = to->make_rotational_footprint();
+	// Make translationally invariant rotational footprints
+	EMData* this_img_rfp = this_img->make_rotational_footprint();
+	EMData *to_rfp = to->make_rotational_footprint();
+	
+	int this_img_rfp_nx = this_img_rfp->get_xsize();
 
-//	to2->write_image("temp.hdf",-1); // eliminate later, PRB
-	int this_img2_nx = this_img2->get_xsize();
+	// Perform the column wise FT (or something like that, unsure of precise details)
+	EMData *cf = this_img_rfp->calc_ccfx(to_rfp, 0, this_img->get_ysize());
 
-	EMData *cf = this_img2->calc_ccfx(to2, 0, this_img->get_ysize());
-// 	cf->mult(-1.0f);
-// 	cf->write_image("temp.hdf",-1); // eliminate later, PRB
-	delete this_img2;
-	delete to2;
+	// Delete them they're no longer needed
+	delete this_img_rfp; this_img_rfp = 0;
+	delete to_rfp; to_rfp = 0;
 
+	// Now solve the rotational alignment directly
 	float *data = cf->get_data();
 	float peak = 0;
 	int peak_index = 0;
-
-	Util::find_max(data, this_img2_nx, &peak, &peak_index);
+	Util::find_max(data, this_img_rfp_nx, &peak, &peak_index);
 	
-// 	cf->update();
-	if( cf )
-	{
+	if( cf ) {
 		delete cf;
 		cf = 0;
 	}
+	float rot_angle = (float) (peak_index * 180.0f / this_img_rfp_nx);
+	
+	// Return the result
 	cf=this_img->copy();
-	float rotateAngle = (float) (peak_index * 180.0f / this_img2_nx);
-	cf->rotate( rotateAngle, 0, 0);
-	
-	cf->set_attr("align.az",rotateAngle);
+	cf->rotate( rot_angle, 0, 0);
+	cf->set_attr("align.az",rot_angle);
 	return cf;
-	
 }
+
 EMData *RotationalAligner::align(EMData * this_img, EMData *to,  
 			const string& cmp_name, const Dict& cmp_params) const
 {
-	if (!to) {
-		return 0;
-	}
+	if (!to) throw InvalidParameterException("Can not rotational align - the image to align to is NULL");
 	
-	EMData* cfL = RotationalAligner::align_180_amgiguous(this_img,to);
-	float rotateAngle = cfL->get_attr("align.az");
-	EMData *cfR=cfL->copy();
-	cfR->process_inplace("math.rotate.180");
-	float Ldot = cfL->cmp(cmp_name, to, cmp_params);
-	float Rdot = cfR->cmp(cmp_name, to, cmp_params);
-// 	printf("Ldot = %f, Rdot=%f \n",Ldot, Rdot); // eliminate later, PRB
+	// Perform 180 ambiguous alignment
+	EMData* rot_aligned = RotationalAligner::align_180_ambiguous(this_img,to);
+	float rotate_angle_solution = rot_aligned->get_attr("align.az");
+	
+	// Make a copy of the rotationally aligned image and then rotate it 180
+	EMData *rot_align_180= rot_aligned->copy();
+	rot_align_180->process_inplace("math.rotate.180");
+	
+	// Generate the comparison metrics for both rotational candidates
+	float rot_cmp = rot_aligned->cmp(cmp_name, to, cmp_params);
+	float rot_180_cmp = rot_align_180->cmp(cmp_name, to, cmp_params);
+
+	// Decide on the result
 	float score = 0.0;
-	EMData* result;
-	if (Ldot<Rdot){
-		result=cfL;
-		score = Ldot;
-		delete cfR;
+	EMData* result = NULL;
+	if (rot_cmp < rot_180_cmp){
+		result = rot_aligned;
+		score = rot_cmp;
+		delete rot_align_180; rot_align_180 = 0;
 	} else {
-		result=cfR;
-		score = Rdot;
-		delete cfL;
-		rotateAngle = rotateAngle-180;
+		result = rot_align_180;
+		score = rot_180_cmp;
+		delete rot_aligned; rot_aligned = 0;
+		rotate_angle_solution = rotate_angle_solution-180;
 	}
 	result->set_attr("align.score", score);
-	result->set_attr("align.az",rotateAngle);
+	result->set_attr("align.az",rotate_angle_solution);
 
 	return result;
 }
@@ -489,54 +493,51 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
 	
-	EMData *this_copy  =  RotationalAligner::align_180_amgiguous(this_img,to);
-	EMData *this_copy2 = this_copy->copy(); // Now this_copy, this_copy2
-	this_copy2->process_inplace("math.rotate.180");               //  is an aligned version of this_img
-	this_copy2->set_attr("align.az",(float)this_copy->get_attr("align.az")+180.0);
-	Dict trans_params;
+	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
+	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to);
+	EMData *rot_align_180 = rot_align->copy(); 
+	rot_align_180->process_inplace("math.rotate.180"); 
+	rot_align_180->set_attr("align.az",(float)rot_align->get_attr("align.az")+180.0);
 	
+	Dict trans_params;
 	trans_params["intonly"]  = 0;
 	trans_params["maxshift"] = params.set_default("maxshift", -1);
 	
+	// Do the first case translational alignment
 	trans_params["nozero"]   = params.set_default("nozero",false);
-	EMData* this_copy_trans =this_copy->align("translational", to, trans_params, cmp_name, cmp_params);
-	if( this_copy )
-	{
-		delete this_copy;
-		this_copy = 0;
+	EMData* rot_trans = rot_align->align("translational", to, trans_params, cmp_name, cmp_params);
+	if( rot_align ) { // Clean up
+		delete rot_align;
+		rot_align = 0; 
 	}
 	
-	
-	EMData* this_copy_trans2 = this_copy2->align("translational", to, trans_params, cmp_name, cmp_params);
-	if( this_copy2 )
-	{
-		delete this_copy2;
-		this_copy2 = 0;
+	// Do the second case translational alignment
+	EMData*  rot_180_trans = rot_align_180->align("translational", to, trans_params, cmp_name, cmp_params);
+	if( rot_align_180 )	{ // Clean up
+		delete rot_align_180;
+		rot_align_180 = 0;
 	}
 	
-
-	float dot1 = 0;
-	float dot2 = 0;
-	dot1 = this_copy_trans->cmp(cmp_name, to, cmp_params);
-	dot2 = this_copy_trans2->cmp(cmp_name, to, cmp_params);
+	// Finally decide on the result
+	float cmp1 = rot_trans->cmp(cmp_name, to, cmp_params);
+	float cmp2 = rot_180_trans->cmp(cmp_name, to, cmp_params);
+	
 	EMData *result = 0;
-	if (dot1 < dot2) { // Assumes smaller is better - thus all comparitors should support "smaller is better"
-		this_copy_trans->set_attr("align.score", dot1);
-		if( this_copy2 )
-		{
-			delete this_copy_trans2;
-			this_copy_trans2 = 0;
+	if (cmp1 < cmp2) { // Assumes smaller is better - thus all comparitors should support "smaller is better"
+		rot_trans->set_attr("align.score", cmp1);
+		if( rot_180_trans )	{
+			delete rot_180_trans;
+			rot_180_trans = 0;
 		}
-		result = this_copy_trans;
+		result = rot_trans;
 	}
 	else {
-		this_copy_trans2->set_attr("align.score", dot2);
-		if( this_copy_trans )
-		{
-			delete this_copy_trans;
-			this_copy_trans = 0;
+		rot_180_trans->set_attr("align.score", cmp2);
+		if( rot_trans )	{
+			delete rot_trans;
+			rot_trans = 0;
 		}
-		result = this_copy_trans2;
+		result = rot_180_trans;
 	}
 	return result;
 }
@@ -614,6 +615,55 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 			this_copy = 0;
 		}
 		result = this_copy2;
+	}
+	
+	return result;
+}
+
+
+EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to, 
+										  const string & cmp_name, const Dict& cmp_params) const
+{
+	// Get the non flipped rotational, tranlsationally aligned image
+	EMData *rot_trans_align = this_img->align("rotate_translate", to, Dict("maxshift", params["maxshift"]),cmp_name, cmp_params);
+
+	// Do the same alignment, but using the flipped version of the image
+	EMData *flipped = params.set_default("flip", (EMData *) 0);
+	bool delete_flag = false;
+	if (flipped == 0) {
+		flipped = this_img->process("xform.flip", Dict("axis", "x"));
+		delete_flag = true;
+	}
+	EMData * rot_trans_align_flip = flipped->align("rotate_translate", to, Dict("maxshift", params["maxshift"]), cmp_name, cmp_params);
+		
+	if (delete_flag){
+		 delete flipped;
+		 flipped = 0;
+	}
+
+	// Now finally decide on what is the best answer
+	float cmp1 = rot_trans_align->cmp(cmp_name, to, cmp_params);
+	float cmp2 = rot_trans_align_flip->cmp(cmp_name, to, cmp_params);
+
+	EMData *result = 0;
+	if (cmp1 < cmp2) {
+		rot_trans_align->set_attr("align.flip",0);
+		rot_trans_align->set_attr("align.score",cmp1);
+
+		if( rot_trans_align_flip ) {
+			delete rot_trans_align_flip;
+			rot_trans_align_flip = 0;
+		}
+		result = rot_trans_align;
+	}
+	else {
+		rot_trans_align_flip->set_attr("align.flip",1);
+		rot_trans_align_flip->set_attr("align.score",cmp2);
+		if( rot_trans_align ) {
+			delete rot_trans_align;
+			rot_trans_align = 0;
+		}
+		result = rot_trans_align_flip;
 	}
 	
 	return result;
@@ -841,95 +891,6 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 
 	return result;
 }
-
-EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to, 
-			const string & given_cmp_name, const Dict& cmp_params) const
-{
-// 	EMData *with = to;
-// 	EMData *flip = params.set_default("flip", (EMData *) 0);
-	
-	params.set_default("maxshift", -1);
-	string cmp_name = given_cmp_name;
-// 	int usedot = params.set_default("usedot", 1);
-// 	if (usedot) {
-// 		cmp_name = "dot";
-// 	}
-
-	EMData *this_copy = this_img->align("rotate_translate", to, Dict("maxshift", params["maxshift"]),cmp_name, cmp_params);
-
-// 	if (flip) {
-// 		this_copy2 = flip->align("rotate_translate", to, Dict("maxshift", params["maxshift"]));
-// 	}
-// 	else {
-	EMData* flipped = this_img->process("xform.flip", Dict("axis", "x"));
-	EMData * this_copy2 = flipped->align("rotate_translate", to, Dict("maxshift", params["maxshift"]), cmp_name, cmp_params);
-	delete flipped;
-// 	}
-
-	if (!this_copy) {
-		LOGERR("%s failed", get_name().c_str());
-		return this_copy2;
-	}
-	if (!this_copy2) {
-		LOGERR("%s flip failed", get_name().c_str());
-		return this_copy;
-	}
-
-	float dot1 = 0;
-	float dot2 = 0;
-
-	
-// 	if (usedot) {
-// 		dot1 = this_copy->cmp(cmp_name, to, cmp_params);
-// 		dot2 = this_copy2->cmp(cmp_name, to, cmp_params);
-// 
-// 		if (usedot == 2) {
-// 			Vec3f trans = this_copy->get_translation();
-// 			Dict rot = this_copy->get_transform().get_rotation(Transform3D::EMAN);
-// 
-// 			Vec3f trans2 = this_copy2->get_translation();
-// 			Dict rot2 = this_copy2->get_transform().get_rotation(Transform3D::EMAN);
-// 
-// 			printf("%f vs %f  (%1.1f, %1.1f  %1.2f) (%1.1f, %1.1f  %1.2f)\n",
-// 				   dot1, dot2, trans[0], trans[1], (float)rot["alt"] * 180. / M_PI,
-// 				   trans2[0], trans2[1], (float)rot2["alt"] * 180. / M_PI);
-// 		}
-// 	}
-// 	else {
-// 		cmp_params["keepzero"] = 1;
-
-	dot1 = this_copy->cmp(cmp_name, to, cmp_params);
-	dot2 = this_copy2->cmp(cmp_name, to, cmp_params);
-// 	}
-
-	EMData *result = 0;
-
-	if (dot1 < dot2) {
-		this_copy->set_attr("align.flip",0);
-		this_copy->set_attr("align.score",dot1);
-
-		if( this_copy2 )
-		{
-			delete this_copy2;
-			this_copy2 = 0;
-		}
-		result = this_copy;
-	}
-	else {
-		this_copy2->set_attr("align.flip",1);
-		this_copy2->set_flipped(true);
-		this_copy2->set_attr("align.score",dot2);
-		if( this_copy )
-		{
-			delete this_copy;
-			this_copy = 0;
-		}
-		result = this_copy2;
-	}
-	
-	return result;
-}
-
 
 
 EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  

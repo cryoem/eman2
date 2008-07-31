@@ -130,6 +130,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_uncut_slice_overloads_1_2, un
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_clip_overloads_1_2, get_clip, 1, 2)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_mult_overloads_1_2, mult, 1, 2)
+		
 }// namespace 
 
 
@@ -264,9 +266,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("add", (void (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::add)
 	.def("sub", (void (EMAN::EMData::*)(float) )&EMAN::EMData::sub)
 	.def("sub", (void (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::sub)
+	.def("mult", (void (EMAN::EMData::*)(const EMAN::EMData&, bool) )&EMAN::EMData::mult, EMAN_EMData_mult_overloads_1_2())
 	.def("mult", (void (EMAN::EMData::*)(int) )&EMAN::EMData::mult)
 	.def("mult", (void (EMAN::EMData::*)(float) )&EMAN::EMData::mult)
-	.def("mult", (void (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::mult)
 	.def("div", (void (EMAN::EMData::*)(float) )&EMAN::EMData::div)
 	.def("div", (void (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::div)
 	.def("to_zero", &EMAN::EMData::to_zero)

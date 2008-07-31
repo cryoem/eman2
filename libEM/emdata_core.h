@@ -100,9 +100,10 @@ void mult(float f);
  * other same-size image.
  *
  * @param image The image multiplied to 'this' image.
+ * @param prevent_complex_multiplication if the image is complex, this flag will override complex multiplication and just multiply each pixel by the other
  * @exception ImageFormatException If the 2 images are not same size.
  */
-void mult(const EMData & image);
+void mult(const EMData & image, bool prevent_complex_multiplication=false);
 
 
 /** make each pixel value divided by a number.

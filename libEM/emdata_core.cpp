@@ -261,23 +261,23 @@ void EMData::mult(float f)
 }
 
 
-void EMData::mult(const EMData & em)
+void EMData::mult(const EMData & em, bool prevent_complex_multiplication)
 {
 	ENTERFUNC;
 
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
-		throw ImageFormatException( "images not same sizes");
+		throw ImageFormatException( "can not multiply images that are not the same size");
 	}
 	else if( (is_real()^em.is_real()) == true )
 	{
-		throw ImageFormatException( "not support multiply between real image and complex image");
+		throw ImageFormatException( "can not multiply real and complex images.");
 	}
 	else
 	{
 		update();
 		const float *src_data = em.get_data();
 		size_t size = nxy * nz;
-		if( is_real() )
+		if( is_real() || prevent_complex_multiplication )
 		{
 			for (size_t i = 0; i < size; i++) {
 				rdata[i] *= src_data[i];
@@ -1054,23 +1054,14 @@ void EMData::to_one()
 
 	if (is_complex()) {
 		set_ri(true);
-		for (int i = 0; i < nxy * nz; i+=2) {
-			rdata[i] = 1.0f;
-		}
-		for (int i = 1; i < nxy * nz; i+=2) {
-			rdata[i] = 0.0f;
-		}
 	}
 	else {
 		set_ri(false);
-		for (int i = 0; i < nxy * nz; i++) {
-			rdata[i] = 1.0f;
-		}
 	}
 
-// 	for (int i = 0; i < nxy * nz; i++) {
-// 		rdata[i] = 1.0f;
-// 	}
+	for (int i = 0; i < nxy * nz; i++) {
+		rdata[i] = 1.0f;
+	}
 
 	update();
 	EXITFUNC;

@@ -200,7 +200,7 @@ namespace EMAN
 			return new RotationalAligner();
 		}
 		
-		static EMData * align_180_amgiguous(EMData * this_img, EMData * to_img);
+		static EMData * align_180_ambiguous(EMData * this_img, EMData * to_img);
 
 		TypeDict get_param_types() const
 		{
