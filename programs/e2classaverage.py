@@ -233,16 +233,18 @@ def main():
 								average = images[p].copy()
 								#average.process_inplace("xform.centerofmass")
 								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-
+							average.process_inplace("normalize.edgemean")
 							average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							#average.write_image("ave_.hdf",-1)
+							average.write_image("e2_seeding_bs.img",-1);
 							np = 1
 						else:
 							if (options.lowmem): 
 								image = EMData()
 								image.read_image(args[0],p)
 							else: image = images[p]
-					
+							
+							image.process_inplace("normalize.edgemean")
 							ta = align(image,average,options)
 							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 							
@@ -270,6 +272,7 @@ def main():
 			#average.write_image("avg.hdf",-1)
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.process_inplace("normalize.edgemean")
+			average.write_image("e2_bootstrapped.img",-1)
 					
 		if np == 0:
 			if options.verbose:
@@ -293,7 +296,8 @@ def main():
 					image = EMData()
 					image.read_image(args[0],p)
 				else: image = images[p]
-					
+				
+				image.process_inplace("normalize.edgemean")
 				ta = align(image,average,options)
 				#ta.write_image("ta"+str(cl)+".img",-1)
 				#g = ta.calc_ccf(average)
@@ -363,6 +367,8 @@ def main():
 				else:
 					image = images[p].copy()
 				
+				image.process_inplace("normalize.edgemean")
+				
 				try:
 					if dflip.get(c,p) != 0:
 						image.process_inplace("xform.flip", {"axis":"x"});
@@ -374,7 +380,7 @@ def main():
 				
 				image.rotate_translate(t3d)
 				#if it != (options.iter-1):
-				image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+				#image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 				#image.rotate(da.get(c,p),0,0)
 				#image.process_inplace("mask.sharp",{"outer_radius":image.get_xsize()/2})
 				#g = image.calc_ccf(average)

@@ -189,10 +189,11 @@ namespace EMAN
 		/** Get an inclusive clip. Pads 0 if larger than this image.
 		 * area can be 2D/3D.
 		 * @param area The clip area.
+		 * @param fill the value to assign new pixels outside the area of the original image
 		 * @exception ImageDimensionException if any of the dimensions of the argument region are negative
 		 * @return The clip image.
 		 */
-		EMData *get_clip(const Region & area) const;
+		EMData *get_clip(const Region & area, const float fill = 0) const;
 		
 		/** Clip the image inplace - clipping region must be smaller than the current region
 		 * internally memory is reallocated

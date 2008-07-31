@@ -567,7 +567,7 @@ void EMData::clip_inplace(const Region & area)
 	EXITFUNC;
 }
 
-EMData *EMData::get_clip(const Region & area) const
+EMData *EMData::get_clip(const Region & area, const float fill) const
 {
 		ENTERFUNC;
 	if (get_ndim() != area.get_ndim()) {
@@ -575,8 +575,8 @@ EMData *EMData::get_clip(const Region & area) const
 		return 0;
 	}
 
-	EMData *result = new EMData();	
-	
+	EMData *result = new EMData();
+
 	// Added by d.woolford - I need to ensure that all of the metadata of this is stored in the new object
 	// Originally added to ensure that euler angles were retained when preprocessing (zero padding) images
 	// prior to insertion into the 3D for volume in the reconstruction phase (see reconstructor.cpp/h).
@@ -596,6 +596,7 @@ EMData *EMData::get_clip(const Region & area) const
 	}
 
 	result->set_size((int)area.size[0], ysize, zsize);
+	if (fill != 0.0) { result->add(fill); };
 
 	int x0 = (int) area.origin[0];
 	x0 = x0 < 0 ? 0 : x0;
@@ -1790,17 +1791,19 @@ EMData *EMData::make_rotational_footprint( bool unwrap)
 	else {
 		r1 = Region(-cs, -cs, -cs, nx + 2 * cs, ny + 2 * cs, nz + 2 * cs);
 	}
-	tmp2 = get_clip(r1);
+	tmp2 = get_clip(r1,get_attr("mean"));
+	tmp2->process_inplace("mask.sharp",Dict("outer_radius",nx/2,"value",get_attr("mean")));
+	tmp2->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
+// 	if (filt->get_xsize() != tmp2->get_xsize() +2 || filt->get_ysize() != tmp2->get_ysize() ||
+// 		filt->get_zsize() != tmp2->get_zsize()) {
+// 		filt->set_size(tmp2->get_xsize() + 2, tmp2->get_ysize(), tmp2->get_zsize());
+// 		filt->to_one();
+// 
+// 		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
+// 	}
 
-	if (filt->get_xsize() != tmp2->get_xsize() + 2 || filt->get_ysize() != tmp2->get_ysize() ||
-		filt->get_zsize() != tmp2->get_zsize()) {
-		filt->set_size(tmp2->get_xsize() + 2, tmp2->get_ysize(), tmp2->get_zsize());
-		filt->to_one();
+	EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true);
 
-		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5/nx));
-	}
-
-	EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true, filt);
 	if( tmp2 )
 	{
 		delete tmp2;
@@ -1888,8 +1891,9 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 
 	EMData *this_fft = 0;
 	this_fft = do_fft();
-
+	
 	if (!this_fft) {
+		
 		LOGERR("FFT returns NULL image");
 		throw NullPointerException("FFT returns NULL image");
 	}
@@ -2240,7 +2244,6 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 				Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx], d[k + nx+1], t,u) * (y + r1);
 		}
 	}
-	update();
 	ret->update();
 
 	EXITFUNC;

@@ -83,7 +83,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	int ny = this_img->get_ysize();
 	int nz = this_img->get_zsize();
 	
-	int maxshiftx = params["maxshift"];
+	int maxshiftx = params.set_default("maxshift",-1);
 	int maxshifty = params["maxshift"];
 	int maxshiftz = params["maxshift"];
 	int nozero = params["nozero"];
@@ -488,7 +488,6 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,
 EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,  
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	params.set_default("maxshift", -1);
 	
 	EMData *this_copy  =  RotationalAligner::align_180_amgiguous(this_img,to);
 	EMData *this_copy2 = this_copy->copy(); // Now this_copy, this_copy2
@@ -497,7 +496,8 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	Dict trans_params;
 	
 	trans_params["intonly"]  = 0;
-	trans_params["maxshift"] = params["maxshift"];
+	trans_params["maxshift"] = params.set_default("maxshift", -1);
+	
 	trans_params["nozero"]   = params.set_default("nozero",false);
 	EMData* this_copy_trans =this_copy->align("translational", to, trans_params, cmp_name, cmp_params);
 	if( this_copy )
@@ -545,7 +545,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,  
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	params.set_default("maxshift", -1);
+	
 
 	EMData *this_copy = this_img->copy();
 	this_img->align("rotational", to,Dict(),cmp_name, cmp_params);
@@ -558,7 +558,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 	Dict trans_params;
 	
 	trans_params["intonly"] = 0;
-	trans_params["maxshift"] = params["maxshift"];
+	trans_params["maxshift"] = params.set_default("maxshift", -1);
 	this_copy->align("translational", to, trans_params, cmp_name, cmp_params);
 
 	Vec3f trans_v = this_copy->get_translation();

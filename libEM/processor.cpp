@@ -4538,7 +4538,7 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 	Dict params1;
 	params1["intonly"] = 1;
 	params1["maxshift"] = image->get_xsize() / 2;
-	// phaseorigin shift only needs to be used until P.Penczek resolves convolution issues relating to odd dimensions. This is as of July 24th 2008
+	// phaseorigin shift only needs to be used until P.Penczek resolves convolution issues relating to odd dimensions. This is as of July 24th 2008 FIXME
 	image->process_inplace("xform.phaseorigin.tocorner");
 	EMData* aligned = image->align("translational", 0, params1);
 	image->process_inplace("xform.phaseorigin.tocenter");

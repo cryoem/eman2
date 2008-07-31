@@ -1054,14 +1054,23 @@ void EMData::to_one()
 
 	if (is_complex()) {
 		set_ri(true);
+		for (int i = 0; i < nxy * nz; i+=2) {
+			rdata[i] = 1.0f;
+		}
+		for (int i = 1; i < nxy * nz; i+=2) {
+			rdata[i] = 0.0f;
+		}
 	}
 	else {
 		set_ri(false);
+		for (int i = 0; i < nxy * nz; i++) {
+			rdata[i] = 1.0f;
+		}
 	}
 
-	for (int i = 0; i < nxy * nz; i++) {
-		rdata[i] = 1.0f;
-	}
+// 	for (int i = 0; i < nxy * nz; i++) {
+// 		rdata[i] = 1.0f;
+// 	}
 
 	update();
 	EXITFUNC;
