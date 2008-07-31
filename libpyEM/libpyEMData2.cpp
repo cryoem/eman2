@@ -128,6 +128,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cut_slice_overloads_2_3, cut_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_uncut_slice_overloads_1_2, uncut_slice, 1, 2)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_clip_overloads_1_2, get_clip, 1, 2)
 
 }// namespace 
 
@@ -365,7 +366,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("Four_ds", &EMAN::EMData::Four_ds, EMAN_EMData_Four_ds_overloads_1_4()[ return_value_policy< manage_new_object >() ])
 	.def("Four_shuf_ds_cen_us", &EMAN::EMData::Four_shuf_ds_cen_us, EMAN_EMData_Four_shuf_ds_cen_us_overloads_1_4()[ return_value_policy< manage_new_object >() ])
 	.def("filter_by_image", &EMAN::EMData::filter_by_image, EMAN_EMData_filter_by_image_overloads_1_2()[ return_value_policy< manage_new_object >() ])
-	.def("get_clip", &EMAN::EMData::get_clip, return_value_policy< manage_new_object >())
+			.def("get_clip", &EMAN::EMData::get_clip, EMAN_EMData_get_clip_overloads_1_2() [ return_value_policy< manage_new_object >()])
 	.def("clip_inplace", &EMAN::EMData::clip_inplace, return_value_policy< reference_existing_object >())
 	.def("get_top_half", &EMAN::EMData::get_top_half, return_value_policy< manage_new_object >())
 	.def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, EMAN_EMData_get_rotated_clip_overloads_2_3()[ return_value_policy< manage_new_object >() ])

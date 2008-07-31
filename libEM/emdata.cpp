@@ -1791,8 +1791,9 @@ EMData *EMData::make_rotational_footprint( bool unwrap)
 	else {
 		r1 = Region(-cs, -cs, -cs, nx + 2 * cs, ny + 2 * cs, nz + 2 * cs);
 	}
-	tmp2 = get_clip(r1,get_attr("mean"));
-	tmp2->process_inplace("mask.sharp",Dict("outer_radius",nx/2,"value",get_attr("mean")));
+	tmp2->process_inplace("normalize.edgemean");
+	tmp2 = get_clip(r1);
+// 	tmp2->process_inplace("mask.sharp",Dict("outer_radius",nx/2,"value",get_attr("mean")));
 	tmp2->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
 // 	if (filt->get_xsize() != tmp2->get_xsize() +2 || filt->get_ysize() != tmp2->get_ysize() ||
 // 		filt->get_zsize() != tmp2->get_zsize()) {
