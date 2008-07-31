@@ -69,8 +69,6 @@ cd
 "CMakeFiles/EM2.dir/polardata.o"
 "CMakeFiles/EM2.dir/sparx/native_fft.o"
 "CMakeFiles/EM2.dir/sparx/util_sparx.o"
-"CMakeFiles/EM2.dir/sparx/Tokenizer.o"
-"CMakeFiles/EM2.dir/sparx/SparxIO.o"
 -L/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/lib
 -L/net/cci/hohn/tmp/gar-sparx/usr/lib
 -lsrfftw
@@ -219,8 +217,6 @@ lib_em2_sources = [
     "polardata.cpp", 
     "sparx/native_fft.cpp", 
     "sparx/util_sparx.cpp", 
-    "sparx/Tokenizer.cpp", 
-    "sparx/SparxIO.cpp", 
     ]
 
 #**

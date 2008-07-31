@@ -10,7 +10,6 @@
 #include <emftgl.h>
 #endif
 #include <imageio.h>
-#include <sparx/SparxIO.h>
 #include <testutil.h>
 #include <xydata.h>
 #include <emobject.h>
@@ -627,22 +626,6 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("get_debug_image")
         .staticmethod("check_image")
     ;
-
-    class_< TFList >("TFList", init<  >())
-        .def(init< const TFList& >())
-        .def(init< int, int >())
-        .def(init< int, int, int >())
-        .def_readwrite("data", &TFList::data)
-        .def_readwrite("nrows", &TFList::nrows)
-        .def_readwrite("ncols", &TFList::ncols)
-        .def_readwrite("ndigit", &TFList::ndigit)
-        .def("read", &TFList::read)
-        .def("write", &TFList::write)
-        .def("Copy", &TFList::Copy)
-        .def("CopyCol", &TFList::CopyCol)
-        .def("CopyRow", &TFList::CopyRow)
-        .def("SetVal", &TFList::SetVal)
-        .def("GetVal", &TFList::GetVal)
     ;
 #ifdef EMAN2_USING_FTGL
 	scope* EMAN_FTGL_scope = new scope(
