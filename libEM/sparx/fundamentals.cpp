@@ -131,8 +131,7 @@ periodogram(EMData* f) {
 		
 	}
 		
-	if( fp )
-	{
+	if( fp ) {
 		delete fp; // avoid a memory leak!
 		fp = 0;
 	}
@@ -246,8 +245,7 @@ Output: 1-2-3D real image with the result
 			float szn = 2*float(itmp)/float(nzp);
 			float sz = -M_PI*szn;
 			if ( std::abs(sxn-1.0)<1e-5 && (std::abs(syn-1.0)<1e-5 || ny==1 ) && (std::abs(szn-1.0)<1e-5 || nz==1 ) ) {
-				switch (ptype)
-				{
+				switch (ptype) {
 					case AUTOCORRELATION:
 					// fpmat := |fpmat|^2
 					// Note nxp are padded dimensions
@@ -306,8 +304,7 @@ Output: 1-2-3D real image with the result
 					}
 				}
 			} else {			
-				switch (ptype)
-				{
+				switch (ptype) {
 					case AUTOCORRELATION:
 					// fpmat := |fpmat|^2
 					// Note nxp are padded dimensions
@@ -371,11 +368,9 @@ Output: 1-2-3D real image with the result
 						throw InvalidValueException(ptype, "Illegal option in Fourier Product");
 				}
 			}
-		}
-		else {
+		} else {
 			// If the center flag is false, then just do basic multiplication
-			switch (ptype)
-			{
+			switch (ptype) {
 				case AUTOCORRELATION:
 					for (int iz = 1; iz <= nzp; iz++) {
 						for (int iy = 1; iy <= nyp; iy++) {
@@ -421,10 +416,8 @@ Output: 1-2-3D real image with the result
 			}
 		}
 		// Now done w/ gp, so let's get rid of it (if it's not an alias of fp or simply g was complex on input);
-		if (gexists && (f != g) && (!g->is_complex())) 
-		{
-			if( gp )
-			{
+		if (gexists && (f != g) && (!g->is_complex())) {
+			if( gp ) {
 				delete gp;
 				gp = 0;
 			}
