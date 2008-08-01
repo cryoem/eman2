@@ -369,16 +369,20 @@ def main():
 				
 				image.process_inplace("normalize.edgemean")
 				
+				flipped = False
 				try:
 					if dflip.get(c,p) != 0:
+						flipped = True
 						image.process_inplace("xform.flip", {"axis":"x"});
 				except:pass
 					
 					
-				t3d = Transform3D(da.get(c,p),0,0)
-				t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
+				#t3d = Transform3D(da.get(c,p),0,0)
+				#t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
 				
-				image.rotate_translate(t3d)
+				#image.rotate_translate(t3d)
+				image.rotate(da.get(c,p),0,0)
+				image.translate(dx.get(c,p),dy.get(c,p),0)
 				#if it != (options.iter-1):
 				#image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 				#image.rotate(da.get(c,p),0,0)
@@ -490,9 +494,15 @@ def align(this,to,options):
 		refineparms[1]["az"] = ta.get_attr_default("align.az",0)
 		refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)
 		refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)
+		flip = ta.get_attr_default("align.flip",0)
 		
-		ta = this.align(refineparms[0],to,refineparms[1],options.alircmp[0],options.alircmp[1])
-	
+		refine_this = this
+		if flip:
+			refine_this = this.process("xform.flip",{"axis":"x"})
+		
+		ta = refine_this.align(refineparms[0],to,refineparms[1],options.alircmp[0],options.alircmp[1])
+		
+		ta.set_attr("align.flip",flip)
 	return ta
 		
 def check(options, verbose=False):

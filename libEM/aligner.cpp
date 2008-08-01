@@ -635,7 +635,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 }
 
 
-EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to, 
+EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to, 
 										  const string & cmp_name, const Dict& cmp_params) const
 {
 	// Get the non flipped rotational, tranlsationally aligned image
@@ -879,22 +879,25 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 {
 	Dict rot_params("rfp_mode",params.set_default("rfp_mode",0));
 	EMData *r1 = this_img->align("rotational", to, rot_params,cmp_name, cmp_params);
-	float dot1 = r1->cmp(cmp_name, to, cmp_params);
+
 
 	EMData* flip_copy=this_img->process("xform.flip", Dict("axis", "x"));
 	EMData *r2 = flip_copy->align("rotational", to,rot_params, cmp_name, cmp_params);
 	delete flip_copy;
-	float dot2 = r2->cmp(cmp_name, to, cmp_params);
+	
+	float cmp1 = r1->cmp(cmp_name, to, cmp_params);
+	float cmp2 = r2->cmp(cmp_name, to, cmp_params);
 
 	EMData *result = 0;
 	
-	if (dot1 < dot2) {
+	if (cmp1 < cmp2) {
 		if( r2 )
 		{
 			delete r2;
 			r2 = 0;
 		}
 		result = r1;
+		result->set_attr("align.flip",0);
 	}
 	else {
 		if( r1 )
@@ -903,6 +906,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 			r1 = 0;
 		}
 		result = r2;
+		result->set_attr("align.flip",1);
 	}
 
 	return result;
@@ -1525,6 +1529,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 // 	sdx -= 1.0;
 	float sdy = params.set_default("dy",0.0f);
 // 	sdy -= 1.0;
+// 	cout << "using starting guesses of" << sdx << " " << sdy << " " << saz << endl;
 	
 	int np = 3;
 	Dict gsl_params;

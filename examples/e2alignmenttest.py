@@ -48,19 +48,17 @@ def main():
 		
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--noise_processor",type="string",help="The processor used to add noise to the images", default="math.addnoise:noise=2")
-	parser.add_option("--align",type="string",help="The first aligner used", default="rotate_translate_flip")
-	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot:normlize=1.",default="dot:normalize=1")
-	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner. If not specified then only one stage of alignment is applied.", default=None)
+	parser.add_option("--noise_processor",type="string",help="The processor used to add noise to the images. Default is math.addnoise:noise=2.", default="math.addnoise:noise=2")
+	parser.add_option("--align",type="string",help="The first aligner used. Default is rotate_translate_flip:rfp_mode=0", default="rotate_translate_flip:rfp_mode=0")
+	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot:normalize=1.",default="dot:normalize=1")
+	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner. If not specified then only one stage of alignment is applied. Default is None.", default=None)
 	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner. Default is dot:normlize=1.",default="dot:normalize=1")
-	
 	parser.add_option("--transmax",type="float",help="The maximum translational distance in any direction. Default is 5.0",default=5.0)
 	parser.add_option("--transmin",type="float",help="The minimum translational distance in any direction. Default is -5.0",default=-5.0)
-	
 	parser.add_option("--rotmax",type="float",help="The maximum rotation angle applied. Default is 360.0",default=360.0)
 	parser.add_option("--rotmin",type="float",help="The minimum rotation angle applied. Default is 0.0",default=0.0)
 	
-	parser.add_option("--allowflip","-a",action="store_true",help="Allow randomized flipping. Default is off.",default=False)
+	parser.add_option("--allowflip","-a",action="store_false",help="Allow randomized flipping. Default is on.",default=True)
 	
 	parser.add_option("--num",type="int",help="The number of randomized tests to perform. Default is 20",default=20)
 
@@ -78,29 +76,46 @@ def main():
 	if model.get_ndim() != 3:
 		print "error, the model you specified is not 3D"
 		
+	# use c1 symmetry to generate random orienations on the unit sphere
 	c1_sym = Symmetries.get("c1")
-	rand_orient = OrientGens.get("rand",{"n":1})
+	rand_orient = OrientGens.get("rand",{"n":1}) # this is the orientation generator
+	# Get all necessary parameters
 	[noise_proc,noise_params] = parsemodopt(options.noise_processor)
 	[aligner,aligner_params] = parsemodopt(options.align)
 	[alignercmp,alignercmp_params] = parsemodopt(options.aligncmp)
+	
+	# if refine aligning then get the parameters
 	if options.ralign != None:
 		[raligner,raligner_params] = parsemodopt(options.ralign)
-		[alignercmp,ralignercmp_params] = parsemodopt(options.raligncmp)
+		[ralignercmp,ralignercmp_params] = parsemodopt(options.raligncmp)
 	
+	# error variables
 	az_error = 0.0
 	dx_error = 0.0
 	dy_error = 0.0
+	flip_errors = 0
+	if options.ralign:
+		refine_az_error = 0.0
+		refine_dx_error = 0.0
+		refine_dy_error = 0.0
+		
+	# print stuff
+	print "EULER_AZ, ALT,PHI",'\t',
+	print "AZ",'\t',"ALIGN.AZ","\t","DX","\t","ALIGN.DX","\t","DY","\t","ALIGN.DY",
 	if options.allowflip:
-		flip_errors = 0
+		print "\t","FLIP","\t","ALIGN.FLIP"
+	
+	# finally the main loop
 	for i in range(0,options.num):
+		# get the random orientation on the unit sphere
 		t3d = rand_orient.gen_orientations(c1_sym)[0]
 		d = {"t3d":t3d}
-		p=model.project(options.projector,d)
-		p.process_inplace(noise_proc,noise_params)
+		p=model.project(options.projector,d) # make the projection
+		p.process_inplace(noise_proc,noise_params) # add noise
 		q = p.copy()
-		az = Util.get_frand(options.rotmin,options.rotmax)
-		dx = Util.get_frand(options.transmin,options.transmax)
-		dy = Util.get_frand(options.transmin,options.transmax)
+		az = Util.get_frand(options.rotmin,options.rotmax) # make random angle
+		dx = Util.get_frand(options.transmin,options.transmax) # random dx
+		dy = Util.get_frand(options.transmin,options.transmax) # random dy
 		t3d_q = Transform3D(az,0,0)
 		t3d_q.set_pretrans(dx,dy,0)
 		
@@ -109,38 +124,84 @@ def main():
 			if flipped: q.process_inplace("xform.flip",{"axis":"x"})
 			
 		q.rotate_translate(t3d_q)
-		#print aligner,p,aligner_params, alignercmp, alignercmp_params
+		#Do the alignment now
 		ali = q.align(aligner,p,aligner_params, alignercmp, alignercmp_params)
 		
+		#make variables to store the solution parameters
 		az_solution = (-ali.get_attr("align.az"))%360
 		dx_solution = -ali.get_attr("align.dx")
 		dy_solution = -ali.get_attr("align.dy")
 		if options.allowflip:
 			if ali.get_attr("align.flip"):
 				az_solution = ali.get_attr("align.az")
-				
-		print "%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution),
-		if options.allowflip: print '\t\t',flipped, '\t',ali.get_attr("align.flip")
-		else: print ''
+				dx_solution = -dx_solution
 		
-		az_error = fabs(az-az_solution)
-		t = fabs(az_error -360)
-		if t  < az_error: az_error = t
-		az_error += fabs(az-az_solution)
+		# print stuff
+		d = t3d.get_rotation()
+		print "%.2f,%.2f,%.2f\t"%(d["az"],d["alt"],d["phi"]),
+		print "%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution),
+		if options.allowflip: print '\t\t',flipped, '\t',ali.get_attr("align.flip"),
+		
+	
+		# calculate the errors
+		error = fabs(az-az_solution)
+		t = fabs(error -360) # could be close going counter clockwise etc
+		if t  < error: error = t
+		az_error += fabs(error)
 		dx_error += fabs(dx-dx_solution)
 		dy_error += fabs(dy-dy_solution)
-		
+		print ''
 		if options.allowflip:
 			if flipped != ali.get_attr("align.flip"):
 				flip_errors += 1
+				print "FLIP detection FAILED"
+				continue
+		
+		# refine align if it has been specified
+		if options.ralign:
+			
+			raligner_params["az"] = ali.get_attr_default("align.az",0)
+			raligner_params["dx"] = ali.get_attr_default("align.dx",0)
+			raligner_params["dy"] = ali.get_attr_default("align.dy",0)
+			flip = ali.get_attr_default("align.flip",0)
+
+			q = p.copy()
+			q.rotate_translate(t3d_q)
+			if flip:
+				q.process_inplace("xform.flip",{"axis":"x"})
+				#print 'yaa7y'
+				#raligner_params["dx"] = -ali.get_attr_default("align.dx",0)
+				
+			ali = q.align(raligner,p,raligner_params,ralignercmp,ralignercmp_params)
+			az_solution = (-ali.get_attr("align.az"))%360
+			dx_solution = -ali.get_attr("align.dx")
+			dy_solution = -ali.get_attr("align.dy")
+			
+			if options.allowflip:
+				if flip:
+					az_solution = ali.get_attr("align.az")
+					dx_solution = -dx_solution
+					
+			error = fabs(az-az_solution)
+			t = fabs(error -360)
+			if t  < error: error = t
+			refine_az_error += fabs(error)
+			refine_dx_error += fabs(dx-dx_solution)
+			refine_dy_error += fabs(dy-dy_solution)
+			
+			print "REFINE           ",'\t',
+			print "%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution)
+		
 		
 	print "#### REPORT ####"
-	print "Average az error",az_error/options.num
-	print "Average dx error",dx_error/options.num
-	print "Average ay error",dy_error/options.num
+	print "Mean az error",az_error/options.num
+	print "Mean dx error",dx_error/options.num
+	print "Mean dy error",dy_error/options.num
 	if options.allowflip:
 		print "Flip detection accuracy", float(options.num-flip_errors)/options.num*100,"%"
-	
-		
+	if options.ralign:
+		print "Mean refine az error",refine_az_error/float(options.num-flip_errors)
+		print "Mean refine dx error",refine_dx_error/float(options.num-flip_errors)
+		print "Mean refine dy error",refine_dy_error/float(options.num-flip_errors)
 if __name__ == "__main__":
     main()
