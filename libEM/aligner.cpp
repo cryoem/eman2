@@ -1451,12 +1451,10 @@ static double refalifn(const gsl_vector * v, void *params)
 	t3d.set_posttrans( (float) x, (float) y);
 	tmp->rotate_translate( t3d );
 	
-	if ( std::isnan((float)tmp->get_attr("mean") ) ) {
-		cout << "tmps mean is nan" << endl;
-	}
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	
+	// DELETE AT SOME STAGE, USEFUL FOR PRERELEASE STUFF
 	if ( std::isnan(result ) ) {
 		cout << "result " << result << " " << x << " " << y << " " << a << endl;
 		cout << (float)this_img->get_attr("mean") << " " << (float)tmp->get_attr("mean") << " " << (float)with->get_attr("mean") << endl;
