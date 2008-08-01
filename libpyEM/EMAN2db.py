@@ -44,6 +44,12 @@ try:
 except:
 	from bsddb import db
 
+try:
+	a=frozenset()
+except:
+	from sets import Set
+	frozenset=Set
+
 def DB_cleanup(a1=None,a2=None):
 	if a1==2 :
 		print "Program interrupted, closing databases, please wait (%d)"%os.getpid() 
