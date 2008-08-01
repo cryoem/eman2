@@ -638,7 +638,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
 {
 	// Get the non flipped rotational, tranlsationally aligned image
-// 	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0));
+	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0));
 	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
 
 	// Do the same alignment, but using the flipped version of the image
@@ -1466,7 +1466,7 @@ static double refalifn(const gsl_vector * v, void *params)
 		t->rotate_translate( t3d );
 		cout << (float)t->get_attr("mean") << endl;
 		cout << "exit" << endl;
-		double result = c->cmp(t,with);
+// 		double result = c->cmp(t,with);
 		cout << (float)t->get_attr("mean") << endl;
 		cout << "now exit" << endl;
 		delete t;

@@ -279,7 +279,7 @@ class TestAligner(unittest.TestCase):
 					t = Transform3D(az,0,0)
 					t.set_pretrans(dx,dy,0)
 					e.rotate_translate(t)
-					g = e.align("rotate_translate_flip",ref,{},"phase")
+					g = e.align("rotate_translate_flip",ref,{"rfp_mode":2},"phase")
 					t1 = Transform3D(g.get_attr("align.az"),0,0)
 					t1.set_posttrans(g.get_attr("align.dx"),g.get_attr("align.dy"),0)
 					
@@ -384,6 +384,29 @@ class TestAligner(unittest.TestCase):
 		
 		e.align('refine', e2)
 		e.align('refine', e2, {'mode':1, 'az':1.2, 'dx':2, 'dy':3.4})
+		
+		
+		for y in [32]:
+			for x in [32]:# does not work yet for odd x - rotational footprint fails
+				size = (x,y)
+				ref = test_image(8,size)
+				for i in range(0,20):
+					e = ref.copy()
+					dx = Util.get_frand(-3,3)
+					dy = Util.get_frand(-3,3)
+					az = Util.get_frand(-5,5)
+					t = Transform3D(az,0,0)
+					t.set_pretrans(dx,dy,0)
+					e.rotate_translate(t)
+					g = e.align("refine",ref,{},"dot",{"normalize":1})
+					t1 = Transform3D(g.get_attr("align.az"),0,0)
+					t1.set_posttrans(g.get_attr("align.dx"),g.get_attr("align.dy"),0)
+					v = Vec3f(0,1,0)
+					vd = v*t
+					vd = vd*t1
+					#print vd[0],vd[1],vd[2],az,g.get_attr("align.az"),dx,dy, g.get_attr("align.dx"),g.get_attr("align.dy")
+					self.failIf(fabs(vd[0]) > 0.1)
+					self.failIf(fabs(vd[1]-1) > 0.02)
 		
 		#n = 128
 		##dx = 0.4
