@@ -231,7 +231,7 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	} else {
 		throw InvalidParameterException("rfp_mode must be 0,1 or 2");
 	}
-	
+	cout << "using rfp mode" << rfp_mode << endl;
 	int this_img_rfp_nx = this_img_rfp->get_xsize();
 
 	// Perform the column wise FT (or something like that, unsure of precise details)
@@ -508,6 +508,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
 	int rfp_mode = params.set_default("rfp_mode",0);
+	cout << "rt alinger using" << rfp_mode << endl;
 	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
 	EMData *rot_align_180 = rot_align->copy(); 
 	rot_align_180->process_inplace("math.rotate.180"); 
@@ -639,7 +640,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
 {
 	// Get the non flipped rotational, tranlsationally aligned image
-	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",1));
+	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0));
 	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
 
 	// Do the same alignment, but using the flipped version of the image
