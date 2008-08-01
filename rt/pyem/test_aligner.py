@@ -279,7 +279,7 @@ class TestAligner(unittest.TestCase):
 					t = Transform3D(az,0,0)
 					t.set_pretrans(dx,dy,0)
 					e.rotate_translate(t)
-					g = e.align("rotate_translate_flip",ref,{"rfp_mode":2},"phase")
+					g = e.align("rotate_translate_flip",ref,{"rfp_mode":0},"phase")
 					t1 = Transform3D(g.get_attr("align.az"),0,0)
 					t1.set_posttrans(g.get_attr("align.dx"),g.get_attr("align.dy"),0)
 					

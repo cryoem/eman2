@@ -1667,14 +1667,15 @@ vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3
 		if ( phitoo ) phi = Util::get_frand(0.0,359.9999);
 		
 		Transform3D t = Transform3D( azimuth, altitude, phi );
-		Transform3D r = sym->reduce(t);
+		
+		if ( !(sym->is_c_sym() and sym->get_nsym() == 1)) t = sym->reduce(t); //reduce doesn't make sense for C1 symmetry
 		
 		if ( !sym->is_in_asym_unit(altitude,azimuth,inc_mirror) ){
 			// is_in_asym_unit has returned the wrong value!
 			// FIXME
 // 			cout << "warning, there is an unresolved issue - email D Woolford" << endl;
 		}
-		ret.push_back(r);
+		ret.push_back(t);
 		i++;
 	}
 	return ret;
