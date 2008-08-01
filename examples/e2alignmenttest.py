@@ -48,7 +48,7 @@ def main():
 		
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--noise_processor",type="string",help="The processor used to add noise to the images. Default is math.addnoise:noise=2.", default="math.addnoise:noise=2")
+	parser.add_option("--noise_processor",type="string",help="The processor used to add noise to the images. Default is math.addnoise:noise=50.", default="math.addnoise:noise=20")
 	parser.add_option("--align",type="string",help="The first aligner used. Default is rotate_translate_flip:rfp_mode=0", default="rotate_translate_flip:rfp_mode=0")
 	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot:normalize=1.",default="dot:normalize=1")
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner. If not specified then only one stage of alignment is applied. Default is None.", default=None)
@@ -58,11 +58,13 @@ def main():
 	parser.add_option("--rotmax",type="float",help="The maximum rotation angle applied. Default is 360.0",default=360.0)
 	parser.add_option("--rotmin",type="float",help="The minimum rotation angle applied. Default is 0.0",default=0.0)
 	
-	parser.add_option("--allowflip","-a",action="store_false",help="Allow randomized flipping. Default is on.",default=True)
+	parser.add_option("--stopflip","-s",action="store_false",help="Stop randomized flipping. Default is off.",default=False)
 	
 	parser.add_option("--num",type="int",help="The number of randomized tests to perform. Default is 20",default=20)
 
 	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use. Default is standard.")
+	
+	parser.add_option("--writeout","-w",action="store_true",help="Write the projection + noise images to projections_and_noise.hdf. Default is off.",default=False)
 	
 	(options, args) = parser.parse_args()
 	
@@ -102,8 +104,9 @@ def main():
 	# print stuff
 	print "EULER_AZ, ALT,PHI",'\t',
 	print "AZ",'\t',"ALIGN.AZ","\t","DX","\t","ALIGN.DX","\t","DY","\t","ALIGN.DY",
-	if options.allowflip:
+	if not options.stopflip:
 		print "\t","FLIP","\t","ALIGN.FLIP"
+	else : print ''
 	
 	# finally the main loop
 	for i in range(0,options.num):
@@ -112,6 +115,8 @@ def main():
 		d = {"t3d":t3d}
 		p=model.project(options.projector,d) # make the projection
 		p.process_inplace(noise_proc,noise_params) # add noise
+		if options.writeout: p.write_image('projections_and_noise.hdf',-1)
+			
 		q = p.copy()
 		az = Util.get_frand(options.rotmin,options.rotmax) # make random angle
 		dx = Util.get_frand(options.transmin,options.transmax) # random dx
@@ -119,7 +124,7 @@ def main():
 		t3d_q = Transform3D(az,0,0)
 		t3d_q.set_pretrans(dx,dy,0)
 		
-		if options.allowflip:
+		if not options.stopflip:
 			flipped = Util.get_irand(0,1)
 			if flipped: q.process_inplace("xform.flip",{"axis":"x"})
 			
@@ -131,7 +136,7 @@ def main():
 		az_solution = (-ali.get_attr("align.az"))%360
 		dx_solution = -ali.get_attr("align.dx")
 		dy_solution = -ali.get_attr("align.dy")
-		if options.allowflip:
+		if not options.stopflip:
 			if ali.get_attr("align.flip"):
 				az_solution = ali.get_attr("align.az")
 				dx_solution = -dx_solution
@@ -140,7 +145,7 @@ def main():
 		d = t3d.get_rotation()
 		print "%.2f,%.2f,%.2f\t"%(d["az"],d["alt"],d["phi"]),
 		print "%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution),
-		if options.allowflip: print '\t\t',flipped, '\t',ali.get_attr("align.flip"),
+		if not options.stopflip: print '\t\t',flipped, '\t',ali.get_attr("align.flip"),
 		
 	
 		# calculate the errors
@@ -151,7 +156,7 @@ def main():
 		dx_error += fabs(dx-dx_solution)
 		dy_error += fabs(dy-dy_solution)
 		print ''
-		if options.allowflip:
+		if not options.stopflip:
 			if flipped != ali.get_attr("align.flip"):
 				flip_errors += 1
 				print "FLIP detection FAILED"
@@ -177,7 +182,7 @@ def main():
 			dx_solution = -ali.get_attr("align.dx")
 			dy_solution = -ali.get_attr("align.dy")
 			
-			if options.allowflip:
+			if not options.stopflip:
 				if flip:
 					az_solution = ali.get_attr("align.az")
 					dx_solution = -dx_solution
@@ -197,7 +202,7 @@ def main():
 	print "Mean az error",az_error/options.num
 	print "Mean dx error",dx_error/options.num
 	print "Mean dy error",dy_error/options.num
-	if options.allowflip:
+	if not options.stopflip:
 		print "Flip detection accuracy", float(options.num-flip_errors)/options.num*100,"%"
 	if options.ralign:
 		print "Mean refine az error",refine_az_error/float(options.num-flip_errors)
