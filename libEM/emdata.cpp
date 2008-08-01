@@ -1167,7 +1167,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 					float t = x2 - ii;
 					float u = y2 - jj;
 					
-					des_data[i + j * nx] = Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u); // This is essentially 
+					des_data[i + j * nx] = Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u); // This is essentially basic interpolation
 				}
 			}
 		}
@@ -1826,6 +1826,7 @@ EMData *EMData::make_rotational_footprint( bool unwrap) {
 	
 	EMData* ccf = this->calc_ccf(this);
 	ccf->sub(ccf->get_edge_mean());
+	ccf->process_inplace("xform.phaseorigin.tocenter");
 	EMData *result = ccf->unwrap();
 	delete ccf; ccf = 0;
 

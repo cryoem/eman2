@@ -78,7 +78,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	EMData *cf = 0;
 
 	cf = this_img->calc_ccf(to);
-
+// 
 	int nx = this_img->get_xsize();
 	int ny = this_img->get_ysize();
 	int nz = this_img->get_zsize();
@@ -231,7 +231,6 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	} else {
 		throw InvalidParameterException("rfp_mode must be 0,1 or 2");
 	}
-	cout << "using rfp mode" << rfp_mode << endl;
 	int this_img_rfp_nx = this_img_rfp->get_xsize();
 
 	// Perform the column wise FT (or something like that, unsure of precise details)
@@ -508,7 +507,6 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
 	int rfp_mode = params.set_default("rfp_mode",0);
-	cout << "rt alinger using" << rfp_mode << endl;
 	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
 	EMData *rot_align_180 = rot_align->copy(); 
 	rot_align_180->process_inplace("math.rotate.180"); 
@@ -1453,12 +1451,10 @@ static double refalifn(const gsl_vector * v, void *params)
 	t3d.set_posttrans( (float) x, (float) y);
 	tmp->rotate_translate( t3d );
 	
-	if ( std::isnan((float)tmp->get_attr("mean") ) ) {
-		cout << "tmps mean is nan" << endl;
-	}
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	
+	// DELETE AT SOME STAGE, USEFUL FOR PRERELEASE STUFF
 	if ( std::isnan(result ) ) {
 		cout << "result " << result << " " << x << " " << y << " " << a << endl;
 		cout << (float)this_img->get_attr("mean") << " " << (float)tmp->get_attr("mean") << " " << (float)with->get_attr("mean") << endl;
