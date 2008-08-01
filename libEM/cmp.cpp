@@ -707,7 +707,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 				else r = Util::round(hypot(x / 2, y-ny) * Ctf::CTFOS);
 #endif
 				float a = dfsnr[r] * with_fft_data[i];
-	
+// 				cout << a << " " << Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) << " " <<image_fft_data[i + 1] << " " << with_fft_data[i + 1] << endl;
 				sum += Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) * a;
 				norm += a;
 				i += 2;

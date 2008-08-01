@@ -120,12 +120,15 @@ void div(float f);
 void div(const EMData & image);
 
 
-/** Make all the pixel value = 0. */
+/** Set all the pixel value = 0. */
 void to_zero();
 
 		
-/** Make all the pixel value = 1. */
+/** set all the pixel values = 1. */
 void to_one();
+
+/** Set all pixel values to a specific value */
+void to_value(const float& value);
 
 
 /** Dot product 2 images. The 2 images must be of same size.

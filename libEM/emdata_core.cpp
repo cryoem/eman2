@@ -1032,6 +1032,15 @@ EMData * EMData::real2complex(const float img) const
 	EXITFUNC;
 }
 
+void EMData::to_value(const float& value)
+{
+	ENTERFUNC;
+	memset((void*)rdata, value, nxy*nz*sizeof(float));
+
+	update();
+	EXITFUNC;
+}
+
 void EMData::to_zero()
 {
 	ENTERFUNC;

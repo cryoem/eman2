@@ -48,6 +48,8 @@
 #include <iomanip>
 #include <complex>
 
+#include <algorithm> // fill
+
 #ifdef WIN32
 	#define M_PI 3.14159265358979323846f
 #endif	//WIN32
@@ -1110,7 +1112,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 	Dict rotation      = RA.get_rotation(Transform3D::EMAN);
 //	Transform3D mx = RA;
 	Transform3D RAInv = RA.inverse();
-
+// 	RAInv.printme();
 #if EMDATA_EMAN2_DEBUG
 	vector<string> keys = rotation.keys();
 	vector<string>::const_iterator it;
@@ -1142,7 +1144,8 @@ void EMData::rotate_translate(const Transform3D & RA)
 				float y2 = RAInv[1][0]*x + RAInv[1][1]*y + y2c;
 
 				if (x2 < 0 || x2 >= nx || y2 < 0 || y2 >= ny ) {
-					des_data[i + j * nx] = 0;
+					des_data[i + j * nx] = 0; // It may be tempting to set this value to the
+					// mean but in fact this is not a good thing to do. Talk to S.Ludtke about it.
 				}
 				else {
 					int ii = Util::fast_floor(x2);
@@ -1154,7 +1157,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 
 					if (ii == nx - 1) {
 						k1--;
-						k2--;
+						k3--;
 					}
 					if (jj == ny - 1) {
 						k2 -= nx;
@@ -1163,8 +1166,8 @@ void EMData::rotate_translate(const Transform3D & RA)
 
 					float t = x2 - ii;
 					float u = y2 - jj;
-
-					des_data[i + j * nx] =Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u); // This is essentially 
+					
+					des_data[i + j * nx] = Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u); // This is essentially 
 				}
 			}
 		}
