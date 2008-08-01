@@ -638,7 +638,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
 {
 	// Get the non flipped rotational, tranlsationally aligned image
-	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0));
+// 	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0));
 	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
 
 	// Do the same alignment, but using the flipped version of the image
@@ -1451,10 +1451,12 @@ static double refalifn(const gsl_vector * v, void *params)
 	t3d.set_posttrans( (float) x, (float) y);
 	tmp->rotate_translate( t3d );
 	
+	if ( std::isnan((float)tmp->get_attr("mean") ) ) {
+		cout << "tmps mean is nan" << endl;
+	}
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	
-	// DELETE AT SOME STAGE, USEFUL FOR PRERELEASE STUFF
 	if ( std::isnan(result ) ) {
 		cout << "result " << result << " " << x << " " << y << " " << a << endl;
 		cout << (float)this_img->get_attr("mean") << " " << (float)tmp->get_attr("mean") << " " << (float)with->get_attr("mean") << endl;
