@@ -37,6 +37,7 @@
 #include "aligner.h"
 #include "emdata.h"
 #include "processor.h"
+#include "util.h"
 #include <gsl/gsl_multimin.h>
 
 #define EMAN2_ALIGNER_DEBUG 0
@@ -1443,7 +1444,8 @@ static double refalifn(const gsl_vector * v, void *params)
 	
 	EMData *tmp = this_img->copy();
 	
-	if ( std::isnan((float)tmp->get_attr("mean") ) ) {
+	float mean = (float)tmp->get_attr("mean");
+	if ( Util::goodf(&mean) ) {
 		cout << "tmps mean is nan even before rotation" << endl;
 	}
 	
@@ -1454,8 +1456,9 @@ static double refalifn(const gsl_vector * v, void *params)
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	
+	float test_result = result;
 	// DELETE AT SOME STAGE, USEFUL FOR PRERELEASE STUFF
-	if ( std::isnan(result ) ) {
+	if ( Util::goodf(&test_result) ) {
 		cout << "result " << result << " " << x << " " << y << " " << a << endl;
 		cout << (float)this_img->get_attr("mean") << " " << (float)tmp->get_attr("mean") << " " << (float)with->get_attr("mean") << endl;
 		tmp->write_image("tmp.hdf");

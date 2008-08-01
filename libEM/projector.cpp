@@ -911,7 +911,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 // 		
 		
 		float alt = p["phi"];
-		alt = (alt*M_PI/180.);
+		alt = (alt*M_PI/180.0f);
 		float cosalt = cos(alt);
 		float sinalt = sin(alt);
 		

@@ -3410,7 +3410,7 @@ Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {
 		}
 	}
 	result /= n;
-	res[kk] = result;
+	res[kk] = (float)result;
 
 	if(result<valmin) {valmin = result; valpos = kk;}
 
@@ -16128,8 +16128,8 @@ void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 	float *p_ccf1dm = peakm->get_data();
 
 	for ( int i = 0; i<maxrin*(2*kx+3)*(2*ky+3); i++) {
-		p_ccf1ds[i] = -1.e20;
-		p_ccf1dm[i] = -1.e20;
+		p_ccf1ds[i] = -1.e20f;
+		p_ccf1dm[i] = -1.e20f;
 	}
 
 	for (int i = -ky; i <= ky; i++) {
