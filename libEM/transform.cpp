@@ -1668,7 +1668,7 @@ vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3
 		
 		Transform3D t = Transform3D( azimuth, altitude, phi );
 		
-		if ( !(sym->is_c_sym() and sym->get_nsym() == 1)) t = sym->reduce(t); //reduce doesn't make sense for C1 symmetry
+		if ( !(sym->is_c_sym() && sym->get_nsym() == 1)) t = sym->reduce(t); //reduce doesn't make sense for C1 symmetry
 		
 		if ( !sym->is_in_asym_unit(altitude,azimuth,inc_mirror) ){
 			// is_in_asym_unit has returned the wrong value!
@@ -2200,14 +2200,14 @@ vector<Transform3D> Symmetry3D::get_touching_au_transforms(bool inc_mirror) cons
 		Dict delim = get_delimiters(false);
 		float angle = float(delim["az_max"])/2.0f;
 // 		cout << "Odd dsym using " << angle << endl;
-		angle *= EMConsts::deg2rad;
+		angle *= (float)EMConsts::deg2rad;
 		float y = -cos(angle);
 		float x = sin(angle);
 		points.push_back(Vec3f(x,y,0));
 		
 		if ( inc_mirror ) {
-			angle = 3.0*(float(delim["az_max"]))/2.0f;
-			angle *= EMConsts::deg2rad;
+			angle = 3.0f*(float(delim["az_max"]))/2.0f;
+			angle *= (float)EMConsts::deg2rad;
 			float y = -cos(angle);
 			float x = sin(angle);
 			points.push_back(Vec3f(x,y,0));
