@@ -1450,7 +1450,7 @@ static double refalifn(const gsl_vector * v, void *params)
 	
 	float mean = (float)tmp->get_attr("mean");
 	if ( Util::goodf(&mean) ) {
-		cout << "tmps mean is nan even before rotation" << endl;
+		//cout << "tmps mean is nan even before rotation" << endl;
 	}
 	
 	Transform3D t3d(Transform3D::EMAN, (float)a, 0.0f, 0.0f);
@@ -1463,20 +1463,20 @@ static double refalifn(const gsl_vector * v, void *params)
 	float test_result = result;
 	// DELETE AT SOME STAGE, USEFUL FOR PRERELEASE STUFF
 	if ( Util::goodf(&test_result) ) {
-		cout << "result " << result << " " << x << " " << y << " " << a << endl;
-		cout << (float)this_img->get_attr("mean") << " " << (float)tmp->get_attr("mean") << " " << (float)with->get_attr("mean") << endl;
-		tmp->write_image("tmp.hdf");
-		with->write_image("with.hdf");
-		this_img->write_image("this_img.hdf");
-		EMData* t = this_img->copy();
-		cout << (float)t->get_attr("mean") << endl;
-		t->rotate_translate( t3d );
-		cout << (float)t->get_attr("mean") << endl;
-		cout << "exit" << endl;
-// 		double result = c->cmp(t,with);
-		cout << (float)t->get_attr("mean") << endl;
-		cout << "now exit" << endl;
-		delete t;
+//		cout << "result " << result << " " << x << " " << y << " " << a << endl;
+//		cout << (float)this_img->get_attr("mean") << " " << (float)tmp->get_attr("mean") << " " << (float)with->get_attr("mean") << endl;
+//		tmp->write_image("tmp.hdf");
+//		with->write_image("with.hdf");
+//		this_img->write_image("this_img.hdf");
+//		EMData* t = this_img->copy();
+//		cout << (float)t->get_attr("mean") << endl;
+//		t->rotate_translate( t3d );
+//		cout << (float)t->get_attr("mean") << endl;
+//		cout << "exit" << endl;
+//// 		double result = c->cmp(t,with);
+//		cout << (float)t->get_attr("mean") << endl;
+//		cout << "now exit" << endl;
+//		delete t;
 	}
 	
 	
