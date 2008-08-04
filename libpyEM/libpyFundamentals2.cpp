@@ -13,7 +13,6 @@ using namespace boost::python;
 // Declarations ================================================================
 namespace  {
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(norm_pad_ft_overloads_3_4, EMAN::norm_pad_ft, 3, 4)
 
 }// namespace 
 
@@ -46,7 +45,6 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     def("autocorrelation", &EMAN::autocorrelation, return_value_policy< manage_new_object >());
     def("self_correlation", &EMAN::self_correlation, return_value_policy< manage_new_object >());
     def("periodogram", &EMAN::periodogram, return_value_policy< manage_new_object >());
-    def("norm_pad_ft", &EMAN::norm_pad_ft, return_value_policy< manage_new_object >(), norm_pad_ft_overloads_3_4());
     def("rsconvolution", &EMAN::rsconvolution, return_value_policy< manage_new_object >());
     def("filt_median_", &EMAN::filt_median_, return_value_policy< manage_new_object >());
     def("filt_dilation_", &EMAN::filt_dilation_, return_value_policy< manage_new_object >());

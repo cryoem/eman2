@@ -1275,7 +1275,7 @@ void FFTShrinkProcessor::fft_shrink(EMData* to, const EMData *const from, const 
 	
 	to->process_inplace("xform.fourierorigin.tocorner");
 	to->do_ift_inplace();
-	to->postift_depad_corner_inplace();
+	to->depad_corner();
 	to->process_inplace("xform.phaseorigin.tocenter");
 	
 }
@@ -6969,11 +6969,23 @@ void HistogramBin::process_inplace(EMData *image)
 }
 void ConvolutionProcessor::process_inplace(EMData* image)
 {
-	bool complexflag = false;
+	//bool complexflag = false;
 	EMData* null = 0;
 	EMData* with = params.set_default("with", null);
 	if ( with == NULL ) throw InvalidParameterException("Error - the image required for the convolution is null");
+
+	EMData* newimage = fourierproduct(image, with, CIRCULANT, CONVOLUTION, false);
 	
+	float* orig = image->get_data();
+	float* work = newimage->get_data();
+	int nx  = image->get_xsize();
+	int ny  = image->get_ysize();
+	int nz  = image->get_zsize();
+	for (int i = 0; i < nx*ny*nz; i++) orig[i] = work[i];
+	image->update();
+	
+        delete newimage;
+	/*
 	if ( image->is_complex() != with->is_complex() ) throw ImageFormatException("Error - one of the images is complex and one is real. Can not proceed");
 	
 	if ( image->is_complex() ) complexflag = true;
@@ -6998,15 +7010,15 @@ void ConvolutionProcessor::process_inplace(EMData* image)
 	
 	if ( complexflag == false ) {
 		image->do_ift_inplace();
-		image->postift_depad_corner_inplace();
+		image->depad_corner();
 		// I decided that the calling function should do the phase origin shift - d.woolford April 10 2008
 // 		image->process_inplace("xform.phaseorigin.tocenter");
 		with->do_ift_inplace();
-		with->postift_depad_corner_inplace();
+		with->depad_corner();
 		with->process_inplace("xform.phaseorigin.tocenter");
 		
 	}
-	
+	*/
 }
 
 void XGradientProcessor::process_inplace( EMData* image )

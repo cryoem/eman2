@@ -220,24 +220,6 @@ namespace EMAN
 	 *          F(0,0,0)^2 is at the image center.
 	 */
 	EMData* periodogram(EMData* f);
-	/** Normalize, pad, and Fourier transform convenience function.
-	 *
-	 * @par Purpose: Create a new [normalized] [zero-padded] Fourier image.
-	 *
-	 * @par Method: Normalize (if requested), pad with zeros (if 
-	 *      requested), extend along x for fft, create new fft image,
-	 *      and return the new fft image.
-	 *
-	 *  @param[in] f Real-space image object.
-	 *               Image may be 1-, 2-,
-	 *               or 3-dimensional.  Image f is not changed.
-	 *  @param[in] do_norm If true then perform normalization.
-	 *  @param[in] do_pad If true then perform zero-padding.
-	 *  @param[in] npad   Amount of zero-padding to use (defaults to 2 if do_pad is true).
-	 *
-	 *  @return fft image of [normalized,] [zero-padded] input image.
-	 */
-	EMData* norm_pad_ft(EMData* f, bool do_norm, bool do_pad, int npad = 2);
 
 	enum kernel_shape {
 		BLOCK = 1,

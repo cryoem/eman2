@@ -51,8 +51,10 @@ periodogram(EMData* f) {
 //  Process f if real
 	EMData* fp = NULL;
 	if(f->is_complex()) fp = f->copy(); // we need to make a full copy so that we don't damage the original
-	else fp = norm_pad_ft(f, false, false); // Extend and do the FFT if f is real
-
+	else {
+		fp = f->norm_pad(false, 1); // Extend and do the FFT if f is real
+		fp->do_fft_inplace();
+	}
 	fp->set_array_offsets(1,1,1);
 
 	//  Periodogram: fp:=|fp|**2
@@ -169,7 +171,8 @@ Output: 1-2-3D real image with the result
 		// periodicity, but it also determines whether or not we should
 		// normalize the results.  Here's some convenience bools:
 		bool donorm = (0 == flag%2) ? true : false;
-		bool dopad  = (flag >= 3) ? true : false;
+		// the 2x padding is hardcoded for now
+		int  npad  = (flag >= 3) ? 2 : 1;  // amount of padding used
 		// g may be NULL.  If so, have g point to the same object as f.  In that
 		// case we need to be careful later on not to try to delete g's workspace
 		// as well as f's workspace, since they will be the same.
@@ -190,9 +193,6 @@ Output: 1-2-3D real image with the result
 		// necessary extension along x for the fft
 		if (!f->is_real()) nx = (nx - 2 + (f->is_fftodd() ? 1 : 0)); 
 
-		int npad = (flag>2) ? 2 : 1; // amount of padding used
-
-		// the 2x padding is hardcoded for now
 		// these are padded dimensions
 		const int nxp = npad*nx;
 		const int nyp = (ny > 1) ? npad*ny : 1; // don't pad y for 1-d image
@@ -209,7 +209,8 @@ Output: 1-2-3D real image with the result
 			fp=f->copy();
 		} else {
 			//  [normalize] [pad] compute fft
-			fp = norm_pad_ft(f, donorm, dopad); 
+			fp = f->norm_pad(donorm, npad);
+                        fp->do_fft_inplace();
 		}
 		// The [padded] fft-extended version of g is gp.
 		EMData* gp = NULL;
@@ -222,7 +223,8 @@ Output: 1-2-3D real image with the result
 			gp = g;
 		} else {
 			// normal case: g is real and different from f, so compute gp
-			gp = norm_pad_ft(g, donorm, dopad);
+			gp = g->norm_pad(donorm, npad);
+			gp->do_fft_inplace();
 		}
 		// Get complex matrix views of fp and gp; matrices start from 1 (not 0)
 		fp->set_array_offsets(1,1,1);
@@ -244,7 +246,7 @@ Output: 1-2-3D real image with the result
 			//float sz  = float(-twopi*float(itmp)/float(nzp));
 			float szn = 2*float(itmp)/float(nzp);
 			float sz = -M_PI*szn;
-			if ( std::abs(sxn-1.0)<1e-5 && (std::abs(syn-1.0)<1e-5 || ny==1 ) && (std::abs(szn-1.0)<1e-5 || nz==1 ) ) {
+			if ( nx%2==0 && (ny%2==0 || ny==1 ) && (nz%2==0 || nz==1 ) ) {
 				switch (ptype) {
 					case AUTOCORRELATION:
 					// fpmat := |fpmat|^2
@@ -313,10 +315,10 @@ Output: 1-2-3D real image with the result
 							for (int iy = 1; iy <= nyp; iy++) {
 							int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
 								for (int ix = 1; ix <= lsd2; ix++) {
-								int jx=ix-1; float arg=sx*jx+argy;
-								float fpr = real(fp->cmplx(ix,iy,iz));
-								float fpi = imag(fp->cmplx(ix,iy,iz));
-								fp->cmplx(ix,iy,iz)= (fpr*fpr + fpi*fpi) *std::complex<float>(cos(arg),sin(arg));
+									int jx=ix-1; float arg=sx*jx+argy;
+									float fpr = real(fp->cmplx(ix,iy,iz));
+									float fpi = imag(fp->cmplx(ix,iy,iz));
+									fp->cmplx(ix,iy,iz)= (fpr*fpr + fpi*fpi) *std::complex<float>(cos(arg),sin(arg));
 								}
 							}
 						}
@@ -329,8 +331,8 @@ Output: 1-2-3D real image with the result
 							for (int iy = 1; iy <= nyp; iy++) {
 							int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
 								for (int ix = 1; ix <= lsd2; ix++) {
-								int jx=ix-1; float arg=sx*jx+argy;
-								fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
+									int jx=ix-1; float arg=sx*jx+argy;
+									fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
 								}
 							}
 						}
@@ -343,8 +345,8 @@ Output: 1-2-3D real image with the result
 							for (int iy = 1; iy <= nyp; iy++) {
 							int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
 								for (int ix = 1; ix <= lsd2; ix++) {
-								int jx=ix-1; float arg=sx*jx+argy;
-								fp->cmplx(ix,iy,iz) *= conj(gp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
+									int jx=ix-1; float arg=sx*jx+argy;
+									fp->cmplx(ix,iy,iz) *= conj(gp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
 								}
 							}
 						}
@@ -352,13 +354,18 @@ Output: 1-2-3D real image with the result
 					case CONVOLUTION:
 					// fpmat:=fpmat*gpmat
 					// Note nxp are padded dimensions
+						if(npad == 1) {
+							sx -= 4*(nx%2)/float(nx);
+							sy -= 4*(ny%2)/float(ny);
+							sz -= 4*(nz%2)/float(nz);
+						}
 						for (int iz = 1; iz <= nzp; iz++) {
-						int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
+							int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
 							for (int iy = 1; iy <= nyp; iy++) {
-							int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
+								int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
 								for (int ix = 1; ix <= lsd2; ix++) {
-								int jx=ix-1; float arg=sx*jx+argy;
-								fp->cmplx(ix,iy,iz) *= gp->cmplx(ix,iy,iz) *std::complex<float>(cos(arg),sin(arg));
+									int jx=ix-1; float arg=sx*jx+argy;
+									fp->cmplx(ix,iy,iz) *= gp->cmplx(ix,iy,iz) *std::complex<float>(cos(arg),sin(arg));
 								}
 							}
 						}
@@ -396,16 +403,32 @@ Output: 1-2-3D real image with the result
 					for (int iz = 1; iz <= nzp; iz++) {
 						for (int iy = 1; iy <= nyp; iy++) {
 							for (int ix = 1; ix <= lsd2; ix++) {
-								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*conj(gp->cmplx(ix,iy,iz));
+								fp->cmplx(ix,iy,iz)*= conj(gp->cmplx(ix,iy,iz));
 							}
 						}
 					}
 					break;
 				case CONVOLUTION:
-					for (int iz = 1; iz <= nzp; iz++) {
-						for (int iy = 1; iy <= nyp; iy++) {
-							for (int ix = 1; ix <= lsd2; ix++) {
-								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*gp->cmplx(ix,iy,iz);
+					if(npad == 1) {
+						float sx = -M_PI*2*(nx%2)/float(nx);
+						float sy = -M_PI*2*(ny%2)/float(ny);
+						float sz = -M_PI*2*(nz%2)/float(nz);
+						for (int iz = 1; iz <= nzp; iz++) {
+							int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
+							for (int iy = 1; iy <= nyp; iy++) {
+								int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
+								for (int ix = 1; ix <= lsd2; ix++) {
+									int jx=ix-1; float arg=sx*jx+argy;
+									fp->cmplx(ix,iy,iz) *= gp->cmplx(ix,iy,iz) *std::complex<float>(cos(arg),sin(arg));
+								}
+							}
+						}
+					} else {
+						for (int iz = 1; iz <= nzp; iz++) {
+							for (int iy = 1; iy <= nyp; iy++) {
+								for (int ix = 1; ix <= lsd2; ix++) {
+									fp->cmplx(ix,iy,iz)*= gp->cmplx(ix,iy,iz);
+								}
 							}
 						}
 					}
@@ -424,7 +447,8 @@ Output: 1-2-3D real image with the result
 		}
 		// back transform
 		fp->do_ift_inplace();
-		fp->postift_depad_corner_inplace();
+		if(center && npad ==2)  fp->depad();
+		else                    fp->depad_corner();
 
 		//vector<int> saved_offsets = fp->get_array_offsets();  I do not know what the meaning of it was, did not work anyway PAP
 		fp->set_array_offsets(1,1,1);

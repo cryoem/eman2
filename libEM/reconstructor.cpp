@@ -235,8 +235,7 @@ EMData *FourierReconstructorSimple2D::finish()
 	
 	image->process_inplace("xform.fourierorigin.tocorner");
 	image->do_ift_inplace();
-	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
-	image->postift_depad_corner_inplace();
+	image->depad();
 	image->process_inplace("xform.phaseorigin.tocenter");
 	
 	return  	image;
@@ -827,11 +826,13 @@ EMData *FourierReconstructor::finish()
 	image->do_ift_inplace();
 	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
 	bool is_fftodd = nx%2;
-	if ( !is_fftodd ) image->postift_depad_corner_inplace();
+	image->depad();
 	image->process_inplace("xform.phaseorigin.tocenter");
 	
 	// FIXME- double check this when all is done! especially the "nx-2*!is_fftodd !!
 	// If the image was padded it should be age size, as the client would expect
+	//  I blocked the rest, it is almost certainly incorrect  PAP 07/31/08
+	/*
 	if ( (nx-2*(!is_fftodd)) != output_x || ny != output_y || nz != output_z )
 	{
 		FloatPoint origin( (nx-output_x)/2, (ny-output_y)/2, (nz-output_z)/2 );
@@ -839,7 +840,7 @@ EMData *FourierReconstructor::finish()
 		Region clip_region( origin, region_size );
 		image->clip_inplace( clip_region );
 	}
-
+	*/
 	print_stats(quality_scores);
 	
 	image->update();
@@ -867,8 +868,7 @@ EMData* BaldwinWoolfordReconstructor::finish()
 	tmp_data->write_image("density.mrc");
 	image->process_inplace("xform.fourierorigin.tocorner");
 	image->do_ift_inplace();
-	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
-	image->postift_depad_corner_inplace();
+	image->depad();
 	image->process_inplace("xform.phaseorigin.tocenter");
 	
 	if ( (bool) params.set_default("postmultiply", false) )
@@ -1907,18 +1907,12 @@ EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
 	EMData* temp = slice->average_circ_sub();
 
 	Assert( temp != NULL );
-	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
-	// because only the former centers the original image in the 
-	// larger area.  FIXME!
-	
-	EMData* zeropadded = temp->zeropad_ntimes(npad);
+	EMData* zeropadded = temp->norm_pad( false, npad );
 	Assert( zeropadded != NULL );
-
-
 	checked_delete( temp );
-
-	EMData* padfftslice = zeropadded->do_fft();
-	checked_delete( zeropadded );
+        
+        zeropadded->do_fft_inplace();
+	EMData* padfftslice = zeropadded;    
 
 	// shift the projection
 	float sx = (ndim==2) ? float( slice->get_attr("s2x") ) : float( slice->get_attr("s1x") );
@@ -1929,8 +1923,9 @@ EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
         int remove = slice->get_attr_default("remove", 0);
         padfftslice->set_attr( "remove", remove );
 
-      	padfftslice->center_origin_fft();
 
+
+      	padfftslice->center_origin_fft();
 	return padfftslice;
 }
 
@@ -2198,8 +2193,51 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 	return 0;
 }
 
-
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
+
+void circumference( EMData* win )
+{
+	float *tw = win->get_data();
+	//  mask and subtract circumference average
+	int ix = win->get_xsize();
+	int iy = win->get_ysize();
+	int iz = win->get_zsize();
+	int L2 = (ix/2)*(ix/2);
+	int L2P = (ix/2-1)*(ix/2-1);
+
+	int IP = ix/2+1;
+	int JP = iy/2+1;
+	int KP = iz/2+1;
+
+	float  TNR = 0.0f;
+	int m = 0;
+	for (int k = 1; k <= iz; k++) {
+		for (int j = 1; j <= iy; j++) {
+			for (int i = 1; i <= ix; i++) {
+				int LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR<=L2) {
+					if(LR >= L2P && LR <= L2) {
+						TNR += tw(i,j,k);
+						m++;
+					}
+				}
+			}
+		}
+	}
+
+	TNR /=float(m);
+	for (int k = 1; k <= iz; k++) {
+		for (int j = 1; j <= iy; j++) {
+			for (int i = 1; i <= ix; i++) {
+				int LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
+				if (LR<=L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
+			}
+		}
+	}
+
+}
+
+
 EMData* nn4Reconstructor::finish() 
 {
         if( m_ndim==3 ) {
@@ -2288,51 +2326,10 @@ EMData* nn4Reconstructor::finish()
 	// back fft
 	m_volume->do_ift_inplace();
 
-	//printf( "realvol:\n" );
-	//printImage( m_volume );
-
-	EMData* win = m_volume->window_center(m_vnx);
-
-	float *tw = win->get_data();
-	//  mask and subtract circumference average
-	ix = win->get_xsize();
-	iy = win->get_ysize();
-	iz = win->get_zsize();
-	int L2 = (ix/2)*(ix/2);
-	int L2P = (ix/2-1)*(ix/2-1);
-
-	int IP = ix/2+1;
-	int JP = iy/2+1;
-	int KP = iz/2+1;
-
-	float  TNR = 0.0f;
-	int m = 0;
-	for (int k = 1; k <= iz; k++) {
-		for (int j = 1; j <= iy; j++) {
-			for (int i = 1; i <= ix; i++) {
-				int LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=L2) {
-					if(LR >= L2P && LR <= L2) {
-						TNR += tw(i,j,k);
-						m++;
-					}
-				}
-			}
-		}
-	}
-
-	TNR /=float(m);
-	for (int k = 1; k <= iz; k++) {
-		for (int j = 1; j <= iy; j++) {
-			for (int i = 1; i <= ix; i++) {
-				int LR = (k-KP)*(k-KP)+(j-JP)*(j-JP)+(i-IP)*(i-IP);
-				if (LR<=L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
-			}
-		}
-	}
-
-	m_result = win;
-	return win;
+	// EMData* win = m_volume->window_center(m_vnx);
+	m_volume->depad();
+	circumference( m_volume );
+	return m_volume;
 }
 #undef  tw
 
@@ -3020,43 +3017,10 @@ EMData* nn4_ctfReconstructor::finish()
 	}
 
 	// back fft
-	m_volume->do_ift_inplace();
-	EMData* win = m_volume->window_center(m_vnx);
-
-	float *tw = win->get_data();
-	ix = win->get_xsize(),iy = win->get_ysize(),iz = win->get_zsize();
-	int L2 = (ix/2)*(ix/2);
-	int L2P = (ix/2-1)*(ix/2-1);
-	int IP = ix/2+1;
-	float  TNR = 0.0f;
-	int m = 0;
-	for (int k = 1; k <= iz; k++) {
-		for (int j = 1; j <= iy; j++) {
-			for (int i = 1; i <= ix; i++) {
-				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
-				if (LR<=L2) {
-					if(LR >= L2P && LR <= L2) {
-						TNR += tw(i,j,k);
-						m++;
-					}
-				}
-			}
-		}
-	}
-	TNR /=float(m);
-	for (int k = 1; k <= iz; k++) {
-		for (int j = 1; j <= iy; j++) {
-			for (int i = 1; i <= ix; i++) {
-				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
-				if (LR<=L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
-			}
-		}
-	}
-
-	// add m_result = win here because the reconstructor is responsible for the memory of m_volume
-	// which I think is strange
-	m_result = win;
-	return win;
+        m_volume->do_ift_inplace();
+	m_volume->depad();
+        circumference( m_volume );
+	return m_volume;
 	// clean up
 }
 #undef  tw

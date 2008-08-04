@@ -442,14 +442,6 @@ EMData* mult_radial(EMData* radial);
 		void fft_shuffle();
 		
 		
-		/** center_padded -- Center a padded image
-		 *  
-		 *  Image padding leaves the image in the corner.  This method
-		 *  moves that original image so that it is centered.
-		 */
-		void center_padded();
-		
-		
 		/** extractpoint -- Gridding convolution
 		 *
 		 *  Note: Expected to be used in combination with fouriergridrot2d.
@@ -573,5 +565,107 @@ EMData* mult_radial(EMData* radial);
 		 *  @return New image
 		 */
 		EMData* helicise(float pixel_size, float dp, float dphi, float section_use = 1.0f, float radius = -1.0f);
+
+
+
+
+      /** De-pad, and and remove Fourier extension convenience function.
+	 *
+	 * @par Purpose: De-pad, and and remove Fourier extension from a real image.
+	 *
+	 * @par Method: Remove padding and extension along x for fft,
+	 *      and return the new  image.
+	 *
+	 *  @param[in] f Real-space image object.
+	 *               Image may be 1-, 2-,
+	 *               or 3-dimensional.  Image f is not changed.
+	 *
+	 *  @return depadded input image.
+	 */
+	void depad();
+
+	/** De-pad, and and remove Fourier extension convenience function.
+	 *
+	 * @par Purpose: De-pad, and and remove Fourier extension from a real image.
+	 *
+	 * @par Method: Remove padding and extension along x for fft,
+	 *      and return the new  image.
+	 *
+	 *  @param[in] f Real-space image object.
+	 *               Image may be 1-, 2-,
+	 *               or 3-dimensional.  Image f is not changed.
+	 *
+	 *  @return depadded input image.
+	 */
+	void depad_corner();
+
+	/** Normalize, pad, and Fourier extend convenience function.
+	 *
+	 * @par Purpose: Create a new [normalized] [zero-padded] Fourier image.
+	 *
+	 * @par Method: Normalize (if requested), pad with zeros (if 
+	 *      requested), extend along x for fft,
+	 *      and return the new  image.
+	 *
+	 *  @param[in] f Real-space image object.
+	 *               Image may be 1-, 2-,
+	 *               or 3-dimensional.  Image f is not changed.
+	 *  @param[in] do_norm If true then perform normalization.
+	 *  @param[in] do_pad If true then perform zero-padding.
+	 *  @param[in] npad   Amount of zero-padding to use (defaults to 2 if do_pad is true).
+	 *
+	 *  @return [normalized,] [zero-padded,] [ft-extended] input image.
+	 */
+	EMData* norm_pad(bool do_norm, int npad = 1);
+	
+	void center_origin();
+
+	void center_origin_yz();
+
+	/** Multiply a Fourier image by (-1)**(ix+iy+iz) to center it.
+	     *
+	     */
+	void center_origin_fft();
+
+
+	/** return an image object that has been fft-padded/unpadded.
+	* The current image is not changed.
+	*
+	* @return An image object that has been fft-padded/unpadded.
+	*/
+	//EMData *pad_fft(int npad = 1);
+
+
+	/** Remove padding, leaving a single corner of the image.
+	*  The current image is changed in place.
+	*
+	*  The assumption is that after an in-place inverse fft
+	*  the real-space image contains too much information 
+	*  because it may have been zero-padded some integer factor
+	*  of times and it has also been extended slightly along x
+	*  for the fft.  Here we keep only the data corresponding 
+	*  to ix=0,...,nxold-1, iy=0,...,nyold-1, iz=0,...,nzold-1,
+	*  where nxold, nyold, nzold are the sizes of the original
+	*  image.
+	*/
+
+	EMData* FourInterpol(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
+
+	/** Truncate Fourier transform of an image, it will reduce its size.  (It is a form of decimation).
+	*  
+	*  @param[in] nxni new x size (has to be larger/equal than the original x size)
+	*  @param[in] nyni new y size (has to be larger/equal than the original y size)
+	*  @param[in] nzni new z size (has to be larger/equal than the original z size)
+	*  @param RetReal
+	*  
+	*  @return New truncated up image.
+	*/
+	EMData* FourTruncate(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
+	//EMData* FourInterpol_i(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
+	EMData* Four_ds(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
+	EMData* Four_shuf_ds_cen_us(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
+
+
+	EMData* filter_by_image(EMData* image, bool RetReal = true);
 
 #endif	//emdata__sparx_h__

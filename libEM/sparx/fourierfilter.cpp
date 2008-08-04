@@ -65,9 +65,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	vector<float> table;
 	int undoctf=0;
 	float voltage=100.0f, ak=0.0f, cs=2.0f, ps=1.0f, b_factor=0.0f, wgh=0.1f, sign=-1.0f;
-	if (!fimage) {
-		return NULL;
-	}
+	if (!fimage)  return NULL;
 	const int ndim = fimage->get_ndim();
 	// Set amount of Fourier padding
 	// dopad should be a bool, but EMObject Dict's can't store bools.
@@ -80,8 +78,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		// 2x padding (hard-wired)
 		npad = 2;
 	} else if (2 == dopad) {
-        npad = 4;
-    } else {
+        	npad = 4;
+	} else {
 		// invalid entry
 		LOGERR("The dopad parameter must be 0 (false) or 1 (true)");
 		return NULL; // FIXME: replace w/ exception throw
@@ -131,9 +129,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			}
 			fp=fimage;
 			fp->do_fft_inplace();
-		}
-		else {
-			fp = fimage->pad_fft(npad); 
+		} else {
+			fp = fimage->norm_pad( false, npad);
 			fp->do_fft_inplace();
 		}
 	}
@@ -269,15 +266,14 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		case RADIAL_TABLE:
 			table = params["table"];
 			tsize = table.size();
-			sz[0] = static_cast<float>(lsd2); 
-			sz[1] = static_cast<float>(nyp2); 
+			sz[0] = static_cast<float>(lsd2);
+			sz[1] = static_cast<float>(nyp2);
 			sz[2] = static_cast<float>(nzp2);
 			szmax = *max_element(&sz[0],&sz[3]);
 			// for 2d, sqrt(2) = 1.414, relax a little bit to 1.6
 			// for 3d, sqrt(3) = 1.732, relax a little bit to 1.9
 			if (nzp > 1) {maxsize = vector<float>::size_type(1.9*szmax);} else {maxsize = vector<float>::size_type(1.6*szmax);}
-			for (vector<float>::size_type i = tsize+1; i < maxsize; i++) 
-				table.push_back(0.f);
+			for (vector<float>::size_type i = tsize+1; i < maxsize; i++) table.push_back(0.f);
 			break;
 		default: 
 			LOGERR("Unknown Fourier Filter type"); 
@@ -571,7 +567,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 					}
 				}*/
 				break;
-			case TANH_LOW_PASS :
+			case TANH_LOW_PASS:
 				for ( iz = 1; iz <= nzp; iz++) {
 					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
 					for ( iy = 1; iy <= nyp; iy++) {
@@ -669,7 +665,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	delete kbptr; kbptr = 0;
 	if (!complex_input) {
 		fp->do_ift_inplace();
-		fp->postift_depad_corner_inplace();
+		fp->depad();
 	}
 
 		// Return a complex (Fourier) filtered image
@@ -698,5 +694,3 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	return fp;
 	EXITFUNC;
 }
-
-/* vim: set ts=4 noet: */

@@ -4053,7 +4053,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 		}
 	}
 
-	PROJ->pad_fft();
+	PROJ = PROJ->norm_pad( false, 2);
 	PROJ->do_fft_inplace();
 	PROJ->update();
 	PROJptr = PROJ->get_data();
@@ -4072,7 +4072,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 		}  
 
 	PROJ->do_ift_inplace();
-	PROJ->postift_depad_corner_inplace();
+	PROJ->depad();
 }
 
 #undef PROJ
@@ -4169,7 +4169,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 		}
 	}
 
-	PROJ->pad_fft();
+	PROJ = PROJ->norm_pad( false, 2);
 	PROJ->do_fft_inplace();
 	PROJ->update();
 	float *PROJptr = PROJ->get_data();
@@ -4185,7 +4185,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 		}
 
 	PROJ->do_ift_inplace();
-	PROJ->postift_depad_corner_inplace();  
+	PROJ->depad();  
 }	
 	
 #undef   AMAX1	

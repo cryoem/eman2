@@ -62,7 +62,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     marchingcubes.cpp
     randnum.cpp
     sparx/fundamentals.cpp
-    sparx/normpadft.cpp
     sparx/fourierfilter.cpp
     sparx/rsconvolution.cpp
     polardata.cpp
