@@ -828,8 +828,6 @@ EMData *FourierReconstructor::finish()
 	// 
 	image->process_inplace("xform.fourierorigin.tocorner");
 	image->do_ift_inplace();
-	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
-	bool is_fftodd = nx%2;
 	image->depad();
 	image->process_inplace("xform.phaseorigin.tocenter");
 	
@@ -1916,7 +1914,7 @@ EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
 	checked_delete( temp );
         
         zeropadded->do_fft_inplace();
-	EMData* padfftslice = zeropadded;    
+	EMData* padfftslice = zeropadded;
 
 	// shift the projection
 	float sx = (ndim==2) ? float( slice->get_attr("s2x") ) : float( slice->get_attr("s1x") );
@@ -2018,12 +2016,9 @@ void nn4Reconstructor::setup()
 		m_ndim = 3;
 	}
 
-    if( params.has_key( "snr" ) )
-    {
+    if( params.has_key( "snr" ) ) {
         m_osnr = 1.0f/float( params["snr"] );
-    }
-    else
-    {
+    } else {
         m_osnr = 0.0;
     }
 
@@ -2078,8 +2073,8 @@ void nn4Reconstructor::buildFFTVolume() {
 	// Added by Zhengfan Yang on 03/15/07
 	// Original author: please check whether my revision is correct and 
 	// other Reconstructor need similiar revision.
-	if ( m_vnxp % 2 == 0 ) { m_volume->set_fftodd(0); }
-			else   { m_volume->set_fftodd(1); }
+	if ( m_vnxp % 2 == 0 )  m_volume->set_fftodd(0);
+	else                    m_volume->set_fftodd(1);
 	// ----------------------------------------------------------------
 
 	m_volume->set_nxc(m_vnxp/2);
