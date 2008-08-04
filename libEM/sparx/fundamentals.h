@@ -1,5 +1,9 @@
 /**
+<<<<<<< fundamentals.h
  * $Id$
+=======
+ * $Id$
+>>>>>>> 1.19.2.3
  */
 
 /*
@@ -47,7 +51,11 @@
  *  Please do not modify the contents of this document
  *  without written consent of the author.
  *
+<<<<<<< fundamentals.h
  *  @date $Date$
+=======
+ *  @date $Date$
+>>>>>>> 1.19.2.3
  *
  *  @see H.R. Myler and A.R. Weeks, "The Pocket Handbook of
  *  Image Processing Algorithms in C" (Prentice Hall, 

@@ -1,5 +1,9 @@
 /**
+<<<<<<< projector.cpp
  * $Id$
+=======
+ * $Id$
+>>>>>>> 1.77.2.3
  */
 
 /*
@@ -992,8 +996,9 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 	EMData* tmpImage = image->copy();
 	tmpImage->divkbsinh(kb);
 	// pad and center volume, then FFT and multiply by (-1)**(i+j+k)
-	EMData* imgft = tmpImage->pad_fft(npad);
-	imgft->center_padded();
+	//EMData* imgft = tmpImage->pad_fft(npad);
+	//imgft->center_padded();
+	EMData* imgft = tmpImage->norm_pad(false, npad);
 	imgft->do_fft_inplace();
 	imgft->center_origin_fft();
 	imgft->fft_shuffle();

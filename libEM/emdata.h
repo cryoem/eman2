@@ -1,5 +1,9 @@
 /**
+<<<<<<< emdata.h
  * $Id$
+=======
+ * $Id$
+>>>>>>> 1.316.2.1
  */
  
 /*
@@ -100,9 +104,6 @@ namespace EMAN
 		#include  "emdata_gl.h"
 #endif //EMAN2_USING_OPENGL
 
-		/** This is the header of EMData stay in sparx directory */
-		#include "sparx/normpadft.h"
-		
 	static int totalalloc;
 	public:
 	
