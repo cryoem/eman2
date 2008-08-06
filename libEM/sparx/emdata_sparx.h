@@ -628,27 +628,6 @@ EMData* mult_radial(EMData* radial);
 	void center_origin_fft();
 
 
-	/** return an image object that has been fft-padded/unpadded.
-	* The current image is not changed.
-	*
-	* @return An image object that has been fft-padded/unpadded.
-	*/
-	//EMData *pad_fft(int npad = 1);
-
-
-	/** Remove padding, leaving a single corner of the image.
-	*  The current image is changed in place.
-	*
-	*  The assumption is that after an in-place inverse fft
-	*  the real-space image contains too much information 
-	*  because it may have been zero-padded some integer factor
-	*  of times and it has also been extended slightly along x
-	*  for the fft.  Here we keep only the data corresponding 
-	*  to ix=0,...,nxold-1, iy=0,...,nyold-1, iz=0,...,nzold-1,
-	*  where nxold, nyold, nzold are the sizes of the original
-	*  image.
-	*/
-
 	EMData* FourInterpol(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
 
 	/** Truncate Fourier transform of an image, it will reduce its size.  (It is a form of decimation).
