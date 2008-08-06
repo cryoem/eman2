@@ -1841,7 +1841,7 @@ class TestProcessor(unittest.TestCase):
     def test_basis_wavelet(self):
         """test basis.wavelet processor ....................."""
         e1 = EMData()
-        e1.set_size(16,16)
+        e1.set_size(64,64)
         e1.process_inplace('testimage.noise.uniform.rand')
         d1 = e1.get_2dview()
         
@@ -1851,8 +1851,8 @@ class TestProcessor(unittest.TestCase):
         e3 = e2.process('basis.wavelet', {'type':'daub', 'dir':-1, 'ord':20})        
         d3 = e3.get_2dview()
         
-        for j in range(16):
-            for i in range(16):
+        for j in range(64):
+            for i in range(64):
                 self.assertAlmostEqual(d1[i][j], d3[i][j], 3)
     
     def test_basis_fft(self):

@@ -6286,9 +6286,10 @@ void WaveletProcessor::process_inplace(EMData *image)
 	ny=image->get_ysize();
 	
 	if (nx != ny && ny!=1) throw ImageDimensionException("Wavelet transform only supports square images");
-	float l=log((float)nx)/log(2.0f);
-	if (l!=floor(l)) throw ImageDimensionException("Wavelet transform size must be power of 2");
-
+//	float l=log((float)nx)/log(2.0f);
+//	if (l!=floor(l)) throw ImageDimensionException("Wavelet transform size must be power of 2");
+	if( !Util::IsPower2(nx) )  throw ImageDimensionException("Wavelet transform size must be power of 2");
+	
 	// Unfortunately GSL works only on double() arrays
 	// eventually we should put our own wavelet code in here
 	// but this will work for now

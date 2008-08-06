@@ -931,6 +931,16 @@ namespace EMAN
 //		static Dict get_isosurface(EMData * image, float surface_value, bool smooth);
 		
 		static float* getBaldwinGridWeights( const int& freq_cutoff, const float& P, const float& r, const float& dfreq = 1, const float& alpha=0.5, const float& beta = 0.2);
+	
+		/** Return true if an integer is positive and is power of 2 
+		 * 
+		 * @param[in] integer to be checked
+		 * 
+		 * @return true if the integer is positive and is power of 2
+		 * */
+		static bool IsPower2(int x) {
+			return ( (x>1) && (x & (x-1))==0 );
+		}
 	};
 }
 
