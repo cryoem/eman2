@@ -5264,10 +5264,10 @@ vector<double> Util::vrdg(const vector<float>& ph, const vector<float>& th)
 		count += weight(i);
 	}
 
-	if( abs(count-6.28) > 0.1 ) 
-	{
-	    printf("Warning: SUM OF VORONOI CELLS AREAS IS %lf, should 2*PI\n", count);
-	}
+	//if( abs(count-6.28) > 0.1 ) 
+	//{
+	//    printf("Warning: SUM OF VORONOI CELLS AREAS IS %lf, should 2*PI\n", count);
+	//}
 
 	free(weight);
 
