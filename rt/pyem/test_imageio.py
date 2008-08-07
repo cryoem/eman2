@@ -411,8 +411,8 @@ class TestMrcIO(unittest.TestCase):
         img4 = base + "_sc.mrc"
         img5 = base + "_fc.mrc"
         
-        TestUtil.make_image_file(img1, IMAGE_MRC, EM_UCHAR)
-        self.assertEqual(TestUtil.verify_image_file(img1, IMAGE_MRC, EM_UCHAR), 0)
+        TestUtil.make_image_file(img1, IMAGE_MRC, EMUtil.EMDataType.EM_UCHAR)
+        self.assertEqual(TestUtil.verify_image_file(img1, IMAGE_MRC, EMUtil.EMDataType.EM_UCHAR), 0)
   
         TestUtil.make_image_file(img2, IMAGE_MRC, EM_USHORT)
         self.assertEqual(TestUtil.verify_image_file(img2, IMAGE_MRC, EM_USHORT), 0)
@@ -420,8 +420,8 @@ class TestMrcIO(unittest.TestCase):
         TestUtil.make_image_file(img3, IMAGE_MRC, EM_FLOAT,64,64)
         self.assertEqual(TestUtil.verify_image_file(img3, IMAGE_MRC, EM_FLOAT, 64,64), 0)
         
-        TestUtil.make_image_file(img4, IMAGE_MRC, EM_USHORT_COMPLEX)
-        self.assertEqual(TestUtil.verify_image_file(img4, IMAGE_MRC, EM_USHORT_COMPLEX), 0)
+        TestUtil.make_image_file(img4, IMAGE_MRC, EM_SHORT_COMPLEX)
+        self.assertEqual(TestUtil.verify_image_file(img4, IMAGE_MRC, EM_SHORT_COMPLEX), 0)
         
         TestUtil.make_image_file(img5, IMAGE_MRC, EM_FLOAT_COMPLEX)
         self.assertEqual(TestUtil.verify_image_file(img5, IMAGE_MRC, EM_FLOAT_COMPLEX), 0)

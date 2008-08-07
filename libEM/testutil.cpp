@@ -550,13 +550,13 @@ void TestUtil::make_image_file_by_mode(const string & filename,
     }        
  
     if (!is_complex) {
-        e->write_image(filename, 0, image_type);
+        e->write_image(filename, 0, image_type, false, 0, datatype, true);
     }
     else {
     	e->update();
         e->set_attr("is_complex", false);
         EMData * fft = e->do_fft();
-        fft->write_image(filename, 0, image_type);
+        fft->write_image(filename, 0, image_type, false, 0, datatype, true);
         if( fft )
         {
         	delete fft;
