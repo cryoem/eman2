@@ -1846,7 +1846,7 @@ The basic design of EMAN Processors: <br>\
 
 		void process_dist_pixel(float *pixel, float dist) const
 		{
-			if (dist >= outer_radius_square){
+			if (dist >= outer_radius_square || dist < inner_radius_square){
 				*pixel = ring_avg;
 			}
 		}
