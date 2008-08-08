@@ -412,7 +412,8 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
-    def test_zeropad_ntimes(self):
+        #there is no zeropad_ntimes() function anymore
+    def no_test_zeropad_ntimes(self):
         """test zeropad_ntimes() function ..................."""
         e = EMData()
         e.set_size(32,32,32)
@@ -434,8 +435,9 @@ class TestEMData(unittest.TestCase):
             for y in range(32):
                 for x in range(32):
                     self.assertEqual( d[z][y][x], d3[z+32][y+32][x+32])
-                    
-    def test_pad_fft(self):
+        
+        #there is no pad_fft() function anymore 
+    def no_test_pad_fft(self):
         """test pad_fft() function .........................."""
         e = EMData()
         e.set_size(32,32,32)
@@ -447,7 +449,8 @@ class TestEMData(unittest.TestCase):
         #test arbitrary argument
         e3 = e.pad_fft(3)
         
-    def test_postift_depad_corner_inplace(self):
+        #there is no postift_depad_corner_inplace() function anymore
+    def no_test_postift_depad_corner_inplace(self):
         """test postift_depad_corner_inplace() .............."""
         e = EMData()
         e.set_size(32,32,32)
@@ -1035,14 +1038,14 @@ class TestEMData(unittest.TestCase):
         e.process_inplace("testimage.noise.uniform.rand")
         
         #test unpadded real image
-        e2 = e.do_fft_inplace()
+        e.do_fft_inplace()
         
         #test padded real image
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace("testimage.noise.uniform.rand")
-        e2 = e.pad_fft()
-        e3 = e2.do_fft_inplace()
+        #e2 = e.pad_fft()
+        e.do_fft_inplace()
         
         e.set_complex(True)
         e.do_ift_inplace()
@@ -1187,7 +1190,7 @@ class TestEMData(unittest.TestCase):
     def test_make_rotational_footprint(self):
         """test make_rotational_footprint() function ........"""
         e = EMData()
-        e.set_size(64,64,64)
+        e.set_size(64,64)
         e.to_one()
         e.make_rotational_footprint()
         
@@ -1535,19 +1538,8 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,1)
         e.to_one()
-        
         e.rotate_180()
         
-        #apply only to square 2D image
-        e2 = EMData()
-        e2.set_size(32,24,1)
-        e2.to_one()
-        self.assertRaises( RuntimeError, e2.rotate_180, )
-        try:
-            e2.rotate_180()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-            
         #exception to 3D image
         e3 = EMData()
         e3.set_size(32,32,32)
@@ -1890,6 +1882,8 @@ class TestEMData(unittest.TestCase):
         e2 = EMData()
         e2.set_size(32,32,32)
         e2.process_inplace("testimage.noise.uniform.rand")
+        e.do_fft_inplace()
+        e2.do_fft_inplace()
         e.calc_fourier_shell_correlation(e2)
         
         #input image can not be null
