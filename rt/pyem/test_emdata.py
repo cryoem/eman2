@@ -1201,7 +1201,7 @@ class TestEMData(unittest.TestCase):
         try:
             e.make_rotational_footprint()
         except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_to_zero(self):
         """test to_zero() function .........................."""
