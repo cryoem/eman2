@@ -55,8 +55,10 @@ Various CTF-related operations on images."""
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
 	parser.add_option("--dbin",type="string",help="Box locations used when input is a whole micrograph")
 	parser.add_option("--powspec",action="store_true",help="Compute the power spectrum of the input image(s)",default=False)
-	parser.add_option("--bgedge",type="int",help="Compute the background power spectrum from the edge of the image, specify the edge width in pixels",default=0)
+	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which will largely mask out the particles",default=0)
+	parser.add_option("--runav",type="int",help="Apply a running average to the background with +-runav pixels",default=0)
 	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=None)
+	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
 	
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	#parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
@@ -103,31 +105,57 @@ Various CTF-related operations on images."""
 	else :
 		names=[]
 		for i in args:
-			ps2d.append(powspec(i))
+			im=EMData(i,0)
+			ys=im.get_ysize()
+			if options.bgmask:
+				mask1=EMData(ys,ys,1)
+				mask1.to_one()
+				mask1.process_inplace("mask.sharp",{"outer_radius":options.bgmask})
+				mask2=mask1.copy()*-1+1
+				ps2d.append(powspec(i,not options.nonorm,mask1))
+			else : ps2d.append(powspec(i,not options.nonorm))
 			ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
-#			xt=ps2d[-1].get_clip(Region(0,0,ps2d[-1].get_xsize(),1))
-#			xt.ri2inten()
-#			ps1d.append([xt.get(ii) for ii in range(0,xt.get_xsize(),2)])
+			ratio=pi*(options.bgmask)**2
+			ratio=ratio/(ys*ys-ratio)
+#			ps1d.append(bgedge1d(i,-options.bgedge,not options.nonorm))
+			out=file("fg1d.txt","w")
+			for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
+			out.close()
 			names.append(i)
+			if options.bgmask>0 :
+				bg2d=powspec(i,not options.nonorm,mask2)
+#				ps2d.append(bg2d)
+				bg=bg2d.calc_radial_dist(bg2d.get_ysize()/2,0.0,1.0,1)
+				bg=[y*ratio for y in bg]
+				if options.runav:
+					ra=options.runav
+					bg=bg[:options.runav]+[sum(bg[v-ra:v+ra+1])/(ra*2+1) for v in range(ra,len(bg)-ra)]+bg[len(bg)-ra:]
+				for v in range(len(bg)): ps1d[-1][v]-=bg[v]
+#				ps1d.append(bg)
+#				names.append(i+"(bg)")
+
+				out=file("bg1d.txt","w")
+				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
+				out.close()
+
 			#if options.bgedge>0 :
 				#bg=bgedge2d(i,options.bgedge)
 				#ps2d.append(bg)
 				#ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
 				#names.append(i+"(bg)")
-
 			
-			if options.bgedge>0 :
-				bg=bgedge1d(i,options.bgedge)
-#				for ii in range(1,len(bg)): bg[ii]/=sqrt(ii)
-#				bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
-#				mins=min(bgs)
-#				bg=[ii*mins for ii in bg]
-				ps1d.append(bg)
-				ps2d.append(ps2d[-1])
-				names.append(i+"(bg)")
-				out=file("bg1d.txt","w")
-				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
-				out.close()
+#			if options.bgedge>0 :
+#				bg=bgedge1d(i,options.bgedge,not options.nonorm)
+##				for ii in range(1,len(bg)): bg[ii]/=sqrt(ii)
+##				bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
+##				mins=min(bgs)
+##				bg=[ii*mins for ii in bg]
+#				ps1d.append(bg)
+#				ps2d.append(ps2d[-1])
+#				names.append(i+"(bg)")
+#				out=file("bg1d.txt","w")
+#				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
+#				out.close()
 
 			
 
@@ -217,14 +245,17 @@ def powspecdb(image,boxes):
 	av.set_attr("is_intensity", 1)
 	return av
 
-def powspec(stackfile):
-	"""This routine will read the images from the specified file, and compute the average
+def powspec(stackfile,edgenorm=True,mask=None):
+	"""This routine will read the images from the specified file, optionally edgenormalize,
+	optionally apply a mask then compute the average
 	2-D power spectrum for the stack. Results returned as a 2-D FFT intensity/0 image"""
 	
 	n=EMUtil.get_image_count(stackfile)
 	
 	for i in range(n):
 		im=EMData(stackfile,i)
+		if edgenorm : im.process_inplace("normalize.edgemean")
+		if mask : im*=mask
 		imf=im.do_fft()
 		imf.ri2inten()
 		if i==0: av=imf
@@ -238,20 +269,23 @@ def powspec(stackfile):
 	av.set_attr("is_intensity", 1)
 	return av
 
-def bgedge1d(stackfile,width):
+def bgedge1d(stackfile,width,edgenorm=True):
 	"""This routine will read the images from the specified file, and compute the average
 	1-D power spectrum computed using lines taken from the edge of the image. Returns the
-	1-D power spectrum as a list of floats"""
+	1-D power spectrum as a list of floats. Negative widths work from the center out."""
 	
 	n=EMUtil.get_image_count(stackfile)
 	
 	for i in range(n):
 		im=EMData(stackfile,i)
+		if edgenorm : im.process_inplace("normalize.edgemean")
 		if i==0 : 
 			xs=im.get_xsize()
 		
 			# values to cover a "width" border around the image
-			pos=range(width)+range(xs-width,xs)
+			if width>0:
+				pos=range(width)+range(xs-width,xs)
+			else: pos=range(-width,xs+width)
 		
 			# avg will store the running sum of the 1D spectra
 			avg=EMData(xs+2,1,1)
