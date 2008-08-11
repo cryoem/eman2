@@ -441,6 +441,9 @@ EMData* mult_radial(EMData* radial);
 		 */
 		void fft_shuffle();
 		
+		void pad_corner(float *pad_image);
+		
+		void EMData::shuffle_pad_corner(float *pad_image);
 		
 		/** extractpoint -- Gridding convolution
 		 *

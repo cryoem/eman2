@@ -51,6 +51,7 @@ using namespace EMAN;
 #include <gsl/gsl_sf_bessel.h>
 #include <cmath>
 using namespace std;
+using std::complex;
 
 vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 //  flip true:  find statistics under the mask (mask >0.5)
@@ -1072,6 +1073,402 @@ size, say N=5, you can easily modify it by referring my code.
 	}
         return pixel/w;
 }
+
+/*
+complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, EMData *fimage, Util::KaiserBessel& kb) {
+
+	int nxreal = nx - 2;
+	if (nxreal != ny)
+		throw ImageDimensionException("extractpoint requires ny == nx");
+	int nhalf = nxreal/2; 
+	int kbsize = kb.get_window_size();
+	int kbmin = -kbsize/2;
+	int kbmax = -kbmin;
+	bool flip = (nuxnew < 0.f);
+	if (flip) {
+		nuxnew *= -1;
+		nuynew *= -1;
+	}
+	// put (xnew,ynew) on a grid.  The indices will be wrong for
+	// the Fourier elements in the image, but the grid sizing will
+	// be correct.
+	int ixn = int(Util::round(nuxnew));
+	int iyn = int(Util::round(nuynew));
+	// set up some temporary weighting arrays
+	float* wy0 = new float[kbmax - kbmin + 1];
+	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
+	float* wx0 = new float[kbmax - kbmin + 1];
+	float* wx = wx0 - kbmin;
+	for (int i = kbmin; i <= kbmax; i++) {
+			int iyp = iyn + i;
+			wy[i] = kb.i0win_tab(nuynew - iyp);
+			int ixp = ixn + i;
+			wx[i] = kb.i0win_tab(nuxnew - ixp);
+	}
+	// restrict loops to non-zero elements
+	int iymin = 0;
+	for (int iy = kbmin; iy <= -1; iy++) {
+		if (wy[iy] != 0.f) {
+			iymin = iy;
+			break;
+		}
+	}
+	int iymax = 0;
+	for (int iy = kbmax; iy >= 1; iy--) {
+		if (wy[iy] != 0.f) {
+			iymax = iy;
+			break;
+		}
+	}
+	int ixmin = 0;
+	for (int ix = kbmin; ix <= -1; ix++) {
+		if (wx[ix] != 0.f) {
+			ixmin = ix;
+			break;
+		}
+	}
+	int ixmax = 0;
+	for (int ix = kbmax; ix >= 1; ix--) {
+		if (wx[ix] != 0.f) {
+			ixmax = ix;
+			break;
+		}
+	}
+	float wsum = 0.0f;
+	for (int iy = iymin; iy <= iymax; iy++)
+		for (int ix = ixmin; ix <= ixmax; ix++)
+			wsum += wx[ix]*wy[iy];
+			
+	complex<float> result(0.f,0.f);
+	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax) && (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
+		// (xin,yin) not within window border from the edge
+		for (int iy = iymin; iy <= iymax; iy++) {
+			int iyp = iyn + iy;
+			for (int ix = ixmin; ix <= ixmax; ix++) {
+				int ixp = ixn + ix;
+				float w = wx[ix]*wy[iy];
+				complex<float> val = fimage->cmplx(ixp,iyp);
+				result += val*w;
+			}
+		}
+	} else {
+		// points that "stick out"
+		for (int iy = iymin; iy <= iymax; iy++) {
+			int iyp = iyn + iy;
+			for (int ix = ixmin; ix <= ixmax; ix++) {
+				int ixp = ixn + ix;
+				bool mirror = false;
+				int ixt= ixp, iyt= iyp;
+				if (ixt < 0) {
+					ixt = -ixt;
+					iyt = -iyt;
+					mirror = !mirror;
+				}
+				if (ixt > nhalf) {
+					ixt = nxreal - ixt;
+					iyt = -iyt;
+					mirror = !mirror;
+				}
+				if (iyt > nhalf-1)  iyt -= nxreal;
+				if (iyt < -nhalf)   iyt += nxreal;
+				float w = wx[ix]*wy[iy];
+				complex<float> val = fimage->cmplx(ixt,iyt);
+				if (mirror)  result += conj(val)*w;
+				else         result += val*w;
+			}
+		}
+	}
+	if (flip)  result = conj(result)/wsum;
+	else result /= wsum;
+	delete [] wx0;
+	delete [] wy0;
+	return result;
+}*/
+
+/*
+complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, EMData *fimage, Util::KaiserBessel& kb) {
+
+	int nxreal = nx - 2;
+	if (nxreal != ny)
+		throw ImageDimensionException("extractpoint requires ny == nx");
+	int nhalf = nxreal/2; 
+	bool flip = false;
+	if (nuxnew < 0.f) {
+		nuxnew *= -1;
+		nuynew *= -1;
+		flip = true;
+	}
+	if (nuynew >= nhalf-0.5)  { 
+		nuynew -= nxreal; 
+	} else if (nuynew < -nhalf-0.5) {
+		nuynew += nxreal; 
+	}
+	
+	// put (xnew,ynew) on a grid.  The indices will be wrong for
+	// the Fourier elements in the image, but the grid sizing will
+	// be correct.
+	int ixn = int(Util::round(nuxnew));
+	int iyn = int(Util::round(nuynew));
+
+	// set up some temporary weighting arrays
+	static float wy[7];
+	static float wx[7];
+
+	float iynn = nuynew - iyn;
+	wy[0] = kb.i0win_tab(iynn+3);
+	wy[1] = kb.i0win_tab(iynn+2);
+	wy[2] = kb.i0win_tab(iynn+1);
+	wy[3] = kb.i0win_tab(iynn);
+	wy[4] = kb.i0win_tab(iynn-1);
+	wy[5] = kb.i0win_tab(iynn-2);
+	wy[6] = kb.i0win_tab(iynn-3);
+
+	float ixnn = nuxnew - ixn;
+	wx[0] = kb.i0win_tab(ixnn+3);
+	wx[1] = kb.i0win_tab(ixnn+2);
+	wx[2] = kb.i0win_tab(ixnn+1);
+	wx[3] = kb.i0win_tab(ixnn);
+	wx[4] = kb.i0win_tab(ixnn-1);
+	wx[5] = kb.i0win_tab(ixnn-2);
+	wx[6] = kb.i0win_tab(ixnn-3);
+
+	float wsum = (wx[0]+wx[1]+wx[2]+wx[3]+wx[4]+wx[5]+wx[6])*(wy[0]+wy[1]+wy[2]+wy[3]+wy[4]+wy[5]+wy[6]);
+
+	complex<float> result(0.f,0.f);
+	for (int iy = 0; iy < 7; iy++) {
+		int iyp = iyn + iy - 3 ;
+		for (int ix = 0; ix < 7; ix++) { 
+			int ixp = ixn + ix - 3;
+			float w = wx[ix]*wy[iy];
+			complex<float> val = fimage->cmplx(ixp,iyp);
+			result += val*w;
+		}
+	}
+
+	if (flip)  result = conj(result)/wsum;
+	else result /= wsum;
+	
+	return result;
+}*/
+
+
+complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, EMData *fimage, Util::KaiserBessel& kb) {
+
+	int nxreal = nx - 2;
+	if (nxreal != ny)
+		throw ImageDimensionException("extractpoint requires ny == nx");
+	int nhalf = nxreal/2; 
+	bool flip = (nuxnew < 0.f);
+	if (flip) {
+		nuxnew *= -1;
+		nuynew *= -1;
+	}
+	if (nuynew >= nhalf-0.5)  { 
+		nuynew -= nxreal; 
+	} else if (nuynew < -nhalf-0.5) {
+		nuynew += nxreal; 
+	}
+	
+	// put (xnew,ynew) on a grid.  The indices will be wrong for
+	// the Fourier elements in the image, but the grid sizing will
+	// be correct.
+	int ixn = int(Util::round(nuxnew));
+	int iyn = int(Util::round(nuynew));
+
+	// set up some temporary weighting arrays
+	static float wy[7];
+	static float wx[7];
+
+	float iynn = nuynew - iyn;
+	wy[0] = kb.i0win_tab(iynn+3);
+	wy[1] = kb.i0win_tab(iynn+2);
+	wy[2] = kb.i0win_tab(iynn+1);
+	wy[3] = kb.i0win_tab(iynn);
+	wy[4] = kb.i0win_tab(iynn-1);
+	wy[5] = kb.i0win_tab(iynn-2);
+	wy[6] = kb.i0win_tab(iynn-3);
+
+	float ixnn = nuxnew - ixn;
+	wx[0] = kb.i0win_tab(ixnn+3);
+	wx[1] = kb.i0win_tab(ixnn+2);
+	wx[2] = kb.i0win_tab(ixnn+1);
+	wx[3] = kb.i0win_tab(ixnn);
+	wx[4] = kb.i0win_tab(ixnn-1);
+	wx[5] = kb.i0win_tab(ixnn-2);
+	wx[6] = kb.i0win_tab(ixnn-3);
+
+	float wsum = (wx[0]+wx[1]+wx[2]+wx[3]+wx[4]+wx[5]+wx[6])*(wy[0]+wy[1]+wy[2]+wy[3]+wy[4]+wy[5]+wy[6]);
+
+	complex<float> result(0.f,0.f);
+        if ((ixn >= 3) && (ixn <= nhalf-3) && (iyn >= -nhalf+3) && (iyn <= nhalf-4)) {
+		// (xin,yin) not within window border from the edge
+		for (int iy = 0; iy < 7; iy++) {
+			int iyp = iyn + iy - 3 ;
+			for (int ix = 0; ix < 7; ix++) {
+				int ixp = ixn + ix - 3;
+				float w = wx[ix]*wy[iy];
+				complex<float> val = fimage->cmplx(ixp,iyp);
+				result += val*w;
+			}
+		}
+	} else {
+		// points that "stick out"
+		for (int iy = 0; iy < 7; iy++) {
+			int iyp = iyn + iy - 3;
+			for (int ix = 0; ix < 7; ix++) {
+				int ixp = ixn + ix - 3;
+				bool mirror = false;
+				int ixt = ixp, iyt = iyp;
+				if (ixt < 0) {
+					ixt = -ixt;
+					iyt = -iyt;
+					mirror = !mirror;
+				}
+				if (ixt > nhalf) {
+					ixt = nxreal - ixt;
+					iyt = -iyt;
+					mirror = !mirror;
+				}
+				if (iyt > nhalf-1)  iyt -= nxreal;
+				if (iyt < -nhalf)   iyt += nxreal; 
+				float w = wx[ix]*wy[iy]; 
+				complex<float> val = fimage->cmplx(ixt,iyt);
+				if (mirror)  result += conj(val)*w;
+				else         result += val*w;
+			}
+		} 
+	}
+	if (flip)  result = conj(result)/wsum;
+	else result /= wsum;
+	return result;
+}
+
+/*
+complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, EMData *fimage, Util::KaiserBessel& kb) {
+
+	int nxreal = nx - 2;
+	if (nxreal != ny)
+		throw ImageDimensionException("extractpoint requires ny == nx");
+	int nhalf = nxreal/2; 
+	bool flip = (nuxnew < 0.f);
+	if (flip) {
+		nuxnew *= -1;
+		nuynew *= -1;
+	}
+	// put (xnew,ynew) on a grid.  The indices will be wrong for
+	// the Fourier elements in the image, but the grid sizing will
+	// be correct.
+	int ixn = int(Util::round(nuxnew));
+	int iyn = int(Util::round(nuynew));
+	// set up some temporary weighting arrays
+	static float wy[7]; 
+	static float wx[7];
+	
+	float iynn = nuynew - iyn;
+	wy[0] = kb.i0win_tab(iynn+3);
+	wy[1] = kb.i0win_tab(iynn+2);
+	wy[2] = kb.i0win_tab(iynn+1);
+	wy[3] = kb.i0win_tab(iynn);
+	wy[4] = kb.i0win_tab(iynn-1);
+	wy[5] = kb.i0win_tab(iynn-2);
+	wy[6] = kb.i0win_tab(iynn-3);
+
+	float ixnn = nuxnew - ixn;		
+	wx[0] = kb.i0win_tab(ixnn+3);
+	wx[1] = kb.i0win_tab(ixnn+2);
+	wx[2] = kb.i0win_tab(ixnn+1);
+	wx[3] = kb.i0win_tab(ixnn);
+	wx[4] = kb.i0win_tab(ixnn-1);
+	wx[5] = kb.i0win_tab(ixnn-2);
+	wx[6] = kb.i0win_tab(ixnn-3);
+
+	float wsum = (wx[0]+wx[1]+wx[2]+wx[3]+wx[4]+wx[5]+wx[6])*(wy[0]+wy[1]+wy[2]+wy[3]+wy[4]+wy[5]+wy[6]);
+			
+	complex<float> result(0.f,0.f);
+
+	if ((ixn >= 3) && (ixn <= nhalf-3) && (iyn >= -nhalf+3) && (iyn <= nhalf-4)) {
+		// (xin,yin) not within window border from the edge
+		result = ( fimage->cmplx(ixn-3,iyn-3)*wx[0] +
+			   fimage->cmplx(ixn-2,iyn-3)*wx[1] +
+			   fimage->cmplx(ixn-1,iyn-3)*wx[2] +
+			   fimage->cmplx(ixn+0,iyn-3)*wx[3] +
+			   fimage->cmplx(ixn+1,iyn-3)*wx[4] +
+			   fimage->cmplx(ixn+2,iyn-3)*wx[5] +
+			   fimage->cmplx(ixn+3,iyn-3)*wx[6] )*wy[0] +
+			   ( fimage->cmplx(ixn-3,iyn-2)*wx[0] +
+			   fimage->cmplx(ixn-2,iyn-2)*wx[1] +
+			   fimage->cmplx(ixn-1,iyn-2)*wx[2] +
+			   fimage->cmplx(ixn+0,iyn-2)*wx[3] +
+			   fimage->cmplx(ixn+1,iyn-2)*wx[4] +
+			   fimage->cmplx(ixn+2,iyn-2)*wx[5] +
+			   fimage->cmplx(ixn+3,iyn-2)*wx[6] )*wy[1] +
+			   ( fimage->cmplx(ixn-3,iyn-1)*wx[0] +
+			   fimage->cmplx(ixn-2,iyn-1)*wx[1] +
+			   fimage->cmplx(ixn-1,iyn-1)*wx[2] +
+			   fimage->cmplx(ixn+0,iyn-1)*wx[3] +
+			   fimage->cmplx(ixn+1,iyn-1)*wx[4] +
+			   fimage->cmplx(ixn+2,iyn-1)*wx[5] +
+			   fimage->cmplx(ixn+3,iyn-1)*wx[6] )*wy[2] +
+			   ( fimage->cmplx(ixn-3,iyn+0)*wx[0] +
+			   fimage->cmplx(ixn-2,iyn+0)*wx[1] +
+			   fimage->cmplx(ixn-1,iyn+0)*wx[2] +
+			   fimage->cmplx(ixn+0,iyn+0)*wx[3] +
+			   fimage->cmplx(ixn+1,iyn+0)*wx[4] +
+			   fimage->cmplx(ixn+2,iyn+0)*wx[5] +
+			   fimage->cmplx(ixn+3,iyn+0)*wx[6] )*wy[3] +
+			   ( fimage->cmplx(ixn-3,iyn+1)*wx[0] +
+			   fimage->cmplx(ixn-2,iyn+1)*wx[1] +
+			   fimage->cmplx(ixn-1,iyn+1)*wx[2] +
+			   fimage->cmplx(ixn+0,iyn+1)*wx[3] +
+			   fimage->cmplx(ixn+1,iyn+1)*wx[4] +
+			   fimage->cmplx(ixn+2,iyn+1)*wx[5] +
+			   fimage->cmplx(ixn+3,iyn+1)*wx[6] )*wy[4] +
+			   ( fimage->cmplx(ixn-3,iyn+2)*wx[0] +
+			   fimage->cmplx(ixn-2,iyn+2)*wx[1] +
+			   fimage->cmplx(ixn-1,iyn+2)*wx[2] +
+			   fimage->cmplx(ixn+0,iyn+2)*wx[3] +
+			   fimage->cmplx(ixn+1,iyn+2)*wx[4] +
+			   fimage->cmplx(ixn+2,iyn+2)*wx[5] +
+			   fimage->cmplx(ixn+3,iyn+2)*wx[6] )*wy[5] +
+			   ( fimage->cmplx(ixn-3,iyn+3)*wx[0] +
+			   fimage->cmplx(ixn-2,iyn+3)*wx[1] +
+			   fimage->cmplx(ixn-1,iyn+3)*wx[2] +
+			   fimage->cmplx(ixn+0,iyn+3)*wx[3] +
+			   fimage->cmplx(ixn+1,iyn+3)*wx[4] +
+			   fimage->cmplx(ixn+2,iyn+3)*wx[5] +
+			   fimage->cmplx(ixn+3,iyn+3)*wx[6] )*wy[6];
+
+	} else {
+		// points that "stick out"
+		for (int iy = 0; iy < 7; iy++) {
+			int iyp = iyn + iy - 3;
+			for (int ix = 0; ix < 7; ix++) {
+				int ixp = ixn + ix - 3;
+				bool mirror = false;
+				int ixt= ixp, iyt= iyp;
+				if (ixt < 0) {
+					ixt = -ixt;
+					iyt = -iyt;
+					mirror = !mirror;
+				}
+				if (ixt > nhalf) {
+					ixt = nxreal - ixt;
+					iyt = -iyt;
+					mirror = !mirror;
+				}
+				if (iyt > nhalf-1)  iyt -= nxreal;
+				if (iyt < -nhalf)   iyt += nxreal;
+				float w = wx[ix]*wy[iy];
+				complex<float> val = fimage->cmplx(ixt,iyt);
+				if (mirror)  result += conj(val)*w;
+				else         result += val*w;
+			}
+		}
+	}
+	if (flip)  result = conj(result)/wsum;
+	else result /= wsum;
+	return result;
+}*/
 
 
 float Util::triquad(float R, float S, float T, float* fdata)
