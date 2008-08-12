@@ -819,13 +819,13 @@ Output: 2D 3xk real image.
 //  Process f if real
 	EMData* fpimage = NULL;
 	if(f->is_complex()) fpimage = f;
-	else {fpimage= f->norm_pad(false, 1); fpimage->do_ift_inplace(); needfree|=1;} // Extend and do the FFT if f is real
+	else {fpimage= f->norm_pad(false, 1); fpimage->do_fft_inplace(); needfree|=1;} // Extend and do the FFT if f is real
 
 
 //  Process g if real
 	EMData* gpimage = NULL;
 	if(g->is_complex()) gpimage = g; 
-	else {gpimage= g->norm_pad(false, 1); gpimage->do_ift_inplace(); needfree|=2;} // Extend and do the FFT if f is real
+	else {gpimage= g->norm_pad(false, 1); gpimage->do_fft_inplace(); needfree|=2;} // Extend and do the FFT if f is real
 
 
 	float *d1 = fpimage->get_data();
