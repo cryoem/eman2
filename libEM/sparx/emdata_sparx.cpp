@@ -3017,6 +3017,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 			float nuxold = (ix*cang - ysang)*scale;
 			float nuyold = (ix*sang + ycang)*scale;
 			result->cmplx(ix,iy) = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
+			//result->cmplx(ix,iy) = extractpoint(nuxold, nuyold, kb);
 		}
 	}
 	result->set_array_offsets();
