@@ -443,7 +443,7 @@ EMData* mult_radial(EMData* radial);
 		
 		void pad_corner(float *pad_image);
 		
-		void EMData::shuffle_pad_corner(float *pad_image);
+		void shuffle_pad_corner(float *pad_image);
 		
 		/** extractpoint -- Gridding convolution
 		 *
