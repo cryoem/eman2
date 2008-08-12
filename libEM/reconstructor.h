@@ -1150,6 +1150,8 @@ namespace EMAN
 
 		void add_image( EMData* data );
 
+		void add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>& mults, int pbegin, int pend );
+
 		void get_image( int id, EMData* buf );
 
 		void restart( );

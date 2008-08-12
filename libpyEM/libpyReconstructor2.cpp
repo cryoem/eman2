@@ -121,8 +121,7 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
 
     class_< EMAN::newfile_store >( "newfile_store", init< const string&, int >() )
         .def( "add_image", &EMAN::newfile_store::add_image )
-        .def( "get_image", &EMAN::newfile_store::get_image )
-        .def( "restart",   &EMAN::newfile_store::restart )
+        .def( "add_tovol", &EMAN::newfile_store::add_tovol )
     ;
 
 

@@ -3494,6 +3494,14 @@ float get_ctf( int winsize, float voltage, float pixel, float Cs, float amp_cont
 using std::ofstream;
 using std::ifstream;
 
+struct point_t
+{
+    int pos2;
+    float real;
+    float imag;
+    float ctf2;
+};
+
 
 newfile_store::newfile_store( const string& filename, int npad )
     : m_bin_file( filename + ".bin" ),
@@ -3532,7 +3540,7 @@ void newfile_store::add_image( EMData* emdata )
     float psi = emdata->get_attr( "psi" );
     Transform3D tf( Transform3D::SPIDER, phi, tht, psi );
 
-    vector<float> points;
+    vector<point_t> points;
 
     for( int j=-ny/2+1; j <= ny/2; j++ )
     {
@@ -3606,23 +3614,26 @@ void newfile_store::add_image( EMData* emdata )
                     float ctfv2 = btq.imag() * ctf;
                     float ctf2 = ctf*ctf;
 
-                    points.push_back( float(pos2) );
-                    points.push_back( ctfv1 );
-                    points.push_back( ctfv2 );
-                    points.push_back( ctf2 );
+                    point_t p;
+                    p.pos2 = pos2;
+                    p.real = ctfv1;
+                    p.imag = ctfv2;
+                    p.ctf2 = ctf2;
+
+                    points.push_back( p );
                 }
 	    }
         }
     }
 
 
-    int nfloat = points.size();
+    int npoint = points.size();
     std::istream::off_type offset = (m_offsets.size()==0) ? 0 : m_offsets.back();
-    offset += nfloat*sizeof(float);
+    offset += npoint*sizeof(point_t);
     m_offsets.push_back( offset );
 
     *m_txt_of << m_offsets.back() << std::endl;
-    m_bin_of->write( (char*)(&points[0]), sizeof(float)*nfloat );
+    m_bin_of->write( (char*)(&points[0]), sizeof(point_t)*npoint );
     checked_delete( padfft );
 }
 
@@ -3663,6 +3674,60 @@ void newfile_store::get_image( int id, EMData* buf )
     m_bin_if->read( data, sizeof(float)*bufsize );
     buf->update();
 }
+
+void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>& mults, int pbegin, int pend )
+{
+    float* vdata = fftvol->get_data();
+    float* wdata = wgtvol->get_data();
+
+    if( m_offsets.size()==0 )
+    {
+        ifstream is( m_txt_file.c_str() );
+        std::istream::off_type off;
+        while( is >> off )
+        {
+            m_offsets.push_back( off );
+        }
+
+        //assert( equal_sized(m_offsets) );
+    }
+
+    std::ifstream fbin( m_bin_file.c_str(), std::ios::in | std::ios::binary );
+    
+    int nprj = m_offsets.size();
+    int npoint = m_offsets[0]/sizeof(point_t);
+    std::ios::off_type prjsize = m_offsets[0];
+
+
+    assert( mults.size()==nprj );
+    vector<point_t> points(npoint);
+
+    std::ios::off_type beginpos = pbegin * prjsize;
+    fbin.seekg( beginpos, std::ios::beg );
+
+    for( int iprj=pbegin; iprj < pend; ++iprj )
+    {
+        fbin.read( (char*)(&points[0]), prjsize );
+	if( fbin.bad() || fbin.fail() || fbin.eof() )
+        {
+            std::cout << "Error: file hander bad or fail or eof" << std::endl;
+            return;
+        }
+
+        int m = mults[iprj];
+
+        for( int i=0; i < npoint; ++i )
+        {
+            int pos2 = points[i].pos2;
+            int pos1 = pos2*2;
+            wdata[pos2] += points[i].ctf2*m;
+            vdata[pos1] += points[i].real*m;
+            vdata[pos1+1]+= points[i].imag*m;
+        }
+    }
+
+}
+
 
 void newfile_store::restart()
 {
