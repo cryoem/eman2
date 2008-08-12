@@ -3028,6 +3028,48 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	return result;
 }
 
+EMData* EMData::fouriergridrot_shift2d(float ang, float sx, float sy, Util::KaiserBessel& kb) {
+	if (2 != get_ndim())
+		throw ImageDimensionException("fouriergridrot2d needs a 2-D image.");
+	if (!is_complex()) 
+		throw ImageFormatException("fouriergridrot2d requires a fourier image");
+	int nxreal = nx - 2 + int(is_fftodd());
+	if (nxreal != ny)
+		throw ImageDimensionException("fouriergridrot2d requires ny == nx(real)");
+	if (0 != nxreal%2)
+		throw ImageDimensionException("fouriergridrot2d needs an even image.");
+	int nxhalf = nxreal/2;
+	int nyhalf = ny/2;
+	
+	if (!is_shuffled()) fft_shuffle();
+
+	EMData* result = copy_head();
+	set_array_offsets(0,-nyhalf);
+	result->set_array_offsets(0,-nyhalf);
+
+	ang = ang*DGR_TO_RAD;
+	float cang = cos(ang);
+	float sang = sin(ang);
+	float temp = -2.0*M_PI/nxreal;
+	for (int iy = -nyhalf; iy < nyhalf; iy++) {
+		float ycang = iy*cang;
+		float ysang = iy*sang;
+		for (int ix = 0; ix <= nxhalf; ix++) {
+			float nuxold = ix*cang - ysang;
+			float nuyold = ix*sang + ycang;
+			result->cmplx(ix,iy) = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
+			//result->cmplx(ix,iy) = extractpoint(nuxold, nuyold, kb);
+			float phase_ang = temp*(sx*ix+sy*iy);
+			result->cmplx(ix,iy) *= complex<float>(cos(phase_ang), sin(phase_ang));			
+		}
+	}
+	result->set_array_offsets();
+	result->fft_shuffle(); // reset to an unshuffled result
+	result->update();
+	set_array_offsets();
+	fft_shuffle(); // reset to an unshuffled complex image
+	return result;
+}
 
 #undef QUADPI
 #undef DGR_TO_RAD

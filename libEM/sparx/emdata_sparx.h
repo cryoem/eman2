@@ -479,6 +479,8 @@ EMData* mult_radial(EMData* radial);
 		EMData* extractplane(const Transform3D& tf, Util::KaiserBessel& kb);
 		
 		EMData* fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb);
+
+		EMData* fouriergridrot_shift2d(float ang, float sx, float sy, Util::KaiserBessel& kb);
 		
 		
 		/** divkbsinh -- Divide image by a Kaiser-Bessel sinh window.
