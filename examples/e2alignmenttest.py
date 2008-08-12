@@ -51,7 +51,7 @@ def main():
 	parser.add_option("--noise_processor",type="string",help="The processor used to add noise to the images. Default is math.addnoise:noise=50.", default="math.addnoise:noise=20")
 	parser.add_option("--align",type="string",help="The first aligner used. Default is rotate_translate_flip:rfp_mode=0", default="rotate_translate_flip:rfp_mode=0")
 	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot:normalize=1.",default="dot:normalize=1")
-	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner. If not specified then only one stage of alignment is applied. Default is None.", default=None)
+	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This must currently be the \'refine\' aligner. If not specified then only one stage of alignment is applied. Default is None.", default=None)
 	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner. Default is dot:normlize=1.",default="dot:normalize=1")
 	parser.add_option("--transmax",type="float",help="The maximum translational distance in any direction. Default is 5.0",default=5.0)
 	parser.add_option("--transmin",type="float",help="The minimum translational distance in any direction. Default is -5.0",default=-5.0)

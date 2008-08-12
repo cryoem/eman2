@@ -233,10 +233,9 @@ class EMImageRotorCore:
 		self.hud_data = [] # a list of strings to be rendered to the heads up display (hud)
 		
 		try:
-			self.font_renderer = EMFTGL()
+			self.font_renderer = get_3d_font_renderer()
 			self.font_renderer.set_face_size(20)
 			self.font_renderer.set_depth(4)
-			self.font_renderer.set_using_display_lists(True)
 			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
 			
 #			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")

@@ -329,14 +329,9 @@ void FourierReconstructor::setup()
 	// default setting behavior - does not override if the parameter is already set
 	params.set_default("mode",2);
 	
-	// Atm the reconstruction algorith works only for even dimensions, this has something to do xform.fourierorigin not
-	// working for images with odd dimensions - once we are certain the xform.fourierorigin has no problems with oddness
-	// then there could be bugs in the reconstructor itself - it needs testing.
 	int x_size = params["x_in"];
-// 	if ( x_size % 2 == 1 ) throw InvalidValueException(x_size, "x size of images must be even");
 	if ( x_size < 0 ) throw InvalidValueException(x_size, "x size of images must be greater than 0");
 	int y_size = params["y_in"];
-// 	if ( y_size % 2 == 1 ) throw InvalidValueException(y_size, "y size of images must be even");
 	if ( y_size < 0 ) throw InvalidValueException(y_size, "y size of images must be greater than 0");
 	
 	if ( x_size > y_size ) max_input_dim = x_size;
@@ -503,10 +498,10 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	}
 	
 	float *dat = input_slice->get_data();
+	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
 	
-	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
-	{
-		Transform3D t3d = arg.get_sym((string) params["sym"], i);
+	for ( int i = 0; i < sym->get_nsym(); ++i) {
+		Transform3D t3d = arg*sym->get_sym(i);
 		for (int y = 0; y < input_slice->get_ysize(); y++) {
 			for (int x = 0; x < input_slice->get_xsize() / 2; x++) {
 				
@@ -550,6 +545,8 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 			}
 		}
 	}
+	
+	delete sym;
 }
 
 int FourierReconstructor::determine_slice_agreement(const EMData* const input_slice, const Transform3D & t3d, const unsigned int num_particles_in_slice)

@@ -49,6 +49,7 @@ from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
+from em3Dfonts import get_3d_font_renderer
 
 class EMImageMX(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
@@ -375,12 +376,9 @@ class EMImageMXCore:
 
 		try:
 			self.font_render_mode = EMImageMXCore.FTGL
-			self.font_renderer = EMFTGL()
+			self.font_renderer = get_3d_font_renderer()
 			self.font_renderer.set_face_size(16)
-			self.font_renderer.set_using_display_lists(True)
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-			
-#			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
 		except:
 			self.font_render_mode = EMImageMXCore.GLUT
 

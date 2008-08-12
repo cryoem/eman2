@@ -479,7 +479,6 @@ def fourier_reconstruction(options):
 		print "Inserting Slices"
 	
 	for j in xrange(0,options.iter):
-		
 		removed = 0;
 		
 		if ( j > 0 ):

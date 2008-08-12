@@ -53,7 +53,7 @@ from emglobjects import EMImage3DObject, Camera2,EMViewportDepthTools
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EM3DFont(EMImage3DObject):
+class EM3DFontWidget(EMImage3DObject):
 	def __init__(self, parent=None):
 		EMImage3DObject.__init__(self)
 		self.parent = parent
@@ -71,10 +71,7 @@ class EM3DFont(EMImage3DObject):
 		self.inspector=None
 		
 		self.vdtools = EMViewportDepthTools(self)
-		self.font_renderer = EMFTGL()
-		self.font_renderer.set_face_size(32)
-		self.font_renderer.set_depth(2)
-		self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif-Bold.ttf")
+		self.font_renderer = get_3d_font_renderer()
 		
 	def getType(self):
 		return "Font"
@@ -308,7 +305,7 @@ class EM3DFont(EMImage3DObject):
 	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
 		
-class EM3DFontWidget(QtOpenGL.QGLWidget):
+class EM3DFontWidgetWidget(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
 	A QT widget for rendering 3D EMData objects.
 	"""
@@ -319,8 +316,8 @@ class EM3DFontWidget(QtOpenGL.QGLWidget):
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 
-		EM3DFontWidget.allim[self]=0
-		self.font_renderer = EM3DFont(self)
+		EM3DFontWidgetWidget.allim[self]=0
+		self.font_renderer = EM3DFontWidget(self)
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
@@ -717,7 +714,7 @@ class EMFontInspector(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EM3DFontWidget()
+	window = EM3DFontWidgetWidget()
 	window.setInit()
 	window2=EMParentWin(window)
 	window2.show()
