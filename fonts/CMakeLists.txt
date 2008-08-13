@@ -1,0 +1,1 @@
+INSTALL_FILES(/fonts FILES DejaVuSerif.ttf readme.txt)
