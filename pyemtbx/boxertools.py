@@ -937,7 +937,7 @@ class BigImageCache:
 
 		def __init__(self):
 			Cache.__init__(self)
-			self.set_max_size(1)
+			self.set_max_size(2)
 
 	
 		def get_image(self,image_name):

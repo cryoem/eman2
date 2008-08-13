@@ -49,8 +49,6 @@ from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
-from em3Dfonts import get_3d_font_renderer
-
 class EMImageMX(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
 	in 'matrix' form on the display. The middle mouse button will bring up a
