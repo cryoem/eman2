@@ -396,6 +396,7 @@ namespace EMAN
 			d.put("sym", EMObject::STRING, "Optional. The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?. Default is c1");
 			d.put("quiet", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
 			d.put("3damp", EMObject::BOOL, "Optional. Toggles writing the 3D FFT amplitude image. Default is false.");
+			d.put("weight", EMObject::FLOAT, "Weight of the slice that is being inserted. Default is 1.0.");
 			return d;
 		}
 

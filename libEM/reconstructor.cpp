@@ -251,10 +251,8 @@ void ReconstructorVolumeData::normalize_threed()
 	float* rdata = image->get_data();
 		
 	// FIXME should throw a sensible error
-	if ( 0 == norm )
-		throw;
-	if ( 0 == rdata )
-		throw;
+	if ( 0 == norm ) throw NullPointerException("The normalization volume was null!");
+	if ( 0 == rdata ) throw NullPointerException("The complex reconstruction volume was null!");
 	
 	for (int i = 0; i < nx * ny * nz; i += 2) {
 		float d = norm[i/2];
@@ -412,7 +410,12 @@ void FourierReconstructor::setup()
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const Transform3D )
 {
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
+	
 	EMData* return_slice = slice->process("xform.phaseorigin.tocorner");
+	
+// 	EMData* return_slice = slice->process("normalize.edgemean");
+// 	return_slice->process_inplace("xform.phaseorigin.tocorner");
+	
 
 	// Fourier transform the slice
 	return_slice->do_fft_inplace();
@@ -468,8 +471,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 	delete slice;	
 
-	image->update();
-
+// 	image->update();
 	return 0;
 }
 
@@ -499,6 +501,8 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	
 	float *dat = input_slice->get_data();
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
+	
+	float weight = params.set_default("weight",1.0);
 	
 	for ( int i = 0; i < sym->get_nsym(); ++i) {
 		Transform3D t3d = arg*sym->get_sym(i);
@@ -541,11 +545,10 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				dt[0] = dat[idx];
 				dt[1] = cc * dat[idx+1];
 
-				inserter->insert_pixel(xx,yy,zz,dt);
+				inserter->insert_pixel(xx,yy,zz,dt,weight);
 			}
 		}
 	}
-	
 	delete sym;
 }
 
@@ -614,6 +617,8 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	}
 	float *dat = slice->get_data();
 	
+	float weight = params.set_default("weight",1.0);
+	
 	for (int y = 0; y < slice->get_ysize(); y++) {
 		for (int x = 0; x < slice->get_xsize() / 2; x++) {
 				
@@ -653,7 +658,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 			dt[0] = dat[idx];
 			dt[1] = cc * dat[idx+1];
 
-			float weight = 1.0;
+			
 			if ( prev_quality_scores.size() != 0 )
 			{
 				// If the slice was not inserted into the 3D volume in the previous round of slice insertion

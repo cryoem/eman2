@@ -494,7 +494,8 @@ def fourier_reconstruction(options):
 				
 				if ( options.no_wt == False ):
 					weight = float (image.get_attr("ptcl_repr"))
-					image.mult(weight)
+					weight_params = {"weight":weight}
+					recon.insert_params(weight_params)
 				
 				transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
 				
@@ -550,7 +551,8 @@ def fourier_reconstruction(options):
 			
 			if ( options.no_wt == False ):
 				weight = float (image.get_attr("ptcl_repr"))
-				image.mult(weight)
+				weight_params = {"weight":weight}
+				recon.insert_params(weight_params)
 
 			transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
 			failure = recon.insert_slice(image,transform)

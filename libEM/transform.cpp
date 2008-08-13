@@ -1983,6 +1983,7 @@ vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Trans
 	return ret;
 }
 // THIS IS DWOOLFORDS FIRST SHOT AT EXTRACTING PHIL'S PLATONIC STUFF FROM SPARX
+// It didn't work.
 // vector<Transform3D> SaffOrientationGenerator::gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const	
 // {
 // 	float scrunch = 0.9; //closeness factor to eliminate oversampling corners

@@ -67,8 +67,6 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImageMX.allim[self]=0
-		
-		
 		self.imagemx = EMImageMXCore(data,self)
 		
 		self.imagefilename = None
