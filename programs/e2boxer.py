@@ -909,7 +909,7 @@ class GUIbox:
 		except:
 			try:
 				trim_autoboxer = project_db["current_autoboxer"]
-				self.autoboxer = SwarmAutoBoxer(None)
+				self.autoboxer = SwarmAutoBoxer(self)
 				self.autoboxer.become(trim_autoboxer)
 				self.autoboxer_name = self.autoboxer.get_unique_stamp()
 				self.dynapix = self.autoboxer.dynapix_on()
@@ -1205,7 +1205,7 @@ class GUIbox:
 				except:
 					try:
 						trim_autoboxer = project_db["current_autoboxer"]
-						self.autoboxer = SwarmAutoBoxer(None)
+						self.autoboxer = SwarmAutoBoxer(self)
 						self.autoboxer.become(trim_autoboxer)
 						self.autoboxer_name = self.autoboxer.get_unique_stamp()
 						self.dynapix = self.autoboxer.dynapix_on()
@@ -2478,11 +2478,10 @@ class GUIboxPanel(QtGui.QWidget):
 		self.advanced_vbl.addWidget(self.groupbox)
 
 		self.ratiobut = QtGui.QRadioButton("Ratio")
+		self.ratiobut.setChecked(True)
 		self.difbut = QtGui.QRadioButton("Difference")
 		self.ratio_average_but = QtGui.QRadioButton("Average Ratio")
-		self.ratio_average_but.setChecked(True)
-		
-		
+
 		self.cmpmethodhbox = QtGui.QHBoxLayout()
 		self.cmpmethodhbox.addWidget(self.ratiobut)
 		self.cmpmethodhbox.addWidget(self.difbut)

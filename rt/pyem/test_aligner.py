@@ -120,8 +120,8 @@ class TestAligner(unittest.TestCase):
 		
 		e.align('rotational', e2)
 		
-		for y in [32]:
-			for x in [32]: # does not work yet for odd x - rotational footprint fails
+		for y in [32,33]:
+			for x in [32,33]:
 				size = (x,y)
 				ref = test_image(0,size)
 				for i in range(0,20):
@@ -173,8 +173,8 @@ class TestAligner(unittest.TestCase):
 		
 		e.align('rotate_translate', e2, {'maxshift':1})
 		
-		for y in [32]:
-			for x in [32]:# does not work yet for odd x - rotational footprint fails
+		for y in [32,33]:
+			for x in [32,33]:
 				size = (x,y)
 				ref = test_image(7,size)
 				for i in range(0,20):
@@ -264,8 +264,8 @@ class TestAligner(unittest.TestCase):
 		
 		e.align('rotate_translate_flip', e2, {'maxshift':1})
 		
-		for y in [32]:
-			for x in [32]:# does not work yet for odd x - rotational footprint fails
+		for y in [32,33]:
+			for x in [32,33]:
 				size = (x,y)
 				ref = test_image(7,size)
 				for i in range(0,20):
@@ -279,7 +279,7 @@ class TestAligner(unittest.TestCase):
 					t = Transform3D(az,0,0)
 					t.set_pretrans(dx,dy,0)
 					e.rotate_translate(t)
-					g = e.align("rotate_translate_flip",ref,{"rfp_mode":0},"phase")
+					g = e.align("rotate_translate_flip",ref,{"rfp_mode":1},"phase")
 					t1 = Transform3D(g.get_attr("align.az"),0,0)
 					t1.set_posttrans(g.get_attr("align.dx"),g.get_attr("align.dy"),0)
 					

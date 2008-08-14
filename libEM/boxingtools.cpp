@@ -562,14 +562,11 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 			}
 			else if (mode == SWARM_AVERAGE_RATIO) {
 				profile[idx] += image->get_value_at(xx,yy);
-// 				cout << "Setting tall at " << idx << endl;
 				tally[idx]++;
-// 				cout << "done" << endl;
 			}
 			
 		}
 	}
-// 	cout << "now averaging" << endl;
 	
 	if (mode == SWARM_AVERAGE_RATIO) {
 		for(unsigned int i = 0; i < profile.size(); ++i) {
@@ -580,7 +577,6 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 		}
 	}
 	
-// 	cout << "Done" << endl;
 	return profile;
 }
 

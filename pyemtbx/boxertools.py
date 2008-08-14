@@ -937,7 +937,7 @@ class BigImageCache:
 
 		def __init__(self):
 			Cache.__init__(self)
-			self.set_max_size(2)
+			self.set_max_size(1)
 
 	
 		def get_image(self,image_name):
@@ -2451,7 +2451,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
 		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
 		self.selection_mode = SwarmAutoBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
-		self.cmp_mode = BoxingTools.CmpMode.SWARM_AVERAGE_RATIO
+		self.cmp_mode = BoxingTools.CmpMode.SWARM_RATIO
 		BoxingTools.set_mode(self.cmp_mode)
 		self.__shrink = -1
 		
@@ -2820,11 +2820,13 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 			
 			if found:
-				if data["autoboxer_unique_id"] == self.get_unique_stamp():
-					#print "we have an associated image"
-					boxable = Boxable(image_name,None,self)
-					boxable.change_box_size(box_size)
-					boxable.get_exclusion_image(True)
+				try:
+					if data["autoboxer_unique_id"] == self.get_unique_stamp():
+						#print "we have an associated image"
+						boxable = Boxable(image_name,None,self)
+						boxable.change_box_size(box_size)
+						boxable.get_exclusion_image(True)
+				except: pass
 			#else:
 				#print "image is not associated",image_name
 			
@@ -2889,7 +2891,6 @@ class SwarmAutoBoxer(AutoBoxer):
 				#boxable.set_autoboxer_id(self.get_unique_stamp())
 				#self.parent.autoboxer_db_changed()
 
-			print 'error, cant get template if there are no references'
 			return 1
 
 		# ref update should only be toggled if we are in user driven mode

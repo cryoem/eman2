@@ -192,10 +192,14 @@ class EMGLPlot(EMImage3DObject):
 			
 			if datar == 0:
 				glBegin(GL_QUADS)
+				glNormal(1,-1,0.1)
 				glVertex(datar,ymin,0)
+				glNormal(.1,-.1,1)
 				glVertex(datar+0.5,ymin,0)
 				top = (self.data[datar]+self.data[datar+1])/2.0
+				glNormal(-1,1,-0.1)
 				glVertex(datar+0.5,top,0)
+				glNormal(-.1,.1,1)
 				glVertex(datar,top,0)
 				glEnd()
 				
@@ -208,10 +212,14 @@ class EMGLPlot(EMImage3DObject):
 				
 			elif datar == len(self.data)-1:
 				glBegin(GL_QUADS)
+				glNormal(-.1,.1,1)
 				glVertex(datar-0.5,ymin,0)
+				glNormal(-1,1,-0.1)
 				glVertex(datar,ymin,0)
 				top = (self.data[datar-1]+self.data[datar])/2.0
+				glNormal(.1,-.1,1)
 				glVertex(datar,top,0)
+				glNormal(1,-1,0.1)
 				glVertex(datar-0.5,top,0)
 				glEnd()
 				
@@ -223,17 +231,25 @@ class EMGLPlot(EMImage3DObject):
 				
 			else:
 				glBegin(GL_QUADS)
+				glNormal(-.1,.1,1)
 				glVertex(datar-0.5,ymin,0)
+				glNormal(-1,1,-0.1)
 				glVertex(datar,ymin,0)
 				top = (self.data[datar-1]+self.data[datar])/2.0
+				glNormal(.1,-.1,1)
 				glVertex(datar,top,0)
+				glNormal(1,-1,0.1)
 				glVertex(datar-0.5,top,0)
 				glEnd()
 				glBegin(GL_QUADS)
+				glNormal(1,-1,0.1)
 				glVertex(datar,ymin,0)
+				glNormal(.1,-.1,1)
 				glVertex(datar+0.5,ymin,0)
 				top = (self.data[datar]+self.data[datar+1])/2.0
+				glNormal(-1,1,-0.1)
 				glVertex(datar+0.5,top,0)
+				glNormal(-.1,.1,1)
 				glVertex(datar,top,0)
 				glEnd()
 	

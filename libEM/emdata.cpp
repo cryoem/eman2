@@ -1781,9 +1781,9 @@ EMData *EMData::make_rotational_footprint_cmc( bool unwrap) {
 	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool)) 
 	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication 
 	// set to true, which is used for speed reasons. 
-	if (filt->get_xsize() != nx+2 || filt->get_ysize() != ny ||
+	if (filt->get_xsize() != nx+2-(nx%2) || filt->get_ysize() != ny ||
 		   filt->get_zsize() != nz ) {
-		filt->set_size(nx+2, ny, nz);
+		filt->set_size(nx+2-(nx%2), ny, nz);
 		filt->to_one();
 	
 		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
@@ -1865,9 +1865,9 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	EMData* filt = &obj_filt;
 	filt->set_complex(true);
 
-	if (nx & 1) {
-		LOGERR("even image xsize only");		throw ImageFormatException("even image xsize only");
-	}
+// 	if (nx & 1) {
+// 		LOGERR("even image xsize only");		throw ImageFormatException("even image xsize only");
+// 	}
 
 	int cs = (((nx * 7 / 4) & 0xfffff8) - nx) / 2; // this pads the image to 1 3/4 * size with result divis. by 8
 
@@ -1889,9 +1889,9 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	// Ultimately it is used an argument to the EMData::mult(EMData,prevent_complex_multiplication (bool)) 
 	// function in calc_mutual_correlation. Note that in the function the prevent_complex_multiplication 
 	// set to true, which is used for speed reasons. 
-	if (filt->get_xsize() != clipped->get_xsize() +2 || filt->get_ysize() != clipped->get_ysize() ||
+	if (filt->get_xsize() != clipped->get_xsize() +2-(clipped->get_xsize()%2) || filt->get_ysize() != clipped->get_ysize() ||
 		   filt->get_zsize() != clipped->get_zsize()) {
-		filt->set_size(clipped->get_xsize() + 2, clipped->get_ysize(), clipped->get_zsize());
+		filt->set_size(clipped->get_xsize() + 2-(clipped->get_xsize()%2), clipped->get_ysize(), clipped->get_zsize());
 		filt->to_one();
 
 		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
@@ -1974,7 +1974,7 @@ EMData *EMData::make_footprint()
 }
 
 
-EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * filter)
+EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * filter)
 {
 	ENTERFUNC;
 
@@ -2051,11 +2051,11 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 		cf->update();
 	}
 
-	if (tocorner) {
-		cf->process_inplace("xform.phaseorigin.tocorner");
-	}
-
 	EMData *f2 = cf->do_ift();
+	
+	if (tocenter) {
+		f2->process_inplace("xform.phaseorigin.tocenter");
+	}
 
 	if( cf )
 	{
