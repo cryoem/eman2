@@ -1142,6 +1142,15 @@ namespace EMAN
 	map<string, vector<string> > dump_reconstructors_list();
 
 
+    struct point_t
+    {
+        int pos2;
+        float real;
+        float imag;
+        float ctf2;
+    };
+
+
         class newfile_store
         {
         public:
@@ -1154,6 +1163,8 @@ namespace EMAN
 		void add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>& mults, int pbegin, int pend );
 
 		void get_image( int id, EMData* buf );
+	
+        void read( int nprj );
 
 		void restart( );
 
@@ -1167,6 +1178,8 @@ namespace EMAN
 		shared_ptr<std::ofstream> m_txt_of;
 		shared_ptr<std::ifstream> m_bin_if;
 		vector< std::istream::off_type > m_offsets;
+
+        vector< point_t > m_points;
 	};
 
 	class file_store

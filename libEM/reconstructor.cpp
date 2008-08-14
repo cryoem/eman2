@@ -3496,14 +3496,6 @@ float get_ctf( int winsize, float voltage, float pixel, float Cs, float amp_cont
 using std::ofstream;
 using std::ifstream;
 
-struct point_t
-{
-    int pos2;
-    float real;
-    float imag;
-    float ctf2;
-};
-
 
 newfile_store::newfile_store( const string& filename, int npad )
     : m_bin_file( filename + ".bin" ),
@@ -3624,7 +3616,7 @@ void newfile_store::add_image( EMData* emdata )
 
                     points.push_back( p );
                 }
-	    }
+	        }
         }
     }
 
@@ -3677,11 +3669,8 @@ void newfile_store::get_image( int id, EMData* buf )
     buf->update();
 }
 
-void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>& mults, int pbegin, int pend )
+void newfile_store::read( int nprj )
 {
-    float* vdata = fftvol->get_data();
-    float* wdata = wgtvol->get_data();
-
     if( m_offsets.size()==0 )
     {
         ifstream is( m_txt_file.c_str() );
@@ -3690,50 +3679,64 @@ void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>
         {
             m_offsets.push_back( off );
         }
-
-        //assert( equal_sized(m_offsets) );
     }
 
-    std::ifstream fbin( m_bin_file.c_str(), std::ios::in | std::ios::binary );
-    
-    int nprj = m_offsets.size();
+    if( m_bin_if==NULL )
+    {
+        m_bin_if = shared_ptr< ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
+    } 
+
+
     int npoint = m_offsets[0]/sizeof(point_t);
     std::ios::off_type prjsize = m_offsets[0];
 
+    m_points.resize(nprj * npoint);
 
-    assert( mults.size()==nprj );
-    vector<point_t> points(npoint);
-
-    std::ios::off_type beginpos = pbegin * prjsize;
-    fbin.seekg( beginpos, std::ios::beg );
-
-    for( int iprj=pbegin; iprj < pend; ++iprj )
+    int ip = 0;
+    for( int i=0; i < nprj; ++i )
     {
-        fbin.read( (char*)(&points[0]), prjsize );
-	if( fbin.bad() || fbin.fail() || fbin.eof() )
+        m_bin_if->read( (char*)(&m_points[ip]), prjsize );
+	    if( m_bin_if->bad() || m_bin_if->fail() || m_bin_if->eof() )
         {
             std::cout << "Error: file hander bad or fail or eof" << std::endl;
             return;
         }
+        ip += npoint;
+    }
+}
 
+void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>& mults, int pbegin, int pend )
+{
+    float* vdata = fftvol->get_data();
+    float* wdata = wgtvol->get_data();
+
+    int nprj = m_offsets.size();
+    int npoint = m_offsets[0]/sizeof(point_t);
+ 
+    assert( mults.size()==nprj );
+    assert( m_points.size()== (pend - pbegin)*npoint );
+
+    int ipt = 0;
+    for( int iprj=pbegin; iprj < pend; ++iprj )
+    {
         int m = mults[iprj];
+        if( m==0 ) continue;
 
         for( int i=0; i < npoint; ++i )
         {
-            int pos2 = points[i].pos2;
+            int pos2 = m_points[ipt].pos2;
             int pos1 = pos2*2;
-            wdata[pos2] += points[i].ctf2*m;
-            vdata[pos1] += points[i].real*m;
-            vdata[pos1+1]+= points[i].imag*m;
+            wdata[pos2] += m_points[ipt].ctf2*m;
+            vdata[pos1] += m_points[ipt].real*m;
+            vdata[pos1+1]+= m_points[ipt].imag*m;
+            ++ipt;
         }
     }
-
 }
-
 
 void newfile_store::restart()
 {
-    m_bin_if = shared_ptr<std::ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
+    m_bin_if = shared_ptr< ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
 } 
                 
 file_store::file_store(const string& filename, int npad, int write)
