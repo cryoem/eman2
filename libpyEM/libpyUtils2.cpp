@@ -37,6 +37,29 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_tf_overloads_2_7, EMAN::Util::tf, 2, 7
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_ctf_img_overloads_5_12, EMAN::Util::ctf_img, 5, 12)
 
+struct EMAN_Util_sincBlackman_Wrapper: EMAN::Util::sincBlackman
+{
+    EMAN_Util_sincBlackman_Wrapper(PyObject* py_self_, const EMAN::Util::sincBlackman& p0):
+        EMAN::Util::sincBlackman(p0), py_self(py_self_) {}
+
+    EMAN_Util_sincBlackman_Wrapper(PyObject* py_self_, int p0, float p1, int p2):
+        EMAN::Util::sincBlackman(p0, p1, p2), py_self(py_self_) {}
+
+    EMAN_Util_sincBlackman_Wrapper(PyObject* py_self_, int p0, float p1, int p2, int p3):
+        EMAN::Util::sincBlackman(p0, p1, p2, p3), py_self(py_self_) {}
+
+    void build_sBtable() {
+        call_method< void >(py_self, "build_sBtable");
+    }
+
+    void default_build_sBtable() {
+        EMAN::Util::sincBlackman::build_sBtable();
+    }
+
+
+    PyObject* py_self;
+};
+
 struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 {
     EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::KaiserBessel& p0):
@@ -401,6 +424,14 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("get_biggest_cluster")
 		.staticmethod("merge_peaks")
 	);
+
+    scope* EMAN_Util_sincBlackman_scope = new scope(
+    class_< EMAN::Util::sincBlackman, EMAN_Util_sincBlackman_Wrapper >("sincBlackman", init< const EMAN::Util::sincBlackman& >())
+        .def(init< int, float, int, optional< int > >())
+        .def("sBwin_tab", &EMAN::Util::sincBlackman::sBwin_tab)
+        .def("get_sB_size", &EMAN::Util::sincBlackman::get_sB_size)
+    );
+    delete EMAN_Util_sincBlackman_scope;
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(
     class_< EMAN::Util::KaiserBessel, EMAN_Util_KaiserBessel_Wrapper >("KaiserBessel", init< const EMAN::Util::KaiserBessel& >())
