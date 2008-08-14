@@ -248,7 +248,7 @@ class Box:
 		
 		# make sure there are no out of date footprints hanging around
 		self.footprint = None
-		
+
 	def change_box_size(self,box_size):
 		'''
 			Changes the box_size if it really is different to that which is currently stored
@@ -1212,7 +1212,7 @@ class Boxable:
 		except: pass
 		#print "got references, now have", len(self.boxes)
 		
-	def resizeBoxes(self,boxes,box_size):
+	def resize_boxes(self,boxes,box_size):
 		if boxes == None:
 			return
 		for box in boxes:
@@ -1225,7 +1225,21 @@ class Boxable:
 			d[1] -= adj
 			d[2] -= adj
 			d[3] -= adj
+	
 			
+	def set_box_size(self,box_size):
+		action = True
+		if self.box_size != box_size and self.box_size != -1:
+			# if you call set box size and there are boxes with this box size then you should
+			# really be calling change box size
+			if len(self.boxes) != 0:
+				print "warning, in calling set box size, change box size is being called"
+				self.change_box_size(box_size)
+				action = False
+	
+		if action:
+			self.box_size = box_size
+	
 	def change_box_size(self,box_size):
 		self.box_size = box_size
 		self.deleted_auto_boxes = []
@@ -1233,19 +1247,19 @@ class Boxable:
 		autoboxes = get_idd_key_entry(self.image_name,"auto_boxes")
 		if oldxsize == None and autoboxes != None and len(autoboxes) != 0:
 			oldxsize = autoboxes[0].xsize
-		self.resizeBoxes(autoboxes,box_size)
+		self.resize_boxes(autoboxes,box_size)
 		set_idd_key_entry(self.image_name,"auto_boxes",autoboxes)
 		
 		manboxes = get_idd_key_entry(self.image_name,"manual_boxes")
 		if oldxsize == None and manboxes != None and len(manboxes) != 0:
 			oldxsize = manboxes[0].xsize
-		self.resizeBoxes(manboxes,box_size)
+		self.resize_boxes(manboxes,box_size)
 		set_idd_key_entry(self.image_name,"manual_boxes",manboxes)
 		
 		refboxes = get_idd_key_entry(self.image_name,"reference_boxes")
 		if oldxsize == None and refboxes != None and len(refboxes) != 0:
 			oldxsize = refboxes[0].xsize
-		self.resizeBoxes(refboxes,box_size)
+		self.resize_boxes(refboxes,box_size)
 		set_idd_key_entry(self.image_name,"reference_boxes",refboxes)
 		
 		
@@ -2437,7 +2451,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
 		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
 		self.selection_mode = SwarmAutoBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
-		self.cmp_mode = BoxingTools.CmpMode.SWARM_RATIO
+		self.cmp_mode = BoxingTools.CmpMode.SWARM_AVERAGE_RATIO
 		BoxingTools.set_mode(self.cmp_mode)
 		self.__shrink = -1
 		
@@ -2448,7 +2462,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.mode = SwarmAutoBoxer.DYNAPIX
 		self.refupdate = False # this is a flag used when self.mode is USERDRIVEN
 		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.ANCHOREDUSERDRIVEN,SwarmAutoBoxer.COMMANDLINE]
-		self.permissablecmp_modes = [BoxingTools.CmpMode.SWARM_RATIO,BoxingTools.CmpMode.SWARM_DIFFERENCE]  # the permissiable peak profile comparitor modes - for convenience when double
+		self.permissablecmp_modes = [BoxingTools.CmpMode.SWARM_RATIO,BoxingTools.CmpMode.SWARM_DIFFERENCE, BoxingTools.CmpMode.SWARM_AVERAGE_RATIO]  # the permissiable peak profile comparitor modes - for convenience when double
 		self.permissableselection_modes = [SwarmAutoBoxer.THRESHOLD,SwarmAutoBoxer.SELECTIVE,SwarmAutoBoxer.MORESELECTIVE]  # the permissiable selection modes - for convenience when double checking the calling program is setting the selectionmode explicitly (through set_selection_mode )
 		self.regressiveflag = False	# flags a force removal of non references in the Boxable in auto_box
 		

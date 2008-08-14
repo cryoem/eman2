@@ -198,23 +198,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def registerScrollMotion(self,x,y):
 		return self.image2d.registerScrollMotion(x,y)
 	
-	def setOtherData(self,data,scale,blend=False):
-		self.image2d.otherdata = data
-		self.image2d.otherdatascale = scale
-		self.image2d.otherdatablend = blend
-		
 	def get_depth_for_height(self, height):
 		return 0
 	
-	def set_frozen(self,frozen):
-		self.image2d.set_frozen(frozen)
-		
-	def set_excluded(self,isexcluded):
-		'''
-		The return values is whether or not the display should be updated
-		'''
-		return self.image2d.set_excluded(isexcluded)
-		
 	def getShapes(self):
 		return self.image2d.getShapes()
 	
@@ -297,6 +283,11 @@ class EMImage2DCore:
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
+	
+	def set_other_data(self,data,scale,blend=False):
+		self.otherdata = data
+		self.otherdatascale = scale
+		self.otherdatablend = blend
 	
 	def get_inspector(self):
 		return self.inspector

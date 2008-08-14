@@ -42,6 +42,7 @@ namespace  {
 		enum_< EMAN::BoxingTools::CmpMode >("CmpMode")
 		.value("SWARM_DIFFERENCE", EMAN::BoxingTools::SWARM_DIFFERENCE)
 		.value("SWARM_RATIO", EMAN::BoxingTools::SWARM_RATIO)
+		.value("SWARM_AVERAGE_RATIO", EMAN::BoxingTools::SWARM_AVERAGE_RATIO)
 		;
 		
 		delete EMAN_BoxingTools_scope;

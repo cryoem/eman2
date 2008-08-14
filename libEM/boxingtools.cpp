@@ -505,6 +505,17 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 	
 	vector<float> profile(radius,0); // this sets the vectors size to radius, and the values to 0
 	int radius_squared = radius*radius;
+	
+	static vector<float> squared_numbers;
+	if ( (unsigned int)(radius+1) > squared_numbers.size() ) {
+		for(int i = squared_numbers.size(); i <= radius; ++i) {
+			squared_numbers.push_back(i*i);
+		}
+	}
+	
+	vector<unsigned int> tally;
+	if (mode == SWARM_AVERAGE_RATIO) tally.resize(profile.size(),0);
+	
 	for(int k = -radius; k <= radius; ++k) {
 		for(int j = -radius; j <= radius; ++j) {
 			// Translate coordinates
@@ -524,7 +535,14 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 			
 			// The idx is the radius, rounded down. This creates a certain type of pattern that
 			// can only really be explained visually...
-			int idx = (int) sqrtf(k*k + j*j);
+			int idx = -1;
+			// This little loop avoids the use of sqrtf
+			for(int i = 1; i < radius; ++i) {
+				if ( square_length >= squared_numbers[i] && square_length <= squared_numbers[i+1] ) {
+					idx = i;
+				}
+			}
+// 			int idx = (int) sqrtf(k*k + j*j);
 			// decrement the idx, because the origin information is redundant
 			idx -= 1;
 			
@@ -542,9 +560,27 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 				// Store it if the drop is smaller than the current value (or if there is no value)
 				if ( profile[idx] > val || profile[idx] == 0 ) profile[idx] = val;
 			}
+			else if (mode == SWARM_AVERAGE_RATIO) {
+				profile[idx] += image->get_value_at(xx,yy);
+// 				cout << "Setting tall at " << idx << endl;
+				tally[idx]++;
+// 				cout << "done" << endl;
+			}
 			
 		}
 	}
+// 	cout << "now averaging" << endl;
+	
+	if (mode == SWARM_AVERAGE_RATIO) {
+		for(unsigned int i = 0; i < profile.size(); ++i) {
+			if (tally[i] != 0) {
+				profile[i] /= static_cast<float>(tally[i]);
+				profile[i] = (peakval - profile[i] ) / peakval;
+			}
+		}
+	}
+	
+// 	cout << "Done" << endl;
 	return profile;
 }
 
@@ -589,8 +625,6 @@ vector<IntPoint> BoxingTools::auto_correlation_pick(const EMData* const image, f
 	vector<IntPoint> solution;
 
 	int r = radius+1;
-	
-	
 	
 	for(int j = r; j < ny-r;++j) {
 		for(int k = r; k < nx-r;++k) {
@@ -642,6 +676,17 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 	float peakval = image->get_value_at(x,y);
 	
 	int radius_squared = radius*radius;
+	
+	static vector<float> squared_numbers;
+	if ( (unsigned int)(radius+1) > squared_numbers.size() ) {
+		for(int i = squared_numbers.size(); i <= radius; ++i) {
+			squared_numbers.push_back(i*i);
+		}
+	}
+	
+	vector<unsigned int> tally;
+	if (mode == SWARM_AVERAGE_RATIO) tally.resize(profile.size(),0);
+	
 	for(int k = -radius; k <= radius; ++k) {
 		for(int j = -radius; j <= radius; ++j) {
 			// Translate coordinates
@@ -664,7 +709,14 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 			
 			// The idx is the radius, rounded down. This creates a certain type of pattern that
 			// can only really be explained visually...
-			int idx = (int) sqrtf(k*k + j*j);
+			int idx = -1;
+			// This little loop avoids the use of sqrtf
+			for(int i = 1; i < radius; ++i) {
+				if ( square_length >= squared_numbers[i] && square_length <= squared_numbers[i+1] ) {
+					idx = i;
+				}
+			}
+// 			int idx = (int) sqrtf(k*k + j*j);
 			// decrement the idx, because the origin information is redundant
 			idx -= 1;
 			
@@ -682,7 +734,20 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 				// Store it if the drop is smaller than the current value (or if there is no value)
 				if ( profile[idx] > val || profile[idx] == 0 ) profile[idx] = val;
 			}
+			else if (mode == SWARM_AVERAGE_RATIO) {
+				profile[idx] += image->get_value_at(xx,yy);
+				tally[idx]++;
+			}
 			
+		}
+	}
+	
+	if (mode == SWARM_AVERAGE_RATIO) {
+		for(unsigned int i = 0; i < profile.size(); ++i) {
+			if (tally[i] != 0) {
+				profile[i] /= static_cast<float>(tally[i]);
+				profile[i] = (peakval - profile[i] ) / peakval;
+			}
 		}
 	}
 	
