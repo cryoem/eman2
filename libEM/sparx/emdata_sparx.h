@@ -335,6 +335,8 @@ EMData* mult_radial(EMData* radial);
 		 *  @return New rotated/shifted/scaled image
 		 */
 		EMData* rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
+
+		EMData* downsample(Util::sincBlackman& kb, float scale = 1.0);
 		
 		EMData* rot_scale_conv7(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input);
 		
@@ -354,6 +356,7 @@ EMData* mult_radial(EMData* radial);
 		 *  @return New rotated/shifted/scaled image
 		 */
 		float get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb);
+		float  get_pixel_filtered(float delx, float dely, float delz, Util::sincBlackman& kb);
 
 		float get_pixel_conv7(float delx, float dely, float delz, Util::KaiserBessel& kb);
 

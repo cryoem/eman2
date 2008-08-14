@@ -1531,6 +1531,27 @@ float Util::triquad(float R, float S, float T, float* fdata)
 
 
 
+Util::sincBlackman::sincBlackman(int M_, float fc_, int N_, int ntable_) 
+		: M(M_), fc(fc_), N(N_), ntable(ntable_) {
+	// Sinc-Blackman kernel
+	build_sBtable();
+}
+
+void Util::sincBlackman::build_sBtable() {
+	sBtable.resize(ntable+1);
+	int ltab = int(round(float(ntable)/1.25f));
+	int M2 = M/2;
+	fltb = float(ltab)/M2;
+	for (int i=ltab+1; i <= ntable; i++) sBtable[i] = 0.0f;
+	float x = 1.0e-7;
+	sBtable[0] = sin(twopi*fc*x)/x*(0.52-0.5*cos(twopi*(x-M2)/M)+0.08*cos(2*twopi*(x-M2)/M));
+	for (int i=1; i <= ltab; i++) {
+		x = float(i)/fltb/N;
+		sBtable[i] = sin(twopi*fc*x)/x*(0.52-0.5*cos(twopi*(x-M2)/M)+0.08*cos(2*twopi*(x-M2)/M));
+//		cout << "  "<<s*N<<"  "<<sBtable[i] <<endl;
+	}
+}
+
 Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_, float v_,
 		                         int N_, float vtable_, int ntable_) 
 		: alpha(alpha_), v(v_), r(r_), N(N_), K(K_), vtable(vtable_), 

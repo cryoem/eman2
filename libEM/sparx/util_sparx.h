@@ -136,6 +136,34 @@ static void Radialize(int *PermMatTr,  float * kValsSorted,
             float *weightofkvalsSorted, int Size, int *SizeReturned);
 		            
 
+
+class sincBlackman
+{
+	protected:
+		int M; /** kernel size */
+		float fc; /** cut-off frequency */
+		int N;
+		int ntable;
+		vector<float> sBtable;
+		//float dtable; /** table spacing */
+		virtual void build_sBtable(); /** Tabulate I0 window for speed */
+		float fltb;
+	public:
+		sincBlackman(int M_, float fc_, int N_, int ntable_ = 1999);
+		virtual ~sincBlackman() {};
+
+		//virtual float sBwin(float x) const;
+		inline  float sBwin_tab(float x) const {
+			float xt;
+			if(x<0.0f) xt = -x*fltb+0.5f; else xt = x*fltb+0.5f;
+			return sBtable[ (int) xt];
+		}
+		/** Return the size of the kernel */
+		int get_sB_size() const { return M; }
+};
+
+
+
 /** 1-D Kaiser-Bessel window function class.
  *  (It's a class so that the windowing parameters may be
  *   instantiated and held in the instance object.)

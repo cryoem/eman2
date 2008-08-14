@@ -2437,6 +2437,38 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 	return ret;
 }
 
+EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
+
+	int M = kb.get_sB_size();
+	int kbmin = -M/2;
+	int kbmax = -kbmin;
+
+	int nxn, nyn, nzn;
+	nxn = nx*scale; nyn = ny*scale; nzn = nz*scale;
+
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	EMData* ret = this->copy_head();
+#ifdef _WIN32
+	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32 
+	ret->to_zero();  //we will leave margins zeroed.
+	
+	// scan new, find pixels in old
+	for (int iy = -kbmin; iy < nyn-kbmax; iy++) {
+		float y = float(iy)/scale;
+		for (int ix = -kbmin; ix < nxn-kbmax; ix++) {
+			float x = float(ix)/scale;
+			(*ret)(ix,iy) = this->get_pixel_filtered(x, y, 1.0f, kb);
+		}
+	}
+	set_array_offsets(saved_offsets);
+	return ret;
+}
+
+
 EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 
 	int nxn, nyn, nzn;
@@ -2519,7 +2551,7 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 
 	float pixel =0.0f;
 	float w=0.0f;
-	
+
 	delx = restrict2(delx, nx);	
 	int inxold = int(Util::round(delx));
 	if(ny<2) {  //1D
@@ -2567,6 +2599,73 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	 	} else {
          		for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
 	 			float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
+				//cout << "OO  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)(inxold+m1,inyold+m2,inzold+m3)<< endl;
+	 			pixel += (*this)(inxold+m1,inyold+m2,inzold+m3)*q; w+=q;}}
+			}
+	 	}
+	}
+        return pixel/w;
+}
+
+
+float  EMData::get_pixel_filtered(float delx, float dely, float delz, Util::sincBlackman& kb) {
+//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
+
+	int K     = kb.get_sB_size();
+	int kbmin = -K/2;
+	int kbmax = -kbmin;
+	int kbc   = kbmax+1;
+
+	float pixel =0.0f;
+	float w=0.0f;
+
+	delx = restrict2(delx, nx);	
+	int inxold = int(Util::round(delx));
+	if(ny<2) {  //1D
+	 	if(inxold <= kbc || inxold >=nx-kbc-2 )  {
+	 		//  loop for ends
+         		for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.sBwin_tab(delx - inxold-m1);
+	 			pixel += (*this)((inxold+m1+nx)%nx)*q; w+=q;
+			}
+	 	} else {
+         		for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.sBwin_tab(delx - inxold-m1);
+	 			pixel += (*this)(inxold+m1)*q; w+=q;
+			}
+	 	}
+	
+	} else if(nz<2) {  // 2D
+		dely = restrict2(dely, ny);
+		int inyold = int(Util::round(dely));
+	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
+	 		//  loop for strips
+         		for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.sBwin_tab(delx - inxold-m1)*kb.sBwin_tab(dely - inyold-m2);
+	 			pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;}
+			}
+	 	} else {
+         		for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.sBwin_tab(delx - inxold-m1)*kb.sBwin_tab(dely - inyold-m2);
+	 			pixel += (*this)(inxold+m1,inyold+m2)*q; w+=q;}
+			}
+	 	}
+	} else {  //  3D
+		dely = restrict2(dely, ny);
+		int inyold = int(Util::round(dely));
+		delz = restrict2(delz, nz);
+		int inzold = int(Util::round(delz));
+		    //cout << inxold<<"  "<< kbc<<"  "<< nx-kbc-2<<"  "<< endl;
+	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2  || inzold <= kbc || inzold >=nz-kbc-2 )  {
+	 		//  loop for strips
+         		for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.sBwin_tab(delx - inxold-m1)*kb.sBwin_tab(dely - inyold-m2)*kb.sBwin_tab(delz - inzold-m3);
+				//cout << "BB  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)<< endl;
+	 			pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)*q ;w+=q;}}
+			}
+	 	} else {
+         		for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.sBwin_tab(delx - inxold-m1)*kb.sBwin_tab(dely - inyold-m2)*kb.sBwin_tab(delz - inzold-m3);
 				//cout << "OO  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)(inxold+m1,inyold+m2,inzold+m3)<< endl;
 	 			pixel += (*this)(inxold+m1,inyold+m2,inzold+m3)*q; w+=q;}}
 			}
