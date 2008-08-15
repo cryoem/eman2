@@ -76,6 +76,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&ValueSquaredProcessor::NEW);
 	force_add(&ValueSqrtProcessor::NEW);
 	force_add(&Rotate180Processor::NEW);
+	force_add(&InvertCarefullyProcessor::NEW);
 
 	force_add(&ClampingProcessor::NEW);
 	force_add(&NSigmaClampingProcessor::NEW);

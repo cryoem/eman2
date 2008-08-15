@@ -711,10 +711,8 @@ class SincBlackmanSubsamplerCache:
 
 class SincBlackmanSubsampledImage:
 	'''
-	Pawel Penczek opimal subsampling approach is encapsulated in this class
+	Pawel Penczek optimal subsampling approach is encapsulated in this class
 	'''
-	template_min_default = 20
-	frequency_cutoff_default = 0.12
 	def __init__(self,image_name):
 		self.smallimage = None		# a small copy of an image which has had its background flattened
 		self.image_name = image_name
@@ -751,23 +749,18 @@ class SincBlackmanSubsampledImage:
 		subsample_rate = params_mediator.get_best_shrink()
 		template_min = params_mediator.get_template_min()
 		frequency_cutoff = params_mediator.get_frequency_cutoff()
-		print "updated the image completely"
 		bic = BigImageCache()
 		image = bic.get_image(self.image_name)
 		
 		sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
 
 		self.smallimage = image.downsample(sb,1.0/subsample_rate)
-			
 
 		self.smallimage.set_attr("subsample_rate",subsample_rate)
 		self.smallimage.set_attr("frequency_cutoff",frequency_cutoff)
 		self.smallimage.set_attr("template_min",template_min)
 		self.smallimage.set_attr("creation_time_stamp",gm_time_string())
-		
-		
-		self.smallimage.write_image("test.hdf")
-		
+
 		set_idd_key_entry(self.image_name,"subsampled_image",self.smallimage)
 				
 		#else:

@@ -996,6 +996,46 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	class InvertCarefullyProcessor:public RealPixelProcessor
+	{
+		public:
+			string get_name() const
+			{
+				return "math.invert.carefully";
+			}
+			static Processor *NEW()
+			{
+				return new InvertCarefullyProcessor();
+			}
+
+			void set_params(const Dict & new_params)
+			{
+				params = new_params;
+				zero_to = params.set_default("zero_to",0.0);
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("zero_to", EMObject::FLOAT, "Inverted zero values are set to this value, default is 0.");
+				return d;
+			}
+
+			string get_desc() const
+			{
+				return "if f(x) != 0: f(x) = 1/f(x) else: f(x) = zero_to";
+			}
+		
+		protected:
+			void process_pixel(float *x) const
+			{
+				if (*x == 0) *x = zero_to;
+				else *x = 1/(*x); 
+			}
+		private:
+			float zero_to;
+	};
+	
 	class ValuePowProcessor:public RealPixelProcessor
 	{
 	  public:
