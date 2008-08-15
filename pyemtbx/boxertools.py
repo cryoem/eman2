@@ -781,6 +781,10 @@ class SincBlackmanSubsampledImage:
 		return self.get_image()
 	
 	def query_params_match(self,params_mediator):
+		'''
+		A utility function that tests to see of the current parameters of the subsampled image
+		match those in the params_mediator
+		'''
 		subsample_rate = params_mediator.get_best_shrink()
 		template_min = params_mediator.get_template_min()
 		frequency_cutoff = params_mediator.get_frequency_cutoff()
