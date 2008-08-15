@@ -711,10 +711,8 @@ class SincBlackmanSubsamplerCache:
 
 class SincBlackmanSubsampledImage:
 	'''
-	Pawel Penczek opimal subsampling approach is encapsulated in this class
+	Pawel Penczek optimal subsampling approach is encapsulated in this class
 	'''
-	template_min_default = 20
-	frequency_cutoff_default = 0.12
 	def __init__(self,image_name):
 		self.smallimage = None		# a small copy of an image which has had its background flattened
 		self.image_name = image_name
@@ -745,8 +743,7 @@ class SincBlackmanSubsampledImage:
 	
 	def __update_image(self,params_mediator):
 		'''
-		Updates the image using the function arguments
-		If they match current parameters than nothing happens - the correct image is already cached
+		Updates the image using the parameters that are deduced from the params_mediator
 		'''
 		subsample_rate = params_mediator.get_best_shrink()
 		template_min = params_mediator.get_template_min()
@@ -773,7 +770,6 @@ class SincBlackmanSubsampledImage:
 		Should only be called if you know the stored image is up to date
 		'''
 		return self.smallimage
-	
 	
 	def get_image_carefully(self,params_mediator):
 		
