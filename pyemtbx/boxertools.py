@@ -718,7 +718,7 @@ class SincBlackmanSubsampledImage:
 		self.image_name = image_name
 		
 		try:
-			# we may have the image already on disk, if so parse it
+			# we may have the image already in the database, if so parse it
 			# the image on disk is likely up to date but not necessarily so
 			self.smallimage = get_idd_key_entry(self.image_name,"subsampled_image")
 			#print "I read the image",self.ouputimage_name
