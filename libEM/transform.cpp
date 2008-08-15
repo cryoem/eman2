@@ -1002,7 +1002,7 @@ Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
 	float m00 = matrix[0][0]; float m01=matrix[0][1]; float m02=matrix[0][2];
 	float m10 = matrix[1][0]; float m11=matrix[1][1]; float m12=matrix[1][2];
 	float m20 = matrix[2][0]; float m21=matrix[2][1]; float m22=matrix[2][2];
- 	float v0  = matrix[0][3]; float v1 =matrix[1][3]; float v2 =matrix[2][3];
+	float v0  = matrix[0][3]; float v1 =matrix[1][3]; float v2 =matrix[2][3];
 
     float cof00 = m11*m22-m12*m21;
     float cof11 = m22*m00-m20*m02;
@@ -1031,14 +1031,19 @@ Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
     invM.matrix[0][3] =  (- cof00*v0 + cof10*v1 - cof20*v2 )/Det;
     invM.matrix[1][3] =  (  cof01*v0 - cof11*v1 + cof21*v2 )/Det;
     invM.matrix[2][3] =  (- cof02*v0 + cof12*v1 - cof22*v2 )/Det;
-     
-
-//	invM.set_pretrans(  -postT );
-//	invM.set_posttrans( -preT  );
-
+	
+	Vec3f postT   = get_posttrans( ) ;
+	Vec3f invMpre   = - postT;
+	Vec3f invMpost   ;
+	for ( int i = 0; i < 3; i++) {
+		invMpost[i] = invM.matrix[i][3];
+		for ( int j = 0; j < 3; j++) {
+			invMpost[i] += - invM.matrix[i][j]*invMpre[j];
+		}
+		invM.matrix[3][i] = invMpost[i];
+	}
 
 	return invM;
-
 }
 
 

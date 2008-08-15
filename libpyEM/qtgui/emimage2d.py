@@ -226,6 +226,8 @@ class EMImage2DCore:
 		self.maxden=1.0
 		self.mindeng=0
 		self.maxdeng=1.0
+		self.brts=0 # stored purely for persistence reasons - the database needs this object to remember the value
+		self.conts=1 # stored purely for persistence reasons - the database needs this object to remember the value
 		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
 		self.mmode=0				# current mouse mode as selected by the inspector
@@ -269,12 +271,15 @@ class EMImage2DCore:
 		self.main_display_list = 0	# if using display lists, the stores the display list
 		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
 		self.hist = []
+		self.file_name = None # stores the filename of the image, if None then member functions should be smart enough to handle it
 		
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
 		if image :
 			self.setData(image)
+			
+		self.__load_display_settings_from_db()
 		
 	def __del__(self):
 		if (self.shapelist != 0):
@@ -283,6 +288,58 @@ class EMImage2DCore:
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
+			
+	def get_minden(self): return self.minden
+	def get_maxden(self): return self.maxden
+	def get_gamma(self): return self.gamma
+	def get_brts(self): return self.brts
+	def get_conts(self): return self.conts
+	
+	def set_brightness(self,brts):
+		self.brts = brts
+		self.__write_display_settings_to_db()
+		
+	def set_contrast(self,conts):
+		self.conts = conts
+		self.__write_display_settings_to_db()
+		
+	def set_brightness_contrast(self,brts,conts):
+		'''
+		Setting the brightness contrast does not require an updateGL but does cause information to
+		be stored to the data base
+		'''
+		self.brts = brts
+		self.const = conts
+		self.__write_display_settings_to_db()
+		
+	def set_density_range(self,x0,x1):
+		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
+		self.minden=x0
+		self.maxden=x1
+		self.__write_display_settings_to_db()
+		self.updateGL()
+	
+	def set_density_min(self,val):
+		self.minden=val
+		self.__write_display_settings_to_db()
+		self.updateGL()
+		
+	def set_density_max(self,val):
+		self.maxden=val
+		self.__write_display_settings_to_db()
+		self.updateGL()
+	
+	def set_gamma(self,val):
+		self.gamma=val
+		self.__write_display_settings_to_db()
+		self.updateGL()
+	
+	def set_file_name(self,file_name):
+		self.file_name = file_name
+		self.__load_display_settings_from_db()
+		
+	def get_file_name(self):
+		return self.file_name
 	
 	def set_other_data(self,data,scale,blend=False):
 		self.otherdata = data
@@ -352,24 +409,66 @@ class EMImage2DCore:
 #		self.origin=(self.width()/2,self.height()/2)
 		
 #		self.updateGL()
-		
-	def setDenRange(self,x0,x1):
-		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
-		self.minden=x0
-		self.maxden=x1
-		self.updateGL()
 	
-	def setDenMin(self,val):
-		self.minden=val
-		self.updateGL()
+	def __load_display_settings_from_db(self):
+		if self.file_name == None: return # there is no file name, we have no means to stores information
 		
-	def setDenMax(self,val):
-		self.maxden=val
-		self.updateGL()
+		try:
+			DB = EMAN2db.EMAN2DB.open_db(".")
+			DB.open_dict("image_2d_display_settings")
+		except:
+			# Databasing is not supported, in which case w
+			return
+		
+		db = DB.image_2d_display_settings
 	
-	def setGamma(self,val):
-		self.gamma=val
-		self.updateGL()
+		data = db[self.file_name]
+		if data == None:
+			data = db["latest_display_settings"] # if there isn't already information try for the latest
+			if data == None:
+				return # there are no settings we can use
+			else:
+				self.__write_display_settings_to_db() # we should store the information if we are suddenly using it
+		
+		self.minden = data["min"]
+		self.maxden = data["max"]
+		self.gamma = data["gamma"] 
+		self.brts = data["brightness"]
+		self.conts = data["contrast"] 
+		
+		if self.inspector != None:
+			#self.inspector.set_brightness(data["brightness"])
+			#self.inspector.set_contrast(data["contrast"])
+			self.inspector.set_minden(self.minden)
+			self.inspector.set_maxden(self.maxden)
+			self.inspector.set_gamma(self.gamma)
+
+	def __write_display_settings_to_db(self):
+		'''
+		writes the min,max, brightness, contrast and gamma values associated with
+		the current image to the homedb. The full path of the image is used
+		'''
+		
+		if self.file_name == None: return # there is no file name, we have no means to stores information
+		
+		try:
+			DB = EMAN2db.EMAN2DB.open_db(".")
+			DB.open_dict("image_2d_display_settings")
+		except:
+			# Databasing is not supported, in which case we do nothing
+			return
+		
+		data = {}	
+		data["min"] = self.minden
+		data["max"] = self.maxden
+		data["gamma"] = self.gamma
+		data["brightness"] = self.brts
+		data["contrast"] = self.conts
+		
+		db = DB.image_2d_display_settings
+		db[self.file_name] = data
+		db["latest_display_settings"] = data #store this to automatically apply previously used settings to other images - this was originally a request of Yao Cong
+
 
 	def setOrigin(self,x,y):
 		"""Set the display origin within the image"""
@@ -1098,14 +1197,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.ffttog3.setCheckable(1)
 		self.vbl2.addWidget(self.ffttog3,2,1)
 		self.fftg.addButton(self.ffttog3,3)
-
-		#self.hbl2 = QtGui.QHBoxLayout()
-		#self.hbl2.setMargin(0)
-		#self.hbl2.setSpacing(6)
-		#self.hbl2.setObjectName("hboxlayout")
-		#self.vbl.addLayout(self.hbl2)
-		
-		
+	
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")
 		self.scale.setValue(1.0)
@@ -1113,27 +1205,32 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		self.mins = ValSlider(self,label="Min:")
 		self.mins.setObjectName("mins")
+		self.mins.setValue(self.target.get_minden())
 		self.vbl.addWidget(self.mins)
 		
 		self.maxs = ValSlider(self,label="Max:")
 		self.maxs.setObjectName("maxs")
+		self.maxs.setValue(self.target.get_maxden())
 		self.vbl.addWidget(self.maxs)
 		
 		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
 		self.brts.setObjectName("brts")
+		#self.brts.setValue(self.target.get_brts())
 		self.vbl.addWidget(self.brts)
 		
 		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
 		self.conts.setObjectName("conts")
+		#self.conts.setValue(self.target.get_conts())
 		self.vbl.addWidget(self.conts)
 		
 		self.gammas = ValSlider(self,(.1,5.0),"Gam:")
 		self.gammas.setObjectName("gamma")
-		self.gammas.setValue(1.0)
+		self.gammas.setValue(self.target.get_gamma())
 		self.vbl.addWidget(self.gammas)
 
 		self.lowlim=0
 		self.highlim=1.0
+		self.updBC()
 		self.busy=0
 		
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
@@ -1147,6 +1244,27 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.mmtab, QtCore.SIGNAL("currentChanged(int)"), target.setMMode)
 #		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
+	def get_contrast(self):
+		return float(self.conts.getValue())
+	
+	def get_brightness(self):
+		return float(self.brts.getValue())
+	
+	#def set_contrast(self,value,quiet=1):
+		#self.conts.setValue(value,quiet)
+		
+	#def set_brightness(self,value,quiet=1):
+		#self.brts.setValue(value,quiet)
+		
+	def set_maxden(self,value,quiet=1):
+		self.maxs.setValue(value,quiet)
+		
+	def set_minden(self,value,quiet=1):
+		self.mins.setValue(value,quiet)
+		
+	def set_gamma(self,value,quiet=1):
+		self.gammas.setValue(value,quiet)
+	
 	def setScale(self,val):
 		if self.busy : return
 		self.busy=1
@@ -1156,48 +1274,52 @@ class EMImageInspector2D(QtGui.QWidget):
 	def newMin(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.setDenMin(val)
-
+		self.target.set_density_min(val)
 		self.updBC()
 		self.busy=0
 		
 	def newMax(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.setDenMax(val)
+		self.target.set_density_max(val)
 		self.updBC()
 		self.busy=0
 	
 	def newBrt(self,val):
 		if self.busy : return
 		self.busy=1
+		self.target.set_brightness(val)
 		self.updMM()
 		self.busy=0
 		
 	def newCont(self,val):
 		if self.busy : return
 		self.busy=1
+		self.target.set_contrast(val)
 		self.updMM()
 		self.busy=0
 		
 	def newGamma(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.setGamma(val)
+		self.target.set_gamma(val)
 		self.busy=0
 
 	def updBC(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
 		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
-		self.brts.setValue(-b)
-		self.conts.setValue(1.0-c)
+		brts = -b
+		conts = 1.0-c
+		self.brts.setValue(brts)
+		self.conts.setValue(conts)
+		self.target.set_brightness_contrast(brts,conts)
 		
 	def updMM(self):
 		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0)
 		self.maxs.setValue(x1)
-		self.target.setDenRange(x0,x1)
+		self.target.set_density_range(x0,x1)
 		
 	def setHist(self,hist,minden,maxden):
 		self.hist.setData(hist,minden,maxden)
@@ -1210,6 +1332,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.maxs.setRange(lowlim,highlim)
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
+		self.target.set_density_range(curmin,curmax)
 		
 class SundryWidget(QtGui.QWidget):
 	def __init__(self,target) :
@@ -1242,6 +1365,8 @@ if __name__ == '__main__':
 	else :
 		a=EMData.read_images(sys.argv[1],[0])
 		window.setData(a[0])
+		window.get_core_object().set_file_name(sys.argv[1])
+		print "set file name",sys.argv[1]
 
 	window2=EMParentWin(window)
 	window2.show()

@@ -1111,7 +1111,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 	Vec3f translation = RA.get_posttrans();
 	Dict rotation      = RA.get_rotation(Transform3D::EMAN);
 //	Transform3D mx = RA;
-	Transform3D RAInv = RA.inverse();
+	Transform3D RAInv = RA.inverse(); // We're rotating the coordinate system, not the data
 // 	RAInv.printme();
 #if EMDATA_EMAN2_DEBUG
 	vector<string> keys = rotation.keys();

@@ -782,35 +782,6 @@ EMData *StandardProjector::project3d(EMData * image) const
 	
 	if ( image->get_ndim() == 3 )
 	{
-// 		EMData* copy = image->copy();
-// 		copy->rotate(*t3d);
-// 		
-// 		int nx = copy->get_xsize();
-// 		int ny = copy->get_ysize();
-// 		int nz = copy->get_zsize();
-// 		int xy = nx * ny;
-// 		
-// 		EMData *proj = new EMData(nx,ny,1);
-// 		proj->to_zero();
-// 		
-// 		float *sdata = copy->get_data();
-// 		float *ddata = proj->get_data();
-// 		
-// 		for (int k = 0; k < nz; k++) {
-// 			int l = 0;
-// 			for (int j = 0; j < ny; j++) {
-// 				ddata[l]=0;
-// 				for (int i = 0; i < nx; i++,l++) {
-// 					int ii = (int) (i + j * nx + k * xy);
-// 					ddata[l] += sdata[ii];
-// 				}
-// 			}
-// 		}
-// 		
-// 		delete copy;
-// 		proj->update();
-// 		return proj;
-		
 		float alt = p["alt"];
 		float az = p["az"];
 		float phi = p["phi"];
@@ -820,7 +791,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 		int nz = image->get_zsize();
 	
 		Transform3D r(Transform3D::EMAN, az, alt, phi);
-		r.transpose();
+		r.transpose(); // The transpose is taken here because we are rotating the coordinate system, not the image
 		int xy = nx * ny;
 	
 		EMData *proj = new EMData();
@@ -915,7 +886,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 // 		
 		
 		float alt = p["phi"];
-		alt = (alt*M_PI/180.0f);
+		alt = -(alt*M_PI/180.0f);// We need to take the 'transpose' (negate) because 
 		float cosalt = cos(alt);
 		float sinalt = sin(alt);
 		

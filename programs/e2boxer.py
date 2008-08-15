@@ -885,6 +885,7 @@ class GUIbox:
 		
 		guiim_core.set_frozen(self.boxable.is_frozen())
 		guiim_core.set_excluded(self.boxable.is_excluded())
+		guiim_core.set_file_name(self.image_names[self.current_image_idx])
 	
 	def __set_autoboxer(self,imagename):
 		'''
@@ -2657,7 +2658,6 @@ class GUIboxPanel(QtGui.QWidget):
 	def new_threshold(self,val):
 		#print "new threshold"
 		self.try_dummy_parameters()
-
 
 if __name__ == "__main__":
 	main()

@@ -506,6 +506,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	
 	for ( int i = 0; i < sym->get_nsym(); ++i) {
 		Transform3D t3d = arg*sym->get_sym(i);
+// 		t3d.transpose();
 		for (int y = 0; y < input_slice->get_ysize(); y++) {
 			for (int x = 0; x < input_slice->get_xsize() / 2; x++) {
 				
@@ -524,6 +525,10 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[1][0]);
 				float yy = (float) (rx * t3d[0][1] + (ry - max_input_dim / 2) * t3d[1][1]);
 				float zz = (float) (rx * t3d[0][2] + (ry - max_input_dim / 2) * t3d[1][2]);
+				
+// 				float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[0][1]);
+// 				float yy = (float) (rx * t3d[1][0] + (ry - max_input_dim / 2) * t3d[1][1]);
+// 				float zz = (float) (rx * t3d[2][0] + (ry - max_input_dim / 2) * t3d[2][1]);
 
 				float cc = 1;
 	
