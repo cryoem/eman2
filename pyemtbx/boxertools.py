@@ -711,8 +711,10 @@ class SincBlackmanSubsamplerCache:
 
 class SincBlackmanSubsampledImage:
 	'''
-	Pawel Penczek optimal subsampling approach is encapsulated in this class
+	Pawel Penczek opimal subsampling approach is encapsulated in this class
 	'''
+	template_min_default = 20
+	frequency_cutoff_default = 0.12
 	def __init__(self,image_name):
 		self.smallimage = None		# a small copy of an image which has had its background flattened
 		self.image_name = image_name
