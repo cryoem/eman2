@@ -762,8 +762,6 @@ class SincBlackmanSubsampledImage:
 
 		set_idd_key_entry(self.image_name,"subsampled_image",self.smallimage)
 				
-		#else:
-			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
 			
 	def get_image(self):
 		'''
@@ -772,8 +770,9 @@ class SincBlackmanSubsampledImage:
 		return self.smallimage
 	
 	def get_image_carefully(self,params_mediator):
-		
-		
+		'''
+		Should generally use this approach to getting the image
+		'''
 		if self.smallimage == None or not self.query_params_match(params_mediator):
 			#print "regenerating sb image"
 			self.__update_image(params_mediator)
