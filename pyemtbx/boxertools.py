@@ -35,6 +35,7 @@ from time import time
 from math import ceil
 from copy import copy
 
+
 class EMProjectDB:
 	"""
 	It's implemented as a singleton
@@ -274,28 +275,29 @@ class Box:
 			self.update_box_image(norm)
 		return self.image
 	
-	def get_small_box_image(self,flattenradius,shrink):
+	def get_small_box_image(self,autoboxer):
 		'''
 		gets a shrunken version of the box by asking the database if the shrunken (entire) image
 		exists and then clipping out from it
 		'''
-		image = self.get_small_image(flattenradius,shrink)
+		image = self.get_small_image(autoboxer)
 		if image == None:
 			return None
 		else:
+			shrink = autoboxer.get_best_shrink()
 			return image.get_clip(Region(int(self.xcorner/shrink),int(self.ycorner/shrink),int(self.xsize/shrink),int(self.ysize/shrink)))
 		
-	def get_small_image(self,flattenradius,shrink):
+	def get_small_image(self,autoboxer):
 		
-		cfImageCache = CFImageCache()
-		return  cfImageCache.get_image(self.image_name, flattenradius,shrink)
+		#cache = CoarsenedFlattenedImageCache()
+		cache = SubsamplerCache
+		return  cache.get_image(self.image_name, autoboxer.get_params_mediator())
+	
+	
+	def get_flcf_image(self,autoboxer):
 		
-	def get_flcf_image(self,flattenradius,shrink,template):
-		
-		cfimage = self.get_small_image(flattenradius,shrink)
 		cache = FLCFImageCache()
-		
-		return cache.get_image(self.image_name,cfimage,template)
+		return cache.get_image(self.image_name,autoboxer.get_params_mediator())
 
 	
 	def get_foot_print(self,shrink=1):
@@ -326,6 +328,7 @@ class Box:
 			
 		if method == Box.CENTEROFMASS:
 			if low_res == True:
+				# WONT WORK there is no self.autoboxer
 				image = self.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
 				ali = image.calc_center_of_mass()
 				dx = -int((ali[0]+0.5-image.get_xsize()/2))*extrasomething.get_best_shrink()
@@ -338,6 +341,7 @@ class Box:
 
 		elif method == Box.CENTERACF:
 			if low_res == True:
+				# WONT WORK there is no self.autoboxer
 				image = self.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
 				ccf  = image.calc_ccf(None)
 				trans = ccf.calc_max_location_wrap(-1,-1,-1)
@@ -401,7 +405,7 @@ class Box:
 		if self.isdummy:
 			return 0
 		
-		correlation = self.get_flcf_image(autoboxer.get_template_radius(),autoboxer.get_best_shrink(),autoboxer.get_template_object())
+		correlation = self.get_flcf_image(autoboxer)
 		if correlation == None:
 			print 'error, can not update the parameters of a Box because the Boxable has no correlation image'
 			return 0
@@ -653,7 +657,62 @@ class ExclusionImage:
 			else: return True
 		except: return False # exception will be thrown if self.smallimage = None
 
-class PenczekSubsampledImage:
+class SincBlackmanSubsamplerCache:
+	'''
+	A singleton - usef for caching coarsened-flattened images
+	'''
+	class __impl(Cache):
+		""" Implementation of the singleton interface """
+
+		def __init__(self):
+			Cache.__init__(self)
+			
+		def get_image(self,image_name,params_mediator):
+			ps_image = None
+			# first see if the object is already stored
+			for object in self.get_cache():
+				if object.get_input_image_name() == image_name:
+					ps_image = object
+					break;
+				
+				
+			if ps_image == None:
+				#if we make it here the cfimage is not cached
+				#print "had to cache a cf image for",image_name
+				ps_image = SincBlackmanSubsampledImage(image_name)
+				self.add_to_cache(ps_image)
+			#else: print "found a cached cf image for",image_name
+				
+			
+			image = ps_image.get_image_carefully(params_mediator)
+			if image != None:
+				return image
+			else:
+				print "there was an error getting the image in CoarsenedFlattenedImageCache"
+				return None
+		
+	# storage for the instance reference	
+	__instance = None
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if SincBlackmanSubsamplerCache.__instance is None:
+			# Create and remember instance
+			SincBlackmanSubsamplerCache.__instance = SincBlackmanSubsamplerCache.__impl()
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+
+class SincBlackmanSubsampledImage:
+	'''
+	Pawel Penczek opimal subsampling approach is encapsulated in this class
+	'''
 	template_min_default = 20
 	frequency_cutoff_default = 0.12
 	def __init__(self,image_name):
@@ -684,15 +743,19 @@ class PenczekSubsampledImage:
 	def get_template_min(self):
 		return self.smallimage.get_attr("template_min")
 	
-	def __update_image(self,subsample_rate,template_min=template_min_default,frequency_cutoff=frequency_cutoff_default):
+	def __update_image(self,params_mediator):
 		'''
 		Updates the image using the function arguments
 		If they match current parameters than nothing happens - the correct image is already cached
 		'''
+		subsample_rate = params_mediator.get_best_shrink()
+		template_min = params_mediator.get_template_min()
+		frequency_cutoff = params_mediator.get_frequency_cutoff()
+		print "updated the image completely"
 		bic = BigImageCache()
 		image = bic.get_image(self.image_name)
 		
-		sb = Util.sincBlackman(template_min, frequency_cutoff)
+		sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
 
 		self.smallimage = image.downsample(sb,1.0/subsample_rate)
 			
@@ -701,6 +764,9 @@ class PenczekSubsampledImage:
 		self.smallimage.set_attr("frequency_cutoff",frequency_cutoff)
 		self.smallimage.set_attr("template_min",template_min)
 		self.smallimage.set_attr("creation_time_stamp",gm_time_string())
+		
+		
+		self.smallimage.write_image("test.hdf")
 		
 		set_idd_key_entry(self.image_name,"subsampled_image",self.smallimage)
 				
@@ -714,77 +780,54 @@ class PenczekSubsampledImage:
 		return self.smallimage
 	
 	
-	def get_image_carefully(self,subsample_rate,template_min=template_min_default,frequency_cutoff=frequency_cutoff_default):
+	def get_image_carefully(self,params_mediator):
 		
-		if self.smallimage == None or not self.query_params_match(subsample_rate,template_min_default,frequency_cutoff):
-			#print "regenerating cf image"
-			self.__update_image(subsample_rate,template_min_default,frequency_cutoff)
-		#else: print "cf image is up to date"
+		
+		if self.smallimage == None or not self.query_params_match(params_mediator):
+			#print "regenerating sb image"
+			self.__update_image(params_mediator)
+		#else: print "sb image is up to date"
 		
 		return self.get_image()
 	
-	def query_params_match(self,subsample_rate,template_min_default,frequency_cutoff):
+	def query_params_match(self,params_mediator):
+		subsample_rate = params_mediator.get_best_shrink()
+		template_min = params_mediator.get_template_min()
+		frequency_cutoff = params_mediator.get_frequency_cutoff()
 		try:
-			if subsample_rate != self.get_subsample_rate() or template_min != self.get_template_min() or frequeny_cutoff != self.get_frequency_cutoff():
+			if subsample_rate != self.get_subsample_rate() or template_min != self.get_template_min() or frequency_cutoff != self.get_frequency_cutoff():
 				return False
 			else: return True
 		except: return False # exception will be thrown if self.smallimage = None
 
-class PenczekSubsamplerCache:
+class ImageProcParamsMediator:
 	'''
-	A singleton - usef for caching coarsened-flattened images
+	A mediator class - coordinates the requests of the various image processing tasks, as embodied 
+	in the Cache classes, which are currently retrieved from the SwarmAutoBoxer
 	'''
-	class __impl(Cache):
-		""" Implementation of the singleton interface """
-
-		def __init__(self):
-			Cache.__init__(self)
-			
-		def get_image(self,image_name,subsample_rate,template_min_default=PenczekSubsampledImage.template_min_default,frequency_cutoff=PenczekSubsampledImage.frequency_cutoff_default):
-			ps_image = None
-			# first see if the object is already stored
-			for object in self.get_cache():
-				if object.get_input_image_name() == image_name:
-					ps_image = object
-					break;
-				
-				
-			if ps_image == None:
-				#if we make it here the cfimage is not cached
-				#print "had to cache a cf image for",image_name
-				ps_image = PenczekSubsampledImage(image_name)
-				self.add_to_cache(cfImage)
-			#else: print "found a cached cf image for",image_name
-				
-			
-			image = ps_image.get_image_carefully(flattenradius,shrink)
-			if image != None:
-				return image
-			else:
-				print "there was an error getting the image in CFImageCache"
-				return None
+	def __init__(self,parent):
+		if not isinstance(parent,AutoBoxer):
+			print "Error, the ImageProcParamsMediator can only be instantiated with an AutoBoxer as its parent"
+			exit(1)
 		
+		self.parent = parent
 		
-	# storage for the instance reference	
-	__instance = None
-
-	def __init__(self):
-		""" Create singleton instance """
-		# Check whether we already have an instance
-		if PenczekSubsamplerCache.__instance is None:
-			# Create and remember instance
-			PenczekSubsamplerCache.__instance = PenczekSubsamplerCache.__impl()
+	def get_best_shrink(self):
+		return self.parent.get_best_shrink()
 	
-	def __getattr__(self, attr):
-		""" Delegate access to implementation """
-		return getattr(self.__instance, attr)
+	def get_template_radius(self):
+		return self.parent.get_template_radius()
+	
+	def get_template_object(self):
+		return self.parent.get_template_object()
 
-	def __setattr__(self, attr, value):
-		""" Delegate access to implementation """
-		return setattr(self.__instance, attr, value)
+	def get_template_min(self):
+		return 20
+	
+	def get_frequency_cutoff(self):
+		return 0.12
 
-
-class CFImageCache:
+class CoarsenedFlattenedImageCache:
 	'''
 	A singleton - usef for caching coarsened-flattened images
 	'''
@@ -794,7 +837,7 @@ class CFImageCache:
 		def __init__(self):
 			Cache.__init__(self)
 			
-		def get_image(self,image_name,flattenradius,shrink):
+		def get_image(self,image_name,params_mediator):
 			cfImage = None
 			# first see if the object is already stored
 			for object in self.get_cache():
@@ -811,23 +854,22 @@ class CFImageCache:
 			#else: print "found a cached cf image for",image_name
 				
 			
-			image = cfImage.get_image_carefully(flattenradius,shrink)
+			image = cfImage.get_image_carefully(params_mediator)
 			if image != None:
 				return image
 			else:
-				print "there was an error getting the image in CFImageCache"
+				print "there was an error getting the image in CoarsenedFlattened"
 				return None
-		
-		
+
 	# storage for the instance reference	
 	__instance = None
 
 	def __init__(self):
 		""" Create singleton instance """
 		# Check whether we already have an instance
-		if CFImageCache.__instance is None:
+		if CoarsenedFlattenedImageCache.__instance is None:
 			# Create and remember instance
-			CFImageCache.__instance = CFImageCache.__impl()
+			CoarsenedFlattenedImageCache.__instance = CoarsenedFlattenedImageCache.__impl()
 	
 	def __getattr__(self, attr):
 		""" Delegate access to implementation """
@@ -863,13 +905,16 @@ class CoarsenedFlattenedImage:
 	def get_shrink_factor(self):
 		return self.smallimage.get_attr("shrink_factor")
 	
-	def __update_image(self,flattenradius,shrink):
+	def __update_image(self,params_mediator):
 		'''
 		Updates the image using the function arguments
 		If they match current parameters than nothing happens - the correct image is already cached
 		'''
 		bic = BigImageCache()
 		image = bic.get_image(self.image_name)
+
+		flattenradius = params_mediator.get_template_radius()
+		shrink =  params_mediator.get_best_shrink()
 
 		self.smallimage = image.process("math.meanshrink",{"n":shrink})
 		self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
@@ -890,24 +935,24 @@ class CoarsenedFlattenedImage:
 		return self.smallimage
 	
 	
-	def get_image_carefully(self,flattenradius,shrink):
-		
-		if self.smallimage == None or not self.query_params_match(flattenradius,shrink):
+	def get_image_carefully(self,params_mediator):
+
+		if self.smallimage == None or not self.query_params_match(params_mediator):
 			#print "regenerating cf image"
-			self.__update_image(flattenradius,shrink)
+			self.__update_image(params_mediator)
 		#else: print "cf image is up to date"
 		
 		return self.get_image()
 	
-	def query_params_match(self,flattenradius,shrink):
+	def query_params_match(self,params_mediator):
 		try:
-			if flattenradius != self.get_flatten_radius() or shrink != self.get_shrink_factor():
+			if self.get_flatten_radius() != params_mediator.get_template_radius() or self.get_shrink_factor() != params_mediator.get_best_shrink():
 				return False
 			else: return True
 		except: return False # exception will be thrown if self.smallimage = None
 
 
-class SigmaImageCache:
+class InverseSigmaImageCache:
 	class __impl(Cache):
 		""" A cache for storing big images """
 
@@ -915,7 +960,7 @@ class SigmaImageCache:
 			Cache.__init__(self)
 
 	
-		def get_image(self,image_name,flattenradius,shrinkfactor,forceupdate=False):
+		def get_image(self,image_name,params_mediator,forceupdate=False):
 			# this loop takes care of things if the image is cached
 			object = None
 			for sigmaImage in self.get_cache():
@@ -927,11 +972,11 @@ class SigmaImageCache:
 			# if we make it here the image is not cached
 			if object == None:
 				#print "I am generating a big image in the cache for",image_name
-				object = SigmaImage(image_name)
+				object = InverseSigmaImage(image_name)
 				self.add_to_cache(object)
 			#else: print "I am returning a big image from the cache"
 				
-			return object.get_image_carefully(flattenradius,shrinkfactor,forceupdate)
+			return object.get_image_carefully(params_mediator,forceupdate)
 			
 			
 	# storage for the instance reference
@@ -940,9 +985,9 @@ class SigmaImageCache:
 	def __init__(self):
 		""" Create singleton instance """
 		# Check whether we already have an instance
-		if SigmaImageCache.__instance is None:
+		if InverseSigmaImageCache.__instance is None:
 			# Create and remember instance
-			SigmaImageCache.__instance = SigmaImageCache.__impl()
+			InverseSigmaImageCache.__instance = InverseSigmaImageCache.__impl()
 	
 	def __getattr__(self, attr):
 		""" Delegate access to implementation """
@@ -953,7 +998,7 @@ class SigmaImageCache:
 		return setattr(self.__instance, attr, value)
 	
 	
-class SigmaImage:
+class InverseSigmaImage:
 	def __init__(self,image_name):
 		self.image_name = image_name
 		self.image = None
@@ -977,28 +1022,33 @@ class SigmaImage:
 	def get_shrink_factor(self):
 		return self.image.get_attr("shrink_factor")
 	
-	def __update_image(self,flattenradius,shrinkfactor):
-	
-		cficache= CFImageCache()
-		image = cficache.get_image(self.image_name,flattenradius,shrinkfactor)
+	def __update_image(self,params_mediator):
+		flattenradius = params_mediator.get_template_radius()
+		shrinkfactor = params_mediator.get_best_shrink()
+		
+		cache = SubsamplerCache
+		image = cache.get_image(self.image_name,params_mediator)
 		tmp = EMData(flattenradius*2,flattenradius*2)
 		tmp.process_inplace("testimage.circlesphere")
 		self.image = image.calc_fast_sigma_image(tmp)
 		self.image.set_attr("flatten_radius",flattenradius)
 		self.image.set_attr("shrink_factor",shrinkfactor)
 		
+		self.image.process_inplace("math.invert.carefully",{"zero_to":1.0})
+		
 		#set_idd_key_entry(self.image_name,"coarse_sigma_image",self.image)
 		
 		return self.image
 	
-	def get_image_carefully(self,flattenradius,shrinkfactor,forceupdate=False):
+	def get_image_carefully(self,params_mediator,forceupdate=False):
+
 		
 		action = False
 		if forceupdate == True: action = True
 		elif self.image == None: action = True
-		elif flattenradius != self.get_flatten_radius() or shrinkfactor != self.get_shrink_factor(): action = True
+		elif params_mediator.get_template_radius() != self.get_flatten_radius() or params_mediator.get_best_shrink() != self.get_shrink_factor(): action = True
 		
-		if action: self.__update_image(flattenradius,shrinkfactor)
+		if action: self.__update_image(params_mediator)
 		
 		return self.image
 
@@ -1121,7 +1171,10 @@ class BigImage:
 			self.image.process_inplace("normalize.edgemean") # this seams to be the normal behavior
 			
 		return self.image
+		
 
+#SubsamplerCache = CoarsenedFlattenedImageCache()
+SubsamplerCache = SincBlackmanSubsamplerCache()
 class FLCFImageCache:
 	'''
 	A singleton - used for caching flcf images
@@ -1133,7 +1186,7 @@ class FLCFImageCache:
 			Cache.__init__(self)
 
 
-		def get_image(self,image_name,cfimage,template):
+		def get_image(self,image_name,params_mediator):
 			
 			flcfImage = None
 			# first see if the object is already stored
@@ -1151,7 +1204,7 @@ class FLCFImageCache:
 			#else: print "found flcf for",image_name
 				
 			
-			image = flcfImage.get_image_carefully(cfimage,template)
+			image = flcfImage.get_image_carefully(params_mediator)
 			if image != None:
 				return image
 			else:
@@ -1189,10 +1242,13 @@ class FLCFImage:
 			# the image doesn't exist, that's okay
 			pass
 		
-	def query_params_match(self,cfimage,template):
+	def query_params_match(self,params_mediator):
+		flatten_radius = params_mediator.get_template_radius()
+		shrink_factor = params_mediator.get_best_shrink()
+		template = params_mediator.get_template_object()
 		#print cfimage.get_attr("creation_time_stamp"), self.get_cfi_ts(),"template",template.get_template_ts(),self.get_template_ts()
 		try:
-			if cfimage.get_attr("creation_time_stamp") != self.get_cfi_ts() or template.get_template_ts() != self.get_template_ts():
+			if flatten_radius != self.get_sigma_image_flatten_radius() or shrink_factor != self.get_sigma_image_shrink_factor() or template.get_template_ts() != self.get_template_ts():
 				#print "params did not match"
 				return False
 			else: return True
@@ -1204,18 +1260,17 @@ class FLCFImage:
 	def get_output_image_name(self):
 		return self.outputimage_name
 	
+	def get_sigma_image_flatten_radius(self):
+		return self.flcfimage.get_attr("get_sigma_image_flatten_radius")
+	
+	def get_sigma_image_shrink_factor(self):
+		return self.flcfimage.get_attr("get_sigma_image_shrink_factor")
+	
 	def get_template_ts(self):
 		'''
 		get template time stamp
 		'''
 		return self.flcfimage.get_attr("template_time_stamp")
-		
-	def get_cfi_ts(self):
-		'''
-		get cfi time stamp
-		Cfi = coarsened flattened image
-		'''
-		return self.flcfimage.get_attr("data_image_time_stamp")
 		
 	def get_image(self):
 		'''
@@ -1223,47 +1278,51 @@ class FLCFImage:
 		'''
 		return self.flcfimage
 	
-	def __update_image(self,cfimage,template):
+	def __update_image(self,params_mediator):
 
-		sicache = SigmaImageCache()
-		sigmaImage = sicache.get_image(self.image_name,cfimage.get_attr("flatten_radius"),cfimage.get_attr("shrink_factor"))
+		sicache = InverseSigmaImageCache()
+		inv_sigma_image = sicache.get_image(self.image_name,params_mediator)
+		
+		cfcache = SubsamplerCache
+		cfimage = cfcache.get_image(self.image_name,params_mediator)
+		
+		flatten_radius = params_mediator.get_template_radius()
+		shrink_factor = params_mediator.get_best_shrink()
+		template = params_mediator.get_template_object()
 		
 		self.flcfimage = cfimage.calc_ccf( template.get_template() )
-		self.flcfimage.div(sigmaImage)
+		self.flcfimage.mult(inv_sigma_image)
 		self.flcfimage.process_inplace("xform.phaseorigin.tocenter")
 		self.flcfimage.set_attr("template_time_stamp",template.get_template_ts())
-		val = cfimage.get_attr("creation_time_stamp")
-		self.flcfimage.set_attr("data_image_time_stamp",val)
+		self.flcfimage.set_attr("get_sigma_image_shrink_factor",shrink_factor)
+		self.flcfimage.set_attr("get_sigma_image_flatten_radius",flatten_radius)
+		
 		set_idd_key_entry(self.image_name,"flcf_image",self.flcfimage)
 		
 	def get_image(self):
 		return self.flcfimage
 	
-	def get_image_carefully(self,cfimage,template):
+	def get_image_carefully(self,params_mediator):
 		'''
 		Checks to see if the arguments are the right types
 		Then checks to see if the currently store correlation image is up to date
 		If it's not up to date or it doesn't exist then it is (re)generated
 		Then it is returned
 		'''
-		
-		if not isinstance(cfimage,EMData):
-			print "you can't call genFLCF on the cfimage is not an EMData"
-			return None
-			
+		template = params_mediator.get_template_object()
 		if not isinstance(template,SwarmTemplate) and not isinstance(template,TrimSwarmTemplate):
 			print "you can't call genFLCF on an object that is not a SwarmTemplate"
 			return None
 		
 		action = False
 		if self.flcfimage != None:
-			if not self.query_params_match(cfimage,template):
+			if not self.query_params_match(params_mediator):
 				action = True
 		else: action = True
 		
 		if action:
 			#print "generating correlation image"
-			self.__update_image(cfimage,template)
+			self.__update_image(params_mediator)
 		#else: print "returning cached correlation image"
 		return self.get_image()
 
@@ -1972,14 +2031,15 @@ class Boxable:
 			print 'warning, there is no autoboxer set, am not sure how to shrink, returning 1 as the shrink factor'
 			return 1
 		
-	def get_correlation_image(self,template):
+	def get_correlation_image(self,autoboxer):
+		
 		cache = FLCFImageCache()
-		cfimage = self.get_small_image()
-		correlation = cache.get_image(self.image_name,cfimage,template)
+		correlation = cache.get_image(self.image_name,autoboxer.get_params_mediator())
 		
 		
 		# the template time stamp may not be necessary ultimately, seeing as the correlation image
 		# (which has its own template time stamp) is tied to this Boxable by the image_name itself
+		template = autoboxer.get_template_object()
 		template_ts = get_idd_key_entry(self.image_name,"template_ts")
 		if template_ts != template.get_template_ts():	
 			set_idd_key_entry(self.image_name,"template_ts",template.get_template_ts())
@@ -1988,8 +2048,9 @@ class Boxable:
 		return correlation
 	
 	def get_small_image(self):
-		cfImageCache = CFImageCache()
-		return  cfImageCache.get_image(self.image_name,self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
+		#cache = CoarsenedFlattenedImageCache()
+		cache = SubsamplerCache
+		return  cache.get_image(self.image_name,self.autoboxer.get_params_mediator())
 	
 	def update_included_boxes(self):
 		added_boxes = []
@@ -2419,7 +2480,7 @@ class SwarmTemplate:
 			# by the isanchor flag
 			if ref.isanchor == False:
 				continue
-			image = ref.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
+			image = ref.get_small_box_image(self.autoboxer)
 			images_copy.append(image)
 		if len(images_copy) == 0:
 			print 'error, you have probably set references that all have the isanchor flag set to false, which exluded them all from the template making process'
@@ -2465,7 +2526,7 @@ class SwarmTemplate:
 				dy = ta.get_attr("align.dy")
 				box = self.refboxes[idx]
 				size = ta.get_xsize()
-				image = box.get_small_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
+				image = box.get_small_image(self.autoboxer)
 				a = image.get_clip(Region(int(box.xcorner/shrink-dx),int(box.ycorner/shrink-dy),size,size))
 				a.process_inplace("normalize.edgemean")
 				
@@ -2556,7 +2617,8 @@ class TrimSwarmAutoBoxer:
 		
 		project_db = EMProjectDB()
 		project_db.set_key_entry(self.get_unique_stamp(),data)
-	
+
+
 class SwarmAutoBoxer(AutoBoxer):
 	'''
 	This is an autoboxer that encapsulates the boxing approach first developed in SwarmPS
@@ -2603,6 +2665,11 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.creationTS = gm_time_string()
 		self.convenienceString = ""
 		self.set_convenience_name(self.get_creation_ts()) # this string is the string that users will use to name this autoboxer in the GUIboxCtrl
+		
+		self.image_proc_params_mediator = ImageProcParamsMediator(self)
+	
+	def get_params_mediator(self):
+		return self.image_proc_params_mediator
 
 	def dynapix_on(self):
 		return (self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX)
@@ -3029,7 +3096,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			if not self.__full_update(): return 0
 			self.refupdate = False
 
-		correlation = boxable.get_correlation_image(self.get_template())
+		correlation = boxable.get_correlation_image(self)
 
 		autoboxer_state_ts = boxable.autoboxer_state_ts
 		# auto boxing will occur if the time stamp of the AutoBoxer is not the
