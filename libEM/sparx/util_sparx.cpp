@@ -4808,6 +4808,50 @@ int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
 	return info;
 }
 
+// same function than Util::coveig but wrappe to use directly in python code
+Dict Util::coveig_for_py(int ncov, const vector<float>& covmatpy)
+{ 
+
+	ENTERFUNC;
+	int len = covmatpy.size();
+	float *eigvec;
+	float *eigval;
+	float *covmat;
+	int status = 0;
+        eigval = (float*)calloc(ncov,sizeof(float));
+        eigvec = (float*)calloc(ncov*ncov,sizeof(float));
+	covmat = (float*)calloc(ncov*ncov, sizeof(float));
+
+	const float *covmat_ptr;
+	covmat_ptr = &covmatpy[0];
+	for(int i=1;i<=len;i++){
+	    covmat[i] = covmat_ptr[i];
+	}
+
+        status = Util::coveig(ncov, covmat, eigval, eigvec);
+
+	vector<float> eigval_py(ncov);
+	const float *eigval_ptr;
+	eigval_ptr = &eigval[0];
+	for(int i=1;i<=ncov;i++){
+	    eigval_py[i] = eigval_ptr[i];
+	}
+
+	vector<float> eigvec_py(ncov*ncov);
+	const float *eigvec_ptr;
+	eigvec_ptr = &eigvec[0];
+	for(int i=1;i<=ncov*ncov;i++){
+	    eigvec_py[i] = eigvec_ptr[i];
+	}
+
+        Dict res;
+        res["eigval"] = eigval_py;
+        res["eigvec"] = eigvec_py;
+	
+	EXITFUNC;
+	return res;
+}
+
 vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 {
 	int k,m,n1,klmd,klm2d,nklmd,n2d,n_larg,l, n2;

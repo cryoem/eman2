@@ -44,6 +44,8 @@ public:
 
 static int coveig(int n, float *covmat, float *eigval, float *eigvec);
 
+static Dict coveig_for_py(int ncov, const vector<float>& covmatpy);
+
 static Dict ExpMinus4YSqr(float ymax,int nsamples);
 
 static void WTM(EMData* PROJ, vector<float> SS,int DIAMETER,int NUMP);
