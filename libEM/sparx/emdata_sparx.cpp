@@ -2439,9 +2439,9 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 
 EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
 
-	int M = kb.get_sB_size();
+	/*int M = kb.get_sB_size();
 	int kbmin = -M/2;
-	int kbmax = -kbmin;
+	int kbmax = -kbmin;*/
 
 	int nxn, nyn, nzn;
 	nxn = nx*scale; nyn = ny*scale; nzn = nz*scale;
@@ -2457,9 +2457,9 @@ EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
 	ret->to_zero();  //we will leave margins zeroed.
 	
 	// scan new, find pixels in old
-	for (int iy = -kbmin; iy < nyn-kbmax; iy++) {
+	for (int iy =0; iy < nyn; iy++) {
 		float y = float(iy)/scale;
-		for (int ix = -kbmin; ix < nxn-kbmax; ix++) {
+		for (int ix = 0; ix < nxn; ix++) {
 			float x = float(ix)/scale;
 			(*ret)(ix,iy) = this->get_pixel_filtered(x, y, 1.0f, kb);
 		}
@@ -2619,9 +2619,9 @@ float  EMData::get_pixel_filtered(float delx, float dely, float delz, Util::sinc
 	float pixel =0.0f;
 	float w=0.0f;
 
-	delx = restrict2(delx, nx);	
+	//delx = restrict2(delx, nx);	//  In this function the old location is always within the	image
 	int inxold = int(Util::round(delx));
-	if(ny<2) {  //1D
+	/*if(ny<2) {  //1D
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 )  {
 	 		//  loop for ends
          		for (int m1 =kbmin; m1 <=kbmax; m1++) {
@@ -2635,22 +2635,30 @@ float  EMData::get_pixel_filtered(float delx, float dely, float delz, Util::sinc
 			}
 	 	}
 	
-	} else if(nz<2) {  // 2D
-		dely = restrict2(dely, ny);
+	} else if(nz<2) {  // 2D*/
+		//dely = restrict2(dely, ny);
 		int inyold = int(Util::round(dely));
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
 	 		//  loop for strips
-         		for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 			float q = kb.sBwin_tab(delx - inxold-m1)*kb.sBwin_tab(dely - inyold-m2);
-	 			pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;}
+         		for (int m2 =kbmin; m2 <=kbmax; m2++){
+				float t = kb.sBwin_tab(dely - inyold-m2); 
+				for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 				float q = kb.sBwin_tab(delx - inxold-m1)*t;
+	 				pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q;
+					w += q;
+				}
 			}
 	 	} else {
-         		for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 			float q = kb.sBwin_tab(delx - inxold-m1)*kb.sBwin_tab(dely - inyold-m2);
-	 			pixel += (*this)(inxold+m1,inyold+m2)*q; w+=q;}
+         		for (int m2 =kbmin; m2 <=kbmax; m2++){
+				float t = kb.sBwin_tab(dely - inyold-m2);
+				for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 				float q = kb.sBwin_tab(delx - inxold-m1)*t;
+	 				pixel += (*this)(inxold+m1,inyold+m2)*q;
+					w += q;
+				}
 			}
 	 	}
-	} else {  //  3D
+	/*} else {  //  3D
 		dely = restrict2(dely, ny);
 		int inyold = int(Util::round(dely));
 		delz = restrict2(delz, nz);
@@ -2670,7 +2678,7 @@ float  EMData::get_pixel_filtered(float delx, float dely, float delz, Util::sinc
 	 			pixel += (*this)(inxold+m1,inyold+m2,inzold+m3)*q; w+=q;}}
 			}
 	 	}
-	}
+	}*/
         return pixel/w;
 }
 

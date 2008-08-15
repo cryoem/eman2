@@ -142,17 +142,14 @@ class sincBlackman
 	protected:
 		int M; /** kernel size */
 		float fc; /** cut-off frequency */
-		int N;
 		int ntable;
 		vector<float> sBtable;
-		//float dtable; /** table spacing */
-		virtual void build_sBtable(); /** Tabulate I0 window for speed */
+		virtual void build_sBtable(); /** Tabulate kernel for speed */
 		float fltb;
 	public:
-		sincBlackman(int M_, float fc_, int N_, int ntable_ = 1999);
+		sincBlackman(int M_, float fc_, int ntable_ = 1999);
 		virtual ~sincBlackman() {};
 
-		//virtual float sBwin(float x) const;
 		inline  float sBwin_tab(float x) const {
 			float xt;
 			if(x<0.0f) xt = -x*fltb+0.5f; else xt = x*fltb+0.5f;

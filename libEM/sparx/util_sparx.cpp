@@ -1528,11 +1528,8 @@ float Util::triquad(float R, float S, float T, float* fdata)
      return triquad;
 }
 
-
-
-
-Util::sincBlackman::sincBlackman(int M_, float fc_, int N_, int ntable_) 
-		: M(M_), fc(fc_), N(N_), ntable(ntable_) {
+Util::sincBlackman::sincBlackman(int M_, float fc_, int ntable_) 
+		: M(M_), fc(fc_), ntable(ntable_) {
 	// Sinc-Blackman kernel
 	build_sBtable();
 }
@@ -1546,9 +1543,9 @@ void Util::sincBlackman::build_sBtable() {
 	float x = 1.0e-7;
 	sBtable[0] = sin(twopi*fc*x)/x*(0.52-0.5*cos(twopi*(x-M2)/M)+0.08*cos(2*twopi*(x-M2)/M));
 	for (int i=1; i <= ltab; i++) {
-		x = float(i)/fltb/N;
+		x = float(i)/fltb;
 		sBtable[i] = sin(twopi*fc*x)/x*(0.52-0.5*cos(twopi*(x-M2)/M)+0.08*cos(2*twopi*(x-M2)/M));
-//		cout << "  "<<s*N<<"  "<<sBtable[i] <<endl;
+		//cout << "  "<<x<<"  "<<sBtable[i] <<endl;
 	}
 }
 
