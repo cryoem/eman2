@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu) and David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -91,6 +91,7 @@ for single particle analysis."""
 	#parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
 	parser.add_option("--parallel",type="int",help="specify more than one processor",default=1)
 	parser.add_option("--merge_boxes_to_db",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
+	parser.add_option("--subsample_method",help="The method used to subsample images prior to generation of the correlation image. Available methods are standard,careful",default="standard")	
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")

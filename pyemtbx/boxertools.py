@@ -653,6 +653,137 @@ class ExclusionImage:
 			else: return True
 		except: return False # exception will be thrown if self.smallimage = None
 
+class PenczekSubsampledImage:
+	template_min_default = 20
+	frequency_cutoff_default = 0.12
+	def __init__(self,image_name):
+		self.smallimage = None		# a small copy of an image which has had its background flattened
+		self.image_name = image_name
+		
+		try:
+			# we may have the image already on disk, if so parse it
+			# the image on disk is likely up to date but not necessarily so
+			self.smallimage = get_idd_key_entry(self.image_name,"subsampled_image")
+			#print "I read the image",self.ouputimage_name
+		except:
+			#print "could not read", self.ouputimage_name 
+			pass
+		
+	def get_input_image_name(self):
+		return self.image_name
+		
+	def get_creation_ts(self):
+		return	self.smallimage.get_attr("creation_time_stamp")
+	
+	def get_subsample_rate(self):
+		return self.smallimage.get_attr("subsample_rate")
+	
+	def get_frequency_cutoff(self):
+		return self.smallimage.get_attr("frequency_cutoff")
+	
+	def get_template_min(self):
+		return self.smallimage.get_attr("template_min")
+	
+	def __update_image(self,subsample_rate,template_min=template_min_default,frequency_cutoff=frequency_cutoff_default):
+		'''
+		Updates the image using the function arguments
+		If they match current parameters than nothing happens - the correct image is already cached
+		'''
+		bic = BigImageCache()
+		image = bic.get_image(self.image_name)
+		
+		sb = Util.sincBlackman(template_min, frequency_cutoff)
+
+		self.smallimage = image.downsample(sb,1.0/subsample_rate)
+			
+
+		self.smallimage.set_attr("subsample_rate",subsample_rate)
+		self.smallimage.set_attr("frequency_cutoff",frequency_cutoff)
+		self.smallimage.set_attr("template_min",template_min)
+		self.smallimage.set_attr("creation_time_stamp",gm_time_string())
+		
+		set_idd_key_entry(self.image_name,"subsampled_image",self.smallimage)
+				
+		#else:
+			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
+			
+	def get_image(self):
+		'''
+		Should only be called if you know the stored image is up to date
+		'''
+		return self.smallimage
+	
+	
+	def get_image_carefully(self,subsample_rate,template_min=template_min_default,frequency_cutoff=frequency_cutoff_default):
+		
+		if self.smallimage == None or not self.query_params_match(subsample_rate,template_min_default,frequency_cutoff):
+			#print "regenerating cf image"
+			self.__update_image(subsample_rate,template_min_default,frequency_cutoff)
+		#else: print "cf image is up to date"
+		
+		return self.get_image()
+	
+	def query_params_match(self,subsample_rate,template_min_default,frequency_cutoff):
+		try:
+			if subsample_rate != self.get_subsample_rate() or template_min != self.get_template_min() or frequeny_cutoff != self.get_frequency_cutoff():
+				return False
+			else: return True
+		except: return False # exception will be thrown if self.smallimage = None
+
+class PenczekSubsamplerCache:
+	'''
+	A singleton - usef for caching coarsened-flattened images
+	'''
+	class __impl(Cache):
+		""" Implementation of the singleton interface """
+
+		def __init__(self):
+			Cache.__init__(self)
+			
+		def get_image(self,image_name,subsample_rate,template_min_default=PenczekSubsampledImage.template_min_default,frequency_cutoff=PenczekSubsampledImage.frequency_cutoff_default):
+			ps_image = None
+			# first see if the object is already stored
+			for object in self.get_cache():
+				if object.get_input_image_name() == image_name:
+					ps_image = object
+					break;
+				
+				
+			if ps_image == None:
+				#if we make it here the cfimage is not cached
+				#print "had to cache a cf image for",image_name
+				ps_image = PenczekSubsampledImage(image_name)
+				self.add_to_cache(cfImage)
+			#else: print "found a cached cf image for",image_name
+				
+			
+			image = ps_image.get_image_carefully(flattenradius,shrink)
+			if image != None:
+				return image
+			else:
+				print "there was an error getting the image in CFImageCache"
+				return None
+		
+		
+	# storage for the instance reference	
+	__instance = None
+
+	def __init__(self):
+		""" Create singleton instance """
+		# Check whether we already have an instance
+		if PenczekSubsamplerCache.__instance is None:
+			# Create and remember instance
+			PenczekSubsamplerCache.__instance = PenczekSubsamplerCache.__impl()
+	
+	def __getattr__(self, attr):
+		""" Delegate access to implementation """
+		return getattr(self.__instance, attr)
+
+	def __setattr__(self, attr, value):
+		""" Delegate access to implementation """
+		return setattr(self.__instance, attr, value)
+
+
 class CFImageCache:
 	'''
 	A singleton - usef for caching coarsened-flattened images
