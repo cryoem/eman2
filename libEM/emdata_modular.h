@@ -100,6 +100,9 @@ EMData *align(const string & aligner_name, EMData * to_img,
  */
 EMData *project(const string & projector_name, const Dict & params = Dict());
 
+
+EMData *project(const string & projector_name, const Transform3D & t3d);
+
 /** Calculate the backprojection of this image (stack) and return the result.
  * @param projector_name Projection algorithm name. 
  * (Only "pawel" and "chao" have been implemented now). 

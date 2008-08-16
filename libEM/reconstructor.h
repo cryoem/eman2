@@ -424,7 +424,7 @@ namespace EMAN
 	  	 * @param transform
 	  	 * @exception InvalidValueException when the specified padding value is less than the size of the images
 		 */
-		EMData* preprocess_slice( const EMData* const slice, const Transform3D transform = Transform3D() );
+		EMData* preprocess_slice( const EMData* const slice, const Vec3f& translation = Vec3f() );
 		// Disallow copy construction
 		FourierReconstructor( const FourierReconstructor& that );
 		// Disallow assignment

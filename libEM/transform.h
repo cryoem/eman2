@@ -180,6 +180,10 @@ namespace EMAN
 		Vec3f get_finger() const;
 		Vec3f get_pretrans( int flag=0) const; // flag=1 => all trans is pre
 		Vec3f get_posttrans(int flag=0) const; // flag=1 => all trans is post
+		
+		/** Get the translation in the right part of the matrix
+		*/
+		Vec3f get_homogeneous_trans() const;
  		Vec3f get_center() const;
 		Vec3f get_matrix3_col(int i) const;
 		Vec3f get_matrix3_row(int i) const;

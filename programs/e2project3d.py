@@ -146,8 +146,7 @@ def main():
 
 def generate_and_save_projections(options, data, eulers, smear=0):
 	for i,euler in enumerate(eulers):
-		d = {"t3d":euler}
-		p=data.project(options.projector,d)
+		p=data.project(options.projector,euler)
 		p.set_rotation(euler)
 		
 		if smear:

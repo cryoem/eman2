@@ -311,10 +311,6 @@ void Transform3D::transpose()  // YYY
 	}
 }
 
-
-
-
-
 void Transform3D::set_scale(float scale)    // YYY
 {
 	float OldScale= get_scale();
@@ -345,6 +341,9 @@ Vec3f Transform3D::get_posttrans(int flag) const    //
 	return Vec3f(matrix[0][3], matrix[1][3], matrix[2][3]);
 }
 
+Vec3f Transform3D::get_homogeneous_trans() const {
+	return Vec3f((*this)[0][3],(*this)[1][3],(*this)[2][3]);
+}
 
 
 Vec3f Transform3D::get_pretrans(int flag) const    // Fix Me

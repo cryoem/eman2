@@ -407,7 +407,7 @@ void FourierReconstructor::setup()
 	}
 }
 
-EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const Transform3D )
+EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  const Vec3f& translation )
 {
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
 	
@@ -436,7 +436,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
-	EMData* slice = preprocess_slice( input_slice, arg );
+	EMData* slice = preprocess_slice( input_slice, arg.get_homogeneous_trans() );
 
 	// Catch the first time a slice is inserted to do some things....
 	if ( slice_insertion_flag == true )
@@ -590,7 +590,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
-	EMData* slice = preprocess_slice( input_slice, t3d );
+	EMData* slice = preprocess_slice( input_slice, t3d.get_homogeneous_trans() );
 
 	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
 	// place until after the first round of slice insertion

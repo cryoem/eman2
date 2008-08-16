@@ -778,24 +778,25 @@ EMData *StandardProjector::project3d(EMData * image) const
 {
 	Transform3D* t3d = params["t3d"];
 	if ( t3d == NULL ) throw NullPointerException("The transform3d object containing the angles(required for projection), was not specified");
-	Dict p = t3d->get_rotation();
-	
+// 	Dict p = t3d->get_rotation();
 	if ( image->get_ndim() == 3 )
 	{
-		float alt = p["alt"];
-		float az = p["az"];
-		float phi = p["phi"];
+// 		float alt = p["alt"];
+// 		float az = p["az"];
+// 		float phi = p["phi"];
 	
 		int nx = image->get_xsize();
 		int ny = image->get_ysize();
 		int nz = image->get_zsize();
 	
-		Transform3D r(Transform3D::EMAN, az, alt, phi);
-		r.transpose(); // The transpose is taken here because we are rotating the coordinate system, not the image
+// 		Transform3D r(Transform3D::EMAN, az, alt, phi);
+		Transform3D r = t3d->inverse(); // The inverse is taken here because we are rotating the coordinate system, not the image
 		int xy = nx * ny;
 	
 		EMData *proj = new EMData();
 		proj->set_size(nx, ny, 1);
+
+		Vec3f offset(nx/2,ny/2,nz/2);
 	
 		float *sdata = image->get_data();
 		float *ddata = proj->get_data();
@@ -804,15 +805,19 @@ EMData *StandardProjector::project3d(EMData * image) const
 			for (int j = -ny / 2; j < ny - ny / 2; j++) {
 				ddata[l]=0;
 				for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
-					float x2 = (float)(r[0][0] * i + r[0][1] * j + r[0][2] * k + nx / 2);
-					float y2 = (float)(r[1][0] * i + r[1][1] * j + r[1][2] * k + ny / 2);
-					float z2 = (float)(r[2][0] * i + r[2][1] * j + r[2][2] * k + nz / 2);
+					
+					Vec3f coord(i,j,k);
+					Vec3f soln = r*coord;
+					soln += offset;
+					
+					float x2 = soln[0];
+					float y2 = soln[1];
+					float z2 = soln[2];
 	
 					float x = (float)Util::fast_floor(x2);
 					float y = (float)Util::fast_floor(y2);
 					float z = (float)Util::fast_floor(z2);
 					
-	
 					float t = x2 - x;
 					float u = y2 - y;
 					float v = z2 - z;
@@ -884,7 +889,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 // 		delete copy;
 // 		return proj;
 // 		
-		
+		Dict p = t3d->get_rotation();
 		float alt = p["phi"];
 		alt = -(alt*M_PI/180.0f);// We need to take the 'transpose' (negate) because 
 		float cosalt = cos(alt);
