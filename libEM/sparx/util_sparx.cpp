@@ -4824,23 +4824,23 @@ Dict Util::coveig_for_py(int ncov, const vector<float>& covmatpy)
 
 	const float *covmat_ptr;
 	covmat_ptr = &covmatpy[0];
-	for(int i=1;i<=len;i++){
+	for(int i=0;i<len;i++){
 	    covmat[i] = covmat_ptr[i];
 	}
 
-        status = Util::coveig(ncov, covmat, eigval, eigvec);
+	status = Util::coveig(ncov, covmat, eigval, eigvec);
 
 	vector<float> eigval_py(ncov);
 	const float *eigval_ptr;
 	eigval_ptr = &eigval[0];
-	for(int i=1;i<=ncov;i++){
+	for(int i=0;i<ncov;i++){
 	    eigval_py[i] = eigval_ptr[i];
 	}
 
 	vector<float> eigvec_py(ncov*ncov);
 	const float *eigvec_ptr;
 	eigvec_ptr = &eigvec[0];
-	for(int i=1;i<=ncov*ncov;i++){
+	for(int i=0;i<ncov*ncov;i++){
 	    eigvec_py[i] = eigvec_ptr[i];
 	}
 
