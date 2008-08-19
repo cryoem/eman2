@@ -85,7 +85,7 @@ namespace EMAN
 
 		/** begin() and start() are used by command-line programs*/
 		int begin(int argc, char *argv[], int ppid);
-		void end(int ref, char *file = "-", char *text = "");
+		void end(int ref, const string& file = "-", const string& text ="");
 
 		/** log an error message. log level = ERROR_LOG.
 		 * Its args are the same as printf().*/

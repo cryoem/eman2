@@ -239,14 +239,14 @@ int Log::begin(int argc, char *argv[], int ppid)
 }
 
 
-void Log::end(int ref, char *file, char *text)
+void Log::end(int ref, const string& file, const string& text)
 {
 	FILE *out = fopen(".emanlog", "a");
 
 	if (out) {
 		time_t tm = time(0);
 		//Util::file_lock_wait(out);
-		fprintf(out, "%d\t%ld\t%s\t%s\n", ref, tm, file, text);
+		fprintf(out, "%d\t%ld\t%s\t%s\n", ref, tm, file.c_str(), text.c_str());
 		fclose(out);
 	}
 }

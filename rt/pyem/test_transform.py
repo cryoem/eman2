@@ -76,7 +76,7 @@ class TestTransform(unittest.TestCase):
 		t = Transform3D(Transform3D.EulerType.EMAN, {'az':-0.60170830102, 'alt':1.45232928554,'phi':0})
 		
 	def test_pre_post_trans_rotation(self):
-		"""test translation before and after rotation ......."""
+		"""test pretrans,rotation,post trans constructor ...."""
 		alt = 1.45232928554
 		az = -0.60170830102
 		phi = 0
@@ -84,17 +84,20 @@ class TestTransform(unittest.TestCase):
 		
 		rot = t.get_rotation()    #default argument is EULER_EMAN
 		#testlib.assertfloat(self, az, float(rot["az"]))
-		print rot
 		self.assertAlmostEqual(az, rot["az"], 3)
 		testlib.assertfloat(self, alt, float(rot["alt"]))
 		testlib.assertfloat(self, phi, float(rot["phi"]))
 		
 		
 		tran = t.get_posttrans()
-		print tran,tran.at(0),tran.at(1),tran.at(2)
 		self.assertAlmostEqual(tran.at(0), 4.0, 3)
 		self.assertAlmostEqual(tran.at(1), 5.0, 3)
 		self.assertAlmostEqual(tran.at(2), 6.0, 3)
+		
+		tran = t.get_pretrans()
+		self.assertAlmostEqual(tran.at(0), 1.0, 3)
+		self.assertAlmostEqual(tran.at(1), 2.0, 3)
+		self.assertAlmostEqual(tran.at(2), 3.0, 3)
 		
 	def test_set_posttrans(self):
 		"""test set/get_posttrans() function ................"""

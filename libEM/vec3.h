@@ -57,18 +57,21 @@ namespace EMAN
 	 * terminology
 	 * typedef Vec3<float> Vec3f;
 	 * typedef Vec3<int> Vec3i;
-	 * typedef Vec3<double> Vec3d;
-	 * @ingroup tested3c
+	 * typedef Vec3<double> Vec3d; // Not recommended for use unless precision is addressed in this class
+	 * @author David Woolford (based on the work of who ever wrote the original Vec3f and Vec3i classes - extracted into a template)
+	 * @date August 2008
+	 * @ingroup tested3c REALLY?
 	 */
 	template<typename Type>
 	class Vec3
 	{
 		public:
-		/** contruct a Vec3 object with all elements equal to 0.
-		 */
-		
+		/** One can always cast to the type of a Vec3 by accessing Vec3<Type>::type
+		*/
 		typedef Type type;
 		
+		/** contruct a Vec3 object with all elements equal to 0.
+		 */
 		Vec3() /*: vec[0](0),vec[1](0),vec[2](0)*/ {
 			
 			vec[0] = static_cast<Type>(0);
@@ -343,8 +346,8 @@ namespace EMAN
 	template<typename Type,typename Type2>
 	inline Vec3<Type> operator +(const Vec3<Type> &v1, const Vec3<Type2> &v2)
 	{
-		Vec3<Type> v(static_cast<Type>(v1[0] + v2[0]), static_cast<Type>(v1[1] + v2[1]),static_cast<Type>(v1[2] + v2[2]));
-		return v;
+		
+		return Vec3<Type>(static_cast<Type>(v1[0] + v2[0]), static_cast<Type>(v1[1] + v2[1]),static_cast<Type>(v1[2] + v2[2]));;
 	}
 	
 	template<typename Type,typename Type2>
@@ -452,5 +455,343 @@ namespace EMAN
 	typedef Vec3<int> Vec3i;
 	typedef Vec3<double> Vec3d;
 	
+	template<typename Type>
+	class Vec2
+	{
+		public:
+		/** One can always cast to the type of a Vec2 by accessing Vec2<Type>::type
+		 */
+		typedef Type type;
+		
+		/** contruct a Vec2 object with all elements equal to 0.
+		 */
+		Vec2() /*: vec[0](0),vec[1](0),vec[2](0)*/ {
+			vec[0] = static_cast<Type>(0);
+			vec[1] = static_cast<Type>(0);
+		}
+		
+		/** contruct a Vec2 object given (x,y) or (x,y,z) values.
+		* @param x  Value of the first item.
+		* @param y  Value of the second item.
+		* @param z  Value of the third item. If not specified,
+		* default to 0.
+		 */
+		template<typename Type2, typename Type3>
+		Vec2(const Type2& x, const Type3& y) 
+		{
+			vec[0] = static_cast<Type>(x);
+			vec[1] = static_cast<Type>(y);
+		}
+
+		/** Construct a Vec2 object given a std::vector object. The
+					 * std::vector object should have at least 3 items.
+					 * @param v The std::vector object. It should have at least 3 items.
+		 */
+		template<typename Type2>
+		Vec2(const vector < Type2 > &v) 
+		{
+			vec[0] = static_cast<Type>(v[0]);
+			vec[1] = static_cast<Type>(v[1]);
+		}
+		
+		/** Copy constructor copies vector elements
+		 */
+		template<typename Type2>
+		Vec2(const Vec2<Type2> &v) 
+		{
+			vec[0] = v[0];
+			vec[1] = v[1];
+		}
+		
+		/** Destructor
+		 */
+		virtual ~Vec2() {}
+		
+		
+		/** Normalize the vector and return its length before the
+		 * normalization.
+		 * @return The length of the Vec before normalization.
+		 */
+		float normalize()
+		{
+		// Warning - float precision
+			float len = length();
+			if (len != 0) {
+				vec[0] = static_cast<Type> (vec[0] / len);
+				vec[1] = static_cast<Type> (vec[1] / len);
+			}
+			else {
+				set_value(0, 0);
+			}
+			return len;
+		}
+		
+		
+		/** Calculate its length.
+		* @return The vector's length
+		* Warning - float precision
+		 */
+		float length() const
+		{
+			float t = (float)(vec[0] * vec[0] + vec[1] * vec[1]);
+			return (float)sqrt(t);
+		}
+		
+		/** Calculate its squared length.
+		 * no sqrt called 
+		 * @return The vector's length squared.
+		 */
+		Type squared_length() const
+		{
+			return  vec[0] * vec[0] + vec[1] * vec[1] ;
+		}
+		
+		/** Calculate the dot product of 'this' vector with a second
+		* vector.
+		* @param v  The second vector to do the dot product.
+		* @return The dot product.
+		 */
+		template<typename Type2>
+		Type dot(const Vec2<Type2> & v) const
+		{
+			return static_cast<Type>((vec[0] * v[0] + vec[1] * v[1]));
+		}
+		
+		/** Return the values of this vector as a std::vector.
+		 * @return The std::vector version of this vector.
+		 */
+		vector<Type> as_list() const
+		{
+			vector < Type > v(2);
+			v[0] = vec[0];
+			v[1] = vec[1];
+			return v;
+		}
+
+		/** Set new values using a std::vector object.
+		 * @param v A std::vector object used to set 'this' vector's value.
+		 *  It should have at least 3 items.
+		 */
+		template<typename Type2>
+		void set_value(const vector < Type2 > &v)
+		{
+			vec[0] =  static_cast<Type>(v[0]);
+			vec[1] =  static_cast<Type>(v[1]);;
+		}
+
+		/** Set values at a particular index
+		 * @param index  The index to be set
+		 * @param value  The value to be set
+		 */
+		template<typename Type2>
+		void set_value_at(int index, const Type2& value)
+		{
+			vec[index] = static_cast<Type>(value);
+		}
+
+		/** Set new values to this vector object.
+		 * @param x Value of the first item.
+		 * @param y Value of the second item.
+		 * @param z Value of the third item.
+		 */
+		void set_value(const Type& x, const Type& y)
+		{
+			vec[0] =  x;
+			vec[1] =  y;
+		}
+
+		/** Get the ith item of the vector. Used in the right side of
+		 * the assignment.
+		 *
+		 * @param i The index of the item to get. Its validality is
+		 * not checked.
+		 * @return The ith item of the vector.
+		 */
+		inline Type operator[] (int i) const { return vec[i]; }
+
+		/** Get the ith item of the vector. Used in the left side of
+		 * the assignment.
+		 *
+		 * @param i The index of the item to get. Its validality is
+		  * not checked.
+		* @return The ith item of the vector.
+		 */
+		inline Type& operator[] (int i) { return vec[i]; }
+
+		/** Get the ith item of the vector. Used in the left side of
+		 * the assignment.
+		 *
+		 * @param i The index of the item to get. Its validality is
+		 * not checked.
+		 * @return The ith item of the vector.
+		 */
+		inline Type at(int i) { return vec[i]; }
+
+		
+		/** 'this' += v; Add the 2 vectors by adding item by item.
+		 * @param v The vector used to be added to 'this' vector.
+		 * @return The new 'this' as a result of add.
+		 */
+		template<typename Type2>
+		Vec2<Type>& operator +=(const Vec2<Type2> &v) {
+			vec[0] = static_cast<Type>(vec[0]+v[0]);
+			vec[1] = static_cast<Type>(vec[1]+v[1]);
+			return *this;
+		}
+
+		/** 'this' += d. Add d to each item of this vector.
+		 * @param d The number used to be added to this vector.
+		 * @return The new 'this' as a result of add.
+		 */
+		template<typename Type2>
+		Vec2<Type>& operator +=(const Type2& d) {
+			vec[0] = static_cast<Type>(vec[0]+d);
+			vec[1] = static_cast<Type>(vec[1]+d);
+			return *this;
+		}
+		
+		/** 'this' -= v; Minus the 2 vectors item by item.
+		 * @param v The vector used to be substracted from 'this' vector.
+		 * @return The new 'this' as a result of substraction.
+		 */
+		template<typename Type2>
+		Vec2<Type>& operator -=(const Vec2<Type2> &v) {
+			vec[0] = static_cast<Type>(vec[0]-v[0]);
+			vec[1] = static_cast<Type>(vec[1]-v[1]);
+			return *this;
+		}
+		
+		/** 'this' -= d; Minus a number from each item of 'this' vector.
+		 * @param d The number used to be substracted from 'this' vector.
+		 * @return The new 'this' as a result of substraction.
+		 */
+		template<typename Type2>
+		Vec2<Type>& operator -=(const Type2& d) {
+			vec[0] = static_cast<Type>(vec[0]-d);
+			vec[1] = static_cast<Type>(vec[1]-d);
+			return *this;
+		}
+
+		/** 'this' *= d; Multiply a number on each item of 'this' vector.
+		 * @param d The number to multiply.
+		 * @return The new 'this' as a result of multiplication.
+		 */
+		template<typename Type2>
+		Vec2<Type>& operator *=(const Type2& d) {
+			vec[0] = static_cast<Type>(vec[0]*d);
+			vec[1] = static_cast<Type>(vec[1]*d);
+			return *this;
+		}
+		
+		/** 'this' /= d; Divide a number on each item of 'this' vector.
+		 * @param d The number to divide.
+		 * @return The new 'this' as a result of division.
+		 */
+		template<typename Type2>
+		Vec2<Type>& operator /=(const Type2& d) {
+			vec[0] = static_cast<Type>(vec[0]/d);
+			vec[1] = static_cast<Type>(vec[1]/d);
+			return *this;
+		}
+	
+		
+		private:
+			Type vec[2];
+	};
+	
+	template<typename Type,typename Type2>
+	inline Vec2<Type> operator +(const Vec2<Type> &v1, const Vec2<Type2> &v2)
+	{
+		return Vec2<Type>(static_cast<Type>(v1[0] + v2[0]), static_cast<Type>(v1[1] + v2[1]));;
+	}
+
+	template<typename Type,typename Type2>
+	inline Vec2<Type> operator +(const Vec2<Type> &v, const Type2& n)
+	{
+		Vec2<Type> v1(v);
+		v1 += n;
+		return v1;
+	}
+
+	template<typename Type,typename Type2>
+	inline Vec2<Type> operator -(const Vec2<Type> &v1, const Vec2<Type2> &v2)
+	{
+		return Vec2<Type>(static_cast<Type>(v1[0] - v2[0]),	static_cast<Type>(v1[1] - v2[1]));
+	}	
+
+	template<typename Type,typename Type2>
+	inline Vec2<Type> operator -(const Vec2<Type> &v, const Type2& n)
+	{
+		Vec2<Type> v1(v);
+		v1 -= n;
+		return v1;
+	}
+	
+	template<typename Type>
+	inline Vec2<Type> operator -(const Vec2<Type> &v)
+	{
+		return Vec2<Type>(-v[0],-v[1]);
+	}
+
+
+	template<typename Type,typename Type2>
+	inline Type operator *(const Vec2<Type> &v1, const Vec2<Type2> &v2)
+	{
+		return v1.dot(v2);
+	}
+
+	template<typename Type,typename Type2>
+	inline Vec2<Type2> operator *(const Type& d, const Vec2<Type2> & v)
+	{
+		// Preserve the vector type
+		Vec2<Type2> v1(v);
+		v1 *= d;
+		return v1;
+	}
+
+	template<typename Type,typename Type2>
+	inline Vec2<Type> operator *(const Vec2<Type> & v,const Type2& d) {
+	// Preserve the vector type
+		Vec2<Type> v1(v);
+		v1 *= d;
+		return v1;
+	}
+
+	template<typename Type,typename Type2>
+	inline Vec2<Type2> operator /(const Type& d, const Vec2<Type2> & v)
+	{
+	// Preserve the vector type
+		Vec2<Type2> v1(v);
+		v1 /= d;
+		return v1;
+	}
+
+	template<typename Type,typename Type2>
+	inline Vec2<Type> operator /(const Vec2<Type> & v,const Type2& d) {
+		// Preserve the vector type
+		Vec2<Type> v1(v);
+		v1 /= d;
+		return v1;
+	}
+
+	template<typename Type,typename Type2>
+	inline bool operator ==(const Vec2<Type> &v1, const Vec2<Type2> &v2) {
+		if (v1[0] == v2[0] && v1[1] == v2[1] ) {
+			return true;
+		}
+		return false;
+	}
+
+	template<typename Type,typename Type2>
+	inline bool operator !=(const Vec2<Type> &v1, const Vec2<Type2> &v2) {
+		if (v1[0] != v2[0] || v1[1] != v2[1] ) {
+			return true;
+		}
+		return false;
+	}
+	
+	typedef Vec2<float> Vec2f;
+	typedef Vec2<int> Vec2i;
+	typedef Vec2<double> Vec2d;
 }
 #endif
