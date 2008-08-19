@@ -118,7 +118,7 @@ def db_read_images(fsp,*parms):
 			return [db.get(i) for i in keys]
 		else :
 			if len(parms)==0 : keys=range(0,len(db))
-			else : keys=range(parms[0][0],parms[0][1])
+			else : keys=parms[0]
 		return [db.get(i) for i in keys]
 	return EMData.read_images_c(fsp,*parms)
 
