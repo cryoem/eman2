@@ -1008,8 +1008,8 @@ void EMData::translate(const Vec3f &translation)
 
 	if( nz == 1 ) 	//2D translation
 	{
-		int tx = Util::round(translation[0]);
-		int ty = Util::round(translation[1]);
+		int tx = Util::round((Vec3f::type)translation[0]);
+		int ty = Util::round((Vec3f::type)translation[1]);
 		float ftx = translation[0];
 		float fty = translation[1];
 		int xp, yp;
@@ -1031,9 +1031,9 @@ void EMData::translate(const Vec3f &translation)
 	}
 	else 	//3D translation
 	{
-		int tx = Util::round(translation[0]);
-		int ty = Util::round(translation[1]);
-		int tz = Util::round(translation[2]);
+		int tx = Util::round((Vec3f::type)translation[0]);
+		int ty = Util::round((Vec3f::type)translation[1]);
+		int tz = Util::round((Vec3f::type)translation[2]);
 		float ftx = translation[0];
 		float fty = translation[1];
 		float ftz = translation[2];

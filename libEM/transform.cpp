@@ -264,9 +264,9 @@ void Transform3D::set_posttrans(const Vec3f & posttrans) // flag=1 means keep th
 //     transFinal = transPost +  Rotation * transPre;
 //   This will keep the old value of pretrans and change the value of posttrans and the total matrix
 	if (flag==0) {
-		matrix[0][3] = matrix[3][0] + matrix[0][0]*preT.at(0) + matrix[0][1]*preT.at(1) + matrix[0][2]*preT.at(2)  ;
-		matrix[1][3] = matrix[3][1] + matrix[1][0]*preT.at(0) + matrix[1][1]*preT.at(1) + matrix[1][2]*preT.at(2)  ;
-		matrix[2][3] = matrix[3][2] + matrix[2][0]*preT.at(0) + matrix[2][1]*preT.at(1) + matrix[2][2]*preT.at(2)  ;
+		matrix[0][3] = matrix[3][0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
+		matrix[1][3] = matrix[3][1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
+		matrix[2][3] = matrix[3][2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
 	}
 //   This will keep the old value of the total matrix, and c
 	if (flag==1) { // Don't do anything
@@ -364,7 +364,7 @@ Vec3f Transform3D::get_pretrans(int flag) const    // Fix Me
 	for (int i=0; i<3; i++) {
                 float ptnow=0;
 		for (int j=0; j<3; j++) {
-			ptnow +=   Rinv.matrix[i][j]* totminuspost.at(j) ;
+			ptnow +=   Rinv.matrix[i][j]* totminuspost[j] ;
 		}
 		pretrans.set_value_at(i,ptnow) ;  // 
 	}
@@ -410,8 +410,6 @@ Vec3f Transform3D::rotate(Vec3f & v3f) const     // YYY
 }
 
 
-
-
 Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     // YYY
 {
 //       This is the  left multiplication of a matrix M1 by a matrix M2; that is M2*M1
@@ -430,37 +428,6 @@ Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     
 	
 	return resultant; // This will have the post_trans of M2
 }
-
-
-
-
-
-Vec3f EMAN::operator*(const Vec3f & v, const Transform3D & M)   // YYY
-{
-//               This is the right multiplication of a row vector, v by a transform3D matrix M
-	float x = v[0] * M[0][0] + v[1] * M[1][0] + v[2] * M[2][0] ;
-	float y = v[0] * M[0][1] + v[1] * M[1][1] + v[2] * M[2][1];
-	float z = v[0] * M[0][2] + v[1] * M[1][2] + v[2] * M[2][2];
-	return Vec3f(x, y, z);
-}
-
-
-Vec3f EMAN::operator*( const Transform3D & M, const Vec3f & v)      // YYY
-{
-//      This is the  left multiplication of a vector, v by a matrix M
-	float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2] + M[0][3] ;
-	float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2] + M[1][3];
-	float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2] + M[2][3];
-	return Vec3f(x, y, z);
-}
-
-
-
-
-
-
-
-
 
 
 /*             Here starts the pure rotation stuff */
@@ -547,8 +514,7 @@ void Transform3D::set_rotation(float az, float alt, float phi )
 	rot["az"]  = az;
 	rot["alt"] = alt;
 	rot["phi"] = phi;
-        set_rotation(euler_type, rot);  // Or should it be &rot ?
-
+	set_rotation(euler_type, rot);
 }
 
 // This is where it all happens;
@@ -704,9 +670,9 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	}
 	// Now do post and pretrans: vfinal = vpost + R vpre;
 	
-	matrix[0][3] = postT.at(0) + matrix[0][0]*preT.at(0) + matrix[0][1]*preT.at(1) + matrix[0][2]*preT.at(2)  ;
-	matrix[1][3] = postT.at(1) + matrix[1][0]*preT.at(0) + matrix[1][1]*preT.at(1) + matrix[1][2]*preT.at(2)  ;
-	matrix[2][3] = postT.at(2) + matrix[2][0]*preT.at(0) + matrix[2][1]*preT.at(1) + matrix[2][2]*preT.at(2)  ;
+	matrix[0][3] = postT[0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
+	matrix[1][3] = postT[1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
+	matrix[2][3] = postT[2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
 }
 
 
@@ -952,11 +918,6 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	return result;
 }
 
-
-
-map<string, int> Transform3D::symmetry_map = map<string, int>();
-
-
 Transform3D Transform3D::inverseUsingAngs() const    //   YYN need to test it for sure
 {
 	// First Find the scale
@@ -1191,7 +1152,7 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 }
 
 
-
+map<string, int> Transform3D::symmetry_map = map<string, int>();
 int Transform3D::get_nsym(const string & name)
 {
 	if (symmetry_map.find(name) != symmetry_map.end()) {

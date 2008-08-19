@@ -707,7 +707,7 @@ class SincBlackmanSubsamplerCache:
 
 class SincBlackmanSubsampledImage:
 	'''
-	Pawel Penczek optimal subsampling approach is encapsulated in this class
+	Pawel Penczek's optimal subsampling approach is encapsulated in this class
 	'''
 	def __init__(self,image_name):
 		self.smallimage = None		# a small copy of an image which has had its background flattened
@@ -792,7 +792,8 @@ class SincBlackmanSubsampledImage:
 class ImageProcParamsMediator:
 	'''
 	A mediator class - coordinates the requests of the various image processing tasks, as embodied 
-	in the Cache classes, which are currently retrieved from the SwarmAutoBoxer
+	in the Cache classes, which are currently retrieved from an AutoBoxer, the only one of which is
+	currently the SwarmAutoBoxer
 	'''
 	def __init__(self,parent):
 		if not isinstance(parent,AutoBoxer):
@@ -1172,8 +1173,9 @@ class BigImage:
 		return self.image
 		
 
-SubsamplerCache = CoarsenedFlattenedImageCache()
-#SubsamplerCache = SincBlackmanSubsamplerCache()
+#SubsamplerCache = CoarsenedFlattenedImageCache()
+SubsamplerCache = SincBlackmanSubsamplerCache()
+
 class FLCFImageCache:
 	'''
 	A singleton - used for caching flcf images

@@ -265,8 +265,31 @@ namespace EMAN
 	}; // ends Class
 
 	Transform3D operator*(const Transform3D & M1, const Transform3D & M2);
-	Vec3f operator*(const Vec3f & v    , const Transform3D & M);
-	Vec3f operator*(const Transform3D & M, const Vec3f & v    );
+// 	Vec3f operator*(const Vec3f & v    , const Transform3D & M);
+// 	Vec3f operator*(const Transform3D & M, const Vec3f & v    );
+	
+	
+// This operator should probably not exist - by discussion with Phil Baldwin (David Woolford).
+	template<typename Type>
+	Vec3f operator*(const Vec3<Type> & v, const Transform3D & M)   // YYY
+	{
+//               This is the right multiplication of a row vector, v by a transform3D matrix M
+		float x = v[0] * M[0][0] + v[1] * M[1][0] + v[2] * M[2][0] ;
+		float y = v[0] * M[0][1] + v[1] * M[1][1] + v[2] * M[2][1];
+		float z = v[0] * M[0][2] + v[1] * M[1][2] + v[2] * M[2][2];
+		return Vec3f(x, y, z);
+	}
+
+	template<typename Type>
+	Vec3f operator*( const Transform3D & M, const Vec3<Type> & v)      // YYY
+	{
+//      This is the  left multiplication of a vector, v by a matrix M
+		float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2] + M[0][3] ;
+		float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2] + M[1][3];
+		float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2] + M[2][3];
+		return Vec3f(x, y, z);
+	}
+
 	
 	/** Symmetry3D - A base class for 3D Symmetry objects.
 	* Objects of this type must provide delimiters for the asymmetric unit (get_delimiters), and
