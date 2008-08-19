@@ -72,6 +72,7 @@ def db_open_env(url):
 	with keys like '1' instead of (int)1 using this mechanism."""
 	if url[:4].lower()!="bdb:": return None
 	url=url.replace("../",os.getcwd()+"/../")
+	if url[4]!='/' : url="bdb:"+os.getcwd()+"/"+url[4:]
 	sln=url.rfind("/")
 	qun=url.rfind("?")
 	if qun<0 : qun=len(url)
