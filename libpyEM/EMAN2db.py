@@ -71,6 +71,7 @@ def db_open_env(url):
 	If key is an integer, it will be converted to an integer before lookup. Thus it is impossible to access data items
 	with keys like '1' instead of (int)1 using this mechanism."""
 	if url[:4].lower()!="bdb:": return None
+	url=url.replace("../",os.getcwd()+"/../")
 	sln=url.rfind("/")
 	qun=url.rfind("?")
 	if qun<0 : qun=len(url)
@@ -379,7 +380,7 @@ class DBDict:
 		self.txn=None	# current transaction used for all database operations
 		self.bdb=db.DB(dbenv)
 		if file==None : file=name+".bdb"
-		self.bdb.open(file,name,db.DB_BTREE,db.DB_CREATE)
+		self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE)
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
 
 	def __str__(self): return "<EMAN2db DBHash instance: %s>" % self.name
