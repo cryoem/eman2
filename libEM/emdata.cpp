@@ -1610,8 +1610,6 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag)
 		
 		return cor;
 	}
-
-	
 }
 
 EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
