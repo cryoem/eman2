@@ -225,6 +225,8 @@ void Transform3D::set_pretrans(float dx, float dy, float dz) // YYY
 void Transform3D::set_pretrans(float dx, float dy) // YYY
 {    set_pretrans( Vec3f(dx,dy,0)); }
 
+void Transform3D::set_pretrans(const Vec2f& pretrans) // YYY
+{    set_pretrans( Vec3f(pretrans[0],pretrans[1],0)); }
 
 void Transform3D::set_pretrans(const Vec3f & preT)  // flag=1 means keep the old value of total trans
 {
@@ -253,6 +255,8 @@ void Transform3D::set_posttrans(float dx, float dy, float dz) // YYY
 void Transform3D::set_posttrans(float dx, float dy) // YYY
 {    set_posttrans( Vec3f(dx,dy,0)); }
 
+void Transform3D::set_posttrans(const Vec2f& posttrans) // YYY
+{    set_pretrans( Vec3f(posttrans[0],posttrans[1],0)); }
 
 void Transform3D::set_posttrans(const Vec3f & posttrans) // flag=1 means keep the old value of total trans
 {

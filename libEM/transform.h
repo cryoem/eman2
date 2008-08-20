@@ -215,9 +215,11 @@ namespace EMAN
 		void set_pretrans(const Vec3f & pretrans); // flag=1 means count all translation as pre
 		void set_pretrans(float dx, float dy, float dz);
 		void set_pretrans(float dx, float dy);
+		void set_pretrans(const Vec2f& pretrans);
 		void set_posttrans(const Vec3f & posttrans);// flag=1 means count all translation as post
 		void set_posttrans(float dx, float dy, float dz);
 		void set_posttrans(float dx, float dy);
+		void set_posttrans(const Vec2f& posttrans);
 
 		float get_scale() const;   
 
@@ -288,6 +290,17 @@ namespace EMAN
 		float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2] + M[1][3];
 		float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2] + M[2][3];
 		return Vec3f(x, y, z);
+	}
+	
+	
+	template<typename Type>
+	Vec3f operator*( const Transform3D & M, const Vec2<Type> & v)      // YYY
+	{
+//      This is the  left multiplication of a vector, v by a matrix M
+		float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][3] ;
+		float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][3];
+// 		float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2] + M[2][3];
+		return Vec2f(x, y);
 	}
 
 	
