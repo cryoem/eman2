@@ -65,7 +65,7 @@ atexit.register(DB_cleanup)
 # if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
 signal.signal(2,DB_cleanup)
 
-def db_open_env(url):
+def db_open_dict(url):
 	"""opens a DB through an environment from a db:/path/to/db/dbname string. If you want to specify a specific image by key,
 	you can specify the key as:  db:/path/to/db/dbname?key
 	If key is an integer, it will be converted to an integer before lookup. Thus it is impossible to access data items
@@ -90,7 +90,7 @@ def db_open_env(url):
 ##########
 def db_read_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_env(fsp)
+		db=db_open_dict(fsp)
 		if len(parms)>1 and parms[1] : nodata=1
 		else: nodata=0
 		if "?" in fsp:
@@ -110,7 +110,7 @@ EMData.read_image=db_read_image
 
 def db_read_images(fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_env(fsp)
+		db=db_open_dict(fsp)
 		if "?" in fsp:
 			keys=fsp[fsp.rfind("?")+1:].split(",")
 			for i in range(len(keys)):
@@ -129,7 +129,7 @@ EMData.read_images=staticmethod(db_read_images)
 
 def db_write_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_env(fsp)
+		db=db_open_dict(fsp)
 		if "?" in fsp :			# if the user specifies the key in fsp, we ignore parms
 			key=fsp[fsp.rfind("?")+1:]
 			try : key=int(key)
@@ -146,7 +146,7 @@ EMData.write_image=db_write_image
 
 def db_get_image_count(fsp):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_env(fsp)
+		db=db_open_dict(fsp)
 		if "?" in fsp :			# if the user specifies the key in fsp, we ignore parms
 			key=fsp[fsp.rfind("?")+1:]
 			try : key=int(key)
