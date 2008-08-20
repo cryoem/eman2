@@ -76,7 +76,7 @@ Transform3D::Transform3D( const Transform3D& rhs )
 }
 
 // C2
-Transform3D::Transform3D(float az, float alt, float phi) 
+Transform3D::Transform3D(const float& az, const float& alt, const float& phi) 
 {
 	init();
 	set_rotation(az,alt,phi);
@@ -84,23 +84,23 @@ Transform3D::Transform3D(float az, float alt, float phi)
 
 
 //  C3  Usual Constructor: Post Trans, after appying Rot
-Transform3D::Transform3D( float az, float alt, float phi, const Vec3f& posttrans )
+Transform3D::Transform3D(const float& az, const float& alt, const float& phi, const Vec3f& posttrans )
 {
 	init();
 	set_rotation(az,alt,phi);
 	set_posttrans(posttrans);
 }
 
-Transform3D::Transform3D(float m11, float m12, float m13,
-                         float m21, float m22, float m23,
-			 float m31, float m32, float m33)
+Transform3D::Transform3D(const float& m11, const float& m12, const float& m13,
+						 const float& m21, const float& m22, const float& m23,
+	   const float& m31, const float& m32, const float& m33)
 {
 	init();
 	set_rotation(m11,m12,m13,m21,m22,m23,m31,m32,m33);
 }
 
 // C4
-Transform3D::Transform3D(EulerType euler_type, float a1, float a2, float a3)  // usually az, alt, phi
+Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3)  // usually az, alt, phi
                                                                                         // only SPIDER and EMAN supported
 {
 	init();
@@ -132,7 +132,7 @@ Transform3D::Transform3D(EulerType euler_type, const Dict& rotation)  //YYY
 
 // C6   First apply pretrans: Then rotation: Then posttrans
 
-Transform3D::Transform3D(  const Vec3f& pretrans,  float az, float alt, float phi, const Vec3f& posttrans )  //YYY  by default EMAN
+Transform3D::Transform3D(  const Vec3f& pretrans,  const float& az, const float& alt, const float& phi, const Vec3f& posttrans )  //YYY  by default EMAN
 {
 	init();
 	set_pretrans(pretrans);
@@ -218,11 +218,11 @@ void Transform3D::init()  // M1
 
 //      Set Methods
 
-void Transform3D::set_pretrans(float dx, float dy, float dz) // YYY
+void Transform3D::set_pretrans(const float& dx, const float& dy, const float& dz) // YYY
 {    set_pretrans( Vec3f(dx,dy,dz)); }
 
 
-void Transform3D::set_pretrans(float dx, float dy) // YYY
+void Transform3D::set_pretrans(const float& dx, const float& dy) // YYY
 {    set_pretrans( Vec3f(dx,dy,0)); }
 
 void Transform3D::set_pretrans(const Vec2f& pretrans) // YYY
@@ -248,11 +248,11 @@ void Transform3D::set_pretrans(const Vec3f & preT)  // flag=1 means keep the old
 }
 
 
-void Transform3D::set_posttrans(float dx, float dy, float dz) // YYY
+void Transform3D::set_posttrans(const float& dx, const float& dy, const float& dz) // YYY
 {    set_posttrans( Vec3f(dx,dy,dz)); }
 
 
-void Transform3D::set_posttrans(float dx, float dy) // YYY
+void Transform3D::set_posttrans(const float& dx, const float& dy) // YYY
 {    set_posttrans( Vec3f(dx,dy,0)); }
 
 void Transform3D::set_posttrans(const Vec2f& posttrans) // YYY
@@ -280,7 +280,7 @@ void Transform3D::set_posttrans(const Vec3f & posttrans) // flag=1 means keep th
 
 
 
-void Transform3D::apply_scale(float scale)    // YYY
+void Transform3D::apply_scale(const float& scale)    // YYY
 {
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 4; j++) {
@@ -315,7 +315,7 @@ void Transform3D::transpose()  // YYY
 	}
 }
 
-void Transform3D::set_scale(float scale)    // YYY
+void Transform3D::set_scale(const float& scale)    // YYY
 {
 	float OldScale= get_scale();
 	float Scale2Apply = scale/OldScale;
@@ -506,12 +506,7 @@ The update of rotations for quaternions is very easy.
 
 */
 
-
-
-
-
-
-void Transform3D::set_rotation(float az, float alt, float phi )
+void Transform3D::set_rotation(const float& az, const float& alt, const float& phi )
 {
 	EulerType euler_type=EMAN;
 	Dict rot;
@@ -522,7 +517,7 @@ void Transform3D::set_rotation(float az, float alt, float phi )
 }
 
 // This is where it all happens;
-void Transform3D::set_rotation(EulerType euler_type, float a1, float a2, float a3) // EMAN: az alt, phi 
+void Transform3D::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3) // EMAN: az alt, phi 
  									                        // SPIDER: phi, theta, psi 
 {
 	init();
@@ -680,9 +675,9 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 }
 
 
-void Transform3D::set_rotation(float m11, float m12, float m13,
-                               float m21, float m22, float m23,
-			       float m31, float m32, float m33)
+void Transform3D::set_rotation(const float& m11, const float& m12, const float& m13,
+							   const float& m21, const float& m22, const float& m23,
+		  const float& m31, const float& m32, const float& m33)
 {
 	EulerType euler_type= MATRIX;
 	Dict rot;

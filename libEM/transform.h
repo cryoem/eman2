@@ -125,14 +125,14 @@ namespace EMAN
 	    Transform3D( const Transform3D& rhs );
 
 	     // C2   
-		Transform3D(float az,float alt, float phi); // EMAN by default
+		Transform3D(const float& az,const float& alt,const float& phi); // EMAN by default
 
 
 		//  C3  Usual Constructor: Post Trans, after appying Rot
-		Transform3D(float az, float alt, float phi, const Vec3f& posttrans);
+		Transform3D(const float& az, const float& alt, const float& phi, const Vec3f& posttrans);
  
 		// C4
-		Transform3D(EulerType euler_type, float a1, float a2, float a3) ; // only EMAN: az alt phi
+		Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3) ; // only EMAN: az alt phi
 								                            // SPIDER     phi theta psi
 		
 		// C5   First apply pretrans: Then rotation
@@ -140,26 +140,27 @@ namespace EMAN
 		
 
 		// C6   First apply pretrans: Then rotation: Then posttrans
-		Transform3D(const Vec3f & pretrans, float az, float alt, float phi,  const Vec3f& posttrans);
+		Transform3D(const Vec3f & pretrans, const float& az,const float& alt,const float& phi,  const Vec3f& posttrans);
 
-		Transform3D(float m11, float m12, float m13,
-					float m21, float m22, float m23,
-					float m31, float m32, float m33);
+		Transform3D(const float& m11, const float& m12, const float& m13,
+					const float& m21, const float& m22, const float& m23,
+	 const float& m31, const float& m32, const float& m33);
 
 		~ Transform3D();  // COmega   Deconstructor
 
 
-		void apply_scale(float scale);
-		void set_scale(float scale);
+		void apply_scale(const float& scale);
+		void set_scale(const float& scale);
 		void orthogonalize();	// reorthogonalize the matrix
 		void transpose();	// create the transpose in place
 
-		void set_rotation(float az, float alt,float phi);
-		void set_rotation(EulerType euler_type, float a1, float a2, float a3); // just SPIDER and EMAN
+		void set_rotation(const float& az, const float& alt,const float& phi);
 		
-		void set_rotation(float m11, float m12, float m13,
-                                     float m21, float m22, float m23,
-			             float m31, float m32, float m33);
+		void set_rotation(EulerType euler_type,const float& a1,const float& a2,const float& a3); // just SPIDER and EMAN
+		
+		void set_rotation(const float& m11, const float& m12, const float& m13,
+						  const float& m21, const float& m22, const float& m23,
+						  const float& m31, const float& m32, const float& m33);
 
 		void set_rotation(EulerType euler_type, const Dict &rotation );
 		
@@ -213,12 +214,12 @@ namespace EMAN
 		Transform3D get_sym(const string & sym, int n) const;
 		void set_center(const Vec3f & center);
 		void set_pretrans(const Vec3f & pretrans); // flag=1 means count all translation as pre
-		void set_pretrans(float dx, float dy, float dz);
-		void set_pretrans(float dx, float dy);
+		void set_pretrans(const float& dx, const float& dy, const float& dz);
+		void set_pretrans(const float& dx, const float& dy);
 		void set_pretrans(const Vec2f& pretrans);
 		void set_posttrans(const Vec3f & posttrans);// flag=1 means count all translation as post
-		void set_posttrans(float dx, float dy, float dz);
-		void set_posttrans(float dx, float dy);
+		void set_posttrans(const float& dx, const float& dy, const float& dz);
+		void set_posttrans(const float& dx, const float& dy);
 		void set_posttrans(const Vec2f& posttrans);
 
 		float get_scale() const;   
@@ -236,6 +237,8 @@ namespace EMAN
 		static vector<Transform3D*>
 			angles2tfvec(EulerType eulertype, const vector<float> angles);
 
+		/** This added by d.woolford, will eventually be removed by author
+		*/
 		void dsaw_zero_hack(){
 			for (int j=0; j<4; ++j) {
 				for (int i=0; i<4; i++) {
@@ -294,12 +297,11 @@ namespace EMAN
 	
 	
 	template<typename Type>
-	Vec3f operator*( const Transform3D & M, const Vec2<Type> & v)      // YYY
+	Vec2f operator*( const Transform3D & M, const Vec2<Type> & v)      // YYY
 	{
 //      This is the  left multiplication of a vector, v by a matrix M
 		float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][3] ;
 		float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][3];
-// 		float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2] + M[2][3];
 		return Vec2f(x, y);
 	}
 
