@@ -143,16 +143,16 @@ class Box:
 		self.origxcorner = trimbox.origxcorner
 		self.origycorner = trimbox.origycorner
 		
-	def __init__(self,xcorner=-1,ycorner=-1,xsize=-1,ysize=-1,isref=0,correlationscore=0,image_name=None):
+	def __init__(self,xcorner=-1,ycorner=-1,xsize=-1,ysize=-1,isref=0,correlation_score=0,image_name=None):
 		self.xcorner = xcorner			# the xcorner - bottom left
 		self.ycorner = ycorner			# the ycorner - bottom left
 		self.xsize = xsize				# the xsize of the box
 		self.ysize = ysize				# the ysize of the box
 		self.isref = isref				# a flag that can be used to tell if the box is being used as a reference
-		self.correlationscore = correlationscore	# the correlation score
+		self.correlation_score = correlation_score	# the correlation score
 		self.ismanual = False			# a flag to store whether or this box was manually added by the user and was not a reference. It's just a plain box
 		
-		self.optprofile = None			# a correlation worst-case profile, used for selective auto boxing
+		self.opt_profile = None			# a correlation worst-case profile, used for selective auto boxing
 		self.changed = False			# a flag signalling the box has changed and display needs updating
 		self.corx = -1			# stores the x coordinate of the correlation peak
 		self.cory = -1			# stores the y coordinate of the correlation peak
@@ -219,7 +219,7 @@ class Box:
 	def update_position_from_data(self,movedboxes):
 		
 		# 0.0064 = 0.08*0.08, then divided by two to make in terms of the radius
-		# ... so the proximity limit is 8% of the radius
+		# .. so the proximity limit is 8% of the radius
 		sq_size_limit = (self.xsize**2 + self.ysize**2)*0.0032
 
 		for data in movedboxes:
@@ -284,7 +284,7 @@ class Box:
 		if image == None:
 			return None
 		else:
-			shrink = autoboxer.get_best_shrink()
+			shrink = autoboxer.get_subsample_rate()
 			return image.get_clip(Region(int(self.xcorner/shrink),int(self.ycorner/shrink),int(self.xsize/shrink),int(self.ysize/shrink)))
 		
 	def get_small_image(self,autoboxer):
@@ -312,7 +312,7 @@ class Box:
 	def center(self,method,extrasomething,low_res=False):
 		'''
 		Ask the box to center itself using one of the available methods (as stored in Box.CENTERMETHODS
-		extrasomething has to be an AutoBoxer if using CENTEROFMASS or CENTERACF (it's asked for get_best_shrink)
+		extrasomething has to be an AutoBoxer if using CENTEROFMASS or CENTERACF (it's asked for get_subsample_rate)
 		extrasomething has to be the template image and have the same dimensions as the results of get_box_image if using 
 		CENTERPROPOGATE
 		The low_res argument has no effect on the CENTERPROPOGATE option
@@ -325,10 +325,10 @@ class Box:
 		if method == Box.CENTEROFMASS:
 			if low_res == True:
 				# WONT WORK there is no self.autoboxer
-				image = self.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
+				image = self.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_subsample_rate())
 				ali = image.calc_center_of_mass()
-				dx = -int((ali[0]+0.5-image.get_xsize()/2))*extrasomething.get_best_shrink()
-				dy = -int((ali[1]+0.5-image.get_ysize()/2))*extrasomething.get_best_shrink()
+				dx = -int((ali[0]+0.5-image.get_xsize()/2))*extrasomething.get_subsample_rate()
+				dy = -int((ali[1]+0.5-image.get_ysize()/2))*extrasomething.get_subsample_rate()
 			else:
 				image = self.get_box_image()
 				ali = image.calc_center_of_mass()
@@ -338,11 +338,11 @@ class Box:
 		elif method == Box.CENTERACF:
 			if low_res == True:
 				# WONT WORK there is no self.autoboxer
-				image = self.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_best_shrink())
+				image = self.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_subsample_rate())
 				ccf  = image.calc_ccf(None)
 				trans = ccf.calc_max_location_wrap(-1,-1,-1)
-				dx = trans[0]/2*extrasomething.get_best_shrink()
-				dy = trans[1]/2*extrasomething.get_best_shrink()
+				dx = trans[0]/2*extrasomething.get_subsample_rate()
+				dy = trans[1]/2*extrasomething.get_subsample_rate()
 			else:
 				image = self.get_box_image()
 				ccf  = image.calc_ccf(None)
@@ -367,7 +367,7 @@ class Box:
 				
 		# have to calculate offsets here
 		if low_res == True and not method == Box.CENTERPROPAGATE:
-			self.correct_resolution_centering(extrasomething.get_best_shrink(),False)
+			self.correct_resolution_centering(extrasomething.get_subsample_rate(),False)
 	
 		self.update_box_image()
 		self.changed = True
@@ -391,7 +391,13 @@ class Box:
 		if update and (difx != 0 or dify != 0):
 			self.update_box_image()
 			self.changed = True
-			
+	
+	def get_opt_profile(self): return self.opt_profile
+	def set_opt_profile(self, profile): self.opt_profile = profile
+	
+	def get_correlation_score(self): return self.correlation_score
+	def set_correlation_score(self,score): self.correlation_score = score
+	
 	def update_params(self,autoboxer,center=False,force=False):
 		'''
 		Updates internally stored parameters, currently works only for SwarmAutoBoxer, but
@@ -407,7 +413,7 @@ class Box:
 			return 0
 		
 		if isinstance(autoboxer,SwarmAutoBoxer):
-			shrink = autoboxer.get_best_shrink()
+			shrink = autoboxer.get_subsample_rate()
 			invshrink = 1/shrink
 	
 			# the central coordinates of the box in terms of the shrunken correlation image
@@ -423,9 +429,9 @@ class Box:
 			peak_location2 = BoxingTools.find_radial_max(correlation,peak_location[0],peak_location[1],searchradius )
 			if (peak_location != peak_location2):
 				# this represents a troubling condition
-				# setting box.correlationscore is the flag that other functions can act on in order to exclude
+				# setting box.get_correlation_score() is the flag that other functions can act on in order to exclude
 				# this box from consideration
-				self.correlationscore = None
+				self.correlation_score = None
 				if not force :
 					#print "Error, peak location unrefined"
 					return 0
@@ -435,10 +441,10 @@ class Box:
 			self.cory = peak_location[1]
 		
 			# store the correlation value at the correlation max
-			self.correlationscore = correlation.get(self.corx,self.cory)
+			self.correlation_score = correlation.get(self.corx,self.cory)
 		
 			# store the profile
-			self.optprofile = BoxingTools.get_min_delta_profile(correlation,self.corx,self.cory, searchradius )
+			self.opt_profile = BoxingTools.get_min_delta_profile(correlation,self.corx,self.cory, searchradius )
 			# center on the correlation peak
 			if (center):
 				self.xcorner = self.corx*shrink-self.xsize/2.0
@@ -733,15 +739,15 @@ class SincBlackmanSubsampledImage:
 	def get_frequency_cutoff(self):
 		return self.smallimage.get_attr("frequency_cutoff")
 	
-	def get_template_min(self):
+	def get_window_size_min(self):
 		return self.smallimage.get_attr("template_min")
 	
 	def __update_image(self,params_mediator):
 		'''
 		Updates the image using the parameters that are deduced from the params_mediator
 		'''
-		subsample_rate = params_mediator.get_best_shrink()
-		template_min = params_mediator.get_template_min()
+		subsample_rate = params_mediator.get_subsample_rate()
+		template_min = params_mediator.get_window_size_min()
 		frequency_cutoff = params_mediator.get_frequency_cutoff()
 		bic = BigImageCache()
 		image = bic.get_image(self.image_name)
@@ -780,43 +786,15 @@ class SincBlackmanSubsampledImage:
 		A utility function that tests to see of the current parameters of the subsampled image
 		match those in the params_mediator
 		'''
-		subsample_rate = params_mediator.get_best_shrink()
-		template_min = params_mediator.get_template_min()
+		subsample_rate = params_mediator.get_subsample_rate()
+		template_min = params_mediator.get_window_size_min()
 		frequency_cutoff = params_mediator.get_frequency_cutoff()
 		try:
-			if subsample_rate != self.get_subsample_rate() or template_min != self.get_template_min() or frequency_cutoff != self.get_frequency_cutoff():
+			if subsample_rate != self.get_subsample_rate() or template_min != self.get_window_size_min() or frequency_cutoff != self.get_frequency_cutoff():
 				return False
 			else: return True
 		except: return False # exception will be thrown if self.smallimage = None
-
-class ImageProcParamsMediator:
-	'''
-	A mediator class - coordinates the requests of the various image processing tasks, as embodied 
-	in the Cache classes, which are currently retrieved from an AutoBoxer, the only one of which is
-	currently the SwarmAutoBoxer
-	'''
-	def __init__(self,parent):
-		if not isinstance(parent,AutoBoxer):
-			print "Error, the ImageProcParamsMediator can only be instantiated with an AutoBoxer as its parent"
-			exit(1)
-		
-		self.parent = parent
-		
-	def get_best_shrink(self):
-		return self.parent.get_best_shrink()
 	
-	def get_template_radius(self):
-		return self.parent.get_template_radius()
-	
-	def get_template_object(self):
-		return self.parent.get_template_object()
-
-	def get_template_min(self):
-		return 20
-	
-	def get_frequency_cutoff(self):
-		return 0.12
-
 class CoarsenedFlattenedImageCache:
 	'''
 	A singleton - usef for caching coarsened-flattened images
@@ -904,7 +882,7 @@ class CoarsenedFlattenedImage:
 		image = bic.get_image(self.image_name)
 
 		flattenradius = params_mediator.get_template_radius()
-		shrink =  params_mediator.get_best_shrink()
+		shrink =  params_mediator.get_subsample_rate()
 
 		self.smallimage = image.process("math.meanshrink",{"n":shrink})
 		self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
@@ -936,7 +914,7 @@ class CoarsenedFlattenedImage:
 	
 	def query_params_match(self,params_mediator):
 		try:
-			if self.get_flatten_radius() != params_mediator.get_template_radius() or self.get_shrink_factor() != params_mediator.get_best_shrink():
+			if self.get_flatten_radius() != params_mediator.get_template_radius() or self.get_shrink_factor() != params_mediator.get_subsample_rate():
 				return False
 			else: return True
 		except: return False # exception will be thrown if self.smallimage = None
@@ -1024,7 +1002,7 @@ class InverseSigmaImage:
 	
 	def __update_image(self,params_mediator):
 		flattenradius = params_mediator.get_template_radius()
-		shrinkfactor = params_mediator.get_best_shrink()
+		shrinkfactor = params_mediator.get_subsample_rate()
 		
 		cache = SubsamplerCache
 		image = cache.get_image(self.image_name,params_mediator)
@@ -1046,7 +1024,7 @@ class InverseSigmaImage:
 		action = False
 		if forceupdate == True: action = True
 		elif self.image == None: action = True
-		elif params_mediator.get_template_radius() != self.get_flatten_radius() or params_mediator.get_best_shrink() != self.get_shrink_factor(): action = True
+		elif params_mediator.get_template_radius() != self.get_flatten_radius() or params_mediator.get_subsample_rate() != self.get_shrink_factor(): action = True
 		
 		if action: self.__update_image(params_mediator)
 		
@@ -1245,7 +1223,7 @@ class FLCFImage:
 		
 	def query_params_match(self,params_mediator):
 		flatten_radius = params_mediator.get_template_radius()
-		shrink_factor = params_mediator.get_best_shrink()
+		shrink_factor = params_mediator.get_subsample_rate()
 		template = params_mediator.get_template_object()
 		#print cfimage.get_attr("creation_time_stamp"), self.get_cfi_ts(),"template",template.get_template_ts(),self.get_template_ts()
 		try:
@@ -1288,7 +1266,7 @@ class FLCFImage:
 		cfimage = cfcache.get_image(self.image_name,params_mediator)
 		
 		flatten_radius = params_mediator.get_template_radius()
-		shrink_factor = params_mediator.get_best_shrink()
+		shrink_factor = params_mediator.get_subsample_rate()
 		template = params_mediator.get_template_object()
 		
 		self.flcfimage = cfimage.calc_ccf( template.get_template() )
@@ -1351,7 +1329,7 @@ class Boxable:
 		
 		# a list of deleted auto boxes - should be cleared everytime an autobox occurs, and store interactively deleted boxes
 		# This is because when the user unerases things the design of e2boxer demands that boxes in unerased regions should 
-		# return...
+		# return..
 		self.deleted_auto_boxes = [] 
 		
 		self.box_size = -1			#  the box_size
@@ -1664,7 +1642,7 @@ class Boxable:
 		'''
 		Sometimes this functionality is needed when the currently stored auto-selected
 		boxes are not removed prior to the execution of autoboxing - in this case 
-		the autoboxes stored in the database need to include what was already stored...
+		the autoboxes stored in the database need to include what was already stored..
 		'''
 		self.deleted_auto_boxes = []
 		for box in self.boxes:
@@ -1798,7 +1776,7 @@ class Boxable:
 			
 			for box in self.boxes:
 				if box_size != -1:
-					# FOO - this will not work if the box dimensions are not equal...
+					# FOO - this will not work if the box dimensions are not equal..
 					origbox_size = box.xsize
 					if origbox_size != box.ysize:
 						print "error, uniform box dimensions are not supported"
@@ -1838,7 +1816,7 @@ class Boxable:
 			
 			for box in self.boxes:
 				if box_size != -1:
-					# FOO - this will not work if the box dimensions are not equal...
+					# FOO - this will not work if the box dimensions are not equal..
 					origbox_size = box.xsize
 					if origbox_size != box.ysize:
 						print "error, uniform box dimensions are not supported"
@@ -2021,13 +1999,13 @@ class Boxable:
 		
 		return self.fpshrink
 		
-	def get_best_shrink(self):
+	def get_subsample_rate(self):
 		'''
 		FIXME - there should probably be a more well established framework for doing this
 		At the moment it is possible that the self.autBoxer is actually None, which isn't good.	
 		'''
 		if self.autoboxer != None:
-			return self.autoboxer.get_best_shrink()
+			return self.autoboxer.get_subsample_rate()
 		else:
 			print 'warning, there is no autoboxer set, am not sure how to shrink, returning 1 as the shrink factor'
 			return 1
@@ -2056,7 +2034,7 @@ class Boxable:
 	def update_included_boxes(self):
 		added_boxes = []
 		added_ref_boxes = []
-		invshrink = 1.0/self.get_best_shrink()
+		invshrink = 1.0/self.get_subsample_rate()
 		exclusionimage = self.get_exclusion_image()
 		n = len(self.deleted_auto_boxes)
 		for i in range(n-1,-1,-1):
@@ -2083,7 +2061,7 @@ class Boxable:
 
 		lostboxes = []
 			
-		invshrink = 1.0/self.get_best_shrink()
+		invshrink = 1.0/self.get_subsample_rate()
 		n = len(self.boxes)
 		refs = []
 		for i in range(n-1,-1,-1):
@@ -2112,11 +2090,11 @@ class Boxable:
 		UNUSEDtype was meant to be a flag for adding other exclusion areas like squares
 		At the moment only circular exclusion areas can be written
 		'''
-		#print "Add exclusion area using",self.get_best_shrink()
-		xx = int(x/self.get_best_shrink())
-		yy = int(y/self.get_best_shrink())
+		#print "Add exclusion area using",self.get_subsample_rate()
+		xx = int(x/self.get_subsample_rate())
+		yy = int(y/self.get_subsample_rate())
 		
-		rr = int(radius/self.get_best_shrink())
+		rr = int(radius/self.get_subsample_rate())
 		bciCache = BinaryCircleImageCache()
 		mask = bciCache.get_image(rr)
 		
@@ -2141,26 +2119,17 @@ class Boxable:
 			self.exclusionimage = eicache.get_image(self.image_name,si.get_xsize(),si.get_ysize())
 	
 		return self.exclusionimage
+		
+	def get_boxes(self): return self.boxes
 	
 	def classify(self):
 		
-		# accrue all params
-		n = self.autoboxer.optprofileradius+1
-		for box in self.boxes:
-			# set the force flag true or else the optprofile won't be set when the peak is 'faulty'
-			box.update_params(self.autoboxer,False,True)
+		try:
+			cl = self.autoboxer.classify(self)
+			self.parent.update_box_colors(cl)
+		except:
+			pass
 		
-		v = []
-		for box in self.boxes:
-			#b = copy(box.optprofile[0:n])
-			b = copy(box.optprofile)
-			#for a in b: 
-				#a = box[6]-a
-			#print b
-			v.append(b)
-			
-		cl = BoxingTools.classify(v,4)
-		self.parent.update_box_colors(cl)
 	
 	def gen_ref_images(self):
 		tmpimage = "tmpparticles.img"
@@ -2213,7 +2182,7 @@ class Boxable:
 		ef = []
 		for image in e:
 			image.process_inplace("normalize.edgemean")
-			if self.get_best_shrink() != 1:
+			if self.get_subsample_rate() != 1:
 				image = image.process("math.meanshrink",{"n":self.get_footprint_shrink()})	
 			ef.append(image.make_footprint())
 		
@@ -2322,74 +2291,6 @@ def get_idd_key_entry(image_name,key):
 		else: return data[key] 
 	except: return None
 
-
-class AutoBoxer:
-	'''
-	FIXME - ALL COMMENTS IN THIS CLASS ARE LIABLE TO BE OUTDATED
-	Base class design for auto boxers
-	'''
-	def __init__(self):
-		self.version = 1.0
-
-	def get_template(self):
-		'''This should return a single template which is an EMData object'''
-		raise Exception
-	
-	def name(self):
-		'''
-		Every autoboxer should return a unique name
-		'''
-		raise Exception
-	
-	def add_reference(self,box):
-		'''
-		add a reference box - the box should be in the format of a Box object, see above
-		Returns 0 if there is a problem, returns 1 if it's all good
-		Adds a reference to a list
-		'''
-		raise Exception
-	
-	def remove_reference(self,box):
-		'''
-		Remove a reference box - the box should in the format of a Box object, see above
-		Pops a reference from a list
-		'''
-		raise Exception
-	
-	def reference_moved(self,ref):
-		'''
-		If a reference was moved interactively in the interface this is the function that should be called
-		'''
-		raise Exception
-
-	def get_template(self):
-		'''
-		Return the template that is being used. Returns None if there is not template
-		'''
-		raise Exception
-
-	def set_box_size(self,box_size):
-		'''
-		Hard set the box_size. Note that nothing is done to the reference boxes. It is
-		assumed whichever part of the program calls this function also updates the Box objects
-		independently (which implicitly affects the boxes stored internally in the AutoBoxer
-		class, because it only ever stores programmatic references)
-		'''
-		raise Exception
-	
-	def auto_box(self,correlation,boxes=[],exclusion=None):
-		'''
-		The main auto_box routine. The calling program should pass in its own correlation map (EMData), and optionally
-		an exclusion map of ones and zeros (0 means include, non zero means exclude). Also a list of boxes that will
-		not be removed prior to the auto_boxing (and hence probably have associated excluded regions in the exlcusion
-		image, but this is beside the point), The model of use here is that
-		the calling program should get the current template from the AutoBoxer to generate the correlation map. The
-		calling program should be able to cache the correlation map, so should be able to detect if there's been
-		a template update by asking for the current set of references (get_references) and cross checking against a list of its own.
-		@Returns a list of Boxes
-		'''
-		raise Exception
-
 class TrimSwarmTemplate:
 	'''
 	used from writing a template to the database
@@ -2401,8 +2302,28 @@ class TrimSwarmTemplate:
 		self.template = swarmTemplate.template	# an EMData object that is the template
 		self.template_ts = swarmTemplate.template_ts 	# a time stamp that records when the template was generate
 
-class SwarmTemplate:
+class Template:
+	def __init__(self):
+		pass
+	
+	def get_template(self):
+		'''
+		Returns an EMData object that is the template image
+		'''
+		raise Exception
+	
+	def get_template_ts(self):
+		'''
+		Returns the time stamp that records when the template image was created. If the template image
+		is ever changed the template time stamp should be updated to reflect the point in time when it was 
+		changed. Associated classes will automatically detect if the template has changed and automatically
+		regenerate important data
+		'''
+		raise Exception
+
+class SwarmTemplate(Template):
 	def __init__(self,autoboxer):
+		Template.__init__(self)
 		self.refboxes = []		# this will eventually be a list of Box objects
 		self.template = None	# an EMData object that is the template
 		self.template_ts = -1 	# a time stamp that records when the template was generate
@@ -2510,7 +2431,7 @@ class SwarmTemplate:
 		#black.write_image("aligned_refs.img",-1)
 		
 		#ave.write_image("ave.hdf")
-		shrink = self.autoboxer.get_best_shrink()
+		shrink = self.autoboxer.get_subsample_rate()
 		# 4 is a magic number
 		for n in range(0,4):
 			t = []
@@ -2561,18 +2482,205 @@ class SwarmTemplate:
 		self.template.set_attr("template_time_stamp",self.template_ts)
 		return 1
 	
+class ImageProcParamsMediator:
+	'''
+	A mediator class - coordinates the requests of the various image processing tasks, as embodied 
+	in the Cache classes, which are currently retrieved from an AutoBoxer, the only one of which is
+	currently the SwarmAutoBoxer
+	'''
+	def __init__(self,parent):
+		if not isinstance(parent,AutoBoxer):
+			print "Error, the ImageProcParamsMediator can only be instantiated with an AutoBoxer as its parent"
+			exit(1)
+		
+		self.parent = parent
+		
+	def get_subsample_rate(self):
+		return self.parent.get_subsample_rate()
 	
+	def get_template_radius(self):
+		return self.parent.get_template_radius()
+	
+	def get_template_object(self):
+		return self.parent.get_template_object()
+
+	def get_window_size_min(self):
+		return self.parent.get_window_size_min()
+	
+	def get_frequency_cutoff(self):
+		return self.parent.get_frequency_cutoff()
+
+class AutoBoxer:
+	'''
+	#Base class design for auto boxers
+	'''
+	def __init__(self):
+		self.version = 1.0
+		self.image_proc_params_mediator = ImageProcParamsMediator(self)
+
+	def get_params_mediator(self):
+		'''
+		An autoboxer must be able to supply an object of type ImageProcParamsMediator when asked for it.
+		Typically you instantiate a ImageProcParamsMediator in the intt function and return it here
+		'''
+		return self.image_proc_params_mediator
+	
+	#### Functions that must be supplied so the ImageProcParamsMediator works
+	def get_subsample_rate(self):
+		'''
+		Return the subsample rate (not the scale factor). An autoboxer must have supply this number, even
+		if it is 1
+		'''
+		raise Exception
+		
+	def get_template_radius(self):
+		''' Get the radius of the current template. Currently accessed by classes Box, FLCFImage, InverseSigmaImage,
+		and CoarsenedFlattenedImage. This should be the radius of the template in terms of the subsampled image. '''
+		raise Exception
+		
+	def get_template_object(self):
+		''' Must be able to return a template object which will in turn return the EMData template andd
+		a time stample - i.e. Must return an object of type Template (look at the class definition above)
+		
+		template_object = autoboxer.get_template_object()
+		template_image = template_object.template() # EMData object that is the template
+		template_time_stamp = template_object.get_template_ts() # must also return its time stamp - a time stamp changes if a template changes, and this triggers regeneration events.
+		
+		The template_image pixel sampling is in terms of the subsampled image which will be used to generate the correlation image.
+		'''
+		raise Exception
+
+	def get_window_size_min(self):
+		'''
+		This is the minimum size the window can be in the subsampled image, the number is required byt the 
+		SincBlackmamSubsampledImage.  In other words the size of the object in the subsampled image must be 
+		atleast (or approximately) this number. At the moment it is hard coded to 20.
+		'''
+		return 20
+	
+	def get_frequency_cutoff(self):
+		'''
+		This is the frequency cut off used by the  SincBlackmamSubsampledImage. At the moment it is hard coded to 0.12.
+		'''
+		return 0.12
+	#### End functions that must be supplied so the ImageProcParamsMediator works
+	
+	def get_high_res_template_image(self):
+		''' Returns an EMData object that is the template scaled so that it is applicable in the context of
+		the original, high resolution micrographs. This is used by the Box class to perform post-autoboxing
+		centering '''
+		raise Exception
+
+	def get_search_radius(self):
+		'''
+		 Returns a pixel radius value that limits the search area when the correlation profile is
+		 genereated. This should be less than the radius of the box_size in the subsampled image
+		'''
+		raise Exception
+	
+	def classify(self,boxable):
+		'''
+		Gets the boxes from the boxable object (which is of type Boxable) and performs some kind of classification.
+		Returns a vector that contains integer numbers that denote 'class', and they have a direct 
+		correspondence to the boxes in the list returned by boxable.get_boxes()
+		
+		NOTE This function is called only one place in the code and it is wrapped in a try/except block, so inheriting
+		classes do not strictly have to supply this function
+		'''
+		raise Exception
+
+
+	def set_mode_explicit(self,mode):
+		'''
+		A way of force setting the mode... this may need a redesign
+		'''
+		raise Exception
+
+	def auto_box(self,boxable,update_display,force_auto_box):
+		'''
+		auto boxes the boxable (which is a Boxable).
+		 
+		If the update_display flag is true you are permitted to make changes that will effect the display 
+		for example, if we're in gui mode. Typically if the user is running autoboxing from the command line
+		with no gui the update_display flag is False. 
+		
+		The force_auto_box is meant to be considered if data basing is being used. For example, in
+		the SwarmAutoBoxer this function examines the contents of the database and if it contains
+		up to date boxing results then nothing occurs... unless the force_auto_box flag is True!
+		
+		This base class function is TAGGED as a candidate for redesign - seeing as the flags are somewhat
+		complicated
+		'''
+		raise Exception
+		
+	def name(self):
+		'''
+		Every autoboxer should return a unique name
+		'''
+		raise Exception
+	
+	def add_reference(self,box):
+		'''
+		add a reference box - the box should be in the format of a Box object, see above
+		Returns 0 if there is a problem, returns 1 if it's all good
+		Adds a reference to a list
+		'''
+		raise Exception
+	
+	def remove_reference(self,box):
+		'''
+		Remove a reference box - the box should in the format of a Box object, see above
+		Pops a reference from a list
+		'''
+		raise Exception
+	
+	def reference_moved(self,ref):
+		'''
+		If a reference was moved interactively in the interface this is the function that should be called
+		'''
+		raise Exception
+
+	def get_template(self):
+		'''
+		Return the template that is being used. Returns None if there is not template
+		'''
+		raise Exception
+
+	def set_box_size(self,box_size):
+		'''
+		Hard set the box_size. Note that nothing is done to the reference boxes. It is
+		assumed whichever part of the program calls this function also updates the Box objects
+		independently (which implicitly affects the boxes stored internally in the AutoBoxer
+		class, because it only ever stores programmatic references)
+		'''
+		raise Exception
+	
+	def auto_box(self,correlation,boxes=[],exclusion=None):
+		'''
+		The main auto_box routine. The calling program should pass in its own correlation map (EMData), and optionally
+		an exclusion map of ones and zeros (0 means include, non zero means exclude). Also a list of boxes that will
+		not be removed prior to the auto_boxing (and hence probably have associated excluded regions in the exlcusion
+		image, but this is beside the point), The model of use here is that
+		the calling program should get the current template from the AutoBoxer to generate the correlation map. The
+		calling program should be able to cache the correlation map, so should be able to detect if there's been
+		a template update by asking for the current set of references (get_references) and cross checking against a list of its own.
+		@Returns a list of Boxes
+		'''
+		raise Exception
 
 class TrimSwarmAutoBoxer:
+	'''
+	A trimmed down version of the SwarmAutoBoxer that is used to store it in the Database
+	'''
 	def __init__(self,swarmAutoBoxer):
 			
 		self.box_size = swarmAutoBoxer.box_size
 		self.shrink = swarmAutoBoxer.shrink
 		self.templatedimmin = swarmAutoBoxer.templatedimmin
 		
-		self.optthreshold = swarmAutoBoxer.optthreshold
-		self.optprofile = copy(swarmAutoBoxer.optprofile)
-		self.optprofileradius = swarmAutoBoxer.optprofileradius
+		self.opt_threshold = swarmAutoBoxer.opt_threshold
+		self.opt_profile = copy(swarmAutoBoxer.opt_profile)
+		self.opt_profile_radius = swarmAutoBoxer.opt_profile_radius
 		self.selection_mode = swarmAutoBoxer.selection_mode
 		self.template_ts = swarmAutoBoxer.template_ts
 		self.state_ts = swarmAutoBoxer.state_ts
@@ -2641,9 +2749,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		# more privately stuff
 		self.templatedimmin = 20  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
-		self.optthreshold = -1	# the correlation threshold, used to as the basis of finding local maxima
-		self.optprofile = []	# the optimum correlation profile used as the basis of auto selection
-		self.optprofileradius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
+		self.opt_threshold = -1	# the correlation threshold, used to as the basis of finding local maxima
+		self.opt_profile = []	# the optimum correlation profile used as the basis of auto selection
+		self.opt_profile_radius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
 		self.selection_mode = SwarmAutoBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
 		self.cmp_mode = BoxingTools.CmpMode.SWARM_RATIO
 		BoxingTools.set_mode(self.cmp_mode)
@@ -2666,11 +2774,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.creationTS = gm_time_string()
 		self.convenienceString = ""
 		self.set_convenience_name(self.get_creation_ts()) # this string is the string that users will use to name this autoboxer in the GUIboxCtrl
-		
-		self.image_proc_params_mediator = ImageProcParamsMediator(self)
-	
-	def get_params_mediator(self):
-		return self.image_proc_params_mediator
 
 	def dynapix_on(self):
 		return (self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX)
@@ -2683,9 +2786,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.shrink = trimSwarmAutoBoxer.shrink
 		self.templatedimmin = trimSwarmAutoBoxer.templatedimmin
 		
-		self.optthreshold = trimSwarmAutoBoxer.optthreshold
-		self.optprofile = copy(trimSwarmAutoBoxer.optprofile)
-		self.optprofileradius = trimSwarmAutoBoxer.optprofileradius
+		self.opt_threshold = trimSwarmAutoBoxer.opt_threshold
+		self.opt_profile = copy(trimSwarmAutoBoxer.opt_profile)
+		self.opt_profile_radius = trimSwarmAutoBoxer.opt_profile_radius
 		self.selection_mode = trimSwarmAutoBoxer.selection_mode
 		self.template_ts = trimSwarmAutoBoxer.template_ts
 		self.state_ts = trimSwarmAutoBoxer.state_ts
@@ -2871,7 +2974,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		'''
 		Should potentially be called remove_references
 		This is somewhat of a hack - the function should be called remove_references because
-		it works if the calling function supplies a list of boxes...
+		it works if the calling function supplies a list of boxes..
 		'''
 		
 		try:
@@ -2928,7 +3031,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		'''
 		Returns what will be or is the template radius
 		'''
-		return int(self.box_size/2/self.get_best_shrink())
+		return int(self.box_size/2/self.get_subsample_rate())
 	
 	def reference_moved(self,box):
 		'''
@@ -3003,7 +3106,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		#self.write_specific_references_to_db(self.boxable.get_image_name())
 		
 		self.box_size = box_size
-		self.get_best_shrink(True)
+		self.get_subsample_rate(True)
 		
 		# changing the box size of all assocated Boxables should change the box size of the references
 		self.template.change_box_size(box_size)
@@ -3044,12 +3147,12 @@ class SwarmAutoBoxer(AutoBoxer):
 			print 'error, unknown mode in SwarmAutoBoxer'
 	
 	def get_search_radius(self):
-		return int(0.75*(self.box_size)/float(self.get_best_shrink()))
+		return int(0.75*(self.box_size)/float(self.get_subsample_rate()))
 	
 	def get_constraining_radius(self):
-		return int(0.5*(self.box_size)/float(self.get_best_shrink()))
+		return int(0.5*(self.box_size)/float(self.get_subsample_rate()))
 	
-	def get_best_shrink(self,force=True):	
+	def get_subsample_rate(self,force=True):	
 		if self.box_size == -1:
 			print "error - the box_size is currently -1 - I can't figure out the best value to shrink by"	
 			return -1
@@ -3065,7 +3168,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		# best autoboxing parameters
 		
 		# this is fine - if a boxable is frozen this is more or less a flag for the autoboxer not
-		# to autobox it...
+		# to autobox it..
 		#print "in autobox"
 		if boxable.is_excluded():
 			print "Image is excluded, doing nothing"
@@ -3153,6 +3256,30 @@ class SwarmAutoBoxer(AutoBoxer):
 			return 1
 
 		else: print 'no auto boxing was necessary, up-2-date' # DEBUG
+		
+	def classify(self,boxable):
+		
+		boxes = boxable.get_boxes()
+		# accrue all params
+		#n = self.opt_profile_radius+1
+		for box in boxes:
+			# set the force flag true or else the optprofile won't be set when the peak is 'faulty'
+			box.update_params(self,False,True)
+		
+		v = []
+		for box in boxes:
+			#b = copy(box.get_opt_profile()[0:n])
+			b = copy(box.get_opt_profile())
+			#for a in b: 
+				#a = box[6]-a
+			#print b
+			v.append(b)
+			
+		cl = BoxingTools.classify(v,4)
+		
+		print c1
+		return cl
+		
 	def get_unique_stamp(self):
 		return "autoboxer_"+self.get_creation_ts()
 	
@@ -3212,11 +3339,11 @@ class SwarmAutoBoxer(AutoBoxer):
 		elif self.selection_mode == SwarmAutoBoxer.MORESELECTIVE:
 			mode = 2
 		
-		shrink = self.get_best_shrink()
+		shrink = self.get_subsample_rate()
 		# Warning, this search radius value should be the same as the one used by the BoxSets that contributed the reference boxes
 		# to this AutoBoxer object. There should be one place/function in the code where both parties access this value
 		searchradius = self.get_search_radius()
-		soln = BoxingTools.auto_correlation_pick(correlation,self.optthreshold,searchradius,self.optprofile,exclusion,self.optprofileradius,mode)
+		soln = BoxingTools.auto_correlation_pick(correlation,self.opt_threshold,searchradius,self.opt_profile,exclusion,self.opt_profile_radius,mode)
 
 
 		template = self.get_high_res_template_image()
@@ -3231,11 +3358,11 @@ class SwarmAutoBoxer(AutoBoxer):
 			yy = int(y*shrink)
 			box = Box(xx-self.box_size/2,yy-self.box_size/2,self.box_size,self.box_size,0)
 			box.set_image_name(boxable.get_image_name())
-			box.correlationscore = correlation.get(x,y)
+			box.set_correlation_score(correlation.get(x,y))
 			box.corx = b[0]
 			box.cory = b[1]
 			box.changed = True
-#			box.correct_resolution_centering(self.get_best_shrink(),False)
+#			box.correct_resolution_centering(self.get_subsample_rate(),False)
 			box.center(Box.CENTERPROPAGATE,template,False)
 			boxes.append(box)
 	
@@ -3244,7 +3371,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	def get_high_res_template_image(self):
 		t = self.get_template_object() # this is the template object
 		template = t.get_template() # this is the image
-		template.write_image('template_low_res.hdf')
+		#template.write_image('template_low_res.hdf')
 		template = template.copy()
 		newx = self.box_size
 		newy = self.box_size
@@ -3259,7 +3386,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		template.clip_inplace(Region((oldx-newx)/2,(oldy-newy)/2,newx,newy))
 		
 		template.scale(scale)
-		# sometimes centers could be off... FIXME double check
+		# sometimes centers could be off.. FIXME double check
 		template.translate(new_center[0]-scale_center[0],new_center[1]-scale_center[1],0)
 		template.process_inplace("xform.centeracf") # fixes a big problem
 		return template
@@ -3310,14 +3437,14 @@ class SwarmAutoBoxer(AutoBoxer):
 		# To determine the threshold from what we've got, iterate through all of the reference
 		# boxes and use the lowest correlation score as the correlation threshold
 		#print 'current params are, using a total of',len(self.refboxes),'references'
-		#print 'threshod:',self.optthreshold
-		#print 'profile:',self.optprofile
-		#print 'optrad:',self.optprofileradius
+		#print 'threshod:',self.opt_threshold
+		#print 'profile:',self.opt_profile
+		#print 'optrad:',self.opt_profile_radius
 		
 		if self.dummybox == None:
 			found = False
 			for i,box in enumerate(self.get_ref_boxes()):
-				if box.correlationscore == None:
+				if box.get_correlation_score() == None:
 					# this is an error which probably means that the box, as created by the user, has a strong correlation maximum next to it which is disrupting the auto parameters
 					# this is mostly an error for dwoolfords attention
 					# for the time being just ignoring it  probably suffices
@@ -3325,10 +3452,10 @@ class SwarmAutoBoxer(AutoBoxer):
 					#print "continuing on faulty"
 					continue
 				if found == False:
-					self.optthreshold = box.correlationscore
+					self.opt_threshold = box.get_correlation_score()
 					found = True
 				else:	
-					if box.correlationscore < self.optthreshold: self.optthreshold = box.correlationscore
+					if box.get_correlation_score() < self.opt_threshold: self.opt_threshold = box.get_correlation_score()
 	
 			# catch the circumstance where for some strange reason things just didn't work
 			# probably the user has some strange data and the rotational template isn't responding normally. 
@@ -3343,49 +3470,49 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 			found = False
 			for i,box in enumerate(self.get_ref_boxes()):
-				if box.correlationscore == None:
+				if box.get_correlation_score() == None:
 					##print "continuing on faulty" - this was already printed above
 					continue
 				
-				#print i,box.optprofile
+				#print i,box.get_opt_profile()
 				if found == False:
-					self.optprofile = copy(box.optprofile)
-					n = len(self.optprofile)
+					self.opt_profile = copy(box.get_opt_profile())
+					n = len(self.opt_profile)
 					found = True
 				else:
-					profile = box.optprofile
+					profile = box.get_opt_profile()
 					for j in range(0,n):
-						if profile[j] < self.optprofile[j]: self.optprofile[j] = profile[j]
+						if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
 		else:
-			self.optprofile = self.dummybox.optprofile
-			self.optthreshold = self.dummybox.correlationscore
+			self.opt_profile = self.dummybox.get_opt_profile()
+			self.opt_threshold = self.dummybox.get_correlation_score()
 		
 	
 		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius
-		self.optprofileradius = -1
-		tmp = self.optprofile[0]
+		self.opt_profile_radius = -1
+		tmp = self.opt_profile[0]
 		for i in range(1,self.get_constraining_radius()):
 			# the tmp > 0 is a
-			if self.optprofile[i] > tmp and tmp > 0:
-				tmp = self.optprofile[i]
-				self.optprofileradius = i
+			if self.opt_profile[i] > tmp and tmp > 0:
+				tmp = self.opt_profile[i]
+				self.opt_profile_radius = i
 		
 		self.__plot_update()
 		#print 'NOW THEY ARE'
-		#print 'threshod:',self.optthreshold
-		#print 'profile:',self.optprofile			
-		#print 'optrad:',self.optprofileradius
+		#print 'threshod:',self.opt_threshold
+		#print 'profile:',self.opt_profile			
+		#print 'optrad:',self.opt_profile_radius
 		return True
 	
 	def __plot_update(self):
 		prof = [] # self.selfmod == SwarmAutoBoxer.THRESHOLD (nothing is the right setting in this case)
 		if self.selection_mode == SwarmAutoBoxer.SELECTIVE:
-			prof = [self.optprofileradius]
+			prof = [self.opt_profile_radius]
 		elif self.selection_mode == SwarmAutoBoxer.MORESELECTIVE:
-			for i in range(0,self.optprofileradius+1): prof.append(i)
+			for i in range(0,self.opt_profile_radius+1): prof.append(i)
 		
 		try:
-			self.parent.opt_params_updated(self.optthreshold,self.optprofile,prof)
+			self.parent.opt_params_updated(self.opt_threshold,self.opt_profile,prof)
 		except: pass
 	
 	def __paint_excluded_box_areas(self,exclusionimage,boxes):
@@ -3397,8 +3524,8 @@ class SwarmAutoBoxer(AutoBoxer):
 			xx = box.xcorner + box.xsize/2
 			yy = box.ycorner + box.ysize/2
 			# shrink them to the small correlation image coordinates
-			xx /= self.get_best_shrink()
-			yy /= self.get_best_shrink()
+			xx /= self.get_subsample_rate()
+			yy /= self.get_subsample_rate()
 			# Set a positive circle into the exclusionimage
 			BoxingTools.set_radial_non_zero(exclusionimage,int(xx),int(yy),searchradius)
 			

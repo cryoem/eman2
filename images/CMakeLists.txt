@@ -1,0 +1,1 @@
+INSTALL_FILES(/images FILES boxer_erase.png boxer_unerase.png)

@@ -882,7 +882,7 @@ class GUIbox:
 	def __update_guiim_states(self):
 		guiim_core = self.guiim.get_core_object()
 		
-		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		
 		guiim_core.set_frozen(self.boxable.is_frozen())
 		guiim_core.set_excluded(self.boxable.is_excluded())
@@ -1018,7 +1018,7 @@ class GUIbox:
 				self.boxable.reload_boxes() # this may be inefficient
 				#print "clearing displays"
 				guiim_core = self.guiim.get_core_object()
-				guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+				guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 				self.clear_displays()
 			elif mode == 1:
 				self.box_size = box_size
@@ -1026,7 +1026,7 @@ class GUIbox:
 				self.boxable.reload_boxes() # this may be inefficient
 				#print "clearing displays"
 				guiim_core = self.guiim.get_core_object()
-				guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+				guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 				self.clear_displays()
 				
 			else:
@@ -1047,7 +1047,7 @@ class GUIbox:
 	def exclusion_area_added(self,typeofexclusion,x,y,radius,mode):
 		self.boxable.add_exclusion_area(typeofexclusion,x,y,radius,mode)
 		guiim_core = self.guiim.get_core_object()
-		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.update_image_display()
 		
 	def erasing_done(self,erase_mode):
@@ -1140,7 +1140,7 @@ class GUIbox:
 		if not (box.isref or box.ismanual):
 			self.boxable.add_exclusion_particle(box)
 		guiim_core = self.guiim.get_core_object()
-		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.box_display_update()
 		
 	def reference_moved(self,box):
@@ -1521,7 +1521,7 @@ class GUIbox:
 		box = self.delete_box(lc[0],force_image_mx_remove)
 		self.boxable.add_exclusion_particle(box)
 		guiim_core = self.guiim.get_core_object()
-		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_best_shrink(),True)
+		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.guictl.num_boxes_changed(len(self.ptcl))
 		self.update_all_image_displays()
 		#self.update_ppc()
@@ -2093,12 +2093,12 @@ class GUIboxPanel(QtGui.QWidget):
 		self.boxinghbl2.setSpacing(6)
 		#self.vbl.addLayout(self.hbl1)
 		
-		self.erasepic = QtGui.QIcon("/home/d.woolford/erase.png");
+		self.erasepic = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/boxer_erase.png");
 		self.erase=QtGui.QPushButton(self.erasepic,Boxable.ERASE)
 		self.erase.setCheckable(1)
 		self.boxinghbl2.addWidget(self.erase)
 		
-		self.unerasepic = QtGui.QIcon("/home/d.woolford/erase.png");
+		self.unerasepic = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/boxer_unerase.png");
 		self.unerase=QtGui.QPushButton(self.unerasepic,Boxable.UNERASE)
 		self.unerase.setCheckable(1)
 		self.boxinghbl2.addWidget(self.unerase)
@@ -2602,8 +2602,8 @@ class GUIboxPanel(QtGui.QWidget):
 	def try_dummy_parameters(self):
 		print "option currently disabled"
 		return
-		self.dummybox.optprofile = self.window.getData()
-		self.dummybox.correlationscore = float(self.thr.getValue())
+		self.dummybox.set_opt_profile(self.window.getData())
+		self.dummybox.set_correlation_score(float(self.thr.getValue()))
 		self.target.set_dummy_box(self.dummybox)
 	
 	def update_data(self,thresh,data,datar):

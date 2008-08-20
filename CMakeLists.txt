@@ -152,7 +152,7 @@ EMAN_CHECK_FUNCTION(ftell64 HAVE_FTELL64)
 EMAN_CHECK_FUNCTION(ftello HAVE_FTELLO)
 # end for 64-bit large file support
 
-SUBDIRS(libEM plugins programs utils rt doc fonts)
+SUBDIRS(libEM plugins programs utils rt doc fonts images)
 
 IF(ENABLE_RT)
     SUBDIRS(rt)
