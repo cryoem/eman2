@@ -345,7 +345,7 @@ Vec3f Transform3D::get_posttrans(int flag) const    //
 	return Vec3f(matrix[0][3], matrix[1][3], matrix[2][3]);
 }
 
-Vec3f Transform3D::get_homogeneous_trans() const {
+Vec3f Transform3D::get_total_posttrans() const {
 	return Vec3f((*this)[0][3],(*this)[1][3],(*this)[2][3]);
 }
 

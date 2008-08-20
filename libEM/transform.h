@@ -184,7 +184,7 @@ namespace EMAN
 		
 		/** Get the translation in the right part of the matrix
 		*/
-		Vec3f get_homogeneous_trans() const;
+		Vec3f get_total_posttrans() const;
  		Vec3f get_center() const;
 		Vec3f get_matrix3_col(int i) const;
 		Vec3f get_matrix3_row(int i) const;

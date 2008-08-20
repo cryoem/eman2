@@ -2613,6 +2613,15 @@ class AutoBoxer:
 		'''
 		raise Exception
 		
+	def set_interactive_mode(self,real_time_auto_boxing=False):
+		'''
+		the e2boxer design promotes the ability to do real time autoboxing. This means that if a 
+		the user clicks on a target then auto boxing may automatically be triggered, as though
+		it were happening in real time. Inheriting AutoBoxer instances should be able to switch
+		real time autoboxing on and off using this function
+		'''
+		raise Exception
+		
 	def name(self):
 		'''
 		Every autoboxer should return a unique name
@@ -2848,14 +2857,11 @@ class SwarmAutoBoxer(AutoBoxer):
 		else:
 			print "error, that mode:", mode, "was not in the list of permissable modes"
 			exit(1)
-	def set_mode(self,dynapix,anchortemplate):
-		if dynapix:
-			if anchortemplate: self.mode = SwarmAutoBoxer.ANCHOREDDYNAPIX
-			else: self.mode = SwarmAutoBoxer.DYNAPIX
-		else:
-			if anchortemplate: self.mode = SwarmAutoBoxer.ANCHOREDUSERDRIVEN
-			else: self.mode = SwarmAutoBoxer.USERDRIVEN
 
+	def set_interactive_mode(self,real_time_auto_boxing=False):
+		if real_time_auto_boxing: self.mode = SwarmAutoBoxer.DYNAPIX
+		else: self.mode = SwarmAutoBoxer.USERDRIVEN
+		
 	def set_cmp_mode(self,cmp_mode):
 		if cmp_mode in self.permissablecmp_modes:
 			if self.cmp_mode != cmp_mode:
@@ -2903,15 +2909,15 @@ class SwarmAutoBoxer(AutoBoxer):
 		'''
 		 add a reference box - the box should be in the format of a Box, see above):
 		'''
-		isanchor = False
 		try:
-			for box in boxes:
-				self.template.append_reference(box)
-				if box.isanchor: isanchor = True
+			for box in boxes: self.template.append_reference(box)
 		except:
-			box = boxes	
-			isanchor = box.isanchor
-			
+			box = boxes
+			self.template.append_reference(box)
+		
+		self.write_specific_references_to_db(self.get_boxable().get_image_name())
+		
+		isanchor = True
 		
 		if isinstance(box,Box):
 			if box.xsize != box.ysize:
@@ -2926,9 +2932,9 @@ class SwarmAutoBoxer(AutoBoxer):
 				print 'error, the currently stored box size does not match the box_size of the reference that was just added'
 				return 0
 			
-			self.template.append_reference(box)
+			
 			# update the data base
-			self.write_specific_references_to_db(self.get_boxable().get_image_name())
+			
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX:
 				if not box.isanchor and not box.isdummy:
@@ -2936,28 +2942,10 @@ class SwarmAutoBoxer(AutoBoxer):
 					return 0
 				if not self.__full_update() : return 0
 				self.auto_box(self.get_boxable())
-			elif self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-				if box.isanchor and not box.isdummy:
-					print 'the box flag is internally inconsistent when anchoring'
-					return 0
-				box.update_params(self)
-				if not self.__accrue_opt_params() :
-					self.state_ts = gm_time_string()
-					print "there is a problem with the references"
-					return 0
-				self.state_ts = gm_time_string()
-				self.auto_box(self.get_boxable())
 			elif self.mode == SwarmAutoBoxer.USERDRIVEN:
 				self.refupdate = True
 				self.state_ts = -1
 				self.template_ts = -1
-			elif self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
-				box.update_params(self)
-				if not self.__accrue_opt_params() :
-					self.state_ts = gm_time_string()
-					print "there is a problem with the references"
-					return 0
-				self.state_ts = gm_time_string()
 			else:
 				print 'error, unknown mode in SwarmAutoBoxer'
 				return 0

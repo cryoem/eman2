@@ -455,6 +455,17 @@ namespace EMAN
 	typedef Vec3<int> Vec3i;
 	typedef Vec3<double> Vec3d;
 	
+	
+	/** The Vec2 is precisely the same as Vec3 except it works exclusively in 2D
+	 * Note there are convenient typedef so one needn't bother about using template
+	 * terminology
+	 * typedef Vec2<float> Vec2f;
+	 * typedef Vec2<int> Vec2i;
+	 * typedef Vec2double> Vec2d; // Not recommended for use unless precision is addressed in this class
+	 * @author David Woolford (based on the work of who ever wrote the original Vec3f and Vec3i classes - extracted into a template)
+	 * @date August 2008
+	 * @ingroup tested3c REALLY?
+	 */
 	template<typename Type>
 	class Vec2
 	{

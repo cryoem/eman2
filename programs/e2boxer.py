@@ -239,7 +239,7 @@ def autobox_multi(image_names,options):
 			print "Image",image_name,"is excluded and being ignored"
 			continue
 		
-		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+		autoboxer.set_interactive_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 		autoboxer.auto_box(boxable,False)
 		if options.write_coord_file:
@@ -274,7 +274,7 @@ def autobox_single(image_name,options):
 		print "Image",image_name,"is excluded and being ignored"
 		return
 	
-	autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+	autoboxer.set_interactive_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 	# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 	autoboxer.auto_box(boxable,False)
 	if options.write_coord_file:
@@ -504,13 +504,9 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 	def __init__(self,mediator):
 		GUIboxMouseEventsObject.__init__(self,mediator)
 		self.mode =  GUIbox.REFERENCE_ADDING
-		self.anchoring = False
 		self.moving = None
 		self.dynapix = False
-		
-	def set_anchoring(self,bool):
-		self.anchoring = bool
-		
+
 	def set_mode(self,mode):
 		if mode not in [GUIbox.REFERENCE_ADDING,GUIbox.MANUALLY_ADDING]:
 			print 'error, that is  an illegal mode'
@@ -532,9 +528,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			
 			box = Box(m[0]-box_size/2,m[1]-box_size/2,box_size,box_size,True)
 			box.set_image_name(self.mediator.get_current_image_name())
-			
-			if self.anchoring:	box.isanchor = False
-			else: box.isanchor = True # this is the default behaviour 
+
 			box.changed = True # this is so image2D nows to repaint the shape
 			
 			if self.mode == GUIbox.REFERENCE_ADDING:
@@ -770,7 +764,6 @@ class GUIbox:
 		
 		# initialize important autoboxer related variables
 		self.dynapix = False
-		self.anchoring = False
 		self.image_names = image_names
 		self.current_image_idx = 0
 		self.box_size = box_size
@@ -816,7 +809,6 @@ class GUIbox:
 		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.setWindowTitle("e2boxer Controller")
 		self.guictl.set_dynapix(self.dynapix)
-		self.guictl.set_anchor(self.anchoring)
 		self.guictl.show()
 		if self.fancy_mode == GUIbox.FANCY_MODE: self.guictl.hide()
 	
@@ -906,7 +898,6 @@ class GUIbox:
 			self.autoboxer = SwarmAutoBoxer(self)
 			self.autoboxer.become(trim_autoboxer)
 			self.dynapix = self.autoboxer.dynapix_on()
-			self.anchoring = self.autoboxer.anchor_on()
 			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
 		except:
 			try:
@@ -915,13 +906,12 @@ class GUIbox:
 				self.autoboxer.become(trim_autoboxer)
 				self.autoboxer_name = self.autoboxer.get_unique_stamp()
 				self.dynapix = self.autoboxer.dynapix_on()
-				self.anchoring = self.autoboxer.anchor_on()
 				if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
 			except:	
 				if self.box_size == -1: self.box_size = 128
 				self.autoboxer = SwarmAutoBoxer(self)
 				self.autoboxer.box_size = self.box_size
-				self.autoboxer.set_mode(self.dynapix,self.anchoring)
+				self.autoboxer.set_interactive_mode(self.dynapix)
 
 	def guiim_inspector_requested(self,event):
 		self.ctl_rotor.get_core_object().add_qt_widget(self.guiim.get_core_object().get_inspector())
@@ -987,9 +977,7 @@ class GUIbox:
 		self.autoboxer.become(trim_autoboxer)
 		self.autoboxer.write_specific_references_to_db(self.boxable.get_image_name())
 		self.dynapix = self.autoboxer.dynapix_on()
-		self.anchoring = self.autoboxer.anchor_on()
 		self.guictl.set_dynapix(self.dynapix)
-		self.guictl.set_anchor(self.anchoring)
 		
 		self.boxable.set_autoboxer(self.autoboxer)
 		
@@ -1201,9 +1189,7 @@ class GUIbox:
 					self.autoboxer = SwarmAutoBoxer(self)
 					self.autoboxer.become(trim_autoboxer)
 					self.dynapix = self.autoboxer.dynapix_on()
-					self.anchoring = self.autoboxer.anchor_on()
 					self.guictl.set_dynapix(self.dynapix)
-					self.guictl.set_anchor(self.anchoring)
 				except:
 					try:
 						trim_autoboxer = project_db["current_autoboxer"]
@@ -1211,9 +1197,7 @@ class GUIbox:
 						self.autoboxer.become(trim_autoboxer)
 						self.autoboxer_name = self.autoboxer.get_unique_stamp()
 						self.dynapix = self.autoboxer.dynapix_on()
-						self.anchoring = self.autoboxer.anchor_on()
 						self.guictl.set_dynapix(self.dynapix)
-						self.guictl.set_anchor(self.anchoring)
 					except:
 						self.autoboxer = ab_failure
 					
@@ -1645,7 +1629,7 @@ class GUIbox:
 
 	def toggle_dynapix(self,bool):
 		self.dynapix = bool
-		self.autoboxer.set_mode(self.dynapix,self.anchoring)
+		self.autoboxer.set_interactive_mode(self.dynapix)
 		
 	def done(self):
 		self.boxable.cache_exc_to_db()
@@ -1665,12 +1649,6 @@ class GUIbox:
 		if self.autoboxer.set_cmp_mode(cmp_mode):
 			self.box_display_update()
 			
-		
-	def set_anchoring(self,bool):
-		self.anchoring = bool
-		self.mouse_handlers["boxing"].set_anchoring(bool)
-		self.autoboxer.set_mode(self.dynapix,self.anchoring)
-		
 	def classify(self,bool):
 		self.boxable.classify()
 		
@@ -1731,9 +1709,9 @@ class GUIbox:
 				continue
 			
 			mode = self.autoboxer.get_mode()
-			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			autoboxer.set_interactive_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 			autoboxer.auto_box(boxable,False)
-			autoboxer.set_mode_explicit(mode)
+			autoboxer.set_interactive_mode_explicit(mode)
 			
 			boxable.write_box_images(box_size,forceoverwrite,imageformat)
 	
@@ -1758,9 +1736,9 @@ class GUIbox:
 				continue
 			
 			mode = autoboxer.get_mode()
-			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			autoboxer.set_interactive_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 			autoboxer.auto_box(boxable,False)
-			autoboxer.set_mode_explicit(mode)
+			autoboxer.set_interactive_mode_explicit(mode)
 			
 			boxable.write_coord_file(box_size,forceoverwrite)
 	
@@ -1820,7 +1798,7 @@ class GUIbox:
 			return None
 		autoboxer = SwarmAutoBoxer(self)
 		autoboxer.box_size = self.box_size
-		autoboxer.set_mode(self.dynapix,self.anchoring)
+		autoboxer.set_interactive_mode(self.dynapix)
 		autoboxer_db_string = "autoboxer_"+autoboxer.get_creation_ts()
 		trim_autoboxer = TrimSwarmAutoBoxer(autoboxer)
 		convenience_name = "New " + str(n)
@@ -2028,7 +2006,6 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
 		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
-		self.connect(self.anchoring, QtCore.SIGNAL("clicked(bool)"), self.target.set_anchoring)
 		
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.num_boxes_changed)
 	
@@ -2081,9 +2058,6 @@ class GUIboxPanel(QtGui.QWidget):
 		self.dynapix = QtGui.QCheckBox("Dynapix")
 		self.dynapix.setChecked(self.target.dynapix)
 		self.boxinghbl3.addWidget(self.dynapix)
-		self.anchoring = QtGui.QCheckBox("Anchor")
-		self.anchoring.setChecked(self.target.anchoring)
-		self.boxinghbl3.addWidget(self.anchoring)
 		self.autobox=QtGui.QPushButton("Auto Box")
 		self.boxinghbl3.addWidget(self.autobox)
 		self.boxingvbl.addLayout(self.boxinghbl3)
@@ -2537,9 +2511,6 @@ class GUIboxPanel(QtGui.QWidget):
 
 	def set_dynapix(self,bool):
 		self.dynapix.setChecked(bool)
-		
-	def set_anchor(self,bool):
-		self.anchoring.setChecked(bool)
 
 	def ref_button_toggled(self,bool):
 		

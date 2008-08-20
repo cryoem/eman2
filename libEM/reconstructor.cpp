@@ -1,9 +1,5 @@
 /**
-<<<<<<< reconstructor.cpp
  * $Id$
-=======
- * $Id$
->>>>>>> 1.197.2.6
  */
 
 /*
@@ -436,7 +432,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
-	EMData* slice = preprocess_slice( input_slice, arg.get_homogeneous_trans() );
+	EMData* slice = preprocess_slice( input_slice, arg.get_total_posttrans() );
 
 	// Catch the first time a slice is inserted to do some things....
 	if ( slice_insertion_flag == true )
@@ -590,7 +586,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
-	EMData* slice = preprocess_slice( input_slice, t3d.get_homogeneous_trans() );
+	EMData* slice = preprocess_slice( input_slice, t3d.get_total_posttrans() );
 
 	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
 	// place until after the first round of slice insertion
