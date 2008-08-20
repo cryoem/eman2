@@ -338,11 +338,15 @@ class EMAN2DB:
 		return self.dicts[key]
 
 	def open_dict(self,name):
-		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB")
+		if self.dicts.has_key(name) : return
+		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self)
 		self.__dict__[name]=self.dicts[name]
 	
 	def close_dict(self,name):
 		self.__dict__[name].close()
+		self.dict_closed(name)
+
+	def dict_closed(self,name):
 		del(self.__dict__[name])
 		del self.dicts[name]
 
@@ -368,7 +372,7 @@ class DBDict:
 	
 	alldicts=weakref.WeakKeyDictionary()
 	fixedkeys=frozenset(("nx","ny","nz","minimum","maximum","mean","sigma","square_sum","mean_nonzero","sigma_nonzero"))
-	def __init__(self,name,file=None,dbenv=None,path=None):
+	def __init__(self,name,file=None,dbenv=None,path=None,parent=None):
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
 		name is required, and will also be used as a filename if none is
 		specified. """
@@ -376,6 +380,7 @@ class DBDict:
 		global dbopenflags
 		DBDict.alldicts[self]=1		# we keep a running list of all trees so we can close everything properly
 		self.name = name
+		self.parent=parent
 		if path : self.path = path
 		else : self.path=os.getcwd()
 		self.txn=None	# current transaction used for all database operations
@@ -391,6 +396,8 @@ class DBDict:
 
 	def close(self):
 		if self.bdb == None: return
+		if self.parent:		# close through the parent if it exists
+			self.parent.dict_closed(self.name)
 		self.bdb.close()
 		self.bdb=None
 	
