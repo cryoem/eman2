@@ -3714,8 +3714,8 @@ void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>
     int nprj = m_offsets.size();
     int npoint = m_offsets[0]/sizeof(point_t);
  
-    assert( mults.size()==nprj );
-    assert( m_points.size()== (pend - pbegin)*npoint );
+    assert( int(mults.size())==nprj );
+    assert( int(m_points.size())== (pend - pbegin)*npoint );
 
     int ipt = 0;
     for( int iprj=pbegin; iprj < pend; ++iprj )
