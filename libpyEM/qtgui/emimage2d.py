@@ -573,6 +573,8 @@ class EMImage2DCore:
 		GL.glNewList(self.shapelist,GL.GL_COMPILE)
 		GL.glEndList()
 
+	def force_display_update(self):
+		self.display_states = []
 
 	def display_state_changed(self):
 		display_states = []

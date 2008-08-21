@@ -239,7 +239,7 @@ def autobox_multi(image_names,options):
 			print "Image",image_name,"is excluded and being ignored"
 			continue
 		
-		autoboxer.set_interactive_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 		autoboxer.auto_box(boxable,False)
 		if options.write_coord_file:
@@ -274,7 +274,7 @@ def autobox_single(image_name,options):
 		print "Image",image_name,"is excluded and being ignored"
 		return
 	
-	autoboxer.set_interactive_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+	autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 	# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 	autoboxer.auto_box(boxable,False)
 	if options.write_coord_file:
@@ -910,7 +910,7 @@ class GUIbox:
 			except:	
 				if self.box_size == -1: self.box_size = 128
 				self.autoboxer = SwarmAutoBoxer(self)
-				self.autoboxer.box_size = self.box_size
+				self.autoboxer.set_box_size_explicit(self.box_size)
 				self.autoboxer.set_interactive_mode(self.dynapix)
 
 	def guiim_inspector_requested(self,event):
@@ -990,7 +990,7 @@ class GUIbox:
 			self.guiim.delShapes()
 			self.boxable.clear_and_reload_images()
 			self.in_display_limbo = True
-			self.autoboxer.regressiveflag = True
+			#self.autoboxer.regressiveflag = True
 			self.autoboxer.auto_box(self.boxable)
 			self.in_display_limbo = False
 		
@@ -1188,6 +1188,7 @@ class GUIbox:
 			if debug: tt = time()
 			self.ptcl = []
 			self.guiim.delShapes()
+			self.guiim.get_core_object().force_display_update()
 			self.in_display_limbo = True
 			if debug: print "it took", time() - tt, "to read the prior stuff B "
 			if debug: tt = time()
@@ -1219,7 +1220,7 @@ class GUIbox:
 			if debug: print "it took", time() - tt, "to the autobox database stuff"
 			
 			if self.dynapix:
-				self.autoboxer.regressiveflag = True
+				#self.autoboxer.regressiveflag = True
 				if debug: tt = time()
 				self.autoboxer.auto_box(self.boxable,False)
 				if debug: print "it took", time() - tt, "to autobox"
@@ -1763,9 +1764,9 @@ class GUIbox:
 				continue
 			
 			mode = self.autoboxer.get_mode()
-			autoboxer.set_interactive_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 			autoboxer.auto_box(boxable,False)
-			autoboxer.set_interactive_mode_explicit(mode)
+			autoboxer.set_mode_explicit(mode)
 			
 			boxable.write_box_images(box_size,forceoverwrite,imageformat)
 	
@@ -1790,9 +1791,9 @@ class GUIbox:
 				continue
 			
 			mode = autoboxer.get_mode()
-			autoboxer.set_interactive_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 			autoboxer.auto_box(boxable,False)
-			autoboxer.set_interactive_mode_explicit(mode)
+			autoboxer.set_mode_explicit(mode)
 			
 			boxable.write_coord_file(box_size,forceoverwrite)
 	
@@ -1851,7 +1852,7 @@ class GUIbox:
 		if not self.boxable.is_interactive():
 			return None
 		autoboxer = SwarmAutoBoxer(self)
-		autoboxer.box_size = self.box_size
+		autoboxer.set_box_size_explicit(self.box_size)
 		autoboxer.set_interactive_mode(self.dynapix)
 		autoboxer_db_string = "autoboxer_"+autoboxer.get_creation_ts()
 		trim_autoboxer = TrimSwarmAutoBoxer(autoboxer)
