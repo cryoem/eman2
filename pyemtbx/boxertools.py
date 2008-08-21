@@ -2529,7 +2529,7 @@ class ImageProcParamsMediator:
 
 class AutoBoxer:
 	'''
-	#Base class design for auto boxers
+	Base Class design for auto boxers to work with e2boxer.py, and various classes in boxertools.py
 	'''
 	def __init__(self):
 		self.version = 1.0
@@ -2540,7 +2540,9 @@ class AutoBoxer:
 	def get_params_mediator(self):
 		'''
 		An autoboxer must be able to supply an object of type ImageProcParamsMediator when asked for it.
-		Typically you instantiate a ImageProcParamsMediator in the intt function and return it here
+		Typically you instantiate a ImageProcParamsMediator in the init function and return it here. It is 
+		safe to rely on this base class for takign care of this, but this aspect can be customised by
+		inheriting classes.
 		'''
 		return self.image_proc_params_mediator
 	
