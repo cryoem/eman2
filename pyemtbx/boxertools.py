@@ -2535,6 +2535,7 @@ class AutoBoxer:
 		self.version = 1.0
 		self.image_proc_params_mediator = ImageProcParamsMediator(self)
 		self.creation_ts = gm_time_string()
+		self.box_size = -1	# stores the box_size used by this auto_boxer - a fundamental parameter
 
 	def get_params_mediator(self):
 		'''
@@ -2743,6 +2744,76 @@ class AutoBoxer:
 		'''
 		raise Exception
 
+class PawelAutoBoxer(AutoBoxer):
+	'''
+	This is an autoboxer that encapsulates the boxing approach first developed in SwarmPS
+	'''
+	def __init__(self,parent):
+		AutoBoxer.__init__(self)
+		self.parent = parent
+	
+	#### Functions that must be supplied so the ImageProcParamsMediator works
+	def get_subsample_rate(self):
+		raise Exception
+		
+	def get_template_radius(self):
+		raise Exception
+		
+	def get_template_object(self):
+		raise Exception
+
+	def get_window_size_min(self):
+		return 20
+	
+	def get_frequency_cutoff(self):
+		return 0.12
+	#### End functions that must be supplied so the ImageProcParamsMediator works
+	
+	def get_high_res_template_image(self):
+		raise Exception
+
+	def get_search_radius(self):
+		raise Exception
+	
+	def classify(self,boxable):
+		raise Exception
+
+	def set_mode_explicit(self,mode):
+		raise Exception
+
+	def auto_box(self,boxable,update_display,force_auto_box):
+		raise Exception
+		
+	def set_interactive_mode(self,real_time_auto_boxing=False):
+		raise Exception
+		
+	def get_mode(self):
+		raise Exception
+		
+	def set_box_size(self,box_size, image_names=[]):
+		raise Exception
+
+	def dynapix_on(self):
+		raise Exception
+	
+	def write_to_db(self, write_current=False):
+		raise Exception
+	
+	def write_specific_references_to_db(self,image_name):
+		raise Exception
+	
+	def add_reference(self,box):
+		raise Exception
+	
+	def remove_reference(self,box):
+		raise Exception
+	
+	def reference_moved(self,ref):
+		raise Exception
+
+	def name(self):
+		return "pawel_autoboxer"
+
 class TrimSwarmAutoBoxer:
 	'''
 	A trimmed down version of the SwarmAutoBoxer that is used to store it in the Database
@@ -2817,7 +2888,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		AutoBoxer.__init__(self)
 
 		self.template = SwarmTemplate(self)	# an EMData object that is the template
-		self.box_size = -1		# stores the global box_size, this is the value being used by boxer in the main interface
 		self.shrink = -1
 		
 		# more privately stuff
