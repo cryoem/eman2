@@ -77,7 +77,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	def setData(self,data):
 		self.imagemx.setData(data)
 	
-	def setImageFileName(self,name):
+	def set_file_name(self,name):
 		#print "set image file name",name
 		self.imagefilename = name
 		
@@ -1557,7 +1557,7 @@ if __name__ == '__main__':
 	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)]*50)
 	else :
 		a=EMData.read_images(sys.argv[1])
-		window.setImageFileName(sys.argv[1])
+		window.set_file_name(sys.argv[1])
 		window.setData(a)
 	window2=EMParentWin(window)
 	window2.show()

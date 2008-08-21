@@ -1205,32 +1205,34 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		self.mins = ValSlider(self,label="Min:")
 		self.mins.setObjectName("mins")
-		self.mins.setValue(self.target.get_minden())
+		#self.mins.setValue(self.target.get_minden())
 		self.vbl.addWidget(self.mins)
 		
 		self.maxs = ValSlider(self,label="Max:")
 		self.maxs.setObjectName("maxs")
-		self.maxs.setValue(self.target.get_maxden())
+		#self.maxs.setValue(self.target.get_maxden())
 		self.vbl.addWidget(self.maxs)
 		
 		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
 		self.brts.setObjectName("brts")
-		#self.brts.setValue(self.target.get_brts())
+		#self.brts.setValue(0.0)
 		self.vbl.addWidget(self.brts)
 		
 		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
 		self.conts.setObjectName("conts")
-		#self.conts.setValue(self.target.get_conts())
+		#self.conts.setValue(1.0)
 		self.vbl.addWidget(self.conts)
 		
 		self.gammas = ValSlider(self,(.1,5.0),"Gam:")
 		self.gammas.setObjectName("gamma")
 		self.gammas.setValue(self.target.get_gamma())
+		#self.gammas.setValue(1.0)
 		self.vbl.addWidget(self.gammas)
 
 		self.lowlim=0
 		self.highlim=1.0
-		self.updBC()
+		#self.updMM()
+		#self.updBC()
 		self.busy=0
 		
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)

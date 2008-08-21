@@ -134,7 +134,6 @@ class Box:
 		self.ysize = trimbox.ysize				# the ysize of the box
 		self.isref = trimbox.isref				# a flag that can be used to tell if the box is being used as a reference
 		self.changed = trimbox.changed			# a flag signalling the box has changed and display needs updatin
-		self.isanchor = trimbox.isanchor		# a flag signalling the box has changed and display needs updatin
 		self.TS = trimbox.TS
 		self.image_name = trimbox.image_name
 		self.ismanual = trimbox.ismanual
@@ -167,7 +166,6 @@ class Box:
 		self.footprint = None	# stores the image footprint as an emdata object
 		self.group = None		# stores a group, typically an int
 		self.footprintshrink = 1
-		self.isanchor = True		# A flag used by AutoBoxer routines that - if set to true the box will not be included in the generation the template) - This is specific to the SwarmPS autoboxer
 		self.TS = None
 		
 		self.isdummy = False # this can be used to avoid parameters updates - i.e. when the user interactively changes parameters forcefully
@@ -468,7 +466,6 @@ class TrimBox:
 		self.ysize = box.ysize				# the ysize of the box
 		self.isref = box.isref				# a flag that can be used to tell if the box is being used as a reference
 		self.changed = box.changed			# a flag signalling the box has changed and display needs updatin
-		self.isanchor = box.isanchor		# a flag signalling the box has changed and display needs updatin
 		self.TS = box.TS					# a time stamp flag
 		self.image_name = box.image_name
 		self.moved = box.moved
@@ -536,6 +533,10 @@ class ExclusionImageCache:
 			Cache.__init__(self)
 			
 		def get_image(self,image_name,xsize,ysize):
+			debug = False
+			
+			if debug: tt_orig = time()
+			if debug: print tt_orig, "entry"
 			excImage = None
 			# first see if the object is already stored
 			for object in self.get_cache():
@@ -543,17 +544,21 @@ class ExclusionImageCache:
 					excImage = object
 					break;
 				
-				
+			if debug: print "get exc image A took", time()-tt_orig
+			if debug: tt = time()
 			if excImage == None:
 				#if we make it here the cfimage is not cached
 				#print "had to cache a cf image for",image_name
 				excImage = ExclusionImage(image_name)
 				self.add_to_cache(excImage)
 			#else: print "found a cached cf image for",image_name
-				
-			
+			if debug: print "get exc image B took", time()-tt
+			if debug: tt = time()
 			image = excImage.get_image_carefully(xsize,ysize)
+			if debug: print "get exc image C took", time()-tt
 			if image != None:
+				if debug: print "total internal", time()-tt_orig
+				if debug: print time(),"exit"
 				return image
 			else:
 				print "there was an error getting the image in ExclusionImageCache"
@@ -1096,7 +1101,7 @@ class BigImageCache:
 
 		def __init__(self):
 			Cache.__init__(self)
-			self.set_max_size(1)
+			self.set_max_size(2)
 
 	
 		def get_image(self,image_name):
@@ -1305,6 +1310,8 @@ class FLCFImage:
 		#else: print "returning cached correlation image"
 		return self.get_image()
 
+debug = False
+
 class Boxable:
 	UNERASE = 'Unerase'
 	ERASE = 'Erase'
@@ -1323,6 +1330,7 @@ class Boxable:
 	QUALITY_META_DATA_MAP[GREAT] =  4
 	
 	def __init__(self,image_name,parent,autoboxer=None):
+		
 		self.parent = parent		# keep track of the parent in case we ever need it
 		self.boxes = []				# a list of boxes
 		self.refboxes = []			# a list of boxes
@@ -1347,11 +1355,20 @@ class Boxable:
 		self.__frozen = False
 		self.__quality = Boxable.QUALITY_META_DATA_MAP[Boxable.AVERAGE] # this makes it the number, not the string
 		
-		try:
-			eicache = ExclusionImageCache()
-			#print "reading exclusion image",excimage_name
-			self.exclusionimage = eicache.get_image(self.image_name,self.get_small_image().get_xsize(),self.get_small_image().get_ysize())
-		except: pass
+		if debug: tt = time()
+		
+		if debug: tt1 = time()
+		eicache = ExclusionImageCache()
+		if debug: print "It took this long to init the EICache", time()-tt1
+		if debug: tt1 = time()
+		if debug: print tt1
+		#print "reading exclusion image",excimage_name
+		self.exclusionimage = eicache.get_image(self.image_name,self.get_small_image().get_xsize(),self.get_small_image().get_ysize())
+		if debug: print "It took this long to get the image from the cache", time()-tt1
+		if debug: print time()
+		#except: pass
+		
+		if debug: print "getting the exclusion image took", time()-tt
 		
 		self.get_db_stamps()
 		self.reload_boxes()
@@ -2399,13 +2416,13 @@ class SwarmTemplate(Template):
 		images_copy = []
 		for ref in self.refboxes:
 			# some references can be excluded from the template generation procedure, this is flagged
-			# by the isanchor flag
-			if ref.isanchor == False:
+			# by the dummy flag
+			if ref.isdummy == True:
 				continue
 			image = ref.get_small_box_image(self.autoboxer)
 			images_copy.append(image)
 		if len(images_copy) == 0:
-			print 'error, you have probably set references that all have the isanchor flag set to false, which exluded them all from the template making process'
+			print 'error, you have probably set references that all have the dummy flag set to True, which exluded them all from the template making process'
 			print 'can not proceed without references to create template'
 			return 0
 			
@@ -2745,9 +2762,7 @@ class SwarmAutoBoxer(AutoBoxer):
 	SELECTIVE = "Selective"
 	MORESELECTIVE = "More Selective"
 	DYNAPIX = 1
-	ANCHOREDDYNAPIX = 2
 	USERDRIVEN = 3
-	ANCHOREDUSERDRIVEN = 4
 	COMMANDLINE = 5
 	def __init__(self,parent):
 		AutoBoxer.__init__(self)
@@ -2772,7 +2787,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		self.mode = SwarmAutoBoxer.DYNAPIX
 		self.refupdate = False # this is a flag used when self.mode is USERDRIVEN
-		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.ANCHOREDDYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.ANCHOREDUSERDRIVEN,SwarmAutoBoxer.COMMANDLINE]
+		self.permissablemodes = [SwarmAutoBoxer.DYNAPIX,SwarmAutoBoxer.USERDRIVEN,SwarmAutoBoxer.COMMANDLINE]
 		self.permissablecmp_modes = [BoxingTools.CmpMode.SWARM_RATIO,BoxingTools.CmpMode.SWARM_DIFFERENCE, BoxingTools.CmpMode.SWARM_AVERAGE_RATIO]  # the permissiable peak profile comparitor modes - for convenience when double
 		self.permissableselection_modes = [SwarmAutoBoxer.THRESHOLD,SwarmAutoBoxer.SELECTIVE,SwarmAutoBoxer.MORESELECTIVE]  # the permissiable selection modes - for convenience when double checking the calling program is setting the selectionmode explicitly (through set_selection_mode )
 		self.regressiveflag = False	# flags a force removal of non references in the Boxable in auto_box
@@ -2785,10 +2800,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.set_convenience_name(self.get_creation_ts()) # this string is the string that users will use to name this autoboxer in the GUIboxCtrl
 
 	def dynapix_on(self):
-		return (self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX)
-	
-	def anchor_on(self):
-		return (self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX)
+		return (self.mode == SwarmAutoBoxer.DYNAPIX)
 
 	def become(self,trimSwarmAutoBoxer):			
 		self.box_size = trimSwarmAutoBoxer.box_size
@@ -2890,7 +2902,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.__plot_update()
 				self.state_ts = gm_time_string()
 				self.regressiveflag = True
-				if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
+				if self.mode == SwarmAutoBoxer.DYNAPIX:
 					self.auto_box(self.get_boxable())
 				elif self.mode == SwarmAutoBoxer.COMMANDLINE:
 					print "warning, haven't double check SwarmAutoBoxer.COMMANDLINE scenario in set_selection_mode"
@@ -2913,33 +2925,29 @@ class SwarmAutoBoxer(AutoBoxer):
 			for box in boxes: self.template.append_reference(box)
 		except:
 			box = boxes
+			if box.isdummy:
+				print "dummy boxes not yet supported"
+				return 0
 			self.template.append_reference(box)
+			
 		
+		
+		#update the database
 		self.write_specific_references_to_db(self.get_boxable().get_image_name())
-		
-		isanchor = True
 		
 		if isinstance(box,Box):
 			if box.xsize != box.ysize:
 				print 'error, support for uneven box dimensions is not currently implemented'
 				return 0
-		
 			# store the box_size if we don't have one already
-			if self.box_size == -1 and not box.isdummy:
+			if self.box_size == -1:
 				self.box_size = box.xsize
 			# do a sanity check, this shouldn't happen if the program is managing everything carefully
-			elif self.box_size != box.xsize and not box.isdummy:
+			elif self.box_size != box.xsize:
 				print 'error, the currently stored box size does not match the box_size of the reference that was just added'
-				return 0
-			
-			
-			# update the data base
-			
+				return 0	
 			
 			if self.mode == SwarmAutoBoxer.DYNAPIX:
-				if not box.isanchor and not box.isdummy:
-					print 'the box flag is internally inconsistent when using pure dynapix'
-					return 0
 				if not self.__full_update() : return 0
 				self.auto_box(self.get_boxable())
 			elif self.mode == SwarmAutoBoxer.USERDRIVEN:
@@ -2951,13 +2959,20 @@ class SwarmAutoBoxer(AutoBoxer):
 				return 0
 		
 			return 1
-	
-			
 		else:
 			print "error, you cannot add a reference to the AutoBoxer if it is not in the format of a Box object"
 			return 0
 	
-	
+	# this is just for remembering what I might do when a dummy is added or removed
+	#def dummy_stuff(self):
+		#if not self.__accrue_opt_params() :
+				#self.state_ts = gm_time_string()
+				#print "there is a problem with the references"
+				#return 0
+		#self.state_ts = gm_time_string()
+		#self.regressiveflag = True
+		#self.auto_box(self.get_boxable())
+		
 	def remove_reference(self,boxes):
 		'''
 		Should potentially be called remove_references
@@ -2966,15 +2981,13 @@ class SwarmAutoBoxer(AutoBoxer):
 		'''
 		
 		try:
-			isanchor = False
 			for box in boxes:
 				self.template.remove_reference(box)
-				if box.isanchor: isanchor = True
 		except:
 			# there is only one box
 			box = boxes
 			self.template.remove_reference(box)
-			isanchor = box.isanchor
+
 		
 		# update the data base
 		self.write_specific_references_to_db(self.get_boxable().get_image_name())
@@ -2982,34 +2995,16 @@ class SwarmAutoBoxer(AutoBoxer):
 		if len(self.template.refboxes) == 0:
 			self.__reset()
 			return 2
-			
-		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-			if isanchor:
-				if not self.__full_update(): return 0
-				self.regressiveflag = True
-				self.auto_box(self.get_boxable())
-			else:
-				if not self.__accrue_opt_params() :
-					self.state_ts = gm_time_string()
-					print "there is a problem with the references"
-					return 0
-				self.state_ts = gm_time_string()
-				self.regressiveflag = True
-				self.auto_box(self.get_boxable())
+		if self.mode == SwarmAutoBoxer.DYNAPIX:
+			if not self.__full_update(): return 0
+			self.regressiveflag = True
+			self.auto_box(self.get_boxable())
+				
 			return 1
-		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
-			if isanchor:
-				self.refupdate = True
-				self.state_ts = -1
-				self.template_ts = -1
-			else:
-				box.update_params(self)
-				if not self.__accrue_opt_params() :
-					self.state_ts = gm_time_string()
-					print "there is a problem with the references"
-					return 0
-				self.state_ts = gm_time_string()
-				self.regressiveflag = True
+		elif self.mode == SwarmAutoBoxer.USERDRIVEN:
+			self.refupdate = True
+			self.state_ts = -1
+			self.template_ts = -1
 				
 			return 1
 		
@@ -3027,38 +3022,19 @@ class SwarmAutoBoxer(AutoBoxer):
 		The return value is whether or not autoboxing occured and hence whether or not display should be updated
 		A -1 is returned if an error occured
 		'''
-		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
-			if box.isanchor:
-				if not self.__full_update() : return 0
-				self.regressiveflag = True
-				self.auto_box(self.get_boxable())
-			else:
-				box.update_params(self)
-				if not self.__accrue_opt_params() :
-					self.state_ts = gm_time_string()
-					print "there is a problem with the references"
-					return 0
-				self.state_ts = gm_time_string()
-				self.regressiveflag = True
-				self.auto_box(self.get_boxable())
+		if self.mode == SwarmAutoBoxer.DYNAPIX:
+			
+			if not self.__full_update() : return 0
+			self.regressiveflag = True
+			self.auto_box(self.get_boxable())
 			
 			# update the data base
 			self.write_specific_references_to_db(self.get_boxable().get_image_name())
 			return 1
-		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN:
-			if box.isanchor:
-				self.refupdate = True
-				self.state_ts = -1
-				self.template_ts = -1
-			else:
-				box.update_params(self)
-				if not self.__accrue_opt_params() :
-					self.state_ts = gm_time_string()
-					print "there is a problem with the references"
-					return 0
-				self.state_ts = gm_time_string()
-				self.regressiveflag = True
-				
+		elif self.mode == SwarmAutoBoxer.USERDRIVEN:
+			self.refupdate = True
+			self.state_ts = -1
+			self.template_ts = -1
 			# update the data base
 			self.write_specific_references_to_db(self.get_boxable().get_image_name())
 			return 0
@@ -3122,12 +3098,12 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 		# make sure the shrink value is updated - use the force flag to do it
 		
-		if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.ANCHOREDDYNAPIX:
+		if self.mode == SwarmAutoBoxer.DYNAPIX:
 			if not self.__full_update(): 
 				print "box size change failed, can't full update"
 				return
 			self.auto_box(self.get_boxable())
-		elif self.mode == SwarmAutoBoxer.USERDRIVEN or self.mode == SwarmAutoBoxer.ANCHOREDUSERDRIVEN :
+		elif self.mode == SwarmAutoBoxer.USERDRIVEN:
 			self.refupdate = True
 			self.state_ts = -1
 			self.template_ts = -1
@@ -3198,10 +3174,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		if autoboxer_state_ts == -1 or autoboxer_state_ts != self.state_ts or boxable.get_autoboxer_id() != self.get_unique_stamp() or force:
 			
-			if self.mode == SwarmAutoBoxer.DYNAPIX or self.mode == SwarmAutoBoxer.USERDRIVEN or self.regressiveflag or self.mode == SwarmAutoBoxer.COMMANDLINE:
-				# we must clear all non-refs if we're using dynapix
-				boxable.delete_non_refs(updatedisplay)
-				self.regressiveflag = False
+			boxable.delete_non_refs(updatedisplay)
+			self.regressiveflag = False
 			
 			exclusion = boxable.get_exclusion_image().copy()
 			self.__paint_excluded_box_areas(exclusion,boxable.boxes)
@@ -3265,7 +3239,6 @@ class SwarmAutoBoxer(AutoBoxer):
 			
 		cl = BoxingTools.classify(v,4)
 		
-		print c1
 		return cl
 		
 	def get_unique_stamp(self):

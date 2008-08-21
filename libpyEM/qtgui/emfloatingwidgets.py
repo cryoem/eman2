@@ -711,9 +711,11 @@ class EMGLRotorWidget(EM3DWidgetVolume):
 		self.rotations = r	
 	
 	def __getitem__(self,idx):
+		if len(self.widgets) == 0: return None
 		i = idx-self.rotations
 		if i != 0:
 			i = i % len(self.widgets)
+		#print len(self.widgets), "asking for i", i
 		return self.widgets[i]
 	
 	def current_index(self):

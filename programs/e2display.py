@@ -150,7 +150,8 @@ def display(img,title="EMImage"):
 	w.setWindowTitle(title)
 	try:
 		if file_exists(title):
-			w.child.setImageFileName(title)
+			print 
+			w.child.get_core_object().set_file_name(title)
 	except: pass
 	w.show()
 	win.append(w)

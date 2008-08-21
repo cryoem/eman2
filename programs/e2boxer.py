@@ -1164,23 +1164,39 @@ class GUIbox:
 		#try:
 		im=lc[0]
 		#try:
+		debug = False
 		if im != self.current_image_idx:
 				#print 'changing images'		
-			bic = BigImageCache()
-			image=bic.get_image(self.image_names[im])
-			self.guiimp.setWindowTitle(self.image_names[im])
-			self.guiim.setData(image)
-			self.boxable.cache_exc_to_db()
-			self.boxable = Boxable(self.image_names[im],self,self.autoboxer)
 			
+			bic = BigImageCache()
+			if debug: tt = time()
+			image=bic.get_image(self.image_names[im])
+			
+			
+			if debug: tt = time()
+			self.guiimp.setWindowTitle(self.image_names[im])
+			if debug: print "it took", time() - tt, "to read the prior stuff A1 "
+			if debug: tt = time()
+			self.guiim.setData(image)
+			if debug: print "it took", time() - tt, "to read the prior stuff A2 "
+			if debug: tt = time()
+			self.boxable.cache_exc_to_db()
+			if debug: print "it took", time() - tt, "to read the prior stuff A3 "
+			if debug: tt = time()
+			self.boxable = Boxable(self.image_names[im],self,self.autoboxer)
+			if debug: print "it took", time() - tt, "to read the prior stuff A4 "
+			if debug: tt = time()
 			self.ptcl = []
 			self.guiim.delShapes()
 			self.in_display_limbo = True
-			
-
+			if debug: print "it took", time() - tt, "to read the prior stuff B "
+			if debug: tt = time()
 			project_db = EMProjectDB()
 			data = project_db[get_idd_key(self.image_names[im])]
 			ab_failure = self.autoboxer
+			if debug: print "it took", time() - tt, "to read the prior stuff C "
+			
+			if debug: tt = time()
 			if data != None:
 				try:
 					autoboxer_id = data["autoboxer_unique_id"]
@@ -1200,10 +1216,13 @@ class GUIbox:
 						self.guictl.set_dynapix(self.dynapix)
 					except:
 						self.autoboxer = ab_failure
-					
+			if debug: print "it took", time() - tt, "to the autobox database stuff"
+			
 			if self.dynapix:
 				self.autoboxer.regressiveflag = True
-				self.autoboxer.auto_box(self.boxable)
+				if debug: tt = time()
+				self.autoboxer.auto_box(self.boxable,False)
+				if debug: print "it took", time() - tt, "to autobox"
 				
 			self.boxable.set_autoboxer(self.autoboxer)
 			
@@ -1224,8 +1243,9 @@ class GUIbox:
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 			self.guictl.set_image_quality(self.boxable.get_quality())
 			
+			if debug: tt = time()
 			self.box_display_update()
-			
+			if debug: print "it took", time() - tt, "to do the box display update"
 		#except: pass
 			
 		app.setOverrideCursor(Qt.ArrowCursor)
@@ -1423,7 +1443,7 @@ class GUIbox:
 		self.guiim.addShape("cen",EMShape([self.shape_string,.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 		box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
 		self.guiim.addShape(box_num,box.shape)
-		self.box_display_update()
+		self.box_display_update_specific(box_num)
 
 	def change_shapes(self,shape_string):
 		if shape_string in ["rectpoint","rect","rcircle","rcirclepoint"]:
@@ -1547,6 +1567,40 @@ class GUIbox:
 				self.clear_displays()
 				
 		return box
+	
+	
+	def box_display_update_specific(self, box_num,force=False):
+		ns = {}
+		box = self.get_boxes()[box_num]
+		
+		im=box.get_box_image()
+		box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
+		
+		#if not force and not box.isref and not box.ismanual:
+			#box.shape.isanimated = True
+			#box.shape.blend = 0
+		
+		ns[box_num]=box.shape
+		if box_num>=len(self.ptcl) : self.ptcl.append(im)
+		else : self.ptcl[box_num]=im
+			
+		self.guiim.addShapes(ns)
+		self.set_ptcl_mx_data(self.ptcl)
+		
+		self.guictl.num_boxes_changed(len(self.ptcl))
+		if self.guimxit != None:
+			self.guimxit.get_target().set_extra_hud_data([len(self.ptcl)])
+		
+		
+		if self.guimxitp !=None:
+			othershapes = {}
+			for shape in ns:
+				s = ns[shape].getShape()
+				othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
+	
+			if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
+
+		self.update_all_image_displays()
 		
 		
 	def box_display_update(self,force=False):
@@ -1993,7 +2047,6 @@ class GUIboxPanel(QtGui.QWidget):
 		self.vbl.addWidget(self.tabwidget)
 		
 		self.dummybox = Box()
-		self.dummybox.isanchor = False
 		self.dummybox.isdummy = True
 		self.currentlyselected = -1 # used in the ab_table
 		

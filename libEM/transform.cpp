@@ -86,7 +86,7 @@ Transform3D::Transform3D(const float& az, const float& alt, const float& phi)
 //  C3  Usual Constructor: Post Trans, after appying Rot
 Transform3D::Transform3D(const float& az, const float& alt, const float& phi, const Vec3f& posttrans )
 {
-	init();
+// 	init(); // This is called in set_rotation
 	set_rotation(az,alt,phi);
 	set_posttrans(posttrans);
 }
@@ -100,27 +100,18 @@ Transform3D::Transform3D(const float& m11, const float& m12, const float& m13,
 }
 
 // C4
-Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3)  // usually az, alt, phi
-                                                                                        // only SPIDER and EMAN supported
+Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3) 
 {
-	init();
-	Dict rot;
-	switch(euler_type) {
-	case EMAN:
-		rot["az"]  = a1;
-		rot["alt"] = a2;
-		rot["phi"] = a3;
-		break;
-	case SPIDER:
-		rot["phi"]   = a1;
-		rot["theta"] = a2;
-		rot["psi"]   = a3;
-		break;
-	default:
-		throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
-  	}  // ends switch euler_type
-	set_rotation(euler_type, rot);  // Or should it be &rot ?
+// 	init(); // This is called in set_rotation
+	set_rotation(euler_type,a1,a2,a3);
 }
+
+Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
+{
+// 	init(); // This is called in set_rotation
+	set_rotation(euler_type,a1,a2,a4);
+}
+
 
 // C5
 Transform3D::Transform3D(EulerType euler_type, const Dict& rotation)  //YYY
@@ -346,7 +337,11 @@ Vec3f Transform3D::get_posttrans(int flag) const    //
 }
 
 Vec3f Transform3D::get_total_posttrans() const {
-	return Vec3f((*this)[0][3],(*this)[1][3],(*this)[2][3]);
+	return get_posttrans(1);
+}
+
+Vec3f Transform3D::get_total_pretrans() const {
+	return get_pretrans(1);
 }
 
 
@@ -394,7 +389,7 @@ Vec3f Transform3D::get_matrix3_row(int i) const     // YYY
 	return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
 }
 
-Vec3f Transform3D::transform(Vec3f & v3f) const     // YYY
+Vec3f Transform3D::transform(const Vec3f & v3f) const     // YYY
 {
 //      This is the transformation of a vector, v by a matrix M
 	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2] + matrix[0][3] ;
@@ -404,7 +399,7 @@ Vec3f Transform3D::transform(Vec3f & v3f) const     // YYY
 }
 
 
-Vec3f Transform3D::rotate(Vec3f & v3f) const     // YYY
+Vec3f Transform3D::rotate(const Vec3f & v3f) const     // YYY
 {
 //      This is the rotation of a vector, v by a matrix M
 	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2]  ;
@@ -517,26 +512,65 @@ void Transform3D::set_rotation(const float& az, const float& alt, const float& p
 }
 
 // This is where it all happens;
-void Transform3D::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3) // EMAN: az alt, phi 
- 									                        // SPIDER: phi, theta, psi 
+void Transform3D::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3)
 {
 	init();
 	Dict rot;
 	switch(euler_type) {
-	case EMAN:
-		rot["az"]  = a1;
-		rot["alt"] = a2;
-		rot["phi"] = a3;
-		break;
-	case SPIDER:
-		rot["phi"]   = a1;
-		rot["theta"] = a2;
-		rot["psi"]   = a3;
-		break;
-	default:
+		case EMAN:
+			rot["az"]  = a1;
+			rot["alt"] = a2;
+			rot["phi"] = a3;
+			break;
+		case SPIDER:
+			rot["phi"]   = a1;
+			rot["theta"] = a2;
+			rot["psi"]   = a3;
+			break;
+		case IMAGIC:
+			rot["alpha"]   = a1;
+			rot["beta"] = a2;
+			rot["gamma"]   = a3;
+			break;
+		case MRC:
+			rot["phi"]   = a1;
+			rot["theta"] = a2;
+			rot["omega"]   = a3;
+			break;
+		case XYZ:
+			rot["xtilt"]   = a1;
+			rot["ytilt"] = a2;
+			rot["ztilt"]   = a3;
+			break;
+		default:
 		throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
   	}  // ends switch euler_type
-	set_rotation(euler_type, rot);  // Or should it be &rot ?
+	set_rotation(euler_type, rot);
+}
+
+// This is where it all happens;
+void Transform3D::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4) 
+{
+	init();
+	Dict rot;
+	switch(euler_type) {
+		case QUATERNION:
+			rot["e0"]  = a1;
+			rot["e1"] = a2;
+			rot["e2"] = a3;
+			rot["e3"] = a4;
+			break;
+		case SPIN:
+		case SGIROT:
+			rot["Omega"]  = a1;
+			rot["n1"] = a2;
+			rot["n2"] = a3;
+			rot["n3"] = a4;
+			break;
+		default:
+			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+	}  // ends switch euler_type
+	set_rotation(euler_type, rot);
 }
 
 void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
@@ -679,7 +713,7 @@ void Transform3D::set_rotation(const float& m11, const float& m12, const float& 
 							   const float& m21, const float& m22, const float& m23,
 		  const float& m31, const float& m32, const float& m33)
 {
-	EulerType euler_type= MATRIX;
+	EulerType euler_type = MATRIX;
 	Dict rot;
 	rot["m11"]  = m11;
 	rot["m12"]  = m12;
@@ -690,7 +724,7 @@ void Transform3D::set_rotation(const float& m11, const float& m12, const float& 
 	rot["m31"]  = m31;
 	rot["m32"]  = m32;
 	rot["m33"]  = m33;
-        set_rotation(euler_type, rot);  // Or should it be &rot ?
+	set_rotation(euler_type, rot);  // Or should it be &rot ?
 }
 
 void Transform3D::set_rotation(const Vec3f & eahat, const Vec3f & ebhat,

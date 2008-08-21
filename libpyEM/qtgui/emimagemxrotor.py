@@ -305,9 +305,10 @@ class EMImageMXRotorCore:
 			self.parent.emit(signal,event,data,bool)
 	
 	def set_selected(self,n,update_gl=True):
-		self.rotor[0].get_drawable().set_selected(n,update_gl)
-	
-	
+		widget = self.rotor[0]
+		if widget != None:
+			widget.get_drawable().set_selected(n,update_gl)
+
 	def get_qt_parent(self):
 		return self.parent
 	
@@ -325,15 +326,20 @@ class EMImageMXRotorCore:
 		return self.parent.context()
 	
 	def is_visible(self,n):
-		img_offset = self.rotor[0].get_drawable().get_img_num_offset()
-		if n >= img_offset and n < (img_offset+self.mx_rows*self.mx_cols):
-			return True
+		widget = self.rotor[0]
+		if widget != None:
+			img_offset = widget.get_drawable().get_img_num_offset()
+			if n >= img_offset and n < (img_offset+self.mx_rows*self.mx_cols):
+				return True
+			else: return False
 		else: return False
 	
 	def scroll_to(self,n,unused):
-		img_offset = self.rotor[0].get_drawable().get_img_num_offset()
-		scroll = (n-img_offset)/(self.mx_rows*self.mx_cols)
-		self.rotor.explicit_animation(-scroll)
+		widget = self.rotor[0]
+		if widget != None:
+			img_offset = widget.get_drawable().get_img_num_offset()
+			scroll = (n-img_offset)/(self.mx_rows*self.mx_cols)
+			self.rotor.explicit_animation(-scroll)
 	
 	def set_mx_cols(self,cols):
 		self.mx_cols = cols
