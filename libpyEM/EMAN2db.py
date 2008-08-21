@@ -66,14 +66,16 @@ atexit.register(DB_cleanup)
 signal.signal(2,DB_cleanup)
 
 def db_open_dict(url):
-	"""opens a DB through an environment from a db:/path/to/db/dbname string. If you want to specify a specific image by key,
-	you can specify the key as:  db:/path/to/db/dbname?key
+	"""opens a DB through an environment from a db:/path/to/db#dbname string. If you want to specify a specific image by key,
+	you can specify the key as:  db:/path/to/db#dbname?key
 	If key is an integer, it will be converted to an integer before lookup. Thus it is impossible to access data items
 	with keys like '1' instead of (int)1 using this mechanism."""
 	if url[:4].lower()!="bdb:": return None
 	url=url.replace("../",os.getcwd()+"/../")
-	if url[4]!='/' : url="bdb:"+os.getcwd()+"/"+url[4:]
-	sln=url.rfind("/")
+	if url[4]!='/' : 
+		if not '/' in url : url="bdb:"+os.getcwd()+"#"+url[4:]
+		else : url="bdb:"+os.getcwd()+"/"+url[4:]
+	sln=url.rfind("#")
 	qun=url.rfind("?")
 	if qun<0 : qun=len(url)
 	if sln<0 :
