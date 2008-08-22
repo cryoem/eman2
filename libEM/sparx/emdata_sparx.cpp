@@ -4357,11 +4357,17 @@ EMData* EMData::norm_pad(bool donorm, int npad) {
 			}
 		}
 	}
+
+
+	vector<int> saved_offsets = this->get_array_offsets();
+	this->set_array_offsets( 0, 0, 0 );
 	for (int iz = 0; iz < nz; iz++) {
 		for (int iy = 0; iy < ny; iy++) {
 			memcpy(&(*fpimage)(xstart,iy+ystart,iz+zstart), &(*this)(0,iy,iz), bytes);
 		}
 	}
+	this->set_array_offsets( saved_offsets );
+
 	
 	//  Perform the actual normalization (only on the
 	//  non-zero section of the image)	
