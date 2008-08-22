@@ -227,7 +227,7 @@ class EMImage2DCore:
 		self.mindeng=0
 		self.maxdeng=1.0
 		self.brts=0 # stored purely for persistence reasons - the database needs this object to remember the value
-		self.conts=1 # stored purely for persistence reasons - the database needs this object to remember the value
+		self.conts=0 # stored purely for persistence reasons - the database needs this object to remember the value
 		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
 		self.mmode=0				# current mouse mode as selected by the inspector
@@ -436,12 +436,12 @@ class EMImage2DCore:
 		self.brts = data["brightness"]
 		self.conts = data["contrast"] 
 		
-		if self.inspector != None:
+		#if self.inspector != None:
 			#self.inspector.set_brightness(data["brightness"])
 			#self.inspector.set_contrast(data["contrast"])
-			self.inspector.set_minden(self.minden)
-			self.inspector.set_maxden(self.maxden)
-			self.inspector.set_gamma(self.gamma)
+			#self.inspector.set_minden(self.minden)
+			#self.inspector.set_maxden(self.maxden)
+			#self.inspector.set_gamma(self.gamma)
 
 	def __write_display_settings_to_db(self):
 		'''
@@ -1330,6 +1330,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def setLimits(self,lowlim,highlim,curmin,curmax):
 		if highlim<=lowlim : highlim=lowlim+.001
+		print "in set limits", self.conts.getValue(), self.conts.getValue()
 		self.lowlim=lowlim
 		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)
@@ -1337,7 +1338,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
 		self.target.set_density_range(curmin,curmax)
-		
+		print "leave set limits", self.conts.getValue(), self.conts.getValue()
 class SundryWidget(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
