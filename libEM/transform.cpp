@@ -392,18 +392,6 @@ Vec3f Transform3D::get_matrix3_row(int i) const     // YYY
 	return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
 }
 
-// template<typename Type>
-// Vec3f Transform3D::transform(const Vec3<Type> & v3f) const     // YYY
-// {
-// //      This is the transformation of a vector, v by a matrix M
-// 	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2] + matrix[0][3] ;
-// 	float y = matrix[1][0] * v3f[0] + matrix[1][1] * v3f[1] + matrix[1][2] * v3f[2] + matrix[1][3] ;
-// 	float z = matrix[2][0] * v3f[0] + matrix[2][1] * v3f[1] + matrix[2][2] * v3f[2] + matrix[2][3] ;
-// 	if ( post_x_mirror ) x *= -1;
-// 	return Vec3f(x, y, z);
-// }
-
-
 Vec3f Transform3D::rotate(const Vec3f & v3f) const     // YYY
 {
 //      This is the rotation of a vector, v by a matrix M
