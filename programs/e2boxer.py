@@ -830,7 +830,7 @@ class GUIbox:
 	def __init_guimx(self):
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		glflags = EMOpenGLFlagsAndTools()
-		if not glflags.npt_textures_unsupported():
+		if True or not glflags.npt_textures_unsupported():
 			self.guimx=EMImageMXRotor()		# widget for displaying image thumbs
 			self.guimx.get_core_object().disable_mx_zoom()
 			self.guimx.get_core_object().allow_camera_rotations(False)
@@ -1288,7 +1288,7 @@ class GUIbox:
 				#print "got thumb",i
 				self.imagethumbs[i] = thumb
 			glflags = EMOpenGLFlagsAndTools()
-			if not glflags.npt_textures_unsupported():
+			if True or not glflags.npt_textures_unsupported():
 				self.guimxit=EMImageRotor()		# widget for displaying image thumbs
 			else:
 				self.guimxit=EMImageMX()
