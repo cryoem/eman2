@@ -109,7 +109,7 @@ Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2,
 Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
 {
 // 	init(); // This is called in set_rotation
-	set_rotation(euler_type,a1,a2,a4);
+	set_rotation(euler_type,a1,a2,a3,a4);
 }
 
 

@@ -1330,7 +1330,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def setLimits(self,lowlim,highlim,curmin,curmax):
 		if highlim<=lowlim : highlim=lowlim+.001
-		print "in set limits", self.conts.getValue(), self.conts.getValue()
+		#print "in set limits", self.conts.getValue(), self.conts.getValue()
 		self.lowlim=lowlim
 		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)
@@ -1338,7 +1338,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
 		self.target.set_density_range(curmin,curmax)
-		print "leave set limits", self.conts.getValue(), self.conts.getValue()
+		#print "leave set limits", self.conts.getValue(), self.conts.getValue()
 class SundryWidget(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
