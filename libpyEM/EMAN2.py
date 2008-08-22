@@ -563,6 +563,10 @@ def test_image(type=0,size=(128,128)):
 	type=2  square
 	type=3  hollow square
 	type=4  circular sinewave
+	type=5  axes
+	type=6  linewave
+	type=7  scurve pluse x,y gradient
+	type=8  scurve translated
 	size=(128,128) """
 	ret=EMData()
 	ret.set_size(*size)
@@ -601,7 +605,7 @@ def test_image_3d(type=0,size=(128,128,128)):
 	type=0  axes
 	type=1	gaussian noise, 0 mean, sigma 1
 	type=2  gradient
-	type=3  hollow square
+	type=3  square
 	type=4  sphere
 	size=(128,128,128) """
 	ret=EMData()

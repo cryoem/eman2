@@ -131,6 +131,16 @@ namespace EMAN
 		 */
 		Transform3D(const float& az,const float& alt,const float& phi); // EMAN by default
 		
+		 /** Construct a Transform3D object consisting of only a single rotation
+		 * this constructor is most useful when this object is being used psuedo 2D",
+		 * as in 2D alignment
+		 * @param alpha in plane angle
+		 */
+		Transform3D(const float& alpha) {
+			init();
+			set_rotation(EMAN,0,0,alpha);
+		}
+		
 		 /** Construct a Transform3D object describing a rotation (assuming the EMAN Euler type) and
 		 * a post translation
 		 * @param az EMAN - az
@@ -302,7 +312,15 @@ namespace EMAN
 		 * @param v3f the vector to be transformed
 		 * @return the transformed vector
 		 */
-		Vec3f transform(const Vec3f & v3f) const; 
+		template<typename Type>
+		Vec3f transform(const Vec3<Type> & v3f) const; 
+		
+		/** Perform a psuedo 2D transform of a Vec2f using the internal transformation matrix
+		 * @param v2f the vector to be transformed
+		 * @return the transformed vector
+		 */
+		template<typename Type>
+		Vec2f transform(const Vec2<Type> & v2f) const; 
 		
 		/** Rotate a Vec3f using the internal rotation matrix
 		 * @param v3f the vector to be rotated
@@ -363,6 +381,13 @@ namespace EMAN
 		void set_posttrans(const float& dx, const float& dy);
 		void set_posttrans(const Vec2f& posttrans);
 
+		
+		/** Set post_x_mirror - a post x flipping operation is applied when transform
+		 * and Transform3D*Transform3D is used
+		 */
+		inline void set_post_x_mirror(const bool b) { post_x_mirror = b; }
+		inline bool get_post_x_mirror() const { return post_x_mirror; }
+		
 		float get_scale() const; 
 
 		void to_identity();
@@ -406,7 +431,9 @@ namespace EMAN
 		static SymType get_sym_type(const string & symname);
 
 		float matrix[4][4];
-
+		
+		bool post_x_mirror;
+		
 		static map<string, int> symmetry_map;
 	}; // ends Class
 
@@ -419,7 +446,7 @@ namespace EMAN
 	template<typename Type>
 	Vec3f operator*(const Vec3<Type> & v, const Transform3D & M)   // YYY
 	{
-//               This is the right multiplication of a row vector, v by a transform3D matrix M
+		// This is the right multiplication of a row vector, v by a transform3D matrix M
 		float x = v[0] * M[0][0] + v[1] * M[1][0] + v[2] * M[2][0] ;
 		float y = v[0] * M[0][1] + v[1] * M[1][1] + v[2] * M[2][1];
 		float z = v[0] * M[0][2] + v[1] * M[1][2] + v[2] * M[2][2];
@@ -427,25 +454,38 @@ namespace EMAN
 	}
 
 	template<typename Type>
-	Vec3f operator*( const Transform3D & M, const Vec3<Type> & v)      // YYY
+	Vec3f operator*( const Transform3D & M, const Vec3<Type> & v)
 	{
-//      This is the  left multiplication of a vector, v by a matrix M
-		float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2] + M[0][3] ;
-		float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2] + M[1][3];
-		float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2] + M[2][3];
-		return Vec3f(x, y, z);
+		return M.transform(v);
 	}
 	
 	
 	template<typename Type>
-	Vec2f operator*( const Transform3D & M, const Vec2<Type> & v)      // YYY
+	Vec3f Transform3D::transform(const Vec3<Type> & v) const
 	{
-//      This is the  left multiplication of a vector, v by a matrix M
-		float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][3] ;
-		float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][3];
-		return Vec2f(x, y);
+//      This is the transformation of a vector, v by a matrix M
+		float x = matrix[0][0] * v[0] + matrix[0][1] * v[1] + matrix[0][2] * v[2] + matrix[0][3] ;
+		float y = matrix[1][0] * v[0] + matrix[1][1] * v[1] + matrix[1][2] * v[2] + matrix[1][3] ;
+		float z = matrix[2][0] * v[0] + matrix[2][1] * v[1] + matrix[2][2] * v[2] + matrix[2][3] ;
+		if ( post_x_mirror ) x *= -1;
+		return Vec3f(x, y, z);
+	}
+	
+	template<typename Type>
+	Vec2f operator*( const Transform3D & M, const Vec2<Type> & v)
+	{
+		return M.transform(v);
 	}
 
+	template<typename Type>
+	Vec2f Transform3D::transform(const Vec2<Type> & v) const
+	{
+//      This is the transformation of a vector, v by a matrix M, psuedo 2D
+		float x = matrix[0][0] * v[0] + matrix[0][1] * v[1] + matrix[0][3] ;
+		float y = matrix[1][0] * v[0] + matrix[1][1] * v[1] + matrix[1][3];
+		if ( post_x_mirror ) x *= -1;
+		return Vec2f(x, y);
+	}
 	
 	/** Symmetry3D - A base class for 3D Symmetry objects.
 	* Objects of this type must provide delimiters for the asymmetric unit (get_delimiters), and

@@ -73,6 +73,7 @@ Transform3D::Transform3D( const Transform3D& rhs )
 	    matrix[i][j] = rhs.matrix[i][j];
 	}
     }
+	post_x_mirror = rhs.post_x_mirror;
 }
 
 // C2
@@ -86,7 +87,7 @@ Transform3D::Transform3D(const float& az, const float& alt, const float& phi)
 //  C3  Usual Constructor: Post Trans, after appying Rot
 Transform3D::Transform3D(const float& az, const float& alt, const float& phi, const Vec3f& posttrans )
 {
-// 	init(); // This is called in set_rotation
+	init(); // This is called in set_rotation
 	set_rotation(az,alt,phi);
 	set_posttrans(posttrans);
 }
@@ -102,13 +103,13 @@ Transform3D::Transform3D(const float& m11, const float& m12, const float& m13,
 // C4
 Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3) 
 {
-// 	init(); // This is called in set_rotation
+	init(); // This is called in set_rotation
 	set_rotation(euler_type,a1,a2,a3);
 }
 
 Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
 {
-// 	init(); // This is called in set_rotation
+	init(); // This is called in set_rotation
 	set_rotation(euler_type,a1,a2,a3,a4);
 }
 
@@ -158,6 +159,7 @@ void Transform3D::to_identity()
 	}
 	
 	set_center(Vec3f(0,0,0));
+	post_x_mirror = false;
 }
 
 
@@ -205,6 +207,7 @@ void Transform3D::init()  // M1
 		}
 		matrix[i][i]=1;
 	}
+	post_x_mirror = false;
 }
 
 //      Set Methods
@@ -389,14 +392,16 @@ Vec3f Transform3D::get_matrix3_row(int i) const     // YYY
 	return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
 }
 
-Vec3f Transform3D::transform(const Vec3f & v3f) const     // YYY
-{
-//      This is the transformation of a vector, v by a matrix M
-	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2] + matrix[0][3] ;
-	float y = matrix[1][0] * v3f[0] + matrix[1][1] * v3f[1] + matrix[1][2] * v3f[2] + matrix[1][3] ;
-	float z = matrix[2][0] * v3f[0] + matrix[2][1] * v3f[1] + matrix[2][2] * v3f[2] + matrix[2][3] ;
-	return Vec3f(x, y, z);
-}
+// template<typename Type>
+// Vec3f Transform3D::transform(const Vec3<Type> & v3f) const     // YYY
+// {
+// //      This is the transformation of a vector, v by a matrix M
+// 	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2] + matrix[0][3] ;
+// 	float y = matrix[1][0] * v3f[0] + matrix[1][1] * v3f[1] + matrix[1][2] * v3f[2] + matrix[1][3] ;
+// 	float z = matrix[2][0] * v3f[0] + matrix[2][1] * v3f[1] + matrix[2][2] * v3f[2] + matrix[2][3] ;
+// 	if ( post_x_mirror ) x *= -1;
+// 	return Vec3f(x, y, z);
+// }
 
 
 Vec3f Transform3D::rotate(const Vec3f & v3f) const     // YYY
@@ -413,12 +418,22 @@ Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     
 {
 //       This is the  left multiplication of a matrix M1 by a matrix M2; that is M2*M1
 //       It returns a new matrix
+	
+	
 	Transform3D resultant;
 	for (int i=0; i<3; i++) {
 		for (int j=0; j<4; j++) {
 			resultant[i][j] = M2[i][0] * M1[0][j] +  M2[i][1] * M1[1][j] + M2[i][2] * M1[2][j];
+			if (i == 0 && M1.get_post_x_mirror() == 0) {
+				resultant[i][j] *= -1;
+			}
 		}
-		resultant[i][3] += M2[i][3];  // add on the new translation (not included above)
+		if (i == 0 && M1.get_post_x_mirror() == 0) {
+			resultant[i][3] -= M2[i][3];
+		} else {
+			resultant[i][3] += M2[i][3];// add on the new translation (not included above)
+		}
+		
 	}
 	
 	for (int j=0; j<3; j++) {
