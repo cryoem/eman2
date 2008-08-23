@@ -42,8 +42,8 @@
 #include "ctf.h"
 #include "emassert.h"
 
-#include <gsl_statistics_double.h>
-#include <gsl_fit.h>
+#include <gsl/gsl_statistics_double.h>
+#include <gsl/gsl_fit.h>
 
 using namespace EMAN;
 using std::complex;
