@@ -425,7 +425,7 @@ Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     
 
 void Transform3D::set_params(const Dict& params, const string& parameter_convention, const EulerType euler_type) {
 	
-	if ( parameter_convention ==  "xform.align2d" ) {
+	if ( parameter_convention ==  "align2d" ) {
 		float alpha = params["alpha"];
 		set_rotation(0,0,alpha);
 		
@@ -438,7 +438,7 @@ void Transform3D::set_params(const Dict& params, const string& parameter_convent
 		
 		float scale = params["scale"];
 		set_scale(scale);
-	} else if ( parameter_convention ==  "xform.align3d" ) {
+	} else if ( parameter_convention ==  "align3d" ) {
 		set_rotation(euler_type,params);
 		
 		float sx = params["sx"];
@@ -451,7 +451,7 @@ void Transform3D::set_params(const Dict& params, const string& parameter_convent
 		
 		float scale = params["scale"];
 		set_scale(scale);
-	} else if ( parameter_convention == "xform.projection" ) {
+	} else if ( parameter_convention == "projection" ) {
 		set_rotation(euler_type,params);
 		
 		float sx = params["sx"];
@@ -465,7 +465,7 @@ void Transform3D::set_params(const Dict& params, const string& parameter_convent
 		float scale = params["scale"];
 		set_scale(scale);*/
 	} else {
-		throw InvalidParameterException("Error, the parameter convention argument must be either xform.align2d, xform.align3d or xform.project");
+		throw InvalidParameterException("Error, the parameter convention argument must be either align2d, align3d or projection");
 	}
 }
 
@@ -474,7 +474,7 @@ Dict Transform3D::get_params(const string& parameter_convention, const EulerType
 	
 	Dict soln;
 	soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
-	if ( parameter_convention ==  "xform.align2d" ) {
+	if ( parameter_convention ==  "align2d" ) {
 		Dict rot = get_rotation(); // Uses EMAN convention
 		soln["alpha"] = rot["phi"]; // Return EMAN phi
 		Vec3f total_post = get_total_posttrans();
@@ -482,7 +482,7 @@ Dict Transform3D::get_params(const string& parameter_convention, const EulerType
 		soln["sy"] = total_post[1];
 		soln["mirror"] = post_x_mirror;
 		soln["scale"] = get_scale();
-	} else if ( parameter_convention ==  "xform.align3d" ) {
+	} else if ( parameter_convention ==  "align3d" ) {
 		Dict rot = get_rotation(euler_type);
 		soln = rot; // Use Dict::operator= to copy the elements
 		Vec3f total_post = get_total_posttrans();
@@ -492,7 +492,7 @@ Dict Transform3D::get_params(const string& parameter_convention, const EulerType
 		soln["mirror"] = post_x_mirror;
 		soln["scale"] = get_scale();
 		soln["euler_convention"] = euler_type; // This added by d.woolford
-	} else if ( parameter_convention == "xform.projection" ) {
+	} else if ( parameter_convention == "projection" ) {
 		Dict rot = get_rotation(euler_type);
 		soln = rot; // Use Dict::operator= to copy the elements
 		Vec3f total_post = get_total_posttrans();
@@ -502,7 +502,7 @@ Dict Transform3D::get_params(const string& parameter_convention, const EulerType
 // 		soln["scale"] = get_scale(); Scale not present yet due to Pawel Penczek's request
 		soln["euler_convention"] = euler_type;
 	} else {
-		throw InvalidParameterException("Error, the parameter convention argument must be either xform.align2d, xform.align3d or xform.project");
+		throw InvalidParameterException("Error, the parameter convention argument must be either align2d, align3d or projection");
 	}
 	
 	return soln;
