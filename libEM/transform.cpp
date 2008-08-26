@@ -473,8 +473,9 @@ void Transform3D::set_params(const Dict& params, const string& parameter_convent
 Dict Transform3D::get_params(const string& parameter_convention, const EulerType euler_type) const {
 	
 	Dict soln;
-	soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
+	
 	if ( parameter_convention ==  "align2d" ) {
+		soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
 		Dict rot = get_rotation(); // Uses EMAN convention
 		soln["alpha"] = rot["phi"]; // Return EMAN phi
 		Vec3f total_post = get_total_posttrans();
@@ -482,9 +483,11 @@ Dict Transform3D::get_params(const string& parameter_convention, const EulerType
 		soln["sy"] = total_post[1];
 		soln["mirror"] = post_x_mirror;
 		soln["scale"] = get_scale();
+		soln["euler_convention"] = UNKNOWN; //This is how it should be, there is no convention for 2D
 	} else if ( parameter_convention ==  "align3d" ) {
 		Dict rot = get_rotation(euler_type);
 		soln = rot; // Use Dict::operator= to copy the elements
+		soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
 		Vec3f total_post = get_total_posttrans();
 		soln["sx"] = total_post[0];
 		soln["sy"] = total_post[1];
@@ -495,6 +498,7 @@ Dict Transform3D::get_params(const string& parameter_convention, const EulerType
 	} else if ( parameter_convention == "projection" ) {
 		Dict rot = get_rotation(euler_type);
 		soln = rot; // Use Dict::operator= to copy the elements
+		soln["parameter_convention"] = parameter_convention;
 		Vec3f total_post = get_total_posttrans();
 		soln["sx"] = total_post[0];
 		soln["sy"] = total_post[1];
@@ -697,12 +701,7 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	case MRC:
 		az  = (float)rotation["phi"]   + 90.0f ;
 		alt = (float)rotation["theta"] ;
-		// This was what was written originally, but according to Phil Baldwin's
-		// transform class paper, phi should be negated
-		//phi = (float)rotation["omega"] - 90.0f ;
-		//  So below is the correct answer (if the paper is correct)
-		// FIXME: double check this by going through the formulas and verifying
-		phi = -(float)rotation["omega"] + 90.0f ;
+		phi = (float)rotation["omega"] - 90.0f ;
 		break;
 
 	case QUATERNION:
@@ -969,10 +968,7 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	case MRC:
 		result["phi"]   = phiS;
 		result["theta"] = alt;
-		// This should be negated, according to the Baldwin Transform paper
-		// FIXME - this should be checked
-		result["omega"] = -psiS;
-		//result["omega"] = psiS;
+		result["omega"] = psiS;
 		break;
 
 	case XYZ:

@@ -38,21 +38,88 @@ import testlib
 
 class TestTransform(unittest.TestCase):
 	"""this is the unit test for Transform3D class"""
+	
+	#def test_get_set_params(self):
+		#"""test get/set params .............................."""
+		#az = 
+		#t = Transform3D(az, alt, phi)
+		#rot = t.get_rotation(EULER_EMAN)
+
+		##testlib.assertfloat(self, az, float(rot["az"]))
+		#self.assertAlmostEqual(az, rot["az"], 3)
+		#testlib.assertfloat(self, alt, float(rot["alt"]))
+		#testlib.assertfloat(self, phi, float(rot["phi"]))
 		
 	def test_get_rotation(self):
-		"""test rotation ...................................."""
+		"""test get rotation ................................"""
 		alt = 1.45232928554
 		az = -0.60170830102
-		phi = 0
-
+		phi = 10.0
+	
+		# EMAN convention
 		t = Transform3D(az, alt, phi)
 		rot = t.get_rotation(EULER_EMAN)
 
-		#testlib.assertfloat(self, az, float(rot["az"]))
-		self.assertAlmostEqual(az, rot["az"], 3)
-		testlib.assertfloat(self, alt, float(rot["alt"]))
-		testlib.assertfloat(self, phi, float(rot["phi"]))
+		self.assertAlmostEqual(az%360.0, rot["az"]%360.0, 3)
+		self.assertAlmostEqual(alt%360.0, rot["alt"]%360.0, 3)
+		self.assertAlmostEqual(phi%360.0, rot["phi"]%360.0, 3)
 		
+		# SPIDER convention
+		phi = az
+		theta = alt
+		psi = phi
+		t = Transform3D(EULER_SPIDER,phi,theta,psi)
+		rot = t.get_rotation(EULER_SPIDER)
+
+		self.assertAlmostEqual(phi%360.0, rot["phi"]%360.0, 3)
+		self.assertAlmostEqual(theta%360.0, rot["theta"]%360.0, 3)
+		self.assertAlmostEqual(psi%360.0, rot["psi"]%360.0, 3)
+	
+		# IMAGIC convention
+		alpha = az
+		beta = alt
+		gamma = phi
+		t = Transform3D(EULER_IMAGIC,alpha,beta,gamma)
+		rot = t.get_rotation(EULER_IMAGIC)
+
+		self.assertAlmostEqual(alpha%360.0, rot["alpha"]%360.0, 3)
+		self.assertAlmostEqual(beta%360.0, rot["beta"]%360.0, 3)
+		self.assertAlmostEqual(gamma%360.0, rot["gamma"]%360.0, 3)
+		
+		# MRC convention
+		phi = az
+		theta = alt
+		omega = phi
+		t = Transform3D(EULER_MRC,phi,theta,omega)
+		rot = t.get_rotation(EULER_MRC)
+
+		self.assertAlmostEqual(phi%360.0, rot["phi"]%360.0, 3)
+		self.assertAlmostEqual(theta%360.0, rot["theta"]%360.0, 3)
+		self.assertAlmostEqual(omega%360.0, rot["omega"]%360.0, 3)
+		
+		# MRC convention
+		xtilt = az
+		ytilt = alt
+		ztilt = phi
+		t = Transform3D(EULER_XYZ,xtilt,ytilt,ztilt)
+		rot = t.get_rotation(EULER_XYZ)
+
+		self.assertAlmostEqual(xtilt%360.0, rot["xtilt"]%360.0, 3)
+		self.assertAlmostEqual(ytilt%360.0, rot["ytilt"]%360.0, 3)
+		self.assertAlmostEqual(ztilt%360.0, rot["ztilt"]%360.0, 3)
+	
+		# MRC convention
+		xtilt = az
+		ytilt = alt
+		ztilt = phi
+		t = Transform3D(EULER_XYZ,xtilt,ytilt,ztilt)
+		rot = t.get_rotation(EULER_XYZ)
+
+		self.assertAlmostEqual(xtilt%360.0, rot["xtilt"]%360.0, 3)
+		self.assertAlmostEqual(ytilt%360.0, rot["ytilt"]%360.0, 3)
+		self.assertAlmostEqual(ztilt%360.0, rot["ztilt"]%360.0, 3)
+	
+	
 	def test_trans_after_rotation(self):
 		"""test translation after rotation .................."""
 		alt = 1.45232928554
