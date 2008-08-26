@@ -124,6 +124,12 @@ namespace EMAN
 		 */
 	    Transform3D( const Transform3D& rhs );
 
+		
+		Transform3D(const Dict& params,const string& parameter_convention, const EulerType euler_type=EMAN) {
+			init();
+			set_params(params,parameter_convention,euler_type);	
+		}
+			
 		 /** Construct a Transform3D object describing a rotation, assuming the EMAN Euler type
 		 * @param az EMAN - az
 		 * @param alt EMAN - alt
@@ -232,6 +238,10 @@ namespace EMAN
 						  const float& m21, const float& m22, const float& m23,
 						  const float& m31, const float& m32, const float& m33);
 
+		void set_params(const Dict& params, const string& parameter_convention, const EulerType euler_type = EMAN);
+				
+		Dict get_params(const string& parameter_convention, const EulerType euler_type = EMAN) const;
+		
 		/** Set a rotation using a specific Euler type and the dictionary interface
 		 * Works for all Euler types
 		 * @param euler_type any Euler type
@@ -362,6 +372,9 @@ namespace EMAN
 		void set_posttrans(const float& dx, const float& dy, const float& dz);
 		void set_posttrans(const float& dx, const float& dy);
 		void set_posttrans(const Vec2f& posttrans);
+		
+		void set_post_x_mirror(const bool b) { post_x_mirror = b; }
+		bool get_post_x_mirror() { return post_x_mirror; }
 
 		float get_scale() const; 
 
@@ -406,6 +419,8 @@ namespace EMAN
 		static SymType get_sym_type(const string & symname);
 
 		float matrix[4][4];
+		
+		bool post_x_mirror;
 
 		static map<string, int> symmetry_map;
 	}; // ends Class
