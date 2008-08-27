@@ -86,7 +86,7 @@ Transform3D::Transform3D(const float& az, const float& alt, const float& phi)
 //  C3  Usual Constructor: Post Trans, after appying Rot
 Transform3D::Transform3D(const float& az, const float& alt, const float& phi, const Vec3f& posttrans )
 {
-// 	init(); // This is called in set_rotation
+ 	init(); 
 	set_rotation(az,alt,phi);
 	set_posttrans(posttrans);
 }
@@ -102,13 +102,13 @@ Transform3D::Transform3D(const float& m11, const float& m12, const float& m13,
 // C4
 Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3) 
 {
-// 	init(); // This is called in set_rotation
+ 	init(); 
 	set_rotation(euler_type,a1,a2,a3);
 }
 
 Transform3D::Transform3D(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
 {
-// 	init(); // This is called in set_rotation
+ 	init(); 
 	set_rotation(euler_type,a1,a2,a3,a4);
 }
 
