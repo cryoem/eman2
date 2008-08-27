@@ -3297,7 +3297,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			#self.regressiveflag = False
 			
 			exclusion = boxable.get_exclusion_image().copy()
-			self.__paint_excluded_box_areas(exclusion,boxable.boxes)
+			self.__paint_excluded_box_areas(exclusion,boxable.get_boxes())
 
 			boxes = self.__auto_box(correlation,boxable,exclusion)
 			print "autoboxed",len(boxes)
@@ -3424,7 +3424,7 @@ class SwarmAutoBoxer(AutoBoxer):
 
 
 		template = self.get_high_res_template_image()
-		template.write_image("template.hdf")
+#		template.write_image("template.hdf")
 		# This is what should be written to the database
 		boxes = []
 		

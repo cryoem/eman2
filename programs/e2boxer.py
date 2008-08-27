@@ -1015,8 +1015,7 @@ class GUIbox:
 				#print "clearing displays"
 				guiim_core = self.guiim.get_core_object()
 				guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
-				self.clear_displays()
-				
+				self.clear_displays()	
 			else:
 				print "error, unknown mode in update_box_size"
 		
