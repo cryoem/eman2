@@ -349,8 +349,12 @@ class EMAN2DB:
 		self.dict_closed(name)
 
 	def dict_closed(self,name):
-		del(self.__dict__[name])
-		del self.dicts[name]
+		try:
+			
+			del(self.__dict__[name])
+			del self.dicts[name]
+		except:
+			print "warning, attempted to close a dictionary named",name,"but failed"
 
 	def remove_dict(self,name):
 		if name in self.dicts.keys():
