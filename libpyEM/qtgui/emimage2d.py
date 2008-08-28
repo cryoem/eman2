@@ -49,6 +49,8 @@ from emshape import EMShape
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
+import platform
+
 MAG_INC = 1.1
 
 from emglobjects import EMOpenGLFlagsAndTools
@@ -82,6 +84,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.timeinterval = 50
 		self.timer.start(50)
 		
+		self.light_0_pos = [.1,.1,1,0.]
+		
 	def timeout(self):
 		update = False
 		if self.image2d.updateblend() :
@@ -101,6 +105,14 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
+		
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, self.light_0_pos)
+	
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
 		try:
 			self.image2d.initializeGL()
 			self.initimageflag = False
@@ -158,6 +170,12 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 	def mouseReleaseEvent(self,event):
 		self.image2d.mouseReleaseEvent(event)
+		
+	def mouseDoubleClickEvent(self,event):
+		self.image2d.mouseDoubleClickEvent(event)
+		
+	def keyPressEvent(self,event):
+		self.image2d.keyPressEvent(event)
 		
 	def dropEvent(self,event):
 		self.image2d.dropEvent(event)
@@ -273,12 +291,27 @@ class EMImage2DCore:
 		self.hist = []
 		self.file_name = None # stores the filename of the image, if None then member functions should be smart enough to handle it
 		
+		self.wheel_navigate = False # useful on Mac laptops
+		
+		self.display_help_hud = False # display heads up display, toggled with F1
+		
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
 		if image :
 			self.setData(image)
 			
+		try:
+			self.font_renderer = get_3d_font_renderer()
+			self.font_renderer.set_face_size(24)
+			self.font_renderer.set_depth(6)
+			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
+			self.font_render_mode = "FTGL"
+		except:
+			self.font_render_mode = "GLUT"
+		
+		
+		self.__generate_display_help()
 		self.__load_display_settings_from_db()
 		
 	def __del__(self):
@@ -577,6 +610,7 @@ class EMImage2DCore:
 		self.display_states = []
 
 	def display_state_changed(self):
+		
 		display_states = []
 		display_states.append(self.parent.width())
 		display_states.append(self.parent.height())
@@ -669,9 +703,7 @@ class EMImage2DCore:
 			glDisable(GL_TEXTURE_2D)
 			
 			glPopMatrix()
-			
-			
-			
+
 		render = False
 		if self.use_display_list:
 		
@@ -718,7 +750,9 @@ class EMImage2DCore:
 					GL.glEnable(GL.GL_BLEND);
 					depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
 					GL.glDisable(GL.GL_DEPTH_TEST);
-					GL.glBlendEquation(GL.GL_FUNC_SUBTRACT);
+					try:
+						GL.glBlendEquation(GL.GL_FUNC_SUBTRACT);
+					except: pass
 					#GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 					GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
 	
@@ -849,7 +883,13 @@ class EMImage2DCore:
 			#glPopMatrix()
 		
 		if ( lighting ): glEnable(GL_LIGHTING)
+		
+		if self.display_help_hud:
+			glEnable(GL_LIGHTING)
+			self.__draw_hud()
+			glDisable(GL_LIGHTING)
 
+		if ( lighting ): glEnable(GL_LIGHTING)
 	def resizeEvent(self,width,height):
 		if self.init_size :
 			self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
@@ -1038,8 +1078,9 @@ class EMImage2DCore:
 			self.parent.emit(QtCore.SIGNAL("mousemove"), event)
 	
 	def keyPressEvent(self,event):
-		if self.mmode==0:
-			self.parent.emit(QtCore.SIGNAL("keypress"), event)
+		if event.key() == Qt.Key_F1:
+			self.display_help_hud = not self.display_help_hud
+			self.updateGL()
 	
 	def leaveEvent(self):
 		if self.rmousedrag:
@@ -1061,15 +1102,123 @@ class EMImage2DCore:
 				self.setData(self.data)
 
 	def wheelEvent(self, event):
-		if self.mmode==0 and event.modifiers()&Qt.ShiftModifier:
-			self.parent.emit(QtCore.SIGNAL("mousewheel"), event)
-			return
-		if event.delta() > 0:
-			self.setScale( self.scale * self.mag )
-		elif event.delta() < 0:
-			self.setScale(self.scale * self.invmag )
-		# The self.scale variable is updated now, so just update with that
-		if self.inspector: self.inspector.setScale(self.scale)
+		if not self.wheel_navigate:
+			if event.orientation() & Qt.Vertical:
+				if self.mmode==0 and event.modifiers()&Qt.ShiftModifier:
+					self.parent.emit(QtCore.SIGNAL("mousewheel"), event)
+					return
+				if event.delta() > 0:
+					self.setScale( self.scale * self.mag )
+				elif event.delta() < 0:
+					self.setScale(self.scale * self.invmag )
+				# The self.scale variable is updated now, so just update with that
+				if self.inspector: self.inspector.setScale(self.scale)
+		else:
+			move_fac = 1.0/20.0
+			delta = event.delta()/120.0
+			
+#			print self.origin, self.data.get_xsize(),self.data.get_ysize(),self.scale,self.parent.width(),self.parent.height()
+
+#			print self.origin
+			if event.orientation() & Qt.Vertical:
+				visible_vertical_pixels = self.parent.height()/sqrt(self.scale)
+				shift_per_delta = move_fac*visible_vertical_pixels
+#				print "there are this many visible vertical pixels",visible_vertical_pixels, "deltas", delta, "shift per delta",shift_per_delta
+#				print "shifting vertical",event.delta(),shift_per_delta
+				self.origin=(self.origin[0],self.origin[1]-delta*shift_per_delta)
+			elif event.orientation() & Qt.Horizontal:
+				visible_horizontal_pixels = self.parent.width()/sqrt(self.scale)
+				shift_per_delta = move_fac*visible_horizontal_pixels
+#				print "shifting horizontal",event.delta(),shift_per_delta
+#	   	   	   	print "there are this many visible horizontal pixels",visible_horizontal_pixels, "deltas", delta, "shift per delta",shift_per_delta
+				self.origin=(self.origin[0]+delta*shift_per_delta,self.origin[1])
+			try: self.parent.update()
+			except: pass
+#			print "exit",self.origin
+			
+	
+	def mouseDoubleClickEvent(self,event):
+		if platform.system() == "Darwin":
+			self.wheel_navigate = not self.wheel_navigate
+		else:
+			print "double click only performs a function on Mac"
+			
+	def __generate_display_help(self):
+		self.display_help = []
+		system = platform.system()
+		if system == "Darwin":
+			self.display_help.append(["Double click", "Toggle wheel zoom/pan"])
+			self.display_help.append(["Right click - Ctrl left click", "Pan"])
+			self.display_help.append(["Middle click - Apple left click", "Show inspector"])
+			
+#		self.display_help_column_bounds = [0,0]
+#		if self.font_render_mode == "FTGL":
+#			for s in self.display_help:
+#				for i,text in enumerate(s):
+#					bbox = self.font_renderer.bounding_box(text)
+#					width = bbox[3]-bbox[0]
+#					if width > self.display_help_column_bounds[i]:
+#						self.display_help_column_bounds[i] = width
+				
+	def __draw_hud(self):
+		if self.font_render_mode == "FTGL":
+			
+			self.display_help_column_bounds = [0,0]
+			for s in self.display_help:
+				for i,text in enumerate(s):
+					bbox = self.font_renderer.bounding_box(text)
+					width = bbox[3]-bbox[0]
+					if width > self.display_help_column_bounds[i]:
+						self.display_help_column_bounds[i] = width
+			
+			width = self.parent.width()
+			height = self.parent.height()
+			glMatrixMode(GL_PROJECTION)
+			glPushMatrix()
+			glLoadIdentity()
+			glOrtho(0,width,0,height,-200,200)
+			glMatrixMode(GL_MODELVIEW)
+			glLoadIdentity()
+			glEnable(GL_LIGHTING)
+			glEnable(GL_NORMALIZE)
+#			glMaterial(GL_FRONT,GL_AMBIENT,(0.0, 0.0, 0.0,1.0))
+			glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 0.9, 0.2,1.0))
+			glMaterial(GL_FRONT,GL_DIFFUSE,(1.0, 1.0, 1.0,1.0))
+			glMaterial(GL_FRONT,GL_SPECULAR,(1,0, 0.0, 1.0,1.0))
+#			glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 0.9, 0.2,1.0))
+#			glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 0.9, 0.9,1.0))
+#			glMaterial(GL_FRONT,GL_SPECULAR,(0.9, 0.5, 0.2,1.0))
+			glMaterial(GL_FRONT,GL_SHININESS,20.0)
+			
+			glDisable(GL_DEPTH_TEST)
+			glColor(1.0,1.0,1.0)
+		
+			for i,s in enumerate(self.display_help):
+				for j,text in enumerate (s):
+#					print j,text
+					glPushMatrix()
+					offset = 0
+					if j > 0: offset = self.display_help_column_bounds[j-1]
+					glTranslate(j*10+offset,height-(i+2)*2.2*self.font_renderer.get_face_size(),0)
+					glRotate(-20,0,1,0)
+					self.font_renderer.render_string(text)
+					glPopMatrix()
+				#string = str(s)
+				#bbox = self.font_renderer.bounding_box(string)
+				#x_offset = width-(bbox[3]-bbox[0]) - 10
+				#y_offset += 10
+				#glPushMatrix()
+				#glTranslate(x_offset,y_offset,0)
+				#glRotate(20,0,1,0)
+				#self.font_renderer.render_string(string)
+				#glPopMatrix()
+				#y_offset += bbox[4]-bbox[1]
+			else:
+				pass
+			
+			glMatrixMode(GL_PROJECTION)
+			glPopMatrix()
+			glMatrixMode(GL_MODELVIEW)
 		
 		
 class EMImageInspector2D(QtGui.QWidget):

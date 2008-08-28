@@ -440,6 +440,9 @@ def remove_file( file_name ):
 # returns gm time as a string. For example if it's 11:13 pm on the 18th of June 2008 this will return something like
 # '23:13:25.14 18/6/2008'
 def gm_time_string():
+	'''
+	Returns gm time as a string. For example if it's 11:13 pm on the 18th of June 2008 this will return something like '23:13:25.14 18/6/2008'
+	'''
 	
 	from time import gmtime,time
 	a = time()
