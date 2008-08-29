@@ -568,6 +568,9 @@ def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	elif type == 1:
 		window_size=(128,128)
 		image_size=(4482,6678)
+	elif type == 2:
+		window_size=(128,128)
+		image_size=(8964,13356)
 	
 	for i in range(num_im):
 		im = test_boxing_image(window_size,image_size,n)

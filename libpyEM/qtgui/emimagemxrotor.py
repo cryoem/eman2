@@ -866,10 +866,11 @@ class EMDataListCache:
 		self.image_height = -1
 	
 	def __del__(self):
-		DB = EMAN2db.EMAN2DB.open_db(".")
-		try:
-			DB.close_dict("emimage_mx_rotor_cache")
-		except: pass
+#		DB = EMAN2db.EMAN2DB.open_db(".")
+#		try:
+#			DB.close_dict("emimage_mx_rotor_cache")
+#		except: pass
+	   pass
 	
 	def get_image_width(self):
 		if self.mode == EMDataListCache.FILE_MODE:
