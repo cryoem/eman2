@@ -340,7 +340,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	class_< EMAN::Transform3D >("Transform3D", init<  >())
 		.def(init< const EMAN::Transform3D& >())
 		.def(init< const float&, const float&, const float& >())
-		.def(init< const EMAN::Dict&, const string&, optional<const EMAN::Transform3D::EulerType> >())
+// 		.def(init< const EMAN::Dict&, const string&, optional<const EMAN::Transform3D::EulerType> >())
 		.def(init< const float&, const float&, const float&, const EMAN::Vec3f& >())
 		.def(init< EMAN::Transform3D::EulerType, const float&, const float&, const float& >())
 		.def(init< EMAN::Transform3D::EulerType, const float&, const float&, const float&, const float&>())
@@ -361,8 +361,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("set_rotation", (void (EMAN::Transform3D::*)(const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
 		.def("set_rotation", (void (EMAN::Transform3D::*)(EMAN::Transform3D::EulerType, const EMAN::Dict&) )&EMAN::Transform3D::set_rotation)
 		.def("set_rotation", (void (EMAN::Transform3D::*)(const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&) )&EMAN::Transform3D::set_rotation)
-		.def("set_params", (void (EMAN::Transform3D::*)(const EMAN::Dict&, const std::string&, const EMAN::Transform3D::EulerType))&EMAN::Transform3D::set_params,EMAN_Transform3D_set_params_overloads_2_3())
-		.def("get_params",( EMAN::Dict (EMAN::Transform3D::*)(const std::string&, const EMAN::Transform3D::EulerType) const)&EMAN::Transform3D::get_params, EMAN_Transform3D_get_params_overloads_1_2())
+// 		.def("set_params", (void (EMAN::Transform3D::*)(const EMAN::Dict&, const std::string&, const EMAN::Transform3D::EulerType))&EMAN::Transform3D::set_params,EMAN_Transform3D_set_params_overloads_2_3())
+// 		.def("get_params",( EMAN::Dict (EMAN::Transform3D::*)(const std::string&, const EMAN::Transform3D::EulerType) const)&EMAN::Transform3D::get_params, EMAN_Transform3D_get_params_overloads_1_2())
 		.def("get_post_x_mirror",&EMAN::Transform3D::get_post_x_mirror)
 		.def("set_post_x_mirror",&EMAN::Transform3D::set_post_x_mirror)
 		.def("get_mag", &EMAN::Transform3D::get_mag)
@@ -415,6 +415,24 @@ BOOST_PYTHON_MODULE(libpyTransform2)
     ;
 	
 	delete EMAN_Transform3D_scope;
+	
+// 	class_< EMAN::Alignment2D, bases<EMAN::Transform3D> >("Alignment2D", init<  >())
+// 	.def("set_params",&EMAN::Alignment2D::set_params)
+// 	.def("get_params",&EMAN::Alignment2D::get_params)
+// 	.def("get_name",&EMAN::Alignment2D::get_name)
+// 	;
+// 	
+// 	class_< EMAN::Alignment3D, bases<EMAN::Transform3D> >("Alignment3D", init<  >())
+// 	.def("set_params",&EMAN::Alignment3D::set_params)
+// 	.def("get_params",&EMAN::Alignment3D::get_params)
+// 	.def("get_name",&EMAN::Alignment3D::get_name)
+// 	;
+// 	
+// 	class_< EMAN::AlignmentProjection, bases<EMAN::Transform3D> >("AlignmentProjection", init<  >())
+// 	.def("set_params",&EMAN::AlignmentProjection::set_params)
+// 	.def("get_params",&EMAN::AlignmentProjection::get_params)
+// 	.def("get_name",&EMAN::AlignmentProjection::get_name)
+// 	;
 }
 
 

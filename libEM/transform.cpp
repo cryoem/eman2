@@ -58,6 +58,34 @@ const string EvenOrientationGenerator::NAME = "even";
 const string RandomOrientationGenerator::NAME = "rand";
 const string OptimumOrientationGenerator::NAME = "opt";
 
+const string Alignment2D::NAME = "align2d";
+// const string Alignment3D::NAME = "align3d";
+// const string AlignmentProjection::NAME = "projection";
+
+Transform3D::EulerType Transform3D::int_to_euler_type(const int euler_int) {
+	static vector<Transform3D::EulerType> eulers;
+	if (eulers.size() == 0) {
+		eulers.push_back(UNKNOWN);
+		eulers.push_back(EMAN);
+		eulers.push_back(IMAGIC);
+		eulers.push_back(QUATERNION);
+		eulers.push_back(SGIROT);
+		eulers.push_back(SPIDER);
+		eulers.push_back(MRC);
+		eulers.push_back(XYZ);
+		eulers.push_back(MATRIX);
+	}
+	
+	
+	for(vector<Transform3D::EulerType>::const_iterator it = eulers.begin(); it != eulers.end(); ++it) {
+		if ( (int)(*it) == euler_int ) {
+			return *it;
+		}
+	}
+	throw InvalidParameterException("Error, unknow euler (cast as int)");
+}
+
+
 //  C1
 Transform3D::Transform3D()  //    C1
 {
@@ -86,7 +114,7 @@ Transform3D::Transform3D(const float& az, const float& alt, const float& phi)
 //  C3  Usual Constructor: Post Trans, after appying Rot
 Transform3D::Transform3D(const float& az, const float& alt, const float& phi, const Vec3f& posttrans )
 {
- 	init(); 
+	init(); // This is called in set_rotation
 	set_rotation(az,alt,phi);
 	set_posttrans(posttrans);
 }
@@ -423,94 +451,94 @@ Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     
 	return resultant; // This will have the post_trans of M2
 }
 
-void Transform3D::set_params(const Dict& params, const string& parameter_convention, const EulerType euler_type) {
-	
-	if ( parameter_convention ==  "align2d" ) {
-		float alpha = params["alpha"];
-		set_rotation(0,0,alpha);
-		
-		float sx = params["sx"];
-		float sy = params["sy"];
-		set_posttrans(sx,sy,0);
-		
-		bool mirror = params["mirror"];
-		set_post_x_mirror(mirror);
-		
-		float scale = params["scale"];
-		set_scale(scale);
-	} else if ( parameter_convention ==  "align3d" ) {
-		set_rotation(euler_type,params);
-		
-		float sx = params["sx"];
-		float sy = params["sy"];
-		float sz = params["sz"];
-		set_posttrans(sx,sy,sz);
-		
-		bool mirror = params["mirror"];
-		set_post_x_mirror(mirror);
-		
-		float scale = params["scale"];
-		set_scale(scale);
-	} else if ( parameter_convention == "projection" ) {
-		set_rotation(euler_type,params);
-		
-		float sx = params["sx"];
-		float sy = params["sy"];
-		set_posttrans(sx,sy,0);
-		// Mirroring and scale currently not supported due to Pawel Penczek's request
-		/*
-		bool mirror = params["mirror"];
-		set_post_x_mirror(mirror);
-		
-		float scale = params["scale"];
-		set_scale(scale);*/
-	} else {
-		throw InvalidParameterException("Error, the parameter convention argument must be either align2d, align3d or projection");
-	}
-}
-
-
-Dict Transform3D::get_params(const string& parameter_convention, const EulerType euler_type) const {
-	
-	Dict soln;
-	
-	if ( parameter_convention ==  "align2d" ) {
-		soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
-		Dict rot = get_rotation(); // Uses EMAN convention
-		soln["alpha"] = rot["phi"]; // Return EMAN phi
-		Vec3f total_post = get_total_posttrans();
-		soln["sx"] = total_post[0];
-		soln["sy"] = total_post[1];
-		soln["mirror"] = post_x_mirror;
-		soln["scale"] = get_scale();
-		soln["euler_convention"] = UNKNOWN; //This is how it should be, there is no convention for 2D
-	} else if ( parameter_convention ==  "align3d" ) {
-		Dict rot = get_rotation(euler_type);
-		soln = rot; // Use Dict::operator= to copy the elements
-		soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
-		Vec3f total_post = get_total_posttrans();
-		soln["sx"] = total_post[0];
-		soln["sy"] = total_post[1];
-		soln["sz"] = total_post[2];
-		soln["mirror"] = post_x_mirror;
-		soln["scale"] = get_scale();
-		soln["euler_convention"] = euler_type; // This added by d.woolford
-	} else if ( parameter_convention == "projection" ) {
-		Dict rot = get_rotation(euler_type);
-		soln = rot; // Use Dict::operator= to copy the elements
-		soln["parameter_convention"] = parameter_convention;
-		Vec3f total_post = get_total_posttrans();
-		soln["sx"] = total_post[0];
-		soln["sy"] = total_post[1];
+// void Transform3D::set_params(const Dict& params, const string& parameter_convention, const EulerType euler_type) {
+// 	
+// 	if ( parameter_convention ==  "align2d" ) {
+// 		float alpha = params["alpha"];
+// 		set_rotation(0,0,alpha);
+// 		
+// 		float sx = params["sx"];
+// 		float sy = params["sy"];
+// 		set_posttrans(sx,sy,0);
+// 		
+// 		bool mirror = params["mirror"];
+// 		set_post_x_mirror(mirror);
+// 		
+// 		float scale = params["scale"];
+// 		set_scale(scale);
+// 	} else if ( parameter_convention ==  "align3d" ) {
+// 		set_rotation(euler_type,params);
+// 		
+// 		float sx = params["sx"];
+// 		float sy = params["sy"];
+// 		float sz = params["sz"];
+// 		set_posttrans(sx,sy,sz);
+// 		
+// 		bool mirror = params["mirror"];
+// 		set_post_x_mirror(mirror);
+// 		
+// 		float scale = params["scale"];
+// 		set_scale(scale);
+// 	} else if ( parameter_convention == "projection" ) {
+// 		set_rotation(euler_type,params);
+// 		
+// 		float sx = params["sx"];
+// 		float sy = params["sy"];
+// 		set_posttrans(sx,sy,0);
+// 		// Mirroring and scale currently not supported due to Pawel Penczek's request
+// 		/*
+// 		bool mirror = params["mirror"];
+// 		set_post_x_mirror(mirror);
+// 		
+// 		float scale = params["scale"];
+// 		set_scale(scale);*/
+// 	} else {
+// 		throw InvalidParameterException("Error, the parameter convention argument must be either align2d, align3d or projection");
+// 	}
+// }
+// 
+// 
+// Dict Transform3D::get_params(const string& parameter_convention, const EulerType euler_type) const {
+// 	
+// 	Dict soln;
+// 	
+// 	if ( parameter_convention ==  "align2d" ) {
+// 		soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
+// 		Dict rot = get_rotation(); // Uses EMAN convention
+// 		soln["alpha"] = rot["phi"]; // Return EMAN phi
+// 		Vec3f total_post = get_total_posttrans();
+// 		soln["sx"] = total_post[0];
+// 		soln["sy"] = total_post[1];
 // 		soln["mirror"] = post_x_mirror;
-// 		soln["scale"] = get_scale(); Scale not present yet due to Pawel Penczek's request
-		soln["euler_convention"] = euler_type;
-	} else {
-		throw InvalidParameterException("Error, the parameter convention argument must be either align2d, align3d or projection");
-	}
-	
-	return soln;
-}
+// 		soln["scale"] = get_scale();
+// 		soln["euler_convention"] = UNKNOWN; //This is how it should be, there is no convention for 2D
+// 	} else if ( parameter_convention ==  "align3d" ) {
+// 		Dict rot = get_rotation(euler_type);
+// 		soln = rot; // Use Dict::operator= to copy the elements
+// 		soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
+// 		Vec3f total_post = get_total_posttrans();
+// 		soln["sx"] = total_post[0];
+// 		soln["sy"] = total_post[1];
+// 		soln["sz"] = total_post[2];
+// 		soln["mirror"] = post_x_mirror;
+// 		soln["scale"] = get_scale();
+// 		soln["euler_convention"] = euler_type; // This added by d.woolford
+// 	} else if ( parameter_convention == "projection" ) {
+// 		Dict rot = get_rotation(euler_type);
+// 		soln = rot; // Use Dict::operator= to copy the elements
+// 		soln["parameter_convention"] = parameter_convention;
+// 		Vec3f total_post = get_total_posttrans();
+// 		soln["sx"] = total_post[0];
+// 		soln["sy"] = total_post[1];
+// // 		soln["mirror"] = post_x_mirror;
+// // 		soln["scale"] = get_scale(); Scale not present yet due to Pawel Penczek's request
+// 		soln["euler_convention"] = euler_type;
+// 	} else {
+// 		throw InvalidParameterException("Error, the parameter convention argument must be either align2d, align3d or projection");
+// 	}
+// 	
+// 	return soln;
+// }
 
 /*             Here starts the pure rotation stuff */
 
@@ -1348,6 +1376,106 @@ Transform3D::angles2tfvec(EulerType eulertype, const vector<float> ang) {
 	return tfvec;
 }
 
+ Alignment2D::Alignment2D() : params() {
+	 params["sx"] = 0.0f;
+	 params["sy"] = 0.0f;
+	 params["alpha"] = 0.0f;
+	 params["mirror"] = false;
+	 params["scale"] = 0.0f;
+ }
+
+
+ Alignment2D::Alignment2D(const float& dx, const float& dy, const float& alpha,const bool post_x_mirror, const float& scale) : params() {
+	params["sx"] = dx;
+	params["sy"] = dy;
+	params["alpha"] = alpha;
+	params["mirror"] = post_x_mirror;
+	params["scale"] = scale;
+ }
+ 
+ Alignment2D::Alignment2D(const Transform3D& t) {
+	 Dict rot = t.get_rotation();
+	 params["alpha"] = params["phi"]; // Grabs the EMAN in plane rotation
+
+	 Vec3f v = t.get_total_posttrans();
+	 params["sx"] = v[0];
+	 params["sy"] = v[1];
+	 
+	 params["mirror"] = t.get_post_x_mirror();
+	 params["scale"] = t.get_scale();
+ }
+
+Dict Alignment2D::get_params(const Transform3D& t) {
+	Alignment2D ali2d(t);
+	return ali2d.get_params();
+}
+
+void Alignment2D::set_params(const Dict& d) {
+	// I got entry wise here to make sure we get evertyhing - the Dict object should
+	// throw if it's asked for an entry it doesn't have (doesn't it?)
+	params["sx"] = d["sx"];
+	params["sy"] = d["sy"];
+	params["alpha"] = d["alpha"];
+	params["mirror"] = d["mirror"];
+	params["scale"] = d["scale"];
+}
+
+// Alignment3D::Alignment3D(const float& az, const float& alt, const float& phi, const Transform3D::EulerType euler_type, const float& sx, const float& sy, const float& sz, const bool post_x_mirror=false, const float& scale=1.0);
+
+// Dict Alignment3D::get_params(const EulerType euler_type) const {
+// 	Dict soln = get_rotation(euler_type);// Use Dict::operator= to copy the elements
+// 	Vec3f total_post = get_total_posttrans();
+// 	soln["sx"] = total_post[0];
+// 	soln["sy"] = total_post[1];
+// 	soln["sz"] = total_post[2];
+// 	soln["mirror"] = post_x_mirror;
+// 	soln["scale"] = get_scale();
+// 	soln["euler_convention"] = euler_type; // This added by d.woolford
+// 	return soln;
+// }
+// 
+// void Alignment3D::set_params(const Dict& params) {
+// 	set_rotation(Transform3D::EMAN,params);
+// 		
+// 	float sx = params["sx"];
+// 	float sy = params["sy"];
+// 	float sz = params["sz"];
+// 	set_posttrans(sx,sy,sz);
+// 		
+// 	bool mirror = params["mirror"];
+// 	set_post_x_mirror(mirror);
+// 		
+// 	float scale = params["scale"];
+// 	set_scale(scale);
+// }
+// 
+// Dict AlignmentProjection::get_params(const EulerType euler_type) const {
+// 	Dict soln =  get_rotation(euler_type);
+// 	Vec3f total_post = get_total_posttrans();
+// 	soln["sx"] = total_post[0];
+// 	soln["sy"] = total_post[1];
+// // 	soln["mirror"] = post_x_mirror; Mirror not present yet due to Pawel Penczek's request
+// // 	soln["scale"] = get_scale(); Scale not present yet due to Pawel Penczek's request
+// 	soln["euler_convention"] = euler_type;
+// 	
+// 	return soln;
+// 	
+// }
+// 
+// void AlignmentProjection::set_params(const Dict& params) {
+// 	set_rotation(Transform3D::EMAN,params);
+// 		
+// 	float sx = params["sx"];
+// 	float sy = params["sy"];
+// 	set_posttrans(sx,sy,0);
+// 		// Mirroring and scale currently not supported due to Pawel Penczek's request
+// 		/*
+// 	bool mirror = params["mirror"];
+// 	set_post_x_mirror(mirror);
+// 		
+// 	float scale = params["scale"];
+// 	set_scale(scale);*/
+// }
 
 template <> Factory < Symmetry3D >::Factory()
 {

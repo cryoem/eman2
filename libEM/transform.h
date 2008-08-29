@@ -42,13 +42,17 @@
 
 #include "vec3.h"
 #include "emobject.h"
-//#include <vector>
-//#include <map>
-//#include <string>
 
-using std::string;
-using std::map;
-using std::vector;
+// #include <vector>
+// using std::vector;
+// 
+// #include <map>
+// using std::map;
+// 
+// #include <string>
+// using std::string;
+
+
 
 namespace EMAN
 {
@@ -95,7 +99,8 @@ namespace EMAN
 	 * therefore equal to  "\pm 1"
 	 * @ingroup tested3c 
      */
-    
+	
+
 	class Transform3D
 	{
 	public:
@@ -125,10 +130,10 @@ namespace EMAN
 	    Transform3D( const Transform3D& rhs );
 
 		
-		Transform3D(const Dict& params,const string& parameter_convention, const EulerType euler_type=EMAN) {
-			init();
-			set_params(params,parameter_convention,euler_type);	
-		}
+// 		Transform3D(const Dict& params,const string& parameter_convention, const EulerType euler_type=EMAN) {
+// 			init();
+// 			set_params(params,parameter_convention,euler_type);	
+// 		}
 			
 		 /** Construct a Transform3D object describing a rotation, assuming the EMAN Euler type
 		 * @param az EMAN - az
@@ -238,9 +243,9 @@ namespace EMAN
 						  const float& m21, const float& m22, const float& m23,
 						  const float& m31, const float& m32, const float& m33);
 
-		void set_params(const Dict& params, const string& parameter_convention, const EulerType euler_type = EMAN);
-				
-		Dict get_params(const string& parameter_convention, const EulerType euler_type = EMAN) const;
+// 		void set_params(const Dict& params, const string& parameter_convention, const EulerType euler_type = EMAN);
+// 				
+// 		Dict get_params(const string& parameter_convention, const EulerType euler_type = EMAN) const;
 		
 		/** Set a rotation using a specific Euler type and the dictionary interface
 		 * Works for all Euler types
@@ -374,7 +379,7 @@ namespace EMAN
 		void set_posttrans(const Vec2f& posttrans);
 		
 		void set_post_x_mirror(const bool b) { post_x_mirror = b; }
-		bool get_post_x_mirror() { return post_x_mirror; }
+		bool get_post_x_mirror() const { return post_x_mirror; }
 
 		float get_scale() const; 
 
@@ -402,8 +407,10 @@ namespace EMAN
 			}
 			
 		}
+		
+		static Transform3D::EulerType int_to_euler_type(const int euler_int);
 
-	private:
+	protected:
 		enum SymType
 		{      CSYM,
 			DSYM,
@@ -423,8 +430,10 @@ namespace EMAN
 		bool post_x_mirror;
 
 		static map<string, int> symmetry_map;
+		
+		Transform3D::EulerType s;
 	}; // ends Class
-
+	
 	Transform3D operator*(const Transform3D & M1, const Transform3D & M2);
 // 	Vec3f operator*(const Vec3f & v    , const Transform3D & M);
 // 	Vec3f operator*(const Transform3D & M, const Vec3f & v    );
@@ -445,7 +454,7 @@ namespace EMAN
 	Vec3f operator*( const Transform3D & M, const Vec3<Type> & v)      // YYY
 	{
 //      This is the  left multiplication of a vector, v by a matrix M
-		float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2] + M[0][3] ;
+		float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2] + M[0][3];
 		float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2] + M[1][3];
 		float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2] + M[2][3];
 		return Vec3f(x, y, z);
@@ -461,6 +470,58 @@ namespace EMAN
 		return Vec2f(x, y);
 	}
 
+	
+	class Alignment2D
+	{
+		public:
+			Alignment2D();
+			Alignment2D(const float& dx, const float& dy, const float& alpha,const bool post_x_mirror=false, const float& scale=1.0);
+			Alignment2D(const Dict& d) { set_params(d); };
+			Alignment2D(const Transform3D& d);
+			~Alignment2D() {}
+			
+			Dict get_params() const { return params; }
+			static Dict get_params(const Transform3D& t);
+			void set_params(const Dict& d);
+			
+			virtual string get_name() const { return NAME; }
+		private:
+			static const string NAME;
+			Dict params;
+	};
+	
+// 	class Alignment3D
+// 	{
+// 		public:
+// 			Alignment3D();
+// 			Alignment3D(const float& az, const float& alt, const float& phi, const Transform3D::EulerType euler_type, const float& sx, const float& sy, const float& sz, const bool post_x_mirror=false, const float& scale=1.0);
+// 			Alignment3D(const Dict& d) { set_params(d); };
+// 			Alignment3D(const Transform3D& d, const Transform3D::EulerType=EMAN);
+// 			~Alignment3D() {}
+// 			
+// 			Dict get_params(const EulerType=EMAN) const { return params; }
+// 			static Dict get_params(const Transform3D& t,const EulerType=EMAN);
+// 			void set_params(const Dict& d);
+// 			
+// 			virtual string get_name() const { return NAME; }
+// 		private:
+// 			static const string NAME;
+// 			Dict params;
+// 	};
+// 	
+// 	class AlignmentProjection :  public EMAlignmentParameters
+// 	{
+// 		public:
+// 			AlignmentProjection() {};
+// 			virtual ~AlignmentProjection() {}
+// 			
+// 			virtual Dict get_params(const Transform3D::EulerType euler_type=Transform3D::EMAN) const;
+// 			virtual void set_params(const Dict& params);
+// 			
+// 			virtual string get_name() const { return NAME; }
+// 		private:
+// 			static const string NAME;
+// 	};
 	
 	/** Symmetry3D - A base class for 3D Symmetry objects.
 	* Objects of this type must provide delimiters for the asymmetric unit (get_delimiters), and

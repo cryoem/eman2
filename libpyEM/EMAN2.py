@@ -559,6 +559,55 @@ def error_exit(s) :
 	print s
 	exit(1)
 	
+
+def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
+	
+	if type == 0:
+		window_size=(128,128)
+		image_size=(4096,4096)
+	elif type == 1:
+		window_size=(128,128)
+		image_size=(4482,6678)
+	
+	for i in range(num_im):
+		im = test_boxing_image(window_size,image_size,n)
+		im.write_image(name+"_"+str(i)+".mrc")
+
+
+def test_boxing_image(window_size=(128,128),image_size=(4096,4096),n=100):
+	'''
+	Returns an image useful for testing boxing procedures
+	A randomly oriented and randomly flipped scurve test image is inserted into a larger image n times.
+	The large image has gaussian noise added to it. Function arguments give control of the window size
+	(of the scurve image), the size of the large returned image, and the number of inserted scurve images.
+	'''
+	ret = EMData(*image_size)
+	
+	x_limit = window_size[0]
+	y_limit = window_size[0]
+	scurve = test_image(0,window_size)
+	for i in range(n):
+		window = scurve.copy()
+		da = Util.get_frand(0,360)
+		flip = Util.get_irand(0,1)
+		
+		t = Transform3D(0,0,da)
+		window.rotate_translate(t)
+		if flip:
+			window.process_inplace("xform.flip",{"axis":"x"})
+		
+		p = (Util.get_irand(x_limit,image_size[0]-x_limit),Util.get_irand(y_limit,image_size[1]-y_limit))
+		
+		ret.insert_clip(window,p)
+		
+	
+	noise = EMData(*image_size)
+	noise.process_inplace("testimage.noise.gauss")
+	ret.add(noise)
+	
+	return ret
+
+	
 def test_image(type=0,size=(128,128)):
 	"""Returns a simple standard test image
 	type=0  scurve
@@ -570,6 +619,7 @@ def test_image(type=0,size=(128,128)):
 	type=6  linewave
 	type=7  scurve pluse x,y gradient
 	type=8  scurve translated
+	type=9  scurve with gaussian noise(mean 0, sigma 1)
 	size=(128,128) """
 	ret=EMData()
 	ret.set_size(*size)
@@ -599,6 +649,11 @@ def test_image(type=0,size=(128,128)):
 	elif type==8:
 		ret.process_inplace("testimage.scurve")
 		ret.translate(int(size[0]/10),int(size[1]/10),0)
+	elif type==9:
+		ret.process_inplace("testimage.scurve")
+		tmp = EMData(*size)
+		tmp.process_inplace("testimage.noise.gauss")
+		ret.add(tmp)
 		
 	
 	return ret

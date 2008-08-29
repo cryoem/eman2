@@ -56,6 +56,8 @@ using std::pair;
 #include "log.h"
 #include "exception.h"
 
+// #include "transform.h" // Trnasform3D::EulerType
+
 // debug
 #include <iostream>
 using std::cout;
@@ -286,9 +288,9 @@ namespace EMAN
 			EMData *emdata;
 			XYData *xydata;
 			Transform3D * transform3d;
+// 			Transform3D::EulerType euler_type;
 		};
 
-		
 		string str;
 		vector < int > iarray;
 		vector < float >farray;
