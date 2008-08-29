@@ -2784,8 +2784,9 @@ class PawelAutoBoxer(AutoBoxer):
 		raise Exception
 
 	def auto_box(self,boxable,update_display,force_auto_box):
-		raise Exception
-		
+		print "inside Pawel auto_box"	
+
+
 	def set_interactive_mode(self,real_time_auto_boxing=False):
 		raise Exception
 		
@@ -2802,7 +2803,7 @@ class PawelAutoBoxer(AutoBoxer):
 		raise Exception
 	
 	def write_specific_references_to_db(self,image_name):
-		raise Exception
+		print "in PawelAutoBox, write specific references to db"
 	
 	def add_reference(self,box):
 		raise Exception

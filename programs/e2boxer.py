@@ -768,7 +768,7 @@ class GUIbox:
 		self.current_image_idx = 0
 		self.box_size = box_size
 		# set self.autoboxer 
-		self.__set_autoboxer(self.image_names[self.current_image_idx])
+		self.set_autoboxer(self.image_names[self.current_image_idx])
 		
 		self.eraseradius = 2*self.box_size # this happens after the autoboxer has been loaded, because the boxsize can change
 		self.erasemode = None #stores the erase mode
@@ -880,7 +880,7 @@ class GUIbox:
 		guiim_core.set_excluded(self.boxable.is_excluded())
 		guiim_core.set_file_name(self.image_names[self.current_image_idx])
 	
-	def __set_autoboxer(self,imagename):
+	def set_autoboxer(self,imagename):
 		'''
 		This function sets the self.autoboxer variable. There are 3 cases:
 		
@@ -2111,7 +2111,13 @@ class GUIboxPanel(QtGui.QWidget):
 		self.dynapix = QtGui.QCheckBox("Dynapix")
 		self.dynapix.setChecked(self.target.dynapix)
 		self.boxinghbl3.addWidget(self.dynapix)
-		self.autobox=QtGui.QPushButton("Auto Box")
+
+		self.method=QtGui.QComboBox()
+		self.method.addItem( "David method" )
+		self.method.addItem( "Pawel method" )
+		self.boxinghbl3.addWidget( self.method )
+
+		self.autobox=QtGui.QPushButton("Run")
 		self.boxinghbl3.addWidget(self.autobox)
 		self.boxingvbl.addLayout(self.boxinghbl3)
 	
@@ -2223,7 +2229,33 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.write_all_box_image_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_images)
 		self.connect(self.write_all_coord_files,QtCore.SIGNAL("clicked(bool)"),self.write_box_coords)
 		
+		self.connect(self.method, QtCore.SIGNAL("activated(int)"), self.method_changed)
+
 		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
+
+	def method_changed(self, methodid):
+
+		name = self.method.itemText( methodid )
+
+		if name[0:5] == "David":
+			tabid = self.tabwidget.indexOf( self.pawel_option )
+			if tabid != -1:
+				self.tabwidget.removeTab( tabid )
+				self.tabwidget.insertTab( tabid, self.david_option, "David Advanced" )
+
+			#self.target.autoboxer = SwarmAutoBoxer(self.target)
+			#self.target.autoboxer.set_box_size_explicit(self.target.box_size)
+			#self.target.autoboxer.set_interactive_mode(self.target.dynapix)
+			self.target.set_autoboxer(self.target.image_names[0])
+		else:
+			assert name[0:5]=="Pawel"
+			tabid = self.tabwidget.indexOf( self.david_option )
+			if tabid != -1:
+				self.tabwidget.removeTab( tabid )
+				self.tabwidget.insertTab( tabid, self.pawel_option, "Pawel Advanced" )
+			
+			self.target.autoboxer = PawelAutoBoxer(self.target)
+
 
 	def set_image_quality(self,integer):
 		self.lock = True
@@ -2519,6 +2551,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.cmpgroupbox = QtGui.QGroupBox("Peak Profile Comparitor")
 		self.cmpgroupbox.setLayout(self.cmpmethodhbox)
 		
+
 		self.advanced_vbl.addWidget(self.cmpgroupbox)
 
 		self.lock = True
@@ -2548,7 +2581,20 @@ class GUIboxPanel(QtGui.QWidget):
 		self.abmanagement.setLayout(self.autoboxerhdbl)
 		self.advanced_vbl.addWidget(self.abmanagement)
 			
-		self.tabwidget.addTab(self.adv_inspector,"Advanced")
+
+		self.david_option = self.adv_inspector
+		
+		self.pawel_option = QtGui.QWidget()
+		self.pawel_option_vbox = QtGui.QVBoxLayout(self.pawel_option)
+		self.pawelhbox = QtGui.QHBoxLayout()
+		self.pawelhbox.addWidget(QtGui.QLabel( "parameter1" ))
+		self.pawelgroup = QtGui.QGroupBox( "Pawel Method's Parameter" )
+		self.pawelgroup.setLayout(self.pawelhbox)
+		self.pawel_option_vbox.addWidget(self.pawelgroup )
+
+
+
+		self.tabwidget.addTab(self.david_option,"David Advanced")
 		
 		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.add_new_autoboxer)
 		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.add_copy_autoboxer)
