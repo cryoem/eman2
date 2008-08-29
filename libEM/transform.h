@@ -484,7 +484,7 @@ namespace EMAN
 			static Dict get_params(const Transform3D& t);
 			void set_params(const Dict& d);
 			
-			virtual string get_name() const { return NAME; }
+			string get_name() const { return NAME; }
 		private:
 			static const string NAME;
 			Dict params;
