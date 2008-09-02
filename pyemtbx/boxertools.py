@@ -2753,11 +2753,15 @@ class PawelAutoBoxer(AutoBoxer):
 	def __init__(self,parent):
 		AutoBoxer.__init__(self)
 		self.parent = parent
-	
+		self.box_size = 128
+		self.pixel_input = 1.0
+		self.pixel_output = 1.0
 	#### Functions that must be supplied so the ImageProcParamsMediator works
 	def get_subsample_rate(self):
-		raise Exception
-		
+		#raise Exception
+		return self.pixel_input/self.pixel_output
+
+
 	def get_template_radius(self):
 		raise Exception
 		
@@ -2784,7 +2788,29 @@ class PawelAutoBoxer(AutoBoxer):
 		raise Exception
 
 	def auto_box(self,boxable,update_display,force_auto_box):
-		print "inside Pawel auto_box"	
+		print "running Pawel's Method: "
+		print "     Pixel input : ", self.pixel_input
+		print "     Pixel output: ", self.pixel_output
+		print "     Box size    : ", self.box_size
+		print "     boxable.image_name:	  ", boxable.image_name
+
+		bic = BigImageCache()
+		img = bic.get_image(boxable.image_name)
+	
+		from filter import filt_gaussh, filt_gaussl
+
+		ratio = self.pixel_input/self.pixel_output 
+		img = filt_gaussh( img, 1.0/(self.box_size/ratio) )
+
+		if ratio ! = 1.0:
+			frequency_cutoff = 0.5*ratio
+	   		sb = Util.sincBlackman(15, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
+			img = img.downsample(sb,ratio)
+
+		ccf = filt_gaussl( img, 1.0/self.box_size )
+		peaks = ccf.peak_ccf( self.box_size/2-1)
+
+		#print 'peaks: ', peaks
 
 
 	def set_interactive_mode(self,real_time_auto_boxing=False):
@@ -2794,7 +2820,7 @@ class PawelAutoBoxer(AutoBoxer):
 		raise Exception
 		
 	def set_box_size(self,box_size, image_names=[]):
-		raise Exception
+		self.box_size = box_size
 
 	def dynapix_on(self):
 		raise Exception

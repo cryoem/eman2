@@ -51,6 +51,12 @@ import signal
 from copy import *
 from OpenGL import contextdata
 
+# import SPARX definitions
+import global_def
+from global_def import *
+# end import SPARX definitions
+
+
 from emglplot import *
 
 from time import time,sleep
@@ -2586,16 +2592,18 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.pawel_option = QtGui.QWidget()
 		self.pawel_option_vbox = QtGui.QVBoxLayout(self.pawel_option)
-		self.pawelhbox = QtGui.QHBoxLayout()
-		self.pawelhbox.addWidget(QtGui.QLabel( "parameter1" ))
-		self.pawelgroup = QtGui.QGroupBox( "Pawel Method's Parameter" )
-		self.pawelgroup.setLayout(self.pawelhbox)
-		self.pawel_option_vbox.addWidget(self.pawelgroup )
+		self.pawel_option_vbox.addWidget(QtGui.QLabel("Pawel Method's Parameter") )
 
+		self.pawel_table = QtGui.QTableWidget( 2, 1 )
+		self.pawel_option_vbox.addWidget( self.pawel_table )
+		self.pawel_table.setVerticalHeaderLabels( ["Input Pixel Size  (Angstrom): ", "Output Pixel size (Angstrom): "] )
+		self.pawel_table.horizontalHeader().hide()
+		self.pawel_table.setItem(0, 0, QtGui.QTableWidgetItem("1.0") )
+		self.pawel_table.setItem(1, 0, QtGui.QTableWidgetItem("1.0") )
+		self.connect(self.pawel_table, QtCore.SIGNAL("cellChanged(int,int)"), self.pawel_parm_changed)
 
 
 		self.tabwidget.addTab(self.david_option,"David Advanced")
-		
 		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.add_new_autoboxer)
 		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.add_copy_autoboxer)
 		self.connect(self.abdelete, QtCore.SIGNAL("clicked(bool)"), self.delete_autoboxer)
@@ -2607,6 +2615,21 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.ratio_average_but, QtCore.SIGNAL("clicked(bool)"), self.cmp_box_changed)
 		#self.connect(self.centerbutton,QtCore.SIGNAL("clicked(bool)"),self.centerpushed)
 		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmp_box_changed)
+	
+	def pawel_parm_changed(self, row, col ):
+		from string import atof
+
+		assert col==0
+
+		t = self.pawel_table.item(row, col).text()
+
+		print 'row, col, text: ', row, col, t
+
+		if row==0:
+			self.target.autoboxer.pixel_input = atof( t )
+		else:
+			assert row==1
+			self.target.autoboxer.pixel_output = atof( t )		
 
 	def set_dynapix(self,bool):
 		self.dynapix.setChecked(bool)
