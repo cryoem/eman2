@@ -2574,7 +2574,7 @@ class PawelAutoBoxer(AutoBoxer):
 			trimboxes.append( TrimBox(box) )
 
 		boxable.append_stored_auto_boxes(trimboxes)
-		boxable.set_key_entryToIDD("auto_boxes",trimboxes)
+		boxable.store_key_entry_in_idd("auto_boxes",trimboxes)
 		boxable.write_to_db()
 
 	def set_interactive_mode(self,real_time_auto_boxing=False):
