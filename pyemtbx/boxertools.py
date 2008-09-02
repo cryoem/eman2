@@ -2539,8 +2539,7 @@ class PawelAutoBoxer(AutoBoxer):
 		print "     Box size    : ", self.box_size
 		print "     boxable.image_name:	  ", boxable.image_name
 
-		bic = BigImageCache()
-		img = bic.get_image(boxable.image_name)
+		img = BigImageCache.get_image(boxable.get_image_name()) # change from boxable.image_name, hope you don't mind
 	
 		from filter import filt_gaussh, filt_gaussl
 
@@ -2551,6 +2550,11 @@ class PawelAutoBoxer(AutoBoxer):
 			frequency_cutoff = 0.5*ratio
 	   		sb = Util.sincBlackman(15, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
 			img = img.downsample(sb,ratio)
+			#  If things are changing from the interface and the same image is required (for 
+			# example the picking parameters have changed but we're still boxing the same image), this will save time
+			#img = SincBlackmanSubsampleCache(boxable.get_image_name(),self.get_params_mediator())
+			# Note you would have to change get_window_size_min so that it returns 15 and get_frequency_cutoff
+			# so that it returns the right value
 
 		ccf = filt_gaussl( img, 1.0/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
@@ -2683,7 +2687,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.template = SwarmTemplate(self)	# an EMData object that is the template
 		self.shrink = -1
 		
-		# more privately stuff
 		self.templatedimmin = 20  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
 		self.opt_threshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.opt_profile = []	# the optimum correlation profile used as the basis of auto selection
@@ -2709,7 +2712,6 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		self.creation_ts = gm_time_string()
 		
-		self.convenienceString = ""
 		self.set_convenience_name(self.get_creation_ts()) # this string is the string that users will use to name this autoboxer in the GUIboxCtrl
 
 	def dynapix_on(self):
@@ -3046,7 +3048,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		update_display is a flag that should be True if this function is being called from an interface, False if from the command line
 		force should be set True if you want to override the internal checks which avoid redundant autoboxing.
 		
-		Returns 1 if autoboxing occurred implying that a display update should occur. Returns 0 if not display update should occur
+		Returns 1 if autoboxing occurred implying that a display update should occur. Returns 0 if no display update should occur
 		'''
 		
 		# this is fine - if a boxable is excluded this is more or less a flag for the autoboxer not to autobox it..
@@ -3060,8 +3062,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			print "Image is frozen, maintaining current state"
 			return 0
 
-		# if there are no references than autoboxing can not occur. Also the boxable should have
-		# no boxes, and it's time/id stamps should reflect the information associated with this AutoBoxer object
+		# if there are no references than autoboxing can not occur.
 		if len(self.get_ref_boxes()) == 0:
 			boxable.clear_and_cache(True) # make sure the boxable has not boxes etc
 			boxable.set_stamps(self.get_state_ts(),-1,self.get_unique_stamp()) # set stamps for record keeping. -1 because there is no template
@@ -3072,9 +3073,9 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.parent.autoboxer_db_changed() # tell the GUIbox that the autoboxers in the db have been added to - this results in a display update, specifically in the advanced tab of the inspector
 			return 1
 
-		# ref update should only be toggled if we are in user driven mode, the user has dynapix off
-		# If so we need to do a full update which included template generation, potential correlation image
-		# generation (of the associated references), and automated parameter generation
+		# ref update should only be toggled if we are in user driven mode so the user has dynapix off
+		# If so we need to do a full update which includes template generation, potential correlation image
+		# generation (of the associated references), and subsequent automated parameter generation
 		if self.refupdate:
 			if not self.__full_update(): return 0
 			self.refupdate = False
