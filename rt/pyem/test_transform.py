@@ -35,6 +35,7 @@ from EMAN2 import *
 import unittest
 from test import test_support
 import testlib
+import math
 
 class TestTransform(unittest.TestCase):
 	"""this is the unit test for Transform3D class"""
@@ -97,7 +98,7 @@ class TestTransform(unittest.TestCase):
 		self.assertAlmostEqual(theta%360.0, rot["theta"]%360.0, 3)
 		self.assertAlmostEqual(omega%360.0, rot["omega"]%360.0, 3)
 		
-		# MRC convention
+		# XTILT convention
 		xtilt = az
 		ytilt = alt
 		ztilt = phi
@@ -108,18 +109,77 @@ class TestTransform(unittest.TestCase):
 		self.assertAlmostEqual(ytilt%360.0, rot["ytilt"]%360.0, 3)
 		self.assertAlmostEqual(ztilt%360.0, rot["ztilt"]%360.0, 3)
 	
-		# MRC convention
-		xtilt = az
-		ytilt = alt
-		ztilt = phi
-		t = Transform3D(EULER_XYZ,xtilt,ytilt,ztilt)
-		rot = t.get_rotation(EULER_XYZ)
-
-		self.assertAlmostEqual(xtilt%360.0, rot["xtilt"]%360.0, 3)
-		self.assertAlmostEqual(ytilt%360.0, rot["ytilt"]%360.0, 3)
-		self.assertAlmostEqual(ztilt%360.0, rot["ztilt"]%360.0, 3)
+		# SPIN convention
+		for e0 in [-10,10]:
+			# solving a rotation matrix to deduce a quaternion style rotation
+			# has more than one solution.
+			n = Vec3f(1,-1,-.5)
+			norm = n.normalize()
+			t = Transform3D(EULER_SPIN,e0,n[0],n[1],n[2])
+			rot = t.get_rotation(EULER_SPIN)
+			t1 = Transform3D(EULER_SPIN,rot["Omega"],rot["n1"],rot["n2"],rot["n3"])
+			
+			# check to make sure the rotation  matrix has exactly the same form
+			for j in range(0,2):
+				for i in range(0,2):
+					self.assertAlmostEqual(t.at(i,j), t1.at(i,j), 3)
+		
+		# QUATERNION convention
+		for alpha in [-10,10]:
+			# solving a rotation matrix to deduce a quaternion style rotation
+			# has more than one solution.
+			
+			e0 = math.cos(alpha*math.pi/180.0)
+			n = Vec3f(1,-1,-.5)
+			norm = n.normalize()
+			sin_alpha = math.sin(alpha*math.pi/180.0)
+			e1 = sin_alpha*n[0]
+			e2 = sin_alpha*n[1]
+			e3 = sin_alpha*n[2]
+			t = Transform3D(EULER_QUATERNION,e0,e1,e2,e3)
+			rot = t.get_rotation(EULER_QUATERNION)
+			t1 = Transform3D(EULER_QUATERNION,rot["e0"],rot["e1"],rot["e2"],rot["e3"])
+			
+			# check to make sure the rotation  matrix has exactly the same form
+			for j in range(0,2):
+				for i in range(0,2):
+					self.assertAlmostEqual(t.at(i,j), t1.at(i,j), 3)
+					
+		# SGIROT convention
+		for e0 in [-10,10]:
+			# solving a rotation matrix to deduce a quaternion style rotation
+			# has more than one solution.
+			n = Vec3f(1,-1,-.5)
+			norm = n.normalize()
+			t = Transform3D(EULER_SGIROT,e0,n[0],n[1],n[2])
+			rot = t.get_rotation(EULER_SGIROT)
+			t1 = Transform3D(EULER_SGIROT,rot["q"],rot["n1"],rot["n2"],rot["n3"])
+			
+			# check to make sure the rotation  matrix has exactly the same form
+			for j in range(0,2):
+				for i in range(0,2):
+					self.assertAlmostEqual(t.at(i,j), t1.at(i,j), 3)	
 	
-	
+		# retrospective note = we don't support retrieving EULER_MATRIX style
+		# rotations from python even though it's possible in C++
+		# MATRIX convention
+		# note this is bad because we are not constructing a matrix
+		# that reflects a true rotation
+		#m11, m12, m13 = 1,2,3
+		#m21, m22, m23 = 4,5,6
+		#m31, m32, m33 = 7,8,9
+		#t = Transform3D(m11,m12,m13,m21,m22,m23,m31,m32,m33)
+		#rot = t.get_rotation(EULER_MATRIX)
+		#self.assertAlmostEqual(m11,rot["m11"], 3)
+		#self.assertAlmostEqual(m12,rot["m12"], 3)
+		#self.assertAlmostEqual(m13,rot["m13"], 3)
+		#self.assertAlmostEqual(m21,rot["m21"], 3)
+		#self.assertAlmostEqual(m22,rot["m22"], 3)
+		#self.assertAlmostEqual(m23,rot["m23"], 3)
+		#self.assertAlmostEqual(m31,rot["m31"], 3)
+		#self.assertAlmostEqual(m32,rot["m32"], 3)
+		#self.assertAlmostEqual(m33,rot["m33"], 3)	
+		
 	def test_trans_after_rotation(self):
 		"""test translation after rotation .................."""
 		alt = 1.45232928554

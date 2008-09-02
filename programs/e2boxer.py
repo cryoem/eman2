@@ -860,8 +860,7 @@ class GUIbox:
 			self.guimx.connect(self.guimx,QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
 		
 	def __init_guiim(self):
-		bic = BigImageCache()
-		image=bic.get_image(self.image_names[self.current_image_idx])
+		image=BigImageCache.get_image_directly(self.image_names[self.current_image_idx])
 		self.guiimp=EMImage(image)		# widget for displaying large image
 		self.guiimp.setWindowTitle(self.image_names[self.current_image_idx])
 		self.guiim=self.guiimp.child
@@ -981,7 +980,7 @@ class GUIbox:
 		#print "changing autoboxer to autoboxer_",timestamp,"and its stamp in the db is",trim_autoboxer.get_creation_ts()
 		self.autoboxer = SwarmAutoBoxer(self)
 		self.autoboxer.become(trim_autoboxer)
-		self.autoboxer.write_specific_references_to_db(self.boxable.get_image_name())
+		self.autoboxer.write_image_specific_references_to_db(self.boxable.get_image_name())
 		self.dynapix = self.autoboxer.dynapix_on()
 		self.guictl.set_dynapix(self.dynapix)
 		
@@ -1098,8 +1097,7 @@ class GUIbox:
 		return self.image_names[self.current_image_idx]
 	
 	def get_current_image(self):
-		bic = BigImageCache()
-		return bic.get_image(self.get_current_image_name())
+		return BigImageCache.get_image_directly(self.get_current_image_name())
 	
 	def get_image_names(self):
 		return self.image_names
@@ -1173,9 +1171,8 @@ class GUIbox:
 		if im != self.current_image_idx:
 				#print 'changing images'		
 			
-			bic = BigImageCache()
 			if debug: tt = time()
-			image=bic.get_image(self.image_names[im])
+			image=BigImageCache.get_image_directly(self.image_names[im])
 			
 			
 			if debug: tt = time()
@@ -1327,9 +1324,8 @@ class GUIbox:
 		image = get_idd_key_entry(self.image_names[i],"e2boxer_image_thumb")
 		if image == None:
 			n = self.get_image_thumb_shrink()
-			
-			bic = BigImageCache()
-			image=bic.get_image(self.image_names[i])
+
+			image=BigImageCache.get_image_directly(self.image_names[i])
 			
 			#while n > 1:
 				#image = image.process("math.meanshrink",{"n":2})
@@ -1340,8 +1336,7 @@ class GUIbox:
 		
 	def get_image_thumb_shrink(self):
 		if self.itshrink == -1:
-			bic = BigImageCache()
-			image=bic.get_image(self.image_names[self.current_image_idx])
+			image=BigImageCache.get_image_directly(self.image_names[self.current_image_idx])
 			if image == None:
 				print "error - the image is not set, I need it to calculate the image thumb shrink"
 				exit(1)
@@ -1682,7 +1677,7 @@ class GUIbox:
 		like hitting refresh - everything is updated
 		'''
 		self.boxable.clear_and_cache(True)
-		self.autoboxer.write_specific_references_to_db(self.boxable.get_image_name())
+		self.autoboxer.write_image_specific_references_to_db(self.boxable.get_image_name())
 		self.boxable.get_references_from_db()
 		self.autoboxer.auto_box(self.boxable, True,True)
 		self.box_display_update()

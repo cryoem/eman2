@@ -671,8 +671,12 @@ void Transform3D::set_rotation(EulerType euler_type, const float& a1, const floa
 			rot["e2"] = a3;
 			rot["e3"] = a4;
 			break;
-		case SPIN:
 		case SGIROT:
+			rot["q"]  = a1;
+			rot["n1"] = a2;
+			rot["n2"] = a3;
+			rot["n3"] = a4;
+		case SPIN:
 			rot["Omega"]  = a1;
 			rot["n1"] = a2;
 			rot["n2"] = a3;
@@ -733,11 +737,11 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 		break;
 
 	case QUATERNION:
-		is_quaternion = 0;
-		e0 = (float)rotation["e0"] ;
-		e1 = (float)rotation["e1"] ;
-		e2 = (float)rotation["e2"] ;
-		e3 = (float)rotation["e3"] ;
+		is_quaternion = 1;
+		e0 = (float)rotation["e0"];
+		e1 = (float)rotation["e1"];
+		e2 = (float)rotation["e2"];
+		e3 = (float)rotation["e3"];
 		break;
 
 	case SPIN:
@@ -1011,8 +1015,6 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		result["ytilt"]  = ytilt*180/M_PI;
 		result["ztilt"]  = ztilt;
 		break;
-
-
 
 	case QUATERNION:
 		result["e0"] = cosOover2 ;
