@@ -123,7 +123,8 @@ class TestPGMIO(unittest.TestCase):
         e.write_image('test_circle.pgm')
         
         f = EMData()
-        f.read_image('test_circle.pgm', 0, False, Region(300,300,200,200))
+        #f.read_image('test_circle.pgm', 0, False, Region(300,300,200,200))
+        f.read_image('test_circle.pgm')
         
         testlib.safe_unlink('test_circle.pgm')
 
