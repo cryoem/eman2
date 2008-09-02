@@ -2802,15 +2802,39 @@ class PawelAutoBoxer(AutoBoxer):
 		ratio = self.pixel_input/self.pixel_output 
 		img = filt_gaussh( img, 1.0/(self.box_size/ratio) )
 
-		if ratio ! = 1.0:
+		if ratio != 1.0:
 			frequency_cutoff = 0.5*ratio
 	   		sb = Util.sincBlackman(15, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
 			img = img.downsample(sb,ratio)
 
 		ccf = filt_gaussl( img, 1.0/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
+		npeak = len(peaks)/3
+		print npeak, " boxes picked"
 
-		#print 'peaks: ', peaks
+		boxhalf = self.box_size/2
+		boxsize = self.box_size
+		boxes = []
+		trimboxes = []
+		for i in xrange(npeak):
+			cx = peaks[3*i+1]
+			cy = peaks[3*i+2]
+			box = Box( cx-boxhalf, cy-boxhalf, boxsize, boxsize, 0)
+			box.set_image_name( boxable.get_image_name() )
+			box.set_correlation_score( peaks[3*i] )
+			box.corx = cx
+			box.cory = cy
+			box.changed = True
+			boxes.append(box)
+			trimboxes.append( TrimBox(box) )
+
+		boxable.append_stored_auto_boxes(trimboxes)
+		boxable.set_key_entryToIDD("auto_boxes",trimboxes)
+		boxable.write_to_db()
+					
+		
+
+
 
 
 	def set_interactive_mode(self,real_time_auto_boxing=False):
