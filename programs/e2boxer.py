@@ -792,7 +792,7 @@ class GUIbox:
 		self.moving_box_data = None # a vector storing [mouse x, mouse y, box idx]
 		self.moving=None # Used during a user box drag. May be redudant could potentially just use self.moving_box_data. FIXME
 		
-		self.__init_guiim() # initialise the 2D image display
+		self.init_guiim() # initialise the 2D image display
 		self.__init_guimx() # intialize the matrix display
 		self.__init_guimx_thumbs() # initialize the thumbnail diplsy
 		self.ab_sel_mediator = AutoBoxerSelectionsMediator(self)
@@ -859,8 +859,11 @@ class GUIbox:
 		if self.fancy_mode == GUIbox.FANCY_MODE:
 			self.guimx.connect(self.guimx,QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
 		
-	def __init_guiim(self):
-		image=BigImageCache.get_image_directly(self.image_names[self.current_image_idx])
+	def init_guiim(self, image=None, imagename=None):
+		if image is None:
+			imagename = self.image_names[self.current_image_idx]
+			image=BigImageCache.get_image_directly(imagename)
+		
 		self.guiimp=EMImage(image)		# widget for displaying large image
 		self.guiimp.setWindowTitle(self.image_names[self.current_image_idx])
 		self.guiim=self.guiimp.child
