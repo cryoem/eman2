@@ -2540,9 +2540,9 @@ class PawelAutoBoxer(AutoBoxer):
 		raise Exception
 
 	def set_mode_explicit(self,mode):
-		raise Exception
+		pass
 
-	def auto_box(self,boxable,update_display,force_auto_box):
+	def auto_box(self,boxable,update_display=True,force_auto_box=False):
 		print "running Pawel's Method: "
 		print "     Pixel input : ", self.pixel_input
 		print "     Pixel output: ", self.pixel_output
@@ -2601,7 +2601,7 @@ class PawelAutoBoxer(AutoBoxer):
 		raise Exception
 		
 	def get_mode(self):
-		raise Exception
+		return SwarmAutoBoxer.COMMANDLINE
 		
 	def set_box_size(self,box_size, image_names=[]):
 		self.box_size = box_size
