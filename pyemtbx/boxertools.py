@@ -242,8 +242,18 @@ class Box:
 		
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
 		if norm:
-			self.image.process_inplace("normalize.edgemean")
+			#self.image.process_inplace("normalize.edgemean")
+			self.image.process_inplace( "filter.ramp" )
+			nx = self.image.get_xsize()
+			mask = EMData()
+			mask.set_size(nx, nx, 1)
+			mask.process_inplace("testimage.circlesphere", {"radius":nx//2-2, "fill":1})
+	
+			avg,var,dummy,dummy = Util.infomask( self.image, mask, False)
+			self.image -= avg
+			self.image /= var
 		
+
 		# make sure there are no out of date footprints hanging around
 		self.footprint = None
 
@@ -2539,7 +2549,9 @@ class PawelAutoBoxer(AutoBoxer):
 		print "     Box size    : ", self.box_size
 		print "     boxable.image_name:	  ", boxable.image_name
 
-		img = BigImageCache.get_image_directly(boxable.get_image_name()) # change from boxable.image_name, hope you don't mind
+		imgname = boxable.get_image_name()
+	
+		img = BigImageCache.get_image_directly(imgname) # change from boxable.image_name, hope you don't mind
 	
 		from filter import filt_gaussh, filt_gaussl
 
@@ -2555,6 +2567,9 @@ class PawelAutoBoxer(AutoBoxer):
 			#img = SincBlackmanSubsampleCache(boxable.get_image_name(),self.get_params_mediator())
 			# Note you would have to change get_window_size_min so that it returns 15 and get_frequency_cutoff
 			# so that it returns the right value
+			imgname = "reduced_" + imgname
+			self.parent.init_guiim(img, imgname)
+			img.write_image( imgname )
 
 		ccf = filt_gaussl( img, 1.0/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
@@ -2569,7 +2584,7 @@ class PawelAutoBoxer(AutoBoxer):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
 			box = Box( cx-boxhalf, cy-boxhalf, boxsize, boxsize, 0)
-			box.set_image_name( boxable.get_image_name() )
+			box.set_image_name( imgname )
 			box.set_correlation_score( peaks[3*i] )
 			box.corx = cx
 			box.cory = cy
@@ -2580,6 +2595,7 @@ class PawelAutoBoxer(AutoBoxer):
 		boxable.append_stored_auto_boxes(trimboxes)
 		boxable.store_key_entry_in_idd("auto_boxes",trimboxes)
 		boxable.write_to_db()
+		boxable.get_auto_selected_from_db() 
 
 	def set_interactive_mode(self,real_time_auto_boxing=False):
 		raise Exception
