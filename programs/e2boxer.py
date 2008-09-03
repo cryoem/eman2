@@ -865,7 +865,7 @@ class GUIbox:
 			image=BigImageCache.get_image_directly(imagename)
 		
 		self.guiimp=EMImage(image)		# widget for displaying large image
-		self.guiimp.setWindowTitle(self.image_names[self.current_image_idx])
+		self.guiimp.setWindowTitle(imagename)
 		self.guiim=self.guiimp.child
 		self.__update_guiim_states()
 		
@@ -1483,7 +1483,7 @@ class GUIbox:
 		self.update_image_display()
 		self.update_mx_display()
 		if self.guimxit != None: self.guimxit.updateGL()
-		
+	
 		#context = contextdata.getContext(None)
 		#print context
 		
@@ -1615,7 +1615,6 @@ class GUIbox:
 		# get the boxes
 		boxes =self.get_boxes()
 		for j,box in enumerate(boxes):
-	
 			if not box.changed and not force:
 				idx += 1
 				continue
@@ -1647,7 +1646,6 @@ class GUIbox:
 				othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
 	
 			if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
-
 		self.update_all_image_displays()
 		
 	def run(self):
@@ -1767,9 +1765,9 @@ class GUIbox:
 				continue
 			
 			mode = self.autoboxer.get_mode()
-			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-			autoboxer.auto_box(boxable,False)
-			autoboxer.set_mode_explicit(mode)
+			self.autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			self.autoboxer.auto_box(boxable,False)
+			self.autoboxer.set_mode_explicit(mode)
 			
 			boxable.write_box_images(box_size,forceoverwrite,imageformat)
 	
@@ -2484,7 +2482,7 @@ class GUIboxPanel(QtGui.QWidget):
 		else: 
 			print "errror, unknown format" 
 			return
-		
+		print "format changed to ", format
 		self.target.change_shapes(format)
 
 	
