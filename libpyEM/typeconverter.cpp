@@ -103,6 +103,7 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 	
 	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
 	int ndim = array_ptr->nd;
+	char data_type = array_ptr->descr->type;
 	
 #if defined (__LP64__) //is it a 64-bit platform?
  	long * dims_ptr = (long*)array_ptr->dimensions;
@@ -135,13 +136,15 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 	char* array_data = array_ptr->data;
     float* data = image->get_data();
     
-    for(int k=0; k<nz; ++k) {
-    	for(int j=0; j<ny; ++j) {
-    		for(int i=0; i<nx; ++i) {
-    			image->set_value_at(i, j, k, static_cast<float>(((double*)array_data)[k*ny*nx+j*nx+i]));
-    		}
-    	}
+    if(data_type == 'f') {
+    	memcpy(data, array_data, sizeof(float) * nx * ny * nz);
     }
+    else {   	
+    	PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, 'f');
+    	char* array_data2 = array_ptr2->data;
+    	memcpy(data, array_data2, sizeof(float) * nx * ny * nz);
+    }
+    
 	image->update();
 }
 
