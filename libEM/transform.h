@@ -99,8 +99,6 @@ namespace EMAN
 	 * therefore equal to  "\pm 1"
 	 * @ingroup tested3c 
      */
-	
-
 	class Transform3D
 	{
 	public:
@@ -356,12 +354,12 @@ namespace EMAN
 		/** Operator[] convenience
 		 * so Transform3D[2][2] etc terminology can be used
 		 */
-		float * operator[] (int i);
+		inline float * operator[] (int i) { return matrix[i]; }
 		
 		/** Operator[] convenience
 		 * so Transform3D[2][2] etc terminology can be used
 		 */
-		const float * operator[] (int i) const;
+		inline const float * operator[] (int i) const { return matrix[i]; }
 		
 		static int get_nsym(const string & sym);
 		Transform3D get_sym(const string & sym, int n) const;
@@ -469,7 +467,160 @@ namespace EMAN
 		float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][3];
 		return Vec2f(x, y);
 	}
+	
+	class Transform2D {
+		// This changes matrix elements directly so needs friend statust
+		friend Transform2D operator*(const Transform2D & M2, const Transform2D & M1);
+		public:
+			/** Default constructor, loads the identity()
+		 	 */
+			Transform2D() { to_identity(); }
+			
+			/** Construct using a single rotation (in degrees)
+			 * @param alpha the rotation angle in degrees
+			 */
+			Transform2D(const float& alpha);
+			
+			/** Copy constructor.
+			 * Currently only copies the contents of the matrix
+			 */
+			Transform2D(const Transform2D& that);
+			
+			/** Assignment operator.
+			 * Performs a deep copy
+			 */
+			Transform2D& operator=(const Transform2D& that);
+			
+			/** Get the inverse
+			 * @return the inverted version of this Transform2D object
+			 */
+			Transform2D inverse() const;
+			
+			/** Invert inplace
+			 */
+			void invert();
+			
+			/** Set the rotation explicitly (in degrees)
+			 * @param alpha the rotation angle in degrees
+			 */
+			void set_rotation(const float& alpha);
+			
+			/** Set the post translation component of the transformation matrix explicitly
+			 * @param x the x translation component
+			 * @param y the y translation component
+			 */
+			inline void set_posttrans(const float& x, const float& y) {
+				matrix[0][2] = x;
+				matrix[1][2] = y;
+			}
+			
+			/** Set the post translation component of the transformation matrix explicitly
+			 * @param v a two dimensional vector containing the x and y translational components
+			 */
+			template<typename Type>
+			inline void set_posttrans(const Vec2<Type>& v) {
+				set_posttrans(v[0],v[1]);
+			}
+			
+			/** Rotate a vector using only the rotation component of the transformation matrix
+			 * @param x the x coordinate of the rotated point
+			 * @param y the y coordinate of the rotated point
+			 * @return the rotated vector
+			 */
+			inline Vec2f rotate(const float& x, const float& y) const {
+				Vec2f ret;
+				ret[0] = matrix[0][0]*x + matrix[0][1]*y;
+				ret[1] = matrix[1][0]*x + matrix[1][1]*y;
+				return ret;
+			}
+			
+			
+			/** Rotate a vector using only the rotation component of the transformation matrix
+			 * @param v a two dimensional vector to be rotated
+			 * @return the rotated vector
+			 */
+			template<typename Type>
+			inline Vec2f rotate(const Vec2<Type>& v) const {
+				return rotate(v[0],v[1]);
+			}
+			
+			/** Transform coordinates using the internal transformation matrix
+			 * @param x the x coordinate of the transformed point
+			 * @param y the y coordinate of the transformed point
+			 * @return the transformed vector
+			 */
+			inline Vec2f transform(const float& x, const float& y) const {
+				Vec2f ret;
+				ret[0] = matrix[0][0]*x + matrix[0][1]*y + matrix[0][2];
+				ret[1] = matrix[1][0]*x + matrix[1][1]*y + matrix[1][2];
+				return ret;
+			}
+			
+			/** Transform a vector using the internal transformation matrix
+			 * @param v a two dimensional vector to be transformed
+			 * @return the transformed vector
+			 */
+			template<typename Type>
+			inline Vec2f transform(const Vec2<Type>& v) const {
+				return transform(v[0],v[1]);
+			}
+		
+			/** Operator[] convenience so Transform2D[2][2] etc terminology can be used
+			* @param i the row number to return
+			* @return the ith row
+		 	*/
+			inline const float * operator[] (const int i) const { return matrix[i]; }
 
+			/** Accessor convenience
+			 * @param i the row number
+			 * @param j the column number
+			 * @return the value at matrix coordinate i,j
+			 */
+			inline float at( const int i, const int j) const { return matrix[i][j]; }
+			
+			/** Get the rotation stored in the rotation part of transformation, in degrees
+			 * @return the rotation in degrees
+			 */
+			inline float get_rotation() const {
+				return EMConsts::rad2deg*atan2(matrix[0][1], matrix[0][0]);
+			}
+			
+			/** Make this object equivalent to the identity matrix
+			 */
+			void to_identity();
+			
+			/** Print the matrix to standard out
+			 */
+			void printme() const {
+				cout << matrix[0][0] << " " << matrix[0][1] << " " << matrix[0][2] << endl;
+				cout << matrix[1][0] << " " << matrix[1][1] << " " << matrix[1][2] << endl;
+				cout << matrix[2][0] << " " << matrix[2][1] << " " << matrix[2][2] << endl;
+			}
+
+			
+		private:
+			float matrix[3][3];
+			
+			
+			/** Operator[] convenience so Transform2D[2][2] etc terminology can be used
+			 * @param i the row number to return
+			 * @return the ith row
+			 */
+			inline float * operator[] (const int i) { return matrix[i]; }
+	};
+	
+	/** Multiply two Transform2Ds together (M2*M1) using direct matrix multiplication
+	 *.@param M2 the Transform2D on the left
+	 * @param M1 the Transform2D on the right
+	 * @return the results as embedded in a Transform2D object
+	 */
+	Transform2D operator*(const Transform2D & M2, const Transform2D & M1);
+	
+	template<typename Type>
+	Vec2f operator*( const Transform2D & M, const Vec2<Type> & v)
+	{
+		return M.transform(v);
+	}
 	
 	class Alignment2D
 	{

@@ -37,7 +37,7 @@ from test import test_support
 import testlib
 import math
 
-class TestTransform(unittest.TestCase):
+class TestTransform3D(unittest.TestCase):
 	"""this is the unit test for Transform3D class"""
 	
 	#def test_get_set_params(self):
@@ -470,8 +470,146 @@ class TestTransform(unittest.TestCase):
 		"""test angles2tfvec() function ....................."""
 		t = Transform3D.angles2tfvec(Transform3D.EulerType.EMAN, (1.45232928554, -0.60170830102, 0))
 
+class TestTransform2D(unittest.TestCase):
+	'''
+	Test the Transform2D object
+	'''
+	
+	
+	def assert_identity(self,t2):
+		for j in range(3):
+			for i in range(3):
+				if i == j:
+					self.assertAlmostEqual(t2.at(i,j),1, 4)
+				else:
+					self.assertAlmostEqual(t2.at(i,j),0, 4)
+	
+	def assert_matrix_equality(self,t,t1):
+		for j in range(3):
+			for i in range(3):
+				self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 7)
+	
+	def test_invert(self):
+		"""test invert inplace ............................"""
+		t = Transform2D(23)
+		t.set_posttrans(2,3)
+		t1 = Transform2D(t)
+		t1.invert()
+		t2 = t1*t
+		self.assert_identity(t2)
+	
+	def test_inverse(self):
+		"""test invese ...................................."""
+		t = Transform2D(23)
+		t.set_posttrans(2,3)
+		t1 = t.inverse()
+		t2 = t1*t
+		self.assert_identity(t2)
+		
+	def test_set_get_rotation(self):
+		"""test set get rotation..........................."""
+		for az in range(0,700,15): # only avoid 360 so that we don't have to deal with odd '%' cases
+			a = az-350
+			t = Transform2D()
+			t.set_rotation(a)
+			b = t.get_rotation()
+			self.assertAlmostEqual(a%360.0,b%360.0, 4)
+	
+	def test_copy_construction(self):
+		"""test copy construction.........................."""
+		t = Transform2D(23)
+		t.set_posttrans(2,3)
+		t1 = Transform2D(t)
+		
+		self.assert_matrix_equality(t,t1)
+		
+	def test_rotation_only_construction(self):
+		"""test rotation only construction................."""
+		for az in range(0,700,15):# only avoid 360 so that we don't have to deal with odd '%' cases
+			a = az-350
+			t = Transform2D(a)
+			b = t.get_rotation()
+			self.assertAlmostEqual(a%360.0,b%360.0, 4)
+	
+	def test_transform(self):	
+		"""test transform.................................."""
+		x = 1
+		y = 2
+		v = Vec2f(x,y)
+		t = Transform2D(23)
+		t.set_posttrans(2,3)
+		v2 = t.transform(v)
+		v3 = t.transform(x,y)
+		self.assertAlmostEqual(v2[0],v3[0], 4)
+		self.assertAlmostEqual(v2[1],v3[1], 4)
+		
+		
+	def test_rotate(self):	
+		"""test rotate....................................."""
+		x = 1
+		y = 2
+		v = Vec2f(x,y)
+		t = Transform2D(23)
+		v2 = t.rotate(v)
+		v3 = t.rotate(x,y)
+		self.assertAlmostEqual(v2[0],v3[0], 4)
+		self.assertAlmostEqual(v2[1],v3[1], 4)
+		
+	def test_rotate_same_as_matrix_vector(self):	
+		"""test rotate same as matrix times vector........."""
+		x = 1
+		y = 2
+		v = Vec2f(x,y)
+		t = Transform2D(23)
+		v2 = t.rotate(v)
+		v3 = t*v
+		self.assertAlmostEqual(v2[0],v3[0], 4)
+		self.assertAlmostEqual(v2[1],v3[1], 4)
+		
+	def test_matrix_vector_multiplication(self):	
+		"""test matrix vector multiplication..............."""
+		v = Vec2f(1,1)
+		t = Transform2D(23)
+		t.set_posttrans(2,3)
+		v2 = t*v
+		
+	def test_matrix_matix_multiplication(self):	
+		"""test matrix matrix multiplication..............."""
+		t = Transform2D(23)
+		t.set_posttrans(2,3)
+		t1 = Transform2D(43)
+		t.set_posttrans(22,13)
+		t2 = t1*t
+		
+	def test_set_posttrans(self):
+		"""test set_posttrans.............................."""
+		t = Transform2D()
+		x = 2
+		y = 3
+		t.set_posttrans(x,y)
+		self.assertAlmostEqual(t.at(0,2),x, 7)
+		self.assertAlmostEqual(t.at(1,2),y, 7)
+		
+	def test_reproducibility(self):
+		"""test reproducibility............................"""
+		az = 23
+		x = 2
+		y = 3
+		t = Transform2D(az)
+		t.set_posttrans(x,y)
+		t1 = Transform2D(az)
+		t1.set_posttrans(x,y)
+		
+		self.assert_matrix_equality(t,t1)
+		
+		
 def test_main():
-	test_support.run_unittest(TestTransform)
+	print 'Testing Transform2D'
+	test_support.run_unittest(TestTransform2D)
+	
+	print "\nTesting Transform3D"
+	test_support.run_unittest(TestTransform3D)
+
 
 if __name__ == '__main__':
 	test_main()

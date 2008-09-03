@@ -36,6 +36,7 @@
 #include "transform.h"
 #include "util.h"
 #include <cctype>
+#include <cstring>  // for memcpy
 
 using namespace EMAN;
 #ifdef WIN32
@@ -209,19 +210,6 @@ void Transform3D::set_center(const Vec3f & center) //YYN
 		matrix[i][3]=center[i];
 	}
 }
-
-
-
-float * Transform3D::operator[] (int i)
-{
-	return matrix[i];
-}
-
-const float * Transform3D::operator[] (int i) const
-{
-	return matrix[i];
-}
-
 
 //            METHODS
 //   Note Transform3Ds are initialized as identities
@@ -930,17 +918,17 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	if (cosalt > max) {  // that is, alt close to 0
 		alt = 0;
 		az=0;
-		phi =(180/M_PI)*(float)atan2(matrix[0][1], matrix[0][0]); 
+		phi = EMConsts::rad2deg*(float)atan2(matrix[0][1], matrix[0][0]); 
 	}
 	else if (cosalt < -max) { // alt close to pi
 		alt = 180;
 		az=0; 
-		phi=360.0f-(180/M_PI)*(float)atan2(matrix[0][1], matrix[0][0]);
+		phi=360.0f-EMConsts::rad2deg*(float)atan2(matrix[0][1], matrix[0][0]);
 	}
 	else {
-		alt = (180/M_PI)*(float) acos(cosalt);
-		az  = 360.0f+(180/M_PI)*(float)atan2(matrix[2][0], -matrix[2][1]);
-		phi = 360.0f+(180/M_PI)*(float)atan2(matrix[0][2], matrix[1][2]);
+		alt = EMConsts::rad2deg*(float) acos(cosalt);
+		az  = 360.0f+EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
+		phi = 360.0f+EMConsts::rad2deg*(float)atan2(matrix[0][2], matrix[1][2]);
 	}
 	az=fmod(az+180.0f,360.0f)-180.0f;
 	phi=fmod(phi+180.0f,360.0f)-180.0f;
@@ -1378,7 +1366,77 @@ Transform3D::angles2tfvec(EulerType eulertype, const vector<float> ang) {
 	return tfvec;
 }
 
- Alignment2D::Alignment2D() : params() {
+
+Transform2D::Transform2D(const float& alpha) {
+	
+	// Set the other matrix entries correctly (calling to_identity() is wasteful)
+	matrix[0][2] = 0.f;
+	matrix[1][2] = 0.f;
+	matrix[2][0] = 0.f;matrix[2][1] = 0.f;matrix[2][2] = 1.f;
+	// Now set the rotation
+	set_rotation(alpha);
+}
+
+Transform2D::Transform2D(const Transform2D& that) {
+	*this = that;
+}
+
+Transform2D& Transform2D::operator=(const Transform2D& that) {
+	memcpy(matrix,that.matrix,9*sizeof(float));
+	return *this;
+}
+
+
+void Transform2D::to_identity() {
+	matrix[0][0] = 1.f;matrix[0][1] = 0.f;matrix[0][2] = 0.f;
+	matrix[1][0] = 0.f;matrix[1][1] = 1.f;matrix[1][2] = 0.f;
+	matrix[2][0] = 0.f;matrix[2][1] = 0.f;matrix[2][2] = 1.f;
+}
+
+void Transform2D::set_rotation(const float& alpha) {
+	float alpha_rad = alpha*EMConsts::deg2rad;
+	float cos_alpha = cos(alpha_rad);
+	float sin_alpha = sin(alpha_rad);
+	
+	// clockwise rotation
+	matrix[0][0] = cos_alpha;matrix[0][1] = sin_alpha;
+	matrix[1][0] =-sin_alpha;matrix[1][1] = cos_alpha;	
+}
+
+Transform2D EMAN::operator*(const Transform2D & M2, const Transform2D & M1)     // YYY
+{
+
+	Transform2D result;
+	result.to_identity();
+	// First do the rotation block
+	for (int i=0; i<2; i++) {
+		for (int j=0; j<2; j++) {
+			result[i][j] = M2[i][0] * M1[0][j] +  M2[i][1] * M1[1][j];
+		}
+	}
+	// Now do the translation part
+	for (int i=0; i<2; i++) {
+		result[i][2] = M2[i][0] * M1[0][2] +  M2[i][1] * M1[1][2] + M2[i][2];
+	}
+	return result;
+}
+
+Transform2D Transform2D::inverse() const {
+	Transform2D inverse(*this);
+	inverse.invert();
+	return inverse;
+}
+
+void Transform2D::invert() {
+	matrix[0][1] *= -1.0f;
+	matrix[1][0] *= -1.0f;
+	float inv_x = -matrix[0][2];
+	float inv_y = -matrix[1][2];
+	matrix[0][2] = matrix[0][0]*inv_x + matrix[0][1]*inv_y; 
+	matrix[1][2] = matrix[1][0]*inv_x + matrix[1][1]*inv_y; 
+}
+
+Alignment2D::Alignment2D() : params() {
 	 params["sx"] = 0.0f;
 	 params["sy"] = 0.0f;
 	 params["alpha"] = 0.0f;

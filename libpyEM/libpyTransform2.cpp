@@ -416,6 +416,26 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	
 	delete EMAN_Transform3D_scope;
 	
+	class_< EMAN::Transform2D >("Transform2D", init<  >())
+		.def(init< const EMAN::Transform2D& >())
+		.def(init< float >())
+		.def("to_identity", &EMAN::Transform2D::to_identity)
+		.def("printme", &EMAN::Transform2D::printme)
+		.def("inverse", &EMAN::Transform2D::inverse)
+		.def("invert", &EMAN::Transform2D::invert)
+		.def("at", &EMAN::Transform2D::at)
+		.def("set_rotation", &EMAN::Transform2D::set_rotation)
+		.def("get_rotation", &EMAN::Transform2D::get_rotation)
+		.def("set_posttrans", (void (EMAN::Transform2D::*)(const float&, const float&))&EMAN::Transform2D::set_posttrans)
+		.def("set_posttrans", (void (EMAN::Transform2D::*)(const EMAN::Vec2f&) )&EMAN::Transform2D::set_posttrans)
+		.def("rotate", (EMAN::Vec2f (EMAN::Transform2D::*)(const float&, const float&) const)&EMAN::Transform2D::rotate)
+		.def("rotate", (EMAN::Vec2f (EMAN::Transform2D::*)(const EMAN::Vec2f&) const)&EMAN::Transform2D::rotate)
+		.def("transform", (EMAN::Vec2f (EMAN::Transform2D::*)(const float&, const float&) const)&EMAN::Transform2D::transform)
+		.def("transform", (EMAN::Vec2f (EMAN::Transform2D::*)(const EMAN::Vec2f&) const)&EMAN::Transform2D::transform)
+		.def( self * self )
+		.def( self * other< EMAN::Vec2f >() )
+	;
+	
 // 	class_< EMAN::Alignment2D, bases<EMAN::Transform3D> >("Alignment2D", init<  >())
 // 	.def("set_params",&EMAN::Alignment2D::set_params)
 // 	.def("get_params",&EMAN::Alignment2D::get_params)
