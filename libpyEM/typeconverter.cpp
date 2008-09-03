@@ -116,7 +116,7 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 		LOGERR("%dD numpy array to EMData is not supported.", ndim);
 		return;
 	}
-
+	
 	if (ndim == 1) {
 		nx = dims_ptr[0];
 	}
@@ -134,8 +134,14 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 
 	char* array_data = array_ptr->data;
     float* data = image->get_data();
-	
-	memcpy(data, array_data, sizeof(float) * nx * ny * nz);
+    
+    for(int k=0; k<nz; ++k) {
+    	for(int j=0; j<ny; ++j) {
+    		for(int i=0; i<nx; ++i) {
+    			image->set_value_at(i, j, k, static_cast<float>(((double*)array_data)[k*ny*nx+j*nx+i]));
+    		}
+    	}
+    }
 	image->update();
 }
 

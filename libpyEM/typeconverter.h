@@ -69,7 +69,9 @@ namespace EMAN {
 		static python::numeric::array em2numpy(EMData *image);
 
 		/** Create an EMData image from a numeric numpy array.
-		 * The image and the array share the same memory block.
+		 * The array data is copied to image element by element, 
+		 * since Python float use 8 bytes but EMData always use 4 byte float.
+		 * Note: the array size is (nz,ny,nx) corresponding to image (nx,ny,nz).
 		 */
 		static void numpy2em(python::numeric::array& array, EMData* image);
     };
