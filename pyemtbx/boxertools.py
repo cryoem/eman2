@@ -2539,7 +2539,7 @@ class PawelAutoBoxer(AutoBoxer):
 		print "     Box size    : ", self.box_size
 		print "     boxable.image_name:	  ", boxable.image_name
 
-		img = BigImageCache.get_image(boxable.get_image_name()) # change from boxable.image_name, hope you don't mind
+		img = BigImageCache.get_image_directly(boxable.get_image_name()) # change from boxable.image_name, hope you don't mind
 	
 		from filter import filt_gaussh, filt_gaussl
 
