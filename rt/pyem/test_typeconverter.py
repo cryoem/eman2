@@ -275,7 +275,17 @@ class TestTypeConverter(unittest.TestCase):
 
         for i in range(n):
             self.assertEqual(e.get_value_at(i, 0), i)
-
+         
+        #test the float64 data(Python float) convert to float32(EMData float)     
+    def test_numpy2em2(self):
+        """test numpy2em for float64 ........................"""
+        n1 = numpy.random.ranf( (5,3) )
+        e1 = EMData()
+        EMNumPy.numpy2em(n1, e1)
+        n2 = EMNumPy.em2numpy(e1)
+        diff = numpy.max(numpy.max(n2 - n1))
+        self.assertAlmostEqual(diff, 0, 3)
+        
     def test_em2numpy2(self):
         """test em2numpy again .............................."""
         imgfile1 = "test_em2numpy2_1.mrc"
@@ -292,7 +302,7 @@ class TestTypeConverter(unittest.TestCase):
         os.unlink(imgfile1)
         
     def test_Point_and_Size_class(self):
-        """test point ans Size class ........................"""
+        """test point and Size class ........................"""
         imgfile1 = "test_Point_and_Size_class_1.mrc"
         TestUtil.make_image_file(imgfile1, IMAGE_MRC, EM_FLOAT, 32,32,32)
 
