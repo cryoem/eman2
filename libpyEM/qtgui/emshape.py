@@ -35,7 +35,7 @@ from math import *
 
 def initGL():
 	"""Call this static function once to initialize necessary display lists"""
-	if EMShape.dlists>=0: return
+	if EMShape.dlists>=0 and GL.glIsList(EMShape.dlists): return
 	EMShape.dlists=GL.glGenLists(1)
 	GL.glNewList(EMShape.dlists,GL.GL_COMPILE)
 	GL.glBegin(GL.GL_LINE_LOOP)
@@ -150,7 +150,6 @@ class EMShape:
 			p2 = d2s(s[6],s[7])
 			GL.glVertex((p1[0]+p2[0])/2,(p1[1]+p2[1])/2)
 			GL.glEnd()
-			
 			v2=d2s(s[6],s[7])
 			GL.glPushMatrix()
 			GL.glColor(*col)
