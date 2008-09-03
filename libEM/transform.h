@@ -468,6 +468,11 @@ namespace EMAN
 		return Vec2f(x, y);
 	}
 	
+	/** Transform2D stores a single rotation and a translation
+	 * A work in progress
+	 * @author David Woolford
+	 * @date Sep 2008
+	 */
 	class Transform2D {
 		// This changes matrix elements directly so needs friend statust
 		friend Transform2D operator*(const Transform2D & M2, const Transform2D & M1);
