@@ -1743,7 +1743,7 @@ class GUIbox:
 		self.autoboxer.set_dummy_box(None)
 		self.box_display_update()
 		
-	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf"):
+	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
 		self.boxable.cache_exc_to_db()
 		for image_name in self.image_names:
 			
@@ -1769,7 +1769,7 @@ class GUIbox:
 			self.autoboxer.auto_box(boxable,False)
 			self.autoboxer.set_mode_explicit(mode)
 			
-			boxable.write_box_images(box_size,forceoverwrite,imageformat)
+			boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method)
 	
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
 		self.boxable.cache_exc_to_db()
@@ -2089,12 +2089,12 @@ class GUIboxPanel(QtGui.QWidget):
 		self.boxinghbl1.setMargin(0)
 		self.boxinghbl1.setSpacing(2)
 		
-		self.refbutton=QtGui.QPushButton("Reference")
+		self.refbutton=QtGui.QPushButton( QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/black_box.png"), "Reference")
 		self.refbutton.setCheckable(1)
 		self.refbutton.setChecked(True)
 		self.boxinghbl1.addWidget(self.refbutton)
 		
-		self.manualbutton=QtGui.QPushButton("Manual")
+		self.manualbutton=QtGui.QPushButton(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/white_box.png"), "Manual")
 		self.manualbutton.setCheckable(1)
 		self.manualbutton.setChecked(False)
 		self.boxinghbl1.addWidget(self.manualbutton)
@@ -2115,11 +2115,14 @@ class GUIboxPanel(QtGui.QWidget):
 		self.boxinghbl3.addWidget(self.dynapix)
 
 		self.method=QtGui.QComboBox()
-		self.method.addItem( "David method" )
-		self.method.addItem( "Pawel method" )
+		self.swarm_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/swarm_icon.png")
+		self.method.addItem( self.swarm_icon, "Swarm" )
+		self.setWindowIcon( self.swarm_icon )
+		self.pp_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/pp_boxer_icon.png");
+		self.method.addItem( self.pp_icon,"Pawel method" )
 		self.boxinghbl3.addWidget( self.method )
 
-		self.autobox=QtGui.QPushButton("Run")
+		self.autobox=QtGui.QPushButton(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/green_boxes.png"), "Autobox")
 		self.boxinghbl3.addWidget(self.autobox)
 		self.boxingvbl.addLayout(self.boxinghbl3)
 	
@@ -2138,7 +2141,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.unerase.setCheckable(1)
 		self.boxinghbl2.addWidget(self.unerase)
 		
-		self.eraseradtext=QtGui.QLabel("Erase Radius",self)
+		self.eraseradtext=QtGui.QLabel("Erase Radius:",self)
 		self.boxinghbl2.addWidget(self.eraseradtext)
 		
 		self.eraserad = QtGui.QLineEdit(str(self.target.eraseradius),self)
@@ -2148,7 +2151,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.boxingvbl.addLayout(self.boxinghbl2)
 		
 		self.boxinghbl4=QtGui.QHBoxLayout()
-		self.togfreeze=QtGui.QPushButton("Toggle Freeze")
+		self.togfreeze=QtGui.QPushButton(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/freeze_swirl.png"),"Toggle Freeze")
 		self.boxinghbl4.addWidget(self.togfreeze)
 		self.clear=QtGui.QPushButton("Clear")
 		self.boxinghbl4.addWidget(self.clear)
@@ -2173,37 +2176,46 @@ class GUIboxPanel(QtGui.QWidget):
 		self.outputvbl = QtGui.QVBoxLayout()
 		self.outputhbl1=QtGui.QHBoxLayout()
 		self.write_all_box_image_files = QtGui.QPushButton("Write Box Images")
-		self.outputhbl1.addWidget(self.write_all_box_image_files)
-		self.write_all_coord_files = QtGui.QPushButton("Write Coord Files")
-		self.outputhbl1.addWidget(self.write_all_coord_files)
+		self.outputhbl1.addWidget(self.write_all_box_image_files,0)
+		self.normalize_box_images = QtGui.QCheckBox("Normalize Box Images")
+		self.normalize_box_images.setChecked(True)
+		self.outputhbl1.addWidget(self.normalize_box_images,0, Qt.AlignLeft)
 		self.outputvbl.addLayout(self.outputhbl1)
 		
 		self.outputhbl2=QtGui.QHBoxLayout()
-		self.usingbox_sizetext=QtGui.QLabel("Using Box Size:",self)
-		
-		self.outputhbl2.addWidget(self.usingbox_sizetext)
-		self.usingbox_size = QtGui.QLineEdit(str(self.target.box_size),self)
-		self.usingbox_size.setValidator(self.pos_int_validator)
-		self.outputhbl2.addWidget(self.usingbox_size)
-		
+		self.write_all_coord_files = QtGui.QPushButton("Write Coord Files")
+		self.outputhbl2.addWidget(self.write_all_coord_files,0)
+		self.outputforceoverwrite = QtGui.QCheckBox("Force Overwrite")
+		self.outputforceoverwrite.setChecked(False)
+		self.outputhbl2.addWidget(self.outputforceoverwrite,0, Qt.AlignRight)
 		self.outputvbl.addLayout(self.outputhbl2)
 		
-		self.outputhbl3=QtGui.QHBoxLayout()
+		self.output_gridl = QtGui.QGridLayout()
+		
+		self.usingbox_sizetext=QtGui.QLabel("Using Box Size:",self)
+		self.output_gridl.addWidget(self.usingbox_sizetext,0,0,Qt.AlignRight)
+		
+		self.usingbox_size = QtGui.QLineEdit(str(self.target.box_size),self)
+		self.usingbox_size.setValidator(self.pos_int_validator)
+		self.output_gridl.addWidget(self.usingbox_size,0,1,Qt.AlignLeft)
 		
 		self.outputformat=QtGui.QLabel("Image Format:",self)
-		self.outputhbl3.addWidget(self.outputformat)
+		self.output_gridl.addWidget(self.outputformat,1,0, Qt.AlignRight)
 		
 		self.outputformats = QtGui.QComboBox(self)
 		self.outputformats.addItem("hdf")
 		self.outputformats.addItem("img")
-		self.outputhbl3.addWidget(self.outputformats)
+		self.output_gridl.addWidget(self.outputformats,1,1,Qt.AlignLeft)
 		
+		self.normalization_method=QtGui.QLabel("Normalization Method:",self)
+		self.output_gridl.addWidget(self.normalization_method,2,0,Qt.AlignRight)
 		
-		self.outputforceoverwrite = QtGui.QCheckBox("Force Overwrite")
-		self.outputforceoverwrite.setChecked(False)
-		self.outputhbl3.addWidget(self.outputforceoverwrite)
+		self.normalization_options = QtGui.QComboBox(self)
+		self.normalization_options.addItem("normalize.edgemean")
+		self.normalization_options.addItem("normalize.ramp.normvar")
+		self.output_gridl.addWidget(self.normalization_options,2,1, Qt.AlignLeft)
 		
-		self.outputvbl.addLayout(self.outputhbl3)
+		self.outputvbl.addLayout(self.output_gridl)
 		
 		self.outputbox = QtGui.QGroupBox("Output")
 		self.outputbox.setLayout(self.outputvbl)
@@ -2233,17 +2245,25 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.connect(self.method, QtCore.SIGNAL("activated(int)"), self.method_changed)
 
+		self.connect(self.normalize_box_images,QtCore.SIGNAL("clicked(bool)"),self.normalize_box_images_toggled)
+
 		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
 
+	def normalize_box_images_toggled(self):
+		val = self.normalize_box_images.isChecked()
+		self.normalization_options.setEnabled(val)
+		self.normalization_method.setEnabled(val)
 	def method_changed(self, methodid):
 
 		name = self.method.itemText( methodid )
 
-		if name[0:5] == "David":
+		if name[0:5] == "Swarm":
 			tabid = self.tabwidget.indexOf( self.pawel_option )
 			if tabid != -1:
 				self.tabwidget.removeTab( tabid )
-				self.tabwidget.insertTab( tabid, self.david_option, "David Advanced" )
+				self.tabwidget.insertTab( tabid, self.david_option, "Swarm Advanced" )
+				self.autobox.setText("Autobox")
+				self.setWindowIcon( self.swarm_icon )
 
 			#self.target.autoboxer = SwarmAutoBoxer(self.target)
 			#self.target.autoboxer.set_box_size_explicit(self.target.box_size)
@@ -2255,7 +2275,9 @@ class GUIboxPanel(QtGui.QWidget):
 			if tabid != -1:
 				self.tabwidget.removeTab( tabid )
 				self.tabwidget.insertTab( tabid, self.pawel_option, "Pawel Advanced" )
-			
+				self.autobox.setText("Run")
+				self.setWindowIcon( self.pp_icon )
+				
 			self.target.autoboxer = PawelAutoBoxer(self.target)
 
 
@@ -2286,14 +2308,14 @@ class GUIboxPanel(QtGui.QWidget):
 		realbox_size = int(str(self.bs.text()))
 		if realbox_size == box_size:
 			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-		self.target.write_all_box_image_files(box_size,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()))
+		self.target.write_all_box_image_files(box_size,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()),self.normalize_box_images.isChecked(),str(self.normalization_options.currentText()))
 		
 	def write_box_coords(self,unused):
 		box_size = int(str(self.usingbox_size.text()))
 		realbox_size = int(str(self.bs.text()))
 		if realbox_size == box_size:
 			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-		self.target.write_all_coord_files(box_size,self.outputforceoverwrite.isChecked())
+		self.target.write_all_coord_files(box_size,self.outputforceoverwrite.isChecked(),)
 	
 	def setChecked(self,tag):
 		
@@ -2599,7 +2621,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.pawel_table, QtCore.SIGNAL("cellChanged(int,int)"), self.pawel_parm_changed)
 
 
-		self.tabwidget.addTab(self.david_option,"David Advanced")
+		self.tabwidget.addTab(self.david_option,"Swarm Advanced")
 		self.connect(self.abnew, QtCore.SIGNAL("clicked(bool)"), self.add_new_autoboxer)
 		self.connect(self.abcopy, QtCore.SIGNAL("clicked(bool)"), self.add_copy_autoboxer)
 		self.connect(self.abdelete, QtCore.SIGNAL("clicked(bool)"), self.delete_autoboxer)

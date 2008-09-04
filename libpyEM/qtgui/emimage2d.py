@@ -86,6 +86,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		self.light_0_pos = [.1,.1,1,0.]
 		
+	def set_parent(self,parent):
+		self.parent = parent
+		
 	def timeout(self):
 		update = False
 		if self.image2d.updateblend() :
@@ -1379,6 +1382,8 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.gammas.setValue(self.target.get_gamma())
 		#self.gammas.setValue(1.0)
 		self.vbl.addWidget(self.gammas)
+
+		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
 
 		self.lowlim=0
 		self.highlim=1.0

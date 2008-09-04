@@ -234,7 +234,7 @@ class Box:
 		
 		return 0
 	
-	def update_box_image(self,norm=True):
+	def update_box_image(self,norm=True,norm_method="normalize.ramp.normvar"):
 		image = BigImageCache.get_image_directly(self.image_name)
 		#print "getting region",self.xcorner,self.ycorner,self.xsize,self.ysize
 		if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
@@ -242,17 +242,10 @@ class Box:
 		
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
 		if norm:
-			#self.image.process_inplace("normalize.edgemean")
-			self.image.process_inplace( "filter.ramp" )
-			nx = self.image.get_xsize()
-			mask = EMData()
-			mask.set_size(nx, nx, 1)
-			mask.process_inplace("testimage.circlesphere", {"radius":nx//2-2, "fill":1})
-	
-			avg,var,dummy,dummy = Util.infomask( self.image, mask, False)
-			self.image -= avg
-			self.image /= var
-		
+			self.image.process_inplace(norm_method)
+			self.image.set_attr("normalization",norm_method)
+		else:
+			self.image.set_attr("normalization","none")
 
 		# make sure there are no out of date footprints hanging around
 		self.footprint = None
@@ -271,14 +264,12 @@ class Box:
 			
 			self.image = None
 			self.footprint = None
-			
-	def get_box_image(self,norm=True,force=False):
-		image = BigImageCache.get_image_directly(self.image_name)
-		
+	
+	def get_box_image(self,norm=True,norm_method="normalize.ramp.normvar",force=False):
 		if self.image == None or force:
-			if image == None:
-				print 'error, need to specify the image argument when first calling get_box_image'
-			self.update_box_image(norm)
+			self.update_box_image(norm,norm_method)
+		elif norm and self.image.get_attr("normalization") != norm_method: #normalization attribute should always exist
+			self.update_box_image(norm,norm_method)
 		return self.image
 	
 	def get_small_box_image(self,autoboxer):
@@ -312,7 +303,7 @@ class Box:
 				
 		return self.footprint
 			
-	def center(self,method,extrasomething,low_res=False):
+	def center(self,method,extrasomething,low_res=False,update_image=True):
 		'''
 		Ask the box to center itself using one of the available methods (as stored in Box.CENTERMETHODS
 		extrasomething has to be an AutoBoxer if using CENTEROFMASS or CENTERACF (it's asked for get_subsample_rate)
@@ -372,7 +363,9 @@ class Box:
 		if low_res == True and not method == Box.CENTERPROPAGATE:
 			self.correct_resolution_centering(extrasomething.get_subsample_rate(),False)
 	
-		self.update_box_image()
+		if update_image:
+			self.update_box_image()
+		
 		self.changed = True
 		
 		return 1
@@ -899,8 +892,9 @@ class InverseSigmaImage:
 		shrinkfactor = params_mediator.get_subsample_rate()
 		
 		image = SubsamplerCache.get_image(self.image_name,params_mediator)
-		tmp = EMData(flattenradius*2,flattenradius*2)
-		tmp.process_inplace("testimage.circlesphere")
+		tmp = BinaryCircleImageCache.get_image_directly(flattenradius)
+		#tmp = EMData(flattenradius*2,flattenradius*2)
+		#tmp.process_inplace("testimage.circlesphere")
 		self.image = image.calc_fast_sigma_image(tmp)
 		self.image.set_attr("flatten_radius",flattenradius)
 		self.image.set_attr("shrink_factor",shrinkfactor)
@@ -929,7 +923,7 @@ class BinaryCircleImage:
 	def __init__(self,circle_radius):
 		self.circle_radius = circle_radius
 		self.image = EMData(2*circle_radius+1,2*circle_radius+1)
-		self.image.process_inplace("testimage.circlesphere")
+		self.image.process_inplace("testimage.circlesphere", {"radius":circle_radius, "fill":1})
 		self.image.set_attr("circle_radius",circle_radius)
 
 	def get_construction_argument(self):
@@ -1563,7 +1557,7 @@ class Boxable:
 	def get_image_file_name(self,imageformat="hdf"):
 		return strip_file_tag(self.image_name)+"."+imageformat
 
-	def write_box_images(self,box_size=-1,force=False,imageformat="hdf",verbose=True):
+	def write_box_images(self,box_size=-1,force=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",verbose=True):
 		'''
 		If box_size is -1 then the current box_size is used to write output
 		If force is True then output is written over (if it already exists) - else an error is printed and nothing happens
@@ -1592,7 +1586,7 @@ class Boxable:
 						return
 					box.change_box_size(box_size)
 						
-				image = box.get_box_image()
+				image = box.get_box_image(normalize,norm_method)
 				
 				image.set_attr("original_x_corner",box.xcorner)
 				image.set_attr("original_y_corner",box.ycorner)
@@ -2175,6 +2169,7 @@ class SwarmTemplate(Template):
 			if ref.isdummy == True:
 				continue
 			image = ref.get_small_box_image(self.autoboxer)
+			image.process_inplace("normalize.edgemean")
 			images_copy.append(image)
 		if len(images_copy) == 0:
 			print 'error, you have probably set references that all have the dummy flag set to True, which exluded them all from the template making process'
@@ -3234,6 +3229,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		# This is what should be written to the database
 		boxes = []
 		
+		update_image = True
+		if self.mode == SwarmAutoBoxer.COMMANDLINE: update_image=False
 		for b in soln:
 			x = b[0]
 			y = b[1]
@@ -3246,7 +3243,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			box.cory = b[1]
 			box.changed = True
 #			box.correct_resolution_centering(self.get_subsample_rate(),False)
-			box.center(Box.CENTERPROPAGATE,template,False)
+			box.center(Box.CENTERPROPAGATE,template,False,update_image)
 			boxes.append(box)
 	
 		return boxes

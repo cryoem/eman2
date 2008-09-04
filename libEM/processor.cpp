@@ -147,6 +147,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&NormalizeLREdgeMeanProcessor::NEW);
 	force_add(&NormalizeMaxMinProcessor::NEW);
 	force_add(&NormalizeRowProcessor::NEW);
+	force_add(&NormalizeRampNormVar::NEW);
 	
 	force_add(&HistogramBin::NEW);
 	
@@ -2637,6 +2638,29 @@ float NormalizeMaskProcessor::calc_mean(EMData * image) const
 	}
 
 	return mean;
+}
+
+void NormalizeRampNormVar::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("cannot do normalization on NULL image");
+		return;
+	}
+
+	if (image->is_complex()) {
+		LOGWARN("cannot do normalization on complex image");
+		return;
+	}
+
+	image->process_inplace( "filter.ramp" );
+	int nx = image->get_xsize();
+	EMData mask(nx,nx);
+	mask.process_inplace("testimage.circlesphere", Dict("radius",nx/2-2,"fill",1));
+	
+	vector<float> rstls = Util::infomask( image, &mask, false);
+	image->add((float)-rstls[0]);
+	image->mult((float)1.0/rstls[1]);
+	image->update();
 }
 
 float NormalizeEdgeMeanProcessor::calc_mean(EMData * image) const

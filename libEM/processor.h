@@ -3409,6 +3409,30 @@ The basic design of EMAN Processors: <br>\
 		float calc_mean(EMData * image) const;
 	};
 
+	/**Normalize an image so its vector length is 1.0.
+		*/
+	class NormalizeRampNormVar: public Processor
+	{
+		public:
+			string get_name() const
+			{
+				return "normalize.ramp.normvar";
+			}
+
+			static Processor *NEW()
+			{
+				return new NormalizeRampNormVar();
+			}
+
+			string get_desc() const
+			{
+				return "First call filter.ramp on the image, then make the mean 0 and norm 1";
+			}
+			
+			void process_inplace(EMData * image);
+	};
+	
+	
 	/**normalizes an image, mean value equals to edge mean.
 	 */
 	class NormalizeEdgeMeanProcessor:public NormalizeProcessor
