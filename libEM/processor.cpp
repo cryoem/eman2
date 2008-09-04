@@ -5734,8 +5734,12 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 	float z_twosig2 = 2*z_sigma*z_sigma;
 
 	float sr2pi = sqrt( 2.0f*(float)pi );
-	float norm  = 1.0f/ ( x_sigma*y_sigma*z_sigma*sr2pi*sr2pi*sr2pi );
-
+	float norm  = 1.0f/ ( x_sigma*sr2pi );
+	if (ny > 1) {
+		norm *= 1.0f/ ( y_sigma*sr2pi );
+		if (nz > 1) norm  *= 1.0f/ ( z_sigma*sr2pi );
+	}
+	
 	for (int iz=0; iz < nz; iz++) {
 		float z = static_cast<float>(iz) - z_center;
 		for (int iy=0; iy < ny; iy++) {
