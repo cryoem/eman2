@@ -93,7 +93,25 @@ Transform& Transform::operator=(const Transform& that ) {
 
 Transform::Transform(const Dict& d) {
 	to_identity();
-	
+	set_params(d);
+}
+
+
+void Transform::to_identity()
+{
+	for(int i=0; i<4; ++i) {
+		for(int j=0; j<4; ++j) {
+			if(i==j) {
+				matrix[i][j] = 1;
+			}
+			else {
+				matrix[i][j] = 0;
+			}
+		}
+	}
+}
+
+void Transform::set_params(const Dict& d) {
 	if (d.has_key_ci("type") ) set_rotation(d);
 	
 	try {
@@ -113,180 +131,46 @@ Transform::Transform(const Dict& d) {
 	catch (...) { }
 	
 	if ( dx != 0.0 || dy != 0.0 || dz != 0.0 ) {
-		set_posttrans(dx,dy,dz);	
+		set_trans(dx,dy,dz);	
 	}
 	
 	try {
-		bool post_x_mirror = static_cast<bool>(d.get_ci("mirror"));
-		set_post_x_mirror(post_x_mirror);
+		bool mirror = static_cast<bool>(d.get_ci("mirror"));
+		set_mirror(mirror);
 	}
 	catch (...) { }
-	
-	
 }
 
-// Transform::Transform(const float& alpha) 
-// {
-// 	to_identity();
-// 	set_rotation(0,0,alpha);
-// }
-// 
-// Transform::Transform(const float& az, const float& alt, const float& phi) 
-// {
-// 	to_identity();
-// 	set_rotation(az,alt,phi);
-// }
-// 
-// Transform::Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3) 
-// {
-// 	to_identity();
-// 	set_rotation(euler_type,a1,a2,a3);
-// }
-// 
-// Transform::Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
-// {
-// 	to_identity();
-// 	set_rotation(euler_type,a1,a2,a3,a4);
-// }
-// 
-// Transform::Transform(EulerType euler_type, const Dict& rotation)
-// {
-// 	to_identity();
-// 	set_rotation(euler_type,rotation);
-// }
 
-
-// Transform::Transform(const float& m11, const float& m12, const float& m13,
-// 					 const float& m21, const float& m22, const float& m23,
-// 	  const float& m31, const float& m32, const float& m33)
-// {
-// 	to_identity();
-// 	set_rotation(m11,m12,m13,m21,m22,m23,m31,m32,m33);
-// }
-
-
-void Transform::to_identity()
-{
-	for(int i=0; i<4; ++i) {
-		for(int j=0; j<4; ++j) {
-			if(i==j) {
-				matrix[i][j] = 1;
-			}
-			else {
-				matrix[i][j] = 0;
-			}
-		}
-	}
+Dict Transform::get_params(const string& euler_type) {
+	Dict params = get_rotation(euler_type);
+	
+	Vec3f v = get_trans();
+	params["dx"] = v[0]; params["dy"] = v[1]; params["dz"] = v[2];
+	
+	float scale = get_scale();
+	params["scale"] = scale;
+	
+	bool mirror = get_mirror();
+	params["mirror"] = mirror;
+	
+	return params;
 }
 
-// void Transform::set_rotation(const float& alpha)
-// {
-// 	Dict rot;
-// 	rot["alpha"]  = alpha;
-// 	set_rotation(ALPHA, rot);
-// }
-// 
-// void Transform::set_rotation(const float& az, const float& alt, const float& phi )
-// {
-// 	Dict rot;
-// 	rot["az"]  = az;
-// 	rot["alt"] = alt;
-// 	rot["phi"] = phi;
-// 	set_rotation(EMAN, rot);
-// }
-// 
-// void Transform::set_rotation(EulerType euler_type, const float& alpha)
-// {
-// 	Dict rot;
-// 	switch(euler_type) {
-// 		case ALPHA:
-// 			rot["alpha"]  = alpha;
-// 			break;
-// 		default:
-// 			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
-// 	}  // ends switch euler_type
-// 	set_rotation(euler_type, rot);
-// }
-// 
-// void Transform::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3)
-// {
-// 	Dict rot;
-// 	switch(euler_type) {
-// 		case EMAN:
-// 			rot["az"]  = a1;
-// 			rot["alt"] = a2;
-// 			rot["phi"] = a3;
-// 			break;
-// 		case SPIDER:
-// 			rot["phi"]   = a1;
-// 			rot["theta"] = a2;
-// 			rot["psi"]   = a3;
-// 			break;
-// 		case IMAGIC:
-// 			rot["alpha"]   = a1;
-// 			rot["beta"] = a2;
-// 			rot["gamma"]   = a3;
-// 			break;
-// 		case MRC:
-// 			rot["phi"]   = a1;
-// 			rot["theta"] = a2;
-// 			rot["omega"]   = a3;
-// 			break;
-// 		case XYZ:
-// 			rot["xtilt"]   = a1;
-// 			rot["ytilt"] = a2;
-// 			rot["ztilt"]   = a3;
-// 			break;
-// 		default:
-// 			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
-// 	}  // ends switch euler_type
-// 	set_rotation(euler_type, rot);
-// }
-// // This is where it all happens;
-// void Transform::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4) 
-// {
-// 	Dict rot;
-// 	switch(euler_type) {
-// 		case QUATERNION:
-// 			rot["e0"]  = a1;
-// 			rot["e1"] = a2;
-// 			rot["e2"] = a3;
-// 			rot["e3"] = a4;
-// 			break;
-// 		case SGIROT:
-// 			rot["q"]  = a1;
-// 			rot["n1"] = a2;
-// 			rot["n2"] = a3;
-// 			rot["n3"] = a4;
-// 		case SPIN:
-// 			rot["Omega"]  = a1;
-// 			rot["n1"] = a2;
-// 			rot["n2"] = a3;
-// 			rot["n3"] = a4;
-// 			break;
-// 		default:
-// 			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
-// 	}  // ends switch euler_type
-// 	set_rotation(euler_type, rot);
-// }
-// 
-// void Transform::set_rotation(const float& m11, const float& m12, const float& m13,
-// 							 const float& m21, const float& m22, const float& m23,
-// 		const float& m31, const float& m32, const float& m33)
-// {
-// 	EulerType euler_type = MATRIX;
-// 	Dict rot;
-// 	rot["m11"]  = m11;
-// 	rot["m12"]  = m12;
-// 	rot["m13"]  = m13;
-// 	rot["m21"]  = m21;
-// 	rot["m22"]  = m22;
-// 	rot["m23"]  = m23;
-// 	rot["m31"]  = m31;
-// 	rot["m32"]  = m32;
-// 	rot["m33"]  = m33;
-// 	set_rotation(euler_type, rot);
-// }
+Dict Transform::get_params_2d() {
+	Dict params = get_rotation("2d");
+	
+	Vec2f v = get_trans_2d();
+	params["dx"] = v[0]; params["dy"] = v[1]; 
+	
+	float scale = get_scale();
+	params["scale"] = scale;
+	
+	bool mirror = get_mirror();
+	params["mirror"] = mirror;
+	
+	return params;
+}
 
 
 void Transform::set_rotation(const Dict& rotation)
@@ -300,7 +184,7 @@ void Transform::set_rotation(const Dict& rotation)
 	euler_type = static_cast<string>(rotation.get_ci("type"));// Warning, will throw
 
 	
-	float e0  = 0;float e1=0; float e2=0; float e3=0;
+	float e0=0;float e1=0; float e2=0; float e3=0;
 	float Omega=0;
 	float az  = 0;
 	float alt = 0;
@@ -315,25 +199,28 @@ void Transform::set_rotation(const Dict& rotation)
 	bool x_mirror;
 	float scale;
 	// Get these before anything changes so we can apply them again
-	get_scale_and_post_x_mirror(scale,x_mirror);
+	get_scale_and_mirror(scale,x_mirror);
 
-	if (euler_type == "2d") {
+	string type(euler_type);
+	std::transform(euler_type.begin(),euler_type.end(),type.begin(), (int (*)(int) ) std::tolower);
+	
+	if (type == "2d") {
 		az  = 0;
 		alt = 0;
 		phi = (float)rotation["alpha"] ;
-	} else if ( euler_type == "eman" ) {
+	} else if ( type == "eman" ) {
 		az  = (float)rotation["az"] ;
 		alt = (float)rotation["alt"]  ;
 		phi = (float)rotation["phi"] ;
-	} else if ( euler_type == "imagic" ) {
+	} else if ( type == "imagic" ) {
 		az  = (float)rotation["alpha"] ;
 		alt = (float)rotation["beta"]  ;
 		phi = (float)rotation["gamma"] ;
-	} else if ( euler_type == "spider" ) {
+	} else if ( type == "spider" ) {
 		az =  (float)rotation["phi"]    + 90.0f;
 		alt = (float)rotation["theta"] ;
 		phi = (float)rotation["psi"]    - 90.0f;
-	} else if ( euler_type == "xyz" ) {
+	} else if ( type == "xyz" ) {
 		cxtilt = cos( (M_PI/180.0f)*(float)rotation["xtilt"]);
 		sxtilt = sin( (M_PI/180.0f)*(float)rotation["xtilt"]);
 		cytilt = cos( (M_PI/180.0f)*(float)rotation["ytilt"]);
@@ -341,31 +228,31 @@ void Transform::set_rotation(const Dict& rotation)
 		az =  (180.0f/M_PI)*atan2(-cytilt*sxtilt,sytilt)   + 90.0f ;
 		alt = (180.0f/M_PI)*acos(cytilt*cxtilt)  ;
 		phi = (float)rotation["ztilt"] +(180.0f/M_PI)*atan2(sxtilt,cxtilt*sytilt)   - 90.0f ;
-	} else if ( euler_type == "mrc" ) {
+	} else if ( type == "mrc" ) {
 		az  = (float)rotation["phi"]   + 90.0f ;
 		alt = (float)rotation["theta"] ;
 		phi = (float)rotation["omega"] - 90.0f ;
-	} else if ( euler_type == "quaternion" ) {
+	} else if ( type == "quaternion" ) {
 		is_quaternion = 1;
 		e0 = (float)rotation["e0"];
 		e1 = (float)rotation["e1"];
 		e2 = (float)rotation["e2"];
 		e3 = (float)rotation["e3"];
-	} else if ( euler_type == "spin" ) {
+	} else if ( type == "spin" ) {
 		is_quaternion = 1;
 		Omega = (float)rotation["Omega"];
 		e0 = cos(Omega*M_PI/360.0f);
 		e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
 		e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
 		e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
-	} else if ( euler_type == "sgirot" ) {
+	} else if ( type == "sgirot" ) {
 		is_quaternion = 1;
 		Omega = (float)rotation["q"] ;
 		e0 = cos(Omega*M_PI/360.0f);
 		e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
 		e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
 		e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
-	} else if ( euler_type == "matrix" ) {
+	} else if ( type == "matrix" ) {
 		is_matrix = 1;
 		matrix[0][0] = (float)rotation["m11"];
 		matrix[0][1] = (float)rotation["m12"];
@@ -432,7 +319,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 	float max = 1 - ERR_LIMIT;
 	float scale;
 	bool x_mirror;
-	get_scale_and_post_x_mirror(scale,x_mirror);
+	get_scale_and_mirror(scale,x_mirror);
 	float cosalt=matrix[2][2]/scale;
 	float x_mirror_scale = (x_mirror ? -1.0 : 1.0);
 	float inv_scale = 1.0/scale;
@@ -447,17 +334,17 @@ Dict Transform::get_rotation(const string& euler_type) const
 	if (cosalt > max) {  // that is, alt close to 0
 		alt = 0;
 		az=0;
-		phi = EMConsts::rad2deg*(float)atan2(matrix[0][1], x_mirror_scale*matrix[0][0]); 
+		phi = EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]); 
 	}
 	else if (cosalt < -max) { // alt close to pi
 		alt = 180;
 		az=0; 
-		phi=360.0f-EMConsts::rad2deg*(float)atan2(matrix[0][1], x_mirror_scale*matrix[0][0]);
+		phi=360.0f-EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]);
 	}
 	else {
 		alt = EMConsts::rad2deg*(float) acos(cosalt);
-		az  = 360.0f+EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[2][0], -matrix[2][1]);
-		phi = 360.0f+EMConsts::rad2deg*(float)atan2(matrix[0][2], matrix[1][2]);
+		az  = 360.0f+EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
+		phi = 360.0f+EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
 	}
 	az=fmod(az+180.0f,360.0f)-180.0f;
 	phi=fmod(phi+180.0f,360.0f)-180.0f;
@@ -544,12 +431,12 @@ Dict Transform::get_rotation(const string& euler_type) const
 		result["n3"] = n3;
 	} else if (type == "matrix") {
 		result["m11"] = x_mirror_scale*matrix[0][0]*inv_scale;
-		result["m12"] = matrix[0][1]*inv_scale;
-		result["m13"] = matrix[0][2]*inv_scale;
-		result["m21"] = x_mirror_scale* matrix[1][0]*inv_scale;
+		result["m12"] = x_mirror_scale*matrix[0][1]*inv_scale;
+		result["m13"] = x_mirror_scale*matrix[0][2]*inv_scale;
+		result["m21"] = matrix[1][0]*inv_scale;
 		result["m22"] = matrix[1][1]*inv_scale;
 		result["m23"] = matrix[1][2]*inv_scale;
-		result["m31"] = x_mirror_scale*matrix[2][0]*inv_scale;
+		result["m31"] = matrix[2][0]*inv_scale;
 		result["m32"] = matrix[2][1]*inv_scale;
 		result["m33"] = matrix[2][2]*inv_scale;
 	} else {
@@ -559,10 +446,14 @@ Dict Transform::get_rotation(const string& euler_type) const
 	return result;
 }
 
+Dict Transform::get_rotation_2d() const {
+	return get_rotation("2d");
+}
 
-void Transform::set_posttrans(const float& x, const float& y, const float& z)
+
+void Transform::set_trans(const float& x, const float& y, const float& z)
 {
-	bool x_mirror = get_post_x_mirror();
+	bool x_mirror = get_mirror();
 	
 	if (x_mirror) matrix[0][3] = -x;
 	else matrix[0][3] = x;
@@ -571,9 +462,9 @@ void Transform::set_posttrans(const float& x, const float& y, const float& z)
 }
 
 
-Vec3f Transform::get_posttrans() const
+Vec3f Transform::get_trans() const
 {
-	bool x_mirror = get_post_x_mirror();
+	bool x_mirror = get_mirror();
 	Vec3f v;
 	if (x_mirror) v[0] = -matrix[0][3];
 	else v[0] = matrix[0][3];
@@ -582,23 +473,32 @@ Vec3f Transform::get_posttrans() const
 	return v;
 }
 
+Vec2f Transform::get_trans_2d() const
+{
+	bool x_mirror = get_mirror();
+	Vec2f v;
+	if (x_mirror) v[0] = -matrix[0][3];
+	else v[0] = matrix[0][3];
+	v[1] = matrix[1][3];
+	return v;
+}
 
-Vec3f Transform::get_pretrans() const 
+
+
+Vec3f Transform::get_pre_trans() const 
 {
 	Transform T(*this);
-	T.set_posttrans(0,0,0);
+	T.set_trans(0,0,0);
 	T.invert();
 	
 	Transform soln  = T*(*this);
 // 	soln.printme();
-	return soln.get_posttrans();
+	return soln.get_trans();
 }
 
-Vec2f Transform::get_pretrans_2d() const 
+Vec2f Transform::get_pre_trans_2d() const 
 {
-	Vec3f v = get_pretrans();
-
-	
+	Vec3f v = get_pre_trans();
 	return Vec2f(v[0],v[1]);
 }
 
@@ -636,12 +536,12 @@ float Transform::get_scale() const {
 void Transform::orthogonalize()
 {
 	set_scale(1.0);
-	set_post_x_mirror(false);
+	set_mirror(false);
 }
 
-void Transform::set_post_x_mirror(const bool x_mirror ) {
+void Transform::set_mirror(const bool x_mirror ) {
 	
-	bool old_x_mirror = get_post_x_mirror();
+	bool old_x_mirror = get_mirror();
 	if (old_x_mirror == x_mirror) return; // The user is setting the same value
 	else {
 		// Toggle the mirroring operation
@@ -651,7 +551,7 @@ void Transform::set_post_x_mirror(const bool x_mirror ) {
 	}
 }
 
-bool Transform::get_post_x_mirror() const {
+bool Transform::get_mirror() const {
 	float determinant = get_determinant();
 	
 	bool x_mirror = false;
@@ -661,7 +561,7 @@ bool Transform::get_post_x_mirror() const {
 
 }
 
-void Transform::get_scale_and_post_x_mirror(float& scale, bool& x_mirror) const {
+void Transform::get_scale_and_mirror(float& scale, bool& x_mirror) const {
 	
 	float determinant = get_determinant();
 	x_mirror = false;
@@ -743,6 +643,29 @@ void Transform::transpose_inplace() {
 			matrix[j][i] = tempij;
 		}
 	}
+}
+
+
+Transform Transform::get_sym(const string & symname, int n) const
+{
+
+// 	Symmetry3D* sym = Factory<Symmetry3D>::get(symname);
+// 	
+// 	Transform ret = sym->get_sym(n);
+// 	delete sym;
+// 	
+// 	ret = (*this) * ret;
+
+// 	return ret;
+	
+	return *this;
+}
+
+
+int Transform::get_nsym(const string & name)
+{
+	Symmetry3D* sym = Factory<Symmetry3D>::get(name);
+	return sym->get_nsym();
 }
 
 
@@ -1810,163 +1733,146 @@ Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
 
 Transform3D Transform3D::get_sym(const string & symname, int n) const
 {
-// 	int nsym = get_nsym(symname);
+	int nsym = get_nsym(symname);
 
 // 	Transform3D invalid;
 // 	invalid.set_rotation( -0.1f, -0.1f, -0.1f);
 
-	Symmetry3D* sym = Factory<Symmetry3D>::get(symname);
-	
-	Transform3D ret = sym->get_sym(n);
-	delete sym;
-// 	if (n >= nsym) {
-// 		return invalid;
-// 	}
-// 	// see www.math.utah.edu/~alfeld/math/polyhedra/polyhedra.html for pictures
-// 	// By default we will put largest symmetry along z-axis.
-// 
-// 	// Each Platonic Solid has 2E symmetry elements.
-// 
-// 
-// 	// An icosahedron has   m=5, n=3, F=20 E=30=nF/2, V=12=nF/m,since vertices shared by 5 triangles;
-// 	// It is composed of 20 triangles. E=3*20/2;
-// 
-// 
-// 	// An dodecahedron has m=3, n=5   F=12 E=30  V=20
-// 	// It is composed of 12 pentagons. E=5*12/2;   V= 5*12/3, since vertices shared by 3 pentagons;
-// 
-// 
-// 
-//     // The ICOS symmetry group has the face along z-axis
-// 
-// 	float lvl0=0;                             //  there is one pentagon on top; five-fold along z
-// 	float lvl1= 63.4349f; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
-// 	float lvl2=116.5651f; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
-// 	float lvl3=180.f;                           // there is one pentagon on the bottom
-//              // Notice that 63.439 is the angle between two faces of the dual object
-// 
-// 	static double ICOS[180] = { // This is with a pentagon normal to z 
-// 		  0,lvl0,0,    0,lvl0,288,   0,lvl0,216,   0,lvl0,144,  0,lvl0,72,
-// 		  0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
-// 		 72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
-// 		144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
-// 		216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
-// 		288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
-// 		 36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
-// 		108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
-// 		180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
-// 		252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
-// 		324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
-//    		  0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
-// 	};
-// 
-// 
-// 	// A cube has   m=3, n=4, F=6 E=12=nF/2, V=8=nF/m,since vertices shared by 3 squares;
-// 	// It is composed of 6 squares.
-// 
-// 
-// 	// An octahedron has   m=4, n=3, F=8 E=12=nF/2, V=6=nF/m,since vertices shared by 4 triangles;
-// 	// It is composed of 8 triangles.
-// 
-//     // We have placed the OCT symmetry group with a face along the z-axis
-//         lvl0=0;
-// 	lvl1=90;
-// 	lvl2=180;
-// 
-// 	static float OCT[72] = {// This is with a face of a cube along z 
-// 		      0,lvl0,0,   0,lvl0,90,    0,lvl0,180,    0,lvl0,270,
-// 		      0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
-// 		     90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
-// 		    180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
-// 		    270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
-// 		      0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
-// 	};
-// 	// B^4=A^3=1;  BABA=1; implies   AA=BAB, ABA=B^3 , AB^2A = BBBABBB and
-// 	//   20 words with at most a single A
-//     //   1 B BB BBB A  BA AB BBA BAB ABB BBBA BBAB BABB ABBB BBBAB BBABB BABBB 
-//     //                        BBBABB BBABBB BBBABBB 
-//      // also     ABBBA is distinct yields 4 more words
-//      //    ABBBA   BABBBA BBABBBA BBBABBBA
-//      // for a total of 24 words
-//      // Note A BBB A BBB A  reduces to BBABB
-//      //  and  B A BBB A is the same as A BBB A BBB etc.
-// 
-//     // The TET symmetry group has a face along the z-axis
-//     // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
-//         lvl0=0;         // There is a face along z
-// 	lvl1=109.4712f;  //  that is acos(-1/3)  // There  are 3 faces at this angle
-// 
-// 	static float TET[36] = {// This is with the face along z 
-// 	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
-// 	      0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
-// 	    120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
-// 	    240,lvl1,60, 240,lvl1,180,  240,lvl1,300
-// 	};
-// 	// B^3=A^3=1;  BABA=1; implies   A^2=BAB, ABA=B^2 , AB^2A = B^2AB^2 and
-// 	//   12 words with at most a single A
-//     //   1 B BB  A  BA AB BBA BAB ABB BBAB BABB BBABB
-//     // at most one A is necessary
-// 
-// 	Transform3D ret;
-// 	SymType type = get_sym_type(symname);
-// 
-// 	switch (type) {
-// 	case CSYM:
-// 		ret.set_rotation( n * 360.0f / nsym, 0, 0);
-// 		break;
-// 	case DSYM:
-// 		if (n >= nsym / 2) {
-// 			ret.set_rotation((n - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
-// 		}
-// 		else {
-// 			ret.set_rotation( n * 360.0f / (nsym / 2),0, 0);
-// 		}
-// 		break;
-// 	case ICOS_SYM:
-// 		ret.set_rotation((float)ICOS[n * 3 ],
-// 				 (float)ICOS[n * 3 + 1],
-// 				 (float)ICOS[n * 3 + 2] );
-// 		break;
-// 	case OCT_SYM:
-// 		ret.set_rotation((float)OCT[n * 3],
-// 				 (float)OCT[n * 3 + 1], 
-// 				 (float)OCT[n * 3 + 2] );
-// 		break;
-// 	case TET_SYM:
-// 		ret.set_rotation((float)TET[n * 3 ],
-// 				 (float)TET[n * 3 + 1] ,
-// 				 (float)TET[n * 3 + 2] );
-// 		break;
-// 	case ISYM:
-// 		ret.set_rotation(0, 0, 0);
-// 		break;
-// 	default:
-// 		throw InvalidValueException(type, symname);
-// 	}
+	// see www.math.utah.edu/~alfeld/math/polyhedra/polyhedra.html for pictures
+	// By default we will put largest symmetry along z-axis.
+
+	// Each Platonic Solid has 2E symmetry elements.
+
+
+	// An icosahedron has   m=5, n=3, F=20 E=30=nF/2, V=12=nF/m,since vertices shared by 5 triangles;
+	// It is composed of 20 triangles. E=3*20/2;
+
+
+	// An dodecahedron has m=3, n=5   F=12 E=30  V=20
+	// It is composed of 12 pentagons. E=5*12/2;   V= 5*12/3, since vertices shared by 3 pentagons;
+
+
+
+    // The ICOS symmetry group has the face along z-axis
+
+	float lvl0=0;                             //  there is one pentagon on top; five-fold along z
+	float lvl1= 63.4349f; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
+	float lvl2=116.5651f; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
+	float lvl3=180.f;                           // there is one pentagon on the bottom
+             // Notice that 63.439 is the angle between two faces of the dual object
+
+	static double ICOS[180] = { // This is with a pentagon normal to z 
+		  0,lvl0,0,    0,lvl0,288,   0,lvl0,216,   0,lvl0,144,  0,lvl0,72,
+		  0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
+		 72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
+		144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
+		216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
+		288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
+		 36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
+		108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
+		180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
+		252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
+		324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
+   		  0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
+	};
+
+
+	// A cube has   m=3, n=4, F=6 E=12=nF/2, V=8=nF/m,since vertices shared by 3 squares;
+	// It is composed of 6 squares.
+
+
+	// An octahedron has   m=4, n=3, F=8 E=12=nF/2, V=6=nF/m,since vertices shared by 4 triangles;
+	// It is composed of 8 triangles.
+
+    // We have placed the OCT symmetry group with a face along the z-axis
+        lvl0=0;
+	lvl1=90;
+	lvl2=180;
+
+	static float OCT[72] = {// This is with a face of a cube along z 
+		      0,lvl0,0,   0,lvl0,90,    0,lvl0,180,    0,lvl0,270,
+		      0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
+		     90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
+		    180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
+		    270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
+		      0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
+	};
+	// B^4=A^3=1;  BABA=1; implies   AA=BAB, ABA=B^3 , AB^2A = BBBABBB and
+	//   20 words with at most a single A
+    //   1 B BB BBB A  BA AB BBA BAB ABB BBBA BBAB BABB ABBB BBBAB BBABB BABBB 
+    //                        BBBABB BBABBB BBBABBB 
+     // also     ABBBA is distinct yields 4 more words
+     //    ABBBA   BABBBA BBABBBA BBBABBBA
+     // for a total of 24 words
+     // Note A BBB A BBB A  reduces to BBABB
+     //  and  B A BBB A is the same as A BBB A BBB etc.
+
+    // The TET symmetry group has a face along the z-axis
+    // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
+        lvl0=0;         // There is a face along z
+	lvl1=109.4712f;  //  that is acos(-1/3)  // There  are 3 faces at this angle
+
+	static float TET[36] = {// This is with the face along z 
+	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
+	      0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
+	    120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
+	    240,lvl1,60, 240,lvl1,180,  240,lvl1,300
+	};
+	// B^3=A^3=1;  BABA=1; implies   A^2=BAB, ABA=B^2 , AB^2A = B^2AB^2 and
+	//   12 words with at most a single A
+    //   1 B BB  A  BA AB BBA BAB ABB BBAB BABB BBABB
+    // at most one A is necessary
+
+	Transform3D ret;
+	SymType type = get_sym_type(symname);
+
+	switch (type) {
+	case CSYM:
+		ret.set_rotation( n * 360.0f / nsym, 0, 0);
+		break;
+	case DSYM:
+		if (n >= nsym / 2) {
+			ret.set_rotation((n - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
+		}
+		else {
+			ret.set_rotation( n * 360.0f / (nsym / 2),0, 0);
+		}
+		break;
+	case ICOS_SYM:
+		ret.set_rotation((float)ICOS[n * 3 ],
+				 (float)ICOS[n * 3 + 1],
+				 (float)ICOS[n * 3 + 2] );
+		break;
+	case OCT_SYM:
+		ret.set_rotation((float)OCT[n * 3],
+				 (float)OCT[n * 3 + 1], 
+				 (float)OCT[n * 3 + 2] );
+		break;
+	case TET_SYM:
+		ret.set_rotation((float)TET[n * 3 ],
+				 (float)TET[n * 3 + 1] ,
+				 (float)TET[n * 3 + 2] );
+		break;
+	case ISYM:
+		ret.set_rotation(0, 0, 0);
+		break;
+	default:
+		throw InvalidValueException(type, symname);
+	}
 
 	ret = (*this) * ret;
 
 	return ret;
 }
 
-
-map<string, int> Transform3D::symmetry_map = map<string, int>();
 int Transform3D::get_nsym(const string & name)
 {
-	if (symmetry_map.find(name) != symmetry_map.end()) {
-		return symmetry_map[name];
-	}
-
 	string symname = name;
 
 	for (size_t i = 0; i < name.size(); i++) {
 		if (isalpha(name[i])) {
 			symname[i] = (char)tolower(name[i]);
 		}
-	}
-
-	if (symmetry_map.find(name) != symmetry_map.end()) {
-		return symmetry_map[symname];
 	}
 
 	SymType type = get_sym_type(symname);
@@ -1995,9 +1901,6 @@ int Transform3D::get_nsym(const string & name)
 	default:
 		throw InvalidValueException(type, name);
 	}
-
-	symmetry_map[symname] = nsym;
-
 	return nsym;
 }
 

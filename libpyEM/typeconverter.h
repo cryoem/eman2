@@ -340,6 +340,59 @@ namespace EMAN {
 
 		}
     };
+	
+	template<class T, class T2>
+	struct tuple2_from_python
+	{
+		tuple2_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+					python::type_id<T>());
+		}
+
+		static void* convertible(PyObject* obj_ptr)
+		{
+			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
+									|| PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+				return 0;
+			}
+
+			return obj_ptr;
+		}
+
+
+		static void construct(PyObject* obj_ptr,
+								python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage = ((python::converter::rvalue_from_python_storage<T>*)
+					data)->storage.bytes;
+			new (storage) T();
+
+			data->convertible = storage;
+
+			T& result = *((T*) storage);
+
+			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+			int i = 0;
+	
+			while(1) {
+				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
+				if (PyErr_Occurred()) {
+					python::throw_error_already_set();
+				}
+
+				if (!py_elem_hdl.get()) {
+					break;
+				}
+
+				python::object py_elem_obj(py_elem_hdl);
+				python::extract<T2> elem_proxy(py_elem_obj);
+				result[i] = elem_proxy();
+				i++;
+			}
+		}
+	};
+
 
 	template<class T, class T2>
 	struct tuple3_from_python

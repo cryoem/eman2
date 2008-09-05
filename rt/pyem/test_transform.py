@@ -40,76 +40,124 @@ import math
 
 class TestTransform(unittest.TestCase):
 	"""this is the unit test for Transform class"""
-#		self.transforms = []
-#		self.transforms.append(Transform()) #empty transform (identity)
-#		d = {"type":"eman","az":3,"alt":5,"phi":-1}
-#		self.transforms.append(Transform(d)) # a eman rotatation
-#		d = {"type":"eman","az":3,"alt":5,"phi":-1,"scale":2.5}
-#		self.transforms.append(Transform(d)) # rotation, scale
-#		d = {"type":"eman","az":3,"alt":5,"phi":-1,"mirror":True}
-#		self.transforms.append(Transform(d)) # rotation, mirror
-#		d = {"type":"eman","az":3,"alt":5,"phi":-1}
-#		self.transforms.append(Transform(d)) # a eman rotatation
-#		
-#		
-#		t.set_post_x_mirror(True) # rotation and mirror
-#		transforms.append(t)
-#		s = Transform(Transform.EulerType.SPIDER,-3,5,-1)
-#		s.set_posttrans(3,2,2)  # rotation and translation
-#		transforms.append(s)
-#		r = Transform(Transform.EulerType.IMAGIC,3,-5,-1)
-#		r.set_scale(3.0)  # rotation and scale
-#		transforms.append(r)
-#		t1 = Transform(t)
-#		t1.set_posttrans(3,-2,0) # rotation, mirror and translation
-#		transforms.append(t1)
-#		t2 = Transform(t1)
-#		t2.set_scale(15.0) # rotation, mirror and translation
-#		transforms.append(t2)
+	#transforms = []
+	#d = {"type":"2d","alpha":self.get_angle_rand()}
+	#t = Transform(d)
+	#transforms.append(t)
+	#d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
+	#t = Transform(d)
+	#transforms.append(t)
+	#d = {"dx":0.2,"dy":3.0}
+	#t = Transform(d)
+	#transforms.append(t)
+
 	def get_angle_rand(self,lower=-359,upper=359):
 		return Util.get_frand(lower,upper)
+	
+	def test_get_trans(self):
+		"""test get trans ................................."""
+		for scale in [1.0,2.0]:
+			for mirror in [True,False]:
+				dx = Util.get_frand(-30.0,30.0)
+				dy = Util.get_frand(-30.0,30.0)
+				dz = Util.get_frand(-30.0,30.0)
+				d = {"dx":dx,"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				v = t.get_trans()
+				self.assertAlmostEqual(v[0], dx, 5)
+			
+				d = {"dx":dx,"dy":dy,"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				v = t.get_trans()
+				self.assertAlmostEqual(v[0], dx, 5)
+				self.assertAlmostEqual(v[1], dy, 5)
+				
+				d = {"dx":dx,"dy":dy,"dz":dz,"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				v = t.get_trans()
+				self.assertAlmostEqual(v[0], dx, 5)
+				self.assertAlmostEqual(v[1], dy, 5)
+				self.assertAlmostEqual(v[2], dz, 5)
+	
+	def test_get_trans_2d(self):
+		"""test get trans 2d .............................."""
+		for scale in [1.0,2.0]:
+			for mirror in [True,False]:
+				dx = Util.get_frand(-30.0,30.0)
+				dy = Util.get_frand(-30.0,30.0)
+				dz = Util.get_frand(-30.0,30.0)
+				d = {"dx":dx,"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				v = t.get_trans_2d()
+				self.assertAlmostEqual(v[0], dx, 5)
+			
+				d = {"dx":dx,"dy":dy,"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				v = t.get_trans_2d()
+				self.assertAlmostEqual(v[0], dx, 5)
+				self.assertAlmostEqual(v[1], dy, 5)
+				
+				# should even work in this case, dz is ignored
+				d = {"dx":dx,"dy":dy,"dz":dz,"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				v = t.get_trans_2d()
+				self.assertAlmostEqual(v[0], dx, 5)
+				self.assertAlmostEqual(v[1], dy, 5)
+	
 	def test_get_rotation(self):
 		"""test get rotation .............................."""	
-		# EMAN convention
-		d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
-		t = Transform(d)
-		rot = t.get_rotation("eman")
-		self.assertEqual("eman",rot["type"])
-
-		self.assertAlmostEqual(d["az"]%360.0, rot["az"]%360.0, 3)
-		self.assertAlmostEqual(d["alt"]%180.0, rot["alt"]%360.0, 3)
-		self.assertAlmostEqual(d["phi"]%360.0, rot["phi"]%360.0, 3)
 		
-		# SPIDER convention
-		d = {"type":"spider","phi":self.get_angle_rand(),"theta":self.get_angle_rand(0,179),"psi":self.get_angle_rand()}
-		t = Transform(d)
-		rot = t.get_rotation("spider")
-		self.assertEqual("spider",rot["type"])
-
-		self.assertAlmostEqual(d["phi"]%360.0, rot["phi"]%360.0, 3)
-		self.assertAlmostEqual(d["theta"]%360.0, rot["theta"]%360.0, 3)
-		self.assertAlmostEqual(d["psi"]%360.0, rot["psi"]%360.0, 3)
-	
-		# IMAGIC convention
-		d = {"type":"imagic","alpha":self.get_angle_rand(),"beta":self.get_angle_rand(0,179),"gamma":self.get_angle_rand()}
-		t = Transform(d)
-		rot = t.get_rotation("imagic")
-		self.assertEqual("imagic",rot["type"])
-
-		self.assertAlmostEqual(d["alpha"]%360.0, rot["alpha"]%360.0, 3)
-		self.assertAlmostEqual(d["beta"]%360.0, rot["beta"]%360.0, 3)
-		self.assertAlmostEqual(d["gamma"]%360.0, rot["gamma"]%360.0, 3)
 		
-		# MRC convention
-		d = {"type":"mrc","phi":self.get_angle_rand(),"theta":self.get_angle_rand(0,179),"omega":self.get_angle_rand()}
-		t = Transform(d)
-		rot = t.get_rotation("mrc")
-		self.assertEqual("mrc",rot["type"])
-
-		self.assertAlmostEqual(d["phi"]%360.0, rot["phi"]%360.0, 3)
-		self.assertAlmostEqual(d["theta"]%360.0, rot["theta"]%360.0, 3)
-		self.assertAlmostEqual(d["omega"]%360.0, rot["omega"]%360.0, 3)
+		for scale in [1.0,2.0]:
+			for mirror in [False,True]:
+				#2D convention
+				d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				rot = t.get_rotation("2d")
+				self.assertEqual("2d",rot["type"])
 		
+				self.assertAlmostEqual(d["alpha"]%360.0, rot["alpha"]%360.0, 3)
+				
+				# EMAN convention
+				d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				rot = t.get_rotation("eman")
+				self.assertEqual("eman",rot["type"])
+		
+				self.assertAlmostEqual(d["az"]%360.0, rot["az"]%360.0, 3)
+				self.assertAlmostEqual(d["alt"]%180.0, rot["alt"]%360.0, 3)
+				self.assertAlmostEqual(d["phi"]%360.0, rot["phi"]%360.0, 3)
+				
+				# SPIDER convention
+				d = {"type":"spider","phi":self.get_angle_rand(),"theta":self.get_angle_rand(0,179),"psi":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				rot = t.get_rotation("spider")
+				self.assertEqual("spider",rot["type"])
+		
+				self.assertAlmostEqual(d["phi"]%360.0, rot["phi"]%360.0, 3)
+				self.assertAlmostEqual(d["theta"]%360.0, rot["theta"]%360.0, 3)
+				self.assertAlmostEqual(d["psi"]%360.0, rot["psi"]%360.0, 3)
+			
+				# IMAGIC convention
+				d = {"type":"imagic","alpha":self.get_angle_rand(),"beta":self.get_angle_rand(0,179),"gamma":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				rot = t.get_rotation("imagic")
+				self.assertEqual("imagic",rot["type"])
+		
+				self.assertAlmostEqual(d["alpha"]%360.0, rot["alpha"]%360.0, 3)
+				self.assertAlmostEqual(d["beta"]%360.0, rot["beta"]%360.0, 3)
+				self.assertAlmostEqual(d["gamma"]%360.0, rot["gamma"]%360.0, 3)
+				
+				# MRC convention
+				d = {"type":"mrc","phi":self.get_angle_rand(),"theta":self.get_angle_rand(0,179),"omega":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				rot = t.get_rotation("mrc")
+				self.assertEqual("mrc",rot["type"])
+		
+				self.assertAlmostEqual(d["phi"]%360.0, rot["phi"]%360.0, 3)
+				self.assertAlmostEqual(d["theta"]%360.0, rot["theta"]%360.0, 3)
+				self.assertAlmostEqual(d["omega"]%360.0, rot["omega"]%360.0, 3)
+				
 		# XTILT convention
 		d = {"type":"xyz","xtilt":self.get_angle_rand(),"ytilt":self.get_angle_rand(),"ztilt":self.get_angle_rand()}
 		t = Transform(d)
@@ -168,7 +216,7 @@ class TestTransform(unittest.TestCase):
 			
 			# check to make sure the rotation  matrix has exactly the same form
 			self.assert_matrix_equality(t,t1)
-	
+			
 		#MATRIX convention
 		#note this is bad because we are not constructing a matrix
 		#that reflects a true rotation
@@ -191,13 +239,214 @@ class TestTransform(unittest.TestCase):
 		self.assertAlmostEqual(m32,rot["m32"], 3)
 		self.assertAlmostEqual(m33,rot["m33"], 3)
 		
-#	def test_set_get_scale(self):
-#		"""test set/get scale ............................."""
-#		scale = 2.0
-#		for t in TestTransform.transforms:
-#			t.set_scale(scale)
-#			self.assertAlmostEqual(scale,t.get_scale(), 5)
-#	
+	def test_set_get_scale(self):
+		"""test set/get scale ............................."""
+		for scale in [1.0,2.0]:
+			for mirror in [True, False]:
+				d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				self.assertAlmostEqual(scale,t.get_scale(), 5)
+				
+				d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				self.assertAlmostEqual(scale,t.get_scale(), 5)
+				
+				d = {"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				self.assertAlmostEqual(scale,t.get_scale(), 5)
+					
+	def test_set_get_mirror(self):
+		"""test set/get mirror............................."""
+		for scale in [1.0,2.0]:
+			for mirror in [True, False]:
+				d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				self.assertEqual(mirror,t.get_mirror())
+				
+				d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				self.assertEqual(mirror,t.get_mirror())
+				
+				d = {"mirror":mirror,"scale":scale}
+				t = Transform(d)
+				self.assertEqual(mirror,t.get_mirror())
+	def test_get_set_params(self):
+		"""test set/get params............................."""
+		t = Transform()
+		t.set_params({"type":"eman","az":10,"alt":150,"scale":2.0,"mirror":True,"dx":3.4})
+		d = t.get_params("eman")
+		s = Transform(d)
+		self.assert_matrix_equality(s,t)
+		d = t.get_params("spider")
+		s = Transform(d)
+		self.assert_matrix_equality(s,t)
+		d = t.get_params("mrc")
+		s = Transform(d)
+		self.assert_matrix_equality(s,t)
+		d = t.get_params("imagic")
+		s = Transform(d)
+		self.assert_matrix_equality(s,t)
+		d = t.get_params("quaternion")
+		s = Transform(d)
+		self.assert_matrix_equality(s,t)
+		d = t.get_params("sgirot")
+		s = Transform(d)
+		self.assert_matrix_equality(s,t)
+		d = t.get_params("spin")
+		s = Transform(d)
+		self.assert_matrix_equality(s,t)
+		d = t.get_params("matrix")
+		s = Transform(d)
+		self.assert_matrix_equality(s,t)
+		d = t.get_params("xyz")
+		s = Transform(d)
+		self.assert_matrix_equality(s,t)
+	def test_get_set_params_2d(self):
+		"""test set/get params 2d.........................."""
+		t = Transform()
+		t.set_params({"type":"2d","alpha":10,"scale":2.0,"mirror":True,"dx":3.4,"dy":0.0})
+		d = t.get_params_2d() # no euler type required because there is only one ("2d")
+		s = Transform(d) # s is the same as t
+		self.assert_matrix_equality(s,t)
+	def test_multiplication(self):
+		"""test multiplication............................."""
+		for v in [Vec3f(1,1,1),[1,1,1]]:
+			t = Transform()
+			v = Vec3f(1,1,1)
+			v_d = t*v
+			self.assertAlmostEqual(v[0],v_d[0], 5)
+			self.assertAlmostEqual(v[1],v_d[1], 5)
+			self.assertAlmostEqual(v[2],v_d[2], 5)
+			
+			t = Transform()
+			scale = 2.3
+			t.set_scale(scale)
+			v = Vec3f(1,1,1)
+			v_d = t*v
+			self.assertAlmostEqual(scale*v[0],v_d[0], 5)
+			self.assertAlmostEqual(scale*v[1],v_d[1], 5)
+			self.assertAlmostEqual(scale*v[2],v_d[2], 5)
+			
+			t = Transform()
+			t.set_mirror(True)
+			v = Vec3f(1,1,1)
+			v_d = t*v
+			self.assertAlmostEqual(-v[0],v_d[0], 5)
+			self.assertAlmostEqual(v[1],v_d[1], 5)
+			self.assertAlmostEqual(v[2],v_d[2], 5)
+			
+			t = Transform()
+			dx = 2
+			dy = -1
+			dz = .23232234
+			t.set_trans(dx,dy,dz)
+			v = Vec3f(1,1,1)
+			v_d = t*v
+			self.assertAlmostEqual(v[0]+dx,v_d[0], 5)
+			self.assertAlmostEqual(v[1]+dy,v_d[1], 5)
+			self.assertAlmostEqual(v[2]+dz,v_d[2], 5)
+	
+	def test_transform(self):
+		"""test transform.................................."""
+		t = Transform()
+		v = Vec3f(1,1,1)
+		v_d = t.transform(v)
+		self.assertAlmostEqual(v[0],v_d[0], 5)
+		self.assertAlmostEqual(v[1],v_d[1], 5)
+		self.assertAlmostEqual(v[2],v_d[2], 5)
+		
+		t = Transform()
+		scale = 2.3
+		t.set_scale(scale)
+		v = Vec3f(1,1,1)
+		v_d = t.transform(v)
+		self.assertAlmostEqual(scale*v[0],v_d[0], 5)
+		self.assertAlmostEqual(scale*v[1],v_d[1], 5)
+		self.assertAlmostEqual(scale*v[2],v_d[2], 5)
+		
+		t = Transform()
+		t.set_mirror(True)
+		v = Vec3f(1,1,1)
+		v_d = t.transform(v)
+		self.assertAlmostEqual(-v[0],v_d[0], 5)
+		self.assertAlmostEqual(v[1],v_d[1], 5)
+		self.assertAlmostEqual(v[2],v_d[2], 5)
+		
+		t = Transform()
+		dx = 2
+		dy = -1
+		dz = .23232234
+		t.set_trans(dx,dy,dz)
+		v = Vec3f(1,1,1)
+		v_d = t.transform(v)
+		self.assertAlmostEqual(v[0]+dx,v_d[0], 5)
+		self.assertAlmostEqual(v[1]+dy,v_d[1], 5)
+		self.assertAlmostEqual(v[2]+dz,v_d[2], 5)
+		
+	def test_multiplication_2d(self):
+		"""test multiplication 2d.........................."""
+		t = Transform()
+		v = Vec2f(1,1)
+		v_d = t*v
+		self.assertAlmostEqual(v[0],v_d[0], 5)
+		self.assertAlmostEqual(v[1],v_d[1], 5)
+		
+		t = Transform()
+		scale = 2.3
+		t.set_scale(scale)
+		v = Vec2f(1,1)
+		v_d = t*v
+		self.assertAlmostEqual(scale*v[0],v_d[0], 5)
+		self.assertAlmostEqual(scale*v[1],v_d[1], 5)
+		
+		t = Transform()
+		t.set_mirror(True)
+		v = Vec2f(1,1)
+		v_d = t*v
+		self.assertAlmostEqual(-v[0],v_d[0], 5)
+		self.assertAlmostEqual(v[1],v_d[1], 5)
+		
+		t = Transform()
+		dx = 2
+		dy = -1.0032023
+		t.set_trans(dx,dy)
+		v = Vec2f(1,1)
+		v_d = t*v
+		self.assertAlmostEqual(v[0]+dx,v_d[0], 5)
+		self.assertAlmostEqual(v[1]+dy,v_d[1], 5)
+	
+	def test_transform_2d(self):
+		"""test transform 2d..............................."""
+		t = Transform()
+		v = Vec2f(1,1)
+		v_d = t.transform(v)
+		self.assertAlmostEqual(v[0],v_d[0], 5)
+		self.assertAlmostEqual(v[1],v_d[1], 5)
+		
+		t = Transform()
+		scale = 2.3
+		t.set_scale(scale)
+		v = Vec2f(1,1)
+		v_d = t.transform(v)
+		self.assertAlmostEqual(scale*v[0],v_d[0], 5)
+		self.assertAlmostEqual(scale*v[1],v_d[1], 5)
+		
+		t = Transform()
+		t.set_mirror(True)
+		v = Vec2f(1,1)
+		v_d = t.transform(v)
+		self.assertAlmostEqual(-v[0],v_d[0], 5)
+		self.assertAlmostEqual(v[1],v_d[1], 5)
+		
+		t = Transform()
+		dx = 2
+		dy = -1.0032023
+		t.set_trans(dx,dy)
+		v = Vec2f(1,1)
+		v_d = t.transform(v)
+		self.assertAlmostEqual(v[0]+dx,v_d[0], 5)
+		self.assertAlmostEqual(v[1]+dy,v_d[1], 5)
+		
 #	def test_set_get_post_x_mirror(self):
 #		"""test set/get post_x_mirror ....................."""
 #		for t in TestTransform.transforms:
@@ -208,71 +457,152 @@ class TestTransform(unittest.TestCase):
 #			t.set_post_x_mirror(True)
 #			self.assertEqual(True,t.get_post_x_mirror())
 #	
-#	def test_set_get_posttrans(self):
-#		"""test set/get posttrans ........................."""
+#	def test_set_get_trans(self):
+#		"""test set/get trans ........................."""
 #		x = 1.3
 #		y = 3.3
 #		z = -9.0
 #		post_trans = Vec3f(x,y,z)
 #		for t in TestTransform.transforms:
-#			t.set_posttrans(post_trans)
-#			v = t.get_posttrans()
+#			t.set_trans(post_trans)
+#			v = t.get_trans()
 #			self.assertAlmostEqual(x,v[0], 5)
 #			self.assertAlmostEqual(y,v[1], 5)
 #			self.assertAlmostEqual(z,v[2], 5)
 #			
-#	def test_inverse_invert(self):
-#		"""test inverse/invert ............................"""
-#		for t in TestTransform.transforms:
-#			s = t.inverse()
-#			self.assert_identity(s*t)
-#			self.assert_identity(t*s)
+	def test_inverse_invert(self):
+		"""test inverse/invert ............................"""
+		no_trans = {}
+		two_trans = {"dx":1.023,"dy":-1.002}
+		three_trans = {"dx":.023,"dy":431.22002,"dz":120.02}
+		for scale in [1.0,2.0]:
+			for mirror in [True, False]:
+				for trans in [no_trans,two_trans,three_trans]:
+					d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+					t = Transform(d)
+					t.set_params(trans)
+					s = t.inverse()
+					self.assert_identity(s*t)
+					self.assert_identity(t*s)
+					s = Transform(t)
+					s.invert()
+					self.assert_identity(s*t)
+					self.assert_identity(t*s)
+					
+					d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+					t = Transform(d)
+					t.set_params(trans)
+					s = t.inverse()
+					self.assert_identity(s*t)
+					self.assert_identity(t*s)
+					s = Transform(t)
+					s.invert()
+					self.assert_identity(s*t)
+					self.assert_identity(t*s)
+		
+					d = {"mirror":mirror,"scale":scale}
+					t = Transform(d)
+					t.set_params(trans)
+					s = t.inverse()
+					self.assert_identity(s*t)
+					self.assert_identity(t*s)
+					s = Transform(t)
+					s.invert()
+					self.assert_identity(s*t)
+					self.assert_identity(t*s)
+	def test_copy_construction(self):
+		"""test copy construction.........................."""
+		three_trans = {"dx":.023,"dy":431.22002,"dz":120.02}
+		d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
+		t = Transform(d)
+		t.set_params(three_trans) # I.E. now we have all matrix elements filled
+		t1 = Transform(t)
+		self.assert_matrix_equality(t,t1)
 #	
-#		for t in TestTransform.transforms:
-#			s = Transform(t) # allright, assumes the copy constructor works, but there is a test for that
-#			s.invert()
-#			self.assert_identity(s*t)
-#			self.assert_identity(t*s)
-#	
-#	def test_copy_construction(self):
-#		"""test copy construction.........................."""
-#		for t in TestTransform.transforms:
-#			t1 = Transform(t)
-#			self.assert_matrix_equality(t,t1)
-#	
-#	def test_transpose(self):
-#		"""test transpose and transpose inplace............"""
-#			
-#		for t in TestTransform.transforms:
-#			s = Transform(t)
-#			s.set_scale(1.0)
-#			t1 = s.transpose()
-#			self.assert_identity(t1*s,3)
-#			self.assert_identity(s*t1,3)
-#		
-#		#fixme why is this so in accurate?
-#		#for t in TestTransform.transforms:
-#			#s = Transform(t)
-#			#s.set_scale(1.0)
-#			#t1 = Transform(t)
-#			#t1.set_scale(1.0)
-#			#t1.transpose_inplace()
-#			#self.assert_identity(t1*s,3)
-#			#self.assert_identity(s*t1,3)
+	def test_transpose(self):
+		"""test transpose and transpose inplace............"""
+		
+		for mirror in [True, False]:
+			d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror}
+			t = Transform(d)
+			t1 = t.transpose()
+			self.assert_identity(t1*t,3)
+			self.assert_identity(t*t1,3)
 			
-	
+			d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
+			t = Transform(d)
+			t = Transform(d)
+			t1 = t.transpose()
+			self.assert_identity(t1*t,3)
+			self.assert_identity(t*t1,3)
+
+			t = Transform()
+			t = Transform(d)
+			t1 = t.transpose()
+			self.assert_identity(t1*t,3)
+			self.assert_identity(t*t1,3)
+		
+	def test_get_pre_trans(self):
+		"""test get pre trans.............................."""
+		dx = .023
+		dy = 431.220002
+		dz = 120.02
+		three_trans = {"dx":dx,"dy":dy,"dz":dz}
+		t = Transform(three_trans)
+		v = t.get_pre_trans()
+		
+		self.assertAlmostEqual(v[0],dx, 5)
+		self.assertAlmostEqual(v[1],dy, 5)
+		self.assertAlmostEqual(v[2],dz, 5)
+		
+		scale = Util.get_frand(1.00001,100.0)
+		t.set_scale(scale)
+		v = t.get_pre_trans()
+		
+		self.assertAlmostEqual(v[0]*scale,dx, 3)
+		self.assertAlmostEqual(v[1]*scale,dy, 3)
+		self.assertAlmostEqual(v[2]*scale,dz, 3)
+		
+		t.set_mirror(True)
+		v = t.get_pre_trans()
+		self.assertAlmostEqual(v[0]*scale,dx, 3)
+		self.assertAlmostEqual(v[1]*scale,dy, 3)
+		self.assertAlmostEqual(v[2]*scale,dz, 3)
+		
+		# finally perhaps the most important test
+		d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
+		t.set_params(d)
+		v = t.get_pre_trans()
+		pre_trans = Transform()
+		pre_trans.set_trans(v)
+		
+		rot = t.get_rotation("eman")
+		scale = t.get_scale()
+		mirror = t.get_mirror()
+		
+		without_trans = Transform(rot)
+		without_trans.set_scale(scale)
+		without_trans.set_mirror(mirror)
+		
+		without_trans.printme()
+		pre_trans.printme()
+		(without_trans*pre_trans).printme()
+		(pre_trans*without_trans).printme()
+		self.assert_matrix_equality(without_trans*pre_trans,t)
+
+		
 	def assert_identity(self,t2,n=4):
 		for j in range(n):
 			for i in range(n):
 				if i == j:
-					self.assertAlmostEqual(t2.at(i,j),1, 5)
+					self.assertAlmostEqual(t2.at(i,j),1, 3)
 				else:
-					self.assertAlmostEqual(t2.at(i,j),0, 5)
+					self.assertAlmostEqual(t2.at(i,j),0, 3)
 	
 	def assert_matrix_equality(self,t,t1):
 		for j in range(4):
 			for i in range(4):
-				self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 5)
+				self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 3)
 	
 class TestTransform3D(unittest.TestCase):
 	"""this is the unit test for Transform3D class"""

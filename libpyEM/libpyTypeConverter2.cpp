@@ -81,8 +81,8 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::tuple3_from_python<EMAN::Vec3i, int>();
 	EMAN::tuple3_from_python<EMAN::Vec3f, float>();
 	
-	EMAN::tuple3_from_python<EMAN::Vec2i, int>();
-	EMAN::tuple3_from_python<EMAN::Vec2f, float>();
+// 	EMAN::tuple2_from_python<EMAN::Vec2i, int>();
+// 	EMAN::tuple2_from_python<EMAN::Vec2f, float>();
 
 	EMAN::emobject_array_from_python();
 	EMAN::emobject_emdata_from_python();
