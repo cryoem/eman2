@@ -94,8 +94,7 @@ Transform& Transform::operator=(const Transform& that ) {
 Transform::Transform(const Dict& d) {
 	to_identity();
 	
-	try { set_rotation(d); }
-	catch(...) { }
+	if (d.has_key_ci("type") ) set_rotation(d);
 	
 	try {
 		float scale = static_cast<float>(d.get_ci("scale"));
@@ -294,6 +293,10 @@ void Transform::set_rotation(const Dict& rotation)
 {
 	string euler_type;
 	
+	if (!rotation.has_key_ci("type") ){
+			throw InvalidParameterException("argument dictionary does not contain the type entry");
+	}
+	
 	euler_type = static_cast<string>(rotation.get_ci("type"));// Warning, will throw
 
 	
@@ -362,7 +365,7 @@ void Transform::set_rotation(const Dict& rotation)
 		e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
 		e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
 		e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
-	} else if ( euler_type == "matirx" ) {
+	} else if ( euler_type == "matrix" ) {
 		is_matrix = 1;
 		matrix[0][0] = (float)rotation["m11"];
 		matrix[0][1] = (float)rotation["m12"];
@@ -425,7 +428,7 @@ void Transform::set_rotation(const Dict& rotation)
 Dict Transform::get_rotation(const string& euler_type) const
 {
 	Dict result;
-
+	
 	float max = 1 - ERR_LIMIT;
 	float scale;
 	bool x_mirror;
@@ -493,8 +496,8 @@ Dict Transform::get_rotation(const string& euler_type) const
 
 	string type(euler_type);
 	std::transform(euler_type.begin(),euler_type.end(),type.begin(), (int (*)(int) ) std::tolower);
-	cout << "Changed " << euler_type << " to " << type << endl;
 	
+	result["type"] = type;
 	if (type == "2d") {
 			result["alpha"]  = phi;
 	} else if (type == "eman") { 
