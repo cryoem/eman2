@@ -1,0 +1,194 @@
+ * ----------------------------------------------------------------
+   Here is a nice split-radix, N-dimensional, fast-fourier transform
+   by R. C. Singleton (Stanford Research Institute, Sept. 1968)
+   which has been converted into C code (7/26/95 by John Beale).
+
+   My very casual tests show this code is significantly faster than the
+   Numerical Recipes fourn() routine (25 vs. 36 seconds for a (1024x1024)
+   floating point matrix). Also, this code is freely redistributable!
+
+    - 7/26/95 jpb
+
+ * ----------------------------------------------------------------
+
+   Started a minor clean-up of the Fortran-66 code to make it closer to
+   Fortran-77 and added comments to help mark-up the logical structure and
+   then re-did the f2c conversion.  There is still a Fortran look to some of
+   the code especially with incrementing a counter and then subtracting 1
+   for an array subscript, but most compilers should optimize around that
+   and it's best not to fiddle with too many things.  I've cleaned-up most
+   of the goto/label spaghetti so that the resulting code is actually
+   recognizable C compared to what f2c produced.
+
+   Added the wrapper function fftn() to remove the hassle of using
+   fftradix() directly.  You MUST call fft_free() to free-up allocated
+   memory.
+
+   Note that the file re-includes itself with different defines so that the
+   both float and double precision version may compiled together.
+
+   Don't want the double version?	define FFT_NODOUBLE
+   Don't want the float version?	define FFT_NOFLOAT
+   Don't want odd radix transforms?	define FFT_RADIX4
+
+   The suffix `f' indicates a float vs. double version.
+
+   Made fftradix() a local (static) function since fftn() should be used
+   instead.
+
+   See INSTALL
+
+   1 Aug July 1995	Mark Olesen <olesen@me.QueensU.CA>
+
+   TODO:
+   - someone should take a look at getting `max_factors' and `max_perm'
+     calculated correctly in fftn()
+ * ----------------------------------------------------------------
+
+/*--------------------------------*-C-*---------------------------------*
+ * File:
+ *	fftn.c
+ *
+ * Public:
+ *	fft_free ();
+ *	fftn / fftnf ();
+ *
+ * Private:
+ *	fftradix / fftradixf ();
+ *
+ * Descript:
+ *	multivariate complex Fourier transform, computed in place
+ *	using mixed-radix Fast Fourier Transform algorithm.
+ *
+ *	Fortran code by:
+ *	RC Singleton, Stanford Research Institute, Sept. 1968
+ *
+ *	translated by f2c (version 19950721).
+ *
+ * Revisions:
+ * 26 July 95	John Beale
+ *	- added maxf and maxp as parameters to fftradix()
+ *
+ * 28 July 95	Mark Olesen <olesen@me.queensu.ca>
+ *	- cleaned-up the Fortran 66 goto spaghetti, only 3 labels remain.
+ *
+ *	- added fft_free() to provide some measure of control over
+ *	  allocation/deallocation.
+ *
+ *	- added fftn() wrapper for multidimensional FFTs
+ *
+ *	- use -DFFT_NOFLOAT or -DFFT_NODOUBLE to avoid compiling that
+ *	  precision. Note suffix `f' on the function names indicates
+ *	  float precision.
+ *
+ *	- revised documentation
+ *
+ * 31 July 95	Mark Olesen <olesen@me.queensu.ca>
+ *	- added GNU Public License
+ *	- more cleanup
+ *	- define SUN_BROKEN_REALLOC to use malloc() instead of realloc()
+ *	  on the first pass through, apparently needed for old libc
+ *	- removed #error directive in favour of some code that simply
+ *	  won't compile (generate an error that way)
+ *
+ * 1 Aug 95	Mark Olesen <olesen@me.queensu.ca>
+ *	- define FFT_RADIX4 to only have radix 2, radix 4 transforms
+ *	- made fftradix /fftradixf () static scope, just use fftn()
+ *	  instead.  If you have good ideas about fixing the factors
+ *	  in fftn() please do so.
+ *
+ * 8 Jan 95	mj olesen <olesen@me.queensu.ca>
+ *	- fixed typo's, including one that broke scaling for scaling by
+ *	  total number of matrix elements or the square root of same
+ *	- removed unnecessary casts from allocations
+ * ======================================================================*
+ * NIST Guide to Available Math Software.
+ * Source for module FFT from package GO.
+ * Retrieved from NETLIB on Wed Jul  5 11:50:07 1995.
+ * ======================================================================*
+ *
+ *-----------------------------------------------------------------------*
+ *
+ * int fftn (int ndim, const int dims[], REAL Re[], REAL Im[],
+ *	    int iSign, double scaling);
+ *
+ * NDIM = the total number dimensions
+ * DIMS = a vector of array sizes
+ *	if NDIM is zero then DIMS must be zero-terminated
+ *
+ * RE and IM hold the real and imaginary components of the data, and return
+ * the resulting real and imaginary Fourier coefficients.  Multidimensional
+ * data *must* be allocated contiguously.  There is no limit on the number
+ * of dimensions.
+ *
+ * ISIGN = the sign of the complex exponential (ie, forward or inverse FFT)
+ *	the magnitude of ISIGN (normally 1) is used to determine the
+ *	correct indexing increment (see below).
+ *
+ * SCALING = normalizing constant by which the final result is *divided*
+ *	if SCALING == -1, normalize by total dimension of the transform
+ *	if SCALING <  -1, normalize by the square-root of the total dimension
+ *
+ * example:
+ * tri-variate transform with Re[n1][n2][n3], Im[n1][n2][n3]
+ *
+ *	int dims[3] = {n1,n2,n3}
+ *	fftn (3, dims, Re, Im, 1, scaling);
+ *
+ *-----------------------------------------------------------------------*
+ * int fftradix (REAL Re[], REAL Im[], size_t nTotal, size_t nPass,
+ *		 size_t nSpan, int iSign, size_t max_factors,
+ *		 size_t max_perm);
+ *
+ * RE, IM - see above documentation
+ *
+ * Although there is no limit on the number of dimensions, fftradix() must
+ * be called once for each dimension, but the calls may be in any order.
+ *
+ * NTOTAL = the total number of complex data values
+ * NPASS  = the dimension of the current variable
+ * NSPAN/NPASS = the spacing of consecutive data values while indexing the
+ *	current variable
+ * ISIGN - see above documentation
+ *
+ * example:
+ * tri-variate transform with Re[n1][n2][n3], Im[n1][n2][n3]
+ *
+ *	fftradix (Re, Im, n1*n2*n3, n1,       n1, 1, maxf, maxp);
+ *	fftradix (Re, Im, n1*n2*n3, n2,    n1*n2, 1, maxf, maxp);
+ *	fftradix (Re, Im, n1*n2*n3, n3, n1*n2*n3, 1, maxf, maxp);
+ *
+ * single-variate transform,
+ *    NTOTAL = N = NSPAN = (number of complex data values),
+ *
+ *	fftradix (Re, Im, n, n, n, 1, maxf, maxp);
+ *
+ * The data can also be stored in a single array with alternating real and
+ * imaginary parts, the magnitude of ISIGN is changed to 2 to give correct
+ * indexing increment, and data [0] and data [1] used to pass the initial
+ * addresses for the sequences of real and imaginary values,
+ *
+ * example:
+ *	REAL data [2*NTOTAL];
+ *	fftradix ( &data[0], &data[1], NTOTAL, nPass, nSpan, 2, maxf, maxp);
+ *
+ * for temporary allocation:
+ *
+ * MAX_FACTORS	>= the maximum prime factor of NPASS
+ * MAX_PERM	>= the number of prime factors of NPASS.  In addition,
+ *	if the square-free portion K of NPASS has two or more prime
+ *	factors, then MAX_PERM >= (K-1)
+ *
+ * storage in FACTOR for a maximum of 15 prime factors of NPASS. if NPASS
+ * has more than one square-free factor, the product of the square-free
+ * factors must be <= 210 array storage for maximum prime factor of 23 the
+ * following two constants should agree with the array dimensions.
+ *
+ *-----------------------------------------------------------------------*
+ *
+ * void fft_free (void);
+ *
+ * free-up allocated temporary storage after finished all the Fourier
+ * transforms.
+ *
+ *----------------------------------------------------------------------*/

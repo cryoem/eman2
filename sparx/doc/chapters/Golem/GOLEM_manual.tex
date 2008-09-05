@@ -1,0 +1,61 @@
+%\documentclass[10pt]{article}
+%\usepackage{fullpage, graphicx, url}
+%\setlength{\parskip}{1ex}
+%\setlength{\parindent}{0ex}
+%\title{GOLEM Manual}
+%\begin{document}
+\section{GOLEM manual}
+Commands in GOLEM are written on one of three possible levels:\\ 
+\begin{enumerate}
+\item Level 1 - commands that directly wrap C++ code.  These are usually simple image processing commands.\\ 
+\\ 
+
+\item Level 2 - commands written as a mixture of python and Level 1 commands.  They perform image processing tasks that require a number of distinct steps, such as 3-D reconstruction from projections.\\ 
+\\ 
+
+\item Level 3 - image processing tasks written as python scripts.  They perform EM-related tasks, such as 2-D alignment.\\ 
+\\ 
+
+
+\end{enumerate}
+Classes of Level 1 and 2 commands:\\ 
+\begin{itemize}
+\item FUNDAMENTALS\\ 
+FFT, periodogram (power spectrum), cross-correlation, convolution, self-correlation\\ 
+ center of gravity, \\ 
+\\ 
+
+\item STATISTICS\\ 
+FRC/FSC, moments, entropy, center of gravity (again?!), SSNR,\\ 
+ principal component analysis, t-test, Mahalanobis distance, correlation\\ 
+ coeff, clustering, discriminant analysis, power spectrum\\ 
+\\ 
+
+\item FILTER\\ 
+ FOURIER: top hat, Gaussian, Butterworth, hyperbolic tangent\\ 
+ SPATIAL: box convolution\\ 
+ NONLINEAR:\\ 
+\\ 
+
+\item MORPHOLOGY\\ 
+ dilation, erosion, skeleton, edge detection\\ 
+
+
+\end{itemize}
+
+Clases of Level 3 scripts:\\ 
+\begin{itemize}
+\item UTILITIES\\ 
+ calculate average and variance files for an image series,\\ 
+\\ 
+
+\item 2-D ALIGNMENT\\ 
+\\ 
+
+\item 3-D PROJECTION ALIGNMENT\\ 
+
+
+\end{itemize}
+
+
+%\end{document}

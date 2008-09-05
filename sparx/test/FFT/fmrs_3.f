@@ -1,0 +1,332 @@
+
+C++************************************************************************
+C
+C FMRS_3.F                          ADDED FFTW FEB 2000 ARDEAN LEITH
+C
+C **************************************************************************
+C *  SPIDER - MODULAR IMAGE PROCESSING SYSTEM.  AUTHOR: J.FRANK            *
+C *  COPYRIGHT (C)1981,1987, WADSWORTH CENTER FOR LABORATORIES AND         *
+C *  RESEARCH, NEW YORK STATE DEPARTMENT OF HEALTH, ALBANY, NY 12201.      *
+C *  THE CONTENTS OF THIS DOCUMENT ARE PROPRIETARY TO THE CENTER FOR       *
+C *  LABORATORIES AND RESEARCH AND ARE NOT TO BE DISCLOSED TO OTHERS OR    *
+C *  USED FOR PURPOSES OTHER THAN INTENDED WITHOUT WRITTEN APPROVAL OF     *
+C *  THE CENTER FOR LABORATORIES AND RESEARCH   			   *
+C **************************************************************************
+C  FOR ORDER OF ELEMENTS SEE FMR_1.
+C
+C  FMRS_3(A,NSAM,NROW,NSLICE,INV)
+C
+C  PARAMETERS:     A       ARRAY (LDA*NROW*NSLICE)        SENT/RET.
+C                  INV     1=REG. FILE, -1= FOURIER FILE       SENT
+C
+C IMAGE_PROCESSING_ROUTINE
+C--************************************************************************
+
+	SUBROUTINE FMRS_3(A,NSAM,NROW,NSLICE,INV)
+
+        INCLUDE 'CMBLOCK.INC'
+	
+	DIMENSION A(*)
+
+#ifdef SP_LIBFFT
+C       USING SGI_COMPLIB FOR FFT
+
+	INTEGER, SAVE :: NSAMO=0,NROWO=0,NSLICEO=0
+	REAL, DIMENSION(:), POINTER, SAVE :: COEFF
+
+	IF(NSAM.NE.NSAMO .OR. NROW.NE.NROWO .OR. NSLICE.NE.NSLICEO) THEN
+
+	   IF (ASSOCIATED(COEFF))  DEALLOCATE(COEFF)
+	   ALLOCATE(COEFF(NSAM+15+2*(NROW+15)+2*(NSLICE+15)),
+     &              STAT=IRTFLG)
+	   IF (IRTFLG.NE.0) CALL ERRT(46,'FT 2, COEFF',IER)
+
+	   CALL  SCFFT3DUI(NSAM,NROW,NSLICE,COEFF)
+	   NSAMO   = NSAM
+	   NROWO   = NROW
+	   NSLICEO = NSLICE
+	ENDIF
+
+	LDA = NSAM+2-MOD(NSAM,2)
+	IF (INV.GT.0) THEN
+C          FORWARD FFT
+	   CALL SCFFT3DU(INV,NSAM,NROW,NSLICE,A,LDA,NROW,COEFF)
+	ELSE
+C          REVERSE FFT
+	   CALL CSFFT3DU(INV,NSAM,NROW,NSLICE,A,LDA,NROW,COEFF)
+	   CALL SSCAL3D(NSAM,NROW,NSLICE,
+     &	      (1.0/FLOAT(NSAM)/FLOAT(NROW)/FLOAT(NSLICE)),A,LDA,NROW)
+	ENDIF
+
+#else
+#if defined(SP_LIBFFTW) || defined(SP_LIBFFTWMP)
+C       USING FFTW LIBRARY CALLS FOR FFT
+
+#include "FFTW.INC"
+
+	INTEGER, SAVE :: NSAMO=0,  NROWO=0, NSLICEO= 0
+	INTEGER, SAVE :: NSAMOR=0, NROWOR=0, NSLICEOR=0
+	LOGICAL, SAVE :: INIT=.TRUE.
+
+C       PLAN AND PLANR ARE ACTUALLY POINTERS TO A STRUCTURE 
+#if defined (__osf__) || defined (ia64)|| defined (__x86_64__)
+        INTEGER*8, SAVE :: PLAN=0, PLANR=0
+#else
+        INTEGER, SAVE :: PLAN=0, PLANR=0
+#endif
+        
+#ifdef SP_LIBFFTWMP
+        IF (INIT) THEN
+C          MUST INITIALIZE THREADS ONCE
+           irtflg = -4
+           CALL FFTW_F77_THREADS_INIT(IRTFLG)
+	   IF (IRTFLG .NE. 0) THEN
+              CALL ERRT(101,'MULTIPLE THREADS FAILED',IER)
+              RETURN
+           ENDIF
+           INIT = .FALSE.
+        ENDIF
+
+        CALL GETTHREADS(NUMTH)
+#else
+        NUMTH = 1
+#endif
+
+C       WRITE(NOUT,90)NUMTH 
+90      FORMAT('USING FFTW THREADS: ',I3)
+
+        IF (INV .GT. 0) THEN
+C          FORWARD TRANSFORM
+
+	   IF (NSAM.NE.NSAMO .OR. NROW.NE.NROWO .OR. 
+     &         NSLICE.NE.NSLICEO) THEN
+C             SIZE CHANGED, REESTABLISH PLAN
+
+              IF (PLAN .GT. 0) CALL FFTWND_F77_DESTROY_PLAN(PLAN)
+
+#ifdef SP_LIBFFTWMP
+              CALL RFFTW3D_F77_CREATE_PLAN(PLAN,NSAM,NROW,NSLICE,
+     &              FFTW_FORWARD, FFTW_ESTIMATE + FFTW_IN_PLACE +
+     &                    FFTW_THREADSAFE)
+#else
+              CALL RFFTW3D_F77_CREATE_PLAN(PLAN,NSAM,NROW,NSLICE,
+     &              FFTW_FORWARD, FFTW_ESTIMATE + FFTW_IN_PLACE)
+#endif
+
+	      NSAMO   = NSAM
+	      NROWO   = NROW
+	      NSLICEO = NSLICE
+           ENDIF
+
+#ifdef SP_LIBFFTWMP
+C          FOR OMP        
+#if defined (sgi) || (defined (__linux__) && !defined (SP_IFC))
+C          SGI DOES NOT LIKE OBJECT NAMES > 31 CHAR
+           CALL RFFTWND_F77_THREADS_ONE_R_TO_C(NUMTH,PLAN,A,0)
+#else
+           CALL RFFTWND_F77_THREADS_ONE_REAL_TO_COMPLEX(NUMTH,PLAN,A,0)
+#endif
+
+#else
+C          SINGLE PROCESSOR
+           CALL RFFTWND_F77_ONE_REAL_TO_COMPLEX(PLAN,A,0)
+#endif
+
+C          CHANGE FFTW FORMAT TO SPIDER FFT FORMAT 
+C          SPIDER FORMAT IMAGINARY PARTS HAVE OPPOSITE SIGNS 
+C          AS THAT OF FFTW 
+
+	   LDA = NSAM+2-MOD(NSAM,2)
+           JH  = LDA/2
+
+c$omp      parallel do private(i)
+	   DO   I = 1,JH*NROW*NSLICE	
+	      A(2*I) = -A(2*I)           
+ 	   ENDDO
+
+        ELSE
+
+C          REVERSE TRANSFORM
+
+C          CHANGE SPIDER FFT FORMAT TO FFTW FORMAT
+C          IMAGINARY PARTS HAVE OPPOSITE SIGNS AS THAT OF FFTW 
+
+
+	   LDA = NSAM+2-MOD(NSAM,2)
+           JH  = LDA/2
+
+c$omp      parallel do private(i)
+	   DO   I = 1,JH*NROW*NSLICE	
+	      A(2*I) = -A(2*I)           
+ 	   ENDDO
+
+	   IF (NSAM.NE.NSAMOR .OR. NROW.NE.NROWOR .OR.
+     &         NSLICE.NE.NSLICEOR) THEN
+C             SIZE CHANGED, REESTABLISH PLAN
+
+              IF (PLANR .GT. 0) CALL FFTWND_F77_DESTROY_PLAN(PLANR)
+
+#ifdef SP_LIBFFTWMP
+C             FOR OMP        
+              CALL RFFTW3D_F77_CREATE_PLAN(PLANR,NSAM,NROW,NSLICE,
+     &              FFTW_BACKWARD, FFTW_ESTIMATE + FFTW_IN_PLACE +
+     &                    FFTW_THREADSAFE)
+
+#else
+C             SINGLE PROCESSOR
+              CALL RFFTW3D_F77_CREATE_PLAN(PLANR,NSAM,NROW,NSLICE,
+     &              FFTW_BACKWARD, FFTW_ESTIMATE + FFTW_IN_PLACE)
+#endif
+	      NSAMOR   = NSAM
+	      NROWOR   = NROW
+	      NSLICEOR = NSLICE
+           ENDIF
+
+#ifdef SP_LIBFFTWMP
+C          FOR OMP 
+#if defined (sgi) || (defined (__linux__) && !defined (SP_IFC))
+C          SGI & PGI DOES NOT LIKE OBJECT NAMES > 31 CHAR
+           CALL RFFTWND_F77_THREADS_ONE_C_TO_R(NUMTH,PLANR,A,0)
+#else
+           CALL RFFTWND_F77_THREADS_ONE_COMPLEX_TO_REAL(NUMTH,PLANR,A,0)
+#endif
+#else
+C          SINGLE PROCESSOR
+           CALL RFFTWND_F77_ONE_COMPLEX_TO_REAL(PLANR,A,0)
+#endif
+
+C          SCALING NEEDED
+           PIX = 1.0 / (NSAM * NROW * NSLICE)
+
+
+c$omp      parallel do private(i)
+           DO I=1,LDA * NROW * NSLICE
+              A(I) = A(I) * PIX
+           ENDDO
+
+        ENDIF
+
+#else
+
+#if defined(SP_LIBFFTW3) || defined(SP_LIBFFTW3MP)
+C       USING FFTW3 LIBRARY CALLS FOR FFT
+
+#include "FFTW3.INC"
+
+	INTEGER, SAVE :: NSAMO=0,  NROWO=0, NSLICEO= 0
+	INTEGER, SAVE :: NSAMOR=0, NROWOR=0, NSLICEOR=0
+	LOGICAL, SAVE :: INIT=.TRUE.
+
+C       PLAN AND PLANR ARE ACTUALLY POINTERS TO A STRUCTURE 
+
+        INTEGER*8, SAVE :: PLAN=0, PLANR=0
+
+#ifdef SP_LIBFFTW3MP
+        IF (INIT) THEN
+	
+C          MUST INITIALIZE THREADS ONCE
+            IRTFLG = -4
+
+           CALL SFFTW_INIT_THREADS(IRTFLG)
+
+	   IF (IRTFLG .EQ. 0) THEN
+              CALL ERRT(101,'MULTIPLE THREADS FAILED -- FFTW3',IER)
+              RETURN
+           ENDIF
+	
+	   CALL GETTHREADS(NUMTH)
+	   CALL SFFTW_PLAN_WITH_NTHREADS(NUMTH)
+           INIT = .FALSE.
+        ENDIF
+#else
+        NUMTH = 1	
+#endif
+
+C       WRITE(NOUT,90)NUMTH 
+C90      FORMAT('USING FFTW THREADS: ',I3)
+
+        IF (INV .GT. 0) THEN
+C          FORWARD TRANSFORM
+
+	   IF (NSAM.NE.NSAMO .OR. NROW.NE.NROWO .OR. 
+     &         NSLICE.NE.NSLICEO) THEN
+C             SIZE CHANGED, REESTABLISH PLAN
+
+              IF (PLAN .GT. 0) CALL SFFTW_DESTROY_PLAN(PLAN)
+
+              CALL SFFTW_PLAN_DFT_R2C_3D(PLAN,NSAM,NROW,
+     &                             NSLICE,A,A,FFTW_ESTIMATE)
+
+	      NSAMO   = NSAM
+	      NROWO   = NROW
+	      NSLICEO = NSLICE
+           ENDIF
+C	     USE FFTW3 GURU INTERFACE
+           CALL SFFTW_EXECUTE_DFT_R2C(PLAN,A,A) 
+
+C          CHANGE FFTW FORMAT TO SPIDER FFT FORMAT 
+C          SPIDER FORMAT IMAGINARY PARTS HAVE OPPOSITE SIGNS 
+C          AS THAT OF FFTW 
+
+	   LDA = NSAM+2-MOD(NSAM,2)
+           JH  = LDA/2
+
+c$omp      parallel do private(i)
+	   DO   I = 1,JH*NROW*NSLICE	
+	      A(2*I) = -A(2*I)           
+ 	   ENDDO
+
+        ELSE
+
+C          REVERSE TRANSFORM
+
+C          CHANGE SPIDER FFT FORMAT TO FFTW FORMAT
+C          IMAGINARY PARTS HAVE OPPOSITE SIGNS AS THAT OF FFTW 
+
+
+	   LDA = NSAM+2-MOD(NSAM,2)
+           JH  = LDA/2
+
+c$omp      parallel do private(i)
+	   DO   I = 1,JH*NROW*NSLICE	
+	      A(2*I) = -A(2*I)           
+ 	   ENDDO
+
+	   IF (NSAM.NE.NSAMOR .OR. NROW.NE.NROWOR .OR.
+     &         NSLICE.NE.NSLICEOR) THEN
+C             SIZE CHANGED, REESTABLISH PLAN
+
+              IF (PLANR .GT. 0) CALL SFFTW_DESTROY_PLAN(PLANR)
+
+              CALL SFFTW_PLAN_DFT_C2R_3D(PLANR,NSAM,NROW,
+     &                              NSLICE,A,A,FFTW_ESTIMATE)
+	      NSAMOR   = NSAM
+	      NROWOR   = NROW
+	      NSLICEOR = NSLICE
+           ENDIF
+
+C         USE FFTW3 GURU INTERFACE
+           CALL SFFTW_EXECUTE_DFT_C2R(PLANR,A,A)
+
+C          SCALING NEEDED
+           PIX = 1.0 / (NSAM * NROW * NSLICE)
+
+
+c$omp      parallel do private(i)
+           DO I=1,LDA * NROW * NSLICE
+              A(I) = A(I) * PIX
+           ENDDO
+
+        ENDIF
+
+#else
+
+C       USING SPIDER CODE FOR FFT
+C       HAVE TO CHANGE NSAM
+	LDA = NSAM+2-MOD(NSAM,2)
+	CALL FMRS_3R(A,LDA,NSAM,NROW,NSLICE,INV)
+#endif
+#endif
+#endif
+
+	END

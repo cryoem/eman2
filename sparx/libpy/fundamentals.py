@@ -1,0 +1,641 @@
+#
+# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+#
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
+from EMAN2_cppwrap import *
+from global_def import *
+
+def absi(e):
+	if e.is_complex():
+		e.set_attr_dict({"is_complex_ri":1})
+	return e.absi()
+
+# Autocorrelation functions
+def acf(e, center=True):
+	return autocorrelation(e, fp_flag.CIRCULANT, center)
+
+def acfn(e, center=True):
+	return autocorrelation(e, fp_flag.CIRCULANT_NORMALIZED, center)
+
+def acfp(e, center=True):
+	return autocorrelation(e, fp_flag.PADDED, center)
+
+def acfnp(e, center=True):
+	return autocorrelation(e, fp_flag.PADDED_NORMALIZED, center)
+
+def acfpl(e, center=True):
+	return autocorrelation(e, fp_flag.PADDED_LAG, center)
+
+def acfnpl(e, center=True):
+	return autocorrelation(e, fp_flag.PADDED_NORMALIZED_LAG, center)
+
+def __buildweights(m, kb):
+	weights = EMData()
+	weights.set_size(m,m,1)
+	for iy in xrange(m):
+		wy = kb.sinhwin(iy-m//2)
+		for ix in xrange(m):
+			wx = kb.sinhwin(ix-m//2)
+			weights.set_value_at(ix,iy,wx*wy)
+	return weights
+
+# shortcuts to Fourier product functions
+# Correlation functions
+def ccf(e, f, center=True):
+	"""
+	Return the circulant cross-correlation function of images e and f.
+	Input images may be real or complex.  Output image is real.
+	1-D, 2-D, or 3-D images supported.
+	"""
+	return correlation(e,f,fp_flag.CIRCULANT, center)
+
+def ccfn(e, f, center=True):
+	return correlation(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
+
+def ccfp(e, f, center=True):
+	return correlation(e,f,fp_flag.PADDED, center)
+
+def ccfnp(e, f, center=True):
+	return correlation(e,f,fp_flag.PADDED_NORMALIZED, center)
+
+def ccfpl(e, f, center=True):
+	return correlation(e,f,fp_flag.PADDED_LAG, center)
+
+def ccfnpl(e, f, center=True):
+	return correlation(e,f,fp_flag.PADDED_NORMALIZED_LAG, center)
+    
+# Convolution functions
+def cnv(e, f, center=True):
+	return convolution(e,f,fp_flag.CIRCULANT, center)
+
+def cnvn(e, f, center=True):
+	return convolution(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
+
+def cnvp(e, f, center=True):
+	return convolution(e,f,fp_flag.PADDED, center)
+
+def cnvnp(e, f, center=True):
+	return convolution(e,f,fp_flag.PADDED_NORMALIZED, center)
+
+def cnvpl(e, f, center=True):
+	return convolution(e,f,fp_flag.PADDED_LAG, center)
+
+def cnvnpl(e, f, center=True):
+	return convolution(e,f,fp_flag.PADDED_NORMALIZED_LAG, center)
+    
+    
+# Selfcorrelation functions
+def scf(e, center=True):
+	return self_correlation(e, fp_flag.CIRCULANT, center)
+
+def scfn(e, center=True):
+	return self_correlation(e, fp_flag.CIRCULANT_NORMALIZED, center)
+
+def scfp(e, center=True):
+	return self_correlation(e, fp_flag.PADDED, center)
+
+def scfnp(e, center=True):
+	return self_correlation(e, fp_flag.PADDED_NORMALIZED, center)
+
+def scfpl(e, center=True):
+	return self_correlation(e, fp_flag.PADDED_LAG, center)
+
+def scfnpl(e, center=True):
+	return self_correlation(e, fp_flag.PADDED_NORMALIZED_LAG, center)
+ 
+def cyclic_shift(img, dx=0, dy=0, dz=0):
+	"""Cyclically shift an image by an integer number of pixels.
+	"""
+	e = img.copy()
+	Util.cyclicshift(e,{"dx":dx,"dy":dy,"dz":dz})
+	return e
+
+def expn(e, r):
+	return  e.get_pow(r)
+
+def mirror(img, axis = 'x'):
+	"""Mirror of an image about by changing the sign of the specified axis
+	"""
+	e = img.copy()
+	e.process_inplace("mirror",{"axis":axis})
+	return e 
+
+# FFT functions
+def fft_(e, npad=1):
+	"""Out-of-place fft / ift
+		No padding performed, and fft-extension along x removed after ift. Zhong added in July,5,06
+	"""
+	if (e.is_complex()):
+		return e.do_ift()
+	else:
+		if npad > 1:
+			f = e.norm_pad(False, npad)
+			f.do_fft_inplace()
+			return f
+		else:
+			f = e.norm_pad(False, 1)
+			f.do_fft_inplace()
+			return f
+
+def fft(e, npad=1):
+	"""Out-of-place fft / ift
+	   No padding performed, and fft-extension along x removed after ift.
+	"""
+	if (e.is_complex()):
+		return  e.do_ift()
+	else:
+		# forward fft
+		if npad > 1:
+			f = e.norm_pad(False, npad)
+			f.do_fft_inplace()
+			return f
+		else:
+			return e.do_fft()
+
+def fftip(e):
+	"""In-place fft / ift
+	   No padding performed, and fft-extension along x removed after ift.
+	"""
+	if (e.is_complex()):
+		# inverse fft
+		e.do_ift_inplace()
+		#e.postift_depad_corner_inplace()
+	else:
+		# forward fft
+		e.do_fft_inplace()
+
+def fpol(image, nnx, nny=0, nnz=0, RetReal = True):
+	return  image.FourInterpol(nnx, nny, nnz, RetReal)
+	
+    
+def fshift(e, delx=0, dely=0, delz=0):
+	params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(delx), "y_shift" : float(dely), "z_shift" : float(delz) }
+	return Processor.EMFourierFilter(e, params)
+
+def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0):
+	from filter       import filt_btwl
+	from fundamentals import smallprime, window2d
+	from utilities    import getImage
+	"""
+		Window image to FFT-friendly size, apply Butterworth low pass filter,
+		and decimate image by integer factor
+	"""
+	if type(img)     == str:	img=getImage(img)
+	nz       = img.get_zsize()
+	if( nz > 1):                    ERROR("This command works only for 2-D images", "image_decimate", 1)
+	if decimation    <= 1  : 	ERROR("Improper decimation ratio", "image_decimate", 1)
+	if(decimation    == 1.0): 	return  img.copy()
+	if frequency_low <= 0  :	
+		frequency_low     = 0.5/decimation-0.02
+		if frequency_low <= 0 : ERRROR("Butterworth pass_band frequency is too low","image_decimation",1)			
+		frequency_high    = min(0.5/decimation + 0.02, 0.499)
+	if fit_to_fft:
+		nx       = img.get_xsize()
+		ny       = img.get_ysize()
+		nx_fft_m = smallprime(nx)
+		ny_fft_m = smallprime(ny)
+		e        = Util.window(img, nx_fft_m, ny_fft_m, 1, 0,0,0)
+		e        = filt_btwl(e, frequency_low, frequency_high)
+	else:
+		e        = filt_btwl(img, frequency_low, frequency_high)
+	return Util.decimate(e, int(decimation), int(decimation), 1)
+
+def resample(img, sub_rate=0.5, fit_to_fft = False, frequency_low=0.0, frequency_high=0.0, num_prime = 3):
+	from filter       import filt_btwl
+	from fundamentals import smallprime, window2d, rtshg
+	"""
+		Window image to FFT-friendly size, apply Butterworth low pass filter,
+		and subsample image 
+		sub_rate <1.0, subsampling rate
+		fit_to_fft will channge the ouput image size
+	"""
+	if type(img) == str:
+		from utilities    import getImage
+		img = getImage(img)
+	if(sub_rate == 1.0): return  img.copy()
+	elif(sub_rate < 1.0):
+		if(frequency_low <= 0.0): 
+			frequency_low = 0.5*sub_rate - 0.02
+			if(frequency_low <= 0.0): ERROR("Butterworth pass_band frequency is too low","resample",1)		 
+			frequency_high = min(0.5*sub_rate + 0.02, 0.499)
+		if(frequency_high == 0.0): frequency_high = frequency_low + 0.1
+		nx = img.get_xsize()
+		ny = img.get_ysize()
+		if fit_to_fft:
+			nx = smallprime(nx, num_prime)
+			ny = smallprime(ny, num_prime)
+			e        = Util.window(img, nx, ny, 1, 0,0,0)
+			e        = filt_btwl(e, frequency_low, frequency_high, False)
+			new_nx_m = int(nx*sub_rate)
+			new_ny_m = int(ny*sub_rate)
+			new_nx 	 = smallprime(new_nx_m, num_prime)
+			new_ny 	 = smallprime(new_ny_m, num_prime)
+			tnx = e.get_xsize()
+		else:
+			e        = filt_btwl(img, frequency_low, frequency_high, False)
+			new_nx   = int(nx*sub_rate)
+			new_ny   = int(ny*sub_rate)
+		if(nx != ny):
+			#  rtshg  will  not  work  for  rectangular  images
+			nn = max(nx, ny)
+			e = Util.pad(e, nn, nn,  1, 0, 0, 0, "circumference")
+		e = Util.window( rtshg(e, scale = sub_rate), new_nx, new_ny, 1, 0,0,0)
+	else:  #  sub_rate>1
+		nx     = img.get_xsize()
+		ny     = img.get_ysize()
+		new_nx = int(nx*sub_rate)
+		new_ny = int(ny*sub_rate)
+		if fit_to_fft:
+			new_nx = smallprime(new_nx, num_prime)
+			new_ny = smallprime(new_ny, num_prime)
+		if(nx != ny):
+			#  rtshg  will  not  work  for  rectangular  images
+			nn = max(new_nx, new_ny)
+			e = Util.pad(e, nn, nn,  1, 0, 0, 0, "circumference")
+			e = Util.window( rtshg(e, scale = sub_rate), new_nx, new_ny, 1, 0,0,0)
+		else:
+			e = rtshg(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"), scale = sub_rate)
+	return 	e
+
+def prepi(image):
+	M = image.get_xsize()
+# padd two times
+	npad = 2
+	N = M*npad
+# support of the window
+	K = 6
+	alpha = 1.75
+	r = M/2
+	v = K/2.0/N
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	#out = rotshift2dg(image, angle*pi/180., sx, sy, kb,alpha)
+# first pad it with zeros in Fourier space
+	o = image.FourInterpol(2*M, 2*M, 1, 0)
+	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+	q = Processor.EMFourierFilter(o, params)
+	o = fft(q)
+	return  o, kb
+
+def prepg(image, kb):
+	M = image.get_xsize()
+# padd two times
+	npad = 2
+	N = M*npad
+# support of the window
+	K = 6
+	alpha = 1.75
+	r = M/2
+	v = K/2.0/N
+# first pad it with zeros in Fourier space
+	o = image.FourInterpol(2*M,2*M,1,0)
+	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+		  "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	q = Processor.EMFourierFilter(o,params)
+	return  fft(q) 
+	
+def ramp(inputimage):
+	e = inputimage.copy()
+	e.process_inplace("filter.ramp")
+	return e
+
+def rot_avg(e):
+	"""Rotational average.
+	   Returns a 1-D image containing a rotational average of image e.
+	"""
+	return e.rotavg()
+
+def rot_avg_table(e):
+	"""Rotational average.
+	   Returns a table containing a rotational average of image e.
+	"""
+	qt = e.rotavg()
+	tab = []
+	n = qt.get_xsize()
+	for i in xrange(n):
+		tab.append(qt.get_value_at(i))
+	return tab
+
+def rot_avg_image(image_to_be_averaged):
+	"""
+	Rotational average
+	Returns a 2-D or 3-D image containing a rotational average of image e
+	"""
+	import types
+	from utilities import get_im
+	if type(image_to_be_averaged) is types.StringType: image_to_be_averaged = get_im(image_to_be_averaged)
+	return image_to_be_averaged.rotavg_i()
+
+def ro_textfile(e, filename, helpful_string=""):
+	"""Rotational average stored as a text file.
+	   Saves a text file (suitable for gnuplot) of the rotational average of e.
+	"""
+	out = open(filename, "w")
+	out.write("#Rotational average: %s\n" % (helpful_string));
+	f = e.rotavg()
+	nr = f.get_xsize()
+	for ir in xrange(nr):
+		out.write("%d\t%12.5g\n" % (ir, f.get_value_at(ir)))
+	out.close()
+
+def rops(e):
+	"""Rotational average of the power spectrum.
+	   Returns a 1-D image containing a rotational average
+	   of the periodogram of image e.
+	"""
+	ps = periodogram(e)
+	return ps.rotavg()
+
+def rops_textfile(e, filename, helpful_string=""):
+	"""Rotational average of the periodogram stored as a text file.
+	   Saves a text file (suitable for gnuplot) of the rotational average 
+	   of the periodogram of image e.
+	"""
+	out = open(filename, "w")
+	out.write("#Rotational average: %s\n" % (helpful_string))
+	ps = periodogram(e)
+	f = ps.rotavg()
+	nr = f.get_xsize()
+	for ir in xrange(nr): out.write("%d\t%12.5g\n" % (ir, f.get_value_at(ir)))
+	out.close()
+	
+def rops_table(img):
+
+	""" 
+		Calculate 1D rotationally averaged 
+		power spectrum and save it in list
+	"""
+
+	table=[]
+	e=periodogram(img)
+	ro=e.rotavg()
+	nr = ro.get_xsize()
+	for ir in xrange(nr): table.append(ro.get_value_at(ir))
+	return table
+
+def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
+	"""Rotate and shift an image using gridding
+	"""
+	from math import pi
+	M = image.get_xsize()
+	alpha = 1.75
+	K = 6
+	N = M*2  # npad*image size
+	r = M/2
+	v = K/2.0/N
+	# first pad it with zeros in Fourier space
+	o = image.FourInterpol(2*M,2*M,1,0)
+	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	q = Processor.EMFourierFilter(o,params)
+	o = fft(q)
+
+	# gridding rotation
+	return o.rot_scale_conv(ang*pi/180.0, dx, dy, kb, scale)
+
+def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
+	"""
+		Rotate and shift an image using gridding on Fourier space.
+	"""
+	from fundamentals import fftip, fft
+
+	nx = image.get_xsize()
+	# split shift into integer and fractional parts
+	isx = int(sx)
+	fsx = sx - isx
+	isy = int(sy)
+	fsy = sy - isy
+	# prepare 
+	npad = 2
+	N = nx*npad
+	K = 6
+	alpha = 1.75
+	r = nx/2
+	v = K/2.0/N
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+
+	image1 = image.copy()  # This step is needed, otherwise image will be changed outside the function
+	# divide out gridding weights
+	image1.divkbsinh(kb)
+	# pad and center image, then FFT
+	image1 = image1.norm_pad(False, npad)
+	fftip(image1)
+	# Put the origin of the (real-space) image at the center
+	image1.center_origin_fft()
+	# gridding rotation
+	image1 = image1.fouriergridrot2d(ang, scale, kb)
+	if(fsx != 0.0 or fsy != 0.0):
+		params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(fsx), "y_shift" : float(fsy), "z_shift" : 0.0 }
+		image1 = Processor.EMFourierFilter(image1, params)
+	# put the origin back in the corner
+	image1.center_origin_fft()
+	# undo FFT and remove padding (window)
+	image1 = fft(image1)
+	image1 = image1.window_center(nx)
+	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
+	return image1
+
+def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, interpolation_method = None, scale = 1.0):
+	"""
+		rotatet/shift image using
+		1. linear    interpolation
+		2. quadratic interpolation
+		3. gridding 
+	"""
+	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift2D", 1)
+	if(interpolation_method):  use_method = interpolation_method
+	else:  use_method = interpolation_method_2D
+
+	if(use_method == "linear"):
+		RA = Transform3D(0, 0, angle)
+		RA.set_scale(scale)
+		RA.set_posttrans((sx, sy, 0));
+		return img.rot_scale_trans(RA)
+	elif(use_method == "quadratic"):
+		return img.rot_scale_trans2D(angle, sx, sy, scale)
+	elif(use_method == "gridding"): # previous rtshg
+		from math import pi
+		o, kb = prepi(img)
+		# gridding rotation
+		return o.rot_scale_conv_new(angle*pi/180.0, sx, sy, kb, scale)
+	elif(use_method == "ftgridding"): # previous rtshg
+		from fundamentals import gridrot_shift2D
+		return gridrot_shift2D(img, angle, sx, sy, scale)
+	else:	ERROR("rot_shift_2D interpolation method is incorrectly set", "rot_shift_2D", 1)
+
+def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scale = 1.0):
+	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift3D", 1)
+	EULER_SPIDER = Transform3D.EulerType.SPIDER
+	RA = Transform3D(EULER_SPIDER, phi, theta, psi)
+	RA.set_posttrans(Vec3f(sx, sy, sz))
+	RA.set_scale(scale)
+	return image.rot_scale_trans(RA)
+
+def rtshg(image, angle = 0.0, sx=0.0, sy=0.0, scale = 1.0):
+	from math import pi
+	o,kb = prepi(image)
+	# gridding rotation
+	return o.rot_scale_conv_new(angle*pi/180., sx, sy, kb, scale)
+
+def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
+	from math import pi
+	# gridding rotation
+	return image.rot_scale_conv_new(angle*pi/180., sx, sy, kb, scale)
+
+def shift2d(image, dx=0, dy=0):
+	"""Shift a 2-d image."""
+	# split shift into integer and fractional parts  DOES NOT SEEM TO MAKE MUCH SENSE
+	from filter import fshift
+	from fundamentals import cyclic_shift
+	idx = int(dx)
+	fdx = dx - idx
+	idy = int(dy)
+	fdy = dy - idy
+	# perform cyclic integer shift 
+	rimage=cyclic_shift(image, idx, idy)
+	# perform fractional shift in Fourier space and return
+	return fshift(image, fdx, fdy)
+	
+def smallprime(arbit_num, numprime=3):
+	primelist = [2,3,5,7,11,13,17,19,23]
+	for i in xrange(1, arbit_num+1):
+		x62 = arbit_num-i+1
+		for k in xrange(1,arbit_num+1): # fake loop try to divide the arbit_num
+			for j in xrange(0,numprime):
+				x71 = primelist[j]*int(x62/primelist[j])
+				if(x71 == x62):
+					x62 = x62/primelist[j]
+					if(x62 == 1):
+						nicenum = arbit_num-i+1
+						return nicenum
+					else:
+						break
+		 
+	nicenum = arbit_num-i+1
+	return nicenum
+
+def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
+	""" 
+		Caclulate power spectrum use Welch periodograms(overlapped periodogram)
+	"""
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nx_fft = smallprime(nx)
+	ny_fft = smallprime(ny)
+	img1 = window2d(img,nx_fft,ny_fft,"l")
+	x_gaussian_hi = 1./win_size
+	del img
+	from filter import filt_gaussh
+	from utilities import info,dropImage	
+	e_fil = filt_gaussh(img1, x_gaussian_hi)
+	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
+	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
+	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
+	x29 = int(x39*((ny-2*edge_y)/win_size-1)+1)  # number of pieces vertical dim.(Y)
+	iz = 0	
+	pw2 = EMData()
+	for iy in xrange(1, x29+1):	
+		x21 = (win_size/x39)*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
+		for ix in  xrange(1, x26+1):			 
+			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
+			wi  = window2d(e_fil,win_size,win_size, "l", x22, x21)
+			ra  = ramp(wi)
+			iz  = iz+1
+			if (iz == 1): pw2  = periodogram(ra)
+			else:         pw2 += periodogram(ra)
+	return  pw2/float(iz)		
+
+def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256):
+	""" 
+		1. Calculate the power spectra of tilt bands
+		2. The tilt micrograph is rotated such that the tilt axis is vertical (along Y axis)
+		3. edge_x and edge_y are removed from the micrograph
+	""" 
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	num1 = int(nx-2*edge_x)
+	num2 = int(ny-2*edge_y)
+	nx_fft = smallprime(num1)
+	ny_fft = smallprime(num2)
+	img1 = window2d(img,nx_fft,ny_fft,"l",edge_x,edge_y)
+	if(num_bnd == -1):
+		num_bnd = int(nx_fft/win_s)
+		win_x   = int(win_s)
+	else:
+		win_x = int(nx_fft/num_bnd)
+		win_x = int(smallprime(win_x))
+	win_y = win_x
+	x_gaussian_hi = 1./win_x
+	del img
+	from filter import filt_gaussh
+	from utilities import dropImage, rot_image
+	# The input img is rotated such that tilt axis is vertical
+	img2  = rot_image(img1,theta, 0, 0, 1.0,1.0)	
+	e_fil = filt_gaussh(img2, x_gaussian_hi)
+	del img1
+	del img2
+	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
+	x29 = int(x39*((ny)/win_y-1)+1)  # number of pieces vertical dim.(Y)
+	pw2 = EMData()
+	pw2_band = []
+	for ix in  xrange(1, num_bnd+1):
+		x22 = (win_x)*(ix-1)# x-direction it should start from 0 if edge_x =0
+		iz=0
+		for iy in xrange(1, x29+1):	
+			x21 = (win_y/x39)*(iy-1) #  y-direction it should start from 0 if edge_y=0	      			 
+			wi = window2d(e_fil,win_x, win_y,"l",x22, x21)
+			ra = ramp(wi)
+			iz = iz+1
+			if (iz == 1): pw2  = periodogram(ra)
+			else:         pw2 += periodogram(ra)
+		pw2/=float(iz)
+		# dropImage(pw2,"band%03d"%(ix))
+		pw2_band.append(pw2)	
+	return 	pw2_band
+
+def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
+	"""
+		Three ways of windowing a portion of image from a large image field:
+		1. Always get the central part: "c" option ( used for reduce image size )
+		2. Get clip starts from the top teft corner: "l" option  ( used for get fft-friendly image dimensions )
+		3. Get clip with arbituary point (ix, iy) as imge center point ( used for particle detection )
+	"""
+	if(opt == "l"): reg = Region(ix, iy, isize_x, isize_y)
+	elif(opt == "c"):
+		lx = img.get_xsize()
+		ly = img.get_ysize()
+		mx = int((lx-isize_x)/2)
+		my = int((ly-isize_y)/2)
+		reg = Region(mx, my, isize_x, isize_y)
+	elif(opt == "a"):
+		mx = ix-int(isize_x/2)
+		my = iy-int(isize_y/2)
+		reg = Region(mx, my, isize_x, isize_y)
+	else:  ERROR("Unknown window2d option","window2d",1)
+	return img.get_clip(reg)
