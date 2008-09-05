@@ -37,6 +37,238 @@ from test import test_support
 import testlib
 import math
 
+
+class TestTransform(unittest.TestCase):
+	"""this is the unit test for Transform class"""
+	transforms = []
+	transforms.append(Transform()) #empty transform (identity)
+	transforms.append(Transform(2,-3,4)) # rotation only transform
+	t = Transform(Transform.EulerType.MRC,3,5,-1)
+	t.set_post_x_mirror(True) # rotation and mirror
+	transforms.append(t)
+	s = Transform(Transform.EulerType.SPIDER,-3,5,-1)
+	s.set_posttrans(3,2,2)  # rotation and translation
+	transforms.append(s)
+	r = Transform(Transform.EulerType.IMAGIC,3,-5,-1)
+	r.set_scale(3.0)  # rotation and scale
+	transforms.append(r)
+	t1 = Transform(t)
+	t1.set_posttrans(3,-2,0) # rotation, mirror and translation
+	transforms.append(t1)
+	t2 = Transform(t1)
+	t2.set_scale(15.0) # rotation, mirror and translation
+	transforms.append(t2)
+	def test_get_rotation(self):
+		"""test get rotation .............................."""
+		alt = 1.45232928554
+		az = -0.60170830102
+		phi = 10.0
+	
+		# EMAN convention
+		t = Transform(az, alt, phi)
+		rot = t.get_rotation(Transform.EulerType.EMAN)
+
+		self.assertAlmostEqual(az%360.0, rot["az"]%360.0, 3)
+		self.assertAlmostEqual(alt%360.0, rot["alt"]%360.0, 3)
+		self.assertAlmostEqual(phi%360.0, rot["phi"]%360.0, 3)
+		
+		# SPIDER convention
+		phi = az
+		theta = alt
+		psi = phi
+		t = Transform(Transform.EulerType.SPIDER,phi,theta,psi)
+		rot = t.get_rotation(Transform.EulerType.SPIDER)
+
+		self.assertAlmostEqual(phi%360.0, rot["phi"]%360.0, 3)
+		self.assertAlmostEqual(theta%360.0, rot["theta"]%360.0, 3)
+		self.assertAlmostEqual(psi%360.0, rot["psi"]%360.0, 3)
+	
+		# IMAGIC convention
+		alpha = az
+		beta = alt
+		gamma = phi
+		t = Transform(Transform.EulerType.IMAGIC,alpha,beta,gamma)
+		rot = t.get_rotation(Transform.EulerType.IMAGIC)
+
+		self.assertAlmostEqual(alpha%360.0, rot["alpha"]%360.0, 3)
+		self.assertAlmostEqual(beta%360.0, rot["beta"]%360.0, 3)
+		self.assertAlmostEqual(gamma%360.0, rot["gamma"]%360.0, 3)
+		
+		# MRC convention
+		phi = az
+		theta = alt
+		omega = phi
+		t = Transform(Transform.EulerType.MRC,phi,theta,omega)
+		rot = t.get_rotation(Transform.EulerType.MRC)
+
+		self.assertAlmostEqual(phi%360.0, rot["phi"]%360.0, 3)
+		self.assertAlmostEqual(theta%360.0, rot["theta"]%360.0, 3)
+		self.assertAlmostEqual(omega%360.0, rot["omega"]%360.0, 3)
+		
+		# XTILT convention
+		xtilt = az
+		ytilt = alt
+		ztilt = phi
+		t = Transform(Transform.EulerType.XYZ,xtilt,ytilt,ztilt)
+		rot = t.get_rotation(Transform.EulerType.XYZ)
+
+		self.assertAlmostEqual(xtilt%360.0, rot["xtilt"]%360.0, 3)
+		self.assertAlmostEqual(ytilt%360.0, rot["ytilt"]%360.0, 3)
+		self.assertAlmostEqual(ztilt%360.0, rot["ztilt"]%360.0, 3)
+	
+		# SPIN convention
+		for e0 in [-10,10]:
+			# solving a rotation matrix to deduce a quaternion style rotation
+			# has more than one solution.
+			n = Vec3f(1,-1,-.5)
+			norm = n.normalize()
+			t = Transform(Transform.EulerType.SPIN,e0,n[0],n[1],n[2])
+			rot = t.get_rotation(Transform.EulerType.SPIN)
+			t1 = Transform(Transform.EulerType.SPIN,rot["Omega"],rot["n1"],rot["n2"],rot["n3"])
+			
+			# check to make sure the rotation  matrix has exactly the same form
+			for j in range(0,2):
+				for i in range(0,2):
+					self.assertAlmostEqual(t.at(i,j), t1.at(i,j), 3)
+		
+		# QUATERNION convention
+		for alpha in [-10,10]:
+			# solving a rotation matrix to deduce a quaternion style rotation
+			# has more than one solution.
+			
+			e0 = math.cos(alpha*math.pi/180.0)
+			n = Vec3f(1,-1,-.5)
+			norm = n.normalize()
+			sin_alpha = math.sin(alpha*math.pi/180.0)
+			e1 = sin_alpha*n[0]
+			e2 = sin_alpha*n[1]
+			e3 = sin_alpha*n[2]
+			t = Transform(Transform.EulerType.QUATERNION,e0,e1,e2,e3)
+			rot = t.get_rotation(Transform.EulerType.QUATERNION)
+			t1 = Transform(Transform.EulerType.QUATERNION,rot["e0"],rot["e1"],rot["e2"],rot["e3"])
+			
+			# check to make sure the rotation  matrix has exactly the same form
+			for j in range(0,2):
+				for i in range(0,2):
+					self.assertAlmostEqual(t.at(i,j), t1.at(i,j), 3)
+					
+		# SGIROT convention
+		for e0 in [-10,10]:
+			# solving a rotation matrix to deduce a quaternion style rotation
+			# has more than one solution.
+			n = Vec3f(1,-1,-.5)
+			norm = n.normalize()
+			t = Transform(Transform.EulerType.SGIROT,e0,n[0],n[1],n[2])
+			rot = t.get_rotation(Transform.EulerType.SGIROT)
+			t1 = Transform(Transform.EulerType.SGIROT,rot["q"],rot["n1"],rot["n2"],rot["n3"])
+			
+			# check to make sure the rotation  matrix has exactly the same form
+			for j in range(0,2):
+				for i in range(0,2):
+					self.assertAlmostEqual(t.at(i,j), t1.at(i,j), 3)	
+	
+		#MATRIX convention
+		#note this is bad because we are not constructing a matrix
+		#that reflects a true rotation
+		t = Transform(Transform.EulerType.MRC,phi,theta,omega)
+		m11, m12, m13 = t.at(0,0),t.at(0,1),t.at(0,2)
+		m21, m22, m23 = t.at(1,0),t.at(1,1),t.at(1,2)
+		m31, m32, m33 = t.at(2,0),t.at(2,1),t.at(2,2)
+		t = Transform(m11,m12,m13,m21,m22,m23,m31,m32,m33)
+		rot = t.get_rotation(Transform.EulerType.MATRIX)
+		self.assertAlmostEqual(m11,rot["m11"], 3)
+		self.assertAlmostEqual(m12,rot["m12"], 3)
+		self.assertAlmostEqual(m13,rot["m13"], 3)
+		self.assertAlmostEqual(m21,rot["m21"], 3)
+		self.assertAlmostEqual(m22,rot["m22"], 3)
+		self.assertAlmostEqual(m23,rot["m23"], 3)
+		self.assertAlmostEqual(m31,rot["m31"], 3)
+		self.assertAlmostEqual(m32,rot["m32"], 3)
+		self.assertAlmostEqual(m33,rot["m33"], 3)
+		
+	def test_set_get_scale(self):
+		"""test set/get scale ............................."""
+		scale = 2.0
+		for t in TestTransform.transforms:
+			t.set_scale(scale)
+			self.assertAlmostEqual(scale,t.get_scale(), 5)
+	
+	def test_set_get_post_x_mirror(self):
+		"""test set/get post_x_mirror ....................."""
+		for t in TestTransform.transforms:
+			t.set_post_x_mirror(False)
+			self.assertEqual(False,t.get_post_x_mirror())
+		
+		for t in TestTransform.transforms:
+			t.set_post_x_mirror(True)
+			self.assertEqual(True,t.get_post_x_mirror())
+	
+	def test_set_get_posttrans(self):
+		"""test set/get posttrans ........................."""
+		x = 1.3
+		y = 3.3
+		z = -9.0
+		post_trans = Vec3f(x,y,z)
+		for t in TestTransform.transforms:
+			t.set_posttrans(post_trans)
+			v = t.get_posttrans()
+			self.assertAlmostEqual(x,v[0], 5)
+			self.assertAlmostEqual(y,v[1], 5)
+			self.assertAlmostEqual(z,v[2], 5)
+			
+	def test_inverse_invert(self):
+		"""test inverse/invert ............................"""
+		for t in TestTransform.transforms:
+			s = t.inverse()
+			self.assert_identity(s*t)
+			self.assert_identity(t*s)
+	
+		for t in TestTransform.transforms:
+			s = Transform(t) # allright, assumes the copy constructor works, but there is a test for that
+			s.invert()
+			self.assert_identity(s*t)
+			self.assert_identity(t*s)
+	
+	def test_copy_construction(self):
+		"""test copy construction.........................."""
+		for t in TestTransform.transforms:
+			t1 = Transform(t)
+			self.assert_matrix_equality(t,t1)
+	
+	def test_transpose(self):
+		"""test transpose and transpose inplace............"""
+			
+		for t in TestTransform.transforms:
+			s = Transform(t)
+			s.set_scale(1.0)
+			t1 = s.transpose()
+			self.assert_identity(t1*s,3)
+			self.assert_identity(s*t1,3)
+		
+		#fixme why is this so in accurate?
+		#for t in TestTransform.transforms:
+			#s = Transform(t)
+			#s.set_scale(1.0)
+			#t1 = Transform(t)
+			#t1.set_scale(1.0)
+			#t1.transpose_inplace()
+			#self.assert_identity(t1*s,3)
+			#self.assert_identity(s*t1,3)
+			
+	
+	def assert_identity(self,t2,n=4):
+		for j in range(n):
+			for i in range(n):
+				if i == j:
+					self.assertAlmostEqual(t2.at(i,j),1, 5)
+				else:
+					self.assertAlmostEqual(t2.at(i,j),0, 5)
+	
+	def assert_matrix_equality(self,t,t1):
+		for j in range(4):
+			for i in range(4):
+				self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 7)
+	
 class TestTransform3D(unittest.TestCase):
 	"""this is the unit test for Transform3D class"""
 	
@@ -604,6 +836,9 @@ class TestTransform2D(unittest.TestCase):
 		
 		
 def test_main():
+	print 'Testing Transform'
+	test_support.run_unittest(TestTransform)
+	
 	print 'Testing Transform2D'
 	test_support.run_unittest(TestTransform2D)
 	

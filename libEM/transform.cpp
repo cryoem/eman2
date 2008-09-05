@@ -63,31 +63,693 @@ const string Alignment2D::NAME = "align2d";
 // const string Alignment3D::NAME = "align3d";
 // const string AlignmentProjection::NAME = "projection";
 
-Transform3D::EulerType Transform3D::int_to_euler_type(const int euler_int) {
-	static vector<Transform3D::EulerType> eulers;
-	if (eulers.size() == 0) {
-		eulers.push_back(UNKNOWN);
-		eulers.push_back(EMAN);
-		eulers.push_back(IMAGIC);
-		eulers.push_back(QUATERNION);
-		eulers.push_back(SGIROT);
-		eulers.push_back(SPIDER);
-		eulers.push_back(MRC);
-		eulers.push_back(XYZ);
-		eulers.push_back(MATRIX);
-	}
+
+
+
+
+const float Transform::ERR_LIMIT = 0.000001f;
+
+ Transform::Transform()
+{
+	to_identity();
+}
+
+Transform::Transform( const Transform& that )
+{
+	*this = that;
+}
+
+Transform& Transform::operator=(const Transform& that ) {
 	
-	
-	for(vector<Transform3D::EulerType>::const_iterator it = eulers.begin(); it != eulers.end(); ++it) {
-		if ( (int)(*it) == euler_int ) {
-			return *it;
-		}
+	if (this != &that ) {
+		memcpy(matrix,that.matrix,16*sizeof(float));
 	}
-	throw InvalidParameterException("Error, unknow euler (cast as int)");
+	return *this;
+}
+
+Transform::Transform(const float& alpha) 
+{
+	to_identity();
+	set_rotation(0,0,alpha);
+}
+
+Transform::Transform(const float& az, const float& alt, const float& phi) 
+{
+	to_identity();
+	set_rotation(az,alt,phi);
+}
+
+Transform::Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3) 
+{
+	to_identity();
+	set_rotation(euler_type,a1,a2,a3);
+}
+
+Transform::Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
+{
+	to_identity();
+	set_rotation(euler_type,a1,a2,a3,a4);
+}
+
+Transform::Transform(EulerType euler_type, const Dict& rotation)
+{
+	to_identity();
+	set_rotation(euler_type,rotation);
 }
 
 
-//  C1
+Transform::Transform(const float& m11, const float& m12, const float& m13,
+					 const float& m21, const float& m22, const float& m23,
+	  const float& m31, const float& m32, const float& m33)
+{
+	to_identity();
+	set_rotation(m11,m12,m13,m21,m22,m23,m31,m32,m33);
+}
+
+
+void Transform::to_identity()
+{
+	for(int i=0; i<4; ++i) {
+		for(int j=0; j<4; ++j) {
+			if(i==j) {
+				matrix[i][j] = 1;
+			}
+			else {
+				matrix[i][j] = 0;
+			}
+		}
+	}
+}
+
+void Transform::set_rotation(const float& alpha)
+{
+	Dict rot;
+	rot["alpha"]  = alpha;
+	set_rotation(ALPHA, rot);
+}
+
+void Transform::set_rotation(const float& az, const float& alt, const float& phi )
+{
+	Dict rot;
+	rot["az"]  = az;
+	rot["alt"] = alt;
+	rot["phi"] = phi;
+	set_rotation(EMAN, rot);
+}
+
+void Transform::set_rotation(EulerType euler_type, const float& alpha)
+{
+	Dict rot;
+	switch(euler_type) {
+		case ALPHA:
+			rot["alpha"]  = alpha;
+			break;
+		default:
+			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+	}  // ends switch euler_type
+	set_rotation(euler_type, rot);
+}
+
+void Transform::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3)
+{
+	Dict rot;
+	switch(euler_type) {
+		case EMAN:
+			rot["az"]  = a1;
+			rot["alt"] = a2;
+			rot["phi"] = a3;
+			break;
+		case SPIDER:
+			rot["phi"]   = a1;
+			rot["theta"] = a2;
+			rot["psi"]   = a3;
+			break;
+		case IMAGIC:
+			rot["alpha"]   = a1;
+			rot["beta"] = a2;
+			rot["gamma"]   = a3;
+			break;
+		case MRC:
+			rot["phi"]   = a1;
+			rot["theta"] = a2;
+			rot["omega"]   = a3;
+			break;
+		case XYZ:
+			rot["xtilt"]   = a1;
+			rot["ytilt"] = a2;
+			rot["ztilt"]   = a3;
+			break;
+		default:
+			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+	}  // ends switch euler_type
+	set_rotation(euler_type, rot);
+}
+// This is where it all happens;
+void Transform::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4) 
+{
+	Dict rot;
+	switch(euler_type) {
+		case QUATERNION:
+			rot["e0"]  = a1;
+			rot["e1"] = a2;
+			rot["e2"] = a3;
+			rot["e3"] = a4;
+			break;
+		case SGIROT:
+			rot["q"]  = a1;
+			rot["n1"] = a2;
+			rot["n2"] = a3;
+			rot["n3"] = a4;
+		case SPIN:
+			rot["Omega"]  = a1;
+			rot["n1"] = a2;
+			rot["n2"] = a3;
+			rot["n3"] = a4;
+			break;
+		default:
+			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+	}  // ends switch euler_type
+	set_rotation(euler_type, rot);
+}
+
+void Transform::set_rotation(const float& m11, const float& m12, const float& m13,
+							 const float& m21, const float& m22, const float& m23,
+		const float& m31, const float& m32, const float& m33)
+{
+	EulerType euler_type = MATRIX;
+	Dict rot;
+	rot["m11"]  = m11;
+	rot["m12"]  = m12;
+	rot["m13"]  = m13;
+	rot["m21"]  = m21;
+	rot["m22"]  = m22;
+	rot["m23"]  = m23;
+	rot["m31"]  = m31;
+	rot["m32"]  = m32;
+	rot["m33"]  = m33;
+	set_rotation(euler_type, rot);
+}
+
+
+void Transform::set_rotation(EulerType euler_type, const Dict& rotation)
+{
+	float e0  = 0;float e1=0; float e2=0; float e3=0;
+	float Omega=0;
+	float az  = 0;
+	float alt = 0;
+	float phi = 0;
+	float cxtilt = 0;
+	float sxtilt = 0;
+	float cytilt = 0;
+	float sytilt = 0;
+	bool is_quaternion = 0;
+	bool is_matrix = 0;
+	
+	bool x_mirror;
+	float scale;
+	// Get these before anything changes so we can apply them again
+	get_scale_and_post_x_mirror(scale,x_mirror);
+
+	switch(euler_type) {
+		case ALPHA:
+			az  = 0;
+			alt = 0;
+			phi = (float)rotation["alpha"] ;
+		
+		case EMAN:
+			az  = (float)rotation["az"] ;
+			alt = (float)rotation["alt"]  ;
+			phi = (float)rotation["phi"] ;
+			break;
+		case IMAGIC:
+			az  = (float)rotation["alpha"] ;
+			alt = (float)rotation["beta"]  ;
+			phi = (float)rotation["gamma"] ;
+			break;
+
+		case SPIDER:
+			az =  (float)rotation["phi"]    + 90.0f;
+			alt = (float)rotation["theta"] ;
+			phi = (float)rotation["psi"]    - 90.0f;
+			break;
+
+		case XYZ:
+			cxtilt = cos( (M_PI/180.0f)*(float)rotation["xtilt"]);
+			sxtilt = sin( (M_PI/180.0f)*(float)rotation["xtilt"]);
+			cytilt = cos( (M_PI/180.0f)*(float)rotation["ytilt"]);
+			sytilt = sin( (M_PI/180.0f)*(float)rotation["ytilt"]);	
+			az =  (180.0f/M_PI)*atan2(-cytilt*sxtilt,sytilt)   + 90.0f ;
+			alt = (180.0f/M_PI)*acos(cytilt*cxtilt)  ;
+			phi = (float)rotation["ztilt"] +(180.0f/M_PI)*atan2(sxtilt,cxtilt*sytilt)   - 90.0f ;
+			break;
+
+		case MRC:
+			az  = (float)rotation["phi"]   + 90.0f ;
+			alt = (float)rotation["theta"] ;
+			phi = (float)rotation["omega"] - 90.0f ;
+			break;
+
+		case QUATERNION:
+			is_quaternion = 1;
+			e0 = (float)rotation["e0"];
+			e1 = (float)rotation["e1"];
+			e2 = (float)rotation["e2"];
+			e3 = (float)rotation["e3"];
+			break;
+
+		case SPIN:
+			is_quaternion = 1;
+			Omega = (float)rotation["Omega"];
+			e0 = cos(Omega*M_PI/360.0f);
+			e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
+			e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
+			e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
+			break;
+
+		case SGIROT:
+			is_quaternion = 1;
+			Omega = (float)rotation["q"]  ;
+			e0 = cos(Omega*M_PI/360.0f);
+			e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
+			e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
+			e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
+			break;
+
+		case MATRIX:
+			is_matrix = 1;
+			matrix[0][0] = (float)rotation["m11"];
+			matrix[0][1] = (float)rotation["m12"];
+			matrix[0][2] = (float)rotation["m13"];
+			matrix[1][0] = (float)rotation["m21"];
+			matrix[1][1] = (float)rotation["m22"];
+			matrix[1][2] = (float)rotation["m23"];
+			matrix[2][0] = (float)rotation["m31"];
+			matrix[2][1] = (float)rotation["m32"];
+			matrix[2][2] = (float)rotation["m33"];
+			break;
+
+		default:
+			throw InvalidValueException(euler_type, "unknown Euler Type");
+	}  // ends switch euler_type
+
+	float azp  = fmod(az,360.0f)*M_PI/180.0f;
+	float altp  = alt*M_PI/180.0f;
+	float phip = fmod(phi,360.0f)*M_PI/180.0f;
+
+	if (!is_quaternion && !is_matrix) {
+		matrix[0][0] =  cos(phip)*cos(azp) - cos(altp)*sin(azp)*sin(phip);
+		matrix[0][1] =  cos(phip)*sin(azp) + cos(altp)*cos(azp)*sin(phip);
+		matrix[0][2] =  sin(altp)*sin(phip);
+		matrix[1][0] = -sin(phip)*cos(azp) - cos(altp)*sin(azp)*cos(phip);
+		matrix[1][1] = -sin(phip)*sin(azp) + cos(altp)*cos(azp)*cos(phip);
+		matrix[1][2] =  sin(altp)*cos(phip);
+		matrix[2][0] =  sin(altp)*sin(azp);
+		matrix[2][1] = -sin(altp)*cos(azp);
+		matrix[2][2] =  cos(altp);
+	}	
+	if (is_quaternion){
+		matrix[0][0] = e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3;
+		matrix[0][1] = 2.0f * (e1 * e2 + e0 * e3);
+		matrix[0][2] = 2.0f * (e1 * e3 - e0 * e2);
+		matrix[1][0] = 2.0f * (e2 * e1 - e0 * e3);
+		matrix[1][1] = e0 * e0 - e1 * e1 + e2 * e2 - e3 * e3;
+		matrix[1][2] = 2.0f * (e2 * e3 + e0 * e1);
+		matrix[2][0] = 2.0f * (e3 * e1 + e0 * e2);
+		matrix[2][1] = 2.0f * (e3 * e2 - e0 * e1);
+		matrix[2][2] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
+		// keep in mind matrix[0][2] is M13 gives an e0 e2 piece, etc
+	}
+	
+	// Apply scale if it existed previously
+	if (scale != 1.0f) {
+		for(int i=0; i<3; ++i) {
+			for(int j=0; j<3; ++j) {
+				matrix[i][j] *= scale;	
+			}
+		}
+	}
+
+	// Apply post x mirroring if it was applied previouslys
+	if ( x_mirror ) {
+		for(int j=0; j<3; ++j) {
+			matrix[0][j] *= -1.0f;	
+		}
+	}
+}
+
+Dict Transform::get_rotation(EulerType euler_type) const
+{
+	Dict result;
+
+	float max = 1 - ERR_LIMIT;
+	float scale;
+	bool x_mirror;
+	get_scale_and_post_x_mirror(scale,x_mirror);
+	float cosalt=matrix[2][2]/scale;
+	float x_mirror_scale = (x_mirror ? -1.0 : 1.0);
+	float inv_scale = 1.0/scale;
+
+	float az=0;
+	float alt = 0;
+	float phi=0;
+	float phiS = 0; // like az   (but in SPIDER ZXZ)
+	float psiS =0;  // like phi  (but in SPIDER ZYZ)
+
+	// get alt, az, phi in EMAN convention
+	if (cosalt > max) {  // that is, alt close to 0
+		alt = 0;
+		az=0;
+		phi = EMConsts::rad2deg*(float)atan2(matrix[0][1], x_mirror_scale*matrix[0][0]); 
+	}
+	else if (cosalt < -max) { // alt close to pi
+		alt = 180;
+		az=0; 
+		phi=360.0f-EMConsts::rad2deg*(float)atan2(matrix[0][1], x_mirror_scale*matrix[0][0]);
+	}
+	else {
+		alt = EMConsts::rad2deg*(float) acos(cosalt);
+		az  = 360.0f+EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[2][0], -matrix[2][1]);
+		phi = 360.0f+EMConsts::rad2deg*(float)atan2(matrix[0][2], matrix[1][2]);
+	}
+	az=fmod(az+180.0f,360.0f)-180.0f;
+	phi=fmod(phi+180.0f,360.0f)-180.0f;
+
+//   get phiS, psiS ; SPIDER
+	if (fabs(cosalt) > max) {  // that is, alt close to 0
+		phiS=0;
+		psiS = phi;
+	}
+	else {
+		phiS = az   - 90.0f;
+		psiS = phi  + 90.0f;
+	}
+	phiS = fmod((phiS   + 360.0f ), 360.0f) ;
+	psiS = fmod((psiS   + 360.0f ), 360.0f) ;
+
+//   do some quaternionic stuff here
+
+	float nphi = (az-phi)/2.0f;
+    // The next is also e0
+	float cosOover2 = (cos((az+phi)*M_PI/360) * cos(alt*M_PI/360)) ;
+	float sinOover2 = sqrt(1 -cosOover2*cosOover2);
+	float cosnTheta = sin((az+phi)*M_PI/360) * cos(alt*M_PI/360) / sqrt(1-cosOover2*cosOover2) ;
+	float sinnTheta = sqrt(1-cosnTheta*cosnTheta);
+	float n1 = sinnTheta*cos(nphi*M_PI/180);
+	float n2 = sinnTheta*sin(nphi*M_PI/180);
+	float n3 = cosnTheta;
+	float xtilt = 0;
+	float ytilt = 0;
+	float ztilt = 0;
+
+	
+	if (cosOover2<0) {
+		cosOover2*=-1; n1 *=-1; n2*=-1; n3*=-1;
+	}
+
+
+	switch (euler_type) {
+		case ALPHA:
+			result["alpha"]  = phi;
+			break;
+		
+		case EMAN:
+			result["az"]  = az;
+			result["alt"] = alt;
+			result["phi"] = phi;
+			break;
+
+		case IMAGIC:
+			result["alpha"] = az;
+			result["beta"] = alt;
+			result["gamma"] = phi;
+			break;
+
+		case SPIDER:
+			result["phi"]   = phiS;  // The first Euler like az
+			result["theta"] = alt;
+			result["psi"]   = psiS;
+			break;
+
+		case MRC:
+			result["phi"]   = phiS;
+			result["theta"] = alt;
+			result["omega"] = psiS;
+			break;
+
+		case XYZ:
+			xtilt = atan2(-sin((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt),cos((M_PI/180.0f)*alt));
+			ytilt = asin(  cos((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt));
+			ztilt = psiS*M_PI/180.0f - atan2(sin(xtilt), cos(xtilt) *sin(ytilt));
+
+			xtilt=fmod(xtilt*180/M_PI+540.0f,360.0f) -180.0f;
+			ztilt=fmod(ztilt*180/M_PI+540.0f,360.0f) -180.0f;
+
+			result["xtilt"]  = xtilt;
+			result["ytilt"]  = ytilt*180/M_PI;
+			result["ztilt"]  = ztilt;
+			break;
+
+		case QUATERNION:
+			result["e0"] = cosOover2 ;
+			result["e1"] = sinOover2 * n1 ;
+			result["e2"] = sinOover2 * n2;
+			result["e3"] = sinOover2 * n3;
+			break;
+
+		case SPIN:
+			result["Omega"] =360.0f* acos(cosOover2)/ M_PI ;
+			result["n1"] = n1;
+			result["n2"] = n2;
+			result["n3"] = n3;
+			break;
+
+		case SGIROT:
+			result["q"] = 360.0f*acos(cosOover2)/M_PI ;
+			result["n1"] = n1;
+			result["n2"] = n2;
+			result["n3"] = n3;
+			break;
+
+		case MATRIX:
+			result["m11"] = x_mirror_scale*matrix[0][0]*inv_scale;
+			result["m12"] = matrix[0][1]*inv_scale;
+			result["m13"] = matrix[0][2]*inv_scale;
+			result["m21"] = x_mirror_scale* matrix[1][0]*inv_scale;
+			result["m22"] = matrix[1][1]*inv_scale;
+			result["m23"] = matrix[1][2]*inv_scale;
+			result["m31"] = x_mirror_scale*matrix[2][0]*inv_scale;
+			result["m32"] = matrix[2][1]*inv_scale;
+			result["m33"] = matrix[2][2]*inv_scale;
+			break;
+
+		default:
+			throw InvalidValueException(euler_type, "unknown Euler Type");
+	}
+
+	return result;
+}
+
+
+void Transform::set_posttrans(const float& x, const float& y, const float& z)
+{
+	bool x_mirror = get_post_x_mirror();
+	
+	if (x_mirror) matrix[0][3] = -x;
+	else matrix[0][3] = x;
+	matrix[1][3] = y;
+	matrix[2][3] = z;
+}
+
+
+Vec3f Transform::get_posttrans() const
+{
+	bool x_mirror = get_post_x_mirror();
+	Vec3f v;
+	if (x_mirror) v[0] = -matrix[0][3];
+	else v[0] = matrix[0][3];
+	v[1] = matrix[1][3];
+	v[2] = matrix[2][3];
+	return v;
+}
+
+
+Vec3f Transform::get_pretrans() const 
+{
+	Transform T(*this);
+	T.set_posttrans(0,0,0);
+	T.invert();
+	
+	Transform soln  = T*(*this);
+// 	soln.printme();
+	return soln.get_posttrans();
+}
+
+Vec2f Transform::get_pretrans_2d() const 
+{
+	Vec3f v = get_pretrans();
+
+	
+	return Vec2f(v[0],v[1]);
+}
+
+
+void Transform::set_scale(const float& new_scale) {
+	if (new_scale <= 0) {
+		throw InvalidValueException(new_scale,"The scale factor in a Transform object must be positive and non zero");
+	}
+	// Transform = MTSR (Mirroring, Translation, Scaling, Rotate)
+	// So changing the scale boils down to this....
+	
+	float old_scale = get_scale();
+	float corrected_scale = new_scale/old_scale;
+	if ( corrected_scale != 1.0 ) {
+		for(int i = 0; i < 3;  ++i ) {
+			for(int j = 0; j < 3; ++j ) {
+				matrix[i][j] *= corrected_scale;
+			}
+		}
+	}
+}
+
+float Transform::get_scale() const {
+	float determinant = get_determinant();
+	if (determinant < 0 ) determinant *= -1;
+	
+	float scale = std::pow(determinant,1.0/3.0);
+	int int_scale = static_cast<int>(scale);
+	float scale_residual = scale-static_cast<float>(int_scale);
+	if  ( scale_residual < ERR_LIMIT ) { scale = static_cast<float>(int_scale); };
+	
+	return scale; 
+}
+
+void Transform::orthogonalize()
+{
+	set_scale(1.0);
+	set_post_x_mirror(false);
+}
+
+void Transform::set_post_x_mirror(const bool x_mirror ) {
+	
+	bool old_x_mirror = get_post_x_mirror();
+	if (old_x_mirror == x_mirror) return; // The user is setting the same value
+	else {
+		// Toggle the mirroring operation
+		for (int j = 0; j < 4; ++j ) {
+			matrix[0][j] *= -1;
+		}
+	}
+}
+
+bool Transform::get_post_x_mirror() const {
+	float determinant = get_determinant();
+	
+	bool x_mirror = false;
+	if ( determinant < 0 ) x_mirror = true;
+	
+	return x_mirror;
+
+}
+
+void Transform::get_scale_and_post_x_mirror(float& scale, bool& x_mirror) const {
+	
+	float determinant = get_determinant();
+	x_mirror = false;
+	if ( determinant < 0 ) {
+		x_mirror = true;
+		determinant *= -1;
+	}
+ 	if (determinant != 1 ) {
+		scale = std::pow(determinant,1.0/3.0);
+		int int_scale = static_cast<int>(scale);
+		float scale_residual = scale-static_cast<float>(int_scale);
+		if  ( scale_residual < ERR_LIMIT ) { scale = static_cast<float>(int_scale); };
+	}
+	else scale = 1;
+}
+
+float Transform::get_determinant() const
+{
+	float det = matrix[0][0]*(matrix[1][1]*matrix[2][2]-matrix[2][1]*matrix[1][2]);
+	det -= matrix[0][1]*(matrix[1][0]*matrix[2][2]-matrix[2][0]*matrix[1][2]);
+	det += matrix[0][2]*(matrix[1][0]*matrix[2][1]-matrix[2][0]*matrix[1][1]);
+
+	return det;
+}
+
+void Transform::invert() {
+	
+	float m00 = matrix[0][0]; float m01=matrix[0][1]; float m02=matrix[0][2];
+	float m10 = matrix[1][0]; float m11=matrix[1][1]; float m12=matrix[1][2];
+	float m20 = matrix[2][0]; float m21=matrix[2][1]; float m22=matrix[2][2];
+	float v0  = matrix[0][3]; float v1 =matrix[1][3]; float v2 =matrix[2][3];
+
+	float cof00 = m11*m22-m12*m21;
+	float cof11 = m22*m00-m20*m02;
+	float cof22 = m00*m11-m01*m10;
+	float cof01 = m10*m22-m20*m12;
+	float cof02 = m10*m21-m20*m11;
+	float cof12 = m00*m21-m01*m20;
+	float cof10 = m01*m22-m02*m21;
+	float cof20 = m01*m12-m02*m11;
+	float cof21 = m00*m12-m10*m02;
+
+	float det = m00* cof00 + m02* cof02 -m01*cof01;
+
+	matrix[0][0] =   cof00/det;
+	matrix[0][1] = - cof10/det;
+	matrix[0][2] =   cof20/det;
+	matrix[1][0] = - cof01/det;
+	matrix[1][1] =   cof11/det;
+	matrix[1][2] = - cof21/det;
+	matrix[2][0] =   cof02/det;
+	matrix[2][1] = - cof12/det;
+	matrix[2][2] =   cof22/det;
+
+	matrix[0][3] =  (- cof00*v0 + cof10*v1 - cof20*v2 )/det;
+	matrix[1][3] =  (  cof01*v0 - cof11*v1 + cof21*v2 )/det;
+	matrix[2][3] =  (- cof02*v0 + cof12*v1 - cof22*v2 )/det;
+}
+
+Transform Transform::inverse() const {
+	Transform t(*this);
+	t.invert();
+	return t;
+}
+
+Transform Transform::transpose() const
+{
+	Transform t(*this);
+	t.transpose_inplace();
+	return t;
+}
+
+void Transform::transpose_inplace() {
+	float tempij;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < i; j++) {
+			tempij= matrix[i][j];
+			matrix[i][j] = matrix[j][i];
+			matrix[j][i] = tempij;
+		}
+	}
+}
+
+
+Transform EMAN::operator*(const Transform & M2, const Transform & M1)     // YYY
+{
+	Transform result;
+	for (int i=0; i<3; i++) {
+		for (int j=0; j<4; j++) {
+			result[i][j] = M2[i][0] * M1[0][j] +  M2[i][1] * M1[1][j] + M2[i][2] * M1[2][j];
+		}
+		result[i][3] += M2[i][3];
+	}
+	
+	return result;
+}
+
+
 Transform3D::Transform3D()  //    C1
 {
 	init();

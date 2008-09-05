@@ -56,6 +56,342 @@
 
 namespace EMAN
 {
+	class Transform {
+		public:
+			static const float ERR_LIMIT;
+			enum EulerType
+			{
+				UNKNOWN,
+				EMAN,
+				IMAGIC,
+				SPIN,
+				QUATERNION,
+				SGIROT,
+				SPIDER,
+				MRC,
+				XYZ,
+				MATRIX,
+				ALPHA
+			};
+			
+			/** Default constructor
+			* Internal matrix is the identity
+			*/
+			Transform();
+	
+			/** Copy constructor
+			* @param rhs the object to be copied
+			*/
+			Transform( const Transform& rhs );
+			
+			/** Assignment operator
+			 * @param that that which this will become
+			 */
+			Transform& operator=(const Transform& that);
+			
+			/** Construct a Transform object using a single rotation, as in the 2D degenerant case
+			 * @param alpha a 2D rotation
+			 */
+			Transform(const float& alpha);
+		
+			
+			/** Construct a Transform3D object describing a only a rotation, assuming the EMAN Euler type
+			* @param az EMAN - az
+			* @param alt EMAN - alt
+			* @param phi EMAN - phi
+			*/
+			Transform(const float& az,const float& alt,const float& phi); // EMAN by default
+			
+			
+			/** Construct a Transform3D object describing a rotation, using a specific Euler type.
+			 * works for EMAN, SPIDER, MRC, IMAGIC and  XYZ (Euler types required 3 parameters)
+			 * @param euler_type the Euler type either  EMAN, SPIDER, MRC, IMAGIC and  XYZ
+			 * @param a1 EMAN - az, SPIDER - phi, MRC - phi, IMAGIC - alpha, XYZ - xtilt
+			 * @param a2 EMAN - alt, SPIDER - theta, MRC - theta, IMAGIC - beta, XYZ - ytilt
+			 * @param a3 EMAN - phi, SPIDER - psi, MRC - omega, IMAGIC - gamma, XYZ - ztilt
+			 */
+			Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3) ; 
+		
+			/** Construct a Transform3D object describing a rotation, using a specific Euler type.
+			 * Works for Euler types that require 4 parameters
+			 * @param euler_type the Euler type either QUATERNION, SPIN or SGIROT
+			 * @param a1 QUATERNION - e0, SPN and SGIROT - Omega
+			 * @param a2 QUATERNION - e1, SPN and SGIROT - n1
+			 * @param a3 QUATERNION - e2, SPN and SGIROT - n2
+			 * @param a4 QUATERNION - e3, SPN and SGIROT - n3
+			 */
+			Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4) ; // o
+		
+			/** Construct a Transform3D object consisting only of a rotation, using a specific Euler type.
+			 * Works for all Euler types
+			 * @param euler_type any Euler type
+			 * @param rotation a dictionary containing all key-entry pair required of the associated Euler type
+			 */
+			Transform(EulerType euler_type, const Dict& rotation);
+
+			/** Construct a Transform3D object consisting only of a rotation by initializing the internal	
+			 * rotation matrix component wise
+			 * @param mij the value to be placed in the internal transformation matrix at coordinate (i-1,j-1)
+		 	*/
+			Transform(const float& m11, const float& m12, const float& m13,
+						const float& m21, const float& m22, const float& m23,
+	  					const float& m31, const float& m32, const float& m33);
+
+			
+			//================ Set and get rotations ==============
+			
+			/** Set the rotation using 2D degenerance
+			 * @param alpha 
+			 */
+			void set_rotation(const float& alpha);
+			
+			
+			/** Sets the rotation as defined by the EulerType
+			 * works for ALPHA, (2D degenerant case)
+			 * @param euler_type the Euler type either  EMAN, SPIDER, MRC, IMAGIC and  XYZ
+			 * @param a1 ALPHA - alpha angle
+			 */
+			void set_rotation(EulerType euler_type,const float& alpha);
+			
+			/** Set the rotation assuming the EMAN Euler type
+			* @param az EMAN - az
+			* @param alt EMAN - alt
+			* @param phi EMAN - phi
+			*/
+			void set_rotation(const float& az, const float& alt,const float& phi);
+			
+			/** Sets the rotation as defined by the EulerType
+			* works for EMAN, SPIDER, MRC, IMAGIC and  XYZ
+			* @param euler_type the Euler type either  EMAN, SPIDER, MRC, IMAGIC and  XYZ
+			* @param a1 EMAN - az, SPIDER - phi, MRC - phi, IMAGIC - alpha, XYZ - xtilt
+			* @param a2 EMAN - alt, SPIDER - theta, MRC - theta, IMAGIC - beta, XYZ - ytilt
+			* @param a3 EMAN - phi, SPIDER - psi, MRC - omega, IMAGIC - gamma, XYZ - ztilt
+			*/
+			void set_rotation(EulerType euler_type,const float& a1,const float& a2,const float& a3);
+			
+			/** Set quaternion-based rotations
+			* Works for QUATERNION, SPIN and SGIROT
+			* @param euler_type the Euler type either QUATERNION, SPIN or SGIROT
+			* @param a1 QUATERNION - e0, SPN and SGIROT - Omega
+			* @param a2 QUATERNION - e1, SPN and SGIROT - n1
+			* @param a3 QUATERNION - e2, SPN and SGIROT - n2
+			* @param a4 QUATERNION - e3, SPN and SGIROT - n3
+			*/
+			void set_rotation(EulerType euler_type,const float& a1,const float& a2,const float& a3, const float& a4);
+			
+			/** Set a rotation using a specific Euler type and the dictionary interface
+			* Works for all Euler types
+			* @param euler_type any Euler type
+			* @param rotation a dictionary containing all key-entry pair required of the associated Euler type
+			*/
+			void set_rotation(EulerType euler_type, const Dict &rotation );
+			
+			/** set the internal rotation matrix component wise
+			* @param mij the value to be placed in the internal transformation matrix at coordinate (i-1,j-1)
+			*/
+			void set_rotation(const float& m11, const float& m12, const float& m13,
+							  const float& m21, const float& m22, const float& m23,
+							  const float& m31, const float& m32, const float& m33);
+			
+			/** Get a rotation in any Euler format
+			 * @param euler_type the requested Euler type
+			 * @return a dictionary containing the key-entry pairs describing the rotations in terms of the requested Euler type
+			 */
+			Dict get_rotation(EulerType euler_type=EMAN) const;
+
+			//=============== set and get post trans =============
+			/** Set the post translation component
+			 * @param x the x translation
+			 * @param y the y translation
+			 * @param z the z translation
+			 */
+			void set_posttrans(const float& x, const float& y, const float& z=0);
+			
+			/** Set the post translation component using a Vec3f
+			 * @param v the 3D translation vector
+			 */
+			inline void set_posttrans(const Vec3f& v) { set_posttrans(v[0],v[1],v[2]); }
+			
+			/** Set the post translation component using a Vec2f
+			 * @param v the 2D translation vector
+			 */
+			inline void set_posttrans(const Vec2f& v) { set_posttrans(v[0],v[1]); }
+			
+			/** Get the post trans as a vec3f by directly accessing the  transformation matrix
+			 * @return the post translation vector
+			 */
+			Vec3f get_posttrans() const;
+			
+			//================= get pre trans is supported =========
+			
+			/** Get the translation vector as though this object was MSRT_ not MTSR, where T_ is what you want
+			 * Note M means post x mirror, T means translation, S means scale, and R means rotaiton
+			 * @return the pre translation vector
+			 */
+			Vec3f get_pretrans() const;
+			
+			
+			/** Get the 2D translation vector as though this object was MSRT_ NOT MTSR, where T_ is what you want
+			 * Note M means post x mirror, T means translation, S means scale, and R means rotaiton
+			 * @return the 2D pre translation vector
+			 */
+			Vec2f get_pretrans_2d() const;
+			
+			//=============== set and get scale =============
+			/** Set the scale
+			 * @param scale the amount to scale by
+			 */
+			void set_scale(const float& scale);
+			
+			/** Get the scale that was applied
+			 * @return the scale factor
+			 */
+			float get_scale() const;
+			
+			//=============== set and get post x mirror =============
+			/** Query whether x_mirroring is occuring
+			 * @return whether x_mirroring is occuring
+			 */
+			bool get_post_x_mirror() const;
+			
+			/** Set whether or not x_mirroring is occuring
+			 * @param x_mirror whether x_mirroring should be applied
+			 */
+			void set_post_x_mirror(const bool x_mirror);
+			
+			//=============== other stuff ============================
+			/** Get scale and x_mirror with 1 function call.
+			 * More efficient than calling get_scale and get_x_mirror separately
+			 * @param scale a reference to the value that will be assigned the scale value
+			 * @param x_mirror a reference to the value that will be assigned the x_mirror value
+			 */
+			void get_scale_and_post_x_mirror(float& scale, bool& x_mirror) const;
+			
+			/** Force the internal matrix to become the identity
+			*/
+			void to_identity();
+			
+			/** Reorthogonalize the matrix.
+			 * Equivalent to calling set_scale(1.0) and set_post_x_mirror(false)
+			 */
+			void orthogonalize();
+			
+			/** Get the determinant of the matrix
+			 * @return the determinant
+			 */
+			float get_determinant() const;
+			
+			/** Print the contents of the internal matrix verbatim to standard out
+			 */
+			void printme() const {
+				cout << matrix[0][0] << " " << matrix[0][1] << " " << matrix[0][2] << " " << matrix[0][3] << endl;
+				cout << matrix[1][0] << " " << matrix[1][1] << " " << matrix[1][2] << " " << matrix[1][3] << endl;
+				cout << matrix[2][0] << " " << matrix[2][1] << " " << matrix[2][2] << " " << matrix[2][3] << endl;
+				cout << matrix[3][0] << " " << matrix[3][1] << " " << matrix[3][2] << " " << matrix[3][3] << endl;
+			}
+			
+			/** Get the inverse of this transformation matrix
+			 * @return the inverse of this transformation matrix
+			 */
+			void invert();
+			
+			/** Get the inverse of this transformation matrix
+			 * @return the inverse of this transformation matrix
+			 */
+			Transform inverse() const;
+			
+			/** transpose this matrix inplace
+			 * FIXME double check precision there was a weird python precision error associated with this
+			 */
+			void transpose_inplace();
+			
+			/** get the transpose this matrix
+			 * @return the transpose of this matrix
+			 */
+			Transform transpose() const;
+			
+			/** Get the value stored in the internal transformation matrix at at coordinate (r,c)
+			 */
+			inline float at(int r,int c) const { return matrix[r][c]; }
+			
+			/** Set the value stored in the internal transformation matrix at at coordinate (r,c) to value
+			 */
+			void set(int r, int c, float value) { matrix[r][c] = value; }
+		
+			/** Operator[] convenience
+			 * so Transform3D[2][2] etc terminology can be used
+			 */
+			inline float * operator[] (int i) { return matrix[i]; }
+		
+			/** Operator[] convenience
+			 * so Transform3D[2][2] etc terminology can be used
+			 */
+			inline const float * operator[] (int i) const { return matrix[i]; }
+			
+			/** Transform 2D coordinates using the internal transformation matrix
+			* @param x the x coordinate of the transformed point
+			* @param y the y coordinate of the transformed point
+			* @return the transformed vector
+			 */
+			inline Vec2f transform(const float& x, const float& y) const {
+				Vec2f ret;
+				ret[0] = matrix[0][0]*x + matrix[0][1]*y + matrix[0][2];
+				ret[1] = matrix[1][0]*x + matrix[1][1]*y + matrix[1][2];
+				return ret;
+			}
+			
+			/** Transform a 2D vector using the internal transformation matrix
+			* @param v a two dimensional vector to be transformed
+			* @return the transformed vector
+			 */
+			template<typename Type>
+			inline Vec2f transform(const Vec2<Type>& v) const {
+				return transform(v[0],v[1]);
+			}
+			
+			/** Transform 3D coordinates using the internal transformation matrix
+			 * @param x the x coordinate of the transformed point
+			 * @param y the y coordinate of the transformed point
+			 * @return the transformed vector
+			 */
+			inline Vec3f transform(const float& x, const float& y, const float& z) const {
+				Vec3f ret;
+				ret[0] = matrix[0][0] * x + matrix[0][1] * y + matrix[0][2] * z + matrix[0][3];
+				ret[0] = matrix[1][0] * x + matrix[1][1] * y + matrix[1][2] * z + matrix[1][3];
+				ret[0] = matrix[2][0] * x + matrix[2][1] * y + matrix[2][2] * z + matrix[2][3];
+				return ret;
+			}
+			
+			/** Transform a 3D vector using the internal transformation matrix
+			 * @param v a three dimensional vector to be transformed
+			 * @return the transformed vector
+			 */
+			template<typename Type>
+			inline Vec3f transform(const Vec3<Type>& v) const {
+				return transform(v[0],v[1],v[2]);
+			}
+		
+			
+		private:
+			float matrix[4][4];
+	};
+	/// Matrix times Matrix, a pure mathematical operation
+	Transform operator*(const Transform & M2, const Transform & M1);
+	
+	/// Matrix times Vector, a pure mathematical operation
+	template<typename Type>
+	Vec3f operator*( const Transform& M, const Vec3<Type> & v)
+	{
+		return M.transform(v);
+	}
+	
+	/// Matrix times Vector, a pure mathematical operation
+	template<typename Type>
+	Vec2f operator*( const Transform& M, const Vec2<Type> & v)
+	{
+		return M.transform(v);
+	}
+	
 	/** Transform3D
 	 * These are  a collection of transformation tools: rotation, translation,
 	 * and construction of symmetric objects
@@ -406,8 +742,6 @@ namespace EMAN
 			
 		}
 		
-		static Transform3D::EulerType int_to_euler_type(const int euler_int);
-
 	protected:
 		enum SymType
 		{      CSYM,

@@ -95,19 +95,17 @@ struct EMAN_OrientationGenerator_Wrapper : public EMAN::OrientationGenerator
 };
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_rotation_overloads_0_1, get_rotation, 0, 1)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_pretrans_overloads_0_1, get_pretrans, 0, 1)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_posttrans_overloads_0_1, get_posttrans, 0, 1)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_pretrans_overloads_2_3, set_pretrans, 2, 3)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
-		BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_params_overloads_2_3, set_params, 2, 3)
-		BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_params_overloads_1_2, get_params, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_params_overloads_2_3, set_params, 2, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_params_overloads_1_2, get_params, 1, 2)
 		
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Symmetry3D_get_asym_unit_points_overloads_1_2, get_asym_unit_points, 1, 2)
+
 		
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
 }// namespace 
 
 
@@ -416,6 +414,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	
 	delete EMAN_Transform3D_scope;
 	
+	
 	class_< EMAN::Transform2D >("Transform2D", init<  >())
 		.def(init< const EMAN::Transform2D& >())
 		.def(init< float >())
@@ -436,6 +435,85 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def( self * other< EMAN::Vec2f >() )
 	;
 	
+	scope* EMAN_Transform_scope = new scope(
+	class_< EMAN::Transform >("Transform", init<  >())
+		.def(init< const EMAN::Transform& >())
+		.def(init< const float& >())
+		.def(init< const float&, const float&, const float& >())
+// 		.def(init< const float&, const float&, const float&, const EMAN::Vec3f& >())
+		.def(init< EMAN::Transform::EulerType, const float&, const float&, const float& >())
+		.def(init< EMAN::Transform::EulerType, const float&, const float&, const float&, const float&>())
+		.def(init< EMAN::Transform::EulerType, const EMAN::Dict& >())
+		.def(init< const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float& >())
+		.def_readonly("ERR_LIMIT", &EMAN::Transform::ERR_LIMIT)
+		.def("set_posttrans", (void (EMAN::Transform::*)(const float&, const float&, const float&) )&EMAN::Transform::set_posttrans,EMAN_Transform_set_posttrans_overloads_2_3())
+		.def("set_posttrans", (void (EMAN::Transform::*)(const EMAN::Vec3f&) )&EMAN::Transform::set_posttrans)
+		.def("set_posttrans", (void (EMAN::Transform::*)(const EMAN::Vec2f&) )&EMAN::Transform::set_posttrans)
+		.def("set_scale", &EMAN::Transform::set_scale)
+		
+		.def("set_rotation", (void (EMAN::Transform::*)(const float&, const float&, const float&) )&EMAN::Transform::set_rotation)
+		.def("set_rotation", (void (EMAN::Transform::*)(EMAN::Transform::EulerType, const float&, const float&, const float&) )&EMAN::Transform::set_rotation)
+		.def("set_rotation", (void (EMAN::Transform::*)(EMAN::Transform::EulerType, const float&, const float&, const float&, const float&) )&EMAN::Transform::set_rotation)
+		.def("set_rotation", (void (EMAN::Transform::*)(const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&) )&EMAN::Transform::set_rotation)
+		.def("set_rotation", (void (EMAN::Transform::*)(EMAN::Transform::EulerType, const EMAN::Dict&) )&EMAN::Transform::set_rotation)
+// 		.def("set_rotation", (void (EMAN::Transform::*)(const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&) )&EMAN::Transform::set_rotation)
+		.def("get_post_x_mirror",&EMAN::Transform::get_post_x_mirror)
+		.def("set_post_x_mirror",&EMAN::Transform::set_post_x_mirror)
+// 		.def("get_mag", &EMAN::Transform::get_mag)
+// 		.def("get_finger", &EMAN::Transform::get_finger)
+		.def("get_pretrans", &EMAN::Transform::get_pretrans)
+		.def("get_posttrans", &EMAN::Transform::get_posttrans)
+// 		.def("get_total_posttrans", &EMAN::Transform::get_total_posttrans)
+// 		.def("get_total_pretrans", &EMAN::Transform::get_total_pretrans)
+// 		.def("get_center", &EMAN::Transform::get_center)
+// 		.def("get_matrix3_col", &EMAN::Transform::get_matrix3_col)
+// 		.def("get_matrix3_row", &EMAN::Transform::get_matrix3_row)
+		.def("transform", (EMAN::Vec2f (EMAN::Transform::*)(const EMAN::Vec2f&) const )&EMAN::Transform::transform)
+		.def("transform", (EMAN::Vec3f (EMAN::Transform::*)(const EMAN::Vec3f&) const )&EMAN::Transform::transform)
+		.def("transform", (EMAN::Vec2f (EMAN::Transform::*)(const float&, const float&) const )&EMAN::Transform::transform)
+		.def("transform", (EMAN::Vec3f (EMAN::Transform::*)(const float&, const float&, const float&) const )&EMAN::Transform::transform)
+// 		.def("rotate", &EMAN::Transform::rotate)
+		.def("inverse", &EMAN::Transform::inverse)
+		.def("invert", &EMAN::Transform::invert)
+		.def("orthogonalize", &EMAN::Transform::orthogonalize)
+		.def("transpose", &EMAN::Transform::transpose)
+		.def("transpose_inplace", &EMAN::Transform::transpose)
+// 		.def("inverseUsingAngs", &EMAN::Transform::inverseUsingAngs)
+		.def("get_rotation", &EMAN::Transform::get_rotation)
+		.def("printme", &EMAN::Transform::printme)
+		.def("at", &EMAN::Transform::at)
+// 		.def("get_nsym", &EMAN::Transform::get_nsym)
+// 		.def("get_sym", &EMAN::Transform::get_sym)
+// 		.def("set_center", &EMAN::Transform::set_center)
+// 		.def("set_pretrans", (void (EMAN::Transform::*)(const float&,const float&,const float&))&EMAN::Transform::set_pretrans, EMAN_Transform_set_pretrans_overloads_2_3())
+// 		.def("set_pretrans", (void (EMAN::Transform::*)(const EMAN::Vec3f&))&EMAN::Transform::set_pretrans)
+// 		.def("set_pretrans", (void (EMAN::Transform::*)(const EMAN::Vec2f&))&EMAN::Transform::set_pretrans)
+		.def("get_scale", &EMAN::Transform::get_scale)
+		.def("to_identity", &EMAN::Transform::to_identity)
+// 		.def("is_identity", &EMAN::Transform::is_identity)
+// 		.def("angles2tfvec", &EMAN::Transform::angles2tfvec)
+// 		.staticmethod("angles2tfvec")
+// 		.staticmethod("get_nsym")
+// 		.def( other< EMAN::Vec3f >() * self )
+		.def( self * self )
+		.def( self * other< EMAN::Vec3f >() )
+		.def( self * other< EMAN::Vec2f >() )
+										   );
+	
+	enum_< EMAN::Transform::EulerType >("EulerType")
+			.value("MATRIX", EMAN::Transform::MATRIX)
+			.value("UNKNOWN", EMAN::Transform::UNKNOWN)
+			.value("XYZ", EMAN::Transform::XYZ)
+			.value("IMAGIC", EMAN::Transform::IMAGIC)
+			.value("SPIDER", EMAN::Transform::SPIDER)
+			.value("QUATERNION", EMAN::Transform::QUATERNION)
+			.value("SGIROT", EMAN::Transform::SGIROT)
+			.value("MRC", EMAN::Transform::MRC)
+			.value("SPIN", EMAN::Transform::SPIN)
+			.value("EMAN", EMAN::Transform::EMAN)
+			.value("MATRIX", EMAN::Transform::MATRIX)
+			;
+	delete EMAN_Transform_scope;
 // 	class_< EMAN::Alignment2D, bases<EMAN::Transform3D> >("Alignment2D", init<  >())
 // 	.def("set_params",&EMAN::Alignment2D::set_params)
 // 	.def("get_params",&EMAN::Alignment2D::get_params)
