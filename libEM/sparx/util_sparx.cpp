@@ -121,7 +121,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 	}
 
        float avg = static_cast<float>(Sum1/count);
-       float sig2 = static_cast<float>(Sum2/count - avg*avg);
+       float sig2 = static_cast<float>(Sum2 - count*avg*avg)/(count-1);
        float sig = sqrt(sig2);
                             
        stats.push_back(avg);
