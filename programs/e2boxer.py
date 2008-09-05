@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu) and David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -2029,6 +2028,42 @@ class AutoBoxerSelectionsMediator:
 		boxable.clear_and_cache(True)
 		self.parent.clear_displays()
 		return new_name
+
+class CcfHistogram(QtGui.QWidget):
+
+	def __init__(self, parent):	
+		QtGui.QWidget.__init__(self,parent)
+		self.parent=parent
+
+		self.nbin=256
+		self.data=None
+
+                self.setMinimumSize(QtCore.QSize(self.nbin,256))
+
+	def setData( self, data ):
+                self.data=data
+
+
+	def paintEvent( self, event ):
+		p=QtGui.QPainter()
+		p.begin(self)
+		p.setBackground(QtGui.QColor(16,16,16))
+		p.eraseRect(0,0,self.width(),self.height())
+		p.setPen(Qt.darkGray)
+
+		if self.data is None:
+			return
+
+		maxh = max( self.data[1] )
+                for i in xrange( len(self.data) ):
+			h = self.data[1][i]
+                        p.drawLine(i, self.height(), i, int(self.height()*(1-h/maxh)) )
+
+
+
+	
+
+
 		
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target,ab_sel_mediator) :
@@ -2260,12 +2295,11 @@ class GUIboxPanel(QtGui.QWidget):
 		self.normalization_method.setEnabled(val)
 	
 	def invert_contrast_mic_toggled(self):
-		val = self.invert_contrast_mic.isChecked()
-		#self.normalization_options.setEnabled(val)
-		#self.normalization_method.setEnabled(val)
-		#  ave = get_attr("mean")
-		#  mic = -mic + 2*ave
-		print  val
+		img = self.target.guiim.image2d.data
+		avg = img.get_attr("mean")
+		invimg = img*(-1.0) #+ 2.0*avg
+		self.target.guiim.setData(invimg)
+		self.target.guiim.updateGL()
 	
 	def method_changed(self, methodid):
 
@@ -2625,14 +2659,41 @@ class GUIboxPanel(QtGui.QWidget):
 		self.pawel_option = QtGui.QWidget()
 		self.pawel_option_vbox = QtGui.QVBoxLayout(self.pawel_option)
 		self.pawel_option_vbox.addWidget(QtGui.QLabel("Pawel Method's Parameter") )
+		pawel_grid1 = QtGui.QGridLayout( )
+		self.pawel_option_vbox.addLayout(pawel_grid1)
+		
+		pawel_grid1.addWidget( QtGui.QLabel("Input Pixel Size:") , 0, 0 )
+		pawel_grid1.addWidget( QtGui.QLabel("Output Pixel Size:"), 1, 0 )
+		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 0, 2 )
+		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 1, 2 )		
 
-		self.pawel_table = QtGui.QTableWidget( 2, 1 )
-		self.pawel_option_vbox.addWidget( self.pawel_table )
-		self.pawel_table.setVerticalHeaderLabels( ["Input Pixel Size  (Angstrom): ", "Output Pixel size (Angstrom): "] )
-		self.pawel_table.horizontalHeader().hide()
-		self.pawel_table.setItem(0, 0, QtGui.QTableWidgetItem("1.0") )
-		self.pawel_table.setItem(1, 0, QtGui.QTableWidgetItem("1.0") )
-		self.connect(self.pawel_table, QtCore.SIGNAL("cellChanged(int,int)"), self.pawel_parm_changed)
+		self.input_pixel_size = QtGui.QLineEdit("1.0", self)
+		self.output_pixel_size = QtGui.QLineEdit("1.0", self)
+		pawel_grid1.addWidget( self.input_pixel_size, 0, 1 )
+		pawel_grid1.addWidget( self.output_pixel_size, 1, 1 )
+	
+
+		self.pawel_option_vbox.addWidget( QtGui.QLabel("CCF Histogram") )
+		self.pawel_histogram = CcfHistogram( self )
+		self.pawel_option_vbox.addWidget( self.pawel_histogram )
+		self.pawel_option_vbox.addWidget( QtGui.QLabel("Range: (N/A, N/A)") )
+
+
+		pawel_grid2 = QtGui.QGridLayout()
+		self.pawel_option_vbox.addLayout( pawel_grid2 )
+
+		pawel_grid2.addWidget( QtGui.QLabel("Threshold Low:"),  0, 0 )
+		pawel_grid2.addWidget( QtGui.QLabel("Threshold High:"), 1, 0 )
+		self.threshold_low = QtGui.QLineEdit()
+		self.threshold_hgh = QtGui.QLineEdit()
+		pawel_grid2.addWidget( self.threshold_low, 0, 1 )
+		pawel_grid2.addWidget( self.threshold_hgh, 1, 1 )
+
+		#self.pawel_table.setVerticalHeaderLabels( ["Input Pixel Size  (Angstrom): ", "Output Pixel size (Angstrom): "] )
+		#self.pawel_table.horizontalHeader().hide()
+		#self.pawel_table.setItem(0, 0, QtGui.QTableWidgetItem("1.0") )
+		#self.pawel_table.setItem(1, 0, QtGui.QTableWidgetItem("1.0") )
+		#self.connect(self.pawel_table, QtCore.SIGNAL("cellChanged(int,int)"), self.pawel_parm_changed)
 
 
 		self.tabwidget.addTab(self.david_option,"Swarm Advanced")

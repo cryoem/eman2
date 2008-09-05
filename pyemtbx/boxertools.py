@@ -2538,6 +2538,11 @@ class PawelAutoBoxer(AutoBoxer):
 		pass
 
 	def auto_box(self,boxable,update_display=True,force_auto_box=False):
+		from string import atoi, atof
+		self.pixel_input = atof(self.parent.guictl.input_pixel_size.text())
+		self.pixel_output= atof(self.parent.guictl.output_pixel_size.text())
+		self.box_size = atoi(self.parent.guictl.bs.text())
+
 		print "running Pawel's Method: "
 		print "     Pixel input : ", self.pixel_input
 		print "     Pixel output: ", self.pixel_output
@@ -2593,8 +2598,8 @@ class PawelAutoBoxer(AutoBoxer):
 		boxable.get_auto_selected_from_db() 
 
 	def set_interactive_mode(self,real_time_auto_boxing=False):
-		raise Exception
-		
+		pass
+
 	def get_mode(self):
 		return SwarmAutoBoxer.COMMANDLINE
 		
@@ -2602,22 +2607,21 @@ class PawelAutoBoxer(AutoBoxer):
 		self.box_size = box_size
 
 	def dynapix_on(self):
-		raise Exception
-	
+		pass
 	def write_to_db(self, write_current=False):
-		raise Exception
-	
+		pass
+
 	def write_image_specific_references_to_db(self,image_name):
 		print "in PawelAutoBox, write specific references to db"
 	
 	def add_reference(self,box):
-		raise Exception
+		pass
 	
 	def remove_reference(self,box):
-		raise Exception
-	
+		pass
+
 	def reference_moved(self,ref):
-		raise Exception
+		pass
 
 	def name(self):
 		return "pawel_autoboxer"
