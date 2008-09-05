@@ -615,7 +615,7 @@ float Transform::get_scale() const {
 	float determinant = get_determinant();
 	if (determinant < 0 ) determinant *= -1;
 	
-	float scale = std::pow(determinant,1.0/3.0);
+	float scale = std::pow(determinant,1.0f/3.0f);
 	int int_scale = static_cast<int>(scale);
 	float scale_residual = scale-static_cast<float>(int_scale);
 	if  ( scale_residual < ERR_LIMIT ) { scale = static_cast<float>(int_scale); };
@@ -660,7 +660,7 @@ void Transform::get_scale_and_post_x_mirror(float& scale, bool& x_mirror) const 
 		determinant *= -1;
 	}
  	if (determinant != 1 ) {
-		scale = std::pow(determinant,1.0/3.0);
+		scale = std::pow(determinant,1.0f/3.0f);
 		int int_scale = static_cast<int>(scale);
 		float scale_residual = scale-static_cast<float>(int_scale);
 		if  ( scale_residual < ERR_LIMIT ) { scale = static_cast<float>(int_scale); };
