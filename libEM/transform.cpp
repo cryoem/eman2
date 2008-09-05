@@ -35,16 +35,20 @@
 
 #include "transform.h"
 #include "util.h"
-#include <cctype>
+#include <cctype> // for std::tolower
 #include <cstring>  // for memcpy
-
 using namespace EMAN;
+
 #ifdef WIN32
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 #endif
 
+#include <algorithm> // for std::transform
+
+#include "exception.h"
+				 
 const float Transform3D::ERR_LIMIT = 0.000001f;
 
 const string CSym::NAME = "c";
@@ -87,44 +91,79 @@ Transform& Transform::operator=(const Transform& that ) {
 	return *this;
 }
 
-Transform::Transform(const float& alpha) 
-{
+Transform::Transform(const Dict& d) {
 	to_identity();
-	set_rotation(0,0,alpha);
+	
+	try { set_rotation(d); }
+	catch(...) { }
+	
+	try {
+		float scale = static_cast<float>(d.get_ci("scale"));
+		set_scale(scale);
+	}
+	catch (...) { }
+	
+	float dx=0,dy=0,dz=0;
+	try  { dx = static_cast<float>(d.get_ci("dx")); }
+	catch (...) { }
+	
+	try  { dy = static_cast<float>(d.get_ci("dy")); }
+	catch (...) { }
+	
+	try  { dz = static_cast<float>(d.get_ci("dz")); }
+	catch (...) { }
+	
+	if ( dx != 0.0 || dy != 0.0 || dz != 0.0 ) {
+		set_posttrans(dx,dy,dz);	
+	}
+	
+	try {
+		bool post_x_mirror = static_cast<bool>(d.get_ci("mirror"));
+		set_post_x_mirror(post_x_mirror);
+	}
+	catch (...) { }
+	
+	
 }
 
-Transform::Transform(const float& az, const float& alt, const float& phi) 
-{
-	to_identity();
-	set_rotation(az,alt,phi);
-}
+// Transform::Transform(const float& alpha) 
+// {
+// 	to_identity();
+// 	set_rotation(0,0,alpha);
+// }
+// 
+// Transform::Transform(const float& az, const float& alt, const float& phi) 
+// {
+// 	to_identity();
+// 	set_rotation(az,alt,phi);
+// }
+// 
+// Transform::Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3) 
+// {
+// 	to_identity();
+// 	set_rotation(euler_type,a1,a2,a3);
+// }
+// 
+// Transform::Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
+// {
+// 	to_identity();
+// 	set_rotation(euler_type,a1,a2,a3,a4);
+// }
+// 
+// Transform::Transform(EulerType euler_type, const Dict& rotation)
+// {
+// 	to_identity();
+// 	set_rotation(euler_type,rotation);
+// }
 
-Transform::Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3) 
-{
-	to_identity();
-	set_rotation(euler_type,a1,a2,a3);
-}
 
-Transform::Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4)
-{
-	to_identity();
-	set_rotation(euler_type,a1,a2,a3,a4);
-}
-
-Transform::Transform(EulerType euler_type, const Dict& rotation)
-{
-	to_identity();
-	set_rotation(euler_type,rotation);
-}
-
-
-Transform::Transform(const float& m11, const float& m12, const float& m13,
-					 const float& m21, const float& m22, const float& m23,
-	  const float& m31, const float& m32, const float& m33)
-{
-	to_identity();
-	set_rotation(m11,m12,m13,m21,m22,m23,m31,m32,m33);
-}
+// Transform::Transform(const float& m11, const float& m12, const float& m13,
+// 					 const float& m21, const float& m22, const float& m23,
+// 	  const float& m31, const float& m32, const float& m33)
+// {
+// 	to_identity();
+// 	set_rotation(m11,m12,m13,m21,m22,m23,m31,m32,m33);
+// }
 
 
 void Transform::to_identity()
@@ -141,118 +180,123 @@ void Transform::to_identity()
 	}
 }
 
-void Transform::set_rotation(const float& alpha)
-{
-	Dict rot;
-	rot["alpha"]  = alpha;
-	set_rotation(ALPHA, rot);
-}
+// void Transform::set_rotation(const float& alpha)
+// {
+// 	Dict rot;
+// 	rot["alpha"]  = alpha;
+// 	set_rotation(ALPHA, rot);
+// }
+// 
+// void Transform::set_rotation(const float& az, const float& alt, const float& phi )
+// {
+// 	Dict rot;
+// 	rot["az"]  = az;
+// 	rot["alt"] = alt;
+// 	rot["phi"] = phi;
+// 	set_rotation(EMAN, rot);
+// }
+// 
+// void Transform::set_rotation(EulerType euler_type, const float& alpha)
+// {
+// 	Dict rot;
+// 	switch(euler_type) {
+// 		case ALPHA:
+// 			rot["alpha"]  = alpha;
+// 			break;
+// 		default:
+// 			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+// 	}  // ends switch euler_type
+// 	set_rotation(euler_type, rot);
+// }
+// 
+// void Transform::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3)
+// {
+// 	Dict rot;
+// 	switch(euler_type) {
+// 		case EMAN:
+// 			rot["az"]  = a1;
+// 			rot["alt"] = a2;
+// 			rot["phi"] = a3;
+// 			break;
+// 		case SPIDER:
+// 			rot["phi"]   = a1;
+// 			rot["theta"] = a2;
+// 			rot["psi"]   = a3;
+// 			break;
+// 		case IMAGIC:
+// 			rot["alpha"]   = a1;
+// 			rot["beta"] = a2;
+// 			rot["gamma"]   = a3;
+// 			break;
+// 		case MRC:
+// 			rot["phi"]   = a1;
+// 			rot["theta"] = a2;
+// 			rot["omega"]   = a3;
+// 			break;
+// 		case XYZ:
+// 			rot["xtilt"]   = a1;
+// 			rot["ytilt"] = a2;
+// 			rot["ztilt"]   = a3;
+// 			break;
+// 		default:
+// 			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+// 	}  // ends switch euler_type
+// 	set_rotation(euler_type, rot);
+// }
+// // This is where it all happens;
+// void Transform::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4) 
+// {
+// 	Dict rot;
+// 	switch(euler_type) {
+// 		case QUATERNION:
+// 			rot["e0"]  = a1;
+// 			rot["e1"] = a2;
+// 			rot["e2"] = a3;
+// 			rot["e3"] = a4;
+// 			break;
+// 		case SGIROT:
+// 			rot["q"]  = a1;
+// 			rot["n1"] = a2;
+// 			rot["n2"] = a3;
+// 			rot["n3"] = a4;
+// 		case SPIN:
+// 			rot["Omega"]  = a1;
+// 			rot["n1"] = a2;
+// 			rot["n2"] = a3;
+// 			rot["n3"] = a4;
+// 			break;
+// 		default:
+// 			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+// 	}  // ends switch euler_type
+// 	set_rotation(euler_type, rot);
+// }
+// 
+// void Transform::set_rotation(const float& m11, const float& m12, const float& m13,
+// 							 const float& m21, const float& m22, const float& m23,
+// 		const float& m31, const float& m32, const float& m33)
+// {
+// 	EulerType euler_type = MATRIX;
+// 	Dict rot;
+// 	rot["m11"]  = m11;
+// 	rot["m12"]  = m12;
+// 	rot["m13"]  = m13;
+// 	rot["m21"]  = m21;
+// 	rot["m22"]  = m22;
+// 	rot["m23"]  = m23;
+// 	rot["m31"]  = m31;
+// 	rot["m32"]  = m32;
+// 	rot["m33"]  = m33;
+// 	set_rotation(euler_type, rot);
+// }
 
-void Transform::set_rotation(const float& az, const float& alt, const float& phi )
-{
-	Dict rot;
-	rot["az"]  = az;
-	rot["alt"] = alt;
-	rot["phi"] = phi;
-	set_rotation(EMAN, rot);
-}
 
-void Transform::set_rotation(EulerType euler_type, const float& alpha)
+void Transform::set_rotation(const Dict& rotation)
 {
-	Dict rot;
-	switch(euler_type) {
-		case ALPHA:
-			rot["alpha"]  = alpha;
-			break;
-		default:
-			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
-	}  // ends switch euler_type
-	set_rotation(euler_type, rot);
-}
+	string euler_type;
+	
+	euler_type = static_cast<string>(rotation.get_ci("type"));// Warning, will throw
 
-void Transform::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3)
-{
-	Dict rot;
-	switch(euler_type) {
-		case EMAN:
-			rot["az"]  = a1;
-			rot["alt"] = a2;
-			rot["phi"] = a3;
-			break;
-		case SPIDER:
-			rot["phi"]   = a1;
-			rot["theta"] = a2;
-			rot["psi"]   = a3;
-			break;
-		case IMAGIC:
-			rot["alpha"]   = a1;
-			rot["beta"] = a2;
-			rot["gamma"]   = a3;
-			break;
-		case MRC:
-			rot["phi"]   = a1;
-			rot["theta"] = a2;
-			rot["omega"]   = a3;
-			break;
-		case XYZ:
-			rot["xtilt"]   = a1;
-			rot["ytilt"] = a2;
-			rot["ztilt"]   = a3;
-			break;
-		default:
-			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
-	}  // ends switch euler_type
-	set_rotation(euler_type, rot);
-}
-// This is where it all happens;
-void Transform::set_rotation(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4) 
-{
-	Dict rot;
-	switch(euler_type) {
-		case QUATERNION:
-			rot["e0"]  = a1;
-			rot["e1"] = a2;
-			rot["e2"] = a3;
-			rot["e3"] = a4;
-			break;
-		case SGIROT:
-			rot["q"]  = a1;
-			rot["n1"] = a2;
-			rot["n2"] = a3;
-			rot["n3"] = a4;
-		case SPIN:
-			rot["Omega"]  = a1;
-			rot["n1"] = a2;
-			rot["n2"] = a3;
-			rot["n3"] = a4;
-			break;
-		default:
-			throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
-	}  // ends switch euler_type
-	set_rotation(euler_type, rot);
-}
-
-void Transform::set_rotation(const float& m11, const float& m12, const float& m13,
-							 const float& m21, const float& m22, const float& m23,
-		const float& m31, const float& m32, const float& m33)
-{
-	EulerType euler_type = MATRIX;
-	Dict rot;
-	rot["m11"]  = m11;
-	rot["m12"]  = m12;
-	rot["m13"]  = m13;
-	rot["m21"]  = m21;
-	rot["m22"]  = m22;
-	rot["m23"]  = m23;
-	rot["m31"]  = m31;
-	rot["m32"]  = m32;
-	rot["m33"]  = m33;
-	set_rotation(euler_type, rot);
-}
-
-
-void Transform::set_rotation(EulerType euler_type, const Dict& rotation)
-{
+	
 	float e0  = 0;float e1=0; float e2=0; float e3=0;
 	float Omega=0;
 	float az  = 0;
@@ -270,87 +314,68 @@ void Transform::set_rotation(EulerType euler_type, const Dict& rotation)
 	// Get these before anything changes so we can apply them again
 	get_scale_and_post_x_mirror(scale,x_mirror);
 
-	switch(euler_type) {
-		case ALPHA:
-			az  = 0;
-			alt = 0;
-			phi = (float)rotation["alpha"] ;
-		
-		case EMAN:
-			az  = (float)rotation["az"] ;
-			alt = (float)rotation["alt"]  ;
-			phi = (float)rotation["phi"] ;
-			break;
-		case IMAGIC:
-			az  = (float)rotation["alpha"] ;
-			alt = (float)rotation["beta"]  ;
-			phi = (float)rotation["gamma"] ;
-			break;
-
-		case SPIDER:
-			az =  (float)rotation["phi"]    + 90.0f;
-			alt = (float)rotation["theta"] ;
-			phi = (float)rotation["psi"]    - 90.0f;
-			break;
-
-		case XYZ:
-			cxtilt = cos( (M_PI/180.0f)*(float)rotation["xtilt"]);
-			sxtilt = sin( (M_PI/180.0f)*(float)rotation["xtilt"]);
-			cytilt = cos( (M_PI/180.0f)*(float)rotation["ytilt"]);
-			sytilt = sin( (M_PI/180.0f)*(float)rotation["ytilt"]);	
-			az =  (180.0f/M_PI)*atan2(-cytilt*sxtilt,sytilt)   + 90.0f ;
-			alt = (180.0f/M_PI)*acos(cytilt*cxtilt)  ;
-			phi = (float)rotation["ztilt"] +(180.0f/M_PI)*atan2(sxtilt,cxtilt*sytilt)   - 90.0f ;
-			break;
-
-		case MRC:
-			az  = (float)rotation["phi"]   + 90.0f ;
-			alt = (float)rotation["theta"] ;
-			phi = (float)rotation["omega"] - 90.0f ;
-			break;
-
-		case QUATERNION:
-			is_quaternion = 1;
-			e0 = (float)rotation["e0"];
-			e1 = (float)rotation["e1"];
-			e2 = (float)rotation["e2"];
-			e3 = (float)rotation["e3"];
-			break;
-
-		case SPIN:
-			is_quaternion = 1;
-			Omega = (float)rotation["Omega"];
-			e0 = cos(Omega*M_PI/360.0f);
-			e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
-			e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
-			e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
-			break;
-
-		case SGIROT:
-			is_quaternion = 1;
-			Omega = (float)rotation["q"]  ;
-			e0 = cos(Omega*M_PI/360.0f);
-			e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
-			e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
-			e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
-			break;
-
-		case MATRIX:
-			is_matrix = 1;
-			matrix[0][0] = (float)rotation["m11"];
-			matrix[0][1] = (float)rotation["m12"];
-			matrix[0][2] = (float)rotation["m13"];
-			matrix[1][0] = (float)rotation["m21"];
-			matrix[1][1] = (float)rotation["m22"];
-			matrix[1][2] = (float)rotation["m23"];
-			matrix[2][0] = (float)rotation["m31"];
-			matrix[2][1] = (float)rotation["m32"];
-			matrix[2][2] = (float)rotation["m33"];
-			break;
-
-		default:
-			throw InvalidValueException(euler_type, "unknown Euler Type");
-	}  // ends switch euler_type
+	if (euler_type == "2d") {
+		az  = 0;
+		alt = 0;
+		phi = (float)rotation["alpha"] ;
+	} else if ( euler_type == "eman" ) {
+		az  = (float)rotation["az"] ;
+		alt = (float)rotation["alt"]  ;
+		phi = (float)rotation["phi"] ;
+	} else if ( euler_type == "imagic" ) {
+		az  = (float)rotation["alpha"] ;
+		alt = (float)rotation["beta"]  ;
+		phi = (float)rotation["gamma"] ;
+	} else if ( euler_type == "spider" ) {
+		az =  (float)rotation["phi"]    + 90.0f;
+		alt = (float)rotation["theta"] ;
+		phi = (float)rotation["psi"]    - 90.0f;
+	} else if ( euler_type == "xyz" ) {
+		cxtilt = cos( (M_PI/180.0f)*(float)rotation["xtilt"]);
+		sxtilt = sin( (M_PI/180.0f)*(float)rotation["xtilt"]);
+		cytilt = cos( (M_PI/180.0f)*(float)rotation["ytilt"]);
+		sytilt = sin( (M_PI/180.0f)*(float)rotation["ytilt"]);	
+		az =  (180.0f/M_PI)*atan2(-cytilt*sxtilt,sytilt)   + 90.0f ;
+		alt = (180.0f/M_PI)*acos(cytilt*cxtilt)  ;
+		phi = (float)rotation["ztilt"] +(180.0f/M_PI)*atan2(sxtilt,cxtilt*sytilt)   - 90.0f ;
+	} else if ( euler_type == "mrc" ) {
+		az  = (float)rotation["phi"]   + 90.0f ;
+		alt = (float)rotation["theta"] ;
+		phi = (float)rotation["omega"] - 90.0f ;
+	} else if ( euler_type == "quaternion" ) {
+		is_quaternion = 1;
+		e0 = (float)rotation["e0"];
+		e1 = (float)rotation["e1"];
+		e2 = (float)rotation["e2"];
+		e3 = (float)rotation["e3"];
+	} else if ( euler_type == "spin" ) {
+		is_quaternion = 1;
+		Omega = (float)rotation["Omega"];
+		e0 = cos(Omega*M_PI/360.0f);
+		e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
+		e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
+		e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
+	} else if ( euler_type == "sgirot" ) {
+		is_quaternion = 1;
+		Omega = (float)rotation["q"] ;
+		e0 = cos(Omega*M_PI/360.0f);
+		e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
+		e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
+		e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
+	} else if ( euler_type == "matirx" ) {
+		is_matrix = 1;
+		matrix[0][0] = (float)rotation["m11"];
+		matrix[0][1] = (float)rotation["m12"];
+		matrix[0][2] = (float)rotation["m13"];
+		matrix[1][0] = (float)rotation["m21"];
+		matrix[1][1] = (float)rotation["m22"];
+		matrix[1][2] = (float)rotation["m23"];
+		matrix[2][0] = (float)rotation["m31"];
+		matrix[2][1] = (float)rotation["m32"];
+		matrix[2][2] = (float)rotation["m33"];
+	} else {
+		throw InvalidStringException(euler_type, "unknown Euler Type");
+	}
 
 	float azp  = fmod(az,360.0f)*M_PI/180.0f;
 	float altp  = alt*M_PI/180.0f;
@@ -397,7 +422,7 @@ void Transform::set_rotation(EulerType euler_type, const Dict& rotation)
 	}
 }
 
-Dict Transform::get_rotation(EulerType euler_type) const
+Dict Transform::get_rotation(const string& euler_type) const
 {
 	Dict result;
 
@@ -466,84 +491,66 @@ Dict Transform::get_rotation(EulerType euler_type) const
 		cosOover2*=-1; n1 *=-1; n2*=-1; n3*=-1;
 	}
 
-
-	switch (euler_type) {
-		case ALPHA:
+	string type(euler_type);
+	std::transform(euler_type.begin(),euler_type.end(),type.begin(), (int (*)(int) ) std::tolower);
+	cout << "Changed " << euler_type << " to " << type << endl;
+	
+	if (type == "2d") {
 			result["alpha"]  = phi;
-			break;
-		
-		case EMAN:
+	} else if (type == "eman") { 
 			result["az"]  = az;
 			result["alt"] = alt;
 			result["phi"] = phi;
-			break;
-
-		case IMAGIC:
+	} else if (type == "imagic") {
 			result["alpha"] = az;
 			result["beta"] = alt;
 			result["gamma"] = phi;
-			break;
+	} else if (type == "spider") {
+		result["phi"]   = phiS;  // The first Euler like az
+		result["theta"] = alt;
+		result["psi"]   = psiS;
+	} else if (type == "mrc") {
+		result["phi"]   = phiS;
+		result["theta"] = alt;
+		result["omega"] = psiS;
+	} else if (type == "xyz") {
+		xtilt = atan2(-sin((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt),cos((M_PI/180.0f)*alt));
+		ytilt = asin(  cos((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt));
+		ztilt = psiS*M_PI/180.0f - atan2(sin(xtilt), cos(xtilt) *sin(ytilt));
 
-		case SPIDER:
-			result["phi"]   = phiS;  // The first Euler like az
-			result["theta"] = alt;
-			result["psi"]   = psiS;
-			break;
+		xtilt=fmod(xtilt*180/M_PI+540.0f,360.0f) -180.0f;
+		ztilt=fmod(ztilt*180/M_PI+540.0f,360.0f) -180.0f;
 
-		case MRC:
-			result["phi"]   = phiS;
-			result["theta"] = alt;
-			result["omega"] = psiS;
-			break;
-
-		case XYZ:
-			xtilt = atan2(-sin((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt),cos((M_PI/180.0f)*alt));
-			ytilt = asin(  cos((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt));
-			ztilt = psiS*M_PI/180.0f - atan2(sin(xtilt), cos(xtilt) *sin(ytilt));
-
-			xtilt=fmod(xtilt*180/M_PI+540.0f,360.0f) -180.0f;
-			ztilt=fmod(ztilt*180/M_PI+540.0f,360.0f) -180.0f;
-
-			result["xtilt"]  = xtilt;
-			result["ytilt"]  = ytilt*180/M_PI;
-			result["ztilt"]  = ztilt;
-			break;
-
-		case QUATERNION:
-			result["e0"] = cosOover2 ;
-			result["e1"] = sinOover2 * n1 ;
-			result["e2"] = sinOover2 * n2;
-			result["e3"] = sinOover2 * n3;
-			break;
-
-		case SPIN:
-			result["Omega"] =360.0f* acos(cosOover2)/ M_PI ;
-			result["n1"] = n1;
-			result["n2"] = n2;
-			result["n3"] = n3;
-			break;
-
-		case SGIROT:
-			result["q"] = 360.0f*acos(cosOover2)/M_PI ;
-			result["n1"] = n1;
-			result["n2"] = n2;
-			result["n3"] = n3;
-			break;
-
-		case MATRIX:
-			result["m11"] = x_mirror_scale*matrix[0][0]*inv_scale;
-			result["m12"] = matrix[0][1]*inv_scale;
-			result["m13"] = matrix[0][2]*inv_scale;
-			result["m21"] = x_mirror_scale* matrix[1][0]*inv_scale;
-			result["m22"] = matrix[1][1]*inv_scale;
-			result["m23"] = matrix[1][2]*inv_scale;
-			result["m31"] = x_mirror_scale*matrix[2][0]*inv_scale;
-			result["m32"] = matrix[2][1]*inv_scale;
-			result["m33"] = matrix[2][2]*inv_scale;
-			break;
-
-		default:
-			throw InvalidValueException(euler_type, "unknown Euler Type");
+		result["xtilt"]  = xtilt;
+		result["ytilt"]  = ytilt*180/M_PI;
+		result["ztilt"]  = ztilt;
+	} else if (type == "quaternion") {
+		result["e0"] = cosOover2 ;
+		result["e1"] = sinOover2 * n1 ;
+		result["e2"] = sinOover2 * n2;
+		result["e3"] = sinOover2 * n3;
+	} else if (type == "spin") {
+		result["Omega"] =360.0f* acos(cosOover2)/ M_PI ;
+		result["n1"] = n1;
+		result["n2"] = n2;
+		result["n3"] = n3;
+	} else if (type == "sgirot") {
+		result["q"] = 360.0f*acos(cosOover2)/M_PI ;
+		result["n1"] = n1;
+		result["n2"] = n2;
+		result["n3"] = n3;
+	} else if (type == "matrix") {
+		result["m11"] = x_mirror_scale*matrix[0][0]*inv_scale;
+		result["m12"] = matrix[0][1]*inv_scale;
+		result["m13"] = matrix[0][2]*inv_scale;
+		result["m21"] = x_mirror_scale* matrix[1][0]*inv_scale;
+		result["m22"] = matrix[1][1]*inv_scale;
+		result["m23"] = matrix[1][2]*inv_scale;
+		result["m31"] = x_mirror_scale*matrix[2][0]*inv_scale;
+		result["m32"] = matrix[2][1]*inv_scale;
+		result["m33"] = matrix[2][2]*inv_scale;
+	} else {
+		throw InvalidStringException(euler_type, "unknown Euler Type");
 	}
 
 	return result;

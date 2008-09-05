@@ -63,6 +63,8 @@ using std::pair;
 using std::cout;
 using std::endl;
 
+#include <cctype> // tolower
+#include <algorithm> //tolower
 namespace EMAN
 {
 	class EMConsts {
@@ -501,6 +503,22 @@ namespace EMAN
 			return result;
 		}
 
+		/** Ask the Dictionary if it as a particular key in a case insensitive way
+		 * @param key the (string) key to find
+		 */
+		bool has_key_ci(const string & key) const
+		{
+			string lower_key(key);
+			std::transform(key.begin(),key.end(),lower_key.begin(),tolower);
+			
+			for (map < string, EMObject >::const_iterator it = dict.begin(); it != dict.end(); ++it ) {
+				string lower(it->first);
+				std::transform(it->first.begin(),it->first.end(),lower.begin(),tolower);
+				if (lower == lower_key) return true;
+			}
+			return false;
+		}
+		
 		/** Ask the Dictionary if it as a particular key
 		 * @param key the (string) key to find
 		 */
@@ -523,7 +541,7 @@ namespace EMAN
 		/** Get the EMObject corresponding to the particular key
 		 * Probably better to just use operator[]
 		 */
-		EMObject get(const string & key)
+		EMObject get(const string & key) const
 		{
 			if( has_key(key) ) {
 				return dict[key];
@@ -532,6 +550,23 @@ namespace EMAN
 				LOGERR("No such key exist in this Dict");
 				throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");
 			}
+		}
+		
+		/** Get the EMObject corresponding to the particular key using case insensitivity
+		 * @param key the key you want to check for in a case insensitive way
+		 */
+		EMObject get_ci(const string & key) const
+		{
+			string lower_key(key);
+			std::transform(key.begin(),key.end(),lower_key.begin(),tolower);
+			
+			for (map < string, EMObject >::const_iterator it = dict.begin(); it != dict.end(); ++it ) {
+				string lower(it->first);
+				std::transform(it->first.begin(),it->first.end(),lower.begin(),tolower);
+				if (lower == lower_key) return it->second;
+			}
+			
+			throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");
 		}
 
 		/** Put the value/key pair into the dictionary

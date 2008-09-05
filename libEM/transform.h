@@ -59,21 +59,7 @@ namespace EMAN
 	class Transform {
 		public:
 			static const float ERR_LIMIT;
-			enum EulerType
-			{
-				UNKNOWN,
-				EMAN,
-				IMAGIC,
-				SPIN,
-				QUATERNION,
-				SGIROT,
-				SPIDER,
-				MRC,
-				XYZ,
-				MATRIX,
-				ALPHA
-			};
-			
+		
 			/** Default constructor
 			* Internal matrix is the identity
 			*/
@@ -89,10 +75,15 @@ namespace EMAN
 			 */
 			Transform& operator=(const Transform& that);
 			
+			/** Construction using a dictionary
+			 * @param dict the dictionary containing the parameters
+			 */
+			Transform(const Dict& d);
+			
 			/** Construct a Transform object using a single rotation, as in the 2D degenerant case
 			 * @param alpha a 2D rotation
 			 */
-			Transform(const float& alpha);
+// 			Transform(const float& alpha);
 		
 			
 			/** Construct a Transform3D object describing a only a rotation, assuming the EMAN Euler type
@@ -100,7 +91,7 @@ namespace EMAN
 			* @param alt EMAN - alt
 			* @param phi EMAN - phi
 			*/
-			Transform(const float& az,const float& alt,const float& phi); // EMAN by default
+// 			Transform(const float& az,const float& alt,const float& phi); // EMAN by default
 			
 			
 			/** Construct a Transform3D object describing a rotation, using a specific Euler type.
@@ -110,7 +101,7 @@ namespace EMAN
 			 * @param a2 EMAN - alt, SPIDER - theta, MRC - theta, IMAGIC - beta, XYZ - ytilt
 			 * @param a3 EMAN - phi, SPIDER - psi, MRC - omega, IMAGIC - gamma, XYZ - ztilt
 			 */
-			Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3) ; 
+// 			Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3) ; 
 		
 			/** Construct a Transform3D object describing a rotation, using a specific Euler type.
 			 * Works for Euler types that require 4 parameters
@@ -120,22 +111,22 @@ namespace EMAN
 			 * @param a3 QUATERNION - e2, SPN and SGIROT - n2
 			 * @param a4 QUATERNION - e3, SPN and SGIROT - n3
 			 */
-			Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4) ; // o
+// 			Transform(EulerType euler_type, const float& a1, const float& a2, const float& a3, const float& a4) ; // o
 		
 			/** Construct a Transform3D object consisting only of a rotation, using a specific Euler type.
 			 * Works for all Euler types
 			 * @param euler_type any Euler type
 			 * @param rotation a dictionary containing all key-entry pair required of the associated Euler type
 			 */
-			Transform(EulerType euler_type, const Dict& rotation);
+// 			Transform(EulerType euler_type, const Dict& rotation);
 
 			/** Construct a Transform3D object consisting only of a rotation by initializing the internal	
 			 * rotation matrix component wise
 			 * @param mij the value to be placed in the internal transformation matrix at coordinate (i-1,j-1)
 		 	*/
-			Transform(const float& m11, const float& m12, const float& m13,
-						const float& m21, const float& m22, const float& m23,
-	  					const float& m31, const float& m32, const float& m33);
+// 			Transform(const float& m11, const float& m12, const float& m13,
+// 						const float& m21, const float& m22, const float& m23,
+// 	  					const float& m31, const float& m32, const float& m33);
 
 			
 			//================ Set and get rotations ==============
@@ -143,7 +134,7 @@ namespace EMAN
 			/** Set the rotation using 2D degenerance
 			 * @param alpha 
 			 */
-			void set_rotation(const float& alpha);
+// 			void set_rotation(const float& alpha);
 			
 			
 			/** Sets the rotation as defined by the EulerType
@@ -151,14 +142,14 @@ namespace EMAN
 			 * @param euler_type the Euler type either  EMAN, SPIDER, MRC, IMAGIC and  XYZ
 			 * @param a1 ALPHA - alpha angle
 			 */
-			void set_rotation(EulerType euler_type,const float& alpha);
+// 			void set_rotation(EulerType euler_type,const float& alpha);
 			
 			/** Set the rotation assuming the EMAN Euler type
 			* @param az EMAN - az
 			* @param alt EMAN - alt
 			* @param phi EMAN - phi
 			*/
-			void set_rotation(const float& az, const float& alt,const float& phi);
+// 			void set_rotation(const float& az, const float& alt,const float& phi);
 			
 			/** Sets the rotation as defined by the EulerType
 			* works for EMAN, SPIDER, MRC, IMAGIC and  XYZ
@@ -167,7 +158,7 @@ namespace EMAN
 			* @param a2 EMAN - alt, SPIDER - theta, MRC - theta, IMAGIC - beta, XYZ - ytilt
 			* @param a3 EMAN - phi, SPIDER - psi, MRC - omega, IMAGIC - gamma, XYZ - ztilt
 			*/
-			void set_rotation(EulerType euler_type,const float& a1,const float& a2,const float& a3);
+// 			void set_rotation(EulerType euler_type,const float& a1,const float& a2,const float& a3);
 			
 			/** Set quaternion-based rotations
 			* Works for QUATERNION, SPIN and SGIROT
@@ -177,27 +168,26 @@ namespace EMAN
 			* @param a3 QUATERNION - e2, SPN and SGIROT - n2
 			* @param a4 QUATERNION - e3, SPN and SGIROT - n3
 			*/
-			void set_rotation(EulerType euler_type,const float& a1,const float& a2,const float& a3, const float& a4);
+// 			void set_rotation(EulerType euler_type,const float& a1,const float& a2,const float& a3, const float& a4);
 			
 			/** Set a rotation using a specific Euler type and the dictionary interface
 			* Works for all Euler types
-			* @param euler_type any Euler type
 			* @param rotation a dictionary containing all key-entry pair required of the associated Euler type
 			*/
-			void set_rotation(EulerType euler_type, const Dict &rotation );
+			void set_rotation( const Dict &rotation );
 			
 			/** set the internal rotation matrix component wise
 			* @param mij the value to be placed in the internal transformation matrix at coordinate (i-1,j-1)
 			*/
-			void set_rotation(const float& m11, const float& m12, const float& m13,
-							  const float& m21, const float& m22, const float& m23,
-							  const float& m31, const float& m32, const float& m33);
+// 			void set_rotation(const float& m11, const float& m12, const float& m13,
+// 							  const float& m21, const float& m22, const float& m23,
+// 							  const float& m31, const float& m32, const float& m33);
 			
 			/** Get a rotation in any Euler format
 			 * @param euler_type the requested Euler type
 			 * @return a dictionary containing the key-entry pairs describing the rotations in terms of the requested Euler type
 			 */
-			Dict get_rotation(EulerType euler_type=EMAN) const;
+			Dict get_rotation(const string& euler_type) const;
 
 			//=============== set and get post trans =============
 			/** Set the post translation component
