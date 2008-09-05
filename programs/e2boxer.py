@@ -2149,7 +2149,12 @@ class GUIboxPanel(QtGui.QWidget):
 		self.eraserad.setEnabled(False)
 		
 		self.boxingvbl.addLayout(self.boxinghbl2)
-		
+
+		self.invert_contrast_mic = QtGui.QCheckBox("Invert Contrast")
+		self.invert_contrast_mic.setChecked(True)
+		self.boxingvbl.addWidget(self.invert_contrast_mic,0, Qt.AlignLeft)
+		self.connect(self.invert_contrast_mic,QtCore.SIGNAL("clicked(bool)"),self.invert_contrast_mic_toggled)
+
 		self.boxinghbl4=QtGui.QHBoxLayout()
 		self.togfreeze=QtGui.QPushButton(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/freeze_swirl.png"),"Toggle Freeze")
 		self.boxinghbl4.addWidget(self.togfreeze)
@@ -2253,6 +2258,15 @@ class GUIboxPanel(QtGui.QWidget):
 		val = self.normalize_box_images.isChecked()
 		self.normalization_options.setEnabled(val)
 		self.normalization_method.setEnabled(val)
+	
+	def invert_contrast_mic_toggled(self):
+		val = self.invert_contrast_mic.isChecked()
+		#self.normalization_options.setEnabled(val)
+		#self.normalization_method.setEnabled(val)
+		#  ave = get_attr("mean")
+		#  mic = -mic + 2*ave
+		print  val
+	
 	def method_changed(self, methodid):
 
 		name = self.method.itemText( methodid )
