@@ -291,10 +291,7 @@ namespace EMAN
 			inline Vec3f transform(const Vec3<Type>& v) const {
 				return transform(v[0],v[1],v[2]);
 			}
-		
-			static int get_nsym(const string & sym);
-			Transform get_sym(const string & sym, const int n) const;
-			
+
 		private:
 			float matrix[4][4];
 	};
@@ -313,6 +310,18 @@ namespace EMAN
 	Vec2f operator*( const Transform& M, const Vec2<Type> & v)
 	{
 		return M.transform(v);
+	}
+	
+	/// Vector times a matrix. Highly specialized. Useful when
+	/// the upper 3x3 only contains rotations and you want to quickly
+	/// multiply by the rotation matrix inverse (transpose)
+	template<typename Type>
+	Vec3f operator*(const Vec3<Type> & v, const Transform & M)
+	{
+		float x = v[0] * M[0][0] + v[1] * M[1][0] + v[2] * M[2][0] ;
+		float y = v[0] * M[0][1] + v[1] * M[1][1] + v[2] * M[2][1];
+		float z = v[0] * M[0][2] + v[1] * M[1][2] + v[2] * M[2][2];
+		return Vec3f(x, y, z);
 	}
 	
 	/** Transform3D
@@ -385,12 +394,6 @@ namespace EMAN
 		 * @param rhs the object to be copied
 		 */
 	    Transform3D( const Transform3D& rhs );
-
-		
-// 		Transform3D(const Dict& params,const string& parameter_convention, const EulerType euler_type=EMAN) {
-// 			init();
-// 			set_params(params,parameter_convention,euler_type);	
-// 		}
 			
 		 /** Construct a Transform3D object describing a rotation, assuming the EMAN Euler type
 		 * @param az EMAN - az
@@ -691,8 +694,6 @@ namespace EMAN
 // 	Vec3f operator*(const Vec3f & v    , const Transform3D & M);
 // 	Vec3f operator*(const Transform3D & M, const Vec3f & v    );
 	
-	
-// This operator should probably not exist - by discussion with Phil Baldwin (David Woolford).
 	template<typename Type>
 	Vec3f operator*(const Vec3<Type> & v, const Transform3D & M)   // YYY
 	{
@@ -723,216 +724,6 @@ namespace EMAN
 		return Vec2f(x, y);
 	}
 	
-	/** Transform2D stores a single rotation and a translation
-	 * A work in progress
-	 * @author David Woolford
-	 * @date Sep 2008
-	 */
-	class Transform2D {
-		// This changes matrix elements directly so needs friend statust
-		friend Transform2D operator*(const Transform2D & M2, const Transform2D & M1);
-		public:
-			/** Default constructor, loads the identity()
-		 	 */
-			Transform2D() { to_identity(); }
-			
-			/** Construct using a single rotation (in degrees)
-			 * @param alpha the rotation angle in degrees
-			 */
-			Transform2D(const float& alpha);
-			
-			/** Copy constructor.
-			 * Currently only copies the contents of the matrix
-			 */
-			Transform2D(const Transform2D& that);
-			
-			/** Assignment operator.
-			 * Performs a deep copy
-			 */
-			Transform2D& operator=(const Transform2D& that);
-			
-			/** Get the inverse
-			 * @return the inverted version of this Transform2D object
-			 */
-			Transform2D inverse() const;
-			
-			/** Invert inplace
-			 */
-			void invert();
-			
-			/** Set the rotation explicitly (in degrees)
-			 * @param alpha the rotation angle in degrees
-			 */
-			void set_rotation(const float& alpha);
-			
-			/** Set the post translation component of the transformation matrix explicitly
-			 * @param x the x translation component
-			 * @param y the y translation component
-			 */
-			inline void set_posttrans(const float& x, const float& y) {
-				matrix[0][2] = x;
-				matrix[1][2] = y;
-			}
-			
-			/** Set the post translation component of the transformation matrix explicitly
-			 * @param v a two dimensional vector containing the x and y translational components
-			 */
-			template<typename Type>
-			inline void set_posttrans(const Vec2<Type>& v) {
-				set_posttrans(v[0],v[1]);
-			}
-			
-			/** Rotate a vector using only the rotation component of the transformation matrix
-			 * @param x the x coordinate of the rotated point
-			 * @param y the y coordinate of the rotated point
-			 * @return the rotated vector
-			 */
-			inline Vec2f rotate(const float& x, const float& y) const {
-				Vec2f ret;
-				ret[0] = matrix[0][0]*x + matrix[0][1]*y;
-				ret[1] = matrix[1][0]*x + matrix[1][1]*y;
-				return ret;
-			}
-			
-			
-			/** Rotate a vector using only the rotation component of the transformation matrix
-			 * @param v a two dimensional vector to be rotated
-			 * @return the rotated vector
-			 */
-			template<typename Type>
-			inline Vec2f rotate(const Vec2<Type>& v) const {
-				return rotate(v[0],v[1]);
-			}
-			
-			/** Transform coordinates using the internal transformation matrix
-			 * @param x the x coordinate of the transformed point
-			 * @param y the y coordinate of the transformed point
-			 * @return the transformed vector
-			 */
-			inline Vec2f transform(const float& x, const float& y) const {
-				Vec2f ret;
-				ret[0] = matrix[0][0]*x + matrix[0][1]*y + matrix[0][2];
-				ret[1] = matrix[1][0]*x + matrix[1][1]*y + matrix[1][2];
-				return ret;
-			}
-			
-			/** Transform a vector using the internal transformation matrix
-			 * @param v a two dimensional vector to be transformed
-			 * @return the transformed vector
-			 */
-			template<typename Type>
-			inline Vec2f transform(const Vec2<Type>& v) const {
-				return transform(v[0],v[1]);
-			}
-		
-			/** Operator[] convenience so Transform2D[2][2] etc terminology can be used
-			* @param i the row number to return
-			* @return the ith row
-		 	*/
-			inline const float * operator[] (const int i) const { return matrix[i]; }
-
-			/** Accessor convenience
-			 * @param i the row number
-			 * @param j the column number
-			 * @return the value at matrix coordinate i,j
-			 */
-			inline float at( const int i, const int j) const { return matrix[i][j]; }
-			
-			/** Get the rotation stored in the rotation part of transformation, in degrees
-			 * @return the rotation in degrees
-			 */
-			inline float get_rotation() const {
-				return EMConsts::rad2deg*atan2(matrix[0][1], matrix[0][0]);
-			}
-			
-			/** Make this object equivalent to the identity matrix
-			 */
-			void to_identity();
-			
-			/** Print the matrix to standard out
-			 */
-			void printme() const {
-				cout << matrix[0][0] << " " << matrix[0][1] << " " << matrix[0][2] << endl;
-				cout << matrix[1][0] << " " << matrix[1][1] << " " << matrix[1][2] << endl;
-				cout << matrix[2][0] << " " << matrix[2][1] << " " << matrix[2][2] << endl;
-			}
-
-			
-		private:
-			float matrix[3][3];
-			
-			
-			/** Operator[] convenience so Transform2D[2][2] etc terminology can be used
-			 * @param i the row number to return
-			 * @return the ith row
-			 */
-			inline float * operator[] (const int i) { return matrix[i]; }
-	};
-	
-	/** Multiply two Transform2Ds together (M2*M1) using direct matrix multiplication
-	 *.@param M2 the Transform2D on the left
-	 * @param M1 the Transform2D on the right
-	 * @return the results as embedded in a Transform2D object
-	 */
-	Transform2D operator*(const Transform2D & M2, const Transform2D & M1);
-	
-	template<typename Type>
-	Vec2f operator*( const Transform2D & M, const Vec2<Type> & v)
-	{
-		return M.transform(v);
-	}
-	
-	class Alignment2D
-	{
-		public:
-			Alignment2D();
-			Alignment2D(const float& dx, const float& dy, const float& alpha,const bool post_x_mirror=false, const float& scale=1.0);
-			Alignment2D(const Dict& d) { set_params(d); };
-			Alignment2D(const Transform3D& d);
-			~Alignment2D() {}
-			
-			Dict get_params() const { return params; }
-			static Dict get_params(const Transform3D& t);
-			void set_params(const Dict& d);
-			
-			string get_name() const { return NAME; }
-		private:
-			static const string NAME;
-			Dict params;
-	};
-	
-// 	class Alignment3D
-// 	{
-// 		public:
-// 			Alignment3D();
-// 			Alignment3D(const float& az, const float& alt, const float& phi, const Transform3D::EulerType euler_type, const float& sx, const float& sy, const float& sz, const bool post_x_mirror=false, const float& scale=1.0);
-// 			Alignment3D(const Dict& d) { set_params(d); };
-// 			Alignment3D(const Transform3D& d, const Transform3D::EulerType=EMAN);
-// 			~Alignment3D() {}
-// 			
-// 			Dict get_params(const EulerType=EMAN) const { return params; }
-// 			static Dict get_params(const Transform3D& t,const EulerType=EMAN);
-// 			void set_params(const Dict& d);
-// 			
-// 			virtual string get_name() const { return NAME; }
-// 		private:
-// 			static const string NAME;
-// 			Dict params;
-// 	};
-// 	
-// 	class AlignmentProjection :  public EMAlignmentParameters
-// 	{
-// 		public:
-// 			AlignmentProjection() {};
-// 			virtual ~AlignmentProjection() {}
-// 			
-// 			virtual Dict get_params(const Transform3D::EulerType euler_type=Transform3D::EMAN) const;
-// 			virtual void set_params(const Dict& params);
-// 			
-// 			virtual string get_name() const { return NAME; }
-// 		private:
-// 			static const string NAME;
-// 	};
 	
 	/** Symmetry3D - A base class for 3D Symmetry objects.
 	* Objects of this type must provide delimiters for the asymmetric unit (get_delimiters), and
@@ -964,9 +755,9 @@ namespace EMAN
 		/** Every Symmetry3D object must provide access to the full set of its symmetry operators
 		 * via this function
 		 * @param n the symmetry operator number
-		 * @return a Transform3D object describing the symmetry operation
+		 * @return a Transform object describing the symmetry operation
 		 */
-		virtual Transform3D get_sym(const int n) const = 0;
+		virtual Transform get_sym(const int n) const = 0;
 		
 		/** The total number of unique symmetry operations that will be return by this object when
 		 * a calling program access Symmetry3D::get_sym. However in the case of HSym, this is really something else.
@@ -1034,7 +825,7 @@ namespace EMAN
 		 * @param parms the parameters handed to OrientationGenerator::set_params after initial construction
 		 * @return a set of orientations in the unit spher
 		*/
-		vector<Transform3D> gen_orientations(const string& generatorname="eman", const Dict& parms=Dict());
+		vector<Transform> gen_orientations(const string& generatorname="eman", const Dict& parms=Dict());
 		
 		/** A function to be used when generating orientations over portion of the unit sphere
 		 * defined by parameters returned by get_delimiters. In platonic symmetry altitude and azimuth
@@ -1055,7 +846,7 @@ namespace EMAN
 		* @return the orientation the specified asymmetric unit (by default this is the default asymmetric unit of the symmetry)
 		* @ingroup tested3c 
 		*/
-		virtual Transform3D reduce(const Transform3D& t3d, int n=0) const;
+		virtual Transform reduce(const Transform& t3d, int n=0) const;
 		
 		
 		/** A function that will determine in which asymmetric unit a given orientation resides 
@@ -1064,7 +855,7 @@ namespace EMAN
 		 * @param t3d a transform3D characterizing an orientation
 		 * @return the asymmetric unit number the the orientation is in
 		 */
-		virtual int in_which_asym_unit(const Transform3D& t3d) const;
+		virtual int in_which_asym_unit(const Transform& t3d) const;
 		
 		/** Get triangles that precisely occlude the projection area of the default asymmetric unit. This will be used
 		 * for collision detection in Symmetry3D::reduce
@@ -1079,9 +870,9 @@ namespace EMAN
 		 * the angular deviation of particles through different stages of iterative Single Particle Reconstruction
 		 * This function could be expanded to work for an asymmetric unit number supplied by the user.
 		 * @param inc_mirror whether or not to include the mirror portion of the asymmetric unit
-		 * @return a vector of Transform3D objects that map the default asymmetric unit to the neighboring asymmetric unit
+		 * @return a vector of Transform objects that map the default asymmetric unit to the neighboring asymmetric unit
 		 */
-		virtual vector<Transform3D> get_touching_au_transforms(bool inc_mirror = true) const;
+		virtual vector<Transform> get_touching_au_transforms(bool inc_mirror = true) const;
 	};
 	
 	/** An encapsulation of cyclic 3D symmetry
@@ -1138,7 +929,7 @@ namespace EMAN
 		 * @return a transform3d containing the correct rotational symmetric operation.
 		 * @exception InvalidValueException if nsym is less than or equal to zero
 		 */
-		virtual Transform3D get_sym(const int n) const;
+		virtual Transform get_sym(const int n) const;
 
 		/** Gets the total number of unique roational symmetry operations associated with this symmetry
 		* For C symmetry, this is simply nsym
@@ -1241,7 +1032,7 @@ namespace EMAN
 		 * @return a transform3d containing the correct rotational symmetric operation.
 		 * @exception InvalidValueException if nsym is less than or equal to zero
 		 */
-		virtual Transform3D get_sym(const int n) const;
+		virtual Transform get_sym(const int n) const;
 		
 		/** Gets the total number of unique roational symmetry operations associated with this symmetry
 		 * For D symmetry, this is simply 2*nsym
@@ -1349,13 +1140,13 @@ namespace EMAN
 			
 			/** Provides access to the complete set of rotational and translational symmetry operations
 			 * associated with helical symmetry. This symmetry operations are generated in a straightforward
-			 * way from the parameters of this class, specifically the return Transform3D object has an 
+			 * way from the parameters of this class, specifically the return Transform object has an 
 			 * azimuth of n times the "d_az" (as specified in the parameters of this class), and has a post
 			 * translation of "dz" in the z direction.
 			 * @param n the helical symmetry operation number.
 			 * @return a transform3d containing the correct rotational and translational symmetry operation.
 			 */
-			virtual Transform3D get_sym(const int n) const;
+			virtual Transform get_sym(const int n) const;
 	
 			/** For symmetries in general this function is supposed to return the number
 			 * of unique symmetric operations that can be applied for the given Symmetry3D object.
@@ -1556,7 +1347,7 @@ namespace EMAN
 		 * @param n the symmetric operation number
 		 * @return a transform3d containing the correct rotational symmetry operation.
 		*/
-		virtual Transform3D get_sym(const int n) const;
+		virtual Transform get_sym(const int n) const;
 		
 		/** In tetrahedral symmetry special consideration must be taken when generating orientations 
 		 * in the asymmetric unit. This function is a specialization of the functionality in 
@@ -1658,7 +1449,7 @@ namespace EMAN
 		 * @param n the symmetric operation number. 
 		 * @return a transform3d containing the correct rotational symmetry operation.
 		 */
-		virtual Transform3D get_sym(const int n) const;
+		virtual Transform get_sym(const int n) const;
 		
 		/** Gets the total number of unique roational symmetry operations associated with this symmetry
 		 * For octahedral symmetry this is 24
@@ -1718,7 +1509,7 @@ namespace EMAN
 		 * @param n the symmetric operation number. 
 		 * @return a transform3d containing the correct rotational symmetry operation.
 		 */
-		virtual Transform3D get_sym(const int n) const;
+		virtual Transform get_sym(const int n) const;
 		
 		/** Gets the total number of unique roational symmetry operations associated with this symmetry
 		 * For icosahedral symmetry, this is 60
@@ -1762,9 +1553,9 @@ namespace EMAN
 		
 		/** generate orientations given some symmetry type
 		 * @param sym the symmetry which defines the interesting asymmetric unit
-		 * @return a vector of Transform3D objects containing the generated set of orientations
+		 * @return a vector of Transform objects containing the generated set of orientations
 		 */
-		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const  = 0;
+		virtual vector<Transform> gen_orientations(const Symmetry3D* const sym) const  = 0;
 		
 		virtual TypeDict get_param_types() const
 		{
@@ -1774,7 +1565,7 @@ namespace EMAN
 			return d;
 		}
 		
-		/** This functions adds one or more Transform3D objects to the vector v, depending
+		/** This functions adds one or more Transform objects to the vector v, depending
 		 * on the parameters stored in the dictionary (which the inheriting class may
 		 * include by initializing the typedict in get_param_types by calling 
 		 *
@@ -1783,14 +1574,14 @@ namespace EMAN
 		 * @endcode
 		 *
 		 * to initialize. If phitoo is no zero, this cause extra orientations to be included in phi (in steps of phitoo).
-		 * If random_phi is true, the phi of the Transform3D object is randomized.
+		 * If random_phi is true, the phi of the Transform object is randomized.
 		 * This function is for internal convenience of child classes.
-		 * @param v the vector to add Transform3D objects to
-		 * @param az the azimuth to be used as a basis for generated Transform3D objects (in degrees)
-		 * @param alt the altitude to be used as a basis for generated Transform3D objects (in degrees)
+		 * @param v the vector to add Transform objects to
+		 * @param az the azimuth to be used as a basis for generated Transform objects (in degrees)
+		 * @param alt the altitude to be used as a basis for generated Transform objects (in degrees)
 		 * @return and indication of success (true or false). False is only ever return if phitoo is less than 0.
 		 */
-		bool add_orientation(vector<Transform3D>& v, const float& az, const float& alt) const;
+		bool add_orientation(vector<Transform>& v, const float& az, const float& alt) const;
 		
 		
 		
@@ -1870,9 +1661,9 @@ namespace EMAN
 		
 		/** generate orientations given some symmetry type
 		 * @param sym the symmetry which defines the interesting asymmetric unit
-		 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
+		 * @return a vector of Transform objects containing the set of evenly distributed orientations
 		 */
-		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+		virtual vector<Transform> gen_orientations(const Symmetry3D* const sym) const;
 		
 		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
@@ -1942,9 +1733,9 @@ namespace EMAN
 		
 		/** Generate random orientations in the asymmetric unit of the symmetry
 		 * @param sym the symmetry which defines the interesting asymmetric unit
-		 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
+		 * @return a vector of Transform objects containing the set of evenly distributed orientations
 		 */
-		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+		virtual vector<Transform> gen_orientations(const Symmetry3D* const sym) const;
 		
 		/// The name of this class - used to access it from factories etc.
 		static const string NAME;
@@ -2003,9 +1794,9 @@ namespace EMAN
 		
 		/** Generate even distributed orientations in the asymmetric unit of the symmetry
 		 * @param sym the symmetry which defines the interesting asymmetric unit
-		 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
+		 * @return a vector of Transform objects containing the set of evenly distributed orientations
 		 */
-		virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+		virtual vector<Transform> gen_orientations(const Symmetry3D* const sym) const;
 		
 		/// The name of this class - used to access it from factories etc. Should be "icos"
 		static const string NAME;
@@ -2063,9 +1854,9 @@ namespace EMAN
 		
 			/** Generate Saff orientations in the asymmetric unit of the symmetry
 			 * @param sym the symmetry which defines the interesting asymmetric unit
-			 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
+			 * @return a vector of Transform objects containing the set of evenly distributed orientations
 			 */
-			virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+			virtual vector<Transform> gen_orientations(const Symmetry3D* const sym) const;
 			
 			/// The name of this class - used to access it from factories etc. Should be "icos"
 			static const string NAME;
@@ -2081,7 +1872,7 @@ namespace EMAN
 			// This was a function that paid special considerations to the overall algorithm in the
 			// case of the Platonic symmetries, which have non trivial asymmetric units. But unfortunately
 			// it was bug-prone, and the approach in place already seemed good enough
-// 			vector<Transform3D> gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const;
+// 			vector<Transform> gen_platonic_orientations(const Symmetry3D* const sym, const float& delta) const;
 	};
 	
 	
@@ -2133,9 +1924,9 @@ namespace EMAN
 		
 			/** Generate Saff orientations in the asymmetric unit of the symmetry
 			 * @param sym the symmetry which defines the interesting asymmetric unit
-			 * @return a vector of Transform3D objects containing the set of evenly distributed orientations
+			 * @return a vector of Transform objects containing the set of evenly distributed orientations
 			 */
-			virtual vector<Transform3D> gen_orientations(const Symmetry3D* const sym) const;
+			virtual vector<Transform> gen_orientations(const Symmetry3D* const sym) const;
 			
 			/// The name of this class - used to access it from factories etc. Should be "icos"
 			static const string NAME;
@@ -2150,8 +1941,8 @@ namespace EMAN
 			
 			
 			/// Optimize the distances in separating points on the unit sphere, as described by the
-			/// the rotations in Transform3D objects.
-			vector<Vec3f> optimize_distances(const vector<Transform3D>& v) const;
+			/// the rotations in Transform objects.
+			vector<Vec3f> optimize_distances(const vector<Transform>& v) const;
 	};
 	
 	/// Template specialization for the OrientationGenerator class

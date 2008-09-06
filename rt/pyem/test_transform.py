@@ -584,13 +584,12 @@ class TestTransform(unittest.TestCase):
 		without_trans.set_scale(scale)
 		without_trans.set_mirror(mirror)
 		
-		without_trans.printme()
-		pre_trans.printme()
-		(without_trans*pre_trans).printme()
-		(pre_trans*without_trans).printme()
+		#without_trans.printme()
+		#pre_trans.printme()
+		#(without_trans*pre_trans).printme()
+		#(pre_trans*without_trans).printme()
 		self.assert_matrix_equality(without_trans*pre_trans,t)
-
-		
+	
 	def assert_identity(self,t2,n=4):
 		for j in range(n):
 			for i in range(n):
@@ -603,7 +602,135 @@ class TestTransform(unittest.TestCase):
 		for j in range(4):
 			for i in range(4):
 				self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 3)
+
+class TestSymmetry3D(unittest.TestCase):
+	def assert_reduction_works(self,i,az,alt,azmax,sym):
+		T = Transform({"type":"eman","az":az,"alt":alt,"phi":0})
+		T1 = sym.get_sym(i)
+		T2 = T*T1
+		A = sym.reduce(T2,0)
+		#print i,i
+		result = A.get_rotation("eman")
+		azsoln = result["az"] %azmax
+		if ( azsoln < azmax and (azmax - azsoln) < 0.001 ): azsoln = 0.0
+		#print i,i,i
+		#print result["az"],az,result["az"] % (720.0/n),az% (720.0/n),720.0/n
+		if (az%azmax) == 0:
+			self.assertAlmostEqual(azsoln,(az%azmax), 4)
+		else:
+			self.assertAlmostEqual(azsoln/(az%azmax),1.0, 4)
+		if alt == 0:
+			self.assertAlmostEqual(result["alt"],alt, 4)
+		else:
+			self.assertAlmostEqual(result["alt"]/alt,1.0, 4)
 	
+	def test_symc_reduce(self):
+		"""test csym reduce ..............................."""
+		syms = []
+			
+		syms.append(Symmetries.get("c",{"nsym":2}))
+		syms.append(Symmetries.get("c",{"nsym":3}))
+		syms.append(Symmetries.get("c",{"nsym":4}))
+		syms.append(Symmetries.get("c",{"nsym":4}))
+		syms.append(Symmetries.get("c",{"nsym":5}))
+		syms.append(Symmetries.get("c",{"nsym":6}))
+		syms.append(Symmetries.get("c",{"nsym":7}))
+		syms.append(Symmetries.get("c",{"nsym":8}))
+		syms.append(Symmetries.get("c",{"nsym":9}))
+		syms.append(Symmetries.get("c",{"nsym":10}))
+		syms.append(Symmetries.get("c",{"nsym":11}))
+		syms.append(Symmetries.get("c",{"nsym":12}))
+		for sym in syms:
+			n = sym.get_nsym()
+			azmax = 360.0/n
+			eulers = sym.gen_orientations("eman",{"delta":12})
+			for euler in eulers:
+				rot = euler.get_rotation("eman")
+				az = rot["az"]
+				alt = rot["alt"]
+				#print az,alt,n
+				for i in range(1,n):
+					self.assert_reduction_works(i,az,alt,azmax,sym)
+	def test_symd_reduce(self):
+		"""test dsym reduce ..............................."""
+		syms = []
+		syms.append(Symmetries.get("d",{"nsym":1}))
+		syms.append(Symmetries.get("d",{"nsym":2}))
+		syms.append(Symmetries.get("d",{"nsym":3}))
+		syms.append(Symmetries.get("d",{"nsym":4}))
+		syms.append(Symmetries.get("d",{"nsym":4}))
+		syms.append(Symmetries.get("d",{"nsym":5}))
+		syms.append(Symmetries.get("d",{"nsym":6}))
+		syms.append(Symmetries.get("d",{"nsym":7}))
+		syms.append(Symmetries.get("d",{"nsym":8}))
+		syms.append(Symmetries.get("d",{"nsym":9}))
+		syms.append(Symmetries.get("d",{"nsym":10}))
+		syms.append(Symmetries.get("d",{"nsym":11}))
+		syms.append(Symmetries.get("d",{"nsym":12}))
+		for sym in syms:
+			n = sym.get_nsym()
+			azmax = 720.0/n
+			
+			eulers = sym.gen_orientations("eman",{"delta":12})
+			for euler in eulers:
+				rot = euler.get_rotation("eman")
+				az = rot["az"]
+				alt = rot["alt"]
+				#print az,alt,n
+				for i in range(1,n):
+					self.assert_reduction_works(i,az,alt,azmax,sym)
+	def test_symtet_reduce(self):
+		"""test tetsym reduce ............................."""
+		syms = []
+		syms.append(Symmetries.get("tet",{}))
+		for sym in syms:
+			n = sym.get_nsym()
+			azmax = 120.0
+			
+			eulers = sym.gen_orientations("eman",{"delta":12})
+			for euler in eulers:
+				rot = euler.get_rotation("eman")
+				az = rot["az"]
+				alt = rot["alt"]
+				#print az,alt,n
+				for i in range(1,n):
+					self.assert_reduction_works(i,az,alt,azmax,sym)
+		
+	def test_symoct_reduce(self):
+		"""test octsym reduce ............................."""
+		syms = []
+		syms.append(Symmetries.get("oct",{}))
+		for sym in syms:
+			n = sym.get_nsym()
+			azmax = 90.0
+			
+			eulers = sym.gen_orientations("eman",{"delta":12})
+			for euler in eulers:
+				rot = euler.get_rotation("eman")
+				az = rot["az"]
+				alt = rot["alt"]
+				#print az,alt,n
+				for i in range(1,n):
+					self.assert_reduction_works(i,az,alt,azmax,sym)
+
+	def test_symicos_reduce(self):
+		"""test icossym reduce ............................"""
+		syms = []
+			
+		syms.append(Symmetries.get("icos",{}))
+		for sym in syms:
+			n = sym.get_nsym()
+			azmax = 72.0
+			
+			eulers = sym.gen_orientations("eman",{"delta":12})
+			for euler in eulers:
+				rot = euler.get_rotation("eman")
+				az = rot["az"]
+				alt = rot["alt"]
+				#print az,alt,n
+				for i in range(1,n):
+					self.assert_reduction_works(i,az,alt,azmax,sym)
+
 class TestTransform3D(unittest.TestCase):
 	"""this is the unit test for Transform3D class"""
 	
@@ -873,309 +1000,17 @@ class TestTransform3D(unittest.TestCase):
 			for j in range(3):
 				if j==i:
 					self.assertAlmostEqual(col.at(j), 1.0, 3)
-	def test_symc_reduce(self):
-		"""test csym reduce ................................."""
-		syms = []
-			
-		syms.append(Symmetries.get("c",{"nsym":2}))
-		syms.append(Symmetries.get("c",{"nsym":3}))
-		syms.append(Symmetries.get("c",{"nsym":4}))
-		syms.append(Symmetries.get("c",{"nsym":4}))
-		syms.append(Symmetries.get("c",{"nsym":5}))
-		syms.append(Symmetries.get("c",{"nsym":6}))
-		syms.append(Symmetries.get("c",{"nsym":7}))
-		syms.append(Symmetries.get("c",{"nsym":8}))
-		syms.append(Symmetries.get("c",{"nsym":9}))
-		syms.append(Symmetries.get("c",{"nsym":10}))
-		syms.append(Symmetries.get("c",{"nsym":11}))
-		syms.append(Symmetries.get("c",{"nsym":12}))
-		for sym in syms:
-			n = sym.get_nsym()
-			azmax = 360.0/n
-			eulers = sym.gen_orientations("eman",{"delta":8})
-			for euler in eulers:
-				az = euler.get_rotation()["az"]
-				alt = euler.get_rotation()["alt"]
-				#print az,alt,n
-				for i in range(1,n):
-					#print i
-					T = Transform3D(az,alt,0)
-					T1 = sym.get_sym(i)
-					T2 = T*T1
-					#print i,i
-					A = sym.reduce(T2,0)
-					result = A.get_rotation()
-					azsoln = result["az"] %azmax
-					if ( azsoln < azmax and (azmax - azsoln) < 0.001 ): azsoln = 0.0
-					#print i,i,i
-					#print result["az"],az,result["az"] % (720.0/n),az% (720.0/n),720.0/n
-					self.assertAlmostEqual(azsoln,az%azmax, 3)
-					self.assertAlmostEqual(result["alt"],alt, 3)
-	def test_symd_reduce(self):
-		"""test dsym reduce ................................."""
-		syms = []
-		syms.append(Symmetries.get("d",{"nsym":1}))
-		syms.append(Symmetries.get("d",{"nsym":2}))
-		syms.append(Symmetries.get("d",{"nsym":3}))
-		syms.append(Symmetries.get("d",{"nsym":4}))
-		syms.append(Symmetries.get("d",{"nsym":4}))
-		syms.append(Symmetries.get("d",{"nsym":5}))
-		syms.append(Symmetries.get("d",{"nsym":6}))
-		syms.append(Symmetries.get("d",{"nsym":7}))
-		syms.append(Symmetries.get("d",{"nsym":8}))
-		syms.append(Symmetries.get("d",{"nsym":9}))
-		syms.append(Symmetries.get("d",{"nsym":10}))
-		syms.append(Symmetries.get("d",{"nsym":11}))
-		syms.append(Symmetries.get("d",{"nsym":12}))
-		for sym in syms:
-			n = sym.get_nsym()
-			azmax = 720.0/n
-			
-			eulers = sym.gen_orientations("eman",{"delta":8})
-			for euler in eulers:
-				az = euler.get_rotation()["az"]
-				alt = euler.get_rotation()["alt"]
-				#print az,alt,n
-				for i in range(1,n):
-					#print i
-					T = Transform3D(az,alt,0)
-					T1 = sym.get_sym(i)
-					T2 = T*T1
-					#print i,i
-					A = sym.reduce(T2,0)
-					result = A.get_rotation()
-					azsoln = result["az"] %azmax
-					if ( azsoln < azmax and (azmax - azsoln) < 0.001 ): azsoln = 0.0
-					#print i,i,i
-					#print result["az"],az,result["az"] % (720.0/n),az% (720.0/n),720.0/n
-					self.assertAlmostEqual(azsoln,az%azmax, 3)
-					self.assertAlmostEqual(result["alt"],alt, 3)
-	def test_symtet_reduce(self):
-		"""test tetsym reduce ..............................."""
-		syms = []
-		syms.append(Symmetries.get("tet",{}))
-		for sym in syms:
-			n = sym.get_nsym()
-			azmax = 120.0
-			
-			eulers = sym.gen_orientations("eman",{"delta":4})
-			for euler in eulers:
-				az = euler.get_rotation()["az"]
-				alt = euler.get_rotation()["alt"]
-				#print az,alt,n
-				for i in range(1,n):
-					#print i
-					T = Transform3D(az,alt,0)
-					T1 = sym.get_sym(i)
-					T2 = T*T1
-					#print i,i
-					A = sym.reduce(T2,0)
-					result = A.get_rotation()
-					azsoln = result["az"] %azmax
-					if ( azsoln < azmax and (azmax - azsoln) < 0.001 ): azsoln = 0.0
-					#print i,i,i
-					#print result["az"],az,result["az"] % (720.0/n),az% (720.0/n),720.0/n
-					self.assertAlmostEqual(azsoln,az%azmax, 3)
-					self.assertAlmostEqual(result["alt"],alt, 3)
-	def test_symoct_reduce(self):
-		"""test octsym reduce ..............................."""
-		syms = []
-		syms.append(Symmetries.get("oct",{}))
-		for sym in syms:
-			n = sym.get_nsym()
-			azmax = 90.0
-			
-			eulers = sym.gen_orientations("eman",{"delta":4})
-			for euler in eulers:
-				az = euler.get_rotation()["az"]
-				alt = euler.get_rotation()["alt"]
-				#print az,alt,n
-				for i in range(1,n):
-					#print i
-					T = Transform3D(az,alt,0)
-					T1 = sym.get_sym(i)
-					T2 = T*T1
-					#print i,i
-					A = sym.reduce(T2,0)
-					result = A.get_rotation()
-					azsoln = result["az"] %azmax
-					if ( azsoln < azmax and (azmax - azsoln) < 0.001 ): azsoln = 0.0
-					#print i,i,i
-					#print result["az"],az,result["az"] % (720.0/n),az% (720.0/n),720.0/n
-					self.assertAlmostEqual(azsoln,az%azmax, 3)
-					self.assertAlmostEqual(result["alt"],alt, 3)
-	def test_symicos_reduce(self):
-		"""test icossym reduce .............................."""
-		syms = []
-			
-		syms.append(Symmetries.get("icos",{}))
-		for sym in syms:
-			n = sym.get_nsym()
-			azmax = 72.0
-			
-			eulers = sym.gen_orientations("eman",{"delta":4})
-			for euler in eulers:
-				az = euler.get_rotation()["az"]
-				alt = euler.get_rotation()["alt"]
-				#print az,alt,n
-				for i in range(1,n):
-					#print i
-					T = Transform3D(az,alt,0)
-					T1 = sym.get_sym(i)
-					T2 = T*T1
-					#print i,i
-					A = sym.reduce(T2,0)
-					result = A.get_rotation()
-					azsoln = result["az"] %azmax
-					if ( azsoln < azmax and (azmax - azsoln) < 0.001 ): azsoln = 0.0
-					#print i,i,i
-					#print result["az"],az,result["az"] % (720.0/n),az% (720.0/n),720.0/n
-					self.assertAlmostEqual(azsoln,az%azmax, 3)
-					self.assertAlmostEqual(result["alt"],alt, 3)
 
 	def no_test_angles2tfvec(self):    #no callable in Python
 		"""test angles2tfvec() function ....................."""
-		t = Transform3D.angles2tfvec(Transform3D.EulerType.EMAN, (1.45232928554, -0.60170830102, 0))
-
-class TestTransform2D(unittest.TestCase):
-	'''
-	Test the Transform2D object
-	'''
-	
-	
-	def assert_identity(self,t2):
-		for j in range(3):
-			for i in range(3):
-				if i == j:
-					self.assertAlmostEqual(t2.at(i,j),1, 4)
-				else:
-					self.assertAlmostEqual(t2.at(i,j),0, 4)
-	
-	def assert_matrix_equality(self,t,t1):
-		for j in range(3):
-			for i in range(3):
-				self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 7)
-	
-	def test_invert(self):
-		"""test invert inplace ............................"""
-		t = Transform2D(23)
-		t.set_posttrans(2,3)
-		t1 = Transform2D(t)
-		t1.invert()
-		t2 = t1*t
-		self.assert_identity(t2)
-	
-	def test_inverse(self):
-		"""test invese ...................................."""
-		t = Transform2D(23)
-		t.set_posttrans(2,3)
-		t1 = t.inverse()
-		t2 = t1*t
-		self.assert_identity(t2)
-		
-	def test_set_get_rotation(self):
-		"""test set get rotation..........................."""
-		for az in range(0,700,15): # only avoid 360 so that we don't have to deal with odd '%' cases
-			a = az-350
-			t = Transform2D()
-			t.set_rotation(a)
-			b = t.get_rotation()
-			self.assertAlmostEqual(a%360.0,b%360.0, 4)
-	
-	def test_copy_construction(self):
-		"""test copy construction.........................."""
-		t = Transform2D(23)
-		t.set_posttrans(2,3)
-		t1 = Transform2D(t)
-		
-		self.assert_matrix_equality(t,t1)
-		
-	def test_rotation_only_construction(self):
-		"""test rotation only construction................."""
-		for az in range(0,700,15):# only avoid 360 so that we don't have to deal with odd '%' cases
-			a = az-350
-			t = Transform2D(a)
-			b = t.get_rotation()
-			self.assertAlmostEqual(a%360.0,b%360.0, 4)
-	
-	def test_transform(self):	
-		"""test transform.................................."""
-		x = 1
-		y = 2
-		v = Vec2f(x,y)
-		t = Transform2D(23)
-		t.set_posttrans(2,3)
-		v2 = t.transform(v)
-		v3 = t.transform(x,y)
-		self.assertAlmostEqual(v2[0],v3[0], 4)
-		self.assertAlmostEqual(v2[1],v3[1], 4)
-		
-		
-	def test_rotate(self):	
-		"""test rotate....................................."""
-		x = 1
-		y = 2
-		v = Vec2f(x,y)
-		t = Transform2D(23)
-		v2 = t.rotate(v)
-		v3 = t.rotate(x,y)
-		self.assertAlmostEqual(v2[0],v3[0], 4)
-		self.assertAlmostEqual(v2[1],v3[1], 4)
-		
-	def test_rotate_same_as_matrix_vector(self):	
-		"""test rotate same as matrix times vector........."""
-		x = 1
-		y = 2
-		v = Vec2f(x,y)
-		t = Transform2D(23)
-		v2 = t.rotate(v)
-		v3 = t*v
-		self.assertAlmostEqual(v2[0],v3[0], 4)
-		self.assertAlmostEqual(v2[1],v3[1], 4)
-		
-	def test_matrix_vector_multiplication(self):	
-		"""test matrix vector multiplication..............."""
-		v = Vec2f(1,1)
-		t = Transform2D(23)
-		t.set_posttrans(2,3)
-		v2 = t*v
-		
-	def test_matrix_matix_multiplication(self):	
-		"""test matrix matrix multiplication..............."""
-		t = Transform2D(23)
-		t.set_posttrans(2,3)
-		t1 = Transform2D(43)
-		t.set_posttrans(22,13)
-		t2 = t1*t
-		
-	def test_set_posttrans(self):
-		"""test set_posttrans.............................."""
-		t = Transform2D()
-		x = 2
-		y = 3
-		t.set_posttrans(x,y)
-		self.assertAlmostEqual(t.at(0,2),x, 7)
-		self.assertAlmostEqual(t.at(1,2),y, 7)
-		
-	def test_reproducibility(self):
-		"""test reproducibility............................"""
-		az = 23
-		x = 2
-		y = 3
-		t = Transform2D(az)
-		t.set_posttrans(x,y)
-		t1 = Transform2D(az)
-		t1.set_posttrans(x,y)
-		
-		self.assert_matrix_equality(t,t1)
-		
+		t = Transform3D.angles2tfvec(Transform3D.EulerType.EMAN, (1.45232928554, -0.60170830102, 0))	
 		
 def test_main():
 	print 'Testing Transform'
 	test_support.run_unittest(TestTransform)
 	
-	print 'Testing Transform2D'
-	test_support.run_unittest(TestTransform2D)
+	print '\nTesting Symmetry3D'
+	test_support.run_unittest(TestSymmetry3D)
 	
 	print "\nTesting Transform3D"
 	test_support.run_unittest(TestTransform3D)

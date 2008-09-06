@@ -47,7 +47,6 @@ using namespace EMAN;
 
 #include <algorithm> // for std::transform
 
-#include "exception.h"
 				 
 const float Transform3D::ERR_LIMIT = 0.000001f;
 
@@ -62,14 +61,6 @@ const string SaffOrientationGenerator::NAME = "saff";
 const string EvenOrientationGenerator::NAME = "even";
 const string RandomOrientationGenerator::NAME = "rand";
 const string OptimumOrientationGenerator::NAME = "opt";
-
-const string Alignment2D::NAME = "align2d";
-// const string Alignment3D::NAME = "align3d";
-// const string AlignmentProjection::NAME = "projection";
-
-
-
-
 
 const float Transform::ERR_LIMIT = 0.000001f;
 
@@ -450,7 +441,6 @@ Dict Transform::get_rotation_2d() const {
 	return get_rotation("2d");
 }
 
-
 void Transform::set_trans(const float& x, const float& y, const float& z)
 {
 	bool x_mirror = get_mirror();
@@ -460,7 +450,6 @@ void Transform::set_trans(const float& x, const float& y, const float& z)
 	matrix[1][3] = y;
 	matrix[2][3] = z;
 }
-
 
 Vec3f Transform::get_trans() const
 {
@@ -644,30 +633,6 @@ void Transform::transpose_inplace() {
 		}
 	}
 }
-
-
-Transform Transform::get_sym(const string & symname, int n) const
-{
-
-// 	Symmetry3D* sym = Factory<Symmetry3D>::get(symname);
-// 	
-// 	Transform ret = sym->get_sym(n);
-// 	delete sym;
-// 	
-// 	ret = (*this) * ret;
-
-// 	return ret;
-	
-	return *this;
-}
-
-
-int Transform::get_nsym(const string & name)
-{
-	Symmetry3D* sym = Factory<Symmetry3D>::get(name);
-	return sym->get_nsym();
-}
-
 
 Transform EMAN::operator*(const Transform & M2, const Transform & M1)     // YYY
 {
@@ -1033,95 +998,6 @@ Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     
 	
 	return resultant; // This will have the post_trans of M2
 }
-
-// void Transform3D::set_params(const Dict& params, const string& parameter_convention, const EulerType euler_type) {
-// 	
-// 	if ( parameter_convention ==  "align2d" ) {
-// 		float alpha = params["alpha"];
-// 		set_rotation(0,0,alpha);
-// 		
-// 		float sx = params["sx"];
-// 		float sy = params["sy"];
-// 		set_posttrans(sx,sy,0);
-// 		
-// 		bool mirror = params["mirror"];
-// 		set_post_x_mirror(mirror);
-// 		
-// 		float scale = params["scale"];
-// 		set_scale(scale);
-// 	} else if ( parameter_convention ==  "align3d" ) {
-// 		set_rotation(euler_type,params);
-// 		
-// 		float sx = params["sx"];
-// 		float sy = params["sy"];
-// 		float sz = params["sz"];
-// 		set_posttrans(sx,sy,sz);
-// 		
-// 		bool mirror = params["mirror"];
-// 		set_post_x_mirror(mirror);
-// 		
-// 		float scale = params["scale"];
-// 		set_scale(scale);
-// 	} else if ( parameter_convention == "projection" ) {
-// 		set_rotation(euler_type,params);
-// 		
-// 		float sx = params["sx"];
-// 		float sy = params["sy"];
-// 		set_posttrans(sx,sy,0);
-// 		// Mirroring and scale currently not supported due to Pawel Penczek's request
-// 		/*
-// 		bool mirror = params["mirror"];
-// 		set_post_x_mirror(mirror);
-// 		
-// 		float scale = params["scale"];
-// 		set_scale(scale);*/
-// 	} else {
-// 		throw InvalidParameterException("Error, the parameter convention argument must be either align2d, align3d or projection");
-// 	}
-// }
-// 
-// 
-// Dict Transform3D::get_params(const string& parameter_convention, const EulerType euler_type) const {
-// 	
-// 	Dict soln;
-// 	
-// 	if ( parameter_convention ==  "align2d" ) {
-// 		soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
-// 		Dict rot = get_rotation(); // Uses EMAN convention
-// 		soln["alpha"] = rot["phi"]; // Return EMAN phi
-// 		Vec3f total_post = get_total_posttrans();
-// 		soln["sx"] = total_post[0];
-// 		soln["sy"] = total_post[1];
-// 		soln["mirror"] = post_x_mirror;
-// 		soln["scale"] = get_scale();
-// 		soln["euler_convention"] = UNKNOWN; //This is how it should be, there is no convention for 2D
-// 	} else if ( parameter_convention ==  "align3d" ) {
-// 		Dict rot = get_rotation(euler_type);
-// 		soln = rot; // Use Dict::operator= to copy the elements
-// 		soln["parameter_convention"] = parameter_convention;// This stored so it's always retrievable
-// 		Vec3f total_post = get_total_posttrans();
-// 		soln["sx"] = total_post[0];
-// 		soln["sy"] = total_post[1];
-// 		soln["sz"] = total_post[2];
-// 		soln["mirror"] = post_x_mirror;
-// 		soln["scale"] = get_scale();
-// 		soln["euler_convention"] = euler_type; // This added by d.woolford
-// 	} else if ( parameter_convention == "projection" ) {
-// 		Dict rot = get_rotation(euler_type);
-// 		soln = rot; // Use Dict::operator= to copy the elements
-// 		soln["parameter_convention"] = parameter_convention;
-// 		Vec3f total_post = get_total_posttrans();
-// 		soln["sx"] = total_post[0];
-// 		soln["sy"] = total_post[1];
-// // 		soln["mirror"] = post_x_mirror;
-// // 		soln["scale"] = get_scale(); Scale not present yet due to Pawel Penczek's request
-// 		soln["euler_convention"] = euler_type;
-// 	} else {
-// 		throw InvalidParameterException("Error, the parameter convention argument must be either align2d, align3d or projection");
-// 	}
-// 	
-// 	return soln;
-// }
 
 /*             Here starts the pure rotation stuff */
 
@@ -1942,175 +1818,6 @@ Transform3D::angles2tfvec(EulerType eulertype, const vector<float> ang) {
 }
 
 
-Transform2D::Transform2D(const float& alpha) {
-	
-	// Set the other matrix entries correctly (calling to_identity() is wasteful)
-	matrix[0][2] = 0.f;
-	matrix[1][2] = 0.f;
-	matrix[2][0] = 0.f;matrix[2][1] = 0.f;matrix[2][2] = 1.f;
-	// Now set the rotation
-	set_rotation(alpha);
-}
-
-Transform2D::Transform2D(const Transform2D& that) {
-	*this = that;
-}
-
-Transform2D& Transform2D::operator=(const Transform2D& that) {
-	memcpy(matrix,that.matrix,9*sizeof(float));
-	return *this;
-}
-
-
-void Transform2D::to_identity() {
-	matrix[0][0] = 1.f;matrix[0][1] = 0.f;matrix[0][2] = 0.f;
-	matrix[1][0] = 0.f;matrix[1][1] = 1.f;matrix[1][2] = 0.f;
-	matrix[2][0] = 0.f;matrix[2][1] = 0.f;matrix[2][2] = 1.f;
-}
-
-void Transform2D::set_rotation(const float& alpha) {
-	float alpha_rad = alpha*EMConsts::deg2rad;
-	float cos_alpha = cos(alpha_rad);
-	float sin_alpha = sin(alpha_rad);
-	
-	// clockwise rotation
-	matrix[0][0] = cos_alpha;matrix[0][1] = sin_alpha;
-	matrix[1][0] =-sin_alpha;matrix[1][1] = cos_alpha;	
-}
-
-Transform2D EMAN::operator*(const Transform2D & M2, const Transform2D & M1)     // YYY
-{
-
-	Transform2D result;
-	result.to_identity();
-	// First do the rotation block
-	for (int i=0; i<2; i++) {
-		for (int j=0; j<2; j++) {
-			result[i][j] = M2[i][0] * M1[0][j] +  M2[i][1] * M1[1][j];
-		}
-	}
-	// Now do the translation part
-	for (int i=0; i<2; i++) {
-		result[i][2] = M2[i][0] * M1[0][2] +  M2[i][1] * M1[1][2] + M2[i][2];
-	}
-	return result;
-}
-
-Transform2D Transform2D::inverse() const {
-	Transform2D inverse(*this);
-	inverse.invert();
-	return inverse;
-}
-
-void Transform2D::invert() {
-	matrix[0][1] *= -1.0f;
-	matrix[1][0] *= -1.0f;
-	float inv_x = -matrix[0][2];
-	float inv_y = -matrix[1][2];
-	matrix[0][2] = matrix[0][0]*inv_x + matrix[0][1]*inv_y; 
-	matrix[1][2] = matrix[1][0]*inv_x + matrix[1][1]*inv_y; 
-}
-
-Alignment2D::Alignment2D() : params() {
-	 params["sx"] = 0.0f;
-	 params["sy"] = 0.0f;
-	 params["alpha"] = 0.0f;
-	 params["mirror"] = false;
-	 params["scale"] = 0.0f;
- }
-
-
- Alignment2D::Alignment2D(const float& dx, const float& dy, const float& alpha,const bool post_x_mirror, const float& scale) : params() {
-	params["sx"] = dx;
-	params["sy"] = dy;
-	params["alpha"] = alpha;
-	params["mirror"] = post_x_mirror;
-	params["scale"] = scale;
- }
- 
- Alignment2D::Alignment2D(const Transform3D& t) {
-	 Dict rot = t.get_rotation();
-	 params["alpha"] = params["phi"]; // Grabs the EMAN in plane rotation
-
-	 Vec3f v = t.get_total_posttrans();
-	 params["sx"] = v[0];
-	 params["sy"] = v[1];
-	 
-	 params["mirror"] = t.get_post_x_mirror();
-	 params["scale"] = t.get_scale();
- }
-
-Dict Alignment2D::get_params(const Transform3D& t) {
-	Alignment2D ali2d(t);
-	return ali2d.get_params();
-}
-
-void Alignment2D::set_params(const Dict& d) {
-	// I got entry wise here to make sure we get evertyhing - the Dict object should
-	// throw if it's asked for an entry it doesn't have (doesn't it?)
-	params["sx"] = d["sx"];
-	params["sy"] = d["sy"];
-	params["alpha"] = d["alpha"];
-	params["mirror"] = d["mirror"];
-	params["scale"] = d["scale"];
-}
-
-// Alignment3D::Alignment3D(const float& az, const float& alt, const float& phi, const Transform3D::EulerType euler_type, const float& sx, const float& sy, const float& sz, const bool post_x_mirror=false, const float& scale=1.0);
-
-// Dict Alignment3D::get_params(const EulerType euler_type) const {
-// 	Dict soln = get_rotation(euler_type);// Use Dict::operator= to copy the elements
-// 	Vec3f total_post = get_total_posttrans();
-// 	soln["sx"] = total_post[0];
-// 	soln["sy"] = total_post[1];
-// 	soln["sz"] = total_post[2];
-// 	soln["mirror"] = post_x_mirror;
-// 	soln["scale"] = get_scale();
-// 	soln["euler_convention"] = euler_type; // This added by d.woolford
-// 	return soln;
-// }
-// 
-// void Alignment3D::set_params(const Dict& params) {
-// 	set_rotation(Transform3D::EMAN,params);
-// 		
-// 	float sx = params["sx"];
-// 	float sy = params["sy"];
-// 	float sz = params["sz"];
-// 	set_posttrans(sx,sy,sz);
-// 		
-// 	bool mirror = params["mirror"];
-// 	set_post_x_mirror(mirror);
-// 		
-// 	float scale = params["scale"];
-// 	set_scale(scale);
-// }
-// 
-// Dict AlignmentProjection::get_params(const EulerType euler_type) const {
-// 	Dict soln =  get_rotation(euler_type);
-// 	Vec3f total_post = get_total_posttrans();
-// 	soln["sx"] = total_post[0];
-// 	soln["sy"] = total_post[1];
-// // 	soln["mirror"] = post_x_mirror; Mirror not present yet due to Pawel Penczek's request
-// // 	soln["scale"] = get_scale(); Scale not present yet due to Pawel Penczek's request
-// 	soln["euler_convention"] = euler_type;
-// 	
-// 	return soln;
-// 	
-// }
-// 
-// void AlignmentProjection::set_params(const Dict& params) {
-// 	set_rotation(Transform3D::EMAN,params);
-// 		
-// 	float sx = params["sx"];
-// 	float sy = params["sy"];
-// 	set_posttrans(sx,sy,0);
-// 		// Mirroring and scale currently not supported due to Pawel Penczek's request
-// 		/*
-// 	bool mirror = params["mirror"];
-// 	set_post_x_mirror(mirror);
-// 		
-// 	float scale = params["scale"];
-// 	set_scale(scale);*/
-// }
 
 template <> Factory < Symmetry3D >::Factory()
 {
@@ -2206,10 +1913,10 @@ map<string, vector<string> > EMAN::dump_orientgens_list()
 	return dump_factory_list < OrientationGenerator > ();
 }
 
-vector<Transform3D> Symmetry3D::gen_orientations(const string& generatorname, const Dict& parms)
+vector<Transform> Symmetry3D::gen_orientations(const string& generatorname, const Dict& parms)
 {
 	ENTERFUNC;
-	vector<Transform3D> ret;
+	vector<Transform> ret;
 	OrientationGenerator *g = Factory < OrientationGenerator >::get(generatorname, parms);
 	if (g) {
 		ret = g->gen_orientations(this);
@@ -2335,21 +2042,27 @@ float OrientationGenerator::get_optimal_delta(const Symmetry3D* const sym, const
 	return delta_soln;
 }
 
-bool OrientationGenerator::add_orientation(vector<Transform3D>& v, const float& az, const float& alt) const
+bool OrientationGenerator::add_orientation(vector<Transform>& v, const float& az, const float& alt) const
 {
 	bool randphi = params.set_default("random_phi",false);
 	float phi = 0.0;
 	if (randphi) phi = Util::get_frand(0.0f,359.99999f);
 	float phitoo = params.set_default("phitoo",0.0f);
 	if ( phitoo < 0 ) throw InvalidValueException(phitoo, "Error, if you specify phitoo is must be positive");
-	Transform3D t(az,alt,phi);
+	Dict d;
+	d["type"] = "eman";
+	d["az"] = az;
+	d["alt"] = alt;
+	d["phi"] = phi;
+	Transform t(d);
 	v.push_back(t);
 	if ( phitoo != 0 ) {
 		if (phitoo < 0) return false;
 		else {
 			for ( float p = phitoo; p <= 360.0-phitoo; p+= phitoo )
 			{
-				Transform3D t(az,alt,fmod(phi+p,360));
+				d["phi"] = fmod(phi+p,360);
+				Transform t(d);
 				v.push_back(t);
 			}
 		}
@@ -2373,7 +2086,7 @@ float EmanOrientationGenerator::get_az_delta(const float& delta,const float& alt
 	return (float)(EMConsts::rad2deg*h);
 }
 
-vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
 {	
 	float delta = params.set_default("delta", 0.0f);
 	int n = params.set_default("n", 0);
@@ -2398,7 +2111,7 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 	// #to the altmax... the object is a h symmetry then it knows its alt_min...
 	if (sym->is_h_sym()) alt_iterator = delimiters["alt_min"];
 	
-	vector<Transform3D> ret;
+	vector<Transform> ret;
 	while ( alt_iterator <= altmax ) {
 		float h = get_az_delta(delta,alt_iterator, sym->get_max_csym() );
 
@@ -2474,7 +2187,7 @@ vector<Transform3D> EmanOrientationGenerator::gen_orientations(const Symmetry3D*
 	return ret;
 }
 
-vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+vector<Transform> RandomOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
 {
 	int n = params.set_default("n", 0);
 	
@@ -2483,9 +2196,10 @@ vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3
 	bool phitoo = params.set_default("phitoo", false);
 	bool inc_mirror = params.set_default("inc_mirror", false);
 	
-	vector<Transform3D> ret;
+	vector<Transform> ret;
 	
 	int i = 0;
+	Dict d("type","eman");
 	while ( i < n ){
 		float u1 =  Util::get_frand(-1.0f,1.0f);
 		float u2 =  Util::get_frand(-1.0f,1.0f);
@@ -2502,7 +2216,8 @@ vector<Transform3D> RandomOrientationGenerator::gen_orientations(const Symmetry3
 		float phi = 0.0;
 		if ( phitoo ) phi = Util::get_frand(0.0,359.9999);
 		
-		Transform3D t = Transform3D( azimuth, altitude, phi );
+		d["az"] = azimuth; d["phi"] = phi; d["alt"] = altitude;
+		Transform t(d);
 		
 		if ( !(sym->is_c_sym() && sym->get_nsym() == 1)) t = sym->reduce(t); //reduce doesn't make sense for C1 symmetry
 		
@@ -2558,7 +2273,7 @@ int EvenOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	return tally;	
 }
 
-vector<Transform3D> EvenOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+vector<Transform> EvenOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
 {
 	float delta = params.set_default("delta", 0.0f);
 	int n = params.set_default("n", 0);
@@ -2580,7 +2295,7 @@ vector<Transform3D> EvenOrientationGenerator::gen_orientations(const Symmetry3D*
 	// to the altmax... the object is a h symmetry then it knows its alt_min...
 	if (sym->is_h_sym()) altmin = delimiters["alt_min"];
 	
-	vector<Transform3D> ret;
+	vector<Transform> ret;
 	
 	for (float alt = altmin; alt <= altmax; alt += delta) {
 		float detaz;
@@ -2650,7 +2365,7 @@ int SaffOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym
 	return tally;
 }
 
-vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+vector<Transform> SaffOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
 {
 	float delta = params.set_default("delta", 0.0f);
 	int n = params.set_default("n", 0);
@@ -2685,7 +2400,7 @@ vector<Transform3D> SaffOrientationGenerator::gen_orientations(const Symmetry3D*
 	float wedgeFactor = fabs( Deltaz*(azmax)/720.0f) ;
 	int NumPoints   =  static_cast<int> (NFactor*NFactor*wedgeFactor);
 	
-	vector<Transform3D> ret;
+	vector<Transform> ret;
 	
 	if (!sym->is_h_sym()) add_orientation(ret,0,0);
 	float az = 0.0;
@@ -2719,7 +2434,7 @@ int OptimumOrientationGenerator::get_orientations_tally(const Symmetry3D* const 
 	else throw;
 }
 
-vector<Transform3D> OptimumOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+vector<Transform> OptimumOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
 {	
 	float delta = params.set_default("delta", 0.0f);
 	int n = params.set_default("n", 0);
@@ -2748,13 +2463,13 @@ vector<Transform3D> OptimumOrientationGenerator::gen_orientations(const Symmetry
 	CSym* unit_sphere = new CSym();
 	Dict nsym; nsym["nsym"] = 1; unit_sphere->set_params(nsym);
 	
-	vector<Transform3D> unitsphereorientations = g->gen_orientations(unit_sphere);
+	vector<Transform> unitsphereorientations = g->gen_orientations(unit_sphere);
 	delete g; g = 0;
 	delete unit_sphere; unit_sphere = 0;
 	
 	vector<Vec3f> angles = optimize_distances(unitsphereorientations);
 	
-	vector<Transform3D> ret;
+	vector<Transform> ret;
 	for (vector<Vec3f>::const_iterator it = angles.begin(); it != angles.end(); ++it ) {
 		if ( sym->is_in_asym_unit((*it)[1],(*it)[0],inc_mirror) ) {
 			add_orientation(ret,(*it)[0],(*it)[1]);
@@ -2769,11 +2484,11 @@ vector<Transform3D> OptimumOrientationGenerator::gen_orientations(const Symmetry
 	return ret;
 }
 
-vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Transform3D>& v) const
+vector<Vec3f> OptimumOrientationGenerator::optimize_distances(const vector<Transform>& v) const
 {
 	vector<Vec3f> points;
 	
-	for (vector<Transform3D>::const_iterator it = v.begin(); it != v.end(); ++it ) {
+	for (vector<Transform>::const_iterator it = v.begin(); it != v.end(); ++it ) {
 		points.push_back(Vec3f(0,0,1)*(*it));
 	}
 	
@@ -2892,10 +2607,10 @@ void verify(const Vec3f& tmp, float * plane, const string& message )
 	cout << message << " residual " << plane[0]*tmp[0]+plane[1]*tmp[1]+plane[2]*tmp[2] + plane[3]  << endl;
 }
 
-Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n) const
+Transform Symmetry3D::reduce(const Transform& t, int n) const
 {
 	// Determine which asym unit the given asym unit is in
-	int soln = in_which_asym_unit(t3d);
+	int soln = in_which_asym_unit(t);
 	
 	// This should never happen
 	if ( soln == -1 ) {
@@ -2904,11 +2619,11 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n) const
 	}
 	
 	// Get the symmetry operation corresponding to the intersection asymmetric unit
-	Transform3D nt = get_sym(soln);
+	Transform nt = get_sym(soln);
 	// Transpose it (invert it)
-	nt.transpose();
+	nt.transpose_inplace();
 	// Now we can transform the argument orientation into the default asymmetric unit
-	nt  = t3d*nt;
+	nt  = t*nt;
 	// Now that we're at the default asymmetric unit, we can map into the requested asymmunit by doing this
 	if ( n != 0 ) {
 		nt = nt*get_sym(n);
@@ -2918,17 +2633,17 @@ Transform3D Symmetry3D::reduce(const Transform3D& t3d, int n) const
 	
 }
 
-int Symmetry3D::in_which_asym_unit(const Transform3D& t3d) const
+int Symmetry3D::in_which_asym_unit(const Transform& t3d) const
 {
 	// Here it is assumed that final destination of the orientation (as encapsulated in the t3d object) is
 	// in the z direction, so in essence we will start in the direction z and 'undo' the orientation to get the real
 	// direction
 	Vec3f p(0,0,1);
 	
-	Transform3D o(t3d);
+	Transform o(t3d);
 	// Orientations are alway transposed when dealing with asymmetric units, projections,etc
 	// We take the transpose to 'undo' the transform and get the true direction of the point.
-	o.transpose();
+	o.transpose_inplace();
 	// Figure out where the point would end up. No we could just as easily not transpose and do
 	// left multiplation (as in what occurs in the FourierReconstructor during slice insertion)
 	p = o*p;
@@ -2998,11 +2713,11 @@ int Symmetry3D::in_which_asym_unit(const Transform3D& t3d) const
 			
 			// We've done a few multiplications, so detect when there are tiny residuals that may throw off the final 
 			// decision
-			if (fabs(s) < Transform3D::ERR_LIMIT ) s = 0;
-			if (fabs(t) < Transform3D::ERR_LIMIT ) t = 0;
+			if (fabs(s) < Transform::ERR_LIMIT ) s = 0;
+			if (fabs(t) < Transform::ERR_LIMIT ) t = 0;
 			
-			if ( fabs((fabs(s)-1.0)) < Transform3D::ERR_LIMIT ) s = 1;
-			if ( fabs((fabs(t)-1.0)) < Transform3D::ERR_LIMIT ) t = 1;
+			if ( fabs((fabs(s)-1.0)) < Transform::ERR_LIMIT ) s = 1;
+			if ( fabs((fabs(t)-1.0)) < Transform::ERR_LIMIT ) t = 1;
 			
 			// The final decision, if this is true then we've hit the jackpot
 			if ( s >= 0 && t >= 0 && (s+t) <= 1 ) {
@@ -3016,9 +2731,9 @@ int Symmetry3D::in_which_asym_unit(const Transform3D& t3d) const
 	return -1;
 }
 
-vector<Transform3D> Symmetry3D::get_touching_au_transforms(bool inc_mirror) const
+vector<Transform> Symmetry3D::get_touching_au_transforms(bool inc_mirror) const
 {
-	vector<Transform3D>  ret;
+	vector<Transform>  ret;
 	vector<int> hit_cache;
 	
 	vector<Vec3f> points = get_asym_unit_points(inc_mirror);
@@ -3057,7 +2772,7 @@ vector<Transform3D> Symmetry3D::get_touching_au_transforms(bool inc_mirror) cons
 		for(int i = 1; i < get_nsym(); ++i) {
 			
 			if ( find(hit_cache.begin(),hit_cache.end(),i) != hit_cache.end() ) continue;
-			Transform3D t = get_sym(i);
+			Transform t = get_sym(i);
 			Vec3f result = (*point)*t;
 			
 			if (is_platonic_sym()) {
@@ -3244,15 +2959,16 @@ vector<Vec3f> CSym::get_asym_unit_points(bool inc_mirror) const
 	
 }
 		
-Transform3D CSym::get_sym(const int n) const {
+Transform CSym::get_sym(const int n) const {
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero nsym");
 			
-	
-	Transform3D ret;
+	Dict d("type","eman");
 	// courtesy of Phil Baldwin
-	ret.set_rotation( (n%nsym) * 360.0f / nsym, 0, 0);
-	return ret;
+	d["az"] = (n%nsym) * 360.0f / nsym;
+	d["alt"] = 0.0f;
+	d["phi"] = 0.0f;
+	return Transform(d);
 }
 
 // D symmetry stuff
@@ -3288,20 +3004,24 @@ bool DSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 	return false;
 }
 
-Transform3D DSym::get_sym(const int n) const
+Transform DSym::get_sym(const int n) const
 {
 	int nsym = 2*params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(n,"Error, you must specify a positive non zero nsym");
 	
+	Dict d("type","eman");
 	// courtesy of Phil Baldwin
-	Transform3D ret;
 	if (n >= nsym / 2) {
-		ret.set_rotation(( (n%nsym) - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
+		d["az"] = ( (n%nsym) - nsym/2) * 360.0f / (nsym / 2);
+		d["alt"] = 180.0f;
+		d["phi"] = 0.0f;
 	}
 	else {
-		ret.set_rotation( (n%nsym) * 360.0f / (nsym / 2),0, 0);
+		d["az"] = (n%nsym) * 360.0f / (nsym / 2);
+		d["alt"] = 0.0f;
+		d["phi"] = 0.0f;
 	}
-	return ret;
+	return Transform(d);
 }
 
 vector<vector<Vec3f> > DSym::get_asym_unit_triangles(bool inc_mirror) const{
@@ -3451,12 +3171,17 @@ vector<Vec3f> HSym::get_asym_unit_points(bool inc_mirror) const
 	
 	bool tracing_arcs = false;
 	
+	
 	if ( !tracing_arcs) {
 		Vec3f a(0,-1,0);
 		ret.push_back(a);
 		
 		if ( nsym > 2 )	{
-			Vec3f b = Transform3D(az,0,0)*a; 
+			Dict d("type","eman");
+			d["phi"] = 0.0f;
+			d["alt"] = 0.0f;
+			d["az"] = az;
+			Vec3f b = Transform(d)*a; 
 			ret.push_back(b);
 		}
 		else
@@ -3475,15 +3200,19 @@ vector<Vec3f> HSym::get_asym_unit_points(bool inc_mirror) const
 	
 }
 
-Transform3D HSym::get_sym(const int n) const
+Transform HSym::get_sym(const int n) const
 {
 	float daz = params.set_default("daz",0.0f);
 	float apix = params.set_default("apix",1.0f);
 	float dz = params.set_default("dz", 0)/apix;
 	
-	Transform3D ret;
-	ret.set_rotation( n * daz, 0, 0);
-	ret.set_posttrans(0,0,n*dz);
+	Dict d("type","eman");
+	// courtesy of Phil Baldwin
+	d["az"] = n * daz;
+	d["alt"] = 0.0f;
+	d["phi"] = 0.0f;
+	Transform ret(d);
+	ret.set_trans(0,0,n*dz);
 	return ret;
 }
 
@@ -3625,7 +3354,11 @@ vector<Vec3f> PlatonicSym::get_asym_unit_points(bool inc_mirror) const
 	}
 	
 	if ( get_az_alignment_offset() != 0 ) {
-		Transform3D t(get_az_alignment_offset(),0,0);
+		Dict d("type","eman");
+		d["az"] = get_az_alignment_offset();
+		d["phi"] = 0.0f;
+		d["alt"] = 0.0f;
+		Transform t(d);
 		for (vector<Vec3f>::iterator it = ret.begin(); it != ret.end(); ++it )
 		{
 			*it = (*it)*t;
@@ -3638,7 +3371,7 @@ vector<Vec3f> PlatonicSym::get_asym_unit_points(bool inc_mirror) const
 
 float IcosahedralSym::get_az_alignment_offset() const { return 234.0; } // This offset positions a 3 fold axis on the positive x axis
 
-Transform3D IcosahedralSym::get_sym(const int n) const
+Transform IcosahedralSym::get_sym(const int n) const
 {
 	// These rotations courtesy of Phil Baldwin
 	static double  lvl0=0.; //  there is one pentagon on top; five-fold along z
@@ -3662,22 +3395,31 @@ Transform3D IcosahedralSym::get_sym(const int n) const
 	};
 	
 	int idx = n % 60;
-	Transform3D ret;
+	Dict d("type","eman");
+// 	Transform3D ret;
 	if (get_az_alignment_offset() == 234.0) {
-		ret.set_rotation((float)ICOS[idx * 3 ]+90,(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]-90);
+		d["az"] =(float)ICOS[idx * 3 ]+90;
+		d["alt"] = (float)ICOS[idx * 3 + 1];
+		d["phi"] = (float)ICOS[idx * 3 + 2]-90;
+// 		ret.set_rotation((float)ICOS[idx * 3 ]+90,(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]-90);
 	}
-	else ret.set_rotation((float)ICOS[idx * 3 ],(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]);
+	else {
+		d["az"] =(float)(float)ICOS[idx * 3 ];
+		d["alt"] = (float)ICOS[idx * 3 + 1];
+		d["phi"] = (float)ICOS[idx * 3 + 2];
+// 		ret.set_rotation((float)ICOS[idx * 3 ],(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]);
+	}
 	
 // 	ret.set_rotation((float)ICOS[idx * 3 ],(float)ICOS[idx * 3 + 1], (float)ICOS[idx * 3 + 2]);
 // 	if ( get_az_alignment_offset() != 0 ) {
 // 		Transform3D t(get_az_alignment_offset(),0,0);
 // 		ret = t*ret;
 // 	}
-	return ret;
+	return Transform(d);
 	
 }
 
-Transform3D OctahedralSym::get_sym(const int n) const
+Transform OctahedralSym::get_sym(const int n) const
 {
 	// These rotations courtesy of Phil Baldwin
 	// We have placed the OCT symmetry group with a face along the z-axis
@@ -3695,9 +3437,13 @@ Transform3D OctahedralSym::get_sym(const int n) const
 	};
 	
 	int idx = n % 24;
-	Transform3D ret;
-	ret.set_rotation((float)OCT[idx * 3 ],(float)OCT[idx * 3 + 1], (float)OCT[idx * 3 + 2] );
-	return ret;
+// 	Transform3D ret;
+// 	ret.set_rotation((float)OCT[idx * 3 ],(float)OCT[idx * 3 + 1], (float)OCT[idx * 3 + 2] );
+	Dict d("type","eman");
+	d["az"] = (float)OCT[idx * 3 ];
+	d["alt"] = (float)OCT[idx * 3 + 1];
+	d["phi"] = (float)OCT[idx * 3 + 2];
+	return Transform(d);
 	
 }
 
@@ -3736,7 +3482,7 @@ bool TetrahedralSym::is_in_asym_unit(const float& altitude, const float& azimuth
 }
 
 
-Transform3D TetrahedralSym::get_sym(const int n) const
+Transform TetrahedralSym::get_sym(const int n) const
 {
 	// These rotations courtesy of Phil Baldwin
 	 // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
@@ -3751,9 +3497,15 @@ Transform3D TetrahedralSym::get_sym(const int n) const
 	};
 // 	
 	int idx = n % 12;
-	Transform3D ret;
-	ret.set_rotation((float)TET[idx * 3 ],(float)TET[idx * 3 + 1], (float)TET[idx * 3 + 2] );
-	return ret;
+// 	Transform3D ret;
+// 	ret.set_rotation((float)TET[idx * 3 ],(float)TET[idx * 3 + 1], (float)TET[idx * 3 + 2] );
+// 	return ret;
+	
+	Dict d("type","eman");
+	d["az"] = (float)TET[idx * 3 ];
+	d["alt"] = (float)TET[idx * 3 + 1];
+	d["phi"] = (float)TET[idx * 3 + 2];
+	return Transform(d);
 	
 }
 
@@ -3785,7 +3537,11 @@ vector<Vec3f> TetrahedralSym::get_asym_unit_points(bool inc_mirror) const
 
 	
 	if ( get_az_alignment_offset() != 0 ) {
-		Transform3D t(get_az_alignment_offset(),0,0);
+		Dict d("type","eman");
+		d["az"] = get_az_alignment_offset();
+		d["phi"] = 0.0f;
+		d["alt"] = 0.0f;
+		Transform t(d);
 		for (vector<Vec3f>::iterator it = ret.begin(); it != ret.end(); ++it )
 		{
 			*it = (*it)*t;

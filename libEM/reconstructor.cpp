@@ -496,12 +496,13 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	}
 	
 	float *dat = input_slice->get_data();
-	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
+// 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
 	
 	float weight = params.set_default("weight",1.0);
 	
-	for ( int i = 0; i < sym->get_nsym(); ++i) {
-		Transform3D t3d = arg*sym->get_sym(i);
+	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i) {
+		Transform3D t3d = arg.get_sym((string)params["sym"],i);
+// 		Transform3D t3d = arg*sym->get_sym(i);
 // 		t3d.transpose();
 		for (int y = 0; y < input_slice->get_ysize(); y++) {
 			for (int x = 0; x < input_slice->get_xsize() / 2; x++) {
@@ -550,7 +551,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 			}
 		}
 	}
-	delete sym;
+// 	delete sym;
 }
 
 int FourierReconstructor::determine_slice_agreement(const EMData* const input_slice, const Transform3D & t3d, const unsigned int num_particles_in_slice)
