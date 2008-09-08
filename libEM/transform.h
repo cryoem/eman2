@@ -92,11 +92,6 @@ namespace EMAN
 			 */
 			Dict get_rotation(const string& euler_type) const;
 			
-			/** Get a rotation in 2D degenerate format
-			 * @return a dictionary containing the key-entry pairs describing the rotation 2D format
-			 */
-			Dict get_rotation_2d() const;
-			
 			/** Set the parameters of the entire transform.
 			 * keys acted upon are "type" - if this exists then the correct euler angles need to be included -
 			 * also "tx","ty","tz", "scale", and "mirror"
@@ -109,11 +104,6 @@ namespace EMAN
 			 * @return a dictionary containing the parameters
 			 */
 			Dict get_params(const string& euler_type);
-			
-			/** Get the parameters of the entire transform as though it were being used in the 2D form
-			 * @return a dictionary containing the parameters of the degenerant 2D transform
-			 */
-			Dict get_params_2d();
 
 			//=============== set and get post trans =============
 			/** Set the post translation component
@@ -121,7 +111,13 @@ namespace EMAN
 			 * @param y the y translation
 			 * @param z the z translation
 			 */
-			void set_trans(const float& x, const float& y, const float& z=0);
+			void set_trans(const float& x, const float& y, const float& z);
+			
+			/** Set the post translation component for 2D
+			 * @param x the x translation
+			 * @param y the y translation
+			 */
+			void set_trans(const float& x, const float& y);
 			
 			/** Set the post translation component using a Vec3f
 			 * @param v the 3D translation vector
@@ -150,15 +146,7 @@ namespace EMAN
 			 * @return the pre translation vector
 			 */
 			Vec3f get_pre_trans() const;
-			
-			
-			/** Get the 2D translation vector as though this object was MSRT_ NOT MTSR, where T_ is what you want
-			 * Note M means post x mirror, T means translation, S means scale, and R means rotaiton
-			 * @return the 2D pre translation vector
-			 */
-			Vec2f get_pre_trans_2d() const;
-			
-			
+
 			//=============== set and get scale =============
 			/** Set the scale
 			 * @param scale the amount to scale by
@@ -256,6 +244,7 @@ namespace EMAN
 			* @return the transformed vector
 			 */
 			inline Vec2f transform(const float& x, const float& y) const {
+				assert_consistent_type(TWOD);
 				Vec2f ret;
 				ret[0] = matrix[0][0]*x + matrix[0][1]*y + matrix[0][3];
 				ret[1] = matrix[1][0]*x + matrix[1][1]*y + matrix[1][3];
@@ -277,6 +266,7 @@ namespace EMAN
 			 * @return the transformed vector
 			 */
 			inline Vec3f transform(const float& x, const float& y, const float& z) const {
+				assert_consistent_type(THREED);
 				Vec3f ret;
 				ret[0] = matrix[0][0] * x + matrix[0][1] * y + matrix[0][2] * z + matrix[0][3];
 				ret[1] = matrix[1][0] * x + matrix[1][1] * y + matrix[1][2] * z + matrix[1][3];
@@ -290,11 +280,26 @@ namespace EMAN
 			 */
 			template<typename Type>
 			inline Vec3f transform(const Vec3<Type>& v) const {
+// 				assert_consistent_type(THREED); // Transform does the assertion
 				return transform(v[0],v[1],v[2]);
 			}
 
 		private:
 			float matrix[4][4];
+			
+			enum TransformType {
+				TWOD,
+				THREED,
+				UNKNOWN
+			};
+			
+			TransformType transform_type;
+			
+			bool validate_and_set_type(const TransformType t);
+			bool assert_consistent_type(const TransformType t) const;
+			
+			string transform_type_to_string(const Transform::TransformType type ) const;
+
 	};
 	/// Matrix times Matrix, a pure mathematical operation
 	Transform operator*(const Transform & M2, const Transform & M1);

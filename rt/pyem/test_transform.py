@@ -86,23 +86,23 @@ class TestTransform(unittest.TestCase):
 				dx = Util.get_frand(-30.0,30.0)
 				dy = Util.get_frand(-30.0,30.0)
 				dz = Util.get_frand(-30.0,30.0)
-				d = {"tx":dx,"mirror":mirror,"scale":scale}
+				d = {"tx":dx,"mirror":mirror,"scale":scale,"type":"2d"}
 				t = Transform(d)
 				v = t.get_trans_2d()
 				self.assertAlmostEqual(v[0], dx, 5)
 			
-				d = {"tx":dx,"ty":dy,"mirror":mirror,"scale":scale}
+				d = {"tx":dx,"ty":dy,"mirror":mirror,"scale":scale,"type":"2d"}
 				t = Transform(d)
 				v = t.get_trans_2d()
 				self.assertAlmostEqual(v[0], dx, 5)
 				self.assertAlmostEqual(v[1], dy, 5)
 				
 				# should even work in this case, dz is ignored
-				d = {"tx":dx,"ty":dy,"tz":dz,"mirror":mirror,"scale":scale}
-				t = Transform(d)
-				v = t.get_trans_2d()
-				self.assertAlmostEqual(v[0], dx, 5)
-				self.assertAlmostEqual(v[1], dy, 5)
+				#d = {"tx":dx,"ty":dy,"tz":dz,"mirror":mirror,"scale":scale,"type":"2d"}
+				#t = Transform(d)
+				#v = t.get_trans_2d()
+				#self.assertAlmostEqual(v[0], dx, 5)
+				#self.assertAlmostEqual(v[1], dy, 5)
 	
 	def test_get_rotation(self):
 		"""test get rotation .............................."""	
@@ -305,7 +305,7 @@ class TestTransform(unittest.TestCase):
 		"""test set/get params 2d.........................."""
 		t = Transform()
 		t.set_params({"type":"2d","alpha":10,"scale":2.0,"mirror":True,"tx":3.4,"ty":0.0})
-		d = t.get_params_2d() # no euler type required because there is only one ("2d")
+		d = t.get_params("2d") # no euler type required because there is only one ("2d")
 		s = Transform(d) # s is the same as t
 		self.assert_matrix_equality(s,t)
 	def test_multiplication(self):
@@ -477,17 +477,21 @@ class TestTransform(unittest.TestCase):
 		three_trans = {"tx":.023,"ty":431.22002,"tz":120.02}
 		for scale in [1.0,2.0]:
 			for mirror in [True, False]:
-				for trans in [no_trans,two_trans,three_trans]:
-					d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror,"scale":scale}
-					t = Transform(d)
-					t.set_params(trans)
-					s = t.inverse()
-					self.assert_identity(s*t)
-					self.assert_identity(t*s)
-					s = Transform(t)
-					s.invert()
-					self.assert_identity(s*t)
-					self.assert_identity(t*s)
+				for i,trans in enumerate([no_trans,two_trans,three_trans]):
+					if i < 2:
+						d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror,"scale":scale}
+						t = Transform(d)
+						trans1 = {}
+						for c in trans: trans1[c] = trans[c]
+						trans1["type"] = "2d"
+						t.set_params(trans1)
+						s = t.inverse()
+						self.assert_identity(s*t)
+						self.assert_identity(t*s)
+						s = Transform(t)
+						s.invert()
+						self.assert_identity(s*t)
+						self.assert_identity(t*s)
 					
 					d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand(),"mirror":mirror,"scale":scale}
 					t = Transform(d)

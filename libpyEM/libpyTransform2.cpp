@@ -104,8 +104,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_params_overloads_1_2
 		
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Symmetry3D_get_asym_unit_points_overloads_1_2, get_asym_unit_points, 1, 2)
 
-		
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_set_trans_overloads_2_3, set_trans, 2, 3)
 }// namespace 
 
 
@@ -419,7 +417,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def(init< const EMAN::Transform& >())
 		.def(init<const EMAN::Dict& >())
 		.def_readonly("ERR_LIMIT", &EMAN::Transform::ERR_LIMIT)
-		.def("set_trans", (void (EMAN::Transform::*)(const float&, const float&, const float&) )&EMAN::Transform::set_trans,EMAN_Transform_set_trans_overloads_2_3())
+		.def("set_trans", (void (EMAN::Transform::*)(const float&, const float&, const float&) )&EMAN::Transform::set_trans)
+		.def("set_trans", (void (EMAN::Transform::*)(const float&, const float&) )&EMAN::Transform::set_trans)
 		.def("set_trans", (void (EMAN::Transform::*)(const EMAN::Vec3f&) )&EMAN::Transform::set_trans)
 		.def("set_trans", (void (EMAN::Transform::*)(const EMAN::Vec2f&) )&EMAN::Transform::set_trans)
 		.def("set_scale", &EMAN::Transform::set_scale)
@@ -430,10 +429,10 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("get_trans", &EMAN::Transform::get_trans)
 		.def("get_trans_2d", &EMAN::Transform::get_trans_2d)
 		.def("get_rotation", &EMAN::Transform::get_rotation)
-		.def("get_rotation_2d", &EMAN::Transform::get_rotation_2d)
+// 		.def("get_rotation_2d", &EMAN::Transform::get_rotation_2d)
 		.def("set_params", &EMAN::Transform::set_params)
 		.def("get_params", &EMAN::Transform::get_params)
-		.def("get_params_2d", &EMAN::Transform::get_params_2d)
+// 		.def("get_params_2d", &EMAN::Transform::get_params_2d)
 		.def("transform", (EMAN::Vec2f (EMAN::Transform::*)(const EMAN::Vec2f&) const )&EMAN::Transform::transform)
 		.def("transform", (EMAN::Vec3f (EMAN::Transform::*)(const EMAN::Vec3f&) const )&EMAN::Transform::transform)
 		.def("transform", (EMAN::Vec2f (EMAN::Transform::*)(const float&, const float&) const )&EMAN::Transform::transform)

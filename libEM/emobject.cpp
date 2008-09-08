@@ -111,7 +111,7 @@ void EMObject::printInfo() const
 }
 
 EMObject::EMObject() :
-	EMObjectTypes(), n(0), type(UNKNOWN)
+	EMObjectTypes(), d(0), type(UNKNOWN)
 {
 }
 
