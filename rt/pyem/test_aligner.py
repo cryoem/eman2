@@ -289,7 +289,7 @@ class TestAligner(unittest.TestCase):
 					v = Vec3f(0,1,0)
 					vd = v*t
 					vd = vd*t1
-					print vd[0],vd[1],vd[2],az,g.get_attr("align.az"),dx,dy,flip,g.get_attr("align.flip")
+					#print vd[0],vd[1],vd[2],az,g.get_attr("align.az"),dx,dy,flip,g.get_attr("align.flip")
 					self.failIf(fabs(vd[0]) > 0.2)
 					self.failIf(fabs(vd[1]-1) > 0.15)
 					self.failIf(flip != g.get_attr("align.flip"))

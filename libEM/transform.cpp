@@ -122,7 +122,10 @@ void Transform::set_params(const Dict& d) {
 	if ( dx != 0.0 || dy != 0.0 || dz != 0.0 ) {
 		bool act = true;
 		if (d.has_key_ci("type") ) {
-			if ( static_cast<string>(d.get_ci("type")) == "2d"){
+			string euler_type(static_cast<string>(d.get_ci("type")));
+			string type(euler_type);
+			std::transform(euler_type.begin(),euler_type.end(),type.begin(), (int (*)(int) ) std::tolower);
+			if ( type == "2d"){
 				if (dz == 0 ) {
 					set_trans(dx,dy);
 					act = false;
