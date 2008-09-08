@@ -36,6 +36,10 @@
 #ifndef eman__util_h__
 #define eman__util_h__ 1
 
+#ifdef _WIN32
+	#pragma warning(disable:4819)
+#endif	//_WIN32
+
 #include "sparx/emconstants.h"
 #include "exception.h"
 #include <vector>

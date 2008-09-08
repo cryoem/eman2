@@ -1219,7 +1219,7 @@ void FourierInserter3DMode8::init()
 	mFreqCutoff = 2;
 	mDFreq = 0.2f;
 	if (W != 0) delete [] W;
-	W = Util::getBaldwinGridWeights(mFreqCutoff, P, r,mDFreq,0.5f,0.2f);
+	W = Util::getBaldwinGridWeights(mFreqCutoff, (float)P, r,mDFreq,0.5f,0.2f);
 	
 }
 bool FourierInserter3DMode8::insert_pixel(const float& qx, const float& qy, const float& qz, const float fq[],const float& weight)

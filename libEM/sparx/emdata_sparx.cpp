@@ -2444,7 +2444,7 @@ EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
 	int kbmax = -kbmin;*/
 
 	int nxn, nyn, nzn;
-	nxn = nx*scale; nyn = ny*scale; nzn = nz*scale;
+	nxn = (int)(nx*scale); nyn = (int)(ny*scale); nzn = (int)(nz*scale);
 
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
@@ -3114,7 +3114,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	set_array_offsets(0,-nyhalf);
 	result->set_array_offsets(0,-nyhalf);
 	
-	ang = ang*DGR_TO_RAD;
+	ang = ang*(float)DGR_TO_RAD;
 	float cang = cos(ang);
 	float sang = sin(ang);
 	for (int iy = -nyhalf; iy < nyhalf; iy++) {
@@ -3154,10 +3154,10 @@ EMData* EMData::fouriergridrot_shift2d(float ang, float sx, float sy, Util::Kais
 	set_array_offsets(0,-nyhalf);
 	result->set_array_offsets(0,-nyhalf);
 
-	ang = ang*DGR_TO_RAD;
+	ang = ang*(float)DGR_TO_RAD;
 	float cang = cos(ang);
 	float sang = sin(ang);
-	float temp = -2.0*M_PI/nxreal;
+	float temp = -2.0f*M_PI/nxreal;
 	for (int iy = -nyhalf; iy < nyhalf; iy++) {
 		float ycang = iy*cang;
 		float ysang = iy*sang;
@@ -4131,7 +4131,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	// how many steps needed
 	int nst = int(nz*pixel_size/dp+0.5);
 	float r2;
-	if(radius < 0.0f) r2 = (nxc-1)*(nxc-1);
+	if(radius < 0.0f) r2 = (float)((nxc-1)*(nxc-1));
 	else r2 = radius*radius;
 	for (int k = 0; k<nz; k++) {
 		for (int j = 0; j<ny; j++) {
@@ -4139,7 +4139,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 			int jj = jy*jy;
 			for (int i = 0; i<nx; i++) {
 				int ix = i - nxc;
-				float d2 = ix*ix + jj;
+				float d2 = (float)(ix*ix + jj);
 				if(d2 <= r2) {
 					int nq = 1;
 					for ( int ist = -nst; ist <= nst; ist++) {
@@ -4147,7 +4147,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 						int IOZ = int(zold);
 						if(IOZ >= nb && IOZ <= ne) {
 							// now x-y position
-							float cphi = ist*dphi*DGR_TO_RAD;
+							float cphi = ist*dphi*(float)DGR_TO_RAD;
 							float ca = cos(cphi);
 							float sa = sin(cphi);
 							float xold = ix*ca - jy*sa + nxc;

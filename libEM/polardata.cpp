@@ -35,10 +35,10 @@
 
 #include <new>
 #include <cmath>
+#include "emdata.h"
 #include "polardata.h"
 #include "exception"
 #include "util.h"
-#include "emdata.h"
 
 #ifdef DEBUG
 	#include <iostream>

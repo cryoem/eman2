@@ -1460,7 +1460,7 @@ static double refalifn(const gsl_vector * v, void *params)
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	
-	float test_result = result;
+	float test_result = (float)result;
 	// DELETE AT SOME STAGE, USEFUL FOR PRERELEASE STUFF
 	if ( Util::goodf(&test_result) ) {
 //		cout << "result " << result << " " << x << " " << y << " " << a << endl;

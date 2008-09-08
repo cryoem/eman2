@@ -36,6 +36,10 @@
 #ifndef eman__byteorder_h__
 #define eman__byteorder_h__ 1
 
+#ifdef _WIN32
+	#pragma warning(disable:4819)
+#endif	//_WIN32
+
 #include <cstddef>
 
 namespace EMAN

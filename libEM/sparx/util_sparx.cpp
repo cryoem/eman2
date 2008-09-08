@@ -1540,11 +1540,11 @@ void Util::sincBlackman::build_sBtable() {
 	int M2 = M/2;
 	fltb = float(ltab)/M2;
 	for (int i=ltab+1; i <= ntable; i++) sBtable[i] = 0.0f;
-	float x = 1.0e-7;
-	sBtable[0] = sin(twopi*fc*x)/x*(0.52-0.5*cos(twopi*(x-M2)/M)+0.08*cos(2*twopi*(x-M2)/M));
+	float x = 1.0e-7f;
+	sBtable[0] = (float)(sin(twopi*fc*x)/x*(0.52-0.5*cos(twopi*(x-M2)/M)+0.08*cos(2*twopi*(x-M2)/M)));
 	for (int i=1; i <= ltab; i++) {
 		x = float(i)/fltb;
-		sBtable[i] = sin(twopi*fc*x)/x*(0.52-0.5*cos(twopi*(x-M2)/M)+0.08*cos(2*twopi*(x-M2)/M));
+		sBtable[i] = (float)(sin(twopi*fc*x)/x*(0.52-0.5*cos(twopi*(x-M2)/M)+0.08*cos(2*twopi*(x-M2)/M)));
 		//cout << "  "<<x<<"  "<<sBtable[i] <<endl;
 	}
 }
@@ -17457,7 +17457,7 @@ vector<float> Util::cluster_pairwise(EMData* d, int K, float T, float F) {
 
 			// Simulated annealing
 			if(exp(-1.0/float(T)) > Util::get_irand(1,1000)/1000.0) {
-			    na = Util::get_irand(0, K);
+			    na = (float)(Util::get_irand(0, K));
 			    qm = (*d)(mono(i,int(na)));
 			    ct++;
 			}

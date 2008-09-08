@@ -2989,7 +2989,7 @@ EMData * EMData::calc_fast_sigma_image( EMData* mask)
 			P++;
 		}
 	}
-	float normfac = 1.0/(float)P;
+	float normfac = 1.0f/(float)P;
 	
 	bool undoclip = false;
 	

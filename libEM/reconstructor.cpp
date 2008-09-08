@@ -33,14 +33,14 @@
  * 
  * */
 
+#include "reconstructor.h"
+#include "ctf.h"
+#include "emassert.h"
 #include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <boost/bind.hpp>
 #include <boost/format.hpp>
-#include "reconstructor.h"
-#include "ctf.h"
-#include "emassert.h"
 
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_fit.h>
