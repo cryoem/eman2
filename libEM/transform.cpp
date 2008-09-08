@@ -35,6 +35,7 @@
 
 #include "transform.h"
 #include "util.h"
+#include "emobject.h"
 #include <cctype> // for std::tolower
 #include <cstring>  // for memcpy
 using namespace EMAN;
@@ -105,31 +106,30 @@ void Transform::to_identity()
 void Transform::set_params(const Dict& d) {
 	if (d.has_key_ci("type") ) set_rotation(d);
 	
-	try {
+	if (d.has_key_ci("scale")) {
 		float scale = static_cast<float>(d.get_ci("scale"));
 		set_scale(scale);
 	}
-	catch (...) { }
 	
 	float dx=0,dy=0,dz=0;
-	try  { dx = static_cast<float>(d.get_ci("dx")); }
-	catch (...) { }
 	
-	try  { dy = static_cast<float>(d.get_ci("dy")); }
-	catch (...) { }
-	
-	try  { dz = static_cast<float>(d.get_ci("dz")); }
-	catch (...) { }
+	if (d.has_key_ci("tx")) dx = static_cast<float>(d.get_ci("tx"));
+	if (d.has_key_ci("ty")) dy = static_cast<float>(d.get_ci("ty"));
+	if (d.has_key_ci("tz")) dz = static_cast<float>(d.get_ci("tz"));
 	
 	if ( dx != 0.0 || dy != 0.0 || dz != 0.0 ) {
 		set_trans(dx,dy,dz);	
 	}
 	
-	try {
-		bool mirror = static_cast<bool>(d.get_ci("mirror"));
+	if (d.has_key_ci("mirror")) {
+		EMObject e = d.get_ci("mirror");
+		if ( (e.get_type() != EMObjectTypes::BOOL ) && (e.get_type() != EMObjectTypes::INT ) && (e.get_type() != EMObjectTypes::UNSIGNEDINT ) )
+			throw InvalidParameterException("Error, mirror must be a bool or an int");
+		
+		bool mirror = static_cast<bool>(e);
 		set_mirror(mirror);
 	}
-	catch (...) { }
+
 }
 
 
@@ -137,7 +137,7 @@ Dict Transform::get_params(const string& euler_type) {
 	Dict params = get_rotation(euler_type);
 	
 	Vec3f v = get_trans();
-	params["dx"] = v[0]; params["dy"] = v[1]; params["dz"] = v[2];
+	params["tx"] = v[0]; params["ty"] = v[1]; params["tz"] = v[2];
 	
 	float scale = get_scale();
 	params["scale"] = scale;
@@ -152,7 +152,7 @@ Dict Transform::get_params_2d() {
 	Dict params = get_rotation("2d");
 	
 	Vec2f v = get_trans_2d();
-	params["dx"] = v[0]; params["dy"] = v[1]; 
+	params["tx"] = v[0]; params["ty"] = v[1]; 
 	
 	float scale = get_scale();
 	params["scale"] = scale;
@@ -3204,7 +3204,7 @@ Transform HSym::get_sym(const int n) const
 {
 	float daz = params.set_default("daz",0.0f);
 	float apix = params.set_default("apix",1.0f);
-	float dz = params.set_default("dz", 0)/apix;
+	float dz = params.set_default("tz", 0)/apix;
 	
 	Dict d("type","eman");
 	// courtesy of Phil Baldwin

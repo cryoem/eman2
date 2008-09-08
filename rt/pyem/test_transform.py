@@ -61,18 +61,18 @@ class TestTransform(unittest.TestCase):
 				dx = Util.get_frand(-30.0,30.0)
 				dy = Util.get_frand(-30.0,30.0)
 				dz = Util.get_frand(-30.0,30.0)
-				d = {"dx":dx,"mirror":mirror,"scale":scale}
+				d = {"tx":dx,"mirror":mirror,"scale":scale}
 				t = Transform(d)
 				v = t.get_trans()
 				self.assertAlmostEqual(v[0], dx, 5)
 			
-				d = {"dx":dx,"dy":dy,"mirror":mirror,"scale":scale}
+				d = {"tx":dx,"ty":dy,"mirror":mirror,"scale":scale}
 				t = Transform(d)
 				v = t.get_trans()
 				self.assertAlmostEqual(v[0], dx, 5)
 				self.assertAlmostEqual(v[1], dy, 5)
 				
-				d = {"dx":dx,"dy":dy,"dz":dz,"mirror":mirror,"scale":scale}
+				d = {"tx":dx,"ty":dy,"tz":dz,"mirror":mirror,"scale":scale}
 				t = Transform(d)
 				v = t.get_trans()
 				self.assertAlmostEqual(v[0], dx, 5)
@@ -86,19 +86,19 @@ class TestTransform(unittest.TestCase):
 				dx = Util.get_frand(-30.0,30.0)
 				dy = Util.get_frand(-30.0,30.0)
 				dz = Util.get_frand(-30.0,30.0)
-				d = {"dx":dx,"mirror":mirror,"scale":scale}
+				d = {"tx":dx,"mirror":mirror,"scale":scale}
 				t = Transform(d)
 				v = t.get_trans_2d()
 				self.assertAlmostEqual(v[0], dx, 5)
 			
-				d = {"dx":dx,"dy":dy,"mirror":mirror,"scale":scale}
+				d = {"tx":dx,"ty":dy,"mirror":mirror,"scale":scale}
 				t = Transform(d)
 				v = t.get_trans_2d()
 				self.assertAlmostEqual(v[0], dx, 5)
 				self.assertAlmostEqual(v[1], dy, 5)
 				
 				# should even work in this case, dz is ignored
-				d = {"dx":dx,"dy":dy,"dz":dz,"mirror":mirror,"scale":scale}
+				d = {"tx":dx,"ty":dy,"tz":dz,"mirror":mirror,"scale":scale}
 				t = Transform(d)
 				v = t.get_trans_2d()
 				self.assertAlmostEqual(v[0], dx, 5)
@@ -273,7 +273,7 @@ class TestTransform(unittest.TestCase):
 	def test_get_set_params(self):
 		"""test set/get params............................."""
 		t = Transform()
-		t.set_params({"type":"eman","az":10,"alt":150,"scale":2.0,"mirror":True,"dx":3.4})
+		t.set_params({"type":"eman","az":10,"alt":150,"scale":2.0,"mirror":True,"tx":3.4})
 		d = t.get_params("eman")
 		s = Transform(d)
 		self.assert_matrix_equality(s,t)
@@ -304,7 +304,7 @@ class TestTransform(unittest.TestCase):
 	def test_get_set_params_2d(self):
 		"""test set/get params 2d.........................."""
 		t = Transform()
-		t.set_params({"type":"2d","alpha":10,"scale":2.0,"mirror":True,"dx":3.4,"dy":0.0})
+		t.set_params({"type":"2d","alpha":10,"scale":2.0,"mirror":True,"tx":3.4,"ty":0.0})
 		d = t.get_params_2d() # no euler type required because there is only one ("2d")
 		s = Transform(d) # s is the same as t
 		self.assert_matrix_equality(s,t)
@@ -473,8 +473,8 @@ class TestTransform(unittest.TestCase):
 	def test_inverse_invert(self):
 		"""test inverse/invert ............................"""
 		no_trans = {}
-		two_trans = {"dx":1.023,"dy":-1.002}
-		three_trans = {"dx":.023,"dy":431.22002,"dz":120.02}
+		two_trans = {"tx":1.023,"ty":-1.002}
+		three_trans = {"tx":.023,"ty":431.22002,"tz":120.02}
 		for scale in [1.0,2.0]:
 			for mirror in [True, False]:
 				for trans in [no_trans,two_trans,three_trans]:
@@ -512,7 +512,7 @@ class TestTransform(unittest.TestCase):
 					self.assert_identity(t*s)
 	def test_copy_construction(self):
 		"""test copy construction.........................."""
-		three_trans = {"dx":.023,"dy":431.22002,"dz":120.02}
+		three_trans = {"tx":.023,"ty":431.22002,"tz":120.02}
 		d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
 		t = Transform(d)
 		t.set_params(three_trans) # I.E. now we have all matrix elements filled
@@ -547,7 +547,7 @@ class TestTransform(unittest.TestCase):
 		dx = .023
 		dy = 431.220002
 		dz = 120.02
-		three_trans = {"dx":dx,"dy":dy,"dz":dz}
+		three_trans = {"tx":dx,"ty":dy,"tz":dz}
 		t = Transform(three_trans)
 		v = t.get_pre_trans()
 		
@@ -601,7 +601,10 @@ class TestTransform(unittest.TestCase):
 	def assert_matrix_equality(self,t,t1):
 		for j in range(4):
 			for i in range(4):
-				self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 3)
+				if t1.at(i,j) != 0:
+					self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 3)
+				else:
+					self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 3)
 
 class TestSymmetry3D(unittest.TestCase):
 	def assert_reduction_works(self,i,az,alt,azmax,sym):

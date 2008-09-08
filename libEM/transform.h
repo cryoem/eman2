@@ -99,7 +99,7 @@ namespace EMAN
 			
 			/** Set the parameters of the entire transform.
 			 * keys acted upon are "type" - if this exists then the correct euler angles need to be included -
-			 * also "dx","dy","dz", "scale", and "mirror"
+			 * also "tx","ty","tz", "scale", and "mirror"
 			 *  @param dict the dictionary containing the parameters
 			 */
 			void set_params(const Dict& d);
@@ -157,6 +157,7 @@ namespace EMAN
 			 * @return the 2D pre translation vector
 			 */
 			Vec2f get_pre_trans_2d() const;
+			
 			
 			//=============== set and get scale =============
 			/** Set the scale
@@ -1117,7 +1118,7 @@ namespace EMAN
 				TypeDict d;
 				d.put("nsym", EMObject::INT, "The symmetry number of the helix, around the equator.");
 				d.put("equator_range", EMObject::FLOAT, "The amount altitude angles are allowed to vary above and below the equator. Default is 5");
-				d.put("dz", EMObject::FLOAT, "The translational distance (along z) between succesive identical subunits in angstrom (default a/pix is 1)");
+				d.put("tz", EMObject::FLOAT, "The translational distance (along z) between succesive identical subunits in angstrom (default a/pix is 1)");
 				d.put("daz", EMObject::FLOAT, "The rotational angle (about z) between successive identical subunits in degrees");
 				d.put("apix", EMObject::FLOAT, "Angstrom per pixel, default is one.");
 				return d;
@@ -1142,7 +1143,7 @@ namespace EMAN
 			 * associated with helical symmetry. This symmetry operations are generated in a straightforward
 			 * way from the parameters of this class, specifically the return Transform object has an 
 			 * azimuth of n times the "d_az" (as specified in the parameters of this class), and has a post
-			 * translation of "dz" in the z direction.
+			 * translation of "tz" in the z direction.
 			 * @param n the helical symmetry operation number.
 			 * @return a transform3d containing the correct rotational and translational symmetry operation.
 			 */
