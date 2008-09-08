@@ -1011,7 +1011,7 @@ The basic design of EMAN Processors: <br>\
 			void set_params(const Dict & new_params)
 			{
 				params = new_params;
-				zero_to = params.set_default("zero_to",0.0);
+				zero_to = params.set_default("zero_to",0.0f);
 			}
 
 			TypeDict get_param_types() const

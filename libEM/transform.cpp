@@ -336,8 +336,8 @@ Dict Transform::get_rotation(const string& euler_type) const
 	bool x_mirror;
 	get_scale_and_mirror(scale,x_mirror);
 	float cosalt=matrix[2][2]/scale;
-	float x_mirror_scale = (x_mirror ? -1.0 : 1.0);
-	float inv_scale = 1.0/scale;
+	float x_mirror_scale = (x_mirror ? -1.0f : 1.0f);
+	float inv_scale = 1.0f/scale;
 
 	float az=0;
 	float alt = 0;
@@ -349,17 +349,17 @@ Dict Transform::get_rotation(const string& euler_type) const
 	if (cosalt > max) {  // that is, alt close to 0
 		alt = 0;
 		az=0;
-		phi = EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]); 
+		phi = (float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]); 
 	}
 	else if (cosalt < -max) { // alt close to pi
 		alt = 180;
 		az=0; 
-		phi=360.0f-EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]);
+		phi=360.0f-(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][1], x_mirror_scale*matrix[0][0]);
 	}
 	else {
-		alt = EMConsts::rad2deg*(float) acos(cosalt);
-		az  = 360.0f+EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
-		phi = 360.0f+EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
+		alt = (float)EMConsts::rad2deg*(float) acos(cosalt);
+		az  = 360.0f+(float)EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
+		phi = 360.0f+(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
 	}
 	az=fmod(az+180.0f,360.0f)-180.0f;
 	phi=fmod(phi+180.0f,360.0f)-180.0f;
@@ -1468,17 +1468,17 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	if (cosalt > max) {  // that is, alt close to 0
 		alt = 0;
 		az=0;
-		phi = EMConsts::rad2deg*(float)atan2(matrix[0][1], matrix[0][0]); 
+		phi = (float)EMConsts::rad2deg*(float)atan2(matrix[0][1], matrix[0][0]); 
 	}
 	else if (cosalt < -max) { // alt close to pi
 		alt = 180;
 		az=0; 
-		phi=360.0f-EMConsts::rad2deg*(float)atan2(matrix[0][1], matrix[0][0]);
+		phi=360.0f-(float)EMConsts::rad2deg*(float)atan2(matrix[0][1], matrix[0][0]);
 	}
 	else {
-		alt = EMConsts::rad2deg*(float) acos(cosalt);
-		az  = 360.0f+EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
-		phi = 360.0f+EMConsts::rad2deg*(float)atan2(matrix[0][2], matrix[1][2]);
+		alt = (float)EMConsts::rad2deg*(float) acos(cosalt);
+		az  = 360.0f+(float)EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
+		phi = 360.0f+(float)EMConsts::rad2deg*(float)atan2(matrix[0][2], matrix[1][2]);
 	}
 	az=fmod(az+180.0f,360.0f)-180.0f;
 	phi=fmod(phi+180.0f,360.0f)-180.0f;

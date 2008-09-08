@@ -509,7 +509,7 @@ vector<float> BoxingTools::get_min_delta_profile(const EMData* const image, int 
 	static vector<float> squared_numbers;
 	if ( (unsigned int)(radius+1) > squared_numbers.size() ) {
 		for(int i = squared_numbers.size(); i <= radius; ++i) {
-			squared_numbers.push_back(i*i);
+			squared_numbers.push_back((float)(i*i));
 		}
 	}
 	
@@ -676,7 +676,7 @@ bool BoxingTools::hi_brid(const EMData* const image, int x, int y, int radius,EM
 	static vector<float> squared_numbers;
 	if ( (unsigned int)(radius+1) > squared_numbers.size() ) {
 		for(int i = squared_numbers.size(); i <= radius; ++i) {
-			squared_numbers.push_back(i*i);
+			squared_numbers.push_back((float)(i*i));
 		}
 	}
 	

@@ -5492,13 +5492,13 @@ void TestImageLineWave::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	float period = params.set_default("period",10.0);
+	float period = params.set_default("period",10.0f);
 	int n = image->get_xsize()*image->get_ysize()*image->get_zsize();
 	
 	for(int i = 0; i < n; ++i) {
 		float x = fmod((float)i,period);
 		x /= period;
-		x = sin(x*EMConsts::pi*2.0);
+		x = (float)sin(x*EMConsts::pi*2.0);
 		image->set_value_at_fast(i,x);
 	}
 }

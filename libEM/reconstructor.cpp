@@ -498,7 +498,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	float *dat = input_slice->get_data();
 // 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
 	
-	float weight = params.set_default("weight",1.0);
+	float weight = params.set_default("weight",1.0f);
 	
 	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i) {
 		Transform3D t3d = arg.get_sym((string)params["sym"],i);
@@ -619,7 +619,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	}
 	float *dat = slice->get_data();
 	
-	float weight = params.set_default("weight",1.0);
+	float weight = params.set_default("weight",1.0f);
 	
 	for (int y = 0; y < slice->get_ysize(); y++) {
 		for (int x = 0; x < slice->get_xsize() / 2; x++) {
@@ -3715,8 +3715,8 @@ void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>
     int nprj = m_offsets.size();
     int npoint = m_offsets[0]/sizeof(point_t);
  
-    assert( int(mults.size())==nprj );
-    assert( int(m_points.size())== (pend - pbegin)*npoint );
+    Assert( int(mults.size())==nprj );
+    Assert( int(m_points.size())== (pend - pbegin)*npoint );
 
     int ipt = 0;
     for( int iprj=pbegin; iprj < pend; ++iprj )
