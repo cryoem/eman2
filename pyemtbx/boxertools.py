@@ -2539,15 +2539,29 @@ class PawelAutoBoxer(AutoBoxer):
 
 	def auto_box(self,boxable,update_display=True,force_auto_box=False):
 		from string import atoi, atof
+
 		self.pixel_input = atof(self.parent.guictl.input_pixel_size.text())
 		self.pixel_output= atof(self.parent.guictl.output_pixel_size.text())
-		self.box_size = atoi(self.parent.guictl.bs.text())
+		self.box_size = int(self.parent.guictl.bs.text())
+
+		slow = self.parent.guictl.threshold_low.text()
+		shgh = self.parent.guictl.threshold_hgh.text()
+
+		try:
+			thr_low = atof(slow)
+			thr_hgh = atof(shgh)
+		except:
+			thr_low = None
+			thr_hgh = None
 
 		print "running Pawel's Method: "
 		print "     Pixel input : ", self.pixel_input
 		print "     Pixel output: ", self.pixel_output
 		print "     Box size    : ", self.box_size
 		print "     boxable.image_name:	  ", boxable.image_name
+		print "     CCF low bound   :   ", thr_low
+		print "     CCF hgh bound   :   ", thr_hgh
+
 
 		imgname = boxable.get_image_name()
 	
@@ -2580,23 +2594,39 @@ class PawelAutoBoxer(AutoBoxer):
 		boxsize = self.box_size
 		boxes = []
 		trimboxes = []
+		ccfs = []
 		for i in xrange(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
 			box = Box( cx-boxhalf, cy-boxhalf, boxsize, boxsize, 0)
 			box.set_image_name( imgname )
 			box.set_correlation_score( peaks[3*i] )
+			ccfs.append( peaks[3*i] )
 			box.corx = cx
 			box.cory = cy
 			box.changed = True
-			boxes.append(box)
-			trimboxes.append( TrimBox(box) )
+		
+			score = peaks[3*i]
+			skip = False
+			if not(thr_low is None) and score < thr_low:
+				skip = True
+	
+			if not(thr_hgh is None) and score > thr_hgh:
+				skip = True
+
+			if not skip:
+				boxes.append(box)
+				trimboxes.append( TrimBox(box) )
+
+		if thr_low is None:
+			self.parent.guictl.pawel_histogram.setData( ccfs )
 
 		boxable.append_stored_auto_boxes(trimboxes)
 		boxable.store_key_entry_in_idd("auto_boxes",trimboxes)
 		boxable.write_to_db()
 		boxable.get_auto_selected_from_db() 
 
+		print "nbox, boxable.numbox: ", len(boxes), boxable.num_boxes()
 	def set_interactive_mode(self,real_time_auto_boxing=False):
 		pass
 
