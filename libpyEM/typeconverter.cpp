@@ -181,6 +181,10 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 		Transform3D * trans = (Transform3D*) emobj;
 		result = python::incref(python::object(trans).ptr());
 	}
+	else if (t == EMObject::TRANSFORM ) {
+		Transform * trans = (Transform*) emobj;
+		result = python::incref(python::object(trans).ptr());
+	}
 	else if (t == EMObject::FLOATARRAY) {
 		vector<float> farray = emobj;
 		python::list flist;
