@@ -65,7 +65,7 @@ const string OptimumOrientationGenerator::NAME = "opt";
 
 const float Transform::ERR_LIMIT = 0.000001f;
 
- Transform::Transform() : transform_type(UNKNOWN)
+ Transform::Transform() /*: transform_type(UNKNOWN)*/
 {
 	to_identity();
 }
@@ -79,12 +79,12 @@ Transform& Transform::operator=(const Transform& that ) {
 	
 	if (this != &that ) {
 		memcpy(matrix,that.matrix,12*sizeof(float));
-		transform_type = that.transform_type;
+// 		transform_type = that.transform_type;
 	}	
 	return *this;
 }
 
-Transform::Transform(const Dict& d) : transform_type(UNKNOWN) {
+Transform::Transform(const Dict& d) /*: transform_type(UNKNOWN)*/ {
 	to_identity();
 	set_params(d);
 }
@@ -97,7 +97,7 @@ Transform::Transform(const float array[12]) {
 
 void Transform::to_identity()
 {
-	transform_type = UNKNOWN;
+// 	transform_type = UNKNOWN;
 	for(int i=0; i<3; ++i) {
 		for(int j=0; j<4; ++j) {
 			if(i==j) {
@@ -222,27 +222,27 @@ void Transform::set_rotation(const Dict& rotation)
 
 	string type = Util::str_to_lower(euler_type);
 	if (type == "2d") {
-		validate_and_set_type(TWOD);
+		assert_valid_2d();
 		az  = 0;
 		alt = 0;
 		phi = (float)rotation["alpha"] ;
 	} else if ( type == "eman" ) {
-		validate_and_set_type(THREED);
+// 		validate_and_set_type(THREED);
 		az  = (float)rotation["az"] ;
 		alt = (float)rotation["alt"]  ;
 		phi = (float)rotation["phi"] ;
 	} else if ( type == "imagic" ) {
-		validate_and_set_type(THREED);
+// 		validate_and_set_type(THREED);
 		az  = (float)rotation["alpha"] ;
 		alt = (float)rotation["beta"]  ;
 		phi = (float)rotation["gamma"] ;
 	} else if ( type == "spider" ) {
-		validate_and_set_type(THREED);
+// 		validate_and_set_type(THREED);
 		az =  (float)rotation["phi"]    + 90.0f;
 		alt = (float)rotation["theta"] ;
 		phi = (float)rotation["psi"]    - 90.0f;
 	} else if ( type == "xyz" ) {
-		validate_and_set_type(THREED);
+// 		validate_and_set_type(THREED);
 		cxtilt = cos( (M_PI/180.0f)*(float)rotation["xtilt"]);
 		sxtilt = sin( (M_PI/180.0f)*(float)rotation["xtilt"]);
 		cytilt = cos( (M_PI/180.0f)*(float)rotation["ytilt"]);
@@ -251,19 +251,19 @@ void Transform::set_rotation(const Dict& rotation)
 		alt = (180.0f/M_PI)*acos(cytilt*cxtilt)  ;
 		phi = (float)rotation["ztilt"] +(180.0f/M_PI)*atan2(sxtilt,cxtilt*sytilt)   - 90.0f ;
 	} else if ( type == "mrc" ) {
-		validate_and_set_type(THREED);
+// 		validate_and_set_type(THREED);
 		az  = (float)rotation["phi"]   + 90.0f ;
 		alt = (float)rotation["theta"] ;
 		phi = (float)rotation["omega"] - 90.0f ;
 	} else if ( type == "quaternion" ) {
-		validate_and_set_type(THREED);
+// 		validate_and_set_type(THREED);
 		is_quaternion = 1;
 		e0 = (float)rotation["e0"];
 		e1 = (float)rotation["e1"];
 		e2 = (float)rotation["e2"];
 		e3 = (float)rotation["e3"];
 	} else if ( type == "spin" ) {
-		validate_and_set_type(THREED);
+// 		validate_and_set_type(THREED);
 		is_quaternion = 1;
 		Omega = (float)rotation["Omega"];
 		e0 = cos(Omega*M_PI/360.0f);
@@ -271,7 +271,7 @@ void Transform::set_rotation(const Dict& rotation)
 		e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
 		e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
 	} else if ( type == "sgirot" ) {
-		validate_and_set_type(THREED);
+// 		validate_and_set_type(THREED);
 		is_quaternion = 1;
 		Omega = (float)rotation["q"] ;
 		e0 = cos(Omega*M_PI/360.0f);
@@ -290,7 +290,7 @@ void Transform::set_rotation(const Dict& rotation)
 		matrix[2][1] = (float)rotation["m32"];
 		matrix[2][2] = (float)rotation["m33"];
 	} else {
-		transform_type = UNKNOWN;
+// 		transform_type = UNKNOWN;
 		throw InvalidStringException(euler_type, "unknown Euler Type");
 	}
 
@@ -420,30 +420,30 @@ Dict Transform::get_rotation(const string& euler_type) const
 	
 	result["type"] = type;
 	if (type == "2d") {
-			assert_consistent_type(TWOD);
-			result["alpha"]  = phi;
+		assert_valid_2d();
+		result["alpha"]  = phi;
 	} else if (type == "eman") {
-			assert_consistent_type(THREED);
-			result["az"]  = az;
-			result["alt"] = alt;
-			result["phi"] = phi;
+// 		assert_consistent_type(THREED);
+		result["az"]  = az;
+		result["alt"] = alt;
+		result["phi"] = phi;
 	} else if (type == "imagic") {
-			assert_consistent_type(THREED);
-			result["alpha"] = az;
-			result["beta"] = alt;
-			result["gamma"] = phi;
+// 		assert_consistent_type(THREED);
+		result["alpha"] = az;
+		result["beta"] = alt;
+		result["gamma"] = phi;
 	} else if (type == "spider") {
-		assert_consistent_type(THREED);
+// 		assert_consistent_type(THREED);
 		result["phi"]   = phiS;  // The first Euler like az
 		result["theta"] = alt;
 		result["psi"]   = psiS;
 	} else if (type == "mrc") {
-		assert_consistent_type(THREED);
+// 		assert_consistent_type(THREED);
 		result["phi"]   = phiS;
 		result["theta"] = alt;
 		result["omega"] = psiS;
 	} else if (type == "xyz") {
-		assert_consistent_type(THREED);
+// 		assert_consistent_type(THREED);
 		xtilt = atan2(-sin((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt),cos((M_PI/180.0f)*alt));
 		ytilt = asin(  cos((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt));
 		ztilt = psiS*M_PI/180.0f - atan2(sin(xtilt), cos(xtilt) *sin(ytilt));
@@ -455,19 +455,19 @@ Dict Transform::get_rotation(const string& euler_type) const
 		result["ytilt"]  = ytilt*180/M_PI;
 		result["ztilt"]  = ztilt;
 	} else if (type == "quaternion") {
-		assert_consistent_type(THREED);
+// 		assert_consistent_type(THREED);
 		result["e0"] = cosOover2 ;
 		result["e1"] = sinOover2 * n1 ;
 		result["e2"] = sinOover2 * n2;
 		result["e3"] = sinOover2 * n3;
 	} else if (type == "spin") {
-		assert_consistent_type(THREED);
+// 		assert_consistent_type(THREED);
 		result["Omega"] =360.0f* acos(cosOover2)/ M_PI ;
 		result["n1"] = n1;
 		result["n2"] = n2;
 		result["n3"] = n3;
 	} else if (type == "sgirot") {
-		assert_consistent_type(THREED);
+// 		assert_consistent_type(THREED);
 		result["q"] = 360.0f*acos(cosOover2)/M_PI ;
 		result["n1"] = n1;
 		result["n2"] = n2;
@@ -492,9 +492,9 @@ Dict Transform::get_rotation(const string& euler_type) const
 
 void Transform::set_trans(const float& x, const float& y, const float& z)
 {
-	if ( z != 0.0 ) {
-		validate_and_set_type(THREED);
-	}
+// 	if ( z != 0.0 ) {
+// 		validate_and_set_type(THREED);
+// 	}
 	bool x_mirror = get_mirror();
 	
 	if (x_mirror) matrix[0][3] = -x;
@@ -517,7 +517,6 @@ Vec3f Transform::get_trans() const
 
 Vec2f Transform::get_trans_2d() const
 {
-// 	assert_consistent_type(TWOD);
 	bool x_mirror = get_mirror();
 	Vec2f v;
 	if (x_mirror) v[0] = -matrix[0][3];
@@ -716,7 +715,7 @@ void Transform::transpose_inplace() {
 		}
 	}
 }
-
+/*
 void Transform::validate_and_set_type(const Transform::TransformType type ) {
 	if (transform_type == UNKNOWN ) {
 		transform_type = type; // This is fine this is the first time the type is being set
@@ -746,16 +745,16 @@ string Transform::transform_type_to_string(const Transform::TransformType type )
 	} else {
 		throw InvalidParameterException("Error, unknown type in Transform::transform_type_to_string");
 	}
-}
+}*/
 
 Transform EMAN::operator*(const Transform & M2, const Transform & M1)     // YYY
 {
-	if (M2.transform_type != Transform::UNKNOWN && M1.transform_type != Transform::UNKNOWN ) {
-		if (M2.transform_type != M1.transform_type) {
-			string message = "can't multiply a " + M2.transform_type_to_string(M2.transform_type) + " Transform type against a " + M1.transform_type_to_string(M1.transform_type) + " Transform type";
-			throw UnexpectedBehaviorException("Error, " + message);
-		}
-	}
+// 	if (M2.transform_type != Transform::UNKNOWN && M1.transform_type != Transform::UNKNOWN ) {
+// 		if (M2.transform_type != M1.transform_type) {
+// 			string message = "can't multiply a " + M2.transform_type_to_string(M2.transform_type) + " Transform type against a " + M1.transform_type_to_string(M1.transform_type) + " Transform type";
+// 			throw UnexpectedBehaviorException("Error, " + message);
+// 		}
+// 	}
 	Transform result;
 	for (int i=0; i<3; i++) {
 		for (int j=0; j<4; j++) {
@@ -767,7 +766,23 @@ Transform EMAN::operator*(const Transform & M2, const Transform & M1)     // YYY
 	return result;
 }
 
-void Transform::assert_valid_2d() {
+void Transform::assert_valid_2d() const {
+	int rotation_error = 0;
+	int translation_error = 0;
+	if (fabs(matrix[2][0]) > ERR_LIMIT) rotation_error++;
+	if (fabs(matrix[2][1]) > ERR_LIMIT) rotation_error++;
+	if (fabs(matrix[2][3]) > ERR_LIMIT) translation_error++;
+	if (fabs(matrix[0][2]) > ERR_LIMIT) rotation_error++;
+	if (fabs(matrix[1][2]) > ERR_LIMIT) rotation_error++;
+	
+	if ( translation_error && rotation_error ) {
+		throw UnexpectedBehaviorException("Error, the internal matrix contains 3D rotations and 3D translations. This object can not be considered 2D");
+	} else if ( translation_error ) {
+		throw UnexpectedBehaviorException("Error, the internal matrix contains a non zero z component for a 3D translation. This object can not be considered 2D");
+	}
+	else if ( rotation_error ) {
+		throw UnexpectedBehaviorException("Error, the internal matrix contains 3D rotations and this object can not be considered 2D");
+	}
 	
 }
 

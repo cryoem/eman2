@@ -57,7 +57,7 @@
 namespace EMAN
 {
 	class Transform {
-		friend Transform EMAN::operator*(const Transform & M2, const Transform & M1);
+// 		friend Transform EMAN::operator*(const Transform & M2, const Transform & M1);
 		public:
 			static const float ERR_LIMIT;
 		
@@ -251,7 +251,7 @@ namespace EMAN
 			* @return the transformed vector
 			 */
 			inline Vec2f transform(const float& x, const float& y) const {
-				assert_consistent_type(TWOD);
+				assert_valid_2d();
 				Vec2f ret;
 				ret[0] = matrix[0][0]*x + matrix[0][1]*y + matrix[0][3];
 				ret[1] = matrix[1][0]*x + matrix[1][1]*y + matrix[1][3];
@@ -273,7 +273,7 @@ namespace EMAN
 			 * @return the transformed vector
 			 */
 			inline Vec3f transform(const float& x, const float& y, const float& z) const {
-				assert_consistent_type(THREED);
+// 				assert_consistent_type(THREED);
 				Vec3f ret;
 				ret[0] = matrix[0][0] * x + matrix[0][1] * y + matrix[0][2] * z + matrix[0][3];
 				ret[1] = matrix[1][0] * x + matrix[1][1] * y + matrix[1][2] * z + matrix[1][3];
@@ -300,7 +300,7 @@ namespace EMAN
 				UNKNOWN
 			};
 			
-			TransformType transform_type;
+// 			TransformType transform_type;
 			
 			/** validate that it is okay set the internal type to the new type
 			 * If the internal type is UNKNOWN then it's okay to set the type to anything. 
@@ -309,7 +309,7 @@ namespace EMAN
 			 * @param t the new transform type
 			 * @exception UnexpectedBehaviorException if the internal type and the new type are irreconcilable
 			 */
-			void validate_and_set_type(const TransformType t);
+// 			void validate_and_set_type(const TransformType t);
 			
 			/** assert that the argument type is consistent with the internally stored type
 			 * If the internal type is UNKNOWN then there is no problem. This could, for example,
@@ -320,16 +320,16 @@ namespace EMAN
 			 * @param t the transform type
 			 * @exception UnexpectedBehaviorException if the internal type and the argument type are irreconcilable
 			 */
-			void assert_consistent_type(const TransformType t) const;
+// 			void assert_consistent_type(const TransformType t) const;
 			
 			/** Convert the argument transform type into a unique and semantically equivalent string
 			 * @param type the transform type
 			 * @return a unique and semantically equivalent string that represents the transform type
 			 */
-			string transform_type_to_string(const Transform::TransformType type ) const;
+// 			string transform_type_to_string(const Transform::TransformType type ) const;
 			
 			
-			void assert_valid_2d();
+			void assert_valid_2d() const;
 
 	};
 	/// Matrix times Matrix, a pure mathematical operation
