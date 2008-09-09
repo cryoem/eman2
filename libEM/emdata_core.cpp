@@ -308,7 +308,6 @@ void EMData::mult_complex_efficient(const EMData & em, const int radius)
 	
 	
 	const float *src_data = em.get_data();
-	size_t size = nxy * nz;
 	
 	size_t i_radius = radius;
 	size_t k_radius = 1;

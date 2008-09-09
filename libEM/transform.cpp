@@ -139,7 +139,10 @@ Dict Transform::get_params(const string& euler_type) {
 	Dict params = get_rotation(euler_type);
 	
 	Vec3f v = get_trans();
-	params["tx"] = v[0]; params["ty"] = v[1]; params["tz"] = v[2];
+	params["tx"] = v[0]; params["ty"] = v[1]; 
+	
+	string type = Util::str_to_lower(euler_type);
+	if ( type != "2d") params["tz"] = v[2];
 	
 	float scale = get_scale();
 	params["scale"] = scale;
@@ -348,7 +351,10 @@ Dict Transform::get_rotation(const string& euler_type) const
 		phi = 360.0f+(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
 	}
 	az=fmod(az+180.0f,360.0f)-180.0f;
-	phi=fmod(phi+180.0f,360.0f)-180.0f;
+// 	phi=fmod(phi+180.0f,360.0f)-180.0f;
+	
+	if (phi > 0) phi = fmod(phi,360.f);
+	else phi = 360.f - fmod(fabs(phi),360.f);
 
 //   get phiS, psiS ; SPIDER
 	if (fabs(cosalt) > max) {  // that is, alt close to 0
