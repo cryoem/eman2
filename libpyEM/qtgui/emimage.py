@@ -96,24 +96,26 @@ def imageupdate():
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
 
-	def __new__(cls,data=None,old=None,parent=1):
+	def __new__(cls,data=None,old=None,parent=1,copy=True):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
 		if isinstance(data,EMData) and data.get_zsize()==1:
 			# single 2D image
+			if copy: local_data = data.copy()
+			else: local_data = data
 			if old:
 				if isinstance(old,EMImage2D) :
-					old.setData(data)
+					old.setData(local_data)
 					return old
 			if parent : 
-				ret=EMParentWin(EMImage2D(data))
+				ret=EMParentWin(EMImage2D(local_data))
 				ret.show()
 #				ret.raise()
 				ret.releaseMouse()
 				ret.releaseKeyboard()
 				return ret
-			return EMImage2D(data)
+			return EMImage2D(local_data)
 		elif isinstance(data,EMData):
 			# must be a single 3D image
 			if old:
@@ -129,18 +131,20 @@ class EMImage(object):
 				return ret
 			return EMImage3D(data)
 		elif isinstance(data,list):
+			if copy: local_data = data.copy()
+			else: local_data = data
 			# list or tuple of images
 			if old:
 				if isinstance(old,EMImageMX) :
 					old.setData(data)
 					return old
 			if parent : 
-				ret=EMParentWin(EMImageMX(data))
+				ret=EMParentWin(EMImageMX(local_data))
 				ret.show()
 #				ret.raise()
 				ret.releaseMouse()
 				ret.releaseKeyboard()
 				return ret
-			return EMImageMX(data)
+			return EMImageMX(local_data)
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"
