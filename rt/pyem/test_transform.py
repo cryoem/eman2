@@ -609,6 +609,14 @@ class TestTransform(unittest.TestCase):
 					self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 3)
 				else:
 					self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 3)
+	
+	def test_transform_as_image_attribute(self):
+		"""test Transform as image attribute .............."""
+		t = Transform()
+		img = test_image()
+		img.set_attr('trans', t)
+		t2 = img.get_attr('trans')
+		self.assert_identity(t2)
 
 class TestSymmetry3D(unittest.TestCase):
 	def assert_reduction_works(self,i,az,alt,azmax,sym):
