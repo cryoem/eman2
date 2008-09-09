@@ -969,7 +969,8 @@ class EMImage2DCore:
 	
 	def delShape(self,p):
 		self.shapes.pop(p)
-	
+		self.shapechange=1
+
 	def delShapes(self,k=None):
 		if k:
 			try:
