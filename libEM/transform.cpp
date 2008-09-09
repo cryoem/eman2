@@ -90,6 +90,11 @@ Transform::Transform(const Dict& d) : transform_type(UNKNOWN) {
 }
 
 
+Transform::Transform(const float array[12]) {
+	memcpy(matrix,array,12*sizeof(float));
+}
+
+
 void Transform::to_identity()
 {
 	transform_type = UNKNOWN;

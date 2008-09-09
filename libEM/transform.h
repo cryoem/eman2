@@ -81,6 +81,12 @@ namespace EMAN
 			 */
 			Transform(const Dict& d);
 			
+			/** Construction using an array of floats
+			 * @param array the array of values that will become the internal matrix. row order (3 rows of 4)
+			 */
+			Transform(const float array[12]);
+			
+			
 			/** Set a rotation using a specific Euler type and the dictionary interface
 			* Works for all Euler types
 			* @param rotation a dictionary containing all key-entry pair required of the associated Euler type
