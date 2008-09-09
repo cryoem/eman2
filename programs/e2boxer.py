@@ -1759,13 +1759,17 @@ class GUIbox:
 				#print "writing box images or",image_name,"using currently stored autoboxer"
 				
 			boxable = Boxable(image_name,self,autoboxer)
+			boxable.clear_and_cache()
 			if boxable.is_excluded():
 				print "Image",image_name,"is excluded and being ignored"
 				continue
 			
+			
 			mode = self.autoboxer.get_mode()
 			self.autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			print "before auto_box, nbox: ", boxable.num_boxes()
 			self.autoboxer.auto_box(boxable,False)
+			print " after auto_box, nbox: ", boxable.num_boxes()
 			self.autoboxer.set_mode_explicit(mode)
 			
 			boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method)
@@ -2029,20 +2033,51 @@ class AutoBoxerSelectionsMediator:
 		self.parent.clear_displays()
 		return new_name
 
+
+		
+def histogram1d( data, nbin ) :
+	fmax = max( data )
+	fmin = min( data )
+	binsize = (fmax - fmin)/(nbin-1)
+	start = fmin-binsize/2.0
+	region = [None]*nbin
+	hist = [None]*nbin
+	for i in xrange(nbin):
+		region[i] = start + (i+0.5)*binsize
+		hist[i] = 0
+
+	for d in data:
+		id = int( (d-start)/binsize )
+		hist[id]+=1
+
+	return region,hist
+
+
+
 class CcfHistogram(QtGui.QWidget):
 
 	def __init__(self, parent):	
 		QtGui.QWidget.__init__(self,parent)
 		self.parent=parent
-
-		self.nbin=256
 		self.data=None
-
-                self.setMinimumSize(QtCore.QSize(self.nbin,256))
+                self.setMinimumSize(QtCore.QSize(256,256))
+		self.PRESIZE = 28
 
 	def setData( self, data ):
-                self.data=data
+		self.ccfs = data
+		self.nbin = self.width()-2*self.PRESIZE
+                self.data = histogram1d( data, self.nbin )
 
+		hmin = min(data)
+		hmax = max(data)
+
+		info = "Range: (%8.4f, %8.4f)" % (hmin, hmax)
+
+		self.parent.ccf_range.setText( info )
+		self.parent.threshold_low.setText( str(hmin) )
+		self.parent.threshold_hgh.setText( str(hmax) )
+		
+		self.tickers =[0, self.width()-1]
 
 	def paintEvent( self, event ):
 		p=QtGui.QPainter()
@@ -2054,14 +2089,80 @@ class CcfHistogram(QtGui.QWidget):
 		if self.data is None:
 			return
 
-		maxh = max( self.data[1] )
-                for i in xrange( len(self.data) ):
+		hmax = max( self.data[1] )
+                for i in xrange( len(self.data[1]) ):
 			h = self.data[1][i]
-                        p.drawLine(i, self.height(), i, int(self.height()*(1-h/maxh)) )
+                        p.drawLine(i+self.PRESIZE, self.height(), i+self.PRESIZE, int(self.height()*(1-0.9*h/hmax)) )
+
+		self.drawTicker( self.tickers[0] )
+		self.drawTicker( self.tickers[1] )
+
+	def mousePressEvent(self, event):
+		if event.button()==Qt.LeftButton:
+			x = event.x()
+			dis1 = abs( x - self.tickers[0] )
+			dis2 = abs( x - self.tickers[1] )
+
+			if dis1 < dis2:
+				self.cur_ticker = 0
+			else:
+				self.cur_ticker = 1
+
+			if not hasattr( self, "shapes" ):
+				self.shapes = self.parent.target.guiim.getShapes().copy()
+
+	def mouseMoveEvent(self, event):
+		if event.buttons()&Qt.LeftButton and event.x() > 0 :
+			self.tickers[self.cur_ticker] = event.x()
+			self.repaint()
+
+			x = event.x()
+			if x < self.PRESIZE:
+				thr = self.data[0][0]
+			elif x < self.PRESIZE + self.nbin:
+				thr = self.data[0][x-self.PRESIZE]
+			else:
+				thr = self.data[0][-1]
+
+			if self.cur_ticker==0:
+				self.parent.threshold_low.setText( str(thr) )
+			else:
+				self.parent.threshold_hgh.setText( str(thr) )
 
 
-
+			thr_low = float( self.parent.threshold_low.text() )
+			thr_hgh = float( self.parent.threshold_hgh.text() )
 	
+			guiim = self.parent.target.guiim
+
+			curt_shapes = guiim.getShapes()
+
+
+			print "# of all shapes: ", len( self.shapes )
+			print "# of cur shapes: ", len( curt_shapes )
+			print "thr_low: ", thr_low
+			print "thr_hgh: ", thr_hgh
+
+			ndelete = 0
+			for i in xrange( len(self.ccfs) ):
+				score = self.ccfs[i] 
+
+				if (score < thr_low or score > thr_hgh) and curt_shapes.has_key(i):
+					ndelete += 1
+					guiim.delShape( i )
+
+				if score >= thr_low and score <= thr_hgh and not(curt_shapes.has_key(i)):
+					guiim.addShape( i, self.shapes[i] )
+			
+			guiim.updateGL()
+
+
+	def drawTicker( self, newpos ) :
+		p=QtGui.QPainter()
+		p.begin(self)
+		p.setPen(Qt.yellow)
+		for i in xrange( newpos, newpos+2):
+			p.drawLine( i, self.height(), i, int(0.2*self.height()) )
 
 
 		
@@ -2676,8 +2777,9 @@ class GUIboxPanel(QtGui.QWidget):
 		self.pawel_option_vbox.addWidget( QtGui.QLabel("CCF Histogram") )
 		self.pawel_histogram = CcfHistogram( self )
 		self.pawel_option_vbox.addWidget( self.pawel_histogram )
-		self.pawel_option_vbox.addWidget( QtGui.QLabel("Range: (N/A, N/A)") )
 
+		self.ccf_range = QtGui.QLabel("Range: (N/A, N/A)")
+		self.pawel_option_vbox.addWidget( self.ccf_range )
 
 		pawel_grid2 = QtGui.QGridLayout()
 		self.pawel_option_vbox.addLayout( pawel_grid2 )
