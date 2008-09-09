@@ -350,12 +350,17 @@ Dict Transform::get_rotation(const string& euler_type) const
 		az  = 360.0f+(float)EMConsts::rad2deg*(float)atan2(matrix[2][0], -matrix[2][1]);
 		phi = 360.0f+(float)EMConsts::rad2deg*(float)atan2(x_mirror_scale*matrix[0][2], matrix[1][2]);
 	}
-	az=fmod(az+180.0f,360.0f)-180.0f;
+// 	az=fmod(az+180.0f,360.0f)-180.0f;
 // 	phi=fmod(phi+180.0f,360.0f)-180.0f;
 	
 	if (phi > 0) phi = fmod(phi,360.f);
 	else phi = 360.f - fmod(fabs(phi),360.f);
-
+	if (phi == 360.f) phi = 0.f;
+	
+	if (az > 0 ) az = fmod(az,360.f);
+	else az = 360.f - fmod(fabs(az),360.f);
+	if (az == 360.f) az = 0.f;
+	
 //   get phiS, psiS ; SPIDER
 	if (fabs(cosalt) > max) {  // that is, alt close to 0
 		phiS=0;
@@ -526,7 +531,15 @@ void Transform::set_scale(const float& new_scale) {
 	// So changing the scale boils down to this....
 	
 	float old_scale = get_scale();
-	float corrected_scale = new_scale/old_scale;
+	
+	float c = ceilf(new_scale);
+	float f = floorf(new_scale);
+	float n_scale = new_scale;
+	if (fabs(n_scale - c) < ERR_LIMIT) n_scale = c;
+	else if (fabs(n_scale - f) < ERR_LIMIT) n_scale = f;
+	
+	
+	float corrected_scale = n_scale/old_scale;
 	if ( corrected_scale != 1.0 ) {
 		for(int i = 0; i < 3;  ++i ) {
 			for(int j = 0; j < 3; ++j ) {
@@ -546,7 +559,13 @@ float Transform::get_scale() const {
 	float scale_residual = scale-static_cast<float>(int_scale);
 	if  ( scale_residual < ERR_LIMIT ) { scale = static_cast<float>(int_scale); };
 	
-	return scale; 
+	
+	float c = ceilf(scale);
+	float f = floorf(scale);
+	if (fabs(scale - c) < ERR_LIMIT) scale = c;
+	else if (fabs(scale - f) < ERR_LIMIT) scale = f;
+	
+	return scale;
 }
 
 void Transform::orthogonalize()
@@ -597,6 +616,11 @@ void Transform::get_scale_and_mirror(float& scale, bool& x_mirror) const {
 		if  ( scale_residual < ERR_LIMIT ) { scale = static_cast<float>(int_scale); };
 	}
 	else scale = 1;
+	
+	float c = ceilf(scale);
+	float f = floorf(scale);
+	if (fabs(scale - c) < ERR_LIMIT) scale = c;
+	else if (fabs(scale - f) < ERR_LIMIT) scale = f;
 }
 
 float Transform::get_determinant() const
@@ -605,6 +629,11 @@ float Transform::get_determinant() const
 	det -= matrix[0][1]*(matrix[1][0]*matrix[2][2]-matrix[2][0]*matrix[1][2]);
 	det += matrix[0][2]*(matrix[1][0]*matrix[2][1]-matrix[2][0]*matrix[1][1]);
 
+	float c = ceilf(det);
+	float f = floorf(det);
+	if (fabs(det - c) < ERR_LIMIT) det = c;
+	else if (fabs(det - f) < ERR_LIMIT) det = f;
+	
 	return det;
 }
 

@@ -622,14 +622,15 @@ class TestSymmetry3D(unittest.TestCase):
 		if ( azsoln < azmax and (azmax - azsoln) < 0.001 ): azsoln = 0.0
 		#print i,i,i
 		#print result["az"],az,result["az"] % (720.0/n),az% (720.0/n),720.0/n
-		if (az%azmax) == 0:
-			self.assertAlmostEqual(azsoln,(az%azmax), 4)
+		
+		if (az%azmax) == 0 or azsoln == 0:
+			self.assertAlmostEqual(azsoln,(az%azmax), 3)
 		else:
-			self.assertAlmostEqual(azsoln/(az%azmax),1.0, 4)
-		if alt == 0:
-			self.assertAlmostEqual(result["alt"],alt, 4)
+			self.assertAlmostEqual(azsoln/(az%azmax),1.0, 3)
+		if alt == 0 or result["alt"] == 0:
+			self.assertAlmostEqual(result["alt"],alt, 3)
 		else:
-			self.assertAlmostEqual(result["alt"]/alt,1.0, 4)
+			self.assertAlmostEqual(result["alt"]/alt,1.0, 3)
 	
 	def test_symc_reduce(self):
 		"""test csym reduce ..............................."""
