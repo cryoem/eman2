@@ -45,6 +45,8 @@
 #include <algorithm>
 // using copy
 
+#include "util.h"
+
 using namespace EMAN;
 
 #include <iostream>
@@ -88,6 +90,7 @@ EMObjectTypes::EMObjectTypes()
 		type_registry[FLOATARRAY] = "FLOATARRAY";
 		type_registry[STRINGARRAY] = "STRINGARRAY";
 		type_registry[TRANSFORM3D] = "TRANFORM3D";
+		type_registry[TRANSFORM] = "TRANFORM";
 		type_registry[FLOAT_POINTER] = "FLOAT_POINTER";
 		type_registry[INT_POINTER] = "INT_POINTER";
 		type_registry[UNKNOWN] = "UNKNOWN";
@@ -180,6 +183,12 @@ EMObject::EMObject(Transform3D * t) :
 {
 }
 
+EMObject::EMObject(Transform * t) :
+		EMObjectTypes(), transform(t), type(TRANSFORM)
+{
+}
+
+
 EMObject::EMObject(const vector< int >& v ) :
 	EMObjectTypes(), iarray(v), type(INTARRAY)
 {
@@ -229,6 +238,9 @@ EMObject::operator bool () const
 	}
 	else if (type == TRANSFORM3D) {
 		return transform3d != 0;
+	}
+	else if (type == TRANSFORM) {
+		return transform != 0;
 	}
 	// It seemed unconventional to return a boolean for the stl objects
 	else {
@@ -370,6 +382,7 @@ EMObject::operator void * () const
 	else if (type == EMDATA) return (void *) emdata;
 	else if (type == XYDATA) return (void *) xydata;
 	else if (type == TRANSFORM3D) return (void *) transform3d;
+	else if (type == TRANSFORM) return (void *) transform;
 	else throw TypeException("Cannot convert to void pointer from this data type", get_object_type_name(type));
 }
 
@@ -447,6 +460,18 @@ EMObject::operator Transform3D *() const
 		}
 	}
 	return transform3d;
+}
+
+
+EMObject::operator Transform *() const
+{
+	if(type != TRANSFORM) {
+		if(type != UNKNOWN) {
+			throw TypeException("Cannot convert to TRANSFORM* from this data type",
+								get_object_type_name(type));
+		}
+	}
+	return transform;
 }
 
 EMObject::operator vector<int>() const
@@ -546,6 +571,9 @@ string EMObject::to_str(ObjectType argtype) const
 		}
 		else if (argtype == TRANSFORM3D) {
 			sprintf(tmp_str, "TRANSFORM3D");
+		}
+		else if (argtype == TRANSFORM) {
+			sprintf(tmp_str, "TRANSFORMD");
 		}
 		else if (argtype == UNKNOWN) {
 			sprintf(tmp_str, "UNKNOWN");
@@ -647,6 +675,9 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 	case EMObjectTypes::TRANSFORM3D:
 		return (e1.transform3d == e2.transform3d);
 	break;
+	case EMObjectTypes::TRANSFORM:
+		return (e1.transform == e2.transform);
+	break;
 	case EMObjectTypes::UNKNOWN:
 		// UNKNOWN really means "no type" and if two objects both have
 		// type UNKNOWN they really are the same
@@ -735,6 +766,10 @@ EMObject& EMObject::operator=( const EMObject& that )
 		case TRANSFORM3D:
 			// Warning - Pointer address copy.
 			transform3d = that.transform3d;
+		break;
+		case TRANSFORM:
+		// Warning - Pointer address copy.
+			transform = that.transform;
 		break;
 		case UNKNOWN:
 			// This is possible, nothing should happen
@@ -892,4 +927,25 @@ Dict::const_iterator& Dict::const_iterator::operator=( const const_iterator& tha
 	return *this;
 }
 
+EMObject Dict::get_ci(const string & key) const
+{
+	string lower_key = Util::str_to_lower(key);
+			
+	for (map < string, EMObject >::const_iterator it = dict.begin(); it != dict.end(); ++it ) {
+		string lower = Util::str_to_lower(it->first);
+		if (lower == lower_key) return it->second;
+	}
+			
+	throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");
+}
 
+bool Dict::has_key_ci(const string & key) const
+{
+	string lower_key = Util::str_to_lower(key);
+			
+	for (map < string, EMObject >::const_iterator it = dict.begin(); it != dict.end(); ++it ) {
+		string lower = Util::str_to_lower(it->first);
+		if (lower == lower_key) return true;
+	}
+	return false;
+}

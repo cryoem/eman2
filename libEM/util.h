@@ -45,6 +45,10 @@
 #include <vector>
 #include <iostream>
 
+#include <string>
+using std::string;
+
+
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
 #include "vec3.h"
@@ -128,6 +132,12 @@ namespace EMAN
 		static vector<EMData *> svdcmp(const vector<EMData *> &data,int nvec);
 
 
+		/** Return a lower case version of the argument string
+		 * @param s the string you want to convert to lower case
+		 * @return the lower case converted version s
+		 */
+		static string str_to_lower(const string& s);
+		
 		/** Safe string compare. It compares 's2' with the first N
 		 * characters of 's1', where N is the length of 's2'.
 		 * 

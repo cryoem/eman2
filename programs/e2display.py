@@ -146,7 +146,7 @@ def display(img,title="EMImage"):
 #	print img
 	
 	if len(img)==1 : img=img[0]
-	w=EMImage(data=img,old=None,parent=1,copy=False) # no copying necessary from the command line
+	w=EMImage(data=img,old=None,parent=1,copy=False) # no copying necessary from the command 
 	w.setWindowTitle(title)
 	try:
 		if file_exists(title):

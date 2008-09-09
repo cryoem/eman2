@@ -103,6 +103,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_params_overloads_2_3
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_params_overloads_1_2, get_params, 1, 2)
 		
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Symmetry3D_get_asym_unit_points_overloads_1_2, get_asym_unit_points, 1, 2)
+		
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_settrans_overloads_2_3, set_trans, 2, 3)
 
 }// namespace 
 
@@ -417,8 +419,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def(init< const EMAN::Transform& >())
 		.def(init<const EMAN::Dict& >())
 		.def_readonly("ERR_LIMIT", &EMAN::Transform::ERR_LIMIT)
-		.def("set_trans", (void (EMAN::Transform::*)(const float&, const float&, const float&) )&EMAN::Transform::set_trans)
-		.def("set_trans", (void (EMAN::Transform::*)(const float&, const float&) )&EMAN::Transform::set_trans)
+		.def("set_trans", (void (EMAN::Transform::*)(const float&, const float&, const float&) )&EMAN::Transform::set_trans, EMAN_Transform_settrans_overloads_2_3())
 		.def("set_trans", (void (EMAN::Transform::*)(const EMAN::Vec3f&) )&EMAN::Transform::set_trans)
 		.def("set_trans", (void (EMAN::Transform::*)(const EMAN::Vec2f&) )&EMAN::Transform::set_trans)
 		.def("set_scale", &EMAN::Transform::set_scale)
@@ -448,6 +449,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 // 		.def("get_sym", &EMAN::Transform::get_sym)
 		.def("get_scale", &EMAN::Transform::get_scale)
 		.def("to_identity", &EMAN::Transform::to_identity)
+		.def("get_determinant", &EMAN::Transform::get_determinant)
 // 		.def("is_identity", &EMAN::Transform::is_identity)
 // 		.staticmethod("get_nsym")
 		.def( self * self )

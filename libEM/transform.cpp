@@ -120,21 +120,7 @@ void Transform::set_params(const Dict& d) {
 	if (d.has_key_ci("tz")) dz = static_cast<float>(d.get_ci("tz"));
 	
 	if ( dx != 0.0 || dy != 0.0 || dz != 0.0 ) {
-		bool act = true;
-		if (d.has_key_ci("type") ) {
-			string euler_type(static_cast<string>(d.get_ci("type")));
-			string type(euler_type);
-			std::transform(euler_type.begin(),euler_type.end(),type.begin(), (int (*)(int) ) std::tolower);
-			if ( type == "2d"){
-				if (dz == 0 ) {
-					set_trans(dx,dy);
-					act = false;
-				}
-				// else all the set_trans(dx,dy,dz) call which will throw
-				
-			}
-		}
-		if (act) set_trans(dx,dy,dz);	
+		set_trans(dx,dy,dz);	
 	}
 	
 	if (d.has_key_ci("mirror")) {
@@ -208,10 +194,7 @@ void Transform::set_rotation(const Dict& rotation)
 	// Get these before anything changes so we can apply them again after the rotation is set
 	get_scale_and_mirror(scale,x_mirror);
 
-	string type(euler_type);
-	std::transform(euler_type.begin(),euler_type.end(),type.begin(), (int (*)(int) ) std::tolower);
-	
-	
+	string type = Util::str_to_lower(euler_type);
 	if (type == "2d") {
 		validate_and_set_type(TWOD);
 		az  = 0;
@@ -228,6 +211,7 @@ void Transform::set_rotation(const Dict& rotation)
 		alt = (float)rotation["beta"]  ;
 		phi = (float)rotation["gamma"] ;
 	} else if ( type == "spider" ) {
+		validate_and_set_type(THREED);
 		az =  (float)rotation["phi"]    + 90.0f;
 		alt = (float)rotation["theta"] ;
 		phi = (float)rotation["psi"]    - 90.0f;
@@ -269,7 +253,6 @@ void Transform::set_rotation(const Dict& rotation)
 		e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
 		e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
 	} else if ( type == "matrix" ) {
-		validate_and_set_type(THREED);
 		is_matrix = 1;
 		matrix[0][0] = (float)rotation["m11"];
 		matrix[0][1] = (float)rotation["m12"];
@@ -399,8 +382,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 		cosOover2*=-1; n1 *=-1; n2*=-1; n3*=-1;
 	}
 
-	string type(euler_type);
-	std::transform(euler_type.begin(),euler_type.end(),type.begin(), (int (*)(int) ) std::tolower);
+	string type = Util::str_to_lower(euler_type);
 	
 	result["type"] = type;
 	if (type == "2d") {
@@ -474,20 +456,11 @@ Dict Transform::get_rotation(const string& euler_type) const
 	return result;
 }
 
-void Transform::set_trans(const float& x, const float& y)
-{
-	validate_and_set_type(TWOD);
-	bool x_mirror = get_mirror();
-	
-	if (x_mirror) matrix[0][3] = -x;
-	else matrix[0][3] = x;
-	matrix[1][3] = y;
-	matrix[2][3] = 0.0;
-}
-
 void Transform::set_trans(const float& x, const float& y, const float& z)
 {
-	validate_and_set_type(THREED);
+	if ( z != 0.0 ) {
+		validate_and_set_type(THREED);
+	}
 	bool x_mirror = get_mirror();
 	
 	if (x_mirror) matrix[0][3] = -x;
@@ -510,7 +483,7 @@ Vec3f Transform::get_trans() const
 
 Vec2f Transform::get_trans_2d() const
 {
-	assert_consistent_type(TWOD);
+// 	assert_consistent_type(TWOD);
 	bool x_mirror = get_mirror();
 	Vec2f v;
 	if (x_mirror) v[0] = -matrix[0][3];
@@ -557,6 +530,7 @@ void Transform::set_scale(const float& new_scale) {
 	}
 }
 
+#include <iomanip>
 float Transform::get_scale() const {
 	float determinant = get_determinant();
 	if (determinant < 0 ) determinant *= -1;
@@ -571,7 +545,12 @@ float Transform::get_scale() const {
 
 void Transform::orthogonalize()
 {
-	set_scale(1.0);
+	float inv_scale = 1.0f/get_scale();
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			matrix[i][j] *= inv_scale;
+		}
+	}
 	set_mirror(false);
 }
 
@@ -681,26 +660,22 @@ void Transform::transpose_inplace() {
 	}
 }
 
-bool Transform::validate_and_set_type(const Transform::TransformType type ) {
+void Transform::validate_and_set_type(const Transform::TransformType type ) {
 	if (transform_type == UNKNOWN ) {
 		transform_type = type; // This is fine this is the first time the type is being set
-		return true;
 	} else if (transform_type != type ) {
 		string message = "can't treat a " + transform_type_to_string(transform_type) + " Transform as though it were a " +  transform_type_to_string(type) + " Transform type";
 		throw UnexpectedBehaviorException("Error, " + message);
 	} 
-	return true;
 }
 
-bool Transform::assert_consistent_type(const Transform::TransformType type )  const{
+void Transform::assert_consistent_type(const Transform::TransformType type )  const{
 	if (transform_type != UNKNOWN ) {// if the type is unknown then maybe it's the identity and the user is asking for parameters?
 		if (transform_type != type ) {
 			string message = "can't treat a " + transform_type_to_string(transform_type) + " Transform type as though it were a " +  transform_type_to_string(type) + " Transform type";
 			throw UnexpectedBehaviorException("Error, " + message);
 		}
 	}
-	
-	return true;
 }
 
 string Transform::transform_type_to_string(const Transform::TransformType type ) const {
@@ -718,6 +693,12 @@ string Transform::transform_type_to_string(const Transform::TransformType type )
 
 Transform EMAN::operator*(const Transform & M2, const Transform & M1)     // YYY
 {
+	if (M2.transform_type != Transform::UNKNOWN && M1.transform_type != Transform::UNKNOWN ) {
+		if (M2.transform_type != M1.transform_type) {
+			string message = "can't multiply a " + M2.transform_type_to_string(M2.transform_type) + " Transform type against a " + M1.transform_type_to_string(M1.transform_type) + " Transform type";
+			throw UnexpectedBehaviorException("Error, " + message);
+		}
+	}
 	Transform result;
 	for (int i=0; i<3; i++) {
 		for (int j=0; j<4; j++) {

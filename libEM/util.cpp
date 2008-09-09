@@ -45,11 +45,10 @@
 #include <sstream>
 
 #include <cstring>
-// using accumulate, inner_product, transform
 
 #include <sys/types.h>
 #include <gsl/gsl_linalg.h>
-#include <algorithm>
+#include <algorithm> // using accumulate, inner_product, transform
 
 #ifndef WIN32
 	#include <unistd.h>
@@ -195,6 +194,12 @@ void Util::flip_image(float *data, size_t nx, size_t ny)
 		delete[]buf;
 		buf = 0;
 	}
+}
+
+string Util::str_to_lower(const string& s) {
+	string ret(s);
+	std::transform(s.begin(),s.end(),ret.begin(), (int (*)(int) ) std::tolower);
+	return ret;
 }
 
 bool Util::sstrncmp(const char *s1, const char *s2)

@@ -1862,6 +1862,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	static EMData obj_filt;
 	EMData* filt = &obj_filt;
 	filt->set_complex(true);
+// 	Region filt_region;
 
 // 	if (nx & 1) {
 // 		LOGERR("even image xsize only");		throw ImageFormatException("even image xsize only");
@@ -1892,7 +1893,6 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 		filt->set_size(clipped->get_xsize() + 2-(clipped->get_xsize()%2), clipped->get_ysize(), clipped->get_zsize());
 		filt->to_one();
 
-		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5f/nx));
 	}
 	
 	EMData *mc = clipped->calc_mutual_correlation(clipped, true,filt);
@@ -2011,8 +2011,10 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocenter, EMData * f
 			throw ImageFormatException("improperly sized filter");
 		}
 
-		cf->mult(*filter,true);
+		cf->mult_complex_efficient(*filter,true);
 		this_fft->mult(*filter,true);
+		/*cf->mult_complex_efficient(*filter,5);
+		this_fft->mult_complex_efficient(*filter,5);*/
 	}
 
 	float *rdata1 = this_fft->get_data();

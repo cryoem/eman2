@@ -300,6 +300,52 @@ void EMData::mult(const EMData & em, bool prevent_complex_multiplication)
 	EXITFUNC;
 }
 
+void EMData::mult_complex_efficient(const EMData & em, const int radius) 
+{
+	ENTERFUNC;
+
+	if( is_real() || em.is_real() )throw ImageFormatException( "can call mult_complex_efficient unless both images are complex");
+	
+	
+	const float *src_data = em.get_data();
+	size_t size = nxy * nz;
+	
+	size_t i_radius = radius;
+	size_t k_radius = 1;
+	size_t j_radius = 1;
+	int ndim = get_ndim();
+	
+	if (ndim != em.get_ndim()) throw ImageDimensionException("Can't do that");
+	
+	if ( ndim == 3 ) {
+		k_radius = radius; 
+		j_radius = radius;
+	} else if ( ndim == 2 ) {
+		j_radius = radius;
+	}
+	
+	
+	update();
+	int s_nx = em.get_xsize();
+	int s_nxy = s_nx*em.get_ysize();
+	
+	int r_size = nxy*nz;
+	int s_size = s_nxy*em.get_zsize();
+	
+	for (size_t k = 0; k < k_radius; ++k ) {
+		for (size_t j = 0; j < j_radius; j++) {
+			for (size_t i = 0; i < i_radius; i++) {
+				int r_idx = k*nxy + j*nx + i;
+				int s_idx = k*s_nxy + j*s_nx + i;
+				rdata[r_idx] *= src_data[s_idx];
+				rdata[r_size-r_idx-1] *= src_data[s_size-s_idx-1];
+			}
+		}
+	}
+
+	EXITFUNC;
+}
+
 
 void EMData::div(float f)
 {

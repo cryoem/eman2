@@ -57,6 +57,7 @@
 namespace EMAN
 {
 	class Transform {
+		friend Transform EMAN::operator*(const Transform & M2, const Transform & M1);
 		public:
 			static const float ERR_LIMIT;
 		
@@ -111,13 +112,7 @@ namespace EMAN
 			 * @param y the y translation
 			 * @param z the z translation
 			 */
-			void set_trans(const float& x, const float& y, const float& z);
-			
-			/** Set the post translation component for 2D
-			 * @param x the x translation
-			 * @param y the y translation
-			 */
-			void set_trans(const float& x, const float& y);
+			void set_trans(const float& x, const float& y, const float& z=0);
 			
 			/** Set the post translation component using a Vec3f
 			 * @param v the 3D translation vector
@@ -295,9 +290,30 @@ namespace EMAN
 			
 			TransformType transform_type;
 			
-			bool validate_and_set_type(const TransformType t);
-			bool assert_consistent_type(const TransformType t) const;
+			/** validate that it is okay set the internal type to the new type
+			 * If the internal type is UNKNOWN then it's okay to set the type to anything. 
+			 * If the internal type matches the type then nothing happens.
+			 * If the internal type is not UNKNOWN and it does not match the argument type an exception is thrown
+			 * @param t the new transform type
+			 * @exception UnexpectedBehaviorException if the internal type and the new type are irreconcilable
+			 */
+			void validate_and_set_type(const TransformType t);
 			
+			/** assert that the argument type is consistent with the internally stored type
+			 * If the internal type is UNKNOWN then there is no problem. This could, for example,
+			 * occur when the user has called set_identity() followed by get_trans()
+			 * If the internal type matches the argument type all is fine as well.
+			 * If the internal type is not UNKNOWN and does not match the argument type this mean
+			 * there is an internal consistency and an exception is thrown
+			 * @param t the transform type
+			 * @exception UnexpectedBehaviorException if the internal type and the argument type are irreconcilable
+			 */
+			void assert_consistent_type(const TransformType t) const;
+			
+			/** Convert the argument transform type into a unique and semantically equivalent string
+			 * @param type the transform type
+			 * @return a unique and semantically equivalent string that represents the transform type
+			 */
 			string transform_type_to_string(const Transform::TransformType type ) const;
 
 	};

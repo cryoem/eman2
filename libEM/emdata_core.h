@@ -105,6 +105,7 @@ void mult(float f);
  */
 void mult(const EMData & image, bool prevent_complex_multiplication=false);
 
+void mult_complex_efficient(const EMData & em, const int radius);
 
 /** make each pixel value divided by a number.
  * @param f The number 'this' image divided by.

@@ -107,12 +107,13 @@ void TiffIO::init()
 
 	if( rw_mode == ImageIO::READ_ONLY ) {
 		tiff_file = TIFFOpen(filename.c_str(), "r");
+
 		if (!tiff_file) {
 			throw ImageReadException(filename, "open TIFF");
 		}
-	
+
 		TIFFGetField(tiff_file, TIFFTAG_BITSPERSAMPLE, &bitspersample);
-	
+
 		if (bitspersample != CHAR_BIT && bitspersample != (CHAR_BIT * sizeof(short))) {
 			char desc[256];
 			sprintf(desc, "invalid %d bits. only %d-bit and %d-bit TIFF are supported",

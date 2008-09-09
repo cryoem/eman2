@@ -89,6 +89,7 @@ namespace EMAN
 	class Reconstructor;
 	class Analyzer;
 	class Transform3D;
+	class Transform;
 
 	enum MapInfoType {
 		NORMAL,
@@ -138,6 +139,7 @@ namespace EMAN
 			INTARRAY,
 			FLOATARRAY,
 			STRINGARRAY,
+			TRANSFORM,
 			TRANSFORM3D,
 			FLOAT_POINTER,
 			INT_POINTER,
@@ -192,6 +194,7 @@ namespace EMAN
 		EMObject(EMData * em);
 		EMObject(XYData * xy);
 		EMObject(Transform3D * t);
+		EMObject(Transform * t);
 		EMObject(const vector< int >& v );
 		EMObject(const vector < float >&v);
 		EMObject(const vector <string>& sarray);
@@ -227,6 +230,7 @@ namespace EMAN
 		operator EMData *() const;
 		operator XYData *() const;
 		operator Transform3D *() const;
+		operator Transform *() const;
 		operator vector < int > () const;
 		operator vector < float > () const;
 		operator vector<string> () const;
@@ -290,6 +294,7 @@ namespace EMAN
 			EMData *emdata;
 			XYData *xydata;
 			Transform3D * transform3d;
+			Transform * transform;
 // 			Transform3D::EulerType euler_type;
 		};
 
@@ -506,18 +511,7 @@ namespace EMAN
 		/** Ask the Dictionary if it as a particular key in a case insensitive way
 		 * @param key the (string) key to find
 		 */
-		bool has_key_ci(const string & key) const
-		{
-			string lower_key(key);
-			std::transform(key.begin(),key.end(),lower_key.begin(),tolower);
-			
-			for (map < string, EMObject >::const_iterator it = dict.begin(); it != dict.end(); ++it ) {
-				string lower(it->first);
-				std::transform(it->first.begin(),it->first.end(),lower.begin(),tolower);
-				if (lower == lower_key) return true;
-			}
-			return false;
-		}
+		bool has_key_ci(const string & key) const;
 		
 		/** Ask the Dictionary if it as a particular key
 		 * @param key the (string) key to find
@@ -555,20 +549,7 @@ namespace EMAN
 		/** Get the EMObject corresponding to the particular key using case insensitivity
 		 * @param key the key you want to check for in a case insensitive way
 		 */
-		EMObject get_ci(const string & key) const
-		{
-			string lower_key(key);
-			std::transform(key.begin(),key.end(),lower_key.begin(),tolower);
-			
-			for (map < string, EMObject >::const_iterator it = dict.begin(); it != dict.end(); ++it ) {
-				string lower(it->first);
-				std::transform(it->first.begin(),it->first.end(),lower.begin(),tolower);
-				if (lower == lower_key) return it->second;
-			}
-			
-			throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");
-		}
-
+		EMObject get_ci(const string & key) const;
 		/** Put the value/key pair into the dictionary
 		 * probably better to just use operator[]
 		 */

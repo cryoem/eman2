@@ -95,19 +95,24 @@ def imageupdate():
 
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
-
 	def __new__(cls,data=None,old=None,parent=1,copy=True):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
 		if isinstance(data,EMData) and data.get_zsize()==1:
 			# single 2D image
+			
+			# sometimes it's necessary to copy, especially if the user is 
+			# calling display from python
 			if copy: local_data = data.copy()
 			else: local_data = data
+
 			if old:
 				if isinstance(old,EMImage2D) :
 					old.setData(local_data)
 					return old
+			if parent: 
+				ret=EMParentWin(EMImage2D(local_data))
 			if parent : 
 				ret=EMParentWin(EMImage2D(local_data))
 				ret.show()
@@ -117,6 +122,9 @@ class EMImage(object):
 				return ret
 			return EMImage2D(local_data)
 		elif isinstance(data,EMData):
+			# data copy considerations shouldn't be necessary here 
+			# seeing as the EMImage3D does internal copying of its own
+			# FIXME double check this aspect of the code once things are going
 			# must be a single 3D image
 			if old:
 				if isinstance(old,EMImage3D) :
@@ -134,9 +142,13 @@ class EMImage(object):
 			if copy: local_data = data.copy()
 			else: local_data = data
 			# list or tuple of images
+			
+			if ( not stop_data_copy ):local_data = data.copy()
+			else: local_data = data
+			
 			if old:
 				if isinstance(old,EMImageMX) :
-					old.setData(data)
+					old.setData(local_data)
 					return old
 			if parent : 
 				ret=EMParentWin(EMImageMX(local_data))
