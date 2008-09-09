@@ -595,8 +595,10 @@ class TestTransform(unittest.TestCase):
 		self.assert_matrix_equality(without_trans*pre_trans,t)
 	
 	def assert_identity(self,t2,n=4):
+		imax = n
+		if n > 3: imax = 3
 		for j in range(n):
-			for i in range(n):
+			for i in range(imax):
 				if i == j:
 					self.assertAlmostEqual(t2.at(i,j),1, 3)
 				else:
@@ -604,7 +606,7 @@ class TestTransform(unittest.TestCase):
 	
 	def assert_matrix_equality(self,t,t1):
 		for j in range(4):
-			for i in range(4):
+			for i in range(3):
 				if t1.at(i,j) != 0:
 					self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 3)
 				else:

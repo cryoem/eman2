@@ -78,7 +78,7 @@ Transform::Transform( const Transform& that )
 Transform& Transform::operator=(const Transform& that ) {
 	
 	if (this != &that ) {
-		memcpy(matrix,that.matrix,16*sizeof(float));
+		memcpy(matrix,that.matrix,12*sizeof(float));
 		transform_type = that.transform_type;
 	}	
 	return *this;
@@ -93,7 +93,7 @@ Transform::Transform(const Dict& d) : transform_type(UNKNOWN) {
 void Transform::to_identity()
 {
 	transform_type = UNKNOWN;
-	for(int i=0; i<4; ++i) {
+	for(int i=0; i<3; ++i) {
 		for(int j=0; j<4; ++j) {
 			if(i==j) {
 				matrix[i][j] = 1;
@@ -139,6 +139,24 @@ Dict Transform::get_params(const string& euler_type) {
 	Dict params = get_rotation(euler_type);
 	
 	Vec3f v = get_trans();
+	params["tx"] = v[0]; params["ty"] = v[1]; 
+	
+	string type = Util::str_to_lower(euler_type);
+	if ( type != "2d") params["tz"] = v[2];
+	
+	float scale = get_scale();
+	params["scale"] = scale;
+	
+	bool mirror = get_mirror();
+	params["mirror"] = mirror;
+	
+	return params;
+}
+
+Dict Transform::get_params_inverse(const string& euler_type) {
+	Dict params = get_rotation(euler_type);
+	
+	Vec3f v = get_pre_trans();
 	params["tx"] = v[0]; params["ty"] = v[1]; 
 	
 	string type = Util::str_to_lower(euler_type);
@@ -549,7 +567,6 @@ void Transform::set_scale(const float& new_scale) {
 	}
 }
 
-#include <iomanip>
 float Transform::get_scale() const {
 	float determinant = get_determinant();
 	if (determinant < 0 ) determinant *= -1;
@@ -743,6 +760,10 @@ Transform EMAN::operator*(const Transform & M2, const Transform & M1)     // YYY
 	}
 	
 	return result;
+}
+
+void Transform::assert_valid_2d() {
+	
 }
 
 

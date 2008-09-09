@@ -105,6 +105,12 @@ namespace EMAN
 			 * @return a dictionary containing the parameters
 			 */
 			Dict get_params(const string& euler_type);
+			
+			/** Get the parameters of the inverse of the transform as though it were in RSMT order not MTSR
+			 * @param euler_type the euler type of the retrieved rotation
+			 * @return a dictionary containing the parameters
+			 */
+			Dict get_params_inverse(const string& euler_type);
 
 			//=============== set and get post trans =============
 			/** Set the post translation component
@@ -192,7 +198,7 @@ namespace EMAN
 				cout << matrix[0][0] << " " << matrix[0][1] << " " << matrix[0][2] << " " << matrix[0][3] << endl;
 				cout << matrix[1][0] << " " << matrix[1][1] << " " << matrix[1][2] << " " << matrix[1][3] << endl;
 				cout << matrix[2][0] << " " << matrix[2][1] << " " << matrix[2][2] << " " << matrix[2][3] << endl;
-				cout << matrix[3][0] << " " << matrix[3][1] << " " << matrix[3][2] << " " << matrix[3][3] << endl;
+				cout << 0 << " " << 0 << " " << 0 << " " << 1 << endl;
 			}
 			
 			/** Get the inverse of this transformation matrix
@@ -280,7 +286,7 @@ namespace EMAN
 			}
 
 		private:
-			float matrix[4][4];
+			float matrix[3][4];
 			
 			enum TransformType {
 				TWOD,
@@ -315,6 +321,9 @@ namespace EMAN
 			 * @return a unique and semantically equivalent string that represents the transform type
 			 */
 			string transform_type_to_string(const Transform::TransformType type ) const;
+			
+			
+			void assert_valid_2d();
 
 	};
 	/// Matrix times Matrix, a pure mathematical operation
