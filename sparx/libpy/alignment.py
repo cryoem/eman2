@@ -36,7 +36,7 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
 	"""
-	from utilities import model_circle, compose_transform2, combine_params2, inverse_transform2
+	from utilities import model_circle, compose_transform2, combine_params2, inverse_transform2, get_params2D, set_params2D
 	from alignment import Applyws, ormq
 	if CTF:
 		from filter       import filt_ctf
@@ -64,10 +64,7 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 			ima = data[im].copy()
 		ima2 = ima.copy()
 			
-		alpha  = ima.get_attr('alpha')
-		sx     = ima.get_attr('sx')
-		sy     = ima.get_attr('sy')
-		mirror = ima.get_attr('mirror')
+		alpha, sx, sy, mirror, dummy = get_params2D(ima)
 		#  add centering from the previous iteration, if image was mirrored, filp the sign of x center
 		if mirror: alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0, cs[0], -cs[1], 1.0)
 		else:	   alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0, -cs[0], -cs[1], 1.0)
@@ -82,7 +79,7 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, F)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			ima2.set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror':mn})
+			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
 			ima2.set_attr_dict({'select': select})
 		elif random_method == "ML":
 			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
@@ -98,7 +95,7 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 				syn.append(float(syx))
 				mn.append(int(mnx))
 				peakt.append(float(peaks[i][0]))					
-			ima2.set_attr_dict({'alpha':alphan[0], 'sx':sxn[0], 'sy':syn[0], 'mirror':mn[0]})
+			set_params2D(ima2, [alphan[0], sxn[0], syn[0], mn[0], 1.0])
 			ima2.set_attr_dict({'alpha_l':alphan, 'sx_l':sxn, 'sy_l':syn, 'mirror_l':mn})
 			prob = sim_anneal2(peaks, Iter, F)
 			ima2.set_attr_dict({'Prob': prob})
@@ -106,7 +103,7 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			ima2.set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror':mn})
+			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
 		if is_string:
 			ima2.write_image(data, im, EMUtil.ImageType.IMAGE_HDF, True)
 		else:

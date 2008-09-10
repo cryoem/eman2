@@ -1113,7 +1113,7 @@ def info(image, mask=None, Comment=""):
 		print "Real image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz)
 
 	print "avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax)
-	return mean,sigma,imin,imax, nx, ny, nz
+	return mean, sigma, imin, imax, nx, ny, nz
 
 def image_decimate(img,decimation=2, fit_to_fft=1,frequency_low=0, frequency_high=0):
 	from filter import filt_btwl
@@ -2340,3 +2340,37 @@ def file_type(name):
 		if(name[:4] == "bdb:"): return "bdb"
 		elif(name[-4:-3] == "."):  return name[-3:]
 	ERROR("Unacceptable file format","file_type",1)
+
+def get_params2D(ima):
+	"""
+	  retrieve 2D alignment parameters from the header
+	  alpha tx ty mirror scale
+	"""
+	t = ima.get_attr("xform.align2d")
+	d = t.get_params("2D")
+	return d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]
+
+def set_params2D(ima, p):
+	"""
+	  set 2D alignment parameters in the header
+	  alpha tx ty mirror scale
+	"""
+	t = Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
+	ima.set_attr("xform.align2d", t)
+
+def get_params3D(ima):
+	"""
+	  retrieve 3D alignment parameters from the header
+	  phi  theta  psi  tx  ty  tz mirror scale
+	"""
+	t = ima.get_attr("xform.align3d")
+	d = t.get_params("spider")
+	return  d["phi"],d["theta"],d["psi"],d["s3x"],d["s3y"],d["s3z"],d["mirror"],d["scale"]
+
+def set_params3D(ima, p):
+	"""
+	  set 3D alignment parameters in the header
+	  phi  theta  psi  tx  ty  tz mirror scale
+	"""
+	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
+	ima.set_attr("xform.align3d", t)

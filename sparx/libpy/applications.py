@@ -570,7 +570,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	mpi_barrier(MPI_COMM_WORLD)
 	#if(CTF and data_had_ctf == 0):
 	#	for im in xrange(len(data)):  data[im].set_attr('ctf_applied', 0)
-	par_str = ["alpha", "sx", "sy", "mirror"]
+	par_str = ["xform.align2d"]
 	if myid == main_node: recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
@@ -1141,7 +1141,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	mpi_barrier(MPI_COMM_WORLD)
 	if CTF and data_had_ctf == 0:
 		for im in xrange(len(data)):  data[im].set_attr('ctf_applied', 0)
-	par_str = ["alpha", "sx", "sy", "mirror"]
+	par_str = ["xform.align2d"]
 	if myid == main_node: recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node:	print_end_msg("ali2d_c_MPI")
@@ -1792,7 +1792,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, 
 	mpi_barrier(MPI_COMM_WORLD)
 	if(CTF and data_had_ctf == 0):
 		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-	list_params = ['alpha', 'sx', 'sy', 'mirror', 'assign']
+	list_params = ['xform.align2d', 'assign']
 	if(myid == main_node): recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc)
 	else: send_attr_dict(main_node, data, list_params, image_start, image_end)
 
