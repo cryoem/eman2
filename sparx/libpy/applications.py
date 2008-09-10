@@ -32,7 +32,7 @@ from global_def import *
 
 def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxit=0, CTF=False, user_func_name="ref_ali2d", randomize = False):
 	from fundamentals import resample
-	from utilities    import model_circle, get_arb_params, set_arb_params, getImage
+	from utilities    import model_circle, get_arb_params, set_arb_params, getImage, get_params2D, set_params_2D
 	from applications import ali2d_a
 	import os
 	
@@ -96,8 +96,7 @@ def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxi
 		outdir_temp = os.path.join(outdir,"001")
 		ali2d_a(stack, outdir_temp, maskfile, ir, ou, rs, xr="1.0", yr="1.0", ts="0.2", center=center, maxit=maxit, CTF=CTF, user_func_name=user_func_name)
 	else:
-		attributes = ["alpha", "sx", "sy", "mirror","Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor"]
-		prm_ali    = ["alpha", "sx", "sy", "mirror"]
+		attributes = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor"]
 
 		for nd in downsmpl:
 			outdir_temp = os.path.join(outdir,"%03d"%(downsmpl.index(nd)))
@@ -115,24 +114,23 @@ def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxi
 				for im in xrange(nima):
 					ima = EMData()
 					ima.read_image(stack, im)
+					t = get_params2D(ima)
 					if CTF:
 						prm = get_arb_params(ima, attributes)
-						prm[4] = npx
-					else:
-						prm = get_arb_params(ima, prm_ali)
+						prm[0] = npx
 					ima = resample(ima, sub_rate, fit_to_fft=True, num_prime=5)
 					if(nd == downsmpl[0]):
-						prm[1] *= sub_rate
-						prm[2] *= sub_rate
-						set_arb_params(ima, prm, attributes)
+						t[1] *= sub_rate
+						t[2] *= sub_rate
+						set_params2D(ima, t)
 					else:
 						imold = EMData()
 						imold.read_image(stack_previous ,im, True)
-						prm_previous = get_arb_params(imold, prm_ali)
-						if CTF:  set_arb_params(ima, prm, attributes)
+						prm_previous = get_params2D(imold)
 						prm_previous[1] *= sub_rate/sub_rate_previous
 						prm_previous[2] *= sub_rate/sub_rate_previous
-						set_arb_params(ima, prm_previous, prm_ali)
+						set_params2D(ima, prm_previous)
+					if CTF: set_arb_params(ima, prm, attributes)
 					ima.write_image(stack_temp, im)
 				if(nd != downsmpl[0]):  os.system('rm -rf '+stack_previous)
 			else:
@@ -148,10 +146,10 @@ def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxi
 						ima.read_image(stack, im, True)
 						imold = EMData()
 						imold.read_image(stack_previous ,im, True)
-						prm_previous = get_arb_params(imold, prm_ali)
+						prm_previous = get_params2D(imold)
 						prm_previous[1] *= sub_rate_previous
 						prm_previous[2] *= sub_rate_previous
-						set_arb_params(ima, prm_previous, prm_ali)
+						set_params2D(ima, prm_previous)
 						ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 					os.system('rm -rf '+stack_previous)
 
@@ -1152,7 +1150,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps = 0.001, maxit = 10, CTF = False, snr = 1.0, user_func_name="ref_ali2d"):
 # 2D alignment using amoeba and gridding interpolation
 	from alignment    	import kbt
-	from utilities    	import model_circle, amoeba, compose_transform2, dropImage, get_arb_params, getImage
+	from utilities    	import model_circle, amoeba, compose_transform2, dropImage, get_arb_params, getImage, get_params2D, set_params2D
 	from alignment    	import fine_2D_refinement, crit2d
 	from statistics   	import add_oe_series, ave_var_series, fsc_mask
 	from filter 		import filt_from_fsc_bwt,filt_table
@@ -1280,11 +1278,9 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 		if center:
 			#  apply centering parameters to shifts
 			for im in xrange(nima):
-				alpha = data[im].get_attr('alpha')
-				sx    = data[im].get_attr('sx')
-				sy    = data[im].get_attr('sy')
+				alpha, sx, sy, mirror, scale    = get_params2D(data[im])
 				alphan, sxn, syn, scale = compose_transform2(alpha, sx, sy, 1.0, 0.0, -cs[0], -cs[1], 1.0)
-				data[im].set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn})
+				set_params2D( data[im], [alphan, sxn, syn, mirror, scale])
 
 		# write current average
 		a1 = tavg.cmp("dot", tavg, {"negative":0, "mask":ref_data[0]})
@@ -1306,7 +1302,7 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 		return
 
 	from utilities      import   model_circle, compose_transform2, combine_params2, dropImage, getImage
-	from utilities	    import   center_2D, get_arb_params, get_im
+	from utilities	    import   center_2D, get_arb_params, get_im, get_params2D, set_params2D
 	from statistics     import   fsc
 	from alignment      import   Numrinit, ringwe, Applyws, fine_2D_refinement
 	from fundamentals   import   rot_shift2D, fshift
@@ -1369,7 +1365,6 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 	cnx = int(nx/2)+1
 	cny = cnx
 
-	ali_parnames = ["alpha", "sx", "sy", "mirror", "ref_num"]
 	mode = "F"
 	#precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
@@ -1421,9 +1416,7 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 					data[im] = filt_ctf(data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
 					data[im].set_attr('ctf_applied', 1)
 			#normalize
-			#psi = ima.get_attr('alpha')
-			sx =  data[im].get_attr('sx')
-			sy =  data[im].get_attr('sy')
+			alpha, sx, sy, mirror, scale =  get_params2D(data[im])
 			# align current image to the reference
 			data[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0})
 			[angt, sxst, syst, mirrort, xiref, peakt] = \
@@ -1432,7 +1425,8 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, sx, sy, 0, angt, sxst, syst, mirrort)
 			#print  "combine with previous ",Iter,im,psin, sxn, syn, mn, iter
-			data[im].set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror':mn, 'ref_num':iref})
+			set_params2D(data[im], [alphan, sxn, syn, mn, scale])
+			data[im].set_attr('assign',iref)
 			# apply current parameters and add to the average
 			temp = rot_shift2D(data[im], alphan, sxn, syn)
 			if mn: temp.process_inplace("mirror", {"axis":'x'})
@@ -1484,11 +1478,9 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 						print_msg(msg)
 						for i in xrange(len(assign[j])):
 							im = assign[j][i]
-							alpha = data[im].get_attr('alpha')
-							sx    = data[im].get_attr('sx')
-							sy    = data[im].get_attr('sy')
+							alpha, sx, sy, mirror, scale =  get_params2D(data[im])
 							alphan, sxn, syn, scale = compose_transform2(alpha, sx, sy, 1.0, 0.0, -csx, -csy, 1.0)
-							data[im].set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn})
+							set_params2D(data[im], [alphan, sxn, syn, mirror, scale])
 						# refine images within the group
 						#  Do the refinement only if max_inter>0, but skip it for the last iteration.
 						if(INter < max_inter):
@@ -1498,9 +1490,9 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 							refi[j][1].to_zero()
 							for i in xrange(len(assign[j])):
 								im = assign[j][i]
-								ali_params = get_arb_params(data[im], ali_parnames)
+								alpha, sx, sy, mirror, scale =  get_params2D(data[im])
 								# apply current parameters and add to the average
-								temp = rot_shift2D(data[im], alphan, sxn, syn)
+								temp = rot_shift2D(data[im], alpha, sx, sy)
 								if mn: temp.process_inplace("mirror", {"axis":'x'})
 								it = im%2
 								Util.add_img( refi[j][it], temp)
@@ -1540,7 +1532,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, 
 	from statistics     import   fsc_mask
 	from alignment      import   Numrinit, ringwe, Applyws
 	from fundamentals   import   rot_shift2D, fshift
-	from utilities      import   get_arb_params
+	from utilities      import   get_arb_params, get_params2D, set_params2D
 	from random         import   seed, randint
 	from morphology     import   ctf_2
 	from filter         import   filt_btwl, filt_params
@@ -1669,8 +1661,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, 
 		# begin MPI section
 		for im in xrange(image_start, image_end):
 			#
-			sx =  data[im-image_start].get_attr('sx')
-			sy =  data[im-image_start].get_attr('sy')
+			alpha, sx, sy, mirror, scale =  get_params2D(data[im-image_start])
 			#normalize
 			# align current image to the reference
 			data[im-image_start].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
@@ -1680,7 +1671,8 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, 
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, sx, sy, 0, angt, sxst, syst, mirrort)
 			#if(iref  ==0):print  "combine with previous ",Iter,im,alphan, sxn, syn, mn, iref
-			data[im-image_start].set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror':mn, 'assign':iref})
+			set_params2D(data[im-image_start], [alphan, sxn, syn, mn, scale])
+			data[im-image_start].set_attr('assign',iref)
 			# apply current parameters and add to the average
 			temp = rot_shift2D(data[im-image_start], alphan, sxn, syn)
 			if mn: temp.process_inplace("mirror", {"axis":'x'})
@@ -2383,7 +2375,7 @@ def ali2d_rac(stack, maskfile = None, ir = 1, ou = -1, rs = 1, nclass = 2, maxit
 		alpha_original_n, sxn, syn, mir = combine_params2(0, -sx, -sy, 0, -alpha_original,0,0,0)
 		alphan, sxn, syn, mir           = combine_params2(0, -sxn, -syn, 0, alpha, 0,0,mirror)
 		temp.read_image(stack, im, True)
-		temp.set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror': mir, 'nclass':kc, 'ref_num':assign[im]})
+		temp.set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror': mir, 'nclass':kc, 'assign':assign[im]})
 		
 		#if(data_had_ctf == 0):   temp.set_attr('ctf_applied', 0)
 		write_header(stack, temp, im)
@@ -8778,8 +8770,8 @@ def ra_cef(indir, noise, outdir, prf, num):
 def ali_vol_2(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
 	#rotation and shift
 	from alignment    import ali_vol_func
-	from utilities    import get_im, model_circle, model_blank, get_arb_params, set_arb_params, dropImage
-	from utilities    import amoeba, compose_transform3
+	from utilities    import get_im, model_circle
+	from utilities    import amoeba
 	from fundamentals import rot_shift3D
 
 	nx = refv.get_xsize()
@@ -8798,9 +8790,7 @@ def ali_vol_2(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
 	#rotation and shift
 	from alignment    import ali_vol_func
-	from utilities    import get_im, model_circle, model_blank, get_arb_params, set_arb_params, dropImage
-	from utilities    import amoeba, compose_transform3
-	from fundamentals import rot_shift3D
+	from utilities    import model_circle
 
 	nx = refv.get_xsize()
 	ny = refv.get_ysize()
@@ -8817,7 +8807,7 @@ def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
 	#rotation and shift
 	from alignment    import ali_vol_func
-	from utilities    import get_im, model_circle, get_arb_params, set_arb_params
+	from utilities    import get_im, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
 	ref = get_im(refv)
@@ -8827,15 +8817,15 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 	if(radius != None):    mask = model_circle(radius, nx, ny, nz)
 	else:                  mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
-	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
-	params = get_arb_params(ref, names_params)
+	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
+	params = get_params3D(ref)
 	print  " params of the reference volume",params
-	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
 	e = get_im(vol)
-	params = get_arb_params(e, names_params)
+	params = get_params3D(e)
 	print  params
-	e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+	e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
 	e = get_im(vol)
 	params = get_arb_params(e, names_params)
@@ -8843,16 +8833,16 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func, 1.e-1, 1.e-1, 500, data)
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[6], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
-	set_arb_params(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale], names_params)
+	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	from utilities import write_headers
 	write_headers( vol, [e], [0])
 
 def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	#rotation 
 	from alignment    import ali_vol_func_rotate
-	from utilities    import get_im, model_circle, get_arb_params, set_arb_params
+	from utilities    import get_im, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
 	ref = get_im(refv)
@@ -8862,27 +8852,27 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	if(radius != None):    mask = model_circle(radius, nx, ny, nz)
 	else:                  mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
-	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
-	params = get_arb_params(ref, names_params)
+	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
+	params = get_params3D(ref)
 	print  " params of the reference volume",params
-	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
 	e = get_im(vol)
-	params = get_arb_params(e, names_params)
+	params = get_params3D(e)
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0]
 	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale], ali_vol_func_rotate, 1.e-1, 1.e-1, 500, data)
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[6], new_params[0][0], new_params[0][1], new_params[0][2],0.0,0.0,0.0,1.0)
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2],0.0,0.0,0.0,1.0)
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
-	set_arb_params(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale], names_params)
+	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	from utilities import write_headers
 	write_headers( vol, [e], [0])
 
 def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 	# shift
 	from alignment    import ali_vol_func_shift
-	from utilities    import get_im, model_circle, get_arb_params, set_arb_params
+	from utilities    import get_im, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
 	ref = get_im(refv)
@@ -8892,31 +8882,27 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 	if(radius != None):    mask = model_circle(radius, nx, ny, nz)
 	else:                  mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
-	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
-	params = get_arb_params(ref, names_params)
-	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
-
-	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
-	params = get_arb_params(ref, names_params)
+	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
+	params = get_params3D(ref)
 	print  " params of the reference volume",params
-	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
 	e = get_im(vol)
-	params = get_arb_params(e, names_params)
+	params = get_params3D(e)
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0]
 	new_params = amoeba(new_params, [shift_scale, shift_scale, shift_scale], ali_vol_func_shift, 1.e-1, 1.e-1, 500, data)
-	cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[6], 0.0,0.0,0.0, new_params[0][0], new_params[0][1], new_params[0][2],1.0)
+	cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], 0.0,0.0,0.0, new_params[0][0], new_params[0][1], new_params[0][2],1.0)
 	print  " new params ", cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale, new_params[1]
-	set_arb_params(e, [cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale], names_params)
+	set_params3D(e, [cphi, ctheta, cpsi, cs3x, cs3y, cs3z, 0, cscale])
 	from utilities import write_headers
 	write_headers( vol, [e], [0])
 
 def ali_vol_scale(vol, refv, ang_scale, shift_scale, mag_scale, radius=None, discrepancy = "ccc"):
 	# rotation shift and scale
 	from alignment    import ali_vol_func_scale
-	from utilities    import get_im, model_circle, get_arb_params, set_arb_params
+	from utilities    import get_im, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
 	ref = get_im(refv)
@@ -8926,27 +8912,27 @@ def ali_vol_scale(vol, refv, ang_scale, shift_scale, mag_scale, radius=None, dis
 	if(radius != None):    mask = model_circle(radius, nx, ny, nz)
 	else:                  mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
-	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
-	params = get_arb_params(ref, names_params)
+	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
+	params = get_params3D(ref)
 	print  " params of the reference volume",params
-	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
 	e = get_im(vol)
-	params = get_arb_params(e, names_params)
+	params = get_params3D(e)
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
 	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale, mag_scale], ali_vol_func_scale, 1.e-1, 1.e-1, 500, data)
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[6], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5], new_params[0][6])
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5], new_params[0][6])
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
-	set_arb_params(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale], names_params)
+	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	from utilities import write_headers
 	write_headers( vol, [e], [0])
 
 def ali_vol_only_scale(vol, refv, mag_scale, radius=None, discrepancy = "ccc"):
 	# scale
 	from alignment    import ali_vol_func_only_scale
-	from utilities    import get_im, model_circle, get_arb_params, set_arb_params
+	from utilities    import get_im, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
 	ref = get_im(refv)
@@ -8957,20 +8943,20 @@ def ali_vol_only_scale(vol, refv, mag_scale, radius=None, discrepancy = "ccc"):
 	else:                  mask = model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
 
-	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
-	params = get_arb_params(ref, names_params)
+	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
+	params = get_params3D(ref)
 	print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
 
 	e = get_im(vol)
-	params = get_arb_params(e, names_params)
+	params = get_params3D(e)
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
 	new_params = [1.0]
 	new_params = amoeba(new_params, [mag_scale], ali_vol_func_only_scale, 1.e-1, 1.e-1, 500, data)
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[6], 0.0,0.0,0.0,0.0,0.0,0.0, new_params[0][0])
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], 0.0,0.0,0.0,0.0,0.0,0.0, new_params[0][0])
 	print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
-	set_arb_params(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale], names_params)
+	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	from utilities import write_headers
 	write_headers( vol, [e], [0])
 
