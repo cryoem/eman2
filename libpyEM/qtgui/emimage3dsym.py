@@ -386,18 +386,20 @@ class EM3DSymViewer(EMImage3DObject):
 				angles = str.split(line)
 				alt = angles[0]
 				az = angles[1]
-				eulers.append(Transform3D(float(az),float(alt),0))
+				eulers.append(Transform({"type":"eman","az":az}))
 
 		glNewList(self.sym_dl,GL_COMPILE)
 		for i in eulers:
 			
 			
 			glPushMatrix()
-			i.transpose()
-			d = i.get_rotation()
-			glRotate(-d["phi"],0,0,1)
-			glRotate(-d["alt"],1,0,0)
-			glRotate(-d["az"],0,0,1)
+			#f = i.transpose()
+			#i.transpose_inplace()
+			d = i.get_rotation("eman")
+			#print d
+			glRotate(d["az"],0,0,1)
+			glRotate(d["alt"],1,0,0)
+			glRotate(d["phi"],0,0,1)
 			
 			#glRotate(-d["az"],0,0,1)
 			#glRotate(-d["alt"],1,0,0)
@@ -466,7 +468,7 @@ class EM3DSymViewer(EMImage3DObject):
 			for k in range(lr,hr):
 				particle = self.tracedata[k]
 				for orient in particle:
-					t = Transform3D(orient[1],orient[0],orient[2])
+					t = Transform({"type":"eman","az":orient[1],"alt":orient[0],"phi":orient[2]})
 					t = self.sym_object.reduce(t,0)
 					d = t.get_rotation()
 					orient[1] = d["az"]
@@ -480,13 +482,13 @@ class EM3DSymViewer(EMImage3DObject):
 				for i in range(1,n):
 					o1 = particle[i-1]
 					o2 = particle[i]
-					t1 = Transform3D(o1[1],o1[0],o1[2])
-					t2 = Transform3D(o2[1],o2[0],o2[2])
+					t1 = Transform({"type":"eman","az":o1[1],"alt":o1[0],"phi":o1[2]})
+					t2 = Transform({"type":"eman","az":o2[1],"alt":o2[0],"phi":o2[2]})
 				
 					angle = self.angular_deviation(t1,t2)
 					
 					for t in touching:
-						t2 = Transform3D(o2[1],o2[0],o2[2])*t
+						t2 = Transform({"type":"eman","az":o2[1],"alt":o2[0],"phi":o2[2]})*t
 						
 						tmp = self.angular_deviation(t1,t2)
 						
@@ -510,8 +512,8 @@ class EM3DSymViewer(EMImage3DObject):
 				az = self.tracedata[i][j][1]
 				phi = self.tracedata[i][j][2]
 				print "a",alt,az
-				T = Transform3D(az,alt,0.0)
-				T.transpose()
+				T = Transform({"type":"eman","az":az,"alt":alt})
+				T.transpose_inplace()
 				a = T*Vec3f(0,0,1)
 				
 				if (j == 0):
@@ -529,8 +531,8 @@ class EM3DSymViewer(EMImage3DObject):
 				alt = self.tracedata[i][j+1][0]
 				az = self.tracedata[i][j+1][1]
 				#print "b",alt,az
-				T = Transform3D(az,alt,0.0)
-				T.transpose()
+				T = Transform({"type":"eman","az":az,"alt":alt})
+				T.transpose_inplace()
 				b = T*Vec3f(0,0,1)
 				#print b[0],b[1],b[2]
 				##if a == b: continue
@@ -579,13 +581,13 @@ class EM3DSymViewer(EMImage3DObject):
 				a = {}
 				a["daz"] = 60
 				dz = 5
-				a["dz"] = dz
+				a["tz"] = dz
 				self.sym_object.insert_params(a)
 			if self.inspector.symtoggled():
 				for i in range(1,self.sym_object.get_nsym()):
 					t = self.sym_object.get_sym(i)
-					t.transpose()
-					d = t.get_rotation()
+					t.transpose_inplace()
+					d = t.get_rotation("eman")
 					glPushMatrix()
 					if ( self.sym_object.is_h_sym() ):
 						trans = t.get_posttrans()
@@ -603,8 +605,8 @@ class EM3DSymViewer(EMImage3DObject):
 				if self.inspector.symtoggled():
 					for i in range(1,self.sym_object.get_nsym()):
 						t = self.sym_object.get_sym(i)
-						t.transpose()
-						d = t.get_rotation()
+						t.transpose_inplace()
+						d = t.get_rotation("eman")
 						glPushMatrix()
 						if ( self.sym_object.is_h_sym() ):
 							trans = t.get_posttrans()
@@ -632,7 +634,7 @@ class EM3DSymViewer(EMImage3DObject):
 				#for i in range(1,self.sym_object.get_nsym()):
 					#t = self.sym_object.get_sym(i)
 				for t in self.sym_object.get_touching_au_transforms(not self.nomirror):
-					d = t.get_rotation()
+					d = t.get_rotation("eman")
 					glPushMatrix()
 					if ( self.sym_object.is_h_sym() ):
 						#trans = t.get_posttrans()
@@ -1299,7 +1301,8 @@ class EMSymInspector(QtGui.QWidget):
 			rot[self.alt.getLabel()] = self.alt.getValue()
 			rot[self.phi.getLabel()] = self.phi.getValue()
 		
-		return Transform3D(self.current_src, rot)
+		rot["type"] = "eman"
+		return Transform(rot)
 	
 	def set_src(self, val):
 		t3d = self.getCurrentRotation()

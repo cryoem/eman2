@@ -31,25 +31,46 @@
 
 #include "emdata.h"
 #include "util.h"
+#include "transform.h"
 
 using namespace EMAN;
 
 #include <iostream>
 using std::cout;
 using std::endl;
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
+
+void test_shared_pointer() {
+	shared_ptr<Transform> p( new Transform);
+	cout << p.use_count() << endl;
+	Transform* t = p.get();
+	cout << p.use_count() << endl;
+	shared_ptr<Transform> p2(p);
+	cout << p.use_count() << endl;
+	cout << p2.use_count() << endl;
+	shared_ptr<Transform> p3 = p;
+	cout << p.use_count() << endl;
+	cout << p3.use_count() << endl;
+}
 
 int main(int argc, char *argv[])
 {
-	int nx = 64;
-	int P = (int)((1.0+0.25)*nx+1);
-	float r = (float)(nx+1)/(float)P;
-	int mFreqCutoff = 2;
-	float mDFreq = 0.2;
+// 	int nx = 64;
+// 	int P = (int)((1.0+0.25)*nx+1);
+// 	float r = (float)(nx+1)/(float)P;
+// 	int mFreqCutoff = 2;
+// 	float mDFreq = 0.2;
 	
-	float* W = Util::getBaldwinGridWeights(mFreqCutoff, P, r, mDFreq,0.5,0.2);
+// 	float* W = Util::getBaldwinGridWeights(mFreqCutoff, P, r, mDFreq,0.5,0.2);
 // 	cout << "Test 2" << endl;
 // 	W = Util::getBaldwinGridWeights(3, 35, 0.9, 1,0.5,0.2);
 	
-	delete [] W;
+	test_shared_pointer();
+// 	delete [] W;
     return 0;
 }
+
+
+
+

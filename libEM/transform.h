@@ -86,6 +86,11 @@ namespace EMAN
 			 */
 			Transform(const float array[12]);
 			
+			/** Construction using a vector of size 12 
+			 * @param array the array of values that will become the internal matrix. row order (3 rows of 4)
+			 */
+			Transform(const vector<float> array);
+			
 			
 			/** Set a rotation using a specific Euler type and the dictionary interface
 			* Works for all Euler types
@@ -206,6 +211,11 @@ namespace EMAN
 				cout << matrix[2][0] << " " << matrix[2][1] << " " << matrix[2][2] << " " << matrix[2][3] << endl;
 				cout << 0 << " " << 0 << " " << 0 << " " << 1 << endl;
 			}
+			
+			//=============== get set matrix ============================
+			void set_matrix(const vector<float>& v);
+			
+			vector<float> get_matrix();
 			
 			/** Get the inverse of this transformation matrix
 			 * @return the inverse of this transformation matrix

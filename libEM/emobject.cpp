@@ -67,12 +67,13 @@ const double EMConsts::rad2deg = 180.0/pi;
 #include <sstream>
 using std::stringstream;
 
+#include "transform.h"
 
 // Static init
-map<EMObjectTypes::ObjectType, string> EMObjectTypes::type_registry;
+map< EMObject::ObjectType, string>  EMObject::type_registry;
 
 //-------------------------------EMObjectTypes-----------------------------------------
-EMObjectTypes::EMObjectTypes()
+void EMObject::init()
 {
 	static bool first_construction = true;
 	if ( first_construction )
@@ -113,95 +114,114 @@ void EMObject::printInfo() const
 	cout << "The address of the static type registry is " << &type_registry <<", it should be same for all EMObjects" << endl;
 }
 
+EMObject::~EMObject() {}
+
 EMObject::EMObject() :
-	EMObjectTypes(), d(0), type(UNKNOWN)
+	d(0), type(UNKNOWN)
 {
+	init();
 }
 
 EMObject::EMObject(bool boolean) :
-	EMObjectTypes(), b(boolean), type(BOOL)
+	b(boolean), type(BOOL)
 {
+	init();
 }
 
 EMObject::EMObject(int num) : 
-	EMObjectTypes(), n(num), type(INT)
+	n(num), type(INT)
 {
+	init();
 }
 
 EMObject::EMObject(unsigned int num) : 
-		EMObjectTypes(), ui(num), type(UNSIGNEDINT)
+	ui(num), type(UNSIGNEDINT)
 {
+	init();
 }
 
 EMObject::EMObject(float ff) :
-	EMObjectTypes(), f(ff), type(FLOAT)
+	f(ff), type(FLOAT)
 {
+	init();
 }
 
 EMObject::EMObject(double dd) :
-	EMObjectTypes(), d(dd), type(DOUBLE)
+	d(dd), type(DOUBLE)
 {
 }
 
 EMObject::EMObject(const char *s) :
-	EMObjectTypes(), str(s), type(STRING)
+	str(s), type(STRING)
 {
+	init();
 }
 
 EMObject::EMObject(const string & s) :
-	EMObjectTypes(), str(s), type(STRING)
+	str(s), type(STRING)
 {
+	init();
 }
 
 EMObject::EMObject(float *f) :
-		EMObjectTypes(), fp(f), type(FLOAT_POINTER)
+	fp(f), type(FLOAT_POINTER)
 {
+	init();
 }
 
 EMObject::EMObject(int *i) :
-		EMObjectTypes(), ip(i), type(INT_POINTER)
+	ip(i), type(INT_POINTER)
 {
+	init();
 }
 
 EMObject::EMObject(void *v) :
-		EMObjectTypes(), vp(v), type(VOID_POINTER)
+	vp(v), type(VOID_POINTER)
 {
+	init();
 }
 
 EMObject::EMObject(EMData * em)	: 
-	EMObjectTypes(),emdata(em), type(EMDATA)
+	emdata(em), type(EMDATA)
 {
+	init();
 }
 
 EMObject::EMObject(XYData * xy) : 
-	EMObjectTypes(), xydata(xy), type(XYDATA)
+	xydata(xy), type(XYDATA)
 {
+	init();
 }
 
 EMObject::EMObject(Transform3D * t) :
-	EMObjectTypes(), transform3d(t), type(TRANSFORM3D)
+	transform3d(t), type(TRANSFORM3D)
 {
+	init();
 }
 
-EMObject::EMObject(Transform * t) :
-		EMObjectTypes(), transform(t), type(TRANSFORM)
+EMObject::EMObject(Transform* t) :
+	transform(t), type(TRANSFORM)
 {
+	init();
 }
 
 
 EMObject::EMObject(const vector< int >& v ) :
-	EMObjectTypes(), iarray(v), type(INTARRAY)
+	iarray(v), type(INTARRAY)
 {
+	init();
 }
 
 EMObject::EMObject(const vector < float >&v) :
-	EMObjectTypes(), farray(v), type(FLOATARRAY)
+	farray(v), type(FLOATARRAY)
 {
+	init();
 }
 
 EMObject:: EMObject(const vector <string>& sarray) :
-	EMObjectTypes(), strarray(sarray), type(STRINGARRAY)
+	strarray(sarray), type(STRINGARRAY)
 {
+	init();
 }
 
 EMObject::operator bool () const
@@ -374,6 +394,7 @@ EMObject::operator float * () const
 	return fp;
 }
 
+// MAYBE REMOVE? FIXME
 EMObject::operator void * () const
 {
 	if (type == VOID_POINTER) return vp;
@@ -382,7 +403,7 @@ EMObject::operator void * () const
 	else if (type == EMDATA) return (void *) emdata;
 	else if (type == XYDATA) return (void *) xydata;
 	else if (type == TRANSFORM3D) return (void *) transform3d;
-	else if (type == TRANSFORM) return (void *) transform;
+// 	else if (type == TRANSFORM) return (void *) transform;
 	else throw TypeException("Cannot convert to void pointer from this data type", get_object_type_name(type));
 }
 
@@ -463,7 +484,7 @@ EMObject::operator Transform3D *() const
 }
 
 
-EMObject::operator Transform *() const
+EMObject::operator Transform* () const
 {
 	if(type != TRANSFORM) {
 		if(type != UNKNOWN) {
@@ -603,40 +624,40 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 	}
 	
 	switch (e1.type) {
-	case EMObjectTypes::BOOL:
+	case  EMObject::BOOL:
 		return (e1.b == e2.b);
 	break;
-	case EMObjectTypes::INT:
+	case  EMObject::INT:
 		return (e1.n == e2.n);
 	break;
-	case EMObjectTypes::UNSIGNEDINT:
+	case  EMObject::UNSIGNEDINT:
 		return (e1.ui == e2.ui);
 	break;
-	case EMObjectTypes::FLOAT:
+	case  EMObject::FLOAT:
 		return (e1.f == e2.f);
 	break;
-	case EMObjectTypes::DOUBLE:
+	case  EMObject::DOUBLE:
 		return (e1.d == e2.d);
 	break;
-	case EMObjectTypes::STRING:
+	case  EMObject::STRING:
 		return (e1.str == e2.str);
 	break;
-	case EMObjectTypes::FLOAT_POINTER:
+	case  EMObject::FLOAT_POINTER:
 		return (e1.fp == e2.fp);
 	break;
-	case EMObjectTypes::INT_POINTER:
+	case  EMObject::INT_POINTER:
 		return (e1.ip == e2.ip);
 	break;
-	case EMObjectTypes::VOID_POINTER:
+	case  EMObject::VOID_POINTER:
 		return (e1.vp == e2.vp);
 	break;
-	case EMObjectTypes::EMDATA:
+	case  EMObject::EMDATA:
 		return (e1.emdata == e2.emdata);
 	break;
-	case EMObjectTypes::XYDATA:
+	case  EMObject::XYDATA:
 		return (e1.xydata == e2.xydata);
 	break;
-	case EMObjectTypes::FLOATARRAY:
+	case  EMObject::FLOATARRAY:
 		if (e1.farray.size() == e2.farray.size()) {
 			for (size_t i = 0; i < e1.farray.size(); i++) {
 				if (e1.farray[i] != e2.farray[i]) {
@@ -649,7 +670,7 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 			return false;
 		}
 	break;
-	case EMObjectTypes::INTARRAY:
+	case  EMObject::INTARRAY:
 		if (e1.iarray.size() == e2.iarray.size()) {
 			for (size_t i = 0; i < e1.iarray.size(); i++) {
 				if (e1.iarray[i] != e2.iarray[i]) {
@@ -659,7 +680,7 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 			return true;
 		}
 	break;
-	case EMObjectTypes::STRINGARRAY:
+	case  EMObject::STRINGARRAY:
 		if (e1.strarray.size() == e2.strarray.size()) {
 			for (size_t i = 0; i < e1.strarray.size(); i++) {
 				if (e1.strarray[i] != e2.strarray[i]) {
@@ -672,13 +693,13 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 			return false;
 		}
 	break;
-	case EMObjectTypes::TRANSFORM3D:
+	case  EMObject::TRANSFORM3D:
 		return (e1.transform3d == e2.transform3d);
 	break;
-	case EMObjectTypes::TRANSFORM:
+	case  EMObject::TRANSFORM:
 		return (e1.transform == e2.transform);
 	break;
-	case EMObjectTypes::UNKNOWN:
+	case  EMObject::UNKNOWN:
 		// UNKNOWN really means "no type" and if two objects both have
 		// type UNKNOWN they really are the same
 		return (e1.type == e2.type);
@@ -696,8 +717,9 @@ bool EMAN::operator!=(const EMObject &e1, const EMObject & e2)
 }
 
 // Copy constructor
-EMObject::EMObject(const EMObject& that) : EMObjectTypes(that)
+EMObject::EMObject(const EMObject& that)
 {
+	// init isn't necessary because that must have already called it!
 	*this = that;
 }
 
@@ -713,6 +735,9 @@ EMObject& EMObject::operator=( const EMObject& that )
 		// First store the type of the input, At first I forgot to do this and it was a very
 		// difficult bug to track down
 		type = that.type;
+		
+// 		if ( type != this_type ) throw
+		
 		
 		switch (type) 
 		{
@@ -768,7 +793,6 @@ EMObject& EMObject::operator=( const EMObject& that )
 			transform3d = that.transform3d;
 		break;
 		case TRANSFORM:
-		// Warning - Pointer address copy.
 			transform = that.transform;
 		break;
 		case UNKNOWN:

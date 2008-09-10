@@ -94,6 +94,32 @@ Transform::Transform(const float array[12]) {
 	memcpy(matrix,array,12*sizeof(float));
 }
 
+Transform::Transform(const vector<float> array)
+{
+	set_matrix(array);
+	
+}
+
+void Transform::set_matrix(const vector<float>& v)
+{
+	if (v.size() != 12 ) throw InvalidParameterException("The construction array must be of size 12");
+	
+	for(int i=0; i<3; ++i) {
+		for(int j=0; j<4; ++j) {
+			matrix[i][j] = v[i*4+j];
+		}
+	}
+}
+vector<float> Transform::get_matrix()
+{
+	vector<float> ret(12);
+	for(int i=0; i<3; ++i) {
+		for(int j=0; j<4; ++j) {
+			ret[i*4+j] = matrix[i][j];
+		}
+	}
+	return ret;
+}
 
 void Transform::to_identity()
 {
@@ -130,7 +156,7 @@ void Transform::set_params(const Dict& d) {
 	
 	if (d.has_key_ci("mirror")) {
 		EMObject e = d.get_ci("mirror");
-		if ( (e.get_type() != EMObjectTypes::BOOL ) && (e.get_type() != EMObjectTypes::INT ) && (e.get_type() != EMObjectTypes::UNSIGNEDINT ) )
+		if ( (e.get_type() != EMObject::BOOL ) && (e.get_type() != EMObject::INT ) && (e.get_type() != EMObject::UNSIGNEDINT ) )
 			throw InvalidParameterException("Error, mirror must be a bool or an int");
 		
 		bool mirror = static_cast<bool>(e);
@@ -709,9 +735,11 @@ void Transform::transpose_inplace() {
 	float tempij;
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < i; j++) {
-			tempij= matrix[i][j];
-			matrix[i][j] = matrix[j][i];
-			matrix[j][i] = tempij;
+			if (i != j) {
+				tempij= matrix[i][j];
+				matrix[i][j] = matrix[j][i];
+				matrix[j][i] = tempij;
+			}
 		}
 	}
 }

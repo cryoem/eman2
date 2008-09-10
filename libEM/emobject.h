@@ -103,29 +103,25 @@ namespace EMAN
 		ICOS_UNKNOWN
 	};
 
-	/** EMObjectTypes stores the types of the EMObject (EMObject derives from it)
-     *  It's basically for convenience and simple management.
-     *	It contains the enumerated object types, a registry
-     *  that maps each type to an identifying string, and 
-     *  performs static initialization of the registry upon first construction.
-     *  If an extra type is added to an EMObject, it's type should be encapsulated in this class
-     *  however the associated constructor and conversion operator should be written into EMObject.
+	/** EMObject is a wrapper class for types including int, float,
+     * double, etc as defined in ObjectType. Each type is typically used 
+     * as follows ('int' is the example):
+     *
+     *    int a = 12;
+     *    EMObject o(a);
+     *    EMObject o2 = a; // implicit converter from int to EMObject. 
+     *    int a1 = o;      // implicit converter from EMObject to int.
      * 
-     *  Also, this class was not initially designed to ever be instantiated by itself -
-     *  it is tightly coupled to the EMObject.
+     *  EMObjects may store pointers but they currently do not assume ownership - that
+     *  is, the memory associated with a pointer is never freed by an EMObject.
+     *  
+     * This type of class design is sometimes referred to as the Variant pattern.
+     * 
+     * See the testing code in rt/emdata/test_emobject.cpp for prewritten testing code
      */
-    
-	class EMObjectTypes
+	class EMObject
 	{
 	public:
-		/** Constructor
-		 * Performs static initialization of the type_registry and nothing else
-		 */
-		EMObjectTypes();
-		
-		/** Enumeration of the allowable types of the EMObject
-		 * See main comments for this class before inserting a new type.
-		 */
 		enum ObjectType {
 			UNKNOWN,
 			BOOL,
@@ -146,36 +142,7 @@ namespace EMAN
 			VOID_POINTER
 		};
 		
-		~EMObjectTypes() {}
 		
-		// There is no copy constructor or assignment operator because there is nothing to copy.
-		// However the compiler will probably make them for us, even though they would not achieve anything.
-		
-	protected:
-		// A type registry that returns the string equivalent of the object type
-		static map< ObjectType, string> type_registry;
-
-	};
-
-	/** EMObject is a wrapper class for types including int, float,
-     * double, etc as defined in ObjectType. Each type is typically used 
-     * as follows ('int' is the example):
-     *
-     *    int a = 12;
-     *    EMObject o(a);
-     *    EMObject o2 = a; // implicit converter from int to EMObject. 
-     *    int a1 = o;      // implicit converter from EMObject to int.
-     * 
-     *  EMObjects may store pointers but they currently do not assume ownership - that
-     *  is, the memory associated with a pointer is never freed by an EMObject.
-     *  
-     * This type of class design is sometimes referred to as the Variant pattern.
-     * 
-     * See the testing code in rt/emdata/test_emobject.cpp for prewritten testing code
-     */
-	class EMObject : public EMObjectTypes
-	{
-	public:
 		/** Constructors for each type
 		 * More types could be added, but all of the accompanying functions would have
 		 * to be altered to ensure correct functioning
@@ -214,8 +181,7 @@ namespace EMAN
 		/** Desctructor
 		 * Does not free pointers.
 		 */
-		~EMObject() {}
-
+		~EMObject();
 		/** Conversion operators
 		 */
 		operator bool () const;
@@ -295,7 +261,6 @@ namespace EMAN
 			XYData *xydata;
 			Transform3D * transform3d;
 			Transform * transform;
-// 			Transform3D::EulerType euler_type;
 		};
 
 		string str;
@@ -307,6 +272,10 @@ namespace EMAN
 		/** A debug function that prints as much information as possibe to cout
 		 */
 		void printInfo() const;
+		
+		void init();
+		
+		static map< ObjectType, string> type_registry;
 
 	};
 

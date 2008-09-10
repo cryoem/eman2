@@ -54,6 +54,41 @@ class TestTransform(unittest.TestCase):
 	def get_angle_rand(self,lower=-359,upper=359):
 		return Util.get_frand(lower,upper)
 	
+	def test_get_set_matrix(self):
+		"""test set/get matrix ............................"""
+		
+		m = []
+		for i in range(12): m.append(Util.get_frand(-2,2))
+		
+		t = Transform(m)
+		s = t.get_matrix()
+		
+		for i in range(12):	self.assertAlmostEqual(s[i],m[i], 6)
+			
+		t.set_matrix(m)
+		s = t.get_matrix()
+		
+		for i in range(12):	self.assertAlmostEqual(s[i],m[i], 6)
+	
+		no_trans = {}
+		one_trans = {"ty":323}
+		two_trans = {"tx":1.023,"ty":-1.002}
+		rot_one = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
+		rot_two = {"type":"spider","phi":self.get_angle_rand(),"theta":self.get_angle_rand(0,179),"psi":self.get_angle_rand()}
+		for scale in [1.0,2.0]:
+			for mirror in [True, False]:
+				for trans in [no_trans,one_trans,two_trans]:
+					for rot in [rot_one,rot_two]:
+						d = {"mirror":mirror,"scale":scale}
+						t = Transform(d)
+						t.set_params(trans)
+						t.set_params(rot)
+						
+						s = Transform(t.get_matrix())
+						
+						self.assert_matrix_equality(s,t)
+						
+	
 	def test_transform_projection_behavior(self):
 		"""test transform projection use .................."""
 		

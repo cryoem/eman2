@@ -137,6 +137,10 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	cf->set_attr("align.dx",cur_trans[0]);
 	cf->set_attr("align.dy",cur_trans[1]);
 	cf->set_attr("align.dz",cur_trans[2]);
+/*	
+	shared_ptr<Transform> t(new Transform);
+	t.get()->set_trans(cur_trans);
+	cf->set_attr("xform.align2d",EMObject(t));*/
 	
 	bool test = false;
 	if ( test ) {
