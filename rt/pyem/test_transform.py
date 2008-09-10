@@ -54,6 +54,36 @@ class TestTransform(unittest.TestCase):
 	def get_angle_rand(self,lower=-359,upper=359):
 		return Util.get_frand(lower,upper)
 	
+	def test_transform_projection_behavior(self):
+		"""test transform projection use .................."""
+		
+		# in projection use no tz is set
+		no_trans = {}
+		one_trans = {"ty":323}
+		two_trans = {"tx":1.023,"ty":-1.002}
+		rot_one = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
+		rot_two = {"type":"spider","phi":self.get_angle_rand(),"theta":self.get_angle_rand(0,179),"psi":self.get_angle_rand()}
+		for scale in [1.0,2.0]:
+			for mirror in [True, False]:
+				for trans in [no_trans,one_trans,two_trans]:
+					for rot in [rot_one,rot_two]:
+						d = {"mirror":mirror,"scale":scale}
+						t = Transform(d)
+						t.set_params(trans)
+						t.set_params(rot)
+					
+						s = t.inverse()
+						inv_params = s.get_params_inverse("eman")
+						params = t.get_params("eman")
+						#This value must be zero for internal consistency
+						if mirror: fac = -1
+						else :fac =1
+						self.assertAlmostEqual(inv_params["tz"], 0, 4)
+						
+						try: self.assertAlmostEqual(inv_params["ty"]/(-1*params["ty"]),1, 4)
+						except: self.assertAlmostEqual(inv_params["ty"], -1*params["ty"], 4)
+						try: self.assertAlmostEqual(fac*inv_params["tx"]/(-1*params["tx"]),1, 4)
+						except: self.assertAlmostEqual(fac*inv_params["tx"],(-1*params["tx"]), 4)
 	def test_get_trans(self):
 		"""test get trans ................................."""
 		for scale in [1.0,2.0]:
@@ -106,8 +136,6 @@ class TestTransform(unittest.TestCase):
 	
 	def test_get_rotation(self):
 		"""test get rotation .............................."""	
-		
-		
 		for scale in [1.0,2.0]:
 			for mirror in [False,True]:
 				#2D convention
@@ -218,8 +246,6 @@ class TestTransform(unittest.TestCase):
 			self.assert_matrix_equality(t,t1)
 			
 		#MATRIX convention
-		#note this is bad because we are not constructing a matrix
-		#that reflects a true rotation
 		d = {"type":"eman","az":3,"alt":5,"phi":-1}
 		t = Transform(d)
 		m11, m12, m13 = t.at(0,0),t.at(0,1),t.at(0,2)
@@ -567,7 +593,7 @@ class TestTransform(unittest.TestCase):
 		self.assertAlmostEqual(v[1]*scale,dy, 3)
 		self.assertAlmostEqual(v[2]*scale,dz, 3)
 		
-		t.set_mirror(True)
+		t.set_mirror(Util.get_irand(0,1))
 		v = t.get_pre_trans()
 		self.assertAlmostEqual(v[0]*scale,dx, 3)
 		self.assertAlmostEqual(v[1]*scale,dy, 3)
@@ -593,7 +619,58 @@ class TestTransform(unittest.TestCase):
 		#(without_trans*pre_trans).printme()
 		#(pre_trans*without_trans).printme()
 		self.assert_matrix_equality(without_trans*pre_trans,t)
+
+	def test_get_params_inverse(self):
+		"""test get params inverse........................."""
+		dx = Util.get_frand(-200,200)
+		dy = Util.get_frand(-200,200)
+		dz = Util.get_frand(-200,200)
+		three_trans = {"tx":dx,"ty":dy,"tz":dz}
+		t = Transform(three_trans)
+		
+		scale = Util.get_frand(1.00001,100.0)
+		t.set_scale(scale)
+		t.set_mirror(Util.get_irand(0,1))
+		
+		d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
+		t.set_params(d)
+		
+		for tipe in ["eman","spider","mrc","imagic","quaternion","matrix","spin","xyz","sgirot"]:
+			inv_params = t.get_params_inverse(tipe)
+			t2 = Transform()
+			t2.set_rotation(inv_params)
+			t2.set_scale(inv_params["scale"])
+			t2.set_mirror(inv_params["mirror"])
+			
+			trans = Transform()
+			trans.set_trans(inv_params["tx"],inv_params["ty"],inv_params["tz"])
+			
+			self.assert_matrix_equality(t2*trans,t)
 	
+	def test_get_params_inverse_2d(self):
+		"""test get params inverse 2d......................"""
+		dx = Util.get_frand(-200,200)
+		dy = Util.get_frand(-200,200)
+		two_trans = {"tx":dx,"ty":dy}
+		t = Transform(two_trans)
+		
+		scale = Util.get_frand(1.00001,100.0)
+		t.set_scale(scale)
+		t.set_mirror(Util.get_irand(0,1))
+
+		d = {"type":"2d","alpha":self.get_angle_rand()}
+		t.set_params(d)
+		
+		
+		inv_params = t.get_params_inverse("2d")
+		t2 = Transform()
+		t2.set_rotation(inv_params)
+		t2.set_scale(inv_params["scale"])
+		t2.set_mirror(inv_params["mirror"])
+		
+		trans = Transform()
+		trans.set_trans(inv_params["tx"],inv_params["ty"])
+		
 	def assert_identity(self,t2,n=4):
 		imax = n
 		if n > 3: imax = 3

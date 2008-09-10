@@ -294,12 +294,12 @@ namespace EMAN
 		private:
 			float matrix[3][4];
 			
-			enum TransformType {
-				TWOD,
-				THREED,
-				UNKNOWN
-			};
-			
+// 			enum TransformType {
+// 				TWOD,
+// 				THREED,
+// 				UNKNOWN
+// 			};
+// 			
 // 			TransformType transform_type;
 			
 			/** validate that it is okay set the internal type to the new type
