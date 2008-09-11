@@ -48,6 +48,9 @@ using namespace EMAN;
 
 #include <algorithm> // for std::transform
 
+#include <gsl_matrix.h>
+#include <gsl_blas.h>
+#include <gsl_linalg.h>
 				 
 const float Transform3D::ERR_LIMIT = 0.000001f;
 
@@ -162,7 +165,58 @@ void Transform::set_params(const Dict& d) {
 		bool mirror = static_cast<bool>(e);
 		set_mirror(mirror);
 	}
+}
 
+
+void Transform::set_params_inverse(const Dict& d) {
+	if (d.has_key_ci("type") ) set_rotation(d);
+	
+	float dx=0,dy=0,dz=0;
+	if (d.has_key_ci("tx")) dx = static_cast<float>(d.get_ci("tx"));
+	if (d.has_key_ci("ty")) dy = static_cast<float>(d.get_ci("ty"));
+	if (d.has_key_ci("tz")) dz = static_cast<float>(d.get_ci("tz"));
+	
+	if ( (dx != 0.0 || dy != 0.0 || dz != 0.0) && d.has_key_ci("type") ) {
+		Transform pre_trans;
+		pre_trans.set_trans(dx,dy,dz);
+		
+		Transform tmp;
+		tmp.set_rotation(d);
+		
+		if (d.has_key_ci("scale")) {
+			float scale = static_cast<float>(d.get_ci("scale"));
+			tmp.set_scale(scale);
+		}
+		
+		Transform solution_trans = tmp*pre_trans;
+		
+		if (d.has_key_ci("scale")) {
+			Transform tmp;
+			float scale = static_cast<float>(d.get_ci("scale"));
+			tmp.set_scale(scale);
+			solution_trans = solution_trans*tmp;
+		}
+		
+		tmp = Transform();
+		tmp.set_rotation(d);
+		solution_trans = solution_trans*tmp;
+		set_trans(solution_trans.get_trans());
+	}
+	
+	if (d.has_key_ci("scale")) {
+		float scale = static_cast<float>(d.get_ci("scale"));
+		set_scale(scale);
+	}
+	
+	if (d.has_key_ci("mirror")) {
+		EMObject e = d.get_ci("mirror");
+		if ( (e.get_type() != EMObject::BOOL ) && (e.get_type() != EMObject::INT ) && (e.get_type() != EMObject::UNSIGNEDINT ) )
+			throw InvalidParameterException("Error, mirror must be a bool or an int");
+		
+		bool mirror = static_cast<bool>(e);
+		set_mirror(mirror);
+	}
+	invert();
 }
 
 
@@ -184,19 +238,22 @@ Dict Transform::get_params(const string& euler_type) {
 	return params;
 }
 
+
+
 Dict Transform::get_params_inverse(const string& euler_type) {
-	Dict params = get_rotation(euler_type);
+	Transform inv(inverse());
 	
-	Vec3f v = get_pre_trans();
+	Dict params = inv.get_rotation(euler_type);
+	Vec3f v = inv.get_pre_trans();
 	params["tx"] = v[0]; params["ty"] = v[1]; 
 	
 	string type = Util::str_to_lower(euler_type);
 	if ( type != "2d") params["tz"] = v[2];
 	
-	float scale = get_scale();
+	float scale = inv.get_scale();
 	params["scale"] = scale;
 	
-	bool mirror = get_mirror();
+	bool mirror = inv.get_mirror();
 	params["mirror"] = mirror;
 	
 	return params;
@@ -615,15 +672,117 @@ float Transform::get_scale() const {
 	return scale;
 }
 
+void print_matrix(gsl_matrix* M, unsigned int r, unsigned int c, const string& message ) {
+	cout << "Message is " << message << endl;
+	for ( unsigned int i = 0; i < r; ++i )
+	{
+		for ( unsigned int j = 0; j < c; ++j )
+		{
+			cout << gsl_matrix_get(M,i,j) << " ";
+		}
+		cout << endl;
+	}
+}
+
 void Transform::orthogonalize()
 {
-	float inv_scale = 1.0f/get_scale();
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
-			matrix[i][j] *= inv_scale;
+	float scale;
+	bool x_mirror;
+	get_scale_and_mirror(scale,x_mirror);
+	double inv_scale = 1.0/static_cast<double>(scale);
+	double mirror_scale = (x_mirror == true ? -1.0:1.0);
+	
+	gsl_matrix * R = gsl_matrix_calloc(3,3);
+	for ( unsigned int i = 0; i < 3; ++i )
+	{
+		for ( unsigned int j = 0; j < 3; ++j )
+		{
+			if (i == 0 && mirror_scale != 1.0 ) {
+				gsl_matrix_set( R, i, j, static_cast<double>(matrix[i][j])*mirror_scale*inv_scale );
+			}
+			else {
+				gsl_matrix_set( R, i, j, static_cast<double>(matrix[i][j])*inv_scale );
+			}
 		}
 	}
-	set_mirror(false);
+
+// 	gsl_matrix * R_copy = gsl_matrix_calloc(3,3); // A copy of R
+// 	gsl_matrix_memcpy(R,R_copy);
+// 	
+
+// 	gsl_matrix * R_t = gsl_matrix_calloc(3,3); // R_t is the tranpose
+// 	gsl_matrix_memcpy(R,R_t);
+// 	gsl_matrix_transpose(R_t); // okay not the most efficient but the cleanest looking code
+	
+	gsl_matrix * RR_t = gsl_matrix_calloc(3,3); // R_t is the tranpose
+	gsl_blas_dgemm (CblasNoTrans, CblasTrans, 1.0, R, R, 0.0, RR_t);
+// 	gsl_matrix_mul(R,R_t); // Now R has the results of R*R_t
+	
+// 	print_matrix(RR_t,3,3,"RR_t as it is");
+// 	
+	gsl_matrix * V = gsl_matrix_calloc(3,3);
+	gsl_vector * S = gsl_vector_calloc(3);
+	gsl_vector * work = gsl_vector_calloc(3);
+	gsl_linalg_SV_decomp (RR_t, V, S, work); // Now R is U of the SVD R = USV^T
+	
+// 	print_matrix(RR_t,3,3,"RR_t is now U");
+// 	print_matrix(V,3,3,"And this is V");
+	
+	// Now the solution is going to be (current) R tranposed * 1/sqrt(s) * (original) R
+	gsl_matrix * D = gsl_matrix_calloc( 3,3 ); // R_t is the tranpose
+	for ( unsigned int i = 0; i < 3; ++i ) gsl_matrix_set(D,i,i,1.0/sqrt(gsl_vector_get( S, i)));
+	
+	// Just a check to see if RR_t = USV^T
+	gsl_matrix * check = gsl_matrix_calloc(3,3);
+	// Just a check to see if RR_t = USV^T
+	gsl_matrix * Diag = gsl_matrix_calloc(3,3);
+	for ( unsigned int i = 0; i < 3; ++i ) gsl_matrix_set(Diag,i,i,gsl_vector_get( S, i));
+	
+// 	gsl_blas_dgemm (CblasNoTrans, CblasTrans, 1.0, Diag,V , 0.0, check);
+// 	gsl_blas_dgemm (CblasNoTrans, CblasNoTrans, 1.0, RR_t,check , 0.0, V);
+// 	print_matrix(V,3,3,"This should be RR_t");
+// 	
+// 	print_matrix(D,3,3,"D inv");
+	
+	gsl_matrix * A_inv = gsl_matrix_calloc(3,3); // R_t is the tranpose
+	gsl_blas_dgemm (CblasNoTrans, CblasTrans, 1.0, D,RR_t, 0.0, A_inv);
+	
+// 	print_matrix(A_inv,3,3,"D inv * U inverse");
+	
+	gsl_blas_dgemm (CblasNoTrans, CblasNoTrans, 1.0, A_inv,R , 0.0, D);// Done, D contains the solution
+// 	print_matrix(D,3,3,"D inv * U inverse * R");
+	
+// 	print_matrix(R,3,3,"Original R");
+// 	cout << "now me" << endl;
+// 	printme();
+	for ( unsigned int i = 0; i < 3; ++i )
+	{
+		for ( unsigned int j = 0; j < 3; ++j )
+		{
+			matrix[i][j] = static_cast<float>( gsl_matrix_get(D,i,j) );
+		}
+	}
+	
+	// Apply scale if it existed previously
+	if (scale != 1.0f) {
+		for(int i=0; i<3; ++i) {
+			for(int j=0; j<3; ++j) {
+				matrix[i][j] *= scale;	
+			}
+		}
+	}
+
+	// Apply post x mirroring if it was applied previouslys
+	if ( x_mirror ) {
+		for(int j=0; j<3; ++j) {
+			matrix[0][j] *= -1.0f;	
+		}
+	}
+	
+// 	cout << "now me" << endl;
+// 	printme();
+	gsl_matrix_free(V); gsl_matrix_free(R); gsl_matrix_free(A_inv);gsl_matrix_free(D);
+	gsl_vector_free(S); gsl_vector_free(work);
 }
 
 void Transform::set_mirror(const bool x_mirror ) {

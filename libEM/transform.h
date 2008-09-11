@@ -111,6 +111,14 @@ namespace EMAN
 			 */
 			void set_params(const Dict& d);
 			
+			/** Set the parameters of the entire transform as though they there in the inverse format
+
+			 * in other words, calling set_params_inverse(get_params_inverse()) should essentially leave
+			 * the object unchanged.
+			 *  @param dict the dictionary containing the inverse parameters
+			 */
+			void set_params_inverse(const Dict& d);
+			
 			/** Get the parameters of the entire transform, using a specific euler convention
 			 * @param euler_type the euler type of the retrieved rotation
 			 * @return a dictionary containing the parameters
