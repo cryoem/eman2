@@ -706,60 +706,19 @@ void Transform::orthogonalize()
 		}
 	}
 
-// 	gsl_matrix * R_copy = gsl_matrix_calloc(3,3); // A copy of R
-// 	gsl_matrix_memcpy(R,R_copy);
-// 	
-
-// 	gsl_matrix * R_t = gsl_matrix_calloc(3,3); // R_t is the tranpose
-// 	gsl_matrix_memcpy(R,R_t);
-// 	gsl_matrix_transpose(R_t); // okay not the most efficient but the cleanest looking code
-	
-	gsl_matrix * RR_t = gsl_matrix_calloc(3,3); // R_t is the tranpose
-	gsl_blas_dgemm (CblasNoTrans, CblasTrans, 1.0, R, R, 0.0, RR_t);
-// 	gsl_matrix_mul(R,R_t); // Now R has the results of R*R_t
-	
-// 	print_matrix(RR_t,3,3,"RR_t as it is");
-// 	
 	gsl_matrix * V = gsl_matrix_calloc(3,3);
 	gsl_vector * S = gsl_vector_calloc(3);
 	gsl_vector * work = gsl_vector_calloc(3);
-	gsl_linalg_SV_decomp (RR_t, V, S, work); // Now R is U of the SVD R = USV^T
+	gsl_linalg_SV_decomp (R, V, S, work); // Now R is U of the SVD R = USV^T
 	
-// 	print_matrix(RR_t,3,3,"RR_t is now U");
-// 	print_matrix(V,3,3,"And this is V");
+	gsl_matrix * Soln = gsl_matrix_calloc(3,3);
+	gsl_blas_dgemm (CblasNoTrans, CblasTrans, 1.0, R, V, 0.0, Soln);
 	
-	// Now the solution is going to be (current) R tranposed * 1/sqrt(s) * (original) R
-	gsl_matrix * D = gsl_matrix_calloc( 3,3 ); // R_t is the tranpose
-	for ( unsigned int i = 0; i < 3; ++i ) gsl_matrix_set(D,i,i,1.0/sqrt(gsl_vector_get( S, i)));
-	
-	// Just a check to see if RR_t = USV^T
-	gsl_matrix * check = gsl_matrix_calloc(3,3);
-	// Just a check to see if RR_t = USV^T
-	gsl_matrix * Diag = gsl_matrix_calloc(3,3);
-	for ( unsigned int i = 0; i < 3; ++i ) gsl_matrix_set(Diag,i,i,gsl_vector_get( S, i));
-	
-// 	gsl_blas_dgemm (CblasNoTrans, CblasTrans, 1.0, Diag,V , 0.0, check);
-// 	gsl_blas_dgemm (CblasNoTrans, CblasNoTrans, 1.0, RR_t,check , 0.0, V);
-// 	print_matrix(V,3,3,"This should be RR_t");
-// 	
-// 	print_matrix(D,3,3,"D inv");
-	
-	gsl_matrix * A_inv = gsl_matrix_calloc(3,3); // R_t is the tranpose
-	gsl_blas_dgemm (CblasNoTrans, CblasTrans, 1.0, D,RR_t, 0.0, A_inv);
-	
-// 	print_matrix(A_inv,3,3,"D inv * U inverse");
-	
-	gsl_blas_dgemm (CblasNoTrans, CblasNoTrans, 1.0, A_inv,R , 0.0, D);// Done, D contains the solution
-// 	print_matrix(D,3,3,"D inv * U inverse * R");
-	
-// 	print_matrix(R,3,3,"Original R");
-// 	cout << "now me" << endl;
-// 	printme();
 	for ( unsigned int i = 0; i < 3; ++i )
 	{
 		for ( unsigned int j = 0; j < 3; ++j )
 		{
-			matrix[i][j] = static_cast<float>( gsl_matrix_get(D,i,j) );
+			matrix[i][j] = static_cast<float>( gsl_matrix_get(Soln,i,j) );
 		}
 	}
 	
@@ -779,9 +738,7 @@ void Transform::orthogonalize()
 		}
 	}
 	
-// 	cout << "now me" << endl;
-// 	printme();
-	gsl_matrix_free(V); gsl_matrix_free(R); gsl_matrix_free(A_inv);gsl_matrix_free(D);
+	gsl_matrix_free(V); gsl_matrix_free(R); gsl_matrix_free(Soln);
 	gsl_vector_free(S); gsl_vector_free(work);
 }
 
@@ -902,46 +859,9 @@ void Transform::transpose_inplace() {
 		}
 	}
 }
-/*
-void Transform::validate_and_set_type(const Transform::TransformType type ) {
-	if (transform_type == UNKNOWN ) {
-		transform_type = type; // This is fine this is the first time the type is being set
-	} else if (transform_type != type ) {
-		string message = "can't treat a " + transform_type_to_string(transform_type) + " Transform as though it were a " +  transform_type_to_string(type) + " Transform type";
-		throw UnexpectedBehaviorException("Error, " + message);
-	} 
-}
-
-void Transform::assert_consistent_type(const Transform::TransformType type )  const{
-	if (transform_type != UNKNOWN ) {// if the type is unknown then maybe it's the identity and the user is asking for parameters?
-		if (transform_type != type ) {
-			string message = "can't treat a " + transform_type_to_string(transform_type) + " Transform type as though it were a " +  transform_type_to_string(type) + " Transform type";
-			throw UnexpectedBehaviorException("Error, " + message);
-		}
-	}
-}
-
-string Transform::transform_type_to_string(const Transform::TransformType type ) const {
-	if ( type == UNKNOWN ) {
-		return string("UNKNOWN");
-	} else if ( type == TWOD ) {
-		return string("2D");
-	}
-	else if ( type == THREED ) {
-		return string("3D");
-	} else {
-		throw InvalidParameterException("Error, unknown type in Transform::transform_type_to_string");
-	}
-}*/
 
 Transform EMAN::operator*(const Transform & M2, const Transform & M1)     // YYY
 {
-// 	if (M2.transform_type != Transform::UNKNOWN && M1.transform_type != Transform::UNKNOWN ) {
-// 		if (M2.transform_type != M1.transform_type) {
-// 			string message = "can't multiply a " + M2.transform_type_to_string(M2.transform_type) + " Transform type against a " + M1.transform_type_to_string(M1.transform_type) + " Transform type";
-// 			throw UnexpectedBehaviorException("Error, " + message);
-// 		}
-// 	}
 	Transform result;
 	for (int i=0; i<3; i++) {
 		for (int j=0; j<4; j++) {

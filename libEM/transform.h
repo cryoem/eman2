@@ -201,8 +201,11 @@ namespace EMAN
 			*/
 			void to_identity();
 			
-			/** Reorthogonalize the matrix.
-			 * Equivalent to calling set_scale(1.0) and set_mirror(false)
+			/** Reorthogonalize the rotation part of the matrix in place.
+			 * Does this by performing the SVD decomposition of the rotation matrix R
+			 * such that R = USV^T - since the eigenvalues of a rotation matrix are all 1 we 
+			 * enforce that S should be the identity and produce a corrected matrix R' = UV^T
+			 * 
 			 */
 			void orthogonalize();
 			
@@ -221,8 +224,14 @@ namespace EMAN
 			}
 			
 			//=============== get set matrix ============================
+			/** Set the transformation matrix using a vector. Must be of length 12.
+			 * @param v the transformation matrix stored as a vector - 3 rows of 4.
+			 */ 
 			void set_matrix(const vector<float>& v);
 			
+			/** Get the transformation matrix using a vector. 
+			 * @return a vector - 3 rows of 4 - that stores the values of the transformation matrix
+			 */ 
 			vector<float> get_matrix();
 			
 			/** Get the inverse of this transformation matrix
@@ -311,41 +320,6 @@ namespace EMAN
 
 		private:
 			float matrix[3][4];
-			
-// 			enum TransformType {
-// 				TWOD,
-// 				THREED,
-// 				UNKNOWN
-// 			};
-// 			
-// 			TransformType transform_type;
-			
-			/** validate that it is okay set the internal type to the new type
-			 * If the internal type is UNKNOWN then it's okay to set the type to anything. 
-			 * If the internal type matches the type then nothing happens.
-			 * If the internal type is not UNKNOWN and it does not match the argument type an exception is thrown
-			 * @param t the new transform type
-			 * @exception UnexpectedBehaviorException if the internal type and the new type are irreconcilable
-			 */
-// 			void validate_and_set_type(const TransformType t);
-			
-			/** assert that the argument type is consistent with the internally stored type
-			 * If the internal type is UNKNOWN then there is no problem. This could, for example,
-			 * occur when the user has called set_identity() followed by get_trans()
-			 * If the internal type matches the argument type all is fine as well.
-			 * If the internal type is not UNKNOWN and does not match the argument type this mean
-			 * there is an internal consistency and an exception is thrown
-			 * @param t the transform type
-			 * @exception UnexpectedBehaviorException if the internal type and the argument type are irreconcilable
-			 */
-// 			void assert_consistent_type(const TransformType t) const;
-			
-			/** Convert the argument transform type into a unique and semantically equivalent string
-			 * @param type the transform type
-			 * @return a unique and semantically equivalent string that represents the transform type
-			 */
-// 			string transform_type_to_string(const Transform::TransformType type ) const;
-			
 			
 			void assert_valid_2d() const;
 
