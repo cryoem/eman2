@@ -1428,8 +1428,7 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 			set_params2D(data[im], [alphan, sxn, syn, mn, scale])
 			data[im].set_attr('assign',iref)
 			# apply current parameters and add to the average
-			temp = rot_shift2D(data[im], alphan, sxn, syn)
-			if mn: temp.process_inplace("mirror", {"axis":'x'})
+			temp = rot_shift2D(data[im], alphan, sxn, syn, mn)
 			it = im%2
 			Util.add_img( refi[iref][it], temp)
 			if(CTF):
@@ -1492,8 +1491,7 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 								im = assign[j][i]
 								alpha, sx, sy, mirror, scale =  get_params2D(data[im])
 								# apply current parameters and add to the average
-								temp = rot_shift2D(data[im], alpha, sx, sy)
-								if mn: temp.process_inplace("mirror", {"axis":'x'})
+								temp = rot_shift2D(data[im], alpha, sx, sy, mn)
 								it = im%2
 								Util.add_img( refi[j][it], temp)
 
@@ -1674,8 +1672,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, 
 			set_params2D(data[im-image_start], [alphan, sxn, syn, mn, scale])
 			data[im-image_start].set_attr('assign',iref)
 			# apply current parameters and add to the average
-			temp = rot_shift2D(data[im-image_start], alphan, sxn, syn)
-			if mn: temp.process_inplace("mirror", {"axis":'x'})
+			temp = rot_shift2D(data[im-image_start], alphan, sxn, syn, mn)
 			it = im%2
 			Util.add_img( refi[iref][it], temp)
 			assign[iref].append(im)
@@ -2577,8 +2574,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 			#  This should be done only for estimation of resolution, nothing else!
 			alpha, sx, sy, mirror, peak = align2d(ktavg[0], ktavg[1], xrng[0], yrng[0], step=0.25, first_ring = first_ring, last_ring = last_ring, rstep=1, mode = mode)
 			#  apply parameters to the original average
-			favg2 = rot_shift2D(tavg[0], alpha, sx, sy, interpolation_method="gridding")
-			if  mirror: favg2.process_inplace("mirror",{"axis":'x'})
+			favg2 = rot_shift2D(tavg[0], alpha, sx, sy, mn, interpolation_method="gridding")
 			fscross = fsc_mask(favg2, tavg[1], ref_data[0], 1.0, os.path.join(outdir, "drcross_%03d"%(total_iter)))
 			del favg2
 			# Here one may want to apply rot-shift of the first average to all images in its group
@@ -8982,8 +8978,8 @@ def rot_sym(infile, outfile, sym_gp="d4", \
 	
 def transform2d(stack_data, stack_data_ali):
 # apply 2D alignment parameters stored in the header of the input stack file using gridding interpolation and create an output stack file
-	from fundamentals	import rot_shift2D
-	from utilities 		import set_arb_params, combine_params2
+	from fundamentals   import rot_shift2D
+	from utilities 	    import set_arb_params, set_params2D, get_params2D
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os
 	
@@ -8993,7 +8989,8 @@ def transform2d(stack_data, stack_data_ali):
 
 	if os.path.exists(stack_data_ali): os.system("rm -f "+stack_data_ali)
 
-	attributes = ['phi', 'theta', 'psi', 'alpha', 'sx', 'sy', 'mirror', 'nclass', 'assign', 's2x', 's2y', 'scale']
+	null2D = Transform({"type":"2D"})
+	attributes = ['phi', 'theta', 'psi', 'nclass', 'assign', 's2x', 's2y', 'scale']
 	data = EMData()
 	nima = EMUtil.get_image_count(stack_data)
 	data.read_image(stack_data, 0)
@@ -9008,15 +9005,10 @@ def transform2d(stack_data, stack_data_ali):
 				params.append(data.get_attr(attributes[ia]))
 			else:
 				params.append(0)
+			al2d = get_params2D(data)
 		# apply params to the image
-		if(params[3] != 0.0 or params[4] != 0.0 or params[5] != 0.0):
-			temp = rot_shift2D(data, params[3], params[4], params[5])
-			params[3]=params[4]=params[5] = 0.0
-		else:
-			temp = data.copy()
-		if  params[6]:
-			temp.process_inplace("mirror", {"axis":'x'})
-			params[6] = 0
+		temp = rot_shift2D(data, al2d[0], al2d[1], al2d[2], al2d[3])
+		set_params2D(temp, null2D)
 		set_arb_params(temp, params, attributes)
 		temp.write_image(stack_data_ali, im)
 	print_end_msg("transform2d")
@@ -9265,8 +9257,7 @@ def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = Fal
 			ima.read_image(input_stack, i)
 			ctf_params = get_arb_params(ima, parnames)
 			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2])
-			if  ali[3]:  ima.process_inplace("mirror",{"axis":'x'})
+			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
 			if avg:
 				st = Util.infomask(ima, mask, False)
 				ima -= st[0]
@@ -9279,8 +9270,7 @@ def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = Fal
 			ima.read_image(input_stack, i)
 			ctf_params = get_arb_params(ima, parnames)
 			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2])
-			if  ali[3]:  ima.process_inplace("mirror",{"axis":'x'})
+			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
 			if avg:
 				st = Util.infomask(ima, mask, False)
 				ima -= st[0]
@@ -9295,8 +9285,7 @@ def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = Fal
 			ima = EMData()
 			ima.read_image(input_stack, i)
 			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2])
-			if  ali[3]:  ima.process_inplace("mirror",{"axis":'x'})
+			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
 			if avg:
 				st = Util.infomask(ima, mask, False)
 				ima -= st[0]
@@ -9307,8 +9296,7 @@ def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = Fal
 			ima = EMData()
 			ima.read_image(input_stack, i)
 			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2])
-			if  ali[3]:  ima.process_inplace("mirror",{"axis":'x'})
+			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
 			if avg:
 				st = Util.infomask(ima, mask, False)
 				ima -= st[0]

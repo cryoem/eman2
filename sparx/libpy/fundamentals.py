@@ -461,7 +461,7 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
 	return image1
 
-def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, interpolation_method = None, scale = 1.0):
+def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, interpolation_method = None):
 	"""
 		rotatet/shift image using
 		1. linear    interpolation
@@ -476,17 +476,25 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, interpolation_method = Non
 		RA = Transform3D(0, 0, angle)
 		RA.set_scale(scale)
 		RA.set_posttrans((sx, sy, 0));
-		return img.rot_scale_trans(RA)
+		img = img.rot_scale_trans(RA)
+		if  mirror: img.process_inplace("mirror", {"axis":'x'})
+		return img
 	elif(use_method == "quadratic"):
-		return img.rot_scale_trans2D(angle, sx, sy, scale)
+		img = img.rot_scale_trans2D(angle, sx, sy, scale)
+		if  mirror: img.process_inplace("mirror", {"axis":'x'})
+		return img
 	elif(use_method == "gridding"): # previous rtshg
 		from math import pi
 		o, kb = prepi(img)
 		# gridding rotation
-		return o.rot_scale_conv_new(angle*pi/180.0, sx, sy, kb, scale)
+		o = o.rot_scale_conv_new(angle*pi/180.0, sx, sy, kb, scale)
+		if  mirror: o.process_inplace("mirror", {"axis":'x'})
+		return o
 	elif(use_method == "ftgridding"): # previous rtshg
 		from fundamentals import gridrot_shift2D
-		return gridrot_shift2D(img, angle, sx, sy, scale)
+		img = gridrot_shift2D(img, angle, sx, sy, scale)
+		if  mirror: img.process_inplace("mirror", {"axis":'x'})
+		return img
 	else:	ERROR("rot_shift_2D interpolation method is incorrectly set", "rot_shift_2D", 1)
 
 def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scale = 1.0):

@@ -35,7 +35,7 @@ def add_oe_series(data):
 	"""
 		Calculate odd an even sum of a image series using current alignment parameters,
 	"""
-	from utilities    import model_blank
+	from utilities    import model_blank, get_params2D
 	from fundamentals import rot_shift2D
 	n = len(data)
 	nx = data[0].get_xsize()
@@ -43,12 +43,8 @@ def add_oe_series(data):
 	ave1 = model_blank(nx,ny)
 	ave2 = model_blank(nx,ny)
 	for i in xrange(n):
-		alpha  = data[i].get_attr('alpha')
-		sx     = data[i].get_attr('sx')
-		sy     = data[i].get_attr('sy')
-		mirror = data[i].get_attr('mirror')
-		temp = rot_shift2D(data[i], alpha, sx, sy, "quadratic")
-		if  mirror: temp.process_inplace("mirror", {"axis":'x'})
+		alpha, sx, sy, mirror, scale = get_params2D(data[i])
+		temp = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 		if((i%2) == 0): Util.add_img(ave1, temp)
 		else:          Util.add_img(ave2, temp)
 	return ave1, ave2
@@ -59,7 +55,7 @@ def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None
 		mode - "a" use current alignment parameters
 		CTF  - if True, use CTF for calculations of both average and variance.
 	"""
-	from utilities    import    model_blank
+	from utilities    import    model_blank, get_params2D
 	from fundamentals import    rot_shift2D, fft
 
 	n = len(data)
@@ -82,12 +78,8 @@ def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None
 	 	for i in xrange(n):
 	 		ima = data[i].copy()
 	 		if mode == "a":
-	 			alpha  = ima.get_attr('alpha')
-	 			sx     = ima.get_attr('sx')
-	 			sy     = ima.get_attr('sy')
-	 			mirror = ima.get_attr('mirror')
-	 			ima    = rot_shift2D(ima, alpha, sx, sy)
-	 			if  mirror:  ima.process_inplace("mirror",{"axis":'x'})
+				alpha, sx, sy, mirror, scale = get_params2D(ima)
+				ima = rot_shift2D(ima, alpha, sx, sy, mirror, scale, "quadratic")
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
@@ -104,12 +96,8 @@ def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None
 	else:
 		for i in xrange(n):
 			if(mode == "a"):
-				alpha  = data[i].get_attr('alpha')
-				sx     = data[i].get_attr('sx')
-				sy     = data[i].get_attr('sy')
-				mirror = data[i].get_attr('mirror')
-				ima = rot_shift2D(data[i], alpha, sx, sy, "quadratic")
-				if  mirror: ima.process_inplace("mirror", {"axis":'x'})
+				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i].copy()
 			Util.add_img(ave, ima)
@@ -135,7 +123,7 @@ def add_oe_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 		mode - "a" use current alignment parameters
 		CTF  - if True, use CTF for calculations of the sum.
 	"""
-	from utilities    import    model_blank
+	from utilities    import    model_blank, get_params2D
 	from fundamentals import    rot_shift2D, fft
 
 	n = len(data)
@@ -153,12 +141,8 @@ def add_oe_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 			ERROR("data cannot be ctf-applied","add_oe_ave_varf",1)
 	 	for i in xrange(n):
 	 		if(mode == "a"):
-	 			alpha  = data[i].get_attr('alpha')
-	 			sx     = data[i].get_attr('sx')
-	 			sy     = data[i].get_attr('sy')
-	 			mirror = data[i].get_attr('mirror')
-		 		ima = rot_shift2D(data[i], alpha, sx, sy)
-		 		if  mirror:  ima.process_inplace("mirror",{"axis":'x'})
+				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
@@ -171,12 +155,8 @@ def add_oe_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 	else:
 		for i in xrange(n):
 			if(mode == "a"):
-				alpha  = data[i].get_attr('alpha')
-				sx     = data[i].get_attr('sx')
-				sy     = data[i].get_attr('sy')
-				mirror = data[i].get_attr('mirror')
-				ima = rot_shift2D(data[i], alpha, sx, sy, "quadratic")
-				if  mirror: ima.process_inplace("mirror", {"axis":'x'})
+				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i].copy()
 			Util.add_img(ave, ima)
@@ -193,7 +173,7 @@ def add_oe_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 		mode - "a" use current alignment parameters
 		CTF  - if True, use CTF for calculations of the sum.
 	"""
-	from utilities    import    model_blank
+	from utilities    import    model_blank, get_params2D
 	from fundamentals import    rot_shift2D, fft
 
 	n = len(data)
@@ -219,22 +199,16 @@ def add_oe_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 		 			sx     = data[i].get_attr('sx_l')
 	 				sy     = data[i].get_attr('sy_l')
 	 				mirror = data[i].get_attr('mirror_l')
-		 			ima_tmp = rot_shift2D(data[i], alpha[0], sx[0], sy[0])
-		 			if  mirror[0]:  ima_tmp.process_inplace("mirror",{"axis":'x'})
+		 			ima_tmp = rot_shift2D(data[i], alpha[0], sx[0], sy[0], mirror)
 					Util.mul_scalar(ima_tmp, p[0])
 					for k in xrange(1, K):
-						ima_tmp2 = rot_shift2D(data[i], alpha[k], sx[k], sy[k])
-			 			if  mirror[k]:  ima_tmp2.process_inplace("mirror",{"axis":'x'})	
+						ima_tmp2 = rot_shift2D(data[i], alpha[k], sx[k], sy[k], mirror[k])
 						Util.mul_scalar(ima_tmp2, p[k])
 						Util.add_img(ima_tmp, ima_tmp2)
 					ima = ima_tmp.copy()
-				else:	
-	 				alpha  = data[i].get_attr('alpha')
-		 			sx     = data[i].get_attr('sx')
-		 			sy     = data[i].get_attr('sy')
-	 				mirror = data[i].get_attr('mirror')
-		 			ima = rot_shift2D(data[i], alpha, sx, sy)
-		 			if  mirror:  ima.process_inplace("mirror",{"axis":'x'})
+				else:
+	 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+		 			ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
@@ -247,12 +221,8 @@ def add_oe_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 	else:
 		for i in xrange(n):
 			if(mode == "a"):
-				alpha  = data[i].get_attr('alpha')
-				sx     = data[i].get_attr('sx')
-				sy     = data[i].get_attr('sy')
-				mirror = data[i].get_attr('mirror')
-				ima = rot_shift2D(data[i], alpha, sx, sy, "quadratic")
-				if  mirror: ima.process_inplace("mirror", {"axis":'x'})
+	 			alpha, sx, sy, mirror, scale = get_params2D(data[i])
+		 		ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
 			else:
 				ima = data[i].copy()
 			Util.add_img(ave, ima)
@@ -298,19 +268,15 @@ def ave_series(data):
 		Calculate average of a image series using current alignment parameters
 		data - real space image series
 	"""
-	from utilities    import model_blank
+	from utilities    import model_blank, get_params2D
 	from fundamentals import rot_shift2D
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
 	ave = model_blank(nx,ny)
 	for i in xrange(n):
-		alpha = data[i].get_attr('alpha')
-		sx =  data[i].get_attr('sx')
-		sy =  data[i].get_attr('sy')
-		mirror =  data[i].get_attr('mirror')
-		temp = rot_shift2D(data[i], alpha, sx, sy,"gridding")
-		if  mirror: temp.process_inplace("mirror",{"axis":'x'})
+	 	alpha, sx, sy, mirror, scale = get_params2D(data[i])
+		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
 		Util.add_img(ave, temp)
 
 	return ave/n
@@ -320,7 +286,7 @@ def ave_series_ctf(data, ctf2):
 		Calculate average of a image series using current alignment parameters and ctf
 		data - real space image series premultiplied by the CTF
 	"""
-	from utilities    import model_blank
+	from utilities    import model_blank, get_params2D
 	from filter       import filt_table
 	from fundamentals import rot_shift2D
 	n = len(data)
@@ -328,12 +294,8 @@ def ave_series_ctf(data, ctf2):
 	ny = data[0].get_ysize()
 	ave = model_blank(nx,ny)
 	for i in xrange(n):
-		alpha = data[i].get_attr('alpha')
-		sx =  data[i].get_attr('sx')
-		sy =  data[i].get_attr('sy')
-		mirror =  data[i].get_attr('mirror')
-		temp = rot_shift2D(data[i], alpha, sx, sy,"gridding")
-		if  mirror: temp.process_inplace("mirror",{"axis":'x'})
+	 	alpha, sx, sy, mirror, scale = get_params2D(data[i])
+		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
 		Util.add_img(ave, temp)
 
 	return filt_table(ave, ctf2)
@@ -458,7 +420,7 @@ def ave_oe_series(stack):
 	"""
 		Calculate odd and even averages of a image stack using current alignment parameters,
 	"""
-	from utilities import model_blank
+	from utilities import model_blank, get_params2D
 	from fundamentals import rot_shift2D
 	n = EMUtil.get_image_count(stack)
 	ima = EMData()
@@ -470,12 +432,8 @@ def ave_oe_series(stack):
 	for i in xrange(n):
 		ima = EMData()
 		ima.read_image(stack,i)
-		alpha  =  ima.get_attr('alpha')
-		sx     =  ima.get_attr('sx')
-		sy     =  ima.get_attr('sy')
-		mirror =  ima.get_attr('mirror')
-		temp = rot_shift2D(ima, alpha, sx, sy)
-		if  mirror: temp.process_inplace("mirror", {"axis":'x'})
+		alpha, sx, sy, mirror, scale = get_params2D(ima)
+		temp = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if((i%2) == 0): Util.add_img(ave1, temp)
 		else:          Util.add_img(ave2, temp)
 	return ave1/(n//2+(n%2)), ave2/(n//2)
@@ -501,13 +459,8 @@ def ave_oe_series_indexed(stack, idx_ref):
 		ima.read_image(stack,i)
 		if(idx_ref==ima.get_attr('ref_num')):
 			ntot+=1
-			alpha = ima.get_attr('alpha')
-			sx =  ima.get_attr('sx')
-			sy =  ima.get_attr('sy')
-			mirror =  ima.get_attr('mirror')
-			#temp = rot_shift2D(ima,alpha, sx, sy, ipm)  # this does not look right, what is ipm?  It is undefined.
-			#  USE VAR NAMES THAT MEAN SOMETHING
-			#if  mirror: temp.process_inplace("mirror",{"axis":'x'})
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+		 	temp = rot_shift2D(ima, alpha, sx, sy, mirror)
 			if((i%2) == 0): Util.add_img(ave1, temp)
 			else:          Util.add_img(ave2, temp)
 	if(ntot>=0):
@@ -764,7 +717,7 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 		1. mode="a" for alignment
 		2. mode=else for normal summation
 	"""
-	from utilities    import model_blank
+	from utilities    import model_blank, get_params2D
 	from fundamentals import rot_shift2D
 	if (i2==0): i2 = EMUtil.get_image_count(stack)-1
 	nima = i2 - i1 +1
@@ -779,12 +732,8 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 			ima = EMData()
 			ima.read_image(stack, i)
 		if (mode=="a"):
-			alpha  = ima.get_attr('alpha')
-			sx     = ima.get_attr('sx')
-			sy     = ima.get_attr('sy')
-			mirror = ima.get_attr('mirror')
-			out = rot_shift2D(ima, alpha, sx, sy, "quadratic")
-			if  mirror: out.process_inplace("mirror", {"axis":'x'})
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+ 			out = rot_shift2D(data[i], alpha, sx, sy, mirror)
 			Util.add_img(ave, out)
 			Util.add_img2(var, out)
 		else: 
@@ -848,7 +797,7 @@ def aves_w(stack, mode="a"):
 	"""
 	
 	from filter       import filt_table
-	from utilities    import model_blank#, info
+	from utilities    import model_blank, get_params2D
 	from fundamentals import rot_shift2D
 	
 	
@@ -866,13 +815,10 @@ def aves_w(stack, mode="a"):
 		active = e.get_attr('active')
 		if(active):
 			if(mode == "a"): # for alignment 
-				alpha  = e.get_attr('alpha')
-				sx     = e.get_attr('sx')
-				sy     = e.get_attr('sy')
-				mirror = e.get_attr('mirror')
-				out    = rot_shift2D(e, alpha, sx, sy)
-				if  mirror: out.process_inplace("mirror",{"axis":'x'})
-			else: out=e.copy()
+				alpha, sx, sy, mirror, scale = get_params2D(e)
+	 			out = rot_shift2D(e, alpha, sx, sy, mirror)
+			else:
+				out=e.copy()
 			ctf_mul = e.get_attr('ctf_applied')
 			ctf_1   = e.get_attr('ctf_1')
 			ctf_2   = e.get_attr('ctf_2')
@@ -908,7 +854,6 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	"""
 	from utilities import get_arb_params
 	
-	pali = ["alpha", "sx", "sy", "mirror"]
 	n = EMUtil.get_image_count(input_stack)
 	ima = EMData()
 	ima.read_image(input_stack, 0)
@@ -920,7 +865,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	from fundamentals import fft, rot_shift2D
 	from morphology   import ctf_img
 	from filter 	  import filt_ctf
-	from utilities    import pad
+	from utilities    import pad, get_params2D
 	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 
 	nx2 = 2*nx
@@ -935,9 +880,8 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		ima.read_image(input_stack, i)
 		ctf_params = get_arb_params(ima, parnames)
 		if( mode == "a"):
-			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2])
-			if  ali[3]:  ima.process_inplace("mirror",{"axis":'x'})
+	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
+		 	ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
 		Util.mul_scalar(oc, SNR)
 		Util.add_img(ave, oc)
@@ -952,8 +896,8 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		ima.read_image(input_stack, i)
 		ctf_params = get_arb_params(ima, parnames)
 		if( mode == "a"):
-			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2])
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+ 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 			if  ali[3]:  ima.process_inplace("mirror",{"axis":'x'})
 		oc = filt_ctf(ave, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad= True)
 		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
@@ -967,7 +911,8 @@ def ssnr2d(data, mask = None, mode=""):
 	Calculate ssnr and variance in Fourier space for 2D or 3D images
 	If mode = "a" apply alignment parameters
 	'''
-	from morphology import threshold
+	from morphology   import threshold
+	from utilities    import get_params2D
 	from fundamentals import fft, rot_shift2D
 	import  types
 	if (type(data) is types.StringType):
@@ -991,22 +936,14 @@ def ssnr2d(data, mask = None, mode=""):
 			ima = EMData()
 			ima.read_image(data, i)
 			if(mode == "a"):
-				alpha  = ima.get_attr('alpha')
-				sx     = ima.get_attr('sx')
-				sy     = ima.get_attr('sy')
-				mirror = ima.get_attr('mirror')
-				ima    = rot_shift2D(ima, alpha, sx, sy)
-				if  mirror: ima.process_inplace("mirror",{"axis":'x'})
+ 				alpha, sx, sy, mirror, scale = get_params2D(ima)
+	 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 			if(mask):  Util.mul_img(ima, mask)
 			fim = fft(ima)
 		else:
 			if(mode == "a"):
-				alpha  = data[i].get_attr('alpha')
-				sx     = data[i].get_attr('sx')
-				sy     = data[i].get_attr('sy')
-				mirror = data[i].get_attr('mirror')
-				ima    = rot_shift2D(data[i], alpha, sx, sy)
-				if  mirror: ima.process_inplace("mirror",{"axis":'x'})
+ 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+	 			ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
 				if(mask):  fim = fft(Util.muln_img(ima, mask))
 				else    :  fim = fft(ima)
 			else:
@@ -1039,7 +976,7 @@ def ssnr2d_ctf(data, mask = None, mode=""):
 	from fundamentals import fft, rot_shift2D, rot_avg_table
 	from morphology   import ctf_img, threshold
 	from filter       import filt_ctf
-	from utilities    import get_arb_params
+	from utilities    import get_arb_params, get_params2D
 	import  types
 	
 	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
@@ -1072,12 +1009,8 @@ def ssnr2d_ctf(data, mask = None, mode=""):
 			ima = data[i].copy()
 		ctf_params = get_arb_params(ima, parnames)
 		if(mode == "a"):
-			alpha  = ima.get_attr('alpha')
-			sx     = ima.get_attr('sx')
-			sy     = ima.get_attr('sy')
-			mirror = ima.get_attr('mirror')
-			ima    = rot_shift2D(ima, alpha, sx, sy, "gridding")
-			if  mirror: ima.process_inplace("mirror",{"axis":'x'})
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+ 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask):  Util.mul_img(ima, mask)
 		ctfimg = ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5], ny = ny, nz = nz)
 		Util.add_img2(ctf_2_sum, ctfimg)
@@ -1109,6 +1042,7 @@ def varf(data, mask = None, mode=""):
 	If mode = "a" apply alignment parameters
 	'''
 	from fundamentals import fft, rot_shift2D
+	from utilities    import get_params2D
 	import  types
 	if (type(data) is types.StringType):
 		n = EMUtil.get_image_count(data)
@@ -1133,12 +1067,8 @@ def varf(data, mask = None, mode=""):
 		else:
 			ima = data[i].copy()
 		if(mode == "a"):
-			alpha  = ima.get_attr('alpha')
-			sx     = ima.get_attr('sx')
-			sy     = ima.get_attr('sy')
-			mirror = ima.get_attr('mirror')
-			ima    = rot_shift2D(ima, alpha, sx, sy)
-			if  mirror: ima.process_inplace("mirror",{"axis":'x'})
+		 	alpha, sx, sy, mirror, scale = get_params2D(ima)
+	 		ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask):  Util.mul_img(ima, mask)
 		fim = fft(ima)
 		Util.add_img(sumsq, fim)
@@ -1161,7 +1091,7 @@ def varfctf(data, mask = None, mode=""):
 	from fundamentals import fft, rot_shift2D
 	from morphology   import ctf_img
 	from filter       import filt_ctf
-	from utilities    import get_arb_params
+	from utilities    import get_arb_params, get_params2D
 	import  types
 
 	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
@@ -1194,12 +1124,8 @@ def varfctf(data, mask = None, mode=""):
 			ima = data[i].copy()
 		ctf_params = get_arb_params(ima, parnames)
 		if(mode == "a"):
-			alpha  = ima.get_attr('alpha')
-			sx     = ima.get_attr('sx')
-			sy     = ima.get_attr('sy')
-			mirror = ima.get_attr('mirror')
-			ima    = rot_shift2D(ima, alpha, sx, sy)
-			if  mirror:  ima.process_inplace("mirror",{"axis":'x'})
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+ 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask): Util.mul_img(ima, mask)
 		oc = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad=True)
 		Util.add_img(sumsq, fft(oc))
@@ -1294,9 +1220,7 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 			if(ir+1==int(params[im][4])):
 				ncnt+=1
 				ima.read_image(imgstack,im)
-				out = rot_shift2D(ima, params[im][0], params[im][1], params[im][2])
-				mirror= params[im][3]
-				if mirror:  out.process_inplace("mirror",{"axis":'x'})
+				out = rot_shift2D(ima, params[im][0], params[im][1], params[im][2], params[im][3])
 				if(ncnt<=2):
 					if(ncnt%2==0): refimge=out
 					if(ncnt%2==1): refimgo=out
@@ -1424,12 +1348,8 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 				# 2D object
 				elif dim['ny'] > 1:
 					# apply parameters
-					alpha  = DB[stack].get_attr(im, 'alpha')
-					sx     = DB[stack].get_attr(im, 'sx')
-					sy     = DB[stack].get_attr(im, 'sy')
-					mirror = DB[stack].get_attr(im, 'mirror')
-					image  = rot_shift2D(image, alpha, sx, sy)
-					if mirror: image.process_inplace('mirror', {'axis':'x'})
+					alpha, sx, sy, mirror, scale = get_params2D(DB[stack])
+ 					image = rot_shift2D(DB[stack], alpha, sx, sy, mirror)
 
 				# obtain ctf
 				ctf_params = DB[stack].get_attr(im, parnames) # return dict
@@ -1477,12 +1397,8 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 				# 2D object
 				elif DB[stack].get_attr(0, 'ny') > 1:
 					# apply parameters
-					alpha  = DB[stack].get_attr(im, 'alpha')
-					sx     = DB[stack].get_attr(im, 'sx')
-					sy     = DB[stack].get_attr(im, 'sy')
-					mirror = DB[stack].get_attr(im, 'mirror')
-					image  = rot_shift2D(image, alpha, sx, sy)
-					if mirror: image.process_inplace('mirror', {'axis':'x'})
+					alpha, sx, sy, mirror, scale = get_params2D(DB[stack])
+ 					image = rot_shift2D(DB[stack], alpha, sx, sy, mirror)
 
 				# apply mask
 				if mask != None: image = Util.compress_image_mask(image, mask)
@@ -1551,12 +1467,8 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 			
 				# 2D object
 				elif or_ny > 1:
-					alpha  = image.get_attr('alpha')
-					sx     = image.get_attr('sx')
-					sy     = image.get_attr('sy')
-					mirror = image.get_attr('mirror')
-					image  = rot_shift2D(image, alpha, sx, sy)
-					if mirror: image.process_inplace('mirror', {'axis':'x'})
+					alpha, sx, sy, mirror, scale = get_params2D(image)
+ 					image = rot_shift2D(image, alpha, sx, sy, mirror)
 			
 				# obtain ctf
 				ctf_params = get_arb_params(image, parnames)
@@ -1601,12 +1513,8 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 			
 				# 2D object
 				elif or_ny > 1:
-					alpha  = image.get_attr('alpha')
-					sx     = image.get_attr('sx')
-					sy     = image.get_attr('sy')
-					mirror = image.get_attr('mirror')
-					image  = rot_shift2D(image, alpha, sx, sy)
-					if mirror: image.process_inplace('mirror', {'axis':'x'})
+					alpha, sx, sy, mirror, scale = get_params2D(image)
+ 					image = rot_shift2D(image, alpha, sx, sy, mirror)
 			
 				# apply mask
 				if mask != None: image = Util.compress_image_mask(image, mask)

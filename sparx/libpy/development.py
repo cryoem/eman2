@@ -2946,8 +2946,7 @@ def alifunc(args, data):
 		sx     =  args[i*3+1]
 		sy     =  args[i*3+2]
 		mirror =  ima.get_attr('mirror')
-		temp = rot_shift2D(ima,alpha, sx, sy)
-		if  mirror: temp.process_inplace("mirror", {"axis":'x'})
+		temp = rot_shift2D(ima,alpha, sx, sy, mirror)
 		ave = ave + temp		
 	v = ave.cmp("SqEuclidean", b, {"mask":mask})
 	print v
@@ -2970,8 +2969,7 @@ def alifunc(args, data):
 		sx     =  args[i*3+1]
 		sy     =  args[i*3+2]
 		mirror =  ima.get_attr('mirror')
-		temp = rot_shift2D(ima,alpha, sx, sy)
-		if  mirror: temp.process_inplace("mirror", {"axis":'x'})
+		temp = rot_shift2D(ima,alpha, sx, sy, mirror)
 		if((i%2) == 0): Util.add_img(ave1, temp)
 		else:          Util.add_img(ave2, temp)
 	ave1 /= (n//2+(n%2))
@@ -7452,8 +7450,7 @@ def k_means_classical(stack, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, 
 			sx     = image.get_attr('sx')
 			sy     = image.get_attr('sy')
 			mirror = image.get_attr('mirror')
-			image  = rot_shift2D(image, alpha, sx, sy)
-			if mirror: image.process_inplace('mirror', {'axis':'x'})
+			image  = rot_shift2D(image, alpha, sx, sy, mirror)
 						
 			# obtain ctf
 			ctf_params = get_arb_params(image, parnames)
@@ -7510,8 +7507,7 @@ def k_means_classical(stack, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, 
 				sx     = image.get_attr('sx')
 				sy     = image.get_attr('sy')
 				mirror = image.get_attr('mirror')
-				image  = rot_shift2D(image, alpha, sx, sy)
-				if mirror: image.process_inplace('mirror', {'axis':'x'})
+				image  = rot_shift2D(image, alpha, sx, sy, mirror)
 								
 			# apply mask
 			if mask:	image = Util.compress_image_mask(image, mask)
@@ -7952,8 +7948,7 @@ def k_means_SSE(stack, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fa
 			sx     = image.get_attr('sx')
 			sy     = image.get_attr('sy')
 			mirror = image.get_attr('mirror')
-			image  = rot_shift2D(image, alpha, sx, sy)
-			if mirror: image.process_inplace('mirror', {'axis':'x'})
+			image  = rot_shift2D(image, alpha, sx, sy, mirror)
 									
 			# obtain ctf
 			ctf_params = get_arb_params(image, parnames)
@@ -8009,8 +8004,7 @@ def k_means_SSE(stack, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fa
 				sx     = image.get_attr('sx')
 				sy     = image.get_attr('sy')
 				mirror = image.get_attr('mirror')
-				image  = rot_shift2D(image, alpha, sx, sy)
-				if mirror: image.process_inplace('mirror', {'axis':'x'})
+				image  = rot_shift2D(image, alpha, sx, sy, mirror)
 												
 			# apply mask
 			if mask: image = Util.compress_image_mask(image, mask)
@@ -8584,8 +8578,7 @@ def k_means_cla_MPI(stack, out_dir, mask, K, rand_seed, maxit, trials, crit_name
 			sx     = image.get_attr('sx')
 			sy     = image.get_attr('sy')
 			mirror = image.get_attr('mirror')
-			image  = rot_shift2D(image, alpha, sx, sy)
-			if mirror: image.process_inplace('mirror', {'axis':'x'})
+			image  = rot_shift2D(image, alpha, sx, sy, mirror)
 						
 			# obtain ctf
 			ctf_params = get_arb_params(image, parnames)
@@ -8639,8 +8632,7 @@ def k_means_cla_MPI(stack, out_dir, mask, K, rand_seed, maxit, trials, crit_name
 				sx     = image.get_attr('sx')
 				sy     = image.get_attr('sy')
 				mirror = image.get_attr('mirror')
-				image  = rot_shift2D(image, alpha, sx, sy)
-				if mirror: image.process_inplace('mirror', {'axis':'x'})
+				image  = rot_shift2D(image, alpha, sx, sy, mirror)
 						
 			# apply mask
 			if mask:	image = Util.compress_image_mask(image, mask)
@@ -9252,8 +9244,7 @@ def k_means_SSE_MPI(stack, out_dir, mask, K, rand_seed, maxit, trials, crit_name
 			sx     = image.get_attr('sx')
 			sy     = image.get_attr('sy')
 			mirror = image.get_attr('mirror')
-			image  = rot_shift2D(image, alpha, sx, sy)
-			if mirror: image.process_inplace('mirror', {'axis':'x'})
+			image  = rot_shift2D(image, alpha, sx, sy, mirror)
 						
 			# obtain ctf
 			ctf_params = get_arb_params(image, parnames)
@@ -9308,8 +9299,7 @@ def k_means_SSE_MPI(stack, out_dir, mask, K, rand_seed, maxit, trials, crit_name
 				sx     = image.get_attr('sx')
 				sy     = image.get_attr('sy')
 				mirror = image.get_attr('mirror')
-				image  = rot_shift2D(image, alpha, sx, sy)
-				if mirror: image.process_inplace('mirror', {'axis':'x'})
+				image  = rot_shift2D(image, alpha, sx, sy, mirror)
 						
 			# apply mask
 			if mask:	image = Util.compress_image_mask(image, mask)
@@ -10360,8 +10350,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 			#  This should be done only for estimation of resolution, nothing else!
 			alpha, sx, sy, mirror, peak = align2d(ktavg[0], ktavg[1], xrng[0], yrng[0], step=0.25, first_ring = first_ring, last_ring = last_ring, rstep=1, mode = mode)
 			#  apply parameters to the original average
-			favg2 = rot_shift2D(tavg[0], alpha, sx, sy, interpolation_method="gridding")
-			if  mirror: favg2.process_inplace("mirror",{"axis":'x'})
+			favg2 = rot_shift2D(tavg[0], alpha, sx, sy, mirrorm interpolation_method="gridding")
 			fscross = fsc_mask(favg2, tavg[1], ref_data[0], 1.0, os.path.join(outdir, "drcross_%03d"%(total_iter)))
 			del favg2
 			# Here one may want to apply rot-shift of the first average to all images in its group
