@@ -2357,19 +2357,6 @@ def set_params2D(ima, p):
 	"""
 	t = Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
 	ima.set_attr("xform.align2d", t)
-	
-	# implicit Python deletion of t
-	
-def set_params2D_test(ima, p):
-	"""
-	  set 2D alignment parameters in the header
-	  alpha tx ty mirror scale
-	"""
-	t = Transform3D(3,3,3)
-	 #Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
-	ima.set_attr("xform.align2d", t)
-	
-	# implicit Python deletion of t
 
 def get_params3D(ima):
 	"""
