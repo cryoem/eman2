@@ -606,37 +606,37 @@ namespace EMAN {
 		}
     };
     
-    struct emobject_transform3d_from_python
-    {
-    	emobject_transform3d_from_python()
-    	{
-    		python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<EMObject>());
-    	}
-    	
-    	static void* convertible(PyObject* obj_ptr)
-		{
-			const char * type_name = obj_ptr->ob_type->tp_name;
-			if (type_name == 0 || strcmp(type_name, "Transform3D") != 0) {
-				return 0;
-			}
-			return obj_ptr;
-		}
-		
-		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
-		{
-			void* storage =
-				((python::converter::rvalue_from_python_storage<EMObject>*)
-				 data)->storage.bytes;
-			new (storage) EMObject();
-
-			data->convertible = storage;
-			EMObject& result = *((EMObject*) storage);
-			Transform3D * trans = python::extract<Transform3D*>(obj_ptr);   
-			result = EMObject(trans);
-		}
-    };
+//     struct emobject_transform3d_from_python
+//     {
+//     	emobject_transform3d_from_python()
+//     	{
+//     		python::converter::registry::push_back(&convertible, &construct,
+// 												   python::type_id<EMObject>());
+//     	}
+//     	
+//     	static void* convertible(PyObject* obj_ptr)
+// 		{
+// 			const char * type_name = obj_ptr->ob_type->tp_name;
+// 			if (type_name == 0 || strcmp(type_name, "Transform3D") != 0) {
+// 				return 0;
+// 			}
+// 			return obj_ptr;
+// 		}
+// 		
+// 		static void construct(PyObject* obj_ptr,
+// 							  python::converter::rvalue_from_python_stage1_data* data)
+// 		{
+// 			void* storage =
+// 				((python::converter::rvalue_from_python_storage<EMObject>*)
+// 				 data)->storage.bytes;
+// 			new (storage) EMObject();
+// 
+// 			data->convertible = storage;
+// 			EMObject& result = *((EMObject*) storage);
+// 			Transform3D * trans = python::extract<Transform3D*>(obj_ptr);   
+// 			result = EMObject(trans);
+// 		}
+//     };
 	
     struct emobject_transform_from_python
     {
@@ -665,7 +665,7 @@ namespace EMAN {
 
 			data->convertible = storage;
 			EMObject& result = *((EMObject*) storage);
-			Transform * trans = python::extract<Transform*>(obj_ptr);   
+			Transform * trans = python::extract<Transform*>(obj_ptr);
 			result = EMObject(trans);
 		}
     };

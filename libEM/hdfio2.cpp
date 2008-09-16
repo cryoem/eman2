@@ -110,9 +110,9 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 	vector <int> iv(pts);
 //	vector <unsigned int> uiv(pts);
 	
-	float * trans3d;
-	Transform3D * trans;
-	int r, c, k=0;
+	float *matrix;
+	Transform* t;
+// 	int r, c, k=0;
 	
 	switch (cls) {
 	case H5T_INTEGER:
@@ -168,18 +168,25 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 		free(s);
 		break;
 	case H5T_COMPOUND:
-		trans3d = (float*)malloc(16*sizeof(float));	//16 float for a Transform3D object
-		H5Aread(attr, type, trans3d);				
+		matrix = (float*)malloc(12*sizeof(float));
+		H5Aread(attr, type, matrix);				
 //		ret.create_transform3d_by_array(trans3d);
-		trans = new Transform3D();
-		for(r=0; r<4; ++r) {
-			for(c=0; c<4; ++c) {
-				trans->set(r, c, trans3d[k]);
-				++k;
-			}
-		}		
-		ret = EMObject(trans);
-		free(trans3d);
+		t = new Transform(matrix);
+		ret = EMObject(t);
+		free(matrix);
+		
+// 		trans3d = (float*)malloc(16*sizeof(float));	//16 float for a Transform3D object
+// 		H5Aread(attr, type, trans3d);				
+// //		ret.create_transform3d_by_array(trans3d);
+// 		trans = new Transform3D();
+// 		for(r=0; r<4; ++r) {
+// 			for(c=0; c<4; ++c) {
+// 				trans->set(r, c, trans3d[k]);
+// 				++k;
+// 			}
+// 		}		
+// 		ret = EMObject(trans);
+// 		free(trans3d);
 		break;
 	default:
 		LOGERR("Unhandled HDF5 metadata %d", cls);
@@ -235,8 +242,31 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		dims=iv.size();
 		spc=H5Screate_simple(1,&dims,NULL);
 		break;
-	case EMObject::TRANSFORM3D:
-		type = H5Tcreate(H5T_COMPOUND, 16 * sizeof(float)); //Transform3D is a 4x4 matrix
+// 	case EMObject::TRANSFORM3D:
+// 		type = H5Tcreate(H5T_COMPOUND, 16 * sizeof(float)); //Transform3D is a 4x4 matrix
+// 		H5Tinsert(type, "00", 0, H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "01", 1*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "02", 2*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "03", 3*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "10", 4*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "11", 5*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "12", 6*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "13", 7*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "20", 8*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "21", 9*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "22", 10*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "23", 11*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "30", 12*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "31", 13*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "32", 14*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tinsert(type, "33", 15*sizeof(float), H5T_NATIVE_FLOAT);
+// 		H5Tpack(type);
+// 		
+// 		dims = 1;	//one compound type
+// 		spc = H5Screate_simple(1, &dims, NULL);		
+// 		break;
+	case EMObject::TRANSFORM:
+		type = H5Tcreate(H5T_COMPOUND, 12 * sizeof(float)); //Transform is a 3x4 matrix
 		H5Tinsert(type, "00", 0, H5T_NATIVE_FLOAT);
 		H5Tinsert(type, "01", 1*sizeof(float), H5T_NATIVE_FLOAT);
 		H5Tinsert(type, "02", 2*sizeof(float), H5T_NATIVE_FLOAT);
@@ -249,12 +279,8 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		H5Tinsert(type, "21", 9*sizeof(float), H5T_NATIVE_FLOAT);
 		H5Tinsert(type, "22", 10*sizeof(float), H5T_NATIVE_FLOAT);
 		H5Tinsert(type, "23", 11*sizeof(float), H5T_NATIVE_FLOAT);
-		H5Tinsert(type, "30", 12*sizeof(float), H5T_NATIVE_FLOAT);
-		H5Tinsert(type, "31", 13*sizeof(float), H5T_NATIVE_FLOAT);
-		H5Tinsert(type, "32", 14*sizeof(float), H5T_NATIVE_FLOAT);
-		H5Tinsert(type, "33", 15*sizeof(float), H5T_NATIVE_FLOAT);
 		H5Tpack(type);
-		
+	
 		dims = 1;	//one compound type
 		spc = H5Screate_simple(1, &dims, NULL);		
 		break;
@@ -290,7 +316,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	unsigned int ui;
 	double d;
 	const char *s;
-	Transform3D * tp;
+	Transform * tp;
 	switch(obj.get_type()) {
 	case EMObject::INT:
 		i=(int)obj;
@@ -325,12 +351,12 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		H5Awrite(attr,H5T_NATIVE_INT,ia);
 		free(ia);
 		break;
-	case EMObject::TRANSFORM3D:
+	case EMObject::TRANSFORM:
 	{
-		tp = (Transform3D *)obj;
-		fa = (float *)malloc(16*sizeof(float));
+		tp = (Transform *)obj;
+		fa = (float *)malloc(12*sizeof(float));
 		int r, c, k=0;
-		for(r=0; r<4; ++r) {
+		for(r=0; r<3; ++r) {
 			for(c=0; c<4; ++c) {
 				fa[k] = tp->at(r,c);
 				++k;

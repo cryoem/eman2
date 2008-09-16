@@ -564,8 +564,6 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,  
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	
-
 	EMData *this_copy = this_img->copy();
 	this_img->align("rotational", to,Dict(),cmp_name, cmp_params);
 	

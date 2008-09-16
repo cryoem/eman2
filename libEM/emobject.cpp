@@ -90,7 +90,6 @@ void EMObject::init()
 		type_registry[INTARRAY] = "INTARRAY";
 		type_registry[FLOATARRAY] = "FLOATARRAY";
 		type_registry[STRINGARRAY] = "STRINGARRAY";
-		type_registry[TRANSFORM3D] = "TRANFORM3D";
 		type_registry[TRANSFORM] = "TRANFORM";
 		type_registry[FLOAT_POINTER] = "FLOAT_POINTER";
 		type_registry[INT_POINTER] = "INT_POINTER";
@@ -192,13 +191,6 @@ EMObject::EMObject(XYData * xy) :
 {
 	init();
 }
-
-EMObject::EMObject(Transform3D * t) :
-	transform3d(t), type(TRANSFORM3D)
-{
-	init();
-}
-
 EMObject::EMObject(Transform* t) :
 	transform(t), type(TRANSFORM)
 {
@@ -255,9 +247,6 @@ EMObject::operator bool () const
 	}
 	else if (type == VOID_POINTER) {
 		return vp != 0;
-	}
-	else if (type == TRANSFORM3D) {
-		return transform3d != 0;
 	}
 	else if (type == TRANSFORM) {
 		return transform != 0;
@@ -402,7 +391,6 @@ EMObject::operator void * () const
 	else if (type == INT_POINTER) return (void *)ip;
 	else if (type == EMDATA) return (void *) emdata;
 	else if (type == XYDATA) return (void *) xydata;
-	else if (type == TRANSFORM3D) return (void *) transform3d;
 // 	else if (type == TRANSFORM) return (void *) transform;
 	else throw TypeException("Cannot convert to void pointer from this data type", get_object_type_name(type));
 }
@@ -471,18 +459,6 @@ EMObject::operator XYData * () const
 	}
 	return xydata;
 }
-
-EMObject::operator Transform3D *() const
-{
-	if(type != TRANSFORM3D) {
-		if(type != UNKNOWN) {
-			throw TypeException("Cannot convert to TRANSFORM3D* from this data type",
-				   get_object_type_name(type));
-		}
-	}
-	return transform3d;
-}
-
 
 EMObject::operator Transform* () const
 {
@@ -590,9 +566,6 @@ string EMObject::to_str(ObjectType argtype) const
 		else if (argtype == STRINGARRAY) {
 			sprintf(tmp_str, "STRINGARRAY");
 		}
-		else if (argtype == TRANSFORM3D) {
-			sprintf(tmp_str, "TRANSFORM3D");
-		}
 		else if (argtype == TRANSFORM) {
 			sprintf(tmp_str, "TRANSFORMD");
 		}
@@ -693,9 +666,6 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 			return false;
 		}
 	break;
-	case  EMObject::TRANSFORM3D:
-		return (e1.transform3d == e2.transform3d);
-	break;
 	case  EMObject::TRANSFORM:
 		return (e1.transform == e2.transform);
 	break;
@@ -787,10 +757,6 @@ EMObject& EMObject::operator=( const EMObject& that )
 		break;
 		case STRINGARRAY:
 			strarray = that.strarray;
-		break;
-		case TRANSFORM3D:
-			// Warning - Pointer address copy.
-			transform3d = that.transform3d;
 		break;
 		case TRANSFORM:
 			transform = that.transform;

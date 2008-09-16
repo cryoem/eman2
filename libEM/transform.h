@@ -92,6 +92,8 @@ namespace EMAN
 			Transform(const vector<float> array);
 			
 			
+			~Transform() { }
+			
 			/** Set a rotation using a specific Euler type and the dictionary interface
 			* Works for all Euler types
 			* @param rotation a dictionary containing all key-entry pair required of the associated Euler type
@@ -245,7 +247,7 @@ namespace EMAN
 			/** Get the transformation matrix using a vector. 
 			 * @return a vector - 3 rows of 4 - that stores the values of the transformation matrix
 			 */ 
-			vector<float> get_matrix();
+			vector<float> get_matrix() const;
 			
 			/** Get the inverse of this transformation matrix
 			 * @return the inverse of this transformation matrix
@@ -260,12 +262,12 @@ namespace EMAN
 			/** transpose this matrix inplace
 			 * FIXME double check precision there was a weird python precision error associated with this
 			 */
-			void transpose_inplace();
+// 			void transpose_inplace();
 			
 			/** get the transpose this matrix
 			 * @return the transpose of this matrix
 			 */
-			Transform transpose() const;
+// 			Transform transpose() const;
 			
 			/** Get the value stored in the internal transformation matrix at at coordinate (r,c)
 			 */
@@ -331,6 +333,16 @@ namespace EMAN
 				return transform(v[0],v[1],v[2]);
 			}
 
+			
+			/** Get a matrix row as a Vec3f
+			 * required for back compatibility with Tranform3D - see PawelProjector
+			* @param i the row number (starting at 0)
+			* @return the ith row
+			*/
+			inline Vec3f get_matrix3_row(int i) const {
+				return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
+			}
+			
 		private:
 			float matrix[3][4];
 			
@@ -383,7 +395,7 @@ namespace EMAN
 
 		Transform tmp2;
 		tmp2.set_rotation(rot);
-		tmp2.transpose_inplace(); // invert
+		tmp2.invert(); // invert
 		if (scale != 1.0 ) tmp2.set_scale(1.0f/scale);
 		
 	

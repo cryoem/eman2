@@ -113,7 +113,7 @@ void Transform::set_matrix(const vector<float>& v)
 		}
 	}
 }
-vector<float> Transform::get_matrix()
+vector<float> Transform::get_matrix() const
 {
 	vector<float> ret(12);
 	for(int i=0; i<3; ++i) {
@@ -851,25 +851,25 @@ Transform Transform::inverse() const {
 	return t;
 }
 
-Transform Transform::transpose() const
-{
-	Transform t(*this);
-	t.transpose_inplace();
-	return t;
-}
-
-void Transform::transpose_inplace() {
-	float tempij;
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < i; j++) {
-			if (i != j) {
-				tempij= matrix[i][j];
-				matrix[i][j] = matrix[j][i];
-				matrix[j][i] = tempij;
-			}
-		}
-	}
-}
+// Transform Transform::transpose() const
+// {
+// 	Transform t(*this);
+// 	t.transpose_inplace();
+// 	return t;
+// }
+// 
+// void Transform::transpose_inplace() {
+// 	float tempij;
+// 	for (int i = 0; i < 3; i++) {
+// 		for (int j = 0; j < i; j++) {
+// 			if (i != j) {
+// 				tempij= matrix[i][j];
+// 				matrix[i][j] = matrix[j][i];
+// 				matrix[j][i] = tempij;
+// 			}
+// 		}
+// 	}
+// }
 
 Transform EMAN::operator*(const Transform & M2, const Transform & M1)     // YYY
 {
@@ -2878,7 +2878,7 @@ Transform Symmetry3D::reduce(const Transform& t, int n) const
 	// Get the symmetry operation corresponding to the intersection asymmetric unit
 	Transform nt = get_sym(soln);
 	// Transpose it (invert it)
-	nt.transpose_inplace();
+	nt.invert();
 	// Now we can transform the argument orientation into the default asymmetric unit
 	nt  = t*nt;
 	// Now that we're at the default asymmetric unit, we can map into the requested asymmunit by doing this
@@ -2900,7 +2900,7 @@ int Symmetry3D::in_which_asym_unit(const Transform& t3d) const
 	Transform o(t3d);
 	// Orientations are alway transposed when dealing with asymmetric units, projections,etc
 	// We take the transpose to 'undo' the transform and get the true direction of the point.
-	o.transpose_inplace();
+	o.invert();
 	// Figure out where the point would end up. No we could just as easily not transpose and do
 	// left multiplation (as in what occurs in the FourierReconstructor during slice insertion)
 	p = o*p;

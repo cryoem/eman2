@@ -185,7 +185,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("t3d", EMObject::TRANSFORM3D);
+			d.put("transform", EMObject::TRANSFORM);
 			d.put("alt", EMObject::FLOAT);
 			d.put("az", EMObject::FLOAT);
 			d.put("phi", EMObject::FLOAT);
@@ -229,7 +229,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("t3d", EMObject::TRANSFORM3D);
+			d.put("transform", EMObject::TRANSFORM);
 			d.put("kb_alpha", EMObject::FLOAT);
 			d.put("kb_K", EMObject::FLOAT);
 			d.put("angletype", EMObject::STRING);
@@ -271,7 +271,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("t3d", EMObject::TRANSFORM3D);
+			d.put("transform", EMObject::TRANSFORM);
 			d.put("origin_x", EMObject::INT);
 			d.put("origin_y", EMObject::INT);
 			d.put("origin_z", EMObject::INT);
@@ -327,7 +327,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("t3d", EMObject::TRANSFORM3D);
+			d.put("transform", EMObject::TRANSFORM);
 			d.put("threshold", EMObject::FLOAT);
 			return d;
 		}
@@ -341,7 +341,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("t3d", EMObject::TRANSFORM3D);
+			d.put("transform", EMObject::TRANSFORM);
 			return d;
 		}
 
@@ -396,7 +396,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("t3d", EMObject::TRANSFORM3D);
+			d.put("transform", EMObject::TRANSFORM);
 			return d;
 		}
 	};
@@ -427,7 +427,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("t3d", EMObject::TRANSFORM3D);
+			d.put("transform", EMObject::TRANSFORM);
 			d.put("origin_x", EMObject::INT);
 			d.put("origin_y", EMObject::INT);
 			d.put("origin_z", EMObject::INT);

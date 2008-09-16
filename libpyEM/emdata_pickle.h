@@ -150,5 +150,17 @@ struct Vec3f_pickle_suite : boost::python::pickle_suite
 	}
 };
 
+struct Transform_pickle_suite : boost::python::pickle_suite
+{
+	static
+	boost::python::tuple
+	getinitargs(const EMAN::Transform& t)
+	{
+		using namespace boost::python;
+		return make_tuple(t.get_matrix());
+	}
+};
+
+
 
 #endif	//EMDATA_PICKLE_H_

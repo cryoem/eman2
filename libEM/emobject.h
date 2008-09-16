@@ -88,7 +88,6 @@ namespace EMAN
 	class Projector;
 	class Reconstructor;
 	class Analyzer;
-	class Transform3D;
 	class Transform;
 
 	enum MapInfoType {
@@ -136,7 +135,6 @@ namespace EMAN
 			FLOATARRAY,
 			STRINGARRAY,
 			TRANSFORM,
-			TRANSFORM3D,
 			FLOAT_POINTER,
 			INT_POINTER,
 			VOID_POINTER
@@ -160,7 +158,6 @@ namespace EMAN
 		EMObject(void * vp);
 		EMObject(EMData * em);
 		EMObject(XYData * xy);
-		EMObject(Transform3D * t);
 		EMObject(Transform * t);
 		EMObject(const vector< int >& v );
 		EMObject(const vector < float >&v);
@@ -195,7 +192,6 @@ namespace EMAN
 		operator void * () const;
 		operator EMData *() const;
 		operator XYData *() const;
-		operator Transform3D *() const;
 		operator Transform *() const;
 		operator vector < int > () const;
 		operator vector < float > () const;
@@ -259,7 +255,6 @@ namespace EMAN
 			void * vp;
 			EMData *emdata;
 			XYData *xydata;
-			Transform3D * transform3d;
 			Transform * transform;
 		};
 

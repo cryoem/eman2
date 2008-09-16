@@ -3338,6 +3338,202 @@ EMData* EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 					}
 				}
 				if    (ixn >= -kbmin      && ixn <= nhalf-1-kbmax
+								   && iyn >= -nhalf-kbmin && iyn <= nhalf-1-kbmax
+								   && izn >= -nhalf-kbmin && izn <= nhalf-1-kbmax) {
+					// interior points
+					for (int lz = lnbz; lz <= lnez; lz++) {
+						int izp = izn + lz;
+						for (int ly=lnby; ly<=lney; ly++) {
+							int iyp = iyn + ly;
+							float ty = wz[lz]*wy[ly];
+							for (int lx=lnbx; lx<=lnex; lx++) {
+								int ixp = ixn + lx;
+								float wg = wx[lx]*ty;
+								btq += cmplx(ixp,iyp,izp)*wg;
+								wsum += wg;
+							}
+						}
+					}
+								   } else {
+					// points "sticking out"
+									   for (int lz = lnbz; lz <= lnez; lz++) {
+										   int izp = izn + lz;
+										   for (int ly=lnby; ly<=lney; ly++) {
+											   int iyp = iyn + ly;
+											   float ty = wz[lz]*wy[ly];
+											   for (int lx=lnbx; lx<=lnex; lx++) {
+												   int ixp = ixn + lx;
+												   float wg = wx[lx]*ty;
+												   bool mirror = false;
+												   int ixt(ixp), iyt(iyp), izt(izp);
+												   if (ixt > nhalf || ixt < -nhalf) {
+													   ixt = Util::sgn(ixt)
+															   *(n - abs(ixt));
+													   iyt = -iyt;
+													   izt = -izt;
+													   mirror = !mirror;
+												   }
+												   if (iyt >= nhalf || iyt < -nhalf) {
+													   if (ixt != 0) {
+														   ixt = -ixt;
+														   iyt = Util::sgn(iyt)
+																   *(n - abs(iyt));
+														   izt = -izt;
+														   mirror = !mirror;
+													   } else {
+														   iyt -= n*Util::sgn(iyt);
+													   }
+												   }
+												   if (izt >= nhalf || izt < -nhalf) {
+													   if (ixt != 0) {
+														   ixt = -ixt;
+														   iyt = -iyt;
+														   izt = Util::sgn(izt)
+																   *(n - abs(izt));
+														   mirror = !mirror;
+													   } else {
+														   izt -= Util::sgn(izt)*n;
+													   }
+												   }
+												   if (ixt < 0) {
+													   ixt = -ixt;
+													   iyt = -iyt;
+													   izt = -izt;
+													   mirror = !mirror;
+												   }
+												   if (iyt == nhalf) iyt = -nhalf;
+												   if (izt == nhalf) izt = -nhalf;
+												   if (mirror)   btq += conj(cmplx(ixt,iyt,izt))*wg;
+												   else          btq += cmplx(ixt,iyt,izt)*wg;
+												   wsum += wg;
+											   }
+										   }
+									   }
+								   }
+								   if (flip)  res->cmplx(jx,jy) = conj(btq);
+								   else       res->cmplx(jx,jy) = btq;
+			}
+		}
+	}
+	for (int jy = -nhalf; jy < nhalf; jy++) 
+		for (int jx = 0; jx <= nhalf; jx++) 
+			res->cmplx(jx,jy) *= count/wsum;
+	delete[] wx0; delete[] wy0; delete[] wz0;
+	set_array_offsets(saved_offsets);
+	res->set_array_offsets(0,0,0);
+	res->set_shuffled(true);
+	return res;
+}
+
+EMData* EMData::extract_plane(const Transform& tf, Util::KaiserBessel& kb) {
+	if (!is_complex()) 
+		throw ImageFormatException("extractplane requires a complex image");
+	if (nx%2 != 0)
+		throw ImageDimensionException("extractplane requires nx to be even");
+	int nxreal = nx - 2; 
+	if (nxreal != ny || nxreal != nz)
+		throw ImageDimensionException("extractplane requires ny == nx == nz");
+	// build complex result image
+	EMData* res = new EMData();
+	res->set_size(nx,ny,1);
+	res->to_zero();
+	res->set_complex(true);
+	res->set_fftodd(false);
+	res->set_fftpad(true);
+	res->set_ri(true);
+	// Array offsets: (0..nhalf,-nhalf..nhalf-1,-nhalf..nhalf-1)
+	int n = nxreal;
+	int nhalf = n/2;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,-nhalf,-nhalf);
+	res->set_array_offsets(0,-nhalf,0);
+	// set up some temporary weighting arrays
+	int kbsize =  kb.get_window_size();
+	int kbmin  = -kbsize/2;
+	int kbmax  = -kbmin;
+	float* wy0 = new float[kbmax - kbmin + 1];
+	float* wy  = wy0 - kbmin; // wy[kbmin:kbmax]
+	float* wx0 = new float[kbmax - kbmin + 1];
+	float* wx  = wx0 - kbmin;
+	float* wz0 = new float[kbmax - kbmin + 1];
+	float* wz  = wz0 - kbmin;
+	float rim = nhalf*float(nhalf);
+	int count = 0;
+	float wsum = 0.f;
+	Transform tftrans = tf; // need transpose of tf here for consistency
+	tftrans.invert();      // with spider
+	for (int jy = -nhalf; jy < nhalf; jy++) {
+		for (int jx = 0; jx <= nhalf; jx++) {
+			Vec3f nucur((float)jx, (float)jy, 0.f);
+			Vec3f nunew = tftrans*nucur;
+			float xnew = nunew[0], ynew = nunew[1], znew = nunew[2];
+			if (xnew*xnew+ynew*ynew+znew*znew <= rim) {
+				count++;
+				std::complex<float> btq(0.f,0.f);
+				bool flip = false;
+				if (xnew < 0.f) {
+					flip = true;
+					xnew = -xnew;
+					ynew = -ynew;
+					znew = -znew;
+				}
+				int ixn = int(Util::round(xnew));
+				int iyn = int(Util::round(ynew));
+				int izn = int(Util::round(znew));
+				// populate weight arrays
+				for (int i=kbmin; i <= kbmax; i++) {
+					int izp = izn + i;
+					wz[i] = kb.i0win_tab(znew - izp);
+					int iyp = iyn + i;
+					wy[i] = kb.i0win_tab(ynew - iyp);
+					int ixp = ixn + i;
+					wx[i] = kb.i0win_tab(xnew - ixp);
+					
+				}
+				// restrict weight arrays to non-zero elements
+				int lnbz = 0;
+				for (int iz = kbmin; iz <= -1; iz++) {
+					if (wz[iz] != 0.f) {
+						lnbz = iz;
+						break;
+					}
+				}
+				int lnez = 0;
+				for (int iz = kbmax; iz >= 1; iz--) {
+					if (wz[iz] != 0.f) {
+						lnez = iz;
+						break;
+					}
+				}
+				int lnby = 0;
+				for (int iy = kbmin; iy <= -1; iy++) {
+					if (wy[iy] != 0.f) {
+						lnby = iy;
+						break;
+					}
+				}
+				int lney = 0;
+				for (int iy = kbmax; iy >= 1; iy--) {
+					if (wy[iy] != 0.f) {
+						lney = iy;
+						break;
+					}
+				}
+				int lnbx = 0;
+				for (int ix = kbmin; ix <= -1; ix++) {
+					if (wx[ix] != 0.f) {
+						lnbx = ix;
+						break;
+					}
+				}
+				int lnex = 0;
+				for (int ix = kbmax; ix >= 1; ix--) {
+					if (wx[ix] != 0.f) {
+						lnex = ix;
+						break;
+					}
+				}
+				if    (ixn >= -kbmin      && ixn <= nhalf-1-kbmax
 				   && iyn >= -nhalf-kbmin && iyn <= nhalf-1-kbmax
 				   && izn >= -nhalf-kbmin && izn <= nhalf-1-kbmax) {
 					// interior points

@@ -461,6 +461,13 @@ EMObject get_attr_default(const string & attr_name, const EMObject & em_obj = EM
 void set_attr(const string & key, EMObject val);
 
 
+/** Set a header attribute's value from Python
+ *
+ * @param key The header attribute name.
+ * @param val The attribute value.
+ */
+void set_attr_python(const string & key, EMObject val);
+
 /** Get the image attribute dictionary containing all the
  * image attribute names and attribute values.
  *

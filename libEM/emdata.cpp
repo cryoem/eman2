@@ -1096,6 +1096,144 @@ void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy
 	rotate_translate(t);
 }
 
+void EMData::rotate_translate(const Transform & transform)
+{
+	ENTERFUNC;
+
+	Transform inv = transform.inverse();
+	 
+	float *src_data = 0;
+	float *des_data = 0;
+
+	src_data = get_data();
+	des_data = (float *) malloc(nx * ny * nz * sizeof(float));
+	
+	if (nz == 1) {
+		Vec2f offset(nx/2,ny/2);
+		for (int j = 0; j < ny; j++) {
+			for (int i = 0; i < nx; i++) {				
+				Vec2f coord(i-nx/2,j-ny/2);
+				Vec2f soln = inv*coord;
+				soln += offset;
+					
+				float x2 = soln[0];
+				float y2 = soln[1];
+
+				if (x2 < 0 || x2 >= nx || y2 < 0 || y2 >= ny ) {
+					des_data[i + j * nx] = 0; // It may be tempting to set this value to the
+					// mean but in fact this is not a good thing to do. Talk to S.Ludtke about it.
+				}
+				else {
+					int ii = Util::fast_floor(x2);
+					int jj = Util::fast_floor(y2);
+					int k0 = ii + jj * nx;
+					int k1 = k0 + 1;
+					int k2 = k0 + nx;
+					int k3 = k0 + nx + 1;
+
+					if (ii == nx - 1) {
+						k1--;
+						k3--;
+					}
+					if (jj == ny - 1) {
+						k2 -= nx;
+						k3 -= nx;
+					}
+
+					float t = x2 - ii;
+					float u = y2 - jj;
+					
+					des_data[i + j * nx] = Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u); // This is essentially basic interpolation
+				}
+			}
+		}
+	}
+	else {
+		int l = 0;
+		Vec3f offset(nx/2,ny/2,nz/2);
+		for (int k = 0; k < nz; k++) {
+			for (int j = 0; j < ny; j++) {
+				for (int i = 0; i < nx; i++,l++) {
+					Vec3f coord(i-nx/2,j-ny/2,k-nz/2);
+					Vec3f soln = inv*coord;
+					soln += offset;
+					
+					float x2 = soln[0];
+					float y2 = soln[1];
+					float z2 = soln[2];
+
+					if (x2 < 0 || y2 < 0 || z2 < 0 || x2 >= nx  || y2 >= ny  || z2>= nz ) {
+						des_data[l] = 0;
+					}
+					else {
+						int ix = Util::fast_floor(x2);
+						int iy = Util::fast_floor(y2);
+						int iz = Util::fast_floor(z2);
+						float tuvx = x2-ix;
+						float tuvy = y2-iy;
+						float tuvz = z2-iz;
+						int ii = ix + iy * nx + iz * nxy;
+
+						int k0 = ii;
+						int k1 = k0 + 1;
+						int k2 = k0 + nx;
+						int k3 = k0 + nx+1;
+						int k4 = k0 + nxy;
+						int k5 = k1 + nxy;
+						int k6 = k2 + nxy;
+						int k7 = k3 + nxy;
+	
+						if (ix == nx - 1) {
+							k1--;
+							k3--;
+							k5--;
+							k7--;
+						}
+						if (iy == ny - 1) {
+							k2 -= nx;
+							k3 -= nx;
+							k6 -= nx;
+							k7 -= nx;
+						}
+						if (iz == nz - 1) {
+							k4 -= nxy;
+							k5 -= nxy;
+							k6 -= nxy;
+							k7 -= nxy;
+						}
+	
+						des_data[l] = Util::trilinear_interpolate(src_data[k0],
+								src_data[k1], src_data[k2], src_data[k3], src_data[k4],
+								src_data[k5], src_data[k6],	src_data[k7], tuvx, tuvy, tuvz);
+					}
+				}
+			}
+		}
+	}
+
+	if( rdata )
+	{
+		free(rdata);
+		rdata = 0;
+	}
+	rdata = des_data;
+
+	float scale = transform.get_scale();
+	if (scale != 1.0) {
+		float inv_scale = 1.0/scale;
+		scale_pixel(inv_scale);
+	
+		attr_dict["origin_row"] = (float) attr_dict["origin_row"] * inv_scale;
+		attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
+		attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
+	}
+
+	update();
+	all_translation += transform.get_trans();
+	EXITFUNC;
+}
+
+
 
 
 void EMData::rotate_translate(const Transform3D & RA)

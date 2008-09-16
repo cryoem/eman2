@@ -143,7 +143,7 @@ class EMImage(object):
 			else: local_data = data
 			# list or tuple of images
 			
-			if ( not stop_data_copy ):local_data = data.copy()
+			if ( copy ):local_data = data.copy()
 			else: local_data = data
 			
 			if old:

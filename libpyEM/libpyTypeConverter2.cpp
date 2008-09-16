@@ -90,7 +90,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::emobject_emdata_from_python();
 	EMAN::emobject_string_from_python();
 	EMAN::emobject_xydata_from_python();
-	EMAN::emobject_transform3d_from_python();
+// 	EMAN::emobject_transform3d_from_python();
 	EMAN::emobject_transform_from_python();
 	EMAN::emobject_null_from_python();
 
@@ -100,7 +100,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	implicitly_convertible<const char*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();
-	implicitly_convertible<EMAN::Transform3D*, EMAN::EMObject>();
+// 	implicitly_convertible<EMAN::Transform3D*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::Transform*, EMAN::EMObject>();
 
 	EMAN::MArrayND_to_python<2>();

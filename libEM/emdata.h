@@ -316,7 +316,7 @@ namespace EMAN
 		 * @param t The rotation and translation transformation to be done.
 		 */
 		void rotate_translate(const Transform3D & t);
-		
+		void rotate_translate(const Transform& t);
 		
 		/** Rotate then translate the image.
 		 * @param alt Rotation euler angle alt in EMAN convention.

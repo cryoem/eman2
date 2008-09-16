@@ -845,7 +845,7 @@ EMObject EMData::get_attr(const string & key) const
 		return attr_dict[key];
 	}
 	else {
-		throw NotExistingObjectException(key, "Not exist");
+		throw NotExistingObjectException(key, "The requested key does not exist");
 	}
 }
 
@@ -925,6 +925,68 @@ void EMData::set_attr(const string & key, EMObject val)
 	}
 			
 	attr_dict[key] = val;
+	
+	/* reset attribute nx, ny, nz will resize the image */	
+	if(rdata != 0) { 	
+		EMData * new_image =0;
+		if( key == "nx" ) {
+			int nd = (int) val;		
+			if( nx != (int)val ) {
+				new_image = get_clip(Region((nx-nd)/2, 0, 0, nd, ny, nz));
+			} 
+		}
+		else if( key == "ny" ) {
+			int nd = (int) val;
+			if( ny != (int)val ) {
+				new_image = get_clip(Region(0, (ny-nd)/2, 0, nx, nd, nz));
+			} 
+		}
+		else if( key == "nz" ) {
+			int nd = (int) val;
+			if( nz != (int)val ) {
+				new_image = get_clip(Region(0, 0, (nz-nd)/2, nz, ny, nd));
+			}
+		}
+		
+		if(new_image) {
+			this->operator=(*new_image);
+			delete new_image; 
+			new_image = 0;
+		}
+	}
+}
+
+void EMData::set_attr_python(const string & key, EMObject val)
+{
+	/* Ignore 'read only' attribute. */
+	if(key == "sigma" ||
+		  key == "sigma_nonzero" || 
+		  key == "square_sum" ||
+		  key == "maximum" ||
+		  key == "minimum" ||
+		  key == "mean" ||
+		  key == "mean_nonzero" ) 
+	{
+		LOGWARN("Ignore setting read only attribute %s", key.c_str());
+		return;
+	}
+
+	EMObject::ObjectType argtype = val.get_type();
+	if (argtype == EMObject::EMDATA) {
+		EMData* e = (EMData*) val;
+		e = e->copy();
+		EMObject v(e);
+		attr_dict[key] = v;
+	}
+	else if (argtype == EMObject::TRANSFORM) {
+		Transform* t = new Transform(*((Transform*) val));
+		EMObject v(t);
+		attr_dict[key] = v;
+		
+	} else {
+		attr_dict[key] = val;
+	}
+	
 	
 	/* reset attribute nx, ny, nz will resize the image */	
 	if(rdata != 0) { 	

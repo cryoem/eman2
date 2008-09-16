@@ -480,6 +480,7 @@ EMData* mult_radial(EMData* radial);
 		 *
 		 */
 		EMData* extractplane(const Transform3D& tf, Util::KaiserBessel& kb);
+		EMData* extract_plane(const Transform& tf, Util::KaiserBessel& kb);
 		
 		EMData* fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb);
 

@@ -112,7 +112,7 @@ def main():
 	for i in range(0,options.num):
 		# get the random orientation on the unit sphere
 		t3d = rand_orient.gen_orientations(c1_sym)[0]
-		d = {"t3d":t3d}
+		d = {"transform":t3d}
 		p=model.project(options.projector,d) # make the projection
 		p.process_inplace(noise_proc,noise_params) # add noise
 		if options.writeout: p.write_image('projections_and_noise.hdf',-1)
@@ -121,16 +121,21 @@ def main():
 		az = Util.get_frand(options.rotmin,options.rotmax) # make random angle
 		dx = Util.get_frand(options.transmin,options.transmax) # random dx
 		dy = Util.get_frand(options.transmin,options.transmax) # random dy
-		t3d_q = Transform3D(az,0,0)
-		t3d_q.set_pretrans(dx,dy,0)
+		
+		d = {"type":"2d","alpha":az}
+		t3d_q = Transform(d)
+		t3d_q.set_pre_trans(Vec2f(dx,dy))
 		
 		if not options.stopflip:
 			flipped = Util.get_irand(0,1)
 			if flipped: q.process_inplace("xform.flip",{"axis":"x"})
 			
 		q.rotate_translate(t3d_q)
+		q.write_image("q.hdf")
 		#Do the alignment now
 		ali = q.align(aligner,p,aligner_params, alignercmp, alignercmp_params)
+		ali.write_image("aligned.hdf",-1)
+		p.write_image("projection.hdf",-1)
 		
 		#make variables to store the solution parameters
 		az_solution = (-ali.get_attr("align.az"))%360
@@ -142,7 +147,7 @@ def main():
 				dx_solution = -dx_solution
 		
 		# print stuff
-		d = t3d.get_rotation()
+		d = t3d.get_rotation("eman")
 		print "%.2f,%.2f,%.2f\t"%(d["az"],d["alt"],d["phi"]),
 		print "%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution),
 		if not options.stopflip: print '\t\t',flipped, '\t',ali.get_attr("align.flip"),

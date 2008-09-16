@@ -263,8 +263,8 @@ void test_emobject_conversion()
 	XYData* xydata = new XYData;
 	test_emobject_specific_conversion( xydata );
 	
-	cout << "Testing Transform3D pointer conversion operator..... ";
-	Transform3D* pTransform = new Transform3D;
+	cout << "Testing Transform pointer conversion operator..... ";
+	Transform* pTransform = new Transform;
 	test_emobject_specific_conversion( pTransform );
 	
 	cout << "Testing EMData pointer conversion operator..... ";
@@ -320,7 +320,7 @@ vector<EMObject> get_test_emobjects()
 	float *fp = new float;
 	objects.push_back(EMObject(fp));
 	
-	Transform3D* pTransform = new Transform3D;
+	Transform* pTransform = new Transform;
 	objects.push_back(EMObject(pTransform));
 
 	vector<int> iv(100,2);
