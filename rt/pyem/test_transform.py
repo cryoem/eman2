@@ -640,7 +640,42 @@ class TestTransform(unittest.TestCase):
 			t1 = t.transpose()
 			self.assert_identity(t1*t,3)
 			self.assert_identity(t*t1,3)
-		
+	
+	def test_set_pre_trans(self):
+		"""test set pre trans.............................."""
+		no_trans = {}
+		one_trans = {"ty":Util.get_frand(-100,100)}
+		two_trans = {"tx":Util.get_frand(-100,100),"ty":Util.get_frand(-100,100)}
+		three_trans = {"tx":Util.get_frand(-100,100),"ty":Util.get_frand(-100,100),"tz":Util.get_frand(-100,100)}
+		rot_one = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
+		rot_two = {"type":"spider","phi":self.get_angle_rand(),"theta":self.get_angle_rand(0,179),"psi":self.get_angle_rand()}
+		for scale in [1.0,2.0]:
+			for mirror in [True, False]:
+				for trans in [no_trans,one_trans,two_trans,three_trans]:
+					for rot in [rot_one,rot_two]:
+						d = {"mirror":mirror,"scale":scale}
+						t = Transform(d)
+						t.set_params(trans)
+						t.set_params(rot)
+						v = Vec3f(Util.get_frand(-100,100),Util.get_frand(-100,100),Util.get_frand(-100,100))
+						
+						t.set_pre_trans(v)
+						v1 = t.get_pre_trans()
+						
+						self.assertAlmostEqual(v[0],v1[0], 3)
+						self.assertAlmostEqual(v[1],v1[1], 3)
+						self.assertAlmostEqual(v[2],v1[2], 3)
+						
+						v = Vec2f(Util.get_frand(-100,100),Util.get_frand(-100,100))
+						
+						t.set_pre_trans(v)
+						v1 = t.get_pre_trans()
+						
+						self.assertAlmostEqual(v[0],v1[0], 3)
+						self.assertAlmostEqual(v[1],v1[1], 3)
+						#self.assertAlmostEqual(v[2],v1[2], 3)
+
+	
 	def test_get_pre_trans(self):
 		"""test get pre trans.............................."""
 		dx = .023

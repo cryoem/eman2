@@ -166,6 +166,13 @@ namespace EMAN
 			 * @return the pre translation vector
 			 */
 			Vec3f get_pre_trans() const;
+			
+			/** Set the translational component of the matrix as though it was MSRT_ not MTSR, where
+			 * T_ is the pre translation. Internally the correct form of MTSR is computed.
+			 * @param v the vector (Vec3f or Vec2f) that is the pre trans
+			 */
+			template<typename type>
+			void set_pre_trans(const type& v);
 
 			//=============== set and get scale =============
 			/** Set the scale
@@ -351,6 +358,32 @@ namespace EMAN
 		float y = v[0] * M[0][1] + v[1] * M[1][1] + v[2] * M[2][1];
 		float z = v[0] * M[0][2] + v[1] * M[1][2] + v[2] * M[2][2];
 		return Vec3f(x, y, z);
+	}
+	
+	template<typename type>
+	void Transform::set_pre_trans(const type& v) {
+	
+		Transform tmp;
+		Dict rot = get_rotation("eman");
+		tmp.set_rotation(rot);
+	
+		float scale = get_scale();
+		if (scale != 1.0 ) tmp.set_scale(scale);
+		
+		Transform trans;
+		trans.set_trans(v);
+	
+		trans = tmp*trans;
+
+		Transform tmp2;
+		tmp2.set_rotation(rot);
+		tmp2.transpose_inplace(); // invert
+		if (scale != 1.0 ) tmp2.set_scale(1.0f/scale);
+		
+	
+		trans = trans*tmp2;
+	
+		set_trans(trans.get_trans());
 	}
 	
 	/** Transform3D
