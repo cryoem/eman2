@@ -724,6 +724,50 @@ class TestTransform(unittest.TestCase):
 		#(pre_trans*without_trans).printme()
 		self.assert_matrix_equality(without_trans*pre_trans,t)
 
+	def test_get_pre_trans_2d(self):
+		"""test get pre trans 2d..........................."""
+		dx = .023
+		dy = 431.220002
+		two_trans = {"tx":dx,"ty":dy}
+		t = Transform(two_trans)
+		v = t.get_pre_trans_2d()
+		
+		self.assertAlmostEqual(v[0],dx, 5)
+		self.assertAlmostEqual(v[1],dy, 5)
+		
+		scale = Util.get_frand(1.00001,100.0)
+		t.set_scale(scale)
+		v = t.get_pre_trans_2d()
+		
+		self.assertAlmostEqual(v[0]*scale,dx, 3)
+		self.assertAlmostEqual(v[1]*scale,dy, 3)
+		
+		t.set_mirror(Util.get_irand(0,1))
+		v = t.get_pre_trans_2d()
+		self.assertAlmostEqual(v[0]*scale,dx, 3)
+		self.assertAlmostEqual(v[1]*scale,dy, 3)
+		
+		# finally perhaps the most important test
+		d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
+		t.set_params(d)
+		v = t.get_pre_trans()
+		pre_trans = Transform()
+		pre_trans.set_trans(v)
+		
+		rot = t.get_rotation("eman")
+		scale = t.get_scale()
+		mirror = t.get_mirror()
+		
+		without_trans = Transform(rot)
+		without_trans.set_scale(scale)
+		without_trans.set_mirror(mirror)
+		
+		#without_trans.printme()
+		#pre_trans.printme()
+		#(without_trans*pre_trans).printme()
+		#(pre_trans*without_trans).printme()
+		self.assert_matrix_equality(without_trans*pre_trans,t)
+
 	def test_get_params_inverse(self):
 		"""test get params inverse........................."""
 		dx = Util.get_frand(-200,200)

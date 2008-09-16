@@ -621,6 +621,17 @@ Vec3f Transform::get_pre_trans() const
 	return soln.get_trans();
 }
 
+Vec2f Transform::get_pre_trans_2d() const 
+{
+	Transform T(*this);
+	T.set_trans(0,0,0);
+	T.invert();
+	
+	Transform soln  = T*(*this);
+// 	soln.printme();
+	return soln.get_trans_2d();
+}
+
 // Vec2f Transform::get_pre_trans_2d() const 
 // {
 // 	Vec3f v = get_pre_trans();

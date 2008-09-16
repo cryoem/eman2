@@ -167,6 +167,12 @@ namespace EMAN
 			 */
 			Vec3f get_pre_trans() const;
 			
+			/** 2D version of getting the translation vector as though this object was MSRT_ not MTSR, where T_ is what you want
+			 * Note M means post x mirror, T means translation, S means scale, and R means rotaiton
+			 * @return the pre translation vector
+			 */
+			Vec2f get_pre_trans_2d() const;
+			
 			/** Set the translational component of the matrix as though it was MSRT_ not MTSR, where
 			 * T_ is the pre translation. Internally the correct form of MTSR is computed.
 			 * @param v the vector (Vec3f or Vec2f) that is the pre trans
