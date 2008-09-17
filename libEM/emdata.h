@@ -114,7 +114,7 @@ namespace EMAN
 		
 		/** Construct an empty EMData instance. It has no image data. */
 		EMData();
-		virtual ~ EMData();  
+		~ EMData();  
 
 		/** Construct from an image file. 
 		 * @param filename the image file name 
