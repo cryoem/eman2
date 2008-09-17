@@ -157,12 +157,12 @@ EMData *EMData::project(const string & projector_name, const Dict & params)
 }
 
 
-EMData *EMData::project(const string & projector_name, const Transform3D & t3d)
+EMData *EMData::project(const string & projector_name, const Transform & t3d)
 {
 	ENTERFUNC;
 	EMData *result = 0;
 	Dict params;
-	params["t3d"] = (Transform3D*) &t3d;
+	params["transform"] = (Transform*) &t3d;
 	Projector *p = Factory < Projector >::get(projector_name, params);
 	if (p) {
 		result = p->project3d(this);

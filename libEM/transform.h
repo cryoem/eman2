@@ -106,6 +106,12 @@ namespace EMAN
 			 */
 			Dict get_rotation(const string& euler_type) const;
 			
+			
+			/** Get the rotation part of the tranformation matrix as a Transform object
+			 * @return a Transform describing the rotation only
+			 */
+			Transform get_rotation_transform() const;
+			
 			/** Set the parameters of the entire transform.
 			 * keys acted upon are "type" - if this exists then the correct euler angles need to be included -
 			 * also "tx","ty","tz", "scale", and "mirror"

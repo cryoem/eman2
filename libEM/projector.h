@@ -186,16 +186,13 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("transform", EMObject::TRANSFORM);
-			d.put("alt", EMObject::FLOAT);
-			d.put("az", EMObject::FLOAT);
-			d.put("phi", EMObject::FLOAT);
 			d.put("mode", EMObject::INT);
 			return d;
 		}
 
 	  private:
 		float alt, az, phi;
-		void interp_ft_3d(int mode, EMData * image, float x, float y,
+		bool interp_ft_3d(int mode, EMData * image, float x, float y,
 						  float z, float *data, float gauss_width) const;
 	};
 
@@ -234,9 +231,6 @@ namespace EMAN
 			d.put("kb_K", EMObject::FLOAT);
 			d.put("angletype", EMObject::STRING);
 			d.put("anglelist", EMObject::FLOATARRAY);
-			d.put("az", EMObject::FLOAT);
-			d.put("alt", EMObject::FLOAT);
-			d.put("phi", EMObject::FLOAT);
 			d.put("theta", EMObject::FLOAT);
 			d.put("psi", EMObject::FLOAT);
 			d.put("npad", EMObject::INT);
@@ -278,9 +272,6 @@ namespace EMAN
 			d.put("radius", EMObject::INT);
 			d.put("anglelist", EMObject::FLOATARRAY);
 			d.put("angletype", EMObject::STRING);
-			d.put("az", EMObject::FLOAT);
-			d.put("alt", EMObject::FLOAT);
-			d.put("phi", EMObject::FLOAT);
 			d.put("theta", EMObject::FLOAT);
 			d.put("psi", EMObject::FLOAT);
 			return d;
@@ -298,39 +289,6 @@ namespace EMAN
 		// within the radius
 		void prepcubes(int nx, int ny, int nz, int ri, Vec3i origin, 
 				       int& nn, IPCube* ipcube=NULL) const;
-	};
-
-	/** fast real-space isosurface 3D proejection.
-     */
-	class SimpleIsoSurfaceProjector:public Projector
-	{
-	  public:
-		EMData * project3d(EMData * image) const;
-                // no implementation yet
-		EMData * backproject3d(EMData * image) const;
-
-		string get_name() const
-		{
-			return "simple_iso_surface";
-		}
-
-		string get_desc() const
-		{
-			return "Simple isosurface rendering, not projections.";
-		}
-
-		static Projector *NEW()
-		{
-			return new SimpleIsoSurfaceProjector();
-		}
-		
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("transform", EMObject::TRANSFORM);
-			d.put("threshold", EMObject::FLOAT);
-			return d;
-		}
 	};
 
 	/** Fast real-space 3D projection.
@@ -362,42 +320,6 @@ namespace EMAN
 		static Projector *NEW()
 		{
 			return new StandardProjector();
-		}
-	};
-
-	/** Real-space 3D projection with trilinear interpolation.
-     * It accumulates the results directly in the 2D image
-     * instead of storing in another rotated copy then accumulating
-     * (ie: less memory requirement). It does not modify the self
-     * data either.
-     */
-	class StandardFastProjector:public Projector
-	{
-	  public:
-		EMData * project3d(EMData * image) const;
-                // no implementation yet
-		EMData * backproject3d(EMData * image) const;
-
-		string get_name() const
-		{
-			return "standardfast";
-		}
-
-		string get_desc() const
-		{
-			return "Standard with some optimizations. Might be minor accuracy difference.";
-		}
-
-		static Projector *NEW()
-		{
-			return new StandardFastProjector();
-		}
-		
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("transform", EMObject::TRANSFORM);
-			return d;
 		}
 	};
 

@@ -245,7 +245,7 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 	int y0 = (int) floor(yy + 0.5f);
 	int z0 = (int) floor(zz + 0.5f);
 	
-	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
+	if (x0 >= nx/2 - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
 		return true;
 	}
 	
@@ -382,7 +382,7 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 	int y0 = (int) floor(yy);
 	int z0 = (int) floor(zz);
  
-	if (x0 >= nx - 2 || y0 >= ny - 1 || z0 >= nz - 2) {
+	if (x0 >= nx/2 - 2 || y0 >= ny - 1 || z0 >= nz - 2) {
 		return false;
 	}
 
@@ -674,7 +674,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	float dz = zz - z0;
 
 	// 
-	if (x0 >= nx - 2 || y0 >= ny - 1 || z0 >= nz - 1) return false;
+	if (x0 >= nx/2 - 2 || y0 >= ny - 1 || z0 >= nz - 1) return false;
 
 	int i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
 

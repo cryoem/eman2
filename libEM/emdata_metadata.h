@@ -468,6 +468,14 @@ void set_attr(const string & key, EMObject val);
  */
 void set_attr_python(const string & key, EMObject val);
 
+/** Ask if the header has a particular attribute
+ * @param key the header attribute name
+ * @return whether or not the header has the name as a key/value entry
+ */
+inline bool has_attr(const string& key) {
+	return attr_dict.has_key(key);
+}
+
 /** Get the image attribute dictionary containing all the
  * image attribute names and attribute values.
  *

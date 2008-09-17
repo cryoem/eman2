@@ -422,6 +422,16 @@ void Transform::set_rotation(const Dict& rotation)
 	}
 }
 
+Transform Transform::get_rotation_transform() const
+{
+	Transform ret(*this);
+	ret.set_scale(1.0);
+	ret.set_mirror(false);
+	ret.set_trans(0,0,0);
+	//ret.orthogonalize(); // ?
+	return ret;
+}
+
 Dict Transform::get_rotation(const string& euler_type) const
 {
 	Dict result;

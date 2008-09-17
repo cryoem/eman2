@@ -130,6 +130,16 @@ namespace EMAN
 
 	  protected:
 		mutable Dict params;
+		
+		/** Get a Transform pointer that is currently stored in the image header corresponding to the given key.  
+		 * If non existant then initialize a new Transform pointer, set it as the image attribute, and return it.
+		 * The point being that if you have to access the xform.align2d or the xform.align3d
+		 * attributes from multiple aligners then you always want to get the same one.
+		 * @param key the alignment key such as "xform.align2d" or "xform.align3d"
+		 * @param image the image from which the Transform pointer will be extracted (and potentially assigned to if non existant)
+		 * @return the Transform pointer that is currently stored in the image header corresponding to the given key.
+		 */
+		static Transform* get_align_attr(const string& key, EMData* const image );
 	};
 
 	/** Translational 2D Alignment using cross correlation.

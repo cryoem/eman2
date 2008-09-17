@@ -49,130 +49,17 @@ template <> Factory < Projector >::Factory()
 {
 	force_add(&GaussFFTProjector::NEW);
 	force_add(&PawelProjector::NEW);
-	force_add(&SimpleIsoSurfaceProjector::NEW);
 	force_add(&StandardProjector::NEW);
-	force_add(&StandardFastProjector::NEW);
 	force_add(&FourierGriddingProjector::NEW);
 	force_add(&ChaoProjector::NEW);
 }
-
-
-
-// EMData *GaussFFTProjector::project3d(EMData * image) const
-// {
-// 	Transform3D* t3d = params["t3d"];
-// 	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
-// 	EMData *f = image;
-// 	if (!image->is_complex()) {
-// 		image->process_inplace("xform.phaseorigin.tocorner");
-// 		f = image->do_fft();
-// 		f->process_inplace("xform.fourierorigin.tocenter");
-// 		image->process_inplace("xform.phaseorigin.tocenter");
-// 	}
-// 
-// 	int f_nx = f->get_xsize();
-// 	int f_ny = f->get_ysize();
-// 	int f_nz = f->get_zsize();
-// 	
-// 	// This part was modified by David Woolford -
-// 	// The framework of the Transform3D allows for a generic implementation
-// 	// as specified here.
-// 	Dict p = t3d->get_rotation();
-// 	float alt2=p["alt"], az2=p["az"], phi2=p["phi"];
-// 	// End David Woolford modifications
-// 	
-// 	if (!f->is_complex() || f_nz != f_ny || f_nx != f_ny + 2) {
-// 		LOGERR("Cannot project this image");
-// 		return 0;
-// 	}
-// 
-// 	f->ap2ri();
-// 
-// 	EMData *tmp = new EMData();
-// 	tmp->set_size(f_nx, f_ny, 1);
-// 	tmp->set_complex(true);
-// 	tmp->set_ri(true);
-// 
-// 	float *data = tmp->get_data();
-// 	Transform3D r( az2, alt2, phi2); // EMAN by default
-// 	r.transpose();
-// 
-// 	int mode = params["mode"];
-// 	float gauss_width = 1;
-// 	if ( mode == 0 ) mode = 2;
-// 	if (mode == 2 ) {
-// 		gauss_width = EMConsts::I2G;
-// 	}
-// 	else if (mode == 3) {
-// 		gauss_width = EMConsts::I3G;
-// 	}
-// 	else if (mode == 4) {
-// 		gauss_width = EMConsts::I4G;
-// 	}
-// 	else if (mode == 6 || mode == 7) {
-// 		gauss_width = EMConsts::I5G; 
-// 	}
-// 
-// 	for (int y = 0; y < f_ny; y++) {
-// 		for (int x = 0; x < f_nx / 2; x++) {
-// 			int ii = x * 2 + y * f_nx;
-// #ifdef	_WIN32
-// 			if (_hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
-// #else
-// 			if (hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
-// #endif	//_WIN32
-// 				data[ii] = 0;
-// 				data[ii + 1] = 0;
-// 			}
-// 			else {
-// 				float xx = (float) (x * r[0][0] + (y - f_ny / 2) * r[0][1]);
-// 				float yy = (float) (x * r[1][0] + (y - f_ny / 2) * r[1][1]);
-// 				float zz = (float) (x * r[2][0] + (y - f_ny / 2) * r[2][1]);
-// 
-// 				int cc = 1;
-// 				if (xx < 0) {
-// 					xx = -xx;
-// 					yy = -yy;
-// 					zz = -zz;
-// 					cc = -1;
-// 				}
-// 
-// 				yy += f_ny / 2;
-// 				zz += f_nz / 2;
-// 
-// 				interp_ft_3d(mode, f, xx, yy, zz, data + ii, gauss_width);
-// 				data[ii + 1] *= cc;
-// 			}
-// 		}
-// 	}
-// 	f->update();
-// 	tmp->update();
-// 
-// 	tmp->process_inplace("xform.fourierorigin.tocorner");
-// 	EMData *ret = tmp->do_ift();
-// 	ret->process_inplace("xform.phaseorigin.tocenter");
-// 
-// 	Dict filter_d;
-// 	filter_d["gauss_width"] = gauss_width;
-// 	filter_d["ring_width"] = ret->get_xsize() / 2;
-// 	ret->process_inplace("math.gausskernelfix", filter_d);
-// 
-// 	ret->set_rotation( az2, alt2, phi2 );
-// 
-// 	if( tmp )
-// 	{ 
-// 		delete tmp;
-// 		tmp = 0;
-// 	}
-// 
-// 	ret->update();
-// 	return ret;
-// }
 
 EMData *GaussFFTProjector::project3d(EMData * image) const
 {
 	Transform* t3d = params["transform"];
 	if ( t3d == NULL ) throw NullPointerException("The transform object (required for projection), was not specified");
+	if ( image->get_ndim() != 3 ) throw ImageDimensionException("Error, the projection volume must be 3D");
+	
 	EMData *f = image;
 	if (!image->is_complex()) {
 		image->process_inplace("xform.phaseorigin.tocorner");
@@ -184,13 +71,6 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	int f_nx = f->get_xsize();
 	int f_ny = f->get_ysize();
 	int f_nz = f->get_zsize();
-	
-	// This part was modified by David Woolford -
-	// The framework of the Transform3D allows for a generic implementation
-	// as specified here.
-	Dict p = t3d->get_rotation("eman");
-	float alt2=p["alt"], az2=p["az"], phi2=p["phi"];
-	// End David Woolford modifications
 	
 	if (!f->is_complex() || f_nz != f_ny || f_nx != f_ny + 2) {
 		LOGERR("Cannot project this image");
@@ -205,8 +85,10 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->set_ri(true);
 
 	float *data = tmp->get_data();
-	Transform r(p ); // EMAN by default
+	
+	Transform r = t3d->get_rotation_transform();
 	r.invert();
+	float scale = t3d->get_scale();
 
 	int mode = params["mode"];
 	float gauss_width = 1;
@@ -230,59 +112,81 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 #ifdef	_WIN32
 			if (_hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
 #else
-				if (hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
+			if (hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
 #endif	//_WIN32
-					data[ii] = 0;
-					data[ii + 1] = 0;
+				data[ii] = 0;
+				data[ii + 1] = 0;
+			}
+			else {
+				Vec3f coord(x,(y - f_ny / 2),0);
+				Vec3f soln = r*coord;
+				float xx = soln[0];
+				float yy = soln[1];
+				float zz = soln[2];
+
+				int cc = 1;
+				if (xx < 0) {
+					xx = -xx;
+					yy = -yy;
+					zz = -zz;
+					cc = -1;
 				}
-				else {
-					float xx = (float) (x * r[0][0] + (y - f_ny / 2) * r[0][1]);
-					float yy = (float) (x * r[1][0] + (y - f_ny / 2) * r[1][1]);
-					float zz = (float) (x * r[2][0] + (y - f_ny / 2) * r[2][1]);
+				
+				if (scale != 1.0) {
+					xx *= scale;
+					yy *= scale;
+					zz *= scale;
+				}
 
-					int cc = 1;
-					if (xx < 0) {
-						xx = -xx;
-						yy = -yy;
-						zz = -zz;
-						cc = -1;
-					}
+				yy += f_ny / 2;
+				zz += f_nz / 2;
 
-					yy += f_ny / 2;
-					zz += f_nz / 2;
-
-					interp_ft_3d(mode, f, xx, yy, zz, data + ii, gauss_width);
+				if (yy < 0 || xx < 0 || zz < 0) {
+					data[ii] = 0;
+					data[ii+1] = 0;
+					continue;
+				}
+				
+				if (interp_ft_3d(mode, f, xx, yy, zz, data + ii, gauss_width)) {
 					data[ii + 1] *= cc;
+				} else {
+					data[ii] = 0;
+					data[ii+1] = 0;
 				}
 			}
 		}
-		f->update();
-		tmp->update();
-
-		tmp->process_inplace("xform.fourierorigin.tocorner");
-		EMData *ret = tmp->do_ift();
-		ret->process_inplace("xform.phaseorigin.tocenter");
-
-		Dict filter_d;
-		filter_d["gauss_width"] = gauss_width;
-		filter_d["ring_width"] = ret->get_xsize() / 2;
-		ret->process_inplace("math.gausskernelfix", filter_d);
-
-		ret->set_rotation( az2, alt2, phi2 );
-
-		if( tmp )
-		{ 
-			delete tmp;
-			tmp = 0;
-		}
-
-		ret->update();
-		return ret;
 	}
 
+	f->update();
+	tmp->update();
+
+	tmp->process_inplace("xform.fourierorigin.tocorner");
+	EMData *ret = tmp->do_ift();
+	ret->process_inplace("xform.phaseorigin.tocenter");
+	
+	ret->translate(t3d->get_trans());
+	
+	if (t3d->get_mirror() ) ret->process_inplace("xform.flip",Dict("axis","x"));
+
+	Dict filter_d;
+	filter_d["gauss_width"] = gauss_width;
+	filter_d["ring_width"] = ret->get_xsize() / 2;
+	ret->process_inplace("math.gausskernelfix", filter_d);
+
+	if( tmp )
+	{ 
+		delete tmp;
+		tmp = 0;
+	}
+
+	ret->set_attr("xform.projection",t3d);
+	ret->update();
+	return ret;
+}
 
 
-void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
+
+bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 									 float z, float *data, float gw) const
 {
 	float *rdata = image->get_data();
@@ -299,6 +203,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 
 		data[0] = rdata[x0 + y0 * nx + z0 * nx * ny];
 		data[1] = rdata[x0 + y0 * nx + z0 * nx * ny + 1];
+		return true;
 	}
 	else if (mode == 2) {
 		int x0 = (int) floor(x);
@@ -309,8 +214,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 		float dy = y - y0;
 		float dz = z - z0;
 
-		if (x0 <= nx - 2 && y0 <= ny - 1 && z0 <= nz - 1) {
-
+		if (x0 <= nx/2- 2 && y0 <= ny - 1 && z0 <= nz - 1) {
 			int i = (int) (x0 * 2 + y0 * nx + z0 * nx * ny);
 
 			float n = Util::agauss(1, dx, dy, dz, gw) +
@@ -340,7 +244,9 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				Util::agauss(rdata[i + 2 + nx * ny], 1 - dx, dy, 1 - dz, gw) +
 				Util::agauss(rdata[i + nx + nx * ny], dx, 1 - dy, 1 - dz, gw) +
 				Util::agauss(rdata[i + 2 + nx + nx * ny], 1 - dx, 1 - dy, 1 - dz, gw) / n;
+			return true;
 		}
+		return false;
 	}
 	else if (mode == 3) {
 		int x0 = 2 * (int) floor(x + .5);
@@ -382,7 +288,9 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 
 			data[0] /= n;
 			data[1] /= n;
+			return true;
 		}
+		return false;
 	}
 	else if (mode == 4) {
 		int x0 = 2 * (int) floor(x);
@@ -423,7 +331,9 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 			}
 			data[0] /= n;
 			data[1] /= n;
+			return true;
 		}
+		return false;
 	}
 	else if (mode == 5) {
 		int x0 = 2 * (int) floor(x + .5);
@@ -473,7 +383,9 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 
 			data[0] /= n;
 			data[1] /= n;
+			return true;
 		}
+		return false;
 	}
 	else if (mode == 6) {
 
@@ -517,7 +429,10 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 
 			data[0] /= n;
 			data[1] /= n;
+			
+			return true;
 		}
+		return false;
 	}
 	else if (mode == 7) {
 		int x0 = 2 * (int) floor(x + .5);
@@ -558,8 +473,13 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 			}
 			data[0] /= n;
 			data[1] /= n;
+			return true;
 		}
+		return false;
+		
 	}
+// 	throw InvalidParameterException("Error, unkown mode");
+	return false;
 }
 
 void PawelProjector::prepcubes(int, int ny, int nz, int ri, Vec3i origin, 
@@ -895,395 +815,16 @@ EMData *PawelProjector::project3d(EMData * image) const
 			}
 		}
 	}
+	// If there is no angle list then it's safe to attach the xform.projection header attribute
+	// This will make this projector usable from the eman2 refinement perspective
+	if (!params.has_key("anglelist")) {
+		Transform* t3d = params["transform"];
+		ret->set_attr("xform.projection",t3d);
+	}
 	ret->update();
 	EMDeleteArray(ipcube);
 	return ret;	
 }
-
-// EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
-// {
-// 
-// 	Transform3D* t3d = params["t3d"];
-// 	if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
-// 	Dict p = t3d->get_rotation();
-// 	
-// 	float alt = p["alt"];
-// 	float az = p["az"];
-// 	float phi = p["phi"];
-// 
-// 	float threshold = params["threshold"];
-// 
-// 	int nx = image->get_xsize();
-// 	int ny = image->get_ysize();
-// 	int nz = image->get_zsize();
-// 
-// 	image->rotate(az, alt, phi);
-// 
-// 	EMData *ret = new EMData();
-// 	ret->set_size(nx, ny, 1);
-// 	float *dat = ret->get_data();
-// 	float *din = image->get_data();
-// 
-// 	int nxy = nx * ny;
-// 	int k = 0;
-// 	int l = 0;
-// 	for (int i = 0; i < nx; i++) {
-// 		for (int j = 0; j < ny; j++) {
-// 			int jnx = j * nx;
-// 
-// 			for (k = nz - 2; k > 0; k--) {
-// 				l = i + jnx + k * nxy;
-// 				if (din[l] > threshold)
-// 					break;
-// 			}
-// 			if (k == 0) {
-// 				dat[i + jnx] = -1000;
-// 			}
-// 			else {
-// 				dat[i + jnx] = nz - k - (threshold - din[l + nxy]) / (din[l] - din[l + nxy]);
-// 			}
-// 		}
-// 	}
-// 
-// 	float v0[3], v1[3], v2[3];
-// 	for (int j = 0; j < ny; j++) {
-// 		for (int i = 0; i < nx; i++) {
-// 			k = i + j * nx;
-// 			float slx = dat[k + 1] + dat[k + nx + 1] - dat[k] - dat[k + nx];
-// 			float sly = dat[k + nx] + dat[k + nx + 1] - dat[k] - dat[k + 1];
-// 
-// 			if (fabs(slx) > 50 || fabs(sly) > 50 ||
-// 				dat[k + 1] == -1000 || j == ny - 1 || i == nx - 1) {
-// 				dat[k] = 2.0f;
-// 			}
-// 			else {
-// #ifdef	_WIN32
-// 				v0[0] = 1.0f / (float)_hypot(1, slx);
-// 				v0[1] = 0;
-// 				v0[2] = slx / (float)_hypot(1, slx);
-// #else
-// 				v0[0] = 1.0f / (float)hypot(1, slx);
-// 				v0[1] = 0;
-// 				v0[2] = slx / (float)hypot(1, slx);
-// #endif
-// 
-// 				v1[0] = 0;
-// #ifdef	_WIN32
-// 				v1[1] = 1.0f / (float)_hypot(1, sly);
-// 				v1[2] = sly / (float)_hypot(1, sly);
-// #else
-// 				v1[1] = 1.0f / (float)hypot(1, sly);
-// 				v1[2] = sly / (float)hypot(1, sly);
-// #endif	//_WIN32
-// 
-// 				v2[0] = v0[1] * v1[2] - v0[2] * v1[1];
-// 				v2[1] = v0[2] * v1[0] - v0[0] * v1[2];
-// 				v2[2] = v0[0] * v1[1] - v0[1] * v1[0];
-// 
-// 				dat[k] = -v2[0] - v2[1] + v2[2];
-// 			}
-// 		}
-// 	}
-// 	image->update();
-// 	ret->update();
-// 	return ret;
-// }
-
-
-EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
-{
-
-	Transform* t3d = params["transform"];
-	if ( t3d == NULL ) throw NullPointerException("The transform object (required for projection), was not specified");
-	Dict p = t3d->get_rotation("eman");
-	
-	float alt = p["alt"];
-	float az = p["az"];
-	float phi = p["phi"];
-
-	float threshold = params["threshold"];
-
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-
-	image->rotate(az, alt, phi);
-
-	EMData *ret = new EMData();
-	ret->set_size(nx, ny, 1);
-	float *dat = ret->get_data();
-	float *din = image->get_data();
-
-	int nxy = nx * ny;
-	int k = 0;
-	int l = 0;
-	for (int i = 0; i < nx; i++) {
-		for (int j = 0; j < ny; j++) {
-			int jnx = j * nx;
-
-			for (k = nz - 2; k > 0; k--) {
-				l = i + jnx + k * nxy;
-				if (din[l] > threshold)
-					break;
-			}
-			if (k == 0) {
-				dat[i + jnx] = -1000;
-			}
-			else {
-				dat[i + jnx] = nz - k - (threshold - din[l + nxy]) / (din[l] - din[l + nxy]);
-			}
-		}
-	}
-
-	float v0[3], v1[3], v2[3];
-	for (int j = 0; j < ny; j++) {
-		for (int i = 0; i < nx; i++) {
-			k = i + j * nx;
-			float slx = dat[k + 1] + dat[k + nx + 1] - dat[k] - dat[k + nx];
-			float sly = dat[k + nx] + dat[k + nx + 1] - dat[k] - dat[k + 1];
-
-			if (fabs(slx) > 50 || fabs(sly) > 50 ||
-						 dat[k + 1] == -1000 || j == ny - 1 || i == nx - 1) {
-				dat[k] = 2.0f;
-						 }
-						 else {
-#ifdef	_WIN32
-							 v0[0] = 1.0f / (float)_hypot(1, slx);
-							 v0[1] = 0;
-							 v0[2] = slx / (float)_hypot(1, slx);
-#else
-							 v0[0] = 1.0f / (float)hypot(1, slx);
-							 v0[1] = 0;
-							 v0[2] = slx / (float)hypot(1, slx);
-#endif
-
-							 v1[0] = 0;
-#ifdef	_WIN32
-							 v1[1] = 1.0f / (float)_hypot(1, sly);
-							 v1[2] = sly / (float)_hypot(1, sly);
-#else
-							 v1[1] = 1.0f / (float)hypot(1, sly);
-							 v1[2] = sly / (float)hypot(1, sly);
-#endif	//_WIN32
-
-							 v2[0] = v0[1] * v1[2] - v0[2] * v1[1];
-							 v2[1] = v0[2] * v1[0] - v0[0] * v1[2];
-							 v2[2] = v0[0] * v1[1] - v0[1] * v1[0];
-
-							 dat[k] = -v2[0] - v2[1] + v2[2];
-						 }
-		}
-	}
-	image->update();
-	ret->update();
-	return ret;
-}
-
-
-EMData *StandardFastProjector::project3d(EMData * image) const
-{
-	Transform* t3d = params["transform"];
-	if ( t3d == NULL ) throw NullPointerException("The transform object (required for projection), was not specified");
-	Dict p = t3d->get_rotation("eman");
-	
-	float alt = p["alt"];
-	float az = p["az"];
-	float phi = p["phi"];
-	
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-	
-	image->rotate(az, alt, phi);
-
-	EMData *ret = new EMData();
-	ret->set_size(nx, ny, 1);
-	float *dat = ret->get_data();
-	float *din = image->get_data();
-	int nxy = nx * ny;
-
-	for (int i = 0; i < nx; i++) {
-		for (int j = 0; j < ny; j++) {
-			int jnx = j * nx;
-			dat[i + jnx] = 0;
-			for (int k = 0; k < nz; k++) {
-				dat[i + jnx] += din[i + jnx + k * nxy];
-			}
-		}
-	}
-
-	image->update();
-	ret->update();
-	return ret;
-}
-
-// EMData *StandardProjector::project3d(EMData * image) const
-// {
-// 	Transform3D* t3d = params["t3d"];
-// 	if ( t3d == NULL ) throw NullPointerException("The transform3d object containing the angles(required for projection), was not specified");
-// // 	Dict p = t3d->get_rotation();
-// 	if ( image->get_ndim() == 3 )
-// 	{
-// // 		float alt = p["alt"];
-// // 		float az = p["az"];
-// // 		float phi = p["phi"];
-// 	
-// 		int nx = image->get_xsize();
-// 		int ny = image->get_ysize();
-// 		int nz = image->get_zsize();
-// 	
-// // 		Transform3D r(Transform3D::EMAN, az, alt, phi);
-// 		Transform3D r = t3d->inverse(); // The inverse is taken here because we are rotating the coordinate system, not the image
-// 		int xy = nx * ny;
-// 	
-// 		EMData *proj = new EMData();
-// 		proj->set_size(nx, ny, 1);
-// 
-// 		Vec3f offset(nx/2,ny/2,nz/2);
-// 	
-// 		float *sdata = image->get_data();
-// 		float *ddata = proj->get_data();
-// 		for (int k = -nz / 2; k < nz - nz / 2; k++) {
-// 			int l = 0;
-// 			for (int j = -ny / 2; j < ny - ny / 2; j++) {
-// 				ddata[l]=0;
-// 				for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
-// 					
-// 					Vec3f coord(i,j,k);
-// 					Vec3f soln = r*coord;
-// 					soln += offset;
-// 					
-// 					float x2 = soln[0];
-// 					float y2 = soln[1];
-// 					float z2 = soln[2];
-// 	
-// 					float x = (float)Util::fast_floor(x2);
-// 					float y = (float)Util::fast_floor(y2);
-// 					float z = (float)Util::fast_floor(z2);
-// 					
-// 					float t = x2 - x;
-// 					float u = y2 - y;
-// 					float v = z2 - z;
-// 	
-// 					int ii = (int) (x + y * nx + z * xy);
-// 					
-// 					if (x2 < 0 || y2 < 0 || z2 < 0 ) continue;
-// 					if 	(x2 > (nx-1) || y2  > (ny-1) || z2 > (nz-1) ) continue;
-// 					
-// 					if (x2 < (nx - 1) && y2 < (ny - 1) && z2 < (nz - 1)) {
-// 						
-// 						ddata[l] +=
-// 							Util::trilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],
-// 														sdata[ii + nx + 1], sdata[ii + xy],
-// 														sdata[ii + xy + 1], sdata[ii + xy + nx],
-// 														sdata[ii + xy + nx + 1], t, u, v);
-// 					}
-// 					else if ( x2 == (nx - 1) && y2 == (ny - 1) && z2 == (nz - 1) ) {
-// 						ddata[l] += sdata[ii];
-// 					}
-// 					else if ( x2 == (nx - 1) && y2 == (ny - 1) ) {
-// 						ddata[l] +=	Util::linear_interpolate(sdata[ii], sdata[ii + xy],v);
-// 					}
-// 					else if ( x2 == (nx - 1) && z2 == (nz - 1) ) {
-// 						ddata[l] += Util::linear_interpolate(sdata[ii], sdata[ii + nx],u);
-// 					}
-// 					else if ( y2 == (ny - 1) && z2 == (nz - 1) ) {
-// 						ddata[l] += Util::linear_interpolate(sdata[ii], sdata[ii + 1],t);
-// 					}
-// 					else if ( x2 == (nx - 1) ) {
-// 						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + nx], sdata[ii + xy], sdata[ii + xy + nx],u,v);
-// 					}
-// 					else if ( y2 == (ny - 1) ) {
-// 						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + xy], sdata[ii + xy + 1],t,v);
-// 					}
-// 					else if ( z2 == (nz - 1) ) {
-// 						ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx], sdata[ii + nx + 1],t,u);
-// 					}
-// 				}
-// 			}
-// 		}
-// 		proj->update();
-// 		return proj;
-// 	}
-// 	else if ( image->get_ndim() == 2 ) {
-// 		
-// // 		EMData* copy = image->copy();
-// // 		copy->rotate(*t3d);
-// // 		
-// // 		int nx = copy->get_xsize();
-// // 		int ny = copy->get_ysize();
-// // 
-// // 		EMData *proj = new EMData();
-// // 		proj->set_size(nx, 1, 1);
-// // 		proj->to_zero();
-// // 		
-// // 		float *sdata = copy->get_data();
-// // 		float *ddata = proj->get_data();
-// // 		
-// // 		for (int j = 0; j < ny; j++) { // j represents a column of pixels in the direction of the angle
-// // 			int l = 0;
-// // 			for (int i = 0; i < nx ; i++,l++) {
-// // 				
-// // 				int ii = (int) (i + j * nx);
-// // 				ddata[l] += sdata[ii];
-// // 			}
-// // 		}
-// // 		proj->update();
-// // 		delete copy;
-// // 		return proj;
-// // 		
-// 		Dict p = t3d->get_rotation();
-// 		float alt = p["phi"];
-// 		alt = -(alt*M_PI/180.0f);// We need to take the 'transpose' (negate) because 
-// 		float cosalt = cos(alt);
-// 		float sinalt = sin(alt);
-// 		
-// 		int nx = image->get_xsize();
-// 		int ny = image->get_ysize();
-// 		
-// 		EMData *proj = new EMData();
-// 		proj->set_size(nx, 1, 1);
-// 		proj->to_zero();
-// 		
-// 		float *sdata = image->get_data();
-// 		float *ddata = proj->get_data();
-// 		
-// 		for (int j = -ny / 2; j < ny - ny / 2; j++) { // j represents a column of pixels in the direction of the angle
-// 			int l = 0;
-// 			for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
-// 				float x2 = cosalt*i-sinalt*j + nx/2;
-// 				float y2 = sinalt*i+cosalt*j + ny/2;
-// 
-// 				float x = (float)Util::fast_floor(x2);
-// 				float y = (float)Util::fast_floor(y2);
-// 				
-// 				int ii = (int) (x + y * nx);
-// 				float u = x2 - x;
-// 				float v = y2 - y;
-// 				
-// 				if (x2 < 0 || y2 < 0 ) continue;
-// 				if 	(x2 > (nx-1) || y2  > (ny-1) ) continue;
-// 				
-// 				if (  x2 < (nx - 1) && y2 < (ny - 1) ) {
-// 					ddata[l] += Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],sdata[ii + nx + 1], u, v);
-// 				}
-// 				else if (x2 == (nx-1) && y2 == (ny-1) ) {
-// 					ddata[l] += sdata[ii];
-// 				}
-// 				else if (x2 == (nx-1) ) {
-// 					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + nx], v);
-// 				}
-// 				else if (y2 == (ny-1) ) {
-// 					ddata[l] += Util::linear_interpolate(sdata[ii],sdata[ii + 1], u);
-// 				}
-// 			}
-// 		}
-// 		proj->update();
-// 		return proj;
-// 	}
-// 	else throw ImageDimensionException("Standard projection works only for 2D and 3D images");
-// }
-
 
 EMData *StandardProjector::project3d(EMData * image) const
 {
@@ -1370,6 +911,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 			}
 		}
 		proj->update();
+		proj->set_attr("xform.projection",t3d);
 		return proj;
 	}
 	else if ( image->get_ndim() == 2 ) {
@@ -1422,6 +964,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 				}
 			}
 		}
+		proj->set_attr("xform.projection",t3d);
 		proj->update();
 		return proj;
 	}
@@ -1609,8 +1152,12 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 		delete winproj;
 	}	
 	delete imgft;
-	ret->update();
 	
+	if (!params.has_key("anglelist")) {
+		Transform* t3d = params["transform"];
+		ret->set_attr("xform.projection",t3d);
+	}
+	ret->update();
 	return ret;
 }
 
@@ -2077,6 +1624,10 @@ EMData *ChaoProjector::project3d(EMData * vol) const
 	EMDeleteArray(cord);
 	EMDeleteArray(sphere);
 
+	if (!params.has_key("anglelist")) {
+		Transform* t3d = params["transform"];
+		ret->set_attr("xform.projection",t3d);
+	}
 	ret->update();
 	return ret;
 }
@@ -2445,13 +1996,6 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
 }
 #undef images
 
-EMData *SimpleIsoSurfaceProjector::backproject3d(EMData * ) const
-{  
-   // no implementation yet
-   EMData *ret = new EMData();
-   return ret;
-}
-
 EMData *StandardProjector::backproject3d(EMData * ) const
 {
    // no implementation yet
@@ -2459,12 +2003,6 @@ EMData *StandardProjector::backproject3d(EMData * ) const
    return ret;
 }
 
-EMData *StandardFastProjector::backproject3d(EMData * ) const
-{  
-   // no implementation yet
-   EMData *ret = new EMData();
-   return ret;
-}
 
 EMData *FourierGriddingProjector::backproject3d(EMData * ) const
 {  
