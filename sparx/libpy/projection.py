@@ -34,13 +34,11 @@ from global_def import *
 def project(volume, params, radius):
         # angles phi, theta, psi
 	from fundamentals import rot_shift2D
-        myparams = {"angletype":"SPIDER", "anglelist":params[0:3], "radius":radius}
+        myparams = {"transform":Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
         proj = volume.project("pawel", myparams)
 	if(params[3]!=0. or params[4]!=0.): 
 		params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
-		#proj.do_fft_inplace()
 		proj=Processor.EMFourierFilter(proj, params2)
-		#proj.do_ift_inplace()
 		#proj = rot_shift2D(proj, sx = params[3], sy = params[4], interpolation_method = "linear")
 	proj.set_attr_dict({'phi':params[0], 'theta':params[1], 'psi':params[2], 's2x':-params[3], 's2y':-params[4]})
 	proj.set_attr_dict({'active':1, 'ctf_applied':0})

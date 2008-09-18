@@ -720,7 +720,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
 	
 		Dict p = t3d->get_rotation("spider");
-		
+
 		string angletype = "SPIDER";
 		float phi = p["phi"];
 		float theta = p["theta"];
@@ -777,7 +777,6 @@ EMData *PawelProjector::project3d(EMData * image) const
 							}
 						}
 					}
-					// What does this do ? 
 					vb += rotation.get_matrix3_row(0);
 				}
 			}

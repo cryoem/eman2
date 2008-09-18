@@ -5,24 +5,40 @@ from sparx  import *
 
 from sys import exit
 
-s2x = 2
-s2y = -4
+s2x = 10
+s2y = -21
 phi = 130
 theta = 25
 psi = 73
 model = test_image_3d()
 t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-t.set_trans([2,-4,0])
+t.set_pre_trans(Vec2f(s2x,s2y))
+print  t.get_pre_trans()
+
 #t.set_scale(2.0) works but probably won't be used
 #t.set_mirror(1) works but probably won't be used
 proj = model.project("standard",t)
 proj_2 = model.project("gauss_fft",t)
-#projl = project(model, [phi, theta, psi, -s2x, -s2y],10000)
+projl = project(model, [phi, theta, psi, -s2x, -s2y],22.0)
 projg = prg(model, [phi, theta, psi, -s2x, -s2y])
+#prl = prl(model, [[phi, theta, psi, -s2x, -s2y]],22.0)
 dropImage(proj,"p1.hdf")
 dropImage(proj_2,"p2.hdf")
-#dropImage(projl,"p3.hdf")
+dropImage(projl,"p3.hdf")
 dropImage(projg,"p4.hdf")
+dropImage(proj-projg,"p5.hdf")
+dropImage(proj_2-projg,"p6.hdf")
+#dropImage(prl,"p5.hdf")
+print  ccc(proj,proj_2),ccc(proj_2,projg),ccc(proj,projg),ccc(projl,projg)
+
+# test of shifting in-plane
+
+projt = prg(model, [phi, theta, psi, 0, 0])
+
+#  This works and proves that the shift stored in the header (s2x, s2y) can be
+#  applied to the projection to have it centered.
+print ccc(projt, fshift(projg, s2x, s2y))
+
 exit()
 vol = EMData()
 vol.read_image("../model001.tcp")
