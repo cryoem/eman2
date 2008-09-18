@@ -2305,13 +2305,12 @@ def write_headers(filename, data, lima):
 	"""
 	from utilities import file_type
 	ftp = file_type(filename)
-	if(ftp == "bdb"):
-		DB = db_open_dict(name)
+	if ftp == "bdb":
+		DB = db_open_dict(filename)
 		for i in range(len(lima)):
-			DB[name].set_header(lima[i], data[i])
-
+			DB.set_header(lima[i], data[i])
 		DB.close()
-	elif(ftp == "hdf"):
+	elif ftp == "hdf":
 		for i in range(len(lima)):
 			data[i].write_image(filename, lima[i], EMUtil.ImageType.IMAGE_HDF, True)
 	else:
@@ -2327,10 +2326,10 @@ def write_header(filename, data, lima):
 	"""
 	from utilities import file_type
 	ftp = file_type(filename)
-	if(ftp == "bdb"):
+	if ftp == "bdb":
 		DB = db_open_dict(filename)
-		DB[name].set_header(lima, data)
-	elif(ftp == "hdf"):
+		DB.set_header(lima, data)
+	elif ftp == "hdf":
 		data.write_image(filename, lima, EMUtil.ImageType.IMAGE_HDF, True)
 	else:
 		ERROR("Unacceptable file format","write_headers",1)

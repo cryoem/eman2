@@ -372,7 +372,7 @@ def sim_anneal(peaks, Iter, F):
 		for k in xrange(K):
 			arg[k] = dJe[k] / T
 			if arg[k] > maxarg: maxarg = arg[k]
-		limarg = 200
+		limarg = 500
 		if maxarg > limarg:
 			sumarg = float(sum(arg))
 			for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
@@ -1163,7 +1163,6 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
        
 def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
-	     no mirror
 	     quadratic interpolation
 	"""
 	#from utilities import printCol
@@ -1188,7 +1187,6 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 
 def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
-	     no mirror
 	     quadratic interpolation
 	"""
 	#from utilities import printCol
@@ -1213,7 +1211,6 @@ def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=
 
 def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
-	     no mirror
 	     quadratic interpolation
 	"""
 	from development import ormy2
