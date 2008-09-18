@@ -5,6 +5,25 @@ from sparx  import *
 
 from sys import exit
 
+s2x = 2
+s2y = -4
+phi = 130
+theta = 25
+psi = 73
+model = test_image_3d()
+t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+t.set_trans([2,-4,0])
+#t.set_scale(2.0) works but probably won't be used
+#t.set_mirror(1) works but probably won't be used
+proj = model.project("standard",t)
+proj_2 = model.project("gauss_fft",t)
+#projl = project(model, [phi, theta, psi, -s2x, -s2y],10000)
+projg = prg(model, [phi, theta, psi, -s2x, -s2y])
+dropImage(proj,"p1.hdf")
+dropImage(proj_2,"p2.hdf")
+#dropImage(projl,"p3.hdf")
+dropImage(projg,"p4.hdf")
+exit()
 vol = EMData()
 vol.read_image("../model001.tcp")
 #vol.read_image("model.spi")
