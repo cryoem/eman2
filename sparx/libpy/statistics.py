@@ -1294,6 +1294,8 @@ def im_diff(im1, im2, mask = None):
 
 # k-means open and prepare images
 def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
+	from utilities import get_params2D
+	
 	# --- New BDB Version ----------------------------------------------------------------
 	if BDB:
 		import EMAN2db
@@ -1303,56 +1305,70 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 			from filter		import filt_ctf, filt_table
 			from fundamentals 	import fftip
 
-		if stack.split(':')[0] == 'bdb': stack = stack.split(':')[1]
-		if maskname != None:
-			if maskname.split(':')[0] == 'bdb': maskname = maskname.split(':')[1]
-		DB   = EMAN2db.EMAN2DB.open_db('.')
-		DB.open_dict(stack)
+		IM = db_open_dict(stack)
+	
 		im_M = [0] * N
-		dim  = DB[stack].get_attr(0, ('nx', 'ny', 'nz'))
+		dim  = IM.get_attr(0, ('nx', 'ny', 'nz'))
 
 		if CTF:
 			parnames    = ('Pixel_size', 'defocus', 'voltage', 'Cs', 'amp_contrast', 'B_factor',  'ctf_applied')
 			ctf	    = []
 			ctf2        = []
-			ctf_params  = DB[stack].get_attr(0, parnames) # return dict
+			ctf_params  = IM.get_attr(0, parnames) # return dict
 			if ctf_params[parnames[6]]:
 				ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
 		if maskname != None:
 			if isinstance(maskname, basestring):
-				DB.open_dict(maskname)
-				mask = DB[maskname][0]
-				DB.close_dict(maskname)
+				MASK = db_open_dict(maskname)
+				mask = MASK[0]
+				MASK.close()
 		else: mask = None
 
 		# apply CTF if flag
 		if CTF:
 			for im in xrange(N_start, N_stop):
 				# obtain image
-				image = DB[stack][im]
+				image = IM[im]
 
 				# 3D object
 				if dim['nz'] > 1:
 					# apply parameters
-					phi    = DB[stack].get_attr(im, 'phi')
-					theta  = DB[stack].get_attr(im, 'theta')
-					psi    = DB[stack].get_attr(im, 'psi')
-					s3x    = DB[stack].get_attr(im, 's3x')
-					s3y    = DB[stack].get_attr(im, 's3y')
-					s3z    = DB[stack].get_attr(im, 's3z')
-					mirror = DB[stack].get_attr(im, 'mirror')
-					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
+					try:
+						phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
+					except:
+						try:
+							phi    = image.get_attr('phi')
+							theta  = image.get_attr('theta')
+							psi    = image.get_attr('psi')
+							s3x    = image.get_attr('s3x')
+							s3y    = image.get_attr('s3y')
+							s3z    = image.get_attr('s3z')
+							mirror = image.get_attr('mirror')
+						except:
+							phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
+					
+					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
 					if mirror: image.process_inplace('mirror', {'axis':'x'})
 
 				# 2D object
 				elif dim['ny'] > 1:
 					# apply parameters
-					alpha, sx, sy, mirror, scale = get_params2D(DB[stack])
- 					image = rot_shift2D(DB[stack], alpha, sx, sy, mirror)
-
+					try:
+						alpha, sx, sy, mirror = get_params2D(image)
+					except:
+						try:
+							alpha  = image.get_attr('alpha')
+							sx     = image.get_attr('sx')
+							sy     = image.get_attr('sy')
+							mirror = image.get_attr('mirror')
+						except:
+							alpha, sx, sy, mirror  = 0, 0, 0, 0
+	
+ 					image = rot_shift2D(image, alpha, sx, sy, mirror)
+				
 				# obtain ctf
-				ctf_params = DB[stack].get_attr(im, parnames) # return dict
+				ctf_params = IM.get_attr(im, parnames) # return dict
 
 				# store the ctf, allow limit acces file
 				ctf.append(ctf_1d(dim['nx'], ctf_params[parnames[0]], ctf_params[parnames[1]], ctf_params[parnames[2]],
@@ -1379,27 +1395,44 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 			for im in xrange(N_start, N_stop):
 
 				# obtain image
-				image = DB[stack][im]
+				image = IM[im]
 
 				# 3D object
-				if DB[stack].get_attr(0, 'nz') > 1:
+				if dim['nz'] > 1:
 					# apply parameters
-					phi    = DB[stack].get_attr(im, 'phi')
-					theta  = DB[stack].get_attr(im, 'theta')
-					psi    = DB[stack].get_attr(im, 'psi')
-					s3x    = DB[stack].get_attr(im, 's3x')
-					s3y    = DB[stack].get_attr(im, 's3y')
-					s3z    = DB[stack].get_attr(im, 's3z')
-					mirror = DB[stack].get_attr(im, 'mirror')
-					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
+					try:
+						phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
+					except:
+						try:
+							phi    = image.get_attr('phi')
+							theta  = image.get_attr('theta')
+							psi    = image.get_attr('psi')
+							s3x    = image.get_attr('s3x')
+							s3y    = image.get_attr('s3y')
+							s3z    = image.get_attr('s3z')
+							mirror = image.get_attr('mirror')
+						except:
+							phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
+					
+					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
 					if mirror: image.process_inplace('mirror', {'axis':'x'})
 
 				# 2D object
-				elif DB[stack].get_attr(0, 'ny') > 1:
+				elif dim['ny'] > 1:
 					# apply parameters
-					alpha, sx, sy, mirror, scale = get_params2D(DB[stack])
- 					image = rot_shift2D(DB[stack], alpha, sx, sy, mirror)
-
+					try:
+						alpha, sx, sy, mirror = get_params2D(image)
+					except:
+						try:
+							alpha  = image.get_attr('alpha')
+							sx     = image.get_attr('sx')
+							sy     = image.get_attr('sy')
+							mirror = image.get_attr('mirror')
+						except:
+							alpha, sx, sy, mirror  = 0, 0, 0, 0
+	
+ 					image = rot_shift2D(image, alpha, sx, sy, mirror)
+			
 				# apply mask
 				if mask != None: image = Util.compress_image_mask(image, mask)
 
@@ -1412,7 +1445,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 				# store image
 				im_M[im] = image.copy()
 
-		DB.close_dict(stack)
+		IM.close()
 
 		if CTF: return im_M, mask, ctf, ctf2
 		else:   return im_M, mask, None, None
@@ -1455,19 +1488,37 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 				# 3D object
 				if or_nz > 1:
 					# apply parameters
-					phi    = image.get_attr('phi')
-					theta  = image.get_attr('theta')
-					psi    = image.get_attr('psi')
-					s3x    = image.get_attr('s3x')
-					s3y    = image.get_attr('s3y')
-					s3z    = image.get_attr('s3z')
-					mirror = image.get_attr('mirror')
-					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
+					try:
+						phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
+					except:
+						try:
+							phi    = image.get_attr('phi')
+							theta  = image.get_attr('theta')
+							psi    = image.get_attr('psi')
+							s3x    = image.get_attr('s3x')
+							s3y    = image.get_attr('s3y')
+							s3z    = image.get_attr('s3z')
+							mirror = image.get_attr('mirror')
+						except:
+							phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
+					
+					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
 					if mirror: image.process_inplace('mirror', {'axis':'x'})
-			
+
 				# 2D object
 				elif or_ny > 1:
-					alpha, sx, sy, mirror, scale = get_params2D(image)
+					# apply parameters
+					try:
+						alpha, sx, sy, mirror = get_params2D(image)
+					except:
+						try:
+							alpha  = image.get_attr('alpha')
+							sx     = image.get_attr('sx')
+							sy     = image.get_attr('sy')
+							mirror = image.get_attr('mirror')
+						except:
+							alpha, sx, sy, mirror  = 0, 0, 0, 0
+	
  					image = rot_shift2D(image, alpha, sx, sy, mirror)
 			
 				# obtain ctf
@@ -1501,21 +1552,39 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 				# 3D object
 				if or_nz > 1:
 					# apply parameters
-					phi    = image.get_attr('phi')
-					theta  = image.get_attr('theta')
-					psi    = image.get_attr('psi')
-					s3x    = image.get_attr('s3x')
-					s3y    = image.get_attr('s3y')
-					s3z    = image.get_attr('s3z')
-					mirror = image.get_attr('mirror')
-					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
+					try:
+						phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
+					except:
+						try:
+							phi    = image.get_attr('phi')
+							theta  = image.get_attr('theta')
+							psi    = image.get_attr('psi')
+							s3x    = image.get_attr('s3x')
+							s3y    = image.get_attr('s3y')
+							s3z    = image.get_attr('s3z')
+							mirror = image.get_attr('mirror')
+						except:
+							phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
+					
+					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
 					if mirror: image.process_inplace('mirror', {'axis':'x'})
-			
+
 				# 2D object
 				elif or_ny > 1:
-					alpha, sx, sy, mirror, scale = get_params2D(image)
+					# apply parameters
+					try:
+						alpha, sx, sy, mirror = get_params2D(image)
+					except:
+						try:
+							alpha  = image.get_attr('alpha')
+							sx     = image.get_attr('sx')
+							sy     = image.get_attr('sy')
+							mirror = image.get_attr('mirror')
+						except:
+							alpha, sx, sy, mirror  = 0, 0, 0, 0
+	
  					image = rot_shift2D(image, alpha, sx, sy, mirror)
-			
+						
 				# apply mask
 				if mask != None: image = Util.compress_image_mask(image, mask)
 
@@ -1607,8 +1676,7 @@ def k_means_export(stackname, Cls, crit, assign, out_seedname, BDB):
 	# BDB version
 	if BDB:
 		from   utilities 		import print_msg
-		import EMAN2db
-
+	
 		# write the report on the logfile
 		Je = 0
 		for k in xrange(Cls['k']): Je += Cls['Ji'][k]
@@ -1629,43 +1697,52 @@ def k_means_export(stackname, Cls, crit, assign, out_seedname, BDB):
 			else:                print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
 
 		# tag each image in the stack with the group of assignment
-		if stackname.split(':')[0] == 'bdb': stackname = stackname.split(':')[1]
-		DB = EMAN2db.EMAN2DB.open_db('.')
-		N  = EMUtil.get_image_count('bdb:' + stackname)
-		DB.open_dict(stackname)
-		for n in xrange(N):
-			DB[stackname].set_attr(n, 'kmeans_active', 1)
-			DB[stackname].set_attr(n, 'kmeans_group', assign[n])
-		DB.close_dict(stackname)
+		DB = db_open_dict(stackname)
+		N  = EMUtil.get_image_count(stackname)
 
-		# export the average
-		lname = ['ave_'  + out_seedname, 'var_' + out_seedname]
-		for name in lname: DB.open_dict(name)
+		for n in xrange(N):
+			DB.set_attr(n, 'kmeans_active', 1)
+			DB.set_attr(n, 'kmeans_group', assign[n])
+		DB.close()
+
+		DB_ave = db_open_dict('bdb:ave_' + out_seedname)
+		DB_var = db_open_dict('bdb:var_' + out_seedname)
 
 		for k in xrange(Cls['k']):
 			lassign = []
 			for i in xrange(len(assign)):
 				if(assign[i] == k):  lassign.append(i)
 
-			DB[lname[0]][k] = Cls['ave'][k]
-			DB[lname[1]][k] = Cls['var'][k]
+			DB_ave[k] = Cls['ave'][k]
+			DB_var[k] = Cls['var'][k]
 
-			DB[lname[0]].set_attr(k, 'kmeans_average', 1)
-			DB[lname[1]].set_attr(k, 'kmeans_variance', 1)
+			DB_ave.set_attr(k, 'kmeans_average', 1)
+			DB_var.set_attr(k, 'kmeans_variance', 1)
 
-			for name in lname:
-				DB[name].set_attr(k, 'kmeans_nobjects', Cls['n'][k])
-				DB[name].set_attr(k, 'kmeans_members', lassign)
-				DB[name].set_attr(k, 'kmeans_Ji', Cls['Ji'][k])
-				DB[name].set_attr(k, 'kmeans_Je', Je)
-				if Cls['n'][k] > 1:
-				     DB[name].set_attr(k, 'kmeans_var', Cls['Ji'][k] / float(Cls['n'][k]-1))
-				DB[name].set_attr(k, 'alpha', 0.0)
-				DB[name].set_attr(k, 'sx', 0.0)
-				DB[name].set_attr(k, 'sy', 0.0)
-				DB[name].set_attr(k, 'mirror', 0.0)
+			DB_ave.set_attr(k, 'kmeans_nobjects', Cls['n'][k])
+			DB_ave.set_attr(k, 'kmeans_members', lassign)
+			DB_ave.set_attr(k, 'kmeans_Ji', Cls['Ji'][k])
+			DB_ave.set_attr(k, 'kmeans_Je', Je)
+			if Cls['n'][k] > 1:
+			     DB_ave.set_attr(k, 'kmeans_var', Cls['Ji'][k] / float(Cls['n'][k]-1))
+			DB_ave.set_attr(k, 'alpha', 0.0)
+			DB_ave.set_attr(k, 'sx', 0.0)
+			DB_ave.set_attr(k, 'sy', 0.0)
+			DB_ave.set_attr(k, 'mirror', 0.0)
 
-		for name in lname: DB.close_dict(name)
+			DB_var.set_attr(k, 'kmeans_nobjects', Cls['n'][k])
+			DB_var.set_attr(k, 'kmeans_members', lassign)
+			DB_var.set_attr(k, 'kmeans_Ji', Cls['Ji'][k])
+			DB_var.set_attr(k, 'kmeans_Je', Je)
+			if Cls['n'][k] > 1:
+			     DB_var.set_attr(k, 'kmeans_var', Cls['Ji'][k] / float(Cls['n'][k]-1))
+			DB_var.set_attr(k, 'alpha', 0.0)
+			DB_var.set_attr(k, 'sx', 0.0)
+			DB_var.set_attr(k, 'sy', 0.0)
+			DB_var.set_attr(k, 'mirror', 0.0)
+
+		DB_ave.close()
+		DB_var.close()
 
 	# other version (hdf, spi, ...)
 	else:
