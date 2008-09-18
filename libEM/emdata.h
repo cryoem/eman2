@@ -303,6 +303,12 @@ namespace EMAN
 		 */
 		void rotate(const Transform3D & t);
 		
+		/** Rotate this image.
+		 * @param t Transformation containing the rotation to be applied to this image
+		 */
+		void rotate(const Transform & t);
+		
+		
 		
 		/** Rotate this image.
 		 * @param az  Rotation euler angle az  in EMAN convention.

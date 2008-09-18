@@ -472,7 +472,7 @@ void set_attr_python(const string & key, EMObject val);
  * @param key the header attribute name
  * @return whether or not the header has the name as a key/value entry
  */
-inline bool has_attr(const string& key) {
+inline bool has_attr(const string& key) const {
 	return attr_dict.has_key(key);
 }
 

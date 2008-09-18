@@ -1075,6 +1075,10 @@ void EMData::rotate(float az, float alt, float phi)
 	rotate_translate(t);
 }
 
+void EMData::rotate(const Transform & t)
+{
+	rotate_translate(t);
+}
 
 void EMData::rotate(const Transform3D & t)
 {

@@ -510,8 +510,8 @@ namespace EMAN
 		template<typename Type2>
 		Vec2(const Vec2<Type2> &v) 
 		{
-			vec[0] = v[0];
-			vec[1] = v[1];
+			vec[0] = static_cast<Type>(v[0]);
+			vec[1] = static_cast<Type>(v[1]);
 		}
 		
 		/** Destructor

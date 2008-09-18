@@ -140,6 +140,8 @@ namespace EMAN
 		 * @return the Transform pointer that is currently stored in the image header corresponding to the given key.
 		 */
 		static Transform* get_align_attr(const string& key, EMData* const image );
+		
+		static Transform* get_set_align_attr(const string& key, EMData* const to_image, const EMData* const from_image  );
 	};
 
 	/** Translational 2D Alignment using cross correlation.
@@ -164,7 +166,7 @@ namespace EMAN
 		
 		string get_desc() const
 		{
-			return "Translational 2D alignment by cross-correlation";
+			return "Translational 2D and 3D alignment by cross-correlation";
 		}
 
 		static Aligner *NEW()
@@ -202,7 +204,7 @@ namespace EMAN
 		
 		string get_desc() const
 		{
-			return "Rotational 2D alignment by angular correlation using make_rotational_footprint(), ~translationally independent";
+			return "Performs rotational alignment,works accurately if the image is precentered, normally called internally in combination with translational and flip alignment";
 		}
 
 		static Aligner *NEW()
@@ -240,7 +242,7 @@ namespace EMAN
 		
 		string get_desc() const
 		{
-			return "Rotational 2D alignment by angular correlation using unwrap(4,ny*7/16,...), precentered images only";
+			return "Performs rotational alignment and works accurately if the image is precentered";
 		}
 
 		static Aligner *NEW()
@@ -251,44 +253,6 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			return d;
-		}
-	};
-
-	/** rotational alignment via circular harmonic
-     */
-	class RotateCHAligner:public Aligner
-	{
-	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
-
-		EMData * align(EMData * this_img, EMData * to_img) const
-		{
-			return align(this_img, to_img, "", Dict());
-		}
-		
-		string get_name() const
-		{
-			return "rotate_ch";
-		}
-		
-		string get_desc() const
-		{
-			return "Rotational 2D alignment using circular harmonics";
-		}
-
-		static Aligner *NEW()
-		{
-			return new RotateCHAligner();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			
-			d.put("irad", EMObject::INT);
-			d.put("orad", EMObject::INT);
 			return d;
 		}
 	};
@@ -313,7 +277,7 @@ namespace EMAN
 		
 		string get_desc() const
 		{
-			return "Full 2D alignment using 'Rotational' and 'Translational'.";
+			return "Performs rotational alignment and follows this with translational alignment.";
 		}
 
 		static Aligner *NEW()
@@ -369,43 +333,6 @@ namespace EMAN
 		}
 	};
 
-	/** rotational, translational alignment with Radon transforms
-     */
-	class RotateTranslateRadonAligner:public Aligner
-	{
-	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
-					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
-		EMData * align(EMData * this_img, EMData * to_img) const
-		{
-			return align(this_img, to_img, "", Dict());
-		}
-		string get_name() const
-		{
-			return "rotate_translate_radon";
-		}
-
-		string get_desc() const
-		{
-			return "Experimental 2D alignment using Radon transforms.";
-		}
-
-		static Aligner *NEW()
-		{
-			return new RotateTranslateRadonAligner();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-
-			d.put("maxshift", EMObject::INT);
-			d.put("radonwith", EMObject::EMDATA);
-			d.put("radonthis", EMObject::EMDATA);
-			return d;
-		}
-	};
-
 	/** rotational and flip alignment
      */
 	class RotateFlipAligner:public Aligner
@@ -424,7 +351,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "'Rotational' alignment with possible handedness change";
+			return "Performs two rotational alignments, one using the original image and one using the hand-flipped image. Decides which alignment is better using a comparitor and returns it";
 		}
 
 		static Aligner *NEW()
@@ -462,7 +389,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "'RotatateTranslate' alignment with possible handedness change";
+			return " Does two 'rotate_translate' alignments, one to accommodate for possible handedness change. Decided which alignment is better using a comparitor and returns the aligned image as the solution";
 		}
 
 		static Aligner *NEW()
@@ -596,45 +523,7 @@ namespace EMAN
 		}
 	};
 
-	/** rotational, translational and flip alignment with Radon transforms
-     */
-	class RTFRadonAligner:public Aligner
-	{
-	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
-					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
-		EMData * align(EMData * this_img, EMData * to_img) const
-		{
-			return align(this_img, to_img, "sqeuclidean", Dict());
-		}
-		string get_name() const
-		{
-			return "rtf_radon";
-		}
-
-		string get_desc() const
-		{
-			return "Experimental 2D alignment using Radon transforms with handedness check.";
-		}
-
-		static Aligner *NEW()
-		{
-			return new RTFRadonAligner();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			
-			d.put("maxshift", EMObject::INT);
-			d.put("thisf", EMObject::EMDATA);
-			d.put("radonwith", EMObject::EMDATA);
-			d.put("radonthis", EMObject::EMDATA);
-			d.put("radonthisf", EMObject::EMDATA);
-			return d;
-		}
-	};
-
+	
 	/** refine alignment
      */
 	class RefineAligner:public Aligner

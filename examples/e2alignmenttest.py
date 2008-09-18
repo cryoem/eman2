@@ -122,38 +122,32 @@ def main():
 		dx = Util.get_frand(options.transmin,options.transmax) # random dx
 		dy = Util.get_frand(options.transmin,options.transmax) # random dy
 		
-		
 		if not options.stopflip:
-			print "flipping"
 			flipped = Util.get_irand(0,1)
 			if flipped: q.process_inplace("xform.flip",{"axis":"x"})
+			
+		t3d_q = Transform({"type":"2d","alpha":az})
+		t3d_q.set_pre_trans([dx,dy,0.0])
 		
-		d = {"type":"2d","alpha":az}
-		t3d_q = Transform(d)
-		t3d_q.set_trans(Vec2f(dx,dy))
-		
-
+		t = Transform()
+		try: t.set_mirror(flipped)
+		except: pass
+		t = t3d_q * t
 			
 		q.rotate_translate(t3d_q)
-		#q.write_image("q.hdf")
 		#Do the alignment now
 		ali = q.align(aligner,p,aligner_params, alignercmp, alignercmp_params)
-		#ali.write_image("aligned.hdf",-1)
-		#p.write_image("projection.hdf",-1)
-		
-		#make variables to store the solution parameters
-		t = ali.get_attr("xform.align2d")
-		soln = t.get_params("2d")
-		az_solution = (-soln["alpha"])%360
-		dx_solution = -soln["tx"]
-		dy_solution = -soln["ty"]
-		mirror = t.get_mirror()
+		alit = ali.get_attr("xform.align2d")
+		soln_parms = alit.get_params("2d")
+		az_solution = (-soln_parms["alpha"])%360
+		dx_solution = -soln_parms["tx"]
+		dy_solution = -soln_parms["ty"]
 		
 		# print stuff
 		d = t3d.get_rotation("eman")
 		print "%.2f,%.2f,%.2f\t"%(d["az"],d["alt"],d["phi"]),
 		print "%.2f"%az,'\t',"%.2f"%az_solution, '\t\t', "%.2f"%dx,'\t',"%.2f"%(dx_solution),'\t\t', "%.2f"%dy,'\t',"%.2f"%(dy_solution),
-		if not options.stopflip: print '\t\t',flipped, '\t',mirror,
+		if not options.stopflip: print '\t\t',flipped, '\t',int(alit.get_mirror()),
 		
 	
 		# calculate the errors
@@ -165,7 +159,7 @@ def main():
 		dy_error += fabs(dy-dy_solution)
 		print ''
 		if not options.stopflip:
-			if flipped != mirror:
+			if flipped != int(alit.get_mirror()):
 				flip_errors += 1
 				print "FLIP detection FAILED"
 				continue
