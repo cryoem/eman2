@@ -709,16 +709,18 @@ EMData *PawelProjector::project3d(EMData * image) const
 	IPCube* ipcube = new IPCube[nn+1];
 	prepcubes(nx, ny, nz, ri, origin, nn, ipcube);
 
+	Transform* rotation = params["transform"];
 	int nangles = 0;
 	vector<float> anglelist;
 	// Do we have a list of angles?
+	/*
 	if (params.has_key("anglelist")) {
 		anglelist = params["anglelist"];
 		nangles = anglelist.size() / 3;
-	} else {
-		Transform* t3d = params["transform"];
-		if ( t3d == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
-	
+	} else {*/
+		
+		if ( rotation == NULL ) throw NullPointerException("The transform3d object (required for projection), was not specified");
+		/*
 		Dict p = t3d->get_rotation("spider");
 
 		string angletype = "SPIDER";
@@ -728,8 +730,9 @@ EMData *PawelProjector::project3d(EMData * image) const
 		anglelist.push_back(phi);
 		anglelist.push_back(theta);
 		anglelist.push_back(psi);
+		*/
 		nangles = 1;
-	}
+	//}
 	
 	// initialize return object
 	EMData* ret = new EMData();
@@ -738,14 +741,14 @@ EMData *PawelProjector::project3d(EMData * image) const
 	
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
-		int indx = 3*ia;
-		Dict d("type","spider","phi",anglelist[indx],"theta",anglelist[indx+1],"psi",anglelist[indx+2]);
-		Transform rotation(d);
+		//int indx = 3*ia;
+		//Dict d("type","spider","phi",anglelist[indx],"theta",anglelist[indx+1],"psi",anglelist[indx+2]);
+		//Transform rotation(d);
 		if (2*(ri+1)+1 > dim) {
 			// Must check x and y boundaries
 			for (int i = 0 ; i <= nn; i++) {
 				int k = ipcube[i].loc[1] + origin[1];
-				Vec3f vb = ipcube[i].loc*rotation + origin;
+				Vec3f vb = ipcube[i].loc*(*rotation) + origin;
 				for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {
 					// check for pixels out-of-bounds
 					int iox = int(vb[0]);
@@ -777,7 +780,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 							}
 						}
 					}
-					vb += rotation.get_matrix3_row(0);
+					vb += rotation->get_matrix3_row(0);
 				}
 			}
 
@@ -785,7 +788,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 			// No need to check x and y boundaries
 			for (int i = 0 ; i <= nn; i++) {
 				int k = ipcube[i].loc[1] + origin[1];
-				Vec3f vb = ipcube[i].loc*rotation + origin;
+				Vec3f vb = ipcube[i].loc*(*rotation) + origin;
 				for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {
 					int iox = int(vb[0]);
 					int ioy = int(vb[1]);
@@ -809,7 +812,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 					(*ret)(j,k,ia) += a1 + dz*(a4 + a6*dx  
 							+ (a7 + a8*dx)*dy)
 							+ a3*dy + dx*(a2 + a5*dy);
-					vb += rotation.get_matrix3_row(0);
+					vb += rotation->get_matrix3_row(0);
 				}
 			}
 		}
