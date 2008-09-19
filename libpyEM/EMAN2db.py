@@ -137,10 +137,10 @@ def db_write_image(self,fsp,*parms):
 			try : key=int(key)
 			except: pass
 			db[key]=self
-			return 0
+			return
 		if parms[0]<0 : parms=(len(db),)+parms[1:]
 		db[parms[0]]=self
-		return 0
+		return
 	return self.write_image_c(fsp,*parms)
 
 EMData.write_image_c=EMData.write_image
