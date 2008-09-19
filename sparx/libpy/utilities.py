@@ -2364,7 +2364,7 @@ def get_params3D(ima):
 	"""
 	t = ima.get_attr("xform.align3d")
 	d = t.get_params("spider")
-	return  d["phi"],d["theta"],d["psi"],d["s3x"],d["s3y"],d["s3z"],d["mirror"],d["scale"]
+	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]
 
 def set_params3D(ima, p):
 	"""
