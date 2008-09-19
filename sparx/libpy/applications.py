@@ -9561,16 +9561,24 @@ def extract_value( s ):
 	
 	return s 
 
-def header(stack, params, zero, one, randomize, fimport, fexport, fprint):
+def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup, restore):
         from string import split
 	from utilities import write_header, file_type
 	from random import random, randint
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D
 
-        params = split(params)
+	op = zero+one+randomize+(fimport!=None)+(fexport!=None)+fprint+backup+restore
+	if op == 0:
+		print "Error: no operation selected!"
+		return
+	elif op > 1:
+		print "Error: more than one operation at the same time!"
+		return
 
-        if len(fimport)>0: fimp = open(fimport, 'r')
-	if len(fexport)>0: fexp = open(fexport, 'w')
+	params = split(params)
+
+	if fimport != None: fimp = open(fimport, 'r')
+	if fexport != None: fexp = open(fexport, 'w')
 
 	ext = file_type(stack)
 	if ext == "bdb": DB = db_open_dict(stack)
@@ -9579,7 +9587,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint):
 		img = EMData()
 		img.read_image(stack, i, True)
 
-		if len(fimport)>0:
+		if fimport != None:
 			line = fimp.readline()
 			if len(line)==0 :
 				print "Error: file " + fimport + " has only " + str(i) + " lines, while there are " + str(nimage) + " images in the file."
@@ -9591,9 +9599,9 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint):
 				if len(parmvalues) < 3:
 					print "Not enough parameters!"
 					return
-				alpha = extract_value(parmvalues[0]) 
-				sx = extract_value(parmvalues[1]) 
-				sy = extract_value(parmvalues[2]) 
+				alpha = extract_value(parmvalues[0])
+				sx = extract_value(parmvalues[1])
+				sy = extract_value(parmvalues[2])
 				if len(parmvalues) > 3:
 					mirror = int(extract_value(parmvalues[3]))
 				else:
@@ -9607,14 +9615,14 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint):
 				if len(parmvalues) < 8:
 					print "Not enough parameters!"
 					return
-				phi = extract_value(parmvalues[0]) 
-				theta = extract_value(parmvalues[1]) 
-				psi = extract_value(parmvalues[2]) 
-				s3x = extract_value(parmvalues[3]) 
-				s3y = extract_value(parmvalues[4]) 
-				s3z = extract_value(parmvalues[5]) 
-				mirror = extract_value(parmvalues[6]) 
-				scale = extract_value(parmvalues[7]) 
+				phi = extract_value(parmvalues[0])
+				theta = extract_value(parmvalues[1])
+				psi = extract_value(parmvalues[2])
+				s3x = extract_value(parmvalues[3])
+				s3y = extract_value(parmvalues[4])
+				s3z = extract_value(parmvalues[5])
+				mirror = int(extract_value(parmvalues[6]))
+				scale = extract_value(parmvalues[7])
 				set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale])				
 			else:
 				if len(params)!=len(parmvalues):
@@ -9658,7 +9666,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint):
 						set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale])						
 					else:
 						print "Invalid operation!"						
-				elif len(fexport)>0:
+				elif fexport != None:
 					if p == "xform.align2d":
 						alpha, sx, sy, mirror, scale = get_params2D(img)
 						fexp.write("%15.5f %15.5f %15.5f %10d %10.3f"%(alpha, sx, sy, mirror, scale))
@@ -9676,18 +9684,20 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint):
 						print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f"%(phi, theta, psi, s3x, s3y, s3z, mirror, scale),
 					else:
 						print "%15s   "%str(img.get_attr(p)),
-				else:
-					print "Error: no operation selected"
-					return
+				elif backup:
+					t = img.get_attr(p)
+					img.set_attr(p+"_backup", t)
+				elif restore:
+					t = img.get_attr(p+"_backup")
+					img.set_attr(p, t)
+					img.del_attr(p+"_backup")					
 
-			if zero or one or randomize:
+			if zero or one or randomize or backup or restore:
 				write_header(stack, img, i)
-			elif len(fexport)>0:
+			elif fexport != None:
 				fexp.write( "\n" )
 			elif fprint:
 				print " "
-			else:
-				assert False
 	if ext == "bdb": DB.close()
 	
 
