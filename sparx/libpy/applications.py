@@ -10374,7 +10374,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	# check entry
 	if maskname != None:
 		if (maskname.split(':')[0] != 'bdb' and BDB) or (maskname.split(':')[0] == 'bdb' and not BDB):
-		        ERROR('Both mask and stack must be on bdb format!', 'k-means groups', 1)
+		        ERROR('Both mask and stack must be on bdb format!', 'k-means', 1)
+
+	if (out_dir.split(':')[0] != 'bdb' and BDB) or (out_dir.split(':')[0] == 'bdb' and not BDB):
+		ERROR('Stack and out_dir+name must be in the same format!', 'k_means', 1)
 		
 	N = EMUtil.get_image_count(stack)
 
