@@ -7028,6 +7028,208 @@ See the module documentation for usage.
                 if self.marked[i][j] == 2:
                     self.marked[i][j] = 0
 
+# match the asignment of two partitions with hungarian algorithm
+def match_clusters_asg(asg1, asg2):
+	import sys
+	N   = len(asg1)
+	MAT = [[0] * N for i in xrange(N)]
+
+	# prepare matrix
+	for k1 in xrange(N):
+		for k2 in xrange(N):
+			for index in asg1[k1]:
+				if index in asg2[k2]:
+					MAT[k1][k2] += 1
+	cost_MAT = []
+	for row in MAT:
+		cost_row = []
+		for col in row:
+			cost_row += [sys.maxint - col]
+		cost_MAT += [cost_row]
+
+	m = Munkres()
+	indexes = m.compute(cost_MAT)
+
+	list_stable = []
+	list_objs   = []
+	nb_tot_objs = 0
+	for r, c in indexes:
+		list_in  = []
+		list_out = []
+		for index1 in asg1[r]:
+			if index1 in asg2[c]:
+				list_in.append(index1)
+			else:
+				list_out.append(index1)
+
+		nb_tot_objs += len(list_in)
+		nb_tot_objs += len(list_out)
+
+		list_stable.append(list_in)
+
+	return list_stable, nb_tot_objs
+
+# compute the hierarchical stability between different partition from k-means (only with bdb format)
+def stability_h_bdb(seed_name, nb_part):
+	from copy import deepcopy
+	N = EMUtil.get_image_count(seed_name + '1_ave')
+
+	# read all assignment
+	PART = []
+	for n in xrange(1, nb_part + 1):
+		L = []
+		DB  = db_open_dict(seed_name + str(n) + '_ave')
+		for i in xrange(N):
+			asg = DB.get_attr(i, 'kmeans_members')
+			L.append(asg)
+		PART.append(L)
+		DB.close()
+
+	resume  = open('stability_h', 'w')
+
+	tot_gbl = 0
+	for i in xrange(N): tot_gbl += len(PART[0][i])
+	
+	for h in xrange(0, nb_part - 1):
+		print 'h', h+1
+		resume.write('h %d\n' % (h + 1))
+		newPART = []
+		for n in xrange(1, nb_part - h):
+			LIST_stb, tot_n = match_clusters_asg(PART[0], PART[n])
+			newPART.append(LIST_stb)
+
+			nb_stb = 0
+			for i in xrange(N): nb_stb += len(LIST_stb[i])
+
+			resume.write('    p1-p%d: %5d / %5d   (%6.2f %%)\n' % (n + 1, nb_stb, tot_n, (float(nb_stb) / float(tot_n)) * 100))
+			print '    p1-p%d: %5d / %5d   (%6.2f %%)' % (n + 1, nb_stb, tot_n, (float(nb_stb) / float(tot_n)) * 100)
+
+		PART = []
+		PART = deepcopy(newPART)
+
+	nb_stb = 0
+	for i in xrange(N): nb_stb += len(PART[0][i])
+
+	stability = (float(nb_stb) / float(tot_gbl)) * 100
+	resume.write('\n')
+	resume.write('Stable:    %5d / %5d   (%6.2f %%)\n' % (nb_stb, tot_gbl, stability))
+	resume.close()
+
+	print '\nStable:    %5d / %5d   (%6.2f %%)\n' % (nb_stb, tot_gbl, stability)
+
+	return stability, PART[0]
+
+# tag data according which object is stable
+def stability_tag_data(tag, PART, bdbname):
+	DB = db_open_dict(bdbname)
+	N  = EMUtil.get_image_count(bdbname)
+	for n in xrange(N): DB.set_attr(n, tag, [0])
+
+	ct = 0
+	for k in xrange(len(PART)):
+		if len(PART[k]) != 0:
+			for im in PART[k]: DB.set_attr(im, tag, [1, ct])
+			ct += 1
+		
+	DB.close()
+
+# read meta data of the stability
+def stability_read_tag(tag, bdbname):
+	DB    = db_open_dict(bdbname)
+	N     = EMUtil.get_image_count(bdbname)
+	valk  = 0
+	nbstb = 0
+	try:
+		for n in xrange(N):
+			val = DB.get_attr(n, tag)
+			if val[0] == 1:
+				nbstb += 1
+				if val[1] > valk:
+					valk = val[1]
+
+		print 'Stability %s: %d stable objects with %d clusters' % (tag, nbstb, valk + 1)
+
+	except:
+		print 'Tag not exist!'
+
+	DB.close()
+
+# extract the stable or unstable data set from the main data
+def stability_extract_data(tag, kind, bdbname, bdbtarget):
+	DB  = db_open_dict(bdbname)
+	N   = EMUtil.get_image_count(bdbname)
+	OUT = db_open_dict(bdbtarget) 
+
+	try:
+		ct = 0
+		for n in xrange(N):
+			val = DB.get_attr(n, tag)
+			if kind == 'stable' and val[0] == 1:
+				im = DB[n]
+				im.set_attr('kmeans_org', n)
+				OUT[ct] = im
+				ct += 1
+			elif kind == 'unstable' and val[0] == 0:
+				im = DB[n]
+				im.set_attr('kmeans_org', n)
+				OUT[ct] = im
+				ct += 1
+	except:
+		print 'Tag not exist!'
+
+	DB.close()
+	OUT.close()
+
+# extract the stable class average from the main data set for a stability tag given
+def stability_extract_stb_ave(tag, bdbname, bdbtarget):
+	from utilities import model_blank
+	
+	DB = db_open_dict(bdbname)
+	N  = EMUtil.get_image_count(bdbname)
+
+	K = 0
+	for n in xrange(N):
+		val = DB.get_attr(n, tag)
+		if val[0] == 1:
+			if val[1] > K: K = val[1]
+	K += 1
+	
+	asg = [[] for i in xrange(K)]
+	nb  = [0] * K
+	bk = model_blank(DB.get_attr(0, 'nx'), DB.get_attr(0, 'ny'))
+	AVE = []
+	for k in xrange(K): AVE.append(bk.copy())
+
+	for n in xrange(N):
+		val = DB.get_attr(n, tag)
+		if val[0] == 1:
+			Util.add_img(AVE[val[1]], DB[n])
+			asg[val[1]].append(n)
+			nb[val[1]] += 1
+
+	OUT = db_open_dict(bdbtarget)
+	for k in xrange(K):
+		Util.mul_scalar(AVE[k], 1 / float(nb[k]))
+		OUT[k] = AVE[k]
+		OUT.set_attr(k, 'kmeans_members', asg[k])
+	OUT.close()
+	DB.close()
+
+# change ID of object in each class average to refert at the ID of the main data set
+def herit_ID_from_main_data(seed_name, nb_part, dbdname_child):
+	K  = EMUtil.get_image_count(seed_name + '1_ave')
+	CH = db_open_dict(dbdname_child)
+	
+	for n in xrange(1, nb_part + 1):
+		DB = db_open_dict(seed_name + str(n) + '_ave')
+		for k in xrange(K):
+			list_im = DB.get_attr(k, 'kmeans_members')
+			newlist = []
+			for im in list_im: newlist.append(CH.get_attr(im, 'kmeans_org'))
+			DB.set_attr(k, 'kmeans_members', newlist)
+
+	CH.close()
+	DB.close()
 
 # match two partitions with hungarian algorithm name1.hdf name2.hdf and N1 (number of images in partition)
 def Match_clusters(name1, name2, N1):
@@ -7116,6 +7318,7 @@ def Match_clusters(name1, name2, N1):
 
 
     return indexes, list_stable, list_objs, tot_n
+
 
 # compute the hierarchical stability between partition given by k-means only
 # seed_name = 'K16_p', nb_part = 5 and org = 'data.hdf'

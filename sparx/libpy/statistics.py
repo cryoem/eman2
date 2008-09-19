@@ -1696,17 +1696,8 @@ def k_means_export(stackname, Cls, crit, assign, out_seedname, BDB):
 			if(Cls['n'][k] > 1): print_msg('\t%s\t%11.6e\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k], ' Variance', Cls['Ji'][k] / float(Cls['n'][k]-1)))
 			else:                print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
 
-		# tag each image in the stack with the group of assignment
-		DB = db_open_dict(stackname)
-		N  = EMUtil.get_image_count(stackname)
-
-		for n in xrange(N):
-			DB.set_attr(n, 'kmeans_active', 1)
-			DB.set_attr(n, 'kmeans_group', assign[n])
-		DB.close()
-
-		DB_ave = db_open_dict('bdb:ave_' + out_seedname)
-		DB_var = db_open_dict('bdb:var_' + out_seedname)
+		DB_ave = db_open_dict(out_seedname + '_ave')
+		DB_var = db_open_dict(out_seedname + '_var')
 
 		for k in xrange(Cls['k']):
 			lassign = []
@@ -1725,22 +1716,14 @@ def k_means_export(stackname, Cls, crit, assign, out_seedname, BDB):
 			DB_ave.set_attr(k, 'kmeans_Je', Je)
 			if Cls['n'][k] > 1:
 			     DB_ave.set_attr(k, 'kmeans_var', Cls['Ji'][k] / float(Cls['n'][k]-1))
-			DB_ave.set_attr(k, 'alpha', 0.0)
-			DB_ave.set_attr(k, 'sx', 0.0)
-			DB_ave.set_attr(k, 'sy', 0.0)
-			DB_ave.set_attr(k, 'mirror', 0.0)
-
+		
 			DB_var.set_attr(k, 'kmeans_nobjects', Cls['n'][k])
 			DB_var.set_attr(k, 'kmeans_members', lassign)
 			DB_var.set_attr(k, 'kmeans_Ji', Cls['Ji'][k])
 			DB_var.set_attr(k, 'kmeans_Je', Je)
 			if Cls['n'][k] > 1:
 			     DB_var.set_attr(k, 'kmeans_var', Cls['Ji'][k] / float(Cls['n'][k]-1))
-			DB_var.set_attr(k, 'alpha', 0.0)
-			DB_var.set_attr(k, 'sx', 0.0)
-			DB_var.set_attr(k, 'sy', 0.0)
-			DB_var.set_attr(k, 'mirror', 0.0)
-
+		
 		DB_ave.close()
 		DB_var.close()
 
