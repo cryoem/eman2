@@ -871,16 +871,13 @@ def cml_spin_proj(Prj, Cst, weights):
 # export result obtain by the function find_struct
 def cml_export_struc(stack, outdir, Prj):
 	from projection import plot_angles
-	from utilities  import get_im
+	from utilities  import get_im, set_params3D
 	
 	pagls = []
 	for i in xrange(len(Prj)):
 		data = get_im(stack, i)
-		data.set_attr('phi',   Prj[i].phi)
-		data.set_attr('theta', Prj[i].theta)
-		data.set_attr('psi',   Prj[i].psi)
-		data.set_attr('s2x', 0.0)
-		data.set_attr('s2y', 0.0)
+		p    = [Prj[i].phi, Prj[i].theta, Prj[i].psi, 0.0, 0.0, 0.0, 0, 1]
+		set_params3D(data, p)
 		data.set_attr('active', 1)
 		data.write_image(outdir + '/result.hdf', i)
 
