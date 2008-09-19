@@ -7216,9 +7216,9 @@ def stability_extract_stb_ave(tag, bdbname, bdbtarget):
 	DB.close()
 
 # change ID of object in each class average to refert at the ID of the main data set
-def herit_ID_from_main_data(seed_name, nb_part, dbdname_child):
+def herit_ID_from_main_data(seed_name, nb_part, bdbname_child):
 	K  = EMUtil.get_image_count(seed_name + '1_ave')
-	CH = db_open_dict(dbdname_child)
+	CH = db_open_dict(bdbname_child)
 	
 	for n in xrange(1, nb_part + 1):
 		DB = db_open_dict(seed_name + str(n) + '_ave')
