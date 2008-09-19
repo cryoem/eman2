@@ -9561,22 +9561,23 @@ def extract_value( s ):
 	
 	return s 
 
-def header( stack, params, zero, one, randomize, fimport, fexport, fprint ):
+def header(stack, params, zero, one, randomize, fimport, fexport, fprint):
         from string import split
-
-        params = split( params )
-
-        if len(fimport)>0: fimp = open( fimport, 'r' )
-	
-	if len(fexport)>0: fexp = open( fexport, 'w' )
-
 	from utilities import write_header, file_type
+	from random import random, randint
+	from utilities import set_params2D, get_params2D, set_params3D, get_params3D
+
+        params = split(params)
+
+        if len(fimport)>0: fimp = open(fimport, 'r')
+	if len(fexport)>0: fexp = open(fexport, 'w')
+
 	ext = file_type(stack)
-	if(ext == "bdb"): DB = db_open_dict(stack)
-	nimage = EMUtil.get_image_count( stack )
+	if ext == "bdb": DB = db_open_dict(stack)
+	nimage = EMUtil.get_image_count(stack)
 	for i in xrange(nimage):
 		img = EMData()
-		img.read_image( stack, i, True)
+		img.read_image(stack, i, True)
 
 		if len(fimport)>0:
 			line = fimp.readline()
@@ -9584,55 +9585,111 @@ def header( stack, params, zero, one, randomize, fimport, fexport, fprint ):
 				print "Error: file " + fimport + " has only " + str(i) + " lines, while there are " + str(nimage) + " images in the file."
 				return
 
-			parmvalues = split( line )
-			if len(params)!=len(parmvalues):
-				print "Error: %d params need to be set, while %d values are provided in line %d of file." % ( len(params), len(parmvalues), i )
-				return
+			parmvalues = split(line)
+			
+			if params[0] == "xform.align2d":
+				if len(parmvalues) < 3:
+					print "Not enough parameters!"
+					return
+				alpha = extract_value(parmvalues[0]) 
+				sx = extract_value(parmvalues[1]) 
+				sy = extract_value(parmvalues[2]) 
+				if len(parmvalues) > 3:
+					mirror = extract_value(parmvalues[3])
+				else:
+					mirror = 0
+				if len(parmvalues) > 4:
+					scale = extract_value(parmvalues[4])
+				else:
+					scale = 1.0
+				set_params2D(img, [alpha, sx, sy, mirror, scale])				
+			elif params[0] == "xform.align3d":
+				if len(parmvalues) < 8:
+					print "Not enough parameters!"
+					return
+				phi = extract_value(parmvalues[0]) 
+				theta = extract_value(parmvalues[1]) 
+				psi = extract_value(parmvalues[2]) 
+				s3x = extract_value(parmvalues[3]) 
+				s3y = extract_value(parmvalues[4]) 
+				s3z = extract_value(parmvalues[5]) 
+				mirror = extract_value(parmvalues[6]) 
+				scale = extract_value(parmvalues[7]) 
+				set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale])				
+			else:
+				if len(params)!=len(parmvalues):
+					print "Error: %d params need to be set, while %d values are provided in line %d of file." % ( len(params), len(parmvalues), i )
+					return
+				for j in xrange(len(params)):
+					img.set_attr(params[j], extract_value(parmvalues[j]))
 
-			for j in xrange(len(params)):
-				img.set_attr( params[j], extract_value(parmvalues[j]) )
-
-			write_header( stack, img, i)
-			#img.write_image( stack, i, EMUtil.ImageType.IMAGE_HDF, True)
-
+			write_header(stack, img, i)
 		else:
 			for p in params:
 				if zero:
-					img.set_attr( p, 0.0 )
-				elif one:
-					img.set_attr( p, 1.0 )
-				elif randomize:
-					from random import random, randint
-					if p == "alpha" or p == "phi" or p == "psi": 
-						v = random()*360.0
-					elif p == "theta":
-						v = random()*180.0
-					elif p == "sx" or p == "sy" or p == "s2x" or p == "s2y":
-						v = random()*4.0-2.0
-					elif p == "mirror":
-						v = randint(0,1)
+					if p == "xform.align2d":
+						set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0])
+					elif p == "xform.align3d":
+						set_params3D(img, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0])
 					else:
-						v = 0.0
-					img.set_attr(p, v)						
+						img.set_attr(p, 0.0)
+				elif one:
+					if p == "xform.align2d" or p == "xform.align3d":
+						print "Invalid operation!"
+					else:
+						img.set_attr(p, 1.0)
+				elif randomize:
+					if p == "xform.align2d":
+						alpha = random()*360.0
+						sx = random()*4.0-2.0
+						sy = random()*4.0-2.0
+						mirror = randint(0,1)
+						scale = 1.0
+						set_params2D(img, [alpha, sx, sy, mirror, scale])
+					elif p == "xform.align3d":
+						phi = random()*360.0
+						theta = random()*180.0
+						psi = random()*360.0
+						s3x = random()*4.0-2.0
+						s3y = random()*4.0-2.0
+						s3z = random()*4.0-2.0
+						mirror = randint(0,1)
+						scale = 1.0
+						set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale])						
+					else:
+						print "Invalid operation!"						
 				elif len(fexport)>0:
-					fexp.write( "%15s   " % str(img.get_attr(p)) )
+					if p == "xform.align2d":
+						alpha, sx, sy, mirror, scale = get_params2D(img)
+						fexp.write("%15.5f %15.5f %15.5f %10d %10.3f"%(alpha, sx, sy, mirror, scale))
+					elif p == "xform.align3d":
+						phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+						fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f"%(phi, theta, psi, s3x, s3y, s3z, mirror, scale))
+					else:
+						fexp.write("%15s   "%str(img.get_attr(p)))
 				elif fprint:
-					print ("%15s   " % str(img.get_attr(p))),
+					if p == "xform.align2d":
+						alpha, sx, sy, mirror, scale = get_params2D(img)
+						print "%15.5f %15.5f %15.5f %10d %10.3f"%(alpha, sx, sy, mirror, scale),
+					elif p == "xform.align3d":
+						phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+						print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f"%(phi, theta, psi, s3x, s3y, s3z, mirror, scale),
+					else:
+						print "%15s   "%str(img.get_attr(p)),
 				else:
 					print "Error: no operation selected"
 					return
 
 			if zero or one or randomize:
-				write_header( stack, img, i)
-				#img.write_image( stack, i, EMUtil.ImageType.IMAGE_HDF, True)
-			elif( len(fexport)>0 ):
+				write_header(stack, img, i)
+			elif len(fexport)>0:
 				fexp.write( "\n" )
 			elif fprint:
 				print " "
 			else:
 				assert False
-	if(ext == "bdb"): DB.close(stack)
-
+	if ext == "bdb": DB.close()
+	
 
 def imgstat_ccc( stacks, rad ):
 	from EMAN2 import EMUtil
