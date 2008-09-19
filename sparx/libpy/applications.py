@@ -9595,7 +9595,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint):
 				sx = extract_value(parmvalues[1]) 
 				sy = extract_value(parmvalues[2]) 
 				if len(parmvalues) > 3:
-					mirror = extract_value(parmvalues[3])
+					mirror = int(extract_value(parmvalues[3]))
 				else:
 					mirror = 0
 				if len(parmvalues) > 4:
