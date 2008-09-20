@@ -907,7 +907,6 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	
 	if (bestflip) {
 		t->set_mirror(true);
-		return df;
 	}
 
 	this_img_copy->set_attr("xform.align2d",t);
