@@ -50,12 +50,11 @@ template <> Factory < Aligner >::Factory()
 	force_add(&RotationalAligner::NEW);
 	force_add(&RotatePrecenterAligner::NEW);
 	force_add(&RotateTranslateAligner::NEW);
-	force_add(&RotateTranslateBestAligner::NEW);
+// 	force_add(&RotateTranslateBestAligner::NEW);
 	force_add(&RotateFlipAligner::NEW);
 	force_add(&RotateTranslateFlipAligner::NEW);
-	force_add(&RTFSlowAligner::NEW);
-//	force_add(&RTFSlowestAligner::NEW);
-	force_add(&RTFBestAligner::NEW);
+	force_add(&RTFExhaustiveAligner::NEW);
+	force_add(&RTFSlowExhaustiveAligner::NEW);
 	force_add(&RefineAligner::NEW);
 }
 
@@ -218,9 +217,8 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	
 	// Return the result
 	cf=this_img->copy();
-	cf->rotate( rot_angle, 0, 0);
+	cf->rotate_translate( Transform(Dict("type","2d","alpha",rot_angle)));
 	cf->set_attr("align.az",rot_angle);
-	
 	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 	t->set_rotation(Dict("type","2d","alpha",rot_angle));
 	
@@ -369,80 +367,6 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 }
 
 
-EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,  
-			const string & cmp_name, const Dict& cmp_params) const
-{
-	EMData *this_copy = this_img->copy();
-	this_img->align("rotational", to,Dict(),cmp_name, cmp_params);
-	
-	Dict rotation = this_img->get_transform().get_rotation(Transform3D::EMAN);
-	float cda = rotation["alt"];
-
-	EMData *this_copy2 = this_copy->copy();
-
-	Dict trans_params;
-	
-	trans_params["intonly"] = 0;
-	trans_params["maxshift"] = params.set_default("maxshift", -1);
-	this_copy->align("translational", to, trans_params, cmp_name, cmp_params);
-
-	Vec3f trans_v = this_copy->get_translation();
-	float cdx = trans_v[0] * cos(cda) + trans_v[1] * sin(cda);
-	float cdy = trans_v[0] * sin(cda) + trans_v[1] * cos(cda);
-
-	Dict refine_params;
-	refine_params["alt"] = cda;
-	refine_params["dx"] = cdx;
-	refine_params["dy"] = cdy;
-	if(params.has_key("dz")) {
-		refine_params["dz"] = params["dz"];
-	}
-	if(params.has_key("snr")) {
-		refine_params["snr"] = params["snr"];
-	}
-
-	this_copy->align("refine", to, refine_params, cmp_name, cmp_params);
-
-	float cda2 = cda + (float)M_PI;
-	this_copy2->process_inplace("math.rotate.180");
-
-	this_copy2->align("translational", to, trans_params, cmp_name, cmp_params);
-	Vec3f trans_v2 = this_copy2->get_translation();
-
-	cdx = trans_v2[0] * cos(cda2) + trans_v2[1] * sin(cda2);
-	cdy = -trans_v2[0] * sin(cda2) + trans_v2[1] * cos(cda2);
-
-	refine_params["az"] = cda2/M_PI*180.;
-	refine_params["dx"] = cdx;
-	refine_params["dy"] = cdy;
-
-	this_copy2->align("refine", to, refine_params, cmp_name, cmp_params);
-	EMData * with = to;
-	float dot1 = this_copy->cmp(cmp_name, with, cmp_params);
-	float dot2 = this_copy2->cmp(cmp_name, with, cmp_params);
-
-	EMData *result = 0;
-	if (dot1 < dot2) {
-		this_copy->set_attr("align.score", dot1);
-		if( this_copy2 )
-		{
-			delete this_copy2;
-			this_copy2 = 0;
-		}
-		result = this_copy;
-	}
-	else {
-		this_copy2->set_attr("align.score", dot2);
-		if( this_copy )
-		{
-			delete this_copy;
-			this_copy = 0;
-		}
-		result = this_copy2;
-	}
-	
-	return result;
-}
 
 
 EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to, 
@@ -544,241 +468,308 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 }
 
 
-EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  
+// David Woolford says FIXME
+// You will note the excessive amount of EMData copying that's going in this function
+// This is because functions that are operating on the EMData objects are changing them
+// and if you do not use copies the whole algorithm breaks. I did not have time to go
+// through and rectify this situation.
+// David Woolford says - this problem is related to the fact that many functions that 
+// take EMData pointers as arguments do not take them as constant pointers to constant
+// objects, instead they are treated as raw (completely changeable) pointers. This means
+// it's hard to track down which functions are changing the EMData objects, because they
+// all do (in name). If this behavior is unavoidable then ignore this comment, however if possible it would
+// be good to make things const as much as possible. For example in alignment, technically
+// the argument EMData objects (raw pointers) should not be altered... should they?
+EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,  
 			const string & cmp_name, const Dict& cmp_params) const
 {
 
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", this_img->get_xsize()/8);
-
-	EMData *to_copy = to->copy();
+	if (maxshift < 2) throw InvalidParameterException("maxshift must be greater than or equal to 2");
+	
 	int ny = this_img->get_ysize();
-
 	int xst = (int) floor(2 * M_PI * ny);
 	xst = Util::calc_best_fft_size(xst);
 
 	Dict d("n",2);
-	to_copy->process_inplace("math.medianshrink",d);
+	EMData *to_shrunk_unwrapped = to->process("math.medianshrink",d);
 
-	int to_copy_r2 = to_copy->get_ysize() / 2 - 2 - maxshift / 2;
-	EMData *tmp = to_copy->unwrap(4, to_copy_r2, xst / 2, 0, 0, true);
-	if( to_copy )
+	int to_copy_r2 = to_shrunk_unwrapped->get_ysize() / 2 - 2 - maxshift / 2;
+	EMData *tmp = to_shrunk_unwrapped->unwrap(4, to_copy_r2, xst / 2, 0, 0, true);
+	if( to_shrunk_unwrapped )
 	{
-		delete to_copy;
-		to_copy = 0;
+		delete to_shrunk_unwrapped;
+		to_shrunk_unwrapped = 0;
 	}
-	to_copy = tmp;
+	to_shrunk_unwrapped = tmp;
 
-	EMData *wsc = to_copy->copy();
-	to = to->unwrap(4, to->get_ysize() / 2 - 2 - maxshift, xst, 0, 0, true);
-	EMData *to_copy2 = to->copy();
+	EMData *to_shrunk_unwrapped_copy = to_shrunk_unwrapped->copy();
+	EMData* to_unwrapped = to->unwrap(4, to->get_ysize() / 2 - 2 - maxshift, xst, 0, 0, true);
+	EMData *to_unwrapped_copy = to_unwrapped->copy();
 
-	EMData *df = 0;
+	bool delete_flipped = true;
+	EMData *flipped = 0;
 	if (flip) {
-		df = flip->copy();
+		delete_flipped = false;
+		flipped = flip;
 	}
 	else {
-		df = this_img->copy();
-		df->process_inplace("xform.flip", Dict("axis", "x"));
+		flipped = to->process("xform.flip", Dict("axis", "x"));
 	}
+	
+	EMData *to_shrunk_flipped_unwrapped = flipped->process("math.medianshrink",d);
+	tmp = to_shrunk_flipped_unwrapped->unwrap(4, to_copy_r2, xst / 2, 0, 0, true);
+	if( to_shrunk_flipped_unwrapped )
+	{
+		delete to_shrunk_flipped_unwrapped;
+		to_shrunk_flipped_unwrapped = 0;
+	}
+	to_shrunk_flipped_unwrapped = tmp;
+	EMData *to_shrunk_flipped_unwrapped_copy = to_shrunk_flipped_unwrapped->copy();
+	EMData* to_flip_unwrapped = flipped->unwrap(4, to->get_ysize() / 2 - 2 - maxshift, xst, 0, 0, true);
+	EMData* to_flip_unwrapped_copy = to_flip_unwrapped->copy();
+	
+	if (delete_flipped && flipped != 0) {
+		delete flipped;
+		flipped = 0;
+	}
+	
+	EMData *this_shrunk_2 = this_img->process("math.medianshrink",d);
 
-	EMData *dns = this_img->copy();
-	EMData *dfs = df->copy();
-	dns->process_inplace("math.medianshrink",d);
-	dfs->process_inplace("math.medianshrink",d);
-
-	int dflip = 0;
 	float bestval = FLT_MAX;
 	float bestang = 0;
 	int bestflip = 0;
-	int bestdx = 0;
-	int bestdy = 0;
-
+	float bestdx = 0;
+	float bestdy = 0;
+	
 	int half_maxshift = maxshift / 2;
-	for (dflip = 0; dflip < 2; dflip++) {
-		EMData *u = 0;
 
-		if (dflip) {
-			u = dfs;
-		}
-		else {
-			u = dns;
-		}
-
-		int ur2 = u->get_ysize() / 2 - 2 - half_maxshift;
-		
-// 		cmp_params["keepzero"] = 1;
-		
-		for (int dy = -half_maxshift; dy <= half_maxshift; dy++) {
-			for (int dx = -half_maxshift; dx <= half_maxshift; dx++) {
+	int ur2 = this_shrunk_2->get_ysize() / 2 - 2 - half_maxshift;
+	
+	for (int dy = -half_maxshift; dy <= half_maxshift; dy += 1) {
+		for (int dx = -half_maxshift; dx <= half_maxshift; dx += 1) {
 #ifdef	_WIN32
-				if (_hypot(dx, dy) <= half_maxshift) {
+			if (_hypot(dx, dy) <= half_maxshift) {
 #else
-				if (hypot(dx, dy) <= half_maxshift) {
+			if (hypot(dx, dy) <= half_maxshift) {
 #endif			
-					EMData *uw = u->unwrap(4, ur2, xst / 2, dx, dy, true);
-					EMData *uwc = uw->copy();
-					EMData *a = uw->calc_ccfx(to_copy);
+				
+				EMData *uw = this_shrunk_2->unwrap(4, ur2, xst / 2, dx, dy, true);
+				EMData *uwc = uw->copy();
+				EMData *a = uw->calc_ccfx(to_shrunk_unwrapped);
 
-					uwc->rotate_x(a->calc_max_index());
+				uwc->rotate_x(a->calc_max_index());
 
-					float cm = uwc->cmp(cmp_name, wsc, cmp_params);
+				float cm = uwc->cmp(cmp_name, to_shrunk_unwrapped_copy, cmp_params);
+				if (cm < bestval) {
+					bestval = cm;
+					bestang = (float) (2.0 * M_PI * a->calc_max_index() / a->get_xsize());
+					bestdx = dx;
+					bestdy = dy;
+					bestflip = 0;
+				}
 
-					if (cm < bestval) {
-						bestval = cm;
-						bestang = (float) (2.0 * M_PI * a->calc_max_index() / a->get_xsize());
-						bestdx = dx;
-						bestdy = dy;
-						bestflip = dflip;
-					}
 					
-					if( a )
-					{
-						delete a;
-						a = 0;
-					}
-					if( uw )
-					{
-						delete uw;
-						uw = 0;
-					}
-					if( uwc )
-					{
-						delete uwc;
-						uwc = 0;
-					}
+				if( a )
+				{
+					delete a;
+					a = 0;
+				}
+				if( uw )
+				{
+					delete uw;
+					uw = 0;
+				}
+				if( uwc )
+				{
+					delete uwc;
+					uwc = 0;
+				}
+				
+				uw = this_shrunk_2->unwrap(4, ur2, xst / 2, dx, dy, true);
+				uwc = uw->copy();
+				a = uw->calc_ccfx(to_shrunk_flipped_unwrapped);
+
+				uwc->rotate_x(a->calc_max_index());
+
+				cm = uwc->cmp(cmp_name, to_shrunk_flipped_unwrapped_copy, cmp_params);
+				if (cm < bestval) {
+					bestval = cm;
+					bestang = (float) (2.0 * M_PI * a->calc_max_index() / a->get_xsize());
+					bestdx = dx;
+					bestdy = dy;
+					bestflip = 1;
+				}
+				
+				if( a )
+				{
+					delete a;
+					a = 0;
+				}
+				
+				if( uw )
+				{
+					delete uw;
+					uw = 0;
+				}
+				if( uwc )
+				{
+					delete uwc;
+					uwc = 0;
 				}
 			}
 		}
 	}
-	if( dns )
+	
+	if( this_shrunk_2 )
 	{
-		delete dns;
-		dns = 0;
+		delete this_shrunk_2;
+		this_shrunk_2 = 0;
 	}
-	if( dfs )
+	if( to_shrunk_unwrapped )
 	{
-		delete dfs;
-		dfs = 0;
+		delete to_shrunk_unwrapped;
+		to_shrunk_unwrapped = 0;
 	}
-	if( to_copy )
+	if( to_shrunk_unwrapped_copy )
 	{
-		delete to_copy;
-		to_copy = 0;
+		delete to_shrunk_unwrapped_copy;
+		to_shrunk_unwrapped_copy = 0;
 	}
-	if( wsc )
+	if( to_shrunk_flipped_unwrapped )
 	{
-		delete wsc;
-		wsc = 0;
+		delete to_shrunk_flipped_unwrapped;
+		to_shrunk_flipped_unwrapped = 0;
 	}
-
+	if( to_shrunk_flipped_unwrapped_copy )
+	{
+		delete to_shrunk_flipped_unwrapped_copy;
+		to_shrunk_flipped_unwrapped_copy = 0;
+	}
 	bestdx *= 2;
 	bestdy *= 2;
 	bestval = FLT_MAX;
 
-	int bestdx2 = bestdx;
-	int bestdy2 = bestdy;
+	float bestdx2 = bestdx;
+	float bestdy2 = bestdy;
 
+	// Note I tried steps less than 1.0 (sub pixel precision) and it actually appeared detrimental
+	// So my advice is to stick with dx += 1.0 etc unless you really are looking to fine tune this
+	// algorithm
+	for (float dy = bestdy2 - 3; dy <= bestdy2 + 3; dy += 1.0 ) {
+		for (float dx = bestdx2 - 3; dx <= bestdx2 + 3; dx += 1.0 ) {
 
-	for (dflip = 0; dflip < 2; dflip++) {
-		EMData *u = 0;
-
-		if (dflip) {
-			u = df;
-			bestdx2 = -bestdx2;
-			bestang = -bestang;
-		}
-		else {
-			u = this_img;
-		}
-
-
-		for (int dy = bestdy2 - 3; dy <= bestdy2 + 3; dy++) {
-			for (int dx = bestdx2 - 3; dx <= bestdx2 + 3; dx++) {
 #ifdef	_WIN32
-				if (_hypot(dx, dy) <= maxshift) {
+			if (_hypot(dx, dy) <= maxshift) {
 #else
-				if (hypot(dx, dy) <= maxshift) {
+			if (hypot(dx, dy) <= maxshift) {
 #endif			
-					EMData *uw = u->unwrap(4, u->get_ysize() / 2 - 2 - maxshift, xst, dx, dy, true);
-					EMData *uwc = uw->copy();
-					EMData *a = uw->calc_ccfx(to);
+				EMData *uw = this_img->unwrap(4, this_img->get_ysize() / 2 - 2 - maxshift, xst, dx, dy, true);
+				EMData *uwc = uw->copy();
+				EMData *a = uw->calc_ccfx(to_unwrapped);
 
-					uwc->rotate_x(a->calc_max_index());
-// 					cmp_params["keepzero"] = 1;
-					float cm = uwc->cmp(cmp_name, to_copy2, cmp_params);
+				uwc->rotate_x(a->calc_max_index());
+				float cm = uwc->cmp(cmp_name, to_unwrapped_copy, cmp_params);
 
-					if (cm < bestval) {
-						bestval = cm;
-						bestang = (float)(2.0 * M_PI * a->calc_max_index() / a->get_xsize());
-						bestdx = dx;
-						bestdy = dy;
-						bestflip = dflip;
-					}
-					if( a )
-					{
-						delete a;
-						a = 0;
-					}
-					if( uw )
-					{
-						delete uw;
-						uw = 0;
-					}
-					if( uwc )
-					{
-						delete uwc;
-						uwc = 0;
-					}
+				if (cm < bestval) {
+					bestval = cm;
+					bestang = (float)(2.0 * M_PI * a->calc_max_index() / a->get_xsize());
+					bestdx = dx;
+					bestdy = dy;
+					bestflip = 0;
+				}
+				
+				if( a )
+				{
+					delete a;
+					a = 0;
+				}
+				if( uw )
+				{
+					delete uw;
+					uw = 0;
+				}
+				if( uwc )
+				{
+					delete uwc;
+					uwc = 0;
+				}
+				uw = this_img->unwrap(4, this_img->get_ysize() / 2 - 2 - maxshift, xst, dx, dy, true);
+				uwc = uw->copy();
+				a = uw->calc_ccfx(to_flip_unwrapped);
+
+				uwc->rotate_x(a->calc_max_index());
+				cm = uwc->cmp(cmp_name, to_flip_unwrapped_copy, cmp_params);
+				
+				if (cm < bestval) {
+					bestval = cm;
+					bestang = (float)(2.0 * M_PI * a->calc_max_index() / a->get_xsize());
+					bestdx = dx;
+					bestdy = dy;
+					bestflip = 1;
+				}
+				
+				if( a )
+				{
+					delete a;
+					a = 0;
+				}
+				if( uw )
+				{
+					delete uw;
+					uw = 0;
+				}
+				if( uwc )
+				{
+					delete uwc;
+					uwc = 0;
 				}
 			}
 		}
 	}
 	
-	if( to )
+	if( to_unwrapped )
 	{
-		delete to;
-		to = 0;
+		delete to_unwrapped;
+		to_unwrapped = 0;
 	}
-	if( to_copy )
+	if( to_shrunk_unwrapped )
 	{
-		delete to_copy;
-		to_copy = 0;
+		delete to_shrunk_unwrapped;
+		to_shrunk_unwrapped = 0;
 	}
-	bestang *= -EMConsts::rad2deg;
-	Transform * t = new Transform(Dict("type","2d","alpha",(float)bestang));
-	t->set_trans(bestdx,bestdy);
+	if (to_unwrapped_copy) {
+		delete to_unwrapped_copy;
+		to_unwrapped_copy = 0;
+	}
+	if (to_flip_unwrapped) {
+		delete to_flip_unwrapped;
+		to_flip_unwrapped = 0;
+	}
+	if (to_flip_unwrapped_copy) {
+		delete to_flip_unwrapped_copy;
+		to_flip_unwrapped_copy = 0;
+	}
 	
+	bestang *= EMConsts::rad2deg;
+	Transform * t = new Transform(Dict("type","2d","alpha",(float)bestang));
+	t->set_pre_trans(Vec2f(-bestdx,-bestdy));	
 	if (bestflip) {
-		df->rotate_translate((float)bestang, 0.0f, 0.0f, (float)bestdx, (float)bestdy, 0.0f);
-		df->set_flipped(1);
 		t->set_mirror(true);
-		df->set_attr("xform.align2d",t);
-		return df;
 	}
 
-	if( df )
-	{
-		delete df;
-		df = 0;
-	}
+	
 
-	EMData *dn = 0;
-	if (dflip) {
-		dn = this_img->copy();
-	}
-	else {
-		dn = this_img->copy();
-	}
+	EMData* ret = this_img->copy();
+	ret->rotate_translate(*t);
+	ret->set_attr("xform.align2d",t);
 
-	dn->rotate_translate((float)bestang, 0.0f, 0.0f, (float)bestdx, (float)bestdy, 0.0f);
-	dn->set_attr("xform.align2d",t);
-
-	return dn;
+	return ret;
 }
 
-/*
-EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  
+
+EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,  
 			const string & cmp_name, const Dict& cmp_params) const
 {
 
@@ -803,21 +794,28 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,
 		maxshift = nx / 10;
 	}
 
-	float astep = atan2(2.0f, (float)nx);
+	float angle_step =  params.set_default("angstep", atan2(2.0f, (float)nx));
+	float trans_step =  params.set_default("transtep",1.0f);
+	
+	if (trans_step <= 0) throw InvalidParameterException("transstep must be greater than 0");
+	if (angle_step <= 0) throw InvalidParameterException("angstep must be greater than 0");
 
+// 	float trans_step_t_two = trans_step*2;
+	
 	EMData *dns = dn->copy();
 	EMData *dfs = df->copy();
 	EMData *to_copy = to->copy();
 
-	dns->median_shrink(2);
-	dfs->median_shrink(2);
-	to_copy->median_shrink(2);
+	Dict shrinkfactor("n",2);
+	dns->process_inplace("math.medianshrink",shrinkfactor);
+	dfs->process_inplace("math.medianshrink",shrinkfactor);
+	to_copy->process_inplace("math.medianshrink",shrinkfactor);
 	dns = dns->copy();
 	dfs = dfs->copy();
 
 	int bestflip = 0;
-	int bestdx = 0;
-	int bestdy = 0;
+	float bestdx = 0;
+	float bestdy = 0;
 
 	float bestang = 0;
 	float bestval = FLT_MAX;
@@ -835,13 +833,14 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,
 			u = dns;
 		}
 
-		for (int dy = -half_maxshift; dy <= half_maxshift; dy++) {
-			for (int dx = -half_maxshift; dx <= half_maxshift; dx++) {
+		for (int dy = -half_maxshift; dy <= half_maxshift; dy += 1) {
+			for (float dx = -half_maxshift; dx <= half_maxshift; dx += 1) {
 				if (hypot(dx, dy) <= maxshift) {
-					for (float ang = -astep * 2.0f; ang <= (float)2 * M_PI; ang += astep * 4.0f) {
-						u->rotate_translate(ang, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
+					for (float ang = -angle_step * 2.0f; ang <= (float)2 * M_PI; ang += angle_step * 4.0f) {
+						EMData v(*u);
+						v.rotate_translate(ang*EMConsts::rad2deg, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
 
-						float lc = u->cmp(cmp_name, to_copy, cmp_params);
+						float lc = v.cmp(cmp_name, to_copy, cmp_params);
 
 						if (lc < bestval) {
 							bestval = lc;
@@ -876,8 +875,8 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,
 	bestdy *= 2;
 	bestval = FLT_MAX;
 
-	int bestdx2 = bestdx;
-	int bestdy2 = bestdy;
+	float bestdx2 = bestdx;
+	float bestdy2 = bestdy;
 	float bestang2 = bestang;
 
 	for (dflip = 0; dflip < 2; dflip++) {
@@ -893,15 +892,14 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,
 			bestdx2 = -bestdx2;
 		}
 
-		for (int dy = bestdy2 - 3; dy <= bestdy2 + 3; dy++) {
-			for (int dx = bestdx2 - 3; dx <= bestdx2 + 3; dx++) {
+		for (float dy = bestdy2 - 3; dy <= bestdy2 + 3; dy += trans_step) {
+			for (float dx = bestdx2 - 3; dx <= bestdx2 + 3; dx += trans_step) {
 				if (hypot(dx, dy) <= maxshift) {
-					for (float ang = bestang2 - astep * 6.0f; ang <= bestang2 + astep * 6.0f;
-						 ang += astep) {
-						u->rotate_translate(ang, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
+					for (float ang = bestang2 - angle_step * 6.0f; ang <= bestang2 + angle_step * 6.0f; ang += angle_step) {
+						EMData v(*u);
+						v.rotate_translate(ang*EMConsts::rad2deg, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
 
-						cmp_params["keepzero"] = 1;
-						float lc = u->cmp(cmp_name, to_copy, cmp_params);
+						float lc = v.cmp(cmp_name, to, cmp_params);
 
 						if (lc < bestval) {
 							bestval = lc;
@@ -910,26 +908,32 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,
 							bestdy = dy;
 							bestflip = dflip;
 						}
+// 						delete v;
 					}
 				}
 			}
 		}
 	}
 
+	bestang *= EMConsts::rad2deg;
+	Transform * t = new Transform(Dict("type","2d","alpha",(float)bestang));
+	t->set_trans(bestdx,bestdy);
+	
 	if (bestflip) {
 		if( dn )
 		{
 			delete dn;
 			dn = 0;
 		}
-
-		df->rotate_translate(bestang, 0.0f, 0.0f, (float)bestdx, (float)bestdy, 0.0f);
-		df->set_flipped(1);
+		t->set_mirror(true);
+		df->rotate_translate(*t);
+		df->set_attr("xform.align2d",t);
 		return df;
 	}
 
-	dn->rotate_translate(bestang, 0.0f, 0.0f, (float)bestdx, (float)bestdy, 0.0f);
-
+	dn->set_attr("xform.align2d",t);
+	dn->rotate_translate(*t);
+	
 	if( df )
 	{
 		delete df;
@@ -937,68 +941,6 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,
 	}
 
 	return dn;
-}
-*/
-
-EMData *RTFBestAligner::align(EMData * this_img, EMData *to,  
-			const string & cmp_name, const Dict& cmp_params) const
-{
-	EMData *flip = params.set_default("flip", (EMData *) 0);
-	params.set_default("maxshift", -1);
-
-	Dict rtb_params;
-	rtb_params["maxshift"] = params["maxshift"];
-	rtb_params["snr"] = params["snr"];
-	
-	EMData *this_copy = this_img->align("rotate_translate_best", to, rtb_params, cmp_name, cmp_params);
-	EMData *flip_copy = 0;
-
-	if (!flip) {
-		this_img->process_inplace("xform.flip", Dict("axis", "x"));
-		flip_copy = this_img->align("rotate_translate_best", to, rtb_params, cmp_name, cmp_params);
-	}
-	else {
-		flip_copy = flip->align("rotate_translate_best", to, rtb_params, cmp_name, cmp_params);
-	}
-
-	if (!this_copy) {
-		LOGERR("%s align failed", get_name().c_str());
-		return flip_copy;
-	}
-	else if (!flip_copy) {
-		LOGERR("%s align failed", get_name().c_str());
-		return this_copy;
-	}
-
-	EMData * with = to;
-	float this_cmp = this_copy->cmp(cmp_name, with, cmp_params);
-	float flip_cmp = flip_copy->cmp(cmp_name, with, cmp_params);
-
-	EMData *result = 0;
-
-	if (this_cmp < flip_cmp) {
-		this_copy->set_flipped(0);
-		if (!flip) {
-			this_img->process_inplace("xform.flip", Dict("axis", "x"));
-		}
-		if( flip_copy )
-		{
-			delete flip_copy;
-			flip_copy = 0;
-		}
-		result = this_copy;
-	}
-	else {
-		flip_copy->set_flipped(1);
-		if( this_copy )
-		{
-			delete this_copy;
-			this_copy = 0;
-		}
-		result = flip_copy;
-	}
-
-	return result;
 }
 
 
@@ -1091,12 +1033,21 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 //	float dda = atan(2.0f / ny);
 
 	int mode = params.set_default("mode", 0);
-	float saz = params.set_default("az",0.0f);
-// 	saz -= 1.0;
-	float sdx = params.set_default("dx",0.0f);
-// 	sdx -= 1.0;
-	float sdy = params.set_default("dy",0.0f);
-// 	sdy -= 1.0;
+	float saz = 0.0;
+	float sdx = 0.0;
+	float sdy = 0.0;
+	if (this_img->has_attr("xform.align2d")) {
+		Transform* t = this_img->get_attr("xform.align2d");
+		Dict params = t->get_params("2d");
+		saz = params["alpha"];
+		sdx = params["tx"];
+		sdy = params["ty"];
+	} else {
+		saz = params.set_default("az",0.0f);
+		sdx = params.set_default("dx",0.0f);
+		sdy = params.set_default("dy",0.0f);
+	}
+
 // 	cout << "using starting guesses of" << sdx << " " << sdy << " " << saz << endl;
 	
 	int np = 3;
@@ -1158,13 +1109,15 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
 	}
 
-	
-	result->rotate_translate((float)gsl_vector_get(s->x, 2), 0, 0,
-								(float)gsl_vector_get(s->x, 0), (float)gsl_vector_get(s->x, 1), 0);
-	
 	result->set_attr("align.dx",(float)gsl_vector_get(s->x, 0));
 	result->set_attr("align.dy",(float)gsl_vector_get(s->x, 1));
 	result->set_attr("align.az",(float)gsl_vector_get(s->x, 2));
+	Transform * t = new Transform(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
+	t->set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
+	result->set_attr("xform.align2d",t);
+// 	result->rotate_translate((float)gsl_vector_get(s->x, 2), 0, 0,
+// 							  (float)gsl_vector_get(s->x, 0), (float)gsl_vector_get(s->x, 1), 0);
+	result->rotate_translate(*t);
 	
 	gsl_vector_free(x);
 	gsl_vector_free(ss);

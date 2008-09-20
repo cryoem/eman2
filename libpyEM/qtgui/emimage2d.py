@@ -32,7 +32,7 @@
 #
 
 import PyQt4
-from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4 import QtCore, QtGui, QtOpenGL, QtWebKit
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
@@ -1083,8 +1083,35 @@ class EMImage2DCore:
 	
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_F1:
-			self.display_help_hud = not self.display_help_hud
-			self.updateGL()
+			try:
+				try:
+					test = self.browser
+				except: 
+					self.browser = QtWebKit.QWebView()
+					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
+					self.browser.resize(800,800)
+				
+				if not self.browser.isVisible(): self.browser.show()
+			except:
+				print "in the middle of getting help working"
+				self.browser2 = QtGui.QTextBrowser()
+				#url = QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display")
+				url = QtCore.QUrl("http://www.google.com")
+				url.setPort(80)
+				#print url.port()
+				self.browser2.setSource(url)
+				#print browser2.port()
+				self.browser2.show()
+				self.browser2.resize(800,800)
+				#print self.browser2.isVisible()
+				
+			#window = EMParentWin(browser)
+			##browser.setParent(
+			#window.show()
+			#window.resize(800,800)
+			
+			#self.display_help_hud = not self.display_help_hud
+			#self.updateGL()
 	
 	def leaveEvent(self):
 		if self.rmousedrag:

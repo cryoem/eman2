@@ -456,7 +456,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If 'this' image is 3D.
 		 * @return The result image containing the CCF.
 		 */
-		EMData *calc_ccfx(EMData * with, int y0 = 0, int y1 = -1, bool nosum = false);
+		EMData *calc_ccfx( EMData * const with, int y0 = 0, int y1 = -1, bool nosum = false);
 		
 		
 		/** Makes a 'rotational footprint', which is an 'unwound'

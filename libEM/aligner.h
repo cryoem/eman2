@@ -331,6 +331,8 @@ namespace EMAN
 			d.put("snr", EMObject::FLOATARRAY);
 			return d;
 		}
+		
+		
 	};
 
 	/** rotational and flip alignment
@@ -358,9 +360,13 @@ namespace EMAN
 		{
 			return new RotateFlipAligner();
 		}
-
+		
 		TypeDict get_param_types() const
 		{
+			return static_get_param_types();
+		}
+		
+		static TypeDict static_get_param_types() {
 			TypeDict d;
 			
 			d.put("flip", EMObject::EMDATA);
@@ -368,6 +374,7 @@ namespace EMAN
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
 		}
+		
 	};
 
 	/** rotational, translational and flip alignment
@@ -399,6 +406,10 @@ namespace EMAN
 
 		TypeDict get_param_types() const
 		{
+			return static_get_param_types();
+		}
+		
+		static TypeDict static_get_param_types() {
 			TypeDict d;
 			
 			d.put("flip", EMObject::EMDATA);
@@ -411,7 +422,7 @@ namespace EMAN
 
 	/** rotational, translational and flip alignment using real-space methods. slow
     */
-	class RTFSlowAligner:public Aligner
+	class RTFExhaustiveAligner:public Aligner
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
@@ -423,7 +434,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "rtf_slow";
+			return "rtf_exhaustive";
 		}
 
 		string get_desc() const
@@ -433,7 +444,7 @@ namespace EMAN
 		
 		static Aligner *NEW()
 		{
-			return new RTFSlowAligner();
+			return new RTFExhaustiveAligner();
 		}
 
 		TypeDict get_param_types() const
@@ -446,10 +457,10 @@ namespace EMAN
 		}
 	};
 	
-	/** rotational, translational and flip alignment using exhaustive search. VERY SLOW
+	/** rotational, translational and flip alignment using exhaustive search. This is very slow
+	 * but can ensure localization of the global maximum
      */
-     //eliminated -- Grant Tang
-/*	class RTFSlowestAligner:public Aligner
+	class RTFSlowExhaustiveAligner:public Aligner
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
@@ -460,7 +471,7 @@ namespace EMAN
 		}
 		string get_name() const
 		{
-			return "rtf_slowest";
+			return "rtf_slow_exhaustive";
 		}
 
 		string get_desc() const
@@ -470,59 +481,20 @@ namespace EMAN
 		
 		static Aligner *NEW()
 		{
-			return new RTFSlowestAligner();
+			return new RTFSlowExhaustiveAligner();
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
 			
-			d.put("flip", EMObject::EMDATA);
-			d.put("maxshift", EMObject::INT);
+			d.put("flip", EMObject::EMDATA,"Optional. This is the flipped version of the images that is being aligned. If specified it will be used for the handedness check, if not a flipped copy of the image will be made");
+			d.put("maxshift", EMObject::INT,"The maximum length of the detectable translational shift");
+			d.put("transtep", EMObject::FLOAT,"The translation step to take when honing the alignment, which occurs after coarse alignment");
+			d.put("angstep", EMObject::FLOAT,"The angular step to take in the exhaustive search for the solution angle. Typically very small, such as 0.05 or smaller");
 			return d;
 		}
 	};
-*/
-	/** rotational, translational and flip alignment using fscmp at multiple locations, slow
-     * but this routine probably produces the best results
-     */
-	class RTFBestAligner:public Aligner
-	{
-	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
-					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
-
-		EMData * align(EMData * this_img, EMData * to_img) const
-		{
-			return align(this_img, to_img, "sqeuclidean", Dict());
-		}
-
-		string get_name() const
-		{
-			return "rtf_best";
-		}
-
-		string get_desc() const
-		{
-			return "Best full 2D alignment with handedness check currently in EMAN.";
-		}
-		
-		static Aligner *NEW()
-		{
-			return new RTFBestAligner();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			
-			d.put("flip", EMObject::EMDATA);
-			d.put("maxshift", EMObject::INT);
-			d.put("snr", EMObject::FLOATARRAY);
-			return d;
-		}
-	};
-
 	
 	/** refine alignment
      */

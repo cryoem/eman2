@@ -167,27 +167,32 @@ def main():
 		# refine align if it has been specified
 		if options.ralign:
 			
-			raligner_params["az"] = ali.get_attr_default("align.az",0)
-			raligner_params["dx"] = ali.get_attr_default("align.dx",0)
-			raligner_params["dy"] = ali.get_attr_default("align.dy",0)
-			flip = ali.get_attr_default("align.flip",0)
+			#raligner_params["az"] = ali.get_attr_default("align.az",0)
+			#raligner_params["dx"] = ali.get_attr_default("align.dx",0)
+			#raligner_params["dy"] = ali.get_attr_default("align.dy",0)
+			#flip = ali.get_attr_default("align.flip",0)
 
 			q = p.copy()
+			q.set_attr("xform.align2d",ali.get_attr("xform.align2d"))
 			q.rotate_translate(t3d_q)
-			if flip:
-				q.process_inplace("xform.flip",{"axis":"x"})
-				#print 'yaa7y'
-				#raligner_params["dx"] = -ali.get_attr_default("align.dx",0)
-				
-			ali = q.align(raligner,p,raligner_params,ralignercmp,ralignercmp_params)
-			az_solution = (-ali.get_attr("align.az"))%360
-			dx_solution = -ali.get_attr("align.dx")
-			dy_solution = -ali.get_attr("align.dy")
+			#q.write_image("pq.hdf",-1)
+			#p.write_image("pq.hdf",-1)
 			
-			if not options.stopflip:
-				if flip:
-					az_solution = ali.get_attr("align.az")
-					dx_solution = -dx_solution
+			
+			ali = q.align(raligner,p,raligner_params,ralignercmp,ralignercmp_params)
+			alit = ali.get_attr("xform.align2d")
+			soln_parms = alit.get_params("2d")
+			az_solution = (-soln_parms["alpha"])%360
+			dx_solution = -soln_parms["tx"]
+			dy_solution = -soln_parms["ty"]
+			#az_solution = (-ali.get_attr("align.az"))%360
+			#dx_solution = -ali.get_attr("align.dx")
+			#dy_solution = -ali.get_attr("align.dy")
+			
+			#if not options.stopflip:
+				#if flip:
+					#az_solution = ali.get_attr("align.az")
+					#dx_solution = -dx_solution
 					
 			error = fabs(az-az_solution)
 			t = fabs(error -360)
