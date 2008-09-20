@@ -759,8 +759,6 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 		t->set_mirror(true);
 	}
 
-	
-
 	EMData* ret = this_img->copy();
 	ret->rotate_translate(*t);
 	ret->set_attr("xform.align2d",t);
@@ -776,16 +774,16 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", -1);
 
-	EMData *dn = this_img->copy();
-	EMData *df = 0;
+	EMData *this_img_copy = this_img->copy();
+	EMData *flipped = 0;
 
+	bool delete_flipped = true;
 	if (flip) {
-		df = flip->copy();
+		delete_flipped = false;
+		flipped = flip;
 	}
 	else {
-		df = this_img->copy();
-		df->process_inplace("xform.flip", Dict("axis", "x"));
-		df = df->copy();
+		flipped = to->process("xform.flip", Dict("axis", "x"));
 	}
 
 	int nx = this_img->get_xsize();
@@ -799,19 +797,12 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	
 	if (trans_step <= 0) throw InvalidParameterException("transstep must be greater than 0");
 	if (angle_step <= 0) throw InvalidParameterException("angstep must be greater than 0");
-
-// 	float trans_step_t_two = trans_step*2;
 	
-	EMData *dns = dn->copy();
-	EMData *dfs = df->copy();
-	EMData *to_copy = to->copy();
 
 	Dict shrinkfactor("n",2);
-	dns->process_inplace("math.medianshrink",shrinkfactor);
-	dfs->process_inplace("math.medianshrink",shrinkfactor);
-	to_copy->process_inplace("math.medianshrink",shrinkfactor);
-	dns = dns->copy();
-	dfs = dfs->copy();
+	EMData *this_img_shrink = this_img->process("math.medianshrink",shrinkfactor);
+	EMData *to_shrunk = to->process("math.medianshrink",shrinkfactor);
+	EMData *flipped_shrunk = flipped->process("math.medianshrink",shrinkfactor);
 
 	int bestflip = 0;
 	float bestdx = 0;
@@ -820,55 +811,53 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	float bestang = 0;
 	float bestval = FLT_MAX;
 
-	int dflip = 0;
 	int half_maxshift = maxshift / 2;
 
-	for (dflip = 0; dflip < 2; dflip++) {
-		EMData *u = 0;
 
-		if (dflip) {
-			u = dfs;
-		}
-		else {
-			u = dns;
-		}
+	for (int dy = -half_maxshift; dy <= half_maxshift; dy += 1) {
+		for (float dx = -half_maxshift; dx <= half_maxshift; dx += 1) {
+			if (hypot(dx, dy) <= maxshift) {
+				for (float ang = -angle_step * 2.0f; ang <= (float)2 * M_PI; ang += angle_step * 4.0f) {
+					EMData v(*this_img_shrink);
+					v.rotate_translate(ang*EMConsts::rad2deg, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
 
-		for (int dy = -half_maxshift; dy <= half_maxshift; dy += 1) {
-			for (float dx = -half_maxshift; dx <= half_maxshift; dx += 1) {
-				if (hypot(dx, dy) <= maxshift) {
-					for (float ang = -angle_step * 2.0f; ang <= (float)2 * M_PI; ang += angle_step * 4.0f) {
-						EMData v(*u);
-						v.rotate_translate(ang*EMConsts::rad2deg, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
+					float lc = v.cmp(cmp_name, to_shrunk, cmp_params);
 
-						float lc = v.cmp(cmp_name, to_copy, cmp_params);
-
-						if (lc < bestval) {
-							bestval = lc;
-							bestang = ang;
-							bestdx = dx;
-							bestdy = dy;
-							bestflip = dflip;
-						}
+					if (lc < bestval) {
+						bestval = lc;
+						bestang = ang;
+						bestdx = dx;
+						bestdy = dy;
+						bestflip = 0;
+					}
+					
+					lc = v.cmp(cmp_name,flipped_shrunk , cmp_params);
+					if (lc < bestval) {
+						bestval = lc;
+						bestang = ang;
+						bestdx = dx;
+						bestdy = dy;
+						bestflip = 1;
 					}
 				}
 			}
 		}
 	}
 
-	if( dns )
+	if( to_shrunk )
 	{
-		delete dns;
-		dns = 0;
+		delete to_shrunk;
+		to_shrunk = 0;
 	}
-	if( dfs )
+	if( flipped_shrunk )
 	{
-		delete dfs;
-		dfs = 0;
+		delete flipped_shrunk;
+		flipped_shrunk = 0;
 	}
-	if( to_copy )
+	if( this_img_shrink )
 	{
-		delete to_copy;
-		to_copy = 0;
+		delete this_img_shrink;
+		this_img_shrink = 0;
 	}
 
 	bestdx *= 2;
@@ -879,68 +868,52 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	float bestdy2 = bestdy;
 	float bestang2 = bestang;
 
-	for (dflip = 0; dflip < 2; dflip++) {
-		EMData *u = 0;
-		if (dflip) {
-			u = df;
-		}
-		else {
-			u = dn;
-		}
+	for (float dy = bestdy2 - 3; dy <= bestdy2 + 3; dy += trans_step) {
+		for (float dx = bestdx2 - 3; dx <= bestdx2 + 3; dx += trans_step) {
+			if (hypot(dx, dy) <= maxshift) {
+				for (float ang = bestang2 - angle_step * 6.0f; ang <= bestang2 + angle_step * 6.0f; ang += angle_step) {
+					EMData v(*this_img);
+					v.rotate_translate(ang*EMConsts::rad2deg, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
 
-		if (dflip) {
-			bestdx2 = -bestdx2;
-		}
+					float lc = v.cmp(cmp_name, to, cmp_params);
 
-		for (float dy = bestdy2 - 3; dy <= bestdy2 + 3; dy += trans_step) {
-			for (float dx = bestdx2 - 3; dx <= bestdx2 + 3; dx += trans_step) {
-				if (hypot(dx, dy) <= maxshift) {
-					for (float ang = bestang2 - angle_step * 6.0f; ang <= bestang2 + angle_step * 6.0f; ang += angle_step) {
-						EMData v(*u);
-						v.rotate_translate(ang*EMConsts::rad2deg, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
+					if (lc < bestval) {
+						bestval = lc;
+						bestang = ang;
+						bestdx = dx;
+						bestdy = dy;
+						bestflip = 0;
+					}
+					
+					lc = v.cmp(cmp_name, flipped, cmp_params);
 
-						float lc = v.cmp(cmp_name, to, cmp_params);
-
-						if (lc < bestval) {
-							bestval = lc;
-							bestang = ang;
-							bestdx = dx;
-							bestdy = dy;
-							bestflip = dflip;
-						}
-// 						delete v;
+					if (lc < bestval) {
+						bestval = lc;
+						bestang = ang;
+						bestdx = dx;
+						bestdy = dy;
+						bestflip = 1;
 					}
 				}
 			}
 		}
 	}
 
+	if (delete_flipped) { delete flipped; flipped = 0; }
+
 	bestang *= EMConsts::rad2deg;
 	Transform * t = new Transform(Dict("type","2d","alpha",(float)bestang));
 	t->set_trans(bestdx,bestdy);
 	
 	if (bestflip) {
-		if( dn )
-		{
-			delete dn;
-			dn = 0;
-		}
 		t->set_mirror(true);
-		df->rotate_translate(*t);
-		df->set_attr("xform.align2d",t);
 		return df;
 	}
 
-	dn->set_attr("xform.align2d",t);
-	dn->rotate_translate(*t);
-	
-	if( df )
-	{
-		delete df;
-		df = 0;
-	}
+	this_img_copy->set_attr("xform.align2d",t);
+	this_img_copy->rotate_translate(*t);
 
-	return dn;
+	return this_img_copy;
 }
 
 
