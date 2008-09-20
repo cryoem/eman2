@@ -2332,6 +2332,7 @@ EMData* nn4Reconstructor::finish()
 	// EMData* win = m_volume->window_center(m_vnx);
 	m_volume->depad();
 	circumference( m_volume );
+	m_volume->set_array_offsets( 0, 0, 0 );
 	return m_volume;
 }
 #undef  tw
@@ -3020,9 +3021,10 @@ EMData* nn4_ctfReconstructor::finish()
 	}
 
 	// back fft
-        m_volume->do_ift_inplace();
+    m_volume->do_ift_inplace();
 	m_volume->depad();
-        circumference( m_volume );
+    circumference( m_volume );
+    m_volume->set_array_offsets( 0, 0, 0 );
 	return m_volume;
 	// clean up
 }
@@ -3718,12 +3720,12 @@ void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>
     Assert( int(mults.size())==nprj );
     Assert( int(m_points.size())== (pend - pbegin)*npoint );
 
-    int ipt = 0;
     for( int iprj=pbegin; iprj < pend; ++iprj )
     {
         int m = mults[iprj];
         if( m==0 ) continue;
 
+        int ipt = (iprj-pbegin)*npoint;
         for( int i=0; i < npoint; ++i )
         {
             int pos2 = m_points[ipt].pos2;
