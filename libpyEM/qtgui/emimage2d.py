@@ -32,7 +32,7 @@
 #
 
 import PyQt4
-from PyQt4 import QtCore, QtGui, QtOpenGL, QtWebKit
+from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
@@ -49,6 +49,8 @@ from emshape import EMShape
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
+try: from PyQt4 import QtWebKit
+except: pass
 import platform
 
 MAG_INC = 1.1
