@@ -2095,7 +2095,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	from mpi 	  import mpi_recv
 	from mpi 	  import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
 	TransType = type(Transform())
-	#  this is done on the main node, so for images from main, simply write headers
+	# This is done on the main node, so for images from the main node, simply write headers
 	# prepare keys for float/int
 	vl = get_arb_params(data[0], list_params)
 	ink = []
@@ -2115,7 +2115,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	for n in xrange(number_of_proc):
 		if(n != main_node):
 			dis = mpi_recv(2, MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
-			vl     = mpi_recv(lenlis*(dis[1]-dis[0]), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+			vl = mpi_recv(lenlis*(dis[1]-dis[0]), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
 			ldis.append([dis[0], dis[1]])
 			headers.append(vl)
 			del  dis
@@ -2133,18 +2133,22 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			nvl = []
 			header = headers[n]
 			ilis = 0
-			for il in xrange( len(list_params) ):
+			for il in xrange(len(list_params)):
 				if(ink[il] == 1): 
-					nvl.append( int(header[par_beg+ilis]) )
+					nvl.append(int(header[par_beg+ilis]))
 					ilis += 1
 				elif ink[il]==0:		  
-					nvl.append( header[par_beg+ilis] )
+					nvl.append(header[par_beg+ilis])
 					ilis += 1
 				else:
 					assert ink[il]==2
-					t = Transform( header[par_beg+ilis:par_beg+ilis+12] )
+					t = Transform()
+					tmp = []
+					for iii in xrange(par_beg+ilis, par_beg+ilis+12):
+						tmp.append(float(header[iii]))
+					t.set_matrix(tmp)
 					ilis += 12
-					nvl.append( t )
+					nvl.append(t)
 
 			# read head, set params, and write it
 			dummy = EMData()
@@ -2158,18 +2162,18 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end):
 	from utilities import get_arb_params
 	from mpi 	  import mpi_send
 	from mpi 	  import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
-	TransType = type( Transform() )
-	#  This function is called from a node different than main
+	TransType = type(Transform())
+	#  This function is called from a node other than the main node
 	mpi_send([image_start, image_end], 2, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 	nvl = []
 	for im in xrange(image_start, image_end):
 		vl = get_arb_params(data[im-image_start], list_params)
-		for il in xrange(lenlis):
+		for il in xrange(len(vl)):
 			if    type(vl[il]) is types.IntType:  nvl.append(float(vl[il]))
 			elif  type(vl[il]) is types.FloatType: nvl.append(vl[il])
 			elif  type(vl[il]) is TransType: 
 				m = vl[il].get_matrix()
-				assert( len(m)==12 )
+				assert(len(m)==12)
 				for f in m: nvl.append(f)
 	mpi_send(nvl, len(nvl), MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 
