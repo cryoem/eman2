@@ -2554,7 +2554,7 @@ class PawelAutoBoxer(AutoBoxer):
 			thr_low = None
 			thr_hgh = None
 
-		print "running Pawel's Method: "
+		print "running Gauss Convolution: "
 		print "     Pixel input : ", self.pixel_input
 		print "     Pixel output: ", self.pixel_output
 		print "     Box size    : ", self.box_size
@@ -2598,6 +2598,7 @@ class PawelAutoBoxer(AutoBoxer):
 		for i in xrange(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
+			print  i,peaks[3*i+0],peaks[3*i+1],peaks[3*i+2]
 			box = Box( cx-boxhalf, cy-boxhalf, boxsize, boxsize, 0)
 			box.set_image_name( imgname )
 			box.set_correlation_score( peaks[3*i] )
@@ -2605,7 +2606,7 @@ class PawelAutoBoxer(AutoBoxer):
 			box.corx = cx
 			box.cory = cy
 			box.changed = True
-		
+
 			score = peaks[3*i]
 			skip = False
 			if not(thr_low is None) and score < thr_low:

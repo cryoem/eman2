@@ -4184,69 +4184,65 @@ vector<float> EMData::peak_ccf(float hf_p)
 	EMData & buf = *this;
 	vector<Pixel> peaks;
 	int half=int(hf_p);
-	float hf_p2=hf_p*hf_p;
+	float hf_p2 = hf_p*hf_p;
 	int i,j;
 	int i__1,i__2;
 	int j__1,j__2;
-	bool peak_found;
-	bool not_overlap;
 	vector<float>res;
 	int nx = buf.get_xsize()-half;
 	int ny = buf.get_ysize()-half; 
-	int n_peak=0;
-	for(i=half;i<=nx;++i) {        
-		i__1=i-1;		
- 		i__2=i+1;	 																	 							    
-		for (j=half;j<=ny;++j) {  
-			j__1=j-1;
-			j__2=j+1;   																      
-			peak_found=(buf(i,j)>buf(i,j__1)) && (buf(i,j)>buf(i,j__2));
-			peak_found=peak_found && (buf(i,j)>buf(i__1,j)) && (buf(i,j)>buf(i__2,j));
-			peak_found=peak_found && (buf(i,j)>buf(i__1,j__1)) && ((buf(i,j))> buf(i__1,j__2));
-			peak_found=peak_found && (buf(i,j)>buf(i__2,j__1)) && (buf(i,j)> buf(i__2,j__2));				
-			if(peak_found) {	
+	for(i=half; i<=nx; ++i) {
+		i__1 = i-1;	
+ 		i__2 = i+1;
+		for (j=half;j<=ny;++j) {
+			j__1 = j-1;
+			j__2 = j+1;
+			if((buf(i,j)>0.0f)&&buf(i,j)>buf(i,j__1)) {
+			 if(buf(i,j)>buf(i,j__2)) {
+			  if(buf(i,j)>buf(i__1,j)) {
+			   if(buf(i,j)>buf(i__2,j)) {
+			    if(buf(i,j)>buf(i__1,j__1)) {
+			     if((buf(i,j))> buf(i__1,j__2)) {
+			      if(buf(i,j)>buf(i__2,j__1)) {
+			       if(buf(i,j)> buf(i__2,j__2)) {
 				if (peaks.size()==0) {
 					peaks.push_back(Pixel(i,j,0,buf(i,j)));
-					n_peak=n_peak+1;
 				} else {
-					not_overlap=true;							
-					bool higher_peak=false;	
-					int size=peaks.size();
-					for ( int kk= 0; kk< size; kk++) {	
-						vector<Pixel>::iterator it= peaks.begin()+kk;
-						float radius=((*it).x-float(i))*((*it).x-float(i))+((*it).y-float(j))*((*it).y-float(j));																	
-						if (radius <= hf_p2 ) {	
-							not_overlap=false;
+					bool not_overlap = true;
+					int  size = peaks.size();
+					for ( int kk= 0; kk< size; kk++) {
+						vector<Pixel>::iterator it = peaks.begin()+kk;
+						float radius=((*it).x-float(i))*((*it).x-float(i))+((*it).y-float(j))*((*it).y-float(j));															   
+						if (radius <= hf_p2 ) {
+							not_overlap = false;
 							if( buf(i,j) > (*it).value) {
-									peaks.erase(it);																								     
-									higher_peak=true;																						    
+									(*it).x = -half; // this marks entry to be deleted
 							} else {
-									higher_peak=false;
+									not_overlap=false;
 									break;
 							}
 						}
-											
 					}
-					if(not_overlap|higher_peak)	{
-						n_peak=n_peak+1;
-						peaks.push_back(Pixel(i,j,0,buf(i,j)));
+					for ( int kk= size-1; kk>=0; kk--) {
+						vector<Pixel>::iterator it = peaks.begin()+kk;
+						if((*it).x < 0) peaks.erase(it);
 					}
+					if(not_overlap)  peaks.push_back(Pixel(i,j,0,buf(i,j)));
 				}
-				                                
-			}
-		}						
-	}	
-	if(peaks.size()>=1) {
-		sort(peaks.begin(),peaks.end(), peakcmp); 
+			       }
+			}}}}}}}
+		}
+	}
+	if(peaks.size()>0) {
+		sort(peaks.begin(),peaks.end(), peakcmp);
 		for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++) {
 			res.push_back((*it).value);
 			res.push_back(static_cast<float>((*it).x));
-			res.push_back(static_cast<float>((*it).y));			
-			
+			res.push_back(static_cast<float>((*it).y));
 		}
 	} else {
 		res.push_back(buf(0,0,0));
- 		res.insert(res.begin(),1,0.0); 	
+ 		res.insert(res.begin(),1,0.0);
 	}
 	return res;
 }
