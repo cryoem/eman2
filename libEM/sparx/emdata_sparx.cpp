@@ -4182,7 +4182,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 vector<float> EMData::peak_ccf(float hf_p)
 {   
 	EMData & buf = *this;
-	vector<Pixel> peaks;	
+	vector<Pixel> peaks;
 	int half=int(hf_p);
 	float hf_p2=hf_p*hf_p;
 	int i,j;
@@ -4205,10 +4205,10 @@ vector<float> EMData::peak_ccf(float hf_p)
 			peak_found=peak_found && (buf(i,j)>buf(i__1,j__1)) && ((buf(i,j))> buf(i__1,j__2));
 			peak_found=peak_found && (buf(i,j)>buf(i__2,j__1)) && (buf(i,j)> buf(i__2,j__2));				
 			if(peak_found) {	
-				if (peaks.size()==0) {	 
+				if (peaks.size()==0) {
 					peaks.push_back(Pixel(i,j,0,buf(i,j)));
 					n_peak=n_peak+1;
-				} else {	
+				} else {
 					not_overlap=true;							
 					bool higher_peak=false;	
 					int size=peaks.size();
@@ -4217,17 +4217,17 @@ vector<float> EMData::peak_ccf(float hf_p)
 						float radius=((*it).x-float(i))*((*it).x-float(i))+((*it).y-float(j))*((*it).y-float(j));																	
 						if (radius <= hf_p2 ) {	
 							not_overlap=false;
-							if( buf(i,j) > (*it).value) {	
+							if( buf(i,j) > (*it).value) {
 									peaks.erase(it);																								     
 									higher_peak=true;																						    
-							} else {	
+							} else {
 									higher_peak=false;
 									break;
 							}
 						}
 											
 					}
-					if(not_overlap|higher_peak)	{										
+					if(not_overlap|higher_peak)	{
 						n_peak=n_peak+1;
 						peaks.push_back(Pixel(i,j,0,buf(i,j)));
 					}
@@ -4244,7 +4244,7 @@ vector<float> EMData::peak_ccf(float hf_p)
 			res.push_back(static_cast<float>((*it).y));			
 			
 		}
-	} else {	
+	} else {
 		res.push_back(buf(0,0,0));
  		res.insert(res.begin(),1,0.0); 	
 	}
@@ -4252,7 +4252,7 @@ vector<float> EMData::peak_ccf(float hf_p)
 }
 
 EMData* EMData::get_pow(float n_pow)
-{   
+{
 	EMData* buf_new = this->copy_head();
 	float *in  = this->get_data();
 	float *out = buf_new->get_data();

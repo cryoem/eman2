@@ -319,8 +319,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							if (argx*omega<=1.0f) fp->cmplx(ix,iy,iz) = 0;
 						}
 					}
-				}
-				break;
+				}				break;
 			case TOP_HAT_BAND_PASS:
 				for ( iz = 1; iz <= nzp; iz++) {
 					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;

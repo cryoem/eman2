@@ -4105,13 +4105,7 @@ void Util::cyclicshift(EMData *image, Dict params) {
 	int nz = image->get_zsize();
 	dz %= nz;
 	if (dz < 0) dz += nz;	
-	 
-	 
- #ifdef DEBUG
-	std::cout << dx << std::endl;
-	std::cout << dy << std::endl;
-	std::cout << dz << std::endl;
- #endif
+
 	int mx = -(dx - nx);
 	int my = -(dy - ny);
 	int mz = -(dz - nz);

@@ -656,4 +656,6 @@ EMData* mult_radial(EMData* radial);
 
 	EMData* filter_by_image(EMData* image, bool RetReal = true);
 
+	EMData* replace_amplitudes(EMData* image, bool RetReal = true);
+
 #endif	//emdata__sparx_h__

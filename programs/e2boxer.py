@@ -2255,7 +2255,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.method.addItem( self.swarm_icon, "Swarm" )
 		self.setWindowIcon( self.swarm_icon )
 		self.pp_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/pp_boxer_icon.png");
-		self.method.addItem( self.pp_icon,"Pawel method" )
+		self.method.addItem( self.pp_icon,"Gauss Conv" )
 		self.boxinghbl3.addWidget( self.method )
 
 		self.autobox=QtGui.QPushButton(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/green_boxes.png"), "Autobox")
@@ -2419,11 +2419,11 @@ class GUIboxPanel(QtGui.QWidget):
 			#self.target.autoboxer.set_interactive_mode(self.target.dynapix)
 			self.target.set_autoboxer(self.target.image_names[0])
 		else:
-			assert name[0:5]=="Pawel"
+			assert name[0:5]=="Gauss"
 			tabid = self.tabwidget.indexOf( self.david_option )
 			if tabid != -1:
 				self.tabwidget.removeTab( tabid )
-				self.tabwidget.insertTab( tabid, self.pawel_option, "Pawel Advanced" )
+				self.tabwidget.insertTab( tabid, self.pawel_option, "Gauss Advanced" )
 				self.autobox.setText("Run")
 				self.setWindowIcon( self.pp_icon )
 				
@@ -2759,7 +2759,7 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		self.pawel_option = QtGui.QWidget()
 		self.pawel_option_vbox = QtGui.QVBoxLayout(self.pawel_option)
-		self.pawel_option_vbox.addWidget(QtGui.QLabel("Pawel Method's Parameter") )
+		self.pawel_option_vbox.addWidget(QtGui.QLabel("Gauss Conv's Parameters") )
 		pawel_grid1 = QtGui.QGridLayout( )
 		self.pawel_option_vbox.addLayout(pawel_grid1)
 		
