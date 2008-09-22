@@ -7212,6 +7212,7 @@ def stability_extract_stb_ave(tag, bdbname, bdbtarget):
 		Util.mul_scalar(AVE[k], 1 / float(nb[k]))
 		OUT[k] = AVE[k]
 		OUT.set_attr(k, 'kmeans_members', asg[k])
+		OUT.set_attr(k, 'kmeans_nobjects', nb[k])
 	OUT.close()
 	DB.close()
 
