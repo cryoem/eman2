@@ -8989,7 +8989,6 @@ def transform2d(stack_data, stack_data_ali):
 
 	if os.path.exists(stack_data_ali): os.system("rm -f "+stack_data_ali)
 
-	null2D = Transform({"type":"2D"})
 	attributes = ['phi', 'theta', 'psi', 'nclass', 'assign', 's2x', 's2y', 'scale']
 	data = EMData()
 	nima = EMUtil.get_image_count(stack_data)
@@ -9005,10 +9004,10 @@ def transform2d(stack_data, stack_data_ali):
 				params.append(data.get_attr(attributes[ia]))
 			else:
 				params.append(0)
-			al2d = get_params2D(data)
+		al2d = get_params2D(data)
 		# apply params to the image
 		temp = rot_shift2D(data, al2d[0], al2d[1], al2d[2], al2d[3])
-		set_params2D(temp, null2D)
+		set_params2D(temp, al2d)
 		set_arb_params(temp, params, attributes)
 		temp.write_image(stack_data_ali, im)
 	print_end_msg("transform2d")
