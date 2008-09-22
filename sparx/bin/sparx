@@ -97,7 +97,9 @@ try:
 			threading.Thread.__init__(self)
 	    
 		def run(self):
-			self.IP.runlines("from EMAN2 import *\nfrom sparx import *\nfrom emimage import *\n")
+			self.IP.runlines("from EMAN2 import *\n")
+			self.IP.runlines("from sparx import *\n")
+			self.IP.runlines("from emimage import *\n")
 			self.IP.mainloop(self._banner)
 			self.IP.kill()
 
