@@ -135,7 +135,8 @@ Various CTF-related operations on images."""
 #				names.append(i+"(bg)")
 
 				out=file("bg1d.txt","w")
-				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
+#				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
+				for a,b in enumerate(bg): out.write("%d\t%1.5f\n"%(a,b))
 				out.close()
 
 			#if options.bgedge>0 :
