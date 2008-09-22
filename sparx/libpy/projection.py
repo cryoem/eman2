@@ -453,12 +453,18 @@ def cml_open_proj(stack, ir, ou):
 
 	nprj = EMUtil.get_image_count(stack)
 
+	if stack.split(':')[0] == 'bdb':
+		BDB = True
+		DB  = db_open_dict(stack)
+        else:   BDB = False
+
 	Prj        = []
 	flagheader = False
 	ct_agl     = 0
 	for i in xrange(nprj):
 		Prj.append(Projection(None, -1, -1, False, False))
-		image       = get_im(stack, i)
+		if BDB: image = DB[i]
+		else:	image = get_im(stack, i)
 		if(i == 0):
 			nx = image.get_xsize()
 			if(ou < 1):
@@ -488,6 +494,8 @@ def cml_open_proj(stack, ir, ou):
 	else:                    flagheader = False
 
 	#print_msg('Angles detected in header   : %s\n'     % flagheader)
+
+	if BDB: DB.close()
 
 	'''
 	if FILTER:
@@ -872,21 +880,42 @@ def cml_spin_proj(Prj, Cst, weights):
 def cml_export_struc(stack, outdir, Prj):
 	from projection import plot_angles
 	from utilities  import get_im, set_params3D
+
+	if stack.split(':')[0] == 'bdb':
+		ST    = db_open_dict(stack)
+		BDBIN = True
+	else:
+		BDBIN = False
+	if outdir.split(':')[0] == 'bdb':
+		OD     = db_open_dict(outdir + '_structure')
+		BDBOUT = True
+	else:
+		BDBOUT = False
 	
 	pagls = []
 	for i in xrange(len(Prj)):
-		data = get_im(stack, i)
-		p    = [Prj[i].phi, Prj[i].theta, Prj[i].psi, 0.0, 0.0, 0.0, 0, 1]
+		if BDBIN: data = ST[i]
+		else:     data = get_im(stack, i)
+		p = [Prj[i].phi, Prj[i].theta, Prj[i].psi, 0.0, 0.0, 0.0, 0, 1]
 		set_params3D(data, p)
 		data.set_attr('active', 1)
-		data.write_image(outdir + '/result.hdf', i)
+		if BDBOUT: OD[i] = data
+		else: data.write_image(outdir + '/structure.hdf', i)
 
 		# prepare angles to plot
 		pagls.append([Prj[i].phi, Prj[i].theta, Prj[i].psi])
 
+	if BDBIN: ST.close()
+	if BDBOUT:
+		OD.close()
+		OD = db_open_dict(outdir + '_plot_agls')
+
 	# plot angles
 	im = plot_angles(pagls)
-	im.write_image(outdir + '/plot_agls.hdf')
+	if BDBOUT:
+		OD[0] = im
+		OD.close()
+	else:	im.write_image(outdir + '/plot_agls.hdf')
 
 # cml init for MPI version
 def cml_init_MPI(trials):
