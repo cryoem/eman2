@@ -9560,13 +9560,13 @@ def extract_value( s ):
 	
 	return s 
 
-def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup, restore):
+def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup, restore, delete):
         from string import split
 	from utilities import write_header, file_type
 	from random import random, randint
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj
 
-	op = zero+one+randomize+(fimport!=None)+(fexport!=None)+fprint+backup+restore
+	op = zero+one+randomize+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete
 	if op == 0:
 		print "Error: no operation selected!"
 		return
@@ -9714,9 +9714,11 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				elif restore:
 					t = img.get_attr(p+"_backup")
 					img.set_attr(p, t)
-					img.del_attr(p+"_backup")					
+					img.del_attr(p+"_backup")
+				elif delete:
+					img.del_attr(p)					
 
-			if zero or one or randomize or backup or restore:
+			if zero or one or randomize or backup or restore or delete:
 				write_header(stack, img, i)
 			elif fexport != None:
 				fexp.write( "\n" )

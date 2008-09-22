@@ -23,6 +23,7 @@ def main():
 	parser.add_option("--print",	 action="store_true", dest="fprint", default=False, help="print parameters")
 	parser.add_option("--backup",	 action="store_true", default=False, help="backup parameters")
 	parser.add_option("--restore",   action="store_true", default=False, help="restore parameters")
+	parser.add_option("--delete",    action="store_true", default=False, help="delete parameters")
 
 	(options,args) = parser.parse_args( arglist[1:] )
 
@@ -35,7 +36,7 @@ def main():
 		exit(-1)
 
         from applications import header
-	header(args[0], options.params, options.zero, options.one, options.randomize, options.fimport, options.fexport, options.fprint, options.backup, options.restore)
+	header(args[0], options.params, options.zero, options.one, options.randomize, options.fimport, options.fexport, options.fprint, options.backup, options.restore, options.delete)
 
 if __name__ == "__main__":
 	main()
