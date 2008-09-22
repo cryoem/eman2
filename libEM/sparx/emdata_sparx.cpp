@@ -5175,7 +5175,62 @@ EMData *EMData::filter_by_image(EMData* image, bool RetReal) {
 
 	return fp;
 }
+#undef   fint
+#define  fint(jx,jy,jz)  fint[jx + (jy + jz*ny)*nx]
+#define  fout(jx,jy,jz)  fout[jx + (jy + jz*ny)*nx]
+EMData *EMData::replace_amplitudes(EMData* image, bool RetReal) {
+
+
+	bool   complex_input = this->is_complex();
+	nx  = this->get_xsize();
+	ny  = this->get_ysize();
+	nz  = this->get_zsize();
+	int nox;
+	if (complex_input) nox = (nx - 2 + this->is_fftodd()); else nox = nx;
+
+	EMData* fp = NULL; // output image
+	if(complex_input) {
+		// fimage must remain pristine
+		fp = this->copy();
+	} else {
+		fp = this->norm_pad( false, 1); 
+		fp->do_fft_inplace();
+	}
+	float *fout = fp->get_data();
+	float *fint = image->get_data();
+	for ( int iz = 0; iz < nz; iz++) {
+		for ( int iy = 0; iy < ny; iy++) {
+			for ( int ix = 0; ix < nx; ix+=2) {
+				float qt = fint(ix,iy,iz)*fint(ix,iy,iz)+fint(ix+1,iy,iz)*fint(ix+1,iy,iz);
+				float rt = fout(ix,iy,iz)*fout(ix,iy,iz)+fout(ix+1,iy,iz)*fout(ix+1,iy,iz);
+				if(rt > 1.0e-20) {
+						fout(ix,iy,iz) *= (qt/rt);
+						fout(ix+1,iy,iz) *= (qt/rt);
+				} else {
+						qt = std::sqrt(qt/2.0);
+						fout(ix,iy,iz) = qt;
+						fout(ix+1,iy,iz) = qt;
+				}
+			}
+		}
+	}
+
+	fp->set_ri(1);
+	fp->set_fftpad(true);
+	fp->set_attr("npad", 1);
+	if (nx%2 == 1) fp->set_fftodd(true);
+	else fp->set_fftodd(false);
+	if(RetReal) {
+		fp->do_ift_inplace();
+		fp->depad();
+	}
+	fp->set_array_offsets(0,0,0);
+	fp->update();
+
+	return fp;
+}
 #undef fint
+#undef fout
 
 
 #undef QUADPI
