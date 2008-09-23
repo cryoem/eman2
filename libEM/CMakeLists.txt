@@ -12,6 +12,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     interp.cpp
     quaternion.cpp
     transform.cpp
+    symmetry.cpp
     geometry.cpp
     pointarray.cpp
     mrcio.cpp

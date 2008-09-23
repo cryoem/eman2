@@ -697,7 +697,14 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 				theta = data.get_attr('theta')
 				psi = data.get_attr('psi')
 				angles.append([phi,theta,psi])
-				RA = Transform3D(Transform3D.EulerType.SPIDER,phi,theta,psi)    
+				RA = Transform3D(Transform3D.EulerType.SPIDER,phi,theta,psi)
+				#ATTENTION
+				#for transform in Symmetry3D.get_symmetries(symmetry):
+					#Tf = transform*RA
+					# though why do you go from 1 to nysm? why not 0 to nysm-1 ? It should be
+					# equivalent unless I am missing something
+					#angdict = Tf.get_params("spider")
+					# then continue as before
 				for ns in xrange(1,nsym+1):
 					# multiply myangles by symmetry using Phil's Transform class
 					Tf=Transform3D(); Tf = Tf.get_sym(symmetry,ns) *RA #Tf.get_rotation(Transform3D.EulerType.SPIDER)

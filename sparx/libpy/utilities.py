@@ -1039,6 +1039,12 @@ def get_sym(symmetry):
 		RNowE = RNow.get_rotation(EULER_SPIDER)
 		angs.append([RNowE["phi"],RNowE["theta"],RNowE["psi"] ] )
 
+	#ATTENTION
+	#angs=[]
+	#for transform in Symmetry3D.get_symmetries(symmetry):
+		#params = transform.get_params("spider")
+		#angs.append([params["phi"],params["theta"],params["psi"] ] )
+		
 	return angs
 		
 def get_textimage(fname):

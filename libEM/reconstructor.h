@@ -62,56 +62,6 @@ namespace EMAN
 	class Transform3D;
 	class EMData;
 
-	/** A class object encapsulating the volume data required by Reconstructors
-	 *  It basically stores two (pointers) to EMData objectsd stores the dimensions of the image volume.
-	 *  One EMData object basically stores the real pixel data, the other is used for storing normalization values.
-	 *  This class was originally added simply to encapsulate the 
-	 *  the things common to FourierReconstructor, WienerFourierReconstructor
-	 *  and BackProjectionReconstructor. It was never expected to instantiated on its own,
-	 *  and is intended to be a parent of the Reconstructor class.
-	 *  d.woolford May 2007
-     */
-
-	class ReconstructorVolumeData
-	{
-	  public:
-		inline ReconstructorVolumeData() : image(0), tmp_data(0), nx(0), ny(0), nz(0) {}
-		virtual ~ReconstructorVolumeData() { free_memory(); }
-		
-		const EMData* const get_emdata() { return image; }
-	  protected: 
-		EMData* image;
-		//tmp_data is the substitute of misused parent in reconstruction
-		//the memory will be allocated in setup() and released in finish()
-		EMData* tmp_data;
-		
-		int nx;
-		int ny;
-		int nz;
-		
-	  protected:
-		void free_memory()
-		{
-			if (image != 0)  {delete image; image = 0;} 
-			if ( tmp_data != 0 ) { delete tmp_data; tmp_data = 0; }
-		}
-
-		virtual void normalize_threed();
-		
-		void zero_memory() 
-		{
-			if (tmp_data != 0 ) tmp_data->to_zero();
-			if (image != 0 ) image->to_zero();
-		}
-		
-		private:
-		// Disallow copy construction
-		ReconstructorVolumeData(const ReconstructorVolumeData& that);
-		// Disallow  assignment
-		ReconstructorVolumeData& operator=(const ReconstructorVolumeData& );
-
-	};
-
 	/** Reconstructor class defines a way to do 3D recontruction.
 	 * A reconstruction is done by 3 steps:
 	 *   - set up.
@@ -229,6 +179,56 @@ namespace EMAN
 	
 	};
 
+	/** A class object encapsulating the volume data required by Reconstructors
+	 *  It basically stores two (pointers) to EMData objectsd stores the dimensions of the image volume.
+	 *  One EMData object basically stores the real pixel data, the other is used for storing normalization values.
+	 *  This class was originally added simply to encapsulate the 
+	 *  the things common to FourierReconstructor, WienerFourierReconstructor
+	 *  and BackProjectionReconstructor. It was never expected to instantiated on its own,
+	 *  and is intended to be a parent of the Reconstructor class.
+	 *  d.woolford May 2007
+	 */
+
+	class ReconstructorVolumeData
+	{
+		public:
+			inline ReconstructorVolumeData() : image(0), tmp_data(0), nx(0), ny(0), nz(0) {}
+			virtual ~ReconstructorVolumeData() { free_memory(); }
+		
+			const EMData* const get_emdata() { return image; }
+		protected: 
+			EMData* image;
+		//tmp_data is the substitute of misused parent in reconstruction
+		//the memory will be allocated in setup() and released in finish()
+			EMData* tmp_data;
+		
+			int nx;
+			int ny;
+			int nz;
+		
+		protected:
+			void free_memory()
+			{
+				if (image != 0)  {delete image; image = 0;} 
+				if ( tmp_data != 0 ) { delete tmp_data; tmp_data = 0; }
+			}
+
+			virtual void normalize_threed();
+		
+			void zero_memory() 
+			{
+				if (tmp_data != 0 ) tmp_data->to_zero();
+				if (image != 0 ) image->to_zero();
+			}
+		
+		private:
+		// Disallow copy construction
+			ReconstructorVolumeData(const ReconstructorVolumeData& that);
+		// Disallow  assignment
+			ReconstructorVolumeData& operator=(const ReconstructorVolumeData& );
+
+	};
+	
 	class FourierReconstructorSimple2D : public Reconstructor, public ReconstructorVolumeData
 	{
 		public:
@@ -349,7 +349,6 @@ namespace EMAN
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
 		virtual int insert_slice(const EMData* const slice, const Transform & t3d = Transform());
-		
 		
 		
 		/** Determine slice agreement with the current reconstruction

@@ -5,10 +5,13 @@
 
 // Includes ====================================================================
 #include <transform.h>
+#include <symmetry.h>
 #include <emdata.h>
 #include <emdata_pickle.h>
 #include <quaternion.h>
 #include <vec3.h>
+
+#include <string>
 
 // Using =======================================================================
 using namespace boost::python;
@@ -117,7 +120,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	
 	def("dump_symmetries", &EMAN::dump_symmetries);
 	def("dump_symmetries_list", &EMAN::dump_symmetries_list);
-	class_< EMAN::Symmetry3D, boost::noncopyable, EMAN_Symmetry3D_Wrapper >("__Symmetry3D", init<  >())
+	
+	class_< EMAN::Symmetry3D, boost::noncopyable, EMAN_Symmetry3D_Wrapper >("Symmetry3D", init<  >())
 		.def("get_delimiters", pure_virtual(&EMAN::Symmetry3D::get_delimiters))
 		.def("get_sym", pure_virtual(&EMAN::Symmetry3D::get_sym))
 		.def("is_in_asym_unit", pure_virtual(&EMAN::Symmetry3D::is_in_asym_unit))
@@ -135,6 +139,9 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("reduce", &EMAN::Symmetry3D::reduce)
 		.def("in_which_asym_unit", &EMAN::Symmetry3D::in_which_asym_unit)
 		.def("get_touching_au_transforms",&EMAN::Symmetry3D::get_touching_au_transforms)
+		.def("get_syms", &EMAN::Symmetry3D::get_syms)
+		.def("get_symmetries", &EMAN::Symmetry3D::get_symmetries)
+		.staticmethod("get_symmetries")
 		;
 		
 

@@ -36,6 +36,7 @@
 #include "reconstructor.h"
 #include "ctf.h"
 #include "emassert.h"
+#include "symmetry.h"
 #include <cstring>
 #include <fstream>
 #include <iomanip>
