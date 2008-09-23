@@ -329,7 +329,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="", F=0.996):
 
 	from utilities    import model_circle, combine_params2, dropImage, getImage, get_arb_params, get_input_from_string
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict, file_type
 	from statistics   import add_oe_ave_varf_MPI, add_oe_ave_varf_ML_MPI
 	from alignment    import Numrinit, ringwe, ali2d_s
 	from filter       import filt_tophatb
@@ -347,6 +347,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
+	ftp = file_type(stack)
+	
 	if myid == main_node:
 		print_begin_msg("ali2d_a_MPI")
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
@@ -373,10 +375,23 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Inner radius                : %i\n"%(first_ring))
 
-	nima = EMUtil.get_image_count(stack)	
+	if ftp == "hdf":
+		nima = EMUtil.get_image_count(stack)
+	elif ftp == "bdb":
+		nima = 0
+		if myid == main_node:
+			nima = EMUtil.get_image_count(stack)
+		nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	else:
+		print "Invalid file type"
+		return
+		
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)	
 	ima = EMData()
-	ima.read_image(stack, image_start, True)
+	for i in xrange(number_of_proc):
+		if ftp == "bdb": os.system('rm -rf EMAN2DB/cache')
+		if myid == i:	ima.read_image(stack, image_start, True)
+		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	if CTF:
 		if(ima.get_attr_default('ctf_applied', 2) > 0):
 			ERROR("data cannot be ctf-applied","ali2d_a_MPI",1)
@@ -419,19 +434,21 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	data = []
 	if CTF:
 		from morphology   import ctf_img
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor", "ctf_applied"]
 		ctf_2_sum = EMData(nx, nx, 1, False)
-
-	for im in xrange(image_start, image_end):
-		ima = EMData()
-		ima.read_image(stack, im)
-		if CTF:
-			ctf_params = get_arb_params(ima, parnames)
-			st = Util.infomask(ima, mask, False)
-			ima -= st[0]
-	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
-		data.append(ima)
 	
+	for i in xrange(number_of_proc):
+		if ftp == "bdb": os.system("rm -rf EMAN2DB/cache")
+		if myid == i: data = EMData.read_images(stack, range(image_start, image_end))
+		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
+
+	if CTF:
+		for im in xrange(image_start, image_end):
+			ctf_params = get_arb_params(data[im-image_start], parnames)
+			st = Util.infomask(data[im-image_start], mask, False)
+			data[im-image_start] -= st[0]
+	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
+			
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
  	wr = ringwe(numr, mode)
 	a0 = -1.0e22
@@ -940,7 +957,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_alpha=False):
 
 	from utilities    import model_circle, model_blank, combine_params2, dropImage, getImage, get_arb_params, get_input_from_string
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict, file_type
 	from statistics   import fsc_mask, add_oe_series
 	from alignment    import Numrinit, ringwe, ali2d_s
 	from filter       import filt_table, filt_ctf
@@ -956,6 +973,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
+	
+	ftp = file_type(stack)
 
 	if myid == main_node:
 		print_begin_msg("ali2d_c_MPI")
@@ -1039,7 +1058,11 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node:  ctfb2 = [0.0]*lctf
 
 	del ima
-	data = EMData.read_images(stack, range(image_start, image_end))
+	for i in xrange(number_of_proc):
+		if ftp == "bdb": os.system("rm -rf EMAN2DB/cache")
+		if myid == i: data = EMData.read_images(stack, range(image_start, image_end))
+		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
+		 
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
 		if CTF:
