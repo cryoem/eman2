@@ -38,9 +38,6 @@ from global_def import *
 from optparse import OptionParser
 import sys
 def main():
-	if(MPI): 
-		from mpi import mpi_init
-		sys.argv = mpi_init( len(sys.argv), sys.argv )
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )	
