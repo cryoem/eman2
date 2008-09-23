@@ -127,6 +127,23 @@ void Transform::to_identity()
 	}
 }
 
+bool Transform::is_identity() {
+	for(int i=0; i<3; ++i) {
+		for(int j=0; j<4; ++j) {
+			float c = matrix[i][j];
+			Util::apply_precision(c,ERR_LIMIT);
+			if(i==j) {
+				if (c != 1.0) return false;
+			}
+			else {
+				if (c != 0.0) return false;
+			}
+		}
+	}
+	return true;
+}
+
+		
 void Transform::set_params(const Dict& d) {
 	if (d.has_key_ci("type") ) set_rotation(d);
 	
