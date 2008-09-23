@@ -3821,6 +3821,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 	# compute Ji global
 	for k in xrange(K): Cls['Ji'][k] = mpi_reduce(Cls['Ji'][k], 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	if myid == main_node:
+		for k in xrange(K): Cls['Ji'][k] = Cls['Ji'][k].tolist()[0]
 
 	# [main_node] write the result
 	if myid == main_node and CTF:
