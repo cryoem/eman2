@@ -130,13 +130,16 @@ Various CTF-related operations on images."""
 				if options.runav:
 					ra=options.runav
 					bg=bg[:options.runav]+[sum(bg[v-ra:v+ra+1])/(ra*2+1) for v in range(ra,len(bg)-ra)]+bg[len(bg)-ra:]
-				for v in range(len(bg)): ps1d[-1][v]-=bg[v]
+				for v in range(len(bg)): ps1d[-1][v]=(ps1d[-1][v]-bg[v])/(bg[v]+.00001)
 #				ps1d.append(bg)
 #				names.append(i+"(bg)")
 
 				out=file("bg1d.txt","w")
-#				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
 				for a,b in enumerate(bg): out.write("%d\t%1.5f\n"%(a,b))
+				out.close()
+
+				out=file("snr.txt","w")
+				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
 				out.close()
 
 			#if options.bgedge>0 :
