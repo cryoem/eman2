@@ -1294,7 +1294,7 @@ def im_diff(im1, im2, mask = None):
 
 # k-means open and prepare images
 def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
-	from utilities     import get_params2D
+	from utilities     import get_params2D, getImage
 	from fundamentals  import rot_shift2D, rot_shift3D
 	
 	if CTF:
