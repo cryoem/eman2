@@ -1676,6 +1676,7 @@ class GUIbox:
 		'''
 		like hitting refresh - everything is updated
 		'''
+		self.guictl.pawel_histogram.clear()
 		self.boxable.clear_and_cache(True)
 		self.autoboxer.write_image_specific_references_to_db(self.boxable.get_image_name())
 		self.boxable.get_references_from_db()
@@ -1767,9 +1768,7 @@ class GUIbox:
 			
 			mode = self.autoboxer.get_mode()
 			self.autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-			print "before auto_box, nbox: ", boxable.num_boxes()
 			self.autoboxer.auto_box(boxable,False)
-			print " after auto_box, nbox: ", boxable.num_boxes()
 			self.autoboxer.set_mode_explicit(mode)
 			
 			boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method)
@@ -2035,11 +2034,11 @@ class AutoBoxerSelectionsMediator:
 
 
 		
-def histogram1d( data, nbin ) :
+def histogram1d( data, nbin, presize=0 ) :
 	fmax = max( data )
 	fmin = min( data )
-	binsize = (fmax - fmin)/(nbin-1)
-	start = fmin-binsize/2.0
+	binsize = (fmax - fmin)/(nbin-2*presize)
+	start = fmin - binsize*presize
 	region = [None]*nbin
 	hist = [None]*nbin
 	for i in xrange(nbin):
@@ -2063,13 +2062,20 @@ class CcfHistogram(QtGui.QWidget):
                 self.setMinimumSize(QtCore.QSize(256,256))
 		self.PRESIZE = 28
 
+	def clear( self ):
+		self.ccfs = None
+		self.data = None
+		self.parent.ccf_range.setText( "Range: (N/A, N/A)" )
+		self.parent.threshold_low.setText( "N/A" )
+		self.parent.threshold_hgh.setText( "N/A" )
+
 	def setData( self, data ):
 		self.ccfs = data
-		self.nbin = self.width()-2*self.PRESIZE
-                self.data = histogram1d( data, self.nbin )
+		self.nbin = self.width()
+                self.data = histogram1d( data, self.nbin, self.PRESIZE )
 
-		hmin = min(data)
-		hmax = max(data)
+		hmin = self.data[0][0]
+		hmax = self.data[0][-1]
 
 		info = "Range: (%8.4f, %8.4f)" % (hmin, hmax)
 
@@ -2077,7 +2083,7 @@ class CcfHistogram(QtGui.QWidget):
 		self.parent.threshold_low.setText( str(hmin) )
 		self.parent.threshold_hgh.setText( str(hmax) )
 		
-		self.tickers =[0, self.width()-1]
+		self.tickers =[1, self.width()-2]
 
 	def paintEvent( self, event ):
 		p=QtGui.QPainter()
@@ -2092,7 +2098,7 @@ class CcfHistogram(QtGui.QWidget):
 		hmax = max( self.data[1] )
                 for i in xrange( len(self.data[1]) ):
 			h = self.data[1][i]
-                        p.drawLine(i+self.PRESIZE, self.height(), i+self.PRESIZE, int(self.height()*(1-0.9*h/hmax)) )
+                        p.drawLine(i, self.height(), i, int(self.height()*(1-0.9*h/hmax)) )
 
 		self.drawTicker( self.tickers[0] )
 		self.drawTicker( self.tickers[1] )
@@ -2117,12 +2123,12 @@ class CcfHistogram(QtGui.QWidget):
 			self.repaint()
 
 			x = event.x()
-			if x < self.PRESIZE:
+			if x < 0 :
 				thr = self.data[0][0]
-			elif x < self.PRESIZE + self.nbin:
-				thr = self.data[0][x-self.PRESIZE]
-			else:
+			elif x > len(self.data[0]) : 
 				thr = self.data[0][-1]
+			else :
+				thr = self.data[0][x]
 
 			if self.cur_ticker==0:
 				self.parent.threshold_low.setText( str(thr) )
