@@ -10417,7 +10417,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		if BDB:
 			# with BDB only one by one node can read data base
+			import os
 			for i in xrange(0, ncpu):
+				try: os.system('rm -fr EMAN2DB/cache')
+				except: pass
 				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
