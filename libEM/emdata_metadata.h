@@ -62,10 +62,31 @@ EMData *get_fft_amplitude2D();
  */
 EMData *get_fft_phase();
 
+
 /** Get the image pixel density data in a 1D float array.
  * @return The image pixel density data.
  */
-float *get_data() const;
+inline float *get_data() const { return rdata; }
+
+/** Get the image pixel density data in a 1D float array - const version of get_data
+ * @return The image pixel density data.
+ */
+inline const float * const get_const_data() const { return rdata; }
+
+/**  Set the data explicitly
+* data pointer must be allocated using malloc!
+* @param data a pointer to the pixel data which is stored in memory. Takes possession
+* @param nx the number of pixels in the x direction
+* @param ny the number of pixels in the y direction
+* @param nz the number of pixels in the z direction
+*/
+inline void set_data(float* data, const int x, const int y, const int z) {
+	if (rdata) { free(rdata); rdata = 0; }
+	rdata = data;
+	nx = x; ny = y; nz = z;
+	update();
+}
+
 
 /** Dump the image pixel data in native byte order to a disk file.
  * @param fsp The filename to write the image data to
@@ -85,10 +106,6 @@ void write_data(string fsp,size_t loc);
 void read_data(string fsp,size_t loc);
  
 
-/** Get the image pixel density data in a 1D float array - const version of get_data
- * @return The image pixel density data.
- */
-const float * const get_const_data() const;
 
 /** Mark EMData as changed, statistics, etc will be updated at need.*/
 inline void update()
@@ -530,6 +547,15 @@ inline int get_ysize() const
 inline int get_zsize() const
 {
 	return nz;
+}
+
+		
+/** Get the number of allocated floats in the image (nx*ny*nz)
+ * @return nx*ny*nz
+ */
+inline int get_size() const
+{
+	return nx*ny*nz;
 }
 
 

@@ -211,7 +211,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "fouriergridding";
+			return "fourier_gridding";
 		}
 
 		string get_desc() const

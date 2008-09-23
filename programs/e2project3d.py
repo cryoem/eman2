@@ -75,7 +75,7 @@ def main():
 	
 	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 	parser.add_option("--orientgen", dest="orientgen", help="The orientation generator to use. See e2help.py orientgen")
-	parser.add_option("--out", dest = "outfile", default = "e2proj.img", help = "Output file. Default is 'e2proj.img'")
+	parser.add_option("--out", dest = "outfile", default = "e2proj.hdf", help = "Output file. Default is 'e2proj.img'")
 	# add --perturb
 	parser.add_option("--smear", dest = "smear", type = "int", default=0,help="Used in conjunction with --phitoo, this will rotationally smear between phi steps. The user must specify the amount of smearing (typically 2-10)")
 	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use")
@@ -147,7 +147,8 @@ def main():
 def generate_and_save_projections(options, data, eulers, smear=0):
 	for i,euler in enumerate(eulers):
 		p=data.project(options.projector,euler)
-		p.set_rotation(euler)
+		p.set_attr("xform.projection",euler)
+		p.set_attr("ptcl_repr",0)
 		
 		if smear:
 			pass
@@ -164,7 +165,7 @@ def generate_and_save_projections(options, data, eulers, smear=0):
 			exit(1)
 		
 		if (options.verbose):
-			d = euler.get_rotation()
+			d = euler.get_params("eman")
 			print "%d\t%4.2f\t%4.2f\t%4.2f" % (i, d["az"], d["alt"], d["phi"])
 
 

@@ -65,6 +65,7 @@ namespace EMAN
 	class Ctf;
 	class XYData;
 	class Transform3D;
+	class Transform;
 	
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
@@ -128,6 +129,16 @@ namespace EMAN
 		 * @param nz size for z dimension, default 1 
 		 * @param is_real boolean to specify real(true) or complex(false) image, default real */
 		EMData(int nx, int ny, int nz=1, bool is_real=true);
+		
+		/** Construction from a data pointer, dimensions must be supplied.
+		 * Takes possession of the pointer. 
+		 * data pointer must be allocated using malloc!
+		 * @param data a pointer to the pixel data which is stored in memory. Takes possession
+		 * @param nx the number of pixels in the x direction
+		 * @param ny the number of pixels in the y direction
+		 * @param nz the number of pixels in the z direction
+		 */
+		EMData(float* data, const int nx, const int ny, const int nz);
 		
 		/** Construct from an EMData (copy constructor).
 		 * Performs a deep copy 
@@ -230,7 +241,7 @@ namespace EMAN
 		 *  @param scale Scaling put on the returned image.
 		 *  @return The clip image.
 		 */ 
-		EMData *get_rotated_clip(const Transform3D & xform, const IntSize &size, float scale=1.0);
+		EMData *get_rotated_clip(const Transform & xform, const IntSize &size, float scale=1.0);
 
 		/** Window the center of an image.
 		 *  Often an image is padded with zeros for fourier interpolation.  In
@@ -299,18 +310,14 @@ namespace EMAN
 		
 		
 		/** Rotate this image.
+		 * DEPRECATED USE EMData::Transform
 		 * @param t Transformation rotation.
 		 */
 		void rotate(const Transform3D & t);
 		
-		/** Rotate this image.
-		 * @param t Transformation containing the rotation to be applied to this image
-		 */
-		void rotate(const Transform & t);
-		
-		
 		
 		/** Rotate this image.
+		 * DEPRECATED USE EMData::Transform
 		 * @param az  Rotation euler angle az  in EMAN convention.
 		 * @param alt Rotation euler angle alt in EMAN convention.		 
 		 * @param phi Rotation euler angle phi in EMAN convention.
@@ -319,12 +326,30 @@ namespace EMAN
 		
 		
 		/** Rotate then translate the image.
+		 * DEPRECATED USE EMData::Transform
 		 * @param t The rotation and translation transformation to be done.
 		 */
 		void rotate_translate(const Transform3D & t);
-		void rotate_translate(const Transform& t);
+		
+		/**  Transform the image
+		 * @param t the transform object that describes the transformation to be applied to the image.
+		 */
+		inline void transform(const Transform& t) {
+			ENTERFUNC;
+			process_inplace("math.transform",Dict("transform",(Transform*)(&t)));
+			EXITFUNC;	
+		}
+		
+		/** Apply a transformation to the image.
+		 * DEPRECATED USE EMData::Transform
+		 * @param t transform object that describes the transformation to be applied to the image.
+		 */
+		inline void rotate_translate(const Transform & t) { 
+			cout << "Deprecation warning. Please consider using EMData::transform() instead " << endl; 
+			transform(t); }
 		
 		/** Rotate then translate the image.
+		 * DEPRECATED USE EMData::Transform
 		 * @param alt Rotation euler angle alt in EMAN convention.
 		 * @param az  Rotation euler angle az  in EMAN convention.
 		 * @param phi Rotation euler angle phi in EMAN convention.
@@ -336,6 +361,7 @@ namespace EMAN
 		
 				
 		/** Rotate then translate the image.
+		 * DEPRECATED USE EMData::Transform
 		 * @param alt Rotation euler angle alt in EMAN convention.
 		 * @param az  Rotation euler angle az  in EMAN convention.
 		 * @param phi Rotation euler angle phi in EMAN convention.
@@ -362,7 +388,11 @@ namespace EMAN
 		 *  @exception ImageFormatException If the image is not square.
 		 *  @exception ImageDimensionException If the image is not 2D.
 		 */
-		void rotate_180();
+		inline void rotate_180() {
+			ENTERFUNC;
+			process_inplace("math.rotate.180",Dict());
+			EXITFUNC;	
+		}
 		
 		
 		/** dot product of 2 images. Then 'this' image is rotated/translated.
@@ -508,10 +538,11 @@ namespace EMAN
 		 * @param do360  If true, do 0-360 degree mapping. Otherwise,
 		 * do 0-180 degree mapping.
 		 * @exception ImageDimensionException If 'this' image is not 2D.
+		 * @exception UnexpectedBehaviorException if the dimension of this image and the function arguments are incompatibale - i.e. the return image is less than 0 in some dimension.
 		 * @return The image in Cartesian coordinates.
 		 */		 
 		EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
-							   int dy = 0, bool do360 = false);
+							   int dy = 0, bool do360 = false) const;
 		
 		
 		/** multiplies by a radial function in fourier space.
@@ -702,17 +733,17 @@ namespace EMAN
 		/** cut a 2D slice out of a real 3D map. Put slice into 'this' image.
 		 *
 		 * @param map The real 3D map.
-		 * @param orientation Orientation of the slice. Takes into account rotation, post and pretrans.
+		 * @param tr orientation of the slice as encapsulated in a Transform object
 		 * @param interpolate Do interpolation or not.
 		 * @exception NullPointerException If map is NULL.
 		 * @exception ImageDimensionException If this image is not 2D.
 		 * @exception ImageDimensionException If map image is not 3D.
 		 * @exception ImageFormatException If this image is complex
 		 * @exception ImageFormatException If map is complex
-		 * @author David Woolford (adapted from an original version by Steve Ludkte)
+		 * @author David Woolford (adapted from an original version by Steve Ludtke)
 		 * @date Feb 2008
 		 */
-		void cut_slice(const EMData * map, Transform3D * orientation = 0, bool interpolate = true);
+		void cut_slice(const EMData * const map, const Transform& tr, bool interpolate = true);
 
 		/** Opposite of the cut_slice(). It will take a slice and insert
 		 * the data into a real 3D map. It does not interpolate, it uses
@@ -725,10 +756,10 @@ namespace EMAN
 		 * @exception ImageDimensionException If map image is not 3D.
 		 * @exception ImageFormatException If this image is complex
 		 * @exception ImageFormatException If map is complex
-		 * @author David Woolford (adapted from an original version by Steve Ludkte)
+		 * @author David Woolford (adapted from an original version by Steve Ludtke)
 		 * @date Feb 2008
 		 */		 
-		void uncut_slice(EMData * map, Transform3D * orientation = 0) const;
+		void uncut_slice(EMData * const map, const Transform& tr) const;
 
 		/** function for MarchingCubes, for 3D image display
 		 * @return the resolution

@@ -369,7 +369,6 @@ namespace EMAN
 		static TypeDict static_get_param_types() {
 			TypeDict d;
 			
-			d.put("flip", EMObject::EMDATA);
 			d.put("imask", EMObject::INT);
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			return d;
@@ -491,7 +490,7 @@ namespace EMAN
 			d.put("flip", EMObject::EMDATA,"Optional. This is the flipped version of the images that is being aligned. If specified it will be used for the handedness check, if not a flipped copy of the image will be made");
 			d.put("maxshift", EMObject::INT,"The maximum length of the detectable translational shift");
 			d.put("transtep", EMObject::FLOAT,"The translation step to take when honing the alignment, which occurs after coarse alignment");
-			d.put("angstep", EMObject::FLOAT,"The angular step to take in the exhaustive search for the solution angle. Typically very small, such as 0.05 or smaller");
+			d.put("angstep", EMObject::FLOAT,"The angular step (in degrees) to take in the exhaustive search for the solution angle. Typically very small i.e. 3 or smaller.");
 			return d;
 		}
 	};

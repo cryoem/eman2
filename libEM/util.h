@@ -955,6 +955,14 @@ namespace EMAN
 		static bool IsPower2(int x) {
 			return ( (x>1) && (x & (x-1))==0 );
 		}
+		
+		
+		static void apply_precision(float& value, const float& precision) {
+			float c = ceilf(value);
+			float f = fast_floor(value);
+			if (fabs(value - c) < precision) value = c;
+			else if (fabs(value - f) < precision) value = f;
+		}
 	};
 }
 

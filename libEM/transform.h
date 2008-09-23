@@ -265,23 +265,13 @@ namespace EMAN
 			 */
 			Transform inverse() const;
 			
-			/** transpose this matrix inplace
-			 * FIXME double check precision there was a weird python precision error associated with this
-			 */
-// 			void transpose_inplace();
-			
-			/** get the transpose this matrix
-			 * @return the transpose of this matrix
-			 */
-// 			Transform transpose() const;
-			
 			/** Get the value stored in the internal transformation matrix at at coordinate (r,c)
 			 */
 			inline float at(int r,int c) const { return matrix[r][c]; }
 			
 			/** Set the value stored in the internal transformation matrix at at coordinate (r,c) to value
 			 */
-			void set(int r, int c, float value) { matrix[r][c] = value; }
+			inline void set(int r, int c, float value) { matrix[r][c] = value; }
 		
 			/** Operator[] convenience
 			 * so Transform3D[2][2] etc terminology can be used
@@ -959,6 +949,9 @@ namespace EMAN
 		 * @return a vector of Transform objects that map the default asymmetric unit to the neighboring asymmetric unit
 		 */
 		virtual vector<Transform> get_touching_au_transforms(bool inc_mirror = true) const;
+		
+		virtual vector<Transform> get_symmetries() const;
+		static vector<Transform> get_symmetries(const string& symmetry);
 	};
 	
 	/** An encapsulation of cyclic 3D symmetry

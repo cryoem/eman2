@@ -188,20 +188,6 @@ EMData* EMData::get_fft_phase()
 	return dat;
 }
 
-
-float *EMData::get_data() const
-{
-	//flags |= EMDATA_BUSY;
-	return rdata;
-}
-
-
-const float * const EMData::get_const_data() const
-{
-	//flags |= EMDATA_BUSY;
-	return rdata;
-}
-
 void EMData::write_data(string fsp,size_t loc) {
 	FILE *f = 0;
 	f=fopen(fsp.c_str(), "rb+");

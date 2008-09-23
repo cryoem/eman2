@@ -68,7 +68,7 @@ const string OptimumOrientationGenerator::NAME = "opt";
 
 const float Transform::ERR_LIMIT = 0.000001f;
 
- Transform::Transform() /*: transform_type(UNKNOWN)*/
+ Transform::Transform() 
 {
 	to_identity();
 }
@@ -87,7 +87,7 @@ Transform& Transform::operator=(const Transform& that ) {
 	return *this;
 }
 
-Transform::Transform(const Dict& d) /*: transform_type(UNKNOWN)*/ {
+Transform::Transform(const Dict& d)  {
 	to_identity();
 	set_params(d);
 }
@@ -605,6 +605,11 @@ Vec3f Transform::get_trans() const
 	else v[0] = matrix[0][3];
 	v[1] = matrix[1][3];
 	v[2] = matrix[2][3];
+	
+	Util::apply_precision(v[0],ERR_LIMIT);
+	Util::apply_precision(v[1],ERR_LIMIT);
+	Util::apply_precision(v[2],ERR_LIMIT);
+	
 	return v;
 }
 
@@ -658,12 +663,8 @@ void Transform::set_scale(const float& new_scale) {
 	
 	float old_scale = get_scale();
 	
-	float c = ceilf(new_scale);
-	float f = floorf(new_scale);
 	float n_scale = new_scale;
-	if (fabs(n_scale - c) < ERR_LIMIT) n_scale = c;
-	else if (fabs(n_scale - f) < ERR_LIMIT) n_scale = f;
-	
+	Util::apply_precision(n_scale,ERR_LIMIT);
 	
 	float corrected_scale = n_scale/old_scale;
 	if ( corrected_scale != 1.0 ) {
@@ -684,11 +685,7 @@ float Transform::get_scale() const {
 	float scale_residual = scale-static_cast<float>(int_scale);
 	if  ( scale_residual < ERR_LIMIT ) { scale = static_cast<float>(int_scale); };
 	
-	
-	float c = ceilf(scale);
-	float f = floorf(scale);
-	if (fabs(scale - c) < ERR_LIMIT) scale = c;
-	else if (fabs(scale - f) < ERR_LIMIT) scale = f;
+	Util::apply_precision(scale, ERR_LIMIT);
 	
 	return scale;
 }
@@ -801,10 +798,7 @@ void Transform::get_scale_and_mirror(float& scale, bool& x_mirror) const {
 	}
 	else scale = 1;
 	
-	float c = ceilf(scale);
-	float f = floorf(scale);
-	if (fabs(scale - c) < ERR_LIMIT) scale = c;
-	else if (fabs(scale - f) < ERR_LIMIT) scale = f;
+	Util::apply_precision(scale,ERR_LIMIT);
 }
 
 float Transform::get_determinant() const
@@ -813,10 +807,7 @@ float Transform::get_determinant() const
 	det -= matrix[0][1]*(matrix[1][0]*matrix[2][2]-matrix[2][0]*matrix[1][2]);
 	det += matrix[0][2]*(matrix[1][0]*matrix[2][1]-matrix[2][0]*matrix[1][1]);
 
-	float c = ceilf(det);
-	float f = floorf(det);
-	if (fabs(det - c) < ERR_LIMIT) det = c;
-	else if (fabs(det - f) < ERR_LIMIT) det = f;
+	Util::apply_precision(det,ERR_LIMIT);
 	
 	return det;
 }
@@ -3066,6 +3057,23 @@ vector<Transform> Symmetry3D::get_touching_au_transforms(bool inc_mirror) const
 	return ret;
 }
 
+
+vector<Transform> Symmetry3D::get_symmetries() const
+{
+	vector<Transform> ret;
+	for(int i = 0; i < get_nsym(); ++i ) {
+		ret.push_back(get_sym(i));
+	}
+	return ret;
+}
+
+vector<Transform> Symmetry3D::get_symmetries(const string& symmetry)
+{
+	Symmetry3D* sym = Factory<Symmetry3D>::get(symmetry);
+	vector<Transform> ret = sym->get_symmetries();
+	delete sym;
+	return ret;
+}
 
 // C Symmetry stuff 
 Dict CSym::get_delimiters(const bool inc_mirror) const {

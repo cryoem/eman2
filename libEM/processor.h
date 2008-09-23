@@ -39,6 +39,7 @@
 #include "emobject.h"
 #include "util.h"
 #include "geometry.h"
+#include "transform.h"
 
 #include <cfloat>
 #include <climits>
@@ -535,7 +536,7 @@ The basic design of EMAN Processors: <br>\
 			return "filter.wiener2dauto";
 		}
 
-		EMData* process(const EMData * const image);
+		virtual EMData* process(const EMData * const image);
 		
 		void process_inplace(EMData *image);
 
@@ -582,7 +583,7 @@ The basic design of EMAN Processors: <br>\
 			return "filter.wiener2d";
 		}
 
-		EMData* process(const EMData * const image);
+		virtual EMData* process(const EMData * const image);
 		
 		void process_inplace(EMData *image);
 
@@ -1189,6 +1190,53 @@ The basic design of EMAN Processors: <br>\
 				return "The 2D image is rotated by 180 degree by carefully swapping image pixel values. No explicit matrix multiplication is performed. If image dimensions are even will change pixels along x=0 and y=0. Works for all combinations of even and oddness.";
 			}
 	};
+	
+	/** Transform the image using a Transform object
+	 * @author David Woolford
+	 * @date September 2008
+	 */
+	class TransformProcessor:public Processor
+	{
+		public:
+			virtual string get_name() const
+			{
+				return "math.transform";
+			}
+			static Processor *NEW()
+			{
+				return new TransformProcessor();
+			}
+			
+			/**
+			 * @exception ImageDimensionException if the image is not 2D or 3D
+			 * @exception InvalidParameterException if the Transform parameter is not specified
+			 */
+			virtual void process_inplace(EMData* image);
+
+			/**
+			 * @exception ImageDimensionException if the image is not 2D or 3D
+			 * @exception InvalidParameterException if the Transform parameter is not specified
+			 */
+			virtual EMData* process(const EMData* const image);
+			
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("transform", EMObject::TRANSFORM, "The transform that will be applied to the image" );
+				return d;
+			}
+			
+			virtual string get_desc() const
+			{
+				return "The image is transformed the Transform parameter.";
+			}
+		private:
+			float* transform(const EMData* const image, const Transform& t);
+			
+			
+			void assert_valid_aspect(const EMData* const image);
+	};
+
 
 	/**f(x) = maxval if f(x) > maxval;
 	  * f(x) = minval if f(x) < minval
@@ -2578,7 +2626,7 @@ The basic design of EMAN Processors: <br>\
 	* identical code, the main difference being the logical operator.
 	* Both of these instances are written at compile time using templates.
 	*/
-	class BooleanShrinkProcessor: public Processor
+	class BooleanShrinkProcessor
 	{
 		protected:
 			/** Boolean shrink an image, returning the processed image
@@ -2589,7 +2637,7 @@ The basic design of EMAN Processors: <br>\
 			* @return the image that results from the operation
 			 */
 			template<class LogicOp>
-			EMData* process(const EMData *const image);
+			EMData* process(const EMData *const image, Dict& params);
 			
 			/** Boolean shrink an image inplace
 			 * @param image the image to operate on
@@ -2598,7 +2646,7 @@ The basic design of EMAN Processors: <br>\
 			 * @exception NullPointerException if the image pointer is null
 			 */
 			template<class LogicOp>
-			void process_inplace(EMData * image);
+			void process_inplace(EMData * image, Dict& params);
 			
 	};
 	
@@ -2608,7 +2656,7 @@ The basic design of EMAN Processors: <br>\
 	 * @author David Woolford
 	 * @date September 2007
 	 */
-	class MaxShrinkProcessor:public BooleanShrinkProcessor
+	class MaxShrinkProcessor:public BooleanShrinkProcessor, public Processor
 	{
 		public:
 			/** The max shrink processor has its own process function
@@ -2619,13 +2667,13 @@ The basic design of EMAN Processors: <br>\
 			*/
 			virtual EMData* process(const EMData *const image)
 			{
-				return BooleanShrinkProcessor::process<GreaterThan>(image);
+				return BooleanShrinkProcessor::process<GreaterThan>(image, params);
 			}
 			
 			// resizes the image
 			virtual void process_inplace(EMData * image)
 			{
-				BooleanShrinkProcessor::process_inplace<GreaterThan>(image);
+				BooleanShrinkProcessor::process_inplace<GreaterThan>(image, params);
 			}
 			
 			string get_desc() const
@@ -2664,7 +2712,7 @@ The basic design of EMAN Processors: <br>\
 	 * @author David Woolford
 	 * @date September 2007
 	 */
-	class MinShrinkProcessor:public BooleanShrinkProcessor
+	class MinShrinkProcessor:public BooleanShrinkProcessor, public Processor
 	{
 		public:
 			/** The min shrink processor has its own process function
@@ -2675,13 +2723,13 @@ The basic design of EMAN Processors: <br>\
 			*/
 			virtual EMData* process(const EMData *const image)
 			{
-				return BooleanShrinkProcessor::process<LessThan>(image);
+				return BooleanShrinkProcessor::process<LessThan>(image, params);
 			}
 			
 			// resizes the image
 			virtual void process_inplace(EMData * image)
 			{
-				BooleanShrinkProcessor::process_inplace<LessThan>(image);
+				BooleanShrinkProcessor::process_inplace<LessThan>(image, params);
 			}
 			string get_desc() const
 			{
@@ -2745,7 +2793,7 @@ The basic design of EMAN Processors: <br>\
 				return "Shrink an image by a given amount , using the mean value found in the pixel neighborhood.";
 			}
 			
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "math.meanshrink";
 			}
@@ -2754,7 +2802,7 @@ The basic design of EMAN Processors: <br>\
 				return new MeanShrinkProcessor();
 			}
 			
-			TypeDict get_param_types() const
+			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("n", EMObject::FLOAT, "The shrink factor");
@@ -2813,7 +2861,7 @@ The basic design of EMAN Processors: <br>\
 			return "Shrink an image by a given amount , using the median value found in the pixel neighborhood.";
 		}
 			
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "math.medianshrink";
 		}
@@ -2822,7 +2870,7 @@ The basic design of EMAN Processors: <br>\
 			return new MedianShrinkProcessor();
 		}
 			
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("n", EMObject::INT, "The shrink factor");
@@ -3696,9 +3744,9 @@ The basic design of EMAN Processors: <br>\
 	class RadialSubstractProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "math.radialsubtract";
 		}
@@ -3708,7 +3756,7 @@ The basic design of EMAN Processors: <br>\
 			return new RadialSubstractProcessor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "subtracts circularly symmetric part of an image.";
 		}
@@ -3722,9 +3770,9 @@ The basic design of EMAN Processors: <br>\
 	class FlipProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "xform.flip";
 		}
@@ -3734,14 +3782,14 @@ The basic design of EMAN Processors: <br>\
 			return new FlipProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;");
 			return d;
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "flip an image around an axis.";
 		}
@@ -3783,9 +3831,9 @@ The basic design of EMAN Processors: <br>\
 	class AddNoiseProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "math.addnoise";
 		}
@@ -3795,7 +3843,7 @@ The basic design of EMAN Processors: <br>\
 			return new AddNoiseProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("noise", EMObject::FLOAT);
@@ -3803,7 +3851,7 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "add noise to an image";
 		}
@@ -3820,7 +3868,7 @@ The basic design of EMAN Processors: <br>\
 	class AddSigmaNoiseProcessor:public AddNoiseProcessor
 	{
 	  public:
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "math.addsignoise";
 		}
@@ -3830,7 +3878,7 @@ The basic design of EMAN Processors: <br>\
 			return new AddSigmaNoiseProcessor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "add sigma noise.";
 		}
@@ -3849,9 +3897,9 @@ The basic design of EMAN Processors: <br>\
 	class AddRandomNoiseProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "addspectralnoise";
 		}
@@ -3861,7 +3909,7 @@ The basic design of EMAN Processors: <br>\
 			return new AddRandomNoiseProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("n", EMObject::INT);
@@ -3873,7 +3921,7 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "add random noise.";
 		}
@@ -3893,9 +3941,9 @@ The basic design of EMAN Processors: <br>\
 			* @param image the image to operate on
 			* @exception ImageFormatException if the image is not complex
 			 */
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "xform.fourierorigin.tocorner";
 			}
@@ -3905,7 +3953,7 @@ The basic design of EMAN Processors: <br>\
 				return new FourierToCornerProcessor();
 			}
 
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Undoes the xform.fourierorigin.tocenter processor";
 			}
@@ -3931,9 +3979,9 @@ The basic design of EMAN Processors: <br>\
 			* @param image the image to operate on
 			* @exception ImageFormatException if the image is not complex
 			*/
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "xform.fourierorigin.tocenter";
 			}
@@ -3943,7 +3991,7 @@ The basic design of EMAN Processors: <br>\
 				return new FourierToCenterProcessor();
 			}
 
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Translates the origin in Fourier space from the corner to the center in y and z - works in 2D and 3D";
 			}
@@ -4011,9 +4059,9 @@ The basic design of EMAN Processors: <br>\
 	class PhaseToCenterProcessor:public Phase180Processor
 	{
 		public:
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "xform.phaseorigin.tocenter";
 			}
@@ -4023,7 +4071,7 @@ The basic design of EMAN Processors: <br>\
 				return new PhaseToCenterProcessor();
 			}
 		
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Undoes the effect of the xform.phaseorigin.tocorner processor";
 			}
@@ -4040,9 +4088,9 @@ The basic design of EMAN Processors: <br>\
 	class PhaseToCornerProcessor:public Phase180Processor
 	{
 		public:
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "xform.phaseorigin.tocorner";
 			}
@@ -4052,7 +4100,7 @@ The basic design of EMAN Processors: <br>\
 				return new PhaseToCornerProcessor();
 			}
 		
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Translates a centered image to the corner in a forward fashion";
 			}
@@ -4066,9 +4114,9 @@ The basic design of EMAN Processors: <br>\
 	class AutoMask2DProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "mask.auto2d";
 		}
@@ -4078,7 +4126,7 @@ The basic design of EMAN Processors: <br>\
 			return new AutoMask2DProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("threshold", EMObject::FLOAT, "runs from ~ -2 to 2, negative numbers for dark protein and positive numbers for light protein (stain).");
@@ -4086,7 +4134,7 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Attempts to automatically mask out the particle, excluding other particles in the box, etc.";
 		}
@@ -4100,9 +4148,9 @@ The basic design of EMAN Processors: <br>\
 	class AutoMask3DProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "mask.auto3d.thresh";
 		}
@@ -4112,7 +4160,7 @@ The basic design of EMAN Processors: <br>\
 			return new AutoMask3DProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("threshold1", EMObject::FLOAT);
@@ -4120,7 +4168,7 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Tries to mask out only interesting density";
 		}
@@ -4137,9 +4185,9 @@ The basic design of EMAN Processors: <br>\
 	class AutoMask3D2Processor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "mask.auto3d";
 		}
@@ -4149,12 +4197,12 @@ The basic design of EMAN Processors: <br>\
 			return new AutoMask3D2Processor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Tries to mask out only interesting density";
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("radius", EMObject::INT);
@@ -4170,14 +4218,14 @@ The basic design of EMAN Processors: <br>\
 	class AddMaskShellProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "mask.addshells";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Add additional shells/rings to an existing 1/0 mask image";
 		}
@@ -4187,7 +4235,7 @@ The basic design of EMAN Processors: <br>\
 			return new AddMaskShellProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("nshells", EMObject::INT, "number of shells to add");
@@ -4202,9 +4250,9 @@ The basic design of EMAN Processors: <br>\
 	class PhaseToMassCenterProcessor:public Processor
 	{
 		public:
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "xform.phasecenterofmass";
 			}
@@ -4214,12 +4262,12 @@ The basic design of EMAN Processors: <br>\
 				return new PhaseToMassCenterProcessor();
 			}
 
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "centers the image the center of mass, which is calculated using Fourier phases, ignores old dx, dy.";
 			}
 		
-			TypeDict get_param_types() const
+			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("int_shift_only", EMObject::INT);
@@ -4234,9 +4282,9 @@ The basic design of EMAN Processors: <br>\
 	class ToMassCenterProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "xform.centerofmass";
 		}
@@ -4246,12 +4294,12 @@ The basic design of EMAN Processors: <br>\
 			return new ToMassCenterProcessor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.";
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("int_shift_only", EMObject::INT);
@@ -4265,9 +4313,9 @@ The basic design of EMAN Processors: <br>\
 	class ACFCenterProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "xform.centeracf";
 		}
@@ -4277,12 +4325,12 @@ The basic design of EMAN Processors: <br>\
 			return new ACFCenterProcessor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Center image using self-convolution.";
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			return d;
@@ -4296,9 +4344,9 @@ The basic design of EMAN Processors: <br>\
 	class SNRProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "eman1.filter.snr";
 		}
@@ -4308,12 +4356,12 @@ The basic design of EMAN Processors: <br>\
 			return new SNRProcessor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.";
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("wiener", EMObject::INT);
@@ -4328,14 +4376,14 @@ The basic design of EMAN Processors: <br>\
 	class FileFourierProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "eman1.filter.byfile";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "A fourier processor specified in a 2 column text file.";
 		}
@@ -4345,7 +4393,7 @@ The basic design of EMAN Processors: <br>\
 			return new FileFourierProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("filename", EMObject::STRING);
@@ -4366,14 +4414,14 @@ The basic design of EMAN Processors: <br>\
 	class SymSearchProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "misc.symsearch";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Identifiy the best symmetry in the given symmetry list for each pixel and then apply the best symmetry to each pixel.";
 		}
@@ -4383,7 +4431,7 @@ The basic design of EMAN Processors: <br>\
 			return new SymSearchProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("sym", EMObject::STRINGARRAY, "the list of symmetries to search");
@@ -4404,7 +4452,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "misc.localnorm";
 		}
@@ -4414,12 +4462,12 @@ The basic design of EMAN Processors: <br>\
 			return new LocalNormProcessor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a normalization size similar to an lp= value.";
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("threshold", EMObject::FLOAT);
@@ -4436,9 +4484,9 @@ The basic design of EMAN Processors: <br>\
 	class IndexMaskFileProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "mask.fromfile";
 		}
@@ -4448,7 +4496,7 @@ The basic design of EMAN Processors: <br>\
 			return new IndexMaskFileProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("filename", EMObject::STRING);
@@ -4456,7 +4504,7 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Multiplies the image by the specified file using pixel indices. The images must be same size. If 'ismaskset=' is 1, it will take a file containing a set of masks and apply the first mask to the image.";
 		}
@@ -4469,9 +4517,9 @@ The basic design of EMAN Processors: <br>\
 	class CoordinateMaskFileProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "mask.fromfile.sizediff";
 		}
@@ -4481,12 +4529,12 @@ The basic design of EMAN Processors: <br>\
 			return new CoordinateMaskFileProcessor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.";
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("filename", EMObject::STRING);
@@ -4504,7 +4552,7 @@ The basic design of EMAN Processors: <br>\
 		{
 		}
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "mask.paint";
 		}
@@ -4514,12 +4562,12 @@ The basic design of EMAN Processors: <br>\
 			return new PaintProcessor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Paints a circle with a decaying edge into the image. r<r1 -> v1, r1<r<r2 -> (v1,v2), r>r2 unchanged";
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("x", EMObject::INT,"Center of circle");
@@ -4532,7 +4580,7 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 
-		void set_params(const Dict & new_params)
+		virtual void set_params(const Dict & new_params)
 		{
 			params = new_params;
 
@@ -4546,7 +4594,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		protected:
-		void process_inplace(EMData *image);
+		virtual void process_inplace(EMData *image);
 
 		int x,y,z,r1;
 		float v1;
@@ -4562,14 +4610,14 @@ The basic design of EMAN Processors: <br>\
 	class SetSFProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		  virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "misc.setpowspec";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Sets the structure factor based on a 1D x/y text file.";
 		}
@@ -4579,7 +4627,7 @@ The basic design of EMAN Processors: <br>\
 			return new SetSFProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("filename", EMObject::STRING);
@@ -4593,9 +4641,9 @@ The basic design of EMAN Processors: <br>\
 	class SmartMaskProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "mask.smart";
 		}
@@ -4605,12 +4653,12 @@ The basic design of EMAN Processors: <br>\
 			return new SmartMaskProcessor();
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Smart mask processor.";
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("mask", EMObject::FLOAT);
@@ -4623,14 +4671,14 @@ The basic design of EMAN Processors: <br>\
 	class IterBinMaskProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "mask.addshells.gauss";
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Iterative expansion of a binary mask, val1 is number of pixels to expand, if val2!=0 will make a soft Gaussian edge starting after val2 pixels.";
 		}
@@ -4640,7 +4688,7 @@ The basic design of EMAN Processors: <br>\
 			return new IterBinMaskProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("val1", EMObject::FLOAT, "number of pixels to expand");
@@ -4670,14 +4718,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImagePureGaussian : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.puregaussian";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image as a strict Gaussian ";
 		}
@@ -4687,7 +4735,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImagePureGaussian();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("x_sigma", EMObject::FLOAT, "sigma value for this Gaussian blob on x direction");
@@ -4709,14 +4757,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageLineWave : public TestImageProcessor
 	{
 		public:
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 		
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "testimage.linewave";
 			}
 		
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Insert an oscillating sine wave into the pixel data";
 			}
@@ -4726,7 +4774,7 @@ The basic design of EMAN Processors: <br>\
 				return new TestImageLineWave();
 			}
 		
-			TypeDict get_param_types() const
+			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("period", EMObject::FLOAT, "The period of the oscillating sine wave. Default 10.");
@@ -4748,14 +4796,14 @@ The basic design of EMAN Processors: <br>\
 			/** Make a useful tomographic phantom image 
 			 * @param image the image to operate upon
 			 */
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 		
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "testimage.tomo.objects";
 			}
 		
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Make an image consisting various objects, useful for tomographic testing";
 			}
@@ -4780,14 +4828,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageGradient : public TestImageProcessor
 	{
 		public:
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 		
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "testimage.gradient";
 			}
 		
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Make a gradient image of the form y=mx+b, where x is any of the image axes.";
 			}
@@ -4797,7 +4845,7 @@ The basic design of EMAN Processors: <br>\
 				return new TestImageGradient();
 			}
 		
-			TypeDict get_param_types() const
+			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("axis", EMObject::STRING, "The axis the will be used to determine pixel values. Must be x,y or z");
@@ -4821,14 +4869,14 @@ The basic design of EMAN Processors: <br>\
 			 * nono zero value
 			* @param image the image to operate upon
 			 */
-			void process_inplace(EMData * image);
+			virtual void process_inplace(EMData * image);
 		
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "testimage.axes";
 			}
 		
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Make an image consisting of a single cross";
 			}
@@ -4838,7 +4886,7 @@ The basic design of EMAN Processors: <br>\
 				return new TestImageAxes();
 			}
 		
-			TypeDict get_param_types() const
+			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("int", EMObject::FLOAT, "radius of the lines emanating from the origin");
@@ -4855,14 +4903,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageGaussian : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.gaussian";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image as a Gaussian Blob";
 		}
@@ -4872,7 +4920,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImageGaussian();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("sigma", EMObject::FLOAT, "sigma value for this Gaussian blob");
@@ -4887,14 +4935,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageScurve : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.scurve";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image with a lumpy S-curve used for alignment testing";
 		}
@@ -4904,7 +4952,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImageScurve();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			return d;
@@ -4921,14 +4969,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageSinewave : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.sinewave";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image as a sine wave in specified wave length";
 		}
@@ -4938,7 +4986,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImageSinewave();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("wave_length", EMObject::FLOAT, "wave_length in equation sin(x*2*PI/wave_length - phase*180/PI)");
@@ -4961,14 +5009,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageSinewaveCircular : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.sinewave.circular";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image as a circular sine wave in specified wave length";
 		}
@@ -4978,7 +5026,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImageSinewaveCircular();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("wave_length", EMObject::FLOAT, "(required)this value is the d in function |sin(x/d)|, unit: pixel");
@@ -4998,14 +5046,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageSquarecube : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.squarecube";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image as a square or cube depends on 2D or 3D of the source image";
 		}
@@ -5015,7 +5063,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImageSquarecube();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("edge_length", EMObject::FLOAT, "edge length of the square or cube, unit: pixel");
@@ -5035,14 +5083,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageCirclesphere : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.circlesphere";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image as a circle or sphere depends on 2D or 3D of the source image";
 		}
@@ -5052,7 +5100,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImageCirclesphere();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("radius", EMObject::FLOAT, "radius of circle or sphere, unit: pixel");
@@ -5069,14 +5117,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageNoiseUniformRand : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.noise.uniform.rand";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image as a uniform random noise, random number generated from gsl_rng_mt19937, the pixel value is [0, 1)";
 		}
@@ -5086,7 +5134,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImageNoiseUniformRand();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("seed", EMObject::INT, "seed for random number generator");
@@ -5104,14 +5152,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageNoiseGauss : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.noise.gauss";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image as a random noise, the random value is gaussian distributed";
 		}
@@ -5121,7 +5169,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImageNoiseGauss();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("sigma", EMObject::FLOAT, "sigma value of gausian distributed noise, default is 0.5");
@@ -5136,14 +5184,14 @@ The basic design of EMAN Processors: <br>\
 	class TestImageCylinder : public TestImageProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 		
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "testimage.cylinder";
 		}	
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Replace a source image as a cylinder";
 		}
@@ -5153,7 +5201,7 @@ The basic design of EMAN Processors: <br>\
 			return new TestImageCylinder();
 		}
 		
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("radius", EMObject::FLOAT, "radius for the cylinder");
@@ -5171,9 +5219,9 @@ The basic design of EMAN Processors: <br>\
 	class CCDNormProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "filter.ccdnorm";
 		}
@@ -5183,12 +5231,12 @@ The basic design of EMAN Processors: <br>\
 			return new CCDNormProcessor();
 		}
 
-		string get_desc() const
+		virtual 	string get_desc() const
 		{
 			return "normalize the 4 quadrants of a CCD image";
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("width", EMObject::INT, "number of pixels on either side of the seam to sample");
@@ -5206,9 +5254,9 @@ The basic design of EMAN Processors: <br>\
 	class WaveletProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
 
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "basis.wavelet";
 		}
@@ -5218,7 +5266,7 @@ The basic design of EMAN Processors: <br>\
 			return new WaveletProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("type", EMObject::STRING, "'daub', 'harr' or 'bspl'");
@@ -5227,7 +5275,7 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Computes the DWT (discrete wavelet transform) of an image in one of 3 possible bases";
 		}
@@ -5252,9 +5300,9 @@ The basic design of EMAN Processors: <br>\
 	class TomoTiltEdgeMaskProcessor : public Processor
 	{
 	public:
-		void process_inplace(EMData* image);
+		virtual void process_inplace(EMData* image);
 			
-		string get_name() const
+		virtual string get_name() const
 		{
 			return "tomo.tiltedgemask";
 		}
@@ -5264,7 +5312,7 @@ The basic design of EMAN Processors: <br>\
 			return new TomoTiltEdgeMaskProcessor();
 		}
 
-		TypeDict get_param_types() const
+		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("biedgemean", EMObject::BOOL, "Mutually  exclusive of edgemean. Experimental. Causes the pixels in the masked out areas to take the average value of both the left and right edge pixel strips");
@@ -5276,7 +5324,7 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Masks the part of the image which is not present in the 0-tilt image. Masked areas can be 0 or set to the edgemean (of the nearest or both edges). Masked areas can also have a Gaussian fall-off to make the appearance smooth.";
 		}
@@ -5300,9 +5348,9 @@ The basic design of EMAN Processors: <br>\
 	class TomoTiltAngleWeightProcessor : public Processor
 	{
 		public:
-			void process_inplace(EMData* image);
+			virtual void process_inplace(EMData* image);
 			
-			string get_name() const
+			virtual string get_name() const
 			{
 				return "tomo.tiltangleweight";
 			}
@@ -5312,7 +5360,7 @@ The basic design of EMAN Processors: <br>\
 				return new TomoTiltAngleWeightProcessor();
 			}
 
-			TypeDict get_param_types() const
+			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
 				d.put("angle", EMObject::INT, "The angle that the image is, with respect to the zero tilt image");
@@ -5320,7 +5368,7 @@ The basic design of EMAN Processors: <br>\
 				return d;
 			}
 
-			string get_desc() const
+			virtual string get_desc() const
 			{
 				return "Weights the image by 1/cos(angle)";
 			}

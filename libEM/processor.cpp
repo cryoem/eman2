@@ -41,6 +41,7 @@
 #include "emassert.h"
 #include "randnum.h"
 
+
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_wavelet.h>
@@ -72,6 +73,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&ValueSquaredProcessor::NEW);
 	force_add(&ValueSqrtProcessor::NEW);
 	force_add(&Rotate180Processor::NEW);
+	force_add(&TransformProcessor::NEW);
 	force_add(&InvertCarefullyProcessor::NEW);
 
 	force_add(&ClampingProcessor::NEW);
@@ -1089,9 +1091,9 @@ void MedianShrinkProcessor::process_inplace(EMData * image)
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
-		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
-	}
+// 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
+// 		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
+// 	}
 
 
 	int shrunken_nx = nx / shrink_factor;
@@ -1125,9 +1127,9 @@ EMData* MedianShrinkProcessor::process(const EMData *const image)
 	int nz = image->get_zsize();
 		
 
-	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
-		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
-	}
+// 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
+// 		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
+// 	}
 
 
 	int shrunken_nx = nx / shrink_factor;
@@ -1502,7 +1504,7 @@ void MeanShrinkProcessor::accrue_mean_one_p_five(EMData* to, const EMData * cons
 }
 
 template<class LogicOp>
-EMData* BooleanShrinkProcessor::process(const EMData *const image)
+EMData* BooleanShrinkProcessor::process(const EMData *const image, Dict& params)
 {
 	// The basic idea of this code is to iterate through each pixel in the output image
 	// determining its value by investigation a region of the input image
@@ -1623,7 +1625,7 @@ EMData* BooleanShrinkProcessor::process(const EMData *const image)
 }
 
 template<class LogicOp>
-void BooleanShrinkProcessor::process_inplace(EMData * image)
+void BooleanShrinkProcessor::process_inplace(EMData * image, Dict& params)
 {
 	// The basic idea of this code is to iterate through each pixel in the output image
 	// determining its value by investigation a region of the input image
@@ -5833,7 +5835,9 @@ void TestImageSinewave::process_inplace(EMData * image)
 		}
 		
 		if(az != 0 || alt != 0 || phi != 0) {
-			image->rotate(az, alt, phi);
+			Dict d("type","eman");
+			d["az"] = az; d["phi"] = phi; d["alt"] = alt;
+			image->transform(Transform(d));
 		}
 	}
 	
@@ -6450,9 +6454,9 @@ void MirrorProcessor::process_inplace(EMData *image)
 
 	float* data = image->EMData::get_data();
 	
-	int nx = image->EMData::get_xsize();
-	int ny = image->EMData::get_ysize();
-	int nz = image->EMData::get_zsize();	 
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();	 
 	int nxy = nx*ny;
 	
 	int x_start = 1-nx%2;
@@ -6523,6 +6527,194 @@ int EMAN::multi_processors(EMData * image, vector < string > processornames)
 	}
 	return 0;
 }
+
+
+float* TransformProcessor::transform(const EMData* const image, const Transform& t) {
+	
+	ENTERFUNC;
+
+	Transform inv = t.inverse();
+	 
+	
+	const float * const src_data = image->get_const_data();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	int nxy = nx*ny;
+	
+	float *des_data = (float *) malloc(nx*ny*nz* sizeof(float));
+	
+	if (nz == 1) {
+		Vec2f offset(nx/2,ny/2);
+		for (int j = 0; j < ny; j++) {
+			for (int i = 0; i < nx; i++) {				
+				Vec2f coord(i-nx/2,j-ny/2);
+				Vec2f soln = inv*coord;
+				soln += offset;
+					
+				float x2 = soln[0];
+				float y2 = soln[1];
+
+				if (x2 < 0 || x2 >= nx || y2 < 0 || y2 >= ny ) {
+					des_data[i + j * nx] = 0; // It may be tempting to set this value to the
+					// mean but in fact this is not a good thing to do. Talk to S.Ludtke about it.
+				}
+				else {
+					int ii = Util::fast_floor(x2);
+					int jj = Util::fast_floor(y2);
+					int k0 = ii + jj * nx;
+					int k1 = k0 + 1;
+					int k2 = k0 + nx;
+					int k3 = k0 + nx + 1;
+
+					if (ii == nx - 1) {
+						k1--;
+						k3--;
+					}
+					if (jj == ny - 1) {
+						k2 -= nx;
+						k3 -= nx;
+					}
+
+					float t = x2 - ii;
+					float u = y2 - jj;
+					
+					des_data[i + j * nx] = Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u);
+				}
+			}
+		}
+	}
+	else {
+		int l = 0;
+		Vec3f offset(nx/2,ny/2,nz/2);
+		for (int k = 0; k < nz; k++) {
+			for (int j = 0; j < ny; j++) {
+				for (int i = 0; i < nx; i++,l++) {
+					Vec3f coord(i-nx/2,j-ny/2,k-nz/2);
+					Vec3f soln = inv*coord;
+					soln += offset;
+					
+					float x2 = soln[0];
+					float y2 = soln[1];
+					float z2 = soln[2];
+
+					if (x2 < 0 || y2 < 0 || z2 < 0 || x2 >= nx  || y2 >= ny  || z2>= nz ) {
+						des_data[l] = 0;
+					}
+					else {
+						int ix = Util::fast_floor(x2);
+						int iy = Util::fast_floor(y2);
+						int iz = Util::fast_floor(z2);
+						float tuvx = x2-ix;
+						float tuvy = y2-iy;
+						float tuvz = z2-iz;
+						int ii = ix + iy * nx + iz * nxy;
+
+						int k0 = ii;
+						int k1 = k0 + 1;
+						int k2 = k0 + nx;
+						int k3 = k0 + nx+1;
+						int k4 = k0 + nxy;
+						int k5 = k1 + nxy;
+						int k6 = k2 + nxy;
+						int k7 = k3 + nxy;
+	
+						if (ix == nx - 1) {
+							k1--;
+							k3--;
+							k5--;
+							k7--;
+						}
+						if (iy == ny - 1) {
+							k2 -= nx;
+							k3 -= nx;
+							k6 -= nx;
+							k7 -= nx;
+						}
+						if (iz == nz - 1) {
+							k4 -= nxy;
+							k5 -= nxy;
+							k6 -= nxy;
+							k7 -= nxy;
+						}
+	
+						des_data[l] = Util::trilinear_interpolate(src_data[k0],
+								src_data[k1], src_data[k2], src_data[k3], src_data[k4],
+								src_data[k5], src_data[k6],	src_data[k7], tuvx, tuvy, tuvz);
+					}
+				}
+			}
+		}
+	}
+	
+	EXITFUNC;
+	return des_data;
+}
+
+void TransformProcessor::assert_valid_aspect(const EMData* const image) {
+	int ndim = image->get_ndim();
+	if (ndim != 2 && ndim != 3) throw ImageDimensionException("Transforming an EMData only works if it's 2D or 3D");
+	
+	Transform* t = params.set_default("transform",(Transform*)0);
+	if (t == 0) throw InvalidParameterException("You must specify a Transform in order to perform this operation");
+}
+
+EMData* TransformProcessor::process(const EMData* const image) {
+	ENTERFUNC;
+	
+	assert_valid_aspect(image);
+	
+	Transform* t = params["transform"];
+	
+	float* des_data = transform(image,*t);
+	EMData* p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
+	// 	all_translation += transform.get_trans();
+	
+	float scale = t->get_scale();
+	if (scale != 1.0) {
+		Dict attr_dict = image->get_attr_dict();
+		float inv_scale = 1.0/scale;
+		attr_dict["origin_row"] = (float) attr_dict["origin_row"] * inv_scale;
+		attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
+		attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
+		p->set_attr_dict(attr_dict); // This adds new values, keeping originals.
+	}
+
+	return p;
+	
+	EXITFUNC;
+}
+
+void TransformProcessor::process_inplace(EMData* image) {
+	ENTERFUNC;
+
+	assert_valid_aspect(image);
+	
+	Transform* t = params["transform"];
+
+	float* des_data = transform(image,*t);
+	
+	// 	all_translation += transform.get_trans();
+	
+	image->set_data(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize());
+	
+	float scale = t->get_scale();
+	if (scale != 1.0) {
+		Dict attr = image->get_attr_dict();
+		Dict attr_dict;
+		float inv_scale = 1.0/scale;
+		attr_dict["origin_row"] = (float) attr["origin_row"] * inv_scale;
+		attr_dict["origin_col"] = (float) attr["origin_col"] * inv_scale;
+		attr_dict["origin_sec"] = (float) attr["origin_sec"] * inv_scale;
+		image->set_attr_dict(attr_dict); // This adds new values, keeping originals.
+	}
+
+	image->update();
+	
+	EXITFUNC;
+}
+
+
 
 void Rotate180Processor::process_inplace(EMData* image) {
 	ENTERFUNC;

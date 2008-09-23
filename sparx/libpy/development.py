@@ -5717,7 +5717,7 @@ def create_write_gridprojections(volume, filepattern, anglelist,
 		    "kb_alpha":kb_alpha,
 		    "kb_K":kb_K,
 		    "npad":npad}
-	projvol = volume.project("fouriergridding",myparams)
+	projvol = volume.project("fourier_gridding",myparams)
 	nangles = len(anglelist) / 3
 	nx = volume.get_xsize()
 	ny = volume.get_ysize()
@@ -5770,11 +5770,11 @@ def cre(volume, filepattern, anglelist,
 		"kb_alpha":kb_alpha,
 		"kb_K":kb_K,
 		"npad":npad}
-    #proj = volume.project("fouriergridding",myparams)
+    #proj = volume.project("fourier_gridding",myparams)
     #projname = parse_spider_fname(filepattern, start)
     #proj.write_image(projname, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
     " This does not work in C code, DO NOT USE!"
-    return volume.project("fouriergridding",myparams)
+    return volume.project("fourier_gridding",myparams)
 """
 
 '''

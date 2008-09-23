@@ -312,8 +312,8 @@ class TestTypeConverter(unittest.TestCase):
         ptuple1 = (16,16,16)
         plist1 = list(ptuple1)
         
-        img2=img1.get_rotated_clip(Transform3D(0,0,0), plist1, 1.0)
-        img3=img1.get_rotated_clip(Transform3D(0,0,0), ptuple1, 1.0)
+        img2=img1.get_rotated_clip(Transform(), plist1, 1.0)
+        img3=img1.get_rotated_clip(Transform(), ptuple1, 1.0)
         
         testlib.check_emdata(img2, sys.argv[0])
         testlib.check_emdata(img3, sys.argv[0])

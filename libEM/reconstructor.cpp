@@ -403,15 +403,30 @@ void FourierReconstructor::setup()
 	}
 }
 
-EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  const Vec3f& translation )
+EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  const Transform& t )
 {
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
+	EMData* return_slice = 0;
+	Transform tmp(t);
+	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly
 	
-	EMData* return_slice = slice->process("xform.phaseorigin.tocorner");
+	Vec2f trans = tmp.get_trans_2d();
+	float scale = tmp.get_scale();
+	bool mirror = tmp.get_mirror();
+	if (trans[0] != 0 || trans[1] != 0 || scale != 1.0 ) {
+		return_slice = slice->process("math.transform",Dict("transform",&tmp));
+	} else if ( mirror == true ) {
+		return_slice = slice->process("xform.flip",Dict("axis","x"));
+	}
 	
+	if (return_slice == 0) {
+		return_slice = slice->process("xform.phaseorigin.tocorner");
+	} else {
+		return_slice->process_inplace("xform.phaseorigin.tocorner");
+	}
+
 // 	EMData* return_slice = slice->process("normalize.edgemean");
 // 	return_slice->process_inplace("xform.phaseorigin.tocorner");
-	
 
 	// Fourier transform the slice
 	return_slice->do_fft_inplace();
@@ -422,7 +437,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 	return return_slice;
 }
 
-int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform3D & arg)
+int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform & arg)
 {
 	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
@@ -432,7 +447,18 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
-	EMData* slice = preprocess_slice( input_slice, arg.get_total_posttrans() );
+	// 
+	// We must use only the rotational component of the transform, scaling, translation and mirroring
+	// are not implemented in Fourier space
+	Transform rotation;
+	if ( input_slice->has_attr("xform.projection") ) {
+		rotation = *((Transform*) input_slice->get_attr("xform.projection")); // assignment operator
+		
+	} else {
+		rotation = arg; // assignment operator
+	}
+	
+	EMData* slice = preprocess_slice( input_slice, rotation);
 
 	// Catch the first time a slice is inserted to do some things....
 	if ( slice_insertion_flag == true )
@@ -463,7 +489,10 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	}
 
 	// Finally to the pixel wise slice insertion
-	do_insert_slice_work(slice, arg);
+	rotation.set_scale(1.0);
+	rotation.set_mirror(false);
+	rotation.set_trans(0,0,0);
+	do_insert_slice_work(slice, rotation);
 
 	delete slice;	
 
@@ -471,7 +500,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	return 0;
 }
 
-void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform3D & arg)
+void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg)
 {	
 	// Reload the inserter if the mode has changed
 	string mode = (string) params["mode"];
@@ -496,14 +525,11 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	}
 	
 	float *dat = input_slice->get_data();
-// 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
-	
+	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
 	float weight = params.set_default("weight",1.0f);
-	
-	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i) {
-		Transform3D t3d = arg.get_sym((string)params["sym"],i);
-// 		Transform3D t3d = arg*sym->get_sym(i);
-// 		t3d.transpose();
+
+	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++ it ) {
+		Transform t3d = arg*(*it);
 		for (int y = 0; y < input_slice->get_ysize(); y++) {
 			for (int x = 0; x < input_slice->get_xsize() / 2; x++) {
 				
@@ -519,14 +545,18 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
 					continue;
 
-				float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[1][0]);
-				float yy = (float) (rx * t3d[0][1] + (ry - max_input_dim / 2) * t3d[1][1]);
-				float zz = (float) (rx * t3d[0][2] + (ry - max_input_dim / 2) * t3d[1][2]);
+				Vec3f coord(rx,(ry - max_input_dim / 2),0);
+				coord = coord*t3d; // transpose multiplication
+				float xx = coord[0];
+				float yy = coord[1];
+				float zz = coord[2];
 				
 // 				float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[0][1]);
 // 				float yy = (float) (rx * t3d[1][0] + (ry - max_input_dim / 2) * t3d[1][1]);
 // 				float zz = (float) (rx * t3d[2][0] + (ry - max_input_dim / 2) * t3d[2][1]);
-
+				
+				
+				
 				float cc = 1;
 	
 				if (xx < 0) {
@@ -551,10 +581,9 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 			}
 		}
 	}
-// 	delete sym;
 }
 
-int FourierReconstructor::determine_slice_agreement(const EMData* const input_slice, const Transform3D & t3d, const unsigned int num_particles_in_slice)
+int FourierReconstructor::determine_slice_agreement(const EMData* const input_slice, const Transform & t3d, const unsigned int num_particles_in_slice)
 {
 	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) {
@@ -587,7 +616,14 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
-	EMData* slice = preprocess_slice( input_slice, t3d.get_total_posttrans() );
+	Transform rotation;
+	if ( input_slice->has_attr("xform.projection") ) {
+		rotation = *((Transform*) input_slice->get_attr("xform.projection")); // assignment operator
+		
+	} else {
+		rotation = t3d; // assignment operator
+	}
+	EMData* slice = preprocess_slice( input_slice, rotation );
 
 	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
 	// place until after the first round of slice insertion
@@ -621,6 +657,11 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	
 	float weight = params.set_default("weight",1.0f);
 	
+	
+	rotation.set_scale(1.0);
+	rotation.set_mirror(false);
+	rotation.set_trans(0,0,0);
+	
 	for (int y = 0; y < slice->get_ysize(); y++) {
 		for (int x = 0; x < slice->get_xsize() / 2; x++) {
 				
@@ -636,9 +677,15 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 			if ((rx * rx + Util::square(ry - max_input_dim / 2)) > rl)
 				continue;
 
-			float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[1][0]);
-			float yy = (float) (rx * t3d[0][1] + (ry - max_input_dim / 2) * t3d[1][1]);
-			float zz = (float) (rx * t3d[0][2] + (ry - max_input_dim / 2) * t3d[1][2]);
+// 			float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[1][0]);
+// 			float yy = (float) (rx * t3d[0][1] + (ry - max_input_dim / 2) * t3d[1][1]);
+// 			float zz = (float) (rx * t3d[0][2] + (ry - max_input_dim / 2) * t3d[1][2]);
+			
+			Vec3f coord(rx,(ry - max_input_dim / 2),0);
+			coord = coord*rotation; // transpose multiplication
+			float xx = coord[0];
+			float yy = coord[1];
+			float zz = coord[2];
 
 			float cc = 1;
 	

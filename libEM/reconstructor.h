@@ -155,7 +155,7 @@ namespace EMAN
      *        TypeDict get_param_types() const;
 	 @endcode
 	*/
-	class Reconstructor : public ReconstructorVolumeData, public FactoryBase
+	class Reconstructor : public FactoryBase
 	{
 	  public:
 		Reconstructor() {}
@@ -173,6 +173,9 @@ namespace EMAN
 		 */
 		virtual int insert_slice(const EMData* const slice, const Transform3D & euler) = 0;
 		
+		// This is pure virtual yet, but it should be...
+		virtual int insert_slice(const EMData* const slice, const Transform & euler) { throw;}
+		
 		/** 
 	  	 * @return 
 	  	 * @param input_slice
@@ -185,8 +188,12 @@ namespace EMAN
 			cout << "You called determine slice agreement but nothing happened - there is no functionality for determing slice agreement using this " << get_name() << " reconstructor" << endl;
 			return 0;
 		}
-
-
+		
+		virtual int determine_slice_agreement(const EMData* const, const Transform &, const unsigned int)
+		{  
+			throw;
+		}
+		
 		/** Finish reconstruction and return the complete model.
 		 * @return The result 3D model.
 		 */
@@ -222,7 +229,7 @@ namespace EMAN
 	
 	};
 
-	class FourierReconstructorSimple2D : public Reconstructor
+	class FourierReconstructorSimple2D : public Reconstructor, public ReconstructorVolumeData
 	{
 		public:
 			FourierReconstructorSimple2D() {}
@@ -253,6 +260,8 @@ namespace EMAN
 				return d;
 			}
 	};
+	
+
 	
 	/** Fourier space 3D reconstruction
 	 * The Fourier reconstructor is designed to work in an iterative fashion, where similarity ("quality") metrics
@@ -303,7 +312,7 @@ namespace EMAN
 	 *	result->write_image("threed.mrc");
 	@endcode
 	 */
-	class FourierReconstructor : public Reconstructor
+	class FourierReconstructor : public Reconstructor, public ReconstructorVolumeData
 	{
 	  public:
 		/** Default constructor
@@ -339,7 +348,9 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, const Transform3D & t3d);
+		virtual int insert_slice(const EMData* const slice, const Transform & t3d = Transform());
+		
+		
 		
 		/** Determine slice agreement with the current reconstruction
 		* @return 0 if successful, 1 otherwise
@@ -349,8 +360,17 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & t3d, const unsigned int  num_particles_in_slice = 1);
+		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform & t3d, const unsigned int  num_particles_in_slice = 1);
 
+		
+		virtual int insert_slice(const EMData* const slice, const Transform3D & t3d) {
+			throw UnexpectedBehaviorException("No support for Transform3D in insert_slice, use Transform instead");
+		};
+		
+		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & t3d, const unsigned int  num_particles_in_slice = 1) {
+			throw UnexpectedBehaviorException("No support for Transform3D in determine_slice_agreement, use Transform instead");
+		};
+		
 		/** Get the reconstructed volume
 		* Peforms Fourier inversion on a potentially large volume and may take 
 		* several minutes.
@@ -424,10 +444,12 @@ namespace EMAN
 	  	 * @param transform
 	  	 * @exception InvalidValueException when the specified padding value is less than the size of the images
 		 */
-		EMData* preprocess_slice( const EMData* const slice, const Vec3f& translation = Vec3f() );
-		// Disallow copy construction
+		EMData* preprocess_slice( const EMData* const slice, const Transform& t = Transform() );
+		/** Disallow copy construction
+		 */
 		FourierReconstructor( const FourierReconstructor& that );
-		// Disallow assignment
+		/**Disallow assignment
+		 */
 		FourierReconstructor& operator=( const FourierReconstructor& );
 		
 		/** Load default settings
@@ -464,7 +486,7 @@ namespace EMAN
 		 * @param input_slice the slice to insert into the 3D volume
 		 * @param euler a transform3D storing the slice euler angle
 		 */
-		void do_insert_slice_work(const EMData* const input_slice, const Transform3D & euler);
+		void do_insert_slice_work(const EMData* const input_slice, const Transform & euler);
 		
 		/** print stats is called internally at various points in the reconstruction routine and is for the benefit of people using e2make3d.py
 		 */
@@ -592,7 +614,7 @@ namespace EMAN
 	
 	/** Fourier space 3D reconstruction with slices already Wiener filter processed.
      */
-	class WienerFourierReconstructor:public Reconstructor
+	class WienerFourierReconstructor:public Reconstructor, public ReconstructorVolumeData
 	{
 	  public:
 		WienerFourierReconstructor() { load_default_settings(); };
@@ -656,7 +678,7 @@ namespace EMAN
      * ("back-projection bodies") obtained by translating the
      * 2D projections along the directions of projection. 
      */
-	class BackProjectionReconstructor:public Reconstructor
+	class BackProjectionReconstructor:public Reconstructor, public ReconstructorVolumeData
 	{
 	  public:
 		BackProjectionReconstructor() { load_default_settings();  }

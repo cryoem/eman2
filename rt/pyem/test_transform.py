@@ -617,29 +617,6 @@ class TestTransform(unittest.TestCase):
 		t.set_params(three_trans) # I.E. now we have all matrix elements filled
 		t1 = Transform(t)
 		self.assert_matrix_equality(t,t1)
-#	
-	def test_transpose(self):
-		"""test transpose and transpose inplace............"""
-		
-		for mirror in [True, False]:
-			d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror}
-			t = Transform(d)
-			t1 = t.transpose()
-			self.assert_identity(t1*t,3)
-			self.assert_identity(t*t1,3)
-			
-			d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
-			t = Transform(d)
-			t = Transform(d)
-			t1 = t.transpose()
-			self.assert_identity(t1*t,3)
-			self.assert_identity(t*t1,3)
-
-			t = Transform()
-			t = Transform(d)
-			t1 = t.transpose()
-			self.assert_identity(t1*t,3)
-			self.assert_identity(t*t1,3)
 	
 	def test_set_pre_trans(self):
 		"""test set pre trans.............................."""

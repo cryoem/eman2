@@ -497,9 +497,9 @@ def fourier_reconstruction(options):
 					weight_params = {"weight":weight}
 					recon.insert_params(weight_params)
 				
-				transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
+				t = image.get_attr("xform.projection")
 				
-				recon.determine_slice_agreement(image,transform,num_img)
+				recon.determine_slice_agreement(image,t,num_img)
 				sys.stdout.write(".")
 				sys.stdout.flush()
 	
@@ -554,15 +554,15 @@ def fourier_reconstruction(options):
 				weight_params = {"weight":weight}
 				recon.insert_params(weight_params)
 
-			transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
-			failure = recon.insert_slice(image,transform)
+			t = image.get_attr("xform.projection")
+			r = t.get_params("eman")
+			#transform = Transform3D(EULER_EMAN,r["az"],r["alt"],r["phi"])
+			failure = recon.insert_slice(image,t)
 				
 			if (options.verbose):
 				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
-								(i+1,total_images, image.get_attr("IMAGIC.imgnum"),
-								image.get_attr("euler_az"),
-								image.get_attr("euler_alt"),
-								image.get_attr("euler_phi"),
+								(i+1,total_images, image.get_attr("ptcl_repr"),
+								r["az"],r["alt"],r["phi"],
 								image.get_attr("maximum"),image.get_attr("minimum")))
 				if ( j > 0):
 					sys.stdout.write("\t%f %f" %(recon.get_norm(idx), recon.get_score(idx) ))

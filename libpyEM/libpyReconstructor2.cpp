@@ -34,6 +34,10 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
     int insert_slice(const EMAN::EMData* const p0, const EMAN::Transform3D& p1) {
         return call_method< int >(py_self, "insert_slice", p0, p1);
     }
+	
+	int insert_slice(const EMAN::EMData* const p0, const EMAN::Transform& p1) {
+		return call_method< int >(py_self, "insert_slice", p0, p1);
+	}
 
     EMAN::EMData* finish() {
         return call_method< EMAN::EMData* >(py_self, "finish");
@@ -86,15 +90,17 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
     def("dump_reconstructors_list", &EMAN::dump_reconstructors_list);
     class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("__Reconstructor", init<  >())
         .def("setup", pure_virtual(&EMAN::Reconstructor::setup))
-        .def("insert_slice", pure_virtual(&EMAN::Reconstructor::insert_slice))
-		.def("determine_slice_agreement", &EMAN::Reconstructor::determine_slice_agreement)
+		.def("insert_slice",  pure_virtual((int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform3D&))&EMAN::Reconstructor::insert_slice))
+		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::insert_slice)
+		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform3D&, const unsigned int))&EMAN::Reconstructor::determine_slice_agreement)
+		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&, const unsigned int))&EMAN::Reconstructor::determine_slice_agreement)
 		.def("insert_slice_weights", &EMAN::Reconstructor::insert_slice_weights)
         .def("finish", pure_virtual(&EMAN::Reconstructor::finish), return_internal_reference< 1 >())
         .def("get_name", pure_virtual(&EMAN::Reconstructor::get_name))
 		.def("get_score", pure_virtual(&EMAN::Reconstructor::get_score))
 		.def("get_norm", pure_virtual(&EMAN::Reconstructor::get_norm))
         .def("get_desc", pure_virtual(&EMAN::Reconstructor::get_desc))
-		.def("get_emdata", (&EMAN::Reconstructor::get_emdata),  return_internal_reference< 1 >())
+// 		.def("get_emdata", (&EMAN::Reconstructor::get_emdata),  return_internal_reference< 1 >())
         //.def("get_params", &EMAN::Reconstructor::get_params, &EMAN_Reconstructor_Wrapper::default_get_params) 
 		.def("get_params", &EMAN::Reconstructor::get_params)
 		.def("insert_params", &EMAN::Reconstructor::insert_params)

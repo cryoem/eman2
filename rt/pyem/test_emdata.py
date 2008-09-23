@@ -1455,25 +1455,27 @@ class TestEMData(unittest.TestCase):
         #Vec3f is tuple 3 of float in Python
         #e.translate((1.1,2.1,3.1))     #problem here, Vec3f not reconized from flaot tuple 3
 
-    def test_rotate_translate(self):
-        """test rotate_translate ............................"""
-        infile = "test_rotate_translate.mrc"
-        TestUtil.make_image_file(infile, IMAGE_MRC, EM_FLOAT, 16,16,16)
-        
-        x=EMData()
-        x.read_image(infile)
-
-        alt = 1.0329837512591338
-        az = 3.7260642381912579
-        phi = 5.7671541529246966
-
-        x.rotate_translate(az, alt, phi, 2, 2, 2)
-        testlib.check_emdata(x, sys.argv[0])
-
-        x.rotate_translate(az, alt, phi, 6, 6, 6)
-        testlib.check_emdata(x, sys.argv[0])
-
-        testlib.safe_unlink(infile)
+    def test_transform(self):
+		"""test transform ..................................."""
+		infile = "test_rotate_translate.mrc"
+		TestUtil.make_image_file(infile, IMAGE_MRC, EM_FLOAT, 16,16,16)
+		
+		x=EMData()
+		x.read_image(infile)
+		
+		alt = 1.0329837512591338
+		az = 3.7260642381912579
+		phi = 5.7671541529246966
+		t = Transform({"type":"eman","az":az,"alt":alt,"phi":phi})
+		
+		x.transform(t)
+		testlib.check_emdata(x, sys.argv[0])
+		
+		t.set_trans(6,6,6)
+		x.transform(t)
+		testlib.check_emdata(x, sys.argv[0])
+		
+		testlib.safe_unlink(infile)
                 
     def test_rotate_2d(self):
         """test rotate_2d ..................................."""
@@ -1486,13 +1488,13 @@ class TestEMData(unittest.TestCase):
         a = EMData()
         a.read_image(infile)
         b=a.copy()
-        b.rotate(0, 0, math.pi/4)
+        b.transform(Transform({"type":"2d","alpha":90}))
         b.write_image(outfile1)
         
         # verify b
         
         b=a.copy()
-        b.rotate(0, 0, math.pi/2)
+        b.transform(Transform({"type":"2d","alpha":180}))
         b.write_image(outfile2)
 
         # verify b
@@ -1508,11 +1510,11 @@ class TestEMData(unittest.TestCase):
         a.to_one()
         
         b=a.copy()
-        b.rotate(0,0,math.pi/4)
+        b.transform(Transform({"type":"eman","phi":90}))
         testlib.check_emdata(b, sys.argv[0])
     
         b=a.copy()
-        b.rotate(0,0,math.pi/2)
+        b.transform(Transform({"type":"eman","phi":180}))
         testlib.check_emdata(b, sys.argv[0])
 
     def test_rotate_x(self):
@@ -2036,24 +2038,23 @@ class TestEMData(unittest.TestCase):
         e.common_lines_real(e2,e3)
         
     def test_cut_slice(self):
-        """test cut_slice() function ........................"""
-        e = EMData()
-        e.set_size(32,32,1)
-        e2 = EMData()
-        e2.set_size(32,32,32)     
-        e2.process_inplace("testimage.noise.uniform.rand")
-        t = Transform3D(0,80,2)
-        t.set_posttrans(0,1,2)
-        t.set_pretrans(3,2,3)
-        e.cut_slice(e2, t)    #default argument
-        e.cut_slice(e2, t, False)
-        
-        e3 = None
-        self.assertRaises( RuntimeError, e.cut_slice, e3, t)
-        try:
-            e.cut_slice(e3, t)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "NullPointerException")
+		"""test cut_slice() function ........................"""
+		e = EMData()
+		e.set_size(32,32,1)
+		e2 = EMData()
+		e2.set_size(32,32,32)     
+		e2.process_inplace("testimage.noise.uniform.rand")
+		t = Transform({"type":"eman","az":123,"alt":122,"phi":3})
+		t.set_trans(0,1,2)
+		e.cut_slice(e2, t)    #default argument
+		e.cut_slice(e2, t, False)
+		
+		e3 = None
+		self.assertRaises( RuntimeError, e.cut_slice, e3, t)
+		try:
+			e.cut_slice(e3, t)
+		except RuntimeError, runtime_err:
+			self.assertEqual(exception_type(runtime_err), "NullPointerException")
             
     def test_uncut_slice(self):
         """test uncut_slice() function ......................"""
@@ -2063,11 +2064,10 @@ class TestEMData(unittest.TestCase):
         e2 = EMData()
         e2.set_size(32,32,32)     
         e2.process_inplace("testimage.noise.uniform.rand")
-        t = Transform3D(0,80,2)
-        t.set_posttrans(0,1,2)
-        t.set_pretrans(3,2,3)
+        t = Transform({"type":"eman","az":123,"alt":122,"phi":3})
+        t.set_trans(0,1,2)
         e.uncut_slice(e2, t)
-        e.uncut_slice(e2, None) #non-default argument
+        #e.uncut_slice(e2, None) #non-default argument
         
     def test_calc_center_density(self):
         """test calc_center_density() function .............."""
@@ -2113,20 +2113,21 @@ class TestEMData(unittest.TestCase):
         cm = e.get_circle_mean()
     
     def test_project(self):
-        """test image projection ............................"""
-        n = 20
-        infile = "test_project.mrc"
-        TestUtil.make_image_file(infile, IMAGE_MRC, EM_FLOAT, n, n, n)
-        volume = EMData()
-        volume.read_image(infile)
-        pi = math.pi
-        t3d = Transform3D(EULER_EMAN, pi/3, pi/5, 1)
-        proj = volume.project("standard", { "t3d" : t3d})
-        self.assertEqual(proj.get_xsize(), n)
-        self.assertEqual(proj.get_ysize(), n)
-        self.assertEqual(proj.get_zsize(), 1)
-        testlib.check_emdata(proj, sys.argv[0])
-        testlib.safe_unlink(infile)
+		"""test image projection ............................"""
+		n = 20
+		infile = "test_project.mrc"
+		TestUtil.make_image_file(infile, IMAGE_MRC, EM_FLOAT, n, n, n)
+		volume = EMData()
+		volume.read_image(infile)
+		pi = math.pi
+		t3d = Transform({"type":"eman", "az":pi/3, "alt":pi/5, "phi":1})
+		proj = volume.project("standard", { "transform" : t3d})
+		proj = volume.project("standard", t3d)
+		self.assertEqual(proj.get_xsize(), n)
+		self.assertEqual(proj.get_ysize(), n)
+		self.assertEqual(proj.get_zsize(), 1)
+		testlib.check_emdata(proj, sys.argv[0])
+		testlib.safe_unlink(infile)
 
     def test_calc_highest_locations(self):
         """test calculation of highest location ............."""
@@ -2222,7 +2223,7 @@ class TestEMData(unittest.TestCase):
         a=EMData()
         a.set_size(100,100,100)
         a.to_one()
-        b=a.get_rotated_clip(Transform3D(0.0,0.0,0.0, [24,24,24]),[32,32,32],1.0)
+        b=a.get_rotated_clip(Transform(),[32,32,32],1.0)
         
     def test_complex_image(self):
         """test complex image ..............................."""

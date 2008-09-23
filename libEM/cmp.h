@@ -43,8 +43,6 @@ namespace EMAN
 {
 
 	class EMData;
-	class Transform3D;
-
 	/** Cmp class defines image comparison method. Using default
 	 * arguments, smaller values indicate more similar images.
 	 *

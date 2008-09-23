@@ -44,20 +44,9 @@ class TestAverager(unittest.TestCase):
     def test_ImageAverager(self):
         """test ImageAverager ..............................."""
 
-class TestProjector(unittest.TestCase):
-    """test Projector"""
-    
-    def test_GaussFFTProjector(self):
-        """test GaussFFTProjector ..........................."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        t3d = Transform3D(EULER_EMAN, pi/3, pi/5, 1)
-        e.project('gauss_fft', {"t3d" : t3d})
 
-        
 def test_main():
-    test_support.run_unittest(TestAverager, TestProjector)
+    test_support.run_unittest(TestAverager)
 
 if __name__ == '__main__':
     test_main()

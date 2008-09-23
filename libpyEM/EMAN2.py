@@ -639,7 +639,7 @@ def test_image(type=0,size=(128,128)):
 	elif type==5:
 		ret.process_inplace("testimage.axes")
 	elif type==6:
-		ret.process_inplace("testimage.linewave")
+		ret.process_inplace("testimage.linewave",{"period":43})
 	elif type==7:
 		ret.process_inplace("testimage.scurve")
 		ret.mult(10)

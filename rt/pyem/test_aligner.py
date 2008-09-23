@@ -62,15 +62,17 @@ class TestAligner(unittest.TestCase):
 					size = (x,y,z)
 					ref = test_image_3d(0,size)
 					for i in range(0,20):
-						e =test_image_3d(0,size)
+						e = ref.copy()
 						dx = Util.get_frand(-3,3)
 						dy = Util.get_frand(-3,3)
 						dz = Util.get_frand(-3,3)
 						e.translate(dx,dy,dz)
 						g = e.align("translational",ref,{},"dot",{})
-						self.failIf(fabs(g.get_attr("align.dx") + dx) > 1)
-						self.failIf(fabs(g.get_attr("align.dy") + dy) > 1)
-						self.failIf(fabs(g.get_attr("align.dz") + dz) > 1)
+						t =  g.get_attr("xform.align3d")
+						params = t.get_params("eman")
+						self.failIf(fabs(params["tx"]+ dx) > 1)
+						self.failIf(fabs(params["ty"] + dy) > 1)
+						self.failIf(fabs(params["tz"] + dz) > 1)
 						
 								
 		# Test 2D behavior
@@ -80,33 +82,16 @@ class TestAligner(unittest.TestCase):
 				images = []
 				ref = test_image(0,size)
 				for i in range(0,20):
-					e =test_image(0,size)
+					e = ref.copy()
 					dx = Util.get_frand(-3,3)
 					dy = Util.get_frand(-3,3)
 					e.translate(dx,dy,0)
 					g = e.align("translational",ref,{},"dot",{})
-					self.failIf(fabs(g.get_attr("align.dx") + dx) > 1)
-					self.failIf(fabs(g.get_attr("align.dy") + dy) > 1)
+					t =  g.get_attr("xform.align2d")
+					params = t.get_params("2d")
+					self.failIf(fabs(params["tx"]+ dx) > 1)
+					self.failIf(fabs(params["ty"] + dy) > 1)
 
-				
-		# Test 1D behavior
-		#for i in [n-1]: #FIXME - do for i in [n-1,n] for some reason n even fails
-			#e = EMData()
-			#e.set_size(i,1,1);
-			#e.to_zero()
-			#e.process_inplace("testimage.x")
-			
-			#for dx in [-1,0,1]:
-				#f = e.copy()
-				#f.translate(dx,0,0)
-				
-				#g = f.align('translational', e, {'maxshift':3})
-
-				#sdx = g.get_attr("align.dx")
-					
-				##print "%d %d" %(dx,sdx)
-				
-				#self.assertEqual(-sdx,dx)
 
 	def test_RotationalAligner(self):
 		"""test RotationalAligner ..........................."""
@@ -123,34 +108,25 @@ class TestAligner(unittest.TestCase):
 		for y in [32,33]:
 			for x in [32,33]:
 				size = (x,y)
-				ref = test_image(0,size)
+				ref = test_image(5,size)
+				ref.translate(4,5,0) # give it handedness
 				for i in range(0,20):
-					e =test_image(0,size)
+					e = ref.copy()
 					az = Util.get_frand(0,360)
-					e.rotate(az,0,0)
+					e.transform(Transform({"type":"2d","alpha":az}))
 					g = e.align("rotational",ref,{},"dot",{})
-					
-					result = fabs(g.get_attr("align.az") + az)
+					t =  g.get_attr("xform.align2d")
+					params = t.get_params("2d")
+					result = fabs(params["alpha"]+ az)
 					#print g.get_attr("align.az"), az
 					if result > 180 and result < 360:
 						result = 360-result
 					if result > 360: result = result-360
 					self.failIf( result > 3 ) # 3 seems accurate enough
 				
-	def no_test_RotatePrecenterAligner(self):
+	def test_RotatePrecenterAligner(self):
 		"""test RotatePrecenterAligner ......................"""
-		e = EMData()
-		#e.set_size(32,32,1)
-		#e.process_inplace('testimage.noise.uniform.rand')
-		
-		e2 = EMData()
-		e2.set_size(32,32,1)
-		e2.process_inplace('testimage.noise.uniform.rand')
-		
-		e.align('rotate_precenter', e2)
-		
-	def test_RotateCHAligner(self):
-		"""test RotateCHAligner ............................."""
+
 		e = EMData()
 		e.set_size(32,32,1)
 		e.process_inplace('testimage.noise.uniform.rand')
@@ -159,8 +135,26 @@ class TestAligner(unittest.TestCase):
 		e2.set_size(32,32,1)
 		e2.process_inplace('testimage.noise.uniform.rand')
 		
-		e.align('rotate_ch', e2, {'irad':1, 'orad':2})
+		e.align('rotate_precenter', e2)
 		
+		for y in [32,33]:
+			for x in [32,33]:
+				size = (x,y)
+				ref = test_image(0,size)
+				for i in range(0,20):
+					e = ref.copy()
+					az = Util.get_frand(0,360)
+					e.transform(Transform({"type":"2d","alpha":az}))
+					g = e.align("rotate_precenter",ref,{},"dot",{})
+					t =  g.get_attr("xform.align2d")
+					params = t.get_params("2d")
+					result = fabs(params["alpha"]+ az)
+					#print g.get_attr("align.az"), az
+					if result > 180 and result < 360:
+						result = 360-result
+					if result > 360: result = result-360
+		
+
 	def test_RotateTranslateAligner(self):
 		"""test RotateTranslateAligner ......................"""
 		e = EMData()
@@ -176,64 +170,29 @@ class TestAligner(unittest.TestCase):
 		for y in [32,33]:
 			for x in [32,33]:
 				size = (x,y)
-				ref = test_image(7,size)
+				ref = test_image(5,size)
+				ref.translate(4,5,0) # give it handedness
 				for i in range(0,20):
 					e = ref.copy()
 					dx = Util.get_frand(-3,3)
 					dy = Util.get_frand(-3,3)
 					az = Util.get_frand(0,360)
-					t = Transform3D(az,0,0)
-					t.set_pretrans(dx,dy,0)
-					e.rotate_translate(t)
+					t = Transform({"type":"2d","alpha":az})
+					t.set_pre_trans(Vec2f(dx,dy))
+					e.transform(t)
 					g = e.align("rotate_translate",ref,{},"dot")
-					t1 = Transform3D(g.get_attr("align.az"),0,0)
-					t1.set_posttrans(g.get_attr("align.dx"),g.get_attr("align.dy"),0)
-					v = Vec3f(0,1,0)
-					vd = v*t
-					vd = vd*t1
-					#print vd[0],vd[1],vd[2],az,g.get_attr("align.az"),dx,dy
-					self.failIf(fabs(vd[0]) > 0.15)
-					self.failIf(fabs(vd[1]-1) > 0.15)
+					t =  g.get_attr("xform.align2d")
+					params = t.get_params("2d")
+					self.failIf(fabs(params["tx"] + dx) > 1)
+					self.failIf(fabs(params["ty"] + dy) > 1)
+					
+					result = fabs(params["alpha"] + az)
+					#print g.get_attr("align.az"), az
+					if result > 180 and result < 360:
+						result = 360-result
+					if result > 360: result = result-360
+					self.failIf( result > 3 ) # 3 seems accurate enough
 
-		
-	def no_test_RotateTranslateBestAligner(self):
-		"""test RotateTranslateBestAligner .................."""
-		e = EMData()
-		e.set_size(32,32,1)
-		e.process_inplace('testimage.noise.uniform.rand')
-		
-		e2 = EMData()
-		e2.set_size(32,32,1)
-		e2.process_inplace('testimage.noise.uniform.rand')
-		
-		img = e.align('rotate_translate_best', e2, {'maxshift':1, 'snr':(1.0, 2.0, 3.0)})
-		
-	def test_RotateTranslateRadonAligner(self):
-		"""test RotateTranslateRadonAligner ................."""
-		Log.logger().set_level(-1)    #no log message printed out
-		e = EMData()
-		e.set_size(32,32,1)
-		e.process_inplace('testimage.noise.uniform.rand')
-		
-		e2 = EMData()
-		e2.set_size(32,32,1)
-		e2.process_inplace('testimage.noise.uniform.rand')
-		
-		e3 = EMData()
-		e3.set_size(32,32,1)
-		e3.process_inplace('testimage.noise.uniform.rand')
-		
-		e4 = EMData()
-		e4.set_size(32,32,1)
-		e4.process_inplace('testimage.noise.uniform.rand')
-		
-		img = e.align('rotate_translate_radon', e2, {'maxshift':2, 'radonwith':e3, 'radonthis':e4})
-		
-		import os
-		testlib.safe_unlink('radon.hed')
-		testlib.safe_unlink('radon.img')
-		testlib.safe_unlink('racf.hed')
-		testlib.safe_unlink('racf.img')
 
 	def test_RotateFlipAligner(self):
 		"""test RotateFlipAligner ..........................."""
@@ -245,13 +204,70 @@ class TestAligner(unittest.TestCase):
 		e2.set_size(32,32,1)
 		e2.process_inplace('testimage.noise.uniform.rand')
 		
-		e3 = EMData()
-		e3.set_size(32,32,1)
-		e3.process_inplace('testimage.noise.uniform.rand')
-		
-		#e.align('rotate_flip', e2, {'flip':e3, 'imask':2})
 		e.align('rotate_flip', e2, {'imask':2})
 		
+		for y in [32,33]:
+			for x in [32,33]:
+				size = (x,y)
+				ref = test_image(5,size)
+				ref.translate(4,5,0) # give it handedness
+				#ref = test_image(0,size)
+				for i in range(0,20):
+					e = ref.copy()
+					az = Util.get_frand(0,360)
+					mirror = Util.get_irand(0,1)
+					if mirror:e.process_inplace("xform.flip",{"axis":"x"})
+					e.transform(Transform({"type":"2d","alpha":az}))
+					g = e.align("rotate_flip",ref,{},"dot",{})
+					t1 =  g.get_attr("xform.align2d")
+					params = t1.get_params("2d")
+					#(t1*t).printme()
+					#print params
+					#print az,mirror
+					result = fabs(params["alpha"]+ az)
+					if result > 180 and result < 360:
+						result = 360-result
+					if result > 360: result = result-360
+					self.failIf( result > 3 ) # 3 seems accurate enough
+					self.failIf( t1.get_mirror() != mirror)
+	
+	def run_rtf_aligner_test(self,aligner_name,aligner_params={},debug=False):
+		
+		for y in [64,65]:
+			for x in [64,65]:
+				size = (x,y)
+				ref = test_image(0,size)
+				ref = ref + test_image(5,size)
+				ref.translate(4,5,0) # give it handedness
+				for i in range(0,20):
+					e = ref.copy()
+					dx = Util.get_frand(-3,3)
+					dy = Util.get_frand(-3,3)
+					az = Util.get_frand(0,360)
+					
+					mirror = Util.get_irand(0,1)
+					if mirror:e.process_inplace("xform.flip",{"axis":"x"})
+					
+					t = Transform({"type":"2d","alpha":az})
+					t.set_pre_trans(Vec2f(dx,dy))
+					e.transform(t)
+					g = e.align(aligner_name,ref,aligner_params,"dot")
+					t =  g.get_attr("xform.align2d")
+					params = t.get_params("2d")
+					if debug:
+						print params
+						print az,dx,dy,mirror
+					self.failIf(fabs(params["tx"] + dx) > 2)
+					self.failIf(fabs(params["ty"] + dy) > 2)
+					
+					result = fabs( (params["alpha"] + az) %360 )
+					
+					if result > 180 and result < 360:
+						result = 360-result
+					if result > 360: result = result-360
+					self.failIf( result > 5 ) # 5 seems accurate enough
+					self.failIf( t.get_mirror() != mirror)
+	
 	def test_RotateTranslateFlipAligner(self):
 		"""test RotateTranslateFlip Aligner ................."""
 		e = EMData()
@@ -264,38 +280,10 @@ class TestAligner(unittest.TestCase):
 		
 		e.align('rotate_translate_flip', e2, {'maxshift':1})
 		
-		for y in [32,33]:
-			for x in [32,33]:
-				size = (x,y)
-				ref = test_image(7,size)
-				for i in range(0,20):
-					e = ref.copy()
-					flip = Util.get_irand(0,1)
-					if flip: e.process_inplace("xform.flip",{"axis":"x"})
-					dx = Util.get_frand(-3,3)
-					dy = Util.get_frand(-3,3)
-					az = Util.get_frand(0,360)
-					
-					t = Transform3D(az,0,0)
-					t.set_pretrans(dx,dy,0)
-					e.rotate_translate(t)
-					g = e.align("rotate_translate_flip",ref,{"rfp_mode":1},"phase")
-					t1 = Transform3D(g.get_attr("align.az"),0,0)
-					t1.set_posttrans(g.get_attr("align.dx"),g.get_attr("align.dy"),0)
-					
-					if g.get_attr("align.flip"):
-						t = Transform3D(360-az,0,0)
-						t.set_pretrans(dx,dy,0)
-					v = Vec3f(0,1,0)
-					vd = v*t
-					vd = vd*t1
-					#print vd[0],vd[1],vd[2],az,g.get_attr("align.az"),dx,dy,flip,g.get_attr("align.flip")
-					self.failIf(fabs(vd[0]) > 0.2)
-					self.failIf(fabs(vd[1]-1) > 0.15)
-					self.failIf(flip != g.get_attr("align.flip"))
+		#self.run_rtf_aligner_test("rotate_translate_flip")
 		
-	def no_test_RTFSlowAligner(self):
-		"""test RTFSlowAligner .............................."""
+	def test_RTF_slow_exhaustive_aligner(self):
+		"""test RTFSlowExhaustiveAligner Aligner ............"""
 		e = EMData()
 		e.set_size(32,32,1)
 		e.process_inplace('testimage.noise.uniform.rand')
@@ -304,74 +292,19 @@ class TestAligner(unittest.TestCase):
 		e2.set_size(32,32,1)
 		e2.process_inplace('testimage.noise.uniform.rand')
 		
-		e3 = EMData()
-		e3.set_size(32,32,1)
-		e3.process_inplace('testimage.noise.uniform.rand')
+		e.align('rtf_slow_exhaustive', e2, {'maxshift':10})
 		
-		e.align('rtf_slow', e2, {'flip':e3, 'maxshift':2})
+		#self.run_rtf_aligner_test("rtf_slow_exhaustive",debug=True)
 		
-		#RTFSlowestAligner eliminated
-	def no_test_RTFSlowestAligner(self):
-		"""test RTFSlowestAligner ..........................."""
-		e = EMData()
-		e.set_size(32,32,1)
-		e.process_inplace('testimage.noise.uniform.rand')
+	def test_RTF_exhaustive_aligner(self):
+		"""test RTFExhaustiveAligner Aligner ................"""
+		e = test_image()
 		
-		e2 = EMData()
-		e2.set_size(32,32,1)
-		e2.process_inplace('testimage.noise.uniform.rand')
+		e2 = test_image()
 		
-		e3 = EMData()
-		e3.set_size(32,32,1)
-		e3.process_inplace('testimage.noise.uniform.rand')
+		e.align('rtf_exhaustive', e2)
+		#self.run_rtf_aligner_test("rtf_exhaustive")
 		
-		e.align('rtf_slowest', e2, {'flip':e3, 'maxshift':2})
-		
-	def no_test_RTFBestAligner(self):
-		"""test RTFBestAligner .............................."""
-		e = EMData()
-		e.set_size(32,32,1)
-		e.process_inplace('testimage.noise.uniform.rand')
-		
-		e2 = EMData()
-		e2.set_size(32,32,1)
-		e2.process_inplace('testimage.noise.uniform.rand')
-		
-		e3 = EMData()
-		e3.set_size(32,32,1)
-		e3.process_inplace('testimage.noise.uniform.rand')
-		
-		e.align('rtf_best', e2, {'flip':e3, 'maxshift':2, 'snr':(1.0, 2.0, 3.0)})
-		
-	def no_test_RTFRadonAligner(self):
-		"""test RTFRadonAligner ............................."""
-		e = EMData()
-		e.set_size(32,32,1)
-		e.process_inplace('testimage.noise.uniform.rand')
-		
-		e2 = EMData()
-		e2.set_size(32,32,1)
-		e2.process_inplace('testimage.noise.uniform.rand')
-		
-		e3 = EMData()
-		e3.set_size(32,32,1)
-		e3.process_inplace('testimage.noise.uniform.rand')
-		
-		e4 = EMData()
-		e4.set_size(32,32,1)
-		e4.process_inplace('testimage.noise.uniform.rand')
-		
-		e5 = EMData()
-		e5.set_size(32,32,1)
-		e5.process_inplace('testimage.noise.uniform.rand')
-		
-		e6 = EMData()
-		e6.set_size(32,32,1)
-		e6.process_inplace('testimage.noise.uniform.rand')
-
-		e.align('rtf_radon', e2, {'maxshift':2, 'thisf':e3, 'radonwith':e4, \
-				'radonthis':e5, 'radonthisf':e6})
-				
 	def test_RefineAligner(self):
 		"""test RefineAligner ..............................."""
 		e = EMData()
@@ -395,18 +328,23 @@ class TestAligner(unittest.TestCase):
 					dx = Util.get_frand(-3,3)
 					dy = Util.get_frand(-3,3)
 					az = Util.get_frand(-5,5)
-					t = Transform3D(az,0,0)
-					t.set_pretrans(dx,dy,0)
-					e.rotate_translate(t)
+					t = Transform({"type":"2d","alpha":az})
+					t.set_pre_trans(Vec2f(dx,dy))
+					e.transform(t)
 					g = e.align("refine",ref,{},"dot",{"normalize":1})
-					t1 = Transform3D(g.get_attr("align.az"),0,0)
-					t1.set_posttrans(g.get_attr("align.dx"),g.get_attr("align.dy"),0)
-					v = Vec3f(0,1,0)
-					vd = v*t
-					vd = vd*t1
-					#print vd[0],vd[1],vd[2],az,g.get_attr("align.az"),dx,dy, g.get_attr("align.dx"),g.get_attr("align.dy")
-					self.failIf(fabs(vd[0]) > 0.1)
-					self.failIf(fabs(vd[1]-1) > 0.02)
+					
+					t =  g.get_attr("xform.align2d")
+					params = t.get_params("2d")
+					self.failIf(fabs(params["tx"] + dx) > 1)
+					self.failIf(fabs(params["ty"] + dy) > 1)
+					
+					result = fabs(params["alpha"] + az)
+					#print g.get_attr("align.az"), az
+					if result > 180 and result < 360:
+						result = 360-result
+					if result > 360: result = result-360
+					self.failIf( result > 3 ) # 3 seems accurate enough
+					
 		
 		#n = 128
 		##dx = 0.4
@@ -491,11 +429,6 @@ class TestAligner(unittest.TestCase):
 								
 							#result.set_value_at(x,y,z,intensity)
 				
-				#print "iter and precision are %d %f" %(maxiter, precision)
-				#print "Stats are %f %f" %(result.get_attr("mean"), result.get_attr("sigma"))
-				
-		#result.write_image("result.mrc")
-
 	
 def test_main():
 	test_support.run_unittest(TestAligner)

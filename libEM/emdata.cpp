@@ -265,6 +265,32 @@ EMData::EMData(int nx, int ny, int nz, bool is_real)
 	EXITFUNC;
 }
 
+
+EMData::EMData(float* data, const int x, const int y, const int z)
+{
+	ENTERFUNC;
+	
+	rot_fp = 0;
+	rdata = 0;
+	supp = 0;
+
+	flags =0;
+	// used to replace cube 'pixel'
+	attr_dict["apix_x"] = 1.0f;
+	attr_dict["apix_y"] = 1.0f;
+	attr_dict["apix_z"] = 1.0f;
+	xoff = yoff = zoff = 0;
+
+	changecount=0;
+	
+	rdata = data;
+	nx = x; ny = y; nz = z;
+	
+	EMData::totalalloc++;
+	
+	EXITFUNC;
+}
+
 //debug
 using std::cout;
 using std::endl;
@@ -707,7 +733,7 @@ EMData *EMData::get_top_half() const
 }
 
 
-EMData *EMData::get_rotated_clip(const Transform3D &xform,
+EMData *EMData::get_rotated_clip(const Transform &xform,
 								 const IntSize &size, float)
 {
 	EMData *result = new EMData();
@@ -843,9 +869,9 @@ float *EMData::setup4slice(bool redo)
 void EMData::scale(float s)
 {
 	ENTERFUNC;
-	Transform3D t;
+	Transform t;
 	t.set_scale(s);
-	rotate_translate(t);
+	transform(t);
 	EXITFUNC;
 }
 
@@ -1071,23 +1097,27 @@ void EMData::translate(const Vec3f &translation)
 
 void EMData::rotate(float az, float alt, float phi)
 {
-	Transform3D t(az, alt, phi);
-	rotate_translate(t);
+	cout << "Deprecation warning in EMData::rotate. Please consider using EMData::transform() instead " << endl; 
+	Dict d("type","eman");
+	d["az"] = az;
+	d["alt"] = alt;
+	d["phi"] = phi;
+	Transform t(d);
+	transform(t);
 }
 
-void EMData::rotate(const Transform & t)
-{
-	rotate_translate(t);
-}
+
 
 void EMData::rotate(const Transform3D & t)
 {
+	cout << "Deprecation warning in EMData::rotate. Please consider using EMData::transform() instead " << endl;
 	rotate_translate(t);
 }
 
 
 void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy, float dz)
 {
+	cout << "Deprecation warning in EMData::rotate_translate. Please consider using EMData::transform() instead " << endl; 
 	Transform3D t( az, alt, phi,Vec3f(dx, dy, dz));
 	rotate_translate(t);
 }
@@ -1096,152 +1126,14 @@ void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy
 void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy,
 							  float dz, float pdx, float pdy, float pdz)
 {
+	cout << "Deprecation warning in EMData::rotate_translate. Please consider using EMData::transform() instead " << endl; 
 	Transform3D t(Vec3f(dx, dy, dz), az, alt, phi, Vec3f(pdx,pdy,pdz));
 	rotate_translate(t);
 }
 
-void EMData::rotate_translate(const Transform & transform)
-{
-	ENTERFUNC;
-
-	Transform inv = transform.inverse();
-	 
-	float *src_data = 0;
-	float *des_data = 0;
-
-	src_data = get_data();
-	des_data = (float *) malloc(nx * ny * nz * sizeof(float));
-	
-	if (nz == 1) {
-		Vec2f offset(nx/2,ny/2);
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i++) {				
-				Vec2f coord(i-nx/2,j-ny/2);
-				Vec2f soln = inv*coord;
-				soln += offset;
-					
-				float x2 = soln[0];
-				float y2 = soln[1];
-
-				if (x2 < 0 || x2 >= nx || y2 < 0 || y2 >= ny ) {
-					des_data[i + j * nx] = 0; // It may be tempting to set this value to the
-					// mean but in fact this is not a good thing to do. Talk to S.Ludtke about it.
-				}
-				else {
-					int ii = Util::fast_floor(x2);
-					int jj = Util::fast_floor(y2);
-					int k0 = ii + jj * nx;
-					int k1 = k0 + 1;
-					int k2 = k0 + nx;
-					int k3 = k0 + nx + 1;
-
-					if (ii == nx - 1) {
-						k1--;
-						k3--;
-					}
-					if (jj == ny - 1) {
-						k2 -= nx;
-						k3 -= nx;
-					}
-
-					float t = x2 - ii;
-					float u = y2 - jj;
-					
-					des_data[i + j * nx] = Util::bilinear_interpolate(src_data[k0],src_data[k1], src_data[k2], src_data[k3],t,u); // This is essentially basic interpolation
-				}
-			}
-		}
-	}
-	else {
-		int l = 0;
-		Vec3f offset(nx/2,ny/2,nz/2);
-		for (int k = 0; k < nz; k++) {
-			for (int j = 0; j < ny; j++) {
-				for (int i = 0; i < nx; i++,l++) {
-					Vec3f coord(i-nx/2,j-ny/2,k-nz/2);
-					Vec3f soln = inv*coord;
-					soln += offset;
-					
-					float x2 = soln[0];
-					float y2 = soln[1];
-					float z2 = soln[2];
-
-					if (x2 < 0 || y2 < 0 || z2 < 0 || x2 >= nx  || y2 >= ny  || z2>= nz ) {
-						des_data[l] = 0;
-					}
-					else {
-						int ix = Util::fast_floor(x2);
-						int iy = Util::fast_floor(y2);
-						int iz = Util::fast_floor(z2);
-						float tuvx = x2-ix;
-						float tuvy = y2-iy;
-						float tuvz = z2-iz;
-						int ii = ix + iy * nx + iz * nxy;
-
-						int k0 = ii;
-						int k1 = k0 + 1;
-						int k2 = k0 + nx;
-						int k3 = k0 + nx+1;
-						int k4 = k0 + nxy;
-						int k5 = k1 + nxy;
-						int k6 = k2 + nxy;
-						int k7 = k3 + nxy;
-	
-						if (ix == nx - 1) {
-							k1--;
-							k3--;
-							k5--;
-							k7--;
-						}
-						if (iy == ny - 1) {
-							k2 -= nx;
-							k3 -= nx;
-							k6 -= nx;
-							k7 -= nx;
-						}
-						if (iz == nz - 1) {
-							k4 -= nxy;
-							k5 -= nxy;
-							k6 -= nxy;
-							k7 -= nxy;
-						}
-	
-						des_data[l] = Util::trilinear_interpolate(src_data[k0],
-								src_data[k1], src_data[k2], src_data[k3], src_data[k4],
-								src_data[k5], src_data[k6],	src_data[k7], tuvx, tuvy, tuvz);
-					}
-				}
-			}
-		}
-	}
-
-	if( rdata )
-	{
-		free(rdata);
-		rdata = 0;
-	}
-	rdata = des_data;
-
-	float scale = transform.get_scale();
-	if (scale != 1.0) {
-		float inv_scale = 1.0/scale;
-		scale_pixel(inv_scale);
-	
-		attr_dict["origin_row"] = (float) attr_dict["origin_row"] * inv_scale;
-		attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
-		attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
-	}
-
-	update();
-	all_translation += transform.get_trans();
-	EXITFUNC;
-}
-
-
-
-
 void EMData::rotate_translate(const Transform3D & RA)
 {
+	cout << "Deprecation warning in EMData::rotate_translate. Please consider using EMData::transform() instead " << endl; 
 	ENTERFUNC;
 
 #if EMDATA_EMAN2_DEBUG	
@@ -1456,15 +1348,6 @@ void EMData::rotate_x(int dx)
 	EXITFUNC;
 }
 
-
-void EMData::rotate_180()
-{
-	ENTERFUNC;
-	process_inplace("math.rotate.180",Dict());
-	EXITFUNC;
-}
-
-
 double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 {
 	ENTERFUNC;
@@ -1659,7 +1542,8 @@ EMData *EMData::do_radon()
 	this_copy = copy();
 
 	for (int i = 0; i < nx; i++) {
-		this_copy->rotate(M_PI * 2.0f * i / nx, 0, 0);
+		Transform t(Dict("type","2d","alpha",(float) M_PI * 2.0f * i / nx));
+		this_copy->transform(t);
 
 		float *copy_data = this_copy->get_data();
 
@@ -2426,7 +2310,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 }
 
 
-EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
+EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360) const
 {
 	ENTERFUNC;
 
@@ -2438,8 +2322,6 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 	if (do360) {
 		p = 2;
 	}
-
-	EMData *ret = new EMData();
 
 	if (xs < 1) {
 		xs = (int) Util::fast_floor(p * M_PI * ny / 4);
@@ -2462,8 +2344,11 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 		r2 = rr;
 	}
 
+	if ( (r2-r1) < 0 ) throw UnexpectedBehaviorException("The combination of function the arguments and the image dimensions causes unexpected behavior internally. Use a larger image, or a smaller value of r1, or a combination of both");
+	
+	EMData *ret = new EMData();
 	ret->set_size(xs, r2 - r1, 1);
-	float *d = get_data();
+	const float *const d = get_const_data();
 	float *dd = ret->get_data();
 
 	for (int x = 0; x < xs; x++) {
@@ -3664,7 +3549,7 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 }
 
 
-void EMData::cut_slice(const EMData * map, Transform3D * ort, bool interpolate)
+void EMData::cut_slice(const EMData *const map, const Transform& transform, bool interpolate)
 {
 	ENTERFUNC;
 
@@ -3676,10 +3561,6 @@ void EMData::cut_slice(const EMData * map, Transform3D * ort, bool interpolate)
 	if ( is_complex() ) throw ImageFormatException("Can not call cut slice on an image that is complex");
 	if ( map->is_complex() ) throw ImageFormatException("Can not cut slice from a complex image");
 
-	Transform3D r(0, 0, 0); // EMAN by default
-	if (!ort) {
-		ort = &r;
-	}
 
 	float *sdata = map->get_data();
 	float *ddata = get_data();
@@ -3689,22 +3570,27 @@ void EMData::cut_slice(const EMData * map, Transform3D * ort, bool interpolate)
 	int map_nz = map->get_zsize();
 	int map_nxy = map_nx * map_ny;
 
-	Vec3f posttrans = ort->get_posttrans();
-	Vec3f pretrans = ort->get_pretrans();
-	
 	int ymax = ny/2;
 	if ( ny % 2 == 1 ) ymax += 1;
 	int xmax = nx/2;
 	if ( nx % 2 == 1 ) xmax += 1;
 	for (int y = -ny/2; y < ymax; y++) {
 		for (int x = -nx/2; x < xmax; x++) {
-			float xx = (x+pretrans[0]) * (*ort)[0][0] +  (y+pretrans[1]) * (*ort)[0][1] + pretrans[2] * (*ort)[0][2] + posttrans[0];
-			float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
-			float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
+			Vec3f coord(x,y,0);
+			Vec3f soln = transform*coord;
 			
-			xx += map_nx/2;
-			yy += map_ny/2;
-			zz += map_nz/2;
+// 			float xx = (x+pretrans[0]) * (*ort)[0][0] +  (y+pretrans[1]) * (*ort)[0][1] + pretrans[2] * (*ort)[0][2] + posttrans[0];
+// 			float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
+// 			float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
+			
+			
+// 			xx += map_nx/2;
+// 			yy += map_ny/2;
+// 			zz += map_nz/2;
+			
+			float xx = soln[0]+map_nx/2;
+			float yy = soln[1]+map_ny/2;
+			float zz = soln[2]+map_nz/2;
 			
 			int l = (x+nx/2) + (y+ny/2) * nx;
 			
@@ -3746,7 +3632,7 @@ void EMData::cut_slice(const EMData * map, Transform3D * ort, bool interpolate)
 }
 
 
-void EMData::uncut_slice(EMData * map, Transform3D * ort) const
+void EMData::uncut_slice(EMData * const map, const Transform& transform) const
 {
 	ENTERFUNC;
 
@@ -3758,10 +3644,10 @@ void EMData::uncut_slice(EMData * map, Transform3D * ort) const
 	if ( is_complex() ) throw ImageFormatException("Can not call cut slice on an image that is complex");
 	if ( map->is_complex() ) throw ImageFormatException("Can not cut slice from a complex image");
 
-	Transform3D r( 0, 0, 0); // EMAN by default
-	if (!ort) {
-		ort = &r;
-	}
+// 	Transform3D r( 0, 0, 0); // EMAN by default
+// 	if (!ort) {
+// 		ort = &r;
+// 	}
 
 	float *ddata = map->get_data();
 	float *sdata = get_data();
@@ -3770,9 +3656,9 @@ void EMData::uncut_slice(EMData * map, Transform3D * ort) const
 	int map_ny = map->get_ysize();
 	int map_nz = map->get_zsize();
 	int map_nxy = map_nx * map_ny;
-
+/*
 	Vec3f posttrans = ort->get_posttrans();
-	Vec3f pretrans = ort->get_pretrans();
+	Vec3f pretrans = ort->get_pretrans();*/
 	
 	int ymax = ny/2;
 	if ( ny % 2 == 1 ) ymax += 1;
@@ -3780,13 +3666,19 @@ void EMData::uncut_slice(EMData * map, Transform3D * ort) const
 	if ( nx % 2 == 1 ) xmax += 1;
 	for (int y = -ny/2; y < ymax; y++) {
 		for (int x = -nx/2; x < xmax; x++) {
-			float xx = (x+pretrans[0]) * (*ort)[0][0] +  (y+pretrans[1]) * (*ort)[0][1] + pretrans[2] * (*ort)[0][2] + posttrans[0];
-			float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
-			float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
-			
-			xx += map_nx/2;
-			yy += map_ny/2;
-			zz += map_nz/2;
+			Vec3f coord(x,y,0);
+			Vec3f soln = transform*coord;
+// 			float xx = (x+pretrans[0]) * (*ort)[0][0] +  (y+pretrans[1]) * (*ort)[0][1] + pretrans[2] * (*ort)[0][2] + posttrans[0];
+// 			float yy = (x+pretrans[0]) * (*ort)[1][0] +  (y+pretrans[1]) * (*ort)[1][1] + pretrans[2] * (*ort)[1][2] + posttrans[1];
+// 			float zz = (x+pretrans[0]) * (*ort)[2][0] +  (y+pretrans[1]) * (*ort)[2][1] + pretrans[2] * (*ort)[2][2] + posttrans[2];
+// 			
+// 			xx += map_nx/2;
+// 			yy += map_ny/2;
+// 			zz += map_nz/2;
+// 			
+			float xx = soln[0]+map_nx/2;
+			float yy = soln[1]+map_ny/2;
+			float zz = soln[2]+map_nz/2;
 			
 			if (xx < 0 || yy < 0 || zz < 0 || xx >= map_nx || yy >= map_ny || zz >= map_nz) continue;
 			
