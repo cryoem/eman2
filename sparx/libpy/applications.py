@@ -10441,13 +10441,14 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		if BDB:
 			# with BDB only one by one node can read data base
 			import os
-			for i in xrange(0, ncpu):
-				try: os.system('rm -fr EMAN2DB/cache')
-				except: pass
-				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB)
+			for i in xrange(ncpu):
+				if myid == i:
+					try: os.system('rm -fr EMAN2DB/cache')
+					except: pass
+					[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
-			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB)
+			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
 
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0, SA2)
@@ -10468,7 +10469,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		print_begin_msg('k-means')
 		k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, SA2, rand_seed, 1)
-		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF, BDB)
+		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF)
 		
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_classical(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
