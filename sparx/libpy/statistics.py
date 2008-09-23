@@ -3546,7 +3546,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 				if res['pos'] != assign[im]:
 					assign[im] = res['pos']
 					change     = 1
-
+				'''
 				# count update
 				ct_update += 1
 
@@ -3613,7 +3613,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 					# [all] waiting the result
 					mpi_barrier(MPI_COMM_WORLD)
-						
+				'''		
 														
 			# [sync]
 			mpi_barrier(MPI_COMM_WORLD)
