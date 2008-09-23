@@ -178,7 +178,7 @@ class Box:
 	
 	def set_image_name(self,image_name):
 		self.image_name = image_name
-		
+
 	def get_image_name(self):
 		return self.image_name
 	
@@ -236,7 +236,7 @@ class Box:
 	
 	def update_box_image(self,norm=True,norm_method="normalize.ramp.normvar"):
 		image = BigImageCache.get_image_directly(self.image_name)
-		#print "getting region",self.xcorner,self.ycorner,self.xsize,self.ysize
+		#print "getting ", self.image_name, " region ",self.xcorner,self.ycorner,self.xsize,self.ysize
 		if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
 		if self.ycorner + self.ysize > image.get_ysize(): self.ycorner = image.get_ysize()-self.ysize
 		
@@ -1323,7 +1323,10 @@ class Boxable:
 	
 	def store_key_entry_in_idd(self,key,object):
 		set_idd_key_entry(self.image_name,key,object)
-		
+	
+	def set_image_name(self, image_name):
+		self.image_name = image_name	
+
 	def get_image_name(self):
 		return self.image_name
 	
@@ -2584,6 +2587,7 @@ class PawelAutoBoxer(AutoBoxer):
 			imgname = "reduced_" + imgname
 			self.parent.init_guiim(img, imgname)
 			img.write_image( imgname )
+			boxable.set_image_name( imgname )
 
 		ccf = filt_gaussl( img, 1.0/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
