@@ -1295,78 +1295,91 @@ def im_diff(im1, im2, mask = None):
 # k-means open and prepare images
 def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 	from utilities import get_params2D
+	from fundamentals               import rot_shift2D, rot_shift3D
 	
-	# --- New BDB Version ----------------------------------------------------------------
+	if CTF:
+		from morphology		import ctf_2, ctf_1d
+		from filter		import filt_ctf, filt_table
+		from fundamentals 	import fftip
+
+	im_M = [0] * N
 	if BDB:
-		import EMAN2db
-		from fundamentals               import rot_shift2D, rot_shift3D
-		if CTF:
-			from morphology		import ctf_2, ctf_1d
-			from filter		import filt_ctf, filt_table
-			from fundamentals 	import fftip
+		IM   = db_open_dict(stack)
+		dim  = IM.get_attr(N_start, ('nx', 'ny', 'nz'))
+	else:
+		image = get_im(stack, N_start)
+		dim   = {}
+		dim['nx'] = image.get_xsize()
+		dim['ny'] = image.get_ysize()
+		dim['nz'] = image.get_zsize()
 
-		IM = db_open_dict(stack)
-	
-		im_M = [0] * N
-		dim  = IM.get_attr(0, ('nx', 'ny', 'nz'))
-
-		if CTF:
-			parnames    = ('Pixel_size', 'defocus', 'voltage', 'Cs', 'amp_contrast', 'B_factor',  'ctf_applied')
-			ctf	    = []
-			ctf2        = []
+	if CTF:
+		parnames    = ('Pixel_size', 'defocus', 'voltage', 'Cs', 'amp_contrast', 'B_factor',  'ctf_applied')
+		ctf	    = []
+		ctf2        = []
+		if BDB:
 			ctf_params  = IM.get_attr(0, parnames) # return dict
-			if ctf_params[parnames[6]]:
-				ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+			if ctf_params[parnames[6]]: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
-		if maskname != None:
-			if isinstance(maskname, basestring):
+		else:
+			ctf_params  = get_arb_params(image, parnames)
+			if ctf_params[6]: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+
+	if maskname != None:
+		if isinstance(maskname, basestring):
+			if BDB:
 				MASK = db_open_dict(maskname)
 				mask = MASK[0]
 				MASK.close()
-		else: mask = None
+			else:
+				mask = get_im(maskname)
+	else:
+		mask = None
 
-		# apply CTF if flag
-		if CTF:
-			for im in xrange(N_start, N_stop):
-				# obtain image
-				image = IM[im]
+	# apply CTF if flag
+	if CTF:
+		for im in xrange(N_start, N_stop):
+			# obtain image
+			if BDB: image = IM[im]
+			else:   image = get_im(stack, im)
 
-				# 3D object
-				if dim['nz'] > 1:
-					# apply parameters
+			# 3D object
+			if dim['nz'] > 1:
+				# apply parameters
+				try:
+					phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
+				except:
 					try:
-						phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
+						phi    = image.get_attr('phi')
+						theta  = image.get_attr('theta')
+						psi    = image.get_attr('psi')
+						s3x    = image.get_attr('s3x')
+						s3y    = image.get_attr('s3y')
+						s3z    = image.get_attr('s3z')
+						mirror = image.get_attr('mirror')
 					except:
-						try:
-							phi    = image.get_attr('phi')
-							theta  = image.get_attr('theta')
-							psi    = image.get_attr('psi')
-							s3x    = image.get_attr('s3x')
-							s3y    = image.get_attr('s3y')
-							s3z    = image.get_attr('s3z')
-							mirror = image.get_attr('mirror')
-						except:
-							phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
-					
-					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
-					if mirror: image.process_inplace('mirror', {'axis':'x'})
+						phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
 
-				# 2D object
-				elif dim['ny'] > 1:
-					# apply parameters
+				image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+				if mirror: image.process_inplace('mirror', {'axis':'x'})
+
+			# 2D object
+			elif dim['ny'] > 1:
+				# apply parameters
+				try:
+					alpha, sx, sy, mirror = get_params2D(image)
+				except:
 					try:
-						alpha, sx, sy, mirror = get_params2D(image)
+						alpha  = image.get_attr('alpha')
+						sx     = image.get_attr('sx')
+						sy     = image.get_attr('sy')
+						mirror = image.get_attr('mirror')
 					except:
-						try:
-							alpha  = image.get_attr('alpha')
-							sx     = image.get_attr('sx')
-							sy     = image.get_attr('sy')
-							mirror = image.get_attr('mirror')
-						except:
-							alpha, sx, sy, mirror  = 0, 0, 0, 0
-	
- 					image = rot_shift2D(image, alpha, sx, sy, mirror)
-				
+						alpha, sx, sy, mirror  = 0, 0, 0, 0
+
+				image = rot_shift2D(image, alpha, sx, sy, mirror)
+
+			if BDB:
 				# obtain ctf
 				ctf_params = IM.get_attr(im, parnames) # return dict
 
@@ -1375,233 +1388,92 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB):
 							     ctf_params[parnames[3]], ctf_params[parnames[4]], ctf_params[parnames[5]]))
 				ctf2.append(ctf_2(dim['nx'], ctf_params[parnames[0]], ctf_params[parnames[1]], ctf_params[parnames[2]],
 							     ctf_params[parnames[3]], ctf_params[parnames[4]], ctf_params[parnames[5]]))
-
-				# apply mask
-				if mask != None: Util.mul_img(image, mask)
-
-				# fft
-				fftip(image)
-
-				# mem the original size
-				if im == N_start:
-					image.set_attr('or_nx', dim['nx'])
-					image.set_attr('or_ny', dim['ny'])
-					image.set_attr('or_nz', dim['nz'])
-
-				# store image
-				im_M[im] = image.copy()
-
-		else:
-			for im in xrange(N_start, N_stop):
-
-				# obtain image
-				image = IM[im]
-
-				# 3D object
-				if dim['nz'] > 1:
-					# apply parameters
-					try:
-						phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
-					except:
-						try:
-							phi    = image.get_attr('phi')
-							theta  = image.get_attr('theta')
-							psi    = image.get_attr('psi')
-							s3x    = image.get_attr('s3x')
-							s3y    = image.get_attr('s3y')
-							s3z    = image.get_attr('s3z')
-							mirror = image.get_attr('mirror')
-						except:
-							phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
-					
-					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
-					if mirror: image.process_inplace('mirror', {'axis':'x'})
-
-				# 2D object
-				elif dim['ny'] > 1:
-					# apply parameters
-					try:
-						alpha, sx, sy, mirror = get_params2D(image)
-					except:
-						try:
-							alpha  = image.get_attr('alpha')
-							sx     = image.get_attr('sx')
-							sy     = image.get_attr('sy')
-							mirror = image.get_attr('mirror')
-						except:
-							alpha, sx, sy, mirror  = 0, 0, 0, 0
-	
- 					image = rot_shift2D(image, alpha, sx, sy, mirror)
-			
-				# apply mask
-				if mask != None: image = Util.compress_image_mask(image, mask)
-
-				# mem the original size
-				if im == N_start:
-					image.set_attr('or_nx', dim['nx'])
-					image.set_attr('or_ny', dim['ny'])
-					image.set_attr('or_nz', dim['nz'])
-
-				# store image
-				im_M[im] = image.copy()
-
-		IM.close()
-
-		if CTF: return im_M, mask, ctf, ctf2
-		else:   return im_M, mask, None, None
-
-	# ----- Old version (hdf, spi, ...) -------------------------------------------------------
-	else:
-		from utilities                  import get_im
-		from fundamentals               import rot_shift2D, rot_shift3D
-		if CTF:
-			from morphology		import ctf_2, ctf_1d
-			from filter		import filt_ctf, filt_table
-			from fundamentals 	import fftip
-
-		
-		im_M  = [0] * N
-		image = get_im(stack, N_start)
-		or_nx = image.get_xsize()
-		or_ny = image.get_ysize()
-		or_nz = image.get_zsize()
-	
-		if CTF:
-			parnames    = ('Pixel_size', 'defocus', 'voltage', 'Cs', 'amp_contrast', 'B_factor',  'ctf_applied')
-			ctf	    = []
-			ctf2        = []
-			ctf_params  = get_arb_params(image, parnames)
-			if ctf_params[parnames[6]]:
-				ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
-		
-		if maskname != None:
-			import types
-			if (type(maskname) is types.StringType): mask = get_im(maskname)
-		else: mask = None
-
-		# apply CTF if flag
-		if CTF:
-			for im in xrange(N_start, N_stop):
-				# obtain image
-				image = get_im(stack, im)
-
-				# 3D object
-				if or_nz > 1:
-					# apply parameters
-					try:
-						phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
-					except:
-						try:
-							phi    = image.get_attr('phi')
-							theta  = image.get_attr('theta')
-							psi    = image.get_attr('psi')
-							s3x    = image.get_attr('s3x')
-							s3y    = image.get_attr('s3y')
-							s3z    = image.get_attr('s3z')
-							mirror = image.get_attr('mirror')
-						except:
-							phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
-					
-					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
-					if mirror: image.process_inplace('mirror', {'axis':'x'})
-
-				# 2D object
-				elif or_ny > 1:
-					# apply parameters
-					try:
-						alpha, sx, sy, mirror = get_params2D(image)
-					except:
-						try:
-							alpha  = image.get_attr('alpha')
-							sx     = image.get_attr('sx')
-							sy     = image.get_attr('sy')
-							mirror = image.get_attr('mirror')
-						except:
-							alpha, sx, sy, mirror  = 0, 0, 0, 0
-	
- 					image = rot_shift2D(image, alpha, sx, sy, mirror)
-			
+			else:
 				# obtain ctf
 				ctf_params = get_arb_params(image, parnames)
 
 				# store the ctf, allow limit acces file
-				ctf.append(ctf_1d(or_nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
-				ctf2.append(ctf_2(or_nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
+				ctf.append(ctf_1d(dim['nx'], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
+				ctf2.append(ctf_2(dim['nx'], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
 
-				# apply mask
-				if mask != None: Util.mul_img(image, mask)
+			# apply mask
+			if mask != None: Util.mul_img(image, mask)
 
-				# fft
-				fftip(image)
+			# fft
+			fftip(image)
 
-				# mem the original size
-				if im == N_start:
-					image.set_attr('or_nx', or_nx)
-					image.set_attr('or_ny', or_ny)
-					image.set_attr('or_nz', or_nz)
+			# mem the original size
+			if im == N_start:
+				image.set_attr('or_nx', dim['nx'])
+				image.set_attr('or_ny', dim['ny'])
+				image.set_attr('or_nz', dim['nz'])
 
-				# store image
-				im_M[im] = image.copy()
+			# store image
+			im_M[im] = image.copy()
 
-		else:
-			for im in xrange(N_start, N_stop):
+	else:
+		for im in xrange(N_start, N_stop):
 
-				# obtain image
-				image = get_im(stack, im)
+			# obtain image
+			if BDB:	image = IM[im]
+			else:   image = get_im(stack, im)
 
-				# 3D object
-				if or_nz > 1:
-					# apply parameters
+			# 3D object
+			if dim['nz'] > 1:
+				# apply parameters
+				try:
+					phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
+				except:
 					try:
-						phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
+						phi    = image.get_attr('phi')
+						theta  = image.get_attr('theta')
+						psi    = image.get_attr('psi')
+						s3x    = image.get_attr('s3x')
+						s3y    = image.get_attr('s3y')
+						s3z    = image.get_attr('s3z')
+						mirror = image.get_attr('mirror')
 					except:
-						try:
-							phi    = image.get_attr('phi')
-							theta  = image.get_attr('theta')
-							psi    = image.get_attr('psi')
-							s3x    = image.get_attr('s3x')
-							s3y    = image.get_attr('s3y')
-							s3z    = image.get_attr('s3z')
-							mirror = image.get_attr('mirror')
-						except:
-							phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
-					
-					image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
-					if mirror: image.process_inplace('mirror', {'axis':'x'})
+						phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
 
-				# 2D object
-				elif or_ny > 1:
-					# apply parameters
+				image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+				if mirror: image.process_inplace('mirror', {'axis':'x'})
+
+			# 2D object
+			elif dim['ny'] > 1:
+				# apply parameters
+				try:
+					alpha, sx, sy, mirror = get_params2D(image)
+				except:
 					try:
-						alpha, sx, sy, mirror = get_params2D(image)
+						alpha  = image.get_attr('alpha')
+						sx     = image.get_attr('sx')
+						sy     = image.get_attr('sy')
+						mirror = image.get_attr('mirror')
 					except:
-						try:
-							alpha  = image.get_attr('alpha')
-							sx     = image.get_attr('sx')
-							sy     = image.get_attr('sy')
-							mirror = image.get_attr('mirror')
-						except:
-							alpha, sx, sy, mirror  = 0, 0, 0, 0
-	
- 					image = rot_shift2D(image, alpha, sx, sy, mirror)
-						
-				# apply mask
-				if mask != None: image = Util.compress_image_mask(image, mask)
+						alpha, sx, sy, mirror  = 0, 0, 0, 0
 
-				# mem the original size
-				if im == N_start:
-					image.set_attr('or_nx', or_nx)
-					image.set_attr('or_ny', or_ny)
-					image.set_attr('or_nz', or_nz)
+				image = rot_shift2D(image, alpha, sx, sy, mirror)
 
-				# store image
-				im_M[im] = image.copy()
+			# apply mask
+			if mask != None: image = Util.compress_image_mask(image, mask)
 
-		if CTF: return im_M, mask, ctf, ctf2
-		else:   return im_M, mask, None, None
+			# mem the original size
+			if im == N_start:
+				image.set_attr('or_nx', dim['nx'])
+				image.set_attr('or_ny', dim['ny'])
+				image.set_attr('or_nz', dim['nz'])
+
+			# store image
+			im_M[im] = image.copy()
+
+	if BDB: IM.close()
+
+	if CTF: return im_M, mask, ctf, ctf2
+	else:   return im_M, mask, None, None
+
 
 # k-means init for MPI version
-def k_means_init_MPI(N):
+def k_means_init_MPI(stack):
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
 	from utilities    import bcast_number_to_all
 	from random       import randint
@@ -1619,6 +1491,11 @@ def k_means_init_MPI(N):
 	mpi_barrier(MPI_COMM_WORLD)
 
 	# define the node affected to the images
+	N = 0
+	if myid == main_node: N = EMUtil.get_image_count(stack)
+	N = bcast_number_to_all(N, 0)
+	mpi_barrier(MPI_COMM_WORLD)
+
 	im_per_node = max(N / number_of_proc, 1)
 	N_start     = myid * im_per_node
 	if myid == (number_of_proc -1):
@@ -1626,7 +1503,7 @@ def k_means_init_MPI(N):
 	else:
 		N_stop = min(N_start + im_per_node, N)
 
-	return main_node, myid, number_of_proc, N_start, N_stop
+	return main_node, myid, number_of_proc, N_start, N_stop, N
 
 # k-means write the head of the logfile
 def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, SA2, rnd, ncpu):

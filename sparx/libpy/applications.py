@@ -10404,19 +10404,24 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 	if (out_dir.split(':')[0] != 'bdb' and BDB) or (out_dir.split(':')[0] == 'bdb' and not BDB):
 		ERROR('Stack and out_dir+name must be in the same format!', 'k_means', 1)
-		
-	N = EMUtil.get_image_count(stack)
 
 	if MPI:
 		from statistics import k_means_cla_MPI, k_means_SSE_MPI, k_means_init_MPI
+		from mpi 	import mpi_barrier, MPI_COMM_WORLD
 		
-		main_node, myid, ncpu, N_start, N_stop = k_means_init_MPI(N)
+		main_node, myid, ncpu, N_start, N_stop, N = k_means_init_MPI(stack)
 
 		if myid == main_node:
 			print_begin_msg('k-means')
 			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, SA2, rand_seed, ncpu)
 
-		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB)
+		if BDB:
+			# with BDB only one by one node can read data base
+			for i in xrange(0, ncpu):
+				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB)
+				mpi_barrier(MPI_COMM_WORLD)
+		else:
+			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF, BDB)
 
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0, SA2)
@@ -10433,6 +10438,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 	else:
 		from statistics import k_means_classical, k_means_SSE
+		N = EMUtil.get_image_count(stack)
 
 		print_begin_msg('k-means')
 		k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, SA2, rand_seed, 1)
