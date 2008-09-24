@@ -1030,10 +1030,17 @@ vector<Transform> Symmetry3D::get_touching_au_transforms(bool inc_mirror) const
 
 vector<Transform> Symmetry3D::get_syms() const
 {
+	
 	vector<Transform> ret;
-	for(int i = 0; i < get_nsym(); ++i ) {
-		ret.push_back(get_sym(i));
-	}
+// 	if (t.is_identity()) {
+		for(int i = 0; i < get_nsym(); ++i ) {
+			ret.push_back(get_sym(i));
+		}
+// 	} else {
+// 		for(int i = 0; i < get_nsym(); ++i ) {
+// 			ret.push_back(get_sym(i)*t);
+// 		}
+// 	}
 	return ret;
 }
 

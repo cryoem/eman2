@@ -134,7 +134,7 @@ def main():
 		except: pass
 		t = t3d_q * t
 			
-		q.rotate_translate(t3d_q)
+		q.transform(t3d_q)
 		#Do the alignment now
 		ali = q.align(aligner,p,aligner_params, alignercmp, alignercmp_params)
 		alit = ali.get_attr("xform.align2d")
@@ -174,7 +174,7 @@ def main():
 
 			q = p.copy()
 			q.set_attr("xform.align2d",ali.get_attr("xform.align2d"))
-			q.rotate_translate(t3d_q)
+			q.transform(t3d_q)
 			#q.write_image("pq.hdf",-1)
 			#p.write_image("pq.hdf",-1)
 			

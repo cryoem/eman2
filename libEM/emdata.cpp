@@ -3456,9 +3456,9 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 	for (int m = 0; m < 2; m++) {
 		float *im = ims[m];
 		float a = M_PI / steps2;
-
+		Transform t(Dict("type","2d","alpha",-a));
 		for (int i = 0; i < steps2; i++) {
-			images[i]->rotate(-a, 0, 0);
+			images[i]->transform(t);
 			float *data = images[i]->get_data();
 
 			for (int j = 0; j < image_ny; j++) {

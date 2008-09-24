@@ -102,10 +102,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_pretrans_overloads_0
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_posttrans_overloads_0_1, get_posttrans, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_pretrans_overloads_2_3, set_pretrans, 2, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_posttrans_overloads_2_3, set_posttrans, 2, 3)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_set_params_overloads_2_3, set_params, 2, 3)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_params_overloads_1_2, get_params, 1, 2)
-		
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Symmetry3D_get_asym_unit_points_overloads_1_2, get_asym_unit_points, 1, 2)
 		
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_settrans_overloads_2_3, set_trans, 2, 3)
 
@@ -113,6 +109,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform_settrans_overloads_2_3, se
 
 
 // Module ======================================================================
+
 BOOST_PYTHON_MODULE(libpyTransform2)
 {
 	def("dump_orientgens", &EMAN::dump_orientgens);
@@ -366,8 +363,6 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("set_rotation", (void (EMAN::Transform3D::*)(const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&, const float&) )&EMAN::Transform3D::set_rotation)
 		.def("set_rotation", (void (EMAN::Transform3D::*)(EMAN::Transform3D::EulerType, const EMAN::Dict&) )&EMAN::Transform3D::set_rotation)
 		.def("set_rotation", (void (EMAN::Transform3D::*)(const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&, const EMAN::Vec3f&) )&EMAN::Transform3D::set_rotation)
-// 		.def("set_params", (void (EMAN::Transform3D::*)(const EMAN::Dict&, const std::string&, const EMAN::Transform3D::EulerType))&EMAN::Transform3D::set_params,EMAN_Transform3D_set_params_overloads_2_3())
-// 		.def("get_params",( EMAN::Dict (EMAN::Transform3D::*)(const std::string&, const EMAN::Transform3D::EulerType) const)&EMAN::Transform3D::get_params, EMAN_Transform3D_get_params_overloads_1_2())
 		.def("get_post_x_mirror",&EMAN::Transform3D::get_post_x_mirror)
 		.def("set_post_x_mirror",&EMAN::Transform3D::set_post_x_mirror)
 		.def("get_mag", &EMAN::Transform3D::get_mag)
@@ -435,7 +430,6 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("set_rotation", (void (EMAN::Transform::*)(const EMAN::Dict&) )&EMAN::Transform::set_rotation)
 		.def("get_mirror",&EMAN::Transform::get_mirror)
 		.def("set_mirror",&EMAN::Transform::set_mirror)
-// 		.def("get_pre_trans", &EMAN::Transform::get_pre_trans)
 		.def("set_pre_trans", (void (EMAN::Transform::*)(const EMAN::Vec2f&) ) &EMAN::Transform::set_pre_trans)
 		.def("set_pre_trans", (void (EMAN::Transform::*)(const EMAN::Vec3f&) ) &EMAN::Transform::set_pre_trans)
 		.def("get_pre_trans", &EMAN::Transform::get_pre_trans)
@@ -445,10 +439,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("get_trans_2d", &EMAN::Transform::get_trans_2d)
 		.def("get_trans_2D", &EMAN::Transform::get_trans_2d)
 		.def("get_rotation", &EMAN::Transform::get_rotation)
-// 		.def("get_rotation_2d", &EMAN::Transform::get_rotation_2d)
 		.def("set_params", &EMAN::Transform::set_params)
 		.def("get_params", &EMAN::Transform::get_params)
-// 		.def("get_params_2d", &EMAN::Transform::get_params_2d)
 		.def("transform", (EMAN::Vec2f (EMAN::Transform::*)(const EMAN::Vec2f&) const )&EMAN::Transform::transform)
 		.def("transform", (EMAN::Vec3f (EMAN::Transform::*)(const EMAN::Vec3f&) const )&EMAN::Transform::transform)
 		.def("transform", (EMAN::Vec2f (EMAN::Transform::*)(const float&, const float&) const )&EMAN::Transform::transform)
@@ -458,8 +450,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("orthogonalize", &EMAN::Transform::orthogonalize)
 		.def("printme", &EMAN::Transform::printme)
 		.def("at", &EMAN::Transform::at)
-// 		.def("get_nsym", &EMAN::Transform::get_nsym)
-// 		.def("get_sym", &EMAN::Transform::get_sym)
+		.def("get_nsym", &EMAN::Transform::get_nsym)
+		.def("get_sym", &EMAN::Transform::get_sym)
 		.def("get_scale", &EMAN::Transform::get_scale)
 		.def("to_identity", &EMAN::Transform::to_identity)
 		.def("is_identity", &EMAN::Transform::is_identity)
@@ -468,11 +460,10 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("set_params_inverse",&EMAN::Transform::set_params_inverse)
 		.def("get_matrix",&EMAN::Transform::get_matrix)
 		.def("set_matrix",&EMAN::Transform::set_matrix)
-// 		.def("is_identity", &EMAN::Transform::is_identity)
-// 		.staticmethod("get_nsym")
 		.def( self * self )
 		.def( self * other< EMAN::Vec3f >() )
 		.def( self * other< EMAN::Vec2f >() )
+		.staticmethod("get_nsym")
 	;
 
 }

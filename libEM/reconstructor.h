@@ -170,7 +170,7 @@ namespace EMAN
 		virtual float get_norm(const unsigned int) { return 0; }
 
 		
-		virtual int insert_slice_weights(const Transform3D&) {return 0;}
+		virtual int insert_slice_weights(const Transform&) {return 0;}
 		
 	  private:
 		// Disallow copy construction
@@ -238,7 +238,11 @@ namespace EMAN
 			
 			virtual void setup();
 			
-			virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
+			virtual int insert_slice(const EMData* const slice, const Transform3D & euler) {
+				throw UnexpectedBehaviorException("Transform3D interface is redundant");
+			}
+			
+			virtual int insert_slice(const EMData* const slice, const Transform & euler);
 		
 			virtual EMData *finish();
 
@@ -256,7 +260,7 @@ namespace EMAN
 			{
 				TypeDict d;
 				d.put("nx", EMObject::INT, "Necessary. The x dimension of the input images.");
-				d.put("sym", EMObject::STRING, "Symmetry - assumed to be C1 if not specified");
+// 				d.put("sym", EMObject::STRING, "Symmetry - assumed to be C1 if not specified");
 				return d;
 			}
 	};
@@ -344,7 +348,7 @@ namespace EMAN
 		/** Insert a slice into a 3D volume, in a given orientation
 		* @return 0 if successful, 1 otherwise
 		* @param slice the image slice to be inserted into the 3D volume
-		* @param t3d the Transform3D that stores the image Euler angles
+		* @param t3d the Transform that stores the image Euler angles
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
@@ -354,7 +358,7 @@ namespace EMAN
 		/** Determine slice agreement with the current reconstruction
 		* @return 0 if successful, 1 otherwise
 		* @param input_slice the image slice to compared against the 3D volume
-		* @param t3d the Transform3D that the image Euler angles
+		* @param t3d the Transform that the image Euler angles
 		* @param num_particles_in_slice the number of particles in the slice - used to determine the SNR normalized FSC, defaults to 1.
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
@@ -425,7 +429,7 @@ namespace EMAN
 		 * @param idx the index of the slice in the quality_scores vector
 		 * @exception GenericException(just throw) when the idx is beyond the range of the quality_scores vector
 		 */
-		virtual float get_score(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_snr_normed_frc_integral(); else throw; }
+		virtual float get_score(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_snr_normed_frc_integral(); else throw UnexpectedBehaviorException("Transform3D interface is redundant"); }
 		
 		/** Get the normalization value that has been determined for this slice
 		 * this is used in e2make3d.py to print information to std out
@@ -433,7 +437,7 @@ namespace EMAN
 		 * @param idx the index of the slice in the quality_scores vector
 		 * @exception GenericException(throw) when the idx is beyond the range of the quality_scores vector
 		 */
-		virtual float get_norm(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_norm();  else throw; }
+		virtual float get_norm(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_norm();  else throw UnexpectedBehaviorException("Transform3D interface is redundant"); }
 		
 	  protected:
 	  	/** Preprocess the slice prior to insertion into the 3D volume
@@ -574,10 +578,12 @@ namespace EMAN
 		 */
 		virtual EMData *finish();
 		
-		virtual int insert_slice_weights(const Transform3D& t3d);
+		virtual int insert_slice_weights(const Transform& t3d);
 		
-		virtual int insert_slice(const EMData* const image, const Transform3D& t3d);
-		
+		virtual int insert_slice(const EMData* const image, const Transform3D& t3d) {
+			throw UnexpectedBehaviorException("Transform3D interface is redundant");
+		}
+		virtual int insert_slice(const EMData* const image, const Transform& t3d);
 		void insert_pixel(const float& x, const float& y, const float& z, const float dt[2]);
 		
 		void insert_density_at(const float& x, const float& y, const float& z);
@@ -686,7 +692,10 @@ namespace EMAN
 
 		virtual void setup();
 		
-		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
+		virtual int insert_slice(const EMData* const slice, const Transform3D & euler) { 
+			throw UnexpectedBehaviorException("Use of Tranform3D with BackProjection is deprecated"); }
+		
+		virtual int insert_slice(const EMData* const slice, const Transform & euler);
 		
 		virtual EMData *finish();
 
@@ -729,7 +738,7 @@ namespace EMAN
 			params["zsample"] = 0;
 		}
 		
-		EMData* preprocess_slice(const EMData* const slice);
+		EMData* preprocess_slice(const EMData* const slice, const Transform& t);
 	};
 
 

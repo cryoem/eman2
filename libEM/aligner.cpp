@@ -129,7 +129,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	
 	
 	IntPoint peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
-	float maxscore = cf->get_value_at_wrap(peak[0],peak[1],peak[2]);
+// 	float maxscore = cf->get_value_at_wrap(peak[0],peak[1],peak[2]);
 // 	Vec3f pre_trans = this_img->get_translation();
 	Vec3f cur_trans = Vec3f ( (float)-peak[0], (float)-peak[1], (float)-peak[2]);
 
@@ -150,11 +150,6 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	cf=this_img->copy();
 	cf->translate(cur_trans[0],cur_trans[1],cur_trans[2]);
 	cf->update();
-	
-	cf->set_attr("align.score", maxscore);
-	cf->set_attr("align.dx",cur_trans[0]);
-	cf->set_attr("align.dy",cur_trans[1]);
-	cf->set_attr("align.dz",cur_trans[2]);
 	
 	if ( nz != 1 ) {
 		Transform* t = get_set_align_attr("xform.align3d",cf,this_img);
@@ -218,7 +213,6 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	// Return the result
 	cf=this_img->copy();
 	cf->transform( Transform(Dict("type","2d","alpha",rot_angle)));
-	cf->set_attr("align.az",rot_angle);
 	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 	t->set_rotation(Dict("type","2d","alpha",rot_angle));
 	
@@ -233,7 +227,9 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	// Perform 180 ambiguous alignment
 	int rfp_mode = params.set_default("rfp_mode",0);
 	EMData* rot_aligned = RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
-	float rotate_angle_solution = rot_aligned->get_attr("align.az");
+	Transform * tmp = rot_aligned->get_attr("xform.align2d");
+	Dict rot = tmp->get_rotation("2d");
+	float rotate_angle_solution = rot["alpha"];
 	
 	// Make a copy of the rotationally aligned image and then rotate it 180
 	EMData *rot_align_180= rot_aligned->copy();
@@ -256,8 +252,6 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 		delete rot_aligned; rot_aligned = 0;
 		rotate_angle_solution = rotate_angle_solution-180;
 	}
-	result->set_attr("align.score", score);
-	result->set_attr("align.az",rotate_angle_solution);
 	
 	Transform* t = get_align_attr("xform.align2d",result);
 	t->set_rotation(Dict("type","2d","alpha",rotate_angle_solution));
@@ -287,8 +281,6 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 	float a = (float) ((1.0f - 1.0f * peak_index / size) * 180. * 2);
 	this_img->transform(Dict("type","2d","alpha",(float)(a*180./M_PI)));
 
-	cf->set_attr("align.score", peak);
-	cf->set_attr("align.az",-a);
 	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 	t->set_rotation(Dict("type","2d","alpha",-a));
 	cf->update();
@@ -315,9 +307,12 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
 	int rfp_mode = params.set_default("rfp_mode",0);
 	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
+	Transform * tmp = rot_align->get_attr("xform.align2d");
+	Dict rot = tmp->get_rotation("2d");
+	float rotate_angle_solution = rot["alpha"];
+	
 	EMData *rot_align_180 = rot_align->copy(); 
 	rot_align_180->process_inplace("math.rotate.180"); 
-	rot_align_180->set_attr("align.az",(float)rot_align->get_attr("align.az")+180.0);
 	
 	Dict trans_params;
 	trans_params["intonly"]  = 0;
@@ -344,7 +339,6 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	
 	EMData *result = 0;
 	if (cmp1 < cmp2) { // Assumes smaller is better - thus all comparitors should support "smaller is better"
-		rot_trans->set_attr("align.score", cmp1);
 		if( rot_180_trans )	{
 			delete rot_180_trans;
 			rot_180_trans = 0;
@@ -352,16 +346,16 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 		result = rot_trans;
 	}
 	else {
-		rot_180_trans->set_attr("align.score", cmp2);
 		if( rot_trans )	{
 			delete rot_trans;
 			rot_trans = 0;
 		}
 		result = rot_180_trans;
+		rotate_angle_solution -= 180.f;
 	}
 	
 	Transform* t = result->get_attr("xform.align2d");
-	t->set_rotation(Dict("type","2d","alpha",(float)result->get_attr("align.az")));
+	t->set_rotation(Dict("type","2d","alpha",rotate_angle_solution));
 	
 	return result;
 }
@@ -398,8 +392,6 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	
 	EMData *result = 0;
 	if (cmp1 < cmp2) {
-		rot_trans_align->set_attr("align.flip",0);
-		rot_trans_align->set_attr("align.score",cmp1);
 
 		if( rot_trans_align_flip ) {
 			delete rot_trans_align_flip;
@@ -408,8 +400,6 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		result = rot_trans_align;
 	}
 	else {
-		rot_trans_align_flip->set_attr("align.flip",1);
-		rot_trans_align_flip->set_attr("align.score",cmp2);
 		if( rot_trans_align ) {
 			delete rot_trans_align;
 			rot_trans_align = 0;
@@ -451,7 +441,6 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 			r2 = 0;
 		}
 		result = r1;
-		result->set_attr("align.flip",0);
 	}
 	else {
 		if( r1 )
@@ -460,7 +449,6 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 			r1 = 0;
 		}
 		result = r2;
-		result->set_attr("align.flip",1);
 		result->process_inplace("xform.flip",Dict("axis","x"));
 	}
 
@@ -982,14 +970,6 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 	EMData *result = this_img->copy();
 
-//	int ny = this_img->get_ysize();
-
-//	float salt = this_img.get_attr("align.az");
-//	float sdx = this_img.get_attr("align.dx");
-//	float sdy = this_img.get_attr("align.dy");
-
-//	float dda = atan(2.0f / ny);
-
 	int mode = params.set_default("mode", 0);
 	float saz = 0.0;
 	float sdx = 0.0;
@@ -1000,13 +980,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		saz = params["alpha"];
 		sdx = params["tx"];
 		sdy = params["ty"];
-	} else {
-		saz = params.set_default("az",0.0f);
-		sdx = params.set_default("dx",0.0f);
-		sdy = params.set_default("dy",0.0f);
 	}
-
-// 	cout << "using starting guesses of" << sdx << " " << sdy << " " << saz << endl;
 	
 	int np = 3;
 	Dict gsl_params;
@@ -1022,8 +996,6 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
 	float stepaz = params.set_default("stepaz",5.0f);
 	
-// 	cout << "Using steps " << stepx << " " << stepy << " " << stepaz << endl;
-	// 	cout << "Using steps " << stepx << " " << stepy << " " << stepaz << endl;
 	gsl_vector_set(ss, 0, stepx);
 	gsl_vector_set(ss, 1, stepy);
 	gsl_vector_set(ss, 2, stepaz);
@@ -1067,14 +1039,9 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
 	}
 
-	result->set_attr("align.dx",(float)gsl_vector_get(s->x, 0));
-	result->set_attr("align.dy",(float)gsl_vector_get(s->x, 1));
-	result->set_attr("align.az",(float)gsl_vector_get(s->x, 2));
 	Transform * t = new Transform(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
 	t->set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
 	result->set_attr("xform.align2d",t);
-// 	result->rotate_translate((float)gsl_vector_get(s->x, 2), 0, 0,
-// 							  (float)gsl_vector_get(s->x, 0), (float)gsl_vector_get(s->x, 1), 0);
 	result->transform(*t);
 	
 	gsl_vector_free(x);

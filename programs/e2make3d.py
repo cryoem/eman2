@@ -341,8 +341,8 @@ def bw_reconstruction(options):
 	for i in xrange(0,total_images):
 		d = EMData()
 		d.read_image(options.input_file, i, True)
-		transform = Transform3D(EULER_EMAN,d.get_attr("euler_az"),d.get_attr("euler_alt"),d.get_attr("euler_phi"))
-		recon.insert_slice_weights(transform)
+		t = d.get_attr("xform.projection")
+		recon.insert_slice_weights(t)
 	
 	if (options.verbose):
 		print "Inserting slices"
@@ -354,8 +354,9 @@ def bw_reconstruction(options):
 		weight = float (d.get_attr("ptcl_repr"))
 		d.mult(weight)
 	
-		transform = Transform3D(EULER_EMAN,d.get_attr("euler_az"),d.get_attr("euler_alt"),d.get_attr("euler_phi"))
-		failure = recon.insert_slice(d,transform)
+		t = d.get_attr("xform.projection")
+		r = t.get_params("eman")
+		failure = recon.insert_slice(d,t)
 
 	return recon.finish()
 
@@ -399,15 +400,14 @@ def back_projection_reconstruction(options):
 		param["weight"] = weight
 		recon.insert_params(param)
 		
-		t = Transform3D(d.get_attr("euler_az"), d.get_attr("euler_alt"), d.get_attr("euler_phi"))
+		t = d.get_attr("xform.projection")
+		r = t.get_params("eman")
 		recon.insert_slice(d, t)
 
 		if not(options.verbose):
 			print "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2g %6.2g" %(
 					(i+1,total_images,d.get_attr("IMAGIC.imgnum"),
-					d.get_attr("euler_alt"),
-					d.get_attr("euler_az"),
-					d.get_attr("euler_phi"),
+					r["alt"], r["az"],r["phi"],
 					d.get_attr("maximum"),d.get_attr("minimum")))
 	
 	return recon.finish()
@@ -433,17 +433,14 @@ def fourier2D_reconstruction(options):
 		print i
 		image = get_processed_image(options,i)
 	
-		transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
-		#transform.transpose()
+		transform = Transform({"type":"2d","alpha",image.get_attr("euler_alt"})
+		r = transform.get_params("2d")
 		failure = recon.insert_slice(image,transform)
 			
 		if (options.verbose):
 			sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
 							(i+1,total_images, image.get_attr("IMAGIC.imgnum"),
-							image.get_attr("euler_az"),
-							image.get_attr("euler_alt"),
-							image.get_attr("euler_phi"),
-							image.get_attr("maximum"),image.get_attr("minimum")))
+							r["alpha"],image.get_attr("maximum"),image.get_attr("minimum")))
 				
 			if ( failure ):
 				sys.stdout.write( " X" )
@@ -556,7 +553,6 @@ def fourier_reconstruction(options):
 
 			t = image.get_attr("xform.projection")
 			r = t.get_params("eman")
-			#transform = Transform3D(EULER_EMAN,r["az"],r["alt"],r["phi"])
 			failure = recon.insert_slice(image,t)
 				
 			if (options.verbose):

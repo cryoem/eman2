@@ -52,7 +52,6 @@ using std::string;
 namespace EMAN
 {
 	class EMData;
-	class Transform3D;
 
 	/** Typical usage of Processors are as follows:
      *
@@ -651,6 +650,25 @@ The basic design of EMAN Processors: <br>\
 		
 	  protected:
 		float lowpass;
+	};
+	
+	class LinearRampFourierProcessor:public FourierProcessor
+	{
+		public:
+			virtual string get_name() const { return "filter.linearfourier"; }
+
+			virtual string get_desc() const
+			{
+				return "";
+			}
+		
+			static Processor *NEW()
+			{
+				return new LinearRampFourierProcessor();
+			}
+			
+		protected:
+			virtual void create_radial_func(vector < float >&radial_mask) const ;
 	};
 
 	/**High-pass processor is rotationally symmetric 2D function. It attenuates amplitudes at low spatial frequencies, and increases amplitudes for high spatial frequencies. It has the result of enhancing the edges in the image while suppressing all slow-moving variations.	<br> HighpassFourierProcessor class is the base class for all high pass fourier processors.
@@ -4813,9 +4831,9 @@ The basic design of EMAN Processors: <br>\
 				return new TestTomoImage();
 			}
 		private:
-			void insert_solid_ellipse( EMData* image, const Region& region, const float& value, const Transform3D* const t3d = NULL );
-			void insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform3D* const t3d = NULL );
-			void insert_rectangle( EMData* image, const Region& region, const float& value, const Transform3D* const t3d = NULL );
+			void insert_solid_ellipse( EMData* image, const Region& region, const float& value, const Transform& t3d = NULL );
+			void insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform& t3d = NULL );
+			void insert_rectangle( EMData* image, const Region& region, const float& value, const Transform& t3d = NULL );
 	};
 	
 	/** Put a gradient in the image of the form y = mx+b : "x" is a string indicating any of the image axes, i.e., x,y or z.
@@ -5328,6 +5346,21 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Masks the part of the image which is not present in the 0-tilt image. Masked areas can be 0 or set to the edgemean (of the nearest or both edges). Masked areas can also have a Gaussian fall-off to make the appearance smooth.";
 		}
+
+	private:
+		class GaussianFunctoid
+		{
+			public:
+				GaussianFunctoid(const float sigma, const float mean = 0.0) : m_mean(mean), m_sigma_squared(sigma*sigma) {}
+				~GaussianFunctoid() {}
+	
+				float operator()(const float distance ) 
+				{
+					return exp( -(distance-m_mean)*(distance-m_mean)/ (m_sigma_squared ));
+				}
+			private:
+				float m_mean, m_sigma_squared;
+		};
 
 	};
 	

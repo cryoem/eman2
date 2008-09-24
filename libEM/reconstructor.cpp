@@ -108,7 +108,7 @@ void FourierReconstructorSimple2D::setup()
 	tmp_data->set_size(nx/2, nx);
 }
 			
-int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const Transform3D & euler)
+int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const Transform & euler)
 {
 	
 	// Are these exceptions really necessary? (d.woolford)
@@ -124,8 +124,6 @@ int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const 
 	// Fourier transform the slice
 	working_slice->do_fft_inplace();
 	
-	string sym = params.set_default("sym","c1");
-	
 	float* rdata = image->get_data();
 	float* norm = tmp_data->get_data();
 	float* dat = working_slice->get_data();
@@ -134,98 +132,95 @@ int FourierReconstructorSimple2D::insert_slice(const EMData* const slice, const 
 	int offset[4];
 	float dt[2];
 	offset[0] = 0; offset[1] = 2; offset[2] = nx; offset[3] = nx+2;
-	for ( int i = 0; i < Transform3D::get_nsym(sym); ++i)
-	{
-		Transform3D t3d = euler.get_sym(sym, i);
-		float alt = -((float)(t3d.get_rotation())["alt"])*M_PI/180.0f;
-		for (int x = 0; x < working_slice->get_xsize() / 2; x++) {
-			
-			float rx = (float) x;
+	
+	float alt = -((float)(euler.get_rotation("2d"))["alpha"])*M_PI/180.0f;
+	for (int x = 0; x < working_slice->get_xsize() / 2; x++) {
+		
+		float rx = (float) x;
 
-			float xx = rx*cos(alt);
-			float yy = rx*sin(alt);
-			float cc = 1.0;
+		float xx = rx*cos(alt);
+		float yy = rx*sin(alt);
+		float cc = 1.0;
 
-			if (xx < 0) {
-				xx = -xx;
-				yy = -yy;
-				cc = -1.0;
-			}
-			
-			yy += ny / 2;
-			
-
-			dt[0] = dat[2*x];
-			dt[1] = cc * dat[2*x+1];
-
-			// PHIL IS INTERESTED FROM HERE DOWN
-			int x0 = (int) floor(xx);
-			int y0 = (int) floor(yy);
-
-			int i = 2*x0 + y0*nx;
-			
-			float dx = xx - x0;
-			float dy = yy - y0;
-			
-			g[0] = Util::agauss(1, dx, dy, 0, EMConsts::I2G);
-			g[1] = Util::agauss(1, 1 - dx, dy, 0, EMConsts::I2G);
-			g[2] = Util::agauss(1, dx, 1 - dy, 0, EMConsts::I2G);
-			g[3] = Util::agauss(1, 1 - dx, 1 - dy, 0, EMConsts::I2G);
-
-			// At the extreme we can only do some much...
-			if ( x0 == nx-2 ) {
-				int k = i + offset[0];
-				rdata[k] += g[0] * dt[0];
-				rdata[k + 1] += g[0] * dt[1];
-				norm[k/2] += g[0];
-				
-				k = i + offset[2];
-				rdata[k] += g[2] * dt[0];
-				rdata[k + 1] += g[2] * dt[1];
-				norm[k/2] += g[2];
-				continue;
-				
-			}
-			// capture and accommodate for periodic boundary conditions in the x direction
-			if ( x0 > nx-2 ) {
-				int dif = x0 - (nx-2);
-				x0 -= dif;
-			}
-			// At the extreme we can only do some much...
-			if ( y0 == ny -1 ) {
-				int k = i + offset[0];
-				rdata[k] += g[0] * dt[0];
-				rdata[k + 1] += g[0] * dt[1];
-				norm[k/2] += g[0];
-				
-				k = i + offset[1];
-				rdata[k] += g[1] * dt[0];
-				rdata[k + 1] += g[1] * dt[1];
-				norm[k/2] += g[1];
-				continue;	
-			}
-			// capture and accommodate for periodic boundary conditions in the y direction
-			if ( y0 > ny-1) {
-				int dif = y0 - (ny-1);
-				y0 -= dif;
-			}
-			
-			if (x0 >= nx - 2 || y0 >= ny - 1) continue;
-			
-			
-			
-			
-			for (int j = 0; j < 4; j++)
-			{
-				int k = i + offset[j];
-				rdata[k] += g[j] * dt[0];
-				rdata[k + 1] += g[j] * dt[1];
-				norm[k/2] += g[j];
-
-			}
+		if (xx < 0) {
+			xx = -xx;
+			yy = -yy;
+			cc = -1.0;
 		}
 		
+		yy += ny / 2;
+		
+
+		dt[0] = dat[2*x];
+		dt[1] = cc * dat[2*x+1];
+
+		// PHIL IS INTERESTED FROM HERE DOWN
+		int x0 = (int) floor(xx);
+		int y0 = (int) floor(yy);
+
+		int i = 2*x0 + y0*nx;
+		
+		float dx = xx - x0;
+		float dy = yy - y0;
+		
+		g[0] = Util::agauss(1, dx, dy, 0, EMConsts::I2G);
+		g[1] = Util::agauss(1, 1 - dx, dy, 0, EMConsts::I2G);
+		g[2] = Util::agauss(1, dx, 1 - dy, 0, EMConsts::I2G);
+		g[3] = Util::agauss(1, 1 - dx, 1 - dy, 0, EMConsts::I2G);
+
+		// At the extreme we can only do some much...
+		if ( x0 == nx-2 ) {
+			int k = i + offset[0];
+			rdata[k] += g[0] * dt[0];
+			rdata[k + 1] += g[0] * dt[1];
+			norm[k/2] += g[0];
+			
+			k = i + offset[2];
+			rdata[k] += g[2] * dt[0];
+			rdata[k + 1] += g[2] * dt[1];
+			norm[k/2] += g[2];
+			continue;
+			
+		}
+		// capture and accommodate for periodic boundary conditions in the x direction
+		if ( x0 > nx-2 ) {
+			int dif = x0 - (nx-2);
+			x0 -= dif;
+		}
+		// At the extreme we can only do some much...
+		if ( y0 == ny -1 ) {
+			int k = i + offset[0];
+			rdata[k] += g[0] * dt[0];
+			rdata[k + 1] += g[0] * dt[1];
+			norm[k/2] += g[0];
+			
+			k = i + offset[1];
+			rdata[k] += g[1] * dt[0];
+			rdata[k + 1] += g[1] * dt[1];
+			norm[k/2] += g[1];
+			continue;	
+		}
+		// capture and accommodate for periodic boundary conditions in the y direction
+		if ( y0 > ny-1) {
+			int dif = y0 - (ny-1);
+			y0 -= dif;
+		}
+		
+		if (x0 >= nx - 2 || y0 >= ny - 1) continue;
+		
+		
+		
+		
+		for (int j = 0; j < 4; j++)
+		{
+			int k = i + offset[j];
+			rdata[k] += g[j] * dt[0];
+			rdata[k + 1] += g[j] * dt[1];
+			norm[k/2] += g[j];
+
+		}
 	}
+
 	return 0;
 	
 }
@@ -333,7 +328,7 @@ void FourierReconstructor::setup()
 	else max_input_dim = y_size;
 	
 	// This is a helical adaptation - FIXME explain
-	bool helical_special_behavior = true;
+	bool helical_special_behavior = false;
 	if ( helical_special_behavior )
 	{
 		if ( x_size > y_size )
@@ -453,8 +448,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	// are not implemented in Fourier space
 	Transform rotation;
 	if ( input_slice->has_attr("xform.projection") ) {
-		rotation = *((Transform*) input_slice->get_attr("xform.projection")); // assignment operator
-		
+		rotation = *((Transform*) input_slice->get_attr("xform.projection")); // assignment operator	
 	} else {
 		rotation = arg; // assignment operator
 	}
@@ -529,7 +523,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
 	float weight = params.set_default("weight",1.0f);
 
-	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++ it ) {
+	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 		Transform t3d = arg*(*it);
 		for (int y = 0; y < input_slice->get_ysize(); y++) {
 			for (int x = 0; x < input_slice->get_xsize() / 2; x++) {
@@ -551,13 +545,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				float xx = coord[0];
 				float yy = coord[1];
 				float zz = coord[2];
-				
-// 				float xx = (float) (rx * t3d[0][0] + (ry - max_input_dim / 2) * t3d[0][1]);
-// 				float yy = (float) (rx * t3d[1][0] + (ry - max_input_dim / 2) * t3d[1][1]);
-// 				float zz = (float) (rx * t3d[2][0] + (ry - max_input_dim / 2) * t3d[2][1]);
-				
-				
-				
+					
 				float cc = 1;
 	
 				if (xx < 0) {
@@ -859,7 +847,7 @@ EMData *FourierReconstructor::finish()
 		normalize_threed();
 	}
 	
-	tmp_data->write_image("density.mrc");
+// 	tmp_data->write_image("density.mrc");
 	
 	// we may as well delete the tmp data now... it saves memory and the calling program might
 	// need memory after it gets the return volume.
@@ -883,10 +871,10 @@ EMData *FourierReconstructor::finish()
 	image->depad();
 	image->process_inplace("xform.phaseorigin.tocenter");
 	
-	// FIXME- double check this when all is done! especially the "nx-2*!is_fftodd !!
-	// If the image was padded it should be age size, as the client would expect
+	// If the image was padded it should be the original size, as the client would expect
 	//  I blocked the rest, it is almost certainly incorrect  PAP 07/31/08
-	/*
+	// No, it's not incorrect. You have the meaning of nx mixed up. DSAW 09/23/
+	bool is_fftodd = (nx % 2 == 1);
 	if ( (nx-2*(!is_fftodd)) != output_x || ny != output_y || nz != output_z )
 	{
 		FloatPoint origin( (nx-output_x)/2, (ny-output_y)/2, (nz-output_z)/2 );
@@ -894,7 +882,7 @@ EMData *FourierReconstructor::finish()
 		Region clip_region( origin, region_size );
 		image->clip_inplace( clip_region );
 	}
-	*/
+
 	print_stats(quality_scores);
 	
 	image->update();
@@ -906,8 +894,8 @@ EMData *FourierReconstructor::finish()
 void BaldwinWoolfordReconstructor::setup()
 {
 	//This is a bit of a hack - but for now it suffices
+	params.set_default("mode",1);
 	FourierReconstructor::setup();
-		
 	// Set up the Baldwin Kernel 
 	int P = (int)((1.0+0.25)*max_input_dim+1);
 	float r = (float)(max_input_dim+1)/(float)P;
@@ -956,7 +944,7 @@ EMData* BaldwinWoolfordReconstructor::finish()
 
 #include <iomanip>
 
-int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
+int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform& t3d)
 {
 	bool fftodd = image->is_fftodd();
 	int rnx = nx-2*!fftodd;
@@ -973,14 +961,9 @@ int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 	int tny = tmp_data->get_ysize();
 	int tnz = tmp_data->get_zsize();
 	
-	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
-	{
-		Transform3D n3d;
-		// Just to a straight copy to avoid uneccesary multiplication by the identity,
-		// and to maintain greater numerical accuracy.
-		if ( i == 0 ) { n3d = t3d;}
-		else n3d = t3d.get_sym((string) params["sym"], i);
-		n3d.dsaw_zero_hack();
+	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
+	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+		Transform n3d = t3d*(*it);
 
 		for (int y = 0; y < tny; y++) {
 			for (int x = 0; x < tnx; x++) {
@@ -993,9 +976,15 @@ int BaldwinWoolfordReconstructor::insert_slice_weights(const Transform3D& t3d)
 					if ( rnx > ny ) ry *= y_scale;
 					else rx *= x_scale;
 				}
-				float xx = rx * n3d[0][0] + (ry - tny/2) * n3d[1][0];
-				float yy = rx * n3d[0][1] + (ry - tny/2) * n3d[1][1];
-				float zz = rx * n3d[0][2] + (ry - tny/2) * n3d[1][2];
+// 				float xx = rx * n3d[0][0] + (ry - tny/2) * n3d[1][0];
+// 				float yy = rx * n3d[0][1] + (ry - tny/2) * n3d[1][1];
+// 				float zz = rx * n3d[0][2] + (ry - tny/2) * n3d[1][2];
+				
+				Vec3f coord(rx,(ry - tny/2),0);
+				coord = coord*n3d; // transpose multiplication
+				float xx = coord[0];
+				float yy = coord[1];
+				float zz = coord[2];
 
 				if (xx < 0 ){
 					xx = -xx;
@@ -1107,10 +1096,32 @@ void BaldwinWoolfordReconstructor::insert_density_at(const float& x, const float
 	}
 }
 
-int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, const Transform3D & t3d)
+int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, const Transform & t)
 {	
+	Transform rotation;
+	if ( input_slice->has_attr("xform.projection") ) {
+		rotation = *((Transform*) input_slice->get_attr("xform.projection")); // assignment operator
+	} else {
+		rotation = t; // assignment operator
+	}
+	Transform tmp(rotation);
+	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly
+	
+	Vec2f trans = tmp.get_trans_2d();
+	float scale = tmp.get_scale();
+	bool mirror = tmp.get_mirror();
+	EMData* slice = 0;
+	if (trans[0] != 0 || trans[1] != 0 || scale != 1.0 ) {
+		slice = input_slice->process("math.transform",Dict("transform",&tmp));
+	} else if ( mirror == true ) {
+		slice = input_slice->process("xform.flip",Dict("axis","x"));
+	}
+	if ( slice == 0 ) {
+		slice = input_slice->process("xform.phaseorigin.tocorner");
+	} else {
+		slice->process_inplace("xform.phaseorigin.tocorner");
+	}
 
-	EMData* slice = input_slice->process("xform.phaseorigin.tocorner");
 	slice->do_fft_inplace();
 	slice->process_inplace("xform.fourierorigin.tocenter");
 	float *dat = slice->get_data();
@@ -1131,12 +1142,12 @@ int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, 
 	int tny = tmp_data->get_ysize();
 	int tnz = tmp_data->get_zsize();
 	
-	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
-	{
-		Transform3D n3d;
-		if ( i == 0 ) { n3d = t3d;}
-		else n3d = t3d.get_sym((string) params["sym"], i);
-		n3d.dsaw_zero_hack();
+	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
+// 	float weight = params.set_default("weight",1.0f);
+
+	rotation.set_scale(1.0); rotation.set_mirror(false); rotation.set_trans(0,0,0);
+	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+		Transform t3d = rotation*(*it);
 		
 		for (int y = 0; y < tny; y++) {
 			for (int x = 0; x < tnx; x++) {
@@ -1148,9 +1159,18 @@ int BaldwinWoolfordReconstructor::insert_slice(const EMData* const input_slice, 
 					if ( rnx > ny ) ry *= y_scale;
 					else rx *= x_scale;
 				}
-				float xx = rx * n3d[0][0] + (ry - tny/2) * n3d[1][0];
-				float yy = rx * n3d[0][1] + (ry - tny/2) * n3d[1][1];
-				float zz = rx * n3d[0][2] + (ry - tny/2) * n3d[1][2];
+				
+// 				float xx = rx * n3d[0][0] + (ry - tny/2) * n3d[1][0];
+// 				float yy = rx * n3d[0][1] + (ry - tny/2) * n3d[1][1];
+// 				float zz = rx * n3d[0][2] + (ry - tny/2) * n3d[1][2];
+
+				Vec3f coord(rx,(ry - tny/2),0);
+				coord = coord*t3d; // transpose multiplication
+				float xx = coord[0];
+				float yy = coord[1];
+				float zz = coord[2];
+					
+				
 				float cc = 1;
 				if (xx < 0 ){
 					xx = -xx;
@@ -1877,14 +1897,27 @@ void BackProjectionReconstructor::setup()
 	image->set_size(nx, ny, nz);
 }
 
-EMData* BackProjectionReconstructor::preprocess_slice(const EMData* const slice)
+EMData* BackProjectionReconstructor::preprocess_slice(const EMData* const slice, const Transform& t)
 {
+	
 	EMData* return_slice = slice->process("normalize.edgemean");
+	return_slice->process_inplace("filter.linearfourier");
+	
+	Transform tmp(t);
+	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly
+	Vec2f trans = tmp.get_trans_2d();
+	float scale = tmp.get_scale();
+	bool mirror = tmp.get_mirror();
+	if (trans[0] != 0 || trans[1] != 0 || scale != 1.0 ) {
+		return_slice->transform(tmp);
+	} else if ( mirror == true ) {
+		return_slice = slice->process("xform.flip",Dict("axis","x"));
+	}
 	
 	return return_slice;
 }
 
-int BackProjectionReconstructor::insert_slice(const EMData* const input, const Transform3D &transform)
+int BackProjectionReconstructor::insert_slice(const EMData* const input, const Transform &t)
 {
 	if (!input) {
 		LOGERR("try to insert NULL slice");
@@ -1896,8 +1929,13 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 		return 1;
 	}
 
-	
-	EMData* slice = preprocess_slice(input);
+	Transform transform;
+	if ( input->has_attr("xform.projection") ) {
+		transform = *((Transform*) input->get_attr("xform.projection")); // assignment operator
+	} else {
+		transform = t; // assignment operator
+	}
+	EMData* slice = preprocess_slice(input, t);
 	
 	float weight = params["weight"];
 	slice->mult(weight);
@@ -1914,10 +1952,12 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 		memcpy(&tmp_data[nxy * i], slice_data, nxy_size);
 	}
 	
-	Transform3D t3d( transform );
-	t3d.transpose();
-	
-	tmp->rotate(t3d);
+	transform.set_scale(1.0);
+	transform.set_mirror(false);
+	transform.set_trans(0,0,0);
+	transform.invert();
+
+	tmp->transform(transform);
 	image->add(*tmp);
 	
 	delete tmp;
@@ -1928,20 +1968,19 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 
 EMData *BackProjectionReconstructor::finish()
 {
-	Transform3D identity;
-	identity.to_identity();
-	for ( int i = 1; i < Transform3D::get_nsym((string)params["sym"]); ++i)
-	{
-		Transform3D t3d = identity.get_sym((string) params["sym"], i);
-// 		t3d.transpose();
-		EMData* tmpcopy = new EMData(*image);
-		tmpcopy->rotate(t3d);
-		image->add(*tmpcopy);
-		delete tmpcopy;
+	
+	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
+	vector<Transform> syms = sym->get_syms();
+
+	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+
+		EMData tmpcopy(*image);
+		tmpcopy.transform(*it);
+		image->add(tmpcopy);
 	}
 	
-	image->mult(1.0f/(float)Transform3D::get_nsym((string)params["sym"]));
-	
+	image->mult(1.0f/(float)sym->get_nsym());
+	delete sym;
 	return image;
 }
 

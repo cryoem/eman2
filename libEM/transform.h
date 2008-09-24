@@ -225,7 +225,7 @@ namespace EMAN
 			
 			/** Returns whethers or this matrix is the identity
 			 */
-			bool is_identity();
+			bool is_identity() const;
 			
 			/** Reorthogonalize the rotation part of the matrix in place.
 			 * Does this by performing the SVD decomposition of the rotation matrix R
@@ -343,6 +343,16 @@ namespace EMAN
 			inline Vec3f get_matrix3_row(int i) const {
 				return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
 			}
+			
+			/** get the number of symmetries associated with the given symmetry name
+			 */
+			static int get_nsym(const string & sym);
+			
+			/** Apply the symmetry deduced from the function arguments to this Transform and 
+			 * return the result
+			 *
+			 */
+			Transform get_sym(const string & sym, int n) const;
 			
 		private:
 			float matrix[3][4];

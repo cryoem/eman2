@@ -69,6 +69,7 @@ def main():
 	parser.add_option("--lowmem","-L",action="store_true",help="Causes images to be read from disk as they are needed, as opposed to having them all read from disk and stored in memory for the duration of the program. Saves on memory but causes more disk accesses.",default=False)
 	parser.add_option("--bootstrap",action="store_true",help="Bootstraps iterative alignment by using the first particle in each class to seed the iterative alignment. Only works if the number of iterations is greater than 0.")
 	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
+	parser.add_option("--norm_proc",type="string",help="The normalization processor. Default is normalize.edgemean.", default="normalize.edgemean")
 
 	(options, args) = parser.parse_args()
 	
@@ -156,8 +157,10 @@ def main():
 	dflip = EMData(da.get_xsize(),da.get_ysize())
 	dflip.to_zero()
 	
+	options.norm = parsemodopt(options.norm_proc)
+	
 	if (options.iter > 0 or options.bootstrap):
-		setAlignOpts(options)
+		set_aligner_params_in_options(options)
 	
 	# do one class at a time
 	for cl in range(class_min,class_max+1):
@@ -185,14 +188,16 @@ def main():
 						
 						# Position the image correctly
 #						print da.get(c,p)
-						t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
-						t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
+						#t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
+						#t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
+						t3d = Transform({"type":"2d","alpha":da.get(c,p)})
+						t3d.set_trans(dx.get(c,p),dy.get(c,p))
 						if (options.lowmem):
 							image = EMData()
 							image.read_image(args[0],p)
 						else:
 							image = images[p].copy()
-						image.rotate_translate(t3d)
+						image.transform(t3d)
 						
 						np += 1
 						weight = weights(c,p)
@@ -233,46 +238,42 @@ def main():
 								average = images[p].copy()
 								#average.process_inplace("xform.centerofmass")
 								#average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
-							average.process_inplace("normalize.edgemean")
+							average.process_inplace(options.norm[0],options.norm[1])
 							average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 							#average.write_image("ave_.hdf",-1)
 							average.write_image("e2_seeding_bs.img",-1);
 							np = 1
 						else:
+							# there are a lot of ways to do and there is probably
+							# an improvement on what happens here, but it suffices
 							if (options.lowmem): 
 								image = EMData()
 								image.read_image(args[0],p)
-							else: image = images[p]
+							else: image = images[p].copy()
 							
-							image.process_inplace("normalize.edgemean")
+							image.process_inplace(options.norm[0],options.norm[1])
 							ta = align(image,average,options)
-							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
-							
-							#g = ta.calc_ccf(average)
-							#d = g.calc_max_location_wrap(-1,-1,1)
-							#if d[0] != 0 or d[1] != 0:
-								#display(ta)
-								#display(average)
-							
+							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
 							np += 1
-							#frac = 1.0/float(np)
-							#omfrac = 1.0 - frac
-							#ta.mult(frac) # be careful about the weighting
-							#average.mult(omfrac) # be carefult about the weighting
 							average.add(ta) # now add the image
-							#tmp = average.copy()
-							#tmp.mult(1.0/np)
-							#tmp.write_image("ave_.hdf",-1)
-
+							
+							#image.process_inplace("normalize.edgemean")
+							#ta = align(average,image,options)
+							#t = ta.get_attr("xform.align2d")
+							#t.invert()
+							#image.transform(t)
+							#image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
+							#np += 1
+							#average.add(image) # now add the image
 			
 			#average/=np
 			
-			average.process_inplace("normalize.edgemean")
+			average.process_inplace(options.norm[0],options.norm[1])
 			average.process_inplace("xform.centeracf")
 			#average.write_image("avg.hdf",-1)
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.process_inplace("normalize.edgemean")
-			average.write_image("e2_bootstrapped.img",-1)
+			#average.write_image("e2_bootstrapped.img",-1)
 					
 		if np == 0:
 			if options.verbose:
@@ -297,26 +298,21 @@ def main():
 					image.read_image(args[0],p)
 				else: image = images[p]
 				
-				image.process_inplace("normalize.edgemean")
-				ta = align(image,average,options)
-				#ta.write_image("ta"+str(cl)+".img",-1)
-				#g = ta.calc_ccf(average)
-				#d = g.calc_max_location_wrap(-1,-1,1)
-				#if d[0] != 0 or d[1] != 0:
-					#ta.translate(-d[0],-d[1],0)
-					#print "origin off",d
-				
+				image.process_inplace(options.norm[0],options.norm[1])
+				ta = align(average,image,options)
+				t = ta.get_attr("xform.align2d")
+				t.invert()
+				params = t.get_params("2d")
 				
 				# store the refined translational and rotational values
-				dx.set(c,p, ta.get_attr_default("align.dx",0))
-				dy.set(c,p, ta.get_attr_default("align.dy",0))
-				da.set(c,p, ta.get_attr_default("align.az",0))
-				try: dflip.set(c,p, ta.get_attr_default("align.flip",0))
-				except:pass
+				dx.set(c,p, params["tx"])
+				dy.set(c,p, params["ty"])
+				da.set(c,p, params["alpha"])
+				dflip.set(c,p, params["mirror"])
 				
 				# store the quality score on top of the weights, seeing as the starting weights are no longer required
 				if (options.cull): # but only if we need to
-					weights.set(c,p, ta.cmp(options.cmp[0],average,options.cmp[1]))
+					weights.set(c,p, ta.cmp(options.cmp[0],image,options.cmp[1]))
 			
 			# get the culling threshold
 			if options.cull:
@@ -367,41 +363,16 @@ def main():
 				else:
 					image = images[p].copy()
 				
-				image.process_inplace("normalize.edgemean")
-				
-				flipped = False
-				try:
-					if dflip.get(c,p) != 0:
-						flipped = True
-						image.process_inplace("xform.flip", {"axis":"x"});
-				except:pass
-					
-					
-				#t3d = Transform3D(da.get(c,p),0,0)
-				#t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
-				
-				#image.rotate_translate(t3d)
-				image.rotate(da.get(c,p),0,0)
-				image.translate(dx.get(c,p),dy.get(c,p),0)
-				#if it != (options.iter-1):
-				#image.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
-				#image.rotate(da.get(c,p),0,0)
-				#image.process_inplace("mask.sharp",{"outer_radius":image.get_xsize()/2})
-				#g = image.calc_ccf(average)
-				#d = g.calc_max_location_wrap(-1,-1,1)
-				#if d[0] != 0 or d[1] != 0:
-					#print "origin off",d
-					#image.translate(d[0],d[1],0)
+				image.process_inplace(options.norm[0],options.norm[1])
+
+				t = Transform({"type":"2d","alpha":da.get(c,p)})
+				t.set_trans(dx.get(c,p),dy.get(c,p))
+				if dflip.get(c,p) != 0: t.set_mirror(True)
+		
+				image.transform(t)
+			
 				np += 1
 				averager.add_image(image)
-				#if avg == None:
-					#avg = image.copy()
-				#else: avg.add(image)
-				
-				#try:
-					#if dflip.get(c,p) != 0:
-						#image.process_inplace("xform.flip", {"axis":"x"});
-				#except:pass
 				
 			if options.verbose:
 				ndata.append(np)
@@ -415,7 +386,7 @@ def main():
 		
 			average = averager.finish()
 			#should this be centeracf?
-			average.process_inplace("normalize.edgemean")
+			average.process_inplace(options.norm[0],options.norm[1])
 			average.process_inplace("xform.centerofmass")
 			average.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})
 			
@@ -464,7 +435,7 @@ def main():
 	
 	E2end(logger)
 
-def setAlignOpts(options):
+def set_aligner_params_in_options(options):
 	'''
 	Call this before calling align
 	'''
@@ -491,18 +462,18 @@ def align(this,to,options):
 		#refineparms[1]["stepy"] = 2
 		#refineparms[1]["stepaz"] = 5
 		
-		refineparms[1]["az"] = ta.get_attr_default("align.az",0)
-		refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)
-		refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)
-		flip = ta.get_attr_default("align.flip",0)
+		refineparms[1]["xform.align2d"] = ta.get_attr("xform.align2d")
+		#refineparms[1]["dx"] = ta.get_attr_default("align.dx",0)
+		#refineparms[1]["dy"] = ta.get_attr_default("align.dy",0)
+		#flip = ta.get_attr_default("align.flip",0)
 		
-		refine_this = this
-		if flip:
-			refine_this = this.process("xform.flip",{"axis":"x"})
+		#refine_this = this
+		#if flip:
+			#refine_this = this.process("xform.flip",{"axis":"x"})
 		
-		ta = refine_this.align(refineparms[0],to,refineparms[1],options.alircmp[0],options.alircmp[1])
+		ta = this.align(refineparms[0],to,refineparms[1],options.alircmp[0],options.alircmp[1])
 		
-		ta.set_attr("align.flip",flip)
+		#ta.set_attr("align.flip",flip)
 	return ta
 		
 def check(options, verbose=False):
@@ -565,6 +536,8 @@ def check(options, verbose=False):
 			print "Error, --iter must be greater than or equal to 0 - you specified %d" %(options.iter)
 		
 	if ( check_eman2_type(options.averager,Averagers,"Averager") == False ):
+		if (verbose):
+			print "Unknown averager",options.averager
 		error = True
 	
 	if ( options.iter > 0 ):
@@ -587,6 +560,9 @@ def check(options, verbose=False):
 				error = True
 				
 			if ( check_eman2_type(options.raligncmp,Cmps,"Comparitor") == False ):
+				error = True
+		if ( options.norm_proc != None ):
+			if ( check_eman2_type(options.norm_proc,Processors,"Processor") == False ):
 				error = True
 
 	return error

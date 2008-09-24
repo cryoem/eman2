@@ -40,6 +40,7 @@ from emimage3d import *
 from emimageutil import EMParentWin
 from OpenGL import GL,GLU,GLUT
 from sys import argv
+from copy import deepcopy
 #from valslider import ValSlider
 #from math import *
 #from EMAN2 import *
@@ -139,11 +140,8 @@ class EMImage(object):
 				return ret
 			return EMImage3D(data)
 		elif isinstance(data,list):
-			if copy: local_data = data.copy()
-			else: local_data = data
-			# list or tuple of images
 			
-			if ( copy ):local_data = data.copy()
+			if ( copy ):local_data = deepcopy(data)
 			else: local_data = data
 			
 			if old:

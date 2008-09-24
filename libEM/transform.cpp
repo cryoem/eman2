@@ -38,6 +38,7 @@
 #include "emobject.h"
 #include <cctype> // for std::tolower
 #include <cstring>  // for memcpy
+#include "symmetry.h"
 using namespace EMAN;
 
 #ifdef WIN32
@@ -51,6 +52,7 @@ using namespace EMAN;
 #include <gsl_matrix.h>
 #include <gsl_blas.h>
 #include <gsl_linalg.h>
+
 				 
 const float Transform3D::ERR_LIMIT = 0.000001f;
 
@@ -127,7 +129,7 @@ void Transform::to_identity()
 	}
 }
 
-bool Transform::is_identity() {
+bool Transform::is_identity() const {
 	for(int i=0; i<3; ++i) {
 		for(int j=0; j<4; ++j) {
 			float c = matrix[i][j];
@@ -910,6 +912,24 @@ void Transform::assert_valid_2d() const {
 	
 }
 
+
+
+Transform Transform::get_sym(const string & sym_name, int n) const
+{
+	Symmetry3D* sym = Factory<Symmetry3D>::get(sym_name);
+	Transform ret;
+	ret = (*this) * sym->get_sym(n);
+	delete sym;
+	return ret;
+}
+
+int Transform::get_nsym(const string & sym_name)
+{
+	Symmetry3D* sym = Factory<Symmetry3D>::get(sym_name);
+	int nsym = sym->get_nsym();
+	delete sym;
+	return nsym;
+}
 
 Transform3D::Transform3D()  //    C1
 {

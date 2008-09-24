@@ -35,6 +35,7 @@
 
 #include "emobject.h"
 #include "vec3.h"
+#include "transform.h"
 
 namespace EMAN {
 		

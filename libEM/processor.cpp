@@ -40,7 +40,7 @@
 #include "emdata.h"
 #include "emassert.h"
 #include "randnum.h"
-
+#include "symmetry.h"
 
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics.h>
@@ -58,7 +58,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&HighpassSharpCutoffProcessor::NEW);
 	force_add(&LowpassGaussProcessor::NEW);
 	force_add(&HighpassGaussProcessor::NEW);
-
+	force_add(&LinearRampFourierProcessor::NEW);
+	
 	force_add(&LowpassTanhProcessor::NEW);
 	force_add(&HighpassTanhProcessor::NEW);
 	force_add(&HighpassButterworthProcessor::NEW);
@@ -495,6 +496,14 @@ void Wiener2DFourierProcessor::process_inplace(EMData *image) {
 	delete tmp;
 	image->update();
 	return;
+}
+
+void LinearRampFourierProcessor::create_radial_func(vector < float >&radial_mask) const
+{
+	Assert(radial_mask.size() > 0);
+	for (size_t i = 0; i < radial_mask.size(); i++) {
+		radial_mask[i] = i;
+	}
 }
 
 void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mask) const
@@ -4765,17 +4774,12 @@ void SymSearchProcessor::process_inplace(EMData * image)
 	// set up all the symmetry transforms for all the searched symmetries
 	const vector<string> sym_list = params["sym"];
 	int sym_num = sym_list.size();
-	vector< vector< Transform3D > > transforms(sym_num);
+	vector< vector< Transform > > transforms(sym_num);
 	vector< float* > symvals(sym_num);
 	for (int i =0; i < sym_num; i++) {
-		Transform3D r;
-		int nsym = r.get_nsym(sym_list[i]);
-		vector<Transform3D> sym_transform(nsym);
-		for (int s=0; s<nsym; s++) {
-			sym_transform[s] = r.get_sym(sym_list[i], s);
-		}
+		vector<Transform> sym_transform =  Symmetry3D::get_symmetries(sym_list[i]);
 		transforms[i] = sym_transform;
-		symvals[i] = new float[nsym]; // new float(nsym);
+		symvals[i] = new float[sym_transform.size()]; // new float(nsym);
 	}
 	
 	EMData *orig = image->copy();
@@ -4809,7 +4813,7 @@ void SymSearchProcessor::process_inplace(EMData * image)
 					float *symval = symvals[sym];
 					// first find out all the symmetry related location values
 					for( int s = 0; s < cur_sym_num; s++){
-						Transform3D r = transforms[sym][s];
+						Transform r = transforms[sym][s];
 						float x2 = (float)(r[0][0] * (i-nx/2) + r[0][1] * (j-ny/2) + r[0][2] * (k-nz/2) + nx / 2);
 						float y2 = (float)(r[1][0] * (i-nx/2) + r[1][1] * (j-ny/2) + r[1][2] * (k-nz/2) + ny / 2);
 						float z2 = (float)(r[2][0] * (i-nx/2) + r[2][1] * (j-ny/2) + r[2][2] * (k-nz/2) + nz / 2);
@@ -6801,7 +6805,7 @@ void ClampingProcessor::process_inplace( EMData* image )
 }
 
 #define deg2rad 0.017453292519943295
-void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const float& value, const Transform3D* const t3d )
+void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const float& value, const Transform& t3d )
 {
 	int startx = (int)region.origin[0] - (int)region.size[0]/2;
 	int starty = (int)region.origin[1] - (int)region.size[1]/2;
@@ -6811,7 +6815,7 @@ void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const
 	int endy  = (int)region.origin[1] + (int)region.size[1]/2;
 	int endz  = (int)region.origin[2] + (int)region.size[2]/2;
 	
-	if ( t3d != NULL ) {
+	if ( ! t3d.is_identity() ) {
 		for ( float z = (float)startz; z < (float)endz; z += 0.25f ) {
 			for ( float y = (float)starty; y < (float)endy; y += 0.25f ) {
 				for ( float x = (float)startx; x < (float)endx; x += 0.25f ) {
@@ -6819,7 +6823,7 @@ void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const
 					float yt = (float) y - region.origin[1];
 					float zt = (float) z - region.origin[2];
 					Vec3f v((float)xt,(float)yt,(float)zt);
-					v = (*t3d)*v;
+					v = t3d*v;
 					image->set_value_at((int)(v[0]+region.origin[0]),(int)(v[1]+region.origin[1]),(int)(v[2]+region.origin[2]), value);
 				}
 			}
@@ -6835,7 +6839,7 @@ void TestTomoImage::insert_rectangle( EMData* image, const Region& region, const
 	}
 }
 
-void TestTomoImage::insert_solid_ellipse( EMData* image, const Region& region, const float& value, const Transform3D* const t3d )
+void TestTomoImage::insert_solid_ellipse( EMData* image, const Region& region, const float& value, const Transform& t3d )
 {
 	int originx = (int)region.origin[0];
 	int originy = (int)region.origin[1];
@@ -6863,12 +6867,12 @@ void TestTomoImage::insert_solid_ellipse( EMData* image, const Region& region, c
 			for ( float lambda = -180.0f; lambda <= 180.0f; lambda += 0.2f ) {
 				float b = (float)(deg2rad * beta);
 				float l = (float)(deg2rad * lambda);
-				if ( t3d != NULL ) {
+				if ( !t3d.is_identity()) {
 					float z = rz * sin(b);
 					float y = ry * cos(b) * sin(l);
 					float x = rx * cos(b) * cos(l);
 					Vec3f v(x,y,z);
-					v = (*t3d)*v;
+					v = t3d*v;
 					image->set_value_at((int)(v[0]+originx),(int)(v[1]+originy),(int)(v[2]+originz), value);
 				}
 				else {
@@ -6882,7 +6886,7 @@ void TestTomoImage::insert_solid_ellipse( EMData* image, const Region& region, c
 	}
 }
 
-void TestTomoImage::insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform3D* const t3d )
+void TestTomoImage::insert_hollow_ellipse( EMData* image, const Region& region, const float& value, const int& radius, const Transform& t3d )
 {
 	int originx = (int)region.origin[0];
 	int originy = (int)region.origin[1];
@@ -6902,12 +6906,12 @@ void TestTomoImage::insert_hollow_ellipse( EMData* image, const Region& region, 
 				float b = (float)(deg2rad * beta);
 				float l = (float)(deg2rad * lambda);
 				
-				if ( t3d != NULL ) {
+				if ( !t3d.is_identity()) {
 					float z = rz * sin(b);
 					float y = ry * cos(b) * sin(l);
 					float x = rx * cos(b) * cos(l);
 					Vec3f v(x,y,z);
-					v = (*t3d)*v;
+					v = t3d*v;
 					image->set_value_at((int)(v[0]+originx),(int)(v[1]+originy),(int)(v[2]+originz), value);
 				}
 				else {
@@ -7031,20 +7035,20 @@ void TestTomoImage::process_inplace( EMData* image )
 	// Center rotated rectangle
 	{
 		Region region(nx/2.,ny/2.,nz/2.,2.*inc*nx,2.5*inc*ny,1.*inc*nz);
-		Transform3D t3d(-25.0,0.,0.);
-		insert_rectangle(image, region, 0.4f, &t3d);
+		Transform t3d(Dict("type","eman","az",(float)-25.0));
+		insert_rectangle(image, region, 0.4f, t3d);
 	}
 	
 	// Rotated ellipsoids
 	{
 		Region region(nx*6.8*inc,ny*16.*inc,nz/2.,1.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		Transform3D t3d(45.0,0.,0.);
-		insert_solid_ellipse(image, region, 0.2f, &t3d);
+		Transform t3d(Dict("type","eman","az",(float)43.0));
+		insert_solid_ellipse(image, region, 0.2f, t3d);
 	}
 	{
 		Region region(nx*7.2*inc,ny*16.*inc,nz/2.,1.5*inc*nx,0.5*inc*ny,0.5*inc*nz);
-		Transform3D t3d(135.0,0.,0.);
-		insert_solid_ellipse(image, region, 0.3f, &t3d);
+		Transform t3d(Dict("type","eman","az",(float)135.0));
+		insert_solid_ellipse(image, region, 0.3f, t3d);
 	}
 	
 	// Dense small ellipsoids
@@ -7074,13 +7078,13 @@ void TestTomoImage::process_inplace( EMData* image )
 	// Dense small rectangles
 	{
 		Region region(nx*18.*inc,ny*11.5*inc,nz/2.,1.*inc*nx,1.*inc*ny,1.*inc*nz);
-		Transform3D t3d(45.0,0.,0.);
-		insert_rectangle(image, region, 1.45f, &t3d);
+		Transform t3d(Dict("type","eman","az",(float)45.0));
+		insert_rectangle(image, region, 1.45f, t3d);
 	}
 	{
 		Region region(nx*3.5*inc,ny*10.5*inc,nz/2.,1.*inc*nx,1.*inc*ny,1.*inc*nz);
-		Transform3D t3d(45.0,0.,0.);
-		insert_rectangle(image, region, 1.45f, &t3d);
+		Transform t3d(Dict("type","eman","az",(float)45.0));
+		insert_rectangle(image, region, 1.45f, t3d);
 	}
 	
 	// Insert small cluster of spheres
@@ -7203,44 +7207,10 @@ void ConvolutionProcessor::process_inplace(EMData* image)
 	int nx  = image->get_xsize();
 	int ny  = image->get_ysize();
 	int nz  = image->get_zsize();
-	for (int i = 0; i < nx*ny*nz; i++) orig[i] = work[i];
+	memcpy(orig,work,nx*ny*nz*sizeof(float));
 	image->update();
 	
-        delete newimage;
-	/*
-	if ( image->is_complex() != with->is_complex() ) throw ImageFormatException("Error - one of the images is complex and one is real. Can not proceed");
-	
-	if ( image->is_complex() ) complexflag = true;
-	else {
-		image->process_inplace("xform.phaseorigin.tocorner");
-		image->do_fft_inplace();
-		with->process_inplace("xform.phaseorigin.tocorner");
-		with->do_fft_inplace();
-	}
-	
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-	
-	for (int iz = 0; iz < nz; iz++) {
-		for (int iy = 0; iy < ny; iy++) {
-			for (int ix = 0; ix < nx/2; ix++) {
-				image->cmplx(ix,iy,iz) *= with->cmplx(ix,iy,iz);
-			}
-		}
-	}
-	
-	if ( complexflag == false ) {
-		image->do_ift_inplace();
-		image->depad_corner();
-		// I decided that the calling function should do the phase origin shift - d.woolford April 10 2008
-// 		image->process_inplace("xform.phaseorigin.tocenter");
-		with->do_ift_inplace();
-		with->depad_corner();
-		with->process_inplace("xform.phaseorigin.tocenter");
-		
-	}
-	*/
+	delete newimage;
 }
 
 void XGradientProcessor::process_inplace( EMData* image )
@@ -7308,19 +7278,6 @@ void XGradientProcessor::process_inplace( EMData* image )
 	delete e;
 }
 
-class GaussianFunctoid
-{
-	public:
-		GaussianFunctoid(const float sigma, const float mean = 0.0) : m_mean(mean), m_sigma_squared(sigma*sigma) {}
-		~GaussianFunctoid() {}
-		
-		float operator()(const float distance ) 
-		{
-			return exp( -(distance-m_mean)*(distance-m_mean)/ (m_sigma_squared ));
-		}
-	private:
-		float m_mean, m_sigma_squared;
-};
 
 void TomoTiltAngleWeightProcessor::process_inplace( EMData* image )
 {

@@ -209,8 +209,9 @@ def detect_convergence(converge,dtheta,data,classdata,good,good_data,debug=False
 				break
 
 def angular_deviation_from_orient(o1,o2):
-	t1 = Transform3D(o1[1],o1[0],o1[2])
-	t2 = Transform3D(o2[1],o2[0],o2[2])
+	t1 = Transform({"type":"eman","az":o1[1],"alt":o1[0],"phi":o1[2]})
+	t2 = Transform({"type":"eman","az":o2[1],"alt":o2[0],"phi":o2[2]})
+	#t2 = Transform(o2[1],o2[0],o2[2])
 	return angular_deviation(t1,t2)
 
 def angular_deviation(t1,t2):
@@ -240,7 +241,7 @@ def reduce(orienttracedata,sym):
 		if len(particle) == 0:	continue
 		nn += 1
 		for orient in particle:
-			t = Transform3D(orient[1],orient[0],orient[2])
+			t = Transform({"type":"eman","az":orient[1],"alt":orient[0],"phi":orient[2]})
 			t = sym.reduce(t,0)
 			d = t.get_rotation()
 			orient[1] = d["az"]
@@ -256,8 +257,8 @@ def reduce(orienttracedata,sym):
 		for i in range(1,n):
 			o1 = particle[i-1]
 			o2 = particle[i]
-			t1 = Transform3D(o1[1],o1[0],o1[2])
-			t2 = Transform3D(o2[1],o2[0],o2[2])
+			t1 = Transform({"type":"eman","az":o1[1],"alt":o1[0],"phi":o1[2]})
+			t2 = Transform({"type":"eman","az":o2[1],"alt":o2[0],"phi":o2[2]})
 		
 			angle = angular_deviation(t1,t2)
 			
@@ -288,8 +289,8 @@ def calc_angular_deviation(orienttracedata):
 		for i in range(0,n-1):
 			o1 = particle[i]
 			o2 = particle[i+1]
-			t1 = Transform3D(o1[1],o1[0],o1[2])
-			t2 = Transform3D(o2[1],o2[0],o2[2])
+			t1 = Transform({"type":"eman","az":o1[1],"alt":o1[0],"phi":o1[2]})
+			t2 = Transform({"type":"eman","az":o2[1],"alt":o2[0],"phi":o2[2]})
 			angle += angular_deviation(t1,t2)
 
 		angle /= (n-1)

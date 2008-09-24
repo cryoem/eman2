@@ -528,9 +528,7 @@ namespace EMAN
 			TypeDict d;
 
 			d.put("mode", EMObject::INT);
-			d.put("az", EMObject::FLOAT);
-			d.put("dx", EMObject::FLOAT);
-			d.put("dy", EMObject::FLOAT);
+			d.put("xform.align2d", EMObject::TRANSFORM);
 			d.put("stepx", EMObject::FLOAT);
 			d.put("stepy", EMObject::FLOAT);
 			d.put("stepaz", EMObject::FLOAT);
