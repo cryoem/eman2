@@ -389,8 +389,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)	
 	ima = EMData()
 	for i in xrange(number_of_proc):
-		if ftp == "bdb": os.system('rm -rf EMAN2DB/cache')
-		if myid == i:	ima.read_image(stack, image_start, True)
+		if myid == i:
+			if ftp == "bdb": os.system('rm -rf EMAN2DB/cache')
+			ima.read_image(stack, image_start, True)
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	if CTF:
 		if(ima.get_attr_default('ctf_applied', 2) > 0):
@@ -438,8 +439,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	
 	for i in xrange(number_of_proc):
-		if ftp == "bdb": os.system("rm -rf EMAN2DB/cache")
-		if myid == i: data = EMData.read_images(stack, range(image_start, image_end))
+		if myid == i:
+			if ftp == "bdb": os.system("rm -rf EMAN2DB/cache")
+			data = EMData.read_images(stack, range(image_start, image_end))
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 
 	if CTF:
