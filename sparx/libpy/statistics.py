@@ -1344,7 +1344,9 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 			ctf2.append(ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
 
 		# apply mask
-		if mask != None: Util.mul_img(image, mask)
+		if mask != None:
+			if CTF: Util.mul_img(image, mask)
+			else: image = Util.compress_image_mask(image, mask)
 
 		# fft
 		if CTF: fftip(image)
@@ -1408,10 +1410,6 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 
 	if ncpu > 1: methodhead = method + ' MPI'
 	else:        methodhead = method
-	
-	if stackname.split(':')[0] == 'bdb': stackname = stackname.split(':')[1]
-	if maskname != None:
-		if maskname.split(':')[0]  == 'bdb': maskname  = maskname.split(':')[1]
 
 	print_msg('\n************* k-means %s *************\n' % methodhead)
 	print_msg('Input stack                 : %s\n'     % stackname)
@@ -1433,118 +1431,73 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 		print_msg('Simulate annealing          : OFF\n')
 	print_msg('Random seed                 : %i\n'     % rnd)
 	print_msg('Number of cpus              : %i\n'     % ncpu)
-	print_msg('Output seed names           : %s\n\n'   % (outname))
+	print_msg('Output seed names           : %s\n\n'   % outname)
 
 # K-means write results output directory
-def k_means_export(stackname, Cls, crit, assign, out_seedname, BDB):
-	# BDB version
-	if BDB:
-		from   utilities 		import print_msg
+def k_means_export(Cls, crit, assign, out_seedname):
+	from utilities import print_msg
 	
-		# write the report on the logfile
-		Je = 0
-		for k in xrange(Cls['k']): Je += Cls['Ji'][k]
-
-		print_msg('\n\n_Details____________________________________________________\n')
-		print_msg('\n\t%s\t%11.6e\n\n' % ('The total Sum of Squares Error (Je) = ', Je))
-
-		for name in crit['name']:
-			if name == 'C':   print_msg('\t%s\t%11.4e\n' % ('Criteria Coleman', crit['C']))
-			elif name == 'H': print_msg('\t%s\t%11.4e\n' % ('Criteria Harabasz', crit['H']))
-			elif name == 'D': print_msg('\t%s\t%11.4e\n' % ('Criteria Davies-Bouldin', crit['D']))
-			else:             ERROR('Kind of criterion k-means unknown', 'k_means_out_res', 0)	
-		print_msg('\n')
-
-		for k in xrange(Cls['k']):
-			print_msg('\t%s\t%d\t%s\t%d' % ('Cluster no:', k, 'No of Objects = ', Cls['n'][k]))
-			if(Cls['n'][k] > 1): print_msg('\t%s\t%11.6e\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k], ' Variance', Cls['Ji'][k] / float(Cls['n'][k]-1)))
-			else:                print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
-
-		DB_ave = db_open_dict(out_seedname + '_ave')
-		DB_var = db_open_dict(out_seedname + '_var')
-
-		for k in xrange(Cls['k']):
-			lassign = []
-			for i in xrange(len(assign)):
-				if(assign[i] == k):  lassign.append(i)
-
-			DB_ave[k] = Cls['ave'][k]
-			DB_var[k] = Cls['var'][k]
-
-			DB_ave.set_attr(k, 'kmeans_average', 1)
-			DB_var.set_attr(k, 'kmeans_variance', 1)
-
-			DB_ave.set_attr(k, 'kmeans_nobjects', Cls['n'][k])
-			DB_ave.set_attr(k, 'kmeans_members', lassign)
-			DB_ave.set_attr(k, 'kmeans_Ji', Cls['Ji'][k])
-			DB_ave.set_attr(k, 'kmeans_Je', Je)
-			if Cls['n'][k] > 1:
-			     DB_ave.set_attr(k, 'kmeans_var', Cls['Ji'][k] / float(Cls['n'][k]-1))
-		
-			DB_var.set_attr(k, 'kmeans_nobjects', Cls['n'][k])
-			DB_var.set_attr(k, 'kmeans_members', lassign)
-			DB_var.set_attr(k, 'kmeans_Ji', Cls['Ji'][k])
-			DB_var.set_attr(k, 'kmeans_Je', Je)
-			if Cls['n'][k] > 1:
-			     DB_var.set_attr(k, 'kmeans_var', Cls['Ji'][k] / float(Cls['n'][k]-1))
-		
-		DB_ave.close()
-		DB_var.close()
-
-	# other version (hdf, spi, ...)
+	if out_seedname.split(':')[0] == 'bdb':
+		BDB = True
 	else:
+		BDB = False
 		import os
-
 		if os.path.exists(out_seedname):  os.system('rm -rf ' + out_seedname)
 		os.mkdir(out_seedname)
 
-		# Write informations on results
-		Je = 0
-		for k in xrange(Cls['k']): Je += Cls['Ji'][k]
-		out  = open(out_seedname + "/kmeans_classification_chart.txt", 'w')
-		out.write("\n\t%s\t%11.6e\n\n" % ("The total Sum of Squares Error (Je) = ", Je))
+	# write the report on the logfile
+	Je = 0
+	for k in xrange(Cls['k']): Je += Cls['Ji'][k]
 
-		for name in crit['name']:
-			if name == 'C':
-				out.write("\t%s\t%11.4e\n"%("Criteria Coleman", crit['C']))
-			elif name == 'H':
-				out.write("\t%s\t%11.4e\n"%("Criteria Harabasz", crit['H']))
-			elif name == 'D':
-				out.write("\t%s\t%11.4e\n"%("Criteria Davies-Bouldin", crit['D']))
-			else:
-				ERROR("Kind of criterion k-means unknown","k_means_out_res",1)	
+	print_msg('\n\n_Details____________________________________________________\n')
+	print_msg('\n\t%s\t%11.6e\n\n' % ('The total Sum of Squares Error (Je) = ', Je))
 
-		out.write('\n')
-		for k in xrange(Cls['k']):
-			# limitation of hdf file in the numbers of attributes
-			if Cls['n'][k] > 16000:
-				print 'WARNING: limitation of number attributes in hdf file, the results will export in separate files \n'
-				outfile = open('%d_kmeans' % k, 'w')
-				list_images = []
-				for i in xrange(len(assign)):
-					if assign[i] == k:
-						list_images.append(i)
-						outfile.write(str(i) +'\n')
-				outfile.close()
-				Cls['ave'][k].set_attr_dict({'Class_average':1.0, 'nobjects':float(Cls['n'][k])})
-			else:
-				lassign = []
-				for i in xrange(len(assign)):
-					if(assign[i] == k):  lassign.append(float(i))
-				Cls['ave'][k].set_attr_dict({'Class_average':1.0, 'nobjects':float(Cls['n'][k]), 'members':lassign})
+	for name in crit['name']:
+		if name == 'C':   print_msg('\t%s\t%11.4e\n' % ('Criteria Coleman', crit['C']))
+		elif name == 'H': print_msg('\t%s\t%11.4e\n' % ('Criteria Harabasz', crit['H']))
+		elif name == 'D': print_msg('\t%s\t%11.4e\n' % ('Criteria Davies-Bouldin', crit['D']))
+		else:             ERROR('Kind of criterion k-means unknown', 'k_means_out_res', 0)	
+	print_msg('\n')
 
-			Cls['ave'][k].set_attr_dict({'alpha':0.0, 'sx':0.0, 'sy':0.0, 'mirror':0.0})
-			Cls['var'][k].set_attr_dict({'alpha':0.0, 'sx':0.0, 'sy':0.0, 'mirror':0.0})
-			Cls['var'][k].set_attr_dict({'Class_variance':1.0, 'nobjects':float(Cls['n'][k])})
+	for k in xrange(Cls['k']):
+		print_msg('\t%s\t%d\t%s\t%d' % ('Cluster no:', k, 'No of Objects = ', Cls['n'][k]))
+		if(Cls['n'][k] > 1): print_msg('\t%s\t%11.6e\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k], ' Variance', Cls['Ji'][k] / float(Cls['n'][k]-1)))
+		else:                print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
+
+		# limitation of hdf file in the numbers of attributes
+		if Cls['n'][k] > 16000 and not BDB:
+			print 'WARNING: limitation of number attributes in hdf file, the results will be export in separate files \n'
+			outfile = open('%d_kmeans' % k, 'w')
+			list_images = []
+			for i in xrange(len(assign)):
+				if assign[i] == k:
+					list_images.append(i)
+					outfile.write(str(i) +'\n')
+			outfile.close()
+			Cls['ave'][k].set_attr_dict({'Class_average':1.0, 'nobjects':float(Cls['n'][k])})
+		else:
+			lassign = []
+			for i in xrange(len(assign)):
+				if(assign[i] == k):  lassign.append(float(i))
+			Cls['ave'][k].set_attr('Class_average', 1.0)
+			Cls['ave'][k].set_attr('nobjects', float(Cls['n'][k]))
+			Cls['ave'][k].set_attr('members', lassign)
+			Cls['ave'][k].set_attr('Ji', Cls['Ji'][k])
+			Cls['ave'][k].set_attr('Je', Je)
+
+			Cls['var'][k].set_attr('Class_variance', 1.0)
+			Cls['var'][k].set_attr('nobjects', float(Cls['n'][k]))
+			Cls['var'][k].set_attr('members', lassign)
+			Cls['var'][k].set_attr('Ji', Cls['Ji'][k])
+			Cls['var'][k].set_attr('Je', Je)
+
+		if BDB:
+			Cls['ave'][k].write_image(out_seedname + '_ave', k)
+			Cls['var'][k].write_image(out_seedname + '_var', k)
+		else:
 			Cls['ave'][k].write_image(out_seedname + "/average.hdf", k)
 			Cls['var'][k].write_image(out_seedname + "/variance.hdf", k)
-			out.write("\t%s\t%d\t%s\t%d" % ("Cluster no:",k, "No of Objects = ",Cls['n'][k]))
-			if(Cls['n'][k] > 1):
-				out.write("\t%s\t%11.6e\t%s\t%11.6e\n" % ("Sum of Squares Error Ji",Cls['Ji'][k]," Variance",Cls['Ji'][k]/float(Cls['n'][k]-1)))
-			else:
-				out.write("\t%s\t%11.6e\n" % ("Sum of Squares Error Ji",Cls['Ji'][k]))
 
-		out.close()
 
 # K-means compute criterion in order to validate the number of groups
 def k_means_criterion(Cls, crit_name=''):

@@ -10413,22 +10413,14 @@ def refvol( vollist, fsclist, output, mask ):
 
 # K-means main driver
 def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname, CTF = False, F = 0, T0 = 0, MPI = False, SA2 = False, DEBUG = False):
-	from utilities 	import print_begin_msg, print_end_msg, print_msg
+	from utilities 	import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
 	import sys
 
 	#== NEW VERSION ==
-
-	if stack.split(':')[0] == 'bdb': BDB = True
-	else:                            BDB = False
-	
-	# check entry
-	if maskname != None:
-		if (maskname.split(':')[0] != 'bdb' and BDB) or (maskname.split(':')[0] == 'bdb' and not BDB):
-		        ERROR('Both mask and stack must be on bdb format!', 'k-means', 1)
-
-	if (out_dir.split(':')[0] != 'bdb' and BDB) or (out_dir.split(':')[0] == 'bdb' and not BDB):
-		ERROR('Stack and out_dir+name must be in the same format!', 'k_means', 1)
+	ext = file_type(stack)
+	if ext == 'bdb': BDB = True
+	else:            BDB = False
 
 	if MPI:
 		from statistics import k_means_cla_MPI, k_means_SSE_MPI, k_means_init_MPI
@@ -10462,8 +10454,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		if myid == main_node:
 			crit = k_means_criterion(Cls, critname)
-			k_means_export(stack, Cls, crit, assign, out_dir, BDB)
+			k_means_export(Cls, crit, assign, out_dir)
 			print_end_msg('k-means')
+
+		mpi_barrier(MPI_COMM_WORLD)
 
 	else:
 		from statistics import k_means_classical, k_means_SSE
@@ -10482,7 +10476,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			sys.exit()
 			
 		crit = k_means_criterion(Cls, critname)
-		k_means_export(stack, Cls, crit, assign, out_dir, BDB)
+		k_means_export(Cls, crit, assign, out_dir)
 		print_end_msg('k-means')
 			
 # K-means groups driver
