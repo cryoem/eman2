@@ -2606,7 +2606,7 @@ class PawelAutoBoxer(AutoBoxer):
 		for i in xrange(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
-			#print  i,peaks[3*i+0],peaks[3*i+1],peaks[3*i+2]
+			print  i,peaks[3*i+0],peaks[3*i+1],peaks[3*i+2], boxsize,boxhalf
 			box = Box( cx-boxhalf, cy-boxhalf, boxsize, boxsize, 0)
 			box.set_image_name( imgname )
 			box.set_correlation_score( peaks[3*i] )

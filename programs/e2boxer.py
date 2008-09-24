@@ -2099,9 +2099,10 @@ class CcfHistogram(QtGui.QWidget):
                 for i in xrange( len(self.data[1]) ):
 			h = self.data[1][i]
                         p.drawLine(i, self.height(), i, int(self.height()*(1-0.9*h/hmax)) )
-
-		self.drawTicker( self.tickers[0] )
-		self.drawTicker( self.tickers[1] )
+		
+		self.drawTicker( self.tickers[0], p )
+		self.drawTicker( self.tickers[1], p )
+		p.end()
 
 	def mousePressEvent(self, event):
 		if event.button()==Qt.LeftButton:
@@ -2163,9 +2164,7 @@ class CcfHistogram(QtGui.QWidget):
 			guiim.updateGL()
 
 
-	def drawTicker( self, newpos ) :
-		p=QtGui.QPainter()
-		p.begin(self)
+	def drawTicker( self, newpos, p ) :
 		p.setPen(Qt.yellow)
 		for i in xrange( newpos, newpos+2):
 			p.drawLine( i, self.height(), i, int(0.2*self.height()) )
