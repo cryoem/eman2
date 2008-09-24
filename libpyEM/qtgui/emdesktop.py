@@ -616,7 +616,7 @@ class EMDesktopWidgets:
 			try: w.d = scalex*w.d # 3D
 			except: pass
 			w.h = scalex*w.h
-			w.setWidth(scalex*w.w)
+			w.set_width(scalex*w.w)
 			
 			try: w.setOptScale()
 			except: pass
