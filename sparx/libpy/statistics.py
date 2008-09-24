@@ -1362,12 +1362,10 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 	if CTF: return im_M, mask, ctf, ctf2
 	else:   return im_M, mask, None, None
 
-
 # k-means init for MPI version
 def k_means_init_MPI(stack):
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from utilities    import bcast_number_to_all
-	from random       import randint
+	from mpi          import mpi_bcast, MPI_INT
 	import sys
 	
 	# init
@@ -1375,17 +1373,15 @@ def k_means_init_MPI(stack):
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 
-	# chose a random node as a main one
+	# chose a main one
 	main_node = 0
-	if myid  == 0:	main_node = randint(0, number_of_proc - 1)
-	main_node = bcast_number_to_all(main_node, 0)
-	mpi_barrier(MPI_COMM_WORLD)
 
 	# define the node affected to the images
 	N = 0
 	if myid == main_node: N = EMUtil.get_image_count(stack)
-	N = bcast_number_to_all(N, 0)
 	mpi_barrier(MPI_COMM_WORLD)
+	N = mpi_bcast(N, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	N = N.tolist()[0]
 
 	im_per_node = max(N / number_of_proc, 1)
 	N_start     = myid * im_per_node
@@ -2545,9 +2541,9 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	
 	# [all] Informations on images or mask for the norm
 	if CTF:
-		nx  = im_M[0].get_attr('or_nx')
-		ny  = im_M[0].get_attr('or_ny')
-		nz  = im_M[0].get_attr('or_nz')
+		nx  = im_M[N_start].get_attr('or_nx')
+		ny  = im_M[N_start].get_attr('or_ny')
+		nz  = im_M[N_start].get_attr('or_nz')
 		buf = model_blank(nx, ny, nz)
 		fftip(buf)		
 		nx   = im_M[N_start].get_xsize()
@@ -3050,9 +3046,9 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 
 	# [all] Informations on images or mask for the norm
 	if CTF:
-		nx  = im_M[0].get_attr('or_nx')
-		ny  = im_M[0].get_attr('or_ny')
-		nz  = im_M[0].get_attr('or_nz')
+		nx  = im_M[N_start].get_attr('or_nx')
+		ny  = im_M[N_start].get_attr('or_ny')
+		nz  = im_M[N_start].get_attr('or_nz')
 		buf = model_blank(nx, ny, nz)
 		fftip(buf)		
 		nx   = im_M[N_start].get_xsize()
