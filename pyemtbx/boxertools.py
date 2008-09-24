@@ -2548,6 +2548,7 @@ class PawelAutoBoxer(AutoBoxer):
 		self.pixel_input = atof(self.parent.guictl.input_pixel_size.text())
 		self.pixel_output= atof(self.parent.guictl.output_pixel_size.text())
 		self.box_size = int(self.parent.guictl.bs.text())
+		self.gauss_ruler = atof(self.parent.guictl.gauss_ruler.text())
 
 		slow = self.parent.guictl.threshold_low.text()
 		shgh = self.parent.guictl.threshold_hgh.text()
@@ -2562,6 +2563,7 @@ class PawelAutoBoxer(AutoBoxer):
 		print "running Gauss Convolution: "
 		print "     Pixel input : ", self.pixel_input
 		print "     Pixel output: ", self.pixel_output
+		print "     Gauss ruler : ", self.gauss_ruler
 		print "     Box size    : ", self.box_size
 		print "     boxable.image_name:	  ", boxable.image_name
 		print "     CCF low bound   :   ", thr_low
@@ -2591,7 +2593,7 @@ class PawelAutoBoxer(AutoBoxer):
 			img.write_image( imgname )
 			boxable.set_image_name( imgname )
 
-		ccf = filt_gaussl( img, 1.0/self.box_size )
+		ccf = filt_gaussl( img, self.gauss_ruler/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
 		npeak = len(peaks)/3
 		print npeak, " boxes picked"
@@ -2604,7 +2606,7 @@ class PawelAutoBoxer(AutoBoxer):
 		for i in xrange(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
-			print  i,peaks[3*i+0],peaks[3*i+1],peaks[3*i+2]
+			#print  i,peaks[3*i+0],peaks[3*i+1],peaks[3*i+2]
 			box = Box( cx-boxhalf, cy-boxhalf, boxsize, boxsize, 0)
 			box.set_image_name( imgname )
 			box.set_correlation_score( peaks[3*i] )

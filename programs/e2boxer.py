@@ -2144,10 +2144,10 @@ class CcfHistogram(QtGui.QWidget):
 			curt_shapes = guiim.getShapes()
 
 
-			print "# of all shapes: ", len( self.shapes )
-			print "# of cur shapes: ", len( curt_shapes )
-			print "thr_low: ", thr_low
-			print "thr_hgh: ", thr_hgh
+			#print "# of all shapes: ", len( self.shapes )
+			#print "# of cur shapes: ", len( curt_shapes )
+			#print "thr_low: ", thr_low
+			#print "thr_hgh: ", thr_hgh
 
 			ndelete = 0
 			for i in xrange( len(self.ccfs) ):
@@ -2771,14 +2771,16 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		pawel_grid1.addWidget( QtGui.QLabel("Input Pixel Size:") , 0, 0 )
 		pawel_grid1.addWidget( QtGui.QLabel("Output Pixel Size:"), 1, 0 )
+		pawel_grid1.addWidget( QtGui.QLabel("Gauss Ruler:"), 2, 0 )
 		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 0, 2 )
 		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 1, 2 )		
 
 		self.input_pixel_size = QtGui.QLineEdit("1.0", self)
 		self.output_pixel_size = QtGui.QLineEdit("1.0", self)
+		self.gauss_ruler = QtGui.QLineEdit("1.0", self)
 		pawel_grid1.addWidget( self.input_pixel_size, 0, 1 )
 		pawel_grid1.addWidget( self.output_pixel_size, 1, 1 )
-	
+		pawel_grid1.addWidget( self.gauss_ruler, 2, 1 )
 
 		self.pawel_option_vbox.addWidget( QtGui.QLabel("CCF Histogram") )
 		self.pawel_histogram = CcfHistogram( self )
