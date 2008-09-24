@@ -2214,8 +2214,10 @@ class SwarmTemplate(Template):
 				# The problem with this approach is one of persistence. If the box has no associated
 				# boxingobj then it will fail. The box will have no boxing obj using the persistent database 
 				# approach of e2boxer
-				dx = ta.get_attr("align.dx")
-				dy = ta.get_attr("align.dy")
+				tra = ta.get_attr("xform.align2d")
+				v = tra.get_trans()
+				dx = v[0]
+				dy = v[1]
 				box = self.refboxes[idx]
 				size = ta.get_xsize()
 				image = box.get_small_image(self.autoboxer)
