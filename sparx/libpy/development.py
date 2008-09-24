@@ -7070,20 +7070,34 @@ def match_clusters_asg(asg1, asg2):
 	return list_stable, nb_tot_objs
 
 # compute the hierarchical stability between different partition from k-means (only with bdb format)
-def stability_h_bdb(seed_name, nb_part):
+def stability_h(seed_name, nb_part):
 	from copy import deepcopy
-	N = EMUtil.get_image_count(seed_name + '1_ave')
+
+	if seed_name.split(':')[0] == 'bdb':
+		N = EMUtil.get_image_count(seed_name + '1_ave')
+		BDB = True
+	else:
+		N = EMUtil.get_image_count(seed_name + '1/average.hdf')
+		BDB = False
 
 	# read all assignment
 	PART = []
 	for n in xrange(1, nb_part + 1):
 		L = []
-		DB  = db_open_dict(seed_name + str(n) + '_ave')
-		for i in xrange(N):
-			asg = DB.get_attr(i, 'kmeans_members')
-			L.append(asg)
+		if BDB:
+			DB  = db_open_dict(seed_name + str(n) + '_ave')
+			for i in xrange(N):
+				asg = DB.get_attr(i, 'members')
+				L.append(asg)
+			DB.close()
+		else:
+			im = EMData()
+			
+			for i in xrange(N):
+				im.read_image(seed_name + str(n) + '/average.hdf', i, True)
+				asg = im.get_attr('members')
+				L.append(asg)
 		PART.append(L)
-		DB.close()
 
 	resume  = open('stability_h', 'w')
 
@@ -7211,8 +7225,8 @@ def stability_extract_stb_ave(tag, bdbname, bdbtarget):
 	for k in xrange(K):
 		Util.mul_scalar(AVE[k], 1 / float(nb[k]))
 		OUT[k] = AVE[k]
-		OUT.set_attr(k, 'kmeans_members', asg[k])
-		OUT.set_attr(k, 'kmeans_nobjects', nb[k])
+		OUT.set_attr(k, 'members', asg[k])
+		OUT.set_attr(k, 'nobjects', nb[k])
 	OUT.close()
 	DB.close()
 
@@ -7224,10 +7238,10 @@ def herit_ID_from_main_data(seed_name, nb_part, bdbname_child):
 	for n in xrange(1, nb_part + 1):
 		DB = db_open_dict(seed_name + str(n) + '_ave')
 		for k in xrange(K):
-			list_im = DB.get_attr(k, 'kmeans_members')
+			list_im = DB.get_attr(k, 'members')
 			newlist = []
 			for im in list_im: newlist.append(CH.get_attr(im, 'kmeans_org'))
-			DB.set_attr(k, 'kmeans_members', newlist)
+			DB.set_attr(k, 'members', newlist)
 
 	CH.close()
 	DB.close()
