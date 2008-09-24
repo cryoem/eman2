@@ -733,7 +733,7 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 			ima.read_image(stack, i)
 		if (mode=="a"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
- 			out = rot_shift2D(data[i], alpha, sx, sy, mirror)
+ 			out = rot_shift2D(ima, alpha, sx, sy, mirror)
 			Util.add_img(ave, out)
 			Util.add_img2(var, out)
 		else: 
