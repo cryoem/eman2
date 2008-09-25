@@ -349,7 +349,7 @@ def cml_head_log(stack, outdir, delta, ir, ou, rand_seed, ncpu, refine, trials):
 	print_msg('Number of projections       : %d\n'     % nprj)
 	print_msg('Output directory            : %s\n'     % outdir)
 	print_msg('Angular step                : %5.2f\n'  % delta)	
-	print_msg('Inner particle radius       : %5.1f\n'  % ir)	
+	print_msg('Inner particle radius       : %5.2f\n'  % ir)	
 	print_msg('Outer particle radius       : %5.2f\n'  % ou)	
 	print_msg('Random seed                 : %i\n'     % rand_seed)
 	print_msg('Number of trials            : %d\n'     % trials)
@@ -453,33 +453,28 @@ def cml_open_proj(stack, ir, ou):
 
 	nprj = EMUtil.get_image_count(stack)
 
-	if stack.split(':')[0] == 'bdb':
-		BDB = True
-		DB  = db_open_dict(stack)
-        else:   BDB = False
-
 	Prj        = []
 	flagheader = False
 	ct_agl     = 0
+	image      = EMData()
 	for i in xrange(nprj):
 		Prj.append(Projection(None, -1, -1, False, False))
-		if BDB: image = DB[i]
-		else:	image = get_im(stack, i)
+		image.read_image(stack, i)
 		if(i == 0):
 			nx = image.get_xsize()
 			if(ou < 1):
-				ou = nx//2 - 1
+				ou = nx // 2 - 1
 			else:
-				ou = int(ou)//2
-				ou = 2*ou +1
-			diameter = 2*ou+1
-			mask2D = model_circle(ou, nx, nx)
-			circ = mask2D.copy()
-			if(ou > 1): circ -= model_circle(ou-1, nx, nx)
-			if(ir > 0):  mask2D -= model_circle(ir, nx, nx)
-		[mean_a,sigma,imin,imax] = Util.infomask(image, circ, True)
+				ou = int(ou) // 2
+				ou = 2 * ou +1
+			diameter = 2 * ou + 1
+			mask2D   = model_circle(ou, nx, nx)
+			circ     = mask2D.copy()
+			if ou > 1:  circ   -= model_circle(ou - 1, nx, nx)
+			if ir > 0:  mask2D -= model_circle(ir, nx, nx)
+		[mean_a, sigma, imin, imax] = Util.infomask(image, circ, True)
 		image -= mean_a
-		Util.mul_img(image, mask2D )
+		Util.mul_img(image, mask2D)
 
 		Prj[i].sino = cml_sinogram(image, diameter)
 		try:
@@ -494,8 +489,6 @@ def cml_open_proj(stack, ir, ou):
 	else:                    flagheader = False
 
 	#print_msg('Angles detected in header   : %s\n'     % flagheader)
-
-	if BDB: DB.close()
 
 	'''
 	if FILTER:
@@ -1042,7 +1035,7 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 	T = 1.0
 	F = 0.999
 	kiter = -1
-	while T>1.0e-5:
+	while T > 1.0e-5:
 		kiter += 1
 		cml_export_progress(infofilename, Prj, Cst, kiter, 'iteration')
 		# ---------- loop for all sinograms ---------------------------------
