@@ -432,7 +432,7 @@ def cml_export_progress(namefile, Prj, Cst, disc, cmd):
 # open and transform projections
 def cml_open_proj(stack, ir, ou):
 	from projection  import cml_sinogram
-	from utilities   import get_im, model_circle
+	from utilities   import model_circle, get_params3D
 
 	# ----- define structures data ---------------------------------
 	class Projection:
@@ -454,8 +454,6 @@ def cml_open_proj(stack, ir, ou):
 	nprj = EMUtil.get_image_count(stack)
 
 	Prj        = []
-	flagheader = False
-	ct_agl     = 0
 	image      = EMData()
 	for i in xrange(nprj):
 		Prj.append(Projection(None, -1, -1, False, False))
@@ -478,17 +476,11 @@ def cml_open_proj(stack, ir, ou):
 
 		Prj[i].sino = cml_sinogram(image, diameter)
 		try:
-			Prj[i].phi    = image.get_attr('phi')
-			Prj[i].theta  = image.get_attr('theta')
-			Prj[i].psi    = image.get_attr('psi')
-			if Prj[i].phi != 0 or Prj[i].theta != 0 or Prj[i].psi != 0: ct_agl += 1
-		except RuntimeError:
-			pass
-
-	if ct_agl >= (nprj - 1): flagheader = True
-	else:                    flagheader = False
-
-	#print_msg('Angles detected in header   : %s\n'     % flagheader)
+			[phi, theta, psi, s3x, s3y, s3z, mir, sca] = get_params3D(image)
+			Prj[i].phi    = phi
+			Prj[i].theta  = theta
+			Prj[i].psi    = psi
+		except:	pass
 
 	'''
 	if FILTER:
@@ -948,11 +940,12 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 	from projection import cml_head_log, cml_weights, cml_disc_proj, cml_spin_proj
 	from projection import cml_export_txtagls, cml_export_progress, cml_refine_agls
 	from utilities  import print_msg, amoeba, even_angles
-	from random     import seed, randrange, shuffle
+	from random     import seed, randrange, shuffle, random
 	from copy       import deepcopy
 	from math       import pi, fmod
 	import time
 	import os
+	import sys
 
 	## TO WORK
 	search = 'ALL'
@@ -977,7 +970,8 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 	ocp_agls = [-1] * n_anglst               # list of occupied angles
 	
 	# check if the number of orientations is sufficient
-	if n_anglst <= Cst['nprj']:
+	## TO TEST I changed <= to <
+	if n_anglst < Cst['nprj']:
 		print 'Not enough angles in the list of orientation, decrease the value of delta!'
 		exit()
 
@@ -987,7 +981,8 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 		ct_agl    = 0
 		for i in xrange(Cst['nprj']):
 			if Prj[i].phi != 0 or Prj[i].theta != 0 or Prj[i].psi != 0: ct_agl += 1
-		if ct_agl >= Cst['nprj']: flaggiven = True
+
+		if ct_agl >= Cst['nprj'] - 1: flaggiven = True
 
 		if flaggiven:
 			for i in xrange(Cst['nprj']): print '%6.2f %6.2f %6.2f' % (Prj[i].phi, Prj[i].theta, Prj[i].psi)
@@ -1007,6 +1002,7 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 	Prj[0].psi      = 0.0
 	ocp_agls[0]     = 0     # first position angles is occupied by sino 0
 
+	'''
 	# Assign randomly direction for the others sinograms
 	n = 1
 	while n < Cst['nprj']:
@@ -1019,10 +1015,24 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 			Prj[n].psi      = Prj[n].pos_psi * Cst['d_psi_pi']
 			ocp_agls[i]     = n
 			n += 1
+	'''
+
+	## TO TEST
+	n = 1
+	i = 5
+	
+	if ocp_agls[i] == -1:
+		Prj[n].pos_agls = i
+		Prj[n].pos_psi  = 20
+		Prj[n].phi      = anglst[i][0]
+		Prj[n].theta    = anglst[i][1]
+		Prj[n].psi      = Prj[n].pos_psi * Cst['d_psi_pi']
+		ocp_agls[i]     = n
 
 	# compute the first discrepancy
 	disc = cml_disc_proj(Prj)
 	disc_initial = disc
+
 	# export the first values in the angfile
 	cml_export_txtagls(angfilename, Prj, Cst, disc, 'init')
 
@@ -1042,25 +1052,28 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 		t_start  = time.time()
 		shuffle(list_prj)
 		ct_prj   = 0
+		## TO TEST
+		list_prj = [1]
 		for iprj in list_prj:
 			# count proj
 			ct_prj += 1
 
+			'''
 			if DEBUG:
 				print '>>' + str(iprj)
 				g_time = time.time()
+			'''
 
 			# Preserve active sinogram
 			Cst['iprj'] = iprj
-			best_Prj = deepcopy(Prj[iprj])
+			best_Prj    = deepcopy(Prj[iprj])
 
 			# choose new position randomly from the list of available positions
 			old_pos = Prj[iprj].pos_agls
-			from random import randrange, random
 			search = True
 			while search:
 				new_pos = randrange(n_anglst)
-				if(ocp_agls[new_pos] == -1):
+				if ocp_agls[new_pos] == -1:
 					Prj[iprj].pos_agls = new_pos
 					search = False
 
@@ -1073,29 +1086,29 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 			Prj[iprj].theta  = anglst[Prj[iprj].pos_agls][1]
 			Prj[iprj].psi	 = 0.0
 			Prj[iprj].mirror = False
-
 				
-			if DEBUG: s_time = time.time()
+			#if DEBUG: s_time = time.time()
 
 			# compute the weight for each common lines with Voronoi
 			weights = cml_weights(Prj)
-			if DEBUG: 
-				print  'weights time: %8.3f s' % (time.time() - s_time)
-				s_time = time.time()
+			#if DEBUG: 
+			#	print  'weights time: %8.3f s' % (time.time() - s_time)
+			#	s_time = time.time()
 
 			# spin for psi of iprj projection			
 			best_psi, mirror, new_disc = cml_spin_proj(Prj, Cst, weights)
+		
+			#if DEBUG: 
+			#	print  'spin time: %8.3f s' % (time.time() - s_time)
+			#	s_time = time.time()
 
-			if DEBUG: 
-				print  'spin time: %8.3f s' % (time.time() - s_time)
-				s_time = time.time()
 			# ---- strategy to select the next orientation ----------------------
 			difd = new_disc - disc
 			if difd < 0.0: accept = True
 			else:
 				qrd = random()
 				drd = exp(-difd/1000.0/T)
-			if new_disc >= disc or random()>0.6:
+			if new_disc >= disc or qrd > drd: #random()>0.6:
 				#accept new one
 				disc	 = new_disc
 				# tag if mirror
@@ -1119,22 +1132,27 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 				Prj[iprj]                    = deepcopy(best_Prj)
 				ocp_agls[Prj[iprj].pos_agls] = iprj
 				cml_export_progress(infofilename, Prj, Cst, new_disc, 'passed')
-	
+
+			'''
 			if DEBUG:
 				print 'ct_agl: %3d' % ct_agl, 'pos_agls: %3d' % Prj[iprj].pos_agls, 'time: %8.3f s' % (time.time() - s_time)
 
-
-
-			if DEBUG:
 				tmp1 = cml_disc_proj(Prj)
 				print 'Time: %8.3f s' % (time.time() - g_time)
 				print 'Disc:', disc, 'check', tmp1, '\n'
+			'''
 
 			# display info
 			cml_export_progress(infofilename, Prj, Cst, disc, 'new')
+			
 		ct_prj = 0
 		cml_export_txtagls(angfilename, Prj, Cst, disc, str(ct_prj).rjust(3, '0'))
-		if( kiter%10 == 0): T*=F
+
+		if kiter % 10 == 0: T *= F
+
+		if DEBUG: print kiter, 'disc', disc, 'T', T
+
+	
 
 	# ----- refine angles ---------------------------------
 	scales = [delta] * (Cst['nprj'] + 2)
@@ -1171,12 +1189,13 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine = False, DEBUG = False):
 	from projection import cml_head_log, cml_weights, cml_disc_proj, cml_spin_proj
 	from projection import cml_export_txtagls, cml_export_progress, cml_refine_agls
-	from utilities  import print_msg, amoeba, even_angles
+	from utilities  import print_msg, amoeba, even_angles, running_time_txt
 	from random     import seed, randrange, shuffle
 	from copy       import deepcopy
 	from math       import pi, fmod
 	import time
 	import os
+	import sys
 
 	## TO WORK
 	search = 'ALL'
@@ -1199,7 +1218,7 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 	anglst   = even_angles(delta, 0.0, 89.9, 0.0, 359.9, 'S')
 	n_anglst = len(anglst)
 	ocp_agls = [-1] * n_anglst               # list of occupied angles
-	
+
 	# check if the number of orientations is sufficient
 	if n_anglst <= Cst['nprj']:
 		print 'Not enough angles in the list of orientation, decrease the value of delta!'
@@ -1211,7 +1230,7 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 		ct_agl    = 0
 		for i in xrange(Cst['nprj']):
 			if Prj[i].phi != 0 or Prj[i].theta != 0 or Prj[i].psi != 0: ct_agl += 1
-		if ct_agl >= Cst['nprj']: flaggiven = True
+		if ct_agl >= Cst['nprj'] - 1: flaggiven = True
 
 		if flaggiven:
 			for i in xrange(Cst['nprj']): print '%6.2f %6.2f %6.2f' % (Prj[i].phi, Prj[i].theta, Prj[i].psi)
@@ -1230,6 +1249,7 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 	Prj[0].theta    = 0.0
 	Prj[0].psi      = 0.0
 	ocp_agls[0]     = 0     # first position angles is occupied by sino 0
+
 
 	# Assign randomly direction for the others sinograms
 	n = 1
@@ -1254,8 +1274,11 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 		for i in xrange(Cst['nprj']): print '%6.2f %6.2f %6.2f' % (Prj[i].phi, Prj[i].theta, Prj[i].psi)
 		print 'disc init: %10.3f' % disc
 
+	stopflag = False
 	list_prj = range(1, Cst['nprj'])
 	for kiter in xrange(Iter):
+		
+		
 		# ---------- loop for all sinograms ---------------------------------
 		t_start  = time.time()
 		shuffle(list_prj)
@@ -1264,9 +1287,9 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 			# count proj
 			ct_prj += 1
 
-			if DEBUG:
-				print '>>' + str(iprj)
-				g_time = time.time()
+			#if DEBUG:
+			#	print '>>' + str(iprj)
+			#	g_time = time.time()
 
 			# change the active sinogram iprj
 			Cst['iprj'] = iprj
@@ -1279,20 +1302,20 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 				# count number of angles tested
 				ct_agl += 1
 				
-				if DEBUG: s_time = time.time()
+				#if DEBUG: s_time = time.time()
 
 				# compute the weight for each common lines with Voronoi
 				weights = cml_weights(Prj)
 				if DEBUG: 
-					print  'weights time: %8.3f s' % (time.time() - s_time)
+				#	print  'weights time: %8.3f s' % (time.time() - s_time)
 					s_time = time.time()
 
 				# spin for psi of iprj projection			
 				best_psi, mirror, new_disc = cml_spin_proj(Prj, Cst, weights)
 
-				if DEBUG: 
-					print  'spin time: %8.3f s' % (time.time() - s_time)
-					s_time = time.time()
+				#if DEBUG: 
+				#	print  'spin time: %8.3f s' % (time.time() - s_time)
+				#	s_time = time.time()
 				# tag if mirror
 				Prj[iprj].mirror = mirror
 				Prj[iprj].psi = best_psi
@@ -1300,9 +1323,9 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 				# display in infofile
 				cml_export_progress(infofilename, Prj, Cst, new_disc, 'progress')
 
-				if DEBUG:
-					print  'export time: %8.3f s' % (time.time() - s_time)
-					s_time = time.time()
+				#if DEBUG:
+				#	print  'export time: %8.3f s' % (time.time() - s_time)
+				#	s_time = time.time()
 				# ---- strategy to select the next orientation ----------------------
 
 				# == search all angles one by one ==
@@ -1327,7 +1350,7 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 					# control running
 					if ct_agl > (n_anglst - Cst['nprj']) - 1:
 						run = False
-
+				
 					# change angles
 					Prj[iprj].phi	 = anglst[Prj[iprj].pos_agls][0]
 					Prj[iprj].theta  = anglst[Prj[iprj].pos_agls][1]
@@ -1339,8 +1362,8 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 					# define the probability of new state
 					flag = 0
 				
-				if DEBUG:
-					print 'ct_agl: %3d' % ct_agl, 'pos_agls: %3d' % Prj[iprj].pos_agls, 'time: %8.3f s' % (time.time() - s_time)
+				#if DEBUG:
+				#	print 'ct_agl: %3d' % ct_agl, 'pos_agls: %3d' % Prj[iprj].pos_agls, 'time: %8.3f s' % (time.time() - s_time)
 
 			# Assign the best orientation
 			ocp_agls[Prj[iprj].pos_agls] = -1
@@ -1360,14 +1383,32 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 				# display info
 				cml_export_progress(infofilename, Prj, Cst, disc, 'mirror')
 
-			if DEBUG:
-				tmp1 = cml_disc_proj(Prj)
-				print 'Time: %8.3f s' % (time.time() - g_time)
-				print 'Disc:', disc, 'check', tmp1, '\n'
+			#if DEBUG:
+			#	tmp1 = cml_disc_proj(Prj)
+			#	print 'Time: %8.3f s' % (time.time() - g_time)
+			#	print 'Disc:', disc, 'check', tmp1, '\n'
 
 			# display info
 			cml_export_progress(infofilename, Prj, Cst, disc, 'new')
 			cml_export_txtagls(angfilename, Prj, Cst, disc, str(ct_prj).rjust(3, '0'))
+
+			try:
+				cmd = open('control', 'r').readline().strip('\n ')
+				if cmd == 'stop':
+					stopflag = True
+					break
+			except:
+				pass
+		
+
+		conv = open('conv', 'a')
+		if DEBUG: print '# ITE', kiter, 'disc', disc, '      ', running_time_txt(t_start)
+		conv.write('ITE %4d  %10.3f     %s\n' % (kiter, disc, running_time_txt(t_start)))
+		conv.close()
+
+		if stopflag: break
+
+			
 
 	# ----- refine angles ---------------------------------
 	scales = [delta] * (Cst['nprj'] + 2)
