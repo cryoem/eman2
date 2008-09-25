@@ -879,7 +879,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		ima = EMData()
 		ima.read_image(input_stack, i)
 		ctf_params = get_arb_params(ima, parnames)
-		if( mode == "a"):
+		if mode == "a":
 	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
 		 	ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
@@ -895,10 +895,10 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		ima = EMData()
 		ima.read_image(input_stack, i)
 		ctf_params = get_arb_params(ima, parnames)
-		if( mode == "a"):
+		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
-			if  ali[3]:  ima.process_inplace("mirror",{"axis":'x'})
+			if  mirror:  ima.process_inplace("mirror",{"axis":'x'})
 		oc = filt_ctf(ave, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad= True)
 		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
 		Util.add_img2(var, ima)
