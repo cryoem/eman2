@@ -764,32 +764,9 @@ class GUIbox:
 	PLAIN_MODE = 'plain'
 	def __init__(self,image_names,boxes,box_size=-1):
 		"""Implements the 'boxer' GUI."""
-		
 		self.dynapixp=get_app() # get the app
 		
-		# initialize important autoboxer related variables
-		self.dynapix = False
-		self.image_names = image_names
-		self.current_image_idx = 0
-		self.box_size = box_size
-		# set self.autoboxer 
-		self.set_autoboxer(self.image_names[self.current_image_idx])
-		
-		self.eraseradius = 2*self.box_size # this happens after the autoboxer has been loaded, because the boxsize can change
-		self.erasemode = None #stores the erase mode
-		self.shape_string = "rectpoint" # the shape of the picked particles
-		self.in_display_limbo = False	# a flag I am using to solve a problem
-		
-		# A boxable is just a class that manages boxes in terms of images
-		self.boxable = Boxable(self.image_names[0],self,self.autoboxer)
-		self.boxable.add_non_refs(boxes)
-		self.boxable.set_box_size(self.box_size)
-		
-		self.initialize_mouse_event_handlers() # initialize the mouse event handlers
-
-		self.ptcl=[] # list of actual boxed out EMImages. This may be redundant I am working on a better solution.
-		self.moving_box_data = None # a vector storing [mouse x, mouse y, box idx]
-		self.moving=None # Used during a user box drag. May be redudant could potentially just use self.moving_box_data. FIXME
+		self.__alt_init__(image_names,boxes,box_size)
 		
 		self.init_guiim() # initialise the 2D image display
 		self.__init_guimx() # intialize the matrix display
@@ -801,7 +778,37 @@ class GUIbox:
 		
 		self.autoboxer.auto_box(self.boxable,False) # Do the automatic autoboxing - this makes the user see results immediately
 		self.box_display_update() # update displays to show boxes etc
+	
+	def __alt_init__(self,image_names,boxes=[],box_size=-1):
 		
+		# initialize important autoboxer related variables
+		self.dynapix = False
+		self.image_names = image_names
+		self.current_image_idx = 0
+		self.box_size = box_size
+		# set self.autoboxer '
+		if len(self.image_names) != 0:
+			self.set_autoboxer(self.image_names[self.current_image_idx])
+		
+		self.eraseradius = 2*self.box_size # this happens after the autoboxer has been loaded, because the boxsize can change
+		self.erasemode = None #stores the erase mode
+		self.shape_string = "rectpoint" # the shape of the picked particles
+		self.in_display_limbo = False	# a flag I am using to solve a problem
+		
+		# A boxable is just a class that manages boxes in terms of images
+		if len(self.image_names) != 0:
+			self.boxable = Boxable(self.image_names[0],self,self.autoboxer)
+			self.boxable.add_non_refs(boxes)
+			self.boxable.set_box_size(self.box_size)
+		else: self.boxable = None
+		
+		self.initialize_mouse_event_handlers() # initialize the mouse event handlers
+
+		self.ptcl=[] # list of actual boxed out EMImages. This may be redundant I am working on a better solution.
+		self.moving_box_data = None # a vector storing [mouse x, mouse y, box idx]
+		self.moving=None # Used during a user box drag. May be redudant could potentially just use self.moving_box_data. FIXME
+	
+		self.ab_sel_mediator = AutoBoxerSelectionsMediator(self)
 	def __init_ctl_rotor(self):
 		self.ctl_rotor = EMRotor()
 		self.ctl_rotor.get_core_object().add_qt_widget(self.guictl)
@@ -1096,7 +1103,9 @@ class GUIbox:
 		return self.autoboxer.get_creation_ts()
 	
 	def get_current_image_name(self):
-		return self.image_names[self.current_image_idx]
+		if len(self.image_names) != 0:
+			return self.image_names[self.current_image_idx]
+		else: return None
 	
 	def get_current_image(self):
 		return BigImageCache.get_image_directly(self.get_current_image_name())
