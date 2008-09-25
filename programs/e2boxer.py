@@ -73,6 +73,13 @@ if os.name == 'nt':
 else:
 	from os import kill
 
+def get_out_file( f ):
+	import os
+	dir = os.path.dirname(f)
+	base = os.path.basename( f )
+	(name, ext) = os.path.splitext( base )
+	outf = os.path.join( dir, ("particles_" + name + ".hdf") )
+	return outf
 pl=()
 
 def main():
@@ -97,7 +104,13 @@ for single particle analysis."""
 	parser.add_option("--parallel",type="int",help="specify more than one processor",default=1)
 	parser.add_option("--merge_boxes_to_db",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
 	parser.add_option("--subsample_method",help="The method used to subsample images prior to generation of the correlation image. Available methods are standard,careful",default="standard")	
-	
+	parser.add_option("--input_pixel", type="float", default=1.0 )
+	parser.add_option("--output_pixel", type="float", default=1.0 )
+	parser.add_option("--gauss_width", type="float", default=1.0 )
+	parser.add_option("--thr_low", type="float")
+	parser.add_option("--thr_hgh", type="float")
+
+
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 	
@@ -164,6 +177,22 @@ for single particle analysis."""
 			for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
 				for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
 					boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
+		elif "gauss" in options.auto:
+			tmpboxer = SwarmAutoBoxer(None)
+			boxer = PawelAutoBoxer(None)
+			boxer.set_params(options.input_pixel, options.output_pixel, options.boxsize, options.gauss_width, options.thr_low, options.thr_hgh)
+			for f in filenames:
+				from sys import stdout
+				print "processing file ", f
+				stdout.flush()
+				boxes,trimboxes,ccfs = boxer.run( f ) 
+
+				fout = get_out_file(  f )
+				print "writing ", len(boxes), " particles to ", fout
+				stdout.flush()
+				for i in xrange( len(boxes) ):
+					p = boxes[i].get_box_image()
+					p.write_image( fout, i )
 		else:
 			print "unknown autoboxing method:",options.auto
 			exit(1)
