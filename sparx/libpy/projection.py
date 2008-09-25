@@ -880,42 +880,22 @@ def cml_spin_proj(Prj, Cst, weights):
 def cml_export_struc(stack, outdir, Prj):
 	from projection import plot_angles
 	from utilities  import get_im, set_params3D
-
-	if stack.split(':')[0] == 'bdb':
-		ST    = db_open_dict(stack)
-		BDBIN = True
-	else:
-		BDBIN = False
-	if outdir.split(':')[0] == 'bdb':
-		OD     = db_open_dict(outdir + '_structure')
-		BDBOUT = True
-	else:
-		BDBOUT = False
 	
 	pagls = []
+	data  = EMData()
 	for i in xrange(len(Prj)):
-		if BDBIN: data = ST[i]
-		else:     data = get_im(stack, i)
+		data.read_image(stack, i)
 		p = [Prj[i].phi, Prj[i].theta, Prj[i].psi, 0.0, 0.0, 0.0, 0, 1]
 		set_params3D(data, p)
 		data.set_attr('active', 1)
-		if BDBOUT: OD[i] = data
-		else: data.write_image(outdir + '/structure.hdf', i)
+		data.write_image(outdir + '/structure.hdf', i)
 
 		# prepare angles to plot
 		pagls.append([Prj[i].phi, Prj[i].theta, Prj[i].psi])
 
-	if BDBIN: ST.close()
-	if BDBOUT:
-		OD.close()
-		OD = db_open_dict(outdir + '_plot_agls')
-
 	# plot angles
 	im = plot_angles(pagls)
-	if BDBOUT:
-		OD[0] = im
-		OD.close()
-	else:	im.write_image(outdir + '/plot_agls.hdf')
+	im.write_image(outdir + '/plot_agls.hdf')
 
 # cml init for MPI version
 def cml_init_MPI(trials):
