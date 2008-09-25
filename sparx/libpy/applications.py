@@ -1002,13 +1002,26 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Inner radius                : %i\n"%(first_ring))
-
-	nima = EMUtil.get_image_count(stack)
+	
+	if ftp == "ftp":
+		nima = EMUtil.get_image_count(stack)
+	else ftp == "bdb":
+		nima = 0
+		if myid == main_node:
+			nima = EMUtil.get_image_count(stack)
+		nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	else:
+		print "Invalid file type"
+		return
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	
 	ima = EMData()
-	ima.read_image(stack, image_start, True)
+	for i in xrange(number_of_proc):
+		if myid == i:
+			if ftp == "bdb": os.system('rm -rf EMAN2DB/cache')
+			ima.read_image(stack, image_start, True)
+		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	nx = ima.get_xsize()
 	# default value for the last ring
 	if last_ring == -1: last_ring = nx//2-2
@@ -1061,8 +1074,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	del ima
 	for i in xrange(number_of_proc):
-		if ftp == "bdb": os.system("rm -rf EMAN2DB/cache")
-		if myid == i: data = EMData.read_images(stack, range(image_start, image_end))
+		if myid == i: 
+			if ftp == "bdb": os.system("rm -rf EMAN2DB/cache")
+			data = EMData.read_images(stack, range(image_start, image_end))
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 		 
 	for im in xrange(image_start, image_end):
