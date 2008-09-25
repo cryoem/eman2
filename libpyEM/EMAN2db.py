@@ -73,7 +73,7 @@ def db_open_dict(url):
 	if url[:4].lower()!="bdb:": return None
 	url=url.replace("../",os.getcwd()+"/../")
 	if url[4]!='/' : 
-		if not '/' in url : url="bdb:"+os.getcwd()+"#"+url[4:]
+		if not '#' in url : url="bdb:"+os.getcwd()+"#"+url[4:]
 		else : url="bdb:"+os.getcwd()+"/"+url[4:]
 	sln=url.rfind("#")
 	qun=url.rfind("?")
@@ -164,7 +164,7 @@ EMUtil.get_image_count=staticmethod(db_get_image_count)
 
 envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_THREAD
 #dbopenflags=db.DB_CREATE
-cachesize=10000000
+cachesize=80000000
 
 #############
 ###  Task Management classes
@@ -313,7 +313,10 @@ class EMAN2DB:
 		# Keep a cache of opened database environments
 		EMAN2DB.opendbs[self.path]=self
 		
-		if not os.access("%s/EMAN2DB/cache"%self.path,os.F_OK) : os.makedirs("%s/EMAN2DB/cache"%self.path)
+		# Make the database directory
+		if not os.access("%s/EMAN2DB"%self.path,os.F_OK) : os.makedirs("%s/EMAN2DB"%self.path)
+		# make the shared cache directory in /tmp
+		if not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
 		self.dbenv=db.DBEnv()
 		self.dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
 #		self.dbenv.set_cachesize(1,0,8)		# gbytes, bytes, ncache (splits into groups)
@@ -324,7 +327,7 @@ class EMAN2DB:
 			#self.LOG(1,"Database recovery required")
 			#sys.exit(1)
 			
-		self.dbenv.open("%s/EMAN2DB/cache"%self.path,envopenflags)
+		self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USER","anyone"),envopenflags)
 		
 	def close(self):
 		"""close the environment associated with this object"""
@@ -392,6 +395,7 @@ class DBDict:
 		self.txn=None	# current transaction used for all database operations
 		self.bdb=db.DB(dbenv)
 		if file==None : file=name+".bdb"
+		print "open ",self.path+"/"+file,name
 		self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE)
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
 
@@ -627,8 +631,6 @@ class DBDict:
 	#if DEBUG>2: sys.stderr.write('\n')
 ## This rmakes sure the database gets closed properly at exit
 #atexit.register(DB_cleanup)
-
-
 
 
 __doc__ = \
