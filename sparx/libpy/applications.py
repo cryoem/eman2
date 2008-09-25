@@ -390,7 +390,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	ima = EMData()
 	for i in xrange(number_of_proc):
 		if myid == i:
-			if ftp == "bdb": os.system('rm -rf EMAN2DB/cache')
 			ima.read_image(stack, image_start, True)
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	if CTF:
@@ -440,7 +439,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	for i in xrange(number_of_proc):
 		if myid == i:
-			if ftp == "bdb": os.system("rm -rf EMAN2DB/cache")
 			data = EMData.read_images(stack, range(image_start, image_end))
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 
@@ -1005,7 +1003,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	
 	if ftp == "ftp":
 		nima = EMUtil.get_image_count(stack)
-	else ftp == "bdb":
+	elif ftp == "bdb":
 		nima = 0
 		if myid == main_node:
 			nima = EMUtil.get_image_count(stack)
@@ -1019,7 +1017,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	ima = EMData()
 	for i in xrange(number_of_proc):
 		if myid == i:
-			if ftp == "bdb": os.system('rm -rf EMAN2DB/cache')
 			ima.read_image(stack, image_start, True)
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 	nx = ima.get_xsize()
@@ -1075,7 +1072,6 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	del ima
 	for i in xrange(number_of_proc):
 		if myid == i: 
-			if ftp == "bdb": os.system("rm -rf EMAN2DB/cache")
 			data = EMData.read_images(stack, range(image_start, image_end))
 		if ftp == "bdb": mpi_barrier(MPI_COMM_WORLD)
 		 
@@ -10467,6 +10463,11 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			sys.exit()
 
 		if myid == main_node:
+			import pickle
+			f = open('Assign', 'w')
+			pickle.dump(assign, f)
+			f.close()
+
 			crit = k_means_criterion(Cls, critname)
 			k_means_export(Cls, crit, assign, out_dir)
 			print_end_msg('k-means')
