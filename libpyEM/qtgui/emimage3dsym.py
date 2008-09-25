@@ -1381,7 +1381,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.cbb.addItem(i)
 
 	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)
 
 	def setScale(self,newscale):
 		self.scale.setValue(newscale)

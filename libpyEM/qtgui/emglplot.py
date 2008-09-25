@@ -571,7 +571,7 @@ class EMGLPlotWidget(QtOpenGL.QGLWidget):
 		
 		self.updateGL()
 
-	def setData(self,data,datar):
+	def set_data(self,data,datar):
 		self.plot.data = data
 		self.plot.datar = datar
 		self.updateGL()

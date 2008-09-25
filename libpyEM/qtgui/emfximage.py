@@ -809,7 +809,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		self.qwidgets.append(EMQtWidgetDrawer(self))
 		self.qwidgets.append(EMQtWidgetDrawer(self))
 	
-	def setData(self,data):
+	def set_data(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
 		self.data=data
 		if data==None:
@@ -1239,7 +1239,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.target.setDenRange(x0,x1)
 		
 	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)
 
 	def setLimits(self,lowlim,highlim,curmin,curmax):
 		self.lowlim=lowlim
@@ -1348,7 +1348,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.target.setDenRange(x0,x1)
 		
 	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)
 
 	def setLimits(self,lowlim,highlim,curmin,curmax):
 		self.lowlim=lowlim
@@ -1405,11 +1405,11 @@ class EMImageInspector2D(QtGui.QWidget):
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMFXImage()
-	if len(sys.argv)==1 : window.setData(test_image(size=(512,512)))
+	if len(sys.argv)==1 : window.set_data(test_image(size=(512,512)))
 	else :
 		a=EMData.read_images(sys.argv[1])
-		if len(a)==1 : window.setData(a[0])
-		else : window.setData(a)
+		if len(a)==1 : window.set_data(a[0])
+		else : window.set_data(a)
 	window2 = EMParentWin(window)
 	window2.show()
 	

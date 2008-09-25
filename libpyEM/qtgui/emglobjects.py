@@ -1259,7 +1259,7 @@ class EMImage3DObject:
 	def resizeEvent(self):
 		pass
 	
-	def setData(self):
+	def set_data(self):
 		pass
 	
 	def showInspector(self):

@@ -105,8 +105,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		#print "received timeout"
 	
-	def setData(self,data):
-		self.image2d.setData(data)
+	def set_data(self,data):
+		self.image2d.set_data(data)
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -304,7 +304,7 @@ class EMImage2DCore:
 		except:	pass
 
 		if image :
-			self.setData(image)
+			self.set_data(image)
 			
 		try:
 			self.font_renderer = get_3d_font_renderer()
@@ -414,7 +414,7 @@ class EMImage2DCore:
 		if wasexcluded or self.isexcluded: return True
 		else: return False
 	
-	def setData(self,data):
+	def set_data(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
 		self.data=data
 		if self.init_size_flag:
@@ -439,7 +439,8 @@ class EMImage2DCore:
 		self.maxdeng=min(m1,mean+5.0*sigma)
 
 		self.datasize=(data.get_xsize(),data.get_ysize())
-	
+		self.scale=1.0				# Scale factor for display
+		self.origin=(0,0)			# Current display origin
 		if self.curfft : 
 			self.setFFT(self.curfft)
 		
@@ -1015,11 +1016,11 @@ class EMImage2DCore:
 	def dropEvent(self,event):
 #		lc=self.scr2img((event.pos().x(),event.pos().y()))
 		if EMAN2.GUIbeingdragged:
-			self.setData(EMAN2.GUIbeingdragged)
+			self.set_data(EMAN2.GUIbeingdragged)
 			EMAN2.GUIbeingdragged=None
 		elif event.provides("application/x-eman"):
 			x=loads(event.mimeData().data("application/x-eman"))
-			self.setData(x)
+			self.set_data(x)
 			event.acceptProposedAction()
 
 	def mousePressEvent(self, event):
@@ -1132,7 +1133,7 @@ class EMImage2DCore:
 			elif self.mmode==1 :
 				self.addShape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 			elif self.mmode==2 and self.inspector:
-				self.setData(self.data)
+				self.set_data(self.data)
 
 	def wheelEvent(self, event):
 		if not self.wheel_navigate:
@@ -1510,7 +1511,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.target.set_density_range(x0,x1)
 		
 	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)
 
 	def setLimits(self,lowlim,highlim,curmin,curmax):
 		if highlim<=lowlim : highlim=lowlim+.001
@@ -1544,7 +1545,7 @@ if __name__ == '__main__':
 	GLUT.glutInit("")
 	window = EMImage2D()
 	if len(sys.argv)==1 : 
-		window.setData(test_image(size=(128,128)))
+		window.set_data(test_image(size=(128,128)))
 
 		# these lines are for testing shape rendering
 # 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
@@ -1553,7 +1554,7 @@ if __name__ == '__main__':
 # 		window.addShape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
 	else :
 		a=EMData.read_images(sys.argv[1],[0])
-		window.setData(a[0])
+		window.set_data(a[0])
 		window.get_core_object().set_file_name(sys.argv[1])
 		print "set file name",sys.argv[1]
 

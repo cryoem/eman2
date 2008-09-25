@@ -861,7 +861,7 @@ class GUIbox:
 	def init_guiim(self, image=None, imagename=None):
 		if image is None:
 			imagename = self.image_names[self.current_image_idx]
-			image=BigImageCache.get_image_directly(imagename)
+			image=BigImageCache.get_object(imagename).get_image(use_alternate=True)
 		
 		self.guiimp=EMImage(image)		# widget for displaying large image
 		self.guiimp.setWindowTitle(imagename)
@@ -1126,6 +1126,17 @@ class GUIbox:
 		boxes = self.get_boxes()
 		return boxes[box_num]
 		
+	def remove_boxes(self,box_nums):
+		if not self.boxable.is_interactive(): return # what does this do again?
+		
+		for box_num in box_nums:
+			box = self.delete_box(box_num)
+		if not (box.isref or box.ismanual):
+			self.boxable.add_exclusion_particle(box)
+		guiim_core = self.guiim.get_core_object()
+		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
+		self.box_display_update()
+	
 	def remove_box(self,box_num):
 		if not self.boxable.is_interactive(): return
 		
@@ -1136,6 +1147,7 @@ class GUIbox:
 		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.box_display_update()
 		
+		return box
 	def reference_moved(self,box):
 		if (self.autoboxer.reference_moved(box)):
 			self.box_display_update()
@@ -1149,7 +1161,7 @@ class GUIbox:
 		Call this to set the Ptcl Mx data 
 		'''
 		if data != None:
-			self.guimx.setData(data)
+			self.guimx.set_data(data)
 			if len(data) != 0:
 				if self.guimxp == None:
 					self.guimxp = EMParentWin(self.guimx)
@@ -1160,9 +1172,16 @@ class GUIbox:
 	def clear_displays(self):
 		self.ptcl = []
 		self.guiim.delShapes()
-		self.guimx.setData([])
+		self.guimx.set_data([])
 		self.box_display_update() # - the user may still have some manual boxes...
 	
+	def big_image_change(self):
+		image=BigImageCache.get_object(self.get_current_image_name()).get_image(use_alternate=True)
+		self.guiim.set_data(image)
+		self.guiim.delShapes()
+		self.guiim.get_core_object().force_display_update()
+		self.box_display_update()
+		
 	def image_selected(self,event,lc):
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.BusyCursor)
@@ -1181,7 +1200,7 @@ class GUIbox:
 			self.guiimp.setWindowTitle(self.image_names[im])
 			if debug: print "it took", time() - tt, "to read the prior stuff A1 "
 			if debug: tt = time()
-			self.guiim.setData(image)
+			self.guiim.set_data(image)
 			if debug: print "it took", time() - tt, "to read the prior stuff A2 "
 			if debug: tt = time()
 			self.boxable.cache_exc_to_db()
@@ -1233,7 +1252,6 @@ class GUIbox:
 			
 			self.autoboxer_db_changed()
 			
-		
 			if self.box_size != self.autoboxer.get_box_size():
 				self.update_box_size(self.autoboxer.get_box_size())
 
@@ -1297,7 +1315,7 @@ class GUIbox:
 			else:
 				self.guimxit=EMImageMX()
 				
-			self.guimxit.setData(self.imagethumbs)
+			self.guimxit.set_data(self.imagethumbs)
 			
 			try:
 				for i in range(0,nim):
@@ -1516,10 +1534,10 @@ class GUIbox:
 						del sh[j]
 			self.ptcl.pop(num)
 						
+			
 		self.guiim.delShapes()
 		self.guiim.addShapes(sh)
 
-			
 		#self.guiim.delShapes()
 		#self.guiim.addShapes(sh)
 		#print "now there are",len(sh),"shapes"
@@ -1555,7 +1573,7 @@ class GUIbox:
 		
 		if force_image_mx_remove: 
 			#self.ptcl.pop(box_num)
-			#self.guimx.setData(self.ptcl)
+			#self.guimx.set_data(self.ptcl)
 			self.guimx.get_core_object().pop_box_image(box_num)
 
 		box = self.boxable.boxes[box_num]
@@ -2062,6 +2080,8 @@ class CcfHistogram(QtGui.QWidget):
                 self.setMinimumSize(QtCore.QSize(256,256))
 		self.PRESIZE = 28
 
+		self.cached_boxes = []
+		
 	def clear( self ):
 		self.ccfs = None
 		self.data = None
@@ -2069,7 +2089,7 @@ class CcfHistogram(QtGui.QWidget):
 		self.parent.threshold_low.setText( "N/A" )
 		self.parent.threshold_hgh.setText( "N/A" )
 
-	def setData( self, data ):
+	def set_data( self, data ):
 		self.ccfs = data
 		self.nbin = self.width()
                 self.data = histogram1d( data, self.nbin, self.PRESIZE )
@@ -2140,28 +2160,47 @@ class CcfHistogram(QtGui.QWidget):
 			thr_low = float( self.parent.threshold_low.text() )
 			thr_hgh = float( self.parent.threshold_hgh.text() )
 	
-			guiim = self.parent.target.guiim
-
-			curt_shapes = guiim.getShapes()
-
-
-			#print "# of all shapes: ", len( self.shapes )
-			#print "# of cur shapes: ", len( curt_shapes )
-			#print "thr_low: ", thr_low
-			#print "thr_hgh: ", thr_hgh
-
-			ndelete = 0
-			for i in xrange( len(self.ccfs) ):
-				score = self.ccfs[i] 
-
-				if (score < thr_low or score > thr_hgh) and curt_shapes.has_key(i):
-					ndelete += 1
-					guiim.delShape( i )
-
-				if score >= thr_low and score <= thr_hgh and not(curt_shapes.has_key(i)):
-					guiim.addShape( i, self.shapes[i] )
+			#guiim = self.parent.target.guiim
+			target = self.parent.get_target() # using getter functions is much preferable. Add support for them yourself if you need them
+			boxable = target.get_boxable()
 			
-			guiim.updateGL()
+			[added_boxes,added_ref_boxes] = boxable.update_included_boxes_hist(thr_low,thr_hgh)
+			[lost_boxes,refs] = boxable.update_excluded_boxes_hist(thr_low,thr_hgh)
+			
+			if len(lost_boxes) != 0:
+				target.delete_display_boxes(lost_boxes)
+			
+			#if len(add_boxes) != 0: FIXME the approach should probably be consistent but I haven't had time to do it
+				
+			if len(added_boxes) != 0 or len(lost_boxes) != 0 :
+				target.box_display_update()
+				target.update_all_image_displays()
+			#curt_shapes = guiim.getShapes()
+
+
+			##print "# of all shapes: ", len( self.shapes )
+			##print "# of cur shapes: ", len( curt_shapes )
+			##print "thr_low: ", thr_low
+			##print "thr_hgh: ", thr_hgh
+
+			#ndelete = 0
+			#deleted_nums = []
+			#added_nums = []
+			#for i in xrange( len(self.ccfs) ):
+				#score = self.ccfs[i] 
+
+				#if (score < thr_low or score > thr_hgh) and curt_shapes.has_key(i):
+					#deleted_nums.append(i)
+					#ndelete += 1
+					##self.cached_boxes.append(target.remove_box( i ))
+
+				#if score >= thr_low and score <= thr_hgh and not(curt_shapes.has_key(i)):
+					#added_nums.append(i)
+					##guiim.addShape( i, self.shapes[i] )
+			
+			#target.set_aligner_params_in_options(deleted_nums,boxable_update=True)
+			#target.update_all_image_displays()
+			#guiim.updateGL()
 
 
 	def drawTicker( self, newpos, p ) :
@@ -2202,11 +2241,13 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
 		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
-		
+	
+	
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.num_boxes_changed)
 	
 	#def centerpushed(self,unused):
 		#self.target.center(str(self.centerooptions.currentText()))
+	def get_target(self): return self.target
 	
 	def insert_main_tab(self):
 		# this is the box layout that will store everything
@@ -2404,7 +2445,7 @@ class GUIboxPanel(QtGui.QWidget):
 		img = self.target.guiim.image2d.data
 		avg = img.get_attr("mean")
 		invimg = img*(-1.0) #+ 2.0*avg
-		self.target.guiim.setData(invimg)
+		self.target.guiim.set_data(invimg)
 		self.target.guiim.updateGL()
 	
 	def method_changed(self, methodid):
@@ -2923,7 +2964,7 @@ class GUIboxPanel(QtGui.QWidget):
 	
 	def update_data(self,thresh,data,datar):
 		#print data
-		self.window.setData(data,datar)
+		self.window.set_data(data,datar)
 		self.thr.setValue(thresh,True)
 		self.resize(self.width(),self.height())
 		#self.window.resizeGL(self.window.width(),self.window.height())

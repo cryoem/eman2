@@ -78,7 +78,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 
 		self.data={}				# List of Lists to plot 
 		
-	def setData(self,key,data):
+	def set_data(self,key,data):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -106,7 +106,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		
 		self.updateGL()
 		
-	def setDataFromFile(self,key,filename):
+	def set_data_from_file(self,key,filename):
 		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
 		
 		data=None
@@ -138,7 +138,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 				
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 				
-		if data : self.setData(filename.split("/")[-1],data)
+		if data : self.set_data(filename.split("/")[-1],data)
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -293,11 +293,11 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 	
 	#def dropEvent(self,event):
 #=		if EMAN2.GUIbeingdragged:
-			#self.setData(EMAN2.GUIbeingdragged)
+			#self.set_data(EMAN2.GUIbeingdragged)
 			#EMAN2.GUIbeingdragged=None
 		#elif event.provides("application/x-eman"):
 			#x=loads(event.mimeData().data("application/x-eman"))
-			#self.setData(x)
+			#self.set_data(x)
 			#event.acceptProposedAction()
 
 	
@@ -529,8 +529,8 @@ if __name__ == '__main__':
 	window = EMPlot2D()
 	if len(sys.argv)==1 : 
 		l=[i/30.*pi for i in range(30)]
-		window.setData("test",[[1,2,3,4],[2,3,4,3],[3,4,5,2]])
-		window.setData("test2",[l,[sin(i) for i in l],[cos(i) for i in l]])
+		window.set_data("test",[[1,2,3,4],[2,3,4,3],[3,4,5,2]])
+		window.set_data("test2",[l,[sin(i) for i in l],[cos(i) for i in l]])
 	else:
 		try:
 			# if it's an image file
@@ -561,7 +561,7 @@ if __name__ == '__main__':
 				print nx,ny
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 				
-		window.setData(sys.argv[1].split("/")[-1],data)
+		window.set_data(sys.argv[1].split("/")[-1],data)
 			
 	window2=EMParentWin(window)
 	window2.show()

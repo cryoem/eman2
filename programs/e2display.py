@@ -119,7 +119,7 @@ def selectclass(rawfsp,mxfsp,event,lc):
 		if len(win)==1:
 			display(ptcls)
 		else:
-			win[1].child.setData(ptcls)
+			win[1].child.set_data(ptcls)
 
 def getmxinfo(fsp,fsp2,clsnum):
 	"""reads particle references associated with a particular class.
@@ -159,7 +159,7 @@ def display(img,title="EMImage"):
 def plot(files):
 	plotw=EMPlot2D()
 	for f in files:
-		plotw.setDataFromFile(f,f)
+		plotw.set_data_from_file(f,f)
 		
 	w=EMParentWin(plotw)
 	w.setWindowTitle("EMPlot2D")

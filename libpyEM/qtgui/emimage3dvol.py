@@ -95,7 +95,7 @@ class EMVolume(EMImage3DObject):
 		
 		
 		if image :
-			self.setData(image)
+			self.set_data(image)
 
 	def addRenderAxis(self,a,b,c):
 		v = Vec3f(a,b,c);
@@ -147,10 +147,10 @@ class EMVolume(EMImage3DObject):
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support
 	
 	def updateData(self,data):
-		self.setData(data)
+		self.set_data(data)
 		self.parent.updateGL()
 		
-	def setData(self,data):
+	def set_data(self,data):
 		"""Pass in a 3D EMData object"""
 		
 		
@@ -599,8 +599,8 @@ class EMVolumeWidget(QtOpenGL.QGLWidget):
 		self.cam = Camera()
 		
 		self.volume = EMVolume(image,self)
-	def setData(self,data):
-		self.volume.setData(data)
+	def set_data(self,data):
+		self.volume.set_data(data)
 		self.cam.default_z = -1.25*data.get_zsize()
 		self.cam.cam_z = -1.25*data.get_zsize()
 		
@@ -1026,7 +1026,7 @@ class EMVolumeInspector(QtGui.QWidget):
 			self.src_map[str(i)] = i
 		
 	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)
 
 	def setScale(self,newscale):
 		self.scale.setValue(newscale)
@@ -1042,7 +1042,7 @@ if __name__ == '__main__':
 		
 		window2=EMParentWin(window)
 		window2.show()
-		window.setData(e)
+		window.set_data(e)
 	else :
 		if not os.path.exists(sys.argv[1]):
 			print "Error, input file %s does not exist" %sys.argv[1]
@@ -1050,7 +1050,7 @@ if __name__ == '__main__':
 		a=EMData.read_images(sys.argv[1],[0])
 		window2=EMParentWin(window)
 		window2.show()
-		window.setData(a[0])
+		window.set_data(a[0])
 	
 	
 #	w2=QtGui.QWidget()

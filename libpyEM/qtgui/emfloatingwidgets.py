@@ -1414,9 +1414,9 @@ class EMGLView3D(EM3DWidgetVolume):
 		#except:
 			#return 0
 	
-	def setData(self,data):
+	def set_data(self,data):
 		try:
-			self.drawable.setData(data)
+			self.drawable.set_data(data)
 			self.image = image
 			self.update()
 		except: pass
@@ -1704,8 +1704,8 @@ class EMGLView2D:
 	def get_render_area_coords(self):
 		return self.vdtools.get_corners()
 	
-	def setData(self,data):
-		self.drawable.setData(data)
+	def set_data(self,data):
+		self.drawable.set_data(data)
 		
 	def initializeGL(self):
 		self.drawable.initializeGL()

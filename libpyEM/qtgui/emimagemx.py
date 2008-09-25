@@ -74,8 +74,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	def get_target(self):
 		return self.imagemx
 	
-	def setData(self,data):
-		self.imagemx.setData(data)
+	def set_data(self,data):
+		self.imagemx.set_data(data)
 	
 	def set_file_name(self,name):
 		#print "set image file name",name
@@ -271,7 +271,7 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 			drag = QtGui.QDrag(self.mediator.get_parent())
 			mime_data = QtCore.QMimeData()
 			
-			mime_data.setData("application/x-eman", dumps(box_image))
+			mime_data.set_data("application/x-eman", dumps(box_image))
 			
 			EMAN2.GUIbeingdragged= box_image	# This deals with within-application dragging between windows
 			mime_data.setText( str(lc[0])+"\n")
@@ -381,7 +381,7 @@ class EMImageMXCore:
 		self.initsizeflag = True
 		self.inspector=None
 		if data:
-			self.setData(data,False)
+			self.set_data(data,False)
 			
 		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a 
 		
@@ -487,9 +487,13 @@ class EMImageMXCore:
 	def __del__(self):
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 		
-	def setData(self,data,update_gl=True):
+	def set_data(self,data,update_gl=True):
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
+			return
+		
+		if not isinstance(data[0],EMData):
+			print "strange error in set_data"
 			return
 
 		if (self.initsizeflag):
@@ -519,9 +523,9 @@ class EMImageMXCore:
 		self.nimg=len(data)
 		
 		self.minden=data[0].get_attr("mean")
-		self.maxden=self.minden
+		self.maxden=1
 		self.mindeng=self.minden
-		self.maxdeng=self.minden
+		self.maxdeng=1
 		
 		for i in data:
 			if i == None: continue
@@ -533,12 +537,18 @@ class EMImageMXCore:
 			sigma=i.get_attr("sigma")
 			m0=i.get_attr("minimum")
 			m1=i.get_attr("maximum")
+			if sigma == 0: continue
+			#print "data",mean,sigma,m0,m1
+		
+			#i.write_image("tesst.hdf",-1)
 		
 			self.minden=min(self.minden,max(m0,mean-3.0*sigma))
 			self.maxden=max(self.maxden,min(m1,mean+3.0*sigma))
 			self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
 			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
 
+
+		#print self.minden, self.maxden,self.mindeng,self.maxdeng
 		#self.showInspector()		# shows the correct inspector if already open
 		#self.timer.start(25)
 		self.max_idx = len(data)
@@ -1199,13 +1209,13 @@ class EMImageMXCore:
 			event.accept()
 		elif EMAN2.GUIbeingdragged:
 			self.data.append(EMAN2.GUIbeingdragged)
-			self.setData(self.data)
+			self.set_data(self.data)
 			EMAN2.GUIbeingdragged=None
 		elif event.provides("application/x-eman"):
 			x=loads(event.mime_data().data("application/x-eman"))
 			if not lc : self.data.append(x)
 			else : self.data.insert(lc[0],x)
-			self.setData(self.data)
+			self.set_data(self.data)
 			event.acceptProposedAction()
 
 
@@ -1539,7 +1549,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.target.set_den_range(x0,x1)
 		
 	def set_hist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)
 
 	def set_limits(self,lowlim,highlim,curmin,curmax):
 		self.lowlim=lowlim
@@ -1554,11 +1564,11 @@ if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	GLUT.glutInit("")
 	window = EMImageMX()
-	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)]*50)
+	if len(sys.argv)==1 : window.set_data([test_image(),test_image(1),test_image(2),test_image(3)]*50)
 	else :
 		a=EMData.read_images(sys.argv[1])
 		window.set_file_name(sys.argv[1])
-		window.setData(a)
+		window.set_data(a)
 	window2=EMParentWin(window)
 	window2.show()
 	

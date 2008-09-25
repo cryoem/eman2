@@ -141,6 +141,7 @@ class Box:
 		self.moved = trimbox.moved
 		self.origxcorner = trimbox.origxcorner
 		self.origycorner = trimbox.origycorner
+		self.correlation_score = trimbox.correlation_score
 		
 	def __init__(self,xcorner=-1,ycorner=-1,xsize=-1,ysize=-1,isref=0,correlation_score=0,image_name=None):
 		self.xcorner = xcorner			# the xcorner - bottom left
@@ -235,20 +236,23 @@ class Box:
 		return 0
 	
 	def update_box_image(self,norm=True,norm_method="normalize.ramp.normvar"):
-		image = BigImageCache.get_image_directly(self.image_name)
+		image = BigImageCache.image=BigImageCache.get_object(self.image_name).get_image(use_alternate=True)
 		#print "getting ", self.image_name, " region ",self.xcorner,self.ycorner,self.xsize,self.ysize
 		if self.xcorner + self.xsize > image.get_xsize(): self.xcorner = image.get_xsize()-self.xsize
 		if self.ycorner + self.ysize > image.get_ysize(): self.ycorner = image.get_ysize()-self.ysize
 		
 		self.image = image.get_clip(Region(self.xcorner,self.ycorner,self.xsize,self.ysize))
+		self.footprint = None
 		if norm:
-			self.image.process_inplace(norm_method)
-			self.image.set_attr("normalization",norm_method)
-		else:
-			self.image.set_attr("normalization","none")
+			if self.image.get_attr("sigma") != 0:	
+				self.image.process_inplace(norm_method)
+				self.image.set_attr("normalization",norm_method)
+				return
+			
+		self.image.set_attr("normalization","none")
 
 		# make sure there are no out of date footprints hanging around
-		self.footprint = None
+		
 
 	def change_box_size(self,box_size):
 		'''
@@ -470,6 +474,7 @@ class TrimBox:
 		self.origxcorner = box.origxcorner
 		self.origycorner = box.origycorner
 		self.ismanual = box.ismanual
+		self.correlation_score = box.correlation_score
 		
 	def change_box_size(self,box_size):
 		'''
@@ -573,10 +578,10 @@ class Cache:
 			
 		if encapsulated_image == None:
 			#if we make it here the cfimage is not cached
-			#print "had to cache a cf image for",image_name
+			#print "had to cache an image for",image_name
 			encapsulated_image = getattr(Cache.factory,self.accessor_name)(image_name)
 			self.add_to_cache(encapsulated_image)
-		#else: print "found a cached cf image for",image_name
+		#else: print "found a cached image for",image_name
 			
 		
 		image = encapsulated_image.get_image_carefully( *args, **kargs)
@@ -586,6 +591,15 @@ class Cache:
 			print "there was an error getting the image, class name is",self.class_name
 			return None
 	
+	
+	def get_object(self,image_name):
+		for object in self.get_cache():
+			if object.get_image_name() == image_name:
+				return object
+		
+		encapsulated_object = getattr(Cache.factory,self.accessor_name)(image_name)
+		self.add_to_cache(encapsulated_object)
+		return encapsulated_object
 	
 	def get_image_directly(self,construction_argument):
 		encapsulated_image = None
@@ -735,7 +749,7 @@ class SincBlackmanSubsampledImage:
 		
 		sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
 
-		self.smallimage = image.downsample(sb,1.0/subsample_rate)
+		self.smallimage = image.downsample(sb,subsample_rate)
 
 		self.smallimage.set_attr("subsample_rate",subsample_rate)
 		self.smallimage.set_attr("frequency_cutoff",frequency_cutoff)
@@ -756,9 +770,9 @@ class SincBlackmanSubsampledImage:
 		Should generally use this approach to getting the image
 		'''
 		if self.smallimage == None or not self.query_params_match(params_mediator):
-			#print "regenerating sb image"
+			print "regenerating sb image"
 			self.__update_image(params_mediator)
-		#else: print "sb image is up to date"
+		else: print "sb image is up to date"
 		
 		return self.get_image()
 	
@@ -771,6 +785,7 @@ class SincBlackmanSubsampledImage:
 		template_min = params_mediator.get_window_size_min()
 		frequency_cutoff = params_mediator.get_frequency_cutoff()
 		try:
+			#print subsample_rate,self.get_subsample_rate(),template_min,self.get_window_size_min(), frequency_cutoff,self.get_frequency_cutoff()
 			if subsample_rate != self.get_subsample_rate() or template_min != self.get_window_size_min() or frequency_cutoff != self.get_frequency_cutoff():
 				return False
 			else: return True
@@ -942,6 +957,8 @@ class BigImage:
 	def __init__(self,image_name):
 		self.image_name = image_name
 		self.image = None
+		
+		self.alternate = None
 	
 	def get_construction_argument(self):
 		return self.image_name
@@ -949,19 +966,23 @@ class BigImage:
 	def get_image_name(self):
 		return self.image_name
 	
-	def get_image(self):
+	def get_image(self,use_alternate=False):
+		if use_alternate and self.alternate != None:
+			return self.alternate
+		
 		if self.image == None:
 			self.image = EMData(self.image_name)
 			self.image.process_inplace("normalize.edgemean") # this seams to be the normal behavior
 			
 		return self.image
 		
-	def get_image_carefully(self):
-		if self.image == None:
-			self.image = EMData(self.image_name)
-			self.image.process_inplace("normalize.edgemean") # this seams to be the normal behavior
-			
-		return self.image
+	def get_image_carefully(self,use_alternate=False):
+		return self.get_image(use_alternate)
+	
+	def register_alternate(self,img):
+		self.alternate = img
+		
+	
 		
 BigImageCache = Cache(BigImage)
 BigImageCache.set_max_size(2)
@@ -1802,6 +1823,27 @@ class Boxable:
 		#cache = CoarsenedFlattenedImageCache()
 		return  SubsamplerCache.get_image(self.image_name,self.autoboxer.get_params_mediator())
 	
+	def update_included_boxes_hist(self,thr_low,thr_hgh):
+		
+		added_boxes = []
+		added_ref_boxes = []
+		n = len(self.deleted_auto_boxes)
+		for i in range(n-1,-1,-1):
+			box = self.deleted_auto_boxes[i]
+			score = box.get_correlation_score() 
+
+			if score >= thr_low and score <= thr_hgh:
+
+				box.changed = True
+				added_boxes.append(box)
+				self.boxes.append(box)
+				self.deleted_auto_boxes.pop(i)
+
+				if box.isref: added_ref_boxes.append(box)
+				
+		return [added_boxes,added_ref_boxes]
+
+	
 	def update_included_boxes(self):
 		added_boxes = []
 		added_ref_boxes = []
@@ -1823,12 +1865,28 @@ class Boxable:
 				
 		return [added_boxes,added_ref_boxes]
 	
+	def update_excluded_boxes_hist(self,thr_low,thr_hgh):
+		lostboxes = []
+		refs = []	
+		n = len(self.boxes)
+		
+		for i in range(n-1,-1,-1):
+			box = self.boxes[i]
+			score = box.get_correlation_score() 
+			if (score < thr_low or score > thr_hgh):
+				lostboxes.append(i)
+				box = self.boxes.pop(i)
+				self.deleted_auto_boxes.append(box)
+				if box.isref: refs.append(box)
+				
+		return [lostboxes,refs]
+				
+
 	def update_excluded_boxes(self, useinternal=True,exclusionimage= None):
 		'''
 		
 		'''
-		if useinternal:
-			exclusionimage = self.get_exclusion_image()
+		if useinternal:	exclusionimage = self.get_exclusion_image()
 
 		lostboxes = []
 			
@@ -2511,13 +2569,13 @@ class PawelAutoBoxer(AutoBoxer):
 		self.box_size = 128
 		self.pixel_input = 1.0
 		self.pixel_output = 1.0
+		self.frequency_cutoff = 0
+		self.window_size_min = 15
 
 	#### Functions that must be supplied so the ImageProcParamsMediator works
 	def get_subsample_rate(self):
-		#raise Exception
 		return self.pixel_input/self.pixel_output
-
-
+	
 	def get_template_radius(self):
 		raise Exception
 		
@@ -2525,10 +2583,10 @@ class PawelAutoBoxer(AutoBoxer):
 		raise Exception
 
 	def get_window_size_min(self):
-		return 20
+		return self.window_size_min
 	
 	def get_frequency_cutoff(self):
-		return 0.12
+		return self.frequency_cutoff
 	#### End functions that must be supplied so the ImageProcParamsMediator works
 	
 	def get_high_res_template_image(self):
@@ -2575,7 +2633,7 @@ class PawelAutoBoxer(AutoBoxer):
 		boxes, trimboxes, ccfs = self.run(boxable)
 
 		if self.thr_low is None:
-			self.parent.guictl.pawel_histogram.setData( ccfs )
+			self.parent.guictl.pawel_histogram.set_data( ccfs )
 
 		boxable.append_stored_auto_boxes(trimboxes)
 		boxable.store_key_entry_in_idd("auto_boxes",trimboxes)
@@ -2594,33 +2652,45 @@ class PawelAutoBoxer(AutoBoxer):
 		print "     CCF low bound   :   ", self.thr_low
 		print "     CCF hgh bound   :   ", self.thr_hgh
 
+		boxable.delete_auto_boxes(True)
 		imgname = boxable.get_image_name()
 		img = BigImageCache.get_image_directly(imgname) # change from boxable.image_name, hope you don't mind
 	
 		from filter import filt_gaussh, filt_gaussl
 
 		ratio = self.pixel_input/self.pixel_output 
+		
+		# but if you filter the image then shouldn't that force a the sinc blackman downsampled image to be updated? Maybe the SincBlackmanSubsampled image should call filt_gaussh internally.
 		img = filt_gaussh( img, 1.0/(self.box_size/ratio) )
 
 		if ratio != 1.0:
-			frequency_cutoff = 0.5*ratio
-	   		sb = Util.sincBlackman(15, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
-			img = img.downsample(sb,ratio)
+			#print "ratio not equals 1"
+			#frequency_cutoff = 0.5*ratio
+	   		#sb = Util.sincBlackman(15, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
+			#img = img.downsample(sb,ratio)
 			#  If things are changing from the interface and the same image is required (for 
 			# example the picking parameters have changed but we're still boxing the same image), this will save time
-			#img = SincBlackmanSubsampleCache(boxable.get_image_name(),self.get_params_mediator())
+			self.frequency_cutoff = 0.5*ratio
+			self.window_size_min = 15
+			# The params mediator is an object that coordinates the requests of Cache objects with the 
+			# get functions of an AutoBoxer. 
+			img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
 			# Note you would have to change get_window_size_min so that it returns 15 and get_frequency_cutoff
 			# so that it returns the right value
-			self.imgorig = imgname
+			
+			BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
 			imgname = "reduced_" + imgname
-			self.parent.init_guiim(img, imgname)
+			self.parent.big_image_change()
+			
+			self.parent.clear_displays()
+			
 			img.write_image( imgname )
-			boxable.set_image_name( imgname )
+			#boxable.set_image_name( imgname ) 
 
 		ccf = filt_gaussl( img, self.gauss_width/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
 		npeak = len(peaks)/3
-		print npeak, " boxes picked"
+		#print npeak, " boxes picked"
 
 		boxhalf = self.box_size/2
 		boxsize = self.box_size
@@ -2630,7 +2700,7 @@ class PawelAutoBoxer(AutoBoxer):
 		for i in xrange(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
-			print  i,peaks[3*i+0],peaks[3*i+1],peaks[3*i+2], boxsize,boxhalf
+			#print  i,peaks[3*i+0],peaks[3*i+1],peaks[3*i+2], boxsize,boxhalf
 			box = Box( cx-boxhalf, cy-boxhalf, boxsize, boxsize, 0)
 			box.set_image_name( imgname )
 			box.set_correlation_score( peaks[3*i] )
@@ -2652,6 +2722,13 @@ class PawelAutoBoxer(AutoBoxer):
 				trimboxes.append( TrimBox(box) )
 		return boxes, trimboxes, ccfs
 
+		if thr_low is None:
+			self.parent.guictl.pawel_histogram.set_data( ccfs )
+
+		boxable.append_stored_auto_boxes(trimboxes)
+		boxable.store_key_entry_in_idd("auto_boxes",trimboxes)
+		boxable.write_to_db()
+		boxable.get_auto_selected_from_db() 
 
 	def set_interactive_mode(self,real_time_auto_boxing=False):
 		pass

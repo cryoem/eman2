@@ -70,7 +70,7 @@ class ImgHistogram(QtGui.QWidget):
 		self.histdata=None
 		self.setMinimumSize(QtCore.QSize(258,128))
 	
-	def setData(self,data,minden,maxden):
+	def set_data(self,data,minden,maxden):
 		self.histdata=data
 #		self.norm=max(self.histdata)
 		self.norm=0

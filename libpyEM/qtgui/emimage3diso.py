@@ -86,7 +86,7 @@ class EMIsosurface(EMImage3DObject):
 		self.vdtools = EMViewportDepthTools(self)
 		
 		if image :
-			self.setData(image)
+			self.set_data(image)
 	
 	def getType(self):
 		return "Isosurface"
@@ -242,7 +242,7 @@ class EMIsosurface(EMImage3DObject):
 		self.getIsoDL()
 		self.parent.updateGL()
 	
-	def setData(self,data):
+	def set_data(self,data):
 		"""Pass in a 3D EMData object"""
 		
 		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
@@ -538,8 +538,8 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		width = self.aspect * height
 		return [width,height]
 
-	def setData(self,data):
-		self.isosurface.setData(data)
+	def set_data(self,data):
+		self.isosurface.set_data(data)
 		self.cam.default_z = -1.25*data.get_zsize()
 		self.cam.cam_z = -1.25*data.get_zsize()
 	
@@ -1063,7 +1063,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.smp.setValue(val, True)
 		
 	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)
 
 	def setScale(self,newscale):
 		self.scale.setValue(newscale)
@@ -1076,14 +1076,14 @@ if __name__ == '__main__':
 		e = EMData()
 		e.set_size(40,35,30)
 		e.process_inplace('testimage.axes')
- 		window.setData(e)
+ 		window.set_data(e)
 
 	else :
 		if not os.path.exists(sys.argv[1]):
 			print "Error, input file %s does not exist" %sys.argv[1]
 			exit(1)
 		a=EMData.read_images(sys.argv[1],[0])
-		window.setData(a[0])
+		window.set_data(a[0])
 	window2=EMParentWin(window)
 	window2.show()
 	

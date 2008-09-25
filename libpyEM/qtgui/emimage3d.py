@@ -96,8 +96,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.cam.default_z = -self.d
 		self.cam.cam_z = -self.d
 	
-	def setData(self,data):
-		self.image3d.setData(data)
+	def set_data(self,data):
+		self.image3d.set_data(data)
 		if ( data != None and isinstance(data,EMData)):
 			self.setCamZ(self.fov,data)
 			
@@ -249,7 +249,7 @@ class EMImage3DCore:
 		self.vdtools = EMViewportDepthTools(self)
 		
 		self.rottarget = None
-		self.setData(image)
+		self.set_data(image)
 		#self.inspector.addIso()
 	#def timeout(self):
 		#self.updateGL()
@@ -298,14 +298,14 @@ class EMImage3DCore:
 	def getDataDims(self):
 		return [self.image.get_xsize(),self.image.get_ysize(),self.image.get_zsize()]
 
-	def setData(self,data):
+	def set_data(self,data):
 		if data == None: return
 		self.image = data
 		for i in self.viewables:
-			i.setData(data)
+			i.set_data(data)
 			
 		self.resizeEvent(self.parent.width(),self.parent.height())
-		#self.volume.setData(data)
+		#self.volume.set_data(data)
 		
 		if self.inspector == None:
 			self.inspector=EMImageInspector3D(self)
@@ -894,7 +894,7 @@ if __name__ == '__main__':
 		e = EMData()
 		e.set_size(64,64,64)
 		e.process_inplace('testimage.axes')
- 		window.setData(e)
+ 		window.set_data(e)
 
 		# these lines are for testing shape rendering
 # 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
@@ -906,7 +906,7 @@ if __name__ == '__main__':
 			print "Error, input file %s does not exist" %sys.argv[1]
 			exit(1)
 		a=EMData.read_images(sys.argv[1],[0])
-		window.setData(a[0])
+		window.set_data(a[0])
 	window2=EMParentWin(window)
 	window2.show()
 	

@@ -96,8 +96,8 @@ class EMImageMorph3D(QtOpenGL.QGLWidget):
 		self.cam.default_z = -self.d
 		self.cam.cam_z = -self.d
 	
-	def setData(self,dataA,dataB):
-		self.image3d.setData(dataA,dataB)
+	def set_data(self,dataA,dataB):
+		self.image3d.set_data(dataA,dataB)
 		if ( dataA != None and dataB != None and isinstance(dataA,EMData) and isinstance(dataB,EMData)):
 			self.setCamZ(self.fov,dataA)
 			
@@ -249,7 +249,7 @@ class EMImageMorph3DCore:
 		self.vdtools = EMViewportDepthTools(self)
 		
 		self.rottarget = None
-		self.setData(image1,image2)
+		self.set_data(image1,image2)
 		self.ratio = 0.5
 		#self.inspector.addIso()
 	#def timeout(self):
@@ -312,16 +312,16 @@ class EMImageMorph3DCore:
 			i.updateData(self.image)
 		
 
-	def setData(self,dataA,dataB):
+	def set_data(self,dataA,dataB):
 		if dataA == None or dataB == None: return
 		self.data1 = dataA
 		self.data2 = dataB
 		self.image = self.ratio*self.data1 + (1.0 - self.ratio)*self.data2
 		for i in self.viewables:
-			i.setData(data)
+			i.set_data(data)
 			
 		self.resizeEvent(self.parent.width(),self.parent.height())
-		#self.volume.setData(data)
+		#self.volume.set_data(data)
 		
 		if self.inspector == None:
 			self.inspector=EMImageMorphInspector3D(self)
@@ -915,7 +915,7 @@ if __name__ == '__main__':
 		e = EMData()
 		e.set_size(64,64,64)
 		e.process_inplace('testimage.axes')
- 		window.setData(e)
+ 		window.set_data(e)
 
 		# these lines are for testing shape rendering
 # 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
@@ -931,7 +931,7 @@ if __name__ == '__main__':
 			exit(1)
 		a=EMData.read_images(sys.argv[1],[0])
 		b=EMData.read_images(sys.argv[2],[0])
-		window.setData(a[0],b[0])
+		window.set_data(a[0],b[0])
 	window2=EMParentWin(window)
 	window2.show()
 	

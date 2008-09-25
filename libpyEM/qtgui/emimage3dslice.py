@@ -79,7 +79,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.track = False
 		
 		if image :
-			self.setData(image)
+			self.set_data(image)
 	
 	def getType(self):
 		return "Slice Viewer"
@@ -139,7 +139,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.parent.updateGL()
 		
 	
-	def setData(self,data,fact=1.0):
+	def set_data(self,data,fact=1.0):
 		"""Pass in a 3D EMData object"""
 		
 		if data==None:
@@ -504,8 +504,8 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		self.endz = 5000
 		self.cam = Camera()
 		self.sliceviewer = EM3DSliceViewer(image,self)
-	def setData(self,data):
-		self.sliceviewer.setData(data)
+	def set_data(self,data):
+		self.sliceviewer.set_data(data)
 		self.cam.default_z = -1.25*data.get_zsize()
 		self.cam.cam_z = -1.25*data.get_zsize()
 		
@@ -927,7 +927,7 @@ class EMSlice3DInspector(QtGui.QWidget):
 			self.cbb.addItem(i)
 
 	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)
 
 	def setScale(self,newscale):
 		self.scale.setValue(newscale)
@@ -947,7 +947,7 @@ if __name__ == '__main__':
 		e = EMData()
 		e.set_size(7,7,7)
 		e.process_inplace('testimage.axes')
-		window.setData(e)
+		window.set_data(e)
 
 		# these lines are for testing shape rendering
 # 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
@@ -959,7 +959,7 @@ if __name__ == '__main__':
 			print "Error, input file %s does not exist" %sys.argv[1]
 			exit(1)
 		a=EMData.read_images(sys.argv[1],[0])
-		window.setData(a[0])
+		window.set_data(a[0])
 	window2=EMParentWin(window)
 	window2.show()
 	

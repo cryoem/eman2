@@ -148,7 +148,7 @@ class EMImage2DTexInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
 		
 	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)
 
 
 class EMImage2DTex:
@@ -192,7 +192,7 @@ class EMImage2DTex:
 		self.histmax = 1.0
 		
 		if image != None :
-			self.setData(image)
+			self.set_data(image)
 	
 	
 	def isinwin(self,x,y):
@@ -228,7 +228,7 @@ class EMImage2DTex:
 	def eyeCoordsDif(self,x1,y1,x2,y2):
 		return self.depthtracker.eyeCoordsDif(x1,y1,x2,y2)
 	
-	def setData(self,data):
+	def set_data(self,data):
 		""" Perform the initial data set up"""
 		
 		if ( not isinstance(data,EMData) ): 
@@ -438,8 +438,8 @@ class EMImage2DTexGLWidget(QtOpenGL.QGLWidget):
 		self.cam = Camera2(self)
 		
 		self.image2dtex = EMImage2DTex(image,self)
-	def setData(self,data):
-		self.image2dtex.setData(data)
+	def set_data(self,data):
+		self.image2dtex.set_data(data)
 		self.cam.setCamTrans("default_z",-data.get_ysize())
 		
 	def initializeGL(self):
@@ -506,13 +506,13 @@ if __name__ == '__main__':
 		e = EMData()
 		e.set_size(512,512,1)
 		e.process_inplace('testimage.scurve')
-		window.setData(e)
+		window.set_data(e)
 	else :
 		if not os.path.exists(sys.argv[1]):
 			print "Error, input file %s does not exist" %sys.argv[1]
 			exit(1)
 		a=EMData.read_images(sys.argv[1],[0])
-		window.setData(a[0])
+		window.set_data(a[0])
 	window2=EMParentWin(window)
 	window2.show()
 	

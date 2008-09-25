@@ -481,11 +481,11 @@ class GUIctf(QtGui.QWidget):
 			self.setlist.addItem(j)
 			l=len(self.pow1d[i])
 			apix=self.sapix.value
-			self.guiplot.setData(j,[[ii/(l*2.0*apix) for ii in range(l)],self.pow1d[i]])
+			self.guiplot.set_data(j,[[ii/(l*2.0*apix) for ii in range(l)],self.pow1d[i]])
 
 
 	def newSet(self,val):
-		self.guiim.setData(self.pow2d[val])
+		self.guiim.set_data(self.pow2d[val])
 
 	def newCTF(self) :
 		df=self.sdefocus.value

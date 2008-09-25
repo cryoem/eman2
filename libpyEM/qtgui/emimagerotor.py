@@ -89,8 +89,8 @@ class EMImageRotor(QtOpenGL.QGLWidget):
 	def get_target(self):
 		return self.image_rotor
 		
-	def setData(self,data):
-		self.image_rotor.setData(data)
+	def set_data(self,data):
+		self.image_rotor.set_data(data)
 	
 	def get_optimal_size(self):
 		lr = self.image_rotor.rotor.get_suggested_lr_bt_nf()
@@ -220,7 +220,7 @@ class EMImageRotorCore:
 
 		self.initsizeflag = True
 		if data:
-			self.setData(data)
+			self.set_data(data)
 		
 		self.rotor = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
 		self.widget = EM3DWidget(self,self.rotor)
@@ -283,7 +283,7 @@ class EMImageRotorCore:
 		try: return self.parent.getImageFileName()
 		except: return None
 		
-	def setData(self,data):
+	def set_data(self,data):
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return
@@ -440,11 +440,11 @@ if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	GLUT.glutInit("")
 	window = EMImageRotor()
-	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)]*4)
+	if len(sys.argv)==1 : window.set_data([test_image(),test_image(1),test_image(2),test_image(3)]*4)
 	else :
 		a=EMData.read_images(sys.argv[1])
 		window.setImageFileName(sys.argv[1])
-		window.setData(a)
+		window.set_data(a)
 	window2=EMParentWin(window)
 	window2.show()
 	window2.resize(*window.get_optimal_size())

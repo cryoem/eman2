@@ -84,8 +84,8 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 		
 		self.light_0_pos = [0.1,.1,1.,0.]
 		
-	def setData(self,data):
-		self.image_rotor.setData(data)
+	def set_data(self,data):
+		self.image_rotor.set_data(data)
 	
 	def get_optimal_size(self):
 		lr = self.image_rotor.rotor.get_suggested_lr_bt_nf()
@@ -254,7 +254,7 @@ class EMImageMXRotorCore:
 		self.widget.set_draw_frame(False)
 		
 		self.image_file_name = None	# keeps track of the image file name (if any) - book keeping purposes only
-		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via setData or set_image_file_name
+		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via set_data or set_image_file_name
 		
 		self.default_mxs = 3
 		self.visible_mxs = self.default_mxs	# the number of visible imagemxs in the rotor
@@ -292,7 +292,7 @@ class EMImageMXRotorCore:
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
 		if data:
-			self.setData(data)
+			self.set_data(data)
 	def get_inspector(self):
 		return self.inspector
 	
@@ -477,7 +477,7 @@ class EMImageMXRotorCore:
 			
 
 			w = self.rotor[idx].get_drawable()
-			w.setData(d,False)
+			w.set_data(d,False)
 
 			w.set_img_num_offset(image_offset)
 			w.set_max_idx(self.emdata_list_cache.get_max_idx())
@@ -537,7 +537,7 @@ class EMImageMXRotorCore:
 	def get_image(self,idx):
 		return self.emdata_list_cache[idx]
 	
-	def setData(self,data):
+	def set_data(self,data):
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return
@@ -1063,7 +1063,7 @@ if __name__ == '__main__':
 			#data.append(e)
 		
 		
-		window.setData(data)
+		window.set_data(data)
 	else :
 		print "reading image"
 		#a=EMData.read_images(sys.argv[1])

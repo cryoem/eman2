@@ -69,18 +69,18 @@ def imageupdate():
 	for i in EMImage2D.allim.keys():
 		try:
 			if i.data.get_attr("changecount")!=i.changec :
-				i.setData(i.data)
+				i.set_data(i.data)
 		except: pass
 
 	for i in EMImage3D.allim.keys():
 		try:
 			if i.data.get_attr("changecount")!=i.changec :
-				i.setData(i.data)
+				i.set_data(i.data)
 		except: pass
 		
 	for i in EMImageMX.allim.keys():
 		try:
-			if len(i.data)!=i.nimg : i.setData(i.data)
+			if len(i.data)!=i.nimg : i.set_data(i.data)
 		except:
 			pass
 		upd=0
@@ -92,7 +92,7 @@ def imageupdate():
 						break
 				except: pass
 		except: pass
-		if upd : i.setData(i.data)
+		if upd : i.set_data(i.data)
 
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
@@ -110,7 +110,7 @@ class EMImage(object):
 
 			if old:
 				if isinstance(old,EMImage2D) :
-					old.setData(local_data)
+					old.set_data(local_data)
 					return old
 			if parent: 
 				ret=EMParentWin(EMImage2D(local_data))
@@ -129,7 +129,7 @@ class EMImage(object):
 			# must be a single 3D image
 			if old:
 				if isinstance(old,EMImage3D) :
-					old.setData(data)
+					old.set_data(data)
 					return old
 			if parent : 
 				ret=EMParentWin(EMImage3D(data))
@@ -146,7 +146,7 @@ class EMImage(object):
 			
 			if old:
 				if isinstance(old,EMImageMX) :
-					old.setData(local_data)
+					old.set_data(local_data)
 					return old
 			if parent : 
 				ret=EMParentWin(EMImageMX(local_data))
