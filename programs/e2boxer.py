@@ -2770,16 +2770,22 @@ class GUIboxPanel(QtGui.QWidget):
 		
 		pawel_grid1.addWidget( QtGui.QLabel("Input Pixel Size:") , 0, 0 )
 		pawel_grid1.addWidget( QtGui.QLabel("Output Pixel Size:"), 1, 0 )
-		pawel_grid1.addWidget( QtGui.QLabel("Gauss Ruler:"), 2, 0 )
+		pawel_grid1.addWidget( QtGui.QLabel("Gauss Width Adjust:"), 2, 0 )
 		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 0, 2 )
 		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 1, 2 )		
 
 		self.input_pixel_size = QtGui.QLineEdit("1.0", self)
 		self.output_pixel_size = QtGui.QLineEdit("1.0", self)
-		self.gauss_ruler = QtGui.QLineEdit("1.0", self)
+		self.gauss_width = QtGui.QLineEdit("1.0", self)
+		self.gauss_width_slider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
 		pawel_grid1.addWidget( self.input_pixel_size, 0, 1 )
 		pawel_grid1.addWidget( self.output_pixel_size, 1, 1 )
-		pawel_grid1.addWidget( self.gauss_ruler, 2, 1 )
+		pawel_grid1.addWidget( self.gauss_width_slider, 2, 1 )
+		pawel_grid1.addWidget( self.gauss_width, 2, 2 )
+
+		self.gauss_width_slider.setRange( -100, 100 )
+		self.gauss_width_slider.setValue( 0 )
+
 
 		self.pawel_option_vbox.addWidget( QtGui.QLabel("CCF Histogram") )
 		self.pawel_histogram = CcfHistogram( self )
@@ -2817,7 +2823,9 @@ class GUIboxPanel(QtGui.QWidget):
 		self.connect(self.ratio_average_but, QtCore.SIGNAL("clicked(bool)"), self.cmp_box_changed)
 		#self.connect(self.centerbutton,QtCore.SIGNAL("clicked(bool)"),self.centerpushed)
 		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmp_box_changed)
-	
+		self.connect(self.gauss_width_slider, QtCore.SIGNAL("valueChanged(int)"), self.gauss_width_changed)
+		self.connect(self.gauss_width, QtCore.SIGNAL("editingFinished()"), self.gauss_width_edited)
+
 	def pawel_parm_changed(self, row, col ):
 		from string import atof
 
@@ -2832,6 +2840,18 @@ class GUIboxPanel(QtGui.QWidget):
 		else:
 			assert row==1
 			self.target.autoboxer.pixel_output = atof( t )		
+	def gauss_width_edited(self):
+		from string import atof
+		from math import log10
+		text = self.gauss_width.text()
+		v = int( log10(atof(text)) * 100)
+		self.gauss_width_slider.setValue( v )
+
+	def gauss_width_changed(self, v):
+		from math import pow
+		s = "%.3f" % pow(10.0, v*0.01)
+		self.gauss_width.setText( s )
+		
 
 	def set_dynapix(self,bool):
 		self.dynapix.setChecked(bool)

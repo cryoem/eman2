@@ -2511,6 +2511,7 @@ class PawelAutoBoxer(AutoBoxer):
 		self.box_size = 128
 		self.pixel_input = 1.0
 		self.pixel_output = 1.0
+
 	#### Functions that must be supplied so the ImageProcParamsMediator works
 	def get_subsample_rate(self):
 		#raise Exception
@@ -2542,36 +2543,58 @@ class PawelAutoBoxer(AutoBoxer):
 	def set_mode_explicit(self,mode):
 		pass
 
+	def set_params( pin, pout, bsize, gwidth, thr_low, thr_hgh ):
+		self.pixel_input = pin
+		self.pixel_output= pout
+		self.box_size    = bsize
+		self.gauss_width = gwidth
+		self.thr_low = thr_low
+		self.thr_hgh = thr_hgh
+		
+
 	def auto_box(self,boxable,update_display=True,force_auto_box=False):
 		from string import atoi, atof
 
 		self.pixel_input = atof(self.parent.guictl.input_pixel_size.text())
 		self.pixel_output= atof(self.parent.guictl.output_pixel_size.text())
 		self.box_size = int(self.parent.guictl.bs.text())
-		self.gauss_ruler = atof(self.parent.guictl.gauss_ruler.text())
-
+		self.gauss_width = atof(self.parent.guictl.gauss_width.text())
 		slow = self.parent.guictl.threshold_low.text()
 		shgh = self.parent.guictl.threshold_hgh.text()
 
-		try:
-			thr_low = atof(slow)
-			thr_hgh = atof(shgh)
-		except:
-			thr_low = None
-			thr_hgh = None
+		if hasattr( self, "imgorig" ):
+			boxable.set_image_name( self.imgorig )
 
+		try:
+			self.thr_low = atof(slow)
+			self.thr_hgh = atof(shgh)
+		except:
+			self.thr_low = None
+			self.thr_hgh = None
+
+		boxes, trimboxes, ccfs = self.run(boxable)
+
+		if self.thr_low is None:
+			self.parent.guictl.pawel_histogram.setData( ccfs )
+
+		boxable.append_stored_auto_boxes(trimboxes)
+		boxable.store_key_entry_in_idd("auto_boxes",trimboxes)
+		boxable.write_to_db()
+		boxable.get_auto_selected_from_db() 
+
+		print "nbox, boxable.numbox: ", len(boxes), boxable.num_boxes()
+
+	def run(self, boxable):
 		print "running Gauss Convolution: "
 		print "     Pixel input : ", self.pixel_input
 		print "     Pixel output: ", self.pixel_output
-		print "     Gauss ruler : ", self.gauss_ruler
+		print "     Gauss width : ", self.gauss_width
 		print "     Box size    : ", self.box_size
 		print "     boxable.image_name:	  ", boxable.image_name
-		print "     CCF low bound   :   ", thr_low
-		print "     CCF hgh bound   :   ", thr_hgh
-
+		print "     CCF low bound   :   ", self.thr_low
+		print "     CCF hgh bound   :   ", self.thr_hgh
 
 		imgname = boxable.get_image_name()
-	
 		img = BigImageCache.get_image_directly(imgname) # change from boxable.image_name, hope you don't mind
 	
 		from filter import filt_gaussh, filt_gaussl
@@ -2588,12 +2611,13 @@ class PawelAutoBoxer(AutoBoxer):
 			#img = SincBlackmanSubsampleCache(boxable.get_image_name(),self.get_params_mediator())
 			# Note you would have to change get_window_size_min so that it returns 15 and get_frequency_cutoff
 			# so that it returns the right value
+			self.imgorig = imgname
 			imgname = "reduced_" + imgname
 			self.parent.init_guiim(img, imgname)
 			img.write_image( imgname )
 			boxable.set_image_name( imgname )
 
-		ccf = filt_gaussl( img, self.gauss_ruler/self.box_size )
+		ccf = filt_gaussl( img, self.gauss_width/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
 		npeak = len(peaks)/3
 		print npeak, " boxes picked"
@@ -2617,25 +2641,18 @@ class PawelAutoBoxer(AutoBoxer):
 
 			score = peaks[3*i]
 			skip = False
-			if not(thr_low is None) and score < thr_low:
+			if not(self.thr_low is None) and score < self.thr_low:
 				skip = True
 	
-			if not(thr_hgh is None) and score > thr_hgh:
+			if not(self.thr_hgh is None) and score > self.thr_hgh:
 				skip = True
 
 			if not skip:
 				boxes.append(box)
 				trimboxes.append( TrimBox(box) )
+		return boxes, trimboxes, ccfs
 
-		if thr_low is None:
-			self.parent.guictl.pawel_histogram.setData( ccfs )
 
-		boxable.append_stored_auto_boxes(trimboxes)
-		boxable.store_key_entry_in_idd("auto_boxes",trimboxes)
-		boxable.write_to_db()
-		boxable.get_auto_selected_from_db() 
-
-		print "nbox, boxable.numbox: ", len(boxes), boxable.num_boxes()
 	def set_interactive_mode(self,real_time_auto_boxing=False):
 		pass
 
