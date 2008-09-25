@@ -406,7 +406,7 @@ class EM3DSymViewer(EMImage3DObject):
 			#glRotate(-d["phi"],0,0,1)
 			#print -d["phi"],-d["alt"],-d["az"]
 			glTranslate(0,0,self.radius)
-			glCallList(self.spheredl)
+			glCallList(self.highresspheredl)
 			glPopMatrix()
 		glEndList()
 	
@@ -513,7 +513,7 @@ class EM3DSymViewer(EMImage3DObject):
 				phi = self.tracedata[i][j][2]
 				print "a",alt,az
 				T = Transform({"type":"eman","az":az,"alt":alt})
-				T.transpose_inplace()
+				T.invert()
 				a = T*Vec3f(0,0,1)
 				
 				if (j == 0):
@@ -532,7 +532,7 @@ class EM3DSymViewer(EMImage3DObject):
 				az = self.tracedata[i][j+1][1]
 				#print "b",alt,az
 				T = Transform({"type":"eman","az":az,"alt":alt})
-				T.transpose_inplace()
+				T.invert()
 				b = T*Vec3f(0,0,1)
 				#print b[0],b[1],b[2]
 				##if a == b: continue
@@ -586,7 +586,7 @@ class EM3DSymViewer(EMImage3DObject):
 			if self.inspector.symtoggled():
 				for i in range(1,self.sym_object.get_nsym()):
 					t = self.sym_object.get_sym(i)
-					t.transpose_inplace()
+					t.invert()
 					d = t.get_rotation("eman")
 					glPushMatrix()
 					if ( self.sym_object.is_h_sym() ):
@@ -605,7 +605,7 @@ class EM3DSymViewer(EMImage3DObject):
 				if self.inspector.symtoggled():
 					for i in range(1,self.sym_object.get_nsym()):
 						t = self.sym_object.get_sym(i)
-						t.transpose_inplace()
+						t.invert()
 						d = t.get_rotation("eman")
 						glPushMatrix()
 						if ( self.sym_object.is_h_sym() ):

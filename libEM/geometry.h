@@ -39,6 +39,11 @@
 #include <string>
 using std::string;
 
+#include <vector>
+using std::vector;
+
+#include <algorithm> // for copy
+		 
 namespace EMAN
 {
 
@@ -177,6 +182,10 @@ namespace EMAN
 			return data[i];
 		}
 		
+		inline operator vector<float>() const {
+			vector<float> t(data,data+3);
+			return t;
+		}
 	private:
 		float data[3];
 	};
@@ -419,6 +428,16 @@ namespace EMAN
 			return data[i];
 		}
 		
+		inline operator vector<float>() const {
+			vector<float> t(data,data+3);
+			return t;
+		}
+		
+		inline FloatPoint& operator=(const vector<float>& v) {
+			copy(v.begin(),v.end(),data);
+			return *this;
+		}
+		
 	private:
 		float data[3];
 		int ndim;
@@ -579,6 +598,35 @@ namespace EMAN
 		bool inside_region(float x, float y, float z) const;
 
 
+		/** get the width */
+		float get_width() { return size[0]; }
+		/** get the height */
+		float get_height() { return size[1]; }
+		/** get the depth */
+		float get_depth() { return size[2]; }
+		
+		/** set the width */
+		void set_width(const float& v) { size[0] = v; }
+		/** set the height */
+		void set_height(const float& v) { size[1] = v; }
+		/** set the depth */
+		void set_depth(const float& v) { size[2] = v; }
+		
+		/** get the x element of the origin */
+		float x_origin() { return origin[0]; }
+		/** get the y element of the origin */
+		float y_origin() { return origin[1]; }
+		/** get the z element of the origin */
+		float z_origin() { return origin[2]; }
+		
+		/** get the size of each dimension as a vector */
+		vector<float> get_size() { return size; }
+		/** get the origin as a vector */
+		vector<float> get_origin() { return origin; }
+		/** set the origin using a vector */
+		void set_origin(const vector<float>& v) { origin = v; }
+		
+		
 		/** To check whether 'this' region is inside a given box
 		 * assuming the box's origins are (0,0,0).
 		 * @param box The nD rectangular box.
