@@ -9471,7 +9471,7 @@ def params_3D_to_2D(stack):
 		ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	print_end_msg("params_3D_to_2D")
 
-def find_struct(prj_stack, outdir, delta, ir, ou, Iter, rand_seed, trials, refine, MPI = False, debug = False):
+def find_struct(prj_stack, outdir, delta, ir, ou, Iter, rand_seed, trials, refine, MPI = False, debug = False, given = False):
 	#from projection import cml_voronoi
 	#cml_voronoi(prj_stack, outdir, delta, rand_seed, refine, debug)
 
@@ -9566,7 +9566,7 @@ def find_struct(prj_stack, outdir, delta, ir, ou, Iter, rand_seed, trials, refin
 			newPrj = deepcopy(Prj)
 			print_msg('\ntrials %s______________________________rnd: %d\n' % (str(trial).rjust(3, '0'), Rnd[trial]))
 			#newPrj, disc = cml_find_struc(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug)
-			newPrj, disc = cml_find_struc___(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug)
+			newPrj, disc = cml_find_struc___(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug, given)
 			print_msg('          \__discrepancy: %10.3f\n' % disc)
 			print_msg('           \_%s' % time.ctime())
 
@@ -9669,6 +9669,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				s3z = extract_value(parmvalues[5])
 				mirror = int(extract_value(parmvalues[6]))
 				scale = extract_value(parmvalues[7])
+				print [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
 				set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale])				
 			else:
 				if len(params)!=len(parmvalues):
