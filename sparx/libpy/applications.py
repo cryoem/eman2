@@ -9552,6 +9552,7 @@ def find_struct(prj_stack, outdir, delta, ir, ou, Iter, rand_seed, trials, refin
 			os.remove('.tmp_txt_1a32b4')
 		
 	else:
+		from projection import cml_find_struc___
 		t_start = start_time()
 		print_begin_msg('find_struct')
 		cml_head_log(prj_stack, outdir, delta, ir, ou, rand_seed, 1, refine, trials)   # 1 is ncpu
@@ -9564,7 +9565,8 @@ def find_struct(prj_stack, outdir, delta, ir, ou, Iter, rand_seed, trials, refin
 		for trial in xrange(trials):
 			newPrj = deepcopy(Prj)
 			print_msg('\ntrials %s______________________________rnd: %d\n' % (str(trial).rjust(3, '0'), Rnd[trial]))
-			newPrj, disc = cml_find_struc(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug)
+			#newPrj, disc = cml_find_struc(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug)
+			newPrj, disc = cml_find_struc___(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug)
 			print_msg('          \__discrepancy: %10.3f\n' % disc)
 			print_msg('           \_%s' % time.ctime())
 
@@ -10446,10 +10448,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			# with BDB only one by one node can read data base
 			import os
 			for i in xrange(ncpu):
-				if myid == i:
-					try: os.system('rm -fr EMAN2DB/cache')
-					except: pass
-					[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
+				if myid == i: [im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
 			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
