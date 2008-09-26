@@ -126,6 +126,18 @@ class EMBasicOpenGLObjects:
 		""" Delegate access to implementation """
 		return setattr(self.__instance, attr, value)
 
+def resize_gl():
+	view = EMGLProjViewMatrices()
+	view.set_update(True)
+	
+def viewport_height():
+	view = EMGLProjViewMatrices()
+	return view.viewport_height()
+	
+def viewport_width():
+	view = EMGLProjViewMatrices()
+	return view.viewport_width()
+
 class EMGLProjViewMatrices:
 	"""
 	Controls a static single instance of OpenGL projection and view(port) matrices
@@ -176,6 +188,14 @@ class EMGLProjViewMatrices:
 		def get_proj_inv_matrix(self):
 			self.check_update()
 			return self.inv_proj_matrix
+		
+		def viewport_height(self):
+			self.check_update()
+			return self.view_matrix[3] - self.view_matrix[1]
+		
+		def viewport_width(self):
+			self.check_update()
+			return self.view_matrix[2] - self.view_matrix[0]
 
 			
 	# storage for the instance reference

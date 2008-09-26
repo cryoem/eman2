@@ -108,6 +108,11 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 	def __del__(self):
 		self.__delete_list()
 	
+	
+	def get_border_width(self): return self.border_width
+	def get_border_height(self): return self.border_height
+	def get_border_depth(self): return self.border_depth
+	
 	def set_color_flag(self,flag):
 		if flag not in EM3DPlainBorderDecoration.PERMISSABLE_COLOR_FLAGS:
 			print 'unknown color flag'
@@ -451,7 +456,7 @@ class EM3DWidget:
 		self.vdtools = EMViewportDepthTools(self) # viewport depth tools - essential for rerouting mouse events correctly
 		
 		self.corner_sets = [] # corner index sets of the 3D volume (?)
-		self.planes = []	# string names for visible planes, used in paintGL
+		self.planes = []	# string names for visible planes, used in draw
 		self.model_matrices = [] # stores up to 3 OpenGL model view matrices (4x4 lists or tuples)
 		
 		self.draw_frame = True
@@ -504,9 +509,9 @@ class EM3DWidget:
 	
 	#HACK ALERT
 	def render(self):
-		self.paintGL()
+		self.draw()
 	
-	def paintGL(self):
+	def draw(self):
 		#clear everything
 		self.corner_sets = []
 		self.planes = []
@@ -892,7 +897,7 @@ class EMGLRotorWidget(EM3DWidgetVolume):
 			glTranslate(points[i][0],points[i][1],points[i][2])
 			glRotate(n,*rot_v)
 			glTranslate(h_width,h_height,0)
-			try: widget.paintGL()
+			try: widget.draw()
 			except: pass
 			glPopMatrix()
 			
@@ -1422,9 +1427,9 @@ class EMGLView3D(EM3DWidgetVolume):
 		except: pass
 	
 	def render(self):
-		self.paintGL()
+		self.draw()
 	
-	def paintGL(self):
+	def draw(self):
 		self.psets = []
 		self.planes = []
 		self.modelmatrices = []
@@ -1600,8 +1605,8 @@ class EMGLView3D(EM3DWidgetVolume):
 	def get_render_dims_at_depth(self, depth):
 		return self.parent.get_render_dims_at_depth(depth)
 	
-	def getNearPlaneDims(self):
-		return self.parent.getNearPlaneDims()
+	def get_near_plane_dims(self):
+		return self.parent.get_near_plane_dims()
 		
 	def getStartZ(self):
 		return self.parent.getStartZ()
@@ -1730,7 +1735,7 @@ class EMGLView2D:
 		if ( h > self.viewportHeight() ):
 			self.h = self.viewportHeight()/self.sizescale
 	
-	def paintGL(self):
+	def draw(self):
 		
 		self.cam.position()
 		
@@ -1838,6 +1843,14 @@ class EMGLView2D:
 			self.drawable.mouseReleaseEvent(qme)
 			#self.drawable.mouseReleaseEvent(event)
 
+	def mouseDoubleClickEvent(self, event):
+		if event.modifiers() == Qt.ControlModifier:
+			self.cam.mouseMoveEvent(event)
+		else:
+			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.drawable.mouseDoubleClickEvent(qme)
+
 		#self.updateGL()
 	def emit(self, signal, event, a=None,b=None):
 		self.parent.emit(signal,event,a,b)
@@ -1880,6 +1893,9 @@ class EMGLViewQtWidget:
 	
 	
 		self.decoration = EM3DPlainBorderDecoration(self)
+	def get_decoration(self):
+		return self.decoration
+	
 	def __del__(self):
 		if (self.itex != 0 ):
 			self.parent.deleteTexture(self.itex)
@@ -1929,10 +1945,10 @@ class EMGLViewQtWidget:
 			self.itex = self.parent.bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 		
-	def paintGL(self):
-		#print "paintGL children"
+	def draw(self):
+		#print "draw children"
 		if (self.qwidget == None or self.itex == 0) :
-			#print "no widget - paintGL children return" 
+			#print "no widget - draw children return" 
 			return
 		
 		#self.cam.debug = True
@@ -1975,7 +1991,7 @@ class EMGLViewQtWidget:
 		for i in self.e2children:
 			glPushMatrix()
 			try:
-				i.paintGL()
+				i.draw()
 			except Exception, inst:
 				print type(inst)     # the exception instance
 				print inst.args      # arguments stored in .args
@@ -2059,7 +2075,7 @@ class EMGLViewQtWidget:
 		if (isinstance(cw,QtGui.QComboBox)):
 			print "it's a combo"
 		else:
-			qme=QtGui.mouseDoubleClickEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
 			#self.qwidget.setVisible(True)
 			QtCore.QCoreApplication.sendEvent(cw,qme)
 			#self.qwidget.setVisible(False)
@@ -2303,8 +2319,8 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		if ( "GL_ARB_multisample" in glGetString(GL_EXTENSIONS) ): glEnable(GL_MULTISAMPLE)
 		else: glDisable(GL_MULTISAMPLE)
 		
-	def paintGL(self):
-		#print "paintGL"
+	def draw(self):
+		#print "draw"
 		glClear(GL_COLOR_BUFFER_BIT)
 		if glIsEnabled(GL_DEPTH_TEST):
 			glClear(GL_DEPTH_BUFFER_BIT)
@@ -2385,7 +2401,7 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 	def hoverEvent(self,event):
 		self.floatwidget.hoverEvent(event)
 
-	def getNearPlaneDims(self):
+	def get_near_plane_dims(self):
 		height = 2.0*self.zNear * tan(self.fov/2.0*pi/180.0)
 		width = self.aspect * height
 		return [width,height]
@@ -2518,13 +2534,13 @@ class EMFloatingWidgetsCore:
 		for i in self.qwidgets:
 			#print "getting opengl matrices"
 			glPushMatrix()
-			i.paintGL()
+			i.draw()
 			glPopMatrix()
 			#print "paint child done"
 		
 		
 		glPopMatrix()
-		#print "paintGL done"
+		#print "draw done"
 	def finished(self,val):
 		if ( val == 1 ):
 			for i in self.fd.selectedFiles():
@@ -2592,7 +2608,7 @@ class EMFloatingWidgetsCore:
 	def mouseDoubleClickEvent(self, event):
 		for i in self.qwidgets:
 			if ( i.isinwin(event.x(),self.height()-event.y()) ):
-				i.mouseReleaseEvent(event)
+				i.mouseDoubleClickEvent(event)
 				self.updateGL()
 				return
 		
@@ -2650,8 +2666,8 @@ class EMFloatingWidgetsCore:
 					break
 		self.updateGL()
 	
-	def getNearPlaneDims(self):
-		return self.parent.getNearPlaneDims()
+	def get_near_plane_dims(self):
+		return self.parent.get_near_plane_dims()
 	
 	def getStartZ(self):
 		return self.parent.getStartZ()

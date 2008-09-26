@@ -215,7 +215,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def getStartZ(self):
 		return self.startz
 	
-	def getNearPlaneDims(self):
+	def get_near_plane_dims(self):
 		if self.perspective:
 			height = 2.0*self.startz * tan(self.fov/2.0*pi/180.0)
 			width = self.aspect * height
@@ -490,8 +490,8 @@ class EMImage3DCore:
 	def getStartZ(self):
 		return self.parent.getStartZ()
 	
-	def getNearPlaneDims(self):
-		return self.parent.getNearPlaneDims()
+	def get_near_plane_dims(self):
+		return self.parent.get_near_plane_dims()
 	
 class EMImageInspector3D(QtGui.QWidget):
 	def __init__(self,target) :

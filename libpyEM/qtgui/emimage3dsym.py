@@ -664,7 +664,7 @@ class EM3DSymViewer(EMImage3DObject):
 		glPushMatrix()
 		# FIXME the approach here is very inefficient
 		glLoadIdentity()
-		[width,height] = self.parent.getNearPlaneDims()
+		[width,height] = self.parent.get_near_plane_dims()
 		z = self.parent.getStartZ()
 		glTranslate(-width/2.0,-height/2.0,-z-0.01)
 		glScalef(width,height,1.0)
@@ -816,7 +816,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 	def getStartZ(self):
 		return self.startz
 	
-	def getNearPlaneDims(self):
+	def get_near_plane_dims(self):
 		height = 2.0 * self.getStartZ()*tan(self.fov/2.0*pi/180.0)
 		width = self.aspect * height
 		return [width,height]
