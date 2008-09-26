@@ -341,7 +341,7 @@ class EMImageRotorCore:
 		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-z+z_trans+abs(lr[3]-lr[2]))
 		glTranslate(0,-75,0) # This number is a FIXME issue
 		#FTGL.print_message("hello hello",36);
-		self.widget.paintGL()
+		self.widget.draw()
 		glPopMatrix()
 		
 		self.draw_hud()

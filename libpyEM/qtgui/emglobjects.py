@@ -265,7 +265,7 @@ class EMViewportDepthTools:
 	def get_viewport_dimensions(self):
 		return self.matrices.get_viewport_matrix()
 	
-	def drawFrame(self, ftest=False):
+	def draw_frame(self, ftest=False):
 		
 		if (ftest):
 			a = Vec3f(self.mc10[0]-self.mc00[0],self.mc10[1]-self.mc00[1],self.mc10[2]-self.mc00[2])
@@ -435,7 +435,7 @@ class EMViewportDepthTools:
 		self.mc11 = points[2]
 		self.mc10 = points[3]
 		
-	def storeModel(self):
+	def store_model(self):
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
 	
 	def printUnproj(self,x,y):
@@ -511,9 +511,13 @@ class EMViewportDepthTools:
 		xNDC2 = 2.0*(x2-self.wview[0])/self.wview[2] - 1
 		yNDC2 = 2.0*(y2-self.wview[1])/self.wview[3] - 1
 		
-
 		self.P_inv = self.matrices.get_proj_inv_matrix()
-		M = numpy.matrix(self.wmodel)
+		
+		try:
+			M = numpy.matrix(self.wmodel)
+		except:
+			self.store_model()
+			M = numpy.matrix(self.wmodel)
 		M_inv = M.I
 		
 		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
@@ -555,8 +559,12 @@ class EMViewportDepthTools:
 		# note the OpenGL returns matrices are in column major format -  the calculations below 
 		# are done with this in  mind - this saves the need to transpose the matrices
 		self.P_inv = self.matrices.get_proj_inv_matrix()
-		M = numpy.matrix(self.wmodel)
 		
+		try:
+			M = numpy.matrix(self.wmodel)
+		except:
+			self.store_model()
+			M = numpy.matrix(self.wmodel)
 		M_inv = M.I
 		#PM_inv = numpy.matrixmultiply(P_inv,M_inv)
 		PM_inv = self.P_inv*M_inv

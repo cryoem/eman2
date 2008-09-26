@@ -261,6 +261,31 @@ class EMBoxerFrame(EMFrame,GUIbox):
 	def draw(self):
 		pass
 
+class LeftSideWidgetBar(EMGLViewContainer):
+	def __init__(self,parent):
+		EMWindowNode.__init__(self,parent)
+		
+	def width(self):
+		width = 0
+		for child in self.children:
+			if child.width() > width:
+				width = width
+		
+		return width
+		
+	def height(self):
+		return viewport_height()
+
+	def draw(self):
+		for child in self.children:
+			glPushMatrix()
+			child.draw()
+			glPopMatrix()
+
+	def i_initialized(self,child):
+		if isinstance(child,EMDesktopTaskWidget):
+			child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
+
 
 class EMBrowserFrame(EMFrame):
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0),qt_parent=None):
@@ -417,7 +442,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		self.sysdesktop=self.app.desktop()
 		self.appscreen=self.sysdesktop.screen(self.sysdesktop.primaryScreen())
 		self.frame_dl = 0 # display list of the desktop frame
-		self.fov = 10
+		self.fov = 40
 		
 		# what is this?
 		self.bgob2=ob2dimage(self,self.read_EMAN2_image())

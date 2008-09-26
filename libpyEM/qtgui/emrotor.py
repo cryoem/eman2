@@ -247,7 +247,7 @@ class EMRotorCore:
 		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
 		glPushMatrix()
 		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans+abs(lr[3]-lr[2]))
-		self.widget.paintGL()
+		self.widget.draw()
 		glPopMatrix()
 	
 	def updateGL(self):
