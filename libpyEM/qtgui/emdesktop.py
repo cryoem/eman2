@@ -78,9 +78,9 @@ class EMDesktopScreenInfo():
 				for i in range( self.__num_screens):				
 					self.__screens.append(sys_desktop.availableGeometry(QtCore.QPoint(x,y)))
 					#print "\t  printing available geometry information it is",geom.left(),geom.right(),geom.top(),geom.bottom()
-					print "\t geometry starts at",geom.left(),geom.top()," and has dimensions", geom.right()-geom.left()+1,geom.bottom()-geom.top()+1
-					x = geom.right()+1
-					y = geom.top()
+#					print "\t geometry starts at",geom.left(),geom.top()," and has dimensions", geom.right()-geom.left()+1,geom.bottom()-geom.top()+1
+#					x = geom.right()+1
+#					y = geom.top()
 		else:
 			print "non virtual desktops are not yet supported"
 

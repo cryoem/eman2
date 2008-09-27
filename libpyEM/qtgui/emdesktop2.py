@@ -341,7 +341,7 @@ class EMFrame(EMWindowNode,EMRegion):
 class EMBoxerFrame(EMFrame,GUIbox):
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0),image_names=[],):
 		EMFrame.__init__(self,parent,geometry)
-		GUIbox.__alt_init__(self,["mici_noise.hdf"],[])
+		GUIbox.__alt_init__(self,[],[])
 		
 	def draw(self):
 		pass
@@ -473,7 +473,7 @@ class LeftSideWidgetBar(EMGLViewContainer):
 				s = self.animation.get_start()
 				if c < s: s = 90
 				elif c > s: s = 0
-				else: print "crazy crazy crazy"
+				else: print "I'm a bad programmer"
 				rot =  [c,s]
 			elif self.state == LeftSideWidgetBar.LeftSideTransform.INACTIVE:
 				rot = [90,0]
