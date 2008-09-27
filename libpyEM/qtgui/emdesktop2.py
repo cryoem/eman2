@@ -47,6 +47,8 @@ from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtCore import QTimer
+from time import time
+import math
 
 from emfloatingwidgets import *
 from emglobjects import Camera, viewport_width, viewport_height,resize_gl
@@ -75,12 +77,120 @@ class EMWindowNode:
 	
 	def parent_height(self):
 		return parent.height()
+
+class EMRegion:
+	def __init__(self,geometry=Region(0,0,0,0,0,0)):
+		self.geometry = geometry
 		
-class EMGLViewContainer(EMWindowNode):
-	def __init__(self,parent):
+	def set_geometry(self,geometry):
+		self.geometry = geometry
+		
+	def get_geomoetry(self): return self.geometry
+	
+	def width(self):
+		return self.geometry.get_width()
+	
+	def height(self):
+		return self.geometry.get_height()
+		
+	def depth(self):
+		return self.geometry.get_depth()
+	
+	def set_width(self,v):
+		self.geometry.set_width(v)
+	
+	def set_height(self,v):
+		self.geometry.set_height(v)
+		
+	def set_depth(self,v):
+		self.geometry.set_depth(v)
+	
+	def get_size(self):
+		return self.geometry.get_size()
+	
+	def get_origin(self):
+		return self.geometry.get_origin()
+	
+	def set_origin(self,v):
+		return self.geometry.set_origin(v)
+
+class Animatable:
+	def __init__(self):
+		self.time = 0		# time indicates the current time used for the basis of animation.
+		self.time_interval = 0.2 # 0.5 seconds for the animation to complete
+		self.time_begin = 0 # records the time at which the animation was begun
+		self.animated = True
+		
+	def set_animated(self,val=True):
+		self.animated = val
+		
+	def is_animated(self): return self.animated
+	
+	def animate(self,t):
+		if not self.animated: return False
+		
+		if self.time_begin == 0:
+			self.time_begin = t
+			
+		self.time = t -self.time_begin
+
+		if self.time > self.time_interval:
+			self.time_begin = 0
+			self.time = 0
+			self.animated = False
+			return 0
+		else:
+			dt = self.__get_dt()
+			self.calculate_animation(dt)
+			return 1
+	
+	def calculate_animation(self,dt): raise
+	
+	def __get_dt(self):
+		return sin(self.time/self.time_interval*math.pi/2)
+		
+		
+	def transform(self): raise
+	
+class SingleAxisRotationAnimation(Animatable):
+	def __init__(self,start,end,axis=[0,1,0]):
+		Animatable.__init__(self)
+		self.start = start
+		self.current = start
+		self.end = end
+		self.axis = axis
+		
+	def get_start(self):
+		return self.start
+	
+	def get_end(self):
+		return self.end
+	
+	def get_current(self):
+		return self.current
+	
+	def calculate_animation(self,dt):
+		'''
+		based on the assumption that dt goes from 0 to 1
+		'''
+		if dt > 1: raise
+		self.current = (1-dt)*self.start + dt*self.end
+
+	def transform(self):
+		glRotate(self.current,*self.axis)
+
+class EMGLViewContainer(EMWindowNode,EMRegion):
+	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
 		EMWindowNode.__init__(self,parent)
+		EMRegion.__init__(self,geometry)
 		self.current = None
 		self.previous = None
+		
+	def draw(self):
+		for child in self.children:
+			glPushMatrix()
+			child.draw()
+			glPopMatrix()
 	
 	def updateGL(self):
 		self.parent.updateGL()
@@ -102,7 +212,8 @@ class EMGLViewContainer(EMWindowNode):
 				self.current = child
 				if (self.current != self.previous ):
 					if ( self.previous != None ):
-						self.previous.leaveEvent()
+						try: self.previous.leaveEvent()
+						except: pass
 				child.mouseMoveEvent(event)
 				self.previous = child
 				self.updateGL()
@@ -175,53 +286,27 @@ class EMGLViewContainer(EMWindowNode):
 				break
 		self.updateGL()
 
-class EMFrame(EMWindowNode):
+	def isinwin(self,x,y):
+		for child in self.children:
+			if child.isinwin(x,y) : return True
+			
+		return False
+			
+class EMFrame(EMWindowNode,EMRegion):
 	'''
 	EMFrame is a base class for windows that have a frame. The frame defines a 3D bounding box, and is defined
 	in terms of its origin and its size in each dimension
 	'''
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
 		EMWindowNode.__init__(self,parent)
-		self.geometry = geometry
+		EMRegion.__init__(self,geometry)
 		self.children = []
-		
-	def set_geometry(self,geometry):
-		self.geometry = geometry
 	
 	def draw(self):
 		for child in self.children:
 			glPushMatrix()
 			child.draw()
 			glPopMatrix()
-	
-	def get_geomoetry(self): return self.geometry
-	
-	def width(self):
-		return self.geometry.get_width()
-	
-	def height(self):
-		return self.geometry.get_height()
-		
-	def depth(self):
-		return self.geometry.get_depth()
-	
-	def set_width(self,v):
-		self.geometry.set_width(v)
-	
-	def set_height(self,v):
-		self.geometry.set_height(v)
-		
-	def set_depth(self,v):
-		self.geometry.set_depth(v)
-	
-	def get_size(self):
-		return self.geometry.get_size()
-	
-	def get_origin(self):
-		return self.geometry.get_origin()
-	
-	def set_origin(self,v):
-		return self.geometry.set_origin(v)
 	
 	def mousePressEvent(self, event):
 		#YUCK fixme soon this is terribly inefficient
@@ -263,8 +348,11 @@ class EMBoxerFrame(EMFrame,GUIbox):
 
 class LeftSideWidgetBar(EMGLViewContainer):
 	def __init__(self,parent):
-		EMWindowNode.__init__(self,parent)
+		EMGLViewContainer.__init__(self,parent)
+		self.mouse_on = None
+		self.previous_mouse_on = None
 		
+		self.transformers = []
 	def width(self):
 		width = 0
 		for child in self.children:
@@ -277,25 +365,186 @@ class LeftSideWidgetBar(EMGLViewContainer):
 		return viewport_height()
 
 	def draw(self):
-		for child in self.children:
+		glPushMatrix()
+		glTranslate(-self.parent.width()/2.0,self.parent.height()/2.0,0)
+		for i,child in enumerate(self.children):
 			glPushMatrix()
+			self.transformers[i].transform()
 			child.draw()
 			glPopMatrix()
+			glTranslate(0,-child.height(),0)
+
+		glPopMatrix()
 
 	def i_initialized(self,child):
 		if isinstance(child,EMDesktopTaskWidget):
-			child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
+			pass
+			#child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
 
+	def add_browser_frame(self):
+		browser_frame = EMBrowserFrame(self)
+		browser_frame.load_browser()
+		self.attach_child(browser_frame)
+		print "done"
+		
+	
+	def mouseMoveEvent(self, event):
+		intercept = False
+		for i,child in enumerate(self.children):
+			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
+				#if self.animations[i] == None:
+				intercept = True
+				self.previous_mouse_on = self.mouse_on
+				self.mouse_on = i
+				if self.transformers[i].is_animatable():
+					#print "entered a window"
+					t = self.transformers[i]
+					t.animate_event()
+					#rot = t.get_suggested_rotation()
+					#animation = SingleAxisRotationAnimation(rot[0],rot[1],[0,1,0])
+					#t.register_animation(animation)
+					#EMDesktop.main_widget.register_animatable(animation)
+				
+				if self.previous_mouse_on != None and self.previous_mouse_on != self.mouse_on:
+					t = self.transformers[self.previous_mouse_on]
+					t.animate_event()
+					#t.deactivate_animation()
+					#rot = t.get_suggested_rotation()
+					#animation = SingleAxisRotationAnimation(rot[0],rot[1],[0,1,0])
+					#t.register_animation(animation)
+					#EMDesktop.main_widget.register_animatable(animation)
+					self.previous_mouse_on = None
+				
+				break
+				
+				#self.current = i
+				#if (self.current != self.previous ):
+					
+				#else:
+					#self.previous = i
+					#pass
+					##if self.previous != None and self.animations[self.previous != None]:
+						##animation = SingleAxisRotationAnimation(0,90,[0,1,0])
+						##self.animations[self.previous] = animation
+						##EMDesktop.main_widget.register_animatable(animation)
+						
+					##pass
+					#print "in a window",child
+		if not intercept:
+			if self.mouse_on != None:
+				#print self.mouse_on
+				t = self.transformers[self.mouse_on]
+				t.animate_event()
+				#t.deactivate_animation()
+				#rot = t.get_suggested_rotation()
+				#animation = SingleAxisRotationAnimation(rot[0],rot[1],[0,1,0])
+				#t.register_animation(animation)
+				#EMDesktop.main_widget.register_animatable(animation)
+				self.mouse_on = None
+		EMGLViewContainer.mouseMoveEvent(self,event)
+		
+	def attach_child(self,new_child):
+		self.transformers.append(LeftSideWidgetBar.LeftSideTransform(new_child))
+		EMWindowNode.attach_child(self,new_child)
 
-class EMBrowserFrame(EMFrame):
-	def __init__(self,parent,geometry=Region(0,0,0,0,0,0),qt_parent=None):
-		EMFrame.__init__(self,parent,geometry)
+	class LeftSideTransform:
+		ACTIVE = 0
+		INACTIVE = 1
+		ANIMATED = 2
+		def __init__(self,child):
+			self.child = child
+			self.animation = None
+			self.state = LeftSideWidgetBar.LeftSideTransform.INACTIVE
+			self.rotation = 90
+		def deactivate_animation(self):
+			if self.animation != None:
+				#self.rotation = self.animation.get_current()
+				self.animation.set_animated(False) # this will cause the EMDesktop to stop animating
+				self.animation = None
+				
+			#self.state = LeftSideWidgetBar.LeftSideTransform.INACTIVE
+		
+		def animate_event(self):
+			
+			if self.state == LeftSideWidgetBar.LeftSideTransform.ACTIVE:
+				rot = [0,90]
+			elif self.state == LeftSideWidgetBar.LeftSideTransform.ANIMATED:
+				c = self.animation.get_current()
+				s = self.animation.get_start()
+				if c < s: s = 90
+				elif c > s: s = 0
+				else: print "crazy crazy crazy"
+				rot =  [c,s]
+			elif self.state == LeftSideWidgetBar.LeftSideTransform.INACTIVE:
+				rot = [90,0]
+				
+			self.deactivate_animation()
+			
+			self.animation = SingleAxisRotationAnimation(rot[0],rot[1],[0,1,0])
+			self.state = LeftSideWidgetBar.LeftSideTransform.ANIMATED
+			EMDesktop.main_widget.register_animatable(self.animation)
+			
+		def register_animation(self,animation):
+			self.deactivate_animation()
+			self.animation = animation
+			self.state = LeftSideWidgetBar.LeftSideTransform.ANIMATED
+		
+		def inactive_transform(self):
+			glTranslate(0,-self.child.height()/2,0)
+			glRotate(90,0,1,0)
+			glTranslate(self.child.width()/2.0,0,0)
+			
+		def active_transform(self):
+			glTranslate(self.child.width()/2.0,-self.child.height()/2,0)
+		
+		def is_animatable(self):
+			if self.animation != None: return not self.animation.is_animated()
+			elif self.state == LeftSideWidgetBar.LeftSideTransform.ACTIVE:
+				return False
+			else: return True
+			
+		def get_suggested_rotation(self):
+			if self.state == LeftSideWidgetBar.LeftSideTransform.ACTIVE:
+				return [0,90]
+			elif self.state == LeftSideWidgetBar.LeftSideTransform.ANIMATED:
+				return [self.animation.get_current(),self.animation.get_start()]
+			elif self.state == LeftSideWidgetBar.LeftSideTransform.INACTIVE:
+				return [90,0]
+			
+		def animation_transform(self):
+			self.animation = None
+	
+		def transform(self):
+			if self.animation != None and not self.animation.is_animated():
+				end = self.animation.get_end()
+				self.animation = None
+				if end == 0.0:
+					self.state = LeftSideWidgetBar.LeftSideTransform.ACTIVE
+				elif end == 90.0:
+					self.state = LeftSideWidgetBar.LeftSideTransform.INACTIVE
+			
+			if self.animation == None and self.state == LeftSideWidgetBar.LeftSideTransform.ANIMATED:
+				return
+			
+			if self.state == LeftSideWidgetBar.LeftSideTransform.INACTIVE:
+				glTranslate(0,-self.child.height()/2,0)
+				glRotate(90,0,1,0)
+				glTranslate(self.child.width()/2.0,0,0)
+			elif self.state == LeftSideWidgetBar.LeftSideTransform.ACTIVE:
+				glTranslate(self.child.width()/2.0,-self.child.height()/2,0)
+			elif self.state == LeftSideWidgetBar.LeftSideTransform.ANIMATED:
+				glTranslate(0,-self.child.height()/2,0)
+				self.animation.transform()
+				glTranslate(self.child.width()/2.0,0,0)
+
+class EMBrowserFrame(EMGLViewContainer):
+	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
+		EMGLViewContainer.__init__(self,parent,geometry)
 		self.file_dialog = None
-		self.qt_parent = qt_parent
 		
 	def get_file_dialog(self):
 		if self.file_dialog == None:
-			self.file_dialog = QtGui.QFileDialog(self.qt_parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
+			self.file_dialog = QtGui.QFileDialog(EMDesktop.main_widget,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
 			#self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
 			QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("finished(int)"), self.finished)
 			QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
@@ -360,9 +609,9 @@ class EMBrowserFrame(EMFrame):
 	def load_browser(self):
 		#self.numcols = 2
 		file_dialog = self.get_file_dialog()
-		self.fd_widget = EMGLViewQtWidget(self.qt_parent)
+		self.fd_widget = EMGLViewQtWidget(EMDesktop.main_widget)
 		self.fd_widget.setQtWidget(file_dialog)
-		self.attach_child(self.fd_widget)
+		self.parent.attach_child(self.fd_widget)
 	
 class EMDesktopFrame(EMFrame):
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
@@ -387,7 +636,10 @@ class EMDesktopFrame(EMFrame):
 		browser_frame.load_browser()
 		self.attach_child(browser_frame)
 		print "done"
-		
+	
+	def updateGL(self):
+		self.parent.updateGL()
+	
 class EMDesktopScreenInfo:
 	"""
 	A class the figures out how many screen the user has, whether or they are running a virtual desktop etc.
@@ -429,9 +681,11 @@ class EMDesktopScreenInfo:
 		return self.__screens
 
 class EMDesktop(QtOpenGL.QGLWidget):
+	main_widget = None
 	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
 	"""
 	def __init__(self):
+		EMDesktop.main_widget = self
 		frame = EMBoxerFrame(self)
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
@@ -452,12 +706,17 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		
 		# this float widget has half of the screen (the left)
 		self.desktop_frame = EMDesktopFrame(self)
-		fw1 = EMDesktopTaskWidget(self.desktop_frame)
+		self.left_side_bar = LeftSideWidgetBar(self.desktop_frame)
+		fw1 = EMDesktopTaskWidget(self.left_side_bar)
+		self.left_side_bar.attach_child(fw1)
+		self.desktop_frame.attach_child(self.left_side_bar)
+		
 		#print fw1.width(),fw1.height()
-		self.desktop_frame.attach_child(fw1)
+		
 		fw1.set_gl_widget(self)
 		
-		self.timereceivers = []
+		
+		self.animatables = []
 		
 	
 		self.glbasicobjects = EMBasicOpenGLObjects()
@@ -468,8 +727,9 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
-		self.timer.start(10)
+		self.timer.start(20)
 		self.time=0
+		self.begin_time = time()
 		
 		# resize finally so that the full screen is used
 		self.show()
@@ -480,7 +740,8 @@ class EMDesktop(QtOpenGL.QGLWidget):
 	
 	#def get_app_height(self):
 		#return self.appheight
-	
+	def register_animatable(self,animatable):
+		self.animatables.append(animatable)
 	def get_aspect(self):
 		return float(self.width())/float(self.height())
 	
@@ -560,12 +821,20 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		return self.time
 	
 	def time_out(self):
-		self.time+=1
-		deletelist = []
-		for i,t in enumerate(self.timereceivers):
-			t.updateTime(self.time)
+		self.time  = time()-self.begin_time
+		rm = []
+		if len(self.animatables) != 0:
+			
+			for a,i in enumerate(self.animatables):
+				if not i.animate(self.time): rm.append(a)
+				
+			rm.reverse()
+			for a in rm:
+				self.animatables.pop(a)
+			
 		
 		self.updateGL()
+		
 		
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
@@ -601,8 +870,8 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		
 		#self.bgob.render()
 		glPushMatrix()
-		if (self.time < 150):
-			z = self.get_z_opt() + float(self.time)/150.0*self.get_z_opt()
+		if (self.get_time() < 2):
+			z = self.get_z_opt() + float(self.get_time())/2.0*self.get_z_opt()
 			#print z
 			glTranslatef(0.,0.,-z)
 		else:
@@ -620,27 +889,27 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		glPopMatrix()
 		glPopMatrix()
 		
-		if self.time>150 :
+		if self.get_time()>2 or True :
 			dx = (self.width() - self.p.width())/2.0
 			dy = (self.height() - self.p.height())/2.0
 			
 			
-			glPushMatrix()
-			glTranslatef(self.width()/2.0+self.p.width(),-dy, -1.8*self.get_z_opt())
-			glScalef(.25,.25,.25)
-			glRotate(self.time,1.0,0.,0.0)
-			self.bgob2.render2()
-			glPopMatrix()
+			#glPushMatrix()
+			#glTranslatef(self.width()/2.0+self.p.width(),-dy, -1.8*self.get_z_opt())
+			#glScalef(.25,.25,.25)
+			#glRotate(self.get_time()*100.0,1.0,0.,0.0)
+			#self.bgob2.render2()
+			#glPopMatrix()
 
-			glPushMatrix()
-			dx = (self.width() - self.p.width())/2.0
-			dy = (self.height() - self.p.height())/2.0
-			dz = (self.time%10000)/5000.0
-			if ( dz > 1): dz = 2-dz
-			glTranslatef(self.width()/2.0,-dy, -self.get_z_opt()-self.p.width()/2.0-dz*(self.get_z_opt()-self.p.width()))
-			glRotatef(-90,0,1,0)
-			self.bgob2.render2()
-			glPopMatrix()
+			#glPushMatrix()
+			#dx = (self.width() - self.p.width())/2.0
+			#dy = (self.height() - self.p.height())/2.0
+			#dz = (self.get_time()%20)/10.0
+			#if ( dz > 1): dz = 2-dz
+			#glTranslatef(self.width()/2.0,-dy, -self.get_z_opt()-self.p.width()/2.0-dz*(self.get_z_opt()-self.p.width()))
+			#glRotatef(-90,0,1,0)
+			#self.bgob2.render2()
+			#glPopMatrix()
 
 			glPushMatrix()
 			glTranslatef(0.,0.,-self.get_z_opt())
@@ -748,6 +1017,11 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 		self.glwidget = None
 		self.widget = None
 		
+		self.animation = None
+	
+	def register_animation(self,animation):
+		self.animation = animation
+	
 	def set_gl_widget(self,widget):
 		self.gl_widget = widget
 
@@ -777,7 +1051,6 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 		except: pass
 			
 	def draw(self):
-		
 		if ( self.init_flag == True ):
 			self.desktop_task_widget = EMGLViewQtWidget(self.gl_widget)
 			self.widget = EMDesktopTaskWidget.EMDesktopTaskInspector(self)
@@ -787,9 +1060,13 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			self.desktop_task_widget.setQtWidget(self.widget)
 			self.init_flag = False
 			self.attach_child(self.desktop_task_widget)
-			self.parent.i_initialized(self)
+			#self.parent.i_initialized(self)
+		
+		if self.animation != None:
+			self.animation.transform()
 		
 		self.cam.position()
+		
 		for child in self.children:
 			glPushMatrix()
 			child.draw()
