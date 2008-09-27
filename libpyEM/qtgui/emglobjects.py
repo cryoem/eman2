@@ -285,7 +285,7 @@ class EMViewportDepthTools:
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		glOrtho(0.0,self.parent.viewportWidth(),0.0,self.parent.viewportHeight(),-5,5)
+		glOrtho(0.0,viewport_width(),0.0,viewport_height(),-5,5)
 
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
@@ -947,7 +947,7 @@ class Camera2:
 	
 	def motionTranslateLA(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
-			[dx,dy] = self.parent.eyeCoordsDif(prev_x,self.parent.viewportHeight()-prev_y,event.x(),self.parent.viewportHeight()-event.y())
+			[dx,dy] = self.parent.eyeCoordsDif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
 		else:
 			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
 

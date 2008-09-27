@@ -51,7 +51,7 @@ from math import sqrt
 try: from emimage import EMImage
 except: pass
 
-from emglobjects import EMViewportDepthTools, Camera2, EMBasicOpenGLObjects, Camera
+from emglobjects import EMViewportDepthTools, Camera2, EMBasicOpenGLObjects, Camera, viewport_width,viewport_height
 from emimage2dtex import *
 
 height_plane = 500
@@ -481,13 +481,7 @@ class EM3DWidget:
 	
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
-	
-	def viewportHeight(self):
-		return self.parent.height()
-	
-	def viewportWidth(self):
-		return self.parent.width()
-	
+
 	def width(self):
 		return self.target.width()
 		
@@ -1512,12 +1506,6 @@ class EMGLView3D(EM3DWidgetVolume):
 		
 		if not lighting: glDisable(GL_LIGHTING)
 		
-	def viewportHeight(self):
-		return self.parent.height()
-	
-	def viewportWidth(self):
-		return self.parent.width()
-	
 	def getInspector(self):
 		if (self.inspector == None):
 			if self.drawable == None:
@@ -1715,12 +1703,6 @@ class EMGLView2D:
 	def initializeGL(self):
 		self.drawable.initializeGL()
 	
-	def viewportHeight(self):
-		return self.parent.height()	
-	
-	def viewportWidth(self):
-		return self.parent.width()
-	
 	def testBoundaries(self):
 		'''
 		Called when the image is first drawn, this resets the dimensions of this object
@@ -1730,10 +1712,10 @@ class EMGLView2D:
 		h = self.vdtools.getMappedHeight()
 		w = self.vdtools.getMappedWidth()
 		
-		if ( w > self.viewportWidth() ):
-			self.w = self.viewportWidth()/self.sizescale
-		if ( h > self.viewportHeight() ):
-			self.h = self.viewportHeight()/self.sizescale
+		if ( w > viewport_width() ):
+			self.w = viewport_width()/self.sizescale
+		if ( h > viewport_height() ):
+			self.h = viewport_height()/self.sizescale
 	
 	def draw(self):
 		
@@ -1753,11 +1735,12 @@ class EMGLView2D:
 			
 		glPushMatrix()
 		glTranslatef(-self.width()/2.0,-self.height()/2.0,0)
-		try: self.drawable.render()
-		except Exception, inst:
-			print type(inst)     # the exception instance
-			print inst.args      # arguments stored in .args
-			print int
+		#try: 
+		self.drawable.render()
+		#except Exception, inst:
+			#print type(inst)     # the exception instance
+			#print inst.args      # arguments stored in .args
+			#print int
 		glPopMatrix()
 		
 		lighting = glIsEnabled(GL_LIGHTING)
@@ -1891,6 +1874,8 @@ class EMGLViewQtWidget:
 		
 		self.vdtools = EMViewportDepthTools(self)
 	
+		self.refresh_dl = True
+		self.texture_dl = 0
 	
 		self.decoration = EM3DPlainBorderDecoration(self)
 	def get_decoration(self):
@@ -1903,18 +1888,15 @@ class EMGLViewQtWidget:
 	def set_update_P_inv(self,val=True):
 		self.vdtools.set_update_P_inv(val)
 	
+	def set_refresh_dl(self,val=True):
+		self.refresh_dl = val
+	
 	def width(self):
 		return self.qwidget.width()
 	
 	def height(self):
 		return self.qwidget.height()
-	
-	def viewportHeight(self):
-		return self.parent.height()
-	
-	def viewportWidth(self):
-		return self.parent.width()
-	
+
 	def setQtWidget(self, widget, delete_current = False):
 		if ( delete_current and self.qwidget != None ):
 			self.qwidget.deleteLater()
@@ -1929,6 +1911,7 @@ class EMGLViewQtWidget:
 			
 	def updateTexture(self):
 		if ( self.itex == 0 or self.genTexture == True ) : 
+			self.refresh_dl == True
 			if (self.itex != 0 ):
 				#passpyth
 				self.parent.deleteTexture(self.itex)
@@ -1957,45 +1940,57 @@ class EMGLViewQtWidget:
 		# make sure the vdtools store the current matrices
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		
-		glPushMatrix()
-		glEnable(GL_TEXTURE_2D)
-		glBindTexture(GL_TEXTURE_2D,self.itex)
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
-		glBegin(GL_QUADS)
-		glTexCoord2f(0.,0.)
-		glVertex(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
-		glTexCoord2f(1.,0.)
-		glVertex( self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
-		glTexCoord2f(1.,1.)
-		glVertex( self.qwidget.width()/2.0, self.qwidget.height()/2.0)
-		glTexCoord2f(0.,1.)
-		glVertex( -self.qwidget.width()/2.0,self.qwidget.height()/2.0)
-		glEnd()
-		glDisable(GL_TEXTURE_2D)
-		glPopMatrix()
+		if self.refresh_dl == True:
+			if self.texture_dl != 0:
+				glDeleteLists(self.texture_dl,1)
+			
+			self.texture_dl=glGenLists(1)
+			glNewList(self.texture_dl,GL_COMPILE)
+		
+			glPushMatrix()
+			glEnable(GL_TEXTURE_2D)
+			glBindTexture(GL_TEXTURE_2D,self.itex)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
+			glBegin(GL_QUADS)
+			glTexCoord2f(0.,0.)
+			glVertex(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
+			glTexCoord2f(1.,0.)
+			glVertex( self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
+			glTexCoord2f(1.,1.)
+			glVertex( self.qwidget.width()/2.0, self.qwidget.height()/2.0)
+			glTexCoord2f(0.,1.)
+			glVertex( -self.qwidget.width()/2.0,self.qwidget.height()/2.0)
+			glEnd()
+			glDisable(GL_TEXTURE_2D)
+			glPopMatrix()
+			
+			glEndList()
+		
+		glCallList(self.texture_dl)
+		self.refresh_dl = False
 	
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
 		self.decoration.draw()
 		if self.drawFrame:
-			try: self.vdtools.drawFrame()
-			except Exception, inst:
-				print type(inst)     # the exception instance
-				print inst.args      # arguments stored in .args
-				print int
+			self.vdtools.drawFrame()
+			#except Exception, inst:
+				#print type(inst)     # the exception instance
+				#print inst.args      # arguments stored in .args
+				#print int
 		if (not lighting): glDisable(GL_LIGHTING)
 		
 		# now draw children if necessary - such as a qcombobox list view that has poppud up
 		for i in self.e2children:
 			glPushMatrix()
-			try:
-				i.draw()
-			except Exception, inst:
-				print type(inst)     # the exception instance
-				print inst.args      # arguments stored in .args
-				print int
+			#try:
+			i.draw()
+			#except Exception, inst:
+				#print type(inst)     # the exception instance
+				#print inst.args      # arguments stored in .args
+				#print int
 			glPopMatrix()
 
 	def isinwin(self,x,y):
