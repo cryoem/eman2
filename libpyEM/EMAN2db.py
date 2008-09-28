@@ -65,11 +65,11 @@ atexit.register(DB_cleanup)
 # if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
 signal.signal(2,DB_cleanup)
 
-def db_open_dict(url):
+def db_open_dict(url,ro=False):
 	"""opens a DB through an environment from a db:/path/to/db#dbname string. If you want to specify a specific image by key,
 	you can specify the key as:  db:/path/to/db#dbname?key
 	If key is an integer, it will be converted to an integer before lookup. Thus it is impossible to access data items
-	with keys like '1' instead of (int)1 using this mechanism."""
+	with keys like '1' instead of (int)1 using this mechanism. ro is a read only flag, which will disable caching as well."""
 	if url[:4].lower()!="bdb:": return None
 	url=url.replace("../",os.getcwd()+"/../")
 	if url[4]!='/' : 
@@ -80,11 +80,11 @@ def db_open_dict(url):
 	if qun<0 : qun=len(url)
 	if sln<0 :
 		ddb=EMAN2DB.open_db(".")
-		ddb.open_dict(url[4:qun])	# strip the ?xyz from the end if present
+		ddb.open_dict(url[4:qun],ro=ro)	# strip the ?xyz from the end if present
 		return ddb.__dict__[url[4:qun]]
 	ddb=EMAN2DB.open_db(url[4:sln])
 	name=url[sln+1:]
-	ddb.open_dict(name)
+	ddb.open_dict(name,ro=ro)
 	return ddb.__dict__[name]
 
 ##########
@@ -381,7 +381,7 @@ class DBDict:
 	
 	alldicts=weakref.WeakKeyDictionary()
 	fixedkeys=frozenset(("nx","ny","nz","minimum","maximum","mean","sigma","square_sum","mean_nonzero","sigma_nonzero"))
-	def __init__(self,name,file=None,dbenv=None,path=None,parent=None):
+	def __init__(self,name,file=None,dbenv=None,path=None,parent=None,ro=False):
 		"""This is a persistent dictionary implemented as a BerkeleyDB Hash
 		name is required, and will also be used as a filename if none is
 		specified. """
@@ -393,10 +393,12 @@ class DBDict:
 		if path : self.path = path
 		else : self.path=os.getcwd()
 		self.txn=None	# current transaction used for all database operations
-		self.bdb=db.DB(dbenv)
+		if ro : self.bdb=db.DB()
+		else : self.bdb=db.DB(dbenv)
 		if file==None : file=name+".bdb"
-		print "open ",self.path+"/"+file,name
-		self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE)
+#		print "open ",self.path+"/"+file,name
+		if ro : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE|db.DB_RDONLY)
+		else : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE)
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
 
 	def __str__(self): return "<EMAN2db DBHash instance: %s>" % self.name
