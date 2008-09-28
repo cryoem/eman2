@@ -342,9 +342,9 @@ class EMAN2DB:
 	def __getitem__(self,key):
 		return self.dicts[key]
 
-	def open_dict(self,name):
+	def open_dict(self,name,ro=False):
 		if self.dicts.has_key(name) : return
-		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self)
+		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
 		self.__dict__[name]=self.dicts[name]
 	
 	def close_dict(self,name):
