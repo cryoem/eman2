@@ -397,7 +397,7 @@ class DBDict:
 		else : self.bdb=db.DB(dbenv)
 		if file==None : file=name+".bdb"
 #		print "open ",self.path+"/"+file,name
-		if ro : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE|db.DB_RDONLY)
+		if ro : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_RDONLY)
 		else : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE)
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
 
