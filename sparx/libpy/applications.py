@@ -159,10 +159,10 @@ def ali2d_reduce(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, center=1, maxi
 
 	print_end_msg("ali2d_reduce")
 
-def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="", F=0.996, MPI=False):
+def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="", T0=1.0, F=0.996, SA_stop=0, MPI=False):
 
 	if MPI:
-		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, user_func_name, random_method, F)
+		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, user_func_name, random_method, T0, F, SA_stop)
 		return
 	from utilities    import model_circle, combine_params2, dropImage, getImage, get_arb_params, get_input_from_string
 	from statistics   import add_oe_ave_varf
@@ -180,7 +180,8 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
-
+	SA_stop = int(SA_stop)
+	if SA_stop == 0: SA_stop = max_iter 
 	if max_iter == 0:
 		max_iter  = 10
 		auto_stop = True
@@ -217,7 +218,10 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Data with CTF               : %s\n"%(CTF))
 	print_msg("Simulated Annealing         : %s\n"%(randomize))
-	if randomize: print_msg("Cooling Rate                : %f\n"%(F))
+	if randomize:
+		print_msg("Initial temperture          : %f\n"%(T0)) 
+		print_msg("Cooling Rate                : %f\n"%(F))
+		if SA_stop != max_iter: print_msg("SA stop at Iteration        : %i\n"%(SA_stop))
 	if auto_stop:   print_msg("Stop iteration with         : criterion\n")
 	else:           print_msg("Stop iteration with         : maxit\n")
 
@@ -319,14 +323,14 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				if (auto_stop == True): break
 			else:	a0 = a1
 			if(N_step == (len(xrng)-1) and Iter == (max_iter-1)):  break
-			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima), CTF=CTF, randomize=randomize, Iter=total_iter, F=F)
+			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima), CTF=CTF, randomize=randomize, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
 	# write out headers
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_a")
 
 
-def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="", F=0.996):
+def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, user_func_name="ref_ali2d", random_method="", T0=1.0, F=0.996, SA_stop=0):
 
 	from utilities    import model_circle, combine_params2, dropImage, getImage, get_arb_params, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict, file_type
@@ -355,7 +359,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		os.mkdir(outdir)
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
-	
+	SA_stop = int(SA_stop)
+	if SA_stop == 0:  SA_stop = max_iter	
 	if max_iter == 0:
 		max_iter = 10
 		auto_stop = True
@@ -411,7 +416,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if random_method != "": 	
 			print_msg("Random method               : %s\n"%(random_method))
 		if random_method == "SA": 
+			print_msg("Initial temperture          : %f\n"%(T0))
 			print_msg("Cooling Rate                : %f\n"%(F))
+			if SA_stop != max_iter:	print_msg("SA stop at Iteration        : %i\n"%(SA_stop))
 		if auto_stop: print_msg("Stop iteration with         : criterion\n")
 		else:         print_msg("Stop iteration with         : maxit\n")
 		print_msg("Number of processors used   : %d\n"%(number_of_proc))
@@ -582,7 +589,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if not again: break
 			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, random_method=random_method, Iter=total_iter, F=F)
+			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	#if(CTF and data_had_ctf == 0):

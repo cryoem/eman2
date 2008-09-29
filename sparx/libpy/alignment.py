@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 	
-def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[], CTF = False, random_method="", Iter=0, F=0.996):
+def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[], CTF = False, random_method="", Iter=0, T0=1.0, F=0.996, SA_stop=0):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -77,7 +77,7 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 		# align current image to the reference
 		if random_method == "SA":
 			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, F)
+			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, T0, F, SA_stop)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
 			ima2.set_attr_dict({'select': select})
@@ -350,13 +350,11 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	return p1
 
 
-def sim_anneal(peaks, Iter, F):
+def sim_anneal(peaks, Iter, T0, F, SA_stop):
 	from math import exp, pow, log10
 	from random import random
 
-	if log10(F)*Iter > -3.0:
-		# Initial temperature
-		T0 = 1.0
+	if log10(F)*Iter > -3.0 and Iter < SA_stop:
 		# Determine the current temperature
 		T = T0*pow(F, Iter)	
 	

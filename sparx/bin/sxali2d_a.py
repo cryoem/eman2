@@ -52,8 +52,10 @@ def main():
 	parser.add_option("--maxit", type="float",  default=0,             help="  maximum number of iterations (0 means the maximum iterations is 10, but it will automatically stop should the criterion falls")
 	parser.add_option("--CTF", action="store_true", default=False,     help="  Consider CTF correction during the alignment ")
 	parser.add_option("--function", type="string", default="ref_ali2d",help="  name of the reference preparation function")
-	parser.add_option("--random_method", type="string", default="",    help=" start with random alpha")
-	parser.add_option("--F",     type="float",  default=0.996,         help="  cooling rate for simulated annealing (only valid when randomize is True)")
+	parser.add_option("--random_method", type="string", default="",    help="  SA: Simulated Annealing   ML: Maximum Likelihood")
+	parser.add_option("--T0",    type="float",  default=1.0,           help="  initial temperature for simulated annealing")
+	parser.add_option("--F",     type="float",  default=0.996,         help="  cooling rate for simulated annealing")
+	parser.add_option("--SA_stop", type="float", default=0,            help="  iteration at which to shut down simulated annealing")
 	parser.add_option("--MPI", action="store_true", default=False,     help="  use MPI version ")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) >3:
@@ -69,7 +71,7 @@ def main():
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 		global_def.BATCH = True
-		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.function, options.random_method, options.F, options.MPI)
+		ali2d_a(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.function, options.random_method, options.T0, options.F, options.MPI, options.SA_stop)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
