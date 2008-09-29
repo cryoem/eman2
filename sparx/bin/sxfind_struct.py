@@ -38,7 +38,7 @@ from   optparse   import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir --delta=angular_delta --rand_seed=random_seed --trials=number_of_trials --refine --MPI --ite --given"
+	usage = progname + " stack outdir --delta=angular_delta --rand_seed=random_seed --trials=number_of_trials --refine --MPI --ite --given --ou --ir"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--delta",     type="float",        default=10.0,     help=" Angle step " )
 	parser.add_option("--ir",        type="float",        default=-1,       help=" Inner radius of particle (set to )")

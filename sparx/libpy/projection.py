@@ -340,7 +340,7 @@ def cml_sinogram(image2D, diameter):
 def cml_head_log(stack, outdir, delta, ir, ou, rand_seed, ncpu, refine, trials):
 	from utilities import print_msg, even_angles
 
-	anglst   = even_angles(delta, 0.0, 89.9, 0.0, 359.9, 'S')
+	anglst   = even_angles(delta, 0.0, 89.9, 0.0, 359.9, 'P')
 	n_anglst = len(anglst)
 	nprj     = EMUtil.get_image_count(stack)
 	
@@ -393,13 +393,12 @@ def cml_export_progress(namefile, Prj, Cst, disc, cmd):
 
 
 	if cmd == 'choose':
-		txt_i    = str(Cst['iprj']).rjust(3, '0')
-		txt_a    = str(Prj[Cst['iprj']].pos_agls).rjust(4, '0')
-		txt      = 'Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f' % (txt_i, txt_a, Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, disc)
+		infofile.write('-------------------------------------------------------------------------------------------------\n')
 		if Prj[Cst['iprj']].mirror:
-			infofile.write(txt + ' update (mirror)\n')
+			infofile.write('>> Choose angles (phi, theta, psi):           %10.3f %10.3f %10.3f   Disc: %10.3f mirror\n\n' % (Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, disc))
 		else:
-			infofile.write(txt + ' update\n')
+			infofile.write('>> Choose angles (phi, theta, psi):           %10.3f %10.3f %10.3f   Disc: %10.3f\n\n' % (Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, disc))
+
 			
 	elif cmd.split(':')[0] == 'passed':
 		agls     = cmd.split(':')[1]
@@ -416,25 +415,27 @@ def cml_export_progress(namefile, Prj, Cst, disc, cmd):
 		txt      = '\n\nIteration %s: %7.1f    ' % (ite, disc)
 		infofile.write(txt + '\n')
 		
-	infofile.close()
+	
 
-	'''
-
-	if cmd == 'progress':
+	elif cmd == 'progress':
 		txt_i    = str(Cst['iprj']).rjust(3, '0')
 		txt_a    = str(Prj[Cst['iprj']].pos_agls).rjust(3, '0')
-		txt      = 'Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f' % (txt_i, txt_a, Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, abs(disc))
+		txt      = 'Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f' % (txt_i, txt_a, Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, disc)
 		if Prj[Cst['iprj']].mirror:
 			infofile.write(txt + ' mirror\n')
 		else:
 			infofile.write(txt + '\n')
-		
+	'''	
 	elif cmd == 'choose':
-		infofile.write('-------------------------------------------------------------------------------------------------\n')
+		
+		txt_i    = str(Cst['iprj']).rjust(3, '0')
+		txt_a    = str(Prj[Cst['iprj']].pos_agls).rjust(4, '0')
+		txt      = 'Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f' % (txt_i, txt_a, Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, disc)
 		if Prj[Cst['iprj']].mirror:
-			infofile.write('>> Choose angles (phi, theta, psi):           %10.3f %10.3f %10.3f   Disc: %10.3f mirror\n' % (Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, abs(disc)))
+			infofile.write(txt + ' update (mirror)\n')
 		else:
-			infofile.write('>> Choose angles (phi, theta, psi):           %10.3f %10.3f %10.3f   Disc: %10.3f\n' % (Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, abs(disc)))
+			infofile.write(txt + ' update\n')
+
 
 	elif cmd == 'mirror':
 		infofile.write('                after apply mirror:           %10.3f %10.3f %10.3f\n' % (Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi))
@@ -446,10 +447,13 @@ def cml_export_progress(namefile, Prj, Cst, disc, cmd):
 
 	'''
 
+	infofile.close()
+
 # open and transform projections
 def cml_open_proj(stack, ir, ou):
 	from projection  import cml_sinogram
 	from utilities   import model_circle, get_params3D
+	from filter      import filt_tophatb
 
 	# ----- define structures data ---------------------------------
 	class Projection:
@@ -476,6 +480,7 @@ def cml_open_proj(stack, ir, ou):
 	for i in xrange(nprj):
 		Prj.append(Projection(None, -1, -1, False, False))
 		image.read_image(stack, i)
+		image = filt_tophatb(image, 0.05, 0.25)
 		if(i == 0):
 			nx = image.get_xsize()
 			if(ou < 1):
@@ -701,6 +706,34 @@ def cml_disc_forspin(Prj, weights, Cst, com, com_m):
 
 	return disc, mirror
 
+## compute list of pair wise distance excluding iprj (no weights)
+def cml_list_of_pairw_dist(Prj, Cst):
+	com     = [[] for i in xrange(Cst['nlines'])]
+	L_disc  = [0.0] * Cst['nlines']
+	n       = 0
+	for i in xrange(Cst['nprj'] - 1):
+		for j in xrange(i + 1, Cst['nprj']):
+			if i != Cst['iprj'] and j != Cst['iprj']:
+				com[n]    = get_common_line_angles(Prj[i].phi, Prj[i].theta, Prj[i].psi, Prj[j].phi, Prj[j].theta, Prj[j].psi, Cst['nangle'])
+				L_disc[n] = Prj[i].sino.cm_euc(Prj[j].sino, com[n][2], com[n][3], com[n][0], com[n][1])
+			n += 1
+
+	return L_disc, com
+
+## calculate partial distance excluding iprj by multiply pair wise distances by their weights
+def cml_partial_disc(L_disc, weights, Cst):
+	n = 0
+	L_tot = 0.0
+
+	# compute the discrepancy
+	for i in xrange(Cst['nprj'] - 1):
+		for j in xrange(i + 1, Cst['nprj']):
+			if i != Cst['iprj'] and j != Cst['iprj']:
+				L_tot += (L_disc[n] * weights[n])
+			n += 1
+
+	return L_tot
+
 # compute the discrepancy for the cml_spin_proj
 def cml_disc_forspin_init(Prj, weights, Cst, com):
 	n = 0
@@ -771,6 +804,114 @@ def cml_refine_agls(vec_in, data):
 	disc = cml_disc_proj(Prj)
 
 	return -disc
+
+## best_psi, mirror, new_disc = cml_spin_proj_full(Prj, Cst, weights, disc_init)
+def cml_spin_proj_full(Prj, Cst, weights, disc_init, com):
+	from math import fmod
+	import sys
+	import time
+
+	# prepare angles for the mirror
+	com_m   = [[] for i in xrange(Cst['nlines'])]
+	phi_m   = fmod(Prj[Cst['iprj']].phi + 180.0, 360.0)
+	theta_m = 180.0 - Prj[Cst['iprj']].theta
+	psi_m   = 0
+
+	Prj[Cst['iprj']].psi = 0
+	best_psi = 0
+
+	t0 = time.time()
+
+	# Add common lines of ith prj
+	n = 0
+	for i in xrange(Cst['nprj'] - 1):
+		for j in xrange(i + 1, Cst['nprj']):
+			if i == Cst['iprj']:
+				com[n]   = get_common_line_angles(Prj[i].phi, Prj[i].theta, Prj[i].psi, Prj[j].phi, Prj[j].theta, Prj[j].psi, Cst['nangle'])
+				com_m[n] = get_common_line_angles(phi_m, theta_m, psi_m, Prj[j].phi, Prj[j].theta, Prj[j].psi, Cst['nangle'])
+			elif j == Cst['iprj']:
+				com[n]   = get_common_line_angles(Prj[i].phi, Prj[i].theta, Prj[i].psi, Prj[j].phi, Prj[j].theta, Prj[j].psi, Cst['nangle'])
+				com_m[n] = get_common_line_angles(Prj[i].phi, Prj[i].theta, Prj[i].psi, phi_m, theta_m, psi_m, Cst['nangle'])
+			n += 1
+
+	t01 = time.time()
+	print 'add cml line:', t01 - t0, 's'
+
+	# full disc for psi = 0
+	disc, mirror = cml_disc_forspin_full(Prj, weights, Cst, com, com_m, disc_init)
+
+	tg = time.time()
+	print 'first cml_disc_forspin_full', tg - t01, 's'
+
+	
+
+	# spin function d_psi to 360
+	for n in xrange(1, Cst['npsi']):
+		Prj[Cst['iprj']].psi += Cst['d_psi_pi']
+
+		#t1 = time.time()
+
+		# update common lines
+		count = 0
+		for i in xrange(Cst['nprj'] - 1):
+			for j in xrange(i + 1, Cst['nprj']):
+				if i == Cst['iprj']:
+					
+					# increase the value by step
+					com[count][0]   = com[count][0] + Cst['d_psi_pi']         # a1 + d_psi in degree
+					com[count][2]   = com[count][2] + 1                       # n1 + 1
+
+					com_m[count][0] = com_m[count][0] + Cst['d_psi_pi']       # a1 + d_psi in degree
+					com_m[count][2] = com_m[count][2] + 1                     # n1 + 1
+										
+					# check value
+					if com[count][0]   > 360:                 com[count][0]   = 0
+					if com_m[count][0] > 360:                 com_m[count][0] = 0
+					if com[count][2]   > (Cst['nangle'] - 1):  com[count][2]   = 0
+					if com_m[count][2] > (Cst['nangle'] - 1):  com_m[count][2] = 0
+
+				elif j == Cst['iprj']:
+					# increase the value by step
+					com[count][1]   = com[count][1]   + Cst['d_psi_pi']       # a2 + d_psi in degree
+					com_m[count][1] = com_m[count][1] + Cst['d_psi_pi']       # a2 + d_psi in degree
+					
+					# check value
+					if com[count][1] > 270 + Cst['d_psi_pi']:
+						com[count][1] = 180 - (com[count][1] - 2 * Cst['d_psi_pi'])
+				
+					if com_m[count][1] > 270 + Cst['d_psi_pi']:
+						com_m[count][1] = 180 - (com_m[count][1] - 2 * Cst['d_psi_pi'])
+		
+					if com[count][1] < 0:   com[count][3] = com[count][3] - 1
+					else:                   com[count][3] = com[count][3] + 1
+
+					if com_m[count][1] < 0: com_m[count][3] = com_m[count][3] - 1
+					else:                   com_m[count][3] = com_m[count][3] + 1
+					
+					if com_m[count][3] > (Cst['nangle'] - 1): com_m[count][3] =  0
+					if com[count][3]   > (Cst['nangle'] - 1): com[count][3]   =  0
+					
+
+				count += 1
+
+		#t2 = time.time()
+		#print 'update cml:', t2-t1, 's'
+
+		# compute the full disc
+		disc_new, mirror_new = cml_disc_forspin_full(Prj, weights, Cst, com, com_m, disc_init)
+
+		#print 'cml_disc_forspin_full:', time.time() - t2
+	
+		# choose the best
+		if disc_new <= disc:
+			disc     = disc_new
+			mirror   = mirror_new
+			best_psi = Prj[Cst['iprj']].psi
+
+	print 'time spin:', time.time()-tg, 's'
+	sys.exit()
+	
+	return best_psi, mirror, disc
 
 # spin Prj in order to select the best orientation
 def cml_spin_proj(Prj, Cst, weights):
@@ -960,7 +1101,7 @@ def cml_init_rnd(trials, rand_seed):
 
 
 # main function for sxfind_struct
-def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine = False, DEBUG = False):
+def cml_find_struc_SA(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine = False, DEBUG = False):
 	from projection import cml_head_log, cml_weights, cml_disc_proj, cml_spin_proj
 	from projection import cml_export_txtagls, cml_export_progress, cml_refine_agls
 	from utilities  import print_msg, amoeba, even_angles
@@ -1210,7 +1351,7 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 
 
 # main function for sxfind_struct
-def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine = False, DEBUG = False, given = False):
+def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine = False, DEBUG = False, given = False):
 	from projection import cml_head_log, cml_weights, cml_disc_proj, cml_spin_proj
 	from projection import cml_export_txtagls, cml_export_progress, cml_refine_agls
 	from utilities  import print_msg, amoeba, even_angles, running_time_txt
@@ -1266,22 +1407,21 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 	infofilename = outdir + '/progress_' + str(outnum).rjust(3, '0')
 	angfilename  = outdir + '/angles_'   + str(outnum).rjust(3, '0')
 
-	# Assign the direction of the first sinograms
-	Prj[0].pos_agls = 0     # assign (phi=0, theta=0)
-	Prj[0].pos_psi  = 0
-	Prj[0].phi      = 0.0
-	Prj[0].theta    = 0.0
-	Prj[0].psi      = 0.0
-	ocp_agls[0]     = 0     # first position angles is occupied by sino 0
-
 	if not given:
+		# Assign the direction of the first sinograms
+		Prj[0].pos_agls = 0     # assign (phi=0, theta=0)
+		Prj[0].pos_psi  = 0
+		Prj[0].phi      = 0.0
+		Prj[0].theta    = 0.0
+		Prj[0].psi      = 0.0
+		ocp_agls[0]     = 0     # first position angles is occupied by sino 0
+
 		# Assign randomly direction for the others sinograms
 		n = 1
 		while n < Cst['nprj']:
 			i = randrange(1, n_anglst)
 			if ocp_agls[i] == -1:
 				Prj[n].pos_agls = i
-				Prj[n].try_agls = i
 				Prj[n].pos_psi  = randrange(0, Prj[0].sino.get_ysize())
 				Prj[n].phi      = anglst[i][0]
 				Prj[n].theta    = anglst[i][1]
@@ -1289,12 +1429,14 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 				ocp_agls[i]     = n
 				n += 1
 	else:
+		Prj[0].pos_agls = 0
+		Prj[0].pos_psi  = int(Prj[0].psi / float(Cst['d_psi_pi']))
+		ocp_agls[0]     = 0
 		n = 1
 		while n < Cst['nprj']:
 			i = randrange(1, n_anglst)
 			if ocp_agls[i] == -1:
 				Prj[n].pos_agls = i
-				Prj[n].try_agls = i
 				Prj[n].pos_psi  = int(Prj[n].psi / float(Cst['d_psi_pi']))
 				n += 1
 
@@ -1309,64 +1451,79 @@ def cml_find_struc___(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 		print 'disc init: %10.3f' % disc
 
 	stopflag = False
-	list_prj = range(1, Cst['nprj'])
+	## SPIDER
+	#list_prj = range(1, Cst['nprj'])
+	list_prj = range(Cst['nprj'])
 	for kiter in xrange(Iter):
 		
 		# ---------- loop for all sinograms ---------------------------------
 		t_start  = time.time()
-		shuffle(list_prj)
+		## SPIDER
+		#shuffle(list_prj)
 		ct_prj   = 0
 		cml_export_progress(infofilename, Prj, Cst, disc, 'iteration:%d' % (kiter))
 		for iprj in list_prj:
 			# count proj
 			ct_prj += 1
-
-			# choose the next from the list of available positions
-			old_pos = Prj[iprj].pos_agls
-			find    = False
-			while not find:
-				Prj[iprj].try_agls += 1
-				if Prj[iprj].try_agls > (n_anglst - 1):
-					Prj[iprj].try_agls = 1
-				if ocp_agls[Prj[iprj].try_agls] == -1:
-					find = True
-
-			# preserve active sinogram
+			# active sinogram and preserve
 			Cst['iprj'] = iprj
 			best_Prj    = deepcopy(Prj[iprj])
 
-			# update list of occupied angles
-			ocp_agls[old_pos]  = -1
-			Prj[iprj].pos_agls = Prj[iprj].try_agls
-			ocp_agls[Prj[iprj].pos_agls] = iprj
+			# list of pair wise distance excluding iprj (no weights)
+			L_disc, com = cml_list_of_pairw_dist(Prj, Cst)
+	
+			for iagls in xrange(n_anglst):
 
-			# change angles
-			Prj[iprj].phi	 = anglst[Prj[iprj].pos_agls][0]
-			Prj[iprj].theta  = anglst[Prj[iprj].pos_agls][1]
-			Prj[iprj].psi	 = 0.0
-			Prj[iprj].mirror = False
+				# choose the next from the list of available positions
+				old_pos = Prj[iprj].pos_agls
+				find    = False
+				while not find:
+					Prj[iprj].pos_agls += 1
+					if Prj[iprj].pos_agls > (n_anglst - 1):
+						Prj[iprj].pos_agls = 1
+					if ocp_agls[Prj[iprj].pos_agls] == -1:
+						find = True
 
-			# compute the weight for each common lines with Voronoi
-			weights = cml_weights(Prj)
-
-			# spin on iprj-th projection			
-			best_psi, mirror, new_disc = cml_spin_proj(Prj, Cst, weights)
-
-			# update if better otherwise revert to the original one
-			if new_disc < disc:
-				disc = new_disc
-				Prj[iprj].psi    = best_psi
-				Prj[iprj].mirror = mirror
-				if mirror:
-					Prj[iprj].phi	 = fmod(Prj[iprj].phi + 180, 360)
-					Prj[iprj].theta  = 180 - Prj[iprj].theta
-				cml_export_progress(infofilename, Prj, Cst, disc, 'choose')
-			else:
-				oldpos = Prj[iprj].pos_agls
-				ocp_agls[Prj[iprj].pos_agls] = -1
-				Prj[iprj]                    = deepcopy(best_Prj)
+				# update list of occupied angles
+				ocp_agls[old_pos]  = -1
 				ocp_agls[Prj[iprj].pos_agls] = iprj
-				cml_export_progress(infofilename, Prj, Cst, disc, 'passed:%5d' % (oldpos))
+
+				# change angles
+				Prj[iprj].phi	 = anglst[Prj[iprj].pos_agls][0]
+				Prj[iprj].theta  = anglst[Prj[iprj].pos_agls][1]
+				Prj[iprj].psi	 = 0.0
+				Prj[iprj].mirror = False
+
+				# compute the weight for each common lines with Voronoi
+				weights = cml_weights(Prj)
+
+				# calculate partial distance excluding iprj by multiply pair wise distances by their weights
+				disc_partial = cml_partial_disc(L_disc, weights, Cst)
+
+				# spin on iprj-th projection			
+				best_psi, mirror, new_disc = cml_spin_proj_full(Prj, Cst, weights, disc_partial, com)
+
+				# update if better otherwise revert to the original one
+				if new_disc < disc:
+					disc = new_disc
+					Prj[iprj].psi    = best_psi
+					Prj[iprj].mirror = mirror
+					if mirror:
+						Prj[iprj].phi	 = fmod(Prj[iprj].phi + 180, 360)
+						Prj[iprj].theta  = 180 - Prj[iprj].theta
+					best_Prj = deepcopy(Prj[iprj])
+				else:
+					Prj[iprj].psi = best_psi
+
+				cml_export_progress(infofilename, Prj, Cst, new_disc, 'progress')
+
+			# assign the best orientation
+			oldpos = Prj[iprj].pos_agls
+			ocp_agls[Prj[iprj].pos_agls] = -1
+			Prj[iprj] = deepcopy(best_Prj)
+			ocp_agls[Prj[iprj].pos_agls] = iprj
+			
+			cml_export_progress(infofilename, Prj, Cst, disc, 'choose')
 
 		# display info
 		cml_export_txtagls(angfilename, Prj, Cst, disc, str(kiter).rjust(3, '0'))

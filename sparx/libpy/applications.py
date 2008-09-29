@@ -9559,7 +9559,7 @@ def find_struct(prj_stack, outdir, delta, ir, ou, Iter, rand_seed, trials, refin
 			os.remove('.tmp_txt_1a32b4')
 		
 	else:
-		from projection import cml_find_struc___
+		from projection import cml_find_struc
 		t_start = start_time()
 		print_begin_msg('find_struct')
 		cml_head_log(prj_stack, outdir, delta, ir, ou, rand_seed, 1, refine, trials)   # 1 is ncpu
@@ -9572,8 +9572,8 @@ def find_struct(prj_stack, outdir, delta, ir, ou, Iter, rand_seed, trials, refin
 		for trial in xrange(trials):
 			newPrj = deepcopy(Prj)
 			print_msg('\ntrials %s______________________________rnd: %d\n' % (str(trial).rjust(3, '0'), Rnd[trial]))
-			#newPrj, disc = cml_find_struc(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug)
-			newPrj, disc = cml_find_struc___(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug, given)
+			#newPrj, disc = cml_find_struc_SA(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug)
+			newPrj, disc = cml_find_struc(newPrj, delta, outdir, trial, Iter, Rnd[trial], refine, debug, given)
 			print_msg('          \__discrepancy: %10.3f\n' % disc)
 			print_msg('           \_%s' % time.ctime())
 
