@@ -348,7 +348,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		glPopMatrix()
 		
 		self.cam.position()
-		self.vdtools.storeModel()
+		self.vdtools.store_model()
 		
 		if ( self.track ):
 			self.loadTrackAxis()
@@ -440,7 +440,7 @@ class EM3DSliceViewer(EMImage3DObject):
 			self.inspector=EMSlice3DInspector(self)
 		self.inspector.updateRotations(t3d)
 	
-	def getInspector(self):
+	def get_inspector(self):
 		if not self.inspector : self.inspector=EMSlice3DInspector(self)
 		return self.inspector
 

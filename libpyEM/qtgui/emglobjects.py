@@ -1293,7 +1293,7 @@ class EMImage3DObject:
 	def showInspector(self):
 		pass
 	
-	def getInspector(self):
+	def get_inspector(self):
 		pass
 	
 	def setRank(self,rank):

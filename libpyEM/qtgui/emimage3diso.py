@@ -326,7 +326,7 @@ class EMIsosurface(EMImage3DObject):
 			self.inspector=EMIsoInspector(self)
 		self.inspector.updateRotations(t3d)
 	
-	def getInspector(self):
+	def get_inspector(self):
 		if not self.inspector : self.inspector=EMIsoInspector(self)
 		return self.inspector
 		

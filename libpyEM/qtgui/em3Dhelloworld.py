@@ -283,7 +283,7 @@ class EM3DHelloWorld(EMImage3DObject):
 			self.inspector=EMHelloWorldInspector(self)
 		self.inspector.updateRotations(t3d)
 	
-	def getInspector(self):
+	def get_inspector(self):
 		if not self.inspector : self.inspector=EMHelloWorldInspector(self)
 		return self.inspector
 		

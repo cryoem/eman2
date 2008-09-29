@@ -267,12 +267,6 @@ class EMImage3DCore:
 	
 	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
-
-	def viewportHeight(self):
-		return self.parent.height()
-	
-	def viewportWidth(self):
-		return self.parent.width()
 	
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
@@ -373,7 +367,7 @@ class EMImage3DCore:
 		return self.parent.get_render_dims_at_depth(depth)
 
 	def getSundryInspector(self):
-		return self.viewables[self.currentselection].getInspector()
+		return self.viewables[self.currentselection].get_inspector()
 	
 	def addSym(self):
 		sym = EM3DSymViewer(self)
@@ -448,7 +442,7 @@ class EMImage3DCore:
 		elif self.currentselection >= len(self.viewables):
 			print "error, current seletion too large", self.currentselection,len(self.viewables)
 			return None
-		return self.viewables[self.currentselection].getInspector()
+		return self.viewables[self.currentselection].get_inspector()
 	
 	def deleteCurrent(self, val):
 		if ( len(self.viewables) == 0 ): return

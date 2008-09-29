@@ -239,7 +239,7 @@ class EMVolume(EMImage3DObject):
 		glPopMatrix()
 		
 		self.cam.position()
-		self.vdtools.storeModel()
+		self.vdtools.store_model()
 
 		# here is where the correct display list (x,y or z direction) is determined
 		self.textureUpdateIfNecessary()
@@ -550,7 +550,7 @@ class EMVolume(EMImage3DObject):
 			self.inspector=EMVolumeInspector(self)
 		self.inspector.updateRotations(t3d)
 	
-	def getInspector(self):
+	def get_inspector(self):
 		if not self.inspector : self.inspector=EMVolumeInspector(self)
 		return self.inspector
 		

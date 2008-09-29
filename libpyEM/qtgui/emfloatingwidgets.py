@@ -96,6 +96,7 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		self.border_depth = 6
 		
 		self.display_list = None
+		self.force_update = False
 		
 		self.faulty = False
 		if not isinstance(object,EMGLView3D) and not isinstance(object,EMGLView2D) and not isinstance(object,EMGLViewQtWidget) and not isinstance(object,EM3DWidgetVolume) and not isinstance(object,EM3DWidget):
@@ -119,9 +120,14 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		else:
 			self.color_flag = flag
 	
+	def set_force_update(self,val=True):
+		self.force_update = val
+	
 	def draw(self,force_update=False):
 		
-		if force_update : self.__delete_list()
+		if force_update or self.force_update:
+			self.__delete_list()
+			self.force_update = False
 		
 		if self.display_list == None:
 			if isinstance(self.object,EMGLView3D) or isinstance(self.object,EM3DWidgetVolume) or isinstance(self.object,EM3DWidget):
@@ -466,6 +472,9 @@ class EM3DWidget:
 		self.allow_target_wheel_events = True
 		
 		self.allow_target_translations = True
+	
+	def get_inspector(self):
+		return self.target.get_inspector()
 		
 	def target_wheel_events_allowed(self,bool):
 		self.allow_target_wheel_events = bool
@@ -496,7 +505,7 @@ class EM3DWidget:
 	
 	def __atomic_draw_frame(self,plane_string):
 		
-		#if self.vdtools.drawFrame(True):
+		#if self.vdtools.draw_frame(True):
 		self.corner_sets.append(self.vdtools.get_corners())
 		self.planes.append((plane_string))
 		self.model_matrices.append(self.vdtools.getModelMatrix())
@@ -572,7 +581,7 @@ class EM3DWidget:
 			#self.drawable.init_inspector()
 			#self.drawable.inspector.show()
 			#self.drawable.inspector.hide()
-			#self.parent.addQtWidgetDrawer(self.getInspector())
+			#self.parent.addQtWidgetDrawer(self.get_inspector())
 		if event.modifiers() == Qt.ControlModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
 			self.cam.mousePressEvent(event)
 		else:
@@ -951,7 +960,7 @@ class EMGLRotorWidget(EM3DWidgetVolume):
 	def wheelEvent(self,event):
 		
 		if not self.is_animated and self.allow_child_mouse_events and self.allow_target_wheel_events: 
-			if self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
+			if self.__get_visible().isinwin(event.x(),viewport_height()-event.y()) :
 				self.__get_visible().wheelEvent(event)
 				return
 
@@ -973,22 +982,22 @@ class EMGLRotorWidget(EM3DWidgetVolume):
 	
 	def mousePressEvent(self,event):
 		if self.is_animated: return
-		if self.allow_child_mouse_events and self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
+		if self.allow_child_mouse_events and self.__get_visible().isinwin(event.x(),viewport_height()-event.y()) :
 			self.__get_visible().mousePressEvent(event)
 	
 	def mouseReleaseEvent(self,event):
 		if self.is_animated: return
-		if self.allow_child_mouse_events and self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
+		if self.allow_child_mouse_events and self.__get_visible().isinwin(event.x(),viewport_height()-event.y()) :
 			self.__get_visible().mouseReleaseEvent(event)
 	
 	def mouseMoveEvent(self,event):
 		if self.is_animated: return
-		if self.allow_child_mouse_events and self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
+		if self.allow_child_mouse_events and self.__get_visible().isinwin(event.x(),viewport_height()-event.y()) :
 			self.__get_visible().mouseMoveEvent(event)
 	
 	def toolTipEvent(self,event):
 		if self.is_animated: return
-		if self.allow_child_mouse_events and self.__get_visible().isinwin(event.x(),self.parent.height()-event.y()) :
+		if self.allow_child_mouse_events and self.__get_visible().isinwin(event.x(),viewport_height()-event.y()) :
 			self.__get_visible().toolTipEvent(event)
 	
 	
@@ -1339,6 +1348,11 @@ class EMGLView3D(EM3DWidgetVolume):
 		
 		self.w = image.get_xsize()	# width of window
 		self.h = image.get_ysize()	# height of window
+		
+		self.w = self.parent.width()	# width of window
+		self.h = self.parent.height() # height of window
+		self.h = self.parent.height() # height of window
+		
 		self.d = image.get_zsize()	# depth of the window
 		self.image = image # FIXME is this allright?
 		self.sizescale = 1.0		# scale/zoom factor
@@ -1358,6 +1372,11 @@ class EMGLView3D(EM3DWidgetVolume):
 		self.psets = []
 		self.modelmatrices = []
 	
+		self.setOptScale()
+	
+		self.draw_frame = True
+		self.decoration = EM3DPlainBorderDecoration(self)
+		
 	def setOptScale(self):
 		dims = self.drawable.getDataDims()
 		
@@ -1387,7 +1406,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		self.w = w
 		self.drawable.resizeEvent(self.width(),self.height())
 		
-	def setDepth(self,d):
+	def set_depth(self,d):
 		self.d = d
 		self.drawable.resizeEvent(self.width(),self.height())
 		
@@ -1395,23 +1414,23 @@ class EMGLView3D(EM3DWidgetVolume):
 		self.h = h
 		self.drawable.resizeEvent(self.width(),self.height())
 		
-	#def width(self):
-		#try:
-			#return int(self.w)
-		#except:
-			#return 0
+	def width(self):
+		try:
+			return int(self.w)
+		except:
+			return 0
 	
-	#def height(self):
-		#try:
-			#return int(self.h)
-		#except:
-			#return 0
+	def height(self):
+		try:
+			return int(self.h)
+		except:
+			return 0
 	
-	#def depth(self):
-		#try:
-			#return int(self.d)
-		#except:
-			#return 0
+	def depth(self):
+		try:
+			return int(self.d)
+		except:
+			return 0
 	
 	def set_data(self,data):
 		try:
@@ -1437,24 +1456,24 @@ class EMGLView3D(EM3DWidgetVolume):
 		self.drawable.render()
 		glPopMatrix()
 		
-		#glPushMatrix()
-		#glTranslatef(-self.width()/2.0,0,0)
-		#glRotatef(-90,0,1,0)
-		#self.vdtools.update(self.depth()/2.0,self.height()/2.0)
+		glPushMatrix()
+		glTranslatef(-self.width()/2.0,0,0)
+		glRotatef(-90,0,1,0)
+		self.vdtools.update(self.depth()/2.0,self.height()/2.0)
 		
-		#if self.drawFrame: 
-			#if self.vdtools.drawFrame(True): 
-				#self.psets.append(self.vdtools.get_corners())
-				#self.planes.append(('zy'))
-				#self.modelmatrices.append(self.vdtools.getModelMatrix())
-		#glPopMatrix()
+		if self.draw_frame: 
+			if self.vdtools.draw_frame(True): 
+				self.psets.append(self.vdtools.get_corners())
+				self.planes.append(('zy'))
+				self.modelmatrices.append(self.vdtools.getModelMatrix())
+		glPopMatrix()
 		
 		#glPushMatrix()
 		#glTranslatef(self.width()/2.0,0,0)
 		#glRotatef(90,0,1,0)
 		#self.vdtools.update(self.depth()/2.0,self.height()/2.0)
-		#if self.drawFrame: 
-			#if self.vdtools.drawFrame(True): 
+		#if self.draw_frame: 
+			#if self.vdtools.draw_frame(True): 
 				#self.planes.append(('yz'))
 				#self.psets.append(self.vdtools.get_corners())
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
@@ -1465,8 +1484,8 @@ class EMGLView3D(EM3DWidgetVolume):
 		#glTranslatef(0,self.height()/2.0,0)
 		#glRotatef(-90,1,0,0)
 		#self.vdtools.update(self.width()/2.0,self.depth()/2.0)
-		#if self.drawFrame: 
-			#if self.vdtools.drawFrame(True): 
+		#if self.draw_frame: 
+			#if self.vdtools.draw_frame(True): 
 				#self.planes.append(('xz'))
 				#self.psets.append(self.vdtools.get_corners())
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
@@ -1476,8 +1495,8 @@ class EMGLView3D(EM3DWidgetVolume):
 		#glTranslatef(0,-self.height()/2.0,0)
 		#glRotatef(90,1,0,0)
 		#self.vdtools.update(self.width()/2.0,self.depth()/2.0)
-		#if self.drawFrame: 
-			#if self.vdtools.drawFrame(True): 
+		#if self.draw_frame: 
+			#if self.vdtools.draw_frame(True): 
 				#self.planes.append(('zx'))
 				#self.psets.append(self.vdtools.get_corners())
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
@@ -1487,26 +1506,29 @@ class EMGLView3D(EM3DWidgetVolume):
 		#glTranslatef(0,0,-self.depth()/2.0)
 		#glRotatef(180,0,1,0)
 		#self.vdtools.update(self.depth()/2.0,self.height()/2.0)
-		#if self.drawFrame: 
-			#if self.vdtools.drawFrame(True):
+		#if self.draw_frame: 
+			#if self.vdtools.draw_frame(True):
 				#self.planes.append(('yx'))
 				#self.psets.append(self.vdtools.get_corners())
 				#self.modelmatrices.append(self.vdtools.getModelMatrix())
 		#glPopMatrix()
 		
-		#glPushMatrix()
-		#glTranslatef(0,0,self.depth()/2.0)
-		#self.vdtools.update(self.width()/2.0,self.height()/2.0)
-		#if self.drawFrame: 
-			#if self.vdtools.drawFrame(True): 
-				#self.planes.append(('xy'))
-				#self.psets.append(self.vdtools.get_corners())
-				#self.modelmatrices.append(self.vdtools.getModelMatrix())
-		#glPopMatrix()
+		glPushMatrix()
+		glTranslatef(0,0,self.depth()/2.0)
+		self.vdtools.update(self.width()/2.0,self.height()/2.0)
+		if self.draw_frame: 
+			if self.vdtools.draw_frame(True): 
+				self.planes.append(('xy'))
+				self.psets.append(self.vdtools.get_corners())
+				self.modelmatrices.append(self.vdtools.getModelMatrix())
+		glPopMatrix()
 		
 		if not lighting: glDisable(GL_LIGHTING)
 		
-	def getInspector(self):
+		
+		if self.draw_frame: self.decoration.draw()
+		#exit(1)
+	def get_inspector(self):
 		if (self.inspector == None):
 			if self.drawable == None:
 				return None
@@ -1522,12 +1544,12 @@ class EMGLView3D(EM3DWidgetVolume):
 			self.drawable.init_inspector()
 			self.drawable.inspector.show()
 			self.drawable.inspector.hide()
-			self.parent.addQtWidgetDrawer(self.getInspector())
+			self.parent.addQtWidgetDrawer(self.get_inspector())
 			
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mousePressEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.vdtools.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mousePressEvent(qme)
 
@@ -1546,7 +1568,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.vdtools.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseMoveEvent(qme)
 			#self.drawable.mouseMoveEvent(event)
@@ -1557,7 +1579,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.vdtools.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseReleaseEvent(qme)
 			#self.drawable.mouseReleaseEvent(event)
@@ -1614,8 +1636,10 @@ class EMGLView2D:
 				self.become_2d_image(image[0])
 			else:
 				self.drawable = EMImageMXCore(image,self)
-				self.w = image[0].get_xsize()
-				self.h = image[0].get_ysize()
+				#self.w = image[0].get_xsize()
+				#self.h = image[0].get_ysize()
+				self.w = self.parent.width()
+				self.h = self.parent.height()
 		elif isinstance(image,EMData):
 			self.become_2d_image(image)
 		else:
@@ -1628,7 +1652,7 @@ class EMGLView2D:
 		
 		self.update_flag = True
 		
-		self.drawFrame = False
+		self.draw_frame = False
 		
 		self.sizescale = 1.0
 		self.changefactor = 1.1
@@ -1662,7 +1686,9 @@ class EMGLView2D:
 		self.drawable = EMImage2DCore(a,self)
 		#self.drawable.originshift = False
 		self.w = a.get_xsize()
+		if self.w > self.parent.width(): self.w = self.parent.width()
 		self.h = a.get_ysize()
+		if self.h > self.parent.height(): self.h = self.parent.height()
 		
 	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
@@ -1748,7 +1774,7 @@ class EMGLView2D:
 		self.decoration.draw(self.update_border_flag)
 		self.update_border_flag = False
 		
-		if self.drawFrame: self.vdtools.drawFrame()
+		if self.draw_frame: self.vdtools.draw_frame()
 		if not lighting: glDisable(GL_LIGHTING)
 		
 	#def update(self):
@@ -1757,7 +1783,7 @@ class EMGLView2D:
 	#def updateGL(self):
 		#self.parent.updateGL()
 	
-	def getInspector(self):
+	def get_inspector(self):
 		if (self.inspector == None):
 			if self.drawable == None:
 				return None
@@ -1774,7 +1800,7 @@ class EMGLView2D:
 				self.drawable.init_inspector()
 				self.drawable.inspector.show()
 				self.drawable.inspector.hide()
-				self.parent.addQtWidgetDrawer(self.getInspector())
+				self.parent.addQtWidgetDrawer(self.get_inspector())
 			except:
 				pass
 				#print "the mouse event had no effect"
@@ -1782,7 +1808,7 @@ class EMGLView2D:
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mousePressEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.vdtools.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mousePressEvent(qme)
 			#self.drawable.mousePressEvent(event)
@@ -1800,6 +1826,7 @@ class EMGLView2D:
 	def wheelEvent(self,event):
 		if event.modifiers() == Qt.ControlModifier:
 			self.scaleEvent(event.delta())
+			self.decoration.set_force_update()
 			#print "updating",self.drawWidth(),self.drawHeight()
 		else:
 			self.drawable.wheelEvent(event)
@@ -1810,7 +1837,7 @@ class EMGLView2D:
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.vdtools.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseMoveEvent(qme)
 			#self.drawable.mouseMoveEvent(event)
@@ -1821,7 +1848,7 @@ class EMGLView2D:
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.vdtools.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseReleaseEvent(qme)
 			#self.drawable.mouseReleaseEvent(event)
@@ -1830,7 +1857,7 @@ class EMGLView2D:
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.vdtools.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseDoubleClickEvent(qme)
 
@@ -1851,7 +1878,7 @@ class EMGLViewQtWidget:
 	def __init__(self, parent=None, qwidget=None, widget_parent=None):
 		self.parent = parent
 		self.qwidget = qwidget
-		self.drawFrame = False
+		self.draw_frame = False
 		self.mapcoords = True
 		self.itex = 0
 		self.genTexture = True
@@ -1968,14 +1995,15 @@ class EMGLViewQtWidget:
 			
 			glEndList()
 		
+		if self.texture_dl == 0: return
 		glCallList(self.texture_dl)
 		self.refresh_dl = False
 	
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
 		self.decoration.draw()
-		if self.drawFrame:
-			self.vdtools.drawFrame()
+		if self.draw_frame:
+			self.vdtools.draw_frame()
 			#except Exception, inst:
 				#print type(inst)     # the exception instance
 				#print inst.args      # arguments stored in .args
@@ -2014,7 +2042,7 @@ class EMGLViewQtWidget:
 			self.childreceiver.toolTip(event)
 			self.childreceiver = None
 			return
-		l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+		l=self.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 		cw=self.qwidget.childAt(l[0],l[1])
 		if cw == None: 
 			QtGui.QToolTip.hideText()
@@ -2045,7 +2073,7 @@ class EMGLViewQtWidget:
 				if len(self.e2children) > 0:
 					self.e2children.pop()
 					return
-			l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
@@ -2062,7 +2090,7 @@ class EMGLViewQtWidget:
 			self.childreceiver.mouseDoubleClickEvent(event)
 			self.childreceiver = None
 			return
-		l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+		l=self.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 		cw=self.qwidget.childAt(l[0],l[1])
 		if cw == None: return
 		gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
@@ -2096,7 +2124,7 @@ class EMGLViewQtWidget:
 					self.e2children.pop()
 					return
 				
-			l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
 			##print cw.objectName()
@@ -2111,7 +2139,7 @@ class EMGLViewQtWidget:
 				widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
 				widget.cam.setCamTrans("y",((self.height()/2.0-cw.geometry().y())-cw.view().height()/2.0))
 				widget.cam.setCamTrans("z",0.1)
-				widget.drawFrame = False
+				widget.draw_frame = False
 				self.e2children.append(widget)
 				self.e2children[0].is_child = True
 			else:
@@ -2133,7 +2161,7 @@ class EMGLViewQtWidget:
 				self.childreceiver = None
 				return
 			else:
-				l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+				l=self.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 				cw=self.qwidget.childAt(l[0],l[1])
 				self.current = cw
 				if ( self.current != self.previous ):
@@ -2185,7 +2213,7 @@ class EMGLViewQtWidget:
 					self.e2children.pop()
 					return
 			
-			l=self.mouseinwin(event.x(),self.parent.height()-event.y(),self.width(),self.height())
+			l=self.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			cw=self.qwidget.childAt(l[0],l[1])
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
@@ -2478,14 +2506,14 @@ class EMFloatingWidgetsCore:
 			
 			w = EMGLView2D(self,test_image(0,size=(256,256)))
 			rotor.add_widget(w)
-			insp = w.getInspector()
+			insp = w.get_inspector()
 			e = EMGLViewQtWidget(self.parent)
 			e.setQtWidget(insp)
 			rotor.add_widget(e)
 			
 			w2 = EMGLView2D(self,[test_image(0,size=(512,512)),test_image(1,size=(512,512))]*4)
 			rotor.add_widget(w2)
-			insp2 = w2.getInspector()
+			insp2 = w2.get_inspector()
 			f = EMGLViewQtWidget(self.parent)
 			f.setQtWidget(insp2)
 			rotor.add_widget(f)
@@ -2493,7 +2521,7 @@ class EMFloatingWidgetsCore:
 			w3 = EMGLView3D(self,test_image_3d(3))
 			ww = EM3DWidget(self.parent,w3)
 			rotor.add_widget(ww)
-			insp3 = w3.getInspector()
+			insp3 = w3.get_inspector()
 			g = EMGLViewQtWidget(self.parent)
 			g.setQtWidget(insp3)
 			rotor.add_widget(g)

@@ -273,7 +273,7 @@ class EM3DFontWidget(EMImage3DObject):
 			self.inspector=EMFontInspector(self)
 		self.inspector.updateRotations(t3d)
 	
-	def getInspector(self):
+	def get_inspector(self):
 		if not self.inspector : self.inspector=EMFontInspector(self)
 		return self.inspector
 		

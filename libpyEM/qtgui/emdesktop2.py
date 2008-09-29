@@ -77,7 +77,19 @@ class EMWindowNode:
 	
 	def parent_height(self):
 		return parent.height()
+	
+	def get_children(self):
+		return self.children
 
+	def emit(self,*args, **kargs):
+		EMDesktop.main_widget.emit(*args,**kargs)
+		
+	def get_near_plane_dims(self):
+		return EMDesktop.main_widget.get_near_plane_dims()
+	
+	def getStartZ(self):
+		return EMDesktop.main_widget.getStartZ()
+	
 class EMRegion:
 	def __init__(self,geometry=Region(0,0,0,0,0,0)):
 		self.geometry = geometry
@@ -428,10 +440,9 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			#child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
 
 	def add_browser_frame(self):
-		browser_frame = EMBrowserFrame(self)
-		browser_frame.load_browser()
-		self.parent.attach_child(browser_frame)
-		#print "done"
+		browser_module = EMBrowserModule(self,self.parent.get_display_child(0))
+		browser_module.load_browser()
+		EMDesktop.main_widget.attach_module(browser_module)
 
 	def seed_scale_animation(self,i):
 		t = self.transformers[i]
@@ -456,7 +467,7 @@ class LeftSideWidgetBar(EMGLViewContainer):
 				
 		
 	def resize_gl(self):
-		self.reset_scale_animation()	
+		self.reset_scale_animation()
 
 	def reset_scale_animation(self):
 		children_height = 0
@@ -513,6 +524,7 @@ class LeftSideWidgetBar(EMGLViewContainer):
 		self.transformers.append(LeftSideWidgetBar.LeftSideTransform(new_child))
 		EMWindowNode.attach_child(self,new_child)
 		self.reset_scale_animation()
+		print_node_hierarchy(self.parent)
 
 	class LeftSideTransform:
 		ACTIVE = 0
@@ -600,7 +612,7 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			glTranslate(0,-self.xy_scale*self.child.height()/2,0)
 			glRotate(self.rotation,0,1,0)
 			glTranslate(self.xy_scale*self.child.width()/2.0,0,0)
-			glScale(self.xy_scale,self.xy_scale,1.0)
+			glScale(1.0,self.xy_scale,1.0)
 		
 		
 		def draw(self):
@@ -611,21 +623,22 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			glPopMatrix()
 			glTranslate(0,-self.xy_scale*self.child.height(),0)
 		
-class EMBrowserFrame(EMGLViewContainer):
-	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
-		EMGLViewContainer.__init__(self,parent,geometry)
-		self.file_dialog = None
 		
-	def get_file_dialog(self):
-		if self.file_dialog == None:
-			self.file_dialog = QtGui.QFileDialog(EMDesktop.main_widget,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
-			#self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
-			QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("finished(int)"), self.finished)
-			QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
-			self.file_dialog.show()
-			self.file_dialog.hide()
-			
-		return self.file_dialog
+class EMModule:
+	def __init__(self):
+		pass
+	
+class EMBrowserModule(EMModule):
+	def __init__(self,inspector_target,display_target):
+		EMModule.__init__(self)
+		
+		self.inspector_target = inspector_target
+		self.display_target = display_target
+		
+		self.file_dialog = None
+		self.inspector = None
+		self.image_display = None
+	
 
 	def changed(self,file):
 		pass
@@ -661,65 +674,91 @@ class EMBrowserFrame(EMGLViewContainer):
 			#except: self.cols[0].append(d)
 			
 			#self.layout()
-	def emit(self,*args, **kargs):
-		EMDesktop.main_widget.emit(*args,**kargs)
-	
-	def get_near_plane_dims(self):
-		return EMDesktop.main_widget.get_near_plane_dims()
-	
-	def getStartZ(self):
-		return EMDesktop.main_widget.getStartZ()
-	
 	def finished(self,val):
+		print self.display_target.width(),self.display_target.height()
+		act = False
 		if ( val == 1 ):
 			for i in self.file_dialog.selectedFiles():
 				a=EMData.read_images(str(i))
 				if len(a) == 1:
 					a = a[0]
 					if a.get_zsize() != 1:
-						w = EMGLView3D(self,a)
-						self.attach_child(w)
+						#b = EMGLView3D(self.display_target,a)
+						
+						#self.image_display = EM3DWidget(self,b)
+						#self.image_display.target_translations_allowed(True)
+						#self.image_display.allow_camera_rotations(True)
+						self.image_display = EMGLView3D(self.display_target,a)
+						act = True
 					else:
-						w = EMGLView2D(self,a)
-						self.attach_child(w)
+						self.image_display = EMGLView2D(self.display_target,a)
+						act = True
 				else:
-					w = EMGLView2D(self,a)
-					self.attach_child(w)
+					self.image_display = EMGLView2D(self.display_target,a)
+					act = True
 					
-
+				if act: break # only read one image at a time
+					
+		if act:
+			self.display_target.attach_child(self.image_display)
+			insp = self.image_display.get_inspector()
+			self.inspector = EMGLViewQtWidget(EMDesktop.main_widget)
+			self.inspector.setQtWidget(insp)
+			self.inspector_target.attach_child(self.inspector)
+			
 	def load_browser(self):
 		#self.numcols = 2
-		file_dialog = self.get_file_dialog()
+		file_dialog = self.__get_file_dialog()
 		self.fd_widget = EMGLViewQtWidget(EMDesktop.main_widget)
 		self.fd_widget.setQtWidget(file_dialog)
-		self.parent.attach_child(self.fd_widget)
+		self.inspector_target.attach_child(self.fd_widget)
+	
+	
+	def __get_file_dialog(self):
+		if self.file_dialog == None:
+			self.file_dialog = QtGui.QFileDialog(EMDesktop.main_widget,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
+			#self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
+			QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("finished(int)"), self.finished)
+			QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
+			self.file_dialog.show()
+			self.file_dialog.hide()
+			
+		return self.file_dialog
 	
 class EMDesktopFrame(EMFrame):
-	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
+	def __init__(self,parent,geometry=Region(0,0,0,0)):
 		EMFrame.__init__(self,parent,geometry)
+		self.display_frames = []
+		
+		EMDesktop.main_widget.register_resize_aware(self)
 		
 	def set_geometry(self,geometry):
 		EMFrame.set_geometry(self,geometry)
-		try:
-			for child in self.children:
-				if isinstance(child,EMDesktopTaskWidget):
-					child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
+		#try:
+			#for child in self.children:
+				#if isinstance(child,EMDesktopTaskWidget):
+					#child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
 					
-		except: pass
-		
+		#except: pass
 
-	def i_initialized(self,child):
-		if isinstance(child,EMDesktopTaskWidget):
-			child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
-
-	def add_browser_frame(self):
-		browser_frame = EMBrowserFrame(self,self.geometry,self.parent)
-		browser_frame.load_browser()
-		self.attach_child(browser_frame)
-		print "done"
-	
 	def updateGL(self):
 		self.parent.updateGL()
+	
+	def attach_display_child(self,child):
+		self.display_frames.append(child)
+		EMWindowNode.attach_child(self,child)
+	
+	def get_display_child(self,idx=0):
+		try: return self.display_frames[idx]
+		except:
+			print "warning, attempted to ask for a display child that did not exist"
+			print "asked for child number ",idx,"but I have only",len(self.display_frames),"display children"
+	
+	def resize_gl(self):
+		print "here ware are resizing to",400,0,viewport_width()-400,viewport_height()
+		self.set_geometry(Region(0,0,int(viewport_width()),int(viewport_height())))
+		if len(self.display_frames) != 0:
+			self.display_frames[0].set_geometry(Region(400,0,int(viewport_width()-400),int(viewport_height())))
 	
 class EMDesktopScreenInfo:
 	"""
@@ -761,6 +800,16 @@ class EMDesktopScreenInfo:
 	def get_screens():
 		return self.__screens
 
+def print_node_hierarchy(node):
+	try: children = node.get_children()
+	except : children = []
+	if len(children) == 0:
+		print ""
+	else:
+		for child in children:
+			print child,
+			print_node_hierarchy(child)
+
 class EMDesktop(QtOpenGL.QGLWidget):
 	main_widget = None
 	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
@@ -773,36 +822,33 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt,None)
 		
+		
+		self.modules = [] # a list of all the modules that currently exist
 		self.gq=0			# quadric object for cylinders, etc	
 		self.app=QtGui.QApplication.instance()
 		self.sysdesktop=self.app.desktop()
 		self.appscreen=self.sysdesktop.screen(self.sysdesktop.primaryScreen())
 		self.frame_dl = 0 # display list of the desktop frame
-		self.fov = 40
+		self.fov = 35
 		self.resize_aware_objects = []
 		self.animatables = []
 		
 		# what is this?
 		self.bgob2=ob2dimage(self,self.read_EMAN2_image())
 		
-		
 		self.setMouseTracking(True)
 		
 		# this float widget has half of the screen (the left)
 		self.desktop_frame = EMDesktopFrame(self)
 		self.left_side_bar = LeftSideWidgetBar(self.desktop_frame)
+		self.display_frame = EMGLViewContainer(self)
 		fw1 = EMDesktopTaskWidget(self.left_side_bar)
 		self.left_side_bar.attach_child(fw1)
 		self.desktop_frame.attach_child(self.left_side_bar)
+		self.desktop_frame.attach_display_child(self.display_frame)
 		
+		print_node_hierarchy(self.desktop_frame)
 		#print fw1.width(),fw1.height()
-		
-		fw1.set_gl_widget(self)
-		
-		
-		
-		
-	
 		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.borderwidth=10.0
 		self.cam = Camera()
@@ -825,7 +871,10 @@ class EMDesktop(QtOpenGL.QGLWidget):
 	
 	#def get_app_height(self):
 		#return self.appheight
-		
+	
+	def attach_module(self,module):
+		self.modules.append(module)
+	
 	def register_resize_aware(self,resize_aware_object):
 		self.resize_aware_objects.append(resize_aware_object)
 		
@@ -1127,13 +1176,10 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 	
 	def register_animation(self,animation):
 		self.animation = animation
-	
-	def set_gl_widget(self,widget):
-		self.gl_widget = widget
 
 	def get_depth_for_height(self, height):
 		try: 
-			return self.gl_widget.get_depth_for_height(height)
+			return EMDesktop.main_widget.get_depth_for_height(height)
 		except:
 			print "parent can't get height for depth"
 			exit(1)
@@ -1158,7 +1204,7 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			
 	def draw(self):
 		if ( self.init_flag == True ):
-			self.desktop_task_widget = EMGLViewQtWidget(self.gl_widget)
+			self.desktop_task_widget = EMGLViewQtWidget(EMDesktop.main_widget)
 			self.widget = EMDesktopTaskWidget.EMDesktopTaskInspector(self)
 			self.widget.show()
 			self.widget.hide()
@@ -1179,13 +1225,13 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			glPopMatrix()
 			
 	def bindTexture(self,pixmap):
-		return self.gl_widget.bindTexture(pixmap)
+		return EMDesktop.main_widget.bindTexture(pixmap)
 	
 	def deleteTexture(self,val):
-		return self.gl_widget.deleteTexture(val)
+		return EMDesktop.main_widget.deleteTexture(val)
 	
 	def get_render_dims_at_depth(self, depth):
-		try: return self.gl_widget.get_render_dims_at_depth(depth)
+		try: return EMDesktop.main_widget.get_render_dims_at_depth(depth)
 		except:
 			print "parent can't get render dims at for depth"
 			return
@@ -1236,359 +1282,6 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 				self.target.add_browser()
 			elif task == "Box":
 				self.target.add_boxer()
-		
-class EMDesktopTaskWidget3:
-	""" Something that organizes and display EMGLWidgets
-	"""
-	def __init__(self, parent=None):
-		#print "init"
-		self.parent = parent
-	
-		self.current = None
-		self.previous = None
-	
-		self.fd = None
-	
-		self.init_flag = True
-		self.qwidgets = []
-		self.imagewidgets = []
-		self.inspectorwidgets = []
-		self.cols = []
-		
-		self.desktopwidget = None
-		self.suppressUpdateGL = False
-		
-		self.fdxpos = 0
-		self.fdypos = 0
-
-		self.cam = Camera()
-		
-		self.glwidget = None
-		
-	def set_gl_widget(self,widget):
-		self.gl_widget = widget
-
-	def get_depth_for_height(self, height):
-		try: 
-			return self.gl_widget.get_depth_for_height(height)
-		except:
-			print "parent can't get height for depth"
-			exit(1)
-			#return 0
-
-		
-	def set_cam_pos(self, x,y,z=0):
-		self.cam.cam_x = x
-		self.cam.cam_y = y
-		self.cam.cam_z = z
-
-	def height(self):
-		return self.parent.height()
-	
-	def width(self):
-		return self.parent.width()
-
-	def updateGL(self):
-		if not self.suppressUpdateGL:
-			try: self.parent.updateGL()
-			except: pass
-
-	def get_col_width(self):
-		numcols = len(self.cols)
-		if numcols == 0: return 0
-		cw = float(self.parent.width())/float(numcols)
-		return cw
-		
-	def get_col_height(self):
-		return float(self.parent.height())
-	
-	def layout(self):
-		print "in layout"
-		numcols = len(self.cols)
-		if numcols == 0: return
-		
-		cw = self.get_col_width()
-		
-		colidx = 0
-		for i in self.cols:
-			ch = 0
-			n = len(i)
-			if n == 0:
-				continue
-			for j in i:
-				ch += j.height()
-				
-				if j.width() > cw:
-					print "error, can handle wide widgets",j.width(),cw
-			
-			dif = float(self.parent.height() - ch)
-			if dif < 0:
-				print "error, can't handle negative diffs atm", dif, colidx, n
-				dif = 0
-				##exit(1)
-			
-			
-			dif /= float(n)
-			dy = dif/2.0
-			
-			dx = cw/2.0 + colidx*cw
-			for j in i:
-				dy += j.height()/2.0
-				j.cam.cam_y = dy
-				j.cam.cam_x = dx
-				#print j.cam.cam_y,j.cam.cam_x
-				dy += j.height()/2.0
-				dy += dif
-			
-			
-			colidx += 1
-		
-	def draw(self):
-		self.cam.position()
-		if ( self.init_flag == True ):
-			self.desktopwidget = EMGLViewQtWidget(self.gl_widget)
-			self.s = EMDesktopInspector(self)
-			self.s.show()
-			self.s.hide()
-			#self.desktopwidget.cam.cam_x = s.width()/2.0
-			#self.desktopwidget.cam.cam_y = self.h - s.height()/2.0
-			self.desktopwidget.setQtWidget(self.s)
-			self.qwidgets.append(self.desktopwidget)
-			self.numcols = 1
-			self.cols = [[self.desktopwidget]]
-			#self.layout()
-			self.init_flag = False
-		
-		#glPushMatrix()
-		#self.desktopwidget.paintGL()
-		#glPopMatrix()
-		for i in self.cols:
-			for j in i:
-				glPushMatrix()
-				j.paintGL()
-				glPopMatrix()
-		
-	def changed(self,file):
-	
-		#try:
-			a=EMData.read_images(str(file))
-			if len(a) == 1:
-				a = a[0]
-				if a.get_zsize() != 1: w = EMGLView3D(self,a)
-				else: w = EMGLView2D(self,a)
-			else: w = EMGLView2D(self,a)
-			
-			try: self.cols[1] = []
-			except: self.cols.append([])
-			self.cols[1].append(w)
-			scalex = self.get_col_width()/float(w.width())
-			scaley = self.get_col_height()/float(w.height())
-			#print scalex,scaley,yheight,w.height()
-			if scalex > scaley: scalex = scaley
-			try: w.d = scalex*w.d # 3D
-			except: pass
-			w.h = scalex*w.h
-			w.set_width(scalex*w.w)
-			
-			try: w.setOptScale()
-			except: pass
-			
-			insp = w.getInspector()
-			d = EMGLViewQtWidget(self.parent)
-			d.setQtWidget(insp)
-			try:
-				self.cols[0][2] = d
-			except: self.cols[0].append(d)
-			
-			self.layout()
-			
-		#except:
-			#print "could not open"
-			#return
-		
-		
-		#print "paintGL done"
-	def finished(self,val):
-		pass
-		if ( val == 1 ):
-			for i in self.fd.selectedFiles():
-				a=EMData.read_images(str(i))
-				if len(a) == 1:
-					a = a[0]
-					if a.get_zsize() != 1:
-						w = EMGLView3D(self,a)
-						self.qwidgets.append(w)
-					else:
-						w = EMGLView2D(self,a)
-						self.qwidgets.append(w)
-				else:
-					w = EMGLView2D(self,a)
-					self.qwidgets.append(w)
-					
-	def timer(self):
-		pass
-		#self.updateGL()
-		
-	def bindTexture(self,pixmap):
-		return self.gl_widget.bindTexture(pixmap)
-	
-	def deleteTexture(self,val):
-		return self.gl_widget.deleteTexture(val)
-	
-	def get_render_dims_at_depth(self, depth):
-		try: return self.gl_widget.get_render_dims_at_depth(depth)
-		except:
-			print "parent can't get render dims at for depth"
-			return
-
-	def resizeEvent(self, width, height):
-		widgets = self.qwidgets + self.imagewidgets
-		for i in widgets:
-			i.set_update_P_inv()
-			
-	def getWidgets(self):
-		widgets = []
-		for i in self.cols:
-			for j in i:
-				widgets.append(j)
-		
-		return widgets
-	
-	def mousePressEvent(self, event):
-		widgets = self.getWidgets()
-		for i in widgets:
-			if ( i.isinwin(event.x(),self.height()-event.y()) ):
-				i.mousePressEvent(event)
-				intercepted = True
-				self.updateGL()
-				return
-	
-	def mouseMoveEvent(self, event):
-		widgets = self.getWidgets()
-		for i in widgets:
-			if ( i.isinwin(event.x(),self.height()-event.y()) ):
-				self.current = i
-				if (self.current != self.previous ):
-					if ( self.previous != None ):
-						self.previous.leaveEvent()
-				i.mouseMoveEvent(event)
-				self.previous = i
-				self.updateGL()
-				return
-		
-	def mouseReleaseEvent(self, event):
-		widgets = self.getWidgets()
-		for i in widgets:
-			if ( i.isinwin(event.x(),self.height()-event.y()) ):
-				i.mouseReleaseEvent(event)
-				self.updateGL()
-				return
-					
-		
-	def mouseDoubleClickEvent(self, event):
-		widgets = self.getWidgets()
-		for i in widgets:
-			if ( i.isinwin(event.x(),self.height()-event.y()) ):
-				i.mouseDoubleClickEvent(event)
-				self.updateGL()
-				return
-		
-		
-	def wheelEvent(self, event):
-		widgets = self.getWidgets()
-		for i in widgets:
-			if ( i.isinwin(event.x(),self.height()-event.y()) ):
-				i.wheelEvent(event)
-				self.updateGL()
-				return
-
-	def toolTipEvent(self, event):
-		widgets = self.getWidgets()
-		for i in widgets:
-			if ( i.isinwin(event.x(),self.height()-event.y()) ):
-				i.toolTipEvent(event)
-				self.updateGL()
-				return
-		
-		QtGui.QToolTip.hideText()
-
-	def dragMoveEvent(self,event):
-		print "received drag move event"
-		
-	def event(self,event):
-		#print "event"
-		#QtGui.QToolTip.hideText()
-		if event.type() == QtCore.QEvent.MouseButtonPress: 
-			self.mousePressEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.MouseButtonRelease:
-			self.mouseReleaseEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.MouseMove: 
-			self.mouseMoveEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.MouseButtonDblClick: 
-			self.mouseDoubleClickEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.Wheel: 
-			self.wheelEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.ToolTip: 
-			self.toolTipEvent(event)
-			return True
-		else: 
-			return QtOpenGL.QGLWidget.event(self,event)
-
-	def hoverEvent(self,event):
-		#print "hoverEvent"
-		if self.inspector :
-			widgets = self.qwidgets + self.imagewidgets
-			for i in widgets:
-				if ( i.isinwin(event.x(),self.height()-event.y()) ):
-					i.hoverEvent(event)
-					break
-		self.updateGL()
-
-	def add_boxer(self):
-		pass
-
-	def getfd(self):
-		if self.fd == None:
-			self.fd = QtGui.QFileDialog(self.gl_widget,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
-			#self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
-			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("finished(int)"), self.finished)
-			QtCore.QObject.connect(self.fd, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
-			self.fd.show()
-			self.fd.hide()
-			
-		return self.fd
-
-	def add_browser(self):
-		#self.numcols = 2
-		fd = self.getfd()
-		self.fdwidget = EMGLViewQtWidget(self.gl_widget)
-		#self.fdwidget.cam.cam_x = -(self.parent.get_app_width() - fd.width())/2.0
-		#self.fdwidget.cam.cam_y = (self.parent.get_app_height() - fd.height())/2.0
-		self.fdwidget.setQtWidget(fd)
-		self.cols = [[self.desktopwidget, self.fdwidget ]]
-		self.layout()
-		
-	
-	def addCompare(self):
-		pass
-	
-	def addFSC(self):
-		pass
-	
-	def close(self):
-		self.cols = [[self.desktopwidget]]
-		self.layout()
-	
-	def getNearPlaneDims(self):
-		return self.parent.getNearPlaneDims()
-		
-	def get_start_z(self):
-		return self.parent.get_start_z()
 		
 class ob2dimage:
 	def __init__(self,target,pixmap):

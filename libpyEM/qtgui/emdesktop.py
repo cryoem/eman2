@@ -621,7 +621,7 @@ class EMDesktopWidgets:
 			try: w.setOptScale()
 			except: pass
 			
-			insp = w.getInspector()
+			insp = w.get_inspector()
 			d = EMGLViewQtWidget(self.parent)
 			d.setQtWidget(insp)
 			try:

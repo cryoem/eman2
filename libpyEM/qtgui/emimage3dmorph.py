@@ -389,7 +389,7 @@ class EMImageMorph3DCore:
 		return self.parent.get_render_dims_at_depth(depth)
 
 	def getSundryInspector(self):
-		return self.viewables[self.currentselection].getInspector()
+		return self.viewables[self.currentselection].get_inspector()
 	
 	def addSym(self):
 		sym = EM3DSymViewer(self)
@@ -464,7 +464,7 @@ class EMImageMorph3DCore:
 		elif self.currentselection >= len(self.viewables):
 			print "error, current seletion too large", self.currentselection,len(self.viewables)
 			return None
-		return self.viewables[self.currentselection].getInspector()
+		return self.viewables[self.currentselection].get_inspector()
 	
 	def deleteCurrent(self, val):
 		if ( len(self.viewables) == 0 ): return

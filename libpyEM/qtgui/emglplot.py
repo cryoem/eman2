@@ -397,7 +397,7 @@ class EMGLPlot(EMImage3DObject):
 			self.inspector=EMGLPlotInspector(self)
 		self.inspector.updateRotations(t3d)
 	
-	def getInspector(self):
+	def get_inspector(self):
 		if not self.inspector : self.inspector=EMGLPlotInspector(self)
 		return self.inspector
 		

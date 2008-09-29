@@ -689,7 +689,7 @@ class EM3DSymViewer(EMImage3DObject):
 			self.inspector=EMSymInspector(self)
 		self.inspector.updateRotations(t3d)
 	
-	def getInspector(self):
+	def get_inspector(self):
 		if not self.inspector : self.inspector=EMSymInspector(self)
 		return self.inspector
 		
