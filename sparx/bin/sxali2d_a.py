@@ -40,7 +40,7 @@ from   optparse       import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --CTF --function=user_function_name --randomize --F=F --MPI"
+	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --center=center --maxit=max_iter --CTF --function=user_function_name --randomize --T0=T0 --F=F --SA_stop=SA_stop --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",    type="float",  default=1,             help="  inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",    type="float",  default=-1,            help="  outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
