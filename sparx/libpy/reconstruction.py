@@ -53,7 +53,7 @@ def rec2D(  lines, idrange=None, snr=None ):
         if idrange is None:
            idrange = xrange( len(lines) )
 
-	t = Transform3D(0.0, 0.0, 0.0)
+	t = Transform()
 	for i in idrange:
 		r.insert_slice( lines[i], t )
 
@@ -89,10 +89,6 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 	else:    proj = stack_name[list_proj[0]].copy()
 	
 	# convert angles to transform (rotation) objects
-	Ttype = Transform3D.EulerType.SPIDER
-	phi    = proj.get_attr('phi')
-	theta  = proj.get_attr('theta')
-	psi    = proj.get_attr('psi')
 	active = proj.get_attr_default('active', 1)
 	size   = proj.get_xsize()
 
@@ -115,18 +111,14 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 			proj.read_image(stack_name, list_proj[i])
 			active = proj.get_attr_default('active', 1)
 			if(active == 1):
-				phi   = proj.get_attr('phi')
-				theta = proj.get_attr('theta')
-				psi   = proj.get_attr('psi')
-				r.insert_slice(proj, Transform3D(Ttype, phi, theta, psi) )
+				xform_proj = proj.get_attr( "xform.proj" )
+				r.insert_slice(proj, xform_proj )
 	else:
 		for i in xrange(len(list_proj)):
 			active = stack_name[list_proj[i]].get_attr_default('active', 1)
 			if(active == 1):
-				phi   = stack_name[list_proj[i]].get_attr('phi')
-				theta = stack_name[list_proj[i]].get_attr('theta')
-				psi   = stack_name[list_proj[i]].get_attr('psi')
-				r.insert_slice(stack_name[list_proj[i]], Transform3D(Ttype, phi, theta, psi) )
+				xform_proj = stack_name[list_proj[i]].get_attr( "xform.proj" )
+				r.insert_slice(stack_name[list_proj[i]], xform_proj )
 	return r.finish()
 
 def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
@@ -138,7 +130,6 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
 	if prjlist[0].get_ysize() != imgsize:
 		ERROR("input data has to be square","recons3d_4nn_ctf_MPI",1)
 
-	Ttype = Transform3D.EulerType.SPIDER
 
         fftvol = EMData()
         weight = EMData()
@@ -152,10 +143,8 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
 		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
 			ERROR("inconsistent image size","recons3d_4nn_ctf_MPI",1)
 
-		phi   = prj.get_attr('phi')
-		theta = prj.get_attr('theta')
-		psi   = prj.get_attr('psi')
-		r.insert_slice(prj, Transform3D(Ttype, phi, theta, psi) )
+		xform_proj = prj.get_attr( "xform.proj" )
+		r.insert_slice(prj, xform_proj )
 		if( not (info is None) ):
 			nimg += 1
 			info.write(" %4d inserted\n" %(nimg) )
@@ -198,7 +187,6 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4,snr=None):
 	     vol = recons3d_4nn(filepattern, list_proj, symmetry)
 	"""
 	import types
-	Ttype = Transform3D.EulerType.SPIDER
 	# Yang add a safety on 05/22/07
 	if list_proj == []:	
 		if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
@@ -210,10 +198,6 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4,snr=None):
 		proj.read_image(stack_name, list_proj[0])
 	else:    proj = stack_name[list_proj[0]].copy()
 
-	phi = proj.get_attr('phi')
-	theta = proj.get_attr('theta')
-	psi = proj.get_attr('psi')
-	#active = proj.get_attr('active')
 	size = proj.get_xsize()
 	# sanity check -- image must be square
 	if size != proj.get_ysize():
@@ -232,18 +216,14 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4,snr=None):
 			proj.read_image(stack_name,list_proj[i])
 			active = proj.get_attr_default('active', 1)
 			if(active == 1):
-				phi   = proj.get_attr('phi')
-				theta = proj.get_attr('theta')
-				psi   = proj.get_attr('psi')
-				r.insert_slice(proj, Transform3D(Ttype, phi, theta, psi) )
+				xform_proj = proj.get_attr( "xform.proj" )
+				r.insert_slice(proj, xform_proj )
 	else:
 		for i in xrange(len(list_proj)):
 			active = proj.get_attr_default('active', 1)
 			if(active == 1):
-				phi   = stack_name[list_proj[i]].get_attr('phi')
-				theta = stack_name[list_proj[i]].get_attr('theta')
-				psi   = stack_name[list_proj[i]].get_attr('psi')
-				r.insert_slice(stack_name[list_proj[i]], Transform3D(Ttype, phi, theta, psi) )
+				xform_proj = proj.get_attr( "xform.proj" )
+				r.insert_slice(stack_name[list_proj[i]], xform_proj )
 	return r.finish()
 
 def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
@@ -255,7 +235,6 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 	if prjlist[0].get_ysize() != imgsize:
 		ERROR("input data has to be square","recons3d_4nn_ctf_MPI",1)
 
-	Ttype = Transform3D.EulerType.SPIDER
 
         fftvol = EMData()
         weight = EMData()
@@ -268,10 +247,8 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
 			ERROR("inconsistent image size","recons3d_4nn_ctf_MPI",1)
 
-		phi   = prj.get_attr('phi')
-		theta = prj.get_attr('theta')
-		psi   = prj.get_attr('psi')
-		r.insert_slice(prj, Transform3D(Ttype,phi,theta,psi) )
+		xform_proj = prj.get_attr( "xform.proj" )
+		r.insert_slice(prj, xform_proj )
 		if( not (info is None) ):
 			nimg += 1
 			info.write(" %4d inserted\n" %(nimg) )
@@ -313,7 +290,6 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	Notice: wght is always turned on during SSNR calculation.
 	"""
 	import types
-	Ttype = Transform3D.EulerType.SPIDER
 	# Yang add a safety on 05/22/07
 	if type(stack_name) == types.StringType: nima = EMUtil.get_image_count(stack_name)
 	else :                                   nima = len(stack_name)
@@ -321,21 +297,8 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	if type(stack_name) == types.StringType:
 		proj = EMData()	
 		proj.read_image(stack_name, 0)
-	else:    proj = stack_name[0].copy()
-	if(random_angles  == 2):
-		from  random import  random
-		phi    = 360.0*random()
-		theta  = 180.0*random()
-		psi    = 360.0*random()
-	elif(random_angles  == 1):
-		from  random import  random
-		phi    = proj.get_attr('phi')
-		theta  = proj.get_attr('theta')
-		psi    = 360.0*random()
-	else:
-		phi    = proj.get_attr('phi')
-		theta  = proj.get_attr('theta')
-		psi    = proj.get_attr('psi')
+	else:    
+		proj = stack_name[0].copy()
 	#active = proj.get_attr('active')
 	size   = proj.get_xsize()	
 	# sanity check -- image must be square
@@ -360,36 +323,35 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 					phi    = 360.0*random()
 					theta  = 180.0*random()
 					psi    = 360.0*random()
+					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
 				elif(random_angles  == 1):
 					from  random import  random
-					phi    = proj.get_attr('phi')
-					theta  = proj.get_attr('theta')
-					psi    = 360.0*random()
+					old_xform_proj = proj.get_attr( "xform.proj" )
+					dict = old_xform_proj.get_rotation( "spider" )
+					dict["psi"] = 360.0*random()
+					xform_proj = Transform( dict )
 				else:
-					phi    = proj.get_attr('phi')
-					theta  = proj.get_attr('theta')
-					psi    = proj.get_attr('psi')
+					xform_proj = proj.get_attr( "xform.proj" )
+
 			 	if mask2D:
 					stats = Util.infomask(proj, mask2D, True)
 					proj -= stats[0]
 					proj *= mask2D
-				r.insert_slice(proj, Transform3D(Ttype,phi,theta,psi))
+				r.insert_slice(proj, xform_proj)
 		vol_ssnr = r.finish()
 	else:
 		for i in xrange(nima):
 			active = stack_name[i].get_attr('active')
 			if(active == 1):
-				phi   = stack_name[i].get_attr('phi'  )
-				theta = stack_name[i].get_attr('theta')
-				psi   = stack_name[i].get_attr('psi'  )
+				xform_proj = proj.get_attr( "xform.proj" )
 				if mask2D:
 					proj = stack_name[i].copy()
 					stats = Util.infomask(proj, mask2D, True)
 					proj -= stats[0]
 					proj *= mask2D
-					r.insert_slice(proj, Transform3D(Ttype, phi, theta, psi))
+					r.insert_slice(proj, xform_proj)
 				else:
-					r.insert_slice(stack_name[i], Transform3D(Ttype, phi, theta, psi))
+					r.insert_slice(stack_name[i], xform_proj)
 		vol_ssnr = r.finish()
 	outlist = [[] for i in xrange(6)]
 	nn = SSNR.get_xsize()
@@ -406,7 +368,6 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 	if( len(prjlist) == 0 ):    ERROR("empty input list","recons3d_nn_SSNR_MPI",1)
 	imgsize = prjlist[0].get_xsize()
 	if prjlist[0].get_ysize() != imgsize:  ERROR("input data has to be square","recons3d_nn_SSNR_MPI",1)
-	Ttype    = Transform3D.EulerType.SPIDER
         fftvol   = EMData()
         weight   = EMData()
 	weight2  = EMData()
@@ -428,21 +389,21 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 			phi    = 360.0*random()
 			theta  = 180.0*random()
 			psi    = 360.0*random()
+			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
 		elif(random_angles  == 1):
 			from  random import  random
-			phi    = prj.get_attr('phi')
-			theta  = prj.get_attr('theta')
-			psi    = 360.0*random()
+			old_xform_proj = prj.get_attr( "xform.proj" )
+			dict = old_xform_proj.get_rotation( "spider" )
+			dict["psi"] = 360.0*random()
+			xform_proj = Transform( dict )
 		else:
-			phi    = prj.get_attr('phi')
-			theta  = prj.get_attr('theta')
-			psi    = prj.get_attr('psi')
+			xform_proj = prj.get_attr( "xform.proj" )
 		if mask2D:
 			stats = Util.infomask(prj, mask2D, True)
 			proj = (prj - stats[0])*mask2D
-			r.insert_slice(proj, Transform3D(Ttype,phi,theta,psi))
+			r.insert_slice(proj, xform_proj)
 		else:
-			r.insert_slice(prj, Transform3D(Ttype,phi,theta,psi) )
+			r.insert_slice(prj, xform_proj )
 	#from utilities import info
 	reduce_EMData_to_root(weight,  myid, 0)
 	reduce_EMData_to_root(fftvol,  myid, 0)
@@ -459,71 +420,6 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		for i in xrange(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 		for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
 		return [outlist, vol_ssnr]
-
-def recons3d_bootstrap(proj_stack, volume_stack, list_proj, niter, media="memory", npad=4, symmetry="c1", output=-1, ctf="no", snr=10.0, sign=1, myseed=None ):
-	from random import seed
-	from random import randint
-	from time   import time
-	from sys    import stdout
-	from random import seed
-	if(output == -1):
-		import sys
-		output=sys.stdout
-        if not(myseed is None):
-            seed(myseed)
-
-	nimages = len(list_proj)
-	if nimages == 0 :
-	    print "empty list of projections input!"
-	    return None
-
-        Ttype = Transform3D.EulerType.SPIDER
-	
-	proj = EMData()
-	proj.read_image(proj_stack,list_proj[0])
-	
-	size = proj.get_xsize()
-	if size != proj.get_ysize():
-	    print "Image projections must be square!"
-	    return None
-	
-	if( ctf=="yes" ) :
-	    params = {"size":size, "npad":npad, "symmetry":symmetry, "media":media, "mult":None, "snr":snr, "sign":sign}
-	    r = Reconstructors.get( "bootstrap_nnctf", params )
-	else :
-	    params = {"size":size, "npad":npad, "symmetry":symmetry, "media":media, "mult":None}
-	    r = Reconstructors.get("bootstrap_nn",params)
-
-        r.setup()
-
-	for i in xrange(nimages):
-	    proj.read_image(proj_stack,list_proj[i])
-	    phi   = proj.get_attr('phi')
-	    theta = proj.get_attr('theta')
-	    psi   = proj.get_attr('psi')
-	    r.insert_slice( proj,Transform3D(Ttype,phi,theta,psi) )
-            output.write( "Projection No. %8d has been padded and stored in %s\n" % (i,media) )
-
-        overall_start = time()
-	for i in xrange(niter):
-	    iter_start = time()
-            mults = nimages*[0]
-	    for j in xrange(nimages):
-                image = randint(0,nimages-1)
-                mults[image] = mults[image]+1
-
-            params = {"size":size, "npad":npad, "symmetry":symmetry, "media":media, "mult":mults}
-	    r.set_params( params )
-	    output.write( "Iteration %8d" % i )
-	    output.flush()
-	    output.write( " calculating... " )
-	    output.flush()
-            v = r.finish()
-            output.write( " writing... " )
-	    output.flush()
-	    v.write_image(volume_stack,i)
-	    output.write( " done!" )
-	    output.write( " time %15.3f %15.3f \n" % (time()-iter_start,time()-overall_start) )
 
 class memory_store:
     def __init__(self, npad):
@@ -553,7 +449,6 @@ def bootstrap_nnctf(proj_stack, volume_stack, list_proj, niter, media="memory", 
 		print "empty list of projections input!"
 		return None
 
-        Ttype = Transform3D.EulerType.SPIDER
 
         if media=="memory" :
         	store = memory_store(npad)
@@ -573,13 +468,7 @@ def bootstrap_nnctf(proj_stack, volume_stack, list_proj, niter, media="memory", 
 	#for j in xrange(nimages):
 	#    proj = EMData()
 	#    proj.read_image(proj_stack, j)
-
-	#    phi = proj.get_attr('phi')
-	#    theta = proj.get_attr('theta')
-	#    psi = proj.get_attr('psi')
-
         #store.add_image( proj )
-	#tras.append( Transform3D(Ttype,phi,theta,psi) )
 
         #if (j+1) % 1000  == 0 :
         #    output.write( "%d image read\n" % (j+1) )
@@ -612,12 +501,7 @@ def bootstrap_nnctf(proj_stack, volume_stack, list_proj, niter, media="memory", 
         			img_j = EMData()
         			store.get_image( j, img_j );
 		    		img_j.set_attr( "mult", mults[j] );
-
-   				phi   = img_j.get_attr('phi')
-				theta = img_j.get_attr('theta')
-				psi   = img_j.get_attr('psi')
-
-				tra_j = Transform3D(Ttype,phi,theta,psi)
+				tra_j = img_j.get_attr( "xform.proj" )
         		
 		    		r.insert_slice(img_j, tra_j)
 
@@ -693,11 +577,10 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 				data.read_image(stack_name,list_proj[i])
 				stat=Util.infomask(data,mask2d,False)
 				data=data-stat[0]   # subtract the background average in the corners
-				phi = data.get_attr('phi')
-				theta = data.get_attr('theta')
-				psi = data.get_attr('psi')
-				angles.append([phi,theta,psi])
-				RA = Transform3D(Transform3D.EulerType.SPIDER,phi,theta,psi)
+				
+				RA = data.get_attr( "xform.proj" )
+
+				angles.append(RA)
 				#ATTENTION
 				#for transform in Symmetry3D.get_symmetries(symmetry):
 					#Tf = transform*RA
@@ -707,8 +590,8 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 					# then continue as before
 				for ns in xrange(1,nsym+1):
 					# multiply myangles by symmetry using Phil's Transform class
-					Tf=Transform3D(); Tf = Tf.get_sym(symmetry,ns) *RA #Tf.get_rotation(Transform3D.EulerType.SPIDER)
-					angdict = Tf.get_rotation(Transform3D.EulerType.SPIDER)
+					Tf=RA.get_sym(symmetry,ns) #
+					angdict = Tf.get_rotation("spider")
 					#				    Chao - please check the order of phi, theta, psi
 					symangles[0] = angdict["phi"]
 					symangles[1] = angdict["theta"]
@@ -724,11 +607,11 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 			pxvol.to_zero() 
 			for i in xrange(nangles):
 				# just a single slice of phi, theta, psi
-				RA = Transform3D(Transform3D.EulerType.SPIDER,angles[i][0],angles[i][1],angles[i][2])
+				RA = angles[i]
 				for ns in xrange(1,nsym+1):
 					# multiply myangles by symmetry using Phil's Transform class
-					Tf=Transform3D(); Tf = Tf.get_sym(symmetry,ns) *RA #Tf.get_rotation(Transform3D.EulerType.SPIDER)
-					angdict = Tf.get_rotation(Transform3D.EulerType.SPIDER)
+					Tf = RA.get_sym(symmetry,ns)#Tf.get_rotation()
+					angdict = Tf.get_rotation("spider")
 					#				    Chao - please check the order of phi, theta, psi
 					symangles[0] = angdict["phi"]
 					symangles[1] = angdict["theta"]
@@ -769,7 +652,7 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 	CUBE.set_size(nx3d,ny3d,nz3d)
 	CUBE.to_zero()
 
-	RA = Transform3D()
+	RA = Transform()
 	nsym = RA.get_nsym(symmetry)
 
 	nimages = len(list_proj)
@@ -777,21 +660,16 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 	dm=[0.0]*(9*ntripletsWnsym)
 	ss=[0.0]*(6*ntripletsWnsym)
 	count = 0
-	#tfvect = Transform3D.angles2tfvec (Transform3D.EulerType.SPIDER, anglelist)
 	for i in xrange(nimages):
 	        if type(stack_name) == types.StringType:
 			B.read_image(stack_name,list_proj[i], True)
-			phis   = B.get_attr("phi" )
-			thetas = B.get_attr("theta")
-			psis   = B.get_attr("psi"  )
+			xform_proj = B.get_attr( "xform.proj" )
 		else:  
-			phis   = stack_name[list_proj[i]].get_attr("phi" )
-			thetas = stack_name[list_proj[i]].get_attr("theta")
-			psis   = stack_name[list_proj[i]].get_attr("psi"  )		
-		RA = Transform3D(Transform3D.EulerType.SPIDER, phis, thetas, psis)	
+			xform_proj = stack_name[list_proj[i]].get_attr( "xform.proj" )
+		RA = xform_proj
 		for j in xrange(nsym):
-			Tf=Transform3D(); Tf = Tf.get_sym(symmetry,j)*RA #Tf.get_rotation(Transform3D.EulerType.SPIDER)
-			angdict = Tf.get_rotation(Transform3D.EulerType.SPIDER)
+			Tf = RA.get_sym(symmetry,j) #Tf.get_rotation()
+			angdict = Tf.get_rotation("spider")
 			PHI   = angdict["phi"]
 			THETA = angdict["theta"]
 			PSI   = angdict["psi"]
@@ -824,7 +702,6 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 	from random import randint
 	from utilities import reduce_EMData_to_root
 	nx = data[0].get_xsize()
-	Ttype = Transform3D.EulerType.SPIDER
 
 	fftvol_half = EMData()
 	weight_half = EMData()
@@ -837,13 +714,11 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 		if(index >-1 ):  group = data[i].get_attr('group')
 		if(group == index):
 			if( data[i].get_attr('active') == 1):
-				phi   = data[i].get_attr('phi')
-				theta = data[i].get_attr('theta')
-				psi   = data[i].get_attr('psi')
+				xform_proj = data[i].get_attr( "xform.proj" )
 				if not(info is None):
 					info.write( "inserting half %d\n" % i )
 					info.flush()
-				half.insert_slice(data[i], Transform3D(Ttype, phi, theta, psi) )
+				half.insert_slice(data[i], xform_proj )
 
 	if not(info is None):
 		info.write( "begin reduce half\n" )
@@ -876,7 +751,6 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
         from random import randint
         from utilities import reduce_EMData_to_root
         nx = data[0].get_xsize()
-	Ttype = Transform3D.EulerType.SPIDER
         
 	fftvol_half = EMData()
 	weight_half = EMData()
@@ -886,13 +760,11 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
         
 	for i in pidlist:
 		if( data[i].get_attr('active') == 1):
-			phi   = data[i].get_attr('phi')
-			theta = data[i].get_attr('theta')
-			psi   = data[i].get_attr('psi')
+			xform_proj = data[i].get_attr( "xform.proj" )
                 	if not(info is None):
 				info.write( "inserting half %d\n" % i )
                 		info.flush()
-			half.insert_slice(data[i], Transform3D(Ttype, phi, theta, psi) )
+			half.insert_slice(data[i], xform_proj )
         
         if not(info is None):
         	info.write( "begin reduce half\n" )
@@ -908,7 +780,6 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
         from utilities import reduce_EMData_to_root
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 
-	Ttype = Transform3D.EulerType.SPIDER
         
 	fftvol_half = EMData()
 	weight_half = EMData()
@@ -918,13 +789,11 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
         
 	for i in xrange(half_start, len(data), step):
 		if( data[i].get_attr('active') == 1):
-			phi   = data[i].get_attr('phi')
-			theta = data[i].get_attr('theta')
-			psi   = data[i].get_attr('psi')
-                	if not(info is None):
+			xform_proj = data[i].get_attr( "xform.proj" )
+			if not(info is None):
 				info.write( "inserting half %d\n" % i )
                 		info.flush()
-			half.insert_slice(data[i], Transform3D(Ttype, phi, theta, psi) )
+			half.insert_slice(data[i], xform_proj )
         
         if not(info is None):
         	info.write( "begin reduce half\n" )

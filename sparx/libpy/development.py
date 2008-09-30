@@ -2564,8 +2564,7 @@ def apmq_local(image, crefim, xrng, yrng, step, ant, mode, numr, cnx, cny):
 	#print "APMQ"
 	#print  ttime()
 	#cimage=Util.Polar2Dm(image, cnx, cny, numr, mode)
-	phi   = image.get_attr('phi')
-	theta = image.get_attr('theta')
+	phi,theta,psi,s2x,s2y = get_params_proj( image )
 	peak = -1.0E23
 	ky = int(2*yrng/step+0.5)//2
 	kx = int(2*xrng/step+0.5)//2

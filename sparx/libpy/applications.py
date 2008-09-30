@@ -3413,12 +3413,9 @@ def ali3d_mN(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 			soto = []
 			for im in xrange(nima):
+				from utilities import set_params_proj, get_params_proj
 				peak = data[im].get_attr('peak')
-				s2x = data[im].get_attr('s2x')
-				s2y = data[im].get_attr('s2y')
-				phi = data[im].get_attr('phi')
-				theta = data[im].get_attr('theta')
-				psi = data[im].get_attr('psi')
+				phi,theta,psi,s2x,s2y = get_params_proj( data[im] )
 				group = data[im].get_attr('group')
 				soto.append([phi,theta,psi,s2x,s2y,peak,group])
 			from utilities import dropSpiderDoc
@@ -3538,11 +3535,8 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 	soto = []
 	for im in xrange(nima):
-		s2x = data[im].get_attr('s2x')
-		s2y = data[im].get_attr('s2y')
-		phi = data[im].get_attr('phi')
-		theta = data[im].get_attr('theta')
-		psi = data[im].get_attr('psi')
+		from utilities import set_params_proj, get_params_proj
+		phi,theta,psi,s2x,s2y = get_params_proj( data[im] )
 		soto.append([phi,theta,psi,s2x,s2y])
 	from utilities import dropSpiderDoc
 	dropSpiderDoc(os.path.join(outdir, replace("params%4d"%(0),' ','0')),soto)
@@ -3570,12 +3564,9 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 				proj_ali_incore_index(volref[iref], iref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, symmetry, MPI=False)
 			soto = []
 			for im in xrange(nima):
+				from utilities import set_params_proj, get_params_proj
 				peak = data[im].get_attr('peak')
-				s2x = data[im].get_attr('s2x')
-				s2y = data[im].get_attr('s2y')
-				phi = data[im].get_attr('phi')
-				theta = data[im].get_attr('theta')
-				psi = data[im].get_attr('psi')
+				phi,theta,psi,s2x,s2y = get_params_proj( data[im] )
 				group = data[im].get_attr('group')
 				soto.append([phi,theta,psi,s2x,s2y,peak,group])
 			from utilities import dropSpiderDoc
@@ -4022,11 +4013,8 @@ def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 			#t4 = finish_time(t3)
 		soto = []
 		for imn in xrange(image_start, image_end):
-			s2x   = dataim[imn-image_start].get_attr('s2x')
-			s2y   = dataim[imn-image_start].get_attr('s2y')
-			phi   = dataim[imn-image_start].get_attr('phi')
-			theta = dataim[imn-image_start].get_attr('theta')
-			psi   = dataim[imn-image_start].get_attr('psi')
+			from utilities import set_params_proj, get_params_proj
+			phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 			group   = dataim[imn-image_start].get_attr('group')
 			soto.append([phi,theta,psi,s2x,s2y,group,imn])
 		dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, group, image number")
@@ -4251,11 +4239,8 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 			if iteration%total_step==refine_step:
 				soto = []
 				for imn in xrange(image_chunk_start, image_chunk_end):
-					s2x   = dataim[imn-image_start].get_attr('s2x')
-					s2y   = dataim[imn-image_start].get_attr('s2y')
-					phi   = dataim[imn-image_start].get_attr('phi')
-					theta = dataim[imn-image_start].get_attr('theta')
-					psi   = dataim[imn-image_start].get_attr('psi')
+					from utilities import set_params_proj, get_params_proj
+					phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 					group = dataim[imn-image_start].get_attr('group')
 					soto.append([phi,theta,psi,s2x,s2y,group,imn])
 				dropSpiderDoc(os.path.join(outdir, "new_params%03d_%03d_%03d"%(iteration, ichunk, myid)), soto," phi, theta, psi, s2x, s2y, group, image number")
@@ -4442,11 +4427,8 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 
 			soto = []
 			for imn in xrange(image_chunk_start, image_chunk_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				group = dataim[imn-image_start].get_attr('group')
 				soto.append([phi,theta,psi,s2x,s2y,group,imn])
 			dropSpiderDoc(os.path.join(outdir, "new_params%03d_%03d_%03d"%(iteration, ichunk, myid)), soto," phi, theta, psi, s2x, s2y, group, image number")
@@ -4822,11 +4804,8 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF
 			del data
 			soto = []
 			for imn in xrange(image_start, image_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
 			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d"%(iteration, ic),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
@@ -5298,11 +5277,8 @@ def ali3d_eB(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, maxit
 			del data
 			soto = []
 			for imn in xrange(image_start, image_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
 			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d"%(iteration, ic),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
@@ -5509,11 +5485,8 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 
 			soto = []
 			for imn in xrange(image_start, image_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
 			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
@@ -5673,11 +5646,8 @@ def ali3d_eB_CCC(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 
 			soto = []
 			for imn in xrange(image_start, image_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
 			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d"%(iteration, ic),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
@@ -5962,11 +5932,8 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 
 			soto = []
 			for imn in xrange(image_start, image_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
 			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
@@ -6308,11 +6275,8 @@ def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 			del data
 			soto = []
 			for imn in xrange(image_start, image_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
 			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
@@ -6653,11 +6617,8 @@ def ali3d_eB_MPI_select(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 			del data
 			soto = []
 			for imn in xrange(image_start, image_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
 			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
@@ -6983,11 +6944,8 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 				#t4 = finish_time(t3)
 			soto = []
 			for imn in xrange(image_start, image_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
 			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
@@ -7282,11 +7240,8 @@ def ali3d_eB_MPI__(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, 
 				#t4 = finish_time(t3)
 			soto = []
 			for imn in xrange(image_start, image_end):
-				s2x   = dataim[imn-image_start].get_attr('s2x')
-				s2y   = dataim[imn-image_start].get_attr('s2y')
-				phi   = dataim[imn-image_start].get_attr('phi')
-				theta = dataim[imn-image_start].get_attr('theta')
-				psi   = dataim[imn-image_start].get_attr('psi')
+				from utilities import set_params_proj, get_params_proj
+				phi,theta,psi,s2x,s2y = get_params_proj(dataim[imn-image_start])
 				soto.append([phi,theta,psi,s2x,s2y,imn])
 			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
@@ -9468,11 +9423,8 @@ def params_3D_to_2D(stack):
 	ima = EMData()
 	for im in xrange(nima):
 		ima.read_image(stack, im, True)
-		s2x   = ima.get_attr('s2x')
-		s2y   = ima.get_attr('s2y')
-		phi   = ima.get_attr('phi')
-		theta = ima.get_attr('theta')
-		psi   = ima.get_attr('psi')
+		from utilities import set_params_proj, get_params_proj
+		phi,theta,psi,s2x,s2y = get_params_proj( ima )
 		alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
 		ima.set_attr_dict({'alpha':alpha, 'sx':sx, 'sy':sy, 'mirror':mirror})
 		ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
@@ -9975,11 +9927,7 @@ def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 		for i in xrange( len(imgdata) ) :
 			exp_prj = imgdata[i]
 			nx = imgdata[i].get_xsize()
-			phi = exp_prj.get_attr( 'phi' )
-			theta = exp_prj.get_attr( 'theta' )
-			psi = exp_prj.get_attr( 'psi' )
-			s2x = exp_prj.get_attr( 's2x' )
-			s2y = exp_prj.get_attr( 's2y' )
+			phi,theta,psi,s2x,s2y = get_params_proj( exp_prj )
 
 			ref_prj = prgs( volft, kb, [phi, theta, psi, -s2x, -s2y] )
 			ref_prj = filt_btwo( ref_prj, 0.01,0.1,0.2)

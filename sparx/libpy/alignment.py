@@ -558,13 +558,10 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 
 	for imn in xrange(len(projdata)):
 		#if(imn%10 == 0):  print_msg("%d  "%(imn))
-		sxo = projdata[imn].get_attr('s2x')
-		syo = projdata[imn].get_attr('s2y')
+		from utilities import get_params_proj, set_params_proj
+		phi, theta, psi, sxo, syo = get_params_proj( projdata[imn] )
 		if not(finfo is None):
-			phi   = projdata[imn].get_attr('phi')
-			theta = projdata[imn].get_attr('theta')
-			psi   = projdata[imn].get_attr('psi')
-			finfo.write( "proj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, sxo, syo) )
+			finfo.write( "proj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, dict["phi"], dict["theta"], dict["psi"], sxo, syo) )
 			finfo.flush()
 		if  CTF:
 			ctf_params = get_arb_params(projdata[imn], parnames)
@@ -590,7 +587,9 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
                         psi   = (ref_angles[numref][2]+angb+360.0)%360.0
                         s2x   = sxb + sxo
                         s2y   = syb + syo
-                projdata[imn].set_attr_dict({'phi':phi, 'theta':theta, 'psi':psi, 's2x':s2x, 's2y':s2y, 'peak':peak})
+		from utilities import set_params_proj
+		set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y] )
+                projdata[imn].set_attr('peak', peak)
                 if not(finfo is None):
 			finfo.write( "proj %4d new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, s2x, s2y) )
 			finfo.flush()
@@ -640,12 +639,10 @@ def proj_ali_incore_local(volref, mask3D, projdata, first_ring, last_ring, rstep
 
 	ant = abs(cos(an*qv))
 	for imn in xrange(len(projdata)):
-		sxo = projdata[imn].get_attr('s2x')
-		syo = projdata[imn].get_attr('s2y')
+		from utilities import set_params_proj, get_params_proj
+		phi, theta, psi, sxo, syo = get_params_proj( projdata[imn] )
+
 		if not(finfo is None):
-			phi   = projdata[imn].get_attr('phi')
-			theta = projdata[imn].get_attr('theta')
-			psi   = projdata[imn].get_attr('psi')
 			finfo.write( "prj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, sxo, syo) )
 			finfo.flush()
 		if  CTF:
@@ -674,8 +671,9 @@ def proj_ali_incore_local(volref, mask3D, projdata, first_ring, last_ring, rstep
 				s2x   = sxb+sxo
 				s2y   = syb+syo
 
-
-			projdata[imn].set_attr_dict({'phi':phi, 'theta':theta, 'psi':psi, 's2x':s2x, 's2y':s2y, 'peak':peak})
+			from utilities import set_params_proj, get_params_proj
+			set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y] )
+			projdata[imn].set_attr('peak',peak)
 
 			# if -1 local search did not have any neighbors, simply skip it
 			if not(finfo is None):
@@ -683,7 +681,7 @@ def proj_ali_incore_local(volref, mask3D, projdata, first_ring, last_ring, rstep
 				finfo.flush()
 
 def proj_ali_incore_index(volref, iref, mask3D, projdata, first_ring, last_ring, rstep, xrng, yrng, step, delta, ref_a, symmetry, MPI):
-	from utilities    import even_angles, model_circle, compose_transform2
+	from utilities    import even_angles, model_circle, compose_transform2, get_params_proj, set_params_proj
 	from alignment    import prepare_refprojs
 	#  DO NOT USE THIS ONE< WILL BE OBSOLETED SOON  PAP 01/25/08
 	mode    = "F"
@@ -717,8 +715,8 @@ def proj_ali_incore_index(volref, iref, mask3D, projdata, first_ring, last_ring,
 	#soto = []
 	for imn in xrange(len(projdata)):
 		peako = projdata[imn].get_attr('peak')
-		sxo = projdata[imn].get_attr('s2x')
-		syo = projdata[imn].get_attr('s2y')
+		from utilities import set_params_proj, get_params_proj
+		phi,theta,psi,sxo,syo = get_params_proj( projdata[imn] )
 		[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 		if(peak > peako):
 			numref=int(nref)
@@ -741,7 +739,8 @@ def proj_ali_incore_index(volref, iref, mask3D, projdata, first_ring, last_ring,
                 		psi = (ref_angles[numref][2]+angb+360.0)%360.0
                 		s2x = sxb + sxo
                 		s2y = syb + syo
-                	projdata[imn].set_attr_dict({'phi':phi, 'theta':theta, 'psi':psi, 's2x':s2x, 's2y':s2y})
+			from utilities import set_params_proj, get_params_proj
+                	set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y] )
 			#soto.append( [phi, theta,psi,s2x, s2y, mirror, numref, peak] )
 	#from utilities import dropSpiderDoc
 	#dropSpiderDoc("ali_s_params.txt",soto)
@@ -790,12 +789,9 @@ def proj_ali_incore_localB(volref, mask3D, projdata, first_ring, last_ring, rste
 
 	ant = abs(cos(an*qv))
 	for imn in xrange(len(projdata)):
-		sxo = projdata[imn].get_attr('s2x')
-		syo = projdata[imn].get_attr('s2y')
+		from utilities import set_params_proj, get_params_proj
+		phi,theta,psi,sxo,syo = get_params_proj( projdata[imn] )
 		if not(info is None):
-			phi = projdata[imn].get_attr('phi')
-			theta = projdata[imn].get_attr('theta')
-			psi = projdata[imn].get_attr('psi')
 			info.write( "prj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, sxo, syo) )
 			info.flush()
 		# This is for Berlin only
@@ -842,8 +838,8 @@ def proj_ali_incore_localB(volref, mask3D, projdata, first_ring, last_ring, rste
 				s2x = sxb+sxo
 				s2y = syb+syo
 
-
-			projdata[imn].set_attr_dict({'phi':phi, 'theta':theta, 'psi':psi, 's2x':sxb+sxo, 's2y':syb+syo})
+			from utilities import set_params_proj, get_params_proj
+			set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y])
 
 			# if -1 local search did not have any neighbors, simply skip it
 			if not(info is None):
@@ -872,24 +868,23 @@ def proj_ali_incore_cone(volref, kb, template_angles, projdata, first_ring, last
 	mask2D = model_circle(last_ring, nx, ny)
 	if(first_ring > 0): mask2D -= model_circle(first_ring, nx, ny)
 	#  Generate ref_angles according to angles of the current projection
-	phi   = projdata.get_attr('phi')
-	theta = projdata.get_attr('theta')
-	psi   = projdata.get_attr('psi')
-	SPIDER = Transform3D.EulerType.SPIDER
-	R2  = Transform3D(SPIDER, phi, theta, 0.0)
+
+	from utilities import set_params_proj, get_params_proj
+	phi, theta, psi, sxo, syo = get_params_proj( projdata )
+	R2  = Transform({"type":"spider", "phi":phi,"theta":theta,"psi":0.0})
 	ref_angles = []
 	for i in xrange(len(template_angles)):
-		R1  = Transform3D(SPIDER, template_angles[i][0], template_angles[i][1], 0.0)
+		R1  = Transform({"type":"spider", "phi":template_angles[i][0], "theta":template_angles[i][1], "psi":0.0})
 		RR = R1*R2
-		Euler = RR.get_rotation(SPIDER)
+		Euler = RR.get_rotation("spider")
 		ref_angles.append( [ Euler['phi'], Euler['theta'], 0.0])
 
 	# generate reference projections in polar coords
 	ref_proj_rings = refprojs( volref, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr )
 
 	#if(imn%10 == 0):  print_msg("%d  "%(imn))
-	sxo = projdata.get_attr('s2x')
-	syo = projdata.get_attr('s2y')
+	from utilities import set_params_proj, get_params_proj
+	phi,theta,psi,sxo,syo = get_params_proj( projdata )
 	if not(finfo is None):
 		finfo.write( "old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(phi, theta, psi, sxo, syo) )
 		finfo.flush()
@@ -905,7 +900,10 @@ def proj_ali_incore_cone(volref, kb, template_angles, projdata, first_ring, last
         psi   = (ref_angles[numref][2]+angb+360.0)%360.0
         s2x   = sxb + sxo
         s2y   = syb + syo
-        projdata.set_attr_dict({'phi':phi, 'theta':theta, 'psi':psi, 's2x':s2x, 's2y':s2y, 'peak':peak})
+	projdata.set_attr( "peak", peak )
+
+	from utilities import set_params_proj, get_params_proj
+	set_params_proj( projdata, [phi, theta, psi, s2x, s2y] )
         if not(finfo is None):
 		finfo.write( "new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(phi, theta, psi, s2x, s2y) )
 		finfo.flush()

@@ -1861,20 +1861,17 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 		dropSpiderDoc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
 
 def rotate_3D_shift(data, shift3d):
-	from utilities import compose_transform3
+	from utilities import compose_transform3,get_params_proj, set_params_proj
 
 	nimage = len(data)
 	for i in xrange(nimage):
-		s2xo = data[i].get_attr('s2x')
-		s2yo = data[i].get_attr('s2y')
-		phi = data[i].get_attr('phi')
-		theta = data[i].get_attr('theta')
-		psi = data[i].get_attr('psi')
-		dummy, dummy, dummy, s2x, s2y, dummy, dummy = compose_transform3(0.0,0.0,0.0,shift3d[0],shift3d[1],shift3d[2],1.0,phi,theta,psi,0.0,0.0,0.0,1.0)
-		s2xn = s2xo-s2x
-		s2yn = s2yo-s2y
-		data[i].set_attr_dict({'s2x':s2xn})
-		data[i].set_attr_dict({'s2y':s2yn})
+		phi,theta,psi,s2xo,s2yo = get_params_proj( data )
+		phi,theta,psi,s2x,s2y,dummy,dummy = compose_transform3(0.0,0.0,0.0,shift3d[0],shift3d[1],shift3d[2],1.0,phi,theta,psi,0.0,0.0,0.0,1.0)
+		#s2xn = s2xo-s2x
+		#s2yn = s2yo-s2y
+		#data[i].set_attr_dict({'s2x':s2xn})
+		#data[i].set_attr_dict({'s2y':s2yn})
+		set_params_proj( data, [phi,theta,psi,s2x,s2y] )
 
 def sym_vol(image, symmetry="c1"):
 	" Symmetrize a volume"
