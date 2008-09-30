@@ -10022,6 +10022,10 @@ def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 	info.write( "output written to file " + prj_file + '\n' )
 	info.flush()
 
+
+
+
+
 def incvar(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 	from statistics import variancer, ccc
 	from string import atoi, replace, split, atof
@@ -10128,6 +10132,109 @@ class file_set :
 			return self.files[0], imgid
 
 		return self.files[ifile], imgid - self.fends[ifile-1]
+
+def defvar_mpi(files, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
+	from statistics import variancer, ccc
+	from string import atoi, replace, split, atof
+	from EMAN2 import EMUtil
+	from utilities import get_im, circumference, model_circle, dropImage, info
+	from filter import filt_btwl, filt_gaussl, filt_tanl
+	from math import sqrt
+	import os
+	from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+
+        myid = mpi_comm_rank( MPI_COMM_WORLD )
+        ncpu = mpi_comm_size( MPI_COMM_WORLD )
+        finf = open( "progress%04d.txt" % myid, "w" )
+	
+	all_varer = def_variancer()
+	odd_varer = def_variancer()
+	eve_varer = def_variancer()
+ 
+	filname = prefix + "0000.hdf"
+	n = get_im(filname, 0).get_xsize()
+	
+	if os.path.exists(output):		os.system("rm -f "+output)
+	if os.path.exists('stack_'+output):	os.system("rm -f stack_"+output)
+	if os.path.exists('odd_stack_'+output):	os.system("rm -f odd_stack_"+output)
+	if os.path.exists('eve_stack_'+output):	os.system("rm -f eve_stack_"+output)
+	if os.path.exists('avg_'+output):	os.system("rm -f avg_"+output)
+
+	cccmask = model_circle(radccc, n, n, n)
+	scale = sqrt( nprj )
+	radcir = n/2
+
+        mystack = file_set( prefix, nfile )
+        nimage = mystack.nimg()
+        ndump = 10
+
+	lpstack = "btwl_cir_prj%04d.hdf" % myid
+	iwritelp = 0
+	iwrite = 0
+	iprint = 0
+	iadded = 0
+	for i in xrange(myid, nimage, ncpu):
+		filename, imgid = mystack.get( i ) 	
+		finf.write( "processing %4d (%s:%d)\n" % (i, filename, imgid) )
+		finf.flush()
+
+		img = get_im( filename, imgid )
+		img *= scale
+		img = circumference( img, radcir, radcir+1 )
+		img = filt_tanl(img, fl, fh)
+
+		if writelp:
+			img.write_image(lpstack, iwritelp)
+			iwritelp += 1
+
+		if i%2==0: 
+			odd_varer.insert(img)
+		else: 
+			eve_varer.insert(img)
+
+		all_varer.insert(img)
+
+		iadded += 1
+		if iadded%ndump==0:
+			odd_var = odd_varer.mpi_getvar(myid, 0)
+			eve_var = eve_varer.mpi_getvar(myid, 0)
+			all_var = all_varer.mpi_getvar(myid, 0)
+			
+
+			if myid==0 :
+
+				odd_nimg = odd_var.get_attr( "nimg" )
+				eve_nimg = eve_var.get_attr( "nimg" )
+				assert odd_nimg==eve_nimg
+				iprint += 1
+				print 'ntot, ccc: %6d %10.3f' % ( all_var.get_attr("nimg"), ccc(odd_var, eve_var, cccmask))  
+				if writestack:
+					odd_var.write_image( 'odd_stack_' + output, iwrite )
+					eve_var.write_image( 'eve_stack_' + output, iwrite )
+					all_var.write_image( 'stack_' + output, iwrite )
+					iwrite += 1
+		
+
+	all_var = all_varer.mpi_getvar(myid, 0)
+	odd_var = odd_varer.mpi_getvar(myid, 0)
+	eve_var = eve_varer.mpi_getvar(myid, 0)
+	avg = all_varer.mpi_getavg(myid, 0)
+
+	if myid==0:
+		print 'ntot, ccc: %6d %10.3f' % (nimage, ccc(odd_var, eve_var, cccmask))  
+
+
+	if myid==0 and writestack:
+		all_var.write_image( 'stack_' + output, iwrite )
+		odd_var.write_image( 'odd_stack_' + output, iwrite )
+		eve_var.write_image( 'eve_stack_' + output, iwrite )
+
+	if myid==0:
+		avg.write_image( 'avg_' + output, 0 )
+		#all_var = circumference( all_var, radcir, radcir+1 )
+		all_var.write_image( output, 0 )
+
+
 
 
 
