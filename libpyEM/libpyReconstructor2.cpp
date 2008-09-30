@@ -90,7 +90,7 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
     def("dump_reconstructors_list", &EMAN::dump_reconstructors_list);
     class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("__Reconstructor", init<  >())
         .def("setup", pure_virtual(&EMAN::Reconstructor::setup))
-		.def("insert_slice",  pure_virtual((int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform3D&))&EMAN::Reconstructor::insert_slice))
+//		.def("insert_slice",  pure_virtual((int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform3D&))&EMAN::Reconstructor::insert_slice))
 		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::insert_slice)
 		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform3D&, const unsigned int))&EMAN::Reconstructor::determine_slice_agreement)
 		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&, const unsigned int))&EMAN::Reconstructor::determine_slice_agreement)

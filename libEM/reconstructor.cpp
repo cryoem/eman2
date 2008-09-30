@@ -83,8 +83,6 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&nnSSNR_Reconstructor::NEW);
 	force_add(&nn4_ctfReconstructor::NEW);
 	force_add(&nnSSNR_ctfReconstructor::NEW);
-	force_add(&bootstrap_nnReconstructor::NEW); 
-	force_add(&bootstrap_nnctfReconstructor::NEW); 
 }
 
 void FourierReconstructorSimple2D::setup()
@@ -1984,7 +1982,7 @@ EMData *BackProjectionReconstructor::finish()
 	return image;
 }
 
-EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
+EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int npad )
 {
         int nx = slice->get_xsize();
 	int ny = slice->get_ysize();
@@ -2008,8 +2006,9 @@ EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
 	EMData* padfftslice = zeropadded;
 
 	// shift the projection
-	float sx = (ndim==2) ? float( slice->get_attr("s2x") ) : float( slice->get_attr("s1x") );
-	float sy = (ndim==2) ? float( slice->get_attr("s2y") ) : 0.0f;
+	Vec2f trans = t.get_trans_2d();
+	float sx = -trans[0];
+	float sy = -trans[1];
 	if(sx != 0.0f || sy != 0.0)
 		padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
 
@@ -2123,7 +2122,7 @@ void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 
 	m_symmetry = symmetry;
 	m_npad = npad;
-	m_nsym = Transform3D::get_nsym(m_symmetry);
+	m_nsym = Transform::get_nsym(m_symmetry);
 
 	m_vnx = size;
 	m_vny = size;
@@ -2211,7 +2210,7 @@ void printImage( const EMData* line )
 
 
 
-int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D& t) {
+int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -2236,7 +2235,7 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 	EMData* padfft = NULL;
 
 	if( padffted != 0 ) padfft = new EMData(*slice);
-	else                padfft = padfft_slice( slice, m_npad );
+	else                padfft = padfft_slice( slice, t,  m_npad );
 
 	int mult= slice->get_attr_default( "mult", 1 );
 	Assert( mult > 0 );
@@ -2272,12 +2271,12 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 	return 0;
 }
 
-int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
+int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
 {
 	Assert( padfft != NULL );
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
-		Transform3D tsym = t.get_sym(m_symmetry, isym);
+		Transform tsym = t.get_sym(m_symmetry, isym);
 		m_volume->nn( m_wptr, padfft, tsym, mult);
         }
 	return 0;
@@ -2478,7 +2477,7 @@ void nnSSNR_Reconstructor::setup( const string& symmetry, int size, int npad )
 
 	m_symmetry = symmetry;
 	m_npad = npad;
-	m_nsym = Transform3D::get_nsym(m_symmetry);
+	m_nsym = Transform::get_nsym(m_symmetry);
 
 	m_vnx = size;
 	m_vny = size;
@@ -2550,7 +2549,7 @@ void nnSSNR_Reconstructor::buildNorm2Volume() {
 }
 
 
-int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform3D& t) {
+int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform& t) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -2568,7 +2567,7 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 	EMData* padfft = NULL;
 
 	if( padffted != 0 ) padfft = new EMData(*slice);
-	else		    padfft = padfft_slice( slice, m_npad );
+	else		    padfft = padfft_slice( slice, t, m_npad );
 
 	int mult = slice->get_attr_default("mult", 1);
 
@@ -2579,12 +2578,12 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 	return 0;
 }
 
-int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
+int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
 {
 	Assert( padfft != NULL );
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
-		Transform3D tsym = t.get_sym(m_symmetry, isym);
+		Transform tsym = t.get_sym(m_symmetry, isym);
 		m_volume->nn_SSNR( m_wptr, m_wptr2, padfft, tsym, mult);
 	}
 	return 0;
@@ -2748,82 +2747,6 @@ EMData* nnSSNR_Reconstructor::finish()
 // End of this addition
 
 //####################################################################################
-//** bootstrap_nn reconstructor
-
-bootstrap_nnReconstructor::bootstrap_nnReconstructor()
-{
-}
-
-bootstrap_nnReconstructor::~bootstrap_nnReconstructor()
-{
-	for_each( m_padffts.begin(), m_padffts.end(), boost::ptr_fun( checked_delete< EMData > ) );
-	for_each( m_transes.begin(), m_transes.end(), boost::ptr_fun( checked_delete< Transform3D > ) );
-}
-
-void bootstrap_nnReconstructor::setup()
-{
-	m_ctf  = params["ctf"].to_str();
-	m_npad = params["npad"];
-	m_size = params["size"];
-	m_media = params["media"].to_str();
-
-	try {
-		m_symmetry = params["symmetry"].to_str();
-		if ("" == m_symmetry) m_symmetry = "c1";
-	}
-	catch(_NotExistingObjectException) {
-		m_symmetry = "c1";
-	}
-	    
-	m_nsym = Transform3D::get_nsym(m_symmetry);
-}
-
-int bootstrap_nnReconstructor::insert_slice(const EMData* const slice, const Transform3D& euler)
-{
-	EMData* padfft = padfft_slice( slice, m_npad );
-	Assert( padfft != NULL );
-
-	if( m_media == "memory" ) {
-		m_padffts.push_back( padfft );
-	} else {
-		padfft->write_image( m_media, m_transes.size() );
-		checked_delete( padfft );
-	}
-
-	Transform3D* trans = new Transform3D( euler );
-	m_transes.push_back( trans );
-	return 0;
-}
-
-EMData* bootstrap_nnReconstructor::finish()
-{
-    nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size, m_npad) );
-    vector<int> mults = params["mult"];
-//    Assert( mults != NULL );
-	Assert( m_transes.size() == mults.size() );
-
-	int total = 0;
-	for( unsigned int i=0; i < mults.size(); ++i ) {
-		int mult = mults.at(i);
-		if( mult > 0 ) {
-			if( m_media == "memory" ) {
-				r->insert_padfft_slice( m_padffts[i], *m_transes[i], mult );
-			} else {
-				EMData* padfft = new EMData();
-				padfft->read_image( m_media, i );
-				r->insert_padfft_slice( padfft, *m_transes[i], mult );
-				checked_delete( padfft );
-			}
-		}
-		total += mult;
-	}
-
-	EMData* w = r->finish();
-	checked_delete(r);
-	return w;
-}
-
-//####################################################################################
 //** nn4 ctf reconstructor 
 
 nn4_ctfReconstructor::nn4_ctfReconstructor() 
@@ -2879,7 +2802,7 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
 	m_symmetry = symmetry;
 	m_npad = npad;
 	m_sign = sign;
-	m_nsym = Transform3D::get_nsym(m_symmetry);
+	m_nsym = Transform::get_nsym(m_symmetry);
 
 	m_snr = snr;
 
@@ -2950,7 +2873,7 @@ void nn4_ctfReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform3D& t) 
+int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform& t) 
 {
 	// sanity checks
 	if (!slice) {
@@ -2977,7 +2900,7 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 	EMData* padfft = NULL;
 
 	if( padffted != 0 ) padfft = new EMData(*slice);
-	else                padfft = padfft_slice( slice, m_npad );
+	else                padfft = padfft_slice( slice, t, m_npad );
 
 	int mult= slice->get_attr_default("mult", 1);
     
@@ -3013,14 +2936,14 @@ int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, int mult )
     return 0;
 }
 
-int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
+int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
 {
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr("ctf_applied");
 	int   ctf_applied = (int) tmp;
 
 	for( int isym=0; isym < m_nsym; isym++) {
-		Transform3D tsym = t.get_sym( m_symmetry, isym );
+		Transform tsym = t.get_sym( m_symmetry, isym );
 
 		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym, mult);
 		else            m_volume->nn_ctf(m_wptr, padfft, tsym, mult);
@@ -3182,7 +3105,7 @@ void nnSSNR_ctfReconstructor::setup( const string& symmetry, int size, int npad,
  
     m_symmetry  = symmetry;
     m_npad      = npad;
-    m_nsym      = Transform3D::get_nsym(m_symmetry);
+    m_nsym      = Transform::get_nsym(m_symmetry);
     
     m_sign      = sign;
     m_snr       = snr;
@@ -3276,7 +3199,7 @@ void nnSSNR_ctfReconstructor::buildNorm3Volume() {
 	m_wptr3->set_array_offsets(0,1,1);
 }
 
-int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform3D& t) {
+int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform& t) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -3293,7 +3216,7 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
     if( padffted != 0 ) {	   
         padfft = new EMData(*slice);
     } else {
-        padfft = padfft_slice( slice, m_npad );
+        padfft = padfft_slice( slice, t, m_npad );
     }
 
     int mult= slice->get_attr_default("mult", 1);
@@ -3304,13 +3227,13 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 	checked_delete( padfft );
 	return 0;
 }
-int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
+int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
 {
 	Assert( padfft != NULL );
 	
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
-		Transform3D tsym = t.get_sym(m_symmetry, isym);
+		Transform tsym = t.get_sym(m_symmetry, isym);
 		m_volume->nn_SSNR_ctf(m_wptr, m_wptr2, m_wptr3, padfft, tsym, mult);		
 	}
 	
@@ -3475,90 +3398,6 @@ EMData* nnSSNR_ctfReconstructor::finish()
 // End of this addition
 
 
-
-// bootstrap_nnctfReconstructor
-bootstrap_nnctfReconstructor::bootstrap_nnctfReconstructor()
-{
-}
-
-bootstrap_nnctfReconstructor::~bootstrap_nnctfReconstructor()
-{
-    for_each( m_padffts.begin(), m_padffts.end(), boost::ptr_fun( checked_delete< EMData > ) );
-    for_each( m_transes.begin(), m_transes.end(), boost::ptr_fun( checked_delete< Transform3D > ) );
-}
-
-void bootstrap_nnctfReconstructor::setup()
-{
-    m_npad = params["npad"];
-    m_size = params["size"];
-    m_sign = params["sign"];
-    m_media = params["media"].to_str();
-    m_snr = params["snr"];
-
-    try {
-	m_symmetry = params["symmetry"].to_str();
-	if ("" == m_symmetry) m_symmetry = "c1";
-    }
-    catch(_NotExistingObjectException) {
-        m_symmetry = "c1";
-    }
-        
-    m_nsym = Transform3D::get_nsym(m_symmetry);
-}
-
-int bootstrap_nnctfReconstructor::insert_slice(const EMData* const slice, const Transform3D& euler)
-{
-    EMData* padfft = padfft_slice( slice, m_npad );
-    Assert( padfft != NULL );
-
-    if( m_media == "memory" )
-    {
-        m_padffts.push_back( padfft );
-    }
-    else
-    {
-        padfft->write_image( m_media, m_transes.size() );
-	checked_delete( padfft );
-    }
-
-    Transform3D* trans = new Transform3D( euler );
-    m_transes.push_back( trans );
-    return 0;
-}
-
-EMData* bootstrap_nnctfReconstructor::finish()
-{
-    nn4_ctfReconstructor* r( new nn4_ctfReconstructor(m_symmetry, m_size, m_npad, m_snr, m_sign) );
-    vector<int> mults = params["mult"];
-//    Assert( mults != NULL );
-    Assert( m_transes.size() == mults.size() );
-
-    int total = 0;
-    for( unsigned int i=0; i < mults.size(); ++i )
-    {
-        int mult = mults.at(i);
-	if( mult > 0 )
-	{
-	    if( m_media == "memory" )
-	    {
-                r->insert_padfft_slice( m_padffts[i], *m_transes[i], mult );
-	    }
-	    else
-	    {
-	        EMData* padfft = new EMData();
-		padfft->read_image( m_media, i );
-		r->insert_padfft_slice( padfft, *m_transes[i], mult );
-		checked_delete( padfft );
-            }
-	}
-	total += mult;
-    }
-
-    EMData* w = r->finish()->copy();
-    checked_delete(r);
-    return w;
-}
-
 void EMAN::dump_reconstructors()
 {
 	dump_factory < Reconstructor > ();
@@ -3599,7 +3438,7 @@ newfile_store::~newfile_store( )
 {  
 }
 
-void newfile_store::add_image( EMData* emdata )
+void newfile_store::add_image( EMData* emdata, const Transform& tf )
 {
     if( m_bin_of == NULL )
     {
@@ -3607,7 +3446,8 @@ void newfile_store::add_image( EMData* emdata )
         m_txt_of = shared_ptr<ofstream>( new ofstream(m_txt_file.c_str()) );
     }
 
-    EMData* padfft = padfft_slice( emdata, m_npad );
+
+    EMData* padfft = padfft_slice( emdata, tf, m_npad );
 
     int nx = padfft->get_xsize();
     int ny = padfft->get_ysize();
@@ -3620,10 +3460,6 @@ void newfile_store::add_image( EMData* emdata )
     float amp_contrast = emdata->get_attr( "amp_contrast" );
     float Cs = emdata->get_attr( "Cs" );
     float b_factor = 0.0;
-    float phi = emdata->get_attr( "phi" );
-    float tht = emdata->get_attr( "theta" );
-    float psi = emdata->get_attr( "psi" );
-    Transform3D tf( Transform3D::SPIDER, phi, tht, psi );
 
     vector<point_t> points;
 
@@ -3801,7 +3637,6 @@ void newfile_store::add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>
     float* vdata = fftvol->get_data();
     float* wdata = wgtvol->get_data();
 
-    int nprj = m_offsets.size();
     int npoint = m_offsets[0]/sizeof(point_t);
  
     Assert( int(mults.size())==nprj );
@@ -3845,7 +3680,8 @@ file_store::~file_store()
 
 void file_store::add_image(  EMData* emdata )
 {
-    EMData* padfft = padfft_slice( emdata, m_npad );
+/*
+    EMData* padfft = padfft_slice( emdata, tf, m_npad );
 
     float* data = padfft->get_data();
 
@@ -3890,10 +3726,12 @@ void file_store::add_image(  EMData* emdata )
     }
 
     checked_delete(padfft);
+*/
 }
 
 void file_store::get_image( int id, EMData* padfft )
 {
+/*
     if( m_defocuses.size() == 0 ) {
         ifstream m_txt_ifs( m_txt_file.c_str() );
         m_txt_ifs.ignore( 4096, '\n' );
@@ -3961,6 +3799,7 @@ void file_store::get_image( int id, EMData* padfft )
     padfft->set_attr( "theta", m_thetas[id] );
     padfft->set_attr( "psi", m_psis[id] );
     padfft->set_attr( "padffted", 1 );
+*/
 }
 
 void file_store::restart( )

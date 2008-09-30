@@ -129,19 +129,19 @@ EMData* mult_radial(EMData* radial);
 		 * @param bi Fourier transform matrix [0:n2][1:n]
 		 * @param tf Transform3D reference
 		 */
-		void onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform3D& tf);
+		void onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf);
 
-		void onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform3D& tf, int mult);
+		void onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
 		 *
 		 * @param wptr Normalization data.
 		 * @param myfft FFT data.
-		 * @param tf Transform3D reference
+		 * @param tf Transform reference
 		 * @param mult
 		 */
-		void nn(EMData* wptr, EMData* myfft, const Transform3D& tf, int mult=1);
+		void nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult=1);
 
 		/** Nearest Neighbor interpolation, meanwhile return necessary data such as
 		 *  Kn, sum_k(F_k^n) ans sum_k(|F_k^n|^2)
@@ -150,10 +150,10 @@ EMData* mult_radial(EMData* radial);
 		 * @param wptr Normalization data.
 		 * @param wptr2 
 		 * @param myfft FFT data.
-		 * @param tf Transform3D reference
+		 * @param tf Transform reference
 		 * @param mult
 		 */
-		void nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform3D& tf, int mult=1);		
+		void nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform& tf, int mult=1);		
 
 		/** Nearest Neighbor interpolation, meanwhile return necessary data such as
 		 *  Kn, sum_k(F_k^n) ans sum_k(|F_k^n|^2)
@@ -163,11 +163,11 @@ EMData* mult_radial(EMData* radial);
 		 * @param wptr2 
 		 * @param wptr3
 		 * @param myfft
-		 * @param tf Transform3D reference
+		 * @param tf Transform reference
 		 * @param mult
 		 */
 /*   	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* wptr4, EMData* wptr5, EMData* myfft, EMData* m_wvolume, const Transform3D& tf, int mult=1); */
- 	 	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult=1);
+ 	 	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform& tf, int mult=1);
    		   
    		   /**  Calculate Spectrum signal noise ratio (SSNR) accounting CTF correction
    		    *  a. 3D Wiener volume F_3D has been pre-calculated already. F_3D(k) = sum(k)(CTF_k*F_k)/{sum CTF_k^2 + 1/snr}
@@ -211,7 +211,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param defocus
 		 * @param mult
 		 */
-		void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform3D& tf, float defocus, int mult);
+		void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float defocus, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -221,7 +221,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param tf Transform3D reference
 		 * @param mult
 		 */
-		void nn_ctf(EMData* w, EMData* myfft, const Transform3D& tf, int mult);
+		void nn_ctf(EMData* w, EMData* myfft, const Transform& tf, int mult);
 
 		/** Helper function for method nn4_ctf.
 		 *  here it is assumed the projection data was already multiplied by the ctf...
@@ -231,11 +231,11 @@ EMData* mult_radial(EMData* radial);
 		 * @param n2 Number of complex elements.
 		 * @param w Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
-		 * @param tf Transform3D reference
+		 * @param tf Transform reference
 		 * @param defocus
 		 * @param mult
 		 */
-		void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Transform3D& tf, float defocus, int mult);
+		void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float defocus, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -246,7 +246,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param tf Transform3D reference
 		 * @param mult
 		 */
-		void nn_ctf_applied(EMData* w, EMData* myfft, const Transform3D& tf, int mult );
+		void nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, int mult );
 
 		/** Symmetrize plane 0
 		 *  Modifies the current object.

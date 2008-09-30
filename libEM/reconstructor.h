@@ -121,10 +121,10 @@ namespace EMAN
 		 * @param euler Euler angle of this image slice.
 		 * @return 0 if OK. 1 if error.
 		 */
-		virtual int insert_slice(const EMData* const slice, const Transform3D & euler) = 0;
+		virtual int insert_slice(const EMData* const slice, const Transform3D & euler) {throw;};
 		
-		// This is pure virtual yet, but it should be...
-		virtual int insert_slice(const EMData* const slice, const Transform & euler) { throw;}
+		// This is pure virtual yet, but it should be... changed by Wei 
+		virtual int insert_slice(const EMData* const slice, const Transform & euler) {throw;};
 		
 		/** 
 	  	 * @return 
@@ -745,7 +745,7 @@ namespace EMAN
 	/** Direct Fourier inversion Reconstructor
      * 
      */
-	EMData* padfft_slice( const EMData* const slice, int npad );
+	EMData* padfft_slice( const EMData* const slice, const Transform& t, int npad );
 
 	class nn4Reconstructor:public Reconstructor
 	{
@@ -758,9 +758,9 @@ namespace EMAN
 
 		virtual void setup();
 
-		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler);
 
-        virtual EMData *finish();
+ 	       virtual EMData *finish();
 
 		virtual string get_name() const
 		{
@@ -795,7 +795,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad );
 
-		int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
+		int insert_padfft_slice( EMData* padded, const Transform& trans, int mult=1 );
 
 
 	  private:
@@ -840,7 +840,7 @@ namespace EMAN
 
 		virtual void setup();
 
-		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler);
 		
 		virtual EMData* finish();
 
@@ -875,7 +875,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad);
 
-		int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
+		int insert_padfft_slice( EMData* padded, const Transform& trans, int mult=1 );
 
 	  private:
 		EMData* m_volume;
@@ -900,57 +900,6 @@ namespace EMAN
 	};
 
 
-	class bootstrap_nnReconstructor:public Reconstructor
-	{
-	  public:
-		bootstrap_nnReconstructor();
-
-		~bootstrap_nnReconstructor();
-
-		virtual void setup();
-
-		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
-		
-		virtual EMData *finish();
-
-		virtual string get_name() const
-		{
-			return "bootstrap_nn";
-		}
-		
-		string get_desc() const
-		{
-			return "Bootstrap nearest neighbour constructor";
-		}
-
-		static Reconstructor *NEW()
-		{
-			return new bootstrap_nnReconstructor();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("size", EMObject::INT);
-			d.put("npad", EMObject::INT);
-			d.put("mult", EMObject::INTARRAY);
-			d.put("media", EMObject::STRING);
-			d.put("symmetry", EMObject::STRING);
-			return d;
-		}
-
-	  private:
-		string m_ctf;
-		string m_media;
-		string m_symmetry;
-		float m_snr;
-		int m_size;
-		int m_npad;
-		int m_nsym;
-		vector< EMData* > m_padffts;
-		vector< Transform3D* > m_transes;
-	};
-
 	/** nn4_ctf Direct Fourier Inversion Reconstructor
      * 
      */
@@ -965,7 +914,7 @@ namespace EMAN
 
 		virtual void setup();
 
-		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
+		virtual int insert_slice(const EMData* const slice, const Transform& euler);
 
 		virtual EMData *finish();
 
@@ -1001,7 +950,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad, float snr, int sign );
 
-		int insert_padfft_slice( EMData* padfft, const Transform3D& trans, int mult=1);
+		int insert_padfft_slice( EMData* padfft, const Transform& trans, int mult=1);
 
 		int insert_buffed_slice( const EMData* buffer, int mult );
 	  private:
@@ -1015,7 +964,7 @@ namespace EMAN
 		int m_vnxc, m_vnyc, m_vnzc;
 		int m_npad;
 		int m_sign;
-        int m_weighting;
+		int m_weighting;
 		float m_wghta, m_wghtb;
 		float m_snr;
 		string m_symmetry;
@@ -1043,7 +992,7 @@ namespace EMAN
 
 		virtual void setup();
 
-		virtual int insert_slice(const EMData *const slice, const Transform3D & euler);
+		virtual int insert_slice(const EMData *const slice, const Transform& euler);
 		
 
 		virtual EMData* finish();
@@ -1082,7 +1031,7 @@ namespace EMAN
 		}
 		void setup( const string& symmetry, int size, int npad, float snr, int sign);
 
-                int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
+                int insert_padfft_slice( EMData* padded, const Transform& trans, int mult=1 );
 
 	  private:
 		EMData* m_volume;
@@ -1112,60 +1061,6 @@ namespace EMAN
 		int wiener;
 	};
 
-	class bootstrap_nnctfReconstructor:public Reconstructor
-	{
-	  public:
-		bootstrap_nnctfReconstructor();
-
-		~bootstrap_nnctfReconstructor();
-
-		virtual void setup();
-
-		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
-		
-		virtual EMData *finish();
-
-		virtual string get_name() const
-		{
-			return "bootstrap_nnctf";
-		}
-		
-		string get_desc() const
-		{
-			return "Bootstrap nearest neighbour CTF constructor";
-		}
-
-		static Reconstructor *NEW()
-		{
-			return new bootstrap_nnctfReconstructor();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("snr", EMObject::FLOAT);
-			d.put("size", EMObject::INT);
-			d.put("npad", EMObject::INT);
-			d.put("sign", EMObject::INT);
-			d.put("mult", EMObject::INTARRAY);
-			d.put("media", EMObject::STRING);
-			d.put("symmetry", EMObject::STRING);
-			return d;
-		}
-
-	  private:
-		string m_ctf;
-		string m_media;
-		string m_symmetry;
-		float m_snr;
-		int m_size;
-		int m_npad;
-		int m_nsym;
-		int m_sign;
-		vector< EMData* > m_padffts;
-		vector< Transform3D* > m_transes;
-	};
-
 	template <> Factory < Reconstructor >::Factory();
 
 	void dump_reconstructors();
@@ -1188,7 +1083,7 @@ namespace EMAN
 
 		virtual ~newfile_store();
 
-		void add_image( EMData* data );
+		void add_image( EMData* data, const Transform& tf );
 
 		void add_tovol( EMData* fftvol, EMData* wgtvol, const vector<int>& mults, int pbegin, int pend );
 

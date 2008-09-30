@@ -996,7 +996,7 @@ EMData* EMData::average_circ_sub() const
 //  Helper functions for method nn
 
 
-void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform3D& tf)
+void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf)
 {   
         //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	int jp = (j >= 0) ? j+1 : n+j+1;
@@ -1050,7 +1050,7 @@ void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Tra
 }
 
 
-void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform3D& tf, int mult)
+void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf, int mult)
 {   
         //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	int jp = (j >= 0) ? j+1 : n+j+1;
@@ -1101,7 +1101,7 @@ void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, cons
 	}
 }
 
-void EMData::nn(EMData* wptr, EMData* myfft, const Transform3D& tf, int mult) 
+void EMData::nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult) 
 {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
@@ -1122,7 +1122,7 @@ void EMData::nn(EMData* wptr, EMData* myfft, const Transform3D& tf, int mult)
 	EXITFUNC;
 }
 
-void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform3D& tf, int)
+void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform& tf, int)
 {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
@@ -1407,7 +1407,7 @@ std::map< float, shared_ptr< std::vector<float> > > ctf_store::m_store;
 
 //  Helper functions for method nn4_ctf
 void EMData::onelinenn_ctf(int j, int n, int n2, 
-		          EMData* w, EMData* bi, const Transform3D& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+		          EMData* w, EMData* bi, const Transform& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
         int remove = bi->get_attr_default( "remove", 0 );
 
@@ -1472,7 +1472,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 }
 
 void EMData::onelinenn_ctf_applied(int j, int n, int n2, 
-		          EMData* w, EMData* bi, const Transform3D& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+		          EMData* w, EMData* bi, const Transform& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
         int remove = bi->get_attr_default( "remove", 0 );
 
@@ -1539,7 +1539,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 }
 
 void
-EMData::nn_ctf(EMData* w, EMData* myfft, const Transform3D& tf, int mult) {
+EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, int mult) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -1566,7 +1566,7 @@ EMData::nn_ctf(EMData* w, EMData* myfft, const Transform3D& tf, int mult) {
 }
 
 void
-EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform3D& tf, int mult) {
+EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, int mult) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -1594,7 +1594,7 @@ EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform3D& tf, int mult
 
 
 
-void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int)
+void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform& tf, int)
 {
 	/***   Preparing terms for SSNR 
 	      m_wvolume F^3D Wiener volume
