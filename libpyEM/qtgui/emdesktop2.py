@@ -68,6 +68,14 @@ class EMWindowNode:
 				return
 		
 		self.children.append(new_child)
+		
+	def detach_child(self,new_child):
+		for i,child in enumerate(self.children):
+			if (child == new_child):
+				self.children.pop(i)
+				return
+			
+		print "error, can not detach the child from a parent it doesn't belong to"
 	
 	def set_parent(self,parent):
 		self.parent = parent
@@ -241,6 +249,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 	def draw(self):
 		for child in self.children:
 			glPushMatrix()
+			glTranslate(*self.get_origin())
 			child.draw()
 			glPopMatrix()
 	
@@ -256,7 +265,9 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
 				child.mousePressEvent(event)
 				self.updateGL()
-				return
+				return True
+		
+		False
 	
 	def mouseMoveEvent(self, event):
 		for child in self.children:
@@ -269,14 +280,18 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 				child.mouseMoveEvent(event)
 				self.previous = child
 				self.updateGL()
-				return
+				return True
+		
+		return False
 		
 	def mouseReleaseEvent(self, event):
 		for child in self.children:
 			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
 				child.mouseReleaseEvent(event)
 				self.updateGL()
-				return
+				return True
+			
+		return False
 					
 		
 	def mouseDoubleClickEvent(self, event):
@@ -284,24 +299,29 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
 				child.mouseDoubleClickEvent(event)
 				self.updateGL()
-				return
-		
+				return True
+		return False
 		
 	def wheelEvent(self, event):
 		for child in self.children:
 			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
 				child.wheelEvent(event)
 				self.updateGL()
-				return
+				return True
+		
+		return False
 
 	def toolTipEvent(self, event):
 		for child in self.children:
 			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
 				child.toolTipEvent(event)
 				self.updateGL()
-				return
+				QtGui.QToolTip.hideText()
+				return True
 		
-		QtGui.QToolTip.hideText()
+		return False
+		
+		
 
 	def dragMoveEvent(self,event):
 		print "received drag move event"
@@ -335,8 +355,11 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		for child in self.children:
 			if ( child.isinwin(event.x(),self.height()-event.y()) ):
 				child.hoverEvent(event)
-				break
-		self.updateGL()
+				return True
+		
+		return False
+				#break
+		#self.updateGL()
 
 	def isinwin(self,x,y):
 		for child in self.children:
@@ -464,6 +487,7 @@ class LeftSideWidgetBar(EMGLViewContainer):
 					#print "seed a scale event for ", j
 					self.transformers[j].seed_scale_animation_event(below_scale)
 			#elif i == (len(self.transformers)-1):
+			
 				
 		
 	def resize_gl(self):
@@ -476,12 +500,13 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			
 		if children_height > viewport_height():
 			scale = viewport_height()/float(children_height)
-			#i = 0
-			for t in self.transformers: 
-				#print "resetting scale event for ", i
-				#i += 1
-				t.seed_scale_animation_event(scale)
-	
+		else: scale = 1.0
+		
+		for t in self.transformers: 
+			#print "resetting scale event for ", i
+			#i += 1
+			t.seed_scale_animation_event(scale)
+
 	def mouseMoveEvent(self, event):
 		intercept = False
 		for i,child in enumerate(self.children):
@@ -524,7 +549,17 @@ class LeftSideWidgetBar(EMGLViewContainer):
 		self.transformers.append(LeftSideWidgetBar.LeftSideTransform(new_child))
 		EMWindowNode.attach_child(self,new_child)
 		self.reset_scale_animation()
-		print_node_hierarchy(self.parent)
+		#print_node_hierarchy(self.parent)
+		
+	def detach_child(self,new_child):
+		for i,child in enumerate(self.children):
+			if (child == new_child):
+				self.children.pop(i)
+				self.transformers.pop(i)
+				#self.reset_scale_animation()
+				return
+			
+		print "error, attempt to detach a child that didn't belong to this parent"
 
 	class LeftSideTransform:
 		ACTIVE = 0
@@ -537,6 +572,15 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			self.state = LeftSideWidgetBar.LeftSideTransform.INACTIVE
 			self.rotation = 90
 			self.xy_scale = 1.0
+			
+		def __del__(self):
+			if self.scale_animation != None:
+				self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+				self.scale_animation = None
+			
+			if self.rotation_animation != None:
+				self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+				self.rotation_animation = None
 		
 		def get_xy_scale(self):
 			return self.xy_scale
@@ -638,57 +682,28 @@ class EMBrowserModule(EMModule):
 		self.file_dialog = None
 		self.inspector = None
 		self.image_display = None
-	
-
-	def changed(self,file):
-		pass
-	
-		#try:
-			#a=EMData.read_images(str(file))
-			#if len(a) == 1:
-				#a = a[0]
-				#if a.get_zsize() != 1: w = EMGLView3D(self,a)
-				#else: w = EMGLView2D(self,a)
-			#else: w = EMGLView2D(self,a)
-			
-			#try: self.cols[1] = []
-			#except: self.cols.append([])
-			#self.cols[1].append(w)
-			#scalex = self.get_col_width()/float(w.width())
-			#scaley = self.get_col_height()/float(w.height())
-			##print scalex,scaley,yheight,w.height()
-			#if scalex > scaley: scalex = scaley
-			#try: w.d = scalex*w.d # 3D
-			#except: pass
-			#w.h = scalex*w.h
-			#w.set_width(scalex*w.w)
-			
-			#try: w.setOptScale()
-			#except: pass
-			
-			#insp = w.getInspector()
-			#d = EMGLViewQtWidget(self.parent)
-			#d.setQtWidget(insp)
-			#try:
-				#self.cols[0][2] = d
-			#except: self.cols[0].append(d)
-			
-			#self.layout()
 	def finished(self,val):
-		print self.display_target.width(),self.display_target.height()
+		print "finished"
 		act = False
 		if ( val == 1 ):
+			if self.image_display != None:
+				self.display_target.detach_child(self.image_display)
+				self.image_display = None
+			if self.inspector != None:
+				self.inspector_target.detach_child(self.inspector)
+				self.inspector = None
+				
 			for i in self.file_dialog.selectedFiles():
 				a=EMData.read_images(str(i))
 				if len(a) == 1:
 					a = a[0]
 					if a.get_zsize() != 1:
-						#b = EMGLView3D(self.display_target,a)
+						b = EMGLView3D(self.display_target,a)
 						
-						#self.image_display = EM3DWidget(self,b)
-						#self.image_display.target_translations_allowed(True)
-						#self.image_display.allow_camera_rotations(True)
-						self.image_display = EMGLView3D(self.display_target,a)
+						self.image_display = EM3DWidget(self,b)
+						self.image_display.target_translations_allowed(True)
+						self.image_display.allow_camera_rotations(True)
+						#self.image_display = EMGLView3D(self.display_target,a)
 						act = True
 					else:
 						self.image_display = EMGLView2D(self.display_target,a)
@@ -706,6 +721,7 @@ class EMBrowserModule(EMModule):
 			self.inspector.setQtWidget(insp)
 			self.inspector_target.attach_child(self.inspector)
 			
+			EMDesktop.main_widget.updateGL()
 	def load_browser(self):
 		#self.numcols = 2
 		file_dialog = self.__get_file_dialog()
@@ -719,7 +735,7 @@ class EMBrowserModule(EMModule):
 			self.file_dialog = QtGui.QFileDialog(EMDesktop.main_widget,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
 			#self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
 			QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("finished(int)"), self.finished)
-			QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
+			#QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
 			self.file_dialog.show()
 			self.file_dialog.hide()
 			
@@ -755,10 +771,10 @@ class EMDesktopFrame(EMFrame):
 			print "asked for child number ",idx,"but I have only",len(self.display_frames),"display children"
 	
 	def resize_gl(self):
-		print "here ware are resizing to",400,0,viewport_width()-400,viewport_height()
+	
 		self.set_geometry(Region(0,0,int(viewport_width()),int(viewport_height())))
 		if len(self.display_frames) != 0:
-			self.display_frames[0].set_geometry(Region(400,0,int(viewport_width()-400),int(viewport_height())))
+			self.display_frames[0].set_geometry(Region(200,0,-100,int(viewport_width()-400),int(viewport_height()),100))
 	
 class EMDesktopScreenInfo:
 	"""
@@ -953,10 +969,12 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,128.0)
+		glDisable(GL_TEXTURE_2D)
+		glEnable(GL_LIGHTING)
 		glCallList(self.frame_dl)
 		
 	def read_EMAN2_image(self):
-		self.p = QtGui.QPixmap("EMAN2.0.big.jpg")
+		self.p = QtGui.QPixmap("EMAN2.0.big2.jpg")
 		return self.p
 
 	
@@ -987,10 +1005,10 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.,0,1,0.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
 
 		# get a new Quadric object for drawing cylinders, spheres, etc
 		if not self.gq:

@@ -698,54 +698,7 @@ def get_3d_font_renderer():
 
 class EMAbstractFactory:
 	''' 
-	Taken from http://code.activestate.com/recipes/86900/
-	This is an abstract factory.
-	(following code example taken directly from url above)
-	
-	Examples:
-	>>f=EMAbstractFactory()
-	>>class A:pass
-	>>f.register("createA",A)
-	>>f.createA()
-	<__main__.A instance at 01491E7C>
-	
-	>>> class B:
-	... 	def __init__(self, a,b=1):
-	... 		self.a=a
-	... 		self.b=b
-	... 		
-	>>> f.register("createB",B,1,b=2)
-	>>> f.createB()
-	>>> b=f.createB()
-	>>> 
-	>>> b.a
-	1
-	>>> b.b
-	2
-	
-	>>> class C:
-	... 	def __init__(self,a,b,c=1,d=2):
-	... 		self.values = (a,b,c,d)
-	... 
-	>>> f.register("createC",C,1,c=3)
-	>>> c=f.createC(2,d=4)
-	>>> c.values
-	(1, 2, 3, 4)
-	
-	>>> f.register("importSerialization",__import__,"cPickle")
-	>>> pickle=f.importSerialization()
-	>>> pickle
-	<module 'cPickle' (built-in)>
-	>>> f.register("importSerialization",__import__,"marshal")
-	>>> pickle=f.importSerialization()
-	>>> pickle
-	<module 'marshal' (built-in)>
-	
-	>>> f.unregister("importSerialization")
-	>>> f.importSerialization()
-	Traceback (most recent call last):
-	  File "<interactive input>", line 1, in ?
-	AttributeError: Factory instance has no attribute 'importSerialization'
+	see http://blake.bcm.edu/emanwiki/Eman2FactoriesInPython
 	'''
 	
 	def register(self, methodName, constructor, *args, **kargs):

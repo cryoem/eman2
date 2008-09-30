@@ -161,6 +161,10 @@ class EMFTGL
 		
 		
 	private:
+		/** Disallow copy construction */
+// 		EMFTGL(const EMFTGL& );  FIXME solve this issue
+		/** Disallow Assignment */
+// 		EMFTGL& operator=(const EMFTGL& );
 		
 		string font_file_name;
 		unsigned int face_size;
@@ -192,6 +196,11 @@ class EMFTGL
 				 */
 				FTFont* get_font() { return font; }
 			private:
+				/** Disallow copy construction */
+// 				EMFTGLFontInstance(const EMFTGLFontInstance& ); 
+				/** Disallow Assignment */
+// 				EMFTGLFontInstance& operator=(const EMFTGLFontInstance& );
+				
 				EMFTGL::FontMode font_mode;
 				string font_file_name;
 				unsigned int face_size;
@@ -218,7 +227,10 @@ class EMFTGL
 				 */
 				FTFont* get_font(EMFTGL::FontMode mode, const string& file_name, const unsigned int face_size, const unsigned int d, const bool use_dl);
 			private:
-		
+				/** Disallow copy construction */
+// 				EMFTGLManager(const EMFTGLManager& ); 
+				/** Disallow Assignment */
+// 				EMFTGLManager& operator=(const EMFTGLManager& );
 		
 				vector<EMFTGLFontInstance*> font_instances;
 		};

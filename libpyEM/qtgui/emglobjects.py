@@ -742,7 +742,13 @@ class Camera2:
 		self.mpressx = -1
 		self.mpressy = -1
 
-		
+	
+	def set_plane(self,plane='xy'):
+		'''
+		plane should by xy,yx,xz,zx,yz, or zy. It should also be a string
+		'''
+		self.plane = plane
+	
 	def allow_camera_rotations(self,bool=True):
 		self.enablerotation = bool
 
@@ -781,7 +787,7 @@ class Camera2:
 		# position the camera, regualar OpenGL movement.
 		if (self.debug):
 			print "Camera translational position",self.cam_x,self.cam_y,self.cam_z
-		glTranslated(self.cam_x, self.cam_y, self.cam_z)
+		glTranslate(self.cam_x, self.cam_y, self.cam_z)
 		
 		if ( self.enablerotation and not norot):
 			rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
@@ -794,7 +800,7 @@ class Camera2:
 		if (self.debug):
 			print "Camera scale ",self.scale
 		# here is where zoom is applied
-		glScalef(self.scale,self.scale,self.scale)
+		glScale(self.scale,self.scale,self.scale)
 		
 	def scale_event(self,delta):
 		if delta > 0:
