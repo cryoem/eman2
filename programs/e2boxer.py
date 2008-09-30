@@ -871,7 +871,10 @@ class GUIbox:
 	def __init_guimx(self):
 		self.guimxp= None # widget for displaying matrix of smaller imagespaugay
 		glflags = EMOpenGLFlagsAndTools()
-		if True or not glflags.npt_textures_unsupported():
+		emftgl_supported = True
+		try: a = EMFTGL()
+		except: emftgl_supported = False
+		if not glflags.npt_textures_unsupported() and emftgl_supported:
 			self.guimx=EMImageMXRotor()		# widget for displaying image thumbs
 			self.guimx.get_core_object().disable_mx_zoom()
 			self.guimx.get_core_object().allow_camera_rotations(False)
@@ -1348,7 +1351,10 @@ class GUIbox:
 				#print "got thumb",i
 				self.imagethumbs[i] = thumb
 			glflags = EMOpenGLFlagsAndTools()
-			if True or not glflags.npt_textures_unsupported():
+			emftgl_supported = True
+			try: a = EMFTGL()
+			except: emftgl_supported = False
+			if not glflags.npt_textures_unsupported() and emftgl_supported:
 				self.guimxit=EMImageRotor()		# widget for displaying image thumbs
 			else:
 				self.guimxit=EMImageMX()
@@ -1802,8 +1808,8 @@ class GUIbox:
 	def write_all_box_image_files(self,box_size,forceoverwrite=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean"):
 		self.boxable.cache_exc_to_db()
 		for image_name in self.image_names:
-			
-			
+			print image_name
+
 			try:
 				project_db = EMProjectDB()
 				data = project_db[get_idd_key(image_name)]
@@ -1814,21 +1820,25 @@ class GUIbox:
 			except:
 				autoboxer = self.autoboxer
 				#print "writing box images or",image_name,"using currently stored autoboxer"
+			
+			
+			if isinstance(autoboxer,SwarmAutoBoxer):
+				boxable = Boxable(image_name,self,autoboxer)
+				#boxable.clear_and_cache() ATTENTION
+				if boxable.is_excluded():
+					print "Image",image_name,"is excluded and being ignored"
+					continue
 				
-			boxable = Boxable(image_name,self,autoboxer)
-			boxable.clear_and_cache()
-			if boxable.is_excluded():
-				print "Image",image_name,"is excluded and being ignored"
-				continue
-			
-			
-			mode = self.autoboxer.get_mode()
-			self.autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-			self.autoboxer.auto_box(boxable,False)
-			self.autoboxer.set_mode_explicit(mode)
-			
-			boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method)
-	
+				mode = self.autoboxer.get_mode()
+				self.autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+				self.autoboxer.auto_box(boxable,False)
+				self.autoboxer.set_mode_explicit(mode)
+				
+				boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method)
+		
+			else: 
+				print "do it your own way but don't destroy old behavior. I have users, this matters"
+				
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
 		self.boxable.cache_exc_to_db()
 		for image_name in self.image_names:
