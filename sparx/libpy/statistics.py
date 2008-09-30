@@ -33,7 +33,7 @@ from global_def import *
 
 def add_oe_series(data):
 	"""
-		Calculate odd an even sum of a image series using current alignment parameters,
+		Calculate odd and even sum of an image series using current alignment parameters
 	"""
 	from utilities    import model_blank, get_params2D
 	from fundamentals import rot_shift2D
@@ -45,14 +45,14 @@ def add_oe_series(data):
 	for i in xrange(n):
 		alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-		if((i%2) == 0): Util.add_img(ave1, temp)
+		if i%2 == 0: Util.add_img(ave1, temp)
 		else:          Util.add_img(ave2, temp)
 	return ave1, ave2
 
 def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 	"""
 		Calculate average of an image series and variance, sum of squares in Fourier space
-		mode - "a" use current alignment parameters
+		mode - "a": use current alignment parameters
 		CTF  - if True, use CTF for calculations of both average and variance.
 	"""
 	from utilities    import    model_blank, get_params2D
@@ -70,11 +70,11 @@ def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None
 		from filter       import filt_ctf, filt_table
 		from utilities    import get_arb_params
 		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		if(data[0].get_attr_default('ctf_applied', 1) == 1):
+		if data[0].get_attr_default('ctf_applied', 1) == 1:
 			ERROR("data cannot be ctf-applied","add_oe_ave_varf",1)
-		if(ctf_2_sum):  get_ctf2 = False
-		else:           get_ctf2 = True
-		if(get_ctf2): ctf_2_sum = EMData(nx, ny, 1, False)
+		if ctf_2_sum:  get_ctf2 = False
+		else:          get_ctf2 = True
+		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
 	 	for i in xrange(n):
 	 		ima = data[i].copy()
 	 		if mode == "a":
@@ -87,7 +87,7 @@ def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None
 	 		oc = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad=False)
 			Util.add_img(ave, oc)
  			Util.add_img2(var, fft(ima))
-	 		if(get_ctf2): Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
+	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
 		sumsq = fft(ave)
 		ave = fft(Util.divn_img(sumsq, ctf_2_sum))
 		Util.mul_img(sumsq, sumsq.conjg())
@@ -95,7 +95,7 @@ def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None
 	 	Util.sub_img(var, sumsq)
 	else:
 		for i in xrange(n):
-			if(mode == "a"):
+			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
@@ -111,7 +111,7 @@ def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None
 		
 	Util.mul_scalar(var, 1.0/float(n-1))	
 	st = Util.infomask(var, None, True)
-	if(st[2]<0.0):  ERROR("Negative variance!","add_oe_ave_varf",1)
+	if st[2]<0.0:  ERROR("Negative variance!", "add_oe_ave_varf", 1)
 	return ave, var, sumsq
 	
 
@@ -120,7 +120,7 @@ def add_oe_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 		Calculate sum of an image series and sum of squares in Fourier space
 		Since this is the MPI version, we need to reduce sum and sum of squares 
 		on the main node and calculate variance there.
-		mode - "a" use current alignment parameters
+		mode - "a": use current alignment parameters
 		CTF  - if True, use CTF for calculations of the sum.
 	"""
 	from utilities    import    model_blank, get_params2D
@@ -137,10 +137,10 @@ def add_oe_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 		from filter       import filt_ctf, filt_table
 		from utilities    import get_arb_params
 		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		if(data[0].get_attr_default('ctf_applied', 1) == 1):
+		if data[0].get_attr_default('ctf_applied', 1) == 1:
 			ERROR("data cannot be ctf-applied","add_oe_ave_varf",1)
 	 	for i in xrange(n):
-	 		if(mode == "a"):
+	 		if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
@@ -154,7 +154,7 @@ def add_oe_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
  			Util.add_img2(var, fft(ima))
 	else:
 		for i in xrange(n):
-			if(mode == "a"):
+			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
@@ -190,7 +190,7 @@ def add_oe_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 		if data[0].get_attr_default('ctf_applied', 1) == 1: 
 			ERROR("data cannot be ctf-applied","add_oe_ave_varf",1)
 	 	for i in xrange(n):
-	 		if(mode == "a"):
+	 		if mode == "a":
 				attr_list = data[i].get_attr_dict()	
 				if attr_list.has_key('Prob'):
 					p = data[i].get_attr('Prob')
@@ -199,7 +199,7 @@ def add_oe_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 		 			sx     = data[i].get_attr('sx_l')
 	 				sy     = data[i].get_attr('sy_l')
 	 				mirror = data[i].get_attr('mirror_l')
-		 			ima_tmp = rot_shift2D(data[i], alpha[0], sx[0], sy[0], mirror)
+		 			ima_tmp = rot_shift2D(data[i], alpha[0], sx[0], sy[0], mirror[0])
 					Util.mul_scalar(ima_tmp, p[0])
 					for k in xrange(1, K):
 						ima_tmp2 = rot_shift2D(data[i], alpha[k], sx[k], sy[k], mirror[k])
@@ -220,7 +220,7 @@ def add_oe_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
  			Util.add_img2(var, fft(ima))
 	else:
 		for i in xrange(n):
-			if(mode == "a"):
+			if mode == "a":
 	 			alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		 		ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
 			else:
@@ -232,7 +232,7 @@ def add_oe_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 
 def ave_var_s(data):
 	"""
-		Calculate average and variance of a image series
+		Calculate average and variance of an image series
 	"""
 	from utilities import model_blank
 	n = len(data)
@@ -249,7 +249,7 @@ def ave_var_s(data):
 
 def add_oe(data):
 	"""
-		Calculate odd an even sum of a image series
+		Calculate odd and even sum of an image series
 	"""
 	from utilities import model_blank
 	n = len(data)
@@ -259,8 +259,8 @@ def add_oe(data):
 	ave1 = model_blank(nx,ny,nz)
 	ave2 = model_blank(nx,ny,nz)
 	for i in xrange(n):
-		if((i%2) == 0): Util.add_img(ave1, data[i])
-		else:          Util.add_img(ave2, data[i])
+		if i%2 == 0: Util.add_img(ave1, data[i])
+		else:        Util.add_img(ave2, data[i])
 	return ave1, ave2
 
 def ave_series(data):
@@ -283,7 +283,7 @@ def ave_series(data):
 
 def ave_series_ctf(data, ctf2):
 	"""
-		Calculate average of a image series using current alignment parameters and ctf
+		Calculate average of an image series using current alignment parameters and ctf
 		data - real space image series premultiplied by the CTF
 	"""
 	from utilities    import model_blank, get_params2D
@@ -302,7 +302,7 @@ def ave_series_ctf(data, ctf2):
 
 def ave_var_series(data, kb):
 	"""
-		Calculate average and variance of a image series using current alignment parameters
+		Calculate average and variance of an image series using current alignment parameters
 	"""
 	from fundamentals import rotshift2dg
 	from utilities    import model_blank
@@ -315,6 +315,7 @@ def ave_var_series(data, kb):
 		alpha = data[i].get_attr('alpha')
 		sx    =  data[i].get_attr('sx')
 		sy    =  data[i].get_attr('sy')
+		mirror =  data[i].get_attr('mirror')
 		temp = rotshift2dg(data[i], alpha, sx, sy, kb)
 		if  mirror: temp.process_inplace("mirror",{"axis":'x'})
 		Util.add_img(ave, temp)
@@ -323,10 +324,10 @@ def ave_var_series(data, kb):
 	ave /= n
 	return ave, (var - ave*ave*n)/(n-1)
 
-def ave_var_series_g(data,kb):
+def ave_var_series_g(data, kb):
 	"""
 		Calculate average and variance of a image series using current alignment parameters,
-		      data contains images prepared for gridding
+		data contains images prepared for gridding
 	"""
 	from fundamentals import rtshgkb
 	from utilities    import model_blank
@@ -367,58 +368,29 @@ def ave_oe_series_g(data, kb):
 		mirror =  data[i].get_attr('mirror')
 		temp = rtshgkb(data[i], alpha, sx, sy, kb)
 		if  mirror: temp.process_inplace("mirror", {"axis":'x'})
-		if((i%2) == 0): Util.add_img(ave1, temp)
-		else:          Util.add_img(ave2, temp)
+		if i%2 == 0: Util.add_img(ave1, temp)
+		else:        Util.add_img(ave2, temp)
 	ave1 /= (n/2+(n%2))
 	ave2 /= (n/2)
 	return ave1, ave2
 
-"""
-def ave_oe_series_gs(stack):
-	
-	#	Calculate odd and even averages of a image series using current alignment parameters,
-	#	      data contains images prepared for gridding, "s" means stackfile
-	
-	from fundamentals import rtshgkb, prepi
-	from utilities    import model_blank
-	n = EMUtil.get_image_count(stack)
-	ima = EMData()
-	ima.read_image(stack,0)
-	nx = ima.get_xsize()
-	ny = ima.get_ysize()
-	ave1 = model_blank(nx,ny)
-	ave2 = model_blank(nx,ny)
-	for i in xrange(n):
-		if i > 0:
-			ima = EMData()
-			ima.read_image(stack,i)
-		alpha  =  ima.get_attr('alpha')
-		sx     =  ima.get_attr('sx')
-		sy     =  ima.get_attr('sy')
-		mirror =  ima.get_attr('mirror')
-		o, kb = prepi(ima)
-		temp = rtshgkb(o, alpha, sx, sy, kb)
-		if  mirror: temp.process_inplace("mirror", {"axis":'x'})
-		if((i%2) == 0): Util.add_img(ave1, temp)
-		else:          Util.add_img(ave2, temp)
-	return ave1/(n//2+(n%2)), ave2/(n//2)
-"""
 
 def ave_oe_series_d(data):
 	"""
-		Calculate odd and even averages of a image series		      
+		Calculate odd and even averages of an image series		      
 	"""
 	n  = len(data)
 	ave1 = data[0].copy()
 	ave2 = data[1].copy()
 	for i in xrange(2,n):
-		if((i%2) == 0): Util.add_img(ave1, data[i])
- 		else:           Util.add_img(ave2, data[i])
+		if i%2 == 0: Util.add_img(ave1, data[i])
+ 		else:        Util.add_img(ave2, data[i])
 	return ave1/(n//2+(n%2)), ave2/(n//2)
+
 
 def ave_oe_series(stack):
 	"""
-		Calculate odd and even averages of a image stack using current alignment parameters,
+		Calculate odd and even averages of an image stack using current alignment parameters
 	"""
 	from utilities import model_blank, get_params2D
 	from fundamentals import rot_shift2D
@@ -434,18 +406,19 @@ def ave_oe_series(stack):
 		ima.read_image(stack,i)
 		alpha, sx, sy, mirror, scale = get_params2D(ima)
 		temp = rot_shift2D(ima, alpha, sx, sy, mirror)
-		if((i%2) == 0): Util.add_img(ave1, temp)
-		else:          Util.add_img(ave2, temp)
+		if i%2 == 0: Util.add_img(ave1, temp)
+		else:        Util.add_img(ave2, temp)
 	return ave1/(n//2+(n%2)), ave2/(n//2)
+
 
 def ave_oe_series_indexed(stack, idx_ref):
 	"""
-		Calculate odd and even averages of a image series using current alignment parameters,
+		Calculate odd and even averages of an image series using current alignment parameters,
 	"""
 	from utilities import model_blank
 	from fundamentals import rot_shift2D
 	
-	ntot=0
+	ntot = 0
 	n = EMUtil.get_image_count(stack)
 	ima = EMData()
 	ima.read_image(stack,0)
@@ -454,23 +427,20 @@ def ave_oe_series_indexed(stack, idx_ref):
 	ave1 = model_blank(nx,ny)
 	ave2 = model_blank(nx,ny)
 	for i in xrange(n):
-		if(i==0):
-			ima = EMData()
-		ima.read_image(stack,i)
-		if(idx_ref==ima.get_attr('ref_num')):
+		if i == 0: ima = EMData()
+		ima.read_image(stack, i)
+		if idx_ref == ima.get_attr('ref_num'):
 			ntot+=1
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 		 	temp = rot_shift2D(ima, alpha, sx, sy, mirror)
-			if((i%2) == 0): Util.add_img(ave1, temp)
-			else:          Util.add_img(ave2, temp)
-	if(ntot>=0):
-		return ave1/(ntot/2+(ntot%2)), ave2/(ntot/2), ntot
-	else:
-		return ave1, ave2, ntot
+			if i%2 == 0: Util.add_img(ave1, temp)
+			else:        Util.add_img(ave2, temp)
+	if ntot >= 0:	return ave1/(ntot/2+(ntot%2)), ave2/(ntot/2), ntot
+	else:		return ave1, ave2, ntot
 	
 def ave_var_series_one(data, skip, kb):
 	"""
-		Calculate average and variance of a image series using current alignment parameters
+		Calculate average and variance of an image series using current alignment parameters
 	"""
 	from fundamentals import rotshift2dg
 	n = len(data)
