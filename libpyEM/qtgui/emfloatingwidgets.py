@@ -1942,9 +1942,9 @@ class EMGLViewQtWidget:
 			self.genTexture = True
 			self.updateTexture()
 			
-	def updateTexture(self):
-		if ( self.itex == 0 or self.genTexture == True ) : 
-			self.refresh_dl == True
+	def updateTexture(self,force=False):
+		if ( self.itex == 0 or self.genTexture == True or force) : 
+			self.refresh_dl = True
 			if (self.itex != 0 ):
 				#passpyth
 				self.parent.deleteTexture(self.itex)

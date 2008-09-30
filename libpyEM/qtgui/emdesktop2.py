@@ -138,7 +138,7 @@ class Animatable:
 	cache_dts = None
 	def __init__(self):
 		self.time = 0		# time indicates the current time used for the basis of animation.
-		self.time_interval = 0.2 # 0.5 seconds for the animation to complete
+		self.time_interval = 0.4 # 0.5 seconds for the animation to complete
 		self.inverse_time_inverval = 1.0/self.time_interval
 		self.time_begin = 0 # records the time at which the animation was begun
 		self.animated = True
@@ -147,9 +147,17 @@ class Animatable:
 			self.init_cache_dts()
 		
 	def init_cache_dts(self):
+		from math import tanh
 		Animatable.cache_dts = []
 		for i in range(self.n):
-			Animatable.cache_dts.append(sin(float(i)/(self.n-1)*math.pi/2))
+			tanh_approach = True
+			if tanh_approach:
+				val = (1+ (tanh(-4+float(i)/(self.n-1)*8)))/2.0
+				Animatable.cache_dts.append(val)
+			else:
+				Animatable.cache_dts.append(sin(float(i)/(self.n-1)*math.pi/2))
+		
+		print Animatable.cache_dts
 		
 	def set_animated(self,val=True):
 		self.animated = val
@@ -320,8 +328,6 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 				return True
 		
 		return False
-		
-		
 
 	def dragMoveEvent(self,event):
 		print "received drag move event"
@@ -431,6 +437,8 @@ class LeftSideWidgetBar(EMGLViewContainer):
 		
 		EMDesktop.main_widget.register_resize_aware(self)
 		
+		self.browser_module = None
+		
 	def __del__(self):
 		try: EMDesktop.main_widget.deregister_resize_aware(self)
 		except: pass # this might happen at program death
@@ -463,9 +471,11 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			#child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
 
 	def add_browser_frame(self):
-		browser_module = EMBrowserModule(self,self.parent.get_display_child(0))
-		browser_module.load_browser()
-		EMDesktop.main_widget.attach_module(browser_module)
+		if self.browser_module == None:
+			self.browser_module = EMBrowserModule(self,self.parent.get_display_child(0))
+			EMDesktop.main_widget.attach_module(self.browser_module)
+		
+		self.browser_module.load_browser()
 
 	def seed_scale_animation(self,i):
 		t = self.transformers[i]
@@ -488,8 +498,6 @@ class LeftSideWidgetBar(EMGLViewContainer):
 					self.transformers[j].seed_scale_animation_event(below_scale)
 			#elif i == (len(self.transformers)-1):
 			
-				
-		
 	def resize_gl(self):
 		self.reset_scale_animation()
 
@@ -656,7 +664,7 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			glTranslate(0,-self.xy_scale*self.child.height()/2,0)
 			glRotate(self.rotation,0,1,0)
 			glTranslate(self.xy_scale*self.child.width()/2.0,0,0)
-			glScale(1.0,self.xy_scale,1.0)
+			glScale(self.xy_scale,self.xy_scale,1.0)
 		
 		
 		def draw(self):
@@ -679,9 +687,10 @@ class EMBrowserModule(EMModule):
 		self.inspector_target = inspector_target
 		self.display_target = display_target
 		
-		self.file_dialog = None
+		self.file_dialogs = []
 		self.inspector = None
 		self.image_display = None
+		self.main_tab = None
 	def finished(self,val):
 		print "finished"
 		act = False
@@ -692,8 +701,10 @@ class EMBrowserModule(EMModule):
 			if self.inspector != None:
 				self.inspector_target.detach_child(self.inspector)
 				self.inspector = None
-				
-			for i in self.file_dialog.selectedFiles():
+			
+			file_dialog = self.file_dialogs[self.main_tab.currentIndex()]
+			
+			for i in file_dialog.selectedFiles():
 				a=EMData.read_images(str(i))
 				if len(a) == 1:
 					a = a[0]
@@ -720,26 +731,46 @@ class EMBrowserModule(EMModule):
 			self.inspector = EMGLViewQtWidget(EMDesktop.main_widget)
 			self.inspector.setQtWidget(insp)
 			self.inspector_target.attach_child(self.inspector)
-			
+			#self.fd_widget.updateTexture(force=True)
+			self.main_tab.updateGeometry()
 			EMDesktop.main_widget.updateGL()
+			
 	def load_browser(self):
+		act = False
+		if self.main_tab == None:
+			self.__init_main_tab()
+			act = True
 		#self.numcols = 2
 		file_dialog = self.__get_file_dialog()
+		self.main_tab.addTab(file_dialog,"Browse")
+		if act:
+			self.main_tab.show()
+			self.main_tab.hide()
+		
+		self.fd_widget.updateTexture(force=True)
+		#EMDesktop.main_widget.updateGL()
+	def __init_main_tab(self):
+		if self.main_tab != None:
+			print "error, can't init the main tab without the main tab being none, that's just the rule at the moment"
+			return
+		
+		self.main_tab = QtGui.QTabWidget(EMDesktop.main_widget)
 		self.fd_widget = EMGLViewQtWidget(EMDesktop.main_widget)
-		self.fd_widget.setQtWidget(file_dialog)
+		self.fd_widget.setQtWidget(self.main_tab)
 		self.inspector_target.attach_child(self.fd_widget)
-	
+		
 	
 	def __get_file_dialog(self):
-		if self.file_dialog == None:
-			self.file_dialog = QtGui.QFileDialog(EMDesktop.main_widget,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
-			#self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
-			QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("finished(int)"), self.finished)
-			#QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
-			self.file_dialog.show()
-			self.file_dialog.hide()
+		file_dialog = QtGui.QFileDialog(self.main_tab,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
+		#self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
+		QtCore.QObject.connect(file_dialog, QtCore.SIGNAL("finished(int)"), self.finished)
+		#QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
+		#file_dialog.show()
+		#file_dialog.hide()
+		
+		self.file_dialogs.append(file_dialog)
 			
-		return self.file_dialog
+		return file_dialog
 	
 class EMDesktopFrame(EMFrame):
 	def __init__(self,parent,geometry=Region(0,0,0,0)):
@@ -968,13 +999,14 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		## and is the default color of the frame
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,128.0)
+		glMaterial(GL_FRONT,GL_SHININESS,1.0)
 		glDisable(GL_TEXTURE_2D)
 		glEnable(GL_LIGHTING)
 		glCallList(self.frame_dl)
 		
 	def read_EMAN2_image(self):
-		self.p = QtGui.QPixmap("EMAN2.0.big2.jpg")
+		#self.p = QtGui.QPixmap("EMAN2.0.big2.jpg")
+		self.p = QtGui.QPixmap.grabWindow(self.appscreen.winId(),0.0,0.0,self.sysdesktop.width(),self.sysdesktop.height()-30)
 		return self.p
 
 	
@@ -1008,8 +1040,22 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,1.])
+		#glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.5)
+		#glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.5)
+		#glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, .2)
+		#glEnable(GL_LIGHT1)
+		#glLightfv(GL_LIGHT1, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
+		#glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		#glLightfv(GL_LIGHT1, GL_SPECULAR, [0.1, .1, .1, 1.0])
+		#glLightfv(GL_LIGHT1, GL_POSITION, [-0.1,.1,1.,1.])
+		#glLightf(GL_LIGHT1, GL_SPOT_DIRECTION, 45)
+		#glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, [-0.1,.1,1.,0.])
+			
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 
+		glEnable(GL_NORMALIZE)
+		#glEnable(GL_RESCALE_NORMAL)
 		# get a new Quadric object for drawing cylinders, spheres, etc
 		if not self.gq:
 			self.gq=gluNewQuadric()
@@ -1033,13 +1079,13 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		#print "dims are ", self.appwidth,self.appheight,self.width(),self.height()
-
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
 		#self.bgob.render()
 		glPushMatrix()
+		
 		if (self.get_time() < 0):
 			z = self.get_z_opt() + float(self.get_time())/2.0*self.get_z_opt()
 			#print z
@@ -1047,7 +1093,12 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		else:
 			#print -2*self.zopt+0.1
 			glTranslatef(0.,0.,-2*self.get_z_opt()+0.1)
-			
+		
+		#glPushMatrix()
+		#glTranslate(self.width()/2.0,0,self.get_z_opt())
+		##glLightfv(GL_LIGHT0, GL_POSITION, [0,0,1,1.])
+		#glPopMatrix()
+		
 		glPushMatrix()
 		self.draw_frame()
 		glPopMatrix()
@@ -1083,7 +1134,11 @@ class EMDesktop(QtOpenGL.QGLWidget):
 
 			glPushMatrix()
 			glTranslatef(0.,0.,-self.get_z_opt())
+			#glEnable(GL_NORMALIZE)
+			#glDisable(GL_RESCALE_NORMAL)
 			self.desktop_frame.draw()
+			#glDisable(GL_NORMALIZE)
+			#glEnable(GL_RESCALE_NORMAL)
 			glPopMatrix()
 
 	def resizeGL(self, width, height):
@@ -1306,7 +1361,13 @@ class ob2dimage:
 		self.pixmap=pixmap
 		self.target=target
 		self.target.makeCurrent()
+		self.texture_dl = 0
 		self.itex=self.target.bindTexture(self.pixmap)
+		
+	def __del__(self):
+		if self.texture_dl != 0: 
+			glDeleteLists(self.texture_dl,1)
+			self.texture_dl = 0
 
 	def __del__(self):
 		target.deleteTexture(self.itex)
@@ -1349,23 +1410,34 @@ class ob2dimage:
 	
 	def render(self):
 		if not self.pixmap : return
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		glColor(1.0,1.0,1.0)
-		glEnable(GL_TEXTURE_2D)
-		glBindTexture(GL_TEXTURE_2D,self.itex)
-		glBegin(GL_QUADS)
-		glTexCoord2f(0.,0.)
-		glVertex(-self.target.get_aspect(),-1.0)
-		glTexCoord2f(.999,0.)
-		glVertex( self.target.get_aspect(),-1.0)
-		glTexCoord2f(.999,0.999)
-		glVertex( self.target.get_aspect(), 1.0)
-		glTexCoord2f(0.,.999)
-		glVertex(-self.target.get_aspect(), 1.0)
-		glEnd()
-		glDisable(GL_TEXTURE_2D)
+		if self.texture_dl == 0:
+			self.texture_dl=glGenLists(1)
+			
+			if self.texture_dl == 0:
+				return
+			
+			glNewList(self.texture_dl,GL_COMPILE)
+	
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+			glColor(1.0,1.0,1.0)
+			glEnable(GL_TEXTURE_2D)
+			glBindTexture(GL_TEXTURE_2D,self.itex)
+			glBegin(GL_QUADS)
+			glTexCoord2f(0.,0.)
+			glVertex(-self.target.get_aspect(),-1.0)
+			glTexCoord2f(.999,0.)
+			glVertex( self.target.get_aspect(),-1.0)
+			glTexCoord2f(.999,0.999)
+			glVertex( self.target.get_aspect(), 1.0)
+			glTexCoord2f(0.,.999)
+			glVertex(-self.target.get_aspect(), 1.0)
+			glEnd()
+			glDisable(GL_TEXTURE_2D)
+			glEndList()
+		
+		if self.texture_dl != 0: glCallList(self.texture_dl)
 		#glPopMatrix()
 
 
