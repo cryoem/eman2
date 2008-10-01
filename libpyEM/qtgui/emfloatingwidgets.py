@@ -1961,6 +1961,7 @@ class EMGLViewQtWidget:
 			self.itex = self.parent.bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 		
+			self.decoration.set_force_update()
 	def draw(self):
 		#print "draw children"
 		if (self.qwidget == None or self.itex == 0) :

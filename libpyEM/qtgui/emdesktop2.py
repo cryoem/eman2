@@ -142,7 +142,7 @@ class Animatable:
 		self.inverse_time_inverval = 1.0/self.time_interval
 		self.time_begin = 0 # records the time at which the animation was begun
 		self.animated = True
-		self.n = 20
+		self.n = 100
 		if Animatable.cache_dts == None:
 			self.init_cache_dts()
 		
@@ -156,8 +156,6 @@ class Animatable:
 				Animatable.cache_dts.append(val)
 			else:
 				Animatable.cache_dts.append(sin(float(i)/(self.n-1)*math.pi/2))
-		
-		print Animatable.cache_dts
 		
 	def set_animated(self,val=True):
 		self.animated = val
@@ -490,6 +488,8 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			to_height = viewport_height()-seed_height
 			below_scale = to_height/float(below_height)
 			
+			if below_scale > 1.0: below_scale = 1.0
+			
 			#print "seed a scale event for ", i
 			t.seed_scale_animation_event(1.0)
 			for j in range(0,len(self.transformers)):
@@ -691,8 +691,12 @@ class EMBrowserModule(EMModule):
 		self.inspector = None
 		self.image_display = None
 		self.main_tab = None
+		
+	def changed(self,val):
+		print "changed"
+		
 	def finished(self,val):
-		print "finished"
+		#print "finished"
 		act = False
 		if ( val == 1 ):
 			if self.image_display != None:
@@ -702,7 +706,10 @@ class EMBrowserModule(EMModule):
 				self.inspector_target.detach_child(self.inspector)
 				self.inspector = None
 			
-			file_dialog = self.file_dialogs[self.main_tab.currentIndex()]
+			if len(self.file_dialogs) == 1:
+				file_dialog = self.file_dialogs[0]
+			else:
+				file_dialog = self.file_dialogs[self.main_tab.currentIndex()]
 			
 			for i in file_dialog.selectedFiles():
 				a=EMData.read_images(str(i))
@@ -731,40 +738,63 @@ class EMBrowserModule(EMModule):
 			self.inspector = EMGLViewQtWidget(EMDesktop.main_widget)
 			self.inspector.setQtWidget(insp)
 			self.inspector_target.attach_child(self.inspector)
-			#self.fd_widget.updateTexture(force=True)
-			self.main_tab.updateGeometry()
-			EMDesktop.main_widget.updateGL()
+			if len(self.file_dialogs) != 1:
+				self.main_tab.setTabText(self.main_tab.currentIndex(),QtCore.QString(i))
+			#file_dialog.show()
+			#file_dialog.hide()
 			
+		if self.main_tab != None: self.main_tab.resize(600,400)
+		
 	def load_browser(self):
 		act = False
-		if self.main_tab == None:
-			self.__init_main_tab()
-			act = True
-		#self.numcols = 2
+		
 		file_dialog = self.__get_file_dialog()
-		self.main_tab.addTab(file_dialog,"Browse")
-		if act:
-			self.main_tab.show()
-			self.main_tab.hide()
 		
-		self.fd_widget.updateTexture(force=True)
-		#EMDesktop.main_widget.updateGL()
-	def __init_main_tab(self):
-		if self.main_tab != None:
-			print "error, can't init the main tab without the main tab being none, that's just the rule at the moment"
-			return
+		if len(self.file_dialogs) == 1:
+			self.fd_widget = EMGLViewQtWidget(EMDesktop.main_widget)
+			self.fd_widget.setQtWidget(file_dialog)
+			file_dialog.resize(600,400)
+			self.inspector_target.attach_child(self.fd_widget)
+		else:
+			if self.main_tab == None:
+				self.inspector_target.detach_child(self.fd_widget)
+				self.main_tab = QtGui.QTabWidget(EMDesktop.main_widget)
+				self.main_tab.addTab(self.file_dialogs[0],"Browse")
+				self.fd_widget = EMGLViewQtWidget(EMDesktop.main_widget)
+				self.fd_widget.setQtWidget(self.main_tab)
+				self.inspector_target.attach_child(self.fd_widget)
+				
+			#for i in self.file_dialogs:
+				#i.setParent(EMDesktop.Widget)
+			
+			self.main_tab.addTab(file_dialog,"Browse")
+			#self.main_tab.show()
+			#self.main_tab.hide()
+			self.main_tab.resize(600,400)
+			self.fd_widget.updateTexture(force=True)
+			
+			#for i in self.file_dialogs:
+				#i.setParent(EMDesktop.main_widget)
+			
+		EMDesktop.main_widget.updateGL()
+	
+	def accepted(self):
+		print "accepted"
 		
-		self.main_tab = QtGui.QTabWidget(EMDesktop.main_widget)
-		self.fd_widget = EMGLViewQtWidget(EMDesktop.main_widget)
-		self.fd_widget.setQtWidget(self.main_tab)
-		self.inspector_target.attach_child(self.fd_widget)
-		
+	def rejected(self):
+		print "rejected"
+	
+	def files_selected(self,strin):
+		print strin
 	
 	def __get_file_dialog(self):
-		file_dialog = QtGui.QFileDialog(self.main_tab,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
+		file_dialog = QtGui.QFileDialog(EMDesktop.main_widget,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc *.hdf)"))
 		#self.fd = EMDesktopFileDialog(self.parent,"Open File",QtCore.QDir.currentPath(),QtCore.QString("Image files (*.img *.hed *.mrc)"))
 		QtCore.QObject.connect(file_dialog, QtCore.SIGNAL("finished(int)"), self.finished)
-		#QtCore.QObject.connect(self.file_dialog, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
+		QtCore.QObject.connect(file_dialog, QtCore.SIGNAL("filesSelected(QString)"), self.files_selected)
+		QtCore.QObject.connect(file_dialog, QtCore.SIGNAL("accepted"), self.accepted)
+		QtCore.QObject.connect(file_dialog, QtCore.SIGNAL("rejected"), self.rejected)
+		QtCore.QObject.connect(file_dialog, QtCore.SIGNAL("currentChanged(QString)"), self.changed)
 		#file_dialog.show()
 		#file_dialog.hide()
 		
