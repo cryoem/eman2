@@ -165,7 +165,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, user_func_name, random_method, T0, F, SA_stop)
 		return
 	from utilities    import model_circle, combine_params2, dropImage, getImage, get_arb_params, get_input_from_string
-	from statistics   import add_oe_ave_varf
+	from statistics   import add_ave_varf
 	from alignment    import Numrinit, ringwe, ali2d_s
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
@@ -277,7 +277,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg(msg)
 		for Iter in xrange(max_iter):
 					
-			tavg, vav, sumsq = add_oe_ave_varf(data, mask, mode="a", CTF=CTF, ctf_2_sum=ctf_2_sum)
+			tavg, vav, sumsq = add_ave_varf(data, mask, mode="a", CTF=CTF, ctf_2_sum=ctf_2_sum)
 
 			if total_iter==0 or randomize==False: select = 0
 			else : 	
@@ -334,7 +334,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	from utilities    import model_circle, combine_params2, dropImage, getImage, get_arb_params, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict, file_type
-	from statistics   import add_oe_ave_varf_MPI, add_oe_ave_varf_ML_MPI
+	from statistics   import add_ave_varf_MPI, add_ave_varf_ML_MPI
 	from alignment    import Numrinit, ringwe, ali2d_s
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
@@ -416,7 +416,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if random_method != "": 	
 			print_msg("Random method               : %s\n"%(random_method))
 		if random_method == "SA": 
-			print_msg("Initial temperture          : %f\n"%(T0))
+			print_msg("Initial temperature          : %f\n"%(T0))
 			print_msg("Cooling Rate                : %f\n"%(F))
 			if SA_stop != max_iter:	print_msg("SA stop at Iteration        : %i\n"%(SA_stop))
 		if auto_stop: print_msg("Stop iteration with         : criterion\n")
@@ -479,9 +479,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
 		
-			tavg, vav = add_oe_ave_varf_MPI(data, mask, mode="a", CTF=CTF)
+			tavg, vav = add_ave_varf_MPI(data, mask, mode="a", CTF=CTF)
 			if random_method == "ML": 
-				tavg_ML, vav_ML = add_oe_ave_varf_ML_MPI(data, mask, mode="a", CTF=CTF)
+				tavg_ML, vav_ML = add_ave_varf_ML_MPI(data, mask, mode="a", CTF=CTF)
 			#  bring all partial sums together
 			reduce_EMData_to_root(tavg, myid, main_node)
 			reduce_EMData_to_root(vav, myid, main_node)
@@ -592,8 +592,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
-	#if(CTF and data_had_ctf == 0):
-	#	for im in xrange(len(data)):  data[im].set_attr('ctf_applied', 0)
 	par_str = ["xform.align2d"]
 	if myid == main_node: recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else: send_attr_dict(main_node, data, par_str, image_start, image_end)

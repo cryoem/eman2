@@ -49,7 +49,7 @@ def add_oe_series(data):
 		else:          Util.add_img(ave2, temp)
 	return ave1, ave2
 
-def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
+def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 	"""
 		Calculate average of an image series and variance, sum of squares in Fourier space
 		mode - "a": use current alignment parameters
@@ -71,7 +71,7 @@ def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None
 		from utilities    import get_arb_params
 		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied","add_oe_ave_varf",1)
+			ERROR("data cannot be ctf-applied","add_ave_varf",1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
@@ -115,7 +115,7 @@ def add_oe_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None
 	return ave, var, sumsq
 	
 
-def add_oe_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
+def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 	"""
 		Calculate sum of an image series and sum of squares in Fourier space
 		Since this is the MPI version, we need to reduce sum and sum of squares 
@@ -138,7 +138,7 @@ def add_oe_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 		from utilities    import get_arb_params
 		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied","add_oe_ave_varf",1)
+			ERROR("data cannot be ctf-applied","add_ave_varf_MPI",1)
 	 	for i in xrange(n):
 	 		if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
@@ -165,7 +165,7 @@ def add_oe_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 	return ave, var
 	
 
-def add_oe_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
+def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 	"""
 		Calculate sum of an image series and sum of squares in Fourier space
 		Since this is the MPI version, we need to reduce sum and sum of squares 
