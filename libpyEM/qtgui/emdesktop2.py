@@ -892,7 +892,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setSampleBuffers(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt,None)
+		QtOpenGL.QGLWidget.__init__(self,fmt)
 		
 		
 		self.modules = [] # a list of all the modules that currently exist

@@ -35,8 +35,11 @@ from PyQt4 import QtGui
 import sys
 
 
-class EMModule:
-	def __init__(self,application=None): self.application = application
+class EMGUIModule:
+	def __init__(self,application=None): 
+		self.application = application
+		if application != None: application.attach_child(self)
+		
 	def set_app(self,application): self.application = application
 	def get_app(self): return self.application
 	def get_qt_widget(self): raise
@@ -49,16 +52,16 @@ class EMApplication:
 		else: self.app = None
 	
 	def attach_child(self,child):
-		pass
+		raise
 	
 	def detach_child(self,child):
-		pass
+		raise
 	
 	def show(self):
-		pass
+		raise
 	
 	def show_specific(self,object):
-		pass
+		raise
 	
 	def execute(self):
 		if self.app != None:
@@ -79,7 +82,7 @@ class EMStandAloneApplication(EMApplication):
 	def attach_child(self,child):
 		for i in self.children:
 			if i == child:
-				print "error, can't attach the same child twice"
+				print "error, can't attach the same child twice",child
 				return
 			
 		self.children.append(child)
@@ -106,11 +109,10 @@ class EMStandAloneApplication(EMApplication):
 		print "error, attempt to close a child that did not belong to this application"
 		
 
-class EMQtWidgetModule:
+class EMQtWidgetModule(EMGUIModule):
 	def __init__(self,qt_widget,application):
+		EMGUIModule.__init__(self,application)
 		self.qt_widget = qt_widget
-		self.application = application
-		application.attach_child(self)
 	
 	def get_qt_widget(self):
 		return self.qt_widget

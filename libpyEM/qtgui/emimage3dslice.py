@@ -43,30 +43,37 @@ from math import *
 from EMAN2 import *
 import sys
 import numpy
-from emimageutil import ImgHistogram,EMParentWin
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DObject, Camera, EMOpenGLFlagsAndTools, Camera2, EMViewportDepthTools
+from emglobjects import EMImage3DGUIModule, Camera, EMOpenGLFlagsAndTools, Camera2, EMViewportDepthTools
+from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EM3DSliceViewer(EMImage3DObject):
-	def __init__(self,image=None, parent=None):
-		
-		EMImage3DObject.__init__(self)
-		
-		self.parent = parent
+class EM3DSliceViewerModule(EMImage3DGUIModule):
+	
+	def get_qt_widget(self):
+		if self.parent == None:	
+			self.parent = EM3DSliceViewerWidget(self)
+			if isinstance(self.data,EMData):
+				self.parent.set_camera_defaults(self.data)
+		return self.parent
+	
+	def __init__(self,image=None, application=None):
+		EMImage3DGUIModule.__init__(self,application)
+		self.parent = None
 		
 		self.init()
 		self.initialized = True
 		
 		self.inspector=None
-		
-		
+	
 		self.axes = []
 		self.axes.append( Vec3f(1,0,0) )
 		self.axes.append( Vec3f(0,1,0) )
@@ -81,7 +88,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		if image :
 			self.set_data(image)
 	
-	def getType(self):
+	def get_type(self):
 		return "Slice Viewer"
 
 	def init(self):
@@ -111,14 +118,8 @@ class EM3DSliceViewer(EMImage3DObject):
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
-
-	def viewportHeight(self):
-		return self.parent.height()
 	
-	def viewportWidth(self):
-		return self.parent.width()
-	
-	def updateData(self,data):
+	def update_data(self,data):
 		if data==None:
 			print "Error, the data is empty"
 			return
@@ -135,8 +136,8 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.data.add(-min)
 		self.data.mult(1/(max-min))
 
-		self.genCurrentDisplayList()
-		self.parent.updateGL()
+		self.generate_current_display_list()
+		self.updateGL()
 		
 	
 	def set_data(self,data,fact=1.0):
@@ -159,7 +160,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.data.mult(1/(max-min))
 		
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMSlice3DInspector(self)
+			self.inspector=EM3DSliceInspector(self)
 
 		hist = self.data.calc_hist(256,0,1.0)
 		self.inspector.set_hist(hist,0,1.0) 
@@ -170,11 +171,11 @@ class EM3DSliceViewer(EMImage3DObject):
 		self.xslice = data.get_xsize()/2
 		self.trackslice = data.get_xsize()/2
 		self.axis = 'z'
-		self.inspector.setSliceRange(0,data.get_zsize()-1)
-		self.inspector.setSlice(self.zslice)
-		self.genCurrentDisplayList()
+		self.inspector.set_sliceRange(0,data.get_zsize()-1)
+		self.inspector.set_slice(self.zslice)
+		self.generate_current_display_list()
 		
-	def getEmanTransform(self,p):
+	def get_eman_transform(self,p):
 		
 		if ( p[2] == 0 ):
 			alt = 90
@@ -184,9 +185,9 @@ class EM3DSliceViewer(EMImage3DObject):
 		phi = atan2(p[0],p[1])
 		phi *= 180.0/pi
 		
-		return [Transform3D(0,alt,phi),alt,phi]
+		return [Transform({"type":"eman","alt":alt,"phi":phi}),alt,phi]
 			
-	def getDimensionSize(self):
+	def get_dimension_size(self):
 		if ( self.axes_idx == 0 ):
 			return self.data.get_xsize()
 		elif ( self.axes_idx == 1 ):
@@ -198,7 +199,7 @@ class EM3DSliceViewer(EMImage3DObject):
 			# this is a hack and needs to be fixed eventually
 			return self.data.get_xsize()
 			#return 0
-	def getCorrectDims2DEMData(self):
+	def get_correct_dims_2d_emdata(self):
 		if ( self.axes_idx == 0 ):
 			return EMData(self.data.get_ysize(),self.data.get_zsize())
 		elif ( self.axes_idx == 1 ):
@@ -210,7 +211,7 @@ class EM3DSliceViewer(EMImage3DObject):
 			# this is a hack and needs to be fixed eventually
 			return EMData(self.data.get_xsize(),self.data.get_zsize())
 
-	def genCurrentDisplayList(self):
+	def generate_current_display_list(self):
 		
 		if ( self.tex_dl != 0 ): glDeleteLists( self.tex_dl, 1)
 		
@@ -219,17 +220,17 @@ class EM3DSliceViewer(EMImage3DObject):
 		if (self.tex_dl == 0): return #OpenGL is initialized yet
 		
 		if ( self.glflags.threed_texturing_supported() and not self.forceuse2dtextures ):
-			self.gen3DTexture()
+			self.get_3D_texture()
 		else:
-			self.gen2DTexture()
+			self.gen_2D_texture()
 	
-	def gen3DTexture(self):
+	def get_3D_texture(self):
 
 		glNewList(self.tex_dl,GL_COMPILE)
 		
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
 		
-		self.tex_name = self.glflags.genTextureName(self.data)
+		self.tex_name = self.glflags.gen_textureName(self.data)
 		
 		glEnable(GL_TEXTURE_3D)
 		glBindTexture(GL_TEXTURE_3D, self.tex_name)
@@ -250,9 +251,9 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		glBegin(GL_QUADS)
 		
-		n = self.getDimensionSize()
+		n = self.get_dimension_size()
 		v = self.axes[self.axes_idx]
-		[t,alt,phi] = self.getEmanTransform(v)
+		[t,alt,phi] = self.get_eman_transform(v)
 		v1 = t*Vec3f(-0.5,-0.5,0)
 		v2 = t*Vec3f(-0.5, 0.5,0)
 		v3 = t*Vec3f( 0.5, 0.5,0)
@@ -275,26 +276,26 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		glEndList()
 		
-	def gen2DTexture(self):
+	def gen_2D_texture(self):
 		glNewList(self.tex_dl,GL_COMPILE)
 		
-		n = self.getDimensionSize()
+		n = self.get_dimension_size()
 		v = self.axes[self.axes_idx]
 		
-		[t,alt,phi] = self.getEmanTransform(v)
+		[t,alt,phi] = self.get_eman_transform(v)
 			
 		nn = float(self.slice)/float(n)
 	
-		tmp = self.getCorrectDims2DEMData() 
+		tmp = self.get_correct_dims_2d_emdata() 
 
 		trans = (nn-0.5)*v
-		t.set_posttrans(2.0*int(n/2)*trans)
+		t.set_trans(2.0*int(n/2)*trans)
 		tmp.cut_slice(self.data,t,True)
 			
 		if ( self.tex_name != 0 ): glDeleteTextures(self.tex_name)
 		self.tex_name = 0
 		
-		self.tex_name = self.glflags.genTextureName(tmp)
+		self.tex_name = self.glflags.gen_textureName(tmp)
 		
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D, self.tex_name)
@@ -352,10 +353,10 @@ class EM3DSliceViewer(EMImage3DObject):
 		
 		if ( self.track ):
 			self.loadTrackAxis()
-			self.genCurrentDisplayList()
+			self.generate_current_display_list()
 		
 		if ( self.tex_dl == 0 ):
-			self.genCurrentDisplayList()
+			self.generate_current_display_list()
 		
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
@@ -389,7 +390,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 	
-	def setSlice(self,val):
+	def set_slice(self,val):
 		self.slice = val
 		if self.axis == 'z':
 			self.zslice = val
@@ -400,48 +401,48 @@ class EM3DSliceViewer(EMImage3DObject):
 		else:
 			self.trackslice = val
 		
-		self.genCurrentDisplayList()
-		self.parent.updateGL()
+		self.generate_current_display_list()
+		self.updateGL()
 		
 	def setAxis(self,val):
 		self.axis = str(val).strip()
 		
 		if (self.inspector != None):
 			if self.axis == 'z':
-				self.inspector.setSliceRange(0,self.data.get_zsize()-1)
-				self.inspector.setSlice(self.zslice)
+				self.inspector.set_sliceRange(0,self.data.get_zsize()-1)
+				self.inspector.set_slice(self.zslice)
 				self.axes_idx = 2
 				self.track = False
 			elif self.axis == 'y':
-				self.inspector.setSliceRange(0,self.data.get_ysize()-1)
-				self.inspector.setSlice(self.yslice)
+				self.inspector.set_sliceRange(0,self.data.get_ysize()-1)
+				self.inspector.set_slice(self.yslice)
 				self.axes_idx = 1
 				self.track = False
 			elif self.axis == 'x':
-				self.inspector.setSliceRange(0,self.data.get_xsize()-1)
-				self.inspector.setSlice(self.xslice)
+				self.inspector.set_sliceRange(0,self.data.get_xsize()-1)
+				self.inspector.set_slice(self.xslice)
 				self.axes_idx = 0
 				self.track = False
 			elif self.axis == 'track':
 				self.track = True
-				self.inspector.setSliceRange(0,self.data.get_xsize()-1)
-				self.inspector.setSlice(self.trackslice)
+				self.inspector.set_sliceRange(0,self.data.get_xsize()-1)
+				self.inspector.set_slice(self.trackslice)
 				self.axes_idx = 3
 				
 				self.loadTrackAxis()
 			else:
 				print "Error, unknown axis", self.axis, val
 		
-		self.genCurrentDisplayList()
-		self.parent.updateGL()
+		self.generate_current_display_list()
+		self.updateGL()
 
-	def updateInspector(self,t3d):
+	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
-			self.inspector=EMSlice3DInspector(self)
-		self.inspector.updateRotations(t3d)
+			self.inspector=EM3DSliceInspector(self)
+		self.inspector.update_rotations(t3d)
 	
 	def get_inspector(self):
-		if not self.inspector : self.inspector=EMSlice3DInspector(self)
+		if not self.inspector : self.inspector=EM3DSliceInspector(self)
 		return self.inspector
 
 	def loadTrackAxis(self):
@@ -460,54 +461,37 @@ class EM3DSliceViewer(EMImage3DObject):
 			self.axes.append(point)
 		else:
 			self.axes[3] = point
-	
-	def mousePressEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
-		if event.button()==Qt.MidButton:
-			if not self.inspector or self.inspector ==None:
-				return
-			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
-			self.resizeEvent()
-			self.show_inspector(1)
-		else:
-			self.cam.mousePressEvent(event)
-		
-		self.updateGL()
-		
-	def mouseMoveEvent(self, event):
-		self.cam.mouseMoveEvent(event)
-		self.updateGL()
-	
-	def mouseReleaseEvent(self, event):
-		self.cam.mouseReleaseEvent(event)
-		self.updateGL()
-			
-	def wheelEvent(self, event):
-		self.cam.wheelEvent(event)
-		self.updateGL()
 
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
 		
-class EMSliceViewerWidget(QtOpenGL.QGLWidget):
+class EM3DSliceViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None, parent=None):
+	def __init__(self, em_slice_viewer_module):
+		assert(isinstance(em_slice_viewer_module,EM3DSliceViewerModule))
+		EM3DSliceViewerWidget.allim[self]=0
+		
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMSliceViewerWidget.allim[self]=0
+		fmt.setSampleBuffers(True)
+		QtOpenGL.QGLWidget.__init__(self,fmt)
+		EMEventRerouter.__init__(self)
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
 		self.endz = 5000
 		self.cam = Camera()
-		self.sliceviewer = EM3DSliceViewer(image,self)
-	def set_data(self,data):
-		self.sliceviewer.set_data(data)
+		self.target = em_slice_viewer_module
+		
+	def set_camera_defaults(self,data):
 		self.cam.default_z = -1.25*data.get_zsize()
 		self.cam.cam_z = -1.25*data.get_zsize()
+		
+	def set_data(self,data):
+		self.target.set_data(data)
+		self.set_camera_defaults(data)
 		
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
@@ -538,11 +522,11 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		self.cam.position()
 		
 		glPushMatrix()
-		self.sliceviewer.render()
+		self.target.render()
 		glPopMatrix()
 		
-		#glAccum(GL_ADD, self.sliceviewer.glbrightness)
-		#glAccum(GL_ACCUM, self.sliceviewer.glcontrast)
+		#glAccum(GL_ADD, self.target.glbrightness)
+		#glAccum(GL_ACCUM, self.target.glcontrast)
 		#glAccum(GL_RETURN, 1.0)
 		
 	def resizeGL(self, width, height):
@@ -565,7 +549,7 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 		
 		
-		self.sliceviewer.resizeEvent()
+		self.target.resizeEvent()
 
 	def get_start_z(self):
 		return self.startz
@@ -576,25 +560,7 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		return [width,height]
 
 	def show_inspector(self,force=0):
-		self.sliceviewer.show_inspector(self,force)
-
-	def closeEvent(self,event) :
-		self.sliceviewer.closeEvent(event)
-		
-	def mousePressEvent(self, event):
-		self.sliceviewer.mousePressEvent(event)
-		self.emit(QtCore.SIGNAL("mousedown"), event)
-		
-	def mouseMoveEvent(self, event):
-		self.sliceviewer.mouseMoveEvent(event)
-		self.emit(QtCore.SIGNAL("mousedrag"), event)
-	
-	def mouseReleaseEvent(self, event):
-		self.sliceviewer.mouseReleaseEvent(event)
-		self.emit(QtCore.SIGNAL("mouseup"), event)
-			
-	def wheelEvent(self, event):
-		self.sliceviewer.wheelEvent(event)
+		self.target.show_inspector(self,force)
 
 	def get_render_dims_at_depth(self,depth):
 		# This function returns the width and height of the renderable 
@@ -605,9 +571,10 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		return [width,height]
 	
 
-class EMSlice3DInspector(QtGui.QWidget):
+class EM3DSliceInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
+		self.rotation_sliders = EMTransformPanel(target,self)
 		self.target=target
 		
 		self.vbl = QtGui.QVBoxLayout(self)
@@ -638,41 +605,37 @@ class EMSlice3DInspector(QtGui.QWidget):
 		self.defaults = QtGui.QPushButton("Defaults")
 		self.vbl2.addWidget(self.defaults)
 		
-		self.vbl.addWidget(self.getMainTab())
+		self.vbl.addWidget(self.get_main_tab())
 		
 		self.n3_showing = False
 		
 		self.current_src = EULER_EMAN
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
-		QtCore.QObject.connect(self.slice, QtCore.SIGNAL("valueChanged"), target.setSlice)
-		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
-		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
+		QtCore.QObject.connect(self.slice, QtCore.SIGNAL("valueChanged"), target.set_slice)
+		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
+		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
 		QtCore.QObject.connect(self.axisCombo, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setAxis)
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
-		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
-		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
-		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
+		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
+		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.set_defaults)
+	
+	def update_rotations(self,t3d):
+		self.rotation_sliders.update_rotations(t3d)
+	
+	def set_scale(self,val):
+		self.rotation_sliders.set_scale(val)
+	
+	def set_xy_trans(self, x, y):
+		self.rotation_sliders.set_xy_trans(x,y)
 		
-	def setDefaults(self):
-		self.x_trans.setValue(0.0)
-		self.y_trans.setValue(0.0)
-		self.z_trans.setValue(0.0)
-		self.scale.setValue(1.0)
+	def get_transform_layout(self):
+		return self.maintab.vbl
+	
+	def set_defaults(self):
 		self.glcontrast.setValue(1.0)
 		self.glbrightness.setValue(0.0)
-		
-		self.az.setValue(0.0)
-		self.alt.setValue(0.0)
-		self.phi.setValue(0.0)
+		self.rotation_sliders.set_defaults()
 
-	def getMainTab(self):
+	def get_main_tab(self):
 	
 		self.maintab = QtGui.QWidget()
 		maintab = self.maintab
@@ -680,12 +643,6 @@ class EMSlice3DInspector(QtGui.QWidget):
 		maintab.vbl.setMargin(0)
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")
-		
-		
-		self.scale = ValSlider(self,(0.01,30.0),"Zoom:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		maintab.vbl.addWidget(self.scale)
 		
 		self.hbl_slice = QtGui.QHBoxLayout()
 		self.hbl_slice.setMargin(0)
@@ -715,259 +672,40 @@ class EMSlice3DInspector(QtGui.QWidget):
 		self.glbrightness.setValue(0.1)
 		self.glbrightness.setValue(0.0)
 		maintab.vbl.addWidget(self.glbrightness)
-		
-		self.cbb = QtGui.QComboBox(maintab)
-		self.vbl.addWidget(self.cbb)
-		self.cbb.deleteLater()
-
-		self.hbl_trans = QtGui.QHBoxLayout()
-		self.hbl_trans.setMargin(0)
-		self.hbl_trans.setSpacing(6)
-		self.hbl_trans.setObjectName("Trans")
-		maintab.vbl.addLayout(self.hbl_trans)
-		
-		self.x_label = QtGui.QLabel()
-		self.x_label.setText('x')
-		self.hbl_trans.addWidget(self.x_label)
-		
-		self.x_trans = QtGui.QDoubleSpinBox(maintab)
-		self.x_trans.setMinimum(-10000)
-		self.x_trans.setMaximum(10000)
-		self.x_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.x_trans)
-		
-		self.y_label = QtGui.QLabel()
-		self.y_label.setText('y')
-		self.hbl_trans.addWidget(self.y_label)
-		
-		self.y_trans = QtGui.QDoubleSpinBox(maintab)
-		self.y_trans.setMinimum(-10000)
-		self.y_trans.setMaximum(10000)
-		self.y_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.y_trans)
-		
-		self.z_label = QtGui.QLabel()
-		self.z_label.setText('z')
-		self.hbl_trans.addWidget(self.z_label)
-		
-		self.z_trans = QtGui.QDoubleSpinBox(maintab)
-		self.z_trans.setMinimum(-10000)
-		self.z_trans.setMaximum(10000)
-		self.z_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.z_trans)
-		
-		self.hbl_src = QtGui.QHBoxLayout()
-		self.hbl_src.setMargin(0)
-		self.hbl_src.setSpacing(6)
-		self.hbl_src.setObjectName("hbl")
-		maintab.vbl.addLayout(self.hbl_src)
-		
-		self.label_src = QtGui.QLabel()
-		self.label_src.setText('Rotation Convention')
-		self.hbl_src.addWidget(self.label_src)
-		
-		self.src = QtGui.QComboBox(maintab)
-		self.load_src_options(self.src)
-		self.hbl_src.addWidget(self.src)
-		
-		# set default value -1 ensures that the val slider is updated the first time it is created
-		self.az = ValSlider(self,(-360.0,360.0),"az",-1)
-		self.az.setObjectName("az")
-		self.az.setValue(0.0)
-		maintab.vbl.addWidget(self.az)
-		
-		self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
-		self.alt.setObjectName("alt")
-		self.alt.setValue(0.0)
-		maintab.vbl.addWidget(self.alt)
-		
-		self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
-		self.phi.setObjectName("phi")
-		self.phi.setValue(0.0)
-		maintab.vbl.addWidget(self.phi)
+	
+		self.rotation_sliders.addWidgets(maintab.vbl)
 		
 		return maintab
 	
-	def setDefaults(self):
-		self.x_trans.setValue(0.0)
-		self.y_trans.setValue(0.0)
-		self.z_trans.setValue(0.0)
-		self.scale.setValue(1.0)
-		self.glcontrast.setValue(1.0)
-		self.glbrightness.setValue(0.0)
-		
-		self.az.setValue(0.0)
-		self.alt.setValue(0.0)
-		self.phi.setValue(0.0)
-
-	def setXYTrans(self, x, y):
-		self.x_trans.setValue(x)
-		self.y_trans.setValue(y)
-	
-	def setTranslateScale(self, xscale,yscale,zscale):
-		self.x_trans.setSingleStep(xscale)
-		self.y_trans.setSingleStep(yscale)
-		self.z_trans.setSingleStep(zscale)
-
-	def updateRotations(self,t3d):
-		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
-		
-		convention = self.src.currentText()
-		if ( self.src_map[str(convention)] == EULER_SPIN ):
-			self.n3.setValue(rot[self.n3.getLabel()],True)
-		
-		self.az.setValue(rot[self.az.getLabel()],True)
-		self.alt.setValue(rot[self.alt.getLabel()],True)
-		self.phi.setValue(rot[self.phi.getLabel()],True)
-	
-	def sliderRotate(self):
-		self.target.load_rotation(self.getCurrentRotation())
-	
-	def getCurrentRotation(self):
-		convention = self.src.currentText()
-		rot = {}
-		if ( self.current_src == EULER_SPIN ):
-			rot[self.az.getLabel()] = self.az.getValue()
-			
-			n1 = self.alt.getValue()
-			n2 = self.phi.getValue()
-			n3 = self.n3.getValue()
-			
-			norm = sqrt(n1*n1 + n2*n2 + n3*n3)
-			
-			n1 /= norm
-			n2 /= norm
-			n3 /= norm
-			
-			rot[self.alt.getLabel()] = n1
-			rot[self.phi.getLabel()] = n2
-			rot[self.n3.getLabel()] = n3
-			
-		else:
-			rot[self.az.getLabel()] = self.az.getValue()
-			rot[self.alt.getLabel()] = self.alt.getValue()
-			rot[self.phi.getLabel()] = self.phi.getValue()
-		
-		return Transform3D(self.current_src, rot)
-	
-	def set_src(self, val):
-		t3d = self.getCurrentRotation()
-		
-		if (self.n3_showing) :
-			self.maintab.vbl.removeWidget(self.n3)
-			self.n3.deleteLater()
-			self.n3_showing = False
-			self.az.setRange(-360,360)
-			self.alt.setRange(-180,180)
-			self.phi.setRange(-360,660)
-		
-		if ( self.src_map[str(val)] == EULER_SPIDER ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('psi')
-		elif ( self.src_map[str(val)] == EULER_EMAN ):
-			self.az.setLabel('az')
-			self.alt.setLabel('alt')
-			self.phi.setLabel('phi')
-		elif ( self.src_map[str(val)] == EULER_IMAGIC ):
-			self.az.setLabel('alpha')
-			self.alt.setLabel('beta')
-			self.phi.setLabel('gamma')
-		elif ( self.src_map[str(val)] == EULER_XYZ ):
-			self.az.setLabel('xtilt')
-			self.alt.setLabel('ytilt')
-			self.phi.setLabel('ztilt')
-		elif ( self.src_map[str(val)] == EULER_MRC ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('omega')
-		elif ( self.src_map[str(val)] == EULER_SPIN ):
-			self.az.setLabel('Omega')
-			self.alt.setRange(-1,1)
-			self.phi.setRange(-1,1)
-			
-			self.alt.setLabel('n1')
-			self.phi.setLabel('n2')
-			
-			self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
-			self.n3.setRange(-1,1)
-			self.n3.setObjectName("n3")
-			self.maintab.vbl.addWidget(self.n3)
-			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-			self.n3_showing = True
-		
-		self.current_src = self.src_map[str(val)]
-		self.updateRotations(t3d)
-	
-	def load_src_options(self,widgit):
-		self.load_src()
-		for i in self.src_strings:
-			widgit.addItem(i)
-	
-	# read src as 'supported rotation conventions'
-	def load_src(self):
-		# supported_rot_conventions
-		src_flags = []
-		src_flags.append(EULER_EMAN)
-		src_flags.append(EULER_SPIDER)
-		src_flags.append(EULER_IMAGIC)
-		src_flags.append(EULER_MRC)
-		src_flags.append(EULER_SPIN)
-		src_flags.append(EULER_XYZ)
-		
-		self.src_strings = []
-		self.src_map = {}
-		for i in src_flags:
-			self.src_strings.append(str(i))
-			self.src_map[str(i)] = i
-		
-	
-	def setColors(self,colors,current_color):
-		for i in colors:
-			self.cbb.addItem(i)
+	def slider_rotate(self):
+		self.target.load_rotation(self.get_current_rotation())
 
 	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
-
-	def set_scale(self,newscale):
-		self.scale.setValue(newscale)
 		
-	def setSlice(self,val):
+	def set_slice(self,val):
 		self.slice.setValue(val)
 	
-	def setSliceRange(self,min,max):
+	def set_sliceRange(self,min,max):
 		self.slice.setRange(min,max)
 	
 		
-# This is just for testing, of course
+	
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	window = EMSliceViewerWidget()
- 	if len(sys.argv)==1 : 
-		e = EMData()
-		e.set_size(7,7,7)
+	em_app = EMStandAloneApplication()
+	window = EM3DSliceViewerModule(application=em_app)
+	
+	if len(sys.argv)==1 : 
+		data = []
+		#for i in range(0,200):
+		e = EMData(64,64,64)
 		e.process_inplace('testimage.axes')
 		window.set_data(e)
-
-		# these lines are for testing shape rendering
-# 		window.add_shape("a",["rect",.2,.8,.2,20,20,80,80,2])
-# 		window.add_shape("b",["circle",.5,.8,.2,120,50,30.0,2])
-# 		window.add_shape("c",["line",.2,.8,.5,20,120,100,200,2])
-# 		window.add_shape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
 	else :
-		if not os.path.exists(sys.argv[1]):
-			print "Error, input file %s does not exist" %sys.argv[1]
-			exit(1)
-		a=EMData.read_images(sys.argv[1],[0])
-		window.set_data(a[0])
-	window2=EMParentWin(window)
-	window2.show()
-	
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
-	
-	sys.exit(app.exec_())
+		a=EMData(sys.argv[1])
+		window.set_file_name(sys.argv[1])
+		window.set_data(a)
+		
+	em_app.show()
+	em_app.execute()
+

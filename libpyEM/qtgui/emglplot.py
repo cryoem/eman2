@@ -48,13 +48,13 @@ from PyQt4.QtCore import QTimer
 from OpenGL import GL,GLU,GLUT
 from time import *
 
-from emglobjects import EMImage3DObject, Camera2
+from emglobjects import EMImage3DGUIModule, Camera2
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMGLPlot(EMImage3DObject):
+class EMGLPlot(EMImage3DGUIModule):
 	def __init__(self, parent=None):
-		EMImage3DObject.__init__(self)
+		EMImage3DGUIModule.__init__(self)
 		self.parent = parent
 		self.data = [1.0,0.93,0.64,0.94,0.30,0.2,0.12,-0.2]
 		self.datar = [0,1,2,3]
@@ -83,7 +83,7 @@ class EMGLPlot(EMImage3DObject):
 		self.moving = False
 		
 
-	def cylinderToFrom(self,next,prev,val=0.5):
+	def cylinder_to_from(self,next,prev,val=0.5):
 		dx = next[0] - prev[0]
 		dy = next[1] - prev[1]
 		dz = next[2] - prev[2]
@@ -103,7 +103,7 @@ class EMGLPlot(EMImage3DObject):
 		glCallList(self.cylinderdl)
 		glPopMatrix()
 
-	def getType(self):
+	def get_type(self):
 		return "emglplot"
 	
 	def updateGL(self):
@@ -120,7 +120,7 @@ class EMGLPlot(EMImage3DObject):
 			
 			p1 = [a,b,0.]
 			p2 = [c,d,0.]
-			self.cylinderToFrom(p2,p1,0.3)
+			self.cylinder_to_from(p2,p1,0.3)
 	def render(self):
 		if ( self.cylinderdl == 0 ):
 			self.gq=gluNewQuadric()
@@ -176,7 +176,7 @@ class EMGLPlot(EMImage3DObject):
 		for i in range(0,n-1):
 			p1 = [i,self.data[i],0]
 			p2 = [i+1,self.data[i+1],0]
-			self.cylinderToFrom(p2,p1,0.1)
+			self.cylinder_to_from(p2,p1,0.1)
 		
 		self.currentcolor = "emerald"
 		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
@@ -309,9 +309,9 @@ class EMGLPlot(EMImage3DObject):
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMGLPlotInspector(self)
 		
-		self.loadColors()
+		self.load_colors()
 		self.inspector.setColors(self.colors,self.currentcolor)
-	def loadColors(self):
+	def load_colors(self):
 		ruby = {}
 		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
 		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
@@ -384,18 +384,18 @@ class EMGLPlot(EMImage3DObject):
 		self.currentcolor = str(val)
 		self.parent.updateGL()
 	
-	def toggleWire(self,val):
+	def toggle_wire(self,val):
 		self.wire = not self.wire
 		self.parent.updateGL()
 		
-	def toggleLight(self,val):
+	def toggle_light(self,val):
 		self.light = not self.light
 		self.parent.updateGL()
 	
-	def updateInspector(self,t3d):
+	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMGLPlotInspector(self)
-		self.inspector.updateRotations(t3d)
+		self.inspector.update_rotations(t3d)
 	
 	def get_inspector(self):
 		if not self.inspector : self.inspector=EMGLPlotInspector(self)
@@ -406,7 +406,7 @@ class EMGLPlot(EMImage3DObject):
 		if event.button()==Qt.MidButton:
 			if not self.inspector or self.inspector ==None:
 				return
-			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
+			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
 			self.resizeEvent()
 			self.show_inspector(1)
 		else:
@@ -645,26 +645,26 @@ class EMGLPlotInspector(QtGui.QWidget):
 		
 		self.tabwidget = QtGui.QTabWidget()
 		self.maintab = None
-		self.tabwidget.addTab(self.getMainTab(), "Main")
-		self.tabwidget.addTab(self.getGLTab(),"GL")
+		self.tabwidget.addTab(self.get_main_tab(), "Main")
+		self.tabwidget.addTab(self.get_GL_tab(),"GL")
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
 		
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
+		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
+		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
 		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
 		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
 		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
-		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggleWire)
-		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggleLight)
-		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
-		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
+		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggle_wire)
+		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggle_light)
+		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
+		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
 	
-	def getGLTab(self):
+	def get_GL_tab(self):
 		self.gltab = QtGui.QWidget()
 		gltab = self.gltab
 		
@@ -686,7 +686,7 @@ class EMGLPlotInspector(QtGui.QWidget):
 	
 		return gltab
 	
-	def getMainTab(self):
+	def get_main_tab(self):
 		if ( self.maintab == None ):
 			self.maintab = QtGui.QWidget()
 			maintab = self.maintab
@@ -781,16 +781,16 @@ class EMGLPlotInspector(QtGui.QWidget):
 		
 		return self.maintab
 
-	def setXYTrans(self, x, y):
+	def set_xy_trans(self, x, y):
 		self.x_trans.setValue(x)
 		self.y_trans.setValue(y)
 	
-	def setTranslateScale(self, xscale,yscale,zscale):
+	def set_translate_scale(self, xscale,yscale,zscale):
 		self.x_trans.setSingleStep(xscale)
 		self.y_trans.setSingleStep(yscale)
 		self.z_trans.setSingleStep(zscale)
 
-	def updateRotations(self,t3d):
+	def update_rotations(self,t3d):
 		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
 		
 		convention = self.src.currentText()
@@ -801,10 +801,10 @@ class EMGLPlotInspector(QtGui.QWidget):
 		self.alt.setValue(rot[self.alt.getLabel()],True)
 		self.phi.setValue(rot[self.phi.getLabel()],True)
 	
-	def sliderRotate(self):
-		self.target.load_rotation(self.getCurrentRotation())
+	def slider_rotate(self):
+		self.target.load_rotation(self.get_current_rotation())
 	
-	def getCurrentRotation(self):
+	def get_current_rotation(self):
 		convention = self.src.currentText()
 		rot = {}
 		if ( self.current_src == EULER_SPIN ):
@@ -832,7 +832,7 @@ class EMGLPlotInspector(QtGui.QWidget):
 		return Transform3D(self.current_src, rot)
 	
 	def set_src(self, val):
-		t3d = self.getCurrentRotation()
+		t3d = self.get_current_rotation()
 		
 		if (self.n3_showing) :
 			self.vbl.removeWidget(self.n3)
@@ -874,11 +874,11 @@ class EMGLPlotInspector(QtGui.QWidget):
 			self.n3.setRange(-1,1)
 			self.n3.setObjectName("n3")
 			self.vbl.addWidget(self.n3)
-			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
 			self.n3_showing = True
 		
 		self.current_src = self.src_map[str(val)]
-		self.updateRotations(t3d)
+		self.update_rotations(t3d)
 	
 	def load_src_options(self,widgit):
 		self.load_src()

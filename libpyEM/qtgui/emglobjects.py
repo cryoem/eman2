@@ -39,6 +39,11 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 
+from emapplication import EMGUIModule,EMQtWidgetModule
+
+try: from PyQt4 import QtWebKit
+except: pass
+
 import numpy
 import sys
 import array
@@ -660,7 +665,7 @@ class EMOpenGLFlagsAndTools:
 			return self.use_3d_texture
 
 		
-		def genTextureName(self,data):
+		def gen_textureName(self,data):
 			if ( not data_dims_power_of(data,2) and self.npt_textures_unsupported()):
 				return data.gen_glu_mipmaps()
 			else:
@@ -714,7 +719,7 @@ class Camera2:
 	however, instead of literally moving a camera, in OpenGL the scene itself is moved
 	and the camera is generally thought of as staying still.
 	
-	Use the public interface of setCamTrans and motionRotate (which is based on mouse movement)_
+	Use the public interface of setCamTrans and motion_rotate (which is based on mouse movement)_
 	to move the camera position
 	
 	Then call 'position' in your main OpenGL draw function before drawing anything.
@@ -834,7 +839,7 @@ class Camera2:
 	def set_cam_x(self,x):
 		self.cam_x = self.default_x + x
 
-	def motionRotate(self,x,y,fac=1.0):
+	def motion_rotate(self,x,y,fac=1.0):
 		# this function implements mouse interactive rotation
 		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
 		# Rotation occurs about the vector 90 degrees to [x,y,0]
@@ -893,7 +898,7 @@ class Camera2:
 	def load_rotation(self,t3d):
 		self.t3d_stack.append(t3d)
 
-	def getThinCopy(self):
+	def get_thin_copy(self):
 		# this is called a thin copy because it does not copy the entire t3d stack, just the last t3d
 		cam = Camera()
 		size = len(self.t3d_stack)
@@ -926,16 +931,16 @@ class Camera2:
 		if event.buttons()&Qt.LeftButton:
 			if self.mmode==0:
 				#if event.modifiers() == Qt.ControlModifier:
-					#self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
+					#self.motion_translate(event.x()-self.mpressx, self.mpressy - event.y())
 				#else:
 				if self.enablerotation == False: return
-				self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(1.0/self.scale))
+				self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(1.0/self.scale))
 
 				self.mpressx = event.x()
 				self.mpressy = event.y()
 		elif event.buttons()&Qt.RightButton:
 			if self.mmode==0:
-				self.motionTranslateLA(self.mpressx, self.mpressy,event)
+				self.motion_translateLA(self.mpressx, self.mpressy,event)
 					
 				self.mpressx = event.x()
 				self.mpressy = event.y()
@@ -951,7 +956,7 @@ class Camera2:
 	def wheelEvent(self, event):
 		self.scale_event(event.delta())
 	
-	def motionTranslateLA(self,prev_x,prev_y,event):
+	def motion_translateLA(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
 			[dx,dy] = self.parent.eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
 		else:
@@ -994,7 +999,7 @@ class Camera:
 	however, instead of literally moving a camera, in OpenGL the scene itself is moved
 	and the camera is generally thought of as staying still.
 	
-	Use the public interface of setCamTrans and motionRotate (which is based on mouse movement)_
+	Use the public interface of setCamTrans and motion_rotate (which is based on mouse movement)_
 	to move the camera position
 	
 	Then call 'position' in your main OpenGL draw function before drawing anything.
@@ -1077,7 +1082,7 @@ class Camera:
 	def set_cam_x(self,x):
 		self.cam_x = self.default_x + x
 
-	def motionRotate(self,x,y):
+	def motion_rotate(self,x,y):
 		# this function implements mouse interactive rotation
 		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
 		# Rotation occurs about the vector 90 degrees to [x,y,0]
@@ -1115,7 +1120,7 @@ class Camera:
 	def load_rotation(self,t3d):
 		self.t3d_stack.append(t3d)
 
-	def getThinCopy(self):
+	def get_thin_copy(self):
 		# this is called a thin copy because it does not copy the entire t3d stack, just the last t3d
 		cam = Camera()
 		size = len(self.t3d_stack)
@@ -1139,10 +1144,10 @@ class EMBrightContrastScreen:
 		self.glcontrast = 1.0
 		self.glbrightness = 0.0
 
-	def setGLBrightness(self,val):
+	def set_GL_brightness(self,val):
 		self.glbrightness = val
 		
-	def setGLContrast(self,val):
+	def set_GL_contrast(self,val):
 		self.glcontrast = val
 
 	def draw_bc_screen(self):
@@ -1265,63 +1270,64 @@ def draw_volume_bounds(width,height,depth):
 	glVertex(0,0,depth)
 	glEnd()
 
-class EMImage3DObject:
-	def __init__(self):
+class EMImage3DGUIModule(EMGUIModule):
+	def __init__(self,application=None):
+		EMGUIModule.__init__(self,application)
+		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
+		
 		self.blendflags = EMOpenGLFlagsAndTools()
-		# we have a brightness contrast screen - it's used in render
 		self.bcscreen = EMBrightContrastScreen()
 		
-	def render(self):
-		pass
-
-	def closeEvent(self,event) :
-		pass
+		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman lingo
+		self.name = None # a name variable, accessed by set and get
+		self.rand = None # a rand varaible
+		self.cam = None # should be a camera, either Camera or Camera2
+		self.cube = False # whether a cube should be drawn
+		self.suppress_inspector = False # turn on to suppress showing the inspector
 		
-	def mousePressEvent(self, event):
-		pass
+		self.parent = None # should be something that accepts UpdateGL calls
+		self.data = None # should eventually be an EMData object
+		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
+		self.help_window = None # eventually will become a Qt help widget of some kind
 		
-	def mouseMoveEvent(self, event):
-		pass
+	def render(self): pass # should do the main drawing
+	def updateGL(self): raise #this needs to be supplied
+	def get_type(self): pass #should return a unique string
+	def get_inspector(self): raise # this need to be supplied
 	
-	def mouseReleaseEvent(self, event):
-		pass
+	def set_parent(self,parent): self.parent = parent
+	def get_parent(self): return self.parent
+	def set_rank(self,rank): self.rank = rank
+	def set_name(self, name): self.name = name
+	def get_name(self): return self.name
+	def set_file_name(self,file_name): self.file_name = file_name
+	def get_file_name(self): return self.file_name
 	
-	def getType(self):
-		pass
-	
-	# this function will be called when OpenGL recieves a resize event
-	def resizeEvent(self):
-		pass
-	
-	def set_data(self):
-		pass
-	
-	def show_inspector(self):
-		pass
-	
-	def get_inspector(self):
-		pass
-	
-	def setRank(self,rank):
-		self.rank = rank
-	
-	def setName(self, name):
-		self.name = name
+	def show_inspector(self,force=0):
+		
+		if self.application == None:
+			print "can't show an inspector with having an associated application"
+		
+		if self.suppress_inspector: return
+		if not force and self.inspector==None : return
+		
+		if not self.inspector : 
+			inspector = self.get_inspector()
+		if not self.em_qt_inspector_widget:
+			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
+		
+		self.application.show_specific(self.em_qt_inspector_widget)
 
-	def getName(self):
-		return self.name
 	
-	def getCurrentCamera(self):
-		return self.cam.getThinCopy()
+	def get_current_camera(self): return self.cam.get_thin_copy()
 	
-	def setCamera(self,camera):
-		self.cam = camera
+	def set_camera(self,camera): self.cam = camera
 	
 	def scale_event(self,delta):
 		self.cam.scale_event(delta)
 		if self.inspector: self.inspector.set_scale(self.cam.scale)
 
-	def getTranslateScale(self):
+	def get_translate_scale(self):
 	
 		[rx,ry] = self.parent.get_render_dims_at_depth(self.cam.cam_z)
 		
@@ -1331,58 +1337,63 @@ class EMImage3DObject:
 		
 		return [xscale,yscale]
 	
-	def motionTranslate(self,x,y):
-		[xscale,yscale] = self.getTranslateScale()
+	def motion_translate(self,x,y):
+		[xscale,yscale] = self.get_translate_scale()
 		self.cam.cam_x += x*xscale
 		self.cam.cam_y += y*yscale
-		self.inspector.setXYTrans(self.cam.cam_x, self.cam.cam_y)
-		
+		self.inspector.set_xy_trans(self.cam.cam_x, self.cam.cam_y)
+
+	
+	def get_current_transform(self):
+		size = len(self.cam.t3d_stack)
+		return self.cam.t3d_stack[size-1]
+
 	def set_cam_z(self,z):
 		self.cam.set_cam_z( z )
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def set_cam_y(self,y):
 		self.cam.set_cam_y( y )
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def set_cam_x(self,x):
 		self.cam.set_cam_x( x )
-		self.parent.updateGL()
+		self.updateGL()
 		
-	def motionRotate(self,x,y):
-		self.cam.motionRotate(x,y)
+	def motion_rotate(self,x,y):
+		self.cam.motion_rotate(x,y)
 		size = len(self.cam.t3d_stack)
-		self.updateInspector(self.cam.t3d_stack[size-1])
+		self.update_inspector(self.cam.t3d_stack[size-1])
 		
 	def set_scale(self,val):
 		self.cam.scale = val
-		self.parent.updateGL()
+		self.updateGL()
 	
 	def load_rotation(self,t3d):
 		self.cam.t3d_stack.append(t3d)
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def resizeEvent(self):
 		if self.inspector == None: return
-		[xscale,yscale] = self.getTranslateScale()
-		if ( xscale > yscale ): self.inspector.setTranslateScale(xscale,yscale,yscale)
-		else: self.inspector.setTranslateScale(xscale,yscale,xscale)
+		[xscale,yscale] = self.get_translate_scale()
+		if ( xscale > yscale ): self.inspector.set_translate_scale(xscale,yscale,yscale)
+		else: self.inspector.set_translate_scale(xscale,yscale,xscale)
 		
 	def draw_bc_screen(self):
 		self.bcscreen.draw_bc_screen()
 
-	def setGLContrast(self,val):
-		self.bcscreen.setGLContrast(val)
+	def set_GL_contrast(self,val):
+		self.bcscreen.set_GL_contrast(val)
 		try:
-			self.parent.updateGL()
+			self.updateGL()
 		except:
 			# the parent may not have been set
 			pass
 	
-	def setGLBrightness(self,val):
-		self.bcscreen.setGLBrightness(val)
+	def set_GL_brightness(self,val):
+		self.bcscreen.set_GL_brightness(val)
 		try:
-			self.parent.updateGL()
+			self.updateGL()
 		except:
 			# the parent may not have been set
 			pass
@@ -1395,16 +1406,160 @@ class EMImage3DObject:
 		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
 		draw_volume_bounds(width,height,depth)
 	
-	def toggleCube(self):
+	def toggle_cube(self):
 		self.cube = not self.cube
-		self.parent.updateGL()
+		self.updateGL()
 		
-	def show_inspector(self,force=0):
-		if not force and self.inspector==None : return
 		
-		if not self.inspector : self.inspector=EMVolumeInspector(self)
-		self.inspector.show()
-			
-	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
+		
+	def mousePressEvent(self, event):
+#		lc=self.scrtoimg((event.x(),event.y()))
+		if event.button()==Qt.MidButton:
+			if not self.inspector or self.inspector ==None:
+				return
+			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
+			self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
+			self.inspector.set_scale(self.cam.scale)
+			self.resizeEvent()
+			self.show_inspector(1)
+		else:
+			self.cam.mousePressEvent(event)
+			
+		
+		
+		self.updateGL()
+	
+	def mouseDoubleClickEvent(self,event):
+		pass
+	
+	def mouseMoveEvent(self, event):
+		self.cam.mouseMoveEvent(event)
+		if self.inspector != None:
+			if event.buttons()&Qt.LeftButton:
+				self.inspector.update_rotations(self.get_current_transform())
+			elif event.buttons()&Qt.RightButton:
+				self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
+				
+		self.updateGL()
+	
+	def mouseReleaseEvent(self, event):
+		self.cam.mouseReleaseEvent(event)
+		self.updateGL()
+			
+	def wheelEvent(self, event):
+		self.cam.wheelEvent(event)
+		if self.inspector != None :
+			self.inspector.set_scale(self.cam.scale)
+		self.updateGL()
+		
+	def keyPressEvent(self,event):
+		
+		if event.key() == Qt.Key_F1:
+			if self.help_window == None:
+				try:	
+					help = QtWebKit.QWebView()
+					help.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
+					
+				except:
+					print "in the middle of getting help working"
+					help = QtGui.QTextBrowser()
+					#url = QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display")
+					url = QtCore.QUrl("http://www.google.com")
+					url.setPort(80)
+					#print url.port()
+					help.setSource(url)
+					#print browser2.port()
+	
+				self.help_window = EMQtWidgetModule(help,self.application)
+				#help.resize(640,640)
+		
+		self.application.show_specific(self.help_window)
+				
+		
+def get_default_gl_colors():
+	ruby = {}
+	ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
+	ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
+	ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
+	ruby["shininess"] = 32
+	ruby["emission"] = [0,0,0]
+	
+	emerald = {}
+	emerald["ambient"] = [0.0215, 0.1745, 0.0215,1.0]
+	emerald["diffuse"] = [0.07568, 0.61424,  0.07568,1.0]
+	emerald["specular"] = [0.833, 0.927811, 0.833,1.0]
+	emerald["shininess"] = 32
+	emerald["emission"] = [0,0,0]
+	
+	pearl = {}
+	pearl["ambient"] = [0.25, 0.20725, 0.20725,1.0]
+	pearl["diffuse"] = [1.0, 0.829, 0.829,1.0]
+	pearl["specular"] = [0.296648, 0.296648, 0.296648,1.0]
+	pearl["shininess"] = 128.0
+	pearl["emission"] = [0,0,0]
+	
+	silver = {}
+	silver["ambient"] = [0.25, 0.25, 0.25,1.0]
+	silver["diffuse"] = [0.4, 0.4, 0.4,1.0]
+	silver["specular"] = [0.974597, 0.974597, 0.974597,1.0]
+	silver["shininess"] = 4
+	silver["emission"] = [0.1,0.1,0.1]
+	
+	gold = {}
+	gold["ambient"] = [0.24725, 0.2245, 0.0645,1.0]
+	gold["diffuse"] = [0.34615, 0.3143, 0.0903,1.0]
+	gold["specular"] = [1.000, 0.9079885, 0.26086934,1.0]
+	gold["shininess"] = 4
+	gold["emission"] = [0,0,0]
+	
+	copper = {}
+	copper["ambient"] = [0.2295, 0.08825, 0.0275,1.0]
+	copper["diffuse"] = [0.5508, 0.2118, 0.066,1.0]
+	copper["specular"] = [0.9, 0.5, 0.2,1.0]
+	copper["shininess"] = 20.0
+	copper["emission"] = [0,0,0]
+	
+	obsidian = {}
+	obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
+	obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
+	obsidian["specular"] = [0.66, 0.65, 0.69]
+	obsidian["shininess"] = 128.0
+	obsidian["emission"] = [0,0,0]
+	
+	turquoise = {}
+	turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
+	turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
+	turquoise["specular"] = [0.297254, 0.30829, 0.306678]
+	turquoise["shininess"] = 128.0
+	turquoise["emission"] = [0,0,0]
+	
+	yellow = {}
+	yellow["ambient"] = [0.3, 0.3, 0.0,1]
+	yellow["diffuse"] = [0.5, 0.5, 0.0,1]
+	yellow["specular"] = [0.7, 0.7, 0.0,1]
+	yellow["shininess"] =  60
+	yellow["emission"] = [0,0,0]
+	
+	custom = {}
+	custom["custom"] = [0.3, 0.3, 0.0,1]
+	custom["custom"] = [0.5, 0.5, 0.0,1]
+	custom["custom"] = [0.7, 0.7, 0.0,1]
+	custom["custom"] =  60
+	custom["emission"] = [0,0,0]
+	
+	colors = {}
+	colors["ruby"] = ruby
+	colors["emerald"] = emerald
+	colors["pearl"] = pearl
+	colors["silver"] = silver
+	colors["gold"] = gold
+	colors["copper"] = copper
+	colors["obsidian"] = obsidian
+	colors["turquoise"] = turquoise
+	colors["yellow"] = yellow
+	colors["custom"] = yellow
+	
+	return colors
+

@@ -159,11 +159,11 @@ class EMQtWidgetModuleDrawer:
 		self.drawframe = True
 		self.mapcoords = True
 		self.itex = 0
-		self.genTexture = True
+		self.gen_texture = True
 		self.click_debug = False
 		self.cam = Camera2(self)
 		self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
-		self.cam.motionRotate(0,0)
+		self.cam.motion_rotate(0,0)
 		self.borderwidth = 3.0
 		self.glbasicobjects = EMBasicObjects()
 		self.setQtWidget(qwidget)
@@ -205,15 +205,15 @@ class EMQtWidgetModuleDrawer:
 			self.qwidget.setEnabled(True)
 			self.glbasicobjects.setWidth(self.qwidget.width())
 			self.glbasicobjects.setHeight(self.qwidget.height())
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 			
 	def updateTexture(self):
-		if ( self.itex == 0 or self.genTexture == True ) : 
+		if ( self.itex == 0 or self.gen_texture == True ) : 
 			if (self.itex != 0 ):
 				#passpyth
 				self.parent.deleteTexture(self.itex)
-			self.genTexture = False
+			self.gen_texture = False
 			#print "binding texture"
 			self.itex = self.parent.bindTexture(QtGui.QPixmap.grabWidget(self.qwidget))
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
@@ -282,16 +282,16 @@ class EMQtWidgetModuleDrawer:
 				glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 				glMaterial(GL_FRONT,GL_SHININESS,50.0)
 				glPushMatrix()
-				self.cylinderToFrom(self.mc00,self.mc10)
+				self.cylinder_to_from(self.mc00,self.mc10)
 				glPopMatrix()
 				glPushMatrix()
-				self.cylinderToFrom(self.mc10,self.mc11)
+				self.cylinder_to_from(self.mc10,self.mc11)
 				glPopMatrix()
 				glPushMatrix()
-				self.cylinderToFrom(self.mc11,self.mc01)
+				self.cylinder_to_from(self.mc11,self.mc01)
 				glPopMatrix()
 				glPushMatrix()
-				self.cylinderToFrom(self.mc01,self.mc00)
+				self.cylinder_to_from(self.mc01,self.mc00)
 				glPopMatrix()
 				
 				#glBegin(GL_LINES)
@@ -332,7 +332,7 @@ class EMQtWidgetModuleDrawer:
 		glScalef(3.0*self.borderwidth,3.0*self.borderwidth,3.0*self.borderwidth)
 		glCallList(self.glbasicobjects.getSphereDL())
 		
-	def cylinderToFrom(self,To,From):
+	def cylinder_to_from(self,To,From):
 		dx = To[0] - From[0]
 		dy = To[1] - From[1]
 		
@@ -536,7 +536,7 @@ class EMQtWidgetModuleDrawer:
 		cw=self.qwidget.childAt(l[0],l[1])
 		if cw == None: 
 			QtGui.QToolTip.hideText()
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 			return
 	
@@ -566,7 +566,7 @@ class EMQtWidgetModuleDrawer:
 			lp=cw.mapFromGlobal(gp)
 			qme=QtGui.QWheelEvent(lp,event.delta(),event.buttons(),event.modifiers(),event.orientation())
 			QtCore.QCoreApplication.sendEvent(cw,qme)
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 	
 	def mouseDoubleClickEvent(self, event):
@@ -588,7 +588,7 @@ class EMQtWidgetModuleDrawer:
 			self.qwidget.setVisible(True)
 			QtCore.QCoreApplication.sendEvent(cw,qme)
 			self.qwidget.setVisible(False)
-		self.genTexture = True
+		self.gen_texture = True
 		self.updateTexture()
 		
 	def get_depth_for_height(self,height_plane):
@@ -639,7 +639,7 @@ class EMQtWidgetModuleDrawer:
 					QtCore.QCoreApplication.sendEvent(cw,qme)
 					self.qwidget.setVisible(False)
 				
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 		
 	def mouseMoveEvent(self,event):
@@ -671,7 +671,7 @@ class EMQtWidgetModuleDrawer:
 				if ( self.previous != None ):
 					qme=QtCore.QEvent(QtCore.QEvent.Leave)
 					QtCore.QCoreApplication.sendEvent(self.previous,qme)
-					self.genTexture = True
+					self.gen_texture = True
 					self.updateTexture()
 				return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
@@ -679,11 +679,11 @@ class EMQtWidgetModuleDrawer:
 			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
 			QtCore.QCoreApplication.sendEvent(cw,qme)
 			# FIXME
-			# setting the genTexture flag true here causes the texture to be regenerated
+			# setting the gen_texture flag true here causes the texture to be regenerated
 			# when the mouse moves over it, which is inefficient.
-			# The fix is to only set the genTexture flag when mouse movement
+			# The fix is to only set the gen_texture flag when mouse movement
 			# actually causes a change in the appearance of the widget (for instance, list boxes from comboboxes)
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 
 	def mouseReleaseEvent(self,event):
@@ -729,7 +729,7 @@ class EMQtWidgetModuleDrawer:
 					QtCore.QCoreApplication.sendEvent(self.widget_parent,qme)
 					self.widget_parent.update()
 					self.widget_parent.parent().update()
-					self.emqtwidget_parent.genTexture = True
+					self.emqtwidget_parent.gen_texture = True
 					self.emqtwidget_parent.updateTexture()
 					#self.qwidget.commitData(self.qwidget.parent())
 					#print self.qwidget.currentText()
@@ -744,7 +744,7 @@ class EMQtWidgetModuleDrawer:
 					QtCore.QCoreApplication.sendEvent(cw,qme)
 					self.qwidget.setVisible(False)
 			
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 		
 	def leaveEvent(self):
@@ -753,14 +753,14 @@ class EMQtWidgetModuleDrawer:
 			QtCore.QCoreApplication.sendEvent(self.current,qme)
 			self.current = None
 			self.previouse = None
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 			
 	def enterEvent():
 		pass
 	def timerEvent(self,event=None):
 		pass
-		#self.cam.motionRotate(.2,.2)
+		#self.cam.motion_rotate(.2,.2)
 		
 	def getsubtendingangle(self,a,b):
 		sinaeb = a[0]*b[1]-a[1]*b[0]
@@ -995,7 +995,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.inspector.show()
 			self.inspector.hide()
 			#print "told gen texture"
-			self.qwidgets[0].genTexture = True
+			self.qwidgets[0].gen_texture = True
 			self.qwidgets[0].updateTexture()
 		else:
 			pass	# 3d not done yet

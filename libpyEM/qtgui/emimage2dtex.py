@@ -144,8 +144,8 @@ class EMImage2DTexInspector(QtGui.QWidget):
 		self.glbrightness.setValue(0.0)
 		self.vbl.addWidget(self.glbrightness)
 	
-		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
-		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
+		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
+		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
 		
 	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
@@ -206,13 +206,6 @@ class EMImage2DTex:
 			return self.parent.width()
 		except:
 			return 0
-	
-	def viewportHeight(self):
-		try:
-			return self.parent.height()
-		except:
-			return 0
-	
 	def width(self):
 		try:
 			return self.data.get_xsize()
@@ -249,8 +242,8 @@ class EMImage2DTex:
 		self.data.add(-min)
 		self.data.mult(1/(max-min))
 	
-	def setGLContrast(self,val):
-		self.bcscreen.setGLContrast(val)
+	def set_GL_contrast(self,val):
+		self.bcscreen.set_GL_contrast(val)
 		self.updateHist()
 		try:
 			self.parent.updateGL()
@@ -258,8 +251,8 @@ class EMImage2DTex:
 			# the parent may not have been set
 			pass
 	
-	def setGLBrightness(self,val):
-		self.bcscreen.setGLBrightness(val)
+	def set_GL_brightness(self,val):
+		self.bcscreen.set_GL_brightness(val)
 		self.updateHist()
 		try:
 			self.parent.updateGL()
@@ -311,7 +304,7 @@ class EMImage2DTex:
 				# no warning
 				pass
 			
-	def genTexture(self):
+	def gen_texture(self):
 		if ( self.tex_id != 0 ):
 			glDeleteTextures(self.tex_id)
 		
@@ -320,9 +313,9 @@ class EMImage2DTex:
 			 #OpenGL is not initialized yet?
 			print "warning, could not get texture id"
 			
-	def genCurrentDisplayList(self):
+	def generate_current_display_list(self):
 		
-		if (self.tex_id == 0): self.genTexture()
+		if (self.tex_id == 0): self.gen_texture()
 		
 		if ( self.tex_dl != 0 ): glDeleteLists( self.tex_dl, 1)
 		
@@ -380,7 +373,7 @@ class EMImage2DTex:
 		glDisable(GL_CULL_FACE)
 
 		if ( self.tex_dl == 0 ):
-			self.genCurrentDisplayList()
+			self.generate_current_display_list()
 			
 		self.cam.position()
 		

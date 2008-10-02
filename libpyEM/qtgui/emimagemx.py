@@ -42,18 +42,18 @@ from EMAN2 import *
 import EMAN2
 import sys
 import numpy
-from emimageutil import ImgHistogram,EventRerouter
+from emimageutil import ImgHistogram,EMEventRerouter
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMModule
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 GLUT.glutInit(sys.argv)
 
-class EMImageMXWidget(QtOpenGL.QGLWidget,EventRerouter):
+class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
 	"""
 	allim=WeakKeyDictionary()
@@ -65,7 +65,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EventRerouter):
 		fmt.setDoubleBuffer(True)
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EventRerouter.__init__(self,em_mx_module)
+		EMEventRerouter.__init__(self,em_mx_module)
 		
 		self.imagefilename = None
 		
@@ -299,7 +299,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				
 			self.mousedrag=(event.x(),event.y())
 
-class EMImageMXModule(EMModule):
+class EMImageMXModule(EMGUIModule):
 
 	allim=WeakKeyDictionary()
 	FTGL = "ftgl"
@@ -329,7 +329,7 @@ class EMImageMXModule(EMModule):
 		return self.parent
 	
 	def __init__(self, data=None,application=None):
-		EMModule.__init__(self,application)
+		EMGUIModule.__init__(self,application)
 		self.parent = None
 		self.data=None
 		self.datasize=(1,1)
@@ -384,10 +384,6 @@ class EMImageMXModule(EMModule):
 		self.__init_mouse_handlers()
 		
 		self.reroute_delete_target = None
-	
-		if application != None:
-			application.attach_child(self)
-			EMModule.set_app(self,application)
 		self.em_qt_inspector_widget = None
 	
 	def __load_font_renderer(self):

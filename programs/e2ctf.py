@@ -462,7 +462,7 @@ class GUIctf(QtGui.QWidget):
 		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 
-		self.updateData()
+		self.update_data()
 		
 		self.guiimw.show()
 		self.guiplotw.show()
@@ -472,9 +472,9 @@ class GUIctf(QtGui.QWidget):
 		self.names.append(name)
 		self.pow1d.append(p1d)
 		self.pow2d.append(p2d)
-		self.updateData()
+		self.update_data()
 		
-	def updateData(self):
+	def update_data(self):
 		"""This will make sure the various widgets properly show the current data sets"""
 		self.setlist.clear()
 		for i,j in enumerate(self.names):
@@ -489,7 +489,7 @@ class GUIctf(QtGui.QWidget):
 
 	def newCTF(self) :
 		df=self.sdefocus.value
-		self.updateData()
+		self.update_data()
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))

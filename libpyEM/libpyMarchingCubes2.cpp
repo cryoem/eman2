@@ -91,7 +91,7 @@ BOOST_PYTHON_MODULE(libpyMarchingCubes2)
         .def("get_isosurface", &EMAN::Isosurface::get_isosurface)
         .def("setVolumeData", &EMAN::Isosurface::setVolumeData)
         .def("getSurfaceValue", &EMAN::Isosurface::getSurfaceValue)
-        .def("setSampleDensity", &EMAN::Isosurface::setSampleDensity)
+        .def("set_sample_density", &EMAN::Isosurface::set_sample_density)
         .def("getSampleDensity", &EMAN::Isosurface::getSampleDensity)
     ;
 

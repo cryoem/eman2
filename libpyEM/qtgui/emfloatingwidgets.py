@@ -1887,11 +1887,11 @@ class EMGLViewQtWidget:
 		self.draw_frame = False
 		self.mapcoords = True
 		self.itex = 0
-		self.genTexture = True
+		self.gen_texture = True
 		self.click_debug = False
 		self.cam = Camera2(self)
 		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
-		self.cam.motionRotate(0,0)
+		self.cam.motion_rotate(0,0)
 		self.borderwidth = 3.0
 		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.setQtWidget(qwidget)
@@ -1939,16 +1939,16 @@ class EMGLViewQtWidget:
 		if ( widget != None ):
 			#self.qwidget.setVisible(True)
 			self.qwidget.setEnabled(True)
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 			
 	def updateTexture(self,force=False):
-		if ( self.itex == 0 or self.genTexture == True or force) : 
+		if ( self.itex == 0 or self.gen_texture == True or force) : 
 			self.refresh_dl = True
 			if (self.itex != 0 ):
 				#passpyth
 				self.parent.deleteTexture(self.itex)
-			self.genTexture = False
+			self.gen_texture = False
 			##print "binding texture"
 			#self.qwidget.setVisible(True)
 			#self.qwidget.repaint()
@@ -2053,7 +2053,7 @@ class EMGLViewQtWidget:
 		cw=self.qwidget.childAt(l[0],l[1])
 		if cw == None: 
 			QtGui.QToolTip.hideText()
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 			return
 	
@@ -2087,7 +2087,7 @@ class EMGLViewQtWidget:
 			lp=cw.mapFromGlobal(gp)
 			qme=QtGui.QWheelEvent(lp,event.delta(),event.buttons(),event.modifiers(),event.orientation())
 			QtCore.QCoreApplication.sendEvent(cw,qme)
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 	
 	def mouseDoubleClickEvent(self, event):
@@ -2109,7 +2109,7 @@ class EMGLViewQtWidget:
 			#self.qwidget.setVisible(True)
 			QtCore.QCoreApplication.sendEvent(cw,qme)
 			#self.qwidget.setVisible(False)
-		self.genTexture = True
+		self.gen_texture = True
 		self.updateTexture()
 		
 	def get_depth_for_height(self,height_plane):
@@ -2154,7 +2154,7 @@ class EMGLViewQtWidget:
 				if (self.is_child): QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
 				else: QtCore.QCoreApplication.sendEvent(cw,qme)
 				
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 		
 	def mouseMoveEvent(self,event):
@@ -2187,7 +2187,7 @@ class EMGLViewQtWidget:
 					if ( self.previous != None ):
 						qme=QtCore.QEvent(QtCore.QEvent.Leave)
 						QtCore.QCoreApplication.sendEvent(self.previous,qme)
-						self.genTexture = True
+						self.gen_texture = True
 						self.updateTexture()
 					return
 				gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
@@ -2195,11 +2195,11 @@ class EMGLViewQtWidget:
 				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				QtCore.QCoreApplication.sendEvent(cw,qme)
 			# FIXME
-			# setting the genTexture flag true here causes the texture to be regenerated
+			# setting the gen_texture flag true here causes the texture to be regenerated
 			# when the mouse moves over it, which is inefficient.
-			# The fix is to only set the genTexture flag when mouse movement
+			# The fix is to only set the gen_texture flag when mouse movement
 			# actually causes a change in the appearance of the widget (for instance, list boxes from comboboxes)
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 
 	def mouseReleaseEvent(self,event):
@@ -2252,7 +2252,7 @@ class EMGLViewQtWidget:
 					QtCore.QCoreApplication.sendEvent(cw,qme)
 					#self.qwidget.setVisible(False)
 			
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 		
 	def leaveEvent(self):
@@ -2261,14 +2261,14 @@ class EMGLViewQtWidget:
 			QtCore.QCoreApplication.sendEvent(self.current,qme)
 			self.current = None
 			self.previouse = None
-			self.genTexture = True
+			self.gen_texture = True
 			self.updateTexture()
 			
 	def enterEvent():
 		pass
 	def timerEvent(self,event=None):
 		pass
-		#self.cam.motionRotate(.2,.2)
+		#self.cam.motion_rotate(.2,.2)
 
 
 class EMFloatingWidgets(QtOpenGL.QGLWidget):

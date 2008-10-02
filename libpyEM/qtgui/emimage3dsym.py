@@ -43,33 +43,42 @@ from math import *
 from EMAN2 import *
 import sys
 import numpy
-from emimageutil import ImgHistogram,EMParentWin
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
 
 from time import *
 
-from emglobjects import EMImage3DObject, Camera, Camera2, EMViewportDepthTools
+from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTools
+from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EM3DSymViewer(EMImage3DObject):
-	def __init__(self, parent=None):
-		EMImage3DObject.__init__(self)
-		self.parent = parent
+class EM3DSymViewerModule(EMImage3DGUIModule):
+	def get_qt_widget(self):
+		if self.parent == None:	
+			self.parent = EMSymViewerWidget(self)
+		return self.parent
+	
+	def __init__(self,application=None):
+		EMImage3DGUIModule.__init__(self,application)
+		self.parent = None
 		
 		self.init()
 		self.initialized = True
 		
-		if not self.inspector or self.inspector ==None:
-			self.inspector=EMSymInspector(self)
+		self.get_inspector()
+		
+	def get_inspector(self):
+		if not self.inspector : self.inspector=EMSymInspector(self)
+		return self.inspector
 	
-	def getType(self):
+	def get_type(self):
 		return "Symmetry Viewer"
 	
-	def updateData(self,data):
+	def update_data(self,data):
 		pass
 
 	def init(self):
@@ -136,22 +145,16 @@ class EM3DSymViewer(EMImage3DObject):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
-	def viewportHeight(self):
-		return self.parent.height()
-	
-	def viewportWidth(self):
-		return self.parent.width()
-	
-	def setRadius(self,radius):
+	def set_radius(self,radius):
 		if ( radius > 0 ):
 			self.radius = radius
 			self.force_force_update = True
-			self.parent.updateGL()
+			self.updateGL()
 		else:
 			print "Error, tried to set a zero or negative radius (",radius,")"
 			exit(1)
 	
-	def traceGreatTriangles(self,triangles):
+	def trace_great_triangles(self,triangles):
 		if ( self.tri_dl != 0 ): glDeleteLists(self.tri_dl, 1)
 		
 		self.tri_dl=glGenLists(1)
@@ -226,7 +229,7 @@ class EM3DSymViewer(EMImage3DObject):
 		glMaterial(GL_FRONT,GL_SPECULAR,(0.927811, 0.826959, 0.826959,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,32.0)
 		
-	def traceGreatArcs(self, points):
+	def trace_great_arcs(self, points):
 		# this functionality is momentarily disabled for the night
 		if ( self.cylinderdl == 0 ):
 			self.cylinderdl=glGenLists(1)
@@ -254,18 +257,18 @@ class EM3DSymViewer(EMImage3DObject):
 			if ( dz == 0 ): dz = 5
 			if (not self.nomirror):
 				glTranslatef(0,0,dz)
-			self.genArcs(points,n,1)
+			self.generate_arcs(points,n,1)
 			glPopMatrix()
 			
 			glPushMatrix()
 			glTranslatef(0,0,-dz)
-			self.genArcs(points,n,1)
+			self.generate_arcs(points,n,1)
 			glPopMatrix()
 		else:
-			self.genArcs(points,n)
+			self.generate_arcs(points,n)
 		glEndList()
 		
-	def genArcs(self,points,n,halt=0):
+	def generate_arcs(self,points,n,halt=0):
 		for i in range(0,n-halt):
 			p1 = points[i]
 			if ( i == n-1 ): p2 = points[0]
@@ -279,11 +282,11 @@ class EM3DSymViewer(EMImage3DObject):
 				p2Copy = self.radius*Vec3f(p2[0],p2[1],p2[2])
 				next = (sin(angle-timeangle)*p1Copy + sin(timeangle)*p2Copy)/sinangle
 				
-				self.cylinderToFrom(next,prev)
+				self.cylinder_to_from(next,prev)
 				prev = Vec3f(next[0],next[1],next[2])
 				
 	
-	def cylinderToFrom(self,next,prev):
+	def cylinder_to_from(self,next,prev):
 		dx = next[0] - prev[0]
 		dy = next[1] - prev[1]
 		dz = next[2] - prev[2]
@@ -305,13 +308,13 @@ class EM3DSymViewer(EMImage3DObject):
 		glCallList(self.cylinderdl)
 		glPopMatrix()
 			
-	def genCurrentDisplayList(self):
-		sym = self.inspector.getSym()
-		prop = self.inspector.getProp()
-		mirror = not self.inspector.getMirror()
-		perturb = self.inspector.getPerturb()
-		angle_label = self.inspector.getAngleLabel()
-		strategy = str(self.inspector.getOrientLabel())
+	def generate_current_display_list(self):
+		sym = self.inspector.get_sym()
+		prop = self.inspector.get_prop()
+		mirror = not self.inspector.get_mirror()
+		perturb = self.inspector.get_perturb()
+		angle_label = self.inspector.get_angle_label()
+		strategy = str(self.inspector.get_orient_label())
 		
 		if self.sym == sym and self.prop == prop and self.nomirror == mirror and self.perturb == perturb and self.angle_label == angle_label and self.strategy == strategy and self.force_force_update == False: return
 		else:
@@ -361,8 +364,8 @@ class EM3DSymViewer(EMImage3DObject):
 		
 		if mirror == True : val = 0
 		else: val = 1
-		self.traceGreatArcs(self.sym_object.get_asym_unit_points(val))
-		self.traceGreatTriangles(self.sym_object.get_asym_unit_triangles(val))
+		self.trace_great_arcs(self.sym_object.get_asym_unit_points(val))
+		self.trace_great_triangles(self.sym_object.get_asym_unit_triangles(val))
 		if ('inc_mirror' in parms):
 			og += ":inc_mirror=" + str(val)
 			
@@ -393,18 +396,12 @@ class EM3DSymViewer(EMImage3DObject):
 			
 			
 			glPushMatrix()
-			#f = i.transpose()
-			#i.transpose_inplace()
+
 			d = i.get_rotation("eman")
 			#print d
 			glRotate(d["az"],0,0,1)
 			glRotate(d["alt"],1,0,0)
 			glRotate(d["phi"],0,0,1)
-			
-			#glRotate(-d["az"],0,0,1)
-			#glRotate(-d["alt"],1,0,0)
-			#glRotate(-d["phi"],0,0,1)
-			#print -d["phi"],-d["alt"],-d["az"]
 			glTranslate(0,0,self.radius)
 			glCallList(self.highresspheredl)
 			glPopMatrix()
@@ -431,7 +428,7 @@ class EM3DSymViewer(EMImage3DObject):
 		
 		return angle
 		
-	def traceupdate(self,f,lr,hr):
+	def trace_update(self,f,lr,hr):
 		if f != self.file:
 			try:
 				f=file(f,'r')
@@ -475,7 +472,7 @@ class EM3DSymViewer(EMImage3DObject):
 					orient[0] = d["alt"]
 					orient[2] = d["phi"]
 					
-			touching = self.sym_object.get_touching_au_transforms(False)
+			syms = self.sym_object.get_syms()
 			for k in range(lr,hr):
 				particle = self.tracedata[k]
 				n = len(particle)
@@ -487,7 +484,7 @@ class EM3DSymViewer(EMImage3DObject):
 				
 					angle = self.angular_deviation(t1,t2)
 					
-					for t in touching:
+					for t in syms:
 						t2 = Transform({"type":"eman","az":o2[1],"alt":o2[0],"phi":o2[2]})*t
 						
 						tmp = self.angular_deviation(t1,t2)
@@ -537,7 +534,7 @@ class EM3DSymViewer(EMImage3DObject):
 				#print b[0],b[1],b[2]
 				##if a == b: continue
 				glPushMatrix()
-				self.cylinderToFrom(b*self.radius,a*self.radius)
+				self.cylinder_to_from(b*self.radius,a*self.radius)
 				glPopMatrix()
 				#print b,a
 		glEndList()
@@ -562,7 +559,7 @@ class EM3DSymViewer(EMImage3DObject):
 		self.cam.position()
 		
 		if ( self.sym_dl == 0 or self.force_update):
-			self.genCurrentDisplayList()
+			self.generate_current_display_list()
 			self.force_update = False
 			if ( self.sym_dl == 0 ) : 
 				print "error, you can't draw an empty list"
@@ -583,7 +580,7 @@ class EM3DSymViewer(EMImage3DObject):
 				dz = 5
 				a["tz"] = dz
 				self.sym_object.insert_params(a)
-			if self.inspector.symtoggled():
+			if self.inspector.sym_toggled():
 				for i in range(1,self.sym_object.get_nsym()):
 					t = self.sym_object.get_sym(i)
 					t.invert()
@@ -602,7 +599,7 @@ class EM3DSymViewer(EMImage3DObject):
 			if ( self.sym_object.is_h_sym() != True ):
 				glCallList(self.tri_dl)
 			
-				if self.inspector.symtoggled():
+				if self.inspector.sym_toggled():
 					for i in range(1,self.sym_object.get_nsym()):
 						t = self.sym_object.get_sym(i)
 						t.invert()
@@ -630,10 +627,10 @@ class EM3DSymViewer(EMImage3DObject):
 			glCallList(self.sym_dl)
 			glPopMatrix()
 		
-			if self.inspector.symtoggled():
+			if self.inspector.sym_toggled():
 				#for i in range(1,self.sym_object.get_nsym()):
 					#t = self.sym_object.get_sym(i)
-				for t in self.sym_object.get_touching_au_transforms(not self.nomirror):
+				for t in self.sym_object.get_syms():
 					d = t.get_rotation("eman")
 					glPushMatrix()
 					if ( self.sym_object.is_h_sym() ):
@@ -661,15 +658,16 @@ class EM3DSymViewer(EMImage3DObject):
 			glPopMatrix()
 		glStencilFunc(GL_EQUAL,self.rank,self.rank)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
-		glPushMatrix()
-		# FIXME the approach here is very inefficient
-		glLoadIdentity()
-		[width,height] = self.parent.get_near_plane_dims()
-		z = self.parent.get_start_z()
-		glTranslate(-width/2.0,-height/2.0,-z-0.01)
-		glScalef(width,height,1.0)
-		self.draw_bc_screen()
-		glPopMatrix()
+		
+		#glPushMatrix()
+		## FIXME the approach here is very inefficient
+		#glLoadIdentity()
+		#[width,height] = self.parent.get_near_plane_dims()
+		#z = self.parent.get_start_z()
+		#glTranslate(-width/2.0,-height/2.0,-z-0.01)
+		#glScalef(width,height,1.0)
+		#self.draw_bc_screen()
+		#glPopMatrix()
 		
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
@@ -684,47 +682,23 @@ class EM3DSymViewer(EMImage3DObject):
 		if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
 		if ( polygonmode[1] == GL_LINE ): glPolygonMode(GL_BACK, GL_LINE)
 
-	def updateInspector(self,t3d):
+	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMSymInspector(self)
-		self.inspector.updateRotations(t3d)
+		self.inspector.update_rotations(t3d)
 	
 	def get_inspector(self):
 		if not self.inspector : self.inspector=EMSymInspector(self)
 		return self.inspector
 		
-	def regenDL(self, dummy=False):
+	def regen_dl(self, dummy=False):
 		self.force_update = True
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def updateGL(self,dummy=False):
-		self.parent.updateGL()
+		try: self.parent.updateGL()
+		except: pass
 		
-	def mousePressEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
-		if event.button()==Qt.MidButton:
-			if not self.inspector or self.inspector ==None:
-				return
-			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
-			self.resizeEvent()
-			self.show_inspector(1)
-		else:
-			self.cam.mousePressEvent(event)
-		
-		self.updateGL()
-		
-	def mouseMoveEvent(self, event):
-		self.cam.mouseMoveEvent(event)
-		self.updateGL()
-	
-	def mouseReleaseEvent(self, event):
-		self.cam.mouseReleaseEvent(event)
-		self.updateGL()
-			
-	def wheelEvent(self, event):
-		self.cam.wheelEvent(event)
-		self.updateGL()
-
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
 		
@@ -743,21 +717,28 @@ class EM3DSymViewer(EMImage3DObject):
 	def reducetog(self,bool):
 		self.reduce = bool
 
-class EMSymViewerWidget(QtOpenGL.QGLWidget):
+class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	
 	allim=WeakKeyDictionary()
-	def __init__(self, parent=None):
+	def __init__(self, em_slice_viwer):
+
+		assert(isinstance(em_slice_viwer,EM3DSymViewerModule))
+		
+		EMSymViewerWidget.allim[self]=0
+		
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMSymViewerWidget.allim[self]=0
+		fmt.setSampleBuffers(True)
+		QtOpenGL.QGLWidget.__init__(self,fmt)
+		EMEventRerouter.__init__(self)
+		
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
 		self.endz = 5000
 		self.cam = Camera()
-		self.sliceviewer = EM3DSymViewer(self)
+		self.target = em_slice_viwer
 		self.cam.setCamTrans("default_z",-100)
 
 	def initializeGL(self):
@@ -770,14 +751,14 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 		GL.glClearColor(0,0,0,0)
 		#GL.glClearAccum(0,0,0,0)
 	
 		glShadeModel(GL_SMOOTH)
 		
-		glClearStencil(0)
-		glEnable(GL_STENCIL_TEST)
+		#glClearStencil(0)
+		#glEnable(GL_STENCIL_TEST)
 		
 	def paintGL(self):
 		#glClear(GL_ACCUM_BUFFER_BIT)
@@ -789,7 +770,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		self.cam.position()
 		
 		glPushMatrix()
-		self.sliceviewer.render()
+		self.target.render()
 		glPopMatrix()
 		
 	def resizeGL(self, width, height):
@@ -811,7 +792,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.sliceviewer.resizeEvent()
+		self.target.resizeEvent()
 
 	def get_start_z(self):
 		return self.startz
@@ -822,25 +803,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		return [width,height]
 
 	def show_inspector(self,force=0):
-		self.sliceviewer.show_inspector(self,force)
-
-	def closeEvent(self,event) :
-		self.sliceviewer.closeEvent(event)
-		
-	def mousePressEvent(self, event):
-		self.sliceviewer.mousePressEvent(event)
-		self.emit(QtCore.SIGNAL("mousedown"), event)
-		
-	def mouseMoveEvent(self, event):
-		self.sliceviewer.mouseMoveEvent(event)
-		self.emit(QtCore.SIGNAL("mousedrag"), event)
-	
-	def mouseReleaseEvent(self, event):
-		self.sliceviewer.mouseReleaseEvent(event)
-		self.emit(QtCore.SIGNAL("mouseup"), event)
-			
-	def wheelEvent(self, event):
-		self.sliceviewer.wheelEvent(event)
+		self.target.show_inspector(self,force)
 
 	def get_render_dims_at_depth(self,depth):
 		# This function returns the width and height of the renderable 
@@ -855,6 +818,7 @@ class EMSymInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
+		self.rotation_sliders = EMTransformPanel(target,self)
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -898,7 +862,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.vbl2.addWidget(self.symtog)
 		
 		
-		self.vbl.addWidget(self.getMainTab())
+		self.vbl.addWidget(self.get_main_tab())
 		
 		self.n3_showing = False
 		
@@ -906,47 +870,50 @@ class EMSymInspector(QtGui.QWidget):
 		self.lr = -1
 		self.hr = -1
 		
-		self.current_src = EULER_EMAN
-		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
-		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
-		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
-		QtCore.QObject.connect(self.sym_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.symChanged)
-		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), target.regenDL)
-		QtCore.QObject.connect(self.prop_text, QtCore.SIGNAL("editingFinished()"), target.regenDL)
-		QtCore.QObject.connect(self.mirror_checkbox, QtCore.SIGNAL("stateChanged(int)"), target.regenDL)
+		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
+		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
+		QtCore.QObject.connect(self.sym_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.sym_changed)
+		QtCore.QObject.connect(self.sym_text, QtCore.SIGNAL("editingFinished()"), target.regen_dl)
+		QtCore.QObject.connect(self.prop_text, QtCore.SIGNAL("editingFinished()"), target.regen_dl)
+		QtCore.QObject.connect(self.mirror_checkbox, QtCore.SIGNAL("stateChanged(int)"), target.regen_dl)
 		QtCore.QObject.connect(self.perturbtog, QtCore.SIGNAL("toggled(bool)"), self.perturbtoggled)
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
-		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
+		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
 		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), target.updateGL)
 		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), target.toggle_sym_display)
 		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), target.triangletog)
 		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), target.arctog)
 		QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
 		QtCore.QObject.connect(self.reducetog, QtCore.SIGNAL("clicked(bool)"), self.target.reducetog)
-		QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
-		QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
-		QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.traceupdate)
+		QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+		QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
+		QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.trace_update)
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
-		QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angleLabelChanged)
-		QtCore.QObject.connect(self.orient_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.orientLabelChanged)
+		QtCore.QObject.connect(self.angle_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.angle_label_changed)
+		QtCore.QObject.connect(self.orient_label, QtCore.SIGNAL("currentIndexChanged(QString)"), self.orient_label_changed)
 	
-	def symtoggled(self):
+	def update_rotations(self,t3d):
+		self.rotation_sliders.update_rotations(t3d)
+	
+	def set_scale(self,val):
+		self.rotation_sliders.set_scale(val)
+	
+	def set_xy_trans(self, x, y):
+		self.rotation_sliders.set_xy_trans(x,y)
+		
+	def get_transform_layout(self):
+		return self.maintab.vbl
+	
+	
+	def sym_toggled(self):
 		return self.symtog.isChecked()
 	
 	def perturbtoggled(self,val):
-		self.target.regenDL()
+		self.target.regen_dl()
 		
-	def angleLabelChanged(self,string):
-		self.target.regenDL()
+	def angle_label_changed(self,string):
+		self.target.regen_dl()
 		
-	def orientLabelChanged(self,string):
+	def orient_label_changed(self,string):
 		label = string
 		self.angle_label.clear()
 		if label == 'random':
@@ -955,50 +922,38 @@ class EMSymInspector(QtGui.QWidget):
 			self.angle_label.addItem('delta')
 			self.angle_label.addItem('n')
 			
-		self.target.regenDL()
-		
-	def setDefaults(self):
-		self.x_trans.setValue(0.0)
-		self.y_trans.setValue(0.0)
-		self.z_trans.setValue(0.0)
-		self.scale.setValue(1.0)
-		self.glcontrast.setValue(1.0)
-		self.glbrightness.setValue(0.0)
-		
-		self.az.setValue(0.0)
-		self.alt.setValue(0.0)
-		self.phi.setValue(0.0)
+		self.target.regen_dl()
 
-	def symChanged(self, sym):
+	def sym_changed(self, sym):
 		if sym == ' D ' or sym == ' C ' or sym == ' H ':
 			self.sym_text.setEnabled(True)
 		else:
 			self.sym_text.setEnabled(False)
 		
-		self.target.regenDL()
+		self.target.regen_dl()
 
-	def getSym(self):
+	def get_sym(self):
 		sym = self.sym_map[str(self.sym_combo.currentText())]
 		if sym in ['c','d','h']:
 			sym = sym+self.sym_text.displayText()
 		return sym
 	
-	def getAngleLabel(self):
+	def get_angle_label(self):
 		return self.angle_label.currentText()
 	
-	def getOrientLabel(self):
+	def get_orient_label(self):
 		return self.orient_label.currentText()
 	
-	def getProp(self):
+	def get_prop(self):
 		return float(self.prop_text.displayText())
 	
-	def getMirror(self):
+	def get_mirror(self):
 		return self.mirror_checkbox.checkState() == Qt.Checked
 	
-	def getPerturb(self):
+	def get_perturb(self):
 		return self.perturbtog.isChecked()
 
-	def traceupdate(self):
+	def trace_update(self):
 		lr = int(self.lowrange.displayText())
 		hr = int(self.highrange.displayText())
 		file = str(self.tracefile.displayText())
@@ -1008,14 +963,14 @@ class EMSymInspector(QtGui.QWidget):
 			self.hr = hr
 			self.lr = lr
 			
-			self.target.traceupdate(file,lr,hr)
+			self.target.trace_update(file,lr,hr)
 
 	def toggle_trace(self,bool):
 		self.tracefile.setEnabled(bool)
 		self.lowrange.setEnabled(bool)
 		self.highrange.setEnabled(bool)
 
-	def getMainTab(self):
+	def get_main_tab(self):
 	
 		self.maintab = QtGui.QWidget()
 		maintab = self.maintab
@@ -1023,12 +978,6 @@ class EMSymInspector(QtGui.QWidget):
 		maintab.vbl.setMargin(0)
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")
-		
-		
-		self.scale = ValSlider(self,(0.01,30.0),"Zoom:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		maintab.vbl.addWidget(self.scale)
 		
 		self.hbl_sym = QtGui.QHBoxLayout()
 		self.hbl_sym.setMargin(0)
@@ -1169,237 +1118,22 @@ class EMSymInspector(QtGui.QWidget):
 		self.glbrightness.setValue(0.0)
 		maintab.vbl.addWidget(self.glbrightness)
 		
-		self.cbb = QtGui.QComboBox(maintab)
-		self.vbl.addWidget(self.cbb)
-		self.cbb.deleteLater()
+		#self.cbb = QtGui.QComboBox(maintab)
+		#self.vbl.addWidget(self.cbb)
+		#self.cbb.deleteLater()
 
-		self.hbl_trans = QtGui.QHBoxLayout()
-		self.hbl_trans.setMargin(0)
-		self.hbl_trans.setSpacing(6)
-		self.hbl_trans.setObjectName("Trans")
-		maintab.vbl.addLayout(self.hbl_trans)
-		
-		self.x_label = QtGui.QLabel()
-		self.x_label.setText('x')
-		self.hbl_trans.addWidget(self.x_label)
-		
-		self.x_trans = QtGui.QDoubleSpinBox(maintab)
-		self.x_trans.setMinimum(-10000)
-		self.x_trans.setMaximum(10000)
-		self.x_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.x_trans)
-		
-		self.y_label = QtGui.QLabel()
-		self.y_label.setText('y')
-		self.hbl_trans.addWidget(self.y_label)
-		
-		self.y_trans = QtGui.QDoubleSpinBox(maintab)
-		self.y_trans.setMinimum(-10000)
-		self.y_trans.setMaximum(10000)
-		self.y_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.y_trans)
-		
-		self.z_label = QtGui.QLabel()
-		self.z_label.setText('z')
-		self.hbl_trans.addWidget(self.z_label)
-		
-		self.z_trans = QtGui.QDoubleSpinBox(maintab)
-		self.z_trans.setMinimum(-10000)
-		self.z_trans.setMaximum(10000)
-		self.z_trans.setValue(0.0)
-		self.hbl_trans.addWidget(self.z_trans)
-		
-		self.hbl_src = QtGui.QHBoxLayout()
-		self.hbl_src.setMargin(0)
-		self.hbl_src.setSpacing(6)
-		self.hbl_src.setObjectName("hbl")
-		maintab.vbl.addLayout(self.hbl_src)
-		
-		self.label_src = QtGui.QLabel()
-		self.label_src.setText('Rotation Convention')
-		self.hbl_src.addWidget(self.label_src)
-		
-		self.src = QtGui.QComboBox(maintab)
-		self.load_src_options(self.src)
-		self.hbl_src.addWidget(self.src)
-		
-		# set default value -1 ensures that the val slider is updated the first time it is created
-		self.az = ValSlider(self,(-360.0,360.0),"az",-1)
-		self.az.setObjectName("az")
-		self.az.setValue(0.0)
-		maintab.vbl.addWidget(self.az)
-		
-		self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
-		self.alt.setObjectName("alt")
-		self.alt.setValue(0.0)
-		maintab.vbl.addWidget(self.alt)
-		
-		self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
-		self.phi.setObjectName("phi")
-		self.phi.setValue(0.0)
-		maintab.vbl.addWidget(self.phi)
+		self.rotation_sliders.addWidgets(maintab.vbl)
 		
 		return maintab
-	
-	def setDefaults(self):
-		self.x_trans.setValue(0.0)
-		self.y_trans.setValue(0.0)
-		self.z_trans.setValue(0.0)
-		self.scale.setValue(1.0)
-		self.glcontrast.setValue(1.0)
-		self.glbrightness.setValue(0.0)
-		
-		self.az.setValue(0.0)
-		self.alt.setValue(0.0)
-		self.phi.setValue(0.0)
 
-	def setXYTrans(self, x, y):
-		self.x_trans.setValue(x)
-		self.y_trans.setValue(y)
+	def slider_rotate(self):
+		self.target.load_rotation(self.get_current_rotation())
 	
-	def setTranslateScale(self, xscale,yscale,zscale):
-		self.x_trans.setSingleStep(xscale)
-		self.y_trans.setSingleStep(yscale)
-		self.z_trans.setSingleStep(zscale)
-
-	def updateRotations(self,t3d):
-		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
-		
-		convention = self.src.currentText()
-		if ( self.src_map[str(convention)] == EULER_SPIN ):
-			self.n3.setValue(rot[self.n3.getLabel()],True)
-		
-		self.az.setValue(rot[self.az.getLabel()],True)
-		self.alt.setValue(rot[self.alt.getLabel()],True)
-		self.phi.setValue(rot[self.phi.getLabel()],True)
-	
-	def sliderRotate(self):
-		self.target.load_rotation(self.getCurrentRotation())
-	
-	def getCurrentRotation(self):
-		convention = self.src.currentText()
-		rot = {}
-		if ( self.current_src == EULER_SPIN ):
-			rot[self.az.getLabel()] = self.az.getValue()
-			
-			n1 = self.alt.getValue()
-			n2 = self.phi.getValue()
-			n3 = self.n3.getValue()
-			
-			norm = sqrt(n1*n1 + n2*n2 + n3*n3)
-			
-			n1 /= norm
-			n2 /= norm
-			n3 /= norm
-			
-			rot[self.alt.getLabel()] = n1
-			rot[self.phi.getLabel()] = n2
-			rot[self.n3.getLabel()] = n3
-			
-		else:
-			rot[self.az.getLabel()] = self.az.getValue()
-			rot[self.alt.getLabel()] = self.alt.getValue()
-			rot[self.phi.getLabel()] = self.phi.getValue()
-		
-		rot["type"] = "eman"
-		return Transform(rot)
-	
-	def set_src(self, val):
-		t3d = self.getCurrentRotation()
-		
-		if (self.n3_showing) :
-			self.maintab.vbl.removeWidget(self.n3)
-			self.n3.deleteLater()
-			self.n3_showing = False
-			self.az.setRange(-360,360)
-			self.alt.setRange(-180,180)
-			self.phi.setRange(-360,660)
-		
-		if ( self.src_map[str(val)] == EULER_SPIDER ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('psi')
-		elif ( self.src_map[str(val)] == EULER_EMAN ):
-			self.az.setLabel('az')
-			self.alt.setLabel('alt')
-			self.phi.setLabel('phi')
-		elif ( self.src_map[str(val)] == EULER_IMAGIC ):
-			self.az.setLabel('alpha')
-			self.alt.setLabel('beta')
-			self.phi.setLabel('gamma')
-		elif ( self.src_map[str(val)] == EULER_XYZ ):
-			self.az.setLabel('xtilt')
-			self.alt.setLabel('ytilt')
-			self.phi.setLabel('ztilt')
-		elif ( self.src_map[str(val)] == EULER_MRC ):
-			self.az.setLabel('phi')
-			self.alt.setLabel('theta')
-			self.phi.setLabel('omega')
-		elif ( self.src_map[str(val)] == EULER_SPIN ):
-			self.az.setLabel('Omega')
-			self.alt.setRange(-1,1)
-			self.phi.setRange(-1,1)
-			
-			self.alt.setLabel('n1')
-			self.phi.setLabel('n2')
-			
-			self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
-			self.n3.setRange(-1,1)
-			self.n3.setObjectName("n3")
-			self.maintab.vbl.addWidget(self.n3)
-			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
-			self.n3_showing = True
-		
-		self.current_src = self.src_map[str(val)]
-		self.updateRotations(t3d)
-	
-	def load_src_options(self,widgit):
-		self.load_src()
-		for i in self.src_strings:
-			widgit.addItem(i)
-	
-	# read src as 'supported rotation conventions'
-	def load_src(self):
-		# supported_rot_conventions
-		src_flags = []
-		src_flags.append(EULER_EMAN)
-		src_flags.append(EULER_SPIDER)
-		src_flags.append(EULER_IMAGIC)
-		src_flags.append(EULER_MRC)
-		src_flags.append(EULER_SPIN)
-		src_flags.append(EULER_XYZ)
-		
-		self.src_strings = []
-		self.src_map = {}
-		for i in src_flags:
-			self.src_strings.append(str(i))
-			self.src_map[str(i)] = i
-		
-	
-	def setColors(self,colors,current_color):
-		for i in colors:
-			self.cbb.addItem(i)
-
 	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
-
-	def set_scale(self,newscale):
-		self.scale.setValue(newscale)
 	
-	
-		
-# This is just for testing, of course
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	window = EMSymViewerWidget()
-	window2=EMParentWin(window)
-	window2.show()
-	
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
-	
-	sys.exit(app.exec_())
+	em_app = EMStandAloneApplication()
+	window = EM3DSymViewerModule(application=em_app)
+	em_app.show()
+	em_app.execute()

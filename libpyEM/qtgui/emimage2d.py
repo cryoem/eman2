@@ -43,13 +43,13 @@ import EMAN2
 import sys
 import numpy
 import struct
-from emimageutil import ImgHistogram,EventRerouter
+from emimageutil import ImgHistogram,EMEventRerouter
 import emshape 
 from emshape import EMShape
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMModule
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 try: from PyQt4 import QtWebKit
 except: pass
@@ -61,7 +61,7 @@ from emglobjects import EMOpenGLFlagsAndTools
 
 GLUT.glutInit(sys.argv )
 
-class EMImage2DWidget(QtOpenGL.QGLWidget,EventRerouter):
+class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	allim=WeakKeyDictionary()
 	def __init__(self, em_image_2d_module,enable_timer=False):
 		fmt=QtOpenGL.QGLFormat()
@@ -69,7 +69,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EventRerouter):
 		fmt.setSampleBuffers(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
-		EventRerouter.__init__(self,em_image_2d_module)
+		EMEventRerouter.__init__(self,em_image_2d_module)
 		self.initimageflag = True
 		
 		self.setFocusPolicy(Qt.StrongFocus)
@@ -191,7 +191,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EventRerouter):
 	def get_shapes(self):
 		return self.target.get_shapes()
 	
-class EMImage2DModule(EMModule):
+class EMImage2DModule(EMGUIModule):
 	"""
 	"""
 	allim=WeakKeyDictionary()
@@ -209,8 +209,7 @@ class EMImage2DModule(EMModule):
 		return self.parent
 	
 	def __init__(self, image=None,application=None):
-		EMModule.__init__(self,application)
-		
+		EMGUIModule.__init__(self,application)
 		
 		self.parent = None
 		self.data=image				# EMData object to display
@@ -279,10 +278,7 @@ class EMImage2DModule(EMModule):
 
 		if image :
 			self.set_data(image)
-		
-		if application != None:
-			application.attach_child(self)
-			EMModule.set_app(self,application)
+
 		self.em_qt_inspector_widget = None
 		
 		self.__load_display_settings_from_db()

@@ -1229,7 +1229,7 @@ BOOST_PYTHON_MODULE(gorgon)
         .def("drawMesh", &MarchingCubes::drawMesh)
 		.def("setSurfaceValue", &MarchingCubes::setSurfaceValue)
 		.def("getSurfaceValue", &MarchingCubes::getSurfaceValue)
-		.def("setSampleDensity", &MarchingCubes::setSampleDensity)
+		.def("set_sample_density", &MarchingCubes::set_sample_density)
 		.def("getSampleDensity", &MarchingCubes::getSampleDensity)
 		.def("loadMRC", &MarchingCubes::loadMRC)
     ;
