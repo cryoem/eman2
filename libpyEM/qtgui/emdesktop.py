@@ -461,7 +461,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		width = self.aspect * height
 		return [width,height]
 		
-	def getStartZ(self):
+	def get_start_z(self):
 		return self.zNear
 
 class EMDesktopWidgets:
@@ -815,8 +815,8 @@ class EMDesktopWidgets:
 	def get_near_plane_dims(self):
 		return self.parent.get_near_plane_dims()
 		
-	def getStartZ(self):
-		return self.parent.getStartZ()
+	def get_start_z(self):
+		return self.parent.get_start_z()
 		
 class ob2dimage:
 	def __init__(self,target,pixmap,aspect):

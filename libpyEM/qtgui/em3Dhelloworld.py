@@ -294,7 +294,7 @@ class EM3DHelloWorld(EMImage3DObject):
 				return
 			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
 			self.resizeEvent()
-			self.showInspector(1)
+			self.show_inspector(1)
 		else:
 			self.cam.mousePressEvent(event)
 		
@@ -389,8 +389,8 @@ class EM3DHelloWorldWidget(QtOpenGL.QGLWidget):
 	def setInit(self):
 		self.helloworld.setInit()
 
-	def showInspector(self,force=0):
-		self.helloworld.showInspector()
+	def show_inspector(self,force=0):
+		self.helloworld.show_inspector()
 	
 	def closeEvent(self,event) :
 		self.helloworld.closeEvent(event)
@@ -457,15 +457,15 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
+		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
+		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
+		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggleWire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggleLight)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
@@ -609,7 +609,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.phi.setValue(rot[self.phi.getLabel()],True)
 	
 	def sliderRotate(self):
-		self.target.loadRotation(self.getCurrentRotation())
+		self.target.load_rotation(self.getCurrentRotation())
 	
 	def getCurrentRotation(self):
 		convention = self.src.currentText()
@@ -718,7 +718,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 				self.cbb.setCurrentIndex(a)
 			a += 1
 
-	def setScale(self,newscale):
+	def set_scale(self,newscale):
 		self.scale.setValue(newscale)
 		
 # This is just for testing, of course

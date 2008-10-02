@@ -42,23 +42,22 @@ from EMAN2 import *
 import EMAN2
 import sys
 import numpy
-from emimageutil import ImgHistogram,EMParentWin
+from emimageutil import ImgHistogram,EventRerouter
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
-class EMImageMX(QtOpenGL.QGLWidget):
-	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
-	in 'matrix' form on the display. The middle mouse button will bring up a
-	control-panel. The QT event loop must be running for this object to function
-	properly.
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMModule
+
+GLUT.glutInit(sys.argv)
+
+class EMImageMXWidget(QtOpenGL.QGLWidget,EventRerouter):
+	"""
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self, data=None,parent=None):
-
-		self.imagemx = None
+	def __init__(self, em_mx_module,parent=None):
 		#self.initflag = True
 		self.mmode = "drag"
 
@@ -66,16 +65,15 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True)
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImageMX.allim[self]=0
-		self.imagemx = EMImageMXCore(data,self)
+		EventRerouter.__init__(self,em_mx_module)
 		
 		self.imagefilename = None
 		
 	def get_target(self):
-		return self.imagemx
+		return self.target
 	
 	def set_data(self,data):
-		self.imagemx.set_data(data)
+		self.target.set_data(data)
 	
 	def set_file_name(self,name):
 		#print "set image file name",name
@@ -99,14 +97,14 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		glEnable(GL_CULL_FACE)
 		glCullFace(GL_BACK)
 	def paintGL(self):
-		if not self.parentWidget() : return
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
-		if ( self.imagemx == None ): return
-		
+		if ( self.target == None ): return
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Matrix context is", context
-		self.imagemx.render()
+		self.target.render()
 
 	
 	def resizeGL(self, width, height):
@@ -119,40 +117,11 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		try: self.imagemx.resizeEvent(width,height)
+		try: self.target.resizeEvent(width,height)
 		except: pass
 	def set_mmode(self,mode):
 		self.mmode = mode
-		self.imagemx.set_mmode(mode)
-	
-	def mousePressEvent(self, event):
-		self.imagemx.mousePressEvent(event)
-			
-	def wheelEvent(self,event):
-		self.imagemx.wheelEvent(event)
-	
-	def mouseMoveEvent(self,event):
-		self.imagemx.mouseMoveEvent(event)
-
-	def mouseReleaseEvent(self,event):
-		self.imagemx.mouseReleaseEvent(event)
-	
-	def keyPressEvent(self,event):
-		print "key press event"
-		if self.mmode == "app":
-			self.emit(QtCore.SIGNAL("keypress"),event)
-
-	def dropEvent(self,event):
-		self.imagemx.dropEvent(event)
-		
-	def closeEvent(self,event) :
-		self.imagemx.closeEvent(event)
-		
-	def dragEnterEvent(self,event):
-		self.imagemx.dragEnterEvent(event)
-
-	def dropEvent(self,event):
-		self.imagemx.dropEvent(event)
+		self.target.set_mmode(mode)
 	
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
@@ -161,13 +130,11 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	
 	def get_qt_parent(self):
 		return self
-	
-	def get_core_object(self):
-		return self.imagemx
+
 
 class EMMXCoreMouseEvents:
 	'''
-	A base class for objects that handle mouse events in the EMImageMXCore
+	A base class for objects that handle mouse events in the EMImageMXModule
 	'''
 	def __init__(self,mediator):
 		'''
@@ -210,8 +177,8 @@ class EMMXCoreMouseEvents:
 
 class EMMXCoreMouseEventsMediator:
 	def __init__(self,target):
-		if not isinstance(target,EMImageMXCore):
-			print "error, the target should be a EMImageMXCore"
+		if not isinstance(target,EMImageMXModule):
+			print "error, the target should be a EMImageMXModule"
 			return
 		
 		self.target = target
@@ -234,8 +201,8 @@ class EMMXCoreMouseEventsMediator:
 	def get_density_min(self):
 		return self.target.get_density_max()
 	
-	def emit(self,signal,event,data,bool=None):
-		self.target.emit(signal,event,data,bool)
+	def emit(self,*args,**kargs):
+		self.target.emit(*args,**kargs)
 
 	def set_selected(self,selected,update_gl=True):
 		self.target.set_selected(selected,update_gl)
@@ -254,7 +221,7 @@ class EMMXDelMouseEvents(EMMXCoreMouseEvents):
 		if event.button()==Qt.LeftButton:
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 			if lc != None:
-				self.mediator.pop_box_image(lc[0],event,False)
+				self.mediator.pop_box_image(lc[0],event,True)
 				self.mediator.force_dl_update()
 
 
@@ -265,13 +232,16 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 	def mouse_down(self,event):
 		if event.button()==Qt.LeftButton:
 			lc= self.mediator.scr_to_img((event.x(),event.y()))
+			if lc == None: 
+				print "strange lc error"
+				return
 			box_image = self.mediator.get_box_image(lc[0])
 			xs=int(box_image.get_xsize())
 			ys=int(box_image.get_ysize())
 			drag = QtGui.QDrag(self.mediator.get_parent())
 			mime_data = QtCore.QMimeData()
 			
-			mime_data.set_data("application/x-eman", dumps(box_image))
+			mime_data.setData("application/x-eman", dumps(box_image))
 			
 			EMAN2.GUIbeingdragged= box_image	# This deals with within-application dragging between windows
 			mime_data.setText( str(lc[0])+"\n")
@@ -311,7 +281,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				self.mediator.emit(QtCore.SIGNAL("mouseup"),event,lc)
 			else:
 				if lc != None:
-					self.mediator.pop_box_image(lc[0],event,False)
+					self.mediator.pop_box_image(lc[0],event,True)
 					self.mediator.force_dl_update()
 					
 	
@@ -319,7 +289,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 		lc=self.scr_to_img((event.x(),event.y()))
 #		print lc
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
-			self.showInspector(1)
+			self.show_inspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
 			try:
@@ -329,13 +299,38 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				
 			self.mousedrag=(event.x(),event.y())
 
-class EMImageMXCore:
+class EMImageMXModule(EMModule):
 
 	allim=WeakKeyDictionary()
 	FTGL = "ftgl"
 	GLUT = "glut"
-	def __init__(self, data=None,parent=None):
-		self.parent = parent
+	def get_qt_widget(self):
+		if self.parent == None:	
+			self.parent = EMImageMXWidget(self)
+			if self.init_size_flag and isinstance(self.data[0],EMData):
+				self.init_size_flag = False
+				if len(self.data)<self.mx_cols :
+					w=len(self.data)*(self.data[0].get_xsize()+2)
+					hfac = 1
+				else : 
+					w=self.mx_cols*(self.data[0].get_xsize()+2)
+					hfac = len(self.data)/self.mx_cols+1
+				hfac *= self.data[0].get_ysize()
+				if hfac > 512:
+					hfac = 512
+				try:
+					self.parent.resize(int(w),int(hfac))
+				except:
+					pass
+			
+			try: self.parent.setAcceptDrops(True)
+			except:	pass
+			
+		return self.parent
+	
+	def __init__(self, data=None,application=None):
+		EMModule.__init__(self,application)
+		self.parent = None
 		self.data=None
 		self.datasize=(1,1)
 		self.scale=1.0
@@ -362,24 +357,16 @@ class EMImageMXCore:
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
 		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
+		self.image_file_name = None
 		
 		self.coords={}
 		self.nshown=0
 		self.valstodisp=["Img #"]
 		
-		try: self.parent.setAcceptDrops(True)
-		except:	pass
-
-		try:
-			self.font_render_mode = EMImageMXCore.FTGL
-			self.font_renderer = get_3d_font_renderer()
-			self.font_renderer.set_face_size(16)
-			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-		except:
-			self.font_render_mode = EMImageMXCore.GLUT
-
-		self.initsizeflag = True
+		self.init_size_flag = True
 		self.inspector=None
+		
+		self.__load_font_renderer()
 		if data:
 			self.set_data(data,False)
 			
@@ -393,6 +380,27 @@ class EMImageMXCore:
 		
 		self.img_num_offset = 0		# used by emimagemxrotary for display correct image numbers
 		self.max_idx = 99999999		# used by emimagemxrotary for display correct image numbers
+	
+		self.__init_mouse_handlers()
+		
+		self.reroute_delete_target = None
+	
+		if application != None:
+			application.attach_child(self)
+			EMModule.set_app(self,application)
+		self.em_qt_inspector_widget = None
+	
+	def __load_font_renderer(self):
+	
+		try:
+			self.font_render_mode = EMImageMXModule.FTGL
+			self.font_renderer = get_3d_font_renderer()
+			self.font_renderer.set_face_size(16)
+			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+		except:
+			self.font_render_mode = EMImageMXModule.GLUT
+	
+	def __init_mouse_handlers(self):
 		
 		self.mouse_events_mediator = EMMXCoreMouseEventsMediator(self)
 		self.mouse_event_handlers = {}
@@ -400,11 +408,10 @@ class EMImageMXCore:
 		self.mouse_event_handlers["del"] = EMMXDelMouseEvents(self.mouse_events_mediator)
 		self.mouse_event_handlers["drag"] = EMMXDragMouseEvents(self.mouse_events_mediator)
 		self.mouse_event_handler = self.mouse_event_handlers[self.mmode]
-		
-		self.reroute_delete_target = None
-		
-	def set_extra_hud_data(self,hud_data):
-		pass
+	
+	def set_file_name(self,name):
+		#print "set image file name",name
+		self.image_file_name = name
 	
 	def get_inspector(self):
 		return self.inspector
@@ -434,8 +441,8 @@ class EMImageMXCore:
 	def get_box_image(self,idx):
 		return self.data[idx]
 
-	def emit(self,signal,event,data,bool=None):
-		self.parent.emit(signal,event,data,bool)
+	def emit(self,*args,**kargs):
+		self.parent.emit(*args,**kargs)
 
 	def __del__(self):
 		if self.main_display_list != 0:
@@ -496,8 +503,9 @@ class EMImageMXCore:
 			print "strange error in set_data"
 			return
 
-		if (self.initsizeflag):
-			self.initsizeflag = False
+		if self.init_size_flag and isinstance(self.parent,QtGui.QWidget):
+			print "here"
+			self.init_size_flag = False
 			if len(data)<self.mx_cols :
 				w=len(data)*(data[0].get_xsize()+2)
 				hfac = 1
@@ -511,14 +519,9 @@ class EMImageMXCore:
 				self.parent.resize(int(w),int(hfac))
 			except:
 				pass
-			#self.parent.resizeGL(w,hfac)
 			
 
 		self.data=data
-		if data==None or len(data)==0:
-			if update_gl: self.updateGL()
-			return
-		
 		self.force_dl_update()
 		self.nimg=len(data)
 		
@@ -538,22 +541,15 @@ class EMImageMXCore:
 			m0=i.get_attr("minimum")
 			m1=i.get_attr("maximum")
 			if sigma == 0: continue
-			#print "data",mean,sigma,m0,m1
-		
-			#i.write_image("tesst.hdf",-1)
-		
+
 			self.minden=min(self.minden,max(m0,mean-3.0*sigma))
 			self.maxden=max(self.maxden,min(m1,mean+3.0*sigma))
 			self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
 			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
 
-
-		#print self.minden, self.maxden,self.mindeng,self.maxdeng
-		#self.showInspector()		# shows the correct inspector if already open
-		#self.timer.start(25)
 		self.max_idx = len(data)
-		# experimental for lst file writing
-		if self.font_render_mode == EMImageMXCore.FTGL:
+
+		if self.font_render_mode == EMImageMXModule.FTGL:
 			self.font_renderer.set_face_size(data[0].get_xsize()/6	)
 		for i,d in enumerate(data):
 			try:
@@ -581,7 +577,7 @@ class EMImageMXCore:
 	def get_gamma(self):
 		return self.gamma
 	
-	def setOrigin(self,x,y,update_gl=True):
+	def set_origin(self,x,y,update_gl=True):
 		"""Set the display origin within the image"""
 		self.origin=(x,y)
 		self.targetorigin=None
@@ -736,15 +732,32 @@ class EMImageMXCore:
 			
 	
 	def set_font_render_resolution(self):
-		if self.font_render_mode != EMImageMXCore.FTGL:
+		if self.font_render_mode != EMImageMXModule.FTGL:
 			print "error, can't call set_font_render_resolution if the mode isn't FTGL"
 			
 		#self.font_renderer.set_face_size(int(self.parent.height()*0.015))
 		#print "scale is",self.scale
 	
+	def __draw_backdrop(self):
+		light = glIsEnabled(GL_LIGHTING)
+		glDisable(GL_LIGHTING)
+		
+		glColor(.9,.9,.9)
+		glBegin(GL_QUADS)
+		glVertex(0,0,-1)
+		glColor(.9,.9,.9)
+		glVertex(self.parent.width(),0,-1)
+		glColor(.9,.9,.9)
+		glVertex(self.parent.width(),self.parent.height(),-1)
+		glColor(.9,.9,.9)
+		glVertex(0,self.parent.height(),-1)
+		glEnd()
+		if light: glEnable(GL_LIGHTING)
+	
+	
 	def render(self):
 		if not self.data : return
-		if self.font_render_mode == EMImageMXCore.FTGL: self.set_font_render_resolution()
+		if self.font_render_mode == EMImageMXModule.FTGL: self.set_font_render_resolution()
 		render = False
 		if self.use_display_list:
 			
@@ -761,26 +774,12 @@ class EMImageMXCore:
 		
 		if render: 
 			if self.draw_background:
-				light = glIsEnabled(GL_LIGHTING)
-				glDisable(GL_LIGHTING)
+				self.__draw_backdrop()
 				
-				glColor(.9,.9,.9)
-				glBegin(GL_QUADS)
-				glVertex(0,0,-1)
-				glColor(.9,.9,.9)
-				glVertex(self.parent.width(),0,-1)
-				glColor(.9,.9,.9)
-				glVertex(self.parent.width(),self.parent.height(),-1)
-				glColor(.9,.9,.9)
-				glVertex(0,self.parent.height(),-1)
-				glEnd()
-				if light: glEnable(GL_LIGHTING)
-			
 			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 			glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
 			glMaterial(GL_FRONT,GL_SHININESS,100.0)
-			
-			
+		
 			#for i in self.data:
 				#self.changec[i]=i.get_attr("changecount")
 			
@@ -863,35 +862,19 @@ class EMImageMXCore:
 					try:
 						exc = self.data[i].get_attr("excluded")
 						if exc == True:
-							width = tw/2.0
-							height = th/2.0
-		
 							light = glIsEnabled(GL_LIGHTING)
 							glEnable(GL_LIGHTING)
+							width = tw/2.0
+							height = th/2.0
 							glPushMatrix()
 							glTranslatef(tx+width,ty+height,0)
-							glBegin(GL_QUADS)
-							
-							glColor(0,0,0)
-							glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
-							glMaterial(GL_FRONT,GL_SPECULAR,(.2,.4,.2,1.0))
-							glMaterial(GL_FRONT,GL_SHININESS,20.0)
-							glNormal(-.1,.1,1)
-							glVertex(-width,height,0.1)
-							glColor(0.15,0.15,0.15)
-							glNormal(-1,1,-0.1)
-							glVertex(-width,-height,0.1)	
-							glColor(0.3,0.3,0.3)
-							glNormal(.1,-.1,1)
-							glVertex(width,-height,0.1)
-							glColor(0.22,0.22,0.22)
-							glNormal(1,-1,0.1)
-							glVertex(width,height,0.1)
-							glEnd()
+							glScale(width,height,1.0)
+							self.__render_excluded_square()
 							glPopMatrix()
 							if not light: glEnable(GL_LIGHTING)
 						else: raise
-					except: pass
+					except: 
+							pass
 					#i = (row+yoffset)*self.mx_cols+col+xoffset
 					#print i,':',row,col,tx,ty,tw,th
 					shown = True
@@ -909,66 +892,10 @@ class EMImageMXCore:
 					self.hist+=hist2
 					# render labels		
 					if drawlabel:
-						if self.font_render_mode == EMImageMXCore.FTGL:
-							
-							glEnable(GL_TEXTURE_2D)
-							glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-							lighting = glIsEnabled(GL_LIGHTING)
-							glDisable(GL_LIGHTING)
-							glEnable(GL_NORMALIZE)
-							tagy = ty
-							glColor(*txtcol)
-							#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
-							#glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
-							#glMaterial(GL_FRONT,GL_SHININESS,100.0)
-							for v in self.valstodisp:
-								glPushMatrix()
-								glTranslate(tx,tagy,0)
-								#bbox = self.bounding_box(str(i))
-								glTranslate(4,4,0.2)
-
-								#glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
-								#glRotate(-10,1,0,0)
-								#glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
-								
-								glScale(self.scale/2.0,self.scale/2.0,1)
-								if v=="Img #" : 
-									#print i,self.img_num_offset,self.max_idx,(i+self.img_num_offset)%self.max_idx,
-									idx = i+self.img_num_offset
-									if idx != 0: idx = idx%self.max_idx
-									self.font_renderer.render_string(str(idx))
-								else : 
-									av=self.data[i].get_attr(v)
-									if isinstance(av,float) : avs="%1.4g"%av
-									else: avs=str(av)
-									try: self.font_renderer.render_string(str(avs))
-									except:	self.font_renderer.render_string("------")
-								tagy+=self.font_renderer.get_face_size()*self.scale/2.0
-								glPopMatrix()
-							if not lighting:
-								glDisable(GL_LIGHTING)
-							glDisable(GL_TEXTURE_2D)
-						elif self.font_render_mode == EMImageMXCore.GLUT:
-							tagy = ty
-							glColor(*txtcol)
-							for v in self.valstodisp:
-								if v=="Img #" :
-									idx = i+self.img_num_offset
-									if idx != 0: idx = idx%self.max_idx
-									self.render_text(tx,tagy,"%d"%idx)
-								else : 
-									av=self.data[i].get_attr(v)
-									if isinstance(av,float) : avs="%1.4g"%av
-									else: avs=str(av)
-									try: self.render_text(tx,tagy,str(avs))
-									except:	self.render_text(tx,tagy,"------")
-								tagy+=16
-								
+						self.__draw_mx_text(tx,ty,txtcol,i)
 						
 					self.coords[i]=(tx,ty,tw,th)
 					
-					#try: self.coords[i]=(tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
-					#except: self.coords.append((tx,ty,self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
 					if shown : self.nshown+=1
 			
 			for i in self.selected:
@@ -997,6 +924,80 @@ class EMImageMXCore:
 		if self.use_display_list and render :
 			glEndList()
 			glCallList(self.main_display_list)
+	
+	def __render_excluded_square(self):
+		glBegin(GL_QUADS)
+		glColor(0,0,0)
+		glNormal(-.1,.1,1)
+		glVertex(-1,1,0.1)
+		glColor(0.15,0.15,0.15)
+		glNormal(-1,1,-0.1)
+		glVertex(-1,-1,0.1)	
+		glColor(0.3,0.3,0.3)
+		glNormal(.1,-.1,1)
+		glVertex(1,-1,0.1)
+		glColor(0.22,0.22,0.22)
+		glNormal(1,-1,0.1)
+		glVertex(1,1,0.1)
+		glEnd()
+		#glPopMatrix()
+	
+	def __draw_mx_text(self,tx,ty,txtcol,i):
+		if self.font_render_mode == EMImageMXModule.FTGL:
+			
+			glEnable(GL_TEXTURE_2D)
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+			lighting = glIsEnabled(GL_LIGHTING)
+			glDisable(GL_LIGHTING)
+			glEnable(GL_NORMALIZE)
+			tagy = ty
+			glColor(*txtcol)
+			#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
+			#glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
+			#glMaterial(GL_FRONT,GL_SHININESS,100.0)
+			for v in self.valstodisp:
+				glPushMatrix()
+				glTranslate(tx,tagy,0)
+				#bbox = self.bounding_box(str(i))
+				glTranslate(4,4,0.2)
+
+				#glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
+				#glRotate(-10,1,0,0)
+				#glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
+				
+				glScale(self.scale/2.0,self.scale/2.0,1)
+				if v=="Img #" : 
+					#print i,self.img_num_offset,self.max_idx,(i+self.img_num_offset)%self.max_idx,
+					idx = i+self.img_num_offset
+					if idx != 0: idx = idx%self.max_idx
+					self.font_renderer.render_string(str(idx))
+				else : 
+					av=self.data[i].get_attr(v)
+					if isinstance(av,float) : avs="%1.4g"%av
+					else: avs=str(av)
+					try: self.font_renderer.render_string(str(avs))
+					except:	self.font_renderer.render_string("------")
+				tagy+=self.font_renderer.get_face_size()*self.scale/2.0
+				glPopMatrix()
+			if not lighting:
+				glDisable(GL_LIGHTING)
+			glDisable(GL_TEXTURE_2D)
+		elif self.font_render_mode == EMImageMXModule.GLUT:
+			tagy = ty
+			glColor(*txtcol)
+			for v in self.valstodisp:
+				if v=="Img #" :
+					idx = i+self.img_num_offset
+					if idx != 0: idx = idx%self.max_idx
+					self.render_text(tx,tagy,"%d"%idx)
+				else : 
+					av=self.data[i].get_attr(v)
+					if isinstance(av,float) : avs="%1.4g"%av
+					else: avs=str(av)
+					try: self.render_text(tx,tagy,str(avs))
+					except:	self.render_text(tx,tagy,"------")
+				tagy+=16
+								
 	
 	def bounding_box(self,character):
 		try: self.text_bbs[character]
@@ -1058,6 +1059,7 @@ class EMImageMXCore:
 #	     print 'in render Text'
 		glRasterPos(x+2,y+2)
 		for c in s:
+			return
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
 
 	def resizeEvent(self, width, height):
@@ -1115,14 +1117,17 @@ class EMImageMXCore:
 		self.display_states = []
 		if update_gl: self.updateGL()
 	
-	def showInspector(self,force=0):
+		
+	def show_inspector(self,force=0):
 		if (self.suppress_inspector): return
 		if not force and self.inspector==None : return
 		self.init_inspector()
-		self.inspector.show()
+		self.application.show_specific(self.em_qt_inspector_widget)
 
 	def init_inspector(self):
-		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
+		if not self.inspector : 
+			self.inspector=EMImageInspectorMX(self)
+			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
 		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def scr_to_img(self,vec):
@@ -1221,7 +1226,7 @@ class EMImageMXCore:
 
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
-			self.showInspector(1)
+			self.show_inspector(1)
 			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
@@ -1257,6 +1262,10 @@ class EMImageMXCore:
 		self.resizeEvent(self.parent.width(),self.parent.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
+	
+	def mouseDoubleClickEvent(self,event):
+		pass
+		
 		
 	def leaveEvent(self):
 		if self.mousedrag:
@@ -1265,7 +1274,7 @@ class EMImageMXCore:
 	def get_frame_buffer(self):
 		return self.parent.get_frame_buffer()
 
-class EMImageMxInspector2D(QtGui.QWidget):
+class EMImageInspectorMX(QtGui.QWidget):
 	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -1507,26 +1516,26 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.busy=1
 		self.target.set_density_min(val)
 
-		self.updBC()
+		self.update_brightness_contrast()
 		self.busy=0
 		
 	def newMax(self,val):
 		if self.busy : return
 		self.busy=1
 		self.target.set_density_max(val)
-		self.updBC()
+		self.update_brightness_contrast()
 		self.busy=0
 	
 	def newBrt(self,val):
 		if self.busy : return
 		self.busy=1
-		self.updMM()
+		self.update_min_max()
 		self.busy=0
 		
 	def newCont(self,val):
 		if self.busy : return
 		self.busy=1
-		self.updMM()
+		self.update_min_max()
 		self.busy=0
 	
 	def newGamma(self,val):
@@ -1535,13 +1544,13 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.target.set_gamma(val)
 		self.busy=0
 
-	def updBC(self):
+	def update_brightness_contrast(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
 		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
 		self.brts.setValue(-b)
 		self.conts.setValue(1.0-c)
 		
-	def updMM(self):
+	def update_min_max(self):
 		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0)
@@ -1559,24 +1568,24 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
 
-# This is just for testing, of course
+
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	GLUT.glutInit("")
-	window = EMImageMX()
-	if len(sys.argv)==1 : window.set_data([test_image(),test_image(1),test_image(2),test_image(3)]*50)
+	em_app = EMStandAloneApplication()
+	window = EMImageMXModule(application=em_app)
+	
+	if len(sys.argv)==1 : 
+		data = []
+		for i in range(0,200):
+			e = test_image(Util.get_irand(0,9))
+			e.set_attr("excluded",Util.get_irand(0,1))
+			data.append(e)
+			
+		window.set_data(data) 
 	else :
 		a=EMData.read_images(sys.argv[1])
 		window.set_file_name(sys.argv[1])
 		window.set_data(a)
-	window2=EMParentWin(window)
-	window2.show()
-	
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
-	
-	sys.exit(app.exec_())
+		
+	em_app.show()
+	em_app.execute()
+

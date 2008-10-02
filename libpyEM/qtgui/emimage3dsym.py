@@ -133,8 +133,8 @@ class EM3DSymViewer(EMImage3DObject):
 		#self.glbasicobjects = EMBasicOpenGLObjects()
 		#print self.glbasicobjects.getSphereDL()
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
 	def viewportHeight(self):
 		return self.parent.height()
@@ -665,7 +665,7 @@ class EM3DSymViewer(EMImage3DObject):
 		# FIXME the approach here is very inefficient
 		glLoadIdentity()
 		[width,height] = self.parent.get_near_plane_dims()
-		z = self.parent.getStartZ()
+		z = self.parent.get_start_z()
 		glTranslate(-width/2.0,-height/2.0,-z-0.01)
 		glScalef(width,height,1.0)
 		self.draw_bc_screen()
@@ -707,7 +707,7 @@ class EM3DSymViewer(EMImage3DObject):
 				return
 			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
 			self.resizeEvent()
-			self.showInspector(1)
+			self.show_inspector(1)
 		else:
 			self.cam.mousePressEvent(event)
 		
@@ -813,16 +813,16 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget):
 		
 		self.sliceviewer.resizeEvent()
 
-	def getStartZ(self):
+	def get_start_z(self):
 		return self.startz
 	
 	def get_near_plane_dims(self):
-		height = 2.0 * self.getStartZ()*tan(self.fov/2.0*pi/180.0)
+		height = 2.0 * self.get_start_z()*tan(self.fov/2.0*pi/180.0)
 		width = self.aspect * height
 		return [width,height]
 
-	def showInspector(self,force=0):
-		self.sliceviewer.showInspector(self,force)
+	def show_inspector(self,force=0):
+		self.sliceviewer.show_inspector(self,force)
 
 	def closeEvent(self,event) :
 		self.sliceviewer.closeEvent(event)
@@ -908,7 +908,7 @@ class EMSymInspector(QtGui.QWidget):
 		
 		self.current_src = EULER_EMAN
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
 		QtCore.QObject.connect(self.sym_combo, QtCore.SIGNAL("currentIndexChanged(QString)"), self.symChanged)
@@ -920,9 +920,9 @@ class EMSymInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
+		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
+		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
+		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
 		#QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.symtog, QtCore.SIGNAL("toggled(bool)"), target.updateGL)
 		QtCore.QObject.connect(self.symtogdisplay, QtCore.SIGNAL("clicked(bool)"), target.toggle_sym_display)
@@ -1274,7 +1274,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.phi.setValue(rot[self.phi.getLabel()],True)
 	
 	def sliderRotate(self):
-		self.target.loadRotation(self.getCurrentRotation())
+		self.target.load_rotation(self.getCurrentRotation())
 	
 	def getCurrentRotation(self):
 		convention = self.src.currentText()
@@ -1380,10 +1380,10 @@ class EMSymInspector(QtGui.QWidget):
 		for i in colors:
 			self.cbb.addItem(i)
 
-	def setHist(self,hist,minden,maxden):
+	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
 
-	def setScale(self,newscale):
+	def set_scale(self,newscale):
 		self.scale.setValue(newscale)
 	
 	

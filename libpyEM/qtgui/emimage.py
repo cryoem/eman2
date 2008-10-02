@@ -47,6 +47,8 @@ from copy import deepcopy
 #import sys
 #import numpy
 
+
+
 GLUT.glutInit(sys.argv )
 
 def get_app():
@@ -66,19 +68,19 @@ def get_app():
 	return app
 		
 def imageupdate():
-	for i in EMImage2D.allim.keys():
+	for i in EMImage2DWidget.allim.keys():
 		try:
 			if i.data.get_attr("changecount")!=i.changec :
 				i.set_data(i.data)
 		except: pass
 
-	for i in EMImage3D.allim.keys():
+	for i in EMImage3DWidget.allim.keys():
 		try:
 			if i.data.get_attr("changecount")!=i.changec :
 				i.set_data(i.data)
 		except: pass
 		
-	for i in EMImageMX.allim.keys():
+	for i in EMImageMXWidget.allim.keys():
 		try:
 			if len(i.data)!=i.nimg : i.set_data(i.data)
 		except:
@@ -109,26 +111,26 @@ class EMImage(object):
 			else: local_data = data
 
 			if old:
-				if isinstance(old,EMImage2D) :
+				if isinstance(old,EMImage2DWidget) :
 					old.set_data(local_data)
 					return old
 			if parent: 
-				ret=EMParentWin(EMImage2D(local_data))
+				ret=EMParentWin(EMImage2DWidget(local_data))
 			if parent : 
-				ret=EMParentWin(EMImage2D(local_data))
+				ret=EMParentWin(EMImage2DWidget(local_data))
 				ret.show()
 #				ret.raise()
 				ret.releaseMouse()
 				ret.releaseKeyboard()
 				return ret
-			return EMImage2D(local_data)
+			return EMImage2DWidget(local_data)
 		elif isinstance(data,EMData):
 			# data copy considerations shouldn't be necessary here 
 			# seeing as the EMImage3D does internal copying of its own
 			# FIXME double check this aspect of the code once things are going
 			# must be a single 3D image
 			if old:
-				if isinstance(old,EMImage3D) :
+				if isinstance(old,EMImage3DWidget) :
 					old.set_data(data)
 					return old
 			if parent : 
@@ -138,23 +140,71 @@ class EMImage(object):
 				ret.releaseMouse()
 				ret.releaseKeyboard()
 				return ret
-			return EMImage3D(data)
+			return EMImage3DWidget(data)
 		elif isinstance(data,list):
 			
 			if ( copy ):local_data = deepcopy(data)
 			else: local_data = data
 			
 			if old:
-				if isinstance(old,EMImageMX) :
+				if isinstance(old,EMImageMXWidget) :
 					old.set_data(local_data)
 					return old
 			if parent : 
-				ret=EMParentWin(EMImageMX(local_data))
+				ret=EMParentWin(EMImageMXWidget(local_data))
 				ret.show()
 #				ret.raise()
 				ret.releaseMouse()
 				ret.releaseKeyboard()
 				return ret
-			return EMImageMX(local_data)
+			return EMImageMXWidget(local_data)
+		else:
+			raise Exception,"data must be a single EMData object or a list of EMData objects"
+		
+class EMImageModule(object):
+	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
+	def __new__(cls,data=None,old=None,copy=True):
+		"""This will create a new EMImage* object depending on the type of 'data'. If
+		old= is provided, and of the appropriate type, it will be used rather than creating
+		a new instance."""
+		if isinstance(data,EMData) and data.get_zsize()==1:
+			# single 2D image
+			# sometimes it's necessary to copy, especially if the user is 
+			# calling display from python
+			if copy: local_data = data.copy()
+			else: local_data = data
+
+			if old:
+				if isinstance(old,EMImage2DModule) :
+					old.set_data(local_data)
+					return old
+			return EMImage2DModule(local_data)
+		elif isinstance(data,EMData):
+			# data copy considerations shouldn't be necessary here 
+			# seeing as the EMImage3D does internal copying of its own
+			# FIXME double check this aspect of the code once things are going
+			# must be a single 3D image
+			if old:
+				if isinstance(old,EMImage3DModule) :
+					old.set_data(data)
+					return old
+			#if parent : 
+				#ret=EMParentWin(EMImage3D(data))
+				#ret.show()
+##				ret.raise()
+				#ret.releaseMouse()
+				#ret.releaseKeyboard()
+				#return ret
+			return EMImage3DModule(data)
+		elif isinstance(data,list):
+			if ( copy ):local_data = deepcopy(data)
+			else: local_data = data
+			
+			if old:
+				if isinstance(old,EMImageMXModule) :
+					old.set_data(local_data)
+					return old
+				
+			return EMImageMXModule(local_data)
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"

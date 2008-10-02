@@ -35,6 +35,49 @@ from PyQt4.QtCore import Qt
 from math import *
 import numpy
 
+class EventRerouter:
+	def __init__(self,target=None):
+		self.target = target
+		
+	def set_target(self,target):
+		self.target = target
+
+	def mousePressEvent(self, event):
+		self.target.mousePressEvent(event)
+			
+	def wheelEvent(self,event):
+		self.target.wheelEvent(event)
+	
+	def mouseMoveEvent(self,event):
+		self.target.mouseMoveEvent(event)
+
+	def mouseReleaseEvent(self,event):
+		self.target.mouseReleaseEvent(event)
+		
+	def mouseDoubleClickEvent(self,event):
+		self.target.mouseDoubleClickEvent(event)
+		
+	def keyPressEvent(self,event):
+		self.target.keyPressEvent(event)
+		
+	def dropEvent(self,event):
+		self.target.dropEvent(event)
+		
+	def closeEvent(self,event) :
+		self.target.closeEvent(event)
+		
+	def dragEnterEvent(self,event):
+		self.target.dragEnterEvent(event)
+		
+	def keyPressEvent(self,event):
+		self.target.keyPressEvent(event)
+
+	def get_core_object(self):
+		return self.target
+	
+	def get_target(self):
+		return self.target # use this one instead of the above
+
 class EMParentWin(QtGui.QWidget):
 	"""Used to give the opengl widgets a parent, necessary for OSX Leopard"""
 	def __init__(self,child=None):
@@ -58,7 +101,10 @@ class EMParentWin(QtGui.QWidget):
 			#self.child.inspector.close()
 		except: pass
 		QtGui.QWidget.closeEvent(self,e)
-		
+	
+	def get_qt_widget(self):
+		return self.child
+	
 class ImgHistogram(QtGui.QWidget):
 	""" A small fixed-size histogram widget"""
 	def __init__(self,parent):

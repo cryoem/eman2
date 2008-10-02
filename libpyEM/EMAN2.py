@@ -33,6 +33,7 @@
 from EMAN2_cppwrap import *
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
+from emapplication import EMStandAloneApplication
 #from Sparx import *
 from sys import exit
 import os
@@ -319,11 +320,17 @@ def parsemodopt_operation(optstr):
 
 	return (p_1[0], p_2[0], p_1[1])
 
+
 def display(img):
 	
 	if GUIMode:
 		import emimage
-		return emimage.EMImage(img)
+		image = emimage.EMImageModule(img)
+		app = EMStandAloneApplication(qt_application_control=False)
+		image.set_app(app)
+		app.attach_child(image)
+		app.show()
+		#app.execute()
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
 		try: os.unlink("/tmp/img.hed")
@@ -636,10 +643,11 @@ def test_image(type=0,size=(128,128)):
 		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":size[0]/2})
 	elif type==4:
 		ret.process_inplace("testimage.sinewave.circular")
+		ret.process_inplace("testimage.linewave",{"period":Util.get_irand(43,143)})
 	elif type==5:
 		ret.process_inplace("testimage.axes")
 	elif type==6:
-		ret.process_inplace("testimage.linewave",{"period":43})
+		ret.process_inplace("testimage.linewave",{"period":Util.get_irand(43,143)})
 	elif type==7:
 		ret.process_inplace("testimage.scurve")
 		ret.mult(10)
@@ -651,13 +659,17 @@ def test_image(type=0,size=(128,128)):
 		ret.process_inplace("normalize.edgemean")
 	elif type==8:
 		ret.process_inplace("testimage.scurve")
-		ret.translate(int(size[0]/10),int(size[1]/10),0)
+		t = Transform({"type":"2d","alpha":Util.get_frand(0,360)})
+		t.set_trans(int(size[0]/10),int(size[1]/10),0)
+		ret.transform(t)
 	elif type==9:
 		ret.process_inplace("testimage.scurve")
 		tmp = EMData(*size)
 		tmp.process_inplace("testimage.noise.gauss")
 		ret.add(tmp)
-		
+	else:
+		raise	
+	
 	
 	return ret
 	

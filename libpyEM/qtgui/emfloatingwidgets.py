@@ -632,8 +632,8 @@ class EM3DWidget:
 				break
 		return interception
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
 	def set_update_P_inv(self,val=True):
 		self.target.set_update_P_inv(val)
@@ -1367,7 +1367,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		self.changefactor = 1.1		# used to zoom
 		self.invchangefactor = 1.0/self.changefactor # used to invert zoom
 		
-		self.drawable = EMImage3DCore(image,self)		# the object that is drawable (has a draw function)
+		self.drawable = EMImage3DModule(image,self)		# the object that is drawable (has a draw function)
 		self.drawable.cam.basicmapping = True
 		self.drawable.cam.motiondull = 3.0
 		#self.drawable.suppressInspector = True
@@ -1385,7 +1385,7 @@ class EMGLView3D(EM3DWidgetVolume):
 		self.decoration = EM3DPlainBorderDecoration(self)
 		
 	def setOptScale(self):
-		dims = self.drawable.getDataDims()
+		dims = self.drawable.get_data_dims()
 		
 		xscale = self.w/dims[0]
 		yscale = self.h/dims[1]
@@ -1606,8 +1606,8 @@ class EMGLView3D(EM3DWidgetVolume):
 		self.parent.updateGL()
 	
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
 	def leaveEvent(self):
 		pass
@@ -1624,8 +1624,8 @@ class EMGLView3D(EM3DWidgetVolume):
 	def get_near_plane_dims(self):
 		return self.parent.get_near_plane_dims()
 		
-	def getStartZ(self):
-		return self.parent.getStartZ()
+	def get_start_z(self):
+		return self.parent.get_start_z()
 	
 class EMGLView2D:
 	"""
@@ -1641,7 +1641,7 @@ class EMGLView2D:
 			if len(image) == 1:
 				self.become_2d_image(image[0])
 			else:
-				self.drawable = EMImageMXCore(image,self)
+				self.drawable = EMImageMXModule(image,self)
 				#self.w = image[0].get_xsize()
 				#self.h = image[0].get_ysize()
 				self.w = self.parent.width()
@@ -1689,15 +1689,15 @@ class EMGLView2D:
 		self.drawable.set_shapes(shapes,shrink)
 		
 	def become_2d_image(self,a):
-		self.drawable = EMImage2DCore(a,self)
+		self.drawable = EMImage2DModule(a,self)
 		#self.drawable.originshift = False
 		self.w = a.get_xsize()
 		if self.w > self.parent.width(): self.w = self.parent.width()
 		self.h = a.get_ysize()
 		if self.h > self.parent.height(): self.h = self.parent.height()
 		
-	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
 	def set_update_P_inv(self,val=True):
 		self.vdtools.set_update_P_inv(val)
@@ -2036,8 +2036,8 @@ class EMGLViewQtWidget:
 		
 		return self.vdtools.isinwin(x,y)
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2):
-		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2)
+	def eye_coords_dif(self,x1,y1,x2,y2):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2)
 			
 	def mouseinwin(self,x,y,width,height):
 		return self.vdtools.mouseinwin(x,y,width,height)
@@ -2436,7 +2436,7 @@ class EMFloatingWidgets(QtOpenGL.QGLWidget):
 		width = self.aspect * height
 		return [width,height]
 	
-	def getStartZ(self):
+	def get_start_z(self):
 		return self.zNear
 
 class EMFloatingWidgetsCore:
@@ -2497,12 +2497,12 @@ class EMFloatingWidgetsCore:
 			self.fd.hide()
 			#self.qwidgets.append(EMGLViewQtWidget(self.parent))
 			#self.qwidgets[0].setQtWidget(self.fd)
-			##self.qwidgets[0].cam.setCamX(-100)
+			##self.qwidgets[0].cam.set_cam_x(-100)
 			
 			
 			#self.qwidgets.append(EMGLViewQtWidget(self.parent))
 			#self.qwidgets[1].setQtWidget(self.fd2)
-			#self.qwidgets[1].cam.setCamX(-200)
+			#self.qwidgets[1].cam.set_cam_x(-200)
 			
 			a = EMGLViewQtWidget(self.parent)
 			a.setQtWidget(self.fd)
@@ -2699,8 +2699,8 @@ class EMFloatingWidgetsCore:
 	def get_near_plane_dims(self):
 		return self.parent.get_near_plane_dims()
 	
-	def getStartZ(self):
-		return self.parent.getStartZ()
+	def get_start_z(self):
+		return self.parent.get_start_z()
 
 # This is just for testing, of course
 if __name__ == '__main__':

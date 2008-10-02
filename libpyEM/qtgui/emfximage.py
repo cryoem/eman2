@@ -152,7 +152,7 @@ class EMBasicObjects:
 		self.height = height
 	
 
-class EMQtWidgetDrawer:
+class EMQtWidgetModuleDrawer:
 	def __init__(self, parent=None, qwidget=None, widget_parent=None,emqtwidget_parent=None):
 		self.parent = parent
 		self.qwidget = qwidget
@@ -414,7 +414,7 @@ class EMQtWidgetDrawer:
 		#print xtrans,ytrans,ztrans
 		return [xtrans,ytrans,ztrans]
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2):
+	def eye_coords_dif(self,x1,y1,x2,y2):
 		# get x and y normalized device coordinates
 		xNDC1 = 2.0*(x1-self.wview[0])/self.wview[2] - 1
 		yNDC1 = 2.0*(y1-self.wview[1])/self.wview[3] - 1
@@ -619,7 +619,7 @@ class EMQtWidgetDrawer:
 			if (isinstance(cw,QtGui.QComboBox)):
 				cw.showPopup()
 				cw.hidePopup()
-				widget = EMQtWidgetDrawer(self.parent,None,cw,self);
+				widget = EMQtWidgetModuleDrawer(self.parent,None,cw,self);
 				widget.setQtWidget(cw.view())
 				widget.cam.loadIdentity()
 				widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
@@ -806,8 +806,8 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		self.previous = None
 	
 		self.qwidgets = []
-		self.qwidgets.append(EMQtWidgetDrawer(self))
-		self.qwidgets.append(EMQtWidgetDrawer(self))
+		self.qwidgets.append(EMQtWidgetModuleDrawer(self))
+		self.qwidgets.append(EMQtWidgetModuleDrawer(self))
 	
 	def set_data(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
@@ -858,7 +858,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.updateGL()
 			return
 		
-		self.showInspector()		# shows the correct inspector if already open
+		self.show_inspector()		# shows the correct inspector if already open
 		self.updateGL()
 		
 	def setDenRange(self,x0,x1):
@@ -873,12 +873,12 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		depth = height/(2.0*tan(self.fov/2.0*pi/180.0))
 		return depth
 	
-	def setOrigin(self,x,y):
+	def set_origin(self,x,y):
 		"""Set the display origin within the image"""
 		self.origin=(x,y)
 		self.updateGL()
 		
-	def setScale(self,newscale):
+	def set_scale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		if isinstance(self.data,list) :
 			yo=self.height()-self.origin[1]-1
@@ -937,7 +937,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				self.fd.show()
 				self.fd.hide()
 				self.qwidgets[1].setQtWidget(self.fd)
-				self.qwidgets[1].cam.setCamX(-100)
+				self.qwidgets[1].cam.set_cam_x(-100)
 			
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
@@ -979,19 +979,19 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		
 		self.updateGL()
 	
-	def showInspector(self,force=0):
+	def show_inspector(self,force=0):
 		if not force and self.inspector==None and self.inspectorl==None and self.inspector3==None : return
 		if isinstance(self.data,list) or isinstance(self.data,tuple) :
 			if self.inspector : self.inspector.hide()
 			if self.inspector3 : self.inspector3.hide()
-			if not self.inspectorl : self.inspectorl=EMImageMxInspector2D(self)
-			self.inspectorl.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+			if not self.inspectorl : self.inspectorl=EMImageInspectorMX(self)
+			self.inspectorl.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 #			self.inspectorl.show()
 		elif self.data.get_zsize()==1 :
 			if self.inspectorl : self.inspectorl.hide()
 			if self.inspector3 : self.inspector3.hide()
 			if not self.inspector : self.inspector=EMImageInspector2D(self)
-			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+			self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 			self.inspector.show()
 			self.inspector.hide()
 			#print "told gen texture"
@@ -1002,7 +1002,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
-			self.showInspector(1)
+			self.show_inspector(1)
 		elif event.button()==Qt.RightButton:
 			intercepted = False
 			for i in self.qwidgets:
@@ -1123,7 +1123,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 						break
 		self.updateGL()
 
-class EMImageMxInspector2D(QtGui.QWidget):
+class EMImageInspectorMX(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -1191,7 +1191,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		
 		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), target.setNPerRow)
 		QtCore.QObject.connect(self.imgn, QtCore.SIGNAL("valueChanged(int)"), target.setNShow)
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
@@ -1203,45 +1203,45 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.busy=1
 		self.target.setDenMin(val)
 
-		self.updBC()
+		self.update_brightness_contrast()
 		self.busy=0
 		
 	def newMax(self,val):
 		if self.busy : return
 		self.busy=1
 		self.target.setDenMax(val)
-		self.updBC()
+		self.update_brightness_contrast()
 		self.busy=0
 	
 	def newBrt(self,val):
 		if self.busy : return
 		self.busy=1
-		self.updMM()
+		self.update_min_max()
 		self.busy=0
 		
 	def newCont(self,val):
 		if self.busy : return
 		self.busy=1
-		self.updMM()
+		self.update_min_max()
 		self.busy=0
 
-	def updBC(self):
+	def update_brightness_contrast(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))
 		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
 		self.brts.setValue(-b)
 		self.conts.setValue(1.0-c)
 		
-	def updMM(self):
+	def update_min_max(self):
 		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value+self.brts.value))
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value-self.brts.value))
 		self.mins.setValue(x0)
 		self.maxs.setValue(x1)
 		self.target.setDenRange(x0,x1)
 		
-	def setHist(self,hist,minden,maxden):
+	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
 
-	def setLimits(self,lowlim,highlim,curmin,curmax):
+	def set_limits(self,lowlim,highlim,curmin,curmax):
 		self.lowlim=lowlim
 		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)
@@ -1295,7 +1295,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.highlim=1.0
 		self.busy=0
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
@@ -1312,45 +1312,45 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.busy=1
 		self.target.setDenMin(val)
 
-		self.updBC()
+		self.update_brightness_contrast()
 		self.busy=0
 		
 	def newMax(self,val):
 		if self.busy : return
 		self.busy=1
 		self.target.setDenMax(val)
-		self.updBC()
+		self.update_brightness_contrast()
 		self.busy=0
 	
 	def newBrt(self,val):
 		if self.busy : return
 		self.busy=1
-		self.updMM()
+		self.update_min_max()
 		self.busy=0
 		
 	def newCont(self,val):
 		if self.busy : return
 		self.busy=1
-		self.updMM()
+		self.update_min_max()
 		self.busy=0
 
-	def updBC(self):
+	def update_brightness_contrast(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))
 		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
 		self.brts.setValue(-b)
 		self.conts.setValue(1.0-c)
 		
-	def updMM(self):
+	def update_min_max(self):
 		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value+self.brts.value))
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value-self.brts.value))
 		self.mins.setValue(x0)
 		self.maxs.setValue(x1)
 		self.target.setDenRange(x0,x1)
 		
-	def setHist(self,hist,minden,maxden):
+	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
 
-	def setLimits(self,lowlim,highlim,curmin,curmax):
+	def set_limits(self,lowlim,highlim,curmin,curmax):
 		self.lowlim=lowlim
 		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)

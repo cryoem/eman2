@@ -228,7 +228,7 @@ class EMViewportDepthTools:
 	These objects need to have mouse events (etc) correctly rerouted to them,
 	and this is not trivial (but not difficult) to do, considering that the
 	mouse events are always in terms of the viewport, but the texture mapped
-	widget is somewhere in 3D space. The function eyeCoordsDif is primarily
+	widget is somewhere in 3D space. The function eye_coords_dif is primarily
 	for positioning the widgits in 3D space (translation), whereas the 
 	mouseinwin function is specifically for mapping the mouse event coordinates
 	into the widgit's transformed coordinate system.
@@ -502,7 +502,7 @@ class EMViewportDepthTools:
 		
 		return atan2(sinaeb,cosaeb)
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2,maintaindepth=True):
+	def eye_coords_dif(self,x1,y1,x2,y2,maintaindepth=True):
 		self.wview = self.matrices.get_viewport_matrix()
 		# get x and y normalized device coordinates
 		xNDC1 = 2.0*(x1-self.wview[0])/self.wview[2] - 1
@@ -810,28 +810,28 @@ class Camera2:
 	
 	def setCamTrans(self,axis,value):
 		if ( axis == 'x'):
-			self.setCamX(value)
+			self.set_cam_x(value)
 		elif ( axis == 'y'):
-			self.setCamY(value)
+			self.set_cam_y(value)
 		elif ( axis == 'z'):
-			self.setCamZ(value)
+			self.set_cam_z(value)
 		elif ( axis == 'default_x'):
 			self.default_x = value
 		elif ( axis == 'default_y'):
 			self.default_y = value
 		elif ( axis == 'default_z'):
 			self.default_z = value
-			self.setCamZ(0)
+			self.set_cam_z(0)
 		else:
 			print 'Error, the axis (%s) specified is unknown. No action was taken' %axis
 	
-	def setCamZ(self,z):
+	def set_cam_z(self,z):
 		self.cam_z = self.default_z + z
 		
-	def setCamY(self,y):
+	def set_cam_y(self,y):
 		self.cam_y = self.default_y + y
 		
-	def setCamX(self,x):
+	def set_cam_x(self,x):
 		self.cam_x = self.default_x + x
 
 	def motionRotate(self,x,y,fac=1.0):
@@ -887,17 +887,17 @@ class Camera2:
 		size = len(self.t3d_stack)
 		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
 		
-	def setScale(self,val):
+	def set_scale(self,val):
 		self.scale = val
 	
-	def loadRotation(self,t3d):
+	def load_rotation(self,t3d):
 		self.t3d_stack.append(t3d)
 
 	def getThinCopy(self):
 		# this is called a thin copy because it does not copy the entire t3d stack, just the last t3d
 		cam = Camera()
 		size = len(self.t3d_stack)
-		cam.loadRotation(self.t3d_stack[size-1])
+		cam.load_rotation(self.t3d_stack[size-1])
 		
 		cam.scale =	self.scale
 		cam.cam_x = self.cam_x
@@ -953,7 +953,7 @@ class Camera2:
 	
 	def motionTranslateLA(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
-			[dx,dy] = self.parent.eyeCoordsDif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
+			[dx,dy] = self.parent.eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
 		else:
 			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
 
@@ -1053,28 +1053,28 @@ class Camera:
 	
 	def setCamTrans(self,axis,value):
 		if ( axis == 'x'):
-			self.setCamX(value)
+			self.set_cam_x(value)
 		elif ( axis == 'y'):
-			self.setCamY(value)
+			self.set_cam_y(value)
 		elif ( axis == 'z'):
-			self.setCamZ(value)
+			self.set_cam_z(value)
 		elif ( axis == 'default_x'):
 			self.default_x = value
 		elif ( axis == 'default_y'):
 			self.default_y = value
 		elif ( axis == 'default_z'):
 			self.default_z = value
-			self.setCamZ(self.cam_z)
+			self.set_cam_z(self.cam_z)
 		else:
 			print 'Error, the axis (%s) specified is unknown. No action was taken' %axis
 	
-	def setCamZ(self,z):
+	def set_cam_z(self,z):
 		self.cam_z = self.default_z + z
 		
-	def setCamY(self,y):
+	def set_cam_y(self,y):
 		self.cam_y = self.default_y + y
 		
-	def setCamX(self,x):
+	def set_cam_x(self,x):
 		self.cam_x = self.default_x + x
 
 	def motionRotate(self,x,y):
@@ -1109,17 +1109,17 @@ class Camera:
 		size = len(self.t3d_stack)
 		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
 		
-	def setScale(self,val):
+	def set_scale(self,val):
 		self.scale = val
 	
-	def loadRotation(self,t3d):
+	def load_rotation(self,t3d):
 		self.t3d_stack.append(t3d)
 
 	def getThinCopy(self):
 		# this is called a thin copy because it does not copy the entire t3d stack, just the last t3d
 		cam = Camera()
 		size = len(self.t3d_stack)
-		cam.loadRotation(self.t3d_stack[size-1])
+		cam.load_rotation(self.t3d_stack[size-1])
 		
 		cam.scale =	self.scale
 		cam.cam_x = self.cam_x
@@ -1296,7 +1296,7 @@ class EMImage3DObject:
 	def set_data(self):
 		pass
 	
-	def showInspector(self):
+	def show_inspector(self):
 		pass
 	
 	def get_inspector(self):
@@ -1319,7 +1319,7 @@ class EMImage3DObject:
 	
 	def scale_event(self,delta):
 		self.cam.scale_event(delta)
-		if self.inspector: self.inspector.setScale(self.cam.scale)
+		if self.inspector: self.inspector.set_scale(self.cam.scale)
 
 	def getTranslateScale(self):
 	
@@ -1337,16 +1337,16 @@ class EMImage3DObject:
 		self.cam.cam_y += y*yscale
 		self.inspector.setXYTrans(self.cam.cam_x, self.cam.cam_y)
 		
-	def setCamZ(self,z):
-		self.cam.setCamZ( z )
+	def set_cam_z(self,z):
+		self.cam.set_cam_z( z )
 		self.parent.updateGL()
 		
-	def setCamY(self,y):
-		self.cam.setCamY( y )
+	def set_cam_y(self,y):
+		self.cam.set_cam_y( y )
 		self.parent.updateGL()
 		
-	def setCamX(self,x):
-		self.cam.setCamX( x )
+	def set_cam_x(self,x):
+		self.cam.set_cam_x( x )
 		self.parent.updateGL()
 		
 	def motionRotate(self,x,y):
@@ -1354,11 +1354,11 @@ class EMImage3DObject:
 		size = len(self.cam.t3d_stack)
 		self.updateInspector(self.cam.t3d_stack[size-1])
 		
-	def setScale(self,val):
+	def set_scale(self,val):
 		self.cam.scale = val
 		self.parent.updateGL()
 	
-	def loadRotation(self,t3d):
+	def load_rotation(self,t3d):
 		self.cam.t3d_stack.append(t3d)
 		self.parent.updateGL()
 		
@@ -1399,7 +1399,7 @@ class EMImage3DObject:
 		self.cube = not self.cube
 		self.parent.updateGL()
 		
-	def showInspector(self,force=0):
+	def show_inspector(self,force=0):
 		if not force and self.inspector==None : return
 		
 		if not self.inspector : self.inspector=EMVolumeInspector(self)

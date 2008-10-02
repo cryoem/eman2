@@ -47,7 +47,7 @@ from EMAN2 import *
 from emimageutil import EMParentWin
 from emglobjects import EMOpenGLFlagsAndTools
 from emfloatingwidgets import EMGLRotorWidget, EMGLView2D,EM3DWidget
-from emimagemx import EMImageMXCore
+from emimagemx import EMImageMXModule
 
 
 class EMImageRotor(QtOpenGL.QGLWidget):
@@ -239,9 +239,9 @@ class EMImageRotorCore:
 			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
 			
 #			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
-			self.font_render_mode = EMImageMXCore.FTGL
+			self.font_render_mode = EMImageMXModule.FTGL
 		except:
-			self.font_render_mode = EMImageMXCore.GLUT
+			self.font_render_mode = EMImageMXModule.GLUT
 		
 	def set_extra_hud_data(self,hud_data):
 		self.hud_data = hud_data
@@ -295,7 +295,7 @@ class EMImageRotorCore:
 			w = EMGLView2D(self,d)
 			self.rotor.add_widget(w)
 			
-		#self.showInspector()		# shows the correct inspector if already open
+		#self.show_inspector()		# shows the correct inspector if already open
 		#self.timer.start(25)
 		
 		# experimental for lst file writing
@@ -368,12 +368,12 @@ class EMImageRotorCore:
 		
 	def wheelEvent(self, event):
 #		if event.delta() > 0:
-#			self.setScale( self.scale * self.mag )
+#			self.set_scale( self.scale * self.mag )
 #		elif event.delta() < 0:
-#			self.setScale(self.scale * self.invmag )
+#			self.set_scale(self.scale * self.invmag )
 #		self.resizeEvent(self.parent.width(),self.parent.height())
 #		# The self.scale variable is updated now, so just update with that
-#		if self.inspector: self.inspector.setScale(self.scale)
+#		if self.inspector: self.inspector.set_scale(self.scale)
 		self.widget.wheelEvent(event)
 		self.updateGL()
 	def leaveEvent(self):
@@ -403,7 +403,7 @@ class EMImageRotorCore:
 		glColor(1.0,1.0,1.0)
 		
 		
-		if self.font_render_mode == EMImageMXCore.FTGL:
+		if self.font_render_mode == EMImageMXModule.FTGL:
 			panels = len(self.rotor)
 			idx = self.rotor.current_index()
 			string = str(idx+1) + ' / ' + str(panels)

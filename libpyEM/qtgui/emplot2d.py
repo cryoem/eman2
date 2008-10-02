@@ -215,7 +215,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		side = min(width, height)
 		GL.glViewport(0,0,self.width(),self.height())
 	
-		self.delShapes(("xcross","ycross","lcross"))
+		self.del_shapes(("xcross","ycross","lcross"))
 	
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -224,7 +224,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		GL.glLoadIdentity()
 		
 	
-	def showInspector(self,force=0):
+	def show_inspector(self,force=0):
 		if not force and self.inspector==None : return
 		
 		if not self.inspector : self.inspector=EMPlot2DInspector(self)
@@ -246,7 +246,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.needupd=1
 		self.updateGL()
 	
-	def addShape(self,k,s):
+	def add_shape(self,k,s):
 		"""Add a 'shape' object to be overlaid on the image. Each shape is
 		keyed into a dictionary, so different types of shapes for different
 		purposes may be simultaneously displayed. The 'scr' shapes are in
@@ -266,12 +266,12 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.shapechange=1
 		self.updateGL()
 	
-	def addShapes(self,d):
+	def add_shapes(self,d):
 		self.shapes.update(d)
 		self.shapechange=1
 		self.updateGL()
 	
-	def delShapes(self,k=None):
+	def del_shapes(self,k=None):
 		if k:
 			try:
 				for i in k:
@@ -304,13 +304,13 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
-			self.showInspector(1)
+			self.show_inspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
-			self.delShapes()
+			self.del_shapes()
 			self.rmousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
-			self.addShape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
-			self.addShape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				#return
@@ -318,18 +318,18 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 				#try: 
 					#del self.shapes["MEASL"]
 				#except: pass
-				#self.addShape("MEAS",("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2))
+				#self.add_shape("MEAS",("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2))
 	
 	def mouseMoveEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
 		
 		if  self.rmousedrag:
-			self.addShape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.x(),self.height()-event.y(),1)))
+			self.add_shape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.x(),self.height()-event.y(),1)))
 		elif event.buttons()&Qt.LeftButton:
-			self.addShape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
-			self.addShape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
-			self.addShape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),120.0,-1)))
-#			self.addShape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
+			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),120.0,-1)))
+#			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 	
 	def mouseReleaseEvent(self, event):
 		lc =self.scr2plot(event.x(),event.y())
@@ -339,23 +339,23 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 			else : self.limits=((min(lc[0],lc2[0]),max(lc[0],lc2[0])),(min(lc[1],lc2[1]),max(lc[1],lc2[1])))
 			self.rmousedrag=None
 			self.needupd=1
-			self.delShapes()  # also triggers an update
+			self.del_shapes()  # also triggers an update
 		#elif event.button()==Qt.LeftButton:
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mouseup"), event)
 				#return
 			#elif self.mmode==1 :
-				#self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
+				#self.add_shape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
 
 	def wheelEvent(self, event):
 		pass
 		#if event.delta() > 0:
-			#self.setScale(self.scale + MAG_INC)	
+			#self.set_scale(self.scale + MAG_INC)	
 		#elif event.delta() < 0:
 			#if ( self.scale - MAG_INC > 0 ):
-				#self.setScale(self.scale - MAG_INC)
+				#self.set_scale(self.scale - MAG_INC)
 		## The self.scale variable is updated now, so just update with that
-		#if self.inspector: self.inspector.setScale(self.scale)
+		#if self.inspector: self.inspector.set_scale(self.scale)
 
 class EMPlot2DInspector(QtGui.QWidget):
 	def __init__(self,target) :
@@ -476,8 +476,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		
 		#QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
-		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
-		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
+		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.set_invert)
+		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.set_mouse_mode)
 
 	def updPlot(self,s=None):
 		if self.quiet : return

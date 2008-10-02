@@ -61,7 +61,7 @@ class DepthTracker:
 			self.wproj = glGetDoublev(GL_PROJECTION_MATRIX)
 		self.wview = glGetIntegerv(GL_VIEWPORT)
 
-	def eyeCoordsDif(self,x1,y1,x2,y2,maintaindepth=True):
+	def eye_coords_dif(self,x1,y1,x2,y2,maintaindepth=True):
 		# get x and y normalized device coordinates
 		xNDC1 = 2.0*(x1-self.wview[0])/self.wview[2] - 1
 		yNDC1 = 2.0*(y1-self.wview[1])/self.wview[3] - 1
@@ -147,7 +147,7 @@ class EMImage2DTexInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
 		
-	def setHist(self,hist,minden,maxden):
+	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
 
 
@@ -225,8 +225,8 @@ class EMImage2DTex:
 		except:
 			return 0
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2):
-		return self.depthtracker.eyeCoordsDif(x1,y1,x2,y2)
+	def eye_coords_dif(self,x1,y1,x2,y2):
+		return self.depthtracker.eye_coords_dif(x1,y1,x2,y2)
 	
 	def set_data(self,data):
 		""" Perform the initial data set up"""
@@ -278,7 +278,7 @@ class EMImage2DTex:
 
 		try:
 			self.hist = self.data.calc_hist(self.histbins ,self.histmin,self.histmax)
-			self.inspector.setHist(self.hist,self.histmin,self.histmax)
+			self.inspector.set_hist(self.hist,self.histmin,self.histmax)
 		except:
 			print "Error getting histogram from data"
 	
@@ -295,9 +295,9 @@ class EMImage2DTex:
 			
 		new_one = ((1.0/self.bcscreen.glcontrast)-self.bcscreen.glbrightness)/dhist
 		
-		self.inspector.setHist(self.hist[int(new_zero):int(new_one+1)],new_zero_val,1.0) 
+		self.inspector.set_hist(self.hist[int(new_zero):int(new_one+1)],new_zero_val,1.0) 
 	
-	def showInspector(self,force):
+	def show_inspector(self,force):
 		try:
 			self.inspector.show()
 		except:
@@ -481,7 +481,7 @@ class EMImage2DTexGLWidget(QtOpenGL.QGLWidget):
 	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
-			self.image2dtex.showInspector(1)
+			self.image2dtex.show_inspector(1)
 		else:
 			self.image2dtex.mousePressEvent(event)
 		

@@ -420,7 +420,7 @@ class GUIctf(QtGui.QWidget):
 			#E2loadappwin("boxer","imagegeom",self.guiim)
 			
 			#if E2getappval("boxer","imcontrol") :
-				#self.guiim.showInspector(True)
+				#self.guiim.show_inspector(True)
 				#E2loadappwin("boxer","imcontrolgeom",self.guiim.inspector)
 		#except:
 			#pass
@@ -493,7 +493,7 @@ class GUIctf(QtGui.QWidget):
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))
-		#self.guiim.addShape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
+		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 		
 	def imgmousedrag(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))

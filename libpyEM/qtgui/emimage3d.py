@@ -42,7 +42,7 @@ from math import *
 from EMAN2 import *
 import sys
 import numpy
-from emimageutil import ImgHistogram,EMParentWin
+
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
@@ -53,22 +53,25 @@ from emimage3dslice import EM3DSliceViewer
 from emimage3dsym import EM3DSymViewer
 
 from emglobjects import Camera2, EMViewportDepthTools, Camera
+from emimageutil import EventRerouter
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMModule
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMImage3D(QtOpenGL.QGLWidget):
+class EMImage3DWidget(QtOpenGL.QGLWidget,EventRerouter):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None, parent=None):
-		self.image3d = None
+	def __init__(self, image_3d_module, parent=None):
+		self.target = None
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(True)
 		fmt.setStencil(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImage3D.allim[self]=0
+		EMImage3DWidget.allim[self]=0
+		EventRerouter.__init__(self,image_3d_module)
 		
 		self.aspect=1.0
 		self.fov = 10 # field of view angle used by gluPerspective
@@ -76,19 +79,18 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.zwidth = 0
 		self.perspective = True
 		
-		self.image3d = EMImage3DCore(image,self)
+		self.target = image_3d_module
 		self.initGL = True
 		self.cam = Camera()
-		
-		if ( image != None and isinstance(image,EMData)):
-			self.setCamZ(self.fov,image)
-		
+
 		self.resize(640,640)
 		self.startz = 0
 		self.endz = 0
-		
-		
-	def setCamZ(self,fov,image):
+	
+	def get_fov(self):
+		return self.fov
+
+	def set_cam_z(self,fov,image):
 		self.d = (image.get_ysize()/2.0)/tan(fov/2.0*pi/180.0)
 		self.zwidth = image.get_zsize()
 		self.yheight = image.get_ysize()
@@ -97,9 +99,9 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.cam.cam_z = -self.d
 	
 	def set_data(self,data):
-		self.image3d.set_data(data)
+		self.target.set_data(data)
 		if ( data != None and isinstance(data,EMData)):
-			self.setCamZ(self.fov,data)
+			self.set_cam_z(self.fov,data)
 			
 		self.resize(640,640)
 		
@@ -116,7 +118,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glEnable(GL_STENCIL_TEST)
 		glClearColor(0,0,0,0)
 		try:
-			self.image3d.initializeGL()
+			self.target.initializeGL()
 			self.initGL = False
 		except:
 			pass
@@ -133,11 +135,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		
 		if ( self.initGL ):
-			self.image3d.initializeGL()
+			self.target.initializeGL()
 			self.initGL = False
 
-		if ( self.image3d != None ):
-			self.image3d.render()
+		if ( self.target != None ):
+			self.target.render()
 
 
 	def resizeGL(self, width, height):
@@ -175,8 +177,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		if (self.image3d != None):
-			try: self.image3d.resizeEvent(width,height)
+		if (self.target != None):
+			try: self.target.resizeEvent(width,height)
 			except: pass
 		
 		self.updateGL()
@@ -188,31 +190,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		#width = self.aspect*height
 		#return [width,height]
 			
-	def mousePressEvent(self, event):
-		self.image3d.mousePressEvent(event)
-			
-	def wheelEvent(self,event):
-		self.image3d.wheelEvent(event)
 	
-	def mouseMoveEvent(self,event):
-		self.image3d.mouseMoveEvent(event)
-
-		
-	def mouseReleaseEvent(self,event):
-		self.image3d.mouseReleaseEvent(event)
-		
-	#def dropEvent(self,event):
-		#self.image3d.dropEvent(event)
-		
-	def closeEvent(self,event) :
-		self.image3d.closeEvent(event)
-	
-	def setPerspective(self,bool):
+	def set_perspective(self,bool):
 		self.perspective = bool
 		self.resizeGL(self.width(),self.height())
 		
 		
-	def getStartZ(self):
+	def get_start_z(self):
 		return self.startz
 	
 	def get_near_plane_dims(self):
@@ -222,15 +206,19 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			return [width,height]
 		else:
 			return [self.xwidth,self.yheight]
-		
-	#def dragEnterEvent(self,event):
-		#self.image3d.dragEnterEvent(event)
 
-class EMImage3DCore:
-
-	def __init__(self, image=None, parent=None):
-		self.parent = parent
-		
+class EMImage3DModule(EMModule):
+	
+	def get_qt_widget(self):
+		if self.parent == None:	
+			self.parent = EMImage3DWidget(self)
+			if isinstance(self.image,EMData):
+				self.parent.set_cam_z(self.parent.get_fov(),self.image)
+		return self.parent
+	
+	def __init__(self, image=None,application=None):
+		self.parent = None
+		self.image = None
 		self.currentselection = -1
 		self.inspector = None
 		#self.isosurface = EMIsosurface(image,self)
@@ -240,19 +228,18 @@ class EMImage3DCore:
 		self.num_vol = 0
 		self.num_sli = 0
 		self.num_sym = 0
-		self.supressInspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
-		
-		#self.timer = QTimer()
-		#QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-
+		self.suppress_inspector = False 	
 		self.cam = Camera2(self)
 		self.vdtools = EMViewportDepthTools(self)
 		
 		self.rottarget = None
 		self.set_data(image)
-		#self.inspector.addIso()
-	#def timeout(self):
-		#self.updateGL()
+			
+		if application != None:
+			application.attach_child(self)
+			EMModule.set_app(self,application)
+		self.em_qt_inspector_widget = None
+			
 	def width(self):
 		try: return self.parent.width()
 		except: return 0
@@ -265,8 +252,8 @@ class EMImage3DCore:
 		try: self.parent.updateGL()
 		except: pass
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
@@ -289,7 +276,7 @@ class EMImage3DCore:
 		for i in self.viewables:
 			i.resizeEvent()
 	
-	def getDataDims(self):
+	def get_data_dims(self):
 		return [self.image.get_xsize(),self.image.get_ysize(),self.image.get_zsize()]
 
 	def set_data(self,data):
@@ -297,23 +284,27 @@ class EMImage3DCore:
 		self.image = data
 		for i in self.viewables:
 			i.set_data(data)
-			
-		self.resizeEvent(self.parent.width(),self.parent.height())
-		#self.volume.set_data(data)
+		
+		if self.parent != None: 
+			self.resizeEvent(self.parent.width(),self.parent.height())
+			self.parent.set_cam_z(self.parent.get_fov(),self.data)
 		
 		if self.inspector == None:
 			self.inspector=EMImageInspector3D(self)
-		self.inspector.addIsosurface()
+		self.inspector.add_isosurface()
 	
-	def showInspector(self,force=0):
-		if self.supressInspector: return
+	def show_inspector(self,force=0):
+		if self.suppress_inspector: return
 		if not force and self.inspector==None : return
 		self.init_inspector()
-		self.inspector.show()
+		self.application.show_specific(self.em_qt_inspector_widget)
 		
 	def init_inspector(self):
-		if not self.inspector : self.inspector=EMImageInspector3D(self)
-	
+		if not self.inspector : 
+			self.inspector=EMImageInspector3D(self)
+		if not self.em_qt_inspector_widget:
+			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
+			
 	def closeEvent(self,event) :
 		#for i in self.viewables:
 			#i.closeEvent(event)
@@ -329,8 +320,8 @@ class EMImage3DCore:
 		self.updateGL()
 	
 			
-	def setCamZ(self,z):
-		self.cam.setCamZ( z )
+	def set_cam_z(self,z):
+		self.cam.set_cam_z( z )
 		self.updateGL()
 		
 	def setCamY(self,y):
@@ -348,16 +339,16 @@ class EMImage3DCore:
 	def wheelEvent(self, event):
 		self.cam.wheelEvent(event)
 		if self.rottarget != None :
-				self.rottarget.setScale(self.cam.scale)
+				self.rottarget.set_scale(self.cam.scale)
 		self.updateGL()
 	
-	def setScale(self,val):
+	def set_scale(self,val):
 		self.cam.scale = val
 		self.updateGL()
 	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
-			self.showInspector(1)
+			self.show_inspector(1)
 		else:
 			self.cam.mousePressEvent(event)
 				
@@ -369,7 +360,7 @@ class EMImage3DCore:
 	def getSundryInspector(self):
 		return self.viewables[self.currentselection].get_inspector()
 	
-	def addSym(self):
+	def add_sym(self):
 		sym = EM3DSymViewer(self)
 		self.viewables.append(sym)
 		#if (len(self.viewables)==1):
@@ -377,7 +368,7 @@ class EMImage3DCore:
 			#sym.cam.cam_z = -1.25*self.image.get_zsize()
 		#else:
 			#pass
-			##self.loadLastViewableCamera()
+			##self.load_last_viewable_camera()
 		sym.setRadius(self.image.get_zsize()/2.0)
 		self.num_sym += 1
 		name = "Sym " + str(self.num_sym)
@@ -386,9 +377,9 @@ class EMImage3DCore:
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
 	
-	def addIsosurface(self):
+	def add_isosurface(self):
 		self.viewables.append(EMIsosurface(self.image,self))
-		#self.loadLastViewableCamera()
+		#self.load_last_viewable_camera()
 		self.num_iso += 1
 		name = "Isosurface " + str(self.num_iso)
 		self.viewables[len(self.viewables)-1].setName(name)
@@ -396,9 +387,9 @@ class EMImage3DCore:
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
 		
-	def addVolume(self):
+	def add_volume(self):
 		self.viewables.append(EMVolume(self.image,self))
-		#self.loadLastViewableCamera()
+		#self.load_last_viewable_camera()
 		self.num_vol += 1
 		name = "Volume " + str(self.num_vol)
 		self.viewables[len(self.viewables)-1].setName(name)
@@ -406,9 +397,9 @@ class EMImage3DCore:
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
 		
-	def addSliceViewer(self):
+	def add_slice_viewer(self):
 		self.viewables.append(EM3DSliceViewer(self.image,self))
-		#self.loadLastViewableCamera()
+		#self.load_last_viewable_camera()
 		self.num_sli += 1
 		name = "Slices " + str(self.num_sli)
 		self.viewables[len(self.viewables)-1].setName(name)
@@ -416,7 +407,7 @@ class EMImage3DCore:
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
 		
-	def loadLastViewableCamera(self):
+	def load_last_viewable_camera(self):
 		return
 		size = len(self.viewables)
 		if ( size <= 1 ): return
@@ -427,24 +418,24 @@ class EMImage3DCore:
 		self.currentselection=row
 		self.updateGL()
 		
-	def getcuridx(self):
+	def get_current_idx(self):
 		return self.currentselection
 		
-	def getCurrentName(self):
+	def get_current_name(self):
 		if self.currentselection == -1 : return ""
 		elif self.currentselection >= len(self.viewables):
 			print "error, current seletion too large", self.currentselection,len(self.viewables)
 			return ""
 		return self.viewables[self.currentselection].getName()
 	
-	def getCurrentInspector(self):
+	def get_current_inspector(self):
 		if self.currentselection == -1 : return None
 		elif self.currentselection >= len(self.viewables):
 			print "error, current seletion too large", self.currentselection,len(self.viewables)
 			return None
 		return self.viewables[self.currentselection].get_inspector()
 	
-	def deleteCurrent(self, val):
+	def delete_current(self, val):
 		if ( len(self.viewables) == 0 ): return
 		
 		self.viewables.pop(val)
@@ -467,11 +458,11 @@ class EMImage3DCore:
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
 		
-	def setPerspective(self,bool):
-		self.parent.setPerspective(bool)
+	def set_perspective(self,bool):
+		self.parent.set_perspective(bool)
 		
-	def loadRotation(self,t3d):
-		self.cam.loadRotation(t3d)
+	def load_rotation(self,t3d):
+		self.cam.load_rotation(t3d)
 		self.updateGL()
 
 	def getCurrentT3d(self):
@@ -481,8 +472,8 @@ class EMImage3DCore:
 	def registerRotTarget(self, targ):
 		self.rottarget = targ
 	
-	def getStartZ(self):
-		return self.parent.getStartZ()
+	def get_start_z(self):
+		return self.parent.get_start_z()
 	
 	def get_near_plane_dims(self):
 		return self.parent.get_near_plane_dims()
@@ -535,8 +526,8 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.addSli = QtGui.QPushButton("Slices")
 		self.hbl_buttons2.addWidget(self.addSli)
 		
-		self.addSym = QtGui.QPushButton("Sym")
-		self.hbl_buttons2.addWidget(self.addSym)
+		self.add_sym = QtGui.QPushButton("Sym")
+		self.hbl_buttons2.addWidget(self.add_sym)
 
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
@@ -558,10 +549,10 @@ class EMImageInspector3D(QtGui.QWidget):
 		#self.advancedcheck.click()
 		self.insertAdvancedTab()
 		
-		QtCore.QObject.connect(self.addIso, QtCore.SIGNAL("clicked()"), self.addIsosurface)
-		QtCore.QObject.connect(self.addVol, QtCore.SIGNAL("clicked()"), self.addVolume)
+		QtCore.QObject.connect(self.addIso, QtCore.SIGNAL("clicked()"), self.add_isosurface)
+		QtCore.QObject.connect(self.addVol, QtCore.SIGNAL("clicked()"), self.add_volume)
 		QtCore.QObject.connect(self.addSli, QtCore.SIGNAL("clicked()"), self.addSlices)
-		QtCore.QObject.connect(self.addSym, QtCore.SIGNAL("clicked()"), self.addSymmetry)
+		QtCore.QObject.connect(self.add_sym, QtCore.SIGNAL("clicked()"), self.add_symmetry)
 		QtCore.QObject.connect(self.delete, QtCore.SIGNAL("clicked()"), self.deleteSelection)
 		#QtCore.QObject.connect(self.advancedcheck, QtCore.SIGNAL("stateChanged(int)"), self.advancedClicked)
 		
@@ -575,34 +566,34 @@ class EMImageInspector3D(QtGui.QWidget):
 			
 		self.target.registerRotTarget(self.setinspector)
 		self.setinspector.updateRotations(self.target.getCurrentT3d())
-		self.setinspector.setScale(self.target.cam.scale)
+		self.setinspector.set_scale(self.target.cam.scale)
 		self.tabwidget.addTab(self.setinspector,"Advanced")
 		self.settingsrow = self.tabwidget.count()-1
 		self.targetidxmap[self.settingsrow] = -1
 		self.tabwidget.setCurrentIndex(self.settingsrow)
 	
 
-	def addIsosurface(self):
-		self.target.addIsosurface()
+	def add_isosurface(self):
+		self.target.add_isosurface()
 		self.updateSelection()
 	
-	def addSymmetry(self):
-		self.target.addSym()
+	def add_symmetry(self):
+		self.target.add_sym()
 		self.updateSelection()
 	
-	def addVolume(self):
-		self.target.addVolume()
+	def add_volume(self):
+		self.target.add_volume()
 		self.updateSelection()
 	
 	def updateSelection(self):
 		n = self.tabwidget.count()
 		if n > 0: n = n - 1
-		self.tabwidget.insertTab(n, self.target.getCurrentInspector(), self.target.getCurrentName())
+		self.tabwidget.insertTab(n, self.target.get_current_inspector(), self.target.get_current_name())
 		self.targetidxmap[n] = self.target.currentselection
 		self.tabwidget.setCurrentIndex(n)
 
 	def addSlices(self):
-		self.target.addSliceViewer()
+		self.target.add_slice_viewer()
 		self.updateSelection()
 	
 	def deleteSelection(self):
@@ -612,7 +603,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		if idx == n-1: return
 		
 		self.tabwidget.removeTab(idx)
-		self.target.deleteCurrent(self.targetidxmap[idx])
+		self.target.delete_current(self.targetidxmap[idx])
 
 class EMRotateSliders:
 	def __init__(self,target,parent):
@@ -673,13 +664,13 @@ class EMRotateSliders:
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
 		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
+		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
 		
 	def sliderRotate(self):
-		self.target.loadRotation(self.getCurrentRotation())
+		self.target.load_rotation(self.getCurrentRotation())
 		
 	def getCurrentRotation(self):
 		convention = self.src.currentText()
@@ -816,7 +807,7 @@ class EMRotateSliders:
 		self.alt.setValue(rot[self.alt.getLabel()],True)
 		self.phi.setValue(rot[self.phi.getLabel()],True)
 		
-	def setScale(self,newscale):
+	def set_scale(self,newscale):
 		self.scale.setValue(newscale)
 		
 	def setXYTrans(self, x, y):
@@ -865,50 +856,55 @@ class EM3DAdvancedInspector(QtGui.QWidget):
 	def updateRotations(self,t3d):
 		self.rotsliders.updateRotations(t3d)
 		
-	def setScale(self,val):
-		self.rotsliders.setScale(val)
+	def set_scale(self,val):
+		self.rotsliders.set_scale(val)
 	
 	def setXYTrans(self, x, y):
 		self.rotsliders.setXYTrans(x,y)
 		
 	def persClicked(self):
-		self.target.setPerspective(True)
+		self.target.set_perspective(True)
 		
 	def orthClicked(self):
-		self.target.setPerspective(False)
+		self.target.set_perspective(False)
 		
 	
 	
-# This is just for testing, of course
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	window = EMImage3D()
- 	if len(sys.argv)==1 : 
-		pass
-		e = EMData()
-		e.set_size(64,64,64)
+	em_app = EMStandAloneApplication()
+	window = EMImage3DModule(application=em_app)
+	
+	if len(sys.argv)==1 : 
+		data = []
+		#for i in range(0,200):
+		e = EMData(64,64,64)
 		e.process_inplace('testimage.axes')
- 		window.set_data(e)
-
-		# these lines are for testing shape rendering
-# 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
-# 		window.addShape("b",["circle",.5,.8,.2,120,50,30.0,2])
-# 		window.addShape("c",["line",.2,.8,.5,20,120,100,200,2])
-# 		window.addShape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
+		window.set_data(e)
 	else :
-		if not os.path.exists(sys.argv[1]):
-			print "Error, input file %s does not exist" %sys.argv[1]
-			exit(1)
-		a=EMData.read_images(sys.argv[1],[0])
-		window.set_data(a[0])
-	window2=EMParentWin(window)
-	window2.show()
-	
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
-	
-	sys.exit(app.exec_())
+		a=EMData.read_images(sys.argv[1])
+		window.set_file_name(sys.argv[1])
+		window.set_data(a)
+		
+	em_app.show()
+	em_app.execute()
+
+# This is just for testing, of course
+#if __name__ == '__main__':
+	#app = QtGui.QApplication(sys.argv)
+	#window = EMImage3D()
+ 	#if len(sys.argv)==1 : 
+		#pass
+		#e = EMData()
+		#e.set_size(64,64,64)
+		#e.process_inplace('testimage.axes')
+ 		#window.set_data(e)
+	#else :
+		#if not os.path.exists(sys.argv[1]):
+			#print "Error, input file %s does not exist" %sys.argv[1]
+			#exit(1)
+		#a=EMData.read_images(sys.argv[1],[0])
+		#window.set_data(a[0])
+	#window2=EMParentWin(window)
+	#window2.show()
+
+	#sys.exit(app.exec_())

@@ -109,8 +109,8 @@ class EM3DSliceViewer(EMImage3DObject):
 		try: self.parent.updateGL()
 		except: pass
 	
-	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
 	def viewportHeight(self):
 		return self.parent.height()
@@ -162,7 +162,7 @@ class EM3DSliceViewer(EMImage3DObject):
 			self.inspector=EMSlice3DInspector(self)
 
 		hist = self.data.calc_hist(256,0,1.0)
-		self.inspector.setHist(hist,0,1.0) 
+		self.inspector.set_hist(hist,0,1.0) 
 
 		self.slice = data.get_zsize()/2
 		self.zslice = data.get_zsize()/2
@@ -370,7 +370,7 @@ class EM3DSliceViewer(EMImage3DObject):
 		glPushMatrix()
 		glLoadIdentity()
 		[width,height] = self.parent.get_near_plane_dims()
-		z = self.parent.getStartZ()
+		z = self.parent.get_start_z()
 		glTranslate(-width/2.0,-height/2.0,-z-0.01)
 		glScalef(width,height,1.0)
 		self.draw_bc_screen()
@@ -468,7 +468,7 @@ class EM3DSliceViewer(EMImage3DObject):
 				return
 			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
 			self.resizeEvent()
-			self.showInspector(1)
+			self.show_inspector(1)
 		else:
 			self.cam.mousePressEvent(event)
 		
@@ -567,7 +567,7 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		
 		self.sliceviewer.resizeEvent()
 
-	def getStartZ(self):
+	def get_start_z(self):
 		return self.startz
 	
 	def get_near_plane_dims(self):
@@ -575,8 +575,8 @@ class EMSliceViewerWidget(QtOpenGL.QGLWidget):
 		width = self.aspect * height
 		return [width,height]
 
-	def showInspector(self,force=0):
-		self.sliceviewer.showInspector(self,force)
+	def show_inspector(self,force=0):
+		self.sliceviewer.show_inspector(self,force)
 
 	def closeEvent(self,event) :
 		self.sliceviewer.closeEvent(event)
@@ -644,7 +644,7 @@ class EMSlice3DInspector(QtGui.QWidget):
 		
 		self.current_src = EULER_EMAN
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.slice, QtCore.SIGNAL("valueChanged"), target.setSlice)
 		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.setGLContrast)
 		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.setGLBrightness)
@@ -653,9 +653,9 @@ class EMSlice3DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
+		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
+		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
+		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.setDefaults)
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
@@ -821,7 +821,7 @@ class EMSlice3DInspector(QtGui.QWidget):
 		self.phi.setValue(rot[self.phi.getLabel()],True)
 	
 	def sliderRotate(self):
-		self.target.loadRotation(self.getCurrentRotation())
+		self.target.load_rotation(self.getCurrentRotation())
 	
 	def getCurrentRotation(self):
 		convention = self.src.currentText()
@@ -926,10 +926,10 @@ class EMSlice3DInspector(QtGui.QWidget):
 		for i in colors:
 			self.cbb.addItem(i)
 
-	def setHist(self,hist,minden,maxden):
+	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
 
-	def setScale(self,newscale):
+	def set_scale(self,newscale):
 		self.scale.setValue(newscale)
 		
 	def setSlice(self,val):
@@ -950,10 +950,10 @@ if __name__ == '__main__':
 		window.set_data(e)
 
 		# these lines are for testing shape rendering
-# 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
-# 		window.addShape("b",["circle",.5,.8,.2,120,50,30.0,2])
-# 		window.addShape("c",["line",.2,.8,.5,20,120,100,200,2])
-# 		window.addShape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
+# 		window.add_shape("a",["rect",.2,.8,.2,20,20,80,80,2])
+# 		window.add_shape("b",["circle",.5,.8,.2,120,50,30.0,2])
+# 		window.add_shape("c",["line",.2,.8,.5,20,120,100,200,2])
+# 		window.add_shape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
 	else :
 		if not os.path.exists(sys.argv[1]):
 			print "Error, input file %s does not exist" %sys.argv[1]

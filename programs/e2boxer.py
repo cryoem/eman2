@@ -501,26 +501,26 @@ class GUIboxMouseEraseEvents(GUIboxMouseEventsObject):
 		self.eraseradius = radius
 	
 	def mouse_move(self,event):
-		m = self.get_2d_gui_image().scr2img((event.x(),event.y()))
-		self.get_2d_gui_image().addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+		m = self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
+		self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
 		self.mediator.update_image_display()
 		
 	def mouse_wheel(self,event):
 		if event.modifiers()&Qt.ShiftModifier:
 			self.get_gui_ctl().adjust_erase_rad(event.delta())
-			m= self.get_2d_gui_image().scr2img((event.x(),event.y()))
-			self.get_2d_gui_image().addShape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
+			m= self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
+			self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",.1,.1,.1,m[0],m[1],self.eraseradius,3]))
 			self.mediator.update_image_display()
 	
 	def mouse_down(self,event) :
-		m=self.get_2d_gui_image().scr2img((event.x(),event.y()))
+		m=self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
 		#self.boxable.add_exclusion_area("circle",m[0],m[1],self.eraseradius)
-		self.get_2d_gui_image().addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
+		self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
 		self.mediator.exclusion_area_added("circle",m[0],m[1],self.eraseradius,self.erasemode)	
 
 	def mouse_drag(self,event) :
-		m=self.get_2d_gui_image().scr2img((event.x(),event.y()))
-		self.get_2d_gui_image().addShape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
+		m=self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
+		self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",.9,.9,.9,m[0],m[1],self.eraseradius,3]))
 		self.mediator.exclusion_area_added("circle",m[0],m[1],self.eraseradius,self.erasemode)
 		# exclusion_area_added does the OpenGL update calls, so there is no need to do so here
 		
@@ -528,7 +528,7 @@ class GUIboxMouseEraseEvents(GUIboxMouseEventsObject):
 		# we have finished erasing
 		
 		# make the eraser shape non visible
-		self.get_2d_gui_image().addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+		self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
 		self.mediator.erasing_done(self.erasemode)
 	
 class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
@@ -549,7 +549,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 		self.mode = mode
 		
 	def mouse_down(self,event) :
-		m = self.get_2d_gui_image().scr2img((event.x(),event.y()))
+		m = self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
 		box_num = self.mediator.detect_box_collision(m)
 		if box_num == -1:
 			if not self.mediator.within_main_image_bounds(m):	return
@@ -577,7 +577,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get_2d_gui_image().addShape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			self.get_2d_gui_image().add_shape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
 			self.mediator.add_box(box)
 			#self.mediator.mouse_click_update_ppc()
@@ -591,11 +591,11 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			# if we make it here than the we're moving a box
 			box = self.mediator.get_box(box_num)
 			self.moving=[box,m,box_num]
-			self.get_2d_gui_image().setActive(box_num,.9,.9,.4)
+			self.get_2d_gui_image().set_active(box_num,.9,.9,.4)
 				
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
-			self.get_2d_gui_image().addShape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+			self.get_2d_gui_image().add_shape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			object = self.get_mx_gui_image().get_core_object()
 			if object.is_visible(box_num) or True : self.get_mx_gui_image().get_core_object().set_selected([box_num],True)
 			self.mediator.update_all_image_displays()
@@ -603,7 +603,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 
 	def mouse_drag(self,event) :
 		
-		m=self.get_2d_gui_image().scr2img((event.x(),event.y()))
+		m=self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
 		
 		if event.modifiers()&Qt.ShiftModifier:
 			box_num = self.mediator.detect_box_collision(m)
@@ -627,7 +627,7 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 				self.mediator.reference_moved(box)
 			self.moving=None
 		
-		m = self.get_2d_gui_image().scr2img((event.x(),event.y()))
+		m = self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
 		box_num = self.mediator.detect_box_collision(m)
 		if box_num != -1 and not event.modifiers()&Qt.ShiftModifier:
 			object = self.get_mx_gui_image().get_core_object()
@@ -1033,7 +1033,7 @@ class GUIbox:
 		
 		if autobox:
 			self.ptcl = []
-			self.guiim.delShapes()
+			self.guiim.del_shapes()
 			self.boxable.clear_and_reload_images()
 			self.in_display_limbo = True
 			#self.autoboxer.regressiveflag = True
@@ -1212,14 +1212,14 @@ class GUIbox:
 	
 	def clear_displays(self):
 		self.ptcl = []
-		self.guiim.delShapes()
+		self.guiim.del_shapes()
 		self.guimx.set_data([])
 		self.box_display_update() # - the user may still have some manual boxes...
 	
 	def big_image_change(self):
 		image=BigImageCache.get_object(self.get_current_image_name()).get_image(use_alternate=True)
 		self.guiim.set_data(image)
-		self.guiim.delShapes()
+		self.guiim.del_shapes()
 		self.guiim.get_core_object().force_display_update()
 		self.box_display_update()
 		
@@ -1251,7 +1251,7 @@ class GUIbox:
 			if debug: print "it took", time() - tt, "to read the prior stuff A4 "
 			if debug: tt = time()
 			self.ptcl = []
-			self.guiim.delShapes()
+			self.guiim.del_shapes()
 			self.guiim.get_core_object().force_display_update()
 			self.in_display_limbo = True
 			if debug: print "it took", time() - tt, "to read the prior stuff B "
@@ -1437,24 +1437,24 @@ class GUIbox:
 
 		im=lc[0]
 		self.moving_box_data = [event.x(),event.y(),im]
-		self.guiim.setActive(im,.9,.9,.4)
+		self.guiim.set_active(im,.9,.9,.4)
 		#self.guimx.get_core_object.set_selected(im)
 		boxes = self.get_boxes()
-		self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+		self.guiim.register_scroll_motion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		
 		self.moving_box_data = None
 		
 	def box_selected(self,event,lc):
 		im=lc[0]
 		self.moving_box_data = [event.x(),event.y(),im]
-		self.guiim.setActive(im,.9,.9,.4)
+		self.guiim.set_active(im,.9,.9,.4)
 		#object = self.guimx.get_core_object()
 		#if not object.is_visible(lc[0]) : object.scroll_to(lc[0],True)
 		#self.get_mx_gui_image().get_core_object().set_selected([lc[0]],True)
 		boxes = self.get_boxes()
-		#self.guiim.registerScrollMotion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+		#self.guiim.register_scroll_motion(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 		#try:
-			##self.guiim.scrollTo(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
+			##self.guiim.scroll_to(boxes[im].xcorner+boxes[im].xsize/2,boxes[im].ycorner+boxes[im].ysize/2)
 			#pass
 			
 		#except: print "box_selected() scrolling error"
@@ -1505,9 +1505,9 @@ class GUIbox:
 			
 		x0=box.xcorner+box.xsize/2-1
 		y0=box.ycorner+box.ysize/2-1
-		self.guiim.addShape("cen",EMShape([self.shape_string,.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
+		self.guiim.add_shape("cen",EMShape([self.shape_string,.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 		box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
-		self.guiim.addShape(box_num,box.shape)
+		self.guiim.add_shape(box_num,box.shape)
 		self.box_display_update_specific(box_num)
 
 	def change_shapes(self,shape_string):
@@ -1518,7 +1518,7 @@ class GUIbox:
 			print "unknown shape string", shapestring
 	
 	def update_box_colors(self,classify):
-		sh=self.guiim.getShapes()
+		sh=self.guiim.get_shapes()
 		for i in classify.items():
 			color = BoxingTools.get_color(i[1])
 			
@@ -1564,10 +1564,10 @@ class GUIbox:
 		#print "called delete display shapesS"
 		if self.in_display_limbo: return
 		
-		sh=self.guiim.getShapes()
+		sh=self.guiim.get_shapes()
 		
 		for num in numbers:
-			sh=self.guiim.getShapes()
+			sh=self.guiim.get_shapes()
 			k=sh.keys()
 			k.sort()
 			del sh[int(num)]
@@ -1579,11 +1579,11 @@ class GUIbox:
 			self.ptcl.pop(num)
 						
 			
-		self.guiim.delShapes()
-		self.guiim.addShapes(sh)
+		self.guiim.del_shapes()
+		self.guiim.add_shapes(sh)
 
-		#self.guiim.delShapes()
-		#self.guiim.addShapes(sh)
+		#self.guiim.del_shapes()
+		#self.guiim.add_shapes(sh)
 		#print "now there are",len(sh),"shapes"
 		
 	def box_image_deleted(self,event,lc,force_image_mx_remove=True):
@@ -1602,7 +1602,7 @@ class GUIbox:
 		you are deleting a list of boxes sequentially (for that you should use delete_display_boxes
 		and something to pop the box from the Boxable. See examples in this code)
 		"""
-		sh=self.guiim.getShapes()
+		sh=self.guiim.get_shapes()
 		k=sh.keys()
 		k.sort()
 		del sh[int(box_num)]
@@ -1611,9 +1611,9 @@ class GUIbox:
 				if j>box_num :
 					sh[j-1]=sh[j]
 					del sh[j]
-		self.guiim.delShapes()
-		self.guiim.addShapes(sh)
-		self.guiim.setActive(None,.9,.9,.4)
+		self.guiim.del_shapes()
+		self.guiim.add_shapes(sh)
+		self.guiim.set_active(None,.9,.9,.4)
 		
 		if force_image_mx_remove: 
 			#self.ptcl.pop(box_num)
@@ -1649,7 +1649,7 @@ class GUIbox:
 		if box_num>=len(self.ptcl) : self.ptcl.append(im)
 		else : self.ptcl[box_num]=im
 			
-		self.guiim.addShapes(ns)
+		self.guiim.add_shapes(ns)
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
@@ -1693,7 +1693,7 @@ class GUIbox:
 			else : self.ptcl[idx]=im
 			idx += 1
 		
-		self.guiim.addShapes(ns)
+		self.guiim.add_shapes(ns)
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
@@ -1777,7 +1777,7 @@ class GUIbox:
 			self.mouse_handlers["erasing"].set_mode(Boxable.ERASE)
 			self.mousehandler = self.mouse_handlers["erasing"]
 		else:
-			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+			self.guiim.add_shape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
 			self.update_image_display()
 			self.mousehandler = self.mouse_handlers["boxing"]
 			
@@ -1787,7 +1787,7 @@ class GUIbox:
 			self.mouse_handlers["erasing"].set_mode(Boxable.UNERASE)
 			self.mousehandler = self.mouse_handlers["erasing"]
 		else:
-			self.guiim.addShape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
+			self.guiim.add_shape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
 			self.update_image_display()
 			self.mousehandler = self.mouse_handlers["boxing"]
 	
@@ -2184,7 +2184,7 @@ class CcfHistogram(QtGui.QWidget):
 				self.cur_ticker = 1
 
 			if not hasattr( self, "shapes" ):
-				self.shapes = self.parent.target.guiim.getShapes().copy()
+				self.shapes = self.parent.target.guiim.get_shapes().copy()
 
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton and event.x() > 0 :
@@ -2223,7 +2223,7 @@ class CcfHistogram(QtGui.QWidget):
 			if len(added_boxes) != 0 or len(lost_boxes) != 0 :
 				target.box_display_update()
 				target.update_all_image_displays()
-			#curt_shapes = guiim.getShapes()
+			#curt_shapes = guiim.get_shapes()
 
 
 			##print "# of all shapes: ", len( self.shapes )
@@ -2244,7 +2244,7 @@ class CcfHistogram(QtGui.QWidget):
 
 				#if score >= thr_low and score <= thr_hgh and not(curt_shapes.has_key(i)):
 					#added_nums.append(i)
-					##guiim.addShape( i, self.shapes[i] )
+					##guiim.add_shape( i, self.shapes[i] )
 			
 			#target.set_aligner_params_in_options(deleted_nums,boxable_update=True)
 			#target.update_all_image_displays()

@@ -43,11 +43,13 @@ import EMAN2
 import sys
 import numpy
 import struct
-from emimageutil import ImgHistogram,EMParentWin
+from emimageutil import ImgHistogram,EventRerouter
 import emshape 
 from emshape import EMShape
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
+
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMModule
 
 try: from PyQt4 import QtWebKit
 except: pass
@@ -56,57 +58,52 @@ import platform
 MAG_INC = 1.1
 
 from emglobjects import EMOpenGLFlagsAndTools
-#from emfloatingwidgets import *
 
-class EMImage2D(QtOpenGL.QGLWidget):
-	"""
-	This is the QtOpenGL Widget that instantiates and hands on events
-	to the EMAN2 2D OpenGL image
-	"""
+GLUT.glutInit(sys.argv )
+
+class EMImage2DWidget(QtOpenGL.QGLWidget,EventRerouter):
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None, parent=None):
-		
-		self.image2d = None
-		self.initimageflag = True
-		
+	def __init__(self, em_image_2d_module,enable_timer=False):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setSampleBuffers(True)
 		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		
-		self.image2d = EMImage2DCore(image,self)
-		
-		#EMImage2D.allim[self]=0
+		QtOpenGL.QGLWidget.__init__(self,fmt)
+		EventRerouter.__init__(self,em_image_2d_module)
+		self.initimageflag = True
 		
 		self.setFocusPolicy(Qt.StrongFocus)
 		
-		self.timer = QtCore.QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-		self.timeinterval = 50
-		self.timer.start(50)
+		if enable_timer:
+			self.enable_timer()
+		else: self.time_enabled = False
 		
-		self.light_0_pos = [.1,.1,1,0.]
+	def enable_timer(self):
+		if self.timer_enabled == False:
+			self.timer = QtCore.QTimer()
+			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+			self.timeinterval = 50
+			self.timer.start(50)
+			self.time_enabled = True
+		else: print "timer already enabled in emimage2d"
 		
 	def set_parent(self,parent):
 		self.parent = parent
 		
 	def timeout(self):
 		update = False
-		if self.image2d.updateblend() :
-			self.image2d.shapechange = 1
+		if self.target.update_blend() :
+			self.target.shapechange = 1
 			update = True
 		
-		if self.image2d.updateanimation():
+		if self.target.update_animation():
 			update = True
 		
 		if update:
 			self.updateGL()
-		
-		#print "received timeout"
-	
+
 	def set_data(self,data):
-		self.image2d.set_data(data)
+		self.target.set_data(data)
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -114,18 +111,18 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, self.light_0_pos)
+		glLightfv(GL_LIGHT0, GL_POSITION,  [.1,.1,1,0.])
 	
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		try:
-			self.image2d.initializeGL()
+			self.target.initializeGL()
 			self.initimageflag = False
 		except:
 			pass
 	
 	def paintGL(self):
-		if not self.image2d: return
+		if not self.target: return
 		
 		glClear(GL_COLOR_BUFFER_BIT)
 		if glIsEnabled(GL_DEPTH_TEST):
@@ -140,12 +137,12 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		#self.cam.position()
 		if self.initimageflag == True:
-			self.image2d.initializeGL()
+			self.target.initializeGL()
 			self.initimageflag = False
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Image2D context is", context
 		glPushMatrix()
-		self.image2d.render()
+		self.target.render()
 		glPopMatrix()
 		
 	def resizeGL(self, width, height):
@@ -158,87 +155,68 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		try: self.image2d.resizeEvent(width,height)
+		try: self.target.resizeEvent(width,height)
 		except: pass
 		
 	def set_mmode(self,mode):
-		self.image2d.mmode = mode
-	
-	def mousePressEvent(self, event):
-		self.image2d.mousePressEvent(event)
-			
-	def wheelEvent(self,event):
-		self.image2d.wheelEvent(event)
-	
-	def mouseMoveEvent(self,event):
-		self.image2d.mouseMoveEvent(event)
+		self.target.mmode = mode
 
-	def mouseReleaseEvent(self,event):
-		self.image2d.mouseReleaseEvent(event)
+	def add_shapes(self,s):
+		self.target.add_shapes(s)
 		
-	def mouseDoubleClickEvent(self,event):
-		self.image2d.mouseDoubleClickEvent(event)
-		
-	def keyPressEvent(self,event):
-		self.image2d.keyPressEvent(event)
-		
-	def dropEvent(self,event):
-		self.image2d.dropEvent(event)
-		
-	def closeEvent(self,event) :
-		self.image2d.closeEvent(event)
-		
-	def dragEnterEvent(self,event):
-		self.image2d.dragEnterEvent(event)
-	
-	def addShapes(self,s):
-		self.image2d.addShapes(s)
-		
-	def keyPressEvent(self,event):
-		self.image2d.keyPressEvent(event)
+	def add_shape(self,name,shape):
+		return self.target.add_shape(name,shape)
 
-	def addShape(self,name,shape):
-		return self.image2d.addShape(name,shape)
+	def scr_to_img(self,p):
+		return self.target.scr_to_img(p)
+	
+	def set_active(self,a,b,c,d):
+		return self.target.set_active(a,b,c,d)
+	
+	def get_shapes(self):
+		return self.target.get_shapes()
+	
+	def del_shapes(self):
+		return self.target.del_shapes()
+	
+	def del_shape(self,p):
+		return self.target.del_shape(p)
 
-	def scr2img(self,p):
-		return self.image2d.scr2img(p)
+	def scroll_to(self,x,y):
+		return self.target.scroll_to(x,y)
 	
-	def setActive(self,a,b,c,d):
-		return self.image2d.setActive(a,b,c,d)
-	
-	#def getShapes(self):
-		#return self.image2d.shapes
-	
-	def delShapes(self):
-		return self.image2d.delShapes()
-	
-	def delShape(self,p):
-		return self.image2d.delShape(p)
-
-	def scrollTo(self,x,y):
-		return self.image2d.scrollTo(x,y)
-	
-	def registerScrollMotion(self,x,y):
-		return self.image2d.registerScrollMotion(x,y)
+	def register_scroll_motion(self,x,y):
+		return self.target.register_scroll_motion(x,y)
 	
 	def get_depth_for_height(self, height):
 		return 0
 	
-	def getShapes(self):
-		return self.image2d.getShapes()
+	def get_shapes(self):
+		return self.target.get_shapes()
 	
-	def get_core_object(self):
-		return self.image2d
-
-class EMImage2DCore:
-	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
-	or sets of 2D images.
+class EMImage2DModule(EMModule):
+	"""
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self, image=None, parent=None):
+	
+	def get_qt_widget(self):
+		if self.parent == None:	
+			self.parent = EMImage2DWidget(self)
+			if self.init_size_flag and isinstance(self.data,EMData):
+				try:
+					if self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
+					else: self.parent.resize(800,800)
+					self.init_size_flag = False
+				except: pass
+			
+		return self.parent
+	
+	def __init__(self, image=None,application=None):
+		EMModule.__init__(self,application)
 		
-		self.parent = parent
-		self.data=None				# EMData object to display
+		
+		self.parent = None
+		self.data=image				# EMData object to display
 		self.oldsize=(-1,-1)
 		self.datasize=(1,1)			# Dimensions of current image
 		self.scale=1.0				# Scale factor for display
@@ -258,7 +236,7 @@ class EMImage2DCore:
 		self.mag = 1.1				# magnification factor
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 		
-		self.shapes={}				# dictionary of shapes to draw, see addShapes
+		self.shapes={}				# dictionary of shapes to draw, see add_shapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
 		self.active=(None,0,0,0)	# The active shape and a hilight color (n,r,g,b)
 		
@@ -271,6 +249,7 @@ class EMImage2DCore:
 		self.timeinc = 0.125
 		
 		self.inspector=None			# set to inspector panel widget when exists
+		self.em_qt_inspector_widget = None # eventually a EMQtWidgetModule storing the inspector
 		
 		self.init_size = True		# A flag used to set the initial origin offset
 		
@@ -278,7 +257,7 @@ class EMImage2DCore:
 		
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		
-		self.supressInspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
+		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		self.tex_name = 0			# an OpenGL texture handle
 		
 		self.otherdata = None
@@ -298,25 +277,17 @@ class EMImage2DCore:
 		
 		self.wheel_navigate = False # useful on Mac laptops
 		
-		self.display_help_hud = False # display heads up display, toggled with F1
-		
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
 		if image :
 			self.set_data(image)
-			
-		try:
-			self.font_renderer = get_3d_font_renderer()
-			self.font_renderer.set_face_size(24)
-			self.font_renderer.set_depth(6)
-			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
-			self.font_render_mode = "FTGL"
-		except:
-			self.font_render_mode = "GLUT"
 		
+		if application != None:
+			application.attach_child(self)
+			EMModule.set_app(self,application)
+		self.em_qt_inspector_widget = None
 		
-		self.__generate_display_help()
 		self.__load_display_settings_from_db()
 		
 	def __del__(self):
@@ -332,14 +303,17 @@ class EMImage2DCore:
 	def get_gamma(self): return self.gamma
 	def get_brts(self): return self.brts
 	def get_conts(self): return self.conts
+	def get_shapes(self): return self.shapes
 	
 	def set_brightness(self,brts):
 		self.brts = brts
 		self.__write_display_settings_to_db()
+		self.updateGL()
 		
 	def set_contrast(self,conts):
 		self.conts = conts
 		self.__write_display_settings_to_db()
+		self.updateGL()
 		
 	def set_brightness_contrast(self,brts,conts):
 		'''
@@ -349,6 +323,7 @@ class EMImage2DCore:
 		self.brts = brts
 		self.const = conts
 		self.__write_display_settings_to_db()
+		self.updateGL()
 		
 	def set_density_range(self,x0,x1):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
@@ -417,16 +392,16 @@ class EMImage2DCore:
 	def set_data(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
 		self.data=data
-		if self.init_size_flag:
+		if data==None:
+			self.updateGL()
+			return
+		
+		if self.init_size_flag and isinstance(self.parent,QtGui.QWidget):
 			try:
 				if self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
 				else: self.parent.resize(800,800)
 				self.init_size_flag = False
 			except: pass
-		
-		if data==None:
-			self.updateGL()
-			return
 		
 		mean=data.get_attr("mean")
 		sigma=data.get_attr("sigma")
@@ -442,12 +417,7 @@ class EMImage2DCore:
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)			# Current display origin
 		if self.curfft : 
-			self.setFFT(self.curfft)
-		
-		#self.showInspector()		# shows the correct inspector if already open
-#		self.origin=(self.width()/2,self.height()/2)
-		
-#		self.updateGL()
+			self.set_FFT(self.curfft)
 	
 	def __load_display_settings_from_db(self):
 		if self.file_name == None: return # there is no file name, we have no means to stores information
@@ -509,23 +479,21 @@ class EMImage2DCore:
 		db["latest_display_settings"] = data #store this to automatically apply previously used settings to other images - this was originally a request of Yao Cong
 
 
-	def setOrigin(self,x,y):
+	def set_origin(self,x,y):
 		"""Set the display origin within the image"""
 		self.origin=(x,y)
 		self.updateGL()
 	
-	def scrollTo(self,x,y):
+	def scroll_to(self,x,y):
 		"""center the point on the screen"""
-		self.setOrigin(x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2)
+		self.set_origin(x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2)
 
 	def set_shapes(self,shapes,shrink):
 		self.hack_shrink = shrink
 		self.shapes = shapes
-		
-#		self.shapes["extra"] = EMShape(["rectpoint",.9,.9,.4,self.width()/4.0,self.height()/4.0,self.width()/2,self.height()/2,8.0])
 		self.shapechange=1
-
-	def updateanimation(self):
+		
+	def update_animation(self):
 		if not self.isanimated:
 			return False
 		
@@ -533,7 +501,7 @@ class EMImage2DCore:
 		if self.time > 1:
 			self.time = 1
 			self.isanimated = False
-			self.setOrigin(self.endorigin[0],self.endorigin[1])
+			self.set_origin(self.endorigin[0],self.endorigin[1])
 			return True
 		
 		# get time squared
@@ -543,28 +511,28 @@ class EMImage2DCore:
 		
 		x = t1*self.startorigin[0] + t2*self.endorigin[0]
 		y = t1*self.startorigin[1] + t2*self.endorigin[1]
-		self.setOrigin(x,y)
+		self.set_origin(x,y)
 		return True
 		
-	def registerScrollMotion(self,x,y):
+	def register_scroll_motion(self,x,y):
 		self.startorigin = self.origin
 		self.endorigin = (x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2)
 		self.isanimated = True
 		self.time = 0
 		return True
 
-	def setScale(self,newscale):
+	def set_scale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		self.origin=(newscale/self.scale*(self.parent.width()/2.0+self.origin[0])-self.parent.width()/2.0,newscale/self.scale*(self.parent.height()/2.0+self.origin[1])-self.parent.height()/2.0)
 		self.scale=newscale
 		self.updateGL()
 		
-	def setInvert(self,val):
+	def set_invert(self,val):
 		if val: self.invert=1
 		else : self.invert=0
 		self.updateGL()
 		
-	def setFFT(self,val):
+	def set_FFT(self,val):
 		if self.data.is_complex(): return
 		self.curfft=val
 		if val>0 :
@@ -595,14 +563,14 @@ class EMImage2DCore:
 				self.ominden=self.minden
 				self.omaxden=self.maxden
 				
-				self.showInspector()
+				self.show_inspector()
 			except: 
 				self.fft=None
 		else: 
 			self.fft=None
 			self.minden=self.ominden
 			self.maxden=self.omaxden
-			self.showInspector()
+			self.show_inspector()
 		self.updateGL()
 
 	def initializeGL(self):
@@ -657,62 +625,26 @@ class EMImage2DCore:
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		
-		#tmp work by d.woolford
 		if self.otherdata != None and isinstance(self.otherdata,EMData) and not self.glflags.npt_textures_unsupported():
 			scale = self.scale*self.otherdatascale
-			#print "second origin",int(self.origin[0]/scale),int(self.origin[1]/scale)
 			b=self.otherdata.render_amp8(int(self.origin[0]/scale),int(self.origin[1]/scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
 			gl_render_type = GL_LUMINANCE
+			
 			if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
 			self.other_tex_name = GL.glGenTextures(1)
 			if ( self.other_tex_name <= 0 ):
 				raise("failed to generate texture name")
 			
+			glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
+			glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
 			
 			glPushMatrix()
 			glTranslatef(width,height,0)
-			
-			GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-			GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
-			
-			
-			glEnable(GL_TEXTURE_2D)
-			glBindTexture(GL_TEXTURE_2D, self.tex_name)
-			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-			#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-			# using GL_NEAREST ensures pixel granularity
-			# using GL_LINEAR blurs textures and makes them more difficult
-			# to interpret (in cryo-em)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-			# this makes it so that the texture is impervious to lighting
-			#glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, [0.2,0.4,0.8,0.5])
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			
-			# POSITIONING POLICY - the texture occupies the entire screen area
-			glBegin(GL_QUADS)
-			
-			glTexCoord2f(0,0)
-			glVertex2f(-width,height)
-			
-			glTexCoord2f(1,0)
-			glVertex2f(width,height)
-				
-			glTexCoord2f(1,1)
-			glVertex2f(width,-height)
-			
-			glTexCoord2f(0,1)
-			glVertex2f(-width,-height)
-				
-			glEnd()
-			
-			glDisable(GL_TEXTURE_2D)
-			
+			self.__draw_texture(self.other_tex_name,-width,-height,width,height)
 			glPopMatrix()
 
 		render = False
 		if self.use_display_list:
-		
 			if self.display_state_changed():
 				if self.main_display_list != 0:
 					glDeleteLists(self.main_display_list,1)
@@ -736,22 +668,17 @@ class EMImage2DCore:
 				a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 				gl_render_type = GL_LUMINANCE
 			else : 
-				#print "first origin",int(self.origin[0]/self.scale),int(self.origin[1]/self.scale)
 				a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 				gl_render_type = GL_LUMINANCE
 			if  not self.glflags.npt_textures_unsupported():
 				
-			
 				self.hist=struct.unpack('256i',a[-1024:])
 			
-				if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
-				self.tex_name = GL.glGenTextures(1)
+				if self.tex_name != 0: glDeleteTextures(self.tex_name)
+				self.tex_name = glGenTextures(1)
 				if ( self.tex_name <= 0 ):
 					raise("failed to generate texture name")
-				glPushMatrix()
-				glTranslatef(width,height,0)
 				
-					
 				if self.otherdatablend and self.otherdata != None:
 					GL.glEnable(GL.GL_BLEND);
 					depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
@@ -765,46 +692,15 @@ class EMImage2DCore:
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 				
-				
-				glEnable(GL_TEXTURE_2D)
-				glBindTexture(GL_TEXTURE_2D, self.tex_name)
-				#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-				#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-				# using GL_NEAREST ensures pixel granularity
-				# using GL_LINEAR blurs textures and makes them more difficult
-				# to interpret (in cryo-em)
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-				# this makes it so that the texture is impervious to lighting
-				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-				
-				# POSITIONING POLICY - the texture occupies the entire screen area
-				glBegin(GL_QUADS)
-				
-				glTexCoord2f(0,0)
-				glVertex2f(-width,height)
-				
-				glTexCoord2f(1,0)
-				glVertex2f(width,height)
-					
-				glTexCoord2f(1,1)
-				glVertex2f(width,-height)
-				
-				glTexCoord2f(0,1)
-				glVertex2f(-width,-height)
-					
-				glEnd()
-				
-				glDisable(GL_TEXTURE_2D)
-				
+				glPushMatrix()
+				glTranslatef(width,height,0)
+				self.__draw_texture(self.tex_name,-width,-height,width,height)
 				glPopMatrix()
 				
 				if self.otherdatablend and self.otherdata != None:
 					GL.glDisable( GL.GL_BLEND);
-					#if (depth_testing_was_on):
-				GL.glEnable(GL.GL_DEPTH_TEST)
+					if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
 			
-
 			else:
 				GL.glRasterPos(0,self.parent.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
@@ -817,50 +713,17 @@ class EMImage2DCore:
 			glCallList(self.main_display_list)
 		
 		if self.frozen or self.isexcluded:
-			
+			if self.isexcluded:	glColor(0,0.1,0,1)
+			else:glColor(0,0,0.1,1)
 			
 			glPushMatrix()
 			glTranslatef(width,height,0)
-			
-			GL.glEnable(GL.GL_BLEND);
-			depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
-			GL.glDisable(GL.GL_DEPTH_TEST);
-			GL.glBlendEquation(GL.GL_FUNC_ADD);
-			#GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
-			GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
-			
-			
-			# POSITIONING POLICY - the texture occupies the entire screen area
-			
-			if self.isexcluded:
-				glColor(0,0.1,0,1)
-			else:
-				glColor(0,0,0.1,1)
-				
-			glBegin(GL_QUADS)
-			
-			glVertex2f(-width,height)
-
-			glVertex2f(width,height)
-				
-			glVertex2f(width,-height)
-
-			glVertex2f(-width,-height)
-				
-			glEnd()
-			
-			glDisable(GL_TEXTURE_2D)
-			
+			self.__draw_square_shaded_region(-width,-height,width,height)
 			glPopMatrix()
 			
-			glDisable( GL.GL_BLEND)
-			if (depth_testing_was_on):
-				GL.glEnable(GL.GL_DEPTH_TEST)
-		
-
-		if self.inspector :
-			if self.invert: self.inspector.setHist(self.hist,self.maxden,self.minden) 
-			else: self.inspector.setHist(self.hist,self.minden,self.maxden)
+		if self.inspector:
+			if self.invert: self.inspector.set_hist(self.hist,self.maxden,self.minden) 
+			else: self.inspector.set_hist(self.hist,self.minden,self.maxden)
 	
 		if self.shapelist != 0:
 			GL.glPushMatrix()
@@ -879,23 +742,73 @@ class EMImage2DCore:
 			GL.glPopMatrix()
 		self.changec=self.data.get_attr("changecount")
 		
-		#if self.integratedwidget  != None:
-			#print "drawing integrated"
-			#glPushMatrix()
-			#glTranslate(100,100,0)
-			#glDisable(GL_LIGHTING)
-			#glDisable( GL.GL_BLEND)
-			#self.integratedwidget.paintGL()
-			#glPopMatrix()
-		
-		if ( lighting ): glEnable(GL_LIGHTING)
-		
-		if self.display_help_hud:
-			glEnable(GL_LIGHTING)
-			self.__draw_hud()
-			glDisable(GL_LIGHTING)
 
 		if ( lighting ): glEnable(GL_LIGHTING)
+	
+	def __draw_texture(self,texture_handle,xmin,ymin,xmax,ymax):
+		
+		texture_2d_was_enabled = GL.glIsEnabled(GL_TEXTURE_2D)
+		if not texture_2d_was_enabled:glEnable(GL_TEXTURE_2D)
+		
+		glBindTexture(GL_TEXTURE_2D, texture_handle)
+		#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+		#glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		# using GL_NEAREST ensures pixel granularity
+		# using GL_LINEAR blurs textures and makes them more difficult
+		# to interpret (in cryo-em)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		# this makes it so that the texture is impervious to lighting
+		#glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, [0.2,0.4,0.8,0.5])
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		
+		# POSITIONING POLICY - the texture occupies the entire screen area
+		glBegin(GL_QUADS)
+		
+		glTexCoord2f(0,0)
+		glVertex2f(xmin,ymax)
+		
+		glTexCoord2f(1,0)
+		glVertex2f(xmax,ymax)
+			
+		glTexCoord2f(1,1)
+		glVertex2f(xmax,ymin)
+		
+		glTexCoord2f(0,1)
+		glVertex2f(xmin,ymin,)
+			
+		glEnd()
+		
+		if not texture_2d_was_enabled:glDisable(GL_TEXTURE_2D)
+			
+	
+	def __draw_square_shaded_region(self,xmin,ymin,xmax,ymax):
+		
+		GL.glEnable(GL.GL_BLEND);
+		depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
+		GL.glDisable(GL.GL_DEPTH_TEST)
+		GL.glBlendEquation(GL.GL_FUNC_ADD)
+		#GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
+		GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE)
+		glBegin(GL_QUADS)
+		
+		glVertex2f(xmin,ymax)
+
+		glVertex2f(xmax,ymax)
+			
+		glVertex2f(xmax,ymin)
+
+		glVertex2f(xmin,ymin)
+			
+		glEnd()
+		
+		glDisable(GL_TEXTURE_2D)
+		
+		glPopMatrix()
+			
+		glDisable( GL.GL_BLEND)
+		if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
+		
 	def resizeEvent(self,width,height):
 		if self.init_size :
 			self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
@@ -905,7 +818,7 @@ class EMImage2DCore:
 			self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.height()/2.0)
 			self.oldsize=(width,height)
 
-	def getShapes(self):
+	def get_shapes(self):
 		return self.shapes
 	
 	def setupShapes(self):
@@ -923,26 +836,29 @@ class EMImage2DCore:
 			else: s.draw()
 		GL.glEndList()
 	
-	def showInspector(self,force=0):
-		if (self.supressInspector): return
+	def show_inspector(self,force=0):
+		if (self.suppress_inspector): return
 		if not force and self.inspector==None : return
 		self.init_inspector()
-		self.inspector.show()
+		
+		self.application.show_specific(self.em_qt_inspector_widget)
 		
 	def init_inspector(self):
-		if not self.inspector : self.inspector=EMImageInspector2D(self)
-		if self.fft : self.inspector.setLimits(self.fmindeng,self.fmaxdeng,self.fminden,self.fmaxden)
-		else : self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+		if not self.inspector :
+			self.inspector=EMImageInspector2D(self)
+			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
+		if self.fft : self.inspector.set_limits(self.fmindeng,self.fmaxdeng,self.fminden,self.fmaxden)
+		else : self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 	
-	def setMMode(self,m):
+	def set_mouse_mode(self,m):
 		self.mmode=m
 	
-	def setActive(self,n,r,g,b):
+	def set_active(self,n,r,g,b):
 		self.active=(n,r,g,b)
 		self.shapechange=1
 		#self.updateGL()
 
-	def updateblend(self):
+	def update_blend(self):
 		ret = False
 		for shape in self.shapes.items():
 			s = shape[1]
@@ -954,7 +870,7 @@ class EMImage2DCore:
 		
 		return ret
 
-	def addShape(self,k,s):
+	def add_shape(self,k,s):
 		"""Add an EMShape object to be overlaid on the image. Each shape is
 		keyed into a dictionary, so different types of shapes for different
 		purposes may be simultaneously displayed.
@@ -964,17 +880,17 @@ class EMImage2DCore:
 		self.shapechange=1
 		#self.updateGL()
 	
-	def addShapes(self,d):
+	def add_shapes(self,d):
 		self.shapes.update(d)
 		self.shapechange=1
 		#self.updateGL()
 	
 	
-	def delShape(self,p):
+	def del_shape(self,p):
 		self.shapes.pop(p)
 		self.shapechange=1
 
-	def delShapes(self,k=None):
+	def del_shapes(self,k=None):
 		if k:
 			try:
 				for i in k:
@@ -985,24 +901,13 @@ class EMImage2DCore:
 		self.shapechange=1
 		#self.updateGL()
 	
-	def scr2img(self,v0,v1=None):
+	def scr_to_img(self,v0,v1=None):
 		try: return ((v0+self.origin[0])/self.scale,(self.parent.height()-(v1-self.origin[1]))/self.scale)
 		except:	return ((v0[0]+self.origin[0])/self.scale,(self.parent.height()-(v0[1]-self.origin[1]))/self.scale)
-	
-	def img2scr(self,v0,v1=None):
-		try: return (v0*self.scale-self.origin[0],self.origin[1]+self.parent.height()-v1*self.scale)
-		except: 
-			try: return (v0[0]*self.scale-self.origin[0],self.origin[1]+self.parent.height()-v0[1]*self.scale)
-			except: print "ERROR ",v0,v1
-			
-	def img2gl(self,v0,v1=None):
-		try: return (v0*self.scale-self.origin[0],-self.origin[1]+v1*self.scale)
-		except: 
-			try: return (v0[0]*self.scale-self.origin[0],-self.origin[1]+v0[1]*self.scale)
-			except: print "ERROR ",v0,v1
 
 	def closeEvent(self,event) :
-		if self.inspector: self.inspector.close()
+		if self.inspector: 
+			self.application.close_child(self.em_qt_inspector_widget)
 		
 	def dragEnterEvent(self,event):
 #		f=event.mimeData().formats()
@@ -1014,7 +919,7 @@ class EMImage2DCore:
 			event.accept()
 
 	def dropEvent(self,event):
-#		lc=self.scr2img((event.pos().x(),event.pos().y()))
+#		lc=self.scr_to_img((event.pos().x(),event.pos().y()))
 		if EMAN2.GUIbeingdragged:
 			self.set_data(EMAN2.GUIbeingdragged)
 			EMAN2.GUIbeingdragged=None
@@ -1024,9 +929,9 @@ class EMImage2DCore:
 			event.acceptProposedAction()
 
 	def mousePressEvent(self, event):
-		lc=self.scr2img(event.x(),event.y())
+		lc=self.scr_to_img(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
-			self.showInspector(1)
+			self.show_inspector(1)
 			self.parent.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
@@ -1043,7 +948,7 @@ class EMImage2DCore:
 				try: 
 					del self.shapes["MEASL"]
 				except: pass
-				self.addShape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
+				self.add_shape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
 			elif self.mmode==2 and self.inspector:
 				#try:
 #					print "paint ",lc
@@ -1058,7 +963,7 @@ class EMImage2DCore:
 					#return
 				
 	def mouseMoveEvent(self, event):
-		lc=self.scr2img(event.x(),event.y())
+		lc=self.scr_to_img(event.x(),event.y())
 		if self.rmousedrag:
 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
@@ -1069,10 +974,10 @@ class EMImage2DCore:
 				self.parent.emit(QtCore.SIGNAL("mousedrag"), event)
 				return
 			elif self.mmode==1 :
-				self.addShape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
+				self.add_shape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 				dx=lc[0]-self.shapes["MEAS"].shape[4]
 				dy=lc[1]-self.shapes["MEAS"].shape[5]
-				self.addShape("MEASL",EMShape(("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d"%(self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1]),9,-1)))
+				self.add_shape("MEASL",EMShape(("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d"%(self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1]),9,-1)))
 				if self.inspector:
 					apix=self.inspector.mtapix.value
 					self.inspector.mtshoworigin.setText("Start: %d , %d"%(self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5]))
@@ -1113,9 +1018,7 @@ class EMImage2DCore:
 			#window.show()
 			#window.resize(800,800)
 			
-			#self.display_help_hud = not self.display_help_hud
-			#self.updateGL()
-	
+
 	def leaveEvent(self):
 		if self.rmousedrag:
 			self.rmousedrag=None
@@ -1123,7 +1026,7 @@ class EMImage2DCore:
 	def mouseReleaseEvent(self, event):
 		app =  QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.ArrowCursor)
-		lc=self.scr2img(event.x(),event.y())
+		lc=self.scr_to_img(event.x(),event.y())
 		if self.rmousedrag:
 			self.rmousedrag=None
 		elif event.button()==Qt.LeftButton:
@@ -1131,7 +1034,7 @@ class EMImage2DCore:
 				self.parent.emit(QtCore.SIGNAL("mouseup"), event)
 				return
 			elif self.mmode==1 :
-				self.addShape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
+				self.add_shape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 			elif self.mmode==2 and self.inspector:
 				self.set_data(self.data)
 
@@ -1142,11 +1045,11 @@ class EMImage2DCore:
 					self.parent.emit(QtCore.SIGNAL("mousewheel"), event)
 					return
 				if event.delta() > 0:
-					self.setScale( self.scale * self.mag )
+					self.set_scale( self.scale * self.mag )
 				elif event.delta() < 0:
-					self.setScale(self.scale * self.invmag )
+					self.set_scale(self.scale * self.invmag )
 				# The self.scale variable is updated now, so just update with that
-				if self.inspector: self.inspector.setScale(self.scale)
+				if self.inspector: self.inspector.set_scale(self.scale)
 		else:
 			move_fac = 1.0/20.0
 			delta = event.delta()/120.0
@@ -1176,83 +1079,6 @@ class EMImage2DCore:
 			self.wheel_navigate = not self.wheel_navigate
 		else:
 			print "double click only performs a function on Mac"
-			
-	def __generate_display_help(self):
-		self.display_help = []
-		system = platform.system()
-		if system == "Darwin":
-			self.display_help.append(["Double click", "Toggle wheel zoom/pan"])
-			self.display_help.append(["Right click - Ctrl left click", "Pan"])
-			self.display_help.append(["Middle click - Apple left click", "Show inspector"])
-			
-#		self.display_help_column_bounds = [0,0]
-#		if self.font_render_mode == "FTGL":
-#			for s in self.display_help:
-#				for i,text in enumerate(s):
-#					bbox = self.font_renderer.bounding_box(text)
-#					width = bbox[3]-bbox[0]
-#					if width > self.display_help_column_bounds[i]:
-#						self.display_help_column_bounds[i] = width
-				
-	def __draw_hud(self):
-		if self.font_render_mode == "FTGL":
-			
-			self.display_help_column_bounds = [0,0]
-			for s in self.display_help:
-				for i,text in enumerate(s):
-					bbox = self.font_renderer.bounding_box(text)
-					width = bbox[3]-bbox[0]
-					if width > self.display_help_column_bounds[i]:
-						self.display_help_column_bounds[i] = width
-			
-			width = self.parent.width()
-			height = self.parent.height()
-			glMatrixMode(GL_PROJECTION)
-			glPushMatrix()
-			glLoadIdentity()
-			glOrtho(0,width,0,height,-200,200)
-			glMatrixMode(GL_MODELVIEW)
-			glLoadIdentity()
-			glEnable(GL_LIGHTING)
-			glEnable(GL_NORMALIZE)
-#			glMaterial(GL_FRONT,GL_AMBIENT,(0.0, 0.0, 0.0,1.0))
-			glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 0.9, 0.2,1.0))
-			glMaterial(GL_FRONT,GL_DIFFUSE,(1.0, 1.0, 1.0,1.0))
-			glMaterial(GL_FRONT,GL_SPECULAR,(1,0, 0.0, 1.0,1.0))
-#			glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 0.9, 0.2,1.0))
-#			glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 0.9, 0.9,1.0))
-#			glMaterial(GL_FRONT,GL_SPECULAR,(0.9, 0.5, 0.2,1.0))
-			glMaterial(GL_FRONT,GL_SHININESS,20.0)
-			
-			glDisable(GL_DEPTH_TEST)
-			glColor(1.0,1.0,1.0)
-		
-			for i,s in enumerate(self.display_help):
-				for j,text in enumerate (s):
-#					print j,text
-					glPushMatrix()
-					offset = 0
-					if j > 0: offset = self.display_help_column_bounds[j-1]
-					glTranslate(j*10+offset,height-(i+2)*2.2*self.font_renderer.get_face_size(),0)
-					glRotate(-20,0,1,0)
-					self.font_renderer.render_string(text)
-					glPopMatrix()
-				#string = str(s)
-				#bbox = self.font_renderer.bounding_box(string)
-				#x_offset = width-(bbox[3]-bbox[0]) - 10
-				#y_offset += 10
-				#glPushMatrix()
-				#glTranslate(x_offset,y_offset,0)
-				#glRotate(20,0,1,0)
-				#self.font_renderer.render_string(string)
-				#glPopMatrix()
-				#y_offset += bbox[4]-bbox[1]
-			else:
-				pass
-			
-			glMatrixMode(GL_PROJECTION)
-			glPopMatrix()
-			glMatrixMode(GL_MODELVIEW)
 		
 		
 class EMImageInspector2D(QtGui.QWidget):
@@ -1418,20 +1244,20 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		self.lowlim=0
 		self.highlim=1.0
-		#self.updMM()
-		#self.updBC()
+		#self.update_min_max()
+		#self.update_brightness_contrast()
 		self.busy=0
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
-		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
-		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
-		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
-		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
-		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
-		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
-		QtCore.QObject.connect(self.fftg, QtCore.SIGNAL("buttonClicked(int)"), target.setFFT)
-		QtCore.QObject.connect(self.mmtab, QtCore.SIGNAL("currentChanged(int)"), target.setMMode)
-#		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
+		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.new_min)
+		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.new_max)
+		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.new_brt)
+		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.new_cont)
+		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.new_gamma)
+		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.set_invert)
+		QtCore.QObject.connect(self.fftg, QtCore.SIGNAL("buttonClicked(int)"), target.set_FFT)
+		QtCore.QObject.connect(self.mmtab, QtCore.SIGNAL("currentChanged(int)"), target.set_mouse_mode)
+#		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.set_mouse_mode)
 
 	def get_contrast(self):
 		return float(self.conts.getValue())
@@ -1454,47 +1280,47 @@ class EMImageInspector2D(QtGui.QWidget):
 	def set_gamma(self,value,quiet=1):
 		self.gammas.setValue(value,quiet)
 	
-	def setScale(self,val):
+	def set_scale(self,val):
 		if self.busy : return
 		self.busy=1
 		self.scale.setValue(val)
 		self.busy=0
 
-	def newMin(self,val):
+	def new_min(self,val):
 		if self.busy : return
 		self.busy=1
 		self.target.set_density_min(val)
-		self.updBC()
+		self.update_brightness_contrast()
 		self.busy=0
 		
-	def newMax(self,val):
+	def new_max(self,val):
 		if self.busy : return
 		self.busy=1
 		self.target.set_density_max(val)
-		self.updBC()
+		self.update_brightness_contrast()
 		self.busy=0
 	
-	def newBrt(self,val):
+	def new_brt(self,val):
 		if self.busy : return
 		self.busy=1
 		self.target.set_brightness(val)
-		self.updMM()
+		self.update_min_max()
 		self.busy=0
 		
-	def newCont(self,val):
+	def new_cont(self,val):
 		if self.busy : return
 		self.busy=1
 		self.target.set_contrast(val)
-		self.updMM()
+		self.update_min_max()
 		self.busy=0
 		
-	def newGamma(self,val):
+	def new_gamma(self,val):
 		if self.busy : return
 		self.busy=1
 		self.target.set_gamma(val)
 		self.busy=0
 
-	def updBC(self):
+	def update_brightness_contrast(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
 		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
 		brts = -b
@@ -1503,17 +1329,17 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.conts.setValue(conts)
 		self.target.set_brightness_contrast(brts,conts)
 		
-	def updMM(self):
+	def update_min_max(self):
 		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0)
 		self.maxs.setValue(x1)
 		self.target.set_density_range(x0,x1)
 		
-	def setHist(self,hist,minden,maxden):
+	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
 
-	def setLimits(self,lowlim,highlim,curmin,curmax):
+	def set_limits(self,lowlim,highlim,curmin,curmax):
 		if highlim<=lowlim : highlim=lowlim+.001
 		#print "in set limits", self.conts.getValue(), self.conts.getValue()
 		self.lowlim=lowlim
@@ -1524,48 +1350,20 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.maxs.setValue(curmax)
 		self.target.set_density_range(curmin,curmax)
 		#print "leave set limits", self.conts.getValue(), self.conts.getValue()
-class SundryWidget(QtGui.QWidget):
-	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
-		self.target=target
 		
-		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
-		
-		self.frozen = QtGui.QCheckBox("Frozen")
-		self.frozen.setChecked(False)
-		self.vbl.addWidget(self.frozen)
 
 # This is just for testing, of course
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	GLUT.glutInit("")
-	window = EMImage2D()
+	em_app = EMStandAloneApplication()
+	window = EMImage2DModule(application=em_app)
+	
 	if len(sys.argv)==1 : 
 		window.set_data(test_image(size=(128,128)))
-
-		# these lines are for testing shape rendering
-# 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
-# 		window.addShape("b",["circle",.5,.8,.2,120,50,30.0,2])
-# 		window.addShape("c",["line",.2,.8,.5,20,120,100,200,2])
-# 		window.addShape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
 	else :
 		a=EMData.read_images(sys.argv[1],[0])
 		window.set_data(a[0])
-		window.get_core_object().set_file_name(sys.argv[1])
-		print "set file name",sys.argv[1]
-
-	window2=EMParentWin(window)
-	window2.show()
+		window.set_file_name(sys.argv[1])
+		
+	em_app.show()
+	em_app.execute()
 	
-#	w2=QtGui.QWidget()
-#	w2.resize(256,128)
-	
-#	w3=ValSlider(w2)
-#	w3.resize(256,24)
-#	w2.show()
-	
-	sys.exit(app.exec_())

@@ -46,7 +46,7 @@ from EMAN2 import *
 from emimageutil import EMParentWin
 from emglobjects import EMOpenGLFlagsAndTools
 from emfloatingwidgets import EMGLRotorWidget, EMGLView2D, EM3DWidget
-from emimagemx import EMImageMxInspector2D, EMImageMXCore
+from emimagemx import EMImageInspectorMX, EMImageMXModule
 from EMAN2db import EMAN2DB
 
 class EMImageMXRotor(QtOpenGL.QGLWidget):
@@ -285,9 +285,9 @@ class EMImageMXRotorCore:
 			self.font_renderer.set_face_size(32)
 			self.font_renderer.set_depth(8)
 			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
-			self.font_render_mode = EMImageMXCore.FTGL
+			self.font_render_mode = EMImageMXModule.FTGL
 		except:
-			self.font_render_mode = EMImageMXCore.GLUT
+			self.font_render_mode = EMImageMXModule.GLUT
 	
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
@@ -712,7 +712,7 @@ class EMImageMXRotorCore:
 		allow_col_variation = True
 		allow_mx_variation = True
 		opt_fit_button_on = True
-		if not self.inspector : self.inspector=EMImageMxInspector2D(self,allow_col_variation,allow_mx_variation,opt_fit_button_on)
+		if not self.inspector : self.inspector=EMImageInspectorMX(self,allow_col_variation,allow_mx_variation,opt_fit_button_on)
 		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def mousePressEvent(self, event):
@@ -776,7 +776,7 @@ class EMImageMXRotorCore:
 		glColor(1.0,1.0,1.0)
 		
 		
-		if self.font_render_mode == EMImageMXCore.FTGL:
+		if self.font_render_mode == EMImageMXModule.FTGL:
 			panels = self.get_num_panels()
 			idx = self.start_mx
 			if idx != 0: idx %= panels

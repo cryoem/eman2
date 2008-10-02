@@ -54,8 +54,8 @@ from emglobjects import Camera2, EMImage3DObject, EMViewportDepthTools, Camera2,
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMIsosurface(EMImage3DObject):
-	def eyeCoordsDif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eyeCoordsDif(x1,y1,x2,y2,mdepth)
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
 	def viewportHeight(self):
 		return self.parent.height()
@@ -98,7 +98,7 @@ class EMIsosurface(EMImage3DObject):
 		self.data_copy.mult(self.contrast)
 		
 		hist = self.data_copy.calc_hist(256,self.minden,self.maxden)
-		self.inspector.setHist(hist,self.minden,self.maxden) 
+		self.inspector.set_hist(hist,self.minden,self.maxden) 
 
 		if ( self.texture ): self.genTexture()
 	
@@ -173,7 +173,7 @@ class EMIsosurface(EMImage3DObject):
 		glPushMatrix()
 		glLoadIdentity()
 		[width,height] = self.parent.get_near_plane_dims()
-		z = self.parent.getStartZ()
+		z = self.parent.get_start_z()
 		
 		glTranslate(-width/2.0,-height/2.0,-z-0.01)
 		glScalef(width,height,1.0)
@@ -259,7 +259,7 @@ class EMIsosurface(EMImage3DObject):
 			self.inspector=EMIsoInspector(self)
 		
 		hist = data.calc_hist(256,self.minden,self.maxden)
-		self.inspector.setHist(hist,self.minden,self.maxden) 
+		self.inspector.set_hist(hist,self.minden,self.maxden) 
 	
 		self.inspector.setThrs(self.minden,self.maxden,mean+3.0*sigma)
 		self.isothr = mean+3.0*sigma
@@ -347,7 +347,7 @@ class EMIsosurface(EMImage3DObject):
 				return
 			self.inspector.updateRotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
 			self.resizeEvent()
-			self.showInspector(1)
+			self.show_inspector(1)
 		else:
 			self.cam.mousePressEvent(event)
 		
@@ -530,7 +530,7 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		
 		self.isosurface.resizeEvent()
 	
-	def getStartZ(self):
+	def get_start_z(self):
 		return self.startz
 	
 	def get_near_plane_dims(self):
@@ -543,8 +543,8 @@ class EMIsosurfaceWidget(QtOpenGL.QGLWidget):
 		self.cam.default_z = -1.25*data.get_zsize()
 		self.cam.cam_z = -1.25*data.get_zsize()
 	
-	def showInspector(self,force=0):
-		self.isosurface.showInspector()
+	def show_inspector(self,force=0):
+		self.isosurface.show_inspector()
 	
 	def closeEvent(self,event) :
 		self.isosurface.closeEvent(event)
@@ -621,7 +621,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
@@ -631,9 +631,9 @@ class EMIsoInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), self.setMaterial)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
 		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setSample)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
+		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
+		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
+		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggleWire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggleLight)
 		QtCore.QObject.connect(self.texturetog, QtCore.SIGNAL("toggled(bool)"), self.toggleTexture)
@@ -940,7 +940,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.phi.setValue(rot[self.phi.getLabel()],True)
 	
 	def sliderRotate(self):
-		self.target.loadRotation(self.getCurrentRotation())
+		self.target.load_rotation(self.getCurrentRotation())
 	
 	def getCurrentRotation(self):
 		convention = self.src.currentText()
@@ -1062,10 +1062,10 @@ class EMIsoInspector(QtGui.QWidget):
 		self.smp.setRange(int(low),int(high))
 		self.smp.setValue(val, True)
 		
-	def setHist(self,hist,minden,maxden):
+	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
 
-	def setScale(self,newscale):
+	def set_scale(self,newscale):
 		self.scale.setValue(newscale)
 		
 # This is just for testing, of course

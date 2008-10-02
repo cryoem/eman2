@@ -99,7 +99,7 @@ def showstars(img,pa):
 #	w.setWindowTitle("EMImage (%s)"%f)
 	for i in range(len(pa)):
 		v=["circle",.2,1.,.2,pa[i][0]+img.get_xsize()/2,pa[i][1]+img.get_ysize()/2,5.0,1.0]
-		w.addShape(i,v)
+		w.add_shape(i,v)
 	w.show()
 	wins.append(w)
 	

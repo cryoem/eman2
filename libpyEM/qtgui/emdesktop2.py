@@ -674,11 +674,6 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			self.child.draw()
 			glPopMatrix()
 			glTranslate(0,-self.xy_scale*self.child.height(),0)
-		
-		
-class EMModule:
-	def __init__(self):
-		pass
 	
 class EMBrowserModule(EMModule):
 	def __init__(self,inspector_target,display_target):

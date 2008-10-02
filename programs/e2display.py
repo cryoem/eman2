@@ -32,7 +32,7 @@
 #
 
 from EMAN2 import *
-from emimage import EMImage
+from emimage import EMImageModule
 try: from emplot2d import EMPlot2D,NewPlot2DWin
 except: pass
 
@@ -42,6 +42,8 @@ from optparse import OptionParser
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
+from emapplication import EMStandAloneApplication
+
 #from valslider import ValSlider
 #from math import *
 #import numpy
@@ -73,7 +75,8 @@ def main():
 	logid=E2init(sys.argv)
 #        GLUT.glutInit(sys.argv)
 
-	app = QtGui.QApplication(sys.argv)
+	app = EMStandAloneApplication() 
+	#QtGui.QApplication(sys.argv)
 	win=[]
 
 	if options.plot:
@@ -81,7 +84,7 @@ def main():
 	elif options.classes:
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
-		display(imgs,args[0])
+		display(imgs,app,args[0])
 		
 		QtCore.QObject.connect(win[0].child,QtCore.SIGNAL("mousedown"),lambda a,b:selectclass(options.classes[0],options.classes[1],a,b))
 		try:
@@ -93,13 +96,15 @@ def main():
 		options.classmx=options.classmx.split(",")
 		clsnum=int(options.classmx[1])
 		imgs=getmxim(args[0],options.classmx[0],clsnum)
-		display(imgs,args[0])
+		display(imgs,app,args[0])
 	else:
 		for i in args:
 			a=EMData.read_images(i)
-			display(a,i)
-			
-	sys.exit(app.exec_())
+			display(a,app,i)
+	
+	app.show()
+	app.execute()
+	#sys.exit(app.exec_())
 
 	E2end(logid)
 
@@ -142,19 +147,16 @@ def getmxim(fsp,fsp2,clsnum):
 	imgs=[i[0] for i in imgs]
 	return imgs
 
-def display(img,title="EMImage"):
-#	print img
-	
+def display(img,app,title="EMAN2 image"):
 	if len(img)==1 : img=img[0]
-	w=EMImage(data=img,old=None,parent=1,copy=False) # no copying necessary from the command 
-	w.setWindowTitle(title)
+	w=EMImageModule(data=img,old=None,copy=False) # no copying necessary from the command 
+	w.get_qt_widget().setWindowTitle(title)
 	try:
 		if file_exists(title):
-			print 
-			w.child.get_core_object().set_file_name(title)
+			w.set_file_name(title)
 	except: pass
-	w.show()
-	win.append(w)
+	w.set_app(app)
+	app.attach_child(w)
 
 def plot(files):
 	plotw=EMPlot2D()
@@ -165,7 +167,7 @@ def plot(files):
 	w.setWindowTitle("EMPlot2D")
 	w.show()
 	win.append(w)
-	
+
 
 # If executed as a program
 if __name__ == '__main__':
