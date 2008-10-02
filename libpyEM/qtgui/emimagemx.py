@@ -307,7 +307,7 @@ class EMImageMXModule(EMModule):
 	def get_qt_widget(self):
 		if self.parent == None:	
 			self.parent = EMImageMXWidget(self)
-			if self.init_size_flag and isinstance(self.data[0],EMData):
+			if self.init_size_flag and self.data != None and isinstance(self.data[0],EMData):
 				self.init_size_flag = False
 				if len(self.data)<self.mx_cols :
 					w=len(self.data)*(self.data[0].get_xsize()+2)
@@ -1223,6 +1223,8 @@ class EMImageMXModule(EMModule):
 			self.set_data(self.data)
 			event.acceptProposedAction()
 
+	def keyPressEvent(self,event):
+		pass
 
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):

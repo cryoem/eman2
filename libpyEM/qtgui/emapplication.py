@@ -64,6 +64,10 @@ class EMApplication:
 		if self.app != None:
 			return sys.exit(self.app.exec_())
 		else: return
+		
+	def quit(self):
+		if self.app != None:
+			self.app.quit
 
 class EMStandAloneApplication(EMApplication):
 	

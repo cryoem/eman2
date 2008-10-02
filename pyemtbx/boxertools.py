@@ -2794,7 +2794,7 @@ class TrimSwarmAutoBoxer:
 	def set_creation_ts(self,TS):
 		''' 
 		This function is used when creating a fresh copy of this autoboxer and placing it
-		in the database in GUIbox
+		in the database in EMBoxerModule
 		'''
 		#print "setting creationTS",TS
 		self.creation_ts= TS
@@ -2860,7 +2860,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		
 		self.creation_ts = gm_time_string()
 		
-		self.set_convenience_name(self.get_creation_ts()) # this string is the string that users will use to name this autoboxer in the GUIboxCtrl
+		self.set_convenience_name(self.get_creation_ts()) # this string is the string that users will use to name this autoboxer in the EMBoxerModuleCtrl
 
 	def dynapix_on(self):
 		return (self.mode == SwarmAutoBoxer.DYNAPIX)
@@ -3218,7 +3218,7 @@ class SwarmAutoBoxer(AutoBoxer):
 			self.write_to_db(True) # this object must be recoverable from the database as the current autoboxer
 			
 			if self.parent != None and self.mode != SwarmAutoBoxer.COMMANDLINE:
-				self.parent.autoboxer_db_changed() # tell the GUIbox that the autoboxers in the db have been added to - this results in a display update, specifically in the advanced tab of the inspector
+				self.parent.autoboxer_db_changed() # tell the EMBoxerModule that the autoboxers in the db have been added to - this results in a display update, specifically in the advanced tab of the inspector
 			return 1
 
 		# ref update should only be toggled if we are in user driven mode so the user has dynapix off
@@ -3263,7 +3263,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				self.write_to_db(True) # this object must be recoverable from the database as the current autoboxer
 		
 			if self.parent != None and self.mode != SwarmAutoBoxer.COMMANDLINE:
-				self.parent.autoboxer_db_changed() # tell the GUIbox that the autoboxers in the db have been added to - this results in a display update, specifically in the advanced tab of the inspector
+				self.parent.autoboxer_db_changed() # tell the EMBoxerModule that the autoboxers in the db have been added to - this results in a display update, specifically in the advanced tab of the inspector
 				
 			#self.write_image_specific_references_to_db(boxable.get_image_name()) # 
 			

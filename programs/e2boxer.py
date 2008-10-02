@@ -37,7 +37,8 @@ from EMAN2 import *
 from pyemtbx.boxertools import *
 from optparse import OptionParser
 from emshape import EMShape
-from emimagemx import EMImageMX
+from emimagemx import EMImageMXModule
+from emimage2d import EMImage2DModule
 from emimagerotor import EMImageRotor
 from emimagemxrotor import EMImageMXRotor
 from emrotor import EMRotor
@@ -63,6 +64,7 @@ from time import time,sleep
 from sys import getrefcount
 
 from emglobjects import EMOpenGLFlagsAndTools
+from emapplication import EMStandAloneApplication
 
 if os.name == 'nt':
 	def kill(pid):
@@ -199,9 +201,10 @@ for single particle analysis."""
 
 	E2end(logid)
 
+	application = EMStandAloneApplication()
 	# invoke the GUI if requested
 	if options.gui:
-		gui=GUIbox(filenames,boxes,options.boxsize)
+		gui=EMBoxerModule(application,filenames,boxes,options.boxsize)
 		gui.run()
 		
 	print "Exiting e2boxer"
@@ -407,9 +410,9 @@ class AutoDBBoxer(QtCore.QObject):
 		#print "process started"
 		
 
-class GUIboxMouseEventsObject:
+class EMBoxerModuleMouseEventsObject:
 	'''
-	A base class for objects that handle mouse events in the GUIbox
+	A base class for objects that handle mouse events in the EMBoxerModule
 	
 	Inheriting objects are concerned with supplying their own definitions of 
 	the functions mouse_up, mouse_down, mouse_drag, mouse_move and mouse_wheel. 
@@ -418,19 +421,19 @@ class GUIboxMouseEventsObject:
 	did not atleast supply one of them.
 	
 	Also stores a reference to the mediator object which coordinates the requests and signals
-	of subclassing objects to the GUIbox class. Modify the mediator class if you ever need
-	to extend the scope of the messaging/signaling/requesting system between GUIboxMouseEventsObjects
-	and the GUIbox.
+	of subclassing objects to the EMBoxerModule class. Modify the mediator class if you ever need
+	to extend the scope of the messaging/signaling/requesting system between EMBoxerModuleMouseEventsObjects
+	and the EMBoxerModule.
 	
-	The mediator object could be replaced with a direct reference to the GUIbox class, but
+	The mediator object could be replaced with a direct reference to the EMBoxerModule class, but
 	this is not recommended - for documentation and clarity of code purposes.
 	'''
 	def __init__(self,mediator):
 		'''
 		Stores only a reference to the mediator
 		'''
-		if not isinstance(mediator,GUIboxEventsMediator):
-			print "error, the mediator should be a GUIboxEventsMediator"
+		if not isinstance(mediator,EMBoxerModuleEventsMediator):
+			print "error, the mediator should be a EMBoxerModuleEventsMediator"
 			return
 		
 		self.mediator = mediator
@@ -484,12 +487,12 @@ class GUIboxMouseEventsObject:
 		pass
 	
 
-class GUIboxMouseEraseEvents(GUIboxMouseEventsObject):
+class EMBoxerModuleMouseEraseEvents(EMBoxerModuleMouseEventsObject):
 	'''
 	A class that knows how to handle mouse erase events for a GUIBox
 	'''
 	def __init__(self,mediator,eraseradius=-1):
-		GUIboxMouseEventsObject.__init__(self,mediator)
+		EMBoxerModuleMouseEventsObject.__init__(self,mediator)
 		
 		self.eraseradius=eraseradius	# This is a circular radius 
 		self.erasemode = None			# erase mode can be either Boxable.ERASE or Boxable.UNERASE
@@ -531,18 +534,18 @@ class GUIboxMouseEraseEvents(GUIboxMouseEventsObject):
 		self.get_2d_gui_image().add_shape("eraser",EMShape(["circle",0,0,0,0,0,0,0.1]))
 		self.mediator.erasing_done(self.erasemode)
 	
-class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
+class EMBoxerModuleParticleManipEvents(EMBoxerModuleMouseEventsObject):
 	'''
 	A class that knows how to add, move and remove reference and non reference boxes 
 	'''
 	def __init__(self,mediator):
-		GUIboxMouseEventsObject.__init__(self,mediator)
-		self.mode =  GUIbox.REFERENCE_ADDING
+		EMBoxerModuleMouseEventsObject.__init__(self,mediator)
+		self.mode =  EMBoxerModule.REFERENCE_ADDING
 		self.moving = None
 		self.dynapix = False
 
 	def set_mode(self,mode):
-		if mode not in [GUIbox.REFERENCE_ADDING,GUIbox.MANUALLY_ADDING]:
+		if mode not in [EMBoxerModule.REFERENCE_ADDING,EMBoxerModule.MANUALLY_ADDING]:
 			print 'error, that is  an illegal mode'
 			return
 		
@@ -565,11 +568,11 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 
 			box.changed = True # this is so image2D nows to repaint the shape
 			
-			if self.mode == GUIbox.REFERENCE_ADDING:
+			if self.mode == EMBoxerModule.REFERENCE_ADDING:
 				box.isref = True
 				box.ismanual = False
 				
-			elif self.mode == GUIbox.MANUALLY_ADDING:
+			elif self.mode == EMBoxerModule.MANUALLY_ADDING:
 				box.isref = False
 				box.ismanual = True
 			else:
@@ -596,8 +599,8 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 			x0=box.xcorner+box.xsize/2-1
 			y0=box.ycorner+box.ysize/2-1
 			self.get_2d_gui_image().add_shape("cen",EMShape([self.mediator.get_shape_string(),.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
-			object = self.get_mx_gui_image().get_core_object()
-			if object.is_visible(box_num) or True : self.get_mx_gui_image().get_core_object().set_selected([box_num],True)
+			object = self.get_mx_gui_image()
+			if object.is_visible(box_num) or True : self.get_mx_gui_image().set_selected([box_num],True)
 			self.mediator.update_all_image_displays()
 			
 
@@ -630,23 +633,23 @@ class GUIboxParticleManipEvents(GUIboxMouseEventsObject):
 		m = self.get_2d_gui_image().scr_to_img((event.x(),event.y()))
 		box_num = self.mediator.detect_box_collision(m)
 		if box_num != -1 and not event.modifiers()&Qt.ShiftModifier:
-			object = self.get_mx_gui_image().get_core_object()
+			object = self.get_mx_gui_image()
 			if not object.is_visible(box_num) : object.scroll_to(box_num,True)
-			self.get_mx_gui_image().get_core_object().set_selected([box_num],True)
+			self.get_mx_gui_image().set_selected([box_num],True)
 			self.mediator.update_all_image_displays()
 
-class GUIboxEventsMediator:
+class EMBoxerModuleEventsMediator:
 	'''
 	This class could just as easily not exist - however it remains in use for documentation
-	purposes. If it was removed, the GUIboxMouseEventsObjects could have a reference to the GUIbox
+	purposes. If it was removed, the EMBoxerModuleMouseEventsObjects could have a reference to the EMBoxerModule
 	class instead of this one and the code would still work. But without this class it would be difficult to
-	disentangle the relationship between the GUIboxMouseEventsObjects and the GUIbox.
+	disentangle the relationship between the EMBoxerModuleMouseEventsObjects and the EMBoxerModule.
 	
-	This class coordinates all the requests and 'signals' of the GUIboxMouseEventsObject classes so that they
-	are connected to the correct 'slots' and getter functions  in the GUIbox class. This behavior is analogous to the 
+	This class coordinates all the requests and 'signals' of the EMBoxerModuleMouseEventsObject classes so that they
+	are connected to the correct 'slots' and getter functions  in the EMBoxerModule class. This behavior is analogous to the 
 	Qt signal/slot mechanism, but no Qt signals/slots are actually used. Instead this class
-	supplies a bunch of public functions that accept the requests and signals from the GUIboxMouseEventsObject
-	and send them on to the 'slots' and getter functions of the the GUIbox - using basic function interfacing. This
+	supplies a bunch of public functions that accept the requests and signals from the EMBoxerModuleMouseEventsObject
+	and send them on to the 'slots' and getter functions of the the EMBoxerModule - using basic function interfacing. This
 	is also motivated by the Mediator concept in the Gang of Four.
 	
 	All things considered, the class remains for documentation purposes. It should only be removed if 
@@ -656,8 +659,8 @@ class GUIboxEventsMediator:
 		'''
 		Stores only a reference to the parent
 		'''
-		if not isinstance(parent,GUIbox):
-			print "error, the parent of a GUIboxMouseEraseEvents must be a GUIbox"
+		if not isinstance(parent,EMBoxerModule):
+			print "error, the parent of a EMBoxerModuleMouseEraseEvents must be a EMBoxerModule"
 			return
 		
 		self.parent = parent	# need a referene to the parent to send it events
@@ -782,7 +785,7 @@ class GUIboxEventsMediator:
 		return self.parent.get_shape_string()
 	
 	
-class GUIbox:
+class EMBoxerModule:
 	'''
 	Cleaning in progress
 	'''
@@ -791,9 +794,9 @@ class GUIbox:
 	MANUALLY_ADDING = 2
 	FANCY_MODE = 'fancy'
 	PLAIN_MODE = 'plain'
-	def __init__(self,image_names,boxes,box_size=-1):
+	def __init__(self,application,image_names,boxes,box_size=-1):
 		"""Implements the 'boxer' GUI."""
-		self.dynapixp=get_app() # get the app
+		self.application = application
 		
 		self.__alt_init__(image_names,boxes,box_size)
 		
@@ -802,7 +805,7 @@ class GUIbox:
 		self.__init_guimx_thumbs() # initialize the thumbnail diplsy
 		self.ab_sel_mediator = AutoBoxerSelectionsMediator(self)
 		self.__init_guictl()
-		if self.fancy_mode == GUIbox.FANCY_MODE:
+		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			self.__init_ctl_rotor()
 		
 		self.autoboxer.auto_box(self.boxable,False) # Do the automatic autoboxing - this makes the user see results immediately
@@ -846,12 +849,12 @@ class GUIbox:
 		self.guictlrotor.show()
 
 	def __init_guictl(self):
-		self.guictl=GUIboxPanel(self,self.ab_sel_mediator)
+		self.guictl=EMBoxerModulePanel(self,self.ab_sel_mediator)
 		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.setWindowTitle("e2boxer Controller")
 		self.guictl.set_dynapix(self.dynapix)
 		self.guictl.show()
-		if self.fancy_mode == GUIbox.FANCY_MODE: self.guictl.hide()
+		if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
 	
 	def __init_guimx_thumbs(self):
 		self.itshrink = -1 # image thumb shrink. Default value of -1 means it has to be calculated when it's first needed
@@ -860,11 +863,11 @@ class GUIbox:
 		self.guimxit = None
 		self.__gen_image_thumbnails_widget()
 		
-		if self.guimxitp != None:
-			self.guimxitp.show()
+		if self.guimxit != None:
+			self.application.show_specific(self.guimxit)
 			if isinstance(self.guimxit,EMImageRotor):
 				self.guimxitp.resize(*self.guimxit.get_optimal_size())
-			self.guimxit.connect(self.guimxit,QtCore.SIGNAL("mousedown"),self.image_selected)
+			QtCore.QObject.connect(self.guimxit.get_qt_widget(),QtCore.SIGNAL("mousedown"),self.image_selected)
 			if isinstance(self.guimxit,EMImageRotor):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 	
@@ -874,51 +877,56 @@ class GUIbox:
 		emftgl_supported = True
 		try: a = EMFTGL()
 		except: emftgl_supported = False
-		if not glflags.npt_textures_unsupported() and emftgl_supported:
+		if False and not glflags.npt_textures_unsupported() and emftgl_supported:
 			self.guimx=EMImageMXRotor()		# widget for displaying image thumbs
 			self.guimx.get_core_object().disable_mx_zoom()
 			self.guimx.get_core_object().allow_camera_rotations(False)
 			self.guimx.get_core_object().disable_mx_translate()
-			#self.fancy_mode = GUIbox.FANCY_MODE
-			self.fancy_mode = GUIbox.PLAIN_MODE # for now just make sure the fancy stuff isn't used
+			#self.fancy_mode = EMBoxerModule.FANCY_MODE
+			self.fancy_mode = EMBoxerModule.PLAIN_MODE # for now just make sure the fancy stuff isn't used
 		else:
-			self.guimx=EMImageMX()	
-			self.fancy_mode = GUIbox.PLAIN_MODE
+			self.guimx=EMImageMXModule(application=self.application)
+			self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
+		qt_target = self.guimx.get_qt_widget()
 		self.guimx.set_mmode("app")
 		
-		if self.fancy_mode == GUIbox.FANCY_MODE:
-			 self.guimx.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
+		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
+			 QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
-		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.box_selected)
-		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedrag"),self.box_moved)
-		self.guimx.connect(self.guimx,QtCore.SIGNAL("mouseup"),self.box_released)
-		self.guimx.connect(self.guimx,QtCore.SIGNAL("boxdeleted"),self.box_image_deleted)
-		if self.fancy_mode == GUIbox.FANCY_MODE:
-			self.guimx.connect(self.guimx,QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.box_selected)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.box_moved)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup"),self.box_released)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("boxdeleted"),self.box_image_deleted)
+		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
+			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
 		
 	def init_guiim(self, image=None, imagename=None):
 		if image is None:
 			imagename = self.image_names[self.current_image_idx]
 			image=BigImageCache.get_object(imagename).get_image(use_alternate=True)
 		
-		self.guiimp=EMImage(image)		# widget for displaying large image
-		self.guiimp.setWindowTitle(imagename)
-		self.guiim=self.guiimp.child
+		self.guiimp= EMImage2DModule(image,self.application)
+		#EMImage(image)# widget for displaying large image
+		qt_target = self.guiimp.get_qt_widget()
+		qt_target.enable_timer()
+		qt_target.setWindowTitle(imagename)
+		self.guiim=self.guiimp
 		self.__update_guiim_states()
 		
 		self.guiim.set_mmode(0)
-		self.guiimp.show()
+		self.application.show_specific(self.guiimp)
+		#self.guiimp.show()
 		
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mouse_down)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("keypress"),self.keypress)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousemove"),self.mouse_move)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.mouse_down)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("keypress"),self.keypress)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousemove"),self.mouse_move)
 	
 	def __update_guiim_states(self):
-		guiim_core = self.guiim.get_core_object()
+		guiim_core = self.guiim
 		
 		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		
@@ -963,20 +971,20 @@ class GUIbox:
 		self.ctl_rotor.get_core_object().add_qt_widget(self.guiim.get_core_object().get_inspector())
 	
 	def guimx_inspector_requested(self,event):
-		self.ctl_rotor.get_core_object().add_qt_widget(self.guimx.get_core_object().get_inspector())
+		self.ctl_rotor.get_core_object().add_qt_widget(self.guimx.get_inspector())
 	
 	def initialize_mouse_event_handlers(self):
-		self.eventsmediator = GUIboxEventsMediator(self)
+		self.eventsmediator = EMBoxerModuleEventsMediator(self)
 		self.mouse_handlers = {}
-		self.mouse_handlers["boxing"] = GUIboxParticleManipEvents(self.eventsmediator)
-		self.mouse_handlers["erasing"] = GUIboxMouseEraseEvents(self.eventsmediator,self.eraseradius)
+		self.mouse_handlers["boxing"] = EMBoxerModuleParticleManipEvents(self.eventsmediator)
+		self.mouse_handlers["erasing"] = EMBoxerModuleMouseEraseEvents(self.eventsmediator,self.eraseradius)
 		self.mousehandler = self.mouse_handlers["boxing"]
 	
 	def get_shape_string(self):
 		return self.shape_string
 	
 	def has_thumbnails(self):
-		return self.guimxitp != None
+		return self.guimxit != None
 	
 	def view_boxes_clicked(self,bool):
 		if bool:
@@ -992,11 +1000,13 @@ class GUIbox:
 			self.guiimp.hide()
 			
 	def view_thumbs_clicked(self,bool):
-		if self.guimxitp == None: return
+		if  self.guimxit== None: return
 		if bool:
-			self.guimxitp.show()
+			self.application.show_specific(self.guimxit)
+			#self.guimxitp.show()
 		else:
-			self.guimxitp.hide()
+			print "handle this"
+			#self.guimxitp.hide()
 			
 	def within_main_image_bounds(self,coords):
 		x = coords[0]
@@ -1051,7 +1061,7 @@ class GUIbox:
 				self.boxable.get_exclusion_image(True)
 				self.boxable.reload_boxes() # this may be inefficient
 				#print "clearing displays"
-				guiim_core = self.guiim.get_core_object()
+				guiim_core = self.guiim
 				guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 				self.clear_displays()
 			elif mode == 1:
@@ -1059,7 +1069,7 @@ class GUIbox:
 				self.autoboxer.set_box_size(self.box_size,self.image_names)
 				self.boxable.reload_boxes() # this may be inefficient
 				#print "clearing displays"
-				guiim_core = self.guiim.get_core_object()
+				guiim_core = self.guiim
 				guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 				self.clear_displays()	
 			else:
@@ -1079,7 +1089,7 @@ class GUIbox:
 		
 	def exclusion_area_added(self,typeofexclusion,x,y,radius,mode):
 		self.boxable.add_exclusion_area(typeofexclusion,x,y,radius,mode)
-		guiim_core = self.guiim.get_core_object()
+		guiim_core = self.guiim
 		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.update_image_display()
 		
@@ -1174,7 +1184,7 @@ class GUIbox:
 			box = self.delete_box(box_num)
 		if not (box.isref or box.ismanual):
 			self.boxable.add_exclusion_particle(box)
-		guiim_core = self.guiim.get_core_object()
+		guiim_core = self.guiim
 		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.box_display_update()
 	
@@ -1184,7 +1194,7 @@ class GUIbox:
 		box = self.delete_box(box_num)
 		if not (box.isref or box.ismanual):
 			self.boxable.add_exclusion_particle(box)
-		guiim_core = self.guiim.get_core_object()
+		guiim_core = self.guiim
 		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.box_display_update()
 		
@@ -1204,11 +1214,9 @@ class GUIbox:
 		if data != None:
 			self.guimx.set_data(data)
 			if len(data) != 0:
-				if self.guimxp == None:
-					self.guimxp = EMParentWin(self.guimx)
-					self.guimxp.setWindowTitle("Particles")
-					self.guimxp.show()
-					#self.guimx.get_core_object().set_selected([0])
+				qt_target = self.guimx.get_qt_widget()
+				if not qt_target.isVisible():
+					self.application.show_specific(self.guimx)
 	
 	def clear_displays(self):
 		self.ptcl = []
@@ -1220,7 +1228,7 @@ class GUIbox:
 		image=BigImageCache.get_object(self.get_current_image_name()).get_image(use_alternate=True)
 		self.guiim.set_data(image)
 		self.guiim.del_shapes()
-		self.guiim.get_core_object().force_display_update()
+		self.guiim.force_display_update()
 		self.box_display_update()
 		
 	def image_selected(self,event,lc):
@@ -1238,7 +1246,7 @@ class GUIbox:
 			
 			
 			if debug: tt = time()
-			self.guiimp.setWindowTitle(self.image_names[im])
+			self.guiim.get_qt_widget().setWindowTitle(self.image_names[im])
 			if debug: print "it took", time() - tt, "to read the prior stuff A1 "
 			if debug: tt = time()
 			self.guiim.set_data(image)
@@ -1252,7 +1260,7 @@ class GUIbox:
 			if debug: tt = time()
 			self.ptcl = []
 			self.guiim.del_shapes()
-			self.guiim.get_core_object().force_display_update()
+			self.guiim.force_display_update()
 			self.in_display_limbo = True
 			if debug: print "it took", time() - tt, "to read the prior stuff B "
 			if debug: tt = time()
@@ -1303,7 +1311,7 @@ class GUIbox:
 			self.current_image_idx = im
 			
 			self.__update_guiim_states()
-			if self.guimxitp != None and isinstance(self.guimxit,EMImageRotor):
+			if isinstance(self.guimxit,EMImageRotor):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 			self.guictl.set_image_quality(self.boxable.get_quality())
 			
@@ -1354,11 +1362,13 @@ class GUIbox:
 			emftgl_supported = True
 			try: a = EMFTGL()
 			except: emftgl_supported = False
-			if not glflags.npt_textures_unsupported() and emftgl_supported:
+			if False and not glflags.npt_textures_unsupported() and emftgl_supported:
 				self.guimxit=EMImageRotor()		# widget for displaying image thumbs
 			else:
-				self.guimxit=EMImageMX()
+				self.guimxit=EMImageMXModule(application=self.application)
 				
+			qt_parent = self.guimxit.get_qt_widget()
+			qt_parent.setWindowTitle("Image Thumbs")
 			self.guimxit.set_data(self.imagethumbs)
 			
 			try:
@@ -1368,9 +1378,6 @@ class GUIbox:
 					if frozen != None:
 						self.guimxit.set_frozen(frozen,i)
 			except: print "setting frozen failed"
-					
-			self.guimxitp = EMParentWin(self.guimxit)
-			self.guimxitp.setWindowTitle("Image Thumbs")
 			
 			self.guimxit.set_mmode("app")
 			app = QtGui.QApplication.instance()
@@ -1543,17 +1550,17 @@ class GUIbox:
 	def update_all_image_displays(self):
 		self.update_image_display()
 		self.update_mx_display()
-		if self.guimxit != None: self.guimxit.updateGL()
+		if self.guimxit != None: self.guimxit.get_qt_widget().updateGL()
 	
 		#context = contextdata.getContext(None)
 		#print context
 		
 	def update_image_display(self):
-		self.guiim.updateGL()
-		if self.guimxit != None: self.guimxit.updateGL()
+		self.guiim.get_qt_widget().updateGL()
+		if self.guimxit != None: self.guimxit.get_qt_widget().updateGL()
 		
 	def update_mx_display(self):
-		self.guimx.updateGL()
+		self.guimx.get_qt_widget().updateGL()
 
 	def delete_display_boxes(self,numbers):
 		'''
@@ -1589,7 +1596,7 @@ class GUIbox:
 	def box_image_deleted(self,event,lc,force_image_mx_remove=True):
 		box = self.delete_box(lc[0],force_image_mx_remove)
 		self.boxable.add_exclusion_particle(box)
-		guiim_core = self.guiim.get_core_object()
+		guiim_core = self.guiim
 		guiim_core.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
 		self.guictl.num_boxes_changed(len(self.ptcl))
 		self.update_all_image_displays()
@@ -1618,7 +1625,7 @@ class GUIbox:
 		if force_image_mx_remove: 
 			#self.ptcl.pop(box_num)
 			#self.guimx.set_data(self.ptcl)
-			self.guimx.get_core_object().pop_box_image(box_num)
+			self.guimx.pop_box_image(box_num)
 
 		box = self.boxable.boxes[box_num]
 		
@@ -1653,17 +1660,17 @@ class GUIbox:
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
-		if self.guimxit != None:
-			self.guimxit.get_target().set_extra_hud_data([len(self.ptcl)])
 		
-		
-		if self.guimxitp !=None:
+		if isinstance(self.guimxit,EMImageRotor):
+			self.guimxit.set_extra_hud_data([len(self.ptcl)])
+	
+		if isinstance(self.guimxit,EMImageRotor):
 			othershapes = {}
 			for shape in ns:
 				s = ns[shape].getShape()
 				othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
 	
-			if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
+			self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
 
 		self.update_all_image_displays()
 		
@@ -1697,22 +1704,31 @@ class GUIbox:
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
-		if self.guimxit != None:
-			self.guimxit.get_target().set_extra_hud_data([len(self.ptcl)])
-
-		if self.guimxitp !=None:
+		if isinstance(self.guimxit,EMImageRotor):
+			self.guimxit.set_extra_hud_data([len(self.ptcl)])
+			
+		if isinstance(self.guimxit,EMImageRotor):
 			othershapes = {}
 			for shape in ns:
 				s = ns[shape].getShape()
 				othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
 	
-			if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
+			self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
+
+
+		#if self.guimxitp !=None:
+			#othershapes = {}
+			#for shape in ns:
+				#s = ns[shape].getShape()
+				#othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
+	
+			#if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
 		self.update_all_image_displays()
 		
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
-		self.dynapixp.exec_()
+		self.application.execute()
 		
 		self.boxable.cache_exc_to_db()
 		project_db = EMProjectDB()
@@ -1751,7 +1767,7 @@ class GUIbox:
 		
 	def done(self):
 		self.boxable.cache_exc_to_db()
-		self.dynapixp.quit
+		self.application.quit()
 		
 	def try_data(self,data,thr):
 		print 'try that was pressed, this feature is currently disabled'
@@ -1795,7 +1811,7 @@ class GUIbox:
 		self.mouse_handlers["erasing"].set_erase_radius(rad)
 
 	def quit(self):
-		self.dynapixp.quit()
+		self.application.quit()
 	
 	def set_dummy_box(self,box):
 		self.autoboxer.set_dummy_box(box)
@@ -1878,9 +1894,9 @@ class GUIbox:
 		self.boxable.toggle_frozen()
 		self.boxable.write_to_db()
 	
-		self.guiim.get_core_object().set_frozen(self.boxable.is_frozen())
+		self.guiim.set_frozen(self.boxable.is_frozen())
 		
-		if self.guimxitp != None  and isinstance(self.guimxit,EMImageRotor): self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
+		if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 		if not self.boxable.is_frozen():
 			self.change_current_autoboxer(self.boxable.get_autoboxer_id(),False)
 		else:	
@@ -1892,7 +1908,7 @@ class GUIbox:
 			self.boxable.set_frozen(False) # If it was already frozen then setting to excluded overrides this
 			self.guiim.set_excluded(True)
 			self.guiim.set_frozen(False)
-			if self.guimxitp != None and isinstance(self.guimxit,EMImageRotor): self.guimxit.set_frozen(False,self.current_image_idx)
+			if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_frozen(False,self.current_image_idx)
 			self.boxable.clear_and_cache(True) # tell boxable to clear its autoboxes and references -
 			self.clear_displays() # tell the display to clear itself
 		elif self.guiim.set_excluded(False):
@@ -1910,9 +1926,9 @@ class GUIbox:
 			print 'error, you cant set both ref and manual'
 			
 		if ref:
-			self.mouse_handlers["boxing"].set_mode(GUIbox.REFERENCE_ADDING)
+			self.mouse_handlers["boxing"].set_mode(EMBoxerModule.REFERENCE_ADDING)
 		elif manual:
-			self.mouse_handlers["boxing"].set_mode(GUIbox.MANUALLY_ADDING)
+			self.mouse_handlers["boxing"].set_mode(EMBoxerModule.MANUALLY_ADDING)
 	
 	def autoboxer_db_changed(self):
 		self.guictl.update_ab_table()
@@ -1944,13 +1960,13 @@ class GUIbox:
 
 class AutoBoxerSelectionsMediator:
 	'''
-	A class for coordinating the GUIboxPanel and the the GUIbox in relation
+	A class for coordinating the EMBoxerModulePanel and the the EMBoxerModule in relation
 	to adding and removing AutoBoxers, and changing which Boxables use which
 	AutoBoxer etc
 	'''
 	def __init__(self,parent):
-		if not isinstance(parent,GUIbox):
-			print "error, the AutoBoxerSelectionsMediator must be initialized with a GUIbox type as its first constructor argument"
+		if not isinstance(parent,EMBoxerModule):
+			print "error, the AutoBoxerSelectionsMediator must be initialized with a EMBoxerModule type as its first constructor argument"
 			return
 		self.parent=parent
 		self.current_image_idx_name = None
@@ -2258,7 +2274,7 @@ class CcfHistogram(QtGui.QWidget):
 
 
 		
-class GUIboxPanel(QtGui.QWidget):
+class EMBoxerModulePanel(QtGui.QWidget):
 	def __init__(self,target,ab_sel_mediator) :
 		
 		QtGui.QWidget.__init__(self,None)
@@ -2967,13 +2983,13 @@ class GUIboxPanel(QtGui.QWidget):
 	def erase_toggled(self,bool):
 		self.unerase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.guiim.setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_qt_widget().setMouseTracking(bool)
 		self.target.erase_toggled(bool)
 		
 	def unerase_toggled(self,bool):
 		self.erase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.guiim.setMouseTracking(bool)
+		elf.target.get_2d_gui_image().get_qt_widget().setMouseTracking(bool)
 		self.target.unerase_toggled(bool)
 		
 	def dynapix_toggled(self,bool):

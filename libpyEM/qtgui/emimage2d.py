@@ -79,7 +79,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EventRerouter):
 		else: self.time_enabled = False
 		
 	def enable_timer(self):
-		if self.timer_enabled == False:
+		if self.time_enabled == False:
 			self.timer = QtCore.QTimer()
 			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 			self.timeinterval = 50
@@ -158,9 +158,6 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EventRerouter):
 		try: self.target.resizeEvent(width,height)
 		except: pass
 		
-	def set_mmode(self,mode):
-		self.target.mmode = mode
-
 	def add_shapes(self,s):
 		self.target.add_shapes(s)
 		
@@ -297,7 +294,8 @@ class EMImage2DModule(EMModule):
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
-			
+	
+	def set_mmode(self,mode): self.mmode = mode
 	def get_minden(self): return self.minden
 	def get_maxden(self): return self.maxden
 	def get_gamma(self): return self.gamma
@@ -803,8 +801,6 @@ class EMImage2DModule(EMModule):
 		glEnd()
 		
 		glDisable(GL_TEXTURE_2D)
-		
-		glPopMatrix()
 			
 		glDisable( GL.GL_BLEND)
 		if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
