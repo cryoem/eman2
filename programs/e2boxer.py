@@ -256,6 +256,7 @@ def autobox_multi(image_names,options):
 		
 		try:
 			data = project_db[get_idd_key(image_name)]
+			
 			trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
 			autoboxer = SwarmAutoBoxer(None)
 			autoboxer.become(trim_autoboxer)
@@ -263,9 +264,12 @@ def autobox_multi(image_names,options):
 		except:
 			try:
 				print "using most recent autoboxer"
-				trim_autoboxer = project_db["current_autoboxer"]
-				autoboxer = SwarmAutoBoxer(None)
-				autoboxer.become(trim_autoboxer)
+				if project_db["current_autoboxer_type"]=="Gauss":
+					autoboxer = project_db["current_autoboxer"]
+				else:
+					trim_autoboxer = project_db["current_autoboxer"]
+					autoboxer = SwarmAutoBoxer(None)
+					autoboxer.become(trim_autoboxer)
 			except:
 				print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
 				continue
@@ -808,6 +812,11 @@ class EMBoxerModule:
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			self.__init_ctl_rotor()
 		
+		if isinstance(self.autoboxer,SwarmAutoBoxer):
+			print "autoboxer is Swarm"
+		else:
+			print "autoboxer is Pawel"
+
 		self.autoboxer.auto_box(self.boxable,False) # Do the automatic autoboxing - this makes the user see results immediately
 		self.box_display_update() # update displays to show boxes etc
 	
@@ -947,25 +956,53 @@ class EMBoxerModule:
 			project_db = EMProjectDB()
 			data = project_db[get_idd_key(imagename)]
 			autoboxer_id = data["autoboxer_unique_id"]
+			type_autoboxer = project_db[autoboxer_id]["autoboxer_type"]
 			trim_autoboxer = project_db[autoboxer_id]["autoboxer"]
 			self.autoboxer_name = autoboxer_id
-			self.autoboxer = SwarmAutoBoxer(self)
-			self.autoboxer.become(trim_autoboxer)
-			self.dynapix = self.autoboxer.dynapix_on()
-			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
-		except:
-			try:
-				trim_autoboxer = project_db["current_autoboxer"]
+
+			if type_autoboxer=="Swarm":
+				print "load SwarmAutoBoxer"
 				self.autoboxer = SwarmAutoBoxer(self)
 				self.autoboxer.become(trim_autoboxer)
+				self.dynapix = self.autoboxer.dynapix_on()
+			else:
+				print "load PawelAutoBoxer"
+				self.autoboxer = PawelAutoBoxer(self)
+				self.autoboxer.become(trim_autoboxer)
+			
+			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
+		except Exception, inst:
+			print "exception happen when load image's autoboxer"
+			print "Error: ", inst
+			try:
+				type_autoboxer = project_db["current_autoboxer_type"]
+				trim_autoboxer = project_db["current_autoboxer"]
+
+				if type_autoboxer=="Swarm":
+					self.autoboxer = SwarmAutoBoxer(self)
+					self.autoboxer.become(trim_autoboxer)
+				else:
+					self.autoboxer = PawelAutoBoxer(self)
+					self.autoboxer.become(trim_autoboxer)
 				self.autoboxer_name = self.autoboxer.get_unique_stamp()
 				self.dynapix = self.autoboxer.dynapix_on()
 				if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
-			except:	
+			except Exception, inst:
+				print "exception happend when load current autoboxer"
+				print "Error: ", inst
 				if self.box_size == -1: self.box_size = 128
 				self.autoboxer = SwarmAutoBoxer(self)
 				self.autoboxer.set_box_size_explicit(self.box_size)
 				self.autoboxer.set_interactive_mode(self.dynapix)
+
+
+
+	
+		if isinstance(self.autoboxer,SwarmAutoBoxer):
+			print "after set autoboxer, autoboxer is Swarm"
+		else:
+			print "after set autoboxer, autoboxer is Pawel"
+
 
 	def guiim_inspector_requested(self,event):
 		self.ctl_rotor.get_core_object().add_qt_widget(self.guiim.get_core_object().get_inspector())
