@@ -2918,7 +2918,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		self.use_variance = QtGui.QCheckBox("Use Variance Image")
 		self.use_variance.setChecked(True)
-		pawel_grid1.addWidget(self.use_variance,0, Qt.AlignLeft)
+		pawel_grid1.addWidget( self.use_variance, 3, 0)
 
 		self.input_pixel_size = QtGui.QLineEdit("1.0", self)
 		self.output_pixel_size = QtGui.QLineEdit("1.0", self)

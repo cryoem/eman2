@@ -2750,8 +2750,10 @@ class PawelAutoBoxer(AutoBoxer):
 				boxable.set_image_name( imgname )
 			#boxable.set_image_name( imgname ) 
 
-		from morphology import power
-		if(self.use_variance):  img = power(img, 2.0)
+		if(self.use_variance):
+			from morphology import power
+			img = power(img, 2.0)
+			print  "  Used Variance Image <<<<<<<"
 		ccf = filt_gaussl( img, self.gauss_width/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
 		npeak = len(peaks)/3
