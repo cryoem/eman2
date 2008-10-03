@@ -81,10 +81,12 @@ def db_open_dict(url,ro=False):
 	if sln<0 :
 		ddb=EMAN2DB.open_db(".")
 		ddb.open_dict(url[4:qun],ro=ro)	# strip the ?xyz from the end if present
+		if ro : return ddb.__dict__[url[4:qun]+"__ro"]
 		return ddb.__dict__[url[4:qun]]
 	ddb=EMAN2DB.open_db(url[4:sln])
 	name=url[sln+1:]
 	ddb.open_dict(name,ro=ro)
+	if ro: return ddb.__dict__[name+"__ro"]
 	return ddb.__dict__[name]
 
 ##########
@@ -92,7 +94,7 @@ def db_open_dict(url,ro=False):
 ##########
 def db_read_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_dict(fsp)
+		db=db_open_dict(fsp,True)
 		if len(parms)>1 and parms[1] : nodata=1
 		else: nodata=0
 		if "?" in fsp:
@@ -112,7 +114,7 @@ EMData.read_image=db_read_image
 
 def db_read_images(fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_dict(fsp)
+		db=db_open_dict(fsp,True)
 		if "?" in fsp:
 			keys=fsp[fsp.rfind("?")+1:].split(",")
 			for i in range(len(keys)):
@@ -344,20 +346,28 @@ class EMAN2DB:
 
 	def open_dict(self,name,ro=False):
 		if self.dicts.has_key(name) : return
-		self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
-		self.__dict__[name]=self.dicts[name]
+		if ro:
+			self.dicts[name+"__ro"]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
+			self.__dict__[name+"__ro"]=self.dicts[name+"__ro"]
+		else:
+			self.dicts[name]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
+			self.__dict__[name]=self.dicts[name]
 	
 	def close_dict(self,name):
-		self.__dict__[name].close()
+		"this will close a dictionary, and also delete references to it"
+		try: 
+			self.__dict__[name].close()
+			self.__dict__[name+"__ro"].close()
+		except: pass
 		self.dict_closed(name)
 
 	def dict_closed(self,name):
+		"This is called when a dictionary has been closed to eliminate references to it"
 		try:
-			
 			del(self.__dict__[name])
 			del self.dicts[name]
-		except:
-			print "warning, attempted to close a dictionary named",name,"but failed"
+		except: pass
+#			print "warning, attempted to close a dictionary named",name,"but failed"
 
 	def remove_dict(self,name):
 		if name in self.dicts.keys():

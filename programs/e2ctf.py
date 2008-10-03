@@ -107,6 +107,8 @@ Various CTF-related operations on images."""
 		for i in args:
 			im=EMData(i,0)
 			ys=im.get_ysize()
+			ratio1=pi*(float(options.bgmask)/ys)**2
+			ratio2=1.0-ratio1
 			if options.bgmask:
 				mask1=EMData(ys,ys,1)
 				mask1.to_one()
@@ -115,8 +117,7 @@ Various CTF-related operations on images."""
 				ps2d.append(powspec(i,not options.nonorm,mask1))
 			else : ps2d.append(powspec(i,not options.nonorm))
 			ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
-			ratio=pi*(options.bgmask)**2
-			ratio=ratio/(ys*ys-ratio)
+			ps1d[-1]=[y/ratio1 for y in ps1d[-1]]
 #			ps1d.append(bgedge1d(i,-options.bgedge,not options.nonorm))
 			out=file("fg1d.txt","w")
 			for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
@@ -126,7 +127,7 @@ Various CTF-related operations on images."""
 				bg2d=powspec(i,not options.nonorm,mask2)
 #				ps2d.append(bg2d)
 				bg=bg2d.calc_radial_dist(bg2d.get_ysize()/2,0.0,1.0,1)
-				bg=[y*ratio for y in bg]
+				bg=[y/ratio2 for y in bg]
 				if options.runav:
 					ra=options.runav
 					bg=bg[:options.runav]+[sum(bg[v-ra:v+ra+1])/(ra*2+1) for v in range(ra,len(bg)-ra)]+bg[len(bg)-ra:]
