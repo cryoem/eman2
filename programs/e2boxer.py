@@ -811,13 +811,8 @@ class EMBoxerModule:
 		self.__init_guictl()
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			self.__init_ctl_rotor()
-		
-		if isinstance(self.autoboxer,SwarmAutoBoxer):
-			print "autoboxer is Swarm"
-		else:
-			print "autoboxer is Pawel"
-
-		self.autoboxer.auto_box(self.boxable,False) # Do the automatic autoboxing - this makes the user see results immediately
+	
+		#self.autoboxer.auto_box(self.boxable,False) # Do the automatic autoboxing - this makes the user see results immediately
 		self.box_display_update() # update displays to show boxes etc
 	
 	def __alt_init__(self,image_names,boxes=[],box_size=-1):
@@ -838,6 +833,7 @@ class EMBoxerModule:
 		
 		# A boxable is just a class that manages boxes in terms of images
 		if len(self.image_names) != 0:
+			print self.autoboxer
 			self.boxable = Boxable(self.image_names[0],self,self.autoboxer)
 			self.boxable.add_non_refs(boxes)
 			self.boxable.set_box_size(self.box_size)

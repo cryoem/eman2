@@ -829,7 +829,7 @@ class CoarsenedFlattenedImage:
 		flattenradius = params_mediator.get_template_radius()
 		shrink =  params_mediator.get_subsample_rate()
 
-		if shrink==1.0:
+		if shrink <= 1.0:
 			self.smallimage = image.copy()
 		else:
 			self.smallimage = image.process("math.meanshrink",{"n":shrink})
@@ -2678,10 +2678,6 @@ class PawelAutoBoxer(AutoBoxer):
 			self.thr_hgh = new_params[5]
 			self.use_variance = new_params[6]
 
-		if hasattr( self, "imgorig" ):
-			boxable.set_image_name( self.imgorig )
-
-
 		boxes, trimboxes, ccfs = self.run(boxable.get_image_name(), boxable)
 
 		if self.thr_low is None:
@@ -2738,17 +2734,14 @@ class PawelAutoBoxer(AutoBoxer):
 			img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
 			# Note you would have to change get_window_size_min so that it returns 15 and get_frequency_cutoff
 			# so that it returns the right value
+			BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
+
 			if not(self.parent is None):
-				self.parent.init_guiim(img, imgname)
 				self.parent.big_image_change()
 				self.parent.clear_displays()
 
-			BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
-			imgname = "reduced_" + imgname
-			img.write_image( imgname )
 
 			if not(boxable is None):
-				self.imgorig = imgname
 				boxable.set_image_name( imgname )
 			#boxable.set_image_name( imgname ) 
 
