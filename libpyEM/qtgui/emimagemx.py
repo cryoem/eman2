@@ -48,7 +48,7 @@ from pickle import dumps,loads
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
-from emglobjects import EMOpenGLFlagsAndTools
+from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 GLUT.glutInit(sys.argv)
@@ -299,11 +299,18 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				
 			self.mousedrag=(event.x(),event.y())
 
-class EMImageMXModule(EMGUIModule):
-
+class EMImageMXModule(EMImage2DGUIModule):
+	
+	def load_font_renderer(self):
+		try:
+			self.font_render_mode = EMGUIModule.FTGL
+			self.font_renderer = get_3d_font_renderer()
+			self.font_renderer.set_face_size(16)
+			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+		except:
+			self.font_render_mode = EMGUIModule.GLUT
+	
 	allim=WeakKeyDictionary()
-	FTGL = "ftgl"
-	GLUT = "glut"
 	def get_qt_widget(self):
 		if self.parent == None:	
 			self.parent = EMImageMXWidget(self)
@@ -329,7 +336,7 @@ class EMImageMXModule(EMGUIModule):
 		return self.parent
 	
 	def __init__(self, data=None,application=None):
-		EMGUIModule.__init__(self,application)
+		EMImage2DGUIModule.__init__(self,application)
 		self.parent = None
 		self.data=None
 		self.datasize=(1,1)
@@ -366,7 +373,7 @@ class EMImageMXModule(EMGUIModule):
 		self.init_size_flag = True
 		self.inspector=None
 		
-		self.__load_font_renderer()
+		self.load_font_renderer()
 		if data:
 			self.set_data(data,False)
 			
@@ -384,17 +391,6 @@ class EMImageMXModule(EMGUIModule):
 		self.__init_mouse_handlers()
 		
 		self.reroute_delete_target = None
-		self.em_qt_inspector_widget = None
-	
-	def __load_font_renderer(self):
-	
-		try:
-			self.font_render_mode = EMImageMXModule.FTGL
-			self.font_renderer = get_3d_font_renderer()
-			self.font_renderer.set_face_size(16)
-			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-		except:
-			self.font_render_mode = EMImageMXModule.GLUT
 	
 	def __init_mouse_handlers(self):
 		
@@ -410,6 +406,7 @@ class EMImageMXModule(EMGUIModule):
 		self.image_file_name = name
 	
 	def get_inspector(self):
+		if not self.inspector : self.inspector=EMImageInspectorMX(self)
 		return self.inspector
 	
 	def set_reroute_delete_target(self,target):
@@ -545,8 +542,8 @@ class EMImageMXModule(EMGUIModule):
 
 		self.max_idx = len(data)
 
-		if self.font_render_mode == EMImageMXModule.FTGL:
-			self.font_renderer.set_face_size(data[0].get_xsize()/6	)
+		if self.font_render_mode == EMGUIModule.FTGL:
+			self.font_renderer.set_face_size(data[0].get_xsize()/6)
 		for i,d in enumerate(data):
 			try:
 				d.set_attr("original_number",i)
@@ -728,7 +725,7 @@ class EMImageMXModule(EMGUIModule):
 			
 	
 	def set_font_render_resolution(self):
-		if self.font_render_mode != EMImageMXModule.FTGL:
+		if self.font_render_mode != EMGUIModule.FTGL:
 			print "error, can't call set_font_render_resolution if the mode isn't FTGL"
 			
 		#self.font_renderer.set_face_size(int(self.parent.height()*0.015))
@@ -737,7 +734,7 @@ class EMImageMXModule(EMGUIModule):
 	def __draw_backdrop(self):
 		light = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
-		
+	
 		glColor(.9,.9,.9)
 		glBegin(GL_QUADS)
 		glVertex(0,0,-1)
@@ -753,7 +750,7 @@ class EMImageMXModule(EMGUIModule):
 	
 	def render(self):
 		if not self.data : return
-		if self.font_render_mode == EMImageMXModule.FTGL: self.set_font_render_resolution()
+		if self.font_render_mode == EMGUIModule.FTGL: self.set_font_render_resolution()
 		render = False
 		if self.use_display_list:
 			
@@ -939,7 +936,7 @@ class EMImageMXModule(EMGUIModule):
 		#glPopMatrix()
 	
 	def __draw_mx_text(self,tx,ty,txtcol,i):
-		if self.font_render_mode == EMImageMXModule.FTGL:
+		if self.font_render_mode == EMGUIModule.FTGL:
 			
 			glEnable(GL_TEXTURE_2D)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
@@ -978,7 +975,7 @@ class EMImageMXModule(EMGUIModule):
 			if not lighting:
 				glDisable(GL_LIGHTING)
 			glDisable(GL_TEXTURE_2D)
-		elif self.font_render_mode == EMImageMXModule.GLUT:
+		elif self.font_render_mode == EMGUIModule.GLUT:
 			tagy = ty
 			glColor(*txtcol)
 			for v in self.valstodisp:
@@ -1114,17 +1111,17 @@ class EMImageMXModule(EMGUIModule):
 		if update_gl: self.updateGL()
 	
 		
-	def show_inspector(self,force=0):
-		if (self.suppress_inspector): return
-		if not force and self.inspector==None : return
-		self.init_inspector()
-		self.application.show_specific(self.em_qt_inspector_widget)
+	#def show_inspector(self,force=0):
+		#if (self.suppress_inspector): return
+		#if not force and self.inspector==None : return
+		#self.init_inspector()
+		#self.application.show_specific(self.em_qt_inspector_widget)
 
-	def init_inspector(self):
-		if not self.inspector : 
-			self.inspector=EMImageInspectorMX(self)
-			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
-		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+	#def init_inspector(self):
+		#if not self.inspector : 
+			#self.inspector=EMImageInspectorMX(self)
+			#self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
+		#self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def scr_to_img(self,vec):
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
@@ -1138,10 +1135,6 @@ class EMImageMXModule(EMGUIModule):
 			if absloc[0]>data[0] and absloc[1]>data[1] and absloc[0]<data[0]+data[2] and absloc[1]<data[1]+data[3] :
 				return (index,(absloc[0]-data[0])/self.scale,(absloc[1]-data[1])/self.scale)
 		return None
-			
-	
-	def closeEvent(self,event) :
-		if self.inspector: self.inspector.close()
 		
 	def dragEnterEvent(self,event):
 #		f=event.mime_data().formats()

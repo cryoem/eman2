@@ -189,7 +189,6 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.perspective = bool
 		self.resizeGL(self.width(),self.height())
 		
-		
 	def get_start_z(self):
 		return self.startz
 	
@@ -206,10 +205,8 @@ class EMImage3DModule(EMImage3DGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:	
 			self.parent = EMImage3DWidget(self)
-			
 			for i in self.viewables:
 				i.set_parent(self.parent)
-			
 			if isinstance(self.image,EMData):
 				self.parent.set_cam_z(self.parent.get_fov(),self.image)
 		return self.parent

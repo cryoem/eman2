@@ -49,6 +49,7 @@ from emshape import EMShape
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
+from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 try: from PyQt4 import QtWebKit
@@ -191,7 +192,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def get_shapes(self):
 		return self.target.get_shapes()
 	
-class EMImage2DModule(EMGUIModule):
+class EMImage2DModule(EMImage2DGUIModule):
 	"""
 	"""
 	allim=WeakKeyDictionary()
@@ -209,7 +210,7 @@ class EMImage2DModule(EMGUIModule):
 		return self.parent
 	
 	def __init__(self, image=None,application=None):
-		EMGUIModule.__init__(self,application)
+		EMImage2DGUIModule.__init__(self,application)
 		
 		self.parent = None
 		self.data=image				# EMData object to display
@@ -278,8 +279,6 @@ class EMImage2DModule(EMGUIModule):
 
 		if image :
 			self.set_data(image)
-
-		self.em_qt_inspector_widget = None
 		
 		self.__load_display_settings_from_db()
 		
@@ -352,9 +351,6 @@ class EMImage2DModule(EMGUIModule):
 		self.otherdata = data
 		self.otherdatascale = scale
 		self.otherdatablend = blend
-	
-	def get_inspector(self):
-		return self.inspector
 	
 	def width(self):
 		try:
@@ -828,19 +824,9 @@ class EMImage2DModule(EMGUIModule):
 			else: s.draw()
 		GL.glEndList()
 	
-	def show_inspector(self,force=0):
-		if (self.suppress_inspector): return
-		if not force and self.inspector==None : return
-		self.init_inspector()
-		
-		self.application.show_specific(self.em_qt_inspector_widget)
-		
-	def init_inspector(self):
-		if not self.inspector :
-			self.inspector=EMImageInspector2D(self)
-			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
-		if self.fft : self.inspector.set_limits(self.fmindeng,self.fmaxdeng,self.fminden,self.fmaxden)
-		else : self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+	def get_inspector(self):
+		if not self.inspector: self.inspector=EMImageInspector2D(self)
+		return self.inspector
 	
 	def set_mouse_mode(self,m):
 		self.mmode=m

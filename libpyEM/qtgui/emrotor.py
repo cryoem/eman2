@@ -43,24 +43,28 @@ from math import tan,pi
 import time
 
 from emfloatingwidgets import EMGLRotorWidget,EM3DWidget,EMGLViewQtWidget
-from emimageutil import EMParentWin
+from emimageutil import  EMEventRerouter
+from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule,EMOpenGLFlagsAndTools
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
-class EMRotor(QtOpenGL.QGLWidget):
+class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
 	in 'matrix' form on the display. The middle mouse button will bring up a
 	control-panel. The QT event loop must be running for this object to function
 	properly.
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self,parent=None):
+	def __init__(self,em_rotor_module,enable_timer=True):
+		assert(isinstance(em_rotor_module,EMRotorModule))
+		EMRotorWidget.allim[self]=0
 		
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		fmt.setSampleBuffers(True)
-		#fmt.setDepthBuffer(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMRotor.allim[self]=0
-		self.rotor = EMRotorCore(self)
+		QtOpenGL.QGLWidget.__init__(self,fmt)
+		EMEventRerouter.__init__(self)
+		
+		self.target = em_rotor_module
 		
 		self.setFocusPolicy(Qt.StrongFocus)
 		
@@ -71,15 +75,23 @@ class EMRotor(QtOpenGL.QGLWidget):
 		
 		self.animatables = []
 		
-		self.timer = QtCore.QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-		self.timer.start(10)
+	
+		if enable_timer:
+			self.__init_timer()
+		else: self.timer_enabled = False
 		
 		self.light_0_pos = [0.1,.1,1.,0.]
 		
 		self.polygon_smooth = True	
+
+	def __init_timer(self):
+		self.timer = QtCore.QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+		self.timer.start(20)
+		self.timer_enabled = True
+		
 	def get_optimal_size(self):
-		lr = self.rotor.get_suggested_lr_bt_nf()
+		lr = self.target.get_suggested_lr_bt_nf()
 		width = lr[1] - lr[0]
 		height = lr[3] - lr[2]
 		return [width+80,height+20]
@@ -132,9 +144,9 @@ class EMRotor(QtOpenGL.QGLWidget):
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT )
 		glLoadIdentity()
-		if ( self.rotor == None ): return
+		if ( self.target == None ): return
 		try:
-			self.rotor.render()
+			self.target.render()
 		except: 
 			print "render error"
 			self.animatables = []
@@ -151,7 +163,7 @@ class EMRotor(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.rotor.projection_or_viewport_changed()
+		self.target.projection_or_viewport_changed()
 	def set_near_far(self,near,far):
 		self.z_near = near
 		self.z_far = far
@@ -170,46 +182,20 @@ class EMRotor(QtOpenGL.QGLWidget):
 	
 		return depth
 	
-	def mousePressEvent(self, event):
-		self.rotor.mousePressEvent(event)
-		self.updateGL()
-	
-	def mouseMoveEvent(self, event):
-		self.rotor.mouseMoveEvent(event)
-		self.updateGL()
-		
-	def mouseReleaseEvent(self, event):
-		self.rotor.mouseReleaseEvent(event)
-		self.updateGL()
-		
-	def wheelEvent(self, event):
-		self.rotor.wheelEvent(event)
-		self.updateGL()
-		
-	def closeEvent(self,event) :
-		self.rotor.closeEvent(event)
-		
-	def dragEnterEvent(self,event):
-		self.rotor.dragEnterEvent(event)
-
-	def dropEvent(self,event):
-		self.rotor.dropEvent(event)
-	
 	def get_core_object(self):
-		return self.rotor
+		return self.target
 	
-	def keyPressEvent(self,event):
-		if event.key() == Qt.Key_1:
-			self.polygon_smooth = not self.polygon_smooth
-			if self.polygon_smooth: glEnable(GL_POLYGON_SMOOTH)
-			else: glDisable(GL_POLYGON_SMOOTH)
-			print "toggled polygon smooth"
-		else: self.rotor.keyPressEvent(event)
-		self.updateGL()
 
-class EMRotorCore:
-	def __init__(self, parent):
-		self.parent = parent
+
+class EMRotorModule(EMImage2DGUIModule):
+	def get_qt_widget(self):
+		if self.parent == None:
+			self.parent = EMRotorWidget(self)
+		return self.parent
+	
+	def __init__(self, data=None,application=None):
+		EMImage2DGUIModule.__init__(self,application)
+		self.parent = None
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
@@ -276,6 +262,8 @@ class EMRotorCore:
 	def dragEnterEvent(self,event):
 		pass
 
+	def get_inspector(self): return None
+
 	def dropEvent(self,event):
 		pass
 	
@@ -309,13 +297,13 @@ class EMRotorCore:
 	def projection_or_viewport_changed(self):
 		self.rotor.resize_event(-1,1)
 	
-	
-# This is just for testing, of course
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	GLUT.glutInit("")
-	window = EMRotor()
-	window.get_core_object().add_file_dialog()
-	window2=EMParentWin(window)
-	window2.show()
-	sys.exit(app.exec_())
+	em_app = EMStandAloneApplication()
+	window = EMRotorModule(application=em_app)
+	window.get_qt_widget()
+	window.add_file_dialog()
+	window.add_file_dialog()
+	window.add_file_dialog()
+	em_app.show()
+	em_app.execute()	
+

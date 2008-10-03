@@ -43,31 +43,37 @@ import time
 from weakref import WeakKeyDictionary
 
 from EMAN2 import *
-from emimageutil import EMParentWin
-from emglobjects import EMOpenGLFlagsAndTools
-from emfloatingwidgets import EMGLRotorWidget, EMGLView2D, EM3DWidget
-from emimagemx import EMImageInspectorMX, EMImageMXModule
+from emimageutil import  EMEventRerouter
+from emglobjects import *
 from EMAN2db import EMAN2DB
 
-class EMImageMXRotor(QtOpenGL.QGLWidget):
+from emfloatingwidgets import EMGLRotorWidget, EMGLView2D, EM3DWidget
+from emimagemx import EMImageInspectorMX, EMImageMXModule
+from emimageutil import  EMEventRerouter
+from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+
+class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self, data=None,parent=None):
-		self.image_rotor = None
-		#self.initflag = True
+	def __init__(self, em_mx_rotor_module,enable_timer=True):
+		EMImageMXRotorWidget.allim[self]=0
+		assert(isinstance(em_mx_rotor_module,EMImageMXRotorModule))
+		
+		self.target = None
 		self.mmode = "drag"
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		fmt.setSampleBuffers(True)
 		#fmt.setDepthBuffer(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImageMXRotor.allim[self]=0
+		QtOpenGL.QGLWidget.__init__(self,fmt)
+		EMEventRerouter.__init__(self)
 		
 		self.setFocusPolicy(Qt.StrongFocus)
 		
-		self.image_rotor = EMImageMXRotorCore(data,self)
+		self.target = em_mx_rotor_module
 		
 		self.imagefilename = None
 		
@@ -78,20 +84,26 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 		
 		self.animatables = []
 		
-		self.timer = QtCore.QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-		self.timer.start(10)
+		if enable_timer:
+			self.__init_timer()
+		else: self.timer_enabled = False
 		
 		self.light_0_pos = [0.1,.1,1.,0.]
 		
 	def set_data(self,data):
-		self.image_rotor.set_data(data)
+		self.target.set_data(data)
 	
 	def get_optimal_size(self):
-		lr = self.image_rotor.rotor.get_suggested_lr_bt_nf()
+		lr = self.target.rotor.get_suggested_lr_bt_nf()
 		width = lr[1] - lr[0]
 		height = lr[3] - lr[2]
 		return [width+80,height+20]
+	
+	def __init_timer(self):
+		self.timer = QtCore.QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+		self.timer.start(20)
+		self.timer_enabled = True
 	
 	def timeout(self):
 		
@@ -118,7 +130,7 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 	def set_image_file_name(self,name):
 		#print "set image file name",name
 		self.imagefilename = name
-		self.image_rotor.set_image_file_name(name)
+		self.target.set_image_file_name(name)
 		
 	def get_image_file_name(self):
 		return self.imagefilename
@@ -130,9 +142,11 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, self.light_0_pos)
-	
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
+		
+		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 		
 		glEnable(GL_DEPTH_TEST)
 		
@@ -145,8 +159,8 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		#glLoadIdentity()
-		if ( self.image_rotor == None ): return
-		self.image_rotor.render()
+		if ( self.target == None ): return
+		self.target.render()
 
 	
 	def resizeGL(self, width, height):
@@ -161,7 +175,7 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.image_rotor.resize_event(width,height)
+		self.target.resize_event(width,height)
 	
 	def set_near_far(self,near,far):
 		self.z_near = near
@@ -175,7 +189,7 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 		GL.glLoadIdentity()
 		
 	
-		self.image_rotor.projection_or_viewport_changed()
+		self.target.projection_or_viewport_changed()
 		
 	def get_depth_for_height(self, height):
 		# This function returns the width and height of the renderable 
@@ -186,38 +200,16 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 	
 	def set_mmode(self,mode):
 		self.mmode = mode
-		self.image_rotor.set_mmode(mode)
+		self.target.set_mmode(mode)
 	
-	def mousePressEvent(self, event):
-		self.image_rotor.mousePressEvent(event)
-		self.updateGL()
-		
-	def wheelEvent(self,event):
-		self.image_rotor.wheelEvent(event)
-		self.updateGL()
-		
-	def mouseMoveEvent(self,event):
-		self.image_rotor.mouseMoveEvent(event)
-		self.updateGL()
-		
-	def mouseReleaseEvent(self,event):
-		self.image_rotor.mouseReleaseEvent(event)
-		self.updateGL()
-		
-	def closeEvent(self,event) :
-		self.image_rotor.closeEvent(event)
-		
-	def dragEnterEvent(self,event):
-		self.image_rotor.dragEnterEvent(event)
-
 	def dropEvent(self,event):
-		self.image_rotor.dropEvent(event)
+		self.target.dropEvent(event)
 	
 	def set_shapes(self,shapes,shrink):
-		self.image_rotor.set_shapes(shapes,shrink)
+		self.target.set_shapes(shapes,shrink)
 	
 	def set_frozen(self,frozen):
-		self.image_rotor.set_frozen(frozen)
+		self.target.set_frozen(frozen)
 	
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context to be created and this is what the True flag
@@ -228,24 +220,29 @@ class EMImageMXRotor(QtOpenGL.QGLWidget):
 		# to get around it we would have to render everything without display lists (a supreme pain).
 		
 	def set_selected(self,n):
-		return self.image_rotor.set_selected(n)
+		return self.target.set_selected(n)
 	
 	def get_core_object(self):
-		return self.image_rotor
+		return self.target
 	
 	def keyPressEvent(self,event):
-		self.image_rotor.keyPressEvent(event)
+		self.target.keyPressEvent(event)
 	
-class EMImageMXRotorCore:
-	def __init__(self, data=None,parent=None):
-		self.parent = parent
+class EMImageMXRotorModule(EMImage2DGUIModule):
+	
+	def get_qt_widget(self):
+		if self.parent == None:
+			self.parent = EMImageMXRotorWidget(self)
+		return self.parent
+	
+	def __init__(self, data=None,application=None):
+		EMImage2DGUIModule.__init__(self,application)
+		
+		self.parent = None
 		self.data=None
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 
-		self.initsizeflag = True
-	
-		
 		self.rotor = EMGLRotorWidget(self,0,-70,-15,EMGLRotorWidget.TOP_ROTARY,100)
 		self.rotor.set_angle_range(110.0)
 		#self.rotor.set_child_mouse_events(False)
@@ -271,39 +268,36 @@ class EMImageMXRotorCore:
 		self.mmode = 'app'
 		self.rot_mode = 'app'
 		
-		self.display_help_hud = False
-		self.display_help = ["Wheel - Rotor Rotate","Ctrl+Wheel - Zoom", "Ctrl+Right Click - Move Rotor","Shift+Left Click - Delete Box"] 
-		
 		self.vals_to_display = ["Img #"]
 		
 		self.z_near = 0
 		self.z_far = 0
 
 		self.init_flag = True
+		
+		self.__init_font_renderer()
+		
+		self.disable_mx_zoom()
+		self.disable_mx_translate()
+		if data:
+			self.set_data(data)
+			
+	def __init_font_renderer(self):
 		try:
 			self.font_renderer = get_3d_font_renderer()
 			self.font_renderer.set_face_size(32)
 			self.font_renderer.set_depth(8)
 			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
-			self.font_render_mode = EMImageMXModule.FTGL
+			self.font_render_mode = EMGUIModule.FTGL
 		except:
-			self.font_render_mode = EMImageMXModule.GLUT
-	
-		self.disable_mx_zoom()
-		self.disable_mx_translate()
-		if data:
-			self.set_data(data)
+			self.font_render_mode = EMGUIModule.GLUT
+		
 	def get_inspector(self):
 		return self.inspector
 	
-	def emit(self,signal,event,data=None,bool=None):
-		if bool==None:
-			self.parent.emit(signal,event,data)
-		elif data == None:
-			self.parent.emit(signal,event)
-		else:
-			self.parent.emit(signal,event,data,bool)
-	
+	def emit(self,*args,**kargs):
+		self.parent.emit(*args,**kargs)
+		
 	def set_selected(self,n,update_gl=True):
 		widget = self.rotor[0]
 		if widget != None:
@@ -522,12 +516,6 @@ class EMImageMXRotorCore:
 	
 	def height(self):
 		return self.parent.height()
-
-	def viewport_width(self):
-		return self.parent.width()
-	
-	def viewport_height(self):
-		return self.parent.height()
 	
 	def get_image_file_name(self):
 		''' warning - could return none in some circumstances'''
@@ -694,7 +682,7 @@ class EMImageMXRotorCore:
 		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans+abs(lr[3]-lr[2]))
 		self.widget.draw()
 		GL.glPopMatrix()
-		
+	
 		self.draw_hud()
 	
 	def dragEnterEvent(self,event):
@@ -703,18 +691,12 @@ class EMImageMXRotorCore:
 	def dropEvent(self,event):
 		pass
 
-	def show_inspector(self,force=False):
-		if not force and self.inspector==None : return
-		self.init_inspector()
-		self.inspector.show()
-
-	def init_inspector(self):
-		allow_col_variation = True
-		allow_mx_variation = True
-		opt_fit_button_on = True
-		if not self.inspector : self.inspector=EMImageInspectorMX(self,allow_col_variation,allow_mx_variation,opt_fit_button_on)
-		self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
-
+	def get_inspector(self):
+		if not self.inspector: 
+			self.inspector=EMImageInspectorMX(self,allow_col_variation=True,allow_window_variation=True,allow_opt_button=True)
+			self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+			
+		return self.inspector
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
 			self.show_inspector(True)
@@ -722,23 +704,27 @@ class EMImageMXRotorCore:
 		else:
 			self.widget.mousePressEvent(event)
 			
-	
+		self.updateGL()
+		
 	def mouseMoveEvent(self, event):
 		self.widget.mouseMoveEvent(event)
+		self.updateGL()
 		
 	def mouseReleaseEvent(self, event):
 		self.widget.mouseReleaseEvent(event)
+		self.updateGL()
 		
 	def wheelEvent(self, event):
 		self.widget.wheelEvent(event)
+		self.updateGL()
 		
 	def leaveEvent(self):
 		pass
 	
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_F1:
-			self.display_help_hud = not self.display_help_hud
-			self.updateGL()
+			pass
+			##self.updateGL()
 
 	def resize_event(self, width, height):
 		self.rotor.resize_event(width,height)
@@ -756,9 +742,11 @@ class EMImageMXRotorCore:
 	def get_frame_buffer(self):
 		return self.parent.get_frame_buffer()
 	
+	
+	
 	def draw_hud(self):
-		width = self.parent.width()
-		height = self.parent.height()
+		width = viewport_width()
+		height = viewport_height()
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
@@ -786,23 +774,6 @@ class EMImageMXRotorCore:
 			glRotate(20,0,1,0)
 			self.font_renderer.render_string(string)
 			glPopMatrix()
-			if self.display_help_hud:
-				for i,s in enumerate(self.display_help):
-					glPushMatrix()
-					glTranslate(10,height-(i+2)*1.2*self.font_renderer.get_face_size(),0)
-					glRotate(20,0,1,0)
-					self.font_renderer.render_string(s)
-					glPopMatrix()
-					#string = str(s)
-					#bbox = self.font_renderer.bounding_box(string)
-					#x_offset = width-(bbox[3]-bbox[0]) - 10
-					#y_offset += 10
-					#glPushMatrix()
-					#glTranslate(x_offset,y_offset,0)
-					#glRotate(20,0,1,0)
-					#self.font_renderer.render_string(string)
-					#glPopMatrix()
-					#y_offset += bbox[4]-bbox[1]
 		else:
 			pass
 		
@@ -810,7 +781,7 @@ class EMImageMXRotorCore:
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)
 		
-			
+	
 class EMDataListCache:
 	'''
 	This class designed primarily for memory management in the context of large lists of EMData objects.
@@ -1047,30 +1018,22 @@ class EMDataListCache:
 			
 # This is just for testing, of course
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	GLUT.glutInit("")
-	window = EMImageMXRotor()
+	em_app = EMStandAloneApplication()
+	window = EMImageMXRotorModule(application=em_app)
+	window.get_qt_widget()
 	if len(sys.argv)==1 : 
 		data = []
-		for i in range(500):
-			#if i == 0: idx = 0
-			#else: idx = i%64
-			#e = EMData(64,64)
-			#e.set_size(64,64,1)
-			#e.to_zero()
-			#e.add(sin( (i/10.0) % (pi/2)))
-			data.append(test_image(Util.get_irand(0,3)))
-			#data.append(e)
-		
-		
-		window.set_data(data)
+		for i in range(0,500):
+			e = test_image(Util.get_irand(0,9))
+			if ( Util.get_irand(0,4) == 0):	e.set_attr("excluded",True)
+			data.append(e)
+			
+		window.set_data(data) 
 	else :
-		print "reading image"
-		#a=EMData.read_images(sys.argv[1])
-		window.set_image_file_name(sys.argv[1])
-	window2=EMParentWin(window)
-	window2.resize(*window.get_optimal_size())
-	window2.show()
-
+		a=EMData.read_images(sys.argv[1])
+		window.set_file_name(sys.argv[1])
+		window.set_data(a)
 	
-	sys.exit(app.exec_())
+	
+	em_app.show()
+	em_app.execute()

@@ -44,34 +44,34 @@ import numpy
 from weakref import WeakKeyDictionary
 
 from EMAN2 import *
-from emimageutil import EMParentWin
-from emglobjects import EMOpenGLFlagsAndTools
+
 from emfloatingwidgets import EMGLRotorWidget, EMGLView2D,EM3DWidget
 from emimagemx import EMImageMXModule
+from emimageutil import  EMEventRerouter
+from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule,EMOpenGLFlagsAndTools
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
+GLUT.glutInit("")
 
-class EMImageRotor(QtOpenGL.QGLWidget):
-	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
-	in 'matrix' form on the display. The middle mouse button will bring up a
-	control-panel. The QT event loop must be running for this object to function
-	properly.
+class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+	"""
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self, data=None,parent=None):
-		self.image_rotor = None
-		#self.initflag = True
+	def __init__(self, em_rotor_module,enable_timer=True):
+		assert(isinstance(em_rotor_module,EMImageRotorModule))
+		EMImageRotorWidget.allim[self]=0
+
 		self.mmode = "drag"
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		fmt.setSampleBuffers(True)
 		#fmt.setDepthBuffer(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImageRotor.allim[self]=0
+		QtOpenGL.QGLWidget.__init__(self,fmt)
+		EMEventRerouter.__init__(self)
 		
 		
-		self.image_rotor = EMImageRotorCore(data,self)
-		
+		self.target = em_rotor_module
 		self.imagefilename = None
 		
 		self.fov = 20
@@ -81,19 +81,25 @@ class EMImageRotor(QtOpenGL.QGLWidget):
 		
 		self.animatables = []
 		
+		if enable_timer:
+			self.__init_timer()
+		else: self.timer_enabled = False
+		
+		
+	def __init_timer(self):
 		self.timer = QtCore.QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-		self.timer.start(10)
-	
+		self.timer.start(20)
+		self.timer_enabled = True
 		
 	def get_target(self):
-		return self.image_rotor
+		return self.target
 		
 	def set_data(self,data):
-		self.image_rotor.set_data(data)
+		self.target.set_data(data)
 	
 	def get_optimal_size(self):
-		lr = self.image_rotor.rotor.get_suggested_lr_bt_nf()
+		lr = self.target.rotor.get_suggested_lr_bt_nf()
 		width = lr[1] - lr[0]
 		height = lr[3] - lr[2]
 		return [width+80,height+20]
@@ -141,8 +147,8 @@ class EMImageRotor(QtOpenGL.QGLWidget):
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glLoadIdentity()
-		if ( self.image_rotor == None ): return
-		self.image_rotor.render()
+		if ( self.target == None ): return
+		self.target.render()
 
 	
 	def resizeGL(self, width, height):
@@ -157,7 +163,7 @@ class EMImageRotor(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.image_rotor.resize_event(width,height)
+		self.target.resize_event(width,height)
 	
 	
 	def set_near_far(self,near,far):
@@ -179,41 +185,23 @@ class EMImageRotor(QtOpenGL.QGLWidget):
 		return depth
 	def set_mmode(self,mode):
 		self.mmode = mode
-		self.image_rotor.set_mmode(mode)
-	
-	def mousePressEvent(self, event):
-		self.image_rotor.mousePressEvent(event)
-			
-	def wheelEvent(self,event):
-		self.image_rotor.wheelEvent(event)
-	
-	def mouseMoveEvent(self,event):
-		self.image_rotor.mouseMoveEvent(event)
-
-	def mouseReleaseEvent(self,event):
-		self.image_rotor.mouseReleaseEvent(event)
-		
-	def closeEvent(self,event) :
-		self.image_rotor.closeEvent(event)
-		
-	def dragEnterEvent(self,event):
-		self.image_rotor.dragEnterEvent(event)
-
-	def dropEvent(self,event):
-		self.image_rotor.dropEvent(event)
-	
+		self.target.set_mmode(mode)
 	
 	def set_shapes(self,shapes,shrink,idx=0):
-		self.image_rotor.set_shapes(shapes,shrink,idx)
+		self.target.set_shapes(shapes,shrink,idx)
 	
 	def set_frozen(self,frozen,idx=0):
-		self.image_rotor.set_frozen(frozen,idx)
+		self.target.set_frozen(frozen,idx)
 	
-class EMImageRotorCore:
-
-	#allim=WeakKeyDictionary()
-	def __init__(self, data=None,parent=None):
-		self.parent = parent
+class EMImageRotorModule(EMImage2DGUIModule):
+	def get_qt_widget(self):
+		if self.parent == None:
+			self.parent = EMImageRotorWidget(self)
+		return self.parent
+	
+	def __init__(self, data=None,application=None):
+		EMImage2DGUIModule.__init__(self,application)
+		self.parent = None
 		self.data=None
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
@@ -226,12 +214,14 @@ class EMImageRotorCore:
 		self.widget = EM3DWidget(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		
-		
 		self.z_near = 0
 		self.z_far = 0
 		
 		self.hud_data = [] # a list of strings to be rendered to the heads up display (hud)
+	
+		self.load_font_renderer()
 		
+	def load_font_renderer(self):
 		try:
 			self.font_renderer = get_3d_font_renderer()
 			self.font_renderer.set_face_size(20)
@@ -239,9 +229,9 @@ class EMImageRotorCore:
 			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
 			
 #			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
-			self.font_render_mode = EMImageMXModule.FTGL
+			self.font_render_mode = EMGUIModule.FTGL
 		except:
-			self.font_render_mode = EMImageMXModule.GLUT
+			self.font_render_mode = EMGUIModule.GLUT
 		
 	def set_extra_hud_data(self,hud_data):
 		self.hud_data = hud_data
@@ -271,7 +261,10 @@ class EMImageRotorCore:
 
 	def register_animatable(self,animatable):
 		self.parent.register_animatable(animatable)
-		
+	
+	def get_inspector(self):
+		return None
+	
 	def width(self):
 		return self.parent.width()
 	
@@ -366,6 +359,9 @@ class EMImageRotorCore:
 		self.widget.mouseReleaseEvent(event)
 		self.updateGL()
 		
+	def keyPressEvent(self,event):
+		pass
+		
 	def wheelEvent(self, event):
 #		if event.delta() > 0:
 #			self.set_scale( self.scale * self.mag )
@@ -437,17 +433,21 @@ class EMImageRotorCore:
 		
 # This is just for testing, of course
 if __name__ == '__main__':
-	app = QtGui.QApplication(sys.argv)
-	GLUT.glutInit("")
-	window = EMImageRotor()
-	if len(sys.argv)==1 : window.set_data([test_image(),test_image(1),test_image(2),test_image(3)]*4)
+	em_app = EMStandAloneApplication()
+	window = EMImageRotorModule(application=em_app)
+	window.get_qt_widget()
+	if len(sys.argv)==1 :
+		data = []
+		for i in range(0,20):
+			e = test_image(Util.get_irand(0,9))
+			data.append(e)
+			
+		window.set_data(data) 
 	else :
 		a=EMData.read_images(sys.argv[1])
 		window.setImageFileName(sys.argv[1])
 		window.set_data(a)
-	window2=EMParentWin(window)
-	window2.show()
-	window2.resize(*window.get_optimal_size())
 
-	
-	sys.exit(app.exec_())
+	em_app.show()
+	em_app.execute()
+

@@ -711,8 +711,7 @@ class EMGLRotorWidget(EM3DWidgetVolume):
 		self.angle_range = 90.0	# the angular amount of the ellipse that is occupied by resident widgets
 		self.allow_target_wheel_events = True
 		self.allow_target_translation = True
-	#def emit(self,signal,event,a,b):
-		#self.parent.emit(signal,event,a,b)
+
 	def target_zoom_events_allowed(self,bool):
 		self.allow_target_wheel_events = bool
 	
@@ -1641,9 +1640,8 @@ class EMGLView2D:
 			if len(image) == 1:
 				self.become_2d_image(image[0])
 			else:
-				self.drawable = EMImageMXModule(image,self)
-				#self.w = image[0].get_xsize()
-				#self.h = image[0].get_ysize()
+				self.drawable = EMImageMXModule(image)
+				self.drawable.set_parent(self)
 				self.w = self.parent.width()
 				self.h = self.parent.height()
 		elif isinstance(image,EMData):
@@ -1689,7 +1687,8 @@ class EMGLView2D:
 		self.drawable.set_shapes(shapes,shrink)
 		
 	def become_2d_image(self,a):
-		self.drawable = EMImage2DModule(a,self)
+		self.drawable = EMImage2DModule(a)
+		self.drawable.set_parent(self)
 		#self.drawable.originshift = False
 		self.w = a.get_xsize()
 		if self.w > self.parent.width(): self.w = self.parent.width()
@@ -1868,8 +1867,8 @@ class EMGLView2D:
 			self.drawable.mouseDoubleClickEvent(qme)
 
 		#self.updateGL()
-	def emit(self, signal, event, a=None,b=None):
-		self.parent.emit(signal,event,a,b)
+	def emit(self, *args,**kargs):
+		self.parent.emit(*args,**kargs)
 
 	def leaveEvent(self):
 		self.drawable.leaveEvent()

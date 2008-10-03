@@ -1270,6 +1270,39 @@ def draw_volume_bounds(width,height,depth):
 	glVertex(0,0,depth)
 	glEnd()
 
+class EMImage2DGUIModule(EMGUIModule):
+	def __init__(self,application=None):
+		EMGUIModule.__init__(self,application)
+		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
+		self.suppress_inspector = False # turn on to suppress showing the inspector
+		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
+	
+	def get_inspector(self): raise # this need to be supplied
+	
+	def show_inspector(self,force=0):
+		
+		if self.application == None:
+			print "can't show an inspector with having an associated application"
+		
+		if self.suppress_inspector: return
+		if not force and self.inspector==None : return
+		if not self.inspector : 
+			self.inspector = self.get_inspector()
+			if self.inspector == None: return # sometimes this happens
+		if not self.em_qt_inspector_widget:
+			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
+		
+		self.application.show_specific(self.em_qt_inspector_widget)
+
+	def set_parent(self,parent):
+		self.parent = parent
+		
+	def closeEvent(self,event) :
+		if self.inspector: self.inspector.close()
+		
+	def mouseDoubleClickEvent(self,event):
+		pass
+
 class EMImage3DGUIModule(EMGUIModule):
 	def __init__(self,application=None):
 		EMGUIModule.__init__(self,application)
@@ -1312,7 +1345,7 @@ class EMImage3DGUIModule(EMGUIModule):
 		if not force and self.inspector==None : return
 		
 		if not self.inspector : 
-			inspector = self.get_inspector()
+			self.inspector = self.get_inspector()
 		if not self.em_qt_inspector_widget:
 			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
 		

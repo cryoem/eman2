@@ -34,8 +34,9 @@
 from PyQt4 import QtGui
 import sys
 
-
 class EMGUIModule:
+	FTGL = "ftgl"
+	GLUT = "glut"
 	def __init__(self,application=None): 
 		self.application = application
 		if application != None: application.attach_child(self)
@@ -43,6 +44,15 @@ class EMGUIModule:
 	def set_app(self,application): self.application = application
 	def get_app(self): return self.application
 	def get_qt_widget(self): raise
+	
+	#def load_font_renderer(self):
+		#try:
+			#self.font_render_mode = EMGUIModule.FTGL
+			#self.font_renderer = get_3d_font_renderer()
+			#self.font_renderer.set_face_size(16)
+			#self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+		#except:
+			#self.font_render_mode = EMGUIModule.GLUT
 	
 
 class EMApplication:

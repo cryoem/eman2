@@ -39,9 +39,9 @@ from optparse import OptionParser
 from emshape import EMShape
 from emimagemx import EMImageMXModule
 from emimage2d import EMImage2DModule
-from emimagerotor import EMImageRotor
-from emimagemxrotor import EMImageMXRotor
-from emrotor import EMRotor
+from emimagerotor import EMImageRotorModule
+from emimagemxrotor import EMImageMXRotorModule
+from emrotor import EMRotorModule
 from emimage import EMImage,get_app
 from math import *
 from time import *
@@ -865,10 +865,10 @@ class EMBoxerModule:
 		
 		if self.guimxit != None:
 			self.application.show_specific(self.guimxit)
-			if isinstance(self.guimxit,EMImageRotor):
+			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxitp.resize(*self.guimxit.get_optimal_size())
 			QtCore.QObject.connect(self.guimxit.get_qt_widget(),QtCore.SIGNAL("mousedown"),self.image_selected)
-			if isinstance(self.guimxit,EMImageRotor):
+			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 	
 	def __init_guimx(self):
@@ -1311,7 +1311,7 @@ class EMBoxerModule:
 			self.current_image_idx = im
 			
 			self.__update_guiim_states()
-			if isinstance(self.guimxit,EMImageRotor):
+			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 			self.guictl.set_image_quality(self.boxable.get_quality())
 			
@@ -1363,7 +1363,7 @@ class EMBoxerModule:
 			try: a = EMFTGL()
 			except: emftgl_supported = False
 			if False and not glflags.npt_textures_unsupported() and emftgl_supported:
-				self.guimxit=EMImageRotor()		# widget for displaying image thumbs
+				self.guimxit=EMImageRotorModule()		# widget for displaying image thumbs
 			else:
 				self.guimxit=EMImageMXModule(application=self.application)
 				
@@ -1661,10 +1661,10 @@ class EMBoxerModule:
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
 		
-		if isinstance(self.guimxit,EMImageRotor):
+		if isinstance(self.guimxit,EMImageRotorModule):
 			self.guimxit.set_extra_hud_data([len(self.ptcl)])
 	
-		if isinstance(self.guimxit,EMImageRotor):
+		if isinstance(self.guimxit,EMImageRotorModule):
 			othershapes = {}
 			for shape in ns:
 				s = ns[shape].getShape()
@@ -1704,10 +1704,10 @@ class EMBoxerModule:
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))
-		if isinstance(self.guimxit,EMImageRotor):
+		if isinstance(self.guimxit,EMImageRotorModule):
 			self.guimxit.set_extra_hud_data([len(self.ptcl)])
 			
-		if isinstance(self.guimxit,EMImageRotor):
+		if isinstance(self.guimxit,EMImageRotorModule):
 			othershapes = {}
 			for shape in ns:
 				s = ns[shape].getShape()
@@ -1722,7 +1722,7 @@ class EMBoxerModule:
 				#s = ns[shape].getShape()
 				#othershapes[shape] = EMShape(["point",s[1],s[2],s[3],(s[4]+s[6])/2,(s[5]+s[7])/2,2])
 	
-			#if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
+			#if isinstance(self.guimxit,EMImageRotorModule): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
 		self.update_all_image_displays()
 		
 	def run(self):
@@ -1896,7 +1896,7 @@ class EMBoxerModule:
 	
 		self.guiim.set_frozen(self.boxable.is_frozen())
 		
-		if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
+		if isinstance(self.guimxit,EMImageRotorModule): self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 		if not self.boxable.is_frozen():
 			self.change_current_autoboxer(self.boxable.get_autoboxer_id(),False)
 		else:	
@@ -1908,7 +1908,7 @@ class EMBoxerModule:
 			self.boxable.set_frozen(False) # If it was already frozen then setting to excluded overrides this
 			self.guiim.set_excluded(True)
 			self.guiim.set_frozen(False)
-			if isinstance(self.guimxit,EMImageRotor): self.guimxit.set_frozen(False,self.current_image_idx)
+			if isinstance(self.guimxit,EMImageRotorModule): self.guimxit.set_frozen(False,self.current_image_idx)
 			self.boxable.clear_and_cache(True) # tell boxable to clear its autoboxes and references -
 			self.clear_displays() # tell the display to clear itself
 		elif self.guiim.set_excluded(False):
