@@ -33,7 +33,6 @@
 from EMAN2_cppwrap import *
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
-from emapplication import EMStandAloneApplication
 #from Sparx import *
 from sys import exit
 import os
@@ -324,6 +323,7 @@ def parsemodopt_operation(optstr):
 def display(img):
 	
 	if GUIMode:
+		from emapplication import EMStandAloneApplication
 		import emimage
 		image = emimage.EMImageModule(img)
 		app = EMStandAloneApplication(qt_application_control=False)

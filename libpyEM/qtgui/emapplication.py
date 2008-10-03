@@ -80,7 +80,7 @@ class EMApplication:
 		
 	def quit(self):
 		if self.app != None:
-			self.app.quit
+			self.app.quit()
 
 class EMStandAloneApplication(EMApplication):
 	
