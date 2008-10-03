@@ -1162,7 +1162,7 @@ class Boxable:
 		try: 
 			self.get_auto_selected_from_db()
 		except: pass # this probably means there is a project_db but it doesn't store any autoboxing results from this image
-		#print "got auto, now have", len(self.boxes)
+		print "got auto, now have", len(self.boxes)
 		try:
 			self.get_manual_boxes_from_db()
 		except: pass
@@ -2559,6 +2559,17 @@ class AutoBoxer:
 		'''
 		raise Exception
 
+class TrimPawelAutoBoxer:
+	def __init__(self, inst):
+		self.pixel_input = inst.pixel_input
+		self.pixel_output = inst.pixel_output
+		self.box_size = inst.box_size
+		self.gauss_width = inst.gauss_width
+		self.thr_low = inst.thr_low
+		self.thr_hgh = inst.thr_hgh
+
+
+
 class PawelAutoBoxer(AutoBoxer):
 	'''
 	This is an autoboxer that encapsulates the boxing approach first developed in SwarmPS
@@ -2601,60 +2612,105 @@ class PawelAutoBoxer(AutoBoxer):
 	def set_mode_explicit(self,mode):
 		pass
 
-	def set_params( pin, pout, bsize, gwidth, thr_low, thr_hgh ):
+	def set_params( self, pin, pout, bsize, gwidth, thr_low, thr_hgh ):
 		self.pixel_input = pin
 		self.pixel_output= pout
 		self.box_size    = bsize
 		self.gauss_width = gwidth
 		self.thr_low = thr_low
 		self.thr_hgh = thr_hgh
+	
+	def become( self, inst ):
+		self.pixel_input = inst.pixel_input
+		self.pixel_output = inst.pixel_output
+		self.box_size = inst.box_size
+		self.gauss_width = inst.gauss_width
+		self.thr_low = inst.thr_low
+		self.thr_hgh = inst.thr_hgh
+
+		'''
+		if not(self.parent is None):
+			self.parent.guictl.input_pixel_size.setText( str(self.pixel_input) )
+			self.parent.guictl.output_pixel_size.setText( str(self.pixel_output) )
+			self.parent.guictl.bs.setText( str(self.box_size) )
+			self.parent.guictl.gauss_width.setText( str(self.gauss_width) )
+			if self.thr_low is None:
+				self.parent.guictl.threshold_low.setText( "N/A" )
+				self.parent.guictl.threshold_hgh.setText( "N/A" )
+			else:
+				self.parent.guictl.threshold_low.setText( str(self.thr_low) )
+				self.parent.guictl.threshold_hgh.setText( str(self.thr_hgh) )
+		'''
+
+	def get_params_from_gui(self):
+		from string import atof, atoi
+		assert not( self.parent is None )
+		pixel_input = atof(self.parent.guictl.input_pixel_size.text())
+		pixel_output= atof(self.parent.guictl.output_pixel_size.text())
+		box_size = int(self.parent.guictl.bs.text())
+		gauss_width = atof(self.parent.guictl.gauss_width.text())
+		slow = self.parent.guictl.threshold_low.text()
+		shgh = self.parent.guictl.threshold_hgh.text()
+		try:
+			thr_low = atof(slow)
+			thr_hgh = atof(shgh)
+		except:
+			thr_low = None
+			thr_hgh = None
+
+		return pixel_input,pixel_output,box_size,gauss_width,thr_low,thr_hgh
 		
 
 	def auto_box(self,boxable,update_display=True,force_auto_box=False):
 		from string import atoi, atof
 
-		self.pixel_input = atof(self.parent.guictl.input_pixel_size.text())
-		self.pixel_output= atof(self.parent.guictl.output_pixel_size.text())
-		self.box_size = int(self.parent.guictl.bs.text())
-		self.gauss_width = atof(self.parent.guictl.gauss_width.text())
-		slow = self.parent.guictl.threshold_low.text()
-		shgh = self.parent.guictl.threshold_hgh.text()
+		if not(self.parent is None):
+			new_params = self.get_params_from_gui()
+			self.pixel_input = new_params[0]
+			self.pixel_output = new_params[1]
+			self.box_size = new_params[2]
+			self.gauss_width = new_params[3]
+			self.thr_low = new_params[4]
+			self.thr_hgh = new_params[5]
 
 		if hasattr( self, "imgorig" ):
 			boxable.set_image_name( self.imgorig )
 
-		try:
-			self.thr_low = atof(slow)
-			self.thr_hgh = atof(shgh)
-		except:
-			self.thr_low = None
-			self.thr_hgh = None
 
-		boxes, trimboxes, ccfs = self.run(boxable)
+		boxes, trimboxes, ccfs = self.run(boxable.get_image_name(), boxable)
 
 		if self.thr_low is None:
 			self.parent.guictl.pawel_histogram.set_data( ccfs )
 
 		boxable.append_stored_auto_boxes(trimboxes)
 		boxable.store_key_entry_in_idd("auto_boxes",trimboxes)
+		boxable.set_stamps( "none", "none", self.get_unique_stamp()) # set stamps for record keeping
+		
 		boxable.write_to_db()
 		boxable.get_auto_selected_from_db() 
-
+		self.write_to_db( True )
 		print "nbox, boxable.numbox: ", len(boxes), boxable.num_boxes()
 
-	def run(self, boxable):
+	def run(self, imgname, boxable=None):
+		from sparx import get_im,filt_gaussl, filt_gaussh
 		print "running Gauss Convolution: "
-		print "     Pixel input : ", self.pixel_input
-		print "     Pixel output: ", self.pixel_output
-		print "     Gauss width : ", self.gauss_width
-		print "     Box size    : ", self.box_size
-		print "     boxable.image_name:	  ", boxable.image_name
-		print "     CCF low bound   :   ", self.thr_low
-		print "     CCF hgh bound   :   ", self.thr_hgh
+		print "     Pixel input  : ", self.pixel_input
+		print "     Pixel output : ", self.pixel_output
+		print "     Gauss width  : ", self.gauss_width
+		print "     Box size     : ", self.box_size
+		print "     image_name   : ", imgname
+		print "     CCF low bound:   ", self.thr_low
+		print "     CCF hgh bound:   ", self.thr_hgh
 
-		boxable.delete_auto_boxes(True)
-		imgname = boxable.get_image_name()
-		img = BigImageCache.get_image_directly(imgname) # change from boxable.image_name, hope you don't mind
+		if not(boxable is None):
+			boxable.delete_auto_boxes(True)
+			imgname = boxable.get_image_name()
+			img = BigImageCache.get_image_directly(imgname) # change from boxable.image_name, hope you don't mind
+		else:
+			img = get_im( imgname )
+			[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
+			img /= sigma
+
 	
 		from filter import filt_gaussh, filt_gaussl
 
@@ -2677,14 +2733,18 @@ class PawelAutoBoxer(AutoBoxer):
 			img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
 			# Note you would have to change get_window_size_min so that it returns 15 and get_frequency_cutoff
 			# so that it returns the right value
-			
+			if not(self.parent is None):
+				self.parent.init_guiim(img, imgname)
+				self.parent.big_image_change()
+				self.parent.clear_displays()
+
 			BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
 			imgname = "reduced_" + imgname
-			self.parent.big_image_change()
-			
-			self.parent.clear_displays()
-			
 			img.write_image( imgname )
+
+			if not(boxable is None):
+				self.imgorig = imgname
+				boxable.set_image_name( imgname )
 			#boxable.set_image_name( imgname ) 
 
 		ccf = filt_gaussl( img, self.gauss_width/self.box_size )
@@ -2741,12 +2801,30 @@ class PawelAutoBoxer(AutoBoxer):
 
 	def dynapix_on(self):
 		pass
+
 	def write_to_db(self, write_current=False):
-		pass
+		print "Gauss Auto boxer wrote to db"
+		trim = TrimPawelAutoBoxer(self)
+		data = {}
+		data["autoboxer_type"] = "Gauss"
+		data["autoboxer"] = trim
+		data["convenience_name"] = "Gauss" # self.get_convenience_name()
+
+		project_db = EMProjectDB()
+		project_db.set_key_entry(self.get_unique_stamp(),data)
+	
+		if write_current:
+			project_db.set_key_entry("current_autoboxer_type", "Gauss")
+			project_db.set_key_entry("current_autoboxer",trim)
+		
+
+	def get_unique_stamp(self):
+		return "gauss_autoboxer_" + self.get_creation_ts()
+
 
 	def write_image_specific_references_to_db(self,image_name):
-		print "in PawelAutoBox, write specific references to db"
-	
+		pass
+
 	def add_reference(self,box):
 		pass
 	
@@ -2810,6 +2888,7 @@ class TrimSwarmAutoBoxer:
 	
 	def write_to_db(self):
 		data = {}
+		data["autoboxer_type"] = "Swarm"
 		data["autoboxer"] = self
 		data["convenience_name"] = self.get_convenience_name()
 		
@@ -3257,7 +3336,7 @@ class SwarmAutoBoxer(AutoBoxer):
 				trimboxes.append(t)
 			
 			boxable.store_key_entry_in_idd("auto_boxes",trimboxes) # store the auto boxing results in the DB
-			boxable.set_stamps(self.get_state_ts(),self.get_template_ts(),self.get_unique_stamp()) # set stamps for record keeping
+			boxable.set_stamps(self.get_state_ts(),None,self.get_unique_stamp()) # set stamps for record keeping
 			
 			if self.mode != SwarmAutoBoxer.COMMANDLINE:
 				self.write_to_db(True) # this object must be recoverable from the database as the current autoboxer
@@ -3308,13 +3387,15 @@ class SwarmAutoBoxer(AutoBoxer):
 		autoboxer_db_string = self.get_unique_stamp()
 		
 		trimself = TrimSwarmAutoBoxer(self)
-		data = {}	
+		data = {}
+		data["autoboxer_type"] = "Swarm"
 		data["autoboxer"] = trimself
 		data["convenience_name"] = self.get_convenience_name()
 		
 		project_db.set_key_entry(autoboxer_db_string,data)
 		
 		if writecurrent:
+			project_db.set_key_entry("current_autoboxer_type", "Swarm")
 			project_db.set_key_entry("current_autoboxer",trimself)
 		
 	def write_image_specific_references_to_db(self,image_name):
