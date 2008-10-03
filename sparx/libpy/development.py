@@ -12720,7 +12720,7 @@ def GA_MPI(stack, rad, K, sizepop, maxgen, pcross, pmut, pselect, elit = False, 
 ###############################################################################################
 ## COMMON LINES OLD VERSION ###################################################################
 
-def sinogram2(image2D):
+def sinogram2__(image2D):
 	from math         import cos,sin
 	from fundamentals import fft
 	from utilities    import info
@@ -13753,5 +13753,161 @@ def cml_weights(agls, prj, nlines, flag2):
 ###############################################################################################
 
 
+###############################################################################################
+## COMMON LINES NEW VERSION ###################################################################
+## 10/03/2008
+
+# to utilities: get_line
+def get_line(im, li):
+	from utilities import model_blank
+	nx = im.get_xsize()
+	e  = model_blank(nx)
+	for n in xrange(nx): e.set_value_at(n, 0, im.get_value_at(n, li))
+	return e
+
+# transform an image to sinogram (mirror include)
+def cml_sinogram_dev(image2D, diameter, d_psi):
+	from math         import cos, sin
+	from fundamentals import fft
+	
+	M_PI  = 3.141592653589793238462643383279502884197
+	
+	# prepare 
+	M = image2D.get_xsize()
+	# padd two times
+	npad  = 2
+	N     = M * npad
+	# support of the window
+	K     = 6
+	alpha = 1.75
+	r     = M / 2
+	v     = K / 2.0 / N
+
+	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
+	volft  = image2D.average_circ_sub()  	# ASTA - in spider
+	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
+	volft  = volft.norm_pad(False, npad)
+	volft.do_fft_inplace()
+	volft.center_origin_fft()
+	volft.fft_shuffle()
+
+	# get line projection
+	nangle = int(360 / d_psi)     
+	dangle = 2 * M_PI / float(nangle)
+	data   = []
+	for j in xrange(nangle):
+		nuxnew =  cos(dangle * j)
+		nuynew = -sin(dangle * j)
+		line   = volft.extractline(kb, nuxnew, nuynew)
+		rlines = fft(line)
+		data.append(rlines.copy())
+
+	# copy each line in the same im
+	e = EMData()
+	e.set_size(data[0].get_xsize() ,len(data), 1)
+	for n in xrange(len(data)):
+		nx = data[n].get_xsize()
+		for i in xrange(nx): e.set_value_at(i, n, data[n].get_value_at(i))
+
+	Util.cyclicshift(e, {"dx":M, "dy":0, "dz":0} )
+
+	return Util.window(e, diameter, len(data), 1, 0, 0, 0)
+
+# open and transform projections
+def cml_open_proj_dev(stack, ir, ou, d_psi, lf, hf):
+	#from projection   import cml_sinogram
+	from development  import cml_sinogram_dev
+	from utilities    import model_circle, get_params_proj, model_blank
+	from fundamentals import fft
+
+	nprj = EMUtil.get_image_count(stack)           # number of projections
+	Prj = []                                       # list of projections
+	Ori = [[0.0, 0.0, 0.0] for i in xrange(nprj)]  # orientation intiale (phi, theta, psi) for each projection
+
+	image      = EMData()
+	for i in xrange(nprj):
+		image.read_image(stack, i)
+
+		# read initiale angles if given
+		try:	Ori[i][0], Ori[i][1], Ori[i][2], s2x, s2y = get_params_proj(image)
+		except:	pass
+		
+		if(i == 0):
+			nx = image.get_xsize()
+			if(ou < 1):
+				ou = nx // 2 - 1
+			else:
+				ou = int(ou) // 2
+				ou = 2 * ou +1
+			diameter = 2 * ou + 1
+			mask2D   = model_circle(ou, nx, nx)
+			circ     = mask2D.copy()
+			if ou > 1:  circ   -= model_circle(ou - 1, nx, nx)
+			if ir > 0:  mask2D -= model_circle(ir, nx, nx)
+
+		# normalize under the mask
+		[mean_a, sigma, imin, imax] = Util.infomask(image, circ, True)
+		image -= mean_a
+		Util.mul_img(image, mask2D)
+
+		# sinogram
+		sino = cml_sinogram_dev(image, diameter, d_psi)
+
+		# prepare the cut positions in order to filter (lf: low freq; hf: high freq)
+		ihf = min(int(2 * hf * diameter), diameter + (diameter + 1) % 2)
+		ihf = ihf + (ihf + 1) % 2    # index ihf must be odd to take the img part
+		ilf = max(int(2 * lf * diameter), 0)
+		ilf = ilf + ilf % 2          # index ilf must be even to fall in the real part
+		bdf = ihf - ilf + 1
+
+		# process lines
+		nxe = sino.get_xsize()
+		nye = sino.get_ysize()
+		prj = model_blank(bdf, nye)
+		prj.set_complex(True)
+		for li in xrange(nye):
+
+			# get the line li
+			line = model_blank(nxe)
+			for ci in xrange(nxe): line.set_value_at(ci, 0, sino.get_value_at(ci, li))
+
+			# normalize this line
+			[mean_l, sigma_l, imin, imax] = Util.infomask(line, None, True)
+			line = (line - mean_l) / sigma_l
+
+			# fft
+			line = fft(line)
+
+			# filter (cut part of coef)
+			ct = 0
+			for ci in xrange(ilf, ihf + 1):
+				prj.set_value_at(ct, li, line.get_value_at(ci, 0))
+				ct += 1
+		
+		# store the projection
+		Prj.append(prj)
+
+	return Prj, Ori
+
+def cml_init_global_var(dpsi, delta, nprj):
+	from utilities import even_angles
+	#def global var
+	global g_anglst, g_d_psi, g_n_psi, g_i_prj, g_n_lines, g_n_prj
+	
+	g_anglst  = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
+	g_d_psi   = dpsi
+	g_n_psi   = int(360 / dpsi)
+	g_i_prj   = 0
+	g_n_lines = ((nprj - 1) * nprj) / 2
+	g_n_prj   = nprj
+	
+
+def testfunc():
+	global g_anglst, g_d_psi, g_n_spi, g_i_prj, g_n_lines, g_n_prj
+	print g_anglst, '\n', g_d_psi, '\n', g_n_psi, '\n', g_i_prj, '\n', g_n_lines, '\n', g_n_prj
+
+#-------------------- OLD --------------------------------------------------------------------
 
 
+## END GA CLUSTERING ##########################################################################
+###############################################################################################
