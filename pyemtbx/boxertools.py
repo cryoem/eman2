@@ -2660,8 +2660,9 @@ class PawelAutoBoxer(AutoBoxer):
 		except:
 			thr_low = None
 			thr_hgh = None
+		use_variance = self.parent.guictl.use_variance.isChecked()
 
-		return pixel_input,pixel_output,box_size,gauss_width,thr_low,thr_hgh
+		return pixel_input,pixel_output,box_size,gauss_width,thr_low,thr_hgh, use_variance
 		
 
 	def auto_box(self,boxable,update_display=True,force_auto_box=False):
@@ -2675,6 +2676,7 @@ class PawelAutoBoxer(AutoBoxer):
 			self.gauss_width = new_params[3]
 			self.thr_low = new_params[4]
 			self.thr_hgh = new_params[5]
+			self.use_variance = new_params[6]
 
 		if hasattr( self, "imgorig" ):
 			boxable.set_image_name( self.imgorig )
