@@ -98,12 +98,6 @@ class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def set_data(self,data):
 		self.target.set_data(data)
 	
-	def get_optimal_size(self):
-		lr = self.target.rotor.get_suggested_lr_bt_nf()
-		width = lr[1] - lr[0]
-		height = lr[3] - lr[2]
-		return [width+80,height+20]
-	
 	def timeout(self):
 		
 		if len(self.animatables) == 0: return
@@ -235,6 +229,12 @@ class EMImageRotorModule(EMImage2DGUIModule):
 		
 	def set_extra_hud_data(self,hud_data):
 		self.hud_data = hud_data
+	
+	def get_optimal_size(self):
+		lr = self.rotor.get_suggested_lr_bt_nf()
+		width = lr[1] - lr[0]
+		height = lr[3] - lr[2]
+		return [width+80,height+20]
 	
 		#self.rotor.set_shapes([],1.01)
 	def context(self):

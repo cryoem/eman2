@@ -1294,8 +1294,9 @@ class EMImage2DGUIModule(EMGUIModule):
 		
 		self.application.show_specific(self.em_qt_inspector_widget)
 
-	def set_parent(self,parent):
-		self.parent = parent
+	def set_parent(self,parent): self.parent = parent
+	def get_parent(self): return self.parent
+		
 		
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()

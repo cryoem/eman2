@@ -1218,7 +1218,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		#self.gammas.setValue(1.0)
 		self.vbl.addWidget(self.gammas)
 
-		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
+		#self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
 
 		self.lowlim=0
 		self.highlim=1.0
