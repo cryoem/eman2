@@ -829,8 +829,11 @@ class CoarsenedFlattenedImage:
 		flattenradius = params_mediator.get_template_radius()
 		shrink =  params_mediator.get_subsample_rate()
 
-		self.smallimage = image.process("math.meanshrink",{"n":shrink})
-		self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
+		if shrink==1.0:
+			self.smallimage = image.copy()
+		else:
+			self.smallimage = image.process("math.meanshrink",{"n":shrink})
+			self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
 			
 		self.smallimage.set_attr("flatten_radius",flattenradius)
 		self.smallimage.set_attr("shrink_factor",shrink)
@@ -2588,8 +2591,8 @@ class PawelAutoBoxer(AutoBoxer):
 		return self.pixel_input/self.pixel_output
 	
 	def get_template_radius(self):
-		raise Exception
-		
+		return int(self.box_size/2/self.get_subsample_rate())
+	
 	def get_template_object(self):
 		raise Exception
 
