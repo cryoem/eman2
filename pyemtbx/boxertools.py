@@ -2692,7 +2692,7 @@ class PawelAutoBoxer(AutoBoxer):
 		print "nbox, boxable.numbox: ", len(boxes), boxable.num_boxes()
 
 	def run(self, imgname, boxable=None):
-		from sparx import get_im,filt_gaussl, filt_gaussh
+		from sparx import get_im, filt_gaussl, filt_gaussh
 		print "running Gauss Convolution: "
 		print "     Pixel input  : ", self.pixel_input
 		print "     Pixel output : ", self.pixel_output
@@ -2747,6 +2747,8 @@ class PawelAutoBoxer(AutoBoxer):
 				boxable.set_image_name( imgname )
 			#boxable.set_image_name( imgname ) 
 
+		from morphology import power
+		if(self.user_variance):  img = power(img, 2.0)
 		ccf = filt_gaussl( img, self.gauss_width/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
 		npeak = len(peaks)/3
