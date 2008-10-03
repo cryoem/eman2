@@ -2748,7 +2748,7 @@ class PawelAutoBoxer(AutoBoxer):
 			#boxable.set_image_name( imgname ) 
 
 		from morphology import power
-		if(self.user_variance):  img = power(img, 2.0)
+		if(self.use_variance):  img = power(img, 2.0)
 		ccf = filt_gaussl( img, self.gauss_width/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
 		npeak = len(peaks)/3

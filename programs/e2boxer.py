@@ -2434,7 +2434,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.boxingvbl.addLayout(self.boxinghbl2)
 
 		self.invert_contrast_mic = QtGui.QCheckBox("Invert Contrast")
-		self.invert_contrast_mic.setChecked(True)
+		self.invert_contrast_mic.setChecked(False)
 		self.boxingvbl.addWidget(self.invert_contrast_mic,0, Qt.AlignLeft)
 		self.connect(self.invert_contrast_mic,QtCore.SIGNAL("clicked(bool)"),self.invert_contrast_mic_toggled)
 
@@ -2545,7 +2545,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	def invert_contrast_mic_toggled(self):
 		img = self.target.guiim.image2d.data
 		avg = img.get_attr("mean")
-		invimg = img*(-1.0) #+ 2.0*avg
+		invimg = img*(-1.0) + 2.0*avg
 		self.target.guiim.set_data(invimg)
 		self.target.guiim.updateGL()
 	
@@ -2916,6 +2916,10 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 0, 2 )
 		pawel_grid1.addWidget( QtGui.QLabel("Angstrom"), 1, 2 )		
 
+		self.use_variance = QtGui.QCheckBox("Use Variance Image")
+		self.use_variance.setChecked(True)
+		pawel_grid1.addWidget(self.use_variance,0, Qt.AlignLeft)
+
 		self.input_pixel_size = QtGui.QLineEdit("1.0", self)
 		self.output_pixel_size = QtGui.QLineEdit("1.0", self)
 		self.gauss_width = QtGui.QLineEdit("1.0", self)
@@ -2982,6 +2986,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		else:
 			assert row==1
 			self.target.autoboxer.pixel_output = atof( t )		
+
 	def gauss_width_edited(self):
 		from string import atof
 		from math import log10
