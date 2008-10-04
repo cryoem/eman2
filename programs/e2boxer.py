@@ -871,7 +871,7 @@ class EMBoxerModule:
 		if self.guimxit != None:
 			self.application.show_specific(self.guimxit)
 			if isinstance(self.guimxit,EMImageRotorModule):
-				self.guimxitp.resize(*self.guimxit.get_optimal_size())
+				self.guimxit.get_parent().resize(*self.guimxit.get_optimal_size())
 			QtCore.QObject.connect(self.guimxit.get_qt_widget(),QtCore.SIGNAL("mousedown"),self.image_selected)
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
@@ -882,11 +882,11 @@ class EMBoxerModule:
 		emftgl_supported = True
 		try: a = EMFTGL()
 		except: emftgl_supported = False
-		if False and not glflags.npt_textures_unsupported() and emftgl_supported:
-			self.guimx=EMImageMXRotor()		# widget for displaying image thumbs
-			self.guimx.get_core_object().disable_mx_zoom()
-			self.guimx.get_core_object().allow_camera_rotations(False)
-			self.guimx.get_core_object().disable_mx_translate()
+		if not glflags.npt_textures_unsupported() and emftgl_supported:
+			self.guimx=EMImageMXRotorModule(application=self.application)# widget for displaying image thumbs
+			self.guimx.disable_mx_zoom()
+			self.guimx.allow_camera_rotations(False)
+			self.guimx.disable_mx_translate()
 			#self.fancy_mode = EMBoxerModule.FANCY_MODE
 			self.fancy_mode = EMBoxerModule.PLAIN_MODE # for now just make sure the fancy stuff isn't used
 		else:
@@ -1395,8 +1395,8 @@ class EMBoxerModule:
 			emftgl_supported = True
 			try: a = EMFTGL()
 			except: emftgl_supported = False
-			if False and not glflags.npt_textures_unsupported() and emftgl_supported:
-				self.guimxit=EMImageRotorModule()		# widget for displaying image thumbs
+			if not glflags.npt_textures_unsupported() and emftgl_supported:
+				self.guimxit=EMImageRotorModule(application=self.application)
 			else:
 				self.guimxit=EMImageMXModule(application=self.application)
 				
