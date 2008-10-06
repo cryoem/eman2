@@ -165,6 +165,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, user_func_name, random_method, T0, F, SA_stop)
 		return
 	from utilities    import model_circle, combine_params2, dropImage, getImage, get_arb_params, get_input_from_string
+	from utilities    import file_type
 	from statistics   import add_ave_varf
 	from alignment    import Numrinit, ringwe, ali2d_s
 	from filter       import filt_tophatb
@@ -217,9 +218,10 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Data with CTF               : %s\n"%(CTF))
-	print_msg("Simulated Annealing         : %s\n"%(randomize))
-	if randomize:
-		print_msg("Initial temperture          : %f\n"%(T0)) 
+	if random_method != "": 	
+		print_msg("Random method               : %s\n"%(random_method))
+	if random_method:
+		print_msg("Initial temperature         : %f\n"%(T0)) 
 		print_msg("Cooling Rate                : %f\n"%(F))
 		if SA_stop != max_iter: print_msg("SA stop at Iteration        : %i\n"%(SA_stop))
 	if auto_stop:   print_msg("Stop iteration with         : criterion\n")
@@ -227,7 +229,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 	if maskfile:
 		import	types
-		if(type(maskfile) is types.StringType):
+		if type(maskfile) is types.StringType:
 			print_msg("Maskfile                    : %s\n\n"%(maskfile))
 			mask=getImage(maskfile)
 		else:
@@ -249,7 +251,9 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		ctf_2_sum = None
 
 	del ima
+	
 	data = EMData.read_images(stack)
+	nima = len(data)
 	for im in xrange(nima):
 		data[im].set_attr('ID', im)
 		if CTF:
@@ -279,7 +283,9 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 					
 			tavg, vav, sumsq = add_ave_varf(data, mask, mode="a", CTF=CTF, ctf_2_sum=ctf_2_sum)
 
-			if total_iter==0 or randomize==False: select = 0
+			attr_list = data[0].get_attr_dict()	
+			if attr_list.has_key("select") == False:
+				select = 0
 			else : 	
 				select = 0
 				for im in xrange(nima):
@@ -288,7 +294,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 			total_iter += 1 
 			
-			if randomize and total_iter%10 == 0:
+			if random_method=="" or total_iter%10 == 0:
 				dropImage(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
 				dropImage(vav, os.path.join(outdir, "vav_%03d.hdf"%(total_iter)))
 
@@ -306,7 +312,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			ref_data[2] = tavg
 			ref_data[3] = frsc
 			#  call user-supplied function to prepare reference image, i.e., center and filter it
-			tavg, cs = user_func( ref_data )
+			tavg, cs = user_func(ref_data)
 			
 			Util.div_filter(sumsq, vav)
 			sumsq = filt_tophatb(sumsq, 0.01, 0.49)
@@ -316,14 +322,14 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			msg = "ITERATION   #%5d    criterion = %15.7e    average select = %5.3f\n\n"%(total_iter, a1, float(select)/nima)
 			print_msg(msg)
 			# write the current average
-			if randomize and total_iter%10 == 0:
+			if random_method=="" or total_iter%10 == 0:
 				dropImage(tavg, os.path.join(outdir, "aqf_%03d.hdf"%(total_iter)))
 			# a0 should increase; stop algorithm when it decreases.    
-			if(a1 < a0):
-				if (auto_stop == True): break
+			if a1 < a0:
+				if auto_stop == True: break
 			else:	a0 = a1
-			if(N_step == (len(xrng)-1) and Iter == (max_iter-1)):  break
-			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima), CTF=CTF, randomize=randomize, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
+			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
+			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima), CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
 	# write out headers
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
@@ -416,7 +422,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if random_method != "": 	
 			print_msg("Random method               : %s\n"%(random_method))
 		if random_method == "SA": 
-			print_msg("Initial temperature          : %f\n"%(T0))
+			print_msg("Initial temperature         : %f\n"%(T0))
 			print_msg("Cooling Rate                : %f\n"%(F))
 			if SA_stop != max_iter:	print_msg("SA stop at Iteration        : %i\n"%(SA_stop))
 		if auto_stop: print_msg("Stop iteration with         : criterion\n")
@@ -590,7 +596,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
-	# write out headers  and STOP, under MPI writing has to be done sequentially
+	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	par_str = ["xform.align2d"]
 	if myid == main_node: recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
