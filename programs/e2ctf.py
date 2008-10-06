@@ -110,6 +110,8 @@ Various CTF-related operations on images."""
 		for i in args:
 			im=EMData(i,0)
 			ys=im.get_ysize()
+			ds=1.0/(options.apix*ys)
+			
 			if options.bgmask:
 				mask1=EMData(ys,ys,1)
 				mask1.to_one()
@@ -120,14 +122,14 @@ Various CTF-related operations on images."""
 #				ratio2=1.0-ratio1
 				ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 				ratio2=mask2.get_attr("square_sum")/(ys*ys)
-				print ratio1,ratio2
+#				print ratio1,ratio2
 				ps2d.append(powspec(i,not options.nonorm,mask1))
 			else : ps2d.append(powspec(i,not options.nonorm))
 			ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
 			ps1d[-1]=[y/ratio1 for y in ps1d[-1]]
 #			ps1d.append(bgedge1d(i,-options.bgedge,not options.nonorm))
 			out=file("fg1d.txt","w")
-			for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
+			for a,b in enumerate(ps1d[-1]): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
 			out.close()
 			names.append(i)
 			if options.bgmask>0 :
@@ -140,22 +142,42 @@ Various CTF-related operations on images."""
 					bg=[0]+[log10(v) for v in bg[1:]]
 					bg=bg[:ra+3]+[sum(bg[v-ra:v+ra+1])/(ra*2+1) for v in range(ra+3,len(bg)-ra)]+bg[len(bg)-ra:]
 					bg=[0]+[10**v for v in bg[1:]]
-				for v in range(len(bg)): ps1d[-1][v]=(ps1d[-1][v]-bg[v])/(bg[v]+.00001)
+				snr=[(ps1d[-1][v]-bg[v])/(bg[v]+.00001) for v in range(len(bg))]
+				for v in range(len(bg)): ps1d[-1][v]=ps1d[-1][v]-bg[v]
 #				ps1d.append(bg)
 #				names.append(i+"(bg)")
 
 				out=file("bg1d.txt","w")
-				for a,b in enumerate(bg): out.write("%d\t%1.5f\n"%(a,b))
+				for a,b in enumerate(bg): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
 				out.close()
 
 				out=file("snr.txt","w")
-				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
+				for a,b in enumerate(snr): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
 				out.close()
 
 			# defocus estimation
 			ctf=SimpleCtf()
-			ctf.from_dict({"amplitude":1,"defocus":-1,"voltage":300,"cs":1.6})
-			ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
+			ctf.from_dict({"amplitude":1,"defocus":-1,"voltage":300,"cs":1.6,"ampcont":.1,"apix":options.apix})
+			
+			dfout=file("df.txt","w")
+			mapout=EMData(64,64)
+			for dfi in range(0,64):			# loop over defocus
+				for ac in range(0,64):		# loop over %ac
+					df=dfi/10.0
+					ctf.defocus=-df
+					ctf.ampcont=ac/100.0
+					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
+					for fz in range(len(cc)):
+						if cc[fz]<0 : break
+				
+					tot=0
+					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
+#					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
+					if ac==10 : dfout.write("%1.2f\t%g\n"%(df,tot))
+					mapout[dfi,ac]=tot
+			
+			mapout.write_image("dfmap.mrc",0)
+				
 			
 			#if options.bgedge>0 :
 				#bg=bgedge2d(i,options.bgedge)
