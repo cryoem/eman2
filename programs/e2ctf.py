@@ -56,9 +56,12 @@ Various CTF-related operations on images."""
 	parser.add_option("--dbin",type="string",help="Box locations used when input is a whole micrograph")
 	parser.add_option("--powspec",action="store_true",help="Compute the power spectrum of the input image(s)",default=False)
 	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which will largely mask out the particles",default=0)
-	parser.add_option("--runav",type="int",help="Apply a running average to the background with +-runav pixels",default=0)
+	parser.add_option("--smooth",type="int",help="Smooth the background curve over roughly the specified range in pixels",default=0)
 	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=None)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
+	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=None)
+	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=None)
+	
 	
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	#parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
@@ -107,13 +110,17 @@ Various CTF-related operations on images."""
 		for i in args:
 			im=EMData(i,0)
 			ys=im.get_ysize()
-			ratio1=pi*(float(options.bgmask)/ys)**2
-			ratio2=1.0-ratio1
 			if options.bgmask:
 				mask1=EMData(ys,ys,1)
 				mask1.to_one()
-				mask1.process_inplace("mask.sharp",{"outer_radius":options.bgmask})
+#				mask1.process_inplace("mask.sharp",{"outer_radius":options.bgmask})
+				mask1.process_inplace("mask.gaussian",{"outer_radius":options.bgmask})
 				mask2=mask1.copy()*-1+1
+#				ratio1=pi*(float(options.bgmask)/ys)**2
+#				ratio2=1.0-ratio1
+				ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
+				ratio2=mask2.get_attr("square_sum")/(ys*ys)
+				print ratio1,ratio2
 				ps2d.append(powspec(i,not options.nonorm,mask1))
 			else : ps2d.append(powspec(i,not options.nonorm))
 			ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
@@ -128,9 +135,11 @@ Various CTF-related operations on images."""
 #				ps2d.append(bg2d)
 				bg=bg2d.calc_radial_dist(bg2d.get_ysize()/2,0.0,1.0,1)
 				bg=[y/ratio2 for y in bg]
-				if options.runav:
-					ra=options.runav
-					bg=bg[:options.runav]+[sum(bg[v-ra:v+ra+1])/(ra*2+1) for v in range(ra,len(bg)-ra)]+bg[len(bg)-ra:]
+				if options.smooth:
+					ra=options.smooth
+					bg=[0]+[log10(v) for v in bg[1:]]
+					bg=bg[:ra+3]+[sum(bg[v-ra:v+ra+1])/(ra*2+1) for v in range(ra+3,len(bg)-ra)]+bg[len(bg)-ra:]
+					bg=[0]+[10**v for v in bg[1:]]
 				for v in range(len(bg)): ps1d[-1][v]=(ps1d[-1][v]-bg[v])/(bg[v]+.00001)
 #				ps1d.append(bg)
 #				names.append(i+"(bg)")
@@ -143,6 +152,11 @@ Various CTF-related operations on images."""
 				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
 				out.close()
 
+			# defocus estimation
+			ctf=SimpleCtf()
+			ctf.from_dict({"amplitude":1,"defocus":-1,"voltage":300,"cs":1.6})
+			ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
+			
 			#if options.bgedge>0 :
 				#bg=bgedge2d(i,options.bgedge)
 				#ps2d.append(bg)
