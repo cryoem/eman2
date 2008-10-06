@@ -13813,6 +13813,76 @@ def cml_sinogram_dev(image2D, diameter, d_psi):
 
 	return Util.window(e, diameter, len(data), 1, 0, 0, 0)
 
+# compute the weight of the common lines
+def cml_weights_dev(Ori):
+	from development import cml_cmlines_3D_dev
+	from math        import fmod
+	
+	# gbl vars
+	global g_n_prj, g_n_lines
+	tol     = 6
+	weights = [1.0] * g_n_lines
+	'''
+	# remove mirror if applied
+	for i in xrange(nprj):
+		if Prj[i].mirror:
+			Prj[i].phi   = fmod(Prj[i].phi + 180.0, 360.0)
+			Prj[i].theta = 180.0 - Prj[i].theta
+
+	# compute the angles of the common lines in space
+	phi, theta = cml_cmlines_3D(Prj)
+
+	# search the sames cm lines
+	mem_i_same = {}                  ## TODO dict change to list
+	ocp_same   = [0] * nlines
+	for i in xrange(nlines - 1):
+		mem_i_same[i] = None
+		v = []
+		flag = False
+		if ocp_same[i] == 0:
+			for j in xrange(i + 1, nlines):
+				if ocp_same[j] == 0:
+					dist = (phi[i] - phi[j]) ** 2 + (theta[i] - theta[j]) ** 2
+					if dist < tol:
+						v.append(j)
+						ocp_same[j] = 1
+						flag = True
+		if flag: mem_i_same[i] = v
+
+	# create the new vector n_phi n_theta without
+	n_phi, n_theta = [], []
+	LUT   = []
+	index = 0
+	for n in xrange(nlines):
+		if ocp_same[n] == 0:
+			n_phi.append(phi[n])
+			n_theta.append(theta[n])
+			LUT.append(n)
+			index += 1
+
+	# compute the weights with the new list phi and theta
+	n_weights = Util.vrdg(n_phi, n_theta)
+
+	# compute the new weights according the sames cm lines
+	weights = [-1] * nlines
+	for n in xrange(index): weights[LUT[n]] = n_weights[n]
+	for n in xrange(nlines - 1):
+		if mem_i_same[n] is not None:
+			val        = weights[n]
+			nval       = val / (len(mem_i_same[n]) + 1)
+			weights[n] = nval
+			for i in mem_i_same[n]: weights[i] = nval
+
+	# re-apply mirror if neeed
+	for i in xrange(nprj):
+		if Prj[i].mirror:
+			Prj[i].phi   = fmod(Prj[i].phi + 180, 360)
+			Prj[i].theta = 180 - Prj[i].theta
+	'''
+	# return the weights
+	return weights
+
+
 # open and transform projections
 def cml_open_proj_dev(stack, ir, ou, d_psi, lf, hf):
 	#from projection   import cml_sinogram
@@ -13820,9 +13890,9 @@ def cml_open_proj_dev(stack, ir, ou, d_psi, lf, hf):
 	from utilities    import model_circle, get_params_proj, model_blank
 	from fundamentals import fft
 
-	nprj = EMUtil.get_image_count(stack)           # number of projections
-	Prj = []                                       # list of projections
-	Ori = [[0.0, 0.0, 0.0] for i in xrange(nprj)]  # orientation intiale (phi, theta, psi) for each projection
+	nprj = EMUtil.get_image_count(stack)                # number of projections
+	Prj = []                                            # list of projections
+	Ori = [[0.0, 0.0, 0.0, -1] for i in xrange(nprj)]  # orientation intiale (phi, theta, psi, index) for each projection
 
 	image      = EMData()
 	for i in xrange(nprj):
@@ -13889,24 +13959,426 @@ def cml_open_proj_dev(stack, ir, ou, d_psi, lf, hf):
 
 	return Prj, Ori
 
-def cml_init_global_var(dpsi, delta, nprj):
-	from utilities import even_angles
-	#def global var
-	global g_anglst, g_d_psi, g_n_psi, g_i_prj, g_n_lines, g_n_prj
+# export result obtain by the function find_struct
+def cml_export_struc_dev(stack, outdir, Ori):
+	from projection import plot_angles
+	from utilities  import set_params_proj
 	
-	g_anglst  = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
-	g_d_psi   = dpsi
-	g_n_psi   = int(360 / dpsi)
-	g_i_prj   = 0
-	g_n_lines = ((nprj - 1) * nprj) / 2
-	g_n_prj   = nprj
+	pagls = []
+	data  = EMData()
+	for i in xrange(len(Ori)):
+		data.read_image(stack, i)
+		p = [Ori[i][0], Ori[i][1], Ori[i][2], 0.0, 0.0]
+		set_params_proj(data, p)
+		data.set_attr('active', 1)
+		data.write_image(outdir + '/structure.hdf', i)
+
+		# prepare angles to plot
+		pagls.append([Ori[i][0], Ori[i][1], Ori[i][2]])
+
+	# plot angles
+	im = plot_angles(pagls)
+	im.write_image(outdir + '/plot_agls.hdf')
+
+# init the global average used for lot of function to cml
+def cml_init_global_var(dpsi, delta, nprj, debug):
+	from utilities import even_angles
+	global g_anglst, g_d_psi, g_n_psi, g_i_prj, g_n_lines, g_n_prj, g_n_anglst, g_debug
+	
+	g_anglst   = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
+	g_n_anglst = len(g_anglst)
+	g_d_psi    = dpsi
+	g_n_psi    = int(360 / dpsi)
+	g_i_prj    = -1
+	g_n_lines  = ((nprj - 1) * nprj) / 2
+	g_n_prj    = nprj
+	g_debug    = debug
 	
 
-def testfunc():
-	global g_anglst, g_d_psi, g_n_spi, g_i_prj, g_n_lines, g_n_prj
-	print g_anglst, '\n', g_d_psi, '\n', g_n_psi, '\n', g_i_prj, '\n', g_n_lines, '\n', g_n_prj
+# write the head of the logfile
+def cml_head_log_dev(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given):
+	from utilities import print_msg
+
+	# call global var
+	global g_anglst, g_n_prj, g_d_psi, g_n_anglst
+	
+	print_msg('Input stack                  : %s\n'     % stack)
+	print_msg('Number of projections        : %d\n'     % g_n_prj)
+	print_msg('Output directory             : %s\n'     % outdir)
+	print_msg('Angular step                 : %5.2f\n'  % delta)
+	print_msg('Sinogram angle accuracy      : %5.2f\n'  % g_d_psi)
+	print_msg('Inner particle radius        : %5.2f\n'  % ir)	
+	print_msg('Outer particle radius        : %5.2f\n'  % ou)
+	print_msg('Filter, minimum frequency    : %5.3f\n'  % lf)
+	print_msg('Filter, maximum frequency    : %5.3f\n'  % hf)
+	print_msg('Random seed                  : %i\n'     % rand_seed)
+	print_msg('Number of maximum iterations : %d\n'     % maxit)
+	print_msg('Start from given orientations: %s\n'     % given)
+	
+	
+	#print_msg('Number of trials            : %d\n'     % trials)
+	#print_msg('Number of cpus              : %i\n'     % ncpu)
+	#if refine:
+	#	print_msg('Refinement                  : True\n')
+	#else:
+	#	print_msg('Refinement                  : False\n')
+	print_msg('Number of angles             : %i\n\n'   % g_n_anglst)
+
+# write the end of the logfile
+def cml_end_log_dev(Ori, disc):
+	from utilities import print_msg
+	print_msg('\n\n')
+	for i in xrange(len(Ori)): print_msg('Projection #%s: phi %10.5f    theta %10.5f    psi %10.5f\n' % (str(i).rjust(3, '0'), Ori[i][0], Ori[i][1], Ori[i][2]))
+	print_msg('\nDiscrepancy: %10.3f\n' % abs(disc))
+
+# display the list of angles for each iterations
+def cml_export_txtagls_dev(outdir, Ori, disc, title):
+	import time
+	global g_n_prj, g_i_prj
+
+	angfile = open(outdir + '/angles', 'a')
+
+	angfile.write('|%s|-----------------------------------------------%s---------\n' % (title, time.ctime()))
+	for i in xrange(g_n_prj): angfile.write('%10.3f\t%10.3f\t%10.3f\n' % (Ori[i][0], Ori[i][1], Ori[i][2]))
+			
+	angfile.write('\nDiscrepancy: %10.3f\n\n' % disc)
+	angfile.close()
+
+# export the progress of the find_struc function
+def cml_export_progress_dev(outdir, iprj, iagl, psi, disc, cmd):
+	infofile = open(outdir + '/progress', 'a')
+	global g_anglst
+
+	if cmd == 'progress':
+		txt_i = str(iprj).rjust(3, '0')
+		txt_a = str(iagl).rjust(3, '0')
+		txt   = 'Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f' % (txt_i, txt_a, g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
+		
+
+	elif cmd == 'choose':
+		txt   = 'Select Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f' % (str(iagl).rjust(3, '0'), g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
+
+	infofile.write(txt + '\n')
+	infofile.close()
+
+	'''
+	if cmd == 'choose':
+		infofile.write('-------------------------------------------------------------------------------------------------\n')
+		if Prj[Cst['iprj']].mirror:
+			infofile.write('>> Choose angles (phi, theta, psi):           %10.3f %10.3f %10.3f   Disc: %10.3f mirror\n\n' % (Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, disc))
+		else:
+			infofile.write('>> Choose angles (phi, theta, psi):           %10.3f %10.3f %10.3f   Disc: %10.3f\n\n' % (Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, disc))
+
+			
+	elif cmd.split(':')[0] == 'passed':
+		agls     = cmd.split(':')[1]
+		txt_i    = str(Cst['iprj']).rjust(3, '0')
+		txt_a    = str(Prj[Cst['iprj']].pos_agls).rjust(4, '0')
+		txt      = 'Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f' % (txt_i, txt_a, Prj[Cst['iprj']].phi, Prj[Cst['iprj']].theta, Prj[Cst['iprj']].psi, disc)
+		if Prj[Cst['iprj']].mirror:
+			infofile.write(txt + ' (mirror)  try:%s\n' % agls)
+		else:
+			infofile.write(txt + '           try:%s\n' % agls)
+ 
+	elif cmd.split(':')[0] == 'iteration':
+		ite = cmd.split(':')[1]
+		txt      = '\n\nIteration %s: %7.1f    ' % (ite, disc)
+		infofile.write(txt + '\n')
+	'''
+
+
+
+
+# compute common lines in 3D in order to calculate the weigths
+def cml_cmlines_3D_dev(Ori):
+	from utilities import common_line_in3D
+
+	# gbl vars
+	global g_n_prj, g_n_lines
+	l_phs  = [0.0] * g_n_lines  # angle phi of the common lines
+	l_ths  = [0.0] * g_n_lines  # angle theta of the common lines
+	n      = 0
+	for i in xrange(g_n_prj - 1):
+		for j in xrange(i + 1, g_n_prj):
+			l_phs[n], l_ths[n] = common_line_in3D(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
+			n += 1
+
+	return l_phs, l_ths
+
+# compute the common lines in sino
+def get_common_line_angles_dev(phi1, theta1, psi1, phi2, theta2, psi2, nangle):
+	from math import fmod
+	#SPIDER = Transform3D.EulerType.SPIDER
+	R1    = Transform({"type":"spider", "phi":phi1, "theta":theta1, "psi":psi1})
+	R2    = Transform({"type":"spider", "phi":phi2, "theta":theta2, "psi":psi2})
+	#R1    = Transform3D(SPIDER,phi1,theta1,psi1)
+	#R2    = Transform3D(SPIDER,phi2,theta2,psi2)
+	R2T   = R2.inverse()
+	R2to1 = R1*R2T
+
+	#eulerR2to1 = R2to1.get_rotation(SPIDER);
+	eulerR2to1 = R2to1.get_rotation("spider")
+	phiR2to1   = eulerR2to1["phi"]
+	thetaR2to1 = eulerR2to1["theta"]
+	psiR2to1   = eulerR2to1["psi"]
+
+	alphain1 = fmod(psiR2to1 + 270.0,  360.0)
+	alphain2 = fmod(-phiR2to1 + 270.0, 360.0)
+
+	if alphain1 < 0:
+		alpha1 = 180 - alphain1
+	else:
+		alpha1 = alphain1
+
+	if alphain2 < 0:
+		alpha2 = 180 - alphain2
+	else:
+		alpha2 = alphain2
+		
+	n1 = int(nangle * (fmod(alpha1, 180.0) / 180.0)) 
+	n2 = int(nangle * (fmod(alpha2, 180.0) / 180.0))
+
+	return [alphain1, alphain2, n1, n2]
+
+
+
+# compute discrepancy according the projections and orientations
+def cml_disc_dev(Prj, Ori):
+	from development import cml_weights_dev, get_common_line_angles_dev
+	from math        import pi, fmod
+
+	# gbl vars
+	global g_n_prj, g_n_psi, g_n_lines
+	
+	weights = cml_weights_dev(Ori)
+
+	com = [[] for i in xrange(g_n_lines)]
+
+	# compute the common lines
+	count = 0
+	for i in xrange(g_n_prj - 1):
+		for j in xrange(i + 1, g_n_prj):
+			com[count] = get_common_line_angles_dev(Ori[i][0], Ori[i][1], Ori[i][2], Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
+			count += 1
+
+	n = 0
+	L_tot = 0.0
+
+	# compute the discrepancy for all sinograms
+	for i in xrange(g_n_prj - 1):
+		for j in xrange(i + 1, g_n_prj):
+			#L      = Prj[i].cm_euc(Prj[j], com[n][2], com[n][3], com[n][0], com[n][1])
+			L      = Prj[i].cm_euc(Prj[j], com[n][2], com[n][3])
+			L_tot += (L * weights[n])
+			n     += 1
+
+	return L_tot
+
+# cml spin function for one orientation
+def cml_spin_dev(Prj, iprj, Ori, iagl):
+	from development import cml_weights_dev, get_common_line_angles_dev
+	from math        import pi, fmod
+	import sys
+
+	# gbl vars
+	global g_n_prj, g_n_psi, g_n_lines, g_anglst
+
+	# assign orientation
+	Ori[iprj][0] = g_anglst[iagl][0]
+	Ori[iprj][1] = g_anglst[iagl][1]
+	Ori[iprj][2] = 0.0
+	
+	weights = cml_weights_dev(Ori)
+
+	com = [[] for i in xrange(g_n_lines)]
+	new = [[0, 0] for i in xrange(g_n_lines)]
+
+	# compute the common lines only including iprj
+	count = 0
+	for i in xrange(g_n_prj - 1):
+		for j in xrange(i + 1, g_n_prj):
+			if i == iprj or j == iprj:
+				com[count] = get_common_line_angles_dev(Ori[i][0], Ori[i][1], Ori[i][2], Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
+				new[count][0] = com[count][2]
+				new[count][1] = com[count][3]
+			count += 1
+
+	# loop over psi
+	best_disc = 1e20
+	best_psi  = -1
+	for ipsi in xrange(g_n_psi):
+		# assign new psi angle
+		a_psi = ipsi * g_d_psi
+
+		if ipsi != 0:
+			# update common lines only including iprj
+			count = 0
+			for i in xrange(g_n_prj - 1):
+				for j in xrange(i + 1, g_n_prj):
+					if i == iprj:
+						#new[count][0] = (com[count][0] - a_psi + 360) % 360          # alpha 1
+						new[count][0] = (com[count][2] - ipsi  + g_n_psi) % g_n_psi   # n1
+					elif j == iprj:
+						#new[count][1] = (com[count][1] - a_psi + 360) % 360          # alpha 2
+						new[count][1] = (com[count][3] - ipsi  + g_n_psi) % g_n_psi   # n2
+					count += 1
+
+		# do the distance with weight
+		n = 0
+		L_tot = 0.0
+
+		# compute the discrepancy (only partial)
+		for i in xrange(g_n_prj - 1):
+			for j in xrange(i + 1, g_n_prj):
+				if i == iprj or j == iprj:
+					L      = Prj[i].cm_euc(Prj[j], new[n][0], new[n][1])
+					L_tot += (L * weights[n])
+				n += 1
+
+		#print 'ipsi', ipsi, 'disc', L_tot
+
+		# select the best
+		if L_tot <= best_disc:
+			best_disc = L_tot
+			best_psi  = ipsi
+
+	return best_disc, best_psi
+	
+
+# find structure
+def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
+	from development import cml_spin_dev, cml_export_progress_dev
+	import time
+	
+	# global vars
+	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug
+
+	# list of free orientation
+	ocp = [-1] * g_n_anglst
+
+	# iteration loop
+	for ite in xrange(maxit):
+		t_start = time.time()
+
+		# loop over i prj
+		change = False
+		if first_zero: listprj = range(1, g_n_prj)
+		else:          listprj = range(g_n_prj)
+		#listprj = [2]
+		for iprj in listprj:
+
+			# Store current index of angles assign
+			cur_agl      = Ori[iprj][3]
+			ocp[cur_agl] = -1
+
+			# loop over all angles
+			best_disc = 1e20
+			best_psi  = -1
+			best_iagl = -1
+			for iagl in xrange(g_n_anglst):
+
+				# if agls free
+				if ocp[iagl] == -1:
+					# spin
+					disc, ind_psi = cml_spin_dev(Prj, iprj, Ori, iagl)
+				else:
+					disc = 1e10
+
+				# select the best
+				if disc < best_disc:
+					best_disc = disc
+					best_psi  = ind_psi
+					best_iagl = iagl
+
+				cml_export_progress_dev(outdir, iprj, iagl, ind_psi * g_d_psi, disc, 'progress')
+
+			#if g_debug: print 'iprj: ', iprj, 'agl: ', cur_agl, 'select agl: ', best_iagl, 'disc: ', disc
+
+			# if change, assign
+			if best_iagl != cur_agl:
+				ocp[best_iagl] = iprj
+				Ori[iprj][0]   = g_anglst[best_iagl][0] # phi
+				Ori[iprj][1]   = g_anglst[best_iagl][1] # theta
+				Ori[iprj][2]   = best_psi * g_d_psi     # psi
+				Ori[iprj][3]   = best_iagl              # index
+
+				change = True
+
+			cml_export_progress_dev(outdir, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
+
+		# if one change, compute new full disc
+		disc = cml_disc_dev(Prj, Ori)
+
+		if g_debug: print 'Ite: ', disc, '           %6.2f s' % (time.time() - t_start)
+
+		# display in the progress file
+		cml_export_txtagls_dev(outdir, Ori, disc, 'Ite: %s' % str(ite).rjust(3, '0'))
+
+	return Ori, disc
+	
+# application find structure
+def find_struct_dev(stack, outdir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, debug = False):
+	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
+	import time
+	import os
+
+	# logfile
+	t_start = start_time()
+	print_begin_msg('find_struct')
+
+	if os.path.exists(outdir): os.system('rm -rf ' + outdir)
+	os.mkdir(outdir)
+
+	# import
+	from development import cml_open_proj_dev, cml_init_global_var, cml_head_log_dev
+	from development import cml_disc_dev, cml_export_txtagls_dev, cml_export_struc_dev
+	from development import cml_end_log_dev
+	from random      import seed, random
+
+	# Open and transform projections
+	Prj, Ori = cml_open_proj_dev(stack, ir, ou, dpsi, lf, hf)
+
+	# if not angles given select randomly orientation for each projection
+	if not given:
+		if rand_seed > 0: seed(rand_seed)
+		else:             seed()
+		for n in xrange(len(Prj)):
+			if first_zero and n == 0:
+				Ori[n][0] = 0.0
+				Ori[n][1] = 0.0
+				Ori[n][2] = 0.0
+			else:
+				Ori[n][0] = random() * 360  # phi
+				Ori[n][1] = random() * 180  # theta
+				Ori[n][2] = random() * 360  # psi
+
+	# Init the global vars
+	cml_init_global_var(dpsi, delta, len(Prj), debug)
+	
+	# Update logfile
+	cml_head_log_dev(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
+
+	# Compute the first disc
+	disc = cml_disc_dev(Prj, Ori)
+
+	# Update progress file
+	cml_export_txtagls_dev(outdir, Ori, disc, 'Init')
+
+	# Find structure
+	Ori, disc = cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero)
+
+	# Export structure
+	cml_export_struc_dev(stack, outdir, Ori)
+
+	# Update logfile
+	cml_end_log_dev(Ori, disc)
+	running_time(t_start)
+	print_end_msg('find_struct')
 
 #-------------------- OLD --------------------------------------------------------------------
+
+
+
 
 
 ## END GA CLUSTERING ##########################################################################
