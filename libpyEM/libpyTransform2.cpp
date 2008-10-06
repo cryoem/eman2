@@ -416,8 +416,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	
 	delete EMAN_Transform3D_scope;
 
-	
-	class_< EMAN::Transform >("Transform", init<  >())
+//	class_< EMAN::Transform >("Transform", init<  >())
+	class_< EMAN::Transform, std::auto_ptr<EMAN::Transform>  >("Transform", init<  >())
 		.def(init< const EMAN::Transform& >())
 		.def(init<const EMAN::Dict& >())
 		.def(init<const std::vector<float>& >())

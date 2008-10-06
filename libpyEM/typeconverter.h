@@ -601,8 +601,9 @@ namespace EMAN {
 
 			data->convertible = storage;
 			EMObject& result = *((EMObject*) storage);
-			EMData * emdata = python::extract<EMData*>(obj_ptr);   
-			result = EMObject(emdata);
+			std::auto_ptr<EMData> emdata = python::extract< std::auto_ptr<EMData> >(obj_ptr);   
+			result = EMObject(emdata.get());
+			emdata.release();
 		}
     };
     
@@ -665,8 +666,9 @@ namespace EMAN {
 
 			data->convertible = storage;
 			EMObject& result = *((EMObject*) storage);
-			Transform * trans = python::extract<Transform*>(obj_ptr);
-			result = EMObject(trans);
+			std::auto_ptr<Transform> trans = python::extract< std::auto_ptr<Transform> >(obj_ptr);
+			result = EMObject(trans.get());
+			trans.release();
 		}
     };
     
