@@ -38,7 +38,41 @@ from   optparse   import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir --delta=angular_delta --rand_seed=random_seed --trials=number_of_trials --refine --MPI --ite --given --ou --ir"
+	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --given --first_zero"
+	parser   = OptionParser(usage, version = SPARXVERSION)
+	parser.add_option("--ir",         type="float",        default=-1,       help=" Inner radius of particle (set to )")
+	parser.add_option("--ou",         type="float",        default=-1,       help=" Outer radius of particle < int(nx/2)-1")
+	parser.add_option("--delta",      type="float",        default=10.0,     help=" Angle step " )
+	parser.add_option("--dpsi",       type="float",        default=1.0,      help=" Angle accuracy for sinogram (set to 1)")
+	parser.add_option("--lf",         type="float",        default=0.0,      help=" Filter, minimum frequency (set to 0.0)")
+	parser.add_option("--hf",         type="float",        default=0.5,      help=" Filter, maximum frequency (set to 0.5)")
+	parser.add_option("--given",      action="store_true", default=False,    help=" Start from given projections orientation (set to False, means start with randomize orientations)")
+	parser.add_option("--rand_seed",  type="int",          default=-1,       help=" Random seed of initial orientations (if set to randomly)")
+	parser.add_option("--maxit",      type="int",          default=20,       help=" Maximum iterations ")
+	parser.add_option("--debug",      action="store_true", default=False,    help=" Help to debug")
+	parser.add_option("--first_zero", action="store_true", default=False,    help=" Assign the first projection orientation to 0")
+
+	(options, args) = parser.parse_args()
+	if len(args) != 2:
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
+	else:
+		if options.maxit < 1: options.maxit = 1
+		
+		from development import find_struct_dev
+		global_def.BATCH = True
+		find_struct_dev(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.debug)
+		global_def.BATCH = False
+
+if __name__ == "__main__":
+	main()
+
+
+
+
+'''
+
+	--delta=angular_delta --rand_seed=random_seed --trials=number_of_trials --refine --MPI --ite --given --ou --ir"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--delta",     type="float",        default=10.0,     help=" Angle step " )
 	parser.add_option("--ir",        type="float",        default=-1,       help=" Inner radius of particle (set to )")
@@ -56,6 +90,13 @@ def main():
         	print "Please run '" + progname + " -h' for detailed options"
 	else:
 		if options.trials <= 0: ERROR('Number of trials must be > 0: %d' % options.trials, 'find_struct', 1)
+
+		from development import find_struct_dev
+		find_struct_dev(stack, outdir, ir, ou, delta, dpsi, lf, hf)
+
+
+
+		
 		from  applications  import  find_struct
 		global_def.BATCH = True
 		find_struct(args[0], args[1], options.delta, options.ir, options.ou, options.ite, options.rand_seed, options.trials, options.refine, options.MPI, options.debug, options.given)
@@ -63,3 +104,4 @@ def main():
 
 if __name__ == "__main__":
 	main()
+'''
