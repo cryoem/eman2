@@ -707,6 +707,7 @@ class ExclusionImage:
 		
 ExclusionImageCache = Cache(ExclusionImage)
 
+
 class SincBlackmanSubsampledImage:
 	'''
 	Pawel Penczek's optimal subsampling approach is encapsulated in this class
@@ -737,20 +738,34 @@ class SincBlackmanSubsampledImage:
 	
 	def get_window_size_min(self):
 		return self.smallimage.get_attr("template_min")
+
+	def get_gaussh_param(self):
+		return self.smallimage.get_attr("gaussh_param")
 	
 	def __update_image(self,params_mediator):
 		'''
 		Updates the image using the parameters that are deduced from the params_mediator
 		'''
+		from sparx import filt_gaussh
 		subsample_rate = params_mediator.get_subsample_rate()
 		template_min = params_mediator.get_window_size_min()
 		frequency_cutoff = params_mediator.get_frequency_cutoff()
+		gaussh_param = params_mediator.get_gaussh_param()
+
 		image = BigImageCache.get_image_directly(self.image_name)
 		
-		sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
+		image = filt_gaussh( image, gaussh_param ) #1.0/(self.box_size/ratio) )
 
-		self.smallimage = image.downsample(sb,subsample_rate)
+		if subsample_rate != 1.0:
+			sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
+			self.smallimage = image.downsample(sb,subsample_rate)
+		else:
+			self.smallimage = image.copy()
 
+		print "        Filt Gauss  High: ", gaussh_param
+		print "        Down sample rate: ", subsample_rate
+
+		self.smallimage.set_attr("gaussh_param", gaussh_param)
 		self.smallimage.set_attr("subsample_rate",subsample_rate)
 		self.smallimage.set_attr("frequency_cutoff",frequency_cutoff)
 		self.smallimage.set_attr("template_min",template_min)
@@ -769,10 +784,11 @@ class SincBlackmanSubsampledImage:
 		'''
 		Should generally use this approach to getting the image
 		'''
-		if self.smallimage == None or not self.query_params_match(params_mediator):
-			print "regenerating sb image"
+		if self.smallimage is None or not self.query_params_match(params_mediator):
+			print "regenerating down sampled image"
 			self.__update_image(params_mediator)
-		else: print "sb image is up to date"
+		else: 
+			print "retrieve down sampled image from cache"
 		
 		return self.get_image()
 	
@@ -781,15 +797,27 @@ class SincBlackmanSubsampledImage:
 		A utility function that tests to see of the current parameters of the subsampled image
 		match those in the params_mediator
 		'''
+		gaussh_param = params_mediator.get_gaussh_param()
 		subsample_rate = params_mediator.get_subsample_rate()
 		template_min = params_mediator.get_window_size_min()
 		frequency_cutoff = params_mediator.get_frequency_cutoff()
-		try:
-			#print subsample_rate,self.get_subsample_rate(),template_min,self.get_window_size_min(), frequency_cutoff,self.get_frequency_cutoff()
-			if subsample_rate != self.get_subsample_rate() or template_min != self.get_window_size_min() or frequency_cutoff != self.get_frequency_cutoff():
-				return False
-			else: return True
-		except: return False # exception will be thrown if self.smallimage = None
+
+		if self.smallimage is None:
+			return False
+
+		if gaussh_param != self.get_gaussh_param():
+			return False
+
+		if subsample_rate != self.get_subsample_rate():
+			return False
+
+		if template_min != self.get_window_size_min():
+			return False
+ 
+		if frequency_cutoff != self.get_frequency_cutoff():
+			return False
+
+		return True
 
 SincBlackmanSubsampleCache = Cache(SincBlackmanSubsampledImage)
 
@@ -1582,7 +1610,9 @@ class Boxable:
 			f.close()
 			
 	def get_image_file_name(self,imageformat="hdf"):
-		return strip_file_tag(self.image_name)+"."+imageformat
+		from os import path
+		name,suffix = path.splitext( self.image_name )
+		return name+"_particles.hdf"
 
 	def write_box_images(self,box_size=-1,force=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",verbose=True):
 		'''
@@ -1741,7 +1771,7 @@ class Boxable:
 				self.delete_box(m)
 				boxestodelete.append(m)
 
-		if update_display:
+		if update_display and not(self.parent is None):
 			self.parent.delete_display_boxes(boxestodelete)
 	
 	def add_non_refs(self,boxes):
@@ -2343,6 +2373,9 @@ class ImageProcParamsMediator:
 	def get_frequency_cutoff(self):
 		return self.parent.get_frequency_cutoff()
 
+	def get_gaussh_param(self):
+		return self.parent.get_gaussh_param()
+
 class AutoBoxer:
 	'''
 	Base Class design for auto boxers to work with e2boxer.py, and various classes in boxertools.py
@@ -2570,8 +2603,7 @@ class TrimPawelAutoBoxer:
 		self.gauss_width = inst.gauss_width
 		self.thr_low = inst.thr_low
 		self.thr_hgh = inst.thr_hgh
-
-
+		self.use_variance = inst.use_variance
 
 class PawelAutoBoxer(AutoBoxer):
 	'''
@@ -2597,12 +2629,16 @@ class PawelAutoBoxer(AutoBoxer):
 		raise Exception
 
 	def get_window_size_min(self):
-		return self.window_size_min
+		return 15
 	
 	def get_frequency_cutoff(self):
-		return self.frequency_cutoff
+		return 0.5*self.get_subsample_rate()
 	#### End functions that must be supplied so the ImageProcParamsMediator works
-	
+
+	def get_gaussh_param(self):
+		ratio = self.pixel_input/self.pixel_output
+		return ratio/self.box_size
+
 	def get_high_res_template_image(self):
 		raise Exception
 
@@ -2624,26 +2660,40 @@ class PawelAutoBoxer(AutoBoxer):
 		self.thr_hgh = thr_hgh
 	
 	def become( self, inst ):
+		print "get params from TrimPawelAutoBoxer"
 		self.pixel_input = inst.pixel_input
 		self.pixel_output = inst.pixel_output
 		self.box_size = inst.box_size
 		self.gauss_width = inst.gauss_width
 		self.thr_low = inst.thr_low
 		self.thr_hgh = inst.thr_hgh
+		self.use_variance = inst.use_variance
 
-		'''
-		if not(self.parent is None):
-			self.parent.guictl.input_pixel_size.setText( str(self.pixel_input) )
-			self.parent.guictl.output_pixel_size.setText( str(self.pixel_output) )
-			self.parent.guictl.bs.setText( str(self.box_size) )
-			self.parent.guictl.gauss_width.setText( str(self.gauss_width) )
-			if self.thr_low is None:
-				self.parent.guictl.threshold_low.setText( "N/A" )
-				self.parent.guictl.threshold_hgh.setText( "N/A" )
-			else:
-				self.parent.guictl.threshold_low.setText( str(self.thr_low) )
-				self.parent.guictl.threshold_hgh.setText( str(self.thr_hgh) )
-		'''
+	def set_params_of_gui(self, boxable):
+		
+		assert self.parent 
+		self.parent.guictl.input_pixel_size.setText( str(self.pixel_input) )
+		self.parent.guictl.output_pixel_size.setText( str(self.pixel_output) )
+		self.parent.guictl.bs.setText( str(self.box_size) )
+		self.parent.guictl.gauss_width.setText( str(self.gauss_width) )
+		self.parent.guictl.use_variance.setChecked( self.use_variance )
+
+		image_name = boxable.get_image_name()
+		img = SincBlackmanSubsampleCache.get_image(image_name,self.get_params_mediator())
+		BigImageCache.get_object(image_name).register_alternate(img)
+
+		self.parent.big_image_change()
+
+		ccfs = []
+		for b in boxable.boxes:
+			ccfs.append( b.correlation_score )
+
+		if len(ccfs) > 0:
+			self.parent.guictl.pawel_histogram.set_data( ccfs )
+
+
+
+
 
 	def get_params_from_gui(self):
 		from string import atof, atoi
@@ -2654,6 +2704,7 @@ class PawelAutoBoxer(AutoBoxer):
 		gauss_width = atof(self.parent.guictl.gauss_width.text())
 		slow = self.parent.guictl.threshold_low.text()
 		shgh = self.parent.guictl.threshold_hgh.text()
+
 		try:
 			thr_low = atof(slow)
 			thr_hgh = atof(shgh)
@@ -2678,9 +2729,9 @@ class PawelAutoBoxer(AutoBoxer):
 			self.thr_hgh = new_params[5]
 			self.use_variance = new_params[6]
 
-		boxes, trimboxes, ccfs = self.run(boxable.get_image_name(), boxable)
 
-		if self.thr_low is None:
+		boxes, trimboxes, ccfs = self.run(boxable.get_image_name(), boxable)
+		if not(self.parent is None):
 			self.parent.guictl.pawel_histogram.set_data( ccfs )
 
 		boxable.append_stored_auto_boxes(trimboxes)
@@ -2702,6 +2753,7 @@ class PawelAutoBoxer(AutoBoxer):
 		print "     image_name   : ", imgname
 		print "     CCF low bound:   ", self.thr_low
 		print "     CCF hgh bound:   ", self.thr_hgh
+		print "     Use variance :   ", self.use_variance
 
 		if not(boxable is None):
 			boxable.delete_auto_boxes(True)
@@ -2712,43 +2764,17 @@ class PawelAutoBoxer(AutoBoxer):
 			[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
 			img /= sigma
 
-	
-		from filter import filt_gaussh, filt_gaussl
+		img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
+		BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
 
-		ratio = self.pixel_input/self.pixel_output 
-		
-		# but if you filter the image then shouldn't that force a the sinc blackman downsampled image to be updated? Maybe the SincBlackmanSubsampled image should call filt_gaussh internally.
-		img = filt_gaussh( img, 1.0/(self.box_size/ratio) )
-
-		if ratio != 1.0:
-			#print "ratio not equals 1"
-			#frequency_cutoff = 0.5*ratio
-	   		#sb = Util.sincBlackman(15, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
-			#img = img.downsample(sb,ratio)
-			#  If things are changing from the interface and the same image is required (for 
-			# example the picking parameters have changed but we're still boxing the same image), this will save time
-			self.frequency_cutoff = 0.5*ratio
-			self.window_size_min = 15
-			# The params mediator is an object that coordinates the requests of Cache objects with the 
-			# get functions of an AutoBoxer. 
-			img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
-			# Note you would have to change get_window_size_min so that it returns 15 and get_frequency_cutoff
-			# so that it returns the right value
-			BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
-
-			if not(self.parent is None):
-				self.parent.big_image_change()
-				self.parent.clear_displays()
-
-
-			if not(boxable is None):
-				boxable.set_image_name( imgname )
-			#boxable.set_image_name( imgname ) 
+		if not(self.parent is None):
+			self.parent.big_image_change()
+			self.parent.clear_displays() # remove all boxes
 
 		if(self.use_variance):
 			from morphology import power
 			img = power(img, 2.0)
-			print  "  Used Variance Image <<<<<<<"
+
 		ccf = filt_gaussl( img, self.gauss_width/self.box_size )
 		peaks = ccf.peak_ccf( self.box_size/2-1)
 		npeak = len(peaks)/3
@@ -2766,10 +2792,10 @@ class PawelAutoBoxer(AutoBoxer):
 			box = Box( cx-boxhalf, cy-boxhalf, boxsize, boxsize, 0)
 			box.set_image_name( imgname )
 			box.set_correlation_score( peaks[3*i] )
-			ccfs.append( peaks[3*i] )
 			box.corx = cx
 			box.cory = cy
 			box.changed = True
+			box.correlation_score = peaks[3*i]
 
 			score = peaks[3*i]
 			skip = False
@@ -2780,17 +2806,47 @@ class PawelAutoBoxer(AutoBoxer):
 				skip = True
 
 			if not skip:
+				ccfs.append( peaks[3*i] )
 				boxes.append(box)
 				trimboxes.append( TrimBox(box) )
 		return boxes, trimboxes, ccfs
 
-		if thr_low is None:
-			self.parent.guictl.pawel_histogram.set_data( ccfs )
 
-		boxable.append_stored_auto_boxes(trimboxes)
-		boxable.store_key_entry_in_idd("auto_boxes",trimboxes)
-		boxable.write_to_db()
-		boxable.get_auto_selected_from_db() 
+	def get_particle_file_name( self, image_name ):
+		from os import path
+		name,suffix = path.splitext( image_name )
+		return name+"_particles.hdf"
+
+	def get_particle_coords_file_name( self, image_name ):
+		from os import path
+		name,suffix = path.splitext( image_name )
+		return name+"_particles.crd"
+
+	def write_box_images( self, boxable ):
+		image_name = boxable.get_image_name()
+		file_name = self.get_particle_file_name( image_name )
+		for i in xrange( len(boxable.boxes) ):
+			b = boxable.boxes[i]
+			img = b.get_box_image()
+			img.set_attr( "Pixel_size", self.pixel_output )
+			img.set_attr( "Micrograph", image_name )
+			img.set_attr( "Score", b.correlation_score )
+			img.write_image( file_name, i )
+			
+		print "wrote ", len(boxable.boxes), " particles to file ", file_name
+
+
+
+	def write_box_coords( self, boxable ):
+
+		file_name = self.get_particle_coords_file_name( image_name )
+		f = open( file_name, "w" )
+		for i in xrange( len(boxable.boxes) ):
+			f.write( "xcorner,ycorner,size: %d %d %d " %(b.xcorner, b.ycorner, b.xsize) )
+					
+		print "wrote ", len(self.boxable.boxes), " particles to file ", file_name
+
+
 
 	def set_interactive_mode(self,real_time_auto_boxing=False):
 		pass

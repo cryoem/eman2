@@ -265,7 +265,9 @@ def autobox_multi(image_names,options):
 			try:
 				print "using most recent autoboxer"
 				if project_db["current_autoboxer_type"]=="Gauss":
-					autoboxer = project_db["current_autoboxer"]
+					trim_autoboxer = project_db["current_autoboxer"]
+					autoboxer = PawelAutoBoxer(None)
+					autoboxer.become(trim_autoboxer)
 				else:
 					trim_autoboxer = project_db["current_autoboxer"]
 					autoboxer = SwarmAutoBoxer(None)
@@ -861,6 +863,16 @@ class EMBoxerModule:
 		self.guictl.show()
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
 	
+	
+		if isinstance(self.autoboxer,PawelAutoBoxer):
+			print "Setting gui for PawelAutoBoxer"
+			gauss_method_id = 1
+			self.guictl.method.setCurrentIndex(gauss_method_id)
+			self.guictl.method_changed( gauss_method_id ) 
+			self.autoboxer.set_params_of_gui(self.boxable)
+			
+
+
 	def __init_guimx_thumbs(self):
 		self.itshrink = -1 # image thumb shrink. Default value of -1 means it has to be calculated when it's first needed
 		self.imagethumbs = None # image thumbs - will be a list of tiny images
@@ -941,7 +953,7 @@ class EMBoxerModule:
 		guiim_core.set_excluded(self.boxable.is_excluded())
 		guiim_core.set_file_name(self.image_names[self.current_image_idx])
 	
-	def set_autoboxer(self,imagename):
+	def set_autoboxer(self,imagename, default_method="Swarm"):
 		'''
 		This function sets the self.autoboxer variable. There are 3 cases:
 		
@@ -970,36 +982,39 @@ class EMBoxerModule:
 			
 			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
 		except Exception, inst:
-			print "exception happen when load image's autoboxer"
-			print "Error: ", inst
+			print "exception happen when load image's autoboxer: ", inst
 			try:
 				type_autoboxer = project_db["current_autoboxer_type"]
 				trim_autoboxer = project_db["current_autoboxer"]
 
+				print "Current Autoboxer Type: ", type_autoboxer
+
 				if type_autoboxer=="Swarm":
 					self.autoboxer = SwarmAutoBoxer(self)
 					self.autoboxer.become(trim_autoboxer)
-				else:
+				elif type_autoboxer=="Gauss":
 					self.autoboxer = PawelAutoBoxer(self)
 					self.autoboxer.become(trim_autoboxer)
+				else:
+					raise Exception("Current autoboxer not set")
+
 				self.autoboxer_name = self.autoboxer.get_unique_stamp()
 				self.dynapix = self.autoboxer.dynapix_on()
 				if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
 			except Exception, inst:
-				print "exception happend when load current autoboxer"
-				print "Error: ", inst
+				print "exception happend when load current autoboxer: ", inst
+
+				
 				if self.box_size == -1: self.box_size = 128
-				self.autoboxer = SwarmAutoBoxer(self)
-				self.autoboxer.set_box_size_explicit(self.box_size)
-				self.autoboxer.set_interactive_mode(self.dynapix)
-
-
-
-	
-		if isinstance(self.autoboxer,SwarmAutoBoxer):
-			print "after set autoboxer, autoboxer is Swarm"
-		else:
-			print "after set autoboxer, autoboxer is Pawel"
+				
+				if default_method=="Swarm":
+					print "Using SwarmAutoBoxer"
+					self.autoboxer = SwarmAutoBoxer(self)
+					self.autoboxer.set_box_size_explicit(self.box_size)
+					self.autoboxer.set_interactive_mode(self.dynapix)
+				else:
+					print "Using PawelAutoBoxer"
+					self.autoboxer = PawelAutoBoxer(self)
 
 
 	def guiim_inspector_requested(self,event):
@@ -1789,7 +1804,6 @@ class EMBoxerModule:
 		'''
 		like hitting refresh - everything is updated
 		'''
-		self.guictl.pawel_histogram.clear()
 		self.boxable.clear_and_cache(True)
 		self.autoboxer.write_image_specific_references_to_db(self.boxable.get_image_name())
 		self.boxable.get_references_from_db()
@@ -1888,8 +1902,8 @@ class EMBoxerModule:
 				boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method)
 		
 			else: 
-				print "do it your own way but don't destroy old behavior. I have users, this matters"
-				
+				self.autoboxer.write_box_images( self.boxable )
+ 
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
 		self.boxable.cache_exc_to_db()
 		for image_name in self.image_names:
@@ -1904,18 +1918,20 @@ class EMBoxerModule:
 			except:
 				autoboxer = self.autoboxer
 				#print "writing box coordinates for",image_name,"using currently stored autoboxer"
-			boxable = Boxable(image_name,self,autoboxer)
+			if isinstance(autoboxer,SwarmAutoBoxer):
+				boxable = Boxable(image_name,self,autoboxer)
 			
-			if boxable.is_excluded():
-				print "Image",image_name,"is excluded and being ignored"
-				continue
+				if boxable.is_excluded():
+					print "Image",image_name,"is excluded and being ignored"
+					continue
 			
-			mode = autoboxer.get_mode()
-			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-			autoboxer.auto_box(boxable,False)
-			autoboxer.set_mode_explicit(mode)
-			
-			boxable.write_coord_file(box_size,forceoverwrite)
+				mode = autoboxer.get_mode()
+				autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+				autoboxer.auto_box(boxable,False)
+				autoboxer.set_mode_explicit(mode)
+				boxable.write_coord_file(box_size,forceoverwrite)
+			else:
+				self.autoboxer.write_box_coords( boxable )
 	
 	def center(self,technique):
 		
@@ -2269,38 +2285,10 @@ class CcfHistogram(QtGui.QWidget):
 			if len(lost_boxes) != 0:
 				target.delete_display_boxes(lost_boxes)
 			
-			#if len(add_boxes) != 0: FIXME the approach should probably be consistent but I haven't had time to do it
 				
 			if len(added_boxes) != 0 or len(lost_boxes) != 0 :
 				target.box_display_update()
 				target.update_all_image_displays()
-			#curt_shapes = guiim.get_shapes()
-
-
-			##print "# of all shapes: ", len( self.shapes )
-			##print "# of cur shapes: ", len( curt_shapes )
-			##print "thr_low: ", thr_low
-			##print "thr_hgh: ", thr_hgh
-
-			#ndelete = 0
-			#deleted_nums = []
-			#added_nums = []
-			#for i in xrange( len(self.ccfs) ):
-				#score = self.ccfs[i] 
-
-				#if (score < thr_low or score > thr_hgh) and curt_shapes.has_key(i):
-					#deleted_nums.append(i)
-					#ndelete += 1
-					##self.cached_boxes.append(target.remove_box( i ))
-
-				#if score >= thr_low and score <= thr_hgh and not(curt_shapes.has_key(i)):
-					#added_nums.append(i)
-					##guiim.add_shape( i, self.shapes[i] )
-			
-			#target.set_aligner_params_in_options(deleted_nums,boxable_update=True)
-			#target.update_all_image_displays()
-			#guiim.updateGL()
-
 
 	def drawTicker( self, newpos, p ) :
 		p.setPen(Qt.yellow)
@@ -2562,7 +2550,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			#self.target.autoboxer = SwarmAutoBoxer(self.target)
 			#self.target.autoboxer.set_box_size_explicit(self.target.box_size)
 			#self.target.autoboxer.set_interactive_mode(self.target.dynapix)
-			self.target.set_autoboxer(self.target.image_names[0])
 		else:
 			assert name[0:5]=="Gauss"
 			tabid = self.tabwidget.indexOf( self.david_option )
@@ -2572,8 +2559,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 				self.autobox.setText("Run")
 				self.setWindowIcon( self.pp_icon )
 				
-			self.target.autoboxer = PawelAutoBoxer(self.target)
 
+		self.target.set_autoboxer(self.target.image_names[0], name[0:5])
 
 	def set_image_quality(self,integer):
 		self.lock = True
