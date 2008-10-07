@@ -14056,7 +14056,7 @@ def cml_export_progress_dev(outdir, iprj, iagl, psi, disc, cmd):
 		
 
 	elif cmd == 'choose':
-		txt   = 'Select Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f' % (str(iagl).rjust(3, '0'), g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
+		txt   = '  Select Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f\n' % (str(iagl).rjust(3, '0'), g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
 
 	infofile.write(txt + '\n')
 	infofile.close()
@@ -14106,41 +14106,25 @@ def cml_cmlines_3D_dev(Ori):
 	return l_phs, l_ths
 
 # compute the common lines in sino
-def get_common_line_angles_dev(phi1, theta1, psi1, phi2, theta2, psi2, nangle):
+def get_common_line_angles_dev(phi1, theta1, psi1, phi2, theta2, psi2, nangle, STOP=False):
 	from math import fmod
-	#SPIDER = Transform3D.EulerType.SPIDER
 	R1    = Transform({"type":"spider", "phi":phi1, "theta":theta1, "psi":psi1})
 	R2    = Transform({"type":"spider", "phi":phi2, "theta":theta2, "psi":psi2})
-	#R1    = Transform3D(SPIDER,phi1,theta1,psi1)
-	#R2    = Transform3D(SPIDER,phi2,theta2,psi2)
 	R2T   = R2.inverse()
 	R2to1 = R1*R2T
 
-	#eulerR2to1 = R2to1.get_rotation(SPIDER);
 	eulerR2to1 = R2to1.get_rotation("spider")
 	phiR2to1   = eulerR2to1["phi"]
 	thetaR2to1 = eulerR2to1["theta"]
 	psiR2to1   = eulerR2to1["psi"]
 
-	alphain1 = fmod(psiR2to1 + 270.0,  360.0)
+	alphain1 = fmod(psiR2to1  + 270.0, 360.0)
 	alphain2 = fmod(-phiR2to1 + 270.0, 360.0)
 
-	if alphain1 < 0:
-		alpha1 = 180 - alphain1
-	else:
-		alpha1 = alphain1
-
-	if alphain2 < 0:
-		alpha2 = 180 - alphain2
-	else:
-		alpha2 = alphain2
-		
-	n1 = int(nangle * (fmod(alpha1, 180.0) / 180.0)) 
-	n2 = int(nangle * (fmod(alpha2, 180.0) / 180.0))
-
-	return [alphain1, alphain2, n1, n2]
-
-
+	n1 = int(nangle * fmod(alphain1 + 360, 360) / 360.0)
+	n2 = int(nangle * fmod(alphain2 + 360, 360) / 360.0)
+	
+	return n1, n2
 
 # compute discrepancy according the projections and orientations
 def cml_disc_dev(Prj, Ori):
@@ -14152,14 +14136,15 @@ def cml_disc_dev(Prj, Ori):
 	
 	weights = cml_weights_dev(Ori)
 
-	com = [[] for i in xrange(g_n_lines)]
+	#com = [[] for i in xrange(g_n_lines)]
+	com = [0] * 2 * g_n_lines
 
 	# compute the common lines
 	count = 0
 	for i in xrange(g_n_prj - 1):
 		for j in xrange(i + 1, g_n_prj):
-			com[count] = get_common_line_angles_dev(Ori[i][0], Ori[i][1], Ori[i][2], Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
-			count += 1
+			com[count], com[count + 1] = get_common_line_angles_dev(Ori[i][0], Ori[i][1], Ori[i][2], Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
+			count += 2
 
 	n = 0
 	L_tot = 0.0
@@ -14167,10 +14152,9 @@ def cml_disc_dev(Prj, Ori):
 	# compute the discrepancy for all sinograms
 	for i in xrange(g_n_prj - 1):
 		for j in xrange(i + 1, g_n_prj):
-			#L      = Prj[i].cm_euc(Prj[j], com[n][2], com[n][3], com[n][0], com[n][1])
-			L      = Prj[i].cm_euc(Prj[j], com[n][2], com[n][3])
-			L_tot += (L * weights[n])
-			n     += 1
+			L      = Prj[i].cm_euc(Prj[j], com[n], com[n + 1])
+			L_tot += (L * weights[int(n/2)])
+			n     += 2
 
 	return L_tot
 
@@ -14182,68 +14166,26 @@ def cml_spin_dev(Prj, iprj, Ori, iagl):
 
 	# gbl vars
 	global g_n_prj, g_n_psi, g_n_lines, g_anglst
-
-	# assign orientation
-	Ori[iprj][0] = g_anglst[iagl][0]
-	Ori[iprj][1] = g_anglst[iagl][1]
-	Ori[iprj][2] = 0.0
 	
 	weights = cml_weights_dev(Ori)
-
-	com = [[] for i in xrange(g_n_lines)]
-	new = [[0, 0] for i in xrange(g_n_lines)]
+	com     = [0] * 2 * g_n_lines
 
 	# compute the common lines only including iprj
 	count = 0
 	for i in xrange(g_n_prj - 1):
 		for j in xrange(i + 1, g_n_prj):
-			if i == iprj or j == iprj:
-				com[count] = get_common_line_angles_dev(Ori[i][0], Ori[i][1], Ori[i][2], Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
-				new[count][0] = com[count][2]
-				new[count][1] = com[count][3]
-			count += 1
+			if i == iprj:
+				com[count], com[count + 1] = get_common_line_angles_dev(g_anglst[iagl][0], g_anglst[iagl][1], 0.0, Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
+			elif j == iprj:
+				com[count], com[count + 1] = get_common_line_angles_dev(Ori[i][0], Ori[i][1], Ori[i][2], g_anglst[iagl][0], g_anglst[iagl][1], 0.0, g_n_psi)
+				
+			count += 2
 
-	# loop over psi
-	best_disc = 1e20
-	best_psi  = -1
-	for ipsi in xrange(g_n_psi):
-		# assign new psi angle
-		a_psi = ipsi * g_d_psi
+	# do spin over all psi
+	res = Util.cml_spin(g_n_psi, iprj, g_n_prj, weights, com, Prj)
 
-		if ipsi != 0:
-			# update common lines only including iprj
-			count = 0
-			for i in xrange(g_n_prj - 1):
-				for j in xrange(i + 1, g_n_prj):
-					if i == iprj:
-						#new[count][0] = (com[count][0] - a_psi + 360) % 360          # alpha 1
-						new[count][0] = (com[count][2] - ipsi  + g_n_psi) % g_n_psi   # n1
-					elif j == iprj:
-						#new[count][1] = (com[count][1] - a_psi + 360) % 360          # alpha 2
-						new[count][1] = (com[count][3] - ipsi  + g_n_psi) % g_n_psi   # n2
-					count += 1
-
-		# do the distance with weight
-		n = 0
-		L_tot = 0.0
-
-		# compute the discrepancy (only partial)
-		for i in xrange(g_n_prj - 1):
-			for j in xrange(i + 1, g_n_prj):
-				if i == iprj or j == iprj:
-					L      = Prj[i].cm_euc(Prj[j], new[n][0], new[n][1])
-					L_tot += (L * weights[n])
-				n += 1
-
-		#print 'ipsi', ipsi, 'disc', L_tot
-
-		# select the best
-		if L_tot <= best_disc:
-			best_disc = L_tot
-			best_psi  = ipsi
-
-	return best_disc, best_psi
-	
+	#return best_disc, best_psi
+	return res[0], int(res[1])
 
 # find structure
 def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
@@ -14256,15 +14198,18 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 	# list of free orientation
 	ocp = [-1] * g_n_anglst
 
+	if first_zero:
+		listprj = range(1, g_n_prj)
+		ocp[0]  = 0 
+	else:   listprj = range(g_n_prj)
+	#listprj = [0, 1]
+
 	# iteration loop
 	for ite in xrange(maxit):
 		t_start = time.time()
 
 		# loop over i prj
 		change = False
-		if first_zero: listprj = range(1, g_n_prj)
-		else:          listprj = range(g_n_prj)
-		#listprj = [2]
 		for iprj in listprj:
 
 			# Store current index of angles assign
@@ -14281,18 +14226,16 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 				if ocp[iagl] == -1:
 					# spin
 					disc, ind_psi = cml_spin_dev(Prj, iprj, Ori, iagl)
+
+					# select the best
+					if disc < best_disc:
+						best_disc = disc
+						best_psi  = ind_psi
+						best_iagl = iagl
+
+					cml_export_progress_dev(outdir, iprj, iagl, ind_psi * g_d_psi, disc, 'progress')
 				else:
-					disc = 1e10
-
-				# select the best
-				if disc < best_disc:
-					best_disc = disc
-					best_psi  = ind_psi
-					best_iagl = iagl
-
-				cml_export_progress_dev(outdir, iprj, iagl, ind_psi * g_d_psi, disc, 'progress')
-
-			#if g_debug: print 'iprj: ', iprj, 'agl: ', cur_agl, 'select agl: ', best_iagl, 'disc: ', disc
+					cml_export_progress_dev(outdir, iprj, iagl, -1, -1, 'progress')
 
 			# if change, assign
 			if best_iagl != cur_agl:
@@ -14303,6 +14246,8 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 				Ori[iprj][3]   = best_iagl              # index
 
 				change = True
+			else:
+				ocp[cur_agl]   = iprj
 
 			cml_export_progress_dev(outdir, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
@@ -14312,7 +14257,9 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 		if g_debug: print 'Ite: ', disc, '           %6.2f s' % (time.time() - t_start)
 
 		# display in the progress file
-		cml_export_txtagls_dev(outdir, Ori, disc, 'Ite: %s' % str(ite).rjust(3, '0'))
+		cml_export_txtagls_dev(outdir, Ori, disc, 'Ite: %s' % str(ite + 1).rjust(3, '0'))
+
+		if not change: break
 
 	return Ori, disc
 	
