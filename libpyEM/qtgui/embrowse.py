@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: David Woolford (sludtke@bcm.edu)
+# Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -60,6 +60,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.first_list_widget = QtGui.QListWidget(None)
 		self.starting_directory = os.getcwd()
 		
+		self.lock = True
 		self.list_widgets = []
 		self.list_widget_data= [] # entries should be tuples containing (current folder item)
 		self.__add_list_widget(self.first_list_widget)
@@ -75,6 +76,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.gl_image_preview = None
 		
 		self.resize(480,480)
+		
+		self.lock = False
 		
 	def set_application(self,app):
 		self.application = app
@@ -117,6 +120,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemDoubleClicked(QListWidgetItem*)"),self.list_widget_dclicked)
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
+		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_item_changed)
 	
 	def __go_back_a_directory(self):
 		self.starting_directory = self.starting_directory[0:self.starting_directory.rfind('/')]
@@ -146,12 +150,20 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.list_widget_data[i] = self.list_widget_data[i+1]
 			directory += '/' + str(self.list_widget_data[i].text())
 		
+		self.lock = True
 		self.list_widgets[0].insertItem(0,"../")
+		self.lock = False
 	
-			
 	def list_widget_clicked(self,item):
+		pass
+	def list_widget_item_changed(self,item,item2):
+		if self.lock : return
+	
+		if item == None: return
+
 		
 		if item.text() == "../": 
+			print "going back a directory"
 			self.__go_back_a_directory()
 			return
 	
@@ -177,8 +189,6 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.__load_directory_data(file+'/',self.list_widgets[n])
 			return
 		
-
-		#idx += 1
 		old_item = self.list_widget_data[idx]
 		
 		if self.__load_directory_data(file,self.list_widgets[idx+1]):
@@ -186,6 +196,11 @@ class EMSelectorDialog(QtGui.QDialog):
 				old_item.setBackgroundColor(QtGui.QColor(255,255,255))
 			item.setBackgroundColor(QtGui.QColor(64,190,0,63))	
 			self.list_widget_data[idx] = item
+			self.list_widget_data[idx+1] = None
+			
+		for i in range(idx+2,len(self.list_widgets)):
+			self.list_widgets[i].clear()
+			self.list_widget_data[i] = None
 	
 	def list_widget_dclicked(self,item):
 		
@@ -277,8 +292,9 @@ class EMSelectorDialog(QtGui.QDialog):
 			files.sort()
 			
 			if (list_widget == self.list_widgets[0]):
-				"it's the first widget"
+				self.lock = True
 				QtGui.QListWidgetItem("../",list_widget)
+				self.lock = False
 				 
 			for i in dirs:
 				if i[0] == '.': continue
@@ -300,7 +316,18 @@ class EMSelectorDialog(QtGui.QDialog):
 			return True
 			
 		return False
+			
+	def focusInEvent(self,event):
+		print 'focus'
 
+	def enterEvent(self,event):
+		print "enter"
+		
+	def paintEvent(self,event):
+		self.lock=True
+		QtGui.QWidget.paintEvent(self,event)
+		self.lock = False
+		return
 
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()

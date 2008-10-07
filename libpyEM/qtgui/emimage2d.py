@@ -271,6 +271,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.isexcluded = False
 		self.hack_shrink = 1
 		self.parent_geometry = None
+		self.font_renderer = None
 		
 		self.list_data = None # this can be used for viewing lists of data
 		self.list_idx = 0	# and idx to the list_data
@@ -413,10 +414,24 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.maxden=min(m1,mean+3.0*sigma)
 		self.mindeng=max(m0,mean-5.0*sigma)
 		self.maxdeng=min(m1,mean+5.0*sigma)
+		
+		
 
 		self.datasize=(self.data.get_xsize(),self.data.get_ysize())
 		self.scale=1.0				# Scale factor for display
-		self.origin=(0,0)			# Current display origin
+		#try: self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
+		self.origin=(0,0)
+		
+		try: 
+			w = self.parent.width()
+			h = self.parent.height()
+			scalew = float(w)/self.data.get_xsize()
+			scaleh = float(h)/self.data.get_ysize()
+			if scaleh < scalew:
+				self.scale = scaleh
+			else: self.scale = scalew
+		except: self.scale = 1.0
+		
 		self.__load_display_settings_from_db()
 		if self.curfft : 
 			self.set_FFT(self.curfft)
@@ -429,17 +444,19 @@ class EMImage2DModule(EMImage2DGUIModule):
 			DB.open_dict("image_2d_display_settings")
 		except:
 			# Databasing is not supported, in which case w
+			print "no db support"
 			return
 		
 		db = DB.image_2d_display_settings
 	
 		data = db[self.file_name]
-		if data == None:
-			data = db["latest_display_settings"] # if there isn't already information try for the latest
-			if data == None:
-				return # there are no settings we can use
-			else:
-				self.__write_display_settings_to_db() # we should store the information if we are suddenly using it
+		#print data
+		if data == None: return
+			#data = db["latest_display_settings"] # if there isn't already information try for the latest
+			#if data == None:
+				#return # there are no settings we can use
+			#else:
+				#self.__write_display_settings_to_db() # we should store the information if we are suddenly using it
 		self.minden = data["min"]
 		self.maxden = data["max"]
 		self.gamma = data["gamma"]
@@ -481,7 +498,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 		
 		db = DB.image_2d_display_settings
 		db[self.file_name] = data
-		db["latest_display_settings"] = data #store this to automatically apply previously used settings to other images - this was originally a request of Yao Cong
+		#db["latest_display_settings"] = data #store this to automatically apply previously used settings to other images - this was originally a request of Yao Cong
 
 
 	def set_origin(self,x,y):
@@ -747,6 +764,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 			GL.glPopMatrix()
 		self.changec=self.data.get_attr("changecount")
 		
+		self.__draw_hud()
 
 		if ( lighting ): glEnable(GL_LIGHTING)
 	
@@ -1103,6 +1121,63 @@ class EMImage2DModule(EMImage2DGUIModule):
 			print "double click only performs a function on Mac"
 		
 		
+	def __draw_hud(self):
+		if self.list_data == None: return
+		
+		if self.font_renderer == None:
+			self.__init_font_renderer()
+			
+		
+		width = self.parent.width()
+		height = self.parent.height()
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		glOrtho(0,width,0,height,-100,100)
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		glEnable(GL_LIGHTING)
+		glEnable(GL_NORMALIZE)
+		glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 1.0, 0.2,1.0))
+		glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 1.0, 0.9,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(1.0	, 0.5, 0.2,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,20.0)
+		
+		glDisable(GL_DEPTH_TEST)
+		glColor(1.0,1.0,1.0)
+		
+		
+		if self.font_render_mode == EMGUIModule.FTGL:
+			n = len(self.list_data)
+			string = str(self.list_idx+1) + ' / ' + str(n)
+			bbox = self.font_renderer.bounding_box(string)
+			x_offset = width-(bbox[3]-bbox[0]) - 10
+			y_offset = 10
+			
+			glPushMatrix()
+			glTranslate(x_offset,y_offset,0)
+			glRotate(20,0,1,0)
+			self.font_renderer.render_string(string)
+			glPopMatrix()
+			#y_offset += bbox[4]-bbox[1]
+
+		glMatrixMode(GL_PROJECTION)
+		glPopMatrix()
+		glMatrixMode(GL_MODELVIEW)
+	
+	
+	def __init_font_renderer(self):
+		try:
+			self.font_renderer = get_3d_font_renderer()
+			self.font_renderer.set_face_size(20)
+			self.font_renderer.set_depth(4)
+			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
+			
+#			self.font_renderer.set_font_file_name("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
+			self.font_render_mode = EMGUIModule.FTGL
+		except:
+			self.font_render_mode = EMGUIModule.GLUT
+	
 class EMImageInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
