@@ -911,7 +911,9 @@ class EMBoxerModule:
 			imagename = self.image_names[self.current_image_idx]
 			image=BigImageCache.get_object(imagename).get_image(use_alternate=True)
 		
-		self.guiimp= EMImage2DModule(image,self.application)
+		self.guiimp= EMImage2DModule(application=self.application)
+		self.guiimp.set_data(image)
+		self.guiimp.set_file_name(imagename)
 		#EMImage(image)# widget for displaying large image
 		qt_target = self.guiimp.get_qt_widget()
 		qt_target.enable_timer()
