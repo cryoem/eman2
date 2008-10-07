@@ -1805,7 +1805,6 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 
 	//     cns2 and cnr2 are predefined centers
 	//     no need to set to zero, all elements are defined
-
 	dpi = 2*atan(1.0);
 	/*std::cout << lcirc << std::endl;
 	clock_t start_time, end_time;
@@ -1843,19 +1842,23 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 		xold  = 0.0f+cns2;
 		yold  = inr+cnr2;
 
+		assert( kcirc <= lcirc );
 		circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);    // Sampling on 90 degree
 
 		xold  = inr+cns2;
 		yold  = 0.0f+cnr2;
+		assert( lt+kcirc <= lcirc );
 		circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 0 degree
 
 		if ( mode == 'f' || mode == 'F' ) {
 			xold = 0.0f+cns2;
 			yold = -inr+cnr2;
+			assert( lt+lt+kcirc <= lcirc );
 			circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 270 degree
 
 			xold = -inr+cns2;
 			yold = 0.0f+cnr2;
+			assert(lt+lt+lt+kcirc <= lcirc );
 			circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on 180 degree
 		}
 	
@@ -1866,19 +1869,27 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 
 			xold = x+cns2;
 			yold = y+cnr2;
+
+			assert( jt+kcirc <= lcirc );
 			circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);      // Sampling on the first 
 
 			xold = y+cns2;
 			yold = -x+cnr2;
+
+			assert( jt+lt+kcirc <= lcirc );
 			circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on the second
 
 			if ( mode == 'f' || mode == 'F' ) {
 				xold = -x+cns2;
 				yold = -y+cnr2;
+
+				assert( jt+lt+lt+kcirc <= lcirc );
 				circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on the third
 
 				xold = -y+cns2;
 				yold = x+cnr2;
+
+				assert( jt+lt+lt+lt+kcirc <= lcirc );
 				circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on the fourth
 			}
 		} // end for jt
@@ -3713,6 +3724,80 @@ void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int
 
 #undef  numr
 #undef  circ
+
+/*
+	# loop over psi
+	best_disc = 1e20
+	best_psi  = -1
+	for ipsi in xrange(g_n_psi):
+
+		if ipsi != 0:
+			count = 0
+			for i in xrange(g_n_prj - 1):
+				for j in xrange(i + 1, g_n_prj):
+					if i == iprj:
+							com[count] = (com[count] + 1) % g_n_psi
+					elif j == iprj:
+							com[count + 1] = (com[count + 1] + 1) % g_n_psi
+						
+					count += 2
+
+		n = 0
+		L_tot = 0.0
+
+		for i in xrange(g_n_prj - 1):
+			for j in xrange(i + 1, g_n_prj):
+				if i == iprj or j == iprj:
+					L      = Prj[i].cm_euc(Prj[j], com[n], com[n + 1])
+					L_tot += (L * weights[int(n/2)])
+				n += 2
+
+		if L_tot <= best_disc:
+			best_disc = L_tot
+			best_psi  = ipsi
+*/
+
+//helper function for Cml
+vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data){
+   
+    vector<float> res(2);    // [best_disc, best_ipsi]
+    double best_disc=1.0e20;
+    int best_psi=-1;
+    // loop psi
+    for(int ipsi=0; ipsi<=n_psi-1; ipsi++){
+	// after psi != 0 update the common lines
+	if(ipsi!=0){
+	    int count=0;
+	    for(int i=0; i<=n_prj-1; i++){
+		for(int j=i+1; j<=n_prj-1; j++){
+		    if(i==i_prj){com[count] = (com[count]+1)%n_psi;}
+		    if(j==i_prj){com[count+1] = (com[count+1]+1)%n_psi;}
+		    count+=2;
+		}
+
+	    }
+	}
+	// do the distance with weighting
+	int n=0;
+	double L_tot=0.0;
+	for(int i=0; i<=n_prj-1; i++){
+	    for(int j=i+1; j<=n_prj-1; j++){
+		if(i==i_prj||j==i_prj){L_tot = L_tot + data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];}
+		n+=2;
+	    }
+
+	}
+	// select the best discrepancy and index ipsi
+	if(L_tot<=best_disc){
+	    best_disc = L_tot;
+	    best_psi = ipsi;
+	}
+    }
+
+    res[0] = float(best_disc);
+    res[1] = float(best_psi);
+    return res;
+}
 
 // helper function for k-means
 Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {
@@ -16352,6 +16437,7 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
         crefim.push_back(proxy());
     }
 */
+
 	size_t crefim_len = crefim.size();
 	
 	int   ky = int(2*yrng/step+0.5)/2; 
@@ -16365,6 +16451,7 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 		for (int j = -kx; j <= kx; j++) {
 			ix = j*step ; 
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+
 			Frngs(cimage, numr);
 			//  compare with all reference images
 			// for iref in xrange(len(crefim)): 
