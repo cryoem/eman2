@@ -106,12 +106,7 @@ for single particle analysis."""
 	parser.add_option("--parallel",type="int",help="specify more than one processor",default=1)
 	parser.add_option("--merge_boxes_to_db",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
 	parser.add_option("--subsample_method",help="The method used to subsample images prior to generation of the correlation image. Available methods are standard,careful",default="standard")	
-	parser.add_option("--input_pixel", type="float", default=1.0 )
-	parser.add_option("--output_pixel", type="float", default=1.0 )
-	parser.add_option("--gauss_width", type="float", default=1.0 )
-	parser.add_option("--thr_low", type="float")
-	parser.add_option("--thr_hgh", type="float")
-
+	parser.add_option("--method", help="boxer method, Swarm or Gauss", default="Swarm")
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -179,22 +174,6 @@ for single particle analysis."""
 			for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
 				for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
 					boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
-		elif "gauss" in options.auto:
-			tmpboxer = SwarmAutoBoxer(None)
-			boxer = PawelAutoBoxer(None)
-			boxer.set_params(options.input_pixel, options.output_pixel, options.boxsize, options.gauss_width, options.thr_low, options.thr_hgh)
-			for f in filenames:
-				from sys import stdout
-				print "processing file ", f
-				stdout.flush()
-				boxes,trimboxes,ccfs = boxer.run( f ) 
-
-				fout = get_out_file(  f )
-				print "writing ", len(boxes), " particles to ", fout
-				stdout.flush()
-				for i in xrange( len(boxes) ):
-					p = boxes[i].get_box_image()
-					p.write_image( fout, i )
 		else:
 			print "unknown autoboxing method:",options.auto
 			exit(1)
@@ -204,7 +183,7 @@ for single particle analysis."""
 	application = EMStandAloneApplication()
 	# invoke the GUI if requested
 	if options.gui:
-		gui=EMBoxerModule(application,filenames,boxes,options.boxsize)
+		gui=EMBoxerModule(application,filenames,boxes,options.boxsize,options.method)
 		gui.run()
 		
 	print "Exiting e2boxer"
@@ -800,11 +779,11 @@ class EMBoxerModule:
 	MANUALLY_ADDING = 2
 	FANCY_MODE = 'fancy'
 	PLAIN_MODE = 'plain'
-	def __init__(self,application,image_names,boxes,box_size=-1):
+	def __init__(self,application,image_names,boxes,box_size=-1, init_method="Swarm"):
 		"""Implements the 'boxer' GUI."""
 		self.application = application
 		
-		self.__alt_init__(image_names,boxes,box_size)
+		self.__alt_init__(image_names,boxes,box_size,init_method)
 		
 		self.init_guiim() # initialise the 2D image display
 		self.__init_guimx() # intialize the matrix display
@@ -817,7 +796,7 @@ class EMBoxerModule:
 		#self.autoboxer.auto_box(self.boxable,False) # Do the automatic autoboxing - this makes the user see results immediately
 		self.box_display_update() # update displays to show boxes etc
 	
-	def __alt_init__(self,image_names,boxes=[],box_size=-1):
+	def __alt_init__(self,image_names,boxes=[],box_size=-1, default_method="Swarm"):
 		
 		# initialize important autoboxer related variables
 		self.dynapix = False
@@ -826,7 +805,7 @@ class EMBoxerModule:
 		self.box_size = box_size
 		# set self.autoboxer '
 		if len(self.image_names) != 0:
-			self.set_autoboxer(self.image_names[self.current_image_idx])
+			self.set_autoboxer(self.image_names[self.current_image_idx], default_method)
 		
 		self.eraseradius = 2*self.box_size # this happens after the autoboxer has been loaded, because the boxsize can change
 		self.erasemode = None #stores the erase mode
@@ -2535,10 +2514,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.target.guiim.set_data(invimg)
 		self.target.guiim.updateGL()
 	
-	def method_changed(self, methodid):
 
-		name = self.method.itemText( methodid )
-
+	def set_method( self, name ):
 		if name[0:5] == "Swarm":
 			tabid = self.tabwidget.indexOf( self.pawel_option )
 			if tabid != -1:
@@ -2546,10 +2523,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 				self.tabwidget.insertTab( tabid, self.david_option, "Swarm Advanced" )
 				self.autobox.setText("Autobox")
 				self.setWindowIcon( self.swarm_icon )
-
-			#self.target.autoboxer = SwarmAutoBoxer(self.target)
-			#self.target.autoboxer.set_box_size_explicit(self.target.box_size)
-			#self.target.autoboxer.set_interactive_mode(self.target.dynapix)
 		else:
 			assert name[0:5]=="Gauss"
 			tabid = self.tabwidget.indexOf( self.david_option )
@@ -2558,7 +2531,12 @@ class EMBoxerModulePanel(QtGui.QWidget):
 				self.tabwidget.insertTab( tabid, self.pawel_option, "Gauss Advanced" )
 				self.autobox.setText("Run")
 				self.setWindowIcon( self.pp_icon )
-				
+	
+	def method_changed(self, methodid):
+
+		name = self.method.itemText( methodid )
+
+		self.set_method( name )
 
 		self.target.set_autoboxer(self.target.image_names[0], name[0:5])
 

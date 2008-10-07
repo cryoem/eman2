@@ -2617,6 +2617,8 @@ class PawelAutoBoxer(AutoBoxer):
 		self.pixel_output = 1.0
 		self.frequency_cutoff = 0
 		self.window_size_min = 15
+		self.gauss_width = 1.0
+		self.use_variance = True
 
 	#### Functions that must be supplied so the ImageProcParamsMediator works
 	def get_subsample_rate(self):
@@ -2650,14 +2652,6 @@ class PawelAutoBoxer(AutoBoxer):
 
 	def set_mode_explicit(self,mode):
 		pass
-
-	def set_params( self, pin, pout, bsize, gwidth, thr_low, thr_hgh ):
-		self.pixel_input = pin
-		self.pixel_output= pout
-		self.box_size    = bsize
-		self.gauss_width = gwidth
-		self.thr_low = thr_low
-		self.thr_hgh = thr_hgh
 	
 	def become( self, inst ):
 		print "get params from TrimPawelAutoBoxer"
