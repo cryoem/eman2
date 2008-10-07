@@ -178,7 +178,7 @@ class EMImageModule(object):
 				if isinstance(old,EMImage2DModule) :
 					old.set_data(local_data)
 					return old
-			return EMImage2DModule(local_data)
+			return EMImage2DModule()
 		elif isinstance(data,EMData):
 			# data copy considerations shouldn't be necessary here 
 			# seeing as the EMImage3D does internal copying of its own
@@ -195,7 +195,7 @@ class EMImageModule(object):
 				#ret.releaseMouse()
 				#ret.releaseKeyboard()
 				#return ret
-			return EMImage3DModule(data)
+			return EMImage3DModule()
 		elif isinstance(data,list):
 			if ( copy ):local_data = deepcopy(data)
 			else: local_data = data
@@ -205,6 +205,6 @@ class EMImageModule(object):
 					old.set_data(local_data)
 					return old
 				
-			return EMImageMXModule(local_data)
+			return EMImageMXModule()
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"

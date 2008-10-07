@@ -286,9 +286,9 @@ class EMImage2DModule(EMImage2DGUIModule):
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
 		
-		self.__load_display_settings_from_db()
+
 		if image : self.set_data(image)
-		
+		else:self.__load_display_settings_from_db()
 	def __del__(self):
 		if (self.shapelist != 0):
 			glDeleteLists(self.shapelist,1)
@@ -420,7 +420,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.__load_display_settings_from_db()
 		if self.curfft : 
 			self.set_FFT(self.curfft)
-	
+
 	def __load_display_settings_from_db(self):
 		if self.file_name == "": return # there is no file name, we have no means to stores information
 		
@@ -445,7 +445,11 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.gamma = data["gamma"]
 		self.scale = data["scale"] 
 		self.origin = data["origin"]
-		try:self.parent_geometry = data["parent_geometry"]
+		try:
+			self.parent_geometry = data["parent_geometry"]
+			if self.parent != None:
+				try: self.parent.restoreGeometry(self.parent_geometry)
+				except: pass
 		except:pass
 		
 		self.inspector_update()
@@ -910,10 +914,9 @@ class EMImage2DModule(EMImage2DGUIModule):
 		except:	return ((v0[0]+self.origin[0])/self.scale,(self.parent.height()-(v0[1]-self.origin[1]))/self.scale)
 
 	def closeEvent(self,event) :
+		self.__write_display_settings_to_db()
 		if self.inspector: 
 			self.application.close_child(self.em_qt_inspector_widget)
-		
-		self.__write_display_settings_to_db()
 		
 	def dragEnterEvent(self,event):
 #		f=event.mimeData().formats()
@@ -1235,12 +1238,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		self.mins = ValSlider(self,label="Min:")
 		self.mins.setObjectName("mins")
-		#self.mins.setValue(self.target.get_minden())
+		self.mins.setValue(self.target.get_minden())
 		self.vbl.addWidget(self.mins)
 		
 		self.maxs = ValSlider(self,label="Max:")
 		self.maxs.setObjectName("maxs")
-		#self.maxs.setValue(self.target.get_maxden())
+		self.maxs.setValue(self.target.get_maxden())
 		self.vbl.addWidget(self.maxs)
 		
 		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
@@ -1250,7 +1253,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
 		self.conts.setObjectName("conts")
-		#self.conts.setValue(1.0)
+		self.conts.setValue(1.0)
 		self.vbl.addWidget(self.conts)
 		
 		self.gammas = ValSlider(self,(.1,5.0),"Gam:")
@@ -1259,7 +1262,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		#self.gammas.setValue(1.0)
 		self.vbl.addWidget(self.gammas)
 
-		#self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
+		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
 
 		self.lowlim=0
 		self.highlim=1.0
@@ -1349,6 +1352,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.target.set_brightness_contrast(brts,conts)
 		
 	def update_min_max(self):
+		
 		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0)

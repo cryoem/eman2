@@ -306,7 +306,6 @@ if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	dialog = EMSelectorDialog(None,em_app)
 	em_qt_widget = EMQtWidgetModule(dialog,em_app)
-	#dialog.set_app(em_app)
 	em_app.show()
 	em_app.execute()
 
