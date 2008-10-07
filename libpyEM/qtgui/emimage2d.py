@@ -199,7 +199,9 @@ class EMImage2DModule(EMImage2DGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:	
 			self.parent = EMImage2DWidget(self)
-			self.parent.setWindowTitle(self.file_name)
+			f = self.file_name.split('/')
+			f = f[len(f)-1]
+			self.parent.setWindowTitle(f)
 			if isinstance(self.data,EMData):
 				self.__parent_resize()
 		return self.parent
@@ -346,7 +348,11 @@ class EMImage2DModule(EMImage2DGUIModule):
 	
 	def set_file_name(self,file_name):
 		self.file_name = file_name
-		try:self.parent.setWindowTitle(file_name)
+		try:
+			f = self.file_name.split('/')
+			f = f[len(f)-1]
+			self.parent.setWindowTitle(f)
+			#self.parent.setWindowTitle(file_name)
 		except:pass
 		self.__load_display_settings_from_db()
 		
@@ -385,11 +391,17 @@ class EMImage2DModule(EMImage2DGUIModule):
 		if wasexcluded or self.isexcluded: return True
 		else: return False
 	
-	def set_data(self,data):
-		"""You may pass a single 2D image"""
-		if self.data != None:
+	def set_data(self,data,file_name=""):
+		"""You may pass a single 2D image or a list of images"""
+		if self.data != None and self.file_name != "":
 			self.__write_display_settings_to_db()
-	
+		self.file_name = file_name
+		try:
+			f = self.file_name.split('/')
+			f = f[len(f)-1]
+			self.parent.setWindowTitle(f)
+		except:pass
+		
 		self.data=data
 		if data==None:
 			self.list_data = None
@@ -414,8 +426,6 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.maxden=min(m1,mean+3.0*sigma)
 		self.mindeng=max(m0,mean-5.0*sigma)
 		self.maxdeng=min(m1,mean+5.0*sigma)
-		
-		
 
 		self.datasize=(self.data.get_xsize(),self.data.get_ysize())
 		self.scale=1.0				# Scale factor for display
@@ -450,7 +460,6 @@ class EMImage2DModule(EMImage2DGUIModule):
 		db = DB.image_2d_display_settings
 	
 		data = db[self.file_name]
-		#print data
 		if data == None: return
 			#data = db["latest_display_settings"] # if there isn't already information try for the latest
 			#if data == None:

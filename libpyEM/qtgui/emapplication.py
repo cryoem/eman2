@@ -80,6 +80,10 @@ class EMApplication:
 	def quit(self):
 		if self.app != None:
 			self.app.quit()
+			
+	def setOverrideCursor(self,cursor_type):
+		if self.app != None:
+			self.app.setOverrideCursor(cursor_type)
 
 class EMStandAloneApplication(EMApplication):
 	
