@@ -130,8 +130,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 			glClear(GL_DEPTH_BUFFER_BIT)
 		if glIsEnabled(GL_STENCIL_TEST):
 			glClear(GL_STENCIL_BUFFER_BIT)
-			
-		glClear(GL.GL_COLOR_BUFFER_BIT )
+
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
@@ -200,14 +199,20 @@ class EMImage2DModule(EMImage2DGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:	
 			self.parent = EMImage2DWidget(self)
-			if self.init_size_flag and isinstance(self.data,EMData):
-				try:
-					if self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
-					else: self.parent.resize(800,800)
-					self.init_size_flag = False
-				except: pass
-			
+			self.parent.setWindowTitle(self.file_name)
+			if isinstance(self.data,EMData):
+				self.__parent_resize()
 		return self.parent
+	
+	def __parent_resize(self):
+		try:
+			if self.parent_geometry != None:
+				self.parent.restoreGeometry(self.parent_geometry)
+			elif self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
+			else: self.parent.resize(800,800)
+			self.init_size_flag = False
+		except: pass
+			
 	
 	def __init__(self, image=None,application=None):
 		EMImage2DGUIModule.__init__(self,application)
@@ -265,22 +270,24 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.frozen = False
 		self.isexcluded = False
 		self.hack_shrink = 1
+		self.parent_geometry = None
+		
+		self.list_data = None # this can be used for viewing lists of data
+		self.list_idx = 0	# and idx to the list_data
 		
 		self.use_display_list = True # whether or not a display list should be used to render the image pixelsw - if on, this will save on time if the view of the image is unchanged, which can quite often be the case
 		self.main_display_list = 0	# if using display lists, the stores the display list
 		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
 		self.hist = []
-		self.file_name = None # stores the filename of the image, if None then member functions should be smart enough to handle it
+		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		
 		self.wheel_navigate = False # useful on Mac laptops
 		
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
-
-		if image :
-			self.set_data(image)
 		
 		self.__load_display_settings_from_db()
+		if image : self.set_data(image)
 		
 	def __del__(self):
 		if (self.shapelist != 0):
@@ -300,12 +307,10 @@ class EMImage2DModule(EMImage2DGUIModule):
 	
 	def set_brightness(self,brts):
 		self.brts = brts
-		self.__write_display_settings_to_db()
 		self.updateGL()
 		
 	def set_contrast(self,conts):
 		self.conts = conts
-		self.__write_display_settings_to_db()
 		self.updateGL()
 		
 	def set_brightness_contrast(self,brts,conts):
@@ -315,33 +320,33 @@ class EMImage2DModule(EMImage2DGUIModule):
 		'''
 		self.brts = brts
 		self.const = conts
-		self.__write_display_settings_to_db()
 		self.updateGL()
 		
 	def set_density_range(self,x0,x1):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
 		self.minden=x0
 		self.maxden=x1
-		self.__write_display_settings_to_db()
+		#self.__write_display_settings_to_db()
 		self.updateGL()
 	
 	def set_density_min(self,val):
 		self.minden=val
-		self.__write_display_settings_to_db()
 		self.updateGL()
 		
 	def set_density_max(self,val):
 		self.maxden=val
-		self.__write_display_settings_to_db()
+		#self.__write_display_settings_to_db()
 		self.updateGL()
 	
 	def set_gamma(self,val):
 		self.gamma=val
-		self.__write_display_settings_to_db()
+		#self.__write_display_settings_to_db()
 		self.updateGL()
 	
 	def set_file_name(self,file_name):
 		self.file_name = file_name
+		try:self.parent.setWindowTitle(file_name)
+		except:pass
 		self.__load_display_settings_from_db()
 		
 	def get_file_name(self):
@@ -380,37 +385,44 @@ class EMImage2DModule(EMImage2DGUIModule):
 		else: return False
 	
 	def set_data(self,data):
-		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
+		"""You may pass a single 2D image"""
+		if self.data != None:
+			self.__write_display_settings_to_db()
+	
 		self.data=data
 		if data==None:
+			self.list_data = None
 			self.updateGL()
 			return
+		elif isinstance(data,list):
+			self.list_data = data
+			self.list_idx = len(self.list_data)/2
+			self.data = data[self.list_idx]
+		else:
+			self.list_data = None
 		
 		if self.init_size_flag and isinstance(self.parent,QtGui.QWidget):
-			try:
-				if self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
-				else: self.parent.resize(800,800)
-				self.init_size_flag = False
-			except: pass
+			self.__parent_resize()
 		
-		mean=data.get_attr("mean")
-		sigma=data.get_attr("sigma")
-		m0=data.get_attr("minimum")
-		m1=data.get_attr("maximum")
+		mean=self.data.get_attr("mean")
+		sigma=self.data.get_attr("sigma")
+		m0=self.data.get_attr("minimum")
+		m1=self.data.get_attr("maximum")
 		
 		self.minden=max(m0,mean-3.0*sigma)
 		self.maxden=min(m1,mean+3.0*sigma)
 		self.mindeng=max(m0,mean-5.0*sigma)
 		self.maxdeng=min(m1,mean+5.0*sigma)
 
-		self.datasize=(data.get_xsize(),data.get_ysize())
+		self.datasize=(self.data.get_xsize(),self.data.get_ysize())
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)			# Current display origin
+		self.__load_display_settings_from_db()
 		if self.curfft : 
 			self.set_FFT(self.curfft)
 	
 	def __load_display_settings_from_db(self):
-		if self.file_name == None: return # there is no file name, we have no means to stores information
+		if self.file_name == "": return # there is no file name, we have no means to stores information
 		
 		try:
 			DB = EMAN2db.EMAN2DB.open_db(".")
@@ -428,20 +440,17 @@ class EMImage2DModule(EMImage2DGUIModule):
 				return # there are no settings we can use
 			else:
 				self.__write_display_settings_to_db() # we should store the information if we are suddenly using it
-		
 		self.minden = data["min"]
 		self.maxden = data["max"]
-		self.gamma = data["gamma"] 
-		self.brts = data["brightness"]
-		self.conts = data["contrast"] 
+		self.gamma = data["gamma"]
+		self.scale = data["scale"] 
+		self.origin = data["origin"]
+		try:self.parent_geometry = data["parent_geometry"]
+		except:pass
 		
-		#if self.inspector != None:
-			#self.inspector.set_brightness(data["brightness"])
-			#self.inspector.set_contrast(data["contrast"])
-			#self.inspector.set_minden(self.minden)
-			#self.inspector.set_maxden(self.maxden)
-			#self.inspector.set_gamma(self.gamma)
-
+		self.inspector_update()
+		self.force_display_update()
+	
 	def __write_display_settings_to_db(self):
 		'''
 		writes the min,max, brightness, contrast and gamma values associated with
@@ -461,8 +470,10 @@ class EMImage2DModule(EMImage2DGUIModule):
 		data["min"] = self.minden
 		data["max"] = self.maxden
 		data["gamma"] = self.gamma
-		data["brightness"] = self.brts
-		data["contrast"] = self.conts
+		data["origin"] = self.origin
+		data["scale"] = self.scale
+		try: data["parent_geometry"] = self.parent.saveGeometry()
+		except: pass
 		
 		db = DB.image_2d_display_settings
 		db[self.file_name] = data
@@ -799,12 +810,17 @@ class EMImage2DModule(EMImage2DGUIModule):
 		
 	def resizeEvent(self,width,height):
 		if self.init_size :
-			self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
-			self.oldsize=(width,height)
+			if self.origin == (0,0):
+				self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
+				self.oldsize=(width,height)
 			self.init_size = False
 		else:
-			self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.height()/2.0)
-			self.oldsize=(width,height)
+			if self.origin == (0,0):
+				self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.height()/2.0)
+				self.oldsize=(width,height)
+				
+		self.window_width = width
+		self.window_height = height
 
 	def get_shapes(self):
 		return self.shapes
@@ -824,8 +840,18 @@ class EMImage2DModule(EMImage2DGUIModule):
 			else: s.draw()
 		GL.glEndList()
 	
+	def inspector_update(self):
+		if self.inspector:
+			self.inspector.set_minden(self.minden)
+			self.inspector.set_maxden(self.maxden)
+			self.inspector.set_gamma(self.gamma)
+			self.inspector.set_scale(self.scale)
+			self.inspector.update_brightness_contrast()
+	
 	def get_inspector(self):
-		if not self.inspector: self.inspector=EMImageInspector2D(self)
+		if not self.inspector:
+			self.inspector=EMImageInspector2D(self)
+			self.inspector_update()
 		return self.inspector
 	
 	def set_mouse_mode(self,m):
@@ -886,6 +912,8 @@ class EMImage2DModule(EMImage2DGUIModule):
 	def closeEvent(self,event) :
 		if self.inspector: 
 			self.application.close_child(self.em_qt_inspector_widget)
+		
+		self.__write_display_settings_to_db()
 		
 	def dragEnterEvent(self,event):
 #		f=event.mimeData().formats()
@@ -989,8 +1017,21 @@ class EMImage2DModule(EMImage2DGUIModule):
 				#print browser2.port()
 				self.browser2.show()
 				self.browser2.resize(800,800)
-				#print self.browser2.isVisible()
 				
+		elif event.key() == Qt.Key_Up:
+			if self.list_data != None:
+				if (self.list_idx < (len(self.list_data)-1)):
+					self.list_idx += 1
+					self.data = self.list_data[self.list_idx]
+					self.force_display_update()
+					self.updateGL()
+		elif event.key() == Qt.Key_Down:
+			if self.list_data != None:
+				if (self.list_idx > 0):
+					self.list_idx -= 1
+					self.data = self.list_data[self.list_idx]
+					self.force_display_update()
+					self.updateGL()
 			#window = EMParentWin(browser)
 			##browser.setParent(
 			#window.show()
@@ -1339,7 +1380,16 @@ if __name__ == '__main__':
 		window.set_data(test_image(size=(128,128)))
 	else :
 		a=EMData.read_images(sys.argv[1],[0])
-		window.set_data(a[0])
+		if len(a) == 1:
+			a = a[0]
+			data = []
+			if a.get_ndim() == 3:
+				for z in range(a.get_zsize()):
+					image = a.get_clip(Region(0,0,z,a.get_xsize(),a.get_ysize(),1))
+					data.append(image)
+				a  = data
+		window.set_data(a)
+		
 		window.set_file_name(sys.argv[1])
 		
 	em_app.show()

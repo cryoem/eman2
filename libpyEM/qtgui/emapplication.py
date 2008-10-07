@@ -60,7 +60,6 @@ class EMApplication:
 		if qt_application_control:
 			self.app = QtGui.QApplication(sys.argv)
 		else: self.app = None
-	
 	def attach_child(self,child):
 		raise
 	
