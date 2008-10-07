@@ -316,7 +316,8 @@ EMData* mult_radial(EMData* radial);
 		 *
 		 */
 
-		float cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2);
+		//float cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2);
+                float cm_euc(EMData* sinoj, int n1, int n2);
 
 
 		

@@ -467,7 +467,7 @@ float dist_r(int lnlen, const float* line_1, const float* line_2)
 	return static_cast<float>(std::sqrt(dis2));
 }
 
-
+/*
 float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 {
     int lnlen = get_xsize();
@@ -494,6 +494,15 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 
 	Assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
 	return dist_r(lnlen, line_1, line_2);
+}
+*/
+
+float EMData::cm_euc(EMData* sinoj, int n1, int n2)
+{
+    int lnlen = get_xsize();
+    float* line_1 = get_data() + n1 * lnlen;
+    float* line_2 = sinoj->get_data() + n2 * lnlen;
+    return dist(lnlen, line_1, line_2);
 }
 
 EMData* EMData::rotavg() {
