@@ -325,7 +325,7 @@ def display(img):
 	if GUIMode:
 		import emimage
 		image = emimage.EMImageModule(img,None,True,app)
-		app.show()
+		app.show_specific(image)
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
 		try: os.unlink("/tmp/img.hed")
@@ -338,6 +338,19 @@ def display(img):
 			img.write_image("/tmp/img.hed")
 	#	os.system("v2 /tmp/img.hed")
 		os.system("e2display.py /tmp/img.hed")
+		
+class EMImage(object):
+	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
+	def __new__(cls,data=None,old=None,parent=1,copy=True):
+		"""This will create a new EMImage* object depending on the type of 'data'. If
+		old= is provided, and of the appropriate type, it will be used rather than creating
+		a new instance."""
+		if GUIMode:	
+			import emimage
+			image = emimage.EMImageModule(data,old,copy,app)
+			app.show_specific(image)
+			return image.get_qt_widget()
+		else: print "can not instantiate EMImage in non gui mode"
 
 def plot(data,show=1,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""
