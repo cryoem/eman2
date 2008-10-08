@@ -134,6 +134,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&BeamstopProcessor::NEW);
 	force_add(&MeanZeroEdgeProcessor::NEW);
 	force_add(&AverageXProcessor::NEW);
+	force_add(&DecayEdgeProcessor::NEW);
 	force_add(&ZeroEdgeRowProcessor::NEW);
 	force_add(&ZeroEdgePlaneProcessor::NEW);
 
@@ -2433,6 +2434,35 @@ void AverageXProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
+void DecayEdgeProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	if (image->get_zsize() > 1) throw ImageDimensionException("3D model not supported");
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+
+	float *d = image->get_data();
+	int width = params["width"];
+
+	for (int i=0; i<width; i++) {
+		float frac=i/(float)width;
+		for (int j=0; j<nx; j++) {
+			d[j+i*nx]*=frac;
+			d[nx*ny-j-i*nx-1]*=frac;
+		}
+		for (int j=0; j<ny; j++) {
+			d[j*nx+i]*=frac;
+			d[nx*ny-j*nx-i-1]*=frac;
+		}
+	}
+
+	image->update();
+}
 
 void ZeroEdgeRowProcessor::process_inplace(EMData * image)
 {

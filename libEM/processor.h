@@ -3231,6 +3231,36 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**Decay edges of image to zero
+	 *@param width
+	 */
+	class DecayEdgeProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+		string get_name() const
+		{
+			return "mask.decayedge2d";
+		}
+
+		static Processor *NEW()
+		{
+			return new DecayEdgeProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Decay edges of image to zero";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("width", EMObject::INT, "Width of the decay region around the edge of the image in pixels");
+			return d;
+		}
+	};
+
 	/**zero edges of image on top and bottom, and on left and right.
 	 *@param x0
 	 *@param x1

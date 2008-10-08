@@ -118,6 +118,7 @@ Various CTF-related operations on images."""
 #				mask1.process_inplace("mask.sharp",{"outer_radius":options.bgmask})
 				mask1.process_inplace("mask.gaussian",{"outer_radius":options.bgmask})
 				mask2=mask1.copy()*-1+1
+				mask2.process_inplace("mask.decayedge2d",{"width":4})
 #				ratio1=pi*(float(options.bgmask)/ys)**2
 #				ratio2=1.0-ratio1
 				ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
@@ -160,23 +161,27 @@ Various CTF-related operations on images."""
 			ctf.from_dict({"amplitude":1,"defocus":-1,"voltage":300,"cs":1.6,"ampcont":.1,"apix":options.apix})
 			
 			dfout=file("df.txt","w")
-			mapout=EMData(64,64)
-			for dfi in range(0,64):			# loop over defocus
-				for ac in range(0,64):		# loop over %ac
-					df=dfi/10.0
+#			mapout=EMData(64,64)
+			for dfi in range(0,128):			# loop over defocus
+#				for ac in range(0,64):		# loop over %ac
+					ac=10
+					df=dfi/20.0
 					ctf.defocus=-df
 					ctf.ampcont=ac/100.0
 					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
-					for fz in range(len(cc)):
+					norm=0
+					for fz in range(len(cc)): 
+#						norm+=cc[fz]**2
 						if cc[fz]<0 : break
 				
 					tot=0
+#					for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
 					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
 #					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
 					if ac==10 : dfout.write("%1.2f\t%g\n"%(df,tot))
-					mapout[dfi,ac]=tot
+#					mapout[dfi,ac]=tot
 			
-			mapout.write_image("dfmap.mrc",0)
+#			mapout.write_image("dfmap.mrc",0)
 				
 			
 			#if options.bgedge>0 :
