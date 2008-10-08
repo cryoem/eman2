@@ -596,8 +596,8 @@ def test_boxing_image(window_size=(128,128),image_size=(4096,4096),n=100):
 		da = Util.get_frand(0,360)
 		flip = Util.get_irand(0,1)
 		
-		t = Transform3D(0,0,da)
-		window.rotate_translate(t)
+		t = Transform({"type":"2d","alpha":da})
+		window.transform(t)
 		if flip:
 			window.process_inplace("xform.flip",{"axis":"x"})
 		
