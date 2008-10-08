@@ -149,7 +149,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
-		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("activated(QModelIndex)"),self.activated)
+		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("activated(QModelIndex)"),self.activated)
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("selectionChanged(QItemSelection,QItemSelection)"),self.selection_changed)
 		
 	def __go_back_a_directory(self):
@@ -193,7 +193,11 @@ class EMSelectorDialog(QtGui.QDialog):
 	def selection_changed(self,item1,item2):
 		pass
 
-	def activated(self,index):
+	#def activated(self,index):
+		#self.__update_selections()
+		
+	def __update_selections(self):
+		
 		directory = self.starting_directory+"/"
 		idx = 0
 		for i,list_widget in enumerate(self.list_widgets):
@@ -239,6 +243,8 @@ class EMSelectorDialog(QtGui.QDialog):
 	def list_widget_clicked(self,item):
 		if self.lock : return
 		if self.current_list_widget == None: return
+		
+		self.__update_selections()
 		#if self.paint_events < 2 :
 			 #self.current_list_widget.setCurrentRow(-1)
 			 #return
