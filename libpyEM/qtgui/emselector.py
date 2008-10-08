@@ -43,7 +43,7 @@ from emapplication import EMStandAloneApplication, EMQtWidgetModule
 class EMSelectorDialog(QtGui.QDialog):
 	def __init__(self,target,application):
 		QtGui.QDialog.__init__(self,None)
-		#self.setMouseTracking(True)
+		self.setFocusPolicy(Qt.StrongFocus)
 		self.application=application
 		self.target=target
 		
@@ -232,6 +232,9 @@ class EMSelectorDialog(QtGui.QDialog):
 	
 	def list_widget_row_changed(self,i):
 		return
+	
+	def keyPressEvent(self,event):
+		print "got that"
 	
 	def list_widget_clicked(self,item):
 		if self.lock : return

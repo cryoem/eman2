@@ -144,4 +144,7 @@ class EMQtWidgetModule(EMGUIModule):
 	
 	def get_qt_widget(self):
 		return self.qt_widget
+	
+	def keyPressEvent(self,event):
+		self.qt_widget.keyPressEvent(event)
 

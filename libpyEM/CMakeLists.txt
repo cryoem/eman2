@@ -76,4 +76,4 @@ INSTALL_FILES(/include "^.+\\.h$")
 INSTALL_FILES(/lib FILES qtgui/emplot2d.py qtgui/emimage.py qtgui/emimage2d.py qtgui/emimagemx.py qtgui/emimage3d.py qtgui/emimageutil.py qtgui/valslider.py qtgui/pyshed.py qtgui/emshape.py)
 INSTALL_FILES(/lib FILES qtgui/emimage3diso.py qtgui/emglobjects.py qtgui/emimage3dslice.py qtgui/emimage3dvol.py qtgui/emimage3dsym.py qtgui/emglplot.py qtgui/emimagemxrotor.py qtgui/emfloatingwidgets.py qtgui/emimagerotor.py qtgui/emrotor.py qtgui/emapplication.py)
 INSTALL_FILES(/lib FILES wxgui/wxemimage.py wxgui/wximagecontrol.py wxgui/wxValSlider.py)
-
+INSTALL_FILES(/bin qtgui/emselector.py)
