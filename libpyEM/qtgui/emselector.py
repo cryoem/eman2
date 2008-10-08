@@ -234,7 +234,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		return
 	
 	def keyPressEvent(self,event):
-		print "got that"
+		pass
 	
 	def list_widget_clicked(self,item):
 		if self.lock : return

@@ -52,7 +52,6 @@ try: from emimage import EMImage
 except: pass
 
 from emglobjects import EMViewportDepthTools, Camera2, EMBasicOpenGLObjects, Camera, viewport_width,viewport_height
-from emimage2dtex import *
 
 height_plane = 500
 
