@@ -13813,74 +13813,143 @@ def cml_sinogram_dev(image2D, diameter, d_psi):
 
 	return Util.window(e, diameter, len(data), 1, 0, 0, 0)
 
+def common_line_in3D_dev(ph1, th1, ph2, th2):
+	from math import pi, sqrt, cos, sin, asin, acos
+
+	deg_rad = pi / 180.0
+	ph1 *= deg_rad 
+	th1 *= deg_rad 
+	ph2 *= deg_rad 
+	th2 *= deg_rad
+
+	# cross-product between normal vector of projections
+	nx = sin(th1)*sin(ph1)*cos(th2) - cos(th1)*sin(th2)*sin(ph2)
+	ny = cos(th1)*sin(th2)*cos(ph2) - cos(th2)*sin(th1)*cos(ph1)
+	nz = sin(th1)*cos(ph1)*sin(th2)*sin(ph2) - sin(th1)*sin(ph1)*sin(th2)*cos(ph2)
+
+	# normalize
+	norm    = nx**2 + ny**2 + nz**2
+	rt_norm = sqrt(norm)
+	nx /= rt_norm
+	ny /= rt_norm
+	nz /= rt_norm
+
+	# if theta > 90, apply mirror 
+	if nz < 0: nx = -nx; ny = -ny; nz = -nz
+	
+	# calculate phi and theta (deg)
+	thetaCom  = acos(nz)
+
+	try:    phiCom = asin(ny / sin(thetaCom))
+	except:
+		try:    phiCom = acos(nx / sin(thetaCom))
+		except: phiCom = 0.0
+	
+	phiCom    = (phiCom * 180 / pi + 360)%360
+	thetaCom *= (180 / pi)
+
+	return phiCom , thetaCom,
+
 # compute the weight of the common lines
-def cml_weights_dev(Ori):
-	from development import cml_cmlines_3D_dev
-	from math        import fmod
+def cml_weights_dev(Ori, iagl = False, iprj = False):
+	from math        import fmod, sin, cos, pi
+	from development   import common_line_in3D_dev
+
+	#f = open('debug', 'w')
 	
 	# gbl vars
-	global g_n_prj, g_n_lines
-	tol     = 6
-	weights = [1.0] * g_n_lines
+	global g_n_prj, g_n_lines, g_anglst
+
 	'''
-	# remove mirror if applied
-	for i in xrange(nprj):
-		if Prj[i].mirror:
-			Prj[i].phi   = fmod(Prj[i].phi + 180.0, 360.0)
-			Prj[i].theta = 180.0 - Prj[i].theta
+	# gbl vars
+	l_phs  = [0.0] * g_n_lines  # angle phi of the common lines
+	l_ths  = [0.0] * g_n_lines  # angle theta of the common lines
+	l_x    = [0.0] * g_n_lines
+	l_y    = [0.0] * g_n_lines
+	l_z    = [0.0] * g_n_lines
+	n      = 0
+	for i in xrange(g_n_prj - 1):
+		for j in xrange(i + 1, g_n_prj):
 
-	# compute the angles of the common lines in space
-	phi, theta = cml_cmlines_3D(Prj)
+			if iagl != False and iprj != False:
+				if i == iprj:   phi, theta = common_line_in3D_dev(g_anglst[iagl][0], g_anglst[iagl][1], Ori[j][0], Ori[j][1])
+				elif j == iprj:	phi, theta = common_line_in3D_dev(Ori[i][0], Ori[i][1], g_anglst[iagl][0], g_anglst[iagl][1])
+				else:		phi, theta = common_line_in3D_dev(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
+			else:			phi, theta = common_line_in3D_dev(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
+	
+			if i == iprj:	f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, g_anglst[iagl][0], g_anglst[iagl][1], Ori[j][0], Ori[j][1]))
+			elif j == iprj: f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, Ori[i][0], Ori[i][1], g_anglst[iagl][0], g_anglst[iagl][1]))
+			else: f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1]))
 
-	# search the sames cm lines
-	mem_i_same = {}                  ## TODO dict change to list
-	ocp_same   = [0] * nlines
-	for i in xrange(nlines - 1):
+			l_phs[n] = phi
+			l_ths[n] = theta
+			theta    = theta * pi / 180.0
+			phi      = phi * pi   / 180.0  
+			l_x[n]   = sin(theta) * cos(phi)
+			l_y[n]   = sin(theta) * sin(phi)
+			l_z[n]   = cos(theta)
+
+			n+= 1
+
+	tol = 2e-5
+
+	f.write('\n')
+			
+	# search the closer cml lines
+	mem_i_same = [[] for i in xrange(g_n_lines - 1)]
+	ocp_same   = [0] * g_n_lines
+	for i in xrange(g_n_lines - 1):
 		mem_i_same[i] = None
 		v = []
 		flag = False
 		if ocp_same[i] == 0:
-			for j in xrange(i + 1, nlines):
+			for j in xrange(i + 1, g_n_lines):
 				if ocp_same[j] == 0:
-					dist = (phi[i] - phi[j]) ** 2 + (theta[i] - theta[j]) ** 2
+					dist = (l_x[i] - l_x[j])**2 + (l_y[i] - l_y[j])**2 + (l_z[i] - l_z[j])**2
 					if dist < tol:
 						v.append(j)
 						ocp_same[j] = 1
 						flag = True
+
 		if flag: mem_i_same[i] = v
 
-	# create the new vector n_phi n_theta without
+	# create the new vector n_phi n_theta without closer
 	n_phi, n_theta = [], []
 	LUT   = []
 	index = 0
-	for n in xrange(nlines):
+	for n in xrange(g_n_lines):
 		if ocp_same[n] == 0:
-			n_phi.append(phi[n])
-			n_theta.append(theta[n])
+			n_phi.append(l_phs[n])
+			n_theta.append(l_ths[n])
 			LUT.append(n)
 			index += 1
 
-	# compute the weights with the new list phi and theta
-	n_weights = Util.vrdg(n_phi, n_theta)
+	f.write('\n')
+	for n in xrange(len(n_phi)): f.write('%10.3f %10.3f\n' % (n_phi[n], n_theta[n]))
+	f.close()
 
-	# compute the new weights according the sames cm lines
-	weights = [-1] * nlines
-	for n in xrange(index): weights[LUT[n]] = n_weights[n]
-	for n in xrange(nlines - 1):
-		if mem_i_same[n] is not None:
-			val        = weights[n]
-			nval       = val / (len(mem_i_same[n]) + 1)
-			weights[n] = nval
-			for i in mem_i_same[n]: weights[i] = nval
-
-	# re-apply mirror if neeed
-	for i in xrange(nprj):
-		if Prj[i].mirror:
-			Prj[i].phi   = fmod(Prj[i].phi + 180, 360)
-			Prj[i].theta = 180 - Prj[i].theta
+	if len(n_phi) > 2:
+		# use Voronoi
+		n_weights = Util.vrdg(n_phi, n_theta)
+	
+		# compute the new weights according the sames cm lines
+		weights = [-1] * g_n_lines
+		for n in xrange(index): weights[LUT[n]] = n_weights[n]
+		for n in xrange(g_n_lines - 1):
+			if mem_i_same[n] is not None:
+				val        = weights[n]
+				nval       = val / (len(mem_i_same[n]) + 1)
+				weights[n] = nval
+				for i in mem_i_same[n]: weights[i] = nval
+	else:	
+		weights = [1] * g_n_lines
 	'''
+	weights = [1] * g_n_lines
+
 	# return the weights
 	return weights
+
+
 
 
 # open and transform projections
@@ -14086,25 +14155,6 @@ def cml_export_progress_dev(outdir, iprj, iagl, psi, disc, cmd):
 		infofile.write(txt + '\n')
 	'''
 
-
-
-
-# compute common lines in 3D in order to calculate the weigths
-def cml_cmlines_3D_dev(Ori):
-	from utilities import common_line_in3D
-
-	# gbl vars
-	global g_n_prj, g_n_lines
-	l_phs  = [0.0] * g_n_lines  # angle phi of the common lines
-	l_ths  = [0.0] * g_n_lines  # angle theta of the common lines
-	n      = 0
-	for i in xrange(g_n_prj - 1):
-		for j in xrange(i + 1, g_n_prj):
-			l_phs[n], l_ths[n] = common_line_in3D(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
-			n += 1
-
-	return l_phs, l_ths
-
 # compute the common lines in sino
 def get_common_line_angles_dev(phi1, theta1, psi1, phi2, theta2, psi2, nangle, STOP=False):
 	from math import fmod
@@ -14167,7 +14217,7 @@ def cml_spin_dev(Prj, iprj, Ori, iagl):
 	# gbl vars
 	global g_n_prj, g_n_psi, g_n_lines, g_anglst
 	
-	weights = cml_weights_dev(Ori)
+	weights = cml_weights_dev(Ori, iagl, iprj)
 	com     = [0] * 2 * g_n_lines
 
 	# compute the common lines only including iprj
