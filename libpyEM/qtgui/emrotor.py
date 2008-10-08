@@ -256,9 +256,6 @@ class EMRotorModule(EMImage2DGUIModule):
 	def wheelEvent(self, event):
 		self.widget.wheelEvent(event)
 		
-	def closeEvent(self,event) :
-		pass
-		
 	def dragEnterEvent(self,event):
 		pass
 

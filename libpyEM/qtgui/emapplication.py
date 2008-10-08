@@ -40,10 +40,43 @@ class EMGUIModule:
 	def __init__(self,application=None): 
 		self.application = application
 		if application != None: application.attach_child(self)
+		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
+		self.suppress_inspector = False # turn on to suppress showing the inspector
+		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
+		self.parent = None # should be something that accepts UpdateGL calls
 		
 	def set_app(self,application): self.application = application
 	def get_app(self): return self.application
 	def get_qt_widget(self): raise
+	
+	
+	def set_parent(self,parent): self.parent = parent
+	def get_parent(self): return self.parent
+	def get_inspector(self): raise # this need to be supplied
+	
+	def show_inspector(self,force=0):
+		
+		if self.application == None:
+			print "can't show an inspector with having an associated application"
+		
+		if self.suppress_inspector: return
+		if not force and self.inspector==None : return
+		if not self.inspector : 
+			self.inspector = self.get_inspector()
+			if self.inspector == None: return # sometimes this happens
+		if not self.em_qt_inspector_widget:
+			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
+		
+		self.application.show_specific(self.em_qt_inspector_widget)
+		
+	def closeEvent(self,event) :
+		if self.application != None:
+			if self.inspector != None and self.em_qt_inspector_widget != None: 
+				self.application.detach_child(self.em_qt_inspector_widget)
+				self.inspector.close()
+				
+			self.application.detach_child(self)
+		
 	
 	#def load_font_renderer(self):
 		#try:
@@ -60,6 +93,8 @@ class EMApplication:
 		if qt_application_control:
 			self.app = QtGui.QApplication(sys.argv)
 		else: self.app = None
+	
+	def get_app(self): return self.app
 	def attach_child(self,child):
 		raise
 	
@@ -87,6 +122,8 @@ class EMApplication:
 	def setOverrideCursor(self,cursor_type):
 		if self.app != None:
 			self.app.setOverrideCursor(cursor_type)
+			
+	
 
 class EMStandAloneApplication(EMApplication):
 	
@@ -94,7 +131,15 @@ class EMStandAloneApplication(EMApplication):
 		EMApplication.__init__(self,qt_application_control)
 		
 		self.children = []
-		
+	
+	def detach_child(self,child):
+		for i,child_ in enumerate(self.children):
+			if child_ == child:
+				self.children.pop(i)
+				return
+	
+		print "error, can't detach a child that doesn't belong to this",child
+	
 	def attach_child(self,child):
 		for i in self.children:
 			if i == child:
@@ -122,6 +167,16 @@ class EMStandAloneApplication(EMApplication):
 		print "couldn't hide",child
 	
 	def show_specific(self,child):
+		for child_ in self.children:
+			if child == child_:
+				widget = child.get_qt_widget()
+				if widget.isVisible() == False:
+					widget.show()
+				return
+	
+		# if we make it here than we automatically attach the child
+		
+		self.attach_child(child)
 		widget = child.get_qt_widget()
 		if widget.isVisible() == False:
 			widget.show()
@@ -135,6 +190,16 @@ class EMStandAloneApplication(EMApplication):
 				return
 			
 		print "error, attempt to close a child that did not belong to this application"
+		
+	def __call__( *args, **kwargs ):
+		return QtGui.qApp
+
+	def exec_loop( *args, **kwargs ):
+		pass
+
+	def __getattr__( self, name ):
+		try: return getattr(self,name)
+		except:	return getattr( self.app, name )
 		
 
 class EMQtWidgetModule(EMGUIModule):

@@ -1273,54 +1273,22 @@ def draw_volume_bounds(width,height,depth):
 class EMImage2DGUIModule(EMGUIModule):
 	def __init__(self,application=None):
 		EMGUIModule.__init__(self,application)
-		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
-		self.suppress_inspector = False # turn on to suppress showing the inspector
-		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
-	
-	def get_inspector(self): raise # this need to be supplied
-	
-	def show_inspector(self,force=0):
-		
-		if self.application == None:
-			print "can't show an inspector with having an associated application"
-		
-		if self.suppress_inspector: return
-		if not force and self.inspector==None : return
-		if not self.inspector : 
-			self.inspector = self.get_inspector()
-			if self.inspector == None: return # sometimes this happens
-		if not self.em_qt_inspector_widget:
-			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
-		
-		self.application.show_specific(self.em_qt_inspector_widget)
-		
 
-	def set_parent(self,parent): self.parent = parent
-	def get_parent(self): return self.parent
-		
-		
-	def closeEvent(self,event) :
-		if self.inspector: self.inspector.close()
-		
 	def mouseDoubleClickEvent(self,event):
 		pass
 
 class EMImage3DGUIModule(EMGUIModule):
 	def __init__(self,application=None):
 		EMGUIModule.__init__(self,application)
-		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
-		
 		self.blendflags = EMOpenGLFlagsAndTools()
 		self.bcscreen = EMBrightContrastScreen()
 		
-		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman lingo
 		self.name = None # a name variable, accessed by set and get
 		self.rand = None # a rand varaible
 		self.cam = None # should be a camera, either Camera or Camera2
 		self.cube = False # whether a cube should be drawn
-		self.suppress_inspector = False # turn on to suppress showing the inspector
 		
-		self.parent = None # should be something that accepts UpdateGL calls
+		
 		self.data = None # should eventually be an EMData object
 		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
 		self.help_window = None # eventually will become a Qt help widget of some kind
@@ -1328,31 +1296,12 @@ class EMImage3DGUIModule(EMGUIModule):
 	def render(self): pass # should do the main drawing
 	def updateGL(self): raise #this needs to be supplied
 	def get_type(self): pass #should return a unique string
-	def get_inspector(self): raise # this need to be supplied
 	
-	def set_parent(self,parent): self.parent = parent
-	def get_parent(self): return self.parent
 	def set_rank(self,rank): self.rank = rank
 	def set_name(self, name): self.name = name
 	def get_name(self): return self.name
 	def set_file_name(self,file_name): self.file_name = file_name
 	def get_file_name(self): return self.file_name
-	
-	def show_inspector(self,force=0):
-		
-		if self.application == None:
-			print "can't show an inspector with having an associated application"
-		
-		if self.suppress_inspector: return
-		if not force and self.inspector==None : return
-		
-		if not self.inspector : 
-			self.inspector = self.get_inspector()
-		if not self.em_qt_inspector_widget:
-			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
-		
-		self.application.show_specific(self.em_qt_inspector_widget)
-
 	
 	def get_current_camera(self): return self.cam.get_thin_copy()
 	
@@ -1444,10 +1393,6 @@ class EMImage3DGUIModule(EMGUIModule):
 	def toggle_cube(self):
 		self.cube = not self.cube
 		self.updateGL()
-		
-		
-	def closeEvent(self,event) :
-		if self.inspector: self.inspector.close()
 		
 	def mousePressEvent(self, event):
 #		lc=self.scrtoimg((event.x(),event.y()))

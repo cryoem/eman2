@@ -61,6 +61,7 @@ Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 GUIMode=0
+app = 0
 GUIbeingdragged=None
 
 # Aliases
@@ -321,16 +322,10 @@ def parsemodopt_operation(optstr):
 
 
 def display(img):
-	
 	if GUIMode:
-		from emapplication import EMStandAloneApplication
 		import emimage
-		image = emimage.EMImageModule(img)
-		app = EMStandAloneApplication(qt_application_control=False)
-		image.set_app(app)
-		app.attach_child(image)
+		image = emimage.EMImageModule(img,None,True,app)
 		app.show()
-		#app.execute()
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
 		try: os.unlink("/tmp/img.hed")

@@ -644,28 +644,6 @@ class EMVolumeWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		width = self.aspect * height
 		return [width,height]
 
-
-	def show_inspector(self,force=0):
-		self.target.show_inspector(self,force)
-
-	def closeEvent(self,event) :
-		self.target.closeEvent(event)
-		
-	def mousePressEvent(self, event):
-		self.target.mousePressEvent(event)
-		self.emit(QtCore.SIGNAL("mousedown"), event)
-		
-	def mouseMoveEvent(self, event):
-		self.target.mouseMoveEvent(event)
-		self.emit(QtCore.SIGNAL("mousedrag"), event)
-	
-	def mouseReleaseEvent(self, event):
-		self.target.mouseReleaseEvent(event)
-		self.emit(QtCore.SIGNAL("mouseup"), event)
-			
-	def wheelEvent(self, event):
-		self.target.wheelEvent(event)
-
 	def get_render_dims_at_depth(self,depth):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume

@@ -163,7 +163,7 @@ class EMImage(object):
 		
 class EMImageModule(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
-	def __new__(cls,data=None,old=None,copy=True):
+	def __new__(cls,data=None,old=None,copy=True,app=None):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
@@ -178,7 +178,9 @@ class EMImageModule(object):
 				if isinstance(old,EMImage2DModule) :
 					old.set_data(local_data)
 					return old
-			return EMImage2DModule()
+			module = EMImage2DModule(application=app)
+			module.set_data(data)
+			return module
 		elif isinstance(data,EMData):
 			# data copy considerations shouldn't be necessary here 
 			# seeing as the EMImage3D does internal copying of its own
@@ -195,7 +197,9 @@ class EMImageModule(object):
 				#ret.releaseMouse()
 				#ret.releaseKeyboard()
 				#return ret
-			return EMImage3DModule()
+			module = EMImage3DModule(application=app)
+			module.set_data(data)
+			return module
 		elif isinstance(data,list):
 			if ( copy ):local_data = deepcopy(data)
 			else: local_data = data
@@ -205,6 +209,8 @@ class EMImageModule(object):
 					old.set_data(local_data)
 					return old
 				
-			return EMImageMXModule()
+			module = EMImageMXModule(application=app)
+			module.set_data(data)
+			return module
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"

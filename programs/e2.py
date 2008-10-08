@@ -40,6 +40,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import threading
 from IPython.Shell import *
+from emapplication import EMStandAloneApplication
 
 class IPShellQt4a(threading.Thread):
 	"""Run a Qt event loop in a separate thread.
@@ -53,22 +54,23 @@ class IPShellQt4a(threading.Thread):
 	def __init__(self,argv=None,user_ns=None,user_global_ns=None,
 				debug=0,shell_class=MTInteractiveShell):
 
-		from PyQt4 import QtCore, QtGui
+		from PyQt4 import QtGui
 
-		class newQApplication2:
-			def __init__( self ):
-				self.QApplication = QtGui.QApplication
+		#class newQApplication2:
+			#def __init__( self ):
+				#self.QApplication = QtGui.QApplication
 
-			def __call__( *args, **kwargs ):
-				return QtGui.qApp
+			#def __call__( *args, **kwargs ):
+				#return QtGui.qApp
 
-			def exec_loop( *args, **kwargs ):
-				pass
+			#def exec_loop( *args, **kwargs ):
+				#pass
 
-			def __getattr__( self, name ):
-				return getattr( self.QApplication, name )
+			#def __getattr__( self, name ):
+				#return getattr( self.QApplication, name )
 
-		QtGui.QApplication = newQApplication2()
+		self.app = EMStandAloneApplication()
+		QtGui.QApplication = self.app.get_app()
 
 		# Allows us to use both Tk and QT.
 		self.tk = get_tk()
@@ -86,6 +88,9 @@ class IPShellQt4a(threading.Thread):
 
 		threading.Thread.__init__(self)
     
+	def get_app(self):
+		return self.app
+	
 	def run(self):
 		self.IP.runlines("from EMAN2 import *\nfrom emimage import *\n")
 		self.IP.mainloop(self._banner)
@@ -120,7 +125,9 @@ class IPShellQt4a(threading.Thread):
 if __name__ == "__main__":
 	
 	EMAN2.GUIMode=True
+	
 	sh=IPShellQt4a()
+	EMAN2.app = sh.get_app()
 #	app = get_app()
 	sh.mainloop(banner="Welcome to EMAN2\nPrompt provided by IPython\nEnter '?' for ipython help\n")
 	

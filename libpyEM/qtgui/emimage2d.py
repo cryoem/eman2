@@ -942,8 +942,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
-		if self.inspector: 
-			self.application.close_child(self.em_qt_inspector_widget)
+		EMImage2DGUIModule.closeEvent(self,event)
 		
 	def dragEnterEvent(self,event):
 #		f=event.mimeData().formats()

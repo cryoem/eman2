@@ -199,6 +199,8 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 			return [width,height]
 		else:
 			return [self.xwidth,self.yheight]
+		
+	
 
 class EMImage3DModule(EMImage3DGUIModule):
 	
