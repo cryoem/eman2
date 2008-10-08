@@ -72,6 +72,9 @@ class EMApplication:
 	def show_specific(self,object):
 		raise
 	
+	def hide_specific(self,child,inspector_too=True):
+		raise
+	
 	def execute(self):
 		if self.app != None:
 			return sys.exit(self.app.exec_())
@@ -105,6 +108,18 @@ class EMStandAloneApplication(EMApplication):
 			widget = child.get_qt_widget()
 			if widget.isVisible() == False:
 				widget.show()
+	
+	
+	def hide_specific(self,child,inspector_too=True):
+		for child_ in self.children:
+			if child == child_:
+				widget = child.get_qt_widget()
+				widget.hide()
+				inspector = child.get_inspector()
+				inspector.hide()
+				return
+			
+		print "couldn't hide",child
 	
 	def show_specific(self,child):
 		widget = child.get_qt_widget()

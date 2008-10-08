@@ -36,13 +36,14 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import os
 import re
-from EMAN2 import EMData,Region
+from EMAN2 import EMData,Region, gimme_image_dimensions3D, EMFunctor
 from emimage2d import EMImage2DModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule
 
 class EMSelectorDialog(QtGui.QDialog):
 	def __init__(self,target,application):
 		QtGui.QDialog.__init__(self,None)
+		#self.setMouseTracking(True)
 		self.application=application
 		self.target=target
 		
@@ -60,6 +61,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.first_list_widget = QtGui.QListWidget(None)
 		self.starting_directory = os.getcwd()
 		
+		self.selections = []
+		self.current_list_widget = None
 		self.lock = True
 		self.list_widgets = []
 		self.list_widget_data= [] # entries should be tuples containing (current folder item)
@@ -101,8 +104,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		QtCore.QObject.connect(self.done_button, QtCore.SIGNAL("clicked(bool)"),self.done_button_clicked)
 		
 	def done_button_clicked(self,bool):
-		print "done button clicked",bool
-	
+		self.emit(QtCore.SIGNAL("done"),self.selections)
+		
 	def __init_filter_combo(self):
 		self.filter_combo = QtGui.QComboBox(None)
 		self.filter_combo.addItem("*.mrc,*.hdf,*.img")
@@ -116,20 +119,24 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.__redo_list_widget_contents()
 	
 	def __redo_list_widget_contents(self):
+		self.lock = True
 		directory = self.starting_directory+"/"
 		for i,data in  enumerate(self.list_widget_data):
 			
 			if data != None:d = str(data.text())
-				
+			old_row = self.list_widgets[i].currentRow()
 			self.__load_directory_data(directory,self.list_widgets[i])
+			self.list_widget_data[i] = self.list_widgets[i].item(old_row)
 			if data == None: return
 			else:
 				directory += '/' + d
 	
+		self.lock = False
 	def __add_list_widget(self, list_widget = None):
 		if list_widget == None:	list_widget = QtGui.QListWidget(None)
 		
 		list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+		list_widget.setMouseTracking(True)	
 		self.list_widgets.append(list_widget)
 		self.list_hdl.addWidget(list_widget)
 		self.list_widget_data.append(None)
@@ -138,17 +145,29 @@ class EMSelectorDialog(QtGui.QDialog):
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
 		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
-	
-	def __go_back_a_directory(self):
-		print "go back a directory"
-		self.starting_directory = self.starting_directory[0:self.starting_directory.rfind('/')]
+		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemEntered(QListWidgetItem*)"),self.list_widget_item_entered)
+		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
+		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
+		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
+		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("activated(QModelIndex)"),self.activated)
+		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("selectionChanged(QItemSelection,QItemSelection)"),self.selection_changed)
 		
+	def __go_back_a_directory(self):
+		self.lock = True
+		new_dir = self.starting_directory[0:self.starting_directory.rfind('/')]
+		if not os.access(new_dir,os.R_OK): 
+			print "can't go up a directory, don't have read permission"
+			return
+		self.starting_directory = new_dir
 		for j in range(0,len(self.list_widgets)):
 			self.list_widgets[j].clear()
 			self.list_widget_data[j] = None
 		self.__load_directory_data(self.starting_directory,self.first_list_widget)
-	
+		self.hide_preview()
+		self.lock = False
+		
 	def __go_forward_a_directory(self):
+		self.lock = True
 		self.starting_directory = self.starting_directory + '/' + str(self.list_widget_data[0].text())
 		
 		directory = self.starting_directory 
@@ -165,113 +184,116 @@ class EMSelectorDialog(QtGui.QDialog):
 			
 			self.list_widgets[i].setCurrentRow(old_row)
 			
-			self.list_widget_data[i] = self.list_widget_data[i+1]
+			self.list_widget_data[i] = self.list_widgets[i].item(old_row)
 			directory += '/' + str(self.list_widget_data[i].text())
 		
-		self.lock = True
 		self.list_widgets[0].insertItem(0,"../")
 		self.lock = False
-		
-		
-	def list_widget_row_changed(self,i):
-		#print i
-		#print i, self.list_hdl.isEnabled(), self.list_hdl.isEmpty()
-		if self.lock : return
-		if i == -1: return
-		if self.paint_events < 2 : return
-		
-		file = self.starting_directory+"/"
+		self.hide_preview()
+	def selection_changed(self,item1,item2):
+		pass
+
+	def activated(self,index):
+		directory = self.starting_directory+"/"
 		idx = 0
 		for i,list_widget in enumerate(self.list_widgets):
-			if list_widget.hasFocus(): 
-				idx = i
-				item = list_widget.currentItem()
-				#print item
-				
-				file += str(item.text())
+			if list_widget == self.current_list_widget: 
 				break
-			file += str(self.list_widget_data[i].text()) + "/"
+			directory += str(self.list_widget_data[i].text()) + "/"
 		else:
 			print "no list widget has focus?"
 			return
 		
-		#for a in list_widget.selectedIndexes(): print a.row()
+		self.selections = []
+		for a in self.current_list_widget.selectedIndexes():
+			file = directory+str(a.data().toString())
+			if self.__is_file(file): self.selections.append( file)
 			
-		# check to see if we have to go back a directory
+		if len(self.selections) == 0:
+			self.hide_preview()
+	
+	def hide_preview(self):
+		if self.gl_image_preview  != None:
+			self.application.hide_specific(self.gl_image_preview)
+	
+	def list_widget_item_activated(self,item):
+		pass
+		
+	
+	def list_widget_item_changed(self,item):
+		pass
+	
+	def list_widget_current_changed(self,item1,item2):
+		pass
+		
+	def list_widget_item_entered(self,item):
+		self.current_list_widget = item.listWidget()
+		#print self.current_list_widget
+	
+	def list_widget_row_changed(self,i):
+		return
+	
+	def list_widget_clicked(self,item):
+		if self.lock : return
+		if self.current_list_widget == None: return
+		#if self.paint_events < 2 :
+			 #self.current_list_widget.setCurrentRow(-1)
+			 #return
+		
+		#item = self.current_list_widget.currentItem()
+		if item == None: return
 		if item.text() == "../": 
 			self.__go_back_a_directory()
 			return
 		
-		if self.__is_file(file):
-			self.__set_preview(file)
+		file = self.starting_directory+"/"
+		directory = self.starting_directory+"/"
+		idx = 0
+		for i,list_widget in enumerate(self.list_widgets):
+			if list_widget == self.current_list_widget: 
+				idx = i
+				file += str(item.text())
+				break
+			file += str(self.list_widget_data[i].text()) + "/"
+			directory += str(self.list_widget_data[i].text()) + "/"
+		else:
+			print "no list widget has focus?"
 			return
-		elif not self.__is_non_empty_directory(file): return
-	
+
+		
 		n = len(self.list_widgets)-1
-		if item.listWidget() == self.list_widgets[n] :
+		if self.current_list_widget  == self.list_widgets[n] and not self.__is_file(file):
 			self.list_widget_data[n] = item
 			self.__go_forward_a_directory()
 			self.__load_directory_data(file+'/',self.list_widgets[n])
 			return
 		
+		
+
+		# check to see if we have to go back a directory
+	
+		
+		if self.__is_file(file):
+			self.__set_preview(file)
+			for i in range(idx+1,len(self.list_widgets)):
+				self.list_widgets[i].clear()
+				self.list_widget_data[i] = None
+			return
+	
+		
 		old_item = self.list_widget_data[idx]
 		
 		if self.__load_directory_data(file,self.list_widgets[idx+1]):
-			if old_item != None:
-				old_item.setBackgroundColor(QtGui.QColor(255,255,255))
-			item.setBackgroundColor(QtGui.QColor(64,190,0,63))	
+			#if old_item != None:
+				#old_item.setBackgroundColor(QtGui.QColor(255,255,255))
+			##item.setBackgroundColor(QtGui.QColor(64,190,0,63))	
 			self.list_widget_data[idx] = item
 			self.list_widget_data[idx+1] = None
 			
 		for i in range(idx+2,len(self.list_widgets)):
 			self.list_widgets[i].clear()
 			self.list_widget_data[i] = None
-	
-	def list_widget_clicked(self,item):
-		pass
-		#if self.lock : return
-	
-		#if item == None: return
 		
-		#if item.text() == "../": 
-			#self.__go_back_a_directory()
-			#return
-	
-		#file = self.starting_directory+"/"
-		#idx = 0
-		#for i,list_widget in enumerate(self.list_widgets):
-			#if item.listWidget() == list_widget:
-				#idx = i
-				#file += str(item.text())
-				#break
-			#file += str(self.list_widget_data[i].text()) + "/"
-	
-		
-		#if self.__is_file(file):
-			#self.__set_preview(file)
-			#return
-		#elif not self.__is_non_empty_directory(file): return
-	
-		#n = len(self.list_widgets)-1
-		#if item.listWidget() == self.list_widgets[n] :
-			#self.list_widget_data[n] = item
-			#self.__go_forward_a_directory()
-			#self.__load_directory_data(file+'/',self.list_widgets[n])
-			#return
-		
-		#old_item = self.list_widget_data[idx]
-		
-		#if self.__load_directory_data(file,self.list_widgets[idx+1]):
-			#if old_item != None:
-				#old_item.setBackgroundColor(QtGui.QColor(255,255,255))
-			#item.setBackgroundColor(QtGui.QColor(64,190,0,63))	
-			#self.list_widget_data[idx] = item
-			#self.list_widget_data[idx+1] = None
-			
-		#for i in range(idx+2,len(self.list_widgets)):
-			#self.list_widgets[i].clear()
-			#self.list_widget_data[i] = None
-	
 	def list_widget_dclicked(self,item):
 		
 		file = self.starting_directory+"/"
@@ -286,10 +308,26 @@ class EMSelectorDialog(QtGui.QDialog):
 			print "Opening ", file
 	
 	def __set_preview(self,filename):
-		try: a=EMData.read_images(filename)
-		except: return
-		
 		self.application.setOverrideCursor(Qt.BusyCursor)
+		try: 
+			dims = gimme_image_dimensions3D(filename)
+			if dims[2] != 1:
+				for d in dims: 
+					if d > 128:
+						print "3D image too big, no preview available"
+						self.application.setOverrideCursor(Qt.ArrowCursor)
+						return
+			elif dims[1] != 1:
+				for d in [dims[0],dims[1]]:
+					if d > 1024:
+						print "2D image too big, no preview available"
+						self.application.setOverrideCursor(Qt.ArrowCursor)
+						return
+			a=EMData.read_images(filename)
+		except: 
+			self.application.setOverrideCursor(Qt.ArrowCursor)
+			return
+		
 		if len(a) == 1:
 			a = a[0]
 			data = []
@@ -308,6 +346,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.gl_image_preview.updateGL()
 		
 		self.application.setOverrideCursor(Qt.ArrowCursor)
+		
+		self.activateWindow()
 
 	
 	def __filter_strings(self,strings):
@@ -389,25 +429,34 @@ class EMSelectorDialog(QtGui.QDialog):
 			
 		return False
 
-	def enterEvent(self,event):
-		self.lock = False
+	#def enterEvent(self,event):
+		#self.lock = False
 		
-	def leaveEvent(self,event):
-		self.lock = True
 		
-	def paintEvent(self,event):
-		self.paint_events += 1
-		#print "paint"
-		##self.lock=True
-		#QtGui.QWidget.paintEvent(self,event)
-		##self.lock = False
-		#print "leave paint"
-		#return
+	#def leaveEvent(self,event):
+		#self.lock = True
+		
+	#def paintEvent(self,event):
+		#self.paint_events += 1 # i had to do this to avoid unwanted behavior
+
+app = None
+def on_done(string_list):
+	if len(string_list) != 0:
+		for s in string_list:
+			print s,
+		print
+	app.quit()
+
 
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
+	app = em_app
 	dialog = EMSelectorDialog(None,em_app)
 	em_qt_widget = EMQtWidgetModule(dialog,em_app)
+	QtCore.QObject.connect(dialog,QtCore.SIGNAL("done"),on_done)
 	em_app.show()
 	em_app.execute()
+
+
+
 
