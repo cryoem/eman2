@@ -88,7 +88,10 @@ int main(int argc, char* argv[])
 
 		printf("%20s: %d x %d x %d\n", "Image Dimensions",
 			   d->get_xsize(), d->get_ysize(), d->get_zsize());
-
+		
+		printf("%20s: %s\n", "Image Data Type",
+				EMUtil::get_datatype_string((EMUtil::EMDataType)((int)(d->get_attr("datatype")))));
+		
 		if (stat) {
 			printf("mean=%1.3g sigma=%1.3g skewness=%1.3g kurtosis=%1.3g\n",
 				   (float) d->get_attr("mean"),
@@ -108,6 +111,8 @@ int main(int argc, char* argv[])
 			EMUtil::dump_dict(dict);
 		}
 		printf("\n");
+		
+		
     
     	if( d )
     	{
