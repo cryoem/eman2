@@ -40,6 +40,7 @@
 #include "geometry.h"
 #include "ctf.h"
 #include "emassert.h"
+#include "transform.h"
 
 #ifdef _WIN32
 	#include <ctime>
@@ -318,9 +319,25 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	new_hed.avdens = (float)dict["mean"];
 	new_hed.sigma = (float)dict["sigma"];
 	
-	if(dict.has_key("euler_alt")) new_hed.mrc1[1] = (float)dict["euler_alt"]*M_PI/180.0f;
-	if(dict.has_key("euler_az")) new_hed.mrc1[2] = (float)dict["euler_az"]*M_PI/180.0f;
-	if(dict.has_key("euler_phi")) new_hed.mrc1[0] = (float)dict["euler_phi"]*M_PI/180.0f;
+	if(nz<=1 && dict.has_key("xform.projection")) {
+		Transform * t = dict["xform.projection"];
+		Dict d = t->get_rotation("eman");
+		new_hed.mrc1[1] = (float)d["alt"]*M_PI/180.0f;
+		new_hed.mrc1[2] = (float)d["az"]*M_PI/180.0f;
+		new_hed.mrc1[0] = (float)d["phi"]*M_PI/180.0f;
+	}
+	else if(nz>1 && dict.has_key("xform.align3d")) {
+		Transform * t = dict["xform.align3d"];
+		Dict d = t->get_rotation("eman");
+		new_hed.mrc1[1] = (float)d["alt"]*M_PI/180.0f;
+		new_hed.mrc1[2] = (float)d["az"]*M_PI/180.0f;
+		new_hed.mrc1[0] = (float)d["phi"]*M_PI/180.0f;
+	}
+	else {
+		if(dict.has_key("euler_alt")) new_hed.mrc1[1] = (float)dict["euler_alt"]*M_PI/180.0f;
+		if(dict.has_key("euler_az")) new_hed.mrc1[2] = (float)dict["euler_az"]*M_PI/180.0f;
+		if(dict.has_key("euler_phi")) new_hed.mrc1[0] = (float)dict["euler_phi"]*M_PI/180.0f;
+	}
 	
 	if(dict.has_key("ptcl_repr")) new_hed.mrc2 = (int)dict["ptcl_repr"];
 
