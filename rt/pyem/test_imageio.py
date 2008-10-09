@@ -184,6 +184,46 @@ class TestSpiderIO(unittest.TestCase):
             self.assertEqual(f.get_zsize(), 1)
             
         testlib.safe_unlink('test.spi')
+        
+    def test_write_transform_spider(self):
+        """test write spi header info from Transform object ."""
+        filename = 'test_write_transform.'
+        img = EMData(32,32)
+        img.process_inplace('testimage.noise.uniform.rand')
+        t3d = Transform()
+        t3d.set_rotation({'type':'spider', 'phi':1.56, 'theta':2.56, 'psi':3.56})
+        t3d.set_trans(10.78, 20.78, 30.78)
+        img.set_attr('xform.projection', t3d)
+        img.write_image(filename+'spi')
+        del img
+        
+        img2 = EMData(filename+'spi')
+        self.assertAlmostEqual(img2.get_attr('SPIDER.phi'), 1.56, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.theta'), 2.56, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.gamma'), 3.56, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.dx'), 10.78, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.dy'), 20.78, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.dz'), 30.78, 3)
+        del img2
+        testlib.safe_unlink(filename+'spi')
+        
+        filename2 = 'test_write_transform2.'
+        img = EMData(32,32,32)
+        img.process_inplace('testimage.noise.uniform.rand')
+        t3d = Transform()
+        t3d.set_rotation({'type':'spider', 'phi':1.56, 'theta':2.56, 'psi':3.56})
+        t3d.set_trans(10.78, 20.78, 30.78)
+        img.set_attr('xform.align3d', t3d)
+        img.write_image(filename2+'spi')
+        
+        img2 = EMData(filename2+'spi')
+        self.assertAlmostEqual(img2.get_attr('SPIDER.phi'), 1.56, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.theta'), 2.56, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.gamma'), 3.56, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.dx'), 10.78, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.dy'), 20.78, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.dz'), 30.78, 3)
+        testlib.safe_unlink(filename2+'spi')
 
 class TestHdfIO(unittest.TestCase):
     """hdf file IO test ....................................."""
@@ -483,6 +523,46 @@ class TestMrcIO(unittest.TestCase):
         
         self.assert_(nlabels > label_i)
         self.assertEqual(d[labelname], label)
+        
+    def test_write_transform_mrc(self):
+        """test write mrc header info from Transform object ."""
+        filename = 'test_write_transform.'
+        img = EMData(32,32)
+        img.process_inplace('testimage.noise.uniform.rand')
+        t3d = Transform()
+        t3d.set_rotation({'type':'imagic', 'alpha':1.56, 'beta':2.56, 'gamma':3.56})
+        t3d.set_trans(10.78, 20.78, 30.78)
+        img.set_attr('xform.projection', t3d)
+        img.write_image(filename+'mrc')
+        del img
+        
+        img2 = EMData(filename+'mrc')
+        self.assertAlmostEqual(img2.get_attr('MRC.alpha'), 1.56, 3)
+        self.assertAlmostEqual(img2.get_attr('MRC.beta'), 2.56, 3)
+        self.assertAlmostEqual(img2.get_attr('MRC.gamma'), 3.56, 3)
+        self.assertAlmostEqual(img2.get_attr('origin_row'), 10.78, 3)
+        self.assertAlmostEqual(img2.get_attr('origin_col'), 20.78, 3)
+        self.assertAlmostEqual(img2.get_attr('origin_sec'), 30.78, 3)
+        del img2
+        testlib.safe_unlink(filename+'mrc')
+        
+        filename2 = 'test_write_transform2.'
+        img = EMData(32,32,32)
+        img.process_inplace('testimage.noise.uniform.rand')
+        t3d = Transform()
+        t3d.set_rotation({'type':'imagic', 'alpha':1.56, 'beta':2.56, 'gamma':3.56})
+        t3d.set_trans(10.78, 20.78, 30.78)
+        img.set_attr('xform.align3d', t3d)
+        img.write_image(filename2+'mrc')
+        
+        img2 = EMData(filename2+'mrc')
+        self.assertAlmostEqual(img2.get_attr('MRC.alpha'), 1.56, 3)
+        self.assertAlmostEqual(img2.get_attr('MRC.beta'), 2.56, 3)
+        self.assertAlmostEqual(img2.get_attr('MRC.gamma'), 3.56, 3)
+        self.assertAlmostEqual(img2.get_attr('origin_row'), 10.78, 3)
+        self.assertAlmostEqual(img2.get_attr('origin_col'), 20.78, 3)
+        self.assertAlmostEqual(img2.get_attr('origin_sec'), 30.78, 3)
+        testlib.safe_unlink(filename2+'mrc')
 
 class TestImagicIO(unittest.TestCase):
     """imagic file IO test"""

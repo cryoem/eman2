@@ -38,6 +38,7 @@
 #include "portable_fileio.h"
 #include "emassert.h"
 #include "util.h"
+#include "transform.h"
 #include <iostream>
 #include <ctime>
 #include <algorithm>
@@ -260,8 +261,8 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["SPIDER.angvalid"] = (int)cur_image_hed->angvalid;
 	if((int)dict["SPIDER.angvalid"] != 0) {
 		dict["SPIDER.phi"] = cur_image_hed->phi;
-		dict["SPIDER.phi"] = cur_image_hed->theta;
-		dict["SPIDER.phi"] = cur_image_hed->gamma;
+		dict["SPIDER.theta"] = cur_image_hed->theta;
+		dict["SPIDER.gamma"] = cur_image_hed->gamma;
 	}
 
 	dict["SPIDER.headrec"] = (int) cur_image_hed->headrec;
@@ -416,6 +417,32 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 	hp->mean = dict["mean"];
 	hp->sigma = dict["sigma"];
 	hp->mmvalid = 1;
+	
+	if(nz<=1 && dict.has_key("xform.projection")) {
+		hp->angvalid = 1;
+		Transform * t = dict["xform.projection"];
+		Dict d = t->get_params("spider");
+		hp->phi = d["phi"];
+		hp->theta = d["theta"];
+		hp->gamma = d["psi"];
+		hp->dx = d["tx"];
+		hp->dy = d["ty"];
+		hp->dz = d["tz"];
+		hp->scale = d["scale"];
+		
+	}
+	else if(nz>1 && dict.has_key("xform.align3d")) {
+		hp->angvalid = 1;
+		Transform * t = dict["xform.align3d"];
+		Dict d = t->get_params("spider");
+		hp->phi = d["phi"];
+		hp->theta = d["theta"];
+		hp->gamma = d["psi"];
+		hp->dx = d["tx"];
+		hp->dy = d["ty"];
+		hp->dz = d["tz"];
+		hp->scale = d["scale"];
+	}
 	
 	if(nz == 1) {
 		hp->type = IMAGE_2D;	
