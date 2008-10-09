@@ -165,7 +165,6 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		ali2d_a_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, user_func_name, random_method, T0, F, SA_stop)
 		return
 	from utilities    import model_circle, combine_params2, dropImage, getImage, get_arb_params, get_input_from_string
-	from utilities    import file_type
 	from statistics   import add_ave_varf
 	from alignment    import Numrinit, ringwe, ali2d_s
 	from filter       import filt_tophatb
@@ -262,20 +261,22 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			ctf_params = get_arb_params(data[im], parnames)
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
 
-	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
+	# precalculate rings
+	numr = Numrinit(first_ring, last_ring, rstep, mode) 	
  	wr = ringwe(numr, mode)
-	a0 = -1.0e22
 
 	# initialize data for the reference preparation function
-	#  mask can be modified in user_function
+	# mask can be modified in user_function
 	ref_data = []
-	ref_data.append( mask )
-	ref_data.append( center )
-	ref_data.append( None )
-	ref_data.append( None )
+	ref_data.append(mask)
+	ref_data.append(center)
+	ref_data.append(None)
+	ref_data.append(None)
 	
 	cs = [0.0]*2
 	total_iter = 0
+	a0 = -1.0e22
+
 	for N_step in xrange(len(xrng)):
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		print_msg(msg)
@@ -462,9 +463,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			data[im-image_start] -= st[0]
 	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
 			
-	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
+	# precalculate rings
+	numr = Numrinit(first_ring, last_ring, rstep, mode) 
  	wr = ringwe(numr, mode)
-	a0 = -1.0e22
 	
 	if CTF: reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 	if myid == main_node:
@@ -480,6 +481,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	again = True
 	cs = [0.0]*2
 	total_iter = 0
+	a0 = -1.0e22
 	for N_step in xrange(len(xrng)):
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
