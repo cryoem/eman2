@@ -715,14 +715,16 @@ class EMImage2DModule(EMImage2DGUIModule):
 		data = db[self.file_name]
 		if data == None: return
 	
-		self.minden = data["min"]
-		self.maxden = data["max"]
-		self.fminden = data["fourier_min"]
-		self.fmaxden = data["fourier_max"]
-		self.fgamma = data["fourier_gamma"]
-		self.gamma = data["gamma"]
-		self.scale = data["scale"] 
-		self.origin = data["origin"]
+		try:
+			self.minden = data["min"]
+			self.maxden = data["max"]
+			self.fminden = data["fourier_min"]
+			self.fmaxden = data["fourier_max"]
+			self.fgamma = data["fourier_gamma"]
+			self.gamma = data["gamma"]
+			self.scale = data["scale"] 
+			self.origin = data["origin"]
+		except: pass
 		try:
 			self.parent_geometry = data["parent_geometry"]
 			if self.parent != None:

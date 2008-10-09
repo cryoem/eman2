@@ -589,7 +589,9 @@ def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	
 	for i in range(num_im):
 		im = test_boxing_image(window_size,image_size,n)
-		im.write_image(name+"_"+str(i)+".mrc")
+		im.write_image(name+"_"+str(i)+".mrc",0,EMUtil.ImageType.IMAGE_UNKNOWN, False,None,EMUtil.EMDataType.EM_SHORT)
+
+		
 
 
 def test_boxing_image(window_size=(128,128),image_size=(4096,4096),n=100):
