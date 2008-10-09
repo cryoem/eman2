@@ -620,7 +620,41 @@ class TestImagicIO(unittest.TestCase):
         os.unlink(hedfile1)
         os.unlink(imgfile1)
         os.unlink(insertfile)
-
+    
+    def test_write_transform_to_euler(self):
+        """test write Transform as euler angles ............."""
+        filename = 'test_write_transform.'
+        img = EMData(32,32)
+        img.process_inplace('testimage.noise.uniform.rand')
+        t3d = Transform()
+        t3d.set_rotation({'type':'eman', 'alt':1.56, 'az':2.56, 'phi':3.56})
+        img.set_attr('xform.projection', t3d)
+        img.write_image(filename+'img')
+        del img
+        
+        img2 = EMData(filename+'img')
+        self.assertAlmostEqual(img2.get_attr('euler_alt'), 1.56, 3)
+        self.assertAlmostEqual(img2.get_attr('euler_az'), 2.56, 3)
+        self.assertAlmostEqual(img2.get_attr('euler_phi'), 3.56, 3)
+        del img2
+        testlib.safe_unlink(filename+'img')
+        testlib.safe_unlink(filename+'hed')
+        
+        filename2 = 'test_write_transform2.'
+        img = EMData(32,32,32)
+        img.process_inplace('testimage.noise.uniform.rand')
+        t3d = Transform()
+        t3d.set_rotation({'type':'eman', 'alt':1.56, 'az':2.56, 'phi':3.56})
+        img.set_attr('xform.align3d', t3d)
+        img.write_image(filename2+'img')
+        
+        img2 = EMData(filename2+'img')
+        self.assertAlmostEqual(img2.get_attr('euler_alt'), 1.56, 3)
+        self.assertAlmostEqual(img2.get_attr('euler_az'), 2.56, 3)
+        self.assertAlmostEqual(img2.get_attr('euler_phi'), 3.56, 3)
+        testlib.safe_unlink(filename2+'hed')
+        testlib.safe_unlink(filename2+'img')
+        
 class TestEmIO(unittest.TestCase):        
     """em file IO test"""
     
