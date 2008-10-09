@@ -41,6 +41,7 @@
 #include "geometry.h"
 #include "util.h"
 #include "ctf.h"
+#include "transform.h"
 
 using namespace EMAN;
 
@@ -308,6 +309,38 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.nxstart = mrch.nystart = mrch.nzstart = 0;
 	}
 
+	if(nz<=1 && dict.has_key("xform.projection")) {
+		Transform * t = dict["xform.projection"];
+		Dict d = t->get_params("imagic");
+		mrch.alpha = d["alpha"];
+		mrch.beta = d["beta"];
+		mrch.gamma = d["gamma"];
+		mrch.xorigin = d["tx"];
+		mrch.yorigin = d["ty"];
+		mrch.zorigin = d["tz"];
+	}
+	else if(nz>1 && dict.has_key("xform.align3d")) {
+		Transform * t = dict["xform.align3d"];
+		Dict d = t->get_params("imagic");
+		mrch.alpha = d["alpha"];
+		mrch.beta = d["beta"];
+		mrch.gamma = d["gamma"];
+		mrch.xorigin = d["tx"];
+		mrch.yorigin = d["ty"];
+		mrch.zorigin = d["tz"];
+	}
+	else {
+		mrch.xorigin = (float)dict["origin_row"];
+		mrch.yorigin = (float)dict["origin_col"];
+
+		if (is_new_file) {
+			mrch.zorigin = (float)dict["origin_sec"];
+		}
+		else {
+			mrch.zorigin = (float) dict["origin_sec"] - (float) dict["apix_z"] * image_index;
+		}
+	}
+	
 	if (dict.has_key("MRC.nlabels")) {
 		mrch.nlabels = dict["MRC.nlabels"];
 	}
@@ -392,16 +425,6 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	}
 	else {
 		mrch.nzstart = -nz / 2;
-	}
-
-	mrch.xorigin = (float)dict["origin_row"];
-	mrch.yorigin = (float)dict["origin_col"];
-
-	if (is_new_file) {
-		mrch.zorigin = (float)dict["origin_sec"];
-	}
-	else {
-		mrch.zorigin = (float) dict["origin_sec"] - (float) dict["apix_z"] * image_index;
 	}
 	
 	sprintf(mrch.map, "MAP ");
