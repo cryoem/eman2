@@ -51,7 +51,7 @@ from emimageutil import  EMEventRerouter
 from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule,EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
-GLUT.glutInit("")
+GLUT.glutInit([""])
 
 class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""

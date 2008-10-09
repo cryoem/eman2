@@ -97,7 +97,8 @@ class EMShape:
 			GL.glEnable(GL.GL_BLEND);
 			depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
 			GL.glDisable(GL.GL_DEPTH_TEST);
-			GL.glBlendEquation(GL.GL_FUNC_ADD);
+			try:GL.glBlendEquation(GL.GL_FUNC_ADD)
+			except:pass
 			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 			
 			col=[self.shape[1],self.shape[2],self.shape[3],self.blend]

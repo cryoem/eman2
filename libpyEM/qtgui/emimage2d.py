@@ -1737,7 +1737,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.target.set_density_range(x0,x1)
 		
 	def set_hist(self,hist,minden,maxden):
-		self.hist.set_data(hist,minden,maxden)
+		if hist != None and len(hist) != 0:self.hist.set_data(hist,minden,maxden)
 
 	def set_limits(self,lowlim,highlim,curmin,curmax):
 		if highlim<=lowlim : highlim=lowlim+.001
