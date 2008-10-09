@@ -498,7 +498,7 @@ class EMImageMXModule(EMImage2DGUIModule):
 			return
 
 		if self.init_size_flag and isinstance(self.parent,QtGui.QWidget):
-			print "here"
+			#
 			self.init_size_flag = False
 			if len(data)<self.mx_cols :
 				w=len(data)*(data[0].get_xsize()+2)

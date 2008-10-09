@@ -120,6 +120,9 @@ class EMApplication:
 	
 	def hide_specific(self,child,inspector_too=True):
 		raise
+		
+	def close_specific(self,child,inspector_too=True):
+		raise
 	
 	def execute(self):
 		if self.app != None:
@@ -170,6 +173,16 @@ class EMStandAloneApplication(EMApplication):
 			if widget.isVisible() == False:
 				widget.show()
 	
+	def close_specific(self,child,inspector_too=True):
+		for child_ in self.children:
+			if child == child_:
+				widget = child.get_qt_widget()
+				widget.close()
+				inspector = child.get_inspector()
+				inspector.close()
+				return
+			
+		print "couldn't close",child
 	
 	def hide_specific(self,child,inspector_too=True):
 		for child_ in self.children:

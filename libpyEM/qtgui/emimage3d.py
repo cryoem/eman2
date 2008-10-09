@@ -278,7 +278,8 @@ class EMImage3DModule(EMImage3DGUIModule):
 	def get_data_dims(self):
 		return [self.image.get_xsize(),self.image.get_ysize(),self.image.get_zsize()]
 
-	def set_data(self,data):
+	def set_data(self,data,file_name=""):
+		self.file_name = file_name # fixme fix this later
 		if data == None: return
 		self.image = data
 		for i in self.viewables:
@@ -292,19 +293,10 @@ class EMImage3DModule(EMImage3DGUIModule):
 			self.inspector=EMImageInspector3D(self)
 		self.inspector.add_isosurface()
 	
-	def show_inspector(self,force=0):
-		if (self.suppress_inspector): return
-		if not force and self.inspector==None : return
-		self.init_inspector()
-		
-		self.application.show_specific(self.em_qt_inspector_widget)
-		
-	def init_inspector(self):
-		if not self.inspector : 
-			self.inspector=EMImageInspector3D(self)
-		if not self.em_qt_inspector_widget:
-			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
-	
+	def get_inspector(self):
+		if not self.inspector :  self.inspector=EMImageInspector3D(self)
+		return self.inspector
+
 	def set_cam_z(self,z):
 		self.cam.set_cam_z( z )
 		self.updateGL()

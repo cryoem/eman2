@@ -53,9 +53,26 @@ class EMBrowserDialog(EMSelectorDialog):
 		if len(a) == 1: a = a[0]
 		
 		import emimage
-		self.application.setOverrideCursor(Qt.BusyCursor)
-		image = emimage.EMImageModule(a,None,False,self.application)
-		self.application.show_specific(image)
+		
+		if self.single_preview.isChecked():
+			if self.gl_image_preview != None:
+				self.application.close_specific(self.gl_image_preview)
+				self.gl_image_preview == None
+			
+			#print self.gl_image_preview
+			self.gl_image_preview =emimage.EMImageModule(a,None,False,self.application)
+			#print self.gl_image_preview
+				
+			self.gl_image_preview.set_data(a,filename)
+			#self.gl_image_preview.set_file_name(f)
+			self.application.show_specific(self.gl_image_preview)
+			self.gl_image_preview.updateGL()
+		else:
+			preview = emimage.EMImageModule(a,None,False,self.application)
+			preview.set_data(a,filename)
+			self.application.show_specific(preview)
+			preview.updateGL()
+			
 		self.application.setOverrideCursor(Qt.ArrowCursor)
 	
 	

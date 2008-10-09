@@ -79,6 +79,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.bottom_hbl.addWidget(self.filter_combo,1)
 		self.__init_done_button()
 		self.bottom_hbl.addWidget(self.done_button,0)
+		self.__init__single_preview_tb()
+		self.bottom_hbl.addWidget(self.single_preview,0)
 		self.hbl.addLayout(self.bottom_hbl)
 		self.gl_image_preview = None
 		
@@ -97,12 +99,21 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.file_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/File.png")
 		
 	
+	def __init__single_preview_tb(self):
+		self.single_preview = QtGui.QCheckBox("Single preview")
+		self.single_preview.setChecked(True)
+		
+		QtCore.QObject.connect(self.single_preview, QtCore.SIGNAL("clicked(bool)"),self.single_preview_clicked)
+	
 	def __init_done_button(self):
 		self.done_button = QtGui.QPushButton("Done")
 		self.done_button.adjustSize()
 	
 		QtCore.QObject.connect(self.done_button, QtCore.SIGNAL("clicked(bool)"),self.done_button_clicked)
-		
+	
+	def single_preview_clicked(self,bool):
+		print bool
+	
 	def done_button_clicked(self,bool):
 		self.emit(QtCore.SIGNAL("done"),self.selections)
 		
@@ -344,14 +355,20 @@ class EMSelectorDialog(QtGui.QDialog):
 					data.append(image)
 				a = data
 		
-		if self.gl_image_preview == None:
-			self.gl_image_preview = EMImage2DModule(application=self.application)
+		if self.single_preview.isChecked():
+			if self.gl_image_preview == None:
+				self.gl_image_preview = EMImage2DModule(application=self.application)
+				
+			self.gl_image_preview.set_data(a,filename)
+			#self.gl_image_preview.set_file_name(f)
+			self.application.show_specific(self.gl_image_preview)
+			self.gl_image_preview.updateGL()
+		else:
+			preview = EMImage2DModule(application=self.application)
+			preview.set_data(a,filename)
+			self.application.show_specific(preview)
+			preview.updateGL()
 			
-		self.gl_image_preview.set_data(a,filename)
-		#self.gl_image_preview.set_file_name(f)
-		self.application.show_specific(self.gl_image_preview)
-		self.gl_image_preview.updateGL()
-		
 		self.application.setOverrideCursor(Qt.ArrowCursor)
 		
 		#self.activateWindow()
