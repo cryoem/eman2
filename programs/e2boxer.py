@@ -950,15 +950,13 @@ class EMBoxerModule:
 			self.autoboxer_name = autoboxer_id
 
 			if type_autoboxer=="Swarm":
-				print "load SwarmAutoBoxer"
 				self.autoboxer = SwarmAutoBoxer(self)
 				self.autoboxer.become(trim_autoboxer)
 				self.dynapix = self.autoboxer.dynapix_on()
 			else:
-				print "load PawelAutoBoxer"
 				self.autoboxer = PawelAutoBoxer(self)
 				self.autoboxer.become(trim_autoboxer)
-			
+				self.autoboxer.source = "loaded"
 			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
 		except Exception, inst:
 			print "exception happen when load image's autoboxer: ", inst
@@ -974,6 +972,7 @@ class EMBoxerModule:
 				elif type_autoboxer=="Gauss":
 					self.autoboxer = PawelAutoBoxer(self)
 					self.autoboxer.become(trim_autoboxer)
+					self.autoboxer.source = "loaded"
 				else:
 					raise Exception("Current autoboxer not set")
 
@@ -987,14 +986,12 @@ class EMBoxerModule:
 				if self.box_size == -1: self.box_size = 128
 				
 				if default_method=="Swarm":
-					print "Using SwarmAutoBoxer"
 					self.autoboxer = SwarmAutoBoxer(self)
 					self.autoboxer.set_box_size_explicit(self.box_size)
 					self.autoboxer.set_interactive_mode(self.dynapix)
 				else:
-					print "Using PawelAutoBoxer"
 					self.autoboxer = PawelAutoBoxer(self)
-
+					self.autoboxer.source = "new"
 
 	def guiim_inspector_requested(self,event):
 		self.ctl_rotor.get_core_object().add_qt_widget(self.guiim.get_core_object().get_inspector())
@@ -2508,12 +2505,15 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.normalization_method.setEnabled(val)
 	
 	def invert_contrast_mic_toggled(self):
-		img = self.target.guiim.image2d.data
-		avg = img.get_attr("mean")
-		invimg = img*(-1.0) + 2.0*avg
-		self.target.guiim.set_data(invimg)
-		self.target.guiim.updateGL()
-	
+		from EMAN2 import Util
+		image_name = self.target.boxable.get_image_name()
+		img = BigImageCache.get_image_directly( image_name )
+		[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
+		img -= avg
+		img *= -1
+		img += avg
+		BigImageCache.get_object(image_name).register_alternate(img)
+		self.target.big_image_change()
 
 	def set_method( self, name ):
 		if name[0:5] == "Swarm":
