@@ -1271,15 +1271,15 @@ def draw_volume_bounds(width,height,depth):
 	glEnd()
 
 class EMImage2DGUIModule(EMGUIModule):
-	def __init__(self,application=None):
-		EMGUIModule.__init__(self,application)
+	def __init__(self,application=None,ensure_gl_context=False):
+		EMGUIModule.__init__(self,application,ensure_gl_context)
 
 	def mouseDoubleClickEvent(self,event):
 		pass
 
 class EMImage3DGUIModule(EMGUIModule):
-	def __init__(self,application=None):
-		EMGUIModule.__init__(self,application)
+	def __init__(self,application=None,ensure_gl_context=False):
+		EMGUIModule.__init__(self,application,ensure_gl_context)
 		self.blendflags = EMOpenGLFlagsAndTools()
 		self.bcscreen = EMBrightContrastScreen()
 		

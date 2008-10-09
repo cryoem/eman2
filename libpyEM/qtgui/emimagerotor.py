@@ -191,10 +191,10 @@ class EMImageRotorModule(EMImage2DGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:
 			self.parent = EMImageRotorWidget(self)
-		return self.parent
+		return EMGUIModule.darwin_check(self)
 	
 	def __init__(self, data=None,application=None):
-		EMImage2DGUIModule.__init__(self,application)
+		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.parent = None
 		self.data=None
 		try: self.parent.setAcceptDrops(True)

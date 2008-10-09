@@ -61,13 +61,14 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 			self.parent = EMIsosurfaceWidget(self)
 			if isinstance(self.data,EMData):
 				self.parent.set_camera_defaults(self.data)
-		return self.parent
+		return EMGUIModule.darwin_check(self)
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
 	def __init__(self,image=None,application=None):
-		EMImage3DGUIModule.__init__(self,application)
+		self.data = None
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.parent = None
 		self.init()
 		self.initialized = True
@@ -82,7 +83,6 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		self.glbrightness = 0.0
 		self.rank = 1
 		self.inspector=None
-		self.data = None
 		self.data_copy = None		
 		self.vdtools = EMViewportDepthTools(self)
 		

@@ -60,10 +60,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:	
 			self.parent = EMSymViewerWidget(self)
-		return self.parent
+		return EMGUIModule.darwin_check(self)
 	
 	def __init__(self,application=None):
-		EMImage3DGUIModule.__init__(self,application)
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.parent = None
 		
 		self.init()

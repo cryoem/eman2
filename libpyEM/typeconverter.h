@@ -55,6 +55,10 @@ namespace python = boost::python;
 using std::vector;
 using std::map;
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 
 namespace EMAN {
 
@@ -606,7 +610,7 @@ namespace EMAN {
 			emdata.release();
 		}
     };
-    
+
 //     struct emobject_transform3d_from_python
 //     {
 //     	emobject_transform3d_from_python()

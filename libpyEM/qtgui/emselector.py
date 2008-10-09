@@ -192,9 +192,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.hide_preview()
 	def selection_changed(self,item1,item2):
 		pass
-
-	#def activated(self,index):
-		#self.__update_selections()
 		
 	def __update_selections(self):
 		
@@ -243,8 +240,9 @@ class EMSelectorDialog(QtGui.QDialog):
 	def list_widget_clicked(self,item):
 		if self.lock : return
 		if self.current_list_widget == None: return
-		
+
 		self.__update_selections()
+
 		#if self.paint_events < 2 :
 			 #self.current_list_widget.setCurrentRow(-1)
 			 #return
@@ -450,6 +448,7 @@ class EMSelectorDialog(QtGui.QDialog):
 
 app = None
 def on_done(string_list):
+	print "on done"
 	if len(string_list) != 0:
 		for s in string_list:
 			print s,

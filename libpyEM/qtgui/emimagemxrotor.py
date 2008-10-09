@@ -58,7 +58,7 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, em_mx_rotor_module,enable_timer=True):
-		EMImageMXRotorWidget.allim[self]=0
+		
 		assert(isinstance(em_mx_rotor_module,EMImageMXRotorModule))
 		
 		self.target = None
@@ -70,6 +70,7 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self)
+		EMImageMXRotorWidget.allim[self]=0
 		
 		self.setFocusPolicy(Qt.StrongFocus)
 		
@@ -233,10 +234,10 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:
 			self.parent = EMImageMXRotorWidget(self)
-		return self.parent
+		return EMGUIModule.darwin_check(self)
 	
 	def __init__(self, data=None,application=None):
-		EMImage2DGUIModule.__init__(self,application)
+		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
 		
 		self.parent = None
 		self.data=None

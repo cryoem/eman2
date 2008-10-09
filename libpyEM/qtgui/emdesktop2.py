@@ -417,10 +417,10 @@ class EMFrame(EMWindowNode,EMRegion):
 		for i in self.children:
 			i.toolTipEvent(event)
 
-class EMBoxerFrame(EMFrame,GUIbox):
+class EMBoxerFrame(EMFrame,EMBoxerModule):
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0),image_names=[],):
 		EMFrame.__init__(self,parent,geometry)
-		GUIbox.__alt_init__(self,[],[])
+		EMBoxerModule.__alt_init__(self,[],[])
 		
 	def draw(self):
 		pass
@@ -675,9 +675,9 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			glPopMatrix()
 			glTranslate(0,-self.xy_scale*self.child.height(),0)
 	
-class EMBrowserModule(EMModule):
+class EMBrowserModule(Module):
 	def __init__(self,inspector_target,display_target):
-		EMModule.__init__(self)
+		Module.__init__(self)
 		
 		self.inspector_target = inspector_target
 		self.display_target = display_target

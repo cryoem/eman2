@@ -333,12 +333,14 @@ class EMImageMXModule(EMImage2DGUIModule):
 			try: self.parent.setAcceptDrops(True)
 			except:	pass
 			
-		return self.parent
+		return EMGUIModule.darwin_check(self)
 	
 	def __init__(self, data=None,application=None):
-		EMImage2DGUIModule.__init__(self,application)
+		self.init_size_flag = True
 		self.parent = None
 		self.data=None
+		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
+
 		self.datasize=(1,1)
 		self.scale=1.0
 		self.minden=0
@@ -370,7 +372,6 @@ class EMImageMXModule(EMImage2DGUIModule):
 		self.nshown=0
 		self.valstodisp=["Img #"]
 		
-		self.init_size_flag = True
 		self.inspector=None
 		
 		self.load_font_renderer()

@@ -305,15 +305,16 @@ class EMTransformPanel:
 
 class EMParentWin(QtGui.QWidget):
 	"""Used to give the opengl widgets a parent, necessary for OSX Leopard"""
-	def __init__(self,child=None):
+	def __init__(self,child):
 		QtGui.QWidget.__init__(self,None)
-		
+#		EMEventRerouter.__init__(self,child)
+
 		self.child = child
 		self.resize(child.width()+20,child.height()+20)
 		self.setMaximumSize(8000,8000)
 
 		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(4)
+		self.hbl.setMargin(6)
 		self.hbl.setSpacing(6)
 		self.hbl.addWidget(self.child)
 		self.setLayout(self.hbl)

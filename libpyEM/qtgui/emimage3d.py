@@ -54,7 +54,7 @@ from emimage3dsym import EM3DSymViewerModule
 
 from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule
 from emimageutil import EMEventRerouter, EMTransformPanel
-from emapplication import EMStandAloneApplication, EMQtWidgetModule
+from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -211,10 +211,12 @@ class EMImage3DModule(EMImage3DGUIModule):
 				i.set_parent(self.parent)
 			if isinstance(self.image,EMData):
 				self.parent.set_cam_z(self.parent.get_fov(),self.image)
-		return self.parent
+		return EMGUIModule.darwin_check(self)
 	
 	def __init__(self, image=None,application=None):
-		EMImage3DGUIModule.__init__(self,application)
+		self.viewables = []
+		self.image = None
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.parent = None
 		self.image = None
 		self.currentselection = -1

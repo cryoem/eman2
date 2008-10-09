@@ -43,7 +43,7 @@ import EMAN2
 import sys
 import numpy
 import struct
-from emimageutil import ImgHistogram,EMEventRerouter
+from emimageutil import ImgHistogram,EMEventRerouter, EMParentWin
 import emshape 
 from emshape import EMShape
 from weakref import WeakKeyDictionary
@@ -368,7 +368,8 @@ class EMImage2DModule(EMImage2DGUIModule):
 			self.parent.setWindowTitle(f)
 			if isinstance(self.data,EMData):
 				self.__parent_resize()
-		return self.parent
+		
+		return EMGUIModule.darwin_check(self)
 	
 	def __parent_resize(self):
 		try:

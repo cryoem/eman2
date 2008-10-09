@@ -33,17 +33,22 @@
 
 from PyQt4 import QtGui
 import sys
+import platform
+from emimageutil import EMParentWin
 
 class EMGUIModule:
 	FTGL = "ftgl"
 	GLUT = "glut"
-	def __init__(self,application=None): 
+	def __init__(self,application=None,ensure_gl_context=False): 
 		self.application = application
 		if application != None: application.attach_child(self)
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
 		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 		self.parent = None # should be something that accepts UpdateGL calls
+		
+		if ensure_gl_context and application != None:
+			application.ensure_gl_context(self)
 		
 	def set_app(self,application): self.application = application
 	def get_app(self): return self.application
@@ -77,15 +82,21 @@ class EMGUIModule:
 				
 			self.application.detach_child(self)
 		
-	
-	#def load_font_renderer(self):
-		#try:
-			#self.font_render_mode = EMGUIModule.FTGL
-			#self.font_renderer = get_3d_font_renderer()
-			#self.font_renderer.set_face_size(16)
-			#self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-		#except:
-			#self.font_render_mode = EMGUIModule.GLUT
+	def darwin_check(self):
+		if platform.system() == "Darwin":
+			self.mac_parent_win = EMParentWin(self.parent)
+			return self.mac_parent_win
+		else:
+			return self.parent
+		
+	def load_font_renderer(self):
+		try:
+			self.font_render_mode = EMGUIModule.FTGL
+			self.font_renderer = get_3d_font_renderer()
+			self.font_renderer.set_face_size(16)
+			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+		except:
+			self.font_render_mode = EMGUIModule.GLUT
 	
 
 class EMApplication:
@@ -118,6 +129,8 @@ class EMApplication:
 	def quit(self):
 		if self.app != None:
 			self.app.quit()
+	
+	def ensure_gl_context(self,child): raise
 			
 	def setOverrideCursor(self,cursor_type):
 		if self.app != None:
@@ -147,6 +160,9 @@ class EMStandAloneApplication(EMApplication):
 				return
 			
 		self.children.append(child)
+		
+	def ensure_gl_context(self,child):
+		child.get_qt_widget()
 	
 	def show(self):
 		for child in self.children:
