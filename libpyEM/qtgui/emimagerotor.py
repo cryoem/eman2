@@ -194,8 +194,8 @@ class EMImageRotorModule(EMImage2DGUIModule):
 		return EMGUIModule.darwin_check(self)
 	
 	def __init__(self, data=None,application=None):
-		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.parent = None
+		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.data=None
 		try: self.parent.setAcceptDrops(True)
 		except:	pass

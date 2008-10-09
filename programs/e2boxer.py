@@ -863,7 +863,7 @@ class EMBoxerModule:
 			self.application.show_specific(self.guimxit)
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.get_parent().resize(*self.guimxit.get_optimal_size())
-			QtCore.QObject.connect(self.guimxit.get_qt_widget(),QtCore.SIGNAL("mousedown"),self.image_selected)
+			QtCore.QObject.connect(self.guimxit.get_parent(),QtCore.SIGNAL("mousedown"),self.image_selected)
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 	
@@ -884,7 +884,7 @@ class EMBoxerModule:
 			self.guimx=EMImageMXModule(application=self.application)
 			self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
-		qt_target = self.guimx.get_qt_widget()
+		qt_target = self.guimx.get_parent()
 		self.guimx.set_mouse_mode("app")
 		
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
@@ -906,7 +906,7 @@ class EMBoxerModule:
 		self.guiimp.set_data(image)
 		self.guiimp.set_file_name(imagename)
 		#EMImage(image)# widget for displaying large image
-		qt_target = self.guiimp.get_qt_widget()
+		qt_target = self.guiimp.get_parent()
 		qt_target.enable_timer()
 		qt_target.setWindowTitle(imagename)
 		self.guiim=self.guiimp
@@ -1240,7 +1240,7 @@ class EMBoxerModule:
 		if data != None:
 			self.guimx.set_data(data)
 			if len(data) != 0:
-				qt_target = self.guimx.get_qt_widget()
+				qt_target = self.guimx.get_parent()
 				if not qt_target.isVisible():
 					self.application.show_specific(self.guimx)
 	
@@ -1272,7 +1272,7 @@ class EMBoxerModule:
 			
 			
 			if debug: tt = time()
-			self.guiim.get_qt_widget().setWindowTitle(self.image_names[im])
+			self.guiim.get_parent().setWindowTitle(self.image_names[im])
 			if debug: print "it took", time() - tt, "to read the prior stuff A1 "
 			if debug: tt = time()
 			self.guiim.set_data(image)
@@ -1393,7 +1393,7 @@ class EMBoxerModule:
 			else:
 				self.guimxit=EMImageMXModule(application=self.application)
 				
-			qt_parent = self.guimxit.get_qt_widget()
+			qt_parent = self.guimxit.get_parent()
 			qt_parent.setWindowTitle("Image Thumbs")
 			self.guimxit.set_data(self.imagethumbs)
 			
@@ -1576,17 +1576,17 @@ class EMBoxerModule:
 	def update_all_image_displays(self):
 		self.update_image_display()
 		self.update_mx_display()
-		if self.guimxit != None: self.guimxit.get_qt_widget().updateGL()
+		if self.guimxit != None: self.guimxit.get_parent().updateGL()
 	
 		#context = contextdata.getContext(None)
 		#print context
 		
 	def update_image_display(self):
-		self.guiim.get_qt_widget().updateGL()
-		if self.guimxit != None: self.guimxit.get_qt_widget().updateGL()
+		self.guiim.get_parent().updateGL()
+		if self.guimxit != None: self.guimxit.get_parent().updateGL()
 		
 	def update_mx_display(self):
-		self.guimx.get_qt_widget().updateGL()
+		self.guimx.get_parent().updateGL()
 
 	def delete_display_boxes(self,numbers):
 		'''
@@ -2988,13 +2988,13 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	def erase_toggled(self,bool):
 		self.unerase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_qt_widget().setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_parent().setMouseTracking(bool)
 		self.target.erase_toggled(bool)
 		
 	def unerase_toggled(self,bool):
 		self.erase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		elf.target.get_2d_gui_image().get_qt_widget().setMouseTracking(bool)
+		elf.target.get_2d_gui_image().get_parent().setMouseTracking(bool)
 		self.target.unerase_toggled(bool)
 		
 	def dynapix_toggled(self,bool):

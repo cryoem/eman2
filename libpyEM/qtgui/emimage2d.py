@@ -368,7 +368,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 			self.parent.setWindowTitle(f)
 			if isinstance(self.data,EMData):
 				self.__parent_resize()
-		
+		print self.parent
 		return EMGUIModule.darwin_check(self)
 	
 	def __parent_resize(self):
@@ -382,10 +382,12 @@ class EMImage2DModule(EMImage2DGUIModule):
 			
 	
 	def __init__(self, image=None,application=None):
-		EMImage2DGUIModule.__init__(self,application)
+		self.data = image 	   # EMData object to display
+		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
+		self.parent = None	
+		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
 		
-		self.parent = None
-		self.data=image				# EMData object to display
+		
 		self.oldsize=(-1,-1)
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)			# Current display origin
@@ -447,7 +449,6 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.main_display_list = 0	# if using display lists, the stores the display list
 		self.display_states = [] # if using display lists, this stores the states that are checked, and if different, will cause regeneration of the display list
 		self.hist = []
-		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		
 		self.wheel_navigate = False # useful on Mac laptops
 		
