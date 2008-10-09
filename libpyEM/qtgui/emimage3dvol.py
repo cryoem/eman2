@@ -81,9 +81,9 @@ class EMVolumeModule(EMImage3DGUIModule):
 		
 		self.axes_idx = -1
 		self.axes = []
-		self.axes.append( Vec3f(1,0,0) )
-		self.axes.append( Vec3f(0,1,0) )
-		self.axes.append( Vec3f(0,0,1) )
+		self.axes.append(Vec3f(1,0,0))
+		self.axes.append(Vec3f(0,1,0))
+		self.axes.append(Vec3f(0,0,1))
 		#self.axes.append( Vec3f(-1,0,0) )
 		#self.axes.append( Vec3f(0,-1,0) )
 		#self.add_render_axis(1,1,1)

@@ -281,7 +281,7 @@ class EMSelectorDialog(QtGui.QDialog):
 	
 		
 		if self.__is_file(file):
-			self.__set_preview(file)
+			self.set_preview(file)
 			for i in range(idx+1,len(self.list_widgets)):
 				self.list_widgets[i].clear()
 				self.list_widget_data[i] = None
@@ -314,7 +314,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		if self.__is_file(file):
 			print "Opening ", file
 	
-	def __set_preview(self,filename):
+	def set_preview(self,filename):
 		self.application.setOverrideCursor(Qt.BusyCursor)
 		try: 
 			dims = gimme_image_dimensions3D(filename)
@@ -354,7 +354,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.application.setOverrideCursor(Qt.ArrowCursor)
 		
-		self.activateWindow()
+		#self.activateWindow()
 
 	
 	def __filter_strings(self,strings):
