@@ -2672,11 +2672,12 @@ class PawelAutoBoxer(AutoBoxer):
 		self.parent.guictl.gauss_width.setText( str(self.gauss_width) )
 		self.parent.guictl.use_variance.setChecked( self.use_variance )
 
-		image_name = boxable.get_image_name()
-		img = SincBlackmanSubsampleCache.get_image(image_name,self.get_params_mediator())
-		BigImageCache.get_object(image_name).register_alternate(img)
-
-		self.parent.big_image_change()
+		if self.source == "loaded":
+			"show the reduced map"
+			image_name = boxable.get_image_name()
+			img = SincBlackmanSubsampleCache.get_image(image_name,self.get_params_mediator())
+			BigImageCache.get_object(image_name).register_alternate(img)
+			self.parent.big_image_change()
 
 		ccfs = []
 		for b in boxable.boxes:
