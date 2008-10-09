@@ -253,6 +253,9 @@ class EMImage2DMouseEventsMediator:
 		
 	def updateGL(self):
 		self.target.updateGL()
+		
+	def redo_fft(self):
+		self.target.redo_fft()
 
 class EMImage2DEmitMouseMode(EMImage2DMouseEvents):
 	def __init__(self,mediator):
@@ -321,7 +324,7 @@ class EMImage2DDrawMouseMode(EMImage2DMouseEvents):
 		
 	def mouse_up(self,event):
 		if event.button()==Qt.LeftButton:
-			#self.mediator.set_data(self.mediator.get_data())
+			self.mediator.redo_fft()
 			self.mediator.force_display_update()
 			self.mediator.updateGL()
 			
@@ -577,6 +580,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 	def get_data(self):
 		return self.data
 	
+	
 	def set_data(self,data,file_name=""):
 		"""You may pass a single 2D image or a list of images"""
 		if self.data != None and self.file_name != "":
@@ -827,6 +831,14 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.force_display_update()
 		self.updateGL()
 
+	def redo_fft(self):
+		if self.list_data == None:
+			self.fft = None
+		else:
+			self.list_fft_data[self.list_idx] = None
+		
+		if self.curfft > 0: self.__set_display_image(self.curfft)
+		
 	def __set_display_image(self,val):
 		if self.list_data == None:
 			if val > 0 :
