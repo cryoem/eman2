@@ -202,7 +202,7 @@ class EMRotorModule(EMImage2DGUIModule):
 		
 		self.rotor = EMGLRotorWidget(self,0,-70,-15,EMGLRotorWidget.TOP_ROTARY,100)
 		self.rotor.set_angle_range(40.0)
-		self.rotor.set_mmode("mxrotor")
+		self.rotor.set_mouse_mode("mxrotor")
 		self.widget = EM3DWidget(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		

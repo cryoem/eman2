@@ -763,7 +763,7 @@ class EMGLRotorWidget(EM3DWidgetVolume):
 	def set_shapes(self,shapes,shrink,idx=0):
 		self.widgets[idx].set_shapes(shapes,shrink)
 
-	def set_mmode(self,mode):
+	def set_mouse_mode(self,mode):
 		self.mmode = mode
 	
 	def clear_widgets(self):

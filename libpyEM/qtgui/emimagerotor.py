@@ -177,9 +177,9 @@ class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		depth = height/(2.0*tan(self.fov/2.0*pi/180.0))
 	
 		return depth
-	def set_mmode(self,mode):
+	def set_mouse_mode(self,mode):
 		self.mmode = mode
-		self.target.set_mmode(mode)
+		self.target.set_mouse_mode(mode)
 	
 	def set_shapes(self,shapes,shrink,idx=0):
 		self.target.set_shapes(shapes,shrink,idx)
@@ -249,9 +249,9 @@ class EMImageRotorModule(EMImage2DGUIModule):
 		else:
 			self.parent.emit(signal,event)
 
-	def set_mmode(self,mode):
+	def set_mouse_mode(self,mode):
 		self.mmode = mode
-		self.rotor.set_mmode(mode)
+		self.rotor.set_mouse_mode(mode)
 
 	def set_frozen(self,frozen,idx=0):
 		self.rotor.set_frozen(frozen,idx)

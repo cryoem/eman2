@@ -198,9 +198,9 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	
 		return depth
 	
-	def set_mmode(self,mode):
+	def set_mouse_mode(self,mode):
 		self.mmode = mode
-		self.target.set_mmode(mode)
+		self.target.set_mouse_mode(mode)
 	
 	def dropEvent(self,event):
 		self.target.dropEvent(event)
@@ -246,7 +246,7 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 		self.rotor = EMGLRotorWidget(self,0,-70,-15,EMGLRotorWidget.TOP_ROTARY,100)
 		self.rotor.set_angle_range(110.0)
 		#self.rotor.set_child_mouse_events(False)
-		self.rotor.set_mmode("mxrotor")
+		self.rotor.set_mouse_mode("mxrotor")
 		self.widget = EM3DWidget(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		
@@ -359,12 +359,12 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 		self.__refresh_rotor_size()
 		self.updateGL()
 	
-	def set_mmode(self,mode):
+	def set_mouse_mode(self,mode):
 		self.mmode = mode
 		try:
 			for i in range(self.visible_mxs):
 				w = self.rotor[i].get_drawable()
-				w.set_mmode(self.mmode)
+				w.set_mouse_mode(self.mmode)
 		except: pass
 	def set_scale(self,scale):
 		pass
@@ -482,7 +482,7 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 
 	def set_rotor_mode(self,mode):
 		self.rot_mode = mode
-		self.rotor.set_mmode(mode)
+		self.rotor.set_mouse_mode(mode)
 
 	def optimize_fit(self,update_gl=True):
 		render_width = self.parent.width()
@@ -630,7 +630,7 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 			w.set_use_display_list(True) # saves HEAPS of time, makes interaction much smoother
 			w.set_reroute_delete_target(self)
 			w.set_draw_background(True)
-			w.set_mmode(self.mmode)
+			w.set_mouse_mode(self.mmode)
 			w.set_display_values(self.vals_to_display,False)	
 
 			w.set_img_num_offset(image_offset)

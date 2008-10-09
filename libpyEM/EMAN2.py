@@ -610,9 +610,10 @@ def test_boxing_image(window_size=(128,128),image_size=(4096,4096),n=100):
 		flip = Util.get_irand(0,1)
 		
 		t = Transform({"type":"2d","alpha":da})
+		t.set_mirror(flip)
 		window.transform(t)
-		if flip:
-			window.process_inplace("xform.flip",{"axis":"x"})
+		#if flip:
+			#window.process_inplace("xform.flip",{"axis":"x"})
 		
 		p = (Util.get_irand(x_limit,image_size[0]-x_limit),Util.get_irand(y_limit,image_size[1]-y_limit))
 		

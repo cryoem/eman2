@@ -119,9 +119,9 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 		try: self.target.resizeEvent(width,height)
 		except: pass
-	def set_mmode(self,mode):
+	def set_mouse_mode(self,mode):
 		self.mmode = mode
-		self.target.set_mmode(mode)
+		self.target.set_mouse_mode(mode)
 	
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
@@ -610,7 +610,7 @@ class EMImageMXModule(EMImage2DGUIModule):
 	def get_mmode(self):
 		return self.mmode
 	
-	def set_mmode(self,mode):
+	def set_mouse_mode(self,mode):
 		self.mmode = mode
 		meh  = self.mouse_event_handler
 		try:
@@ -1491,16 +1491,16 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.target.set_display_values(v2d)
 
 	def setAppMode(self,i):
-		self.target.set_mmode("app")
+		self.target.set_mouse_mode("app")
 	
 	#def setMeasMode(self,i):
-		#self.target.set_mmode("meas")
+		#self.target.set_mouse_mode("meas")
 	
 	def setDelMode(self,i):
-		self.target.set_mmode("del")
+		self.target.set_mouse_mode("del")
 	
 	def setDragMode(self,i):
-		self.target.set_mmode("drag")
+		self.target.set_mouse_mode("drag")
 
 	def newMin(self,val):
 		if self.busy : return

@@ -885,7 +885,7 @@ class EMBoxerModule:
 			self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
 		qt_target = self.guimx.get_qt_widget()
-		self.guimx.set_mmode("app")
+		self.guimx.set_mouse_mode("app")
 		
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			 QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
@@ -912,7 +912,7 @@ class EMBoxerModule:
 		self.guiim=self.guiimp
 		self.__update_guiim_states()
 		
-		self.guiim.set_mmode(0)
+		self.guiim.set_mouse_mode(0)
 		self.application.show_specific(self.guiimp)
 		#self.guiimp.show()
 		
@@ -1408,7 +1408,7 @@ class EMBoxerModule:
 						self.guimxit.set_frozen(frozen,i)
 			except: print "setting frozen failed"
 			
-			self.guimxit.set_mmode("app")
+			self.guimxit.set_mouse_mode("app")
 			app = QtGui.QApplication.instance()
 			app.setOverrideCursor(Qt.BusyCursor)
 		except: 
