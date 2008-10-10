@@ -742,18 +742,30 @@ class SincBlackmanSubsampledImage:
 	def get_gaussh_param(self):
 		return self.smallimage.get_attr("gaussh_param")
 	
+	def get_invert(self):
+		return self.smallimage.get_attr("invert")
+
 	def __update_image(self,params_mediator):
 		'''
 		Updates the image using the parameters that are deduced from the params_mediator
 		'''
 		from sparx import filt_gaussh
+		from EMAN2 import Util
 		subsample_rate = params_mediator.get_subsample_rate()
 		template_min = params_mediator.get_window_size_min()
 		frequency_cutoff = params_mediator.get_frequency_cutoff()
 		gaussh_param = params_mediator.get_gaussh_param()
+		invert = params_mediator.get_invert()
 
 		image = BigImageCache.get_image_directly(self.image_name)
 		
+		if invert:
+			[avg,sigma,fmin,fmax] = Util.infomask( image, None, True )
+			image -= avg
+			image *= -1.0
+			image += avg
+
+
 		image = filt_gaussh( image, gaussh_param ) #1.0/(self.box_size/ratio) )
 
 		if subsample_rate != 1.0:
@@ -765,6 +777,7 @@ class SincBlackmanSubsampledImage:
 		print "        Filt Gauss  High: ", gaussh_param
 		print "        Down sample rate: ", subsample_rate
 
+		self.smallimage.set_attr("invert", invert)
 		self.smallimage.set_attr("gaussh_param", gaussh_param)
 		self.smallimage.set_attr("subsample_rate",subsample_rate)
 		self.smallimage.set_attr("frequency_cutoff",frequency_cutoff)
@@ -797,12 +810,16 @@ class SincBlackmanSubsampledImage:
 		A utility function that tests to see of the current parameters of the subsampled image
 		match those in the params_mediator
 		'''
+		invert = params_mediator.get_invert()
 		gaussh_param = params_mediator.get_gaussh_param()
 		subsample_rate = params_mediator.get_subsample_rate()
 		template_min = params_mediator.get_window_size_min()
 		frequency_cutoff = params_mediator.get_frequency_cutoff()
 
 		if self.smallimage is None:
+			return False
+
+		if invert != self.get_invert():
 			return False
 
 		if gaussh_param != self.get_gaussh_param():
@@ -2376,6 +2393,9 @@ class ImageProcParamsMediator:
 	def get_gaussh_param(self):
 		return self.parent.get_gaussh_param()
 
+	def get_invert(self):
+		return self.parent.get_invert()
+
 class AutoBoxer:
 	'''
 	Base Class design for auto boxers to work with e2boxer.py, and various classes in boxertools.py
@@ -2604,6 +2624,7 @@ class TrimPawelAutoBoxer:
 		self.thr_low = inst.thr_low
 		self.thr_hgh = inst.thr_hgh
 		self.use_variance = inst.use_variance
+		self.invert = inst.invert
 
 class PawelAutoBoxer(AutoBoxer):
 	'''
@@ -2619,6 +2640,7 @@ class PawelAutoBoxer(AutoBoxer):
 		self.window_size_min = 15
 		self.gauss_width = 1.0
 		self.use_variance = True
+		self.invert = False
 
 	#### Functions that must be supplied so the ImageProcParamsMediator works
 	def get_subsample_rate(self):
@@ -2641,6 +2663,9 @@ class PawelAutoBoxer(AutoBoxer):
 		ratio = self.pixel_input/self.pixel_output
 		return ratio/self.box_size
 
+	def get_invert(self):
+		return self.invert
+
 	def get_high_res_template_image(self):
 		raise Exception
 
@@ -2662,6 +2687,7 @@ class PawelAutoBoxer(AutoBoxer):
 		self.thr_low = inst.thr_low
 		self.thr_hgh = inst.thr_hgh
 		self.use_variance = inst.use_variance
+		self.invert = inst.invert
 
 	def set_params_of_gui(self, boxable):
 		
@@ -2671,6 +2697,7 @@ class PawelAutoBoxer(AutoBoxer):
 		self.parent.guictl.bs.setText( str(self.box_size) )
 		self.parent.guictl.gauss_width.setText( str(self.gauss_width) )
 		self.parent.guictl.use_variance.setChecked( self.use_variance )
+		self.parent.guictl.invert_contrast_mic.setChecked( self.invert )
 
 		if self.source == "loaded":
 			"show the reduced map"
@@ -2707,8 +2734,9 @@ class PawelAutoBoxer(AutoBoxer):
 			thr_low = None
 			thr_hgh = None
 		use_variance = self.parent.guictl.use_variance.isChecked()
+		invert = self.parent.guictl.invert_contrast_mic.isChecked()
 
-		return pixel_input,pixel_output,box_size,gauss_width,thr_low,thr_hgh, use_variance
+		return pixel_input,pixel_output,box_size,gauss_width,thr_low,thr_hgh, use_variance, invert
 		
 
 	def auto_box(self,boxable,update_display=True,force_auto_box=False):
@@ -2723,7 +2751,7 @@ class PawelAutoBoxer(AutoBoxer):
 			self.thr_low = new_params[4]
 			self.thr_hgh = new_params[5]
 			self.use_variance = new_params[6]
-
+			self.invert = new_params[7]
 
 		boxes, trimboxes, ccfs = self.run(boxable.get_image_name(), boxable)
 		if not(self.parent is None):
@@ -2749,6 +2777,7 @@ class PawelAutoBoxer(AutoBoxer):
 		print "     CCF low bound:   ", self.thr_low
 		print "     CCF hgh bound:   ", self.thr_hgh
 		print "     Use variance :   ", self.use_variance
+		print "     Invert Cnst  :   ", self.invert
 
 		if not(boxable is None):
 			boxable.delete_auto_boxes(True)
