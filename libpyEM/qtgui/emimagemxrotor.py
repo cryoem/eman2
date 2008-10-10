@@ -1022,7 +1022,6 @@ class EMDataListCache:
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	window = EMImageMXRotorModule(application=em_app)
-	window.get_qt_widget()
 	if len(sys.argv)==1 : 
 		data = []
 		for i in range(0,500):

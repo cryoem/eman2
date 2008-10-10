@@ -60,7 +60,7 @@ MAG_INC = 1.1
 
 from emglobjects import EMOpenGLFlagsAndTools
 
-GLUT.glutInit(sys.argv )
+GLUT.glutInit(sys.argv)
 
 class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	allim=WeakKeyDictionary()
@@ -368,15 +368,21 @@ class EMImage2DModule(EMImage2DGUIModule):
 			self.parent.setWindowTitle(f)
 			if isinstance(self.data,EMData):
 				self.__parent_resize()
-		print self.parent
-		return EMGUIModule.darwin_check(self)
+			
+			if isinstance(self.data,EMData):
+				self.__parent_resize()
+				
+		parent =  EMGUIModule.darwin_check(self)
+		return parent
 	
 	def __parent_resize(self):
 		try:
+			parent = self.parent
+			if self.mac_parent_win != None: parent = self.mac_parent_win
 			if self.parent_geometry != None:
-				self.parent.restoreGeometry(self.parent_geometry)
-			elif self.data.get_xsize()<1024 and self.data.get_ysize()<1024: self.parent.resize(self.data.get_xsize(),self.data.get_ysize())
-			else: self.parent.resize(800,800)
+				parent.restoreGeometry(self.parent_geometry)
+			elif self.data.get_xsize()<1024 and self.data.get_ysize()<1024: parent.resize(self.data.get_xsize(),self.data.get_ysize())
+			else: parent.resize(800,800)
 			self.init_size_flag = False
 		except: pass
 			
@@ -715,7 +721,6 @@ class EMImage2DModule(EMImage2DGUIModule):
 	
 		data = db[self.file_name]
 		if data == None: return
-	
 		try:
 			self.minden = data["min"]
 			self.maxden = data["max"]
@@ -729,7 +734,10 @@ class EMImage2DModule(EMImage2DGUIModule):
 		try:
 			self.parent_geometry = data["parent_geometry"]
 			if self.parent != None:
-				try: self.parent.restoreGeometry(self.parent_geometry)
+				try: 
+					parent = self.parent
+					if self.mac_parent_win != None: parent = self.mac_parent_win
+					parent.restoreGeometry(self.parent_geometry)
 				except: pass
 		except:pass
 		
@@ -760,7 +768,11 @@ class EMImage2DModule(EMImage2DGUIModule):
 		data["gamma"] = self.gamma
 		data["origin"] = self.origin
 		data["scale"] = self.scale
-		try: data["parent_geometry"] = self.parent.saveGeometry()
+		
+		try:
+			parent = self.parent
+			if self.mac_parent_win != None: parent = self.mac_parent_win
+			data["parent_geometry"] = parent.saveGeometry()
 		except: pass
 		
 		db = DB.image_2d_display_settings
@@ -1141,12 +1153,12 @@ class EMImage2DModule(EMImage2DGUIModule):
 	def resizeEvent(self,width,height):
 		if self.init_size :
 			if self.origin == (0,0):
-				self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
+				#self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
 				self.oldsize=(width,height)
 			self.init_size = False
 		else:
 			if self.origin == (0,0):
-				self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.height()/2.0)
+				#self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.height()/2.0)
 				self.oldsize=(width,height)
 				
 		self.window_width = width

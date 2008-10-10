@@ -46,6 +46,7 @@ class EMGUIModule:
 		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 		self.parent = None # should be something that accepts UpdateGL calls
+		self.mac_parent_win = None # can potentially be a special window used on MAC
 		
 		if ensure_gl_context and application != None:
 			application.ensure_gl_context(self)
@@ -84,7 +85,7 @@ class EMGUIModule:
 		
 	def darwin_check(self):
 		if platform.system() == "Darwin":
-			self.mac_parent_win = EMParentWin(self.parent)
+			if self.mac_parent_win == None:	self.mac_parent_win = EMParentWin(self.parent)
 			return self.mac_parent_win
 		else:
 			return self.parent
@@ -170,6 +171,10 @@ class EMStandAloneApplication(EMApplication):
 	def show(self):
 		for child in self.children:
 			widget = child.get_qt_widget()
+			print widget
+			try:
+				print widget.child
+			except:pass
 			if widget.isVisible() == False:
 				widget.show()
 	

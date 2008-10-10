@@ -51,7 +51,6 @@ from emimageutil import  EMEventRerouter
 from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule,EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
-GLUT.glutInit([""])
 
 class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
@@ -191,10 +190,14 @@ class EMImageRotorModule(EMImage2DGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:
 			self.parent = EMImageRotorWidget(self)
-		return EMGUIModule.darwin_check(self)
+			
+		parent = EMGUIModule.darwin_check(self)
+
+		return parent
 	
 	def __init__(self, data=None,application=None):
 		self.parent = None
+		self.rotor = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
 		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.data=None
 		try: self.parent.setAcceptDrops(True)
@@ -204,7 +207,7 @@ class EMImageRotorModule(EMImage2DGUIModule):
 		if data:
 			self.set_data(data)
 		
-		self.rotor = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
+		
 		self.widget = EM3DWidget(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		
@@ -435,7 +438,6 @@ class EMImageRotorModule(EMImage2DGUIModule):
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	window = EMImageRotorModule(application=em_app)
-	window.get_qt_widget()
 	if len(sys.argv)==1 :
 		data = []
 		for i in range(0,20):
@@ -447,6 +449,8 @@ if __name__ == '__main__':
 		a=EMData.read_images(sys.argv[1])
 		window.setImageFileName(sys.argv[1])
 		window.set_data(a)
+	
+	window.get_parent().resize(*window.get_optimal_size())
 
 	em_app.show()
 	em_app.execute()

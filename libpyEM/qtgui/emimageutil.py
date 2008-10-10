@@ -327,6 +327,9 @@ class EMParentWin(QtGui.QWidget):
 			#self.child.inspector.close()
 		except: pass
 		QtGui.QWidget.closeEvent(self,e)
+		
+	def resizeEvent(self,event):
+		self.child.updateGL()
 	
 	def get_qt_widget(self):
 		return self.child
