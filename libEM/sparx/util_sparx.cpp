@@ -3725,38 +3725,6 @@ void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int
 #undef  numr
 #undef  circ
 
-/*
-	# loop over psi
-	best_disc = 1e20
-	best_psi  = -1
-	for ipsi in xrange(g_n_psi):
-
-		if ipsi != 0:
-			count = 0
-			for i in xrange(g_n_prj - 1):
-				for j in xrange(i + 1, g_n_prj):
-					if i == iprj:
-							com[count] = (com[count] + 1) % g_n_psi
-					elif j == iprj:
-							com[count + 1] = (com[count + 1] + 1) % g_n_psi
-						
-					count += 2
-
-		n = 0
-		L_tot = 0.0
-
-		for i in xrange(g_n_prj - 1):
-			for j in xrange(i + 1, g_n_prj):
-				if i == iprj or j == iprj:
-					L      = Prj[i].cm_euc(Prj[j], com[n], com[n + 1])
-					L_tot += (L * weights[int(n/2)])
-				n += 2
-
-		if L_tot <= best_disc:
-			best_disc = L_tot
-			best_psi  = ipsi
-*/
-
 //helper function for Cml
 vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data){
    
@@ -3798,6 +3766,102 @@ vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weig
     res[1] = float(best_psi);
     return res;
 }
+
+//helper function for Cml
+vector<int> Util::cml_line_pos(float phi1, float theta1, float psi1, float phi2, float theta2, float psi2, int nangle){
+    
+    vector<int> Res(2);
+    Dict d1;
+    Dict d2;
+    d1["type"] = "SPIDER";
+    d1["phi"] = phi1;
+    d1["theta"] = theta1;
+    d1["psi"] = psi1;
+    d2["type"] = "SPIDER";
+    d2["phi"] = phi2;
+    d2["theta"] = theta2;
+    d2["psi"] = psi2;
+
+    Transform R1(d1);
+    Transform R2(d2);
+    Transform R2T = R2.inverse();
+    Transform R2to1 = R1*R2T;
+
+    Dict eulerR2to1 = R2to1.get_rotation("SPIDER");
+    float phiR2to1 = eulerR2to1["phi"];
+    float psiR2to1 = eulerR2to1["psi"];
+
+    int a1 = int(psiR2to1+270) % 360;
+    int a2 = int(phiR2to1*(-1)+270) % 360;
+    Res[0] = int(nangle * float((a1+360)%360) / 360.0);
+    Res[1] = int(nangle * float((a2+360)%360) / 360.0);
+
+    return Res;
+}
+
+//helper function for Cml
+vector<int> Util::cml_list_line_pos(vector<float> Ori, float newphi, float newtheta, int i_prj, int n_prj, int nangle, int nlines){
+    Dict d1;
+    Dict d2;
+    d1["type"] = "SPIDER";
+    d2["type"] = "SPIDER";
+    vector<int> com(2*nlines);
+    int count=0;
+    for(int i=0; i<=n_prj-1; i++){
+	for(int j=i+1; j<=n_prj-1; j++){
+	    if(i==i_prj){
+		    d1["phi"] = newphi;
+		    d1["theta"] = newtheta;
+		    d1["psi"] = 0.0;
+		    d2["phi"] = Ori[3*j];
+		    d2["theta"] = Ori[3*j+1];
+		    d2["psi"] = Ori[3*j+2];
+
+		    Transform R1(d1);
+		    Transform R2(d2);
+		    Transform R2T = R2.inverse();
+		    Transform R2to1 = R1*R2T;
+
+		    Dict eulerR2to1 = R2to1.get_rotation("SPIDER");
+		    float phiR2to1 = eulerR2to1["phi"];
+		    float psiR2to1 = eulerR2to1["psi"];
+
+		    int a1 = int(psiR2to1+270) % 360;
+		    int a2 = int(phiR2to1*(-1)+270) % 360;
+		    com[count] = int(nangle * float((a1+360)%360) / 360.0);
+		    com[count+1] = int(nangle * float((a2+360)%360) / 360.0);
+	    }
+	    if(j==i_prj){
+		    d1["phi"] = Ori[3*i];
+		    d1["theta"] = Ori[3*i+1];
+		    d1["psi"] = Ori[3*i+2];
+		    d2["phi"] = newphi;
+		    d2["theta"] = newtheta;
+		    d2["psi"] = 0.0;
+
+		    Transform R1(d1);
+		    Transform R2(d2);
+		    Transform R2T = R2.inverse();
+		    Transform R2to1 = R1*R2T;
+
+		    Dict eulerR2to1 = R2to1.get_rotation("SPIDER");
+		    float phiR2to1 = eulerR2to1["phi"];
+		    float psiR2to1 = eulerR2to1["psi"];
+
+		    int a1 = int(psiR2to1+270) % 360;
+		    int a2 = int(phiR2to1*(-1)+270) % 360;
+		    com[count] = int(nangle * float((a1+360)%360) / 360.0);
+		    com[count+1] = int(nangle * float((a2+360)%360) / 360.0);
+	    }
+	    count+=2;
+	}
+
+    }
+
+    return com;
+
+}
+
 
 // helper function for k-means
 Dict Util::min_dist(EMData* image, const vector<EMData*>& data) {

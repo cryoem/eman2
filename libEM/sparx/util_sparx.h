@@ -437,6 +437,10 @@ class FakeKaiserBessel : public KaiserBessel {
         static Dict min_dist(EMData* im, const vector<EMData*>& data);
       
         static vector<float> cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data);
+
+        static vector<int> cml_line_pos(float phi1, float theta1, float psi1, float phi2, float theta2, float psi2, int nangle);
+
+        static vector<int> cml_list_line_pos(vector<float> Ori, float newphi, float newtheta, int i_prj, int n_prj, int nangle, int nlines);
         
 	/* Decimates the image with respect to the image center.
 	 * (i.e) the center of the original image is kept the same 
