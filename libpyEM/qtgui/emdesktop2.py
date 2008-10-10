@@ -63,7 +63,6 @@ class EMWindowNode:
 		self.children = []
 		
 	def attach_child(self,new_child):
-		print "attaching child",self,new_child
 		for child in self.children:
 			if (child == new_child):
 				print "error, can not attach the same child to the same parent more than once"
@@ -110,13 +109,13 @@ class EMRegion:
 	def get_geomoetry(self): return self.geometry
 	
 	def width(self):
-		return self.geometry.get_width()
+		return int(self.geometry.get_width())
 	
 	def height(self):
-		return self.geometry.get_height()
+		return int(self.geometry.get_height())
 		
 	def depth(self):
-		return self.geometry.get_depth()
+		return int(self.geometry.get_depth())
 	
 	def set_width(self,v):
 		self.geometry.set_width(v)
@@ -474,14 +473,15 @@ class LeftSideWidgetBar(EMGLViewContainer):
 
 	def add_browser_frame(self):
 		if self.browser_module == None:
-			self.browser_module = EMBrowserModule(self,self.parent.get_display_child(0))
+			self.browser_module = True
+			#self.browser_module = EMBrowserModule(self,self.parent.get_display_child(0))
 			dialog = EMBrowserDialog(self,EMDesktop.application)
 			em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
 			print "attached",EMDesktop.application
 			#self.browser_dialog = EMBrowserDialog(self,EMDesktop.application)
 			EMDesktop.main_widget.attach_module(self.browser_module)
 		
-		self.browser_module.load_browser()
+		#self.browser_module.load_browser()
 
 	def seed_scale_animation(self,i):
 		t = self.transformers[i]
@@ -828,7 +828,7 @@ class EMDesktopApplication(EMApplication):
 			
 		self.children.append(child)
 		print "attaching in desktop application"
-		self.target.attach_child(child.get_gl_widget(EMDesktop.main_widget),child.get_desktop_hint())
+		self.target.attach_child(child,child.get_desktop_hint())
 		
 	def ensure_gl_context(self,child):
 		pass
@@ -1051,10 +1051,11 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		#return self.appheight
 	
 	def attach_child(self,child,hint):
-		if hint == "dialog":
-			self.left_side_bar.attach_child(child)
+		if hint == "dialog" or hint == "inspector":
+			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
 		elif hint == "image":
-			self.display_frame.attach_child(child)
+			child.set_parent(self.display_frame)
+			self.display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget))
 		else:
 			print "unsupported",hint
 	

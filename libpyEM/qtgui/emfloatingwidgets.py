@@ -1349,25 +1349,34 @@ class EMGLView3D(EM3DWidgetVolume):
 		self.parent = parent
 		self.cam = Camera2(self)
 		self.cam.motiondull = 3.0
+		
+		if isinstance(parent,EMImage3DGUIModule) or isinstance(parent,EMImage2DModule):
+			self.drawable = parent
+			self.w = self.drawable.width()
+			self.h = self.drawable.height()
+			self.d = self.drawable.height() # height of window
+		else:
 		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
-		self.w = image.get_xsize()	# width of window
-		self.h = image.get_ysize()	# height of window
-		self.d = image.get_zsize()	# depth of the window
-				
-		self.w = self.parent.width()	# width of window
-		self.h = self.parent.height() # height of window
-		self.d = self.parent.height() # height of window
-		
-
-		self.image = image # FIXME is this allright?
+			#self.w = image.get_xsize()	# width of window
+			#self.h = image.get_ysize()	# height of window
+			#self.d = image.get_zsize()	# depth of the window
+					
+			self.w = self.parent.width()	# width of window
+			self.h = self.parent.height() # height of window
+			self.d = self.parent.height() # height of window
+			
+	
+			self.image = image # FIXME is this allright?
+			self.drawable = EMImage3DModule(image,self)		# the object that is drawable (has a draw function)
+			
+			self.drawable.cam.basicmapping = True
+			self.drawable.cam.motiondull = 3.0
+			
 		self.sizescale = 1.0		# scale/zoom factor
 		self.changefactor = 1.1		# used to zoom
 		self.invchangefactor = 1.0/self.changefactor # used to invert zoom
 		
-		self.drawable = EMImage3DModule(image,self)		# the object that is drawable (has a draw function)
-		self.drawable.cam.basicmapping = True
-		self.drawable.cam.motiondull = 3.0
 		#self.drawable.suppressInspector = True
 		self.vdtools = EMViewportDepthTools(self)
 		
@@ -1377,7 +1386,8 @@ class EMGLView3D(EM3DWidgetVolume):
 		
 		self.model_matrix = None
 	
-		self.setOptScale()
+		self.init_scale_flag = True
+		
 	
 		self.draw_frame = True
 		self.decoration = EM3DPlainBorderDecoration(self)
@@ -1452,6 +1462,10 @@ class EMGLView3D(EM3DWidgetVolume):
 		#self.planes = []
 		#self.modelmatrices = []
 		#glTranslatef(0,0,-self.depth()/2.0)
+		
+		if self.init_scale_flag:
+			self.setOptScale()
+			self.init_scale_flag = False
 		
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
@@ -1545,11 +1559,11 @@ class EMGLView3D(EM3DWidgetVolume):
 		return self.inspector
 	
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and self.inspector == None):	
-			self.drawable.init_inspector()
-			self.drawable.inspector.show()
-			self.drawable.inspector.hide()
-			self.parent.addQtWidgetDrawer(self.get_inspector())
+		#if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and self.inspector == None):	
+			#self.drawable.init_inspector()
+			#self.drawable.inspector.show()
+			#self.drawable.inspector.hide()
+			#self.parent.addQtWidgetDrawer(self.get_inspector())
 			
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mousePressEvent(event)
@@ -1625,6 +1639,8 @@ class EMGLView3D(EM3DWidgetVolume):
 	def get_start_z(self):
 		return self.parent.get_start_z()
 	
+	#def isinwin(self,x,y):
+		#return self.vdtools.isinwin(x,y)
 class EMGLView2D:
 	"""
 	A view of a 2D drawable type, such as a single 2D image or a matrix of 2D images

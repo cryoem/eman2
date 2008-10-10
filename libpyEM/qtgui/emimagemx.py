@@ -335,10 +335,21 @@ class EMImageMXModule(EMImage2DGUIModule):
 			
 		return EMGUIModule.darwin_check(self)
 	
+	def get_gl_widget(self,qt_parent):
+		from emfloatingwidgets import EMGLView2D
+		if self.gl_widget == None:
+			self.gl_widget = EMGLView2D(self,image=None)
+		return self.gl_widget
+		
+	def get_desktop_hint(self):
+		return "image"
+	
+	
 	def __init__(self, data=None,application=None):
 		self.init_size_flag = True
 		self.parent = None
 		self.data=None
+		self.gl_widget = None
 		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
 
 		self.datasize=(1,1)
@@ -392,6 +403,18 @@ class EMImageMXModule(EMImage2DGUIModule):
 		self.__init_mouse_handlers()
 		
 		self.reroute_delete_target = None
+	
+	def width(self):
+		if self.parent != None:
+			return self.parent.width()
+		else:
+			return 0
+		
+	def height(self):
+		if self.parent != None:
+			return self.parent.height()
+		else:
+			return 0
 	
 	def __init_mouse_handlers(self):
 		
@@ -1057,7 +1080,6 @@ class EMImageMXModule(EMImage2DGUIModule):
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
 
 	def resizeEvent(self, width, height):
-		
 		if self.data and len(self.data)>0 :
 			if self.data[0].get_xsize()*self.scale != 0:
 				self.set_mx_cols(int(width/(self.data[0].get_xsize()*self.scale)))
@@ -1451,6 +1473,10 @@ class EMImageInspectorMX(QtGui.QWidget):
 			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target.optimize_fit)
 		QtCore.QObject.connect(self.bsavelst, QtCore.SIGNAL("clicked(bool)"), self.save_lst)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
+	
+	def get_desktop_hint(self):
+		return "inspector"
+	
 	
 	def set_scale(self,val):
 		if self.busy : return

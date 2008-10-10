@@ -41,11 +41,12 @@ class EMGUIModule:
 	GLUT = "glut"
 	def __init__(self,application=None,ensure_gl_context=False): 
 		self.application = application
-		if application != None: application.attach_child(self)
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
 		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 		self.parent = None # should be something that accepts UpdateGL calls
+		if application != None: application.attach_child(self)
+		
 		self.mac_parent_win = None # can potentially be a special window used on MAC
 		
 		if ensure_gl_context and application != None:

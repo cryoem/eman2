@@ -574,11 +574,11 @@ class EMImage2DModule(EMImage2DGUIModule):
 		return [data.get_xsize(),data.get_ysize(),data.get_zsize()]
 	
 	def width(self):
-		try: return self.data.get_xsize()
+		try: return self.parent.width()
 		except:	return 0
 	
 	def height(self):
-		try: return self.data.get_ysize()
+		try: return self.parent.width()
 		except:	return 0
 	
 	def updateGL(self):

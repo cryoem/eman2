@@ -213,12 +213,25 @@ class EMImage3DModule(EMImage3DGUIModule):
 				self.parent.set_cam_z(self.parent.get_fov(),self.image)
 		return EMGUIModule.darwin_check(self)
 	
+	def get_gl_widget(self,qt_parent):
+		from emfloatingwidgets import EMGLView3D,EM3DWidget
+		if self.gl_widget == None:
+			gl_view = EMGLView3D(self,image=None)
+			self.gl_widget = EM3DWidget(self,gl_view)
+			self.gl_widget.target_translations_allowed(True)
+			self.gl_widget.allow_camera_rotations(True)
+		return self.gl_widget
+		
+	def get_desktop_hint(self):
+		return "image"
+	
+	
 	def __init__(self, image=None,application=None):
 		self.viewables = []
 		self.image = None
-		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.parent = None
-		self.image = None
+		self.gl_widget = None
+		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.currentselection = -1
 		self.inspector = None
 		#self.isosurface = EMIsosurfaceModule(image,self)
@@ -232,7 +245,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.cam = Camera2(self)
 		self.vdtools = EMViewportDepthTools(self)
 		
-		self.set_data(image)
+		if image != None: self.set_data(image)
 			
 		self.em_qt_inspector_widget = None
 		
@@ -276,18 +289,22 @@ class EMImage3DModule(EMImage3DGUIModule):
 			i.resizeEvent()
 	
 	def get_data_dims(self):
-		return [self.image.get_xsize(),self.image.get_ysize(),self.image.get_zsize()]
+		if self.image != None:
+			return [self.image.get_xsize(),self.image.get_ysize(),self.image.get_zsize()]
+		else: return [0,0,0]
 
 	def set_data(self,data,file_name=""):
+		print "SETTING DATA"
 		self.file_name = file_name # fixme fix this later
 		if data == None: return
 		self.image = data
 		for i in self.viewables:
 			i.set_data(data)
 		
-		if self.parent != None: 
+		if self.parent != None and self.image != None: 
 			self.resizeEvent(self.parent.width(),self.parent.height())
-			self.parent.set_cam_z(self.parent.get_fov(),self.data)
+			try:self.parent.set_cam_z(self.parent.get_fov(),self.image)
+			except:pass
 		
 		if self.inspector == None:
 			self.inspector=EMImageInspector3D(self)
@@ -422,6 +439,10 @@ class EMImage3DModule(EMImage3DGUIModule):
 		return self.parent.get_near_plane_dims()
 	
 class EMImageInspector3D(QtGui.QWidget):
+	def get_desktop_hint(self):
+		return "inspector"
+	
+	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -552,6 +573,8 @@ class EMImageInspector3D(QtGui.QWidget):
 
 
 class EM3DAdvancedInspector(QtGui.QWidget):
+	
+	
 	def __init__(self,target,parent=None):
 		QtGui.QWidget.__init__(self,None)
 		self.target=target

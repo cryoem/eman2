@@ -270,17 +270,17 @@ class EMVolumeModule(EMImage3DGUIModule):
 		#self.test_accum()
 		#glPopMatrix()
 		
-		
-		glStencilFunc(GL_EQUAL,self.rank,self.rank)
-		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
-		glPushMatrix()
-		glLoadIdentity()
-		[width,height] = self.parent.get_near_plane_dims()
-		z = self.parent.get_start_z()
-		glTranslate(-width/2.0,-height/2.0,-z-0.01)
-		glScalef(width,height,1.0)
-		self.draw_bc_screen()
-		glPopMatrix()
+		#breaks in desktop!
+		#glStencilFunc(GL_EQUAL,self.rank,self.rank)
+		#glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
+		#glPushMatrix()
+		#glLoadIdentity()
+		#[width,height] = self.parent.get_near_plane_dims()
+		#z = self.parent.get_start_z()
+		#glTranslate(-width/2.0,-height/2.0,-z-0.01)
+		#glScalef(width,height,1.0)
+		#self.draw_bc_screen()
+		#glPopMatrix()
 		
 		glStencilFunc(GL_ALWAYS,1,1)
 		if self.cube:
