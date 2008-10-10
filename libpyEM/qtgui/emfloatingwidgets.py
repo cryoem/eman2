@@ -1635,20 +1635,25 @@ class EMGLView2D:
 		self.cam = Camera2(self)
 		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
-		if isinstance(image,list):
-			if len(image) == 1:
-				self.become_2d_image(image[0])
-			else:
-				self.drawable = EMImageMXModule(image)
-				self.drawable.set_parent(self)
-				self.w = self.parent.width()
-				self.h = self.parent.height()
-		elif isinstance(image,EMData):
-			self.become_2d_image(image)
+		if isinstance(parent,EMImageMXModule) or isinstance(parent,EMImage2DModule):
+			self.drawable = parent
+			self.w = self.parent.width()
+			self.h = self.parent.height()
 		else:
-			print "error, the EMGLView2D class must be initialized with data"
-			return
-		
+			if isinstance(image,list):
+				if len(image) == 1:
+					self.become_2d_image(image[0])
+				else:
+					self.drawable = EMImageMXModule(image)
+					self.drawable.set_parent(self)
+					self.w = self.parent.width()
+					self.h = self.parent.height()
+			elif isinstance(image,EMData):
+				self.become_2d_image(image)
+			else:
+				print "error, the EMGLView2D class must be initialized with data"
+				return
+			
 		self.drawable.suppressInspector = True
 		self.initflag = True
 		self.vdtools = EMViewportDepthTools(self)

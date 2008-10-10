@@ -361,6 +361,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.parent.emit(*args,**kargs)
 	
 	def get_qt_widget(self):
+		print "qt widget was called"
 		if self.parent == None:	
 			self.parent = EMImage2DWidget(self)
 			f = self.file_name.split('/')
@@ -374,6 +375,15 @@ class EMImage2DModule(EMImage2DGUIModule):
 				
 		parent =  EMGUIModule.darwin_check(self)
 		return parent
+	
+	def get_gl_widget(self,qt_parent):
+		from emfloatingwidgets import EMGLView2D
+		if self.gl_widget == None:
+			self.gl_widget = EMGLView2D(self,image=None)
+		return self.gl_widget
+		
+	def get_desktop_hint(self):
+		return "image"
 	
 	def __parent_resize(self):
 		try:
@@ -390,7 +400,8 @@ class EMImage2DModule(EMImage2DGUIModule):
 	def __init__(self, image=None,application=None):
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
-		self.parent = None	
+		self.parent = None
+		self.gl_widget = None
 		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
 		
 		
@@ -1654,7 +1665,9 @@ class EMImageInspector2D(QtGui.QWidget):
 			self.image_range.deleteLater()
 			self.image_range = None
 		else:
-			print "warning, attempted to disable image range when there was none!"
+			# this is fine
+			pass
+			#print "warning, attempted to disable image range when there was none!"
 
 	def enable_image_range(self,minimum,maximum,current_idx):
 		if self.image_range == None:

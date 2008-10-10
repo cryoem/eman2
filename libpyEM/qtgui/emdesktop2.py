@@ -53,7 +53,8 @@ import math
 from emfloatingwidgets import *
 from emglobjects import Camera, viewport_width, viewport_height,resize_gl
 from e2boxer import *
-
+from embrowse import EMBrowserDialog
+from emapplication import EMApplication
 
 
 class EMWindowNode:
@@ -62,6 +63,7 @@ class EMWindowNode:
 		self.children = []
 		
 	def attach_child(self,new_child):
+		print "attaching child",self,new_child
 		for child in self.children:
 			if (child == new_child):
 				print "error, can not attach the same child to the same parent more than once"
@@ -370,7 +372,9 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			if child.isinwin(x,y) : return True
 			
 		return False
-			
+
+
+
 class EMFrame(EMWindowNode,EMRegion):
 	'''
 	EMFrame is a base class for windows that have a frame. The frame defines a 3D bounding box, and is defined
@@ -471,6 +475,10 @@ class LeftSideWidgetBar(EMGLViewContainer):
 	def add_browser_frame(self):
 		if self.browser_module == None:
 			self.browser_module = EMBrowserModule(self,self.parent.get_display_child(0))
+			dialog = EMBrowserDialog(self,EMDesktop.application)
+			em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
+			print "attached",EMDesktop.application
+			#self.browser_dialog = EMBrowserDialog(self,EMDesktop.application)
 			EMDesktop.main_widget.attach_module(self.browser_module)
 		
 		self.browser_module.load_browser()
@@ -675,9 +683,9 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			glPopMatrix()
 			glTranslate(0,-self.xy_scale*self.child.height(),0)
 	
-class EMBrowserModule(Module):
+class EMBrowserModule:
 	def __init__(self,inspector_target,display_target):
-		Module.__init__(self)
+		#Module.__init__(self)
 		
 		self.inspector_target = inspector_target
 		self.display_target = display_target
@@ -796,7 +804,102 @@ class EMBrowserModule(Module):
 		self.file_dialogs.append(file_dialog)
 			
 		return file_dialog
+
+class EMDesktopApplication(EMApplication):
+	def __init__(self,target,qt_application_control=True):
+		EMApplication.__init__(self,qt_application_control)
+		self.target = target
+		
+		self.children = []
 	
+	def detach_child(self,child):
+		for i,child_ in enumerate(self.children):
+			if child_ == child:
+				self.children.pop(i)
+				return
+	
+		print "error, can't detach a child that doesn't belong to this",child
+	
+	def attach_child(self,child):
+		for i in self.children:
+			if i == child:
+				print "error, can't attach the same child twice",child
+				return
+			
+		self.children.append(child)
+		print "attaching in desktop application"
+		self.target.attach_child(child.get_gl_widget(EMDesktop.main_widget),child.get_desktop_hint())
+		
+	def ensure_gl_context(self,child):
+		pass
+	
+	def show(self):
+		#for child in self.children:
+			#widget = child.get_qt_widget()
+			#if widget.isVisible() == False:
+				#widget.show()
+		pass
+	
+	def close_specific(self,child,inspector_too=True):
+		#for child_ in self.children:
+			#if child == child_:
+				#widget = child.get_qt_widget()
+				#widget.close()
+				#inspector = child.get_inspector()
+				#inspector.close()
+				#return
+			
+		#print "couldn't close",child
+		pass
+	
+	def hide_specific(self,child,inspector_too=True):
+		#for child_ in self.children:
+			#if child == child_:
+				#widget = child.get_qt_widget()
+				#widget.hide()
+				#inspector = child.get_inspector()
+				#inspector.hide()
+				#return
+			
+		#print "couldn't hide",child
+		pass
+	
+	def show_specific(self,child):
+		#for child_ in self.children:
+			#if child == child_:
+				#widget = child.get_qt_widget()
+				#if widget.isVisible() == False:
+					#widget.show()
+				#return
+				#
+		pass
+	
+		# if we make it here than we automatically attach the child
+		
+		#self.attach_child(child)
+		#widget = child.get_qt_widget()
+		#if widget.isVisible() == False:
+			#widget.show()
+		
+
+	def close_child(self,child):
+		#for child_ in self.children:
+			#if child == child_:
+				#widget = child.get_qt_widget()
+				#widget.close()
+				#return
+		pass
+			
+		print "error, attempt to close a child that did not belong to this application"
+		
+	def __call__( *args, **kwargs ):
+		return QtGui.qApp
+
+	def exec_loop( *args, **kwargs ):
+		pass
+
+		
+
 class EMDesktopFrame(EMFrame):
 	def __init__(self,parent,geometry=Region(0,0,0,0)):
 		EMFrame.__init__(self,parent,geometry)
@@ -886,6 +989,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 	main_widget = None
 	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
 	"""
+	application = None
 	def __init__(self):
 		EMDesktop.main_widget = self
 		frame = EMBoxerFrame(self)
@@ -894,6 +998,8 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		
+		if EMDesktop.application == None:
+			EMDesktop.application = EMDesktopApplication(self,qt_application_control=False)
 		
 		self.modules = [] # a list of all the modules that currently exist
 		self.gq=0			# quadric object for cylinders, etc	
@@ -943,6 +1049,14 @@ class EMDesktop(QtOpenGL.QGLWidget):
 	
 	#def get_app_height(self):
 		#return self.appheight
+	
+	def attach_child(self,child,hint):
+		if hint == "dialog":
+			self.left_side_bar.attach_child(child)
+		elif hint == "image":
+			self.display_frame.attach_child(child)
+		else:
+			print "unsupported",hint
 	
 	def attach_module(self,module):
 		self.modules.append(module)

@@ -89,6 +89,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.lock = False
 		
 		self.paint_events = 0
+		
+	def get_desktop_hint(self):
+		return "dialog"
+		
 	def set_application(self,app):
 		self.application = app
 		

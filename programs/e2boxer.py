@@ -906,7 +906,6 @@ class EMBoxerModule:
 		self.guiim.force_display_update()
 		self.application.show_specific(self.guiim)
 
-		#EMImage(image)# widget for displaying large image
 		self.__update_guiim_states()
 		self.guiim.set_mouse_mode(0)
 		

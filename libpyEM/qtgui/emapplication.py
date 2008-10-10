@@ -141,9 +141,11 @@ class EMApplication:
 			self.app.setOverrideCursor(cursor_type)
 			
 	
+	def __getattr__( self, name ):
+		try: return getattr(self,name)
+		except:	return getattr( self.app, name )
 
 class EMStandAloneApplication(EMApplication):
-	
 	def __init__(self,qt_application_control=True):
 		EMApplication.__init__(self,qt_application_control)
 		
@@ -171,10 +173,6 @@ class EMStandAloneApplication(EMApplication):
 	def show(self):
 		for child in self.children:
 			widget = child.get_qt_widget()
-			print widget
-			try:
-				print widget.child
-			except:pass
 			if widget.isVisible() == False:
 				widget.show()
 	
@@ -231,18 +229,28 @@ class EMStandAloneApplication(EMApplication):
 	def exec_loop( *args, **kwargs ):
 		pass
 
-	def __getattr__( self, name ):
-		try: return getattr(self,name)
-		except:	return getattr( self.app, name )
+	
 		
 
 class EMQtWidgetModule(EMGUIModule):
 	def __init__(self,qt_widget,application):
-		EMGUIModule.__init__(self,application)
 		self.qt_widget = qt_widget
-	
+		self.gl_widget = None
+		EMGUIModule.__init__(self,application)
+		#print self.gl_widget,"is real"
 	def get_qt_widget(self):
 		return self.qt_widget
+	
+	def get_gl_widget(self,qt_parent):
+		from emfloatingwidgets import EMGLViewQtWidget
+		if self.gl_widget == None:
+			self.gl_widget = EMGLViewQtWidget(qt_parent)
+			self.gl_widget.setQtWidget(self.qt_widget)
+		return self.gl_widget
+		
+	def get_desktop_hint(self):
+		return self.qt_widget.get_desktop_hint()
+			
 	
 	def keyPressEvent(self,event):
 		self.qt_widget.keyPressEvent(event)
