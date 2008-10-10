@@ -841,15 +841,19 @@ class EMDesktopApplication(EMApplication):
 		pass
 	
 	def close_specific(self,child,inspector_too=True):
-		#for child_ in self.children:
-			#if child == child_:
-				#widget = child.get_qt_widget()
-				#widget.close()
-				#inspector = child.get_inspector()
+		for child_ in self.children:
+			if child == child_:
+				self.target.detach_child(child)
+				if inspector_too:
+					inspector = child.get_em_inspector()
+					if inspector != None:
+						self.target.detach_child(inspector)
+				
+				return
 				#inspector.close()
 				#return
 			
-		#print "couldn't close",child
+		print "couldn't close",child
 		pass
 	
 	def hide_specific(self,child,inspector_too=True):
@@ -1044,6 +1048,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		self.move(0,0)
 		self.resize(self.appscreen.size())
 		
+		self.child_mappings = {}
 	#def get_app_width(self):
 		#return self.appwidth
 	
@@ -1053,11 +1058,21 @@ class EMDesktop(QtOpenGL.QGLWidget):
 	def attach_child(self,child,hint):
 		if hint == "dialog" or hint == "inspector":
 			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
+			self.child_mappings[child] = self.left_side_bar
 		elif hint == "image":
 			child.set_parent(self.display_frame)
 			self.display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget))
+			self.child_mappings[child] = self.display_frame
 		else:
 			print "unsupported",hint
+	
+	def detach_child(self,child):
+		try:
+			owner = self.child_mappings[child]
+		except:
+			print "owner doesn't exist for child",child
+			
+		owner.detach_child(child.get_gl_widget())
 	
 	def attach_module(self,module):
 		self.modules.append(module)

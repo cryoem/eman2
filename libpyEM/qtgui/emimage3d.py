@@ -213,7 +213,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 				self.parent.set_cam_z(self.parent.get_fov(),self.image)
 		return EMGUIModule.darwin_check(self)
 	
-	def get_gl_widget(self,qt_parent):
+	def get_gl_widget(self,qt_parent=None):
 		from emfloatingwidgets import EMGLView3D,EM3DWidget
 		if self.gl_widget == None:
 			gl_view = EMGLView3D(self,image=None)

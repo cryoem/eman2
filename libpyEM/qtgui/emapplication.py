@@ -61,6 +61,9 @@ class EMGUIModule:
 	def get_parent(self): return self.parent
 	def get_inspector(self): raise # this need to be supplied
 	
+	def get_em_inspector(self):
+		return self.em_qt_inspector_widget
+	
 	def show_inspector(self,force=0):
 		
 		if self.application == None:
@@ -242,7 +245,7 @@ class EMQtWidgetModule(EMGUIModule):
 	def get_qt_widget(self):
 		return self.qt_widget
 	
-	def get_gl_widget(self,qt_parent):
+	def get_gl_widget(self,qt_parent=None):
 		from emfloatingwidgets import EMGLViewQtWidget
 		if self.gl_widget == None:
 			self.gl_widget = EMGLViewQtWidget(qt_parent)

@@ -376,7 +376,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 		parent =  EMGUIModule.darwin_check(self)
 		return parent
 	
-	def get_gl_widget(self,qt_parent):
+	def get_gl_widget(self,qt_parent=None):
 		from emfloatingwidgets import EMGLView2D
 		if self.gl_widget == None:
 			self.gl_widget = EMGLView2D(self,image=None)
@@ -1476,6 +1476,9 @@ class EMImage2DModule(EMImage2DGUIModule):
 			self.font_render_mode = EMGUIModule.GLUT
 	
 class EMImageInspector2D(QtGui.QWidget):
+	def get_desktop_hint(self):
+		return "inspector"
+	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
