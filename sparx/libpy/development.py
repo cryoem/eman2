@@ -13877,9 +13877,9 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 				else:		phi, theta = common_line_in3D_dev(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
 			else:			phi, theta = common_line_in3D_dev(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
 	
-			if i == iprj:	f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, g_anglst[iagl][0], g_anglst[iagl][1], Ori[j][0], Ori[j][1]))
-			elif j == iprj: f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, Ori[i][0], Ori[i][1], g_anglst[iagl][0], g_anglst[iagl][1]))
-			else: f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1]))
+			#if i == iprj:	f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, g_anglst[iagl][0], g_anglst[iagl][1], Ori[j][0], Ori[j][1]))
+			#elif j == iprj: f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, Ori[i][0], Ori[i][1], g_anglst[iagl][0], g_anglst[iagl][1]))
+			#else: f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1]))
 
 			l_phs[n] = phi
 			l_ths[n] = theta
@@ -13893,7 +13893,7 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 
 	tol = 2e-5
 
-	f.write('\n')
+	#f.write('\n')
 			
 	# search the closer cml lines
 	mem_i_same = [[] for i in xrange(g_n_lines - 1)]
@@ -13924,9 +13924,9 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 			LUT.append(n)
 			index += 1
 
-	f.write('\n')
-	for n in xrange(len(n_phi)): f.write('%10.3f %10.3f\n' % (n_phi[n], n_theta[n]))
-	f.close()
+	#f.write('\n')
+	#for n in xrange(len(n_phi)): f.write('%10.3f %10.3f\n' % (n_phi[n], n_theta[n]))
+	#f.close()
 
 	if len(n_phi) > 2:
 		# use Voronoi
@@ -14220,20 +14220,37 @@ def cml_spin_dev(Prj, iprj, Ori, iagl):
 	weights = cml_weights_dev(Ori, iagl, iprj)
 	com     = [0] * 2 * g_n_lines
 
+
+	list_ori = [0.0] * 3 * g_n_prj
+	j = 0
+	for i in xrange(g_n_prj):
+		list_ori[j]   = Ori[i][0]
+		list_ori[j+1] = Ori[i][1]
+		list_ori[j+2] = Ori[i][2]
+		j += 3
+
+
+	com = Util.cml_list_line_pos(list_ori, g_anglst[iagl][0], g_anglst[iagl][1], iprj, g_n_prj, g_n_psi, g_n_lines)
+
+	'''
 	# compute the common lines only including iprj
 	count = 0
 	for i in xrange(g_n_prj - 1):
 		for j in xrange(i + 1, g_n_prj):
 			if i == iprj:
+				#[com[count], com[count + 1]] = Util.cml_line_pos(g_anglst[iagl][0], g_anglst[iagl][1], 0.0, Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
 				com[count], com[count + 1] = get_common_line_angles_dev(g_anglst[iagl][0], g_anglst[iagl][1], 0.0, Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
 			elif j == iprj:
+				#[com[count], com[count + 1]] = Util.cml_line_pos(Ori[i][0], Ori[i][1], Ori[i][2], g_anglst[iagl][0], g_anglst[iagl][1], 0.0, g_n_psi)
 				com[count], com[count + 1] = get_common_line_angles_dev(Ori[i][0], Ori[i][1], Ori[i][2], g_anglst[iagl][0], g_anglst[iagl][1], 0.0, g_n_psi)
 				
 			count += 2
+	'''
+
 
 	# do spin over all psi
 	res = Util.cml_spin(g_n_psi, iprj, g_n_prj, weights, com, Prj)
-
+	#res = [0.0, 0.0]
 	#return best_disc, best_psi
 	return res[0], int(res[1])
 
