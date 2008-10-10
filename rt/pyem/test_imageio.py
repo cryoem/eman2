@@ -193,6 +193,7 @@ class TestSpiderIO(unittest.TestCase):
         t3d = Transform()
         t3d.set_rotation({'type':'spider', 'phi':1.56, 'theta':2.56, 'psi':3.56})
         t3d.set_trans(10.78, 20.78, 30.78)
+        t3d.set_scale(4.0)
         img.set_attr('xform.projection', t3d)
         img.write_image(filename+'spi')
         del img
@@ -204,6 +205,7 @@ class TestSpiderIO(unittest.TestCase):
         self.assertAlmostEqual(img2.get_attr('SPIDER.dx'), 10.78, 3)
         self.assertAlmostEqual(img2.get_attr('SPIDER.dy'), 20.78, 3)
         self.assertAlmostEqual(img2.get_attr('SPIDER.dz'), 30.78, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.scale'), 4.0, 3)
         del img2
         testlib.safe_unlink(filename+'spi')
         
@@ -213,6 +215,7 @@ class TestSpiderIO(unittest.TestCase):
         t3d = Transform()
         t3d.set_rotation({'type':'spider', 'phi':1.56, 'theta':2.56, 'psi':3.56})
         t3d.set_trans(10.78, 20.78, 30.78)
+        t3d.set_scale(4.0)
         img.set_attr('xform.align3d', t3d)
         img.write_image(filename2+'spi')
         
@@ -223,6 +226,7 @@ class TestSpiderIO(unittest.TestCase):
         self.assertAlmostEqual(img2.get_attr('SPIDER.dx'), 10.78, 3)
         self.assertAlmostEqual(img2.get_attr('SPIDER.dy'), 20.78, 3)
         self.assertAlmostEqual(img2.get_attr('SPIDER.dz'), 30.78, 3)
+        self.assertAlmostEqual(img2.get_attr('SPIDER.scale'), 4.0, 3)
         testlib.safe_unlink(filename2+'spi')
 
 class TestHdfIO(unittest.TestCase):
