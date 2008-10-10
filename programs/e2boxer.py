@@ -1850,7 +1850,7 @@ class EMBoxerModule:
 				boxable.write_box_images(box_size,forceoverwrite,imageformat,normalize,norm_method)
 		
 			else: 
-				self.autoboxer.write_box_images( self.boxable )
+				self.autoboxer.write_box_images(self.boxable, normalize, norm_method)
  
 	def write_all_coord_files(self,box_size,forceoverwrite=False):
 		self.boxable.cache_exc_to_db()
@@ -2480,12 +2480,16 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		from EMAN2 import Util
 		image_name = self.target.boxable.get_image_name()
 		img = BigImageCache.get_image_directly( image_name )
+
 		[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
+
+		print "before invert, info: ", Util.infomask( img, None, True )
 		img -= avg
 		img *= -1
 		img += avg
 		BigImageCache.get_object(image_name).register_alternate(img)
 		self.target.big_image_change()
+		print " after invert, info: ", Util.infomask( img, None, True )
 
 	def set_method( self, name ):
 		if name[0:5] == "Swarm":

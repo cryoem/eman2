@@ -758,12 +758,7 @@ class SincBlackmanSubsampledImage:
 		invert = params_mediator.get_invert()
 
 		image = BigImageCache.get_image_directly(self.image_name)
-		
-		if invert:
-			[avg,sigma,fmin,fmax] = Util.infomask( image, None, True )
-			image -= avg
-			image *= -1.0
-			image += avg
+		print "info of image we got: ", Util.infomask( image, None, True )		
 
 
 		image = filt_gaussh( image, gaussh_param ) #1.0/(self.box_size/ratio) )
@@ -2698,6 +2693,7 @@ class PawelAutoBoxer(AutoBoxer):
 		self.parent.guictl.gauss_width.setText( str(self.gauss_width) )
 		self.parent.guictl.use_variance.setChecked( self.use_variance )
 		self.parent.guictl.invert_contrast_mic.setChecked( self.invert )
+		self.parent.guictl.normalization_options.setCurrentIndex( 1 )
 
 		if self.source == "loaded":
 			"show the reduced map"
@@ -2846,12 +2842,12 @@ class PawelAutoBoxer(AutoBoxer):
 		name,suffix = path.splitext( image_name )
 		return name+"_particles.crd"
 
-	def write_box_images( self, boxable ):
+	def write_box_images( self, boxable, normalize, norm_method ):
 		image_name = boxable.get_image_name()
 		file_name = self.get_particle_file_name( image_name )
 		for i in xrange( len(boxable.boxes) ):
 			b = boxable.boxes[i]
-			img = b.get_box_image()
+			img = b.get_box_image(normalize, norm_method)
 			img.set_attr( "Pixel_size", self.pixel_output )
 			img.set_attr( "Micrograph", image_name )
 			img.set_attr( "Score", b.correlation_score )
