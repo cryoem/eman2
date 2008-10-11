@@ -301,7 +301,24 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	
 	dict["SPIDER.title"] = string(cur_image_hed->title);
 	
-
+	Dict dic;
+	dic.put("type", "spider");
+	dic.put("phi", cur_image_hed->phi);
+	dic.put("theta", cur_image_hed->theta);
+	dic.put("psi", cur_image_hed->gamma);
+	dic.put("tx", cur_image_hed->dx);
+	dic.put("ty", cur_image_hed->dy);
+	dic.put("tz", cur_image_hed->dz);
+	dic.put("scale", cur_image_hed->scale);
+	Transform * trans = new Transform(dic);
+	if(zlen<=1) {
+		dict["xform.projection"] = trans;
+	}
+	else {
+		dict["xform.align3d"] = trans;
+	}
+	
+	
 /**	No complex image support for SPIDER in EMAN2
  * 	// complex check is in is_complex_mode, but even/odd check needs to be here
 	int type = dict["SPIDER.type"];

@@ -208,11 +208,6 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["maximum"] = hed.max;
 	dict["mean"] = hed.avdens;
 	dict["sigma"] = hed.sigma;
-
-    dict["orientation_convention"] = "EMAN";
-	dict["euler_alt"] = hed.mrc1[1]*180.0/M_PI;
-	dict["euler_az"] = hed.mrc1[2]*180.0/M_PI;
-	dict["euler_phi"] = hed.mrc1[0]*180.0/M_PI;
 	
 	dict["IMAGIC.imgnum"] = hed.imgnum;
 	dict["IMAGIC.count"] = hed.count;
@@ -237,6 +232,23 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["IMAGIC.oldav"] = hed.oldav;
 	dict["IMAGIC.label"] = hed.label;
 	dict["ptcl_repr"] = hed.mrc2;			// raw images represented by this image
+	
+	dict["orientation_convention"] = "EMAN";
+    const float alt = hed.mrc1[1]*180.0/M_PI;
+    const float az = hed.mrc1[2]*180.0/M_PI;
+    const float phi = hed.mrc1[0]*180.0/M_PI;
+	dict["euler_alt"] = alt;
+	dict["euler_az"] = az;
+	dict["euler_phi"] = phi;
+	Transform *trans = new Transform();
+	trans->set_rotation(Dict("type", "eman", "alt", alt, "az", az, "phi", phi));
+	if( hed.count==0 ) {
+		dict["xform.projection"] = trans;
+	}
+	else {
+		dict["xform.projection"] = trans;
+		dict["xform.align3d"] = trans;
+	}
 	
 	SimpleCtf ctf_;
 	if(read_ctf(ctf_) == 0) {

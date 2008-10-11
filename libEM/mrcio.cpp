@@ -263,6 +263,22 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 		dict["ctf"] = vctf;
 	}
 	
+	Dict dic;
+	dic.put("type", "imagic");
+	dic.put("alpha", mrch.alpha);
+	dic.put("beta", mrch.beta);
+	dic.put("gamma", mrch.gamma);
+	dic.put("tx", mrch.xorigin);
+	dic.put("ty", mrch.yorigin);
+	dic.put("tz", mrch.zorigin);
+	Transform * trans = new Transform(dic);
+	if(zlen<=1) {
+		dict["xform.projection"] = trans;
+	}
+	else {
+		dict["xform.align3d"] = trans;
+	}
+	
 	EXITFUNC;
 	return 0;
 }
