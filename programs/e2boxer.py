@@ -64,7 +64,7 @@ from time import time,sleep
 from sys import getrefcount
 
 from emglobjects import EMOpenGLFlagsAndTools
-from emapplication import EMStandAloneApplication
+from emapplication import EMStandAloneApplication,EMQtWidgetModule
 
 if os.name == 'nt':
 	def kill(pid):
@@ -839,10 +839,9 @@ class EMBoxerModule:
 		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.setWindowTitle("e2boxer Controller")
 		self.guictl.set_dynapix(self.dynapix)
-		self.guictl.show()
-		if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
-	
-	
+		self.em_qt_inspector_widget = EMQtWidgetModule(self.guictl,self.application)
+		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
+		self.application.show_specific(self.em_qt_inspector_widget)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
 			print "Setting gui for PawelAutoBoxer"
 			gauss_method_id = 1
@@ -882,9 +881,10 @@ class EMBoxerModule:
 			self.guimx=EMImageMXModule(application=self.application)
 			self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
-		qt_target = self.guimx.get_parent()
 		self.guimx.set_mouse_mode("app")
 		
+		qt_target = self.guimx.get_parent()
+			
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			 QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
@@ -900,7 +900,6 @@ class EMBoxerModule:
 			imagename = self.image_names[self.current_image_idx]
 			image=BigImageCache.get_object(imagename).get_image(use_alternate=True)
 		
-		print image,"is the image"
 		self.guiim= EMImage2DModule(application=self.application)
 		self.guiim.set_data(image,imagename)
 		self.guiim.force_display_update()
@@ -910,15 +909,21 @@ class EMBoxerModule:
 		self.guiim.set_mouse_mode(0)
 		
 		qt_target = self.guiim.get_parent()
-		qt_target.setWindowTitle(imagename)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.mouse_down)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("keypress"),self.keypress)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousemove"),self.mouse_move)
+			
+		try:qt_target.setWindowTitle(imagename)
+		except: pass
 		
-		qt_target.enable_timer()
+		try:
+			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.mouse_down)
+			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
+			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
+			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("keypress"),self.keypress)
+			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
+			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousemove"),self.mouse_move)
+		except: pass
+		
+		try: qt_target.enable_timer()
+		except: pass
 		
 	def __update_guiim_states(self):
 		self.guiim.set_other_data(self.boxable.get_exclusion_image(False),self.autoboxer.get_subsample_rate(),True)
@@ -1963,6 +1968,7 @@ class AutoBoxerSelectionsMediator:
 	to adding and removing AutoBoxers, and changing which Boxables use which
 	AutoBoxer etc
 	'''
+	def get_desktop_hint(self): return "inspector"
 	def __init__(self,parent):
 		if not isinstance(parent,EMBoxerModule):
 			print "error, the AutoBoxerSelectionsMediator must be initialized with a EMBoxerModule type as its first constructor argument"
@@ -2246,6 +2252,9 @@ class CcfHistogram(QtGui.QWidget):
 
 		
 class EMBoxerModulePanel(QtGui.QWidget):
+	def get_desktop_hint(self):
+		return "inspector"
+	
 	def __init__(self,target,ab_sel_mediator) :
 		
 		QtGui.QWidget.__init__(self,None)

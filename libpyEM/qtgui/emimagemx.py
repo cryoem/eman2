@@ -339,6 +339,7 @@ class EMImageMXModule(EMImage2DGUIModule):
 		from emfloatingwidgets import EMGLView2D
 		if self.gl_widget == None:
 			self.gl_widget = EMGLView2D(self,image=None)
+			self.set_parent(qt_parent)
 		return self.gl_widget
 		
 	def get_desktop_hint(self):
@@ -533,7 +534,7 @@ class EMImageMXModule(EMImage2DGUIModule):
 			if hfac > 512:
 				hfac = 512
 			try:
-				self.parent.resize(int(w),int(hfac))
+				if self.gl_widget != None:	self.parent.resize(int(w),int(hfac))
 			except:
 				pass
 			

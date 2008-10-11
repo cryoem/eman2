@@ -36,6 +36,7 @@ import sys
 import platform
 from emimageutil import EMParentWin
 
+
 class EMGUIModule:
 	FTGL = "ftgl"
 	GLUT = "glut"

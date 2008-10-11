@@ -218,6 +218,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		if self.gl_widget == None:
 			gl_view = EMGLView3D(self,image=None)
 			self.gl_widget = EM3DWidget(self,gl_view)
+			self.set_parent(qt_parent)
 			self.gl_widget.target_translations_allowed(True)
 			self.gl_widget.allow_camera_rotations(True)
 		return self.gl_widget

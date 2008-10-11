@@ -631,6 +631,9 @@ class EM3DWidget:
 				break
 		return interception
 	
+	def keyPressEvent(self,event):
+		self.target.keyPressEvent(event)
+	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
@@ -711,6 +714,7 @@ class EMGLRotorWidget(EM3DWidgetVolume):
 		self.allow_target_wheel_events = True
 		self.allow_target_translation = True
 
+		#self.cam = Camera2(self) # currently unused
 	def target_zoom_events_allowed(self,bool):
 		self.allow_target_wheel_events = bool
 	
@@ -719,6 +723,12 @@ class EMGLRotorWidget(EM3DWidgetVolume):
 	
 	def set_angle_range(self,angle_range):
 		self.angle_range = angle_range
+	
+	def set_plane(self,plane):
+		pass
+	
+	def set_model_matrix(self,matrix):
+		pass
 	
 	def set_rotations(self,r):
 		self.rotations = r	
@@ -1641,6 +1651,7 @@ class EMGLView3D(EM3DWidgetVolume):
 	
 	#def isinwin(self,x,y):
 		#return self.vdtools.isinwin(x,y)
+
 class EMGLView2D:
 	"""
 	A view of a 2D drawable type, such as a single 2D image or a matrix of 2D images
@@ -1885,6 +1896,9 @@ class EMGLView2D:
 			l=self.vdtools.mouseinwin(event.x(),viewport_height()-event.y(),self.width(),self.height())
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseDoubleClickEvent(qme)
+			
+	def keyPressEvent(self,event):
+		self.drawable.keyPressEvent(event)
 
 		#self.updateGL()
 	def emit(self, *args,**kargs):
@@ -2177,6 +2191,12 @@ class EMGLViewQtWidget:
 			self.updateTexture()
 		
 	def mouseMoveEvent(self,event):
+		#pos = QtGui.QCursor.pos()
+		
+		#print event.x(),pos.x(),event.y(),pos.y()
+		#pos = self.parent.mapFromGlobal(pos)
+		#print "now",event.x(),pos.x(),event.y(),pos.y()
+	
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
@@ -2220,6 +2240,52 @@ class EMGLViewQtWidget:
 			# actually causes a change in the appearance of the widget (for instance, list boxes from comboboxes)
 			self.gen_texture = True
 			self.updateTexture()
+	
+	def keyPressEvent(self,event):
+		print "we are in this place"
+		if ( self.childreceiver != None ):
+			# this means this class already knows that the mouse event is in the child
+			# that is being displayed
+			self.childreceiver.keyPressEvent(event)
+			self.childreceiver = None
+			return
+		else:
+			pos = self.parent.mapFromGlobal(QtGui.QCursor.pos())
+			l=self.mouseinwin(pos.x(),viewport_height()-pos.y(),self.width(),self.height())
+			cw=self.qwidget.childAt(l[0],l[1])
+			self.current = cw
+			print cw
+			if ( self.current != self.previous ):
+				QtGui.QToolTip.hideText()
+				if ( self.current != None ):
+					qme=QtCore.QEvent(QtCore.QEvent.Enter)
+					QtCore.QCoreApplication.sendEvent(self.current,qme)
+					
+				if ( self.previous != None ):
+					qme=QtCore.QEvent(QtCore.QEvent.Leave)
+					QtCore.QCoreApplication.sendEvent(self.previous,qme)
+			
+			self.previous = self.current
+			if cw == None:
+				QtGui.QToolTip.hideText()
+				if ( self.previous != None ):
+					qme=QtCore.QEvent(QtCore.QEvent.Leave)
+					QtCore.QCoreApplication.sendEvent(self.previous,qme)
+					self.gen_texture = True
+					self.updateTexture()
+				return
+			#gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+			#lp=cw.mapFromGlobal(gp)
+			#qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			#print cw,event
+			QtCore.QCoreApplication.sendEvent(cw,event)
+		# FIXME
+		# setting the gen_texture flag true here causes the texture to be regenerated
+		# when the mouse moves over it, which is inefficient.
+		# The fix is to only set the gen_texture flag when mouse movement
+		# actually causes a change in the appearance of the widget (for instance, list boxes from comboboxes)
+		self.gen_texture = True
+		self.updateTexture()
 
 	def mouseReleaseEvent(self,event):
 		if event.modifiers() == Qt.ControlModifier:

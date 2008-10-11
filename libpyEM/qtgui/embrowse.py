@@ -63,7 +63,7 @@ class EMBrowserDialog(EMSelectorDialog):
 			self.gl_image_preview =emimage.EMImageModule(a,None,False,self.application)
 			#print self.gl_image_preview
 				
-			self.gl_image_preview.set_data(a,filename)
+			#self.gl_image_preview.set_data(a,filename)
 			#self.gl_image_preview.set_file_name(f)
 			self.application.show_specific(self.gl_image_preview)
 			self.gl_image_preview.updateGL()

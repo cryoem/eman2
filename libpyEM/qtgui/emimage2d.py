@@ -378,7 +378,9 @@ class EMImage2DModule(EMImage2DGUIModule):
 	
 	def get_gl_widget(self,qt_parent=None):
 		from emfloatingwidgets import EMGLView2D
+		self.init_size_flag = False
 		if self.gl_widget == None:
+			self.set_parent(qt_parent)
 			self.gl_widget = EMGLView2D(self,image=None)
 		return self.gl_widget
 		
@@ -386,6 +388,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 		return "image"
 	
 	def __parent_resize(self):
+		#if self.gl_widget != None: return
 		try:
 			parent = self.parent
 			if self.mac_parent_win != None: parent = self.mac_parent_win
@@ -663,7 +666,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 			#else:
 				#self.list_data = None
 			
-		if self.init_size_flag and isinstance(self.parent,QtGui.QWidget):
+		if self.init_size_flag and isinstance(self.parent,QtGui.QWidget) and self.gl_widget == None:
 			self.__parent_resize()
 		
 		self.auto_contrast(inspector_update=False,display_update=False)
@@ -1439,7 +1442,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 		glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 1.0, 0.9,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(1.0	, 0.5, 0.2,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,20.0)
-		
+		enable_depth = glIsEnabled(GL_DEPTH_TEST)
 		glDisable(GL_DEPTH_TEST)
 		glColor(1.0,1.0,1.0)
 		
@@ -1458,6 +1461,8 @@ class EMImage2DModule(EMImage2DGUIModule):
 			glPopMatrix()
 			#y_offset += bbox[4]-bbox[1]
 
+		if enable_depth: glEnable(GL_DEPTH_TEST)
+		
 		glMatrixMode(GL_PROJECTION)
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)

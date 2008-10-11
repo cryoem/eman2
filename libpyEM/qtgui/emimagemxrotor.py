@@ -231,6 +231,24 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	
 class EMImageMXRotorModule(EMImage2DGUIModule):
 	
+	def get_desktop_hint(self):
+		return "rotor"
+	
+	def get_gl_widget(self,qt_parent=None):
+		from emfloatingwidgets import EMGLView2D
+		if self.gl_widget == None:
+			self.gl_widget = EMGLView2D(self,image=None)
+			self.parent = qt_parent
+		return self.gl_widget
+		
+	def get_gl_widget(self,qt_parent=None):
+		from emfloatingwidgets import EMGLView3D,EM3DWidget
+		self.set_parent(qt_parent)
+		if self.gl_widget == None:
+			self.gl_widget =EM3DWidget(self,self.rotor)
+			self.set_parent(qt_parent)
+		return self.gl_widget
+		
 	def get_qt_widget(self):
 		if self.parent == None:
 			self.parent = EMImageMXRotorWidget(self)
@@ -238,7 +256,8 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 	
 	def __init__(self, data=None,application=None):
 		self.parent = None
-		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
+		self.gl_widget = None
+		
 		
 		
 		self.data=None
@@ -249,8 +268,8 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 		self.rotor.set_angle_range(110.0)
 		#self.rotor.set_child_mouse_events(False)
 		self.rotor.set_mouse_mode("mxrotor")
-		self.widget = EM3DWidget(self,self.rotor)
-		self.widget.set_draw_frame(False)
+		self.gl_widget = EM3DWidget(self,self.rotor)
+		self.gl_widget.set_draw_frame(False)
 		
 		self.image_file_name = None	# keeps track of the image file name (if any) - book keeping purposes only
 		self.emdata_list_cache = None # all import emdata list cache, the object that stores emdata objects efficiently. Must be initialized via set_data or set_image_file_name
@@ -260,6 +279,8 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 		self.mx_rows = 4 # the number of rows in any given imagemx
 		self.mx_cols = 4 # the number of columns in any given imagemx
 		self.start_mx = 0 # the starting index for the currently visible set of imagemxs
+		
+		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
 		
 		self.inspector = None
 		self.minden=0
@@ -383,6 +404,9 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 		self.gamma=val
 		self.update_min_max_gamma()
 	
+	def set_plane(self,plane):
+		self.plane = plane
+	
 	def disable_mx_zoom(self):
 		'''
 		Disable mx zoom.
@@ -390,10 +414,10 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 		self.rotor.target_zoom_events_allowed(False)
 		
 	def disable_mx_translate(self):
-		self.widget.target_translations_allowed(False)
+		self.gl_widget.target_translations_allowed(False)
 	
 	def allow_camera_rotations(self,bool=False):
-		self.widget.allow_camera_rotations(bool)
+		self.gl_widget.allow_camera_rotations(bool)
 	
 	def pop_box_image(self,idx):
 		val = self.emdata_list_cache.delete_box(idx)
@@ -663,7 +687,7 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
 		z = self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
-		lrt = self.widget.get_lr_bt_nf()
+		lrt = self.gl_widget.get_lr_bt_nf()
 		
 		z_near = z-lrt[4]
 		z_trans = 0
@@ -682,7 +706,7 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 		GL.glPushMatrix()
 		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
 		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans+abs(lr[3]-lr[2]))
-		self.widget.draw()
+		self.gl_widget.draw()
 		GL.glPopMatrix()
 	
 		self.draw_hud()
@@ -704,20 +728,20 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 			self.show_inspector(True)
 			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		else:
-			self.widget.mousePressEvent(event)
+			self.gl_widget.mousePressEvent(event)
 			
 		self.updateGL()
 		
 	def mouseMoveEvent(self, event):
-		self.widget.mouseMoveEvent(event)
+		self.gl_widget.mouseMoveEvent(event)
 		self.updateGL()
 		
 	def mouseReleaseEvent(self, event):
-		self.widget.mouseReleaseEvent(event)
+		self.gl_widget.mouseReleaseEvent(event)
 		self.updateGL()
 		
 	def wheelEvent(self, event):
-		self.widget.wheelEvent(event)
+		self.gl_widget.wheelEvent(event)
 		self.updateGL()
 		
 	def leaveEvent(self):
@@ -762,6 +786,7 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 		glMaterial(GL_FRONT,GL_SPECULAR,(0.9, 0.5, 0.2,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,20.0)
 		
+		enable_depth = glIsEnabled(GL_DEPTH_TEST)
 		glDisable(GL_DEPTH_TEST)
 		glColor(1.0,1.0,1.0)
 		
@@ -778,6 +803,8 @@ class EMImageMXRotorModule(EMImage2DGUIModule):
 			glPopMatrix()
 		else:
 			pass
+		
+		if enable_depth: glEnable(GL_DEPTH_TEST)
 		
 		glMatrixMode(GL_PROJECTION)
 		glPopMatrix()
