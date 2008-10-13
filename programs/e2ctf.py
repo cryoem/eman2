@@ -57,10 +57,11 @@ Various CTF-related operations on images."""
 	parser.add_option("--powspec",action="store_true",help="Compute the power spectrum of the input image(s)",default=False)
 	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which will largely mask out the particles",default=0)
 	parser.add_option("--smooth",type="int",help="Smooth the background curve over roughly the specified range in pixels",default=0)
-	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=None)
+	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
-	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=None)
-	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=None)
+	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
+	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
+	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
 	
 	
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
@@ -79,6 +80,10 @@ Various CTF-related operations on images."""
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
+
+	if options.voltage==0 : parser.error("Please specify voltage")
+	if options.cs==0 : parser.error("Please specify Cs")
+	if options.apix==0 : parser.error("Please specify A/Pix")
 
 	logid=E2init(sys.argv)
 	
@@ -158,17 +163,19 @@ Various CTF-related operations on images."""
 
 			# defocus estimation
 			ctf=SimpleCtf()
-			ctf.from_dict({"amplitude":1,"defocus":-1,"voltage":300,"cs":1.6,"ampcont":.1,"apix":options.apix})
+			ctf.from_dict({"amplitude":1,"defocus":-1,"voltage":options.voltage,"cs":options.cs,"ampcont":options.ac,"apix":options.apix})
 			
 			dfout=file("df.txt","w")
 #			mapout=EMData(64,64)
-			for dfi in range(0,128):			# loop over defocus
+			dfbest1=(0,-1.0e20)
+			for dfi in range(5,128):			# loop over defocus
 #				for ac in range(0,64):		# loop over %ac
 					ac=10
 					df=dfi/20.0
 					ctf.defocus=-df
 					ctf.ampcont=ac/100.0
 					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
+					st=.04/ds
 					norm=0
 					for fz in range(len(cc)): 
 #						norm+=cc[fz]**2
@@ -176,11 +183,36 @@ Various CTF-related operations on images."""
 				
 					tot=0
 #					for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
-					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
+					for s in range(int(st),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
+#					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
 #					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
-					if ac==10 : dfout.write("%1.2f\t%g\n"%(df,tot))
+					if tot>dfbest1[1] : dfbest1=(df,tot)
+					dfout.write("%1.2f\t%g\n"%(df,tot))
 #					mapout[dfi,ac]=tot
 			
+			acbest=10
+			dfbest=dfbest1
+			for dfi in range(-10,10):			# loop over defocus
+					ac=options.ac
+#				for ac in range(0,20):		# loop over %ac
+					df=dfi/100.0+dfbest1[0]
+					ctf.defocus=-df
+					ctf.ampcont=ac/100.0
+					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
+					st=.04/ds
+					norm=0
+					for fz in range(len(cc)): 
+#						norm+=cc[fz]**2
+						if cc[fz]<0 : break
+				
+					tot=0
+					for s in range(int(st),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
+					if tot>dfbest[1] : 
+						dfbest=(df,tot)
+#						acbest=ac
+					dfout.write("%1.2f\t%g\n"%(df,tot))
+
+			print "Best DF,AC = ",dfbest[0],acbest
 #			mapout.write_image("dfmap.mrc",0)
 				
 			
