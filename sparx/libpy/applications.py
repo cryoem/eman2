@@ -1014,7 +1014,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Inner radius                : %i\n"%(first_ring))
 	
-	if ftp == "ftp":
+	if ftp == "hdf":
 		nima = EMUtil.get_image_count(stack)
 	elif ftp == "bdb":
 		nima = 0
