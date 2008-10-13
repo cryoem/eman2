@@ -10656,7 +10656,7 @@ def err_func(args, data):
 	return -err/mirror_same
 
 def ave_ali_err(stack):
-	from utilities import inverse_transform2, amoeba
+	from utilities import inverse_transform2, amoeba, get_params2D
 	from math import sqrt
 
 	nima = EMUtil.get_image_count(stack)
@@ -10666,10 +10666,7 @@ def ave_ali_err(stack):
 	for im in xrange(nima):
 		img = EMData()
 		img.read_image(stack,im)
-		alpha = img.get_attr("alpha")
-		sx = img.get_attr("sx")
-		sy = img.get_attr("sy")
-		mirror = img.get_attr("mirror")
+		alpha, sx, sy, mirror, dummy = get_params2D(img)
 		v1.append(alpha)
 		v1.append(sx)
 		v1.append(sy)
@@ -10728,7 +10725,7 @@ def ave_ali_err(stack):
 	
 
 def ave_ali_err_MPI(stack):
-	from utilities import inverse_transform2, amoeba
+	from utilities import inverse_transform2, amoeba, get_params2D
 	from math import sqrt
 	from utilities import reduce_EMData_to_root, print_msg
 	from mpi import mpi_comm_size, mpi_comm_rank, mpi_bcast, mpi_reduce, MPI_COMM_WORLD, MPI_FLOAT, MPI_MIN
@@ -10744,11 +10741,8 @@ def ave_ali_err_MPI(stack):
 	mirror_same = 0 
 	for im in xrange(nima):
 		img = EMData()
-		img.read_image(stack,im)
-		alpha = img.get_attr("alpha")
-		sx = img.get_attr("sx")
-		sy = img.get_attr("sy")
-		mirror = img.get_attr("mirror")
+		img.read_image(stack, im)
+		alpha, sx, sy, mirror, mirror = get_params2D(img)
 		v1.append(alpha)
 		v1.append(sx)
 		v1.append(sy)
@@ -11282,7 +11276,7 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 	from numpy import Inf
 	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 	from scipy.optimize.optimize import fmin_cg
-	from utilities import getImage, print_begin_msg, print_end_msg, print_msg
+	from utilities import getImage, get_params2D, print_begin_msg, print_end_msg, print_msg
 	
 	if CTF:
 		from utilities import get_arb_params
@@ -11291,7 +11285,7 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 	print_begin_msg("ali_SSNR")
 
 	if opti_method!="CG" and opti_method!="LBFGSB":
-		 print "Wrong optimization method!"
+		 print "Unknown optimization method!"
 		 return
 		 
 	nima = EMUtil.get_image_count(stack)
@@ -11389,9 +11383,7 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 				index_list.append(index)
 			Util.add_img2(ctfimg2, ctfimg)			
 
-		x0[im*3] = ima.get_attr("alpha")
-		x0[im*3+1] = ima.get_attr("sx")
-		x0[im*3+2] = ima.get_attr("sy")
+		x0[im*3], x0[im*3+1], x0[im*3+2], dummy1, dummy2 = get_params2D(ima)
 		if opti_method == "LBFGSB":
 			bounds.append((x0[im*3]-2.0, x0[im*3]+2.0))
 			bounds.append((x0[im*3+1]-1.0, x0[im*3+1]+1.0))
@@ -11463,7 +11455,7 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 	from scipy.optimize.optimize import fmin_cg
 	from mpi import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD
-	from utilities import getImage, print_begin_msg, print_end_msg, print_msg
+	from utilities import getImage, get_params2D, print_begin_msg, print_end_msg, print_msg
 	
 	if CTF:
 		from utilities import get_arb_params
@@ -11577,10 +11569,8 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 				ctfimg = ctfimg_list[index]
 				index_list.append(index)
 			Util.add_img2(ctfimg2, ctfimg)			
-
-		x0[im*3] = ima.get_attr("alpha")
-		x0[im*3+1] = ima.get_attr("sx")
-		x0[im*3+2] = ima.get_attr("sy")
+		
+		x0[im*3], x0[im*3+1], x0[im*3+2], dummy1, dummy2 = get_params2D(ima)
 		if opti_method == "LBFGSB":
 			bounds.append((x0[im*3]-2.0, x0[im*3]+2.0))
 			bounds.append((x0[im*3+1]-1.0, x0[im*3+1]+1.0))
