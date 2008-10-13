@@ -2201,23 +2201,35 @@ def check_attr(ima, num, params, default_value, action="Warning"):
 		return False
 	else: return True
 
-def print_begin_msg(program_name):
+def print_begin_msg(program_name, onscreen=False):
 	from time import localtime, strftime
-	print_msg("****************************************************************************************************\n")
+	hundred_stars = "****************************************************************************************************"
 	string = "Beginning of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
 	s = (100-len(string))//2
 	spacing = " "*s
-	print_msg(spacing+string+"\n")
-	print_msg("****************************************************************************************************\n")
+	if onscreen:
+		print hundred_stars
+		print spacing+string
+		print hundred_stars
+	else:
+		print_msg(hundred_stars+"\n")
+		print_msg(spacing+string+"\n")
+		print_msg(hundred_stars+"\n")
 
-def print_end_msg(program_name):
+def print_end_msg(program_name, onsrceen=False):
 	from time import localtime, strftime
-	print_msg("****************************************************************************************************\n")
+	hundred_stars = "****************************************************************************************************"
 	string = "End of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
 	s = (100-len(string))//2
 	spacing = " "*s
-	print_msg(spacing+string+"\n")
-	print_msg("****************************************************************************************************\n")
+	if onscreen:
+		print hundred_stars
+		print spacing+string
+		print hundred_stars
+	else:
+		print_msg(hundred_stars+"\n")
+		print_msg(spacing+string+"\n")
+		print_msg(hundred_stars+"\n")
 
 def print_msg(msg):
 	import sys
