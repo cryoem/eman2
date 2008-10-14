@@ -248,55 +248,176 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			back = dims[5]
 			back_plus = back - self.border_depth
 
+
+			x_center = (right+left)/2.0
+			y_center = (top+bottom)/2.0
+			z_center = (front+back)/2.0
 			self.display_list=glGenLists(1)
 				
 			glNewList(self.display_list,GL_COMPILE)
 			
+			width = right-left
+			width_plus = width + self.border_height*2
+			height = top - bottom
+			height_plus = height + self.border_height*2
+			depth = front-back
+			depth_plus = depth + +self.border_height*2
+			# front
 			glPushMatrix()
-			glTranslate(0,0,front_plus)
-			self.__frame_inner_shell(left,right,bottom,top,thick_front,thick_back)
-			self.__frame_face(left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus)
+			glTranslate(x_center,y_center,front_plus)
+			self.__frame_face_basic(width,width_plus,height,height_plus)
+			self.__frame_inner_shell_basic(width,height,thick_front,thick_back)
 			glPopMatrix()
 			
-			
+			# back
 			glPushMatrix()
-			glTranslate(0,0,back_plus)
+			glTranslate(x_center,y_center,back_plus)
 			glRotate(180,0,1,0)
-			self.__frame_inner_shell(-left,-right,bottom,top,thick_front,thick_back)
-			self.__frame_face(-left,-left_plus,-right,-right_plus,bottom,bottom_plus,top,top_plus)
+			self.__frame_face_basic(width,width_plus,height,height_plus)
+			self.__frame_inner_shell_basic(width,height,thick_front,thick_back)
 			glPopMatrix()
 			
+			#right side
 			glPushMatrix()
-			glTranslate(right_plus,0,0)
+			glTranslate(right_plus,y_center,z_center)
 			glRotate(90,0,1,0)
-			self.__frame_inner_shell(back,front,bottom,top,thick_front,thick_back)
-			self.__frame_face(back,back_plus,front,front_plus,bottom,bottom_plus,top,top_plus)
+			self.__frame_face_basic(depth,depth_plus,height,height_plus)
+			self.__frame_inner_shell_basic(depth,height,thick_front,thick_back)
 			glPopMatrix()
 			
+			# left
 			glPushMatrix()
-			glTranslate(left_plus,0,0)
-			glRotate(270,0,1,0)
-			self.__frame_inner_shell(back,front,bottom,top,thick_front,thick_back)
-			self.__frame_face(back,back_plus,front,front_plus,bottom,bottom_plus,top,top_plus)
+			glTranslate(left_plus,y_center,z_center)
+			glRotate(-90,0,1,0)
+			self.__frame_face_basic(depth,depth_plus,height,height_plus)
+			self.__frame_inner_shell_basic(depth,height,thick_front,thick_back)
 			glPopMatrix()
 			
+			#bottom
 			glPushMatrix()
-			glTranslate(0,bottom_plus,0)
+			glTranslate(x_center,bottom_plus,z_center)	
 			glRotate(90,1,0,0)
-			self.__frame_inner_shell(left,right,back,front,thick_front,thick_back)
-			self.__frame_face(left,left_plus,right,right_plus,back,back_plus,front,front_plus)
+			self.__frame_face_basic(width,width_plus,depth,depth_plus)
+			self.__frame_inner_shell_basic(width,depth,thick_front,thick_back)
 			glPopMatrix()
 			
+			#top
 			glPushMatrix()
-			glTranslate(0,top_plus,0)
-			glRotate(270,1,0,0)
-			self.__frame_inner_shell(left,right,back,front,thick_front,thick_back)
-			self.__frame_face(left,left_plus,right,right_plus,back,back_plus,front,front_plus)
+			glTranslate(x_center,top_plus,z_center)	
+			glRotate(-90,1,0,0)
+			self.__frame_face_basic(width,width_plus,depth,depth_plus)
+			self.__frame_inner_shell_basic(width,depth,thick_front,thick_back)
 			glPopMatrix()
 			
 			glEndList()
 		else: print "error, the delete list operation failed"
-			
+		
+	def __frame_inner_shell_basic(self,width,height,front,back):
+		w = width/2.0
+		h = height/2.0
+		glBegin(GL_TRIANGLE_STRIP)
+		glNormal(-1,0,0)
+		glVertex(w,-h,back)
+		glVertex(w,-h,front)
+		glVertex(w,h,back)
+		glVertex(w,h,front)
+		glEnd()
+		
+		glNormal(0,-1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(w,h,back)
+		glVertex(w,h,front)
+		glVertex(-w,h,back)
+		glVertex(-w,h,front)
+		glEnd()
+		
+		glNormal(1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-w,h,back)
+		glVertex(-w,h,front)
+		glVertex(-w,-h,back)
+		glVertex(-w,-h,front)
+		glEnd()
+		
+		glNormal(0,1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-w,-h,back)
+		glVertex(-w,-h,front)
+		glVertex(w,-h,back)
+		glVertex(w,-h,front)
+		glEnd()	
+	
+	def __frame_outer_shell_basic(self,width_plus,height_plus,front,back):
+		
+		wp = width_plus/2.0
+		hp = height_plus/2.0
+		
+		glNormal(-1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-wp,-hp,back)
+		glVertex(-wp,-hp,front)
+		glVertex(-wp,hp,back)
+		glVertex(-wp,hp,front)
+		glEnd()
+		
+		glNormal(0,1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-wp,hp,back)
+		glVertex(-wp,hp,front)
+		glVertex(wp,hp,back)
+		glVertex(wp,hp,front)
+		glEnd()
+		
+		glNormal(1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(wp,hp,back)
+		glVertex(wp,hp,front)
+		glVertex(wp,-hp,back)
+		glVertex(wp,-hp,front)
+		glEnd()
+		
+		glNormal(0,-1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(wp,-hp,back)
+		glVertex(wp,-hp,front)
+		glVertex(-wp,-hp,back)
+		glVertex(-wp,-hp,front)
+		glEnd()
+		
+	def __frame_face_basic(self,width,width_plus,height,height_plus):
+		w = width/2.0
+		wp = width_plus/2.0
+		h = height/2.0
+		hp = height_plus/2.0
+		
+		glNormal(0,0,1)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-wp,-hp,0)
+		glVertex(-w,-hp,0)
+		glVertex(-wp,hp,0)
+		glVertex(-w,hp,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-wp,hp,0)
+		glVertex(-w,h,0)
+		glVertex(w,hp,0)
+		glVertex(w,h,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(wp,hp,0)
+		glVertex(w,hp,0)
+		glVertex(wp,-hp,0)
+		glVertex(w,-hp,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(w,-h,0)
+		glVertex(w,-hp,0)
+		glVertex(-w,-h,0)
+		glVertex(-w,-hp,0)
+		glEnd()
 	
 	def __frame_face(self,left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus):
 		glNormal(0,0,1)
@@ -691,7 +812,7 @@ class EMGLRotorWidget(EM3DGLVolume):
 			points.append([dx,dy,dz])
 		
 		self.__rotate_elliptical_points(points)
-			
+		
 		for i in range(size):
 			n = self.angle_information[i][0]
 
@@ -765,6 +886,7 @@ class EMGLRotorWidget(EM3DGLVolume):
 				#if (depth_testing_was_on): GL.glEnable(GL.GL_DEPTH_TEST)
 		#print self.rotations % (len(self.widgets))
 	
+	
 	def __get_visible(self):
 		'''
 		returns the visible widget
@@ -821,6 +943,9 @@ class EMGLRotorWidget(EM3DGLVolume):
 		if self.allow_child_mouse_events and self.__get_visible().isinwin(event.x(),viewport_height()-event.y()) :
 			self.__get_visible().toolTipEvent(event)
 	
+	
+	def keyPressEvent(self,event):
+		print "should act on up and down"
 	
 	def determine_dimensions(self):
 		# first determine the ellipse offset - this is related to the inplane rotation of the ellipse. We want the back point corresponding to
@@ -1286,6 +1411,10 @@ class EM3DGLWindow(EMGLWindow):
 	def depth(self):
 		return self.d
 	
+	def resize(self,width,height):
+		self.w = width
+		self.h = height
+	
 	def get_lr_bt_nf(self):
 		
 		#return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
@@ -1371,11 +1500,18 @@ class EM3DGLWindow(EMGLWindow):
 		glPopMatrix()
 	
 		glPushMatrix()
+		lrt = self.drawable.get_suggested_lr_bt_nf()
+		glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,0)
+		
+		glPushMatrix()
 		self.drawable.render()
 		glPopMatrix()
 
+		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
 		if self.draw_frame:
 			self.decoration.draw()
+			
+		glPopMatrix()
 
 	def isinwin(self,x,y):
 		interception = False
@@ -1388,6 +1524,13 @@ class EM3DGLWindow(EMGLWindow):
 				self.vdtools.setModelMatrix(self.model_matrices[i])
 				break
 		return interception
+		
+	def updateGL(self):
+		self.parent.updateGL()
+
+	def emit(self,*args,**kargs):
+		print "emit me"
+		#self.parent.emit(*args,**kargs)
 		
 class EM3DGLWindowOverride(EM3DGLWindow):
 	'''
@@ -1654,7 +1797,6 @@ class EMGLView2D_v2(EMEventRerouter):
 			self.drawable = parent
 			self.w = self.parent.width()
 			self.h = self.parent.height()
-			print "in init gl dimes are",self.w,self.h,self.parent
 		else:
 			if isinstance(image,list):
 				if len(image) == 1:
@@ -1752,7 +1894,6 @@ class EMGLView2D:
 			self.drawable = parent
 			self.w = self.parent.width()
 			self.h = self.parent.height()
-			print "in init gl dimes are",self.w,self.h,self.parent
 		else:
 			if isinstance(image,list):
 				if len(image) == 1:
@@ -2079,6 +2220,7 @@ class EMGLViewQtWidget:
 				pixmap = QtGui.QPixmap.grabWidget(self.qwidget.widget())
 			#self.qwidget.setVisible(False)
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
+			print self.parent
 			self.itex = self.parent.bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 		

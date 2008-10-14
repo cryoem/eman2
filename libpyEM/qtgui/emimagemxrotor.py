@@ -139,15 +139,26 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
 		
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, self.light_0_pos)
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,1.])
+		#glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.5)
+		#glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.5)
+		#glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, .2)
+		#glEnable(GL_LIGHT1)
+		#glLightfv(GL_LIGHT1, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
+		#glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		#glLightfv(GL_LIGHT1, GL_SPECULAR, [0.1, .1, .1, 1.0])
+		#glLightfv(GL_LIGHT1, GL_POSITION, [-0.1,.1,1.,1.])
+		#glLightf(GL_LIGHT1, GL_SPOT_DIRECTION, 45)
+		#glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, [-0.1,.1,1.,0.])
+			
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
+
 		
 		glEnable(GL_DEPTH_TEST)
 		
@@ -235,9 +246,11 @@ class EMImageMXRotorModule(EMGUIModule):
 		return "rotor"
 		
 	def get_gl_widget(self,qt_parent=None):
-		from emfloatingwidgets import EM3DGLWindow
+		from emfloatingwidgets import EM3DGLWindowOverride
 		if self.gl_widget == None:
-			self.gl_widget =EM3DGLWindowOverride(self,self.rotor)
+			self.gl_widget = EM3DGLWindowOverride(self,self.rotor)
+			self.gl_widget.resize(640,640)
+			self.parent = self.gl_widget
 			self.set_qt_parent(qt_parent)
 			self.disable_mx_zoom()
 			self.disable_mx_translate()
@@ -295,7 +308,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			
 	def __init_gl_widget(self):
 		self.gl_widget = EM3DGLWindowOverride(self,self.rotor)
-		self.gl_widget.set_draw_frame(False)
+		self.gl_widget.set_draw_frame(True)
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
 			
@@ -460,8 +473,10 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 		self.__update_rotor_range(start_changed ,end_changed)
 		
-		w = self.rotor[idx].get_drawable()
-		self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
+		try:
+			w = self.rotor[0].get_drawable()
+			self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
+		except: pass
 	
 	def __update_rotor_range(self,start_changed,end_changed):
 		
@@ -526,7 +541,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.rotor.set_shapes(shapes,shrink)
 
 	def register_animatable(self,animatable):
-		self.parent.register_animatable(animatable)
+		self.get_qt_parent().register_animatable(animatable)
 		
 	def width(self):
 		try: return self.parent.width()
@@ -683,7 +698,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		GL.glEnable(GL.GL_LIGHTING)
 		z = self.parent.get_depth_for_height(abs(lrt[3]-lrt[2]))
 		
-		z_near = z-lrt[4]
+		z_near = z-lrt[4]-1000
 		z_trans = 0
 		z_far = z-lrt[5]
 		if z_near < 0:
@@ -699,7 +714,8 @@ class EMImageMXRotorModule(EMGUIModule):
 
 		GL.glPushMatrix()
 		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
-		glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-z)
+		#glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-z)
+		glTranslate(0,0,-z)
 		self.gl_widget.draw()
 		GL.glPopMatrix()
 	

@@ -187,6 +187,21 @@ class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.target.set_frozen(frozen,idx)
 	
 class EMImageRotorModule(EMGUIModule):
+	
+	def get_desktop_hint(self):
+		return "rotor"
+		
+	def get_gl_widget(self,qt_parent=None):
+		from emfloatingwidgets import EM3DGLWindowOverride
+		if self.gl_widget == None:
+			self.gl_widget =EM3DGLWindowOverride(self,self.rotor)
+			self.parent = self.gl_widget
+			self.set_qt_parent(qt_parent)
+			#self.disable_mx_zoom()
+			#self.disable_mx_translate()
+			
+		return self.gl_widget
+	
 	def get_qt_widget(self):
 		if self.parent == None:
 			self.parent = EMImageRotorWidget(self)
@@ -197,6 +212,7 @@ class EMImageRotorModule(EMGUIModule):
 	
 	def __init__(self, data=None,application=None):
 		self.parent = None
+		self.gl_widget = None
 		self.rotor = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.data=None
@@ -263,16 +279,18 @@ class EMImageRotorModule(EMGUIModule):
 		self.rotor.set_shapes(shapes,shrink,idx)
 
 	def register_animatable(self,animatable):
-		self.parent.register_animatable(animatable)
+		self.get_qt_parent().register_animatable(animatable)
 	
 	def get_inspector(self):
 		return None
 	
 	def width(self):
-		return self.parent.width()
+		try: return self.get_parent().width()
+		except: return 0
 	
 	def height(self):
-		return self.parent.height()
+		try: return self.get_parent().height()
+		except: return 0
 
 	def getImageFileName(self):
 		''' warning - could return none in some circumstances'''
@@ -331,8 +349,8 @@ class EMImageRotorModule(EMGUIModule):
 		#print self.z_near,self.z_far,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans
 		
 		glPushMatrix()
-		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-z)
-		glTranslate(0,-75,0) # This number is a FIXME issue
+		glTranslate(0,0,-z)
+		#glTranslate(0,-75,0) # This number is a FIXME issue
 		#FTGL.print_message("hello hello",36);
 		self.widget.draw()
 		glPopMatrix()

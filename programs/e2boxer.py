@@ -855,15 +855,16 @@ class EMBoxerModule:
 		self.guimxitp = None
 		self.guimxit = None
 		self.__gen_image_thumbnails_widget()
-		
+
 		if self.guimxit != None:
+			self.application.show_specific(self.guimxit)
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.get_parent().resize(*self.guimxit.get_optimal_size())
-			QtCore.QObject.connect(self.guimxit.get_parent(),QtCore.SIGNAL("mousedown"),self.image_selected)
+			QtCore.QObject.connect(self.guimxit.get_qt_parent(),QtCore.SIGNAL("mousedown"),self.image_selected)
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 	
-			self.application.show_specific(self.guimxit)
+			
 	def __init_guimx(self):
 		glflags = EMOpenGLFlagsAndTools()
 		emftgl_supported = True

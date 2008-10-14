@@ -969,7 +969,6 @@ class EMImage2DModule(EMGUIModule):
 		return False
 
 	def render(self):
-		
 		if not self.data and not self.fft : return
 		
 		lighting = glIsEnabled(GL_LIGHTING)

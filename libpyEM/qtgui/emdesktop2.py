@@ -36,6 +36,7 @@ from PyQt4.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.GLX import *
 from OpenGL.GLUT import *
 from valslider import ValSlider
 from math import *
@@ -136,6 +137,11 @@ class EMRegion:
 	
 	def set_origin(self,v):
 		return self.geometry.set_origin(v)
+	
+	def resize(self,width,height,depth=0):
+		self.geometry.set_width(width)
+		self.geometry.set_height(height)
+		self.geometry.set_depth(depth)
 
 class EMGLViewContainer(EMWindowNode,EMRegion):
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
@@ -374,12 +380,11 @@ class EMDesktopApplication(EMApplication):
 				return
 			
 		self.children.append(child)
-		print "attaching in desktop application"
 		#self.target.attach_gl_child(child,child.get_desktop_hint())
 		
 	def ensure_gl_context(self,child):
-		print "ensuring opengl context?? "
-		pass
+		EMDesktop.main_widget.context().makeCurrent()
+		#pass
 	
 	def show(self):
 		for i in self.children:
@@ -434,8 +439,10 @@ class EMDesktopFrame(EMFrame):
 		EMDesktop.main_widget.register_resize_aware(self)
 		
 		self.left_side_bar = LeftSideWidgetBar(self)
+		self.right_side_bar = RightSideWidgetBar(self)
 		self.display_frame = EMPlainDisplayFrame(self)
 		self.attach_child(self.left_side_bar)
+		self.attach_child(self.right_side_bar)
 		self.attach_display_child(self.display_frame)
 		# what is this?
 		self.bgob2=ob2dimage(self,self.read_EMAN2_image())
@@ -484,19 +491,21 @@ class EMDesktopFrame(EMFrame):
 			self.display_frames[0].set_geometry(Region(200,0,-100,int(viewport_width()-400),int(viewport_height()),100))
 	
 	def attach_gl_child(self,child,hint):
-		if hint == "dialog" or hint == "inspector" or hint == "rotor":
+		for child_,t in self.child_mappings.items():
+			if child_ == child: return
+		
+		if hint == "dialog" or hint == "inspector":
 			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
 			self.child_mappings[child] = self.left_side_bar
-		elif hint == "image" or hint == "rotor":
-			#child.set_parent(self.display_frame)
+		elif hint == "image":
 			p = self.display_frame.get_child_region()
 			child.set_parent(p)
-			print "set child",child, "parent",p
 			p.attach_child(child.get_gl_widget(EMDesktop.main_widget))
-			#p = self.display_frame.attach_child()
-			#child.set_parent(p)
 			print self.display_frame.print_info()
 			self.child_mappings[child] = self.display_frame
+		elif hint == "rotor":
+			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
+			self.child_mappings[child] = self.right_side_bar
 		else:
 			print "unsupported",hint
 	
@@ -652,10 +661,11 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
 	application = None
 	def __init__(self):
+		print "in desktop initi"
 		EMDesktop.main_widget = self
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
-		fmt.setSampleBuffers(True)
+		fmt.setSampleBuffers(False)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		
 		
@@ -749,8 +759,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 	def add_boxer_frame(self):
 		if not self.establish_target_frame("boxer"): return
 		
-		print "myself is",self
-		boxer = EMBoxerModule(EMDesktop.application,["mici_noise.hdf"],[],128)
+		boxer = EMBoxerModule(EMDesktop.application,["mici_noise.hdf","mici_noise_2.hdf"],[],128)
 		
 	def get_app_screen(self):
 		return self.appscreen
@@ -803,7 +812,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 		return self.time
 	
 	def time_out(self):
-		self.time  = time()-self.begin_time
+		self.time  = time()
 		rm = []
 		if len(self.animatables) != 0:
 			#print len(self.animatables)
@@ -852,14 +861,14 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 	
 	def paintGL(self):
-
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		print glXGetCurrentContext(),glXGetCurrentDisplay()
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
 		glPushMatrix()
-		
+		glEnable(GL_DEPTH_TEST)
 		if (self.get_time() < 0):
 			z = self.get_z_opt() + float(self.get_time())/2.0*self.get_z_opt()
 			#print z
@@ -964,7 +973,7 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			self.animation.transform()
 		
 		self.cam.position()
-		
+	
 		for child in self.children:
 			glPushMatrix()
 			child.draw()
@@ -1117,7 +1126,9 @@ class ob2dimage:
 		
 		if self.texture_dl != 0: glCallList(self.texture_dl)
 		#glPopMatrix()
-class LeftSideWidgetBar(EMGLViewContainer):
+
+
+class SideWidgetBar(EMGLViewContainer):
 	def __init__(self,parent):
 		EMGLViewContainer.__init__(self,parent)
 		self.mouse_on = None
@@ -1131,7 +1142,8 @@ class LeftSideWidgetBar(EMGLViewContainer):
 		
 	def __del__(self):
 		try: EMDesktop.main_widget.deregister_resize_aware(self)
-		except: pass # this might happen at program death
+		except: pass # this might happen at program
+		
 	def width(self):
 		width = 0
 		for child in self.children:
@@ -1142,24 +1154,9 @@ class LeftSideWidgetBar(EMGLViewContainer):
 		
 	def height(self):
 		return viewport_height()
-
-	def draw(self):
-		glPushMatrix()
-		glTranslate(-self.parent.width()/2.0,self.parent.height()/2.0,0)
-		for i,child in enumerate(self.children):
-			glPushMatrix()
-			self.transformers[i].transform()
-			child.draw()
-			glPopMatrix()
-			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height(),0)
-
-		glPopMatrix()
-
-	def i_initialized(self,child):
-		if isinstance(child,EMDesktopTaskWidget):
-			pass
-			#child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
-
+	
+	
+	
 	def seed_scale_animation(self,i):
 		t = self.transformers[i]
 		if t.get_xy_scale() != 1.0:
@@ -1181,8 +1178,7 @@ class LeftSideWidgetBar(EMGLViewContainer):
 				if j != i: 
 					#print "seed a scale event for ", j
 					self.transformers[j].seed_scale_animation_event(below_scale)
-			#elif i == (len(self.transformers)-1):
-			
+					
 	def resize_gl(self):
 		self.reset_scale_animation()
 
@@ -1199,7 +1195,7 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			#print "resetting scale event for ", i
 			#i += 1
 			t.seed_scale_animation_event(scale)
-
+			
 	def mouseMoveEvent(self, event):
 		intercept = False
 		for i,child in enumerate(self.children):
@@ -1237,13 +1233,7 @@ class LeftSideWidgetBar(EMGLViewContainer):
 				self.reset_scale_animation()
 				
 		EMGLViewContainer.mouseMoveEvent(self,event)
-		
-	def attach_child(self,new_child):
-		self.transformers.append(LeftSideWidgetBar.LeftSideTransform(new_child))
-		EMWindowNode.attach_child(self,new_child)
-		self.reset_scale_animation()
-		#print_node_hierarchy(self.parent)
-		
+
 	def detach_child(self,new_child):
 		for i,child in enumerate(self.children):
 			if (child == new_child):
@@ -1254,111 +1244,191 @@ class LeftSideWidgetBar(EMGLViewContainer):
 			
 		print "error, attempt to detach a child that didn't belong to this parent"
 
-	class LeftSideTransform:
-		ACTIVE = 0
-		INACTIVE = 1
-		ANIMATED = 2
-		def __init__(self,child):
-			self.child = child
-			self.rotation_animation = None
+class SideTransform:
+	ACTIVE = 0
+	INACTIVE = 1
+	ANIMATED = 2
+	def __init__(self,child):
+		self.child = child
+		self.rotation_animation = None
+		self.scale_animation = None
+		self.state = SideTransform.INACTIVE
+		self.xy_scale = 1.0
+		
+		self.rotation = 0 # supply these yourself, probably
+		self.default_rotation = 0 # supply these yourself, probably
+		
+	def __del__(self):
+		if self.scale_animation != None:
+			self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
 			self.scale_animation = None
-			self.state = LeftSideWidgetBar.LeftSideTransform.INACTIVE
-			self.rotation = 90
-			self.xy_scale = 1.0
-			
-		def __del__(self):
-			if self.scale_animation != None:
-				self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
-				self.scale_animation = None
-			
-			if self.rotation_animation != None:
-				self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
-				self.rotation_animation = None
 		
-		def get_xy_scale(self):
-			return self.xy_scale
+		if self.rotation_animation != None:
+			self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+			self.rotation_animation = None
+	
+	def get_xy_scale(self):
+		return self.xy_scale
+	
+	def set_xy_scale(self,xy_scale):
+		self.xy_scale = xy_scale
+	
+	def set_rotation(self,rotation):
+		self.rotation = rotation
+	
+	def seed_scale_animation_event(self,scale):
+		if self.xy_scale == scale: return
 		
-		def set_xy_scale(self,xy_scale):
-			self.xy_scale = xy_scale
+		if self.scale_animation != None:
+			self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+			self.scale_animation = None
 		
-		def set_rotation(self,rotation):
-			self.rotation = rotation
+		animation = XYScaleAnimation(self,self.xy_scale,scale)
+		self.scale_animation = animation
+		EMDesktop.main_widget.register_animatable(animation)
 		
-		def seed_scale_animation_event(self,scale):
-			if self.xy_scale == scale: return
+	def seed_rotation_animation_event(self,force_inactive=False,force_active=False):
+		
+		if self.state == SideTransform.ACTIVE:
+			rot = [0,self.default_rotation]
+		elif self.state == SideTransform.ANIMATED:
+			c = self.rotation
+			s = self.rotation_animation.get_start()
+			if c < s: s = self.default_rotation
+			elif c > s: s = 0
+			else: print "I'm a bad programmer",c,s
+			if force_inactive: s = self.default_rotation
+			if force_active: s = 0
+			rot =  [c,s]
+		elif self.state == SideTransform.INACTIVE:
+			rot = [self.default_rotation,0]
 			
-			if self.scale_animation != None:
-				self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
-				self.scale_animation = None
-			
-			animation = XYScaleAnimation(self,self.xy_scale,scale)
-			self.scale_animation = animation
-			EMDesktop.main_widget.register_animatable(animation)
-			
-		def seed_rotation_animation_event(self,force_inactive=False,force_active=False):
-			
-			if self.state == LeftSideWidgetBar.LeftSideTransform.ACTIVE:
-				rot = [0,90]
-			elif self.state == LeftSideWidgetBar.LeftSideTransform.ANIMATED:
-				c = self.rotation
-				s = self.rotation_animation.get_start()
-				if c < s: s = 90
-				elif c > s: s = 0
-				else: print "I'm a bad programmer",c,s
-				if force_inactive: s = 90
-				if force_active: s = 0
-				rot =  [c,s]
-			elif self.state == LeftSideWidgetBar.LeftSideTransform.INACTIVE:
-				rot = [90,0]
-				
-			if self.rotation_animation != None:
-				self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
-				self.rotation_animation = None
+		if self.rotation_animation != None:
+			self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+			self.rotation_animation = None
+
+		
+		#print "adding animation",rot
+		animation = SingleAxisRotationAnimation(self,rot[0],rot[1],[0,1,0])
+		self.rotation_animation = animation
+		self.state =  SideTransform.ANIMATED
+		EMDesktop.main_widget.register_animatable(animation)
+		
+	def is_animatable(self):
+		if self.rotation_animation != None: return not self.rotation_animation.is_animated()
+		elif self.state == SideTransform.ACTIVE:
+			return False
+		else: return True
+
+	def transform(self):
+		if self.rotation_animation != None and not self.rotation_animation.is_animated():
+			end = self.rotation_animation.get_end()
+			self.rotation_animation = None
+			if end == 0.0:
+				self.state = SideTransform.ACTIVE
+				self.rotation = 0
+			elif end == self.default_rotation:
+				self.state = SideTransform.INACTIVE
+		
+		if self.scale_animation != None and not self.scale_animation.is_animated():
+			self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+			self.scale_animation = None
+		
+		if self.rotation_animation == None:
+			if self.rotation != self.default_rotation and self.rotation != 0:
+				self.rotation = self.default_rotation
+		
+	def draw(self):
+		
+		glPushMatrix()
+		self.transform()
+		self.child.draw()
+		glPopMatrix()
+		glTranslate(0,-self.xy_scale*self.child.height(),0)
 
 			
-			#print "adding animation",rot
-			animation = SingleAxisRotationAnimation(self,rot[0],rot[1],[0,1,0])
-			self.rotation_animation = animation
-			self.state = LeftSideWidgetBar.LeftSideTransform.ANIMATED
-			EMDesktop.main_widget.register_animatable(animation)
-			
-		def is_animatable(self):
-			if self.rotation_animation != None: return not self.rotation_animation.is_animated()
-			elif self.state == LeftSideWidgetBar.LeftSideTransform.ACTIVE:
-				return False
-			else: return True
+class RightSideWidgetBar(SideWidgetBar):
+	def __init__(self,parent):
+		SideWidgetBar.__init__(self,parent)
+	
+	
+	def draw(self):
+		glPushMatrix()
+		glTranslate(self.parent.width()/2.0,self.parent.height()/2.0,0)
+		for i,child in enumerate(self.children):
+			glPushMatrix()
+			self.transformers[i].transform()
+			child.draw()
+			glPopMatrix()
+			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height(),0)
+
+		glPopMatrix()
+		
+	def attach_child(self,new_child):
+		self.transformers.append(RightSideWidgetBar.RightSideTransform(new_child))
+		EMWindowNode.attach_child(self,new_child)
+		self.reset_scale_animation()
+		#print_node_hierarchy(self.parent)
+
+
+	def get_child_region(self):
+		child = EMGLViewContainer(self,Region(0,0,0,640,640,640))
+		self.attach_child(child)
+		return child
+
+	class RightSideTransform(SideTransform):
+		def __init__(self,child):
+			SideTransform.__init__(self,child)
+			self.rotation = -90
+			self.default_rotation = -90
 
 		def transform(self):
-			if self.rotation_animation != None and not self.rotation_animation.is_animated():
-				end = self.rotation_animation.get_end()
-				self.rotation_animation = None
-				if end == 0.0:
-					self.state = LeftSideWidgetBar.LeftSideTransform.ACTIVE
-					self.rotation = 0
-				elif end == 90.0:
-					self.state = LeftSideWidgetBar.LeftSideTransform.INACTIVE
+			SideTransform.transform(self)
 			
-			if self.scale_animation != None and not self.scale_animation.is_animated():
-				self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
-				self.scale_animation = None
-			
-			if self.rotation_animation == None:
-				if self.rotation != 90 and self.rotation != 0:
-					self.rotation = 90
+			glTranslate(0,-self.xy_scale*self.child.height()/2,0)
+			glRotate(self.rotation,0,1,0)
+			glTranslate(-self.xy_scale*self.child.width()/2.0,0,0)
+			glScale(self.xy_scale,self.xy_scale,1.0)
+		
+	
+
+class LeftSideWidgetBar(SideWidgetBar):
+	def __init__(self,parent):
+		SideWidgetBar.__init__(self,parent)
+
+	def draw(self):
+		glPushMatrix()
+		glTranslate(-self.parent.width()/2.0,self.parent.height()/2.0,0)
+		for i,child in enumerate(self.children):
+			glPushMatrix()
+			self.transformers[i].transform()
+			child.draw()
+			glPopMatrix()
+			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height(),0)
+
+		glPopMatrix()
+		
+	def attach_child(self,new_child):
+		self.transformers.append(LeftSideWidgetBar.LeftSideTransform(new_child))
+		EMWindowNode.attach_child(self,new_child)
+		self.reset_scale_animation()
+		#print_node_hierarchy(self.parent)
+		
+	class LeftSideTransform(SideTransform):
+		def __init__(self,child):
+			SideTransform.__init__(self,child)
+			self.rotation = 90
+			self.default_rotation = 90
+
+		def transform(self):
+			SideTransform.transform(self)
 			
 			glTranslate(0,-self.xy_scale*self.child.height()/2,0)
 			glRotate(self.rotation,0,1,0)
 			glTranslate(self.xy_scale*self.child.width()/2.0,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
-		
-		
-		def draw(self):
-			
-			glPushMatrix()
-			self.transform()
-			self.child.draw()
-			glPopMatrix()
-			glTranslate(0,-self.xy_scale*self.child.height(),0)
+
+	
 	
 
 			
