@@ -1057,7 +1057,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		import  types
 		if type(maskfile) is types.StringType:  
 			if myid == main_node:		print_msg("Maskfile                    : %s\n\n"%(maskfile))
-			mask=getImage(maskfile)
+			mask = getImage(maskfile)
 		else:
 			if myid == main_node: 		print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
@@ -1164,7 +1164,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				total_iter += 1
 
 				dropImage(tavg, os.path.join(outdir, "aqc_%03d.hdf"%(total_iter)))
-
+				
 				frsc = fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "drc%03d"%(total_iter)))
 				ref_data[2] = tavg
 				ref_data[3] = frsc

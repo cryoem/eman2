@@ -11276,7 +11276,7 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 	from numpy import Inf
 	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 	from scipy.optimize.optimize import fmin_cg
-	from utilities import getImage, get_params2D, print_begin_msg, print_end_msg, print_msg
+	from utilities import getImage, get_params2D, set_params2D, print_begin_msg, print_end_msg, print_msg
 	
 	if CTF:
 		from utilities import get_arb_params
@@ -11455,7 +11455,7 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 	from scipy.optimize.optimize import fmin_cg
 	from mpi import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD
-	from utilities import getImage, get_params2D, print_begin_msg, print_end_msg, print_msg
+	from utilities import getImage, set_params2D, get_params2D, print_begin_msg, print_end_msg, print_msg
 	
 	if CTF:
 		from utilities import get_arb_params
