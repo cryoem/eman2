@@ -282,3 +282,8 @@ class EMQtWidgetModule(EMGUIModule):
 	def keyPressEvent(self,event):
 		self.qt_widget.keyPressEvent(event)
 
+	def lock_texture(self):
+		self.gl_widget.lock_texture()
+		
+	def unlock_texture(self):
+		self.gl_widget.unlock_texture()

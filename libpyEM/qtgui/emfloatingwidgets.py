@@ -1288,6 +1288,14 @@ class EMGLWindow:
 		self.allow_target_wheel_events = True
 		
 		self.allow_target_translations = True
+		
+		self.texture_lock = 0
+	
+	def lock_texture(self):
+		self.texture_lock += 1
+	
+	def unlock_texture(self):
+		self.texture_lock -= 1
 	
 	def get_drawable(self): return self.drawable
 	
@@ -1310,6 +1318,8 @@ class EMGLWindow:
 		return self.drawable.get_inspector()
 	
 	def mousePressEvent(self, event):
+		if self.texture_lock > 0: return
+		
 		if event.modifiers() == Qt.ControlModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
 			self.cam.set_plane('xy')
 			self.cam.mousePressEvent(event)
@@ -1319,6 +1329,9 @@ class EMGLWindow:
 			self.drawable.mousePressEvent(qme)
 
 	def wheelEvent(self,event):
+		
+		if self.texture_lock > 0: return
+		
 		try: e = event.modifiers()
 		except: return
 		if event.modifiers() == Qt.ControlModifier:
@@ -1331,6 +1344,8 @@ class EMGLWindow:
 		#self.updateGL()
 	
 	def mouseMoveEvent(self,event):
+		if self.texture_lock > 0: return
+		
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
@@ -1340,6 +1355,8 @@ class EMGLWindow:
 			self.drawable.mouseMoveEvent(qme)
 	
 	def mouseDoubleClickEvent(self, event):
+		if self.texture_lock > 0: return
+		
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
@@ -1351,6 +1368,8 @@ class EMGLWindow:
 		#self.updateGL()
 
 	def mouseReleaseEvent(self,event):
+		if self.texture_lock > 0: return
+		
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseReleaseEvent(event)
@@ -1360,9 +1379,11 @@ class EMGLWindow:
 			self.drawable.mouseReleaseEvent(qme)
 	
 	def toolTipEvent(self,event):
+		if self.texture_lock > 0: return
 		self.drawable.toolTipEvent(event)
 	
 	def keyPressEvent(self,event):
+		if self.texture_lock > 0: return
 		self.drawable.keyPressEvent(event)
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
@@ -1395,6 +1416,14 @@ class EM3DGLWindow(EMGLWindow):
 		self.w = self.parent.width()
 		self.h = self.parent.height()
 		self.d = self.parent.height()
+		
+		self.texure_lock = 0
+	
+	def lock_texture(self):
+		self.texture_lock += 1
+	
+	def unlock_texture(self):
+		self.texture_lock -= 1
 	
 	def context(self):
 		return self.parent.context()
@@ -1540,6 +1569,7 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 		EM3DGLWindow.__init__(self,parent,gl_view)
 		
 	def mousePressEvent(self, event):
+		if self.texture_lock > 0: return
 		if event.modifiers() == Qt.ControlModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
 			self.cam.set_plane('xy')
 			self.cam.mousePressEvent(event)
@@ -1547,6 +1577,7 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 
 	
 	def mouseMoveEvent(self,event):
+		if self.texture_lock > 0: return
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
@@ -1554,6 +1585,7 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 			self.drawable.mouseMoveEvent(event)
 	
 	def mouseDoubleClickEvent(self, event):
+		if self.texture_lock > 0: return
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
@@ -1562,6 +1594,7 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 		#self.updateGL()
 
 	def mouseReleaseEvent(self,event):
+		if self.texture_lock > 0: return
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseReleaseEvent(event)
@@ -1841,9 +1874,10 @@ class EMGLView2D_v2(EMEventRerouter):
 		self.drawable.set_parent(self)
 		#self.drawable.originshift = False
 		self.w = a.get_xsize()
-		if self.w > self.parent.width(): self.w = self.parent.width()
+		#if self.w > self.parent.width(): self.w = self.parent.width()
 		self.h = a.get_ysize()
-		if self.h > self.parent.height(): self.h = self.parent.height()
+		#if self.h > self.parent.height(): self.h = self.parent.height()
+		print self.w,self.h
 
 	def set_width(self,w,resize_event=True):
 		self.w = w
@@ -2171,10 +2205,16 @@ class EMGLViewQtWidget:
 	
 		self.refresh_dl = True
 		self.texture_dl = 0
-	
+		self.texture_lock = 0
 		self.decoration = EM3DPlainBorderDecoration(self)
 	def get_decoration(self):
 		return self.decoration
+	
+	def lock_texture(self):
+		self.texture_lock += 1
+	
+	def unlock_texture(self):
+		self.texture_lock -= 1
 	
 	def __del__(self):
 		if (self.itex != 0 ):
@@ -2205,6 +2245,9 @@ class EMGLViewQtWidget:
 			self.updateTexture()
 			
 	def updateTexture(self,force=False):
+		if self.texture_lock > 0:
+			return
+		
 		if ( self.itex == 0 or self.gen_texture == True or force) : 
 			self.refresh_dl = True
 			if (self.itex != 0 ):
@@ -2220,7 +2263,6 @@ class EMGLViewQtWidget:
 				pixmap = QtGui.QPixmap.grabWidget(self.qwidget.widget())
 			#self.qwidget.setVisible(False)
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
-			print self.parent
 			self.itex = self.parent.bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 		

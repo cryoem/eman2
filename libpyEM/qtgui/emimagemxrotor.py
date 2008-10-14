@@ -308,7 +308,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			
 	def __init_gl_widget(self):
 		self.gl_widget = EM3DGLWindowOverride(self,self.rotor)
-		self.gl_widget.set_draw_frame(True)
+		self.gl_widget.set_draw_frame(False)
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
 			

@@ -287,7 +287,9 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		EMGLViewContainer.__init__(self,parent,geometry)
 		
 	def print_info(self):
+		
 		print self.get_size(),self.get_origin()
+		
 		
 	def get_child_region(self):
 		child = EMGLViewContainer(self,EMRegion.get_geometry(self))
@@ -441,9 +443,11 @@ class EMDesktopFrame(EMFrame):
 		self.left_side_bar = LeftSideWidgetBar(self)
 		self.right_side_bar = RightSideWidgetBar(self)
 		self.display_frame = EMPlainDisplayFrame(self)
-		self.attach_child(self.left_side_bar)
-		self.attach_child(self.right_side_bar)
+		
+		
 		self.attach_display_child(self.display_frame)
+		self.attach_child(self.right_side_bar)
+		self.attach_child(self.left_side_bar)
 		# what is this?
 		self.bgob2=ob2dimage(self,self.read_EMAN2_image())
 		self.child_mappings = {}
@@ -501,7 +505,7 @@ class EMDesktopFrame(EMFrame):
 			p = self.display_frame.get_child_region()
 			child.set_parent(p)
 			p.attach_child(child.get_gl_widget(EMDesktop.main_widget))
-			print self.display_frame.print_info()
+			#print self.display_frame.print_info()
 			self.child_mappings[child] = self.display_frame
 		elif hint == "rotor":
 			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
@@ -661,11 +665,10 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
 	application = None
 	def __init__(self):
-		print "in desktop initi"
 		EMDesktop.main_widget = self
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
-		fmt.setSampleBuffers(False)
+		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		
 		
@@ -759,7 +762,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 	def add_boxer_frame(self):
 		if not self.establish_target_frame("boxer"): return
 		
-		boxer = EMBoxerModule(EMDesktop.application,["mici_noise.hdf","mici_noise_2.hdf"],[],128)
+		boxer = EMBoxerModule(EMDesktop.application,["mici_noise.hdf","mici_noise_2.hdf","mici_noise.hdf","mici_noise_2.hdf","mici_noise.hdf","mici_noise_2.hdf"],[],128)
 		
 	def get_app_screen(self):
 		return self.appscreen
@@ -862,13 +865,14 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 	
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		print glXGetCurrentContext(),glXGetCurrentDisplay()
+		#print glXGetCurrentContext(),glXGetCurrentDisplay()
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
 		glPushMatrix()
 		glEnable(GL_DEPTH_TEST)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 		if (self.get_time() < 0):
 			z = self.get_z_opt() + float(self.get_time())/2.0*self.get_z_opt()
 			#print z
@@ -956,7 +960,13 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
-			
+	
+	def lock_texture(self):
+		self.desktop_task_widget.lock_texture()
+		
+	def unlock_texture(self):
+		self.desktop_task_widget.unlock_texture()
+	
 	def draw(self):
 		if ( self.init_flag == True ):
 			self.desktop_task_widget = EMGLViewQtWidget(EMDesktop.main_widget)
@@ -1257,7 +1267,7 @@ class SideTransform:
 		
 		self.rotation = 0 # supply these yourself, probably
 		self.default_rotation = 0 # supply these yourself, probably
-		
+		self.target_rotation = 0.0
 	def __del__(self):
 		if self.scale_animation != None:
 			self.scale_animation.set_animated(False) # this will cause the EMDesktop to stop animating
@@ -1266,6 +1276,10 @@ class SideTransform:
 		if self.rotation_animation != None:
 			self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
 			self.rotation_animation = None
+	
+	def animation_done_event(self,child):
+		self.child.unlock_texture()
+		pass
 	
 	def get_xy_scale(self):
 		return self.xy_scale
@@ -1286,22 +1300,23 @@ class SideTransform:
 		animation = XYScaleAnimation(self,self.xy_scale,scale)
 		self.scale_animation = animation
 		EMDesktop.main_widget.register_animatable(animation)
+		self.child.lock_texture()
 		
 	def seed_rotation_animation_event(self,force_inactive=False,force_active=False):
 		
 		if self.state == SideTransform.ACTIVE:
-			rot = [0,self.default_rotation]
+			rot = [self.target_rotation,self.default_rotation]
 		elif self.state == SideTransform.ANIMATED:
 			c = self.rotation
 			s = self.rotation_animation.get_start()
 			if c < s: s = self.default_rotation
-			elif c > s: s = 0
+			elif c > s: s = self.target_rotation
 			else: print "I'm a bad programmer",c,s
 			if force_inactive: s = self.default_rotation
-			if force_active: s = 0
+			if force_active: s = self.target_rotation
 			rot =  [c,s]
 		elif self.state == SideTransform.INACTIVE:
-			rot = [self.default_rotation,0]
+			rot = [self.default_rotation,self.target_rotation]
 			
 		if self.rotation_animation != None:
 			self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
@@ -1313,6 +1328,7 @@ class SideTransform:
 		self.rotation_animation = animation
 		self.state =  SideTransform.ANIMATED
 		EMDesktop.main_widget.register_animatable(animation)
+		self.child.lock_texture()
 		
 	def is_animatable(self):
 		if self.rotation_animation != None: return not self.rotation_animation.is_animated()
@@ -1324,9 +1340,9 @@ class SideTransform:
 		if self.rotation_animation != None and not self.rotation_animation.is_animated():
 			end = self.rotation_animation.get_end()
 			self.rotation_animation = None
-			if end == 0.0:
+			if end == self.target_rotation :
 				self.state = SideTransform.ACTIVE
-				self.rotation = 0
+				self.rotation = self.target_rotation
 			elif end == self.default_rotation:
 				self.state = SideTransform.INACTIVE
 		
@@ -1335,7 +1351,7 @@ class SideTransform:
 			self.scale_animation = None
 		
 		if self.rotation_animation == None:
-			if self.rotation != self.default_rotation and self.rotation != 0:
+			if self.rotation != self.default_rotation and self.rotation != self.target_rotation:
 				self.rotation = self.default_rotation
 		
 	def draw(self):
@@ -1350,7 +1366,7 @@ class SideTransform:
 class RightSideWidgetBar(SideWidgetBar):
 	def __init__(self,parent):
 		SideWidgetBar.__init__(self,parent)
-	
+		
 	
 	def draw(self):
 		glPushMatrix()
@@ -1381,7 +1397,8 @@ class RightSideWidgetBar(SideWidgetBar):
 			SideTransform.__init__(self,child)
 			self.rotation = -90
 			self.default_rotation = -90
-
+			self.target_rotation = -25
+			
 		def transform(self):
 			SideTransform.transform(self)
 			

@@ -1447,9 +1447,10 @@ class EMImage3DGUIModule(EMGUIModule):
 					#print browser2.port()
 	
 				self.help_window = EMQtWidgetModule(help,self.application)
+				self.application.show_specific(self.help_window)
 				#help.resize(640,640)
 		
-		self.application.show_specific(self.help_window)
+		
 				
 		
 def get_default_gl_colors():

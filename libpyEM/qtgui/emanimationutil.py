@@ -34,7 +34,7 @@ class Animatable:
 	cache_dts = None
 	def __init__(self):
 		self.time = 0		# time indicates the current time used for the basis of animation.
-		self.time_interval = 0.4 # 0.5 seconds for the animation to complete
+		self.time_interval = 0.3 # 0.3 seconds for the animation to complete
 		self.inverse_time_inverval = 1.0/self.time_interval
 		self.time_begin = 0 # records the time at which the animation was begun
 		self.animated = True
@@ -43,15 +43,17 @@ class Animatable:
 			self.init_cache_dts()
 		
 	def init_cache_dts(self):
-		from math import tanh
+		from math import tanh,sin,pi
 		Animatable.cache_dts = []
+		tanh_approach = False
 		for i in range(self.n):
-			tanh_approach = True
 			if tanh_approach:
 				val = (1+ (tanh(-4+float(i)/(self.n-1)*8)))/2.0
 				Animatable.cache_dts.append(val)
 			else:
-				Animatable.cache_dts.append(sin(float(i)/(self.n-1)*math.pi/2))
+				Animatable.cache_dts.append(sin(float(i)/(self.n-1)*pi/2))
+				
+		print Animatable.cache_dts
 		
 	def set_animated(self,val=True):
 		self.animated = val
@@ -94,7 +96,10 @@ class SingleAxisRotationAnimation(Animatable):
 		self.current = start
 		self.end = end
 		self.axis = axis
-		
+	
+	def __del__(self):
+		self.target.animation_done_event(self)
+	
 	def get_start(self):
 		return self.start
 	
@@ -121,7 +126,11 @@ class XYScaleAnimation(Animatable):
 		self.current = start
 		self.end = end
 		self.target = target
-		
+	
+	def __del__(self):
+		self.target.animation_done_event(self)
+	
+	
 	def get_start(self):
 		return self.start
 	

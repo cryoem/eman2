@@ -57,7 +57,7 @@ from global_def import *
 # end import SPARX definitions
 
 
-from emglplot import *
+#from emglplot import *
 
 from time import time,sleep
 
@@ -1551,7 +1551,7 @@ class EMBoxerModule:
 	def update_all_image_displays(self):
 		self.update_image_display()
 		self.update_mx_display()
-		if self.guimxit != None: self.guimxit.get_parent().updateGL()
+		if self.guimxit != None: self.guimxit.updateGL()
 	
 		#context = contextdata.getContext(None)
 		#print context
@@ -1562,8 +1562,8 @@ class EMBoxerModule:
 		if self.guimxit != None: self.guimxit.get_parent()
 		
 	def update_mx_display(self):
-		self.application.get_qt_gl_updategl_target(self.guimx).updateGL()
-		#self.guimx.get_qt_parent().updateGL()
+		#self.application.get_qt_gl_updategl_target(self.guimx).updateGL()
+		self.guimx.updateGL()
 
 	def delete_display_boxes(self,numbers):
 		'''
@@ -2284,8 +2284,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.new_threshold)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
-		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
-		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
+		#self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
+		#self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
 	
 	
@@ -2759,26 +2759,26 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.adv_inspector = QtGui.QWidget()
 		self.advanced_vbl =  QtGui.QVBoxLayout(self.adv_inspector)
 		
-		#  Insert the plot widget
+		#Insert the plot widget
 		self.plothbl = QtGui.QHBoxLayout()
 		
-		self.window = EMGLPlotWidget(self)
-		self.window.setInit()
-		self.window.resize(100,100)
-		self.window2=EMParentWin(self.window)
-		self.window2.resize(100,100)
+		#self.window = EMGLPlotWidget(self)
+		#self.window.setInit()
+		#self.window.resize(100,100)
+		#self.window2=EMParentWin(self.window)
+		#self.window2.resize(100,100)
 		
-		self.plothbl.addWidget(self.window2)
+		#self.plothbl.addWidget(self.window2)
 		
-		self.plotbuttonvbl = QtGui.QVBoxLayout()
+		#self.plotbuttonvbl = QtGui.QVBoxLayout()
 		
-		self.trythat=QtGui.QPushButton("Try That")
-		self.plotbuttonvbl.addWidget(self.trythat)
+		#self.trythat=QtGui.QPushButton("Try That")
+		#self.plotbuttonvbl.addWidget(self.trythat)
 		
-		self.reset=QtGui.QPushButton("Reset")
-		self.plotbuttonvbl.addWidget(self.reset)
+		#self.reset=QtGui.QPushButton("Reset")
+		#self.plotbuttonvbl.addWidget(self.reset)
 		
-		self.plothbl.addLayout(self.plotbuttonvbl)
+		#self.plothbl.addLayout(self.plotbuttonvbl)
 		
 		self.advanced_vbl2 = QtGui.QVBoxLayout()
 		
@@ -2975,13 +2975,13 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	def erase_toggled(self,bool):
 		self.unerase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_parent().setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_qt_parent().setMouseTracking(bool)
 		self.target.erase_toggled(bool)
 		
 	def unerase_toggled(self,bool):
 		self.erase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_parent().setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_qt_parent().setMouseTracking(bool)
 		self.target.unerase_toggled(bool)
 		
 	def dynapix_toggled(self,bool):
