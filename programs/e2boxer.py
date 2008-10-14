@@ -865,7 +865,6 @@ class EMBoxerModule:
 	
 			self.application.show_specific(self.guimxit)
 	def __init_guimx(self):
-		
 		glflags = EMOpenGLFlagsAndTools()
 		emftgl_supported = True
 		try: a = EMFTGL()
@@ -873,8 +872,8 @@ class EMBoxerModule:
 		if not glflags.npt_textures_unsupported() and emftgl_supported:
 			self.guimx=EMImageMXRotorModule(application=self.application)# widget for displaying image thumbs
 			self.guimx.disable_mx_zoom()
-			self.guimx.allow_camera_rotations(False)
-			self.guimx.disable_mx_translate()
+			#self.guimx.allow_camera_rotations(False)
+			#self.guimx.disable_mx_translate()
 			#self.fancy_mode = EMBoxerModule.FANCY_MODE
 			
 		else:
@@ -883,8 +882,8 @@ class EMBoxerModule:
 		
 		self.guimx.set_mouse_mode("app")
 		
-		qt_target = self.guimx.get_parent()
-			
+		qt_target = self.application.get_qt_emitter(self.guimx)
+
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			 QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
@@ -908,19 +907,16 @@ class EMBoxerModule:
 		self.__update_guiim_states()
 		self.guiim.set_mouse_mode(0)
 		
-		qt_target = self.guiim.get_parent()
+		qt_target = self.application.get_qt_emitter(self.guiim)
 			
-		try:qt_target.setWindowTitle(imagename)
-		except: pass
+		qt_target.setWindowTitle(imagename)
 		
-		try:
-			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.mouse_down)
-			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
-			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
-			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("keypress"),self.keypress)
-			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
-			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousemove"),self.mouse_move)
-		except: pass
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.mouse_down)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup")  ,self.mouse_up  )
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("keypress"),self.keypress)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousewheel"),self.mouse_wheel)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousemove"),self.mouse_move)
 		
 		try: qt_target.enable_timer()
 		except: pass
@@ -1232,11 +1228,13 @@ class EMBoxerModule:
 		if data != None:
 			if self.guimx == None:
 				self.__init_guimx()
-			self.guimx.set_data(data)
 			if len(data) != 0:
-				qt_target = self.guimx.get_parent()
-				if not qt_target.isVisible():
-					self.application.show_specific(self.guimx)
+				self.application.show_specific(self.guimx)
+				self.guimx.set_data(data)
+			
+				#qt_target = self.guimx.get_parent()
+				#if not qt_target.isVisible():
+					#self.application.show_specific(self.guimx)
 	
 	def clear_displays(self):
 		self.ptcl = []
@@ -1559,9 +1557,12 @@ class EMBoxerModule:
 		
 	def update_image_display(self):
 		self.guiim.updateGL()
+		
 		if self.guimxit != None: self.guimxit.get_parent()
+		
 	def update_mx_display(self):
-		self.guimx.get_parent().updateGL()
+		self.application.get_qt_gl_updategl_target(self.guimx).updateGL()
+		#self.guimx.get_qt_parent().updateGL()
 
 	def delete_display_boxes(self,numbers):
 		'''

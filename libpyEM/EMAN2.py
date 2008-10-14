@@ -324,7 +324,7 @@ def parsemodopt_operation(optstr):
 def display(img):
 	if GUIMode:
 		import emimage
-		image = emimage.EMImageModule(img,None,True,app)
+		image = emimage.EMImageModule(img,None,app)
 		app.show_specific(image)
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
@@ -341,13 +341,13 @@ def display(img):
 		
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
-	def __new__(cls,data=None,old=None,parent=1,copy=True):
+	def __new__(cls,data=None,old=None,parent=1):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
 		if GUIMode:	
 			import emimage
-			image = emimage.EMImageModule(data,old,copy,app)
+			image = emimage.EMImageModule(data,old,app)
 			app.show_specific(image)
 			return image.get_qt_widget()
 		else: print "can not instantiate EMImage in non gui mode"

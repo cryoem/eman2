@@ -484,7 +484,7 @@ class EMDesktopFrame(EMFrame):
 			self.display_frames[0].set_geometry(Region(200,0,-100,int(viewport_width()-400),int(viewport_height()),100))
 	
 	def attach_gl_child(self,child,hint):
-		if hint == "dialog" or hint == "inspector":
+		if hint == "dialog" or hint == "inspector" or hint == "rotor":
 			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
 			self.child_mappings[child] = self.left_side_bar
 		elif hint == "image" or hint == "rotor":

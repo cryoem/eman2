@@ -149,7 +149,7 @@ def getmxim(fsp,fsp2,clsnum):
 
 def display(img,app,title="EMAN2 image"):
 	if len(img)==1 : img=img[0]
-	w=EMImageModule(data=img,old=None,copy=False) # no copying necessary from the command 
+	w=EMImageModule(data=img,old=None)
 	w.get_qt_widget().setWindowTitle(title)
 	try:
 		if file_exists(title):
