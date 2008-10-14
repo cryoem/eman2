@@ -2216,7 +2216,7 @@ def print_begin_msg(program_name, onscreen=False):
 		print_msg(spacing+string+"\n")
 		print_msg(hundred_stars+"\n")
 
-def print_end_msg(program_name, onsrceen=False):
+def print_end_msg(program_name, onscreen=False):
 	from time import localtime, strftime
 	hundred_stars = "****************************************************************************************************"
 	string = "End of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
