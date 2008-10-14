@@ -42,9 +42,9 @@ import sys
 from math import tan,pi
 import time
 
-from emfloatingwidgets import EMGLRotorWidget,EM3DWidget,EMGLViewQtWidget
+from emfloatingwidgets import EMGLRotorWidget,EM3DGLWindow,EMGLViewQtWidget
 from emimageutil import  EMEventRerouter
-from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule,EMOpenGLFlagsAndTools
+from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule,EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
@@ -187,14 +187,14 @@ class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	
 
 
-class EMRotorModule(EMImage2DGUIModule):
+class EMRotorModule(EMGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:
 			self.parent = EMRotorWidget(self)
 		return EMGUIModule.darwin_check(self)
 	
 	def __init__(self, data=None,application=None):
-		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.parent = None
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
@@ -203,7 +203,7 @@ class EMRotorModule(EMImage2DGUIModule):
 		self.rotor = EMGLRotorWidget(self,0,-70,-15,EMGLRotorWidget.TOP_ROTARY,100)
 		self.rotor.set_angle_range(40.0)
 		self.rotor.set_mouse_mode("mxrotor")
-		self.widget = EM3DWidget(self,self.rotor)
+		self.widget = EM3DGLWindow(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		
 		self.z_near = 0

@@ -43,7 +43,7 @@ from EMAN2 import *
 import EMAN2
 import sys
 import numpy
-from emimageutil import ImgHistogram
+
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtCore import QTimer
@@ -57,6 +57,7 @@ from embrowse import EMBrowserDialog
 from emselector import EMSelectorDialog
 from emapplication import EMApplication, EMQtWidgetModule
 from emanimationutil import *
+from emimageutil import EMEventRerouter
 
 class EMWindowNode:
 	def __init__(self,parent):
@@ -281,16 +282,21 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		
 	def print_info(self):
 		print self.get_size(),self.get_origin()
+		
+	def get_child_region(self):
+		child = EMGLViewContainer(self,EMRegion.get_geometry(self))
+		EMGLViewContainer.attach_child(self,child)
+		return child
 
-	def attach_child(self,new_child):
-		if len(self.children)== 0:
-			child = EMGLViewContainer(self,EMRegion.get_geometry(self))
-			child.attach_child(new_child)
-			#new_child.set_parent(child)
-			EMGLViewContainer.attach_child(self,child)
-			return child
-		else:
-			print "bailing"
+	#def attach_child(self,new_child):
+		#if len(self.children)== 0:
+			#child = EMGLViewContainer(self,EMRegion.get_geometry(self))
+			##child.attach_child(new_child)
+			##new_child.set_parent(child)
+			##EMGLViewContainer.attach_child(self,child)
+			#return child
+		#else:
+			#print "bailing"
 			
 
 class EMFrame(EMWindowNode,EMRegion):
@@ -369,12 +375,15 @@ class EMDesktopApplication(EMApplication):
 			
 		self.children.append(child)
 		print "attaching in desktop application"
-		self.target.attach_gl_child(child,child.get_desktop_hint())
+		#self.target.attach_gl_child(child,child.get_desktop_hint())
 		
 	def ensure_gl_context(self,child):
+		print "ensuring opengl context?? "
 		pass
 	
 	def show(self):
+		for i in self.children:
+			self.target.attach_gl_child(child,child.get_desktop_hint())
 		pass
 	
 	def close_specific(self,child,inspector_too=True):
@@ -392,9 +401,11 @@ class EMDesktopApplication(EMApplication):
 		pass
 	
 	def hide_specific(self,child,inspector_too=True):
+		#self.target.attach_gl_child(child,child.get_desktop_hint())
 		pass
 	
 	def show_specific(self,child):
+		self.target.attach_gl_child(child,child.get_desktop_hint())
 		pass
 
 	def close_child(self,child):
@@ -408,7 +419,11 @@ class EMDesktopApplication(EMApplication):
 	def exec_loop( *args, **kwargs ):
 		pass
 
-		
+	def get_qt_emitter(self,child):
+		return EMDesktop.main_widget
+			
+	def get_qt_gl_updategl_target(self,child):
+		return EMDesktop.main_widget
 
 class EMDesktopFrame(EMFrame):
 	image = None
@@ -469,13 +484,17 @@ class EMDesktopFrame(EMFrame):
 			self.display_frames[0].set_geometry(Region(200,0,-100,int(viewport_width()-400),int(viewport_height()),100))
 	
 	def attach_gl_child(self,child,hint):
-		if hint == "dialog" or hint == "inspector" or hint == "rotor":
+		if hint == "dialog" or hint == "inspector":
 			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
 			self.child_mappings[child] = self.left_side_bar
-		elif hint == "image":
+		elif hint == "image" or hint == "rotor":
 			#child.set_parent(self.display_frame)
-			p = self.display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget))
+			p = self.display_frame.get_child_region()
 			child.set_parent(p)
+			print "set child",child, "parent",p
+			p.attach_child(child.get_gl_widget(EMDesktop.main_widget))
+			#p = self.display_frame.attach_child()
+			#child.set_parent(p)
 			print self.display_frame.print_info()
 			self.child_mappings[child] = self.display_frame
 		else:
@@ -536,16 +555,15 @@ class EMDesktopFrame(EMFrame):
 	
 	
 	def draw(self):
+		#print EMDesktop.main_widget.context()
 		glPushMatrix()
 		self.draw_frame()
 		glPopMatrix()
 		
-
 		glPushMatrix()
 		glScalef(self.height()/2.0,self.height()/2.0,1.0)
 		self.bgob2.render()
 		glPopMatrix()
-	
 
 		glPushMatrix()
 		glTranslatef(0.,0.,self.get_z_opt())
@@ -574,6 +592,9 @@ class EMDesktopFrame(EMFrame):
 
 	def get_aspect(self):
 		return self.parent.get_aspect()
+	
+	def closeEvent(self,event):
+		print "should act on close event"
 
 class EMDesktopScreenInfo:
 	"""
@@ -625,7 +646,7 @@ def print_node_hierarchy(node):
 			print child,
 			print_node_hierarchy(child)
 
-class EMDesktop(QtOpenGL.QGLWidget):
+class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 	main_widget = None
 	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
 	"""
@@ -637,11 +658,11 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		
+		
 		if EMDesktop.application == None:
 			EMDesktop.application = EMDesktopApplication(self,qt_application_control=False)
 		
 		self.modules = [] # a list of all the modules that currently exist
-		self.gq=0			# quadric object for cylinders, etc	
 		self.app=QtGui.QApplication.instance()
 		self.sysdesktop=self.app.desktop()
 		self.appscreen=self.sysdesktop.screen(self.sysdesktop.primaryScreen())
@@ -650,9 +671,6 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		self.resize_aware_objects = []
 		self.animatables = []
 		
-		# what is this?
-		self.bgob2=ob2dimage(self,self.read_EMAN2_image())
-		
 		self.setMouseTracking(True)
 		
 		# this float widget has half of the screen (the left)
@@ -660,14 +678,13 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		self.desktop_frames = [EMDesktopFrame(self)]
 		self.current_desktop_frame = self.desktop_frames[0]
 		self.current_desktop_frame.append_task_widget(self.task_widget)
+		EMEventRerouter.__init__(self,self.current_desktop_frame)
 		
-		print_node_hierarchy(self.current_desktop_frame)
+		#print_node_hierarchy(self.current_desktop_frame)
 		#print fw1.width(),fw1.height()
 		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.borderwidth=10.0
 		self.cam = Camera()
-		
-		self.frame_dl = 0
 		
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
@@ -695,6 +712,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		
 		dialog = EMBrowserDialog(self,EMDesktop.application)
 		em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
+		EMDesktop.application.show_specific(em_qt_widget)
 
 		
 	def establish_target_frame(self,type_name):
@@ -716,6 +734,8 @@ class EMDesktop(QtOpenGL.QGLWidget):
 			self.desktop_frames.append(target_frame)
 			self.current_desktop_frame = target_frame
 		
+		EMEventRerouter.set_target(self,self.current_desktop_frame)
+		
 		target_frame.set_type(type_name)
 		
 		return True
@@ -724,7 +744,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		if not self.establish_target_frame("thumb"): return
 		dialog = EMSelectorDialog(self,EMDesktop.application)
 		em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
-	
+		EMDesktop.application.show_specific(em_qt_widget)
 	
 	def add_boxer_frame(self):
 		if not self.establish_target_frame("boxer"): return
@@ -778,56 +798,6 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		width = self.aspect*height
 		return [width,height]
 	
-	def draw_frame(self):
-		if self.frame_dl == 0:
-			#print self.appwidth/2.0,self.appheight/2.0,self.zopt
-			glCallList(self.glbasicobjects.getCylinderDL())
-			length = self.get_z_opt()
-			self.frame_dl=glGenLists(1)
-			glNewList(self.frame_dl,GL_COMPILE)
-			glPushMatrix()
-			glTranslatef(-self.width()/2.0,-self.height()/2.0,0.0)
-			glScaled(self.borderwidth,self.borderwidth,length)
-			glCallList(self.glbasicobjects.getCylinderDL())
-			glPopMatrix()
-			glPushMatrix()
-			glTranslatef( self.width()/2.0,-self.height()/2.0,0.0)
-			glScaled(self.borderwidth,self.borderwidth,length)
-			glCallList(self.glbasicobjects.getCylinderDL())
-			glPopMatrix()
-			
-			glPushMatrix()
-			glTranslatef( self.width()/2.0, self.height()/2.0,0.0)
-			glScaled(self.borderwidth,self.borderwidth,length)
-			glCallList(self.glbasicobjects.getCylinderDL())
-			glPopMatrix()
-			
-			glPushMatrix()
-			glTranslatef(-self.width()/2.0, self.height()/2.0,0.0)
-			glScaled(self.borderwidth,self.borderwidth,length)
-			glCallList(self.glbasicobjects.getCylinderDL())
-			glPopMatrix()
-			
-			glEndList()
-			
-		if self.frame_dl == 0:
-			print "error, frame display list failed to compile"
-			exit(1)
-		glColor(.9,.2,.8)
-		## this is a nice light blue color (when lighting is on)
-		## and is the default color of the frame
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,1.0)
-		glDisable(GL_TEXTURE_2D)
-		glEnable(GL_LIGHTING)
-		glCallList(self.frame_dl)
-		
-	def read_EMAN2_image(self):
-		#self.p = QtGui.QPixmap("EMAN2.0.big2.jpg")
-		self.p = QtGui.QPixmap.grabWindow(self.appscreen.winId(),0.0,0.0,self.sysdesktop.width(),self.sysdesktop.height()-30)
-		return self.p
-
 	
 	def get_time(self):
 		return self.time
@@ -875,34 +845,19 @@ class EMDesktop(QtOpenGL.QGLWidget):
 
 		glEnable(GL_NORMALIZE)
 		#glEnable(GL_RESCALE_NORMAL)
-		# get a new Quadric object for drawing cylinders, spheres, etc
-		if not self.gq:
-			self.gq=gluNewQuadric()
-			gluQuadricDrawStyle(self.gq,GLU_FILL)
-			gluQuadricNormals(self.gq,GLU_SMOOTH)
-			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
-			gluQuadricTexture(self.gq,GL_FALSE)
 	
 		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
 		glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST)
-	
-	
-	#def gl_error(self):
-		#OpenGL.error.ErrorChecker.glCheckError(
 		
 	
 	def paintGL(self):
-		#OpenGL.error.ErrorChecker.registerChecker( self.gl_error )
-		#print self.glCheckError()
-		
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		#print "dims are ", self.appwidth,self.appheight,self.width(),self.height()
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		#self.bgob.render()
 		glPushMatrix()
 		
 		if (self.get_time() < 0):
@@ -940,69 +895,6 @@ class EMDesktop(QtOpenGL.QGLWidget):
 		for obj in self.resize_aware_objects:
 			obj.resize_gl()
 		
-	def mouseReleaseEvent(self, event):
-		if event.button()==Qt.LeftButton:
-			pass
-		
-	def mousePressEvent(self, event):
-		self.current_desktop_frame.mousePressEvent(event)
-	
-	def mouseMoveEvent(self, event):
-		#YUCK fixme soon
-		self.current_desktop_frame.mouseMoveEvent(event)
-		
-	def mouseReleaseEvent(self, event):
-		#YUCK fixme soon
-		self.current_desktop_frame.mouseReleaseEvent(event)
-
-	def mouseDoubleClickEvent(self, event):
-		#YUCK fixme soon
-		self.current_desktop_frame.mouseDoubleClickEvent(event)
-
-	def wheelEvent(self, event):
-		#YUCK fixme soon
-		self.current_desktop_frame.wheelEvent(event)
-
-	def toolTipEvent(self, event):
-		#YUCK fixme soon
-		self.current_desktop_frame.toolTipEvent(event)
-		QtGui.QToolTip.hideText()
-		
-	def keyPressEvent(self, event):
-		#YUCK fixme soon
-		self.current_desktop_frame.keyPressEvent(event)
-		#QtGui.QToolTip.hideText()
-		
-	def dragMoveEvent(self,event):
-		print "received drag move event, but I don't do anything about it :("
-		
-	def event(self,event):
-		if event.type() == QtCore.QEvent.MouseButtonPress: 
-			self.mousePressEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.MouseButtonRelease:
-			self.mouseReleaseEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.MouseMove: 
-			self.mouseMoveEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.MouseButtonDblClick: 
-			self.mouseDoubleClickEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.Wheel: 
-			self.wheelEvent(event)
-			return True
-		elif event.type() == QtCore.QEvent.ToolTip: 
-			self.toolTipEvent(event)
-			return True
-		else: 
-			return QtOpenGL.QGLWidget.event(self,event)
-
-	def hoverEvent(self,event):
-		#YUCK fixme soon
-		for i in self.floatwidgets:
-			i.hoverEvent(event)
-
 	def get_near_plane_dims(self):
 		height = 2.0*self.zNear * tan(self.fov/2.0*pi/180.0)
 		width = self.get_aspect() * height

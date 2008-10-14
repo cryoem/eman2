@@ -1270,12 +1270,6 @@ def draw_volume_bounds(width,height,depth):
 	glVertex(0,0,depth)
 	glEnd()
 
-class EMImage2DGUIModule(EMGUIModule):
-	def __init__(self,application=None,ensure_gl_context=False):
-		EMGUIModule.__init__(self,application,ensure_gl_context)
-
-	def mouseDoubleClickEvent(self,event):
-		pass
 
 class EMImage3DGUIModule(EMGUIModule):
 	def __init__(self,application=None,ensure_gl_context=False):

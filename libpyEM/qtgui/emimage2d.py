@@ -49,7 +49,7 @@ from emshape import EMShape
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
-from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule
+from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 try: from PyQt4 import QtWebKit
@@ -352,18 +352,19 @@ class EMImage2DDrawMouseMode(EMImage2DMouseEvents):
 		pass
 
 
-class EMImage2DModule(EMImage2DGUIModule):
+class EMImage2DModule(EMGUIModule):
 	"""
 	"""
 	allim=WeakKeyDictionary()
 	
 	def emit(self,*args,**kargs):
-		self.parent.emit(*args,**kargs)
+		qt_widget = self.application.get_qt_emitter(self)
+		qt_widget.emit(*args,**kargs)
 	
 	def get_qt_widget(self):
-		print "qt widget was called"
 		if self.parent == None:	
 			self.parent = EMImage2DWidget(self)
+			self.set_qt_parent(self.parent)
 			f = self.file_name.split('/')
 			f = f[len(f)-1]
 			self.parent.setWindowTitle(f)
@@ -377,11 +378,13 @@ class EMImage2DModule(EMImage2DGUIModule):
 		return parent
 	
 	def get_gl_widget(self,qt_parent=None):
-		from emfloatingwidgets import EMGLView2D
+		from emfloatingwidgets import EMGLView2D_v2, EM2DGLWindow
 		self.init_size_flag = False
 		if self.gl_widget == None:
-			self.set_parent(qt_parent)
-			self.gl_widget = EMGLView2D(self,image=None)
+			gl_view = EMGLView2D_v2(self,image=None)
+			self.gl_widget = EM2DGLWindow(self,gl_view)
+			self.set_qt_parent(qt_parent)
+			self.gl_widget.target_translations_allowed(True)
 		return self.gl_widget
 		
 	def get_desktop_hint(self):
@@ -405,7 +408,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		self.parent = None
 		self.gl_widget = None
-		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 		
 		
 		self.oldsize=(-1,-1)
@@ -581,7 +584,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 		except:	return 0
 	
 	def height(self):
-		try: return self.parent.width()
+		try: return self.parent.height()
 		except:	return 0
 	
 	def updateGL(self):
@@ -1273,7 +1276,7 @@ class EMImage2DModule(EMImage2DGUIModule):
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
-		EMImage2DGUIModule.closeEvent(self,event)
+		EMGUIModule.closeEvent(self,event)
 		
 	def dragEnterEvent(self,event):
 #		f=event.mimeData().formats()

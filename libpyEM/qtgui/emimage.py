@@ -163,7 +163,7 @@ def imageupdate():
 		
 class EMImageModule(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
-	def __new__(cls,data=None,old=None,copy=True,app=None):
+	def __new__(cls,data=None,old=None,app=None):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
@@ -171,13 +171,12 @@ class EMImageModule(object):
 			# single 2D image
 			# sometimes it's necessary to copy, especially if the user is 
 			# calling display from python
-			if copy: local_data = data.copy()
-			else: local_data = data
 
 			if old:
 				if isinstance(old,EMImage2DModule) :
-					old.set_data(local_data)
+					old.set_data(data)
 					return old
+			print "returning 2d module"
 			module = EMImage2DModule(application=app)
 			module.set_data(data)
 			return module
@@ -197,18 +196,16 @@ class EMImageModule(object):
 				#ret.releaseMouse()
 				#ret.releaseKeyboard()
 				#return ret
+			print "returning 3d module"
 			module = EMImage3DModule(application=app)
 			module.set_data(data)
 			return module
 		elif isinstance(data,list):
-			if ( copy ):local_data = deepcopy(data)
-			else: local_data = data
-			
 			if old:
 				if isinstance(old,EMImageMXModule) :
-					old.set_data(local_data)
+					old.set_data(data)
 					return old
-				
+			print "returning mx module"	
 			module = EMImageMXModule(application=app)
 			module.set_data(data)
 			return module

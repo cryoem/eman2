@@ -46,6 +46,7 @@ class EMGUIModule:
 		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 		self.parent = None # should be something that accepts UpdateGL calls
+		self.qt_parent = None # should be a qt Widget, especially important for calling CONNECT in e2boxer
 		if application != None: application.attach_child(self)
 		
 		self.mac_parent_win = None # can potentially be a special window used on MAC
@@ -56,7 +57,8 @@ class EMGUIModule:
 	def set_app(self,application): self.application = application
 	def get_app(self): return self.application
 	def get_qt_widget(self): raise
-	
+	def set_qt_parent(self,parent): self.qt_parent = parent
+	def get_qt_parent(self): return self.qt_parent
 	
 	def set_parent(self,parent): self.parent = parent
 	def get_parent(self): return self.parent
@@ -103,7 +105,9 @@ class EMGUIModule:
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 		except:
 			self.font_render_mode = EMGUIModule.GLUT
-	
+			
+	def mouseDoubleClickEvent(self,event):
+		pass
 
 class EMApplication:
 	def __init__(self,qt_application_control=True):
@@ -149,6 +153,12 @@ class EMApplication:
 	def __getattr__( self, name ):
 		try: return getattr(self,name)
 		except:	return getattr( self.app, name )
+
+	def get_qt_emitter(self,child):
+		raise
+	
+	def get_qt_gl_updategl_target(self,child):
+		raise
 
 class EMStandAloneApplication(EMApplication):
 	def __init__(self,qt_application_control=True):
@@ -202,6 +212,18 @@ class EMStandAloneApplication(EMApplication):
 				return
 			
 		print "couldn't hide",child
+		
+	def get_qt_emitter(self,child):
+		for child_ in self.children:
+			if child == child_:
+				return child.get_qt_widget()
+			
+		print "couldn't get emitter", child
+		return None
+	
+	def get_qt_gl_updategl_target(self,child):
+		return self.get_qt_emitter(child) # it's the same thing for now
+
 	
 	def show_specific(self,child):
 		for child_ in self.children:

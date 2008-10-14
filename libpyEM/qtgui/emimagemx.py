@@ -48,7 +48,7 @@ from pickle import dumps,loads
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
-from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule
+from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 GLUT.glutInit(sys.argv)
@@ -299,7 +299,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				
 			self.mousedrag=(event.x(),event.y())
 
-class EMImageMXModule(EMImage2DGUIModule):
+class EMImageMXModule(EMGUIModule):
 	
 	def load_font_renderer(self):
 		try:
@@ -314,6 +314,7 @@ class EMImageMXModule(EMImage2DGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:	
 			self.parent = EMImageMXWidget(self)
+			self.set_qt_parent(self.parent)
 			if self.init_size_flag and self.data != None and isinstance(self.data[0],EMData):
 				self.init_size_flag = False
 				if len(self.data)<self.mx_cols :
@@ -336,10 +337,12 @@ class EMImageMXModule(EMImage2DGUIModule):
 		return EMGUIModule.darwin_check(self)
 	
 	def get_gl_widget(self,qt_parent=None):
-		from emfloatingwidgets import EMGLView2D
+		from emfloatingwidgets import EMGLView2D_v2, EM2DGLWindow
 		if self.gl_widget == None:
-			self.gl_widget = EMGLView2D(self,image=None)
-			self.set_parent(qt_parent)
+			gl_view = EMGLView2D_v2(self,image=None)
+			self.gl_widget = EM2DGLWindow(self,gl_view)
+			self.set_qt_parent(qt_parent)
+			#self.gl_widget.target_translations_allowed(True)
 		return self.gl_widget
 		
 	def get_desktop_hint(self):
@@ -351,7 +354,7 @@ class EMImageMXModule(EMImage2DGUIModule):
 		self.parent = None
 		self.data=None
 		self.gl_widget = None
-		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 
 		self.datasize=(1,1)
 		self.scale=1.0
@@ -534,7 +537,8 @@ class EMImageMXModule(EMImage2DGUIModule):
 			if hfac > 512:
 				hfac = 512
 			try:
-				if self.gl_widget != None:	self.parent.resize(int(w),int(hfac))
+				#if self.gl_widget != None:	self.parent.resize(int(w),int(hfac))
+				pass
 			except:
 				pass
 			
@@ -574,7 +578,7 @@ class EMImageMXModule(EMImage2DGUIModule):
 				d.set_attr("original_number",i)
 			except:pass
 
-		if update_gl: self.updateGL()
+		#if update_gl: self.updateGL()
 
 	def updateGL(self):
 		try: self.parent.updateGL()
@@ -937,7 +941,9 @@ class EMImageMXModule(EMImage2DGUIModule):
 			
 			if self.inspector : self.inspector.set_hist(self.hist,self.minden,self.maxden)
 		else:
-			glCallList(self.main_display_list)
+			try:
+				glCallList(self.main_display_list)
+			except: pass
 		
 		if self.use_display_list and render :
 			glEndList()

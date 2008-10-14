@@ -45,11 +45,12 @@ from weakref import WeakKeyDictionary
 
 from EMAN2 import *
 
-from emfloatingwidgets import EMGLRotorWidget, EMGLView2D,EM3DWidget
+from emfloatingwidgets import EMGLRotorWidget, EMGLView2D_v2,EM3DGLWindow,EM2DGLWindow
 from emimagemx import EMImageMXModule
 from emimageutil import  EMEventRerouter
-from emglobjects import EMOpenGLFlagsAndTools, EMImage2DGUIModule,EMOpenGLFlagsAndTools
+from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule,EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emimage import EMImageModule
 
 
 class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
@@ -68,7 +69,6 @@ class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self)
-		
 		
 		self.target = em_rotor_module
 		self.imagefilename = None
@@ -186,11 +186,11 @@ class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def set_frozen(self,frozen,idx=0):
 		self.target.set_frozen(frozen,idx)
 	
-class EMImageRotorModule(EMImage2DGUIModule):
+class EMImageRotorModule(EMGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:
 			self.parent = EMImageRotorWidget(self)
-			
+			self.set_qt_parent(self.parent)
 		parent = EMGUIModule.darwin_check(self)
 
 		return parent
@@ -198,7 +198,7 @@ class EMImageRotorModule(EMImage2DGUIModule):
 	def __init__(self, data=None,application=None):
 		self.parent = None
 		self.rotor = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
-		EMImage2DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.data=None
 		try: self.parent.setAcceptDrops(True)
 		except:	pass
@@ -207,8 +207,8 @@ class EMImageRotorModule(EMImage2DGUIModule):
 		if data:
 			self.set_data(data)
 		
-		
-		self.widget = EM3DWidget(self,self.rotor)
+
+		self.widget = EM3DGLWindow(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		
 		self.z_near = 0
@@ -288,15 +288,12 @@ class EMImageRotorModule(EMImage2DGUIModule):
 		
 		self.rotor.clear_widgets()
 		for d in self.data:
-			w = EMGLView2D(self,d)
-			self.rotor.add_widget(w)
-			
-		#self.show_inspector()		# shows the correct inspector if already open
-		#self.timer.start(25)
-		
-		# experimental for lst file writing
-		for i,d in enumerate(data):
-			d.set_attr("original_number",i)
+			w = EMGLView2D_v2(self,d)
+			w.get_drawable().set_app(self.application)
+			x = EM2DGLWindow(self,w)
+			x.set_width(w.width())
+			x.set_height(w.height())
+			self.rotor.add_widget(x)
 
 	def updateGL(self):
 		try: self.parent.updateGL()
@@ -334,7 +331,7 @@ class EMImageRotorModule(EMImage2DGUIModule):
 		#print self.z_near,self.z_far,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans
 		
 		glPushMatrix()
-		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-z+z_trans+abs(lr[3]-lr[2]))
+		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-z)
 		glTranslate(0,-75,0) # This number is a FIXME issue
 		#FTGL.print_message("hello hello",36);
 		self.widget.draw()

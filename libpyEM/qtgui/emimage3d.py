@@ -207,18 +207,20 @@ class EMImage3DModule(EMImage3DGUIModule):
 	def get_qt_widget(self):
 		if self.parent == None:	
 			self.parent = EMImage3DWidget(self)
+			self.set_qt_parent(self.parent)
 			for i in self.viewables:
 				i.set_parent(self.parent)
+				i.set_qt_parent(self.parent)
 			if isinstance(self.image,EMData):
 				self.parent.set_cam_z(self.parent.get_fov(),self.image)
 		return EMGUIModule.darwin_check(self)
 	
 	def get_gl_widget(self,qt_parent=None):
-		from emfloatingwidgets import EMGLView3D,EM3DWidget
+		from emfloatingwidgets import EMGLView3D,EM3DGLWindow
 		if self.gl_widget == None:
 			gl_view = EMGLView3D(self,image=None)
-			self.gl_widget = EM3DWidget(self,gl_view)
-			self.set_parent(qt_parent)
+			self.gl_widget = EM3DGLWindow(self,gl_view)
+			self.set_qt_parent(qt_parent)
 			self.gl_widget.target_translations_allowed(True)
 			self.gl_widget.allow_camera_rotations(True)
 		return self.gl_widget
@@ -295,7 +297,6 @@ class EMImage3DModule(EMImage3DGUIModule):
 		else: return [0,0,0]
 
 	def set_data(self,data,file_name=""):
-		print "SETTING DATA"
 		self.file_name = file_name # fixme fix this later
 		if data == None: return
 		self.image = data

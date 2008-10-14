@@ -35,7 +35,7 @@ import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from emapplication import EMStandAloneApplication, EMQtWidgetModule
-
+from emimage2d import *
 from emselector import EMSelectorDialog
 
 from EMAN2 import EMData
@@ -58,13 +58,9 @@ class EMBrowserDialog(EMSelectorDialog):
 			if self.gl_image_preview != None:
 				self.application.close_specific(self.gl_image_preview)
 				self.gl_image_preview == None
-			
-			#print self.gl_image_preview
-			self.gl_image_preview =emimage.EMImageModule(a,None,False,self.application)
-			#print self.gl_image_preview
-				
-			#self.gl_image_preview.set_data(a,filename)
-			#self.gl_image_preview.set_file_name(f)
+		
+			self.gl_image_preview =emimage.EMImageModule(a,None,self.application)
+
 			self.application.show_specific(self.gl_image_preview)
 			self.gl_image_preview.updateGL()
 		else:
