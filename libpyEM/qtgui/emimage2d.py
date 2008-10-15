@@ -397,7 +397,7 @@ class EMImage2DModule(EMGUIModule):
 	def __parent_resize(self):
 		#if self.gl_widget != None: return
 		try:
-			parent = self.get_qt_parent()
+			parent = self.get_parent()
 			if self.mac_parent_win != None: parent = self.mac_parent_win
 			if self.parent_geometry != None:
 				parent.restoreGeometry(self.parent_geometry)

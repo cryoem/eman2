@@ -315,23 +315,10 @@ class EMImageMXModule(EMGUIModule):
 		if self.parent == None:	
 			self.parent = EMImageMXWidget(self)
 			self.set_qt_parent(self.parent)
-			if self.init_size_flag and self.data != None and isinstance(self.data[0],EMData):
-				self.init_size_flag = False
-				if len(self.data)<self.mx_cols :
-					w=len(self.data)*(self.data[0].get_xsize()+2)
-					hfac = 1
-				else : 
-					w=self.mx_cols*(self.data[0].get_xsize()+2)
-					hfac = len(self.data)/self.mx_cols+1
-				hfac *= self.data[0].get_ysize()
-				if hfac > 512:
-					hfac = 512
-				try:
-					self.parent.resize(int(w),int(hfac))
-				except:
-					pass
 			
-			try: self.parent.setAcceptDrops(True)
+			self.__parent_resize()
+			
+			try: self.get_qt_parent().setAcceptDrops(True)
 			except:	pass
 			
 		return EMGUIModule.darwin_check(self)
@@ -514,7 +501,25 @@ class EMImageMXModule(EMGUIModule):
 	
 	def __del__(self):
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
-		
+	
+	def __parent_resize(self):
+		if self.init_size_flag and self.data != None and isinstance(self.data[0],EMData) and self.get_parent() != None:
+			#
+			self.init_size_flag = False
+			if len(self.data)<self.mx_cols :
+				w=len(self.data)*(self.data[0].get_xsize()+2)
+				hfac = 1
+			else : 
+				w=self.mx_cols*(self.data[0].get_xsize()+2)
+				hfac = len(self.data)/self.mx_cols+1
+			hfac *= self.data[0].get_ysize()
+			if hfac > 512:
+				hfac = 512
+			try:
+				self.get_parent().resize(int(w),int(hfac))
+			except:
+				pass
+	
 	def set_data(self,data,update_gl=True):
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
@@ -524,26 +529,10 @@ class EMImageMXModule(EMGUIModule):
 			print "strange error in set_data"
 			return
 
-		if self.init_size_flag and isinstance(self.parent,QtGui.QWidget):
-			#
-			self.init_size_flag = False
-			if len(data)<self.mx_cols :
-				w=len(data)*(data[0].get_xsize()+2)
-				hfac = 1
-			else : 
-				w=self.mx_cols*(data[0].get_xsize()+2)
-				hfac = len(data)/self.mx_cols+1
-			hfac *= data[0].get_ysize()
-			if hfac > 512:
-				hfac = 512
-			try:
-				#if self.gl_widget != None:	self.parent.resize(int(w),int(hfac))
-				pass
-			except:
-				pass
-			
-
+		
 		self.data=data
+		self.__parent_resize()
+		
 		self.force_dl_update()
 		self.nimg=len(data)
 		
