@@ -149,7 +149,7 @@ Various CTF-related operations on images."""
 					bg=bg[:ra+3]+[sum(bg[v-ra:v+ra+1])/(ra*2+1) for v in range(ra+3,len(bg)-ra)]+bg[len(bg)-ra:]
 					bg=[0]+[10**v for v in bg[1:]]
 				snr=[(ps1d[-1][v]-bg[v])/(bg[v]+.00001) for v in range(len(bg))]
-				for v in range(len(bg)): ps1d[-1][v]=ps1d[-1][v]-bg[v]
+#				for v in range(len(bg)): ps1d[-1][v]=ps1d[-1][v]-bg[v]
 #				ps1d.append(bg)
 #				names.append(i+"(bg)")
 
@@ -183,12 +183,30 @@ Various CTF-related operations on images."""
 				
 					tot=0
 #					for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
-					for s in range(int(st),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
+					for s in range(int(st),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*(ps1d[-1][s]-bg[s])
 #					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
 #					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
 					if tot>dfbest1[1] : dfbest1=(df,tot)
 					dfout.write("%1.2f\t%g\n"%(df,tot))
 #					mapout[dfi,ac]=tot
+			
+			# now we try to construct a better background based on the CTF zeroes being zero
+			#bg2=[]
+			#last=0,1.0
+			#for x in range(len(bg)*ctf.CTFOS ) : 
+				#if cc[x]*cc[x+1]<0 : 
+					#cur=(x/ctf.CTFOS,ps1d[-1][x/ctf.CTFOS]/bg[x/ctf.CTFOS])
+					#print cur
+					#for xx in range(last[0],cur[0]):
+						#w=(xx-last[0])/(cur[0]-last[0])
+						#bg2.append(cur[1]*w+last[1]*(1-w))
+					#last=cur
+			
+			#out=file("bg1d2.txt","w")
+			#for a,b in enumerate(bg2): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
+			#out.close()
+
+
 			
 			acbest=10
 			dfbest=dfbest1
@@ -206,11 +224,20 @@ Various CTF-related operations on images."""
 						if cc[fz]<0 : break
 				
 					tot=0
-					for s in range(int(st),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
+					for s in range(int(st),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*(ps1d[-1][s]-bg[s])
 					if tot>dfbest[1] : 
 						dfbest=(df,tot)
 #						acbest=ac
 					dfout.write("%1.2f\t%g\n"%(df,tot))
+
+			ctf.defocus=-dfbest[0]
+			ctf.ampcont=acbest/100.0
+			cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
+			out=file("ctf.txt","w")
+			for a,b in enumerate(cc): 
+				if a%ctf.CTFOS==0 :out.write("%1.4f\t%1.5f\n"%(a*ds/ctf.CTFOS,b))
+			out.close()
+
 
 			print "Best DF,AC = ",dfbest[0],acbest
 #			mapout.write_image("dfmap.mrc",0)
