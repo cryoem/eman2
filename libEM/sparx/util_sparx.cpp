@@ -1842,23 +1842,23 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 		xold  = 0.0f+cns2;
 		yold  = inr+cnr2;
 
-		assert( kcirc <= lcirc );
+		Assert( kcirc <= lcirc );
 		circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);    // Sampling on 90 degree
 
 		xold  = inr+cns2;
 		yold  = 0.0f+cnr2;
-		assert( lt+kcirc <= lcirc );
+		Assert( lt+kcirc <= lcirc );
 		circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 0 degree
 
 		if ( mode == 'f' || mode == 'F' ) {
 			xold = 0.0f+cns2;
 			yold = -inr+cnr2;
-			assert( lt+lt+kcirc <= lcirc );
+			Assert( lt+lt+kcirc <= lcirc );
 			circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 270 degree
 
 			xold = -inr+cns2;
 			yold = 0.0f+cnr2;
-			assert(lt+lt+lt+kcirc <= lcirc );
+			Assert(lt+lt+lt+kcirc <= lcirc );
 			circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on 180 degree
 		}
 	
@@ -1870,26 +1870,26 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 			xold = x+cns2;
 			yold = y+cnr2;
 
-			assert( jt+kcirc <= lcirc );
+			Assert( jt+kcirc <= lcirc );
 			circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);      // Sampling on the first 
 
 			xold = y+cns2;
 			yold = -x+cnr2;
 
-			assert( jt+lt+kcirc <= lcirc );
+			Assert( jt+lt+kcirc <= lcirc );
 			circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on the second
 
 			if ( mode == 'f' || mode == 'F' ) {
 				xold = -x+cns2;
 				yold = -y+cnr2;
 
-				assert( jt+lt+lt+kcirc <= lcirc );
+				Assert( jt+lt+lt+kcirc <= lcirc );
 				circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on the third
 
 				xold = -y+cns2;
 				yold = x+cnr2;
 
-				assert( jt+lt+lt+lt+kcirc <= lcirc );
+				Assert( jt+lt+lt+lt+kcirc <= lcirc );
 				circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on the fourth
 			}
 		} // end for jt
