@@ -766,7 +766,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 	def add_boxer_frame(self):
 		if not self.establish_target_frame("boxer"): return
 		
-		boxer = EMBoxerModule(EMDesktop.application,[ "20071015173642.mrc","20071015192905.mrc", "20071015201036.mrc", "20071015205338.mrc", "20071015212720.mrc", "20071015221557.mrc"],[],128)
+		boxer = EMBoxerModule(EMDesktop.application,[ "test_box_0.mrc","test_box_1.mrc","test_box_2.mrc","test_box_3.mrc"],[],128)
 		
 	def get_app_screen(self):
 		return self.appscreen

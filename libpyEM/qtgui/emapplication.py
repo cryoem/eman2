@@ -50,6 +50,7 @@ class EMGUIModule:
 		if application != None: application.attach_child(self)
 		
 		self.mac_parent_win = None # can potentially be a special window used on MAC
+		self.mac_parent_dependent = None
 		
 		if ensure_gl_context and application != None:
 			application.ensure_gl_context(self)
@@ -95,7 +96,6 @@ class EMGUIModule:
 			if self.mac_parent_win == None:
 				self.mac_parent_win = EMParentWin(self.parent)
 				self.qt_parent = self.mac_parent_win
-				
 			return self.mac_parent_win
 		else:
 			return self.parent
