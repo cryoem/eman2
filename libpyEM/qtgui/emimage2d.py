@@ -397,12 +397,16 @@ class EMImage2DModule(EMGUIModule):
 	def __parent_resize(self):
 		#if self.gl_widget != None: return
 		try:
-			parent = self.parent
+			parent = self.get_qt_parent()
 			if self.mac_parent_win != None: parent = self.mac_parent_win
 			if self.parent_geometry != None:
 				parent.restoreGeometry(self.parent_geometry)
-			elif self.data.get_xsize()<1024 and self.data.get_ysize()<1024: parent.resize(self.data.get_xsize(),self.data.get_ysize())
-			else: parent.resize(800,800)
+			elif self.data.get_xsize()<1024 and self.data.get_ysize()<1024: 
+				parent.resize(self.data.get_xsize(),self.data.get_ysize())
+				self.load_default_scale_origin()
+			else: 
+				parent.resize(800,800)
+				self.load_default_scale_origin()
 			self.init_size_flag = False
 		except: pass
 			
@@ -689,8 +693,8 @@ class EMImage2DModule(EMGUIModule):
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)
 		try: 
-			w = self.parent.width()
-			h = self.parent.height()
+			w = self.get_qt_parent().width()
+			h = self.get_qt_parent().height()
 			data = self.get_data_dims()
 			if data[0] == 0 or data[1] == 0: raise
 			scalew = float(w)/data[0]

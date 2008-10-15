@@ -36,7 +36,7 @@ from PyQt4.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.GLX import *
+
 from OpenGL.GLUT import *
 from valslider import ValSlider
 from math import *

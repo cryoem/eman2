@@ -176,7 +176,6 @@ class EMImageModule(object):
 				if isinstance(old,EMImage2DModule) :
 					old.set_data(data)
 					return old
-			print "returning 2d module"
 			module = EMImage2DModule(application=app)
 			module.set_data(data)
 			return module
@@ -196,7 +195,6 @@ class EMImageModule(object):
 				#ret.releaseMouse()
 				#ret.releaseKeyboard()
 				#return ret
-			print "returning 3d module"
 			module = EMImage3DModule(application=app)
 			module.set_data(data)
 			return module
@@ -205,7 +203,6 @@ class EMImageModule(object):
 				if isinstance(old,EMImageMXModule) :
 					old.set_data(data)
 					return old
-			print "returning mx module"	
 			module = EMImageMXModule(application=app)
 			module.set_data(data)
 			return module

@@ -92,7 +92,10 @@ class EMGUIModule:
 		
 	def darwin_check(self):
 		if platform.system() == "Darwin":
-			if self.mac_parent_win == None:	self.mac_parent_win = EMParentWin(self.parent)
+			if self.mac_parent_win == None:
+				self.mac_parent_win = EMParentWin(self.parent)
+				self.qt_parent = self.mac_parent_win
+				
 			return self.mac_parent_win
 		else:
 			return self.parent
