@@ -266,19 +266,19 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 		if event.button()==Qt.LeftButton:
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 			if lc:
-				self.mediator.emit(QtCore.SIGNAL("mousedown"),event,lc)
+				self.mediator.emit(QtCore.SIGNAL("mx_image_selected"),event,lc)
 				self.mediator.set_selected([lc[0]],True)
 			
 	def mouse_move(self,event):
 		if event.buttons()&Qt.LeftButton:
-			self.mediator.emit(QtCore.SIGNAL("mousedrag"),event,self.mediator.get_scale())
+			self.mediator.emit(QtCore.SIGNAL("mx_mousedrag"),event,self.mediator.get_scale())
 	
 	def mouse_up(self,event):
 		if event.button()==Qt.LeftButton:
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 		
 			if  not event.modifiers()&Qt.ShiftModifier:
-				self.mediator.emit(QtCore.SIGNAL("mouseup"),event,lc)
+				self.mediator.emit(QtCore.SIGNAL("mx_mouseup"),event,lc)
 			else:
 				if lc != None:
 					self.mediator.pop_box_image(lc[0],event,True)
@@ -444,20 +444,20 @@ class EMImageMXModule(EMGUIModule):
 		return self.scale
 	
 	def get_parent(self):
-		return self.parent.get_qt_parent()
+		return self.get_qt_parent()
 	
 	def pop_box_image(self,idx,event=None,update_gl=False):
 		if self.reroute_delete_target  == None:
 			d = self.data.pop(idx)
 			self.display_states = []
-			if event != None: self.emit(QtCore.SIGNAL("boxdeleted"),event,[idx],False)
+			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
 			if update_gl:
 				self.display_states = [] 
 				self.updateGL()
 			return d
 		else:
 			self.reroute_delete_target.pop_box_image(idx)
-			if event != None: self.emit(QtCore.SIGNAL("boxdeleted"),event,[idx],False)
+			if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
 
 	def get_box_image(self,idx):
 		return self.data[idx]

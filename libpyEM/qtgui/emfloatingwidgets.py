@@ -640,6 +640,12 @@ class EMGLRotorWidget(EM3DGLVolume):
 		self.angle_range = 90.0	# the angular amount of the ellipse that is occupied by resident widgets
 		self.allow_target_wheel_events = True
 		self.allow_target_translation = True
+		
+		
+		t1 = Transform({"type":"xyz","ztilt":z_rot})
+		t2 = Transform({"type":"xyz","ytilt":y_rot})
+		t3 = Transform({"type":"xyz","xtilt":x_rot})
+		self.rotation = t3*t2*t1
 
 		#self.cam = Camera2(self) # currently unused
 	def target_zoom_events_allowed(self,bool):
@@ -754,7 +760,7 @@ class EMGLRotorWidget(EM3DGLVolume):
 			self.angle_information = None
 			self.rotations += self.anim_rotations
 			if self.mmode=="app":
-				self.parent.emit(QtCore.SIGNAL("mousedown"),None,[(-self.rotations)%len(self.widgets)])
+				self.parent.emit(QtCore.SIGNAL("image_selected"),None,[(-self.rotations)%len(self.widgets)])
 			elif self.mmode == "mxrotor":
 				self.parent.update_rotor_position(-self.anim_rotations)
 			return 0
@@ -769,7 +775,6 @@ class EMGLRotorWidget(EM3DGLVolume):
 		return 1
 	
 	def render(self):
-		
 		size = len(self.widgets)
 		if size == 0:
 			return
@@ -846,46 +851,6 @@ class EMGLRotorWidget(EM3DGLVolume):
 			except: pass
 			glPopMatrix()
 			
-			#if self.is_animated:
-				#GL.glEnable(GL.GL_BLEND)
-				#glDisable(GL_LIGHTING)
-				#depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
-				#GL.glDisable(GL.GL_DEPTH_TEST);
-				#GL.glBlendEquation(GL.GL_FUNC_ADD);
-				#GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE_MINUS_SRC_ALPHA);
-				
-				#vdtools = EMViewportDepthTools(self)
-				#vp = vdtools.get_viewport_dimensions()
-				
-				#glMatrixMode(GL_PROJECTION)
-				#glPushMatrix()
-				#glLoadIdentity()
-				#glOrtho(vp[0],vp[2],vp[1],vp[3],-100,100)
-				
-				#glMatrixMode(GL_MODELVIEW)
-				#glPushMatrix()
-				#glLoadIdentity()
-				#dt = self.__get_dt_2()
-				##print dt
-				#glColor(0,0,0,1-dt)
-				##print vp,dt
-				#glBegin(GL_QUADS)
-				#glVertex(vp[0],vp[1],0)
-				#glVertex(vp[2],vp[1],0)
-				#glVertex(vp[2],vp[3],0)
-				#glVertex(vp[0],vp[3],0)
-				#glEnd()
-				#glPopMatrix()
-				
-				#glMatrixMode(GL_PROJECTION)
-				#glPopMatrix()
-				
-				#glMatrixMode(GL_MODELVIEW)
-		
-				#GL.glDisable( GL.GL_BLEND);
-				#if (depth_testing_was_on): GL.glEnable(GL.GL_DEPTH_TEST)
-		#print self.rotations % (len(self.widgets))
-	
 	
 	def __get_visible(self):
 		'''
@@ -948,6 +913,7 @@ class EMGLRotorWidget(EM3DGLVolume):
 		print "should act on up and down"
 	
 	def determine_dimensions(self):
+		print "in determine dimensions"
 		# first determine the ellipse offset - this is related to the inplane rotation of the ellipse. We want the back point corresponding to
 		# a rotation of 90 degrees around the boundary of the ellipse (starting at [ellipse_a/2,0,0]) to be visible
 		
@@ -1043,7 +1009,100 @@ class EMGLRotorWidget(EM3DGLVolume):
 		
 		self.update_dims = False
 
+	def get_lr_bt_nf_2(self):
+		from math import sqrt
+		zmax = (self.rotation.at(2,0)*self.ellipse_a)**2
+		zmax += (self.rotation.at(2,1)*self.ellipse_b)**2
+		zmax = sqrt(zmax)
+		zmin = -zmax
+		
+		ymax = (self.rotation.at(1,0)*self.ellipse_a)**2
+		ymax += (self.rotation.at(1,1)*self.ellipse_b)**2
+		ymax = sqrt(ymax)
+		ymin = -ymax
+		
+		xmax = (self.rotation.at(0,0)*self.ellipse_a)**2
+		xmax += (self.rotation.at(0,1)*self.ellipse_b)**2
+		xmax = sqrt(xmax)
+		xmin = -xmax
+		
+		return [xmin,xmax,ymin,ymax,zmin,zmax]
+	
+	def get_lr_bt_nf(self):
+		size = len(self.widgets)
+		
+		#if size == 0:
+		#return
+		#dtheta = self.__get_current_dtheta()
+		#if self.angle_information == None or  size > len(self.angle_information):
+			#self.angle_information = []
+			#for i in range(len(self.widgets)):
+				#angle = i*dtheta
+				#self.angle_information.append([angle,angle,0])
+		points = []
+		for n in [0,90]:
+			#n = self.angle_information[i][0]
+			n_rad = n*pi/180.0
+			if self.rotor_type == EMGLRotorWidget.LEFT_ROTARY:
+				dx = self.ellipse_a*cos(n_rad)
+				dy = 0
+				dz = -self.ellipse_b*sin(n_rad)
+				rot_v = [0,1,0]
+			elif self.rotor_type == EMGLRotorWidget.RIGHT_ROTARY:
+				dx = -self.ellipse_a*cos(n_rad)
+				dy = 0
+				dz = self.ellipse_b*sin(n_rad)
+				rot_v = [0,1,0]
+			elif self.rotor_type == EMGLRotorWidget.BOTTOM_ROTARY:
+				dx = 0
+				dy = self.ellipse_a*cos(n_rad)
+				dz = self.ellipse_b*sin(n_rad)
+				rot_v = [1,0,0]
+			elif self.rotor_type == EMGLRotorWidget.TOP_ROTARY:
+				dx = 0
+				dy = -self.ellipse_a*cos(n_rad)
+				dz = -self.ellipse_b*sin(n_rad)
+				rot_v = [1,0,0]
+			else:
+				print "unsupported"
+				return
+			points.append([dx,dy,dz])
+		
+		self.__rotate_elliptical_points(points)
+		
+		p1 = points[0]
+		pn = points[len(points)-1]
+		#print "points",p1,pn
+		if self.rotor_type == EMGLRotorWidget.LEFT_ROTARY:
+			left = pn[0]
+			right = p1[0]+self.widgets[0].width()+ 10
+			top = p1[1]+ self.widgets[0].height()/2 + 10
+			bottom = pn[1]-self.widgets[0].height()/2 - 10
+			near = p1[2]
+			far = pn[2]-self.widgets[0].width()
+			
+			#print "return",[left,right,bottom,top,near,far],
+			return [left,right,bottom,top,near,far]
+		elif self.rotor_type == EMGLRotorWidget.TOP_ROTARY:
+			if p1[0] < pn[0] :
+				left = p1[0] -self.widgets[0].width()/2 - 10
+				right = pn[0]+ self.widgets[0].widths()/2 + 10
+			else:
+				left = pn[0] -self.widgets[0].width()/2 - 10
+				right = p1[0]+ self.widgets[0].width()/2 + 10
+				
+			top = pn[1]
+			bottom = p1[1]-self.widgets[0].height() - 10
+			
+			near = p1[2]
+			far = pn[2]-self.widgets[0].width()
+			
+			#print "return",[left,right,bottom,top,near,far],self.widgets[0].height()/2
+			return [left,right,bottom,top,near,far]
+		
+		
 	def nice_lr_bt_nf(self):
+	
 		'''
 		This function returns what it thinks are optimal values for left, right, top, bottom, near and far,
 		for the purposes of the display
@@ -1109,6 +1168,8 @@ class EMGLRotorWidget(EM3DGLVolume):
 			
 			near = interesting_points[3][2] + height
 			far =  -interesting_points[3][2] - height
+			print get_lr_bt_nf()
+			print "and",[left,right,bottom,top,near,far]
 			return [left,right,bottom,top,near,far]
 		else:
 			error_string = "error"
@@ -1125,26 +1186,34 @@ class EMGLRotorWidget(EM3DGLVolume):
 	
 	def __rotate_elliptical_points(self,points):
 		
-		if self.z_rot != 0:
-			for p in points:
-				x = p[0]
-				y = p[1]
-				p[0] = self.cos_z_rot*x - self.sin_z_rot*y
-				p[1] = -self.sin_z_rot*x + self.cos_z_rot*y
+		#if self.z_rot != 0:
+			#for p in points:
+				#x = p[0]
+				#y = p[1]
+				#p[0] = self.cos_z_rot*x - self.sin_z_rot*y
+				#p[1] = -self.sin_z_rot*x + self.cos_z_rot*y
 		
-		if self.y_rot != 0:
-			for p in points:
-				x = p[0]
-				z = p[2]
-				p[0] = self.cos_y_rot*x + self.sin_y_rot*z
-				p[2] = -self.sin_y_rot*x +self.cos_y_rot*z
+		#if self.y_rot != 0:
+			#for p in points:
+				#x = p[0]
+				#z = p[2]
+				#p[0] = self.cos_y_rot*x + self.sin_y_rot*z
+				#p[2] = -self.sin_y_rot*x +self.cos_y_rot*z
 		
-		if self.x_rot != 0:
-			for p in points:
-				y = p[1]
-				z = p[2]
-				p[1] = self.cos_x_rot*y + self.sin_x_rot*z
-				p[2] = -self.sin_x_rot*y +self.cos_x_rot*z
+		#if self.x_rot != 0:
+			#for p in points:
+				#y = p[1]
+				#z = p[2]
+				#p[1] = self.cos_x_rot*y + self.sin_x_rot*z
+				#p[2] = -self.sin_x_rot*y +self.cos_x_rot*z
+				
+		
+		for p in points:
+			v = Vec3f(p)
+			v_d = self.rotation*v
+			p[0] = v_d[0]
+			p[1] = v_d[1]
+			p[2] = v_d[2]
 			
 	def __get_current_dtheta_range(self):
 		if len(self.widgets) == 1: return [0,0]
@@ -1416,7 +1485,7 @@ class EM3DGLWindow(EMGLWindow):
 		self.w = self.parent.width()
 		self.h = self.parent.height()
 		self.d = self.parent.height()
-		
+		self.init_flag = True
 		self.texure_lock = 0
 	
 	def lock_texture(self):
@@ -1472,6 +1541,13 @@ class EM3DGLWindow(EMGLWindow):
 	
 	def draw(self):
 		#clear everything
+		
+		if self.init_flag == True:
+			lrt = self.drawable.get_lr_bt_nf()
+			self.w = lrt[1]-lrt[0]
+			self.h = lrt[3]-lrt[2]
+			self.d = lrt[4]-lrt[5]
+			self.init_flag = False
 	
 		self.corner_sets = []
 		self.planes = []
@@ -1529,14 +1605,15 @@ class EM3DGLWindow(EMGLWindow):
 		glPopMatrix()
 	
 		glPushMatrix()
-		lrt = self.drawable.get_suggested_lr_bt_nf()
-		glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,0)
+		lrt = self.drawable.get_lr_bt_nf()
+		glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-lrt[4])
 		
 		glPushMatrix()
 		self.drawable.render()
 		glPopMatrix()
 
 		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
+		glEnable(GL_DEPTH_TEST) # lighting is on to make the borders look nice
 		if self.draw_frame:
 			self.decoration.draw()
 			
@@ -1558,8 +1635,8 @@ class EM3DGLWindow(EMGLWindow):
 		self.parent.updateGL()
 
 	def emit(self,*args,**kargs):
-		print "emit me"
-		#self.parent.emit(*args,**kargs)
+		#print "emit me"
+		self.parent.emit(*args,**kargs)
 		
 class EM3DGLWindowOverride(EM3DGLWindow):
 	'''
@@ -1672,7 +1749,7 @@ class EMGLView3D(EM3DGLVolume,EMEventRerouter):
 		self.top =  height/2.0
 		self.near = depth/2.0
 		self.far =  -depth/2.0
-		
+	
 		self.update_dims = False
 
 	def set_width(self,w):
@@ -1787,6 +1864,7 @@ class EM2DGLWindow(EMGLWindow):
 		
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		
+		glEnable(GL_DEPTH_TEST)
 		glPushMatrix()
 		glTranslatef(-self.width()/2.0,-self.height()/2.0,0)
 		self.drawable.draw()
@@ -1877,7 +1955,7 @@ class EMGLView2D_v2(EMEventRerouter):
 		#if self.w > self.parent.width(): self.w = self.parent.width()
 		self.h = a.get_ysize()
 		#if self.h > self.parent.height(): self.h = self.parent.height()
-		print self.w,self.h
+		#print self.w,self.h
 
 	def set_width(self,w,resize_event=True):
 		self.w = w

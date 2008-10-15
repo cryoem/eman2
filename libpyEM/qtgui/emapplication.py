@@ -172,7 +172,7 @@ class EMStandAloneApplication(EMApplication):
 				self.children.pop(i)
 				return
 	
-		print "error, can't detach a child that doesn't belong to this",child
+		print "error, can't detach a child that doesn't belong to this",child,child.get_child()
 	
 	def attach_child(self,child):
 		for i in self.children:
@@ -282,8 +282,11 @@ class EMQtWidgetModule(EMGUIModule):
 	def keyPressEvent(self,event):
 		self.qt_widget.keyPressEvent(event)
 
+	def get_child(self):
+		return self.qt_widget
+
 	def lock_texture(self):
 		self.gl_widget.lock_texture()
-		
+	
 	def unlock_texture(self):
 		self.gl_widget.unlock_texture()

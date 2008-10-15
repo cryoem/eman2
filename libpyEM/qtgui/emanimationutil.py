@@ -53,7 +53,7 @@ class Animatable:
 			else:
 				Animatable.cache_dts.append(sin(float(i)/(self.n-1)*pi/2))
 				
-		print Animatable.cache_dts
+		#print Animatable.cache_dts
 		
 	def set_animated(self,val=True):
 		self.animated = val

@@ -814,7 +814,7 @@ class EMBoxerModule:
 		
 		# A boxable is just a class that manages boxes in terms of images
 		if len(self.image_names) != 0:
-			print self.autoboxer
+			#print self.autoboxer
 			self.boxable = Boxable(self.image_names[0],self,self.autoboxer)
 			self.boxable.add_non_refs(boxes)
 			self.boxable.set_box_size(self.box_size)
@@ -860,7 +860,10 @@ class EMBoxerModule:
 			self.application.show_specific(self.guimxit)
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.get_parent().resize(*self.guimxit.get_optimal_size())
-			QtCore.QObject.connect(self.guimxit.get_qt_parent(),QtCore.SIGNAL("mousedown"),self.image_selected)
+				QtCore.QObject.connect(self.application.get_qt_emitter(self.guimxit),QtCore.SIGNAL("image_selected"),self.image_selected)
+			else:
+				QtCore.QObject.connect(self.application.get_qt_emitter(self.guimxit),QtCore.SIGNAL("mx_image_selected"),self.image_selected)
+		
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.set_frozen(self.boxable.is_frozen(),self.current_image_idx)
 	
@@ -888,10 +891,10 @@ class EMBoxerModule:
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			 QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.box_selected)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.box_moved)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mouseup"),self.box_released)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("boxdeleted"),self.box_image_deleted)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_mousedown"),self.box_selected)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_mouseup"),self.box_released)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			QtCore.QObject.connect(qt_target,QtCore.SIGNAL("inspector_shown"),self.guimx_inspector_requested)
 		
@@ -1261,7 +1264,10 @@ class EMBoxerModule:
 			
 			image=BigImageCache.get_image_directly(self.image_names[im])
 			
-			self.guiim.get_parent().setWindowTitle(self.image_names[im])
+			try: self.guiim.get_parent().setWindowTitle(self.image_names[im])
+			except:
+				print "set window title failed"
+				
 			self.guiim.set_data(image)
 			self.boxable.cache_exc_to_db()
 			self.boxable = Boxable(self.image_names[im],self,self.autoboxer)
@@ -1378,7 +1384,8 @@ class EMBoxerModule:
 					frozen = get_idd_key_entry(self.image_names[i],"frozen_state")
 					if frozen != None:
 						self.guimxit.set_frozen(frozen,i)
-			except: print "setting frozen failed"
+			except: 
+				pass # this will happen if fancy widgets are being used
 			
 			self.guimxit.set_mouse_mode("app")
 			app = QtGui.QApplication.instance()
@@ -1730,9 +1737,7 @@ class EMBoxerModule:
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
-		print "showing"
-		#self.application.show()
-		print "done showing"
+
 		self.application.execute()
 		
 		self.boxable.cache_exc_to_db()

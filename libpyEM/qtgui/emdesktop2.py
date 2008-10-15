@@ -709,7 +709,10 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.show()
 		self.move(0,0)
 		self.resize(self.appscreen.size())
-	
+		
+	def emit(self,*args, **kargs):
+		#print "i am emitting",args,kargs
+		QtGui.QWidget.emit(self,*args,**kargs)
 	def enable_timer(self):
 		pass
 	
@@ -732,6 +735,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 		for frame in self.desktop_frames:
 			if frame.get_type() == type_name:
 				self.current_desktop_frame = frame
+				EMEventRerouter.set_target(self,self.current_desktop_frame)
 				print "that already exists"
 				print "now animate change"
 				return False
@@ -762,7 +766,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 	def add_boxer_frame(self):
 		if not self.establish_target_frame("boxer"): return
 		
-		boxer = EMBoxerModule(EMDesktop.application,["mici_noise.hdf","mici_noise_2.hdf","mici_noise.hdf","mici_noise_2.hdf","mici_noise.hdf","mici_noise_2.hdf"],[],128)
+		boxer = EMBoxerModule(EMDesktop.application,[ "20071015173642.mrc","20071015192905.mrc", "20071015201036.mrc", "20071015205338.mrc", "20071015212720.mrc", "20071015221557.mrc"],[],128)
 		
 	def get_app_screen(self):
 		return self.appscreen
@@ -1376,6 +1380,7 @@ class RightSideWidgetBar(SideWidgetBar):
 			self.transformers[i].transform()
 			child.draw()
 			glPopMatrix()
+			#print child.height(), child
 			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height(),0)
 
 		glPopMatrix()

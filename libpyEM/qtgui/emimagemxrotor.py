@@ -250,6 +250,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		if self.gl_widget == None:
 			self.gl_widget = EM3DGLWindowOverride(self,self.rotor)
 			self.gl_widget.resize(640,640)
+			#self.optimize_fit()
 			self.parent = self.gl_widget
 			self.set_qt_parent(qt_parent)
 			self.disable_mx_zoom()
@@ -326,7 +327,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		return self.inspector
 	
 	def emit(self,*args,**kargs):
-		self.parent.emit(*args,**kargs)
+		self.application.get_qt_emitter(self).emit(*args,**kargs)
 		
 	def set_selected(self,n,update_gl=True):
 		widget = self.rotor[0]

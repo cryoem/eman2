@@ -132,6 +132,7 @@ class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glEnable(GL_DEPTH_TEST)
 		
 		glEnable(GL_NORMALIZE)
+		glDisable(GL_CULL_FACE)
 		
 		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)
@@ -213,7 +214,7 @@ class EMImageRotorModule(EMGUIModule):
 	def __init__(self, data=None,application=None):
 		self.parent = None
 		self.gl_widget = None
-		self.rotor = EMGLRotorWidget(self,-25,10,40,EMGLRotorWidget.LEFT_ROTARY)
+		self.rotor = EMGLRotorWidget(self,15,10,45,EMGLRotorWidget.LEFT_ROTARY)
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.data=None
 		try: self.parent.setAcceptDrops(True)
@@ -223,7 +224,6 @@ class EMImageRotorModule(EMGUIModule):
 		if data:
 			self.set_data(data)
 		
-
 		self.widget = EM3DGLWindow(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		
@@ -250,7 +250,7 @@ class EMImageRotorModule(EMGUIModule):
 		self.hud_data = hud_data
 	
 	def get_optimal_size(self):
-		lr = self.rotor.get_suggested_lr_bt_nf()
+		lr = self.rotor.get_lr_bt_nf()
 		width = lr[1] - lr[0]
 		height = lr[3] - lr[2]
 		return [width+80,height+20]
@@ -260,13 +260,15 @@ class EMImageRotorModule(EMGUIModule):
 		# asking for the OpenGL context from the parent
 		return self.parent.context()
 	
-	def emit(self,signal,event,a=None,b=None):
-		if b != None:
-			self.parent.emit(signal,event,a,b)
-		elif a != None:
-			self.parent.emit(signal,event,a)
-		else:
-			self.parent.emit(signal,event)
+	def emit(self,*args,**kargs):
+		#print "emitting",signal,event
+		self.application.get_qt_emitter(self).emit(*args,**kargs)
+		#if b != None:
+			
+		#elif a != None:
+			#self.application.get_qt_emitter(self).emit(signal,event,a)
+		#else:
+			#self.application.get_qt_emitter(self).emit(signal,event)
 
 	def set_mouse_mode(self,mode):
 		self.mmode = mode
@@ -303,7 +305,6 @@ class EMImageRotorModule(EMGUIModule):
 			return
 		
 		self.data = data
-		
 		self.rotor.clear_widgets()
 		for d in self.data:
 			w = EMGLView2D_v2(self,d)
@@ -325,7 +326,7 @@ class EMImageRotorModule(EMGUIModule):
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
 		
-		lr = self.rotor.get_suggested_lr_bt_nf()
+		lr = self.rotor.get_lr_bt_nf()
 		lrt = lr
 		#lr = self.widget.get_lr_bt_nf()
 		
@@ -350,6 +351,7 @@ class EMImageRotorModule(EMGUIModule):
 		
 		glPushMatrix()
 		glTranslate(0,0,-z)
+		glEnable(GL_DEPTH_TEST)
 		#glTranslate(0,-75,0) # This number is a FIXME issue
 		#FTGL.print_message("hello hello",36);
 		self.widget.draw()

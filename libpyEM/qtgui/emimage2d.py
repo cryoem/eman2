@@ -262,16 +262,19 @@ class EMImage2DEmitMouseMode(EMImage2DMouseEvents):
 		EMImage2DMouseEvents.__init__(self,mediator)
 		
 	def mouse_up(self,event):
-		self.mediator.emit(QtCore.SIGNAL("mouseup"), event)
+		lc=self.mediator.scr_to_img(event.x(),event.y())
+		self.mediator.emit(QtCore.SIGNAL("mouseup"), event,lc)
 
 	def mouse_down(self,event):
-		self.mediator.emit(QtCore.SIGNAL("mousedown"), event)
+		lc=self.mediator.scr_to_img(event.x(),event.y())
+		self.mediator.emit(QtCore.SIGNAL("mousedown"), event,lc)
 		
 	def mouse_move(self,event):
+		lc=self.mediator.scr_to_img(event.x(),event.y())
 		if event.buttons()&Qt.LeftButton:
-			self.mediator.emit(QtCore.SIGNAL("mousedrag"), event)
+			self.mediator.emit(QtCore.SIGNAL("mousedrag"), event,lc)
 		else:
-			self.mediator.emit(QtCore.SIGNAL("mousemove"), event)
+			self.mediator.emit(QtCore.SIGNAL("mousemove"), event,lc)
 		
 	def mouse_wheel(self,event):
 		self.mediator.emit(QtCore.SIGNAL("mousewheel"), event)
@@ -359,6 +362,7 @@ class EMImage2DModule(EMGUIModule):
 	
 	def emit(self,*args,**kargs):
 		qt_widget = self.application.get_qt_emitter(self)
+		#print args,kargs
 		qt_widget.emit(*args,**kargs)
 	
 	def get_qt_widget(self):
@@ -410,7 +414,7 @@ class EMImage2DModule(EMGUIModule):
 		self.gl_widget = None
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 		
-		
+		self.init_gl_flag = True
 		self.oldsize=(-1,-1)
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)			# Current display origin
@@ -934,11 +938,8 @@ class EMImage2DModule(EMGUIModule):
 			return False
 		
 	def initializeGL(self):
-		#GL.glClearColor(0,0,0,0)
 		emshape.initGL()
-		self.shapelist=GL.glGenLists(1)		# displaylist for shapes displayed over the image
-		GL.glNewList(self.shapelist,GL.GL_COMPILE)
-		GL.glEndList()
+		self.init_gl_flag = False
 
 	def force_display_update(self):
 		self.display_states = []
@@ -970,6 +971,7 @@ class EMImage2DModule(EMGUIModule):
 
 	def render(self):
 		if not self.data and not self.fft : return
+		if self.init_gl_flag: self.initializeGL()
 		
 		lighting = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
@@ -1186,17 +1188,17 @@ class EMImage2DModule(EMGUIModule):
 	def setupShapes(self):
 		if self.shapelist != 0: GL.glDeleteLists(self.shapelist,1)
 		
-		self.shapelist = GL.glGenLists(1)
+		self.shapelist = glGenLists(1)
 		
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Image2D context is", context,"display list is",self.shapelist
 		
 		# make our own cirle rather than use gluDisk or somesuch
-		GL.glNewList(self.shapelist,GL.GL_COMPILE)
+		glNewList(self.shapelist,GL_COMPILE)
 		for k,s in self.shapes.items():
 			if self.active[0]==k: s.draw(None,self.active[1:])
 			else: s.draw()
-		GL.glEndList()
+		glEndList()
 	
 	def inspector_update(self,use_fourier=False):
 		if self.inspector:
