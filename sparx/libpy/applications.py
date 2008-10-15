@@ -919,6 +919,8 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	# initialize data for the reference preparation function
 	#  mask can be modified in user_function
 	ref_data = []
+	from utilities import info
+	info(mask)
 	ref_data.append( mask )
 	ref_data.append( center )
 	ref_data.append( None )
@@ -1341,16 +1343,16 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 		for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
-	print_end_msg("ali2d_e")	
+	print_end_msg("ali2d_e")
 
-def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr = 0, yr = 0, ts = 1, center = 1, maxit = 10, CTF = False, snr = 1.0, rand_seed = 1000, MPI=False):
+def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng = 0, yrng = 0, step = 1, center = 1, maxit = 10, CTF = False, snr = 1.0, rand_seed = 1000, MPI=False):
 # 2D multi-reference alignment using rotational ccf in polar coords and quadratic interpolation
 	if MPI:
-		ali2d_m_MPI(stack, refim, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, rand_seed )
+		ali2d_m_MPI(stack, refim, outdir, maskfile, ir, ou, rs, xrng, yrng, step, center, maxit, CTF, snr, rand_seed )
 		return
 
 	from utilities      import   model_circle, compose_transform2, combine_params2, dropImage, getImage
-	from utilities	    import   center_2D, get_arb_params, get_im, get_params2D, set_params2D
+	from utilities	  import   center_2D, get_arb_params, get_im, get_params2D, set_params2D
 	from statistics     import   fsc
 	from alignment      import   Numrinit, ringwe, Applyws, fine_2D_refinement
 	from fundamentals   import   rot_shift2D, fshift
@@ -1359,8 +1361,9 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 	from random         import   seed, randint
 	import os
 	import sys
-	
+
 	from utilities      import   print_begin_msg, print_end_msg, print_msg
+	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
 	print_begin_msg("ali2d_m")
 
 	print_msg("Input stack                 : %s\n"%(stack))
@@ -1473,7 +1476,7 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, sx, sy, 0, angt, sxst, syst, mirrort)
 			#print  "combine with previous ",Iter,im,psin, sxn, syn, mn, iter
-			set_params2D(data[im], [alphan, sxn, syn, mn, scale])
+			set_params2D(data[im], [alphan, sxn, syn, int(mn), scale])
 			data[im].set_attr('assign',iref)
 			# apply current parameters and add to the average
 			temp = rot_shift2D(data[im], alphan, sxn, syn, mn)
@@ -1527,7 +1530,7 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 							im = assign[j][i]
 							alpha, sx, sy, mirror, scale =  get_params2D(data[im])
 							alphan, sxn, syn, scale = compose_transform2(alpha, sx, sy, 1.0, 0.0, -csx, -csy, 1.0)
-							set_params2D(data[im], [alphan, sxn, syn, mirror, scale])
+							set_params2D(data[im], [alphan, sxn, syn, int(mirror), scale])
 						# refine images within the group
 						#  Do the refinement only if max_inter>0, but skip it for the last iteration.
 						if(INter < max_inter):
@@ -1568,7 +1571,7 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xr =
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_m")
 
-def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, center=1, maxit=10, CTF = False, snr = 1., rand_seed = 1000):
+def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, center=1, maxit=10, CTF = False, snr = 1., rand_seed = 1000):
 # 2D multi-reference alignment using rotational ccf in polar coords and quadratic interpolation
 
 	from utilities      import   model_circle, compose_transform2, combine_params2, dropImage, getImage
@@ -1613,6 +1616,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, 
 	ima = EMData()
 	ima.read_image(stack, image_start)
 	# 
+	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
 
 	if (myid == main_node):
 		print_msg("Input stack                 : %s\n"%(stack))
@@ -1717,7 +1721,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, 
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, sx, sy, 0, angt, sxst, syst, mirrort)
 			#if(iref  ==0):print  "combine with previous ",Iter,im,alphan, sxn, syn, mn, iref
-			set_params2D(data[im-image_start], [alphan, sxn, syn, mn, scale])
+			set_params2D(data[im-image_start], [alphan, sxn, syn, int(mn), scale])
 			data[im-image_start].set_attr('assign',iref)
 			# apply current parameters and add to the average
 			temp = rot_shift2D(data[im-image_start], alphan, sxn, syn, mn)
