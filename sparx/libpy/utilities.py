@@ -1851,7 +1851,7 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 			e.read_image(file_name, im)
 			tmp1 = periodogram(e)
 			tmp  = tmp1.rotavg()
-			if im == 0 : 
+			if im == 0:
 				sum_ima  = model_blank(tmp.get_xsize())
 				sum_ima += tmp
 			else :  sum_ima += tmp
@@ -1865,13 +1865,13 @@ def rotate_3D_shift(data, shift3d):
 
 	nimage = len(data)
 	for i in xrange(nimage):
-		phi,theta,psi,s2xo,s2yo = get_params_proj( data )
+		phi,theta,psi,s2xo,s2yo = get_params_proj( data[i] )
 		phi,theta,psi,s2x,s2y,dummy,dummy = compose_transform3(0.0,0.0,0.0,shift3d[0],shift3d[1],shift3d[2],1.0,phi,theta,psi,0.0,0.0,0.0,1.0)
 		#s2xn = s2xo-s2x
 		#s2yn = s2yo-s2y
 		#data[i].set_attr_dict({'s2x':s2xn})
 		#data[i].set_attr_dict({'s2y':s2yn})
-		set_params_proj( data, [phi,theta,psi,s2x,s2y] )
+		set_params_proj( data[i], [phi,theta,psi,s2x,s2y] )
 
 def sym_vol(image, symmetry="c1"):
 	" Symmetrize a volume"
@@ -1885,7 +1885,7 @@ def set_arb_params(img, params, par_str):
 		filling arbitary headers 
 	"""
 	for i in xrange(len(par_str)): img.set_attr_dict({par_str[i]:params[i]})
-	
+
 def get_arb_params(img, par_str):
 
 	"""
@@ -1896,7 +1896,7 @@ def get_arb_params(img, par_str):
 	return params
 
 ###------------------------------------------------------------------------------------------	
-	
+
 def start_time():
 	import time
 	start_time = time.time()

@@ -1252,7 +1252,7 @@ def cml_find_struc_SA(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 
 			# change angles
 			Prj[iprj].phi	 = anglst[Prj[iprj].pos_agls][0]
-			Prj[iprj].theta  = anglst[Prj[iprj].pos_agls][1]
+			Prj[iprj].theta    = anglst[Prj[iprj].pos_agls][1]
 			Prj[iprj].psi	 = 0.0
 			Prj[iprj].mirror = False
 				
@@ -1383,8 +1383,7 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 	Cst['d_psi_pi'] = Cst['d_psi'] * 180.0 / pi
 	Cst['iprj']     = -1
 
-	# Define list of angle randomly distribute
-	#anglst   = even_angles(delta, 0.0, 89.9, 0.0, 359.9, 'P')
+	# Define list of uniformly distributed angles
 	anglst = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
 
 	## TO TEST
@@ -1501,9 +1500,9 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 
 				# change angles
 				Prj[iprj].phi	 = anglst[Prj[iprj].pos_agls][0]
-				Prj[iprj].theta  = anglst[Prj[iprj].pos_agls][1]
+				Prj[iprj].theta    = anglst[Prj[iprj].pos_agls][1]
 				Prj[iprj].psi	 = 0.0
-				Prj[iprj].mirror = False
+				Prj[iprj].mirror   = False
 
 				# compute the weight for each common lines with Voronoi
 				weights = cml_weights(Prj)
@@ -1521,17 +1520,17 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 					Prj[iprj].mirror = mirror
 					if mirror:
 						Prj[iprj].phi	 = fmod(Prj[iprj].phi + 180, 360)
-						Prj[iprj].theta  = 180 - Prj[iprj].theta
+						Prj[iprj].theta    = 180 - Prj[iprj].theta
 					best_Prj = deepcopy(Prj[iprj])
 				else:
 					Prj[iprj].psi = best_psi
 
-				cml_export_progress(infofilename, Prj, Cst, new_disc, 'progress')
+				#cml_export_progress(infofilename, Prj, Cst, new_disc, 'progress')
 
 			# assign the best orientation
-			oldpos = Prj[iprj].pos_agls
+			oldpos                       = Prj[iprj].pos_agls
 			ocp_agls[Prj[iprj].pos_agls] = -1
-			Prj[iprj] = deepcopy(best_Prj)
+			Prj[iprj]                    = deepcopy(best_Prj)
 			ocp_agls[Prj[iprj].pos_agls] = iprj
 			
 			cml_export_progress(infofilename, Prj, Cst, disc, 'choose')

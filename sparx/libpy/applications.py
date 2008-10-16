@@ -919,8 +919,6 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	# initialize data for the reference preparation function
 	#  mask can be modified in user_function
 	ref_data = []
-	from utilities import info
-	info(mask)
 	ref_data.append( mask )
 	ref_data.append( center )
 	ref_data.append( None )
@@ -961,6 +959,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			if a1 < a0:
 				if auto_stop == True: break
 			else:	a0 = a1
+	dropImage(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
 	if CTF and data_had_ctf == 0:
 		for im in xrange(nima):	data[im].set_attr('ctf_applied', 0)
@@ -1187,6 +1186,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			if not again: break
+	if myid == main_node:  dropImage(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	if CTF and data_had_ctf == 0:
@@ -1561,7 +1561,9 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng
 			print_msg(msg)
 			if (a1 > a0 and Iter < max_iter) :  a0 = a1
 			else:
-				os.system('cp '+newrefim+' multi_ref.hdf')
+				newrefim = os.path.join(outdir,"multi_ref.hdf")
+				for j in xrange(numref):
+					refi[j][0].write_image(newrefim, j)
 				break
 
 	if(CTF):
@@ -1834,6 +1836,12 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 		if(again):
 			for j in xrange(numref):
 				bcast_EMData_to_all(refi[j][0], myid, main_node)
+		else:
+			newrefim = os.path.join(outdir,"multi_ref.hdf")
+			for j in xrange(numref):
+				refi[j][0].write_image(newrefim, j)
+
+
 	#  clean up
 	del refi
 	del assign
@@ -8996,7 +9004,8 @@ def transform2d(stack_data, stack_data_ali):
 
 	if os.path.exists(stack_data_ali): os.system("rm -f "+stack_data_ali)
 
-	attributes = ['phi', 'theta', 'psi', 'nclass', 'assign', 's2x', 's2y', 'scale']
+	attributes = ['nclass', 'assign']
+	t = Transform({"type":"2D"})
 	data = EMData()
 	nima = EMUtil.get_image_count(stack_data)
 	data.read_image(stack_data, 0)
@@ -9014,7 +9023,7 @@ def transform2d(stack_data, stack_data_ali):
 		al2d = get_params2D(data)
 		# apply params to the image
 		temp = rot_shift2D(data, al2d[0], al2d[1], al2d[2], al2d[3])
-		set_params2D(temp, al2d)
+		temp.set_attr("xform.align2d", t)
 		set_arb_params(temp, params, attributes)
 		temp.write_image(stack_data_ali, im)
 	print_end_msg("transform2d")
@@ -9039,15 +9048,19 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 
 	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose)
 	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad)
-	dropImage(vol, vol_stack)
+	if(vol_stack[-3:] == "spi"):
+		dropImage(vol, vol_stack, "s")
+	else:
+		dropImage(vol, vol_stack)
 	print_end_msg("recons3d_n")
 
 def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, verbose):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI
 	from utilities import get_im
-	from string import replace
-	from time import time
-	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from utilities import dropImage
+	from string    import replace
+	from time      import time
+	from mpi 	   import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 
 	myid  = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
@@ -9088,7 +9101,10 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, info)
 
 	if myid == 0 :
-		vol.write_image(vol_stack)
+		if(vol_stack[-3:] == "spi"):
+			dropImage(vol, vol_stack, "s")
+		else:
+			dropImage(vol, vol_stack)
 		if not(info is None):
 			info.write( "result wrote to " + vol_stack + "\n")
 			info.write( "Total time: %10.3f\n" % (time()-time_start) )
@@ -9103,6 +9119,7 @@ def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
 	from statistics     import fsc_mask
+	from utilities      import dropImage
 	if CTF:
 		volodd = recons3d_4nn_ctf(prj_stack, range(0, nimage, 2), snr, 1, sym, verbose)
 		voleve = recons3d_4nn_ctf(prj_stack, range(1, nimage, 2), snr, 1, sym, verbose)
@@ -9111,13 +9128,16 @@ def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym
 		volodd = recons3d_4nn(prj_stack, range(0, nimage, 2), sym)
 		voleve = recons3d_4nn(prj_stack, range(1, nimage, 2), sym)
 		volall = recons3d_4nn(prj_stack, range(nimage),       sym)
-	volall.write_image(vol_stack)
+	if(vol_stack[-3:] == "spi"):
+		dropImage(volall, vol_stack, "s")
+	else:
+		dropImage(volall, vol_stack)
 	t = fsc_mask( volodd, voleve, mask, filename=fsc_file)
 
 def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym="c1", verbose=1):
 
 	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from utilities import get_im
+	from utilities import get_im, dropImage
 	nproc = mpi_comm_size( MPI_COMM_WORLD )
 	myid  = mpi_comm_rank( MPI_COMM_WORLD )
 
@@ -9152,7 +9172,11 @@ def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym=
 	else :
 		from reconstruction import rec3D_MPI_noCTF
 		vol,fsc = rec3D_MPI_noCTF(imgdata, sym, mask, fsc_file, myid)
-	if myid == 0: vol.write_image(vol_stack)
+	if myid == 0:
+		if(vol_stack[-3:] == "spi"):
+			dropImage(vol, vol_stack, "s")
+		else:
+			dropImage(vol, vol_stack)
 
 def pca( input_stack, output_stack, imglist, nfile, subavg, mask_radius, nvec, type="out_of_core", maskfile="",verbose=False ) :
 	from utilities import getImage, get_im, model_circle, model_blank
@@ -9405,7 +9429,7 @@ def bootstrap_run(prj_stack, media, vol_prefix, nvol, snr, sym, verbose, MPI=Fal
 	bootstrap_nnctf( prj_stack, myvolume_file, list_proj, mynvol, media, npad, sym, mystatus, snr, sign)
 	
 def params_2D_to_3D(stack):
-	from utilities import params_2D_3D, print_begin_msg, print_end_msg, print_msg
+	from utilities import params_2D_3D, print_begin_msg, print_end_msg, print_msg, get_params2D, set_params_proj, write_header
 	
 	print_begin_msg("params_2D_to_3D")
 	print_msg("Input stack                 : %s\n\n"%(stack))
@@ -9414,13 +9438,10 @@ def params_2D_to_3D(stack):
 	ima = EMData()
 	for im in xrange(nima):
 		ima.read_image(stack, im, True)
-		alpha  = ima.get_attr('alpha')
-		sx     = ima.get_attr('sx')
-		sy     = ima.get_attr('sy')
-		mirror = ima.get_attr('mirror')
-		phi, theta, psi, s2x, s2y = params_2D_3D(alpha, sx, sy, mirror)
-		ima.set_attr_dict({'phi':phi, 'theta':theta, 'psi':psi, 's2x':s2x, 's2y':s2y})
-		ima.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)	
+		p = get_params2D(ima)
+		p = params_2D_3D(p[0], p[1], p[2], int(p[3]))
+		set_params_proj(ima, p)
+		write_header(stack, ima, im)
 	print_end_msg("params_2D_to_3D")
 	
 def params_3D_to_2D(stack):
@@ -9599,7 +9620,6 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				return
 
 			parmvalues = split(line)
-			
 			if params[0] == "xform.align2d":
 				if len(parmvalues) < 3:
 					print "Not enough parameters!"
