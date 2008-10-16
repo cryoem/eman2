@@ -95,7 +95,6 @@ class EMGUIModule:
 		if platform.system() == "Darwin":
 			if self.mac_parent_win == None:
 				self.mac_parent_win = EMParentWin(self.parent)
-				self.qt_parent = self.mac_parent_win
 			return self.mac_parent_win
 		else:
 			return self.parent
@@ -117,6 +116,8 @@ class EMApplication:
 		if qt_application_control:
 			self.app = QtGui.QApplication(sys.argv)
 		else: self.app = None
+		
+		self.qt_emission_registry = {}
 	
 	def get_app(self): return self.app
 	def attach_child(self,child):
@@ -162,6 +163,15 @@ class EMApplication:
 	
 	def get_qt_gl_updategl_target(self,child):
 		raise
+
+	def register_qt_emitter(self,child,emitter):
+	
+		self.qt_emission_registry[child] = emitter
+	
+	
+	def deregister_qt_emitter(self,child):
+		self.qt_emission_registry.pop(child)
+		
 
 class EMStandAloneApplication(EMApplication):
 	def __init__(self,qt_application_control=True):
@@ -220,9 +230,13 @@ class EMStandAloneApplication(EMApplication):
 		for child_ in self.children:
 			if child == child_:
 				return child.get_qt_widget()
-			
-		print "couldn't get emitter", child
-		return None
+		
+		try:
+			return self.qt_emission_registry[child]
+		except:
+			print "couldn't get emitter", child
+			return None
+
 	
 	def get_qt_gl_updategl_target(self,child):
 		return self.get_qt_emitter(child) # it's the same thing for now

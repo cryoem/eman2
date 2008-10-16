@@ -48,6 +48,9 @@ from emimage3d import *
 from emimagemx import *
 from math import sqrt
 
+import Image
+import numpy
+
 try: from emimage import EMImage
 except: pass
 
@@ -89,11 +92,13 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 	FROZEN_COLOR = "frozen"
 	DEFAULT_COLOR = "default"
 	PERMISSABLE_COLOR_FLAGS = [FROZEN_COLOR,DEFAULT_COLOR]
+	x_texture_dl = None
+	x_texture_size = (-1,1)
 	def __init__(self, object):
 		EM3DBorderDecoration.__init__(self)
-		self.border_width = 6
-		self.border_height = 6
-		self.border_depth = 6
+		self.border_width = 10
+		self.border_height = 20
+		self.border_depth = 20
 		
 		self.display_list = None
 		self.force_update = False
@@ -156,6 +161,15 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			
 		if self.display_list != None and self.display_list != 0:
 			glCallList(self.display_list)
+			glEnable(GL_TEXTURE_2D)
+			glEnable(GL_BLEND)
+			#glDisable(GL_DEPTH_TEST)
+			glBlendFunc(GL_ONE,GL_SRC_COLOR)
+			glTranslate(self.object.width()/2.0,self.object.height()/2.0+self.border_height/2.0,self.border_depth/2+1)
+			glCallList(EM3DPlainBorderDecoration.x_texture_dl)
+			glDisable(GL_BLEND)
+			glDisable(GL_TEXTURE_2D)
+			#glable(GL_DEPTH_TEST)
 		else: print "weird"
 	
 	def __delete_list(self):
@@ -163,11 +177,74 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			glDeleteLists(self.display_list,1)
 			self.display_list = None
 	
+	def __init_x_texture(self):
+		print "done list"
+		if EM3DPlainBorderDecoration.x_texture_dl == None or EM3DPlainBorderDecoration.x_texture_dl < 0:
+			print "here"
+			glEnable(GL_TEXTURE_2D)
+			img = Image.open(os.getenv("EMAN2DIR")+"/images/Close.png")
+			img_data = numpy.array(list(img.getdata()), numpy.int8)
+			print "here"
+			x_texture_size = img.size
+			EM3DPlainBorderDecoration.x_texture_dl=glGenLists(1)
+			print EM3DPlainBorderDecoration.x_texture_dl
+			
+			if EM3DPlainBorderDecoration.x_texture_dl == 0:
+				return
+			print "here1"
+			glNewList( EM3DPlainBorderDecoration.x_texture_dl,GL_COMPILE)
+			print "here2"
+			
+			texture = glGenTextures(1)
+			#glPixelStorei(GL_UNPACK_ALIGNMENT,1)
+			print "here"
+			glBindTexture(GL_TEXTURE_2D, texture)
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.size[0], img.size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			# this makes it so that the texture is impervious to lighting
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+			print "here3"
+			
+			xmin = -self.border_height/2
+			xmax =  self.border_height/2
+			ymin = -self.border_height/2
+			ymax =  self.border_height/2
+			glBegin(GL_QUADS)
+		
+			glNormal(0,0,1)
+			glTexCoord2f(0,0)
+			glVertex2f(xmin,ymax)
+			
+			glTexCoord2f(1,0)
+			glVertex2f(xmax,ymax)
+				
+			glTexCoord2f(1,1)
+			glVertex2f(xmax,ymin)
+			
+			glTexCoord2f(0,1)
+			glVertex2f(xmin,ymin)
+			
+			glEnd()
+			
+			glEndList()
+			
+			print "done list"
+			
+			#EM3DPlainBorderDecoration.x_texture_dl
+			
+			glDisable(GL_TEXTURE_2D)
+			
 	def __gen_2d_object_border_list(self):
 		
 		#context = self.object.context()
 		#context.makeCurrent()
 		#print "made",context,"current"
+		
+		if EM3DPlainBorderDecoration.x_texture_dl == None:
+			self.__init_x_texture()
+			
+		
 		
 		self.__delete_list()
 		if self.display_list == None:
@@ -195,6 +272,7 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 				return
 			
 			glNewList(self.display_list,GL_COMPILE)
+
 	
 			# All triangles are drawn in counter clockwise direction
 			# Do the front facing strip first
@@ -221,11 +299,13 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			glPopMatrix()
 			
 			glEndList()
-			
 		else: print "error, the delete list operation failed"
 	
 	def __gen_3d_object_border_list(self):
 		self.__delete_list()
+	
+		if EM3DPlainBorderDecoration.x_texture_dl == None:
+			self.__init_x_texture()
 	
 		if self.display_list == None:
 			thick_front = 0
@@ -666,6 +746,8 @@ class EMGLRotorWidget(EM3DGLVolume):
 	def set_rotations(self,r):
 		self.rotations = r	
 	
+	def get_widgets(self): return self.widgets
+	
 	def __getitem__(self,idx):
 		if len(self.widgets) == 0: return None
 		i = idx-self.rotations
@@ -872,7 +954,27 @@ class EMGLRotorWidget(EM3DGLVolume):
 				self.__get_visible().wheelEvent(event)
 				return
 
-		if event.delta() > 0:
+
+		self.seed_rotation_animation(event.delta())
+		#if event.delta() > 0:
+			#if self.target_displayed_widget == 0:
+				#self.target_displayed_widget =  len(self.widgets)-1
+			#else: 
+				#self.target_displayed_widget -= 1
+		#else:
+			#if self.target_displayed_widget == len(self.widgets)-1:
+				#self.target_displayed_widget = 0
+			#else:
+				#self.target_displayed_widget += 1
+		##print self.target_displayed_widget
+		#if not self.is_animated: 
+			#self.__start_animation(event.delta()> 0)
+		#else: self.__update_animation_dthetas(event.delta() > 0)
+	
+	def seed_rotation_animation(self,delta):
+		if delta == 0: return
+		
+		if delta > 0:
 			if self.target_displayed_widget == 0:
 				self.target_displayed_widget =  len(self.widgets)-1
 			else: 
@@ -884,9 +986,9 @@ class EMGLRotorWidget(EM3DGLVolume):
 				self.target_displayed_widget += 1
 		#print self.target_displayed_widget
 		if not self.is_animated: 
-			self.__start_animation(event.delta()> 0)
-		else: self.__update_animation_dthetas(event.delta() > 0)
-		
+			self.__start_animation(delta > 0)
+		else: self.__update_animation_dthetas( delta > 0)
+	
 	
 	def mousePressEvent(self,event):
 		if self.is_animated: return
@@ -910,10 +1012,12 @@ class EMGLRotorWidget(EM3DGLVolume):
 	
 	
 	def keyPressEvent(self,event):
-		print "should act on up and down"
+		if event.key()==Qt.Key_Up:
+			self.seed_rotation_animation(1)
+		elif  event.key()==Qt.Key_Down:
+			self.seed_rotation_animation(-1)
 	
 	def determine_dimensions(self):
-		print "in determine dimensions"
 		# first determine the ellipse offset - this is related to the inplane rotation of the ellipse. We want the back point corresponding to
 		# a rotation of 90 degrees around the boundary of the ellipse (starting at [ellipse_a/2,0,0]) to be visible
 		
@@ -1558,8 +1662,12 @@ class EM3DGLWindow(EMGLWindow):
 		
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
-			
-		p = self.get_my_dims()
+		
+		glPushMatrix()
+		lrt = self.drawable.get_lr_bt_nf()
+		glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-lrt[4])
+		
+		p = self.get_lr_bt_nf()
 		points = []
 		points.append((p[0],p[2],p[5]))
 		points.append((p[0],p[2],p[4]))
@@ -1604,9 +1712,7 @@ class EM3DGLWindow(EMGLWindow):
 		self.__atomic_draw_frame('xy')
 		glPopMatrix()
 	
-		glPushMatrix()
-		lrt = self.drawable.get_lr_bt_nf()
-		glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-lrt[4])
+		
 		
 		glPushMatrix()
 		self.drawable.render()

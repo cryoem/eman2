@@ -891,7 +891,7 @@ class EMBoxerModule:
 		if self.fancy_mode == EMBoxerModule.FANCY_MODE:
 			 QtCore.QObject.connect(self.guiim,QtCore.SIGNAL("inspector_shown"),self.guiim_inspector_requested)
 		#self.guimx.connect(self.guimx,QtCore.SIGNAL("removeshape"),self.removeshape)
-		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_mousedown"),self.box_selected)
+		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_image_selected"),self.box_selected)
 		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_mousedrag"),self.box_moved)
 		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_mouseup"),self.box_released)
 		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mx_boxdeleted"),self.box_image_deleted)
@@ -1691,6 +1691,7 @@ class EMBoxerModule:
 		#self.ptcl = []
 		# get the boxes
 		boxes =self.get_boxes()
+		register_animation = False
 		for j,box in enumerate(boxes):
 			if not box.changed and not force:
 				idx += 1
@@ -1703,13 +1704,14 @@ class EMBoxerModule:
 			
 			if not force and not box.isref and not box.ismanual:
 				box.shape.isanimated = True
-				box.shape.blend = 0
+				box.shape.set_blend(0)
+				register_animation = True
 			ns[idx]=box.shape
 			if idx>=len(self.ptcl) : self.ptcl.append(im)
 			else : self.ptcl[idx]=im
 			idx += 1
 		
-		self.guiim.add_shapes(ns)
+		self.guiim.add_shapes(ns,register_animation)
 		self.set_ptcl_mx_data(self.ptcl)
 		
 		self.guictl.num_boxes_changed(len(self.ptcl))

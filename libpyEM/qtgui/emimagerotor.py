@@ -380,7 +380,8 @@ class EMImageRotorModule(EMGUIModule):
 		self.updateGL()
 		
 	def keyPressEvent(self,event):
-		pass
+		self.widget.keyPressEvent(event)
+		self.updateGL()
 		
 	def wheelEvent(self, event):
 #		if event.delta() > 0:

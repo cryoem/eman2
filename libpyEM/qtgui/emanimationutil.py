@@ -30,6 +30,42 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from time import time
+
+class Animator:
+	'''
+	Inheriting parent should probably having something like this:
+	self.timer = QTimer()
+	QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
+	self.timer.start(10)
+	'''
+	def __init__(self):
+		self.animatables = []
+		self.time = -1
+		self.begin_time = time()
+		
+	def time_out(self):
+		self.time  = time()
+		rm = []
+		if len(self.animatables) != 0:
+			
+			for a,i in enumerate(self.animatables):
+				if not i.animate(self.time): rm.append(a)
+				
+			rm.reverse()
+			for a in rm:
+				self.animatables.pop(a)
+			
+		
+			self.updateGL()
+		
+	def get_time(self):
+		return self.time
+	
+	def register_animatable(self,animatable):
+		self.animatables.append(animatable)
+	
+
 class Animatable:
 	cache_dts = None
 	def __init__(self):
@@ -51,8 +87,10 @@ class Animatable:
 				val = (1+ (tanh(-4+float(i)/(self.n-1)*8)))/2.0
 				Animatable.cache_dts.append(val)
 			else:
+				# sine approach
 				Animatable.cache_dts.append(sin(float(i)/(self.n-1)*pi/2))
-				
+				#  Linear
+				#Animatable.cache_dts.append(float(i)/(self.n-1))
 		#print Animatable.cache_dts
 		
 	def set_animated(self,val=True):
@@ -149,4 +187,68 @@ class XYScaleAnimation(Animatable):
 		self.target.set_xy_scale(self.current)
 	def transform(self):
 		glScale(self.current,self.current,1.0)
+		
+class SingleValueIncrementAnimation(Animatable):
+	def __init__(self,target,start,end):
+		Animatable.__init__(self)
+		self.start = start
+		self.current = start
+		self.end = end
+		self.target = target
+	
+	def __del__(self):
+		self.target.animation_done_event(self)
+	
+	def get_start(self):
+		return self.start
+	
+	def get_end(self):
+		return self.end
+	
+	def get_current(self):
+		return self.current
+	
+	def calculate_animation(self,dt):
+		'''
+		based on the assumption that dt goes from 0 to 1
+		'''
+		if dt > 1: raise
+		self.current = (1-dt)*self.start + dt*self.end
+		self.target.set_animation_increment(self.current)
+		
+	def transform(self):pass
+	
+class LineAnimation(Animatable):
+	'''
+	Animates from one point to another
+	'''
+	def __init__(self,target,start,end):
+		Animatable.__init__(self)
+		self.start = start
+		self.current = start
+		self.end = end
+		self.target = target
+	
+	def __del__(self):
+		self.target.animation_done_event(self)
+	
+	def get_start(self):
+		return self.start
+	
+	def get_end(self):
+		return self.end
+	
+	def get_current(self):
+		return self.current
+	
+	def calculate_animation(self,dt):
+		'''
+		based on the assumption that dt goes from 0 to 1
+		'''
+		if dt > 1: raise
+		x = (1-dt)*self.start[0] + dt*self.end[0]
+		y = (1-dt)*self.start[1] + dt*self.end[1]
+		self.target.set_line_animation(x,y)
+		
+	def transform(self):pass
 		

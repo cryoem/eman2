@@ -328,6 +328,7 @@ class EMImageMXModule(EMGUIModule):
 		if self.gl_widget == None:
 			gl_view = EMGLView2D_v2(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
+			print "setting qt_parent",qt_parent
 			self.set_qt_parent(qt_parent)
 			#self.gl_widget.target_translations_allowed(True)
 		return self.gl_widget
@@ -450,8 +451,9 @@ class EMImageMXModule(EMGUIModule):
 		return self.data[idx]
 
 	def emit(self,*args,**kargs):
-		self.parent.emit(*args,**kargs)
-
+		qt_widget = self.application.get_qt_emitter(self)
+		qt_widget.emit(*args,**kargs)
+	
 	def __del__(self):
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)

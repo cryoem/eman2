@@ -48,7 +48,6 @@ import numpy
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtCore import QTimer
-from time import time
 import math
 
 from emfloatingwidgets import *
@@ -380,7 +379,8 @@ class EMDesktopApplication(EMApplication):
 			if i == child:
 				print "error, can't attach the same child twice",child
 				return
-			
+		
+		print "attaching child",child
 		self.children.append(child)
 		#self.target.attach_gl_child(child,child.get_desktop_hint())
 		
@@ -394,14 +394,14 @@ class EMDesktopApplication(EMApplication):
 		pass
 	
 	def close_specific(self,child,inspector_too=True):
-		for child_ in self.children:
+		for i,child_ in enumerate(self.children):
 			if child == child_:
+				self.children.pop(i)
 				self.target.detach_gl_child(child)
 				if inspector_too:
 					inspector = child.get_em_inspector()
 					if inspector != None:
-						self.target.detach_gl_child(inspector)
-				
+						self.close_specific(inspector,False)
 				return
 
 		print "couldn't close",child
@@ -413,7 +413,6 @@ class EMDesktopApplication(EMApplication):
 	
 	def show_specific(self,child):
 		self.target.attach_gl_child(child,child.get_desktop_hint())
-		pass
 
 	def close_child(self,child):
 		pass
@@ -506,7 +505,7 @@ class EMDesktopFrame(EMFrame):
 			child.set_parent(p)
 			p.attach_child(child.get_gl_widget(EMDesktop.main_widget))
 			#print self.display_frame.print_info()
-			self.child_mappings[child] = self.display_frame
+			self.child_mappings[child] = p
 		elif hint == "rotor":
 			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
 			self.child_mappings[child] = self.right_side_bar
@@ -659,12 +658,13 @@ def print_node_hierarchy(node):
 			print child,
 			print_node_hierarchy(child)
 
-class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 	main_widget = None
 	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
 	"""
 	application = None
 	def __init__(self):
+		Animator.__init__(self)
 		EMDesktop.main_widget = self
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
@@ -682,7 +682,6 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.frame_dl = 0 # display list of the desktop frame
 		self.fov = 35
 		self.resize_aware_objects = []
-		self.animatables = []
 		
 		self.setMouseTracking(True)
 		
@@ -702,8 +701,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.timer = QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
 		self.timer.start(10)
-		self.time=0
-		self.begin_time = time()
+		
 		
 		# resize finally so that the full screen is used
 		self.show()
@@ -788,8 +786,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 			
 		print "warning, can't deregestire resize aware object",resize_aware_object
 	
-	def register_animatable(self,animatable):
-		self.animatables.append(animatable)
+	
 	def get_aspect(self):
 		return float(self.width())/float(self.height())
 	
@@ -814,26 +811,6 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter):
 		width = self.aspect*height
 		return [width,height]
 	
-	
-	def get_time(self):
-		return self.time
-	
-	def time_out(self):
-		self.time  = time()
-		rm = []
-		if len(self.animatables) != 0:
-			#print len(self.animatables)
-			
-			for a,i in enumerate(self.animatables):
-				if not i.animate(self.time): rm.append(a)
-				
-			rm.reverse()
-			for a in rm:
-				self.animatables.pop(a)
-			
-		
-			self.updateGL()
-		
 		
 	def initializeGL(self):
 		glClearColor(0,0,0,0)

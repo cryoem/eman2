@@ -52,6 +52,8 @@ from pickle import dumps,loads
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
+from emanimationutil import SingleValueIncrementAnimation,Animator, LineAnimation
+
 try: from PyQt4 import QtWebKit
 except: pass
 import platform
@@ -62,9 +64,10 @@ from emglobjects import EMOpenGLFlagsAndTools
 
 GLUT.glutInit(sys.argv)
 
-class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 	allim=WeakKeyDictionary()
 	def __init__(self, em_image_2d_module,enable_timer=False):
+		Animator.__init__(self)
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		#fmt.setSampleBuffers(True)
@@ -82,7 +85,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	def enable_timer(self):
 		if self.time_enabled == False:
 			self.timer = QtCore.QTimer()
-			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
 			self.timeinterval = 50
 			self.timer.start(50)
 			self.time_enabled = True
@@ -90,18 +93,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 	def set_parent(self,parent):
 		self.parent = parent
-		
-	def timeout(self):
-		update = False
-		if self.target.update_blend() :
-			self.target.shapechange = 1
-			update = True
-		
-		if self.target.update_animation():
-			update = True
-		
-		if update:
-			self.updateGL()
+
 
 	def set_data(self,data):
 		self.target.set_data(data)
@@ -362,7 +354,6 @@ class EMImage2DModule(EMGUIModule):
 	
 	def emit(self,*args,**kargs):
 		qt_widget = self.application.get_qt_emitter(self)
-		#print args,kargs
 		qt_widget.emit(*args,**kargs)
 	
 	def get_qt_widget(self):
@@ -817,32 +808,9 @@ class EMImage2DModule(EMGUIModule):
 		self.shapes = shapes
 		self.shapechange=1
 		
-	def update_animation(self):
-		if not self.isanimated:
-			return False
-		
-		self.time += self.timeinc
-		if self.time > 1:
-			self.time = 1
-			self.isanimated = False
-			self.set_origin(self.endorigin[0],self.endorigin[1])
-			return True
-		
-		# get time squared
-		tinv = 1-self.time
-		t1 = tinv**2
-		t2 = 1-t1
-		
-		x = t1*self.startorigin[0] + t2*self.endorigin[0]
-		y = t1*self.startorigin[1] + t2*self.endorigin[1]
-		self.set_origin(x,y)
-		return True
-		
 	def register_scroll_motion(self,x,y):
-		self.startorigin = self.origin
-		self.endorigin = (x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2)
-		self.isanimated = True
-		self.time = 0
+		animation = LineAnimation(self,self.origin,(x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2))
+		self.get_qt_parent().register_animatable(animation)
 		return True
 
 	def set_scale(self,newscale):
@@ -981,7 +949,7 @@ class EMImage2DModule(EMGUIModule):
 		glDisable(GL_LIGHTING)
 
 		if self.shapechange:
-			self.setupShapes()
+			self.setup_shapes()
 			self.shapechange=0
 
 		width = self.parent.width()/2.0
@@ -1140,7 +1108,7 @@ class EMImage2DModule(EMGUIModule):
 		glVertex2f(xmax,ymin)
 		
 		glTexCoord2f(0,1)
-		glVertex2f(xmin,ymin,)
+		glVertex2f(xmin,ymin)
 			
 		glEnd()
 		
@@ -1189,7 +1157,7 @@ class EMImage2DModule(EMGUIModule):
 	def get_shapes(self):
 		return self.shapes
 	
-	def setupShapes(self):
+	def setup_shapes(self):
 		if self.shapelist != 0: GL.glDeleteLists(self.shapelist,1)
 		
 		self.shapelist = glGenLists(1)
@@ -1230,14 +1198,50 @@ class EMImage2DModule(EMGUIModule):
 		self.shapechange=1
 		#self.updateGL()
 
+	def update_animation(self):
+		
+		if not self.isanimated:
+			return False
+		
+		self.time += self.timeinc
+		if self.time > 1:
+			self.time = 1
+			self.isanimated = False
+			self.set_origin(self.endorigin[0],self.endorigin[1])
+			return True
+		
+		# get time squared
+		tinv = 1-self.time
+		t1 = tinv**2
+		t2 = 1-t1
+		
+		x = t1*self.startorigin[0] + t2*self.endorigin[0]
+		y = t1*self.startorigin[1] + t2*self.endorigin[1]
+		self.set_origin(x,y)
+		return True
+
+	def animation_done_event(self,animation):
+		if isinstance(animation,SingleValueIncrementAnimation):
+			self.set_animation_increment(animation.get_end())
+		elif isinstance(animation,LineAnimation):
+			self.set_line_animation(*animation.get_end())
+
+	def set_animation_increment(self,increment):
+		for shape in self.shapes.items():
+			shape[1].set_blend(increment)
+		
+		self.shapechange = True
+		
+	def set_line_animation(self,x,y):
+		self.origin=(x,y)
+		self.display_states = [] #forces an display list update
+		
 	def update_blend(self):
 		ret = False
 		for shape in self.shapes.items():
 			s = shape[1]
 			if s.isanimated:
 				v = s.incblend()
-				if v == 2:
-					self.parent.emit(QtCore.SIGNAL("removeshape"), shape[0])
 				ret = True
 		
 		return ret
@@ -1252,7 +1256,10 @@ class EMImage2DModule(EMGUIModule):
 		self.shapechange=1
 		#self.updateGL()
 	
-	def add_shapes(self,d):
+	def add_shapes(self,d,register_animation=False):
+		if register_animation:
+			animation = SingleValueIncrementAnimation(self,0,1)
+			self.get_qt_parent().register_animatable(animation)
 		self.shapes.update(d)
 		self.shapechange=1
 		#self.updateGL()

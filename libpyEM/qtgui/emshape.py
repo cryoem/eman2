@@ -103,6 +103,7 @@ class EMShape:
 			
 			col=[self.shape[1],self.shape[2],self.shape[3],self.blend]
 
+		
 		if s[0]=="rect":
 			GL.glLineWidth(s[8])
 			#if  self.isanimated:
@@ -319,5 +320,12 @@ class EMShape:
 			# remove me please
 			return 2
 		else: return 0
-	
+		
+	def set_blend(self,blend):
+		if not self.isanimated: return
+		self.blend = blend
+		if self.blend >= 1: self.isanimated = False
+		
+	def is_animated(self):
+		return self.isanimated
 		

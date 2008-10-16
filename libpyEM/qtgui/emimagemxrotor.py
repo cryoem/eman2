@@ -633,7 +633,9 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.rotor.update()
 
 	def __regenerate_rotor(self):
-		self.rotor.clear_widgets()
+		for widget in self.rotor.get_widgets():
+			self.application.deregister_qt_emitter(widget.get_drawable())
+			self.rotor.clear_widgets()
 #		self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
 		num_per_view = self.mx_rows*self.mx_cols
 		for idx in range(self.start_mx,self.start_mx+self.visible_mxs):
@@ -659,6 +661,8 @@ class EMImageMXRotorModule(EMGUIModule):
 				for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 
 			e = EMGLView2D(self,d)
+			e.get_drawable().set_app(self.application)
+			self.application.register_qt_emitter(e.get_drawable(),self.application.get_qt_emitter(self))
 			self.rotor.add_widget(e)
 			w = e.get_drawable()
 	
@@ -759,10 +763,9 @@ class EMImageMXRotorModule(EMGUIModule):
 		pass
 	
 	def keyPressEvent(self,event):
-		if event.key() == Qt.Key_F1:
-			pass
-			##self.updateGL()
-
+		self.gl_widget.keyPressEvent(event)
+		self.updateGL()
+		
 	def resize_event(self, width, height):
 		self.rotor.resize_event(width,height)
 		self.optimize_fit(False)
