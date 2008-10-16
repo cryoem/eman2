@@ -13704,21 +13704,20 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 	#for n in xrange(len(n_phi)): f.write('%10.3f %10.3f\n' % (n_phi[n], n_theta[n]))
 	#f.close()
 
-	if len(n_phi) > 2:
-		# use Voronoi
-		n_weights = Util.vrdg(n_phi, n_theta)
-	
-		# compute the new weights according the sames cm lines
-		weights = [-1] * g_n_lines
-		for n in xrange(index): weights[LUT[n]] = n_weights[n]
-		for n in xrange(g_n_lines - 1):
-			if mem_i_same[n] is not None:
-				val        = weights[n]
-				nval       = val / (len(mem_i_same[n]) + 1)
-				weights[n] = nval
-				for i in mem_i_same[n]: weights[i] = nval
-	else:	
-		weights = [1] * g_n_lines
+
+	# use Voronoi
+	n_weights = Util.vrdg(n_phi, n_theta)
+
+	# compute the new weights according the sames cm lines
+	weights = [-1] * g_n_lines
+	for n in xrange(index): weights[LUT[n]] = n_weights[n]
+	for n in xrange(g_n_lines - 1):
+		if mem_i_same[n] is not None:
+			val        = weights[n]
+			nval       = val / (len(mem_i_same[n]) + 1)
+			weights[n] = nval
+			for i in mem_i_same[n]: weights[i] = nval
+
 	'''
 	weights = [1] * g_n_lines
 
@@ -13985,17 +13984,14 @@ def cml_disc_dev(Prj, Ori):
 	return L_tot
 
 # cml spin function for one orientation
-def cml_spin_dev(Prj, iprj, Ori, iagl):
+def cml_spin_dev(Prj, iprj, Ori, iagl, weights):
 	from development import cml_weights_dev, get_common_line_angles_dev
 	from math        import pi, fmod
 	import sys
 
 	# gbl vars
 	global g_n_prj, g_n_psi, g_n_lines, g_anglst
-	
-	weights = cml_weights_dev(Ori, iagl, iprj)
 	com     = [0] * 2 * g_n_lines
-
 
 	list_ori = [0.0] * 3 * g_n_prj
 	j = 0
@@ -14005,28 +14001,12 @@ def cml_spin_dev(Prj, iprj, Ori, iagl):
 		list_ori[j+2] = Ori[i][2]
 		j += 3
 
-
+	# compute the common line (only for iprj)
 	com = Util.cml_list_line_pos(list_ori, g_anglst[iagl][0], g_anglst[iagl][1], iprj, g_n_prj, g_n_psi, g_n_lines)
-
-	'''
-	# compute the common lines only including iprj
-	count = 0
-	for i in xrange(g_n_prj - 1):
-		for j in xrange(i + 1, g_n_prj):
-			if i == iprj:
-				#[com[count], com[count + 1]] = Util.cml_line_pos(g_anglst[iagl][0], g_anglst[iagl][1], 0.0, Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
-				com[count], com[count + 1] = get_common_line_angles_dev(g_anglst[iagl][0], g_anglst[iagl][1], 0.0, Ori[j][0], Ori[j][1], Ori[j][2], g_n_psi)
-			elif j == iprj:
-				#[com[count], com[count + 1]] = Util.cml_line_pos(Ori[i][0], Ori[i][1], Ori[i][2], g_anglst[iagl][0], g_anglst[iagl][1], 0.0, g_n_psi)
-				com[count], com[count + 1] = get_common_line_angles_dev(Ori[i][0], Ori[i][1], Ori[i][2], g_anglst[iagl][0], g_anglst[iagl][1], 0.0, g_n_psi)
-				
-			count += 2
-	'''
-
 
 	# do spin over all psi
 	res = Util.cml_spin(g_n_psi, iprj, g_n_prj, weights, com, Prj)
-	#res = [0.0, 0.0]
+
 	#return best_disc, best_psi
 	return res[0], int(res[1])
 
@@ -14067,8 +14047,11 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 
 				# if agls free
 				if ocp[iagl] == -1:
+					# weights
+					weights = cml_weights_dev(Ori, iagl, iprj)
+					
 					# spin
-					disc, ind_psi = cml_spin_dev(Prj, iprj, Ori, iagl)
+					disc, ind_psi = cml_spin_dev(Prj, iprj, Ori, iagl, weights)
 
 					# select the best
 					if disc < best_disc:
