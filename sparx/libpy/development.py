@@ -14076,9 +14076,9 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 						best_psi  = ind_psi
 						best_iagl = iagl
 
-					cml_export_progress_dev(outdir, iprj, iagl, ind_psi * g_d_psi, disc, 'progress')
+					if g_debug: cml_export_progress_dev(outdir, iprj, iagl, ind_psi * g_d_psi, disc, 'progress')
 				else:
-					cml_export_progress_dev(outdir, iprj, iagl, -1, -1, 'progress')
+					if g_debug: cml_export_progress_dev(outdir, iprj, iagl, -1, -1, 'progress')
 
 			# if change, assign
 			if best_iagl != cur_agl:
@@ -14092,7 +14092,7 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 			else:
 				ocp[cur_agl]   = iprj
 
-			cml_export_progress_dev(outdir, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
+			if g_debug: cml_export_progress_dev(outdir, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
 		# if one change, compute new full disc
 		disc = cml_disc_dev(Prj, Ori)
