@@ -48,8 +48,8 @@ from emimage3d import *
 from emimagemx import *
 from math import sqrt
 
-import Image
-import numpy
+#import Image
+#import numpy
 
 try: from emimage import EMImage
 except: pass
@@ -92,8 +92,8 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 	FROZEN_COLOR = "frozen"
 	DEFAULT_COLOR = "default"
 	PERMISSABLE_COLOR_FLAGS = [FROZEN_COLOR,DEFAULT_COLOR]
-	x_texture_dl = None
-	x_texture_size = (-1,1)
+	#x_texture_dl = None
+	#x_texture_size = (-1,1)
 	def __init__(self, object):
 		EM3DBorderDecoration.__init__(self)
 		self.border_width = 10
@@ -161,14 +161,14 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			
 		if self.display_list != None and self.display_list != 0:
 			glCallList(self.display_list)
-			glEnable(GL_TEXTURE_2D)
-			glEnable(GL_BLEND)
-			#glDisable(GL_DEPTH_TEST)
-			glBlendFunc(GL_ONE,GL_SRC_COLOR)
-			glTranslate(self.object.width()/2.0,self.object.height()/2.0+self.border_height/2.0,self.border_depth/2+1)
-			glCallList(EM3DPlainBorderDecoration.x_texture_dl)
-			glDisable(GL_BLEND)
-			glDisable(GL_TEXTURE_2D)
+			#glEnable(GL_TEXTURE_2D)
+			#glEnable(GL_BLEND)
+			##glDisable(GL_DEPTH_TEST)
+			#glBlendFunc(GL_ONE,GL_SRC_COLOR)
+			#glTranslate(self.object.width()/2.0,self.object.height()/2.0+self.border_height/2.0,self.border_depth/2+1)
+			#glCallList(EM3DPlainBorderDecoration.x_texture_dl)
+			#glDisable(GL_BLEND)
+			#glDisable(GL_TEXTURE_2D)
 			#glable(GL_DEPTH_TEST)
 		else: print "weird"
 	
@@ -177,63 +177,63 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			glDeleteLists(self.display_list,1)
 			self.display_list = None
 	
-	def __init_x_texture(self):
-		print "done list"
-		if EM3DPlainBorderDecoration.x_texture_dl == None or EM3DPlainBorderDecoration.x_texture_dl < 0:
-			print "here"
-			glEnable(GL_TEXTURE_2D)
-			img = Image.open(os.getenv("EMAN2DIR")+"/images/Close.png")
-			img_data = numpy.array(list(img.getdata()), numpy.int8)
-			print "here"
-			x_texture_size = img.size
-			EM3DPlainBorderDecoration.x_texture_dl=glGenLists(1)
-			print EM3DPlainBorderDecoration.x_texture_dl
+	#def __init_x_texture(self):
+		#print "done list"
+		#if EM3DPlainBorderDecoration.x_texture_dl == None or EM3DPlainBorderDecoration.x_texture_dl < 0:
+			#print "here"
+			#glEnable(GL_TEXTURE_2D)
+			#img = Image.open(os.getenv("EMAN2DIR")+"/images/Close.png")
+			#img_data = numpy.array(list(img.getdata()), numpy.int8)
+			#print "here"
+			#x_texture_size = img.size
+			#EM3DPlainBorderDecoration.x_texture_dl=glGenLists(1)
+			#print EM3DPlainBorderDecoration.x_texture_dl
 			
-			if EM3DPlainBorderDecoration.x_texture_dl == 0:
-				return
-			print "here1"
-			glNewList( EM3DPlainBorderDecoration.x_texture_dl,GL_COMPILE)
-			print "here2"
+			#if EM3DPlainBorderDecoration.x_texture_dl == 0:
+				#return
+			#print "here1"
+			#glNewList( EM3DPlainBorderDecoration.x_texture_dl,GL_COMPILE)
+			#print "here2"
 			
-			texture = glGenTextures(1)
-			#glPixelStorei(GL_UNPACK_ALIGNMENT,1)
-			print "here"
-			glBindTexture(GL_TEXTURE_2D, texture)
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.size[0], img.size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-			# this makes it so that the texture is impervious to lighting
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			print "here3"
+			#texture = glGenTextures(1)
+			##glPixelStorei(GL_UNPACK_ALIGNMENT,1)
+			#print "here"
+			#glBindTexture(GL_TEXTURE_2D, texture)
+			#glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.size[0], img.size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
+			#glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			#glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			## this makes it so that the texture is impervious to lighting
+			#glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+			#print "here3"
 			
-			xmin = -self.border_height/2
-			xmax =  self.border_height/2
-			ymin = -self.border_height/2
-			ymax =  self.border_height/2
-			glBegin(GL_QUADS)
+			#xmin = -self.border_height/2
+			#xmax =  self.border_height/2
+			#ymin = -self.border_height/2
+			#ymax =  self.border_height/2
+			#glBegin(GL_QUADS)
 		
-			glNormal(0,0,1)
-			glTexCoord2f(0,0)
-			glVertex2f(xmin,ymax)
+			#glNormal(0,0,1)
+			#glTexCoord2f(0,0)
+			#glVertex2f(xmin,ymax)
 			
-			glTexCoord2f(1,0)
-			glVertex2f(xmax,ymax)
+			#glTexCoord2f(1,0)
+			#glVertex2f(xmax,ymax)
 				
-			glTexCoord2f(1,1)
-			glVertex2f(xmax,ymin)
+			#glTexCoord2f(1,1)
+			#glVertex2f(xmax,ymin)
 			
-			glTexCoord2f(0,1)
-			glVertex2f(xmin,ymin)
+			#glTexCoord2f(0,1)
+			#glVertex2f(xmin,ymin)
 			
-			glEnd()
+			#glEnd()
 			
-			glEndList()
+			#glEndList()
 			
-			print "done list"
+			#print "done list"
 			
-			#EM3DPlainBorderDecoration.x_texture_dl
+			##EM3DPlainBorderDecoration.x_texture_dl
 			
-			glDisable(GL_TEXTURE_2D)
+			#glDisable(GL_TEXTURE_2D)
 			
 	def __gen_2d_object_border_list(self):
 		
@@ -241,10 +241,8 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		#context.makeCurrent()
 		#print "made",context,"current"
 		
-		if EM3DPlainBorderDecoration.x_texture_dl == None:
-			self.__init_x_texture()
-			
-		
+		#if EM3DPlainBorderDecoration.x_texture_dl == None:
+			#self.__init_x_texture()
 		
 		self.__delete_list()
 		if self.display_list == None:
@@ -304,8 +302,8 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 	def __gen_3d_object_border_list(self):
 		self.__delete_list()
 	
-		if EM3DPlainBorderDecoration.x_texture_dl == None:
-			self.__init_x_texture()
+		#if EM3DPlainBorderDecoration.x_texture_dl == None:
+			#self.__init_x_texture()
 	
 		if self.display_list == None:
 			thick_front = 0
