@@ -4648,10 +4648,10 @@ void SNRProcessor::process_inplace(EMData * image)
 
 	vector < float >ctf;
 	if (wiener) {
-		ctf = image_ctf->compute_1d(image->get_ysize(), Ctf::CTF_WIENER_CTF_CORRECTION1, &sf);
+		ctf = image_ctf->compute_1d(image->get_ysize(), Ctf::CTF_WIENER_FILTER, &sf);
 	}
 	else {
-		ctf = image_ctf->compute_1d(image->get_ysize(), Ctf::CTF_ABS_SNR, &sf);
+		ctf = image_ctf->compute_1d(image->get_ysize(), Ctf::CTF_SNR, &sf);
 	}
 
 	image->process_inplace("normalize.circlemean");

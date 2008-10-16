@@ -187,7 +187,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 	float amp1 = calc_amp1();
 
 	switch (type) {
-	case CTF_AMP_S:
+	case CTF_AMP:
 		for (int i = 0; i < np; i++) {
 			float gamma = calc_gamma(g1, g2, s);
 			r[i] = calc_ctf1(amp1, gamma, s);
@@ -195,39 +195,31 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 		}
 		break;
 
-	case CTF_NOISE_S:
+	case CTF_SIGN:
+		for (int i = 0; i < np; i++) {
+			float gamma = calc_gamma(g1, g2, s);
+			r[i] = calc_ctf1(amp1, gamma, s)>0?1.0:-1.0;
+			s += ds;
+		}
+		break;
+
+	case CTF_BACKGROUND:
 		for (int i = 0; i < np; i++) {
 			r[i] = calc_noise(s);
 			s += ds;
 		}
 		break;
 
-	case CTF_ABS_AMP_S:
-		for (int i = 0; i < np; i++) {
-			float gamma = calc_gamma(g1, g2, s);
-			r[i] = fabs(calc_ctf1(amp1, gamma, s));
-			s += ds;
-		}
-		break;
-
-	case CTF_RELATIVE_SNR:
-		for (int i = 0; i < np; i++) {
-			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_ctf(amp1, gamma, s);
-			s += ds;
-		}
-		break;
-
-	case CTF_ABS_SNR:
-		if (!sf) {
-			LOGERR("CTF computation error, no SF found\n");
-			return r;
-		}
+	case CTF_SNR:
+// 		if (!sf) {
+// 			LOGERR("CTF computation error, no SF found\n");
+// 			return r;
+// 		}
 
 		for (int i = 0; i < np; i++) {
 			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_ctf(amp1, gamma, s);
-			if (s) {
+			r[i] = calc_snr(amp1, gamma, s);
+			if (s && sf) {
 				r[i] *= pow(10.0f, sf->get_yatx(s));
 			}
 			s += ds;
@@ -235,7 +227,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 
 		break;
 
-	case CTF_SNR_WIENER:
+	case CTF_WIENER_FILTER:
 		if (!sf) {
 			LOGERR("CTF computation error, no SF found\n");
 			return r;
@@ -243,8 +235,8 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 
 		for (int i = 0; i < np; i++) {
 			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_ctf(amp1, gamma, s);
-			if (s) {
+			r[i] = calc_snr(amp1, gamma, s);
+			if (s && sf) {
 				r[i] *= pow(10.0f, sf->get_yatx(s));
 			}
 
@@ -253,7 +245,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 		}
 		break;
 
-	case CTF_WIENER_CTF_CORRECTION1:
+	case CTF_TOTAL:
 		if (!sf) {
 			LOGERR("CTF computation error, no SF found\n");
 			return r;
@@ -261,60 +253,13 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 
 		for (int i = 0; i < np; i++) {
 			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_ctf(amp1, gamma, s);
-			if (s) {
-				r[i] *= pow(10.0f, sf->get_yatx(s));
-			}
-
-
-			float v = fabs(calc_ctf1(amp1, gamma, s));
-			if (r[i] == 0 || v == 0) {
-				r[i] = 0;
-			}
-			else {
-				r[i] = (1.0f / (1.0f + 1.0f / r[i])) / v;
-			}
-			s += ds;
-		}
-		break;
-
-	case CTF_WIENER_CTF_CORRECTION2:
-		if (!sf) {
-			LOGERR("CTF computation error, no SF found\n");
-			return r;
-		}
-
-		for (int i = 0; i < np; i++) {
-			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_ctf(amp1, gamma, s);
-			if (s) {
-				r[i] *= pow(10.0f, sf->get_yatx(s));
-			}
-			float v = calc_ctf1(amp1, gamma, s);
-			if (r[i] == 0 || v == 0) {
-				r[i] = 0;
-			}
-			else {
-				r[i] = (1.0f / (1.0f + 1.0f / r[i])) / v;
-			}
-			s += ds;
-		}
-		break;
-
-	case CTF_TOTAL_CURVE:
-		if (!sf) {
-			LOGERR("CTF computation error, no SF found\n");
-			return r;
-		}
-
-		for (int i = 0; i < np; i++) {
-			float gamma = calc_gamma(g1, g2, s);
-			if (sf->is_validx(s)) {
+			if (sf) {
 				r[i] = calc_ctf1(amp1, gamma, s);
 				r[i] = r[i] * r[i] * pow(10.0f, sf->get_yatx(s)) + calc_noise(s);
 			}
 			else {
-				r[i] = 0;
+				r[i] = calc_ctf1(amp1, gamma, s);
+				r[i] = r[i] * r[i] + calc_noise(s);
 			}
 			s += ds;
 		}
@@ -362,7 +307,7 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	float g1 = calc_g1();
 	float g2 = calc_g2();
 
-	if (type == CTF_NOISE) {
+	if (type == CTF_BACKGROUND) {
 		for (int y = 0; y < ny; y++) {
 			int ynx = y * nx;
 
@@ -373,24 +318,7 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float s = (float) hypot(x, y - ny / 2.0f) * ds;
 #endif			
 				d[x * 2 + ynx] = calc_noise(s);
-				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
-			}
-		}
-	}
-	else if (type == CTF_BFACTOR) {
-		for (int y = 0; y < ny; y++) {
-			int ynx = y * nx;
-
-			for (int x = 0; x < nx / 2; x++) {
-#ifdef	_WIN32
-				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
-#else
-				float s = (float)hypot(x, y - ny / 2.0f) * ds;
-#endif	
-				float gamma = calc_gamma(g1, g2, s);
-				float v = calc_amplitude(gamma);
-				d[x * 2 + ynx] *= v;
-				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
+				d[x * 2 + ynx + 1] = 0;			// The phase is somewhat arbitrary
 			}
 		}
 	}
@@ -406,8 +334,8 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #endif	//_WIN32	
 				float gamma = calc_gamma(g1, g2, s);
 				float v = fabs(calc_amplitude(gamma));
-				d[x * 2 + ynx] *= v;
-				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
+				d[x * 2 + ynx] = v;
+				d[x * 2 + ynx + 1] = 0;
 			}
 		}
 	}
@@ -422,26 +350,35 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #endif	
 				float gamma = calc_gamma(g1, g2, s);
 				float v = calc_amplitude(gamma);
-				v = v > 0 ? 1.0f : -1.0f;
-				d[x * 2 + ynx] *= v;
-				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
+				d[x * 2 + ynx] = v > 0 ? 1.0f : -1.0f;
+				d[x * 2 + ynx + 1] = 0;
 			}
 		}
 
 	}
-	else if (type == CTF_BFACTOR) {
+	else if (type == CTF_SNR) {
+		float amp1 = calc_amp1();
+
 		for (int y = 0; y < ny; y++) {
 			int ynx = y * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
+
 #ifdef	_WIN32
 				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
 #else
 				float s = (float)hypot(x, y - ny / 2.0f) * ds;
-#endif			
-				float v = exp(-(bfactor * s * s));
-				d[x * 2 + ynx] *= v;
-				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
+#endif	
+				float gamma = calc_gamma(g1, g2, s);
+				float f = calc_ctf1(amp1, gamma, s);
+				float noise = calc_noise(s);
+				f = f * f / noise;
+
+				if (s && sf) {
+					f *= pow(10.0f, sf->get_yatx(s));
+				}
+				d[x * 2 + ynx] *= f;
+				d[x * 2 + ynx + 1] = 0;
 			}
 		}
 	}
@@ -468,7 +405,35 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				}
 				f = 1.0f / (1.0f + 1.0f / f);
 				d[x * 2 + ynx] *= f;
-				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+	}
+	else if (type == CTF_TOTAL) {
+		float amp1 = calc_amp1();
+
+		for (int y = 0; y < ny; y++) {
+			int ynx = y * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+
+#ifdef	_WIN32
+				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
+#else
+				float s = (float)hypot(x, y - ny / 2.0f) * ds;
+#endif	
+				float gamma = calc_gamma(g1, g2, s);
+				float f = calc_ctf1(amp1, gamma, s);
+				float noise = calc_noise(s);
+				f = f * f;
+
+				if (sf && s) {
+					f *= pow(10.0f, sf->get_yatx(s));
+				}
+				f+=noise;
+
+				d[x * 2 + ynx] *= f;
+				d[x * 2 + ynx + 1] = 0;
 			}
 		}
 	}

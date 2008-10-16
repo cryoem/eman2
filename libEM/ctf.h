@@ -66,26 +66,12 @@ namespace EMAN
 		// NOTE: ctf is positive for the first peak, instead of negative
 		enum CtfType
 		{
-			CTF_NOISE,			// the true ctf with B decay and with positive and negative peaks,  
-			CTF_CTF_NO_BDECAY,	// the true ctf without B decay and with positive and negative peaks
-			CTF_AMP,			// ctf ampltidue only = fabs(CTF_CTF)
-			CTF_AMP_NO_BDECAY,	// ctf ampltidue only = fabs(CTF_CTF_NO_B)
-			CTF_SIGN,			// ctf sign (+-1)       = sign(CTF_CTF)
-			CTF_BFACTOR,		// B factor decay only, no ctf oscillation
+			CTF_AMP,			// ctf ampltidue only
+			CTF_SIGN,			// ctf sign (+-1)
 			CTF_BACKGROUND,		// Background, no ctf oscillation
 			CTF_SNR,			// Signal to noise ratio
-			CTF_SNR_SIGN,		// Signal to noise ratio with sign = CTF_SNR*CTF_SIGN
 			CTF_WIENER_FILTER,	// Weiner Filter = 1/(1+1/snr)
-			CTF_WIENER_CTF_CORRECTION,	// ctf correction with Weiner Filter = 1/(ctf*exp(-b*s^2)*(1+1/snr))    
-			CTF_AMP_S,
-			CTF_NOISE_S,
-			CTF_ABS_AMP_S,
-			CTF_RELATIVE_SNR,
-			CTF_ABS_SNR,
-			CTF_SNR_WIENER,
-			CTF_WIENER_CTF_CORRECTION1,
-			CTF_WIENER_CTF_CORRECTION2,
-			CTF_TOTAL_CURVE
+			CTF_TOTAL			// AMP*AMP+NOISE
 		};
 	  public:
 		virtual ~ Ctf()
@@ -217,7 +203,7 @@ namespace EMAN
 			return n;
 		}
 
-		inline float calc_ctf(float g1, float gamma, float s)
+		inline float calc_snr(float g1, float gamma, float s)
 		{
 			float ctf1 = calc_ctf1(g1, gamma, s);
 			float ctf2 = ctf1 * ctf1 / calc_noise(s);

@@ -671,9 +671,9 @@ void CtfAverager::add_image(EMData * image)
 		image0_copy->to_zero();
 	}
 	
-	Ctf::CtfType curve_type = Ctf::CTF_ABS_AMP_S;
+	Ctf::CtfType curve_type = Ctf::CTF_AMP;
 	if (alg_name == "CtfCWauto") {
-		curve_type = Ctf::CTF_AMP_S;
+		curve_type = Ctf::CTF_AMP;
 	}
 	
 	float *src = image->get_data();
@@ -691,10 +691,10 @@ void CtfAverager::add_image(EMData * image)
 
 	vector<float> ctfn1;
 	if (sf) {
-		ctfn1 = image_ctf->compute_1d(ny2, Ctf::CTF_ABS_SNR, sf);
+		ctfn1 = image_ctf->compute_1d(ny2, Ctf::CTF_SNR, sf);
 	}
 	else {
-		ctfn1 = image_ctf->compute_1d(ny2, Ctf::CTF_RELATIVE_SNR);
+		ctfn1 = image_ctf->compute_1d(ny2, Ctf::CTF_SNR);
 	}
 
 	ctfn.push_back(ctfn1);
