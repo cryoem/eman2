@@ -50,7 +50,7 @@ from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
-from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emapplication import EMStandAloneApplication, EMGUIModule
 
 from emanimationutil import SingleValueIncrementAnimation,Animator, LineAnimation
 
@@ -73,7 +73,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 		#fmt.setSampleBuffers(True)
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
-		EMEventRerouter.__init__(self,em_image_2d_module)
+		EMEventRerouter.__init__(self,em_image_2d_module) # makes self.target
 		self.initimageflag = True
 		
 		self.setFocusPolicy(Qt.StrongFocus)
@@ -139,12 +139,14 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 		glPopMatrix()
 		
 	def resizeGL(self, width, height):
+		print width, height, self.width(),self.height()
 		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
+		
+		GL.glViewport(0,0,width,height)
 	
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
+		GLU.gluOrtho2D(0.0,width,0.0,height)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
@@ -361,15 +363,13 @@ class EMImage2DModule(EMGUIModule):
 		if self.parent == None:	
 			self.gl_parent = EMImage2DWidget(self,enable_timer=True)
 			self.parent = EMParentWin(self.gl_parent)
+			self.gl_widget = self.gl_parent
 			self.set_gl_parent(self.gl_parent)
 			f = self.file_name.split('/')
 			f = f[len(f)-1]
 			self.parent.setWindowTitle(f)
 			if isinstance(self.data,EMData):
 				self.load_default_scale_origin()
-			
-			if isinstance(self.data,EMData):
-				sself.load_default_scale_origin()
 		return self.parent
 	
 	def get_gl_widget(self,qt_parent=None):
@@ -439,9 +439,6 @@ class EMImage2DModule(EMGUIModule):
 		self.isanimated = False
 		self.time = 1
 		self.timeinc = 0.125
-		
-		self.inspector=None			# set to inspector panel widget when exists
-		self.em_qt_inspector_widget = None # eventually a EMQtWidgetModule storing the inspector
 		
 		self.init_size = True		# A flag used to set the initial origin offset
 		
@@ -579,15 +576,15 @@ class EMImage2DModule(EMGUIModule):
 		return [data.get_xsize(),data.get_ysize(),data.get_zsize()]
 	
 	def width(self):
-		try: return self.parent.width()
+		try: return self.gl_widget.width()
 		except:	return 0
 	
 	def height(self):
-		try: return self.parent.height()
+		try: return self.gl_widget.height()
 		except:	return 0
 	
 	def updateGL(self):
-		try: self.gl_parent.updateGL()
+		try: self.gl_widget.updateGL()
 		except: pass
 		
 	def set_frozen(self,frozen):
@@ -681,9 +678,8 @@ class EMImage2DModule(EMGUIModule):
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)
 		try: 
-			parent = self.get_parent()
-			w = parent.width()
-			h = parent.height()
+			w = self.gl_widget.width()
+			h = self.gl_widget.height()
 			data = self.get_data_dims()
 			if data[0] == 0 or data[1] == 0: raise
 			scalew = float(w)/data[0]
@@ -795,7 +791,7 @@ class EMImage2DModule(EMGUIModule):
 	
 	def scroll_to(self,x,y):
 		"""center the point on the screen"""
-		self.set_origin(x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2)
+		self.set_origin(x*self.scale-self.gl_widget.width()/2,y*self.scale-self.gl_widget.height()/2)
 
 	def set_shapes(self,shapes,shrink):
 		self.hack_shrink = shrink
@@ -803,14 +799,14 @@ class EMImage2DModule(EMGUIModule):
 		self.shapechange=1
 		
 	def register_scroll_motion(self,x,y):
-		animation = LineAnimation(self,self.origin,(x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2))
+		animation = LineAnimation(self,self.origin,(x*self.scale-self.gl_widget.width()/2,y*self.scale-self.gl_widget.height()/2))
 		self.get_gl_parent().register_animatable(animation)
 		return True
 
 	def set_scale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		try:
-			self.origin=(newscale/self.scale*(self.parent.width()/2.0+self.origin[0])-self.parent.width()/2.0,newscale/self.scale*(self.parent.height()/2.0+self.origin[1])-self.parent.height()/2.0)
+			self.origin=(newscale/self.scale*(self.gl_widget.width()/2.0+self.origin[0])-self.gl_widget.width()/2.0,newscale/self.scale*(self.gl_widget.height()/2.0+self.origin[1])-self.gl_widget.height()/2.0)
 			self.scale=newscale
 			self.updateGL()
 		except: pass
@@ -913,8 +909,8 @@ class EMImage2DModule(EMGUIModule):
 	def display_state_changed(self):
 		
 		display_states = []
-		display_states.append(self.parent.width())
-		display_states.append(self.parent.height())
+		display_states.append(self.gl_widget.width())
+		display_states.append(self.gl_widget.height())
 		display_states.append(self.origin[0])
 		display_states.append(self.origin[1])
 		display_states.append(self.scale)
@@ -946,15 +942,15 @@ class EMImage2DModule(EMGUIModule):
 			self.setup_shapes()
 			self.shapechange=0
 
-		width = self.parent.width()/2.0
-		height = self.parent.height()/2.0
+		width = self.gl_widget.width()/2.0
+		height = self.gl_widget.height()/2.0
 		
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		
 		if self.otherdata != None and isinstance(self.otherdata,EMData) and not self.glflags.npt_textures_unsupported():
 			scale = self.scale*self.otherdatascale
-			b=self.otherdata.render_amp8(int(self.origin[0]/scale),int(self.origin[1]/scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
+			b=self.otherdata.render_amp8(int(self.origin[0]/scale),int(self.origin[1]/scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
 			gl_render_type = GL_LUMINANCE
 			
 			if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
@@ -963,7 +959,7 @@ class EMImage2DModule(EMGUIModule):
 				raise("failed to generate texture name")
 			
 			glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
-			glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
+			glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.gl_widget.width(),self.gl_widget.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
 			
 			glPushMatrix()
 			glTranslatef(width,height,0)
@@ -988,16 +984,16 @@ class EMImage2DModule(EMGUIModule):
 				if self.display_fft.is_complex() == False:
 					print "error, the fft is not complex, internal error"
 					return
-				a=self.display_fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fminden,self.fmaxden,self.fgamma,3)
+				a=self.display_fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fminden,self.fmaxden,self.fgamma,3)
 				gl_render_type = GL_RGB
 				
 			elif self.curfft in (2,3) :
-				a=self.display_fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fminden,self.fmaxden,self.fgamma,2)
+				a=self.display_fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fminden,self.fmaxden,self.fgamma,2)
 				gl_render_type = GL_LUMINANCE
 			else : 
-				a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.parent.width(),self.parent.height(),(self.parent.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+				a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 				gl_render_type = GL_LUMINANCE
-			if  not self.glflags.npt_textures_unsupported():
+			if not self.glflags.npt_textures_unsupported():
 				
 				self.hist=struct.unpack('256i',a[-1024:])
 			
@@ -1017,7 +1013,7 @@ class EMImage2DModule(EMGUIModule):
 					GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
 	
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.parent.width(),self.parent.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.gl_widget.width(),self.gl_widget.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 				
 				glPushMatrix()
 				glTranslatef(width,height,0)
@@ -1029,9 +1025,10 @@ class EMImage2DModule(EMGUIModule):
 					if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
 			
 			else:
-				GL.glRasterPos(0,self.parent.height()-1)
+				offset = self.parent.get_viewport_offset()
+				GL.glRasterPos(0,self.gl_widget.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
-				GL.glDrawPixels(self.parent.width(),self.parent.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
+				GL.glDrawPixels(self.gl_widget.width(),self.gl_widget.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
 		else:
 			glCallList(self.main_display_list)
 		
@@ -1137,12 +1134,12 @@ class EMImage2DModule(EMGUIModule):
 	def resizeEvent(self,width,height):
 		if self.init_size :
 			if self.origin == (0,0):
-				#self.origin = ((self.data.get_xsize() - self.parent.width())/2.0, (self.data.get_ysize() - self.parent.height())/2.0 )
+				#self.origin = ((self.data.get_xsize() - self.gl_widget.width())/2.0, (self.data.get_ysize() - self.gl_widget.height())/2.0 )
 				self.oldsize=(width,height)
 			self.init_size = False
 		else:
 			if self.origin == (0,0):
-				#self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.parent.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.parent.height()/2.0)
+				#self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.gl_widget.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.gl_widget.height()/2.0)
 				self.oldsize=(width,height)
 				
 		self.window_width = width
@@ -1277,8 +1274,8 @@ class EMImage2DModule(EMGUIModule):
 		#self.updateGL()
 	
 	def scr_to_img(self,v0,v1=None):
-		try: return ((v0+self.origin[0])/self.scale,(self.gl_parent.height()-(v1-self.origin[1]))/self.scale)
-		except:	return ((v0[0]+self.origin[0])/self.scale,(self.gl_parent.height()-(v0[1]-self.origin[1]))/self.scale)
+		try: return ((v0+self.origin[0])/self.scale,(self.gl_widget.height()-(v1-self.origin[1]))/self.scale)
+		except:	return ((v0[0]+self.origin[0])/self.scale,(self.gl_widget.height()-(v0[1]-self.origin[1]))/self.scale)
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
@@ -1349,17 +1346,17 @@ class EMImage2DModule(EMGUIModule):
 			move_fac = 1.0/20.0
 			delta = event.delta()/120.0
 			
-#			print self.origin, self.data.get_xsize(),self.data.get_ysize(),self.scale,self.parent.width(),self.parent.height()
+#			print self.origin, self.data.get_xsize(),self.data.get_ysize(),self.scale,self.gl_widget.width(),self.gl_widget.height()
 
 #			print self.origin
 			if event.orientation() & Qt.Vertical:
-				visible_vertical_pixels = self.parent.height()/sqrt(self.scale)
+				visible_vertical_pixels = self.gl_widget.height()/sqrt(self.scale)
 				shift_per_delta = move_fac*visible_vertical_pixels
 #				print "there are this many visible vertical pixels",visible_vertical_pixels, "deltas", delta, "shift per delta",shift_per_delta
 #				print "shifting vertical",event.delta(),shift_per_delta
 				self.origin=(self.origin[0],self.origin[1]-delta*shift_per_delta)
 			elif event.orientation() & Qt.Horizontal:
-				visible_horizontal_pixels = self.parent.width()/sqrt(self.scale)
+				visible_horizontal_pixels = self.gl_widget.width()/sqrt(self.scale)
 				shift_per_delta = move_fac*visible_horizontal_pixels
 #				print "shifting horizontal",event.delta(),shift_per_delta
 #	   	   	   	print "there are this many visible horizontal pixels",visible_horizontal_pixels, "deltas", delta, "shift per delta",shift_per_delta
@@ -1436,8 +1433,8 @@ class EMImage2DModule(EMGUIModule):
 			self.__init_font_renderer()
 			
 		
-		width = self.parent.width()
-		height = self.parent.height()
+		width = self.gl_widget.width()
+		height = self.gl_widget.height()
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()

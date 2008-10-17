@@ -35,6 +35,7 @@ import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
+from OpenGL.GL import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
@@ -52,21 +53,74 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 
+from emapplication import EMStandAloneApplication, EMGUIModule
+from emimageutil import EMEventRerouter, EMParentWin
+from emglobjects import EMOpenGLFlagsAndTools
+
 linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]
 colortypes=["k","b","r","g"]
 
-def NewPlot2DWin():
-	return EMParentWin(EMPlot2D())
 
-
-class EMPlot2D(QtOpenGL.QGLWidget):
+class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
-	def __init__(self, parent=None):
+	def __init__(self, em_plot_module):
+		assert(isinstance(em_plot_module,EMPlot2DModule))
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		QtOpenGL.QGLWidget.__init__(self,fmt, None)
+		EMEventRerouter.__init__(self,em_plot_module) # sets self.target to em_plot_module
+
+		self.resize(480,480)
+	def initializeGL(self):
+		GL.glClearColor(0,0,0,0)
+		
+	def paintGL(self):
+		if not self.parentWidget() : return
+		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+		
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+		self.target.draw()
+		
+	def resizeGL(self, width, height):
+#		print "resize ",self.width()
+		side = min(width, height)
+		GL.glViewport(0,0,self.width(),self.height())
+	
+		
+	
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+		
+		self.target.on_resize(width,height)
+		
+class EMPlot2DModule(EMGUIModule):
+	
+	def get_qt_widget(self):
+		if self.parent == None:	
+			self.gl_parent = EMPlot2DWidget(self)
+			self.parent = EMParentWin(self.gl_parent)
+			self.gl_widget = self.gl_parent
+			self.set_gl_parent(self.gl_parent)
+
+		return self.parent
+	
+	def get_gl_widget(self,qt_parent=None):
+		from emfloatingwidgets import EMGLView2D_v2, EM2DGLWindow
+		self.init_size_flag = False
+		if self.gl_widget == None:
+			gl_view = EMGLView2D_v2(self,image=None)
+			self.gl_widget = EM2DGLWindow(self,gl_view)
+			self.set_gl_parent(qt_parent)
+		return self.gl_widget
+	
+	def __init__(self,application=None):
+		EMGUIModule.__init__(self,application)
 		self.axes={}
 		self.pparm={}
 		self.inspector=None
@@ -77,7 +131,16 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.rmousedrag=None
 
 		self.data={}				# List of Lists to plot 
+		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		
+		self.tex_name = 0
+		self.main_display_list = 0
+	def __del__(self):
+		if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
+		if self.main_display_list != 0:
+			glDeleteLists(self.main_display_list,1)
+			self.main_display_list = 0
+	
 	def set_data(self,key,data):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
@@ -105,6 +168,25 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		if self.inspector: self.inspector.datachange()
 		
 		self.updateGL()
+	
+	def get_inspector(self):
+		if not self.inspector :
+			self.inspector=EMPlot2DInspector(self)
+			self.inspector.datachange()
+		return self.inspector
+	
+	
+	def width(self):
+		try: return self.gl_widget.width()
+		except: pass
+		
+	def height(self):
+		try: return self.gl_widget.height()
+		except: pass
+	
+	def updateGL(self):
+		try: self.gl_widget.updateGL()
+		except: pass
 		
 	def set_data_from_file(self,key,filename):
 		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
@@ -139,20 +221,25 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 				
 		if data : self.set_data(filename.split("/")[-1],data)
-		
-	def initializeGL(self):
-		GL.glClearColor(0,0,0,0)
-		
-	def paintGL(self):
-		if not self.parentWidget() : return
-		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-#		GL.glLoadIdentity()
-#		GL.glTranslated(0.0, 0.0, -10.0)
-		
+	
+	def draw(self):
 		if not self.data : return
 		
+		render = False
+			
 		if self.needupd or not self.plotimg:
 			self.needupd=0
+			if self.main_display_list != 0:
+				glDeleteLists(self.main_display_list,1)
+				self.main_display_list = 0
+
+		if self.main_display_list == 0:
+			self.main_display_list = glGenLists(1)
+			glNewList(self.main_display_list,GL_COMPILE)
+			render = True
+		
+		if render: 
+
 			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
 			if self.limits :ax=fig.add_axes((.1,.05,.85,.9),autoscale_on=False,xlim=self.limits[0],ylim=self.limits[1])
 			else : ax=fig.add_axes((.1,.05,.85,.9),autoscale_on=True)
@@ -177,25 +264,69 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 			canvas.draw()
 			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 			
-			self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
+			self.scrlim=(ax.get_window_extent().xmin,ax.get_window_extent().ymin,ax.get_window_extent().xmax-ax.get_window_extent().xmin,ax.get_window_extent().ymax-ax.get_window_extent().ymin)
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
+			
+	#		print ax.get_window_extent().xmin(),ax.get_window_extent().ymin()
+	#		print ax.get_window_extent().xmax(),ax.get_window_extent().ymax()
+	#		print ax.get_position()
+			if not self.glflags.npt_textures_unsupported():
+				self.__texture_plot(self.plotimg)
+			else:
+				GL.glRasterPos(0,self.height()-1)
+				GL.glPixelZoom(1.0,-1.0)
+		#		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
+				GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
+				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
+		else:
+			try:
+				glCallList(self.main_display_list)
+			except: pass
 		
-#		print ax.get_window_extent().xmin(),ax.get_window_extent().ymin()
-#		print ax.get_window_extent().xmax(),ax.get_window_extent().ymax()
-#		print ax.get_position()
-		
-		GL.glRasterPos(0,self.height()-1)
-		GL.glPixelZoom(1.0,-1.0)
-#		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
-		GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
-		GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
-		
+		if render :
+			glEndList()
+			glCallList(self.main_display_list)
+			
 		GL.glPushMatrix()
 		for k,s in self.shapes.items():
 			s.draw(self.scr2plot)
 		GL.glPopMatrix()
-
-
+		
+	def __texture_plot(self,image_data):
+		
+		
+		texture_2d_was_enabled = GL.glIsEnabled(GL.GL_TEXTURE_2D)
+		if not texture_2d_was_enabled:GL.glEnable(GL.GL_TEXTURE_2D)
+		
+		if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
+		self.tex_name = GL.glGenTextures(1)
+		GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
+		GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
+		GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGB,GL.GL_UNSIGNED_BYTE, image_data)
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		
+		# POSITIONING POLICY - the texture occupies the entire screen area
+		glBegin(GL_QUADS)
+		
+		glTexCoord2f(0,0)
+		glVertex2f(0,self.height())
+		
+		glTexCoord2f(1,0)
+		glVertex2f(self.width(),self.height())
+			
+		glTexCoord2f(1,1)
+		glVertex2f(self.width(),0)
+		
+		glTexCoord2f(0,1)
+		glVertex2f(0,0)
+			
+		glEnd()
+		
+		if not texture_2d_was_enabled: GL.glDisable(GL.GL_TEXTURE_2D)
+	
 	def scr2plot(self,x,y) :
 		""" converts screen coordinates to plot coordinates """
 		try: 
@@ -208,33 +339,10 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 			return ((x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0],(self.height()-y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1])
 		except: return (0,0)
 
-
-	def resizeGL(self, width, height):
-#		print "resize ",self.width()
+	def on_resize(self,width,height):
 		self.needupd=1
-		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
-	
 		self.del_shapes(("xcross","ycross","lcross"))
-	
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
-		
-	
-	def show_inspector(self,force=0):
-		if not force and self.inspector==None : return
-		
-		if not self.inspector : self.inspector=EMPlot2DInspector(self)
-		self.inspector.show()
-		self.inspector.datachange()
-		self.needupd=1
-	
-	def closeEvent(self,event) :
-		if self.inspector: self.inspector.close()
-	
+
 	def setAxes(self,key,xa,ya,za):
 		if self.axes[key]==(xa,ya,za) : return
 		self.axes[key]=(xa,ya,za)
@@ -284,23 +392,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.shapechange=1
 		self.updateGL()
 		
-	#def dragEnterEvent(self,event):
 		
-		#if event.provides("application/x-eman"):
-			#event.setDropAction(Qt.CopyAction)
-			#event.accept()
-
-	
-	#def dropEvent(self,event):
-#=		if EMAN2.GUIbeingdragged:
-			#self.set_data(EMAN2.GUIbeingdragged)
-			#EMAN2.GUIbeingdragged=None
-		#elif event.provides("application/x-eman"):
-			#x=loads(event.mimeData().data("application/x-eman"))
-			#self.set_data(x)
-			#event.acceptProposedAction()
-
-	
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
@@ -356,6 +448,8 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 				#self.set_scale(self.scale - MAG_INC)
 		## The self.scale variable is updated now, so just update with that
 		#if self.inspector: self.inspector.set_scale(self.scale)
+
+
 
 class EMPlot2DInspector(QtGui.QWidget):
 	def __init__(self,target) :
@@ -520,13 +614,61 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		for i,j in enumerate(keys) :
 			self.setlist.addItem(j)
+
+
+#if __name__ == '__main__':
+	#GLUT.glutInit(sys.argv )
+	#app = QtGui.QApplication(sys.argv)
+	#window = EMPlot2D()
+	#if len(sys.argv)==1 : 
+		#l=[i/30.*pi for i in range(30)]
+		#window.set_data("test",[[1,2,3,4],[2,3,4,3],[3,4,5,2]])
+		#window.set_data("test2",[l,[sin(i) for i in l],[cos(i) for i in l]])
+	#else:
+		#try:
+			## if it's an image file
+			#im=EMData(sys.argv[1])
+			## This could be faster...
+			#data=[[im.get_value_at(i,j) for j in range(im.get_ysize())] for j in range(im.get_xsize())]
+		#except:
+			#try:
+				## Maybe a .fp file
+				#fin=file(sys.argv[1])
+				#fph=struct.unpack("120sII",fin.read(128))
+				#ny=fph[1]
+				#nx=fph[2]
+				#data=[]
+				#for i in range(nx):
+					#data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
+			#except:
+				## Probably a text file
+				#fin=file(sys.argv[1])
+				#fin.seek(0)
+				#rdata=fin.readlines()
+				#rdata=[i for i in rdata if i[0]!='#']
+				#if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
+				#else : rdata=[[float(j) for j in i.split()] for i in rdata]
+				#nx=len(rdata[0])
+				#ny=len(rdata)
+				
+				#print nx,ny
+				#data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
+				
+		#window.set_data(sys.argv[1].split("/")[-1],data)
+			
+	#window2=EMParentWin(window)
+	#window2.show()
 		
+	#sys.exit(app.exec_())
+	##app.show()
+	##app.execute()
+
 		
 # This is just for testing, of course
 if __name__ == '__main__':
 	GLUT.glutInit(sys.argv )
-	app = QtGui.QApplication(sys.argv)
-	window = EMPlot2D()
+	app = EMStandAloneApplication()
+	window = EMPlot2DModule(app)
 	if len(sys.argv)==1 : 
 		l=[i/30.*pi for i in range(30)]
 		window.set_data("test",[[1,2,3,4],[2,3,4,3],[3,4,5,2]])
@@ -563,7 +705,9 @@ if __name__ == '__main__':
 				
 		window.set_data(sys.argv[1].split("/")[-1],data)
 			
-	window2=EMParentWin(window)
-	window2.show()
+	#window2=EMParentWin(window)
+	#window2.show()
 		
-	sys.exit(app.exec_())
+	#sys.exit(app.exec_())
+	app.show()
+	app.execute()

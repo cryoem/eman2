@@ -42,6 +42,8 @@ import time
 import os
 import sys
 
+
+
 pl=()
 
 def main():
@@ -479,17 +481,18 @@ class GUIctf(QtGui.QWidget):
 		pow2d is a list of EMData objects with the 2-D power spectra
 		"""
 		try:
-			from emimage import EMImage,get_app
+			from emimage import EMImageModule
 		except:
 			print "Cannot import EMAN image GUI objects (emimage,etc.)"
 			sys.exit(1)
 #		try:
-		from emplot2d import EMPlot2D,NewPlot2DWin
+		from emplot2d import EMPlot2DModule
+		from emapplication import EMStandAloneApplication
 		#except:
 			#print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
 			#sys.exit(1)
 		
-		self.app=get_app()
+		self.app=EMStandAloneApplication()
 		
 		QtGui.QWidget.__init__(self,None)
 		
@@ -504,16 +507,17 @@ class GUIctf(QtGui.QWidget):
 			self.pow1d=[]
 			self.pow2d=[]
 		
-		try: self.guiimw=EMImage(pow2d[0])
-		except: self.guiimw=EMImage()
-		self.guiim=self.guiimw.child
-		self.guiplotw=NewPlot2DWin()
-		self.guiplot=self.guiplotw.child
+		try: self.guiim=EMImageModule(pow2d[0],application=self.app)
+		except: self.guiim=EMImageModule(application=self.app)
+		self.guiplot=EMPlot2DModule(application=self.app)
 		
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.imgmousedown)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
-		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
-		self.guiplot.connect(self.guiplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
+		im_qt_target = self.application.get_qt_emitter(self.guiim)
+		plot_qt_target = self.application.get_qt_emitter(self.guiplot)
+		
+		self.guiim.connect(im_qt_target,QtCore.SIGNAL("mousedown"),self.imgmousedown)
+		self.guiim.connect(im_qt_target,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
+		self.guiim.connect(im_qt_target,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
+		self.guiplot.connect(plot_qt_target,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 		
 		self.guiim.mmode="app"
 		
@@ -565,9 +569,9 @@ class GUIctf(QtGui.QWidget):
 
 		self.update_data()
 		
-		self.guiimw.show()
-		self.guiplotw.show()
-		self.show()
+		self.app.show() # should probably be name "show_all"
+		self.show() # this is the troublesome part.... this Widget has to be a module and should register itsefl with the application
+		self.app.execute()
 		
 	def newData(self,name,p1d,p2d):
 		self.names.append(name)

@@ -34,7 +34,7 @@ from time import time
 
 class Animator:
 	'''
-	Inheriting parent should probably having something like this:
+	Inheriting class should probably having something like this:
 	self.timer = QTimer()
 	QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
 	self.timer.start(10)
@@ -46,9 +46,9 @@ class Animator:
 		
 	def time_out(self):
 		self.time  = time()
-		rm = []
+		
 		if len(self.animatables) != 0:
-			
+			rm = []
 			for a,i in enumerate(self.animatables):
 				if not i.animate(self.time): rm.append(a)
 				

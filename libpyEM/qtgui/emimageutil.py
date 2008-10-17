@@ -310,7 +310,9 @@ class EMParentWin(QtGui.QWidget):
 #		EMEventRerouter.__init__(self,child)
 
 		self.child = child
-		self.resize(child.width()+20,child.height()+20)
+		self.width_offset = 20
+		self.height_offset = 20
+		self.resize(child.width()+self.width_offset,child.height()+self.height_offset)
 		self.setMaximumSize(8000,8000)
 
 		self.hbl = QtGui.QHBoxLayout()
@@ -320,6 +322,9 @@ class EMParentWin(QtGui.QWidget):
 		self.setLayout(self.hbl)
 		
 #		self.setWindowTitle(self.tr("Whatever"))
+
+	def get_viewport_offset(self):
+		return (self.width_offset/2,self.height_offset/2)
 
 	def closeEvent(self, e):
 		try:
@@ -340,7 +345,13 @@ class EMParentWin(QtGui.QWidget):
 	def updateGL(self):
 		self.child.updateGL()
 	
+	#def width(self):
+		##print "asked for width!"
+		#return self.child.width()
 	
+	#def height(self):
+		##print "asked for height!"
+		#return self.child.height()
 	def initGL(self):
 		print self.child
 		self.child.glInit()

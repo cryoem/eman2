@@ -48,7 +48,7 @@ from pickle import dumps,loads
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 
-from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
+from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 GLUT.glutInit(sys.argv)
@@ -129,9 +129,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
 		# (because display lists are involved)
 		return self.renderPixmap(0,0,True)
-	
-	def get_gl_parent(self):
-		return self
+
 
 
 class EMMXCoreMouseEvents:
@@ -317,8 +315,8 @@ class EMImageMXModule(EMGUIModule):
 		if self.parent == None:	
 			self.gl_parent = EMImageMXWidget(self)
 			self.parent = EMParentWin(self.gl_parent)
-			self.set_gl_parent(self.gl_parent)
-			
+			self.set_gl_parent(self.gl_parent) # THIS NEEDS TO CHANGE
+			self.gl_widget = self.gl_parent
 			self.parent.resize(*self.get_parent_suggested_size())
 			
 			try: self.parent.setAcceptDrops(True)
@@ -395,16 +393,17 @@ class EMImageMXModule(EMGUIModule):
 		self.__init_mouse_handlers()
 		
 		self.reroute_delete_target = None
+
 	
 	def width(self):
 		if self.parent != None:
-			return self.parent.width()
+			return self.gl_widget.width()
 		else:
 			return 0
 		
 	def height(self):
 		if self.parent != None:
-			return self.parent.height()
+			return self.gl_widget.height()
 		else:
 			return 0
 	
@@ -464,6 +463,9 @@ class EMImageMXModule(EMGUIModule):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 	
+		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
+			self.tex_names = []
+	
 	def get_cols(self):
 		return self.mx_cols
 	
@@ -519,7 +521,7 @@ class EMImageMXModule(EMGUIModule):
 			hfac *= self.data[0].get_ysize()
 			if hfac > 512: hfac = 512
 				
-			return (int(w)+2,int(hfac))
+			return (int(w),int(hfac))
 		else: return (480,480)
 	
 	def __parent_resize(self):
@@ -621,8 +623,8 @@ class EMImageMXModule(EMGUIModule):
 			self.origin=self.targetorigin
 			self.targetorigin=None
 			
-		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.parent.height() or self.data[0].get_xsize()*newscale>self.parent.width()):
-			newscale=min(float(self.parent.height())/self.data[0].get_ysize(),float(self.parent.width())/self.data[0].get_xsize())
+		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.gl_widget.height() or self.data[0].get_xsize()*newscale>self.gl_widget.width()):
+			newscale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.gl_widget.width())/self.data[0].get_xsize())
 			if self.inspector: self.inspector.scale.setValue(newscale)
 			
 			
@@ -631,7 +633,7 @@ class EMImageMXModule(EMGUIModule):
 #		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
 #		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(yo-self.height()/2)+self.height()/2)
 		if adjust:
-			self.origin=(newscale/self.scale*(self.parent.width()/2+self.origin[0])-self.parent.width()/2,newscale/self.scale*(self.parent.height()/2+self.origin[1])-self.parent.height()/2)
+			self.origin=(newscale/self.scale*(self.gl_widget.width()/2+self.origin[0])-self.gl_widget.width()/2,newscale/self.scale*(self.gl_widget.height()/2+self.origin[1])-self.gl_widget.height()/2)
 #		print self.origin,newscale/self.scale,yo,self.height()/2+yo
 		
 		self.scale=newscale
@@ -699,15 +701,15 @@ class EMImageMXModule(EMGUIModule):
 	
 	def get_matrix_ranges(self,x,y):
 		n=len(self.data)
-		w=int(min(self.data[0].get_xsize()*self.scale,self.parent.width()))
-		h=int(min(self.data[0].get_ysize()*self.scale,self.parent.height()))
+		w=int(min(self.data[0].get_xsize()*self.scale,self.gl_widget.width()))
+		h=int(min(self.data[0].get_ysize()*self.scale,self.gl_widget.height()))
 		
 		yoff = 0
 		if y < 0:
 			ybelow = floor(-y/(h+2))
 			yoff = ybelow*(h+2)+y
-			visiblerows = int(ceil(float(self.parent.height()-yoff)/(h+2)))
-		else: visiblerows = int(ceil(float(self.parent.height()-y)/(h+2)))
+			visiblerows = int(ceil(float(self.gl_widget.height()-yoff)/(h+2)))
+		else: visiblerows = int(ceil(float(self.gl_widget.height()-y)/(h+2)))
 				
 		maxrow = int(ceil(float(n)/self.mx_cols))
 		ystart =-y/(h+2)
@@ -721,8 +723,8 @@ class EMImageMXModule(EMGUIModule):
 		if x < 0:
 			xbelow = floor(-x/(w+2))
 			xoff = xbelow*(w+2)+x
-			visiblecols =  int(ceil(float(self.parent.width()-xoff)/(w+2)))
-		else: visiblecols =  int(ceil(float(self.parent.width()-x)/(w+2)))
+			visiblecols =  int(ceil(float(self.gl_widget.width()-xoff)/(w+2)))
+		else: visiblecols =  int(ceil(float(self.gl_widget.width()-x)/(w+2)))
 
 		xstart =-x/(w+2)
 		if xstart < 0:
@@ -737,8 +739,8 @@ class EMImageMXModule(EMGUIModule):
 	
 	def display_state_changed(self):
 		display_states = []
-		display_states.append(self.parent.width())
-		display_states.append(self.parent.height())
+		display_states.append(self.gl_widget.width())
+		display_states.append(self.gl_widget.height())
 		display_states.append(self.origin[0])
 		display_states.append(self.origin[1])
 		display_states.append(self.scale)
@@ -766,7 +768,7 @@ class EMImageMXModule(EMGUIModule):
 		if self.font_render_mode != EMGUIModule.FTGL:
 			print "error, can't call set_font_render_resolution if the mode isn't FTGL"
 			
-		#self.font_renderer.set_face_size(int(self.parent.height()*0.015))
+		#self.font_renderer.set_face_size(int(self.gl_widget.height()*0.015))
 		#print "scale is",self.scale
 	
 	def __draw_backdrop(self):
@@ -777,11 +779,11 @@ class EMImageMXModule(EMGUIModule):
 		glBegin(GL_QUADS)
 		glVertex(0,0,-1)
 		glColor(.9,.9,.9)
-		glVertex(self.parent.width(),0,-1)
+		glVertex(self.gl_widget.width(),0,-1)
 		glColor(.9,.9,.9)
-		glVertex(self.parent.width(),self.parent.height(),-1)
+		glVertex(self.gl_widget.width(),self.gl_widget.height(),-1)
 		glColor(.9,.9,.9)
-		glVertex(0,self.parent.height(),-1)
+		glVertex(0,self.gl_widget.height(),-1)
 		glEnd()
 		if light: glEnable(GL_LIGHTING)
 	
@@ -837,14 +839,14 @@ class EMImageMXModule(EMGUIModule):
 			self.nshown=0
 			
 			x,y=-self.origin[0],-self.origin[1]
-			w=int(min(self.data[0].get_xsize()*self.scale,self.parent.width()))
-			h=int(min(self.data[0].get_ysize()*self.scale,self.parent.height()))
+			w=int(min(self.data[0].get_xsize()*self.scale,self.gl_widget.width()))
+			h=int(min(self.data[0].get_ysize()*self.scale,self.gl_widget.height()))
 			
 			[xstart,visiblecols,ystart,visiblerows] = self.get_matrix_ranges(x,y)
 				
 			#print "rows",visiblerows-ystart,"cols",visiblecols-xstart
 			#print "yoffset",yoff,"xoffset",xoff
-			#print (visiblerows-ystart)*(h+2)+yoff,self.parent.height(),"height",(visiblecols-xstart)*(w+2)+xoff,self.parent.width()		
+			#print (visiblerows-ystart)*(h+2)+yoff,self.gl_widget.height(),"height",(visiblecols-xstart)*(w+2)+xoff,self.gl_widget.width()		
 			invscale=1.0/self.scale
 			self.coords = {}
 			for row in range(ystart,visiblerows):
@@ -863,8 +865,8 @@ class EMImageMXModule(EMGUIModule):
 					ry = 0	#render y
 					#print "Prior",i,':',row,col,tx,ty,tw,th,y,x
 					drawlabel = True
-					if (tx+tw) > self.parent.width():
-						tw = int(self.parent.width()-tx)
+					if (tx+tw) > self.gl_widget.width():
+						tw = int(self.gl_widget.width()-tx)
 					elif tx<0:
 						drawlabel=False
 						rx = int(ceil(-tx*invscale))
@@ -874,9 +876,9 @@ class EMImageMXModule(EMGUIModule):
 	
 					#print h,row,y
 					#print "Prior",i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
-					if (ty+th) > self.parent.height():
-						#print "ty + th was greater than",self.parent.height()
-						th = int(self.parent.height()-ty)
+					if (ty+th) > self.gl_widget.height():
+						#print "ty + th was greater than",self.gl_widget.height()
+						th = int(self.gl_widget.height()-ty)
 					elif ty<0:
 						drawlabel = False
 						ry = int(ceil(-ty*invscale))
@@ -909,7 +911,7 @@ class EMImageMXModule(EMGUIModule):
 					#i = (row+yoffset)*self.mx_cols+col+xoffset
 					#print i,':',row,col,tx,ty,tw,th
 					shown = True
-					#print rx,ry,tw,th,self.parent.width(),self.parent.height()
+					#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height()
 					if not self.glflags.npt_textures_unsupported():
 						a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 						self.texture(a,tx,ty,tw,th)
@@ -944,7 +946,7 @@ class EMImageMXModule(EMGUIModule):
 					pass
 			# If the user is lost, help him find himself again...
 			if self.nshown==0 : 
-				try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
+				try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.gl_widget.height()/2+self.data[0].get_ysize()*self.scale/2)
 				except: self.targetorigin=(0,0)
 				self.targetspeed=100.0
 			
@@ -1103,8 +1105,8 @@ class EMImageMXModule(EMGUIModule):
 				print "error", self.data[0].get_xsize(),self.scale
 		#except: pass
 		
-		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.parent.height() or self.data[0].get_xsize()*self.scale>self.parent.width()):
-			self.scale=min(float(self.parent.height())/self.data[0].get_ysize(),float(self.parent.width())/self.data[0].get_xsize())
+		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.gl_widget.height() or self.data[0].get_xsize()*self.scale>self.gl_widget.width()):
+			self.scale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.gl_widget.width())/self.data[0].get_xsize())
 
 	def is_visible(self,n):
 		try: return self.coords[n][4]
@@ -1117,10 +1119,10 @@ class EMImageMXModule(EMGUIModule):
 #		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
 		if yonly :
 			try: 
-				self.targetorigin=(0,self.coords[n][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
+				self.targetorigin=(0,self.coords[n][1]-self.gl_widget.height()/2+self.data[0].get_ysize()*self.scale/2)
 			except: return
 		else:
-			try: self.targetorigin=(self.coords[n][0]-self.parent.width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.parent.height()/2+self.data[0].get_ysize()*self.scale/2)
+			try: self.targetorigin=(self.coords[n][0]-self.gl_widget.width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.gl_widget.height()/2+self.data[0].get_ysize()*self.scale/2)
 			except: return
 		self.targetspeed=hypot(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1])/20.0
 #		print n,self.origin
@@ -1153,7 +1155,7 @@ class EMImageMXModule(EMGUIModule):
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
 		image from the matrix. Returns (image number,x,y) or None if the location is not within any
 		of the contained images. """ 
-		absloc=((vec[0]),(self.parent.height()-(vec[1])))
+		absloc=((vec[0]),(self.gl_widget.height()-(vec[1])))
 		for item in self.coords.items():
 			index = item[0]+self.img_num_offset
 			if index != 0: index %= self.max_idx
@@ -1276,7 +1278,7 @@ class EMImageMXModule(EMGUIModule):
 			self.set_scale( self.scale * self.mag )
 		elif event.delta() < 0:
 			self.set_scale(self.scale * self.invmag )
-		self.resizeEvent(self.parent.width(),self.parent.height())
+		self.resizeEvent(self.gl_widget.width(),self.gl_widget.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
 	

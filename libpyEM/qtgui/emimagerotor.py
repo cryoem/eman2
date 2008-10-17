@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: David Woolford (sludtke@bcm.edu)
+# Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
