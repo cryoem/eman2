@@ -42,6 +42,7 @@
 #from OpenGL import GL,GLU,GLUT
 
 from emimagemxrotor import *
+from emapplication import EMStandAloneApplication
 from optparse import OptionParser
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -60,28 +61,24 @@ def main():
 	(options, args) = parser.parse_args()
 
 	logid=E2init(sys.argv)
-	app = QtGui.QApplication(sys.argv)
-	window = EMImageMXRotor()
+	
+	
+	app = EMStandAloneApplication()
+	window = EMImageMXRotorModule(application=app)
+	
 	if len(sys.argv)==1 : 
 		data = []
-		for i in range(500):
-			#if i == 0: idx = 0
-			#else: idx = i%64
-			#e = EMData(64,64)
-			#e.set_size(64,64,1)
-			#e.to_zero()
-			#e.add(sin( (i/10.0) % (pi/2)))
-			data.append(test_image(Util.get_irand(0,3)))
-			#data.append(e)
-		
-		
-		window.setData(data)
+		for i in range(0,500):
+			e = test_image(Util.get_irand(0,9))
+			if ( Util.get_irand(0,4) == 0):	e.set_attr("excluded",True)
+			data.append(e)
+			
+		window.set_data(data)
 	else :
 		window.set_image_file_name(sys.argv[1])
-	window2=EMParentWin(window)
-	window2.resize(*window.get_optimal_size())
-	window2.show()
-	sys.exit(app.exec_())
+		
+	app.show()
+	app.execute()
 	
 	E2end(logid)
 	

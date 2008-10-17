@@ -159,7 +159,7 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		#glLightf(GL_LIGHT1, GL_SPOT_DIRECTION, 45)
 		#glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, [-0.1,.1,1.,0.])
 			
-		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
+		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 
 		
 		glEnable(GL_DEPTH_TEST)
@@ -295,6 +295,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.maxden=1.0
 		self.mindeng=0
 		self.maxdeng=1.0
+		self.hist = None
 		self.gamma=1.0
 		self.mmode = 'app'
 		self.rot_mode = 'app'
@@ -400,6 +401,15 @@ class EMImageMXRotorModule(EMGUIModule):
 		except: pass
 	def set_scale(self,scale):
 		pass
+	
+	def get_density_min(self):
+		return self.rotor[0].get_drawable().get_density_min()
+	
+	def get_density_max(self):
+		return self.rotor[0].get_drawable().get_density_max()
+	
+	def get_hist(self):
+		return self.rotor[0].get_drawable().get_hist()
 	
 	def set_density_max(self,val):
 		self.maxden=val
@@ -683,6 +693,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		w = e.get_drawable()
 		self.minden = w.get_density_min()
 		self.maxden = w.get_density_max()
+		self.hist = w.get_hist()
 		self.mindeng = self.minden
 		self.maxdeng = self.maxden
 		self.gamma = w.get_gamma()
@@ -743,9 +754,8 @@ class EMImageMXRotorModule(EMGUIModule):
 			
 		return self.inspector
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton:
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.show_inspector(True)
-			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		else:
 			self.gl_widget.mousePressEvent(event)
 			
@@ -1081,6 +1091,6 @@ if __name__ == '__main__':
 		window.set_data(a)
 	
 	em_app.show()
-	window.get_qt_widget().resize(640,640)
+	#window.get_qt_widget().resize(640,640)
 	#window.optimize_fit()
 	em_app.execute()

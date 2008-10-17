@@ -97,8 +97,8 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 	def __init__(self, object):
 		EM3DBorderDecoration.__init__(self)
 		self.border_width = 10
-		self.border_height = 20
-		self.border_depth = 20
+		self.border_height = 10
+		self.border_depth = 10
 		
 		self.display_list = None
 		self.force_update = False

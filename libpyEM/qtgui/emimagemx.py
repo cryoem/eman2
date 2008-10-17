@@ -201,7 +201,7 @@ class EMMXCoreMouseEventsMediator:
 		return self.target.get_density_max()
 	
 	def get_density_min(self):
-		return self.target.get_density_max()
+		return self.target.get_density_min()
 	
 	def emit(self,*args,**kargs):
 		self.target.emit(*args,**kargs)
@@ -495,8 +495,7 @@ class EMImageMXModule(EMGUIModule):
 		self.gamma = gamma
 		if update_gl: self.updateGL()
 		
-	def get_hist(self):
-		return self.hist
+	def get_hist(self): return self.hist
 	
 	def get_image(self,idx):
 		return self.data[idx]
@@ -1429,14 +1428,16 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.vbl.addWidget(self.scale)
 		
 		self.mins = ValSlider(self,label="Min:")
-		self.mins.setValue(self.target.minden)
-		self.mins.setRange(self.target.minden,self.target.maxden)
+		minden = self.target.get_density_min()
+		maxden = self.target.get_density_max()
+		self.mins.setValue(minden)
+		self.mins.setRange(minden,maxden)
 		self.mins.setObjectName("mins")
 		self.vbl.addWidget(self.mins)
 		
 		self.maxs = ValSlider(self,label="Max:")
-		self.maxs.setValue(self.target.maxden)
-		self.maxs.setRange(self.target.minden,self.target.maxden)
+		self.maxs.setValue(maxden)
+		self.maxs.setRange(minden,maxden)
 		self.maxs.setObjectName("maxs")
 		self.vbl.addWidget(self.maxs)
 		
@@ -1457,7 +1458,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.highlim=1.0
 		
 		self.update_brightness_contrast()
-		self.hist.set_data(self.target.hist,self.target.minden,self.target.maxden)
+		self.hist.set_data(self.target.get_hist(),minden,maxden)
 		self.busy=0
 		
 		QtCore.QObject.connect(self.vals, QtCore.SIGNAL("triggered(QAction*)"), self.newValDisp)
