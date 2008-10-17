@@ -329,10 +329,10 @@ class EMImage3DModule(EMImage3DGUIModule):
 			from emimageutil import EMParentWin
 			self.gl_parent = EMImage3DWidget(self)
 			self.parent = EMParentWin(self.gl_parent)
-			self.set_qt_parent(self.gl_parent)
+			self.set_gl_parent(self.gl_parent)
 			for i in self.viewables:
 				i.set_parent(self.parent)
-				i.set_qt_parent(self.parent)
+				i.set_gl_parent(self.parent)
 			if isinstance(self.data,EMData):
 				self.gl_parent.set_cam_z(self.gl_parent.get_fov(),self.data)
 		return self.parent

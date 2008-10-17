@@ -130,7 +130,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		# (because display lists are involved)
 		return self.renderPixmap(0,0,True)
 	
-	def get_qt_parent(self):
+	def get_gl_parent(self):
 		return self
 
 
@@ -317,7 +317,7 @@ class EMImageMXModule(EMGUIModule):
 		if self.parent == None:	
 			self.gl_parent = EMImageMXWidget(self)
 			self.parent = EMParentWin(self.gl_parent)
-			self.set_qt_parent(self.gl_parent)
+			self.set_gl_parent(self.gl_parent)
 			
 			self.parent.resize(*self.get_parent_suggested_size())
 			
@@ -331,7 +331,7 @@ class EMImageMXModule(EMGUIModule):
 		if self.gl_widget == None:
 			gl_view = EMGLView2D_v2(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
-			self.set_qt_parent(qt_parent)
+			self.set_gl_parent(qt_parent)
 			#self.gl_widget.target_translations_allowed(True)
 		return self.gl_widget
 		
@@ -1149,19 +1149,6 @@ class EMImageMXModule(EMGUIModule):
 		self.valstodisp=v2d
 		self.display_states = []
 		if update_gl: self.updateGL()
-	
-		
-	#def show_inspector(self,force=0):
-		#if (self.suppress_inspector): return
-		#if not force and self.inspector==None : return
-		#self.init_inspector()
-		#self.application.show_specific(self.em_qt_inspector_widget)
-
-	#def init_inspector(self):
-		#if not self.inspector : 
-			#self.inspector=EMImageInspectorMX(self)
-			#self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
-		#self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 	def scr_to_img(self,vec):
 		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
@@ -1442,10 +1429,14 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.vbl.addWidget(self.scale)
 		
 		self.mins = ValSlider(self,label="Min:")
+		self.mins.setValue(self.target.minden)
+		self.mins.setRange(self.target.minden,self.target.maxden)
 		self.mins.setObjectName("mins")
 		self.vbl.addWidget(self.mins)
 		
 		self.maxs = ValSlider(self,label="Max:")
+		self.maxs.setValue(self.target.maxden)
+		self.maxs.setRange(self.target.minden,self.target.maxden)
 		self.maxs.setObjectName("maxs")
 		self.vbl.addWidget(self.maxs)
 		
@@ -1464,6 +1455,9 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		self.lowlim=0
 		self.highlim=1.0
+		
+		self.update_brightness_contrast()
+		self.hist.set_data(self.target.hist,self.target.minden,self.target.maxden)
 		self.busy=0
 		
 		QtCore.QObject.connect(self.vals, QtCore.SIGNAL("triggered(QAction*)"), self.newValDisp)

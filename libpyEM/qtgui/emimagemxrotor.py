@@ -254,7 +254,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			self.gl_widget.resize(640,640)
 			#self.optimize_fit()
 			self.parent = self.gl_widget
-			self.set_qt_parent(qt_parent)
+			self.set_gl_parent(qt_parent)
 			self.disable_mx_zoom()
 			self.disable_mx_translate()
 			
@@ -266,7 +266,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			self.gl_parent = EMImageMXRotorWidget(self)
 			self.parent = EMParentWin(self.gl_parent)
 			self.parent.setAcceptDrops(True)
-			self.set_qt_parent(self.gl_parent)
+			self.set_gl_parent(self.gl_parent)
 		return self.parent
 	
 	def __init__(self, data=None,application=None):
@@ -546,7 +546,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.rotor.set_shapes(shapes,shrink)
 
 	def register_animatable(self,animatable):
-		self.get_qt_parent().register_animatable(animatable)
+		self.get_gl_parent().register_animatable(animatable)
 		
 	def width(self):
 		try: return self.parent.width()

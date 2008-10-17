@@ -185,7 +185,7 @@ class EMImageRotorModule(EMGUIModule):
 		if self.gl_widget == None:
 			self.gl_widget =EM3DGLWindowOverride(self,self.rotor)
 			self.parent = self.gl_widget
-			self.set_qt_parent(self.gl_widget)
+			self.set_gl_parent(qt_parent)
 			#self.disable_mx_zoom()
 			#self.disable_mx_translate()
 			
@@ -196,7 +196,7 @@ class EMImageRotorModule(EMGUIModule):
 			from emimageutil import EMParentWin
 			self.gl_parent = EMImageRotorWidget(self)
 			self.parent = EMParentWin(self.gl_parent)
-			self.set_qt_parent(self.gl_parent)
+			self.set_gl_parent(self.gl_parent)
 
 		return self.parent
 	
@@ -270,7 +270,7 @@ class EMImageRotorModule(EMGUIModule):
 		self.rotor.set_shapes(shapes,shrink,idx)
 
 	def register_animatable(self,animatable):
-		self.get_qt_parent().register_animatable(animatable)
+		self.get_gl_parent().register_animatable(animatable)
 	
 	def get_inspector(self):
 		return None

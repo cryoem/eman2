@@ -61,7 +61,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 #			from emimageutil import EMParentWin
 #			self.gl_parent = EMIsosurfaceWidget(self)
 #			self.parent = EMParentWin(self.gl_parent)
-#			self.set_qt_parent(self.gl_parent)
+#			self.set_gl_parent(self.gl_parent)
 #			if isinstance(self.data,EMData):
 #				self.gl_parent.set_camera_defaults(self.data)
 #		return self.parent

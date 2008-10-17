@@ -361,7 +361,7 @@ class EMImage2DModule(EMGUIModule):
 		if self.parent == None:	
 			self.gl_parent = EMImage2DWidget(self,enable_timer=True)
 			self.parent = EMParentWin(self.gl_parent)
-			self.set_qt_parent(self.gl_parent)
+			self.set_gl_parent(self.gl_parent)
 			f = self.file_name.split('/')
 			f = f[len(f)-1]
 			self.parent.setWindowTitle(f)
@@ -378,7 +378,7 @@ class EMImage2DModule(EMGUIModule):
 		if self.gl_widget == None:
 			gl_view = EMGLView2D_v2(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
-			self.set_qt_parent(qt_parent)
+			self.set_gl_parent(qt_parent)
 			self.gl_widget.target_translations_allowed(True)
 		return self.gl_widget
 		
@@ -804,7 +804,7 @@ class EMImage2DModule(EMGUIModule):
 		
 	def register_scroll_motion(self,x,y):
 		animation = LineAnimation(self,self.origin,(x*self.scale-self.parent.width()/2,y*self.scale-self.parent.height()/2))
-		self.get_qt_parent().register_animatable(animation)
+		self.get_gl_parent().register_animatable(animation)
 		return True
 
 	def set_scale(self,newscale):
@@ -1253,7 +1253,7 @@ class EMImage2DModule(EMGUIModule):
 	def add_shapes(self,d,register_animation=False):
 		if register_animation:
 			animation = SingleValueIncrementAnimation(self,0,1)
-			self.get_qt_parent().register_animatable(animation)
+			self.get_gl_parent().register_animatable(animation)
 		self.shapes.update(d)
 		self.shapechange=1
 		#self.updateGL()

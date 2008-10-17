@@ -1304,7 +1304,7 @@ class EMImage3DGUIModule(EMGUIModule):
 			from emimageutil import EMParentWin
 			self.gl_parent = EMImage3DGeneralWidget(self)
 			self.parent = EMParentWin(self.gl_parent)
-			self.set_qt_parent(self.gl_parent)
+			self.set_gl_parent(self.gl_parent)
 			if isinstance(self.data,EMData):
 				print "setting camera defaults"
 				self.gl_parent.set_camera_defaults(self.data)
@@ -1316,7 +1316,7 @@ class EMImage3DGUIModule(EMGUIModule):
 #			from emimageutil import EMParentWin
 #			self.gl_parent = EMImage3DWidget(self)
 #			self.parent = EMParentWin(self.gl_parent)
-#			self.set_qt_parent(self.parent)
+#			self.set_gl_parent(self.parent)
 #			if isinstance(self.data,EMData):
 #				self.gl_parent.set_cam_z(self.gl_parent.get_fov(),self.image)
 #		return self.parent
@@ -1326,7 +1326,7 @@ class EMImage3DGUIModule(EMGUIModule):
 		if self.gl_widget == None:
 			gl_view = EMGLView3D(self,image=None)
 			self.gl_widget = EM3DGLWindow(self,gl_view)
-			self.set_qt_parent(qt_parent)
+			self.set_gl_parent(qt_parent)
 			self.gl_widget.target_translations_allowed(True)
 			self.gl_widget.allow_camera_rotations(True)
 		return self.gl_widget

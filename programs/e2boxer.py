@@ -1371,7 +1371,7 @@ class EMBoxerModule:
 				self.guimxit=EMImageMXModule(application=self.application)
 				
 			try:
-				qt_parent = self.guimxit.get_qt_parent()
+				qt_parent = self.guimxit.get_gl_parent()
 				qt_parent.setWindowTitle("Image Thumbs")
 			except:
 				pass
@@ -2982,13 +2982,13 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	def erase_toggled(self,bool):
 		self.unerase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_qt_parent().setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_gl_parent().setMouseTracking(bool)
 		self.target.erase_toggled(bool)
 		
 	def unerase_toggled(self,bool):
 		self.erase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_qt_parent().setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_gl_parent().setMouseTracking(bool)
 		self.target.unerase_toggled(bool)
 		
 	def dynapix_toggled(self,bool):

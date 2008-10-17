@@ -48,12 +48,8 @@ class EMGUIModule:
 		self.parent = None # EMParentWin
 		self.gl_parent = None # EMImage3DWidget, EMImage2DWidget, EMImageMXWidget etc
 		self.gl_widget = None # EM3DGLWindow, EM2DGLWindow etc
-		self.qt_parent = None # should be a qt Widget, especially important for calling CONNECT in e2boxer
 		if application != None: application.attach_child(self)
-		
-		self.mac_parent_win = None # can potentially be a special window used on MAC
-		self.mac_parent_dependent = None
-		
+
 		if ensure_gl_context and application != None:
 			application.ensure_gl_context(self)
 		
@@ -100,16 +96,6 @@ class EMGUIModule:
 				self.inspector.close()
 				
 			self.application.detach_child(self)
-		
-	def darwin_check(self):
-		if platform.system() == "Darwin":
-			if self.mac_parent_win == None:
-				self.mac_parent_win = EMParentWin(self.parent)
-				self.mac_parent_dependent = self.parent
-				self.parent = self.mac_parent_win
-			return self.mac_parent_win
-		else:
-			return self.parent
 		
 	def load_font_renderer(self):
 		try:
