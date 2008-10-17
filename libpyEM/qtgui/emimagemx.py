@@ -42,7 +42,7 @@ from EMAN2 import *
 import EMAN2
 import sys
 import numpy
-from emimageutil import ImgHistogram,EMEventRerouter
+from emimageutil import ImgHistogram,EMEventRerouter,EMParentWin
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtGui import QImage
@@ -68,6 +68,8 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		EMEventRerouter.__init__(self,em_mx_module)
 		
 		self.imagefilename = None
+		
+		self.resize(480,480)
 		
 	def get_target(self):
 		return self.target
@@ -313,22 +315,22 @@ class EMImageMXModule(EMGUIModule):
 	allim=WeakKeyDictionary()
 	def get_qt_widget(self):
 		if self.parent == None:	
-			self.parent = EMImageMXWidget(self)
-			self.set_qt_parent(self.parent)
+			self.gl_parent = EMImageMXWidget(self)
+			self.parent = EMParentWin(self.gl_parent)
+			self.set_qt_parent(self.gl_parent)
 			
-			self.__parent_resize()
+			self.parent.resize(*self.get_parent_suggested_size())
 			
-			try: self.get_qt_parent().setAcceptDrops(True)
+			try: self.parent.setAcceptDrops(True)
 			except:	pass
 			
-		return EMGUIModule.darwin_check(self)
+		return self.parent
 	
 	def get_gl_widget(self,qt_parent=None):
 		from emfloatingwidgets import EMGLView2D_v2, EM2DGLWindow
 		if self.gl_widget == None:
 			gl_view = EMGLView2D_v2(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
-			print "setting qt_parent",qt_parent
 			self.set_qt_parent(qt_parent)
 			#self.gl_widget.target_translations_allowed(True)
 		return self.gl_widget
@@ -339,9 +341,7 @@ class EMImageMXModule(EMGUIModule):
 	
 	def __init__(self, data=None,application=None):
 		self.init_size_flag = True
-		self.parent = None
 		self.data=None
-		self.gl_widget = None
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 
 		self.datasize=(1,1)
@@ -422,17 +422,22 @@ class EMImageMXModule(EMGUIModule):
 		self.image_file_name = name
 	
 	def get_inspector(self):
-		if not self.inspector : self.inspector=EMImageInspectorMX(self)
+		if not self.inspector : 
+			self.inspector=EMImageInspectorMX(self)
+			self.inspector_update()
 		return self.inspector
+	
+	def inspector_update(self):
+		#FIXME
+		pass
+		#print "do inspector update"
+		
 	
 	def set_reroute_delete_target(self,target):
 		self.reroute_delete_target = target
 	
 	def get_scale(self):
 		return self.scale
-	
-	def get_parent(self):
-		return self.get_qt_parent()
 	
 	def pop_box_image(self,idx,event=None,update_gl=False):
 		if self.reroute_delete_target  == None:
@@ -498,11 +503,25 @@ class EMImageMXModule(EMGUIModule):
 	
 	def get_image_file_name(self):
 		''' warning - could return none in some circumstances'''
-		try: return self.parent.get_image_file_name()
+		try: return self.gl_parent.get_image_file_name()
 		except: return None
 	
 	def __del__(self):
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
+	
+	def get_parent_suggested_size(self):
+		if self.data != None and isinstance(self.data[0],EMData): 
+			if len(self.data)<self.mx_cols :
+				w=len(self.data)*(self.data[0].get_xsize()+2)
+				hfac = 1
+			else : 
+				w=self.mx_cols*(self.data[0].get_xsize()+2)
+				hfac = len(self.data)/self.mx_cols+1
+			hfac *= self.data[0].get_ysize()
+			if hfac > 512: hfac = 512
+				
+			return (int(w)+2,int(hfac))
+		else: return (480,480)
 	
 	def __parent_resize(self):
 		if self.init_size_flag and self.data != None and isinstance(self.data[0],EMData) and self.get_parent() != None:
@@ -518,7 +537,7 @@ class EMImageMXModule(EMGUIModule):
 			if hfac > 512:
 				hfac = 512
 			try:
-				self.get_parent().resize(int(w),int(hfac))
+				self.get_parent().resize(int(w)+20,int(hfac)+20)
 			except:
 				pass
 	
@@ -572,7 +591,7 @@ class EMImageMXModule(EMGUIModule):
 		#if update_gl: self.updateGL()
 
 	def updateGL(self):
-		try: self.parent.updateGL()
+		try: self.gl_parent.updateGL()
 		except: pass
 		
 	def set_den_range(self,x0,x1,update_gl=True):
@@ -1239,7 +1258,7 @@ class EMImageMXModule(EMGUIModule):
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.show_inspector(1)
-			self.emit(QtCore.SIGNAL("inspector_shown"),event)
+#			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
 			try:
@@ -1284,7 +1303,7 @@ class EMImageMXModule(EMGUIModule):
 			self.mousedrag=None
 			
 	def get_frame_buffer(self):
-		return self.parent.get_frame_buffer()
+		return self.gl_parent.get_frame_buffer()
 
 class EMImageInspectorMX(QtGui.QWidget):
 	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):

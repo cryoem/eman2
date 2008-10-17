@@ -50,21 +50,33 @@ from PyQt4.QtCore import QTimer
 from time import *
 
 from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTools
-from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
+from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel, EMParentWin
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 
 MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DSymViewerModule(EMImage3DGUIModule):
+#	def get_qt_widget(self):
+#		if self.parent == None:	
+#			from emimage3d import EMImage3DGeneralWidget
+#			from emimageutil import EMParentWin
+#			self.gl_parent = EMImage3DGeneralWidget(self)
+#			self.parent = EMParentWin(self.gl_parent)
+#			self.set_qt_parent(self.parent)
+#			if isinstance(self.data,EMData):
+#				print "setting camera defaults"
+#				self.gl_parent.set_camera_defaults(self.data)
+#		return self.parent
 	def get_qt_widget(self):
 		if self.parent == None:	
-			self.parent = EMSymViewerWidget(self)
-		return EMGUIModule.darwin_check(self)
-	
+			self.gl_parent = EMSymViewerWidget(self)
+			self.parent = EMParentWin(self.gl_parent)
+			self.set_qt_parent(self.gl_parent)
+		return self.parent
+#	
 	def __init__(self,application=None):
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
-		self.parent = None
 		
 		self.init()
 		self.initialized = True
@@ -696,7 +708,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.updateGL()
 		
 	def updateGL(self,dummy=False):
-		try: self.parent.updateGL()
+		try: self.gl_parent.updateGL()
 		except: pass
 		
 	def resizeEvent(self,width=0,height=0):
@@ -775,7 +787,6 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 	def resizeGL(self, width, height):
 		if width<=0 or height<=0 : 
-			print "bad size"
 			return
 		# just use the whole window for rendering
 		glViewport(0,0,self.width(),self.height())

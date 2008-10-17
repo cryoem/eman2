@@ -53,10 +53,121 @@ from emimage3dslice import EM3DSliceViewerModule
 from emimage3dsym import EM3DSymViewerModule
 
 from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModule
-from emimageutil import EMEventRerouter, EMTransformPanel
+from emimageutil import EMEventRerouter, EMTransformPanel, EMParentWin
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 MAG_INCREMENT_FACTOR = 1.1
+
+
+class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+	
+	allim=WeakKeyDictionary()
+	def __init__(self, em_3d_module):
+		assert(isinstance(em_3d_module,EMImage3DGUIModule))
+		EMImage3DGeneralWidget.allim[self]=0
+		
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True)
+		fmt.setDepth(1)
+		fmt.setSampleBuffers(True)
+		QtOpenGL.QGLWidget.__init__(self,fmt)
+		EMEventRerouter.__init__(self)
+		
+		self.fov = 50 # field of view angle used by gluPerspective
+		self.startz = 1
+		self.endz = 5000
+		self.cam = Camera()
+		self.target = em_3d_module
+		self.resize(480,480)
+		
+	def set_camera_defaults(self,data):
+		if isinstance(data,EMData):
+			self.cam.default_z = -1.25*data.get_zsize()
+			self.cam.cam_z = -1.25*data.get_zsize()
+		elif isinstance(data,float):
+			self.cam.default_z = -1.25*data
+			self.cam.cam_z = -1.25*data\
+		
+	def set_data(self,data):
+		self.target.set_data(data)
+		self.set_camera_defaults(data)
+		
+	def initializeGL(self):
+		glEnable(GL_NORMALIZE)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
+		#print "Initializing"
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
+		GL.glClearColor(0,0,0,0)
+		#GL.glClearAccum(0,0,0,0)
+	
+		glShadeModel(GL_SMOOTH)
+		
+		glClearStencil(0)
+		glEnable(GL_STENCIL_TEST)
+		
+	def paintGL(self):
+		#glClear(GL_ACCUM_BUFFER_BIT)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		self.cam.position()
+		
+		glPushMatrix()
+		self.target.render()
+		glPopMatrix()
+		
+		#glAccum(GL_ADD, self.target.glbrightness)
+		#glAccum(GL_ACCUM, self.target.glcontrast)
+		#glAccum(GL_RETURN, 1.0)
+		
+	def resizeGL(self, width, height):
+		if width<=0 or height<=0 : 
+			print "bad size"
+			return
+		# just use the whole window for rendering
+		glViewport(0,0,self.width(),self.height())
+		
+		# maintain the aspect ratio of the window we have
+		self.aspect = float(self.width())/float(self.height())
+		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		# using gluPerspective for simplicity
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
+		
+		# switch back to model view mode
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		
+		self.target.resizeEvent()
+
+	def get_start_z(self):
+		return self.startz
+	
+	def get_near_plane_dims(self):
+		height = 2.0 * self.startz*tan(self.fov/2.0*pi/180.0)
+		width = self.aspect * height
+		return [width,height]
+
+	def show_inspector(self,force=0):
+		self.target.show_inspector(self,force)
+
+	def get_render_dims_at_depth(self,depth):
+		# This function returns the width and height of the renderable 
+		# area at the origin of the data volume
+		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		width = self.aspect*height
+		
+		return [width,height]
 
 class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	""" 
@@ -68,8 +179,8 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(True)
-		fmt.setStencil(True)
-		fmt.setSampleBuffers(True)
+#		fmt.setStencil(True)
+#		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImage3DWidget.allim[self]=0
 		EMEventRerouter.__init__(self,image_3d_module)
@@ -81,10 +192,9 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.perspective = True
 		
 		self.target = image_3d_module
-		self.initGL = True
 		self.cam = Camera()
 
-		self.resize(640,640)
+		self.resize(480,480)
 		self.startz = 0
 		self.endz = 0
 	
@@ -121,24 +231,18 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glClearColor(0,0,0,0)
 		try:
 			self.target.initializeGL()
-			self.initGL = False
 		except:
 			pass
 		
 		
 	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT )
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		try:
 			self.cam.position()
 		except:
 			return
-		
-		
-		if ( self.initGL ):
-			self.target.initializeGL()
-			self.initGL = False
 
 		if ( self.target != None ):
 			self.target.render()
@@ -200,40 +304,45 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		else:
 			return [self.xwidth,self.yheight]
 		
+	def set_camera_defaults(self,data):
+		self.cam.default_z = -1.25*data.get_zsize()
+		self.cam.cam_z = -1.25*data.get_zsize()
 	
+	def set_data(self,data):
+		self.target.set_data(data)
+		self.set_camera_defaults()
+	
+	def show_inspector(self,force=0):
+		self.target.show_inspector()
 
+	def get_render_dims_at_depth(self, depth):
+		# This function returns the width and height of the renderable 
+		# area at the origin of the data volume
+		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
+		width = self.aspect*height
+		return [width,height]		
+		
 class EMImage3DModule(EMImage3DGUIModule):
-	
 	def get_qt_widget(self):
-		if self.parent == None:	
-			self.parent = EMImage3DWidget(self)
-			self.set_qt_parent(self.parent)
+		if self.parent == None:
+			from emimage3d import EMImage3DWidget
+			from emimageutil import EMParentWin
+			self.gl_parent = EMImage3DWidget(self)
+			self.parent = EMParentWin(self.gl_parent)
+			self.set_qt_parent(self.gl_parent)
 			for i in self.viewables:
 				i.set_parent(self.parent)
 				i.set_qt_parent(self.parent)
-			if isinstance(self.image,EMData):
-				self.parent.set_cam_z(self.parent.get_fov(),self.image)
-		return EMGUIModule.darwin_check(self)
+			if isinstance(self.data,EMData):
+				self.gl_parent.set_cam_z(self.gl_parent.get_fov(),self.data)
+		return self.parent
 	
-	def get_gl_widget(self,qt_parent=None):
-		from emfloatingwidgets import EMGLView3D,EM3DGLWindow
-		if self.gl_widget == None:
-			gl_view = EMGLView3D(self,image=None)
-			self.gl_widget = EM3DGLWindow(self,gl_view)
-			self.set_qt_parent(qt_parent)
-			self.gl_widget.target_translations_allowed(True)
-			self.gl_widget.allow_camera_rotations(True)
-		return self.gl_widget
-		
 	def get_desktop_hint(self):
 		return "image"
 	
 	
 	def __init__(self, image=None,application=None):
 		self.viewables = []
-		self.image = None
-		self.parent = None
-		self.gl_widget = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.currentselection = -1
 		self.inspector = None
@@ -264,7 +373,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		except: return 0
 	
 	def updateGL(self):
-		try: self.parent.updateGL()
+		try: self.gl_parent.updateGL()
 		except: pass
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
@@ -292,20 +401,20 @@ class EMImage3DModule(EMImage3DGUIModule):
 			i.resizeEvent()
 	
 	def get_data_dims(self):
-		if self.image != None:
-			return [self.image.get_xsize(),self.image.get_ysize(),self.image.get_zsize()]
+		if self.data != None:
+			return [self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize()]
 		else: return [0,0,0]
 
 	def set_data(self,data,file_name=""):
 		self.file_name = file_name # fixme fix this later
 		if data == None: return
-		self.image = data
+		self.data = data
 		for i in self.viewables:
 			i.set_data(data)
 		
-		if self.parent != None and self.image != None: 
+		if self.gl_parent != None and self.data != None: 
 			self.resizeEvent(self.parent.width(),self.parent.height())
-			try:self.parent.set_cam_z(self.parent.get_fov(),self.image)
+			try:self.gl_parent.set_cam_z(self.gl_parent.get_fov(),self.data)
 			except:pass
 		
 		if self.inspector == None:
@@ -333,7 +442,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.updateGL()
 
 	def get_render_dims_at_depth(self, depth):
-		return self.parent.get_render_dims_at_depth(depth)
+		return self.gl_parent.get_render_dims_at_depth(depth)
 
 	def get_sundry_inspector(self):
 		return self.viewables[self.currentselection].get_inspector()
@@ -341,25 +450,29 @@ class EMImage3DModule(EMImage3DGUIModule):
 	def add_sym(self):
 		module = EM3DSymViewerModule()
 		module.set_parent(self.parent)
-		module.set_radius(self.image.get_zsize()/2.0)
+		module.set_gl_parent(self.gl_parent)
+		module.set_radius(self.data.get_zsize()/2.0)
 		self.num_sym += 1
 		self.__add_module(module,self.num_sym)
 	
 	def add_isosurface(self):
-		module = EMIsosurfaceModule(self.image)
+		module = EMIsosurfaceModule(self.data)
 		module.set_parent(self.parent)
+		module.set_gl_parent(self.gl_parent)
 		self.num_iso += 1
 		self.__add_module(module,self.num_iso)
 		
 	def add_volume(self):
-		module = EMVolumeModule(self.image)
+		module = EMVolumeModule(self.data)
 		module.set_parent(self.parent)
+		module.set_gl_parent(self.gl_parent)
 		self.num_vol += 1
 		self.__add_module(module,self.num_vol)
 	
 	def add_slice_viewer(self):
-		module = EM3DSliceViewerModule(self.image)
+		module = EM3DSliceViewerModule(self.data)
 		module.set_parent(self.parent)
+		module.set_gl_parent(self.gl_parent)
 		self.num_sli += 1
 		self.__add_module(module,self.num_sli)
 	
@@ -424,7 +537,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.vdtools.set_update_P_inv()
 		
 	def set_perspective(self,bool):
-		self.parent.set_perspective(bool)
+		self.gl_parent.set_perspective(bool)
 		
 	def load_rotation(self,t3d):
 		self.cam.load_rotation(t3d)
@@ -435,10 +548,10 @@ class EMImage3DModule(EMImage3DGUIModule):
 		return self.cam.t3d_stack[size-1]
 	
 	def get_start_z(self):
-		return self.parent.get_start_z()
+		return self.gl_parent.get_start_z()
 	
 	def get_near_plane_dims(self):
-		return self.parent.get_near_plane_dims()
+		return self.gl_parent.get_near_plane_dims()
 	
 class EMImageInspector3D(QtGui.QWidget):
 	def get_desktop_hint(self):

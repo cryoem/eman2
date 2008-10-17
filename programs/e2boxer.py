@@ -843,7 +843,7 @@ class EMBoxerModule:
 		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
 		self.application.show_specific(self.em_qt_inspector_widget)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
-			print "Setting gui for PawelAutoBoxer"
+			print "Setting GUI for Gauss boxing method"
 			gauss_method_id = 1
 			self.guictl.method.setCurrentIndex(gauss_method_id)
 			self.guictl.method_changed( gauss_method_id ) 
@@ -958,7 +958,7 @@ class EMBoxerModule:
 				self.autoboxer.source = "loaded"
 			if self.box_size==-1: self.box_size = self.autoboxer.get_box_size()
 		except Exception, inst:
-			print "exception happen when load image's autoboxer: ", inst
+#			print "exception happen when load image's autoboxer: ", inst
 			try:
 				type_autoboxer = project_db["current_autoboxer_type"]
 				trim_autoboxer = project_db["current_autoboxer"]

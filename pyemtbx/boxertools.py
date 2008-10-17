@@ -1205,7 +1205,6 @@ class Boxable:
 		try: 
 			self.get_auto_selected_from_db()
 		except: pass # this probably means there is a project_db but it doesn't store any autoboxing results from this image
-		print "got auto, now have", len(self.boxes)
 		try:
 			self.get_manual_boxes_from_db()
 		except: pass

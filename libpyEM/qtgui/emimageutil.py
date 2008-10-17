@@ -334,6 +334,17 @@ class EMParentWin(QtGui.QWidget):
 	def get_qt_widget(self):
 		return self.child
 	
+	def update(self):
+		self.child.updateGL()
+		
+	def updateGL(self):
+		self.child.updateGL()
+	
+	
+	def initGL(self):
+		print self.child
+		self.child.glInit()
+	
 class ImgHistogram(QtGui.QWidget):
 	""" A small fixed-size histogram widget"""
 	def __init__(self,parent):

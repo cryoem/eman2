@@ -91,6 +91,8 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 		self.light_0_pos = [0.1,.1,1.,0.]
 		
+		self.resize(480,480)
+		
 	def set_data(self,data):
 		self.target.set_data(data)
 	
@@ -260,10 +262,12 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 	def get_qt_widget(self):
 		if self.parent == None:
-			self.parent = EMImageMXRotorWidget(self)
+			from emimageutil import EMParentWin
+			self.gl_parent = EMImageMXRotorWidget(self)
+			self.parent = EMParentWin(self.gl_parent)
 			self.parent.setAcceptDrops(True)
-			self.set_qt_parent(self.parent)
-		return EMGUIModule.darwin_check(self)
+			self.set_qt_parent(self.gl_parent)
+		return self.parent
 	
 	def __init__(self, data=None,application=None):
 		self.parent = None
@@ -345,7 +349,7 @@ class EMImageMXRotorModule(EMGUIModule):
 
 	def context(self):
 		# asking for the OpenGL context from the parent
-		return self.parent.context()
+		return self.gl_parent.context()
 	
 	def is_visible(self,n):
 		widget = self.rotor[0]
@@ -554,7 +558,7 @@ class EMImageMXRotorModule(EMGUIModule):
 	
 	def get_image_file_name(self):
 		''' warning - could return none in some circumstances'''
-		try: return self.parent.get_image_file_name()
+		try: return self.gl_parent.get_image_file_name()
 		except: return None
 	
 	def get_image(self,idx):
@@ -687,7 +691,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.__refresh_rotor_size()
 
 	def updateGL(self):
-		try: self.parent.updateGL()
+		try: self.gl_parent.updateGL()
 		except: pass
 
 
@@ -701,7 +705,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
-		z = self.parent.get_depth_for_height(abs(lrt[3]-lrt[2]))
+		z = self.gl_parent.get_depth_for_height(abs(lrt[3]-lrt[2]))
 		
 		z_near = z-lrt[4]-1000
 		z_trans = 0
@@ -715,7 +719,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		if self.z_near != z_near or self.z_far != z_far:
 			self.z_near = z_near
 			self.z_far = z_far
-			self.parent.set_near_far(self.z_near,self.z_far)
+			self.gl_parent.set_near_far(self.z_near,self.z_far)
 
 		GL.glPushMatrix()
 		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
@@ -780,7 +784,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.emdata_list_cache.save_data()
 	
 	def get_frame_buffer(self):
-		return self.parent.get_frame_buffer()
+		return self.gl_parent.get_frame_buffer()
 	
 	
 	

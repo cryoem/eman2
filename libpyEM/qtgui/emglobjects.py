@@ -1272,8 +1272,7 @@ def draw_volume_bounds(width,height,depth):
 
 
 class EMImage3DGUIModule(EMGUIModule):
-	def __init__(self,application=None,ensure_gl_context=False):
-		EMGUIModule.__init__(self,application,ensure_gl_context)
+	def __init__(self,application=None,ensure_gl_context=True):
 		self.blendflags = EMOpenGLFlagsAndTools()
 		self.bcscreen = EMBrightContrastScreen()
 		
@@ -1287,6 +1286,8 @@ class EMImage3DGUIModule(EMGUIModule):
 		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
 		self.help_window = None # eventually will become a Qt help widget of some kind
 		
+		EMGUIModule.__init__(self,application,ensure_gl_context)
+	
 	def render(self): pass # should do the main drawing
 	def updateGL(self): raise #this needs to be supplied
 	def get_type(self): pass #should return a unique string
@@ -1296,6 +1297,39 @@ class EMImage3DGUIModule(EMGUIModule):
 	def get_name(self): return self.name
 	def set_file_name(self,file_name): self.file_name = file_name
 	def get_file_name(self): return self.file_name
+	
+	def get_qt_widget(self):
+		if self.parent == None:	
+			from emimage3d import EMImage3DGeneralWidget
+			from emimageutil import EMParentWin
+			self.gl_parent = EMImage3DGeneralWidget(self)
+			self.parent = EMParentWin(self.gl_parent)
+			self.set_qt_parent(self.gl_parent)
+			if isinstance(self.data,EMData):
+				print "setting camera defaults"
+				self.gl_parent.set_camera_defaults(self.data)
+		return self.parent
+	
+#	def get_qt_widget(self):
+#		if self.parent == None:
+#			from emimage3d import EMImage3DWidget
+#			from emimageutil import EMParentWin
+#			self.gl_parent = EMImage3DWidget(self)
+#			self.parent = EMParentWin(self.gl_parent)
+#			self.set_qt_parent(self.parent)
+#			if isinstance(self.data,EMData):
+#				self.gl_parent.set_cam_z(self.gl_parent.get_fov(),self.image)
+#		return self.parent
+	
+	def get_gl_widget(self,qt_parent=None):
+		from emfloatingwidgets import EMGLView3D,EM3DGLWindow
+		if self.gl_widget == None:
+			gl_view = EMGLView3D(self,image=None)
+			self.gl_widget = EM3DGLWindow(self,gl_view)
+			self.set_qt_parent(qt_parent)
+			self.gl_widget.target_translations_allowed(True)
+			self.gl_widget.allow_camera_rotations(True)
+		return self.gl_widget
 	
 	def get_current_camera(self): return self.cam.get_thin_copy()
 	
@@ -1307,11 +1341,11 @@ class EMImage3DGUIModule(EMGUIModule):
 
 	def get_translate_scale(self):
 	
-		[rx,ry] = self.parent.get_render_dims_at_depth(self.cam.cam_z)
+		[rx,ry] = self.gl_parent.get_render_dims_at_depth(self.cam.cam_z)
 		
 		#print "render area is %f %f " %(xx,yy)
-		xscale = rx/float(self.parent.width())
-		yscale = ry/float(self.parent.height())
+		xscale = rx/float(self.get_parent().width())
+		yscale = ry/float(self.get_parent().height())
 		
 		return [xscale,yscale]
 	
@@ -1390,19 +1424,16 @@ class EMImage3DGUIModule(EMGUIModule):
 		
 	def mousePressEvent(self, event):
 #		lc=self.scrtoimg((event.x(),event.y()))
-		if event.button()==Qt.MidButton:
-			if not self.inspector or self.inspector ==None:
-				return
+	   	
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+			self.show_inspector(1)
 			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
 			self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
 			self.inspector.set_scale(self.cam.scale)
-			self.resizeEvent()
-			self.show_inspector(1)
+			
 		else:
 			self.cam.mousePressEvent(event)
-			
-		
-		
+
 		self.updateGL()
 	
 	def mouseDoubleClickEvent(self,event):
@@ -1450,7 +1481,9 @@ class EMImage3DGUIModule(EMGUIModule):
 				self.application.show_specific(self.help_window)
 				#help.resize(640,640)
 		
-		
+	def initializeGL(self):
+		# redefine this if you want to do any OpenGL specific initialization
+		pass
 				
 		
 def get_default_gl_colors():

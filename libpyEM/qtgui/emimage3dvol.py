@@ -58,12 +58,12 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EMVolumeModule(EMImage3DGUIModule):
 	
-	def get_qt_widget(self):
-		if self.parent == None:	
-			self.parent = EMVolumeWidget(self)
-			if isinstance(self.data,EMData):
-				self.parent.set_camera_defaults(self.data)
-		return EMGUIModule.darwin_check(self)
+#	def get_qt_widget(self):
+#		if self.parent == None:	
+#			self.parent = EMVolumeWidget(self)
+#			if isinstance(self.data,EMData):
+#				self.parent.set_camera_defaults(self.data)
+#		return EMGUIModule.darwin_check(self)
 	
 	def __init__(self,image=None,application=None):
 		self.data = None

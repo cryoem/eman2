@@ -149,14 +149,13 @@ def getmxim(fsp,fsp2,clsnum):
 
 def display(img,app,title="EMAN2 image"):
 	if len(img)==1 : img=img[0]
-	w=EMImageModule(data=img,old=None)
+	w=EMImageModule(data=img,old=None,app=app)
 	w.get_qt_widget().setWindowTitle(title)
 	try:
 		if file_exists(title):
 			w.set_file_name(title)
 	except: pass
-	w.set_app(app)
-	app.attach_child(w)
+	return w
 
 def plot(files):
 	plotw=EMPlot2D()

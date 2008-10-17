@@ -56,12 +56,15 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EMIsosurfaceModule(EMImage3DGUIModule):
 	
-	def get_qt_widget(self):
-		if self.parent == None:	
-			self.parent = EMIsosurfaceWidget(self)
-			if isinstance(self.data,EMData):
-				self.parent.set_camera_defaults(self.data)
-		return EMGUIModule.darwin_check(self)
+#	def get_qt_widget(self):
+#		if self.parent == None:	
+#			from emimageutil import EMParentWin
+#			self.gl_parent = EMIsosurfaceWidget(self)
+#			self.parent = EMParentWin(self.gl_parent)
+#			self.set_qt_parent(self.gl_parent)
+#			if isinstance(self.data,EMData):
+#				self.gl_parent.set_camera_defaults(self.data)
+#		return self.parent
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
@@ -343,106 +346,6 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
 		
-class EMIsosurfaceWidget(QtOpenGL.QGLWidget,EMEventRerouter):
-	""" This class is not yet complete.
-	A QT widget for rendering 3D EMData objects.
-	"""
-	allim=WeakKeyDictionary()
-	def __init__(self, em_isosurface_module):
-		EMIsosurfaceWidget.allim[self]=0
-		
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		QtOpenGL.QGLWidget.__init__(self,fmt)
-		EMEventRerouter.__init__(self)
-		
-		self.target = em_isosurface_module
-
-		self.cam = Camera()
-		self.aspect=1.0
-		self.fov = 50 # field of view angle used by gluPerspective
-		self.startz = 1
-		self.endz = 5000
-		
-	def initializeGL(self):
-		
-		glEnable(GL_NORMALIZE)
-		
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
-		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
-		
-		GL.glClearColor(0,0,0,0)
-		glEnable(GL_CULL_FACE)
-		glCullFace(GL_BACK)
-		# For the time being
-		
-	def paintGL(self):
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.cam.position()
-		
-		glPushMatrix()
-		self.target.render()
-		glPopMatrix()
-
-	def resizeGL(self, width, height):
-		if width<=0 or height<=0 : 
-			print "bad size"
-			return
-		# just use the whole window for rendering
-		glViewport(0,0,self.width(),self.height())
-		
-		# maintain the aspect ratio of the window we have
-		self.aspect = float(self.width())/float(self.height())
-		
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
-		
-		# switch back to model view mode
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		self.target.resizeEvent()
-	
-	def get_start_z(self):
-		return self.startz
-	
-	def get_near_plane_dims(self):
-		height = 2.0 * self.startz*tan(self.fov/2.0*pi/180.0)
-		width = self.aspect * height
-		return [width,height]
-
-	def set_camera_defaults(self,data):
-		self.cam.default_z = -1.25*data.get_zsize()
-		self.cam.cam_z = -1.25*data.get_zsize()
-
-	def set_data(self,data):
-		self.target.set_data(data)
-		self.set_camera_defaults()
-	
-	def show_inspector(self,force=0):
-		self.target.show_inspector()
-
-	def get_render_dims_at_depth(self, depth):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
-		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
-		width = self.aspect*height
-		return [width,height]
 
 class EMIsoInspector(QtGui.QWidget):
 	def __init__(self,target) :

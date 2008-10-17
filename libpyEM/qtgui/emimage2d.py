@@ -66,7 +66,7 @@ GLUT.glutInit(sys.argv)
 
 class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 	allim=WeakKeyDictionary()
-	def __init__(self, em_image_2d_module,enable_timer=False):
+	def __init__(self, em_image_2d_module,enable_timer=True):
 		Animator.__init__(self)
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
@@ -78,9 +78,11 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 		
 		self.setFocusPolicy(Qt.StrongFocus)
 		
+		self.time_enabled = False
 		if enable_timer:
 			self.enable_timer()
-		else: self.time_enabled = False
+		
+		self.resize(480,480)
 		
 	def enable_timer(self):
 		if self.time_enabled == False:
@@ -93,7 +95,6 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 		
 	def set_parent(self,parent):
 		self.parent = parent
-
 
 	def set_data(self,data):
 		self.target.set_data(data)
@@ -358,19 +359,18 @@ class EMImage2DModule(EMGUIModule):
 	
 	def get_qt_widget(self):
 		if self.parent == None:	
-			self.parent = EMImage2DWidget(self)
-			self.set_qt_parent(self.parent)
+			self.gl_parent = EMImage2DWidget(self,enable_timer=True)
+			self.parent = EMParentWin(self.gl_parent)
+			self.set_qt_parent(self.gl_parent)
 			f = self.file_name.split('/')
 			f = f[len(f)-1]
 			self.parent.setWindowTitle(f)
 			if isinstance(self.data,EMData):
-				self.__parent_resize()
+				self.load_default_scale_origin()
 			
 			if isinstance(self.data,EMData):
-				self.__parent_resize()
-				
-		parent =  EMGUIModule.darwin_check(self)
-		return parent
+				sself.load_default_scale_origin()
+		return self.parent
 	
 	def get_gl_widget(self,qt_parent=None):
 		from emfloatingwidgets import EMGLView2D_v2, EM2DGLWindow
@@ -387,26 +387,26 @@ class EMImage2DModule(EMGUIModule):
 	
 	def __parent_resize(self):
 		#if self.gl_widget != None: return
-		try:
-			parent = self.get_parent()
-			if self.mac_parent_win != None: parent = self.mac_parent_win
-			if self.parent_geometry != None:
-				parent.restoreGeometry(self.parent_geometry)
-			elif self.data.get_xsize()<1024 and self.data.get_ysize()<1024: 
-				parent.resize(self.data.get_xsize(),self.data.get_ysize())
-				self.load_default_scale_origin()
-			else: 
-				parent.resize(800,800)
-				self.load_default_scale_origin()
-			self.init_size_flag = False
-		except: pass
+		self.load_default_scale_origin()
+		
+#		print "resizing"
+#		try:
+#			parent = self.get_parent()
+#			if self.parent_geometry != None:
+#				parent.restoreGeometry(self.parent_geometry)
+#			elif self.data.get_xsize()<1024 and self.data.get_ysize()<1024: 
+#				parent.resize(self.data.get_xsize(),self.data.get_ysize())
+#				self.load_default_scale_origin()
+#			else:
+#				parent.resize(800,800)
+#				self.load_default_scale_origin()
+#			self.init_size_flag = False
+#		except: pass
 			
 	
 	def __init__(self, image=None,application=None):
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
-		self.parent = None
-		self.gl_widget = None
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 		
 		self.init_gl_flag = True
@@ -555,7 +555,7 @@ class EMImage2DModule(EMGUIModule):
 		try:
 			f = self.file_name.split('/')
 			f = f[len(f)-1]
-			self.parent.setWindowTitle(f)
+			self.get_parent().setWindowTitle(f)
 		except:pass
 		
 		if load_cache_settings:
@@ -587,7 +587,7 @@ class EMImage2DModule(EMGUIModule):
 		except:	return 0
 	
 	def updateGL(self):
-		try: self.parent.updateGL()
+		try: self.gl_parent.updateGL()
 		except: pass
 		
 	def set_frozen(self,frozen):
@@ -668,9 +668,6 @@ class EMImage2DModule(EMGUIModule):
 			#else:
 				#self.list_data = None
 			
-		if self.init_size_flag and isinstance(self.parent,QtGui.QWidget) and self.gl_widget == None:
-			self.__parent_resize()
-		
 		self.auto_contrast(inspector_update=False,display_update=False)
 
 		self.load_default_scale_origin()
@@ -684,8 +681,9 @@ class EMImage2DModule(EMGUIModule):
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)
 		try: 
-			w = self.get_qt_parent().width()
-			h = self.get_qt_parent().height()
+			parent = self.get_parent()
+			w = parent.width()
+			h = parent.height()
 			data = self.get_data_dims()
 			if data[0] == 0 or data[1] == 0: raise
 			scalew = float(w)/data[0]
@@ -750,10 +748,8 @@ class EMImage2DModule(EMGUIModule):
 		try:
 			self.parent_geometry = data["parent_geometry"]
 			if self.parent != None:
-				try: 
-					parent = self.parent
-					if self.mac_parent_win != None: parent = self.mac_parent_win
-					parent.restoreGeometry(self.parent_geometry)
+				try:
+					self.parent.restoreGeometry(self.parent_geometry)
 				except: pass
 		except:pass
 		
@@ -786,9 +782,7 @@ class EMImage2DModule(EMGUIModule):
 		data["scale"] = self.scale
 		
 		try:
-			parent = self.parent
-			if self.mac_parent_win != None: parent = self.mac_parent_win
-			data["parent_geometry"] = parent.saveGeometry()
+			data["parent_geometry"] = self.parent.saveGeometry()
 		except: pass
 		
 		db = DB.image_2d_display_settings
@@ -1283,8 +1277,8 @@ class EMImage2DModule(EMGUIModule):
 		#self.updateGL()
 	
 	def scr_to_img(self,v0,v1=None):
-		try: return ((v0+self.origin[0])/self.scale,(self.parent.height()-(v1-self.origin[1]))/self.scale)
-		except:	return ((v0[0]+self.origin[0])/self.scale,(self.parent.height()-(v0[1]-self.origin[1]))/self.scale)
+		try: return ((v0+self.origin[0])/self.scale,(self.gl_parent.height()-(v1-self.origin[1]))/self.scale)
+		except:	return ((v0[0]+self.origin[0])/self.scale,(self.gl_parent.height()-(v0[1]-self.origin[1]))/self.scale)
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
@@ -1312,7 +1306,6 @@ class EMImage2DModule(EMGUIModule):
 		lc=self.scr_to_img(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.show_inspector(1)
-			self.parent.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			try:
 				self.application.setOverrideCursor(Qt.ClosedHandCursor)
@@ -1824,3 +1817,4 @@ if __name__ == '__main__':
 	em_app.show()
 	em_app.execute()
 	
+

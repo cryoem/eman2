@@ -36,16 +36,18 @@ import sys
 import platform
 from emimageutil import EMParentWin
 
-
 class EMGUIModule:
 	FTGL = "ftgl"
 	GLUT = "glut"
-	def __init__(self,application=None,ensure_gl_context=False): 
+	def __init__(self,application=None,ensure_gl_context=False):
 		self.application = application
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
 		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
-		self.parent = None # should be something that accepts UpdateGL calls
+		
+		self.parent = None # EMParentWin
+		self.gl_parent = None # EMImage3DWidget, EMImage2DWidget, EMImageMXWidget etc
+		self.gl_widget = None # EM3DGLWindow, EM2DGLWindow etc
 		self.qt_parent = None # should be a qt Widget, especially important for calling CONNECT in e2boxer
 		if application != None: application.attach_child(self)
 		
@@ -58,11 +60,19 @@ class EMGUIModule:
 	def set_app(self,application): self.application = application
 	def get_app(self): return self.application
 	def get_qt_widget(self): raise
+	
 	def set_qt_parent(self,parent): self.qt_parent = parent
 	def get_qt_parent(self): return self.qt_parent
 	
 	def set_parent(self,parent): self.parent = parent
 	def get_parent(self): return self.parent
+	
+	def set_gl_parent(self,parent): self.gl_parent = parent
+	def get_gl_parent(self): return self.gl_parent
+	
+	def set_gl_widget(self,gl_widget): self.gl_widget = gl_widget
+	def get_gl_widget(self): return self.gl_widget
+	
 	def get_inspector(self): raise # this need to be supplied
 	
 	def get_em_inspector(self):
@@ -95,6 +105,8 @@ class EMGUIModule:
 		if platform.system() == "Darwin":
 			if self.mac_parent_win == None:
 				self.mac_parent_win = EMParentWin(self.parent)
+				self.mac_parent_dependent = self.parent
+				self.parent = self.mac_parent_win
 			return self.mac_parent_win
 		else:
 			return self.parent
@@ -196,7 +208,7 @@ class EMStandAloneApplication(EMApplication):
 		self.children.append(child)
 		
 	def ensure_gl_context(self,child):
-		child.get_qt_widget()
+		child.get_qt_widget().initGL()
 	
 	def show(self):
 		for child in self.children:

@@ -51,9 +51,10 @@ from emimageutil import  EMEventRerouter
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule,EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 from emimage import EMImageModule
+from emanimationutil import Animator
 
 
-class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 	"""
 	"""
 	allim=WeakKeyDictionary()
@@ -69,6 +70,7 @@ class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self)
+		Animator.__init__(self)
 		
 		self.target = em_rotor_module
 		self.imagefilename = None
@@ -87,7 +89,7 @@ class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 	def __init_timer(self):
 		self.timer = QtCore.QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
 		self.timer.start(20)
 		self.timer_enabled = True
 		
@@ -96,21 +98,7 @@ class EMImageRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 	def set_data(self,data):
 		self.target.set_data(data)
-	
-	def timeout(self):
-		
-		if len(self.animatables) == 0: return
-		
-		for i,animatable in enumerate(self.animatables):
-			if not animatable.animate(time.time()):
-				# this could be dangerous
-				self.animatables.pop(i)
-		
-		self.updateGL()
-		
-	def register_animatable(self,animatable):
-		self.animatables.append(animatable)
-	
+
 	def setImageFileName(self,name):
 		#print "set image file name",name
 		self.imagefilename = name
@@ -197,7 +185,7 @@ class EMImageRotorModule(EMGUIModule):
 		if self.gl_widget == None:
 			self.gl_widget =EM3DGLWindowOverride(self,self.rotor)
 			self.parent = self.gl_widget
-			self.set_qt_parent(qt_parent)
+			self.set_qt_parent(self.gl_widget)
 			#self.disable_mx_zoom()
 			#self.disable_mx_translate()
 			
@@ -205,11 +193,12 @@ class EMImageRotorModule(EMGUIModule):
 	
 	def get_qt_widget(self):
 		if self.parent == None:
-			self.parent = EMImageRotorWidget(self)
-			self.set_qt_parent(self.parent)
-		parent = EMGUIModule.darwin_check(self)
+			from emimageutil import EMParentWin
+			self.gl_parent = EMImageRotorWidget(self)
+			self.parent = EMParentWin(self.gl_parent)
+			self.set_qt_parent(self.gl_parent)
 
-		return parent
+		return self.parent
 	
 	def __init__(self, data=None,application=None):
 		self.parent = None
@@ -258,7 +247,7 @@ class EMImageRotorModule(EMGUIModule):
 		#self.rotor.set_shapes([],1.01)
 	def context(self):
 		# asking for the OpenGL context from the parent
-		return self.parent.context()
+		return self.gl_parent.context()
 	
 	def emit(self,*args,**kargs):
 		#print "emitting",signal,event
@@ -296,7 +285,7 @@ class EMImageRotorModule(EMGUIModule):
 
 	def getImageFileName(self):
 		''' warning - could return none in some circumstances'''
-		try: return self.parent.getImageFileName()
+		try: return self.gl_parent.getImageFileName()
 		except: return None
 		
 	def set_data(self,data):
@@ -315,7 +304,7 @@ class EMImageRotorModule(EMGUIModule):
 			self.rotor.add_widget(x)
 
 	def updateGL(self):
-		try: self.parent.updateGL()
+		try: self.gl_parent.updateGL()
 		except: pass
 
 
@@ -330,7 +319,7 @@ class EMImageRotorModule(EMGUIModule):
 		lrt = lr
 		#lr = self.widget.get_lr_bt_nf()
 		
-		z = self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
+		z = self.gl_parent.get_depth_for_height(abs(lr[3]-lr[2]))
 		
 		z_near = z-lrt[4]
 		z_trans = 0
@@ -343,7 +332,7 @@ class EMImageRotorModule(EMGUIModule):
 		if self.z_near != z_near or self.z_far != z_far:
 			self.z_near = z_near
 			self.z_far = z_far
-			self.parent.set_near_far(self.z_near,self.z_far)
+			self.gl_parent.set_near_far(self.z_near,self.z_far)
 
 		#FTGL.print_message("hello world",36);
 		
