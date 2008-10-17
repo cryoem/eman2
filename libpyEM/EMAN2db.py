@@ -150,7 +150,7 @@ EMData.write_image=db_write_image
 
 def db_get_image_count(fsp):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_dict(fsp)
+		db=db_open_dict(fsp,True)
 		if "?" in fsp :			# if the user specifies the key in fsp, we ignore parms
 			key=fsp[fsp.rfind("?")+1:]
 			try : key=int(key)
@@ -342,11 +342,17 @@ class EMAN2DB:
 		self.close()
 
 	def __getitem__(self,key):
-		return self.dicts[key]
+#		print "get ",key
+		try: return self.dicts[key]
+		except:
+			if key[-4:]=="__ro" : return self.dicts[key[:-4]]
+			raise KeyError
 
 	def open_dict(self,name,ro=False):
+#		print "open ",name,ro
 		if self.dicts.has_key(name) : return
 		if ro:
+			if self.dicts.has_key(name+"__ro") : return
 			self.dicts[name+"__ro"]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
 			self.__dict__[name+"__ro"]=self.dicts[name+"__ro"]
 		else:
