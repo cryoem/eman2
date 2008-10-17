@@ -58,6 +58,7 @@
 #include "emdata.h"
 #include "transform.h"
 #include "xydata.h"
+#include "ctf.h"
 
 #include <iostream>
 using std::cout;
@@ -267,6 +268,10 @@ void test_emobject_conversion()
 	Transform* pTransform = new Transform;
 	test_emobject_specific_conversion( pTransform );
 	
+	cout << "Testing Ctf pointer conversion operator..... ";
+	Ctf* pCtf = new EMAN2Ctf();
+	test_emobject_specific_conversion( pCtf );
+	
 	cout << "Testing EMData pointer conversion operator..... ";
 	EMData* pEMData = new EMData;
 	test_emobject_specific_conversion( pEMData );
@@ -323,6 +328,9 @@ vector<EMObject> get_test_emobjects()
 	Transform* pTransform = new Transform;
 	objects.push_back(EMObject(pTransform));
 
+	Ctf* ctf = new EMAN1Ctf();
+	objects.push_back(EMObject(ctf));
+	
 	vector<int> iv(100,2);
 	objects.push_back(EMObject(iv));
 	
@@ -615,6 +623,56 @@ void test_dict()
 	
 }
 
+void test_attr()
+{
+	cout << "-----------------------------------------------------------------------------" << endl;
+	bool success = true;
+	EMData * img = new EMData(32,32);
+	float arr[11] = {0.1f, 1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f, 9.9f, 10.1f}; 
+	vector<float> v1(arr, arr+11);
+	
+	Ctf* ctf1 = new EMAN1Ctf();
+	ctf1->from_vector(v1);
+	img->set_attr("ctf1", ctf1);
+	delete ctf1;
+	img->write_image("test_image1.hdf");
+	
+	EMData* img2 = new EMData("test_image1.hdf");
+	Ctf* ctf11 = img2->get_attr("ctf1");
+	string s1 = ctf11->to_string();
+	cout << "ctf1 string: " << s1 << endl;
+	if(success && s1 != "O0.1 1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8 9.9 10.1") {
+		success = false;
+	}
+	delete ctf11;
+	delete img2;
+	
+	Ctf* ctf2  = new EMAN2Ctf();
+	ctf2->from_vector(v1);
+	img->set_attr("ctf2", ctf2);
+	delete ctf2;
+	img->write_image("test_image2.hdf");
+	
+	EMData* img3 = new EMData("test_image2.hdf");
+	Ctf* ctf22 = img3->get_attr("ctf2");
+	string s2 = ctf22->to_string();
+	cout << "ctf2 string: " << s2 << endl;
+	if(success && s2 != "E0.1 1.1 2.2 3.3 4.4 5.5") {
+		success = false;
+	}
+	delete ctf22;
+	
+	delete img;
+	if(success) {
+		cout << "Testing set Ctf object as image attribute ............................. passed" << endl;
+	}
+	else {
+		cout << "Testing set Ctf object as image attribute ............................. failed" << endl;
+	}
+	
+	
+}
+
 int main(int, char**)
 {
 	cout << "-----------------------------------------------------------------------------" << endl;
@@ -624,6 +682,10 @@ int main(int, char**)
 	cout << "-----------------------------------------------------------------------------" << endl;
 	cout << "TESTING DICT" << endl << endl;
 	test_dict();
+	cout << endl;
+	cout << "-----------------------------------------------------------------------------" << endl;
+	cout << "TESTING Attribute" << endl << endl;
+	test_attr();
 	cout << endl;
 
 	return 0;	

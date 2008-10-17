@@ -89,6 +89,7 @@ namespace EMAN
 	class Reconstructor;
 	class Analyzer;
 	class Transform;
+	class Ctf;
 
 	enum MapInfoType {
 		NORMAL,
@@ -135,6 +136,7 @@ namespace EMAN
 			FLOATARRAY,
 			STRINGARRAY,
 			TRANSFORM,
+			CTF,
 			FLOAT_POINTER,
 			INT_POINTER,
 			VOID_POINTER
@@ -159,6 +161,7 @@ namespace EMAN
 		EMObject(EMData * em);
 		EMObject(XYData * xy);
 		EMObject(Transform * t);
+		EMObject(Ctf * ctf);
 		EMObject(const vector< int >& v );
 		EMObject(const vector < float >&v);
 		EMObject(const vector <string>& sarray);
@@ -193,6 +196,7 @@ namespace EMAN
 		operator EMData *() const;
 		operator XYData *() const;
 		operator Transform *() const;
+		operator Ctf *() const;
 		operator vector < int > () const;
 		operator vector < float > () const;
 		operator vector<string> () const;

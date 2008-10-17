@@ -68,6 +68,7 @@ const double EMConsts::rad2deg = 180.0/pi;
 using std::stringstream;
 
 #include "transform.h"
+#include "ctf.h"
 
 // Static init
 map< EMObject::ObjectType, string>  EMObject::type_registry;
@@ -91,6 +92,7 @@ void EMObject::init()
 		type_registry[FLOATARRAY] = "FLOATARRAY";
 		type_registry[STRINGARRAY] = "STRINGARRAY";
 		type_registry[TRANSFORM] = "TRANFORM";
+		type_registry[CTF] = "CTF";
 		type_registry[FLOAT_POINTER] = "FLOAT_POINTER";
 		type_registry[INT_POINTER] = "INT_POINTER";
 		type_registry[UNKNOWN] = "UNKNOWN";
@@ -197,7 +199,12 @@ EMObject::EMObject(Transform* t) :
 	init();
 }
 
-
+EMObject::EMObject(Ctf * ctf) :
+	str(ctf->to_string()), type(CTF)
+{
+	init();
+}
+	
 EMObject::EMObject(const vector< int >& v ) :
 	iarray(v), type(INTARRAY)
 {
@@ -397,7 +404,7 @@ EMObject::operator void * () const
 
 EMObject::operator const char * () const
 {
-	if (type != STRING) {
+	if (type != STRING && type != CTF) {
 		stringstream ss;
 		string return_string;
 		if ( type == INT )
@@ -469,6 +476,26 @@ EMObject::operator Transform* () const
 		}
 	}
 	return transform;
+}
+
+EMObject::operator Ctf* () const
+{
+	if(type != CTF) {
+		if(type != CTF) {
+			throw TypeException("Cannot convert to TRANSFORM* from this data type",
+								get_object_type_name(type));
+		}
+	}
+	Ctf * ctf = 0;
+	if(str[0] == 'O') {
+		ctf = new EMAN1Ctf();
+		ctf->from_string(str); 
+	}
+	else if(str[0] == 'E') {
+		ctf = new EMAN2Ctf();
+		ctf->from_string(str);
+	}
+	return ctf;
 }
 
 EMObject::operator vector<int>() const
@@ -568,6 +595,9 @@ string EMObject::to_str(ObjectType argtype) const
 		}
 		else if (argtype == TRANSFORM) {
 			sprintf(tmp_str, "TRANSFORMD");
+		}
+		else if (argtype == CTF) {
+			sprintf(tmp_str, "CTF");
 		}
 		else if (argtype == UNKNOWN) {
 			sprintf(tmp_str, "UNKNOWN");
@@ -669,6 +699,9 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 	case  EMObject::TRANSFORM:
 		return (e1.transform == e2.transform);
 	break;
+	case EMObject::CTF:
+		return e1.str == e2.str;
+	break;
 	case  EMObject::UNKNOWN:
 		// UNKNOWN really means "no type" and if two objects both have
 		// type UNKNOWN they really are the same
@@ -760,6 +793,9 @@ EMObject& EMObject::operator=( const EMObject& that )
 		break;
 		case TRANSFORM:
 			transform = that.transform;
+		break;
+		case CTF:
+			str = that.str;
 		break;
 		case UNKNOWN:
 			// This is possible, nothing should happen

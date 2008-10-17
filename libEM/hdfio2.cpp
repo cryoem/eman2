@@ -42,6 +42,7 @@
 #include "ctf.h"
 #include "emassert.h"
 #include "transform.h"
+#include "ctf.h"
 #include <iostream>
 #include <cstring>
 
@@ -112,6 +113,7 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 	
 	float *matrix;
 	Transform* t;
+	Ctf* ctf;
 // 	int r, c, k=0;
 	
 	switch (cls) {
@@ -164,7 +166,21 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 		s=(char *)malloc(sz+1);
 		H5Aread(attr,type,s);
 //		H5Aread(attr,H5T_NATIVE_CHAR,s);
-		ret=EMObject(s);
+		if(s[0] == 'O') {
+			ctf = new EMAN1Ctf();
+			ctf->from_string(string(s));
+			ret = EMObject(ctf);
+			delete ctf;
+		}
+		else if(s[0] == 'E') {
+			ctf = new EMAN2Ctf();
+			ctf->from_string(string(s));
+			ret = EMObject(ctf);
+			delete ctf;
+		}
+		else {
+			ret=EMObject(s);
+		}
 		free(s);
 		break;
 	case H5T_COMPOUND:
@@ -225,7 +241,8 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		type=H5Tcopy(H5T_IEEE_F64LE); 
 		spc=H5Scopy(simple_space);
 		break;
-	case EMObject::STRING: 
+	case EMObject::STRING:
+	case EMObject::CTF:
 		type=H5Tcopy(H5T_C_S1); 
 		H5Tset_size(type,strlen((const char *)obj)+1);
 		spc=H5Screate(H5S_SCALAR);
@@ -334,7 +351,8 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		d=(double)obj;
 		H5Awrite(attr,H5T_NATIVE_DOUBLE,&d);
 		break;
-	case EMObject::STRING: 
+	case EMObject::STRING:
+	case EMObject::CTF:
 		s=(const char *)obj;
 //		H5Awrite(attr,H5T_NATIVE_CHAR,s);
 		H5Awrite(attr,type,s);
