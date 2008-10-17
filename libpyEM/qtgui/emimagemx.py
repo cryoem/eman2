@@ -463,7 +463,8 @@ class EMImageMXModule(EMGUIModule):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 	
-		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
+		if ( len(self.tex_names) > 0 ):	
+			glDeleteTextures(self.tex_names)
 			self.tex_names = []
 	
 	def get_cols(self):
