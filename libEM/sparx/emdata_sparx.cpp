@@ -5212,7 +5212,7 @@ EMData *EMData::replace_amplitudes(EMData* image, bool RetReal) {
 						fout(ix,iy,iz) *= (qt/rt);
 						fout(ix+1,iy,iz) *= (qt/rt);
 				} else {
-						qt = std::sqrt(qt/2.0);
+						qt = std::sqrt(qt/2.0f);
 						fout(ix,iy,iz) = qt;
 						fout(ix+1,iy,iz) = qt;
 				}

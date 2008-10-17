@@ -959,7 +959,7 @@ namespace EMAN
 		
 		static void apply_precision(float& value, const float& precision) {
 			float c = ceilf(value);
-			float f = fast_floor(value);
+			float f = (float)fast_floor(value);
 			if (fabs(value - c) < precision) value = c;
 			else if (fabs(value - f) < precision) value = f;
 		}

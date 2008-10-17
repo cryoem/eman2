@@ -503,7 +503,7 @@ void LinearRampFourierProcessor::create_radial_func(vector < float >&radial_mask
 {
 	Assert(radial_mask.size() > 0);
 	for (size_t i = 0; i < radial_mask.size(); i++) {
-		radial_mask[i] = i;
+		radial_mask[i] = (float)i;
 	}
 }
 

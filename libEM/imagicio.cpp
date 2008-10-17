@@ -234,9 +234,9 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["ptcl_repr"] = hed.mrc2;			// raw images represented by this image
 	
 	dict["orientation_convention"] = "EMAN";
-    const float alt = hed.mrc1[1]*180.0/M_PI;
-    const float az = hed.mrc1[2]*180.0/M_PI;
-    const float phi = hed.mrc1[0]*180.0/M_PI;
+    const float alt = hed.mrc1[1]*180.0f/M_PI;
+    const float az = hed.mrc1[2]*180.0f/M_PI;
+    const float phi = hed.mrc1[0]*180.0f/M_PI;
 	dict["euler_alt"] = alt;
 	dict["euler_az"] = az;
 	dict["euler_phi"] = phi;

@@ -199,7 +199,7 @@ vector < float >EMAN1Ctf::compute_1d(int size, CtfType type, XYData * sf)
 	case CTF_SIGN:
 		for (int i = 0; i < np; i++) {
 			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_ctf1(amp1, gamma, s)>0?1.0:-1.0;
+			r[i] = calc_ctf1(amp1, gamma, s)>0?1.0f:-1.0f;
 			s += ds;
 		}
 		break;
@@ -595,7 +595,7 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 	case CTF_SIGN:
 		for (int i = 0; i < np; i++) {
 			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_ctf1(amp1, gamma, s)>0?1.0:-1.0;
+			r[i] = calc_ctf1(amp1, gamma, s)>0?1.0f:-1.0f;
 			s += ds;
 		}
 		break;
