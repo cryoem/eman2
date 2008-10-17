@@ -139,7 +139,6 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 		glPopMatrix()
 		
 	def resizeGL(self, width, height):
-		print width, height, self.width(),self.height()
 		side = min(width, height)
 		
 		GL.glViewport(0,0,width,height)

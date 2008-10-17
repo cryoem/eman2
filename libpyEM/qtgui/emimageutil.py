@@ -353,7 +353,6 @@ class EMParentWin(QtGui.QWidget):
 		##print "asked for height!"
 		#return self.child.height()
 	def initGL(self):
-		print self.child
 		self.child.glInit()
 	
 class ImgHistogram(QtGui.QWidget):
