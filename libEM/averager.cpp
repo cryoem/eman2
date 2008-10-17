@@ -929,9 +929,9 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 	vector < float >*ctfn = new vector < float >[num_images];
 	float **src = new float *[num_images];
 
-	Ctf::CtfType curve_type = Ctf::CTF_ABS_AMP_S;
+	Ctf::CtfType curve_type = Ctf::CTF_ABS_AMP;
 	if (alg_name == "CtfCWauto") {
-		curve_type = Ctf::CTF_AMP_S;
+		curve_type = Ctf::CTF_AMP;
 	}
 
 	for (size_t i = 0; i < num_images; i++) {

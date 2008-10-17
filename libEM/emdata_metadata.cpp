@@ -575,7 +575,7 @@ void EMData::set_ctf(Ctf * new_ctf)
 Ctf * EMData::get_ctf() const
 {
 	if(attr_dict.has_key("ctf")) {
-		SimpleCtf * ctf = new SimpleCtf();
+		EMAN1Ctf * ctf = new EMAN1Ctf();
 		ctf->from_vector(attr_dict["ctf"]);
 	
 		return dynamic_cast<Ctf *>(ctf);

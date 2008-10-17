@@ -78,7 +78,7 @@ namespace EMAN
 		{
 		}
 
-		virtual int from_string(const string & ctf) = 0;
+		virtual int from_string(const string & ctf) = 0;	// The first letter of the string indicates the subclass type
 		virtual string to_string() const = 0;
 
 		virtual void from_dict(const Dict & dict) = 0;
@@ -103,9 +103,9 @@ namespace EMAN
 
 	};
 
-	/** SimpleCtf is the CTF model used in EMAN1.
+	/** EMAN1Ctf is the CTF model used in EMAN1.
      */
-	class SimpleCtf:public Ctf
+	class EMAN1Ctf:public Ctf
 	{
 	  public:
 		float defocus;			// 0
@@ -121,8 +121,8 @@ namespace EMAN
 		float apix;				// 10
 
 	  public:
-		SimpleCtf();
-		~SimpleCtf();
+		EMAN1Ctf();
+		~EMAN1Ctf();
 
 		vector < float >compute_1d(int size, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
@@ -200,6 +200,108 @@ namespace EMAN
 			float ns = (float) M_PI / 2 * noise4 * s;
 			float ns2 = ns * ns;
 			float n = noise3 * exp(-ns2 - s * noise2 - sqrt(fabs(s)) * noise1);
+			return n;
+		}
+
+		inline float calc_snr(float g1, float gamma, float s)
+		{
+			float ctf1 = calc_ctf1(g1, gamma, s);
+			float ctf2 = ctf1 * ctf1 / calc_noise(s);
+			return ctf2;
+		}
+
+	};
+
+	/** EMAN1Ctf is the CTF model used in EMAN1.
+     */
+	class EMAN2Ctf:public Ctf
+	{
+	  public:
+		float defocus;
+		float bfactor;
+		float ampcont;
+		float voltage;
+		float cs;
+		float apix;
+
+	  public:
+		EMAN2Ctf();
+		~EMAN2Ctf();
+
+		vector < float >compute_1d(int size, CtfType type, XYData * struct_factor = 0);
+		void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
+		void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
+
+		int from_string(const string & ctf);
+		string to_string() const;
+
+		void from_dict(const Dict & dict);
+		Dict to_dict() const;
+		
+		void from_vector(const vector<float>& vctf);
+		vector<float> to_vector() const;
+
+		void copy_from(const Ctf * new_ctf);
+		bool equal(const Ctf * ctf1) const;
+
+		float get_defocus() const
+		{
+			return defocus;
+		}
+		float get_bfactor() const
+		{
+			return bfactor;
+		}
+
+	  private:
+		inline float calc_amp1()
+		{
+			return (sqrt(1 - ampcont * ampcont));
+		}
+
+		inline float calc_lambda()
+		{
+			float lambda = 12.2639f / sqrt(voltage * 1000.0f + 0.97845f * voltage * voltage);
+			return lambda;
+		}
+
+		inline float calc_g1()
+		{
+			float lambda = calc_lambda();
+			float g1 = 2.5e6f * cs * lambda * lambda * lambda;
+			return g1;
+		}
+
+		inline float calc_g2()
+		{
+			float lambda = calc_lambda();
+			float g2 = 5000.0f * defocus * lambda;
+			return g2;
+		}
+
+		inline float calc_gamma(float g1, float g2, float s)
+		{
+			float s2 = s * s;
+			float gamma = (float) (-2 * M_PI * (g1 * s2 * s2 + g2 * s2));
+			return gamma;
+		}
+
+		inline float calc_ctf1(float g, float gamma, float s)
+		{
+			float r = exp(-(bfactor * s * s)) * (g * sin(gamma) + ampcont * cos(gamma));
+			return r;
+		}
+
+		inline float calc_amplitude(float gamma)
+		{
+			float t1 = sqrt(1.0f - ampcont * ampcont) * sin(gamma);
+			float v = (t1 + ampcont * cos(gamma));
+			return v;
+		}
+
+		inline float calc_noise(float s)
+		{
+			float n = 0;
 			return n;
 		}
 

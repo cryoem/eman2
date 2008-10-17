@@ -40,7 +40,7 @@
 
 using namespace EMAN;
 
-SimpleCtf::SimpleCtf()
+EMAN1Ctf::EMAN1Ctf()
 {
 	defocus = 0;
 	bfactor = 0;
@@ -56,16 +56,17 @@ SimpleCtf::SimpleCtf()
 }
 
 
-SimpleCtf::~SimpleCtf()
+EMAN1Ctf::~EMAN1Ctf()
 {
 }
 
 
-int SimpleCtf::from_string(const string & ctf)
+int EMAN1Ctf::from_string(const string & ctf)
 {
 	Assert(ctf != "");
-	int i = sscanf(ctf.c_str(), "%f %f %f %f %f %f %f %f %f %f %f",
-				   &defocus, &bfactor, &amplitude, &ampcont, &noise1,
+	char type;
+	int i = sscanf(ctf.c_str(), "%c%f %f %f %f %f %f %f %f %f %f %f",
+				   &type,&defocus, &bfactor, &amplitude, &ampcont, &noise1,
 				   &noise2, &noise3, &noise4, &voltage, &cs, &apix);
 	if (i != 11) {
 		return 1;
@@ -73,7 +74,7 @@ int SimpleCtf::from_string(const string & ctf)
 	return 0;
 }
 
-void SimpleCtf::from_dict(const Dict & dict)
+void EMAN1Ctf::from_dict(const Dict & dict)
 {
 	defocus = dict["defocus"];
 	bfactor = dict["bfactor"];
@@ -88,7 +89,7 @@ void SimpleCtf::from_dict(const Dict & dict)
 	apix = dict["apix"];
 }
 
-Dict SimpleCtf::to_dict() const
+Dict EMAN1Ctf::to_dict() const
 {
 	Dict dict;
 	dict["defocus"] = defocus;
@@ -106,7 +107,7 @@ Dict SimpleCtf::to_dict() const
 	return dict;
 }
 
-void SimpleCtf::from_vector(const vector<float>& vctf)
+void EMAN1Ctf::from_vector(const vector<float>& vctf)
 {
 	defocus = vctf[0];
 	bfactor = vctf[1];
@@ -121,7 +122,7 @@ void SimpleCtf::from_vector(const vector<float>& vctf)
 	apix = vctf[10];
 }
 
-vector<float> SimpleCtf::to_vector() const
+vector<float> EMAN1Ctf::to_vector() const
 {
 	vector<float> vctf;
 	
@@ -141,20 +142,20 @@ vector<float> SimpleCtf::to_vector() const
 }
 		
 
-string SimpleCtf::to_string() const
+string EMAN1Ctf::to_string() const
 {
 	char ctf[1024];
-	sprintf(ctf, "%1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g",
+	sprintf(ctf, "O%1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g",
 			defocus, bfactor, amplitude, ampcont, noise1, noise2, noise3, noise4, voltage, cs,
 			apix);
 
 	return string(ctf);
 }
 
-void SimpleCtf::copy_from(const Ctf * new_ctf)
+void EMAN1Ctf::copy_from(const Ctf * new_ctf)
 {
 	if (new_ctf) {
-		const SimpleCtf *c = static_cast<const SimpleCtf *>(new_ctf);
+		const EMAN1Ctf *c = static_cast<const EMAN1Ctf *>(new_ctf);
 		defocus = c->defocus;
 		bfactor = c->bfactor;
 		amplitude = c->amplitude;
@@ -170,7 +171,7 @@ void SimpleCtf::copy_from(const Ctf * new_ctf)
 }
 
 
-vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
+vector < float >EMAN1Ctf::compute_1d(int size, CtfType type, XYData * sf)
 {
 	Assert(size > 0);
 	
@@ -272,7 +273,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 }
 
 
-void SimpleCtf::compute_2d_real(EMData *, CtfType, XYData *)
+void EMAN1Ctf::compute_2d_real(EMData *, CtfType, XYData *)
 {
 
 
@@ -280,7 +281,7 @@ void SimpleCtf::compute_2d_real(EMData *, CtfType, XYData *)
 
 
 
-void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
+void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 {
 	if (!image) {
 		LOGERR("image is null. cannot computer 2D complex CTF");
@@ -443,10 +444,10 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 
 
-bool SimpleCtf::equal(const Ctf * ctf1) const
+bool EMAN1Ctf::equal(const Ctf * ctf1) const
 {
 	if (ctf1) {
-		const SimpleCtf *c = static_cast<const SimpleCtf *>(ctf1);
+		const EMAN1Ctf *c = static_cast<const EMAN1Ctf *>(ctf1);
 		if (defocus == c->defocus &&
 			bfactor == c->bfactor &&
 			amplitude == c->amplitude &&
@@ -455,6 +456,397 @@ bool SimpleCtf::equal(const Ctf * ctf1) const
 			noise2 == c->noise2 &&
 			noise3 == c->noise3 &&
 			noise4 == c->noise4 && voltage == c->voltage && cs == c->cs && apix == c->apix) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/*************************************
+EMAN2Ctf
+*************************************/
+
+EMAN2Ctf::EMAN2Ctf()
+{
+	defocus = 0;
+	bfactor = 0;
+	ampcont = 0;
+	voltage = 0;
+	cs = 0;
+	apix = 0;
+}
+
+
+EMAN2Ctf::~EMAN2Ctf()
+{
+}
+
+
+int EMAN2Ctf::from_string(const string & ctf)
+{
+	Assert(ctf != "");
+	char type;
+	int i = sscanf(ctf.c_str(), "%c%f %f %f %f %f %f",
+				   &type,&defocus, &bfactor,&ampcont,&voltage, &cs, &apix);
+	if (type!='E') throw InvalidValueException(type,"Trying to initialize Ctf object with bad string");
+	if (i != 11) {
+		return 1;
+	}
+	return 0;
+}
+
+string EMAN2Ctf::to_string() const
+{
+	char ctf[1024];
+	sprintf(ctf, "E%1.3g %1.3g %1.3g %1.3g %1.3g %1.3g",
+			defocus, bfactor, ampcont, voltage, cs, apix);
+
+	return string(ctf);
+}
+
+void EMAN2Ctf::from_dict(const Dict & dict)
+{
+	defocus = dict["defocus"];
+	bfactor = dict["bfactor"];
+	ampcont = dict["ampcont"];
+	voltage = dict["voltage"];
+	cs = dict["cs"];
+	apix = dict["apix"];
+}
+
+Dict EMAN2Ctf::to_dict() const
+{
+	Dict dict;
+	dict["defocus"] = defocus;
+	dict["bfactor"] = bfactor;
+	dict["ampcont"] = ampcont;
+	dict["voltage"] = voltage;
+	dict["cs"] = cs;
+	dict["apix"] = apix;
+
+	return dict;
+}
+
+void EMAN2Ctf::from_vector(const vector<float>& vctf)
+{
+	defocus = vctf[0];
+	bfactor = vctf[1];
+	ampcont = vctf[2];
+	voltage = vctf[3];
+	cs = vctf[4];
+	apix = vctf[5];
+}
+
+vector<float> EMAN2Ctf::to_vector() const
+{
+	vector<float> vctf;
+	
+	vctf.push_back(defocus);
+	vctf.push_back(bfactor);
+	vctf.push_back(ampcont);
+	vctf.push_back(voltage);
+	vctf.push_back(cs);
+	vctf.push_back(apix);
+	
+	return vctf;
+}
+		
+
+
+void EMAN2Ctf::copy_from(const Ctf * new_ctf)
+{
+	if (new_ctf) {
+		const EMAN1Ctf *c = static_cast<const EMAN1Ctf *>(new_ctf);
+		defocus = c->defocus;
+		bfactor = c->bfactor;
+		ampcont = c->ampcont;
+		voltage = c->voltage;
+		cs = c->cs;
+		apix = c->apix;
+	}
+}
+
+
+vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
+{
+	Assert(size > 0);
+	
+	float tmp_f1 = CTFOS * sqrt((float) 2) * size / 2;
+	int np = (int) ceil(tmp_f1) + 2;
+	vector < float >r;
+
+	r.resize(np);
+
+	float ds = 1 / (apix * size * CTFOS);
+	float s = 0;
+	float g1 = calc_g1();
+	float g2 = calc_g2();
+	float amp1 = calc_amp1();
+
+	switch (type) {
+	case CTF_AMP:
+		for (int i = 0; i < np; i++) {
+			float gamma = calc_gamma(g1, g2, s);
+			r[i] = calc_ctf1(amp1, gamma, s);
+			s += ds;
+		}
+		break;
+
+	case CTF_SIGN:
+		for (int i = 0; i < np; i++) {
+			float gamma = calc_gamma(g1, g2, s);
+			r[i] = calc_ctf1(amp1, gamma, s)>0?1.0:-1.0;
+			s += ds;
+		}
+		break;
+
+	case CTF_BACKGROUND:
+		for (int i = 0; i < np; i++) {
+			r[i] = calc_noise(s);
+			s += ds;
+		}
+		break;
+
+	case CTF_SNR:
+// 		if (!sf) {
+// 			LOGERR("CTF computation error, no SF found\n");
+// 			return r;
+// 		}
+
+		for (int i = 0; i < np; i++) {
+			float gamma = calc_gamma(g1, g2, s);
+			r[i] = calc_snr(amp1, gamma, s);
+			if (s && sf) {
+				r[i] *= pow(10.0f, sf->get_yatx(s));
+			}
+			s += ds;
+		}
+
+		break;
+
+	case CTF_WIENER_FILTER:
+		if (!sf) {
+			LOGERR("CTF computation error, no SF found\n");
+			return r;
+		}
+
+		for (int i = 0; i < np; i++) {
+			float gamma = calc_gamma(g1, g2, s);
+			r[i] = calc_snr(amp1, gamma, s);
+			if (s && sf) {
+				r[i] *= pow(10.0f, sf->get_yatx(s));
+			}
+
+			r[i] = 1.0f / (1.0f + 1.0f / r[i]);
+			s += ds;
+		}
+		break;
+
+	case CTF_TOTAL:
+		if (!sf) {
+			LOGERR("CTF computation error, no SF found\n");
+			return r;
+		}
+
+		for (int i = 0; i < np; i++) {
+			float gamma = calc_gamma(g1, g2, s);
+			if (sf) {
+				r[i] = calc_ctf1(amp1, gamma, s);
+				r[i] = r[i] * r[i] * pow(10.0f, sf->get_yatx(s)) + calc_noise(s);
+			}
+			else {
+				r[i] = calc_ctf1(amp1, gamma, s);
+				r[i] = r[i] * r[i] + calc_noise(s);
+			}
+			s += ds;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return r;
+}
+
+
+void EMAN2Ctf::compute_2d_real(EMData *, CtfType, XYData *)
+{
+
+
+}
+
+
+
+void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
+{
+	if (!image) {
+		LOGERR("image is null. cannot computer 2D complex CTF");
+		return;
+	}
+
+	if (image->is_complex() == false) {
+		LOGERR("compute_2d_complex can only work on complex images");
+		return;
+	}
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+
+	if (nx != ny + 2) {
+		LOGERR("compute_2d_complex only works on (nx, nx-2) images");
+		return;
+	}
+
+	float ds = 1.0f / (apix * ny);
+	image->to_one();
+
+	float *d = image->get_data();
+	float g1 = calc_g1();
+	float g2 = calc_g2();
+
+	if (type == CTF_BACKGROUND) {
+		for (int y = 0; y < ny; y++) {
+			int ynx = y * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+#ifdef	_WIN32
+				float s = (float) _hypot(x, y - ny / 2.0f) * ds;
+#else
+				float s = (float) hypot(x, y - ny / 2.0f) * ds;
+#endif			
+				d[x * 2 + ynx] = calc_noise(s);
+				d[x * 2 + ynx + 1] = 0;			// The phase is somewhat arbitrary
+			}
+		}
+	}
+	else if (type == CTF_AMP) {
+		for (int y = 0; y < ny; y++) {
+			int ynx = y * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+#ifdef	_WIN32
+				float s = (float)_hypot((float) x, (float) y - ny / 2) * ds;
+#else
+				float s = (float)hypot((float) x, (float) y - ny / 2) * ds;
+#endif	//_WIN32	
+				float gamma = calc_gamma(g1, g2, s);
+				float v = fabs(calc_amplitude(gamma));
+				d[x * 2 + ynx] = v;
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+	}
+	else if (type == CTF_SIGN) {
+		for (int y = 0; y < ny; y++) {
+			int ynx = y * nx;
+			for (int x = 0; x < nx / 2; x++) {
+#ifdef	_WIN32
+				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
+#else
+				float s = (float)hypot(x, y - ny / 2.0f) * ds;
+#endif	
+				float gamma = calc_gamma(g1, g2, s);
+				float v = calc_amplitude(gamma);
+				d[x * 2 + ynx] = v > 0 ? 1.0f : -1.0f;
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+
+	}
+	else if (type == CTF_SNR) {
+		float amp1 = calc_amp1();
+
+		for (int y = 0; y < ny; y++) {
+			int ynx = y * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+
+#ifdef	_WIN32
+				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
+#else
+				float s = (float)hypot(x, y - ny / 2.0f) * ds;
+#endif	
+				float gamma = calc_gamma(g1, g2, s);
+				float f = calc_ctf1(amp1, gamma, s);
+				float noise = calc_noise(s);
+				f = f * f / noise;
+
+				if (s && sf) {
+					f *= pow(10.0f, sf->get_yatx(s));
+				}
+				d[x * 2 + ynx] *= f;
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+	}
+	else if (type == CTF_WIENER_FILTER) {
+		float amp1 = calc_amp1();
+
+		for (int y = 0; y < ny; y++) {
+			int ynx = y * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+
+#ifdef	_WIN32
+				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
+#else
+				float s = (float)hypot(x, y - ny / 2.0f) * ds;
+#endif	
+				float gamma = calc_gamma(g1, g2, s);
+				float f = calc_ctf1(amp1, gamma, s);
+				float noise = calc_noise(s);
+				f = f * f / noise;
+
+				if (s) {
+					f *= pow(10.0f, sf->get_yatx(s));
+				}
+				f = 1.0f / (1.0f + 1.0f / f);
+				d[x * 2 + ynx] *= f;
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+	}
+	else if (type == CTF_TOTAL) {
+		float amp1 = calc_amp1();
+
+		for (int y = 0; y < ny; y++) {
+			int ynx = y * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+
+#ifdef	_WIN32
+				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
+#else
+				float s = (float)hypot(x, y - ny / 2.0f) * ds;
+#endif	
+				float gamma = calc_gamma(g1, g2, s);
+				float f = calc_ctf1(amp1, gamma, s);
+				float noise = calc_noise(s);
+				f = f * f;
+
+				if (sf && s) {
+					f *= pow(10.0f, sf->get_yatx(s));
+				}
+				f+=noise;
+
+				d[x * 2 + ynx] *= f;
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+	}
+
+	image->update();
+}
+
+
+
+bool EMAN2Ctf::equal(const Ctf * ctf1) const
+{
+	if (ctf1) {
+		const EMAN1Ctf *c = static_cast<const EMAN1Ctf *>(ctf1);
+		if (defocus == c->defocus &&
+			bfactor == c->bfactor &&
+			ampcont == c->ampcont && voltage == c->voltage && cs == c->cs && apix == c->apix) {
 			return true;
 		}
 	}

@@ -174,7 +174,7 @@ Various CTF-related operations on images."""
 					df=dfi/20.0
 					ctf.defocus=-df
 					ctf.ampcont=ac/100.0
-					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
+					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
 					st=.04/ds
 					norm=0
 					for fz in range(len(cc)): 
@@ -216,7 +216,7 @@ Various CTF-related operations on images."""
 					df=dfi/100.0+dfbest1[0]
 					ctf.defocus=-df
 					ctf.ampcont=ac/100.0
-					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
+					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
 					st=.04/ds
 					norm=0
 					for fz in range(len(cc)): 
@@ -232,7 +232,7 @@ Various CTF-related operations on images."""
 
 			ctf.defocus=-dfbest[0]
 			ctf.ampcont=acbest/100.0
-			cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP_S)
+			cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
 			out=file("ctf.txt","w")
 			for a,b in enumerate(cc): 
 				if a%ctf.CTFOS==0 :out.write("%1.4f\t%1.5f\n"%(a*ds/ctf.CTFOS,b))
