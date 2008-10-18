@@ -859,7 +859,7 @@ class EMBoxerModule:
 		if self.guimxit != None:
 			self.application.show_specific(self.guimxit)
 			if isinstance(self.guimxit,EMImageRotorModule):
-				self.guimxit.get_parent().resize(*self.guimxit.get_optimal_size())
+				self.guimxit.optimally_resize()
 				QtCore.QObject.connect(self.application.get_qt_emitter(self.guimxit),QtCore.SIGNAL("image_selected"),self.image_selected)
 			else:
 				QtCore.QObject.connect(self.application.get_qt_emitter(self.guimxit),QtCore.SIGNAL("mx_image_selected"),self.image_selected)

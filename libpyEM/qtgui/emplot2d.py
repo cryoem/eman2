@@ -102,19 +102,33 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 class EMPlot2DModule(EMGUIModule):
 	
 	def get_qt_widget(self):
-		if self.parent == None:	
-			self.gl_parent = EMPlot2DWidget(self)
-			self.parent = EMParentWin(self.gl_parent)
-			self.gl_widget = self.gl_parent
-			self.set_gl_parent(self.gl_parent)
-
-		return self.parent
+		if self.qt_context_parent == None:	
+			
+			self.gl_context_parent = EMPlot2DWidget(self)
+			self.qt_context_parent = EMParentWin(self.gl_context_parent)
+			self.gl_widget = self.gl_context_parent
+		
+		return self.qt_context_parent
+	
+	#def get_gl_widget(self,qt_context_parent,gl_context_parent):
+		#from emfloatingwidgets import EM2DGLView, EM2DGLWindow
+		#self.init_size_flag = False
+		#if self.gl_widget == None:
+			
+			#self.gl_context_parent = gl_context_parent
+			#self.qt_context_parent = qt_context_parent
+			
+			#gl_view = EM2DGLView(self,image=None)
+			#self.gl_widget = EM2DGLWindow(self,gl_view)
+			#self.gl_widget.target_translations_allowed(True)
+			
+		#return self.gl_widget
 	
 	def get_gl_widget(self,qt_parent=None):
-		from emfloatingwidgets import EMGLView2D_v2, EM2DGLWindow
+		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
 		self.init_size_flag = False
 		if self.gl_widget == None:
-			gl_view = EMGLView2D_v2(self,image=None)
+			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
 			self.set_gl_parent(qt_parent)
 		return self.gl_widget

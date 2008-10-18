@@ -46,8 +46,14 @@ class EMGUIModule:
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 		
 		self.parent = None # EMParentWin
+		
 		self.gl_parent = None # EMImage3DWidget, EMImage2DWidget, EMImageMXWidget etc
-		self.gl_widget = None # EM3DGLWindow, EM2DGLWindow etc
+		
+		self.gl_widget = None # the thing that nows the dimensions of the object (width,height), could be EMImage3DWidget or EM3DGLVolume etc
+		
+		self.gl_context_parent = None # should be the thing that owns the associated context
+		self.qt_context_parent = None # should the the thing that will emit signals
+		
 		if application != None: application.attach_child(self)
 
 		if ensure_gl_context and application != None:
@@ -55,10 +61,12 @@ class EMGUIModule:
 		
 	def set_app(self,application): self.application = application
 	def get_app(self): return self.application
-	def get_qt_widget(self): raise
 	
-	def set_qt_parent(self,parent): self.qt_parent = parent
-	def get_qt_parent(self): return self.qt_parent
+	def set_gl_context_parent(self,parent): self.gl_context_parent = parent
+	def get_gl_context_parent(self): return self.gl_context_parent
+	
+	def set_qt_context_parent(self,parent): self.qt_context_parent = parent
+	def get_qt_context_parent(self): return self.qt_context_parent
 	
 	def set_parent(self,parent): self.parent = parent
 	def get_parent(self): return self.parent

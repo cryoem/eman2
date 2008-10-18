@@ -36,6 +36,7 @@ from math import *
 import numpy
 from EMAN2 import *
 from valslider import ValSlider
+from emanimationutil import Animator
 
 class EMEventRerouter:
 	def __init__(self,target=None):
@@ -303,15 +304,16 @@ class EMTransformPanel:
 	
 
 
-class EMParentWin(QtGui.QWidget):
+class EMParentWin(QtGui.QWidget,Animator):
 	"""Used to give the opengl widgets a parent, necessary for OSX Leopard"""
-	def __init__(self,child):
+	def __init__(self,child,enable_timer=False):
 		QtGui.QWidget.__init__(self,None)
+		Animator.__init__(self)
 #		EMEventRerouter.__init__(self,child)
 
 		self.child = child
-		self.width_offset = 20
-		self.height_offset = 20
+		self.width_offset = 8
+		self.height_offset = 8
 		self.resize(child.width()+self.width_offset,child.height()+self.height_offset)
 		self.setMaximumSize(8000,8000)
 
@@ -322,9 +324,6 @@ class EMParentWin(QtGui.QWidget):
 		self.setLayout(self.hbl)
 		
 #		self.setWindowTitle(self.tr("Whatever"))
-
-	def get_viewport_offset(self):
-		return (self.width_offset/2,self.height_offset/2)
 
 	def closeEvent(self, e):
 		try:

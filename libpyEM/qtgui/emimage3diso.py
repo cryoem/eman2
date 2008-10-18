@@ -72,7 +72,6 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	def __init__(self,image=None,application=None):
 		self.data = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
-		self.parent = None
 		self.init()
 		self.initialized = True
 		
@@ -117,7 +116,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 			self.tex_name = self.data_copy.gen_gl_texture()
 			
 	def updateGL(self):
-		try: self.parent.updateGL()
+		try: self.gl_widget.updateGL()
 		except: pass
 	
 	def render(self):
@@ -275,6 +274,10 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 		
 		self.load_colors()
 		self.inspector.set_materials(self.colors,self.isocolor)
+		
+		from emimage3d import EMImage3DGeneralWidget
+		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget):
+			self.gl_context_parent.set_camera_defaults(self.data)
 	
 	def load_colors(self):
 		self.colors = get_default_gl_colors()

@@ -42,12 +42,12 @@ import sys
 from math import tan,pi
 import time
 
-from emfloatingwidgets import EMGLRotorWidget,EM3DGLWindow,EMGLViewQtWidget
+from emfloatingwidgets import EMGLRotorWidget,EM3DGLWindowOverride,EMGLViewQtWidget
 from emimageutil import  EMEventRerouter
-from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule,EMOpenGLFlagsAndTools
+from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule,EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
-class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
 	in 'matrix' form on the display. The middle mouse button will bring up a
 	control-panel. The QT event loop must be running for this object to function
@@ -63,7 +63,7 @@ class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self)
-		
+		self.setMouseTracking(True)
 		self.target = em_rotor_module
 		
 		self.setFocusPolicy(Qt.StrongFocus)
@@ -75,23 +75,13 @@ class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 		self.animatables = []
 		
-	
-		if enable_timer:
-			self.__init_timer()
-		else: self.timer_enabled = False
 		
 		self.light_0_pos = [0.1,.1,1.,0.]
 		
 		self.polygon_smooth = True	
-
-	def __init_timer(self):
-		self.timer = QtCore.QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-		self.timer.start(20)
-		self.timer_enabled = True
 		
 	def get_optimal_size(self):
-		lr = self.target.get_suggested_lr_bt_nf()
+		lr = self.target.get_lr_bt_nf()
 		width = lr[1] - lr[0]
 		height = lr[3] - lr[2]
 		return [width+80,height+20]
@@ -162,7 +152,7 @@ class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		GLU.gluPerspective(self.fov,self.aspect,self.z_near,self.z_far)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
-		
+		self.set_projection_view_update()
 		self.target.projection_or_viewport_changed()
 	def set_near_far(self,near,far):
 		self.z_near = near
@@ -188,10 +178,28 @@ class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 
 
 class EMRotorModule(EMGUIModule):
+	
+	def get_gl_widget(self,qt_context_parent,gl_context_parent):
+		
+		if self.gl_widget == None:
+			
+			self.gl_context_parent = gl_context_parent
+			self.qt_context_parent = qt_context_parent
+			self.gl_widget = EM3DGLWindowOverride(self,self.rotor)
+		return self.gl_widget
+		
+	
+
 	def get_qt_widget(self):
-		if self.parent == None:
-			self.parent = EMRotorWidget(self)
-		return EMGUIModule.darwin_check(self)
+		if self.qt_context_parent == None:	
+			from emimageutil import EMParentWin
+			self.gl_context_parent = EMRotorWidget(self)
+			self.qt_context_parent = EMParentWin(self.gl_context_parent)
+			self.gl_widget = self.gl_context_parent
+		
+			self.qt_context_parent.setAcceptDrops(True)
+
+		return self.qt_context_parent
 	
 	def __init__(self, data=None,application=None):
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
@@ -203,7 +211,7 @@ class EMRotorModule(EMGUIModule):
 		self.rotor = EMGLRotorWidget(self,0,-70,-15,EMGLRotorWidget.TOP_ROTARY,100)
 		self.rotor.set_angle_range(40.0)
 		self.rotor.set_mouse_mode("mxrotor")
-		self.widget = EM3DGLWindow(self,self.rotor)
+		self.widget = EM3DGLWindowOverride(self,self.rotor)
 		self.widget.set_draw_frame(False)
 		
 		self.z_near = 0
@@ -211,12 +219,15 @@ class EMRotorModule(EMGUIModule):
 		
 		self.inspector = None
 		
+	def __del__(self):
+		for widget in self.rotor.get_widgets():
+			self.application.deregister_qt_emitter(widget.get_drawable().get_drawable())
+			
 	def render(self):
-		lr = self.rotor.get_suggested_lr_bt_nf()
-		z = self.parent.get_depth_for_height(abs(lr[3]-lr[2]))
 		lrt = self.widget.get_lr_bt_nf()
+		z = self.gl_context_parent.get_depth_for_height(abs(lrt[3]-lrt[2]))
 		
-		z_near = z-lrt[4]
+		z_near = z-lrt[4]-1000
 		z_trans = 0
 		z_far = z-lrt[5]
 		if z_near < 0:
@@ -224,20 +235,21 @@ class EMRotorModule(EMGUIModule):
 			z_near = 1
 			z_far -= z_trans
 		if z_far < 0: z_far = 0.1 # hacking alert
-		z_far += abs(lr[3]-lr[2]) # hacking alert
+		z_far += abs(lrt[3]-lrt[2]) # hacking alert
 		if self.z_near != z_near or self.z_far != z_far:
 			self.z_near = z_near
 			self.z_far = z_far
-			self.parent.set_near_far(self.z_near,self.z_far)
+			if isinstance(self.gl_context_parent,EMRotorWidget):
+				self.gl_context_parent.set_near_far(self.z_near,self.z_far)
+			else: print "bug 3"
 
-		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
 		glPushMatrix()
-		glTranslate(-(lr[1]+lr[0])/2.0,-(lr[3]+lr[2])/2.0,-self.parent.get_depth_for_height(abs(lr[3]-lr[2]))+z_trans+abs(lr[3]-lr[2]))
+		glTranslate(0,0,-z)
 		self.widget.draw()
 		glPopMatrix()
 	
 	def updateGL(self):
-		try: self.parent.updateGL()
+		try: self.gl_widget.updateGL()
 		except: pass
 		
 	def mousePressEvent(self, event):
@@ -249,13 +261,14 @@ class EMRotorModule(EMGUIModule):
 	
 	def mouseMoveEvent(self, event):
 		self.widget.mouseMoveEvent(event)
+		self.updateGL()
 		
 	def mouseReleaseEvent(self, event):
 		self.widget.mouseReleaseEvent(event)
-		
+		self.updateGL()
 	def wheelEvent(self, event):
 		self.widget.wheelEvent(event)
-		
+		self.updateGL()
 	def dragEnterEvent(self,event):
 		pass
 
@@ -278,21 +291,25 @@ class EMRotorModule(EMGUIModule):
 			self.add_file_dialog()
 			
 	def add_qt_widget(self,qt_widget):
-		a = EMGLViewQtWidget(self.parent)
-		a.setQtWidget(qt_widget)
-		self.rotor.add_widget(a)
+		gl_widget = EMGLViewQtWidget(self.gl_context_parent)
+		gl_widget.setQtWidget(qt_widget)
+		self.application.register_qt_emitter(gl_widget,self.application.get_qt_emitter(self))
+		self.rotor.add_widget(gl_widget)
 			
 	def width(self):
-		return self.parent.width()
+		return self.gl_widget.width()
 	
 	def height(self):
-		return self.parent.height()
+		return self.gl_widget.height()
 	
 	def register_animatable(self,animatable):
-		self.parent.register_animatable(animatable)
+		self.qt_context_parent.register_animatable(animatable)
 	
 	def projection_or_viewport_changed(self):
 		self.rotor.resize_event(-1,1)
+		
+	def update_rotor_position(self,*args):
+		pass
 	
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()

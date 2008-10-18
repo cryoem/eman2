@@ -205,6 +205,7 @@ class EMImageModule(object):
 					return old
 			module = EMImageMXModule(application=app)
 			module.set_data(data)
+			module.optimally_resize_qt_context()
 			return module
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"

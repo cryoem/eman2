@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# Author: David Woolford 10/2008 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -50,14 +50,15 @@ from pickle import dumps,loads
 from PyQt4.QtCore import QTimer
 import math
 
-from emfloatingwidgets import *
-from emglobjects import Camera, viewport_width, viewport_height,resize_gl
-from e2boxer import *
+from emglobjects import Camera,EMGLProjectionViewMatrices
+from e2boxer import EMBoxerModule
 from embrowse import EMBrowserDialog
 from emselector import EMSelectorDialog
 from emapplication import EMApplication, EMQtWidgetModule
 from emanimationutil import *
 from emimageutil import EMEventRerouter
+from emfloatingwidgets import EMBasicOpenGLObjects, EMGLViewQtWidget
+
 
 class EMWindowNode:
 	def __init__(self,parent):
@@ -165,7 +166,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 	
 	def mousePressEvent(self, event):
 		for child in self.children:
-			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
+			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mousePressEvent(event)
 				self.updateGL()
 				return True
@@ -174,7 +175,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 	
 	def mouseMoveEvent(self, event):
 		for child in self.children:
-			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
+			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				self.current = child
 				if (self.current != self.previous ):
 					if ( self.previous != None ):
@@ -189,7 +190,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		
 	def mouseReleaseEvent(self, event):
 		for child in self.children:
-			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
+			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mouseReleaseEvent(event)
 				self.updateGL()
 				return True
@@ -199,7 +200,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		
 	def mouseDoubleClickEvent(self, event):
 		for child in self.children:
-			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
+			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mouseDoubleClickEvent(event)
 				self.updateGL()
 				return True
@@ -207,7 +208,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		
 	def wheelEvent(self, event):
 		for child in self.children:
-			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
+			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.wheelEvent(event)
 				self.updateGL()
 				return True
@@ -216,7 +217,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 
 	def toolTipEvent(self, event):
 		for child in self.children:
-			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
+			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.toolTipEvent(event)
 				self.updateGL()
 				QtGui.QToolTip.hideText()
@@ -227,7 +228,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 	def keyPressEvent(self,event):
 		for child in self.children:
 			pos = EMDesktop.main_widget.mapFromGlobal(QtGui.QCursor.pos())
-			if ( child.isinwin(pos.x(),viewport_height()-pos.y()) ):
+			if ( child.isinwin(pos.x(),EMDesktop.main_widget.viewport_height()-pos.y()) ):
 				child.keyPressEvent(event)
 				self.updateGL()
 				return True
@@ -489,9 +490,9 @@ class EMDesktopFrame(EMFrame):
 	
 	def resize_gl(self):
 	
-		self.set_geometry(Region(0,0,int(viewport_width()),int(viewport_height())))
+		self.set_geometry(Region(0,0,int(EMDesktop.main_widget.viewport_width()),int(EMDesktop.main_widget.viewport_height())))
 		if len(self.display_frames) != 0:
-			self.display_frames[0].set_geometry(Region(200,0,-100,int(viewport_width()-400),int(viewport_height()),100))
+			self.display_frames[0].set_geometry(Region(200,0,-100,int(EMDesktop.main_widget.viewport_width()-400),int(EMDesktop.main_widget.viewport_height()),100))
 	
 	def attach_gl_child(self,child,hint):
 		for child_,t in self.child_mappings.items():
@@ -658,13 +659,14 @@ def print_node_hierarchy(node):
 			print child,
 			print_node_hierarchy(child)
 
-class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
+class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMatrices):
 	main_widget = None
 	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
 	"""
 	application = None
 	def __init__(self):
 		Animator.__init__(self)
+		EMGLProjectionViewMatrices.__init__(self)
 		EMDesktop.main_widget = self
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
@@ -697,11 +699,6 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.borderwidth=10.0
 		self.cam = Camera()
-		
-		self.timer = QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
-		self.timer.start(10)
-		
 		
 		# resize finally so that the full screen is used
 		self.show()
@@ -879,15 +876,17 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
+		self.set_projection_view_update()
+		
 		if self.frame_dl != 0:
 			glDeleteLists(self.frame_dl,1)
 			self.frame_dl = 0
 		
 		self.current_desktop_frame.set_geometry(Region(0,0,self.width(),self.height()))
-		resize_gl()
 		
 		for obj in self.resize_aware_objects:
 			obj.resize_gl()
+		
 		
 	def get_near_plane_dims(self):
 		height = 2.0*self.zNear * tan(self.fov/2.0*pi/180.0)
@@ -1144,7 +1143,7 @@ class SideWidgetBar(EMGLViewContainer):
 		return width
 		
 	def height(self):
-		return viewport_height()
+		return EMDesktop.main_widget.viewport_height()
 	
 	
 	
@@ -1158,7 +1157,7 @@ class SideWidgetBar(EMGLViewContainer):
 				if j != i: below_height += self.children[j].height()
 			
 			
-			to_height = viewport_height()-seed_height
+			to_height = EMDesktop.main_widget.viewport_height()-seed_height
 			below_scale = to_height/float(below_height)
 			
 			if below_scale > 1.0: below_scale = 1.0
@@ -1178,8 +1177,8 @@ class SideWidgetBar(EMGLViewContainer):
 		for child in self.children:
 			children_height += child.height()
 			
-		if children_height > viewport_height():
-			scale = viewport_height()/float(children_height)
+		if children_height > EMDesktop.main_widget.viewport_height():
+			scale = EMDesktop.main_widget.viewport_height()/float(children_height)
 		else: scale = 1.0
 		
 		for t in self.transformers: 
@@ -1190,7 +1189,7 @@ class SideWidgetBar(EMGLViewContainer):
 	def mouseMoveEvent(self, event):
 		intercept = False
 		for i,child in enumerate(self.children):
-			if ( child.isinwin(event.x(),viewport_height()-event.y()) ):
+			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				#if self.animations[i] == None:
 				intercept = True
 				self.previous_mouse_on = self.mouse_on

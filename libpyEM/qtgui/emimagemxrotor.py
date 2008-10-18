@@ -47,17 +47,18 @@ from emimageutil import  EMEventRerouter
 from emglobjects import *
 from EMAN2db import EMAN2DB
 
-from emfloatingwidgets import EMGLRotorWidget, EMGLView2D, EM3DGLWindowOverride
+from emfloatingwidgets import EMGLRotorWidget, EM2DGLView, EM3DGLWindowOverride, EM2DGLWindow
 from emimagemx import EMImageInspectorMX, EMImageMXModule
 from emimageutil import  EMEventRerouter
-from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
+from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule, EMGLProjectionViewMatrices
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
-class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
+
+class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrices):
 	"""
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self, em_mx_rotor_module,enable_timer=True):
+	def __init__(self, em_mx_rotor_module):
 		
 		assert(isinstance(em_mx_rotor_module,EMImageMXRotorModule))
 		
@@ -70,6 +71,7 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 		EMEventRerouter.__init__(self)
+		EMGLProjectionViewMatrices.__init__(self)
 		EMImageMXRotorWidget.allim[self]=0
 		
 		self.setFocusPolicy(Qt.StrongFocus)
@@ -82,13 +84,7 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.aspect = 1.0
 		self.z_near = 6000
 		self.z_far = 13000
-		
-		self.animatables = []
-		
-		if enable_timer:
-			self.__init_timer()
-		else: self.timer_enabled = False
-		
+
 		self.light_0_pos = [0.1,.1,1.,0.]
 		
 		self.resize(480,480)
@@ -100,35 +96,8 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		lr = self.target.rotor.get_suggested_lr_bt_nf()
 		width = lr[1] - lr[0]
 		height = lr[3] - lr[2]
-		return [width+80,height+20]
-	
-	def __init_timer(self):
-		self.timer = QtCore.QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
-		self.timer.start(20)
-		self.timer_enabled = True
-	
-	def timeout(self):
-		
-		if len(self.animatables) == 0: 
-			#self.light_0_pos[0] +=  sin(Util.get_frand(-0.2,0.2))
-			#self.light_0_pos[1] +=  sin(Util.get_frand(-0.2,0.2))
-			#self.light_0_pos[2] +=  sin(Util.get_frand(-0.2,0.2))
-			#glLightfv(GL_LIGHT0, GL_POSITION, self.light_0_pos)
-			#self.updateGL()
-			return
-		for i,animatable in enumerate(self.animatables):
-			try:
-				if not animatable.animate(time.time()):
-					# this could be dangerous
-					self.animatables.pop(i)
-			
-			except:
-				self.animatables.pop(i)
-		self.updateGL()
-		
-	def register_animatable(self,animatable):
-		self.animatables.append(animatable)
+		return [width+20,height+20]
+
 	
 	def set_image_file_name(self,name):
 		#print "set image file name",name
@@ -189,6 +158,7 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
+		self.set_projection_view_update()
 		self.target.resize_event(width,height)
 	
 	def set_near_far(self,near,far):
@@ -202,7 +172,6 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-	
 		self.target.projection_or_viewport_changed()
 		
 	def get_depth_for_height(self, height):
@@ -246,32 +215,35 @@ class EMImageMXRotorModule(EMGUIModule):
 	
 	def get_desktop_hint(self):
 		return "rotor"
-		
-	def get_gl_widget(self,qt_parent=None):
+	
+	
+	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		from emfloatingwidgets import EM3DGLWindowOverride
 		if self.gl_widget == None:
+			
+			self.gl_context_parent = gl_context_parent
+			self.qt_context_parent = qt_context_parent
+			
 			self.gl_widget = EM3DGLWindowOverride(self,self.rotor)
+			self.widget = self.gl_widget
 			self.gl_widget.resize(640,640)
-			#self.optimize_fit()
-			self.parent = self.gl_widget
-			self.set_gl_parent(qt_parent)
 			self.disable_mx_zoom()
 			self.disable_mx_translate()
-			
 		return self.gl_widget
 		
 	def get_qt_widget(self):
-		if self.parent == None:
+		if self.qt_context_parent == None:	
 			from emimageutil import EMParentWin
-			self.gl_parent = EMImageMXRotorWidget(self)
-			self.parent = EMParentWin(self.gl_parent)
-			self.parent.setAcceptDrops(True)
-			self.set_gl_parent(self.gl_parent)
-		return self.parent
+			self.gl_context_parent = EMImageMXRotorWidget(self)
+			self.qt_context_parent = EMParentWin(self.gl_context_parent)
+			self.gl_widget = self.gl_context_parent
+		
+			self.qt_context_parent.setAcceptDrops(True)
+
+		return self.qt_context_parent
 	
 	def __init__(self, data=None,application=None):
-		self.parent = None
-		self.gl_widget = None
+		self.widget = None
 		self.data=None
 		self.rotor = EMGLRotorWidget(self,0,-70,-15,EMGLRotorWidget.TOP_ROTARY,100)
 		self.rotor.set_angle_range(110.0)
@@ -311,10 +283,14 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 		if data:
 			self.set_data(data)
-			
+
+	def __del__(self):
+		for widget in self.rotor.get_widgets():
+			self.application.deregister_qt_emitter(widget.get_drawable().get_drawable())
+		
 	def __init_gl_widget(self):
-		self.gl_widget = EM3DGLWindowOverride(self,self.rotor)
-		self.gl_widget.set_draw_frame(False)
+		self.widget = EM3DGLWindowOverride(self,self.rotor)
+		self.widget.set_draw_frame(False)
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
 			
@@ -337,7 +313,7 @@ class EMImageMXRotorModule(EMGUIModule):
 	def set_selected(self,n,update_gl=True):
 		widget = self.rotor[0]
 		if widget != None:
-			widget.get_drawable().set_selected(n,update_gl)
+			widget.get_drawable().get_drawable().set_selected(n,update_gl)
 			
 	def get_rows(self):
 		return self.mx_rows
@@ -350,12 +326,12 @@ class EMImageMXRotorModule(EMGUIModule):
 
 	def context(self):
 		# asking for the OpenGL context from the parent
-		return self.gl_parent.context()
+		return self.gl_context_parent.context()
 	
 	def is_visible(self,n):
 		widget = self.rotor[0]
 		if widget != None:
-			img_offset = widget.get_drawable().get_img_num_offset()
+			img_offset = widget.get_drawable().get_drawable().get_img_num_offset()
 			if n >= img_offset and n < (img_offset+self.mx_rows*self.mx_cols):
 				return True
 			else: return False
@@ -364,7 +340,7 @@ class EMImageMXRotorModule(EMGUIModule):
 	def scroll_to(self,n,unused):
 		widget = self.rotor[0]
 		if widget != None:
-			img_offset = widget.get_drawable().get_img_num_offset()
+			img_offset = widget.get_drawable().get_drawable().get_img_num_offset()
 			scroll = (n-img_offset)/(self.mx_rows*self.mx_cols)
 			self.rotor.explicit_animation(-scroll)
 	
@@ -403,13 +379,13 @@ class EMImageMXRotorModule(EMGUIModule):
 		pass
 	
 	def get_density_min(self):
-		return self.rotor[0].get_drawable().get_density_min()
+		return self.rotor[0].get_drawable().get_drawable().get_density_min()
 	
 	def get_density_max(self):
-		return self.rotor[0].get_drawable().get_density_max()
+		return self.rotor[0].get_drawable().get_drawable().get_density_max()
 	
 	def get_hist(self):
-		return self.rotor[0].get_drawable().get_hist()
+		return self.rotor[0].get_drawable().get_drawable().get_hist()
 	
 	def set_density_max(self,val):
 		self.maxden=val
@@ -433,10 +409,10 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.rotor.target_zoom_events_allowed(False)
 		
 	def disable_mx_translate(self):
-		self.gl_widget.target_translations_allowed(False)
+		self.widget.target_translations_allowed(False)
 	
 	def allow_camera_rotations(self,bool=False):
-		self.gl_widget.allow_camera_rotations(bool)
+		self.widget.allow_camera_rotations(bool)
 	
 	def pop_box_image(self,idx):
 		val = self.emdata_list_cache.delete_box(idx)
@@ -451,7 +427,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 	def update_min_max_gamma(self,update_gl=True):
 		for i in range(self.visible_mxs):
-			w = self.rotor[i].get_drawable()
+			w = self.rotor[i].get_drawable().get_drawable()
 			w.set_min_max_gamma(self.minden,self.maxden,self.gamma,False)
 			if  i == 0 and  self.inspector != None:	
 				try:
@@ -489,7 +465,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.__update_rotor_range(start_changed ,end_changed)
 		
 		try:
-			w = self.rotor[0].get_drawable()
+			w = self.rotor[0].get_drawable().get_drawable()
 			self.inspector.set_hist(w.get_hist(),self.minden,self.maxden)
 		except: pass
 	
@@ -517,7 +493,7 @@ class EMImageMXRotorModule(EMGUIModule):
 				for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 			
 
-			w = self.rotor[idx].get_drawable()
+			w = self.rotor[idx].get_drawable().get_drawable()
 			w.set_data(d,False)
 
 			w.set_img_num_offset(image_offset)
@@ -532,8 +508,8 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.rotor.set_mouse_mode(mode)
 
 	def optimize_fit(self,update_gl=True):
-		render_width = self.parent.width()
-		render_height = self.parent.height()
+		render_width = self.gl_widget.width()
+		render_height = self.gl_widget.height()
 		try:
 			self.mx_rows = render_width/self.emdata_list_cache.get_image_width()
 			self.mx_cols = render_height/self.emdata_list_cache.get_image_height()
@@ -556,14 +532,14 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.rotor.set_shapes(shapes,shrink)
 
 	def register_animatable(self,animatable):
-		self.get_gl_parent().register_animatable(animatable)
+		self.qt_context_parent.register_animatable(animatable)
 		
 	def width(self):
-		try: return self.parent.width()
+		try: return self.gl_widget.width()
 		except: return 0
 	
 	def height(self):
-		try: return self.parent.height()
+		try: return self.gl_widget.height()
 		except: return 0
 	
 	def get_image_file_name(self):
@@ -621,8 +597,8 @@ class EMImageMXRotorModule(EMGUIModule):
 	def __refresh_rotor_size(self):
 		if len(self.rotor) == 0: return
 		
-		self.render_width = self.parent.width()
-		self.render_height = self.parent.height()
+		self.render_width = self.gl_widget.width()
+		self.render_height = self.gl_widget.height()
 		width = self.mx_rows*(self.emdata_list_cache.get_image_width()+2)-2
 		height = self.mx_cols*(self.emdata_list_cache.get_image_height()+2)-2
 		scale1 = self.render_height/float(height)
@@ -637,18 +613,19 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 		for idx in range(0,self.visible_mxs):
 			e = self.rotor[idx]
-			w = e.get_drawable()
+			w = e.get_drawable().get_drawable()
 
 			w.set_scale(scale,False,False)
-			e.set_width(self.render_width,False)
-			e.set_height(self.render_height,False)
+			e.set_width(self.render_width)
+			e.set_height(self.render_height)
+			e.set_update_frame(True)
 			w.set_mx_cols(self.mx_rows,False)
 			
 		self.rotor.update()
 
 	def __regenerate_rotor(self):
 		for widget in self.rotor.get_widgets():
-			self.application.deregister_qt_emitter(widget.get_drawable())
+			self.application.deregister_qt_emitter(widget.get_drawable().get_drawable())
 			self.rotor.clear_widgets()
 #		self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
 		num_per_view = self.mx_rows*self.mx_cols
@@ -674,10 +651,16 @@ class EMImageMXRotorModule(EMGUIModule):
 			else:
 				for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 
-			e = EMGLView2D(self,d)
+			e = EM2DGLView(self,d)
 			e.get_drawable().set_app(self.application)
 			self.application.register_qt_emitter(e.get_drawable(),self.application.get_qt_emitter(self))
-			self.rotor.add_widget(e)
+			x = EM2DGLWindow(self,e)
+			self.rotor.add_widget(x)
+			
+			#e = EMGLView2D(self,d)
+			#e.get_drawable().set_app(self.application)
+			#self.application.register_qt_emitter(e.get_drawable(),self.application.get_qt_emitter(self))
+			#self.rotor.add_widget(e)
 			w = e.get_drawable()
 	
 			w.set_use_display_list(True) # saves HEAPS of time, makes interaction much smoother
@@ -690,7 +673,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			w.set_max_idx(self.emdata_list_cache.get_max_idx())
 
 		e = self.rotor[0]
-		w = e.get_drawable()
+		w = e.get_drawable().get_drawable()
 		self.minden = w.get_density_min()
 		self.maxden = w.get_density_max()
 		self.hist = w.get_hist()
@@ -702,21 +685,21 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.__refresh_rotor_size()
 
 	def updateGL(self):
-		try: self.gl_parent.updateGL()
+		try: self.gl_widget.updateGL()
 		except: pass
 
 
 	def render(self):
-		if self.gl_widget == None: self.__init_gl_widget()
+		if self.widget == None: self.__init_gl_widget()
 		
-		if not self.parent.isVisible(): return
+		if not self.get_qt_context_parent().isVisible(): return
 		if self.emdata_list_cache == None: return
 		
-		lrt = self.gl_widget.get_lr_bt_nf()
+		lrt = self.widget.get_lr_bt_nf()
 		
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
-		z = self.gl_parent.get_depth_for_height(abs(lrt[3]-lrt[2]))
+		z = self.gl_context_parent.get_depth_for_height(abs(lrt[3]-lrt[2]))
 		
 		z_near = z-lrt[4]-1000
 		z_trans = 0
@@ -730,13 +713,13 @@ class EMImageMXRotorModule(EMGUIModule):
 		if self.z_near != z_near or self.z_far != z_far:
 			self.z_near = z_near
 			self.z_far = z_far
-			self.gl_parent.set_near_far(self.z_near,self.z_far)
+			if isinstance(self.gl_context_parent,EMImageMXRotorWidget):
+				self.gl_context_parent.set_near_far(self.z_near,self.z_far)
+			else: print "bug 2"
 
 		GL.glPushMatrix()
-		#print -self.parent.get_depth_for_height(abs(lr[3]-lr[2])),self.z_near,self.z_far,abs(lr[3]-lr[2])
-		#glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-z)
 		glTranslate(0,0,-z)
-		self.gl_widget.draw()
+		self.widget.draw()
 		GL.glPopMatrix()
 	
 		self.draw_hud()
@@ -757,27 +740,27 @@ class EMImageMXRotorModule(EMGUIModule):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			self.show_inspector(True)
 		else:
-			self.gl_widget.mousePressEvent(event)
+			self.widget.mousePressEvent(event)
 			
 		self.updateGL()
 		
 	def mouseMoveEvent(self, event):
-		self.gl_widget.mouseMoveEvent(event)
+		self.widget.mouseMoveEvent(event)
 		self.updateGL()
 		
 	def mouseReleaseEvent(self, event):
-		self.gl_widget.mouseReleaseEvent(event)
+		self.widget.mouseReleaseEvent(event)
 		self.updateGL()
 		
 	def wheelEvent(self, event):
-		self.gl_widget.wheelEvent(event)
+		self.widget.wheelEvent(event)
 		self.updateGL()
 		
 	def leaveEvent(self):
 		pass
 	
 	def keyPressEvent(self,event):
-		self.gl_widget.keyPressEvent(event)
+		self.widget.keyPressEvent(event)
 		self.updateGL()
 		
 	def resize_event(self, width, height):
@@ -794,13 +777,13 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.emdata_list_cache.save_data()
 	
 	def get_frame_buffer(self):
-		return self.gl_parent.get_frame_buffer()
+		return self.gl_widget.get_frame_buffer()
 	
 	
 	
 	def draw_hud(self):
-		width = viewport_width()
-		height = viewport_height()
+		width = self.gl_widget.viewport_width()
+		height =self.gl_widget.viewport_height()
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()

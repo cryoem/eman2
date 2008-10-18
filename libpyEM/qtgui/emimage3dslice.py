@@ -61,7 +61,6 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 	def __init__(self,image=None, application=None):
 		self.data = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
-		self.parent = None
 		
 		self.init()
 		self.initialized = True
@@ -107,7 +106,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support
 	
 	def updateGL(self):
-		try: self.parent.updateGL()
+		try: self.gl_widget.updateGL()
 		except: pass
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
@@ -168,6 +167,10 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		self.inspector.set_sliceRange(0,data.get_zsize()-1)
 		self.inspector.set_slice(self.zslice)
 		self.generate_current_display_list()
+		
+		from emimage3d import EMImage3DGeneralWidget
+		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget):
+			self.gl_context_parent.set_camera_defaults(self.data)
 		
 	def get_eman_transform(self,p):
 		
@@ -364,7 +367,7 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		#glStencilFunc(GL_EQUAL,self.rank,self.rank)
 		#glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP)
 		#glPushMatrix()
-		#glLoadIdentity()
+		##glLoadIdentity()
 		#[width,height] = self.parent.get_near_plane_dims()
 		#z = self.parent.get_start_z()
 		#glTranslate(-width/2.0,-height/2.0,-z-0.01)

@@ -52,7 +52,7 @@ from pickle import dumps,loads
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
 from emapplication import EMStandAloneApplication, EMGUIModule
 
-from emanimationutil import SingleValueIncrementAnimation,Animator, LineAnimation
+from emanimationutil import SingleValueIncrementAnimation, LineAnimation
 
 try: from PyQt4 import QtWebKit
 except: pass
@@ -64,10 +64,9 @@ from emglobjects import EMOpenGLFlagsAndTools
 
 GLUT.glutInit(sys.argv)
 
-class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
+class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	allim=WeakKeyDictionary()
-	def __init__(self, em_image_2d_module,enable_timer=True):
-		Animator.__init__(self)
+	def __init__(self, em_image_2d_module):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		#fmt.setSampleBuffers(True)
@@ -77,22 +76,9 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,Animator):
 		self.initimageflag = True
 		
 		self.setFocusPolicy(Qt.StrongFocus)
-		
-		self.time_enabled = False
-		if enable_timer:
-			self.enable_timer()
-		
+
 		self.resize(480,480)
-		
-	def enable_timer(self):
-		if self.time_enabled == False:
-			self.timer = QtCore.QTimer()
-			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
-			self.timeinterval = 50
-			self.timer.start(50)
-			self.time_enabled = True
-		else: print "timer already enabled in emimage2d"
-		
+
 	def set_parent(self,parent):
 		self.parent = parent
 
@@ -359,26 +345,33 @@ class EMImage2DModule(EMGUIModule):
 		qt_widget.emit(*args,**kargs)
 	
 	def get_qt_widget(self):
-		if self.parent == None:	
-			self.gl_parent = EMImage2DWidget(self,enable_timer=True)
-			self.parent = EMParentWin(self.gl_parent)
-			self.gl_widget = self.gl_parent
-			self.set_gl_parent(self.gl_parent)
+		if self.qt_context_parent == None:	
+			
+			self.gl_context_parent = EMImage2DWidget(self)
+			self.qt_context_parent = EMParentWin(self.gl_context_parent)
+			self.gl_widget = self.gl_context_parent
 			f = self.file_name.split('/')
 			f = f[len(f)-1]
-			self.parent.setWindowTitle(f)
+			self.qt_context_parent.setWindowTitle(f)
 			if isinstance(self.data,EMData):
 				self.load_default_scale_origin()
-		return self.parent
+				
+			self.qt_context_parent.setAcceptDrops(True)
+		
+		return self.qt_context_parent
 	
-	def get_gl_widget(self,qt_parent=None):
-		from emfloatingwidgets import EMGLView2D_v2, EM2DGLWindow
+	def get_gl_widget(self,qt_context_parent,gl_context_parent):
+		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
 		self.init_size_flag = False
 		if self.gl_widget == None:
-			gl_view = EMGLView2D_v2(self,image=None)
+			
+			self.gl_context_parent = gl_context_parent
+			self.qt_context_parent = qt_context_parent
+			
+			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
-			self.set_gl_parent(qt_parent)
 			self.gl_widget.target_translations_allowed(True)
+			
 		return self.gl_widget
 		
 	def get_desktop_hint(self):
@@ -469,9 +462,7 @@ class EMImage2DModule(EMGUIModule):
 		self.hist = []
 		
 		self.wheel_navigate = False # useful on Mac laptops
-		
-		try: self.parent.setAcceptDrops(True)
-		except:	pass
+	
 		
 		if image : self.set_data(image)
 		else:self.__load_display_settings_from_db()
@@ -740,13 +731,14 @@ class EMImage2DModule(EMGUIModule):
 			self.scale = data["scale"] 
 			self.origin = data["origin"]
 		except: pass
-		try:
-			self.parent_geometry = data["parent_geometry"]
-			if self.parent != None:
-				try:
-					self.parent.restoreGeometry(self.parent_geometry)
-				except: pass
-		except:pass
+		if isinstance(self.gl_context_parent,EMImage2DWidget):
+			try:
+				self.parent_geometry = data["parent_geometry"]
+				if self.qt_context_parent != None:
+					try:
+						self.qt_context_parent.restoreGeometry(self.parent_geometry)
+					except: pass
+			except:pass
 		
 		if inspector_update: self.inspector_update()
 		if display_update: self.force_display_update()
@@ -776,9 +768,10 @@ class EMImage2DModule(EMGUIModule):
 		data["origin"] = self.origin
 		data["scale"] = self.scale
 		
-		try:
-			data["parent_geometry"] = self.parent.saveGeometry()
-		except: pass
+		if isinstance(self.gl_context_parent,EMImage2DWidget):
+			try:
+				data["parent_geometry"] = self.qt_context_parent.saveGeometry()
+			except: pass
 		
 		db = DB.image_2d_display_settings
 		db[self.file_name] = data
@@ -799,7 +792,7 @@ class EMImage2DModule(EMGUIModule):
 		
 	def register_scroll_motion(self,x,y):
 		animation = LineAnimation(self,self.origin,(x*self.scale-self.gl_widget.width()/2,y*self.scale-self.gl_widget.height()/2))
-		self.get_gl_parent().register_animatable(animation)
+		self.get_qt_context_parent().register_animatable(animation)
 		return True
 
 	def set_scale(self,newscale):
@@ -1024,7 +1017,6 @@ class EMImage2DModule(EMGUIModule):
 					if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
 			
 			else:
-				offset = self.parent.get_viewport_offset()
 				GL.glRasterPos(0,self.gl_widget.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
 				GL.glDrawPixels(self.gl_widget.width(),self.gl_widget.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
@@ -1249,7 +1241,7 @@ class EMImage2DModule(EMGUIModule):
 	def add_shapes(self,d,register_animation=False):
 		if register_animation:
 			animation = SingleValueIncrementAnimation(self,0,1)
-			self.get_gl_parent().register_animatable(animation)
+			self.get_qt_context_parent().register_animatable(animation)
 		self.shapes.update(d)
 		self.shapechange=1
 		#self.updateGL()
@@ -1316,7 +1308,7 @@ class EMImage2DModule(EMGUIModule):
 		if self.rmousedrag:
 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
-			try: self.parent.update()
+			try: self.gl_widget.updateGL()
 			except: pass
 		else:
 			self.mouse_event_handler.mouse_move(event)
@@ -1360,7 +1352,7 @@ class EMImage2DModule(EMGUIModule):
 #				print "shifting horizontal",event.delta(),shift_per_delta
 #	   	   	   	print "there are this many visible horizontal pixels",visible_horizontal_pixels, "deltas", delta, "shift per delta",shift_per_delta
 				self.origin=(self.origin[0]+delta*shift_per_delta,self.origin[1])
-			try: self.parent.update()
+			try: self.gl_widget.updateGL()
 			except: pass
 #			print "exit",self.origin
 			

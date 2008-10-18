@@ -111,7 +111,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		self.axes.append( v )
 	
 	def updateGL(self):
-		try: self.parent.updateGL()
+		try: self.gl_widget.updateGL()
 		except: pass
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
@@ -150,7 +150,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 	
 	def update_data(self,data):
 		self.set_data(data)
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def set_data(self,data):
 		"""Pass in a 3D EMData object"""
@@ -170,6 +170,10 @@ class EMVolumeModule(EMImage3DGUIModule):
 			self.inspector=EMVolumeInspector(self)
 		
 		self.update_data_and_texture()
+		
+		from emimage3d import EMImage3DGeneralWidget
+		if isinstance(self.gl_context_parent,EMImage3DGeneralWidget):
+			self.gl_context_parent.set_camera_defaults(self.data)
 		
 	def test_accum(self):
 		# this code will do volume rendering using the accumulation buffer
@@ -531,12 +535,12 @@ class EMVolumeModule(EMImage3DGUIModule):
 	def set_contrast(self,val):
 		self.contrast = val
 		self.update_data_and_texture()
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def set_brightness(self,val):
 		self.brightness = val
 		self.update_data_and_texture()
-		self.parent.updateGL()
+		self.updateGL()
 		
 	def set_texture_sample(self,val):
 		if ( val < 0 ) :
@@ -545,7 +549,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 		
 		self.texsample = val
 		self.force_texture_update = True
-		self.parent.updateGL()
+		self.updateGL()
 
 	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:

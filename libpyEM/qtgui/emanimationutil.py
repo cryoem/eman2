@@ -32,6 +32,10 @@
 
 from time import time
 
+import PyQt4
+from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import Qt
+
 class Animator:
 	'''
 	Inheriting class should probably having something like this:
@@ -44,6 +48,9 @@ class Animator:
 		self.time = -1
 		self.begin_time = time()
 		
+		self.timer_enabled = False
+		self.timer_interval = 20
+		
 	def time_out(self):
 		self.time  = time()
 		
@@ -54,17 +61,32 @@ class Animator:
 				
 			rm.reverse()
 			for a in rm:
-				self.animatables.pop(a)
-			
+				self.animatables.pop(a)			
 		
-			self.updateGL()
+			self.update()
+		else:
+			if not QtCore.QObject.disconnect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out):
+				print "failed to disconnect timer"
+			
+			self.timer_enabled = False
 		
 	def get_time(self):
 		return self.time
 	
 	def register_animatable(self,animatable):
+		if not self.timer_enabled:
+			self.__enable_timer()
 		self.animatables.append(animatable)
 	
+	
+	def __enable_timer(self):
+		if self.timer_enabled == False:
+			self.timer = QtCore.QTimer()
+			QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
+			
+			self.timer.start(self.timer_interval)
+			self.timer_enabled = True
+		else: print "timer already enabled in Animator"
 
 class Animatable:
 	cache_dts = None

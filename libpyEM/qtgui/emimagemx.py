@@ -119,7 +119,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		try: self.target.resizeEvent(width,height)
+		try: self.target.resize_event(width,height)
 		except: pass
 	def set_mouse_mode(self,mode):
 		self.mmode = mode
@@ -310,32 +310,34 @@ class EMImageMXModule(EMGUIModule):
 		except:
 			self.font_render_mode = EMGUIModule.GLUT
 	
-	allim=WeakKeyDictionary()
 	def get_qt_widget(self):
-		if self.parent == None:	
-			self.gl_parent = EMImageMXWidget(self)
-			self.parent = EMParentWin(self.gl_parent)
-			self.set_gl_parent(self.gl_parent) # THIS NEEDS TO CHANGE
-			self.gl_widget = self.gl_parent
-			self.parent.resize(*self.get_parent_suggested_size())
+		if self.qt_context_parent == None:	
 			
-			try: self.parent.setAcceptDrops(True)
-			except:	pass
-			
-		return self.parent
-	
-	def get_gl_widget(self,qt_parent=None):
-		from emfloatingwidgets import EMGLView2D_v2, EM2DGLWindow
-		if self.gl_widget == None:
-			gl_view = EMGLView2D_v2(self,image=None)
-			self.gl_widget = EM2DGLWindow(self,gl_view)
-			self.set_gl_parent(qt_parent)
-			#self.gl_widget.target_translations_allowed(True)
-		return self.gl_widget
+			self.gl_context_parent = EMImageMXWidget(self)
+			self.qt_context_parent = EMParentWin(self.gl_context_parent)
+			self.gl_widget = self.gl_context_parent
+			self.optimally_resize_qt_context()
+				
+			self.qt_context_parent.setAcceptDrops(True)
 		
+		return self.qt_context_parent
+	
+	def get_gl_widget(self,qt_context_parent,gl_context_parent):
+		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
+		self.init_size_flag = False
+		if self.gl_widget == None:
+			
+			self.gl_context_parent = gl_context_parent
+			self.qt_context_parent = qt_context_parent
+			
+			gl_view = EM2DGLView(self,image=None)
+			self.gl_widget = EM2DGLWindow(self,gl_view)
+			self.gl_widget.target_translations_allowed(True)
+			
+		return self.gl_widget
+	
 	def get_desktop_hint(self):
 		return "image"
-	
 	
 	def __init__(self, data=None,application=None):
 		self.init_size_flag = True
@@ -396,13 +398,13 @@ class EMImageMXModule(EMGUIModule):
 
 	
 	def width(self):
-		if self.parent != None:
+		if self.gl_widget != None:
 			return self.gl_widget.width()
 		else:
 			return 0
 		
 	def height(self):
-		if self.parent != None:
+		if self.gl_widget != None:
 			return self.gl_widget.height()
 		else:
 			return 0
@@ -505,11 +507,14 @@ class EMImageMXModule(EMGUIModule):
 	
 	def get_image_file_name(self):
 		''' warning - could return none in some circumstances'''
-		try: return self.gl_parent.get_image_file_name()
+		try: return self.gl_widget.get_image_file_name()
 		except: return None
 	
 	def __del__(self):
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
+	
+	def optimally_resize_qt_context(self):
+		self.qt_context_parent.resize(*self.get_parent_suggested_size())
 	
 	def get_parent_suggested_size(self):
 		if self.data != None and isinstance(self.data[0],EMData): 
@@ -520,28 +525,10 @@ class EMImageMXModule(EMGUIModule):
 				w=self.mx_cols*(self.data[0].get_xsize()+2)
 				hfac = len(self.data)/self.mx_cols+1
 			hfac *= self.data[0].get_ysize()
-			if hfac > 512: hfac = 512
+			if hfac > 528: hfac = 528
 				
-			return (int(w),int(hfac))
-		else: return (480,480)
-	
-	def __parent_resize(self):
-		if self.init_size_flag and self.data != None and isinstance(self.data[0],EMData) and self.get_parent() != None:
-			#
-			self.init_size_flag = False
-			if len(self.data)<self.mx_cols :
-				w=len(self.data)*(self.data[0].get_xsize()+2)
-				hfac = 1
-			else : 
-				w=self.mx_cols*(self.data[0].get_xsize()+2)
-				hfac = len(self.data)/self.mx_cols+1
-			hfac *= self.data[0].get_ysize()
-			if hfac > 512:
-				hfac = 512
-			try:
-				self.get_parent().resize(int(w)+20,int(hfac)+20)
-			except:
-				pass
+			return (int(w)+2,int(hfac))
+		else: return (528,528)
 	
 	def set_data(self,data,update_gl=True):
 		if data == None or not isinstance(data,list) or len(data)==0:
@@ -554,7 +541,6 @@ class EMImageMXModule(EMGUIModule):
 
 		
 		self.data=data
-		self.__parent_resize()
 		
 		self.force_dl_update()
 		self.nimg=len(data)
@@ -593,7 +579,7 @@ class EMImageMXModule(EMGUIModule):
 		#if update_gl: self.updateGL()
 
 	def updateGL(self):
-		try: self.gl_parent.updateGL()
+		try: self.gl_widget.updateGL()
 		except: pass
 		
 	def set_den_range(self,x0,x1,update_gl=True):
@@ -1098,7 +1084,7 @@ class EMImageMXModule(EMGUIModule):
 			return
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
 
-	def resizeEvent(self, width, height):
+	def resize_event(self, width, height):
 		if self.data and len(self.data)>0 :
 			if self.data[0].get_xsize()*self.scale != 0:
 				self.set_mx_cols(int(width/(self.data[0].get_xsize()*self.scale)))
@@ -1108,7 +1094,7 @@ class EMImageMXModule(EMGUIModule):
 		
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.gl_widget.height() or self.data[0].get_xsize()*self.scale>self.gl_widget.width()):
 			self.scale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.gl_widget.width())/self.data[0].get_xsize())
-
+				
 	def is_visible(self,n):
 		try: return self.coords[n][4]
 		except: return False
@@ -1262,7 +1248,7 @@ class EMImageMXModule(EMGUIModule):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
 			self.mousedrag=(event.x(),event.y())
-			try:self.parent.update()
+			try:self.gl_widget.updateGL()
 			except: pass
 		else: self.mouse_event_handler.mouse_move(event)
 		
@@ -1279,7 +1265,7 @@ class EMImageMXModule(EMGUIModule):
 			self.set_scale( self.scale * self.mag )
 		elif event.delta() < 0:
 			self.set_scale(self.scale * self.invmag )
-		self.resizeEvent(self.gl_widget.width(),self.gl_widget.height())
+		self.resize_event(self.gl_widget.width(),self.gl_widget.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
 	
@@ -1292,7 +1278,7 @@ class EMImageMXModule(EMGUIModule):
 			self.mousedrag=None
 			
 	def get_frame_buffer(self):
-		return self.gl_parent.get_frame_buffer()
+		return self.gl_widget.get_frame_buffer()
 
 class EMImageInspectorMX(QtGui.QWidget):
 	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):
