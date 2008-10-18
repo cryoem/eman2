@@ -56,6 +56,7 @@ except: pass
 
 from emglobjects import EMViewportDepthTools,EMViewportDepthTools2, Camera2, EMBasicOpenGLObjects, Camera
 from emimageutil import EMEventRerouter
+from emplot2d import EMPlot2DModule
 
 height_plane = 500
 
@@ -1459,6 +1460,10 @@ class EMGLWindow:
 		
 		self.texture_lock = 0
 	
+	
+		self.border_scale = 1.1
+		self.inv_border_scale = 1.0/self.border_scale
+		self.update_border_flag = True
 	def lock_texture(self):
 		self.texture_lock += 1
 	
@@ -1496,6 +1501,8 @@ class EMGLWindow:
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mousePressEvent(qme)
 
+	def border_scale_event(self,delta): raise
+
 	def wheelEvent(self,event):
 		
 		if self.texture_lock > 0: return
@@ -1503,8 +1510,8 @@ class EMGLWindow:
 		try: e = event.modifiers()
 		except: return
 		if event.modifiers() == Qt.ControlModifier:
-			self.cam.set_plane('xy')
-			self.cam.wheelEvent(event)
+			self.border_scale_event(event.delta())
+			
 		else:
 			if self.allow_target_wheel_events:
 				self.drawable.wheelEvent(event)
@@ -1603,6 +1610,19 @@ class EM3DGLWindow(EMGLWindow):
 	
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
+
+	def border_scale_event(self,delta):
+		if delta > 0:
+			scale = self.border_scale
+		elif delta < 0:
+			scale = self.inv_border_scale
+		else: return
+		
+		self.w *= scale
+		self.h *= scale
+		self.d *= scale
+		
+		self.update_border_flag = True
 
 	def set_width(self,w): self.w = w
 	def set_height(self,h): self.h = h
@@ -1722,7 +1742,8 @@ class EM3DGLWindow(EMGLWindow):
 		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
 		glEnable(GL_DEPTH_TEST) # lighting is on to make the borders look nice
 		if self.draw_frame:
-			self.decoration.draw()
+			self.decoration.draw(self.update_border_flag)
+			self.update_border_flag = False
 			
 		glPopMatrix()
 
@@ -1936,7 +1957,18 @@ class EM2DGLWindow(EMGLWindow):
 		
 		self.draw_vd_frame = False
 		self.update_border_flag = False
+	
+	def border_scale_event(self,delta):
+		if delta > 0:
+			scale = self.border_scale
+		elif delta < 0:
+			scale = self.inv_border_scale
+		else: return
 		
+		self.w *= scale
+		self.h *= scale
+		self.update_border_flag = True
+	
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
 
@@ -2002,7 +2034,7 @@ class EM2DGLView(EMEventRerouter):
 		self.cam = Camera2(self)
 		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
-		if isinstance(parent,EMImageMXModule) or isinstance(parent,EMImage2DModule):
+		if isinstance(parent,EMImageMXModule) or isinstance(parent,EMImage2DModule) or isinstance(parent,EMPlot2DModule):
 			self.drawable = parent
 			self.w = self.parent.width()
 			self.h = self.parent.height()

@@ -346,6 +346,7 @@ class EMImageMXModule(EMGUIModule):
 		self.data=None
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 
+		self.filename = ''
 		self.datasize=(1,1)
 		self.scale=1.0
 		self.minden=0
@@ -536,7 +537,8 @@ class EMImageMXModule(EMGUIModule):
 			return (int(w)+2,int(hfac))
 		else: return (528,528)
 	
-	def set_data(self,data,update_gl=True):
+	def set_data(self,data,filename='',update_gl=True):
+		self.filename = filename
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return

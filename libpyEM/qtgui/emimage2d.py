@@ -594,14 +594,24 @@ class EMImage2DModule(EMGUIModule):
 		return self.data
 	
 	
-	def set_data(self,data,file_name=""):
+	def set_data(self,incoming_data,file_name=""):
 		"""You may pass a single 2D image or a list of images"""
 		if self.data != None and self.file_name != "":
 			self.__write_display_settings_to_db()
 			
 		self.set_file_name(file_name,load_cache_settings=False)
 	
+		data = incoming_data
+		
 		fourier = False
+		
+		if not isinstance(data,list) and data.get_zsize() != 1:
+				data = []
+				for z in range(incoming_data.get_zsize()):
+					image = incoming_data.get_clip(Region(0,0,z,incoming_data.get_xsize(),incoming_data.get_ysize(),1))
+					data.append(image)
+		
+		
 		if isinstance(data,list):
 			self.list_idx = len(data)/2
 			d = data[0]
@@ -620,6 +630,7 @@ class EMImage2DModule(EMGUIModule):
 				
 			self.get_inspector().enable_image_range(1,len(data),self.list_idx+1)
 		else:
+	
 			self.get_inspector().disable_image_range()
 			self.list_data = None
 			self.list_fft_data = None
@@ -1791,18 +1802,9 @@ if __name__ == '__main__':
 	if len(sys.argv)==1 : 
 		window.set_data(test_image(size=(128,128)))
 	else :
-		a=EMData.read_images(sys.argv[1],[0])
-		if len(a) == 1:
-			a = a[0]
-			data = []
-			if a.get_ndim() == 3:
-				for z in range(a.get_zsize()):
-					image = a.get_clip(Region(0,0,z,a.get_xsize(),a.get_ysize(),1))
-					data.append(image)
-				a  = data
-		window.set_data(a)
-		
-		window.set_file_name(sys.argv[1])
+		a=EMData.read_images(sys.argv[1])
+		if len(a) == 1:	a = a[0]
+		window.set_data(a,sys.argv[1])
 		
 	em_app.show()
 	em_app.execute()

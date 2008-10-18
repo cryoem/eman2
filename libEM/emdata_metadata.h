@@ -558,6 +558,12 @@ inline int get_size() const
 	return nx*ny*nz;
 }
 
+inline vector<float> get_data_as_vector() const {
+	int size = get_size();
+	vector<float> v(size);
+	std::copy(rdata,rdata+size,v.begin());
+	return v;
+}
 
 /** Get image dimension.
  * @return image dimension.

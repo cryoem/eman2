@@ -38,40 +38,75 @@ from emapplication import EMStandAloneApplication, EMQtWidgetModule
 from emimage2d import *
 from emselector import EMSelectorDialog
 
+
 from EMAN2 import EMData
 
 class EMBrowserDialog(EMSelectorDialog):
 	def __init__(self,target,application):
 		EMSelectorDialog.__init__(self,target,application)
-
+		self.__init__force_2d_tb()
+		self.__init__force_plot_tb()
+		self.bottom_hbl.addWidget(self.force_2d,0)
+		self.bottom_hbl.addWidget(self.force_plot,0)
+		
+		self.current_force = None
+		self.browse_gl_preview = None
+		
 	def set_preview(self,filename):
-		try:
-			a=EMData.read_images(filename)
-		except:
-			return
-		
-		if len(a) == 1: a = a[0]
-		
-		import emimage
+		from emimage import EMModuleFromFile
+		self.application.setOverrideCursor(Qt.BusyCursor)
+		#if len(self.selections) > 1:
+		f_2d = self.force_2d.isChecked()
+		f_plot = self.force_plot.isChecked()
 		
 		if self.single_preview.isChecked():
-			if self.gl_image_preview != None:
-				self.application.close_specific(self.gl_image_preview)
-				self.gl_image_preview == None
+			if self.browse_gl_preview != None:
+				self.application.close_specific(self.browse_gl_preview)
+				self.browse_gl_preview == None
 		
-			self.gl_image_preview =emimage.EMImageModule(a,None,self.application)
+			self.browse_gl_preview =EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot)
 
-			self.application.show_specific(self.gl_image_preview)
-			self.gl_image_preview.updateGL()
+			self.application.show_specific(self.browse_gl_preview)
+			self.browse_gl_preview.updateGL()
 		else:
-			preview = emimage.EMImageModule(a,None,self.application)
-			preview.set_data(a,filename)
+			preview =EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot)
 			self.application.show_specific(preview)
 			preview.updateGL()
 			
 		self.application.setOverrideCursor(Qt.ArrowCursor)
 	
+	def __init__force_2d_tb(self):
+		self.force_2d = QtGui.QCheckBox("2D only")
+		self.force_2d.setChecked(False)
+		
+		QtCore.QObject.connect(self.force_2d, QtCore.SIGNAL("clicked(bool)"),self.force_2d_clicked)
+		
+	def __init__force_plot_tb(self):
+		self.force_plot = QtGui.QCheckBox("Plot only")
+		self.force_plot.setChecked(False)
+		
+		QtCore.QObject.connect(self.force_plot, QtCore.SIGNAL("clicked(bool)"),self.force_plot_clicked)
 	
+	def force_2d_clicked(self):
+		self.force_clicked(self.force_2d)
+		
+	def force_plot_clicked(self):
+		self.force_clicked(self.force_plot)
+	
+	def force_clicked(self,f):
+		
+		if self.current_force == None:
+			self.current_force = f
+		elif f == self.current_force:
+			self.current_force = None
+			return
+		else:
+			self.current_force.setChecked(False)
+			self.current_force = f
+		
+
+		
+					
 	
 app = None
 def on_done(string_list):

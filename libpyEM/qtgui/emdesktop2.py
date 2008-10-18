@@ -506,7 +506,7 @@ class EMDesktopFrame(EMFrame):
 		if hint == "dialog" or hint == "inspector":
 			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.left_side_bar
-		elif hint == "image":
+		elif hint == "image" or hint == "plot":
 			self.display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.display_frame
 		elif hint == "rotor":
@@ -1011,7 +1011,7 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			self.tree_widget = QtGui.QTreeWidget(self)
 			self.tree_widget_entries = []
 			self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Browse")))
-			self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Thumb")))
+			#self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Thumb")))
 			self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Box")))
 			self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 			self.tree_widget.setHeaderLabel("Choose a task")

@@ -101,6 +101,9 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		
 class EMPlot2DModule(EMGUIModule):
 	
+	def get_desktop_hint(self):
+		return "plot"
+	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
 			
@@ -110,28 +113,20 @@ class EMPlot2DModule(EMGUIModule):
 		
 		return self.qt_context_parent
 	
-	#def get_gl_widget(self,qt_context_parent,gl_context_parent):
-		#from emfloatingwidgets import EM2DGLView, EM2DGLWindow
-		#self.init_size_flag = False
-		#if self.gl_widget == None:
-			
-			#self.gl_context_parent = gl_context_parent
-			#self.qt_context_parent = qt_context_parent
-			
-			#gl_view = EM2DGLView(self,image=None)
-			#self.gl_widget = EM2DGLWindow(self,gl_view)
-			#self.gl_widget.target_translations_allowed(True)
-			
-		#return self.gl_widget
-	
-	def get_gl_widget(self,qt_parent=None):
+	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
 		self.init_size_flag = False
 		if self.gl_widget == None:
+			
+			self.gl_context_parent = gl_context_parent
+			self.qt_context_parent = qt_context_parent
+			
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
-			self.set_gl_parent(qt_parent)
+			self.gl_widget.target_translations_allowed(True)
+			
 		return self.gl_widget
+	
 	
 	def __init__(self,application=None):
 		EMGUIModule.__init__(self,application)
@@ -165,9 +160,6 @@ class EMPlot2DModule(EMGUIModule):
 		
 		self.needupd=1
 		
-		if type(data)==EMData :
-			data=(data.get_data_pickle(),)
-		
 		try:
 			if len(data)>1 : self.axes[key]=(0,1,-1)
 			else : self.axes[key]=(-1,0,-1)
@@ -175,8 +167,13 @@ class EMPlot2DModule(EMGUIModule):
 		
 		self.pparm[key]=(0,1,0,1,0,0,5)
 		
-		if data : self.data[key]=data
-		else : del self.data[key]
+		if not isinstance(data[0],list):
+			x_axis = [i for i in range(len(data))]
+			rdata = [ x_axis,data ]
+			self.data[key]= rdata
+		else:
+			if data : self.data[key]=data
+			else : del self.data[key]
 		
 		
 		if self.inspector: self.inspector.datachange()
@@ -202,27 +199,38 @@ class EMPlot2DModule(EMGUIModule):
 		try: self.gl_widget.updateGL()
 		except: pass
 		
-	def set_data_from_file(self,key,filename):
+	def set_data_from_file(self,filename):
 		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
 		
-		data=None
-		try:
-			# if it's an image file
-			im=EMData(filename)
-			# This could be faster...
-			data=[[im.get_value_at(i,j) for j in range(im.get_ysize())] for j in range(im.get_xsize())]
-		except:
+		file_type = Util.get_filename_ext(filename)
+		em_file_type = EMUtil.get_image_ext_type(file_type)
+		
+		if em_file_type != IMAGE_UNKNOWN:
+			
+			im=EMData.read_images(filename)
+			if len(im) == 1:
+				im = im[0]
+				l = [i for i in range(im.get_size())]
+				k = im.get_data_as_vector()
+				self.set_data(filename,[l,k])
+			else:
+				for idx,image in enumerate(im):
+					l = [i for i in range(image.get_size())]
+					k = image.get_data_as_vector()
+					self.set_data("Image "+str(idx),[l,k])
+				
+		elif file_type == 'fp':
+			fin=file(filename)
+			fph=struct.unpack("120sII",fin.read(128))
+			ny=fph[1]
+			nx=fph[2]
+			data=[]
+			for i in range(nx):
+				data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
+				
+			self.set_data(filename,data)
+		else:
 			try:
-				# Maybe an EMAN1 .fp file
-				fin=file(filename)
-				fph=struct.unpack("120sII",fin.read(128))
-				ny=fph[1]
-				nx=fph[2]
-				data=[]
-				for i in range(nx):
-					data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
-			except:
-				# Probably a text file
 				fin=file(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
@@ -231,11 +239,15 @@ class EMPlot2DModule(EMGUIModule):
 				else : rdata=[[float(j) for j in i.split()] for i in rdata]
 				nx=len(rdata[0])
 				ny=len(rdata)
-				
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
-				
-		if data : self.set_data(filename.split("/")[-1],data)
-	
+					
+				self.set_data(filename,data)
+			except:
+				print "couldn't read",filename
+
+	def render(self):
+		self.draw() # HACK :(
+		
 	def draw(self):
 		if not self.data : return
 		
@@ -405,7 +417,11 @@ class EMPlot2DModule(EMGUIModule):
 			self.shapes={}
 		self.shapechange=1
 		self.updateGL()
-		
+	
+	def keyPressEvent(self,event):
+		# this event is being sent by the deskto
+		pass
+	
 		
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
@@ -466,6 +482,9 @@ class EMPlot2DModule(EMGUIModule):
 
 
 class EMPlot2DInspector(QtGui.QWidget):
+	def get_desktop_hint(self):
+		return "inspector"
+	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -629,55 +648,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		for i,j in enumerate(keys) :
 			self.setlist.addItem(j)
 
-
-#if __name__ == '__main__':
-	#GLUT.glutInit(sys.argv )
-	#app = QtGui.QApplication(sys.argv)
-	#window = EMPlot2D()
-	#if len(sys.argv)==1 : 
-		#l=[i/30.*pi for i in range(30)]
-		#window.set_data("test",[[1,2,3,4],[2,3,4,3],[3,4,5,2]])
-		#window.set_data("test2",[l,[sin(i) for i in l],[cos(i) for i in l]])
-	#else:
-		#try:
-			## if it's an image file
-			#im=EMData(sys.argv[1])
-			## This could be faster...
-			#data=[[im.get_value_at(i,j) for j in range(im.get_ysize())] for j in range(im.get_xsize())]
-		#except:
-			#try:
-				## Maybe a .fp file
-				#fin=file(sys.argv[1])
-				#fph=struct.unpack("120sII",fin.read(128))
-				#ny=fph[1]
-				#nx=fph[2]
-				#data=[]
-				#for i in range(nx):
-					#data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
-			#except:
-				## Probably a text file
-				#fin=file(sys.argv[1])
-				#fin.seek(0)
-				#rdata=fin.readlines()
-				#rdata=[i for i in rdata if i[0]!='#']
-				#if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
-				#else : rdata=[[float(j) for j in i.split()] for i in rdata]
-				#nx=len(rdata[0])
-				#ny=len(rdata)
-				
-				#print nx,ny
-				#data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
-				
-		#window.set_data(sys.argv[1].split("/")[-1],data)
-			
-	#window2=EMParentWin(window)
-	#window2.show()
-		
-	#sys.exit(app.exec_())
-	##app.show()
-	##app.execute()
-
-		
+	
 # This is just for testing, of course
 if __name__ == '__main__':
 	GLUT.glutInit(sys.argv )
@@ -685,43 +656,11 @@ if __name__ == '__main__':
 	window = EMPlot2DModule(app)
 	if len(sys.argv)==1 : 
 		l=[i/30.*pi for i in range(30)]
-		window.set_data("test",[[1,2,3,4],[2,3,4,3],[3,4,5,2]])
-		window.set_data("test2",[l,[sin(i) for i in l],[cos(i) for i in l]])
+		window.set_data("test",[[1,2,3,4],[2,3,4,3]])
+		window.set_data("test2",[l,[sin(2*i) for i in l]])
 	else:
-		try:
-			# if it's an image file
-			im=EMData(sys.argv[1])
-			# This could be faster...
-			data=[[im.get_value_at(i,j) for j in range(im.get_ysize())] for j in range(im.get_xsize())]
-		except:
-			try:
-				# Maybe a .fp file
-				fin=file(sys.argv[1])
-				fph=struct.unpack("120sII",fin.read(128))
-				ny=fph[1]
-				nx=fph[2]
-				data=[]
-				for i in range(nx):
-					data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
-			except:
-				# Probably a text file
-				fin=file(sys.argv[1])
-				fin.seek(0)
-				rdata=fin.readlines()
-				rdata=[i for i in rdata if i[0]!='#']
-				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
-				else : rdata=[[float(j) for j in i.split()] for i in rdata]
-				nx=len(rdata[0])
-				ny=len(rdata)
-				
-				print nx,ny
-				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
-				
-		window.set_data(sys.argv[1].split("/")[-1],data)
-			
-	#window2=EMParentWin(window)
-	#window2.show()
-		
-	#sys.exit(app.exec_())
+		for i in range(1,len(sys.argv)):
+			window.set_data_from_file(sys.argv[i])
+	
 	app.show()
 	app.execute()

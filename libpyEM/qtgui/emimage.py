@@ -35,6 +35,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from emimage2d import *
 from emimagemx import *
+from emplot2d import *
 #from emimagemxrotor import *
 from emimage3d import *
 from emimageutil import EMParentWin
@@ -198,7 +199,7 @@ class EMImageModule(object):
 			module = EMImage3DModule(application=app)
 			module.set_data(data)
 			return module
-		elif isinstance(data,list):
+		elif isinstance(data,list) and isinstance(data[0],EMData):
 			if old:
 				if isinstance(old,EMImageMXModule) :
 					old.set_data(data)
@@ -206,5 +207,50 @@ class EMImageModule(object):
 			module = EMImageMXModule(application=app)
 			module.set_data(data)
 			return module
+		elif isinstance(data,list):
+			if old:
+				if isinstance(old,EMPlot2DModule) :
+					old.set_data(data)
+					return old
+			module = EMPlot2DModule(application=app)
+			module.set_data("data",data)
+			return module	
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"
+
+
+class EMModuleFromFile(object):
+	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
+	def __new__(cls,filename,application,force_plot=False,force_2d=False):
+		
+		file_type = Util.get_filename_ext(filename)
+		em_file_type = EMUtil.get_image_ext_type(file_type)
+		
+		if force_plot and force_2d:
+			# ok this sucks but it suffices for the time being
+			print "Error, the force_plot and force_2d options are mutually exclusive"
+			return None
+		
+		if force_plot:
+			module = EMPlot2DModule(application=application)
+			module.set_data_from_file(filename)
+			return module
+		
+		if em_file_type != IMAGE_UNKNOWN:
+			data=EMData.read_images(filename)
+			if len(data) == 1: data = data[0]
+			
+			if force_2d or isinstance(data,EMData) and data.get_zsize()==1:
+				module= EMImage2DModule(application=application)
+			elif isinstance(data,EMData):
+				module = EMImage3DModule(application=application)
+			elif isinstance(data,list) and isinstance(data[0],EMData):
+				module = EMImageMXModule(application=application)
+			else: raise # weirdness, this should never happen
+			module.set_data(data,filename)
+			return module
+		else:
+			module = EMPlot2DModule(application=application)
+			module.set_data_from_file(filename)
+			return module
+

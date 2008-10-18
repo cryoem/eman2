@@ -80,7 +80,7 @@ def main():
 	win=[]
 
 	if options.plot:
-		plot(args)
+		plot(args,app)
 	elif options.classes:
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
@@ -157,15 +157,13 @@ def display(img,app,title="EMAN2 image"):
 	except: pass
 	return w
 
-def plot(files):
-	plotw=EMPlot2D()
+def plot(files,app):
+	from emplot2d import EMPlot2DModule
+	plotw=EMPlot2DModule(application=app)
 	for f in files:
-		plotw.set_data_from_file(f,f)
-		
-	w=EMParentWin(plotw)
-	w.setWindowTitle("EMPlot2D")
-	w.show()
-	win.append(w)
+		plotw.set_data_from_file(f)
+	plotw.get_qt_widget().setWindowTitle("2D Plot")
+	return plotw
 
 
 # If executed as a program
