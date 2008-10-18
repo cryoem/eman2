@@ -291,10 +291,12 @@ class EMQtWidgetModule(EMGUIModule):
 	def get_qt_widget(self):
 		return self.qt_widget
 	
-	def get_gl_widget(self,qt_parent=None):
+	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		from emfloatingwidgets import EMGLViewQtWidget
 		if self.gl_widget == None:
-			self.gl_widget = EMGLViewQtWidget(qt_parent)
+			self.qt_context_parent = qt_context_parent
+			self.ql_context_parent = gl_context_parent
+			self.gl_widget = EMGLViewQtWidget(gl_context_parent)
 			self.gl_widget.setQtWidget(self.qt_widget)
 		return self.gl_widget
 		

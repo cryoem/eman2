@@ -370,6 +370,8 @@ class EMImage2DModule(EMGUIModule):
 			
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
+			self.gl_widget.set_width(480)
+			self.gl_widget.set_height(480)
 			self.gl_widget.target_translations_allowed(True)
 			
 		return self.gl_widget

@@ -638,7 +638,7 @@ class EM3DGLVolume:
 		if self.update_dims:
 			self.determine_dimensions()
 			
-		return [self.left,self.right,self.bottom,self.top,0,self.far]
+		return [self.left,self.right,self.bottom,self.top,self.near,self.far]
 		
 	def get_suggested_lr_bt_nf(self):
 		'''
@@ -648,10 +648,6 @@ class EM3DGLVolume:
 		try: return self.nice_lr_bt_nf()
 		except: return self.get_lr_bt_nf()
 		
-
-
-
-
 class EMGLRotorWidget(EM3DGLVolume):
 	'''
 	A display rotor widget - consists of an ellipse  with widgets 'attached' to it.
@@ -927,8 +923,7 @@ class EMGLRotorWidget(EM3DGLVolume):
 			glTranslate(points[i][0],points[i][1],points[i][2])
 			glRotate(n,*rot_v)
 			glTranslate(h_width,h_height,0)
-			try: widget.draw()
-			except: pass
+			widget.draw()
 			glPopMatrix()
 			
 	
@@ -1587,13 +1582,15 @@ class EM3DGLWindow(EMGLWindow):
 		
 		self.draw_frame = True
 		
-		self.decoration = EM3DPlainBorderDecoration(self)
-		
-		self.w = 128
-		self.h = 128
-		self.d = 128
+		self.w = 480
+		self.h = 480
+		self.d = 480
 		self.init_flag = True
 		self.texure_lock = 0
+		
+		#print "my dimensions are",self.w,self.h,self.d
+	
+		self.decoration = EM3DPlainBorderDecoration(self)
 	
 	def lock_texture(self):
 		self.texture_lock += 1
@@ -1607,14 +1604,15 @@ class EM3DGLWindow(EMGLWindow):
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
 
-	def width(self):
-		return self.w
+	def set_width(self,w): self.w = w
+	def set_height(self,h): self.h = h
+	def set_depth(self,d): self.d = d
+
+	def width(self): return self.w
 		
-	def height(self):
-		return self.h
+	def height(self): return self.h
 	
-	def depth(self):
-		return self.d
+	def depth(self): return self.d
 	
 	def resize(self,width,height):
 		self.w = width
@@ -1804,6 +1802,7 @@ class EMGLView3D(EM3DGLVolume,EMEventRerouter):
 			self.h = self.drawable.height()
 			self.d = self.drawable.height() # height of window
 		else:
+			raise # tell me when this happens, I think it might be redundant
 		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
 			#self.w = image.get_xsize()	# width of window
@@ -1858,36 +1857,23 @@ class EMGLView3D(EM3DGLVolume,EMEventRerouter):
 		self.top =  height/2.0
 		self.near = depth/2.0
 		self.far =  -depth/2.0
-	
 		self.update_dims = False
 
-	def set_width(self,w):
-		self.w = w
-		self.drawable.resizeEvent(self.width(),self.height())
-		
-	def set_depth(self,d):
-		self.d = d
-		self.drawable.resizeEvent(self.width(),self.height())
-		
-	def set_height(self,h):
-		self.h = h
-		self.drawable.resizeEvent(self.width(),self.height())
-		
 	def width(self):
 		try:
-			return int(self.w)
+			return int(self.parent.width())
 		except:
 			return 0
 	
 	def height(self):
 		try:
-			return int(self.h)
+			return int(self.parent.height())
 		except:
 			return 0
 	
 	def depth(self):
 		try:
-			return int(self.d)
+			return int(self.parent.height())
 		except:
 			return 0
 	
@@ -1939,14 +1925,15 @@ class EM2DGLWindow(EMGLWindow):
 	A class for managing a 3D object as an interactive widget
 	'''
 	def __init__(self,parent,gl_view):
+		self.w = 128
+		self.h = 128
 		EMGLWindow.__init__(self,parent,gl_view)
 		gl_view.get_drawable().set_gl_widget(self)
 		self.draw_frame = True
 		
 		self.decoration = EM3DPlainBorderDecoration(self)
 		
-		self.w = self.parent.width()
-		self.h = self.parent.height()
+		
 		self.draw_vd_frame = False
 		self.update_border_flag = False
 		
@@ -1973,7 +1960,6 @@ class EM2DGLWindow(EMGLWindow):
 	def draw(self):
 		
 		self.cam.position()
-		
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		
 		glEnable(GL_DEPTH_TEST)
@@ -2711,7 +2697,6 @@ class EMGLViewQtWidget:
 			self.updateTexture()
 	
 	def keyPressEvent(self,event):
-		print "we are in this place"
 		if ( self.childreceiver != None ):
 			# this means this class already knows that the mouse event is in the child
 			# that is being displayed

@@ -229,6 +229,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			self.gl_widget.resize(640,640)
 			self.disable_mx_zoom()
 			self.disable_mx_translate()
+			
 		return self.gl_widget
 		
 	def get_qt_widget(self):
@@ -657,10 +658,6 @@ class EMImageMXRotorModule(EMGUIModule):
 			x = EM2DGLWindow(self,e)
 			self.rotor.add_widget(x)
 			
-			#e = EMGLView2D(self,d)
-			#e.get_drawable().set_app(self.application)
-			#self.application.register_qt_emitter(e.get_drawable(),self.application.get_qt_emitter(self))
-			#self.rotor.add_widget(e)
 			w = e.get_drawable()
 	
 			w.set_use_display_list(True) # saves HEAPS of time, makes interaction much smoother

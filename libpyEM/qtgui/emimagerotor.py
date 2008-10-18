@@ -177,6 +177,7 @@ class EMImageRotorModule(EMGUIModule):
 			self.qt_context_parent = qt_context_parent
 			
 			self.gl_widget = EM3DGLWindowOverride(self,self.rotor)
+			
 			self.rotor.target_zoom_events_allowed(False)
 			self.rotor.target_translations_allowed(False)
 		return self.gl_widget
@@ -224,9 +225,6 @@ class EMImageRotorModule(EMGUIModule):
 		self.hud_data = [] # a list of strings to be rendered to the heads up display (hud)
 	
 		self.load_font_renderer()
-
-	def optimally_resize_qt_context(self):
-		self.gl_context_parent.resize(*self.get_optimal_size())
 		
 	def optimally_resize(self):
 		if isinstance(self.gl_context_parent,EMImageRotorWidget):

@@ -57,8 +57,7 @@ from emselector import EMSelectorDialog
 from emapplication import EMApplication, EMQtWidgetModule
 from emanimationutil import *
 from emimageutil import EMEventRerouter
-from emfloatingwidgets import EMBasicOpenGLObjects, EMGLViewQtWidget
-
+from emfloatingwidgets import *
 
 class EMWindowNode:
 	def __init__(self,parent):
@@ -295,6 +294,12 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		child = EMGLViewContainer(self,EMRegion.get_geometry(self))
 		EMGLViewContainer.attach_child(self,child)
 		return child
+	
+	def draw(self):
+		for child in self.children:
+			glPushMatrix()
+			child.draw()
+			glPopMatrix()
 
 	#def attach_child(self,new_child):
 		#if len(self.children)== 0:
@@ -499,16 +504,13 @@ class EMDesktopFrame(EMFrame):
 			if child_ == child: return
 		
 		if hint == "dialog" or hint == "inspector":
-			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
+			self.left_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.left_side_bar
 		elif hint == "image":
-			p = self.display_frame.get_child_region()
-			child.set_parent(p)
-			p.attach_child(child.get_gl_widget(EMDesktop.main_widget))
-			#print self.display_frame.print_info()
-			self.child_mappings[child] = p
+			self.display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			self.child_mappings[child] = self.display_frame
 		elif hint == "rotor":
-			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget))
+			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.right_side_bar
 		else:
 			print "unsupported",hint
@@ -518,8 +520,9 @@ class EMDesktopFrame(EMFrame):
 			owner = self.child_mappings[child]
 		except:
 			print "owner doesn't exist for child",child
+			return
 			
-		owner.detach_child(child.get_gl_widget())
+		owner.detach_child(child.get_gl_widget(None,None))
 
 	def draw_frame(self):
 		if self.frame_dl == 0:
@@ -672,8 +675,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		fmt.setDoubleBuffer(True)
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
-		
-		
+
 		if EMDesktop.application == None:
 			EMDesktop.application = EMDesktopApplication(self,qt_application_control=False)
 		
@@ -781,7 +783,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 				self.resize_aware_objects.pop(i)
 				return
 			
-		print "warning, can't deregestire resize aware object",resize_aware_object
+		print "warning, can't deregister resize aware object",resize_aware_object
 	
 	
 	def get_aspect(self):
@@ -851,13 +853,13 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		glPushMatrix()
 		glEnable(GL_DEPTH_TEST)
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		if (self.get_time() < 0):
-			z = self.get_z_opt() + float(self.get_time())/2.0*self.get_z_opt()
-			#print z
-			glTranslatef(0.,0.,-z)
-		else:
-			#print -2*self.zopt+0.1
-			glTranslatef(0.,0.,-2*self.get_z_opt()+0.1)
+		#if (self.get_time() < 0):
+			#z = self.get_z_opt() + float(self.get_time())/2.0*self.get_z_opt()
+			##print z
+			#glTranslatef(0.,0.,-z)
+		#else:
+			##print -2*self.zopt+0.1
+		glTranslatef(0.,0.,-2*self.get_z_opt()+0.1)
 		
 		self.current_desktop_frame.draw()
 		glPopMatrix()

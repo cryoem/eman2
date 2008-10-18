@@ -857,7 +857,6 @@ class EMBoxerModule:
 		self.__gen_image_thumbnails_widget()
 
 		if self.guimxit != None:
-			self.application.show_specific(self.guimxit)
 			if isinstance(self.guimxit,EMImageRotorModule):
 				self.guimxit.optimally_resize()
 				QtCore.QObject.connect(self.application.get_qt_emitter(self.guimxit),QtCore.SIGNAL("image_selected"),self.image_selected)
@@ -1375,12 +1374,11 @@ class EMBoxerModule:
 				qt_parent.setWindowTitle("Image Thumbs")
 			except:
 				pass
-			
+			self.application.show_specific(self.guimxit)
 			self.guimxit.set_data(self.imagethumbs)
 			
 			try:
 				for i in range(0,nim):
-					print i
 					frozen = get_idd_key_entry(self.image_names[i],"frozen_state")
 					if frozen != None:
 						self.guimxit.set_frozen(frozen,i)

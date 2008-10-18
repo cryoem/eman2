@@ -316,7 +316,7 @@ class EMImageMXModule(EMGUIModule):
 			self.gl_context_parent = EMImageMXWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.gl_widget = self.gl_context_parent
-			self.optimally_resize_qt_context()
+			self.optimally_resize()
 				
 			self.qt_context_parent.setAcceptDrops(True)
 		
@@ -324,6 +324,7 @@ class EMImageMXModule(EMGUIModule):
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
+		print "getting gl widget"
 		self.init_size_flag = False
 		if self.gl_widget == None:
 			
@@ -333,7 +334,8 @@ class EMImageMXModule(EMGUIModule):
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
 			self.gl_widget.target_translations_allowed(True)
-			
+			self.gl_widget.set_width(480)
+			self.gl_widget.set_height(480)
 		return self.gl_widget
 	
 	def get_desktop_hint(self):
@@ -513,8 +515,12 @@ class EMImageMXModule(EMGUIModule):
 	def __del__(self):
 		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 	
-	def optimally_resize_qt_context(self):
-		self.qt_context_parent.resize(*self.get_parent_suggested_size())
+	def optimally_resize(self):
+		if isinstance(self.gl_context_parent,EMImageMXWidget):
+			self.qt_context_parent.resize(*self.get_parent_suggested_size())
+		else:
+			self.gl_widget.resize(*self.get_parent_suggested_size())
+		
 	
 	def get_parent_suggested_size(self):
 		if self.data != None and isinstance(self.data[0],EMData): 
@@ -1604,7 +1610,8 @@ if __name__ == '__main__':
 		a=EMData.read_images(sys.argv[1])
 		window.set_file_name(sys.argv[1])
 		window.set_data(a)
-		
+	
+	window.optimally_resize()
 	em_app.show()
 	em_app.execute()
 

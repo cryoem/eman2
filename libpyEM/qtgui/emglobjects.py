@@ -1731,7 +1731,7 @@ class EMImage3DGUIModule(EMGUIModule):
 
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
-		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
+		from emfloatingwidgets import EMGLView3D, EM3DGLWindow
 		if self.gl_widget == None:
 			
 			self.gl_context_parent = gl_context_parent
