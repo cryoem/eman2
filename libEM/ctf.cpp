@@ -502,14 +502,14 @@ string EMAN2Ctf::to_string() const
 			defocus, bfactor, ampcont, voltage, cs, apix,(int)background.size());
 
 	string ret=ctf;
-	for (uint i=0; i<background.size(); i++) {
+	for (int i=0; i<(int)background.size(); i++) {
 		sprintf(ctf,",%1.3f",background[i]);
 		ret+=ctf;
 	}
 
 	sprintf(ctf, " %d",(int)snr.size());
 	ret+=ctf;
-	for (uint i=0; i<snr.size(); i++) {
+	for (int i=0; i<(int)snr.size(); i++) {
 		sprintf(ctf,",%1.3f",snr[i]);
 		ret+=ctf;
 	}
