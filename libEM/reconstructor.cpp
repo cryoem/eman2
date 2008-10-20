@@ -2419,7 +2419,9 @@ EMData* nn4Reconstructor::finish()
 	m_volume->depad();
 	circumference( m_volume );
 	m_volume->set_array_offsets( 0, 0, 0 );
-	return m_volume;
+
+    m_result = m_volume->copy();
+	return m_result;
 }
 #undef  tw
 
@@ -3035,7 +3037,8 @@ EMData* nn4_ctfReconstructor::finish()
 	m_volume->depad();
     circumference( m_volume );
     m_volume->set_array_offsets( 0, 0, 0 );
-	return m_volume;
+    m_result = m_volume->copy();
+	return m_result;
 	// clean up
 }
 #undef  tw
