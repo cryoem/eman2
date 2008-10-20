@@ -2413,7 +2413,7 @@ class EMGLViewQtWidget:
 		self.is_child = False
 		
 		print parent
-		self.vdtools = EMViewportDepthTools2(parent.get_gl_context_parent())
+		self.vdtools = EMViewportDepthTools2(parent)
 	
 		self.refresh_dl = True
 		self.texture_dl = 0

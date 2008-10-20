@@ -165,10 +165,8 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 	
 	def mousePressEvent(self, event):
 		for child in self.children:
-			print child
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mousePressEvent(event)
-				print "child was in"
 				self.updateGL()
 				return True
 		
