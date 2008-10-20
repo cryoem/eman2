@@ -5054,7 +5054,81 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 	return freq2, pw_n2, a2, b2
 
 
-class variancer:
+class def_variancer:
+	def __init__(self, nx, ny, nz):
+		from utilities import model_blank
+		self.nimg = 0
+		self.sum1 = model_blank(nx, ny, nz)
+		self.imgs = []
+
+	def insert(self, img):
+		self.nimg += 1
+		Util.add_img(self.sum1, img)
+
+		self.imgs.append(img)
+
+        def mpi_getvar(self, myid, rootid):
+		from utilities import reduce_EMData_to_root, bcast_EMData_to_all
+		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+		avg = self.sum1.copy()
+
+		reduce_EMData_to_root( avg, myid, rootid )
+		nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
+		
+		if myid==rootid:
+   		    nimg = int(nimg[0])
+		    avg /= nimg
+
+		bcast_EMData_to_all( avg, myid, rootid )
+
+		var = avg.copy()
+		var.to_zero()
+		for img in self.imgs:
+			s = img - avg
+			Util.add_img2( var, s )
+	
+		reduce_EMData_to_root( var, myid, rootid )
+		if myid==rootid:
+			var /= (nimg-1)
+			var.set_attr( "nimg", nimg )
+			return var, avg
+
+		return None, None
+
+
+        def mpi_getavg(self, myid, rootid ):
+		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+		from utilities import reduce_EMData_to_root
+
+		cpy1 = self.sum1.copy()
+
+		reduce_EMData_to_root( cpy1, myid, rootid )
+		
+		nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
+		
+		if myid==rootid:
+			nimg = int( nimg[0] )
+			return cpy1/nimg
+
+		return None
+
+	def getvar(self):
+		avg1 = self.sum1/self.nimg
+
+		tmp = avg1.copy()
+		Util.mul_img( tmp, avg1 )
+		avg2 -= tmp
+
+		avg2 *= (float(self.nimg)/float(self.nimg-1))
+		 
+		return avg2
+
+
+	def getavg(self):
+		return self.sum1/self.nimg
+
+
+class inc_variancer:
 	def __init__(self):
 		self.nimg = 0
 		self.sum1 = None
