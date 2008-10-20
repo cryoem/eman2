@@ -2412,7 +2412,8 @@ class EMGLViewQtWidget:
 		self.e2children = []
 		self.is_child = False
 		
-		self.vdtools = EMViewportDepthTools(self)
+		print parent
+		self.vdtools = EMViewportDepthTools2(parent.get_gl_context_parent())
 	
 		self.refresh_dl = True
 		self.texture_dl = 0
@@ -2490,7 +2491,7 @@ class EMGLViewQtWidget:
 		
 		# make sure the vdtools store the current matrices
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
-		
+
 		if self.refresh_dl == True:
 			if self.texture_dl != 0:
 				glDeleteLists(self.texture_dl,1)

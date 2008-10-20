@@ -165,8 +165,10 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 	
 	def mousePressEvent(self, event):
 		for child in self.children:
+			print child
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mousePressEvent(event)
+				print "child was in"
 				self.updateGL()
 				return True
 		
@@ -337,16 +339,25 @@ class EMFrame(EMWindowNode,EMRegion):
 		#YUCK fixme soon this is terribly inefficient
 		for i in self.children:
 			i.mouseMoveEvent(event)
+			
+		EMDesktop.main_widget.updateGL()
+	
 		
 	def mouseReleaseEvent(self, event):
 		#YUCK fixme soon this is terribly inefficient
 		for i in self.children:
 			i.mouseReleaseEvent(event)
+			
+		EMDesktop.main_widget.updateGL()
+	
 
 	def mouseDoubleClickEvent(self, event):
 		#YUCK fixme soon this is terribly inefficient
 		for i in self.children:
 			i.mouseDoubleClickEvent(event)
+		
+		EMDesktop.main_widget.updateGL()
+	
 
 	def wheelEvent(self, event):
 		#YUCK fixme soon this is terribly inefficient
@@ -462,6 +473,11 @@ class EMDesktopFrame(EMFrame):
 		
 		self.type_name = None
 	
+	def __del__(self):
+		if self.frame_dl:
+			glDeleteLists(self.frame_dl,1)
+			self.frame_dl = 0
+	
 	def get_type(self):
 		return self.type_name
 	
@@ -498,6 +514,12 @@ class EMDesktopFrame(EMFrame):
 		self.set_geometry(Region(0,0,int(EMDesktop.main_widget.viewport_width()),int(EMDesktop.main_widget.viewport_height())))
 		if len(self.display_frames) != 0:
 			self.display_frames[0].set_geometry(Region(200,0,-100,int(EMDesktop.main_widget.viewport_width()-400),int(EMDesktop.main_widget.viewport_height()),100))
+			
+		if self.frame_dl:
+			glDeleteLists(self.frame_dl,1)
+			self.frame_dl = 0
+			
+		self.bgob2.refresh()
 	
 	def attach_gl_child(self,child,hint):
 		for child_,t in self.child_mappings.items():
@@ -707,6 +729,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.move(0,0)
 		self.resize(self.appscreen.size())
 		
+	def get_gl_context_parent(self): return self
+		
 	def emit(self,*args, **kargs):
 		#print "i am emitting",args,kargs
 		QtGui.QWidget.emit(self,*args,**kargs)
@@ -863,7 +887,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		
 		self.current_desktop_frame.draw()
 		glPopMatrix()
-
+		
+	def update(self): self.updateGL()
 
 	def resizeGL(self, width, height):
 		side = min(width, height)
@@ -1042,11 +1067,15 @@ class ob2dimage:
 		self.target.makeCurrent()
 		self.texture_dl = 0
 		self.itex=self.target.bindTexture(self.pixmap)
+		self.refresh_flag = False
 		
 	def __del__(self):
 		if self.texture_dl != 0: 
 			glDeleteLists(self.texture_dl,1)
 			self.texture_dl = 0
+			
+	def refresh(self):
+		self.refresh_flag = True
 
 	def __del__(self):
 		target.deleteTexture(self.itex)
@@ -1089,7 +1118,11 @@ class ob2dimage:
 	
 	def render(self):
 		if not self.pixmap : return
-		if self.texture_dl == 0:
+		if self.texture_dl == 0 or self.refresh_flag:
+			if self.texture_dl != 0:
+				glDeleteLists(self.texture_dl,1)
+				self.texture_dl = 0
+			
 			self.texture_dl=glGenLists(1)
 			
 			if self.texture_dl == 0:
