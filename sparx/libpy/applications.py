@@ -1018,10 +1018,10 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if ftp == "hdf":
 		nima = EMUtil.get_image_count(stack)
 	elif ftp == "bdb":
-		nima = 0
-		if myid == main_node:
-			nima = EMUtil.get_image_count(stack)
-		nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		#nima = 0
+		#if myid == main_node:
+		nima = EMUtil.get_image_count(stack)
+		#nima = mpi_bcast(nima, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 	else:
 		print "Invalid file type"
 		return
@@ -1475,7 +1475,7 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, sx, sy, 0, angt, sxst, syst, mirrort)
-			#print  "combine with previous ",Iter,im,psin, sxn, syn, mn, iter
+			#print  "combine with previous ",Iter,im,alphan, sxn, syn, mn, iref
 			set_params2D(data[im], [alphan, sxn, syn, int(mn), scale])
 			data[im].set_attr('assign',iref)
 			# apply current parameters and add to the average
@@ -1487,7 +1487,6 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng
 				for i in xrange(lctf):  ctf2[iref][it][i] += ctm[i]
 			assign[iref].append(im)
 			refi[iref][2] += 1
-
 		del ringref
 		if(again):
 			a1 = 0.0
@@ -1565,6 +1564,8 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng
 				for j in xrange(numref):
 					refi[j][0].write_image(newrefim, j)
 				break
+			print  assign
+			exit()
 
 	if(CTF):
 		if(data_had_ctf == 0):
@@ -1579,7 +1580,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	from utilities      import   model_circle, compose_transform2, combine_params2, dropImage, getImage
 	from utilities      import   reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all
 	from utilities      import   send_attr_dict, recv_attr_dict
-	from utilities	    import   center_2D
+	from utilities	  import   center_2D
 	from statistics     import   fsc_mask
 	from alignment      import   Numrinit, ringwe, Applyws
 	from fundamentals   import   rot_shift2D, fshift
@@ -1599,9 +1600,6 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	#  chose a random node as a main one...
 	main_node = 0
-	if(myid == 0): main_node = randint(0,number_of_proc-1)
-	main_node = mpi_bcast(main_node, 1, MPI_INT, 0, MPI_COMM_WORLD)
-	main_node = main_node[0][0]
 	# create the output directory, if it does not exist
 	if(myid == main_node):
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
@@ -1681,17 +1679,17 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	#  for each node read its share of data
 	data = EMData.read_images(stack, range(image_start, image_end))
 	for im in xrange(image_start, image_end):
-		data[im].set_attr('ID', im)
+		data[im-image_start].set_attr('ID', im)
 		if(CTF):
-			ctf_params = get_arb_params(data[im], parnames)
+			ctf_params = get_arb_params(data[im-image_start], parnames)
 			if(ctf_params[6] == 0):
-				st = Util.infomask(data[im], mask, False)
+				st = Util.infomask(data[im-image_start], mask, False)
 				data[im] -= st[0]
 				from filter import filt_ctf
 				data[im] = filt_ctf(data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
 				data[im].set_attr('ctf_applied', 1)
 	if(myid == main_node):  seed(rand_seed)
-	a0 = -1.
+	a0 = -1.0
 	again = True
 	Iter = 0
 	while(Iter < max_iter and again):
@@ -1722,7 +1720,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, sx, sy, 0, angt, sxst, syst, mirrort)
-			#if(iref  ==0):print  "combine with previous ",Iter,im,alphan, sxn, syn, mn, iref
+			#print  "combine with previous ",Iter,im,alphan, sxn, syn, mn, iref
 			set_params2D(data[im-image_start], [alphan, sxn, syn, int(mn), scale])
 			data[im-image_start].set_attr('assign',iref)
 			# apply current parameters and add to the average
@@ -1788,18 +1786,21 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 						av1 = filt_table( refi[j][0], ctm)
 						for i in xrange(lctf):  ctm[i] = 1.0 / (ctf2[j][1][i] + 1.0/snr)
 						av2 = filt_table( refi[j][1], ctm)
+						from statistcs import fsc
 						frsc = fsc_mask(av1, av2, mask, 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter, j)))
 						#Now the total average
 						for i in xrange(lctf):  ctm[i] = 1.0 / (ctf2[j][0][i] + ctf2[j][1][i] + 1.0/snr)
 						refi[j][0] = filt_table( Util.addn_img( refi[j][0], refi[j][1] ), ctm)
 					else:
-						frsc = fsc_mask(refi[j][0], refi[j][1], mask, 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter, j)))
+						#frsc = fsc_mask(refi[j][0], refi[j][1], mask, 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter, j)))
+						from statistics import fsc
+						frsc = fsc(refi[j][0], refi[j][1], 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter,j)))
 						Util.add_img( refi[j][0], refi[j][1] )
 						Util.mul_scalar( refi[j][0], 1.0/float(refi[j][2]) )
 					#  low pass filter references
-					lowfq, highfq = filt_params(frsc, low = 0.3)
-					lowfq = max(0.05, lowfq)
-					highfq = min(0.4,max(highfq,lowfq)+0.1)
+					lowfq, highfq = filt_params(frsc, low = 0.1)
+					#lowfq = max(0.05, lowfq)
+					#highfq = min(0.4,max(highfq,lowfq)+0.1)
 					#from filter import filt_from_fsc, filt_table
 					#filt = filt_from_fsc(frsc, 0.1)
 					#refi[j][0] = filt_table(refi[j][0], filt)
@@ -1807,7 +1808,6 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 					#from morphology import threshold
 					#refi[j][0]  = filt_btwl(threshold(refi[j][0]), lowfq, highfq)
 					refi[j][0]  = filt_btwl(refi[j][0], lowfq, highfq)
-					#refi[j][0], csx, csy = center_2D(refi[j][0], center, searching_range = max(xrng, yrng))
 					refi[j][0], csx, csy = center_2D(refi[j][0], center)
 					msg = "   group #%3d   filter parameters = %6.4f, %6.4f,  center parameters (x,y) = %10.3e, %10.3e\n"%(j, lowfq, highfq, csx, csy)
 					print_msg(msg)
@@ -1825,6 +1825,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 				refi[j][0].write_image(refim, j)
 				a1 += refi[j][0].cmp("dot", refi[j][0], {"negative":0, "mask":mask})
 				# send refi[j][0]  back!
+
 			Iter += 1
 			msg = "ITERATION #%3d        criterion = %20.7e\n\n"%(Iter,a1)
 			print_msg(msg)
@@ -1836,14 +1837,8 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 		if(again):
 			for j in xrange(numref):
 				bcast_EMData_to_all(refi[j][0], myid, main_node)
-		else:
-			newrefim = os.path.join(outdir,"multi_ref.hdf")
-			for j in xrange(numref):
-				refi[j][0].write_image(newrefim, j)
-
 
 	#  clean up
-	del refi
 	del assign
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
@@ -1853,7 +1848,11 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	if(myid == main_node): recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc)
 	else: send_attr_dict(main_node, data, list_params, image_start, image_end)
 
-	if (myid==main_node):	print_end_msg("ali2d_m_MPI")
+	if (myid==main_node):
+		newrefim = os.path.join(outdir,"multi_ref.hdf")
+		for j in xrange(numref):
+			refi[j][0].write_image(newrefim, j)
+		print_end_msg("ali2d_m_MPI")
 
 def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_mirror = False, CTF = False, rand_seed = 1000):
 # 2D rotational alignment using ccf in polar coordinates
@@ -2822,7 +2821,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
-	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1", user_func_name="ref_ali3d", pinfo = False, MPI=False):
+	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1", user_func_name="ref_ali3d", MPI=False, pinfo = False):
 	if MPI:
 		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts, delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name)
 		return
@@ -2831,7 +2830,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	from utilities      import getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params
 	from filter         import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
-	from alignment	    import proj_ali_incore, proj_ali_incore_local
+	from alignment	  import proj_ali_incore, proj_ali_incore_local
 	from statistics     import fsc_mask
 	import os
 	import types
@@ -2940,7 +2939,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)))
 			del vol1
 			del vol2
-
+			
 			# calculate new and improved 3D
 			if(CTF): vol = recons3d_4nn_ctf(data, range(nima), snr, 1, sym)
 			else:	 vol = recons3d_4nn(data, range(nima), sym)
@@ -3063,16 +3062,16 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 	data = EMData.read_images(stack, range(image_start, image_end))
 	for im in xrange(image_start, image_end):
-		data[im].set_attr('ID', im)
+		data[im-image_start].set_attr('ID', im)
 		if(CTF):
 			ctf_params = get_arb_params(data[im], ctf_dicts)
 			if(im == image_start): data_had_ctf = ctf_params[6]
 			if(ctf_params[6] == 0):
-				st = Util.infomask(data[im], mask, False)
-				data[im] -= st[0]
+				st = Util.infomask(data[im-image_start], mask, False)
+				data[im-image_start] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
-				data[im].set_attr('ctf_applied', 1)
+				data[im-image_start] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				data[im-image_start].set_attr('ctf_applied', 1)
 		if(im%100==0 and debug) :
 			finfo.write( '%d loaded  ' % im )
 			finfo.flush()
@@ -9099,11 +9098,11 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 
 	if ctf: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, info)
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, info)
-
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			dropImage(vol, vol_stack, "s")
 		else:
+			print  vol_stack
 			dropImage(vol, vol_stack)
 		if not(info is None):
 			info.write( "result wrote to " + vol_stack + "\n")

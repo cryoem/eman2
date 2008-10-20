@@ -69,9 +69,9 @@ def main():
 			mask = None
 		else:
 			mask = args[3]
-	        if options.MPI:
+		if options.MPI:
 			from mpi import mpi_init
-   			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		if(options.B):
 			from applications import ali3d_dB
 			global_def.BATCH = True

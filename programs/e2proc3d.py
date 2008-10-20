@@ -184,7 +184,13 @@ def main():
             elif option1 == "filter":
                 fi = index_d[option1]
                 (filtername, param_dict) = parsemodopt(options.filter[fi])
-                data.process_inplace(filtername, param_dict)
+                if(filtername[:2] == "sx"):
+                   qte = "Processor.fourier_filter_types."+filtername[2:]
+                   params = {"filter_type" : eval(qte), "dopad" : False}
+                   for ety in param_dict.keys():  params[ety] = param_dict[ety]
+                   data = Processor.EMFourierFilter(data, params)
+                else:
+                   data.process_inplace(filtername, param_dict)
                 index_d[option1] += 1
 
             elif option1 == "mult":

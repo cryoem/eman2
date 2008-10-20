@@ -463,7 +463,7 @@ def prepare_refprojs( volref,  ref_angles, last_ring, mask2D, cnx, cny, numr, mo
         num_ref = len(ref_angles)
 
 	if MPI:
-		from mpi import mpi_comm_size, mpi_comm_rank
+		from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
         	from utilities import bcast_EMData_to_all
         	ncpu = mpi_comm_size(MPI_COMM_WORLD)
         	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -524,6 +524,7 @@ def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr
 def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng, yrng, step, delta, ref_a, symmetry, CTF = False, finfo=None, MPI=False):
 	from utilities    import even_angles, model_circle, compose_transform2, print_msg
 	from alignment    import prepare_refprojs
+	from utilities    import get_params_proj, set_params_proj
 
 	mode    = "F"
 	# generate list of Eulerian angles for reference projections
@@ -558,10 +559,9 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 
 	for imn in xrange(len(projdata)):
 		#if(imn%10 == 0):  print_msg("%d  "%(imn))
-		from utilities import get_params_proj, set_params_proj
 		phi, theta, psi, sxo, syo = get_params_proj( projdata[imn] )
 		if not(finfo is None):
-			finfo.write( "proj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, dict["phi"], dict["theta"], dict["psi"], sxo, syo) )
+			finfo.write( "proj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, sxo, syo) )
 			finfo.flush()
 		if  CTF:
 			ctf_params = get_arb_params(projdata[imn], parnames)
@@ -587,10 +587,9 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
                         psi   = (ref_angles[numref][2]+angb+360.0)%360.0
                         s2x   = sxb + sxo
                         s2y   = syb + syo
-		from utilities import set_params_proj
 		set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y] )
-                projdata[imn].set_attr('peak', peak)
-                if not(finfo is None):
+		projdata[imn].set_attr('peak', peak)
+		if not(finfo is None):
 			finfo.write( "proj %4d new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, s2x, s2y) )
 			finfo.flush()
 
@@ -1119,7 +1118,6 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 		#print  im,tave.cmp("dot", tave, {"negative":0,"mask":mask}),params,outparams[0],outparams[2]
 		#tave,tvar = ave_var_series_g(data,kb)
 		#print  " Criterium on the fly ", tave.cmp("dot", tave, {"negative":0,"mask":mask})
-
 
 def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""Determine shift and rotation between image and reference image (refim)

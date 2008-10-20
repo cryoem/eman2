@@ -213,17 +213,17 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4,snr=None):
 	
 	if type(stack_name) == types.StringType:
 		for i in xrange(len(list_proj)):
-			proj.read_image(stack_name,list_proj[i])
+			proj.read_image(stack_name, list_proj[i])
 			active = proj.get_attr_default('active', 1)
 			if(active == 1):
 				xform_proj = proj.get_attr( "xform.proj" )
 				r.insert_slice(proj, xform_proj )
 	else:
-		for i in xrange(len(list_proj)):
-			active = proj.get_attr_default('active', 1)
+		for i in list_proj:
+			active = stack_name[i].get_attr_default('active', 1)
 			if(active == 1):
-				xform_proj = proj.get_attr( "xform.proj" )
-				r.insert_slice(stack_name[list_proj[i]], xform_proj )
+				xform_proj = stack_name[i].get_attr( "xform.proj" )
+				r.insert_slice(stack_name[i], xform_proj )
 	return r.finish()
 
 def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
@@ -235,9 +235,8 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 	if prjlist[0].get_ysize() != imgsize:
 		ERROR("input data has to be square","recons3d_4nn_ctf_MPI",1)
 
-
-        fftvol = EMData()
-        weight = EMData()
+	fftvol = EMData()
+	weight = EMData()
 
 	params = {"size":imgsize, "npad":4, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
 	r = Reconstructors.get( "nn4", params )
@@ -264,6 +263,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 	if( not (info is None) ): 
 		info.write( "after reduce\n" )
 		info.flush()
+
 	if myid == 0 :  vol = r.finish()
 	else:           vol = None
 	return vol
@@ -701,6 +701,7 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index, info=None):
 	from random import randint
 	from utilities import reduce_EMData_to_root
+	from mpi import mpi_barrier, MPI_COMM_WORLD
 	nx = data[0].get_xsize()
 
 	fftvol_half = EMData()
@@ -1094,10 +1095,11 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 	  if index > -1, projections should have attribute group set and only those whose group matches index will be used in the reconstruction
 	    this is for multireference alignment
 	'''
-        import os
+	import os
 	from statistics import fsc_mask
 	from utilities  import model_blank, reduce_EMData_to_root, getImage,send_EMData, recv_EMData
 	from random import randint
+	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
         
 	if nproc==1:
