@@ -1965,8 +1965,8 @@ class EM2DGLWindow(EMGLWindow):
 			scale = self.inv_border_scale
 		else: return
 		
-		self.w *= scale
-		self.h *= scale
+		self.w = int(scale*self.w)
+		self.h = int(scale*self.h)
 		self.update_border_flag = True
 	
 	def set_draw_frame(self,bool):

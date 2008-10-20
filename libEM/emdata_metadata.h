@@ -558,6 +558,9 @@ inline int get_size() const
 	return nx*ny*nz;
 }
 
+/** Get the pixel data as a vector
+ * @return a vector containing the pixel data.
+ */
 inline vector<float> get_data_as_vector() const {
 	int size = get_size();
 	vector<float> v(size);
