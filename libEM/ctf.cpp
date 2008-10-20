@@ -497,11 +497,25 @@ int EMAN2Ctf::from_string(const string & ctf)
 
 string EMAN2Ctf::to_string() const
 {
-	char ctf[1024];
-	sprintf(ctf, "E%1.3g %1.3g %1.3g %1.3g %1.3g %1.3g",
-			defocus, bfactor, ampcont, voltage, cs, apix);
+	char ctf[256];
+	sprintf(ctf, "E%1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %d",
+			defocus, bfactor, ampcont, voltage, cs, apix,(int)background.size());
 
-	return string(ctf);
+	string ret=ctf;
+	for (uint i=0; i<background.size(); i++) {
+		sprintf(ctf,",%1.3f",background[i]);
+		ret+=ctf;
+	}
+
+	sprintf(ctf, " %d",(int)snr.size());
+	ret+=ctf;
+	for (uint i=0; i<snr.size(); i++) {
+		sprintf(ctf,",%1.3f",snr[i]);
+		ret+=ctf;
+	}
+
+
+	return ret;
 }
 
 void EMAN2Ctf::from_dict(const Dict & dict)
@@ -512,6 +526,8 @@ void EMAN2Ctf::from_dict(const Dict & dict)
 	voltage = dict["voltage"];
 	cs = dict["cs"];
 	apix = dict["apix"];
+	background = dict["background"];
+	snr = dict["snr"];
 }
 
 Dict EMAN2Ctf::to_dict() const
@@ -523,18 +539,25 @@ Dict EMAN2Ctf::to_dict() const
 	dict["voltage"] = voltage;
 	dict["cs"] = cs;
 	dict["apix"] = apix;
+	dict["background"] = background;
+	dict["snr"] = snr;
 
 	return dict;
 }
 
 void EMAN2Ctf::from_vector(const vector<float>& vctf)
 {
+	int i;
 	defocus = vctf[0];
 	bfactor = vctf[1];
 	ampcont = vctf[2];
 	voltage = vctf[3];
 	cs = vctf[4];
 	apix = vctf[5];
+	background.resize((int)vctf[6]);
+	for (i=0; i<(int)vctf[6]; i++) background[i]=vctf[i+7];
+	snr.resize((int)vctf[i]);
+	for (int j=0; j<(int)vctf[j]; j++) snr[j]=vctf[i+j+1];
 }
 
 vector<float> EMAN2Ctf::to_vector() const
@@ -547,7 +570,11 @@ vector<float> EMAN2Ctf::to_vector() const
 	vctf.push_back(voltage);
 	vctf.push_back(cs);
 	vctf.push_back(apix);
-	
+	vctf.push_back(background.size());
+	for (int i=0; i<background.size(); i++) vctf.push_back(background[i]);
+	vctf.push_back((float)snr.size());
+	for (int j=0; j<snr.size(); j++) vctf.push_back(snr[j]);
+
 	return vctf;
 }
 		

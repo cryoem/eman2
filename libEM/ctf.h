@@ -223,6 +223,8 @@ namespace EMAN
 		float voltage;
 		float cs;
 		float apix;
+		vector<float> background;
+		vector<float> snr;
 
 	  public:
 		EMAN2Ctf();
