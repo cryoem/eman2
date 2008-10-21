@@ -1310,7 +1310,7 @@ class EMImage2DModule(EMGUIModule):
 
 	def mousePressEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			try:

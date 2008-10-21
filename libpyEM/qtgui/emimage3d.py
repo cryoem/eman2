@@ -85,7 +85,7 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 			self.cam.cam_z = -1.25*data.get_zsize()
 		elif isinstance(data,float):
 			self.cam.default_z = -1.25*data
-			self.cam.cam_z = -1.25*data\
+			self.cam.cam_z = -1.25*data
 		
 	def set_data(self,data):
 		self.target.set_data(data)

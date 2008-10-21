@@ -1241,7 +1241,7 @@ class EMImageMXModule(EMGUIModule):
 		pass
 
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 #			self.emit(QtCore.SIGNAL("inspector_shown"),event)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):

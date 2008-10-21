@@ -741,7 +741,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			
 		return self.inspector
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(True)
 		else:
 			self.widget.mousePressEvent(event)

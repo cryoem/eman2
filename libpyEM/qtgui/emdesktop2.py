@@ -552,24 +552,24 @@ class EMDesktopFrame(EMFrame):
 			self.frame_dl=glGenLists(1)
 			glNewList(self.frame_dl,GL_COMPILE)
 			glPushMatrix()
-			glTranslatef(-self.width()/2.0,-self.height()/2.0,0.0)
+			glTranslatef(-self.width()/2.0-self.borderwidth,-self.height()/2.0-self.borderwidth,0.0)
 			glScaled(self.borderwidth,self.borderwidth,length)
 			glCallList(self.glbasicobjects.getCylinderDL())
 			glPopMatrix()
 			glPushMatrix()
-			glTranslatef( self.width()/2.0,-self.height()/2.0,0.0)
-			glScaled(self.borderwidth,self.borderwidth,length)
-			glCallList(self.glbasicobjects.getCylinderDL())
-			glPopMatrix()
-			
-			glPushMatrix()
-			glTranslatef( self.width()/2.0, self.height()/2.0,0.0)
+			glTranslatef( self.width()/2.0+self.borderwidth,-self.height()/2.0-self.borderwidth,0.0)
 			glScaled(self.borderwidth,self.borderwidth,length)
 			glCallList(self.glbasicobjects.getCylinderDL())
 			glPopMatrix()
 			
 			glPushMatrix()
-			glTranslatef(-self.width()/2.0, self.height()/2.0,0.0)
+			glTranslatef( self.width()/2.0+self.borderwidth, self.height()/2.0+self.borderwidth,0.0)
+			glScaled(self.borderwidth,self.borderwidth,length)
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslatef(-self.width()/2.0-self.borderwidth, self.height()/2.0+self.borderwidth,0.0)
 			glScaled(self.borderwidth,self.borderwidth,length)
 			glCallList(self.glbasicobjects.getCylinderDL())
 			glPopMatrix()
@@ -1222,10 +1222,10 @@ class SideWidgetBar(EMGLViewContainer):
 		t = self.transformers[i]
 		if t.get_xy_scale() != 1.0:
 			#if i == 0:
-			seed_height = self.children[i].height()
+			seed_height = self.children[i].height_inc_border()
 			below_height = 0
 			for j in range(0,len(self.children)):
-				if j != i: below_height += self.children[j].height()
+				if j != i: below_height += self.children[j].height_inc_border()
 			
 			
 			to_height = EMDesktop.main_widget.viewport_height()-seed_height
