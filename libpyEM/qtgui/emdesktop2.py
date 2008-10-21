@@ -687,6 +687,10 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
 	"""
 	application = None
+	
+	def get_gl_context_parent(self):
+		return self
+	
 	def __init__(self):
 		Animator.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
@@ -696,8 +700,9 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 
+		self.application = EMDesktopApplication(self,qt_application_control=False)
 		if EMDesktop.application == None:
-			EMDesktop.application = EMDesktopApplication(self,qt_application_control=False)
+			EMDesktop.application = self.application
 		
 		self.modules = [] # a list of all the modules that currently exist
 		self.app=QtGui.QApplication.instance()
@@ -953,6 +958,12 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 	
 	def register_animation(self,animation):
 		self.animation = animation
+	
+	def get_qt_context_parent(self):
+		return EMDesktop.main_widget
+	
+	def get_gl_context_parent(self):
+		return EMDesktop.main_widget
 
 	def get_depth_for_height(self, height):
 		try: 
@@ -968,13 +979,21 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 		self.cam.cam_z = z
 
 	def height(self):
-		if self.widget != None: return self.widget.height() + 2*self.desktop_task_widget.get_decoration().get_border_width()
+		if self.desktop_task_widget != None: return self.desktop_task_widget.height() 
 		return 0
 		
 	def width(self):
-		if self.widget != None: return self.widget.width() + 2*self.desktop_task_widget.get_decoration().get_border_height()
+		if self.desktop_task_widget != None: return self.desktop_task_widget.width() 
+		return 0
+	
+	def height_inc_border(self):
+		if self.desktop_task_widget != None: return self.desktop_task_widget.height_inc_border() 
 		return 0
 		
+	def width_inc_border(self):
+		if self.desktop_task_widget != None: return self.desktop_task_widget.width_inc_border() 
+		return 0
+	
 	def updateGL(self):
 		try: self.parent.updateGL()
 		except: pass
@@ -987,12 +1006,18 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 	
 	def draw(self):
 		if ( self.init_flag == True ):
-			self.desktop_task_widget = EMGLViewQtWidget(EMDesktop.main_widget)
+			
+			#gl_view.setQtWidget(self.qt_widget)
+			
+			#self.desktop_task_widget = EMGLViewQtWidget(EMDesktop.main_widget)
 			self.widget = EMDesktopTaskWidget.EMDesktopTaskInspector(self)
 			self.widget.show()
 			self.widget.hide()
 			self.widget.resize(150,150)
-			self.desktop_task_widget.setQtWidget(self.widget)
+			gl_view = EMQtGLView(EMDesktop.main_widget,self.widget)
+			self.desktop_task_widget = EM2DGLWindow(self,gl_view)
+			
+			
 			self.init_flag = False
 			self.attach_child(self.desktop_task_widget)
 			#self.parent.i_initialized(self)
@@ -1183,7 +1208,7 @@ class SideWidgetBar(EMGLViewContainer):
 	def width(self):
 		width = 0
 		for child in self.children:
-			if child.width() > width:
+			if child.width_inc_border() > width:
 				width = width
 		
 		return width
@@ -1221,7 +1246,7 @@ class SideWidgetBar(EMGLViewContainer):
 	def reset_scale_animation(self):
 		children_height = 0
 		for child in self.children:
-			children_height += child.height()
+			children_height += child.height_inc_border()
 			
 		if children_height > EMDesktop.main_widget.viewport_height():
 			scale = EMDesktop.main_widget.viewport_height()/float(children_height)
@@ -1386,7 +1411,7 @@ class SideTransform:
 		self.transform()
 		self.child.draw()
 		glPopMatrix()
-		glTranslate(0,-self.xy_scale*self.child.height(),0)
+		glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
 
 			
 class RightSideWidgetBar(SideWidgetBar):
@@ -1402,8 +1427,8 @@ class RightSideWidgetBar(SideWidgetBar):
 			self.transformers[i].transform()
 			child.draw()
 			glPopMatrix()
-			#print child.height(), child
-			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height(),0)
+			#print child.height_inc_border(), child
+			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height_inc_border(),0)
 
 		glPopMatrix()
 		
@@ -1429,9 +1454,9 @@ class RightSideWidgetBar(SideWidgetBar):
 		def transform(self):
 			SideTransform.transform(self)
 			
-			glTranslate(0,-self.xy_scale*self.child.height()/2,0)
+			glTranslate(0,-self.xy_scale*self.child.height_inc_border()/2,0)
 			glRotate(self.rotation,0,1,0)
-			glTranslate(-self.xy_scale*self.child.width()/2.0,0,0)
+			glTranslate(-self.xy_scale*self.child.width_inc_border()/2.0,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
 		
 	
@@ -1448,7 +1473,7 @@ class LeftSideWidgetBar(SideWidgetBar):
 			self.transformers[i].transform()
 			child.draw()
 			glPopMatrix()
-			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height(),0)
+			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height_inc_border(),0)
 
 		glPopMatrix()
 		
@@ -1467,9 +1492,9 @@ class LeftSideWidgetBar(SideWidgetBar):
 		def transform(self):
 			SideTransform.transform(self)
 			
-			glTranslate(0,-self.xy_scale*self.child.height()/2,0)
+			glTranslate(0,-self.xy_scale*self.child.height_inc_border()/2,0)
 			glRotate(self.rotation,0,1,0)
-			glTranslate(self.xy_scale*self.child.width()/2.0,0,0)
+			glTranslate(self.xy_scale*self.child.width_inc_border()/2.0,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
 
 	

@@ -1174,6 +1174,7 @@ class Camera2:
 		self.plane = plane
 	
 	def allow_camera_rotations(self,bool=True):
+		print "setting allow rotaitons",bool
 		self.allow_rotations = bool
 
 		
@@ -1335,6 +1336,7 @@ class Camera2:
 		return cam
 	
 	def mousePressEvent(self, event):
+		print self.allow_rotations,"in caamera"
 		self.mpressx = event.x()
 		self.mpressy = event.y()
 		if event.button()==Qt.LeftButton and self.allow_rotations:
@@ -1739,7 +1741,7 @@ class EMImage3DGUIModule(EMGUIModule):
 			self.gl_widget = EM3DGLWindow(self,gl_view)
 			
 			self.gl_widget.target_translations_allowed(True)
-			self.gl_widget.allow_camera_rotations(True)
+			#self.gl_widget.allow_camera_rotations(True)
 			
 		return self.gl_widget
 	

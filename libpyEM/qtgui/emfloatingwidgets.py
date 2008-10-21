@@ -89,15 +89,32 @@ class EMBorderDecoration:
 	FROZEN_COLOR = "frozen"
 	DEFAULT_COLOR = "default"
 	YELLOW_COLOR = "yellow"
+	x_texture_dl = None
 	PERMISSABLE_COLOR_FLAGS = [FROZEN_COLOR,DEFAULT_COLOR,YELLOW_COLOR]
 	def __init__(self):
 		self.color_flag = EMBorderDecoration.DEFAULT_COLOR
 		self.display_list = None
 		self.unprojected_points = [] # for determing mouse-border collision detection
+		self.pressed = -1
+		self.current_frame = ""
+		self.moving = [-1,-1]
+		self.init_frame_unproject_order()
+		self.corner_sets = []
+		self.bottom_border_height = 6
+		self.top_border_height = 18
+		self.border_width = 6
+		self.border_depth = 6
+		
 	def __del__(self):
 		self.delete_list()
 	
 	def draw(self,object): raise
+	
+	def total_width(self):
+		return 2*self.border_width
+	
+	def total_height(self):
+		return self.top_border_height+self.bottom_border_height
 
 	def delete_list(self):
 		if self.display_list != None:
@@ -343,187 +360,69 @@ class EMBorderDecoration:
 		if bool: self.color_flag = EMBorderDecoration.YELLOW_COLOR
 		else: self.color_flag =  EMBorderDecoration.DEFAULT_COLOR
 			
+	def init_frame_unproject_order(self):
+		self.frame_unproject_order = []
+		self.currently_selected_frame = -1
+		self.frame_unproject_order.append("bottom_left")
+		self.frame_unproject_order.append("bottom")
+		self.frame_unproject_order.append("bottom_right")
+		self.frame_unproject_order.append("right")
+		self.frame_unproject_order.append("top_right")
+		self.frame_unproject_order.append("top")
+		self.frame_unproject_order.append("top_left")
+		self.frame_unproject_order.append("left")
 		
-	#def __init_x_texture(self):
-		#print "done list"
-		#if EM3DPlainBorderDecoration.x_texture_dl == None or EM3DPlainBorderDecoration.x_texture_dl < 0:
-			#print "here"
+	def init_x_texture(self):
+		if EMBorderDecoration.x_texture_dl == None or EMBorderDecoration.x_texture_dl < 0:
 			#glEnable(GL_TEXTURE_2D)
-			#img = Image.open(os.getenv("EMAN2DIR")+"/images/Close.png")
-			#img_data = numpy.array(list(img.getdata()), numpy.int8)
-			#print "here"
-			#x_texture_size = img.size
-			#EM3DPlainBorderDecoration.x_texture_dl=glGenLists(1)
-			#print EM3DPlainBorderDecoration.x_texture_dl
+			pixmap = QtGui.QPixmap(os.getenv("EMAN2DIR")+"/images/Close.png")
+			#self.qwidget.setVisible(False)
+			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
+			print self.object,self.object.parent,self.object.parent.get_gl_context_parent()
+			self.texture = self.object.parent.get_gl_context_parent().bindTexture(pixmap)
+			EMBorderDecoration.x_texture_dl=glGenLists(1)
 			
-			#if EM3DPlainBorderDecoration.x_texture_dl == 0:
-				#return
-			#print "here1"
-			#glNewList( EM3DPlainBorderDecoration.x_texture_dl,GL_COMPILE)
-			#print "here2"
+			if EMBorderDecoration.x_texture_dl == 0:
+				return
+			glNewList( EMBorderDecoration.x_texture_dl,GL_COMPILE)
+			glEnable(GL_TEXTURE_2D)
+			texture = glGenTextures(1)
+			glPixelStorei(GL_UNPACK_ALIGNMENT,1)
+			print glGetInteger(GL_UNPACK_ALIGNMENT)
+			glBindTexture(GL_TEXTURE_2D, self.texture)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			# this makes it so that the texture is impervious to lighting
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			
-			#texture = glGenTextures(1)
-			##glPixelStorei(GL_UNPACK_ALIGNMENT,1)
-			#print "here"
-			#glBindTexture(GL_TEXTURE_2D, texture)
-			#glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.size[0], img.size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
-			#glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-			#glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-			## this makes it so that the texture is impervious to lighting
-			#glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			#print "here3"
-			
-			#xmin = -self.border_height/2
-			#xmax =  self.border_height/2
-			#ymin = -self.border_height/2
-			#ymax =  self.border_height/2
-			#glBegin(GL_QUADS)
+			xmin = -0.5
+			xmax =  0.5
+			ymin = -0.5
+			ymax =  0.5
+			glBegin(GL_QUADS)
 		
-			#glNormal(0,0,1)
-			#glTexCoord2f(0,0)
-			#glVertex2f(xmin,ymax)
+			glNormal(0,0,1)
+			glTexCoord2f(0,0)
+			glVertex2f(xmin,ymax)
 			
-			#glTexCoord2f(1,0)
-			#glVertex2f(xmax,ymax)
+			glTexCoord2f(1,0)
+			glVertex2f(xmax,ymax)
 				
-			#glTexCoord2f(1,1)
-			#glVertex2f(xmax,ymin)
+			glTexCoord2f(1,1)
+			glVertex2f(xmax,ymin)
 			
-			#glTexCoord2f(0,1)
-			#glVertex2f(xmin,ymin)
+			glTexCoord2f(0,1)
+			glVertex2f(xmin,ymin)
 			
-			#glEnd()
+			glEnd()
+			glDisable(GL_TEXTURE_2D)
+			glEndList()
 			
-			#glEndList()
 			
-			#print "done list"
-			
-			##EM3DPlainBorderDecoration.x_texture_dl
-			
-			#glDisable(GL_TEXTURE_2D)
-
-class EM2DPlainBorderDecoration(EMBorderDecoration):
-	def __init__(self,object,gl_context_parent): 
-		EMBorderDecoration.__init__(self)
-		self.gl_context_parent = gl_context_parent
-		self.vdtools = EMViewportDepthTools2(gl_context_parent)
-		self.bottom_border_height = 6
-		self.top_border_height = 18
-		self.border_width = 6
-		self.border_height = 6
-		self.border_depth = 6
-		
-		self.force_update = False
-		
-		self.faulty = False
-		if not isinstance(object,EM2DGLWindow) and not isinstance(object,EMGLViewQtWidget): 
-			print "error, EM2DPlainBorderDecoration works only for EM2DGLWindow and EMGLViewQtWidget"
-			self.faulty = True
-			return
-		else: self.object = object
-		
-		self.current_frame = ""
-		self.moving = [-1,-1]
-		
-		self.init_frame_unproject_order()
-	def draw(self,force_update=False):
-		if force_update or self.force_update:
-			self.delete_list()
-			self.force_update = False
-		
-		if self.display_list == None:
-			self.__gen_2d_object_border_list()
-		
-		if self.display_list == None:
-			print "display list generation failed" 
-			return
-		
-		self.viewport_update()
-		
-		self.load_materials()
-			
-		if self.display_list != None and self.display_list != 0:
-			glCallList(self.display_list)
-		else: print "An error occured"
-	
-	def viewport_update(self):
-		self.corner_sets = []
-		width = self.object.width()
-		height = self.object.height()
-			
-			# plus, i.e. plus the border
-		left = -width/2.0
-		left_plus = left-self.border_width
-		right = -left
-		right_plus = -left_plus
-			
-		bottom = -height/2.0
-		bottom_plus = bottom - self.bottom_border_height
-		top = -bottom
-		top_plus = top + self.top_border_height
-			#top_plus = -bottom_plus
-			
-		front = self.border_depth/2.0
-		back = -self.border_depth/2.0
-		
-		points = []
-		points.append((left_plus,bottom_plus,0))
-		points.append((left,bottom_plus,0))
-		points.append((left,bottom,0))
-		points.append((left_plus,bottom,0))
-		
-		points.append((right,bottom_plus,0))
-		points.append((right_plus,bottom_plus,0))
-		points.append((right_plus,bottom,0))
-		points.append((right,bottom,0))
-		
-		points.append((right,top,0))
-		points.append((right_plus,top,0))
-		points.append((right_plus,top_plus,0))
-		points.append((right,top_plus,0))
-		
-		points.append((left_plus,top,0))
-		points.append((left,top,0))
-		points.append((left,top_plus,0))
-		points.append((left_plus,top_plus,0))
-		
-		self.unprojected_points = self.vdtools.unproject_points(points)
-		unprojected = self.unprojected_points
-		self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
-		self.corner_sets.append( self.vdtools.get_corners() )
-		
-		self.vdtools.set_mouse_coords(unprojected[1],unprojected[4],unprojected[7],unprojected[2])
-		self.corner_sets.append( self.vdtools.get_corners() )
-		
-		self.vdtools.set_mouse_coords(unprojected[4],unprojected[5],unprojected[6],unprojected[7])
-		self.corner_sets.append( self.vdtools.get_corners() )
-		
-		self.vdtools.set_mouse_coords(unprojected[7],unprojected[6],unprojected[9],unprojected[8])
-		self.corner_sets.append( self.vdtools.get_corners() )
-		
-		self.vdtools.set_mouse_coords(unprojected[8],unprojected[9],unprojected[10],unprojected[11])
-		self.corner_sets.append( self.vdtools.get_corners() )
-		
-		self.vdtools.set_mouse_coords(unprojected[13],unprojected[8],unprojected[11],unprojected[14])
-		self.corner_sets.append( self.vdtools.get_corners() )
-		
-		self.vdtools.set_mouse_coords(unprojected[12],unprojected[13],unprojected[14],unprojected[15])
-		self.corner_sets.append( self.vdtools.get_corners() )
-		
-		self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[13],unprojected[12])
-		self.corner_sets.append( self.vdtools.get_corners() )
-	
-	def isinwin(self,x,y):
-		interception = False
-		#print "I have this many corner sets",len(self.corner_sets)
-		for i,p in enumerate(self.corner_sets):
-			if self.vdtools.isinwinpoints(x,y,p):
-				interception = True
-				self.currently_selected_frame = i
-				break
-		return interception
+			#EM3DPlainBorderDecoration.x_texture_dl
 
 	def mousePressEvent(self,event):
+		self.pressed = self.currently_selected_frame 
 		if self.currently_selected_frame == 5: # top
 			self.object.set_mouse_lock(self)
 			self.object.cam.mousePressEvent(event)
@@ -575,6 +474,8 @@ class EM2DPlainBorderDecoration(EMBorderDecoration):
 			self.object.release_mouse_lock()
 			self.object.cam.mouseReleaseEvent(event)
 			self.object.updateGL()
+		elif self.currently_selected_frame == 8 and self.pressed == 8:
+			self.object.closeEvent(event)
 		
 		if self.current_frame != "":
 			self.object.release_mouse_lock()
@@ -583,27 +484,141 @@ class EM2DPlainBorderDecoration(EMBorderDecoration):
 		
 	def wheelEvent(self,event):
 		if self.currently_selected_frame == 5: # top
-			self.object.cam.wheelEvent(event)
+			self.object.top_frame_wheel(event.delta())
 			self.object.updateGL()
 			
 	def keyPressEvent(self,event):
 		pass
 	
-	def init_frame_unproject_order(self):
-		self.frame_unproject_order = []
-		self.currently_selected_frame = -1
-		self.frame_unproject_order.append("bottom_left")
-		self.frame_unproject_order.append("bottom")
-		self.frame_unproject_order.append("bottom_right")
-		self.frame_unproject_order.append("right")
-		self.frame_unproject_order.append("top_right")
-		self.frame_unproject_order.append("top")
-		self.frame_unproject_order.append("top_left")
-		self.frame_unproject_order.append("left")
+
+class EM2DPlainBorderDecoration(EMBorderDecoration):
+	def __init__(self,object,gl_context_parent): 
+		EMBorderDecoration.__init__(self)
+		self.gl_context_parent = gl_context_parent
+		self.vdtools = EMViewportDepthTools2(gl_context_parent)
 		
+		
+		self.force_update = False
+		
+		self.faulty = False
+		if not isinstance(object,EM2DGLWindow) and not isinstance(object,EMGLViewQtWidget): 
+			print "error, EM2DPlainBorderDecoration works only for EM2DGLWindow and EMGLViewQtWidget"
+			self.faulty = True
+			return
+		else: self.object = object
+		
+	def draw(self,force_update=False):
+		self.init_x_texture()
+		if force_update or self.force_update:
+			self.delete_list()
+			self.force_update = False
+		
+		if self.display_list == None:
+			self.__gen_2d_object_border_list()
+		
+		if self.display_list == None:
+			print "display list generation failed" 
+			return
+		
+		self.viewport_update()
+		
+		self.load_materials()
+			
+		if self.display_list != None and self.display_list != 0:
+			glCallList(self.display_list)
+		else: print "An error occured"
+	
+		glPushMatrix()
+		glTranslate(self.object.width()/2.0-self.top_border_height/2,self.object.height()/2.0+self.top_border_height/2.0,self.border_depth+.1)
+		glScale(self.top_border_height,self.top_border_height,1.0)
+		glCallList( EMBorderDecoration.x_texture_dl)
+		glPopMatrix()
+		
+	def viewport_update(self):
+		self.corner_sets = []
+		width = self.object.width()
+		height = self.object.height()
+			
+			# plus, i.e. plus the border
+		left = -width/2.0
+		left_plus = left-self.border_width
+		right = -left
+		right_plus = -left_plus
+			
+		bottom = -height/2.0
+		bottom_plus = bottom - self.bottom_border_height
+		top = -bottom
+		top_plus = top + self.top_border_height
+			#top_plus = -bottom_plus
+			
+		front = self.border_depth/2.0
+		back = -self.border_depth/2.0
+		
+		points = []
+		points.append((left_plus,bottom_plus,0))
+		points.append((left,bottom_plus,0))
+		points.append((left,bottom,0))
+		points.append((left_plus,bottom,0))
+		
+		points.append((right,bottom_plus,0))
+		points.append((right_plus,bottom_plus,0))
+		points.append((right_plus,bottom,0))
+		points.append((right,bottom,0))
+		
+		points.append((right,top,0))
+		points.append((right_plus,top,0))
+		points.append((right_plus,top_plus,0))
+		points.append((right,top_plus,0))
+		
+		points.append((left_plus,top,0))
+		points.append((left,top,0))
+		points.append((left,top_plus,0))
+		points.append((left_plus,top_plus,0))	
+		
+		points.append((right-self.top_border_height,top,0))
+		points.append((right-self.top_border_height,top_plus,0))
+		
+		self.unprojected_points = self.vdtools.unproject_points(points)
+		unprojected = self.unprojected_points
+		self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[1],unprojected[4],unprojected[7],unprojected[2])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[4],unprojected[5],unprojected[6],unprojected[7])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[7],unprojected[6],unprojected[9],unprojected[8])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[8],unprojected[9],unprojected[10],unprojected[11])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[13],unprojected[16],unprojected[17],unprojected[14])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[12],unprojected[13],unprojected[14],unprojected[15])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[13],unprojected[12])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[16],unprojected[8],unprojected[11],unprojected[17])
+		self.corner_sets.append( self.vdtools.get_corners() )
+	
+	def isinwin(self,x,y):
+		interception = False
+		#print "I have this many corner sets",len(self.corner_sets)
+		for i,p in enumerate(self.corner_sets):
+			if self.vdtools.isinwinpoints(x,y,p):
+				interception = True
+				self.currently_selected_frame = i
+				break
+		return interception
 		
 	def get_border_width(self): return self.border_width
-	def get_border_height(self): return self.border_height
+	#def get_border_height(self): return self.border_height
 	
 	def __gen_2d_object_border_list(self):
 		
@@ -677,17 +692,12 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 	'''
 	
 	
-	#x_texture_dl = None
+	
 	#x_texture_size = (-1,1)
 	def __init__(self, object,gl_context_parent):
 		EMBorderDecoration.__init__(self)
 		self.gl_context_parent = gl_context_parent
 		self.vdtools = EMViewportDepthTools2(gl_context_parent)
-		self.bottom_border_height = 6
-		self.top_border_height = 18
-		self.border_width = 6
-		self.border_height = 6
-		self.border_depth = 6
 		
 		self.force_update = False
 		
@@ -700,7 +710,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		
 	
 	def get_border_width(self): return self.border_width
-	def get_border_height(self): return self.border_height
+	#def get_border_height(self): return self.border_height
 	def get_border_depth(self): return self.border_depth
 	
 	def set_force_update(self,val=True):
@@ -727,6 +737,24 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		if self.display_list != None and self.display_list != 0:
 			glCallList(self.display_list)
 		else: print "An error occured"
+	
+	
+		self.draw_x()
+		
+	def draw_x(self):
+		dims = self.object.get_lr_bt_nf()
+		# plus, i.e. plus the border
+		
+		right = dims[1]
+		top = dims[3]
+		width =  dims[1]- dims[0]
+		height = dims[3] -  dims[2]
+		front =  dims[4]
+		glPushMatrix()
+		glTranslate(right-self.top_border_height/2,top+self.top_border_height/2.0,front+self.border_depth+.1)
+		glScale(self.top_border_height,self.top_border_height,1.0)
+		glCallList( EMBorderDecoration.x_texture_dl)
+		glPopMatrix()
 	
 	def __gen_3d_object_border_list(self):
 		self.delete_list()
@@ -765,11 +793,11 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			glNewList(self.display_list,GL_COMPILE)
 			
 			width = right-left
-			width_plus = width + self.border_height*2
+			width_plus = width + self.border_width*2
 			height = top - bottom
-			height_plus = height + self.border_height*2
+			#height_plus = height + self.border_height*2
 			depth = front-back
-			depth_plus = depth + +self.border_height*2
+			depth_plus = depth + +self.border_depth*2
 			# front
 			glPushMatrix()
 			glTranslate(x_center,y_center,front_plus)
@@ -865,10 +893,12 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		points.append((left,top_plus,front_plus))
 		points.append((left_plus,top_plus,front_plus))
 		
+		points.append((right-self.top_border_height,top,front_plus))
+		points.append((right-self.top_border_height,top_plus,front_plus))
+		
 		self.unprojected_points = self.vdtools.unproject_points(points)
 		unprojected = self.unprojected_points
 		self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
-		self.vdtools.draw_frame(True)
 		self.corner_sets.append( self.vdtools.get_corners() )
 		
 		self.vdtools.set_mouse_coords(unprojected[1],unprojected[4],unprojected[7],unprojected[2])
@@ -883,7 +913,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		self.vdtools.set_mouse_coords(unprojected[8],unprojected[9],unprojected[10],unprojected[11])
 		self.corner_sets.append( self.vdtools.get_corners() )
 		
-		self.vdtools.set_mouse_coords(unprojected[13],unprojected[8],unprojected[11],unprojected[14])
+		self.vdtools.set_mouse_coords(unprojected[13],unprojected[16],unprojected[17],unprojected[14])
 		self.corner_sets.append( self.vdtools.get_corners() )
 		
 		self.vdtools.set_mouse_coords(unprojected[12],unprojected[13],unprojected[14],unprojected[15])
@@ -891,7 +921,10 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		
 		self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[13],unprojected[12])
 		self.corner_sets.append( self.vdtools.get_corners() )
-	
+		
+		self.vdtools.set_mouse_coords(unprojected[16],unprojected[8],unprojected[11],unprojected[17])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
 	def isinwin(self,x,y):
 		interception = False
 		#print "I have this many corner sets",len(self.corner_sets)
@@ -901,32 +934,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 				self.currently_selected_frame = i
 				break
 		return interception
-	
-	def mousePressEvent(self,event):
-		if self.currently_selected_frame == 5: # top
-			self.object.set_mouse_lock(self)
-			self.object.cam.mousePressEvent(event)
-			self.object.updateGL()
-			
-	def mouseMoveEvent(self,event):
-		if self.currently_selected_frame == 5: # top
-			self.object.cam.mouseMoveEvent(event)
-			self.object.updateGL()
-			
-	def mouseReleaseEvent(self,event):
-		if self.currently_selected_frame == 5: # top
-			self.object.release_mouse_lock()
-			self.object.cam.mouseReleaseEvent(event)
-			self.object.updateGL()
-			
-	def wheelEvent(self,event):
-		if self.currently_selected_frame == 5: # top
-			self.object.cam.wheelEvent(event)
-			self.object.updateGL()
-			
-	def keyPressEvent(self,event):
-		pass
-	
+
 	
 class EM3DVolume:
 	'''
@@ -1137,7 +1145,7 @@ class EMGLRotorWidget(EM3DVolume):
 		return 1 if a redraw is necessary
 		return 0 if a redraw is not necessary 
 		'''
-		if not isinstance(widget,EMGLViewQtWidget) and not isinstance(widget,EMGLView2D) and not isinstance(widget,EMGLView3D) and not isinstance(widget,EM3DGLWindow)  and not isinstance(widget,EM2DGLWindow):
+		if not isinstance(widget,EMGLViewQtWidget) and not isinstance(widget,EMGLView3D) and not isinstance(widget,EM3DGLWindow)  and not isinstance(widget,EM2DGLWindow):
 			print "error, can only add instances of EMGLViewQtWidget to the EMGLRotorWidget"
 			return 0
 		else:
@@ -1350,16 +1358,15 @@ class EMGLRotorWidget(EM3DVolume):
 		# first determine the ellipse offset - this is related to the inplane rotation of the ellipse. We want the back point corresponding to
 		# a rotation of 90 degrees around the boundary of the ellipse (starting at [ellipse_a/2,0,0]) to be visible
 		
-		if self.rotor_type == EMGLRotorWidget.LEFT_ROTARY or self.rotor_type == EMGLRotorWidget.RIGHT_ROTARY :
+		if self.rotor_type == EMGLRotorWidget.LEFT_ROTARY or self.rotor_type == EMGLRotorWidget.RIGHT_ROTARY:
 			interesting_points = [[-self.ellipse_a,0,0],[self.ellipse_a,0,0],[0,0,-self.ellipse_b],[0,0,self.ellipse_b]]
-		elif self.rotor_type == EMGLRotorWidget.BOTTOM_ROTARY or self.rotor_type == EMGLRotorWidget.TOP_ROTARY :	
+		elif self.rotor_type == EMGLRotorWidget.BOTTOM_ROTARY or self.rotor_type == EMGLRotorWidget.TOP_ROTARY:	
 			interesting_points = [[0,-self.ellipse_a,0],[0,self.ellipse_a,0],[0,0,-self.ellipse_b],[0,0,self.ellipse_b]]
 		else:
 			print "unsupported"
 		
 		self.__rotate_elliptical_points(interesting_points)
 			
-		
 		max_z = interesting_points[0][2]
 		min_z = interesting_points[0][2]
 		min_y = interesting_points[0][1]
@@ -1798,7 +1805,10 @@ class EMGLWindow:
 		self.border_scale = 1.1
 		self.inv_border_scale = 1.0/self.border_scale
 		self.update_border_flag = True
-		
+
+	def closeEvent(self,event):
+		self.parent.get_app().close_specific(self.drawable.drawable)
+
 	def updateGL(self):
 		self.parent.get_gl_context_parent().updateGL()
 	
@@ -1834,7 +1844,12 @@ class EMGLWindow:
 	
 	def allow_camera_rotations(self,bool):
 		self.cam.allow_camera_rotations(bool)
-	
+		
+	def width_inc_border(self):
+		return self.w + self.decoration.total_width()
+
+	def height_inc_border(self):
+		return self.h + self.decoration.total_height()
 	
 	def get_inspector(self):
 		return self.drawable.get_inspector()
@@ -1939,7 +1954,7 @@ class EMGLWindow:
 				print "mouse release error" # this shouldn't happen
 	
 	def mouse_in_win_args(self,event):
-		return [event.x(),self.parent.gl_context_parent.viewport_height()-event.y(),self.width(),self.height()]
+		return [event.x(),self.parent.get_gl_context_parent().viewport_height()-event.y(),self.width(),self.height()]
 	
 	def toolTipEvent(self,event):
 		if self.texture_lock > 0: return
@@ -1947,7 +1962,9 @@ class EMGLWindow:
 	
 	def keyPressEvent(self,event):
 		if self.texture_lock > 0: return
-		self.drawable.keyPressEvent(event)
+		pos = self.parent.get_gl_context_parent().mapFromGlobal(QtGui.QCursor.pos())
+		l=self.vdtools.mouseinwin(*self.mouse_in_win_args(pos))
+		self.drawable.keyPressEvent(event,l)
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
@@ -1983,6 +2000,8 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		#print "my dimensions are",self.w,self.h,self.d
 		self.decoration = EM3DPlainBorderDecoration(self,parent.get_gl_context_parent())
 		
+		self.cam.allow_camera_rotations(False)
+		
 		self.update_dims = True
 	def lock_texture(self):
 		self.texture_lock += 1
@@ -1996,6 +2015,45 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
 
+	def top_frame_wheel(self,delta):
+		if delta > 0:
+			scale = self.border_scale
+		elif delta < 0:
+			scale = self.inv_border_scale
+		else: return
+
+		self.x_change = self.w*(scale-1.0)/2.0
+		self.left -= self.x_change
+		self.right += self.x_change
+		
+		self.y_change = self.h*(scale-1.0)/2.0
+		self.bottom -= self.y_change
+		
+		
+		
+		self.w += int(2*self.x_change)
+		self.h += int(2*self.y_change)
+		self.update_border_flag = True
+		
+	def add_width_right(self,w): 
+		self.right += w
+		self.update_border_flag = True
+		#self.drawable.resize_event(self.w,self.h)
+		
+	def add_width_left(self,w): 
+		self.left -= w
+		self.update_border_flag = True
+		#self.drawable.resize_event(self.w,self.h)
+		
+	def add_height_bottom(self,h): 
+		self.bottom -= h
+		self.update_border_flag = True
+		#self.drawable.resize_event(self.w,self.h)
+		
+	def add_height_top(self,h): 
+		self.top += h
+		self.update_border_flag = True
+
 	def border_scale_event(self,delta):
 		if delta > 0:
 			scale = self.border_scale
@@ -2003,23 +2061,22 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 			scale = self.inv_border_scale
 		else: return
 		
-		self.x_change = self.w*(1.0-scale)/2.0
+		self.x_change = self.w*(scale-1.0)/2.0
 		self.left -= self.x_change
 		self.right += self.x_change
 		
-		self.y_change = self.h*(1.0-scale)/2.0
+		self.y_change = self.h*(scale-1.0)/2.0
 		self.bottom -= self.y_change
 		self.top += self.y_change
 		
-		self.z_change = self.d*(1.0-scale)/2.0
-		self.far -= self.y_change
-		self.near += self.y_change
+		self.z_change = self.d*(scale-1.0)/2.0
+		self.far -= self.z_change
+		self.near += self.z_change
 		
 		
-		self.w *= int(2*self.x_change)
-		self.h *= int(2*self.y_change)
-		self.d *= int(2*self.z_change)
-		
+		self.w += int(2*self.x_change)
+		self.h += int(2*self.y_change)
+		self.d += int(2*self.z_change)
 		#self.drawable.resize_event(self.w,self.h,self.d)
 		
 		#self.update_dims = True
@@ -2048,8 +2105,8 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 	
 	#def get_lr_bt_nf(self):
 		
-		##return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
-		##return self.drawable.get_lr_bt_nf()
+		#return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
+		#return self.drawable.get_lr_bt_nf()
 	def get_my_dims(self):
 		
 		return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
@@ -2351,7 +2408,11 @@ class EM2DGLWindow(EMGLWindow):
 		self.w = 128
 		self.h = 128
 		EMGLWindow.__init__(self,parent,gl_view)
-		gl_view.get_drawable().set_gl_widget(self)
+		if isinstance(gl_view,EM2DGLView): gl_view.get_drawable().set_gl_widget(self)
+		elif isinstance(gl_view,EMQtGLView): 
+			self.w = gl_view.width()
+			self.h = gl_view.height()
+		
 		self.draw_frame = True
 		
 		self.decoration = EM2DPlainBorderDecoration(self,parent.get_gl_context_parent())
@@ -2359,8 +2420,6 @@ class EM2DGLWindow(EMGLWindow):
 		
 		self.draw_vd_frame = False
 		self.update_border_flag = False
-	
-
 		
 		self.cam.allow_camera_rotations(False)
 	
@@ -2380,6 +2439,7 @@ class EM2DGLWindow(EMGLWindow):
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
 
+
 	def width(self):
 		return self.w
 		
@@ -2388,6 +2448,26 @@ class EM2DGLWindow(EMGLWindow):
 	
 	def set_width(self,w): self.w = w
 	def set_height(self,h): self.h = h
+	
+	def top_frame_wheel(self,delta):
+		if delta > 0:
+			scale = self.border_scale
+		elif delta < 0:
+			scale = self.inv_border_scale
+		else: return
+
+		x_change = int( self.w*(scale-1.0))
+		self.w += x_change
+	
+		
+		y_change = int(self.h*(scale-1.0))
+		self.cam.cam_y -= y_change/2
+		self.h += y_change
+		
+		
+		self.update_border_flag = True
+		self.drawable.resize_event(self.w,self.h)
+		
 	
 	def add_width_right(self,w): 
 		self.w += w
@@ -2412,7 +2492,6 @@ class EM2DGLWindow(EMGLWindow):
 		self.cam.cam_y += h/2.0
 		self.update_border_flag = True
 		self.drawable.resize_event(self.w,self.h)
-	
 	def set_update_frame(self,val=True):
 		self.update_border_flag = val
 	
@@ -2449,9 +2528,6 @@ class EM2DGLView(EMEventRerouter):
 	"""
 	def __init__(self, parent,image):
 		self.parent = parent
-		self.cam = Camera2(self)
-		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
-		
 		if isinstance(parent,EMImageMXModule) or isinstance(parent,EMImage2DModule) or isinstance(parent,EMPlot2DModule):
 			self.drawable = parent
 			self.w = self.parent.width()
@@ -2538,276 +2614,461 @@ class EM2DGLView(EMEventRerouter):
 		self.drawable.initializeGL()
 	
 	def draw(self):
-		
 		self.drawable.render()
-		
 
-
-class EMGLView2D:
-	"""
-	A view of a 2D drawable type, such as a single 2D image or a matrix of 2D images
-	
-	"""
-	def __init__(self, parent,image):
+class EMQtGLView:
+	def __init__(self, parent, qwidget=None, widget_parent=None):
 		self.parent = parent
+		print self.parent
+
+		self.qwidget = qwidget
+		self.itex = 0
+		self.gen_texture = True # A flag to cause texture generation
+		
+		self.childreceiver = None
+		self.widget_parent = widget_parent
+		
+		self.current = None
+		self.previous = None
+		
+		self.e2children = []
+		self.is_child = False
+	
+		self.refresh_dl = True
+		self.texture_dl = 0
+		self.texture_lock = 0
+		
+		self.vdtools = EMViewportDepthTools2(parent.get_gl_context_parent())
+		print self.parent
+		if qwidget != None: self.setQtWidget(qwidget) # if you don't do this set it straight after calling __init__
+		
+		
 		self.cam = Camera2(self)
-		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		
-		if isinstance(parent,EMImageMXModule) or isinstance(parent,EMImage2DModule):
-			self.drawable = parent
-			self.w = self.parent.width()
-			self.h = self.parent.height()
-		else:
-			if isinstance(image,list):
-				if len(image) == 1:
-					self.become_2d_image(image[0])
-				else:
-					self.drawable = EMImageMXModule(image)
-					self.drawable.set_parent(self)
-					self.w = self.parent.width()
-					self.h = self.parent.height()
-			elif isinstance(image,EMData):
-				self.become_2d_image(image)
-			else:
-				print "error, the EMGLView2D class must be initialized with data"
-				return
-			
-		self.drawable.suppressInspector = True
-		self.initflag = True
-		self.vdtools = EMViewportDepthTools(self)
 		
-		self.update_flag = True
-		
-		self.draw_frame = False
-		
-		self.sizescale = 1.0
-		self.changefactor = 1.1
-		self.invchangefactor = 1.0/self.changefactor
-		
-		self.inspector = None
-		
-		self.update_border_flag = False
-		
-		raise
-		self.decoration = EM2DPlainBorderDecoration(self)
+	def get_decoration(self):
+		return self.decoration
 	
-	def set_sizescale(self,scale):
-		self.sizescale = scale
+	def lock_texture(self):
+		self.texture_lock += 1
 	
-	def get_drawable(self):
-		return self.drawable
+	def unlock_texture(self):
+		self.texture_lock -= 1
 	
-	def set_frozen(self,frozen):
-		#self.drawable.set_frozen(frozen)
-		if frozen: self.decoration.set_color_flag(EMPlainBorderDecoration.FROZEN_COLOR)
-		else : self.decoration.set_color_flag(EMPlainBorderDecoration.DEFAULT_COLOR)
-	
-	def context(self):
-		# asking for the OpenGL context from the parent
-		return self.parent.context()
-	
-	def set_shapes(self,shapes,shrink):
-		self.drawable.set_shapes(shapes,shrink)
+	def __del__(self):
+		if (self.itex != 0 ):
+			self.parent.deleteTexture(self.itex)
+			self.itex = 0
+		if self.texture_dl != 0:
+			glDeleteLists(self.texture_dl,1)
+			self.texture_dl = 0
 		
-	def become_2d_image(self,a):
-		self.drawable = EMImage2DModule(a)
-		self.drawable.set_parent(self)
-		#self.drawable.originshift = False
-		self.w = a.get_xsize()
-		if self.w > self.parent.width(): self.w = self.parent.width()
-		self.h = a.get_ysize()
-		if self.h > self.parent.height(): self.h = self.parent.height()
-		
-	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
-		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
-	
 	def set_update_P_inv(self,val=True):
 		self.vdtools.set_update_P_inv(val)
 	
-	def set_width(self,w,resize_event=True):
-		self.w = w
-		print "set width"
-		if resize_event: self.drawable.resizeEvent(self.width(),self.height())
-		self.update_border_flag = True
-		
-	def set_height(self,h,resize_event=True):
-		self.h = h
-		if resize_event: self.drawable.resizeEvent(self.width(),self.height())
-		self.update_border_flag = True
-
+	def set_refresh_dl(self,val=True):
+		self.refresh_dl = val
+	
 	def width(self):
-		try:
-			return int(self.sizescale*self.w)
-		except:
-			return 0
-		#return self.drawable.width()
+		return self.qwidget.width()
 	
 	def height(self):
-		try:
-			return int(self.sizescale*self.h)
-		except:
-			return 0
-		#return self.drawable.height()
-	
-	def get_render_area_coords(self):
-		return self.vdtools.get_corners()
-	
-	def set_data(self,data):
-		self.drawable.set_data(data)
+		return self.qwidget.height()
+
+	def setQtWidget(self, widget, delete_current = False):
+		if ( delete_current and self.qwidget != None ):
+			self.qwidget.deleteLater()
 		
-	def initializeGL(self):
-		self.drawable.initializeGL()
-	
-	def testBoundaries(self):
-		'''
-		Called when the image is first drawn, this resets the dimensions of this object
-		if it is larger than the current size of the viewport. It's somewhat of a hack,
-		but it's early stages in the design
-		'''
-		h = self.vdtools.getMappedHeight()
-		w = self.vdtools.getMappedWidth()
+		self.qwidget = widget
 		
-		if ( w > self.vdtools.viewport_width() ):
-			self.w = self.vdtools.viewport_width()/self.sizescale
-		if ( h > self.vdtools.viewport_height() ):
-			self.h = self.vdtools.viewport_height()/self.sizescale
+		if ( widget != None ):
+			#self.qwidget.setVisible(True)
+			self.qwidget.setEnabled(True)
+			self.gen_texture = True
+			self.updateTexture()
+			
+	def updateTexture(self,force=False):
+		if self.texture_lock > 0:
+			return
+		
+		if ( self.itex == 0 or self.gen_texture == True or force) : 
+			self.refresh_dl = True
+			if (self.itex != 0 ):
+				#passpyth
+				self.parent.get_gl_context_parent().deleteTexture(self.itex)
+			self.gen_texture = False
+			##print "binding texture"
+			#self.qwidget.setVisible(True)
+			#self.qwidget.repaint()
+			if ( isinstance(self.qwidget,QtGui.QWidget) ):
+				pixmap = QtGui.QPixmap.grabWidget(self.qwidget)
+			else:
+				pixmap = QtGui.QPixmap.grabWidget(self.qwidget.widget())
+			#self.qwidget.setVisible(False)
+			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
+			self.itex = self.parent.get_gl_context_parent().bindTexture(pixmap)
+			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
+		
+			#self.decoration.set_force_update()
 	
 	def draw(self):
+		#print "draw children"
+		if (self.qwidget == None or self.itex == 0) :
+			#print "no widget - draw children return" 
+			return
 		
-		self.cam.position()
+		#self.cam.debug = True
+		#self.cam.position()
 		
+		# make sure the vdtools store the current matrices
 		self.vdtools.update(self.width()/2.0,self.height()/2.0)
-		
-		if (self.initflag == True):
-			self.testBoundaries()
-			self.initflag = False
 
-		
-		#self.mediator.checkBoundaryIssues()
-		if (self.update_flag):
-			self.drawable.resizeEvent(self.width(),self.height())
-			self.update_flag = False
+		glTranslate(self.qwidget.width()/2.0,self.qwidget.height()/2.0,0)
+		if self.refresh_dl == True:
+			if self.texture_dl != 0:
+				glDeleteLists(self.texture_dl,1)
 			
-		glPushMatrix()
-		glTranslatef(-self.width()/2.0,-self.height()/2.0,0)
-		#try: 
-		self.drawable.render()
-		#except Exception, inst:
-			#print type(inst)     # the exception instance
-			#print inst.args      # arguments stored in .args
-			#print int
-		glPopMatrix()
+			self.texture_dl=glGenLists(1)
+			glNewList(self.texture_dl,GL_COMPILE)
 		
-		lighting = glIsEnabled(GL_LIGHTING)
-		glEnable(GL_LIGHTING)
-		self.decoration.draw(self.update_border_flag)
-		self.update_border_flag = False
-		
-		if self.draw_frame: self.vdtools.draw_frame()
-		if not lighting: glDisable(GL_LIGHTING)
-		
-	#def update(self):
-		#self.parent.updateGL()
-	
-	#def updateGL(self):
-		#self.parent.updateGL()
-	
-	def get_inspector(self):
-		if (self.inspector == None):
-			if self.drawable == None:
-				return None
-			self.drawable.init_inspector()
-			self.drawable.inspector.show()
-			self.drawable.inspector.hide()
-			self.inspector = self.drawable.inspector
+			glPushMatrix()
+			glEnable(GL_TEXTURE_2D)
+			glBindTexture(GL_TEXTURE_2D,self.itex)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
+			glBegin(GL_QUADS)
+			glTexCoord2f(0.,0.)
+			glVertex(-self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
+			glTexCoord2f(1.,0.)
+			glVertex( self.qwidget.width()/2.0,-self.qwidget.height()/2.0)
+			glTexCoord2f(1.,1.)
+			glVertex( self.qwidget.width()/2.0, self.qwidget.height()/2.0)
+			glTexCoord2f(0.,1.)
+			glVertex( -self.qwidget.width()/2.0,self.qwidget.height()/2.0)
+			glEnd()
+			glDisable(GL_TEXTURE_2D)
+			glPopMatrix()
 			
-		return self.inspector
+			glEndList()
+		
+		if self.texture_dl == 0: return
+		glCallList(self.texture_dl)
+		self.refresh_dl = False
 	
+		#lighting = glIsEnabled(GL_LIGHTING)
+		#glEnable(GL_LIGHTING)
+		#self.decoration.draw()
+		#if self.draw_frame:
+			#self.vdtools.draw_frame()
+			##except Exception, inst:
+				##print type(inst)     # the exception instance
+				##print inst.args      # arguments stored in .args
+				##print int
+		#if (not lighting): glDisable(GL_LIGHTING)
+		
+		# now draw children if necessary - such as a qcombobox list view that has poppud up
+		for i in self.e2children:
+			glPushMatrix()
+			#try:
+			i.draw()
+			#except Exception, inst:
+				#print type(inst)     # the exception instance
+				#print inst.args      # arguments stored in .args
+				#print int
+			glPopMatrix()
+
+	def isinwin(self,x,y):
+		for i in self.e2children:
+			if i.isinwin(x,y):
+				self.childreceiver = i
+				return True
+		
+		return self.vdtools.isinwin(x,y)
+	
+	def eye_coords_dif(self,x1,y1,x2,y2):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2)
+			
+	def mouseinwin(self,x,y,width,height):
+		return self.vdtools.mouseinwin(x,y,width,height)
+
 	def mouse_in_win_args(self,event):
-		return [event.x(),self.parent.gl_context_parent.viewport_height()-event.y(),self.width(),self.height()]
+		return [event.x(),self.parent.viewport_height()-event.y(),self.width(),self.height()]
+
+	def toolTipEvent(self,event):
+		if ( self.childreceiver != None ):
+			# this means this class already knows that the mouse event is in the child
+			# that is being displayed
+			self.childreceiver.toolTip(event)
+			self.childreceiver = None
+			return
+		cw=self.qwidget.childAt(event.x(),event.y())
+		if cw == None: 
+			QtGui.QToolTip.hideText()
+			self.gen_texture = True
+			self.updateTexture()
+			return
+	
+		p1 = QtCore.QPoint(event.x(),event.y())
+		p2 = self.parent.mapToGlobal(p1)
+		QtGui.QToolTip.showText(p2,cw.toolTip())
+	
+	def wheelEvent(self,event):
+		doElse = True
+		try:
+			if event.modifiers() == Qt.ControlModifier:
+				self.cam.wheelEvent(event)
+				doElse = False
+		except: pass
+		if doElse:
+			if ( self.childreceiver != None ):
+				# this means this class already knows that the mouse event is in the child
+				# that is being displayed
+				self.childreceiver.wheelEvent(event)
+				self.childreceiver = None
+				return
+			else:
+				# if we have any children (i.e. a drop down combo box) it should now disappear
+				if len(self.e2children) > 0:
+					self.e2children.pop()
+					return
+			cw=self.qwidget.childAt(event.x(),event.y())
+			if cw == None: return
+			gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
+			lp=cw.mapFromGlobal(gp)
+			qme=QtGui.QWheelEvent(lp,event.delta(),event.buttons(),event.modifiers(),event.orientation())
+			QtCore.QCoreApplication.sendEvent(cw,qme)
+			self.gen_texture = True
+			self.updateTexture()
+	
+	def mouseDoubleClickEvent(self, event):
+		if ( self.childreceiver != None ):
+			# this means this class already knows that the mouse event is in the child
+			# that is being displayed
+			self.childreceiver.mouseDoubleClickEvent(event)
+			self.childreceiver = None
+			return
+		cw=self.qwidget.childAt(event.x(),event.y())
+		if cw == None: return
+		gp = self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
+		lp=cw.mapFromGlobal(gp)
+		if (isinstance(cw,QtGui.QComboBox)):
+			print "it's a combo"
+		else:
+			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			#self.qwidget.setVisible(True)
+			QtCore.QCoreApplication.sendEvent(cw,qme)
+			#self.qwidget.setVisible(False)
+		self.gen_texture = True
+		self.updateTexture()
+		
+	def get_depth_for_height(self,height_plane):
+		return self.parent.get_depth_for_height(height_plane)
 	
 	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and self.inspector == None):
-			try:	
-				self.drawable.init_inspector()
-				self.drawable.inspector.show()
-				self.drawable.inspector.hide()
-				self.parent.addQtWidgetDrawer(self.get_inspector())
-			except:
-				pass
-				#print "the mouse event had no effect"
-			
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mousePressEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.drawable.mousePressEvent(qme)
-			#self.drawable.mousePressEvent(event)
+			if ( self.childreceiver != None ):
+				# this means this class already knows that the mouse event is in the child
+				# that is being displayed
+				self.childreceiver.mousePressEvent(event)
+				self.childreceiver = None
+				return
+			else:
+				# if we have any children (i.e. a drop down combo box) it should now disappear
+				if len(self.e2children) > 0:
+					self.e2children.pop()
+					return
+				
+			cw=self.qwidget.childAt(event.x(),event.y())
+			if cw == None: return
+			##print cw.objectName()
+			gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
+			lp=cw.mapFromGlobal(gp)
+			if (isinstance(cw,QtGui.QComboBox)):
+				cw.showPopup()
+				cw.hidePopup()
+				widget = EMQtGLView(self.parent,None,cw);
+				widget.setQtWidget(cw.view())
+				widget.cam.loadIdentity()	
+				widget.cam.setCamTrans("x",cw.geometry().x()-self.width()/2.0+cw.view().width()/2.0)
+				widget.cam.setCamTrans("y",((self.height()/2.0-cw.geometry().y())-cw.view().height()/2.0))
+				widget.cam.setCamTrans("z",0.1)
+				widget.draw_frame = False
+				self.e2children.append(widget)
+				self.e2children[0].is_child = True
+			else:
+				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
+				if (self.is_child): QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
+				else: QtCore.QCoreApplication.sendEvent(cw,qme)
+				
+			self.gen_texture = True
+			self.updateTexture()
 		
-		#self.updateGL()
-	
-	def scaleEvent(self,delta):
-		if ( delta > 0 ):
-			self.sizescale *= self.changefactor
-		elif ( delta < 0 ):
-			self.sizescale *= self.invchangefactor
-
-		self.drawable.resizeEvent(self.width(),self.height())
-	
-	def wheelEvent(self,event):
-		if event.modifiers() == Qt.ControlModifier:
-			self.scaleEvent(event.delta())
-			self.decoration.set_force_update()
-			#print "updating",self.drawWidth(),self.drawHeight()
-		else:
-			self.drawable.wheelEvent(event)
-			
-		#self.updateGL()
-	
 	def mouseMoveEvent(self,event):
+		#pos = QtGui.QCursor.pos()
+		
+		#print event.x(),pos.x(),event.y(),pos.y()
+		#pos = self.parent.mapFromGlobal(pos)
+		#print "now",event.x(),pos.x(),event.y(),pos.y()
+	
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.drawable.mouseMoveEvent(qme)
-			#self.drawable.mouseMoveEvent(event)
-		
-		#self.updateGL()
+			if ( self.childreceiver != None ):
+				# this means this class already knows that the mouse event is in the child
+				# that is being displayed
+				self.childreceiver.mouseMoveEvent(event)
+				self.childreceiver = None
+				return
+			else:
+				cw=self.qwidget.childAt(event.x(),event.y())
+				self.current = cw
+				if ( self.current != self.previous ):
+					QtGui.QToolTip.hideText()
+					if ( self.current != None ):
+						qme=QtCore.QEvent(QtCore.QEvent.Enter)
+						QtCore.QCoreApplication.sendEvent(self.current,qme)
+						
+					if ( self.previous != None ):
+						qme=QtCore.QEvent(QtCore.QEvent.Leave)
+						QtCore.QCoreApplication.sendEvent(self.previous,qme)
+				
+				self.previous = self.current
+				if cw == None:
+					QtGui.QToolTip.hideText()
+					if ( self.previous != None ):
+						qme=QtCore.QEvent(QtCore.QEvent.Leave)
+						QtCore.QCoreApplication.sendEvent(self.previous,qme)
+						self.gen_texture = True
+						self.updateTexture()
+					return
+				gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
+				lp=cw.mapFromGlobal(gp)
+				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+				QtCore.QCoreApplication.sendEvent(cw,qme)
+			# FIXME
+			# setting the gen_texture flag true here causes the texture to be regenerated
+			# when the mouse moves over it, which is inefficient.
+			# The fix is to only set the gen_texture flag when mouse movement
+			# actually causes a change in the appearance of the widget (for instance, list boxes from comboboxes)
+			self.gen_texture = True
+			self.updateTexture()
+	
+	def keyPressEvent(self,event,pos):
+		if ( self.childreceiver != None ):
+			# this means this class already knows that the mouse event is in the child
+			# that is being displayed
+			self.childreceiver.keyPressEvent(event)
+			self.childreceiver = None
+			return
+		else:
+			#pos = self.parent.get_gl_context_parent().mapFromGlobal(QtGui.QCursor.pos())
+			cw=self.qwidget.childAt(pos[0],pos[1])
+			self.current = cw
+			if ( self.current != self.previous ):
+				QtGui.QToolTip.hideText()
+				if ( self.current != None ):
+					qme=QtCore.QEvent(QtCore.QEvent.Enter)
+					QtCore.QCoreApplication.sendEvent(self.current,qme)
+					
+				if ( self.previous != None ):
+					qme=QtCore.QEvent(QtCore.QEvent.Leave)
+					QtCore.QCoreApplication.sendEvent(self.previous,qme)
+			
+			self.previous = self.current
+			if cw == None:
+				QtGui.QToolTip.hideText()
+				if ( self.previous != None ):
+					qme=QtCore.QEvent(QtCore.QEvent.Leave)
+					QtCore.QCoreApplication.sendEvent(self.previous,qme)
+					self.gen_texture = True
+					self.updateTexture()
+				return
+			#gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+			#lp=cw.mapFromGlobal(gp)
+			#qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			#print cw,event
+			QtCore.QCoreApplication.sendEvent(cw,event)
+		# FIXME
+		# setting the gen_texture flag true here causes the texture to be regenerated
+		# when the mouse moves over it, which is inefficient.
+		# The fix is to only set the gen_texture flag when mouse movement
+		# actually causes a change in the appearance of the widget (for instance, list boxes from comboboxes)
+		self.gen_texture = True
+		self.updateTexture()
 
 	def mouseReleaseEvent(self,event):
 		if event.modifiers() == Qt.ControlModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.drawable.mouseReleaseEvent(qme)
-			#self.drawable.mouseReleaseEvent(event)
-
-	def mouseDoubleClickEvent(self, event):
-		if event.modifiers() == Qt.ControlModifier:
-			self.cam.mouseMoveEvent(event)
-		else:
-			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.drawable.mouseDoubleClickEvent(qme)
+			if ( self.childreceiver != None ):
+				# this means this class already knows that the mouse event is in the child
+				# that is being displayed
+				#try:
+				self.childreceiver.mouseReleaseEvent(event)
+				self.childreceiver = None
+				self.e2children.pop()
+				return
+			else:
+				# if we have any children (i.e. a drop down combo box) it should now disappear
+				if len(self.e2children) > 0:
+					self.e2children.pop()
+					return
 			
-	def keyPressEvent(self,event):
-		self.drawable.keyPressEvent(event)
-
-		#self.updateGL()
-	def emit(self, *args,**kargs):
-		self.parent.emit(*args,**kargs)
-
+			cw=self.qwidget.childAt(event.x(),event.y())
+			if cw == None: return
+			gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
+			lp=cw.mapFromGlobal(gp)
+			if (isinstance(cw,QtGui.QComboBox)):
+				print "it's a combo"
+				#cw.showPopup()
+			else:
+				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+				if (self.is_child):
+					##print self.qwidget
+					##print self.qwidget.currentIndex().row()
+					##print self.widget_parent
+					##print self.qwidget.rect().left(),self.qwidget.rect().right(),self.qwidget.rect().top(),self.qwidget.rect().bottom()
+					##print lp.x(),lp.y()
+					self.widget_parent.setCurrentIndex(self.qwidget.currentIndex().row())
+					#self.widget_parent.changeEvent(QtCore.QEvent())
+					#self.widget_parent.highlighted(self.qwidget.currentIndex().row())
+					#self.qwidget.commitData(self.qwidget.parent())
+					##print self.qwidget.currentText()
+					#self.widget_parent.setVisible(True)
+					#self.widget_parent.setEnabled(True)
+					#self.qwidget.setVisible(True)
+					#QtCore.QCoreApplication.sendEvent(self.widget_parent,qme)
+					#self.qwidget.setVisible(False)
+					self.widget_parent.emit(QtCore.SIGNAL("activated(QString)"),self.widget_parent.itemText(self.qwidget.currentIndex().row()))
+				else:
+					#self.qwidget.setVisible(True)
+					QtCore.QCoreApplication.sendEvent(cw,qme)
+					#self.qwidget.setVisible(False)
+			
+			self.gen_texture = True
+			self.updateTexture()
+		
 	def leaveEvent(self):
-		self.drawable.leaveEvent()
-	
-	def toolTipEvent(self,event):
+		if (self.current != None) : 
+			qme = QtCore.QEvent(QtCore.QEvent.Leave)
+			QtCore.QCoreApplication.sendEvent(self.current,qme)
+			self.current = None
+			self.previouse = None
+			self.gen_texture = True
+			self.updateTexture()
+			
+	def resize_event(self,width,height):
+		self.qwidget.resize(width,height)
+			
+	def enterEvent():
 		pass
-	
-	def isinwin(self,x,y):
-		return self.vdtools.isinwin(x,y)
+	def timerEvent(self,event=None):
+		pass
+		#self.cam.motion_rotate(.2,.2)
+
 
 
 class EMGLViewQtWidget:
@@ -2818,7 +3079,6 @@ class EMGLViewQtWidget:
 		self.mapcoords = True
 		self.itex = 0
 		self.gen_texture = True
-		self.click_debug = False
 		self.cam = Camera2(self)
 		#self.cam.setCamTrans('default_z',-parent.get_depth_for_height(height_plane))
 		self.cam.motion_rotate(0,0)

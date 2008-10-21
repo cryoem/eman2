@@ -1065,7 +1065,7 @@ if __name__ == '__main__':
 	window = EMImageMXRotorModule(application=em_app)
 	if len(sys.argv)==1 : 
 		data = []
-		for i in range(0,500):
+		for i in range(0,200):
 			e = test_image(Util.get_irand(0,9))
 			if ( Util.get_irand(0,4) == 0):	e.set_attr("excluded",True)
 			data.append(e)

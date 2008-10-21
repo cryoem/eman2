@@ -328,11 +328,15 @@ class EMQtWidgetModule(EMGUIModule):
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		from emfloatingwidgets import EMGLViewQtWidget
+		from emfloatingwidgets import EMQtGLView, EM2DGLWindow
 		if self.gl_widget == None:
 			self.qt_context_parent = qt_context_parent
-			self.ql_context_parent = gl_context_parent
-			self.gl_widget = EMGLViewQtWidget(gl_context_parent)
-			self.gl_widget.setQtWidget(self.qt_widget)
+			self.gl_context_parent = gl_context_parent
+			gl_view = EMQtGLView(self,self.qt_widget)
+			gl_view.setQtWidget(self.qt_widget)
+			self.gl_widget = EM2DGLWindow(self,gl_view)
+			#self.gl_widget = EMGLViewQtWidget(gl_context_parent)
+			#self.gl_widget.setQtWidget(self.qt_widget)
 		return self.gl_widget
 		
 	def get_desktop_hint(self):
@@ -350,3 +354,7 @@ class EMQtWidgetModule(EMGUIModule):
 	
 	def unlock_texture(self):
 		self.gl_widget.unlock_texture()
+		
+	def width(self): return self.qt_widget.widht()
+	
+	def height(self): return self.qt_widget.height()

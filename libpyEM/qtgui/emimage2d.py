@@ -967,6 +967,7 @@ class EMImage2DModule(EMGUIModule):
 				raise("failed to generate texture name")
 			
 			glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
+			glPixelStorei(GL_UNPACK_ALIGNMENT,4)
 			glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.gl_widget.width(),self.gl_widget.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
 			
 			glPushMatrix()
@@ -1021,6 +1022,7 @@ class EMImage2DModule(EMGUIModule):
 					GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
 	
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
+				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
 				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.gl_widget.width(),self.gl_widget.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 				
 				glPushMatrix()

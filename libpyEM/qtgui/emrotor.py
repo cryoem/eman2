@@ -135,11 +135,11 @@ class EMRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionViewMatrice
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT )
 		glLoadIdentity()
 		if ( self.target == None ): return
-		try:
-			self.target.render()
-		except: 
-			print "render error"
-			self.animatables = []
+		
+		self.target.draw()
+		#except: 
+			#print "render error"
+			#self.animatables = []
 
 	
 	def resizeGL(self, width, height):
@@ -223,7 +223,7 @@ class EMRotorModule(EMGUIModule):
 		for widget in self.rotor.get_widgets():
 			self.application.deregister_qt_emitter(widget.get_drawable().get_drawable())
 			
-	def render(self):
+	def draw(self):
 		lrt = self.widget.get_lr_bt_nf()
 		z = self.gl_context_parent.get_depth_for_height(abs(lrt[3]-lrt[2]))
 		
@@ -291,8 +291,12 @@ class EMRotorModule(EMGUIModule):
 			self.add_file_dialog()
 			
 	def add_qt_widget(self,qt_widget):
-		gl_widget = EMGLViewQtWidget(self.gl_context_parent)
-		gl_widget.setQtWidget(qt_widget)
+		from emfloatingwidgets import EMQtGLView, EM2DGLWindow
+		gl_view = EMQtGLView(self,qt_widget)
+		gl_view.setQtWidget(qt_widget)
+		gl_widget = EM2DGLWindow(self,gl_view)
+		#gl_widget = EMGLViewQtWidget(self.gl_context_parent)
+		#gl_widget.setQtWidget(qt_widget)
 		self.application.register_qt_emitter(gl_widget,self.application.get_qt_emitter(self))
 		self.rotor.add_widget(gl_widget)
 			

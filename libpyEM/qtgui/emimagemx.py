@@ -1049,10 +1049,12 @@ class EMImageMXModule(EMGUIModule):
 		glTranslatef(x+width,y+height,0)
 			
 		glBindTexture(GL_TEXTURE_2D,tex_name)
+		glPixelStorei(GL_UNPACK_ALIGNMENT,4)
 		glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,w,h,0,GL_LUMINANCE,GL_UNSIGNED_BYTE, a)
 		
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D, tex_name)
+		
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		# using GL_NEAREST ensures pixel granularity
