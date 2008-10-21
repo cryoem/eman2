@@ -2418,8 +2418,8 @@ class EM2DGLWindow(EMGLWindow):
 	
 	def set_frozen(self,frozen):
 		#self.drawable.set_frozen(frozen)
-		if frozen: self.decoration.set_color_flag(EM3DBorderDecoration.FROZEN_COLOR)
-		else : self.decoration.set_color_flag(EM3DBorderDecoration.DEFAULT_COLOR)
+		if frozen: self.decoration.set_color_flag(EMBorderDecoration.FROZEN_COLOR)
+		else : self.decoration.set_color_flag(EMBorderDecoration.DEFAULT_COLOR)
 	
 	def draw(self):
 		
