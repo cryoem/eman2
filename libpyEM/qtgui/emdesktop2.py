@@ -582,7 +582,7 @@ class EMDesktopFrame(EMFrame):
 		glColor(.9,.2,.8)
 		## this is a nice light blue color (when lighting is on)
 		## and is the default color of the frame
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.5,.5,.5,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,1.0)
 		glDisable(GL_TEXTURE_2D)
@@ -726,6 +726,19 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.show()
 		self.move(0,0)
 		self.resize(self.appscreen.size())
+		
+		self.selected_objects = []
+		
+	def set_selected(self,object,event):
+		if len(self.selected_objects) != 0:
+			for i in range(len(self.selected_objects)-1,-1,-1):
+				self.selected_objects[i].set_selected(False)
+				self.selected_objects.pop(i)
+				
+		self.selected_objects.append(object)
+		object.set_selected(True)
+
+		
 		
 	def get_gl_context_parent(self): return self
 		

@@ -50,7 +50,7 @@ from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
-from emapplication import EMStandAloneApplication, EMGUIModule
+from emapplication import EMGUIModule
 
 from emanimationutil import SingleValueIncrementAnimation, LineAnimation
 
@@ -65,7 +65,6 @@ from emglobjects import EMOpenGLFlagsAndTools
 GLUT.glutInit(sys.argv)
 
 class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
-	allim=WeakKeyDictionary()
 	def __init__(self, em_image_2d_module):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
@@ -135,7 +134,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		try: self.target.resizeEvent(width,height)
+		try: self.target.resize_event(width,height)
 		except: pass
 		
 	def add_shapes(self,s):
@@ -338,7 +337,7 @@ class EMImage2DDrawMouseMode(EMImage2DMouseEvents):
 class EMImage2DModule(EMGUIModule):
 	"""
 	"""
-	allim=WeakKeyDictionary()
+	
 	
 	def emit(self,*args,**kargs):
 		qt_widget = self.application.get_qt_emitter(self)
@@ -397,12 +396,13 @@ class EMImage2DModule(EMGUIModule):
 #			self.init_size_flag = False
 #		except: pass
 			
-	
+	allim=WeakKeyDictionary()
 	def __init__(self, image=None,application=None):
+		
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
-		
+		EMImage2DModule.allim[self] = 0
 		self.init_gl_flag = True
 		self.oldsize=(-1,-1)
 		self.scale=1.0				# Scale factor for display
@@ -667,6 +667,7 @@ class EMImage2DModule(EMGUIModule):
 				#self.data = data[self.list_idx]
 			#else:
 				#self.list_data = None
+		self.image_change_count = 0
 			
 		self.auto_contrast(inspector_update=False,display_update=False)
 
@@ -912,7 +913,6 @@ class EMImage2DModule(EMGUIModule):
 		self.display_states = []
 
 	def display_state_changed(self):
-		
 		display_states = []
 		display_states.append(self.gl_widget.width())
 		display_states.append(self.gl_widget.height())
@@ -939,6 +939,9 @@ class EMImage2DModule(EMGUIModule):
 	def render(self):
 		if not self.data and not self.fft : return
 		if self.init_gl_flag: self.initializeGL()
+		
+		self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+		
 		
 		lighting = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
@@ -1135,7 +1138,7 @@ class EMImage2DModule(EMGUIModule):
 		glDisable( GL.GL_BLEND)
 		if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
 		
-	def resizeEvent(self,width,height):
+	def resize_event(self,width,height):
 		if self.init_size :
 			if self.origin == (0,0):
 				#self.origin = ((self.data.get_xsize() - self.gl_widget.width())/2.0, (self.data.get_ysize() - self.gl_widget.height())/2.0 )
@@ -1796,6 +1799,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 # This is just for testing, of course
 if __name__ == '__main__':
+	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	window = EMImage2DModule(application=em_app)
 	

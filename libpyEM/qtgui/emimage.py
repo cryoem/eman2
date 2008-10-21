@@ -52,6 +52,29 @@ from copy import deepcopy
 
 GLUT.glutInit(sys.argv )
 
+
+def image_update():
+	for i in EMImage2DModule.allim.keys():
+		try:
+			if i.data.get_changecount() !=i.get_last_render_image_display_count() :
+				i.force_display_update()
+				i.updateGL()
+		except: pass
+	
+	for i in EMImageMXModule.allim.keys():
+		try:
+			if i.data[0].get_changecount()!=i.get_last_render_image_display_count() :
+				i.force_display_update()
+				i.updateGL()
+		except: pass
+		
+	for i in EMImage3DModule.allim.keys():
+		try:
+			if i.data.get_changecount()!=i.get_last_render_image_display_count() :
+				i.updateGL()
+		except: pass
+	
+	
 def get_app():
 	app=QtGui.QApplication.instance()
 	if not app : app = QtGui.QApplication([])
@@ -69,110 +92,44 @@ def get_app():
 	return app
 		
 def imageupdate():
-	for i in EMImage2DWidget.allim.keys():
+	for i in EMImage2DModule.allim.keys():
 		try:
-			if i.data.get_attr("changecount")!=i.changec :
-				i.set_data(i.data)
+			if i.data.get_attr("changecount")!=i.get_last_render_image_display_count() :
+				i.force_display_update()
+				i.updateGL()
 		except: pass
 
-	for i in EMImage3DWidget.allim.keys():
-		try:
-			if i.data.get_attr("changecount")!=i.changec :
-				i.set_data(i.data)
-		except: pass
+	#for i in EMImage3DWidget.allim.keys():
+		#try:
+			#if i.data.get_attr("changecount")!=i.changec :
+				#i.set_data(i.data)
+		#except: pass
 		
-	for i in EMImageMXWidget.allim.keys():
-		try:
-			if len(i.data)!=i.nimg : i.set_data(i.data)
-		except:
-			pass
-		upd=0
-		try:
-			for j in i.changec.keys():
-				try:
-					if j.get_attr("changecount")!=i.changec[j] :
-						upd=1
-						break
-				except: pass
-		except: pass
-		if upd : i.set_data(i.data)
+	#for i in EMImageMXWidget.allim.keys():
+		#try:
+			#if len(i.data)!=i.nimg : i.set_data(i.data)
+		#except:
+			#pass
+		#upd=0
+		#try:
+			#for j in i.changec.keys():
+				#try:
+					#if j.get_attr("changecount")!=i.changec[j] :
+						#upd=1
+						#break
+				#except: pass
+		#except: pass
+		#if upd : i.set_data(i.data)
 
-#class EMImage(object):
-	#"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
-	#def __new__(cls,data=None,old=None,parent=1,copy=True):
-		#"""This will create a new EMImage* object depending on the type of 'data'. If
-		#old= is provided, and of the appropriate type, it will be used rather than creating
-		#a new instance."""
-		#if isinstance(data,EMData) and data.get_zsize()==1:
-			## single 2D image
-			
-			## sometimes it's necessary to copy, especially if the user is 
-			## calling display from python
-			#if copy: local_data = data.copy()
-			#else: local_data = data
-
-			#if old:
-				#if isinstance(old,EMImage2DWidget) :
-					#old.set_data(local_data)
-					#return old
-			#if parent: 
-				#ret=EMParentWin(EMImage2DWidget(local_data))
-			#if parent : 
-				#ret=EMParentWin(EMImage2DWidget(local_data))
-				#ret.show()
-##				ret.raise()
-				#ret.releaseMouse()
-				#ret.releaseKeyboard()
-				#return ret
-			#return EMImage2DWidget(local_data)
-		#elif isinstance(data,EMData):
-			## data copy considerations shouldn't be necessary here 
-			## seeing as the EMImage3D does internal copying of its own
-			## FIXME double check this aspect of the code once things are going
-			## must be a single 3D image
-			#if old:
-				#if isinstance(old,EMImage3DWidget) :
-					#old.set_data(data)
-					#return old
-			#if parent : 
-				#ret=EMParentWin(EMImage3D(data))
-				#ret.show()
-##				ret.raise()
-				#ret.releaseMouse()
-				#ret.releaseKeyboard()
-				#return ret
-			#return EMImage3DWidget(data)
-		#elif isinstance(data,list):
-			
-			#if ( copy ):local_data = deepcopy(data)
-			#else: local_data = data
-			
-			#if old:
-				#if isinstance(old,EMImageMXWidget) :
-					#old.set_data(local_data)
-					#return old
-			#if parent : 
-				#ret=EMParentWin(EMImageMXWidget(local_data))
-				#ret.show()
-##				ret.raise()
-				#ret.releaseMouse()
-				#ret.releaseKeyboard()
-				#return ret
-			#return EMImageMXWidget(local_data)
-		#else:
-			#raise Exception,"data must be a single EMData object or a list of EMData objects"
-		
 class EMImageModule(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
 	def __new__(cls,data=None,old=None,app=None):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
-		a new instance."""
+		a new instance.
+		FIXME "old" aspect un tested
+		"""
 		if isinstance(data,EMData) and data.get_zsize()==1:
-			# single 2D image
-			# sometimes it's necessary to copy, especially if the user is 
-			# calling display from python
-
 			if old:
 				if isinstance(old,EMImage2DModule) :
 					old.set_data(data)
@@ -181,21 +138,10 @@ class EMImageModule(object):
 			module.set_data(data)
 			return module
 		elif isinstance(data,EMData):
-			# data copy considerations shouldn't be necessary here 
-			# seeing as the EMImage3D does internal copying of its own
-			# FIXME double check this aspect of the code once things are going
-			# must be a single 3D image
 			if old:
 				if isinstance(old,EMImage3DModule) :
 					old.set_data(data)
 					return old
-			#if parent : 
-				#ret=EMParentWin(EMImage3D(data))
-				#ret.show()
-##				ret.raise()
-				#ret.releaseMouse()
-				#ret.releaseKeyboard()
-				#return ret
 			module = EMImage3DModule(application=app)
 			module.set_data(data)
 			return module
@@ -220,7 +166,9 @@ class EMImageModule(object):
 
 
 class EMModuleFromFile(object):
-	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
+	"""This is basically a factory class that will return an instance of the appropriate EMDisplay class,
+	using only a file name as input. Can force plot and force 2d display, also.
+	"""
 	def __new__(cls,filename,application,force_plot=False,force_2d=False):
 		
 		file_type = Util.get_filename_ext(filename)

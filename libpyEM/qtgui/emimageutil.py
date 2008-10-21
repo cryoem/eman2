@@ -41,9 +41,17 @@ from emanimationutil import Animator
 class EMEventRerouter:
 	def __init__(self,target=None):
 		self.target = target
+		self.orig_target  = target
 		
+	def lock_target(self,target):
+		self.target = target
+		
+	def unlock_target(self):
+		self.target = self.orig_target
+
 	def set_target(self,target):
 		self.target = target
+		self.orig_target  = target
 
 	def mousePressEvent(self, event):
 		self.target.mousePressEvent(event)

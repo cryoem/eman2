@@ -97,7 +97,7 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.target.on_resize(width,height)
+		self.target.resize_event(width,height)
 		
 class EMPlot2DModule(EMGUIModule):
 	
@@ -365,7 +365,7 @@ class EMPlot2DModule(EMGUIModule):
 			return ((x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0],(self.height()-y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1])
 		except: return (0,0)
 
-	def on_resize(self,width,height):
+	def resize_event(self,width,height):
 		self.needupd=1
 		self.del_shapes(("xcross","ycross","lcross"))
 

@@ -31,10 +31,12 @@
 #
 #
 
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
+from PyQt4.QtCore import Qt
 import sys
 import platform
 from emimageutil import EMParentWin
+
 
 class EMGUIModule:
 	FTGL = "ftgl"
@@ -53,6 +55,8 @@ class EMGUIModule:
 		
 		self.gl_context_parent = None # should be the thing that owns the associated context
 		self.qt_context_parent = None # should the the thing that will emit signals
+		
+		self.image_change_count =  0# this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		
 		if application != None: application.attach_child(self)
 
@@ -78,6 +82,8 @@ class EMGUIModule:
 	def get_gl_widget(self): return self.gl_widget
 	
 	def get_inspector(self): raise # this need to be supplied
+	
+	def get_last_render_image_display_count(self): return self.image_change_count
 	
 	def get_em_inspector(self):
 		return self.em_qt_inspector_widget
@@ -181,10 +187,14 @@ class EMApplication:
 
 class EMStandAloneApplication(EMApplication):
 	def __init__(self,qt_application_control=True):
+		self.children = []
+		
+		# Stuff for display synchronization in e2.py
+		self.timer_function = None
+		self.tmr = None
+		
 		EMApplication.__init__(self,qt_application_control)
 		
-		self.children = []
-	
 	def detach_child(self,child):
 		for i,child_ in enumerate(self.children):
 			if child_ == child:
@@ -279,6 +289,31 @@ class EMStandAloneApplication(EMApplication):
 	def exec_loop( *args, **kwargs ):
 		pass
 
+	
+	
+	def start_timer(self,interval,function):
+	
+		if self.tmr != None:
+			print "can't start a timer, already have one running. Call stop_timer first"
+			#FIXME, add support for mutliple timers
+			return
+	
+		self.tmr=QtCore.QTimer()
+		self.tmr.setInterval(interval)
+		QtCore.QObject.connect(self.tmr,QtCore.SIGNAL("timeout()"), function)
+		self.tmr.start()
+		
+		self.timer_function = function
+		
+	
+	def stop_timer(self):
+		if self.tmr != None:
+			QtCore.QObject.disconnect(self.tmr, QtCore.SIGNAL("timeout()"), self.timer_function)
+			self.tmr = None
+			self.timer_function = None
+		else:
+			print "warning, can't stop a timer when there is none"
+		
 	
 		
 

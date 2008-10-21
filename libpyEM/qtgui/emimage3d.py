@@ -61,10 +61,9 @@ MAG_INCREMENT_FACTOR = 1.1
 
 class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	
-	allim=WeakKeyDictionary()
+	
 	def __init__(self, em_3d_module):
 		assert(isinstance(em_3d_module,EMImage3DGUIModule))
-		EMImage3DGeneralWidget.allim[self]=0
 		
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
@@ -173,7 +172,6 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""
-	allim=WeakKeyDictionary()
 	def __init__(self, image_3d_module, parent=None):
 		self.target = None
 		fmt=QtOpenGL.QGLFormat()
@@ -182,7 +180,6 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 #		fmt.setStencil(True)
 #		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImage3DWidget.allim[self]=0
 		EMEventRerouter.__init__(self,image_3d_module)
 		
 		self.aspect=1.0
@@ -343,10 +340,11 @@ class EMImage3DModule(EMImage3DGUIModule):
 	
 	def get_desktop_hint(self):
 		return "image"
-	
+	allim=WeakKeyDictionary()
 	def __init__(self, image=None,application=None):
 		self.viewables = []
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EMImage3DModule.allim[self] = 0
 		self.currentselection = -1
 		self.inspector = None
 		#self.isosurface = EMIsosurfaceModule(image,self)
@@ -386,6 +384,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		glEnable(GL_NORMALIZE)
 	
 	def render(self):
+		self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		glPushMatrix()
 		self.cam.position(True)
 		# the ones are dummy variables atm... they don't do anything

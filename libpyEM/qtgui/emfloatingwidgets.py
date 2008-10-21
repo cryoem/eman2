@@ -70,114 +70,280 @@ green = (0.0,1.0,0.0,1.0)
 purple = (1.0,0.0,1.0,1.0)
 black = (0.0,0.0,0.0,1.0)
 dark_purple = (0.4,0.0,0.4,1.0)
-light_blue = (.2,.2,.6,1.0)
+light_blue_diffuse = (.4,.53,.86,1.0)
+light_blue_ambient = (.4,.7,.89,1.0)
 
-class EM3DBorderDecoration:
+ligh_yellow_diffuse = (.84,.82,.38,1.0)
+ligh_yellow_ambient = (.83,.83,.38,1.0)
+ligh_yellow_specular = (.76,.75,.39,1.0)
+
+
+
+class EMBorderDecoration:
 	'''
 	An class for drawing borders around widgets
 	The implementation of border decorations in EMAN2 floating widgets is based on the 
 	Decorator pattern in the Gang of Four. Inheriting classes should provide draw(object)
 	which draws a border around the given object.
 	'''
-	def __init__(self):
-		pass
-	
-	def draw(self,object):
-		pass
-
-class EM3DPlainBorderDecoration(EM3DBorderDecoration):
-	'''
-	A plain border decoration
-	'''
-	
 	FROZEN_COLOR = "frozen"
 	DEFAULT_COLOR = "default"
-	PERMISSABLE_COLOR_FLAGS = [FROZEN_COLOR,DEFAULT_COLOR]
-	#x_texture_dl = None
-	#x_texture_size = (-1,1)
-	def __init__(self, object):
-		EM3DBorderDecoration.__init__(self)
-		self.border_width = 6
-		self.border_height = 6
-		self.border_depth = 6
-		
+	YELLOW_COLOR = "yellow"
+	PERMISSABLE_COLOR_FLAGS = [FROZEN_COLOR,DEFAULT_COLOR,YELLOW_COLOR]
+	def __init__(self):
+		self.color_flag = EMBorderDecoration.DEFAULT_COLOR
 		self.display_list = None
-		self.force_update = False
-		
-		self.faulty = False
-		if not isinstance(object,EMGLView3D) and not isinstance(object,EMGLView2D) and not isinstance(object,EMGLViewQtWidget) and not isinstance(object,EM3DGLVolume) and not isinstance(object,EM3DGLWindow) and not isinstance(object,EMGLWindow):
-			print "error, border construction works only for EMGLView3D, EMGLView2D, EM3DGLVolume, and EMGLViewQtWidget objects"
-			self.faulty = True
-			return
-		else: self.object = object
-		
-		self.color_flag = EM3DPlainBorderDecoration.DEFAULT_COLOR
+		self.unprojected_points = [] # for determing mouse-border collision detection
 	def __del__(self):
-		self.__delete_list()
+		self.delete_list()
 	
-	
-	def get_border_width(self): return self.border_width
-	def get_border_height(self): return self.border_height
-	def get_border_depth(self): return self.border_depth
-	
-	def set_color_flag(self,flag):
-		if flag not in EM3DPlainBorderDecoration.PERMISSABLE_COLOR_FLAGS:
-			print 'unknown color flag'
-		else:
-			self.color_flag = flag
-	
-	def set_force_update(self,val=True):
-		self.force_update = val
-	
-	def draw(self,force_update=False):
-		if force_update or self.force_update:
-			self.__delete_list()
-			self.force_update = False
-		
-		if self.display_list == None:
-			if isinstance(self.object,EMGLView3D) or isinstance(self.object,EM3DGLVolume) or isinstance(self.object,EM3DGLWindow):
-				self.__gen_3d_object_border_list()
-			elif isinstance(self.object,EMGLView2D) or isinstance(self.object,EMGLViewQtWidget) or isinstance(self.object,EM2DGLWindow):
-				self.__gen_2d_object_border_list()
-			else:
-				print "error, border decoration works only for EMGLView3D, EMGLView2D and EMGLViewQtWidget objects"
-				return
-		
-		if self.display_list == None: return
-		
-		if self.color_flag ==  EM3DPlainBorderDecoration.DEFAULT_COLOR:
-			glMaterial(GL_FRONT,GL_AMBIENT,green)
-			glMaterial(GL_FRONT,GL_DIFFUSE,black)
-			glMaterial(GL_FRONT,GL_SPECULAR,grey)
-			glMaterial(GL_FRONT,GL_SHININESS,20.0)
-			glColor(*white)
-		elif self.color_flag ==  EM3DPlainBorderDecoration.FROZEN_COLOR:
-			glMaterial(GL_FRONT,GL_AMBIENT,dark_purple)
-			glMaterial(GL_FRONT,GL_DIFFUSE,blue)
-			glMaterial(GL_FRONT,GL_SPECULAR,light_blue)
-			glMaterial(GL_FRONT,GL_SHININESS,20.0)
-			glColor(*blue)
-		else:
-			print "warning, unknown color flag, coloring failed"
-			
-		if self.display_list != None and self.display_list != 0:
-			glCallList(self.display_list)
-			#glEnable(GL_TEXTURE_2D)
-			#glEnable(GL_BLEND)
-			##glDisable(GL_DEPTH_TEST)
-			#glBlendFunc(GL_ONE,GL_SRC_COLOR)
-			#glTranslate(self.object.width()/2.0,self.object.height()/2.0+self.border_height/2.0,self.border_depth/2+1)
-			#glCallList(EM3DPlainBorderDecoration.x_texture_dl)
-			#glDisable(GL_BLEND)
-			#glDisable(GL_TEXTURE_2D)
-			#glable(GL_DEPTH_TEST)
-		else: print "weird"
-	
-	def __delete_list(self):
+	def draw(self,object): raise
+
+	def delete_list(self):
 		if self.display_list != None:
 			glDeleteLists(self.display_list,1)
 			self.display_list = None
+
+	def frame_inner_shell_basic(self,width,height,front,back):
+		w = width/2.0
+		h = height/2.0
+		glBegin(GL_TRIANGLE_STRIP)
+		glNormal(-1,0,0)
+		glVertex(w,-h,back)
+		glVertex(w,-h,front)
+		glVertex(w,h,back)
+		glVertex(w,h,front)
+		glEnd()
+		
+		glNormal(0,-1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(w,h,back)
+		glVertex(w,h,front)
+		glVertex(-w,h,back)
+		glVertex(-w,h,front)
+		glEnd()
+		
+		glNormal(1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-w,h,back)
+		glVertex(-w,h,front)
+		glVertex(-w,-h,back)
+		glVertex(-w,-h,front)
+		glEnd()
+		
+		glNormal(0,1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-w,-h,back)
+		glVertex(-w,-h,front)
+		glVertex(w,-h,back)
+		glVertex(w,-h,front)
+		glEnd()	
 	
+	def frame_outer_shell_basic(self,width_plus,height_plus,front,back):
+		
+		wp = width_plus/2.0
+		hp = height_plus/2.0
+		
+		glNormal(-1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-wp,-hp,back)
+		glVertex(-wp,-hp,front)
+		glVertex(-wp,hp,back)
+		glVertex(-wp,hp,front)
+		glEnd()
+		
+		glNormal(0,1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-wp,hp,back)
+		glVertex(-wp,hp,front)
+		glVertex(wp,hp,back)
+		glVertex(wp,hp,front)
+		glEnd()
+		
+		glNormal(1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(wp,hp,back)
+		glVertex(wp,hp,front)
+		glVertex(wp,-hp,back)
+		glVertex(wp,-hp,front)
+		glEnd()
+		
+		glNormal(0,-1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(wp,-hp,back)
+		glVertex(wp,-hp,front)
+		glVertex(-wp,-hp,back)
+		glVertex(-wp,-hp,front)
+		glEnd()
+		
+	def frame_face_basic(self,width,width_plus,height,height_plus):
+		w = width/2.0
+		wp = width_plus/2.0
+		h = height/2.0
+		hp = height_plus/2.0
+		
+		glNormal(0,0,1)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-wp,-hp,0)
+		glVertex(-w,-hp,0)
+		glVertex(-wp,hp,0)
+		glVertex(-w,hp,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(-wp,hp,0)
+		glVertex(-w,h,0)
+		glVertex(w,hp,0)
+		glVertex(w,h,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(wp,hp,0)
+		glVertex(w,hp,0)
+		glVertex(wp,-hp,0)
+		glVertex(w,-hp,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(w,-h,0)
+		glVertex(w,-hp,0)
+		glVertex(-w,-h,0)
+		glVertex(-w,-hp,0)
+		glEnd()
+		
+	
+	def frame_face(self,left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus):
+		glNormal(0,0,1)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left_plus,bottom_plus,0)
+		glVertex(left,bottom_plus,0)
+		glVertex(left_plus,top_plus,0)
+		glVertex(left,top_plus,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left_plus,top_plus,0)
+		glVertex(left,top,0)
+		glVertex(right,top_plus,0)
+		glVertex(right,top,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right_plus,top_plus,0)
+		glVertex(right,top_plus,0)
+		glVertex(right_plus,bottom_plus,0)
+		glVertex(right,bottom_plus,0)
+		glEnd()
+		
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right,bottom,0)
+		glVertex(right,bottom_plus,0)
+		glVertex(left,bottom,0)
+		glVertex(left,bottom_plus,0)
+		glEnd()
+	
+	def frame_outer_shell(self,left_plus,right_plus,bottom_plus,top_plus,front,back):
+		
+		glNormal(-1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left_plus,bottom_plus,back)
+		glVertex(left_plus,bottom_plus,front)
+		glVertex(left_plus,top_plus,back)
+		glVertex(left_plus,top_plus,front)
+		glEnd()
+		
+		glNormal(0,1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left_plus,top_plus,back)
+		glVertex(left_plus,top_plus,front)
+		glVertex(right_plus,top_plus,back)
+		glVertex(right_plus,top_plus,front)
+		glEnd()
+		
+		glNormal(1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right_plus,top_plus,back)
+		glVertex(right_plus,top_plus,front)
+		glVertex(right_plus,bottom_plus,back)
+		glVertex(right_plus,bottom_plus,front)
+		glEnd()
+		
+		glNormal(0,-1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right_plus,bottom_plus,back)
+		glVertex(right_plus,bottom_plus,front)
+		glVertex(left_plus,bottom_plus,back)
+		glVertex(left_plus,bottom_plus,front)
+		glEnd()
+		
+	def frame_inner_shell(self,left,right,bottom,top,front,back):
+		glBegin(GL_TRIANGLE_STRIP)
+		glNormal(-1,0,0)
+		glVertex(right,bottom,back)
+		glVertex(right,bottom,front)
+		glVertex(right,top,back)
+		glVertex(right,top,front)
+		glEnd()
+		
+		glNormal(0,-1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(right,top,back)
+		glVertex(right,top,front)
+		glVertex(left,top,back)
+		glVertex(left,top,front)
+		glEnd()
+		
+		glNormal(1,0,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left,top,back)
+		glVertex(left,top,front)
+		glVertex(left,bottom,back)
+		glVertex(left,bottom,front)
+		glEnd()
+		
+		glNormal(0,1,0)
+		glBegin(GL_TRIANGLE_STRIP)
+		glVertex(left,bottom,back)
+		glVertex(left,bottom,front)
+		glVertex(right,bottom,back)
+		glVertex(right,bottom,front)
+		glEnd()
+		
+	def set_color_flag(self,flag):
+		if flag not in EMBorderDecoration.PERMISSABLE_COLOR_FLAGS:
+			print 'unknown color flag'
+		else:
+			self.color_flag = flag
+			
+	def load_materials(self):
+		
+		if self.color_flag ==  EMBorderDecoration.DEFAULT_COLOR:
+			glMaterial(GL_FRONT,GL_AMBIENT,light_blue_ambient)
+			glMaterial(GL_FRONT,GL_DIFFUSE,light_blue_diffuse)
+			glMaterial(GL_FRONT,GL_SPECULAR,light_blue_diffuse)
+			glMaterial(GL_FRONT,GL_SHININESS,20.0)
+			glColor(*white)
+		elif self.color_flag ==  EMBorderDecoration.FROZEN_COLOR:
+			glMaterial(GL_FRONT,GL_AMBIENT,dark_purple)
+			glMaterial(GL_FRONT,GL_DIFFUSE,blue)
+			glMaterial(GL_FRONT,GL_SPECULAR,light_blue_ambient)
+			glMaterial(GL_FRONT,GL_SHININESS,20.0)
+			glColor(*blue)
+		elif self.color_flag ==  EMBorderDecoration.YELLOW_COLOR:
+			glMaterial(GL_FRONT,GL_AMBIENT,ligh_yellow_ambient)
+			glMaterial(GL_FRONT,GL_DIFFUSE,ligh_yellow_diffuse)
+			glMaterial(GL_FRONT,GL_SPECULAR,ligh_yellow_specular)
+			glMaterial(GL_FRONT,GL_SHININESS,18.0)
+			glColor(*blue)
+		else:
+			print "warning, unknown color flag, coloring failed"
+
+	
+	def set_selected(self,bool=True):
+		if bool: self.color_flag = EMBorderDecoration.YELLOW_COLOR
+		else: self.color_flag =  EMBorderDecoration.DEFAULT_COLOR
+			
+		
 	#def __init_x_texture(self):
 		#print "done list"
 		#if EM3DPlainBorderDecoration.x_texture_dl == None or EM3DPlainBorderDecoration.x_texture_dl < 0:
@@ -235,7 +401,210 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			##EM3DPlainBorderDecoration.x_texture_dl
 			
 			#glDisable(GL_TEXTURE_2D)
+
+class EM2DPlainBorderDecoration(EMBorderDecoration):
+	def __init__(self,object,gl_context_parent): 
+		EMBorderDecoration.__init__(self)
+		self.gl_context_parent = gl_context_parent
+		self.vdtools = EMViewportDepthTools2(gl_context_parent)
+		self.bottom_border_height = 6
+		self.top_border_height = 18
+		self.border_width = 6
+		self.border_height = 6
+		self.border_depth = 6
+		
+		self.force_update = False
+		
+		self.faulty = False
+		if not isinstance(object,EM2DGLWindow) and not isinstance(object,EMGLViewQtWidget): 
+			print "error, EM2DPlainBorderDecoration works only for EM2DGLWindow and EMGLViewQtWidget"
+			self.faulty = True
+			return
+		else: self.object = object
+		
+		self.current_frame = ""
+		self.moving = [-1,-1]
+		
+		self.init_frame_unproject_order()
+	def draw(self,force_update=False):
+		if force_update or self.force_update:
+			self.delete_list()
+			self.force_update = False
+		
+		if self.display_list == None:
+			self.__gen_2d_object_border_list()
+		
+		if self.display_list == None:
+			print "display list generation failed" 
+			return
+		
+		self.viewport_update()
+		
+		self.load_materials()
 			
+		if self.display_list != None and self.display_list != 0:
+			glCallList(self.display_list)
+		else: print "An error occured"
+	
+	def viewport_update(self):
+		self.corner_sets = []
+		width = self.object.width()
+		height = self.object.height()
+			
+			# plus, i.e. plus the border
+		left = -width/2.0
+		left_plus = left-self.border_width
+		right = -left
+		right_plus = -left_plus
+			
+		bottom = -height/2.0
+		bottom_plus = bottom - self.bottom_border_height
+		top = -bottom
+		top_plus = top + self.top_border_height
+			#top_plus = -bottom_plus
+			
+		front = self.border_depth/2.0
+		back = -self.border_depth/2.0
+		
+		points = []
+		points.append((left_plus,bottom_plus,0))
+		points.append((left,bottom_plus,0))
+		points.append((left,bottom,0))
+		points.append((left_plus,bottom,0))
+		
+		points.append((right,bottom_plus,0))
+		points.append((right_plus,bottom_plus,0))
+		points.append((right_plus,bottom,0))
+		points.append((right,bottom,0))
+		
+		points.append((right,top,0))
+		points.append((right_plus,top,0))
+		points.append((right_plus,top_plus,0))
+		points.append((right,top_plus,0))
+		
+		points.append((left_plus,top,0))
+		points.append((left,top,0))
+		points.append((left,top_plus,0))
+		points.append((left_plus,top_plus,0))
+		
+		self.unprojected_points = self.vdtools.unproject_points(points)
+		unprojected = self.unprojected_points
+		self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[1],unprojected[4],unprojected[7],unprojected[2])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[4],unprojected[5],unprojected[6],unprojected[7])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[7],unprojected[6],unprojected[9],unprojected[8])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[8],unprojected[9],unprojected[10],unprojected[11])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[13],unprojected[8],unprojected[11],unprojected[14])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[12],unprojected[13],unprojected[14],unprojected[15])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[13],unprojected[12])
+		self.corner_sets.append( self.vdtools.get_corners() )
+	
+	def isinwin(self,x,y):
+		interception = False
+		#print "I have this many corner sets",len(self.corner_sets)
+		for i,p in enumerate(self.corner_sets):
+			if self.vdtools.isinwinpoints(x,y,p):
+				interception = True
+				self.currently_selected_frame = i
+				break
+		return interception
+
+	def mousePressEvent(self,event):
+		if self.currently_selected_frame == 5: # top
+			self.object.set_mouse_lock(self)
+			self.object.cam.mousePressEvent(event)
+			self.object.updateGL()
+		elif self.currently_selected_frame in [0,1,2,3,4,6,7]:  # right
+			if (event.buttons()&Qt.LeftButton):
+				self.object.set_mouse_lock(self)
+				self.current_frame = self.frame_unproject_order[self.currently_selected_frame]
+				self.moving = [event.x(), event.y()]
+			
+		
+	def mouseMoveEvent(self,event):
+		if self.currently_selected_frame == 5: # top
+			self.object.cam.mouseMoveEvent(event)
+			self.object.updateGL()
+			
+		elif self.current_frame != "": # right
+			if (event.buttons()&Qt.LeftButton):
+				movement = [event.x()-self.moving[0],event.y()-self.moving[1]]
+				self.moving = [event.x(), event.y()]
+				if self.current_frame == "right":
+					self.object.add_width_right(movement[0])
+					self.object.updateGL()
+				if self.current_frame == "left":
+					self.object.add_width_left(-movement[0])
+					self.object.updateGL()
+				if self.current_frame == "bottom":
+					self.object.add_height_bottom(movement[1])
+					self.object.updateGL()
+				if self.current_frame == "bottom_left":
+					self.object.add_width_left(-movement[0])
+					self.object.add_height_bottom(movement[1])
+					self.object.updateGL()
+				if self.current_frame == "bottom_right":
+					self.object.add_width_right(movement[0])
+					self.object.add_height_bottom(movement[1])
+					self.object.updateGL()
+				if self.current_frame == "top_right":
+					self.object.add_width_right(movement[0])
+					self.object.add_height_top(-movement[1])
+					self.object.updateGL()
+				if self.current_frame == "top_left":
+					self.object.add_width_left(-movement[0])
+					self.object.add_height_top(-movement[1])
+					self.object.updateGL()
+			
+	def mouseReleaseEvent(self,event):
+		if self.currently_selected_frame == 5: # top
+			self.object.release_mouse_lock()
+			self.object.cam.mouseReleaseEvent(event)
+			self.object.updateGL()
+		
+		if self.current_frame != "":
+			self.object.release_mouse_lock()
+			self.current_frame = ""
+			self.object.updateGL()
+		
+	def wheelEvent(self,event):
+		if self.currently_selected_frame == 5: # top
+			self.object.cam.wheelEvent(event)
+			self.object.updateGL()
+			
+	def keyPressEvent(self,event):
+		pass
+	
+	def init_frame_unproject_order(self):
+		self.frame_unproject_order = []
+		self.currently_selected_frame = -1
+		self.frame_unproject_order.append("bottom_left")
+		self.frame_unproject_order.append("bottom")
+		self.frame_unproject_order.append("bottom_right")
+		self.frame_unproject_order.append("right")
+		self.frame_unproject_order.append("top_right")
+		self.frame_unproject_order.append("top")
+		self.frame_unproject_order.append("top_left")
+		self.frame_unproject_order.append("left")
+		
+		
+	def get_border_width(self): return self.border_width
+	def get_border_height(self): return self.border_height
+	
 	def __gen_2d_object_border_list(self):
 		
 		#context = self.object.context()
@@ -245,7 +614,7 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 		#if EM3DPlainBorderDecoration.x_texture_dl == None:
 			#self.__init_x_texture()
 		
-		self.__delete_list()
+		self.delete_list()
 		if self.display_list == None:
 			
 			width = self.object.width()
@@ -258,9 +627,10 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			right_plus = -left_plus
 			
 			bottom = -height/2.0
-			bottom_plus = bottom - self.border_height
+			bottom_plus = bottom - self.bottom_border_height
 			top = -bottom
-			top_plus = -bottom_plus
+			top_plus = top + self.top_border_height
+			#top_plus = -bottom_plus
 			
 			front = self.border_depth/2.0
 			back = -self.border_depth/2.0
@@ -277,31 +647,89 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			# Do the front facing strip first
 			glPushMatrix()
 			glTranslate(0,0,front)
-			self.__frame_face(left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus)
+			self.frame_face(left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus)
 			glPopMatrix()
 			
 			# Do the back facing part
 			glPushMatrix()
 			glTranslate(0,0,back)
 			glRotate(180,0,1,0)
-			self.__frame_face(left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus)
+			self.frame_face(left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus)
 			glPopMatrix()
 			
 			# Now do the border around the edges
 			glPushMatrix()
-			self.__frame_outer_shell(left_plus,right_plus,bottom_plus,top_plus,front,back)
+			self.frame_outer_shell(left_plus,right_plus,bottom_plus,top_plus,front,back)
 			glPopMatrix()
 			
 			# Now do the border around the inside edges
 			glPushMatrix()
-			self.__frame_inner_shell(left,right,bottom,top,front,back)
+			self.frame_inner_shell(left,right,bottom,top,front,back)
 			glPopMatrix()
 			
 			glEndList()
 		else: print "error, the delete list operation failed"
 	
+		
+class EM3DPlainBorderDecoration(EMBorderDecoration):
+	'''
+	A plain border decoration
+	'''
+	
+	
+	#x_texture_dl = None
+	#x_texture_size = (-1,1)
+	def __init__(self, object,gl_context_parent):
+		EMBorderDecoration.__init__(self)
+		self.gl_context_parent = gl_context_parent
+		self.vdtools = EMViewportDepthTools2(gl_context_parent)
+		self.bottom_border_height = 6
+		self.top_border_height = 18
+		self.border_width = 6
+		self.border_height = 6
+		self.border_depth = 6
+		
+		self.force_update = False
+		
+		self.faulty = False
+		if not isinstance(object,EM3DGLWindow) and not isinstance(object,EM3DGLWindowOverride):
+			print "error, border construction"
+			self.faulty = True
+			return
+		else: self.object = object
+		
+	
+	def get_border_width(self): return self.border_width
+	def get_border_height(self): return self.border_height
+	def get_border_depth(self): return self.border_depth
+	
+	def set_force_update(self,val=True):
+		self.force_update = val
+	
+	
+	def draw(self,force_update=False):
+		if force_update or self.force_update:
+			self.delete_list()
+			self.force_update = False
+		
+		if self.display_list == None:
+			self.__gen_3d_object_border_list()
+	
+		if self.display_list == None:
+			print "display list generation failed" 
+			return
+		
+		
+		self.viewport_update()
+		
+		self.load_materials()
+			
+		if self.display_list != None and self.display_list != 0:
+			glCallList(self.display_list)
+		else: print "An error occured"
+	
 	def __gen_3d_object_border_list(self):
-		self.__delete_list()
+		self.delete_list()
 	
 		#if EM3DPlainBorderDecoration.x_texture_dl == None:
 			#self.__init_x_texture()
@@ -318,9 +746,10 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			right_plus = right + self.border_width
 			
 			bottom = dims[2]
-			bottom_plus = bottom - self.border_height
+			bottom_plus = bottom - self.bottom_border_height
 			top =  dims[3]
-			top_plus = top + self.border_height
+			top_plus = top + self.top_border_height
+			
 			
 			front =  dims[4]
 			front_plus = front + self.border_depth
@@ -344,260 +773,164 @@ class EM3DPlainBorderDecoration(EM3DBorderDecoration):
 			# front
 			glPushMatrix()
 			glTranslate(x_center,y_center,front_plus)
-			self.__frame_face_basic(width,width_plus,height,height_plus)
-			self.__frame_inner_shell_basic(width,height,thick_front,thick_back)
+			#self.frame_face_basic(width,width_plus,height,height_plus)
+			self.frame_face(-width/2,-width/2-self.border_width,width/2,width/2+self.border_width,-height/2,-height/2-self.bottom_border_height,height/2,height/2+self.top_border_height)
+			self.frame_inner_shell_basic(width,height,thick_front,thick_back)
 			glPopMatrix()
 			
 			# back
 			glPushMatrix()
 			glTranslate(x_center,y_center,back_plus)
 			glRotate(180,0,1,0)
-			self.__frame_face_basic(width,width_plus,height,height_plus)
-			self.__frame_inner_shell_basic(width,height,thick_front,thick_back)
+			#self.frame_face_basic(width,width_plus,height,height_plus)
+			self.frame_face(-width/2,-width/2-self.border_width,width/2,width/2+self.border_width,-height/2,-height/2-self.bottom_border_height,height/2,height/2+self.top_border_height)
+			self.frame_inner_shell_basic(width,height,thick_front,thick_back)
 			glPopMatrix()
 			
 			#right side
 			glPushMatrix()
 			glTranslate(right_plus,y_center,z_center)
 			glRotate(90,0,1,0)
-			self.__frame_face_basic(depth,depth_plus,height,height_plus)
-			self.__frame_inner_shell_basic(depth,height,thick_front,thick_back)
+			self.frame_face(-depth/2,-depth/2-self.border_depth,depth/2,depth/2+self.border_depth,-height/2,-height/2-self.bottom_border_height,height/2,height/2+self.top_border_height)
+			#self.frame_face_basic(depth,depth_plus,height,height_plus)
+			self.frame_inner_shell_basic(depth,height,thick_front,thick_back)
 			glPopMatrix()
 			
 			# left
 			glPushMatrix()
 			glTranslate(left_plus,y_center,z_center)
 			glRotate(-90,0,1,0)
-			self.__frame_face_basic(depth,depth_plus,height,height_plus)
-			self.__frame_inner_shell_basic(depth,height,thick_front,thick_back)
+			self.frame_face(-depth/2,-depth/2-self.border_depth,depth/2,depth/2+self.border_depth,-height/2,-height/2-self.bottom_border_height,height/2,height/2+self.top_border_height)
+			self.frame_inner_shell_basic(depth,height,thick_front,thick_back)
 			glPopMatrix()
 			
 			#bottom
 			glPushMatrix()
 			glTranslate(x_center,bottom_plus,z_center)	
 			glRotate(90,1,0,0)
-			self.__frame_face_basic(width,width_plus,depth,depth_plus)
-			self.__frame_inner_shell_basic(width,depth,thick_front,thick_back)
+			self.frame_face_basic(width,width_plus,depth,depth_plus)
+			self.frame_inner_shell_basic(width,depth,0,-self.bottom_border_height)
 			glPopMatrix()
 			
 			#top
 			glPushMatrix()
 			glTranslate(x_center,top_plus,z_center)	
 			glRotate(-90,1,0,0)
-			self.__frame_face_basic(width,width_plus,depth,depth_plus)
-			self.__frame_inner_shell_basic(width,depth,thick_front,thick_back)
+			self.frame_face_basic(width,width_plus,depth,depth_plus)
+			self.frame_inner_shell_basic(width,depth,0,-self.top_border_height)
 			glPopMatrix()
 			
 			glEndList()
 		else: print "error, the delete list operation failed"
 		
-	def __frame_inner_shell_basic(self,width,height,front,back):
-		w = width/2.0
-		h = height/2.0
-		glBegin(GL_TRIANGLE_STRIP)
-		glNormal(-1,0,0)
-		glVertex(w,-h,back)
-		glVertex(w,-h,front)
-		glVertex(w,h,back)
-		glVertex(w,h,front)
-		glEnd()
+	def viewport_update(self):
+		self.corner_sets = []
 		
-		glNormal(0,-1,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(w,h,back)
-		glVertex(w,h,front)
-		glVertex(-w,h,back)
-		glVertex(-w,h,front)
-		glEnd()
+		dims = self.object.get_lr_bt_nf()
+		# plus, i.e. plus the border
+		left =  dims[0]
+		left_plus = left-self.border_width
+		right = dims[1]
+		right_plus = right + self.border_width
 		
-		glNormal(1,0,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(-w,h,back)
-		glVertex(-w,h,front)
-		glVertex(-w,-h,back)
-		glVertex(-w,-h,front)
-		glEnd()
+		bottom = dims[2]
+		bottom_plus = bottom - self.bottom_border_height
+		top =  dims[3]
+		top_plus = top + self.top_border_height
 		
-		glNormal(0,1,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(-w,-h,back)
-		glVertex(-w,-h,front)
-		glVertex(w,-h,back)
-		glVertex(w,-h,front)
-		glEnd()	
+		
+		front =  dims[4]
+		front_plus = front + self.border_depth
+		back = dims[5]
+		back_plus = back - self.border_depth
+				
+		points = []
+		points.append((left_plus,bottom_plus,front_plus))
+		points.append((left,bottom_plus,front_plus))
+		points.append((left,bottom,front_plus))
+		points.append((left_plus,bottom,front_plus))
+		
+		points.append((right,bottom_plus,front_plus))
+		points.append((right_plus,bottom_plus,front_plus))
+		points.append((right_plus,bottom,front_plus))
+		points.append((right,bottom,front_plus))
+		
+		points.append((right,top,front_plus))
+		points.append((right_plus,top,front_plus))
+		points.append((right_plus,top_plus,front_plus))
+		points.append((right,top_plus,front_plus))
+		
+		points.append((left_plus,top,front_plus))
+		points.append((left,top,front_plus))
+		points.append((left,top_plus,front_plus))
+		points.append((left_plus,top_plus,front_plus))
+		
+		self.unprojected_points = self.vdtools.unproject_points(points)
+		unprojected = self.unprojected_points
+		self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
+		self.vdtools.draw_frame(True)
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[1],unprojected[4],unprojected[7],unprojected[2])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[4],unprojected[5],unprojected[6],unprojected[7])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[7],unprojected[6],unprojected[9],unprojected[8])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[8],unprojected[9],unprojected[10],unprojected[11])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[13],unprojected[8],unprojected[11],unprojected[14])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[12],unprojected[13],unprojected[14],unprojected[15])
+		self.corner_sets.append( self.vdtools.get_corners() )
+		
+		self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[13],unprojected[12])
+		self.corner_sets.append( self.vdtools.get_corners() )
 	
-	def __frame_outer_shell_basic(self,width_plus,height_plus,front,back):
-		
-		wp = width_plus/2.0
-		hp = height_plus/2.0
-		
-		glNormal(-1,0,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(-wp,-hp,back)
-		glVertex(-wp,-hp,front)
-		glVertex(-wp,hp,back)
-		glVertex(-wp,hp,front)
-		glEnd()
-		
-		glNormal(0,1,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(-wp,hp,back)
-		glVertex(-wp,hp,front)
-		glVertex(wp,hp,back)
-		glVertex(wp,hp,front)
-		glEnd()
-		
-		glNormal(1,0,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(wp,hp,back)
-		glVertex(wp,hp,front)
-		glVertex(wp,-hp,back)
-		glVertex(wp,-hp,front)
-		glEnd()
-		
-		glNormal(0,-1,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(wp,-hp,back)
-		glVertex(wp,-hp,front)
-		glVertex(-wp,-hp,back)
-		glVertex(-wp,-hp,front)
-		glEnd()
-		
-	def __frame_face_basic(self,width,width_plus,height,height_plus):
-		w = width/2.0
-		wp = width_plus/2.0
-		h = height/2.0
-		hp = height_plus/2.0
-		
-		glNormal(0,0,1)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(-wp,-hp,0)
-		glVertex(-w,-hp,0)
-		glVertex(-wp,hp,0)
-		glVertex(-w,hp,0)
-		glEnd()
-		
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(-wp,hp,0)
-		glVertex(-w,h,0)
-		glVertex(w,hp,0)
-		glVertex(w,h,0)
-		glEnd()
-		
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(wp,hp,0)
-		glVertex(w,hp,0)
-		glVertex(wp,-hp,0)
-		glVertex(w,-hp,0)
-		glEnd()
-		
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(w,-h,0)
-		glVertex(w,-hp,0)
-		glVertex(-w,-h,0)
-		glVertex(-w,-hp,0)
-		glEnd()
+	def isinwin(self,x,y):
+		interception = False
+		#print "I have this many corner sets",len(self.corner_sets)
+		for i,p in enumerate(self.corner_sets):
+			if self.vdtools.isinwinpoints(x,y,p):
+				interception = True
+				self.currently_selected_frame = i
+				break
+		return interception
 	
-	def __frame_face(self,left,left_plus,right,right_plus,bottom,bottom_plus,top,top_plus):
-		glNormal(0,0,1)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(left_plus,bottom_plus,0)
-		glVertex(left,bottom_plus,0)
-		glVertex(left_plus,top_plus,0)
-		glVertex(left,top_plus,0)
-		glEnd()
-		
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(left_plus,top_plus,0)
-		glVertex(left,top,0)
-		glVertex(right,top_plus,0)
-		glVertex(right,top,0)
-		glEnd()
-		
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(right_plus,top_plus,0)
-		glVertex(right,top_plus,0)
-		glVertex(right_plus,bottom_plus,0)
-		glVertex(right,bottom_plus,0)
-		glEnd()
-		
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(right,bottom,0)
-		glVertex(right,bottom_plus,0)
-		glVertex(left,bottom,0)
-		glVertex(left,bottom_plus,0)
-		glEnd()
+	def mousePressEvent(self,event):
+		if self.currently_selected_frame == 5: # top
+			self.object.set_mouse_lock(self)
+			self.object.cam.mousePressEvent(event)
+			self.object.updateGL()
+			
+	def mouseMoveEvent(self,event):
+		if self.currently_selected_frame == 5: # top
+			self.object.cam.mouseMoveEvent(event)
+			self.object.updateGL()
+			
+	def mouseReleaseEvent(self,event):
+		if self.currently_selected_frame == 5: # top
+			self.object.release_mouse_lock()
+			self.object.cam.mouseReleaseEvent(event)
+			self.object.updateGL()
+			
+	def wheelEvent(self,event):
+		if self.currently_selected_frame == 5: # top
+			self.object.cam.wheelEvent(event)
+			self.object.updateGL()
+			
+	def keyPressEvent(self,event):
+		pass
 	
-	def __frame_outer_shell(self,left_plus,right_plus,bottom_plus,top_plus,front,back):
-		
-		glNormal(-1,0,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(left_plus,bottom_plus,back)
-		glVertex(left_plus,bottom_plus,front)
-		glVertex(left_plus,top_plus,back)
-		glVertex(left_plus,top_plus,front)
-		glEnd()
-		
-		glNormal(0,1,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(left_plus,top_plus,back)
-		glVertex(left_plus,top_plus,front)
-		glVertex(right_plus,top_plus,back)
-		glVertex(right_plus,top_plus,front)
-		glEnd()
-		
-		glNormal(1,0,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(right_plus,top_plus,back)
-		glVertex(right_plus,top_plus,front)
-		glVertex(right_plus,bottom_plus,back)
-		glVertex(right_plus,bottom_plus,front)
-		glEnd()
-		
-		glNormal(0,-1,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(right_plus,bottom_plus,back)
-		glVertex(right_plus,bottom_plus,front)
-		glVertex(left_plus,bottom_plus,back)
-		glVertex(left_plus,bottom_plus,front)
-		glEnd()
-		
-	def __frame_inner_shell(self,left,right,bottom,top,front,back):
-		glBegin(GL_TRIANGLE_STRIP)
-		glNormal(-1,0,0)
-		glVertex(right,bottom,back)
-		glVertex(right,bottom,front)
-		glVertex(right,top,back)
-		glVertex(right,top,front)
-		glEnd()
-		
-		glNormal(0,-1,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(right,top,back)
-		glVertex(right,top,front)
-		glVertex(left,top,back)
-		glVertex(left,top,front)
-		glEnd()
-		
-		glNormal(1,0,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(left,top,back)
-		glVertex(left,top,front)
-		glVertex(left,bottom,back)
-		glVertex(left,bottom,front)
-		glEnd()
-		
-		glNormal(0,1,0)
-		glBegin(GL_TRIANGLE_STRIP)
-		glVertex(left,bottom,back)
-		glVertex(left,bottom,front)
-		glVertex(right,bottom,back)
-		glVertex(right,bottom,front)
-		glEnd()
 	
-class EM3DGLVolume:
+class EM3DVolume:
 	'''
-	a EM3DGLVolume has width(), height(), and depth() functions, and the associated private variables
+	a EM3DVolume has width(), height(), and depth() functions, and the associated private variables
 	Inheriting functions should define the __determine_dimensions function which will be called implicitly if the update_dims flag is true
 	In it they should define the member variables left,right,bottom,top,near and far.
 	'''
@@ -649,7 +982,7 @@ class EM3DGLVolume:
 		try: return self.nice_lr_bt_nf()
 		except: return self.get_lr_bt_nf()
 		
-class EMGLRotorWidget(EM3DGLVolume):
+class EMGLRotorWidget(EM3DVolume):
 	'''
 	A display rotor widget - consists of an ellipse  with widgets 'attached' to it.
 	Visually, the ellipse would lay in the plane perpendicular to the screen, and the widgets would be displayed in the plane
@@ -671,7 +1004,7 @@ class EMGLRotorWidget(EM3DGLVolume):
 	TOP_ROTARY = "top_rotor"
 	BOTTOM_ROTARY = "bottom_rotor"
 	def __init__(self,parent,y_rot=15,z_rot=70,x_rot=-45,rotor_type=RIGHT_ROTARY,ellipse_a=200,ellipse_b=400):
-		EM3DGLVolume.__init__(self)
+		EM3DVolume.__init__(self)
 		self.parent = parent
 		self.widgets = []	# the list of widgets to display
 		self.displayed_widget = -1 # the index of the currently displayed widget in self.widgets
@@ -1460,10 +1793,28 @@ class EMGLWindow:
 		
 		self.texture_lock = 0
 	
-	
+		self.mouse_event_target = None
+		
 		self.border_scale = 1.1
 		self.inv_border_scale = 1.0/self.border_scale
 		self.update_border_flag = True
+		
+	def updateGL(self):
+		self.parent.get_gl_context_parent().updateGL()
+	
+	def get_border(self):
+		return self.decoration
+	
+	def set_selected(self,bool=True):
+		self.decoration.set_selected(bool)
+	
+	
+	def set_mouse_lock(self,target):
+		self.parent.get_qt_context_parent().lock_target(target)
+		
+	def release_mouse_lock(self):
+		self.parent.get_qt_context_parent().unlock_target()
+
 	def lock_texture(self):
 		self.texture_lock += 1
 	
@@ -1471,8 +1822,6 @@ class EMGLWindow:
 		self.texture_lock -= 1
 	
 	def get_drawable(self): return self.drawable
-	
-	def isinwin(self,x,y): raise
 	
 	def context(self):
 		return self.parent.context() # Fixme, this will raise if the parent isn't a QtOpenGL.QGLWidget, which is a more recent development. However, this function may become redundant, it is not currently used but it potentially could be
@@ -1489,7 +1838,19 @@ class EMGLWindow:
 	
 	def get_inspector(self):
 		return self.drawable.get_inspector()
-	
+
+	def border_scale_event(self,delta): raise
+
+	def isinwin(self,x,y):
+		if self.vdtools.isinwin(x,y):
+			self.mouse_event_target = self.drawable
+			return True
+		if self.decoration.isinwin(x,y):
+			self.mouse_event_target = self.decoration
+			return True
+		
+		return False
+
 	def mousePressEvent(self, event):
 		if self.texture_lock > 0: return
 		
@@ -1497,12 +1858,19 @@ class EMGLWindow:
 			self.cam.set_plane('xy')
 			self.cam.mousePressEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.drawable.mousePressEvent(qme)
-
-	def border_scale_event(self,delta): raise
-
+			
+			if self.mouse_event_target == self.drawable:
+				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+				qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+				self.drawable.mousePressEvent(qme)
+			elif self.mouse_event_target == self.decoration:
+				self.decoration.mousePressEvent(event)
+			else:
+				print "mouse press error" # this shouldn't happen
+				return
+			
+		self.parent.get_qt_context_parent().set_selected(self,event)
+			
 	def wheelEvent(self,event):
 		
 		if self.texture_lock > 0: return
@@ -1513,11 +1881,13 @@ class EMGLWindow:
 			self.border_scale_event(event.delta())
 			
 		else:
-			if self.allow_target_wheel_events:
+			if self.mouse_event_target == self.drawable and self.allow_target_wheel_events:
 				self.drawable.wheelEvent(event)
-			
-		#self.updateGL()
-	
+			elif self.mouse_event_target == self.decoration:
+				self.decoration.wheelEvent(event)
+			else:
+				print "mouse wheel error" # this shouldn't happen
+
 	def mouseMoveEvent(self,event):
 		if self.texture_lock > 0: return
 		
@@ -1525,9 +1895,14 @@ class EMGLWindow:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.drawable.mouseMoveEvent(qme)
+			if self.mouse_event_target == self.drawable:
+				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+				qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+				self.drawable.mouseMoveEvent(qme)
+			elif self.mouse_event_target == self.decoration:
+				self.decoration.mouseMoveEvent(event)
+			else:
+				print "mouse move error" # this shouldn't happen
 	
 	def mouseDoubleClickEvent(self, event):
 		if self.texture_lock > 0: return
@@ -1536,9 +1911,14 @@ class EMGLWindow:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.drawable.mouseMoveEvent(qme)
+			if self.mouse_event_target == self.drawable:
+				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+				qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+				self.drawable.mouseDoubleClickEvent(qme)
+			elif self.mouse_event_target == self.decoration:
+				self.decoration.mouseDoubleClickEvent(event)
+			else:
+				print "mouse double click error" # this shouldn't happen
 	
 		#self.updateGL()
 
@@ -1549,9 +1929,14 @@ class EMGLWindow:
 			self.cam.set_plane('xy')
 			self.cam.mouseReleaseEvent(event)
 		else:
-			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-			self.drawable.mouseReleaseEvent(qme)
+			if self.mouse_event_target == self.drawable:
+				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+				qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+				self.drawable.mouseReleaseEvent(qme)
+			elif self.mouse_event_target == self.decoration:
+				self.decoration.mouseReleaseEvent(event)
+			else:
+				print "mouse release error" # this shouldn't happen
 	
 	def mouse_in_win_args(self,event):
 		return [event.x(),self.parent.gl_context_parent.viewport_height()-event.y(),self.width(),self.height()]
@@ -1576,7 +1961,7 @@ class EMGLWindow:
 	def say_something(self):
 		print "hello from EMGLVolume"
 
-class EM3DGLWindow(EMGLWindow):
+class EM3DGLWindow(EMGLWindow,EM3DVolume):
 	'''
 	A class for managing a 3D object as an interactive widget
 	'''
@@ -1596,9 +1981,9 @@ class EM3DGLWindow(EMGLWindow):
 		self.texure_lock = 0
 		
 		#print "my dimensions are",self.w,self.h,self.d
-	
-		self.decoration = EM3DPlainBorderDecoration(self)
-	
+		self.decoration = EM3DPlainBorderDecoration(self,parent.get_gl_context_parent())
+		
+		self.update_dims = True
 	def lock_texture(self):
 		self.texture_lock += 1
 	
@@ -1618,12 +2003,35 @@ class EM3DGLWindow(EMGLWindow):
 			scale = self.inv_border_scale
 		else: return
 		
-		self.w *= scale
-		self.h *= scale
-		self.d *= scale
+		self.x_change = self.w*(1.0-scale)/2.0
+		self.left -= self.x_change
+		self.right += self.x_change
 		
+		self.y_change = self.h*(1.0-scale)/2.0
+		self.bottom -= self.y_change
+		self.top += self.y_change
+		
+		self.z_change = self.d*(1.0-scale)/2.0
+		self.far -= self.y_change
+		self.near += self.y_change
+		
+		
+		self.w *= int(2*self.x_change)
+		self.h *= int(2*self.y_change)
+		self.d *= int(2*self.z_change)
+		
+		#self.drawable.resize_event(self.w,self.h,self.d)
+		
+		#self.update_dims = True
 		self.update_border_flag = True
-
+		
+	def determine_dimensions(self):
+		[self.left,self.right,self.bottom,self.top,self.near,self.far] = self.drawable.get_lr_bt_nf()
+		self.w = self.right - self.left
+		self.h = self.top - self.bottom
+		self.d = self.near - self.far
+		self.update_dims = False
+		
 	def set_width(self,w): self.w = w
 	def set_height(self,h): self.h = h
 	def set_depth(self,d): self.d = d
@@ -1638,10 +2046,10 @@ class EM3DGLWindow(EMGLWindow):
 		self.w = width
 		self.h = height
 	
-	def get_lr_bt_nf(self):
+	#def get_lr_bt_nf(self):
 		
-		#return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
-		return self.drawable.get_lr_bt_nf()
+		##return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
+		##return self.drawable.get_lr_bt_nf()
 	def get_my_dims(self):
 		
 		return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
@@ -1668,10 +2076,7 @@ class EM3DGLWindow(EMGLWindow):
 		#clear everything
 		
 		if self.init_flag == True:
-			lrt = self.drawable.get_lr_bt_nf()
-			self.w = lrt[1]-lrt[0]
-			self.h = lrt[3]-lrt[2]
-			self.d = lrt[4]-lrt[5]
+			self.determine_dimensions()
 			self.init_flag = False
 	
 		self.corner_sets = []
@@ -1703,30 +2108,30 @@ class EM3DGLWindow(EMGLWindow):
 		#print "the unprojected points are"
 		
 		# left zy plane
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
-		self.__atomic_draw_frame('zy')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
+		#self.__atomic_draw_frame('zy')
+		#glPopMatrix()
 		
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[5],unprojected[4],unprojected[7],unprojected[6])
-		self.__atomic_draw_frame('yz')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[5],unprojected[4],unprojected[7],unprojected[6])
+		#self.__atomic_draw_frame('yz')
+		#glPopMatrix()
 		
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[0],unprojected[4],unprojected[5],unprojected[1])
-		self.__atomic_draw_frame('xz')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[4],unprojected[5],unprojected[1])
+		#self.__atomic_draw_frame('xz')
+		#glPopMatrix()
 		
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[6],unprojected[7])
-		self.__atomic_draw_frame('zx')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[6],unprojected[7])
+		#self.__atomic_draw_frame('zx')
+		#glPopMatrix()
 		
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[0],unprojected[3],unprojected[7],unprojected[4])
-		self.__atomic_draw_frame('yx')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[3],unprojected[7],unprojected[4])
+		#self.__atomic_draw_frame('yx')
+		#glPopMatrix()
 		
 		glPushMatrix()
 		self.vdtools.set_mouse_coords(unprojected[1],unprojected[5],unprojected[6],unprojected[2])
@@ -1747,23 +2152,19 @@ class EM3DGLWindow(EMGLWindow):
 			
 		glPopMatrix()
 
-	def isinwin(self,x,y):
-		interception = False
-		#print "I have this many corner sets",len(self.corner_sets)
-		for i,p in enumerate(self.corner_sets):
-			if self.vdtools.isinwinpoints(x,y,p):
-				interception = True
-				#self.cam.set_plane(self.planes[i])
-				#print "plane is",self.planes[i]
-				self.vdtools.setModelMatrix(self.model_matrices[i])
-				break
-		return interception
-		
-	def updateGL(self):
-		self.parent.updateGL()
+	#def isinwin(self,x,y):
+		#interception = False
+		##print "I have this many corner sets",len(self.corner_sets)
+		#for i,p in enumerate(self.corner_sets):
+			#if self.vdtools.isinwinpoints(x,y,p):
+				#interception = True
+				##self.cam.set_plane(self.planes[i])
+				##print "plane is",self.planes[i]
+				#self.vdtools.setModelMatrix(self.model_matrices[i])
+				#break
+		#return interception
 
 	def emit(self,*args,**kargs):
-		#print "emit me"
 		self.parent.emit(*args,**kargs)
 		
 class EM3DGLWindowOverride(EM3DGLWindow):
@@ -1805,13 +2206,13 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 			self.cam.mouseReleaseEvent(event)
 		else: self.drawable.mouseReleaseEvent(event)
 			
-class EMGLView3D(EM3DGLVolume,EMEventRerouter):
+class EMGLView3D(EM3DVolume,EMEventRerouter):
 	"""
 	A view of an EMAN2 3D type, such as an isosurface or a 
 	volume rendition, etc.
 	"""
 	def __init__(self, parent,image=None):
-		EM3DGLVolume.__init__(self)
+		EM3DVolume.__init__(self)
 	
 		self.parent = parent
 		self.cam = Camera2(self)
@@ -1941,6 +2342,7 @@ class EMGLView3D(EM3DGLVolume,EMEventRerouter):
 		return self.parent.get_start_z()
 	
 
+
 class EM2DGLWindow(EMGLWindow):
 	'''
 	A class for managing a 3D object as an interactive widget
@@ -1952,11 +2354,15 @@ class EM2DGLWindow(EMGLWindow):
 		gl_view.get_drawable().set_gl_widget(self)
 		self.draw_frame = True
 		
-		self.decoration = EM3DPlainBorderDecoration(self)
+		self.decoration = EM2DPlainBorderDecoration(self,parent.get_gl_context_parent())
 		
 		
 		self.draw_vd_frame = False
 		self.update_border_flag = False
+	
+
+		
+		self.cam.allow_camera_rotations(False)
 	
 	def border_scale_event(self,delta):
 		if delta > 0:
@@ -1968,6 +2374,8 @@ class EM2DGLWindow(EMGLWindow):
 		self.w = int(scale*self.w)
 		self.h = int(scale*self.h)
 		self.update_border_flag = True
+		
+		self.drawable.resize_event(self.w,self.h)
 	
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
@@ -1981,13 +2389,37 @@ class EM2DGLWindow(EMGLWindow):
 	def set_width(self,w): self.w = w
 	def set_height(self,h): self.h = h
 	
+	def add_width_right(self,w): 
+		self.w += w
+		self.cam.cam_x += w/2.0
+		self.update_border_flag = True
+		self.drawable.resize_event(self.w,self.h)
+		
+	def add_width_left(self,w): 
+		self.w += w
+		self.cam.cam_x -= w/2.0
+		self.update_border_flag = True
+		self.drawable.resize_event(self.w,self.h)
+	
+	def add_height_bottom(self,h): 
+		self.h += h
+		self.cam.cam_y -= h/2.0
+		self.update_border_flag = True
+		self.drawable.resize_event(self.w,self.h)
+		
+	def add_height_top(self,h): 
+		self.h += h
+		self.cam.cam_y += h/2.0
+		self.update_border_flag = True
+		self.drawable.resize_event(self.w,self.h)
+	
 	def set_update_frame(self,val=True):
 		self.update_border_flag = val
 	
 	def set_frozen(self,frozen):
 		#self.drawable.set_frozen(frozen)
-		if frozen: self.decoration.set_color_flag(EM3DPlainBorderDecoration.FROZEN_COLOR)
-		else : self.decoration.set_color_flag(EM3DPlainBorderDecoration.DEFAULT_COLOR)
+		if frozen: self.decoration.set_color_flag(EM3DBorderDecoration.FROZEN_COLOR)
+		else : self.decoration.set_color_flag(EM3DBorderDecoration.DEFAULT_COLOR)
 	
 	def draw(self):
 		
@@ -2008,21 +2440,7 @@ class EM2DGLWindow(EMGLWindow):
 		
 		if self.draw_vd_frame: self.vdtools.draw_frame()
 		if not lighting: glDisable(GL_LIGHTING)
-
-	def isinwin(self,x,y):
-		interception = False
-		#print "I have this many corner sets",len(self.corner_sets)
-		for i,p in enumerate(self.corner_sets):
-			if self.vdtools.isinwinpoints(x,y,p):
-				interception = True
-				#self.cam.set_plane(self.planes[i])
-				#print "plane is",self.planes[i]
-				self.vdtools.setModelMatrix(self.model_matrices[i])
-				break
-		return interception
-		
-	def isinwin(self,x,y):
-		return self.vdtools.isinwin(x,y)
+	
 	
 class EM2DGLView(EMEventRerouter):
 	"""
@@ -2086,6 +2504,9 @@ class EM2DGLView(EMEventRerouter):
 		self.h = a.get_ysize()
 		#if self.h > self.parent.height(): self.h = self.parent.height()
 		#print self.w,self.h
+		
+	def resize_event(self,width,height):
+		self.drawable.resize_event(self.width(),self.height())
 
 	def set_width(self,w,resize_event=True):
 		self.w = w
@@ -2167,7 +2588,8 @@ class EMGLView2D:
 		
 		self.update_border_flag = False
 		
-		self.decoration = EM3DPlainBorderDecoration(self)
+		raise
+		self.decoration = EM2DPlainBorderDecoration(self)
 	
 	def set_sizescale(self,scale):
 		self.sizescale = scale
@@ -2177,8 +2599,8 @@ class EMGLView2D:
 	
 	def set_frozen(self,frozen):
 		#self.drawable.set_frozen(frozen)
-		if frozen: self.decoration.set_color_flag(EM3DPlainBorderDecoration.FROZEN_COLOR)
-		else : self.decoration.set_color_flag(EM3DPlainBorderDecoration.DEFAULT_COLOR)
+		if frozen: self.decoration.set_color_flag(EMPlainBorderDecoration.FROZEN_COLOR)
+		else : self.decoration.set_color_flag(EMPlainBorderDecoration.DEFAULT_COLOR)
 	
 	def context(self):
 		# asking for the OpenGL context from the parent
@@ -2204,6 +2626,7 @@ class EMGLView2D:
 	
 	def set_width(self,w,resize_event=True):
 		self.w = w
+		print "set width"
 		if resize_event: self.drawable.resizeEvent(self.width(),self.height())
 		self.update_border_flag = True
 		
@@ -2412,13 +2835,12 @@ class EMGLViewQtWidget:
 		self.e2children = []
 		self.is_child = False
 		
-		print parent
 		self.vdtools = EMViewportDepthTools2(parent)
 	
 		self.refresh_dl = True
 		self.texture_dl = 0
 		self.texture_lock = 0
-		self.decoration = EM3DPlainBorderDecoration(self)
+		self.decoration = EM2DPlainBorderDecoration(self,parent)
 	def get_decoration(self):
 		return self.decoration
 	

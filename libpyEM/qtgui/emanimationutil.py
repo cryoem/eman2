@@ -38,10 +38,7 @@ from PyQt4.QtCore import Qt
 
 class Animator:
 	'''
-	Inheriting class should probably having something like this:
-	self.timer = QTimer()
-	QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.time_out)
-	self.timer.start(10)
+	Register Animatables with this class
 	'''
 	def __init__(self):
 		self.animatables = []

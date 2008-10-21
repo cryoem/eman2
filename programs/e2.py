@@ -70,6 +70,7 @@ class IPShellQt4a(threading.Thread):
 				#return getattr( self.QApplication, name )
 
 		self.app = EMStandAloneApplication()
+		self.app.start_timer(250,image_update)
 		QtGui.QApplication = self.app.get_app()
 
 		# Allows us to use both Tk and QT.

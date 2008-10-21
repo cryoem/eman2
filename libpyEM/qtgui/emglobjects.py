@@ -346,7 +346,7 @@ class EMViewportDepthTools2:
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		glOrtho(0.0,self.viewport_width(),0.0,self.viewport_height(),-5,5)
+		glOrtho(0.0,self.matrices.viewport_width(),0.0,self.matrices.viewport_height(),-5,5)
 
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
@@ -1156,8 +1156,6 @@ class Camera2:
 		self.mmode = 0
 		self.debug = False
 		
-		self.enablerotation = True
-		
 		self.basicmapping = False
 		self.plane = 'xy'
 		
@@ -1166,6 +1164,8 @@ class Camera2:
 		self.mpressx = -1
 		self.mpressy = -1
 
+		self.allow_rotations = True
+		
 	
 	def set_plane(self,plane='xy'):
 		'''
@@ -1174,7 +1174,7 @@ class Camera2:
 		self.plane = plane
 	
 	def allow_camera_rotations(self,bool=True):
-		self.enablerotation = bool
+		self.allow_rotations = bool
 
 		
 	def loadIdentity(self):
@@ -1201,7 +1201,7 @@ class Camera2:
 	
 	def undoRot(self):
 		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-		if ( self.enablerotation ):
+		if ( self.allow_rotations ):
 			glRotate(-float(rot["az"]),0,0,1)
 			glRotate(-float(rot["alt"]),1,0,0)
 			glRotate(-float(rot["phi"]),0,0,1)
@@ -1213,7 +1213,7 @@ class Camera2:
 			print "Camera translational position",self.cam_x,self.cam_y,self.cam_z
 		glTranslate(self.cam_x, self.cam_y, self.cam_z)
 		
-		if ( self.enablerotation and not norot):
+		if ( self.allow_rotations and not norot):
 			rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
 			if (self.debug):
 				print "Camera rotation ",float(rot["phi"]),float(rot["alt"]),float(rot["az"])
@@ -1337,9 +1337,8 @@ class Camera2:
 	def mousePressEvent(self, event):
 		self.mpressx = event.x()
 		self.mpressy = event.y()
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.LeftButton and self.allow_rotations:
 			if self.mmode==0:
-				if self.enablerotation == False: return
 				# this is just a way of duplicating the last copy
 				tmp =self.t3d_stack.pop()
 				t3d = Transform3D(tmp)
@@ -1347,17 +1346,16 @@ class Camera2:
 				self.t3d_stack.append(t3d)
 		
 	def mouseMoveEvent(self, event):
-		if event.buttons()&Qt.LeftButton:
+		if event.buttons()&Qt.LeftButton and self.allow_rotations:
 			if self.mmode==0:
 				#if event.modifiers() == Qt.ControlModifier:
 					#self.motion_translate(event.x()-self.mpressx, self.mpressy - event.y())
 				#else:
-				if self.enablerotation == False: return
 				self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(1.0/self.scale))
 
 				self.mpressx = event.x()
 				self.mpressy = event.y()
-		elif event.buttons()&Qt.RightButton:
+		elif event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and not self.allow_rotations):
 			if self.mmode==0:
 				self.motion_translateLA(self.mpressx, self.mpressy,event)
 					

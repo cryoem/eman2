@@ -422,7 +422,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			self.__refresh_rotor()
 		elif val == 2:
 			w = self.rotor[0].get_drawable()
-			w.force_dl_update()
+			w.force_display_update()
 		else:
 			print 'failed to delete box image'
 		
@@ -523,6 +523,11 @@ class EMImageMXRotorModule(EMGUIModule):
 			self.inspector.set_n_rows(self.mx_rows)
 		except: pass
 
+		#try:
+			#self.widget.set_width(render_width)
+			#self.widget.set_height(render_height)
+		#except: pass
+		
 		self.__refresh_rotor(True)
 		if update_gl: self.updateGL()
 		
@@ -692,7 +697,9 @@ class EMImageMXRotorModule(EMGUIModule):
 		if not self.get_qt_context_parent().isVisible(): return
 		if self.emdata_list_cache == None: return
 		
+		
 		lrt = self.widget.get_lr_bt_nf()
+
 		
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
@@ -761,6 +768,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.updateGL()
 		
 	def resize_event(self, width, height):
+		if self.widget != None: self.widget.update()
 		self.rotor.resize_event(width,height)
 		self.optimize_fit(False)
 	
@@ -775,8 +783,6 @@ class EMImageMXRotorModule(EMGUIModule):
 	
 	def get_frame_buffer(self):
 		return self.gl_widget.get_frame_buffer()
-	
-	
 	
 	def draw_hud(self):
 		width = self.gl_widget.viewport_width()

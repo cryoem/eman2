@@ -56,7 +56,6 @@ GLUT.glutInit(sys.argv)
 class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 	"""
 	"""
-	allim=WeakKeyDictionary()
 	def __init__(self, em_mx_module,parent=None):
 		#self.initflag = True
 		self.mmode = "drag"
@@ -207,8 +206,8 @@ class EMMXCoreMouseEventsMediator:
 	def set_selected(self,selected,update_gl=True):
 		self.target.set_selected(selected,update_gl)
 		
-	def force_dl_update(self):
-		self.target.force_dl_update() 
+	def force_display_update(self):
+		self.target.force_display_update() 
 		
 	def get_scale(self):
 		return self.target.get_scale()
@@ -222,7 +221,7 @@ class EMMXDelMouseEvents(EMMXCoreMouseEvents):
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 			if lc != None:
 				self.mediator.pop_box_image(lc[0],event,True)
-				self.mediator.force_dl_update()
+				self.mediator.force_display_update()
 
 
 class EMMXDragMouseEvents(EMMXCoreMouseEvents):
@@ -282,7 +281,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 			else:
 				if lc != None:
 					self.mediator.pop_box_image(lc[0],event,True)
-					self.mediator.force_dl_update()
+					self.mediator.force_display_update()
 					
 	
 	def mousePressEvent(self, event):
@@ -340,12 +339,12 @@ class EMImageMXModule(EMGUIModule):
 	
 	def get_desktop_hint(self):
 		return "image"
-	
+	allim=WeakKeyDictionary()
 	def __init__(self, data=None,application=None):
 		self.init_size_flag = True
 		self.data=None
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
-
+		EMImageMXModule.allim[self] = 0
 		self.filename = ''
 		self.datasize=(1,1)
 		self.scale=1.0
@@ -475,26 +474,26 @@ class EMImageMXModule(EMGUIModule):
 	def get_cols(self):
 		return self.mx_cols
 	
-	def force_dl_update(self):
+	def force_display_update(self):
 		''' If display lists are being used this will force a regeneration'''
 		self.display_states = []
 	
 	def set_img_num_offset(self,n):
 		self.img_num_offset = n
-		self.force_dl_update() # empty display lists causes an automatic regeneration of the display list
+		self.force_display_update() # empty display lists causes an automatic regeneration of the display list
 	
 	def get_img_num_offset(self):
 		return self.img_num_offset
 	
 	def set_draw_background(self,bool):
 		self.draw_background = bool
-		self.force_dl_update()# empty display lists causes an automatic regeneration of the display list
+		self.force_display_update()# empty display lists causes an automatic regeneration of the display list
 		
 	def set_use_display_list(self,bool):
 		self.use_display_list = bool
 		
 	def set_max_idx(self,n):
-		self.force_dl_update()# empty display lists causes an automatic regeneration of the display list
+		self.force_display_update()# empty display lists causes an automatic regeneration of the display list
 		self.max_idx = n
 		
 	def set_min_max_gamma(self,minden,maxden,gamma,update_gl=True):
@@ -550,7 +549,7 @@ class EMImageMXModule(EMGUIModule):
 		
 		self.data=data
 		
-		self.force_dl_update()
+		self.force_display_update()
 		self.nimg=len(data)
 		
 		self.minden=data[0].get_attr("mean")
@@ -786,6 +785,7 @@ class EMImageMXModule(EMGUIModule):
 	def render(self):
 		if not self.data : return
 		if self.font_render_mode == EMGUIModule.FTGL: self.set_font_render_resolution()
+		self.image_change_count = self.data[0].get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		render = False
 		if self.use_display_list:
 			
@@ -1136,7 +1136,7 @@ class EMImageMXModule(EMGUIModule):
 		if isinstance(numlist,int) : numlist=[real_numlist]
 		if isinstance(numlist,list) or isinstance(real_numlist,tuple) : self.selected=real_numlist
 		else : self.selected=[]
-		self.force_dl_update()
+		self.force_display_update()
 		if update_gl: self.updateGL()
 	
 	def set_display_values(self,v2d,update_gl=True):
