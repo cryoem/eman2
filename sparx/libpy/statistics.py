@@ -3408,9 +3408,9 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			if Je != 0: thd = abs(Je - old_Je) / Je
 			else:       thd = 0
 			if SA:
-				if thd < 1e-12 and ct_pert == 0: change = 0
+				if thd < 1.0e-12 and ct_pert == 0: change = 0
 			else:
-				if thd < 1e-8: change = 0
+				if thd < 1.0e-8: change = 0
 
 			# Convergence control: if Je sway, means clusters unstable, due to the parallel version of k-means
 			# store Je_n, Je_(n-1), Je_(n-2)
@@ -3505,13 +3505,14 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	assign = mpi_reduce(assign, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	assign = assign.tolist() # convert array gave by MPI to list
 
+	"""
 	# [main] Watch dog
 	if myid == main_node:
 		import pickle
 		f = open('Assign', 'w')
 		pickle.dump(assign, f)
 		f.close()
-
+	"""
 	# compute Ji global
 	for k in xrange(K): Cls['Ji'][k] = mpi_reduce(Cls['Ji'][k], 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	if myid == main_node:
