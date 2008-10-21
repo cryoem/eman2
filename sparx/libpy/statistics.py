@@ -163,7 +163,6 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 			Util.add_img2(var, fft(ima))
 	
 	return ave, var
-	
 
 def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 	"""
@@ -1268,8 +1267,9 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 	
 	if CTF:
 		from morphology		import ctf_2, ctf_1d
-		from filter		import filt_ctf, filt_table
+		from filter		      import filt_ctf, filt_table
 		from fundamentals 	import fftip
+		from utilities          import get_arb_params
 
 	im_M = [0] * N
 	im = EMData()
@@ -1321,7 +1321,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 		if CTF: fftip(image)
 
 		# mem the original size
-		if im == N_start:
+		if i == N_start:
 			image.set_attr('or_nx', nx)
 			image.set_attr('or_ny', ny)
 			image.set_attr('or_nz', nz)
@@ -1934,10 +1934,10 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 	if CTF:
 		# ifft
 		for k in xrange(K):
-			fftip(Cls['ave'][k])
-			fftip(Cls['var'][k])
-			Cls['ave'][k].postift_depad_corner_inplace()
-			Cls['var'][k].postift_depad_corner_inplace()
+			Cls['ave'][k].do_ift_inplace()
+			Cls['var'][k].do_ift_inplace()
+			Cls['ave'][k].depad()
+			Cls['var'][k].depad()
 	
 	# information display
 	running_time(t_start)
@@ -2401,10 +2401,10 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 	if CTF:
 		# ifft
 		for k in xrange(K):
-			fftip(Cls['ave'][k])
-			fftip(Cls['var'][k])
-			Cls['ave'][k].postift_depad_corner_inplace()
-			Cls['var'][k].postift_depad_corner_inplace()
+			Cls['ave'][k].do_ift_inplace()
+			Cls['var'][k].do_ift_inplace()
+			Cls['ave'][k].depad()
+			Cls['var'][k].depad()
 
 	# information display
 	running_time(t_start)
@@ -2905,10 +2905,10 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	if myid == main_node and CTF:
 		# ifft
 		for k in xrange(K):
-			fftip(Cls['ave'][k])
-			fftip(Cls['var'][k])
-			Cls['ave'][k].postift_depad_corner_inplace()
-			Cls['var'][k].postift_depad_corner_inplace()
+			Cls['ave'][k].do_ift_inplace()
+			Cls['var'][k].do_ift_inplace()
+			Cls['ave'][k].depad()
+			Cls['var'][k].depad()
 
 			
 	# [main_node] information display
@@ -3522,10 +3522,10 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	if myid == main_node and CTF:
 		# ifft
 		for k in xrange(K):
-			fftip(Cls['ave'][k])
-			fftip(Cls['var'][k])
-			Cls['ave'][k].postift_depad_corner_inplace()
-			Cls['var'][k].postift_depad_corner_inplace()
+			Cls['ave'][k].do_ift_inplace()
+			Cls['var'][k].do_ift_inplace()
+			Cls['ave'][k].depad()
+			Cls['var'][k].depad()
 
 	# [main_node] information display
 	if myid == main_node:

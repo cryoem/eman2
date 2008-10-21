@@ -180,7 +180,7 @@ def fft(e, npad=1):
 
 def fftip(e):
 	"""In-place fft / ift
-	   No padding performed, and fft-extension along x removed after ift.
+	   No padding performed, and fft-extension along x NOT removed after ift.
 	"""
 	if (e.is_complex()):
 		# inverse fft
