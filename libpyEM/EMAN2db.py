@@ -89,6 +89,25 @@ def db_open_dict(url,ro=False):
 	if ro: return ddb.__dict__[name+"__ro"]
 	return ddb.__dict__[name]
 
+def db_remove_dict(url):
+	"""closes and deletes a database using the same specification as db_open_dict"""
+	if url[:4].lower()!="bdb:": return None
+	url=url.replace("../",os.getcwd()+"/../")
+	if url[4]!='/' : 
+		if not '#' in url : url="bdb:"+os.getcwd()+"#"+url[4:]
+		else : url="bdb:"+os.getcwd()+"/"+url[4:]
+	sln=url.rfind("#")
+	qun=url.rfind("?")
+	if qun<0 : qun=len(url)
+	if sln<0 :
+		ddb=EMAN2DB.open_db(".")
+		ddb.remove_dict(url[4:qun])	# strip the ?xyz from the end if present
+		return
+	ddb=EMAN2DB.open_db(url[4:sln])
+	name=url[sln+1:]
+	ddb.remove_dict(name)
+	return
+
 ##########
 #### replace a few EMData methods with python versions to intercept 'bdb:' filenames
 ##########
@@ -378,8 +397,6 @@ class EMAN2DB:
 	def remove_dict(self,name):
 		if name in self.dicts.keys():
 			self.__dict__[name].close()
-			del(self.__dict__[name])
-			del self.dicts[name]
 		os.unlink(self.path+"/EMAN2DB/"+name+".bdb")
 		for f in os.listdir(self.path+"/EMAN2DB"):
 			if fnmatch.fnmatch(f, name+'_*'):
