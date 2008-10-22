@@ -13624,55 +13624,40 @@ def common_line_in3D_dev(ph1, th1, ph2, th2):
 	phiCom    = (phiCom * 180 / pi + 360)%360
 	thetaCom *= (180 / pi)
 
-	return phiCom , thetaCom,
+	return phiCom , thetaCom, nx, ny
 
 # compute the weight of the common lines
 def cml_weights_dev(Ori, iagl = False, iprj = False):
-	from math        import fmod, sin, cos, pi
+	from math          import fmod, sin, cos, pi
 	from development   import common_line_in3D_dev
 
-	#f = open('debug', 'w')
-	
 	# gbl vars
 	global g_n_prj, g_n_lines, g_anglst
 
-	'''
 	# gbl vars
 	l_phs  = [0.0] * g_n_lines  # angle phi of the common lines
 	l_ths  = [0.0] * g_n_lines  # angle theta of the common lines
 	l_x    = [0.0] * g_n_lines
 	l_y    = [0.0] * g_n_lines
-	l_z    = [0.0] * g_n_lines
+	#l_z    = [0.0] * g_n_lines
 	n      = 0
 	for i in xrange(g_n_prj - 1):
 		for j in xrange(i + 1, g_n_prj):
 
-			if iagl != False and iprj != False:
-				if i == iprj:   phi, theta = common_line_in3D_dev(g_anglst[iagl][0], g_anglst[iagl][1], Ori[j][0], Ori[j][1])
-				elif j == iprj:	phi, theta = common_line_in3D_dev(Ori[i][0], Ori[i][1], g_anglst[iagl][0], g_anglst[iagl][1])
-				else:		phi, theta = common_line_in3D_dev(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
-			else:			phi, theta = common_line_in3D_dev(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
+			if iagl and iprj:
+				if i == iprj:   l_phs[n], l_ths[n], l_x[n], l_y[n] = common_line_in3D_dev(g_anglst[iagl][0], g_anglst[iagl][1], Ori[j][0], Ori[j][1])
+				elif j == iprj:	l_phs[n], l_ths[n], l_x[n], l_y[n] = common_line_in3D_dev(Ori[i][0], Ori[i][1], g_anglst[iagl][0], g_anglst[iagl][1])
+				else:		l_phs[n], l_ths[n], l_x[n], l_y[n] = common_line_in3D_dev(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
+			else:			l_phs[n], l_ths[n], l_x[n], l_y[n] = common_line_in3D_dev(Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1])
 	
-			#if i == iprj:	f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, g_anglst[iagl][0], g_anglst[iagl][1], Ori[j][0], Ori[j][1]))
-			#elif j == iprj: f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, Ori[i][0], Ori[i][1], g_anglst[iagl][0], g_anglst[iagl][1]))
-			#else: f.write('%10.3f %10.3f         %10.3f %10.3f <-> %10.3f %10.3f\n' % (phi, theta, Ori[i][0], Ori[i][1], Ori[j][0], Ori[j][1]))
-
-			l_phs[n] = phi
-			l_ths[n] = theta
-			theta    = theta * pi / 180.0
-			phi      = phi * pi   / 180.0  
-			l_x[n]   = sin(theta) * cos(phi)
-			l_y[n]   = sin(theta) * sin(phi)
-			l_z[n]   = cos(theta)
-
 			n+= 1
 
-	tol = 2e-5
+	'''
 
-	#f.write('\n')
-			
-	# search the closer cml lines
-	mem_i_same = [[] for i in xrange(g_n_lines - 1)]
+	tol = 0.5
+
+	# search the sames cm lines
+	mem_i_same = [[] for i in xrange(g_n_lines)]
 	ocp_same   = [0] * g_n_lines
 	for i in xrange(g_n_lines - 1):
 		mem_i_same[i] = None
@@ -13681,14 +13666,17 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 		if ocp_same[i] == 0:
 			for j in xrange(i + 1, g_n_lines):
 				if ocp_same[j] == 0:
-					dist = (l_x[i] - l_x[j])**2 + (l_y[i] - l_y[j])**2 + (l_z[i] - l_z[j])**2
+					dist = (l_phs[i] - l_phs[j])**2 + (l_ths[i] - l_ths[j])**2
 					if dist < tol:
 						v.append(j)
 						ocp_same[j] = 1
 						flag = True
-
 		if flag: mem_i_same[i] = v
 
+	if iagl:
+		t1 = time.time()
+		print 'Old merging', t1-t, 's'
+	
 	# create the new vector n_phi n_theta without closer
 	n_phi, n_theta = [], []
 	LUT   = []
@@ -13700,13 +13688,16 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 			LUT.append(n)
 			index += 1
 
-	#f.write('\n')
-	#for n in xrange(len(n_phi)): f.write('%10.3f %10.3f\n' % (n_phi[n], n_theta[n]))
-	#f.close()
-
+	if iagl:
+		t2 = time.time()
+		print 'Old new v', t2-t1, 's'
 
 	# use Voronoi
 	n_weights = Util.vrdg(n_phi, n_theta)
+
+	if iagl:
+		t3 = time.time()
+		print 'Old vor', t3-t2, 's'
 
 	# compute the new weights according the sames cm lines
 	weights = [-1] * g_n_lines
@@ -13718,8 +13709,85 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 			weights[n] = nval
 			for i in mem_i_same[n]: weights[i] = nval
 
+	if iagl:
+		t4 = time.time()
+		print 'Old splitting', t4-t3, 's'
+
+
+
+	########################################################
+	if iagl:
+		t4 = time.time()
+		print 'Cml', t4-t, 's'
+
 	'''
-	weights = [1] * g_n_lines
+	tol = 8.e-4
+
+	# search the closer cml lines
+	ocp_same   = [-1] * g_n_lines
+	num_agl    = 0
+	for i in xrange(g_n_lines - 1):
+	    if ocp_same[i] == -1:
+		ocp_same[i] = num_agl
+		for j in xrange(i + 1, g_n_lines):
+		    if ocp_same[j] == -1:
+			#dist = (l_phs[i] - l_phs[j])**2 + (l_ths[i] - l_ths[j])**2
+			dist = (l_x[i] - l_x[j])**2 + (l_y[i] - l_y[j])**2
+			if dist < tol: ocp_same[j] = num_agl
+
+		num_agl += 1
+
+	if num_agl > 2:
+
+		# create the new vector n_phi n_theta without closer
+		memx = [0.0] * num_agl
+		memy = [0.0] * num_agl
+		
+		n_phi   = [0.0] * num_agl
+		n_theta = [0.0] * num_agl
+		nb_same = [0]   * num_agl
+		num_agl = 0
+		for n in xrange(g_n_lines):
+		    nb_same[ocp_same[n]] += 1
+		    if ocp_same[n] == num_agl:
+			n_phi[num_agl]   = l_phs[n]
+			n_theta[num_agl] = l_ths[n]
+
+			memx[num_agl] = l_x[n]
+			memy[num_agl] = l_y[n]
+
+			num_agl += 1
+
+
+		if iagl == 166 and iprj == 2:
+			for n in xrange(len(n_phi)):
+				print '%6.2f %6.2f' % (n_phi[n], n_theta[n])
+
+			for i in xrange(len(n_phi) - 1):
+				for j in xrange(i+1, len(n_phi)):
+					print (memx[i] - memx[j])**2 + (memy[i] - memy[j])**2
+			#import sys
+			#sys.exit()
+
+
+		# Voronoi
+		n_weights = Util.vrdg(n_phi, n_theta)
+
+
+		if iagl == 166 and iprj == 2:
+			print 'passed'
+			import sys
+			#sys.exit()
+
+			
+		weights = [0.0] * g_n_lines
+		for i in xrange(g_n_lines):
+			if nb_same[ocp_same[i]] > 1:
+				weights[i] = n_weights[ocp_same[i]] / float(nb_same[ocp_same[i]])
+			else:
+				weights[i] = n_weights[ocp_same[i]]
+	else:
+		weights = [6.28/float(g_n_lines)] * g_n_lines
 
 	# return the weights
 	return weights
@@ -13952,14 +14020,15 @@ def get_common_line_angles_dev(phi1, theta1, psi1, phi2, theta2, psi2, nangle, S
 	return n1, n2
 
 # compute discrepancy according the projections and orientations
-def cml_disc_dev(Prj, Ori):
+def cml_disc_dev(Prj, Ori, flag_weights):
 	from development import cml_weights_dev, get_common_line_angles_dev
 	from math        import pi, fmod
 
 	# gbl vars
 	global g_n_prj, g_n_psi, g_n_lines
-	
-	weights = cml_weights_dev(Ori)
+
+	if flag_weights: weights = cml_weights_dev(Ori)
+	else:            weights = [1.0] * g_n_lines
 
 	#com = [[] for i in xrange(g_n_lines)]
 	com = [0] * 2 * g_n_lines
@@ -14011,12 +14080,12 @@ def cml_spin_dev(Prj, iprj, Ori, iagl, weights):
 	return res[0], int(res[1])
 
 # find structure
-def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
+def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 	from development import cml_spin_dev, cml_export_progress_dev
 	import time
 	
 	# global vars
-	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug
+	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug, g_n_lines
 
 	# list of free orientation
 	ocp = [-1] * g_n_anglst
@@ -14048,7 +14117,8 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 				# if agls free
 				if ocp[iagl] == -1:
 					# weights
-					weights = cml_weights_dev(Ori, iagl, iprj)
+					if flag_weights: weights = cml_weights_dev(Ori, iagl, iprj)
+					else:            weights = [1.0] * g_n_lines
 					
 					# spin
 					disc, ind_psi = cml_spin_dev(Prj, iprj, Ori, iagl, weights)
@@ -14078,9 +14148,10 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 			if g_debug: cml_export_progress_dev(outdir, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
 		# if one change, compute new full disc
-		disc = cml_disc_dev(Prj, Ori)
+		disc = cml_disc_dev(Prj, Ori, flag_weights)
 
-		if g_debug: print 'Ite: ', disc, '           %6.2f s' % (time.time() - t_start)
+		if g_debug:
+			print 'Ite: ', disc, '           %6.2f s' % (time.time() - t_start)
 
 		# display in the progress file
 		cml_export_txtagls_dev(outdir, Ori, disc, 'Ite: %s' % str(ite + 1).rjust(3, '0'))
@@ -14090,7 +14161,7 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero):
 	return Ori, disc
 	
 # application find structure
-def find_struct_dev(stack, outdir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, debug = False):
+def find_struct_dev(stack, outdir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
 	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
 	import time
 	import os
@@ -14132,13 +14203,13 @@ def find_struct_dev(stack, outdir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit
 	cml_head_log_dev(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given)
 
 	# Compute the first disc
-	disc = cml_disc_dev(Prj, Ori)
+	disc = cml_disc_dev(Prj, Ori, flag_weights)
 
 	# Update progress file
 	cml_export_txtagls_dev(outdir, Ori, disc, 'Init')
 
 	# Find structure
-	Ori, disc = cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero)
+	Ori, disc = cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights)
 
 	# Export structure
 	cml_export_struc_dev(stack, outdir, Ori)
