@@ -1267,12 +1267,12 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 	
 	if CTF:
 		from morphology		import ctf_2, ctf_1d
-		from filter		      import filt_ctf, filt_table
+		from filter		import filt_ctf, filt_table
 		from fundamentals 	import fftip
 		from utilities          import get_arb_params
 
 	im_M = [0] * N
-	im = EMData()
+	im   = EMData()
 	im.read_image(stack, N_start, True)
 	nx = im.get_xsize()
 	ny = im.get_ysize()
@@ -1280,8 +1280,8 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 	
 	if CTF:
 		parnames    = ('Pixel_size', 'defocus', 'voltage', 'Cs', 'amp_contrast', 'B_factor',  'ctf_applied')
-		ctf	    = []
-		ctf2        = []
+		ctf	    = [[] for i in xrange(N)]
+		ctf2        = [[] for i in xrange(N)]
 		ctf_params  = get_arb_params(im, parnames)
 		if ctf_params[6]: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
@@ -1297,20 +1297,20 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 		image = DATA[ct].copy()
 		# 3D object
 		if nz > 1:
-			try:	phi, theta, psi, s3x, s3y, s3z, mirror = get_params3D(image)
-			except:	phi, theta, psi, s3x, s3y, s3z, mirror = 0, 0, 0, 0, 0, 0, 0
+			try:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
+			except:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = 0, 0, 0, 0, 0, 0, 0, 0
 			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
 			if mirror: image.process_inplace('mirror', {'axis':'x'})
 		# 2D object
 		elif ny > 1:
-			try:	alpha, sx, sy, mirror = get_params2D(image)
-			except: alpha, sx, sy, mirror  = 0, 0, 0, 0
-			image = rot_shift2D(image, alpha, sx, sy, mirror)
+			try:	alpha, sx, sy, mirror, scale = get_params2D(image)
+			except: alpha, sx, sy, mirror, scale  = 0, 0, 0, 0, 0
+			image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
 		# obtain ctf
 		if CTF:
 			ctf_params = get_arb_params(image, parnames)
-			ctf.append(ctf_1d(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
-			ctf2.append(ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
+			ctf[i]  = ctf_1d(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf2[i] = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
 
 		# apply mask
 		if mask != None:
@@ -2493,7 +2493,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	
 	if CTF:
 		Cls_ctf2    = {}
-		len_ctm	    = len(ctf2[0])
+		len_ctm	    = len(ctf2[N_start])
 	
 	# TRIALS
 	if trials > 1:
@@ -2897,6 +2897,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		assign[n] = 0
 	for n in xrange(N_stop, N):
 		assign[n] = 0
+		
 	# [all] gather in main_node
 	assign = mpi_reduce(assign, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	assign = assign.tolist() # convert array gave by MPI to list
@@ -2909,7 +2910,6 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			Cls['var'][k].do_ift_inplace()
 			Cls['ave'][k].depad()
 			Cls['var'][k].depad()
-
 			
 	# [main_node] information display
 	if myid == main_node:
@@ -2998,7 +2998,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	
 	if CTF:
 		Cls_ctf2    = {}
-		len_ctm	    = len(ctf2[0])
+		len_ctm	    = len(ctf2[N_start])
 	
 	# TRIALS
 	if trials > 1:
@@ -3513,6 +3513,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		pickle.dump(assign, f)
 		f.close()
 	"""
+	
 	# compute Ji global
 	for k in xrange(K): Cls['Ji'][k] = mpi_reduce(Cls['Ji'][k], 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	if myid == main_node:
