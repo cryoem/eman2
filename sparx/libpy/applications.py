@@ -1345,7 +1345,7 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 	write_headers(stack, data, range(nima))
 	print_end_msg("ali2d_e")
 
-def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng = 0, yrng = 0, step = 1, center = 1, maxit = 10, CTF = False, snr = 1.0, rand_seed = 1000, MPI=False):
+def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng = 0, yrng = 0, step = 1, center = 1, maxit = 0, CTF = False, snr = 1.0, rand_seed = 1000, MPI=False):
 # 2D multi-reference alignment using rotational ccf in polar coords and quadratic interpolation
 	if MPI:
 		ali2d_m_MPI(stack, refim, outdir, maskfile, ir, ou, rs, xrng, yrng, step, center, maxit, CTF, snr, rand_seed )
@@ -1364,6 +1364,12 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng
 
 	from utilities      import   print_begin_msg, print_end_msg, print_msg
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
+	if max_iter == 0:
+		max_iter  = 10
+		auto_stop = True
+	else:
+		auto_stop = False
+
 	print_begin_msg("ali2d_m")
 
 	print_msg("Input stack                 : %s\n"%(stack))
@@ -1558,15 +1564,12 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng
 			Iter += 1
 			msg = "ITERATION #%3d        criterion = %20.7e\n"%(Iter,a1)
 			print_msg(msg)
-			if (a1 > a0 and Iter < max_iter) :  a0 = a1
-			else:
-				newrefim = os.path.join(outdir,"multi_ref.hdf")
-				for j in xrange(numref):
-					refi[j][0].write_image(newrefim, j)
-				break
-			print  assign
-			exit()
+			if(a1 < a0):
+				if (auto_stop == True):	break
+			else:	a0 = a1
 
+	newrefim = os.path.join(outdir,"multi_ref.hdf")
+	for j in xrange(numref):  refi[j][0].write_image(newrefim, j)
 	if(CTF):
 		if(data_had_ctf == 0):
 			for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
@@ -1617,6 +1620,12 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	ima.read_image(stack, image_start)
 	# 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
+
+	if max_iter == 0:
+		max_iter  = 10
+		auto_stop = True
+	else:
+		auto_stop = False
 
 	if (myid == main_node):
 		print_msg("Input stack                 : %s\n"%(stack))
@@ -1829,8 +1838,9 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 			Iter += 1
 			msg = "ITERATION #%3d        criterion = %20.7e\n\n"%(Iter,a1)
 			print_msg(msg)
-			#if(a1 > a0):  a0 = a1
-			#else:         again = False
+			if(a1 < a0):
+				if (auto_stop == True):	again = False
+			else:	a0 = a1
 		#again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 		Iter  = bcast_number_to_all( Iter, main_node )
 		if(CTF):  del  ctf2
