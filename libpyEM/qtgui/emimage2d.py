@@ -940,7 +940,9 @@ class EMImage2DModule(EMGUIModule):
 		if not self.data and not self.fft : return
 		if self.init_gl_flag: self.initializeGL()
 		
-		self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+		try:
+			self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
+		except: pass # probably looking at an FFT image
 		
 		
 		lighting = glIsEnabled(GL_LIGHTING)

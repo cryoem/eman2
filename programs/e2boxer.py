@@ -2980,13 +2980,13 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	def erase_toggled(self,bool):
 		self.unerase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_gl_parent().setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_qt_context_parent().setMouseTracking(bool)
 		self.target.erase_toggled(bool)
 		
 	def unerase_toggled(self,bool):
 		self.erase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_gl_parent().setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_qt_context_parent().setMouseTracking(bool)
 		self.target.unerase_toggled(bool)
 		
 	def dynapix_toggled(self,bool):
