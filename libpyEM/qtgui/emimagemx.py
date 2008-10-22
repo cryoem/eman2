@@ -323,7 +323,6 @@ class EMImageMXModule(EMGUIModule):
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
-		print "getting gl widget"
 		self.init_size_flag = False
 		if self.gl_widget == None:
 			

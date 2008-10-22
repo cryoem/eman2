@@ -117,18 +117,6 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,1.])
-		#glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.5)
-		#glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.5)
-		#glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, .2)
-		#glEnable(GL_LIGHT1)
-		#glLightfv(GL_LIGHT1, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
-		#glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		#glLightfv(GL_LIGHT1, GL_SPECULAR, [0.1, .1, .1, 1.0])
-		#glLightfv(GL_LIGHT1, GL_POSITION, [-0.1,.1,1.,1.])
-		#glLightf(GL_LIGHT1, GL_SPOT_DIRECTION, 45)
-		#glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, [-0.1,.1,1.,0.])
-			
-		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 
 		
 		glEnable(GL_DEPTH_TEST)
@@ -603,6 +591,8 @@ class EMImageMXRotorModule(EMGUIModule):
 	def __refresh_rotor_size(self):
 		if len(self.rotor) == 0: return
 		
+		
+		
 		self.render_width = self.gl_widget.width()
 		self.render_height = self.gl_widget.height()
 		width = self.mx_rows*(self.emdata_list_cache.get_image_width()+2)-2
@@ -749,16 +739,18 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.updateGL()
 		
 	def mouseMoveEvent(self, event):
-		self.widget.mouseMoveEvent(event)
-		self.updateGL()
+		if self.widget.isinwin(event.x(),self.gl_context_parent.viewport_height()-event.y()):
+			self.widget.mouseMoveEvent(event)
+			self.updateGL()
 		
 	def mouseReleaseEvent(self, event):
 		self.widget.mouseReleaseEvent(event)
 		self.updateGL()
 		
 	def wheelEvent(self, event):
-		self.widget.wheelEvent(event)
-		self.updateGL()
+		if self.widget.isinwin(event.x(),self.gl_context_parent.viewport_height()-event.y()):
+			self.widget.wheelEvent(event)
+			self.updateGL()
 		
 	def leaveEvent(self):
 		pass
@@ -768,7 +760,8 @@ class EMImageMXRotorModule(EMGUIModule):
 		self.updateGL()
 		
 	def resize_event(self, width, height):
-		if self.widget != None: self.widget.update()
+		if self.widget != None: 
+			self.widget.update()
 		self.rotor.resize_event(width,height)
 		self.optimize_fit(False)
 	

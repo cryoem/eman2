@@ -366,36 +366,38 @@ class EMImageRotorModule(EMGUIModule):
 	def dropEvent(self,event):
 		pass
 
-
 	def mousePressEvent(self, event):
-		self.widget.mousePressEvent(event)
+		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+			self.show_inspector(True)
+		else:
+			if self.widget.isinwin(event.x(),self.gl_context_parent.viewport_height()-event.y()):
+				self.widget.mousePressEvent(event)
+			
 		self.updateGL()
-	
+		
 	def mouseMoveEvent(self, event):
-		self.widget.mouseMoveEvent(event)
-		self.updateGL()
+		if self.widget.isinwin(event.x(),self.gl_context_parent.viewport_height()-event.y()):
+			self.widget.mouseMoveEvent(event)
+			self.updateGL()
 		
 	def mouseReleaseEvent(self, event):
-		self.widget.mouseReleaseEvent(event)
-		self.updateGL()
-		
-	def keyPressEvent(self,event):
-		self.widget.keyPressEvent(event)
-		self.updateGL()
-		
+		if self.widget.isinwin(event.x(),self.gl_context_parent.viewport_height()-event.y()):
+			self.widget.mouseReleaseEvent(event)
+			self.updateGL()
+			
 	def wheelEvent(self, event):
-#		if event.delta() > 0:
-#			self.set_scale( self.scale * self.mag )
-#		elif event.delta() < 0:
-#			self.set_scale(self.scale * self.invmag )
-#		self.resizeEvent(self.parent.width(),self.parent.height())
-#		# The self.scale variable is updated now, so just update with that
-#		if self.inspector: self.inspector.set_scale(self.scale)
-		self.widget.wheelEvent(event)
-		self.updateGL()
+		if self.widget.isinwin(event.x(),self.gl_context_parent.viewport_height()-event.y()):
+			self.widget.wheelEvent(event)
+			self.updateGL()
+		
 	def leaveEvent(self):
 		pass
 	
+	def keyPressEvent(self,event):
+		if self.widget.isinwin(event.x(),self.gl_context_parent.viewport_height()-event.y()):
+			self.widget.keyPressEvent(event)
+			self.updateGL()
+		
 	def resize_event(self, width, height):
 		self.rotor.resize_event(width,height)
 

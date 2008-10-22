@@ -296,11 +296,13 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		return child
 	
 	def draw(self):
+		glPushMatrix()
+		glTranslate(0,0,-25)
 		for child in self.children:
 			glPushMatrix()
 			child.draw()
 			glPopMatrix()
-
+		glPopMatrix()
 	#def attach_child(self,new_child):
 		#if len(self.children)== 0:
 			#child = EMGLViewContainer(self,EMRegion.get_geometry(self))

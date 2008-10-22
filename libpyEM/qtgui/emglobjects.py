@@ -1174,10 +1174,8 @@ class Camera2:
 		self.plane = plane
 	
 	def allow_camera_rotations(self,bool=True):
-		print "setting allow rotaitons",bool
 		self.allow_rotations = bool
 
-		
 	def loadIdentity(self):
 		self.scale = 1.0
 		
@@ -1336,7 +1334,6 @@ class Camera2:
 		return cam
 	
 	def mousePressEvent(self, event):
-		print self.allow_rotations,"in caamera"
 		self.mpressx = event.x()
 		self.mpressy = event.y()
 		if event.button()==Qt.LeftButton and self.allow_rotations:
