@@ -285,24 +285,33 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
 		EMGLViewContainer.__init__(self,parent,geometry)
 		
+		self.first_draw = []
 	def print_info(self):
 		
 		print self.get_size(),self.get_origin()
-		
-		
-	def get_child_region(self):
-		child = EMGLViewContainer(self,EMRegion.get_geometry(self))
-		EMGLViewContainer.attach_child(self,child)
-		return child
+
 	
 	def draw(self):
 		glPushMatrix()
 		glTranslate(0,0,-25)
+		glTranslate(*self.get_origin())
 		for child in self.children:
+			print "drawing child",child,child.width(),child.height()
+			if child in self.first_draw:
+				print "first draw"
+				
 			glPushMatrix()
 			child.draw()
 			glPopMatrix()
 		glPopMatrix()
+	
+		self.first_draw = []
+	
+	def attach_child(self,child):
+		print "attaching child", child, child.width(),child.height()
+		EMGLViewContainer.attach_child(self,child)
+		self.first_draw.append(child)
+	
 	#def attach_child(self,new_child):
 		#if len(self.children)== 0:
 			#child = EMGLViewContainer(self,EMRegion.get_geometry(self))
@@ -397,7 +406,6 @@ class EMDesktopApplication(EMApplication):
 				print "error, can't attach the same child twice",child
 				return
 		
-		print "attaching child",child
 		self.children.append(child)
 		#self.target.attach_gl_child(child,child.get_desktop_hint())
 		
@@ -615,7 +623,8 @@ class EMDesktopFrame(EMFrame):
 		if EMDesktopFrame.image == None:
 			appscreen = self.parent.get_app_screen()
 			sysdesktop = self.parent.get_sys_desktop()
-			EMDesktopFrame.image = QtGui.QPixmap.grabWindow(appscreen.winId(),0.0,0.0,sysdesktop.width(),sysdesktop.height()-30)
+			EMDesktopFrame.image = QtGui.QPixmap("galactic-stars.jpg")
+			#EMDesktopFrame.image = QtGui.QPixmap.grabWindow(appscreen.winId(),0.0,0.0,sysdesktop.width(),sysdesktop.height()-30)
 		return EMDesktopFrame.image
 
 	def get_time(self):
@@ -707,6 +716,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.application = EMDesktopApplication(self,qt_application_control=False)
 		if EMDesktop.application == None:
 			EMDesktop.application = self.application
+		
+		self.setMinimumSize(400,400)
 		
 		self.modules = [] # a list of all the modules that currently exist
 		self.app=QtGui.QApplication.instance()
@@ -1448,18 +1459,12 @@ class RightSideWidgetBar(SideWidgetBar):
 		self.reset_scale_animation()
 		#print_node_hierarchy(self.parent)
 
-
-	def get_child_region(self):
-		child = EMGLViewContainer(self,Region(0,0,0,640,640,640))
-		self.attach_child(child)
-		return child
-
 	class RightSideTransform(SideTransform):
 		def __init__(self,child):
 			SideTransform.__init__(self,child)
 			self.rotation = -90
 			self.default_rotation = -90
-			self.target_rotation = -25
+			self.target_rotation = 0
 			
 		def transform(self):
 			SideTransform.transform(self)

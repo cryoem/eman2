@@ -58,6 +58,7 @@ def image_update():
 		try:
 			if i.data.get_changecount() !=i.get_last_render_image_display_count() :
 				i.force_display_update()
+				i.force_fft_redo()
 				i.updateGL()
 		except: pass
 	

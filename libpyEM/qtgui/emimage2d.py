@@ -858,7 +858,25 @@ class EMImage2DModule(EMGUIModule):
 			self.list_fft_data[self.list_idx] = None
 		
 		if self.curfft > 0: self.__set_display_image(self.curfft)
-		
+	
+	def force_fft_redo(self):
+		'''
+		Called from image_update in emimage.py, this is useful if you 
+		have two display windows displaying the same image, but one shows
+		the fft and the other the real space image. If you draw on the real
+		space image you want the FFT to update in real time.
+		It only redoes the FFT if the FFT is currently being displayed. Otherwise
+		it sets a flag for the FFT to be recalculated next time it is displayed.
+		'''
+	
+		if self.curfft > 0:
+			self.fft = None
+			self.display_fft = None
+			self.__set_display_image(self.curfft)
+		else:
+			self.fft = None
+			self.display_fft = None
+	
 	def __set_display_image(self,val):
 		if self.list_data == None:
 			if val > 0 :
