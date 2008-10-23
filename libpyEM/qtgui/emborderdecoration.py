@@ -37,7 +37,6 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import os
 
-from EMAN2 import get_3d_font_renderer,FTGLFontMode
 
 
 white = (1.0,1.0,1.0,1.0)
@@ -85,6 +84,7 @@ class EMBorderDecoration:
 		self.border_depth = 6
 		
 		try:
+			from EMAN2 import get_3d_font_renderer,FTGLFontMode
 			self.font_renderer = get_3d_font_renderer()
 			self.font_renderer.set_face_size(self.top_border_height-2)
 			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)

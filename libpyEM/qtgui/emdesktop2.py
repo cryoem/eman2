@@ -296,16 +296,21 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		glTranslate(0,0,-25)
 		glTranslate(*self.get_origin())
 		for child in self.children:
-			print "drawing child",child,child.width(),child.height()
+			#print "drawing child",child,child.width(),child.height()
 			if child in self.first_draw:
 				print "first draw"
-				
+				self.find_out_geometry(child)
 			glPushMatrix()
 			child.draw()
 			glPopMatrix()
 		glPopMatrix()
 	
 		self.first_draw = []
+	
+	def find_out_geometry(self,child):
+		print child.get_position()
+		print self.get_origin(),self.get_size()
+		child.set_position(child.width_inc_border()/2,self.height()-child.height_inc_border()/2,0)
 	
 	def attach_child(self,child):
 		print "attaching child", child, child.width(),child.height()
@@ -521,7 +526,9 @@ class EMDesktopFrame(EMFrame):
 	
 		self.set_geometry(Region(0,0,int(EMDesktop.main_widget.viewport_width()),int(EMDesktop.main_widget.viewport_height())))
 		if len(self.display_frames) != 0:
-			self.display_frames[0].set_geometry(Region(200,0,-100,int(EMDesktop.main_widget.viewport_width()-400),int(EMDesktop.main_widget.viewport_height()),100))
+			width = int(EMDesktop.main_widget.viewport_width()-200)
+			height = int(EMDesktop.main_widget.viewport_height()-50)
+			self.display_frames[0].set_geometry(Region(-width/2,-height/2,-20,width,height,100))
 			
 		if self.frame_dl:
 			glDeleteLists(self.frame_dl,1)

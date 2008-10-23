@@ -954,6 +954,12 @@ class EMGLWindow:
 		self.border_scale = 1.1
 		self.inv_border_scale = 1.0/self.border_scale
 		self.update_border_flag = True
+		
+	def get_position(self):
+		return (self.cam.cam_x, self.cam.cam_y,self.cam.cam_z)
+	
+	def set_position(self,x,y,z):
+		self.cam.cam_x, self.cam.cam_y,self.cam.cam_z = x,y,z
 
 	def closeEvent(self,event):
 		self.parent.get_app().close_specific(self.drawable.drawable)
