@@ -1905,6 +1905,8 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 			wd_trials  += 1
 			if wd_trials > 10:
 				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+				MemJe[ntrials-1] = 1e10
+				wd_trials = 0
 			else:
 				ntrials -= 1
 						
@@ -2044,7 +2046,9 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 		MemCls, MemJe, MemAssign = {}, {}, {}
 	else:
 		trials = 1
-	ntrials = 0
+	flag_empty = False	
+	ntrials    = 0
+	wd_trials  = 0
 	while ntrials < trials:
 		ntrials += 1
 
@@ -2291,12 +2295,16 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 										
 					# empty cluster control
 					if Cls['n'][assign_from] == 1:
-						print_msg('\nEmpty clusters!!\n')
-						for k in xrange(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
-						ERROR("Empty groups in kmeans_SSE","k_means_SSE",1)						
-						exit()							
-								
+						print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
+						flag_empty = True
+												
 					change = True
+
+				# empty cluster
+				if flag_empty: break
+
+			# empty cluster
+			if flag_empty: break
 			
 			if CTF:
 				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
@@ -2337,45 +2345,59 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 				print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e'%(ite, Je)
 
-		if CTF:
-			## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
-			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
-			for im in xrange(N):
-				# compute Sum ctf2
-				for i in xrange(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
-				# compute average first step
-				CTFxF = filt_table(im_M[im], ctf[im])
-				Util.add_img(Cls['ave'][assign[im]], CTFxF)
-			for k in xrange(K):
-				valCTF = [0] * len_ctm
-				for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-				Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
-			## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
-			for k in xrange(K): Cls['Ji'][k] = 0
-			for n in xrange(N):
-				CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
-				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
-			Je = 0
-			for k in xrange(K):	  Je += Cls['Ji'][k]
+		# if no empty cluster
+		if not flag_empty:
+
+			if CTF:
+				## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
+				for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
+				for im in xrange(N):
+					# compute Sum ctf2
+					for i in xrange(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
+					# compute average first step
+					CTFxF = filt_table(im_M[im], ctf[im])
+					Util.add_img(Cls['ave'][assign[im]], CTFxF)
+				for k in xrange(K):
+					valCTF = [0] * len_ctm
+					for i in xrange(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
+					Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
+				for k in xrange(K): Cls['Ji'][k] = 0
+				for n in xrange(N):
+					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+				Je = 0
+				for k in xrange(K):	  Je += Cls['Ji'][k]
+			else:
+				# Calculate the real averages, because the iterations method cause approximation
+				buf.to_zero()
+				for k in xrange(K):     Cls['ave'][k] = buf.copy()
+				for im in xrange(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
+				for k in xrange(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+
+				# Compute the accurate Je, because during the iterations Je is aproximated from average
+				Je = 0
+				for k in xrange(K):     Cls['Ji'][k] = 0
+				for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
+				for k in xrange(K):	Je += Cls['Ji'][k]	
+
+			# memorize the result for this trial	
+			if trials > 1:
+				MemCls[ntrials-1]    = deepcopy(Cls)
+				MemJe[ntrials-1]     = deepcopy(Je)
+				MemAssign[ntrials-1] = deepcopy(assign)
+
+			# set to zero watch dog trials
+			wd_trials = 0
 		else:
-			# Calculate the real averages, because the iterations method cause approximation
-			buf.to_zero()
-			for k in xrange(K):     Cls['ave'][k] = buf.copy()
-			for im in xrange(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
-			for k in xrange(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
-
-			# Compute the accurate Je, because during the iterations Je is aproximated from average
-			Je = 0
-			for k in xrange(K):     Cls['Ji'][k] = 0
-			for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
-			for k in xrange(K):	Je += Cls['Ji'][k]	
-
-		# memorize the result for this trial	
-		if trials > 1:
-			MemCls[ntrials-1]    = deepcopy(Cls)
-			MemJe[ntrials-1]     = deepcopy(Je)
-			MemAssign[ntrials-1] = deepcopy(assign)
-
+			flag_empty  = False
+			wd_trials  += 1
+			if wd_trials > 10:
+				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+				MemJe[ntrials-1] = 1e10
+				wd_trials = 0
+			else:
+				ntrials -= 1
 			
 	# if severals trials choose the best
 	if trials > 1:
