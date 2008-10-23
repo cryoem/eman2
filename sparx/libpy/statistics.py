@@ -1305,7 +1305,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 		elif ny > 1:
 			try:	alpha, sx, sy, mirror, scale = get_params2D(image)
 			except: alpha, sx, sy, mirror, scale  = 0, 0, 0, 0, 0
-			image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
+			image = rot_shift2D(image, alpha, sx, sy, mirror)
 		# obtain ctf
 		if CTF:
 			ctf_params = get_arb_params(image, parnames)
