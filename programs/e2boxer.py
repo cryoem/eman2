@@ -872,7 +872,7 @@ class EMBoxerModule:
 		emftgl_supported = True
 		try: a = EMFTGL()
 		except: emftgl_supported = False
-		if not glflags.npt_textures_unsupported() and emftgl_supported:
+		if False and (not glflags.npt_textures_unsupported() and emftgl_supported):
 			self.guimx=EMImageMXRotorModule(application=self.application)# widget for displaying image thumbs
 			self.guimx.disable_mx_zoom()
 			#self.guimx.allow_camera_rotations(False)
@@ -881,6 +881,7 @@ class EMBoxerModule:
 			
 		else:
 			self.guimx=EMImageMXModule(application=self.application)
+			self.guimx.desktop_hint = "rotor"
 			self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
 		self.guimx.set_mouse_mode("app")
@@ -906,6 +907,7 @@ class EMBoxerModule:
 		self.guiim.set_data(image,imagename)
 		self.guiim.force_display_update()
 		self.application.show_specific(self.guiim)
+		self.guiim.optimally_resize()
 
 		self.__update_guiim_states()
 		self.guiim.set_mouse_mode(0)
@@ -1233,6 +1235,7 @@ class EMBoxerModule:
 				self.__init_guimx()
 			if len(data) != 0:
 				self.application.show_specific(self.guimx)
+				self.guimx.optimally_resize()
 				self.guimx.set_data(data)
 			
 				#qt_target = self.guimx.get_parent()
@@ -1364,10 +1367,12 @@ class EMBoxerModule:
 			emftgl_supported = True
 			try: a = EMFTGL()
 			except: emftgl_supported = False
-			if not glflags.npt_textures_unsupported() and emftgl_supported:
+			if False and (not glflags.npt_textures_unsupported() and emftgl_supported):
 				self.guimxit=EMImageRotorModule(application=self.application)
 			else:
 				self.guimxit=EMImageMXModule(application=self.application)
+				self.guimxit.desktop_hint = "rotor"
+				self.guimxit.filename = "Image Thumbs"
 				
 			try:
 				qt_parent = self.guimxit.get_gl_parent()
@@ -1375,6 +1380,7 @@ class EMBoxerModule:
 			except:
 				pass
 			self.application.show_specific(self.guimxit)
+			self.guimxit.optimally_resize()
 			self.guimxit.set_data(self.imagethumbs)
 			
 			try:

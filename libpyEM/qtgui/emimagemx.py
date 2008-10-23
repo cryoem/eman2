@@ -335,9 +335,10 @@ class EMImageMXModule(EMGUIModule):
 		return self.gl_widget
 	
 	def get_desktop_hint(self):
-		return "image"
+		return self.desktop_hint
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,application=None):
+		self.desktop_hint = "image"
 		self.init_size_flag = True
 		self.data=None
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)

@@ -372,7 +372,7 @@ class EMImage2DModule(EMGUIModule):
 		return self.gl_widget
 		
 	def get_desktop_hint(self):
-		return "image"
+		return self.desktop_hint
 	
 	def __parent_resize(self):
 		#if self.gl_widget != None: return
@@ -402,7 +402,7 @@ class EMImage2DModule(EMGUIModule):
 	
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None,application=None):
-		
+		self.desktop_hint = "image"
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
