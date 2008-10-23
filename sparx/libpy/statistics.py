@@ -1632,7 +1632,10 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 		MemCls, MemJe, MemAssign = {}, {}, {}
 	else:
 		trials = 1
-	ntrials = 0
+		
+	flag_empty = False
+	ntrials    = 0
+	wd_trials  = 0
 	while ntrials < trials:
 		ntrials  += 1
 
@@ -1819,7 +1822,12 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 							
 			# manage empty cluster
 			for k in xrange(K):
-				if Cls['n'][k] < 1: ERROR('Empty groups in kmeans_classical', 'k_means_classical', 1)
+				if Cls['n'][k] < 1:
+					print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
+					flag_empty = True
+					break
+			if flag_empty: break
+					
 													
 			# Update clusters
 			for k in xrange(K):
@@ -1882,12 +1890,23 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 			else:
 				print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
 				if DEBUG: print '> iteration: %5d    criterion: %11.6e' % (ite, Je)
-						
-		# memorize the result for this trial	
-		if trials > 1:
-			MemCls[ntrials-1]    = deepcopy(Cls)
-			MemJe[ntrials-1]     = deepcopy(Je)
-			MemAssign[ntrials-1] = deepcopy(assign)
+
+		if not flag_empty:
+			# memorize the result for this trial	
+			if trials > 1:
+				MemCls[ntrials-1]    = deepcopy(Cls)
+				MemJe[ntrials-1]     = deepcopy(Je)
+				MemAssign[ntrials-1] = deepcopy(assign)
+
+			# set to zero watch dog trials
+			wd_trials = 0
+		else:
+			flag_empty  = False
+			wd_trials  += 1
+			if wd_trials > 10:
+				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+			else:
+				ntrials -= 1
 						
 	# if severals trials choose the best
 	if trials > 1:
