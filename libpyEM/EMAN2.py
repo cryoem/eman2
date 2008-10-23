@@ -326,6 +326,8 @@ def display(img):
 		import emimage
 		image = emimage.EMImageModule(img,None,app)
 		app.show_specific(image)
+		try: image.optimally_resize()
+		except: pass
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
 		try: os.unlink("/tmp/img.hed")
@@ -349,6 +351,8 @@ class EMImage(object):
 			import emimage
 			image = emimage.EMImageModule(data,old,app)
 			app.show_specific(image)
+			try: image.optimally_resize()
+			except: pass
 			return image.get_qt_widget()
 		else: print "can not instantiate EMImage in non gui mode"
 
@@ -527,13 +531,31 @@ def get_file_tag(file_name):
 		return None
 	
 	return file_name[i+1:]	
-# a function for stripping the contents of a filename so that all
-# that remains is up to the first '.'
-# eg if given image.sh4. mrc this functions strips the 'sh4.mrc' and returns 'image'	
+
 def strip_after_dot(file_name):
-	# FIXME it's probably easiest to do this with regular expressions...
+	""" a function for stripping the contents of a filename so that all
+	 that remains is up to the first '.'
+	 eg if given image.sh4. mrc this functions strips the 'sh4.mrc' and returns 'image'	
+	 FIXME it's probably easiest to do this with regular expressions... """
 	idx = str.find(file_name,'.')
 	return file_name[0:idx]
+
+def remove_directories_from_name(file_name):
+	'''
+	Removes the directories from a file name, eg asdf/qwer/zxcv is reduced to zxcv.
+	Works on Windows, Linux and Darwin)
+	'''
+	import platform
+	pfm = platform.system() # will be Linux, Darwin or Windows, even Java
+	if pfm == "Window":
+		idx = file_name.rfind('\\')
+	else:
+		idx = file_name.rfind('/')
+		
+	if idx == -1: return file_name
+	elif idx == (len(file_name)-1): return file_name
+	else: return file_name[idx+1:]
+		
 	
 # a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
 # can be created from the command line string. Returns false if there are problems

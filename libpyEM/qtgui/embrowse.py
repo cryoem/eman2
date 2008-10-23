@@ -67,10 +67,14 @@ class EMBrowserDialog(EMSelectorDialog):
 			self.browse_gl_preview =EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot)
 
 			self.application.show_specific(self.browse_gl_preview)
+			try: self.browse_gl_preview.optimally_resize()
+			except: pass
 			self.browse_gl_preview.updateGL()
 		else:
 			preview =EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot)
 			self.application.show_specific(preview)
+			try: preview.optimally_resize()
+			except: pass
 			preview.updateGL()
 			
 		self.application.setOverrideCursor(Qt.ArrowCursor)

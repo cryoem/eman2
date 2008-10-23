@@ -37,6 +37,8 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import os
 
+from EMAN2 import get_3d_font_renderer,FTGLFontMode
+
 
 white = (1.0,1.0,1.0,1.0)
 yellow = (1.0,1.0,0.0,1.0)
@@ -82,6 +84,15 @@ class EMBorderDecoration:
 		self.border_width = 6
 		self.border_depth = 6
 		
+		try:
+			self.font_renderer = get_3d_font_renderer()
+			self.font_renderer.set_face_size(self.top_border_height-2)
+			self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+		except:
+			self.font_renderer = None
+			
+		self.window_title = ""
+		
 	def __del__(self):
 		self.delete_list()
 	
@@ -89,6 +100,9 @@ class EMBorderDecoration:
 	
 	def total_width(self):
 		return 2*self.border_width
+	
+	def setWindowTitle(self,title):
+		self.window_title = title
 	
 	def total_height(self):
 		return self.top_border_height+self.bottom_border_height
@@ -511,11 +525,24 @@ class EM2DPlainBorderDecoration(EMBorderDecoration):
 		glPushMatrix()
 		glTranslate(self.object.width()/2.0-self.top_border_height/2,self.object.height()/2.0+self.top_border_height/2.0,self.border_depth+.1)
 		glScale(self.top_border_height,self.top_border_height,1.0)
-		glEnable(GL_BLEND)
-		glBlendFunc(GL_DST_ALPHA,GL_ONE_MINUS_DST_ALPHA)
+		#glEnable(GL_BLEND)
+		#glBlendFunc(GL_DST_ALPHA,GL_ONE_MINUS_DST_ALPHA)
 		glCallList( EMBorderDecoration.x_texture_dl)
-		glDisable(GL_BLEND)
+		#glDisable(GL_BLEND)
 		glPopMatrix()
+		
+		if self.font_renderer != None:
+			glPushMatrix()
+			glDisable(GL_LIGHTING)
+			glEnable(GL_TEXTURE_2D)
+			bbox = self.font_renderer.bounding_box(self.window_title)
+			glTranslate(4,4,0.2)
+
+			glTranslate((bbox[0]-bbox[3])/2,0,0)
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+			glTranslate(0,self.object.height()/2.0,self.border_depth+.1)
+			self.font_renderer.render_string(self.window_title)
+			glPopMatrix()
 		
 	def viewport_update(self):
 		self.corner_sets = []

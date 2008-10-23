@@ -320,18 +320,19 @@ class EMParentWin(QtGui.QWidget,Animator):
 #		EMEventRerouter.__init__(self,child)
 
 		self.child = child
-		self.width_offset = 8
-		self.height_offset = 8
-		self.resize(child.width()+self.width_offset,child.height()+self.height_offset)
+		self.margin = 6
+		self.resize(child.width(),child.height())
 		self.setMaximumSize(8000,8000)
 
 		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(6)
-		self.hbl.setSpacing(6)
+		self.hbl.setMargin(self.margin)
+		self.hbl.setSpacing(0)
 		self.hbl.addWidget(self.child)
 		self.setLayout(self.hbl)
-		
-#		self.setWindowTitle(self.tr("Whatever"))
+	
+	def get_margin(self):
+		return 50
+	
 
 	def closeEvent(self, e):
 		try:
@@ -351,6 +352,9 @@ class EMParentWin(QtGui.QWidget,Animator):
 		
 	def updateGL(self):
 		self.child.updateGL()
+	
+	def keyPressEvent(self,event):
+		self.child.keyPressEvent(event)
 	
 	#def width(self):
 		##print "asked for width!"

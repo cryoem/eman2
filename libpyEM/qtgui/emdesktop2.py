@@ -598,10 +598,12 @@ class EMDesktopFrame(EMFrame):
 		self.draw_frame()
 		glPopMatrix()
 		
+		glEnable(GL_FOG)
 		glPushMatrix()
 		glScalef(self.height()/2.0,self.height()/2.0,1.0)
 		self.bgob2.render()
 		glPopMatrix()
+		glDisable(GL_FOG)
 
 		glPushMatrix()
 		glTranslatef(0.,0.,self.get_z_opt())
@@ -879,6 +881,12 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 
 		glEnable(GL_NORMALIZE)
 		#glEnable(GL_RESCALE_NORMAL)
+		
+		glFogi(GL_FOG_MODE,GL_EXP)
+		glFogf(GL_FOG_DENSITY,0.00035)
+		glFogf(GL_FOG_START,1.0)
+		glFogf(GL_FOG_END,5.0)
+		glFogfv(GL_FOG_COLOR,(0,0,0,1.0))
 	
 		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST)

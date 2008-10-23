@@ -1006,6 +1006,12 @@ class EMGLWindow:
 	def border_scale_event(self,delta): raise
 
 
+	def setWindowTitle(self,title):
+		'''
+		Can be used like Qt.QWidget.setWindowTitle, hence the capitalized name
+		'''
+		self.decoration.setWindowTitle(title)
+
 	def mousePressEvent(self, event):
 		if self.texture_lock > 0: return
 		
@@ -1240,9 +1246,7 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 
 	def resize(self,width,height):
-		self.w = width
-		self.h = height
-	
+		print "resize not yet supported"
 	#def get_lr_bt_nf(self):
 		
 		#return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
@@ -1584,7 +1588,9 @@ class EM2DGLWindow(EMGLWindow):
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
 
-
+	def resize(self,width,height):
+		self.w = width
+		self.h = height
 	
 	def isinwin(self,x,y):
 		if self.vdtools.isinwin(x,y):

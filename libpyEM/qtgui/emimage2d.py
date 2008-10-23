@@ -76,8 +76,6 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 		self.setFocusPolicy(Qt.StrongFocus)
 
-		self.resize(480,480)
-
 	def set_parent(self,parent):
 		self.parent = parent
 
@@ -125,7 +123,6 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 	def resizeGL(self, width, height):
 		side = min(width, height)
-		
 		GL.glViewport(0,0,width,height)
 	
 		GL.glMatrixMode(GL.GL_PROJECTION)
@@ -134,8 +131,8 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		try: self.target.resize_event(width,height)
-		except: pass
+		self.target.resize_event(width,height)
+		#except: pass
 		
 	def add_shapes(self,s):
 		self.target.add_shapes(s)
@@ -369,9 +366,8 @@ class EMImage2DModule(EMGUIModule):
 			
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
-			self.gl_widget.set_width(480)
-			self.gl_widget.set_height(480)
 			self.gl_widget.target_translations_allowed(True)
+			self.update_window_title(self.file_name)
 			
 		return self.gl_widget
 		
@@ -381,21 +377,29 @@ class EMImage2DModule(EMGUIModule):
 	def __parent_resize(self):
 		#if self.gl_widget != None: return
 		self.load_default_scale_origin()
+
+	def optimally_resize(self):
+		if isinstance(self.gl_context_parent,EMImage2DWidget):
+			if self.parent_geometry != None:
+				self.qt_context_parent.restoreGeometry(self.parent_geometry)
+				
+			else:
+				self.qt_context_parent.resize(*self.get_parent_suggested_size())
+				self.load_default_scale_origin()
+		else:
+			self.gl_widget.resize(*self.get_parent_suggested_size())
+			self.load_default_scale_origin()
 		
-#		print "resizing"
-#		try:
-#			parent = self.get_parent()
-#			if self.parent_geometry != None:
-#				parent.restoreGeometry(self.parent_geometry)
-#			elif self.data.get_xsize()<1024 and self.data.get_ysize()<1024: 
-#				parent.resize(self.data.get_xsize(),self.data.get_ysize())
-#				self.load_default_scale_origin()
-#			else:
-#				parent.resize(800,800)
-#				self.load_default_scale_origin()
-#			self.init_size_flag = False
-#		except: pass
-			
+	def get_parent_suggested_size(self):
+		
+		data = self.data
+		if data == None: data = self.fft
+		
+		if data != None and  data.get_xsize()<800 and data.get_ysize()<800: 
+			return (data.get_xsize()+12,data.get_ysize()+12)
+		else:
+			return (800,800)
+	
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None,application=None):
 		
@@ -442,6 +446,9 @@ class EMImage2DModule(EMGUIModule):
 		
 		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		self.tex_name = 0			# an OpenGL texture handle
+		
+		self.window_width = None# Used for intelligently managing resize events
+		self.window_height = None # Used for intelligently managing resize events
 		
 		self.otherdata = None
 		self.otherdatascale = -1
@@ -593,14 +600,21 @@ class EMImage2DModule(EMGUIModule):
 	def get_data(self):
 		return self.data
 	
-	
+	def update_window_title(self,filename):
+		if isinstance(self.gl_context_parent,EMImage2DWidget):
+			self.qt_context_parent.setWindowTitle(remove_directories_from_name(filename))
+		else:
+			if self.gl_widget != None:
+				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
+				
 	def set_data(self,incoming_data,file_name=""):
 		"""You may pass a single 2D image or a list of images"""
 		if self.data != None and self.file_name != "":
 			self.__write_display_settings_to_db()
 			
 		self.set_file_name(file_name,load_cache_settings=False)
-	
+		self.update_window_title(self.file_name)
+		
 		data = incoming_data
 		
 		fourier = False
@@ -671,27 +685,27 @@ class EMImage2DModule(EMGUIModule):
 			
 		self.auto_contrast(inspector_update=False,display_update=False)
 
-		self.load_default_scale_origin()
-		
 		self.__load_display_settings_from_db(inspector_update=False,display_update=False)
 		
 		self.inspector_update(use_fourier=fourier)
 		self.force_display_update()
 		
 	def load_default_scale_origin(self):
-		self.scale=1.0				# Scale factor for display
-		self.origin=(0,0)
-		try: 
-			w = self.gl_widget.width()
-			h = self.gl_widget.height()
-			data = self.get_data_dims()
-			if data[0] == 0 or data[1] == 0: raise
-			scalew = float(w)/data[0]
-			scaleh = float(h)/data[1]
-			if scaleh < scalew:
-				self.scale = scaleh
-			else: self.scale = scalew
-		except: pass
+		self.scale=1.0				# self.origin=(0,0)Scale factor for display
+		self.origin = (0,0)
+		#try: 
+		w = self.gl_widget.width()
+		h = self.gl_widget.height()
+		data = self.get_data_dims()
+		if data[0] == 0 or data[1] == 0: raise
+		scalew = float(w)/data[0]
+		scaleh = float(h)/data[1]
+		if scaleh < scalew:
+			self.scale = scaleh
+		else: self.scale = scalew
+		
+		#print "scale is ", self.scale
+		#except: pass
 	
 	def auto_contrast(self,bool=False,inspector_update=True,display_update=True):
 		if self.curfft == 0:
@@ -750,7 +764,8 @@ class EMImage2DModule(EMGUIModule):
 				self.parent_geometry = data["parent_geometry"]
 				if self.qt_context_parent != None:
 					try:
-						self.qt_context_parent.restoreGeometry(self.parent_geometry)
+						pass
+						#self.qt_context_parent.restoreGeometry(self.parent_geometry)
 					except: pass
 			except:pass
 		
@@ -1152,9 +1167,56 @@ class EMImage2DModule(EMGUIModule):
 			if self.origin == (0,0):
 				#self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.gl_widget.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.gl_widget.height()/2.0)
 				self.oldsize=(width,height)
+		
+		
+		#if self.window_width and self.window_height:
+			#if width == self.window_width
+				#if height <= self.window_height:
+					
+				#elif height >= self.window_height:
+				#self.window_width = width
+				#self.window_height = height
+				#return
+		#self.window_width = width
+		#self.window_height = height
+		
+		display_width = self.gl_widget.width()
+		display_height = self.gl_widget.height()
+
+		data = self.data
+		if data == None: data = self.fft
+		#print data
+		if data != None:
+			pixel_x = self.scale*data.get_xsize()
+			pixel_y = self.scale*data.get_ysize()
+		else: return
+		
+		
+		ox = self.origin[0]
+		oy = self.origin[1]
+		#print display_width,pixel_x
+		if pixel_x < display_width:
+			#if self.origin[0] < 0:
+				#left = -self.origin[0]
+				#right = display_width-pixel_x
+			ox = - (display_width-pixel_x)/2.0
+		if pixel_y < display_width:
+			oy =  - (display_height-pixel_y)/2.0
+			
+		self.origin = (ox,oy)
+		#if self.origin[0] <= 0 and self.origin[1] <= 0:
+			##print "yoda"
+			
 				
-		self.window_width = width
-		self.window_height = height
+				 #and pixel_y < display_height:
+					#data = self.get_data_dims()
+					#if data[0] == 0 or data[1] == 0: raise
+					#scalew = float(display_width)/data[0]
+					#scaleh = float(display_height)/data[1]
+					#if scaleh < scalew:
+						#self.scale = scaleh
+					#else: self.scale = scalew
+		
 
 	def get_shapes(self):
 		return self.shapes
@@ -1813,8 +1875,9 @@ if __name__ == '__main__':
 		a=EMData.read_images(sys.argv[1])
 		if len(a) == 1:	a = a[0]
 		window.set_data(a,sys.argv[1])
-		
+	
 	em_app.show()
+	window.optimally_resize()
 	em_app.execute()
 	
 

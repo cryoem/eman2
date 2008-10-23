@@ -68,7 +68,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 		self.imagefilename = None
 		
-		self.resize(480,480)
+		#self.resize(480,480)
 		
 	def get_target(self):
 		return self.target
@@ -315,8 +315,7 @@ class EMImageMXModule(EMGUIModule):
 			self.gl_context_parent = EMImageMXWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.gl_widget = self.gl_context_parent
-			self.optimally_resize()
-				
+			#self.optimally_resize()
 			self.qt_context_parent.setAcceptDrops(True)
 		
 		return self.qt_context_parent
@@ -332,8 +331,7 @@ class EMImageMXModule(EMGUIModule):
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
 			self.gl_widget.target_translations_allowed(True)
-			self.gl_widget.set_width(480)
-			self.gl_widget.set_height(480)
+			self.update_window_title(self.filename)
 		return self.gl_widget
 	
 	def get_desktop_hint(self):
@@ -378,6 +376,7 @@ class EMImageMXModule(EMGUIModule):
 		
 		self.inspector=None
 		
+		self.font_size = 0
 		self.load_font_renderer()
 		if data:
 			self.set_data(data,False)
@@ -403,6 +402,17 @@ class EMImageMXModule(EMGUIModule):
 			return self.gl_widget.width()
 		else:
 			return 0
+	
+	def using_ftgl(self):
+		return self.font_render_mode == EMGUIModule.FTGL
+	
+	def get_font_size(self):
+		return self.font_renderer.get_face_size()
+		
+	def set_font_size(self,value):
+		self.font_renderer.set_face_size(value)
+		self.force_display_update() # only for redoing the fonts, this could be made more efficient :(
+		self.updateGL()
 		
 	def height(self):
 		if self.gl_widget != None:
@@ -530,22 +540,29 @@ class EMImageMXModule(EMGUIModule):
 				w=self.mx_cols*(self.data[0].get_xsize()+2)
 				hfac = len(self.data)/self.mx_cols+1
 			hfac *= self.data[0].get_ysize()
-			if hfac > 528: hfac = 528
-				
-			return (int(w)+2,int(hfac))
-		else: return (528,528)
+			if hfac > 512: hfac = 512
+			if w > 512: w = 512
+			return (int(w)+12,int(hfac)+12) # the 12 is related to the EMParentWin... hack...
+		else: return (512+12,512+12)
+	
+	def update_window_title(self,filename):
+		if isinstance(self.gl_context_parent,EMImageMXWidget):
+			self.qt_context_parent.setWindowTitle(remove_directories_from_name(filename))
+		else:
+			if self.gl_widget != None:
+				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
 	
 	def set_data(self,data,filename='',update_gl=True):
-		self.filename = filename
+		
 		if data == None or not isinstance(data,list) or len(data)==0:
 			self.data = [] 
 			return
-		
 		if not isinstance(data[0],EMData):
 			print "strange error in set_data"
 			return
 
-		
+		self.filename = filename
+		self.update_window_title(self.filename)
 		self.data=data
 		
 		self.force_display_update()
@@ -576,7 +593,8 @@ class EMImageMXModule(EMGUIModule):
 		self.max_idx = len(data)
 
 		if self.font_render_mode == EMGUIModule.FTGL:
-			self.font_renderer.set_face_size(data[0].get_xsize()/6)
+			self.font_size = data[0].get_xsize()/6
+			self.font_renderer.set_face_size(self.font_size)
 		for i,d in enumerate(data):
 			try:
 				d.set_attr("original_number",i)
@@ -864,7 +882,7 @@ class EMImageMXModule(EMGUIModule):
 					elif tx<0:
 						drawlabel=False
 						rx = int(ceil(-tx*invscale))
-						tw=int(w+2+tx)
+						tw=int(w+tx)
 						tx = 0
 						
 	
@@ -876,14 +894,14 @@ class EMImageMXModule(EMGUIModule):
 					elif ty<0:
 						drawlabel = False
 						ry = int(ceil(-ty*invscale))
-						th=int(h+2+ty)
+						th=int(h+ty)
 						ty = 0
 						
 					#print i,':',row,col,tx,ty,tw,th,'offsets',yoffset,xoffset
 					if th < 0 or tw < 0:
 						#weird += 1
-						print "weirdness"
-						print col,row,
+						#print "weirdness"
+						#print col,row,
 						continue
 					
 					try:
@@ -905,7 +923,7 @@ class EMImageMXModule(EMGUIModule):
 					#i = (row+yoffset)*self.mx_cols+col+xoffset
 					#print i,':',row,col,tx,ty,tw,th
 					shown = True
-					#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height()
+					#print rx,ry,tw,th,self.gl_widget.width(),self.gl_widget.height(),self.origin
 					if not self.glflags.npt_textures_unsupported():
 						a=self.data[i].render_amp8(rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 						self.texture(a,tx,ty,tw,th)
@@ -978,7 +996,7 @@ class EMImageMXModule(EMGUIModule):
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			lighting = glIsEnabled(GL_LIGHTING)
 			glDisable(GL_LIGHTING)
-			glEnable(GL_NORMALIZE)
+			#glEnable(GL_NORMALIZE)
 			tagy = ty
 			glColor(*txtcol)
 			#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
@@ -1096,11 +1114,10 @@ class EMImageMXModule(EMGUIModule):
 	def resize_event(self, width, height):
 		if self.data and len(self.data)>0 :
 			if self.data[0].get_xsize()*self.scale != 0:
-				self.set_mx_cols(int(width/(self.data[0].get_xsize()*self.scale)))
+				self.set_mx_cols(int(self.gl_widget.width()/(self.data[0].get_xsize()*self.scale)))
 			else:
 				print "error", self.data[0].get_xsize(),self.scale
 		#except: pass
-		
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.gl_widget.height() or self.data[0].get_xsize()*self.scale>self.gl_widget.width()):
 			self.scale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.gl_widget.width())/self.data[0].get_xsize())
 				
@@ -1237,8 +1254,21 @@ class EMImageMXModule(EMGUIModule):
 			event.acceptProposedAction()
 
 	def keyPressEvent(self,event):
-		pass
-
+		ystep = (self.data[0].get_ysize()*self.scale + 2)/2.0
+		xstep = (self.data[0].get_xsize()*self.scale + 2)/2.0
+		if event.key()==Qt.Key_Up :
+			self.origin=(self.origin[0],self.origin[1]+ystep)
+			self.updateGL()
+		elif event.key()==Qt.Key_Down :
+			self.origin=(self.origin[0],self.origin[1]-ystep)
+			self.updateGL()
+		elif event.key()==Qt.Key_Left :
+			self.origin=(self.origin[0]+xstep,self.origin[1])
+			self.updateGL()
+		elif event.key()==Qt.Key_Right:
+			self.origin=(self.origin[0]-xstep,self.origin[1])
+			self.updateGL()
+			
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
@@ -1271,9 +1301,9 @@ class EMImageMXModule(EMGUIModule):
 			
 	def wheelEvent(self, event):
 		if event.delta() > 0:
-			self.set_scale( self.scale * self.mag )
+			self.set_scale( self.scale * self.mag,False )
 		elif event.delta() < 0:
-			self.set_scale(self.scale * self.invmag )
+			self.set_scale(self.scale * self.invmag,False)
 		self.resize_event(self.gl_widget.width(),self.gl_widget.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
@@ -1387,6 +1417,20 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.vbl.addLayout(self.hbl)
 		
 		self.hbl.addWidget(self.valsbut)
+		
+		if self.target.using_ftgl():
+			self.font_label = QtGui.QLabel("font size:")
+			self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
+			self.hbl.addWidget(self.font_label)
+		
+			self.font_size = QtGui.QSpinBox(self)
+			self.font_size.setObjectName("nrow")
+			self.font_size.setRange(1,50)
+			self.font_size.setValue(int(self.target.get_font_size()))
+			self.hbl.addWidget(self.font_size)
+			
+			QtCore.QObject.connect(self.font_size, QtCore.SIGNAL("valueChanged(int)"), target.set_font_size)
+		
 		
 		if allow_col_variation:
 			self.lbl2 = QtGui.QLabel("#/col:")
@@ -1613,8 +1657,8 @@ if __name__ == '__main__':
 		a=EMData.read_images(sys.argv[1])
 		window.set_file_name(sys.argv[1])
 		window.set_data(a)
-	
-	window.optimally_resize()
+		
 	em_app.show()
+	window.optimally_resize()
 	em_app.execute()
 

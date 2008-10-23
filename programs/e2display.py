@@ -102,7 +102,7 @@ def main():
 			a=EMData.read_images(i)
 			display(a,app,i)
 	
-	app.show()
+	
 	app.execute()
 	#sys.exit(app.exec_())
 
@@ -155,6 +155,9 @@ def display(img,app,title="EMAN2 image"):
 		if file_exists(title):
 			w.set_file_name(title)
 	except: pass
+	app.show_specific(w)
+	try: w.optimally_resize()
+	except: pass
 	return w
 
 def plot(files,app):
@@ -163,6 +166,7 @@ def plot(files,app):
 	for f in files:
 		plotw.set_data_from_file(f)
 	plotw.get_qt_widget().setWindowTitle("2D Plot")
+	app.show_specific(plotw)
 	return plotw
 
 
