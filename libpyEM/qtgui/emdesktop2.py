@@ -1632,7 +1632,7 @@ class RightSideWidgetBar(SideWidgetBar):
 			
 			glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
 			glRotate(self.rotation,0,1,0)
-			#glTranslate(-self.xy_scale*self.child.width_inc_border()/2.0,0,0)
+			glTranslate(-self.xy_scale*self.child.width_inc_border(),0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
 		
 	
