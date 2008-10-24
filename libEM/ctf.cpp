@@ -469,11 +469,14 @@ EMAN2Ctf
 EMAN2Ctf::EMAN2Ctf()
 {
 	defocus = 0;
+	dfdiff = 0;
+	dfang = 0;
 	bfactor = 0;
 	ampcont = 0;
 	voltage = 0;
 	cs = 0;
 	apix = 0;
+	boxsize=0;
 }
 
 
@@ -485,32 +488,53 @@ EMAN2Ctf::~EMAN2Ctf()
 int EMAN2Ctf::from_string(const string & ctf)
 {
 	Assert(ctf != "");
-	char type;
-	int i = sscanf(ctf.c_str(), "%c%f %f %f %f %f %f",
-				   &type,&defocus, &bfactor,&ampcont,&voltage, &cs, &apix);
+	char type=' ';
+	int pos,i,j;
+	int bglen=0,snrlen=0;
+	float v;
+	const char *s=ctf.c_str();
+	
+	int ii = sscanf(s, "%c%f %f %f %f %f %f %f %f %d %d%n",
+				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &cs, &apix,&boxsize,&bglen,&pos);
 	if (type!='E') throw InvalidValueException(type,"Trying to initialize Ctf object with bad string");
-	if (i != 11) {
-		return 1;
+	
+
+	background.resize(bglen);
+	for (i=0; i<bglen; i++) {
+		if (sscanf(s+pos,",%f%n",&v,&j)<1) return(1);
+		background[i]=v;
+		pos+=j;
 	}
+	
+	sscanf(s+pos," %d%n",&snrlen,&j);
+	pos+=j;
+	snr.resize(snrlen);
+	for (i=0; i<snrlen; i++) {
+		if (sscanf(s+pos,",%f%n",&v,&j)<1) return(1);
+		snr[i]=v;
+		pos+=j;
+	}
+
 	return 0;
+	
 }
 
 string EMAN2Ctf::to_string() const
 {
 	char ctf[256];
-	sprintf(ctf, "E%1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %d",
-			defocus, bfactor, ampcont, voltage, cs, apix,(int)background.size());
+	sprintf(ctf, "E%1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %d %d",
+			defocus, dfdiff, dfang, bfactor, ampcont, voltage, cs, apix, boxsize, (int)background.size());
 
 	string ret=ctf;
 	for (int i=0; i<(int)background.size(); i++) {
-		sprintf(ctf,",%1.3f",background[i]);
+		sprintf(ctf,",%1.3g",background[i]);
 		ret+=ctf;
 	}
 
 	sprintf(ctf, " %d",(int)snr.size());
 	ret+=ctf;
 	for (int i=0; i<(int)snr.size(); i++) {
-		sprintf(ctf,",%1.3f",snr[i]);
+		sprintf(ctf,",%1.3g",snr[i]);
 		ret+=ctf;
 	}
 
@@ -521,11 +545,14 @@ string EMAN2Ctf::to_string() const
 void EMAN2Ctf::from_dict(const Dict & dict)
 {
 	defocus = dict["defocus"];
+	dfdiff = dict["dfdiff"];
+	dfang = dict["dfang"];
 	bfactor = dict["bfactor"];
 	ampcont = dict["ampcont"];
 	voltage = dict["voltage"];
 	cs = dict["cs"];
 	apix = dict["apix"];
+	boxsize = dict["boxsize"];
 	background = dict["background"];
 	snr = dict["snr"];
 }
@@ -534,11 +561,14 @@ Dict EMAN2Ctf::to_dict() const
 {
 	Dict dict;
 	dict["defocus"] = defocus;
+	dict["dfdiff"] = dfdiff;
+	dict["dfang"] = dfang;
 	dict["bfactor"] = bfactor;
 	dict["ampcont"] = ampcont;
 	dict["voltage"] = voltage;
 	dict["cs"] = cs;
 	dict["apix"] = apix;
+	dict["boxsize"] = boxsize;
 	dict["background"] = background;
 	dict["snr"] = snr;
 
@@ -549,15 +579,18 @@ void EMAN2Ctf::from_vector(const vector<float>& vctf)
 {
 	int i;
 	defocus = vctf[0];
-	bfactor = vctf[1];
-	ampcont = vctf[2];
-	voltage = vctf[3];
-	cs = vctf[4];
-	apix = vctf[5];
-	background.resize((int)vctf[6]);
-	for (i=0; i<(int)vctf[6]; i++) background[i]=vctf[i+7];
-	snr.resize((int)vctf[i]);
-	for (int j=0; j<(int)vctf[j]; j++) snr[j]=vctf[i+j+1];
+	dfdiff = vctf[1];
+	dfang = vctf[2];
+	bfactor = vctf[3];
+	ampcont = vctf[4];
+	voltage = vctf[5];
+	cs = vctf[6];
+	apix = vctf[7];
+	boxsize = (int)vctf[8];
+	background.resize((int)vctf[9]);
+	for (i=0; i<(int)vctf[9]; i++) background[i]=vctf[i+10];
+	snr.resize((int)vctf[i+10]);
+	for (int j=0; j<(int)vctf[j]; j++) snr[j]=vctf[i+j+11];
 }
 
 vector<float> EMAN2Ctf::to_vector() const
@@ -565,11 +598,14 @@ vector<float> EMAN2Ctf::to_vector() const
 	vector<float> vctf;
 	
 	vctf.push_back(defocus);
+	vctf.push_back(dfdiff);
+	vctf.push_back(dfang);
 	vctf.push_back(bfactor);
 	vctf.push_back(ampcont);
 	vctf.push_back(voltage);
 	vctf.push_back(cs);
 	vctf.push_back(apix);
+	vctf.push_back((float)boxsize);
 	vctf.push_back(background.size());
 	for (int i=0; i<background.size(); i++) vctf.push_back(background[i]);
 	vctf.push_back((float)snr.size());

@@ -108,7 +108,7 @@ namespace EMAN
 	class EMAN1Ctf:public Ctf
 	{
 	  public:
-		float defocus;			// 0
+		float defocus;			// 0	Defocus in microns, note that postitive is now underfocus, whereas values in EMAN1 are negative overfocus
 		float bfactor;			// 1
 		float amplitude;		// 2
 		float ampcont;			// 3
@@ -152,7 +152,7 @@ namespace EMAN
 	  private:
 		inline float calc_amp1()
 		{
-			return (sqrt(1 - ampcont * ampcont));
+			return (sqrt(1 - ampcont * ampcont/10000.0));
 		}
 
 		inline float calc_lambda()
@@ -184,14 +184,14 @@ namespace EMAN
 
 		inline float calc_ctf1(float g, float gamma, float s)
 		{
-			float r = amplitude * exp(-(bfactor * s * s)) * (g * sin(gamma) + ampcont * cos(gamma));
+			float r = amplitude * exp(-(bfactor * s * s)) * (g * sin(gamma) + ampcont/100.0 * cos(gamma));
 			return r;
 		}
 
 		inline float calc_amplitude(float gamma)
 		{
-			float t1 = sqrt(1.0f - ampcont * ampcont) * sin(gamma);
-			float v = amplitude * (t1 + ampcont * cos(gamma));
+			float t1 = sqrt(1.0f - ampcont * ampcont/10000.0) * sin(gamma);
+			float v = amplitude * (t1 + ampcont/100.0 * cos(gamma));
 			return v;
 		}
 
@@ -217,14 +217,17 @@ namespace EMAN
 	class EMAN2Ctf:public Ctf
 	{
 	  public:
-		float defocus;
-		float bfactor;
-		float ampcont;
-		float voltage;
-		float cs;
-		float apix;
-		vector<float> background;
-		vector<float> snr;
+		float defocus;		// defocus in microns, positive underfocus
+		float dfdiff;		// defocus difference for astigmatism, defocus is the major elliptical axis
+		float dfang;		// angle of the major elliptical axis in degrees measured counterclockwise from x
+		float bfactor;		// bfactor in 1/A^2 using the (?) convention
+		float ampcont;		// amplitude contrast as a percentage ie- this should be 10 for 10% amp contrast
+		float voltage;		// microscope voltage in kV
+		float cs;			// Cs in mm
+		float apix;			// A/pix value used when generating 2D results
+		int boxsize;		// Box size in pixels (relates to # points in background and snr)
+		vector<float> background;	// background intensity, 1 value per radial pixel (typically NX/2, corners ignored)
+		vector<float> snr;			// SNR, 1 value per radial pixel (typically NX/2, corners assumed 0)
 
 	  public:
 		EMAN2Ctf();
@@ -258,7 +261,7 @@ namespace EMAN
 	  private:
 		inline float calc_amp1()
 		{
-			return (sqrt(1 - ampcont * ampcont));
+			return (sqrt(1 - ampcont * ampcont/10000.0));
 		}
 
 		inline float calc_lambda()
@@ -290,14 +293,14 @@ namespace EMAN
 
 		inline float calc_ctf1(float g, float gamma, float s)
 		{
-			float r = exp(-(bfactor * s * s)) * (g * sin(gamma) + ampcont * cos(gamma));
+			float r = exp(-(bfactor * s * s)) * (g * sin(gamma) + ampcont/100.0 * cos(gamma));
 			return r;
 		}
 
 		inline float calc_amplitude(float gamma)
 		{
-			float t1 = sqrt(1.0f - ampcont * ampcont) * sin(gamma);
-			float v = (t1 + ampcont * cos(gamma));
+			float t1 = sqrt(1.0f - ampcont * ampcont/10000.0) * sin(gamma);
+			float v = (t1 + ampcont/100.0 * cos(gamma));
 			return v;
 		}
 

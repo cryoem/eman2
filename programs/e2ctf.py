@@ -136,7 +136,7 @@ Various CTF-related operations on images."""
 			ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
 			ps1d[-1]=[y/ratio1 for y in ps1d[-1]]
 #			ps1d.append(bgedge1d(i,-options.bgedge,not options.nonorm))
-			out=file("fg1d.txt","w")
+			out=file("ctf.fg1d.txt","w")
 			for a,b in enumerate(ps1d[-1]): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
 			out.close()
 			names.append(i)
@@ -155,19 +155,19 @@ Various CTF-related operations on images."""
 #				ps1d.append(bg)
 #				names.append(i+"(bg)")
 
-				out=file("bg1d.txt","w")
+				out=file("ctf.bg1d.txt","w")
 				for a,b in enumerate(bg): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
 				out.close()
 
-				out=file("snr.txt","w")
+				out=file("ctf.snr.txt","w")
 				for a,b in enumerate(snr): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
 				out.close()
 
 			# defocus estimation
-			ctf=SimpleCtf()
-			ctf.from_dict({"amplitude":1,"defocus":-1,"voltage":options.voltage,"cs":options.cs,"ampcont":options.ac,"apix":options.apix})
+			ctf=EMAN2Ctf()
+			ctf.from_dict({"defocus":1,"voltage":options.voltage,"cs":options.cs,"ampcont":options.ac,"apix":options.apix})
 			
-			dfout=file("df.txt","w")
+			dfout=file("ctf.df.txt","w")
 #			mapout=EMData(64,64)
 			dfbest1=(0,-1.0e20)
 			for dfi in range(5,128):			# loop over defocus
@@ -175,7 +175,7 @@ Various CTF-related operations on images."""
 					ac=10
 					df=dfi/20.0
 					ctf.defocus=-df
-					ctf.ampcont=ac/100.0
+					ctf.ampcont=ac
 					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
 					st=.04/ds
 					norm=0
@@ -217,7 +217,7 @@ Various CTF-related operations on images."""
 #				for ac in range(0,20):		# loop over %ac
 					df=dfi/100.0+dfbest1[0]
 					ctf.defocus=-df
-					ctf.ampcont=ac/100.0
+					ctf.ampcont=ac
 					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
 					st=.04/ds
 					norm=0
@@ -233,7 +233,7 @@ Various CTF-related operations on images."""
 					dfout.write("%1.2f\t%g\n"%(df,tot))
 
 			ctf.defocus=-dfbest[0]
-			ctf.ampcont=acbest/100.0
+			ctf.ampcont=acbest
 			cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
 			out=file("ctf.txt","w")
 			for a,b in enumerate(cc): 
