@@ -968,7 +968,9 @@ class EMGLWindow:
 		self.cam.cam_z += z
 	
 	def closeEvent(self,event):
-		self.parent.get_app().close_specific(self.drawable.drawable)
+		try:
+			self.parent.get_app().close_specific(self.drawable.drawable)
+		except: print "close event failed in EMGLWindow closeEvent"
 
 	def updateGL(self):
 		self.parent.get_gl_context_parent().updateGL()
@@ -1219,7 +1221,6 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 		self.update_border_flag = True
 		
-		print "top frame wheel"
 		self.drawable.resize_event(self.width(),self.height())
 		
 	def border_scale_event(self,delta):
@@ -1577,7 +1578,7 @@ class EMGLView3D(EM3DVolume,EMEventRerouter):
 		return self.parent.get_start_z()
 	
 	def resize_event(self,width,height):
-		print self.drawable.resize_event(width,height)
+		self.drawable.resize_event(width,height)
 	
 
 
@@ -1616,13 +1617,13 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 	def determine_dimensions(self):
 		pass
 	
-	def set_width(self,w):
-		self.left = 0
-		self.right = w
+	#def set_width(self,w):
+		#self.left = 0
+		#self.right = w
 		
-	def set_height(self,h):
-		self.bottom = 0
-		self.top = h
+	#def set_height(self,h):
+		#self.bottom = 0
+		#self.top = h
 	
 	def border_scale_event(self,delta):
 		if delta > 0:
@@ -1631,11 +1632,12 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 			scale = self.inv_border_scale
 		else: return
 		
-		x_change = scale*self.width()/2
+	
+		x_change = (scale-1)*self.width()/2
 		self.left -= int(x_change)
 		self.right += int(x_change)
 		
-		y_change = scale*self.height()/2
+		y_change = (scale-1)*self.height()/2
 		self.bottom -= int(y_change)
 		self.top += int(y_change)
 
@@ -1671,16 +1673,17 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 			scale = self.inv_border_scale
 		else: return
 
-
-		x_change = scale*self.width()/2
+		print self.width(),self.height()
+		x_change = (scale-1)*self.width()/2
+		
 		self.left -= int(x_change)
 		self.right += int(x_change)
 		
-		y_change = scale*self.height()
+		y_change = (scale-1)*self.height()
 		self.bottom -= int(y_change)
-		
+		print x_change,y_change
 		self.update_border_flag = True
-		self.drawable.resize_event(self.w,self.h)
+		self.drawable.resize_event(self.width(),self.height())
 		
 	def set_update_frame(self,val=True):
 		self.update_border_flag = val
