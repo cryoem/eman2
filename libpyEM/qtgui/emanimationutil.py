@@ -46,7 +46,7 @@ class Animator:
 		self.begin_time = time()
 		
 		self.timer_enabled = False
-		self.timer_interval = 20
+		self.timer_interval = 10
 		
 	def time_out(self):
 		self.time  = time()

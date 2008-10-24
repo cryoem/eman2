@@ -409,6 +409,7 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		
 		self.first_draw = []
 		self.transformers = []
+		self.invisible_boundary = 5
 	def print_info(self):
 		
 		print self.get_size(),self.get_origin()
@@ -442,32 +443,139 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		t.seed_translation_animation((0,0,-300),(0,0,0))
 		self.transformers[len(self.transformers)-1].append(t)
 		
-		if len(self.children) != 1:
-			nearest_left = 9999999999
-			idx = -1
-			c = None
-			for i,child_ in enumerate(self.children):
-				if i != (len(self.children)-1):
-					position = child_.get_position()
-					print position
-					if position[0] < nearest_left:
-						nearest_left = position[0]
-						idx = i
-						c = child_
-					
-			child_left = child.get_position()[0]
-			print nearest_left,child_left,c.width_inc_border(),child.width_inc_border()
-			if nearest_left < (child_left+child.width_inc_border()+5):
-				#print "we have a problem"
-				delta = child_left+child.width_inc_border()+5-nearest_left
-				#print delta
-				t = Translation(c)
-				c.increment_position(delta,0,0)
-				t.seed_translation_animation((-delta,0,0),(0,0,0))
-				self.transformers[idx].append(t)
+		#print "animating and ignoring",child
+		self.ignore_list = [child]
+		self.check_translation_anim(child)
 		
+	def check_translation_anim(self,child):
+		
+		child_position = child.get_position() # should be called "get origin"
+		child_left = child_position[0]
+		#child_right = child_left + child.width_inc_border()+self.invisible_boundary
+		child_bottom = child_position[1]
+		#child_top = child_bottom + child.height_inc_border()+self.invisible_boundary
+		recursion = []
+		left_recall = []
+		idx_recall = []
+		child_left = child.get_position()[0]
+		if len(self.children) != 1:
+			for i,child_ in enumerate(self.children):
+				if child_ == child: continue
+				
+				if child_ in self.ignore_list:
+					continue
+					
+				position = child_.get_position()
+				left = position[0]
+
+				if self.intersection(child,child_):
+					recursion.append(child_)
+					left_recall.append(left)
+					idx_recall.append(i)
+					if self.space_below(child_,child_bottom):
+						print "space below"
+						t = self.down_animation(child,child_)
+						self.transformers[i].append(t)
+					else:
+						t = self.right_animation(child,child_)
+						self.transformers[i].append(t)
+					self.ignore_list.append(child_)
+		
+		for i in range(len(recursion)):
+			for j in range(i+1,len(recursion)):
+				c1 = recursion[i]
+				c2 = recursion[j]
+				if self.intersection(c1,c2):
+					l1 = left_recall[i]
+					l2 = left_recall[j]
+					idx = idx_recall[j]
+					
+					if l1 > l2:
+						c1,c2 = c2,c1
+						idx = idx_recall[i]
+					
+					t = self.right_animation(c1,c2)
+					self.transformers[idx].append(t)
+		
+		for c in recursion: 
+			self.check_translation_anim(c)
 	
+	
+	def right_animation(self,c1,c2):
+		child_position = c1.get_position() # should be called "get origin"
+		child_left = child_position[0]
+		child_right = child_left+c1.width_inc_border()+5
+		position = c2.get_position()
+		left = position[0]
+		delta = child_right-left
+		t = Translation(c2)
+		c2.increment_position(delta,0,0)
+		t.seed_translation_animation((-delta,0,0),(0,0,0))
+		return t
+	
+	def down_animation(self,c1,c2):
+		child_position = c1.get_position() # should be called "get origin"
+		child_bottom = child_position[1]
+		position = c2.get_position()
+		top = position[1] + c2.height_inc_border()+5
+		delta = child_bottom - top
+		t = Translation(c2)
+		c2.increment_position(0,delta,0)
+		t.seed_translation_animation((0,-delta,0),(0,0,0))
+		return t
+	
+	def space_below(self,child,down_shift):
+		child_position = child.get_position() # should be called "get origin"
+		child_left = child_position[0]
+		#child_right = child_left + child.width_inc_border()+self.invisible_boundary
+		#child_bottom = child_position[1]-down_shift
+		if len(self.children) != 1:
+			for i,child_ in enumerate(self.children):
+				if child_ == child: continue
+				
+				if child_ in self.ignore_list:
+					continue
+				
+				if self.intersection_below(child,child_,down_shift):
+					print "intersection below"
+					return False
+				
+		return True
+	
+	def intersection_below(self,c1,c2,down_shift):
+		child_position = c1.get_position() # should be called "get origin"
+		child_left = child_position[0]
+		child_right = child_left + c1.width_inc_border()+self.invisible_boundary
+		child_bottom = child_position[1]-down_shift
+		child_top = child_bottom + c1.height_inc_border()+self.invisible_boundary
+	
+		position = c2.get_position()
+		left = position[0]
+		right = left + c2.width_inc_border()+self.invisible_boundary
+		bottom = position[1]
+		top = bottom + c2.height_inc_border()+self.invisible_boundary
+
+		if left < child_right and right > child_left and bottom < child_top and top > child_bottom:	return True
+		else: return False
+	
+	def intersection(self,c1,c2):
+		child_position = c1.get_position() # should be called "get origin"
+		child_left = child_position[0]
+		child_right = child_left + c1.width_inc_border()+self.invisible_boundary
+		child_bottom = child_position[1]
+		child_top = child_bottom + c1.height_inc_border()+self.invisible_boundary
+	
+		position = c2.get_position()
+		left = position[0]
+		right = left + c2.width_inc_border()+self.invisible_boundary
+		bottom = position[1]
+		top = bottom + c2.height_inc_border()+self.invisible_boundary
+
+		if left < child_right and right > child_left and bottom < child_top and top > child_bottom:	return True
+		else: return False
+		
 	def attach_child(self,child):
+		#print "attached child", child
 		EMGLViewContainer.attach_child(self,child)
 		self.transformers.append([])
 		self.first_draw.append(child)
@@ -681,7 +789,7 @@ class EMDesktopFrame(EMFrame):
 		self.set_geometry(Region(0,0,int(EMDesktop.main_widget.viewport_width()),int(EMDesktop.main_widget.viewport_height())))
 		if len(self.display_frames) != 0:
 			width = int(EMDesktop.main_widget.viewport_width()-200)
-			height = int(EMDesktop.main_widget.viewport_height()-50)
+			height = int(EMDesktop.main_widget.viewport_height())
 			self.display_frames[0].set_geometry(Region(-width/2,-height/2,-20,width,height,100))
 			
 		if self.frame_dl:
