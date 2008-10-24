@@ -3725,6 +3725,180 @@ void Util::sub_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int
 #undef  numr
 #undef  circ
 
+
+#define	QUADPI	 3.141592653589793238462643383279502884197
+#define	PI2      QUADPI*2
+#define deg_rad  QUADPI/180.0
+#define rad_deg  180.0/QUADPI
+
+vector<float> Util::cml_line_in3d_full(const vector<float>& Ori){
+    int nprj = Ori.size() / 4;
+    int nlines = (nprj-1)*nprj/2;
+    vector<float> cml(2*nlines); // [phi, theta] / line
+    float ph1 = 0.0;
+    float th1 = 0.0;
+    float ph2 = 0.0;
+    float th2 = 0.0;
+    float nx = 0.0;
+    float ny = 0.0;
+    float nz = 0.0;
+    float norm = 0.0;
+
+    int ct = 0;
+    for(int i=0; i<(nprj-1); i++){
+	ph1 = Ori[4*i]*deg_rad;
+	th1 = Ori[4*i+1]*deg_rad;
+	for(int j=i+1; j<nprj; j++){
+	    ph2 = Ori[4*j]*deg_rad;
+	    th2 = Ori[4*j+1]*deg_rad;
+	    // cross product
+	    nx = sin(th1)*sin(ph1)*cos(th2) - cos(th1)*sin(th2)*sin(ph2);
+	    ny = cos(th1)*sin(th2)*cos(ph2) - cos(th2)*sin(th1)*cos(ph1);
+	    nz = sin(th1)*cos(ph1)*sin(th2)*sin(ph2) - sin(th1)*sin(ph1)*sin(th2)*cos(ph2);
+	    // normalize
+	    norm = sqrt(nx*nx+ny*ny+nz*nz);
+	    nx = nx / norm;
+	    ny = ny / norm;
+	    nz = nz / norm;
+	    // apply mirror if need
+	    if(nz<0){nx=-nx; ny=-ny; nz=-nz;}
+	    // compute theta and phi
+	    cml[ct+1]=acos(nz);
+	    if(cml[ct+1]==0){cml[ct]=0;}
+	    else{
+		cml[ct]=asin(ny/sin(cml[ct+1]));
+		cml[ct+1]=cml[ct+1]*rad_deg;
+		cml[ct]=((int(cml[ct]*rad_deg*100)+36000)%36000)/100.0;
+	    }
+	    ct++;
+	    ct++;
+	}
+    }
+    return cml;
+}
+
+vector<float> Util::cml_line_in3d_iagl(const vector<float>& Ori, float phi, float theta, int iprj){
+    int nprj = Ori.size() / 4;
+    int nlines = (nprj-1)*nprj/2;
+    vector<float> cml(2*nlines); // [phi, theta] / line
+    float ph1 = 0.0;
+    float th1 = 0.0;
+    float ph2 = 0.0;
+    float th2 = 0.0;
+    float nx = 0.0;
+    float ny = 0.0;
+    float nz = 0.0;
+    float norm = 0.0;
+
+    int ct = 0;
+    for(int i=0; i<(nprj-1); i++){
+	if(i==iprj){
+	    ph1 = phi*deg_rad;
+	    th1 = theta*deg_rad;
+	}
+	else
+	{
+	    ph1 = Ori[4*i]*deg_rad;
+	    th1 = Ori[4*i+1]*deg_rad;
+	}
+	for(int j=i+1; j<nprj; j++){
+	    if(j==iprj){
+		ph2 = phi*deg_rad;
+		th2 = theta*deg_rad;
+	    }
+	    else
+	    {
+		ph2 = Ori[4*j]*deg_rad;
+		th2 = Ori[4*j+1]*deg_rad;
+	    }
+	    // cross product
+	    nx = sin(th1)*sin(ph1)*cos(th2) - cos(th1)*sin(th2)*sin(ph2);
+	    ny = cos(th1)*sin(th2)*cos(ph2) - cos(th2)*sin(th1)*cos(ph1);
+	    nz = sin(th1)*cos(ph1)*sin(th2)*sin(ph2) - sin(th1)*sin(ph1)*sin(th2)*cos(ph2);
+	    // normalize
+	    norm = sqrt(nx*nx+ny*ny+nz*nz);
+	    nx = nx / norm;
+	    ny = ny / norm;
+	    nz = nz / norm;
+	    // apply mirror if need
+	    if(nz<0){nx=-nx; ny=-ny; nz=-nz;}
+	    // compute theta and phi
+	    cml[ct+1]=acos(nz);
+	    if(cml[ct+1]==0){cml[ct]=0;}
+	    else{
+		cml[ct]=asin(ny/sin(cml[ct+1]));
+		cml[ct+1]=cml[ct+1]*rad_deg;
+		cml[ct]=((int(cml[ct]*rad_deg*100)+36000)%36000)/100.0;
+	    }
+	    ct++;
+	    ct++;
+	}
+    }
+    return cml;
+}
+
+//helper function for the weights calculation by Voronoi to Cml
+vector<double> Util::cml_weights(const vector<float>& cml){
+    int nlines=cml.size()/2;
+    vector<int> ocp_same(nlines);
+    vector<double> weights(nlines);
+    for(int i=0; i<nlines; i++){ocp_same[i] = -1;}
+    int num_agl = 0;
+    double dist = 0;
+    float tol = 3.0;
+
+    // search closer cml
+    for(int i=0; i<nlines; i++){
+	if(ocp_same[i]==-1){
+	    ocp_same[i] = num_agl;
+	    for(int j=i+1; j<nlines; j++){
+		if(ocp_same[i]==-1){
+		    dist = (cml[2*i]-cml[2*j])*(cml[2*i]-cml[2*j])+(cml[2*i+1]-cml[2*j+1])*(cml[2*i+1]*cml[2*j+1]);
+		    if(dist<tol){ocp_same[j] = num_agl;}
+		}
+	    }
+	    num_agl++;
+	}
+    }
+
+    if(num_agl>2){
+	// pack closer cml
+	vector<float> newph(num_agl); 
+	vector<float> newth(num_agl);
+	vector<double> w(num_agl);
+	vector<float> nb_same(num_agl);
+	num_agl=0;
+	for(int i=0; i<nlines; i++){
+	    nb_same[ocp_same[i]]++;
+	    if(ocp_same[i]==num_agl){
+		newph[num_agl]=cml[2*i];
+		newth[num_agl]=cml[2*i+1];
+		num_agl++;
+	    }
+	}
+	// Voronoi
+	w=Util::vrdg(newph, newth);
+	// unpack closer cml
+	for(int i=0; i<nlines; i++){
+	    if(nb_same[ocp_same[i]]>1){weights[i]=w[ocp_same[i]]/nb_same[ocp_same[i]];}
+	    else{weights[i]=w[ocp_same[i]];} 
+	}
+    }
+    else{
+	cout<<"warning"<<endl;
+	double val = PI2/float(nlines);
+	for(int i=0; i<nlines; i++){weights[i]=val;}
+    }
+
+    return weights;
+
+}
+
+#undef	QUADPI
+#undef	PI2
+#undef  deg_rad
+#undef  rad_deg
+
 //helper function for Cml
 vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data){
    
@@ -3736,7 +3910,7 @@ vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weig
 	// after psi != 0 update the common lines
 	if(ipsi!=0){
 	    int count=0;
-	    for(int i=0; i<=n_prj-1; i++){
+	    for(int i=0; i<=n_prj-2; i++){
 		for(int j=i+1; j<=n_prj-1; j++){
 		    if(i==i_prj){com[count] = (com[count]+1)%n_psi;}
 		    if(j==i_prj){com[count+1] = (com[count+1]+1)%n_psi;}
@@ -3748,9 +3922,9 @@ vector<float> Util::cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weig
 	// do the distance with weighting
 	int n=0;
 	double L_tot=0.0;
-	for(int i=0; i<=n_prj-1; i++){
+	for(int i=0; i<=n_prj-2; i++){
 	    for(int j=i+1; j<=n_prj-1; j++){
-		if(i==i_prj||j==i_prj){L_tot = L_tot + data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];}
+		if(i==i_prj||j==i_prj){L_tot = L_tot + data[i]->cm_euc(data[j], com[n], com[n+1]) * weights[int(n/2)];}   
 		n+=2;
 	    }
 
@@ -3807,15 +3981,15 @@ vector<int> Util::cml_list_line_pos(vector<float> Ori, float newphi, float newth
     d2["type"] = "SPIDER";
     vector<int> com(2*nlines);
     int count=0;
-    for(int i=0; i<=n_prj-1; i++){
+    for(int i=0; i<=n_prj-2; i++){
 	for(int j=i+1; j<=n_prj-1; j++){
 	    if(i==i_prj){
 		    d1["phi"] = newphi;
 		    d1["theta"] = newtheta;
 		    d1["psi"] = 0.0;
-		    d2["phi"] = Ori[3*j];
-		    d2["theta"] = Ori[3*j+1];
-		    d2["psi"] = Ori[3*j+2];
+		    d2["phi"] = Ori[4*j];
+		    d2["theta"] = Ori[4*j+1];
+		    d2["psi"] = Ori[4*j+2];
 
 		    Transform R1(d1);
 		    Transform R2(d2);
@@ -3832,9 +4006,9 @@ vector<int> Util::cml_list_line_pos(vector<float> Ori, float newphi, float newth
 		    com[count+1] = int(nangle * float((a2+360)%360) / 360.0);
 	    }
 	    if(j==i_prj){
-		    d1["phi"] = Ori[3*i];
-		    d1["theta"] = Ori[3*i+1];
-		    d1["psi"] = Ori[3*i+2];
+		    d1["phi"] = Ori[4*i];
+		    d1["theta"] = Ori[4*i+1];
+		    d1["psi"] = Ori[4*i+2];
 		    d2["phi"] = newphi;
 		    d2["theta"] = newtheta;
 		    d2["psi"] = 0.0;
