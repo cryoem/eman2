@@ -1299,7 +1299,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 		if nz > 1:
 			try:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
 			except:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = 0, 0, 0, 0, 0, 0, 0, 0
-			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+			image  = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z)
 			if mirror: image.process_inplace('mirror', {'axis':'x'})
 		# 2D object
 		elif ny > 1:
@@ -2541,7 +2541,10 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		MemCls, MemJe, MemAssign = {}, {}, {}
 	else:
 		trials = 1
-	ntrials   = 0
+
+	flag_empty = False
+	ntrials    = 0
+	wd_trials  = 0
 	while ntrials < trials:
 		ntrials  += 1
 
@@ -2758,12 +2761,20 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			# [all] init average and ctf2
 			for k in xrange(K):
 				if Cls['n'][k] < 1:
-					ERROR('Empty groups in kmeans_classical', 'k_means_cla MPI', 1)
-					exit()			
+					if myid == main_node: print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
+					flag_empty = True
+					break
 				
 				Cls['ave'][k].to_zero()
 				Cls['Ji'][k] = 0
-				if CTF:	Cls_ctf2[k] = [0] * len_ctm			
+				if CTF:	Cls_ctf2[k] = [0] * len_ctm
+
+			# [all] broadcast empty cluster information
+			mpi_barrier(MPI_COMM_WORLD)
+			flag_empty = mpi_reduce(flag_empty, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+			flag_empty = mpi_bcast(flag_empty, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			flag_empty = flag_empty.tolist()[0]
+			if flag_empty: break
 			
 			if CTF:
 				# [id] compute local S ctf2 and local S ave	
@@ -2863,11 +2874,24 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
 
-		# [id] memorize the result for this trial	
-		if trials > 1:
-			MemCls[ntrials-1]    = deepcopy(Cls)
-			MemJe[ntrials-1]     = deepcopy(Je)
-			MemAssign[ntrials-1] = deepcopy(assign)
+		if not flag_empty:
+			# [id] memorize the result for this trial	
+			if trials > 1:
+				MemCls[ntrials-1]    = deepcopy(Cls)
+				MemJe[ntrials-1]     = deepcopy(Je)
+				MemAssign[ntrials-1] = deepcopy(assign)
+
+			# set to zero watch dog trials
+			wd_trials = 0
+		else:
+			flag_empty  = False
+			wd_trials  += 1
+			if wd_trials > 10:
+				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+				MemJe[ntrials-1] = 1e10
+				wd_trials = 0
+			else:
+				ntrials -= 1
 			
 	# if severals trials choose the best
 	if trials > 1:
@@ -3046,7 +3070,9 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		MemCls, MemJe, MemAssign = {}, {}, {}
 	else:
 		trials = 1
-	ntrials   = 0
+	flag_empty = False
+	ntrials    = 0
+	wd_trials  = 0
 	while ntrials < trials:
 		ntrials += 1
 
@@ -3354,15 +3380,23 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			Cls['n'] = Cls['n'].tolist() # convert array gave by MPI to list
 			
-			# [all] init average, Ji and ctf2
+			# [all] init average, Ji and ctf2, and manage empty cluster
 			for k in xrange(K):
-				if Cls['n'][k] < 2:
-					ERROR('Empty groups in kmeans_classical', 'k_means_SSE_MPI', 1)
-					exit()	
+				if Cls['n'][k] < 1:
+					if myid == main_node: print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
+					flag_empty = True
+					break
 				
 				Cls['ave'][k].to_zero()
 				Cls['Ji'][k] = 0
 				if CTF:	Cls_ctf2[k] = [0] * len_ctm	
+
+			# [all] broadcast empty cluster information
+			mpi_barrier(MPI_COMM_WORLD)
+			flag_empty = mpi_reduce(flag_empty, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+			flag_empty = mpi_bcast(flag_empty, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			flag_empty = flag_empty.tolist()[0]
+			if flag_empty: break
 			
 			if CTF:
 				# [id] compute local S ctf2 and local S ave	
@@ -3476,12 +3510,25 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		# [all] waiting the result
 		mpi_barrier(MPI_COMM_WORLD)
 				
-		# [id] memorize the result for this trial	
-		if trials > 1:
-			MemCls[ntrials-1]    = deepcopy(Cls)
-			MemJe[ntrials-1]     = deepcopy(Je)
-			MemAssign[ntrials-1] = deepcopy(assign)
-			
+		if not flag_empty:
+			# [id] memorize the result for this trial	
+			if trials > 1:
+				MemCls[ntrials-1]    = deepcopy(Cls)
+				MemJe[ntrials-1]     = deepcopy(Je)
+				MemAssign[ntrials-1] = deepcopy(assign)
+
+			# set to zero watch dog trials
+			wd_trials = 0
+		else:
+			flag_empty  = False
+			wd_trials  += 1
+			if wd_trials > 10:
+				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+				MemJe[ntrials-1] = 1e10
+				wd_trials = 0
+			else:
+				ntrials -= 1
+				
 	# if severals trials choose the best
 	if trials > 1:
 		val_min = 1.0e20
