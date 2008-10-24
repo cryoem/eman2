@@ -71,8 +71,8 @@ class EMBasicOpenGLObjects:
 			self.cylinder_along_z = 2
 			
 			# sphere parameters
-			self.sphere_around_z = 6
-			self.sphere_along_z = 6
+			self.sphere_around_z = 8
+			self.sphere_along_z = 8
 			
 			self.gq=gluNewQuadric()
 			gluQuadricDrawStyle(self.gq,GLU_FILL)
@@ -91,9 +91,9 @@ class EMBasicOpenGLObjects:
 				self.spheredl=glGenLists(1)
 				
 				glNewList(self.spheredl,GL_COMPILE)
-				glPushMatrix()
+				#glPushMatrix()
 				gluSphere(self.gq,.5,self.sphere_along_z,self.sphere_around_z)
-				glPopMatrix()
+				#glPopMatrix()
 				
 				glEndList()
 				
@@ -104,9 +104,9 @@ class EMBasicOpenGLObjects:
 				self.cylinderdl=glGenLists(1)
 				
 				glNewList(self.cylinderdl,GL_COMPILE)
-				glPushMatrix()
+				#glPushMatrix()
 				gluCylinder(self.gq,1.0,1.0,1.0,self.cylinder_around_z,self.cylinder_along_z)
-				glPopMatrix()
+				#glPopMatrix()
 				
 				glEndList()
 				

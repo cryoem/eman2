@@ -956,6 +956,8 @@ class EMGLWindow:
 		self.inv_border_scale = 1.0/self.border_scale
 		self.update_border_flag = True
 		
+		self.enable_clip = False
+		
 	def get_position(self):
 		return (self.cam.cam_x+self.left, self.cam.cam_y+self.bottom,self.cam.cam_z+self.near)
 	
@@ -981,6 +983,15 @@ class EMGLWindow:
 	def set_selected(self,bool=True):
 		self.decoration.set_selected(bool)
 	
+	
+	def get_border_width(self):
+		'''
+		Get the width of the border component only
+		'''
+		return self.decoration.total_width()
+	
+	def get_border_height(self):
+		return self.decoration.total_height()
 	
 	def set_mouse_lock(self,target):
 		self.parent.get_qt_context_parent().lock_target(target)
@@ -1189,6 +1200,8 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		self.cam.allow_camera_rotations(False)
 		
 		self.update_dims = True
+		
+		self.enable_clip = True
 	def lock_texture(self):
 		self.texture_lock += 1
 	
@@ -1253,6 +1266,7 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 	def determine_dimensions(self):
 		[self.left,self.right,self.bottom,self.top,self.near,self.far] = self.drawable.get_lr_bt_nf()
+		print [self.left,self.right,self.bottom,self.top,self.near,self.far]
 		#self.w = self.right - self.left
 		#self.h = self.top - self.bottom
 		#self.d = self.near - self.far
@@ -1260,14 +1274,10 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 
 	def resize(self,width,height):
-		print "resize not yet supported"
-	#def get_lr_bt_nf(self):
+		self.drawable.resize_event(width,height)
+		self.determine_dimensions()
+		self.update_border_flag = True
 		
-		#return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
-		#return self.drawable.get_lr_bt_nf()
-	#def get_my_dims(self):
-		
-		##return [-self.w/2,self.w/2,-self.h/2,self.h/2,self.d/2,-self.d/2]
 	def __atomic_draw_frame(self,plane_string):
 		
 		[mc00,mc01,mc11,mc10] = self.vdtools.get_corners()
@@ -1310,7 +1320,8 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 		glPushMatrix()
 		lrt = self.get_lr_bt_nf()
-		glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-lrt[4])
+		#print "translating",-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-lrt[4]
+		glTranslate(-lrt[0],-lrt[2],-lrt[4])
 		
 		p = self.get_lr_bt_nf()
 		points = []
@@ -1359,12 +1370,12 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 		
 		glPushMatrix()
-		#self.decoration.enable_clip_planes()
-		glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,0)
+		if self.enable_clip:self.decoration.enable_clip_planes()
+		#glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,0)
 		
 		self.drawable.render()
 		glPopMatrix()
-		#self.decoration.disable_clip_planes()
+		if self.enable_clip: self.decoration.disable_clip_planes()
 
 		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
 		glEnable(GL_DEPTH_TEST) # lighting is on to make the borders look nice
@@ -1506,17 +1517,19 @@ class EMGLView3D(EM3DVolume,EMEventRerouter):
 		return self.drawable.get_data_dims()
 	
 	def determine_dimensions(self):
-		d = self.parent.get_data_dims()
+		#print "determing dimensions"
+		#d = self.parent.get_data_dims()
 	
-		self.left = -d[0]/2
-		self.right = d[0]/2
-		#if self.right < 480: self.right = 480
-		self.bottom = -d[1]/2
-		self.top = d[1]/2
-		#if self.top < 480: self.top = 480
-		self.near = d[2]/2
-		self.far = -d[2]/2
+		#self.left = -d[0]/2
+		#self.right = d[0]/2
+		##if self.right < 480: self.right = 480
+		#self.bottom = -d[1]/2
+		#self.top = d[1]/2
+		##if self.top < 480: self.top = 480
+		#self.near = d[2]/2
+		#self.far = -d[2]/2
 		#if self.far > -480: self.far = -480
+		self.update_dims = False
 
 	def width(self):
 		try:
@@ -1578,6 +1591,14 @@ class EMGLView3D(EM3DVolume,EMEventRerouter):
 		return self.parent.get_start_z()
 	
 	def resize_event(self,width,height):
+		self.left = -width/2
+		self.right = width/2
+		self.bottom = -height/2
+		self.top = height/2
+		self.near =height/2
+		self.far = -height/2
+		#print self.get_lr_bt_nf()
+		self.update_dims = False
 		self.drawable.resize_event(width,height)
 	
 
@@ -1649,10 +1670,10 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		self.draw_frame = bool
 
 	def resize(self,width,height):
-		self.left = 0
-		self.right = width
-		self.bottom = 0
-		self.top = height
+		self.left = self.decoration.total_width()/2
+		self.right = width-self.decoration.total_width()/2
+		self.bottom = self.decoration.total_height()/2
+		self.top = height-self.decoration.total_height()/2
 	
 	def isinwin(self,x,y):
 		if self.vdtools.isinwin(x,y):

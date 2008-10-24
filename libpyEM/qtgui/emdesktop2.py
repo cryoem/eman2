@@ -410,6 +410,27 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		self.first_draw = []
 		self.transformers = []
 		self.invisible_boundary = 5
+		
+		self.rows = 1
+		self.columns = 1
+		
+	def num_rows(self):	return self.rows
+	
+	def num_cols(self): return self.columns
+	
+	def set_num_rows(self,rows): self.rows = rows
+	def set_num_cols(self,cols): self.columns = cols
+	
+	def apply_row_col(self,cols):
+		print "soon"
+		
+	def clear_all(self):
+		for child in self.children:
+			child.closeEvent(None)
+			
+		self.children = []
+		self.transformers = []
+		self.first_draw = [] # just for safety
 	def print_info(self):
 		
 		print self.get_size(),self.get_origin()
@@ -421,6 +442,10 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		for i,child in enumerate(self.children):
 			#print "drawing child",child,child.width(),child.height()
 			if child in self.first_draw:
+				optimal_width = self.width()/self.columns
+				optimal_height = self.height()/self.rows
+		
+				child.resize(optimal_width-self.invisible_boundary,optimal_height-self.invisible_boundary)
 				self.introduce_child(child)
 			glPushMatrix()
 			if self.transformers[i] != None: 
@@ -473,7 +498,6 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 					left_recall.append(left)
 					idx_recall.append(i)
 					if self.space_below(child_,child_bottom):
-						print "space below"
 						t = self.down_animation(child,child_)
 						self.transformers[i].append(t)
 					else:
@@ -525,10 +549,9 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		return t
 	
 	def space_below(self,child,down_shift):
-		child_position = child.get_position() # should be called "get origin"
-		child_left = child_position[0]
-		#child_right = child_left + child.width_inc_border()+self.invisible_boundary
-		#child_bottom = child_position[1]-down_shift
+		child_position = child.get_position() #
+		child_bottom = child_position[1] - down_shift
+		if child_bottom < 0: return False
 		if len(self.children) != 1:
 			for i,child_ in enumerate(self.children):
 				if child_ == child: continue
@@ -576,6 +599,9 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		
 	def attach_child(self,child):
 		#print "attached child", child
+		
+	
+		
 		EMGLViewContainer.attach_child(self,child)
 		self.transformers.append([])
 		self.first_draw.append(child)
@@ -658,6 +684,7 @@ class EMDesktopApplication(EMApplication):
 		self.target = target
 		
 		self.children = []
+		
 	
 	def detach_child(self,child):
 		for i,child_ in enumerate(self.children):
@@ -734,11 +761,12 @@ class EMDesktopFrame(EMFrame):
 		self.left_side_bar = LeftSideWidgetBar(self)
 		self.right_side_bar = RightSideWidgetBar(self)
 		self.display_frame = EMPlainDisplayFrame(self)
-		
+		self.bottom_bar = BottomWidgetBar(self)
 		
 		self.attach_display_child(self.display_frame)
 		self.attach_child(self.right_side_bar)
 		self.attach_child(self.left_side_bar)
+		self.attach_child(self.bottom_bar)
 		# what is this?
 		self.bgob2=ob2dimage(self,self.read_EMAN2_image())
 		self.child_mappings = {}
@@ -789,7 +817,7 @@ class EMDesktopFrame(EMFrame):
 		self.set_geometry(Region(0,0,int(EMDesktop.main_widget.viewport_width()),int(EMDesktop.main_widget.viewport_height())))
 		if len(self.display_frames) != 0:
 			width = int(EMDesktop.main_widget.viewport_width()-200)
-			height = int(EMDesktop.main_widget.viewport_height())
+			height = int(EMDesktop.main_widget.viewport_height())-50
 			self.display_frames[0].set_geometry(Region(-width/2,-height/2,-20,width,height,100))
 			
 		if self.frame_dl:
@@ -811,6 +839,9 @@ class EMDesktopFrame(EMFrame):
 		elif hint == "rotor":
 			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.right_side_bar
+		elif hint == "settings":
+			self.bottom_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			self.child_mappings[child] = self.bottom_bar
 		else:
 			print "unsupported",hint
 	
@@ -826,7 +857,8 @@ class EMDesktopFrame(EMFrame):
 	def draw_frame(self):
 		if self.frame_dl == 0:
 			#print self.appwidth/2.0,self.appheight/2.0,self.zopt
-			glCallList(self.glbasicobjects.getCylinderDL())
+			self.glbasicobjects.getCylinderDL()
+			self.glbasicobjects.getSphereDL()
 			length = self.get_z_opt()
 			self.frame_dl=glGenLists(1)
 			glNewList(self.frame_dl,GL_COMPILE)
@@ -851,6 +883,47 @@ class EMDesktopFrame(EMFrame):
 			glTranslatef(-self.width()/2.0-self.borderwidth, self.height()/2.0+self.borderwidth,0.0)
 			glScaled(self.borderwidth,self.borderwidth,length)
 			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			#glTranslatef(0,0,0)
+			glTranslate(-self.width()/2.0,self.height()/2.0+self.borderwidth,0)
+			glRotate(90,0,1,0)
+			
+			glScaled(self.borderwidth,self.borderwidth,self.width())
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			#glTranslatef(0,0,0)
+			glTranslate(-self.width()/2.0,-self.height()/2.0-self.borderwidth,0)
+			glRotate(90,0,1,0)
+			glScaled(self.borderwidth,self.borderwidth,self.width())
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslate(-self.width()/2.0-self.borderwidth,-self.height()/2.0-self.borderwidth,0)
+			glScale(3*self.borderwidth,3*self.borderwidth,3*self.borderwidth)
+			glCallList(self.glbasicobjects.getSphereDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslate(self.width()/2.0+self.borderwidth,self.height()/2.0+self.borderwidth,0)
+			glScale(3*self.borderwidth,3*self.borderwidth,3*self.borderwidth)
+			glCallList(self.glbasicobjects.getSphereDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslate(self.width()/2.0+self.borderwidth,-self.height()/2.0-self.borderwidth,0)
+			glScale(3*self.borderwidth,3*self.borderwidth,3*self.borderwidth)
+			glCallList(self.glbasicobjects.getSphereDL())
+			glPopMatrix()
+			
+			glPushMatrix()
+			glTranslate(-self.width()/2.0-self.borderwidth,self.height()/2.0+self.borderwidth,0)
+			glScale(3*self.borderwidth,3*self.borderwidth,3*self.borderwidth)
+			glCallList(self.glbasicobjects.getSphereDL())
 			glPopMatrix()
 			
 			glEndList()
@@ -892,8 +965,9 @@ class EMDesktopFrame(EMFrame):
 		if EMDesktopFrame.image == None:
 			appscreen = self.parent.get_app_screen()
 			sysdesktop = self.parent.get_sys_desktop()
-			EMDesktopFrame.image = QtGui.QPixmap("galactic-stars.jpg")
-			#EMDesktopFrame.image = QtGui.QPixmap.grabWindow(appscreen.winId(),0.0,0.0,sysdesktop.width(),sysdesktop.height()-30)
+			try:
+				EMDesktopFrame.image = QtGui.QPixmap("galactic-stars.jpg")
+			except: EMDesktopFrame.image = QtGui.QPixmap.grabWindow(appscreen.winId(),0.0,0.0,sysdesktop.width(),sysdesktop.height()-30)
 		return EMDesktopFrame.image
 
 	def get_time(self):
@@ -1050,6 +1124,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		dialog = EMBrowserDialog(self,EMDesktop.application)
 		em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
 		EMDesktop.application.show_specific(em_qt_widget)
+		self.browser_settings = EMBrowserSettings(self.current_desktop_frame.display_frame,self.application)
 
 		
 	def establish_target_frame(self,type_name):
@@ -1229,6 +1304,75 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 	def getStartZ(self):
 		return self.zNear
 
+class EMBrowserSettings(object):
+	def __new__(cls,parent,application):
+		widget = EMBrowserSettingsInspector(parent)
+		widget.show()
+		widget.hide()
+		#widget.resize(150,150)
+		#gl_view = EMQtGLView(EMDesktop.main_widget,widget)
+		module = EMQtWidgetModule(widget,application)
+		application.show_specific(module)
+		#desktop_task_widget = EM2DGLWindow(gl_view)
+		return module
+	
+class EMBrowserSettingsInspector(QtGui.QWidget):
+	def get_desktop_hint(self):
+		return "settings"
+	
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=target
+		
+		
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vboxlayout")
+
+		self.hbl = QtGui.QHBoxLayout()
+		self.hbl.setMargin(0)
+		self.hbl.setSpacing(6)
+		self.hbl.setObjectName("hboxlayout")
+		self.vbl.addLayout(self.hbl)
+		
+		self.row_label = QtGui.QLabel("# rows")
+		self.row_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
+		self.hbl.addWidget(self.row_label)
+	
+		self.row_size = QtGui.QSpinBox(self)
+		self.row_size.setObjectName("row_size")
+		self.row_size.setRange(1,10)
+		self.row_size.setValue(int(self.target.num_rows()))
+		QtCore.QObject.connect(self.row_size, QtCore.SIGNAL("valueChanged(int)"), target.set_num_rows)
+		self.hbl.addWidget(self.row_size)
+		
+		self.col_label = QtGui.QLabel("# cols")
+		self.col_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
+		self.hbl.addWidget(self.col_label)
+	
+		self.col_size = QtGui.QSpinBox(self)
+		self.col_size.setObjectName("col_size")
+		self.col_size.setRange(1,10)
+		self.col_size.setValue(int(self.target.num_cols()))
+		QtCore.QObject.connect(self.col_size, QtCore.SIGNAL("valueChanged(int)"), target.set_num_cols)
+		self.hbl.addWidget(self.col_size)
+		
+		self.hbl2 = QtGui.QHBoxLayout()
+		self.hbl2.setMargin(0)
+		self.hbl2.setSpacing(6)
+		self.hbl2.setObjectName("hboxlayout2")
+		self.vbl.addLayout(self.hbl2)
+		
+		self.apply_button = QtGui.QPushButton("apply")
+		self.hbl2.addWidget(self.apply_button)
+		
+		self.clear_button = QtGui.QPushButton("clear")
+		self.hbl2.addWidget(self.clear_button)
+
+		QtCore.QObject.connect(self.apply_button, QtCore.SIGNAL("clicked(bool)"), target.apply_row_col)
+		QtCore.QObject.connect(self.clear_button, QtCore.SIGNAL("clicked(bool)"), target.clear_all)
+		
 class EMDesktopTaskWidget(EMGLViewContainer):
 	def __init__(self, parent):
 		#print "init"
@@ -1238,16 +1382,11 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 		self.init_flag = True
 		
 		self.desktop_task_widget = None
-
-		self.cam = Camera()
-		
+	
 		self.glwidget = None
 		self.widget = None
 		
 		self.animation = None
-	
-	def register_animation(self,animation):
-		self.animation = animation
 	
 	def get_qt_context_parent(self):
 		return EMDesktop.main_widget
@@ -1263,11 +1402,6 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			exit(1)
 			#return 0
 			
-	def set_cam_pos(self, x,y,z=0):
-		self.cam.cam_x = x
-		self.cam.cam_y = y
-		self.cam.cam_z = z
-
 	def height(self):
 		if self.desktop_task_widget != None: return self.desktop_task_widget.height() 
 		return 0
@@ -1311,11 +1445,6 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			self.init_flag = False
 			self.attach_child(self.desktop_task_widget)
 			#self.parent.i_initialized(self)
-		
-		if self.animation != None:
-			self.animation.transform()
-		
-		self.cam.position()
 	
 		for child in self.children:
 			glPushMatrix()
@@ -1703,6 +1832,43 @@ class SideTransform:
 		glPopMatrix()
 		glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
 
+
+class BottomWidgetBar(SideWidgetBar):
+	def __init__(self,parent):
+		SideWidgetBar.__init__(self,parent)
+		
+	def draw(self):
+		if len(self.children) != 1 : 
+			#print len(self.children)
+			return
+		child = self.children[0]
+		glPushMatrix()
+		
+		glTranslate(-child.width_inc_border()/2,-self.parent.height()/2.0,0)
+		self.transformers[0].transform()
+		child.draw()
+		glPopMatrix()
+		
+	def attach_child(self,new_child):
+		print "attached child"
+		self.transforms = []
+		self.children = []
+		self.transformers.append(BottomWidgetBar.BottomTransform(new_child))
+		EMWindowNode.attach_child(self,new_child)
+		self.reset_scale_animation()
+		print len(self.children)
+		#print_node_hierarchy(self.parent)
+
+	class BottomTransform(SideTransform):
+		def __init__(self,child):
+			SideTransform.__init__(self,child)
+			self.rotation = -90
+			self.default_rotation = -90
+			self.target_rotation = 0
+			
+		def transform(self):
+			SideTransform.transform(self)
+			glRotate(self.rotation,1,0,0)
 			
 class RightSideWidgetBar(SideWidgetBar):
 	def __init__(self,parent):

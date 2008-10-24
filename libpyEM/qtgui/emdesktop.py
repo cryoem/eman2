@@ -239,11 +239,13 @@ class EMDesktop(QtOpenGL.QGLWidget):
 			length = self.zopt
 			self.framedl=glGenLists(1)
 			glNewList(self.framedl,GL_COMPILE)
+			
 			glPushMatrix()
 			glTranslatef(-self.appwidth/2.0,-self.appheight/2.0,0.0)
 			glScaled(self.borderwidth,self.borderwidth,length)
 			glCallList(self.glbasicobjects.getCylinderDL())
 			glPopMatrix()
+			
 			glPushMatrix()
 			glTranslatef( self.appwidth/2.0,-self.appheight/2.0,0.0)
 			glScaled(self.borderwidth,self.borderwidth,length)
@@ -261,6 +263,7 @@ class EMDesktop(QtOpenGL.QGLWidget):
 			glScaled(self.borderwidth,self.borderwidth,length)
 			glCallList(self.glbasicobjects.getCylinderDL())
 			glPopMatrix()
+			
 			
 			glEndList()
 			
