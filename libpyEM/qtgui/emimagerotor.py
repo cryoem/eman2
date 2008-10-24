@@ -394,9 +394,9 @@ class EMImageRotorModule(EMGUIModule):
 		pass
 	
 	def keyPressEvent(self,event):
-		if self.widget.isinwin(event.x(),self.gl_context_parent.viewport_height()-event.y()):
-			self.widget.keyPressEvent(event)
-			self.updateGL()
+		#if self.widget.isinwin(event.x(),self.gl_context_parent.viewport_height()-event.y()):
+		self.widget.keyPressEvent(event)
+		self.updateGL()
 		
 	def resize_event(self, width, height):
 		self.rotor.resize_event(width,height)

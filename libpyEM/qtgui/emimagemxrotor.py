@@ -231,11 +231,14 @@ class EMImageMXRotorModule(EMGUIModule):
 
 		return self.qt_context_parent
 	
+		
+	def using_ftgl(self): return False
+	
 	def __init__(self, data=None,application=None):
 		self.widget = None
 		self.data=None
-		self.rotor = EMGLRotorWidget(self,0,-70,-15,EMGLRotorWidget.TOP_ROTARY,100)
-		self.rotor.set_angle_range(110.0)
+		self.rotor = EMGLRotorWidget(self,-15,70,-15,EMGLRotorWidget.BOTTOM_ROTARY,200)
+		#self.rotor.set_angle_range(110.0)
 		#self.rotor.set_child_mouse_events(False)
 		self.rotor.set_mouse_mode("mxrotor")
 		
@@ -279,7 +282,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 	def __init_gl_widget(self):
 		self.widget = EM3DGLWindowOverride(self,self.rotor)
-		self.widget.set_draw_frame(False)
+		self.widget.set_draw_frame(True)
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
 			
@@ -483,7 +486,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			
 
 			w = self.rotor[idx].get_drawable().get_drawable()
-			w.set_data(d,False)
+			w.set_data(d,"",False)
 
 			w.set_img_num_offset(image_offset)
 			w.set_max_idx(self.emdata_list_cache.get_max_idx())

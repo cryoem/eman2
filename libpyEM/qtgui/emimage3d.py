@@ -362,6 +362,9 @@ class EMImage3DModule(EMImage3DGUIModule):
 			
 		self.em_qt_inspector_widget = None
 		
+		self.last_window_width = -1 # used for automatic resizing from the desktop
+		self.last_window_height = -1 # used for automatic resizing from the desktop
+		
 		self.file_name = None
 	def set_file_name(self,name): self.file_name = name
 	
@@ -533,7 +536,21 @@ class EMImage3DModule(EMImage3DGUIModule):
 	
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
-		
+	
+	def resize_event(self,width,height):
+		if self.last_window_width == -1:
+			self.last_window_width = width
+			self.last_window_height = height
+		else:
+			height_scale = height/float(self.last_window_height)
+			width_scale = width/float(self.last_window_width)
+			
+			if height_scale < width_scale: width_scale = height_scale
+			#print width_scale, "is the factor"
+			self.cam.scale *= width_scale
+			self.last_window_width = width
+			self.lsat_window_height = height
+	
 	def set_perspective(self,bool):
 		self.gl_context_parent.set_perspective(bool)
 		

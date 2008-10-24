@@ -640,7 +640,7 @@ class EMViewportDepthTools2:
 		xcoord = zprime*(xNDC*PM_inv[0,0]+yNDC*PM_inv[1,0]+zNDC*PM_inv[2,0]+PM_inv[3,0])
 		ycoord = zprime*(xNDC*PM_inv[0,1]+yNDC*PM_inv[1,1]+zNDC*PM_inv[2,1]+PM_inv[3,1])
 
-		return (xcoord + width*0.5, 0.5*height-ycoord)
+		return (xcoord, height-ycoord)
 
 class EMViewportDepthTools:
 	"""
@@ -1738,7 +1738,7 @@ class EMImage3DGUIModule(EMGUIModule):
 			self.gl_widget = EM3DGLWindow(self,gl_view)
 			
 			self.gl_widget.target_translations_allowed(True)
-			#self.gl_widget.allow_camera_rotations(True)
+			self.gl_widget.allow_camera_rotations(True)
 			
 		return self.gl_widget
 	

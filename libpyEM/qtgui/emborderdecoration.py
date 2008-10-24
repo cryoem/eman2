@@ -56,6 +56,8 @@ ligh_yellow_diffuse = (.84,.82,.38,1.0)
 ligh_yellow_ambient = (.83,.83,.38,1.0)
 ligh_yellow_specular = (.76,.75,.39,1.0)
 
+from EMAN2 import Vec3f
+
 
 class EMBorderDecoration:
 	'''
@@ -69,7 +71,8 @@ class EMBorderDecoration:
 	YELLOW_COLOR = "yellow"
 	x_texture_dl = None
 	PERMISSABLE_COLOR_FLAGS = [FROZEN_COLOR,DEFAULT_COLOR,YELLOW_COLOR]
-	def __init__(self):
+	def __init__(self,object):
+		self.object = object
 		self.color_flag = EMBorderDecoration.DEFAULT_COLOR
 		self.display_list = None
 		self.unprojected_points = [] # for determing mouse-border collision detection
@@ -92,6 +95,13 @@ class EMBorderDecoration:
 			self.font_renderer = None
 			
 		self.window_title = ""
+		
+		self.init_x_texture()
+		
+		self.do_clip = False
+		
+	def enable_clip(self,val=True):
+		self.do_clip = val
 		
 	def __del__(self):
 		self.delete_list()
@@ -373,6 +383,8 @@ class EMBorderDecoration:
 			EMBorderDecoration.x_texture_dl=glGenLists(1)
 			
 			if EMBorderDecoration.x_texture_dl == 0:
+				print "BORDER GENERATION FAILED"
+				sys.exit(1)
 				return
 			glNewList( EMBorderDecoration.x_texture_dl,GL_COMPILE)
 			glEnable(GL_TEXTURE_2D)
@@ -487,7 +499,7 @@ class EM2DPlainBorderDecoration(EMBorderDecoration):
 	def __init__(self,object,gl_context_parent): 
 		from emglobjects import EMViewportDepthTools2
 		from emfloatingwidgets import EM2DGLWindow
-		EMBorderDecoration.__init__(self)
+		EMBorderDecoration.__init__(self,object)
 		self.gl_context_parent = gl_context_parent
 		self.vdtools = EMViewportDepthTools2(gl_context_parent)
 		
@@ -502,7 +514,7 @@ class EM2DPlainBorderDecoration(EMBorderDecoration):
 		else: self.object = object
 		
 	def draw(self,force_update=False):
-		self.init_x_texture()
+		#self.init_x_texture()
 		if force_update or self.force_update:
 			self.delete_list()
 			self.force_update = False
@@ -707,18 +719,19 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 	def __init__(self, object,gl_context_parent):
 		from emglobjects import EMViewportDepthTools2
 		from emfloatingwidgets import EM3DGLWindow
-		EMBorderDecoration.__init__(self)
+		EMBorderDecoration.__init__(self,object)
 		self.gl_context_parent = gl_context_parent
 		self.vdtools = EMViewportDepthTools2(gl_context_parent)
 		
 		self.force_update = False
 		
 		self.faulty = False
-		if not isinstance(object,EM3DGLWindow):
-			print "error, border construction"
-			self.faulty = True
-			return
-		else: self.object = object
+		#if not isinstance(object,EM3DGLWindow):
+			#print "error, border construction"
+			#self.faulty = True
+			#return
+		#else:
+		self.object = object
 		
 	
 	def get_border_width(self): return self.border_width
@@ -729,7 +742,27 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		self.force_update = val
 	
 	
+	def enable_clip_planes(self):
+		self.calculate_clip_planes()
+		glEnable(GL_CLIP_PLANE0)
+		glEnable(GL_CLIP_PLANE1)
+		glEnable(GL_CLIP_PLANE2)
+		glEnable(GL_CLIP_PLANE3)
+		glEnable(GL_CLIP_PLANE4)
+		glEnable(GL_CLIP_PLANE5)
+	
+	def disable_clip_planes(self):
+		glDisable(GL_CLIP_PLANE0)
+		glDisable(GL_CLIP_PLANE1)
+		glDisable(GL_CLIP_PLANE2)
+		glDisable(GL_CLIP_PLANE3)
+		glDisable(GL_CLIP_PLANE4)
+		glDisable(GL_CLIP_PLANE5)
+	
 	def draw(self,force_update=False):
+		
+			
+			
 		if force_update or self.force_update:
 			self.delete_list()
 			self.force_update = False
@@ -767,7 +800,120 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		glScale(self.top_border_height,self.top_border_height,1.0)
 		glCallList( EMBorderDecoration.x_texture_dl)
 		glPopMatrix()
-	
+		
+	def calculate_clip_planes(self):
+		dims = self.object.get_lr_bt_nf()
+		
+		front =  dims[4]
+		back =  dims[5]
+		left =  dims[0]
+		right =  dims[1]
+		
+		bottom = dims[2]
+		top =  dims[3]
+		
+		# left plane
+		
+		p1 = Vec3f(left,bottom,front)
+		p2 =  Vec3f(left,bottom,back)
+		p3 = Vec3f(left,top,front)
+		
+		v1 = p3 - p1
+		v2 = p2 - p1
+		
+		cross = v2.cross(v1)
+		cross.normalize()
+		d = -left
+		plane = [cross[0],cross[1],cross[2],d]
+		#print plane
+		
+		glClipPlane(GL_CLIP_PLANE0,plane)
+		
+		
+		# right plane
+		
+		p1 = Vec3f(right,bottom,front)
+		p2 =  Vec3f(right,bottom,back)
+		p3 = Vec3f(right,top,front)
+		
+		v1 = p3 - p1
+		v2 = p2 - p1
+		
+		cross = v1.cross(v2)
+		cross.normalize()
+		d = right
+		plane2 = [cross[0],cross[1],cross[2],d]
+		#print plane
+		
+		glClipPlane(GL_CLIP_PLANE1,plane2)
+		
+		
+		# top
+		p1 = Vec3f(right,top,front)
+		p2 = Vec3f(right,top,back)
+		p3 = Vec3f(left,top,front)
+		
+		v1 = p3-p1
+		v2 = p2-p1
+		
+		cross = v1.cross(v2)
+		cross.normalize()
+		d = top
+		plane3 = [cross[0],cross[1],cross[2],d]
+		#print plane
+		
+		glClipPlane(GL_CLIP_PLANE2,plane3)
+		
+		
+		# bottom
+		p1 = Vec3f(right,bottom,front)
+		p2 = Vec3f(right,bottom,back)
+		p3 = Vec3f(left,bottom,front)
+		
+		v1 = p3-p1
+		v2 = p2-p1
+		
+		cross = v2.cross(v1)
+		cross.normalize()
+		d = bottom
+		plane4 = [cross[0],cross[1],cross[2],-d]
+		#print plane
+		
+		glClipPlane(GL_CLIP_PLANE3,plane4)
+		
+		#front
+		p1 = Vec3f(right,bottom,front)
+		p2 = Vec3f(right,top,front)
+		p3 = Vec3f(left,bottom,front)
+		
+		v1 = p3-p1
+		v2 = p2-p1
+		
+		cross = v1.cross(v2)
+		cross.normalize()
+		d = front
+		plane5 = [cross[0],cross[1],cross[2],d]
+		#print plane
+		
+		glClipPlane(GL_CLIP_PLANE4,plane5)
+		
+		#back
+		p1 = Vec3f(right,bottom,back)
+		p2 = Vec3f(right,top,back)
+		p3 = Vec3f(left,bottom,back)
+		
+		v1 = p3-p1
+		v2 = p2-p1
+		
+		cross = v2.cross(v1)
+		cross.normalize()
+		d = back
+		plane6 = [cross[0],cross[1],cross[2],-d]
+		#print plane
+		
+		glClipPlane(GL_CLIP_PLANE5,plane6)
+		
+		
 	def __gen_3d_object_border_list(self):
 		self.delete_list()
 	

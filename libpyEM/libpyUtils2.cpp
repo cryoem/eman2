@@ -668,7 +668,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     ;
 #ifdef EMAN2_USING_FTGL
 	scope* EMAN_FTGL_scope = new scope(
-	class_< EMAN::EMFTGL>("EMFTGL", init<  >())
+	class_<EMAN::EMFTGL>("EMFTGL", init<  >())
 	.def("render_string", &EMAN::EMFTGL::render_string)
 	.def("bounding_box", &EMAN::EMFTGL::bounding_box)
 	.def("set_font_file_name",&EMAN::EMFTGL::set_font_file_name)

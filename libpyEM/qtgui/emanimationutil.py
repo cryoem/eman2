@@ -236,10 +236,47 @@ class SingleValueIncrementAnimation(Animatable):
 		self.target.set_animation_increment(self.current)
 		
 	def transform(self):pass
+
+class TranslationAnimation(Animatable):
+	'''
+	Animates from 3D oint one point to another
+	'''
+	def __init__(self,target,start,end):
+		Animatable.__init__(self)
+		self.start = start
+		self.current = start
+		self.end = end
+		self.target = target
+	
+	def __del__(self):
+		self.target.animation_done_event(self)
+	
+	def get_start(self):
+		return self.start
+	
+	def get_end(self):
+		return self.end
+	
+	def get_current(self):
+		return self.current
+	
+	def calculate_animation(self,dt):
+		'''
+		based on the assumption that dt goes from 0 to 1
+		'''
+		if dt > 1: raise
+		x = (1-dt)*self.start[0] + dt*self.end[0]
+		y = (1-dt)*self.start[1] + dt*self.end[1]
+		z = (1-dt)*self.start[2] + dt*self.end[2]
+		self.target.set_translation((x,y,z))
+		
+	def transform(self):pass
+		
 	
 class LineAnimation(Animatable):
 	'''
 	Animates from one point to another
+	Should really be 2D line animation
 	'''
 	def __init__(self,target,start,end):
 		Animatable.__init__(self)

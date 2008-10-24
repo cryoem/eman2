@@ -281,11 +281,134 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			
 		return False
 			
+			
+class Translation:
+	def __init__(self,child):
+		self.child = child
+		self.translation_animation = None
+		self.p1 = None
+		self.p2 = None
+		
+		self.translation = (0,0,0)
+	def __del__(self):
+		if self.translation_animation != None:
+			self.translation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+			self.translation_animation = None
+	
+	def animation_done_event(self,child):
+		self.child.unlock_texture()
+	
+	def get_translation(self):
+		return (self.x,self.y,self.z)
+		
+	def seed_translation_animation(self,p1,p2):
+		self.translation = p1
+		self.p1 = p1
+		self.p2 = p2
+		animation = TranslationAnimation(self,p1,p2)
+		
+		self.translation_animation = animation
+		EMDesktop.main_widget.register_animatable(animation)
+		self.child.lock_texture()
+	
+	def set_translation(self,translation):
+		self.translation = translation
+	
+	def transform(self):
+		if self.translation_animation != None and self.translation_animation.is_animated() :
+			glTranslate(*self.translation)
+			return True
+		else:
+			self.translation_animation = None 
+			return False
+
+class Rotation:
+	def __init__(self,child,axis=[1,0,0]):
+		self.child = child
+		self.rotation_animation = None
+		self.r1 = None
+		self.r2 = None
+		self.rotation = None
+		self.axis = axis
+
+	def __del__(self):
+		if self.rotation_animation != None:
+			self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+			self.rotation_animation = None
+	
+	def animation_done_event(self,child):
+		self.child.unlock_texture()
+	
+	def get_rotation(self):
+		return self.rotation
+		
+	def seed_rotation_animation(self,r1,r2):
+		self.rotation = r1
+		self.r1 = r1
+		self.r2 = r2
+		animation = SingleValueIncrementAnimation(self,r1,r2)
+		
+		self.rotation_animation = animation
+		EMDesktop.main_widget.register_animatable(animation)
+		self.child.lock_texture()
+	
+	def set_animation_increment(self,value):
+		self.rotation = value
+	
+	def transform(self):
+		if self.rotation_animation != None and self.rotation_animation.is_animated() :
+			glRotate(self.rotation,*self.axis)
+			return True
+		else:
+			self.rotation_animation = None 
+			return False
+
+class Scale:
+	def __init__(self,child):
+		self.child = child
+		self.rotation_animation = None
+		self.r1 = None
+		self.r2 = None
+		self.rotation = None
+
+	def __del__(self):
+		if self.rotation_animation != None:
+			self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+			self.rotation_animation = None
+	
+	def animation_done_event(self,child):
+		self.child.unlock_texture()
+	
+	def get_rotation(self):
+		return self.rotation
+		
+	def seed_rotation_animation(self,r1,r2):
+		self.rotation = r1
+		self.r1 = r1
+		self.r2 = r2
+		animation = SingleValueIncrementAnimation(self,r1,r2)
+		
+		self.rotation_animation = animation
+		EMDesktop.main_widget.register_animatable(animation)
+		self.child.lock_texture()
+	
+	def set_animation_increment(self,value):
+		self.rotation = value
+	
+	def transform(self):
+		if self.rotation_animation != None and self.rotation_animation.is_animated() :
+			glScale(self.rotation,self.rotation,1.0)
+			return True
+		else:
+			self.rotation_animation = None 
+			return False
+
 class EMPlainDisplayFrame(EMGLViewContainer):
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
 		EMGLViewContainer.__init__(self,parent,geometry)
 		
 		self.first_draw = []
+		self.transformers = []
 	def print_info(self):
 		
 		print self.get_size(),self.get_origin()
@@ -293,40 +416,71 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 	
 	def draw(self):
 		glPushMatrix()
-		glTranslate(0,0,-25)
 		glTranslate(*self.get_origin())
-		for child in self.children:
+		for i,child in enumerate(self.children):
 			#print "drawing child",child,child.width(),child.height()
 			if child in self.first_draw:
-				print "first draw"
-				self.find_out_geometry(child)
+				self.introduce_child(child)
 			glPushMatrix()
+			if self.transformers[i] != None: 
+				for j,transformer in enumerate(self.transformers[i]):
+					if transformer and not transformer.transform(): 
+						self.transformers[i][j] = None
+					
 			child.draw()
 			glPopMatrix()
 		glPopMatrix()
 	
 		self.first_draw = []
 	
-	def find_out_geometry(self,child):
-		print child.get_position()
-		print self.get_origin(),self.get_size()
-		child.set_position(child.width_inc_border()/2,self.height()-child.height_inc_border()/2,0)
+	def introduce_child(self,child):
+		child.set_position(0,self.height()-child.height_inc_border(),0)
+		r = Scale(child)
+		r.seed_rotation_animation(0,1)
+		self.transformers[len(self.transformers)-1].append(r)
+		t = Translation(child)
+		t.seed_translation_animation((0,0,-300),(0,0,0))
+		self.transformers[len(self.transformers)-1].append(t)
+		
+		if len(self.children) != 1:
+			nearest_left = 9999999999
+			idx = -1
+			c = None
+			for i,child_ in enumerate(self.children):
+				if i != (len(self.children)-1):
+					position = child_.get_position()
+					print position
+					if position[0] < nearest_left:
+						nearest_left = position[0]
+						idx = i
+						c = child_
+					
+			child_left = child.get_position()[0]
+			print nearest_left,child_left,c.width_inc_border(),child.width_inc_border()
+			if nearest_left < (child_left+child.width_inc_border()+5):
+				#print "we have a problem"
+				delta = child_left+child.width_inc_border()+5-nearest_left
+				#print delta
+				t = Translation(c)
+				c.increment_position(delta,0,0)
+				t.seed_translation_animation((-delta,0,0),(0,0,0))
+				self.transformers[idx].append(t)
+		
 	
 	def attach_child(self,child):
-		print "attaching child", child, child.width(),child.height()
 		EMGLViewContainer.attach_child(self,child)
+		self.transformers.append([])
 		self.first_draw.append(child)
-	
-	#def attach_child(self,new_child):
-		#if len(self.children)== 0:
-			#child = EMGLViewContainer(self,EMRegion.get_geometry(self))
-			##child.attach_child(new_child)
-			##new_child.set_parent(child)
-			##EMGLViewContainer.attach_child(self,child)
-			#return child
-		#else:
-			#print "bailing"
+		
+	def detach_child(self,new_child):
+		for i,child in enumerate(self.children):
+			if (child == new_child):
+				self.children.pop(i)
+				self.transformers.pop(i)
+				#self.reset_scale_animation()
+				return
 			
+		print "error, attempt to detach a child that didn't belong to this parent"
 
 class EMFrame(EMWindowNode,EMRegion):
 	'''
@@ -354,7 +508,7 @@ class EMFrame(EMWindowNode,EMRegion):
 		for i in self.children:
 			i.mouseMoveEvent(event)
 			
-		EMDesktop.main_widget.updateGL()
+		#EMDesktop.main_widget.updateGL()
 	
 		
 	def mouseReleaseEvent(self, event):
@@ -362,7 +516,7 @@ class EMFrame(EMWindowNode,EMRegion):
 		for i in self.children:
 			i.mouseReleaseEvent(event)
 			
-		EMDesktop.main_widget.updateGL()
+		#EMDesktop.main_widget.updateGL()
 	
 
 	def mouseDoubleClickEvent(self, event):
@@ -370,7 +524,7 @@ class EMFrame(EMWindowNode,EMRegion):
 		for i in self.children:
 			i.mouseDoubleClickEvent(event)
 		
-		EMDesktop.main_widget.updateGL()
+		#EMDesktop.main_widget.updateGL()
 	
 
 	def wheelEvent(self, event):
@@ -613,12 +767,12 @@ class EMDesktopFrame(EMFrame):
 		self.draw_frame()
 		glPopMatrix()
 		
-		glEnable(GL_FOG)
+		#glEnable(GL_FOG)
 		glPushMatrix()
 		glScalef(self.height()/2.0,self.height()/2.0,1.0)
 		self.bgob2.render()
 		glPopMatrix()
-		glDisable(GL_FOG)
+		#glDisable(GL_FOG)
 
 		glPushMatrix()
 		glTranslatef(0.,0.,self.get_z_opt())
@@ -1357,9 +1511,9 @@ class SideTransform:
 			self.rotation_animation = None
 	
 	def animation_done_event(self,child):
+		#print "del side transform"
 		self.child.unlock_texture()
-		pass
-	
+
 	def get_xy_scale(self):
 		return self.xy_scale
 	
@@ -1390,7 +1544,7 @@ class SideTransform:
 			s = self.rotation_animation.get_start()
 			if c < s: s = self.default_rotation
 			elif c > s: s = self.target_rotation
-			else: print "I'm a bad programmer",c,s
+			#else: print "I'm a bad programmer",c,s
 			if force_inactive: s = self.default_rotation
 			if force_active: s = self.target_rotation
 			rot =  [c,s]
@@ -1476,9 +1630,9 @@ class RightSideWidgetBar(SideWidgetBar):
 		def transform(self):
 			SideTransform.transform(self)
 			
-			glTranslate(0,-self.xy_scale*self.child.height_inc_border()/2,0)
+			glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
 			glRotate(self.rotation,0,1,0)
-			glTranslate(-self.xy_scale*self.child.width_inc_border()/2.0,0,0)
+			#glTranslate(-self.xy_scale*self.child.width_inc_border()/2.0,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
 		
 	
@@ -1514,9 +1668,9 @@ class LeftSideWidgetBar(SideWidgetBar):
 		def transform(self):
 			SideTransform.transform(self)
 			
-			glTranslate(0,-self.xy_scale*self.child.height_inc_border()/2,0)
+			glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
 			glRotate(self.rotation,0,1,0)
-			glTranslate(self.xy_scale*self.child.width_inc_border()/2.0,0,0)
+			#glTranslate(self.xy_scale*self.child.width_inc_border()/2.0,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
 
 	
