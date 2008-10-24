@@ -734,11 +734,17 @@ def test_image_3d(type=0,size=(128,128,128)):
 
 # get a font renderer
 def get_3d_font_renderer():
+        import platform
 	font_renderer = EMFTGL()
 	font_renderer.set_face_size(32)
 	font_renderer.set_using_display_lists(True)
 	font_renderer.set_depth(2)
-	font_renderer.set_font_file_name(os.getenv("EMAN2DIR")+"/fonts/DejaVuSerif.ttf")
+	if platform.system() in ["Linux","Darwin"]:
+                font_renderer.set_font_file_name(os.getenv("EMAN2DIR")+"/fonts/DejaVuSerif.ttf")
+        elif platform.system() == "Windows":
+                font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
+        else:
+                print "unknown platform:",platform.system()
 	return font_renderer
 
 class EMAbstractFactory:
