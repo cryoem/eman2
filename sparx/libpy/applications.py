@@ -1693,10 +1693,10 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 			ctf_params = get_arb_params(data[im-image_start], parnames)
 			if(ctf_params[6] == 0):
 				st = Util.infomask(data[im-image_start], mask, False)
-				data[im] -= st[0]
+				data[im-image_start] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
-				data[im].set_attr('ctf_applied', 1)
+				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				data[im-image_start].set_attr('ctf_applied', 1)
 	if(myid == main_node):  seed(rand_seed)
 	a0 = -1.0
 	again = True
@@ -1795,8 +1795,9 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 						av1 = filt_table( refi[j][0], ctm)
 						for i in xrange(lctf):  ctm[i] = 1.0 / (ctf2[j][1][i] + 1.0/snr)
 						av2 = filt_table( refi[j][1], ctm)
-						from statistcs import fsc
-						frsc = fsc_mask(av1, av2, mask, 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter, j)))
+						from statistics import fsc
+						#frsc = fsc_mask(av1, av2, mask, 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter, j)))
+						frsc = fsc(av1, av2, 1.0, os.path.join(outdir,"drm%03d%04d"%(Iter, j)))
 						#Now the total average
 						for i in xrange(lctf):  ctm[i] = 1.0 / (ctf2[j][0][i] + ctf2[j][1][i] + 1.0/snr)
 						refi[j][0] = filt_table( Util.addn_img( refi[j][0], refi[j][1] ), ctm)
@@ -3074,13 +3075,13 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
 		if(CTF):
-			ctf_params = get_arb_params(data[im], ctf_dicts)
+			ctf_params = get_arb_params(data[im-image_start], ctf_dicts)
 			if(im == image_start): data_had_ctf = ctf_params[6]
 			if(ctf_params[6] == 0):
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
 				from filter import filt_ctf
-				data[im-image_start] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
 				data[im-image_start].set_attr('ctf_applied', 1)
 		if(im%100==0 and debug) :
 			finfo.write( '%d loaded  ' % im )
@@ -9615,9 +9616,9 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 	if fimport != None: fimp = open(fimport, 'r')
 	if fexport != None: fexp = open(fexport, 'w')
 
+	nimage = EMUtil.get_image_count(stack)
 	ext = file_type(stack)
 	if ext == "bdb": DB = db_open_dict(stack)
-	nimage = EMUtil.get_image_count(stack)
 	for i in xrange(nimage):
 		img = EMData()
 		img.read_image(stack, i, True)
@@ -10564,10 +10565,12 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			sys.exit()
 
 		if myid == main_node:
+			"""
 			import pickle
 			f = open('Assign', 'w')
 			pickle.dump(assign, f)
 			f.close()
+			"""
 
 			crit = k_means_criterion(Cls, critname)
 			k_means_export(Cls, crit, assign, out_dir)
