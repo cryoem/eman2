@@ -937,6 +937,7 @@ class EMDesktopFrame(EMFrame):
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.5,.5,.5,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,1.0)
+		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1))
 		glDisable(GL_TEXTURE_2D)
 		glEnable(GL_LIGHTING)
 		glCallList(self.frame_dl)
@@ -1093,15 +1094,28 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.selected_objects = []
 		
 	def set_selected(self,object,event):
-		if len(self.selected_objects) != 0:
-			for i in range(len(self.selected_objects)-1,-1,-1):
-				self.selected_objects[i].set_selected(False)
-				self.selected_objects.pop(i)
-				
+		if not event.modifiers()&Qt.ControlModifier: return
+			#if len(self.selected_objects) != 0:
+				#for i in range(len(self.selected_objects)-1,-1,-1):
+					#self.selected_objects[i].set_selected(False)
+					#self.selected_objects.pop(i)
+
+		
+		
 		self.selected_objects.append(object)
 		object.set_selected(True)
 
-		
+		if len(self.selected_objects) > 1:
+			master = self.selected_objects[0]
+			for i in range(1,len(self.selected_objects)):
+				object = self.selected_objects[i]
+				
+				if not object.camera_slaved():
+					QtCore.QObject.connect(self,QtCore.SIGNAL("apply_rotation"),object.get_drawable_camera().apply_rotation)
+					QtCore.QObject.connect(self,QtCore.SIGNAL("scale_delta"),object.get_drawable_camera().scale_delta)
+					QtCore.QObject.connect(self,QtCore.SIGNAL("apply_translation"),object.get_drawable_camera().apply_translation)
+					object.set_camera_slaved()
+				
 		
 	def get_gl_context_parent(self): return self
 		
