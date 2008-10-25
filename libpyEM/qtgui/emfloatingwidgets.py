@@ -959,7 +959,10 @@ class EMGLWindow:
 		self.enable_clip = False
 		
 		self.camera_is_slaved = False
-		
+	
+	def emit(self,*args,**kargs):
+		self.parent.emit(*args,**kargs)
+	
 	def camera_slaved(self):
 		return self.camera_is_slaved
 	
@@ -1412,9 +1415,6 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 			self.mouse_event_target = self.decoration
 			return True
 		return False
-
-	def emit(self,*args,**kargs):
-		self.parent.emit(*args,**kargs)
 		
 class EM3DGLWindowOverride(EM3DGLWindow):
 	'''

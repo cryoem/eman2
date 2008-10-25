@@ -1858,7 +1858,7 @@ class BottomWidgetBar(SideWidgetBar):
 		child = self.children[0]
 		glPushMatrix()
 		
-		glTranslate(-child.width_inc_border()/2,-self.parent.height()/2.0,0)
+		glTranslate(-child.width_inc_border()/2,-self.parent.height()/2.0+6,0)
 		self.transformers[0].transform()
 		child.draw()
 		glPopMatrix()
@@ -1931,7 +1931,7 @@ class LeftSideWidgetBar(SideWidgetBar):
 
 	def draw(self):
 		glPushMatrix()
-		glTranslate(-self.parent.width()/2.0,self.parent.height()/2.0,0)
+		glTranslate(-self.parent.width()/2.0+6,self.parent.height()/2.0,0)
 		for i,child in enumerate(self.children):
 			glPushMatrix()
 			self.transformers[i].transform()
