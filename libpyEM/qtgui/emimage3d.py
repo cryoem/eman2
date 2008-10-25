@@ -366,6 +366,10 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.last_window_height = -1 # used for automatic resizing from the desktop
 		
 		self.file_name = None
+		
+	def emit(self,*args,**kargs):
+		self.application.get_qt_emitter(self).emit(*args,**kargs)
+	
 	def set_file_name(self,name): self.file_name = name
 	
 	def width(self):

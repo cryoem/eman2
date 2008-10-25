@@ -334,7 +334,7 @@ class EMBorderDecoration:
 			self.color_flag = flag
 			
 	def load_materials(self):
-		
+		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1))
 		if self.color_flag ==  EMBorderDecoration.DEFAULT_COLOR:
 			glMaterial(GL_FRONT,GL_AMBIENT,light_blue_ambient)
 			glMaterial(GL_FRONT,GL_DIFFUSE,light_blue_diffuse)

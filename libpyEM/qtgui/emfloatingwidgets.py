@@ -958,6 +958,14 @@ class EMGLWindow:
 		
 		self.enable_clip = False
 		
+		self.camera_is_slaved = False
+		
+	def camera_slaved(self):
+		return self.camera_is_slaved
+	
+	def set_camera_slaved(self,val=True):
+		self.camera_is_slaved = val
+		
 	def get_position(self):
 		return (self.cam.cam_x+self.left, self.cam.cam_y+self.bottom,self.cam.cam_z+self.near)
 	
@@ -983,6 +991,12 @@ class EMGLWindow:
 	def set_selected(self,bool=True):
 		self.decoration.set_selected(bool)
 	
+	
+	def get_camera(self):
+		return self.cam
+	
+	def get_drawable_camera(self):
+		return self.drawable.cam
 	
 	def get_border_width(self):
 		'''
@@ -1372,7 +1386,7 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		glPushMatrix()
 		if self.enable_clip:self.decoration.enable_clip_planes()
 		#glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,0)
-		
+		glTranslate(0,0,-10)
 		self.drawable.render()
 		glPopMatrix()
 		if self.enable_clip: self.decoration.disable_clip_planes()
@@ -1638,13 +1652,13 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 	def determine_dimensions(self):
 		pass
 	
-	#def set_width(self,w):
-		#self.left = 0
-		#self.right = w
+	def set_width(self,w):
+		self.left = -w/2
+		self.right = w/2
 		
-	#def set_height(self,h):
-		#self.bottom = 0
-		#self.top = h
+	def set_height(self,h):
+		self.bottom = -h/2
+		self.top = h/2
 	
 	def border_scale_event(self,delta):
 		if delta > 0:

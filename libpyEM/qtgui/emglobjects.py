@@ -1226,6 +1226,10 @@ class Camera2:
 		glScale(self.scale,self.scale,self.scale)
 		
 	def scale_event(self,delta):
+		self.scale_delta(delta)
+		self.parent.emit(QtCore.SIGNAL("scale_delta"),delta)
+		
+	def scale_delta(self,delta):
 		if delta > 0:
 			self.scale *= self.mag_factor
 		elif delta < 0:
@@ -1307,6 +1311,12 @@ class Camera2:
 		
 		t3d.set_rotation( EULER_SPIN, quaternion )
 		
+		self.parent.emit(QtCore.SIGNAL("apply_rotation"),t3d)
+		
+		size = len(self.t3d_stack)
+		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
+		
+	def apply_rotation(self,t3d):
 		size = len(self.t3d_stack)
 		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
 		
@@ -1390,21 +1400,35 @@ class Camera2:
 		if ( plane == 'xy' ):
 			self.cam_x += dx
 			self.cam_y += dy
+			v = (dx,dy,0)
 		elif ( plane == 'yx' ):
 			self.cam_x -= dx
 			self.cam_y += dy
+			v = (-dx,dy,0)
 		elif ( plane == 'xz' ):
 			self.cam_x += dx
 			self.cam_z -= dy
+			v = (dx,-dy,0)
 		elif ( plane == 'zx' ):
 			self.cam_x += dx
 			self.cam_z += dy
+			v = (dx,0,dy)
 		elif ( plane == 'yz' ):
 			self.cam_y += dy
 			self.cam_z -= dx
+			v = (0,dy,-dx)
 		elif ( plane == 'zy' ):
 			self.cam_y += dy
 			self.cam_z += dx
+			v = (0,dy,dx)
+			
+		self.parent.emit(QtCore.SIGNAL("apply_translation"),v)
+		
+	def apply_translation(self,v):
+		self.cam_x += v[0]
+		self.cam_y += v[1]
+		self.cam_z += v[2]
+		
 		
 
 class Camera:
@@ -1738,7 +1762,7 @@ class EMImage3DGUIModule(EMGUIModule):
 			self.gl_widget = EM3DGLWindow(self,gl_view)
 			
 			self.gl_widget.target_translations_allowed(True)
-			self.gl_widget.allow_camera_rotations(True)
+			#self.gl_widget.allow_camera_rotations(True)
 			
 		return self.gl_widget
 	
@@ -1971,6 +1995,13 @@ def get_default_gl_colors():
 	yellow["shininess"] =  60
 	yellow["emission"] = [0,0,0]
 	
+	bluewhite = {}
+	bluewhite["ambient"] = [0.66, 0.95,0.62,1]
+	bluewhite["diffuse"] = [0.80, 0.92, 0.56,1]
+	bluewhite["specular"] = [0.27, 0.04, 0.55,1]
+	bluewhite["shininess"] =  32
+	bluewhite["emission"] = [0.0, 0.0,0.368]
+	
 	custom = {}
 	custom["custom"] = [0.3, 0.3, 0.0,1]
 	custom["custom"] = [0.5, 0.5, 0.0,1]
@@ -1988,7 +2019,8 @@ def get_default_gl_colors():
 	colors["obsidian"] = obsidian
 	colors["turquoise"] = turquoise
 	colors["yellow"] = yellow
-	colors["custom"] = yellow
+	colors["bluewhite"] = bluewhite
+	colors["custom"] = custom
 	
 	return colors
 

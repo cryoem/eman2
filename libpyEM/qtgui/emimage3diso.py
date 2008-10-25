@@ -282,7 +282,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	def load_colors(self):
 		self.colors = get_default_gl_colors()
 		
-		self.isocolor = "ruby"
+		self.isocolor = "bluewhite"
 	
 	def get_material(self):
 		return self.colors[self.isocolor]

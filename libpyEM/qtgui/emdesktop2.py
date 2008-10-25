@@ -966,9 +966,9 @@ class EMDesktopFrame(EMFrame):
 		if EMDesktopFrame.image == None:
 			appscreen = self.parent.get_app_screen()
 			sysdesktop = self.parent.get_sys_desktop()
-			try:
+			if file_exists("galactic-stars.jpg"):
 				EMDesktopFrame.image = QtGui.QPixmap("galactic-stars.jpg")
-			except: EMDesktopFrame.image = QtGui.QPixmap.grabWindow(appscreen.winId(),0.0,0.0,sysdesktop.width(),sysdesktop.height()-30)
+			else:	EMDesktopFrame.image = QtGui.QPixmap.grabWindow(appscreen.winId(),0.0,0.0,sysdesktop.width(),sysdesktop.height()-30)
 		return EMDesktopFrame.image
 
 	def get_time(self):
