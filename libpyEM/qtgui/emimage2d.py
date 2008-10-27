@@ -674,8 +674,7 @@ class EMImage2DModule(EMGUIModule):
 	def load_default_scale_origin(self):
 		self.scale=1.0				# self.origin=(0,0)Scale factor for display
 		self.origin = (0,0)
-		print "loaded default scale origin"
-		#try: 
+		##try: 
 		w = self.gl_widget.width()
 		h = self.gl_widget.height()
 		data = self.get_data_dims()
