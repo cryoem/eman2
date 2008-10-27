@@ -381,8 +381,8 @@ class EMImage2DModule(EMGUIModule):
 	def optimally_resize(self):
 		if isinstance(self.gl_context_parent,EMImage2DWidget):
 			if self.parent_geometry != None:
+				#self.load_default_scale_origin()
 				self.qt_context_parent.restoreGeometry(self.parent_geometry)
-				
 			else:
 				self.qt_context_parent.resize(*self.get_parent_suggested_size())
 				self.load_default_scale_origin()
@@ -407,6 +407,7 @@ class EMImage2DModule(EMGUIModule):
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 		EMImage2DModule.allim[self] = 0
+		
 		self.init_gl_flag = True
 		self.oldsize=(-1,-1)
 		self.scale=1.0				# Scale factor for display
@@ -644,8 +645,6 @@ class EMImage2DModule(EMGUIModule):
 				
 			self.get_inspector().enable_image_range(1,len(data),self.list_idx+1)
 		else:
-	
-			self.get_inspector().disable_image_range()
 			self.list_data = None
 			self.list_fft_data = None
 			if data.is_complex():
@@ -660,27 +659,6 @@ class EMImage2DModule(EMGUIModule):
 				fourier = True
 			else: self.data = data
 	
-		#fourier = False
-		#d = data
-		#if isinstance(d,list): d = d[0]
-		#if d.is_complex():
-			#fourier = True
-			#self.fft = data.copy()# have to make copies here because we alter it!
-			#self.fft.set_value_at(0,0,0,0) # get rid of the DC component
-			#self.fft.set_value_at(1,0,0,0) # this should already by 0... ?
-			#self.curfft = 2
-			#self.__set_display_image(self.curfft)
-			#inspector = self.get_inspector()
-			#inspector.set_fft_amp_pressed()
-		#else:
-			#self.data=data
-			
-			#if isinstance(data,list):
-				#self.list_data = data
-				#self.list_idx = len(self.list_data)/2
-				#self.data = data[self.list_idx]
-			#else:
-				#self.list_data = None
 		self.image_change_count = 0
 			
 		self.auto_contrast(inspector_update=False,display_update=False)
@@ -690,9 +668,13 @@ class EMImage2DModule(EMGUIModule):
 		self.inspector_update(use_fourier=fourier)
 		self.force_display_update()
 		
+		if not isinstance(data,list):
+			self.get_inspector().disable_image_range()
+		
 	def load_default_scale_origin(self):
 		self.scale=1.0				# self.origin=(0,0)Scale factor for display
 		self.origin = (0,0)
+		print "loaded default scale origin"
 		#try: 
 		w = self.gl_widget.width()
 		h = self.gl_widget.height()
@@ -968,18 +950,17 @@ class EMImage2DModule(EMGUIModule):
 		
 		return False
 
-	
-
 	def render(self):
 		if not self.data and not self.fft : return
-		if not self.is_visible(): return
+		if not self.is_visible(): 
+			return
 		if self.init_gl_flag: self.initializeGL()
 		
 		try:
 			self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		except: pass # probably looking at an FFT image
 		
-		
+	
 		lighting = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
 
@@ -1188,18 +1169,6 @@ class EMImage2DModule(EMGUIModule):
 				#self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.gl_widget.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.gl_widget.height()/2.0)
 				self.oldsize=(width,height)
 		
-		
-		#if self.window_width and self.window_height:
-			#if width == self.window_width
-				#if height <= self.window_height:
-					
-				#elif height >= self.window_height:
-				#self.window_width = width
-				#self.window_height = height
-				#return
-		#self.window_width = width
-		#self.window_height = height
-		
 		display_width = self.gl_widget.width()
 		display_height = self.gl_widget.height()
 
@@ -1214,29 +1183,17 @@ class EMImage2DModule(EMGUIModule):
 		
 		ox = self.origin[0]
 		oy = self.origin[1]
-		#print display_width,pixel_x
-		if pixel_x < display_width:
-			#if self.origin[0] < 0:
-				#left = -self.origin[0]
-				#right = display_width-pixel_x
-			ox = - (display_width-pixel_x)/2.0
-		if pixel_y < display_width:
-			oy =  - (display_height-pixel_y)/2.0
-			
-		self.origin = (ox,oy)
-		#if self.origin[0] <= 0 and self.origin[1] <= 0:
-			##print "yoda"
-			
-				
-				 #and pixel_y < display_height:
-					#data = self.get_data_dims()
-					#if data[0] == 0 or data[1] == 0: raise
-					#scalew = float(display_width)/data[0]
-					#scaleh = float(display_height)/data[1]
-					#if scaleh < scalew:
-						#self.scale = scaleh
-					#else: self.scale = scalew
 		
+		# if the image is off the screen automatically center it
+		if pixel_x + ox < 0: ox = - (display_width-pixel_x)/2.0
+		if pixel_y + oy < 0: oy = - (display_height-pixel_y)/2.0
+			
+		
+		# this operation keeps the image iff it is completely visible
+		if pixel_x < display_width:	ox = - (display_width-pixel_x)/2.0
+		if pixel_y < display_width: oy =  - (display_height-pixel_y)/2.0
+
+		self.origin = (ox,oy)
 
 	def get_shapes(self):
 		return self.shapes
@@ -1259,12 +1216,15 @@ class EMImage2DModule(EMGUIModule):
 	def inspector_update(self,use_fourier=False):
 		if self.inspector:
 			if not use_fourier:
+				self.inspector.set_bc_range(self.minden,self.maxden)
 				self.inspector.set_minden(self.minden)
 				self.inspector.set_maxden(self.maxden)
 				self.inspector.set_gamma(self.gamma)
 			else:
+				self.inspector.set_bc_range(self.fminden,self.fmaxden)
 				self.inspector.set_minden(self.fminden)
 				self.inspector.set_maxden(self.fmaxden)
+				
 				self.inspector.set_gamma(self.fgamma)
 				
 			self.inspector.set_scale(self.scale)
@@ -1870,6 +1830,11 @@ class EMImageInspector2D(QtGui.QWidget):
 	def set_hist(self,hist,minden,maxden):
 		if hist != None and len(hist) != 0:self.hist.set_data(hist,minden,maxden)
 
+	def set_bc_range(self,lowlim,highlim):
+		#print "set range",lowlim,highlim
+		self.mins.setRange(lowlim,highlim)
+		self.maxs.setRange(lowlim,highlim)
+		
 	def set_limits(self,lowlim,highlim,curmin,curmax):
 		if highlim<=lowlim : highlim=lowlim+.001
 		#print "in set limits", self.conts.getValue(), self.conts.getValue()

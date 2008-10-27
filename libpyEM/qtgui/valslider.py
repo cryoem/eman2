@@ -105,16 +105,17 @@ class ValSlider(QtGui.QWidget):
 		if maxv<=minv : maxv=minv+.001
 		self.range=[float(minv),float(maxv)]
 		self.updates()
+		#self.slider.setRange(*self.range)
 		
 	def getRange(self): return self.range
 
 	def setValue(self,val,quiet=0):
-		if val <= self.range[0]:
-			self.range[0] -= 2.0*(self.range[0]-val)
-			self.updates()
-		if val >= self.range[1]:
-			self.range[1] += 2.0*(val-self.range[1])
-			self.updates()
+		#if val <= self.range[0]:
+			#self.range[0] -= 2.0*(self.range[0]-val)
+			#self.updates()
+		#if val >= self.range[1]:
+			#self.range[1] += 2.0*(val-self.range[1])
+			#self.updates()
 		
 		if self.intonly : 
 			if self.value==int(val+.5) : return
