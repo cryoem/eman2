@@ -447,7 +447,7 @@ class EMImage2DModule(EMGUIModule):
 		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		self.tex_name = 0			# an OpenGL texture handle
 		
-		self.window_width = None# Used for intelligently managing resize events
+		self.window_width = None # Used for intelligently managing resize events
 		self.window_height = None # Used for intelligently managing resize events
 		
 		self.otherdata = None
@@ -868,7 +868,6 @@ class EMImage2DModule(EMGUIModule):
 		It only redoes the FFT if the FFT is currently being displayed. Otherwise
 		it sets a flag for the FFT to be recalculated next time it is displayed.
 		'''
-	
 		if self.curfft > 0:
 			self.fft = None
 			self.display_fft = None

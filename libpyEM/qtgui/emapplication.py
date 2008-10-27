@@ -108,7 +108,7 @@ class EMGUIModule:
 			if self.inspector != None and self.em_qt_inspector_widget != None: 
 				self.application.detach_child(self.em_qt_inspector_widget)
 				self.inspector.close()
-				
+			
 			self.application.detach_child(self)
 		
 	def load_font_renderer(self):
@@ -184,7 +184,11 @@ class EMApplication:
 	def deregister_qt_emitter(self,child):
 		self.qt_emission_registry.pop(child)
 		
-
+	#def starting_up(self):
+		#if self.app != None:
+			#if QtGui.QApplication.startingUp():
+			#a = QtGui.QApplication.QApplication(sys.argv)
+			
 class EMStandAloneApplication(EMApplication):
 	def __init__(self,qt_application_control=True):
 		self.children = []
@@ -221,7 +225,7 @@ class EMStandAloneApplication(EMApplication):
 				widget.show()
 	
 	def close_specific(self,child,inspector_too=True):
-		for child_ in self.children:
+		for i,child_ in enumerate(self.children):
 			if child == child_:
 				widget = child.get_qt_widget()
 				widget.close()

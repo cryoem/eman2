@@ -85,20 +85,20 @@ def get_app():
 	except:
 		tmr=QtCore.QTimer()
 		tmr.setInterval(250)
-		tmr.connect(tmr,QtCore.SIGNAL("timeout()"), imageupdate)
+		tmr.connect(tmr,QtCore.SIGNAL("timeout()"), image_update)
 		tmr.start()
 	
 		app.updtimer=tmr
 
 	return app
 		
-def imageupdate():
-	for i in EMImage2DModule.allim.keys():
-		try:
-			if i.data.get_attr("changecount")!=i.get_last_render_image_display_count() :
-				i.force_display_update()
-				i.updateGL()
-		except: pass
+#def imageupdate():
+	#for i in EMImage2DModule.allim.keys():
+		#try:
+			#if i.data.get_attr("changecount")!=i.get_last_render_image_display_count() :
+				#i.force_display_update()
+				#i.updateGL()
+		#except: pass
 
 	#for i in EMImage3DWidget.allim.keys():
 		#try:
