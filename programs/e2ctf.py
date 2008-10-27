@@ -132,6 +132,8 @@ Various CTF-related operations on images."""
 				ratio2=mask2.get_attr("square_sum")/(ys*ys)
 #				print ratio1,ratio2
 				ps2d.append(powspec(i,not options.nonorm,mask1))
+#				mask1.write_image("mask1.mrc")
+#				mask2.write_image("mask2.mrc")
 			else : ps2d.append(powspec(i,not options.nonorm))
 			ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
 			ps1d[-1]=[y/ratio1 for y in ps1d[-1]]
@@ -183,11 +185,16 @@ Various CTF-related operations on images."""
 #						norm+=cc[fz]**2
 						if cc[fz]<0 : break
 				
-					tot=0
+					tot,totr=0,0
 #					for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
-					for s in range(int(st),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*(ps1d[-1][s]-bg[s])
+					for s in range(int(st),ys/2): 
+						tot+=(cc[s]**2)*(ps1d[-1][s]-bg[s])
+#						totr+=cc[s]**4
+						totr+=cc[s]**2
 #					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
 #					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
+#					tot/=sqrt(totr)
+					tot/=totr
 					if tot>dfbest1[1] : dfbest1=(df,tot)
 					dfout.write("%1.2f\t%g\n"%(df,tot))
 #					mapout[dfi,ac]=tot
@@ -225,8 +232,12 @@ Various CTF-related operations on images."""
 #						norm+=cc[fz]**2
 						if cc[fz]<0 : break
 				
-					tot=0
-					for s in range(int(st),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*(ps1d[-1][s]-bg[s])
+					tot,totr=0,0
+					for s in range(int(st),ys/2): 
+						tot+=(cc[s]**2)*(ps1d[-1][s]-bg[s])
+						totr+=cc[s]**4
+					
+					tot/=sqrt(totr)
 					if tot>dfbest[1] : 
 						dfbest=(df,tot)
 #						acbest=ac
@@ -234,10 +245,10 @@ Various CTF-related operations on images."""
 
 			ctf.defocus=-dfbest[0]
 			ctf.ampcont=acbest
-			cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
-			out=file("ctf.txt","w")
+			cc=ctf.compute_1d(ys*5,Ctf.CtfType.CTF_AMP)
+			out=file("ctf.curve.txt","w")
 			for a,b in enumerate(cc): 
-				if a%ctf.CTFOS==0 :out.write("%1.4f\t%1.5f\n"%(a*ds/ctf.CTFOS,b))
+				out.write("%1.4f\t%1.5f\n"%(a*ds/5.0,b*b))
 			out.close()
 
 

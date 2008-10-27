@@ -476,7 +476,6 @@ EMAN2Ctf::EMAN2Ctf()
 	voltage = 0;
 	cs = 0;
 	apix = 0;
-	boxsize=0;
 }
 
 
@@ -494,8 +493,8 @@ int EMAN2Ctf::from_string(const string & ctf)
 	float v;
 	const char *s=ctf.c_str();
 	
-	int ii = sscanf(s, "%c%f %f %f %f %f %f %f %f %d %d%n",
-				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &cs, &apix,&boxsize,&bglen,&pos);
+	int ii = sscanf(s, "%c%f %f %f %f %f %f %f %f %d%n",
+				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &cs, &apix,&bglen,&pos);
 	if (type!='E') throw InvalidValueException(type,"Trying to initialize Ctf object with bad string");
 	
 
@@ -522,8 +521,8 @@ int EMAN2Ctf::from_string(const string & ctf)
 string EMAN2Ctf::to_string() const
 {
 	char ctf[256];
-	sprintf(ctf, "E%1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %d %d",
-			defocus, dfdiff, dfang, bfactor, ampcont, voltage, cs, apix, boxsize, (int)background.size());
+	sprintf(ctf, "E%1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %d",
+			defocus, dfdiff, dfang, bfactor, ampcont, voltage, cs, apix, (int)background.size());
 
 	string ret=ctf;
 	for (int i=0; i<(int)background.size(); i++) {
@@ -552,7 +551,6 @@ void EMAN2Ctf::from_dict(const Dict & dict)
 	voltage = dict["voltage"];
 	cs = dict["cs"];
 	apix = dict["apix"];
-	boxsize = dict["boxsize"];
 	background = dict["background"];
 	snr = dict["snr"];
 }
@@ -568,7 +566,6 @@ Dict EMAN2Ctf::to_dict() const
 	dict["voltage"] = voltage;
 	dict["cs"] = cs;
 	dict["apix"] = apix;
-	dict["boxsize"] = boxsize;
 	dict["background"] = background;
 	dict["snr"] = snr;
 
@@ -586,11 +583,10 @@ void EMAN2Ctf::from_vector(const vector<float>& vctf)
 	voltage = vctf[5];
 	cs = vctf[6];
 	apix = vctf[7];
-	boxsize = (int)vctf[8];
-	background.resize((int)vctf[9]);
-	for (i=0; i<(int)vctf[9]; i++) background[i]=vctf[i+10];
-	snr.resize((int)vctf[i+10]);
-	for (int j=0; j<(int)vctf[j]; j++) snr[j]=vctf[i+j+11];
+	background.resize((int)vctf[8]);
+	for (i=0; i<(int)vctf[8]; i++) background[i]=vctf[i+9];
+	snr.resize((int)vctf[i+9]);
+	for (int j=0; j<(int)vctf[j]; j++) snr[j]=vctf[i+j+10];
 }
 
 vector<float> EMAN2Ctf::to_vector() const
@@ -605,7 +601,6 @@ vector<float> EMAN2Ctf::to_vector() const
 	vctf.push_back(voltage);
 	vctf.push_back(cs);
 	vctf.push_back(apix);
-	vctf.push_back((float)boxsize);
 	vctf.push_back(background.size());
 	for (int i=0; i<background.size(); i++) vctf.push_back(background[i]);
 	vctf.push_back((float)snr.size());
@@ -634,13 +629,13 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 {
 	Assert(size > 0);
 	
-	float tmp_f1 = CTFOS * sqrt((float) 2) * size / 2;
+	float tmp_f1 =  sqrt((float) 2) * size / 2;
 	int np = (int) ceil(tmp_f1) + 2;
 	vector < float >r;
 
 	r.resize(np);
 
-	float ds = 1 / (apix * size * CTFOS);
+	float ds = 1 / (apix * size);
 	float s = 0;
 	float g1 = calc_g1();
 	float g2 = calc_g2();
