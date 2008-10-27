@@ -2778,13 +2778,20 @@ class PawelAutoBoxer(AutoBoxer):
 			boxable.delete_auto_boxes(True)
 			imgname = boxable.get_image_name()
 			img = BigImageCache.get_image_directly(imgname) # change from boxable.image_name, hope you don't mind
+			print "box"
 		else:
 			img = get_im( imgname )
-			[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
-			img /= sigma
+			print "norm"
+			#[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
+			#img /= sigma
 
 		img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
 		BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
+
+		img -= avg
+		img /= sigma
+		print "stat: ",avg,sigma
+
 
 		if not(self.parent is None):
 			self.parent.big_image_change()

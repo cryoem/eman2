@@ -33,6 +33,7 @@
  *
  */
 
+#include <stack>
 #include "emdata.h"
 #include <iostream>
 #include <cmath>
@@ -3927,35 +3928,46 @@ vector<float> EMData::peak_search(int ml, float invert) {
 		}
 	break;
 	}
-	// 
+	// do we have a peak list yet?
 	if (peaks.begin() != peaks.end()) {
-		sort(peaks.begin(), peaks.end(), peakcmp);
-		int count = 0;
-		float xval = (*peaks.begin()).value;
-		for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++)  {
-			count++;
-	    		if(count <= ml) {
-				res.push_back((*it).value);
-				res.push_back(static_cast<float>((*it).x));
-				if(img_dim > 1) {
-					res.push_back(static_cast<float>((*it).y));
-					if(nz > 1) res.push_back(static_cast<float>((*it).z));
-				}
-
-				if(xval != 0.0) res.push_back((*it).value/xval);
-				else            res.push_back((*it).value);
-				res.push_back((*it).x-float(int(nx/2)));
-				if(img_dim >1) {
-					res.push_back((*it).y-float(int(ny/2)));
-					if(nz>1)   res.push_back((*it).z-float(nz/2));
-				}
-			}
-		}
-		res.insert(res.begin(),1,img_dim);
+	  // yes. sort it
+	  sort(peaks.begin(), peaks.end(), peakcmp);
+	  
+	  int count = 0;
+	  
+	  float xval = (*peaks.begin()).value;
+	  // loop over all peaks
+	  for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++)  {
+	    // current peak count
+	    count++;
+	    // is current peak count below max?
+	    if(count <= ml) {
+	      // yes, so append it
+	      res.push_back((*it).value);
+	      res.push_back(static_cast<float>((*it).x));
+	      
+	      if(img_dim > 1) {
+		res.push_back(static_cast<float>((*it).y));
+		if(nz > 1) res.push_back(static_cast<float>((*it).z));
+	      }
+	      
+	      if(xval != 0.0) res.push_back((*it).value/xval);
+	      else            res.push_back((*it).value);
+	      res.push_back((*it).x-float(int(nx/2)));
+	      if(img_dim >1) {
+		res.push_back((*it).y-float(int(ny/2)));
+		if(nz>1)   res.push_back((*it).z-float(nz/2));
+	      }
+	    }
+	  }
+	  res.insert(res.begin(),1,img_dim);
 	} else {
-		res.push_back(buf(0,0,0));
-		res.insert(res.begin(),1,0.0);
+	  // no peak list. build empty list
+	  res.push_back(buf(0,0,0));
+	  res.insert(res.begin(),1,0.0);
 	}
+
+	// return results list
 	return res;
 }	
 	  
@@ -4187,73 +4199,149 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 #undef R
 #undef C
 
+
+// reworked peak_ccf uses max queue lenght for peak objects, i.e. lowest
+//    peaks are deleted if queue length is exceeded and a new peak is inserted
+//    instead.
 		
+
 vector<float> EMData::peak_ccf(float hf_p)
 {   
-	EMData & buf = *this;
-	vector<Pixel> peaks;
-	int half=int(hf_p);
-	float hf_p2 = hf_p*hf_p;
-	int i,j;
-	int i__1,i__2;
-	int j__1,j__2;
-	vector<float>res;
-	int nx = buf.get_xsize()-half;
-	int ny = buf.get_ysize()-half; 
-	for(i=half; i<=nx; ++i) {
-		i__1 = i-1;	
- 		i__2 = i+1;
-		for (j=half;j<=ny;++j) {
-			j__1 = j-1;
-			j__2 = j+1;
-			if((buf(i,j)>0.0f)&&buf(i,j)>buf(i,j__1)) {
-			 if(buf(i,j)>buf(i,j__2)) {
-			  if(buf(i,j)>buf(i__1,j)) {
-			   if(buf(i,j)>buf(i__2,j)) {
-			    if(buf(i,j)>buf(i__1,j__1)) {
-			     if((buf(i,j))> buf(i__1,j__2)) {
-			      if(buf(i,j)>buf(i__2,j__1)) {
-			       if(buf(i,j)> buf(i__2,j__2)) {
-				if (peaks.size()==0) {
-					peaks.push_back(Pixel(i,j,0,buf(i,j)));
-				} else {
-					bool not_overlap = true;
-					int  size = peaks.size();
-					for ( int kk= 0; kk< size; kk++) {
-						vector<Pixel>::iterator it = peaks.begin()+kk;
-						float radius=((*it).x-float(i))*((*it).x-float(i))+((*it).y-float(j))*((*it).y-float(j));															   
-						if (radius <= hf_p2 ) {
-							not_overlap = false;
-							if( buf(i,j) > (*it).value) {
-									(*it).x = -half; // this marks entry to be deleted
-							} else {
-									not_overlap=false;
-									break;
-							}
-						}
-					}
-					for ( int kk= size-1; kk>=0; kk--) {
-						vector<Pixel>::iterator it = peaks.begin()+kk;
-						if((*it).x < 0) peaks.erase(it);
-					}
-					if(not_overlap)  peaks.push_back(Pixel(i,j,0,buf(i,j)));
-				}
-			       }
-			}}}}}}}
-		}
-	}
-	if(peaks.size()>0) {
-		sort(peaks.begin(),peaks.end(), peakcmp);
-		for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++) {
-			res.push_back((*it).value);
-			res.push_back(static_cast<float>((*it).x));
-			res.push_back(static_cast<float>((*it).y));
-		}
-	} else {
-		res.push_back(buf(0,0,0));
- 		res.insert(res.begin(),1,0.0);
-	}
-	return res;
+
+  cout << "peak ccf starting up" << endl;
+
+  EMData & buf = *this;
+  vector<Pixel> peaks;
+  int half=int(hf_p);
+  float hf_p2 = hf_p*hf_p;
+  int i,j;
+  int i__1,i__2;
+  int j__1,j__2;
+  vector<float>res;
+  int nx = buf.get_xsize()-half;
+  int ny = buf.get_ysize()-half; 
+  // iterate over image
+  for(i=half; i<=nx; ++i) {
+    // static assignment so we don't have to re-evaluate
+    i__1 = i-1;	
+    i__2 = i+1;
+    for (j=half;j<=ny;++j) {
+      j__1 = j-1;
+      j__2 = j+1;
+      
+      if((buf(i,j)>0.0f)&&buf(i,j)>buf(i,j__1)) {
+	if(buf(i,j)>buf(i,j__2)) {
+	  if(buf(i,j)>buf(i__1,j)) {
+	    if(buf(i,j)>buf(i__2,j)) {
+	      if(buf(i,j)>buf(i__1,j__1)) {
+		if((buf(i,j))> buf(i__1,j__2)) {
+		  if(buf(i,j)>buf(i__2,j__1)) {
+		    if(buf(i,j)> buf(i__2,j__2)) {
+		      
+		      // found a peak
+		      // empty list?
+		      if (peaks.size()==0) {
+			// yes, so just push the peak onto the list
+			peaks.push_back(Pixel(i,j,0,buf(i,j)));
+			
+		      } else {
+			// not empty list. check neighbourhood for peaks
+			// logical not in the name is awkward. renamed to overlap
+			bool overlap = false;
+			//int  size = peaks.size();
+			
+			// list of peaks to be deleted, if the current peak is the largest (see below).
+			//    list contains iterators to the original list, which will have to be processed
+			//    back to front (i.e. LIFO: stl::stack)
+			std::stack <vector<Pixel>::iterator> delete_stack;
+
+			// loop over all peaks found so far. this would be nicer with iterators
+			for (vector<Pixel>::iterator it=peaks.begin();it!=peaks.end();++it) {
+			// for ( int kk= 0; kk< size; kk++) {
+			//  vector<Pixel>::iterator it = peaks.begin()+kk;
+
+			  // calc L2 distance
+			  float radius=((*it).x-float(i))*((*it).x-float(i))+((*it).y-float(j))*((*it).y-float(j));
+			  if (radius <= hf_p2 ) {
+			    // peaks overlap
+			    if( buf(i,j) > (*it).value) {
+			      // this peak (indexed by (i,j)) is larger, mark the old for deletion
+			      //    however, we have to be careful. if there is a larger peak within the vicinity of
+			      //    the new one, this new peak is not marked as such, and the deletion of prior low
+			      //    peaks should not continued. to make sure this deletion does not happen, we have
+			      //    to make sure we cycle through all peaks within the vicinity, and only delete smaller
+			      //    peaks if this new one is the largest in the vicinity.
+			      delete_stack.push(it);
+				
+			      //(*it).x = -half; // this marks entry to be deleted, since it's smaller than the new one
+			      
+
+			    } else {
+			      overlap = true;
+			      // old peak is larger, ignore this one. since it's enough to know there is some peak larger
+			      //    than this one, we can break out of the peak list loop, instead of continuing.
+			      break;
+			    }
+			  }
+			}
+			
+			// check whether we need to delete anything. this is marked by the flag overlap == false
+			// loop over all peaks and clean out redundant ones
+			if (false == overlap) {
+			  vector<Pixel>::iterator delete_iterator;
+			  while (not(delete_stack.empty())) {
+			    // pop empties the stack from the back. since we are dealing with iterators, we need to delete
+			    //    from the back, so as to keep the rest stack intact upon deletion.
+			    delete_iterator = delete_stack.top();
+			    peaks.erase(delete_iterator);
+			    delete_stack.pop();
+			  }
+			  // before pushing the peak, we need to check whether max queue length is exceeded and delete
+			  //     peaks if necessary.
+			  // XXX: remove hardcoded value!
+			  if (! (peaks.size() < 2000 )) {
+			    
+			    //cout << ".";
+			    // we need to delete a peak first.
+			    // - resort list to get lowest peak at the back
+			    sort(peaks.begin(), peaks.end(), peakcmp);
+			    
+			    // - remove lowest peak
+			    peaks.pop_back();
+			  }
+
+			  // push the new peak onto the list of peaks
+			  peaks.push_back(Pixel(i,j,0,buf(i,j)));
+			  //cout << "done." << endl;
+
+			} else {
+			  // this peak too small and is ignored, so delete_list is ignored as well. make sure delete_list 
+			  //    is empty. probably redundant because of scope, but better safe than sorry.....
+			  while (not(delete_stack.empty())) delete_stack.pop();
+			}
+		      }
+		    }
+		  }}}}}}}
+    }
+  }
+
+  // we have peaks, so build a results vector.
+  if(peaks.size()>0) {
+    // sort peaks by size
+    sort(peaks.begin(),peaks.end(), peakcmp);
+    // and push all peaks to the results vector
+    for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++) {
+      // XXX: this format is necessary for Boost to work???
+      res.push_back((*it).value);
+      res.push_back(static_cast<float>((*it).x));
+      res.push_back(static_cast<float>((*it).y));
+    }
+  } else {
+    // only one or zero (?) entries
+    res.push_back(buf(0,0,0));
+    res.insert(res.begin(),1,0.0);
+  }
+  return res;
 }
 
 EMData* EMData::get_pow(float n_pow)
