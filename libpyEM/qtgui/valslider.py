@@ -110,11 +110,11 @@ class ValSlider(QtGui.QWidget):
 	def getRange(self): return self.range
 
 	def setValue(self,val,quiet=0):
-		#if val <= self.range[0]:
-			#self.range[0] -= 2.0*(self.range[0]-val)
+		if val <= self.range[0]:
+			self.range[0] = val
 			#self.updates()
-		#if val >= self.range[1]:
-			#self.range[1] += 2.0*(val-self.range[1])
+		if val >= self.range[1]:
+			self.range[1] = val
 			#self.updates()
 		
 		if self.intonly : 
