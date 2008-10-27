@@ -650,6 +650,21 @@ def test_boxing_image(window_size=(128,128),image_size=(4096,4096),n=100):
 	
 	return ret
 
+def test_image_array(subim,size=(0,0),n_array=(1,1)):
+	"""This will build a packed array of 2-D images (subim) into a new
+image of the specified size. The number of subimages in X and y can be 
+independently defined. This is useful for making simulated 2-D crystals
+(with an orthogonal geometry). Size will default to just fit the specified
+number of subimages"""
+	if size==(0,0): size=(subim.get_xsize()*n_array[0],subim.get_ysize()*n_array[1])
+
+	out=EMData(*size)
+	
+	for x in range(n_array[0]):
+		for y in range(n_array[1]):
+			out.insert_clip(subim,(size[0]/2+int((x-n_array[0]/2.0)*subim.get_xsize()),size[1]/2+int((y-n_array[1]/2.0)*subim.get_ysize())))
+
+	return out
 	
 def test_image(type=0,size=(128,128)):
 	"""Returns a simple standard test image
