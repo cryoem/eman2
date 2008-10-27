@@ -49,99 +49,97 @@ try:
 	from PyQt4.QtCore import Qt
 	import threading
 	from IPython.Shell import *
-
-
+	from emapplication import EMStandAloneApplication
 
 	class IPShellQt4a(threading.Thread):
-		"""Run a Qt event loop in a separate thread.
+	      """Run a Qt event loop in a separate thread.
 
-		Python commands can be passed to the thread where they will be executed.
-		This is implemented by periodically checking for passed code using a
-		Qt timer / slot."""
+	      Python commands can be passed to the thread where they will be executed.
+	      This is implemented by periodically checking for passed code using a
+	      Qt timer / slot."""
 
-		TIMEOUT = 100 # Millisecond interval between timeouts.
+	      TIMEOUT = 100 # Millisecond interval between timeouts.
 
-		def __init__(self,argv=None,user_ns=None,user_global_ns=None,
-					debug=0,shell_class=MTInteractiveShell):
+	      def __init__(self,argv=None,user_ns=None,user_global_ns=None,
+	      			debug=0,shell_class=MTInteractiveShell):
 
-			from PyQt4 import QtGui
+	      	from PyQt4 import QtGui
 
-			#class newQApplication2:
-				#def __init__( self ):
-					#self.QApplication = QtGui.QApplication
+	      	#class newQApplication2:
+	      		#def __init__( self ):
+	      			#self.QApplication = QtGui.QApplication
 
-				#def __call__( *args, **kwargs ):
-					#return QtGui.qApp
+	      		#def __call__( *args, **kwargs ):
+	      			#return QtGui.qApp
 
-				#def exec_loop( *args, **kwargs ):
-					#pass
+	      		#def exec_loop( *args, **kwargs ):
+	      			#pass
 
-				#def __getattr__( self, name ):
-					#return getattr( self.QApplication, name )
+	      		#def __getattr__( self, name ):
+	      			#return getattr( self.QApplication, name )
 
-			self.app = EMStandAloneApplication()
-			QtGui.QApplication = self.app.get_app()
+	      	self.app = EMStandAloneApplication()
 
-			# Allows us to use both Tk and QT.
-			self.tk = get_tk()
+	      	QtGui.QApplication = self.app.get_app()
 
-			self.IP = make_IPython(argv,user_ns=user_ns,
-								user_global_ns=user_global_ns,
-								debug=debug,
-								shell_class=shell_class,
-								on_kill=[QtGui.qApp.exit])
+	      	# Allows us to use both Tk and QT.
+	      	self.tk = get_tk()
 
-			# HACK: slot for banner in self; it will be passed to the mainloop
-			# method only and .run() needs it.  The actual value will be set by
-			# .mainloop().
-			self._banner = None
+	      	self.IP = make_IPython(argv,user_ns=user_ns,
+	      						user_global_ns=user_global_ns,
+	      						debug=debug,
+	      						shell_class=shell_class,
+	      						on_kill=[QtGui.qApp.exit])
 
-			threading.Thread.__init__(self)
-	    
-		def get_app(self):
-			return self.app
-		
-		def run(self):
-			self.IP.runlines("from EMAN2 import *\n")
-			self.IP.runlines("from sparx import *\n")
-			self.IP.runlines("from emimage import *\n")
-			self.IP.mainloop(self._banner)
-			self.IP.kill()
+	      	# HACK: slot for banner in self; it will be passed to the mainloop
+	      	# method only and .run() needs it.  The actual value will be set by
+	      	# .mainloop().
+	      	self._banner = None
 
-		def mainloop(self,sys_exit=0,banner=None):
+	      	threading.Thread.__init__(self)
 
-			from PyQt4 import QtCore, QtGui
+	      def get_app(self):
+	      	return self.app
 
-			self._banner = banner
+	      def run(self):
+	      	self.IP.runlines("from EMAN2 import *\nfrom emimage import *\n")
+	      	self.IP.mainloop(self._banner)
+	      	self.IP.kill()
 
-			if QtGui.QApplication.startingUp():
-				a = QtGui.QApplication.QApplication(sys.argv)
-			self.timer = QtCore.QTimer()
-			QtCore.QObject.connect( self.timer, QtCore.SIGNAL( 'timeout()' ), self.on_timer )
+	      def mainloop(self,sys_exit=0,banner=None):
 
-			self.start()
-			self.timer.start( self.TIMEOUT )
-			while True:
-				if self.IP._kill: break
-				QtGui.qApp.exec_()
-			self.join()
+	      	from PyQt4 import QtCore, QtGui
 
-		def on_timer(self):
-			update_tk(self.tk)
-			result = self.IP.runcode()
-			imageupdate()
-			self.timer.start( self.TIMEOUT )
-			return result
+	      	self._banner = banner
+
+	      	if QtGui.QApplication.startingUp():
+	      		a = QtGui.QApplication.QApplication(sys.argv)
+	      	self.timer = QtCore.QTimer()
+	      	QtCore.QObject.connect( self.timer, QtCore.SIGNAL( 'timeout()' ), self.on_timer )
+
+	      	self.start()
+	      	self.timer.start( self.TIMEOUT )
+	      	while True:
+	      		if self.IP._kill: break
+	      		QtGui.qApp.exec_()
+	      	self.join()
+
+	      def on_timer(self):
+	      	update_tk(self.tk)
+	      	result = self.IP.runcode()
+	      	image_update()
+	      	self.timer.start( self.TIMEOUT )
+	      	return result
 
 
 	if __name__ == "__main__":
-		
+
 		EMAN2.GUIMode=True
-		
+
 		sh=IPShellQt4a()
 		EMAN2.app = sh.get_app()
+		#    app = get_app()
 		sh.mainloop(banner="Welcome to GUI "+SPARXVERSION)
-
 
 except:
 	try:
