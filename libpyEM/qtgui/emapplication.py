@@ -62,6 +62,9 @@ class EMGUIModule:
 
 		if ensure_gl_context and application != None:
 			application.ensure_gl_context(self)
+			
+	def is_visible(self):
+		return self.qt_context_parent.isVisible()
 		
 	def set_app(self,application): self.application = application
 	def get_app(self): return self.application

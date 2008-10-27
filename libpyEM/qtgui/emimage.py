@@ -50,13 +50,13 @@ from copy import deepcopy
 
 
 
-GLUT.glutInit(sys.argv )
+GLUT.glutInit(sys.argv ) # is this really necessary ?
 
 
 def image_update():
 	for i in EMImage2DModule.allim.keys():
 		try:
-			if i.data.get_changecount() !=i.get_last_render_image_display_count() :
+			if i.is_visible() and i.data.get_changecount() !=i.get_last_render_image_display_count() :
 				i.force_display_update()
 				i.force_fft_redo()
 				i.updateGL()
@@ -64,19 +64,22 @@ def image_update():
 	
 	for i in EMImageMXModule.allim.keys():
 		try:
-			if i.data[0].get_changecount()!=i.get_last_render_image_display_count() :
+			if i.is_visible() and i.data[0].get_changecount()!=i.get_last_render_image_display_count() :
 				i.force_display_update()
 				i.updateGL()
 		except: pass
 		
 	for i in EMImage3DModule.allim.keys():
 		try:
-			if i.data.get_changecount()!=i.get_last_render_image_display_count() :
+			if i.is_visible() and i.data.get_changecount()!=i.get_last_render_image_display_count() :
 				i.updateGL()
 		except: pass
 	
 	
 def get_app():
+	'''
+	Deprecated
+	'''
 	app=QtGui.QApplication.instance()
 	if not app : app = QtGui.QApplication([])
 	
@@ -91,36 +94,7 @@ def get_app():
 		app.updtimer=tmr
 
 	return app
-		
-#def imageupdate():
-	#for i in EMImage2DModule.allim.keys():
-		#try:
-			#if i.data.get_attr("changecount")!=i.get_last_render_image_display_count() :
-				#i.force_display_update()
-				#i.updateGL()
-		#except: pass
 
-	#for i in EMImage3DWidget.allim.keys():
-		#try:
-			#if i.data.get_attr("changecount")!=i.changec :
-				#i.set_data(i.data)
-		#except: pass
-		
-	#for i in EMImageMXWidget.allim.keys():
-		#try:
-			#if len(i.data)!=i.nimg : i.set_data(i.data)
-		#except:
-			#pass
-		#upd=0
-		#try:
-			#for j in i.changec.keys():
-				#try:
-					#if j.get_attr("changecount")!=i.changec[j] :
-						#upd=1
-						#break
-				#except: pass
-		#except: pass
-		#if upd : i.set_data(i.data)
 
 class EMImageModule(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
@@ -169,6 +143,7 @@ class EMImageModule(object):
 class EMModuleFromFile(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMDisplay class,
 	using only a file name as input. Can force plot and force 2d display, also.
+	Used by embrowse.py
 	"""
 	def __new__(cls,filename,application,force_plot=False,force_2d=False):
 		

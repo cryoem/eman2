@@ -968,8 +968,11 @@ class EMImage2DModule(EMGUIModule):
 		
 		return False
 
+	
+
 	def render(self):
 		if not self.data and not self.fft : return
+		if not self.is_visible(): return
 		if self.init_gl_flag: self.initializeGL()
 		
 		try:
