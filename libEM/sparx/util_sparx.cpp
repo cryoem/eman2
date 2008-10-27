@@ -3777,18 +3777,18 @@ vector<float> Util::cml_line_in3d_full(const vector<float>& Ori){
     return cml;
 }
 
-vector<float> Util::cml_line_in3d_iagl(const vector<float>& Ori, float phi, float theta, int iprj){
+vector<double> Util::cml_line_in3d_iagl(const vector<float>& Ori, float phi, float theta, int iprj){
     int nprj = Ori.size() / 4;
     int nlines = (nprj-1)*nprj/2;
-    vector<float> cml(2*nlines); // [phi, theta] / line
+    vector<double> cml(2*nlines); // [phi, theta] / line
     float ph1 = 0.0;
     float th1 = 0.0;
     float ph2 = 0.0;
     float th2 = 0.0;
-    float nx = 0.0;
-    float ny = 0.0;
-    float nz = 0.0;
-    float norm = 0.0;
+    double nx = 0.0;
+    double ny = 0.0;
+    double nz = 0.0;
+    double norm = 0.0;
 
     int ct = 0;
     for(int i=0; i<(nprj-1); i++){
@@ -3828,7 +3828,7 @@ vector<float> Util::cml_line_in3d_iagl(const vector<float>& Ori, float phi, floa
 	    else{
 		cml[ct]=asin(ny/sin(cml[ct+1]));
 		cml[ct+1]=cml[ct+1]*rad_deg;
-		cml[ct]=((int(cml[ct]*rad_deg*100)+36000)%36000)/100.0;
+		cml[ct]=((int(cml[ct]*rad_deg*100000)+36000000)%36000000)/100000.0;
 	    }
 	    ct++;
 	    ct++;
@@ -3852,8 +3852,9 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 	if(ocp_same[i]==-1){
 	    ocp_same[i] = num_agl;
 	    for(int j=i+1; j<nlines; j++){
-		if(ocp_same[i]==-1){
-		    dist = (cml[2*i]-cml[2*j])*(cml[2*i]-cml[2*j])+(cml[2*i+1]-cml[2*j+1])*(cml[2*i+1]*cml[2*j+1]);
+		if(ocp_same[j]==-1){
+		    dist = (cml[2*i]-cml[2*j])*(cml[2*i]-cml[2*j])+(cml[2*i+1]-cml[2*j+1])*(cml[2*i+1]-cml[2*j+1]);
+		    //cout<<i<<" "<<j<<" "<<dist<<endl;
 		    if(dist<tol){ocp_same[j] = num_agl;}
 		}
 	    }

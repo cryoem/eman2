@@ -438,7 +438,7 @@ class FakeKaiserBessel : public KaiserBessel {
 
         static vector<float> cml_line_in3d_full(const vector<float>& Ori);
 
-        static vector<float> cml_line_in3d_iagl(const vector<float>& Ori, float phi, float theta, int iprj);
+        static vector<double> cml_line_in3d_iagl(const vector<float>& Ori, float phi, float theta, int iprj);
 
         static vector<double> cml_weights(const vector<float>& cml);
       
