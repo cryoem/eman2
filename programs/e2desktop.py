@@ -852,6 +852,11 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		
 	def attach_child(self,child):
 		#print "attached child", child
+		if len(self.children) == self.rows*self.columns:
+			print "too many children"
+			child.closeEvent(None)
+			return
+		
 		EMGLViewContainer.attach_child(self,child)
 		self.transformers.append([])
 		self.first_draw.append(child)
@@ -1357,6 +1362,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 
 		if len(self.selected_objects) > 1:
 			master = self.selected_objects[0]
+			#print "set master slave"
+			master.set_events_master(True)
 			for i in range(1,len(self.selected_objects)):
 				object = self.selected_objects[i]
 				
