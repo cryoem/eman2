@@ -36,6 +36,8 @@ import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 
+
+
 class Animator:
 	'''
 	Register Animatables with this class

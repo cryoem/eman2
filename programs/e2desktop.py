@@ -281,7 +281,6 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			
 		return False
 			
-			
 class Translation:
 	def __init__(self,child):
 		self.child = child
@@ -402,6 +401,87 @@ class Scale:
 		else:
 			self.rotation_animation = None 
 			return False
+		
+#class XScale:
+	#def __init__(self,child):
+		#self.child = child
+		#self.rotation_animation = None
+		#self.r1 = None
+		#self.r2 = None
+		#self.rotation = None
+
+	#def __del__(self):
+		#if self.rotation_animation != None:
+			#self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+			#self.rotation_animation = None
+	
+	#def animation_done_event(self,child):
+		#self.child.unlock_texture()
+	
+	#def get_rotation(self):
+		#return self.rotation
+		
+	#def seed_rotation_animation(self,r1,r2):
+		#self.rotation = r1
+		#self.r1 = r1
+		#self.r2 = r2
+		#animation = SingleValueIncrementAnimation(self,r1,r2)
+		
+		#self.rotation_animation = animation
+		#EMDesktop.main_widget.register_animatable(animation)
+		#self.child.lock_texture()
+	
+	#def set_animation_increment(self,value):
+		#self.rotation = value
+	
+	#def transform(self):
+		#if self.rotation_animation != None and self.rotation_animation.is_animated() :
+			#glScale(self.rotation,1.0,1.0)
+			#return True
+		#else:
+			#self.rotation_animation = None 
+			#return False
+		
+#class YScale:
+	#def __init__(self,child):
+		#self.child = child
+		#self.rotation_animation = None
+		#self.r1 = None
+		#self.r2 = None
+		#self.rotation = None
+
+	#def __del__(self):
+		#if self.rotation_animation != None:
+			#self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
+			#self.rotation_animation = None
+	
+	#def animation_done_event(self,child):
+		#self.child.unlock_texture()
+	
+	#def get_rotation(self):
+		#return self.rotation
+		
+	#def seed_rotation_animation(self,r1,r2):
+		#self.rotation = r1
+		#self.r1 = r1
+		#self.r2 = r2
+		#animation = SingleValueIncrementAnimation(self,r1,r2)
+		
+		#self.rotation_animation = animation
+		#EMDesktop.main_widget.register_animatable(animation)
+		#self.child.lock_texture()
+	
+	#def set_animation_increment(self,value):
+		#self.rotation = value
+	
+	#def transform(self):
+		#if self.rotation_animation != None and self.rotation_animation.is_animated() :
+			#glScale(1.0,self.rotation,1.0)
+			#return True
+		#else:
+			#self.rotation_animation = None 
+			#return False
+
 
 class EMPlainDisplayFrame(EMGLViewContainer):
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
@@ -409,10 +489,15 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		
 		self.first_draw = []
 		self.transformers = []
-		self.invisible_boundary = 5
+		self.invisible_boundary = 20
 		
-		self.rows = 1
-		self.columns = 1
+		self.rows = 2
+		self.columns = 2
+		
+		self.glbasicobjects = EMBasicOpenGLObjects()
+		self.glbasicobjects.getCylinderDL()
+		
+		self.draw_grid = True
 		
 	def num_rows(self):	return self.rows
 	
@@ -421,8 +506,59 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 	def set_num_rows(self,rows): self.rows = rows
 	def set_num_cols(self,cols): self.columns = cols
 	
+	def show_grid(self,val):
+		#print "setting val",val
+		self.draw_grid = val
+	
 	def apply_row_col(self,cols):
-		print "soon"
+		if len(self.children) > self.rows*self.columns:
+			print "can't do that, there are too many children"
+			
+		else:
+			r = 0
+			c = 0
+			optimal_width = self.width()/self.columns
+			optimal_height = self.height()/self.rows
+			child_width = optimal_width-2*self.invisible_boundary
+			child_height = optimal_height-2*self.invisible_boundary
+			for i,child in enumerate(self.children):
+				t = Translation(child)
+				old_pos = child.get_position()
+				new_pos = [ c*(optimal_width)+self.invisible_boundary,self.height()-(r+1)*(optimal_height)+self.invisible_boundary,0]
+				trans = [ old_pos[j]-new_pos[j] for j in range(3)]
+				
+				t.seed_translation_animation(trans,(0,0,0))
+				child.set_position(*new_pos)
+				
+				self.transformers[i].append(t)
+				
+				c += 1
+				if c == self.columns:
+					c = 0
+					r += 1
+				
+				#size = child.get_lr_bt_nf()
+				child.resize(child_width,child_height)
+				
+				#width_scale = child_width/float(size[1]-size[0])
+				#if width_scale != 1:
+					#s = XScale(child)
+					#s.seed_rotation_animation(width_scale,1)
+					#self.transformers[i].append(s)
+				
+				#height_scale = child_height/float(size[3]-size[2])
+				#if height_scale !=1:
+					#x = YScale(child)
+					#s.seed_rotation_animation(height_scale,1)
+					#self.transformers[i].append(s)
+				#
+				
+				#
+				##r.seed_rotation_animation(0,1)
+				##self.transformers[len(self.transformers)-1].append(r)
+				##t = Translation(child)
+				##t.seed_translation_animation((0,0,-300),(0,0,0))
+				##self.transformers[len(self.transformers)-1].append(t)
 		
 	def clear_all(self):
 		for child in self.children:
@@ -442,11 +578,11 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		for i,child in enumerate(self.children):
 			#print "drawing child",child,child.width(),child.height()
 			if child in self.first_draw:
-				optimal_width = self.width()/self.columns
-				optimal_height = self.height()/self.rows
-		
-				child.resize(optimal_width-self.invisible_boundary,optimal_height-self.invisible_boundary)
-				self.introduce_child(child)
+				#optimal_width = self.width()/self.columns
+				#optimal_height = self.height()/self.rows
+				## FIXME
+				#child.resize(optimal_width-2*self.invisible_boundary,optimal_height-2*self.invisible_boundary)
+				self.introduce_child_2(child)
 			glPushMatrix()
 			if self.transformers[i] != None: 
 				for j,transformer in enumerate(self.transformers[i]):
@@ -456,152 +592,266 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 			child.draw()
 			glPopMatrix()
 		glPopMatrix()
-	
+		
+		optimal_width = self.width()/self.columns
+		optimal_height = self.height()/self.rows
+		
+		
+		if self.draw_grid:
+			for row in range(self.rows+1):
+				
+				glPushMatrix()
+				glTranslate(*self.get_origin())
+				glTranslate(0,row*optimal_height,0)
+				glRotate(90,0,1,0)
+				glScaled(1.0,1.0,self.width())
+				glCallList(self.glbasicobjects.getCylinderDL())
+				glPopMatrix()
+				
+			for col in range(self.columns+1):
+				
+				glPushMatrix()
+				glTranslate(*self.get_origin())
+				glTranslate(col*optimal_width,0,0)
+				glRotate(-90,1,0,0)
+				glScaled(1.0,1.0,self.height())
+				glCallList(self.glbasicobjects.getCylinderDL())
+				glPopMatrix()
+
 		self.first_draw = []
 	
-	def introduce_child(self,child):
-		child.set_position(0,self.height()-child.height_inc_border(),0)
+	def find_open_position(self,new_child):
+		optimal_width = self.width()/self.columns
+		optimal_height = self.height()/self.rows
+		
+		available = [i for i in range(self.columns*self.rows)]
+		
+		rm = []
+		for child in self.children:
+			if child == new_child: continue
+			position = child.get_position()
+			#print position
+			left = position[0]
+			right =  left + child.width_inc_border()
+			
+			x_min_idx = left/optimal_width
+			x_max_idx = float(right)/optimal_width
+			#print "x s", x_min_idx, x_max_idx
+			if x_max_idx != int(x_max_idx): x_max_idx = ceil(x_max_idx) # this is usually the case
+			x_max_idx = int(x_max_idx)
+		
+			bottom = position[1]
+			top = bottom + child.height_inc_border()
+			#print "lr bt",left,right,bottom,top
+			#print "hieghts", child.height_inc_border(),optimal_height
+			y_min_idx = bottom/optimal_height
+			y_max_idx = float(top)/optimal_height
+			#print y_max_idx
+			if y_max_idx != int(y_max_idx): y_max_idx = ceil(y_max_idx) # this is usually the case
+			y_max_idx = int(y_max_idx)
+			#print "prior inversion",(y_min_idx,y_max_idx)
+			# screen opposite axis adjustment
+			y_min_idx = self.rows - y_min_idx
+			y_max_idx = self.rows - y_max_idx
+			
+			#print (x_min_idx,x_max_idx),(y_min_idx,y_max_idx)
+			for x in range(x_min_idx,x_max_idx):
+				for y in range(y_max_idx,y_min_idx):
+					idx = y*self.columns + x
+					if idx not in rm:
+						rm.append(idx)
+						#print "appended",idx
+					
+		
+		#print "removing",rm
+		rm.sort()
+		rm.reverse()
+		for r in rm: available.pop(r)
+		
+		#print "available",available
+		
+		if len(available) == 0: return None
+		else: return available[0]
+				
+	
+	def introduce_child_2(self,child):
+		position = self.find_open_position(child)
+		#print "position is", position
+		
+		if position == None:
+			#print "no position available"
+			return
+		
+		optimal_width = self.width()/self.columns
+		optimal_height = self.height()/self.rows
+
+		child.resize(optimal_width-2*self.invisible_boundary,optimal_height-2*self.invisible_boundary)
+		
+		if position != 0: col = position % self.columns
+		else: col = 0
+		row = position / self.columns
+		
+		child.set_position(col*(optimal_width)+self.invisible_boundary,self.height()-(row+1)*(optimal_height)+self.invisible_boundary,0)
+		#print "child position is", child.get_position()
 		r = Scale(child)
 		r.seed_rotation_animation(0,1)
+		
 		self.transformers[len(self.transformers)-1].append(r)
 		t = Translation(child)
 		t.seed_translation_animation((0,0,-300),(0,0,0))
 		self.transformers[len(self.transformers)-1].append(t)
+	
+	#def introduce_child(self,child):
+		#position = self.find_open_position()
+		#print "the first available position is",position
 		
-		#print "animating and ignoring",child
-		self.ignore_list = [child]
-		self.check_translation_anim(child)
+		#child.set_position(0,self.height()-child.height_inc_border(),0)
+		#r = Scale(child)
+		#r.seed_rotation_animation(0,1)
+		#self.transformers[len(self.transformers)-1].append(r)
+		#t = Translation(child)
+		#t.seed_translation_animation((0,0,-300),(0,0,0))
+		#self.transformers[len(self.transformers)-1].append(t)
 		
-	def check_translation_anim(self,child):
+		##print "animating and ignoring",child
+		##print "primo seeding translation animation"
+		#self.ignore_list = [child]
+		#self.check_translation_anim(child)
 		
-		child_position = child.get_position() # should be called "get origin"
-		child_left = child_position[0]
-		#child_right = child_left + child.width_inc_border()+self.invisible_boundary
-		child_bottom = child_position[1]
-		#child_top = child_bottom + child.height_inc_border()+self.invisible_boundary
-		recursion = []
-		left_recall = []
-		idx_recall = []
-		child_left = child.get_position()[0]
-		if len(self.children) != 1:
-			for i,child_ in enumerate(self.children):
-				if child_ == child: continue
+	
+	#def check_translation_anim(self,child):
+		
+		
+		##self.path_seek()
+		
+		#child_position = child.get_position() # should be called "get origin"
+		#child_left = child_position[0]
+		##child_right = child_left + child.width_inc_border()+self.invisible_boundary
+		#child_bottom = child_position[1]
+		##child_top = child_bottom + child.height_inc_border()+self.invisible_boundary
+		#recursion = []
+		#left_recall = []
+		#idx_recall = []
+		#child_left = child.get_position()[0]
+		#if len(self.children) != 1:
+			#for i,child_ in enumerate(self.children):
+				#if child_ == child: continue
 				
-				if child_ in self.ignore_list:
-					continue
+				#if child_ in self.ignore_list:
+					#continue
 					
-				position = child_.get_position()
-				left = position[0]
+				#position = child_.get_position()
+				#left = position[0]
 
-				if self.intersection(child,child_):
-					recursion.append(child_)
-					left_recall.append(left)
-					idx_recall.append(i)
-					if self.space_below(child_,child_bottom):
-						t = self.down_animation(child,child_)
-						self.transformers[i].append(t)
-					else:
-						t = self.right_animation(child,child_)
-						self.transformers[i].append(t)
-					self.ignore_list.append(child_)
+				#if self.intersection(child,child_):
+					#recursion.append(child_)
+					#left_recall.append(left)
+					#idx_recall.append(i)
+					#if self.space_below(child_,child_bottom):
+						#print "down animation, child location is", position
+						#t = self.down_animation(child,child_)
+						#self.transformers[i].append(t)
+					#else:
+						#print "right animation, child location is", position
+						#t = self.right_animation(child,child_)
+						#self.transformers[i].append(t)
+					#self.ignore_list.append(child_)
 		
-		for i in range(len(recursion)):
-			for j in range(i+1,len(recursion)):
-				c1 = recursion[i]
-				c2 = recursion[j]
-				if self.intersection(c1,c2):
-					l1 = left_recall[i]
-					l2 = left_recall[j]
-					idx = idx_recall[j]
+		##for i in range(len(recursion)):
+			##for j in range(i+1,len(recursion)):
+				##c1 = recursion[i]
+				##c2 = recursion[j]
+				##if self.intersection(c1,c2):
+					##l1 = left_recall[i]
+					##l2 = left_recall[j]
+					##idx = idx_recall[j]
 					
-					if l1 > l2:
-						c1,c2 = c2,c1
-						idx = idx_recall[i]
+					##if l1 > l2:
+						##c1,c2 = c2,c1
+						##idx = idx_recall[i]
 					
-					t = self.right_animation(c1,c2)
-					self.transformers[idx].append(t)
+					##t = self.right_animation(c1,c2)
+					##self.transformers[idx].append(t)
 		
-		for c in recursion: 
-			self.check_translation_anim(c)
+		#for c in recursion: 
+			#self.check_translation_anim(c)
 	
 	
-	def right_animation(self,c1,c2):
-		child_position = c1.get_position() # should be called "get origin"
-		child_left = child_position[0]
-		child_right = child_left+c1.width_inc_border()+5
-		position = c2.get_position()
-		left = position[0]
-		delta = child_right-left
-		t = Translation(c2)
-		c2.increment_position(delta,0,0)
-		t.seed_translation_animation((-delta,0,0),(0,0,0))
-		return t
+	#def right_animation(self,c1,c2):
+		#child_position = c1.get_position() # should be called "get origin"
+		#child_left = child_position[0]
+		#child_right = child_left+c1.width_inc_border()+5
+		#position = c2.get_position()
+		#left = position[0]
+		#delta = child_right-left
+		#t = Translation(c2)
+		#c2.increment_position(delta,0,0)
+		#t.seed_translation_animation((-delta,0,0),(0,0,0))
+		#return t
 	
-	def down_animation(self,c1,c2):
-		child_position = c1.get_position() # should be called "get origin"
-		child_bottom = child_position[1]
-		position = c2.get_position()
-		top = position[1] + c2.height_inc_border()+5
-		delta = child_bottom - top
-		t = Translation(c2)
-		c2.increment_position(0,delta,0)
-		t.seed_translation_animation((0,-delta,0),(0,0,0))
-		return t
+	#def down_animation(self,c1,c2):
+		#child_position = c1.get_position() # should be called "get origin"
+		#child_bottom = child_position[1]
+		#position = c2.get_position()
+		#top = position[1] + c2.height_inc_border()+5
+		#delta = child_bottom - top
+		#t = Translation(c2)
+		#c2.increment_position(0,delta,0)
+		#t.seed_translation_animation((0,-delta,0),(0,0,0))
+		#return t
 	
-	def space_below(self,child,down_shift):
-		child_position = child.get_position() #
-		child_bottom = child_position[1] - down_shift
-		if child_bottom < 0: return False
-		if len(self.children) != 1:
-			for i,child_ in enumerate(self.children):
-				if child_ == child: continue
+	#def space_below(self,child,down_shift):
+		#child_position = child.get_position() #
+		#child_bottom = child_position[1] - child.height_inc_border()+5
+		#print child_bottom, child_position[1],"#"
+		#if child_bottom < 0: return False
+		#else: return True
+		##if len(self.children) != 1:
+			##for i,child_ in enumerate(self.children):
+				##if child_ == child: continue
 				
-				if child_ in self.ignore_list:
-					continue
+				##if child_ in self.ignore_list:
+					##continue
 				
-				if self.intersection_below(child,child_,down_shift):
-					print "intersection below"
-					return False
+				##if self.intersection_below(child,child_,down_shift):
+					##return False
 				
-		return True
+		##return True
 	
-	def intersection_below(self,c1,c2,down_shift):
-		child_position = c1.get_position() # should be called "get origin"
-		child_left = child_position[0]
-		child_right = child_left + c1.width_inc_border()+self.invisible_boundary
-		child_bottom = child_position[1]-down_shift
-		child_top = child_bottom + c1.height_inc_border()+self.invisible_boundary
+	#def intersection_below(self,c1,c2,down_shift):
+		#child_position = c1.get_position() # should be called "get origin"
+		#child_left = child_position[0]
+		#child_right = child_left + c1.width_inc_border()+self.invisible_boundary
+		#child_bottom = child_position[1]-down_shift
+		#child_top = child_bottom + c1.height_inc_border()+self.invisible_boundary
 	
-		position = c2.get_position()
-		left = position[0]
-		right = left + c2.width_inc_border()+self.invisible_boundary
-		bottom = position[1]
-		top = bottom + c2.height_inc_border()+self.invisible_boundary
+		#position = c2.get_position()
+		#left = position[0]
+		#right = left + c2.width_inc_border()+self.invisible_boundary
+		#bottom = position[1]
+		#top = bottom + c2.height_inc_border()+self.invisible_boundary
 
-		if left < child_right and right > child_left and bottom < child_top and top > child_bottom:	return True
-		else: return False
+		#if left < child_right and right > child_left and bottom < child_top and top > child_bottom:	return True
+		#else: return False
 	
-	def intersection(self,c1,c2):
-		child_position = c1.get_position() # should be called "get origin"
-		child_left = child_position[0]
-		child_right = child_left + c1.width_inc_border()+self.invisible_boundary
-		child_bottom = child_position[1]
-		child_top = child_bottom + c1.height_inc_border()+self.invisible_boundary
+	#def intersection(self,c1,c2):
+		#child_position = c1.get_position() # should be called "get origin"
+		#child_left = child_position[0]
+		#child_right = child_left + c1.width_inc_border()+self.invisible_boundary
+		#child_bottom = child_position[1]
+		#child_top = child_bottom + c1.height_inc_border()+self.invisible_boundary
 	
-		position = c2.get_position()
-		left = position[0]
-		right = left + c2.width_inc_border()+self.invisible_boundary
-		bottom = position[1]
-		top = bottom + c2.height_inc_border()+self.invisible_boundary
+		#position = c2.get_position()
+		#left = position[0]
+		#right = left + c2.width_inc_border()+self.invisible_boundary
+		#bottom = position[1]
+		#top = bottom + c2.height_inc_border()+self.invisible_boundary
 
-		if left < child_right and right > child_left and bottom < child_top and top > child_bottom:	return True
-		else: return False
+		#if left < child_right and right > child_left and bottom < child_top and top > child_bottom:	return True
+		#else: return False
 		
 	def attach_child(self,child):
 		#print "attached child", child
-		
-	
-		
 		EMGLViewContainer.attach_child(self,child)
 		self.transformers.append([])
 		self.first_draw.append(child)
@@ -1361,31 +1611,43 @@ class EMBrowserSettingsInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.row_size, QtCore.SIGNAL("valueChanged(int)"), target.set_num_rows)
 		self.hbl.addWidget(self.row_size)
 		
+		
+		self.hbl3 = QtGui.QHBoxLayout()
+		self.hbl3.setMargin(0)
+		self.hbl3.setSpacing(6)
+		self.hbl3.setObjectName("hboxlayout3")
+		self.vbl.addLayout(self.hbl3)
+		
 		self.col_label = QtGui.QLabel("# cols")
 		self.col_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-		self.hbl.addWidget(self.col_label)
+		self.hbl3.addWidget(self.col_label)
 	
 		self.col_size = QtGui.QSpinBox(self)
 		self.col_size.setObjectName("col_size")
 		self.col_size.setRange(1,10)
 		self.col_size.setValue(int(self.target.num_cols()))
 		QtCore.QObject.connect(self.col_size, QtCore.SIGNAL("valueChanged(int)"), target.set_num_cols)
-		self.hbl.addWidget(self.col_size)
+		self.hbl3.addWidget(self.col_size)
 		
-		self.hbl2 = QtGui.QHBoxLayout()
-		self.hbl2.setMargin(0)
-		self.hbl2.setSpacing(6)
-		self.hbl2.setObjectName("hboxlayout2")
-		self.vbl.addLayout(self.hbl2)
+		#self.hbl2 = QtGui.QHBoxLayout()
+		#self.hbl2.setMargin(0)
+		#self.hbl2.setSpacing(6)
+		#self.hbl2.setObjectName("hboxlayout2")
+		#self.vbl.addLayout(self.hbl2)
 		
 		self.apply_button = QtGui.QPushButton("apply")
-		self.hbl2.addWidget(self.apply_button)
+		self.vbl.addWidget(self.apply_button)
 		
 		self.clear_button = QtGui.QPushButton("clear")
-		self.hbl2.addWidget(self.clear_button)
+		self.vbl.addWidget(self.clear_button)
+		
+		self.show_grid = QtGui.QCheckBox("show grid")
+		self.show_grid.setChecked(True)
+		self.vbl.addWidget(self.show_grid)
 
 		QtCore.QObject.connect(self.apply_button, QtCore.SIGNAL("clicked(bool)"), target.apply_row_col)
 		QtCore.QObject.connect(self.clear_button, QtCore.SIGNAL("clicked(bool)"), target.clear_all)
+		QtCore.QObject.connect(self.show_grid, QtCore.SIGNAL("toggled(bool)"), target.show_grid)
 		
 class EMDesktopTaskWidget(EMGLViewContainer):
 	def __init__(self, parent):
@@ -1506,7 +1768,7 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			self.tree_widget_entries = []
 			self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Browse")))
 			#self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Thumb")))
-			self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Box")))
+			#self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Box")))
 			self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 			self.tree_widget.setHeaderLabel("Choose a task")
 			
@@ -1864,13 +2126,13 @@ class BottomWidgetBar(SideWidgetBar):
 		glPopMatrix()
 		
 	def attach_child(self,new_child):
-		print "attached child"
+		#print "attached child"
 		self.transforms = []
 		self.children = []
 		self.transformers.append(BottomWidgetBar.BottomTransform(new_child))
 		EMWindowNode.attach_child(self,new_child)
 		self.reset_scale_animation()
-		print len(self.children)
+		#print len(self.children)
 		#print_node_hierarchy(self.parent)
 
 	class BottomTransform(SideTransform):

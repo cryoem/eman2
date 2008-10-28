@@ -81,9 +81,9 @@ class EMBorderDecoration:
 		self.moving = [-1,-1]
 		self.init_frame_unproject_order()
 		self.corner_sets = []
-		self.bottom_border_height = 6
+		self.bottom_border_height = 10
 		self.top_border_height = 18
-		self.border_width = 6
+		self.border_width = 10
 		self.border_depth = 6
 		
 		try:
@@ -459,18 +459,22 @@ class EMBorderDecoration:
 				if self.current_frame == "bottom_left":
 					self.object.add_width_left(-movement[0])
 					self.object.add_height_bottom(movement[1])
+					self.object.add_depth((movement[1]+movement[0])/2)
 					self.object.updateGL()
 				if self.current_frame == "bottom_right":
 					self.object.add_width_right(movement[0])
 					self.object.add_height_bottom(movement[1])
+					self.object.add_depth((movement[1]+movement[0])/2)
 					self.object.updateGL()
 				if self.current_frame == "top_right":
 					self.object.add_width_right(movement[0])
 					self.object.add_height_top(-movement[1])
+					self.object.add_depth((movement[1]+movement[0])/2)
 					self.object.updateGL()
 				if self.current_frame == "top_left":
 					self.object.add_width_left(-movement[0])
 					self.object.add_height_top(-movement[1])
+					self.object.add_depth((movement[1]+movement[0])/2)
 					self.object.updateGL()
 			
 	def mouseReleaseEvent(self,event):
@@ -1005,7 +1009,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			self.frame_face_basic(width,width_plus,depth,depth_plus)
 			self.frame_inner_shell_basic(width,depth,0,-self.top_border_height)
 			glPopMatrix()
-			
+				
 			glEndList()
 		else: print "error, the delete list operation failed"
 		

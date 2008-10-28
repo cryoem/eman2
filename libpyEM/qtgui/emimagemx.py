@@ -1302,10 +1302,10 @@ class EMImageMXModule(EMGUIModule):
 			
 	def wheelEvent(self, event):
 		if event.delta() > 0:
-			self.set_scale( self.scale * self.mag,False )
+			self.set_scale( self.scale * self.mag,True )
 		elif event.delta() < 0:
-			self.set_scale(self.scale * self.invmag,False)
-		self.resize_event(self.gl_widget.width(),self.gl_widget.height())
+			self.set_scale(self.scale * self.invmag,True)
+		#self.resize_event(self.gl_widget.width(),self.gl_widget.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
 	

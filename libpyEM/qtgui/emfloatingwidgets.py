@@ -970,7 +970,8 @@ class EMGLWindow:
 		self.camera_is_slaved = val
 		
 	def get_position(self):
-		return (self.cam.cam_x+self.left, self.cam.cam_y+self.bottom,self.cam.cam_z+self.near)
+		#return (self.cam.cam_x, self.cam.cam_y,self.cam.cam_z)
+		return (self.cam.cam_x+self.left-self.decoration.border_width, self.cam.cam_y+self.bottom-self.decoration.bottom_border_height,self.cam.cam_z+self.near)
 	
 	def set_position(self,x,y,z):
 		self.cam.cam_x, self.cam.cam_y,self.cam.cam_z = x,y,z
@@ -1045,6 +1046,9 @@ class EMGLWindow:
 		self.drawable.resize_event(self.width(),self.height())
 	def context(self):
 		return self.parent.context() # Fixme, this will raise if the parent isn't a QtOpenGL.QGLWidget, which is a more recent development. However, this function may become redundant, it is not currently used but it potentially could be
+	
+	def add_depth(self,d):
+		pass
 	
 	def target_wheel_events_allowed(self,bool):
 		self.allow_target_wheel_events = bool
@@ -1201,12 +1205,12 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 		self.draw_frame = True
 		
-		#self.left = 0
-		#self.right = 240
-		#self.bottom = 0
-		#self.top = 480
-		#self.near = 0
-		#self.far = -480
+		self.left = 0
+		self.right = 64
+		self.bottom = 0
+		self.top = 64
+		self.near = 0
+		self.far = 64
 		
 		self.init_flag = True
 		self.texure_lock = 0
@@ -1282,8 +1286,8 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		self.update_border_flag = True
 		
 	def determine_dimensions(self):
-		[self.left,self.right,self.bottom,self.top,self.near,self.far] = self.drawable.get_lr_bt_nf()
-		print [self.left,self.right,self.bottom,self.top,self.near,self.far]
+		#[self.left,self.right,self.bottom,self.top,self.near,self.far] = self.drawable.get_lr_bt_nf()
+		#print [self.left,self.right,self.bottom,self.top,self.near,self.far]
 		#self.w = self.right - self.left
 		#self.h = self.top - self.bottom
 		#self.d = self.near - self.far
@@ -1291,9 +1295,22 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 
 	def resize(self,width,height):
-		self.drawable.resize_event(width,height)
-		self.determine_dimensions()
+		#self.drawable.resize_event_with_border_data(width,height,self.decoration)
+		bw = self.decoration.total_width()/2
+		top = self.decoration.top_border_height
+		bot = self.decoration.bottom_border_height
+		
+		self.left =  bw
+		self.right = width -bw
+		self.bottom = bot
+		self.top = height - top
+		self.near = bw
+		self.far = -height-bw
+		#
+		#self.determine_dimensions()
 		self.update_border_flag = True
+		
+		self.drawable.resize_event(width,height)
 		
 	def __atomic_draw_frame(self,plane_string):
 		
@@ -1305,11 +1322,16 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 			#print "facing backward"
 			return False
 		self.corner_sets.append([mc00,mc01,mc11,mc10] )
-		
+		#self.vdtools.draw_frame(True)
 		self.planes.append((plane_string))
 		self.model_matrices.append(self.vdtools.getModelMatrix())
 		return True
 	
+	def add_depth(self,d):
+		self.far -= d
+		self.update_border_flag = True
+		self.drawable.resize_event(self.width(),self.height())
+		pass
 	#HACK ALERT
 	def render(self):
 		self.draw()
@@ -1319,7 +1341,7 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 		if self.init_flag == True:
 			self.update_border_flag = True
-			self.determine_dimensions()
+			#self.determine_dimensions()
 			self.init_flag = False
 	
 		self.corner_sets = []
@@ -1334,11 +1356,9 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
 		
-		
-		glPushMatrix()
-		lrt = self.get_lr_bt_nf()
+		#lrt = self.get_lr_bt_nf()
 		#print "translating",-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-lrt[4]
-		glTranslate(-lrt[0],-lrt[2],-lrt[4])
+		
 		
 		p = self.get_lr_bt_nf()
 		points = []
@@ -1355,30 +1375,30 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		#print "the unprojected points are"
 		
 		#left zy plane
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
-		self.__atomic_draw_frame('zy')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
+		#self.__atomic_draw_frame('zy')
+		#glPopMatrix()
 		
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[5],unprojected[4],unprojected[7],unprojected[6])
-		self.__atomic_draw_frame('yz')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[5],unprojected[4],unprojected[7],unprojected[6])
+		#self.__atomic_draw_frame('yz')
+		#glPopMatrix()
 		
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[0],unprojected[4],unprojected[5],unprojected[1])
-		self.__atomic_draw_frame('xz')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[4],unprojected[5],unprojected[1])
+		#self.__atomic_draw_frame('xz')
+		#glPopMatrix()
 		
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[6],unprojected[7])
-		self.__atomic_draw_frame('zx')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[6],unprojected[7])
+		#self.__atomic_draw_frame('zx')
+		#glPopMatrix()
 		
-		glPushMatrix()
-		self.vdtools.set_mouse_coords(unprojected[0],unprojected[3],unprojected[7],unprojected[4])
-		self.__atomic_draw_frame('yx')
-		glPopMatrix()
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[3],unprojected[7],unprojected[4])
+		#self.__atomic_draw_frame('yx')
+		#glPopMatrix()
 		
 		glPushMatrix()
 		self.vdtools.set_mouse_coords(unprojected[1],unprojected[5],unprojected[6],unprojected[2])
@@ -1388,8 +1408,9 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 		glPushMatrix()
 		if self.enable_clip:self.decoration.enable_clip_planes()
-		#glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,0)
-		glTranslate(0,0,-10)
+		glTranslate((p[1]+p[0])/2.0,(p[3]+p[2])/2.0,(p[4]+p[5])/2.0)
+		#glTranslate(self.left,self.bottom,self.near)
+		#glTranslate(0,0,-10)
 		self.drawable.render()
 		glPopMatrix()
 		if self.enable_clip: self.decoration.disable_clip_planes()
@@ -1399,8 +1420,6 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		if self.draw_frame:
 			self.decoration.draw(self.update_border_flag)
 			self.update_border_flag = False
-		glPopMatrix()
-
 	def isinwin(self,x,y):
 		#print "I have this many corner sets",len(self.corner_sets)
 		for i,p in enumerate(self.corner_sets):
@@ -1466,7 +1485,7 @@ class EMGLView3D(EM3DVolume,EMEventRerouter):
 	
 		self.parent = parent
 		self.cam = Camera2(self)
-		self.cam.motiondull = 3.0
+		self.cam.motiondull = 1.0
 		
 		if isinstance(parent,EMImage3DGUIModule):
 			self.drawable = parent
@@ -1502,7 +1521,7 @@ class EMGLView3D(EM3DVolume,EMEventRerouter):
 			self.drawable = EMImage3DModule(image,self)		# the object that is drawable (has a draw function)
 			
 			self.drawable.cam.basicmapping = True
-			self.drawable.cam.motiondull = 3.0
+			self.drawable.cam.motiondull = 1.0
 		
 		EMEventRerouter.__init__(self,self.drawable)
 		self.sizescale = 1.0		# scale/zoom factor
@@ -1574,7 +1593,6 @@ class EMGLView3D(EM3DVolume,EMEventRerouter):
 		self.draw()
 	
 	def draw(self):
-		
 		if self.init_scale_flag:
 			self.set_opt_scale()
 			self.init_scale_flag = False
@@ -1604,16 +1622,35 @@ class EMGLView3D(EM3DVolume,EMEventRerouter):
 	def get_start_z(self):
 		return self.parent.get_start_z()
 	
-	def resize_event(self,width,height):
-		self.left = -width/2
-		self.right = width/2
-		self.bottom = -height/2
-		self.top = height/2
-		self.near =height/2
-		self.far = -height/2
+	
+	def resize_event_with_border_data(self,width,height,decoration):
+		bw = decoration.total_width()/2
+		top = decoration.top_border_height
+		bot = decoration.bottom_border_height
+		
+		self.left = -width/2 +bw
+		self.right = width/2 -bw
+		self.bottom = -height/2 + bot
+		self.top = height/2 - top
+		self.near =height/2 -bw
+		self.far = -height/2 +bw
+
 		#print self.get_lr_bt_nf()
 		self.update_dims = False
 		self.drawable.resize_event(width,height)
+	
+	def resize_event(self,width,height):
+
+		#self.left = -width/2
+		#self.right = width/2
+		#self.bottom = -height/2
+		#self.top = height/2
+		#self.near =height/2
+		#self.far = -height/2
+		#print self.get_lr_bt_nf()
+		#self.update_dims = False
+		#self.drawable.resize_event(width,height)
+		pass
 	
 
 
@@ -1684,10 +1721,14 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		self.draw_frame = bool
 
 	def resize(self,width,height):
-		self.left = self.decoration.total_width()/2
-		self.right = width-self.decoration.total_width()/2
-		self.bottom = self.decoration.total_height()/2
-		self.top = height-self.decoration.total_height()/2
+		bw = self.decoration.total_width()/2
+		top = self.decoration.top_border_height
+		bot = self.decoration.bottom_border_height
+		self.left = bw
+		self.right = width-bw
+		self.bottom = bot
+		self.top = height-top
+		self.update_border_flag = True
 	
 	def isinwin(self,x,y):
 		if self.vdtools.isinwin(x,y):
@@ -1731,6 +1772,7 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		
 		self.cam.position()
 		self.vdtools.update_points((self.left,self.bottom,0),(self.right,self.bottom,0),(self.right,self.top,0),(self.left,self.top,0))
+		#self.vdtools.draw_frame(True)
 		glEnable(GL_DEPTH_TEST)
 		glPushMatrix()
 		glTranslate(self.left,self.bottom,self.near)
@@ -2325,7 +2367,7 @@ class EMGLViewQtWidget:
 		self.refresh_dl = True
 		self.texture_dl = 0
 		self.texture_lock = 0
-		self.decoration = EM2DPlainBorderDecoration(self,parent)
+		self.decoration = EM3DPlainBorderDecoration(self,parent)
 	def get_decoration(self):
 		return self.decoration
 	

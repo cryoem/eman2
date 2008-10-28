@@ -1166,6 +1166,8 @@ class Camera2:
 
 		self.allow_rotations = True
 		
+		self.emit_events = False
+		
 	
 	def set_plane(self,plane='xy'):
 		'''
@@ -1227,7 +1229,7 @@ class Camera2:
 		
 	def scale_event(self,delta):
 		self.scale_delta(delta)
-		self.parent.emit(QtCore.SIGNAL("scale_delta"),delta)
+		if self.emit_events:self.parent.emit(QtCore.SIGNAL("scale_delta"),delta)
 		
 	def scale_delta(self,delta):
 		if delta > 0:
@@ -1311,7 +1313,7 @@ class Camera2:
 		
 		t3d.set_rotation( EULER_SPIN, quaternion )
 		
-		self.parent.emit(QtCore.SIGNAL("apply_rotation"),t3d)
+		if self.emit_events: self.parent.emit(QtCore.SIGNAL("apply_rotation"),t3d)
 		
 		size = len(self.t3d_stack)
 		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
@@ -1422,7 +1424,7 @@ class Camera2:
 			self.cam_z += dx
 			v = (0,dy,dx)
 			
-		self.parent.emit(QtCore.SIGNAL("apply_translation"),v)
+		if self.emit_events: self.parent.emit(QtCore.SIGNAL("apply_translation"),v)
 		
 	def apply_translation(self,v):
 		self.cam_x += v[0]
