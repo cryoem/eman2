@@ -4289,7 +4289,7 @@ vector<float> EMData::peak_ccf(float hf_p)
 			// loop over all peaks and clean out redundant ones
 			if (false == overlap) {
 			  vector<Pixel>::iterator delete_iterator;
-			  while (not(delete_stack.empty())) {
+			  while (!delete_stack.empty()) {
 			    // pop empties the stack from the back. since we are dealing with iterators, we need to delete
 			    //    from the back, so as to keep the rest stack intact upon deletion.
 			    delete_iterator = delete_stack.top();
@@ -4317,7 +4317,7 @@ vector<float> EMData::peak_ccf(float hf_p)
 			} else {
 			  // this peak too small and is ignored, so delete_list is ignored as well. make sure delete_list 
 			  //    is empty. probably redundant because of scope, but better safe than sorry.....
-			  while (not(delete_stack.empty())) delete_stack.pop();
+			  while (!delete_stack.empty()) delete_stack.pop();
 			}
 		      }
 		    }
