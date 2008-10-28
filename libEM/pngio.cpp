@@ -241,6 +241,11 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region*,
 	if (depth_type == PNG_SHORT_DEPTH) {
 		png_set_swap(png_ptr);
 	}
+
+	if(dict.has_key("render_min")) rendermin=(float)dict["render_min"];
+	else rendermin=0;
+	if(dict.has_key("render_max")) rendermax=(float)dict["render_max"];
+	else rendermax=0;
 	EXITFUNC;
 	return 0;
 }
@@ -313,7 +318,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 	check_write_access(rw_mode, image_index, 1, data);
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
-	getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	if (!rendermin && !rendermax) getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	if (depth_type == PNG_CHAR_DEPTH) {
 		unsigned char *cdata = new unsigned char[nx];

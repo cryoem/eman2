@@ -203,6 +203,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageGaussian::NEW);
 	force_add(&TestImagePureGaussian::NEW);
 	force_add(&TestImageSinewave::NEW);
+	force_add(&TestImageSphericalWave::NEW);
 	force_add(&TestImageSinewaveCircular::NEW);
 	force_add(&TestImageSquarecube::NEW);
 	force_add(&TestImageCirclesphere::NEW);
@@ -5791,15 +5792,64 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 	image->update();
 }
 
+void TestImageSphericalWave::process_inplace(EMData * image)
+{
+	preprocess(image);
+	
+	if(!params.has_key("wavelength")) {
+		LOGERR("%s wavelength is required parameter", get_name().c_str());
+		throw InvalidParameterException("wavelength parameter is required.");
+	}
+	float wavelength = params["wavelength"];
+		
+	float phase = 0;
+	if(params.has_key("phase")) {
+		phase = params["phase"];
+	}
+	
+	float x = 0;
+	if (params.has_key("x")) x=params["x"];
+	float y = 0;
+	if (params.has_key("y")) y=params["y"];
+	float z = 0;
+	if (params.has_key("z")) z=params["z"];
+
+	int ndim = image->get_ndim();
+	
+	if(ndim==2) {	//2D
+		for(int j=0; j<ny; ++j) {
+			for(int i=0; i<nx; ++i) {
+				float r=hypot(x-(float)i,y-(float)j);
+				if (r<.5) continue;
+				image->set_value_at(i,j,cos(2*pi*r/wavelength+phase)/r);
+			}
+		}
+	}
+	else {	//3D 
+		for(int k=0; k<nz; ++k) {
+			for(int j=0; j<ny; ++j) {
+				for(int i=0; i<nx; ++i) {
+					float r=Util::hypot3(x-(float)i,y-(float)j,z-(float)k);
+					if (r<.5) continue;
+					image->set_value_at(i,j,k,cos(2*pi*r/wavelength+phase)/(r*r));
+				}
+			}
+		}
+	}
+	
+	image->update();	
+}
+
+
 void TestImageSinewave::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	if(!params.has_key("wave_length")) {
-		LOGERR("%s wave_length is required parameter", get_name().c_str());
-		throw InvalidParameterException("wave_length parameter is required.");
+	if(!params.has_key("wavelength")) {
+		LOGERR("%s wavelength is required parameter", get_name().c_str());
+		throw InvalidParameterException("wavelength parameter is required.");
 	}
-	float wave_length = params["wave_length"];
+	float wavelength = params["wavelength"];
 	
 	string axis = "";
 	if(params.has_key("axis")) {
@@ -5816,7 +5866,7 @@ void TestImageSinewave::process_inplace(EMData * image)
 	
 	if(ndim==1) {	//1D
 		for(int i=0; i<nx; ++i, ++dat) {
-			*dat = sin(i*(2.0f*M_PI/wave_length) - phase*180/M_PI);
+			*dat = sin(i*(2.0f*M_PI/wavelength) - phase*180/M_PI);
 		}
 	}
 	else if(ndim==2) {	//2D
@@ -5827,13 +5877,13 @@ void TestImageSinewave::process_inplace(EMData * image)
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i, ++dat) {
 				if(alpha != 0) {
-					*dat = sin((i*sin((180-alpha)*M_PI/180)+j*cos((180-alpha)*M_PI/180))*(2.0f*M_PI/wave_length) - phase*M_PI/180); 
+					*dat = sin((i*sin((180-alpha)*M_PI/180)+j*cos((180-alpha)*M_PI/180))*(2.0f*M_PI/wavelength) - phase*M_PI/180); 
 				}
 				else if(axis.compare("y")==0 || axis.compare("Y")==0) {
-					*dat = sin(j*(2.0f*M_PI/wave_length) - phase*M_PI/180);
+					*dat = sin(j*(2.0f*M_PI/wavelength) - phase*M_PI/180);
 				}
 				else {
-					*dat = sin(i*(2.0f*M_PI/wave_length) - phase*M_PI/180);
+					*dat = sin(i*(2.0f*M_PI/wavelength) - phase*M_PI/180);
 				}
 			} 
 		}
@@ -5856,13 +5906,13 @@ void TestImageSinewave::process_inplace(EMData * image)
 			for(int j=0; j<ny; ++j) {
 				for(int i=0; i<nx; ++i, ++dat) {
 					if(axis.compare("z")==0 || axis.compare("Z")==0) {
-						*dat = sin(k*(2.0f*M_PI/wave_length) - phase*M_PI/180);
+						*dat = sin(k*(2.0f*M_PI/wavelength) - phase*M_PI/180);
 					}
 					else if(axis.compare("y")==0 || axis.compare("Y")==0) {
-						*dat = sin(j*(2.0f*M_PI/wave_length) - phase*M_PI/180);
+						*dat = sin(j*(2.0f*M_PI/wavelength) - phase*M_PI/180);
 					}
 					else {
-						*dat = sin(i*(2.0f*M_PI/wave_length) - phase*M_PI/180);
+						*dat = sin(i*(2.0f*M_PI/wavelength) - phase*M_PI/180);
 					}
 				}
 			}
@@ -5882,7 +5932,7 @@ void TestImageSinewaveCircular::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	float wave_length = params["wave_length"];
+	float wavelength = params["wavelength"];
 	string axis = (const char*)params["axis"];
 	float c = params["c"];
 	float phase = params["phase"];
@@ -5923,7 +5973,7 @@ void TestImageSinewaveCircular::process_inplace(EMData * image)
 				else{
 					throw InvalidValueException(0, "please specify a valid axis for asymmetric features");
 				}
-				*dat = sin( r * (2.0f*M_PI/wave_length) - phase*180/M_PI);
+				*dat = sin( r * (2.0f*M_PI/wavelength) - phase*180/M_PI);
 			}
 		}
 	}

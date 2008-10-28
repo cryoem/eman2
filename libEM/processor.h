@@ -5006,6 +5006,45 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 	};
+
+	/**Replace a source image as a sine wave in specified wave length
+	 *@param wavelength cos(2*pi*r/wavelength+phase)
+	 *@param phase in radians
+	 *@param x center of the spherical wave
+	 *@param y center of the spherical wave
+	 *@param z center of the spherical wave
+	 */
+	class TestImageSphericalWave : public TestImageProcessor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		
+		virtual string get_name() const
+		{
+			return "testimage.sphericalwave";
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Replace a source image in 2d or 3d with a spherical wave cos(2*pi*r/wavelength+phase) also 1/r (2d) or 1/r^2 (3d)";
+		}
+		
+		static Processor * NEW()
+		{
+			return new TestImageSphericalWave();
+		}
+		
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("wavelength", EMObject::FLOAT, "cos(2*pi*r/wavelength+phase)");
+			d.put("phase", EMObject::FLOAT, "in radians");
+			d.put("x", EMObject::FLOAT, "center of the spherical wave");
+			d.put("y", EMObject::FLOAT, "center of the spherical wave");
+			d.put("z", EMObject::FLOAT, "center of the spherical wave");
+			return d;
+		}
+	};
 	
 
 	/**Replace a source image as a sine wave in specified wave length
@@ -5037,9 +5076,9 @@ The basic design of EMAN Processors: <br>\
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("wave_length", EMObject::FLOAT, "wave_length in equation sin(x*2*PI/wave_length - phase*180/PI)");
+			d.put("wavelength", EMObject::FLOAT, "wavelength in equation sin(x*2*PI/wavelength - phase*180/PI)");
 			d.put("axis", EMObject::STRING, "(optional) specify a major axis for asymmetric features, default x axis");
-			d.put("phase", EMObject::FLOAT, "(optional) the phase in equation sin(x*2*PI/wave_length - phase*180/PI)");
+			d.put("phase", EMObject::FLOAT, "(optional) the phase in equation sin(x*2*PI/wavelength - phase*180/PI)");
 			d.put("az", EMObject::FLOAT, "(optional) angle in degree. for 2D image, this is the rotated angle of the image, \
 												in 3D image, it's az for euler angle. default is zero");
 			d.put("alt", EMObject::FLOAT, "(optional) angle in degree. only in 3D case, alt for euler angle, default is zero"); 
@@ -5049,7 +5088,7 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/**Replace a source image as a circular sine wave in specified wave length
-	 *@param wave_length float this value is the d in function |sin(x/d)|
+	 *@param wavelength float this value is the d in function |sin(x/d)|
 	 *@param axis char (optional) specify a major axis for asymmetric features
 	 *@param c distance (optional) float between focus and the center of an ellipse
 	 *@param phase degree (optional) phase for sine wave, default is 0
@@ -5077,7 +5116,7 @@ The basic design of EMAN Processors: <br>\
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("wave_length", EMObject::FLOAT, "(required)this value is the d in function |sin(x/d)|, unit: pixel");
+			d.put("wavelength", EMObject::FLOAT, "(required)this value is the d in function |sin(x/d)|, unit: pixel");
 			d.put("axis", EMObject::STRING, "specify a major axis for asymmetric features");
 			d.put("c", EMObject::FLOAT, "distance between focus and the center of an ellipse");
 			d.put("phase", EMObject::FLOAT, "(optional)phase for sine wave, default is 0");
