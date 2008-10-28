@@ -55,7 +55,7 @@ int write_image(EMData* em, const char* infile, char* outfile,
 		is_new_file = true;
 		outfile = new char[256];
 		strcpy(outfile, infile);
-		char* ext = strrchr(infile, '.');
+		const char* ext = strrchr(infile, '.');
 		outfile[strlen(infile) - strlen(ext)] = '\0';
 		sprintf(outfile, "%s_%d.%s", outfile, r_image_index, imgext);
     }
