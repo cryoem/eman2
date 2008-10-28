@@ -1168,7 +1168,10 @@ class Camera2:
 		
 		self.emit_events = False
 		
-	
+	def enable_emit_events(self,val=True):
+		#print "set emit events to",val
+		self.emit_events = val
+		
 	def set_plane(self,plane='xy'):
 		'''
 		plane should by xy,yx,xz,zx,yz, or zy. It should also be a string
@@ -1313,7 +1316,8 @@ class Camera2:
 		
 		t3d.set_rotation( EULER_SPIN, quaternion )
 		
-		if self.emit_events: self.parent.emit(QtCore.SIGNAL("apply_rotation"),t3d)
+		if self.emit_events: 
+			self.parent.emit(QtCore.SIGNAL("apply_rotation"),t3d)
 		
 		size = len(self.t3d_stack)
 		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
@@ -1424,7 +1428,9 @@ class Camera2:
 			self.cam_z += dx
 			v = (0,dy,dx)
 			
-		if self.emit_events: self.parent.emit(QtCore.SIGNAL("apply_translation"),v)
+		if self.emit_events: 
+			#print "emitting applyt translation"
+			self.parent.emit(QtCore.SIGNAL("apply_translation"),v)
 		
 	def apply_translation(self,v):
 		self.cam_x += v[0]

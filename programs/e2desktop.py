@@ -494,8 +494,8 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		self.rows = 2
 		self.columns = 2
 		
-		self.glbasicobjects = EMBasicOpenGLObjects()
-		self.glbasicobjects.getCylinderDL()
+		self.glbasicobjects = None
+		#self.glbasicobjects.getCylinderDL()
 		
 		self.draw_grid = True
 		
@@ -598,6 +598,8 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		
 		
 		if self.draw_grid:
+			if self.glbasicobjects == None:
+				self.glbasicobjects = EMBasicOpenGLObjects()
 			for row in range(self.rows+1):
 				
 				glPushMatrix()

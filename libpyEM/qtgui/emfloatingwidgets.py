@@ -963,6 +963,10 @@ class EMGLWindow:
 	def emit(self,*args,**kargs):
 		self.parent.emit(*args,**kargs)
 	
+	
+	def set_events_master(self,val=True):
+		self.drawable.drawable.cam.enable_emit_events(val)
+	
 	def camera_slaved(self):
 		return self.camera_is_slaved
 	
@@ -1000,7 +1004,7 @@ class EMGLWindow:
 		return self.cam
 	
 	def get_drawable_camera(self):
-		return self.drawable.cam
+		return self.drawable.drawable.cam
 	
 	def get_border_width(self):
 		'''
