@@ -960,6 +960,13 @@ class EMGLWindow:
 		
 		self.camera_is_slaved = False
 	
+		gl_context_parent = self.parent.get_gl_context_parent()
+		QtCore.QObject.connect(gl_context_parent, QtCore.SIGNAL("window_selected"), gl_context_parent.window_selected)
+		
+	def get_connection_object(self):
+		return self.parent.get_gl_context_parent()
+	
+	
 	def emit(self,*args,**kargs):
 		self.parent.emit(*args,**kargs)
 	
@@ -1084,23 +1091,21 @@ class EMGLWindow:
 	def mousePressEvent(self, event):
 		if self.texture_lock > 0: return
 		
-		if event.modifiers() == Qt.ControlModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
+		if self.mouse_event_target == self.decoration:
+			self.decoration.mousePressEvent(event)
+			self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
+		elif event.modifiers() == Qt.AltModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
 			self.cam.set_plane('xy')
 			self.cam.mousePressEvent(event)
-		else:
+		elif self.mouse_event_target == self.drawable:
+			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.drawable.mousePressEvent(qme)
+			self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
+			#self.set_mouse_lock(self)
+		else: print "mouse press error" # this shouldn't happen
 			
-			if self.mouse_event_target == self.drawable:
-				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-				qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-				self.drawable.mousePressEvent(qme)
-			elif self.mouse_event_target == self.decoration:
-				self.decoration.mousePressEvent(event)
-			else:
-				print "mouse press error" # this shouldn't happen
-				return
-			
-		try: self.parent.get_qt_context_parent().set_selected(self,event)
-		except: pass
+		
 			
 	def wheelEvent(self,event):
 		
@@ -1108,65 +1113,61 @@ class EMGLWindow:
 		
 		try: e = event.modifiers()
 		except: return
-		if event.modifiers() == Qt.ControlModifier:
+		if self.mouse_event_target == self.decoration:
+			self.decoration.wheelEvent(event)
+		elif event.modifiers() == Qt.AltModifier:
 			self.border_scale_event(event.delta())
-		else:
-			if self.mouse_event_target == self.drawable and self.allow_target_wheel_events:
-				self.drawable.wheelEvent(event)
-			elif self.mouse_event_target == self.decoration:
-				self.decoration.wheelEvent(event)
-			else:
-				print "mouse wheel error",self.drawable# this shouldn't happen
+		elif self.mouse_event_target == self.drawable and self.allow_target_wheel_events:
+			self.drawable.wheelEvent(event)
+		else: print "mouse wheel error",self.drawable# this shouldn't happen
+
+		#self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
 
 	def mouseMoveEvent(self,event):
 		if self.texture_lock > 0: return
 		
-		if event.modifiers() == Qt.ControlModifier:
+		if self.mouse_event_target == self.decoration:
+			self.decoration.mouseMoveEvent(event)
+		elif event.modifiers() == Qt.AltModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
-		else:
-			if self.mouse_event_target == self.drawable:
-				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-				qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-				self.drawable.mouseMoveEvent(qme)
-			elif self.mouse_event_target == self.decoration:
-				self.decoration.mouseMoveEvent(event)
-			else:
-				print "mouse move error" # this shouldn't happen
-	
+		elif self.mouse_event_target == self.drawable:
+			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.drawable.mouseMoveEvent(qme)
+		else: print "mouse move error" # this shouldn't happen
+		
+		#self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
+		
 	def mouseDoubleClickEvent(self, event):
 		if self.texture_lock > 0: return
 		
-		if event.modifiers() == Qt.ControlModifier:
+		if self.mouse_event_target == self.decoration:
+			self.decoration.mouseDoubleClickEvent(event)
+		elif event.modifiers() == Qt.AltModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
-		else:
-			if self.mouse_event_target == self.drawable:
-				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-				qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-				self.drawable.mouseDoubleClickEvent(qme)
-			elif self.mouse_event_target == self.decoration:
-				self.decoration.mouseDoubleClickEvent(event)
-			else:
-				print "mouse double click error" # this shouldn't happen
+		elif self.mouse_event_target == self.drawable:
+			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.drawable.mouseDoubleClickEvent(qme)
+		else: print "mouse double click error" # this shouldn't happen
 	
-		#self.updateGL()
+		#self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
 
 	def mouseReleaseEvent(self,event):
 		if self.texture_lock > 0: return
 		
-		if event.modifiers() == Qt.ControlModifier:
+		if self.mouse_event_target == self.decoration:
+			self.decoration.mouseReleaseEvent(event)
+		elif event.modifiers() == Qt.AltModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseReleaseEvent(event)
-		else:
-			if self.mouse_event_target == self.drawable:
-				l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
-				qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
-				self.drawable.mouseReleaseEvent(qme)
-			elif self.mouse_event_target == self.decoration:
-				self.decoration.mouseReleaseEvent(event)
-			else:
-				print "mouse release error" # this shouldn't happen
+		elif self.mouse_event_target == self.drawable:
+			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
+			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
+			self.drawable.mouseReleaseEvent(qme)
+		else: print "mouse release error" # this shouldn't happen
 	
 	def mouse_in_win_args(self,event):
 		return [event.x(),self.parent.get_gl_context_parent().viewport_height()-event.y(),self.width(),self.height()]
@@ -1448,7 +1449,7 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 		
 	def mousePressEvent(self, event):
 		if self.texture_lock > 0: return
-		if event.modifiers() == Qt.ControlModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
+		if event.modifiers() == Qt.AltModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
 			self.cam.set_plane('xy')
 			self.cam.mousePressEvent(event)
 		else: self.drawable.mousePressEvent(event)
@@ -1456,7 +1457,7 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 	
 	def mouseMoveEvent(self,event):
 		if self.texture_lock > 0: return
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.AltModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
 		else:
@@ -1464,7 +1465,7 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 	
 	def mouseDoubleClickEvent(self, event):
 		if self.texture_lock > 0: return
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.AltModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
 		else: self.drawable.mouseMoveEvent(event)
@@ -1473,7 +1474,7 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 
 	def mouseReleaseEvent(self,event):
 		if self.texture_lock > 0: return
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.AltModifier:
 			self.cam.set_plane('xy')
 			self.cam.mouseReleaseEvent(event)
 		else: self.drawable.mouseReleaseEvent(event)
@@ -2087,7 +2088,7 @@ class EMQtGLView:
 	def wheelEvent(self,event):
 		doElse = True
 		try:
-			if event.modifiers() == Qt.ControlModifier:
+			if event.modifiers() == Qt.AltModifier:
 				self.cam.wheelEvent(event)
 				doElse = False
 		except: pass
@@ -2137,7 +2138,7 @@ class EMQtGLView:
 		return self.parent.get_depth_for_height(height_plane)
 	
 	def mousePressEvent(self, event):
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.AltModifier:
 			self.cam.mousePressEvent(event)
 		else:
 			if ( self.childreceiver != None ):
@@ -2184,7 +2185,7 @@ class EMQtGLView:
 		#pos = self.parent.mapFromGlobal(pos)
 		#print "now",event.x(),pos.x(),event.y(),pos.y()
 	
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.AltModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
 			if ( self.childreceiver != None ):
@@ -2271,7 +2272,7 @@ class EMQtGLView:
 		self.updateTexture()
 
 	def mouseReleaseEvent(self,event):
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.AltModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
 			if ( self.childreceiver != None ):
@@ -2538,7 +2539,7 @@ class EMGLViewQtWidget:
 	def wheelEvent(self,event):
 		doElse = True
 		try:
-			if event.modifiers() == Qt.ControlModifier:
+			if event.modifiers() == Qt.AltModifier:
 				self.cam.wheelEvent(event)
 				doElse = False
 		except: pass
@@ -2590,7 +2591,7 @@ class EMGLViewQtWidget:
 		return self.parent.get_depth_for_height(height_plane)
 	
 	def mousePressEvent(self, event):
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.AltModifier:
 			self.cam.mousePressEvent(event)
 		else:
 			if ( self.childreceiver != None ):
@@ -2638,7 +2639,7 @@ class EMGLViewQtWidget:
 		#pos = self.parent.mapFromGlobal(pos)
 		#print "now",event.x(),pos.x(),event.y(),pos.y()
 	
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.AltModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
 			if ( self.childreceiver != None ):
@@ -2727,7 +2728,7 @@ class EMGLViewQtWidget:
 		self.updateTexture()
 
 	def mouseReleaseEvent(self,event):
-		if event.modifiers() == Qt.ControlModifier:
+		if event.modifiers() == Qt.AltModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
 			if ( self.childreceiver != None ):

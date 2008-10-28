@@ -42,6 +42,8 @@ class EMEventRerouter:
 	def __init__(self,target=None):
 		self.target = target
 		self.orig_target  = target
+		self.selected_object = None
+		self.multi_selected_objects = [] # as grown using "ctrl-click" selection, for event master slave relationships
 		
 	def lock_target(self,target):
 		self.target = target
@@ -88,6 +90,60 @@ class EMEventRerouter:
 	
 	def get_target(self):
 		return self.target # use this one instead of the above
+	
+	def window_selected(self,object,event):
+		
+		if event.modifiers()&Qt.ControlModifier:
+			self.window_selected_added(object,event)
+			return
+		
+		if self.selected_object != None:
+			self.selected_object.set_selected(False)
+		
+		self.selected_object = object
+		self.selected_object.set_selected(True)
+
+		#self.target = self.selected_object
+					
+	def window_selected_added(self,object,event):
+		
+		if object in self.multi_selected_objects:
+			object.set_selected(False)
+			self.multi_selected_objects.remove(object)
+			
+			if self.selected_object == object:
+				self.selected_object = None
+			return
+		
+		
+		self.multi_selected_objects.append(object)
+		object.set_selected(True)	
+			
+		
+		#if not event.modifiers()&Qt.ControlModifier: return
+			##if len(self.selected_objects) != 0:
+				##for i in range(len(self.selected_objects)-1,-1,-1):
+					##self.selected_objects[i].set_selected(False)
+					##self.selected_objects.pop(i)
+
+		
+		
+		#self.selected_objects.append(object)
+		#object.set_selected(True)
+
+		#if len(self.selected_objects) > 1:
+			#master = self.selected_objects[0]
+			##print "set master slave"
+			#master.set_events_master(True)
+			#for i in range(1,len(self.selected_objects)):
+				#object = self.selected_objects[i]
+				
+				#if not object.camera_slaved():
+					#QtCore.QObject.connect(self,QtCore.SIGNAL("apply_rotation"),object.get_drawable_camera().apply_rotation)
+					#QtCore.QObject.connect(self,QtCore.SIGNAL("scale_delta"),object.get_drawable_camera().scale_delta)
+					#QtCore.QObject.connect(self,QtCore.SIGNAL("apply_translation"),object.get_drawable_camera().apply_translation)
+					#object.set_camera_slaved()
+
 
 class EMTransformPanel:
 	def __init__(self,target,parent):

@@ -125,6 +125,15 @@ class EMGUIModule:
 			
 	def mouseDoubleClickEvent(self,event):
 		pass
+	
+	def emit(self,*args,**kargs):
+		self.application.get_qt_emitter(self).emit(*args,**kargs)
+		
+	def make_connections(self,calling_object):
+		'''
+		Should overwrite this function in the subclass 
+		'''
+		pass
 
 class EMApplication:
 	def __init__(self,qt_application_control=True):
@@ -365,3 +374,4 @@ class EMQtWidgetModule(EMGUIModule):
 	def width(self): return self.qt_widget.widht()
 	
 	def height(self): return self.qt_widget.height()
+	

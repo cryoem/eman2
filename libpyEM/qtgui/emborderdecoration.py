@@ -100,6 +100,9 @@ class EMBorderDecoration:
 		
 		self.do_clip = False
 		
+		#gl_context_parent = object.get_connection_object()
+		#QtCore.QObject.connect(gl_context_parent, QtCore.SIGNAL("window_selected_added"), gl_context_parent.window_selected_added)
+		
 	def enable_clip(self,val=True):
 		self.do_clip = val
 		

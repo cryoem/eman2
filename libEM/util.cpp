@@ -1025,6 +1025,49 @@ void Util::equation_of_plane(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, 
 	plane[3] = -plane[3];
 }
 
+
+bool Util::point_is_in_triangle_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3,const Vec2f& point) 
+{
+
+	Vec2f u = p2 - p1;
+	Vec2f v = p3 - p1;
+	Vec2f w = point - p1;
+	
+	float udotu = u.dot(u);
+	float udotv = u.dot(v); 
+	float udotw = u.dot(w);
+	float vdotv = v.dot(v);
+	float vdotw = v.dot(w);
+	
+	float d = 1.0f/(udotv*udotv - udotu*vdotv);
+	float s = udotv*vdotw - vdotv*udotw;
+	s *= d;
+			
+	float t = udotv*udotw - udotu*vdotw;
+	t *= d;
+			
+	// We've done a few multiplications, so detect when there are tiny residuals that may throw off the final 
+	// decision
+	if (fabs(s) < Transform::ERR_LIMIT ) s = 0;
+	if (fabs(t) < Transform::ERR_LIMIT ) t = 0;
+			
+	if ( fabs((fabs(s)-1.0)) < Transform::ERR_LIMIT ) s = 1;
+	if ( fabs((fabs(t)-1.0)) < Transform::ERR_LIMIT ) t = 1;
+			
+// 	cout << "s and t are " << s << " " << t << endl;
+	
+	// The final decision, if this is true then we've hit the jackpot
+	if ( s >= 0 && t >= 0 && (s+t) <= 1 ) return true;
+	else return false;
+}
+
+bool Util::point_is_in_convex_polygon_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3, const Vec2f& p4,const Vec2f& actual_point) 
+{
+	
+	if (point_is_in_triangle_2d(p1,p2,p3,actual_point)) return true;
+	else return point_is_in_triangle_2d(p2,p4,p3,actual_point);
+}
+
 /*
 Dict Util::get_isosurface(EMData * image, float surface_palue, bool smooth)
 {

@@ -515,47 +515,53 @@ class EMViewportDepthTools2:
 		return int(self.mc11[1]-self.mc00[1])
 	
 	def isinwinpoints(self,x,y,points):
-		try:
-			a = [points[0][0]-x, points[0][1]-y]
-			b = [points[1][0]-x, points[1][1]-y]
-			c = [points[2][0]-x, points[2][1]-y]
-			d = [points[3][0]-x, points[3][1]-y]
+		
+		return Util.point_is_in_convex_polygon_2d(Vec2f(points[0][0],points[0][1]),Vec2f(points[1][0],points[1][1]),Vec2f(points[2][0],points[2][1]),Vec2f(points[3][0],points[3][1]),Vec2f(x,y))
+		
+		
+		#try:
+			#a = [points[0][0]-x, points[0][1]-y]
+			#b = [points[1][0]-x, points[1][1]-y]
+			#c = [points[2][0]-x, points[2][1]-y]
+			#d = [points[3][0]-x, points[3][1]-y]
 			
-			aeb = self.getsubtendingangle(a,b)
-			bec = self.getsubtendingangle(b,c)
-			ced = self.getsubtendingangle(c,d)
-			dea = self.getsubtendingangle(d,a)
-			if abs(aeb + bec + ced + dea) > 0.1:
-				return True 
-			else:
-				return False
-		except:
-			return False
+			#aeb = self.getsubtendingangle(a,b)
+			#bec = self.getsubtendingangle(b,c)
+			#ced = self.getsubtendingangle(c,d)
+			#dea = self.getsubtendingangle(d,a)
+			#if abs(aeb + bec + ced + dea) > 0.1:
+				#return True 
+			#else:
+				#return False
+		#except:
+			#return False
 	
 	def isinwin(self,x,y):
-		# this function can be called to determine
-		# if the event at x,y (in terms of the viewport)
-		# was within the frame of the object being drawn
+		return Util.point_is_in_convex_polygon_2d(Vec2f(self.mc00[0],self.mc00[1]),Vec2f(self.mc01[0],self.mc01[1]),Vec2f(self.mc10[0],self.mc10[1]),Vec2f(self.mc11[0],self.mc11[1]),Vec2f(x,y))
 		
-		#print x,y
-		#print self.mc00,self.mc11
+	#def isinwin(self,x,y):
+		## this function can be called to determine
+		## if the event at x,y (in terms of the viewport)
+		## was within the frame of the object being drawn
 		
-		try:
-			a = [self.mc00[0]-x, self.mc00[1]-y]
-			b = [self.mc01[0]-x, self.mc01[1]-y]
-			c = [self.mc11[0]-x, self.mc11[1]-y]
-			d = [self.mc10[0]-x, self.mc10[1]-y]
+		##print x,y
+		##print self.mc00,self.mc11
+		
+		#try:
+			#a = [self.mc00[0]-x, self.mc00[1]-y]
+			#b = [self.mc01[0]-x, self.mc01[1]-y]
+			#c = [self.mc11[0]-x, self.mc11[1]-y]
+			#d = [self.mc10[0]-x, self.mc10[1]-y]
 			
-			aeb = self.getsubtendingangle(a,b)
-			bec = self.getsubtendingangle(b,c)
-			ced = self.getsubtendingangle(c,d)
-			dea = self.getsubtendingangle(d,a)
-			if abs(aeb + bec + ced + dea) > 0.1:
-				return True 
-			else:
-				return False
-		except:
-			return False
+			#aeb = self.getsubtendingangle(a,b)
+			#bec = self.getsubtendingangle(b,c)
+			#ced = self.getsubtendingangle(c,d)
+			#dea = self.getsubtendingangle(d,a)
+			#if abs(aeb + bec + ced + dea) > 0.1:
+				#return True 
+			#else:
+				#return False
+		#except:
 	
 	def getsubtendingangle(self,a,b):
 		sinaeb = a[0]*b[1]-a[1]*b[0]
@@ -1159,7 +1165,7 @@ class Camera2:
 		self.basicmapping = False
 		self.plane = 'xy'
 		
-		self.motiondull = 8.0
+		self.motiondull = 4.0
 		
 		self.mpressx = -1
 		self.mpressy = -1
@@ -1746,7 +1752,6 @@ class EMImage3DGUIModule(EMGUIModule):
 	def set_file_name(self,file_name): self.file_name = file_name
 	def get_file_name(self): return self.file_name
 	
-	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
 			from emimageutil import EMParentWin
@@ -1771,6 +1776,8 @@ class EMImage3DGUIModule(EMGUIModule):
 			
 			self.gl_widget.target_translations_allowed(True)
 			#self.gl_widget.allow_camera_rotations(True)
+			
+			
 			
 		return self.gl_widget
 	

@@ -1348,34 +1348,6 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.move(0,0)
 		self.resize(self.appscreen.size())
 		
-		self.selected_objects = []
-		
-	def set_selected(self,object,event):
-		if not event.modifiers()&Qt.ControlModifier: return
-			#if len(self.selected_objects) != 0:
-				#for i in range(len(self.selected_objects)-1,-1,-1):
-					#self.selected_objects[i].set_selected(False)
-					#self.selected_objects.pop(i)
-
-		
-		
-		self.selected_objects.append(object)
-		object.set_selected(True)
-
-		if len(self.selected_objects) > 1:
-			master = self.selected_objects[0]
-			#print "set master slave"
-			master.set_events_master(True)
-			for i in range(1,len(self.selected_objects)):
-				object = self.selected_objects[i]
-				
-				if not object.camera_slaved():
-					QtCore.QObject.connect(self,QtCore.SIGNAL("apply_rotation"),object.get_drawable_camera().apply_rotation)
-					QtCore.QObject.connect(self,QtCore.SIGNAL("scale_delta"),object.get_drawable_camera().scale_delta)
-					QtCore.QObject.connect(self,QtCore.SIGNAL("apply_translation"),object.get_drawable_camera().apply_translation)
-					object.set_camera_slaved()
-				
-		
 	def get_gl_context_parent(self): return self
 		
 	def emit(self,*args, **kargs):

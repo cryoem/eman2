@@ -913,6 +913,10 @@ namespace EMAN
 		*/
 		static void equation_of_plane(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, float * plane );
 
+		
+		static bool point_is_in_convex_polygon_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3, const Vec2f& p4,const Vec2f& actual_point);
+		static bool point_is_in_triangle_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3, const Vec2f& actual_point); 
+		
 		/** Print a 3D integer matrix to a file stream (std out by default).
 		 *
 		 * @param[in] mat integer 3-d multi_array reference
