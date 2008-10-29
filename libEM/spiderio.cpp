@@ -488,7 +488,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
  	char cdate[12];
  	strftime(ctime, 9, "%H:%M:%S", ttt);
  	std::copy(&ctime[0], &ctime[8], hp->time);
- 	strftime(cdate, 12, "%d-%h-%Y", ttt);
+ 	strftime(cdate, 12, "%d-%b-%Y", ttt);
 	std::copy(&cdate[0], &cdate[11], hp->date);
 	
 	if(dict.has_key("SPIDER.title")) {
