@@ -11,10 +11,10 @@ e.write_image('circle.hdf')
 e.process_inplace('testimage.squarecube', {'edge_length':200, 'fill':1})
 e.write_image('square.hdf')
 
-e.process_inplace('testimage.sinewave.circular', {'wave_length':150})
+e.process_inplace('testimage.sinewave.circular', {'wavelength':150})
 e.write_image('sinewave_circular.hdf')
 
-e.process_inplace('testimage.sinewave', {'wave_length':150})
+e.process_inplace('testimage.sinewave', {'wavelength':150})
 e.write_image('sinewave.hdf')
 
 e.process_inplace('testimage.scurve')

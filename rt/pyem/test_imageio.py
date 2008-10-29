@@ -165,7 +165,7 @@ class TestSpiderIO(unittest.TestCase):
         e.process_inplace('testimage.gaussian', {'sigma':20})
         e.write_image('test.spi', 2)
             
-        e.process_inplace('testimage.sinewave', {'wave_length':20})
+        e.process_inplace('testimage.sinewave', {'wavelength':20})
         e.set_attr('SPIDER.title', 'The fourth image in the stack')
         e.write_image('test.spi', 3)
         
