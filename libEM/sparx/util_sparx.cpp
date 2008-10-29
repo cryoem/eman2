@@ -4786,6 +4786,8 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 		}
 	}
 
+        EMData* proj_in = PROJ;
+
 	PROJ = PROJ->norm_pad( false, 2);
 	PROJ->do_fft_inplace();
 	PROJ->update();
@@ -4805,6 +4807,19 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 	delete W; W = 0;
 	PROJ->do_ift_inplace();
 	PROJ->depad();
+
+        float* data_src = PROJ->get_data();
+        float* data_dst = proj_in->get_data();
+
+        int ntotal = NSAM*NROW;
+        for( int i=0; i < ntotal; ++i )
+        {
+            data_dst[i] = data_src[i];
+        }
+
+        proj_in->update();
+
+	delete PROJ;
 }
 
 #undef PROJ
@@ -4901,6 +4916,8 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 		}
 	}
 
+        EMData* proj_in = PROJ;
+
 	PROJ = PROJ->norm_pad( false, 2);
 	PROJ->do_fft_inplace();
 	PROJ->update();
@@ -4918,6 +4935,18 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 	delete W; W = 0;
 	PROJ->do_ift_inplace();
 	PROJ->depad();
+
+        float* data_src = PROJ->get_data();
+        float* data_dst = proj_in->get_data();
+
+        int ntotal = NSAM*NROW;
+        for( int i=0; i < ntotal; ++i )
+        {
+            data_dst[i] = data_src[i];
+        }
+
+        proj_in->update();
+	delete PROJ;
 }	
 	
 #undef   AMAX1	
