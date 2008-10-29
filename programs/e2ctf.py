@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 10/17/2007 (sludtke@bcm.edu)
+# Author: Steven Ludtke, 10/29/2008 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -31,9 +31,8 @@
 #
 #
 
-# e2boxer.py  10/17/2007  Steven Ludtke
-# This is a program for performing various CTF related operations on
-# images and sets of images
+# e2ctf.py  10/29/2008 Steven Ludtke
+# This is a program for determining CTF parameters and (optionally) phase flipping images
 
 from EMAN2 import *
 from optparse import OptionParser
@@ -42,44 +41,24 @@ import time
 import os
 import sys
 
-
-
-pl=()
-
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input stack/image> ...
 	
-Various CTF-related operations on images."""
+Various CTF-related operations on images. Input particles should be unmasked and unfiltered. A minimum of ~20% padding around the
+particles is required for background extraction, even if this brings the edge of another particle into the box in some cases.
+Particles should be reasonably well centered."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
-	parser.add_option("--dbin",type="string",help="Box locations used when input is a whole micrograph")
-	parser.add_option("--powspec",action="store_true",help="Compute the power spectrum of the input image(s)",default=False)
-	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which will largely mask out the particles",default=0)
-	parser.add_option("--smooth",type="int",help="Smooth the background curve over roughly the specified range in pixels",default=0)
+	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which would largely mask out the particles",default=0)
 	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
-	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
 	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
-	
-	
-	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	#parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
-	#parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid, pspec",default=[])
-	#parser.add_option("--threshold","-T",type="float",help="(auto:ref) Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
-	#parser.add_option("--refptcl","-R",type="string",help="(auto:ref) A stack of reference images. Must have the same scale as the image being boxed.",default=None)
-	#parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
-	#parser.add_option("--retestlist",type="string",help="(auto:ref) Comma separated list of image numbers for retest cycle",default="")
-	#parser.add_option("--ptclsize","-P",type="int",help="(auto:circle) Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=0)
-	#parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
-	#parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
-	#parser.add_option("--dbout",type="string",help="filename to write EMAN1 style box database file to",default=None)
-	#parser.add_option("--ptclout",type="string",help="filename to write boxed out particles to",default=None)
-	#parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
-	
+	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
+
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 
@@ -87,84 +66,139 @@ Various CTF-related operations on images."""
 	if options.cs==0 : parser.error("Please specify Cs")
 	if options.apix==0 : parser.error("Please specify A/Pix")
 
-	logid=E2init(sys.argv)
+	img_sets=[]
+
+	for i in args:
+		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(i,radius=options.bgmask,edgenorm=not options.nonorm)
+
+
+def powspec(stackfile,mask=None,edgenorm=True,):
+	"""This routine will read the images from the specified file, optionally edgenormalize,
+	optionally apply a mask then compute the average
+	2-D power spectrum for the stack. Results returned as a 2-D FFT intensity/0 image"""
 	
-	ps1d=[]
-	ps2d=[]
-	# This is for reading an entire micrograph
-	# and processing it two different ways from the box db
-	if options.dbin:
-		im=EMData(args[0],0)
-		im.process_inplace("normalize.edgemean")
+	n=EMUtil.get_image_count(stackfile)
+	
+	for i in range(n):
+		im=EMData(stackfile,i)
+		if edgenorm : im.process_inplace("normalize.edgemean")
+		if mask : im*=mask
+		imf=im.do_fft()
+		imf.ri2inten()
+		if i==0: av=imf
+		else: av+=imf
+	
+	av/=(float(n)*av.get_ysize()*av.get_ysize())
+	av.set_value_at(0,0,0.0)
+#	av.process_inplace("xform.fourierorigin.tocenter")
+	
+	av.set_complex(1)
+	av.set_attr("is_intensity", 1)
+	return av
+
+masks={}		# mask cache for background/foreground masking
+def powspec_with_bg(stackfile,radius=0,edgenorm=True):
+	"""This routine will read the images from the specified file, optionally edgenormalize,
+	then apply a gaussian mask with the specified radius then compute the average 2-D power 
+	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge 
+	apotization to get an appoximate 'background' power spectrum. 2-D results returned as a 2-D FFT 
+	intensity/0 image. 1-D results returned as a list of floats.
+	
+	returns a 4-tuple with spectra for (1d particle,1d background,2d particle,2d background)
+	"""
+	
+	global masks
+	
+	im=EMData(stackfile,0,True)
+	ys=im.get_ysize()
+	
+	# set up the inner and outer Gaussian masks
+	try:
+		mask1,ratio1,mask2,ratio2=masks[(ys,radius)]
+	except:
+		mask1=EMData(ys,ys,1)
+		mask1.to_one()
+		mask1.process_inplace("mask.gaussian",{"outer_radius":radius})
+		mask2=mask1.copy()*-1+1
+		mask2.process_inplace("mask.decayedge2d",{"width":4})
+		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
+		ratio2=mask2.get_attr("square_sum")/(ys*ys)
+		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
+	
+	for i in range(n):
+		im1=EMData(stackfile,i)
 		
-		# x,y,xsize,ysize,quality,changed
-		boxes=[[int(j) for j in i.split()] for i in file(options.dbin,"r").readlines() if i[0]!="#"]	# this reads the whole box db file
+		if edgenorm : im1.process_inplace("normalize.edgemean")
+		im2=em1.copy()
+
+		im1*=mask1
+		imf=im.do_fft()
+		imf.ri2inten()
+		if i==0: av1=imf
+		else: av1+=imf
+	
+		im2*=mask2
+		imf=im2.do_fft()
+		imf.ri2inten()
+		if i==0: av2=imf
+		else: av2+=imf
 		
-		ps2d.append(powspecdb(im,boxes))
-		i3,i2=powspecbg(im,boxes[0][2])
-		ps2d.append(i3)
+	
+	av1/=(float(n)*av1.get_ysize()*av1.get_ysize()*ratio1)
+	av1.set_value_at(0,0,0.0)
+	av1.set_complex(1)
+	av1.set_attr("is_intensity", 1)
+
+	av2/=(float(n)*av2.get_ysize()*av2.get_ysize()*ratio2)
+	av2.set_value_at(0,0,0.0)
+	av2.set_complex(1)
+	av2.set_attr("is_intensity", 1)
+
+	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
+	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
+
+	return (av1_1d,av2_1d,av1,av2)
+
+
+def bgedge2d(stackfile,width):
+	"""This routine will read the images from the specified file, and compute the average
+	2-D power spectrum computed using boxes taken from the edge of the image. Returns the
+	1-D power spectrum as a list of floats. This is not presently used in e2ctf since it
+	produces a heavily downsampled background curve, and is provided only for experimentation."""
+	
+	n=EMUtil.get_image_count(stackfile)
+	av=None
+	
+	for i in range(n):
+		im=EMData(stackfile,i)
 		
-		names=args[:]
-		names.append(names[0]+" BG")
+		xs=im.get_xsize()		# x size of image
+		xst=int(floor(xs/ceil(xs/width)))	# step to use so we cover xs with width sized blocks
 		
-		ps1d=[ps2d[0].calc_radial_dist(ps2d[0].get_ysize()/2,0.0,1.0,1),i2]
-		norm=sum(ps1d[0][-4:-1])/sum(ps1d[1][-4:-1])
-		for i in range(len(ps1d[1])): ps1d[1][i]*=norm
-		
-	# This reads already boxed images
-	else :
-		names=[]
-		for i in args:
-			im=EMData(i,0)
-			ys=im.get_ysize()
-			ds=1.0/(options.apix*ys)
+		# Build a list of all boxes around the edge
+		boxl=[]
+		for x in range(0,xs-xst/2,xst): 
+			boxl.append((x,0))
+			boxl.append((x,xs-xst))
+		for y in range(xst,xs-3*xst/2,xst):
+			boxl.append((0,y))
+			boxl.append((xs-xst,y))
 			
-			if options.bgmask:
-				mask1=EMData(ys,ys,1)
-				mask1.to_one()
-#				mask1.process_inplace("mask.sharp",{"outer_radius":options.bgmask})
-				mask1.process_inplace("mask.gaussian",{"outer_radius":options.bgmask})
-				mask2=mask1.copy()*-1+1
-				mask2.process_inplace("mask.decayedge2d",{"width":4})
-#				ratio1=pi*(float(options.bgmask)/ys)**2
-#				ratio2=1.0-ratio1
-				ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
-				ratio2=mask2.get_attr("square_sum")/(ys*ys)
-#				print ratio1,ratio2
-				ps2d.append(powspec(i,not options.nonorm,mask1))
-#				mask1.write_image("mask1.mrc")
-#				mask2.write_image("mask2.mrc")
-			else : ps2d.append(powspec(i,not options.nonorm))
-			ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
-			ps1d[-1]=[y/ratio1 for y in ps1d[-1]]
-#			ps1d.append(bgedge1d(i,-options.bgedge,not options.nonorm))
-			out=file("ctf.fg1d.txt","w")
-			for a,b in enumerate(ps1d[-1]): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
-			out.close()
-			names.append(i)
-			if options.bgmask>0 :
-				bg2d=powspec(i,not options.nonorm,mask2)
-#				ps2d.append(bg2d)
-				bg=bg2d.calc_radial_dist(bg2d.get_ysize()/2,0.0,1.0,1)
-				bg=[y/ratio2 for y in bg]
-				if options.smooth:
-					ra=options.smooth
-					bg=[0]+[log10(v) for v in bg[1:]]
-					bg=bg[:ra+3]+[sum(bg[v-ra:v+ra+1])/(ra*2+1) for v in range(ra+3,len(bg)-ra)]+bg[len(bg)-ra:]
-					bg=[0]+[10**v for v in bg[1:]]
-				snr=[(ps1d[-1][v]-bg[v])/(bg[v]+.00001) for v in range(len(bg))]
-#				for v in range(len(bg)): ps1d[-1][v]=ps1d[-1][v]-bg[v]
-#				ps1d.append(bg)
-#				names.append(i+"(bg)")
+		for b in boxl:
+			r=im.get_clip(Region(b[0],b[1],width,width))
+			imf=r.do_fft()
+			imf.ri2inten()
+			if av : av+=imf
+			else: av=imf
+	
+	av/=(n*len(boxl)*width*width)
+	av.set_value_at(0,0,0.0)
 
-				out=file("ctf.bg1d.txt","w")
-				for a,b in enumerate(bg): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
-				out.close()
+	av.set_complex(1)
+	av.set_attr("is_intensity", 1)
+	return av
 
-				out=file("ctf.snr.txt","w")
-				for a,b in enumerate(snr): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
-				out.close()
-
+def ctf_fit():
 			# defocus estimation
 			ctf=EMAN2Ctf()
 			ctf.from_dict({"defocus":1,"voltage":options.voltage,"cs":options.cs,"ampcont":options.ac,"apix":options.apix})
@@ -253,235 +287,6 @@ Various CTF-related operations on images."""
 
 
 			print "Best DF,AC = ",dfbest[0],acbest
-#			mapout.write_image("dfmap.mrc",0)
-				
-			
-			#if options.bgedge>0 :
-				#bg=bgedge2d(i,options.bgedge)
-				#ps2d.append(bg)
-				#ps1d.append(ps2d[-1].calc_radial_dist(ps2d[-1].get_ysize()/2,0.0,1.0,1))
-				#names.append(i+"(bg)")
-			
-#			if options.bgedge>0 :
-#				bg=bgedge1d(i,options.bgedge,not options.nonorm)
-##				for ii in range(1,len(bg)): bg[ii]/=sqrt(ii)
-##				bgs=[ps1d[-1][ii]/bg[ii] for ii in range(2,len(bg)/2)]
-##				mins=min(bgs)
-##				bg=[ii*mins for ii in bg]
-#				ps1d.append(bg)
-#				ps2d.append(ps2d[-1])
-#				names.append(i+"(bg)")
-#				out=file("bg1d.txt","w")
-#				for a,b in enumerate(ps1d[-1]): out.write("%d\t%1.5f\n"%(a,b))
-#				out.close()
-
-			
-
-	if options.gui : 
-		gui=GUIctf(names,ps1d,ps2d)
-		gui.sapix.setValue(options.apix)
-		gui.run()
-
-def powspecbg(image,size):
-	"""This routine will 'gridbox' the entire image, and compute a power spectrum consisting
-	of the minimum value in each pixel. Hopefully this will approximate the background."""
-	
-	avgr=Averagers.get("minmax",{"max":0})
-#	avgr=Averagers.get("image")
-	allav=[]	# used for development, can be removed in production
-	
-	norm=size*size
-	n=0
-	for y in range(size/2,image.get_ysize()-size*3/2,size/2):
-		for x in range(size/2,image.get_xsize()-size*3/2,size/2):
-			b=image.get_clip(Region(x,y,size,size))
-			imf=b.do_fft()
-			imf.ri2inten()
-			i2=imf.calc_radial_dist(imf.get_ysize()/2,0.0,1.0,1)
-			if n==0 : i2a=i2[:]
-			else :
-				for i,j in enumerate(i2):
-					i2a[i]=min(j,i2a[i])
-			avgr.add_image(imf)
-			n+=1
-			allav.append(i2)	# store the individual power spectra
-	
-	av=avgr.finish()
-	av/=norm
-	av.set_value_at(0,0,0.0)
-	
-	i2a=[i/norm for i in i2a]
-	
-	av.set_complex(1)
-	av.set_attr("is_intensity", 1)
-	
-	# SVD on individual spectra
-	allav2=[]
-	for i in allav:
-		im=EMData(len(i),1,1)
-		im.to_zero()
-		for j in range(1,len(i)): im.set_value_at(j,0,0,i[j])
-		allav2.append(im) 
-	#s=Util.svdcmp(allav2,10)
-	#for i in s: i.write_image("basis.hed",-1)
-	
-	# PCA on individual spectra
-	#msk=allav2[0].copy()
-	#msk.to_one()
-	#an=Analyzers.get("pca",{"mask":msk ,"nvec":20})
-	#an.insert_images_list(allav2)
-	#s=an.analyze()
-	for i in allav2: i.write_image("basis.hed",-1)
-	
-	
-	# this writes a 2D image containing all of the individual power spectra
-	aa=EMData(len(allav[0]),len(allav))
-	aa.to_zero()
-	for y,a in enumerate(allav):
-		for x in range(1,len(a)):
-			aa.set_value_at(x,y,a[x])
-	aa.write_image("psp.mrc")
-	
-	return av,i2a
-
-def powspecdb(image,boxes):
-	"""This routine will read the images from the specified file, and compute the average
-	2-D power spectrum for the stack. Results returned as a 2-D FFT intensity/0 image"""
-	
-	
-	for j,i in enumerate(boxes):
-		b=image.get_clip(Region(i[0],i[1],i[2],i[3]))
-		imf=b.do_fft()
-		imf.ri2inten()
-		if j==0: av=imf
-		else: av+=imf
-	
-	av/=(float(len(boxes))*av.get_xsize()*av.get_ysize())
-	av.set_value_at(0,0,0.0)
-
-	av.set_complex(1)
-	av.set_attr("is_intensity", 1)
-	return av
-
-def powspec(stackfile,edgenorm=True,mask=None):
-	"""This routine will read the images from the specified file, optionally edgenormalize,
-	optionally apply a mask then compute the average
-	2-D power spectrum for the stack. Results returned as a 2-D FFT intensity/0 image"""
-	
-	n=EMUtil.get_image_count(stackfile)
-	
-	for i in range(n):
-		im=EMData(stackfile,i)
-		if edgenorm : im.process_inplace("normalize.edgemean")
-		if mask : im*=mask
-		imf=im.do_fft()
-		imf.ri2inten()
-		if i==0: av=imf
-		else: av+=imf
-	
-	av/=(float(n)*av.get_ysize()*av.get_ysize())
-	av.set_value_at(0,0,0.0)
-#	av.process_inplace("xform.fourierorigin.tocenter")
-	
-	av.set_complex(1)
-	av.set_attr("is_intensity", 1)
-	return av
-
-def bgedge1d(stackfile,width,edgenorm=True):
-	"""This routine will read the images from the specified file, and compute the average
-	1-D power spectrum computed using lines taken from the edge of the image. Returns the
-	1-D power spectrum as a list of floats. Negative widths work from the center out."""
-	
-	n=EMUtil.get_image_count(stackfile)
-	
-	for i in range(n):
-		im=EMData(stackfile,i)
-		if edgenorm : im.process_inplace("normalize.edgemean")
-		if i==0 : 
-			xs=im.get_xsize()
-		
-			# values to cover a "width" border around the image
-			if width>0:
-				pos=range(width)+range(xs-width,xs)
-			else: pos=range(-width,xs+width)
-		
-			# avg will store the running sum of the 1D spectra
-			avg=EMData(xs+2,1,1)
-			avg.to_zero()
-			avg.set_complex(1)
-			avg.set_ri(1)
-		
-		for j in pos:
-			c=im.get_clip(Region(0,j,xs,1))
-			cf=c.do_fft()
-			cf.ri2inten()
-			avg+=cf
-			
-			c=im.get_clip(Region(j,0,1,xs))
-			c.set_size(xs,1,1)
-			cf=c.do_fft()
-			cf.ri2inten()
-			avg+=cf
-			
-#	avg.ri2inten()
-	avg/=len(pos)*2*n
-	avg/=xs
-#	avg/=(xs+2)/4			# didn't work the math out for this, but seems to be correct
-	ret=[avg.get(v,0,0) for v in range(0,xs+2,2)]
-	
-	return ret
-
-def bgedge2d(stackfile,width):
-	"""This routine will read the images from the specified file, and compute the average
-	2-D power spectrum computed using boxes taken from the edge of the image. Returns the
-	1-D power spectrum as a list of floats"""
-	
-	n=EMUtil.get_image_count(stackfile)
-	av=None
-	
-	for i in range(n):
-		im=EMData(stackfile,i)
-		
-		xs=im.get_xsize()		# x size of image
-		xst=int(floor(xs/ceil(xs/width)))	# step to use so we cover xs with width sized blocks
-		
-		# Build a list of all boxes around the edge
-		boxl=[]
-		for x in range(0,xs-xst/2,xst): 
-			boxl.append((x,0))
-			boxl.append((x,xs-xst))
-		for y in range(xst,xs-3*xst/2,xst):
-			boxl.append((0,y))
-			boxl.append((xs-xst,y))
-			
-		for b in boxl:
-			r=im.get_clip(Region(b[0],b[1],width,width))
-			imf=r.do_fft()
-			imf.ri2inten()
-			if av : av+=imf
-			else: av=imf
-	
-	av/=(n*len(boxl)*width*width)
-	av.set_value_at(0,0,0.0)
-
-	av.set_complex(1)
-	av.set_attr("is_intensity", 1)
-	return av
-
-try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
-	from valslider import ValSlider
-except:
-	print "Warning: PyQt4 must be installed to use the --gui option"
-	class dummy:
-		pass
-	class QWidget:
-		"A dummy class for use when Qt not installed"
-		def __init__(self,parent):
-			print "Qt4 has not been loaded"
-	QtGui=dummy()
-	QtGui.QWidget=QWidget
 
 
 class GUIctf(QtGui.QWidget):
@@ -636,49 +441,6 @@ class GUIctf(QtGui.QWidget):
 #		except : E2setappval("boxer","imcontrol",False)
 		
 		return
-
-#class GUIctfPanel(QtGui.QWidget):
-	#def __init__(self,target) :
-		
-		#QtGui.QWidget.__init__(self,None)
-		#self.target=target
-		
-		#self.vbl = QtGui.QVBoxLayout(self)
-		#self.vbl.setMargin(0)
-		#self.vbl.setSpacing(6)
-		#self.vbl.setObjectName("vbl")
-		
-		#self.info = QtGui.QLabel("%d Boxes"%len(target.boxes),self)
-		#self.vbl.addWidget(self.info)
-
-		#self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
-		#self.thr.setValue(target.threshold)
-		#self.vbl.addWidget(self.thr)
-
-		#self.hbl1=QtGui.QHBoxLayout()
-		#self.hbl1.setMargin(0)
-		#self.hbl1.setSpacing(2)
-		#self.vbl.addLayout(self.hbl1)
-		
-		#self.lblbs=QtGui.QLabel("Box Size:",self)
-		#self.hbl1.addWidget(self.lblbs)
-		
-		#self.bs = QtGui.QLineEdit(str(target.boxsize),self)
-		#self.hbl1.addWidget(self.bs)
-
-		#self.hbl2=QtGui.QHBoxLayout()
-		#self.hbl2.setMargin(0)
-		#self.hbl2.setSpacing(2)
-		#self.vbl.addLayout(self.hbl2)
-
-		#self.done=QtGui.QPushButton("Done")
-		#self.vbl.addWidget(self.done)
-		
-		#self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
-		#self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
-		#self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.app.quit)
-##		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
-		
 
 
 if __name__ == "__main__":

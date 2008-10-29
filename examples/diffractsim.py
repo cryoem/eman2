@@ -54,19 +54,19 @@ Various CTF-related operations on images."""
 
 	(options, args) = parser.parse_args()
 	
-	size=512
+	size=512,256
 	
 	for i in range(8):
 		nsrc=0
-		sm=EMData(size,size)
-		t=EMData(size,size)
+		sm=EMData(*size)
+		t=EMData(*size)
 		for x in range(*eval(options.xrange)):
 			for y in range(*eval(options.yrange)):
-				t.process_inplace("testimage.sphericalwave",{"wavelength":options.wavelen,"phase":options.phase+2*pi*x/(options.wavelen)-0.25*pi*i,"x":x+size/2,"y":y+size/2,"z":0})
+				t.process_inplace("testimage.sphericalwave",{"wavelength":options.wavelen,"phase":options.phase+2*pi*x/(options.wavelen)-0.25*pi*i,"x":x+size[0]/2,"y":y+size[1]/2,"z":0})
 				sm+=t
 				nsrc+=1
-		sm["render_min"]=-nsrc/64.0
-		sm["render_max"]=nsrc/64.0
+		sm["render_min"]=-nsrc/256.0
+		sm["render_max"]=nsrc/256.0
 		sm.write_image("img.%d.png"%i)
 		
 	os.system("animate -delay 2 img.?.png")
