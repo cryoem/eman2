@@ -8611,7 +8611,7 @@ def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Rando
 def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None ):
 # 2D multi-reference alignment using rotational ccf in polar coords and quadratic interpolation
 	from projection    import   prgs, prep_vol
-	from utilities     import   even_angles, read_txt_col
+	from utilities     import   even_angles, read_txt_col, set_params_proj
 	from string        import   split
 	import os
 	import types
@@ -8659,7 +8659,8 @@ def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "M
 	s2y=0
 	for i in xrange(len(angles)):
 		proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
-		proj.set_attr_dict({'phi':angles[i][0], 'theta':angles[i][1], 'psi':angles[i][2], 's2x':0.0, 's2y':0.0, 'active':1})
+		set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+		proj.set_attr_dict({'active':1})
 		if(Disk):
                     proj.write_image(stack, i)
 		else: 
@@ -9127,16 +9128,11 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 		if(vol_stack[-3:] == "spi"):
 			dropImage(vol, vol_stack, "s")
 		else:
-			from utilities import info
-			print 'vol:', vol
-			info(vol)
-			print vol.get_attr_dict()
-			#print  vol_stack
-			#dropImage(vol, vol_stack)
-		#if not(info is None):
-		#	info.write( "result wrote to " + vol_stack + "\n")
-		#	info.write( "Total time: %10.3f\n" % (time()-time_start) )
-		#	info.flush()
+			dropImage(vol, vol_stack)
+		if not(info is None):
+			info.write( "result wrote to " + vol_stack + "\n")
+			info.write( "Total time: %10.3f\n" % (time()-time_start) )
+			info.flush()
 
 def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym="c1", verbose=1, MPI=False):
 	if MPI:
