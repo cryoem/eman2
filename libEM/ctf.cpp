@@ -476,6 +476,8 @@ EMAN2Ctf::EMAN2Ctf()
 	voltage = 0;
 	cs = 0;
 	apix = 0;
+	background.clear();
+	snr.clear();
 }
 
 
@@ -493,8 +495,8 @@ int EMAN2Ctf::from_string(const string & ctf)
 	float v;
 	const char *s=ctf.c_str();
 	
-	int ii = sscanf(s, "%c%f %f %f %f %f %f %f %f %d%n",
-				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &cs, &apix,&bglen,&pos);
+	int ii = sscanf(s, "%c%f %f %f %f %f %f %f %f %f %d%n",
+				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &cs, &apix,&dsbg,&bglen,&pos);
 	if (type!='E') throw InvalidValueException(type,"Trying to initialize Ctf object with bad string");
 	
 
@@ -521,8 +523,8 @@ int EMAN2Ctf::from_string(const string & ctf)
 string EMAN2Ctf::to_string() const
 {
 	char ctf[256];
-	sprintf(ctf, "E%1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %d",
-			defocus, dfdiff, dfang, bfactor, ampcont, voltage, cs, apix, (int)background.size());
+	sprintf(ctf, "E%1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %d",
+			defocus, dfdiff, dfang, bfactor, ampcont, voltage, cs, apix, dsbg,(int)background.size());
 
 	string ret=ctf;
 	for (int i=0; i<(int)background.size(); i++) {
@@ -551,6 +553,7 @@ void EMAN2Ctf::from_dict(const Dict & dict)
 	voltage = dict["voltage"];
 	cs = dict["cs"];
 	apix = dict["apix"];
+	dsbg = dict["dsbg"];
 	background = dict["background"];
 	snr = dict["snr"];
 }
@@ -566,6 +569,7 @@ Dict EMAN2Ctf::to_dict() const
 	dict["voltage"] = voltage;
 	dict["cs"] = cs;
 	dict["apix"] = apix;
+	dict["dsbg"] = dsbg;
 	dict["background"] = background;
 	dict["snr"] = snr;
 
@@ -583,10 +587,11 @@ void EMAN2Ctf::from_vector(const vector<float>& vctf)
 	voltage = vctf[5];
 	cs = vctf[6];
 	apix = vctf[7];
-	background.resize((int)vctf[8]);
-	for (i=0; i<(int)vctf[8]; i++) background[i]=vctf[i+9];
-	snr.resize((int)vctf[i+9]);
-	for (int j=0; j<(int)vctf[j]; j++) snr[j]=vctf[i+j+10];
+	dsbg = vctf[8];
+	background.resize((int)vctf[9]);
+	for (i=0; i<(int)vctf[8]; i++) background[i]=vctf[i+10];
+	snr.resize((int)vctf[i+10]);
+	for (int j=0; j<(int)vctf[j]; j++) snr[j]=vctf[i+j+11];
 }
 
 vector<float> EMAN2Ctf::to_vector() const
@@ -601,6 +606,7 @@ vector<float> EMAN2Ctf::to_vector() const
 	vctf.push_back(voltage);
 	vctf.push_back(cs);
 	vctf.push_back(apix);
+	vctf.push_back(dsbg);
 	vctf.push_back(background.size());
 	for (int i=0; i<background.size(); i++) vctf.push_back(background[i]);
 	vctf.push_back((float)snr.size());
@@ -614,13 +620,18 @@ vector<float> EMAN2Ctf::to_vector() const
 void EMAN2Ctf::copy_from(const Ctf * new_ctf)
 {
 	if (new_ctf) {
-		const EMAN1Ctf *c = static_cast<const EMAN1Ctf *>(new_ctf);
+		const EMAN2Ctf *c = static_cast<const EMAN2Ctf *>(new_ctf);
 		defocus = c->defocus;
+		dfdiff = c->dfdiff;
+		dfang = c->dfang;
 		bfactor = c->bfactor;
 		ampcont = c->ampcont;
 		voltage = c->voltage;
 		cs = c->cs;
 		apix = c->apix;
+		dsbg = c->dsbg;
+		background = c->background;
+		snr = c->snr;
 	}
 }
 
@@ -660,43 +671,42 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 
 	case CTF_BACKGROUND:
 		for (int i = 0; i < np; i++) {
-			r[i] = calc_noise(s);
-			s += ds;
+			float f = s/dsbg;
+			int j = (int)floor(f);
+			f-=j;
+			if (j>background.size()-2) r[i]=background.back();
+			else r[i]=background[j]*(1.0-f)+background[j+1]*f;
+			s+=ds;
 		}
 		break;
 
 	case CTF_SNR:
+		for (int i = 0; i < np; i++) {
+			float f = s/dsbg;
+			int j = (int)floor(f);
+			f-=j;
+			if (j>snr.size()-2) r[i]=snr.back();
+			else r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
+			s+=ds;
+		}
+
+		break;
+
+	case CTF_WIENER_FILTER:
 // 		if (!sf) {
 // 			LOGERR("CTF computation error, no SF found\n");
 // 			return r;
 // 		}
 
 		for (int i = 0; i < np; i++) {
-			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_snr(amp1, gamma, s);
-			if (s && sf) {
-				r[i] *= pow(10.0f, sf->get_yatx(s));
-			}
-			s += ds;
-		}
-
-		break;
-
-	case CTF_WIENER_FILTER:
-		if (!sf) {
-			LOGERR("CTF computation error, no SF found\n");
-			return r;
-		}
-
-		for (int i = 0; i < np; i++) {
-			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_snr(amp1, gamma, s);
-			if (s && sf) {
-				r[i] *= pow(10.0f, sf->get_yatx(s));
-			}
-
-			r[i] = 1.0f / (1.0f + 1.0f / r[i]);
-			s += ds;
+			float f = s/dsbg;
+			int j = (int)floor(f);
+			f-=j;
+			if (j>snr.size()-2) r[i]=snr.back();
+			else r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
+			if (r[i]<0) r[i]=0;
+			r[i]=1/(1+1/(r[i]));
+			s+=ds;
 		}
 		break;
 
@@ -710,11 +720,11 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 			float gamma = calc_gamma(g1, g2, s);
 			if (sf) {
 				r[i] = calc_ctf1(amp1, gamma, s);
-				r[i] = r[i] * r[i] * pow(10.0f, sf->get_yatx(s)) + calc_noise(s);
+//				r[i] = r[i] * r[i] * pow(10.0f, sf->get_yatx(s)) + calc_noise(s);
 			}
 			else {
 				r[i] = calc_ctf1(amp1, gamma, s);
-				r[i] = r[i] * r[i] + calc_noise(s);
+//				r[i] = r[i] * r[i] + calc_noise(s);
 			}
 			s += ds;
 		}
@@ -772,7 +782,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #else
 				float s = (float) hypot(x, y - ny / 2.0f) * ds;
 #endif			
-				d[x * 2 + ynx] = calc_noise(s);
+//				d[x * 2 + ynx] = calc_noise(s);
 				d[x * 2 + ynx + 1] = 0;			// The phase is somewhat arbitrary
 			}
 		}
@@ -826,7 +836,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #endif	
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
-				float noise = calc_noise(s);
+				float noise = 0;
 				f = f * f / noise;
 
 				if (s && sf) {
@@ -852,7 +862,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #endif	
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
-				float noise = calc_noise(s);
+				float noise = 0;
 				f = f * f / noise;
 
 				if (s) {
@@ -879,7 +889,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #endif	
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
-				float noise = calc_noise(s);
+				float noise = 0;
 				f = f * f;
 
 				if (sf && s) {

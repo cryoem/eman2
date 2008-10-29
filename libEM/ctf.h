@@ -225,9 +225,9 @@ namespace EMAN
 		float voltage;		// microscope voltage in kV
 		float cs;			// Cs in mm
 		float apix;			// A/pix value used when generating 2D results
-		int boxsize;		// Box size in pixels (relates to # points in background and snr)
-		vector<float> background;	// background intensity, 1 value per radial pixel (typically NX/2, corners ignored)
-		vector<float> snr;			// SNR, 1 value per radial pixel (typically NX/2, corners assumed 0)
+		float dsbg;			// ds value for background and SNR
+		vector<float> background;	// background intensity, 1 value per radial pixel (NX/2, corners ignored)
+		vector<float> snr;			// SNR, 1 value per radial pixel (NX/2, corners assumed 0)
 
 	  public:
 		EMAN2Ctf();
@@ -302,19 +302,6 @@ namespace EMAN
 			float t1 = sqrt(1.0f - ampcont * ampcont/10000.0) * sin(gamma);
 			float v = (t1 + ampcont/100.0 * cos(gamma));
 			return v;
-		}
-
-		inline float calc_noise(float s)
-		{
-			float n = 0;
-			return n;
-		}
-
-		inline float calc_snr(float g1, float gamma, float s)
-		{
-			float ctf1 = calc_ctf1(g1, gamma, s);
-			float ctf2 = ctf1 * ctf1 / calc_noise(s);
-			return ctf2;
 		}
 
 	};
