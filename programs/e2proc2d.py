@@ -229,6 +229,7 @@ def main():
 		index_d[append_option] = 0
 	
 	outfilename_no_ext = outfile[:-4]
+	outfilename_ext = outfile[-3:]
 	for i in range(n0, n1+1):
 		if options.verbose >= 1:
 			if i%100==0 or options.verbose>2 :
@@ -239,7 +240,7 @@ def main():
 			continue
 
 		if options.split and options.split > 1:
-			outfile = outfilename_no_ext + ".%02d.hdf" % (i % options.split)
+			outfile = outfilename_no_ext + ".%02d." % (i % options.split) + outfilename_ext
 
 		if not isthreed:
 			d.read_image(infile, i)
