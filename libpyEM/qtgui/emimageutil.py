@@ -48,7 +48,7 @@ class EventsEmitterAndReciever:
 	
 	def is_emitting(self): return self.emit_events
 	
-	def get_emit_signals_and_connections(self): raise
+	def get_emit_signals_and_connections(self): return {}
 
 class EMEventRerouter:
 	def __init__(self,target=None):

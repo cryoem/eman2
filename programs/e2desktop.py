@@ -1375,13 +1375,16 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 	def update(self): self.updateGL()
 
 	def resizeGL(self, width, height):
-		side = min(width, height)
+		#side = min(width, height)
 		glViewport(0,0,self.width(),self.height())
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		
 		self.zNear = self.get_z_opt()
 		self.zFar = 2*self.get_z_opt()
+		#self.startz = self.d - 2.0*self.zwidth
+		#self.endz = self.d + 2.0*self.zwidth
+		
 		gluPerspective(self.fov,self.get_aspect(),self.zNear-500,self.zFar)
 		
 		glMatrixMode(GL_MODELVIEW)
@@ -1397,6 +1400,23 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		
 		for obj in self.resize_aware_objects:
 			obj.resize_gl()
+			
+	def load_orthographic(self):
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		self.aspect = float(self.width())/float(self.height())
+		self.xwidth = self.aspect*self.yheight
+		glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
+		glMatrixMode(GL_MODELVIEW)
+		
+	def load_perspective(self):
+		self.aspect = float(self.width())/float(self.height())
+		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		if self.startz < 0: self.startz = 1
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
+		glMatrixMode(GL_MODELVIEW)
 		
 		
 	def get_near_plane_dims(self):

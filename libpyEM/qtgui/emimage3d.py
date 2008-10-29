@@ -97,10 +97,10 @@ class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
 		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,1.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 		GL.glClearColor(0,0,0,0)
@@ -179,12 +179,12 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		fmt.setDoubleBuffer(True)
 		fmt.setDepth(True)
 #		fmt.setStencil(True)
-#		fmt.setSampleBuffers(True)
+		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMEventRerouter.__init__(self,image_3d_module)
 		
 		self.aspect=1.0
-		self.fov = 10 # field of view angle used by gluPerspective
+		self.fov = 20 # field of view angle used by gluPerspective
 		self.d = 0
 		self.zwidth = 0
 		self.perspective = True
@@ -206,7 +206,8 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.xwidth = image.get_xsize()
 		self.cam.default_z = -self.d
 		self.cam.cam_z = -self.d
-	
+		self.startz = self.d - 2.0*self.zwidth
+		self.endz = self.d + 2.0*self.zwidth
 	def set_data(self,data):
 		self.target.set_data(data)
 		if ( data != None and isinstance(data,EMData)):
@@ -218,10 +219,10 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,1.])
 		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 		glClearStencil(0)
@@ -251,10 +252,13 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glViewport(0,0,self.width(),self.height())
 		
 		# maintain the aspect ratio of the window we have
-		self.aspect = float(self.width())/float(self.height())
+		#self.aspect = float(self.width())/float(self.height())
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
+		
+		#self.startz = self.d - 2.0*self.zwidth
+		#self.endz = self.d + 2.0*self.zwidth
 		
 		if (self.zwidth == 0):
 			# We've received  a resize event but no data has been set
@@ -266,16 +270,14 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 			#glLoadIdentity()
 			return
 		
-		self.startz = self.d - 2.0*self.zwidth
-		self.endz = self.d + 2.0*self.zwidth
-		if self.perspective:
+		#if self.perspective:
 			# using gluPerspective for simplicity
 			
-			if self.startz < 0: self.startz = 1
-			gluPerspective(self.fov,self.aspect,self.startz,self.endz)
-		else:
-			self.xwidth = self.aspect*self.yheight
-			glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
+		self.load_perspective()
+		#else:
+			#self.load_orthographic()
+			#self.xwidth = self.aspect*self.yheight
+			#glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
 			
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
@@ -287,6 +289,24 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 		self.updateGL()
 
+	def load_orthographic(self):
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		self.aspect = float(self.width())/float(self.height())
+		self.xwidth = self.aspect*self.yheight
+		glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
+		glMatrixMode(GL_MODELVIEW)
+		
+	def load_perspective(self):
+		self.aspect = float(self.width())/float(self.height())
+		
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		if self.startz < 0: self.startz = 1
+		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
+		glMatrixMode(GL_MODELVIEW)
+		
+		
 	def set_perspective(self,bool):
 		self.perspective = bool
 		self.resizeGL(self.width(),self.height())
@@ -374,7 +394,9 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.file_name = None
 		
 		self.emit_events = False
-	
+		
+		self.perspective = True
+		
 	def __del__(self):
 		pass
 		#for v in self.viewables:
@@ -413,6 +435,8 @@ class EMImage3DModule(EMImage3DGUIModule):
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
 	
+	
+	
 	def render(self):
 		self.image_change_count = self.data.get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		glPushMatrix()
@@ -421,13 +445,18 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.vdtools.update(1,1)
 		glPopMatrix()
 		
+		if not self.perspective: self.gl_context_parent.load_orthographic()
+		
 		self.cam.position()
+		
 		
 		for i in self.viewables:
 			glPushMatrix()
 			i.render()
 			glPopMatrix()
-
+		
+		if not self.perspective: self.gl_context_parent.load_perspective()
+		
 	def resizeEvent(self, width, height):
 		for i in self.viewables:
 			i.resizeEvent()
@@ -589,6 +618,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 			self.lsat_window_height = height
 	
 	def set_perspective(self,bool):
+		self.perspective = bool
 		self.gl_context_parent.set_perspective(bool)
 		
 	def load_rotation(self,t3d):

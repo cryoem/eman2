@@ -50,13 +50,13 @@ from PyQt4.QtCore import QTimer
 from time import *
 
 from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTools
-from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
+from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel, EventsEmitterAndReciever
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EM3DSymViewerModule(EMImage3DGUIModule):
+class EM3DSymViewerModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
@@ -69,7 +69,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 
 	def __init__(self,application=None):
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
-		
+		EventsEmitterAndReciever.__init__(self)
 		self.init()
 		self.initialized = True
 		
@@ -217,20 +217,21 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		glMaterial(GL_FRONT,GL_AMBIENT,(0.24725, 0.2245, 0.0645,1.0))
 		glMaterial(GL_FRONT,GL_DIFFUSE,(0.34615, 0.3143, 0.0903,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(1.000, 0.9079885, 0.26086934,1.0))
+		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,4.0)
 		
 	def green(self):
 		glColor(.2,.9,.2)
-		# this is a nice light blue color (when lighting is on)
-		# and is the default color of the frame
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.3,.1,1.0))
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.9,.9,.1,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,32.0)
 		
 	def red(self):
 		glMaterial(GL_FRONT,GL_AMBIENT,(0.1745, 0.01175, 0.01175,1.0))
 		glMaterial(GL_FRONT,GL_DIFFUSE,(0.61424, 0.04136, 0.04136,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(0.927811, 0.826959, 0.826959,1.0))
+		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,32.0)
 		
 	def trace_great_arcs(self, points):

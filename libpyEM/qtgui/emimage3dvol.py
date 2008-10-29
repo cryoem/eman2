@@ -50,13 +50,13 @@ from PyQt4.QtCore import QTimer
 from time import *
 
 from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,EMOpenGLFlagsAndTools
-from emimageutil import ImgHistogram,EMEventRerouter, EMTransformPanel
+from emimageutil import ImgHistogram,EMEventRerouter, EMTransformPanel, EventsEmitterAndReciever
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 MAG_INCREMENT_FACTOR = 1.1
 
 
-class EMVolumeModule(EMImage3DGUIModule):
+class EMVolumeModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 	
 #	def get_qt_widget(self):
 #		if self.parent == None:	
@@ -68,6 +68,7 @@ class EMVolumeModule(EMImage3DGUIModule):
 	def __init__(self,image=None,application=None):
 		self.data = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EventsEmitterAndReciever.__init__(self)
 		self.parent = None
 		
 		self.init()
