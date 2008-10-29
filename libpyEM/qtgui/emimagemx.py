@@ -50,6 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emimageutil import EventsEmitterAndReciever
 
 GLUT.glutInit(sys.argv)
 
@@ -298,7 +299,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				
 			self.mousedrag=(event.x(),event.y())
 
-class EMImageMXModule(EMGUIModule):
+class EMImageMXModule(EMGUIModule,EventsEmitterAndReciever):
 	
 	def load_font_renderer(self):
 		try:
@@ -342,6 +343,7 @@ class EMImageMXModule(EMGUIModule):
 		self.init_size_flag = True
 		self.data=None
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
+		EventsEmitterAndReciever.__init__(self)
 		EMImageMXModule.allim[self] = 0
 		self.filename = ''
 		self.datasize=(1,1)
@@ -397,6 +399,8 @@ class EMImageMXModule(EMGUIModule):
 		
 		self.reroute_delete_target = None
 
+	def get_emit_signals_and_connections(self):
+		return {"set_origin":self.set_origin,"set_scale":self.set_scale}
 	
 	def width(self):
 		if self.gl_widget != None:
@@ -468,9 +472,9 @@ class EMImageMXModule(EMGUIModule):
 	def get_box_image(self,idx):
 		return self.data[idx]
 
-	def emit(self,*args,**kargs):
-		qt_widget = self.application.get_qt_emitter(self)
-		qt_widget.emit(*args,**kargs)
+	#def emit(self,*args,**kargs):
+		#qt_widget = self.application.get_qt_emitter(self)
+		#qt_widget.emit(*args,**kargs)
 	
 	def __del__(self):
 		if self.main_display_list != 0:
@@ -649,6 +653,7 @@ class EMImageMXModule(EMGUIModule):
 #		print self.origin,newscale/self.scale,yo,self.height()/2+yo
 		
 		self.scale=newscale
+		if self.emit_events: self.emit(QtCore.SIGNAL("set_scale"),self.scale,adjust,update_gl)
 		if update_gl: self.updateGL()
 		
 	def set_density_min(self,val,update_gl=True):
@@ -1287,6 +1292,7 @@ class EMImageMXModule(EMGUIModule):
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
+			if self.emit_events: self.emit(QtCore.SIGNAL("set_origin"),self.origin[0],self.origin[1],False)
 			self.mousedrag=(event.x(),event.y())
 			try:self.gl_widget.updateGL()
 			except: pass

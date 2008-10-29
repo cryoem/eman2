@@ -40,6 +40,8 @@ from math import *
 from EMAN2 import *
 
 from emapplication import EMGUIModule,EMQtWidgetModule
+from emimageutil import EventsEmitterAndReciever
+
 
 try: from PyQt4 import QtWebKit
 except: pass
@@ -537,7 +539,7 @@ class EMViewportDepthTools2:
 			#return False
 	
 	def isinwin(self,x,y):
-		return Util.point_is_in_convex_polygon_2d(Vec2f(self.mc00[0],self.mc00[1]),Vec2f(self.mc01[0],self.mc01[1]),Vec2f(self.mc10[0],self.mc10[1]),Vec2f(self.mc11[0],self.mc11[1]),Vec2f(x,y))
+		return Util.point_is_in_convex_polygon_2d(Vec2f(self.mc00[0],self.mc00[1]),Vec2f(self.mc01[0],self.mc01[1]),Vec2f(self.mc11[0],self.mc11[1]),Vec2f(self.mc10[0],self.mc10[1]),Vec2f(x,y))
 		
 	#def isinwin(self,x,y):
 		## this function can be called to determine
@@ -1136,7 +1138,7 @@ class EMOpenGLFlagsAndTools:
 		return setattr(self.__instance, attr, value)
 
 
-class Camera2:
+class Camera2(EventsEmitterAndReciever):
 	"""\brief A camera object encapsulates 6 degrees of freedom, and a scale factor
 	
 	The camera object stores x,y,z coordinates and a single transform object.
@@ -1151,6 +1153,7 @@ class Camera2:
 	
 	"""
 	def __init__(self,parent):
+		EventsEmitterAndReciever.__init__(self)
 		# The magnification factor influences how the scale (zoom) is altered when a zoom event is received.
 		# The equation is scale *= mag_factor or scale /= mag_factor, depending on the event.
 		self.parent=parent
@@ -1172,11 +1175,8 @@ class Camera2:
 
 		self.allow_rotations = True
 		
-		self.emit_events = False
-		
-	def enable_emit_events(self,val=True):
-		#print "set emit events to",val
-		self.emit_events = val
+	def get_emit_signals_and_connections(self):
+		return  {"apply_rotation":self.apply_rotation,"apply_translation":self.apply_translation,"scale_delta":self.scale_delta}
 		
 	def set_plane(self,plane='xy'):
 		'''

@@ -959,20 +959,25 @@ class EMGLWindow:
 		self.enable_clip = False
 		
 		self.camera_is_slaved = False
-	
-		gl_context_parent = self.parent.get_gl_context_parent()
-		QtCore.QObject.connect(gl_context_parent, QtCore.SIGNAL("window_selected"), gl_context_parent.window_selected)
+		self.window_selected_emit_signal = "window_selected"
+		
+	def set_window_selected_emit_signal(self,string):
+		self.window_selected_emit_signal = string
 		
 	def get_connection_object(self):
 		return self.parent.get_gl_context_parent()
 	
-	
 	def emit(self,*args,**kargs):
 		self.parent.emit(*args,**kargs)
 	
-	
 	def set_events_master(self,val=True):
-		self.drawable.drawable.cam.enable_emit_events(val)
+		self.drawable.drawable.enable_emit_events(val)
+		
+	def is_events_master(self,val=True):
+		self.drawable.drawable.is_emitting()
+	
+	def get_emit_signals_and_connections(self):
+		return self.drawable.drawable.get_emit_signals_and_connections()
 	
 	def camera_slaved(self):
 		return self.camera_is_slaved
@@ -1010,8 +1015,8 @@ class EMGLWindow:
 	def get_camera(self):
 		return self.cam
 	
-	def get_drawable_camera(self):
-		return self.drawable.drawable.cam
+	#def get_drawable_camera(self):
+		#return self.drawable.drawable.cam
 	
 	def get_border_width(self):
 		'''
@@ -1098,10 +1103,11 @@ class EMGLWindow:
 			self.cam.set_plane('xy')
 			self.cam.mousePressEvent(event)
 		elif self.mouse_event_target == self.drawable:
+			self.parent.emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
 			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mousePressEvent(qme)
-			self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
+			
 			#self.set_mouse_lock(self)
 		else: print "mouse press error" # this shouldn't happen
 			
@@ -1118,7 +1124,9 @@ class EMGLWindow:
 		elif event.modifiers() == Qt.AltModifier:
 			self.border_scale_event(event.delta())
 		elif self.mouse_event_target == self.drawable and self.allow_target_wheel_events:
+			self.parent.emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
 			self.drawable.wheelEvent(event)
+			
 		else: print "mouse wheel error",self.drawable# this shouldn't happen
 
 		#self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
@@ -1148,9 +1156,11 @@ class EMGLWindow:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
 		elif self.mouse_event_target == self.drawable:
+			self.parent.emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
 			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseDoubleClickEvent(qme)
+			
 		else: print "mouse double click error" # this shouldn't happen
 	
 		#self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)

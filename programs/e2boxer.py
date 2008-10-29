@@ -872,16 +872,16 @@ class EMBoxerModule:
 		emftgl_supported = True
 		try: a = EMFTGL()
 		except: emftgl_supported = False
-		if not glflags.npt_textures_unsupported() and emftgl_supported:
-			self.guimx=EMImageMXRotorModule(application=self.application)# widget for displaying image thumbs
-			self.guimx.disable_mx_zoom()
-			#self.guimx.allow_camera_rotations(False)
-			#self.guimx.disable_mx_translate()
-			#self.fancy_mode = EMBoxerModule.FANCY_MODE
+		#if not glflags.npt_textures_unsupported() and emftgl_supported:
+			#self.guimx=EMImageMXRotorModule(application=self.application)# widget for displaying image thumbs
+			#self.guimx.disable_mx_zoom()
+			##self.guimx.allow_camera_rotations(False)
+			##self.guimx.disable_mx_translate()
+			##self.fancy_mode = EMBoxerModule.FANCY_MODE
 			
-		else:
-			self.guimx=EMImageMXModule(application=self.application)
-			self.fancy_mode = EMBoxerModule.PLAIN_MODE
+		#else:
+		self.guimx=EMImageMXModule(application=self.application)
+		self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
 		self.guimx.set_mouse_mode("app")
 		
@@ -1364,10 +1364,10 @@ class EMBoxerModule:
 			emftgl_supported = True
 			try: a = EMFTGL()
 			except: emftgl_supported = False
-			if not glflags.npt_textures_unsupported() and emftgl_supported:
-				self.guimxit=EMImageRotorModule(application=self.application)
-			else:
-				self.guimxit=EMImageMXModule(application=self.application)
+			#if not glflags.npt_textures_unsupported() and emftgl_supported:
+				#self.guimxit=EMImageRotorModule(application=self.application)
+			#else:
+			self.guimxit=EMImageMXModule(application=self.application)
 				
 			try:
 				qt_parent = self.guimxit.get_gl_parent()
@@ -2980,13 +2980,13 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	def erase_toggled(self,bool):
 		self.unerase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_gl_parent().setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_qt_context_parent().setMouseTracking(bool)
 		self.target.erase_toggled(bool)
 		
 	def unerase_toggled(self,bool):
 		self.erase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_gl_parent().setMouseTracking(bool)
+		self.target.get_2d_gui_image().get_qt_context_parent().setMouseTracking(bool)
 		self.target.unerase_toggled(bool)
 		
 	def dynapix_toggled(self,bool):

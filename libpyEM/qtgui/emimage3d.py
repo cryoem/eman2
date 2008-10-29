@@ -56,6 +56,7 @@ from emglobjects import Camera2, EMViewportDepthTools, Camera, EMImage3DGUIModul
 from emimageutil import EMEventRerouter, EMTransformPanel, EMParentWin
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
+
 MAG_INCREMENT_FACTOR = 1.1
 
 
@@ -338,6 +339,11 @@ class EMImage3DModule(EMImage3DGUIModule):
 		
 		return self.qt_context_parent
 	
+	def get_gl_widget(self,qt_context_parent,gl_context_parent):
+		ret = EMImage3DGUIModule.get_gl_widget(self,qt_context_parent,gl_context_parent)
+		self.__set_module_contexts()
+		return ret
+	
 	def get_desktop_hint(self):
 		return "image"
 	allim=WeakKeyDictionary()
@@ -366,6 +372,26 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.last_window_height = -1 # used for automatic resizing from the desktop
 		
 		self.file_name = None
+		
+		self.emit_events = False
+	
+	def __del__(self):
+		pass
+		#for v in self.viewables:
+			##self.application.deregister_qt_emitter(v)
+	
+	def enable_emit_events(self,val=True):
+		for v in self.viewables: v.enable_emit_events(val)
+		self.emit_events = val
+		self.cam.enable_emit_events(val)
+	def is_emitting(self): return self.emit_events
+	
+	def get_emit_signals_and_connections(self):
+		ret = {}
+		for v in self.viewables: ret.update(v.get_emit_signals_and_connections())
+		ret.update(self.cam.get_emit_signals_and_connections())
+		
+		return ret
 		
 	def set_file_name(self,name): self.file_name = name
 	
@@ -487,6 +513,15 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.currentselection = len(self.viewables)-1
 		self.updateGL()
 	
+	
+	def __set_module_contexts(self):
+		for v in self.viewables:
+			v.set_qt_context_parent(self.qt_context_parent)
+			v.set_gl_context_parent(self.gl_context_parent)
+			v.set_gl_widget(self.gl_context_parent)
+			v.set_app(self.application)
+			#self.application.register_qt_emitter(v,self.application.get_qt_emitter(self))
+	
 	def load_last_viewable_camera(self):
 		return
 		size = len(self.viewables)
@@ -518,7 +553,8 @@ class EMImage3DModule(EMImage3DGUIModule):
 	def delete_current(self, val):
 		if ( len(self.viewables) == 0 ): return
 		
-		self.viewables.pop(val)
+		v = self.viewables.pop(val)
+		#self.application.deregister_qt_emitter(v)
 		if (len(self.viewables) == 0 ) : 
 			self.currentselection = -1
 		elif ( len(self.viewables) == 1):

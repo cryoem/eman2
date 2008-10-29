@@ -38,6 +38,18 @@ from EMAN2 import *
 from valslider import ValSlider
 from emanimationutil import Animator
 
+class EventsEmitterAndReciever:
+	def __init__(self):
+		self.emit_events = False
+		
+	def enable_emit_events(self,val=True):
+		#print "set emit events to",val
+		self.emit_events = val
+	
+	def is_emitting(self): return self.emit_events
+	
+	def get_emit_signals_and_connections(self): raise
+
 class EMEventRerouter:
 	def __init__(self,target=None):
 		self.target = target
@@ -94,6 +106,16 @@ class EMEventRerouter:
 	def window_selected(self,object,event):
 		
 		if event.modifiers()&Qt.ControlModifier:
+			
+			if object in self.multi_selected_objects:
+				object.set_selected(False)
+				self.multi_selected_objects.remove(object)
+			
+			if self.selected_object == object:
+				self.selected_object = None
+				eturn
+			
+			
 			self.window_selected_added(object,event)
 			return
 		
@@ -107,13 +129,7 @@ class EMEventRerouter:
 					
 	def window_selected_added(self,object,event):
 		
-		if object in self.multi_selected_objects:
-			object.set_selected(False)
-			self.multi_selected_objects.remove(object)
-			
-			if self.selected_object == object:
-				self.selected_object = None
-			return
+		
 		
 		
 		self.multi_selected_objects.append(object)
@@ -131,12 +147,12 @@ class EMEventRerouter:
 		#self.selected_objects.append(object)
 		#object.set_selected(True)
 
-		#if len(self.selected_objects) > 1:
-			#master = self.selected_objects[0]
+		#if len(self.multi_selected_objects) > 1:
+			#master = self.multi_selected_objects[0]
 			##print "set master slave"
 			#master.set_events_master(True)
-			#for i in range(1,len(self.selected_objects)):
-				#object = self.selected_objects[i]
+			#for i in range(1,len(self.multi_selected_objects)):
+				#object = self.multi_selected_objects[i]
 				
 				#if not object.camera_slaved():
 					#QtCore.QObject.connect(self,QtCore.SIGNAL("apply_rotation"),object.get_drawable_camera().apply_rotation)

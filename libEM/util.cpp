@@ -1064,8 +1064,8 @@ bool Util::point_is_in_triangle_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f
 bool Util::point_is_in_convex_polygon_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3, const Vec2f& p4,const Vec2f& actual_point) 
 {
 	
-	if (point_is_in_triangle_2d(p1,p2,p3,actual_point)) return true;
-	else return point_is_in_triangle_2d(p2,p4,p3,actual_point);
+	if (point_is_in_triangle_2d(p1,p2,p4,actual_point)) return true;
+	else return point_is_in_triangle_2d(p3,p2,p4,actual_point);
 }
 
 /*

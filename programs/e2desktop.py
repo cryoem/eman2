@@ -149,6 +149,11 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		self.current = None
 		self.previous = None
 		
+		self.selected_object = None
+		self.multi_selected_objects = [] # as grown using "ctrl-click" selection, for event master slave
+		
+		self.connections = []
+		
 	def draw(self):
 		for child in self.children:
 			glPushMatrix()
@@ -206,6 +211,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		return False
 		
 	def wheelEvent(self, event):
+		
 		for child in self.children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.wheelEvent(event)
@@ -281,6 +287,87 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			
 		return False
 			
+	def window_selected(self,object,event):
+		'''
+		Manages multiple selection. Acts on the control modifier
+		'''
+		
+		if event.modifiers()&Qt.ControlModifier:
+			
+			if object in self.multi_selected_objects:
+				# unselect the object
+				object.set_selected(False)
+				self.multi_selected_objects.remove(object)
+				
+				if self.selected_object == object:
+					# be careful to make sure the selected object isn't dangling
+					self.selected_object = None
+				
+				self.__update_slave_master_connections()
+				return
+			
+			# if we made it hear the user is adding another selected window
+			self.multi_selected_objects.append(object)
+			object.set_selected(True)
+			if self.selected_object == None:
+				# if there was no selected object then automatically make this the selected object
+				self.selected_object = object
+			self.__update_slave_master_connections()
+			return
+			
+		if object in self.multi_selected_objects: 
+			# This is a nice way of allowing the selected object to change without losing the
+			# selected groupd
+			self.selected_object = object
+			self.__update_slave_master_connections()
+			return
+		
+		if self.selected_object == object: 
+			# of course, nothing should happen
+			return
+		
+		# if we made it hear then it's time to clear all the selections and establish a single
+		# selected window
+		for obj in self.multi_selected_objects: 
+			obj.set_selected(False)
+		
+		self.selected_object = object
+		self.selected_object.set_selected(True)
+		self.multi_selected_objects = [object]
+		self.__update_slave_master_connections()
+
+	def __update_slave_master_connections(self):
+		
+		self.__clear_connections()
+		if self.selected_object != None:
+			if len(self.multi_selected_objects) > 1 :
+				for object in self.multi_selected_objects:
+					object.set_events_master(False)
+					object.set_camera_slaved(True)
+			
+					
+				self.selected_object.set_events_master(True)
+				self.selected_object.set_camera_slaved(False)
+			
+				signals = self.selected_object.get_emit_signals_and_connections()
+				
+				for object in self.multi_selected_objects:
+					if object != self.selected_object:
+						signals_2 = object.get_emit_signals_and_connections()
+						for sig in signals:
+							try:
+								QtCore.QObject.connect(EMDesktop.main_widget, QtCore.SIGNAL(sig), signals_2[sig])
+								self.connections.append({sig:signals_2[sig]})
+							except: 
+								print "failed on",sig
+								
+	def __clear_connections(self):
+		for c in self.connections:
+			a = c.items()[0]
+			QtCore.QObject.disconnect(EMDesktop.main_widget, QtCore.SIGNAL(a[0]), a[1])
+		
+		self.connections = []
+		
 class Translation:
 	def __init__(self,child):
 		self.child = child
@@ -401,92 +488,14 @@ class Scale:
 		else:
 			self.rotation_animation = None 
 			return False
-		
-#class XScale:
-	#def __init__(self,child):
-		#self.child = child
-		#self.rotation_animation = None
-		#self.r1 = None
-		#self.r2 = None
-		#self.rotation = None
 
-	#def __del__(self):
-		#if self.rotation_animation != None:
-			#self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
-			#self.rotation_animation = None
-	
-	#def animation_done_event(self,child):
-		#self.child.unlock_texture()
-	
-	#def get_rotation(self):
-		#return self.rotation
-		
-	#def seed_rotation_animation(self,r1,r2):
-		#self.rotation = r1
-		#self.r1 = r1
-		#self.r2 = r2
-		#animation = SingleValueIncrementAnimation(self,r1,r2)
-		
-		#self.rotation_animation = animation
-		#EMDesktop.main_widget.register_animatable(animation)
-		#self.child.lock_texture()
-	
-	#def set_animation_increment(self,value):
-		#self.rotation = value
-	
-	#def transform(self):
-		#if self.rotation_animation != None and self.rotation_animation.is_animated() :
-			#glScale(self.rotation,1.0,1.0)
-			#return True
-		#else:
-			#self.rotation_animation = None 
-			#return False
-		
-#class YScale:
-	#def __init__(self,child):
-		#self.child = child
-		#self.rotation_animation = None
-		#self.r1 = None
-		#self.r2 = None
-		#self.rotation = None
-
-	#def __del__(self):
-		#if self.rotation_animation != None:
-			#self.rotation_animation.set_animated(False) # this will cause the EMDesktop to stop animating
-			#self.rotation_animation = None
-	
-	#def animation_done_event(self,child):
-		#self.child.unlock_texture()
-	
-	#def get_rotation(self):
-		#return self.rotation
-		
-	#def seed_rotation_animation(self,r1,r2):
-		#self.rotation = r1
-		#self.r1 = r1
-		#self.r2 = r2
-		#animation = SingleValueIncrementAnimation(self,r1,r2)
-		
-		#self.rotation_animation = animation
-		#EMDesktop.main_widget.register_animatable(animation)
-		#self.child.lock_texture()
-	
-	#def set_animation_increment(self,value):
-		#self.rotation = value
-	
-	#def transform(self):
-		#if self.rotation_animation != None and self.rotation_animation.is_animated() :
-			#glScale(1.0,self.rotation,1.0)
-			#return True
-		#else:
-			#self.rotation_animation = None 
-			#return False
 
 
 class EMPlainDisplayFrame(EMGLViewContainer):
+	count = 0
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
 		EMGLViewContainer.__init__(self,parent,geometry)
-		
+		EMPlainDisplayFrame.count += 1
 		self.first_draw = []
 		self.transformers = []
 		self.invisible_boundary = 20
@@ -498,6 +507,9 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		#self.glbasicobjects.getCylinderDL()
 		
 		self.draw_grid = True
+		self.window_selected_emit_signal = "display_frame_window_selected_"+str(EMPlainDisplayFrame.count)
+		
+		QtCore.QObject.connect(EMDesktop.main_widget, QtCore.SIGNAL(self.window_selected_emit_signal), self.window_selected)
 		
 	def num_rows(self):	return self.rows
 	
@@ -576,13 +588,8 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		glPushMatrix()
 		glTranslate(*self.get_origin())
 		for i,child in enumerate(self.children):
-			#print "drawing child",child,child.width(),child.height()
 			if child in self.first_draw:
-				#optimal_width = self.width()/self.columns
-				#optimal_height = self.height()/self.rows
-				## FIXME
-				#child.resize(optimal_width-2*self.invisible_boundary,optimal_height-2*self.invisible_boundary)
-				self.introduce_child_2(child)
+				self.introduce_child(child)
 			glPushMatrix()
 			if self.transformers[i] != None: 
 				for j,transformer in enumerate(self.transformers[i]):
@@ -600,6 +607,7 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		if self.draw_grid:
 			if self.glbasicobjects == None:
 				self.glbasicobjects = EMBasicOpenGLObjects()
+				#FIXME USE DISPLAY LIST
 			for row in range(self.rows+1):
 				
 				glPushMatrix()
@@ -676,7 +684,7 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		else: return available[0]
 				
 	
-	def introduce_child_2(self,child):
+	def introduce_child(self,child):
 		position = self.find_open_position(child)
 		#print "position is", position
 		
@@ -703,155 +711,6 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		t.seed_translation_animation((0,0,-300),(0,0,0))
 		self.transformers[len(self.transformers)-1].append(t)
 	
-	#def introduce_child(self,child):
-		#position = self.find_open_position()
-		#print "the first available position is",position
-		
-		#child.set_position(0,self.height()-child.height_inc_border(),0)
-		#r = Scale(child)
-		#r.seed_rotation_animation(0,1)
-		#self.transformers[len(self.transformers)-1].append(r)
-		#t = Translation(child)
-		#t.seed_translation_animation((0,0,-300),(0,0,0))
-		#self.transformers[len(self.transformers)-1].append(t)
-		
-		##print "animating and ignoring",child
-		##print "primo seeding translation animation"
-		#self.ignore_list = [child]
-		#self.check_translation_anim(child)
-		
-	
-	#def check_translation_anim(self,child):
-		
-		
-		##self.path_seek()
-		
-		#child_position = child.get_position() # should be called "get origin"
-		#child_left = child_position[0]
-		##child_right = child_left + child.width_inc_border()+self.invisible_boundary
-		#child_bottom = child_position[1]
-		##child_top = child_bottom + child.height_inc_border()+self.invisible_boundary
-		#recursion = []
-		#left_recall = []
-		#idx_recall = []
-		#child_left = child.get_position()[0]
-		#if len(self.children) != 1:
-			#for i,child_ in enumerate(self.children):
-				#if child_ == child: continue
-				
-				#if child_ in self.ignore_list:
-					#continue
-					
-				#position = child_.get_position()
-				#left = position[0]
-
-				#if self.intersection(child,child_):
-					#recursion.append(child_)
-					#left_recall.append(left)
-					#idx_recall.append(i)
-					#if self.space_below(child_,child_bottom):
-						#print "down animation, child location is", position
-						#t = self.down_animation(child,child_)
-						#self.transformers[i].append(t)
-					#else:
-						#print "right animation, child location is", position
-						#t = self.right_animation(child,child_)
-						#self.transformers[i].append(t)
-					#self.ignore_list.append(child_)
-		
-		##for i in range(len(recursion)):
-			##for j in range(i+1,len(recursion)):
-				##c1 = recursion[i]
-				##c2 = recursion[j]
-				##if self.intersection(c1,c2):
-					##l1 = left_recall[i]
-					##l2 = left_recall[j]
-					##idx = idx_recall[j]
-					
-					##if l1 > l2:
-						##c1,c2 = c2,c1
-						##idx = idx_recall[i]
-					
-					##t = self.right_animation(c1,c2)
-					##self.transformers[idx].append(t)
-		
-		#for c in recursion: 
-			#self.check_translation_anim(c)
-	
-	
-	#def right_animation(self,c1,c2):
-		#child_position = c1.get_position() # should be called "get origin"
-		#child_left = child_position[0]
-		#child_right = child_left+c1.width_inc_border()+5
-		#position = c2.get_position()
-		#left = position[0]
-		#delta = child_right-left
-		#t = Translation(c2)
-		#c2.increment_position(delta,0,0)
-		#t.seed_translation_animation((-delta,0,0),(0,0,0))
-		#return t
-	
-	#def down_animation(self,c1,c2):
-		#child_position = c1.get_position() # should be called "get origin"
-		#child_bottom = child_position[1]
-		#position = c2.get_position()
-		#top = position[1] + c2.height_inc_border()+5
-		#delta = child_bottom - top
-		#t = Translation(c2)
-		#c2.increment_position(0,delta,0)
-		#t.seed_translation_animation((0,-delta,0),(0,0,0))
-		#return t
-	
-	#def space_below(self,child,down_shift):
-		#child_position = child.get_position() #
-		#child_bottom = child_position[1] - child.height_inc_border()+5
-		#print child_bottom, child_position[1],"#"
-		#if child_bottom < 0: return False
-		#else: return True
-		##if len(self.children) != 1:
-			##for i,child_ in enumerate(self.children):
-				##if child_ == child: continue
-				
-				##if child_ in self.ignore_list:
-					##continue
-				
-				##if self.intersection_below(child,child_,down_shift):
-					##return False
-				
-		##return True
-	
-	#def intersection_below(self,c1,c2,down_shift):
-		#child_position = c1.get_position() # should be called "get origin"
-		#child_left = child_position[0]
-		#child_right = child_left + c1.width_inc_border()+self.invisible_boundary
-		#child_bottom = child_position[1]-down_shift
-		#child_top = child_bottom + c1.height_inc_border()+self.invisible_boundary
-	
-		#position = c2.get_position()
-		#left = position[0]
-		#right = left + c2.width_inc_border()+self.invisible_boundary
-		#bottom = position[1]
-		#top = bottom + c2.height_inc_border()+self.invisible_boundary
-
-		#if left < child_right and right > child_left and bottom < child_top and top > child_bottom:	return True
-		#else: return False
-	
-	#def intersection(self,c1,c2):
-		#child_position = c1.get_position() # should be called "get origin"
-		#child_left = child_position[0]
-		#child_right = child_left + c1.width_inc_border()+self.invisible_boundary
-		#child_bottom = child_position[1]
-		#child_top = child_bottom + c1.height_inc_border()+self.invisible_boundary
-	
-		#position = c2.get_position()
-		#left = position[0]
-		#right = left + c2.width_inc_border()+self.invisible_boundary
-		#bottom = position[1]
-		#top = bottom + c2.height_inc_border()+self.invisible_boundary
-
-		#if left < child_right and right > child_left and bottom < child_top and top > child_bottom:	return True
-		#else: return False
-		
 	def attach_child(self,child):
 		#print "attached child", child
 		if len(self.children) == self.rows*self.columns:
@@ -860,8 +719,10 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 			return
 		
 		EMGLViewContainer.attach_child(self,child)
+		child.set_window_selected_emit_signal( self.window_selected_emit_signal )
 		self.transformers.append([])
 		self.first_draw.append(child)
+		
 		
 	def detach_child(self,new_child):
 		for i,child in enumerate(self.children):
@@ -890,46 +751,43 @@ class EMFrame(EMWindowNode,EMRegion):
 			glPopMatrix()
 	
 	def mousePressEvent(self, event):
-		#YUCK fixme soon this is terribly inefficient
+		#this could be optimized
 		for i in self.children:
-			i.mousePressEvent(event)
+			if i.mousePressEvent(event): return True
 	
 	def mouseMoveEvent(self, event):
-		#YUCK fixme soon this is terribly inefficient
+		#this could be optimized
 		for i in self.children:
-			i.mouseMoveEvent(event)
-			
+			if i.mouseMoveEvent(event): return True
 		#EMDesktop.main_widget.updateGL()
 	
 		
 	def mouseReleaseEvent(self, event):
-		#YUCK fixme soon this is terribly inefficient
+		#this could be optimized
 		for i in self.children:
-			i.mouseReleaseEvent(event)
-			
-		#EMDesktop.main_widget.updateGL()
+			if i.mouseReleaseEvent(event): return True
 	
 
 	def mouseDoubleClickEvent(self, event):
-		#YUCK fixme soon this is terribly inefficient
+		#this could be optimized
 		for i in self.children:
-			i.mouseDoubleClickEvent(event)
+			if i.mouseDoubleClickEvent(event): return True
 		
 		#EMDesktop.main_widget.updateGL()
 	
 
 	def wheelEvent(self, event):
-		#YUCK fixme soon this is terribly inefficient
+		#this could be optimized
 		for i in self.children:
-			i.wheelEvent(event)
+			if i.wheelEvent(event): return True
 	
 	def keyPressEvent(self, event):
-		#YUCK fixme soon this is terribly inefficient
+		#this could be optimized
 		for i in self.children:
 			i.keyPressEvent(event)
 	
 	def toolTipEvent(self, event):
-		#YUCK fixme soon this is terribly inefficient
+		#this could be optimized
 		for i in self.children:
 			i.toolTipEvent(event)
 
@@ -1968,8 +1826,11 @@ class SideWidgetBar(EMGLViewContainer):
 				self.previous_mouse_on = None
 				self.active = None
 				self.reset_scale_animation()
+				EMDesktop.main_widget.unlock_target()
+		else:
+			EMDesktop.main_widget.lock_target(self)
 				
-		EMGLViewContainer.mouseMoveEvent(self,event)
+		return EMGLViewContainer.mouseMoveEvent(self,event) or intercept
 
 	def detach_child(self,new_child):
 		for i,child in enumerate(self.children):

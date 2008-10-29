@@ -51,20 +51,12 @@ from time import *
 from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,get_default_gl_colors
 from emimageutil import ImgHistogram,EMEventRerouter,EMTransformPanel
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+from emimageutil import EventsEmitterAndReciever
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMIsosurfaceModule(EMImage3DGUIModule):
+class EMIsosurfaceModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 	
-#	def get_qt_widget(self):
-#		if self.parent == None:	
-#			from emimageutil import EMParentWin
-#			self.gl_parent = EMIsosurfaceWidget(self)
-#			self.parent = EMParentWin(self.gl_parent)
-#			self.set_gl_parent(self.gl_parent)
-#			if isinstance(self.data,EMData):
-#				self.gl_parent.set_camera_defaults(self.data)
-#		return self.parent
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
@@ -72,6 +64,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	def __init__(self,image=None,application=None):
 		self.data = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
+		EventsEmitterAndReciever.__init__(self)
 		self.init()
 		self.initialized = True
 		
@@ -93,6 +86,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 	
 	def get_type(self):
 		return "Isosurface"
+	
+	def get_emit_signals_and_connections(self):
+		return {"set_threshold":self.set_threshold}
 	
 	def update_data_and_texture(self):
 		
@@ -294,7 +290,9 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 			if ( self.texture ):
 				self.update_data_and_texture()
 			self.get_iso_dl()
-			self.updateGL()
+		
+			if self.emit_events: self.emit(QtCore.SIGNAL("set_threshold"),val)
+			#self.updateGL()
 	
 	def set_sample(self,val):
 		if ( self.smpval != int(val)):
