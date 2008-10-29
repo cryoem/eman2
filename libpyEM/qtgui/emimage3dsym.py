@@ -222,7 +222,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 		
 	def green(self):
 		glColor(.2,.9,.2)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.9,.9,.1,1.0))
+		# this is a nice light blue color (when lighting is on)
+		# and is the default color of the frame
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.3,.1,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
 		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,32.0)
@@ -574,9 +576,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 			glColor(.2,.9,.2)
 			# this is a nice light blue color (when lighting is on)
 			# and is the default color of the frame
-			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.3,.1,1.0))
-			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-			glMaterial(GL_FRONT,GL_SHININESS,40.0)
+			#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.1,.3,.1,1.0))
+			#glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+			#glMaterial(GL_FRONT,GL_SHININESS,40.0)
+			self.green()
 			glCallList(self.arc_dl)
 			
 			if ( self.sym_object.is_h_sym() ):
@@ -623,9 +626,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 			glColor(.9,.2,.8)
 			# this is a nice light blue color (when lighting is on)
 			# and is the default color of the frame
-			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
-			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-			glMaterial(GL_FRONT,GL_SHININESS,50.0)
+			self.gold()
 			glStencilFunc(GL_EQUAL,self.rank,0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 			glPushMatrix()
@@ -652,9 +653,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 			glColor(.9,.2,.8)
 			# this is a nice light blue color (when lighting is on)
 			# and is the default color of the frame
-			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
-			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-			glMaterial(GL_FRONT,GL_SHININESS,50.0)
+			self.gold()
 			glStencilFunc(GL_EQUAL,self.rank,0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 			#print "rendering trace"

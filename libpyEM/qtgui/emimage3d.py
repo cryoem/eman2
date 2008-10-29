@@ -307,9 +307,9 @@ class EMImage3DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glMatrixMode(GL_MODELVIEW)
 		
 		
-	def set_perspective(self,bool):
-		self.perspective = bool
-		self.resizeGL(self.width(),self.height())
+	#def set_perspective(self,bool):
+		#self.perspective = bool
+		#self.resizeGL(self.width(),self.height())
 		
 	def get_start_z(self):
 		return self.startz
@@ -412,6 +412,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		ret = {}
 		for v in self.viewables: ret.update(v.get_emit_signals_and_connections())
 		ret.update(self.cam.get_emit_signals_and_connections())
+		ret.update({"set_perspective":self.set_perspective})
 		
 		return ret
 		
@@ -445,7 +446,12 @@ class EMImage3DModule(EMImage3DGUIModule):
 		self.vdtools.update(1,1)
 		glPopMatrix()
 		
-		if not self.perspective: self.gl_context_parent.load_orthographic()
+		if not self.perspective:
+			glMatrixMode(GL_PROJECTION)
+			glPushMatrix() 
+			self.gl_context_parent.load_orthographic()
+			
+			glMatrixMode(GL_MODELVIEW)
 		
 		self.cam.position()
 		
@@ -455,7 +461,10 @@ class EMImage3DModule(EMImage3DGUIModule):
 			i.render()
 			glPopMatrix()
 		
-		if not self.perspective: self.gl_context_parent.load_perspective()
+		if not self.perspective:
+			glMatrixMode(GL_PROJECTION)
+			glPopMatrix()
+			glMatrixMode(GL_MODELVIEW)
 		
 	def resizeEvent(self, width, height):
 		for i in self.viewables:
@@ -619,7 +628,9 @@ class EMImage3DModule(EMImage3DGUIModule):
 	
 	def set_perspective(self,bool):
 		self.perspective = bool
-		self.gl_context_parent.set_perspective(bool)
+		if self.emit_events: self.emit(QtCore.SIGNAL("set_perspective"),bool)
+		self.updateGL()
+		#self.gl_context_parent.set_perspective(bool)
 		
 	def load_rotation(self,t3d):
 		self.cam.load_rotation(t3d)

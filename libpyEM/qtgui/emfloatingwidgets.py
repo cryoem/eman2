@@ -1788,7 +1788,6 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		self.cam.position()
 		self.vdtools.update_points((self.left,self.bottom,0),(self.right,self.bottom,0),(self.right,self.top,0),(self.left,self.top,0))
 		#self.vdtools.draw_frame(True)
-		glEnable(GL_DEPTH_TEST)
 		glPushMatrix()
 		glTranslate(self.left,self.bottom,self.near)
 		self.drawable.draw()
@@ -1797,7 +1796,10 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
 		
+		enable_depth = glIsEnabled(GL_DEPTH_TEST)
+		glEnable(GL_DEPTH_TEST)
 		self.decoration.draw(self.update_border_flag)
+		if not enable_depth: glDisable(GL_DEPTH_TEST)
 		self.update_border_flag = False
 		
 		if self.draw_vd_frame: self.vdtools.draw_frame()

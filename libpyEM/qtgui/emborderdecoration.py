@@ -963,13 +963,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			#height_plus = height + self.border_height*2
 			depth = front-back
 			depth_plus = depth + +self.border_depth*2
-			# front
-			glPushMatrix()
-			glTranslate(x_center,y_center,front_plus)
-			#self.frame_face_basic(width,width_plus,height,height_plus)
-			self.frame_face(-width/2,-width/2-self.border_width,width/2,width/2+self.border_width,-height/2,-height/2-self.bottom_border_height,height/2,height/2+self.top_border_height)
-			self.frame_inner_shell_basic(width,height,thick_front,thick_back)
-			glPopMatrix()
+			
 			
 			# back
 			glPushMatrix()
@@ -978,6 +972,23 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			#self.frame_face_basic(width,width_plus,height,height_plus)
 			self.frame_face(-width/2,-width/2-self.border_width,width/2,width/2+self.border_width,-height/2,-height/2-self.bottom_border_height,height/2,height/2+self.top_border_height)
 			self.frame_inner_shell_basic(width,height,thick_front,thick_back)
+			glPopMatrix()
+			
+			
+			#bottom
+			glPushMatrix()
+			glTranslate(x_center,bottom_plus,z_center)	
+			glRotate(90,1,0,0)
+			self.frame_face_basic(width,width_plus,depth,depth_plus)
+			self.frame_inner_shell_basic(width,depth,0,-self.bottom_border_height)
+			glPopMatrix()
+			
+			#top
+			glPushMatrix()
+			glTranslate(x_center,top_plus,z_center)	
+			glRotate(-90,1,0,0)
+			self.frame_face_basic(width,width_plus,depth,depth_plus)
+			self.frame_inner_shell_basic(width,depth,0,-self.top_border_height)
 			glPopMatrix()
 			
 			#right side
@@ -997,20 +1008,12 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			self.frame_inner_shell_basic(depth,height,thick_front,thick_back)
 			glPopMatrix()
 			
-			#bottom
+			# front
 			glPushMatrix()
-			glTranslate(x_center,bottom_plus,z_center)	
-			glRotate(90,1,0,0)
-			self.frame_face_basic(width,width_plus,depth,depth_plus)
-			self.frame_inner_shell_basic(width,depth,0,-self.bottom_border_height)
-			glPopMatrix()
-			
-			#top
-			glPushMatrix()
-			glTranslate(x_center,top_plus,z_center)	
-			glRotate(-90,1,0,0)
-			self.frame_face_basic(width,width_plus,depth,depth_plus)
-			self.frame_inner_shell_basic(width,depth,0,-self.top_border_height)
+			glTranslate(x_center,y_center,front_plus)
+			#self.frame_face_basic(width,width_plus,height,height_plus)
+			self.frame_face(-width/2,-width/2-self.border_width,width/2,width/2+self.border_width,-height/2,-height/2-self.bottom_border_height,height/2,height/2+self.top_border_height)
+			self.frame_inner_shell_basic(width,height,thick_front,thick_back)
 			glPopMatrix()
 				
 			glEndList()

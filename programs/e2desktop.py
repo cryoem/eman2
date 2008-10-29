@@ -1305,7 +1305,6 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		return depth
 	
 	def get_render_dims_at_depth(self, depth):
-		return 0
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
 		height = -2*tan(self.fov/2.0*pi/180.0)*(depth)
@@ -1380,12 +1379,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		
-		self.zNear = self.get_z_opt()
-		self.zFar = 2*self.get_z_opt()
-		#self.startz = self.d - 2.0*self.zwidth
-		#self.endz = self.d + 2.0*self.zwidth
-		
-		gluPerspective(self.fov,self.get_aspect(),self.zNear-500,self.zFar)
+		self.load_perspective()
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
@@ -1402,11 +1396,16 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 			obj.resize_gl()
 			
 	def load_orthographic(self):
+		#pass
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		self.aspect = float(self.width())/float(self.height())
-		self.xwidth = self.aspect*self.yheight
-		glOrtho(-self.xwidth/2.0,self.xwidth/2.0,-self.yheight/2.0,self.yheight/2.0,self.startz,self.endz)
+		self.startz = self.get_z_opt()
+		self.endz = 2*self.get_z_opt()
+		
+		[width,height] = self.get_render_dims_at_depth( -1.*self.get_z_opt())
+		width /= 2
+		height /=2
+		glOrtho(-width,width,-height,height,self.startz,self.endz)
 		glMatrixMode(GL_MODELVIEW)
 		
 	def load_perspective(self):
@@ -1414,18 +1413,19 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		if self.startz < 0: self.startz = 1
-		gluPerspective(self.fov,self.aspect,self.startz,self.endz)
+		self.startz = self.get_z_opt()-500
+		self.endz = 2*self.get_z_opt()
+		gluPerspective(self.fov,self.get_aspect(),self.startz,self.endz)
 		glMatrixMode(GL_MODELVIEW)
 		
 		
 	def get_near_plane_dims(self):
-		height = 2.0*self.zNear * tan(self.fov/2.0*pi/180.0)
+		height = 2.0*self.start_z * tan(self.fov/2.0*pi/180.0)
 		width = self.get_aspect() * height
 		return [width,height]
 		
 	def getStartZ(self):
-		return self.zNear
+		return self.start_z
 
 class EMBrowserSettings(object):
 	def __new__(cls,parent,application):
@@ -1962,14 +1962,14 @@ class SideTransform:
 			if self.rotation != self.default_rotation and self.rotation != self.target_rotation:
 				self.rotation = self.default_rotation
 		
-	def draw(self):
+	#def draw(self):
 		
-		glPushMatrix()
-		self.transform()
-		self.child.draw()
-		glPopMatrix()
-		glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
-
+		#glPushMatrix()
+		#self.transform()
+		#self.child.draw()
+		#glPopMatrix()
+		#glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
+	def has_focus(self): raise # must supply this, see how the fun
 
 class BottomWidgetBar(SideWidgetBar):
 	def __init__(self,parent):
@@ -1979,6 +1979,10 @@ class BottomWidgetBar(SideWidgetBar):
 		if len(self.children) != 1 : 
 			#print len(self.children)
 			return
+		depth_back_on = False
+		if self.transformers[0].has_focus():
+			depth_back_on = glIsEnabled(GL_DEPTH_TEST)
+			glDisable(GL_DEPTH_TEST)
 		child = self.children[0]
 		glPushMatrix()
 		
@@ -1986,6 +1990,9 @@ class BottomWidgetBar(SideWidgetBar):
 		self.transformers[0].transform()
 		child.draw()
 		glPopMatrix()
+		
+		if self.transformers[0].has_focus():
+			if depth_back_on: glEnable(GL_DEPTH_TEST)
 		
 	def attach_child(self,new_child):
 		#print "attached child"
@@ -2007,23 +2014,33 @@ class BottomWidgetBar(SideWidgetBar):
 		def transform(self):
 			SideTransform.transform(self)
 			glRotate(self.rotation,1,0,0)
-			
+		
+		
+		def has_focus(self):
+			return self.rotation == self.target_rotation
+		
 class RightSideWidgetBar(SideWidgetBar):
 	def __init__(self,parent):
 		SideWidgetBar.__init__(self,parent)
 		
 	
 	def draw(self):
+		
 		glPushMatrix()
 		glTranslate(self.parent.width()/2.0,self.parent.height()/2.0,0)
 		for i,child in enumerate(self.children):
+			depth_back_on = False
+			if self.transformers[i].has_focus():
+				depth_back_on = glIsEnabled(GL_DEPTH_TEST)
+				glDisable(GL_DEPTH_TEST)
 			glPushMatrix()
 			self.transformers[i].transform()
 			child.draw()
 			glPopMatrix()
 			#print child.height_inc_border(), child
 			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height_inc_border(),0)
-
+			if self.transformers[i].has_focus():
+				if depth_back_on: glEnable(GL_DEPTH_TEST)
 		glPopMatrix()
 		
 	def attach_child(self,new_child):
@@ -2047,8 +2064,9 @@ class RightSideWidgetBar(SideWidgetBar):
 			glTranslate(-self.xy_scale*self.child.width_inc_border(),0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
 		
-	
-
+		def has_focus(self):
+			return self.rotation == self.target_rotation
+		
 class LeftSideWidgetBar(SideWidgetBar):
 	def __init__(self,parent):
 		SideWidgetBar.__init__(self,parent)
@@ -2057,12 +2075,18 @@ class LeftSideWidgetBar(SideWidgetBar):
 		glPushMatrix()
 		glTranslate(-self.parent.width()/2.0+6,self.parent.height()/2.0,0)
 		for i,child in enumerate(self.children):
+			depth_back_on = False
+			if self.transformers[i].has_focus():
+				#print "disabled depth testing"
+				depth_back_on = glIsEnabled(GL_DEPTH_TEST)
+				glDisable(GL_DEPTH_TEST)
 			glPushMatrix()
 			self.transformers[i].transform()
 			child.draw()
 			glPopMatrix()
 			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height_inc_border(),0)
-
+			if self.transformers[i].has_focus():
+				if depth_back_on: glEnable(GL_DEPTH_TEST)
 		glPopMatrix()
 		
 	def attach_child(self,new_child):
@@ -2084,6 +2108,9 @@ class LeftSideWidgetBar(SideWidgetBar):
 			glRotate(self.rotation,0,1,0)
 			#glTranslate(self.xy_scale*self.child.width_inc_border()/2.0,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
+			
+		def has_focus(self):
+			return self.rotation == self.target_rotation
 
 	
 	
