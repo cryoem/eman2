@@ -4752,8 +4752,8 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 
 	NSAM = PROJ->get_xsize();
 	NROW = PROJ->get_ysize(); 
-	NNNN   = NSAM+2-(NSAM%2);
-	NR2 = NROW/2;
+	NNNN = NSAM+2-(NSAM%2);
+	NR2  = NROW/2;
 
 	NANG = int(SS.size())/6; 
 	 
@@ -4791,7 +4791,6 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 	PROJ->update();
 	PROJptr = PROJ->get_data();
 
-
 	float WNRMinv,temp;
 	float osnr = 1.0f/SNR;
 	WNRMinv = 1/W(1,1);
@@ -4803,7 +4802,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 			PROJ(I,J)	*= WW;
 			PROJ(I+1,J) *= WW;
 		}  
-
+	delete W; W = 0;
 	PROJ->do_ift_inplace();
 	PROJ->depad();
 }
@@ -4832,8 +4831,8 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 	 
 	NSAM = PROJ->get_xsize();
 	NROW = PROJ->get_ysize(); 
-	NNNN   = NSAM+2-(NSAM%2);
-	NR2 = NROW/2;
+	NNNN = NSAM+2-(NSAM%2);
+	NR2  = NROW/2;
 	NANG = int(SS.size())/6;
 
 	float RI[9];
@@ -4866,8 +4865,8 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 			TMP = sqrt(CC(1)*CC(1) +  CC(2)*CC(2) + CC(3)*CC(3)); 
 			CCN=static_cast<float>( AMAX1( AMIN1(TMP,1.0) ,-1.0) );
 			ALPHA=rad2deg*float(asin(CCN));
-			if (ALPHA>180.0) ALPHA=ALPHA-180.0f;
-			if (ALPHA>90.0) ALPHA=180.0f-ALPHA;
+			if (ALPHA>180.0f) ALPHA=ALPHA-180.0f;
+			if (ALPHA>90.0f) ALPHA=180.0f-ALPHA;
 			if(ALPHA<1.0E-6) {
 				for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++) W(I,J)+=1.0;
 			} else {
@@ -4916,9 +4915,9 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 			PROJ(I,J)   = PROJ(I,J)*WW;
 			PROJ(I+1,J) = PROJ(I+1,J)*WW;
 		}
-
+	delete W; W = 0;
 	PROJ->do_ift_inplace();
-	PROJ->depad();  
+	PROJ->depad();
 }	
 	
 #undef   AMAX1	
@@ -4933,6 +4932,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 #undef   W
 #undef   SS
 #undef   PROJ
+
 //-----------------------------------------------------------------------------------------------------------------------
 Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 {
@@ -4953,6 +4953,7 @@ Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 
 	return lookupdict;  
 }
+
 //------------------------------------------------------------------------------------------------------------------------- 
 
 float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)  
@@ -4964,6 +4965,7 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 	if(b_factor != 0.0f)  ctfv *= b_factor*exp(-b_factor*ak*ak);
 	return ctfv;
 }
+
 EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 {
 	/***********
@@ -5946,6 +5948,7 @@ L640:
     error = (float)xsum;
     return;
 }
+
 float Util::eval(char * images,EMData * img, vector<int> S,int N, int ,int size)
 {
 	int j,d;
@@ -16920,7 +16923,7 @@ void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 			Crosrng_msg_vec(crefim, cimage, numr,
 			  p_ccf1ds+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin,
 			  p_ccf1dm+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin);
-			delete cimage;
+			delete cimage; cimage = 0;
 		}
 	}
 	return;

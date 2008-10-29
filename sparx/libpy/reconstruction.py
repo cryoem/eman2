@@ -649,7 +649,7 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 	nz3d = nrow
 
 	CUBE = EMData()
-	CUBE.set_size(nx3d,ny3d,nz3d)
+	CUBE.set_size(nx3d, ny3d, nz3d)
 	CUBE.to_zero()
 
 	RA = Transform()
@@ -660,13 +660,13 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 	dm=[0.0]*(9*ntripletsWnsym)
 	ss=[0.0]*(6*ntripletsWnsym)
 	count = 0
+	"""
 	for i in xrange(nimages):
-	        if type(stack_name) == types.StringType:
+		if type(stack_name) == types.StringType:
 			B.read_image(stack_name,list_proj[i], True)
-			xform_proj = B.get_attr( "xform.proj" )
+			RA = B.get_attr( "xform.proj" )
 		else:  
-			xform_proj = stack_name[list_proj[i]].get_attr( "xform.proj" )
-		RA = xform_proj
+			RA = stack_name[list_proj[i]].get_attr( "xform.proj" )
 		for j in xrange(nsym):
 			Tf = RA.get_sym(symmetry,j) #Tf.get_rotation()
 			angdict = Tf.get_rotation("spider")
@@ -674,26 +674,37 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 			THETA = angdict["theta"]
 			PSI   = angdict["psi"]
 			DMnSS = Util.CANG(PHI,THETA,PSI)
-			DM = DMnSS["DM"]
-			SS = DMnSS["SS"]
-			dm[(count*9) :(count+1)*9] = DM
-			ss[(count*6) :(count+1)*6] = SS
+			dm[(count*9) :(count+1)*9] = DMnSS["DM"]
+			ss[(count*6) :(count+1)*6] = DMnSS["SS"]
 			count += 1
+	"""
+	from utilities import get_params_proj
+	for i in xrange(nimages):
+		if type(stack_name) == types.StringType:
+			B.read_image(stack_name,list_proj[i], True)
+			PHI, THETA, PSI, s2x, s2y = get_params_proj( B )
+		else:  
+			PHI, THETA, PSI, s2x, s2y = get_params_proj( stack_name[list_proj[i]] )
+		DMnSS = Util.CANG(PHI,THETA,PSI)
+		dm[(count*9) :(count+1)*9] = DMnSS["DM"]
+		ss[(count*6) :(count+1)*6] = DMnSS["SS"]
+		count += 1
 
 	if(method=="general"):
 	# for general weighting tabularize table of exponents
 		expdict =  Util.ExpMinus4YSqr(2.0,1000)
 		exptable = expdict["table"]
 
-	count = 0
+	count = 1
 	for i in xrange(nimages):
 		if type(stack_name) == types.StringType: B.read_image(stack_name,list_proj[i])
 		else : B = stack_name[list_proj[i]].copy()
 		for j in xrange(nsym):
+			print  i
 			DM = dm[((j*nsym+list_proj[i])*9) :(j*nsym+list_proj[i]+1)*9]
-			if   (method=="general"):    Util.WTF(B,ss,const,count+1,exptable)
-			elif (method=="exact"  ):    Util.WTM(B,ss,const,count+1)
-			Util.BPCQ(B,CUBE,DM)
+			if   (method=="general"):    Util.WTF(B, ss, const, count, exptable)
+			elif (method=="exact"  ):    Util.WTM(B, ss, const, count)
+			#Util.BPCQ(B,CUBE,DM)
 			count += 1
 
 	return CUBE
