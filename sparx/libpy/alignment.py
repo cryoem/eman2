@@ -320,10 +320,12 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	peaks = EMData()
 	peakm = EMData()
 	Util.multiref_peaks_ali2d(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, peaks, peakm)
+	#p1 = peak_search(peaks, 50)
 	p1 = peak_search(peaks, 4)
 	
 	for i in xrange(len(p1)):	p1[i].append(0)
 	
+	#p2 = peak_search(peakm, 50)
 	p2 = peak_search(peakm, 4)
 	for i in xrange(len(p2)):	p2[i].append(1)
 	p1 += p2
@@ -358,6 +360,7 @@ def sim_anneal(peaks, Iter, T0, F, SA_stop):
 		# Determine the current temperature
 		T = T0*pow(F, Iter)	
 	
+		#K = max(int(len(peaks)*(1-float(Iter)/SA_stop)), 1)
 		K = len(peaks)
 		dJe = [0.0]*K
 		for k in xrange(K):

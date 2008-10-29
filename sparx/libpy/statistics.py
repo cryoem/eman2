@@ -131,6 +131,9 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 	ny = data[0].get_ysize()
 	ave = model_blank(nx, ny)
 	var = EMData(nx, ny, 1, False)
+	
+	sx_sum = 0.0
+	sy_sum = 0.0
 
 	if CTF:
 		from morphology   import ctf_img
@@ -142,6 +145,9 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 	 	for i in xrange(n):
 	 		if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+				if mirror == 0: sx_sum += sx
+				else: sx_sum -= sx
+				sy_sum += sy
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
@@ -156,13 +162,16 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 		for i in xrange(n):
 			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
+				if mirror == 0: sx_sum += sx
+				else: sx_sum -= sx
+				sy_sum += sy
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 			else:
 				ima = data[i].copy()
 			Util.add_img(ave, ima)
 			Util.add_img2(var, fft(ima))
 	
-	return ave, var
+	return ave, var, sx_sum, sy_sum
 
 def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 	"""

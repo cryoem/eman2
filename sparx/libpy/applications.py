@@ -487,7 +487,9 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
 		
-			tavg, vav = add_ave_varf_MPI(data, mask, mode="a", CTF=CTF)
+			tavg, vav, sx_sum, sy_sum = add_ave_varf_MPI(data, mask, mode="a", CTF=CTF)
+			sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if random_method == "ML": 
 				tavg_ML, vav_ML = add_ave_varf_ML_MPI(data, mask, mode="a", CTF=CTF)
 			#  bring all partial sums together
@@ -572,8 +574,20 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					ref_data[3] = frsc
 					
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
-				tavg, cs = user_func( ref_data )
-
+				if center!=7:
+					tavg, cs = user_func(ref_data)
+				else:
+					ref_data[1] = 0
+					tavg, cs = user_func(ref_data)
+					sx_sum = float(sx_sum)/nima
+					sy_sum = float(sy_sum)/nima
+					cs[0] = sx_sum
+					cs[1] = sy_sum
+					from fundamentals import fshift
+					tavg = fshift(tavg, -cs[0], -cs[1])
+					msg = "Center x = %10.4f    Center y = %10.4f\n"%(cs[0], cs[1])
+					print_msg(msg)
+				
 				Util.div_filter(sumsq, vav)
 				sumsq = filt_tophatb(sumsq, 0.01, 0.49)
 				a1 = Util.infomask(sumsq, None, True)
@@ -9113,12 +9127,16 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, ctf, snr, sign, npad, sym, ve
 		if(vol_stack[-3:] == "spi"):
 			dropImage(vol, vol_stack, "s")
 		else:
-			print  vol_stack
-			dropImage(vol, vol_stack)
-		if not(info is None):
-			info.write( "result wrote to " + vol_stack + "\n")
-			info.write( "Total time: %10.3f\n" % (time()-time_start) )
-			info.flush()
+			from utilities import info
+			print 'vol:', vol
+			info(vol)
+			print vol.get_attr_dict()
+			#print  vol_stack
+			#dropImage(vol, vol_stack)
+		#if not(info is None):
+		#	info.write( "result wrote to " + vol_stack + "\n")
+		#	info.write( "Total time: %10.3f\n" % (time()-time_start) )
+		#	info.flush()
 
 def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym="c1", verbose=1, MPI=False):
 	if MPI:
@@ -10147,13 +10165,13 @@ def incvar(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 
 class file_set :
 
-	def __init__( self, prefix, nfile ):
-		self.files = [None] * nfile
+	def __init__( self, files ):
+		nfile = len(files)
+		self.files = files
 		self.fends = [None] * nfile
 
 		totimg = 0
 		for i in xrange(nfile):
-			self.files[i] = prefix + ("%04d.hdf" % i )
 			totimg += EMUtil.get_image_count( self.files[i] )
 			self.fends[i] = totimg
 		
@@ -10173,8 +10191,8 @@ class file_set :
 
 		return self.files[ifile], imgid - self.fends[ifile-1]
 
-def defvar_mpi(files, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
-	from statistics import variancer, ccc
+def defvar_mpi(files, nprj, output, fl, fh, radccc, writelp, writestack):
+	from statistics import def_variancer, ccc
 	from string import atoi, replace, split, atof
 	from EMAN2 import EMUtil
 	from utilities import get_im, circumference, model_circle, dropImage, info
@@ -10185,15 +10203,15 @@ def defvar_mpi(files, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 
         myid = mpi_comm_rank( MPI_COMM_WORLD )
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
-        finf = open( "progress%04d.txt" % myid, "w" )
+        if myid==0:
+		finf = open( "progress.txt", "w" )
 	
-	all_varer = def_variancer()
-	odd_varer = def_variancer()
-	eve_varer = def_variancer()
+	n = get_im(files[0]).get_xsize()
+	all_varer = def_variancer(n,n,n)
+	odd_varer = def_variancer(n,n,n)
+	eve_varer = def_variancer(n,n,n)
  
-	filname = prefix + "0000.hdf"
-	n = get_im(filname, 0).get_xsize()
-	
+
 	if os.path.exists(output):		os.system("rm -f "+output)
 	if os.path.exists('stack_'+output):	os.system("rm -f stack_"+output)
 	if os.path.exists('odd_stack_'+output):	os.system("rm -f odd_stack_"+output)
@@ -10202,30 +10220,35 @@ def defvar_mpi(files, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 
 	cccmask = model_circle(radccc, n, n, n)
 	scale = sqrt( nprj )
-	radcir = n/2
+	radcir = n/2-1
 
-        mystack = file_set( prefix, nfile )
+        mystack = file_set( files )
         nimage = mystack.nimg()
         ndump = 10
 
 	lpstack = "btwl_cir_prj%04d.hdf" % myid
-	iwritelp = 0
 	iwrite = 0
+	istack = 0
 	iprint = 0
 	iadded = 0
+
+	niter = nimage/(2*ncpu)*2
+	nimage = niter * ncpu
 	for i in xrange(myid, nimage, ncpu):
 		filename, imgid = mystack.get( i ) 	
-		finf.write( "processing %4d (%s:%d)\n" % (i, filename, imgid) )
-		finf.flush()
+		if myid==0:
+			finf.write( "loading %20s img %6d write to %20s %6d\n" % (filename, imgid, lpstack, iwrite) )
+			finf.flush()
 
 		img = get_im( filename, imgid )
 		img *= scale
 		img = circumference( img, radcir, radcir+1 )
 		img = filt_tanl(img, fl, fh)
 
+		
 		if writelp:
-			img.write_image(lpstack, iwritelp)
-			iwritelp += 1
+			img.write_image(lpstack, iwrite)
+			iwrite += 1
 
 		if i%2==0: 
 			odd_varer.insert(img)
@@ -10235,10 +10258,10 @@ def defvar_mpi(files, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 		all_varer.insert(img)
 
 		iadded += 1
-		if iadded%ndump==0:
-			odd_var = odd_varer.mpi_getvar(myid, 0)
-			eve_var = eve_varer.mpi_getvar(myid, 0)
-			all_var = all_varer.mpi_getvar(myid, 0)
+		if iadded%ndump==0 or iadded==niter:
+			odd_var, odd_avg = odd_varer.mpi_getvar(myid, 0)
+			eve_var, eve_avg = eve_varer.mpi_getvar(myid, 0)
+			all_var, all_avg = all_varer.mpi_getvar(myid, 0)
 			
 
 			if myid==0 :
@@ -10247,32 +10270,19 @@ def defvar_mpi(files, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 				eve_nimg = eve_var.get_attr( "nimg" )
 				assert odd_nimg==eve_nimg
 				iprint += 1
-				print 'ntot, ccc: %6d %10.3f' % ( all_var.get_attr("nimg"), ccc(odd_var, eve_var, cccmask))  
+				finf.write( 'ntot, ccc: %6d %10.3f\n' % (all_var.get_attr("nimg"), ccc(odd_var, eve_var, cccmask)) )
+				finf.flush()
 				if writestack:
-					odd_var.write_image( 'odd_stack_' + output, iwrite )
-					eve_var.write_image( 'eve_stack_' + output, iwrite )
-					all_var.write_image( 'stack_' + output, iwrite )
-					iwrite += 1
+					odd_var.write_image( 'odd_stack_' + output, istack )
+					eve_var.write_image( 'eve_stack_' + output, istack )
+					all_var.write_image( 'all_stack_' + output, istack )
+					istack += 1
 		
 
-	all_var = all_varer.mpi_getvar(myid, 0)
-	odd_var = odd_varer.mpi_getvar(myid, 0)
-	eve_var = eve_varer.mpi_getvar(myid, 0)
-	avg = all_varer.mpi_getavg(myid, 0)
-
-	if myid==0:
-		print 'ntot, ccc: %6d %10.3f' % (nimage, ccc(odd_var, eve_var, cccmask))  
-
-
-	if myid==0 and writestack:
-		all_var.write_image( 'stack_' + output, iwrite )
-		odd_var.write_image( 'odd_stack_' + output, iwrite )
-		eve_var.write_image( 'eve_stack_' + output, iwrite )
-
-	if myid==0:
-		avg.write_image( 'avg_' + output, 0 )
-		#all_var = circumference( all_var, radcir, radcir+1 )
-		all_var.write_image( output, 0 )
+				if iadded==niter:
+					all_avg.write_image( 'avg_' + output, 0 )
+					#all_var = circumference( all_var, radcir, radcir+1 )
+					all_var.write_image( output, 0 )
 
 
 
