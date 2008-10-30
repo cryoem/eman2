@@ -73,9 +73,26 @@ Particles should be reasonably well centered."""
 
 	img_sets=[]
 
-	for i in args:
-		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(i,radius=options.bgmask,edgenorm=not options.nonorm)
-		ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix)
+	project=db_open_dict("bdb:project")
+	parms=db_open_dict("bdb:e2ctf.parms")
+	
+
+	for filename in args:
+		name=filename.rsplit(".",1)[0]		# remove the extension from the filename
+
+		# compute the power spectra
+		if debug : print "Processing ",filename
+		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm)
+		if debug:
+			ds=1.0/(options.apix*im_2d.get_ysize())
+			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
+			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
+
+		# Fit the CTF parameters
+		if debug : print "Fit CTF"
+		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix)
+		parms[name]=ctf
+
 
 def powspec(stackfile,mask=None,edgenorm=True,):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
@@ -114,8 +131,9 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True):
 	
 	global masks
 	
-	im=EMData(stackfile,0,True)
+	im=EMData(stackfile,0)
 	ys=im.get_ysize()
+	n=EMUtil.get_image_count(stackfile)
 	
 	# set up the inner and outer Gaussian masks
 	try:
@@ -129,15 +147,16 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True):
 		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
+		print ratio1,ratio2
 	
 	for i in range(n):
 		im1=EMData(stackfile,i)
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
-		im2=em1.copy()
+		im2=im1.copy()
 
 		im1*=mask1
-		imf=im.do_fft()
+		imf=im1.do_fft()
 		imf.ri2inten()
 		if i==0: av1=imf
 		else: av1+=imf
@@ -211,6 +230,9 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 	ctf=EMAN2Ctf()
 	ctf.from_dict({"defocus":1,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix})
 	
+	ys=im_2d.get_ysize()
+	ds=1.0/(apix*ys)
+	
 	if debug: dfout=file("ctf.df.txt","w")
 	dfbest1=(0,-1.0e20)
 	for dfi in range(5,128):			# loop over defocus
@@ -226,7 +248,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 		
 			tot,totr=0,0
 			for s in range(int(st),ys/2): 
-				tot+=(cc[s]**2)*(ps1d[-1][s]-bg[s])
+				tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
 				totr+=cc[s]**2
 			#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
 			#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
@@ -255,30 +277,45 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 
 	dfbest=dfbest1
 	for dfi in range(-10,10):			# loop over defocus
-			df=dfi/100.0+dfbest1[0]
-			ctf.defocus=-df
-			ctf.ampcont=ac
-			cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
-			st=.04/ds
-			norm=0
-			for fz in range(len(cc)): 
-				#norm+=cc[fz]**2
-				if cc[fz]<0 : break
+		df=dfi/100.0+dfbest1[0]
+		ctf.defocus=-df
+		cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
+		st=.04/ds
+		norm=0
+		for fz in range(len(cc)): 
+			#norm+=cc[fz]**2
+			if cc[fz]<0 : break
+	
+		tot,totr=0,0
+		for s in range(int(st),ys/2): 
+			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
+			totr+=cc[s]**2
 		
-			tot,totr=0,0
-			for s in range(int(st),ys/2): 
-				tot+=(cc[s]**2)*(ps1d[-1][s]-bg[s])
-				totr+=cc[s]**4
-			
-			tot/=sqrt(totr)
-			if tot>dfbest[1] : 
-				dfbest=(df,tot)
-			if debug : dfout.write("%1.2f\t%g\n"%(df,tot))
+		tot/=sqrt(totr)
+		if tot>dfbest[1] : 
+			dfbest=(df,tot)
+		if debug : dfout.write("%1.2f\t%g\n"%(df,tot))
 
 	ctf.defocus=-dfbest[0]
-	ctf.ampcont=acbest
 
-	if debug : print "Best DF = ",dfbest[0]
+	if 1 : print "Best DF = ",dfbest[0]
+
+	return ctf
+
+try:
+	from PyQt4 import QtCore, QtGui, QtOpenGL
+	from PyQt4.QtCore import Qt
+	from valslider import ValSlider
+except:
+	print "Warning: PyQt4 must be installed to use the --gui option"
+	class dummy:
+		pass
+	class QWidget:
+		"A dummy class for use when Qt not installed"
+		def __init__(self,parent):
+			print "Qt4 has not been loaded"
+	QtGui=dummy()
+	QtGui.QWidget=QWidget
 
 
 class GUIctf(QtGui.QWidget):
