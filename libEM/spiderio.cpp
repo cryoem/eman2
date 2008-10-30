@@ -272,8 +272,10 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["SPIDER.dx"] = cur_image_hed->dx;
 	dict["SPIDER.dy"] = cur_image_hed->dy;
 	dict["SPIDER.dz"] = cur_image_hed->dz;
-
-	dict["SPIDER.scale"] = cur_image_hed->scale;
+	
+	if(cur_image_hed->scale>0) {
+		dict["SPIDER.scale"] = cur_image_hed->scale;
+	}
 	
 	dict["SPIDER.istack"] = (int) cur_image_hed->istack;
 	if((int)dict["SPIDER.istack"] > 0) {	//maxim only for overall header 
@@ -301,21 +303,23 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	
 	dict["SPIDER.title"] = string(cur_image_hed->title);
 	
-	Dict dic;
-	dic.put("type", "spider");
-	dic.put("phi", cur_image_hed->phi);
-	dic.put("theta", cur_image_hed->theta);
-	dic.put("psi", cur_image_hed->gamma);
-	dic.put("tx", cur_image_hed->dx);
-	dic.put("ty", cur_image_hed->dy);
-	dic.put("tz", cur_image_hed->dz);
-	dic.put("scale", cur_image_hed->scale);
-	Transform * trans = new Transform(dic);
-	if(zlen<=1) {
-		dict["xform.projection"] = trans;
-	}
-	else {
-		dict["xform.align3d"] = trans;
+	if(cur_image_hed->scale>0) {
+		Dict dic;
+		dic.put("type", "spider");
+		dic.put("phi", cur_image_hed->phi);
+		dic.put("theta", cur_image_hed->theta);
+		dic.put("psi", cur_image_hed->gamma);
+		dic.put("tx", cur_image_hed->dx);
+		dic.put("ty", cur_image_hed->dy);
+		dic.put("tz", cur_image_hed->dz);
+		dic.put("scale", cur_image_hed->scale);
+		Transform * trans = new Transform(dic);
+		if(zlen<=1) {
+			dict["xform.projection"] = trans;
+		}
+		else {
+			dict["xform.align3d"] = trans;
+		}
 	}
 	
 	
