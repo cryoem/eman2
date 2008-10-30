@@ -187,6 +187,26 @@ envopenflags=db.DB_CREATE|db.DB_INIT_MPOOL|db.DB_INIT_LOCK|db.DB_INIT_LOG|db.DB_
 #dbopenflags=db.DB_CREATE
 cachesize=80000000
 
+def db_get_all_attributes(fsp,*parms):
+	if fsp[:4].lower()=="bdb:" :
+		db=db_open_dict(fsp,True)
+		attr_name = parms[-1]
+		if "?" in fsp:
+			keys=fsp[fsp.rfind("?")+1:].split(",")
+			for i in range(len(keys)):
+				try: keys[i]=int(keys[i])
+				except: pass
+			return [db.get_attr(i, attr_name) for i in keys]
+		else :
+			if len(parms)==1 : keys=range(0,len(db))
+			else : keys=parms[0]
+		print keys
+		return [db.get_attr(i, attr_name) for i in keys]
+	return EMUtil.get_all_attributes_c(fsp,*parms)
+
+EMUtil.get_all_attributes_c=staticmethod(EMUtil.get_all_attributes)
+EMUtil.get_all_attributes=staticmethod(db_get_all_attributes)
+
 #############
 ###  Task Management classes
 #############
