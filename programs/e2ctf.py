@@ -41,7 +41,10 @@ import time
 import os
 import sys
 
+debug=False
+
 def main():
+	global debug
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input stack/image> ...
 	
@@ -58,6 +61,7 @@ Particles should be reasonably well centered."""
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
+	parser.add_option("--debug",action="store_true",default=False)
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -65,12 +69,13 @@ Particles should be reasonably well centered."""
 	if options.voltage==0 : parser.error("Please specify voltage")
 	if options.cs==0 : parser.error("Please specify Cs")
 	if options.apix==0 : parser.error("Please specify A/Pix")
+	debug=options.debug
 
 	img_sets=[]
 
 	for i in args:
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(i,radius=options.bgmask,edgenorm=not options.nonorm)
-
+		ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix)
 
 def powspec(stackfile,mask=None,edgenorm=True,):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
@@ -198,95 +203,82 @@ def bgedge2d(stackfile,width):
 	av.set_attr("is_intensity", 1)
 	return av
 
-def ctf_fit():
-			# defocus estimation
-			ctf=EMAN2Ctf()
-			ctf.from_dict({"defocus":1,"voltage":options.voltage,"cs":options.cs,"ampcont":options.ac,"apix":options.apix})
+def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
+	"""Determines CTF parameters given power spectra produced by powspec_with_bg()"""
+	# defocus estimation
+	global debug
+	
+	ctf=EMAN2Ctf()
+	ctf.from_dict({"defocus":1,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix})
+	
+	if debug: dfout=file("ctf.df.txt","w")
+	dfbest1=(0,-1.0e20)
+	for dfi in range(5,128):			# loop over defocus
+			ac=10
+			df=dfi/20.0
+			ctf.defocus=-df
+			ctf.ampcont=ac
+			cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
+			st=.04/ds
+			norm=0
+			for fz in range(len(cc)): 
+				if cc[fz]<0 : break
+		
+			tot,totr=0,0
+			for s in range(int(st),ys/2): 
+				tot+=(cc[s]**2)*(ps1d[-1][s]-bg[s])
+				totr+=cc[s]**2
+			#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
+			#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
+			#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
+			#tot/=sqrt(totr)
+			tot/=totr
+			if tot>dfbest1[1] : dfbest1=(df,tot)
+			try :dfout.write("%1.2f\t%g\n"%(df,tot))
+			except : pass
+	
+	# now we try to construct a better background based on the CTF zeroes being zero
+	#bg2=[]
+	#last=0,1.0
+	#for x in range(len(bg)*ctf.CTFOS ) : 
+		#if cc[x]*cc[x+1]<0 : 
+			#cur=(x/ctf.CTFOS,ps1d[-1][x/ctf.CTFOS]/bg[x/ctf.CTFOS])
+			#print cur
+			#for xx in range(last[0],cur[0]):
+				#w=(xx-last[0])/(cur[0]-last[0])
+				#bg2.append(cur[1]*w+last[1]*(1-w))
+			#last=cur
+	
+	#out=file("bg1d2.txt","w")
+	#for a,b in enumerate(bg2): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
+	#out.close()
+
+	dfbest=dfbest1
+	for dfi in range(-10,10):			# loop over defocus
+			df=dfi/100.0+dfbest1[0]
+			ctf.defocus=-df
+			ctf.ampcont=ac
+			cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
+			st=.04/ds
+			norm=0
+			for fz in range(len(cc)): 
+				#norm+=cc[fz]**2
+				if cc[fz]<0 : break
+		
+			tot,totr=0,0
+			for s in range(int(st),ys/2): 
+				tot+=(cc[s]**2)*(ps1d[-1][s]-bg[s])
+				totr+=cc[s]**4
 			
-			dfout=file("ctf.df.txt","w")
-#			mapout=EMData(64,64)
-			dfbest1=(0,-1.0e20)
-			for dfi in range(5,128):			# loop over defocus
-#				for ac in range(0,64):		# loop over %ac
-					ac=10
-					df=dfi/20.0
-					ctf.defocus=-df
-					ctf.ampcont=ac
-					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
-					st=.04/ds
-					norm=0
-					for fz in range(len(cc)): 
-#						norm+=cc[fz]**2
-						if cc[fz]<0 : break
-				
-					tot,totr=0,0
-#					for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
-					for s in range(int(st),ys/2): 
-						tot+=(cc[s]**2)*(ps1d[-1][s]-bg[s])
-#						totr+=cc[s]**4
-						totr+=cc[s]**2
-#					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
-#					for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
-#					tot/=sqrt(totr)
-					tot/=totr
-					if tot>dfbest1[1] : dfbest1=(df,tot)
-					dfout.write("%1.2f\t%g\n"%(df,tot))
-#					mapout[dfi,ac]=tot
-			
-			# now we try to construct a better background based on the CTF zeroes being zero
-			#bg2=[]
-			#last=0,1.0
-			#for x in range(len(bg)*ctf.CTFOS ) : 
-				#if cc[x]*cc[x+1]<0 : 
-					#cur=(x/ctf.CTFOS,ps1d[-1][x/ctf.CTFOS]/bg[x/ctf.CTFOS])
-					#print cur
-					#for xx in range(last[0],cur[0]):
-						#w=(xx-last[0])/(cur[0]-last[0])
-						#bg2.append(cur[1]*w+last[1]*(1-w))
-					#last=cur
-			
-			#out=file("bg1d2.txt","w")
-			#for a,b in enumerate(bg2): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
-			#out.close()
+			tot/=sqrt(totr)
+			if tot>dfbest[1] : 
+				dfbest=(df,tot)
+			if debug : dfout.write("%1.2f\t%g\n"%(df,tot))
 
+	ctf.defocus=-dfbest[0]
+	ctf.ampcont=acbest
 
-			
-			acbest=10
-			dfbest=dfbest1
-			for dfi in range(-10,10):			# loop over defocus
-					ac=options.ac
-#				for ac in range(0,20):		# loop over %ac
-					df=dfi/100.0+dfbest1[0]
-					ctf.defocus=-df
-					ctf.ampcont=ac
-					cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
-					st=.04/ds
-					norm=0
-					for fz in range(len(cc)): 
-#						norm+=cc[fz]**2
-						if cc[fz]<0 : break
-				
-					tot,totr=0,0
-					for s in range(int(st),ys/2): 
-						tot+=(cc[s]**2)*(ps1d[-1][s]-bg[s])
-						totr+=cc[s]**4
-					
-					tot/=sqrt(totr)
-					if tot>dfbest[1] : 
-						dfbest=(df,tot)
-#						acbest=ac
-					dfout.write("%1.2f\t%g\n"%(df,tot))
-
-			ctf.defocus=-dfbest[0]
-			ctf.ampcont=acbest
-			cc=ctf.compute_1d(ys*5,Ctf.CtfType.CTF_AMP)
-			out=file("ctf.curve.txt","w")
-			for a,b in enumerate(cc): 
-				out.write("%1.4f\t%1.5f\n"%(a*ds/5.0,b*b))
-			out.close()
-
-
-			print "Best DF,AC = ",dfbest[0],acbest
+	if debug : print "Best DF = ",dfbest[0]
 
 
 class GUIctf(QtGui.QWidget):
