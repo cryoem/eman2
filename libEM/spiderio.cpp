@@ -273,10 +273,6 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["SPIDER.dy"] = cur_image_hed->dy;
 	dict["SPIDER.dz"] = cur_image_hed->dz;
 	
-	if(cur_image_hed->scale>0) {
-		dict["SPIDER.scale"] = cur_image_hed->scale;
-	}
-	
 	dict["SPIDER.istack"] = (int) cur_image_hed->istack;
 	if((int)dict["SPIDER.istack"] > 0) {	//maxim only for overall header 
 		dict["SPIDER.maxim"] = (int)cur_image_hed->maxim;
@@ -304,6 +300,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["SPIDER.title"] = string(cur_image_hed->title);
 	
 	if(cur_image_hed->scale>0) {
+		dict["SPIDER.scale"] = cur_image_hed->scale;
 		Dict dic;
 		dic.put("type", "spider");
 		dic.put("phi", cur_image_hed->phi);
