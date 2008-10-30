@@ -95,7 +95,7 @@ for single particle analysis."""
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db",default=[])
+	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db, cmd",default=[])
 	parser.add_option("--write_coord_file",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--write_box_images",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--force","-f",action="store_true",help="Force overwrites old files",default=False)
@@ -107,6 +107,20 @@ for single particle analysis."""
 	parser.add_option("--merge_boxes_to_db",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
 	parser.add_option("--subsample_method",help="The method used to subsample images prior to generation of the correlation image. Available methods are standard,careful",default="standard")	
 	parser.add_option("--method", help="boxer method, Swarm or Gauss", default="Swarm")
+
+	# options added for cmdline calling of screening with gauss convolution. parameters for Gauss are passed as
+	#    commandline arguments and will have to be parsed only if auto="cmd" option is specified. note that these parameters
+	#    are applicable only to Gauss...
+	# jl 10-28-08.
+	parser.add_option("--ccf_lo",default=False,help="lower CCF threshold")
+	parser.add_option("--ccf_hi",default=False,help="upper CCF threshold")
+	
+	parser.add_option("--pix_in",default=False,help="input pixel size in Angstrom")
+	parser.add_option("--pix_out",default=False,help="output pixel size in Angstrom")
+
+	parser.add_option("--width",default=False,help="width of the Gaussian")
+	parser.add_option("--var",action="store_true",default=False,help="Use variance flag (default is False)")
+	parser.add_option("--inv",action="store_true",default=False,help="Invert image flag (default is False)")
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -158,6 +172,109 @@ for single particle analysis."""
 				#print "done"
 					
 			exit(1)
+
+		# cmd refers to commandline mode, i.e. parameters are passed in as commandline
+		#    arguments. these need to be parsed and passed into boxer....
+		elif "cmd" in options.auto:
+			print "commandline version"
+
+			# commands to execute follow autbox_multi, except for getting parameters
+			#    from the db
+			project_db = EMProjectDB()
+
+			# set up a parameter dict for passing arguments to the autoboxer object.
+			#    dict keys will have to follow variable names in autoboxer.
+			parm_dict = {}
+
+			# parse cmd arguments
+			if (options.ccf_lo):
+				try:
+					parm_dict["thr_low"] = float(options.ccf_lo)
+				except ValueError:
+					print "could not convert ccf_lo value. bad value",options.ccf_lo,". exiting!"
+					sys.exit(1)
+
+			if (options.ccf_hi):
+				try:
+					parm_dict["thr_hgh"] = float(options.ccf_hi)
+				except ValueError:
+					print "could not convert ccf_hi value. bad value",options.ccf_hi,". exiting!"
+					sys.exit(1)
+
+			if (options.pix_in):
+				try:
+					parm_dict["pixel_input"] = float(options.pix_in)
+				except ValueError:
+					print "could not convert pix_in value. bad value",options.pix_in,". exiting!"
+					sys.exit(1)
+
+			if (options.pix_out):
+				try:
+					parm_dict["pixel_output"] = float(options.pix_out)
+				except ValueError:
+					print "could not convert pix_out value. bad value",options.pix_out,". exiting!"
+					sys.exit(1)
+
+			if (options.width):
+				try:
+					parm_dict["gauss_width"] = float(options.width)
+				except ValueError:
+					print "could not convert gaussian width. bad value",options.width,". exiting!"
+					sys.exit(1)
+
+			if not( -1 == options.boxsize):
+				try:
+					parm_dict["box_size"] = int(options.boxsize)
+				except ValueError:
+					print "could not convert boxsize. bad value",options.width,". exiting!"
+					sys.exit(1)
+			# this is necessary, since default boxsize is -1 (which segfaults peak_ccf) and is not overwritten
+			#    anywhere else....
+			else:
+				print "boxsize not set! exiting!"
+				sys.exit(1)
+				
+			if (options.var):
+				parm_dict["use_variance"] = True
+			else:
+				parm_dict["use_variance"] = False
+				
+			if (options.inv):
+				parm_dict["invert"] = True
+			else:
+				parm_dict["invert"] = False
+
+			# PawelAutoBoxer is changed to allow passing in of a parameter dictionary
+			#    as additional argument....
+			
+			autoboxer = PawelAutoBoxer(None,parm_dict)
+
+			for image_name in filenames:
+				print "cmd autoboxing",image_name
+				boxable = Boxable(image_name,None,autoboxer)
+				
+				if boxable.is_excluded():
+					print "Image",image_name,"is excluded and being ignored"
+					continue
+		
+				autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+				# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
+				autoboxer.auto_box(boxable,False)
+				if options.write_coord_file:
+					boxable.write_coord_file(-1,options.force)
+				if options.write_box_images:
+					boxable.write_box_images(-1,options.force)
+
+			
+	
+			project_db.close()
+
+			print "cmdline autoboxer exiting"
+
+			# done
+			
+			sys.exit(1)
+
 		elif "grid" in options.auto:
 			image_size=gimme_image_dimensions2D(filenames[0])
 			try:
