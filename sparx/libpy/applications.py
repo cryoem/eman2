@@ -8450,47 +8450,75 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 		f_micname            = os.path.join(outdir, f_micrograph)
 		e1.write_image(f_micname)
 
-def cpy(ins, ous):
-	nima = EMUtil.get_image_count(ins)
-	data = EMData()
-	from utilities import file_type
-	iextension = file_type(ins)
-	oextension = file_type(ous)
-			
-	if(nima == 1 and oextension == "spi"):
-		data.read_image(ins)
-		data.write_image(ous, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+# reworked cpy is able to process lists instead of single files. ins_list can
+#    be either single file names like "test.hdf" or "bdb:image1", but also lists
+#    of these names. note that mixed lists (containing both raw file names and
+#    db objects) also work.
 
-	elif(iextension == "bdb" and oextension == "bdb"):
+def cpy(ins_list, ous):
 
-		DB = db_open_dict(ins)
-		OB = db_open_dict(ous)
-		for i in range(nima):
-			OB[i] = DB[i]
-		DB.close()
-		OB.close()
-
-	elif(iextension == "bdb"):
-
-		DB = db_open_dict(ins)
-		for i in range(nima):
-			a = DB[i]
-			a.write_image(ous, i)
-		DB.close()
-
-	elif(oextension == "bdb"):
-
-		DB = db_open_dict(ous)
-		for i in range(nima):
-			a = EMData()
-			a.read_image(ins, i)
-			DB[i] = a
-		DB.close()
-		
+	# reworked to include lists, since we want to be able to copy lists of images
+	#    into one file, concatenating.
+	if isinstance(ins_list,list):
+		# got a list of input files
+		image_list = ins_list
 	else:
-		for im in xrange(nima):
-			data.read_image(ins, im)
-			data.write_image(ous, im)
+		# got a single input file
+		image_list = [ins_list,]
+
+	gl_index = 0
+
+	from utilities import file_type
+
+	oextension = file_type(ous)	
+
+	if (oextension == "bdb"):
+		DB = db_open_dict(ous)
+
+	# iterate over all images in the list, even if it's only one...
+	for ins in image_list:
+
+		print ins
+		nima = EMUtil.get_image_count(ins)
+		data = EMData()
+		iextension = file_type(ins)
+		if(nima == 1 and oextension == "spi"):
+			data.read_image(ins)
+			data.write_image(ous, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+			
+		elif(iextension == "bdb" and oextension == "bdb"):
+			
+			OB = db_open_dict(ins)
+			for i in range(nima):
+				DB[gl_index] = OB[i]
+				gl_index += 1
+			OB.close()
+
+		elif(iextension == "bdb"):
+			
+			DB = db_open_dict(ins)
+			for i in range(nima):
+				a = DB[i]
+				a.write_image(ous, gl_index)
+				gl_index += 1
+			DB.close()
+			
+		elif(oextension == "bdb"):
+			
+			for i in range(nima):
+				a = EMData()
+				a.read_image(ins, i)
+				DB[gl_index] = a
+				gl_index += 1
+			
+		else:
+			for im in xrange(nima):
+				data.read_image(ins, im)
+				data.write_image(ous, gl_index)
+				gl_index += 1
+
+	if (oextension == "bdb"):
+		DB.close()
 
 def dele_flist(flist):
 	""" 

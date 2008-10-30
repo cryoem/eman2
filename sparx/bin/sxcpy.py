@@ -44,11 +44,30 @@ def main():
 	usage = progname + " stack_in  stack_out"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	(options, args) = parser.parse_args()
-	if len(args) != 2:
+	
+	# check length of arguments list. less than 2 is illegal
+	if (len(args) < 2):
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
-	else:
+	# 2 is file to file copying
+	elif (2 == len(args)):
+		print "file to file"
 		cpy(args[0], args[1])
-
+	# more than 2, this means a wildcard is transformed to a list of filenams
+	else:
+		print "list to file"
+		#
+		# XXX: note that wildcards only work for filenames! wildcards in files
+		#    are processed by the shell and read in as a space-delimited list
+		#    of filenames. however, this does NOT work for bdb:image1 type names,
+		#    since these will not be found and processed by the shell, not being
+		#    normal files. globbing of db objects will have to be done here!
+		#
+		# make sure we only pass the last entry of args as output file name,
+		#    since [-1:] pass a list containing only the last entry....
+		#
+		# application.cpy
+		cpy(args[:-1], args[-1:][0])
+		
 if __name__ == "__main__":
 	main()
