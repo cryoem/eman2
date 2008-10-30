@@ -50,18 +50,17 @@ from PyQt4.QtCore import QTimer
 from time import *
 
 from emglobjects import EMImage3DGUIModule, Camera, EMOpenGLFlagsAndTools, Camera2, EMViewportDepthTools
-from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel, EventsEmitterAndReciever
+from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EM3DSliceViewerModule(EMImage3DGUIModule,EventsEmitterAndReciever):
+class EM3DSliceViewerModule(EMImage3DGUIModule):
 	
 	def __init__(self,image=None, application=None):
 		self.data = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
-		EventsEmitterAndReciever.__init__(self)
 		self.init()
 		self.initialized = True
 		

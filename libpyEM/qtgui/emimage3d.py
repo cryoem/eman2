@@ -361,6 +361,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		ret = EMImage3DGUIModule.get_gl_widget(self,qt_context_parent,gl_context_parent)
+		self.gl_widget.setWindowTitle(remove_directories_from_name(self.file_name))
 		self.__set_module_contexts()
 		return ret
 	
@@ -477,6 +478,8 @@ class EMImage3DModule(EMImage3DGUIModule):
 
 	def set_data(self,data,file_name=""):
 		self.file_name = file_name # fixme fix this later
+		if self.gl_widget != None:
+			self.gl_widget.setWindowTitle(remove_directories_from_name(self.file_name))
 		if data == None: return
 		self.data = data
 		for i in self.viewables:

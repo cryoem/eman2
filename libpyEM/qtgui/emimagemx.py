@@ -50,7 +50,6 @@ from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
-from emimageutil import EventsEmitterAndReciever
 
 GLUT.glutInit(sys.argv)
 
@@ -299,7 +298,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 				
 			self.mousedrag=(event.x(),event.y())
 
-class EMImageMXModule(EMGUIModule,EventsEmitterAndReciever):
+class EMImageMXModule(EMGUIModule):
 	
 	def load_font_renderer(self):
 		try:
@@ -332,7 +331,7 @@ class EMImageMXModule(EMGUIModule,EventsEmitterAndReciever):
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
 			self.gl_widget.target_translations_allowed(True)
-			self.update_window_title(self.filename)
+			self.update_window_title(self.file_name)
 		return self.gl_widget
 	
 	def get_desktop_hint(self):
@@ -343,9 +342,8 @@ class EMImageMXModule(EMGUIModule,EventsEmitterAndReciever):
 		self.init_size_flag = True
 		self.data=None
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
-		EventsEmitterAndReciever.__init__(self)
 		EMImageMXModule.allim[self] = 0
-		self.filename = ''
+		self.file_name = ''
 		self.datasize=(1,1)
 		self.scale=1.0
 		self.minden=0
@@ -566,8 +564,8 @@ class EMImageMXModule(EMGUIModule,EventsEmitterAndReciever):
 			print "strange error in set_data"
 			return
 
-		self.filename = filename
-		self.update_window_title(self.filename)
+		self.file_name = filename
+		self.update_window_title(self.file_name)
 		self.data=data
 		
 		self.force_display_update()

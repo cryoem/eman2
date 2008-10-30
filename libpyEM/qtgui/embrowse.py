@@ -61,7 +61,8 @@ class EMBrowserDialog(EMSelectorDialog):
 		
 		if self.single_preview.isChecked():
 			if self.browse_gl_preview != None:
-				self.application.close_specific(self.browse_gl_preview)
+				self.browse_gl_preview.closeEvent(None)
+				#self.application.close_specific(self.browse_gl_preview)
 				self.browse_gl_preview == None
 		
 			self.browse_gl_preview =EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot)

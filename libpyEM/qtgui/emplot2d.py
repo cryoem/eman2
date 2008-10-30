@@ -124,6 +124,7 @@ class EMPlot2DModule(EMGUIModule):
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
 			self.gl_widget.target_translations_allowed(True)
+			self.gl_widget.setWindowTitle("2D Plot")
 			
 		return self.gl_widget
 	
@@ -144,6 +145,7 @@ class EMPlot2DModule(EMGUIModule):
 		
 		self.tex_name = 0
 		self.main_display_list = 0
+		
 	def __del__(self):
 		if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
 		if self.main_display_list != 0:

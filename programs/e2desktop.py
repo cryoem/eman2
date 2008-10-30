@@ -318,7 +318,9 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		if object in self.multi_selected_objects: 
 			# This is a nice way of allowing the selected object to change without losing the
 			# selected groupd
+			if self.selected_object != None: self.selected_object.set_inspector_enabled(False)
 			self.selected_object = object
+			self.selected_object.set_inspector_enabled(True)
 			self.__update_slave_master_connections()
 			return
 		
@@ -507,22 +509,40 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		#self.glbasicobjects.getCylinderDL()
 		
 		self.draw_grid = True
+		self.update_grid = True
+		self.grid_dl = 0
+		
 		self.window_selected_emit_signal = "display_frame_window_selected_"+str(EMPlainDisplayFrame.count)
 		
 		QtCore.QObject.connect(EMDesktop.main_widget, QtCore.SIGNAL(self.window_selected_emit_signal), self.window_selected)
 		
+	def __del__(self):
+		self.__delete_lists()
+	
+	def __delete_lists(self):
+		if self.grid_dl > 0:
+			glDeleteLists(self.grid_dl,1)
+			self.grid_dl = 0
+	
 	def num_rows(self):	return self.rows
 	
 	def num_cols(self): return self.columns
 	
-	def set_num_rows(self,rows): self.rows = rows
-	def set_num_cols(self,cols): self.columns = cols
+	def set_num_rows(self,rows): 
+		self.rows = rows
+		self.update_grid = True
+	def set_num_cols(self,cols):
+		self.columns = cols
+		self.update_grid = True
+	
+	def set_update_grid(self,val=True):
+		self.update_grid = val
 	
 	def show_grid(self,val):
 		#print "setting val",val
 		self.draw_grid = val
 	
-	def apply_row_col(self,cols):
+	def apply_row_col(self,bool):
 		if len(self.children) > self.rows*self.columns:
 			print "can't do that, there are too many children"
 			
@@ -573,16 +593,25 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 				##self.transformers[len(self.transformers)-1].append(t)
 		
 	def clear_all(self):
-		for child in self.children:
+		copy_child = [child for child in self.children] # because calling closeEvent below affects self.children
+		
+		for child in copy_child:
 			child.closeEvent(None)
 			
 		self.children = []
 		self.transformers = []
 		self.first_draw = [] # just for safety
+		
 	def print_info(self):
 		
 		print self.get_size(),self.get_origin()
 
+	
+	def frame_color(self):
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.5,.5,.5,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,1.0)
+		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1))
 	
 	def draw(self):
 		glPushMatrix()
@@ -600,35 +629,51 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 			glPopMatrix()
 		glPopMatrix()
 		
+		if self.draw_grid:
+			if self.update_grid:
+				self.__update_grid()
+			glCallList(self.grid_dl)
+			
+		self.first_draw = []
+		
+	def __update_grid(self):
+		self.__delete_lists()
+		
+		if self.glbasicobjects == None:
+			self.glbasicobjects = EMBasicOpenGLObjects()
+		
+		self.glbasicobjects.getCylinderDL() # make sure the display list is compiled
+			
 		optimal_width = self.width()/self.columns
 		optimal_height = self.height()/self.rows
+			
+		self.grid_dl = glGenLists(1)
+		glNewList(self.grid_dl,GL_COMPILE)
 		
+		self.frame_color()
+		for row in range(self.rows+1):
+			glPushMatrix()
+			glTranslate(*self.get_origin())
+			glTranslate(0,row*optimal_height,0)
+			glRotate(90,0,1,0)
+			glScaled(1.0,1.0,self.width())
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+		for col in range(self.columns+1):
+			
+			glPushMatrix()
+			glTranslate(*self.get_origin())
+			glTranslate(col*optimal_width,0,0)
+			glRotate(-90,1,0,0)
+			glScaled(1.0,1.0,self.height())
+			glCallList(self.glbasicobjects.getCylinderDL())
+			glPopMatrix()
+			
+		glEndList()
 		
-		if self.draw_grid:
-			if self.glbasicobjects == None:
-				self.glbasicobjects = EMBasicOpenGLObjects()
-				#FIXME USE DISPLAY LIST
-			for row in range(self.rows+1):
-				
-				glPushMatrix()
-				glTranslate(*self.get_origin())
-				glTranslate(0,row*optimal_height,0)
-				glRotate(90,0,1,0)
-				glScaled(1.0,1.0,self.width())
-				glCallList(self.glbasicobjects.getCylinderDL())
-				glPopMatrix()
-				
-			for col in range(self.columns+1):
-				
-				glPushMatrix()
-				glTranslate(*self.get_origin())
-				glTranslate(col*optimal_width,0,0)
-				glRotate(-90,1,0,0)
-				glScaled(1.0,1.0,self.height())
-				glCallList(self.glbasicobjects.getCylinderDL())
-				glPopMatrix()
+		self.update_grid = False
 
-		self.first_draw = []
 	
 	def find_open_position(self,new_child):
 		optimal_width = self.width()/self.columns
@@ -798,8 +843,6 @@ class EMDesktopApplication(EMApplication):
 		EMApplication.__init__(self,qt_application_control)
 		self.target = target
 		
-		self.children = []
-		
 	
 	def detach_child(self,child):
 		for i,child_ in enumerate(self.children):
@@ -827,7 +870,7 @@ class EMDesktopApplication(EMApplication):
 			self.target.attach_gl_child(child,child.get_desktop_hint())
 		pass
 	
-	def close_specific(self,child,inspector_too=True):
+	def close_specific(self,child,inspector_too=False):
 		for i,child_ in enumerate(self.children):
 			if child == child_:
 				self.children.pop(i)
@@ -938,7 +981,9 @@ class EMDesktopFrame(EMFrame):
 		if self.frame_dl:
 			glDeleteLists(self.frame_dl,1)
 			self.frame_dl = 0
-			
+		
+		self.display_frame.apply_row_col(True)
+		self.display_frame.set_update_grid()
 		self.bgob2.refresh()
 	
 	def attach_gl_child(self,child,hint):
@@ -968,6 +1013,7 @@ class EMDesktopFrame(EMFrame):
 			return
 			
 		owner.detach_child(child.get_gl_widget(None,None))
+		self.child_mappings.pop(child)
 
 	def draw_frame(self):
 		if self.frame_dl == 0:
@@ -1857,7 +1903,9 @@ class SideWidgetBar(EMGLViewContainer):
 			if (child == new_child):
 				self.children.pop(i)
 				self.transformers.pop(i)
-				#self.reset_scale_animation()
+				if self.mouse_on == i:
+					self.mouse_on= None
+					EMDesktop.main_widget.unlock_target()
 				return
 			
 		print "error, attempt to detach a child that didn't belong to this parent"
@@ -2079,7 +2127,7 @@ class LeftSideWidgetBar(SideWidgetBar):
 			if self.transformers[i].has_focus():
 				#print "disabled depth testing"
 				depth_back_on = glIsEnabled(GL_DEPTH_TEST)
-				glDisable(GL_DEPTH_TEST)
+				#glDisable(GL_DEPTH_TEST)
 			glPushMatrix()
 			self.transformers[i].transform()
 			child.draw()

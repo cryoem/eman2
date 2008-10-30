@@ -51,11 +51,10 @@ from time import *
 from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,get_default_gl_colors
 from emimageutil import ImgHistogram,EMEventRerouter,EMTransformPanel
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
-from emimageutil import EventsEmitterAndReciever
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMIsosurfaceModule(EMImage3DGUIModule,EventsEmitterAndReciever):
+class EMIsosurfaceModule(EMImage3DGUIModule):
 	
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
@@ -64,7 +63,6 @@ class EMIsosurfaceModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 	def __init__(self,image=None,application=None):
 		self.data = None
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
-		EventsEmitterAndReciever.__init__(self)
 		self.init()
 		self.initialized = True
 		
@@ -255,7 +253,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 		mean=data.get_attr("mean")
 		sigma=data.get_attr("sigma")
 		
-		if not self.inspector or self.inspector ==None:
+		if not self.inspector or self.inspector == None:
 			self.inspector=EMIsoInspector(self)
 		
 		hist = data.calc_hist(256,self.minden,self.maxden)
@@ -292,7 +290,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule,EventsEmitterAndReciever):
 			self.get_iso_dl()
 		
 			if self.emit_events: self.emit(QtCore.SIGNAL("set_threshold"),val)
-			#self.updateGL()
+			self.updateGL()
 	
 	def set_sample(self,val):
 		if ( self.smpval != int(val)):

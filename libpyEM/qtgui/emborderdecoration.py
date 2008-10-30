@@ -360,6 +360,9 @@ class EMBorderDecoration:
 			print "warning, unknown color flag, coloring failed"
 
 	
+	def is_selected(self):
+		return  self.color_flag == EMBorderDecoration.YELLOW_COLOR
+	
 	def set_selected(self,bool=True):
 		if bool: self.color_flag = EMBorderDecoration.YELLOW_COLOR
 		else: self.color_flag =  EMBorderDecoration.DEFAULT_COLOR
@@ -492,7 +495,10 @@ class EMBorderDecoration:
 			self.object.release_mouse_lock()
 			self.current_frame = ""
 			self.object.updateGL()
-		
+	
+	def mouseDoubleClickEvent(self,event):
+		pass
+	
 	def wheelEvent(self,event):
 		if self.currently_selected_frame == 5: # top
 			self.object.top_frame_wheel(event.delta())
@@ -772,10 +778,12 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			
 		if force_update or self.force_update:
 			self.delete_list()
+			
 			self.force_update = False
 		
 		if self.display_list == None:
 			self.__gen_3d_object_border_list()
+			
 	
 		if self.display_list == None:
 			print "display list generation failed" 
@@ -790,6 +798,25 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			glCallList(self.display_list)
 		else: print "An error occured"
 	
+	
+		if self.font_renderer != None:
+			dims = self.object.get_lr_bt_nf()
+			glPushMatrix()
+			light_on = glIsEnabled(GL_LIGHTING)
+			texture_on = glIsEnabled(GL_TEXTURE_2D)
+			glDisable(GL_LIGHTING)
+			glEnable(GL_TEXTURE_2D)
+			bbox = self.font_renderer.bounding_box(self.window_title)
+			glTranslate((dims[0]+dims[1])/2 , (dims[3]+dims[2])/2+ 2, dims[4]+self.border_depth)
+
+			glTranslate((bbox[0]-bbox[3])/2,0,0)
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+			glTranslate(0,self.object.height()/2.0,self.border_depth+.1)
+			self.font_renderer.render_string(self.window_title)
+			glPopMatrix()
+			
+			if not texture_on: glDisable(GL_TEXTURE_2D)
+			if light_on: glEnable(GL_LIGHTING)
 	
 		self.draw_x()
 		

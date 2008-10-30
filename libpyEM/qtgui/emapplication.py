@@ -35,10 +35,10 @@ from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import Qt
 import sys
 import platform
-from emimageutil import EMParentWin
+from emimageutil import EMParentWin,EventsEmitterAndReciever
+from EMAN2 import remove_directories_from_name
 
-
-class EMGUIModule:
+class EMGUIModule(EventsEmitterAndReciever):
 	FTGL = "ftgl"
 	GLUT = "glut"
 	def __init__(self,application=None,ensure_gl_context=False):
@@ -58,10 +58,13 @@ class EMGUIModule:
 		
 		self.image_change_count =  0# this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		
+		self.file_name = ""
 		if application != None: application.attach_child(self)
 
 		if ensure_gl_context and application != None:
 			application.ensure_gl_context(self)
+			
+		EventsEmitterAndReciever.__init__(self)
 			
 	def is_visible(self):
 		return self.qt_context_parent.isVisible()
@@ -103,16 +106,22 @@ class EMGUIModule:
 			if self.inspector == None: return # sometimes this happens
 		if not self.em_qt_inspector_widget:
 			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
-		
+			self.em_qt_inspector_widget.setWindowTitle(remove_directories_from_name(self.file_name))
+			if self.gl_widget != None:
+				try:
+					self.em_qt_inspector_widget.set_selected(self.gl_widget.decoration.is_selected())
+				except: pass
+
+		if not self.application.child_is_attached(self.em_qt_inspector_widget):
+			self.application.attach_child(self.em_qt_inspector_widget)
 		self.application.show_specific(self.em_qt_inspector_widget)
 		
 	def closeEvent(self,event) :
 		if self.application != None:
-			if self.inspector != None and self.em_qt_inspector_widget != None: 
-				self.application.detach_child(self.em_qt_inspector_widget)
-				self.inspector.close()
+			if self.em_qt_inspector_widget != None: 
+				self.em_qt_inspector_widget.closeEvent(event)
 			
-			self.application.detach_child(self)
+			self.application.close_specific(self)
 		
 	def load_font_renderer(self):
 		try:
@@ -134,14 +143,22 @@ class EMGUIModule:
 		Should overwrite this function in the subclass 
 		'''
 		pass
+	
+	def set_inspector_selected(self,bool):
+		if self.em_qt_inspector_widget != None: self.em_qt_inspector_widget.set_selected(bool)
 
 class EMApplication:
 	def __init__(self,qt_application_control=True):
+		self.children = []
 		if qt_application_control:
 			self.app = QtGui.QApplication(sys.argv)
 		else: self.app = None
 		
 		self.qt_emission_registry = {}
+	
+	def child_is_attached(self,query_child):
+		if query_child in self.children: return True
+		else: return False
 	
 	def get_app(self): return self.app
 	def attach_child(self,child):
@@ -203,7 +220,7 @@ class EMApplication:
 			
 class EMStandAloneApplication(EMApplication):
 	def __init__(self,qt_application_control=True):
-		self.children = []
+		
 		
 		# Stuff for display synchronization in e2.py
 		self.timer_function = None
@@ -339,6 +356,12 @@ class EMQtWidgetModule(EMGUIModule):
 		self.gl_widget = None
 		EMGUIModule.__init__(self,application)
 		#print self.gl_widget,"is real"
+		self.selected = False
+		
+	def set_selected(self,bool):
+		self.selected = bool
+		if self.gl_widget != None:self.gl_widget.set_selected(self.selected)
+			
 	def get_qt_widget(self):
 		return self.qt_widget
 	
@@ -351,14 +374,19 @@ class EMQtWidgetModule(EMGUIModule):
 			gl_view = EMQtGLView(self,self.qt_widget)
 			gl_view.setQtWidget(self.qt_widget)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
+			self.gl_widget.setWindowTitle(self.file_name)
+			self.gl_widget.set_selected(self.selected)
 			#self.gl_widget = EMGLViewQtWidget(gl_context_parent)
 			#self.gl_widget.setQtWidget(self.qt_widget)
 		return self.gl_widget
-		
+	
+	def setWindowTitle(self,title):
+		self.file_name = title
+		if self.gl_widget != None: self.gl_widget.setWindowTitle(self.file_name)
+	
 	def get_desktop_hint(self):
 		return self.qt_widget.get_desktop_hint()
-			
-	
+
 	def keyPressEvent(self,event):
 		self.qt_widget.keyPressEvent(event)
 
@@ -374,4 +402,10 @@ class EMQtWidgetModule(EMGUIModule):
 	def width(self): return self.qt_widget.widht()
 	
 	def height(self): return self.qt_widget.height()
+	
+	def closeEvent(self,event) :
+		if self.application != None:
+			self.application.close_specific(self)
+		
+		if self.qt_widget != None: self.qt_widget.close()
 	

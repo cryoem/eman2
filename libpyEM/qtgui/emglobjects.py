@@ -1201,6 +1201,8 @@ class Camera2(EventsEmitterAndReciever):
 		self.default_y = 0
 		self.default_z = 0
 		
+		self.allow_z_mouse_trans = True
+		
 		t3d = Transform3D()
 		t3d.to_identity()
 		self.t3d_stack.append(t3d)
@@ -1376,12 +1378,19 @@ class Camera2(EventsEmitterAndReciever):
 
 				self.mpressx = event.x()
 				self.mpressy = event.y()
-		elif event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and not self.allow_rotations):
-			if self.mmode==0:
-				self.motion_translateLA(self.mpressx, self.mpressy,event)
-					
-				self.mpressx = event.x()
-				self.mpressy = event.y()
+		elif self.mmode==0:
+			if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier and self.allow_z_mouse_trans:
+				
+					self.motion_translate_z_only(self.mpressx, self.mpressy,event)
+						
+					self.mpressx = event.x()
+					self.mpressy = event.y()
+			elif event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and not self.allow_rotations):
+				if self.mmode==0:
+					self.motion_translateLA(self.mpressx, self.mpressy,event)
+						
+					self.mpressx = event.x()
+					self.mpressy = event.y()
 	
 	def mouseReleaseEvent(self, event):
 		if event.button()==Qt.LeftButton:
@@ -1393,6 +1402,21 @@ class Camera2(EventsEmitterAndReciever):
 			
 	def wheelEvent(self, event):
 		self.scale_event(event.delta())
+	
+	def motion_translate_z_only(self,prev_x,prev_y,event):
+		if (self.basicmapping == False):
+			[dx,dy] = self.parent.eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
+		else:
+			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+
+		d = abs(dx) + abs(dy)
+		if dy > 0: d = -d 
+		self.cam_z += d
+		v = (0,0,d)
+			
+		if self.emit_events: 
+			#print "emitting applyt translation"
+			self.parent.emit(QtCore.SIGNAL("apply_translation"),v)
 	
 	def motion_translateLA(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
@@ -1437,7 +1461,15 @@ class Camera2(EventsEmitterAndReciever):
 		if self.emit_events: 
 			#print "emitting applyt translation"
 			self.parent.emit(QtCore.SIGNAL("apply_translation"),v)
+	
+	def explicit_translate(self,x,y,z):
 		
+		self.cam_x += x
+		self.cam_y += y
+		self.cam_z += z
+		
+		if self.emit_events: self.parent.emit(QtCore.SIGNAL("apply_translation"),(x,y,z))
+			
 	def apply_translation(self,v):
 		self.cam_x += v[0]
 		self.cam_y += v[1]
@@ -1940,6 +1972,26 @@ class EMImage3DGUIModule(EMGUIModule):
 				self.help_window = EMQtWidgetModule(help,self.application)
 				self.application.show_specific(self.help_window)
 				#help.resize(640,640)
+		elif event.key() == Qt.Key_Up:
+			
+			
+			if event.modifiers()&Qt.ShiftModifier: self.cam.explicit_translate(0,0,-1)
+			else: self.cam.explicit_translate(0,1,0)
+			self.updateGL()
+			
+		elif event.key() == Qt.Key_Down:
+			if event.modifiers()&Qt.ShiftModifier: self.cam.explicit_translate(0,0,1)
+			else:self.cam.explicit_translate(0,-1,0)
+			self.updateGL()
+			
+		elif event.key() == Qt.Key_Left:
+			self.cam.explicit_translate(-1,0,0)
+			self.updateGL()
+			
+		elif event.key() == Qt.Key_Right:
+			self.cam.explicit_translate(1,0,0)
+			self.updateGL()
+			
 		
 	def initializeGL(self):
 		# redefine this if you want to do any OpenGL specific initialization
