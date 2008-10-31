@@ -3015,8 +3015,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		os.mkdir(outdir)
 	from string import replace
 	if debug:
-        	info_file = outdir+("/progress%04d"%myid)
-        	finfo = open(info_file, 'w')
+		info_file = outdir+("/progress%04d"%myid)
+		finfo = open(info_file, 'w')
 	else:
 		finfo = None
 
