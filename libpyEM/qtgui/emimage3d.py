@@ -345,6 +345,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
 			from emimageutil import EMParentWin
+			self.under_qt_control = True
 			self.gl_context_parent = EMImage3DWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.gl_widget = self.gl_context_parent
@@ -353,6 +354,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 				i.set_qt_context_parent(self.qt_context_parent)
 				i.set_gl_context_parent(self.gl_context_parent)
 				i.set_gl_widget(self.gl_context_parent)
+				i.under_qt_control = True
 				
 			if isinstance(self.data,EMData):
 				self.gl_context_parent.set_cam_z(self.gl_context_parent.get_fov(),self.data)
@@ -360,6 +362,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		return self.qt_context_parent
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
+		self.under_qt_control = False
 		ret = EMImage3DGUIModule.get_gl_widget(self,qt_context_parent,gl_context_parent)
 		self.gl_widget.setWindowTitle(remove_directories_from_name(self.file_name))
 		self.__set_module_contexts()
@@ -428,15 +431,15 @@ class EMImage3DModule(EMImage3DGUIModule):
 		except: return 0
 	
 	def updateGL(self):
-		try: self.gl_widget.updateGL()
-		except: pass
+		from emfloatingwidgets import EM3DGLWindow
+		if self.gl_widget != None and not isinstance(self.gl_widget,EM3DGLWindow):
+			self.gl_widget.updateGL()
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
-	
 	
 	
 	def render(self):
@@ -545,6 +548,7 @@ class EMImage3DModule(EMImage3DGUIModule):
 		module.set_qt_context_parent(self.qt_context_parent)
 		module.set_gl_context_parent(self.gl_context_parent)
 		module.set_gl_widget(self.gl_context_parent)
+		module.under_qt_control = self.under_qt_control
 		
 		self.viewables.append(module)
 		

@@ -52,6 +52,7 @@ from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camer
 from emimageutil import ImgHistogram,EMEventRerouter,EMTransformPanel
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
+
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMIsosurfaceModule(EMImage3DGUIModule):
@@ -108,10 +109,6 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 			self.tex_name = self.data.gen_gl_texture()
 		else:
 			self.tex_name = self.data_copy.gen_gl_texture()
-			
-	def updateGL(self):
-		try: self.gl_widget.updateGL()
-		except: pass
 	
 	def render(self):
 		if (not isinstance(self.data,EMData)): return

@@ -81,9 +81,9 @@ class EMBorderDecoration:
 		self.moving = [-1,-1]
 		self.init_frame_unproject_order()
 		self.corner_sets = []
-		self.bottom_border_height = 10
-		self.top_border_height = 18
-		self.border_width = 10
+		self.bottom_border_height = 7
+		self.top_border_height = 14
+		self.border_width = 7
 		self.border_depth = 6
 		
 		try:
@@ -755,23 +755,27 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		self.force_update = val
 	
 	
-	def enable_clip_planes(self):
-		self.calculate_clip_planes()
+	
+	
+	def enable_clip_planes(self,two_d_only=False):
+		self.calculate_clip_planes(two_d_only)
 		glEnable(GL_CLIP_PLANE0)
 		glEnable(GL_CLIP_PLANE1)
 		glEnable(GL_CLIP_PLANE2)
 		glEnable(GL_CLIP_PLANE3)
-		glEnable(GL_CLIP_PLANE4)
-		glEnable(GL_CLIP_PLANE5)
+		if not two_d_only:
+			glEnable(GL_CLIP_PLANE4)
+			glEnable(GL_CLIP_PLANE5)
 	
-	def disable_clip_planes(self):
+	def disable_clip_planes(self,two_d_only=False):
 		glDisable(GL_CLIP_PLANE0)
 		glDisable(GL_CLIP_PLANE1)
 		glDisable(GL_CLIP_PLANE2)
 		glDisable(GL_CLIP_PLANE3)
-		glDisable(GL_CLIP_PLANE4)
-		glDisable(GL_CLIP_PLANE5)
-	
+		if not two_d_only:
+			glDisable(GL_CLIP_PLANE4)
+			glDisable(GL_CLIP_PLANE5)
+
 	def draw(self,force_update=False):
 		
 			
@@ -835,11 +839,14 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		glCallList( EMBorderDecoration.x_texture_dl)
 		glPopMatrix()
 		
-	def calculate_clip_planes(self):
+	def calculate_clip_planes(self,two_d_only=False):
 		dims = self.object.get_lr_bt_nf()
-		
-		front =  dims[4]
-		back =  dims[5]
+		if two_d_only:
+			front = 0
+			back = -1
+		else:
+			front =  dims[4]
+			back =  dims[5]
 		left =  dims[0]
 		right =  dims[1]
 		
@@ -862,7 +869,6 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		#print plane
 		
 		glClipPlane(GL_CLIP_PLANE0,plane)
-		
 		
 		# right plane
 		
@@ -915,38 +921,39 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		
 		glClipPlane(GL_CLIP_PLANE3,plane4)
 		
-		#front
-		p1 = Vec3f(right,bottom,front)
-		p2 = Vec3f(right,top,front)
-		p3 = Vec3f(left,bottom,front)
-		
-		v1 = p3-p1
-		v2 = p2-p1
-		
-		cross = v1.cross(v2)
-		cross.normalize()
-		d = front
-		plane5 = [cross[0],cross[1],cross[2],d]
-		#print plane
-		
-		glClipPlane(GL_CLIP_PLANE4,plane5)
-		
-		#back
-		p1 = Vec3f(right,bottom,back)
-		p2 = Vec3f(right,top,back)
-		p3 = Vec3f(left,bottom,back)
-		
-		v1 = p3-p1
-		v2 = p2-p1
-		
-		cross = v2.cross(v1)
-		cross.normalize()
-		d = back
-		plane6 = [cross[0],cross[1],cross[2],-d]
-		#print plane
-		
-		glClipPlane(GL_CLIP_PLANE5,plane6)
-		
+		if not two_d_only:
+			#front
+			p1 = Vec3f(right,bottom,front)
+			p2 = Vec3f(right,top,front)
+			p3 = Vec3f(left,bottom,front)
+			
+			v1 = p3-p1
+			v2 = p2-p1
+			
+			cross = v1.cross(v2)
+			cross.normalize()
+			d = front
+			plane5 = [cross[0],cross[1],cross[2],d]
+			#print plane
+			
+			glClipPlane(GL_CLIP_PLANE4,plane5)
+			
+			#back
+			p1 = Vec3f(right,bottom,back)
+			p2 = Vec3f(right,top,back)
+			p3 = Vec3f(left,bottom,back)
+			
+			v1 = p3-p1
+			v2 = p2-p1
+			
+			cross = v2.cross(v1)
+			cross.normalize()
+			d = back
+			plane6 = [cross[0],cross[1],cross[2],-d]
+			#print plane
+			
+			glClipPlane(GL_CLIP_PLANE5,plane6)
+			
 		
 	def __gen_3d_object_border_list(self):
 		self.delete_list()

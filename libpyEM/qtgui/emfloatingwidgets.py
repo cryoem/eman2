@@ -938,9 +938,10 @@ class EMGLRotorWidget(EM3DVolume):
 
 
 class EMGLWindow:
-	def __init__(self,parent,drawable,inspectee=None):
+	def __init__(self,parent,drawable):
 		self.parent = parent
 		self.drawable = drawable
+		self.drawable.set_window(self)
 		self.cam = Camera2(self) # a camera/orientation/postion object
 		self.vdtools = EMViewportDepthTools2(parent.get_gl_context_parent()) # viewport depth tools - essential for rerouting mouse events
 		
@@ -961,7 +962,11 @@ class EMGLWindow:
 		self.camera_is_slaved = False
 		self.window_selected_emit_signal = "window_selected"
 		
-		self.inspectee = inspectee
+	def set_enable_clip(self,val=True):
+		self.enable_clip = val
+		
+	def correct_internal_translations(self):
+		glTranslate(-self.cam.cam_x,-self.cam.cam_y,-self.cam.cam_z)
 		
 	def set_window_selected_emit_signal(self,string):
 		self.window_selected_emit_signal = string
@@ -1050,12 +1055,14 @@ class EMGLWindow:
 		self.drawable.resize_event(self.width(),self.height())
 		
 	def add_width_left(self,w): 
-		self.left -= w
+		self.cam.cam_x -= w
+		self.right += w
 		self.update_border_flag = True
 		self.drawable.resize_event(self.width(),self.height())
 		
-	def add_height_bottom(self,h): 
-		self.bottom -= h
+	def add_height_bottom(self,h):
+		self.cam.cam_y -= h
+		self.top += h
 		self.update_border_flag = True
 		self.drawable.resize_event(self.width(),self.height())
 		
@@ -1183,7 +1190,7 @@ class EMGLWindow:
 		else: print "mouse release error" # this shouldn't happen
 	
 	def mouse_in_win_args(self,event):
-		return [event.x(),self.parent.get_gl_context_parent().viewport_height()-event.y(),self.width(),self.height()]
+		return [event.x()-self.decoration.border_width,self.parent.get_gl_context_parent().viewport_height()-event.y()-self.decoration.bottom_border_height,self.width(),self.height()]
 	
 	def toolTipEvent(self,event):
 		if self.texture_lock > 0: return
@@ -1278,43 +1285,9 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 		self.drawable.resize_event(self.width(),self.height())
 		
-	def border_scale_event(self,delta):
-		#if delta > 0:
-			#scale = self.border_scale
-		#elif delta < 0:
-			#scale = self.inv_border_scale
-		#else: return
-		
-		#self.x_change = self.w*(scale-1.0)/2.0
-		#self.left -= self.x_change
-		#self.right += self.x_change
-		
-		#self.y_change = self.h*(scale-1.0)/2.0
-		#self.bottom -= self.y_change
-		#self.top += self.y_change
-		
-		#self.z_change = self.d*(scale-1.0)/2.0
-		#self.far -= self.z_change
-		#self.near += self.z_change
-		
-		
-		#self.w += int(2*self.x_change)
-		#self.h += int(2*self.y_change)
-		#self.d += int(2*self.z_change)
-		#self.drawable.resize_event(self.w,self.h,self.d)
-		
-		#self.update_dims = True
-		self.update_border_flag = True
-		
 	def determine_dimensions(self):
-		#[self.left,self.right,self.bottom,self.top,self.near,self.far] = self.drawable.get_lr_bt_nf()
-		#print [self.left,self.right,self.bottom,self.top,self.near,self.far]
-		#self.w = self.right - self.left
-		#self.h = self.top - self.bottom
-		#self.d = self.near - self.far
 		self.update_dims = False
 		
-
 	def resize(self,width,height):
 		#self.drawable.resize_event_with_border_data(width,height,self.decoration)
 		bw = self.decoration.total_width()/2
@@ -1497,13 +1470,22 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 			self.cam.mouseReleaseEvent(event)
 		else: self.drawable.mouseReleaseEvent(event)
 
-			
-class EMGLView3D(EM3DVolume,EMEventRerouter):
+
+class GLView:
+	def __init__(self,window=None):
+		self.window = window
+		
+	def set_window(self,window): self.window = window
+	
+	def get_window(self): return self.window
+
+class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 	"""
 	A view of an EMAN2 3D type, such as an isosurface or a 
 	volume rendition, etc.
 	"""
 	def __init__(self, parent,image=None):
+		GLView.__init__(self)
 		EM3DVolume.__init__(self)
 	
 		self.parent = parent
@@ -1739,7 +1721,7 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 
 		self.update_border_flag = True
 		
-		self.drawable.resize_event(self.width(),self.height)
+		self.drawable.resize_event(self.width(),self.height())
 	
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
@@ -1753,19 +1735,19 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		self.bottom = bot
 		self.top = height-top
 		self.update_border_flag = True
+		
+		self.drawable.resize_event(self.width(),self.height())
 	
 	def isinwin(self,x,y):
+		
 		if self.vdtools.isinwin(x,y):
 			self.mouse_event_target = self.drawable
-			if isinstance(self.drawable,EMQtGLView):
-				self.drawable.check_reroute_events(x,y)
 			return True
 		if self.decoration.isinwin(x,y):
 			self.mouse_event_target = self.decoration
 			return True
 		
 		self.mouse_event_targe =None
-
 		return False
 	
 	def top_frame_wheel(self,delta):
@@ -1798,15 +1780,16 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		
 		self.cam.position()
 		self.vdtools.update_points((self.left,self.bottom,0),(self.right,self.bottom,0),(self.right,self.top,0),(self.left,self.top,0))
-		#self.vdtools.draw_frame(True)
+		#self.vdtools.draw_frame(True)\
 		glPushMatrix()
+		if self.enable_clip:self.decoration.enable_clip_planes(two_d_only=True)
 		glTranslate(self.left,self.bottom,self.near)
 		self.drawable.draw()
 		glPopMatrix()
-		
+		if self.enable_clip: self.decoration.disable_clip_planes(two_d_only=True)
 		lighting = glIsEnabled(GL_LIGHTING)
 		glEnable(GL_LIGHTING)
-		
+
 		enable_depth = glIsEnabled(GL_DEPTH_TEST)
 		glEnable(GL_DEPTH_TEST)
 		self.decoration.draw(self.update_border_flag)
@@ -1815,14 +1798,16 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		
 		if self.draw_vd_frame: self.vdtools.draw_frame()
 		if not lighting: glDisable(GL_LIGHTING)
+
+
 	
-	
-class EM2DGLView(EMEventRerouter):
+class EM2DGLView(EMEventRerouter,GLView):
 	"""
 	A view of a 2D drawable type, such as a single 2D image or a matrix of 2D images
 	
 	"""
-	def __init__(self, parent,image):
+	def __init__(self, parent,image,window=None):
+		GLView.__init__(self,window)
 		self.parent = parent
 		if isinstance(parent,EMImageMXModule) or isinstance(parent,EMImage2DModule) or isinstance(parent,EMPlot2DModule):
 			self.drawable = parent
@@ -1854,7 +1839,7 @@ class EM2DGLView(EMEventRerouter):
 		self.sizescale = 1.0
 		self.changefactor = 1.1
 		self.invchangefactor = 1.0/self.changefactor
-
+	
 	def get_drawable(self):
 		return self.drawable
 
@@ -1878,30 +1863,13 @@ class EM2DGLView(EMEventRerouter):
 		#print self.w,self.h
 		
 	def resize_event(self,width,height):
-		self.drawable.resize_event(self.width(),self.height())
-
-	def set_width(self,w,resize_event=True):
-		self.w = w
-		if resize_event: self.drawable.resizeEvent(self.width(),self.height())
-		self.update_border_flag = True
-		
-	def set_height(self,h,resize_event=True):
-		self.h = h
-		if resize_event: self.drawable.resizeEvent(self.width(),self.height())
-		self.update_border_flag = True
+		self.drawable.resize_event(self.width,height)
 
 	def width(self):
-		try:
-			return int(self.sizescale*self.w)
-		except:
-			return 0
-		#return self.drawable.width()
+		self.window.width()
 	
 	def height(self):
-		try:
-			return int(self.sizescale*self.h)
-		except:
-			return 0
+		self.window.height()
 
 	def set_data(self,data):
 		self.drawable.set_data(data)
@@ -1915,8 +1883,25 @@ class EM2DGLView(EMEventRerouter):
 	def closeEvent(self,event):
 		self.drawable.closeEvent(event)
 
-class EMQtGLView:
-	def __init__(self, parent, qwidget=None, widget_parent=None):
+class EM2DQtGLWindow(EM2DGLWindow):
+	def __init__(self,parent,gl_view):
+		EM2DGLWindow.__init__(self,parent,gl_view)
+	
+	
+		self.qt_gl_popup_connection_made = False
+	def mouse_in_win_args(self,event):
+		'''
+		:( hack
+		'''
+		return [event.x(),self.parent.get_gl_context_parent().viewport_height()-event.y(),self.width(),self.height()]
+	
+	
+	def connect_qt_pop_up_event(self):
+		self.parent.connect_qt_pop_up_application_event(QtCore.SIGNAL("gl_qt_pop_up"))
+
+class EMQtGLView(GLView):
+	def __init__(self, parent, qwidget=None, widget_parent=None,qtglview_parent=None):
+		GLView.__init__(self,None)
 		self.parent = parent
 
 		self.qwidget = qwidget
@@ -1935,13 +1920,12 @@ class EMQtGLView:
 		self.refresh_dl = True
 		self.texture_dl = 0
 		self.texture_lock = 0
-		
-		self.vdtools = EMViewportDepthTools2(parent.get_gl_context_parent())
-		
+
 		if qwidget != None: self.setQtWidget(qwidget) # if you don't do this set it straight after calling __init__
 		
 		
 		self.cam = Camera2(self)
+		self.qtglview_parent = qtglview_parent
 		
 	def closeEvent(self,event):
 		self.parent.closeEvent(event)
@@ -1963,9 +1947,6 @@ class EMQtGLView:
 			glDeleteLists(self.texture_dl,1)
 			self.texture_dl = 0
 		
-	def set_update_P_inv(self,val=True):
-		self.vdtools.set_update_P_inv(val)
-	
 	def set_refresh_dl(self,val=True):
 		self.refresh_dl = val
 	
@@ -2016,12 +1997,6 @@ class EMQtGLView:
 		if (self.qwidget == None or self.itex == 0) :
 			#print "no widget - draw children return" 
 			return
-		
-		#self.cam.debug = True
-		#self.cam.position()
-		
-		# make sure the vdtools store the current matrices
-		
 
 		if self.refresh_dl == True:
 			if self.texture_dl != 0:
@@ -2054,45 +2029,19 @@ class EMQtGLView:
 
 		glPushMatrix()
 		glTranslate(self.qwidget.width()/2.0,self.qwidget.height()/2.0,0)
-		if self.texture_dl == 0: return
+		if self.texture_dl == 0: 
+			print "no texture dl"
+			return
 		glCallList(self.texture_dl)
 		self.refresh_dl = False
 		glPopMatrix()
 
-		
-		# now draw children if necessary - such as a qcombobox list view that has poppud up
 		for i in self.e2children:
 			glPushMatrix()
 			#try:
 			i.draw()
-			#except Exception, inst:
-				#print type(inst)     # the exception instance
-				#print inst.args      # arguments stored in .args
-				#print int
 			glPopMatrix()
 
-
-	def check_reroute_events(self,x,y):
-		for i in self.e2children:
-			if i.isinwin(x,y):
-				self.childreceiver = i.drawable
-				return True
-		#print 'no interception',self.e2children,self.qwidget
-		return False
-
-	#def isinwin(self,x,y):
-		
-		#if self.check_reroute_events(x,y): return True
-		#else: return self.vdtools.isinwin(x,y)
-	
-	#def eye_coords_dif(self,x1,y1,x2,y2):
-		#return self.vdtools.eye_coords_dif(x1,y1,x2,y2)
-			
-	#def mouseinwin(self,x,y,width,height):
-		#return self.vdtools.mouseinwin(x,y,width,height)
-
-	def mouse_in_win_args(self,event):
-		return [event.x(),self.parent.viewport_height()-event.y(),self.width(),self.height()]
 
 	def toolTipEvent(self,event):
 		if ( self.childreceiver != None ):
@@ -2113,6 +2062,7 @@ class EMQtGLView:
 		QtGui.QToolTip.showText(p2,cw.toolTip())
 	
 	def wheelEvent(self,event):
+
 		doElse = True
 		try:
 			if event.modifiers() == Qt.AltModifier:
@@ -2120,17 +2070,8 @@ class EMQtGLView:
 				doElse = False
 		except: pass
 		if doElse:
-			if ( self.childreceiver != None ):
-				# this means this class already knows that the mouse event is in the child
-				# that is being displayed
-				self.childreceiver.wheelEvent(event)
-				self.childreceiver = None
-				return
-			else:
-				# if we have any children (i.e. a drop down combo box) it should now disappear
-				if len(self.e2children) > 0:
-					self.e2children.pop()
-					return
+			self.__check_pop_up_death()
+			
 			cw=self.qwidget.childAt(event.x(),event.y())
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
@@ -2155,9 +2096,7 @@ class EMQtGLView:
 			print "it's a combo"
 		else:
 			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
-			#self.qwidget.setVisible(True)
 			QtCore.QCoreApplication.sendEvent(cw,qme)
-			#self.qwidget.setVisible(False)
 		self.gen_texture = True
 		self.updateTexture()
 		
@@ -2168,17 +2107,7 @@ class EMQtGLView:
 		if event.modifiers() == Qt.AltModifier:
 			self.cam.mousePressEvent(event)
 		else:
-			if ( self.childreceiver != None ):
-				# this means this class already knows that the mouse event is in the child
-				# that is being displayed
-				self.childreceiver.mousePressEvent(event)
-				self.childreceiver = None
-				return
-			else:
-				# if we have any children (i.e. a drop down combo box) it should now disappear
-				if len(self.e2children) > 0:
-					self.e2children.pop()
-					return
+			self.__check_pop_up_death()
 				
 			cw=self.qwidget.childAt(event.x(),event.y())
 			if cw == None: return
@@ -2188,25 +2117,18 @@ class EMQtGLView:
 			if (isinstance(cw,QtGui.QComboBox)):
 				cw.showPopup()
 				cw.hidePopup()
-				widget = EMQtGLView(self.parent,cw.view(),self);
-				gl_widget = EM2DGLWindow(self.parent,widget)
-				#application = self.parent.get_app()
-				#application.attach_child(self.gl_widget)
-				#application.show_specific(self.gl_widget)
-				#widget.setQtWidget(cw.view())
-				gl_widget .cam.loadIdentity()	
+				self.widget = EMQtGLView(self.parent,cw.view(),cw,self);
+				self.gl_widget = EM2DQtGLWindow(self.parent,self.widget)
+				self.gl_widget.cam.loadIdentity()	
 				p = QtCore.QPoint(cw.geometry().x(),cw.geometry().y())
 				p2 = cw.mapToParent(p)
-				#print p2.x(),p2.y()
-				#print cw.geometry().x(),cw.geometry().y(),cw.geometry().width(),cw.geometry().height()
-				gl_widget .cam.setCamTrans("x",event.x())
-				gl_widget .cam.setCamTrans("y",self.height()-event.y())
-				gl_widget .cam.setCamTrans("z",0.1+6) # 6 is border depth
-				#self.parent.get_qt_context_parent().lock_target(target)
-				#widget.draw_frame = False
-				self.e2children.append(gl_widget)
-				self.e2children[0].is_child = True
-				#print "self.e2children just became",self.e2children
+				self.gl_widget.cam.setCamTrans("x",event.x())
+				self.gl_widget.cam.setCamTrans("y",self.height()-event.y())
+				self.gl_widget.cam.setCamTrans("z",0.1+6) # 6 is border depth
+				self.e2children.append(self.gl_widget)
+				self.widget.is_child = True
+				self.window.connect_qt_pop_up_event()
+				self.window.emit(QtCore.SIGNAL("gl_qt_pop_up"),self.gl_widget)
 			else:
 				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child): QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
@@ -2216,66 +2138,12 @@ class EMQtGLView:
 			self.updateTexture()
 		
 	def mouseMoveEvent(self,event):
-		#pos = QtGui.QCursor.pos()
-		
-		#print event.x(),pos.x(),event.y(),pos.y()
-		#pos = self.parent.mapFromGlobal(pos)
-		#print "now",event.x(),pos.x(),event.y(),pos.y()
-	
 		if event.modifiers() == Qt.AltModifier:
 			self.cam.mouseMoveEvent(event)
 		else:
-			if ( self.childreceiver != None ):
-				# this means this class already knows that the mouse event is in the child
-				# that is being displayed
-				self.childreceiver.mouseMoveEvent(event)
-				self.childreceiver = None
-				return True
-			else:
-				#print "mouse move event",self.qwidget
-				cw=self.qwidget.childAt(event.x(),event.y())
-				self.current = cw
-				if ( self.current != self.previous ):
-					QtGui.QToolTip.hideText()
-					if ( self.current != None ):
-						qme=QtCore.QEvent(QtCore.QEvent.Enter)
-						QtCore.QCoreApplication.sendEvent(self.current,qme)
-						
-					if ( self.previous != None ):
-						qme=QtCore.QEvent(QtCore.QEvent.Leave)
-						QtCore.QCoreApplication.sendEvent(self.previous,qme)
-				
-				self.previous = self.current
-				if cw == None:
-					QtGui.QToolTip.hideText()
-					if ( self.previous != None ):
-						qme=QtCore.QEvent(QtCore.QEvent.Leave)
-						QtCore.QCoreApplication.sendEvent(self.previous,qme)
-						self.gen_texture = True
-						self.updateTexture()
-					return
-				gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
-				lp=cw.mapFromGlobal(gp)
-				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
-				QtCore.QCoreApplication.sendEvent(cw,qme)
-			# FIXME
-			# setting the gen_texture flag true here causes the texture to be regenerated
-			# when the mouse moves over it, which is inefficient.
-			# The fix is to only set the gen_texture flag when mouse movement
-			# actually causes a change in the appearance of the widget (for instance, list boxes from comboboxes)
-			self.gen_texture = True
-			self.updateTexture()
-	
-	def keyPressEvent(self,event,pos):
-		if ( self.childreceiver != None ):
-			# this means this class already knows that the mouse event is in the child
-			# that is being displayed
-			self.childreceiver.keyPressEvent(event)
-			self.childreceiver = None
-			return
-		else:
-			#pos = self.parent.get_gl_context_parent().mapFromGlobal(QtGui.QCursor.pos())
-			cw=self.qwidget.childAt(pos[0],pos[1])
+			self.__check_pop_up_death()
+			
+			cw=self.qwidget.childAt(event.x(),event.y())
 			self.current = cw
 			if ( self.current != self.previous ):
 				QtGui.QToolTip.hideText()
@@ -2296,11 +2164,42 @@ class EMQtGLView:
 					self.gen_texture = True
 					self.updateTexture()
 				return
-			#gp=self.qwidget.mapToGlobal(QtCore.QPoint(l[0],l[1]))
-			#lp=cw.mapFromGlobal(gp)
-			#qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
-			#print cw,event
-			QtCore.QCoreApplication.sendEvent(cw,event)
+			gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
+			lp=cw.mapFromGlobal(gp)
+			qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+			QtCore.QCoreApplication.sendEvent(cw,qme)
+			# FIXME
+			# setting the gen_texture flag true here causes the texture to be regenerated
+			# when the mouse moves over it, which is inefficient.
+			# The fix is to only set the gen_texture flag when mouse movement
+			# actually causes a change in the appearance of the widget (for instance, list boxes from comboboxes)
+			self.gen_texture = True
+			self.updateTexture()
+	
+	def keyPressEvent(self,event,pos):
+		cw=self.qwidget.childAt(pos[0],pos[1])
+		self.current = cw
+		if ( self.current != self.previous ):
+			QtGui.QToolTip.hideText()
+			if ( self.current != None ):
+				qme=QtCore.QEvent(QtCore.QEvent.Enter)
+				QtCore.QCoreApplication.sendEvent(self.current,qme)
+				
+			if ( self.previous != None ):
+				qme=QtCore.QEvent(QtCore.QEvent.Leave)
+				QtCore.QCoreApplication.sendEvent(self.previous,qme)
+		
+		self.previous = self.current
+		if cw == None:
+			QtGui.QToolTip.hideText()
+			if ( self.previous != None ):
+				qme=QtCore.QEvent(QtCore.QEvent.Leave)
+				QtCore.QCoreApplication.sendEvent(self.previous,qme)
+				self.gen_texture = True
+				self.updateTexture()
+			return
+			
+		QtCore.QCoreApplication.sendEvent(cw,event)
 		# FIXME
 		# setting the gen_texture flag true here causes the texture to be regenerated
 		# when the mouse moves over it, which is inefficient.
@@ -2309,24 +2208,41 @@ class EMQtGLView:
 		self.gen_texture = True
 		self.updateTexture()
 
+
+	def pop_me(self,child):
+		#print self, "pop me"
+		if len(self.e2children) > 0:
+			widget = self.e2children.pop()
+			#qwidget = widget.drawable.qwidget
+			#idx = qwidget.currentIndex()
+			#qwidget.update(idx)
+
+	def __check_pop_up_death(self,event=None):
+		if len(self.e2children) > 0:
+			widget = self.e2children.pop()
+			qwidget = widget.drawable.qwidget
+			idx = qwidget.currentIndex()
+			qwidget.update(idx)
+			#if event != None:
+				#qwidget.mouseReleaseEvent(event)
+			return
 	def mouseReleaseEvent(self,event):
 		if event.modifiers() == Qt.AltModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
-			if ( self.childreceiver != None ):
-				# this means this class already knows that the mouse event is in the child
-				# that is being displayed
-				#try:
-				self.childreceiver.mouseReleaseEvent(event)
-				self.childreceiver = None
-				self.e2children.pop()
-				return
-			else:
+			#if ( self.childreceiver != None ):
+				## this means this class already knows that the mouse event is in the child
+				## that is being displayed
+				##try:
+				#self.childreceiver.mouseReleaseEvent(event)
+				#self.childreceiver = None
+				#self.e2children.pop()
+				#return
+			#else:
 				# if we have any children (i.e. a drop down combo box) it should now disappear
-				if len(self.e2children) > 0:
-					self.e2children.pop()
-					return
-			
+		
+
+			self.__check_pop_up_death(event)
 			cw=self.qwidget.childAt(event.x(),event.y())
 			if cw == None: return
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
@@ -2337,22 +2253,15 @@ class EMQtGLView:
 			else:
 				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child):
-					##print self.qwidget
-					##print self.qwidget.currentIndex().row()
-					##print self.widget_parent
-					##print self.qwidget.rect().left(),self.qwidget.rect().right(),self.qwidget.rect().top(),self.qwidget.rect().bottom()
-					##print lp.x(),lp.y()
+
 					self.widget_parent.setCurrentIndex(self.qwidget.currentIndex().row())
-					#self.widget_parent.changeEvent(QtCore.QEvent())
-					#self.widget_parent.highlighted(self.qwidget.currentIndex().row())
-					#self.qwidget.commitData(self.qwidget.parent())
-					##print self.qwidget.currentText()
-					#self.widget_parent.setVisible(True)
-					#self.widget_parent.setEnabled(True)
-					#self.qwidget.setVisible(True)
-					#QtCore.QCoreApplication.sendEvent(self.widget_parent,qme)
-					#self.qwidget.setVisible(False)
-					self.widget_parent.emit(QtCore.SIGNAL("activated(QString)"),self.widget_parent.itemText(self.qwidget.currentIndex().row()))
+
+					#self.widget_parent.emit(QtCore.SIGNAL("activated(QString)"),self.widget_parent.itemText(self.qwidget.currentIndex().row()))
+					self.qtglview_parent.pop_me(self.window)
+					self.qtglview_parent.gen_texture = True
+					#self.qtglview_parent.updateTexture()
+					#self.window.updateGL()
+					return
 				else:
 					#self.qwidget.setVisible(True)
 					QtCore.QCoreApplication.sendEvent(cw,qme)
@@ -2662,6 +2571,7 @@ class EMGLViewQtWidget:
 				widget.draw_frame = False
 				self.e2children.append(widget)
 				self.e2children[0].is_child = True
+				
 			else:
 				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child): QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
@@ -3024,9 +2934,6 @@ class EMFloatingWidgetsCore:
 		self.suppressUpdateGL = False
 		self.rotor = None
 		#print "init done"
-	
-	def emit(self,signal,event,a=None,b=None):
-		pass
 	
 	def register_animatable(self,animatable):
 		self.parent.register_animatable(animatable)

@@ -104,10 +104,6 @@ class EM3DSliceViewerModule(EMImage3DGUIModule):
 		
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support
 	
-	def updateGL(self):
-		try: self.gl_widget.updateGL()
-		except: pass
-	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	

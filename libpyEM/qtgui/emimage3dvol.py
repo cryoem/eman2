@@ -110,10 +110,6 @@ class EMVolumeModule(EMImage3DGUIModule):
 		v.normalize()
 		self.axes.append( v )
 	
-	def updateGL(self):
-		try: self.gl_widget.updateGL()
-		except: pass
-	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 	

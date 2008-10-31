@@ -998,6 +998,7 @@ class EMBoxerModule:
 			
 		#else:
 		self.guimx=EMImageMXModule(application=self.application)
+		self.guimx.desktop_hint = "rotor"
 		self.fancy_mode = EMBoxerModule.PLAIN_MODE
 		
 		self.guimx.set_mouse_mode("app")
@@ -1020,6 +1021,7 @@ class EMBoxerModule:
 			image=BigImageCache.get_object(imagename).get_image(use_alternate=True)
 		
 		self.guiim= EMImage2DModule(application=self.application)
+		self.guiim.set_enable_clip(True) # only makes a difference in the desktop
 		self.guiim.set_data(image,imagename)
 		self.guiim.force_display_update()
 		self.application.show_specific(self.guiim)
@@ -1485,6 +1487,7 @@ class EMBoxerModule:
 				#self.guimxit=EMImageRotorModule(application=self.application)
 			#else:
 			self.guimxit=EMImageMXModule(application=self.application)
+			self.guimxit.desktop_hint = "rotor"
 				
 			try:
 				qt_parent = self.guimxit.get_gl_parent()

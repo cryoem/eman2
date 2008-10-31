@@ -1758,6 +1758,7 @@ def draw_volume_bounds(width,height,depth):
 
 
 class EMImage3DGUIModule(EMGUIModule):
+	
 	def __init__(self,application=None,ensure_gl_context=True):
 		self.blendflags = EMOpenGLFlagsAndTools()
 		self.bcscreen = EMBrightContrastScreen()
@@ -1771,11 +1772,14 @@ class EMImage3DGUIModule(EMGUIModule):
 		self.data = None # should eventually be an EMData object
 		self.file_name = None # stores the file name of the associated EMData, if applicable (use setter/getter)
 		self.help_window = None # eventually will become a Qt help widget of some kind
-		
 		EMGUIModule.__init__(self,application,ensure_gl_context)
 	
 	def render(self): pass # should do the main drawing
-	def updateGL(self): raise #this needs to be supplied
+	
+	def updateGL(self):
+		if self.gl_widget != None and self.under_qt_control:
+			self.gl_widget.updateGL()
+			
 	def get_type(self): pass #should return a unique string
 	
 	def set_rank(self,rank): self.rank = rank
@@ -1785,6 +1789,7 @@ class EMImage3DGUIModule(EMGUIModule):
 	def get_file_name(self): return self.file_name
 	
 	def get_qt_widget(self):
+		self.under_qt_control = True
 		if self.qt_context_parent == None:	
 			from emimageutil import EMParentWin
 			from emimage3d import EMImage3DGeneralWidget
@@ -1793,6 +1798,7 @@ class EMImage3DGUIModule(EMGUIModule):
 			self.gl_widget = self.gl_context_parent
 			if isinstance(self.data,EMData):
 				self.gl_context_parent.set_camera_defaults(self.data)
+			self.under_qt_control = True
 		return self.qt_context_parent
 
 	
@@ -1808,7 +1814,7 @@ class EMImage3DGUIModule(EMGUIModule):
 			
 			self.gl_widget.target_translations_allowed(True)
 			#self.gl_widget.allow_camera_rotations(True)
-			
+			self.under_qt_control = False
 			
 			
 		return self.gl_widget

@@ -42,6 +42,7 @@ class EMGUIModule(EventsEmitterAndReciever):
 	FTGL = "ftgl"
 	GLUT = "glut"
 	def __init__(self,application=None,ensure_gl_context=False):
+		self.under_qt_control = False
 		self.application = application
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
 		self.suppress_inspector = False # turn on to suppress showing the inspector
@@ -367,13 +368,13 @@ class EMQtWidgetModule(EMGUIModule):
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		from emfloatingwidgets import EMGLViewQtWidget
-		from emfloatingwidgets import EMQtGLView, EM2DGLWindow
+		from emfloatingwidgets import EMQtGLView, EM2DQtGLWindow
 		if self.gl_widget == None:
 			self.qt_context_parent = qt_context_parent
 			self.gl_context_parent = gl_context_parent
 			gl_view = EMQtGLView(self,self.qt_widget)
 			gl_view.setQtWidget(self.qt_widget)
-			self.gl_widget = EM2DGLWindow(self,gl_view)
+			self.gl_widget = EM2DQtGLWindow(self,gl_view)
 			self.gl_widget.setWindowTitle(self.file_name)
 			self.gl_widget.set_selected(self.selected)
 			#self.gl_widget = EMGLViewQtWidget(gl_context_parent)
@@ -409,3 +410,6 @@ class EMQtWidgetModule(EMGUIModule):
 		
 		if self.qt_widget != None: self.qt_widget.close()
 	
+	def connect_qt_pop_up_application_event(self,signal):
+		self.application.connect_qt_pop_up_application_event(signal,self)
+		

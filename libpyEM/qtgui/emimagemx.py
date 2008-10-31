@@ -311,7 +311,7 @@ class EMImageMXModule(EMGUIModule):
 	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
-			
+			self.under_qt_control = True
 			self.gl_context_parent = EMImageMXWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.gl_widget = self.gl_context_parent
@@ -324,7 +324,7 @@ class EMImageMXModule(EMGUIModule):
 		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
 		self.init_size_flag = False
 		if self.gl_widget == None:
-			
+			self.under_qt_control = False
 			self.gl_context_parent = gl_context_parent
 			self.qt_context_parent = qt_context_parent
 			
@@ -606,8 +606,9 @@ class EMImageMXModule(EMGUIModule):
 		#if update_gl: self.updateGL()
 
 	def updateGL(self):
-		try: self.gl_widget.updateGL()
-		except: pass
+		if self.gl_widget != None and self.under_qt_control:
+			self.gl_widget.updateGL()
+
 		
 	def set_den_range(self,x0,x1,update_gl=True):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""

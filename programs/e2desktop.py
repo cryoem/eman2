@@ -154,6 +154,8 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		
 		self.connections = []
 		
+		self.target = None # can be used to send events directly to somemothing
+		
 	def draw(self):
 		for child in self.children:
 			glPushMatrix()
@@ -169,16 +171,25 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			child.set_update_P_inv()
 	
 	def mousePressEvent(self, event):
-		for child in self.children:
+		children = self.children
+		if self.target != None:
+			children = [self.target]
+			
+		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mousePressEvent(event)
 				self.updateGL()
 				return True
 		
-		False
+		self.target = None
+		return False
 	
 	def mouseMoveEvent(self, event):
-		for child in self.children:
+		children = self.children
+		if self.target != None:
+			children = [self.target]
+			
+		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				self.current = child
 				if (self.current != self.previous ):
@@ -190,54 +201,82 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 				self.updateGL()
 				return True
 		
+		self.target = None
 		return False
 		
 	def mouseReleaseEvent(self, event):
-		for child in self.children:
+		children = self.children
+		if self.target != None:
+			children = [self.target]
+			
+		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mouseReleaseEvent(event)
 				self.updateGL()
 				return True
 			
+		self.target = None
 		return False
 					
 		
 	def mouseDoubleClickEvent(self, event):
-		for child in self.children:
+		children = self.children
+		if self.target != None:
+			children = [self.target]
+			
+		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mouseDoubleClickEvent(event)
 				self.updateGL()
 				return True
+		self.target = None
 		return False
 		
 	def wheelEvent(self, event):
 		
-		for child in self.children:
+		children = self.children
+		if self.target != None:
+			children = [self.target]
+			
+		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.wheelEvent(event)
 				self.updateGL()
 				return True
 		
+		self.target = None
 		return False
-
+		
 	def toolTipEvent(self, event):
-		for child in self.children:
+		children = self.children
+		if self.target != None:
+			children = [self.target]
+			
+		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.toolTipEvent(event)
 				self.updateGL()
 				QtGui.QToolTip.hideText()
 				return True
 		
+		self.target = None
 		return False
 
 	def keyPressEvent(self,event):
-		for child in self.children:
+		children = self.children
+		if self.target != None:
+			children = [self.target]
+			
+		for child in children:
 			pos = EMDesktop.main_widget.mapFromGlobal(QtGui.QCursor.pos())
 			if ( child.isinwin(pos.x(),EMDesktop.main_widget.viewport_height()-pos.y()) ):
 				child.keyPressEvent(event)
 				self.updateGL()
 				return True
 				#QtGui.QToolTip.hideText()
+				
+		self.target = None
+		return False
 
 	def dragMoveEvent(self,event):
 		print "received drag move event"
@@ -272,7 +311,11 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 
 	def hoverEvent(self,event):
 		#print "hoverEvent
-		for child in self.children:
+		children = self.children
+		if self.target != None:
+			children = [self.target]
+			
+		for child in children:
 			if ( child.isinwin(event.x(),self.height()-event.y()) ):
 				child.hoverEvent(event)
 				return True
@@ -282,9 +325,14 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		#self.updateGL()
 
 	def isinwin(self,x,y):
-		for child in self.children:
+		children = self.children
+		if self.target != None:
+			children = [self.target]
+			
+		for child in children:
 			if child.isinwin(x,y) : return True
 			
+		self.target = None
 		return False
 			
 	def window_selected(self,object,event):
@@ -369,6 +417,9 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			QtCore.QObject.disconnect(EMDesktop.main_widget, QtCore.SIGNAL(a[0]), a[1])
 		
 		self.connections = []
+		
+	def on_qt_pop_up(self,object):
+		self.target = object
 		
 class Translation:
 	def __init__(self,child):
@@ -491,8 +542,6 @@ class Scale:
 			self.rotation_animation = None 
 			return False
 
-
-
 class EMPlainDisplayFrame(EMGLViewContainer):
 	count = 0
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
@@ -508,7 +557,7 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		self.glbasicobjects = None
 		#self.glbasicobjects.getCylinderDL()
 		
-		self.draw_grid = True
+		self.draw_grid = False
 		self.update_grid = True
 		self.grid_dl = 0
 		
@@ -717,11 +766,11 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 						rm.append(idx)
 						#print "appended",idx
 					
-		
-		#print "removing",rm
 		rm.sort()
 		rm.reverse()
-		for r in rm: available.pop(r)
+		for r in rm: 
+			try:available.pop(r)
+			except: print "failed to remove",r, "this is a bug"
 		
 		#print "available",available
 		
@@ -907,7 +956,19 @@ class EMDesktopApplication(EMApplication):
 			
 	def get_qt_gl_updategl_target(self,child):
 		return EMDesktop.main_widget
-
+	
+	def connect_qt_pop_up_application_event(self,sig,child):
+		owner = EMDesktop.main_widget.get_owner(child)
+		if owner != None:
+			QtCore.QObject.connect(self.get_qt_emitter(child),sig,owner.on_qt_pop_up)
+		else: print "connect_qt_pop_up_application_event connection failed"
+	
+	def diconnect_qt_pop_up_application_event(self,sig,child):
+		owner = EMDesktop.main_widget.get_owner(child)
+		if owner != None:
+			QtCore.QObject.disconnect(self.get_qt_emitter(child),sig,owner.on_qt_pop_up)
+		else: print "diconnect_qt_pop_up_application_event disconnection failed"
+		
 class EMDesktopFrame(EMFrame):
 	image = None
 	def __init__(self,parent,geometry=Region(0,0,0,0)):
@@ -997,6 +1058,7 @@ class EMDesktopFrame(EMFrame):
 			self.display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.display_frame
 		elif hint == "rotor":
+			print "attaching right side bar"
 			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.right_side_bar
 		elif hint == "settings":
@@ -1014,6 +1076,15 @@ class EMDesktopFrame(EMFrame):
 			
 		owner.detach_child(child.get_gl_widget(None,None))
 		self.child_mappings.pop(child)
+
+	def get_owner(self,child):
+		try:
+			owner = self.child_mappings[child]
+		except:
+			print "owner doesn't exist for child",child
+			return
+		
+		return owner
 
 	def draw_frame(self):
 		if self.frame_dl == 0:
@@ -1215,7 +1286,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		EMDesktop.main_widget = self
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
-		fmt.setSampleBuffers(True)
+		#fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 
 		self.application = EMDesktopApplication(self,qt_application_control=False)
@@ -1259,6 +1330,9 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		QtGui.QWidget.emit(self,*args,**kargs)
 	def enable_timer(self):
 		pass
+	
+	def get_owner(self,child):
+		return self.current_desktop_frame.get_owner(child)
 	
 	def attach_gl_child(self,child,hint):
 		self.current_desktop_frame.attach_gl_child(child,hint)
@@ -1547,7 +1621,7 @@ class EMBrowserSettingsInspector(QtGui.QWidget):
 		self.vbl.addWidget(self.clear_button)
 		
 		self.show_grid = QtGui.QCheckBox("show grid")
-		self.show_grid.setChecked(True)
+		self.show_grid.setChecked(False)
 		self.vbl.addWidget(self.show_grid)
 
 		QtCore.QObject.connect(self.apply_button, QtCore.SIGNAL("clicked(bool)"), target.apply_row_col)
@@ -1582,7 +1656,9 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			print "parent can't get height for depth"
 			exit(1)
 			#return 0
-			
+	
+	def correct_internal_translations(self):
+		pass
 	def height(self):
 		if self.desktop_task_widget != None: return self.desktop_task_widget.height() 
 		return 0
@@ -1620,7 +1696,7 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			self.widget.hide()
 			self.widget.resize(150,150)
 			gl_view = EMQtGLView(EMDesktop.main_widget,self.widget)
-			self.desktop_task_widget = EM2DGLWindow(self,gl_view)
+			self.desktop_task_widget = EM2DQtGLWindow(self,gl_view)
 			
 			
 			self.init_flag = False
@@ -1673,7 +1749,7 @@ class EMDesktopTaskWidget(EMGLViewContainer):
 			self.tree_widget_entries = []
 			self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Browse")))
 			#self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Thumb")))
-			#self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Box")))
+			self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Box")))
 			self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 			self.tree_widget.setHeaderLabel("Choose a task")
 			
@@ -2035,6 +2111,7 @@ class BottomWidgetBar(SideWidgetBar):
 		glPushMatrix()
 		
 		glTranslate(-child.width_inc_border()/2,-self.parent.height()/2.0+6,0)
+		child.correct_internal_translations()
 		self.transformers[0].transform()
 		child.draw()
 		glPopMatrix()
@@ -2083,6 +2160,7 @@ class RightSideWidgetBar(SideWidgetBar):
 				glDisable(GL_DEPTH_TEST)
 			glPushMatrix()
 			self.transformers[i].transform()
+			child.correct_internal_translations()
 			child.draw()
 			glPopMatrix()
 			#print child.height_inc_border(), child
@@ -2109,7 +2187,7 @@ class RightSideWidgetBar(SideWidgetBar):
 			
 			glTranslate(0,-self.xy_scale*self.child.height_inc_border(),0)
 			glRotate(self.rotation,0,1,0)
-			glTranslate(-self.xy_scale*self.child.width_inc_border(),0,0)
+			glTranslate(-self.xy_scale*self.child.width()-6,0,0)
 			glScale(self.xy_scale,self.xy_scale,1.0)
 		
 		def has_focus(self):
@@ -2130,6 +2208,7 @@ class LeftSideWidgetBar(SideWidgetBar):
 				#glDisable(GL_DEPTH_TEST)
 			glPushMatrix()
 			self.transformers[i].transform()
+			child.correct_internal_translations()
 			child.draw()
 			glPopMatrix()
 			glTranslate(0,-self.transformers[i].get_xy_scale()*child.height_inc_border(),0)

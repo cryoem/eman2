@@ -53,7 +53,6 @@ from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTool
 from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
 
-
 MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DSymViewerModule(EMImage3DGUIModule):
@@ -697,11 +696,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 	def regen_dl(self, dummy=False):
 		self.force_update = True
 		self.updateGL()
-		
-	def updateGL(self,dummy=False):
-		try: self.gl_widget.updateGL()
-		except: pass
-		
+			
 	def resizeEvent(self,width=0,height=0):
 		self.vdtools.set_update_P_inv()
 		

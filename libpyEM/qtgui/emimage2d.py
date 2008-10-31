@@ -342,7 +342,7 @@ class EMImage2DModule(EMGUIModule):
 	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
-			
+			self.under_qt_control = True
 			self.gl_context_parent = EMImage2DWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.gl_widget = self.gl_context_parent
@@ -360,12 +360,13 @@ class EMImage2DModule(EMGUIModule):
 		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
 		self.init_size_flag = False
 		if self.gl_widget == None:
-			
+			self.under_qt_control = False
 			self.gl_context_parent = gl_context_parent
 			self.qt_context_parent = qt_context_parent
 			
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
+			self.gl_widget.set_enable_clip(self.enable_clip)
 			self.gl_widget.target_translations_allowed(True)
 			self.update_window_title(self.file_name)
 			
@@ -405,6 +406,7 @@ class EMImage2DModule(EMGUIModule):
 		self.desktop_hint = "image"
 		self.data = image 	   # EMData object to display
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
+		self.enable_clip = False
 		EMGUIModule.__init__(self,application,ensure_gl_context=True)
 		EMImage2DModule.allim[self] = 0
 		
@@ -478,7 +480,11 @@ class EMImage2DModule(EMGUIModule):
 		else:self.__load_display_settings_from_db()
 		
 		self.__init_mouse_handlers()
-		
+	
+	def set_enable_clip(self,val=True):
+		self.enable_clip = val
+		if self.gl_widget != None: self.gl_widget.set_enable_clip(val)
+	
 	def __init_mouse_handlers(self):
 		self.mouse_events_mediator = EMImage2DMouseEventsMediator(self)
 		self.mouse_event_handlers = {}
@@ -584,8 +590,8 @@ class EMImage2DModule(EMGUIModule):
 		except:	return 0
 	
 	def updateGL(self):
-		try: self.gl_widget.updateGL()
-		except: pass
+		if self.gl_widget != None and self.under_qt_control:
+			self.gl_widget.updateGL()
 		
 	def set_frozen(self,frozen):
 		self.frozen = frozen
@@ -1326,6 +1332,7 @@ class EMImage2DModule(EMGUIModule):
 		#self.updateGL()
 	
 	def scr_to_img(self,v0,v1=None):
+		#print v0,v1,"in image2d",self.origin
 		try: return ((v0+self.origin[0])/self.scale,(self.gl_widget.height()-(v1-self.origin[1]))/self.scale)
 		except:	return ((v0[0]+self.origin[0])/self.scale,(self.gl_widget.height()-(v0[1]-self.origin[1]))/self.scale)
 
