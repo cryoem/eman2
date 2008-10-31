@@ -272,9 +272,55 @@ def ref_7grp( ref_data ):
 	volf = filt_gaussinv( volf, 10.0 )
 	return  volf,cs
 
+def spruce_up( ref_data ):
+	from utilities      import print_msg
+	from filter         import fit_tanh, filt_tanl
+	from fundamentals   import fshift
+	from morphology     import threshold
+	#  Prepare the reference in 3D alignment, i.e., low-pass filter and center.
+	#  Input: list ref_data
+	#   0 - mask
+	#   1 - center flag
+	#   2 - raw average
+	#   3 - fsc result
+	#  Output: filtered, centered, and masked reference image
+	#  apply filtration (FSC) to reference image:
+
+	print_msg("spruce_up\n")
+	cs = [0.0]*3
+
+	stat = Util.infomask(ref_data[2], None, True)
+	volf = ref_data[2] - stat[0]
+	Util.mul_scalar(volf, 1.0/stat[1])
+	volf = threshold(volf)
+	# Apply B-factor
+	from filter import filt_gaussinv
+	from math import sqrt
+	B = 1.0/sqrt(2.*20.0)
+	volf = filt_gaussinv(volf, B, False)
+	nx = volf.get_xsize()
+	from utilities import model_circle
+	stat = Util.infomask(volf, model_circle(nx//2-2,nx,nx,nx)-model_circle(nx//2-6,nx,nx,nx), True)
+
+	volf -= stat[0]
+	Util.mul_img(volf, ref_data[0])
+	#fl, aa = fit_tanh(ref_data[3])
+	fl = 0.32
+	aa = 0.03
+	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
+	print_msg(msg)
+	volf = filt_tanl(volf, fl, aa)
+	if(ref_data[1] == 1):
+		cs    = volf.phase_cog()
+		msg = "Center x =	%10.3f        Center y       = %10.3f        Center z       = %10.3f\n"%(cs[0], cs[1], cs[2])
+		print_msg(msg)
+		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
+	return  volf, cs
+
 factory = {}
 factory["ref_ali2d"] = ref_ali2d
 factory["ref_random"] = ref_random
 factory["ref_ali3d"] = ref_ali3d
+factory["spruce_up"] = spruce_up
 factory["ref_aliB_cone"] = ref_aliB_cone
 factory["ref_7grp"] = ref_7grp
