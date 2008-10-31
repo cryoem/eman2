@@ -2536,7 +2536,7 @@ class TestEMData(unittest.TestCase):
 
         testlib.safe_unlink(file1)
         
-    def test_ctf(self):
+    def no_test_ctf(self):
         """test ctf ........................................."""
         infile = "test_ctf_in.mrc"
         TestUtil.make_image_file(infile, IMAGE_HDF)
