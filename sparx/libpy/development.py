@@ -13628,13 +13628,8 @@ def common_line_in3D_dev(ph1, th1, ph2, th2):
 
 	return phiCom , thetaCom
 
-
-# compute the weight of the common lines
-def cml_weights_dev(Ori, iagl = False, iprj = False):
-	from math          import fmod, sin, cos, pi
+def cml_weights_full_dev(Ori):
 	from development   import common_line_in3D_dev
-
-
 
 	# gbl vars
 	global g_n_prj, g_n_lines, g_anglst
@@ -13646,23 +13641,9 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 	n      = 0
 	for i in xrange(g_n_prj - 1):
 		for j in xrange(i + 1, g_n_prj):
-
-			if iagl and iprj:
-				if i == iprj:   l_phs[n], l_ths[n] = common_line_in3D_dev(g_anglst[iagl][0], g_anglst[iagl][1], Ori[4*j], Ori[4*j+1])
-				elif j == iprj:	l_phs[n], l_ths[n] = common_line_in3D_dev(Ori[4*i], Ori[4*i+1], g_anglst[iagl][0], g_anglst[iagl][1])
-				else:		l_phs[n], l_ths[n] = common_line_in3D_dev(Ori[4*i], Ori[4*i+1], Ori[4*j], Ori[4*j+1])
-			else:			l_phs[n], l_ths[n] = common_line_in3D_dev(Ori[4*i], Ori[4*i+1], Ori[4*j], Ori[4*j+1])
-	
+			l_phs[n], l_ths[n] = common_line_in3D_dev(Ori[4*i], Ori[4*i+1], Ori[4*j], Ori[4*j+1])
 			n+= 1
 
-
-	f=open('chk_cml_old', 'a')
-	f.write('iagl %d iprj %d\n' % (iagl, iprj))
-	for n in xrange(g_n_lines):
-		f.write('%6.3f\n%6.3f\n' % (l_phs[n], l_ths[n]))
-	f.write('\n')
-	f.close()
-	
 	tol = 3
 
 	# search the closer cml lines
@@ -13674,7 +13655,6 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 		for j in xrange(i + 1, g_n_lines):
 		    if ocp_same[j] == -1:
 			dist = (l_phs[i] - l_phs[j])**2 + (l_ths[i] - l_ths[j])**2
-			#dist = (l_x[i] - l_x[j])**2 + (l_y[i] - l_y[j])**2
 			if dist < tol: ocp_same[j] = num_agl
 
 		num_agl += 1
@@ -13707,6 +13687,125 @@ def cml_weights_dev(Ori, iagl = False, iprj = False):
 		weights = [6.28/float(g_n_lines)] * g_n_lines
 
 	return weights
+	
+
+# compute the weight of the common lines
+def cml_weights_iagl_dev(Ori, iagl, iprj):
+	from development   import common_line_in3D_dev
+
+	# gbl vars
+	global g_n_prj, g_n_lines, g_anglst
+
+	
+	# gbl vars
+	l_phs  = [0.0] * g_n_lines  # angle phi of the common lines
+	l_ths  = [0.0] * g_n_lines  # angle theta of the common lines
+	n      = 0
+	for i in xrange(g_n_prj - 1):
+		for j in xrange(i + 1, g_n_prj):
+			if i == iprj:   l_phs[n], l_ths[n] = common_line_in3D_dev(g_anglst[iagl][0], g_anglst[iagl][1], Ori[4*j], Ori[4*j+1])
+			elif j == iprj:	l_phs[n], l_ths[n] = common_line_in3D_dev(Ori[4*i], Ori[4*i+1], g_anglst[iagl][0], g_anglst[iagl][1])
+			else:		l_phs[n], l_ths[n] = common_line_in3D_dev(Ori[4*i], Ori[4*i+1], Ori[4*j], Ori[4*j+1])
+			n+= 1
+
+	tol = 3
+
+	# search the closer cml lines
+	ocp_same   = [-1] * g_n_lines
+	num_agl    = 0
+	for i in xrange(g_n_lines):
+	    if ocp_same[i] == -1:
+		ocp_same[i] = num_agl
+		for j in xrange(i + 1, g_n_lines):
+		    if ocp_same[j] == -1:
+			dist = (l_phs[i] - l_phs[j])**2 + (l_ths[i] - l_ths[j])**2
+			#print i, j, dist
+			if dist < tol: ocp_same[j] = num_agl
+
+		num_agl += 1
+
+	if num_agl > 2:
+
+		# create the new vector n_phi n_theta without closer
+		n_phi   = [0.0] * num_agl
+		n_theta = [0.0] * num_agl
+		nb_same = [0]   * num_agl
+		num_agl = 0
+		for n in xrange(g_n_lines):
+		    nb_same[ocp_same[n]] += 1
+		    if ocp_same[n] == num_agl:
+			n_phi[num_agl]   = l_phs[n]
+			n_theta[num_agl] = l_ths[n]
+			num_agl += 1
+
+		# Voronoi
+		n_weights = Util.vrdg(n_phi, n_theta)
+
+		weights = [0.0] * g_n_lines
+		for i in xrange(g_n_lines):
+			if nb_same[ocp_same[i]] > 1:
+				weights[i] = n_weights[ocp_same[i]] / float(nb_same[ocp_same[i]])
+			else:
+				weights[i] = n_weights[ocp_same[i]]
+
+	else:
+		weights = [6.28/float(g_n_lines)] * g_n_lines
+
+	return weights
+
+# compute the weight of the common lines
+def cml_weights_iagl_old(Ori, iagl, iprj):
+	from development   import common_line_in3D_dev
+
+	# gbl vars
+	global g_n_prj, g_n_lines, g_anglst
+
+	
+	# gbl vars
+	l_phs  = [0.0] * g_n_lines  # angle phi of the common lines
+	l_ths  = [0.0] * g_n_lines  # angle theta of the common lines
+	n      = 0
+	for i in xrange(g_n_prj - 1):
+		for j in xrange(i + 1, g_n_prj):
+			if i == iprj:   l_phs[n], l_ths[n] = common_line_in3D_dev(g_anglst[iagl][0], g_anglst[iagl][1], Ori[4*j], Ori[4*j+1])
+			elif j == iprj:	l_phs[n], l_ths[n] = common_line_in3D_dev(Ori[4*i], Ori[4*i+1], g_anglst[iagl][0], g_anglst[iagl][1])
+			else:		l_phs[n], l_ths[n] = common_line_in3D_dev(Ori[4*i], Ori[4*i+1], Ori[4*j], Ori[4*j+1])
+			n += 1
+
+	
+	# Voronoi
+	weights = Util.vrdg(l_phs, l_ths)
+
+	if iagl == 729 and iprj == 18:
+		for n in xrange(len(l_phs)):
+			print '%6.3f %6.3f' % (l_phs[n], l_ths[n])
+
+		print '\n\n', weights
+
+
+	return weights
+
+def cml_weights_full_old(Ori):
+	from development   import common_line_in3D_dev
+
+	# gbl vars
+	global g_n_prj, g_n_lines, g_anglst
+	
+	# gbl vars
+	l_phs  = [0.0] * g_n_lines  # angle phi of the common lines
+	l_ths  = [0.0] * g_n_lines  # angle theta of the common lines
+	n      = 0
+	for i in xrange(g_n_prj - 1):
+		for j in xrange(i + 1, g_n_prj):
+			l_phs[n], l_ths[n] = common_line_in3D_dev(Ori[4*i], Ori[4*i+1], Ori[4*j], Ori[4*j+1])
+			n+= 1
+
+	# Voronoi
+	weights = Util.vrdg(l_phs, l_ths)
+
+	return weights
+
+
 
 		
 '''
@@ -13933,12 +14032,14 @@ def cml_head_log_dev(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, giv
 	print_msg('Number of angles             : %i\n\n'   % g_n_anglst)
 
 # write the end of the logfile
-def cml_end_log_dev(Ori, disc):
+def cml_end_log_dev(Ori, disc, disc_nw, ite):
 	from utilities import print_msg
 	global g_n_prj
 	print_msg('\n\n')
 	for i in xrange(g_n_prj): print_msg('Projection #%s: phi %10.5f    theta %10.5f    psi %10.5f\n' % (str(i).rjust(3, '0'), Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
-	print_msg('\nDiscrepancy: %10.3f\n' % abs(disc))
+	print_msg('\nNumber of iterations: %d\n' % ite)
+	print_msg('Discrepancy: %10.3f\n' % abs(disc))
+	print_msg('Discrepancy without weigths: %10.3f\n' % abs(disc_nw))
 
 # display the list of angles for each iterations
 def cml_export_txtagls_dev(outdir, Ori, disc, title):
@@ -13954,18 +14055,19 @@ def cml_export_txtagls_dev(outdir, Ori, disc, title):
 	angfile.close()
 
 # export the progress of the find_struc function
-def cml_export_progress_dev(outdir, iprj, iagl, psi, disc, cmd):
+def cml_export_progress_dev(outdir, ite, iprj, iagl, psi, disc, cmd):
 	infofile = open(outdir + '/progress', 'a')
 	global g_anglst
 
 	if cmd == 'progress':
-		txt_i = str(iprj).rjust(3, '0')
-		txt_a = str(iagl).rjust(3, '0')
-		txt   = 'Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f' % (txt_i, txt_a, g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
+		txt_ite = str(ite).rjust(3, '0')
+		txt_i   = str(iprj).rjust(3, '0')
+		txt_a   = str(iagl).rjust(3, '0')
+		txt     = 'Ite: %s Prj: %s Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.7f' % (txt_ite, txt_i, txt_a, g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
 		
 
 	elif cmd == 'choose':
-		txt   = '  Select Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.3f\n' % (str(iagl).rjust(3, '0'), g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
+		txt   = 'Ite: %s  Select Agls: %s >> Agls (phi, theta, psi): %10.3f %10.3f %10.3f   Disc: %10.7f\n' % (str(ite).rjust(3, '0'), str(iagl).rjust(3, '0'), g_anglst[iagl][0], g_anglst[iagl][1], psi, disc)
 
 	infofile.write(txt + '\n')
 	infofile.close()
@@ -13993,16 +14095,18 @@ def get_common_line_angles_dev(phi1, theta1, psi1, phi2, theta2, psi2, nangle, S
 
 # compute discrepancy according the projections and orientations
 def cml_disc_dev(Prj, Ori, flag_weights):
-	#from development import cml_weights_dev, get_common_line_angles_dev
-	from development import get_common_line_angles_dev
+	from development import get_common_line_angles_dev, cml_weights_full_dev
 	from math        import pi, fmod
 
 	# gbl vars
 	global g_n_prj, g_n_psi, g_n_lines
 
 	if flag_weights:
-		cml = Util.cml_line_in3d_full(Ori)
-		weights = Util.cml_weights(cml)
+		cml = Util.cml_line_in3d_full(Ori)    # c-code
+		weights = Util.cml_weights(cml)       # c-code
+		#weights = cml_weights_full_dev(Ori)  # py-code
+		#weights = cml_weights_full_old(Ori)
+		
 	else:   weights = [1.0] * g_n_lines
 
 	#com = [[] for i in xrange(g_n_lines)]
@@ -14013,7 +14117,7 @@ def cml_disc_dev(Prj, Ori, flag_weights):
 	for i in xrange(g_n_prj - 1):
 		for j in xrange(i + 1, g_n_prj):
 			#com[count], com[count + 1] = get_common_line_angles_dev(Ori[4*i], Ori[4*i+1], Ori[4*i+2], Ori[4*j], Ori[4*j+1], Ori[4*j+2], g_n_psi)
-			[com[count], com[count + 1]] = Util.cml_line_pos(Ori[4*i], Ori[4*i+1], Ori[4*i+2], Ori[4*j], Ori[4*j+1], Ori[4*j+2], g_n_psi)
+			[com[count], com[count + 1]] = Util.cml_line_pos(Ori[4*i], Ori[4*i+1], Ori[4*i+2], Ori[4*j], Ori[4*j+1], Ori[4*j+2], g_n_psi)        # c-code
 			count += 2
 
 	n = 0
@@ -14027,6 +14131,52 @@ def cml_disc_dev(Prj, Ori, flag_weights):
 			n     += 2
 
 	return L_tot
+
+# interface between the simplex function to refine the angles and the function to compute the discrepancy
+def cml_refine_agls_wrap_dev(vec_in, data):
+	# vec_in: [phi_i, theta_i, psi_i]
+	# data:   [Prj, Ori, iprj]
+
+	# unpack
+	phi, theta, psi = vec_in
+	Prj, Ori, iprj  = data
+
+	# prepare the variables
+	Ori[4*iprj]   = phi
+	Ori[4*iprj+1] = theta
+	Ori[4*iprj+2] = psi
+
+	# compute the discrepancy
+	disc = cml_disc_dev(Prj, Ori, True)
+
+	return -disc
+
+# cml refines angles
+def cml_refine_agls_dev(Prj, Ori, delta):
+	from copy      import deepcopy
+	from utilities import amoeba
+	global g_n_prj
+	
+	scales = [delta] * (g_n_prj + 2)
+
+	for iprj in xrange(g_n_prj):
+		# init vec_in
+		vec_in   = [Ori[4*iprj], Ori[4*iprj+1], Ori[4*iprj+2]]
+
+		# prepare vec_data
+		vec_data = [Prj, deepcopy(Ori), iprj]
+
+		# simplex
+		optvec, disc, niter = amoeba(vec_in, scales, cml_refine_agls_wrap_dev, data = vec_data)
+
+		# assign new angles refine
+		Ori[4*iprj]   = (optvec[0]+360)%360
+		Ori[4*iprj+1] = optvec[1]
+		Ori[4*iprj+2] = optvec[2]
+
+		print 'refine:', iprj, 'angles:', Ori[4*iprj:4*iprj+4], 'disc:', -disc
+
+	return Ori
 
 # cml spin function for one orientation
 def cml_spin_dev(Prj, iprj, Ori, iagl, weights):
@@ -14047,10 +14197,19 @@ def cml_spin_dev(Prj, iprj, Ori, iagl, weights):
 	#return best_disc, best_psi
 	return res[0], int(res[1])
 
+
+
 # find structure
 def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights):
-	from development import cml_spin_dev, cml_export_progress_dev
+	from development import cml_spin_dev, cml_export_progress_dev, cml_weights_iagl_dev
 	import time
+	import signal
+	import sys
+
+	# watchdog to Util.vrdg (voronoi c-code)
+	def alarmHandler(signum, frame):
+		#raise TimeExceededError, "Voronoi ran too long"
+		raise Exception
 	
 	# global vars
 	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug, g_n_lines
@@ -14086,12 +14245,26 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 				if ocp[iagl] == -1:
 					# weights
 					if flag_weights:
-						cml = Util.cml_line_in3d_iagl(Ori, g_anglst[iagl][0], g_anglst[iagl][1], iprj)
-						weights = Util.cml_weights(cml)
+						cml = Util.cml_line_in3d_iagl(Ori, g_anglst[iagl][0], g_anglst[iagl][1], iprj)    # c-code
+						signal.signal(signal.SIGALRM, alarmHandler)
+						signal.alarm(10)
+						try:						
+							weights = Util.cml_weights(cml)                        # c-code
+						except Exception:
+							#print "Voronoi function ran too long!"
+							signal.alarm(0)
+							sys.exit()
+							
+						signal.alarm(0)
+											
+						#weights = cml_weights_iagl_dev(Ori, iagl, iprj)               # py-code
+						#weights = cml_weights_iagl_old(Ori, iagl, iprj)
+						
 					else:   weights = [1.0] * g_n_lines
 					
 					# spin
 					disc, ind_psi = cml_spin_dev(Prj, iprj, Ori, iagl, weights)
+
 
 					# select the best
 					if disc < best_disc:
@@ -14099,9 +14272,9 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 						best_psi  = ind_psi
 						best_iagl = iagl
 
-					if g_debug: cml_export_progress_dev(outdir, iprj, iagl, ind_psi * g_d_psi, disc, 'progress')
+					if g_debug: cml_export_progress_dev(outdir, ite, iprj, iagl, ind_psi * g_d_psi, disc, 'progress')
 				else:
-					if g_debug: cml_export_progress_dev(outdir, iprj, iagl, -1, -1, 'progress')
+					if g_debug: cml_export_progress_dev(outdir, ite, iprj, iagl, -1, -1, 'progress')
 
 			# if change, assign
 			if best_iagl != cur_agl:
@@ -14115,26 +14288,29 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 			else:
 				ocp[cur_agl]   = iprj
 
-			if g_debug: cml_export_progress_dev(outdir, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
+			if g_debug: cml_export_progress_dev(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
+
 
 		# if one change, compute new full disc
 		disc = cml_disc_dev(Prj, Ori, flag_weights)
 
 		if g_debug:
-			print 'Ite: ', disc, '           %6.2f s' % (time.time() - t_start)
+			disc2 = cml_disc_dev(Prj, Ori, False)
+			print 'Ite: ', disc, '           %6.2f s     ' % (time.time() - t_start), disc2
 
 		# display in the progress file
 		cml_export_txtagls_dev(outdir, Ori, disc, 'Ite: %s' % str(ite + 1).rjust(3, '0'))
 
 		if not change: break
 
-	return Ori, disc
+	return Ori, disc, ite
 	
 # application find structure
 def find_struct_dev(stack, outdir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
 	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
 	import time
 	import os
+	import sys
 
 	# logfile
 	t_start = start_time()
@@ -14181,15 +14357,101 @@ def find_struct_dev(stack, outdir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit
 	cml_export_txtagls_dev(outdir, Ori, disc, 'Init')
 
 	# Find structure
-	Ori, disc = cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights)
+	try:
+		Ori, disc, ite = cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights)
+	except SystemExit:
+		sys.exit()
 
 	# Export structure
 	cml_export_struc_dev(stack, outdir, Ori)
 
+	# Compute disc without weights
+	disc_now = cml_disc_dev(Prj, Ori, False)
+
 	# Update logfile
-	cml_end_log_dev(Ori, disc)
+	cml_end_log_dev(Ori, disc, disc_now, ite)
 	running_time(t_start)
 	print_end_msg('find_struct')
+
+	return 1
+
+# cml init for MPI version
+def cml_init_MPI_dev(trials):
+	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	from utilities    import bcast_number_to_all
+	from random       import randint
+	import sys
+	
+	# init
+	sys.argv       = mpi_init(len(sys.argv),sys.argv)
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid           = mpi_comm_rank(MPI_COMM_WORLD)
+
+	# chose a random node as a main one
+	main_node = 0
+	if myid  == 0:	main_node = randint(0, number_of_proc - 1)
+	main_node = bcast_number_to_all(main_node, 0)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	# define the number of loop per node
+	loop = trials / number_of_proc
+	if trials % number_of_proc != 0: loop += 1
+
+	return main_node, myid, number_of_proc, loop
+
+# cml init list of rand_seed for trials version
+def cml_init_rnd_dev(trials, rand_seed):
+	from random import seed, randrange
+
+	if trials == 1: return [rand_seed]
+	
+	if rand_seed > 0: seed(rand_seed)
+	else:             seed()
+
+	r_min = 100
+	r_max = 1000000
+	f_min = 1
+	f_max = 100
+
+	rnd     = []
+	itrials = 0
+	while itrials < trials:
+		val_rnd = randrange(r_min, r_max)
+		val_f   = randrange(f_min, f_max)
+		val_o   = randrange(0, 2)
+		if val_o: val_rnd = int(val_rnd * val_f)
+		else:     val_rnd = int(val_rnd / float(val_f))
+		if val_rnd not in rnd:
+			rnd.append(val_rnd)
+			itrials += 1
+
+	return rnd
+
+def find_structure_MPI(stack, trials, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit):
+	from development import find_struct_dev, cml_init_rnd_dev, cml_init_MPI_dev
+	from mpi         import mpi_barrier, mpi_reduce, mpi_bcast
+	from mpi         import MPI_COMM_WORLD, MPI_FLOAT, MPI_INT, MPI_SUM
+	import os
+
+	main_node, myid, ncpu, loop = cml_init_MPI_dev(trials)
+	Rnd = cml_init_rnd_dev(loop * ncpu, rand_seed)
+	print Rnd
+
+	for i in xrange(loop):
+		outdir = 'trials_%s' % str(myid * loop + i).rjust(4, '0')
+		ret = 0
+		try:
+			ret = find_struct_dev(stack, outdir, ir, ou, delta, dpsi, lf, hf, Rnd[myid * loop + i], maxit, False, False, True, False)
+		except SystemExit:
+			ret = 0
+
+		f = open('report_node%s' % str(myid).rjust(2, '0'), 'a')
+		if ret: txt = 'passed'
+		else:   txt = 'failed'
+		f.write('node %s   trials %s: %s\n' % (str(myid).rjust(2, '0'), str(myid * loop + i).rjust(4, '0'), txt))
+		f.close()
+
+
 
 
 #-------------------- OLD --------------------------------------------------------------------
