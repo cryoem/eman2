@@ -2848,7 +2848,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
 	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1", user_func_name="ref_ali3d", MPI=False, pinfo = False):
 	if MPI:
-		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts, delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name)
+		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts, delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, True)
 		return
 
 	from utilities      import model_circle, dropImage
@@ -2997,15 +2997,15 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	from utilities      import bcast_list_to_all, bcast_number_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc,recv_attr_dict, send_attr_dict
 	from utilities      import dropSpiderDoc, get_im
-	from alignment	  import proj_ali_incore
-	from random	        import randint
+	from alignment      import proj_ali_incore
+	from random	    import randint
 	from fundamentals   import rot_avg_image
 	import os
 	import types
 	from reconstruction import rec3D_MPI, rec3D_MPI_noCTF
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from mpi 	        import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	        import mpi_barrier
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import mpi_barrier
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
