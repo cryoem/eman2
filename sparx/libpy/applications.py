@@ -3013,6 +3013,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	if(myid == main_node):
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
 	from string import replace
 	if debug:
 		info_file = outdir+("/progress%04d"%myid)
@@ -3073,7 +3074,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		if(type(maskfile) is types.StringType): mask3D = getImage(maskfile)
 		else:                                  mask3D = maskfile
 	else:         mask3D = model_circle(last_ring, nx, nx, nx)
-	nima            = EMUtil.get_image_count(stack)
 	mask = model_circle(last_ring, nx, nx)
 
 
