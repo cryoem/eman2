@@ -227,6 +227,11 @@ namespace EMAN
 		float apix;			// A/pix value used when generating 2D results
 		float dsbg;			// ds value for background and SNR
 		vector<float> background;	// background intensity, 1 value per radial pixel (NX/2, corners ignored)
+		
+		vector<float> get_snr(){ return snr;}
+		void set_snr(const vector<float>& vf) {snr = vf;}
+		
+	  private:
 		vector<float> snr;			// SNR, 1 value per radial pixel (NX/2, corners assumed 0)
 
 	  public:
