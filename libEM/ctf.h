@@ -212,7 +212,7 @@ namespace EMAN
 
 	};
 
-	/** EMAN1Ctf is the CTF model used in EMAN1.
+	/** EMAN2Ctf is the default CTF model used in EMAN2
      */
 	class EMAN2Ctf:public Ctf
 	{

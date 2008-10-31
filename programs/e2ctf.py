@@ -92,7 +92,12 @@ Particles should be reasonably well centered."""
 		if debug : print "Fit CTF"
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix)
 		parms[name]=ctf
+		
+		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
 
+	if options.gui :
+		gui=GUIctf(img_sets)
+		gui.run()
 
 def powspec(stackfile,mask=None,edgenorm=True,):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
@@ -147,7 +152,6 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True):
 		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
-		print ratio1,ratio2
 	
 	for i in range(n):
 		im1=EMData(stackfile,i)
@@ -228,7 +232,9 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 	global debug
 	
 	ctf=EMAN2Ctf()
-	ctf.from_dict({"defocus":1,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix})
+	print im_1d,bg_1d
+	snr=[(im_1d[i]-bg_1d[i])/bg_1d[i] for i in range(len(im_1d))]
+	ctf.from_dict({"defocus":1,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"background":bg_1d,"snr":snr})
 	
 	ys=im_2d.get_ysize()
 	ds=1.0/(apix*ys)
@@ -319,11 +325,9 @@ except:
 
 
 class GUIctf(QtGui.QWidget):
-	def __init__(self,names,pow1d,pow2d):
+	def __init__(self,data):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
-		names is a list of strings with the names for each power spectrum
-		pow1d is a list of the 1-D power spectra of the images
-		pow2d is a list of EMData objects with the 2-D power spectra
+		input is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
 		try:
 			from emimage import EMImageModule
@@ -341,18 +345,9 @@ class GUIctf(QtGui.QWidget):
 		
 		QtGui.QWidget.__init__(self,None)
 		
-		self.names=names
-		self.pow1d=pow1d
-		self.pow2d=pow2d
-		if names and (len(names)!=len(pow1d) or len(names)!=len(pow2d)) :
-			raise Exception,"Uneven number of data sets in GUIctf (%d,%d,%d)"%(len(names),len(pow1d),len(pow2d))
-		
-		if not names :
-			self.names=[]
-			self.pow1d=[]
-			self.pow2d=[]
-		
-		try: self.guiim=EMImageModule(pow2d[0],application=self.app)
+		self.data=data
+				
+		try: self.guiim=EMImageModule(data[0][4],application=self.app)
 		except: self.guiim=EMImageModule(application=self.app)
 		self.guiplot=EMPlot2DModule(application=self.app)
 		
@@ -365,16 +360,6 @@ class GUIctf(QtGui.QWidget):
 		self.guiplot.connect(plot_qt_target,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 		
 		self.guiim.mmode="app"
-		
-		#try:
-			#E2loadappwin("boxer","imagegeom",self.guiim)
-			
-			#if E2getappval("boxer","imcontrol") :
-				#self.guiim.show_inspector(True)
-				#E2loadappwin("boxer","imcontrolgeom",self.guiim.inspector)
-		#except:
-			#pass
-		
 
 		# This object is itself a widget we need to set up
 		self.hbl = QtGui.QHBoxLayout(self)
@@ -393,8 +378,8 @@ class GUIctf(QtGui.QWidget):
 		self.vbl.setObjectName("vbl")
 		self.hbl.addLayout(self.vbl)
 		
-		self.samp = ValSlider(self,(0,5.0),"Amp:",0)
-		self.vbl.addWidget(self.samp)
+		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
+		#self.vbl.addWidget(self.samp)
 		
 		self.sdefocus=ValSlider(self,(0,5.0),"Defocus:",0)
 		self.vbl.addWidget(self.sdefocus)
@@ -402,14 +387,24 @@ class GUIctf(QtGui.QWidget):
 		self.sbfactor=ValSlider(self,(0,500),"B factor:",0)
 		self.vbl.addWidget(self.sbfactor)
 		
+		self.sampcont=ValSlider(self,(0,500),"% AC",0)
+		self.vbl.addWidget(self.sampcont)
+		
 		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2)
 		self.vbl.addWidget(self.sapix)
-
 		
-		QtCore.QObject.connect(self.samp, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		self.svoltage=ValSlider(self,(0,500),"Voltage (kV):",0)
+		self.vbl.addWidget(self.svoltage)
+		
+		self.scs=ValSlider(self,(0,500),"Cs (mm):",0)
+		self.vbl.addWidget(self.scs)
+
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.sampcont, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 
 		self.update_data()
@@ -418,28 +413,36 @@ class GUIctf(QtGui.QWidget):
 		self.show() # this is the troublesome part.... this Widget has to be a module and should register itsefl with the application
 		self.app.execute()
 		
-	def newData(self,name,p1d,p2d):
-		self.names.append(name)
-		self.pow1d.append(p1d)
-		self.pow2d.append(p2d)
+	def newData(self,data):
+		self.data=data
 		self.update_data()
 		
 	def update_data(self):
 		"""This will make sure the various widgets properly show the current data sets"""
 		self.setlist.clear()
-		for i,j in enumerate(self.names):
-			self.setlist.addItem(j)
-			l=len(self.pow1d[i])
-			apix=self.sapix.value
-			self.guiplot.set_data(j,[[ii/(l*2.0*apix) for ii in range(l)],self.pow1d[i]])
-
+		for i,j in enumerate(self.data):
+			self.setlist.addItem(j[0])
+			l=len(self.data)
 
 	def newSet(self,val):
-		self.guiim.set_data(self.pow2d[val])
+		self.sdefocus.setValue(self.data[val][1].defocus)
+		self.sbfactor.setValue(self.data[val][1].bfactor)
+		self.sapix.setValue(self.data[val][1].apix)
+		self.sampcont.setValue(self.data[val][1].ampcont)
+		self.svoltage.setValue(self.data[val][1].voltage)
+		self.scs.setValue(self.data[val][1].scs)
+		
+		self.guiim.set_data(self.data[val][4])
+		self.curset=val
 
 	def newCTF(self) :
-		df=self.sdefocus.value
-		self.update_data()
+		self.data[self.curset][1].defocus=self.sdefocus.value
+		self.data[self.curset][1].bfactor=self.bfactor.value
+		self.data[self.curset][1].apix=self.apix.value
+		self.data[self.curset][1].ampcont=self.ampcont.value
+		self.data[self.curset][1].voltage=self.voltage.value
+		self.data[self.curset][1].scs=self.scs.value
+#		self.update_data()
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))
