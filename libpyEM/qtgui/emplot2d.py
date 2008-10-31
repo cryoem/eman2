@@ -75,14 +75,14 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		self.resize(480,480)
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
-		
+		GL.glEnable(GL_DEPTH_TEST)
 	def paintGL(self):
 		if not self.parentWidget() : return
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 		
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
-		self.target.draw()
+		self.target.render()
 		
 	def resizeGL(self, width, height):
 #		print "resize ",self.width()
@@ -90,10 +90,10 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		GL.glViewport(0,0,self.width(),self.height())
 	
 		
-	
+		
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
+		GL.glOrtho(0.0,self.width(),0.0,self.height(),-10,10)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
@@ -106,7 +106,7 @@ class EMPlot2DModule(EMGUIModule):
 	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
-			
+			self.under_qt_control = True
 			self.gl_context_parent = EMPlot2DWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.gl_widget = self.gl_context_parent
@@ -117,7 +117,7 @@ class EMPlot2DModule(EMGUIModule):
 		from emfloatingwidgets import EM2DGLView, EM2DGLWindow
 		self.init_size_flag = False
 		if self.gl_widget == None:
-			
+			self.under_qt_control = False
 			self.gl_context_parent = gl_context_parent
 			self.qt_context_parent = qt_context_parent
 			
@@ -198,8 +198,7 @@ class EMPlot2DModule(EMGUIModule):
 		except: pass
 	
 	def updateGL(self):
-		try: self.gl_widget.updateGL()
-		except: pass
+		if  self.gl_widget != None and self.under_qt_control: self.gl_widget.updateGL()
 		
 	def set_data_from_file(self,filename):
 		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
@@ -246,11 +245,8 @@ class EMPlot2DModule(EMGUIModule):
 				self.set_data(filename,data)
 			except:
 				print "couldn't read",filename
-
-	def render(self):
-		self.draw() # HACK :(
 		
-	def draw(self):
+	def render(self):
 		if not self.data : return
 		
 		render = False
@@ -265,6 +261,13 @@ class EMPlot2DModule(EMGUIModule):
 			self.main_display_list = glGenLists(1)
 			glNewList(self.main_display_list,GL_COMPILE)
 			render = True
+		
+		GL.glPushMatrix()
+		glTranslate(0,0,5)
+		for k,s in self.shapes.items():
+			#print s
+			s.draw(self.scr2plot)
+		GL.glPopMatrix()
 		
 		if render: 
 
@@ -301,6 +304,7 @@ class EMPlot2DModule(EMGUIModule):
 			if not self.glflags.npt_textures_unsupported():
 				self.__texture_plot(self.plotimg)
 			else:
+				print "rastering"
 				GL.glRasterPos(0,self.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
 		#		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
@@ -315,10 +319,7 @@ class EMPlot2DModule(EMGUIModule):
 			glEndList()
 			glCallList(self.main_display_list)
 			
-		GL.glPushMatrix()
-		for k,s in self.shapes.items():
-			s.draw(self.scr2plot)
-		GL.glPopMatrix()
+		
 		
 	def __texture_plot(self,image_data):
 		
