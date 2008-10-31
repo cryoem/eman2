@@ -16847,8 +16847,11 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 */
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
-	float phi = image->get_attr("phi");
-	float theta = image->get_attr("theta");
+
+	Transform * t = image->get_attr("xform.projection");
+	Dict d = t->get_params("spider");
+	float phi = d["phi"];
+	float theta = d["theta"];
 	int   ky = int(2*yrng/step+0.5)/2; 
 	int   kx = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0; 
