@@ -3602,8 +3602,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 
 	finfo = open( "progress%04d"%myid, "w" )
-		finfo.write( "image_start, image_end: %6d %6d\n" %(image_start, image_end) )
-		finfo.flush()
+	finfo.write( "image_start, image_end: %6d %6d\n" %(image_start, image_end) )
+	finfo.flush()
 
 	#if(myid == main_node)       :
 	#	for  iref in xrange(numref):
