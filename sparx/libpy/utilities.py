@@ -2103,8 +2103,8 @@ def recv_EMData(src, tag):
 def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc):
 	import types
 	from  utilities import  get_arb_params, set_arb_params
-	from mpi 	  import mpi_recv
-	from mpi 	  import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	from  mpi 	    import mpi_recv
+	from  mpi 	    import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
 	TransType = type(Transform())
 	# This is done on the main node, so for images from the main node, simply write headers
 	# prepare keys for float/int
@@ -2131,8 +2131,12 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			headers.append(vl)
 			del  dis
 	del  vl
+	list_of_particles = []
+	for n in xrange(image_start, image_end):
+		list_of_particles.append(data[n-image_start].get_attr_default('ID', n))
 	from utilities import write_headers
-	write_headers(stack, data, range(image_start, image_end))
+	write_headers(stack, data, list_of_particles)
+	del  list_of_particles
 	#for im in xrange(image_start, image_end):
 	#	data[im-image_start].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	from utilities import write_header
@@ -2145,10 +2149,10 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			header = headers[n]
 			ilis = 0
 			for il in xrange(len(list_params)):
-				if(ink[il] == 1): 
+				if(ink[il] == 1):
 					nvl.append(int(header[par_beg+ilis]))
 					ilis += 1
-				elif ink[il]==0:		  
+				elif ink[il]==0:
 					nvl.append(header[par_beg+ilis])
 					ilis += 1
 				else:
@@ -2160,13 +2164,17 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 					t.set_matrix(tmp)
 					ilis += 12
 					nvl.append(t)
-
+			ISID = list_params.count('ID')
+			if(ISID == 0):
+				imm = im
+			else:
+				imm = nvl[ISID]
 			# read head, set params, and write it
 			dummy = EMData()
-			dummy.read_image(stack, im, True)
+			dummy.read_image(stack, imm, True)
 			set_arb_params(dummy, nvl, list_params)
-			write_header(stack, dummy, im)
-			#dummy.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
+			write_header(stack, dummy, imm)
+
 
 def send_attr_dict(main_node, data, list_params, image_start, image_end):
 	import types

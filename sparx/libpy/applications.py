@@ -2926,13 +2926,13 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	else:     outf = None
 
 	active = EMUtil.get_all_attributes(data, 'active')
-	lac = []
+	list_of_particles = []
 	for im in xrange(nima):
-		if(active[im]):  lac.append(im)
-	data = EMData.read_images(stack, lac)
+		if(active[im]):  list_of_particles.append(im)
+	del active
+	data = EMData.read_images(stack, list_of_particles)
 	nima = len(data)
 	for im in xrange(nima):
-		data[im].set_attr('ID', lac(im))
 		if(CTF):
 			ctf_params = get_arb_params(data[im], ctf_dicts)
 			if(im == 0): data_had_ctf = ctf_params[6]
@@ -2942,8 +2942,6 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				from filter import filt_ctf
 				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
 				data[im].set_attr('ctf_applied', 1)
-	del lac
-	del active
 	# initialize data for the reference preparation function
 	ref_data = []
 	ref_data.append( mask3D )
@@ -2988,10 +2986,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	if(CTF and data_had_ctf == 0):
 		for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
 	from utilities import write_headers
-	lac = []
-	for im in xrange(nima):
-		lac.append(data[im].get_attr('ID'))
-	write_headers( stack, data, lac)
+	write_headers( stack, data, list_of_particles)
 	print_end_msg("ali3d_d")
 
 def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
@@ -2999,18 +2994,18 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a="S", sym="c1", user_func_name="ref_ali3d",debug=False):
 
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_string_to_all, getImage, get_input_from_string
+	from utilities      import bcast_list_to_all, bcast_number_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc,recv_attr_dict, send_attr_dict
 	from utilities      import dropSpiderDoc, get_im
-	from alignment	    import proj_ali_incore
-	from random	    import randint
+	from alignment	  import proj_ali_incore
+	from random	        import randint
 	from fundamentals   import rot_avg_image
 	import os
 	import types
 	from reconstruction import rec3D_MPI, rec3D_MPI_noCTF
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	    import mpi_barrier
+	from mpi 	        import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	        import mpi_barrier
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -3091,30 +3086,29 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 	if(myid == main_node):
 		active = EMUtil.get_all_attributes(stack, 'active')
-		print  active
-		lac = []
+		list_of_particles = []
 		for im in xrange(nima):
-			if(active[im]):  lac.append(im)
+			if(active[im]):  list_of_particles.append(im)
 		del active
-		nima = len(lac)
+		nima = len(list_of_particles)
 	else:
 		nima =0
 	nima = bcast_number_to_all(nima, source_node = main_node)
 	
 	if(myid != main_node):
-		lac = [-1]*nima
-	lac = bcast_list_to_all(lac, source_node = main_node)
+		list_of_particles = [-1]*nima
+	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
-	lac = lac[image_start, image_end]
+	list_of_particles = list_of_particles[image_start: image_end]
 	if debug:
 		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
 		finfo.flush()
 
-	data = EMData.read_images(stack, lac)
+	data = EMData.read_images(stack, list_of_particles)
 	for im in xrange(len(data)):
-		data[im].set_attr('ID', lac[im])
+		data[im].set_attr('ID', list_of_particles[im])
 		if(CTF):
 			ctf_params = get_arb_params(data[im], ctf_dicts)
 			if(im == image_start): data_had_ctf = ctf_params[6]
@@ -3127,7 +3121,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		if(im%100==0 and debug) :
 			finfo.write( '%d loaded  ' % im )
 			finfo.flush()
-	del lac
+	del list_of_particles
 	if (myid == main_node):
 		# initialize data for the reference preparation function
 		ref_data = []
@@ -3162,7 +3156,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	mpi_barrier(MPI_COMM_WORLD)
 	if(CTF and data_had_ctf == 0):
 		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-	par_str = ['phi', 'theta', 'psi', 's2x', 's2y']
+	par_str = ['xform.proj', 'ID']
 	if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if (myid == main_node): print_end_msg("ali3d_d_MPI")
@@ -3236,17 +3230,17 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	prm = readSpiderDoc("params_new.doc")
 	prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
 	for im in xrange(image_start, image_end):
-		data[im].set_attr('ID', im)
+		data[im-image_start].set_attr('ID', im)
 		set_arb_params(ima, prm[im], prm_dict)
 		if(CTF):
 			ctf_params = get_arb_params(data[im], ctf_dicts)
 			if(im == image_start): data_had_ctf = ctf_params[6]
 			if(ctf_params[6] == 0):
-				st = Util.infomask(data[im], mask, False)
-				data[im] -= st[0]
+				st = Util.infomask(data[im-image_start], mask, False)
+				data[im-image_start] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
-				data[im].set_attr('ctf_applied', 1)
+				data[im-image_start] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				data[im-image_start].set_attr('ctf_applied', 1)
 	del prm
 	# do the projection matching
 	from  string        import replace
@@ -3275,7 +3269,7 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				vol_ssnr /= vol_ssnr + 1.0
 				#  filter it somewhat
 				vol_ssnr = threshold(filt_gaussl(vol_ssnr, 0.1))
-			else:    recons3d_nn_SSNR_MPI(myid, data, model_circle(last_ring, nx, nx), ctf = CTF)
+			else:  recons3d_nn_SSNR_MPI(myid, data, model_circle(last_ring, nx, nx), ctf = CTF)
 
 			if(CTF): volo, fscc = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, replace("resolution%4d"%(N_step*max_iter+Iter+1),' ','0')), myid, main_node)
 			else:    volo, fscc = rec3D_MPI_noCTF(data, sym, mask3D, os.path.join(outdir, replace("resolution%4d"%(N_step*max_iter+Iter+1),' ','0')), myid, main_node)
