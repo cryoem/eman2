@@ -94,9 +94,6 @@ namespace EMAN
 		virtual void copy_from(const Ctf * new_ctf) = 0;
 		virtual bool equal(const Ctf * ctf1) const = 0;
 
-		virtual float get_defocus() const = 0;
-		virtual float get_bfactor() const = 0;
-
 	  public:
 		enum
 		{ CTFOS = 5 };
@@ -227,12 +224,10 @@ namespace EMAN
 		float apix;			// A/pix value used when generating 2D results
 		float dsbg;			// ds value for background and SNR
 		vector<float> background;	// background intensity, 1 value per radial pixel (NX/2, corners ignored)
+		vector<float> snr;			// SNR, 1 value per radial pixel (NX/2, corners assumed 0)
 		
 		vector<float> get_snr(){ return snr;}
 		void set_snr(const vector<float>& vf) {snr = vf;}
-		
-	  private:
-		vector<float> snr;			// SNR, 1 value per radial pixel (NX/2, corners assumed 0)
 
 	  public:
 		EMAN2Ctf();
@@ -253,15 +248,6 @@ namespace EMAN
 
 		void copy_from(const Ctf * new_ctf);
 		bool equal(const Ctf * ctf1) const;
-
-		float get_defocus() const
-		{
-			return defocus;
-		}
-		float get_bfactor() const
-		{
-			return bfactor;
-		}
 
 	  private:
 		inline float calc_amp1()
