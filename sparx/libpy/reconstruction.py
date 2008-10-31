@@ -92,13 +92,13 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 	active = proj.get_attr_default('active', 1)
 	size   = proj.get_xsize()
 
-        padffted = proj.get_attr_default("padffed", 0)
+	padffted = proj.get_attr_default("padffed", 0)
 
-        if padffted == 1 :
-            size = size /npad
+	if padffted == 1 :
+		size = size /npad
 
 	elif size != proj.get_ysize():
-	    ERROR("input data has to be square","recons3d_4nn_ctf",1)
+		ERROR("input data has to be square","recons3d_4nn_ctf",1)
 
 	# reconstructor
 	params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign}
@@ -131,8 +131,8 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
 		ERROR("input data has to be square","recons3d_4nn_ctf_MPI",1)
 
 
-        fftvol = EMData()
-        weight = EMData()
+	fftvol = EMData()
+	weight = EMData()
 
 	params = {"size":imgsize, "npad":4, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
 	r = Reconstructors.get( "nn4_ctf", params )
@@ -143,13 +143,15 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
 		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
 			ERROR("inconsistent image size","recons3d_4nn_ctf_MPI",1)
 
-		xform_proj = prj.get_attr( "xform.proj" )
-		r.insert_slice(prj, xform_proj )
+		active = prj.get_attr_default('active', 1)
+		if(active == 1):
+			xform_proj = prj.get_attr( "xform.proj" )
+			r.insert_slice(prj, xform_proj )
 		if( not (info is None) ):
 			nimg += 1
 			info.write(" %4d inserted\n" %(nimg) )
 			info.flush()
-
+	#  WEI:  what to do is no particles were active, thus none was inserted PAP  10/30/08
 	if( not (info is None) ): 
 		info.write( "begin reduce\n" )
 		info.flush()
@@ -165,7 +167,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None):
 	else:           vol = None
 
 	return vol
-      
+
 def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4,snr=None):
 	"""
 	Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
@@ -246,13 +248,15 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None):
 		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
 			ERROR("inconsistent image size","recons3d_4nn_ctf_MPI",1)
 
-		xform_proj = prj.get_attr( "xform.proj" )
-		r.insert_slice(prj, xform_proj )
+		active = prj.get_attr_default('active', 1)
+		if(active == 1):
+			xform_proj = prj.get_attr( "xform.proj" )
+			r.insert_slice(prj, xform_proj )
 		if( not (info is None) ):
 			nimg += 1
 			info.write(" %4d inserted\n" %(nimg) )
 			info.flush()
-
+	#  Wei, what if none are active?
 	if( not (info is None) ): 
 		info.write( "begin reduce\n" )
 		info.flush()
@@ -316,7 +320,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	if type(stack_name) == types.StringType:
 		for i in xrange(nima):
 			proj.read_image(stack_name, i)
-			active = proj.get_attr('active')
+			active = proj.get_attr_default('active', 1)
 			if(active == 1):
 				if(random_angles  == 2):
 					from  random import  random
@@ -341,7 +345,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 		vol_ssnr = r.finish()
 	else:
 		for i in xrange(nima):
-			active = stack_name[i].get_attr('active')
+			active = stack_name[i].get_attr_default('active',1)
 			if(active == 1):
 				xform_proj = proj.get_attr( "xform.proj" )
 				if mask2D:
@@ -368,8 +372,8 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 	if( len(prjlist) == 0 ):    ERROR("empty input list","recons3d_nn_SSNR_MPI",1)
 	imgsize = prjlist[0].get_xsize()
 	if prjlist[0].get_ysize() != imgsize:  ERROR("input data has to be square","recons3d_nn_SSNR_MPI",1)
-        fftvol   = EMData()
-        weight   = EMData()
+	fftvol   = EMData()
+	weight   = EMData()
 	weight2  = EMData()
 	SSNR     = EMData()
 	if CTF:
@@ -382,28 +386,31 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		r = Reconstructors.get( "nnSSNR",     params )
 	r.setup()
 
+	if prjlist[0].get_xsize() != imgsize or prjlist[0].get_ysize() != imgsize: ERROR("inconsistent image size","recons3d_nn_SSNR_MPI",1)
 	for prj in prjlist:
-		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize: ERROR("inconsistent image size","recons3d_nn_SSNR_MPI",1)
-		if(random_angles  == 2):
-			from  random import  random
-			phi    = 360.0*random()
-			theta  = 180.0*random()
-			psi    = 360.0*random()
-			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
-		elif(random_angles  == 1):
-			from  random import  random
-			old_xform_proj = prj.get_attr( "xform.proj" )
-			dict = old_xform_proj.get_rotation( "spider" )
-			dict["psi"] = 360.0*random()
-			xform_proj = Transform( dict )
-		else:
-			xform_proj = prj.get_attr( "xform.proj" )
-		if mask2D:
-			stats = Util.infomask(prj, mask2D, True)
-			proj = (prj - stats[0])*mask2D
-			r.insert_slice(proj, xform_proj)
-		else:
-			r.insert_slice(prj, xform_proj )
+		active = prj.get_attr_default('active', 1)
+		if(active == 1):
+			if(random_angles  == 2):
+				from  random import  random
+				phi	 = 360.0*random()
+				theta  = 180.0*random()
+				psi	 = 360.0*random()
+				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
+			elif(random_angles  == 1):
+				from  random import  random
+				old_xform_proj = prj.get_attr( "xform.proj" )
+				dict = old_xform_proj.get_rotation( "spider" )
+				dict["psi"] = 360.0*random()
+				xform_proj = Transform( dict )
+			else:
+				xform_proj = prj.get_attr( "xform.proj" )
+			if mask2D:
+				stats = Util.infomask(prj, mask2D, True)
+				proj = (prj - stats[0])*mask2D
+				r.insert_slice(proj, xform_proj)
+			else:
+				r.insert_slice(prj, xform_proj )
+	#  WEI: what if none inserted
 	#from utilities import info
 	reduce_EMData_to_root(weight,  myid, 0)
 	reduce_EMData_to_root(fftvol,  myid, 0)
@@ -441,8 +448,8 @@ def bootstrap_nnctf(proj_stack, volume_stack, list_proj, niter, media="memory", 
 		import sys
 		output=sys.stdout
 
-        if not(myseed is None):
-        	seed(myseed) 
+	if not(myseed is None):
+		seed(myseed) 
 
 	nimages = len(list_proj)
 	if nimages == 0 :
@@ -450,12 +457,12 @@ def bootstrap_nnctf(proj_stack, volume_stack, list_proj, niter, media="memory", 
 		return None
 
 
-        if media=="memory" :
-        	store = memory_store(npad)
-        else :
-        	store = file_store(media,npad, 0)
-        	if not(output is None):
-        		output.flush()
+	if media=="memory" :
+		store = memory_store(npad)
+	else :
+		store = file_store(media,npad, 0)
+		if not(output is None):
+			output.flush()
 
 	proj = EMData()
 	proj.read_image(proj_stack,list_proj[0])
@@ -509,14 +516,14 @@ def bootstrap_nnctf(proj_stack, volume_stack, list_proj, niter, media="memory", 
         			#output.write( "img %4d %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f\n" % (j, mean, sigma, min, max, phi, theta, psi) )
         			#output.flush()
 
-        	if not(output is None):
+		if not(output is None):
 			output.write( "Finishing... " )
-        		output.flush( )
+			output.flush( )
 
-        	vol = r.finish()
+		vol = r.finish()
 
-        	if not(output is None):
-        		output.write( "Writing... " )
+		if not(output is None):
+			output.write( "Writing... " )
 			output.flush()
 
 		vol.write_image(volume_stack,i)
@@ -692,7 +699,7 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 
 	if(method=="general"):
 	# for general weighting tabularize table of exponents
-		expdict =  Util.ExpMinus4YSqr(2.0,1000)
+		expdict =  Util.ExpMinus4YSqr(2.0, 1000)
 		exptable = expdict["table"]
 
 	count = 1
@@ -700,11 +707,10 @@ def recons3d_wbp(stack_name, list_proj, method, const=1.0E4, symmetry="c1"):
 		if type(stack_name) == types.StringType: B.read_image(stack_name,list_proj[i])
 		else : B = stack_name[list_proj[i]].copy()
 		for j in xrange(nsym):
-			print  i
 			DM = dm[((j*nsym+list_proj[i])*9) :(j*nsym+list_proj[i]+1)*9]
 			if   (method=="general"):    Util.WTF(B, ss, const, count, exptable)
 			elif (method=="exact"  ):    Util.WTM(B, ss, const, count)
-			#Util.BPCQ(B,CUBE,DM)
+			Util.BPCQ(B,CUBE,DM)
 			count += 1
 
 	return CUBE
@@ -725,7 +731,7 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 	for i in xrange(half_start, len(data), step):
 		if(index >-1 ):  group = data[i].get_attr('group')
 		if(group == index):
-			if( data[i].get_attr('active') == 1):
+			if( data[i].get_attr_default('active',1) == 1):
 				xform_proj = data[i].get_attr( "xform.proj" )
 				if not(info is None):
 					info.write( "inserting half %d\n" % i )
@@ -760,9 +766,9 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 
 
 def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist, info=None):
-        from random import randint
-        from utilities import reduce_EMData_to_root
-        nx = data[0].get_xsize()
+	from random import randint
+	from utilities import reduce_EMData_to_root
+	nx = data[0].get_xsize()
         
 	fftvol_half = EMData()
 	weight_half = EMData()
@@ -771,25 +777,25 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
 	half.setup()
         
 	for i in pidlist:
-		if( data[i].get_attr('active') == 1):
+		if( data[i].get_attr_default('active', 1) == 1):
 			xform_proj = data[i].get_attr( "xform.proj" )
                 	if not(info is None):
 				info.write( "inserting half %d\n" % i )
                 		info.flush()
 			half.insert_slice(data[i], xform_proj )
         
-        if not(info is None):
-        	info.write( "begin reduce half\n" )
-        	info.flush()
+	if not(info is None):
+		info.write( "begin reduce half\n" )
+		info.flush()
 
 	reduce_EMData_to_root(fftvol_half, myid, main_node_half)
 	reduce_EMData_to_root(weight_half, myid, main_node_half)
         
-        return fftvol_half, weight_half
+	return fftvol_half, weight_half
 
 def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step,info=None):
-        from random import randint
-        from utilities import reduce_EMData_to_root
+	from random import randint
+	from utilities import reduce_EMData_to_root
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 
         
@@ -800,23 +806,23 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 	half.setup()
         
 	for i in xrange(half_start, len(data), step):
-		if( data[i].get_attr('active') == 1):
+		if( data[i].get_attr_default('active',1) == 1):
 			xform_proj = data[i].get_attr( "xform.proj" )
 			if not(info is None):
 				info.write( "inserting half %d\n" % i )
                 		info.flush()
 			half.insert_slice(data[i], xform_proj )
         
-        if not(info is None):
+	if not(info is None):
         	info.write( "begin reduce half\n" )
         	info.flush()
 
 	reduce_EMData_to_root(fftvol_half, myid, main_node_half)
 	reduce_EMData_to_root(weight_half, myid, main_node_half)
         
-        if not(info is None):
-        	info.write( "after reduce half\n" )
-        	info.flush()
+	if not(info is None):
+		info.write( "after reduce half\n" )
+		info.flush()
         
 	if myid == main_node_half:
 		tmpid = randint(0, 1000000) 
@@ -824,15 +830,15 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 		weight_half_file = ("/tmp/weight_half%d.hdf" % tmpid)
 		fftvol_half.write_image(fftvol_half_file)
 		weight_half.write_image(weight_half_file)
-        mpi_barrier(MPI_COMM_WORLD)
+	mpi_barrier(MPI_COMM_WORLD)
         
 	fftvol_half = None
 	weight_half = None
 
-        if myid == main_node_half:
-        	return fftvol_half_file, weight_half_file
-        
-        return None,None
+	if myid == main_node_half:
+		return fftvol_half_file, weight_half_file
+
+	return None,None
 
 def recons_from_fftvol(size, fftvol, weight, symmetry):
 	params = {"size":size, "npad":4, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}

@@ -2925,10 +2925,14 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	if pinfo:  outf = file(os.path.join(outdir, "progress"), "w")
 	else:     outf = None
 
-	data = EMData.read_images(stack)
+	active = EMUtil.get_all_attributes(data, 'active')
+	lac = []
+	for im in xrange(nima):
+		if(active[im]):  lac.append(im)
+	data = EMData.read_images(stack, lac)
 	nima = len(data)
 	for im in xrange(nima):
-		data[im].set_attr('ID', im)
+		data[im].set_attr('ID', lac(im))
 		if(CTF):
 			ctf_params = get_arb_params(data[im], ctf_dicts)
 			if(im == 0): data_had_ctf = ctf_params[6]
@@ -2938,7 +2942,8 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				from filter import filt_ctf
 				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
 				data[im].set_attr('ctf_applied', 1)
-
+	del lac
+	del active
 	# initialize data for the reference preparation function
 	ref_data = []
 	ref_data.append( mask3D )
@@ -2954,7 +2959,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			#vol = filt_gaussinv(vol, 0.175, True)
 			#dropImage(vol, os.path.join(outdir, replace("vhl%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 			if(an[N_step] == -1):	proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
-			else:	               proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
+			else:	                 proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
 			#  3D stuff
 			if(CTF): vol1 = recons3d_4nn_ctf(data, range(0,nima,2), snr, 1, sym)
 			else:	 vol1 = recons3d_4nn(data, range(0,nima,2), sym)
@@ -2983,7 +2988,10 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	if(CTF and data_had_ctf == 0):
 		for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
 	from utilities import write_headers
-	write_headers( stack, data, range(nima))
+	lac = []
+	for im in xrange(nima):
+		lac.append(data[im].get_attr('ID'))
+	write_headers( stack, data, lac)
 	print_end_msg("ali3d_d")
 
 def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
@@ -2991,7 +2999,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a="S", sym="c1", user_func_name="ref_ali3d",debug=False):
 
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_list_to_all, bcast_string_to_all, getImage, get_input_from_string
+	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc,recv_attr_dict, send_attr_dict
 	from utilities      import dropSpiderDoc, get_im
 	from alignment	    import proj_ali_incore
@@ -3073,10 +3081,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	nima            = EMUtil.get_image_count(stack)
 	mask = model_circle(last_ring, nx, nx)
 
-	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
-	if debug:
-		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
-		finfo.flush()
 
 	if(CTF):
 		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
@@ -3085,22 +3089,45 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	else:
 		from reconstruction import rec3D_MPI_noCTF
 
-	data = EMData.read_images(stack, range(image_start, image_end))
-	for im in xrange(image_start, image_end):
-		data[im-image_start].set_attr('ID', im)
+	if(myid == main_node):
+		active = EMUtil.get_all_attributes(stack, 'active')
+		print  active
+		lac = []
+		for im in xrange(nima):
+			if(active[im]):  lac.append(im)
+		del active
+		nima = len(lac)
+	else:
+		nima =0
+	nima = bcast_number_to_all(nima, source_node = main_node)
+	
+	if(myid != main_node):
+		lac = [-1]*nima
+	lac = bcast_list_to_all(lac, source_node = main_node)
+	
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	# create a list of images for each node
+	lac = lac[image_start, image_end]
+	if debug:
+		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
+		finfo.flush()
+
+	data = EMData.read_images(stack, lac)
+	for im in xrange(len(data)):
+		data[im].set_attr('ID', lac[im])
 		if(CTF):
-			ctf_params = get_arb_params(data[im-image_start], ctf_dicts)
+			ctf_params = get_arb_params(data[im], ctf_dicts)
 			if(im == image_start): data_had_ctf = ctf_params[6]
 			if(ctf_params[6] == 0):
-				st = Util.infomask(data[im-image_start], mask, False)
-				data[im-image_start] -= st[0]
+				st = Util.infomask(data[im], mask, False)
+				data[im] -= st[0]
 				from filter import filt_ctf
-				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
-				data[im-image_start].set_attr('ctf_applied', 1)
+				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				data[im].set_attr('ctf_applied', 1)
 		if(im%100==0 and debug) :
 			finfo.write( '%d loaded  ' % im )
 			finfo.flush()
-
+	del lac
 	if (myid == main_node):
 		# initialize data for the reference preparation function
 		ref_data = []
@@ -3145,7 +3172,7 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	    center = 1, maxit = 5, CTF = False, snr = 1.0,  ref_a="S", sym="c1"):
 	#  THIS IS FOR PROCESSING BERLIN DATASET
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_list_to_all, bcast_string_to_all, getImage, get_input_from_string
+	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc,recv_attr_dict, send_attr_dict
 	from utilities      import dropSpiderDoc,get_im
 	from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, filt_gaussl
@@ -3318,7 +3345,7 @@ def ali3d_mN(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		            delta, center, maxit, CTF, snr, ref_a, symmetry)
 		return
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_list_to_all, bcast_string_to_all, getImage, get_input_from_string
+	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc
 	from filter	    import filt_params,filt_btwl, filt_from_fsc, filt_table
 	from alignment	    import proj_ali_incore_index
@@ -3484,7 +3511,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		            delta, center, maxit, CTF, snr, ref_a, symmetry)
 		return
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_list_to_all, bcast_string_to_all, getImage, get_input_from_string
+	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc
 	from filter	    import filt_params,filt_btwl, filt_from_fsc, filt_table
 	from alignment	    import proj_ali_incore_index
@@ -3689,7 +3716,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
             ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	    center = 0, maxit= 5, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1"):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_list_to_all, bcast_string_to_all, getImage, get_input_from_string
+	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc, recv_attr_dict, send_attr_dict
 	from filter	    import filt_params, filt_btwl, filt_from_fsc2, filt_table, fit_tanh, filt_tanl, filt_vols
 	from alignment	    import proj_ali_incore_index
@@ -3874,7 +3901,7 @@ def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import amoeba, bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -4108,7 +4135,7 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl, filt_vols
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import amoeba, bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -4324,7 +4351,7 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import amoeba, bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -4707,7 +4734,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_gaussl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol
-	from utilities      import amoeba, bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -5366,7 +5393,7 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -5728,7 +5755,7 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -5997,7 +6024,7 @@ def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import amoeba, bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -6340,7 +6367,7 @@ def ali3d_eB_MPI_select(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import amoeba, bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -6681,7 +6708,7 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_gaussl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import amoeba, bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -7024,7 +7051,7 @@ def ali3d_eB_MPI__(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, 
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_gaussl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol
-	from utilities      import amoeba, bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
@@ -7538,7 +7565,7 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc2, filt_btwl
 	from fundamentals   import fshift
 	from projection     import prep_vol
-	from utilities      import amoeba, bcast_list_to_all, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict,get_im
 	from utilities      import readSpiderDoc
 	from reconstruction import rec3D_MPI,rec3D_MPI_index
