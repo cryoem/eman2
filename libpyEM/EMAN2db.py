@@ -200,7 +200,6 @@ def db_get_all_attributes(fsp,*parms):
 		else :
 			if len(parms)==1 : keys=range(0,len(db))
 			else : keys=parms[0]
-		print keys
 		return [db.get_attr(i, attr_name) for i in keys]
 	return EMUtil.get_all_attributes_c(fsp,*parms)
 
