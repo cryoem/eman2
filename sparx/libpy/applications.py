@@ -2998,14 +2998,14 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc,recv_attr_dict, send_attr_dict
 	from utilities      import dropSpiderDoc, get_im
 	from alignment      import proj_ali_incore
-	from random	    import randint
+	from random	        import randint
 	from fundamentals   import rot_avg_image
 	import os
 	import types
 	from reconstruction import rec3D_MPI, rec3D_MPI_noCTF
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	    import mpi_barrier
+	from mpi 	        import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	        import mpi_barrier
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -3160,175 +3160,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if (myid == main_node): print_end_msg("ali3d_d_MPI")
-
-def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
-            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an="-1",
-	    center = 1, maxit = 5, CTF = False, snr = 1.0,  ref_a="S", sym="c1"):
-	#  THIS IS FOR PROCESSING BERLIN DATASET
-	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_string_to_all, getImage, get_input_from_string
-	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc,recv_attr_dict, send_attr_dict
-	from utilities      import dropSpiderDoc,get_im
-	from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, filt_gaussl
-	from alignment	    import proj_ali_incore
-	from random	    import randint
-	from fundamentals   import fshift,rot_avg_image
-	import os
-	import types
-	from string         import replace
-	from reconstruction import rec3D_MPI, rec3D_MPI_noCTF
-	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	    import mpi_barrier
-	
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-	myid           = mpi_comm_rank(MPI_COMM_WORLD)
-	main_node = 0
-	if(myid == main_node):
-		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
-		os.mkdir(outdir)
-        finfo = None
-	#info_file = replace("progress%4d"%myid, ' ', '0')
-        #finfo = open(info_file, 'w')
-
-	max_iter    = int(maxit)
-	xrng        = get_input_from_string(xr)
-	if  yr == "-1":  yrng = xrng
-	else          :  yrng = get_input_from_string(yr)
-	step        = get_input_from_string(ts)
-	delta       = get_input_from_string(delta)
-	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
-	if (an == "-1"):
-		an = []
-		for i in xrange(lstp):   an.append(-1)
-	else:
-		from  alignment	    import proj_ali_incore_localB
-		an      = get_input_from_string(an)
-	first_ring  = int(ir)
-	rstep       = int(rs)
-	last_ring   = int(ou)
-	vol     = EMData()
-	vol.read_image(ref_vol)
-	nx      = vol.get_xsize()
-	if last_ring < 0:	last_ring = int(nx/2) - 2
-	if(maskfile):
-		if(type(maskfile) is types.StringType): mask3D = getImage(maskfile)
-		else:                                  mask3D = maskfile
-	else:         mask3D = model_circle(last_ring, nx, nx, nx)
-	nima            = EMUtil.get_image_count(stack)
-	mask = model_circle(last_ring, nx, nx)
-	
-	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
-
-	if(myid == main_node)       :  dropImage(vol, os.path.join(outdir,"ref_volf00.spi"), "s")
-	if(CTF):
-		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		#                 0      1         2            3               4                  5               6
-		from reconstruction import rec3D_MPI
-	else:
-		from reconstruction import rec3D_MPI_noCTF
-	from utilities import readSpiderDoc, set_arb_params
-	prm = readSpiderDoc("params_new.doc")
-	prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
-	for im in xrange(image_start, image_end):
-		data[im-image_start].set_attr('ID', im)
-		set_arb_params(ima, prm[im], prm_dict)
-		if(CTF):
-			ctf_params = get_arb_params(data[im], ctf_dicts)
-			if(im == image_start): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
-				st = Util.infomask(data[im-image_start], mask, False)
-				data[im-image_start] -= st[0]
-				from filter import filt_ctf
-				data[im-image_start] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
-				data[im-image_start].set_attr('ctf_applied', 1)
-	del prm
-	# do the projection matching
-	from  string        import replace
-	from utilities      import bcast_number_to_all
-	from morphology     import adaptive_mask, threshold, threshold_to_minval
-	from statistics     import histogram
-	from reconstruction import recons3d_nn_SSNR_MPI
-	for N_step in xrange(lstp):
- 		for Iter in xrange(max_iter):
-			#print " ali3d_d_MPI: ITERATION #",N_step*max_iter + Iter+1
-			#  We have to find a mask on a filtered volume, apply it to non filtered, filter, 
-			#          derive adjustment of rotational average on thresholded filtered volume
-			#          finally apply mask and adjustment to not-filtered and fitler it
-			#  vol   - filtered
-			#  volo  - not-filtered
-			#if(N_step == 0 and Iter == 0):
-			#	adam = adaptive_mask(vol, 3000, 2.22)
-			#	vol = threshold( adam*vol)
-			#	h = histogram( vol )
-			#	vol *= get_im("rotav_tteftu_with_tRNA.spi") / threshold_to_minval( rot_avg_image(vol), h[len(h)//2])
-			#	vol = filt_btwl(vol, 0.3, 0.4)
-			if myid == 0:
-				[ssnr1, vol_ssnr] = recons3d_nn_SSNR_MPI(myid, data, model_circle(last_ring, nx, nx), ctf = CTF)
-				del ssnr1
-				#  change volume to fsc
-				vol_ssnr /= vol_ssnr + 1.0
-				#  filter it somewhat
-				vol_ssnr = threshold(filt_gaussl(vol_ssnr, 0.1))
-			else:  recons3d_nn_SSNR_MPI(myid, data, model_circle(last_ring, nx, nx), ctf = CTF)
-
-			if(CTF): volo, fscc = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, replace("resolution%4d"%(N_step*max_iter+Iter+1),' ','0')), myid, main_node)
-			else:    volo, fscc = rec3D_MPI_noCTF(data, sym, mask3D, os.path.join(outdir, replace("resolution%4d"%(N_step*max_iter+Iter+1),' ','0')), myid, main_node)
-
-			mpi_barrier(MPI_COMM_WORLD)
-			if(myid == main_node):
-				dropImage(volo,  os.path.join(outdir, replace("vol%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
-				from fundamentals import rot_avg
-				filt = filt_from_fsc(fscc, 0.1)
-				# This is a cheat - it moves the resolution curve to the right making the filter more lenient
-				#filt = [ 1.0, 1.0, 1.0] + filt
-				#filt = [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] + filt
-				rfsc = rot_avg(vol_ssnr)
-				rfsc.set_value_at(0, 1.0)
-				nrfsc = rfsc.get_xsize()
-				for irf in xrange(nrfsc):
-					qtq = rfsc.get_value_at(irf)
-					if(qtq > 0.0):   rfsc.set_value_at(irf, filt[irf]/qtq)
-					else:            rfsc.set_value_at(irf, 0.0)
-				vol_ssnr = vol_ssnr.mult_radial(rfsc)  # adjust radially fsc filter to fsc curve
-				dropImage(vol_ssnr,  os.path.join(outdir, replace("filter%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
-				#  Filter by volume
-				vol = volo.filter_by_image(vol_ssnr)
-				#vol  = filt_table(volo, filt)
-				if(center == 1):
-					cs   = vol.phase_cog()
-					vol  = fshift(vol, -cs[0], -cs[1] -cs[2])
-					volo = fshift(volo, -cs[0], -cs[1] -cs[2])
-				dropImage(vol, os.path.join(outdir, replace("volf%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
-				adam = adaptive_mask(vol, 3000, 2.22)
-				vol = threshold( adam*vol )
-				h = histogram( vol )
-				vol = threshold( adam*volo ) * get_im("rotav_tteftu_with_tRNA.spi") / threshold_to_minval( rot_avg_image(vol), h[len(h)//2])
-				del volo
-				#  Filter by volume
-				vol = vol.filter_by_image(vol_ssnr)
-				#vol  = filt_table(vol, filt)
-				#vol = filt_btwl(vol, fl, fh)
-				dropImage(vol, os.path.join(outdir, replace("vhlf%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
-				del adam, vol_ssnr, rfsc, filt
-				del h
-			bcast_EMData_to_all(vol, myid, main_node)
-			if(an[N_step] == -1): proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo, MPI=True)
-			else:                 proj_ali_incore_localB(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo, MPI=True)
-			prm = []
-			for im in xrange(image_start, image_end):
-				prml = get_arb_params(data[im-image_start], prm_dict)
-				prml.append(im)
-				prm.append(prml)
-			dropSpiderDoc(os.path.join(outdir, replace("new_params%8d"%((N_step*max_iter+Iter+1)*1000+myid),' ','0')), prm," phi, theta, psi, s2x, s2y, image number")
-			del prm, prml
-
-	# write out headers  and STOP, under MPI writing has to be done sequentially
-	mpi_barrier(MPI_COMM_WORLD)
-	if(CTF and data_had_ctf == 0):
-		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-	#par_str = ['phi', 'theta', 'psi', 's2x', 's2y']
-	if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
 
 def ali3d_mN(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
             xr  ="4 2  2  1",      yr="-1",
@@ -3771,8 +3602,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 
 	finfo = open( "progress%04d"%myid, "w" )
-        finfo.write( "image_start, image_end: %6d %6d\n" %(image_start, image_end) )
-        finfo.flush()
+		finfo.write( "image_start, image_end: %6d %6d\n" %(image_start, image_end) )
+		finfo.flush()
 
 	#if(myid == main_node)       :
 	#	for  iref in xrange(numref):
