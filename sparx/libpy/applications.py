@@ -3087,7 +3087,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	if(myid == main_node):
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
-		for im in xrange(nima):
+		for im in xrange(nimalen(active)):
 			if(active[im]):  list_of_particles.append(im)
 		del active
 		nima = len(list_of_particles)
