@@ -545,15 +545,15 @@ string EMAN2Ctf::to_string() const
 
 void EMAN2Ctf::from_dict(const Dict & dict)
 {
-	defocus = dict["defocus"];
-	dfdiff = dict["dfdiff"];
-	dfang = dict["dfang"];
-	bfactor = dict["bfactor"];
-	ampcont = dict["ampcont"];
-	voltage = dict["voltage"];
-	cs = dict["cs"];
-	apix = dict["apix"];
-	dsbg = dict["dsbg"];
+	defocus = (float)dict["defocus"];
+	dfdiff = (float)dict["dfdiff"];
+	dfang = (float)dict["dfang"];
+	bfactor = (float)dict["bfactor"];
+	ampcont = (float)dict["ampcont"];
+	voltage = (float)dict["voltage"];
+	cs = (float)dict["cs"];
+	apix = (float)dict["apix"];
+	dsbg = (float)dict["dsbg"];
 	background = dict["background"];
 	snr = dict["snr"];
 }

@@ -61,6 +61,7 @@ Particles should be reasonably well centered."""
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
+	parser.add_option("--smooth",action="store_true",help="Smooth the background (running-average of the log)",default=False)
 	parser.add_option("--debug",action="store_true",default=False)
 
 	(options, args) = parser.parse_args()
@@ -83,16 +84,19 @@ Particles should be reasonably well centered."""
 		# compute the power spectra
 		if debug : print "Processing ",filename
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm)
-		if debug:
-			ds=1.0/(options.apix*im_2d.get_ysize())
-			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
-			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
+		ds=1.0/(options.apix*im_2d.get_ysize())
+		if options.smooth : bg_1d=smooth_bg(bg_1d,ds)
 
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix)
 		parms[name]=ctf
-		
+
+		if debug:
+			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
+			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
+			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
+			
 		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
 
 	if options.gui :
@@ -226,15 +230,28 @@ def bgedge2d(stackfile,width):
 	av.set_attr("is_intensity", 1)
 	return av
 
+def smooth_bg(curve,ds):
+	"""Smooths a background curve by doing a running average of the log of the curve, ignoring the first few points"""
+	
+	first=int(.02/ds)	# start at 1/50 1/A
+	if first<2 : first=2
+
+	return curve[:first]+[pow(curve[i-2]*curve[i-1]*curve[i]*curve[i+1]*curve[i+2],.2) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
+
+
+def snr_safe(s,n) :
+	if s==0 or n==0 : return 0.0
+	return (s-n)/n
+
 def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()"""
 	# defocus estimation
 	global debug
 	
 	ctf=EMAN2Ctf()
-	print im_1d,bg_1d
-	snr=[(im_1d[i]-bg_1d[i])/bg_1d[i] for i in range(len(im_1d))]
-	ctf.from_dict({"defocus":1,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"background":bg_1d,"snr":snr})
+	
+	snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
+	ctf.from_dict({"defocus":1.0,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"background":bg_1d,"snr":snr})
 	
 	ys=im_2d.get_ysize()
 	ds=1.0/(apix*ys)
@@ -255,12 +272,12 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 			tot,totr=0,0
 			for s in range(int(st),ys/2): 
 				tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
-				totr+=cc[s]**2
+				totr+=cc[s]**4
 			#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
 			#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
 			#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
-			#tot/=sqrt(totr)
-			tot/=totr
+			tot/=sqrt(totr)
+			#tot/=totr
 			if tot>dfbest1[1] : dfbest1=(df,tot)
 			try :dfout.write("%1.2f\t%g\n"%(df,tot))
 			except : pass
@@ -295,7 +312,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 		tot,totr=0,0
 		for s in range(int(st),ys/2): 
 			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
-			totr+=cc[s]**2
+			totr+=cc[s]**4
 		
 		tot/=sqrt(totr)
 		if tot>dfbest[1] : 
