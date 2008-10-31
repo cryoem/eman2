@@ -106,12 +106,12 @@ class TestReconstructor(unittest.TestCase):
 		e3.set_size(n,n,1)
 		e3.process_inplace('testimage.noise.uniform.rand')
 		#e3.do_fft_inplace()
-		
+
 		r = Reconstructors.get('fourier', {'x_in':n,'y_in':n, 'mode':2, 'sym':'c1', 'quiet':1})
 		r.setup()
-		r.insert_slice(e1, Transform3D(EULER_EMAN, 0,0,0))
-		r.insert_slice(e2, Transform3D(EULER_EMAN, 0,45,45))
-		r.insert_slice(e3, Transform3D(EULER_EMAN, 10,0,54))
+		r.insert_slice(e1, Transform({'type':'eman', 'alt':1.56, 'az':2.56, 'phi':3.56}))
+		r.insert_slice(e2, Transform({'type':'eman', 'alt':2.56, 'az':3.56, 'phi':4.56}))
+		r.insert_slice(e3, Transform({'type':'eman', 'alt':3.56, 'az':4.56, 'phi':5.56}))
 		result = r.finish()
 		
 		testlib.safe_unlink('density.mrc')
@@ -153,9 +153,9 @@ class TestReconstructor(unittest.TestCase):
 		
 		r = Reconstructors.get('back_projection', {'size':32, 'weight':0.8, 'sym':'c3'})
 		r.setup()
-		r.insert_slice(e1, Transform3D(EULER_EMAN, 0,0,0))
-		r.insert_slice(e2, Transform3D(EULER_EMAN, 0,0,0))
-		r.insert_slice(e3, Transform3D(EULER_EMAN, 0,0,0))
+		r.insert_slice(e1, Transform({'type':'eman', 'alt':1.56, 'az':2.56, 'phi':3.56}))
+		r.insert_slice(e2, Transform({'type':'eman', 'alt':1.56, 'az':2.56, 'phi':3.56}))
+		r.insert_slice(e3, Transform({'type':'eman', 'alt':1.56, 'az':2.56, 'phi':3.56}))
 		result = r.finish()
 		
 	def no_test_nn4Reconstructor(self):
