@@ -226,22 +226,6 @@ struct EMAN_EMAN1Ctf_Wrapper: EMAN::EMAN1Ctf
         return EMAN::EMAN1Ctf::equal(p0);
     }
 
-    float get_defocus() const {
-        return call_method< float >(py_self, "get_defocus");
-    }
-
-    float default_get_defocus() const {
-        return EMAN::EMAN1Ctf::get_defocus();
-    }
-
-    float get_bfactor() const {
-        return call_method< float >(py_self, "get_bfactor");
-    }
-
-    float default_get_bfactor() const {
-        return EMAN::EMAN1Ctf::get_bfactor();
-    }
-
     PyObject* py_self;
 };
 
@@ -395,8 +379,6 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("compute_2d_complex", pure_virtual(&EMAN::Ctf::compute_2d_complex))
         .def("copy_from", pure_virtual(&EMAN::Ctf::copy_from))
         .def("equal", pure_virtual(&EMAN::Ctf::equal))
-        .def("get_defocus", pure_virtual(&EMAN::Ctf::get_defocus))
-        .def("get_bfactor", pure_virtual(&EMAN::Ctf::get_bfactor))
     );
 
     enum_< EMAN::Ctf::CtfType >("CtfType")
@@ -415,8 +397,6 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 
     class_< EMAN::EMAN1Ctf, bases< EMAN::Ctf > , EMAN_EMAN1Ctf_Wrapper >("EMAN1Ctf", init<  >())
         .def(init< const EMAN::EMAN1Ctf& >())
-        .def_readwrite("defocus", &EMAN::EMAN1Ctf::defocus)
-        .def_readwrite("bfactor", &EMAN::EMAN1Ctf::bfactor)
         .def_readwrite("amplitude", &EMAN::EMAN1Ctf::amplitude)
         .def_readwrite("ampcont", &EMAN::EMAN1Ctf::ampcont)
         .def_readwrite("noise1", &EMAN::EMAN1Ctf::noise1)
@@ -440,8 +420,6 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("to_vector", (std::vector<float,std::allocator<float> > (EMAN::EMAN1Ctf::*)() const)&EMAN::EMAN1Ctf::to_vector, (std::vector<float,std::allocator<float> > (EMAN_EMAN1Ctf_Wrapper::*)() const)&EMAN_EMAN1Ctf_Wrapper::default_to_vector)
         .def("copy_from", (void (EMAN::EMAN1Ctf::*)(const EMAN::Ctf*) )&EMAN::EMAN1Ctf::copy_from, (void (EMAN_EMAN1Ctf_Wrapper::*)(const EMAN::Ctf*))&EMAN_EMAN1Ctf_Wrapper::default_copy_from)
         .def("equal", (bool (EMAN::EMAN1Ctf::*)(const EMAN::Ctf*) const)&EMAN::EMAN1Ctf::equal, (bool (EMAN_EMAN1Ctf_Wrapper::*)(const EMAN::Ctf*) const)&EMAN_EMAN1Ctf_Wrapper::default_equal)
-        .def("get_defocus", (float (EMAN::EMAN1Ctf::*)() const)&EMAN::EMAN1Ctf::get_defocus, (float (EMAN_EMAN1Ctf_Wrapper::*)() const)&EMAN_EMAN1Ctf_Wrapper::default_get_defocus)
-        .def("get_bfactor", (float (EMAN::EMAN1Ctf::*)() const)&EMAN::EMAN1Ctf::get_bfactor, (float (EMAN_EMAN1Ctf_Wrapper::*)() const)&EMAN_EMAN1Ctf_Wrapper::default_get_bfactor)
     ;
 
     class_< EMAN::EMAN2Ctf, bases< EMAN::Ctf > , EMAN_EMAN2Ctf_Wrapper >("EMAN2Ctf", init<  >())
