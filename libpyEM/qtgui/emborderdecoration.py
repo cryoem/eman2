@@ -437,6 +437,7 @@ class EMBorderDecoration:
 			self.object.set_mouse_lock(self)
 			self.object.cam.mousePressEvent(event)
 			self.object.updateGL()
+			self.current_frame = self.frame_unproject_order[self.currently_selected_frame]
 		elif self.currently_selected_frame in [0,1,2,3,4,6,7]:  # right
 			if (event.buttons()&Qt.LeftButton):
 				self.object.set_mouse_lock(self)
@@ -445,11 +446,10 @@ class EMBorderDecoration:
 			
 		
 	def mouseMoveEvent(self,event):
-		if self.currently_selected_frame == 5: # top
-			self.object.cam.mouseMoveEvent(event)
-			self.object.updateGL()
-			
-		elif self.current_frame != "": # right
+		if self.current_frame != "": # establishing and destablished in mousePress and mouseRelease
+			if self.currently_selected_frame == 5: # top
+				self.object.cam.mouseMoveEvent(event)
+				self.object.updateGL()
 			if (event.buttons()&Qt.LeftButton):
 				movement = [event.x()-self.moving[0],event.y()-self.moving[1]]
 				self.moving = [event.x(), event.y()]

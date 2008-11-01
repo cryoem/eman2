@@ -430,10 +430,10 @@ class EMImage3DModule(EMImage3DGUIModule):
 		try: return self.gl_widget.height()
 		except: return 0
 	
-	def updateGL(self):
-		from emfloatingwidgets import EM3DGLWindow
-		if self.gl_widget != None and not isinstance(self.gl_widget,EM3DGLWindow):
-			self.gl_widget.updateGL()
+	#def updateGL(self):
+		#from emfloatingwidgets import EM3DGLWindow
+		#if self.gl_widget != None and not isinstance(self.gl_widget,EM3DGLWindow):
+			#self.gl_widget.updateGL()
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
@@ -741,7 +741,10 @@ class EMImageInspector3D(QtGui.QWidget):
 	
 	def set_xy_trans(self, x, y):
 		self.advanced_tab.set_xy_trans(x,y)
-		
+	
+	def set_xyz_trans(self,x,y,z):
+		self.advanced_tab.set_xyz_trans(x,y,z)
+	
 	def insert_advance_tab(self):
 		if self.advanced_tab == None:
 			self.advanced_tab = EM3DAdvancedInspector(self.target, self)
@@ -838,7 +841,10 @@ class EM3DAdvancedInspector(QtGui.QWidget):
 	
 	def set_xy_trans(self, x, y):
 		self.rotation_sliders.set_xy_trans(x,y)
-		
+	
+	def set_xyz_trans(self, x, y,z):
+		self.rotation_sliders.set_xyz_trans(x,y,z)
+	
 	def perspective_clicked(self):
 		self.target.set_perspective(True)
 		

@@ -713,6 +713,9 @@ class EMVolumeInspector(QtGui.QWidget):
 	
 	def set_xy_trans(self, x, y):
 		self.rotation_sliders.set_xy_trans(x,y)
+	
+	def set_xyz_trans(self,x,y,z):
+		self.rotation_sliders.set_xyz_trans(x,y,z)	
 		
 	def get_transform_layout(self):
 		return self.maintab.vbl

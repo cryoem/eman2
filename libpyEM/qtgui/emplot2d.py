@@ -482,7 +482,8 @@ class EMPlot2DModule(EMGUIModule):
 		## The self.scale variable is updated now, so just update with that
 		#if self.inspector: self.inspector.set_scale(self.scale)
 
-
+	def leaveEvent(self,event):
+		pass
 
 class EMPlot2DInspector(QtGui.QWidget):
 	def get_desktop_hint(self):

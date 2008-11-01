@@ -66,7 +66,12 @@ class EMGUIModule(EventsEmitterAndReciever):
 			application.ensure_gl_context(self)
 			
 		EventsEmitterAndReciever.__init__(self)
-			
+	
+	
+	def updateGL(self):
+		if self.gl_widget != None and self.under_qt_control:
+			self.gl_widget.updateGL()
+	
 	def is_visible(self):
 		return self.qt_context_parent.isVisible()
 		
@@ -116,7 +121,11 @@ class EMGUIModule(EventsEmitterAndReciever):
 		if not self.application.child_is_attached(self.em_qt_inspector_widget):
 			self.application.attach_child(self.em_qt_inspector_widget)
 		self.application.show_specific(self.em_qt_inspector_widget)
-		
+	
+	def update_inspector_texture(self):
+		if self.em_qt_inspector_widget != None:
+			self.em_qt_inspector_widget.force_texture_update()
+	
 	def closeEvent(self,event) :
 		if self.application != None:
 			if self.em_qt_inspector_widget != None: 
@@ -162,6 +171,9 @@ class EMApplication:
 		else: return False
 	
 	def get_app(self): return self.app
+	
+	def set_app(self,app): self.app = app # hack
+	
 	def attach_child(self,child):
 		raise
 	
@@ -170,6 +182,8 @@ class EMApplication:
 	
 	def show(self):
 		raise
+	
+	def isVisible(self,child): raise
 	
 	def show_specific(self,object):
 		raise
@@ -247,6 +261,9 @@ class EMStandAloneApplication(EMApplication):
 		
 	def ensure_gl_context(self,child):
 		child.get_qt_widget().initGL()
+	
+	def isVisible(self,child):
+		return child.gl_widget.isVisible()
 	
 	def show(self):
 		for child in self.children:
@@ -357,6 +374,7 @@ class EMQtWidgetModule(EMGUIModule):
 		self.gl_widget = None
 		EMGUIModule.__init__(self,application)
 		#print self.gl_widget,"is real"
+		
 		self.selected = False
 		
 	def set_selected(self,bool):
@@ -364,12 +382,14 @@ class EMQtWidgetModule(EMGUIModule):
 		if self.gl_widget != None:self.gl_widget.set_selected(self.selected)
 			
 	def get_qt_widget(self):
+		self.under_qt_control = True
 		return self.qt_widget
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		from emfloatingwidgets import EMGLViewQtWidget
 		from emfloatingwidgets import EMQtGLView, EM2DQtGLWindow
 		if self.gl_widget == None:
+			self.under_qt_control = False
 			self.qt_context_parent = qt_context_parent
 			self.gl_context_parent = gl_context_parent
 			gl_view = EMQtGLView(self,self.qt_widget)
@@ -412,4 +432,11 @@ class EMQtWidgetModule(EMGUIModule):
 	
 	def connect_qt_pop_up_application_event(self,signal):
 		self.application.connect_qt_pop_up_application_event(signal,self)
-		
+	
+	
+	def force_texture_update(self,val=True):
+		if not self.under_qt_control and val == True:
+			if self.application.isVisible(self):
+				self.gl_widget.drawable.gen_texture = True
+				self.gl_widget.drawable.updateTexture()
+	

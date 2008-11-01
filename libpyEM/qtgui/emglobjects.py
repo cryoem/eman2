@@ -1375,9 +1375,10 @@ class Camera2(EventsEmitterAndReciever):
 					#self.motion_translate(event.x()-self.mpressx, self.mpressy - event.y())
 				#else:
 				self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(1.0/self.scale))
-
+				
 				self.mpressx = event.x()
 				self.mpressy = event.y()
+				return True
 		elif self.mmode==0:
 			if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier and self.allow_z_mouse_trans:
 				
@@ -1385,23 +1386,28 @@ class Camera2(EventsEmitterAndReciever):
 						
 					self.mpressx = event.x()
 					self.mpressy = event.y()
+					return True
 			elif event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and not self.allow_rotations):
 				if self.mmode==0:
 					self.motion_translateLA(self.mpressx, self.mpressy,event)
 						
 					self.mpressx = event.x()
 					self.mpressy = event.y()
+					return True
+				
+		return False
 	
 	def mouseReleaseEvent(self, event):
 		if event.button()==Qt.LeftButton:
 			if self.mmode==0:
-				return
+				return False
 		elif event.button()==Qt.RightButton:
 			if self.mmode==0:
-				return
+				return False
 			
 	def wheelEvent(self, event):
 		self.scale_event(event.delta())
+		return True
 	
 	def motion_translate_z_only(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
@@ -1775,10 +1781,6 @@ class EMImage3DGUIModule(EMGUIModule):
 		EMGUIModule.__init__(self,application,ensure_gl_context)
 	
 	def render(self): pass # should do the main drawing
-	
-	def updateGL(self):
-		if self.gl_widget != None and self.under_qt_control:
-			self.gl_widget.updateGL()
 			
 	def get_type(self): pass #should return a unique string
 	
@@ -1926,7 +1928,7 @@ class EMImage3DGUIModule(EMGUIModule):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
-			self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
+			self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 			self.inspector.set_scale(self.cam.scale)
 			
 		else:
@@ -1938,21 +1940,24 @@ class EMImage3DGUIModule(EMGUIModule):
 		pass
 	
 	def mouseMoveEvent(self, event):
-		self.cam.mouseMoveEvent(event)
+		if self.cam.mouseMoveEvent(event):
+			self.update_inspector_texture()
+			
 		if self.inspector != None:
 			if event.buttons()&Qt.LeftButton:
 				self.inspector.update_rotations(self.get_current_transform())
 			elif event.buttons()&Qt.RightButton:
 				self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
-				
+				self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 		self.updateGL()
 	
 	def mouseReleaseEvent(self, event):
-		self.cam.mouseReleaseEvent(event)
+		
+		if self.cam.mouseReleaseEvent(event): self.update_inspector_texture()
 		self.updateGL()
 			
 	def wheelEvent(self, event):
-		self.cam.wheelEvent(event)
+		if self.cam.wheelEvent(event): self.update_inspector_texture()
 		if self.inspector != None :
 			self.inspector.set_scale(self.cam.scale)
 		self.updateGL()
@@ -1997,7 +2002,9 @@ class EMImage3DGUIModule(EMGUIModule):
 		elif event.key() == Qt.Key_Right:
 			self.cam.explicit_translate(1,0,0)
 			self.updateGL()
-			
+	
+	def leaveEvent(self,event):
+		pass
 		
 	def initializeGL(self):
 		# redefine this if you want to do any OpenGL specific initialization

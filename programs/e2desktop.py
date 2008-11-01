@@ -147,8 +147,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		EMWindowNode.__init__(self,parent)
 		EMRegion.__init__(self,geometry)
 		self.current = None
-		self.previous = None
-		
+
 		self.selected_object = None
 		self.multi_selected_objects = [] # as grown using "ctrl-click" selection, for event master slave
 		
@@ -163,6 +162,13 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			child.draw()
 			glPopMatrix()
 	
+	def set_current(self,current):
+		if self.current != current:
+			if self.current != None:
+				self.current.leaveEvent(None)
+		
+		self.current = current
+	
 	def updateGL(self):
 		self.parent.updateGL()
 		
@@ -174,13 +180,18 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		children = self.children
 		if self.target != None:
 			children = [self.target]
+		elif self.current != None:
+			children = [self.current]
+		
 			
 		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mousePressEvent(event)
+				self.set_current(child)
 				self.updateGL()
 				return True
 		
+		self.set_current(None)
 		self.target = None
 		return False
 	
@@ -188,19 +199,16 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		children = self.children
 		if self.target != None:
 			children = [self.target]
+		elif self.current != None:
+			children = [self.current]
 			
 		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
-				self.current = child
-				if (self.current != self.previous ):
-					if ( self.previous != None ):
-						try: self.previous.leaveEvent()
-						except: pass
 				child.mouseMoveEvent(event)
-				self.previous = child
+				self.set_current(child)
 				self.updateGL()
 				return True
-		
+		self.set_current(None)
 		self.target = None
 		return False
 		
@@ -208,13 +216,16 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		children = self.children
 		if self.target != None:
 			children = [self.target]
+		elif self.current != None:
+			children = [self.current]
 			
 		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mouseReleaseEvent(event)
+				self.set_current(child)
 				self.updateGL()
 				return True
-			
+		self.set_current(None)	
 		self.target = None
 		return False
 					
@@ -223,12 +234,16 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		children = self.children
 		if self.target != None:
 			children = [self.target]
+		elif self.current != None:
+			children = [self.current]
 			
 		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.mouseDoubleClickEvent(event)
+				self.set_current(child)
 				self.updateGL()
 				return True
+		self.set_current(None)
 		self.target = None
 		return False
 		
@@ -237,13 +252,16 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		children = self.children
 		if self.target != None:
 			children = [self.target]
+		elif self.current != None:
+			children = [self.current]
 			
 		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
 				child.wheelEvent(event)
+				self.set_current(child)
 				self.updateGL()
 				return True
-		
+		self.set_current(None)
 		self.target = None
 		return False
 		
@@ -251,6 +269,8 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		children = self.children
 		if self.target != None:
 			children = [self.target]
+		elif self.current != None:
+			children = [self.current]
 			
 		for child in children:
 			if ( child.isinwin(event.x(),EMDesktop.main_widget.viewport_height()-event.y()) ):
@@ -258,7 +278,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 				self.updateGL()
 				QtGui.QToolTip.hideText()
 				return True
-		
+		self.set_current(None)
 		self.target = None
 		return False
 
@@ -266,21 +286,28 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 		children = self.children
 		if self.target != None:
 			children = [self.target]
+		elif self.current != None:
+			children = [self.current]
 			
 		for child in children:
 			pos = EMDesktop.main_widget.mapFromGlobal(QtGui.QCursor.pos())
 			if ( child.isinwin(pos.x(),EMDesktop.main_widget.viewport_height()-pos.y()) ):
 				child.keyPressEvent(event)
+				self.set_current(child)
 				self.updateGL()
 				return True
 				#QtGui.QToolTip.hideText()
-				
+		self.set_current(None)
 		self.target = None
 		return False
 
 	def dragMoveEvent(self,event):
 		print "received drag move event"
+	
+	def leaveEvent(self,event):
+		self.current=  None
 		
+	
 	def event(self,event):
 		#print "event"
 		#QtGui.QToolTip.hideText()
@@ -837,43 +864,65 @@ class EMFrame(EMWindowNode,EMRegion):
 		EMWindowNode.__init__(self,parent)
 		EMRegion.__init__(self,geometry)
 		self.children = []
-	
+		self.current = None
 	def draw(self):
 		for child in self.children:
 			glPushMatrix()
 			child.draw()
 			glPopMatrix()
 	
+	def set_current(self,current):
+		if self.current != current:
+			if self.current != None:
+				self.current.leaveEvent(None)
+		
+		self.current = current
+	
 	def mousePressEvent(self, event):
 		#this could be optimized
 		for i in self.children:
-			if i.mousePressEvent(event): return True
+			if i.mousePressEvent(event):
+				self.set_current(i) 
+				return True
+			
+		self.set_current(None)
+		
 	
 	def mouseMoveEvent(self, event):
 		#this could be optimized
 		for i in self.children:
-			if i.mouseMoveEvent(event): return True
+			if i.mouseMoveEvent(event):
+				self.set_current(i) 
+				return True
 		#EMDesktop.main_widget.updateGL()
-	
+		self.set_current(None)
 		
 	def mouseReleaseEvent(self, event):
 		#this could be optimized
 		for i in self.children:
-			if i.mouseReleaseEvent(event): return True
-	
+			if i.mouseReleaseEvent(event): 
+				self.set_current(i) 
+				return True
+		
+		self.set_current(None)
 
 	def mouseDoubleClickEvent(self, event):
 		#this could be optimized
 		for i in self.children:
-			if i.mouseDoubleClickEvent(event): return True
+			if i.mouseDoubleClickEvent(event):
+				self.set_current(i) 
+				return True
 		
 		#EMDesktop.main_widget.updateGL()
 	
-
+		self.set_current(None)
+		
 	def wheelEvent(self, event):
 		#this could be optimized
 		for i in self.children:
-			if i.wheelEvent(event): return True
+			if i.wheelEvent(event):
+				self.set_current(i) 
+				return True
 	
 	def keyPressEvent(self, event):
 		#this could be optimized
@@ -884,8 +933,9 @@ class EMFrame(EMWindowNode,EMRegion):
 		#this could be optimized
 		for i in self.children:
 			i.toolTipEvent(event)
-
-
+	
+	def leaveEvent(self,event):
+		self.current = None
 
 class EMDesktopApplication(EMApplication):
 	def __init__(self,target,qt_application_control=True):
@@ -968,7 +1018,12 @@ class EMDesktopApplication(EMApplication):
 		if owner != None:
 			QtCore.QObject.disconnect(self.get_qt_emitter(child),sig,owner.on_qt_pop_up)
 		else: print "diconnect_qt_pop_up_application_event disconnection failed"
-		
+	
+	def isVisible(self,child):
+		owner = EMDesktop.main_widget.get_owner(child)
+		if owner != None: return True
+		else: return False
+	
 class EMDesktopFrame(EMFrame):
 	image = None
 	def __init__(self,parent,geometry=Region(0,0,0,0)):
@@ -1081,8 +1136,7 @@ class EMDesktopFrame(EMFrame):
 		try:
 			owner = self.child_mappings[child]
 		except:
-			print "owner doesn't exist for child",child
-			return
+			return None
 		
 		return owner
 
@@ -1280,16 +1334,17 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 	def get_gl_context_parent(self):
 		return self
 	
-	def __init__(self):
+	def __init__(self,app):
 		Animator.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
 		EMDesktop.main_widget = self
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
-		#fmt.setSampleBuffers(True)
+		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
 
 		self.application = EMDesktopApplication(self,qt_application_control=False)
+		self.application.set_app(app)
 		if EMDesktop.application == None:
 			EMDesktop.application = self.application
 		
@@ -2245,6 +2300,6 @@ class LeftSideWidgetBar(SideWidgetBar):
 			
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMDesktop()
+	window = EMDesktop(app)
 #	window.showFullScreen()
 	window.app.exec_()

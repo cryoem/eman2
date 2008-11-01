@@ -232,6 +232,9 @@ class EMImage2DMouseEventsMediator:
 		
 	def redo_fft(self):
 		self.target.redo_fft()
+		
+	def update_inspector_texture(self):
+		self.target.update_inspector_texture()
 
 class EMImage2DEmitMouseMode(EMImage2DMouseEvents):
 	def __init__(self,mediator):
@@ -287,7 +290,8 @@ class EMImage2DMeasureMode(EMImage2DMouseEvents):
 				inspector.mtshoworigin.setText("Start: %d , %d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5]))
 				inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
 				inspector.mtshowlen.setText("dx,dy (len): %1.2f , %1.2f (%1.3f)"%(dx*apix,dy*apix,hypot(dx,dy)*apix))
-				
+			
+			self.mediator.update_inspector_texture()
 			self.mediator.updateGL()
 		
 	def mouse_wheel(self,event):
@@ -366,9 +370,10 @@ class EMImage2DModule(EMGUIModule):
 			
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
-			self.gl_widget.set_enable_clip(self.enable_clip)
+			self.gl_widget.set_enable_clip(self.enable_clip) # because we draw shapes that go out of screen
 			self.gl_widget.target_translations_allowed(True)
 			self.update_window_title(self.file_name)
+			self.set_enable_clip(True) # 
 			
 		return self.gl_widget
 		
@@ -480,6 +485,10 @@ class EMImage2DModule(EMGUIModule):
 		else:self.__load_display_settings_from_db()
 		
 		self.__init_mouse_handlers()
+	
+	def get_emit_signals_and_connections(self):
+		return {"set_scale":self.set_scale,"origin_update":self.origin_update, "increment_list_data":self.increment_list_data}
+		#return {}
 	
 	def set_enable_clip(self,val=True):
 		self.enable_clip = val
@@ -614,7 +623,7 @@ class EMImage2DModule(EMGUIModule):
 			if self.gl_widget != None:
 				self.gl_widget.setWindowTitle(remove_directories_from_name(filename))
 				
-	def set_data(self,incoming_data,file_name=""):
+	def set_data(self,incoming_data,file_name="",retain_current_settings=True):
 		"""You may pass a single 2D image or a list of images"""
 		if self.data != None and self.file_name != "":
 			self.__write_display_settings_to_db()
@@ -634,7 +643,7 @@ class EMImage2DModule(EMGUIModule):
 		
 		
 		if isinstance(data,list):
-			self.list_idx = len(data)/2
+			if self.list_data == None and self.list_idx < len(data): self.list_idx = len(data)/2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
 			d = data[0]
 			if d.is_complex():
 				self.list_data = []
@@ -669,7 +678,8 @@ class EMImage2DModule(EMGUIModule):
 			
 		self.auto_contrast(inspector_update=False,display_update=False)
 
-		self.__load_display_settings_from_db(inspector_update=False,display_update=False)
+		if not retain_current_settings:
+			self.__load_display_settings_from_db(inspector_update=False,display_update=False)
 		
 		self.inspector_update(use_fourier=fourier)
 		self.force_display_update()
@@ -817,6 +827,7 @@ class EMImage2DModule(EMGUIModule):
 			self.origin=(newscale/self.scale*(self.gl_widget.width()/2.0+self.origin[0])-self.gl_widget.width()/2.0,newscale/self.scale*(self.gl_widget.height()/2.0+self.origin[1])-self.gl_widget.height()/2.0)
 			self.scale=newscale
 			self.updateGL()
+			if self.emit_events: self.emit(QtCore.SIGNAL("set_scale"),newscale)
 		except: pass
 		
 	def set_invert(self,val):
@@ -998,9 +1009,17 @@ class EMImage2DModule(EMGUIModule):
 			self.__draw_texture(self.other_tex_name,-width,-height,width,height)
 			glPopMatrix()
 
+
+		update = False
+		if self.display_state_changed():
+			update = True
+			
+		if update:
+			self.update_inspector_texture() # important for this to occur in term of the e2desktop only
+			
 		render = False
 		if self.use_display_list:
-			if self.display_state_changed():
+			if update:
 				if self.main_display_list != 0:
 					glDeleteLists(self.main_display_list,1)
 					self.main_display_list = 0
@@ -1376,11 +1395,15 @@ class EMImage2DModule(EMGUIModule):
 		if self.rmousedrag:
 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
+			if self.emit_events: self.emit(QtCore.SIGNAL("origin_update"),self.origin)
 			try: self.gl_widget.updateGL()
 			except: pass
 		else:
 			self.mouse_event_handler.mouse_move(event)
-		
+			
+	def origin_update(self,new_origin):
+		self.origin = new_origin
+	
 	def mouseReleaseEvent(self, event):
 		self.application.setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img(event.x(),event.y())
@@ -1455,21 +1478,45 @@ class EMImage2DModule(EMGUIModule):
 				self.browser2.resize(800,800)
 				
 		elif event.key() == Qt.Key_Up:
-			if self.list_data != None:
+			self.increment_list_data(1)
+			if self.emit_events: self.emit(QtCore.SIGNAL("increment_list_data"),1)
+			self.updateGL()
+			#if self.list_data != None:
+				#if (self.list_idx < (len(self.list_data)-1)):
+					#self.list_idx += 1
+					#self.get_inspector().set_image_idx(self.list_idx+1)
+					#self.__set_display_image(self.curfft)
+					#self.force_display_update()
+					#
+		elif event.key() == Qt.Key_Down:
+			self.increment_list_data(-1)
+			if self.emit_events: self.emit(QtCore.SIGNAL("increment_list_data"),-1)
+			self.updateGL()
+			#if self.list_data != None:
+				#if (self.list_idx > 0):
+					#self.list_idx -= 1
+					#self.get_inspector().set_image_idx(self.list_idx+1)
+					#self.__set_display_image(self.curfft)
+					#self.force_display_update()
+					#self.updateGL()
+
+	def increment_list_data(self,delta):
+		'''
+		delta is negative or positive, indicating forward and backwards movement
+		'''
+		if self.list_data != None:
+			if delta > 0:
 				if (self.list_idx < (len(self.list_data)-1)):
 					self.list_idx += 1
 					self.get_inspector().set_image_idx(self.list_idx+1)
 					self.__set_display_image(self.curfft)
 					self.force_display_update()
-					self.updateGL()
-		elif event.key() == Qt.Key_Down:
-			if self.list_data != None:
+			elif delta < 0:
 				if (self.list_idx > 0):
 					self.list_idx -= 1
 					self.get_inspector().set_image_idx(self.list_idx+1)
 					self.__set_display_image(self.curfft)
 					self.force_display_update()
-					self.updateGL()
 
 	def image_range_changed(self,val):
 		l_val = val-1
@@ -1481,7 +1528,8 @@ class EMImage2DModule(EMGUIModule):
 			self.force_display_update()
 			self.updateGL()
 
-	def leaveEvent(self):
+	def leaveEvent(self,event):
+		self.application.setOverrideCursor(Qt.ArrowCursor)
 		if self.rmousedrag:
 			self.rmousedrag=None
 		

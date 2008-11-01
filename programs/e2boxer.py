@@ -1021,7 +1021,6 @@ class EMBoxerModule:
 			image=BigImageCache.get_object(imagename).get_image(use_alternate=True)
 		
 		self.guiim= EMImage2DModule(application=self.application)
-		self.guiim.set_enable_clip(True) # only makes a difference in the desktop
 		self.guiim.set_data(image,imagename)
 		self.guiim.force_display_update()
 		self.application.show_specific(self.guiim)

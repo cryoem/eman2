@@ -211,6 +211,9 @@ class EMMXCoreMouseEventsMediator:
 		
 	def get_scale(self):
 		return self.target.get_scale()
+	
+	def update_inspector_texture(self):
+		self.target.update_inspector_texture()
 
 class EMMXDelMouseEvents(EMMXCoreMouseEvents):
 	def __init__(self,mediator):
@@ -222,6 +225,7 @@ class EMMXDelMouseEvents(EMMXCoreMouseEvents):
 			if lc != None:
 				self.mediator.pop_box_image(lc[0],event,True)
 				self.mediator.force_display_update()
+				
 
 
 class EMMXDragMouseEvents(EMMXCoreMouseEvents):
@@ -292,9 +296,11 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
 			try:
-				app.setOverrideCursor(Qt.ClosedHandCursor)
+				self.application.setOverrideCursor(Qt.ClosedHandCursor)
+				#app.setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				app.setOverrideCursor(Qt.SizeAllCursor)
+				self.application.setOverrideCursor(Qt.SizeAllCursor)
+				#app.setOverrideCursor(Qt.SizeAllCursor)
 				
 			self.mousedrag=(event.x(),event.y())
 
@@ -396,9 +402,9 @@ class EMImageMXModule(EMGUIModule):
 		self.__init_mouse_handlers()
 		
 		self.reroute_delete_target = None
-
+	
 	def get_emit_signals_and_connections(self):
-		return {"set_origin":self.set_origin,"set_scale":self.set_scale}
+		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
 	
 	def width(self):
 		if self.gl_widget != None:
@@ -489,6 +495,7 @@ class EMImageMXModule(EMGUIModule):
 	def force_display_update(self):
 		''' If display lists are being used this will force a regeneration'''
 		self.display_states = []
+		self.update_inspector_texture()
 	
 	def set_img_num_offset(self,n):
 		self.img_num_offset = n
@@ -809,9 +816,17 @@ class EMImageMXModule(EMGUIModule):
 		if self.font_render_mode == EMGUIModule.FTGL: self.set_font_render_resolution()
 		self.image_change_count = self.data[0].get_changecount() # this is important when the user has more than one display instance of the same image, for instance in e2.py if 
 		render = False
+		
+		update = False
+		if self.display_state_changed():
+			update = True
+			
+		if update:
+			self.update_inspector_texture() # important for this to occur in term of the e2desktop only
+			
 		if self.use_display_list:
 			
-			if self.display_state_changed():
+			if update:
 				if self.main_display_list != 0:
 					glDeleteLists(self.main_display_list,1)
 					self.main_display_list = 0
@@ -1273,6 +1288,14 @@ class EMImageMXModule(EMGUIModule):
 		elif event.key()==Qt.Key_Right:
 			self.origin=(self.origin[0]-xstep,self.origin[1])
 			self.updateGL()
+		else:
+			return
+		
+		if self.emit_events: self.emit(QtCore.SIGNAL("origin_update"),self.origin)
+		
+	
+	def origin_update(self,new_origin):
+		self.origin = new_origin
 			
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
@@ -1281,9 +1304,11 @@ class EMImageMXModule(EMGUIModule):
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
 			try:
-				app.setOverrideCursor(Qt.ClosedHandCursor)
+				self.application.setOverrideCursor(Qt.ClosedHandCursor)
+				#app.setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				app.setOverrideCursor(Qt.SizeAllCursor)
+				self.application.setOverrideCursor(Qt.SizeAllCursor)
+				#app.setOverrideCursor(Qt.SizeAllCursor)
 				
 			self.mousedrag=(event.x(),event.y())
 		else: self.mouse_event_handler.mouse_down(event)
@@ -1298,8 +1323,7 @@ class EMImageMXModule(EMGUIModule):
 		else: self.mouse_event_handler.mouse_move(event)
 		
 	def mouseReleaseEvent(self, event):
-		app =  QtGui.QApplication.instance()
-		app.setOverrideCursor(Qt.ArrowCursor)
+		self.application.setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img((event.x(),event.y()))
 		if self.mousedrag:
 			self.mousedrag=None
@@ -1318,7 +1342,8 @@ class EMImageMXModule(EMGUIModule):
 		pass
 		
 		
-	def leaveEvent(self):
+	def leaveEvent(self,event):
+		self.application.setOverrideCursor(Qt.ArrowCursor)
 		if self.mousedrag:
 			self.mousedrag=None
 			

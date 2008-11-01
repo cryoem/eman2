@@ -36,7 +36,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import os
 import re
-from EMAN2 import EMData,Region, gimme_image_dimensions3D, EMFunctor
+from EMAN2 import EMData,Region, gimme_image_dimensions3D, EMFunctor, get_file_tag
 from emimage2d import EMImage2DModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule
 
@@ -101,6 +101,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.folder_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/Folder.png")
 		self.folder_files_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/FolderFiles.png")
 		self.file_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/File.png")
+		self.database_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/database.png")
 		
 	
 	def __init__single_preview_tb(self):
@@ -124,6 +125,7 @@ class EMSelectorDialog(QtGui.QDialog):
 	def __init_filter_combo(self):
 		self.filter_combo = QtGui.QComboBox(None)
 		self.filter_combo.addItem("*.mrc,*.hdf,*.img")
+		self.filter_combo.addItem("*.bdb")
 		self.filter_combo.addItem("*.*")
 		self.filter_combo.setEditable(True)
 	
@@ -205,6 +207,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.list_widgets[0].insertItem(0,"../")
 		self.lock = False
 		self.hide_preview()
+		
 	def selection_changed(self,item1,item2):
 		pass
 		
@@ -290,12 +293,12 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.__load_directory_data(file+'/',self.list_widgets[n])
 			return
 		
-		
-
 		# check to see if we have to go back a directory
 	
-		
 		if self.__is_file(file):
+			if get_file_tag(file) == "bdb":
+				self.__load_database_directory(file,self.list_widgets[n])
+				return
 			self.set_preview(file)
 			for i in range(idx+1,len(self.list_widgets)):
 				self.list_widgets[i].clear()
@@ -362,8 +365,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		if self.single_preview.isChecked():
 			if self.gl_image_preview == None:
 				self.gl_image_preview = EMImage2DModule(application=self.application)
+				self.gl_image_preview.set_data(a,filename)
+			else:
+				self.gl_image_preview.set_data(a,filename,retain_current_settings=True)
 				
-			self.gl_image_preview.set_data(a,filename)
 			#self.gl_image_preview.set_file_name(f)
 			self.application.show_specific(self.gl_image_preview)
 			self.gl_image_preview.updateGL()
@@ -421,6 +426,48 @@ class EMSelectorDialog(QtGui.QDialog):
 			
 			return False
 	
+	def __load_database_directory(self,database_name,list_widget):
+		
+		print "loading database directory",database_name
+		
+		#for root, dirs, files in os.walk(directory):
+			#files = self.__filter_strings(files)
+			
+			#list_widget.clear()
+			#dirs.sort()
+			#files.sort()
+			
+			#if (list_widget == self.list_widgets[0]):
+				#self.lock = True
+				#QtGui.QListWidgetItem("../",list_widget)
+				#self.lock = False
+				 
+			#for i in dirs:
+				#if i[0] == '.': continue
+				#file_length = 0
+				#for r, d, f in os.walk(directory+"/"+i):
+					#f = self.__filter_strings(f)
+					#file_length = len(f)
+					#if file_length == 0: file_length = len(d)
+					#break
+				#if file_length != 0:
+					#a = QtGui.QListWidgetItem(self.folder_files_icon,i,list_widget)
+				#else:
+					#a = QtGui.QListWidgetItem(self.folder_icon,i,list_widget)
+				
+			#for i,file in enumerate(files):
+				#if file[0] == '.': continue
+				#if get_file_tag(file) == "bdb":
+					#a = QtGui.QListWidgetItem(self.database_icon,file,list_widget)
+					#files.pop(i)
+					
+			#for file in files:
+				#a = QtGui.QListWidgetItem(self.file_icon,file,list_widget)
+
+			#return True
+			
+		#return False
+	
 	
 	def __load_directory_data(self,directory,list_widget):
 		
@@ -449,9 +496,14 @@ class EMSelectorDialog(QtGui.QDialog):
 				else:
 					a = QtGui.QListWidgetItem(self.folder_icon,i,list_widget)
 				
-			for i in files:
-				if i[0] == '.': continue
-				a = QtGui.QListWidgetItem(self.file_icon,i,list_widget)
+			for i,file in enumerate(files):
+				if file[0] == '.': continue
+				if get_file_tag(file) == "bdb":
+					a = QtGui.QListWidgetItem(self.database_icon,file,list_widget)
+					files.pop(i)
+					
+			for file in files:
+				a = QtGui.QListWidgetItem(self.file_icon,file,list_widget)
 
 			return True
 			

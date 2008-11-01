@@ -59,6 +59,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
+			self.under_qt_control = True
 			from emimageutil import EMParentWin
 			self.gl_context_parent = EMSymViewerWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
@@ -898,6 +899,9 @@ class EMSymInspector(QtGui.QWidget):
 	
 	def set_xy_trans(self, x, y):
 		self.rotation_sliders.set_xy_trans(x,y)
+	
+	def set_xyz_trans(self,x,y,z):
+		self.rotation_sliders.set_xyz_trans(x,y,z)	
 		
 	def get_transform_layout(self):
 		return self.maintab.vbl

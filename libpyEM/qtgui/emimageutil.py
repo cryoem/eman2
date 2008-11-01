@@ -97,6 +97,9 @@ class EMEventRerouter:
 	def keyPressEvent(self,event):
 		self.target.keyPressEvent(event)
 
+	def leaveEvent(self,event):
+		self.target.leaveEvent(event)
+		
 	def get_core_object(self):
 		return self.target
 	
@@ -324,6 +327,11 @@ class EMTransformPanel:
 	def set_xy_trans(self, x, y):
 		self.x_trans.setValue(x)
 		self.y_trans.setValue(y)
+		
+	def set_xyz_trans(self, x, y,z):
+		self.x_trans.setValue(x)
+		self.y_trans.setValue(y)
+		self.z_trans.setValue(z)
 	
 
 

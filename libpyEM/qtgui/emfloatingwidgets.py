@@ -1214,7 +1214,9 @@ class EMGLWindow:
 	def set_update_P_inv(self,val=True):
 		self.vdtools.set_update_P_inv(val)
 	
-	def leaveEvent(self):
+	def leaveEvent(self,event):
+		self.drawable.leaveEvent(event)
+		#print 'leave gl window'
 		pass
 	
 	def say_something(self):
@@ -1927,6 +1929,9 @@ class EMQtGLView(GLView):
 		self.cam = Camera2(self)
 		self.qtglview_parent = qtglview_parent
 		
+		
+		self.target_lock = None
+		
 	def closeEvent(self,event):
 		self.parent.closeEvent(event)
 	
@@ -2110,6 +2115,8 @@ class EMQtGLView(GLView):
 			self.__check_pop_up_death()
 				
 			cw=self.qwidget.childAt(event.x(),event.y())
+			self.target_lock = cw
+			
 			if cw == None: return
 			##print cw.objectName()
 			gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
@@ -2143,6 +2150,15 @@ class EMQtGLView(GLView):
 		else:
 			self.__check_pop_up_death()
 			
+			if self.target_lock != None:
+				gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
+				lp = self.target_lock.mapFromGlobal(gp)
+				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+				QtCore.QCoreApplication.sendEvent(self.target_lock,qme)
+				self.gen_texture = True
+				self.updateTexture()
+				return
+			
 			cw=self.qwidget.childAt(event.x(),event.y())
 			self.current = cw
 			if ( self.current != self.previous ):
@@ -2154,6 +2170,7 @@ class EMQtGLView(GLView):
 				if ( self.previous != None ):
 					qme=QtCore.QEvent(QtCore.QEvent.Leave)
 					QtCore.QCoreApplication.sendEvent(self.previous,qme)
+			
 			
 			self.previous = self.current
 			if cw == None:
@@ -2230,17 +2247,16 @@ class EMQtGLView(GLView):
 		if event.modifiers() == Qt.AltModifier:
 			self.cam.mouseReleaseEvent(event)
 		else:
-			#if ( self.childreceiver != None ):
-				## this means this class already knows that the mouse event is in the child
-				## that is being displayed
-				##try:
-				#self.childreceiver.mouseReleaseEvent(event)
-				#self.childreceiver = None
-				#self.e2children.pop()
-				#return
-			#else:
-				# if we have any children (i.e. a drop down combo box) it should now disappear
-		
+			if self.target_lock != None:
+				
+				gp=self.qwidget.mapToGlobal(QtCore.QPoint(event.x(),event.y()))
+				lp = self.target_lock.mapFromGlobal(gp)
+				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
+				QtCore.QCoreApplication.sendEvent(self.target_lock,qme)
+				self.gen_texture = True
+				self.updateTexture()
+				self.target_lock = None
+				return
 
 			self.__check_pop_up_death(event)
 			cw=self.qwidget.childAt(event.x(),event.y())
@@ -2253,24 +2269,19 @@ class EMQtGLView(GLView):
 			else:
 				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child):
-
 					self.widget_parent.setCurrentIndex(self.qwidget.currentIndex().row())
-
-					#self.widget_parent.emit(QtCore.SIGNAL("activated(QString)"),self.widget_parent.itemText(self.qwidget.currentIndex().row()))
 					self.qtglview_parent.pop_me(self.window)
 					self.qtglview_parent.gen_texture = True
-					#self.qtglview_parent.updateTexture()
-					#self.window.updateGL()
+					self.qtglview_parent.target_lock = None
 					return
 				else:
-					#self.qwidget.setVisible(True)
 					QtCore.QCoreApplication.sendEvent(cw,qme)
-					#self.qwidget.setVisible(False)
 			
 			self.gen_texture = True
 			self.updateTexture()
 		
-	def leaveEvent(self):
+	def leaveEvent(self,event):
+		self.target_lock = None
 		if (self.current != None) : 
 			qme = QtCore.QEvent(QtCore.QEvent.Leave)
 			QtCore.QCoreApplication.sendEvent(self.current,qme)
@@ -2379,21 +2390,6 @@ class EMGLViewQtWidget:
 			self.itex = self.parent.bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 		
-			#self.decoration.set_force_update()
-	
-	def draw(self):
-		#print "draw children"
-		if (self.qwidget == None or self.itex == 0) :
-			#print "no widget - draw children return" 
-			return
-		
-		#self.cam.debug = True
-		self.cam.position()
-		
-		# make sure the vdtools store the current matrices
-		self.vdtools.update(self.width()/2.0,self.height()/2.0)
-
-		if self.refresh_dl == True:
 			if self.texture_dl != 0:
 				glDeleteLists(self.texture_dl,1)
 			
@@ -2403,8 +2399,8 @@ class EMGLViewQtWidget:
 			glPushMatrix()
 			glEnable(GL_TEXTURE_2D)
 			glBindTexture(GL_TEXTURE_2D,self.itex)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
 			glBegin(GL_QUADS)
 			glTexCoord2f(0.,0.)
@@ -2420,6 +2416,19 @@ class EMGLViewQtWidget:
 			glPopMatrix()
 			
 			glEndList()
+			#self.decoration.set_force_update()
+	
+	def draw(self):
+		#print "draw children"
+		if (self.qwidget == None or self.itex == 0) :
+			#print "no widget - draw children return" 
+			return
+		
+		#self.cam.debug = True
+		self.cam.position()
+		
+		# make sure the vdtools store the current matrices
+		#self.vdtools.update(self.width()/2.0,self.height()/2.0)
 		
 		if self.texture_dl == 0: return
 		glCallList(self.texture_dl)
@@ -2728,7 +2737,7 @@ class EMGLViewQtWidget:
 			self.gen_texture = True
 			self.updateTexture()
 		
-	def leaveEvent(self):
+	def leaveEvent(self,event):
 		if (self.current != None) : 
 			qme = QtCore.QEvent(QtCore.QEvent.Leave)
 			QtCore.QCoreApplication.sendEvent(self.current,qme)
