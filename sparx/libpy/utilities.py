@@ -958,7 +958,7 @@ def gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3):
 	kern /= (aves[0]*nx*ny*nz)
 	return  rsconvolution(sharp_edge_image, kern)
 
-def getImage(imagename, nx = 0, ny = 1, nz = 1):
+def getImage(imagename, nx = 0, ny = 1, nz = 1, im = 0):
 	"""Read an image from the disk or assign existing object to the output.
 
 	Usage: myimage = readImage("path/to/image")
@@ -966,7 +966,7 @@ def getImage(imagename, nx = 0, ny = 1, nz = 1):
 	"""
 	if type(imagename) == type(""):
 	    e = EMData()
-	    e.read_image(imagename,0)
+	    e.read_image(imagename, im)
 	elif not imagename:
 	    e = EMData()
 	    if (nx > 0): e.set_size(nx, ny, nz)

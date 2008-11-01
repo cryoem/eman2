@@ -682,6 +682,7 @@ def proj_ali_incore_local(volref, mask3D, projdata, first_ring, last_ring, rstep
 				finfo.write( "prj %4d new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, s2x, s2y) )
 				finfo.flush()
 
+"""
 def proj_ali_incore_index(volref, iref, mask3D, projdata, first_ring, last_ring, rstep, xrng, yrng, step, delta, ref_a, symmetry, MPI):
 	from utilities    import even_angles, model_circle, compose_transform2, get_params_proj, set_params_proj
 	from alignment    import prepare_refprojs
@@ -850,9 +851,8 @@ def proj_ali_incore_localB(volref, mask3D, projdata, first_ring, last_ring, rste
 	return
 
 def proj_ali_incore_cone(volref, kb, template_angles, projdata, first_ring, last_ring, rstep, xrng, yrng, step, finfo=None):
-	"""
-	  alignment within a cone, no mirror considered
-	"""
+	#alignment within a cone, no mirror considered
+
 	from utilities    import even_angles, model_circle, compose_transform2, print_msg
 	from alignment    import refprojs
 	mode    = "F"
@@ -909,6 +909,7 @@ def proj_ali_incore_cone(volref, kb, template_angles, projdata, first_ring, last
         if not(finfo is None):
 		finfo.write( "new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(phi, theta, psi, s2x, s2y) )
 		finfo.flush()
+"""
 
 def ali_vol_func(params, data):
 	from utilities    import compose_transform3

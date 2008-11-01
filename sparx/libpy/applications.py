@@ -2846,9 +2846,11 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
-	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1", user_func_name="ref_ali3d", MPI=False, pinfo = False):
+	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
+	     user_func_name="ref_ali3d", MPI=False, pinfo = False):
 	if MPI:
-		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts, delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, pinfo)
+		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
+	      delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, pinfo)
 		return
 
 	from utilities      import model_circle, dropImage
@@ -2921,7 +2923,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		else                                  : mask3D = maskfile
 	else          :   mask3D = model_circle(last_ring, nx, nx, nx)
 	mask = model_circle(last_ring, nx, nx)
-	#dropImage(vol, os.path.join(outdir,"ref_vol00.hdf"))
+
 	if pinfo:  outf = file(os.path.join(outdir, "progress"), "w")
 	else:     outf = None
 
@@ -2953,11 +2955,8 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	for N_step in xrange(lstp):
  		for Iter in xrange(max_iter):
 			print_msg("ITERATION #%3d\n"%(N_step*max_iter + Iter+1))
-			#from filter import filt_gaussinv
-			#vol = filt_gaussinv(vol, 0.175, True)
-			#dropImage(vol, os.path.join(outdir, replace("vhl%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 			if(an[N_step] == -1):	proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
-			else:	                 proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
+			else:	           proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
 			#  3D stuff
 			if(CTF): vol1 = recons3d_4nn_ctf(data, range(0,nima,2), snr, 1, sym)
 			else:	 vol1 = recons3d_4nn(data, range(0,nima,2), sym)
@@ -2987,6 +2986,8 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
 			from utilities import write_headers
 			write_headers( stack, data, list_of_particles)
+			if(CTF and data_had_ctf == 0):
+				for im in xrange(nima): data[im].set_attr('ctf_applied', 1)
 	print_end_msg("ali3d_d")
 
 def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
@@ -3161,183 +3162,17 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			else:                  send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if (myid == main_node): print_end_msg("ali3d_d_MPI")
 
-def ali3d_mN(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
-            xr  ="4 2  2  1",      yr="-1",
-            ts  ="1 1 0.5 0.25",   delta="10  6  4  4",
-	    center = 0, maxit= 5, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1", MPI=False):
-	if MPI:
-		ali3d_m_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts, 
-		            delta, center, maxit, CTF, snr, ref_a, symmetry)
-		return
-	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_string_to_all, getImage, get_input_from_string
-	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc
-	from filter	    import filt_params,filt_btwl, filt_from_fsc, filt_table
-	from alignment	    import proj_ali_incore_index
-	from fundamentals   import fshift
-	from utilities      import print_begin_msg, print_end_msg, print_msg
-	import os
-	import types
-	from string         import replace
-	from random         import shuffle, seed, randint
-	# 2D alignment using rotational ccf in polar coords and linear
-	# interpolation
-	seed()
-	print_begin_msg("ali3d_d")
-	if CTF :
-		from reconstruction import recons3d_4nn_ctf
-		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		#                     0          1         2             3                 4                   5               6
-	else   : from reconstruction import recons3d_4nn
-
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
-	os.mkdir(outdir)
-
-	xrng        = get_input_from_string(xr)
-	if  yr == "-1":  yrng = xrng
-	else          :  yrng = get_input_from_string(yr)
-	step        = get_input_from_string(ts)
-	delta       = get_input_from_string(delta)
-	#if (an == "-1"):
-	#	an = []
-	#	for i in xrange(len(xrng)):   an.append(-1)
-	#else:
-	#	an = get_input_from_string(an)
-	first_ring  = int(ir)
-	rstep       = int(rs)
-	last_ring   = int(ou)
-	max_iter    = int(maxit);
-
-	print_msg("Input stack                 : %s\n"%(stack))
-	print_msg("Reference volume            : %s\n"%(ref_vol))	
-	print_msg("Output directory            : %s\n"%(outdir))
-	print_msg("Maskfile                    : %s\n"%(maskfile))
-	print_msg("Inner radius                : %i\n"%(first_ring))
-
-	numref            = 2
-
-	ima = EMData()
-	ima.read_image(stack, 0)
-	nx      = ima.get_xsize()
-	if last_ring < 0:	last_ring = int(nx/2) - 2
-	if(maskfile):
-		if(type(maskfile) is types.StringType):	 mask3D = getImage(maskfile)
-		else: 	                                mask3D = maskfile
-	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
-	mask = model_circle(last_ring, nx, nx)
-
-	print_msg("Outer radius                : %i\n"%(last_ring))
-	print_msg("Ring step                   : %i\n"%(rstep))
-	print_msg("X search range              : %s\n"%(xrng))
-	print_msg("Y search range              : %s\n"%(yrng))
-	print_msg("Translational step          : %s\n"%(step))
-	print_msg("Angular step                : %s\n"%(delta))
-	#print_msg("Angular search range        : %s\n"%(an))
-	print_msg("Maximum iteration           : %i\n"%(max_iter))
-	print_msg("Center type                 : %i\n"%(center))
-	print_msg("data with CTF               : %s\n"%(CTF))
-	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
-	print_msg("Reference projection method : %s\n"%(ref_a))
-	print_msg("Symmetry group              : %s\n\n"%(symmetry))
-
-	for  iref in xrange(numref):  dropImage(volref[iref],os.path.join(outdir, replace("ref_vol%2d.spi"%iref,' ','0')), "s")
-
-	if(CTF):
-		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		#                        0      1              2            3               4                  5               6
-
-	del ima
-	data = EMData.read_images(stack)
-	nima = len(data)
-	asi = []
-	for im in xrange(nima):
-		data[im].set_attr('ID', im)
-		data[im].set_attr_dict({'group':im%numref})  # this pretends to be general.  However, for the time being no CTF
-		if(CTF):
-			ctf_params = get_arb_params(data[im], ctf_dicts)
-			if(im == 0): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
-				st = Util.infomask(data[im], mask, False)
-				data[im] -= st[0]
-				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
-				data[im].set_attr('ctf_applied', 1)
-		asi. append(randint(0,numref))
-		data[im].set_attr('group',asi[im])
-	volref = []
-	for  iref in xrange(numref):
-		# calculate initial 3D
-		list_p = []
-		for im in xrange(nima):
-			if(data[im].get_attr('group') == iref):  list_p.append(im)
-		print  iref,len(list_p)
-		if(CTF): volref.append( recons3d_4nn_ctf(data, list_p, snr, 1, symmetry) )
-		else:	 volref.append( recons3d_4nn(data, list_p, symmetry) )
-		del list_p
-
-	# do the projection matching
-	for N_step in xrange(len(xrng)):
- 		for Iter in xrange(max_iter):
-			for im in xrange(nima):
-				data[im].set_attr_dict({'peak':-1.0e23})
-				order = range(nima)
-				shuffle(order)
-				for iref in xrange(numref):
-					#print " ali3d_m_MPI: ITERATION #",N_step*max_iter + Iter+1
-					proj_ali_incore_index(volref[iref], iref, mask3D, data[order[im]], first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, symmetry, MPI=False)
-				list_p = []
-				for im in xrange(nima):
-					if(data[im].get_attr('group') == asi[order[im]]):  list_p.append(im)
-				print  asi[order[im]],len(list_p)
-				if(CTF): volref[asi[order[im]]] = recons3d_4nn_ctf(data, list_p, snr, 1, symmetry)
-				else:	 volref[asi[order[im]]] = recons3d_4nn(data, list_p, symmetry)
-				del list_p
-				volref[asi[order[im]]] = filt_btwl(volref[asi[order[im]]], 0.3, 0.4)
-				#  changed assignment?
-				group = data[order[im]].get_attr('group')
-				if( asi[order[im]] != group ):
-					list_p = []
-					for im in xrange(nima):
-						if(data[im].get_attr('group') == group):  list_p.append(im)
-					print  group,len(list_p)
-					if(CTF): volref[group] = recons3d_4nn_ctf(data, list_p, snr, 1, symmetry)
-					else:	 volref[group] = recons3d_4nn(data, list_p, symmetry)
-					del list_p
-					volref[group] = filt_btwl(volref[group], 0.3, 0.4)
-
-			soto = []
-			for im in xrange(nima):
-				from utilities import set_params_proj, get_params_proj
-				peak = data[im].get_attr('peak')
-				phi,theta,psi,s2x,s2y = get_params_proj( data[im] )
-				group = data[im].get_attr('group')
-				soto.append([phi,theta,psi,s2x,s2y,peak,group])
-			from utilities import dropSpiderDoc
-			dropSpiderDoc(os.path.join(outdir, replace("params%4d"%(N_step*max_iter+Iter+1),' ','0')),soto)
-			for iref in xrange(numref):
-				ilm = 0
-				for im in xrange(nima):
-					if(asi[im] == iref):  ilm +=1
-				print  "  REF ",iref,"  elements:",ilm
-	del  volref
-	#  here we  write header info
-	if(CTF and data_had_ctf == 0):
-		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-	from utilities import write_headers
-	write_headers( stack, data, range(nima))
-	print_end_msg("ali3d_m")
-
 def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
-            xr  ="4 2  2  1",      yr="-1",
-            ts  ="1 1 0.5 0.25",   delta="10  6  4  4",
-	    center = 0, maxit= 5, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1", MPI=False):
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
+	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
+	     user_func_name="ref_ali3d", MPI=False, pinfo = False):
 	if MPI:
-		ali3d_m_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts, 
-		            delta, center, maxit, CTF, snr, ref_a, symmetry)
+		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
+		 delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, pinfo)
 		return
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
 	from utilities      import bcast_string_to_all, getImage, get_input_from_string
-	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import get_arb_params, set_arb_params, get_im
 	from filter	        import filt_params,filt_btwl, filt_from_fsc, filt_table
 	from alignment	  import proj_ali_incore_index
 	from fundamentals   import fshift
@@ -3347,11 +3182,15 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	from string         import replace
 	# 2D alignment using rotational ccf in polar coords and linear
 	# interpolation	
-	print_begin_msg("ali3d_d")
+	print_begin_msg("ali3d_m")
+
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+
 	if CTF :
 		from reconstruction import recons3d_4nn_ctf
 		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		#                     0          1         2             3                 4                   5               6
+		#                     0              1         2             3                     4                   5               6
 	else   : from reconstruction import recons3d_4nn
 
 	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
@@ -3362,11 +3201,11 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	else          :  yrng = get_input_from_string(yr)
 	step        = get_input_from_string(ts)
 	delta       = get_input_from_string(delta)
-	#if (an == "-1"):
-	#	an = []
-	#	for i in xrange(len(xrng)):   an.append(-1)
-	#else:
-	#	an = get_input_from_string(an)
+	if (an == "-1"):
+		an = []
+		for i in xrange(len(xrng)):   an.append(-1)
+	else:
+		an = get_input_from_string(an)
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
@@ -3378,45 +3217,49 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	print_msg("Maskfile                    : %s\n"%(maskfile))
 	print_msg("Inner radius                : %i\n"%(first_ring))
 
-	numref            = EMUtil.get_image_count(ref_vol)
-	volref = []
+	numref = EMUtil.get_image_count(ref_vol)
 	for  iref in xrange(numref):
-		vol     = EMData()
-		vol.read_image(ref_vol, iref)
-		volref.append(vol)
-	del vol
+		volref     = EMData()
+		volref.read_image(ref_vol, iref)
+		volref.write_image(os.path.join(outdir, "volf0000.hdf"))
 
-	nx      = volref[0].get_xsize()
-	if last_ring < 0:	last_ring = int(nx/2) - 2
-	if(maskfile):
-		if(type(maskfile) is types.StringType):	 mask3D = getImage(maskfile)
-		else: 	                                mask3D = maskfile
-	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
-	mask = model_circle(last_ring, nx, nx)
+	nx      = volref.get_xsize()
+	if last_ring < 0:	last_ring = nx//2 - 2
 
+	print_msg("Number of reference volumes : %i\n"%(firnumref))
 	print_msg("Outer radius                : %i\n"%(last_ring))
 	print_msg("Ring step                   : %i\n"%(rstep))
 	print_msg("X search range              : %s\n"%(xrng))
 	print_msg("Y search range              : %s\n"%(yrng))
 	print_msg("Translational step          : %s\n"%(step))
 	print_msg("Angular step                : %s\n"%(delta))
-	#print_msg("Angular search range        : %s\n"%(an))
+	print_msg("Angular search range        : %s\n"%(an))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("Reference projection method : %s\n"%(ref_a))
-	print_msg("Symmetry group              : %s\n\n"%(symmetry))
+	print_msg("Symmetry group              : %s\n\n"%(sym))
 
-	if(CTF):
-		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		#                        0      1              2            3               4                  5               6
+	if(maskfile):
+		if(type(maskfile) is types.StringType):	 mask3D = getImage(maskfile)
+		else: 	                                mask3D = maskfile
+	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
+	mask = model_circle(last_ring, nx, nx)
 
-	data = EMData.read_images(stack)
+
+	if pinfo:  outf = file(os.path.join(outdir, "progress"), "w")
+	else:     outf = None
+
+	active = EMUtil.get_all_attributes(data, 'active')
+	list_of_particles = []
+	for im in xrange(nima):
+		if(active[im]):  list_of_particles.append(im)
+	del active
+	data = EMData.read_images(stack, list_of_particles)
 	nima = len(data)
 	for im in xrange(nima):
-		data[im].set_attr('ID', im)
-		data[im].set_attr_dict({'group':im%numref})  # this pretends to be general.  However, for the time being no CTF
+		data[im].set_attr_dict({'group':im%numref})  # random assignment
 		if(CTF):
 			ctf_params = get_arb_params(data[im], ctf_dicts)
 			if(im == 0): data_had_ctf = ctf_params[6]
@@ -3426,115 +3269,95 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 				from filter import filt_ctf
 				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
 				data[im].set_attr('ctf_applied', 1)
+	# initialize data for the reference preparation function
+	ref_data = []
+	ref_data.append( mask3D )
+	ref_data.append( center )
+	ref_data.append( None )
+	ref_data.append( None )
 
-	soto = []
-	for im in xrange(nima):
-		from utilities import set_params_proj, get_params_proj
-		phi,theta,psi,s2x,s2y = get_params_proj( data[im] )
-		soto.append([phi,theta,psi,s2x,s2y])
-	from utilities import dropSpiderDoc
-	dropSpiderDoc(os.path.join(outdir, replace("params%4d"%(0),' ','0')),soto)
-	volref = []
-	for  iref in xrange(numref):
-		# calculate initial 3D
-		list_p = []
-		for im in xrange(nima):
-			if(data[im].get_attr('group') == iref):  list_p.append(im)
-		print  iref,len(list_p)
-		if(CTF): volref.append( recons3d_4nn_ctf(data, list_p, snr, 1, symmetry) )
-		else:	 volref.append( recons3d_4nn(data, list_p, symmetry) )
-		del list_p
-
-	for  iref in xrange(numref):  dropImage(volref[iref],os.path.join(outdir, replace("ref_vol%2d.spi"%iref,' ','0')), "s")
-
-	from utilities import ttime
 	# do the projection matching
-	for N_step in xrange(len(xrng)):
+	for N_step in xrange(lstp):
  		for Iter in xrange(max_iter):
-			for im in xrange(nima):  data[im].set_attr_dict({'peak':-1.0e23})
-			for iref in xrange(numref):
-				print  ttime()
-				#print " ali3d_m_MPI: ITERATION #",N_step*max_iter + Iter+1
-				proj_ali_incore_index(volref[iref], iref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, symmetry, MPI=False)
-			soto = []
-			for im in xrange(nima):
-				from utilities import set_params_proj, get_params_proj
-				peak = data[im].get_attr('peak')
-				phi,theta,psi,s2x,s2y = get_params_proj( data[im] )
-				group = data[im].get_attr('group')
-				soto.append([phi,theta,psi,s2x,s2y,peak,group])
-			from utilities import dropSpiderDoc
-			dropSpiderDoc(os.path.join(outdir, replace("params%4d"%(N_step*max_iter+Iter+1),' ','0')),soto)
-			for iref in xrange(numref):
-				"""
-				print  ttime()
-				list_p = []
-				get = 1
-				for im in xrange(nima):
-					if(data[im].get_attr('group') == iref):
-						if(get):
-							get = 0
-							list_p.append(im)
-						else:    get = 1
- 				if(CTF): vol1 = recons3d_4nn_ctf(data, list_p, snr, 1, symmetry)
-				else:    vol1 = recons3d_4nn(data, list_p, symmetry)
-				list_p = []
-				get = 0
-				for im in xrange(nima):
-					if(data[im].get_attr('group') == iref):
-						if(get):
-							get = 0
-							list_p.append(im)
-						else:    get = 1
-				if(CTF): vol2 = recons3d_4nn_ctf(data, list_p, snr, 1, symmetry)
-				else:	 vol2 = recons3d_4nn(data, list_p, symmetry)
-				if(mask3D == None):
-					fscc = fsc( vol1, vol2, 1.0, os.path.join(outdir, replace("resolution%2d%4d"%(iref, N_step*max_iter+Iter+1),' ','0')))
-				else:
-					sbo = Util.infomask(vol1, mask3D, False)
-					sbe = Util.infomask(vol2, mask3D, False)
-					fscc = fsc( (vol1 - sbo[0])*mask3D, (vol2 - sbe[0])*mask3D, 1.0, os.path.join(outdir, replace("resolution%2d%4d"%(iref, N_step*max_iter+Iter+1),' ','0')))
+			total_ter = N_step*max_iter + Iter+1
+			print_msg("ITERATION #%3d\n"%(total_iter))
 
+			tr = Transform({"type":"spider"})
+			peaks = [[-1.0e23, tr] for im in xrange(nima) ]
+			for iref in xrange(numref):
+				volref.read_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref)
+				if(an[N_step] == -1):	s(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
+				else:	           proj_ali_incore_local(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
+				for im in xrange(nima):
+					peak = data[im].get_attr('peak')
+					if(peak > peaks[im][0]):
+						peaks[im][0] = peak
+						peaks[im][1] = data[im].get_attr('xform.proj')
+						data[im].set_attr('group', iref)
+
+			for im in xrange(nima):
+				group = data[im].get_attr('group')
+				data[im].set_attr('xform.proj', peaks[im][1])
+			fscc = []
+			for iref in xrange(numref):
+				list_p = []
+				for im in xrange(nima):
+					if(iref == data[im].get_attr('group')):
+						list_p.append(im)
+				#  3D stuff
+				if(CTF): vol1 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
+				else:  vol1 = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+				if(CTF): vol2 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
+				else:  vol2 = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+
+				fscc.append(fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%02d_%04d"%(iref, N_step*max_iter+Iter+1))))
 				del vol1
 				del vol2
-				"""
-				print  ttime()
+			
 				# calculate new and improved 3D
-				list_p = []
-				for im in xrange(nima):
-					if(data[im].get_attr('group') == iref):  list_p.append(im)
-				print  iref,len(list_p)
-				if(CTF): volref[iref] = recons3d_4nn_ctf(data, list_p, snr, 1, symmetry)
-				else:	 volref[iref] = recons3d_4nn(data, list_p, symmetry)
+				if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, symmetry)
+				else:	 volref = recons3d_4nn(data, list_p, symmetry)
 				del list_p
-				print ttime()
-				dropImage(volref[iref],os.path.join(outdir, replace("vol%2d%4d.spi"%(iref, N_step*max_iter+Iter+1),' ','0')), "s")
-				#if(fscc[1][0] < 0.5):  fscc[1][0] = 1.0
-				#if(fscc[1][1] < 0.5):  fscc[1][1] = 1.0
-				#fl, fh = filt_params(fscc)
-				#filt = filt_from_fsc(fscc, 0.075)
-				# here figure the filtration parameters and filter vol for the  next iteration
-				#fl, fh = filt_params(res)
-				#lk = 2
-				#while(fscc[1][lk] >0.98 and fscc[0][lk]<0.25):
-				#	lk+=1
-				#fl = fscc[0][lk]
-				#fh = min(fl+0.1,0.49)
-				#print "fl, fh, iter",fl,fh,Iter
-				#volref[iref] = filt_btwl(volref[iref], fl, fh)
-				volref[iref] = filt_btwl(volref[iref], 0.2, 0.3)
-				if(center == 1):
-					cs   = volref[iref].phase_cog()
-					volref[iref]  = fshift(volref[iref], -cs[0], -cs[1] -cs[2])
-				dropImage(volref[iref],os.path.join(outdir, replace("volf%2d%4d.spi"%(iref, N_step*max_iter+Iter+1),' ','0')), "s")
-	del  volref
-	#  here we  write header info
-	if(CTF and data_had_ctf == 0):
-		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-	from utilities import write_headers
-	write_headers( stack, data, range(nima))
-	print_end_msg("ali3d_m")
+				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 
+			# add all volumes
+			volref = get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), 0)
+			for iref in xrange(numref):
+				Util.add_img(volref, get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref))
+			Util.mul_scalar(volref, 1.0/float(numref))
+			# filter the average volume
+			from filter import fit_tanh, filt_tanl
+			flmin = 1.0
+			flmax = -1.0
+			for iref in xrange(numref):
+				fl, aa = fit_tanh( fscc[iref] )
+				if (fl < flmin):
+					flmin = fl
+					aamin = aa
+				if (fl > flmax):
+					flmax = fl
+					aamax = aa
+			volref = filt_tanl(volref, (flmax+flmin)/2.0, (aamax+aamin)/2.0)
+			
+			
+			if(center == 1):
+				from fundamentals import fshift
+				cs   = volref.phase_cog()
+				volref = fshift(volref, -cs[0], -cs[1] -cs[2])
+
+			# align each volume to the average
+			for iref in xrange(numref):
+				vol = get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
+
+
+			#  here we  write header info
+			if(CTF and data_had_ctf == 0):
+				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
+			from utilities import write_headers
+			write_headers( stack, data, range(nima))
+			if(CTF and data_had_ctf == 0):
+				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 1)
+	print_end_msg("ali3d_m")
 
 def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
             xr              ="4 2  2  1",      yr="-1",
@@ -7162,219 +6985,6 @@ def ali3d_eB_MPI__(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, 
 	#	for im in xrange(image_start, image_end): data[im-image_start].set_attr('ctf_applied', 0)
 	#if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	#else: send_attr_dict(main_node, data, par_str, image_start, image_end)
-
-"""
-def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou = -1, rw = 1.0,  npad = 1, CTF = False, sign = 1, sym ="c1", random_angles = 0):
-"""
-"""
-	Perform 3D reconstruction using selected particle images, 
-	and calculate spectrum signal noise ratio (SSNR).
-	1. The selection file is supposed to be in SPIDER text format.
-	2. The 3D alignment parameters have been written in headers of the particle images.
-""" 
-""" 
-
-	from global_def import MPI
-	if MPI:
-		ssnr3d_MPI(stack, output_volume, ssnr_text_file, mask, ou, rw, npad, CTF, sign, sym, random_angles)
-		return
-
-	from utilities import readSpiderDoc, dropImage, get_arb_params, set_arb_params, model_circle, get_im
-	from filter import filt_ctf
-	from reconstruction import recons3d_nn_SSNR, recons3d_4nn, recons3d_4nn_ctf
-	from projection import prep_vol, prgs
-	from utilities import print_begin_msg, print_end_msg, print_msg
-	
-	print_begin_msg("ssnr3d")
-
-	if output_volume  is None: output_volume  = "SSNR"
-	if ssnr_text_file is None: ssnr_text_file = "ssnr"
-
-	print_msg("Input stack                 : %s\n"%(stack))
-	print_msg("Output volume               : %s\n"%(output_volume))	
-	print_msg("SSNR text file              : %s\n"%(ssnr_text_file))
-	print_msg("Outer radius                : %i\n"%(ou))
-	print_msg("Ring width                  : %i\n"%(rw))
-	print_msg("Padding factor              : %i\n"%(npad))
-	print_msg("data with CTF               : %s\n"%(CTF))
-	print_msg("CTF sign                    : %i\n"%(sign))
-	print_msg("Symmetry group              : %s\n\n"%(sym))
-	
-	nima = EMUtil.get_image_count(stack)
-	fring_width = float(rw)
-	if mask:
-		import  types
-		if(type(mask) is types.StringType):
-			print_msg("Maskfile                    : %s\n"%(mask))
-			mask2D=get_im(mask)
-		else:
-			print_msg("Maskfile                    : user provided in-core mask")
-			mask2D = mask
-	else:
-		print_msg("Maskfile                    : None")
-		mask2D = None
-
-	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(stack, mask2D, rw, npad, sign, sym, CTF, random_angles)
-	dropImage(vol_ssnr1, output_volume+"1.spi", "s")
-	outf = file(ssnr_text_file+"1.txt", "w")
-	for i in xrange(len(ssnr1)):
-		datstrings = []
-		datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
-		datstrings.append("  %15e" % ssnr1[1][i])   # SSNR
-		datstrings.append("  %15e" % ssnr1[2][i])   # variance divided by two numbers
-		datstrings.append("  %15f" % ssnr1[3][i])		 # number of points in the shell
-		datstrings.append("  %15f" % ssnr1[4][i])		 # number of added Fourier points
-		datstrings.append("  %15f" % ssnr1[5][i])		 # square of signal
-		datstrings.append("\n")
-		outf.write("".join(datstrings))
-	outf.close()
-	print_end_msg("ssnr3d")
-	return ssnr1, vol_ssnr1
-	'''
-	# perform 3D reconstruction
-	if CTF:
-		snr = 1.0e20
-		vol = recons3d_4nn_ctf(stack, range(nima), snr, sign, sym)
-	else :   vol = recons3d_4nn(stack, range(nima), sym)
-	# re-project the reconstructed volume
-	if CTF :img_dicts = ["phi", "theta", "psi", "s2x", "s2y", "defocus", "Pixel_size",\
-                  "voltage", "Cs", "amp_contrast", "sign", "B_factor", "active", "ctf_applied"]
-	else   :img_dicts = ["phi", "theta", "psi", "s2x", "s2y", "active"]
-	nx = vol.get_xsize()
-	if int(ou) == -1: radius = nx//2 - 1
-	else :            radius = int(ou)
-	#
-	prjlist = []
-	vol *= model_circle(radius, nx, nx, nx)
-	volft,kb = prep_vol(vol)
-	del vol
-	for i in xrange(nima):
-		e = EMData()
-		e.read_image(stack, i, True)
-		e.set_attr('sign', 1)
-		params = get_arb_params(e, img_dicts)
-		#proj = project(vol,[params[0], params[1], params[2], params[3], params[4]] , radius)
-		proj = prgs(volft, kb, [params[0], params[1], params[2], params[3], params[4]])
-		if CTF :  proj = filt_ctf(proj, params[5], params[8], params[7], params[6], params[9], params[11])
-		set_arb_params(proj, params, img_dicts)
-		if(CTF):	 proj.set_attr('ctf_applied', 1)
-		else:		 proj.set_attr('ctf_applied', 0)
-		prjlist.append(proj)
-	del volft
-	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(prjlist, mask2D, CTF, sym, npad, sign, fring_width, filename=ssnr_text_file+"2.txt")
-	qt = 0.0
-	for i in xrange(len(ssnr1)):
-		tqt = ssnr1[i][1] - ssnr2[i][1]
-		if( tqt<qt ): qt = tqt
-	for i in xrange(len(ssnr1)): ssnr1[i][1] -= (ssnr2[i][1] + qt)
-	from utilities import dropSpiderDoc19289
-	dropSpiderDoc(ssnr_text_file+".doc", ssnr1)
-	dropImage(vol_ssnr2, output_volume+"2.spi", "s")
-	'''
-
-def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", random_angles = 0):
-	from reconstruction import recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
-	from string import replace
-	from time import time
-	from utilities import info, get_arb_params, set_arb_params, bcast_EMData_to_all, model_blank, model_circle, get_im, dropImage
-	from filter import filt_ctf
-	from projection import prep_vol, prgs
-
-	if output_volume  is None: output_volume  = "SSNR.spi"
-	if ssnr_text_file is None: ssnr_text_file = "ssnr"
-	from utilities import readSpiderDoc
-
-	#   TWO NEXT LINEs FOR EXTRA PROJECT
-	#params_ref = readSpiderDoc("params_new.txt")
-	#headers = ["phi", "theta", "psi", "s2x", "s2y"]
-
-	nima = EMUtil.get_image_count(stack)
-	nproc = mpi_comm_size(MPI_COMM_WORLD)
-	myid  = mpi_comm_rank(MPI_COMM_WORLD)
-
-	#nimage_per_node = nima/nproc
-	#image_start     = myid * nimage_per_node
-	#if (myid == nproc-1): image_end = nima
-	#else:	              image_end = image_start + nimage_per_node
-	image_start, image_end = MPI_start_end(nima, nproc, myid)
-
-	if mask:
-		import  types
-		if(type(mask) is types.StringType):  mask2D=get_im(mask)
-		else: mask2D = mask
-	else:
-		mask2D = None
-
-	prjlist = []
-	for i in range(image_start, image_end):
-		prj = EMData()
-		prj.read_image( stack, i)
-		#  TWO NEXT LINEs FOR EXTRA PROJECT
-		#tmp_par = [params_ref[i][0], params_ref[i][1], params_ref[i][2], params_ref[i][3], params_ref[i][4], 0]
-		#set_arb_params(prj, params_ref[i], headers)
-		prjlist.append( prj )
-	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
-	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
-	if myid == 0:
-		dropImage(vol_ssnr1, output_volume+"1.spi", "s")
-		outf = file(ssnr_text_file+"1.txt", "w")
-		for i in xrange(len(ssnr1)):
-			datstrings = []
-			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
-			datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
-			datstrings.append("  %15e" % ssnr1[2][i])    # variance divided by two numbers
-			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
-			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
-			datstrings.append("  %15f" % ssnr1[5][i])    # square of signal
-			datstrings.append("\n")
-			outf.write("".join(datstrings))
-		outf.close()
-		return ssnr1, vol_ssnr1
-
-	'''
-	nx  = prjlist[0].get_xsize()
-	vol = model_blank(nx,nx,nx)
-	if ou == -1: radius = int(nx/2) - 1
-	else:        radius = int(ou)
-	if CTF :
-		snr = 1.0e20
-		if myid == 0 : vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
-		else :  	     recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
-	else  :
-		if myid == 0 : vol = recons3d_4nn_MPI(myid, prjlist, sym)
-		else:		     recons3d_4nn_MPI(myid, prjlist, sym)
-	bcast_EMData_to_all(vol, myid, 0)
-	if CTF: img_dicts = ["phi", "theta", "psi", "s2x", "s2y", "defocus", "Pixel_size",\
-	                    "voltage", "Cs", "amp_contrast", "sign", "B_factor", "active", "ctf_applied"]
-	else   : img_dicts = ["phi", "theta", "psi", "s2x", "s2y"]
-	re_prjlist = []
-	vol *= model_circle(radius, nx, nx, nx)
-	volft,kb = prep_vol(vol)
-	del vol
-	for i in xrange(image_start, image_end):
-		prjlist[i-image_start].set_attr('sign', 1)
-		params = get_arb_params(prjlist[i-image_start], img_dicts)
-		#proj   = project(vol, [params[0], params[1], params[2], params[3], params[4]] , radius)
-		proj = prgs(volft, kb, [params[0], params[1], params[2], params[3], params[4]])
-		if CTF: proj = filt_ctf(proj, params[5], params[8], params[7], params[6], params[9], params[11])
-		set_arb_params(proj,params,img_dicts)
-		if(CTF):	 proj.set_attr('ctf_applied', 1)
-		else:		 proj.set_attr('ctf_applied', 0)
-		re_prjlist.append(proj)
-	del volft
-	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, ssnr_text_file+"2.txt", mask2D, rw, npad, sign, sym, CTF)
-	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, ssnr_text_file+"2.txt", mask2D, rw, npad, sign, sym, CTF)
-	if myid == 0 :
-		qt = 0.0
-		for i in xrange(len(ssnr1)):
-			tqt = ssnr1[i][1] - ssnr2[i][1]
-			if( tqt<qt ): qt = tqt
-		for i in xrange(len(ssnr1)): ssnr1[i][1] -= (ssnr2[i][1] + qt)
-		from utilities import dropSpiderDoc
-		dropSpiderDoc(ssnr_text_file+".doc", ssnr1)
-		dropImage(vol_ssnr2, output_volume+"2.spi", "s")
-	'''
-"""
 	
 def ali3d_f(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = None, chunk = -1.0, MPI=False):
 	if MPI:
@@ -8700,8 +8310,8 @@ def ali_vol_2(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 	data  = [vol, refv, mask]
 	new_params = [0.0]*6
 	new_params = amoeba(new_params, scale, ali_vol_func, 1.e-1, 1.e-1, 500, data)
-        vol = rot_shift3D(vol, new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
-        return vol
+	vol = rot_shift3D(vol, new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
+	return vol
         
 def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
 	#rotation and shift
@@ -8718,12 +8328,12 @@ def ali_vol_3(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc
 	data=[vol, refv, mask]
 	new_params = [0.0]*6
 	opt_params,funval,niter = amoeba(new_params, scale, ali_vol_func, 1.e-1, 1.e-1, 500, data)
-        return opt_params
+	return opt_params
  
 def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc"):
 	#rotation and shift
 	from alignment    import ali_vol_func
-	from utilities    import get_im, model_circle, get_params3D, set_params3D
+	from utilities    import getImage, model_circle, get_params3D, set_params3D
 	from utilities    import amoeba, compose_transform3
 	from fundamentals import rot_shift3D
 	ref = get_im(refv)
@@ -8738,12 +8348,12 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 	print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
-	e = get_im(vol)
+	e = getImage(vol)
 	params = get_params3D(e)
 	print  params
 	e = rot_shift3D(e, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 
-	e = get_im(vol)
+	e = getImage(vol)
 	params = get_arb_params(e, names_params)
 	print  " input params ",params
 	data=[e, ref, mask, params, discrepancy]
@@ -10396,7 +10006,7 @@ def refvol( vollist, fsclist, output, mask ):
 	nvol = len(vollist)
 	assert len(fsclist)==nvol
 
-        fscs = [None]*nvol
+	fscs = [None]*nvol
 	vols = [None]*nvol
 	for i in xrange(nvol):
 		fscs[i] = read_fsc( fsclist[i] )

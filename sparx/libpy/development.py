@@ -14636,3 +14636,218 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
 
 """
+
+
+
+"""
+def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou = -1, rw = 1.0,  npad = 1, CTF = False, sign = 1, sym ="c1", random_angles = 0):
+"""
+"""
+	Perform 3D reconstruction using selected particle images, 
+	and calculate spectrum signal noise ratio (SSNR).
+	1. The selection file is supposed to be in SPIDER text format.
+	2. The 3D alignment parameters have been written in headers of the particle images.
+""" 
+""" 
+
+	from global_def import MPI
+	if MPI:
+		ssnr3d_MPI(stack, output_volume, ssnr_text_file, mask, ou, rw, npad, CTF, sign, sym, random_angles)
+		return
+
+	from utilities import readSpiderDoc, dropImage, get_arb_params, set_arb_params, model_circle, get_im
+	from filter import filt_ctf
+	from reconstruction import recons3d_nn_SSNR, recons3d_4nn, recons3d_4nn_ctf
+	from projection import prep_vol, prgs
+	from utilities import print_begin_msg, print_end_msg, print_msg
+	
+	print_begin_msg("ssnr3d")
+
+	if output_volume  is None: output_volume  = "SSNR"
+	if ssnr_text_file is None: ssnr_text_file = "ssnr"
+
+	print_msg("Input stack                 : %s\n"%(stack))
+	print_msg("Output volume               : %s\n"%(output_volume))	
+	print_msg("SSNR text file              : %s\n"%(ssnr_text_file))
+	print_msg("Outer radius                : %i\n"%(ou))
+	print_msg("Ring width                  : %i\n"%(rw))
+	print_msg("Padding factor              : %i\n"%(npad))
+	print_msg("data with CTF               : %s\n"%(CTF))
+	print_msg("CTF sign                    : %i\n"%(sign))
+	print_msg("Symmetry group              : %s\n\n"%(sym))
+	
+	nima = EMUtil.get_image_count(stack)
+	fring_width = float(rw)
+	if mask:
+		import  types
+		if(type(mask) is types.StringType):
+			print_msg("Maskfile                    : %s\n"%(mask))
+			mask2D=get_im(mask)
+		else:
+			print_msg("Maskfile                    : user provided in-core mask")
+			mask2D = mask
+	else:
+		print_msg("Maskfile                    : None")
+		mask2D = None
+
+	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(stack, mask2D, rw, npad, sign, sym, CTF, random_angles)
+	dropImage(vol_ssnr1, output_volume+"1.spi", "s")
+	outf = file(ssnr_text_file+"1.txt", "w")
+	for i in xrange(len(ssnr1)):
+		datstrings = []
+		datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
+		datstrings.append("  %15e" % ssnr1[1][i])   # SSNR
+		datstrings.append("  %15e" % ssnr1[2][i])   # variance divided by two numbers
+		datstrings.append("  %15f" % ssnr1[3][i])		 # number of points in the shell
+		datstrings.append("  %15f" % ssnr1[4][i])		 # number of added Fourier points
+		datstrings.append("  %15f" % ssnr1[5][i])		 # square of signal
+		datstrings.append("\n")
+		outf.write("".join(datstrings))
+	outf.close()
+	print_end_msg("ssnr3d")
+	return ssnr1, vol_ssnr1
+	'''
+	# perform 3D reconstruction
+	if CTF:
+		snr = 1.0e20
+		vol = recons3d_4nn_ctf(stack, range(nima), snr, sign, sym)
+	else :   vol = recons3d_4nn(stack, range(nima), sym)
+	# re-project the reconstructed volume
+	if CTF :img_dicts = ["phi", "theta", "psi", "s2x", "s2y", "defocus", "Pixel_size",\
+                  "voltage", "Cs", "amp_contrast", "sign", "B_factor", "active", "ctf_applied"]
+	else   :img_dicts = ["phi", "theta", "psi", "s2x", "s2y", "active"]
+	nx = vol.get_xsize()
+	if int(ou) == -1: radius = nx//2 - 1
+	else :            radius = int(ou)
+	#
+	prjlist = []
+	vol *= model_circle(radius, nx, nx, nx)
+	volft,kb = prep_vol(vol)
+	del vol
+	for i in xrange(nima):
+		e = EMData()
+		e.read_image(stack, i, True)
+		e.set_attr('sign', 1)
+		params = get_arb_params(e, img_dicts)
+		#proj = project(vol,[params[0], params[1], params[2], params[3], params[4]] , radius)
+		proj = prgs(volft, kb, [params[0], params[1], params[2], params[3], params[4]])
+		if CTF :  proj = filt_ctf(proj, params[5], params[8], params[7], params[6], params[9], params[11])
+		set_arb_params(proj, params, img_dicts)
+		if(CTF):	 proj.set_attr('ctf_applied', 1)
+		else:		 proj.set_attr('ctf_applied', 0)
+		prjlist.append(proj)
+	del volft
+	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(prjlist, mask2D, CTF, sym, npad, sign, fring_width, filename=ssnr_text_file+"2.txt")
+	qt = 0.0
+	for i in xrange(len(ssnr1)):
+		tqt = ssnr1[i][1] - ssnr2[i][1]
+		if( tqt<qt ): qt = tqt
+	for i in xrange(len(ssnr1)): ssnr1[i][1] -= (ssnr2[i][1] + qt)
+	from utilities import dropSpiderDoc19289
+	dropSpiderDoc(ssnr_text_file+".doc", ssnr1)
+	dropImage(vol_ssnr2, output_volume+"2.spi", "s")
+	'''
+
+def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", random_angles = 0):
+	from reconstruction import recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
+	from string import replace
+	from time import time
+	from utilities import info, get_arb_params, set_arb_params, bcast_EMData_to_all, model_blank, model_circle, get_im, dropImage
+	from filter import filt_ctf
+	from projection import prep_vol, prgs
+
+	if output_volume  is None: output_volume  = "SSNR.spi"
+	if ssnr_text_file is None: ssnr_text_file = "ssnr"
+	from utilities import readSpiderDoc
+
+	#   TWO NEXT LINEs FOR EXTRA PROJECT
+	#params_ref = readSpiderDoc("params_new.txt")
+	#headers = ["phi", "theta", "psi", "s2x", "s2y"]
+
+	nima = EMUtil.get_image_count(stack)
+	nproc = mpi_comm_size(MPI_COMM_WORLD)
+	myid  = mpi_comm_rank(MPI_COMM_WORLD)
+
+	#nimage_per_node = nima/nproc
+	#image_start     = myid * nimage_per_node
+	#if (myid == nproc-1): image_end = nima
+	#else:	              image_end = image_start + nimage_per_node
+	image_start, image_end = MPI_start_end(nima, nproc, myid)
+
+	if mask:
+		import  types
+		if(type(mask) is types.StringType):  mask2D=get_im(mask)
+		else: mask2D = mask
+	else:
+		mask2D = None
+
+	prjlist = []
+	for i in range(image_start, image_end):
+		prj = EMData()
+		prj.read_image( stack, i)
+		#  TWO NEXT LINEs FOR EXTRA PROJECT
+		#tmp_par = [params_ref[i][0], params_ref[i][1], params_ref[i][2], params_ref[i][3], params_ref[i][4], 0]
+		#set_arb_params(prj, params_ref[i], headers)
+		prjlist.append( prj )
+	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
+	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+	if myid == 0:
+		dropImage(vol_ssnr1, output_volume+"1.spi", "s")
+		outf = file(ssnr_text_file+"1.txt", "w")
+		for i in xrange(len(ssnr1)):
+			datstrings = []
+			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
+			datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
+			datstrings.append("  %15e" % ssnr1[2][i])    # variance divided by two numbers
+			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
+			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
+			datstrings.append("  %15f" % ssnr1[5][i])    # square of signal
+			datstrings.append("\n")
+			outf.write("".join(datstrings))
+		outf.close()
+		return ssnr1, vol_ssnr1
+
+	'''
+	nx  = prjlist[0].get_xsize()
+	vol = model_blank(nx,nx,nx)
+	if ou == -1: radius = int(nx/2) - 1
+	else:        radius = int(ou)
+	if CTF :
+		snr = 1.0e20
+		if myid == 0 : vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+		else :  	     recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+	else  :
+		if myid == 0 : vol = recons3d_4nn_MPI(myid, prjlist, sym)
+		else:		     recons3d_4nn_MPI(myid, prjlist, sym)
+	bcast_EMData_to_all(vol, myid, 0)
+	if CTF: img_dicts = ["phi", "theta", "psi", "s2x", "s2y", "defocus", "Pixel_size",\
+	                    "voltage", "Cs", "amp_contrast", "sign", "B_factor", "active", "ctf_applied"]
+	else   : img_dicts = ["phi", "theta", "psi", "s2x", "s2y"]
+	re_prjlist = []
+	vol *= model_circle(radius, nx, nx, nx)
+	volft,kb = prep_vol(vol)
+	del vol
+	for i in xrange(image_start, image_end):
+		prjlist[i-image_start].set_attr('sign', 1)
+		params = get_arb_params(prjlist[i-image_start], img_dicts)
+		#proj   = project(vol, [params[0], params[1], params[2], params[3], params[4]] , radius)
+		proj = prgs(volft, kb, [params[0], params[1], params[2], params[3], params[4]])
+		if CTF: proj = filt_ctf(proj, params[5], params[8], params[7], params[6], params[9], params[11])
+		set_arb_params(proj,params,img_dicts)
+		if(CTF):	 proj.set_attr('ctf_applied', 1)
+		else:		 proj.set_attr('ctf_applied', 0)
+		re_prjlist.append(proj)
+	del volft
+	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, ssnr_text_file+"2.txt", mask2D, rw, npad, sign, sym, CTF)
+	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, ssnr_text_file+"2.txt", mask2D, rw, npad, sign, sym, CTF)
+	if myid == 0 :
+		qt = 0.0
+		for i in xrange(len(ssnr1)):
+			tqt = ssnr1[i][1] - ssnr2[i][1]
+			if( tqt<qt ): qt = tqt
+		for i in xrange(len(ssnr1)): ssnr1[i][1] -= (ssnr2[i][1] + qt)
+		from utilities import dropSpiderDoc
+		dropSpiderDoc(ssnr_text_file+".doc", ssnr1)
+		dropImage(vol_ssnr2, output_volume+"2.spi", "s")
+	'''
+"""

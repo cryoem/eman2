@@ -526,23 +526,20 @@ def filt_matched(ima, SNR, Pref):
 	return res	
 
 def filt_vols( vols, fscs, mask3D ):
-	from EMAN2         import Util
 	from math          import sqrt
 	from filter        import fit_tanh, filt_tanl, filt_table
 	from fundamentals  import rops_table
 	from morphology    import threshold
 
-	flmin = None
-	aamin = None
-	flmax = None
-	idmax = None
+	flmin = 1.0
+	flmax = -1.0
 	nvol = len(vols)
 	for i in xrange(nvol):
 		fl, aa = fit_tanh( fscs[i] )
-		if (flmin is None) or (fl < flmin):
+		if (fl < flmin):
 			flmin = fl
 			aamin = aa
-		if (flmax is None) or (fl > flmax):
+		if (fl > flmax):
 			flmax = fl
 			idmax = i
 	print " Filter tanl, parameters: ",flmin-0.05, "  ",  aamin
