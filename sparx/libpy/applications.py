@@ -3338,8 +3338,8 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
 	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc
-	from filter	    import filt_params,filt_btwl, filt_from_fsc, filt_table
-	from alignment	    import proj_ali_incore_index
+	from filter	        import filt_params,filt_btwl, filt_from_fsc, filt_table
+	from alignment	  import proj_ali_incore_index
 	from fundamentals   import fshift
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os
