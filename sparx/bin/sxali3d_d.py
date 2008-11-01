@@ -74,7 +74,7 @@ def main():
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		from applications import ali3d_d
 		global_def.BATCH = True
-		ali3d_d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debud)
+		ali3d_d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
