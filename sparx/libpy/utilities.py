@@ -2175,12 +2175,11 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			set_arb_params(dummy, nvl, list_params)
 			write_header(stack, dummy, imm)
 
-
 def send_attr_dict(main_node, data, list_params, image_start, image_end):
 	import types
 	from utilities import get_arb_params
-	from mpi 	  import mpi_send
-	from mpi 	  import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
+	from mpi 	   import mpi_send
+	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_TAG_UB, MPI_COMM_WORLD
 	TransType = type(Transform())
 	#  This function is called from a node other than the main node
 	mpi_send([image_start, image_end], 2, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)

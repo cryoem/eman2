@@ -891,8 +891,8 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 	import os
 	from statistics import fsc_mask
 	from utilities  import model_blank, reduce_EMData_to_root, getImage, send_EMData, recv_EMData
-	from random import randint
-        from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from random     import randint
+	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 
 	if nproc==1:

@@ -274,8 +274,7 @@ def ref_7grp( ref_data ):
 
 def spruce_up( ref_data ):
 	from utilities      import print_msg
-	from filter         import fit_tanh, filt_tanl
-	from fundamentals   import fshift
+	from filter         import filt_tanl
 	from morphology     import threshold
 	#  Prepare the reference in 3D alignment, i.e., low-pass filter and center.
 	#  Input: list ref_data
@@ -296,7 +295,7 @@ def spruce_up( ref_data ):
 	# Apply B-factor
 	from filter import filt_gaussinv
 	from math import sqrt
-	B = 1.0/sqrt(2.*20.0)
+	B = 1.0/sqrt(2.*10.0)
 	volf = filt_gaussinv(volf, B, False)
 	nx = volf.get_xsize()
 	from utilities import model_circle
@@ -304,15 +303,17 @@ def spruce_up( ref_data ):
 
 	volf -= stat[0]
 	Util.mul_img(volf, ref_data[0])
-	#fl, aa = fit_tanh(ref_data[3])
-	fl = 0.32
-	aa = 0.03
+	fl, aa = fit_tanh(ref_data[3])
+	#fl = 0.32
+	#aa = 0.03
+	aa /= 2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = filt_tanl(volf, fl, aa)
 	if(ref_data[1] == 1):
+		from fundamentals   import fshift
 		cs    = volf.phase_cog()
-		msg = "Center x =	%10.3f        Center y       = %10.3f        Center z       = %10.3f\n"%(cs[0], cs[1], cs[2])
+		msg = "Center x =	%10.3f  y = %10.3f  z = %10.3f\n"%(cs[0], cs[1], cs[2])
 		print_msg(msg)
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs

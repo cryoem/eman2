@@ -2982,11 +2982,11 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				from utilities import rotate_3D_shift
 				rotate_3D_shift(data, cs)
 			dropImage(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
-	#  here we  write header info
-	if(CTF and data_had_ctf == 0):
-		for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
-	from utilities import write_headers
-	write_headers( stack, data, list_of_particles)
+			#  here we  write header info
+			if(CTF and data_had_ctf == 0):
+				for im in xrange(nima): data[im].set_attr('ctf_applied', 0)
+			from utilities import write_headers
+			write_headers( stack, data, list_of_particles)
 	print_end_msg("ali3d_d")
 
 def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
@@ -3119,7 +3119,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
 				data[im].set_attr('ctf_applied', 1)
 	if(debug) :
-		finfo.write( '%d loaded  \n' % len(data)
+		finfo.write( '%d loaded  \n' % len(data) )
 		finfo.flush()
 	del list_of_particles
 	if (myid == main_node):
@@ -3152,13 +3152,13 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 					rotate_3D_shift(data, cs)
 				dropImage(vol,  os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 			bcast_EMData_to_all(vol, myid, main_node)
-	# write out headers  and STOP, under MPI writing has to be done sequentially
-	mpi_barrier(MPI_COMM_WORLD)
-	if(CTF and data_had_ctf == 0):
-		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-	par_str = ['xform.proj', 'ID']
-	if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
+			# write out headers  and STOP, under MPI writing has to be done sequentially
+			mpi_barrier(MPI_COMM_WORLD)
+			#if(CTF and data_had_ctf == 0):
+			#	for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
+			par_str = ['xform.proj', 'ID']
+			if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+			else:                  send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if (myid == main_node): print_end_msg("ali3d_d_MPI")
 
 def ali3d_mN(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
@@ -9492,7 +9492,7 @@ def extract_value( s ):
 	return s 
 
 def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup, restore, delete):
-      from string    import split
+	from string    import split
 	from utilities import write_header, file_type
 	from random    import random, randint
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj
@@ -9656,7 +9656,6 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 			elif fprint:
 				print " "
 	if ext == "bdb": DB.close()
-	
 
 def imgstat_ccc( stacks, rad ):
 	from EMAN2 import EMUtil
