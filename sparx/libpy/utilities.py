@@ -1867,11 +1867,7 @@ def rotate_3D_shift(data, shift3d):
 	for i in xrange(nimage):
 		phi,theta,psi,s2xo,s2yo = get_params_proj( data[i] )
 		phi,theta,psi,s2x,s2y,dummy,dummy = compose_transform3(0.0,0.0,0.0,shift3d[0],shift3d[1],shift3d[2],1.0,phi,theta,psi,0.0,0.0,0.0,1.0)
-		#s2xn = s2xo-s2x
-		#s2yn = s2yo-s2y
-		#data[i].set_attr_dict({'s2x':s2xn})
-		#data[i].set_attr_dict({'s2y':s2yn})
-		set_params_proj( data[i], [phi,theta,psi,s2x,s2y] )
+		set_params_proj( data[i], [phi, theta, psi, s2xo-s2x, s2yo-s2y] )
 
 def sym_vol(image, symmetry="c1"):
 	" Symmetrize a volume"
@@ -2374,54 +2370,54 @@ def file_type(name):
 		elif(name[-4:-3] == "."):  return name[-3:]
 	ERROR("Unacceptable file format","file_type",1)
 
-def get_params2D(ima):
+def get_params2D(ima, xform = "xform.align2d"):
 	"""
 	  retrieve 2D alignment parameters from the header
 	  alpha tx ty mirror scale
 	"""
-	t = ima.get_attr("xform.align2d")
+	t = ima.get_attr(xform)
 	d = t.get_params("2D")
 	return d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]
 
-def set_params2D(ima, p):
+def set_params2D(ima, p, xform = "xform.align2d"):
 	"""
 	  set 2D alignment parameters in the header
 	  alpha tx ty mirror scale
 	"""
 	t = Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
-	ima.set_attr("xform.align2d", t)
+	ima.set_attr(xform, t)
 
-def get_params3D(ima):
+def get_params3D(ima, xform = "xform.align3d"):
 	"""
 	  retrieve 3D alignment parameters from the header
 	  phi  theta  psi  tx  ty  tz mirror scale
 	"""
-	t = ima.get_attr("xform.align3d")
+	t = ima.get_attr(xform)
 	d = t.get_params("spider")
 	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]
 
-def set_params3D(ima, p):
+def set_params3D(ima, p, xform = "xform.align3d"):
 	"""
 	  set 3D alignment parameters in the header
 	  phi  theta  psi  tx  ty  tz mirror scale
 	"""
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
-	ima.set_attr("xform.align3d", t)
+	ima.set_attr(xform, t)
 
-def get_params_proj(ima):
+def get_params_proj(ima, xform = "xform.proj"):
 	"""
 	  retrieve projection alignment parameters from the header
 	  phi  theta  psi  s2x  s2y
 	"""
-	t = ima.get_attr("xform.proj")
+	t = ima.get_attr(xform)
 	d = t.get_params("spider")
 	return  d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"]
 
-def set_params_proj(ima, p):
+def set_params_proj(ima, p, xform = "xform.proj"):
 	"""
 	  set projection alignment parameters in the header
 	  phi  theta  psi  s2x  s2y
 	"""
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
 	t.set_trans(Vec2f(-p[3], -p[4]))
-	ima.set_attr("xform.proj", t)
+	ima.set_attr(xform, t)

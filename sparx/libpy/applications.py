@@ -9101,7 +9101,7 @@ def extract_value( s ):
 	
 	return s 
 
-def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup, restore, delete):
+def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup, suffix, restore, delete):
 	from string    import split
 	from utilities import write_header, file_type
 	from random    import random, randint
@@ -9134,7 +9134,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				return
 
 			parmvalues = split(line)
-			if params[0] == "xform.align2d":
+			if params[0][:13] == "xform.align2d":
 				if len(parmvalues) < 3:
 					print "Not enough parameters!"
 					return
@@ -9149,8 +9149,8 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 					scale = extract_value(parmvalues[4])
 				else:
 					scale = 1.0
-				set_params2D(img, [alpha, sx, sy, mirror, scale])
-			elif params[0] == "xform.proj":
+				set_params2D(img, [alpha, sx, sy, mirror, scale], params[0])
+			elif params[0][:10] == "xform.proj":
 				if len(parmvalues) < 5:
 					print "Not enough parameters!"
 					return
@@ -9159,8 +9159,8 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				psi = extract_value(parmvalues[2])
 				s2x = extract_value(parmvalues[3])
 				s2y = extract_value(parmvalues[4])
-				set_params_proj(img, [phi, theta, psi, s2x, s2y])				
-			elif params[0] == "xform.align3d":
+				set_params_proj(img, [phi, theta, psi, s2x, s2y], params[0])				
+			elif params[0][:13] == "xform.align3d":
 				if len(parmvalues) < 8:
 					print "Not enough parameters!"
 					return
@@ -9173,7 +9173,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				mirror = int(extract_value(parmvalues[6]))
 				scale = extract_value(parmvalues[7])
 				print [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
-				set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale])				
+				set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], params[0])				
 			else:
 				if len(params)!=len(parmvalues):
 					print "Error: %d params need to be set, while %d values are provided in line %d of file." % ( len(params), len(parmvalues), i )
@@ -9185,35 +9185,36 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 		else:
 			for p in params:
 				if zero:
-					if p == "xform.align2d":
-						set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0])
-					elif p == "xform.proj":
-						set_params_proj(img, [0.0, 0.0, 0.0, 0.0, 0.0])
-					elif p == "xform.align3d":
-						set_params3D(img, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0])
+					if p[:13] == "xform.align2d":
+						set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0], p)
+					elif p[:10] == "xform.proj":
+						set_params_proj(img, [0.0, 0.0, 0.0, 0.0, 0.0], p)
+					elif p[:13] == "xform.align3d":
+						set_params3D(img, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0], p)
 					else:
 						img.set_attr(p, 0.0)
 				elif one:
-					if p == "xform.align2d" or p == "xform.align3d" or p == "xform.proj":
+					if p[:6] == "xform.":
 						print "Invalid operation!"
+						return
 					else:
 						img.set_attr(p, 1.0)
 				elif randomize:
-					if p == "xform.align2d":
+					if p[:13] == "xform.align2d":
 						alpha = random()*360.0
 						sx = random()*4.0-2.0
 						sy = random()*4.0-2.0
 						mirror = randint(0,1)
 						scale = 1.0
-						set_params2D(img, [alpha, sx, sy, mirror, scale])
-					elif p == "xform.proj":
+						set_params2D(img, [alpha, sx, sy, mirror, scale], p)
+					elif p[:10] == "xform.proj":
 						phi = random()*360.0
 						theta = random()*180.0
 						psi = random()*360.0
 						s2x = random()*4.0-2.0
 						s2y = random()*4.0-2.0
-						set_params_proj(img, [phi, theta, psi, s2x, s2y])
-					elif p == "xform.align3d":
+						set_params_proj(img, [phi, theta, psi, s2x, s2y], p)
+					elif p[:13] == "xform.align3d":
 						phi = random()*360.0
 						theta = random()*180.0
 						psi = random()*360.0
@@ -9222,40 +9223,50 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 						s3z = random()*4.0-2.0
 						mirror = randint(0,1)
 						scale = 1.0
-						set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale])						
+						set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], p)						
 					else:
-						print "Invalid operation!"						
+						print "Invalid operation!"
+						return						
 				elif fexport != None:
-					if p == "xform.align2d":
-						alpha, sx, sy, mirror, scale = get_params2D(img)
+					if p[:13] == "xform.align2d":
+						alpha, sx, sy, mirror, scale = get_params2D(img, p)
 						fexp.write("%15.5f %15.5f %15.5f %10d %10.3f"%(alpha, sx, sy, mirror, scale))
-					elif p == "xform.proj":
-						phi, theta, psi, s2x, s2y = get_params_proj(img)
+					elif p[:10] == "xform.proj":
+						phi, theta, psi, s2x, s2y = get_params_proj(img, p)
 						fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f"%(phi, theta, psi, s2x, s2y))
-					elif p == "xform.align3d":
-						phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+					elif p[:13] == "xform.align3d":
+						phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, p)
 						fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f"%(phi, theta, psi, s3x, s3y, s3z, mirror, scale))
 					else:
 						fexp.write("%15s   "%str(img.get_attr(p)))
 				elif fprint:
-					if p == "xform.align2d":
-						alpha, sx, sy, mirror, scale = get_params2D(img)
+					if p[:13] == "xform.align2d":
+						alpha, sx, sy, mirror, scale = get_params2D(img, p)
 						print "%15.5f %15.5f %15.5f %10d %10.3f"%(alpha, sx, sy, mirror, scale),
-					elif p == "xform.proj":
-						phi, theta, psi, s2x, s2y = get_params_proj(img)
+					elif p[:10] == "xform.proj":
+						phi, theta, psi, s2x, s2y = get_params_proj(img, p)
 						print "%15.5f %15.5f %15.5f %15.5f %15.5f"%(phi, theta, psi, s2x, s2y),
-					elif p == "xform.align3d":
-						phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+					elif p[:13] == "xform.align3d":
+						phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, p)
 						print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f"%(phi, theta, psi, s3x, s3y, s3z, mirror, scale),
 					else:
 						print "%15s   "%str(img.get_attr(p)),
 				elif backup:
 					t = img.get_attr(p)
-					img.set_attr(p+"_backup", t)
+					img.set_attr(p+suffix, t)
 				elif restore:
-					t = img.get_attr(p+"_backup")
-					img.set_attr(p, t)
-					img.del_attr(p+"_backup")
+					if( p == "xform.align2d" or p == "xform.align3d" or p == "xform.proj"):
+						print  "ERROR, no suffix in xform!"
+						return
+					t = img.get_attr(p)
+					if p[:13] == "xform.align2d":
+						img.set_attr(p[:13], t)
+					elif p[:10] == "xform.proj":
+						img.set_attr(p[:10], t)
+					elif p[:13] == "xform.align3d":
+						img.set_attr(p[:13], t)
+					else:
+						img.set_attr(p[:-len(suffix)], t)
 				elif delete:
 					img.del_attr(p)					
 
