@@ -64,9 +64,8 @@ operations are performed on oversampled images if specified."""
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
 	parser.add_option("--smooth",action="store_true",help="Smooth the background (running-average of the log) and adjust it at the zeroes of the CTF",default=False)
-	parser.add_option("--phaseflip",type="string",help="Perform phase flipping after CTF determination and writes to specified file. 'auto' will autogenerate a path into bdb (recommended)",default=None)
-	parser.add_option("--wiener",type="string",help="Wiener filter (optionally phaseflipped) particles. 'auto' will autogenerate a path into bdb (recommended)",default=None)
-	parser.add_option("--ctfwiener",type="string",help="Wiener filter (optionally phaseflipped) particles. 'auto' will autogenerate a path into bdb (recommended)",default=None)
+	parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
+	parser.add_option("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False)
 	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
 	parser.add_option("--debug",action="store_true",default=False)
 
@@ -76,6 +75,7 @@ operations are performed on oversampled images if specified."""
 	if options.voltage==0 : parser.error("Please specify voltage")
 	if options.cs==0 : parser.error("Please specify Cs")
 	if options.apix==0 : parser.error("Please specify A/Pix")
+		
 	debug=options.debug
 
 #	if options.oversamp>1 : options.apix/=float(options.oversamp)
@@ -114,6 +114,41 @@ operations are performed on oversampled images if specified."""
 	if options.gui :
 		gui=GUIctf(img_sets)
 		gui.run()
+
+	if debug : print "Phase flipping / Wiener filtration"
+	if options.phaseflip or options.wiener:
+		for filename in args:
+			if debug: print "Processing ",filename
+
+			if options.phaseflip: phaseout="bdb:ctf.flip."+get_file_tag(filename)
+			else: phaseout=None
+		
+			if options.wiener: wienerout="bdb:ctf.wiener."+get_file_tag(filename)
+			else : wienerout=None
+
+			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp)
+
+def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1):
+	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
+	phaseflip should be the path for writing the phase-flipped particles
+	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
+	oversamp will oversample as part of the processing, ostensibly permitting phase-flipping on a wider range of defocus values
+	"""
+	
+	im=EMData(stackfile,0)
+	ys=im.get_ysize()*oversamp
+	ys2=im.get_ysize()
+	n=EMUtil.get_image_count(stackfile)
+	
+	for i in range(n):
+		im1=EMData(stackfile,i)
+		
+		if edgenorm : im1.process_inplace("normalize.edgemean")
+		if oversamp>1 :
+			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+	
+		if phaseflip :
+			
 
 
 def powspec(stackfile,mask=None,edgenorm=True,):

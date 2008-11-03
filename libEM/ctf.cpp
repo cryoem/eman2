@@ -664,7 +664,7 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 	case CTF_SIGN:
 		for (int i = 0; i < np; i++) {
 			float gamma = calc_gamma(g1, g2, s);
-			r[i] = calc_ctf1(amp1, gamma, s)>0?1.0f:-1.0f;
+			r[i] = calc_ctf1(amp1, gamma, s)>=0?1.0f:-1.0f;
 			s += ds;
 		}
 		break;
@@ -781,14 +781,15 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	float g2 = calc_g2();
 
 	if (type == CTF_BACKGROUND) {
-		for (int y = 0; y < ny; y++) {
-			int ynx = y * nx;
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
 #ifdef	_WIN32
-				float s = (float) _hypot(x, y - ny / 2.0f) * ds;
+				float s = (float) _hypot(x, y ) * ds;
 #else
-				float s = (float) hypot(x, y - ny / 2.0f) * ds;
+				float s = (float) hypot(x, y ) * ds;
 #endif			
 //				d[x * 2 + ynx] = calc_noise(s);
 				d[x * 2 + ynx + 1] = 0;			// The phase is somewhat arbitrary
@@ -796,34 +797,36 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 		}
 	}
 	else if (type == CTF_AMP) {
-		for (int y = 0; y < ny; y++) {
-			int ynx = y * nx;
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
 #ifdef	_WIN32
-				float s = (float)_hypot((float) x, (float) y - ny / 2) * ds;
+				float s = (float)_hypot((float) x, (float) y ) * ds;
 #else
-				float s = (float)hypot((float) x, (float) y - ny / 2) * ds;
+				float s = (float)hypot((float) x, (float) y ) * ds;
 #endif	//_WIN32	
 				float gamma = calc_gamma(g1, g2, s);
-				float v = fabs(calc_amplitude(gamma));
+				float v = calc_amplitude(gamma);
 				d[x * 2 + ynx] = v;
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}
 	}
 	else if (type == CTF_SIGN) {
-		for (int y = 0; y < ny; y++) {
-			int ynx = y * nx;
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
 			for (int x = 0; x < nx / 2; x++) {
 #ifdef	_WIN32
-				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
+				float s = (float)_hypot((float)x, (float)y ) * ds;
 #else
-				float s = (float)hypot(x, y - ny / 2.0f) * ds;
+				float s = (float)hypot((float)x, (float)y ) * ds;
 #endif	
 				float gamma = calc_gamma(g1, g2, s);
 				float v = calc_amplitude(gamma);
-				d[x * 2 + ynx] = v > 0 ? 1.0f : -1.0f;
+				d[x * 2 + ynx] = v >= 0 ? 1.0f : -1.0f;
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}
@@ -831,15 +834,16 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	}
 	else if (type == CTF_SNR) {
 
-		for (int y = 0; y < ny; y++) {
-			int ynx = y * nx;
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
 
 #ifdef	_WIN32
-				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
+				float s = (float)_hypot(x, y ) * ds;
 #else
-				float s = (float)hypot(x, y - ny / 2.0f) * ds;
+				float s = (float)hypot(x, y ) * ds;
 #endif	
 				float f = s/dsbg;
 				int j = (int)floor(f);
@@ -851,15 +855,16 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 		}
 	}
 	else if (type == CTF_WIENER_FILTER) {
-		for (int y = 0; y < ny; y++) {
-			int ynx = y * nx;
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
 
 #ifdef	_WIN32
-				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
+				float s = (float)_hypot(x, y ) * ds;
 #else
-				float s = (float)hypot(x, y - ny / 2.0f) * ds;
+				float s = (float)hypot(x, y ) * ds;
 #endif	
 				float f = s/dsbg;
 				int j = (int)floor(f);
@@ -880,15 +885,16 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	else if (type == CTF_TOTAL) {
 		float amp1 = calc_amp1();
 
-		for (int y = 0; y < ny; y++) {
-			int ynx = y * nx;
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
 
 #ifdef	_WIN32
-				float s = (float)_hypot(x, y - ny / 2.0f) * ds;
+				float s = (float)_hypot(x, y ) * ds;
 #else
-				float s = (float)hypot(x, y - ny / 2.0f) * ds;
+				float s = (float)hypot(x, y ) * ds;
 #endif	
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
@@ -905,6 +911,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			}
 		}
 	}
+	else printf("Unknown CTF image mode\n");
 
 	image->update();
 }
@@ -914,12 +921,27 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 bool EMAN2Ctf::equal(const Ctf * ctf1) const
 {
 	if (ctf1) {
-		const EMAN1Ctf *c = static_cast<const EMAN1Ctf *>(ctf1);
-		if (defocus == c->defocus &&
-			bfactor == c->bfactor &&
-			ampcont == c->ampcont && voltage == c->voltage && cs == c->cs && apix == c->apix) {
-			return true;
+		const EMAN2Ctf *c = static_cast<const EMAN2Ctf *>(ctf1);
+		if (defocus != c->defocus ||
+			dfdiff != c->dfdiff ||
+			dfang != c->dfang ||
+			bfactor != c->bfactor ||
+			ampcont != c->ampcont || 
+			voltage != c->voltage || 
+			cs != c->cs || 
+			apix != c->apix ||
+			dsbg != c->dsbg ||
+			background.size() != c->background.size() ||
+			snr.size() != c->snr.size()
+			) return false;
+
+		for (int i=0; i<background.size(); i++) {
+			if (background[i]!=c->background[i]) return false;
 		}
+		for (int i=0; i<snr.size(); i++) {
+			if (snr[i]!=c->snr[i]) return false;
+		}
+		return true;
 	}
 	return false;
 }
