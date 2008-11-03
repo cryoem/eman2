@@ -40,11 +40,11 @@ import sys
 
 
 def main():
-        arglist = []
-        for arg in sys.argv:
-        	arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack ref_vol outdir <maskfile> --ou=outer_radius --delta=angular_bracket --maxit=max_iter --center --CTF --snr=SNR --sym=symmetry --chunk=data_chunk_for_update --MPI"
+	usage = progname + " stack ref_vol outdir <maskfile> --ou=outer_radius --delta=angular_bracket --maxit=max_iter --center --CTF --snr=SNR --sym=symmetry --chunk=data_chunk_for_update  --function=user_function --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",     type="float",        default=-1,    help="  radius < int(nx/2)-1 (set to int(nx/2)-1)")
 	parser.add_option("--delta",  type="float",        default=2,     help="  angular bracket (set to 2)")
@@ -54,6 +54,7 @@ def main():
 	parser.add_option("--debug",  action="store_true", default=False, help="  Debug printout ")
 	parser.add_option("--snr",    type="float", 	   default=1,     help="  SNR > 0.0 (set to 1.0)")
 	parser.add_option("--sym",    type="string",       default="c1",  help="  symmetry group (set to c1)")
+	parser.add_option("--function", type="string", default="ref_ali3d",         help="  name of the reference preparation function")
 	parser.add_option("--chunk",  type="float",        default=1.0,   help="  chunk of data after which the 3D will be updated 0<chunk<=1.0 (set to 1.0) ")
 	parser.add_option("--MPI",    action="store_true", default=False, help="  whether using MPI version ")
 	(options, args) = parser.parse_args(arglist[1:])
@@ -66,12 +67,13 @@ def main():
 			mask = None
 		else:
 			mask = args[3]
+
 		if options.MPI:
 			from mpi import mpi_init
 	   		sys.argv = mpi_init(len(sys.argv), sys.argv)
 		from applications import ali3d_e
 		global_def.BATCH = True
-		ali3d_e(args[0], args[1], args[2], mask, options.ou, options.delta, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk, options.MPI, options.debug)
+		ali3d_e(args[0], args[1], args[2], mask, options.ou, options.delta, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk,  options.function, options.MPI, options.debug)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
