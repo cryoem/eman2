@@ -168,7 +168,7 @@ namespace EMAN
 		inline float calc_g2()
 		{
 			float lambda = calc_lambda();
-			float g2 = 5000.0f * defocus * lambda;
+			float g2 = 5000.0f * -defocus * lambda;
 			return g2;
 		}
 
@@ -271,7 +271,7 @@ namespace EMAN
 		inline float calc_g2()
 		{
 			float lambda = calc_lambda();
-			float g2 = 5000.0f * defocus * lambda;
+			float g2 = 5000.0f * -defocus * lambda;
 			return g2;
 		}
 

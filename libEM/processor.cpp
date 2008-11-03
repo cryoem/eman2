@@ -457,9 +457,25 @@ void Wiener2DAutoAreaProcessor::process_inplace(EMData *image) {
 }
 
 
-EMData * Wiener2DFourierProcessor::process(const EMData *)
+EMData * Wiener2DFourierProcessor::process(const EMData *in)
 {
-	EMData *ret = NULL;
+	const EMData *in2;
+	if (in->is_complex()) in2=in;
+	else in=in->do_fft();
+
+	EMData *filt = in->copy_head();
+	Ctf *ictf = ctf;
+
+	if (!ictf) ctf=(Ctf *)in->get_attr("ctf");
+
+	ictf->compute_2d_complex(filt,Ctf::CTF_WIENER_FILTER);
+	filt->mult(*in2);
+	EMData *ret=filt->do_ift();
+
+	delete filt;
+	if (!in->is_complex()) delete in2;
+
+	return(ret);
 /*	const EMData *fft;
 	float *fftd;
 	int f=0;

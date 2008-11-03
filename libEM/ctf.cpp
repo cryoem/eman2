@@ -822,7 +822,6 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 	}
 	else if (type == CTF_SNR) {
-		float amp1 = calc_amp1();
 
 		for (int y = 0; y < ny; y++) {
 			int ynx = y * nx;
@@ -834,22 +833,16 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #else
 				float s = (float)hypot(x, y - ny / 2.0f) * ds;
 #endif	
-				float gamma = calc_gamma(g1, g2, s);
-				float f = calc_ctf1(amp1, gamma, s);
-				float noise = 0;
-				f = f * f / noise;
-
-				if (s && sf) {
-					f *= pow(10.0f, sf->get_yatx(s));
-				}
-				d[x * 2 + ynx] *= f;
+				float f = s/dsbg;
+				int j = (int)floor(f);
+				f-=j;
+				if (j>snr.size()-2) d[x*2+ynx]=snr.back();
+				else d[x*2+ynx]=snr[j]*(1.0-f)+snr[j+1]*f;
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}
 	}
 	else if (type == CTF_WIENER_FILTER) {
-		float amp1 = calc_amp1();
-
 		for (int y = 0; y < ny; y++) {
 			int ynx = y * nx;
 
@@ -860,16 +853,11 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #else
 				float s = (float)hypot(x, y - ny / 2.0f) * ds;
 #endif	
-				float gamma = calc_gamma(g1, g2, s);
-				float f = calc_ctf1(amp1, gamma, s);
-				float noise = 0;
-				f = f * f / noise;
-
-				if (s) {
-					f *= pow(10.0f, sf->get_yatx(s));
-				}
-				f = 1.0f / (1.0f + 1.0f / f);
-				d[x * 2 + ynx] *= f;
+				float f = s/dsbg;
+				int j = (int)floor(f);
+				f-=j;
+				if (j>snr.size()-2) d[x*2+ynx]=1.0/(1.0+1.0/snr.back());
+				else d[x*2+ynx]=1.0/(1.0+1.0/(snr[j]*(1.0-f)+snr[j+1]*f));
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}

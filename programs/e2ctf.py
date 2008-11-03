@@ -61,7 +61,10 @@ Particles should be reasonably well centered."""
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
-	parser.add_option("--smooth",action="store_true",help="Smooth the background (running-average of the log)",default=False)
+	parser.add_option("--smooth",action="store_true",help="Smooth the background (running-average of the log) and adjust it at the zeroes of the CTF",default=False)
+	parser.add_option("--wiener",action="store_true",help="Apply a Wiener filter",default=False)
+	parser.add_option("--flipphase",action="store_true",help="Flip phases",default=False)
+	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
 	parser.add_option("--debug",action="store_true",default=False)
 
 	(options, args) = parser.parse_args()
@@ -71,6 +74,8 @@ Particles should be reasonably well centered."""
 	if options.cs==0 : parser.error("Please specify Cs")
 	if options.apix==0 : parser.error("Please specify A/Pix")
 	debug=options.debug
+
+#	if options.oversamp>1 : options.apix/=float(options.oversamp)
 
 	img_sets=[]
 
@@ -83,14 +88,18 @@ Particles should be reasonably well centered."""
 
 		# compute the power spectra
 		if debug : print "Processing ",filename
-		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm)
+		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
 		ds=1.0/(options.apix*im_2d.get_ysize())
 		if options.smooth : bg_1d=smooth_bg(bg_1d,ds)
 
+		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
+		
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
-		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix)
+		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=options.smooth)
 		parms[name]=ctf
+
+		print options.apix,len(im_1d)
 
 		if debug:
 			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
@@ -102,6 +111,7 @@ Particles should be reasonably well centered."""
 	if options.gui :
 		gui=GUIctf(img_sets)
 		gui.run()
+
 
 def powspec(stackfile,mask=None,edgenorm=True,):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
@@ -128,7 +138,7 @@ def powspec(stackfile,mask=None,edgenorm=True,):
 	return av
 
 masks={}		# mask cache for background/foreground masking
-def powspec_with_bg(stackfile,radius=0,edgenorm=True):
+def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power 
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge 
@@ -141,18 +151,22 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True):
 	global masks
 	
 	im=EMData(stackfile,0)
-	ys=im.get_ysize()
+	ys=im.get_ysize()*oversamp
+	ys2=im.get_ysize()
 	n=EMUtil.get_image_count(stackfile)
 	
 	# set up the inner and outer Gaussian masks
 	try:
 		mask1,ratio1,mask2,ratio2=masks[(ys,radius)]
 	except:
-		mask1=EMData(ys,ys,1)
+		mask1=EMData(ys2,ys2,1)
 		mask1.to_one()
 		mask1.process_inplace("mask.gaussian",{"outer_radius":radius})
 		mask2=mask1.copy()*-1+1
+#		mask1.process_inplace("mask.decayedge2d",{"width":4})
 		mask2.process_inplace("mask.decayedge2d",{"width":4})
+		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
@@ -161,6 +175,9 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True):
 		im1=EMData(stackfile,i)
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
+		if oversamp>1 :
+			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		
 		im2=im1.copy()
 
 		im1*=mask1
@@ -236,22 +253,24 @@ def smooth_bg(curve,ds):
 	first=int(.02/ds)	# start at 1/50 1/A
 	if first<2 : first=2
 
-	return curve[:first]+[pow(curve[i-2]*curve[i-1]*curve[i]*curve[i+1]*curve[i+2],.2) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
+	return curve[:first]+[pow(curve[i-1]*curve[i]*curve[i+1],.33333) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
+#	return curve[:first]+[pow(curve[i-2]*curve[i-1]*curve[i]*curve[i+1]*curve[i+2],.2) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
 
 
 def snr_safe(s,n) :
 	if s==0 or n==0 : return 0.0
 	return (s-n)/n
 
-def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
-	"""Determines CTF parameters given power spectra produced by powspec_with_bg()"""
+def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0):
+	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
+	The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
+	of the CTF (in which case bg_1d is modified in place)."""
 	# defocus estimation
 	global debug
 	
 	ctf=EMAN2Ctf()
 	
-	snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
-	ctf.from_dict({"defocus":1.0,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"background":bg_1d,"snr":snr})
+	ctf.from_dict({"defocus":1.0,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"background":bg_1d})
 	
 	ys=im_2d.get_ysize()
 	ds=1.0/(apix*ys)
@@ -259,40 +278,31 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 	if debug: dfout=file("ctf.df.txt","w")
 	dfbest1=(0,-1.0e20)
 	for dfi in range(5,128):			# loop over defocus
-			ac=10
-			df=dfi/20.0
-			ctf.defocus=-df
-			ctf.ampcont=ac
-			cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
-			st=.04/ds
-			norm=0
-			for fz in range(len(cc)): 
-				if cc[fz]<0 : break
-		
-			tot,totr=0,0
-			for s in range(int(st),ys/2): 
-				tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
-				totr+=cc[s]**4
-			#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
-			#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
-			#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
-			tot/=sqrt(totr)
-			#tot/=totr
-			if tot>dfbest1[1] : dfbest1=(df,tot)
-			try :dfout.write("%1.2f\t%g\n"%(df,tot))
-			except : pass
+		ac=10
+		df=dfi/20.0
+		ctf.defocus=df
+		ctf.ampcont=ac
+		cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
+		st=.04/ds
+		norm=0
+		for fz in range(len(cc)): 
+			if cc[fz]<0 : break
 	
-	# now we try to construct a better background based on the CTF zeroes being zero
-	#bg2=[]
-	#last=0,1.0
-	#for x in range(len(bg)*ctf.CTFOS ) : 
-		#if cc[x]*cc[x+1]<0 : 
-			#cur=(x/ctf.CTFOS,ps1d[-1][x/ctf.CTFOS]/bg[x/ctf.CTFOS])
-			#print cur
-			#for xx in range(last[0],cur[0]):
-				#w=(xx-last[0])/(cur[0]-last[0])
-				#bg2.append(cur[1]*w+last[1]*(1-w))
-			#last=cur
+		tot,totr=0,0
+		for s in range(int(st),ys/2): 
+			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
+			totr+=cc[s]**4
+		#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
+		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
+		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
+		tot/=sqrt(totr)
+		#tot/=totr
+		if tot>dfbest1[1] : dfbest1=(df,tot)
+		try :dfout.write("%1.2f\t%g\n"%(df,tot))
+		except : pass
+	
+	
+	
 	
 	#out=file("bg1d2.txt","w")
 	#for a,b in enumerate(bg2): out.write("%1.4f\t%1.5f\n"%(a*ds,b))
@@ -301,7 +311,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 	dfbest=dfbest1
 	for dfi in range(-10,10):			# loop over defocus
 		df=dfi/100.0+dfbest1[0]
-		ctf.defocus=-df
+		ctf.defocus=df
 		cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
 		st=.04/ds
 		norm=0
@@ -319,7 +329,31 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix):
 			dfbest=(df,tot)
 		if debug : dfout.write("%1.2f\t%g\n"%(df,tot))
 
-	ctf.defocus=-dfbest[0]
+	ctf.defocus=dfbest1[0]
+	cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
+	Util.save_data(0,ds,cc,"ctf.ctf.txt")
+
+	if bgadj:
+		# now we try to construct a better background based on the CTF zeroes being zero
+		bg2=bg_1d[:]
+		last=0,1.0
+		for x in range(1,len(bg2)-1) : 
+			if cc[x]*cc[x+1]<0 :
+				# we search +-1 point from the zero for the minimum
+				cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x-1]/bg_1d[x-1],im_1d[x+1]/bg_1d[x+1]))
+				# once we have a pair of zeros we adjust the background values between
+				for xx in range(last[0],cur[0]):
+					w=(xx-last[0])/float(cur[0]-last[0])
+					bg_1d[xx]=bg2[xx]*(cur[1]*w+last[1]*(1.0-w))
+#					print xx,"\t",(cur[1]*w+last[1]*(1.0-w)) #,"\t",cur[1],last[1]
+				last=cur
+		# cover the area from the last zero crossing to the end of the curve
+		for xx in range(last[0],len(bg2)):
+			bg_1d[xx]=bg2[xx]*last[1]
+
+	
+	ctf.snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
+	ctf.defocus=dfbest[0]
 
 	if 1 : print "Best DF = ",dfbest[0]
 

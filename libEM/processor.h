@@ -568,11 +568,11 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
-	/**Wiener filter based on externally provided background image
-	 *@param background[in] Fourier intensity image containing the background to use in SNR calculation
+	/**Wiener filter based on a Ctf object either in the image header
+	 *@param ctf[in] A Ctf object to use 
 	 *
 	 *@author Steve Ludtke
-	 *@date 2007/11/06
+	 *@date 2008/11/03
 	 */
 	class Wiener2DFourierProcessor:public Processor
 	{
@@ -589,14 +589,14 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
-			background = params["background"];
+			ctf = params["ctf"];
 //			printf("%s %f\n",params.keys()[0].c_str(),lowpass);
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("background", EMObject::EMDATA, "Fourier image containing averaged background from the frame");
+			d.put("ctf", EMObject::EMDATA, "Ctf object to use for Wiener filter parameters");
 			return d;
 		}
 
@@ -607,11 +607,11 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Applies a 2-D Wiener filter to an image based on the provided background image, which must be the same size as the image being filtered.";
+			return "Applies a 2-D Wiener filter to an image based on its Ctf parameters";
 		}
 
 		protected:
-		EMData *background;
+		Ctf *ctf;
 	};
 
 	/**Low-pass processor attenuates amplitudes at high spatial frequencies. It has the result of blurring the image, and of eliminating sharp edges and noise. The base class for all low pass fourier processors.
