@@ -14198,6 +14198,27 @@ def cml_spin_dev(Prj, iprj, Ori, iagl, weights):
 	return res[0], int(res[1])
 
 
+def timeout(func, args=(), kwargs={}, timeout_duration=1, default=None):
+    import threading, sys
+    class InterruptableThread(threading.Thread):
+        def __init__(self):
+            threading.Thread.__init__(self)
+            self.result = None
+
+        def run(self):
+            try:
+                self.result = func(*args, **kwargs)
+            except:
+                self.result = default
+
+    it = InterruptableThread()
+    it.start()
+    it.join(timeout_duration)
+    if it.isAlive():
+        sys.exit()
+        #return default
+    else:
+        return it.result
 
 # find structure
 def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights):
@@ -14205,11 +14226,6 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 	import time
 	import signal
 	import sys
-
-	# watchdog to Util.vrdg (voronoi c-code)
-	def alarmHandler(signum, frame):
-		#raise TimeExceededError, "Voronoi ran too long"
-		raise Exception
 	
 	# global vars
 	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug, g_n_lines
@@ -14246,17 +14262,12 @@ def cml_find_structure_dev(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 					# weights
 					if flag_weights:
 						cml = Util.cml_line_in3d_iagl(Ori, g_anglst[iagl][0], g_anglst[iagl][1], iprj)    # c-code
-						signal.signal(signal.SIGALRM, alarmHandler)
-						signal.alarm(10)
-						try:						
-							weights = Util.cml_weights(cml)                        # c-code
-						except Exception:
-							#print "Voronoi function ran too long!"
-							signal.alarm(0)
+						try:
+							weights = timeout(Util.cml_weights, (cml,), {}, 5)                        # c-code
+						except SystemExit:
+							print 'Voronoi error!'
 							sys.exit()
-							
-						signal.alarm(0)
-											
+																
 						#weights = cml_weights_iagl_dev(Ori, iagl, iprj)               # py-code
 						#weights = cml_weights_iagl_old(Ori, iagl, iprj)
 						
