@@ -49,7 +49,7 @@ def main():
                 arglist.append( sys.argv[i] )
                 i = i+1
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vols outdir <mask> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step --center=1  --maxit=max_iter --CTF --snr=1.0 --ref_a=S --sym=c1 --MPI"
+	usage = progname + " stack ref_vols outdir <mask> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step  --delta=angular_step --center=1  --maxit=max_iter --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",   default= 1,                  help="  inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",   default= "-1",               help="  outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
@@ -65,7 +65,9 @@ def main():
 	parser.add_option("--snr",      type="float",  default= 1.0,                help="  Signal-to-Noise Ratio of the data")   
 	parser.add_option("--ref_a",    type="string", default= "S",                help="  method for generating the quasi-uniformly distributed projection directions (default S) ")
 	parser.add_option("--sym",      type="string", default= "c1",               help="  symmetry of the structure ")
+	parser.add_option("--function", type="string", default="ref_ali3d",         help="  name of the reference preparation function")
 	parser.add_option("--MPI",      action="store_true", default=False,         help="  whether using MPI version ")
+	parser.add_option("--debug",    action="store_true", default=False,         help="  Berlin dataset ")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
@@ -77,12 +79,12 @@ def main():
 		else:
 			mask = args[3]
 
-		from applications import ali3d_m_MPI
+		from applications import ali3d_m
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 		global_def.BATCH = True
-		ali3d_m_MPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym, options.MPI)
+		ali3d_m(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

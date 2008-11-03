@@ -3165,19 +3165,19 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	if (myid == main_node): print_end_msg("ali3d_d_MPI")
 
 def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
-            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
-	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
-	     user_func_name="ref_ali3d", MPI=False, pinfo = False):
+           xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
+	     center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
+	     user_func_name="ref_ali3d", MPI=False, debug = False):
 	if MPI:
-		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
-		 delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, pinfo)
+		ali3d_m_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
+		 delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, debug)
 		return
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
 	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, get_im
-	from filter	        import filt_params,filt_btwl, filt_from_fsc, filt_table
-	from alignment	  import proj_ali_incore_index
+	from filter	        import filt_params, filt_tanl
 	from fundamentals   import fshift
+	from statistics     import fsc_mask
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os
 	import types
@@ -3203,11 +3203,15 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	else          :  yrng = get_input_from_string(yr)
 	step        = get_input_from_string(ts)
 	delta       = get_input_from_string(delta)
+	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
 	if (an == "-1"):
 		an = []
 		for i in xrange(len(xrng)):   an.append(-1)
+		from alignment	  import proj_ali_incore
 	else:
 		an = get_input_from_string(an)
+		from alignment	  import proj_ali_incore_local
+
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
@@ -3223,12 +3227,12 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	for  iref in xrange(numref):
 		volref     = EMData()
 		volref.read_image(ref_vol, iref)
-		volref.write_image(os.path.join(outdir, "volf0000.hdf"))
+		volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 
 	nx      = volref.get_xsize()
 	if last_ring < 0:	last_ring = nx//2 - 2
 
-	print_msg("Number of reference volumes : %i\n"%(firnumref))
+	print_msg("Number of reference volumes : %i\n"%(numref))
 	print_msg("Outer radius                : %i\n"%(last_ring))
 	print_msg("Ring step                   : %i\n"%(rstep))
 	print_msg("X search range              : %s\n"%(xrng))
@@ -3250,10 +3254,10 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	mask = model_circle(last_ring, nx, nx)
 
 
-	if pinfo:  outf = file(os.path.join(outdir, "progress"), "w")
-	else:     outf = None
+	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
+	else:      outf = None
 
-	active = EMUtil.get_all_attributes(data, 'active')
+	active = EMUtil.get_all_attributes(stack, 'active')
 	list_of_particles = []
 	for im in xrange(len(active)):
 		if(active[im]):  list_of_particles.append(im)
@@ -3281,14 +3285,14 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	# do the projection matching
 	for N_step in xrange(lstp):
  		for Iter in xrange(max_iter):
-			total_ter = N_step*max_iter + Iter+1
+			total_iter = N_step*max_iter + Iter+1
 			print_msg("ITERATION #%3d\n"%(total_iter))
 
 			tr = Transform({"type":"spider"})
 			peaks = [[-1.0e23, tr] for im in xrange(nima) ]
 			for iref in xrange(numref):
 				volref.read_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref)
-				if(an[N_step] == -1):	s(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
+				if(an[N_step] == -1):	proj_ali_incore(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
 				else:	           proj_ali_incore_local(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
 				for im in xrange(nima):
 					peak = data[im].get_attr('peak')
@@ -3306,21 +3310,22 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 				for im in xrange(nima):
 					if(iref == data[im].get_attr('group')):
 						list_p.append(im)
+				print_msg("Group number : %i"%(numref) + ",  number of objects: %i\n"%(len(list_p)))
 				#  3D stuff
 				if(CTF): vol1 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
 				else:  vol1 = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
 				if(CTF): vol2 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
 				else:  vol2 = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
 
-				fscc.append(fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%02d_%04d"%(iref, N_step*max_iter+Iter+1))))
+				fscc.append(fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution_%02d_%04d"%(iref, N_step*max_iter+Iter+1))))
 				del vol1
 				del vol2
 			
 				# calculate new and improved 3D
-				if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, symmetry)
+				if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, sym)
 				else:	 volref = recons3d_4nn(data, list_p, symmetry)
-				del list_p
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
+			del list_p
 
 			# add all volumes
 			volref = get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), 0)
@@ -3333,6 +3338,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 			flmax = -1.0
 			for iref in xrange(numref):
 				fl, aa = fit_tanh( fscc[iref] )
+				filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), fl, aa).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 				if (fl < flmin):
 					flmin = fl
 					aamin = aa
@@ -3347,7 +3353,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 				cs   = volref.phase_cog()
 				volref = fshift(volref, -cs[0], -cs[1] -cs[2])
 
-			# align each volume to the average
+			# align each volume to the average - BORING!
 			for iref in xrange(numref):
 				vol = get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 
@@ -3362,14 +3368,14 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	print_end_msg("ali3d_m")
 
 def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
-            xr              ="4 2  2  1",      yr="-1",
-            ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
-	    center = 0, maxit= 5, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1"):
+            xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
+	      center = 0, maxit= 5, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1",
+	      user_func_name="ref_ali3d", MPI=False, pinfo = False):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
 	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc, recv_attr_dict, send_attr_dict
-	from filter	    import filt_params, filt_btwl, filt_from_fsc2, filt_table, fit_tanh, filt_tanl, filt_vols
-	from alignment	    import proj_ali_incore_index
+	from filter	        import filt_params, filt_btwl, filt_from_fsc2, filt_table, fit_tanh, filt_tanl, filt_vols
+	from alignment	  import proj_ali_incore
 	from random         import randint
 	from fundamentals   import fshift
 	from utilities      import print_begin_msg, print_end_msg, print_msg
