@@ -520,17 +520,21 @@ def strip_file_tag(file_name):
 	return file_name[0:i]
 
 def get_file_tag(file_name):
-	'''
-	FIXME - could replace with Util.get_filename_ext()
-	'''
-	for i in range(len(file_name)-1,-1,-1):
-		if file_name[i] == '.':
-			break
-	else:
-		print "never found the full stop in", file_name
-		return None
+	"""Returns the file identifier associated with a path, ie for "/home/stevel/abc1234.mrc" would return abc1234
+or for "bdb:hello99?1,2,3" would return hello99
+	"""
+
+	if file_name[:4].lower()=="bdb:" :
+		dname=file_name.find("#")+1
+		if dname==0 :dname=4
+		dtail=file_name.find("?")
+		if dtail>-1 : return file_name[dname:dtail]
+		return file_name[dname:]
 	
-	return file_name[i+1:]	
+	dname=file_name.rfind("/")+1
+	ddot=file_name.rfind(".")
+	if ddot==-1 : return file_name[dname:]
+	return file_name[dname:ddot]
 
 def strip_after_dot(file_name):
 	""" a function for stripping the contents of a filename so that all

@@ -68,7 +68,8 @@ signal.signal(2,DB_cleanup)
 def db_open_dict(url,ro=False):
 	"""opens a DB through an environment from a db:/path/to/db#dbname string. If you want to specify a specific image by key,
 	you can specify the key as:  db:/path/to/db#dbname?key
-	If key is an integer, it will be converted to an integer before lookup. Thus it is impossible to access data items
+	If key is an integer, it will be converted to an integer before lookup. For commands like read_images, key may also be a
+	comma-separated list of keys. Thus it is impossible to access data items
 	with keys like '1' instead of (int)1 using this mechanism. ro is a read only flag, which will disable caching as well."""
 	if url[:4].lower()!="bdb:": return None
 	url=url.replace("../",os.getcwd()+"/../")

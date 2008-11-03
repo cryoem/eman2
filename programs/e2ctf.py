@@ -50,7 +50,9 @@ def main():
 	
 Various CTF-related operations on images. Input particles should be unmasked and unfiltered. A minimum of ~20% padding around the
 particles is required for background extraction, even if this brings the edge of another particle into the box in some cases.
-Particles should be reasonably well centered."""
+Particles should be reasonably well centered. Can also optionally phase flip and Wiener filter particles. Wiener filtration comes
+after phase-flipping, so if phase flipping is performed Wiener filtered particles will also be phase-flipped. Note that both
+operations are performed on oversampled images if specified."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -62,8 +64,9 @@ Particles should be reasonably well centered."""
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
 	parser.add_option("--smooth",action="store_true",help="Smooth the background (running-average of the log) and adjust it at the zeroes of the CTF",default=False)
-	parser.add_option("--wiener",action="store_true",help="Apply a Wiener filter",default=False)
-	parser.add_option("--flipphase",action="store_true",help="Flip phases",default=False)
+	parser.add_option("--phaseflip",type="string",help="Perform phase flipping after CTF determination and writes to specified file. 'auto' will autogenerate a path into bdb (recommended)",default=None)
+	parser.add_option("--wiener",type="string",help="Wiener filter (optionally phaseflipped) particles. 'auto' will autogenerate a path into bdb (recommended)",default=None)
+	parser.add_option("--ctfwiener",type="string",help="Wiener filter (optionally phaseflipped) particles. 'auto' will autogenerate a path into bdb (recommended)",default=None)
 	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
 	parser.add_option("--debug",action="store_true",default=False)
 

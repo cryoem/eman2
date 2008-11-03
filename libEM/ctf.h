@@ -106,7 +106,7 @@ namespace EMAN
 	{
 	  public:
 		float defocus;			// 0	Defocus in microns, note that postitive is now underfocus, whereas values in EMAN1 are negative overfocus
-		float bfactor;			// 1
+		float bfactor;			// 1	B-factor expressed using the x-ray convention (e^-B/4 s^2 in amplitude space) EMAN1 used E^-B s^2
 		float amplitude;		// 2
 		float ampcont;			// 3
 		float noise1;			// 4
@@ -181,7 +181,7 @@ namespace EMAN
 
 		inline float calc_ctf1(float g, float gamma, float s)
 		{
-			float r = amplitude * exp(-(bfactor * s * s)) * (g * sin(gamma) + ampcont/100.0 * cos(gamma));
+			float r = amplitude * exp(-(bfactor/4.0 * s * s)) * (g * sin(gamma) + ampcont/100.0 * cos(gamma));
 			return r;
 		}
 
@@ -217,7 +217,7 @@ namespace EMAN
 		float defocus;		// defocus in microns, positive underfocus
 		float dfdiff;		// defocus difference for astigmatism, defocus is the major elliptical axis
 		float dfang;		// angle of the major elliptical axis in degrees measured counterclockwise from x
-		float bfactor;		// bfactor in 1/A^2 using the (?) convention
+		float bfactor;		// B-factor in 1/A^2 expressed using the x-ray convention (e^-B/4 s^2 in amplitude space) EMAN1 used E^-B s^2
 		float ampcont;		// amplitude contrast as a percentage ie- this should be 10 for 10% amp contrast
 		float voltage;		// microscope voltage in kV
 		float cs;			// Cs in mm
@@ -284,7 +284,7 @@ namespace EMAN
 
 		inline float calc_ctf1(float g, float gamma, float s)
 		{
-			float r = exp(-(bfactor * s * s)) * (g * sin(gamma) + ampcont/100.0 * cos(gamma));
+			float r = exp(-(bfactor/4.0 * s * s)) * (g * sin(gamma) + ampcont/100.0 * cos(gamma));
 			return r;
 		}
 
