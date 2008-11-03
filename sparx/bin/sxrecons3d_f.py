@@ -47,10 +47,10 @@ def main():
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--CTF",  action="store_true", default=False, help="if the data has ctf information")
-	parser.add_option("--snr",  type="float",   default=10.0, help="Signal-to-Noise Ratio in the data" )
-	parser.add_option("--sym",  type="string",  default="c1", help="symmetry" )
-	parser.add_option("--verbose", type="int", default=0, help="verbose level: 0 no verbose, 1 verbose" )
-	parser.add_option("--MPI", action="store_true", default=False,     help="  whether using MPI version ")
+	parser.add_option("--snr",  type="float",        default=10.0, help="Signal-to-Noise Ratio in the data" )
+	parser.add_option("--sym",  type="string",       default="c1", help="symmetry" )
+	parser.add_option("--verbose", type="int",       default=0, help="verbose level: 0 no verbose, 1 verbose" )
+	parser.add_option("--MPI", action="store_true",  default=False,     help="  whether using MPI version ")
 	(options,args) = parser.parse_args(arglist[1:])     
 
 

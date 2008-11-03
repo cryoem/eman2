@@ -8087,33 +8087,30 @@ def recons3d_f(prj_stack, vol_stack, fsc_file, mask=None, CTF=True, snr=1.0, sym
 
 def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym="c1", verbose=1):
 
-	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from utilities import get_im, dropImage
+	from mpi       import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from utilities import dropImage
 	nproc = mpi_comm_size( MPI_COMM_WORLD )
+	print  "  NUMBER OF PROCS  ",nproc
 	myid  = mpi_comm_rank( MPI_COMM_WORLD )
+	print  "  STARTED  ",myid
+	
+	if verbose==0:
+		info = None
+	else:
+		infofile = "progress%04d.txt" % (myid)
+		info = open( infofile, 'w' )
 
 	img_number     = EMUtil.get_image_count( prj_stack )
 
-	#img_per_node   = img_number/nproc
-	#img_node_start = img_per_node*myid
-	#if myid == nproc-1:  img_node_end = img_number
-	#else:                 img_node_end = img_node_start + img_per_node
 	img_node_start, img_node_end = MPI_start_end(img_number, nproc, myid)
 
 	imgdata = EMData.read_images(prj_stack,range(img_node_start, img_node_end))
+
 	print  "  DATA  LOADED  ",myid
 	if CTF:
 		from reconstruction import rec3D_MPI
 		odd_start = img_node_start % 2
 		eve_start = (odd_start+1)%2
-
-		if verbose==0:
-			info = None
-		else:
-			from string import replace
-			infofile = "progress%4d.txt" % (myid+1)
-			infofile = replace(infofile, ' ', '0')
-			info = open( infofile, 'w' )
 
 		vol,fsc = rec3D_MPI(imgdata, snr, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, info)
 	else :
