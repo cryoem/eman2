@@ -793,7 +793,7 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
         
 	return fftvol_half, weight_half
 
-def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step,info=None):
+def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step, info=None):
 	from random import randint
 	from utilities import reduce_EMData_to_root
 	from mpi import mpi_barrier, MPI_COMM_WORLD
@@ -819,7 +819,7 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 
 	reduce_EMData_to_root(fftvol_half, myid, main_node_half)
 	reduce_EMData_to_root(weight_half, myid, main_node_half)
-        
+
 	if not(info is None):
 		info.write( "after reduce half\n" )
 		info.flush()
@@ -892,7 +892,7 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 	from statistics import fsc_mask
 	from utilities  import model_blank, reduce_EMData_to_root, getImage, send_EMData, recv_EMData
 	from random     import randint
-	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi        import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 
 	if nproc==1:
