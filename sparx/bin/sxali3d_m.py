@@ -60,7 +60,8 @@ def main():
 	parser.add_option("--delta",    type="string", default= " 10 6 4  3   2",   help="  angular step of reference projections")
 	parser.add_option("--an",       type="string", default= "-1",               help="  angular neighborhood for local searches")
 	parser.add_option("--center",   type="float",  default= 1,                  help="  0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=1)")
-	parser.add_option("--maxit",    type="float",  default= 5,                  help="  maximum number of iterations performed for each angular step (set to 5) ")
+	parser.add_option("--kmax",     type="float",  default= 3,                  help="  maximum number of reassignment iterations performed for each angular step (set to 3) ")
+	parser.add_option("--maxit",    type="float",  default= 1,                  help="  maximum number of alignment iterations performed for each angular step (set to 1) ")
 	parser.add_option("--CTF",      action="store_true", default=False,         help="  Consider CTF correction during the alignment ")
 	parser.add_option("--snr",      type="float",  default= 1.0,                help="  Signal-to-Noise Ratio of the data")   
 	parser.add_option("--ref_a",    type="string", default= "S",                help="  method for generating the quasi-uniformly distributed projection directions (default S) ")
@@ -84,7 +85,7 @@ def main():
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
 		global_def.BATCH = True
-		ali3d_m(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug)
+		ali3d_m(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.delta, options.an, options.center, options.kmax, options.maxit, options.CTF, options.snr, options.ref_a, options.sym, options.function, options.MPI, options.debug)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

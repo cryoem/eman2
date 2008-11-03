@@ -3166,11 +3166,11 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 
 def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
-	     center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
+	     center = 1.0, kmax = 3, maxit = 1, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
 	     user_func_name="ref_ali3d", MPI=False, debug = False):
 	if MPI:
 		ali3d_m_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
-		 delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, debug)
+		 delta, an, center, kmax, maxit, CTF, snr, ref_a, sym, user_func_name, debug)
 		return
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
 	from utilities      import bcast_string_to_all, getImage, get_input_from_string
@@ -3181,7 +3181,6 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os
 	import types
-	from string         import replace
 	# 2D alignment using rotational ccf in polar coords and linear
 	# interpolation	
 	print_begin_msg("ali3d_m")
@@ -3283,13 +3282,76 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	ref_data.append( None )
 
 	# do the projection matching
+	total_iter = 0
+	tr_dummy = Transform({"type":"spider"})
 	for N_step in xrange(lstp):
- 		for Iter in xrange(max_iter):
-			total_iter = N_step*max_iter + Iter+1
-			print_msg("ITERATION #%3d\n"%(total_iter))
+		for Iter in xrange(kmax):
+			total_iter += 1
+			print_msg("ASSIGNMENT ITERATION #%3d\n"%(total_iter))
+			peaks = [-1.0e23]*nima
+			from projection import prep_vol, prgs
+			from utilities import get_params_proj
+			for iref in xrange(numref):
+				if(CTF):
+					previous_defocus = -1.0
+					vol = get_im(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref)
+				else:
+					volref, kb = prep_vol(get_im(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref) )
+				for im in xrange(nima):
+					if(CTF):
+						ctf_params = get_arb_params(data[im], parnames)
+						if(ctf_params[1] != previous_defocus):
+							previous_defocus = ctf_params[1]
+							volref, kb = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+					phi, theta, psi, tx, ty = get_params_proj(data[im])
+					peak = prgs(volref, kb, [phi, theta, psi, tx, ty]).cmp("ccc", data[im], {"mask":mask, "negative":0})
+					if(peak > peaks[im]):
+						peaks[im] = peak
+						data[im].set_attr('group', iref)
+			del peaks
+			if CTF: del vol
+			fscc = []
+			for iref in xrange(numref):
+				list_p = []
+				for im in xrange(nima):
+					if(iref == data[im].get_attr('group')):
+						list_p.append(im)
+				print_msg("Group number : %i"%(iref) + ",  number of objects: %i\n"%(len(list_p)))
+				#  3D stuff
+				if(CTF): vol1 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
+				else:    vol1 = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+				if(CTF): vol2 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
+				else:    vol2 = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
 
-			tr = Transform({"type":"spider"})
-			peaks = [[-1.0e23, tr] for im in xrange(nima) ]
+				fscc.append(fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter))))
+				del vol1
+				del vol2
+			
+				# calculate new and improved 3D
+				if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, sym)
+				else:	   volref = recons3d_4nn(data, list_p, sym)
+				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
+			del list_p
+			from filter import fit_tanh, filt_tanl
+			flmin = 1.0
+			flmax = -1.0
+			for iref in xrange(numref):
+				fl, aa = fit_tanh( fscc[iref] )
+				if (fl < flmin):
+					flmin = fl
+					aamin = aa
+				if (fl > flmax):
+					flmax = fl
+					aamax = aa
+			# filter to minimum resolution
+			for iref in xrange(numref):
+				filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), flmin, aamin).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
+					
+ 		for Iter in xrange(max_iter):
+			total_iter += 1
+			print_msg("ALIGNMENT ITERATION #%3d\n"%(total_iter))
+
+			peaks = [[-1.0e23, tr_dummy] for im in xrange(nima) ]
 			for iref in xrange(numref):
 				volref.read_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref)
 				if(an[N_step] == -1):	proj_ali_incore(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
@@ -3302,8 +3364,9 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 						data[im].set_attr('group', iref)
 
 			for im in xrange(nima):
-				group = data[im].get_attr('group')
+				#group = data[im].get_attr('group')  ???
 				data[im].set_attr('xform.proj', peaks[im][1])
+			del peaks
 			fscc = []
 			for iref in xrange(numref):
 				list_p = []
@@ -3313,17 +3376,17 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 				print_msg("Group number : %i"%(iref) + ",  number of objects: %i\n"%(len(list_p)))
 				#  3D stuff
 				if(CTF): vol1 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
-				else:  vol1 = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+				else:    vol1 = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
 				if(CTF): vol2 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
-				else:  vol2 = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+				else:    vol2 = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
 
-				fscc.append(fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution_%02d_%04d"%(iref, N_step*max_iter+Iter+1))))
+				fscc.append(fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter))))
 				del vol1
 				del vol2
 			
 				# calculate new and improved 3D
 				if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, sym)
-				else:	 volref = recons3d_4nn(data, list_p, symmetry)
+				else:	   volref = recons3d_4nn(data, list_p, symm)
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 			del list_p
 
@@ -3338,13 +3401,15 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 			flmax = -1.0
 			for iref in xrange(numref):
 				fl, aa = fit_tanh( fscc[iref] )
-				filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), fl, aa).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 				if (fl < flmin):
 					flmin = fl
 					aamin = aa
 				if (fl > flmax):
 					flmax = fl
 					aamax = aa
+			# filter to minimum resolution
+			for iref in xrange(numref):
+				filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), flmin, aamin).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 			volref = filt_tanl(volref, (flmax+flmin)/2.0, (aamax+aamin)/2.0)
 			
 			
@@ -3369,7 +3434,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
-	      center = 0, maxit= 5, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1",
+	      center = 0, kmax = 3, maxit= 1, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1",
 	      user_func_name="ref_ali3d", MPI=False, pinfo = False):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
 	from utilities      import bcast_string_to_all, getImage, get_input_from_string
@@ -3382,8 +3447,8 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	import os
 	import types
 	from string         import replace
-	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	    import mpi_barrier
+	from mpi 	        import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	        import mpi_barrier
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
