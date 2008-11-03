@@ -3310,7 +3310,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 				for im in xrange(nima):
 					if(iref == data[im].get_attr('group')):
 						list_p.append(im)
-				print_msg("Group number : %i"%(numref) + ",  number of objects: %i\n"%(len(list_p)))
+				print_msg("Group number : %i"%(iref) + ",  number of objects: %i\n"%(len(list_p)))
 				#  3D stuff
 				if(CTF): vol1 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
 				else:  vol1 = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
