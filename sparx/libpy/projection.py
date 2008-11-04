@@ -79,10 +79,8 @@ def prj(vol, params, stack = None):
 def prgs(volft, kb, params):
 	#  params:  phi, theta, psi, sx, sy
 	from fundamentals import fft
-	#EULER_SPIDER = Transform3D.EulerType.SPIDER
-	#R= Transform3D(EULER_SPIDER, params[0], params[1], params[2])
 	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
-	temp = volft.extractplane(R,kb)
+	temp = volft.extract_plane(R,kb)
 	temp.fft_shuffle()
 	temp.center_origin_fft()
 

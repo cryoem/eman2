@@ -4796,7 +4796,7 @@ def eqprojG3(args, data):
 	theta = params[1]
 	psi = params[2]
 	R = Transform({"type":"spider", "phi":phi, "theta":theta, "psi":psi})
-	temp = volft.extractplane(R,kb)
+	temp = volft.extract_plane(R,kb)
 	M = temp.get_ysize()	
 	temp = temp.Four_shuf_ds_cen_us(M, M, 1, False)
 
