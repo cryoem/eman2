@@ -830,7 +830,6 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}
-
 	}
 	else if (type == CTF_SNR) {
 

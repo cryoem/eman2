@@ -87,7 +87,7 @@ operations are performed on oversampled images if specified."""
 	
 
 	for filename in args:
-		name=filename.rsplit(".",1)[0]		# remove the extension from the filename
+		name=get_file_tag(filename)
 
 		# compute the power spectra
 		if debug : print "Processing ",filename
@@ -100,9 +100,7 @@ operations are performed on oversampled images if specified."""
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=options.smooth)
-		parms[name]=ctf
-
-		print options.apix,len(im_1d)
+		parms[name]=ctf.to_string()
 
 		if debug:
 			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
@@ -120,15 +118,20 @@ operations are performed on oversampled images if specified."""
 		for filename in args:
 			if debug: print "Processing ",filename
 
-			if options.phaseflip: phaseout="bdb:ctf.flip."+get_file_tag(filename)
+			if options.phaseflip: phaseout="bdb:ctf.flip."+name
 			else: phaseout=None
 		
-			if options.wiener: wienerout="bdb:ctf.wiener."+get_file_tag(filename)
+			if options.wiener: wienerout="bdb:ctf.wiener."+name
 			else : wienerout=None
 
-			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp)
+			if phaseout : print "Phase image out: ",phaseout,"\t",
+			if wienerout : print "Wiener image out: ",wienerout,
+			print ""
+			ctf=EMAN2Ctf()
+			ctf.from_string(parms[name])
+			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf)
 
-def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1):
+def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -139,16 +142,41 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
 	n=EMUtil.get_image_count(stackfile)
+	lctf=None
 	
 	for i in range(n):
 		im1=EMData(stackfile,i)
+		try: ctf=im1["ctf"]
+		except : ctf=default_ctf
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
 			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-	
-		if phaseflip :
+		
+		fft1=im1.do_fft()
 			
+		if phaseflip :
+			if not lctf or not lctf.equal(ctf):
+				flipim=fft1.copy()
+				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+			fft1.mult(flipim)
+			out=fft1.do_ift()
+			out["ctf"]=ctf
+			out.write_image(phaseflip,i)
+
+		if wiener :
+			if not lctf or not lctf.equal(ctf):
+				wienerim=fft1.copy()
+				ctf.compute_2d_complex(wienerim,Ctf.CtfType.CTF_WIENER_FILTER)
+			fft1.mult(wienerim)
+			out=fft1.do_ift()
+			out["ctf"]=ctf
+			out.write_image(wiener,i)
+			
+		lctf=ctf
+
+	print ctf.to_string()
+	display((flipim,wienerim))
 
 
 def powspec(stackfile,mask=None,edgenorm=True,):
