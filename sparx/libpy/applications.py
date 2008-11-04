@@ -7549,11 +7549,12 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	params = get_params3D(ref)
 	print  " params of the reference volume",params
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
-
 	e = get_im(vol)
 	params = get_params3D(e)
-	print  " input params ",params
-	data=[e, ref, mask, params, discrepancy]
+	print  " input params ", params
+	params2 = list(params)
+	del params2[6]
+	data=[e, ref, mask, params2, discrepancy]
 	new_params = [0.0, 0.0, 0.0]
 	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale], ali_vol_func_rotate, 1.e-1, 1.e-1, 500, data)
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2],0.0,0.0,0.0,1.0)
