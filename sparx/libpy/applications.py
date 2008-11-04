@@ -3174,7 +3174,8 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		return
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
 	from utilities      import bcast_string_to_all, getImage, get_input_from_string
-	from utilities      import get_arb_params, set_arb_params, get_im
+	from utilities      import get_arb_params, set_arb_params, get_im, write_headers
+
 	from filter	        import filt_params, filt_tanl
 	from fundamentals   import fshift
 	from statistics     import fsc_mask
@@ -3187,12 +3188,6 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
-
-	if CTF :
-		from reconstruction import recons3d_4nn_ctf
-		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		#                     0              1         2             3                     4                   5               6
-	else   : from reconstruction import recons3d_4nn
 
 	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 	os.mkdir(outdir)
@@ -3248,7 +3243,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 	if(maskfile):
 		if(type(maskfile) is types.StringType):	 mask3D = getImage(maskfile)
-		else: 	                                mask3D = maskfile
+		else: 	                              mask3D = maskfile
 	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
 	mask = model_circle(last_ring, nx, nx)
 
@@ -3263,17 +3258,16 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	del active
 	data = EMData.read_images(stack, list_of_particles)
 	nima = len(data)
-	for im in xrange(nima):
-		data[im].set_attr_dict({'group':im%numref})  # random assignment
-		if(CTF):
-			ctf_params = get_arb_params(data[im], ctf_dicts)
-			if(im == 0): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
-				st = Util.infomask(data[im], mask, False)
-				data[im] -= st[0]
-				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
-				data[im].set_attr('ctf_applied', 1)
+
+	if CTF :
+		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+		#                  0                  1              2          3              4               5                   6
+		#  ERROR if ctf applied
+		ctf_params = get_arb_params(data[0], parnames)
+		if(ctf_params[6] == 1):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
+		from reconstruction import recons3d_4nn_ctf
+	else   : from reconstruction import recons3d_4nn
+
 	# initialize data for the reference preparation function
 	ref_data = []
 	ref_data.append( mask3D )
@@ -3347,6 +3341,8 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 			for iref in xrange(numref):
 				filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), flmin, aamin).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
 					
+			#  here we  write header info
+			write_headers( stack, data, list_of_particles)
  		for Iter in xrange(max_iter):
 			total_iter += 1
 			print_msg("ALIGNMENT ITERATION #%3d\n"%(total_iter))
@@ -3424,12 +3420,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 
 			#  here we  write header info
-			if(CTF and data_had_ctf == 0):
-				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-			from utilities import write_headers
-			write_headers( stack, data, range(nima))
-			if(CTF and data_had_ctf == 0):
-				for im in xrange(len(data)): data[im].set_attr('ctf_applied', 1)
+			write_headers( stack, data, list_of_particles)
 	print_end_msg("ali3d_m")
 
 def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
