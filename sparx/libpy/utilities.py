@@ -578,32 +578,23 @@ def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 	return (compparams[0]+compparams[2])%360.0, compparams[3], compparams[4], compparams[6]
 
 def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2):
-	"""Print the composition of two transformations  T2*T1
+	"""
+	  Compute the composition of two transformations  T2*T1
 		Here  if v's are vectors:	vnew = T2*T1 vold
 		with T1 described by phi1, sx1,  scale1 etc.
 
 		Usage: compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2)
 		   angles in degrees
 	"""
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
-	R1 = Transform3D(EULER_SPIDER, phi1, theta1, psi1)
-	R1.set_posttrans(Vec3f(sx1,sy1,sz1))
-	R1.set_scale(scale1)
-	R2 = Transform3D(EULER_SPIDER,phi2,theta2,psi2)
-	R2.set_posttrans(Vec3f( float(sx2),float(sy2),float(sz2) ))
-	R2.set_scale(scale2)
+	R1 = Transform({"type":"spider","phi":phi1,"theta":theta1,"psi":psi1,"tx":sx1,"ty":sy1,"tz":sz1,"mirror":0,"scale":scale1})
+	R2 = Transform({"type":"spider","phi":phi2,"theta":theta2,"psi":psi2,"tx":sx2,"ty":sy2,"tz":sz2,"mirror":0,"scale":scale2})
 	Rcomp=R2*R1
-	compeuler = Rcomp.get_rotation(EULER_SPIDER)
-	compphi   = compeuler["phi"] ;  compphi   = (compphi  +360.0)%360.0 ;
-	comptheta = compeuler["theta"]; comptheta = (comptheta+360.0)%360.0 ;
-	comppsi   = compeuler["psi"];   comppsi   = (comppsi  +360.0)%360.0 ;
-	#	comptrans = Rcomp.get_posttrans();
-	compscale = Rcomp.get_scale()
-
-	return compphi, comptheta, comppsi, Rcomp.at(0,3), Rcomp.at(1,3), Rcomp.at(2,3), compscale
+	d = Rcomp.get_params("spider")
+	return d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["scale"]
    
 def combine_params2(a1, x1, y1, m1, a2, x2, y2, m2):
-	"""  Combine 2D alignent parameters including mirror
+	"""
+	  Combine 2D alignent parameters including mirror
 	"""
 	if( m1 == 0):
 		[a3,x3,y3,scale] = compose_transform2(a1, x1, y1, 1.0, a2, x2, y2, 1.0)
