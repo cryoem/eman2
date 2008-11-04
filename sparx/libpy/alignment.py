@@ -914,7 +914,10 @@ def proj_ali_incore_cone(volref, kb, template_angles, projdata, first_ring, last
 def ali_vol_func(params, data):
 	from utilities    import compose_transform3
 	from fundamentals import rot_shift3D
+	print  params
+	print  data[3]
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], params[0], params[1], params[2],params[3], params[4], params[5],1.0)
+	print  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
 	x = rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
 	print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
@@ -947,6 +950,15 @@ def ali_vol_func_scale(params, data):
 	print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2],params[3], params[4], params[5], params[6], -res)
 	return res
 
+def ali_vol_func_only_scale(params, data):
+	from utilities    import compose_transform3
+	from fundamentals import rot_shift3D
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], 0.0,0.0,0.0,0.0,0.0,0.0, params[0])
+	x = rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
+	res = -x.cmp(data[4], data[1], {"mask":data[2]})
+	print  " %9.3f  %12.3e" %(params[0], -res)
+	return res
+
 def helios_func(params, data):
 	sm = data[0].helicise(data[2], params[0], params[1], data[3], data[4])
 	q = sm.cmp("dot", sm, {"negative":0})
@@ -967,15 +979,6 @@ def helios(vol, pixel_size, dp, dphi, section_use = 1.0, radius = 0.0):
 	new_params = amoeba(new_params, [0.05*dp, 0.05*abs(dphi)], helios_func, 1.0e-3, 1.0e-3, 500, data)
 	#print  " new params ", new_params[0], new_params[1]
 	return  vol.helicise(pixel_size, new_params[0][0], new_params[0][1], section_use, radius), new_params[0][0], new_params[0][1]
-
-def ali_vol_func_only_scale(params, data):
-	from utilities    import compose_transform3
-	from fundamentals import rot_shift3D
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], 0.0,0.0,0.0,0.0,0.0,0.0, params[0])
-	x = rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
-	res = -x.cmp(data[4], data[1], {"mask":data[2]})
-	print  " %9.3f  %12.3e" %(params[0], -res)
-	return res
 
 def sub_favj(ave, data, jtot, mirror, numr):
 	'''
