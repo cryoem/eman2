@@ -806,7 +806,6 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		data[im].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	print_end_msg("ali2d_c")
 
-
 """
 
 #* ali2d_c
@@ -879,6 +878,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
 		mask = model_circle(last_ring, nx, nx)
 
+
 	cnx = nx//2+1
  	cny = cnx
  	mode = "F"
@@ -927,6 +927,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	if CTF:  tavg = filt_table(av1, ctfb2)
 	else:     tavg = av1/nima
 	a0 = tavg.cmp("dot", tavg, dict(negative = 0, mask = mask))
+	a0 = 0.0
 	msg = "Initial criterion = %-20.7e\n"%(a0)
 	print_msg(msg)
 
@@ -4687,11 +4688,10 @@ def eqprojG3(args, data):
 	params = args
 	
 	# This part is copied from prgs
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
 	phi = params[0]
 	theta = params[1]
 	psi = params[2]
-	R= Transform3D(EULER_SPIDER,phi,theta,psi)
+	R = Transform({"type":"spider", "phi":phi, "theta":theta, "psi":psi})
 	temp = volft.extractplane(R,kb)
 	M = temp.get_ysize()	
 	temp = temp.Four_shuf_ds_cen_us(M, M, 1, False)
@@ -9117,7 +9117,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 				mpi_barrier(MPI_COMM_WORLD)
 		else:
 			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
-
+	
 		if   opt_method == 'cla':
 			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0, SA2)
 		elif opt_method == 'SSE':

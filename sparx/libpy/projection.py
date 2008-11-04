@@ -79,8 +79,9 @@ def prj(vol, params, stack = None):
 def prgs(volft, kb, params):
 	#  params:  phi, theta, psi, sx, sy
 	from fundamentals import fft
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
-	R= Transform3D(EULER_SPIDER, params[0], params[1], params[2])
+	#EULER_SPIDER = Transform3D.EulerType.SPIDER
+	#R= Transform3D(EULER_SPIDER, params[0], params[1], params[2])
+	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
 	temp = volft.extractplane(R,kb)
 	temp.fft_shuffle()
 	temp.center_origin_fft()
@@ -269,7 +270,7 @@ def plot_angles(agls):
 		py = int(py)
 
 		if agls[i][1] > 90: style = 2
-		else:              style = 1
+		else:               style = 1
 		
 	
 		for cx in xrange(px - c, px + c + 1, style):
@@ -289,6 +290,7 @@ def cml_sinogram(image2D, diameter):
 	from math         import cos, sin
 	from fundamentals import fft
 	from filter       import filt_tanh
+	from utilities    import model_blank
 	
 	M_PI  = 3.141592653589793238462643383279502884197
 	
@@ -311,21 +313,19 @@ def cml_sinogram(image2D, diameter):
 	volft.center_origin_fft()
 	volft.fft_shuffle()
 	cst = 1#  5  use to be 5
-	nangle = int(M_PI * r * cst)		# pi * r * cst
-	dangle = M_PI / nangle			# 180 * sino
+	#nangle = int(M_PI * r * cst)		# pi * r * cst
+	nangle = 360
+	dangle = 2*M_PI / nangle			# 180 * sino
+
 
 	data = []
 	for j in xrange(nangle):
 		nuxnew =  cos(dangle * j)
 		nuynew = -sin(dangle * j)
-
 		line = volft.extractline(kb, nuxnew, nuynew)
-
-		# filter to omitted u**2  TODO
-			
 		rlines = fft(line)
 		data.append(rlines.copy())
-	
+		
 	e = EMData()
 	e.set_size(data[0].get_xsize() ,len(data), 1)
 	for n in xrange(len(data)):
@@ -333,7 +333,6 @@ def cml_sinogram(image2D, diameter):
 		for i in xrange(nx): e.set_value_at(i, n, data[n].get_value_at(i))
 
 	Util.cyclicshift(e, {"dx":M, "dy":0, "dz":0} )
-
 	return Util.window(e, diameter, len(data), 1, 0, 0, 0)
 
 # write the head of the logfile
@@ -451,8 +450,9 @@ def cml_export_progress(namefile, Prj, Cst, disc, cmd):
 # open and transform projections
 def cml_open_proj(stack, ir, ou):
 	from projection  import cml_sinogram
-	from utilities   import model_circle, get_params_proj
+	from utilities   import model_circle, get_params_proj, model_blank
 	from filter      import filt_tophatb
+	from fundamentals import fft
 
 	# ----- define structures data ---------------------------------
 	class Projection:
@@ -479,7 +479,7 @@ def cml_open_proj(stack, ir, ou):
 	for i in xrange(nprj):
 		Prj.append(Projection(None, -1, -1, False, False))
 		image.read_image(stack, i)
-		image = filt_tophatb(image, 0.05, 0.25)
+		
 		if(i == 0):
 			nx = image.get_xsize()
 			if(ou < 1):
@@ -492,18 +492,72 @@ def cml_open_proj(stack, ir, ou):
 			circ     = mask2D.copy()
 			if ou > 1:  circ   -= model_circle(ou - 1, nx, nx)
 			if ir > 0:  mask2D -= model_circle(ir, nx, nx)
+
+		# normalize under the mask
 		[mean_a, sigma, imin, imax] = Util.infomask(image, circ, True)
 		image -= mean_a
 		Util.mul_img(image, mask2D)
 
-		Prj[i].sino = cml_sinogram(image, diameter)
+		# sinogram
+		tmp = cml_sinogram(image, diameter)
+		
 		try:
 			phi, theta, psi, s2x, s2y = get_params_proj(image)
 			Prj[i].phi    = phi
 			Prj[i].theta  = theta
 			Prj[i].psi    = psi
-
 		except:	pass
+
+		# normalize each lines of the sino
+		nxe      = tmp.get_xsize()
+		nye      = tmp.get_ysize()
+		f1 = 0.05
+		f2 = 0.25
+		nln = diameter
+		lb = max(int(2*f1*nln+1), 3)
+		lb = lb + (lb+1)%2
+		le = min(int(2*f2*nln+1), nln-1)
+		lf = le-lb+1
+
+		Prj[i].sino = model_blank(lf, nye)
+		for li in xrange(nye):
+			e = model_blank(nxe)
+			for ci in xrange(nxe): e.set_value_at(ci, 0, tmp.get_value_at(ci, li))
+			[mean_e, sigma_e, imin, imax] = Util.infomask(e, None, True)
+			e = (e - mean_e) / sigma_e
+			newe = fft(e)
+			ct = 0
+			for ci in xrange(lb, lf+lb):
+				print ct
+				Prj[i].sino.set_value_at(ct, li, newe.get_value_at(ci, 0))
+				ct += 1
+
+			
+		'''
+		if i == 5:
+			for ik in xrange(nxe):
+				print Prj[i].sino.get_value_at(ik, 2), '    ', Prj[i].sino.get_value_at(nxe-ik-1, 182)
+
+			Prj[i].sino.write_image('test.hdf', 0)
+		'''
+			
+
+		
+
+	## flip to test
+	tmpim = Prj[0].sino.copy()
+	Prj[0].sino = Prj[1].sino.copy()
+	Prj[1].sino = tmpim.copy()
+
+	tmpphi = Prj[0].phi
+	tmptheta = Prj[0].theta
+	tmppsi = Prj[0].psi
+	Prj[0].phi = Prj[1].phi
+	Prj[0].theta = Prj[1].theta
+	Prj[0].psi = Prj[1].psi
+	Prj[1].phi = tmpphi
+	Prj[1].theta = tmptheta
+	Prj[1].psi = tmppsi
 
 	'''
 	if FILTER:
@@ -550,7 +604,7 @@ def cml_weights(Prj):
 		if Prj[i].mirror:
 			Prj[i].phi   = fmod(Prj[i].phi + 180.0, 360.0)
 			Prj[i].theta = 180.0 - Prj[i].theta
-	
+
 	# compute the angles of the common lines in space
 	phi, theta = cml_cmlines_3D(Prj)
 
@@ -595,7 +649,6 @@ def cml_weights(Prj):
 			weights[n] = nval
 			for i in mem_i_same[n]: weights[i] = nval
 
-	
 	# re-apply mirror if neeed
 	for i in xrange(nprj):
 		if Prj[i].mirror:
@@ -605,6 +658,7 @@ def cml_weights(Prj):
 	# return the weights
 	return weights
 
+'''
 # compute the common lines in sino
 def get_common_line_angles(phi1, theta1, psi1, phi2, theta2, psi2, nangle):
 	from math import fmod
@@ -637,6 +691,8 @@ def get_common_line_angles(phi1, theta1, psi1, phi2, theta2, psi2, nangle):
 	n2 = int(nangle * (fmod(alpha2, 180.0) / 180.0))
 
 	return [alphain1, alphain2, n1, n2]
+'''
+
 
 # compute discrepancy according the projections
 def cml_disc_proj(Prj):
@@ -852,7 +908,8 @@ def cml_spin_proj_full(Prj, Cst, weights, disc_init, com):
 	# spin function d_psi to 360
 	for n in xrange(1, Cst['npsi']):
 		Prj[Cst['iprj']].psi += Cst['d_psi_pi']
-
+		
+		#print Prj[Cst['iprj']].psi, Cst['d_psi_pi']
 		#t1 = time.time()
 
 		# update common lines
@@ -903,7 +960,8 @@ def cml_spin_proj_full(Prj, Cst, weights, disc_init, com):
 
 		# compute the full disc
 		disc_new, mirror_new = cml_disc_forspin_full(Prj, weights, Cst, com, com_m, disc_init)
-
+		cml_export_progress('disc_psi', Prj, Cst, disc_new, 'progress')
+		
 		#print 'cml_disc_forspin_full:', time.time() - t2
 	
 		# choose the best
@@ -1129,9 +1187,10 @@ def cml_find_struc_SA(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, ref
 	Cst['npsi']     = 2 * Prj[0].sino.get_ysize()
 	Cst['nlines']   = ((Cst['nprj'] - 1) * Cst['nprj']) / 2
 	Cst['nangle']   = Prj[0].sino.get_ysize()
-	Cst['d_psi']    = pi / Cst['nangle']
+	Cst['d_psi']    = 2*pi / Cst['nangle']
 	Cst['d_psi_pi'] = Cst['d_psi'] * 180.0 / pi
 	Cst['iprj']     = -1
+
 
 	# Define list of angle randomly distribute
 	anglst   = even_angles(delta, 0.0, 89.9, 0.0, 359.9, 'S')
@@ -1376,12 +1435,15 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 	# Cst
 	Cst     = {}
 	Cst['nprj']     = len(Prj)
-	Cst['npsi']     = 2 * Prj[0].sino.get_ysize()
+	Cst['npsi']     = Prj[0].sino.get_ysize()
 	Cst['nlines']   = ((Cst['nprj'] - 1) * Cst['nprj']) / 2
 	Cst['nangle']   = Prj[0].sino.get_ysize()
-	Cst['d_psi']    = pi / Cst['nangle']
+	Cst['d_psi']    = 2*pi / Cst['nangle']
 	Cst['d_psi_pi'] = Cst['d_psi'] * 180.0 / pi
 	Cst['iprj']     = -1
+	print Cst
+	#sys.exit()
+	
 
 	# Define list of uniformly distributed angles
 	anglst = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
@@ -1459,6 +1521,9 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 		for i in xrange(Cst['nprj']): print '%6.2f %6.2f %6.2f' % (Prj[i].phi, Prj[i].theta, Prj[i].psi)
 		print 'disc init: %10.3f' % disc
 
+	print Prj[0].sino.get_xsize()
+	sys.exit()
+
 	stopflag = False
 	## SPIDER
 	if not given: list_prj = range(1, Cst['nprj'])
@@ -1471,7 +1536,7 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 		#shuffle(list_prj)
 		ct_prj   = 0
 		cml_export_progress(infofilename, Prj, Cst, disc, 'iteration:%d' % (kiter))
-		#list_prj = [3]
+		#list_prj = [5]
 		for iprj in list_prj:
 			# count proj
 			ct_prj += 1
@@ -1525,7 +1590,9 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 				else:
 					Prj[iprj].psi = best_psi
 
+
 				#cml_export_progress(infofilename, Prj, Cst, new_disc, 'progress')
+
 
 			# assign the best orientation
 			oldpos                       = Prj[iprj].pos_agls
@@ -1537,6 +1604,9 @@ def cml_find_struc(Prj, delta, outdir, outnum, Iter = 10, rand_seed=1000, refine
 
 			# display info
 			cml_export_txtagls(angfilename, Prj, Cst, disc, 'Iter: ' + str(kiter).rjust(3, '0') + ' prj: ' + str(iprj + 1).rjust(2, '0'))
+
+			sys.exit()
+
 
 			
 		try:
