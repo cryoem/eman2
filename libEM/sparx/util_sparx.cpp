@@ -17207,7 +17207,8 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		//        Compute function value f for the sample problem.
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]),kb);
+		//proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]),kb);
+		proj = volft->extract_plane(Transform(Dict("type", "SPIDER", "phi", (float)x[0], "theta", (float)x[1], "psi", (float)x[2])), kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
@@ -17223,7 +17224,8 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 		float dt = 1.0e-3f;
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0]+dt,(float)x[1],(float)x[2]),kb);
+		//proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0]+dt,(float)x[1],(float)x[2]),kb);
+		proj = volft->extract_plane(Transform(Dict("type", "SPIDER", "phi", (float)x[0]+dt, "theta", (float)x[1], "psi", (float)x[2])), kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
@@ -17237,7 +17239,8 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1]+dt,(float)x[2]),kb);
+		//proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1]+dt,(float)x[2]),kb);
+		proj = volft->extract_plane(Transform(Dict("type", "SPIDER", "phi", (float)x[0], "theta", (float)x[1]+dt, "psi", (float)x[2])), kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
@@ -17251,7 +17254,8 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]+dt),kb);
+		//proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]+dt),kb);
+		proj = volft->extract_plane(Transform(Dict("type", "SPIDER", "phi", (float)x[0], "theta", (float)x[1], "psi", (float)x[2]+dt)), kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
@@ -17265,7 +17269,8 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]),kb);
+		//proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]),kb);
+		proj = volft->extract_plane(Transform(Dict("type", "SPIDER", "phi", (float)x[0], "theta", (float)x[1], "psi", (float)x[2])), kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3]+dt, "y_shift", x[4], "z_shift", 0.0f));
@@ -17279,7 +17284,8 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 
 		proj = new EMData();
 		proj2 = new EMData();
-		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]),kb);
+		//proj = volft->extractplane(Transform3D(Transform3D::SPIDER,(float)x[0],(float)x[1],(float)x[2]),kb);
+		proj = volft->extract_plane(Transform(Dict("type", "SPIDER", "phi", (float)x[0], "theta", (float)x[1], "psi", (float)x[2])), kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4]+dt, "z_shift", 0.0f));
