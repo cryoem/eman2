@@ -82,12 +82,16 @@ def db_open_dict(url,ro=False):
 	if sln<0 :
 		ddb=EMAN2DB.open_db(".")
 		ddb.open_dict(url[4:qun],ro=ro)	# strip the ?xyz from the end if present
-		if ro : return ddb.__dict__[url[4:qun]+"__ro"]
+		try:
+			if ro : return ddb.__dict__[url[4:qun]+"__ro"]
+		except: pass
 		return ddb.__dict__[url[4:qun]]
 	ddb=EMAN2DB.open_db(url[4:sln])
 	name=url[sln+1:]
 	ddb.open_dict(name,ro=ro)
-	if ro: return ddb.__dict__[name+"__ro"]
+	try: 
+		if ro: return ddb.__dict__[name+"__ro"]
+	except: pass
 	return ddb.__dict__[name]
 
 def db_remove_dict(url):
