@@ -373,7 +373,6 @@ class EMQtWidgetModule(EMGUIModule):
 		self.qt_widget = qt_widget
 		self.gl_widget = None
 		EMGUIModule.__init__(self,application)
-		#print self.gl_widget,"is real"
 		
 		self.selected = False
 		
@@ -384,7 +383,7 @@ class EMQtWidgetModule(EMGUIModule):
 	def get_qt_widget(self):
 		self.under_qt_control = True
 		return self.qt_widget
-	
+		
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
 		from emfloatingwidgets import EMGLViewQtWidget
 		from emfloatingwidgets import EMQtGLView, EM2DQtGLWindow

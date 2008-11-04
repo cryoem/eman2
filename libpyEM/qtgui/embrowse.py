@@ -109,10 +109,6 @@ class EMBrowserDialog(EMSelectorDialog):
 			self.current_force.setChecked(False)
 			self.current_force = f
 		
-
-		
-					
-	
 app = None
 def on_done(string_list):
 	print "on done"

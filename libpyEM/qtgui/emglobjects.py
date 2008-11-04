@@ -1174,6 +1174,7 @@ class Camera2(EventsEmitterAndReciever):
 		self.mpressy = -1
 
 		self.allow_rotations = True
+		self.allow_translations = True
 		
 	def get_emit_signals_and_connections(self):
 		return  {"apply_rotation":self.apply_rotation,"apply_translation":self.apply_translation,"scale_delta":self.scale_delta}
@@ -1186,7 +1187,10 @@ class Camera2(EventsEmitterAndReciever):
 	
 	def allow_camera_rotations(self,bool=True):
 		self.allow_rotations = bool
-
+		
+	def enable_camera_translations(self,val):
+		self.allow_translations = val
+		
 	def loadIdentity(self):
 		self.scale = 1.0
 		
@@ -1380,20 +1384,21 @@ class Camera2(EventsEmitterAndReciever):
 				self.mpressy = event.y()
 				return True
 		elif self.mmode==0:
-			if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier and self.allow_z_mouse_trans:
-				
-					self.motion_translate_z_only(self.mpressx, self.mpressy,event)
-						
-					self.mpressx = event.x()
-					self.mpressy = event.y()
-					return True
-			elif event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and not self.allow_rotations):
-				if self.mmode==0:
-					self.motion_translateLA(self.mpressx, self.mpressy,event)
-						
-					self.mpressx = event.x()
-					self.mpressy = event.y()
-					return True
+			if self.allow_translations:
+				if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier and self.allow_z_mouse_trans:
+					
+						self.motion_translate_z_only(self.mpressx, self.mpressy,event)
+							
+						self.mpressx = event.x()
+						self.mpressy = event.y()
+						return True
+				elif event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and not self.allow_rotations):
+					if self.mmode==0:
+						self.motion_translateLA(self.mpressx, self.mpressy,event)
+							
+						self.mpressx = event.x()
+						self.mpressy = event.y()
+						return True
 				
 		return False
 	

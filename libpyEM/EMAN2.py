@@ -559,7 +559,19 @@ def remove_directories_from_name(file_name):
 	if idx == -1: return file_name
 	elif idx == (len(file_name)-1): return file_name
 	else: return file_name[idx+1:]
-		
+
+def name_has_no_tag(file_name):
+	'''
+	A convenient way of asking if the file name in has no tag. i.e.
+	/home/tmp.jpg would have a tag but /home/tmp would not. Ofcourse
+	this function will return true if the argument is the name of a
+	folder, but that was not the original intended use
+	'''
+	idx1 = file_name.rfind("/")
+	idx2 = file_name.rfind(".")
+	
+	if idx1 >= idx2: return True # -1 == -1 
+	else: return False
 	
 # a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
 # can be created from the command line string. Returns false if there are problems
@@ -753,17 +765,17 @@ def test_image_3d(type=0,size=(128,128,128)):
 
 # get a font renderer
 def get_3d_font_renderer():
-        import platform
+	import platform
 	font_renderer = EMFTGL()
 	font_renderer.set_face_size(32)
 	font_renderer.set_using_display_lists(True)
 	font_renderer.set_depth(2)
 	if platform.system() in ["Linux","Darwin"]:
-                font_renderer.set_font_file_name(os.getenv("EMAN2DIR")+"/fonts/DejaVuSerif.ttf")
-        elif platform.system() == "Windows":
-                font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
-        else:
-                print "unknown platform:",platform.system()
+				font_renderer.set_font_file_name(os.getenv("EMAN2DIR")+"/fonts/DejaVuSerif.ttf")
+	elif platform.system() == "Windows":
+			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
+	else:
+			print "unknown platform:",platform.system()
 	return font_renderer
 
 class EMAbstractFactory:

@@ -965,6 +965,9 @@ class EMGLWindow:
 	def set_enable_clip(self,val=True):
 		self.enable_clip = val
 		
+	def enable_interactive_translation(self,val=True):
+		self.cam.enable_camera_translations(val)
+		
 	def correct_internal_translations(self):
 		glTranslate(-self.cam.cam_x,-self.cam.cam_y,-self.cam.cam_z)
 		

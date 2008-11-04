@@ -854,6 +854,7 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 				return
 			
 		print "error, attempt to detach a child that didn't belong to this parent"
+		
 
 class EMFrame(EMWindowNode,EMRegion):
 	'''
@@ -1061,8 +1062,8 @@ class EMDesktopFrame(EMFrame):
 	def set_type(self,type_name):
 		self.type_name = type_name
 	
-	def append_task_widget(self,task_widget):
-		self.left_side_bar.attach_child(task_widget)
+	#def append_task_widget(self,task_widget):
+		#self.left_side_bar.attach_child(task_widget)
 	
 	def set_geometry(self,geometry):
 		EMFrame.set_geometry(self,geometry)
@@ -1113,7 +1114,7 @@ class EMDesktopFrame(EMFrame):
 			self.display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.display_frame
 		elif hint == "rotor":
-			print "attaching right side bar"
+			#print "attaching right side bar"
 			self.right_side_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.right_side_bar
 		elif hint == "settings":
@@ -1361,10 +1362,11 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.setMouseTracking(True)
 		
 		# this float widget has half of the screen (the left)
-		self.task_widget = EMDesktopTaskWidget(self)
+		
 		self.desktop_frames = [EMDesktopFrame(self)]
 		self.current_desktop_frame = self.desktop_frames[0]
-		self.current_desktop_frame.append_task_widget(self.task_widget)
+		self.task_widget = EMDesktopTaskWidget(self,self.application)
+		self.application.show_specific(self.task_widget)
 		EMEventRerouter.__init__(self,self.current_desktop_frame)
 		
 		#print_node_hierarchy(self.current_desktop_frame)
@@ -1408,8 +1410,10 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 	def establish_target_frame(self,type_name):
 		for frame in self.desktop_frames:
 			if frame.get_type() == type_name:
+				self.application.close_specific(self.task_widget)
 				self.current_desktop_frame = frame
 				EMEventRerouter.set_target(self,self.current_desktop_frame)
+				self.application.show_specific(self.task_widget)
 				print "that already exists"
 				print "now animate change"
 				return False
@@ -1418,12 +1422,13 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		if self.current_desktop_frame.get_type() == None:
 			target_frame = self.current_desktop_frame
 		else:
-			self.current_desktop_frame.detach_child(self.task_widget)
+			self.application.close_specific(self.task_widget)
 			target_frame = EMDesktopFrame(self)
 			target_frame.resize_gl()
-			target_frame.append_task_widget(self.task_widget)
+			#target_frame.append_task_widget(self.task_widget.gl_widget)
 			self.desktop_frames.append(target_frame)
 			self.current_desktop_frame = target_frame
+			self.application.show_specific(self.task_widget)
 		
 		EMEventRerouter.set_target(self,self.current_desktop_frame)
 		
@@ -1682,150 +1687,61 @@ class EMBrowserSettingsInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.apply_button, QtCore.SIGNAL("clicked(bool)"), target.apply_row_col)
 		QtCore.QObject.connect(self.clear_button, QtCore.SIGNAL("clicked(bool)"), target.clear_all)
 		QtCore.QObject.connect(self.show_grid, QtCore.SIGNAL("toggled(bool)"), target.show_grid)
-		
-class EMDesktopTaskWidget(EMGLViewContainer):
-	def __init__(self, parent):
-		#print "init"
-		EMGLViewContainer.__init__(self,parent)
-		self.parent = parent
-	
-		self.init_flag = True
-		
-		self.desktop_task_widget = None
-	
-		self.glwidget = None
-		self.widget = None
-		
-		self.animation = None
-	
-	def get_qt_context_parent(self):
-		return EMDesktop.main_widget
-	
-	def get_gl_context_parent(self):
-		return EMDesktop.main_widget
 
-	def get_depth_for_height(self, height):
-		try: 
-			return EMDesktop.main_widget.get_depth_for_height(height)
-		except:
-			print "parent can't get height for depth"
-			exit(1)
-			#return 0
-	
-	def correct_internal_translations(self):
-		pass
-	def height(self):
-		if self.desktop_task_widget != None: return self.desktop_task_widget.height() 
-		return 0
-		
-	def width(self):
-		if self.desktop_task_widget != None: return self.desktop_task_widget.width() 
-		return 0
-	
-	def height_inc_border(self):
-		if self.desktop_task_widget != None: return self.desktop_task_widget.height_inc_border() 
-		return 0
-		
-	def width_inc_border(self):
-		if self.desktop_task_widget != None: return self.desktop_task_widget.width_inc_border() 
-		return 0
-	
-	def updateGL(self):
-		try: self.parent.updateGL()
-		except: pass
-	
-	def lock_texture(self):
-		self.desktop_task_widget.lock_texture()
-		
-	def unlock_texture(self):
-		self.desktop_task_widget.unlock_texture()
-	
-	def draw(self):
-		if ( self.init_flag == True ):
-			
-			#gl_view.setQtWidget(self.qt_widget)
-			
-			#self.desktop_task_widget = EMGLViewQtWidget(EMDesktop.main_widget)
-			self.widget = EMDesktopTaskWidget.EMDesktopTaskInspector(self)
-			self.widget.show()
-			self.widget.hide()
-			self.widget.resize(150,150)
-			gl_view = EMQtGLView(EMDesktop.main_widget,self.widget)
-			self.desktop_task_widget = EM2DQtGLWindow(self,gl_view)
-			
-			
-			self.init_flag = False
-			self.attach_child(self.desktop_task_widget)
-			#self.parent.i_initialized(self)
-	
-		for child in self.children:
-			glPushMatrix()
-			child.draw()
-			glPopMatrix()
-			
-	def bindTexture(self,pixmap):
-		return EMDesktop.main_widget.bindTexture(pixmap)
-	
-	def deleteTexture(self,val):
-		return EMDesktop.main_widget.deleteTexture(val)
-	
-	def get_render_dims_at_depth(self, depth):
-		try: return EMDesktop.main_widget.get_render_dims_at_depth(depth)
-		except:
-			print "parent can't get render dims at for depth"
-			return
+class EMDesktopTaskWidget(object):
+	def __new__(cls,parent,application):
+		widget = EMDesktopTaskInspector(parent)
+		widget.show()
+		widget.hide()
+		widget.resize(150,150)
+		#gl_view = EMQtGLView(EMDesktop.main_widget,widget)
+		module = EMQtWidgetModule(widget,application)
+		application.show_specific(module)
+		#desktop_task_widget = EM2DGLWindow(gl_view)
+		return module
 
-	def close(self):
-		pass
-
-	def add_browser(self):
-		self.parent.add_browser_frame()
+class EMDesktopTaskInspector(QtGui.QWidget):
+	def get_desktop_hint(self):
+		return "inspector"
+	
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=target
 		
-	def add_selector(self):
-		self.parent.add_selector_frame()
 		
-	def add_boxer(self):
-		self.parent.add_boxer_frame()
-
-	class EMDesktopTaskInspector(QtGui.QWidget):
-		def __init__(self,target) :
-			QtGui.QWidget.__init__(self,None)
-			self.target=target
-			
-			
-			self.vbl = QtGui.QVBoxLayout(self)
-			self.vbl.setMargin(0)
-			self.vbl.setSpacing(6)
-			self.vbl.setObjectName("vbl")
-			
-			self.hbl_buttons2 = QtGui.QHBoxLayout()
-			
-			self.tree_widget = QtGui.QTreeWidget(self)
-			self.tree_widget_entries = []
-			self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Browse")))
-			#self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Thumb")))
-			self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Box")))
-			self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
-			self.tree_widget.setHeaderLabel("Choose a task")
-			
-			self.hbl_buttons2.addWidget(self.tree_widget)
-			
-			self.close = QtGui.QPushButton("Close")
-			
-			self.vbl.addLayout(self.hbl_buttons2)
-			self.vbl.addWidget(self.close)
-			
-			QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
-			QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
-			
-		def tree_widget_double_click(self,tree_item,i):
-			task = tree_item.text(0)
-			if task == "Browse":
-				self.target.add_browser()
-			if task == "Thumb":
-				self.target.add_selector()
-			elif task == "Box":
-				self.target.add_boxer()
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+		
+		self.hbl_buttons2 = QtGui.QHBoxLayout()
+		
+		self.tree_widget = QtGui.QTreeWidget(self)
+		self.tree_widget_entries = []
+		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Browse")))
+		#self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Thumb")))
+		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Box")))
+		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
+		self.tree_widget.setHeaderLabel("Choose a task")
+		
+		self.hbl_buttons2.addWidget(self.tree_widget)
+		
+		self.close = QtGui.QPushButton("Close")
+		
+		self.vbl.addLayout(self.hbl_buttons2)
+		self.vbl.addWidget(self.close)
+		
+		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
+		QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
+		
+	def tree_widget_double_click(self,tree_item,i):
+		task = tree_item.text(0)
+		if task == "Browse":
+			self.target.add_browser_frame()
+		if task == "Thumb":
+			self.target.add_selector_frame()
+		elif task == "Box":
+			self.target.add_boxer_frame()
 		
 class ob2dimage:
 	def __init__(self,target,pixmap):
@@ -2178,6 +2094,7 @@ class BottomWidgetBar(SideWidgetBar):
 		#print "attached child"
 		self.transforms = []
 		self.children = []
+		new_child.enable_interactive_translation(False)
 		self.transformers.append(BottomWidgetBar.BottomTransform(new_child))
 		EMWindowNode.attach_child(self,new_child)
 		self.reset_scale_animation()
@@ -2226,6 +2143,7 @@ class RightSideWidgetBar(SideWidgetBar):
 		
 	def attach_child(self,new_child):
 		self.transformers.append(RightSideWidgetBar.RightSideTransform(new_child))
+		new_child.enable_interactive_translation(False)
 		EMWindowNode.attach_child(self,new_child)
 		self.reset_scale_animation()
 		#print_node_hierarchy(self.parent)
@@ -2273,6 +2191,7 @@ class LeftSideWidgetBar(SideWidgetBar):
 		
 	def attach_child(self,new_child):
 		self.transformers.append(LeftSideWidgetBar.LeftSideTransform(new_child))
+		new_child.enable_interactive_translation(False)
 		EMWindowNode.attach_child(self,new_child)
 		self.reset_scale_animation()
 		#print_node_hierarchy(self.parent)
@@ -2301,5 +2220,6 @@ class LeftSideWidgetBar(SideWidgetBar):
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMDesktop(app)
+	window.showMaximized()
 #	window.showFullScreen()
 	window.app.exec_()
