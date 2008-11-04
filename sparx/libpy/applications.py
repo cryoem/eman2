@@ -3042,6 +3042,11 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	max_iter    = int(maxit)
 	center      = int(center)
 
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	nx      = vol.get_xsize()
+	if last_ring < 0:	last_ring = int(nx/2) - 2
+
 	if (myid == main_node):
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -3052,13 +3057,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Maskfile                    : %s\n"%(maskfile))
 		print_msg("Inner radius                : %i\n"%(first_ring))
-
-	vol     = EMData()
-	vol.read_image(ref_vol)
-	nx      = vol.get_xsize()
-	if last_ring < 0:	last_ring = int(nx/2) - 2
-
-	if (myid == main_node):
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Ring step                   : %i\n"%(rstep))
 		print_msg("X search range              : %s\n"%(xrng))
@@ -3078,7 +3076,6 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		else:                                  mask3D = maskfile
 	else:         mask3D = model_circle(last_ring, nx, nx, nx)
 	mask = model_circle(last_ring, nx, nx)
-
 
 	if(CTF):
 		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
@@ -3114,7 +3111,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		data[im].set_attr('ID', list_of_particles[im])
 		if(CTF):
 			ctf_params = get_arb_params(data[im], ctf_dicts)
-			if(im == image_start): data_had_ctf = ctf_params[6]
+			if(im == 0): data_had_ctf = ctf_params[6]
 			if(ctf_params[6] == 0):
 				st = Util.infomask(data[im], mask, False)
 				data[im] -= st[0]
@@ -3137,7 +3134,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	for N_step in xrange(lstp):
  		for Iter in xrange(max_iter):
 			if(an[N_step] == -1): proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = finfo, MPI=True)
-			else:                proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = finfo, MPI=True)
+			else:           proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = finfo, MPI=True)
 
 			if(CTF): vol, fscc = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, mask3D, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
@@ -3171,13 +3168,15 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	     user_func_name="ref_ali3d", MPI=False, debug = False):
 	if MPI:
 		ali3d_m_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
-		 delta, an, center, kmax, maxit, CTF, snr, ref_a, sym, user_func_name, debug)
+		 delta, an, center, kmaxi, maxit, CTF, snr, ref_a, sym, user_func_name, debug)
 		return
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
 	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, get_im, write_headers
+	from projection     import prep_vol, prgs
+	from utilities      import get_params_proj
 
-	from filter	        import filt_params, filt_tanl
+	from filter	    import filt_params, filt_tanl
 	from fundamentals   import fshift
 	from statistics     import fsc_mask
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -3210,13 +3209,8 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
-	max_iter    = int(maxit);
-
-	print_msg("Input stack                 : %s\n"%(stack))
-	print_msg("Reference volume            : %s\n"%(ref_vol))	
-	print_msg("Output directory            : %s\n"%(outdir))
-	print_msg("Maskfile                    : %s\n"%(maskfile))
-	print_msg("Inner radius                : %i\n"%(first_ring))
+	max_iter    = int(maxit)
+	kmax        = int(kmaxi)
 
 	numref = EMUtil.get_image_count(ref_vol)
 	for  iref in xrange(numref):
@@ -3227,7 +3221,13 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	nx      = volref.get_xsize()
 	if last_ring < 0:	last_ring = nx//2 - 2
 
+
+	print_msg("Input stack                 : %s\n"%(stack))
+	print_msg("Reference volume            : %s\n"%(ref_vol))	
 	print_msg("Number of reference volumes : %i\n"%(numref))
+	print_msg("Output directory            : %s\n"%(outdir))
+	print_msg("Maskfile                    : %s\n"%(maskfile))
+	print_msg("Inner radius                : %i\n"%(first_ring))
 	print_msg("Outer radius                : %i\n"%(last_ring))
 	print_msg("Ring step                   : %i\n"%(rstep))
 	print_msg("X search range              : %s\n"%(xrng))
@@ -3235,7 +3235,8 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	print_msg("Translational step          : %s\n"%(step))
 	print_msg("Angular step                : %s\n"%(delta))
 	print_msg("Angular search range        : %s\n"%(an))
-	print_msg("Maximum iteration           : %i\n"%(max_iter))
+	print_msg("Maximum number of reassignment iterations   : %i\n"%(kmax))
+	print_msg("Maximum number of alignment iterations      : %i\n"%(max_iter))
 	print_msg("Center type                 : %i\n"%(center))
 	print_msg("data with CTF               : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
@@ -3244,7 +3245,7 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 	if(maskfile):
 		if(type(maskfile) is types.StringType):	 mask3D = getImage(maskfile)
-		else: 	                              mask3D = maskfile
+		else: 	                                 mask3D = maskfile
 	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
 	mask = model_circle(last_ring, nx, nx)
 
@@ -3284,8 +3285,6 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 			total_iter += 1
 			print_msg("ASSIGNMENT ITERATION #%3d\n"%(total_iter))
 			peaks = [-1.0e23]*nima
-			from projection import prep_vol, prgs
-			from utilities import get_params_proj
 			for iref in xrange(numref):
 				if(CTF):
 					previous_defocus = -1.0
@@ -3426,21 +3425,21 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
-	      center = 0, kmax = 3, maxit= 1, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1",
-	      user_func_name="ref_ali3d", MPI=False, pinfo = False):
+	      center = 0, kmaxi = 3, maxit= 1, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1",
+	      user_func_name="ref_ali3d", MPI=False, debug = False):
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
 	from utilities      import bcast_string_to_all, getImage, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc, recv_attr_dict, send_attr_dict
-	from filter	        import filt_params, filt_btwl, filt_from_fsc2, filt_table, fit_tanh, filt_tanl, filt_vols
-	from alignment	  import proj_ali_incore
+	from filter	    import filt_params, filt_btwl, filt_from_fsc2, filt_table, fit_tanh, filt_tanl, filt_vols
+	from alignment	    import proj_ali_incore
 	from random         import randint
 	from fundamentals   import fshift
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os
 	import types
 	from string         import replace
-	from mpi 	        import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	        import mpi_barrier
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import mpi_barrier
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -3448,6 +3447,13 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	if(myid == main_node):
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
+	from string import replace
+	if debug:
+		info_file = outdir+("/progress%04d"%myid)
+		finfo = open(info_file, 'w')
+	else:
+		finfo = None
 
 
 	xrng        = get_input_from_string(xr)
@@ -3462,149 +3468,247 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		from  alignment	    import proj_ali_incore_local
 		an      = get_input_from_string(an)
 
-	from alignment import proj_ali_incore
-
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
 	max_iter    = int(maxit)
 	center      = int(center)
+	kmax        = int(kmaxi)
 
-	numref            = EMUtil.get_image_count(ref_vol)
-	volref = []
-	for  iref in xrange(numref):
-		vol     = EMData()
-		vol.read_image(ref_vol, iref)
-		volref.append(vol)
-	del vol
-	nx      = volref[0].get_xsize()
+
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	nx      = vol.get_xsize()
 	if last_ring < 0:	last_ring = int(nx/2) - 2
+
+	numref = EMUtil.get_image_count(ref_vol)
+	volref     = EMData()
+	volref.read_image(stack, 0)
+	nx      = volref.get_xsize()
+	if last_ring < 0:	last_ring = nx//2 - 2
+
+
+	if (myid == main_node):
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+
+		for  iref in xrange(numref):
+			volref     = EMData()
+			volref.read_image(ref_vol, iref)
+			volref.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
+
+		print_begin_msg("ali3d_m_MPI")
+		print_msg("Input stack                 : %s\n"%(stack))
+		print_msg("Reference volume            : %s\n"%(ref_vol))	
+		print_msg("Number of reference volumes : %i\n"%(numref))
+		print_msg("Output directory            : %s\n"%(outdir))
+		print_msg("Maskfile                    : %s\n"%(maskfile))
+		print_msg("Inner radius                : %i\n"%(first_ring))
+		print_msg("Outer radius                : %i\n"%(last_ring))
+		print_msg("Ring step                   : %i\n"%(rstep))
+		print_msg("X search range              : %s\n"%(xrng))
+		print_msg("Y search range              : %s\n"%(yrng))
+		print_msg("Translational step          : %s\n"%(step))
+		print_msg("Angular step                : %s\n"%(delta))
+		print_msg("Angular search range        : %s\n"%(an))
+		print_msg("Maximum number of reassignment iterations   : %i\n"%(kmax))
+		print_msg("Maximum number of alignment iterations      : %i\n"%(max_iter))
+		print_msg("Center type                 : %i\n"%(center))
+		print_msg("data with CTF               : %s\n"%(CTF))
+		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
+		print_msg("Reference projection method : %s\n"%(ref_a))
+		print_msg("Symmetry group              : %s\n\n"%(sym))
+
 	if(maskfile):
 		if(type(maskfile) is types.StringType):	 mask3D = getImage(maskfile)
-		else: 	                                mask3D = maskfile
+		else: 	                                 mask3D = maskfile
 	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
 	mask = model_circle(last_ring, nx, nx)
 
-	nima = EMUtil.get_image_count(stack)
-
+	if(myid == main_node):
+		active = EMUtil.get_all_attributes(stack, 'active')
+		list_of_particles = []
+		for im in xrange(len(active)):
+			if(active[im]):  list_of_particles.append(im)
+		del active
+		nima = len(list_of_particles)
+	else:
+		nima =0
+	nima = bcast_number_to_all(nima, source_node = main_node)
+	
+	if(myid != main_node):
+		list_of_particles = [-1]*nima
+	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	# create a list of images for each node
+	list_of_particles = list_of_particles[image_start: image_end]
+	if debug:
+		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
+		finfo.flush()
 
-	finfo = open( "progress%04d"%myid, "w" )
-	finfo.write( "image_start, image_end: %6d %6d\n" %(image_start, image_end) )
-	finfo.flush()
+	data = EMData.read_images(stack, list_of_particles)
+	for im in xrange(len(data)):
+		data[im].set_attr('ID', list_of_particles[im])
 
-	#if(myid == main_node)       :
-	#	for  iref in xrange(numref):
-	#		volref[iref].write_image(os.path.join(outdir,replace("ref_vol%2d.hdf"%iref,' ','0')))
 	if(CTF):
 		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
 		#                0       1        2            3               4            5               6
+		#  ERROR if ctf applied
+		ctf_params = get_arb_params(data[0], parnames)
+		if(ctf_params[6] == 1):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
 
-	data = EMData.read_images(stack, range(image_start, image_end))
-	for im in xrange(image_start, image_end):
-		data[im].set_attr('ID', im)
-		group = data[im].get_attr_default('group', -1)
-		if( group == -1 ):  data[im].set_attr_dict({'group':im%numref})
-		if(CTF):
-			ctf_params = get_arb_params(data[im], ctf_dicts)
-			if(im == image_start): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
-				st = Util.infomask(data[im], mask, False)
-				data[im] -= st[0]
-				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
-				data[im].set_attr('ctf_applied', 1)
-				#set_arb_params(data[im], ctf_dicts)  #I am not sure whether this is needed
-	finfo.write( "data loaded\n" )
-	finfo.flush()
+	if(debug) :
+		finfo.write( '%d loaded  \n' % len(data) )
+		finfo.flush()
+	nima = len(list_of_particles)
+	del list_of_particles
+	if (myid == main_node):
+		# initialize data for the reference preparation function
+		ref_data = []
+		ref_data.append( mask3D )
+		ref_data.append( center )
+		ref_data.append( None )
+		ref_data.append( None )
 
-	par_str = ['phi', 'theta', 'psi', 's2x', 's2y', 'group']
-	# do the projection matching
-	for N_step in xrange(len(xrng)):
- 		for Iter in xrange(max_iter):
+	total_iter = 0
+	tr_dummy = Transform({"type":"spider"})
+	for N_step in xrange(lstp):
+		for Iter in xrange(kmax):
+			total_iter += 1
 			if(myid == main_node):
-				msg = " ITERATION #%2i  X range = %5.2f   Y range = %5.2f   Step = %4.2f  delta = %4.1f  angular range = %4.1f\n"%(N_step*max_iter + Iter+1, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step])
-				finfo.write( msg + "\n" )
-				finfo.flush()
-			old_params  = []
-			best_params = []
-			for im in xrange(image_start, image_end):
-				data[im-image_start].set_attr_dict({'peak_b':-1.0e23})
-				qtemp = get_arb_params(data[im-image_start], par_str)
-				old_params.append( qtemp )
-				best_params.append( qtemp )
+				print_msg("ASSIGNMENT ITERATION #%3d\n"%(total_iter))
+			peaks = [-1.0e23]*nima
 			for iref in xrange(numref):
-				if(myid == main_node):
-					msg = "  Align particles for group #%d \n"%(iref)
-					finfo.write(msg)
-					finfo.flush()
-				if(an[N_step] == -1): proj_ali_incore(volref[iref], mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, symmetry, CTF, finfo, MPI=True)
-				else:                proj_ali_incore_local(volref[iref], mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, symmetry, CTF, finfo, MPI=True)
-				for im in xrange(image_start, image_end):
-					peaks = get_arb_params(data[im-image_start], ['peak', 'peak_b'] )
-					finfo.write( "imn, grpid, peak, peak_best: %6d %d %f %f\n" % (im, iref, peaks[0], peaks[1]) )
-					finfo.flush()
-					if( peaks[0] > peaks[1] ):
-						data[im-image_start].set_attr_dict({'peak_b': peaks[0]})
-						data[im-image_start].set_attr_dict({'group': iref})
-						best_params[im-image_start] = get_arb_params(data[im-image_start], par_str)
-					set_arb_params(data[im-image_start], old_params[im-image_start], par_str)
-
-			for im in xrange(image_start, image_end):
-				set_arb_params(data[im-image_start], best_params[im-image_start], par_str)
-				qtemp = data[im-image_start].get_attr('peak_b')
-				data[im-image_start].set_attr_dict({'peak': qtemp})
-				finfo.write( "image %6d assigned to group %d, peak value is %f\n" % (im, best_params[im-image_start][-1], qtemp) )
-				finfo.flush()
-			dropSpiderDoc(os.path.join(outdir, "new_params%03d_%03d"%(Iter,myid)), best_params, "phi, theta, psi, s2x, s2y, group")
-			del old_params, best_params
-			mpi_barrier(MPI_COMM_WORLD)
-
+				if(CTF):
+					previous_defocus = -1.0
+					vol = get_im(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref)
+				else:
+					volref, kb = prep_vol(get_im(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref) )
+				for im in xrange(nima):
+					if(CTF):
+						ctf_params = get_arb_params(data[im], parnames)
+						if(ctf_params[1] != previous_defocus):
+							previous_defocus = ctf_params[1]
+							volref, kb = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+					phi, theta, psi, tx, ty = get_params_proj(data[im])
+					peak = prgs(volref, kb, [phi, theta, psi, tx, ty]).cmp("ccc", data[im], {"mask":mask, "negative":0})
+					if(peak > peaks[im]):
+						peaks[im] = peak
+						data[im].set_attr('group', iref)
+			del peaks
+			if CTF: del vol
 			fscc = [None]*numref
 			for iref in xrange(numref):
-				finfo.write( "reconstructing %d\n" % iref )
-				finfo.flush()
-				if(CTF): 
-                                    volref[iref], fscc[iref] = rec3D_MPI(data, snr, symmetry, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iref, Iter)), myid, main_node, info=outf, index=iref)
-				else:    
-				    volref[iref], fscc[iref] = rec3D_MPI_noCTF(data, symmetry, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iref,Iter)), myid, main_node, 1.0, index = iref)
+				#  3D stuff
+				if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref)
+				else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, mask3D, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref)
+
 				if(myid == main_node):
-					dropImage(volref[iref],os.path.join(outdir, "vol%03d_%03d.spi"%(iref, Iter)), 's')
-					if(center == 1):
-						cs   = volref[iref].phase_cog()
-						volref[iref]  = fshift(volref[iref], -cs[0], -cs[1] -cs[2])
+					volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
+					from filter import fit_tanh, filt_tanl
+					flmin = 1.0
+					flmax = -1.0
+					for iref in xrange(numref):
+						fl, aa = fit_tanh( fscc[iref] )
+						if (fl < flmin):
+							flmin = fl
+							aamin = aa
+						if (fl > flmax):
+							flmax = fl
+							aamax = aa
+					# filter to minimum resolution
+					for iref in xrange(numref):
+						filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), flmin, aamin).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
+					
+			#  here we  write header info
 			mpi_barrier(MPI_COMM_WORLD)
+			par_str = ['xform.proj', 'ID']
+			if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+			else:                  send_attr_dict(main_node, data, par_str, image_start, image_end)
+ 		for Iter in xrange(max_iter):
+			total_iter += 1
+			if(myid == main_node):
+				print_msg("ALIGNMENT ITERATION #%3d\n"%(total_iter))
 
-			if(myid==main_node):
-				volref = filt_vols( volref, fscc, mask3D )
-				for iref in xrange(numref):
-					dropImage( volref[iref], os.path.join(outdir, "volf%03d_%03d.spi"%(iref, Iter)), 's' )
+			peaks = [[-1.0e23, tr_dummy] for im in xrange(nima) ]
+			for iref in xrange(numref):
+				volref.read_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref)
+				if(an[N_step] == -1):	proj_ali_incore(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
+				else:	           proj_ali_incore_local(volref, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
+				for im in xrange(nima):
+					peak = data[im].get_attr('peak')
+					if(peak > peaks[im][0]):
+						peaks[im][0] = peak
+						peaks[im][1] = data[im].get_attr('xform.proj')
+						data[im].set_attr('group', iref)
 
-			for iref in xrange(numref): bcast_EMData_to_all(volref[iref], myid, main_node)
+			for im in xrange(nima):
+				#group = data[im].get_attr('group')  ???
+				data[im].set_attr('xform.proj', peaks[im][1])
+			del peaks
+			fscc = []
+			for iref in xrange(numref):
+				list_p = []
+				for im in xrange(nima):
+					if(iref == data[im].get_attr('group')):
+						list_p.append(im)
+				print_msg("Group number : %i"%(iref) + ",  number of objects: %i\n"%(len(list_p)))
+				#  3D stuff
+				if(CTF): vol1 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
+				else:    vol1 = recons3d_4nn(data, [list_p[im] for im in xrange(1,len(list_p), 2)], sym)
+				if(CTF): vol2 = recons3d_4nn_ctf(data, [list_p[im] for im in xrange(0,len(list_p), 2)], snr, 1, sym)
+				else:    vol2 = recons3d_4nn(data,[list_p[im] for im in xrange(1,len(list_p), 2)], sym)
 
-		if(CTF and data_had_ctf == 0):
-			for im in xrange(image_start, image_end): data[im-image_start].set_attr('ctf_applied', 0)
-		if(myid == main_node):
-			result_stack = 'ali3d_m_result.hdf'
-			recv_attr_dict(main_node, result_stack, data, par_str, image_start, image_end, number_of_proc)
-		else: send_attr_dict(main_node, data, par_str, image_start, image_end)
+				fscc.append(fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter))))
+				del vol1
+				del vol2
+			
+				# calculate new and improved 3D
+				if(CTF): volref = recons3d_4nn_ctf(data, list_p, snr, 1, sym)
+				else:	   volref = recons3d_4nn(data, list_p, symm)
+				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
+			del list_p
+
+			# add all volumes
+			volref = get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), 0)
+			for iref in xrange(numref):
+				Util.add_img(volref, get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref))
+			Util.mul_scalar(volref, 1.0/float(numref))
+			# filter the average volume
+			from filter import fit_tanh, filt_tanl
+			flmin = 1.0
+			flmax = -1.0
+			for iref in xrange(numref):
+				fl, aa = fit_tanh( fscc[iref] )
+				if (fl < flmin):
+					flmin = fl
+					aamin = aa
+				if (fl > flmax):
+					flmax = fl
+					aamax = aa
+			# filter to minimum resolution
+			for iref in xrange(numref):
+				filt_tanl(get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref), flmin, aamin).write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
+			volref = filt_tanl(volref, (flmax+flmin)/2.0, (aamax+aamin)/2.0)
+			
+			
+			if(center == 1):
+				from fundamentals import fshift
+				cs   = volref.phase_cog()
+				volref = fshift(volref, -cs[0], -cs[1] -cs[2])
+
+			# align each volume to the average - BORING!
+			for iref in xrange(numref):
+				vol = get_im(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 
 
-	mpi_barrier(MPI_COMM_WORLD)
-	del  volref
-	vol, fscc = rec3D_MPI_noCTF(data, symmetry, mask3D, os.path.join(outdir, "resolution_merged"), myid, main_node, info=myinfo)
-	if(myid == main_node):  dropImage(vol,os.path.join(outdir, "vol_merged.spi"), "s")
-	#  clean up
-	del vol
-	# write out headers  and STOP, under MPI writing has to be done sequentially
-	mpi_barrier(MPI_COMM_WORLD)
-	if(CTF and data_had_ctf == 0):
-		for im in xrange(len(data)): data[im].set_attr('ctf_applied', 0)
-	if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
+			#  here we  write header info
+			write_headers( stack, data, list_of_particles)
+	print_end_msg("ali3d_m")
 
 def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1"):
 	"""
