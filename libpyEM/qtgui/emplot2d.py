@@ -618,7 +618,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def newSet(self,row):
 		self.quiet=1
-		i=str(self.setlist.item(row).text())
+		try:
+			i=str(self.setlist.item(row).text())
+		except: 
+			print "plot error"
+			return
 		self.slidex.setRange(-1,len(self.target.data[i])-1)
 		self.slidey.setRange(-1,len(self.target.data[i])-1)
 		self.slidec.setRange(-1,len(self.target.data[i])-1)

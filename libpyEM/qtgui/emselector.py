@@ -36,10 +36,11 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import os
 import re
-from EMAN2 import EMData,Region, gimme_image_dimensions3D, EMFunctor, get_file_tag, name_has_no_tag, remove_directories_from_name, file_exists, strip_file_tag
+from EMAN2 import EMData,Region, gimme_image_dimensions3D, EMFunctor, get_file_tag, name_has_no_tag, remove_directories_from_name, file_exists, strip_file_tag, EMData
 from emimage2d import EMImage2DModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule
 from EMAN2db import EMAN2DB
+#from boxertools import TrimSwarmAutoBoxer
 
 
 class EMSelectorDialog(QtGui.QDialog):
@@ -50,6 +51,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.target=target
 		
 		self.db_listing = EMBDBListing(self)
+		self.dir_listing = EMDirectoryListing(self)
 		
 		self.hbl = QtGui.QVBoxLayout(self)
 		self.hbl.setMargin(0)
@@ -111,6 +113,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.key_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/Key.png")
 		self.basic_python_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/boxhabanosclose.png")
 		self.dict_python_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/Bag.png")
+		self.ab_refboxes_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/black_box.png")
+		self.ab_manboxes_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/black_box.png")
+		self.ab_autoboxes_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/green_boxes.png")
+		self.emdata_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/boxer_erase.png");
 		
 	
 	def __init__single_preview_tb(self):
@@ -126,7 +132,8 @@ class EMSelectorDialog(QtGui.QDialog):
 		QtCore.QObject.connect(self.done_button, QtCore.SIGNAL("clicked(bool)"),self.done_button_clicked)
 	
 	def single_preview_clicked(self,bool):
-		print "not supported"
+		pass
+		#print "not supported"
 	
 	def done_button_clicked(self,bool):
 		self.emit(QtCore.SIGNAL("done"),self.selections)
@@ -181,15 +188,18 @@ class EMSelectorDialog(QtGui.QDialog):
 	def __go_back_a_directory(self):
 		self.lock = True
 		new_dir = self.starting_directory[0:self.starting_directory.rfind('/')]
-		if not os.access(new_dir,os.R_OK): 
-			print "can't go up a directory, don't have read permission"
-			return
+		#if  self.db_listing.responsible_for(new_dir):
+			#new_dir = self.db_listing.
+		#print "going back a directory",new_dir
+		#if not os.access(new_dir,os.R_OK):
+			#print "can't go up a directory, don't have read permission"
+			#return
 		self.starting_directory = new_dir
 		for j in range(0,len(self.list_widgets)):
 			self.list_widgets[j].clear()
 			self.list_widget_data[j] = None
 		self.__load_directory_data(self.starting_directory,self.first_list_widget)
-		self.hide_preview()
+		#self.hide_preview()
 		self.lock = False
 		
 	def __go_forward_a_directory(self):
@@ -215,7 +225,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.list_widgets[0].insertItem(0,"../")
 		self.lock = False
-		self.hide_preview()
+		#self.hide_preview()
 		
 	def selection_changed(self,item1,item2):
 		pass
@@ -241,11 +251,11 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.selections = []
 		for a in self.current_list_widget.selectedIndexes():
 			file = directory+str(a.data().toString())
-			if self.__is_file(file): self.selections.append( file)
+			if self.__is_previewable(file): self.selections.append(file)
 		
 		# if there are no selections then close the preview
-		if len(self.selections) == 0:
-			self.hide_preview()
+		#if len(self.selections) == 0:
+			#self.hide_preview()
 	
 	def hide_preview(self):
 		if self.gl_image_preview  != None:
@@ -296,33 +306,21 @@ class EMSelectorDialog(QtGui.QDialog):
 			print "no list widget has focus?"
 			return
 
-		
-	
-		n = len(self.list_widgets)-1
-		if self.current_list_widget  == self.list_widgets[n]:
-	 		if not self.__is_file(file):
-				self.list_widget_data[n] = item
-				self.__go_forward_a_directory()
-				self.__load_directory_data(file+'/',self.list_widgets[n])
-				return
-		
-		# check to see if we have to go back a directory
-	
-		if self.db_listing.is_database_file(file):
-			print "it's a database"
-			self.db_listing.load_database_data(file,self.list_widgets[idx+1])
-			return
-	
-		if self.__is_file(file):
-			self.set_preview(file)
+
+		if self.set_preview(file):
 			for i in range(idx+1,len(self.list_widgets)):
 				self.list_widgets[i].clear()
 				self.list_widget_data[i] = None
 			return
+		
 	
-		
-		old_item = self.list_widget_data[idx]
-		
+		n = len(self.list_widgets)-1
+		if self.current_list_widget  == self.list_widgets[n]:
+				self.list_widget_data[n] = item
+				self.__go_forward_a_directory()
+				self.__load_directory_data(file+'/',self.list_widgets[n])
+				return
+
 		if self.__load_directory_data(file,self.list_widgets[idx+1]):
 			#if old_item != None:
 				#old_item.setBackgroundColor(QtGui.QColor(255,255,255))
@@ -344,31 +342,22 @@ class EMSelectorDialog(QtGui.QDialog):
 			file += str(self.list_widget_data[i].text()) + "/"
 	
 		
-		if self.__is_file(file):
+		if self.__is_previewable(file):
 			print "Opening ", file
 	
 	def set_preview(self,filename):
-		self.application.setOverrideCursor(Qt.BusyCursor)
-		try: 
-			dims = gimme_image_dimensions3D(filename)
-			if dims[2] != 1:
-				for d in dims: 
-					if d > 128:
-						print "3D image too big, no preview available"
-						self.application.setOverrideCursor(Qt.ArrowCursor)
-						return
-			elif dims[1] != 1:
-				for d in [dims[0],dims[1]]:
-					if d > 1024:
-						print "2D image too big, no preview available"
-						self.application.setOverrideCursor(Qt.ArrowCursor)
-						return
-			a=EMData.read_images(filename)
-		except: 
-			self.application.setOverrideCursor(Qt.ArrowCursor)
-			return
 		
-		if len(a) == 1:
+		if self.db_listing.do_preview(filename):
+			return True
+		elif self.dir_listing.do_preview(filename):
+			return True
+		
+		return False
+		
+	def preview_data(self,a,filename=""):
+		self.application.setOverrideCursor(Qt.BusyCursor)
+		
+		if type(a) == list and len(a) == 1:
 			a = a[0]
 			data = []
 			if a.get_zsize() != 1:
@@ -395,10 +384,8 @@ class EMSelectorDialog(QtGui.QDialog):
 			
 		self.application.setOverrideCursor(Qt.ArrowCursor)
 		
-		#self.activateWindow()
-
 	
-	def __filter_strings(self,strings):
+	def filter_strings(self,strings):
 		filters = str(self.filter_combo.currentText()).split(",")
 		
 		for j,f in enumerate(filters):
@@ -420,21 +407,19 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		return solution
 	
-	def __is_file(self,s):
-		if s[len(s)-3:] == "bdb":
-			return False
+	def __is_previewable(self,s):
+		if  self.db_listing.responsible_for(s):
+			if self.db_listing.is_previewable(s): return True 
+			else: return False
+		else: return self.dir_listing.is_previewable(s)
 		
-		for root, dirs, files in os.walk(s):
-			return False
-		return True
-
 	def __is_non_empty_directory(self,s):
 		'''
 		Returns true if s is a non empty directory
 		'''
 
 		for root, dirs, files in os.walk(s):
-			files = self.__filter_strings(files)
+			files = self.filter_strings(files)
 			file_length = len(files)
 			if file_length == 0: file_length = len(dirs)
 		
@@ -449,38 +434,50 @@ class EMSelectorDialog(QtGui.QDialog):
 	
 	def __load_directory_data(self,directory,list_widget):
 		
-		if self.db_listing.responsible_for(directory):
-			self.db_listing.load_directory_data(str(directory),list_widget)
-			return True
-					
+		list_widget.clear()
+		if (list_widget == self.list_widgets[0]):
+			self.lock = True
+			QtGui.QListWidgetItem("../",list_widget)
+			self.lock = False
 		
+		if self.db_listing.responsible_for(directory):
+			if  self.db_listing.load_database_data(directory,list_widget): return True
+			elif self.db_listing.load_directory_data(directory,list_widget): return True
+			elif self.db_listing.load_database_interrogation(directory,list_widget): return True
+			else: return False
+		else: return self.dir_listing.load_directory_data(directory,list_widget)
+		
+	def make_replacements(self,dirs,list_widget):
+		self.db_listing.make_replacements(dirs,list_widget)
+
+
+class EMDirectoryListing:
+	def __init__(self,target):
+		self.target = target
+		pass
+	
+	def load_directory_data(self,directory,list_widget):
 		for root, dirs, files in os.walk(directory):
-			files = self.__filter_strings(files)
+			files = self.target.filter_strings(files)
 			
-			list_widget.clear()
 			dirs.sort()
 			files.sort()
-			
-			if (list_widget == self.list_widgets[0]):
-				self.lock = True
-				QtGui.QListWidgetItem("../",list_widget)
-				self.lock = False
 			 
-			self.db_listing.make_replacements(dirs,list_widget)
+			self.target.make_replacements(dirs,list_widget)
 			 
 			for i in dirs:
 				if i[0] == '.': continue
 				
 				file_length = 0
 				for r, d, f in os.walk(directory+"/"+i):
-					f = self.__filter_strings(f)
+					f = self.target.filter_strings(f)
 					file_length = len(f)
 					if file_length == 0: file_length = len(d)
 					break
 				if file_length != 0:
-					a = QtGui.QListWidgetItem(self.folder_files_icon,i,list_widget)
+					a = QtGui.QListWidgetItem(self.target.folder_files_icon,i,list_widget)
 				else:
-					a = QtGui.QListWidgetItem(self.folder_icon,i,list_widget)
+					a = QtGui.QListWidgetItem(self.target.folder_icon,i,list_widget)
 				
 			#for i,file in enumerate(files):
 				#if file[0] == '.': continue
@@ -489,27 +486,62 @@ class EMSelectorDialog(QtGui.QDialog):
 					#files.pop(i)
 					
 			for file in files:
-				a = QtGui.QListWidgetItem(self.file_icon,file,list_widget)
+				a = QtGui.QListWidgetItem(self.target.file_icon,file,list_widget)
 
 			return True
 			
 		return False
-
-	#def enterEvent(self,event):
-		#self.lock = False
-		
-		
-	#def leaveEvent(self,event):
-		#self.lock = True
-		
-	#def paintEvent(self,event):
-		#self.paint_events += 1 # i had to do this to avoid unwanted behavior
-
-class EMDirectoryListing:
-	def __init__(self,target):
-		pass
 	
-	
+	def do_preview(self,file_or_folder):
+		if not os.path.isfile(file_or_folder): return False
+		
+		filename = file_or_folder
+		try: 
+			dims = gimme_image_dimensions3D(filename)
+			if dims[2] != 1:
+				for d in dims: 
+					if d > 128:
+						print "3D image too big, no preview available"
+						return False
+			elif dims[1] != 1:
+				for d in [dims[0],dims[1]]:
+					if d > 1024:
+						print "2D image too big, no preview available"
+						return False
+			a=EMData.read_images(filename)
+		except: 
+			return False
+		
+		self.target.preview_data(a,filename)
+		return True
+
+	def do_preview_in_browse(self,file_or_folder):
+		if not os.path.isfile(file_or_folder): return False
+		
+		filename = file_or_folder
+		try: 
+			dims = gimme_image_dimensions3D(filename)
+			if dims[2] != 1:
+				for d in dims: 
+					if d > 128:
+						print "3D image too big, no preview available"
+						return False
+			elif dims[1] != 1:
+				for d in [dims[0],dims[1]]:
+					if d > 1024:
+						print "2D image too big, no preview available"
+						return False
+			a=EMData.read_images(filename)
+		except: 
+			return False
+		
+		self.target.preview_data(a,filename)
+		return True
+
+	def is_previewable(self,file_or_folder):
+		# this may not be strictly correct, seeing as if it's a file it will return true
+		return os.path.isfile(file_or_folder)
+		
 
 class EMBDBListing:
 	def __init__(self,target):
@@ -517,8 +549,12 @@ class EMBDBListing:
 		self.directory_replacements = {"EMAN2DB":"bdb"}
 	
 	def responsible_for(self,file_or_folder):
-		for replacement in self.directory_replacements.values():
-			if file_or_folder.find(replacement) != -1: return True 
+		real_name = self.convert_to_absolute_path(file_or_folder)
+		split = real_name.split('/')
+		split.reverse() # this probably makes things faster
+		for s in split:
+			if s in self.directory_replacements.keys() or (len(s) > 4 and s[-4:] == ".bdb"): return True 
+	
 		return False
 	
 	def make_replacements(self,dirs,list_widget):
@@ -538,16 +574,22 @@ class EMBDBListing:
 		ret = file_or_folder
 		for dir_rep in self.directory_replacements.items():
 			ret = ret.replace('/'+dir_rep[1],'/'+dir_rep[0])
-		if (not os.path.isdir(ret)) and (name_has_no_tag(ret)):
+		if (not os.path.isdir(ret)) and (not os.path.isfile(ret)):
+			if ret[-1] == "/": ret = ret[:-1]
 			ret += ".bdb"
 			
 		return ret
 			
+	def is_database_directory(self,directory):
+		if remove_directories_from_name(directory) in self.directory_replacements.values(): return True
+		else: return False
+
 	def load_directory_data(self,directory,list_widget):
-	
+		if not remove_directories_from_name(directory) in self.directory_replacements.values():
+			 return False
+
 		real_directory = self.convert_to_absolute_path(directory)
 		for root, dirs, files in os.walk(real_directory):
-			list_widget.clear()
 			files.sort()
 			dirs.sort()
 			
@@ -575,11 +617,26 @@ class EMBDBListing:
 				#else:
 					#a = QtGui.QListWidgetItem(self.target.key_icon,file,list_widget)
 				
-			return
+			return True
+				
+		return False
+
+	def is_database_file(self,file_name):
+		file = self.convert_to_absolute_path(file_name)
+		if len(file) > 4 and file[-4:] == ".bdb":
+			if self.get_last_directory(file) == "EMAN2DB":
+				if file_exists(file):
+					return True
+			
+		return False
 
 	def load_database_data(self,directory,list_widget):
-		file = self.convert_to_absolute_path(directory)
 		
+		if not self.is_database_file(directory): 
+			return False
+		
+		file = self.convert_to_absolute_path(directory)
+ 
 		db_directory = self.get_emdatabase_directory(file)
 		DB = EMAN2DB.open_db(db_directory)
 		
@@ -588,12 +645,22 @@ class EMBDBListing:
 		key = remove_directories_from_name(file)
 		key = strip_file_tag(key)
 		DB.open_dict(key)
+		
 		list_widget.clear()
-		for k,i in DB[key].items():
-			if type(i) in [str,float,int,tuple,list]:
-				a = QtGui.QListWidgetItem(self.target.basic_python_icon,str(k),list_widget)
-			elif type(i) == dict:
-				a = QtGui.QListWidgetItem(self.target.dict_python_icon,str(k),list_widget)
+		item = DB[key]
+		keys = item.keys()
+		keys.sort() # puts them alphabetical order
+		for k in keys:
+			i = item[k]
+			if k == '': continue
+			if type(i) == dict:
+				a = QtGui.QListWidgetItem(self.target.database_icon,str(k),list_widget)
+			elif type(i) == EMData:
+				a = QtGui.QListWidgetItem(self.target.emdata_icon,str(k),list_widget)
+			else:
+				#if type(i) in [str,float,int,tuple,list,bool]:
+				a = QtGui.QListWidgetItem(self.target.basic_python_icon,str(k),list_widget)	
+		return True
 				
 	
 	def get_last_directory(self,file):
@@ -613,37 +680,125 @@ class EMBDBListing:
 		Get the database where EMAN2DB should be opening in order to open the given file
 		e.g. if db path is /home/someone/work/EMAN2DB/data.bdb will return /home/someone/work
 		'''
-		idx1 = file.rfind('/')
+		
+		idx1 = file.find("EMAN2DB")
 		if idx1 > 0:
-			ret = file[0:idx1]
-		else: return ret
-		
-		idx2 = ret.rfind('/')
-		if idx2 > 0:
-			ret = ret[0:idx2]
-		
-		return ret
-	
-	def get_emdatabase_name(self,file):
-		'''
-		Get the database name 
-		e.g. if db path is /home/someone/work/EMAN2DB/data.bdb will return "data"
-		'''
+			return file[0:idx1]
+		else: return None
 		
 	
-	def is_database_file(self,file_name):
-		print "is db file",file_name
-		file = self.convert_to_absolute_path(file_name)
-		print "file is",file
+	def load_database_interrogation(self,file_name,list_widget):
+		split = file_name.split('/')
 		
-		if len(file) > 4 and file[-4:] == ".bdb":
-			if self.get_last_directory(file) == "EMAN2DB":
-				if file_exists(file):
-					return True
+		rm = []
+		for i,s in enumerate(split):
+			if len(s) == 0: rm.append(i)
+		
+		rm.reverse()
+		for k in rm: split.pop(k)
+		
+		if len(split) > 2 : # must atleast have EMAN2DB/something.bdb/dictionary
+			split.reverse() # this probably makes things faster
+			for j in range(2,len(split)):
+				if split[j] in self.directory_replacements.values():
+					break
+			else:
+				return False
+			
+			real_name = self.convert_to_absolute_path(file_name)
+			db_directory = self.get_emdatabase_directory(real_name)
+
+			DB = EMAN2DB.open_db(db_directory)
+			
+			key = split[j-1]
+			item_key = split[j-2]
+			
+			DB.open_dict(key)
+			item = DB[key]
+			
+			#item = item[item_key]
+			for ii in range(j-2,-1,-1):
+				item = item[split[ii]]
+			
+			if type(item) == dict:
+				keys = item.keys()
+				keys.sort() # puts them alphabetical order
+				for k in keys:
+					i = item[k]
+					if k == "auto_boxes":
+						a = QtGui.QListWidgetItem(self.target.ab_autoboxes_icon,str(k),list_widget)
+					elif k == "reference_boxes":
+						a = QtGui.QListWidgetItem(self.target.ab_autoboxes_icon,str(k),list_widget)
+					elif k == "manual_boxes":
+						a = QtGui.QListWidgetItem(self.target.ab_autoboxes_icon,str(k),list_widget)
+					elif type(i) in [str,float,int,tuple,list,bool]:
+						a = QtGui.QListWidgetItem(self.target.basic_python_icon,str(k),list_widget)
+					elif type(i) == dict:
+						a = QtGui.QListWidgetItem(self.target.dict_python_icon,str(k),list_widget)
+					elif type(i) == EMData:
+						a = QtGui.QListWidgetItem(self.target.emdata_icon,str(k),list_widget)
+					else:
+						a = QtGui.QListWidgetItem(self.target.basic_python_icon,str(k),list_widget)
+			elif isinstance(item,EMData):
+				print "this shouldn't happen"
+				self.target.preview_data(item)
+				return False
+			else:
+				a = QtGui.QListWidgetItem(self.target.basic_python_icon,str(item),list_widget)
+			
+			return True
+				
+		else: return False 
+	
+	def is_previewable(self,file_name):
+		return self.do_preview(file_name,fake_it=True)
+	
+	def do_preview(self,file_name,fake_it=False):
+		split = file_name.split('/')
+		
+		rm = []
+		for i,s in enumerate(split):
+			if len(s) == 0: rm.append(i)
+		
+		rm.reverse()
+		for k in rm: split.pop(k)
+		
+		if len(split) > 1 : # must atleast have EMAN2DB/something.bdb/dictionary
+			split.reverse() # this probably makes things faster
+			for j in range(1,len(split)):
+				if split[j] in self.directory_replacements.values():
+					break
+			else: return False
+			
+			real_name = self.convert_to_absolute_path(file_name)
+			db_directory = self.get_emdatabase_directory(real_name)
+			DB = EMAN2DB.open_db(db_directory)
+			
+			key = split[j-1]
+			#item_key = split[j-2]
+			
+			
+			#print key,item_key
+			DB.open_dict(key)
+			item = DB[key]
+			for ii in range(j-2,-1,-1):
+				for t in [type(split[ii]),float,int]:
+					try:
+						key = t(split[ii])
+						if item[key] != None: 
+							item = item[key]
+							break
+					except:
+						pass
+			
+			if isinstance(item,EMData):
+				if not fake_it: self.target.preview_data(item)
+				return True
 			
 		return False
 			
-		
+	def load_database_variables(self,directory,list_widget):
+		pass
 		
 app = None
 def on_done(string_list):

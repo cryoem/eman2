@@ -460,7 +460,8 @@ def remove_file( file_name ):
 # '23:13:25.14 18/6/2008'
 def gm_time_string():
 	'''
-	Returns gm time as a string. For example if it's 11:13 pm on the 18th of June 2008 this will return something like '23:13:25.14 18/6/2008'
+	Returns gm time as a string. For example if it's 11:13 pm on the 18th of June 2008 this will return something like '23:13:25.14 18-6-2008'
+	The use of '/' is intentionally avoided
 	'''
 	
 	from time import gmtime,time
@@ -470,7 +471,7 @@ def gm_time_string():
 	idx = str.find(astr,'.')
 	decimalseconds = astr[idx:len(astr)]
 	
-	val = str(b[3])+':'+str(b[4])+':'+str(b[5])+decimalseconds +' '+str(b[2])+'/'+str(b[1])+'/'+str(b[0])
+	val = str(b[3])+':'+str(b[4])+':'+str(b[5])+decimalseconds +' '+str(b[2])+'-'+str(b[1])+'-'+str(b[0])
 	return val
 # A function for checking if a file exists
 # basically wraps os.path.exists, but when an img or hed file is the argument, it
@@ -546,7 +547,10 @@ def strip_after_dot(file_name):
 
 def remove_directories_from_name(file_name):
 	'''
-	Removes the directories from a file name, eg asdf/qwer/zxcv is reduced to zxcv.
+	Removes the directories from a file name.
+	If the file_name is "/a/b/c.d", "c.d" is returned
+	If the file_name is "/a/b/c/" (last character is '/'), "c" is returned
+	If the file_name is "/a/b/c" , "e" is returned
 	Works on Windows, Linux and Darwin)
 	'''
 	import platform
@@ -557,8 +561,11 @@ def remove_directories_from_name(file_name):
 		idx = file_name.rfind('/')
 		
 	if idx == -1: return file_name
-	elif idx == (len(file_name)-1): return file_name
+	elif idx == (len(file_name)-1): #If the file_name is "/a/b/c/" (last character is '/'), "c" is returned
+		f = file_name[0:-1]
+		return remove_directories_from_name(f)
 	else: return file_name[idx+1:]
+
 
 def name_has_no_tag(file_name):
 	'''

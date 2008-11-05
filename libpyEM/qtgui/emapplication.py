@@ -276,8 +276,9 @@ class EMStandAloneApplication(EMApplication):
 			if child == child_:
 				widget = child.get_qt_widget()
 				widget.close()
-				inspector = child.get_inspector()
-				inspector.close()
+				if inspector_too and child.inspector != None:
+					inspector = child.get_inspector()
+					inspector.close()
 				return
 			
 		print "couldn't close",child

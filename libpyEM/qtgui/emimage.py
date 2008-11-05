@@ -98,13 +98,20 @@ def get_app():
 
 class EMImageModule(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
-	def __new__(cls,data=None,old=None,app=None):
+	def __new__(cls,data=None,old=None,app=None,force_2d=False,force_plot=False):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance.
 		FIXME "old" aspect un tested
 		"""
-		if isinstance(data,EMData) and data.get_zsize()==1:
+		
+		if force_plot and force_2d:
+			# ok this sucks but it suffices for the time being
+			print "Error, the force_plot and force_2d options are mutually exclusive"
+			return None
+		
+		
+		if force_2d or (isinstance(data,EMData) and data.get_zsize()==1):
 			if old:
 				if isinstance(old,EMImage2DModule) :
 					old.set_data(data)
@@ -112,6 +119,14 @@ class EMImageModule(object):
 			module = EMImage2DModule(application=app)
 			module.set_data(data)
 			return module
+		elif force_plot:
+			if old:
+				if isinstance(old,EMPlot2DModule) :
+					old.set_data(data)
+					return old
+			module = EMPlot2DModule(application=app)
+			module.set_data("data",data)
+			return module	
 		elif isinstance(data,EMData):
 			if old:
 				if isinstance(old,EMImage3DModule) :
@@ -145,7 +160,7 @@ class EMModuleFromFile(object):
 	using only a file name as input. Can force plot and force 2d display, also.
 	Used by embrowse.py
 	"""
-	def __new__(cls,filename,application,force_plot=False,force_2d=False):
+	def __new__(cls,filename,application,force_plot=False,force_2d=False,old=None):
 		
 		file_type = Util.get_filename_ext(filename)
 		em_file_type = EMUtil.get_image_ext_type(file_type)
@@ -156,7 +171,8 @@ class EMModuleFromFile(object):
 			return None
 		
 		if force_plot:
-			module = EMPlot2DModule(application=application)
+			if isinstance(old,EMPlot2DModule): module = old
+			else: module = EMPlot2DModule(application=application)
 			module.set_data_from_file(filename)
 			return module
 		
@@ -165,16 +181,20 @@ class EMModuleFromFile(object):
 			if len(data) == 1: data = data[0]
 			
 			if force_2d or isinstance(data,EMData) and data.get_zsize()==1:
-				module= EMImage2DModule(application=application)
+				if isinstance(old,EMImage2DModule): module = old
+				else: module= EMImage2DModule(application=application)
 			elif isinstance(data,EMData):
-				module = EMImage3DModule(application=application)
+				if isinstance(old,EMImage3DModule): module = old
+				else: module = EMImage3DModule(application=application)
 			elif isinstance(data,list) and isinstance(data[0],EMData):
-				module = EMImageMXModule(application=application)
+				if isinstance(old,EMImageMXModule): module = old
+				else: module = EMImageMXModule(application=application)
 			else: raise # weirdness, this should never happen
 			module.set_data(data,filename)
 			return module
 		else:
-			module = EMPlot2DModule(application=application)
+			if isinstance(old,EMPlot2DModule): module = old
+			else: module = EMPlot2DModule(application=application)
 			module.set_data_from_file(filename)
 			return module
 

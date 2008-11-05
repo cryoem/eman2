@@ -43,6 +43,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from emapplication import EMStandAloneApplication
+from embrowse import *
 
 #from valslider import ValSlider
 #from math import *
@@ -70,7 +71,7 @@ def main():
 	parser.add_option("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	
 	(options, args) = parser.parse_args()
-	if len(args)<1 : parser.error("Input image required")
+	
 
 	logid=E2init(sys.argv)
 #        GLUT.glutInit(sys.argv)
@@ -79,7 +80,12 @@ def main():
 	#QtGui.QApplication(sys.argv)
 	win=[]
 
-	if options.plot:
+	if len(args)<1 :
+		dialog = EMBrowserDialog(None,app)
+		em_qt_widget = EMQtWidgetModule(dialog,app)
+		QtCore.QObject.connect(dialog,QtCore.SIGNAL("done"),on_browser_done)
+		app.show()
+	elif options.plot:
 		plot(args,app)
 	elif options.classes:
 		options.classes=options.classes.split(",")
@@ -107,6 +113,9 @@ def main():
 	#sys.exit(app.exec_())
 
 	E2end(logid)
+	
+def on_browser_done(string_list):
+	pass
 
 def selectclass(rawfsp,mxfsp,event,lc):
 	"""Used in 'classes' mode when the user selects a particular class-average"""

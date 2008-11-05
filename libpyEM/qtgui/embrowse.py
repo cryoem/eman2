@@ -51,34 +51,74 @@ class EMBrowserDialog(EMSelectorDialog):
 		
 		self.current_force = None
 		self.browse_gl_preview = None
-		
+	
 	def set_preview(self,filename):
-		from emimage import EMModuleFromFile
-		self.application.setOverrideCursor(Qt.BusyCursor)
-		#if len(self.selections) > 1:
-		f_2d = self.force_2d.isChecked()
-		f_plot = self.force_plot.isChecked()
+		if self.db_listing.do_preview(filename):
+			return True
+		else:
+			if os.path.isdir(filename): return False
+			try: # see if we can read the file name as an EMData
+				read_header_only = True
+				e = EMData()
+				e.read_image(filename,0, read_header_only)	
+			except: return False
+	
+			from emimage import EMModuleFromFile
+			self.application.setOverrideCursor(Qt.BusyCursor)
+			#if len(self.selections) > 1:
+			f_2d = self.force_2d.isChecked()
+			f_plot = self.force_plot.isChecked()
+			
+			if self.single_preview.isChecked():
+				#if self.browse_gl_preview != None:
+					#self.browse_gl_preview.closeEvent(None)
+					##self.application.close_specific(self.browse_gl_preview)
+					#self.browse_gl_preview == None
+			
+				preview = EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot,old=self.browse_gl_preview)
+				if preview != self.browse_gl_preview:
+					if self.browse_gl_preview != None: self.browse_gl_preview.closeEvent(None)
+					self.browse_gl_preview = preview
+	
+					self.application.show_specific(self.browse_gl_preview)
+					try: self.browse_gl_preview.optimally_resize()
+					except: pass
+					
+				self.browse_gl_preview.updateGL()
+			else:
+				preview =EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot)
+				self.application.show_specific(preview)
+				try: preview.optimally_resize()
+				except: pass
+				preview.updateGL()
+				
+			self.application.setOverrideCursor(Qt.ArrowCursor)
+			return True
 		
+		#return False
+	def preview_data(self,a,filename=""):
+		from emimage import EMImageModule
 		if self.single_preview.isChecked():
-			if self.browse_gl_preview != None:
-				self.browse_gl_preview.closeEvent(None)
-				#self.application.close_specific(self.browse_gl_preview)
-				self.browse_gl_preview == None
-		
-			self.browse_gl_preview =EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot)
-
+			
+			f_2d = self.force_2d.isChecked()
+			f_plot = self.force_plot.isChecked()
+			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=self.browse_gl_preview)
+			if preview != self.browse_gl_preview:
+				if self.browse_gl_preview != None: self.browse_gl_preview.closeEvent(None)
+				self.browse_gl_preview = preview
+	
 			self.application.show_specific(self.browse_gl_preview)
 			try: self.browse_gl_preview.optimally_resize()
 			except: pass
+					
 			self.browse_gl_preview.updateGL()
 		else:
-			preview =EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot)
+			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot)
 			self.application.show_specific(preview)
-			try: preview.optimally_resize()
-			except: pass
 			preview.updateGL()
 			
-		self.application.setOverrideCursor(Qt.ArrowCursor)
+		self.application.setOverrideCursor(Qt.ArrowCursor)	
+
 	
 	def __init__force_2d_tb(self):
 		self.force_2d = QtGui.QCheckBox("2D only")

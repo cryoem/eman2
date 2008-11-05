@@ -46,8 +46,8 @@ class EMProjectDB:
 
 		def __init__(self):
 			DB = EMAN2db.EMAN2DB.open_db(".")
-			DB.open_dict("boxer_cache")
-			self.project_db = DB.boxer_cache
+			DB.open_dict("e2boxer.cache")
+			self.project_db = DB["e2boxer.cache"]
 			self.memory_db = {}
 			#self.project_db = shelve.open('.eman2project_db','c',-1,True)
 
@@ -67,7 +67,7 @@ class EMProjectDB:
 		def close(self):
 			#self.project_db.close()
 			DB = EMAN2db.EMAN2DB.open_db(".")
-			DB.close_dict("boxer_cache")
+			DB.close_dict("e2boxer.cache")
 			
 		def set_key_entry(self,key,entry):
 			self.project_db[key]= entry
