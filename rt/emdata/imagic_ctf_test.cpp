@@ -30,7 +30,7 @@
  * */
 #include <iostream>
 #include "emdata.h"
-
+#include "ctf.h"
 using namespace std;
 using namespace EMAN;
 

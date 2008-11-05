@@ -58,6 +58,15 @@ from emplot2d import EMPlot2DModule
 height_plane = 500
 
 from emborderdecoration import EM2DPlainBorderDecoration,EM3DPlainBorderDecoration, EMBorderDecoration
+
+class GLView:
+	def __init__(self,window=None):
+		self.window = window
+		
+	def set_window(self,window): self.window = window
+	
+	def get_window(self): return self.window
+
 class EM3DVolume:
 	'''
 	a EM3DVolume has width(), height(), and depth() functions, and the associated private variables
@@ -113,7 +122,7 @@ class EM3DVolume:
 		except: return self.get_lr_bt_nf()
 
 
-class EMGLRotorWidget(EM3DVolume):
+class EMGLRotorWidget(EM3DVolume,GLView):
 	'''
 	A display rotor widget - consists of an ellipse  with widgets 'attached' to it.
 	Visually, the ellipse would lay in the plane perpendicular to the screen, and the widgets would be displayed in the plane
@@ -136,6 +145,7 @@ class EMGLRotorWidget(EM3DVolume):
 	BOTTOM_ROTARY = "bottom_rotor"
 	def __init__(self,parent,y_rot=15,z_rot=70,x_rot=-45,rotor_type=RIGHT_ROTARY,ellipse_a=200,ellipse_b=400):
 		EM3DVolume.__init__(self)
+		GLView.__init__(self)
 		self.parent = parent
 		self.widgets = []	# the list of widgets to display
 		self.displayed_widget = -1 # the index of the currently displayed widget in self.widgets
@@ -1475,14 +1485,6 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 			self.cam.mouseReleaseEvent(event)
 		else: self.drawable.mouseReleaseEvent(event)
 
-
-class GLView:
-	def __init__(self,window=None):
-		self.window = window
-		
-	def set_window(self,window): self.window = window
-	
-	def get_window(self): return self.window
 
 class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 	"""
@@ -3107,7 +3109,7 @@ class EMFloatingWidgetsCore:
 				self.current = i
 				if (self.current != self.previous ):
 					if ( self.previous != None ):
-						self.previous.leaveEvent()
+						self.previous.leaveEvent(None)
 				i.mouseMoveEvent(event)
 				self.previous = i
 				self.updateGL()
