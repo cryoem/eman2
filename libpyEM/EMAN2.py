@@ -330,16 +330,17 @@ def display(img):
 		except: pass
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
-		try: os.unlink("/tmp/img.hed")
-		except: pass
-		try: os.unlink("/tmp/img.img")
-		except: pass
+		fsp="bdb:%s/.eman2dir#tmp"%os.getenv("HOME")
+		
+		db_remove_dict(fsp)
+		d=db_open_dict(fsp)
 		if isinstance(img,list) or isinstance(img,tuple) :
-			for i in img: i.write_image("/tmp/img.hed",-1)
+			for i,j in enumerate(img): d[i]=j
 		else:
-			img.write_image("/tmp/img.hed")
+			d[0]=img
+		d.close()
 	#	os.system("v2 /tmp/img.hed")
-		os.system("e2display.py /tmp/img.hed")
+		os.system("e2display.py "+fsp)
 		
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """

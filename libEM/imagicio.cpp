@@ -250,11 +250,11 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		dict["xform.align3d"] = trans;
 	}
 	
-	cout << "hed.label = '" << hed.label << "'" << endl;
-	Ctf * ctf_ = read_ctf(hed);
-	if( ctf_ != 0) {
-		dict["ctf"] = ctf_;
-	}
+//	cout << "hed.label = '" << hed.label << "'" << endl;
+//	Ctf * ctf_ = read_ctf(hed);
+//	if( ctf_ != 0) {
+//		dict["ctf"] = ctf_;
+//	}
 		
 	EXITFUNC;
 	return 0;
@@ -426,10 +426,10 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	imagich.count=nimg;
 	is_new_hed = false;
 	
-	if( dict.has_key("ctf") ) {
-		Ctf * ctf_ = dict["ctf"];
-		write_ctf(ctf_);
-	}
+//	if( dict.has_key("ctf") ) {
+//		Ctf * ctf_ = dict["ctf"];
+//		write_ctf(ctf_);
+//	}
 	
 	EXITFUNC;
 	return 0;
@@ -572,18 +572,18 @@ Ctf * ImagicIO::read_ctf(const ImagicHeader& hed) const
 	Ctf * ctf_ = 0;
 	size_t n = strlen(CTF_MAGIC);
 	
-	cout << "hed.label = '" << hed.label << "'" << endl;
+//	cout << "hed.label = '" << hed.label << "'" << endl;
 	
 	if (strncmp(imagich.label, CTF_MAGIC, n) == 0) {
 		string sctf = "O" + string(hed.label).substr(2);
 		
-		cout << "sctf = '" << sctf << "'" << endl;
+//		cout << "sctf = '" << sctf << "'" << endl;
 		
 		ctf_ = new EMAN1Ctf();
 		ctf_->from_string(sctf);
 	}
 
-	cout << "ctf_->to_string() = '" << ctf_->to_string() << "'" << endl; 
+//	cout << "ctf_->to_string() = '" << ctf_->to_string() << "'" << endl; 
 	
 	EXITFUNC;
 	return ctf_;

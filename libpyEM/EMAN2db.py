@@ -421,10 +421,12 @@ class EMAN2DB:
 	def remove_dict(self,name):
 		if name in self.dicts.keys():
 			self.__dict__[name].close()
-		os.unlink(self.path+"/EMAN2DB/"+name+".bdb")
+		try: os.unlink(self.path+"/EMAN2DB/"+name+".bdb")
+		except: pass
 		for f in os.listdir(self.path+"/EMAN2DB"):
 			if fnmatch.fnmatch(f, name+'_*'):
-				os.unlink(self.path+"/EMAN2DB/"+f)
+				try: os.unlink(self.path+"/EMAN2DB/"+f)
+				except: pass
 
 ##########
 ### This represents a 'dictionary' within a 'database', in BerkeleyDB parlance this is a B-tree (though it could also be a Hash)

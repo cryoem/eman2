@@ -144,6 +144,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 	n=EMUtil.get_image_count(stackfile)
 	lctf=None
 	
+	
 	for i in range(n):
 		im1=EMData(stackfile,i)
 		try: ctf=im1["ctf"]
@@ -162,21 +163,23 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			fft1.mult(flipim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
+			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys,ys))
 			out.write_image(phaseflip,i)
 
 		if wiener :
 			if not lctf or not lctf.equal(ctf):
 				wienerim=fft1.copy()
 				ctf.compute_2d_complex(wienerim,Ctf.CtfType.CTF_WIENER_FILTER)
+#				print wienerim.get_attr_dict()
+				display(wienerim)
 			fft1.mult(wienerim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
+			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys,ys))
 			out.write_image(wiener,i)
 			
 		lctf=ctf
 
-	print ctf.to_string()
-	display((flipim,wienerim))
 
 
 def powspec(stackfile,mask=None,edgenorm=True,):
