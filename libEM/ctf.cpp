@@ -714,7 +714,7 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 			}
 			if (r[i]<0) r[i]=0;
 //			r[i]=r[i]/(r[i]+1.0);		// Full Wiener filter assuming perfect image with noise
-			r[i]=(1.0/bg)/(r[i]+1.0);	// Wiener filter with 1/CTF term to restore image then filter
+			r[i]=sqrt(r[i]/bg)/(r[i]+1.0);	// Wiener filter with 1/CTF term to restore image then filter
 			s+=ds;
 		}
 		break;
@@ -873,11 +873,11 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				f-=j;
 				if (j>snr.size()-2) {
 					bg=background.back();
-					d[x*2+ynx]=(1.0/bg)/(snr.back()+1.0);
+					d[x*2+ynx]=sqrt(snr[j]/bg)/(snr.back()+1.0);
 				}
 				else {
 					bg=background[j]*(1.0-f)+background[j+1]*f;
-					d[x*2+ynx]=(1.0/bg)/(snr[j]*(1.0-f)+snr[j+1]*f+1.0);	// Note that this is a Wiener filter with a 1/CTF term to compensate for the filtration already applied
+					d[x*2+ynx]=sqrt(snr[j]/bg)/(snr[j]*(1.0-f)+snr[j+1]*f+1.0);	// Note that this is a Wiener filter with a 1/CTF term to compensate for the filtration already applied
 				}
 				d[x * 2 + ynx + 1] = 0;
 			}

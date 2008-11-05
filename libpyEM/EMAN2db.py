@@ -557,7 +557,7 @@ class DBDict:
 	def __getitem__(self,key):
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
-		if isinstance(r,dict) and r.has_key("nx") :
+		if isinstance(r,dict) and r.has_key("is_complex_x") :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
@@ -575,6 +575,12 @@ class DBDict:
 
 	def __contains__(self,key):
 		return self.bdb.has_key(dumps(key,-1),txn=self.txn)
+
+	def item_type(self,key):
+		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
+		except: return None
+		if isinstance(r,dict) and r.has_key("is_complex_x") : return EMData
+		return type(r)
 
 	def keys(self):
 		return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
