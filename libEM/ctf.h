@@ -228,6 +228,8 @@ namespace EMAN
 		
 		vector<float> get_snr(){ return snr;}
 		void set_snr(const vector<float>& vf) {snr = vf;}
+		vector<float> get_background(){ return background;}
+		void set_background(const vector<float>& vf) {background = vf;}
 
 	  public:
 		EMAN2Ctf();

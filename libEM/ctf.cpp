@@ -690,7 +690,7 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 			else r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
 			s+=ds;
 		}
-
+		r[0]=0;
 		break;
 
 	case CTF_WIENER_FILTER:
@@ -713,10 +713,11 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 				bg=background[j]*(1.0-f)+background[j+1]*f;
 			}
 			if (r[i]<0) r[i]=0;
-//			r[i]=r[i]/(r[i]+1.0);		// Full Wiener filter assuming perfect image with noise
-			r[i]=sqrt(r[i]/bg)/(r[i]+1.0);	// Wiener filter with 1/CTF term to restore image then filter
+			r[i]=r[i]/(r[i]+1.0);		// Full Wiener filter assuming perfect image with noise
+//			r[i]=sqrt(r[i]/bg)/(r[i]+1.0);	// Wiener filter with 1/CTF term (sort of) to restore image then filter
 			s+=ds;
 		}
+		r[0]=0;
 		break;
 
 	case CTF_TOTAL:
@@ -853,6 +854,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}
+		d[0]=0;
 	}
 	else if (type == CTF_WIENER_FILTER) {
 		if (dsbg==0) printf("Warning, DSBG set to 0\n");
@@ -869,19 +871,22 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 #endif	//_WIN32	
 				float f = s/dsbg;
 				int j = (int)floor(f);
-				float bg;
+				float bg,snrf;
 				f-=j;
 				if (j>snr.size()-2) {
 					bg=background.back();
-					d[x*2+ynx]=sqrt(snr[j]/bg)/(snr.back()+1.0);
+					d[x*2+ynx]=snr.back()/(snr.back()+1.0);
 				}
 				else {
 					bg=background[j]*(1.0-f)+background[j+1]*f;
-					d[x*2+ynx]=sqrt(snr[j]/bg)/(snr[j]*(1.0-f)+snr[j+1]*f+1.0);	// Note that this is a Wiener filter with a 1/CTF term to compensate for the filtration already applied
+					snrf=snr[j]*(1.0-f)+snr[j+1]*f;
+//					d[x*2+ynx]=sqrt(snrf/bg)/(snrf+1.0);	// Note that this is a Wiener filter with a 1/CTF term (sort of) to compensate for the filtration already applied
+					d[x*2+ynx]=snrf/(snrf+1);	// This is just the simple Wiener filter
 				}
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}
+		d[0]=0;
 	}
 	else if (type == CTF_TOTAL) {
 		float amp1 = calc_amp1();

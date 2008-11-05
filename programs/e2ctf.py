@@ -171,8 +171,11 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 				wienerim=fft1.copy()
 				ctf.compute_2d_complex(wienerim,Ctf.CtfType.CTF_WIENER_FILTER)
 #				print wienerim.get_attr_dict()
-#				display(wienerim)
-				print ctf.compute_1d(ys,Ctf.CtfType.CTF_WIENER_FILTER)
+				display(wienerim)
+#				print ctf.to_string()
+#				plot(ctf.background)
+#				plot(ctf.snr)
+#				plot(ctf.compute_1d(ys,Ctf.CtfType.CTF_WIENER_FILTER))
 			fft1.mult(wienerim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
@@ -328,7 +331,7 @@ def smooth_bg(curve,ds):
 
 
 def snr_safe(s,n) :
-	if s==0 or n==0 : return 0.0
+	if s<=0 or n<=0 : return 0.0
 	return (s-n)/n
 
 def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0):
