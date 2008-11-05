@@ -300,7 +300,7 @@ class EMPlot2DModule(EMGUIModule):
 				self.scrlim=(ax.get_window_extent().xmin,ax.get_window_extent().ymin,ax.get_window_extent().xmax-ax.get_window_extent().xmin,ax.get_window_extent().ymax-ax.get_window_extent().ymin)
 			except:
 				try: # this should work for matplotlib 0.91
-					self.scrlim=(ax.get_window_extent().xmin,ax.get_window_extent().ymin,ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
+					self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin,ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
 				except:
 					print 'there is a problem with your matplotlib'
 					return
