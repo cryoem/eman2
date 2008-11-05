@@ -250,12 +250,12 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		dict["xform.align3d"] = trans;
 	}
 	
-	EMAN1Ctf ctf_;
-	if(read_ctf(ctf_) == 0) {
-		vector<float> vctf = ctf_.to_vector();
-		dict["ctf"] = vctf;
+	cout << "hed.label = '" << hed.label << "'" << endl;
+	Ctf * ctf_ = read_ctf(hed);
+	if( ctf_ != 0) {
+		dict["ctf"] = ctf_;
 	}
-	
+		
 	EXITFUNC;
 	return 0;
 }
@@ -427,9 +427,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	is_new_hed = false;
 	
 	if( dict.has_key("ctf") ) {
-		vector<float> vctf = dict["ctf"];
-		EMAN1Ctf ctf_;
-		ctf_.from_vector(vctf);
+		Ctf * ctf_ = dict["ctf"];
 		write_ctf(ctf_);
 	}
 	
@@ -567,28 +565,39 @@ void ImagicIO::flush()
 	fflush(hed_file);
 }
 
-int ImagicIO::read_ctf(Ctf & ctf, int)
+Ctf * ImagicIO::read_ctf(const ImagicHeader& hed) const
 {
 	ENTERFUNC;
-	init();
-
+	
+	Ctf * ctf_ = 0;
 	size_t n = strlen(CTF_MAGIC);
-	int err = 1;
+	
+	cout << "hed.label = '" << hed.label << "'" << endl;
+	
 	if (strncmp(imagich.label, CTF_MAGIC, n) == 0) {
-		err = ctf.from_string(string(&imagich.label[n]));
+		string sctf = "O" + string(hed.label).substr(2);
+		
+		cout << "sctf = '" << sctf << "'" << endl;
+		
+		ctf_ = new EMAN1Ctf();
+		ctf_->from_string(sctf);
 	}
+
+	cout << "ctf_->to_string() = '" << ctf_->to_string() << "'" << endl; 
+	
 	EXITFUNC;
-	return err;
+	return ctf_;
 }
 
-void ImagicIO::write_ctf(const Ctf & ctf, int)
+void ImagicIO::write_ctf(const Ctf * const ctf, int image_index)
 {
 	ENTERFUNC;
 	init();
 
 	size_t n = strlen(CTF_MAGIC);
 	strcpy(imagich.label, CTF_MAGIC);
-	strncpy(&imagich.label[n], ctf.to_string().c_str(), sizeof(imagich.label) - n);
+	string ctf_ = ctf->to_string().substr(1);
+	strncpy(&imagich.label[n], ctf_.c_str(), sizeof(imagich.label) - n);
 
 	rewind(hed_file);
 	if (fwrite(&imagich, sizeof(ImagicHeader), 1, hed_file) != 1) {

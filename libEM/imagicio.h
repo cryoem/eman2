@@ -77,8 +77,6 @@ namespace EMAN
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
-		int read_ctf(Ctf & ctf, int image_index = 0);
-		void write_ctf(const Ctf & ctf, int image_index = 0);
 		
 		bool is_single_image_format() const
 		{
@@ -180,6 +178,10 @@ namespace EMAN
 		void swap_header(ImagicHeader & hed);
 		DataType get_datatype_from_name(const char *name);
 
+		/** the Ctf object is a EMAN1Ctf object. */
+		Ctf * read_ctf(const ImagicHeader& hed) const;
+		void write_ctf(const Ctf * const ctf, int image_index = 0);
+		
 	  private:
 		string filename;
 		string hed_filename;
