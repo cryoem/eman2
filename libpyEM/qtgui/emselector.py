@@ -647,15 +647,15 @@ class EMBDBListing:
 		DB.open_dict(key)
 		
 		list_widget.clear()
-		item = DB[key]
-		keys = item.keys()
+		items = DB[key]
+		keys = items.keys()
 		keys.sort() # puts them alphabetical order
 		for k in keys:
-			i = item[k]
 			if k == '': continue
-			if type(i) == dict:
+			_type =items.item_type(k)
+			if _type == dict:
 				a = QtGui.QListWidgetItem(self.target.database_icon,str(k),list_widget)
-			elif type(i) == EMData:
+			elif _type == EMData:
 				a = QtGui.QListWidgetItem(self.target.emdata_icon,str(k),list_widget)
 			else:
 				#if type(i) in [str,float,int,tuple,list,bool]:
@@ -708,6 +708,7 @@ class EMBDBListing:
 			real_name = self.convert_to_absolute_path(file_name)
 			db_directory = self.get_emdatabase_directory(real_name)
 
+			#db_open_dict
 			DB = EMAN2DB.open_db(db_directory)
 			
 			key = split[j-1]

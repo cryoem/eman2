@@ -55,6 +55,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image file> ...
 	
+	Can be run without any arguments, in which case a browsing interface pops up.
+	
 """
 	global app,win,options
 
