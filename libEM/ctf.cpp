@@ -475,7 +475,8 @@ EMAN2Ctf::EMAN2Ctf()
 	ampcont = 0;
 	voltage = 0;
 	cs = 0;
-	apix = 0;
+	apix = 1.0;
+	dsbg=-1;
 	background.clear();
 	snr.clear();
 }
@@ -854,6 +855,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 		}
 	}
 	else if (type == CTF_WIENER_FILTER) {
+		if (dsbg==0) printf("Warning, DSBG set to 0\n");
 		for (int y = -ny/2; y < ny/2; y++) {
 			int y2=(y+ny)%ny;
 			int ynx = y2 * nx;
@@ -861,10 +863,10 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 
 #ifdef	_WIN32
-				float s = (float)_hypot(x, y ) * ds;
+				float s = (float)_hypot((float) x, (float) y ) * ds;
 #else
-				float s = (float)hypot(x, y ) * ds;
-#endif	
+				float s = (float)hypot((float) x, (float) y ) * ds;
+#endif	//_WIN32	
 				float f = s/dsbg;
 				int j = (int)floor(f);
 				float bg;

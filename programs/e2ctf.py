@@ -163,7 +163,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			fft1.mult(flipim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
-			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys,ys))
+			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			out.write_image(phaseflip,i)
 
 		if wiener :
@@ -171,11 +171,12 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 				wienerim=fft1.copy()
 				ctf.compute_2d_complex(wienerim,Ctf.CtfType.CTF_WIENER_FILTER)
 #				print wienerim.get_attr_dict()
-				display(wienerim)
+#				display(wienerim)
+				print ctf.compute_1d(ys,Ctf.CtfType.CTF_WIENER_FILTER)
 			fft1.mult(wienerim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
-			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys,ys))
+			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			out.write_image(wiener,i)
 			
 		lctf=ctf
@@ -337,12 +338,12 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0):
 	# defocus estimation
 	global debug
 	
-	ctf=EMAN2Ctf()
-	
-	ctf.from_dict({"defocus":1.0,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"background":bg_1d})
-	
 	ys=im_2d.get_ysize()
 	ds=1.0/(apix*ys)
+	
+	ctf=EMAN2Ctf()
+	ctf.from_dict({"defocus":1.0,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
+	
 	
 	if debug: dfout=file("ctf.df.txt","w")
 	dfbest1=(0,-1.0e20)
