@@ -3647,7 +3647,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 						data[im].set_attr('group', iref)
 
 			for im in xrange(nima):
-				#group = data[im].get_attr('group')  ???
 				data[im].set_attr('xform.proj', peaks[im][1])
 			del peaks
 			fscc = []
@@ -4603,6 +4602,11 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	max_iter    = int(maxit)
 	center      = int(center)
 
+	vol     = EMData()
+	vol.read_image(ref_vol, 0)
+	nx      = vol.get_xsize()
+	if last_ring < 0:	last_ring = int(nx/2) - 2
+
 	if (myid == main_node):
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -4612,13 +4616,6 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 		print_msg("Reference volume            : %s\n"%(ref_vol))	
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Maskfile                    : %s\n"%(maskfile))
-
-	vol     = EMData()
-	vol.read_image(ref_vol, 0)
-	nx      = vol.get_xsize()
-	if last_ring < 0:	last_ring = int(nx/2) - 2
-
-	if (myid == main_node):
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Angular search range        : %s\n"%(delta))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
@@ -4634,8 +4631,6 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
 	mask2D = model_circle(last_ring, nx, nx)
-
-
 
 	if(myid == main_node):
 		active = EMUtil.get_all_attributes(stack, 'active')
@@ -4653,6 +4648,8 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
 
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	# create a list of images for each node
+	list_of_particles = list_of_particles[image_start: image_end]
 	if debug:
 		outf.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
 		outf.flush()
