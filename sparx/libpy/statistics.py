@@ -1914,7 +1914,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 			wd_trials  += 1
 			if wd_trials > 10:
 				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
-				MemJe[ntrials-1] = 1e10
+				if trials > 1: MemJe[ntrials-1] = 1e10
 				wd_trials = 0
 			else:
 				ntrials -= 1
@@ -2403,7 +2403,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 			wd_trials  += 1
 			if wd_trials > 10:
 				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
-				MemJe[ntrials-1] = 1e10
+				if trials >1: MemJe[ntrials-1] = 1e10
 				wd_trials = 0
 			else:
 				ntrials -= 1
@@ -2897,7 +2897,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			wd_trials  += 1
 			if wd_trials > 10:
 				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
-				MemJe[ntrials-1] = 1e10
+				if trials > 1: MemJe[ntrials-1] = 1e10
 				wd_trials = 0
 			else:
 				ntrials -= 1
@@ -3533,7 +3533,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			wd_trials  += 1
 			if wd_trials > 10:
 				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
-				MemJe[ntrials-1] = 1e10
+				if trials > 1: MemJe[ntrials-1] = 1e10
 				wd_trials = 0
 			else:
 				ntrials -= 1
