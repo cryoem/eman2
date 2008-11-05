@@ -825,14 +825,14 @@ EMObject EMData::get_attr(const string & key) const
 	}
 	else if (key == "changecount") return EMObject(changecount);
 
-
-	EXITFUNC;
 	if(attr_dict.has_key(key)) {
 		return attr_dict[key];
 	}
 	else {
 		throw NotExistingObjectException(key, "The requested key does not exist");
 	}
+	
+	EXITFUNC;
 }
 
 EMObject EMData::get_attr_default(const string & key, const EMObject & em_obj) const

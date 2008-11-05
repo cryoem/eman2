@@ -17,6 +17,7 @@ LINK_LIBRARIES(EM2)
 #ADD_EXECUTABLE(randnum_test randnum_test.cpp)
 # this test added by david woolford - it should be executed and results evaluated on every platform.
 ADD_EXECUTABLE(test_emobject_and_dict test_emobject.cpp)
+ADD_EXECUTABLE(imagic_ctf_test imagic_ctf_test.cpp)
 
 #FIND_LIBRARY(EMAN1_LIBRARY NAMES EM PATHS $ENV{EMANDIR}/lib $ENV{HOME}/EMAN/lib)
 #IF(EMAN1_LIBRARY)
