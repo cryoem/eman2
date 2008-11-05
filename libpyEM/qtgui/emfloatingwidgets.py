@@ -654,14 +654,14 @@ class EMGLRotorWidget(EM3DVolume,GLView):
 		pn = points[len(points)-1]
 		#print "points",p1,pn
 		if self.rotor_type == EMGLRotorWidget.LEFT_ROTARY:
-			left = pn[0]
+			left = p1[0]
 			right = p1[0]+self.widgets[0].width()+ 10
 			top = p1[1]+ self.widgets[0].height()/2 + 10
-			bottom = pn[1]-self.widgets[0].height()/2 - 10
+			bottom = p1[1]-self.widgets[0].height()/2 - 10
 			near = p1[2]
 			far = pn[2]-self.widgets[0].width()
 			
-			#print "return",[left,right,bottom,top,near,far],
+			print "return",[left,right,bottom,top,near,far]
 			return [left,right,bottom,top,near,far]
 		elif self.rotor_type == EMGLRotorWidget.TOP_ROTARY:
 			if p1[0] < pn[0] :
@@ -688,14 +688,14 @@ class EMGLRotorWidget(EM3DVolume,GLView):
 				right = p1[0]+ self.widgets[0].width()/2 + 10
 				
 			top = p1[1]+self.widgets[0].height() 
-			bottom = pn[1]
+			bottom = p1[1]
 			
 			near = p1[2]
 			far = pn[2]-self.widgets[0].height()
 			
 			#print "return",[left,right,bottom,top,near,far],self.widgets[0].height()/2
 			#print p1,pn
-			print [left,right,bottom,top,near,far]
+			#print [left,right,bottom,top,near,far]
 			return [left,right,bottom,top,near,far]
 		
 		
@@ -1321,7 +1321,7 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		
 		self.drawable.resize_event(width,height)
 		
-	def __atomic_draw_frame(self,plane_string):
+	def atomic_draw_frame(self,plane_string):
 		
 		[mc00,mc01,mc11,mc10] = self.vdtools.get_corners()
 		a = Vec3f(mc10[0]-mc00[0],mc10[1]-mc00[1],mc10[2]-mc00[2])
@@ -1386,32 +1386,32 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		#left zy plane
 		#glPushMatrix()
 		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
-		#self.__atomic_draw_frame('zy')
+		#self.atomic_draw_frame('zy')
 		#glPopMatrix()
 		
 		#glPushMatrix()
 		#self.vdtools.set_mouse_coords(unprojected[5],unprojected[4],unprojected[7],unprojected[6])
-		#self.__atomic_draw_frame('yz')
+		#self.atomic_draw_frame('yz')
 		#glPopMatrix()
 		
 		#glPushMatrix()
 		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[4],unprojected[5],unprojected[1])
-		#self.__atomic_draw_frame('xz')
+		#self.atomic_draw_frame('xz')
 		#glPopMatrix()
 		
 		#glPushMatrix()
 		#self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[6],unprojected[7])
-		#self.__atomic_draw_frame('zx')
+		#self.atomic_draw_frame('zx')
 		#glPopMatrix()
 		
 		#glPushMatrix()
 		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[3],unprojected[7],unprojected[4])
-		#self.__atomic_draw_frame('yx')
+		#self.atomic_draw_frame('yx')
 		#glPopMatrix()
 		
 		glPushMatrix()
 		self.vdtools.set_mouse_coords(unprojected[1],unprojected[5],unprojected[6],unprojected[2])
-		self.__atomic_draw_frame('xy')
+		self.atomic_draw_frame('xy')
 		glPopMatrix()
 		
 		
@@ -1458,7 +1458,8 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 		if event.modifiers() == Qt.AltModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
 			self.cam.set_plane('xy')
 			self.cam.mousePressEvent(event)
-		else: self.drawable.mousePressEvent(event)
+		else: 
+			self.drawable.mousePressEvent(event)
 
 	
 	def mouseMoveEvent(self,event):
@@ -1486,6 +1487,100 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 		else: self.drawable.mouseReleaseEvent(event)
 
 
+	def update(self):
+		self.update_dims = True
+		self.update_border_flag = True
+	def determine_dimensions(self):
+		self.update_dims = False
+
+	def get_lr_bt_nf(self):
+		return self.drawable.get_lr_bt_nf()
+
+	def draw(self):
+		#clear everything
+		
+		if self.init_flag == True:
+			self.update_border_flag = True
+			#self.determine_dimensions()
+			self.init_flag = False
+	
+		self.corner_sets = []
+		self.planes = []
+		self.model_matrices = []
+		
+		#print "in draw",self.width(),self.height()
+		
+		#glTranslatef(0,0,-self.depth()/2.0) # is this necessary?
+		self.cam.position()
+		
+		lighting = glIsEnabled(GL_LIGHTING)
+		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
+		
+		#lrt = self.get_lr_bt_nf()
+		#print "translating",-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-lrt[4]
+		
+		
+		p = self.get_lr_bt_nf()
+		points = []
+		points.append((p[0],p[2],p[5]))
+		points.append((p[0],p[2],p[4]))
+		points.append((p[0],p[3],p[4]))
+		points.append((p[0],p[3],p[5]))
+		points.append((p[1],p[2],p[5]))
+		points.append((p[1],p[2],p[4]))
+		points.append((p[1],p[3],p[4]))
+		points.append((p[1],p[3],p[5]))
+		unprojected = self.vdtools.unproject_points(points)
+		
+		#print "the unprojected points are"
+		
+		#left zy plane
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[1],unprojected[2],unprojected[3])
+		#self.atomic_draw_frame('zy')
+		#glPopMatrix()
+		
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[5],unprojected[4],unprojected[7],unprojected[6])
+		#self.atomic_draw_frame('yz')
+		#glPopMatrix()
+		
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[4],unprojected[5],unprojected[1])
+		#self.atomic_draw_frame('xz')
+		#glPopMatrix()
+		
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[3],unprojected[2],unprojected[6],unprojected[7])
+		#self.atomic_draw_frame('zx')
+		#glPopMatrix()
+		
+		#glPushMatrix()
+		#self.vdtools.set_mouse_coords(unprojected[0],unprojected[3],unprojected[7],unprojected[4])
+		#self.atomic_draw_frame('yx')
+		#glPopMatrix()
+		
+		glPushMatrix()
+		self.vdtools.set_mouse_coords(unprojected[1],unprojected[5],unprojected[6],unprojected[2])
+		self.atomic_draw_frame('xy')
+		glPopMatrix()
+		
+		
+		glPushMatrix()
+		if self.enable_clip:self.decoration.enable_clip_planes()
+		#glTranslate((p[1]+p[0])/2.0,(p[3]+p[2])/2.0,(p[4]+p[5])/2.0)
+		#glTranslate(self.left,self.bottom,self.near)
+		#glTranslate(0,0,-10)
+		self.drawable.render()
+		glPopMatrix()
+		if self.enable_clip: self.decoration.disable_clip_planes()
+
+		glEnable(GL_LIGHTING) # lighting is on to make the borders look nice
+		glEnable(GL_DEPTH_TEST) # lighting is on to make the borders look nice
+		if self.draw_frame:
+			self.decoration.draw(self.update_border_flag)
+			self.update_border_flag = False
+	
 class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 	"""
 	A view of an EMAN2 3D type, such as an isosurface or a 

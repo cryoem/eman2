@@ -163,12 +163,14 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 		self.target.projection_or_viewport_changed()
 		
 	def get_depth_for_height(self, height):
-		# This function returns the width and height of the renderable 
-		# area at the origin of the data volume
 		depth = height/(2.0*tan(self.fov/2.0*pi/180.0))
 	
 		return depth
 	
+	def get_depth_for_width(self, width):
+		equiv_height = width/self.aspect
+		return self.get_depth_for_height(equiv_height)
+
 	def set_mouse_mode(self,mode):
 		self.mmode = mode
 		self.target.set_mouse_mode(mode)
@@ -213,6 +215,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			self.qt_context_parent = qt_context_parent
 			
 			self.gl_widget = EM3DGLWindowOverride(self,self.rotor)
+			self.gl_widget.set_enable_clip(False)
 			self.widget = self.gl_widget
 			self.gl_widget.resize(640,640)
 			self.disable_mx_zoom()
@@ -282,6 +285,7 @@ class EMImageMXRotorModule(EMGUIModule):
 		
 	def __init_gl_widget(self):
 		self.widget = EM3DGLWindowOverride(self,self.rotor)
+		self.widget.set_enable_clip(False)
 		self.widget.set_draw_frame(True)
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
@@ -697,8 +701,12 @@ class EMImageMXRotorModule(EMGUIModule):
 		GL.glEnable(GL.GL_DEPTH_TEST)
 		GL.glEnable(GL.GL_LIGHTING)
 		z = self.gl_context_parent.get_depth_for_height(abs(lrt[3]-lrt[2]))
+		z2 = self.gl_context_parent.get_depth_for_width(abs(lrt[1]-lrt[0]))
 		
-		z_near = z-lrt[4]-1000
+		if z2 > z: z = z2
+		
+		
+		z_near = z-lrt[4]-100
 		z_trans = 0
 		z_far = z-lrt[5]
 		if z_near < 0:
@@ -715,7 +723,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			else: print "bug 2"
 
 		GL.glPushMatrix()
-		glTranslate(0,0,-z)
+		glTranslate(-(lrt[1]+lrt[0])/2.0,-(lrt[3]+lrt[2])/2.0,-z)
 		self.widget.draw()
 		GL.glPopMatrix()
 	
@@ -755,7 +763,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			self.widget.wheelEvent(event)
 			self.updateGL()
 		
-	def leaveEvent(self):
+	def leaveEvent(self,event):
 		pass
 	
 	def keyPressEvent(self,event):

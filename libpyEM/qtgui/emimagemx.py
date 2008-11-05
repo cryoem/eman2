@@ -270,6 +270,7 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 			lc=self.mediator.scr_to_img((event.x(),event.y()))
 			if lc:
 				self.mediator.emit(QtCore.SIGNAL("mx_image_selected"),event,lc)
+				#print "setting selected"
 				self.mediator.set_selected([lc[0]],True)
 			
 	def mouse_move(self,event):
@@ -288,21 +289,21 @@ class EMMAppMouseEvents(EMMXCoreMouseEvents):
 					self.mediator.force_display_update()
 					
 	
-	def mousePressEvent(self, event):
-		lc=self.scr_to_img((event.x(),event.y()))
-#		print lc
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
-			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
-			app =  QtGui.QApplication.instance()
-			try:
-				self.application.setOverrideCursor(Qt.ClosedHandCursor)
-				#app.setOverrideCursor(Qt.ClosedHandCursor)
-			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				self.application.setOverrideCursor(Qt.SizeAllCursor)
-				#app.setOverrideCursor(Qt.SizeAllCursor)
+	#def mousePressEvent(self, event):
+		#lc=self.scr_to_img((event.x(),event.y()))
+##		print lc
+		#if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
+			#self.show_inspector(1)
+		#elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+			#app =  QtGui.QApplication.instance()
+			#try:
+				#self.application.setOverrideCursor(Qt.ClosedHandCursor)
+				##app.setOverrideCursor(Qt.ClosedHandCursor)
+			#except: # if we're using a version of qt older than 4.2 than we have to use this...
+				#self.application.setOverrideCursor(Qt.SizeAllCursor)
+				##app.setOverrideCursor(Qt.SizeAllCursor)
 				
-			self.mousedrag=(event.x(),event.y())
+			#self.mousedrag=(event.x(),event.y())
 
 class EMImageMXModule(EMGUIModule):
 	
@@ -1320,7 +1321,8 @@ class EMImageMXModule(EMGUIModule):
 			self.mousedrag=(event.x(),event.y())
 			try:self.gl_widget.updateGL()
 			except: pass
-		else: self.mouse_event_handler.mouse_move(event)
+		else: 
+			self.mouse_event_handler.mouse_move(event)
 		
 	def mouseReleaseEvent(self, event):
 		self.application.setOverrideCursor(Qt.ArrowCursor)
