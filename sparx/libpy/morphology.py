@@ -150,12 +150,10 @@ def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 	curve   = [0]*len(roo)
 	for i in xrange(i_start,i_stop,1):	TMP_roo.append(roo[i])
 	nc     = -1								 
-	TMP = imf_params_cl1(TMP_roo,nrank,iswi)
+	TMP = imf_params_cl1(TMP_roo, nrank, iswi)
 	for i in xrange(i_start, i_stop, 1):
 		nc      += 1
 		curve[i] = TMP[1][nc]
-	del    TMP_roo
-	del    TMP
 	return curve
 			
 def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a", skip="#", round_off=1, nr1=3, nr2=6):
@@ -191,7 +189,7 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	for i in xrange(len(roo)):
 		Res_roo.append(roo[i] - Pn1[i])
 		Res_TE.append( TE[i]  - Pn1[i])
-#
+	#
 	defocus=defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
 	del    roo
 	del    TE
@@ -202,7 +200,6 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	
 def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a" ,skip="#", round_off=1, nr1=3, nr2=6):
 	"""
-	
 		1.Estimating envelope function and baseline noise using constrained simplex method
 		  so as to extract CTF imprints from 1D power spectrum
 		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
@@ -231,7 +228,7 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 	TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	Pn1 = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 	Res_roo = []
-	Res_TE  = []	
+	Res_TE  = []
 	for i in xrange(len(roo)):
 		Res_roo.append( roo[i] - Pn1[i] )
 		Res_TE.append(  TE[i]  - Pn1[i] )
@@ -242,15 +239,7 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 	for i in xrange(len(Res_TE)):
 		ctf[i]=ctf[i]*Res_TE[i]
 	dis = defocus_L2_euc(ctf, Res_roo, i_start, i_stop)
-	del roo
-	del TE
-	del Pn1
-	del Res_TE
-	del Res_roo
-	Res = []
-	Res.append(defocus)
-	Res.append(dis)	
-	return Res
+	return [defocus, dis]
 	
 def defocus_L2_euc(v1,v2, ist,istp):
 	from math import sqrt
@@ -538,8 +527,8 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 
 def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, prefix="roo", docf="s", skip=";",micdir="micrograph", print_screen="p"):
 	"""
-		Estimate defocus using user defined 1D power spectrum area
-		mode=1 return the estimated defoci in a list, and write them down also in a text file
+		Estimate defocus using user provided 1D power spectrum
+		mode=1 return the estimated defoci in a list, and writes them down also in a text file
 		mode=2 output estimated defocus in a list
 		mode=3 output estimated defocus in a text file
 		This is a slow version, more accurate than no s version
@@ -548,7 +537,7 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 	import os
 	if writetodoc[0]   != "a" and writetodoc[0]   != "l" and writetodoc[0] != "a" : writetodoc   = "a"
 	if print_screen[0] != "p" and print_screen[0] != "n": 				print_screen = "n" 
-	if os.path.exists(indir) == False: 						ERROR("roodir doesn't exist", "defocus_get_slow",1)
+	if os.path.exists(indir) == False: 	ERROR("roodir doesn't exist", "defocus_get_slow",1)
 	flist=os.listdir(indir)
 	res  = []
 	f_l  = f_l0
@@ -573,7 +562,7 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 			istart   = int(f_l)
 			istop    = int(f_h)
 			fnam_roo = os.path.join(indir,v)
-			Mdis     = 1.e38
+			Mdis     = 1.e22
 			defo     = 0.0
 			for nr1 in xrange(2,7,1):
 				for nr2 in xrange(2,7,1):
@@ -590,11 +579,11 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 						if(Mdis>dis):
 							defo = defocus
 							Mdis = dis
-			if(defo >= dz_max): 				ERROR("defo_get_s fails at estimating defocus from ", fnam, 0)
-			else:						print "micrograph", flist[i], defo # screen output, give the user a general impression about estimated defoci		
+			if(defo >= dz_max): 	ERROR("defo_get_s fails at estimating defocus from ", fnam, 0)
+			else:				print "micrograph", flist[i], defo # screen output, give the user a general impression about estimated defoci		
 			if writetodoc    == "w" or writetodoc[0] == "a":out.write("%d\t%f\t%s\n" % (ncount, defo, fdefo_nam))
-			if writetodoc[0] == "l" : 			res.append(defo)
-	if  len(res) == 0 and writetodoc == "l" : 		ERROR("No input file, check the input directory", indir, 1)
+			if writetodoc[0] == "l" : 	res.append(defo)
+	if  len(res) == 0 and writetodoc == "l" :  ERROR("No input file, check the input directory", indir, 1)
 	else:
 		if writetodoc[0] == "a":
 			out.close()
@@ -645,7 +634,7 @@ def imf_params_cl1(pw,n=2,iswi=3,Pixel_size=1):
 		3. original power spectrum to be fitted
 		4. The parameters
 		Attension:
-		        iswi= 2 using polynomial n rank to fit no-Gaussian envelope function
+		      iswi= 2 using polynomial n rank to fit no-Gaussian envelope function
 			iswi =3 using polynomail n rank to fit background
 			n = the polynomial rank +1
 			The optimization tend to fail when the polynomial rank is higher than 6 
