@@ -548,8 +548,8 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 				if (cm < bestval) {
 					bestval = cm;
 					bestang = (float) (2.0 * M_PI * a->calc_max_index() / a->get_xsize());
-					bestdx = dx;
-					bestdy = dy;
+					bestdx = (float)dx;
+					bestdy = (float)dy;
 					bestflip = 0;
 				}
 
@@ -578,8 +578,8 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 				if (cm < bestval) {
 					bestval = cm;
 					bestang = (float) (2.0 * M_PI * a->calc_max_index() / a->get_xsize());
-					bestdx = dx;
-					bestdy = dy;
+					bestdx = (float)dx;
+					bestdy = (float)dy;
 					bestflip = 1;
 				}
 				
