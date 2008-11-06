@@ -175,7 +175,6 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	import os
 		
 	print_begin_msg("ali2d_a")
-
 	if os.path.exists(outdir): os.system('rm -rf '+outdir)
 	os.mkdir(outdir)
 
@@ -219,7 +218,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	print_msg("Data with CTF               : %s\n"%(CTF))
 	if random_method != "": 	
 		print_msg("Random method               : %s\n"%(random_method))
-	if random_method:
+	if random_method == "SA":
 		print_msg("Initial temperature         : %f\n"%(T0)) 
 		print_msg("Cooling Rate                : %f\n"%(F))
 		if SA_stop != max_iter: print_msg("SA stop at Iteration        : %i\n"%(SA_stop))
@@ -230,7 +229,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		import	types
 		if type(maskfile) is types.StringType:
 			print_msg("Maskfile                    : %s\n\n"%(maskfile))
-			mask=getImage(maskfile)
+			mask = getImage(maskfile)
 		else:
 			print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
@@ -238,13 +237,13 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
 		mask = model_circle(last_ring, nx, nx)
 
-	cnx = int(nx/2)+1
+	cnx = nx/2+1
  	cny = cnx
  	mode = "F"
 
 	if CTF:
 		from morphology   import ctf_img
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor"]
+		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor", "ctf_applied"]
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
 		ctf_2_sum = None
@@ -282,7 +281,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg(msg)
 		for Iter in xrange(max_iter):
 					
-			tavg, vav, sumsq = add_ave_varf(data, mask, mode="a", CTF=CTF, ctf_2_sum=ctf_2_sum)
+			tavg, vav, sumsq, sx_sum, sy_sum = add_ave_varf(data, mask, mode="a", CTF=CTF, ctf_2_sum=ctf_2_sum)
 
 			attr_list = data[0].get_attr_dict()	
 			if attr_list.has_key("select") == False:
@@ -313,7 +312,19 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			ref_data[2] = tavg
 			ref_data[3] = frsc
 			#  call user-supplied function to prepare reference image, i.e., center and filter it
-			tavg, cs = user_func(ref_data)
+			if center != 7:
+				tavg, cs = user_func(ref_data)
+			else:
+				ref_data[1] = 0
+				tavg, cs = user_func(ref_data)
+				sx_sum = float(sx_sum)/nima
+				sy_sum = float(sy_sum)/nima
+				cs[0] = sx_sum
+				cs[1] = sy_sum
+				from fundamentals import fshift
+				tavg = fshift(tavg, -cs[0], -cs[1])
+				msg = "Center x = %10.4f    Center y = %10.4f\n"%(cs[0], cs[1])
+				print_msg(msg)
 			
 			Util.div_filter(sumsq, vav)
 			sumsq = filt_tophatb(sumsq, 0.01, 0.49)
@@ -442,10 +453,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		if myid==main_node: 	print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
 		mask = model_circle(last_ring,nx,nx)
 
-	cnx  = nx//2+1
+	cnx  = nx/2+1
  	cny  = cnx
  	mode = "F"
-	data = []
+
 	if CTF:
 		from morphology   import ctf_img
 		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor", "ctf_applied"]
@@ -471,17 +482,16 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if myid == main_node:
 		# initialize data for the reference preparation function
 		ref_data = []
-		ref_data.append( mask )
-		ref_data.append( center )
-		ref_data.append( None )
-		ref_data.append( None )
-		if CTF:	ctf_2sum = ctf_2_sum.copy()
-	if CTF:	del ctf_2_sum	
+		ref_data.append(mask)
+		ref_data.append(center)
+		ref_data.append(None)
+		ref_data.append(None)
 
 	again = True
 	cs = [0.0]*2
 	total_iter = 0
 	a0 = -1.0e22
+	
 	for N_step in xrange(len(xrng)):
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
@@ -516,14 +526,14 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				if random_method == "ML":
 					sumsq_ML = fft(tavg_ML)				
 				if CTF:	
-					tavg = fft(Util.divn_img(sumsq, ctf_2sum))
+					tavg = fft(Util.divn_img(sumsq, ctf_2_sum))
 				 	Util.mul_img(sumsq, sumsq.conjg())
-				 	Util.div_img(sumsq, ctf_2sum)
+				 	Util.div_img(sumsq, ctf_2_sum)
 			 		Util.sub_img(vav, sumsq)
 					if random_method == "ML":
-						tavg_ML = fft(Util.divn_img(sumsq_ML, ctf_2sum))
+						tavg_ML = fft(Util.divn_img(sumsq_ML, ctf_2_sum))
 					 	Util.mul_img(sumsq_ML, sumsq_ML.conjg())
-					 	Util.div_img(sumsq_ML, ctf_2sum)
+					 	Util.div_img(sumsq_ML, ctf_2_sum)
 			 			Util.sub_img(vav_ML, sumsq_ML)					
 				else:
 					Util.mul_scalar(tavg, 1.0/float(nima))
