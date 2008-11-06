@@ -2959,9 +2959,9 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			if(an[N_step] == -1):	proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, finfo = outf, MPI=False)
 			else:	           proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, finfo = outf, MPI=False)
 			#  3D stuff
-			if(CTF): vol1 = recons3d_4nn_ctf(data, range(0,nima,2), snr, 1, sym)
+			if(CTF):   vol1 = recons3d_4nn_ctf(data, range(0,nima,2), snr, 1, sym)
 			else:	   vol1 = recons3d_4nn(data, range(0,nima,2), sym)
-			if(CTF): vol2 = recons3d_4nn_ctf(data, range(1,nima,2), snr, 1, sym)
+			if(CTF):   vol2 = recons3d_4nn_ctf(data, range(1,nima,2), snr, 1, sym)
 			else:	   vol2 = recons3d_4nn(data, range(1,nima,2), sym)
 
 			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)))
@@ -4468,14 +4468,14 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
 				atparams = [phi, theta, psi, tx, ty]
-				#  change signs of shifts for projections
-				atparams[3] *= -1
-				atparams[4] *= -1
 				if debug:
 					initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
 					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f    %7.4f'%(atparams[0], atparams[1], atparams[2], atparams[3], atparams[4], initial))
 					outf.write("\n")
+				#  change signs of shifts for projections
+				atparams[3] *= -1
+				atparams[4] *= -1
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 				#from utilities import start_time, finish_time
@@ -4695,14 +4695,14 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
 				atparams = [phi, theta, psi, tx, ty]
-				#  change signs of shifts for projections
-				atparams[3] *= -1
-				atparams[4] *= -1
 				if debug:
 					initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
 					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f    %7.4f'%(atparams[0], atparams[1], atparams[2], atparams[3], atparams[4], initial))
 					outf.write("\n")
+				#  change signs of shifts for projections
+				atparams[3] *= -1
+				atparams[4] *= -1
 
 				#optm_params = ali_G3(data, atparams, dtheta)
 				#  Align only Euler angles

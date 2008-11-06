@@ -197,7 +197,37 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	del    Res_TE
 	del    Res_roo	
 	return defocus
+			
+def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, docf="a", skip="#", round_off=1.0, nr1=3, nr2=6):
+	"""
 	
+		1. Estimating envelope function and baseline noise using constrained simplex method
+		   so as to extract CTF imprints from 1D power spectrum
+		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
+		   defocus which matches the extracted CTF imprints 
+	"""
+	
+	from math 	import sqrt, atan
+	res     = []
+	Res_roo = []
+	Res_TE  = []	
+	if f_start == 0 : 	i_start = 0
+	else: 			i_start = int(Pixel_size*2.*len(roo)/f_start)
+	if f_stop <= i_start : 	i_stop  = len(roo)
+	else: 			i_stop  = int(Pixel_size*2.*len(roo)/f_stop)
+	print f_start, i_start, f_stop, i_stop
+	TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
+	Pn1 = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
+	Res_roo = []
+	Res_TE  = []	
+	for i in xrange(len(roo)):
+		Res_roo.append(roo[i] - Pn1[i])
+		Res_TE.append( TE[i]  - Pn1[i])
+	#
+	from utilities import write_text_file
+	write_text_file([roo, Res_roo, Res_TE], "procpw.txt")
+	return  defocus_guess(Res_roo, Res_TE, voltage, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
+
 def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a" ,skip="#", round_off=1, nr1=3, nr2=6):
 	"""
 		1. Estimating envelope function and baseline noise using constrained simplex method
@@ -261,9 +291,9 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 		Use specified frequencies area (istart-istop)to estimate defocus
 		1.  The searching range is limited to dz_low (.1um) ~ dz_high (20 um).
 		    The user can modify this limitation accordingly
-		2. changing nloop can speed up the estimation
-		3. mode=1 compare squared error 
-		   mode=2; compare cross correlation coefficients 
+		2.  changing nloop can speed up the estimation
+		3.  mode=1 compare squared error 
+		    mode=2; compare cross correlation coefficients 
 	"""
 	
 	from math import sqrt
@@ -315,10 +345,10 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 		step/=10.
 	defocus=int( defocus/round_off )*round_off
 	return defocus
-	
+
 def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix="roo", docf="a",skip="#", micdir="no", print_screen="p"):
 	"""
-		Estimate defocus using user defined 1D power spectrum area
+		Estimate defocus using user supplied 1D power spectrum area
 		writetodoc="a" return the estimated defoci in a list, and write them down also in a text file
 		writetodoc="l" output estimated defocus in a list
 		writetodoc="w" output estimated defocus in a text file
