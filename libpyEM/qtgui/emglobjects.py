@@ -1806,6 +1806,8 @@ class EMImage3DGUIModule(EMGUIModule):
 			if isinstance(self.data,EMData):
 				self.gl_context_parent.set_camera_defaults(self.data)
 			self.under_qt_control = True
+		
+			self.qt_context_parent.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image_3d.png"))
 		return self.qt_context_parent
 
 	

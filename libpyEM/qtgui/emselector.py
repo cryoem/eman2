@@ -36,7 +36,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import os
 import re
-from EMAN2 import EMData,Region, gimme_image_dimensions3D, EMFunctor, get_file_tag, name_has_no_tag, remove_directories_from_name, file_exists, strip_file_tag, EMData
+from EMAN2 import *
 from emimage2d import EMImage2DModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule
 from EMAN2db import EMAN2DB
@@ -116,9 +116,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.ab_refboxes_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/black_box.png")
 		self.ab_manboxes_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/black_box.png")
 		self.ab_autoboxes_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/green_boxes.png")
-		self.emdata_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/boxer_erase.png");
-		
-	
+		self.emdata_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image.png")
+		self.emdata_3d_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image_3d.png")
+		self.emdata_matrix_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/multiple_images.png")
+
 	def __init__single_preview_tb(self):
 		self.single_preview = QtGui.QCheckBox("Single preview")
 		self.single_preview.setChecked(True)
@@ -288,6 +289,8 @@ class EMSelectorDialog(QtGui.QDialog):
 
 		if item == None: return
 		
+		#print item.type_of_me
+		
 		if item.text() == "../": 
 			self.__go_back_a_directory()
 			return
@@ -437,7 +440,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		list_widget.clear()
 		if (list_widget == self.list_widgets[0]):
 			self.lock = True
-			QtGui.QListWidgetItem("../",list_widget)
+			EMSelectionListItem("../",list_widget)
 			self.lock = False
 		
 		if self.db_listing.responsible_for(directory):
@@ -456,7 +459,10 @@ class EMDirectoryListing:
 		self.target = target
 		pass
 	
+	
 	def load_directory_data(self,directory,list_widget):
+		e = EMData()
+		read_header_only = True
 		for root, dirs, files in os.walk(directory):
 			files = self.target.filter_strings(files)
 			
@@ -475,18 +481,36 @@ class EMDirectoryListing:
 					if file_length == 0: file_length = len(d)
 					break
 				if file_length != 0:
-					a = QtGui.QListWidgetItem(self.target.folder_files_icon,i,list_widget)
+					a = EMSelectionListItem(self.target.folder_files_icon,i,list_widget)
 				else:
-					a = QtGui.QListWidgetItem(self.target.folder_icon,i,list_widget)
+					a = EMSelectionListItem(self.target.folder_icon,i,list_widget)
 				
 			#for i,file in enumerate(files):
 				#if file[0] == '.': continue
 				#if get_file_tag(file) == "bdb":
-					#a = QtGui.QListWidgetItem(self.database_icon,file,list_widget)
+					#a = EMSelectionListItem(self.database_icon,file,list_widget)
 					#files.pop(i)
 					
 			for file in files:
-				a = QtGui.QListWidgetItem(self.target.file_icon,file,list_widget)
+				#print EMUtil.get_image_ext_type(Util.get_filename_ext((file)),get_file_tag(file)
+				if EMUtil.get_image_ext_type(Util.get_filename_ext(file)) != IMAGE_UNKNOWN:
+					full_name = directory+"/"+file
+					try:
+						if EMUtil.get_image_count(full_name) > 1:
+							a = EMSelectionListItem(self.target.emdata_matrix_icon,file,list_widget)
+							a.type_of_me = "emdata_mx"
+						else:
+							e.read_image(full_name,0, read_header_only)
+							if e.get_zsize() > 1:
+								a = EMSelectionListItem(self.target.emdata_3d_icon,file,list_widget)
+								a.type_of_me = "emdata_3d"
+							else:
+								a = EMSelectionListItem(self.target.emdata_icon,file,list_widget)
+								a.type_of_me = "emdata"
+					except:
+						a = EMSelectionListItem(self.target.file_icon,file,list_widget) # this happens when files are corrupted	
+						
+				else: a = EMSelectionListItem(self.target.file_icon,file,list_widget)
 
 			return True
 			
@@ -563,7 +587,7 @@ class EMBDBListing:
 			d = remove_directories_from_name(directory)
 			
 			if d in self.directory_replacements.keys():
-				a = QtGui.QListWidgetItem(self.target.database_icon,self.directory_replacements[d],list_widget)
+				a = EMSelectionListItem(self.target.database_icon,self.directory_replacements[d],list_widget)
 				rm.append(i)
 		
 		rm.reverse()
@@ -597,7 +621,7 @@ class EMBDBListing:
 				if i[0] == '.': continue
 				
 				if i == "EMAN2DB":
-					a = QtGui.QListWidgetItem(self.target.database_icon,"bdb",list_widget)
+					a = EMSelectionListItem(self.target.database_icon,"bdb",list_widget)
 					continue
 			
 				file_length = 0
@@ -606,16 +630,16 @@ class EMBDBListing:
 					if file_length == 0: file_length = len(d)
 					break
 				if file_length != 0:
-					a = QtGui.QListWidgetItem(self.target.folder_files_icon,i,list_widget)
+					a = EMSelectionListItem(self.target.folder_files_icon,i,list_widget)
 				else:
-					a = QtGui.QListWidgetItem(self.target.folder_icon,i,list_widget)
+					a = EMSelectionListItem(self.target.folder_icon,i,list_widget)
 				
 			for file in files:
 				if file[len(file)-3:] == "bdb":
 					f = file.rpartition(".bdb")
-					a = QtGui.QListWidgetItem(self.target.database_icon,f[0],list_widget)
+					a = EMSelectionListItem(self.target.database_icon,f[0],list_widget)
 				#else:
-					#a = QtGui.QListWidgetItem(self.target.key_icon,file,list_widget)
+					#a = EMSelectionListItem(self.target.key_icon,file,list_widget)
 				
 			return True
 				
@@ -654,12 +678,12 @@ class EMBDBListing:
 			if k == '': continue
 			_type =items.item_type(k)
 			if _type == dict:
-				a = QtGui.QListWidgetItem(self.target.database_icon,str(k),list_widget)
+				a = EMSelectionListItem(self.target.database_icon,str(k),list_widget)
 			elif _type == EMData:
-				a = QtGui.QListWidgetItem(self.target.emdata_icon,str(k),list_widget)
+				a = EMSelectionListItem(self.target.emdata_icon,str(k),list_widget)
 			else:
 				#if type(i) in [str,float,int,tuple,list,bool]:
-				a = QtGui.QListWidgetItem(self.target.basic_python_icon,str(k),list_widget)	
+				a = EMSelectionListItem(self.target.basic_python_icon,str(k),list_widget)	
 		return True
 				
 	
@@ -727,25 +751,31 @@ class EMBDBListing:
 				for k in keys:
 					i = item[k]
 					if k == "auto_boxes":
-						a = QtGui.QListWidgetItem(self.target.ab_autoboxes_icon,str(k),list_widget)
+						a = EMSelectionListItem(self.target.ab_autoboxes_icon,str(k),list_widget)
+						a.type_of_me = "auto_boxes"
 					elif k == "reference_boxes":
-						a = QtGui.QListWidgetItem(self.target.ab_autoboxes_icon,str(k),list_widget)
+						a = EMSelectionListItem(self.target.ab_autoboxes_icon,str(k),list_widget)
+						a.type_of_me = "reference_boxes"
 					elif k == "manual_boxes":
-						a = QtGui.QListWidgetItem(self.target.ab_autoboxes_icon,str(k),list_widget)
+						a = EMSelectionListItem(self.target.ab_autoboxes_icon,str(k),list_widget)
+						a.type_of_me = "manual_boxes"
 					elif type(i) in [str,float,int,tuple,list,bool]:
-						a = QtGui.QListWidgetItem(self.target.basic_python_icon,str(k),list_widget)
+						a = EMSelectionListItem(self.target.basic_python_icon,str(k),list_widget)
+						a.type_of_me = "python_basic"
 					elif type(i) == dict:
-						a = QtGui.QListWidgetItem(self.target.dict_python_icon,str(k),list_widget)
+						a = EMSelectionListItem(self.target.dict_python_icon,str(k),list_widget)
+						a.type_of_me = "python_dict"
 					elif type(i) == EMData:
-						a = QtGui.QListWidgetItem(self.target.emdata_icon,str(k),list_widget)
+						a = EMSelectionListItem(self.target.emdata_icon,str(k),list_widget)
+						a.type_of_me = "emdata"
 					else:
-						a = QtGui.QListWidgetItem(self.target.basic_python_icon,str(k),list_widget)
+						a = EMSelectionListItem(self.target.basic_python_icon,str(k),list_widget)
 			elif isinstance(item,EMData):
 				print "this shouldn't happen"
 				self.target.preview_data(item)
 				return False
 			else:
-				a = QtGui.QListWidgetItem(self.target.basic_python_icon,str(item),list_widget)
+				a = EMSelectionListItem(self.target.basic_python_icon,str(item),list_widget)
 			
 			return True
 				
@@ -800,7 +830,21 @@ class EMBDBListing:
 			
 	def load_database_variables(self,directory,list_widget):
 		pass
+
+
+class EMSelectionListItem(QtGui.QListWidgetItem):
+	def __init__(self,a,b,c=None):
+		if c != None:
+			QtGui.QListWidgetItem.__init__(self,a,b,c)
+		else:
+			QtGui.QListWidgetItem.__init__(self,a,b)
+	
+		self.type_of_me = None # should be a string storing "emdata","emdata_matrix","emdata_3d", etc
+	def set_type_of_me(self,type_of_me):
+		self.type_of_me = type_of_me
 		
+	def get_type_of_me(self): return self.type_of_me
+	
 app = None
 def on_done(string_list):
 	print "on done"

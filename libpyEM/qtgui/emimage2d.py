@@ -357,6 +357,7 @@ class EMImage2DModule(EMGUIModule):
 				self.load_default_scale_origin()
 				
 			self.qt_context_parent.setAcceptDrops(True)
+			self.qt_context_parent.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image.png"))
 		
 		return self.qt_context_parent
 	
