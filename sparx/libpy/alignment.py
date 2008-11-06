@@ -66,8 +66,8 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 			
 		alpha, sx, sy, mirror, dummy = get_params2D(ima)
 		#  add centering from the previous iteration, if image was mirrored, filp the sign of x center
-		if mirror: alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0, cs[0], -cs[1], 1.0)
-		else:	   alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0, -cs[0], -cs[1], 1.0)
+		if mirror:    alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0.0, cs[0], -cs[1], 1.0)
+		else:    alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 0.0, -cs[0], -cs[1], 1.0)
 		alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
 		if CTF:
 			#Apply CTF to image
@@ -76,8 +76,10 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 
 		# align current image to the reference
 		if random_method == "SA":
-			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, T0, F, SA_stop)
+			#peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			#[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, Iter, T0, F, SA_stop)
+			peaks, peakm, peaks_major, peakm_major = ormq_peaks_m(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
 			ima2.set_attr_dict({'select': select})
@@ -108,6 +110,7 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 			ima2.write_image(data, im, EMUtil.ImageType.IMAGE_HDF, True)
 		else:
 			data[im] = ima2.copy()
+			
 
 def ang_n(tot, mode, maxrin):
 	"""
@@ -307,6 +310,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	sys = sx*so + sy*co
 	return  ang, sxs, sys, mirror, peak
 			
+
 def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""Determine shift and rotation between image and reference image (crefim)
 		crefim should be as FT of polar coords with applied weights
@@ -317,39 +321,143 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	from math import pi, cos, sin
 	from utilities import peak_search
 	
-	peaks = EMData()
-	peakm = EMData()
-	Util.multiref_peaks_ali2d(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, peaks, peakm)
-	#p1 = peak_search(peaks, 50)
-	p1 = peak_search(peaks, 4)
+	ccfs = EMData()
+	ccfm = EMData()
+	Util.multiref_peaks_ali2d(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, ccfs, ccfm)
 	
-	for i in xrange(len(p1)):	p1[i].append(0)
+	peaks = peak_search(ccfs, 1000)
+	for i in xrange(len(peaks)):	peaks[i].append(0)
 	
-	#p2 = peak_search(peakm, 50)
-	p2 = peak_search(peakm, 4)
-	for i in xrange(len(p2)):	p2[i].append(1)
-	p1 += p2
+	peakm = peak_search(ccfm, 1000)
+	for i in xrange(len(peakm)):	peakm[i].append(1)
+	peaks += peakm 
 	
-	peak_num = len(p1)
+	peak_num = len(peaks)
 	maxrin = numr[-1]
 	for i in xrange(peak_num):
-		p1[i][1]= ang_n(p1[i][1]+1, mode, maxrin)
-	p1.sort(reverse=True)
+		peaks[i][1]= ang_n(peaks[i][1]+1, mode, maxrin)
+	peaks.sort(reverse=True)
 	
 	for i in xrange(peak_num):
-		ang = p1[i][1]
-		sx  = -p1[i][6]*step
-		sy  = -p1[i][7]*step
+		ang = peaks[i][1]
+		sx  = -peaks[i][6]*step
+		sy  = -peaks[i][7]*step
 
 		co =  cos(ang*pi/180.0)
 		so = -sin(ang*pi/180.0)
 		sxs = sx*co - sy*so
 		sys = sx*so + sy*co
 		
-		p1[i][6] = sxs
-		p1[i][7] = sys
+		peaks[i][6] = sxs
+		peaks[i][7] = sys
 		
-	return p1
+	return peaks
+
+
+def process_peak(peaks, step, mode, numr):
+	from math import pi, cos, sin
+	
+	peak_num = len(peaks)
+	maxrin = numr[-1]
+	for i in xrange(peak_num):
+		peaks[i][1]= ang_n(peaks[i][1]+1, mode, maxrin)
+	peaks.sort(reverse=True)
+	
+	for i in xrange(peak_num):
+		ang = peaks[i][1]
+		sx  = -peaks[i][6]*step
+		sy  = -peaks[i][7]*step
+
+		co =  cos(ang*pi/180.0)
+		so = -sin(ang*pi/180.0)
+		sxs = sx*co - sy*so
+		sys = sx*so + sy*co
+		
+		peaks[i][6] = sxs
+		peaks[i][7] = sys
+		
+	return peaks
+
+
+def ormq_peaks_m(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
+	"""Determine shift and rotation between image and reference image (crefim)
+		crefim should be as FT of polar coords with applied weights
+	        consider mirror
+		quadratic interpolation
+		cnx, cny in FORTRAN convention
+	"""
+	from math import pi, cos, sin
+	from utilities import peak_search
+	from filter import filt_gaussl
+	
+	ccfs = EMData()
+	ccfm = EMData()
+	Util.multiref_peaks_ali2d(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, ccfs, ccfm)
+	
+	nx = ccfs.get_xsize()
+	ny = ccfs.get_ysize()
+	nz = ccfs.get_zsize()
+
+	f = EMData(nx, ny-2, nz-2, True)
+	for x in xrange(nx):
+		for y in xrange(ny-2):
+			for z in xrange(nz-2):
+				val = ccfs.get_value_at(x, y+1, z+1)
+				f.set_value_at(x, y, z, val)
+	[mean, std, xmax, xmin] = Util.infomask(f, None, True)
+	
+	g = ccfs.copy()
+	for y in xrange(ny):
+		for z in xrange(nz):
+			if y == 0 or y == ny-1 or z == 0 or z == nz-1:
+				for x in xrange(nx):	g.set_value_at(x, y, z, xmin)
+
+	for i in xrange(100):
+		fl = 0.5-i*0.005
+		g_filt = filt_gaussl(g, fl)
+		peakg = peak_search(g_filt, 1000)
+		K = len(peakg)
+		for k in xrange(K):
+			if peakg[k][4] < 0.7:	break
+		if peakg[k][4] >= 0.7:  k += 1
+		if k <= 5: break
+	peaks_major = peakg[0:k] 
+
+	f = EMData(nx, ny-2, nz-2, True)
+	for x in xrange(nx):
+		for y in xrange(ny-2):
+			for z in xrange(nz-2):
+				val = ccfm.get_value_at(x, y+1, z+1)
+				f.set_value_at(x, y, z, val)
+	[mean, std, xmax, xmin] = Util.infomask(f, None, True)
+	
+	g = ccfm.copy()
+	for y in xrange(ny):
+		for z in xrange(nz):
+			if y == 0 or y == ny-1 or z == 0 or z == nz-1:
+				for x in xrange(nx):	g.set_value_at(x, y, z, xmin)
+
+	for i in xrange(100):
+		fl = 0.5-i*0.005
+		g_filt = filt_gaussl(g, fl)
+		peakg = peak_search(g_filt, 1000)
+		K = len(peakg)
+		for k in xrange(K):
+			if peakg[k][4] < 0.7:	break
+		if peakg[k][4] >= 0.7:  k += 1
+		if k <= 5: break
+	peakm_major = peakg[0:k]
+	print k, len(peakm_major), peakg, fl
+
+	peaks = peak_search(ccfs, 1000)
+	peakm = peak_search(ccfm, 1000)
+	
+	peaks = process_peak(peaks, step, mode, numr)
+	peakm = process_peak(peakm, step, mode, numr)
+	peaks_major = process_peak(peaks_major, step, mode, numr)
+	peakm_major = process_peak(peakm_major, step, mode, numr)	
+		
+	return peaks, peakm, peaks_major, peakm_major
 
 
 def sim_anneal(peaks, Iter, T0, F, SA_stop):
@@ -445,6 +553,161 @@ def sim_anneal2(peaks, Iter, F):
 		p[0] = 1.0
 	
 	return p
+
+
+def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
+	from math import exp, pow, log10, sin, cos, sqrt, pi
+	from random import random
+
+	if log10(F)*Iter > -3.0 and Iter < SA_stop:
+		# Determine the current temperature
+		T = T0*pow(F, Iter)	
+	
+		K = len(peaks_major)
+		dJe = [0.0]*K
+		for k in xrange(K):
+			dJe[k] = peaks_major[k][0]/peaks_major[0][0]
+
+		# q[k]
+		q      = [0.0] * K
+		arg    = [0.0] * K
+		maxarg = 0
+		for k in xrange(K):
+			arg[k] = dJe[k] / T
+			if arg[k] > maxarg: maxarg = arg[k]
+		limarg = 500
+		if maxarg > limarg:
+			sumarg = float(sum(arg))
+			for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+		else:
+			for k in xrange(K): q[k] = exp(arg[k])
+
+		# p[k]
+		p = [0.0] * K
+		sumq = float(sum(q))
+		for k in xrange(K):
+			p[k] = q[k] / sumq
+			
+		c = [0.0] * K
+		c[0] = p[0]
+		for k in xrange(1, K): c[k] = c[k-1] + p[k]
+
+		pb = random()
+		select_major = -1
+		for k in xrange(K):
+			if c[k] > pb:
+				select_major = k
+				break
+		
+		ang_m = peaks_major[select_major][1]
+		sx_m = peaks_major[select_major][6]
+		sy_m = peaks_major[select_major][7]
+		
+		neighbor = []
+		min_dist = 1e22
+		for i in xrange(len(peaks)):
+			ang = peaks[i][1]
+			sx = peaks[i][6]
+			sy = peaks[i][7]		
+			dist = 64*sin((ang-ang_m)/2/180*pi)+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
+			if dist < 7.0: neighbor.append(i)
+			if dist < min_dist:
+				min_dist = dist
+				select_s = i
+		if len(neighbor) != 0:
+			select_s = neighbor[int(random()*len(neighbor))]
+		
+		###################################
+
+		K = len(peakm_major)
+		dJe = [0.0]*K
+		for k in xrange(K):
+			dJe[k] = peakm_major[k][0]/peakm_major[0][0]
+
+		# q[k]
+		q      = [0.0] * K
+		arg    = [0.0] * K
+		maxarg = 0
+		for k in xrange(K):
+			arg[k] = dJe[k] / T
+			if arg[k] > maxarg: maxarg = arg[k]
+		limarg = 500
+		if maxarg > limarg:
+			sumarg = float(sum(arg))
+			for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+		else:
+			for k in xrange(K): q[k] = exp(arg[k])
+
+		# p[k]
+		p = [0.0] * K
+		sumq = float(sum(q))
+		for k in xrange(K):
+			p[k] = q[k] / sumq
+			
+		c = [0.0] * K
+		c[0] = p[0]
+		for k in xrange(1, K): c[k] = c[k-1] + p[k]
+
+		pb = random()
+		select_major = -1
+		for k in xrange(K):
+			if c[k] > pb:
+				select_major = k
+				break
+		
+		ang_m = peakm_major[select_major][1]
+		sx_m = peakm_major[select_major][6]
+		sy_m = peakm_major[select_major][7]
+		
+		neighbor = []
+		min_dist = 1e22
+		for i in xrange(len(peakm)):
+			ang = peakm[i][1]
+			sx = peakm[i][6]
+			sy = peakm[i][7]		
+			dist = 64*sin((ang-ang_m)/2/180*pi)+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
+			if dist < 7.0: neighbor.append(i)
+			if dist < min_dist:
+				min_dist = dist
+				select_m = i
+		if len(neighbor) != 0:
+			select_m = neighbor[int(random()*len(neighbor))]
+			
+		ps = peaks[select_s][0]
+		pm = peakm[select_m][0]
+		p1 = ps/(ps+pm)
+		p = random()
+		if p < p1: 
+			use_mirror = 0
+		else:
+			use_mirror = 1
+	else:
+		select_s = 0
+		select_m = 0
+		ps = peaks[select_s][0]
+		pm = peaks[select_m][0]
+		if ps > pm:
+			use_mirror = 0
+		else:
+			use_mirror = 1
+	
+	if use_mirror == 0:
+		select = select_s	
+		ang = peaks[select][1]
+		sx  = peaks[select][6]
+		sy  = peaks[select][7]
+		mirror = 0
+		peak = peaks[select][0]
+	else:
+		select = select_m
+		ang = peakm[select][1]
+		sx  = peakm[select][6]
+		sy  = peakm[select][7]
+		mirror = 1
+		peak = peakm[select][0]
+		
+	return  ang, sx, sy, mirror, peak, select
+
 
 def prep_vol_kb(vol, kb, npad=2):
 	# prepare the volume
