@@ -705,8 +705,9 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 			float bg;
 			f-=j;
 			if (j>snr.size()-2) { 
-				r[i]=snr.back(); 
-				bg=background.back(); 
+/*				r[i]=snr.back(); 
+				bg=background.back();*/
+				r[i]=0;
 			}
 			else {
 				r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
@@ -874,8 +875,9 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float bg,snrf;
 				f-=j;
 				if (j>snr.size()-2) {
-					bg=background.back();
-					d[x*2+ynx]=snr.back()/(snr.back()+1.0);
+/*					bg=background.back();
+					d[x*2+ynx]=snr.back()/(snr.back()+1.0);*/
+					d[x*2+ynx]=0;
 				}
 				else {
 					bg=background[j]*(1.0-f)+background[j+1]*f;

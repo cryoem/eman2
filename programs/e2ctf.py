@@ -171,7 +171,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 				wienerim=fft1.copy()
 				ctf.compute_2d_complex(wienerim,Ctf.CtfType.CTF_WIENER_FILTER)
 #				print wienerim.get_attr_dict()
-				display(wienerim)
+#				display(wienerim)
 #				print ctf.to_string()
 #				plot(ctf.background)
 #				plot(ctf.snr)
