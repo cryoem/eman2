@@ -1,4 +1,4 @@
-# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+# Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -3440,17 +3440,16 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	from utilities      import bcast_string_to_all, bcast_list_to_all, getImage, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc, recv_attr_dict, send_attr_dict
 	from utilities      import get_params_proj, set_params_proj
-	from filter	        import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
-	from alignment	  import proj_ali_incore
-	from random         import randint
+	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
+	from alignment      import proj_ali_incore
+	from random          import randint
 	from fundamentals   import fshift
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from projection     import prep_vol, prgs
 	import os
 	import types
 	from string         import replace
-	from mpi 	        import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	        import mpi_barrier
+	from mpi            import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -3459,7 +3458,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
-	from string import replace
 	if debug:
 		info_file = outdir+("/progress%04d"%myid)
 		finfo = open(info_file, 'w')
@@ -3565,7 +3563,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 
 	if(CTF):
 		parnames = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		#                    0            1        2                    3               4                        5               6
+		#               0        1        2         3              4              5               6
 		#  ERROR if ctf applied
 		ctf_params = get_arb_params(data[0], parnames)
 		if(ctf_params[6] == 1):  ERROR("ali3d_m does not work for CTF-applied data","ali3d_m",1)
@@ -3929,7 +3927,7 @@ def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 
 
 
-def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk=0.101):
+def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", debug=False ):
 	"""
 		
 	"""
@@ -3938,209 +3936,231 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
 	from utilities      import amoeba, bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
-	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
-	from utilities      import readSpiderDoc, get_im
+	from utilities      import bcast_number_to_all, bcast_list_to_all,getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import get_params_proj, set_params_proj, print_msg, readSpiderDoc, get_im
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
 	from math           import pi, sqrt
 	from string         import replace
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import mpi_barrier, mpi_bcast, MPI_INT
 	import os
 	import sys
-	from development    import ali_G3
-	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	    import mpi_barrier
+	
+	chunk = 0.201
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	#  chose a random node as a main one...
+	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 	if(myid == main_node):
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 
-	nima = EMUtil.get_image_count(stack)
-
-	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	if debug:
+		info_file = outdir+("/progress%04d"%myid)
+		finfo = open( info_file, "w")
+	else:
+		finfo = None
 	
-	outf = file( outdir+("/progress%04d"%myid), "w")
-        outf.write( "image_start, image_end: %6d %6d\n" %(image_start, image_end) )
-        outf.flush()
 
         # refine step define on which step refinement will be carried
         # if set to -1, new refinement only assignment 
-        total_step=5
-	refine_step=0
-	nx  = getImage( ref_vol ).get_xsize()
+	nassign = 4
+        nrefine = 1
 
+	nx  = getImage( ref_vol ).get_xsize()
+	if(ou <= 0):  ou = nx//2-2
 	if maskfile:
 		import  types
 		if(type(maskfile) is types.StringType): 
-			outf.write( "usage 3D mask " + maskfile  + "\n")
-			outf.flush()                          
 			mask3D = getImage(maskfile)
 		else:   
 			mask3D = maskfile
 	else:
-		outf.write( "using spherical 3D mask: rad=%d\n" % ou )
-		outf.flush()
 		mask3D = model_circle(ou, nx, nx, nx)
+
 	mask2D = model_circle(ou, nx, nx)
 
-	#  We heave Kref reference volumes
-	Kref = EMUtil.get_image_count(ref_vol)
-	vol = [None]*Kref
-	for krf in xrange(Kref):
+	numref = EMUtil.get_image_count(ref_vol)
+	vol = [None]*numref
+	for krf in xrange(numref):
 		vol[krf] = get_im(ref_vol, krf)
-	if(ou <= 0):  ou = nx//2-2
-
-	dataim = []
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-	#               0             1         2        3          4              5                 6
-	#from utilities import readSpiderDoc, set_arb_params
-	#prm = readSpiderDoc("params_new.doc")
-	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
-
-	for im in xrange(image_start, image_end):
-		ima = EMData()
-		ima.read_image(stack, im)
-		if(CTF):
-			ctfparms = get_arb_params(ima, parnames)
-			if(ctfparms[6] == 1.0):
-				print "Error: ali3d_em does not work on ctf_applied data"
-				return
-
-		group = ima.get_attr_default('group', 0)
-		ima.set_attr('group', group)
-		dataim.append(ima)
+		if myid==main_node: vol[krf].write_image( os.path.join(outdir, "volf_0000_%d.hdf" % krf) )
 
 
-	outf.write("data read\n")
-	outf.flush()
 
-	from utilities      import bcast_number_to_all, info
-	from morphology     import threshold, threshold_to_minval
+	if(myid == main_node):
+		active = EMUtil.get_all_attributes(stack, "active")
+		list_of_particles = []
+		for im in xrange( len(active) ):
+			if( active[im] ) : list_of_particles.append(im)
+		del active
+		nima = len( list_of_particles )
+	else:
+		nima = 0
 
-	par_str=["phi", "theta", "psi", "s2x", "s2y"]
+	nima = bcast_number_to_all( nima, source_node = main_node )
 
-	from time import time
-	ldef = -1
+	if(myid != main_node):
+		list_of_particles = [-1]*nima
+	list_tmp = mpi_bcast(list_of_particles, nima, MPI_INT, main_node, MPI_COMM_WORLD)
+
+	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
+	list_of_particles = list_tmp[image_start:image_end]
+	if debug:
+		finfo.write( "image_start, image_end: %d %d\n" % (image_start, image_end) )
+		finfo.flush()
+
+	data = EMData.read_images(stack, list_of_particles)
+	for im in xrange(len(data)):
+		if(data[im] is None):
+			print 'myid, im, ID: ', myid, im, list_of_particles[im], ' is none'
+		data[im].set_attr('ID', list_of_particles[im])
+
+
+	if(CTF):
+		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+		ctfparms = get_arb_params(data[0], parnames)
+		if(ctfparms[6] == 1.0):
+			ERROR( "ali3d_em does not work on ctf_applied data", "ali3d_em", 1)
+		from reconstruction import rec3D_MPI
+	else:
+		from reconstruction import rec3D_MPI_noCTF
+
+	if(debug) :
+		finfo.write( '%d loaded  \n' % len(data) )	
+		finfo.flush()
+	
+	nima = len(list_of_particles)
+	del list_of_particles
+	
+
 	for iteration in xrange(maxit):
-		outf.write("iteration = "+str(iteration)+"   ")
-		outf.write("\n")
-		outf.flush()
 
-		volft = [None]*Kref
-		iter_start_time = time()
+		if iteration%(nassign+nrefine) < nassign :
+			runtype = "ASSIGNMENT"
+		else:
+			runtype = "REFINEMENT"
 
-		if iteration%total_step==refine_step:
+
+		if(myid == main_node) :
+			print_msg( runtype + (" ITERATION #%3d\n"%iteration) )
+
+		curt_defocus = -1.0
+		volft = [None]*numref
+
+		if runtype=="REFINEMENT":
 			mychunk = chunk
 			nchunk = int(1.0/chunk) + 1
 		else:
 			mychunk = 1.0
 			nchunk = 1
 
-		outf.write( "N of chunks: %4d\n" % nchunk )
-		outf.flush()
+		if debug:
+			finfo.write( "N of chunks: %4d\n" % nchunk )
+			finfo.flush()
 
-		curt_defocus = -1.0
 
 		for ichunk in xrange(nchunk):
-			image_chunk_start = image_start + int((image_end-image_start)*mychunk*ichunk)
-			image_chunk_end   = image_start + int((image_end-image_start)*mychunk*(ichunk+1))
-			if image_chunk_end > image_end:
-				image_chunk_end = image_end
+
+			image_chunk_start, image_chunk_end = MPI_start_end(nima, nchunk, ichunk)
 
 			for imn in xrange(image_chunk_start, image_chunk_end):
-				ima = dataim[imn-image_start]
+				ima = data[imn]
 
 				if CTF:
 					ctfparms = get_arb_params( ima, parnames )
 					if ctfparms[1] != curt_defocus :
 						curt_defocus = ctfparms[1]
 						
-						for krf in xrange(Kref):
+						for krf in xrange(numref):
 							ctfvol = filt_ctf(vol[krf],ctfparms[1],ctfparms[3],ctfparms[2],ctfparms[0],ctfparms[4],ctfparms[5])
-							volft[krf],kb  = prep_vol( vol[krf] )
+							volft[krf],kb  = prep_vol( ctfvol )
 
 
 
-				img_start_time = time()
-				atparams = get_arb_params(dataim[imn-image_start], par_str)
+				atparams = get_params_proj(ima)
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 				bestccc = -2.0
 				bestgrp = None
 				bestang = [None]*3
-				for krf in xrange(Kref):
+				for krf in xrange(numref):
 
-					if iteration%total_step==refine_step:
+					if runtype=="REFINEMENT":
 						# running refinement
-						data = []
-						data.append(volft[krf])
-						data.append(kb)
-						data.append(ima)     
-						data.append(-atparams[3])
-						data.append(-atparams[4])
-						data.append(mask2D)
-						[curtang,curtccc,niter] = amoeba(atparams[0:3], [weight_phi, delta, weight_phi], eqprojEuler, 1.e-4, 1.e-4, 500, data)
+						refdata = []
+						refdata.append(volft[krf])
+						refdata.append(kb)
+						refdata.append(ima)     
+						refdata.append(-atparams[3])
+						refdata.append(-atparams[4])
+						refdata.append(mask2D)
+						[curtang,curtccc,niter] = amoeba(atparams[0:3], [weight_phi, delta, weight_phi], eqprojEuler, 1.e-4, 1.e-4, 500, refdata)
 					else:
-						# change assignment only
+						# assignment only
 						prj = prgs( volft[krf], kb, [ atparams[0], atparams[1], atparams[2], -atparams[3], -atparams[4] ] )
 						curtccc = prj.cmp( "ccc", ima, {"mask":mask2D, "negative":0} )
-						outf.write( "        imn, krf, ccc: %d %d %10.5f\n" % (imn, krf, curtccc) )
-						outf.flush()
 
 					if(bestccc < curtccc):
 						bestccc = curtccc
 						bestgrp = krf
-						if iteration%total_step==refine_step: bestang = curtang[0:3]																										     
+						if runtype=="REFINEMENT": bestang = curtang[0:3]																										     
 				ima.set_attr('group', bestgrp)
 
-				if iteration%total_step==refine_step:
-					ima.set_attr( 'phi', bestang[0])
-					ima.set_attr( 'theta', bestang[1] )
-					ima.set_attr( 'psi', bestang[2] )
-					outf.write( "imn,old: %6d %10.3f %10.3f %10.3f\n" % (imn, atparams[0], atparams[1], atparams[2]) )
-					outf.write( "imn,new: %6d %10.3f %10.3f %10.3f %d iter %d\n" % (imn, bestang[0], bestang[1], bestang[2], bestgrp, iteration) )
-					outf.flush()
+				if runtype=="REFINEMENT":
+					set_params_proj( ima, [bestang[0], bestang[1], bestang[2], atparams[3], atparams[4]] )
+					if debug:
+						finfo.write( "imn,old: %6d %10.3f %10.3f %10.3f\n" % (imn, atparams[0], atparams[1], atparams[2]) )
+						finfo.write( "imn,new: %6d %10.3f %10.3f %10.3f %d iter %d\n" % (imn, bestang[0], bestang[1], bestang[2], bestgrp, iteration) )
+						finfo.flush()
 				else:
-					outf.write( "imn %6d assigned to group %d on iter %d\n" % (imn, bestgrp, iteration) )
-					outf.flush()
+					if debug:
+						finfo.write( "imn %6d assigned to group %d on iter %d\n" % (imn, bestgrp, iteration) )
+						finfo.flush()
 
-			if iteration%total_step==refine_step:
+			if runtype=="REFINEMENT":
 				soto = []
 				for imn in xrange(image_chunk_start, image_chunk_end):
 					from utilities import set_params_proj, get_params_proj
-					phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
+					phi,theta,psi,s2x,s2y = get_params_proj( data[imn] )
 					group = dataim[imn-image_start].get_attr('group')
 					soto.append([phi,theta,psi,s2x,s2y,group,imn])
 				dropSpiderDoc(os.path.join(outdir, "new_params%03d_%03d_%03d"%(iteration, ichunk, myid)), soto," phi, theta, psi, s2x, s2y, group, image number")
 
 
-			fscc = [None]*Kref
-			for krf in xrange(Kref):
+			fscc = [None]*numref
+			for krf in xrange(numref):
  	    			# resolution
-				outf.write("reconstructing volume: %d\n" % krf)
-				outf.flush()
-				vol[krf], fscc[krf] = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d_%03d"%(krf, iteration, ichunk)), myid, main_node, index = krf)
+				if debug:
+					finfo.write("reconstructing volume: %d\n" % krf)
+					finfo.flush()
+				if CTF:
+					vol[krf], fscc[krf] = rec3D_MPI(data, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d_%03d"%(krf, iteration, ichunk)), myid, main_node, index = krf)
+				else:
+					vol[krf], fscc[krf] = rec3D_MPI_noCTF(data, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d_%03d"%(krf, iteration, ichunk)), myid, main_node, index = krf)
+				
+
 				if(myid==main_node):
-					dropImage( vol[krf], os.path.join(outdir,"vol%03d_%03d_%03d.spi"%(krf, iteration, ichunk)), 's')
+					vol[krf].write_image( os.path.join(outdir,"vol%03d_%03d_%03d.spi"%(krf, iteration, ichunk)) )
 			mpi_barrier(MPI_COMM_WORLD)
 
 			if(myid == main_node):
 				vol = filt_vols( vol, fscc, mask3D )
-				for krf in xrange(Kref):
+				for krf in xrange(numref):
 					dropImage( vol[krf], os.path.join(outdir,"volf%03d_%03d_%03d.spi"%(krf, iteration, ichunk)), 's')
 
-			for krf in xrange(Kref):
-				outf.write( "bcasting volume: %d\n" % krf )
-				outf.flush()
+			for krf in xrange(numref):
+				if debug: 
+					finfo.write( "bcasting volume: %d\n" % krf )
+					finfo.flush()
 				bcast_EMData_to_all(vol[krf], myid, main_node)
 
 		#from sys import exit
 		#exit()
 		#  here we should write header info, just in case the program crashes...
 	# write out headers  and STOP, under MPI writing has to be done sequentially
+	par_str = ["xform.proj", "group", "ID"]
 	mpi_barrier(MPI_COMM_WORLD)
 	if(myid == main_node): recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
