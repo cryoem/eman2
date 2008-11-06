@@ -42,6 +42,7 @@ from emimageutil import EMParentWin
 from OpenGL import GL,GLU,GLUT
 from sys import argv
 from copy import deepcopy
+
 #from valslider import ValSlider
 #from math import *
 #from EMAN2 import *
@@ -98,19 +99,26 @@ def get_app():
 
 class EMImageModule(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
-	def __new__(cls,data=None,old=None,app=None,force_2d=False,force_plot=False):
+	def __new__(cls,data=None,old=None,app=None,force_2d=False,force_plot=False,filename=""):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance.
 		FIXME "old" aspect un tested
 		"""
-		
+		from EMAN2 import remove_directories_from_name
 		if force_plot and force_2d:
 			# ok this sucks but it suffices for the time being
 			print "Error, the force_plot and force_2d options are mutually exclusive"
 			return None
 		
-		
+		if force_plot:
+			if old:
+				if isinstance(old,EMPlot2DModule) :
+					old.set_data(remove_directories_from_name(filename),data)
+					return old
+			module = EMPlot2DModule(application=app)
+			module.set_data(remove_directories_from_name(filename),data)
+			return module	
 		if force_2d or (isinstance(data,EMData) and data.get_zsize()==1):
 			if old:
 				if isinstance(old,EMImage2DModule) :
@@ -119,14 +127,6 @@ class EMImageModule(object):
 			module = EMImage2DModule(application=app)
 			module.set_data(data)
 			return module
-		elif force_plot:
-			if old:
-				if isinstance(old,EMPlot2DModule) :
-					old.set_data(data)
-					return old
-			module = EMPlot2DModule(application=app)
-			module.set_data("data",data)
-			return module	
 		elif isinstance(data,EMData):
 			if old:
 				if isinstance(old,EMImage3DModule) :
@@ -161,7 +161,6 @@ class EMModuleFromFile(object):
 	Used by embrowse.py
 	"""
 	def __new__(cls,filename,application,force_plot=False,force_2d=False,old=None):
-		
 		file_type = Util.get_filename_ext(filename)
 		em_file_type = EMUtil.get_image_ext_type(file_type)
 		
@@ -169,7 +168,7 @@ class EMModuleFromFile(object):
 			# ok this sucks but it suffices for the time being
 			print "Error, the force_plot and force_2d options are mutually exclusive"
 			return None
-		
+		print "force plot is",force_plot
 		if force_plot:
 			if isinstance(old,EMPlot2DModule): module = old
 			else: module = EMPlot2DModule(application=application)

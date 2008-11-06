@@ -50,7 +50,7 @@ class EMBrowserDialog(EMSelectorDialog):
 		self.bottom_hbl.addWidget(self.force_plot,0)
 		
 		self.current_force = None
-		self.browse_gl_preview = None
+		#self.browse_gl_preview = None
 	
 	#def set_preview(self,item):
 		#if self.db_listing.do_preview(filename):
@@ -96,28 +96,28 @@ class EMBrowserDialog(EMSelectorDialog):
 			#return True
 		
 		#return False
-	def preview_data(self,a,filename=""):
-		from emimage import EMImageModule
-		if self.single_preview.isChecked():
+	#def preview_data(self,a,filename=""):
+		#from emimage import EMImageModule
+		#if self.single_preview.isChecked():
 			
-			f_2d = self.force_2d.isChecked()
-			f_plot = self.force_plot.isChecked()
-			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=self.browse_gl_preview)
-			if preview != self.browse_gl_preview:
-				if self.browse_gl_preview != None: self.browse_gl_preview.closeEvent(None)
-				self.browse_gl_preview = preview
+			#f_2d = self.force_2d.isChecked()
+			#f_plot = self.force_plot.isChecked()
+			#preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=self.browse_gl_preview)
+			#if preview != self.browse_gl_preview:
+				#if self.browse_gl_preview != None: self.browse_gl_preview.closeEvent(None)
+				#self.browse_gl_preview = preview
 	
-			self.application.show_specific(self.browse_gl_preview)
-			try: self.browse_gl_preview.optimally_resize()
-			except: pass
+			#self.application.show_specific(self.browse_gl_preview)
+			#try: self.browse_gl_preview.optimally_resize()
+			#except: pass
 					
-			self.browse_gl_preview.updateGL()
-		else:
-			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot)
-			self.application.show_specific(preview)
-			preview.updateGL()
+			#self.browse_gl_preview.updateGL()
+		#else:
+			#preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot)
+			#self.application.show_specific(preview)
+			#preview.updateGL()
 			
-		self.application.setOverrideCursor(Qt.ArrowCursor)	
+		#self.application.setOverrideCursor(Qt.ArrowCursor)	
 
 	
 	def __init__force_2d_tb(self):

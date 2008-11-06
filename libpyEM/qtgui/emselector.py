@@ -40,6 +40,7 @@ from EMAN2 import *
 from emimage2d import EMImage2DModule
 from emapplication import EMStandAloneApplication, EMQtWidgetModule
 from EMAN2db import EMAN2DB
+from emplot2d import EMPlot2DModule
 #from boxertools import TrimSwarmAutoBoxer
 
 
@@ -117,6 +118,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.emdata_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image.png")
 		self.emdata_3d_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/single_image_3d.png")
 		self.emdata_matrix_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/multiple_images.png")
+		self.plot_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/plot.png")
 
 	def __init__single_preview_tb(self):
 		self.single_preview = QtGui.QCheckBox("Single preview")
@@ -139,9 +141,11 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 	def __init_filter_combo(self):
 		self.filter_combo = QtGui.QComboBox(None)
-		self.filter_combo.addItem("*.mrc,*.hdf,*.img")
+		self.filter_combo.addItem("EM types")
 		self.filter_combo.addItem("Databases")
+		self.filter_combo.addItem("*.mrc,*.hdf,*.img")
 		self.filter_combo.addItem("*.*")
+		self.filter_combo.addItem("*")
 		self.filter_combo.setEditable(True)
 	
 		QtCore.QObject.connect(self.filter_combo, QtCore.SIGNAL("currentIndexChanged(int)"),self.filter_index_changed)
@@ -370,38 +374,88 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		return False
 	
-	def preview_data(self,a,filename=""):
-		self.application.setOverrideCursor(Qt.BusyCursor)
-		
-		if type(a) == list and len(a) == 1:
-			a = a[0]
-			data = []
-			if a.get_zsize() != 1:
-				for z in range(a.get_zsize()):
-					image = a.get_clip(Region(0,0,z,a.get_xsize(),a.get_ysize(),1))
-					data.append(image)
-				a = data
-		
+	#def try_preview_plot(self,filename):		#preview = EMModuleFromFile(filename,app=self.application,force_2d=False,force_plot=True,old=self.browse_gl_preview)
+		#if preview != self.browse_gl_preview:
+			#if self.browse_gl_preview != None: self.browse_gl_preview.closeEvent(None):
+				#self.browse_gl_preview = preview
+
+	
+	def preview_plot(self,filename):
 		if self.single_preview.isChecked():
-			if self.gl_image_preview == None:
-				self.gl_image_preview = EMImage2DModule(application=self.application)
-				self.gl_image_preview.set_data(a,filename)
-			else:
-				self.gl_image_preview.set_data(a,filename,retain_current_settings=True)
-				
-			#self.gl_image_preview.set_file_name(f)
+			if not isinstance(self.gl_image_preview,EMPlot2DModule):
+				if self.gl_image_preview != None: self.application.close_specific(self.gl_image_preview)
+				self.gl_image_preview = EMPlot2DModule(self.application)
+	
+			self.gl_image_preview.set_data_from_file(filename)
 			self.application.show_specific(self.gl_image_preview)
 			self.gl_image_preview.updateGL()
+			
 		else:
-			preview = EMImage2DModule(application=self.application)
-			preview.set_data(a,filename)
+			preview =EMPlot2DModule(self.application)
+			preview.set_data_from_file(filename)
+			self.application.show_specific(preview)
+			
+	def preview_data(self,a,filename=""):
+		from emimage import EMImageModule
+		if self.single_preview.isChecked():
+			
+			f_2d = self.force_2d.isChecked()
+			f_plot = self.force_plot.isChecked()
+			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=self.gl_image_preview,filename=filename)
+			if preview != self.gl_image_preview:
+				if self.gl_image_preview != None: self.application.close_specific(self.gl_image_preview)
+				self.gl_image_preview = preview
+	
+			self.application.show_specific(self.gl_image_preview)
+			try: self.gl_image_preview.optimally_resize()
+			except: pass
+					
+			self.gl_image_preview.updateGL()
+		else:
+			f_2d = self.force_2d.isChecked()
+			f_plot = self.force_plot.isChecked()
+			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,filename=filename)
 			self.application.show_specific(preview)
 			preview.updateGL()
 			
-		self.application.setOverrideCursor(Qt.ArrowCursor)
+		self.application.setOverrideCursor(Qt.ArrowCursor)	
+			
+	#def preview_data(self,a,filename=""):
+		#self.application.setOverrideCursor(Qt.BusyCursor)
+		
+		#if type(a) == list and len(a) == 1:
+			#a = a[0]
+			#data = []
+			#if a.get_zsize() != 1:
+				#for z in range(a.get_zsize()):
+					#image = a.get_clip(Region(0,0,z,a.get_xsize(),a.get_ysize(),1))
+					#data.append(image)
+				#a = data
+		
+		#if self.single_preview.isChecked():
+			#if self.gl_image_preview == None:
+				#self.gl_image_preview = EMImage2DModule(application=self.application)
+				#self.gl_image_preview.set_data(a,filename)
+			#else:
+				#self.gl_image_preview.set_data(a,filename,retain_current_settings=True)
+				
+			##self.gl_image_preview.set_file_name(f)
+			#self.application.show_specific(self.gl_image_preview)
+			#self.gl_image_preview.updateGL()
+		#else:
+			#preview = EMImage2DModule(application=self.application)
+			#preview.set_data(a,filename)
+			#self.application.show_specific(preview)
+			#preview.updateGL()
+			
+		#self.application.setOverrideCursor(Qt.ArrowCursor)
 		
 	
+	def get_file_filter(self):
+		return str(self.filter_combo.currentText())
+	
 	def filter_strings(self,strings):
+		
 		filters = str(self.filter_combo.currentText()).split(",")
 		
 		for j,f in enumerate(filters):
@@ -485,17 +539,51 @@ class EMDirectoryListing:
 		self.emdata_3d = "directory_emdata_3d"
 		self.emdata = "directory_emdata"
 		self.emdata_mx_member = "directory_emdata_mx_member" # for individual images in mxs
+		self.plot_data = "plot_data"
  		
-		self.previewable_types = [self.emdata_mx,self.emdata_3d,self.emdata,self.emdata_mx_member] # add any others as functionality grows
+		self.previewable_types = [self.emdata_mx,self.emdata_3d,self.emdata,self.emdata_mx_member,self.plot_data] # add any others as functionality grows
 		self.threed_dim_limit = 128
 		pass
 	
 	
+	#if str(self.filter_combo.currentText()) != "EM types":
+			#for s in strings:
+				
+		#else:
+			
+	def filter_strings(self,strings):
+		
+		filt = self.target.get_file_filter()
+		if filt == "EM types": 	return strings # this is a bit of hack unfortunately
+		
+		filters = filt.split(",")
+
+		for j,f in enumerate(filters):
+			s = f.replace("*","\w*")
+			s = s.replace(".","\.")
+			filters[j] = s
+		
+		reg_exp = []
+		for f in filters:
+			reg_exp.append(re.compile(f))
+		
+		solution = []
+		for s in strings:
+			for r in reg_exp:
+				if len(re.findall(r,s)) != 0:
+					solution.append(s)
+					break
+					
+		
+		return solution
+	
 	def load_directory_data(self,directory,list_widget):
 		e = EMData()
 		read_header_only = True
+		plot = EMPlot2DModule()
 		for root, dirs, files in os.walk(directory):
-			files = self.target.filter_strings(files)
+			files = self.filter_strings(files)
+			filt = self.target.get_file_filter()
 			
 			dirs.sort()
 			files.sort()
@@ -507,7 +595,7 @@ class EMDirectoryListing:
 				
 				file_length = 0
 				for r, d, f in os.walk(directory+"/"+i):
-					f = self.target.filter_strings(f)
+					f = self.filter_strings(f)
 					file_length = len(f)
 					if file_length == 0: file_length = len(d)
 					break
@@ -525,9 +613,11 @@ class EMDirectoryListing:
 					#files.pop(i)
 					
 			for file in files:
+				if file[0] == '.': continue
+				if file[-1] == '~': continue
 				#print EMUtil.get_image_ext_type(Util.get_filename_ext((file)),get_file_tag(file)
+				full_name = directory+"/"+file
 				if EMUtil.get_image_ext_type(Util.get_filename_ext(file)) != IMAGE_UNKNOWN:
-					full_name = directory+"/"+file
 					try:
 						if EMUtil.get_image_count(full_name) > 1:
 							a = EMSelectionListItem(self.target.emdata_matrix_icon,file,list_widget)
@@ -543,13 +633,20 @@ class EMDirectoryListing:
 								a = EMSelectionListItem(self.target.emdata_icon,file,list_widget)
 								a.type_of_me = self.emdata 
 								a.full_path = full_name
+						
 					except:
 						a = EMSelectionListItem(self.target.file_icon,file,list_widget) # this happens when files are corrupted	
 						a.type_of_me = "regular_file"
-						
+				
+				elif plot.is_file_readable(full_name):
+					a = EMSelectionListItem(self.target.plot_icon,file,list_widget)
+					a.type_of_me = self.plot_data
+					a.full_path = full_name
 				else:
-					a = EMSelectionListItem(self.target.file_icon,file,list_widget)
-					a.type_of_me = "regular_file"
+					if filt != "EM types":
+						a = EMSelectionListItem(self.target.file_icon,file,list_widget)
+						a.type_of_me = "regular_file"
+						
 
 			return True
 			
@@ -572,6 +669,13 @@ class EMDirectoryListing:
 			a=EMData(item.full_path,item.idx)
 			self.target.preview_data(a,item.full_path)
 			return True
+		elif item.type_of_me == self.plot_data:
+			# there is an inconsistency here seeing as size considerations are 
+			self.target.preview_plot(item.full_path)
+			return True
+		#else:
+			
+			#self.target.preview
 		else: return False
 	
 	def load_image_metada(self,item,list_widget):

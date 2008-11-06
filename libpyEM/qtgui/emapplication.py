@@ -243,13 +243,13 @@ class EMStandAloneApplication(EMApplication):
 		
 		EMApplication.__init__(self,qt_application_control)
 		
-	def detach_child(self,child):
-		for i,child_ in enumerate(self.children):
-			if child_ == child:
-				self.children.pop(i)
-				return
+	#def detach_child(self,child):
+		#for i,child_ in enumerate(self.children):
+			#if child_ == child:
+				#self.children.pop(i)
+				#return
 	
-		print "error, can't detach a child that doesn't belong to this",child,child.get_child()
+		#print "error, can't detach a child that doesn't belong to this",child,child.get_child()
 	
 	def attach_child(self,child):
 		for i in self.children:
@@ -275,8 +275,9 @@ class EMStandAloneApplication(EMApplication):
 		for i,child_ in enumerate(self.children):
 			if child == child_:
 				widget = child.get_qt_widget()
-				widget.close()
 				self.children.pop(i) # need to double check that this is the correct behavior
+				widget.close()
+
 				if inspector_too and child.inspector != None:
 					inspector = child.get_inspector()
 					inspector.close()
@@ -327,14 +328,6 @@ class EMStandAloneApplication(EMApplication):
 			widget.show()
 		
 
-	def close_child(self,child):
-		for child_ in self.children:
-			if child == child_:
-				widget = child.get_qt_widget()
-				widget.close()
-				return
-			
-		print "error, attempt to close a child that did not belong to this application"
 		
 	def __call__( *args, **kwargs ):
 		return QtGui.qApp

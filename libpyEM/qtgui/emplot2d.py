@@ -100,9 +100,10 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		self.target.resize_event(width,height)
 		
 class EMPlot2DModule(EMGUIModule):
-	
+
 	def get_desktop_hint(self):
 		return "plot"
+	
 	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
@@ -110,7 +111,7 @@ class EMPlot2DModule(EMGUIModule):
 			self.gl_context_parent = EMPlot2DWidget(self)
 			self.qt_context_parent = EMParentWin(self.gl_context_parent)
 			self.gl_widget = self.gl_context_parent
-		
+			self.qt_context_parent.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/plot.png"))
 		return self.qt_context_parent
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
@@ -152,7 +153,7 @@ class EMPlot2DModule(EMGUIModule):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 	
-	def set_data(self,key,data):
+	def set_data(self,key,input_data):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -161,6 +162,10 @@ class EMPlot2DModule(EMGUIModule):
 		data array is plotted as if it were 1-D."""
 		
 		self.needupd=1
+		
+		if isinstance(input_data,EMData):
+			data = input_data.get_data_as_vector()
+		else: data = input_data
 		
 		try:
 			if len(data)>1 : self.axes[key]=(0,1,-1)
@@ -242,10 +247,47 @@ class EMPlot2DModule(EMGUIModule):
 				ny=len(rdata)
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 					
-				self.set_data(filename,data)
+				self.set_data(remove_directories_from_name(filename),data)
 			except:
 				print "couldn't read",filename
-		
+				return False
+				
+		return True
+
+	def is_file_readable(self,filename):
+		'''
+		Called by file browsing interfaces to determine if the file is plottable
+		Tries to parse two lines, convert the values into floats, make sure
+		the number of columns matches etc. If something goes wrong then return False.
+		This function should be tightly coupled to set_data_from_file function, should
+		any adaptations occur in future
+		'''
+		try:
+			fin=file(filename)
+			fin.seek(0)
+			rdata = []
+			while (len(rdata) < 2):
+				line = fin.readline()
+				if line == '': # this is equivalent to EOF
+					break
+				elif line[0] == '#': continue
+				else: rdata.append(line)
+				
+			#print rdata
+			if len(rdata) < 2: return False
+
+			if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
+			else : rdata=[[float(j) for j in i.split()] for i in rdata]
+			
+			if len(rdata[0]) == 0 or len(rdata[1]) == 0: return False
+			if  len(rdata[0]) != len(rdata[1]) : return False
+
+			return True
+			
+		except:
+			#print "couldn't read",filename
+			return False
+
 	def render(self):
 		if not self.data : return
 		
