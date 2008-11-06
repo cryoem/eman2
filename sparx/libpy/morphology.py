@@ -200,8 +200,8 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	
 def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a" ,skip="#", round_off=1, nr1=3, nr2=6):
 	"""
-		1.Estimating envelope function and baseline noise using constrained simplex method
-		  so as to extract CTF imprints from 1D power spectrum
+		1. Estimating envelope function and baseline noise using constrained simplex method
+		   so as to extract CTF imprints from 1D power spectrum
 		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
 		   defocus which matches the extracted CTF imprints
 		3. It returns Euclidean distance for defocus selection 

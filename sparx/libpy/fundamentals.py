@@ -552,6 +552,7 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	""" 
 		Caclulate power spectrum use Welch periodograms(overlapped periodogram)
 	"""
+	from fundamentals import window2d, ramp
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nx_fft = smallprime(nx)
@@ -559,8 +560,8 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	img1 = window2d(img,nx_fft,ny_fft,"l")
 	x_gaussian_hi = 1./win_size
 	del img
-	from filter import filt_gaussh
-	from utilities import info,dropImage	
+	from filter    import filt_gaussh
+	from utilities import info, dropImage	
 	e_fil = filt_gaussh(img1, x_gaussian_hi)
 	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
 	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
@@ -572,7 +573,7 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 		x21 = (win_size/x39)*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
 		for ix in  xrange(1, x26+1):			 
 			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
-			wi  = window2d(e_fil,win_size,win_size, "l", x22, x21)
+			wi  = window2d(e_fil, win_size, win_size, "l", x22, x21)
 			ra  = ramp(wi)
 			iz  = iz+1
 			if (iz == 1): pw2  = periodogram(ra)
