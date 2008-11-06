@@ -62,6 +62,8 @@ operations are performed on oversampled images if specified."""
 	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
+	parser.add_option("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False)
+	parser.add_option("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
 	parser.add_option("--smooth",action="store_true",help="Smooth the background (running-average of the log) and adjust it at the zeroes of the CTF",default=False)
 	parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
@@ -77,6 +79,8 @@ operations are performed on oversampled images if specified."""
 	if options.apix==0 : parser.error("Please specify A/Pix")
 		
 	debug=options.debug
+
+	logid=E2init(sys.argv)
 
 #	if options.oversamp>1 : options.apix/=float(options.oversamp)
 
@@ -99,7 +103,7 @@ operations are performed on oversampled images if specified."""
 		
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
-		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=options.smooth)
+		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=options.smooth,autohp=options.autohp)
 		parms[name]=ctf.to_string()
 
 		if debug:
@@ -129,9 +133,11 @@ operations are performed on oversampled images if specified."""
 			print ""
 			ctf=EMAN2Ctf()
 			ctf.from_string(parms[name])
-			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf)
+			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
 
-def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None):
+	E2end(logid)
+
+def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -164,6 +170,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			out=fft1.do_ift()
 			out["ctf"]=ctf
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
+			if invert: out.mult(-1.0)
 			out.write_image(phaseflip,i)
 
 		if wiener :
@@ -180,6 +187,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			out=fft1.do_ift()
 			out["ctf"]=ctf
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
+			if invert : out.mult(-1.0)
 			out.write_image(wiener,i)
 			
 		lctf=ctf
@@ -334,7 +342,7 @@ def snr_safe(s,n) :
 	if s<=0 or n<=0 : return 0.0
 	return (s-n)/n
 
-def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0):
+def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
 	The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
 	of the CTF (in which case bg_1d is modified in place)."""
@@ -425,7 +433,21 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0):
 			bg_1d[xx]=bg2[xx]*last[1]
 
 	
-	ctf.snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
+	snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
+	
+	# This will dramatically reduce the intensity of the initial sharp peak found in almost all single particle data
+	# this applies to the SNR curve only, downweighting the importance of this section of the spectrum without actually
+	# removing the information by filtering the image data. It will, of course also impact Wiener filters.
+	if autohp:
+		for x in range(1,len(snr)-2):
+			if snr[x]>snr[x+1] and snr[x+1]<snr[x+2] : break	# we find the first minimum
+		
+		snr1max=max(snr[1:x])				# find the intensity of the first peak
+		snr2max=max(snr[x+2:len(snr)/2])		# find the next highest snr peak
+
+		for xx in range(1,x+1): snr[xx]*=0.5*snr2max/snr1max		# scale the initial peak to 50% of the next highest peak
+
+	ctf.snr=snr
 	ctf.defocus=dfbest[0]
 
 	if 1 : print "Best DF = ",dfbest[0]
@@ -451,7 +473,7 @@ except:
 class GUIctf(QtGui.QWidget):
 	def __init__(self,data):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
-		input is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
+		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
 		try:
 			from emimage import EMImageModule
