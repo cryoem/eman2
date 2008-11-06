@@ -692,9 +692,7 @@ namespace EMAN {
     	static void* convertible(PyObject* obj_ptr)
 		{
 			const char * type_name = obj_ptr->ob_type->tp_name;
-			if (type_name == 0 || strcmp(type_name, "Ctf") != 0 
-					|| strcmp(type_name, "EMAN1Ctf") != 0
-					|| strcmp(type_name, "EMAN2Ctf") != 0 ) {
+			if (type_name == 0 || strcmp(type_name, "Ctf") != 0 ) {
 				return 0;
 			}
 			return obj_ptr;
@@ -711,6 +709,70 @@ namespace EMAN {
 			data->convertible = storage;
 			EMObject& result = *((EMObject*) storage);
 			Ctf * ctf_ = python::extract<Ctf*>(obj_ptr);
+			result = EMObject(ctf_);
+		}
+    };
+    
+    struct emobject_eman1ctf_from_python
+    {
+    	emobject_eman1ctf_from_python()
+    	{
+    		python::converter::registry::push_back(&convertible, &construct,
+    												python::type_id<EMObject>());
+    	}
+    	
+    	static void* convertible(PyObject* obj_ptr)
+		{
+			const char * type_name = obj_ptr->ob_type->tp_name;
+			if (type_name == 0 || strcmp(type_name, "EMAN1Ctf") != 0  ) {
+				return 0;
+			}
+			return obj_ptr;
+		}
+    	
+    	static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage =
+				((python::converter::rvalue_from_python_storage<EMObject>*)
+				 data)->storage.bytes;
+			new (storage) EMObject();
+
+			data->convertible = storage;
+			EMObject& result = *((EMObject*) storage);
+			Ctf * ctf_ = python::extract<EMAN1Ctf*>(obj_ptr);
+			result = EMObject(ctf_);
+		}
+    };
+
+    struct emobject_eman2ctf_from_python
+    {
+    	emobject_eman2ctf_from_python()
+    	{
+    		python::converter::registry::push_back(&convertible, &construct,
+    												python::type_id<EMObject>());
+    	}
+    	
+    	static void* convertible(PyObject* obj_ptr)
+		{
+			const char * type_name = obj_ptr->ob_type->tp_name;
+			if (type_name == 0 || strcmp(type_name, "EMAN2Ctf") != 0  ) {
+				return 0;
+			}
+			return obj_ptr;
+		}
+    	
+    	static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage =
+				((python::converter::rvalue_from_python_storage<EMObject>*)
+				 data)->storage.bytes;
+			new (storage) EMObject();
+
+			data->convertible = storage;
+			EMObject& result = *((EMObject*) storage);
+			Ctf * ctf_ = python::extract<EMAN2Ctf*>(obj_ptr);
 			result = EMObject(ctf_);
 		}
     };

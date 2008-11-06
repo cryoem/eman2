@@ -181,6 +181,22 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 		Transform * trans = (Transform*) emobj;
 		result = python::incref(python::object(trans).ptr());
 	}
+	else if (t == EMObject::CTF ) {
+		Ctf * ctf_ = (Ctf*) emobj;
+		string str = ctf_->to_string();
+		
+		if(str.at(0) == 'O') {
+			EMAN1Ctf* c = dynamic_cast<EMAN1Ctf*>(ctf_);
+			result = python::incref(python::object(c).ptr());
+		}
+		else if(str.at(0) == 'E') {
+			EMAN2Ctf* c = dynamic_cast<EMAN2Ctf*>(ctf_);
+			result = python::incref(python::object(c).ptr());
+		}
+		else {
+			printf("Ctf object wrong...\n");
+		}
+	}
 	else if (t == EMObject::FLOATARRAY) {
 		vector<float> farray = emobj;
 		python::list flist;

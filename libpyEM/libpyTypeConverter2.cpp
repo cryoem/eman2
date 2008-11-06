@@ -30,8 +30,9 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::vector_to_python<long>();
 	EMAN::vector_to_python<float>();
 	EMAN::vector_to_python<double>();
-	EMAN::vector_to_python<EMAN::Transform3D>();
+//	EMAN::vector_to_python<EMAN::Transform3D>();
 	EMAN::vector_to_python<EMAN::Transform>();
+	EMAN::vector_to_python<EMAN::Ctf>();
 	EMAN::vector_to_python<std::string>();
 	EMAN::vector_to_python<EMAN::EMData*>();
 	EMAN::vector_to_python<EMAN::Pixel>();
@@ -42,8 +43,10 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::vector_from_python<int>();
 	EMAN::vector_from_python<long>();
 	EMAN::vector_from_python<float>();
-	EMAN::vector_from_python<EMAN::Transform3D>();
+//	EMAN::vector_from_python<EMAN::Transform3D>();
 	EMAN::vector_from_python<EMAN::Transform>();
+	EMAN::vector_from_python<EMAN::EMAN1Ctf>();
+	EMAN::vector_from_python<EMAN::EMAN2Ctf>();
 	EMAN::vector_from_python<std::string>();
 	EMAN::vector_from_python<EMAN::EMData*>();
 	EMAN::vector_from_python<EMAN::Pixel>();
@@ -93,6 +96,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 // 	EMAN::emobject_transform3d_from_python();
 	EMAN::emobject_transform_from_python();
 	EMAN::emobject_ctf_from_python();
+	EMAN::emobject_eman1ctf_from_python();
 	EMAN::emobject_null_from_python();
 
 	implicitly_convertible<int, EMAN::EMObject>();
@@ -104,6 +108,8 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 // 	implicitly_convertible<EMAN::Transform3D*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::Transform*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::Ctf*, EMAN::EMObject>();
+	implicitly_convertible<EMAN::EMAN1Ctf*, EMAN::Ctf*>();
+	implicitly_convertible<EMAN::EMAN2Ctf*, EMAN::Ctf*>();
 
 	EMAN::MArrayND_to_python<2>();
 	EMAN::MArrayND_to_python<3>();
