@@ -96,8 +96,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.paint_events = 0
 		
-		
-		
 	def get_desktop_hint(self):
 		return "dialog"
 		
@@ -105,7 +103,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.application = app
 		
 	def __init_icons(self):
-		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/eman.png"))
+		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/display_icon.png"))
 		self.folder_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/Folder.png")
 		self.folder_files_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/FolderFiles.png")
 		self.file_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/File.png")
@@ -224,7 +222,11 @@ class EMSelectorDialog(QtGui.QDialog):
 			self.list_widget_data[i] = self.list_widgets[i].item(old_row)
 			directory += '/' + str(self.list_widget_data[i].text())
 		
-		self.list_widgets[0].insertItem(0,"../")
+		
+		a = EMSelectionListItem("../",None)
+		a.type_of_me = "go up a directory"
+		self.list_widgets[0].insertItem(0,a)
+		
 		self.lock = False
 		#self.hide_preview()
 		
@@ -250,9 +252,9 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		# now make the list of selections accurate
 		self.selections = []
-		for a in self.current_list_widget.selectedIndexes():
-			file = directory+str(a.data().toString())
-			if self.__is_previewable(file): self.selections.append(file)
+		for a in self.current_list_widget.selectedItems():
+			file = directory+str(a.text())
+			if self.__is_previewable(a): self.selections.append(file)
 		
 		# if there are no selections then close the preview
 		#if len(self.selections) == 0:
@@ -289,7 +291,7 @@ class EMSelectorDialog(QtGui.QDialog):
 
 		if item == None: return
 		
-		#print item.type_of_me
+		
 		
 		if item.text() == "../": 
 			self.__go_back_a_directory()
@@ -308,23 +310,26 @@ class EMSelectorDialog(QtGui.QDialog):
 		else:
 			print "no list widget has focus?"
 			return
-
-
-		if self.set_preview(file):
+		
+		if self.set_preview(item):
+			
 			for i in range(idx+1,len(self.list_widgets)):
 				self.list_widgets[i].clear()
 				self.list_widget_data[i] = None
-			return
+				
+			if not self.check_preview_item_wants_to_list(item):
+				print "nope"
+				return
 		
 	
 		n = len(self.list_widgets)-1
 		if self.current_list_widget  == self.list_widgets[n]:
 				self.list_widget_data[n] = item
 				self.__go_forward_a_directory()
-				self.__load_directory_data(file+'/',self.list_widgets[n])
+				self.__load_directory_data(file+'/',self.list_widgets[n],item)
 				return
 
-		if self.__load_directory_data(file,self.list_widgets[idx+1]):
+		if self.__load_directory_data(file,self.list_widgets[idx+1],item):
 			#if old_item != None:
 				#old_item.setBackgroundColor(QtGui.QColor(255,255,255))
 			##item.setBackgroundColor(QtGui.QColor(64,190,0,63))	
@@ -345,18 +350,26 @@ class EMSelectorDialog(QtGui.QDialog):
 			file += str(self.list_widget_data[i].text()) + "/"
 	
 		
-		if self.__is_previewable(file):
+		if self.__is_previewable(item):
 			print "Opening ", file
 	
-	def set_preview(self,filename):
+	def set_preview(self,item):
 		
-		if self.db_listing.do_preview(filename):
+		if self.db_listing.do_preview(item):
 			return True
-		elif self.dir_listing.do_preview(filename):
+		elif self.dir_listing.do_preview(item):
 			return True
 		
 		return False
 		
+	def check_preview_item_wants_to_list(self,item):
+		if self.db_listing.preview_item_wants_to_list(item):
+			return True
+		elif self.dir_listing.preview_item_wants_to_list(item):
+			return True
+		
+		return False
+	
 	def preview_data(self,a,filename=""):
 		self.application.setOverrideCursor(Qt.BusyCursor)
 		
@@ -410,11 +423,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		return solution
 	
-	def __is_previewable(self,s):
-		if  self.db_listing.responsible_for(s):
-			if self.db_listing.is_previewable(s): return True 
-			else: return False
-		else: return self.dir_listing.is_previewable(s)
+	def __is_previewable(self,item):
+		#if  self.db_listing.responsible_for(file_name):
+		if self.db_listing.is_previewable(item): return True 
+		else: return self.dir_listing.is_previewable(item)
 		
 	def __is_non_empty_directory(self,s):
 		'''
@@ -435,20 +447,31 @@ class EMSelectorDialog(QtGui.QDialog):
 		print "loading database directory",database_name
 	
 	
-	def __load_directory_data(self,directory,list_widget):
+	def __load_directory_data(self,directory,list_widget,item=None):
 		
 		list_widget.clear()
 		if (list_widget == self.list_widgets[0]):
 			self.lock = True
-			EMSelectionListItem("../",list_widget)
+			a = EMSelectionListItem("../",list_widget)
+			a.type_of_me = "go up a directory"
 			self.lock = False
+			
+		if item != None and item.type_of_me == "key_value":
+			a = EMSelectionListItem(self.basic_python_icon,str(item.value),list_widget)
+			a.type_of_me = "value"
+			a.value = item.value
+			return
 		
 		if self.db_listing.responsible_for(directory):
 			if  self.db_listing.load_database_data(directory,list_widget): return True
+			elif item != None and self.db_listing.load_image_metada(item,list_widget): return True
 			elif self.db_listing.load_directory_data(directory,list_widget): return True
 			elif self.db_listing.load_database_interrogation(directory,list_widget): return True
+			
 			else: return False
-		else: return self.dir_listing.load_directory_data(directory,list_widget)
+		else: 
+			if item != None and self.dir_listing.load_image_metada(item,list_widget): return True
+			else: return self.dir_listing.load_directory_data(directory,list_widget)
 		
 	def make_replacements(self,dirs,list_widget):
 		self.db_listing.make_replacements(dirs,list_widget)
@@ -457,6 +480,14 @@ class EMSelectorDialog(QtGui.QDialog):
 class EMDirectoryListing:
 	def __init__(self,target):
 		self.target = target
+		
+		self.emdata_mx = "directory_emdata_mx"
+		self.emdata_3d = "directory_emdata_3d"
+		self.emdata = "directory_emdata"
+		self.emdata_mx_member = "directory_emdata_mx_member" # for individual images in mxs
+ 		
+		self.previewable_types = [self.emdata_mx,self.emdata_3d,self.emdata,self.emdata_mx_member] # add any others as functionality grows
+		self.threed_dim_limit = 128
 		pass
 	
 	
@@ -482,8 +513,10 @@ class EMDirectoryListing:
 					break
 				if file_length != 0:
 					a = EMSelectionListItem(self.target.folder_files_icon,i,list_widget)
+					a.type_of_me = "directory_file"
 				else:
 					a = EMSelectionListItem(self.target.folder_icon,i,list_widget)
+					type_of_me = "directory"
 				
 			#for i,file in enumerate(files):
 				#if file[0] == '.': continue
@@ -498,73 +531,98 @@ class EMDirectoryListing:
 					try:
 						if EMUtil.get_image_count(full_name) > 1:
 							a = EMSelectionListItem(self.target.emdata_matrix_icon,file,list_widget)
-							a.type_of_me = "emdata_mx"
+							a.type_of_me = self.emdata_mx
+							a.full_path = full_name
 						else:
 							e.read_image(full_name,0, read_header_only)
 							if e.get_zsize() > 1:
 								a = EMSelectionListItem(self.target.emdata_3d_icon,file,list_widget)
-								a.type_of_me = "emdata_3d"
+								a.type_of_me = self.emdata_3d 
+								a.full_path = full_name
 							else:
 								a = EMSelectionListItem(self.target.emdata_icon,file,list_widget)
-								a.type_of_me = "emdata"
+								a.type_of_me = self.emdata 
+								a.full_path = full_name
 					except:
 						a = EMSelectionListItem(self.target.file_icon,file,list_widget) # this happens when files are corrupted	
+						a.type_of_me = "regular_file"
 						
-				else: a = EMSelectionListItem(self.target.file_icon,file,list_widget)
+				else:
+					a = EMSelectionListItem(self.target.file_icon,file,list_widget)
+					a.type_of_me = "regular_file"
 
 			return True
 			
 		return False
 	
-	def do_preview(self,file_or_folder):
-		if not os.path.isfile(file_or_folder): return False
+	def do_preview(self,item):
 		
-		filename = file_or_folder
-		try: 
-			dims = gimme_image_dimensions3D(filename)
-			if dims[2] != 1:
-				for d in dims: 
-					if d > 128:
-						print "3D image too big, no preview available"
-						return False
-			elif dims[1] != 1:
-				for d in [dims[0],dims[1]]:
-					if d > 1024:
-						print "2D image too big, no preview available"
-						return False
-			a=EMData.read_images(filename)
-		except: 
-			return False
+		#if not os.path.isfile(item.full_path): return False
 		
-		self.target.preview_data(a,filename)
-		return True
+		if item.type_of_me == self.emdata_3d or item.type_of_me == self.emdata:
+			self.target.preview_data(EMData(item.full_path),item.full_path)
+			return True
+		elif item.type_of_me == self.emdata_mx:
+			# there is an inconsistency here seeing as size considerations are 
+			a=EMData.read_images(item.full_path)
+			self.target.preview_data(a,item.full_path)
+			return True
+		elif item.type_of_me == self.emdata_mx_member:
+			# there is an inconsistency here seeing as size considerations are 
+			a=EMData(item.full_path,item.idx)
+			self.target.preview_data(a,item.full_path)
+			return True
+		else: return False
+	
+	def load_image_metada(self,item,list_widget):
+		if item.type_of_me in [self.emdata_3d, self.emdata,self.emdata_mx_member]:
+			data = self.get_emdata_header(item)
+			keys = data.keys()
+			keys.sort() # alphabetical order
+			for k in keys:
+				v = data[k]
+				a = EMSelectionListItem(self.target.basic_python_icon,str(k)+":"+str(v),list_widget)
+				a.type_of_me = "key_value"
+				a.key = k
+				a.value = v
+		
+			return True
+		elif item.type_of_me == self.emdata_mx:
+			for i in range(EMUtil.get_image_count(item.full_path)):
+				a = EMSelectionListItem(self.target.emdata_icon,str(i),list_widget)
+				a.type_of_me = self.emdata_mx_member
+				a.full_path = item.full_path
+				a.idx = i
+				
+			return True
+				
+				
+		return False
+	
+	def get_emdata_header(self,item):
+		
+		read_header_only = True
+		e = EMData()
+		if item.type_of_me in [self.emdata_3d, self.emdata]:
+			e.read_image(item.full_path,0, read_header_only)
+			return e.get_attr_dict()
+		elif item.type_of_me == self.emdata_mx_member:
+			e.read_image(item.full_path,item.idx, read_header_only)
+			return e.get_attr_dict()
+		else: return None
+			
+		
+	def is_previewable(self,item):
+		if item.type_of_me in self.previewable_types: return True
+		else: return False
+		
+	def preview_item_wants_to_list(self,item):
+		if item.type_of_me in self.previewable_types: return True
+		else: return False
 
-	def do_preview_in_browse(self,file_or_folder):
-		if not os.path.isfile(file_or_folder): return False
-		
-		filename = file_or_folder
-		try: 
-			dims = gimme_image_dimensions3D(filename)
-			if dims[2] != 1:
-				for d in dims: 
-					if d > 128:
-						print "3D image too big, no preview available"
-						return False
-			elif dims[1] != 1:
-				for d in [dims[0],dims[1]]:
-					if d > 1024:
-						print "2D image too big, no preview available"
-						return False
-			a=EMData.read_images(filename)
-		except: 
-			return False
-		
-		self.target.preview_data(a,filename)
-		return True
-
-	def is_previewable(self,file_or_folder):
-		# this may not be strictly correct, seeing as if it's a file it will return true
-		return os.path.isfile(file_or_folder)
+	#def is_previewable(self,file_or_folder):
+		## this may not be strictly correct, seeing as if it's a file it will return true
+		#return os.path.isfile(file_or_folder)
 		
 
 class EMBDBListing:
@@ -572,8 +630,16 @@ class EMBDBListing:
 		self.target = target
 		self.directory_replacements = {"EMAN2DB":"bdb"}
 	
+		self.db_mx = "database_emdata_mx"
+		self.emdata_3d_entry = "database_emdata_3d_entry"
+		self.emdata_entry = "database_emdata_entry"
+		self.db_dict_emdata_entry = "database_dictionary_emdata"
+		
+		self.previewable_types = [self.db_mx,self.emdata_3d_entry,self.emdata_entry,self.db_dict_emdata_entry] # add any others as functionality grows
+	
 	def responsible_for(self,file_or_folder):
 		real_name = self.convert_to_absolute_path(file_or_folder)
+		#print file_or_folder,real_name
 		split = real_name.split('/')
 		split.reverse() # this probably makes things faster
 		for s in split:
@@ -589,6 +655,7 @@ class EMBDBListing:
 			if d in self.directory_replacements.keys():
 				a = EMSelectionListItem(self.target.database_icon,self.directory_replacements[d],list_widget)
 				rm.append(i)
+				a.type_of_me = "regular"
 		
 		rm.reverse()
 		for r in rm:
@@ -596,8 +663,12 @@ class EMBDBListing:
 	
 	def convert_to_absolute_path(self,file_or_folder):
 		ret = file_or_folder
+		found = False
 		for dir_rep in self.directory_replacements.items():
-			ret = ret.replace('/'+dir_rep[1],'/'+dir_rep[0])
+			if ret.find('/'+dir_rep[1]) != -1:
+				ret = ret.replace('/'+dir_rep[1],'/'+dir_rep[0])
+				found = True
+		if not found: return ret
 		if (not os.path.isdir(ret)) and (not os.path.isfile(ret)):
 			if ret[-1] == "/": ret = ret[:-1]
 			ret += ".bdb"
@@ -609,6 +680,15 @@ class EMBDBListing:
 		else: return False
 
 	def load_directory_data(self,directory,list_widget):
+		
+		'''
+		Displays the file/folder information in the directory /home/someonone/data/EMAN2DB
+		this will typically consist of .bdb (database) files, but may contain folders and other
+		EMAN2DB directories.
+		
+		At the moment I have only written the code so that it supports the interrogation of the .bdb
+		files, and am displaying the other folders only as a I reminder that they need to be dealt with
+		'''
 		if not remove_directories_from_name(directory) in self.directory_replacements.values():
 			 return False
 
@@ -621,7 +701,8 @@ class EMBDBListing:
 				if i[0] == '.': continue
 				
 				if i == "EMAN2DB":
-					a = EMSelectionListItem(self.target.database_icon,"bdb",list_widget)
+					a = EMSelectionListItem(self.target.database_icon,"bdb",list_widget) # this is something we do not wish to support
+					a.type_of_me = "unwanted"
 					continue
 			
 				file_length = 0
@@ -629,15 +710,42 @@ class EMBDBListing:
 					file_length = len(f)
 					if file_length == 0: file_length = len(d)
 					break
+					
 				if file_length != 0:
 					a = EMSelectionListItem(self.target.folder_files_icon,i,list_widget)
+					a.type_of_me = "directory_file"
+					#a.full_path = real_directory
 				else:
 					a = EMSelectionListItem(self.target.folder_icon,i,list_widget)
+					a.type_of_me = "directory"
+					a.full_path = real_directory
 				
 			for file in files:
 				if file[len(file)-3:] == "bdb":
 					f = file.rpartition(".bdb")
-					a = EMSelectionListItem(self.target.database_icon,f[0],list_widget)
+					db_directory = self.get_emdatabase_directory(real_directory)
+					DB = EMAN2DB.open_db(db_directory)
+					DB.open_dict(f[0])
+					if DB[f[0]].has_key("maxrec"):
+						n = DB[f[0]]["maxrec"]
+						if n > 1:
+							a = EMSelectionListItem(self.target.emdata_matrix_icon,f[0],list_widget)
+							a.type_of_me = self.db_mx
+							a.database_directory = db_directory
+							a.database = f[0]
+						else:
+							a = EMSelectionListItem(self.target.database_icon,f[0],list_widget)
+							a.type_of_me = "regular"
+							#data = DB[f[0]].get_header(0)
+							#if data["nz"] > 1:
+								
+							#else:
+								
+							#print data
+						
+					else:
+						a = EMSelectionListItem(self.target.database_icon,f[0],list_widget)
+						a.type_of_me = "regular"
 				#else:
 					#a = EMSelectionListItem(self.target.key_icon,file,list_widget)
 				
@@ -679,11 +787,28 @@ class EMBDBListing:
 			_type =items.item_type(k)
 			if _type == dict:
 				a = EMSelectionListItem(self.target.database_icon,str(k),list_widget)
+				a.type_of_me = "database_dict"
 			elif _type == EMData:
-				a = EMSelectionListItem(self.target.emdata_icon,str(k),list_widget)
+				data = items.get_header(k)
+				if data["nz"] > 1:
+					a = EMSelectionListItem(self.target.emdata_3d_icon,str(k),list_widget)
+					a.type_of_me = self.emdata_3d_entry
+					a.database_directory = db_directory
+					a.database = key
+					a.database_key = k
+				else:
+					a = EMSelectionListItem(self.target.emdata_icon,str(k),list_widget)
+					a.type_of_me = self.emdata_entry
+					a.database_directory = db_directory
+					a.database = key
+					a.database_key = k
 			else:
 				#if type(i) in [str,float,int,tuple,list,bool]:
-				a = EMSelectionListItem(self.target.basic_python_icon,str(k),list_widget)	
+				v = items[k]
+				a = EMSelectionListItem(self.target.basic_python_icon,str(k)+":"+str(v),list_widget)
+				a.type_of_me = "key_value"
+				a.key = k
+				a.value = v
 		return True
 				
 	
@@ -709,6 +834,24 @@ class EMBDBListing:
 		if idx1 > 0:
 			return file[0:idx1]
 		else: return None
+		
+	
+	def load_image_metada(self,item,list_widget):
+		if item.type_of_me in [self.emdata_3d_entry,self.emdata_entry,self.db_dict_emdata_entry]:
+			data = self.get_emdata_header(item)
+			data = self.get_emdata_header(item)
+			keys = data.keys()
+			keys.sort() # alphabetical order
+			for k in keys:
+				v = data[k]
+				a = EMSelectionListItem(self.target.basic_python_icon,str(k)+":"+str(v),list_widget)
+				a.type_of_me = "key_value"
+				a.key = k
+				a.value = v
+				
+			return True
+			
+		return False
 		
 	
 	def load_database_interrogation(self,file_name,list_widget):
@@ -767,66 +910,138 @@ class EMBDBListing:
 						a.type_of_me = "python_dict"
 					elif type(i) == EMData:
 						a = EMSelectionListItem(self.target.emdata_icon,str(k),list_widget)
-						a.type_of_me = "emdata"
+						a.type_of_me = self.db_dict_emdata_entry
+						a.database_directory = db_directory
+						a.database = key
+						a.database_dictionary_keys = [split[jj] for jj in range(j-2,-1,-1)]
+						a.database_dictionary_keys.append(k)
 					else:
 						a = EMSelectionListItem(self.target.basic_python_icon,str(k),list_widget)
+						a.type_of_me = "python_basic"
 			elif isinstance(item,EMData):
 				print "this shouldn't happen"
 				self.target.preview_data(item)
 				return False
 			else:
 				a = EMSelectionListItem(self.target.basic_python_icon,str(item),list_widget)
-			
+				a.type_of_me = "python_basic"
 			return True
 				
 		else: return False 
 	
-	def is_previewable(self,file_name):
-		return self.do_preview(file_name,fake_it=True)
+	#def is_previewable(self,file_name):
+		#return self.do_preview(file_name,fake_it=True)
 	
-	def do_preview(self,file_name,fake_it=False):
-		split = file_name.split('/')
+	def is_previewable(self,item):
+		if item.type_of_me in self.previewable_types: return True 
+	
+	def preview_item_wants_to_list(self,item):
+		'''
+		Sometimes a previeable item will still be able to list information
+		'''
+		if item.type_of_me in self.previewable_types: return True
+		else: return False
+	
+	def do_preview(self,item):
+		#if not os.path.isfile(item.full_path): return False
 		
-		rm = []
-		for i,s in enumerate(split):
-			if len(s) == 0: rm.append(i)
+		if item.type_of_me == self.db_mx:
+			DB = EMAN2DB.open_db(item.database_directory)
+			DB.open_dict(item.database)
+			maxrec = DB[item.database]["maxrec"]
+			data = []
+			for i in range(maxrec):
+				data.append(DB[item.database][i])
+			self.target.preview_data(data)	
+			return True
+				
+		elif item.type_of_me == self.emdata_3d_entry or item.type_of_me == self.emdata_entry:
+			
+			DB = EMAN2DB.open_db(item.database_directory)
+			DB.open_dict(item.database)
+			data = DB[item.database][item.database_key]
+			self.target.preview_data(data)
+			return True
+
+		elif item.type_of_me == self.db_dict_emdata_entry:
+			DB = EMAN2DB.open_db(item.database_directory)
+			DB.open_dict(item.database)
+			db = DB[item.database]
+			for key in item.database_dictionary_keys:
+				db = db[key]
+				
+			# db should now be an EMData
+			self.target.preview_data(db)
+			return True
 		
-		rm.reverse()
-		for k in rm: split.pop(k)
 		
-		if len(split) > 1 : # must atleast have EMAN2DB/something.bdb/dictionary
-			split.reverse() # this probably makes things faster
-			for j in range(1,len(split)):
-				if split[j] in self.directory_replacements.values():
-					break
-			else: return False
+		else: return False
+		
+	
+	def get_emdata_header(self,item):
+
+				
+		if item.type_of_me == self.emdata_3d_entry or item.type_of_me == self.emdata_entry:
 			
-			real_name = self.convert_to_absolute_path(file_name)
-			db_directory = self.get_emdatabase_directory(real_name)
-			DB = EMAN2DB.open_db(db_directory)
+			DB = EMAN2DB.open_db(item.database_directory)
+			DB.open_dict(item.database)
+			return DB[item.database].get_header(item.database_key)
+
+		elif item.type_of_me == self.db_dict_emdata_entry:
+			#this is really inefficient seeing as the whole image has to be read
+			DB = EMAN2DB.open_db(item.database_directory)
+			DB.open_dict(item.database)
+			db = DB[item.database]
+			for key in item.database_dictionary_keys:
+				db = db[key]
+				
+			return db.get_attr_dict()
 			
-			key = split[j-1]
-			#item_key = split[j-2]
+		else: return None
+	
+	#def do_preview(self,file_name,fake_it=False):
+		#split = file_name.split('/')
+		
+		#rm = []
+		#for i,s in enumerate(split):
+			#if len(s) == 0: rm.append(i)
+		
+		#rm.reverse()
+		#for k in rm: split.pop(k)
+		
+		#if len(split) > 1 : # must atleast have EMAN2DB/something.bdb/dictionary
+			#split.reverse() # this probably makes things faster
+			#for j in range(1,len(split)):
+				#if split[j] in self.directory_replacements.values():
+					#break
+			#else: return False
+			
+			#real_name = self.convert_to_absolute_path(file_name)
+			#db_directory = self.get_emdatabase_directory(real_name)
+			#DB = EMAN2DB.open_db(db_directory)
+			
+			#key = split[j-1]
+			##item_key = split[j-2]
 			
 			
-			#print key,item_key
-			DB.open_dict(key)
-			item = DB[key]
-			for ii in range(j-2,-1,-1):
-				for t in [type(split[ii]),float,int]:
-					try:
-						key = t(split[ii])
-						if item[key] != None: 
-							item = item[key]
-							break
-					except:
-						pass
+			##print key,item_key
+			#DB.open_dict(key)
+			#item = DB[key]
+			#for ii in range(j-2,-1,-1):
+				#for t in [type(split[ii]),float,int]:
+					#try:
+						#key = t(split[ii])
+						#if item[key] != None: 
+							#item = item[key]
+							#break
+					#except:
+						#pass
 			
-			if isinstance(item,EMData):
-				if not fake_it: self.target.preview_data(item)
-				return True
+			#if isinstance(item,EMData):
+				#if not fake_it: self.target.preview_data(item)
+				#return True
 			
-		return False
+		#return False
 			
 	def load_database_variables(self,directory,list_widget):
 		pass
@@ -844,6 +1059,8 @@ class EMSelectionListItem(QtGui.QListWidgetItem):
 		self.type_of_me = type_of_me
 		
 	def get_type_of_me(self): return self.type_of_me
+	
+
 	
 app = None
 def on_done(string_list):

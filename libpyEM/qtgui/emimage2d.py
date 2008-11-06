@@ -644,7 +644,7 @@ class EMImage2DModule(EMGUIModule):
 		
 		
 		if isinstance(data,list):
-			if self.list_data == None and self.list_idx < len(data): self.list_idx = len(data)/2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
+			if self.list_data == None and self.list_idx > len(data): self.list_idx = len(data)/2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
 			d = data[0]
 			if d.is_complex():
 				self.list_data = []
