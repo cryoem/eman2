@@ -41,7 +41,7 @@ class ValSlider(QtGui.QWidget):
 	setValue(float) - to programatically change the value
 	emit valueChanged(float)
 	"""
-	def __init__(self, parent, range=None, label=None, value=0):
+	def __init__(self, parent, range=None, label=None, value=0,labelwidth=30):
 		if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
@@ -67,7 +67,7 @@ class ValSlider(QtGui.QWidget):
 			self.label.setSizePolicy(sizePolicy)
 #			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
 			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-			self.label.setMinimumSize(QtCore.QSize(30,20))
+			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
 			self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		

@@ -477,15 +477,17 @@ class GUIctf(QtGui.QWidget):
 		"""
 		try:
 			from emimage import EMImageModule
+			from emimage2d import EMImage2DModule
 		except:
 			print "Cannot import EMAN image GUI objects (emimage,etc.)"
 			sys.exit(1)
-#		try:
-		from emplot2d import EMPlot2DModule
+		try: 
+			from emplot2d import EMPlot2DModule
+		except:
+			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
+			sys.exit(1)
+		
 		from emapplication import EMStandAloneApplication
-		#except:
-			#print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
-			#sys.exit(1)
 		
 		self.app=EMStandAloneApplication()
 		
@@ -493,17 +495,16 @@ class GUIctf(QtGui.QWidget):
 		
 		self.data=data
 				
-		try: self.guiim=EMImageModule(data[0][4],application=self.app)
-		except: self.guiim=EMImageModule(application=self.app)
+		self.guiim=EMImage2DModule(application=self.app)
 		self.guiplot=EMPlot2DModule(application=self.app)
 		
-		im_qt_target = self.application.get_qt_emitter(self.guiim)
-		plot_qt_target = self.application.get_qt_emitter(self.guiplot)
+		im_qt_target = self.app.get_qt_emitter(self.guiim)
+		plot_qt_target = self.app.get_qt_emitter(self.guiplot)
 		
-		self.guiim.connect(im_qt_target,QtCore.SIGNAL("mousedown"),self.imgmousedown)
-		self.guiim.connect(im_qt_target,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
-		self.guiim.connect(im_qt_target,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
-		self.guiplot.connect(plot_qt_target,QtCore.SIGNAL("mousedown"),self.plotmousedown)
+		im_qt_target.connect(im_qt_target,QtCore.SIGNAL("mousedown"),self.imgmousedown)
+		im_qt_target.connect(im_qt_target,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
+		im_qt_target.connect(im_qt_target,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
+		plot_qt_target.connect(plot_qt_target,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 		
 		self.guiim.mmode="app"
 
@@ -527,22 +528,22 @@ class GUIctf(QtGui.QWidget):
 		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
 		#self.vbl.addWidget(self.samp)
 		
-		self.sdefocus=ValSlider(self,(0,5.0),"Defocus:",0)
+		self.sdefocus=ValSlider(self,(0,5.0),"Defocus:",0,90)
 		self.vbl.addWidget(self.sdefocus)
 		
-		self.sbfactor=ValSlider(self,(0,500),"B factor:",0)
+		self.sbfactor=ValSlider(self,(0,500),"B factor:",0,90)
 		self.vbl.addWidget(self.sbfactor)
 		
-		self.sampcont=ValSlider(self,(0,500),"% AC",0)
+		self.sampcont=ValSlider(self,(0,500),"% AC",0,90)
 		self.vbl.addWidget(self.sampcont)
 		
-		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2)
+		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
 		self.vbl.addWidget(self.sapix)
 		
-		self.svoltage=ValSlider(self,(0,500),"Voltage (kV):",0)
+		self.svoltage=ValSlider(self,(0,500),"Voltage (kV):",0,90)
 		self.vbl.addWidget(self.svoltage)
 		
-		self.scs=ValSlider(self,(0,500),"Cs (mm):",0)
+		self.scs=ValSlider(self,(0,500),"Cs (mm):",0,90)
 		self.vbl.addWidget(self.scs)
 
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
