@@ -408,19 +408,16 @@ int main(int argc, char *argv[])
 		ti *= 10.0;
     if (!big && !slow && !newali) {
 		printf("\nFor comparison (note these numbers may change from release to release)\n");
-		printf("* - denotes old values which may be 25%% higher than the current version\n");
-		printf("A  250Mhz R10k Octane has a SF of 180\n");
-		printf("A  PIII 800 has a sf of ~390\n");
-		printf("An Athlon 1.4ghz has a sf of 580\n");
-		printf
-			("A Xeon 2600mhz on a 4-way shared memory machine with all processors active has a sf of 380 *\n");
-		printf
-			("A Xeon 2600mhz on a 4-way shared memory machine with 2 processors active has a sf of 400 *\n");
-		printf("A P4 3.2 Ghz with dual channel pc2700 ram has a sf of 800 (*?)\n");
-		printf("An Athlon XP2800+ (2133mhz) with gcc3.2 and FFTWGEL has a sf of 1100\n");
-		printf("An Athlon64 3000 (2000mhz) with gcc3.2, FFTWGEL and 2.4 kernel has a sf of 1050\n");
-		printf("An Athlon64 3200 (2000mhz) 32-bit with FFTWGEL and 2.6 kernel has a sf of 1350\n");
-		printf("An Athlon64 3200 (2000mhz) 64-bit has a sf of 1520\n");
+		printf("An AMD Athlon XP 2400+ (32 bit) 2.0Ghz SF ----------------------- 1010\n");
+		printf("An AMD Athlon XP 2600+ (32 bit) 2.0Ghz SF ----------------------- 1090\n");
+		printf("An AMD Athlon 64 3700+ 2.2Ghz SF -------------------------------- 1530\n");
+		printf("An AMD Athlon 64 FX-51 2.2Ghz SF -------------------------------- 1760\n");
+		printf("An AMD Opteron 248 2.2Ghz SF ------------------------------------ 1870\n");
+		printf("An Intel Xeon E5335 2.0Ghz SF ----------------------------------- 2010\n");
+		printf("An AMD Opteron 280 2.4Ghz SF ------------------------------------ 2130\n");
+		printf("An Intel Xeon E5430 2.66Ghz SF ---------------------------------- 2700\n");
+		printf("An Intel Xeon X5355 2.66Ghz SF ---------------------------------- 2920\n");
+		printf("An Intel Xeon X5460 2.8Ghz SF ----------------------------------- 3320\n");
 		printf("\nYour machines speed factor = %1.1f\n", 25000.0 / ti);
 		printf("\n\nThis repesents %1.2f RTFAligns/sec\n",
 			   3.0 * ((slow == 2 ? NTT / 10 : NTT) - 5) / ti);
