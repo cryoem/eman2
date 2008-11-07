@@ -61,8 +61,6 @@ MAG_INCREMENT_FACTOR = 1.1
 
 
 class EMImage3DGeneralWidget(QtOpenGL.QGLWidget,EMEventRerouter):
-	
-	
 	def __init__(self, em_3d_module):
 		assert(isinstance(em_3d_module,EMImage3DGUIModule))
 		
@@ -481,14 +479,14 @@ class EMImage3DModule(EMImage3DGUIModule):
 			return [self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize()]
 		else: return [0,0,0]
 
-	def set_data(self,data,file_name=""):
+	def set_data(self,data,file_name="",replace=True):
 		self.file_name = file_name # fixme fix this later
 		if self.gl_widget != None:
 			self.gl_widget.setWindowTitle(remove_directories_from_name(self.file_name))
 		if data == None: return
 		self.data = data
-		for i in self.viewables:
-			i.set_data(data)
+		#for i in self.viewables:
+			#i.set_data(data)
 		
 		if isinstance(self.gl_context_parent,EMImage3DWidget):
 			self.resizeEvent(self.gl_context_parent.width(),self.gl_context_parent.height())
@@ -496,6 +494,9 @@ class EMImage3DModule(EMImage3DGUIModule):
 		
 		if self.inspector == None:
 			self.inspector=EMImageInspector3D(self)
+			
+		if replace:
+			self.inspector.delete_all()
 		self.inspector.add_isosurface()
 	
 	def get_inspector(self):
@@ -790,6 +791,15 @@ class EMImageInspector3D(QtGui.QWidget):
 		
 		self.tabwidget.removeTab(idx)
 		self.target.delete_current(self.targetidxmap[idx])
+	
+	def delete_all(self):
+		n = self.tabwidget.count()
+		if n <= 1: return
+		
+		for idx in range(n-2,-1,-1):
+			self.tabwidget.removeTab(idx)
+			self.target.delete_current(self.targetidxmap[idx])
+	
 
 
 class EM3DAdvancedInspector(QtGui.QWidget):

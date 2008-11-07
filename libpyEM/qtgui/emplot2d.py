@@ -153,7 +153,7 @@ class EMPlot2DModule(EMGUIModule):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 	
-	def set_data(self,key,input_data):
+	def set_data(self,key,input_data,replace=False):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -163,6 +163,9 @@ class EMPlot2DModule(EMGUIModule):
 		
 		self.needupd=1
 		
+		if replace: 
+			self.data = {}
+			self.axes = {}
 		if isinstance(input_data,EMData):
 			data = input_data.get_data_as_vector()
 		else: data = input_data
@@ -205,8 +208,12 @@ class EMPlot2DModule(EMGUIModule):
 	def updateGL(self):
 		if  self.gl_widget != None and self.under_qt_control: self.gl_widget.updateGL()
 		
-	def set_data_from_file(self,filename):
+	def set_data_from_file(self,filename,replace=False):
 		"""Reads a keyed data set from a file. Automatically interpret the file contents."""
+		
+		if replace: 
+			self.data = {}
+			self.axes = {}
 		
 		file_type = Util.get_filename_ext(filename)
 		em_file_type = EMUtil.get_image_ext_type(file_type)

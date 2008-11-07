@@ -44,10 +44,7 @@ from EMAN2 import EMData
 class EMBrowserDialog(EMSelectorDialog):
 	def __init__(self,target,application):
 		EMSelectorDialog.__init__(self,target,application)
-		self.__init__force_2d_tb()
-		self.__init__force_plot_tb()
-		self.bottom_hbl.addWidget(self.force_2d,0)
-		self.bottom_hbl.addWidget(self.force_plot,0)
+		
 		
 		self.current_force = None
 		#self.browse_gl_preview = None
@@ -120,35 +117,7 @@ class EMBrowserDialog(EMSelectorDialog):
 		#self.application.setOverrideCursor(Qt.ArrowCursor)	
 
 	
-	def __init__force_2d_tb(self):
-		self.force_2d = QtGui.QCheckBox("2D only")
-		self.force_2d.setChecked(False)
-		
-		QtCore.QObject.connect(self.force_2d, QtCore.SIGNAL("clicked(bool)"),self.force_2d_clicked)
-		
-	def __init__force_plot_tb(self):
-		self.force_plot = QtGui.QCheckBox("Plot only")
-		self.force_plot.setChecked(False)
-		
-		QtCore.QObject.connect(self.force_plot, QtCore.SIGNAL("clicked(bool)"),self.force_plot_clicked)
 	
-	def force_2d_clicked(self):
-		self.force_clicked(self.force_2d)
-		
-	def force_plot_clicked(self):
-		self.force_clicked(self.force_plot)
-	
-	def force_clicked(self,f):
-		
-		if self.current_force == None:
-			self.current_force = f
-		elif f == self.current_force:
-			self.current_force = None
-			return
-		else:
-			self.current_force.setChecked(False)
-			self.current_force = f
-		
 app = None
 def on_done(string_list):
 	print "on done"

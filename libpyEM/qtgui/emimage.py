@@ -99,7 +99,7 @@ def get_app():
 
 class EMImageModule(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
-	def __new__(cls,data=None,old=None,app=None,force_2d=False,force_plot=False,filename=""):
+	def __new__(cls,data=None,old=None,app=None,force_2d=False,force_plot=False,filename="",replace=True):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance.
@@ -122,34 +122,34 @@ class EMImageModule(object):
 		if force_2d or (isinstance(data,EMData) and data.get_zsize()==1):
 			if old:
 				if isinstance(old,EMImage2DModule) :
-					old.set_data(data)
+					old.set_data(data,filename)
 					return old
 			module = EMImage2DModule(application=app)
-			module.set_data(data)
+			module.set_data(data,filename)
 			return module
 		elif isinstance(data,EMData):
 			if old:
 				if isinstance(old,EMImage3DModule) :
-					old.set_data(data)
+					old.set_data(data,filename,replace)
 					return old
 			module = EMImage3DModule(application=app)
-			module.set_data(data)
+			module.set_data(data,filename,replace)
 			return module
 		elif isinstance(data,list) and isinstance(data[0],EMData):
 			if old:
 				if isinstance(old,EMImageMXModule) :
-					old.set_data(data)
+					old.set_data(data,filename)
 					return old
 			module = EMImageMXModule(application=app)
-			module.set_data(data)
+			module.set_data(data,filename)
 			return module
 		elif isinstance(data,list):
 			if old:
 				if isinstance(old,EMPlot2DModule) :
-					old.set_data(data)
+					old.set_data(remove_directories_from_name(filename),data,replace)
 					return old
 			module = EMPlot2DModule(application=app)
-			module.set_data("data",data)
+			module.set_data(remove_directories_from_name(filename),data,replace)
 			return module	
 		else:
 			raise Exception,"data must be a single EMData object or a list of EMData objects"

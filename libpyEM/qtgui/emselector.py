@@ -82,14 +82,37 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.hbl.addLayout(self.list_hdl)
 
-		self.bottom_hbl = self.list_hdl = QtGui.QHBoxLayout()
+		self.bottom_hbl = QtGui.QHBoxLayout()
+		self.bottom_hbl.addWidget(self.filter_text,0)
 		self.bottom_hbl.addWidget(self.filter_combo,1)
-		self.__init_done_button()
-		self.bottom_hbl.addWidget(self.done_button,0)
-		self.__init__single_preview_tb()
-		self.bottom_hbl.addWidget(self.single_preview,0)
+		self.__init_buttons()
+		self.bottom_hbl.addWidget(self.cancel_button,0)
+		self.bottom_hbl.addWidget(self.ok_button,0)
 		self.hbl.addLayout(self.bottom_hbl)
 		self.gl_image_preview = None
+		
+		self.bottom_hbl2 = QtGui.QHBoxLayout()
+		self.__init_preview_options()
+		self.bottom_hbl2.addWidget(self.preview_options,0)
+		self.hbl.addLayout(self.bottom_hbl2)
+		
+		self.__init__force_2d_tb()
+		self.__init__force_plot_tb()
+		self.bottom_hbl2.addWidget(self.force_2d,0)
+		self.bottom_hbl2.addWidget(self.force_plot,0)
+		
+		self.bottom_hbl3 = QtGui.QHBoxLayout()
+		self.__init_plot_options()
+		self.bottom_hbl3.addWidget(self.replace,0)
+		self.bottom_hbl3.addWidget(self.include,0)
+		
+		#self.hbl.addLayout(self.bottom_hbl3)
+		
+		self.groupbox = QtGui.QGroupBox("Plot/3D options")
+		self.groupbox.setLayout(self.bottom_hbl3)
+		
+		
+		self.bottom_hbl2.addWidget(self.groupbox)
 		
 		self.resize(480,480)
 		
@@ -120,29 +143,101 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.emdata_matrix_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/multiple_images.png")
 		self.plot_icon = QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/plot.png")
 
-	def __init__single_preview_tb(self):
-		self.single_preview = QtGui.QCheckBox("Single preview")
-		self.single_preview.setChecked(True)
+	def __init_plot_options(self):
+		self.replace = QtGui.QRadioButton("Replace")
+		self.include = QtGui.QRadioButton("Include")
+		self.include.setChecked(True)
+	
+	#def __init_3d_options(self):
+		#self.threed_options_label = QtGui.QLabel("3D options:",self)
+		#self.replace_3d = QtGui.QCheckBox("Replace")
+		#self.include_3d = QtGui.QCheckBox("Include")
+		#self.include_3d.setChecked(True)
+
+	def __init_preview_options(self):
 		
-		QtCore.QObject.connect(self.single_preview, QtCore.SIGNAL("clicked(bool)"),self.single_preview_clicked)
+		self.preview_options = QtGui.QComboBox(self)
+		self.preview_options.addItem("No preview")
+		self.preview_options.addItem("Single preview")
+		self.preview_options.addItem("Multi preview")
+		self.preview_options.setCurrentIndex(1)
+		
+		QtCore.QObject.connect(self.preview_options, QtCore.SIGNAL("currentIndexChanged(QString)"), self.preview_options_changed)
 	
-	def __init_done_button(self):
-		self.done_button = QtGui.QPushButton("Done")
-		self.done_button.adjustSize()
+	def preview_options_changed(self,qstring):
+		if str(qstring) == "Single preview":
+			self.groupbox.setEnabled(True)
+		else:
+			self.groupbox.setEnabled(False)
+			
+		if str(qstring) == "No preview":
+			self.force_2d.setEnabled(False)
+			self.force_plot.setEnabled(False)
+		else:
+			self.force_2d.setEnabled(True)
+			self.force_plot.setEnabled(True)
 	
-		QtCore.QObject.connect(self.done_button, QtCore.SIGNAL("clicked(bool)"),self.done_button_clicked)
+	def previews_allowed(self):
+		return str(self.preview_options.currentText()) != "No preview"
+	
+	def single_preview_only(self):
+		return str(self.preview_options.currentText()) == "Single preview"
+	
+	def __init_buttons(self):
+		self.ok_button = QtGui.QPushButton("Ok")
+		self.ok_button.adjustSize()
+		
+		self.cancel_button = QtGui.QPushButton("Cancel")
+		self.cancel_button.adjustSize()
+	
+		QtCore.QObject.connect(self.ok_button, QtCore.SIGNAL("clicked(bool)"),self.ok_button_clicked)
+		QtCore.QObject.connect(self.cancel_button, QtCore.SIGNAL("clicked(bool)"),self.cancel_button_clicked)
+	
+	def __init__force_2d_tb(self):
+		self.force_2d = QtGui.QCheckBox("Force 2D")
+		self.force_2d.setChecked(False)
+		
+		QtCore.QObject.connect(self.force_2d, QtCore.SIGNAL("clicked(bool)"),self.force_2d_clicked)
+		
+	def __init__force_plot_tb(self):
+		self.force_plot = QtGui.QCheckBox("Force plot")
+		self.force_plot.setChecked(False)
+		
+		QtCore.QObject.connect(self.force_plot, QtCore.SIGNAL("clicked(bool)"),self.force_plot_clicked)
+	
+	def force_2d_clicked(self):
+		self.force_clicked(self.force_2d)
+		
+	def force_plot_clicked(self):
+		self.force_clicked(self.force_plot)
+	
+	def force_clicked(self,f):
+		
+		if self.current_force == None:
+			self.current_force = f
+		elif f == self.current_force:
+			self.current_force = None
+			return
+		else:
+			self.current_force.setChecked(False)
+			self.current_force = f
+		
 	
 	def single_preview_clicked(self,bool):
 		pass
 		#print "not supported"
 	
-	def done_button_clicked(self,bool):
+	def cancel_button_clicked(self,bool):
+		print "cancel"
+	
+	def ok_button_clicked(self,bool):
 		self.emit(QtCore.SIGNAL("done"),self.selections)
 		
 	def __init_filter_combo(self):
+		self.filter_text = QtGui.QLabel("Filter:",self)
 		self.filter_combo = QtGui.QComboBox(None)
 		self.filter_combo.addItem("EM types")
-		self.filter_combo.addItem("Databases")
+		self.filter_combo.addItem("Databases") # this doesn't really do anything
 		self.filter_combo.addItem("*.mrc,*.hdf,*.img")
 		self.filter_combo.addItem("*.*")
 		self.filter_combo.addItem("*")
@@ -315,7 +410,7 @@ class EMSelectorDialog(QtGui.QDialog):
 			print "no list widget has focus?"
 			return
 		
-		if self.set_preview(item):
+		if self.previews_allowed() and self.set_preview(item):
 			
 			for i in range(idx+1,len(self.list_widgets)):
 				self.list_widgets[i].clear()
@@ -381,27 +476,27 @@ class EMSelectorDialog(QtGui.QDialog):
 
 	
 	def preview_plot(self,filename):
-		if self.single_preview.isChecked():
+		if self.single_preview_only():
 			if not isinstance(self.gl_image_preview,EMPlot2DModule):
 				if self.gl_image_preview != None: self.application.close_specific(self.gl_image_preview)
 				self.gl_image_preview = EMPlot2DModule(self.application)
 	
-			self.gl_image_preview.set_data_from_file(filename)
+			self.gl_image_preview.set_data_from_file(filename,self.replace.isChecked())
 			self.application.show_specific(self.gl_image_preview)
 			self.gl_image_preview.updateGL()
 			
 		else:
 			preview =EMPlot2DModule(self.application)
-			preview.set_data_from_file(filename)
+			preview.set_data_from_file(filename,self.replace.isChecked())
 			self.application.show_specific(preview)
 			
 	def preview_data(self,a,filename=""):
 		from emimage import EMImageModule
-		if self.single_preview.isChecked():
+		if self.single_preview_only():
 			
 			f_2d = self.force_2d.isChecked()
 			f_plot = self.force_plot.isChecked()
-			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=self.gl_image_preview,filename=filename)
+			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=self.gl_image_preview,filename=filename,replace=self.replace.isChecked())
 			if preview != self.gl_image_preview:
 				if self.gl_image_preview != None: self.application.close_specific(self.gl_image_preview)
 				self.gl_image_preview = preview
