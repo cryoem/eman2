@@ -153,7 +153,7 @@ class EMPlot2DModule(EMGUIModule):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 	
-	def set_data(self,key,input_data,replace=False):
+	def set_data(self,key,input_data,replace=False,quiet=False):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -188,7 +188,7 @@ class EMPlot2DModule(EMGUIModule):
 		
 		if self.inspector: self.inspector.datachange()
 		
-		self.updateGL()
+		if not quiet: self.updateGL()
 	
 	def get_inspector(self):
 		if not self.inspector :

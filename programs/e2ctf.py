@@ -120,6 +120,7 @@ operations are performed on oversampled images if specified."""
 	if debug : print "Phase flipping / Wiener filtration"
 	if options.phaseflip or options.wiener:
 		for filename in args:
+			name=get_file_tag(filename)
 			if debug: print "Processing ",filename
 
 			if options.phaseflip: phaseout="bdb:ctf.flip."+name
@@ -342,6 +343,14 @@ def snr_safe(s,n) :
 	if s<=0 or n<=0 : return 0.0
 	return (s-n)/n
 
+def sfact(s):
+	"""This will return a curve shaped something like the structure factor of a typical protein. It is not designed to be
+	highly accurate, but be good enough for approximate B-factor estimation"""
+
+	if s<.004 : return 0
+	if s>.2934 : s=.2934
+	return pow(10.0,3.6717 - 364.58 * s + 15597 * s**2 - 4.0678e+05 * s**3 + 6.7098e+06 * s**4 - 7.0735e+07 * s**5 + 4.7839e+08 * s**6 - 2.0574e+09 * s**7 +5.4288e+09 * s**8 - 8.0065e+09 * s**9 + 5.0518e+09 * s**10)
+
 def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
 	The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
@@ -355,6 +364,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	ctf=EMAN2Ctf()
 	ctf.from_dict({"defocus":1.0,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
 	
+	sf = [sfact(i*ds) for i in range(ys)]
 	
 	if debug: dfout=file("ctf.df.txt","w")
 	dfbest1=(0,-1.0e20)
@@ -451,6 +461,9 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	ctf.defocus=dfbest[0]
 
 	if 1 : print "Best DF = ",dfbest[0]
+	
+	# Now let's try for a B-factor
+	
 
 	return ctf
 
@@ -494,7 +507,9 @@ class GUIctf(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		
 		self.data=data
-				
+		self.curset=0
+		self.plotmode=0
+		
 		self.guiim=EMImage2DModule(application=self.app)
 		self.guiplot=EMPlot2DModule(application=self.app)
 		
@@ -514,11 +529,20 @@ class GUIctf(QtGui.QWidget):
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		
-		# plot list
+		# plot list and plot mode combobox
+		self.vbl2 = QtGui.QVBoxLayout()
 		self.setlist=QtGui.QListWidget(self)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
-		self.hbl.addWidget(self.setlist)
+		self.vbl2.addWidget(self.setlist)
 		
+		self.splotmode=QtGui.QComboBox(self)
+		self.splotmode.addItem("Ptcl & BG power")
+		self.splotmode.addItem("Bgsub & fit")
+		self.splotmode.addItem("SNR")
+		self.vbl2.addWidget(self.splotmode)
+		self.hbl.addLayout(self.vbl2)
+		
+		# ValSliders for CTF parameters
 		self.vbl = QtGui.QVBoxLayout()
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
@@ -528,38 +552,45 @@ class GUIctf(QtGui.QWidget):
 		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
 		#self.vbl.addWidget(self.samp)
 		
-		self.sdefocus=ValSlider(self,(0,5.0),"Defocus:",0,90)
+		self.sdefocus=ValSlider(self,(0,5),"Defocus:",0,90)
 		self.vbl.addWidget(self.sdefocus)
 		
-		self.sbfactor=ValSlider(self,(0,500),"B factor:",0,90)
+		self.sbfactor=ValSlider(self,(0,1600),"B factor:",0,90)
 		self.vbl.addWidget(self.sbfactor)
 		
-		self.sampcont=ValSlider(self,(0,500),"% AC",0,90)
+		self.sampcont=ValSlider(self,(0,100),"% AC",0,90)
 		self.vbl.addWidget(self.sampcont)
 		
-		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
-		self.vbl.addWidget(self.sapix)
+#		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
+#		self.vbl.addWidget(self.sapix)
 		
 		self.svoltage=ValSlider(self,(0,500),"Voltage (kV):",0,90)
 		self.vbl.addWidget(self.svoltage)
 		
-		self.scs=ValSlider(self,(0,500),"Cs (mm):",0,90)
+		self.scs=ValSlider(self,(0,5),"Cs (mm):",0,90)
 		self.vbl.addWidget(self.scs)
 
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
-		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
+#		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sampcont, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
 
 		self.update_data()
 		
 		self.app.show() # should probably be name "show_all"
 		self.show() # this is the troublesome part.... this Widget has to be a module and should register itsefl with the application
 		self.app.execute()
-		
+
+	def closeEvent(self,event):
+#		QtGui.QWidget.closeEvent(self,event)
+#		self.app.app.closeAllWindows()
+		self.app.app.exit()
+		event.accept()
+
 	def newData(self,data):
 		self.data=data
 		self.update_data()
@@ -569,44 +600,80 @@ class GUIctf(QtGui.QWidget):
 		self.setlist.clear()
 		for i,j in enumerate(self.data):
 			self.setlist.addItem(j[0])
-			l=len(self.data)
+		self.setlist.setCurrentRow(self.curset)
+
+	def update_plot(self):
+		val=self.curset
+		ctf=self.data[val][1]
+		ds=self.data[val][1].dsbg
+		s=[ds*i for i in range(len(ctf.background))]
+		if self.plotmode==0:
+			self.guiplot.set_data("fg",(s,self.data[val][2]),True,True)
+			self.guiplot.set_data("bg",(s,self.data[val][3]))
+		elif self.plotmode==1: 
+			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
+			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
+			
+			fit=ctf.compute_1d(len(s)*2,Ctf.CtfType.CTF_AMP)		# The fit curve
+			fit=[sfact(s[i])*fit[i]**2 for i in range(len(s))]		# squared * a generic structure factor
+
+			# autoamplitude for b-factor adjustment
+			rto,nrto=0,0
+			for i in range(len(s)): 
+				if bgsub[i]>0 : 
+					rto+=fit[i]**2/bgsub[i]
+					nrto+=fit[i]
+			if nrto==0 : rto=1.0
+			else : rto/=nrto
+			fit=[fit[i]/rto for i in range(len(s))]
+
+			self.guiplot.set_data("fit",(s,fit))
+		elif self.plotmode==2:
+			self.guiplot.set_data("snr",(s,ctf.snr),True)
 
 	def newSet(self,val):
-		self.sdefocus.setValue(self.data[val][1].defocus)
-		self.sbfactor.setValue(self.data[val][1].bfactor)
-		self.sapix.setValue(self.data[val][1].apix)
-		self.sampcont.setValue(self.data[val][1].ampcont)
-		self.svoltage.setValue(self.data[val][1].voltage)
-		self.scs.setValue(self.data[val][1].scs)
+		"called when a new data set is selected from the list"
+		self.curset=val
+
+		self.sdefocus.setValue(self.data[val][1].defocus,True)
+		self.sbfactor.setValue(self.data[val][1].bfactor,True)
+#		self.sapix.setValue(self.data[val][1].apix)
+		self.sampcont.setValue(self.data[val][1].ampcont,True)
+		self.svoltage.setValue(self.data[val][1].voltage,True)
+		self.scs.setValue(self.data[val][1].cs,True)
 		
 		self.guiim.set_data(self.data[val][4])
-		self.curset=val
+		self.update_plot()
+
+	def newPlotMode(self,mode):
+		self.plotmode=mode
+		self.update_plot()
 
 	def newCTF(self) :
 		self.data[self.curset][1].defocus=self.sdefocus.value
-		self.data[self.curset][1].bfactor=self.bfactor.value
-		self.data[self.curset][1].apix=self.apix.value
-		self.data[self.curset][1].ampcont=self.ampcont.value
-		self.data[self.curset][1].voltage=self.voltage.value
-		self.data[self.curset][1].scs=self.scs.value
-#		self.update_data()
+		self.data[self.curset][1].bfactor=self.sbfactor.value
+#		self.data[self.curset][1].apix=self.sapix.value
+		self.data[self.curset][1].ampcont=self.sampcont.value
+		self.data[self.curset][1].voltage=self.svoltage.value
+		self.data[self.curset][1].cs=self.scs.value
+		self.update_plot()
 
 	def imgmousedown(self,event) :
-		m=self.guiim.scrtoimg((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.x(),event.y()))
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 		
 	def imgmousedrag(self,event) :
-		m=self.guiim.scrtoimg((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.x(),event.y()))
 		
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
 			#for i,j in enumerate(self.boxes):
 		
 	def imgmouseup(self,event) :
-		m=self.guiim.scrtoimg((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.x(),event.y()))
 	
 	def plotmousedown(self,event) :
-		m=self.guiim.scrtoimg((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.x(),event.y()))
 	
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
