@@ -51,6 +51,7 @@ from embrowse import *
 #from emimageutil import ImgHistogram
 #from weakref import WeakKeyDictionary
 
+#gapp = None
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image file> ...
@@ -78,7 +79,8 @@ def main():
 	logid=E2init(sys.argv)
 #        GLUT.glutInit(sys.argv)
 
-	app = EMStandAloneApplication() 
+	app = EMStandAloneApplication()
+	gapp = app
 	#QtGui.QApplication(sys.argv)
 	win=[]
 
@@ -86,6 +88,7 @@ def main():
 		dialog = EMBrowserDialog(None,app)
 		em_qt_widget = EMQtWidgetModule(dialog,app)
 		QtCore.QObject.connect(dialog,QtCore.SIGNAL("done"),on_browser_done)
+		QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
 		app.show()
 	elif options.plot:
 		plot(args,app)
@@ -117,6 +120,11 @@ def main():
 	E2end(logid)
 	
 def on_browser_done(string_list):
+	if len(string_list) != 0:
+		for s in string_list:
+			print s,
+		print
+def on_browser_cancel():
 	pass
 
 def selectclass(rawfsp,mxfsp,event,lc):

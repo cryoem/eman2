@@ -228,7 +228,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		#print "not supported"
 	
 	def cancel_button_clicked(self,bool):
-		print "cancel"
+		self.emit(QtCore.SIGNAL("cancel"),self.selections)
 	
 	def ok_button_clicked(self,bool):
 		self.emit(QtCore.SIGNAL("done"),self.selections)
@@ -1263,11 +1263,13 @@ class EMSelectionListItem(QtGui.QListWidgetItem):
 	
 app = None
 def on_done(string_list):
-	print "on done"
 	if len(string_list) != 0:
 		for s in string_list:
 			print s,
 		print
+	app.quit()
+
+def on_cancel(string_list):
 	app.quit()
 
 
@@ -1277,6 +1279,7 @@ if __name__ == '__main__':
 	dialog = EMSelectorDialog(None,em_app)
 	em_qt_widget = EMQtWidgetModule(dialog,em_app)
 	QtCore.QObject.connect(dialog,QtCore.SIGNAL("done"),on_done)
+	QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_cancel)
 	em_app.show()
 	em_app.execute()
 
