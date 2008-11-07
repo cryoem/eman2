@@ -63,9 +63,9 @@ using std::endl;
 
 namespace EMAN {
 
-    python::numeric::array make_numeric_array(float * data, vector<int> dims);
+    python::numeric::array make_numeric_array(float * data, vector<npy_intp> dims);
     python::numeric::array make_numeric_complex_array(std::complex<float> * data,
-                                                      vector<int> dims);
+                                                      vector<npy_intp> dims);
 	class EMNumPy {
 	public:
 		/** Get an EMData image's pixel data as a numeric numpy array.
@@ -172,7 +172,7 @@ namespace EMAN {
     {
         static PyObject* convert(boost::multi_array_ref<float, NumDims> const & marray)
         {
-            vector<int> dims; 
+            vector<npy_intp> dims; 
             const size_t * shape = marray.shape();
             int ndim = marray.num_dimensions();
             for (int i = ndim-1; i >= 0; i--) {
@@ -194,7 +194,7 @@ namespace EMAN {
     {
         static PyObject* convert(boost::multi_array_ref<std::complex<float>, NumDims> const & mcarray)
         {
-            vector<int> dims;
+            vector<npy_intp> dims;
             const size_t * shape = mcarray.shape();
             int ndim = mcarray.num_dimensions();
             for (int i = ndim-1; i >= 0; i--) {

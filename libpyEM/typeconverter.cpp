@@ -39,35 +39,33 @@
 using namespace EMAN;
 
 
-python::numeric::array EMAN::make_numeric_array(float * data, vector<int> dims)
+python::numeric::array EMAN::make_numeric_array(float * data, vector<npy_intp> dims)
 {
 	size_t total = 1;
-	vector<int>::iterator iter = dims.begin();
+	vector<npy_intp>::iterator iter = dims.begin();
 	while(iter != dims.end()){
 		total *= *iter;
 		++iter;
 	}    
 
-	python::object obj(python::handle<>(PyArray_FromDimsAndData(dims.size(),&dims[0],
-																PyArray_FLOAT, (char*)data)));
-
+	python::object obj(python::handle<>(PyArray_SimpleNewFromData(dims.size(),&dims[0],
+																	PyArray_FLOAT, (char*)data)));
 
 	return python::extract<python::numeric::array>(obj);
 }
 
 python::numeric::array EMAN::make_numeric_complex_array(std::complex<float> * data,
-                                                        vector<int> dims)
+                                                        vector<npy_intp> dims)
 {
 	size_t total = 1;
-	vector<int>::iterator iter = dims.begin();
+	vector<npy_intp>::iterator iter = dims.begin();
 	while(iter != dims.end()){
 		total *= *iter;
 		++iter;
 	}    
 
-	python::object obj(python::handle<>(PyArray_FromDimsAndData(dims.size(),&dims[0],
-																PyArray_CFLOAT, (char*)data)));
-
+	python::object obj(python::handle<>(PyArray_SimpleNewFromData(dims.size(),&dims[0],
+																	PyArray_CFLOAT, (char*)data)));
 
 	return python::extract<python::numeric::array>(obj);
 }
@@ -79,7 +77,7 @@ python::numeric::array EMNumPy::em2numpy(EMData *image)
     int ny = image->get_ysize();
     int nz = image->get_zsize();
 	
-	vector<int> dims;
+	vector<npy_intp> dims;
 	
 	if (nz > 1) {
 		dims.push_back(nz);
@@ -245,7 +243,7 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 
 PyObject* MArray2D_to_python::convert(MArray2D const & marray2d)
 {
-    vector<int> dims;
+    vector<npy_intp> dims;
     const size_t * shape = marray2d.shape();
     int ndim = marray2d.num_dimensions();
     for (int i = ndim-1; i >= 0; i--) {
