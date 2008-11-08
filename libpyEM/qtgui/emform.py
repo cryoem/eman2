@@ -38,7 +38,13 @@ from emselector import EMSelectorModule
 from emapplication import EMQtWidgetModule
 
 class EMFormModule(EMQtWidgetModule):
-	def __init__(self,params=None,application=None):
+	'''
+	params should be a list of ParamDef objects
+	application should be an EMAN2 type application
+	After initializing this object you should probably call application.show(this)
+	or application.show_specific(this), depending on what you're doing
+	'''
+	def __init__(self,params,application):
 		self.application = application
 		self.widget = EMFormWidget(self,params)
 		EMQtWidgetModule.__init__(self,self.widget,application)
@@ -124,7 +130,6 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 				
-		#text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
 		text_edit = QtGui.QTextEdit("",self)
 		text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
 		text_edit.setText(param.defaultunits)
@@ -151,7 +156,6 @@ class EMFormWidget(QtGui.QWidget):
 				if i != (len(param.defaultunits)-1): 
 					defaults += '\n'
 				
-		#text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
 		text_edit = QtGui.QTextEdit("",self)
 		text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
 		text_edit.setText(defaults)
@@ -174,7 +178,7 @@ class EMFormWidget(QtGui.QWidget):
 		
 		layout.addWidget(groupbox)
 		
-		self.event_handlers.append(UrlEventHandler(text_edit,browse_button,clear_button,self.parent.application))
+		self.event_handlers.append(UrlEventHandler(text_edit,browse_button,clear_button,self.parent.application,param.desc_short))
 		self.output_writers.append(UrlParamWriter(param.name,text_edit))
 
 	def __incorporate_choice(self,param,layout):
@@ -273,7 +277,8 @@ class ChoiceParamWriter:
 
 class UrlEventHandler:
 	'''
-	The browse and cancel events have to be sent to the correct line edit, this achieves that
+	The browse and cancel events have to be sent to the correct line edit, so this handles it
+	Basically to simplify things when there is more than one url type.
 	'''
 	def __init__(self,text_edit,browse_button,clear_button,application,title=""):
 		self.application = application
@@ -286,6 +291,7 @@ class UrlEventHandler:
 	def browse_pressed(self,bool):
 		if self.browser == None:
 			self.browser = EMSelectorModule(self.application)
+			self.browser.setWindowTitle(self.browser_title)
 			self.application.show_specific(self.browser)
 			QtCore.QObject.connect(self.browser.widget,QtCore.SIGNAL("ok"),self.on_browser_ok)
 			QtCore.QObject.connect(self.browser.widget,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
