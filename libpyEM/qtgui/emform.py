@@ -123,7 +123,7 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.addWidget(line_edit)
 		hbl.name = param.name
 		layout.addLayout(hbl)
-		self.output_writers.append(StringParamWriter(param.name,line_edit))
+		self.output_writers.append(IntParamWriter(param.name,line_edit))
 		
 	def __incorporate_text(self,param,layout):
 		hbl=QtGui.QHBoxLayout()
