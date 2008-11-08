@@ -31,7 +31,7 @@
 #
 
 
-from emdatastorage import *
+from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 import os
 from emselector import EMSelectorModule
