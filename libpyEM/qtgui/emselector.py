@@ -42,7 +42,13 @@ from emapplication import EMStandAloneApplication, EMQtWidgetModule
 from EMAN2db import EMAN2DB
 from emplot2d import EMPlot2DModule
 #from boxertools import TrimSwarmAutoBoxer
+from emapplication import EMQtWidgetModule
 
+class EMSelectorModule(EMQtWidgetModule):
+	def __init__(self,application=None):
+		self.application = application
+		self.widget = EMSelectorDialog(self,application)
+		EMQtWidgetModule.__init__(self,self.widget,application)	
 
 class EMSelectorDialog(QtGui.QDialog):
 	def __init__(self,target,application):
@@ -110,6 +116,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.groupbox = QtGui.QGroupBox("Plot/3D options")
 		self.groupbox.setLayout(self.bottom_hbl3)
+		self.groupbox.setEnabled(False)
 		
 		
 		self.bottom_hbl2.addWidget(self.groupbox)
@@ -160,7 +167,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.preview_options.addItem("No preview")
 		self.preview_options.addItem("Single preview")
 		self.preview_options.addItem("Multi preview")
-		self.preview_options.setCurrentIndex(1)
+		self.preview_options.setCurrentIndex(0)
 		
 		QtCore.QObject.connect(self.preview_options, QtCore.SIGNAL("currentIndexChanged(QString)"), self.preview_options_changed)
 	
@@ -196,12 +203,14 @@ class EMSelectorDialog(QtGui.QDialog):
 	def __init__force_2d_tb(self):
 		self.force_2d = QtGui.QCheckBox("Force 2D")
 		self.force_2d.setChecked(False)
+		self.force_2d.setEnabled(False)
 		
 		QtCore.QObject.connect(self.force_2d, QtCore.SIGNAL("clicked(bool)"),self.force_2d_clicked)
 		
 	def __init__force_plot_tb(self):
 		self.force_plot = QtGui.QCheckBox("Force plot")
 		self.force_plot.setChecked(False)
+		self.force_plot.setEnabled(False)
 		
 		QtCore.QObject.connect(self.force_plot, QtCore.SIGNAL("clicked(bool)"),self.force_plot_clicked)
 	
@@ -231,7 +240,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.emit(QtCore.SIGNAL("cancel"),self.selections)
 	
 	def ok_button_clicked(self,bool):
-		self.emit(QtCore.SIGNAL("done"),self.selections)
+		self.emit(QtCore.SIGNAL("ok"),self.selections)
 		
 	def __init_filter_combo(self):
 		self.filter_text = QtGui.QLabel("Filter:",self)
@@ -1276,10 +1285,10 @@ def on_cancel(string_list):
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	app = em_app
-	dialog = EMSelectorDialog(None,em_app)
-	em_qt_widget = EMQtWidgetModule(dialog,em_app)
-	QtCore.QObject.connect(dialog,QtCore.SIGNAL("done"),on_done)
-	QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_cancel)
+	#dialog = EMSelectorDialog(None,em_app)
+	em_qt_widget = EMSelectorModule(em_app)
+	QtCore.QObject.connect(em_qt_widget.widget,QtCore.SIGNAL("ok"),on_done)
+	QtCore.QObject.connect(em_qt_widget.widget,QtCore.SIGNAL("cancel"),on_cancel)
 	em_app.show()
 	em_app.execute()
 

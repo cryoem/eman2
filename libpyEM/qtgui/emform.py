@@ -296,7 +296,6 @@ class UrlEventHandler:
 		self.application.hide_specific(self.browser)
 		
 	def on_browser_ok(self,stringlist):
-		print "yo"
 		new_string = str(self.text_edit.toPlainText())
 		for i,s in enumerate(stringlist):
 			if len(new_string) != 0:

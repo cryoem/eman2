@@ -2886,6 +2886,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		#Insert the plot widget
 		self.plothbl = QtGui.QHBoxLayout()
 		
+		# This was commented out because the extra GL context crashes the desktop
 		#self.window = EMGLPlotWidget(self)
 		#self.window.setInit()
 		#self.window.resize(100,100)

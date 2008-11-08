@@ -291,7 +291,8 @@ class EMStandAloneApplication(EMApplication):
 				widget = child.get_qt_widget()
 				widget.hide()
 				inspector = child.get_inspector()
-				inspector.hide()
+				if inspector != None:
+					inspector.hide()
 				return
 			
 		print "couldn't hide",child
@@ -433,4 +434,14 @@ class EMQtWidgetModule(EMGUIModule):
 			if self.application.isVisible(self):
 				self.gl_widget.drawable.gen_texture = True
 				self.gl_widget.drawable.updateTexture()
+				
+	def get_inspector(self):
+		'''
+
+		'''
+		return None
 	
+	def setWindowTitle(self,title):
+		if self.qt_widget != None:
+			self.qt_widget.setWindowTitle(title)
+			
