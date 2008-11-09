@@ -417,7 +417,7 @@ int main(int argc, char *argv[])
 		printf("An AMD Opteron 280 2.4Ghz SF ------------------------------------ 2130\n");
 		printf("An Intel Xeon E5430 2.66Ghz SF ---------------------------------- 2800\n");
 		printf("An Intel Xeon X5355 2.66Ghz SF ---------------------------------- 2920\n");
-		printf("An Intel Xeon X5460 2.8Ghz SF ----------------------------------- 3320\n");
+		printf("An Intel Xeon X5460 3.16Ghz SF ---------------------------------- 3320\n");
 		printf("\nYour machines speed factor = %1.1f\n", 25000.0 / ti);
 		printf("\n\nThis repesents %1.2f RTFAligns/sec\n",
 			   3.0 * ((slow == 2 ? NTT / 10 : NTT) - 5) / ti);
