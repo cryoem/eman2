@@ -14,6 +14,7 @@
 #include <xydata.h>
 #include <emobject.h>
 #include <randnum.h>
+#include "ctf.h"
 
 // Using =======================================================================
 using namespace boost::python;
@@ -155,21 +156,21 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_make_image_file2_overloads_2_6, EM
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_verify_image_file2_overloads_2_6, EMAN::TestUtil::verify_image_file2, 2, 6)
 
-}// namespace 
+}// namespace
 
 /*
 struct EMAN_Util_Wrapper: EMAN::Util
 {
 	EMAN_Util_Wrapper(PyObject* py_self_, const EMAN::Util& p):
 		EMAN::Util(p), py_self(py_self_) {}
-	
+
 	EMAN_Util_Wrapper(PyObject* py_self_):
 		EMAN::Util(), py_self(py_self_) {}
-	
+
 	EMAN::Dict get_stats(const std::vector<double,std::allocator<double> >& data) {
 		return call_method< EMAN::Dict>(py_self,"get_stats", data);
 	}
-	
+
 	PyObject* py_self;
 };*/
 
@@ -317,7 +318,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("merge_peaks", &EMAN::Util::merge_peaks )
 		.def("point_is_in_triangle_2d", &EMAN::Util::point_is_in_triangle_2d )
 		.def("point_is_in_convex_polygon_2d", &EMAN::Util::point_is_in_convex_polygon_2d )
-		
+
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
@@ -605,12 +606,16 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_debug_image", &EMAN::TestUtil::get_debug_image)
         .def("get_golden_image", &EMAN::TestUtil::get_golden_image)
         .def("to_emobject", &EMAN::TestUtil::to_emobject)
+        .def("emobject_to_py", (EMAN::EMObject (*)(bool))&EMAN::TestUtil::emobject_to_py)
+        .def("emobject_to_py", (EMAN::EMObject (*)(unsigned int))&EMAN::TestUtil::emobject_to_py)
         .def("emobject_to_py", (EMAN::EMObject (*)(int))&EMAN::TestUtil::emobject_to_py)
         .def("emobject_to_py", (EMAN::EMObject (*)(float))&EMAN::TestUtil::emobject_to_py)
         .def("emobject_to_py", (EMAN::EMObject (*)(double))&EMAN::TestUtil::emobject_to_py)
         .def("emobject_to_py", (EMAN::EMObject (*)(const std::string&))&EMAN::TestUtil::emobject_to_py)
         .def("emobject_to_py", (EMAN::EMObject (*)(EMAN::EMData*))&EMAN::TestUtil::emobject_to_py)
         .def("emobject_to_py", (EMAN::EMObject (*)(EMAN::XYData*))&EMAN::TestUtil::emobject_to_py)
+		.def("emobject_to_py", (EMAN::EMObject (*)(EMAN::Transform*))&EMAN::TestUtil::emobject_to_py)
+        .def("emobject_to_py", (EMAN::EMObject (*)(EMAN::Ctf*))&EMAN::TestUtil::emobject_to_py)
         .def("emobject_farray_to_py", &EMAN::TestUtil::emobject_farray_to_py)
         .def("emobject_strarray_to_py", &EMAN::TestUtil::emobject_strarray_to_py)
         .def("test_IntPoint", &EMAN::TestUtil::test_IntPoint)
@@ -693,10 +698,10 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 	.def("get_using_display_lists",&EMAN::EMFTGL::get_using_display_lists)
 	.def("set_font_mode",&EMAN::EMFTGL::set_font_mode)
 	.def("get_font_mode",&EMAN::EMFTGL::get_font_mode)
-	
+
 	);
 	delete EMAN_FTGL_scope;
-	
+
 	enum_< EMAN::EMFTGL::FontMode >("FTGLFontMode")
 		.value("EXTRUDE", EMAN::EMFTGL::EXTRUDE)
 		.value("TEXTURE", EMAN::EMFTGL::TEXTURE)

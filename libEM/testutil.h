@@ -5,32 +5,32 @@
 /*
  * Author: Liwei Peng, 12/16/2004 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifndef eman__testutil_h__
@@ -48,22 +48,24 @@ namespace EMAN
 	 */
 
 	class Dict;
-	
+
 	class TestUtil
 	{
 	public:
 		static const char * EMDATA_HEADER_EXT;
 		static const char * EMDATA_DATA_EXT;
-		
+
 		static int get_debug_int(int i);
 		static float get_debug_float(int i);
 		static string get_debug_string(int i);
-		
+
 		static string get_debug_image(const string & imagename);
 		static string get_golden_image(const string & imagename);
-		
+
 		static void to_emobject(const Dict & d);
 
+		static EMObject emobject_to_py(bool b);
+		static EMObject emobject_to_py(unsigned int n);
 		static EMObject emobject_to_py(int n);
 		static EMObject emobject_to_py(float f);
 		static EMObject emobject_to_py(double f);
@@ -72,7 +74,9 @@ namespace EMAN
 		static EMObject emobject_to_py(XYData * xydata);
 		static EMObject emobject_farray_to_py();
 		static EMObject emobject_strarray_to_py();
-		
+		static EMObject emobject_to_py(Transform * t);
+		static EMObject emobject_to_py(Ctf * ctf_);
+
 		static IntPoint test_IntPoint(const IntPoint & p);
 		static FloatPoint test_FloatPoint(const FloatPoint & p);
 		static IntSize test_IntSize(const IntSize & p);
@@ -101,7 +105,7 @@ namespace EMAN
 		static void dump_emdata(EMData * image, const string & filename);
 		static int check_image(const string& imagefile, EMData * image = 0);
         static void set_progname(const string & cur_progname);
-        
+
         static void make_image_file(const string & filename,
 									EMUtil::ImageType image_type,
 									EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
@@ -130,30 +134,30 @@ namespace EMAN
 									  EMUtil::ImageType image_type,
 									  EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
 									  int nx = 16, int ny = 16, int nz = 1)
-        {            
+        {
             return verify_image_file_by_mode(filename, image_type, 2,
 											 datatype, nx, ny, nz);
         }
 
-        
-        
-		
+
+
+
 	private:
 		static float tf[10];
 		static int ti[10];
 		static string progname;
-        
+
         static void make_image_file_by_mode(const string & filename,
 											EMUtil::ImageType image_type, int mode,
 											EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
 											int nx = 16, int ny = 16, int nz = 1);
-        
+
 		static int verify_image_file_by_mode(const string & filename,
 											 EMUtil::ImageType image_type, int mode,
 											 EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
 											 int nx = 16, int ny = 16, int nz = 1);
-        
-        
+
+
 		static float get_pixel_value_by_dist1(int nx, int ny, int nz, int x, int y, int z)
 		{
             int x2 = x;
@@ -166,7 +170,7 @@ namespace EMAN
             if (z > nz/2) {
                 z2 = nz-z;
             }
-            
+
             if (nz == 1) {
                 return (float)(x2*x2 + y2*y2);
             }
@@ -199,7 +203,7 @@ namespace EMAN
             if (z > nz/2) {
                 z2 = nz-z;
             }
-            
+
             if (nz == 1) {
                 return (float)(x2*x2 + y2*y2);
             }
@@ -217,9 +221,9 @@ namespace EMAN
 	};
 
 
-	
-	
-    
+
+
+
 }
 
 #endif	//eman__testutil_h__

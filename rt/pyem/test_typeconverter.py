@@ -62,6 +62,10 @@ class TestTypeConverter(unittest.TestCase):
         self.assertEqual(type(attr_dict["minimum"]), type(2.2))
         self.assertEqual(type(attr_dict["nx"]), type(nx))
         
+        b1 = True
+        b2 = TestUtil.emobject_to_py(b1)
+        self.assertEqual(b1,b2)
+        
         n1 = 100
         n2 = TestUtil.emobject_to_py(n1)
         self.assertEqual(n1, n2)
@@ -81,6 +85,18 @@ class TestTypeConverter(unittest.TestCase):
         strarray = TestUtil.emobject_strarray_to_py()
         strarray2 = testlib.get_list("string")
         self.assertEqual(strarray, strarray2)
+
+        alt = 1.0329837512591338
+        az = 3.7260642381912579
+        phi = 5.7671541529246966
+        t1 = Transform({"type":"eman","az":az,"alt":alt,"phi":phi})
+        t2 = TestUtil.emobject_to_py(t1)
+        self.assertEqual(t1.get_matrix(), t2.get_matrix())
+        
+        ctf1 = EMAN1Ctf()
+        ctf1.from_vector((1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0))
+        ctf2 = TestUtil.emobject_to_py(ctf1)
+        self.assertEqual(ctf1.to_string(), ctf2.to_string())
 
         testfile = "test_emobject_to_py_xydata.txt"
         out = open(testfile, "wb")

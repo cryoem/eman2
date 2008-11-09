@@ -5,32 +5,32 @@
 /*
  * Author: Liwei Peng, 12/16/2004 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "testutil.h"
@@ -113,7 +113,7 @@ void TestUtil::to_emobject(const Dict& d)
 			LOGDEBUG("floatarray[%d] = %f\n", i, array[i]);
 		}
 	}
-	
+
 	if (d.has_key("emdata")) {
 		EMData * img = d["emdata"];
 		if (img) {
@@ -126,19 +126,19 @@ void TestUtil::to_emobject(const Dict& d)
 			LOGDEBUG("image size = (%d, %d, %d)\n", nx, ny, nz);
 		}
 	}
-	
+
 	if (d.has_key("int")) {
 		int n = d["int"];
 		Assert(n == ti[0]);
 		LOGDEBUG("int n = %d\n", n);
 	}
-	
+
 	if (d.has_key("float")) {
 		float f = d["float"];
 		Assert(f == tf[0]);
 		LOGDEBUG("float f = %f\n", f);
 	}
-	
+
 	if (d.has_key("long")) {
 		int l = (int)d["long"];
 		Assert(l == ti[0]);
@@ -151,7 +151,7 @@ void TestUtil::to_emobject(const Dict& d)
         Assert(s == s2);
     }
 
-    
+
 	if (d.has_key("xydata")) {
 		XYData *xyd = d["xydata"];
 		size_t nitems = xyd->get_size();
@@ -192,7 +192,7 @@ FloatPoint TestUtil::test_FloatPoint(const FloatPoint & p)
 	return FloatPoint(tf[0], tf[1], tf[2]);
 }
 
-	
+
 IntSize TestUtil::test_IntSize(const IntSize & p)
 {
 	Assert(p[0] == ti[0]);
@@ -368,14 +368,14 @@ vector<Pixel> TestUtil::test_vector_pixel(const vector<Pixel> & v)
 		Pixel p2(p.x, p.y, p.z, p.value);
 		r.push_back(p2);
 	}
-	
+
 	return r;
 }
 
 Dict TestUtil::test_dict(const Dict & d)
 {
 	Dict r;
-	
+
 	vector<string> keys = d.keys();
 	sort(keys.begin(), keys.end());
 
@@ -408,21 +408,21 @@ int TestUtil::check_image(const string& imagefile, EMData * image)
 	string headerfile2 = string(imgpath) + headerfile1;
 	string datafile2 = string(imgpath) + datafile1;
 
-    
+
 	if (image) {
 		dump_emdata(image, imagefile);
 	}
 	else {
 		dump_image_from_file(imagefile);
 	}
-	
+
     if (!Util::is_file_exist(headerfile2) ||
         !Util::is_file_exist(datafile2)) {
         return 0;
     }
 
 	string diffcmd1 = "diff " + headerfile1 + " " + headerfile2;
-	
+
 	int err = system(diffcmd1.c_str());
 	if (!err) {
 		string diffcmd2 = "diff " + datafile1 + " " + datafile2;
@@ -431,7 +431,7 @@ int TestUtil::check_image(const string& imagefile, EMData * image)
 	if (err) {
 		LOGERR("check_image on %s FAILED\n", imagefile.c_str());
 	}
-	
+
 	return err;
 #endif
     return 0;
@@ -464,12 +464,12 @@ void TestUtil::dump_emdata(EMData * image, const string & filename)
 	excl_keys.push_back("MRC.label");
 	excl_keys.push_back("IMAGIC.minute");
 	excl_keys.push_back("IMAGIC.sec");
-	
+
 	Dict attr_dict = image->get_attr_dict();
 	vector < string > keys = attr_dict.keys();
-	
 
-	
+
+
 	for (size_t i = 0; i < keys.size(); i++) {
 
 		bool is_exclude = false;
@@ -479,7 +479,7 @@ void TestUtil::dump_emdata(EMData * image, const string & filename)
 				break;
 			}
 		}
-		if (!is_exclude) {		
+		if (!is_exclude) {
 			fprintf(hfile, "%s = %s\n", keys[i].c_str(),
 					attr_dict[keys[i]].to_str().c_str());
 		}
@@ -489,7 +489,7 @@ void TestUtil::dump_emdata(EMData * image, const string & filename)
 	fprintf(hfile, "nx = %d\n", image->get_xsize());
 	fprintf(hfile, "ny = %d\n", image->get_ysize());
 	fprintf(hfile, "nz = %d\n", image->get_zsize());
-	
+
 	fclose(hfile);
 	hfile = 0;
 
@@ -501,11 +501,11 @@ void TestUtil::dump_emdata(EMData * image, const string & filename)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	
+
 	size_t row_size = nx * sizeof(float);
 	size_t nxy = nx * ny;
 	float * rdata = image->get_data();
-	
+
 	for (int i = 0; i < nz; i++) {
 		for (int j = 0; j < ny; j++) {
 			fwrite(&rdata[i * nxy + j * nx], row_size, 1, dfile);
@@ -529,11 +529,11 @@ void TestUtil::make_image_file_by_mode(const string & filename,
     EMData * e = new EMData();
     e->set_size(nx, ny, nz);
 	bool is_complex = EMUtil::is_complex_type(datatype);
-	
+
 	e->set_attr("is_complex", (int)is_complex);
     e->set_attr("datatype", (int)datatype);
     float * data = e->get_data();
-    
+
 	int l = 0;
     for (int i = 0; i < nz; i++) {
         for (int j = 0; j < ny; j++) {
@@ -547,8 +547,8 @@ void TestUtil::make_image_file_by_mode(const string & filename,
 				l++;
             }
         }
-    }        
- 
+    }
+
     if (!is_complex) {
         e->write_image(filename, 0, image_type, false, 0, datatype, true);
     }
@@ -577,13 +577,13 @@ int TestUtil::verify_image_file_by_mode(const string & filename,
 										int nx, int ny, int nz)
 {
 	int err = 0;
-    
+
 	EMData * e = new EMData();
 	e->read_image(filename);
 
 	Dict attr_dict = e->get_attr_dict();
 	bool is_complex = EMUtil::is_complex_type(datatype);
-	
+
 	if (is_complex) {
 		nx = (nx+2);
 	}
@@ -592,29 +592,29 @@ int TestUtil::verify_image_file_by_mode(const string & filename,
         LOGERR("nx: %d != %d\n", nx, (int) attr_dict["nx"]);
         return 1;
     }
-    
+
     if (ny != (int) attr_dict["ny"]) {
         LOGERR("ny: %d != %d\n", ny, (int) attr_dict["ny"]);
         return 1;
     }
-    
+
     if (nz != (int) attr_dict["nz"]) {
         LOGERR("nz: %d != %d\n", nz, (int) attr_dict["nz"]);
         return 1;
     }
-	
+
 	if (datatype != (int) attr_dict["datatype"]) {
         LOGERR("datatype: %d != %d\n", datatype, (int) attr_dict["datatype"]);
         return 1;
     }
 
-    
+
 	if ((int)is_complex != (int) attr_dict["is_complex"]) {
         LOGERR("is_complex: %d != %d\n", is_complex, (int) attr_dict["is_complex"]);
         return 1;
     }
-	
-	
+
+
 	if (!is_complex) {
 		float * data = e->get_data();
 		int l = 0;
@@ -629,7 +629,7 @@ int TestUtil::verify_image_file_by_mode(const string & filename,
                     else if (mode == 2) {
                         d2 = (int)get_pixel_value_by_dist2(nx,ny,nz,k,j,i);
                     }
-                    
+
 					if ((int)data[l] != d2) {
                         LOGERR("(%d,%d,%d): %d != %d\n", i,j,k,(int)data[l], d2);
 						break;
@@ -640,8 +640,18 @@ int TestUtil::verify_image_file_by_mode(const string & filename,
 			}
 		}
 	}
-	
+
 	return err;
+}
+
+EMObject TestUtil::emobject_to_py(bool b)
+{
+	return EMObject(b);
+}
+
+EMObject TestUtil::emobject_to_py(unsigned int un)
+{
+	return EMObject(un);
 }
 
 EMObject TestUtil::emobject_to_py(int n)
@@ -696,8 +706,16 @@ EMObject TestUtil::emobject_strarray_to_py()
 	return EMObject(v);
 }
 
+EMObject TestUtil::emobject_to_py(Transform * t)
+{
+	return EMObject(t);
+}
+
+EMObject TestUtil::emobject_to_py(Ctf * ctf_)
+{
+	return EMObject(ctf_);
+}
 
 
-		
 
 
