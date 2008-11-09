@@ -1365,8 +1365,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		
 		self.desktop_frames = [EMDesktopFrame(self)]
 		self.current_desktop_frame = self.desktop_frames[0]
-		self.task_widget = EMDesktopTaskWidget(self,self.application)
-		self.application.show_specific(self.task_widget)
+		
+		
 		EMEventRerouter.__init__(self,self.current_desktop_frame)
 		
 		#print_node_hierarchy(self.current_desktop_frame)
@@ -1378,7 +1378,10 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		# resize finally so that the full screen is used
 		self.show()
 		self.move(0,0)
-		self.resize(self.appscreen.size())
+		self.resize(self.appscreen.availableGeometry().size())
+		
+		self.task_widget = EMDesktopTaskWidget(self,self.application)
+		self.application.show_specific(self.task_widget)
 		
 	def get_gl_context_parent(self): return self
 		

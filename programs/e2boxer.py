@@ -85,14 +85,6 @@ def get_out_file( f ):
 pl=()
 
 
-def get_param_options():
-	from emdatastorage import ParamDef
-	params = []
-	params.append(ParamDef(name="box size",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=128,choices=[]))
-	params.append(ParamDef(name="file_names",vartype="url",desc_short="file names",desc_long="The files you wish to box",property=None,defaultunits=None,choices=[]))
-	params.append(ParamDef(name="gui_or_auto",vartype="choice",desc_short="Interface or automatic?",desc_long="Whether to load the GUI or run automatic boxing using data stored in the database",property=None,defaultunits="gui",choices=["gui","auto"]))
-	return params
-
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <image>
@@ -105,7 +97,7 @@ for single particle analysis."""
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: ref, grid, db, cmd",default=[])
-	parser.add_option("--write_coord_file",action="store_true",help="Write data box files",default=False)
+	parser.add_option("--write_coord_files",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--write_box_images",action="store_true",help="Write data box files",default=False)
 	parser.add_option("--force","-f",action="store_true",help="Force overwrites old files",default=False)
 	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
@@ -131,198 +123,165 @@ for single particle analysis."""
 	parser.add_option("--var",action="store_true",default=False,help="Use variance flag (default is False)")
 	parser.add_option("--inv",action="store_true",default=False,help="Invert image flag (default is False)")
 
-	application = EMStandAloneApplication()
+	
+	
 	(options, args) = parser.parse_args()
-	if len(args)<1 :
-		from emform import EMFormModule
-		window = EMFormModule(params=get_param_options(),application=application)
-		window.setWindowTitle("e2boxer inputs")
-		#QtCore.QObject.connect(window.widget,QtCore.SIGNAL("emform_ok"),on_ok)
-		#QtCore.QObject.connect(window.widget,QtCore.SIGNAL("emform_cancel"),on_cancel)
-		application.show()
-		application.execute()
-		parser.error("Input image required")
-	else:
-		filenames = []
-		for i in range(0,len(args)):
-			filenames.append(args[i])
-	
-		logid=E2init(sys.argv)
+	logid=E2init(sys.argv)
+	filenames = []
+	for i in range(0,len(args)):
+		filenames.append(args[i])
 		
-		if options.merge_boxes_to_db == True:
-			#The user wants to add some boxes to the database
-			merge_boxes_as_manual_to_db(filenames)
+	options.filenames = filenames
+	
+	if options.merge_boxes_to_db == True:
+		#The user wants to add some boxes to the database
+		merge_boxes_as_manual_to_db(filenames)
+		sys.exit(1)
+		
+	if options.gui: options.running_mode = "gui"
+	elif options.auto: options.running_mode = "auto_db"
+	else: 
+		options.running_mode = None
+		print "unknown running mode"
+		# in the new framework there is not need to tell the options parser there is an error, because the boxer module is smart enough to handle it
+	
+	
+	boxes=[]
+	if len(options.auto)>0:
+		print "Autobox mode ",options.auto[0]
+		if "cmd" in options.auto:
+			print "commandline version"
+			
+			do_gauss_cmd_line_boxing(options)
+			print "cmdline autoboxer exiting"
+			
 			sys.exit(1)
+
+		elif "grid" in options.auto:
+			image_size=gimme_image_dimensions2D(filenames[0])
+			try:
+				dx=-options.overlap
+				if dx+options.boxsize<=0 : dx=0.0
+				dy=dx
+			except:
+				dy=(image_size[1]%options.boxsize)*options.boxsize/image_size[1]-1
+				dx=(image_size[0]%options.boxsize)*options.boxsize/image_size[0]-1
+				if dy<=0 : dy=((image_size[1]-1)%options.boxsize)*options.boxsize/image_size[1]-1
+				if dx<=0 : dx=((image_size[0]-1)%options.boxsize)*options.boxsize/image_size[0]-1
 			
-		if not options.gui and not options.auto:
-			parser.error("Atleast one of the --gui or --auto arguments are required.")
-			exit(1)
+	#		print image_size,dx,dy,options.boxsize
+			for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
+				for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
+					boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
+		else:
+			# this is fine the boxer module should be smart enough to handle it
+			pass
+
+	E2end(logid)
+	application = EMStandAloneApplication()
+	options.boxes = boxes
+	gui=EMBoxerModule(application,options)
+	QtCore.QObject.connect(gui, QtCore.SIGNAL("e2boxer_idle"), on_idle)
+	application.execute()
 		
-		# we need to know how big to make the boxes. If nothing is specified, but
-		# reference particles are, then we use the reference particle size
-		#if options.boxsize<5 :
-			#if not options.boxsize in good_box_sizes:
-				#print "Note: EMAN2 processing would be more efficient with a box_size of %d"%good_box_size(options.boxsize)
+	print "Exiting e2boxer"
+
+def on_idle():
+	# I may need this yet
+	pass
+
+def do_gauss_cmd_line_boxing(options):
+	
+	# commands to execute follow autbox_multi, except for getting parameters
+	#    from the db
+	project_db = EMProjectDB()
+
+	# set up a parameter dict for passing arguments to the autoboxer object.
+	#    dict keys will have to follow variable names in autoboxer.
+	parm_dict = {}
+
+	# parse cmd arguments
+	if (options.ccf_lo):
+		try:
+			parm_dict["thr_low"] = float(options.ccf_lo)
+		except ValueError:
+			print "could not convert ccf_lo value. bad value",options.ccf_lo,". exiting!"
+			sys.exit(1)
+
+	if (options.ccf_hi):
+		try:
+			parm_dict["thr_hgh"] = float(options.ccf_hi)
+		except ValueError:
+			print "could not convert ccf_hi value. bad value",options.ccf_hi,". exiting!"
+			sys.exit(1)
+
+	if (options.pix_in):
+		try:
+			parm_dict["pixel_input"] = float(options.pix_in)
+		except ValueError:
+			print "could not convert pix_in value. bad value",options.pix_in,". exiting!"
+			sys.exit(1)
+
+	if (options.pix_out):
+		try:
+			parm_dict["pixel_output"] = float(options.pix_out)
+		except ValueError:
+			print "could not convert pix_out value. bad value",options.pix_out,". exiting!"
+			sys.exit(1)
+
+	if (options.width):
+		try:
+			parm_dict["gauss_width"] = float(options.width)
+		except ValueError:
+			print "could not convert gaussian width. bad value",options.width,". exiting!"
+			sys.exit(1)
+
+	if not( -1 == options.boxsize):
+		try:
+			parm_dict["box_size"] = int(options.boxsize)
+		except ValueError:
+			print "could not convert boxsize. bad value",options.width,". exiting!"
+			sys.exit(1)
+	# this is necessary, since default boxsize is -1 (which segfaults peak_ccf) and is not overwritten
+	#    anywhere else....
+	else:
+		print "boxsize not set! exiting!"
+		sys.exit(1)
 		
-		boxes=[]
-		if len(options.auto)>0 :
-			print "Autobox mode ",options.auto[0]
+	if (options.var):
+		parm_dict["use_variance"] = True
+	else:
+		parm_dict["use_variance"] = False
 		
-			if "db" in options.auto:
-				print "auto data base boxing"
-			
-				autobox_multi(filenames,options)
-				#if len(filenames) == 1:
-					#autobox_single(filenames[0],options)
-					#exit(1)
-				#else:
-					#print "autoboxing using parallelism - you specified",options.parallel,"processors"
-					#autoboxer = AutoDBBoxer(filenames,options.parallel,options,options.force)
-					#try:
-						#from emimage import get_app
-					#except: 
-						#print "error, can't import get_app"
-						#exit(1)
-						
-					#a = get_app()
-					#autoboxer.go(a)
-					#a.exec_()
-					#print "done"
-						
-				exit(1)
+	if (options.inv):
+		parm_dict["invert"] = True
+	else:
+		parm_dict["invert"] = False
+
+	# PawelAutoBoxer is changed to allow passing in of a parameter dictionary
+	#    as additional argument....
 	
-			# cmd refers to commandline mode, i.e. parameters are passed in as commandline
-			#    arguments. these need to be parsed and passed into boxer....
-			elif "cmd" in options.auto:
-				print "commandline version"
-	
-				# commands to execute follow autbox_multi, except for getting parameters
-				#    from the db
-				project_db = EMProjectDB()
-	
-				# set up a parameter dict for passing arguments to the autoboxer object.
-				#    dict keys will have to follow variable names in autoboxer.
-				parm_dict = {}
-	
-				# parse cmd arguments
-				if (options.ccf_lo):
-					try:
-						parm_dict["thr_low"] = float(options.ccf_lo)
-					except ValueError:
-						print "could not convert ccf_lo value. bad value",options.ccf_lo,". exiting!"
-						sys.exit(1)
-	
-				if (options.ccf_hi):
-					try:
-						parm_dict["thr_hgh"] = float(options.ccf_hi)
-					except ValueError:
-						print "could not convert ccf_hi value. bad value",options.ccf_hi,". exiting!"
-						sys.exit(1)
-	
-				if (options.pix_in):
-					try:
-						parm_dict["pixel_input"] = float(options.pix_in)
-					except ValueError:
-						print "could not convert pix_in value. bad value",options.pix_in,". exiting!"
-						sys.exit(1)
-	
-				if (options.pix_out):
-					try:
-						parm_dict["pixel_output"] = float(options.pix_out)
-					except ValueError:
-						print "could not convert pix_out value. bad value",options.pix_out,". exiting!"
-						sys.exit(1)
-	
-				if (options.width):
-					try:
-						parm_dict["gauss_width"] = float(options.width)
-					except ValueError:
-						print "could not convert gaussian width. bad value",options.width,". exiting!"
-						sys.exit(1)
-	
-				if not( -1 == options.boxsize):
-					try:
-						parm_dict["box_size"] = int(options.boxsize)
-					except ValueError:
-						print "could not convert boxsize. bad value",options.width,". exiting!"
-						sys.exit(1)
-				# this is necessary, since default boxsize is -1 (which segfaults peak_ccf) and is not overwritten
-				#    anywhere else....
-				else:
-					print "boxsize not set! exiting!"
-					sys.exit(1)
-					
-				if (options.var):
-					parm_dict["use_variance"] = True
-				else:
-					parm_dict["use_variance"] = False
-					
-				if (options.inv):
-					parm_dict["invert"] = True
-				else:
-					parm_dict["invert"] = False
-	
-				# PawelAutoBoxer is changed to allow passing in of a parameter dictionary
-				#    as additional argument....
-				
-				autoboxer = PawelAutoBoxer(None,parm_dict)
-	
-				for image_name in filenames:
-					print "cmd autoboxing",image_name
-					boxable = Boxable(image_name,None,autoboxer)
-					
-					if boxable.is_excluded():
-						print "Image",image_name,"is excluded and being ignored"
-						continue
-			
-					autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-					# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-					autoboxer.auto_box(boxable,False)
-					if options.write_coord_file:
-						boxable.write_coord_file(-1,options.force)
-					if options.write_box_images:
-						boxable.write_box_images(-1,options.force)
-	
-				
+	autoboxer = PawelAutoBoxer(None,parm_dict)
+
+	for image_name in options.filenames:
+		print "cmd autoboxing",image_name
+		boxable = Boxable(image_name,None,autoboxer)
 		
-				project_db.close()
-	
-				print "cmdline autoboxer exiting"
-	
-				# done
-				
-				sys.exit(1)
-	
-			elif "grid" in options.auto:
-				image_size=gimme_image_dimensions2D(filenames[0])
-				try:
-					dx=-options.overlap
-					if dx+options.boxsize<=0 : dx=0.0
-					dy=dx
-				except:
-					dy=(image_size[1]%options.boxsize)*options.boxsize/image_size[1]-1
-					dx=(image_size[0]%options.boxsize)*options.boxsize/image_size[0]-1
-					if dy<=0 : dy=((image_size[1]-1)%options.boxsize)*options.boxsize/image_size[1]-1
-					if dx<=0 : dx=((image_size[0]-1)%options.boxsize)*options.boxsize/image_size[0]-1
-				
-		#		print image_size,dx,dy,options.boxsize
-				for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
-					for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
-						boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
-			else:
-				print "unknown autoboxing method:",options.auto
-				exit(1)
-	
-		E2end(logid)
-	
-		
-		# invoke the GUI if requested
-		if options.gui:
-			gui=EMBoxerModule(application,filenames,boxes,options.boxsize,options.method)
-			gui.run()
-			
-		print "Exiting e2boxer"
-	
+		if boxable.is_excluded():
+			print "Image",image_name,"is excluded and being ignored"
+			continue
+
+		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
+		autoboxer.auto_box(boxable,False)
+		if options.write_coord_files:
+			boxable.write_coord_file(-1,options.force)
+		if options.write_box_images:
+			boxable.write_box_images(-1,options.force)
+
+	project_db.close()
+	#done
+
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
@@ -363,86 +322,7 @@ def merge_boxes_as_manual_to_db(filenames):
 		set_idd_key_entry(filename,"manual_boxes",manualboxes)
 
 
-def autobox_multi(image_names,options):
-	project_db = EMProjectDB()
-	for image_name in image_names:
-		print "autoboxing",image_name
-		
-		try:
-			data = project_db[get_idd_key(image_name)]
-			
-			trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
-			autoboxer = SwarmAutoBoxer(None)
-			autoboxer.become(trim_autoboxer)
-			print 'using cached autoboxer db'
-		except:
-			try:
-				print "using most recent autoboxer"
-				if project_db["current_autoboxer_type"]=="Gauss":
-					trim_autoboxer = project_db["current_autoboxer"]
-					autoboxer = PawelAutoBoxer(None)
-					autoboxer.become(trim_autoboxer)
-				else:
-					trim_autoboxer = project_db["current_autoboxer"]
-					autoboxer = SwarmAutoBoxer(None)
-					autoboxer.become(trim_autoboxer)
-			except:
-				print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-				continue
-		
-		boxable = Boxable(image_name,None,autoboxer)
-		
-		if boxable.is_excluded():
-			print "Image",image_name,"is excluded and being ignored"
-			continue
-		
-		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-		autoboxer.auto_box(boxable,False)
-		if options.write_coord_file:
-			boxable.write_coord_file(-1,options.force)
-		if options.write_box_images:
-			boxable.write_box_images(-1,options.force)
-	
-	
-	project_db.close()
 
-def autobox_single(image_name,options):
-	
-	project_db = EMProjectDB()
-	try:
-		data = project_db[get_idd_key(image_name)]
-		trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
-		autoboxer = SwarmAutoBoxer(None)
-		autoboxer.become(trim_autoboxer)
-		print 'using cached autoboxer db'
-	except:
-		try:
-			trim_autoboxer = project_db["current_autoboxer"]
-			autoboxer = SwarmAutoBoxer(None)
-			autoboxer.become(trim_autoboxer)
-		except:
-			print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
-			project_db.close()
-			return 0
-	
-	boxable = Boxable(image_name,None,autoboxer)
-	if boxable.is_excluded():
-		print "Image",image_name,"is excluded and being ignored"
-		return
-	
-	autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
-	# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
-	autoboxer.auto_box(boxable,False)
-	if options.write_coord_file:
-		print "writing box coordinates"
-		boxable.write_coord_file(-1,options.force)
-	if options.write_box_images:
-		print "writing boxed images"
-		boxable.write_box_images(-1,options.force)
-	
-	project_db.close()
-	return 1
 	
 class AutoDBBoxer(QtCore.QObject):
 	'''
@@ -493,7 +373,7 @@ class AutoDBBoxer(QtCore.QObject):
 		args = QtCore.QStringList()
 		args.append(self.image_names[self.currentidx])
 		args.append("--auto=db")
-		if self.options.write_coord_file != False:
+		if self.options.write_coord_files != False:
 			args.append("--write_coord_file")
 		if self.options.write_box_images != False:
 			args.append("--write_box_images")
@@ -901,9 +781,185 @@ class EMBoxerModuleEventsMediator:
 		Gets the shape string currently used for creating shapes for the 2D image
 		'''
 		return self.parent.get_shape_string()
+
+
+
+class DatabaseAutoBoxer(QtCore.QObject):
+	'''
+	Initialize this with the application
+	Then call the member function go (with the options)
+	When this object is done it will emit "db_auto_boxing_done"
+	'''
+	def __init__(self,application):
+		QtCore.QObject.__init__(self)
+		self.application = application
+		self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat"]
+		
+
+	def go(self,options):
+		options_ready = True
+		for req_opt in self.required_options:
+			if not hasattr(options,req_opt):
+				options_ready = False
+				self.__run_form_initialization(options)
+				return
+			
+		if options_ready:
+			self.autobox_multi(options)
+
+	def __run_form_initialization(self,options):
+		from emform import EMFormModule
+		self.form = EMFormModule(self.get_params(options),self.application)
+		self.form.setWindowTitle("Auto boxing parameters")
+		self.application.show_specific(self.form)
+		emitter = self.application.get_qt_emitter(self.form)
+		print emitter
+		print QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		print QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+
+	def on_form_ok(self,params):
+		options = EmptyObject()
+		for key in params.keys():
+			setattr(options,key,params[key])
+			
+		print params
+		print options
+		
+		options_ready = True
+		for req_opt in self.required_options:
+			if not hasattr(options,req_opt):
+				print "a parameters is missing"
+				return
+		
+		self.application.close_specific(self.form)
+		self.autobox_multi(options)
+		
+	def on_form_cancel(self):
+		self.application.close_specific(self.form)
 	
+	def get_params(self,options):
+		from emdatastorage import ParamDef
+		
+		
+		try: filenames = options.filenames
+		except: filenames = []
+		try: boxsize = options.boxsize
+		except: boxsize = 128
+		try: fo = options.force
+		except: fo = False
+		try: wc = options.write_coord_files
+		except: wc = False
+		try: wb = options.write_box_images
+		except: wb = True
+		try: norm = options.normproc
+		except: norm = "normalize.edgemean"
+		try: output = options.outformat
+		except: output = "hdf"
 	
-class EMBoxerModule:
+		params = []
+		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=filenames,choices=[]))
+		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="The output box size",property=None,defaultunits=boxsize,choices=None)
+		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=fo,choices=None)
+		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=wc,choices=None)
+		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=wb,choices=None)
+		pn =  ParamDef(name="normproc",vartype="stringlist",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=norm,choices=["normalize","normalize.edgemean","none"])
+		pop = ParamDef(name="outformat",vartype="stringlist",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=output,choices=["img","hdf"])
+		params.append([pbox,pfo])
+		params.append([pwc,pwb])
+		params.append(pn)
+		params.append(pop)
+		
+		return params
+
+	def autobox_multi(self,options):
+		image_names = options.filenames
+		project_db = EMProjectDB()
+		for image_name in image_names:
+			print "autoboxing",image_name
+			
+			try:
+				data = project_db[get_idd_key(image_name)]
+				
+				trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+				autoboxer = SwarmAutoBoxer(None)
+				autoboxer.become(trim_autoboxer)
+				print 'using cached autoboxer db'
+			except:
+				try:
+					print "using most recent autoboxer"
+					if project_db["current_autoboxer_type"]=="Gauss":
+						trim_autoboxer = project_db["current_autoboxer"]
+						autoboxer = PawelAutoBoxer(None)
+						autoboxer.become(trim_autoboxer)
+					else:
+						trim_autoboxer = project_db["current_autoboxer"]
+						autoboxer = SwarmAutoBoxer(None)
+						autoboxer.become(trim_autoboxer)
+				except:
+					print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
+					continue
+			
+			boxable = Boxable(image_name,None,autoboxer)
+			
+			if boxable.is_excluded():
+				print "Image",image_name,"is excluded and being ignored"
+				continue
+			
+			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
+			autoboxer.auto_box(boxable,False)
+			if options.write_coord_files:
+				boxable.write_coord_file(options.boxsize,options.force)
+			if options.write_box_images:
+				if options.normproc == "none":normalize=False
+				else: normalize=True
+				boxable.write_box_images(options.boxsize,options.force,imageformat=options.outformat,normalize=normalize,norm_method=options.normproc)
+		
+		project_db.close()
+		self.emit(QtCore.SIGNAL("db_auto_boxing_done"))
+
+	def autobox_single(self,image_name,options):
+		
+		project_db = EMProjectDB()
+		try:
+			data = project_db[get_idd_key(image_name)]
+			trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+			autoboxer = SwarmAutoBoxer(None)
+			autoboxer.become(trim_autoboxer)
+			print 'using cached autoboxer db'
+		except:
+			try:
+				trim_autoboxer = project_db["current_autoboxer"]
+				autoboxer = SwarmAutoBoxer(None)
+				autoboxer.become(trim_autoboxer)
+			except:
+				print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
+				project_db.close()
+				return 0
+		
+		boxable = Boxable(image_name,None,autoboxer)
+		if boxable.is_excluded():
+			print "Image",image_name,"is excluded and being ignored"
+			return
+		
+		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
+		autoboxer.auto_box(boxable,False)
+		if options.write_coord_files:
+			print "writing box coordinates"
+			boxable.write_coord_file(-1,options.force)
+		if options.write_box_images:
+			print "writing boxed images"
+			boxable.write_box_images(-1,options.force)
+		
+		project_db.close()
+		return 1
+
+
+class EmptyObject:
+	def __init__(self):
+		pass
+class EMBoxerModule(QtCore.QObject):
 	'''
 	Cleaning in progress
 	'''
@@ -912,11 +968,100 @@ class EMBoxerModule:
 	MANUALLY_ADDING = 2
 	FANCY_MODE = 'fancy'
 	PLAIN_MODE = 'plain'
-	def __init__(self,application,image_names,boxes,box_size=-1, init_method="Swarm"):
+	def __init__(self,application,options): #image_names,boxes,box_size=-1, init_method="Swarm"):
+		QtCore.QObject.__init__(self)
 		"""Implements the 'boxer' GUI."""
 		self.application = application
 		
-		self.__alt_init__(image_names,boxes,box_size,init_method)
+		if len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
+			self.__run_form_initialization(options)
+		elif options.running_mode == "gui":
+			self.__gui_init(options)
+		elif options.running_mode == "auto_db":
+			self.__auto_box_from_db(options)
+		else: # if the first if statement is false then one of the second must be true
+			print "this shouldn't happen"
+	
+	def __run_form_initialization(self,options):
+		from emform import EMFormModule
+		self.form = EMFormModule(self.get_params(options),self.application)
+		self.form.setWindowTitle("Boxer input variables")
+		self.application.show_specific(self.form)
+		emitter = self.application.get_qt_emitter(self.form)
+		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		
+	def on_form_ok(self,params):
+		
+		options = EmptyObject()
+		for key in params.keys():
+			setattr(options,key,params[key])
+			
+		print params
+		print options
+		
+		if len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
+			print "we have to keep the dialog open"
+			return
+		elif options.running_mode == "gui":
+			self.__disconnect_form_signals()
+			self.application.close_specific(self.form)
+			self.__gui_init(options)
+		elif options.running_mode == "auto_db":
+			self.__disconnect_form_signals()
+			self.application.close_specific(self.form)
+			self.__auto_box_from_db(options)
+			
+	def __disconnect_form_signals(self):
+		emitter = self.application.get_qt_emitter(self.form)
+		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)	
+		
+	def on_form_cancel(self):
+		# this means e2boxer isn't doing anything. The application should probably be told to close the EMBoxerModule
+		self.__disconnect_form_signals()
+		self.application.close_specific(self.form)
+		self.emit(QtCore.SIGNAL("e2boxer_idle"))
+	
+	def __auto_box_from_db(self,options):
+
+		print "auto data base boxing"
+		
+		self.dab = DatabaseAutoBoxer(self.application)
+		QtCore.QObject.connect(self.dab,QtCore.SIGNAL("db_auto_boxing_done"),self.on_db_autoboxing_done)
+		
+		self.dab.go(options)
+#		autobox_multi(options)
+		# this is the old parallized way, it was slower than doing it in a single program!
+		
+		#if len(filenames) == 1:
+			#autobox_single(filenames[0],options)
+			#exit(1)
+		#else:
+			#print "autoboxing using parallelism - you specified",options.parallel,"processors"
+			#autoboxer = AutoDBBoxer(filenames,options.parallel,options,options.force)
+			#try:
+				#from emimage import get_app
+			#except: 
+				#print "error, can't import get_app"
+				#exit(1)
+				
+			#a = get_app()
+			#autoboxer.go(a)
+			#a.exec_()
+			#print "done"
+		
+		# this means e2boxer isn't doing anything. The application should probably be told to close the EMBoxerModule
+#		self.emit(QtCore.SIGNAL("e2boxer_idle"))
+
+	def on_db_autoboxing_done(self):
+		self.emit(QtCore.SIGNAL("e2boxer_idle"))
+	
+	def __gui_init(self,options):
+		
+		if not hasattr(options,"boxes"): options.boxes = [] # this is a temporary workaround
+		
+		self.__initialize_from_parms(options.filenames,options.boxes,options.boxsize,options.method)
 		
 		self.__init_guiim() # initialise the 2D image display
 		#self.__init_guimx() # intialize the matrix display
@@ -930,7 +1075,34 @@ class EMBoxerModule:
 			self.autoboxer.auto_box(self.boxable,False) # Do the automatic autoboxing - this makes the user see results immediately
 		self.box_display_update() # update displays to show boxes etc
 
-	def __alt_init__(self,image_names,boxes=[],box_size=-1, default_method="Swarm"):
+	def get_params(self,options=None):
+		'''
+		Gets the params in order to run the Form mudule. This happens when no filenames have been specified, for example. Only works for the Swarm mode, because the other mode has broken with conventions etc.
+		'''
+		
+		if options == None:
+			filenames = None
+			box_size = 128
+			running_mode = "gui"
+			mode = "Swarm"
+		else:
+			filenames = options.filenames
+			box_size = options.boxsize
+			if box_size == -1: box_size = 128
+			running_mode = options.running_mode
+			if running_mode == None:
+				running_mode = "gui"
+			mode = "Swarm"
+			
+		from emdatastorage import ParamDef
+		params = []
+		params.append(ParamDef(name="filenames",vartype="url",desc_short="File names",desc_long="The files you wish to box",property=None,defaultunits=filenames,choices=[]))
+		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=box_size,choices=[]))
+		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits=mode,choices=["Swarm"]))
+		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Boxing mode",desc_long="Whether to load the GUI or run automatic boxing based on information stored in the database",property=None,defaultunits=running_mode,choices=["gui","auto_db"]))
+		return params
+
+	def __initialize_from_parms(self,image_names,boxes=[],box_size=-1, default_method="Swarm"):
 		
 		# initialize important autoboxer related variables
 		self.dynapix = False
@@ -1870,32 +2042,6 @@ class EMBoxerModule:
 	
 			#if isinstance(self.guimxit,EMImageRotorModule): self.guimxit.set_shapes(othershapes,self.get_image_thumb_shrink(),self.current_image_idx)
 		self.update_all_image_displays()
-		
-	def run(self):
-		"""If you make your own application outside of this object, you are free to use
-		your own local app.exec_(). This is a convenience for boxer-only programs."""
-
-		self.application.execute()
-		
-		self.boxable.cache_exc_to_db()
-		project_db = EMProjectDB()
-		project_db.close()
-		
-
-		E2saveappwin("boxer","imagegeom",self.guiim)
-		E2saveappwin("boxer","matrixgeom",self.guimx)
-		E2saveappwin("boxer","controlgeom",self.guictl)
-		#E2setappval("boxer","matrixnperrow",self.guimx.nperrow)
-		try:
-			E2setappval("boxer","imcontrol",self.guiim.inspector.isVisible())
-			if self.guiim.inspector.isVisible() : E2saveappwin("boxer","imcontrolgeom",self.guiim.inspector)
-		except : E2setappval("boxer","imcontrol",False)
-		try:
-			E2setappval("boxer","mxcontrol",self.guimx.inspector.isVisible())
-			if self.guimx.inspector.isVisible() : E2saveappwin("boxer","mxcontrolgeom",self.guimx.inspector)
-		except : E2setappval("boxer","mxcontrol",False)
-		
-		return (self.get_boxes())
 
 	def force_autobox(self,bool):
 		'''
@@ -2263,6 +2409,24 @@ class AutoBoxerSelectionsMediator:
 		self.parent.clear_displays()
 		return new_name
 
+	def closeEvent(self,event=None):
+		self.boxable.cache_exc_to_db()
+		project_db = EMProjectDB()
+		project_db.close()
+		
+
+		E2saveappwin("boxer","imagegeom",self.guiim)
+		E2saveappwin("boxer","matrixgeom",self.guimx)
+		E2saveappwin("boxer","controlgeom",self.guictl)
+		#E2setappval("boxer","matrixnperrow",self.guimx.nperrow)
+		try:
+			E2setappval("boxer","imcontrol",self.guiim.inspector.isVisible())
+			if self.guiim.inspector.isVisible() : E2saveappwin("boxer","imcontrolgeom",self.guiim.inspector)
+		except : E2setappval("boxer","imcontrol",False)
+		try:
+			E2setappval("boxer","mxcontrol",self.guimx.inspector.isVisible())
+			if self.guimx.inspector.isVisible() : E2saveappwin("boxer","mxcontrolgeom",self.guimx.inspector)
+		except : E2setappval("boxer","mxcontrol",False)
 
 		
 def histogram1d( data, nbin, presize=0 ) :

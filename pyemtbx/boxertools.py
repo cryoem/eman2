@@ -1623,7 +1623,7 @@ class Boxable:
 	def get_image_file_name(self,imageformat="hdf"):
 		from os import path
 		name,suffix = path.splitext( self.image_name )
-		return name+"_particles.hdf"
+		return name+"_particles."+imageformat
 
 	def write_box_images(self,box_size=-1,force=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",verbose=True):
 		'''

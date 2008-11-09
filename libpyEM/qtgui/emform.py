@@ -36,6 +36,7 @@ from PyQt4 import QtGui,QtCore
 import os
 from emselector import EMSelectorModule
 from emapplication import EMQtWidgetModule
+from EMAN2 import Util
 
 class EMFormModule(EMQtWidgetModule):
 	'''
@@ -48,6 +49,9 @@ class EMFormModule(EMQtWidgetModule):
 		self.application = application
 		self.widget = EMFormWidget(self,params)
 		EMQtWidgetModule.__init__(self,self.widget,application)
+		
+	def get_desktop_hint(self):
+		return "form"
 		
 		
 
@@ -73,6 +77,10 @@ class EMFormWidget(QtGui.QWidget):
 		self.__auto_incorporate["choice"] = self.__incorporate_choice
 		self.__auto_incorporate["string"] = self.__incorporate_string
 		self.__auto_incorporate["text"] = self.__incorporate_text
+		self.__auto_incorporate["boolean"] = self.__incorporate_boolean
+		self.__auto_incorporate["stringlist"] = self.__incorporate_stringlist
+		self.__auto_incorporate["intlist"] = self.__incorporate_intlist
+		self.__auto_incorporate["floatlist"] = self.__incorporate_floatlist
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.__incorporate_params(self.params,self.vbl)
@@ -80,7 +88,26 @@ class EMFormWidget(QtGui.QWidget):
 			
 	def __incorporate_params(self,params,layout):
 		for param in self.params:
+			try:
+				if len(param) != 1:
+					hbl=QtGui.QHBoxLayout()
+					for iparam in param:
+						self.__auto_incorporate[iparam.vartype](iparam,hbl)
+					layout.addLayout(hbl)
+					continue
+					
+			except: pass
 			self.__auto_incorporate[param.vartype](param,layout)
+	
+	def __incorporate_boolean(self,param,layout):
+		hbl=QtGui.QHBoxLayout()
+		hbl.setMargin(0)
+		hbl.setSpacing(2)
+		check_box = QtGui.QCheckBox(str(param.desc_short),self)
+		check_box.setChecked(bool(param.defaultunits))
+		hbl.addWidget(check_box)
+		layout.addLayout(hbl)
+		self.output_writers.append(BoolParamWriter(param.name,check_box))
 	
 	def __incorporate_string(self,param,layout):
 		hbl=QtGui.QHBoxLayout()
@@ -131,6 +158,7 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.setSpacing(2)
 				
 		text_edit = QtGui.QTextEdit("",self)
+		text_edit.setReadOnly(True)
 		text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
 		text_edit.setText(param.defaultunits)
 		hbl.addWidget(text_edit)
@@ -197,7 +225,77 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setLayout(hbl)
 		layout.addWidget(groupbox)
 		self.output_writers.append(ChoiceParamWriter(param.name,buttons,type(param.choices[0])))
+	
+	def __incorporate_floatlist(self,param,layout):
+		hbl=QtGui.QHBoxLayout()
+		hbl.setMargin(0)
+		hbl.setSpacing(2)
 		
+		hbl=QtGui.QHBoxLayout()
+		label = QtGui.QLabel(param.desc_short,self)
+		label.setToolTip(param.desc_long)
+		hbl.addWidget(label)
+				
+		combo = QtGui.QComboBox(self)
+		idx_default = 0
+		for i,float_p in enumerate(param.choices):
+			combo.addItem(str(float_p))
+			
+			if str(float_p) == str(param.defaultunits):
+				idx_default = i
+		combo.setCurrentIndex(idx_default)
+
+		hbl.addWidget(combo)
+		layout.addLayout(hbl)
+		
+		self.output_writers.append(FloatlistParamWriter(param.name,combo))
+	
+	def __incorporate_intlist(self,param,layout):
+		hbl=QtGui.QHBoxLayout()
+		hbl.setMargin(0)
+		hbl.setSpacing(2)
+		
+		hbl=QtGui.QHBoxLayout()
+		label = QtGui.QLabel(param.desc_short,self)
+		label.setToolTip(param.desc_long)
+		hbl.addWidget(label)
+				
+		combo = QtGui.QComboBox(self)
+		idx_default = 0
+		for i,integer in enumerate(param.choices):
+			combo.addItem(str(integer))
+			if str(integer) == str(param.defaultunits):
+				idx_default = i
+		combo.setCurrentIndex(idx_default)
+
+		hbl.addWidget(combo)
+		layout.addLayout(hbl)
+		
+		self.output_writers.append(IntlistParamWriter(param.name,combo))
+	
+	def __incorporate_stringlist(self,param,layout):
+		hbl=QtGui.QHBoxLayout()
+		hbl.setMargin(0)
+		hbl.setSpacing(2)
+		
+		hbl=QtGui.QHBoxLayout()
+		label = QtGui.QLabel(param.desc_short,self)
+		label.setToolTip(param.desc_long)
+		hbl.addWidget(label)
+				
+		combo = QtGui.QComboBox(self)
+		idx_default = 0
+		for i,string in enumerate(param.choices):
+			combo.addItem(string)
+			if string == param.defaultunits:
+				idx_default = i
+		combo.setCurrentIndex(idx_default)
+
+		hbl.addWidget(combo)
+		layout.addLayout(hbl)
+		
+		self.output_writers.append(StringlistParamWriter(param.name,combo))
+	
 	def __add_ok_cancel_buttons(self,layout):
 		hbl=QtGui.QHBoxLayout()
 		label = QtGui.QLabel("Form commands:",self)
@@ -215,11 +313,43 @@ class EMFormWidget(QtGui.QWidget):
 	def ok_pressed(self,bool):
 		ret = {}
 		for output in self.output_writers: output.write_data(ret)
-		#print ret
 		self.emit(QtCore.SIGNAL("emform_ok"),ret)
 		
 	def cancel_pressed(self,bool):
 		self.emit(QtCore.SIGNAL("emform_cancel"))
+
+class BoolParamWriter:
+	def __init__(self,param_name,check_box):
+		self.param_name = param_name
+		self.check_box = check_box
+		
+	def write_data(self,dict):
+		dict[self.param_name] = bool(self.check_box.isChecked())
+
+class FloatlistParamWriter:
+	def __init__(self,param_name,combo):
+		self.param_name = param_name
+		self.combo = combo
+		
+	def write_data(self,dict):
+		dict[self.param_name] = float(self.combo.currentText())
+
+class IntlistParamWriter:
+	def __init__(self,param_name,combo):
+		self.param_name = param_name
+		self.combo = combo
+		
+	def write_data(self,dict):
+		dict[self.param_name] = int(self.combo.currentText())
+
+class StringlistParamWriter:
+	def __init__(self,param_name,combo):
+		self.param_name = param_name
+		self.combo = combo
+		
+	def write_data(self,dict):
+		dict[self.param_name] = str(self.combo.currentText())
+
 
 class StringParamWriter:
 	def __init__(self,param_name,line_edit):
@@ -320,12 +450,21 @@ def get_example_params():
 	params = []
 	params.append(ParamDef(name="box size",vartype="int",desc_short="int",desc_long="An integer value",property=None,defaultunits=128,choices=[]))
 	params.append(ParamDef(name="apix",vartype="float",desc_short="float",desc_long="A floating point value",property=None,defaultunits=1.0,choices=[]))
-	params.append(ParamDef(name="model",vartype="string",desc_short="string",desc_long="A string value",property=None,defaultunits="Three thousand series",choices=None))
+	ps = ParamDef(name="model",vartype="string",desc_short="string",desc_long="A string value",property=None,defaultunits="Three thousand series",choices=None)
+	params.append(ParamDef(name="Is there a God?",vartype="boolean",desc_short="boolean",desc_long="Something that is true or false",property=None,defaultunits=Util.get_irand(0,1),choices=None))
+	p1 = ParamDef(name="True or false",vartype="boolean",desc_short="boolean",desc_long="Something that is true or false",property=None,defaultunits=Util.get_irand(0,1),choices=None)
+	p2 = ParamDef(name="integer length",vartype="int",desc_short="int",desc_long="An integer value",property=None,defaultunits=128,choices=[])
+	params.append([p1,p2,ps])
 	params.append(ParamDef(name="file_names",vartype="url",desc_short="url",desc_long="This is an editable list of file names with convenient browse and clear buttons",property=None,defaultunits=["tmp.txt","other.mrc"],choices=[]))
 	params.append(ParamDef(name="comparitor",vartype="choice",desc_short="choice",desc_long="This is a string choice",property=None,defaultunits="frc",choices=["frc","phase","sqeuclidean"]))
 	params.append(ParamDef(name="lucky number",vartype="choice",desc_short="choice",desc_long="This is to demonstrate that the type of choice is preserved. When you click ok the value in the return dictionary corresponding to this form entry will be an integer",property=None,defaultunits=3,choices=[1,2,3,98]))
+	params.append(ParamDef(name="Normalization method",vartype="stringlist",desc_short="stringlist",desc_long="Choose from a list of strings",property=None,defaultunits="normalize",choices=["normalize","normalize.edgemean","normalize.other"]))
+	
+	pi = ParamDef(name="Int 1 to 10",vartype="intlist",desc_short="intlist",desc_long="Choose from a list of ints",property=None,defaultunits=5,choices=[1,2,3,4,5,6,7,8,9,10])
+	pf = ParamDef(name="Float 1 to 10",vartype="floatlist",desc_short="floatlist",desc_long="Choose from a list of floats",property=None,defaultunits=2.1,choices=[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1,10.1])
+	params.append([pi,pf])
 	params.append(ParamDef(name="song",vartype="text",desc_short="text",desc_long="A potentially very long description",property=None,defaultunits="Jack and Jill went up the hill\nTo fetch a pail of water.\nJack fell down and broke his crown,\nAnd Jill came tumbling after.",choices=None))
-
+	
 	return params
 
 def on_ok(dict):

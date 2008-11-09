@@ -38,6 +38,27 @@ import platform
 from emimageutil import EMParentWin,EventsEmitterAndReciever
 from EMAN2 import remove_directories_from_name
 
+class EMModule:
+	'''
+	An EM module is something that provides a form data (list of ParamdDef objects) in order to gather input
+	'''
+	def __init__(self):
+		pass
+	
+	def get_params(self):
+		'''
+		Must supply this. Should return a list of ParamDef objects
+		'''
+		raise
+	
+	def get_blurb(self):
+		'''
+		Must supply this, should return a list of ParamDef objects. If the blurb is only a string
+		'''
+		raise
+	
+	
+	
 class EMGUIModule(EventsEmitterAndReciever):
 	FTGL = "ftgl"
 	GLUT = "glut"
