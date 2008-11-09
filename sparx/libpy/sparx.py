@@ -29,7 +29,6 @@
 #
 #
 from utilities       import *
-from stefan	     import *
 from filter          import *
 from projection      import *
 from fundamentals    import *
