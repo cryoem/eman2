@@ -1,32 +1,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 /* This program runs a set of speed tests on the current machine
@@ -35,11 +35,11 @@
  * have at least 1 unloaded processor, and minimal i/o occuring when this
  *  is run. It will give a single value which should be generally proportional
  * to how fast refine will run on a given computer. It is a 'real world' test,
- * in that it simulates a variety of actual operations performed by a 
+ * in that it simulates a variety of actual operations performed by a
  * refinement procedure. Don't compare values given by speed test in
  * different versions of EMAN, since the underlying routines may be
  * improved with time.
- *  
+ *
  * */
 
 #include <ctime>
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 {
 	int SIZE = 96;
     int NTT = 500;
- 
+
     int slow = 0;
     int low = 0;
     int big = 0;
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     pat.process_inplace("mask.sharp", Dict("outer_radius", pat.get_xsize()/2));
 
     EMData *data[5000];
-    
+
     for (int i = 0; i < NTT; i++) {
 		data[i] = pat.copy();
 		float *d = data[i]->get_data();
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 		data[i]->update();
 		data[i]->process_inplace("normalize.circlemean");
 		data[i]->process_inplace("mask.sharp", Dict("outer_radius", data[i]->get_xsize()/2));
-	
+
 		if (i < 5) {
 			data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
 		}
@@ -139,13 +139,13 @@ int main(int argc, char *argv[])
 
     if (low) {
 		printf("Low level tests starting. Please note that compiling with optimization may invalidate certain tests. Also note that overhead is difficult to compensate for, so in most cases it is not dealt with.\n");
-	
+
 		float t1 = (float) clock();
 		for (float fj = 0; fj < 500.0; fj += 1.0) {
 			for (int i = 0; i < NTT / 2.0; i += 1)
 				data[i]->dot(data[i + NTT / 2]);
 		}
-	
+
 		float t2 = (float) clock();
 		float ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 1: %d, %d x %d dot()s in %1.1f sec  %1.1f/sec-> ~%1.2f mflops\n",
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
 		printf("Baseline 1a: %d, %d x %d optimized cached dot()s in %1.1f s %1.1f/s-> ~%1.2f mflops\n",
 			   500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti),
 			   SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti));
-	
+
 		t1 = (float) clock();
 		for (int j = 0; j < 500; j++) {
 			for (int i = 0; i < NTT / 2; i++) {
@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
-	
+
 		t2 = (float) clock();
 		ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 5f: %d, %d x %d mult in %1.1f sec -> ~%1.2f mmult/sec (cached)\n",
@@ -328,7 +328,7 @@ int main(int argc, char *argv[])
 
 		data[0]->update();
 		t1 = (float) clock();
-	
+
 		for (int i = 0; i < NTT * 100; i++) {
 			EMData *cp = data[i % NTT]->copy();
 			Dict d("n",2);
@@ -353,7 +353,7 @@ int main(int argc, char *argv[])
 		t2 = (float) clock();
 		ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 7:  %1.1f sec %f ffts/sec\n", ti, NTT * 1000 / ti);
-	
+
 		d1a = d1a->copy();
 		t1 = (float) clock();
 
@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
 		return 0;
     }
 
-    
+
     EMData *tmp = 0;
     float t1 = (float) clock();
     for (int i = 0; i < 3; i++) {
@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
 				tmp = data[i]->align("rtf_best", data[j],
 									 Dict("flip", (EMData*)0,"maxshift", SIZE/8));
 			}
-			else if (slow == 1) {			
+			else if (slow == 1) {
 				Dict d;
 				d["flip"] = (EMData*)0;
 				d["maxshift"] = SIZE/8;
@@ -415,7 +415,7 @@ int main(int argc, char *argv[])
 		printf("An AMD Opteron 248 2.2Ghz SF ------------------------------------ 1870\n");
 		printf("An Intel Xeon E5335 2.0Ghz SF ----------------------------------- 2010\n");
 		printf("An AMD Opteron 280 2.4Ghz SF ------------------------------------ 2130\n");
-		printf("An Intel Xeon E5430 2.66Ghz SF ---------------------------------- 2700\n");
+		printf("An Intel Xeon E5430 2.66Ghz SF ---------------------------------- 2800\n");
 		printf("An Intel Xeon X5355 2.66Ghz SF ---------------------------------- 2920\n");
 		printf("An Intel Xeon X5460 2.8Ghz SF ----------------------------------- 3320\n");
 		printf("\nYour machines speed factor = %1.1f\n", 25000.0 / ti);
@@ -430,5 +430,5 @@ int main(int argc, char *argv[])
     }
     return 0;
 }
-       
-    
+
+
