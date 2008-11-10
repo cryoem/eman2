@@ -647,20 +647,20 @@ void test_attr()
 	delete ctf11;
 	delete img2;
 	
-	Ctf* ctf2  = new EMAN2Ctf();
-	ctf2->from_vector(v1);
-	img->set_attr("ctf2", ctf2);
-	delete ctf2;
-	img->write_image("test_image2.hdf");
-	
-	EMData* img3 = new EMData("test_image2.hdf");
-	Ctf* ctf22 = img3->get_attr("ctf2");
-	string s2 = ctf22->to_string();
-	cout << "ctf2 string: " << s2 << endl;
-	if(success && s2 != "E0.1 1.1 2.2 3.3 4.4 5.5") {
-		success = false;
-	}
-	delete ctf22;
+//	Ctf* ctf2  = new EMAN2Ctf();
+//	ctf2->from_vector(v1);
+//	img->set_attr("ctf2", ctf2);
+//	delete ctf2;
+//	img->write_image("test_image2.hdf");
+//	
+//	EMData* img3 = new EMData("test_image2.hdf");
+//	Ctf* ctf22 = img3->get_attr("ctf2");
+//	string s2 = ctf22->to_string();
+//	cout << "ctf2 string: " << s2 << endl;
+//	if(success && s2 != "E0.1 1.1 2.2 3.3 4.4 5.5") {
+//		success = false;
+//	}
+//	delete ctf22;
 	
 	delete img;
 	if(success) {
