@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 	
-def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[], CTF = False, random_method="", Iter=0, T0=1.0, F=0.996, SA_stop=0):
+def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[], CTF=False, random_method="", Iter=0, T0=1.0, F=0.996, SA_stop=0):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -379,6 +379,32 @@ def process_peak(peaks, step, mode, numr):
 	return peaks
 
 
+def select_major_peaks(g, max_major_peaks, min_height):
+
+	from filter import filt_gaussl
+	from fundamentals import fft
+	from utilities import peak_search
+	
+	G = fft(g)	
+	for i in xrange(100):
+		fl = 0.5-i*0.005
+		peakg = peak_search(fft(filt_gaussl(G, fl)), 1000)
+		K = len(peakg)
+		if K > max_major_peaks:
+			if peakg[max_major_peaks][4] > min_height:
+				k = max_major_peaks+1
+			else:
+			 	for k in xrange(max_major_peaks):
+					if peakg[k][4] < min_height: break
+				if peakg[k][4] >= min_height:  k += 1				
+		else:
+			for k in xrange(K):
+				if peakg[k][4] < min_height:	break
+			if peakg[k][4] >= min_height:  k += 1
+		if k <= max_major_peaks: break
+	return peakg[0:k] 
+
+
 def ormq_peaks_m(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""
 	      Determine shift and rotation between image and reference image (crefim)
@@ -389,7 +415,7 @@ def ormq_peaks_m(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""
 	from math import pi, cos, sin
 	from utilities import peak_search
-	from filter import filt_gaussl
+	from morphology import threshold_to_minval
 	
 	ccfs = EMData()
 	ccfm = EMData()
@@ -398,61 +424,33 @@ def ormq_peaks_m(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	nx = ccfs.get_xsize()
 	ny = ccfs.get_ysize()
 	nz = ccfs.get_zsize()
-	#  What follows is very strange.  What is the purpose of the next two do loops?  In the first one, do you try to find minimum
-	#  within certain region?  This can be done muc simpler either by creating an appropriate mask or by windowing the relevant sction.
-	#  The second loop is simply threshold_to_minval.   PAP
-	f = EMData(nx, ny-2, nz-2, True)
-	for x in xrange(nx):
-		for y in xrange(ny-2):
-			for z in xrange(nz-2):
-				val = ccfs.get_value_at(x, y+1, z+1)
-				f.set_value_at(x, y, z, val)
-	[mean, std, xmax, xmin] = Util.infomask(f, None, True)
+
+	mins = 1e22
+	minm = 1e22
+
+	fs = Util.window(ccfs, nx, ny-2, nz-2, 0, 0, 0)
+	fm = Util.window(ccfm, nx, ny-2, nz-2, 0, 0, 0)
 	
-	g = ccfs.copy()
-	for y in xrange(ny):
-		for z in xrange(nz):
-			if y == 0 or y == ny-1 or z == 0 or z == nz-1:
-				for x in xrange(nx):	g.set_value_at(x, y, z, xmin)
+	dummy1, dummy2, mins, dummy3 = Util.infomask(fs, None, True)
+	dummy1, dummy2, minm, dummy3 = Util.infomask(fm, None, True)
+
+	gs = threshold_to_minval(ccfs, mins)
+	gm = threshold_to_minval(ccfm, minm)
+
 
 	#  This is even stranger.  See below.    PAP  11/09/08
 	#   1,  Normaly such things are done using gloden search method.  See Numerical Recipes for the proper code.
 	#   2.  Usually, a proper structure is a while statement, not a do-loop
 	#   3.  it will work much faster if you do forward ft outside of the loop, it will save you 50% of time.
-	for i in xrange(100):
-		fl = 0.5-i*0.005
-		peakg = peak_search(filt_gaussl(g, fl), 1000)
-		K = len(peakg)
-		for k in xrange(K):
-			if peakg[k][4] < 0.7:	break
-		if peakg[k][4] >= 0.7:  k += 1
-		if k <= 5: break
-	peaks_major = peakg[0:k] 
-	#  Same spurious code as above  PAP
-	f = EMData(nx, ny-2, nz-2, True)
-	for x in xrange(nx):
-		for y in xrange(ny-2):
-			for z in xrange(nz-2):
-				val = ccfm.get_value_at(x, y+1, z+1)
-				f.set_value_at(x, y, z, val)
-	[mean, std, xmax, xmin] = Util.infomask(f, None, True)
 	
-	g = ccfm.copy()
-	for y in xrange(ny):
-		for z in xrange(nz):
-			if y == 0 or y == ny-1 or z == 0 or z == nz-1:
-				for x in xrange(nx):	g.set_value_at(x, y, z, xmin)
+	# I did the easy change you mentioned, but I think the currently prioity is to check whether our methods make
+	# sense, we can always do the optimiztion later.
 
-	for i in xrange(100):
-		fl = 0.5-i*0.005
-		peakg = peak_search(filt_gaussl(g, fl), 1000)
-		K = len(peakg)
-		for k in xrange(K):
-			if peakg[k][4] < 0.7:	break
-		if peakg[k][4] >= 0.7:  k += 1
-		if k <= 5: break
-	peakm_major = peakg[0:k]
-	print k, len(peakm_major), peakg, fl
+	max_major_peaks = 5
+	min_height = 0.7
+
+	peaks_major = select_major_peaks(gs, max_major_peaks, min_height)
+	peakm_major = select_major_peaks(gm, max_major_peaks, min_height)
 
 	peaks = peak_search(ccfs, 1000)
 	peakm = peak_search(ccfm, 1000)
@@ -559,9 +557,47 @@ def sim_anneal2(peaks, Iter, F):
 	
 	return p
 
+def select_k(dJe, T):
+	from math import exp
+	from random import random
+
+	K = len(dJe)
+	
+	# q[k]
+	q      = [0.0] * K
+	arg    = [0.0] * K
+	maxarg = 0
+	for k in xrange(K):
+		arg[k] = dJe[k] / T
+		if arg[k] > maxarg: maxarg = arg[k]
+	limarg = 500
+	if maxarg > limarg:
+		sumarg = float(sum(arg))
+		for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+	else:
+		for k in xrange(K): q[k] = exp(arg[k])
+
+	# p[k]
+	p = [0.0] * K
+	sumq = float(sum(q))
+	for k in xrange(K):
+		p[k] = q[k] / sumq
+		
+	c = [0.0] * K
+	c[0] = p[0]
+	for k in xrange(1, K): c[k] = c[k-1] + p[k]
+
+	pb = random()
+	select = -1
+	for k in xrange(K):
+		if c[k] > pb:
+			select = k
+			break
+	return select
+	
 
 def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
-	from math import exp, pow, log10, sin, cos, sqrt, pi
+	from math import log10, pow, sin, sqrt, pi
 	from random import random
 
 	if log10(F)*Iter > -3.0 and Iter < SA_stop:
@@ -570,39 +606,9 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 	
 		K = len(peaks_major)
 		dJe = [0.0]*K
-		for k in xrange(K):
-			dJe[k] = peaks_major[k][0]/peaks_major[0][0]
+		for k in xrange(K):	dJe[k] = peaks_major[k][4]
 
-		# q[k]
-		q      = [0.0] * K
-		arg    = [0.0] * K
-		maxarg = 0
-		for k in xrange(K):
-			arg[k] = dJe[k] / T
-			if arg[k] > maxarg: maxarg = arg[k]
-		limarg = 500
-		if maxarg > limarg:
-			sumarg = float(sum(arg))
-			for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
-		else:
-			for k in xrange(K): q[k] = exp(arg[k])
-
-		# p[k]
-		p = [0.0] * K
-		sumq = float(sum(q))
-		for k in xrange(K):
-			p[k] = q[k] / sumq
-			
-		c = [0.0] * K
-		c[0] = p[0]
-		for k in xrange(1, K): c[k] = c[k-1] + p[k]
-
-		pb = random()
-		select_major = -1
-		for k in xrange(K):
-			if c[k] > pb:
-				select_major = k
-				break
+		select_major = select_k(dJe, T)
 		
 		ang_m = peaks_major[select_major][1]
 		sx_m = peaks_major[select_major][6]
@@ -615,51 +621,25 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 			sx = peaks[i][6]
 			sy = peaks[i][7]		
 			dist = 64*sin((ang-ang_m)/2/180*pi)+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
-			if dist < 7.0: neighbor.append(i)
+			if dist < 4.0: neighbor.append(i)
 			if dist < min_dist:
 				min_dist = dist
 				select_s = i
+		print neighbor
 		if len(neighbor) != 0:
-			select_s = neighbor[int(random()*len(neighbor))]
-		
+			K = len(neighbor)
+			dJe = [0.0]*K
+			for k in xrange(K):   dJe[k] = peaks[neighbor[k]][4]
+			select_s = neighbor[select_k(dJe, T)]
+			
 		###################################
 
 		K = len(peakm_major)
 		dJe = [0.0]*K
-		for k in xrange(K):
-			dJe[k] = peakm_major[k][0]/peakm_major[0][0]
+		for k in xrange(K): 	dJe[k] = peakm_major[k][4]
 
-		# q[k]
-		q      = [0.0] * K
-		arg    = [0.0] * K
-		maxarg = 0
-		for k in xrange(K):
-			arg[k] = dJe[k] / T
-			if arg[k] > maxarg: maxarg = arg[k]
-		limarg = 500
-		if maxarg > limarg:
-			sumarg = float(sum(arg))
-			for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
-		else:
-			for k in xrange(K): q[k] = exp(arg[k])
-
-		# p[k]
-		p = [0.0] * K
-		sumq = float(sum(q))
-		for k in xrange(K):
-			p[k] = q[k] / sumq
-			
-		c = [0.0] * K
-		c[0] = p[0]
-		for k in xrange(1, K): c[k] = c[k-1] + p[k]
-
-		pb = random()
-		select_major = -1
-		for k in xrange(K):
-			if c[k] > pb:
-				select_major = k
-				break
-		
+		select_major = select_k(dJe, T)
+				
 		ang_m = peakm_major[select_major][1]
 		sx_m = peakm_major[select_major][6]
 		sy_m = peakm_major[select_major][7]
@@ -671,12 +651,16 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 			sx = peakm[i][6]
 			sy = peakm[i][7]		
 			dist = 64*sin((ang-ang_m)/2/180*pi)+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
-			if dist < 7.0: neighbor.append(i)
+			if dist < 4.0: neighbor.append(i)
 			if dist < min_dist:
 				min_dist = dist
 				select_m = i
+		print neighbor
 		if len(neighbor) != 0:
-			select_m = neighbor[int(random()*len(neighbor))]
+			K = len(neighbor)
+			dJe = [0.0]*K
+			for k in xrange(K):   dJe[k] = peakm[neighbor[k]][4]
+			select_m = neighbor[select_k(dJe, T)]
 			
 		ps = peaks[select_s][0]
 		pm = peakm[select_m][0]
