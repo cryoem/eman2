@@ -586,8 +586,8 @@ def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,
 		Usage: compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2)
 		   angles in degrees
 	"""
-	R1 = Transform({"type":"spider","phi":phi1,"theta":theta1,"psi":psi1,"tx":sx1,"ty":sy1,"tz":sz1,"mirror":0,"scale":scale1})
-	R2 = Transform({"type":"spider","phi":phi2,"theta":theta2,"psi":psi2,"tx":sx2,"ty":sy2,"tz":sz2,"mirror":0,"scale":scale2})
+	R1 = Transform({"type":"spider","phi":float(phi1),"theta":float(theta1),"psi":float(psi1),"tx":float(sx1),"ty":float(sy1),"tz":float(sz1),"mirror":0,"scale":float(scale1)})
+	R2 = Transform({"type":"spider","phi":float(phi2),"theta":float(theta2),"psi":float(psi2),"tx":float(sx2),"ty":float(sy2),"tz":float(sz2),"mirror":0,"scale":float(scale2)})
 	Rcomp=R2*R1
 	d = Rcomp.get_params("spider")
 	return d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["scale"]
