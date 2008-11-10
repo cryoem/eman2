@@ -381,9 +381,6 @@ class EMStandAloneApplication(EMApplication):
 			self.timer_function = None
 		else:
 			print "warning, can't stop a timer when there is none"
-		
-	
-		
 
 class EMQtWidgetModule(EMGUIModule):
 	def __init__(self,qt_widget,application):

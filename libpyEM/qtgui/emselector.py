@@ -48,7 +48,8 @@ class EMSelectorModule(EMQtWidgetModule):
 	def __init__(self,application=None):
 		self.application = application
 		self.widget = EMSelectorDialog(self,application)
-		EMQtWidgetModule.__init__(self,self.widget,application)	
+		EMQtWidgetModule.__init__(self,self.widget,application)
+		
 
 class EMSelectorDialog(QtGui.QDialog):
 	def __init__(self,target,application):
@@ -56,7 +57,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.application=application
 		self.target=target
-		
+		self.desktop_hint = "dialog"
 		self.db_listing = EMBDBListing(self)
 		self.dir_listing = EMDirectoryListing(self)
 		
@@ -128,7 +129,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.paint_events = 0
 		
 	def get_desktop_hint(self):
-		return "dialog"
+		return self.desktop_hint
 		
 	def set_application(self,app):
 		self.application = app

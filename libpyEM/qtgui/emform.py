@@ -61,7 +61,7 @@ class EMFormWidget(QtGui.QWidget):
 	If ok is clicked the "emform_ok" signal is emitted along with a dictionary containing all of the form entries
 	If cancel is clicked the "emform_cancel" signal is emmitted. No extra information is sent in this case
 	'''
-	def __init__(self,parent=None,params=None):
+	def __init__(self,parent,params=None):
 		QtGui.QWidget.__init__(self,None)
 		self.parent = parent
 		self.params = params
@@ -207,7 +207,7 @@ class EMFormWidget(QtGui.QWidget):
 		
 		layout.addWidget(groupbox)
 		
-		self.event_handlers.append(UrlEventHandler(text_edit,browse_button,clear_button,self.parent.application,param.desc_short))
+		self.event_handlers.append(UrlEventHandler(self,text_edit,browse_button,clear_button,self.parent.application,param.desc_short))
 		self.output_writers.append(UrlParamWriter(param.name,text_edit))
 
 	def __incorporate_choice(self,param,layout):
@@ -313,10 +313,14 @@ class EMFormWidget(QtGui.QWidget):
 	def ok_pressed(self,bool):
 		ret = {}
 		for output in self.output_writers: output.write_data(ret)
-		self.emit(QtCore.SIGNAL("emform_ok"),ret)
+		self.parent.emit(QtCore.SIGNAL("emform_ok"),ret) # getting the parent to emit ensures integration with the desktop
 		
 	def cancel_pressed(self,bool):
-		self.emit(QtCore.SIGNAL("emform_cancel"))
+		self.parent.emit(QtCore.SIGNAL("emform_cancel")) # getting the parent to emit ensures integration with the desktop
+
+
+	def update_texture(self):
+		self.parent.force_texture_update()
 
 class BoolParamWriter:
 	def __init__(self,param_name,check_box):
@@ -411,7 +415,8 @@ class UrlEventHandler:
 	The browse and cancel events have to be sent to the correct line edit, so this handles it
 	Basically to simplify things when there is more than one url type.
 	'''
-	def __init__(self,text_edit,browse_button,clear_button,application,title=""):
+	def __init__(self,target,text_edit,browse_button,clear_button,application,title=""):
+		self.target = target
 		self.application = application
 		self.text_edit = text_edit
 		self.browser = None # this will be the browser itself
@@ -422,6 +427,7 @@ class UrlEventHandler:
 	def browse_pressed(self,bool):
 		if self.browser == None:
 			self.browser = EMSelectorModule(self.application)
+			self.browser.widget.desktop_hint = "form" # this is to make things work as expected in the desktop
 			self.browser.setWindowTitle(self.browser_title)
 			self.application.show_specific(self.browser)
 			QtCore.QObject.connect(self.browser.widget,QtCore.SIGNAL("ok"),self.on_browser_ok)
@@ -430,8 +436,8 @@ class UrlEventHandler:
 			self.application.show_specific(self.browser)
 
 	def on_browser_cancel(self):
-		self.application.hide_specific(self.browser)
-		
+		self.application.close_specific(self.browser)
+		self.browser = None
 	def on_browser_ok(self,stringlist):
 		new_string = str(self.text_edit.toPlainText())
 		for i,s in enumerate(stringlist):
@@ -440,11 +446,12 @@ class UrlEventHandler:
 			new_string += s
 
 		self.text_edit.setText(new_string)
-		self.application.hide_specific(self.browser)
+		self.target.update_texture()# in the desktop the texture would have to be updated
+		self.application.close_specific(self.browser)
+		self.browser = None
 	def clear_pressed(self,bool):
+		#self.target.update_texture()# in the desktop the texture would have to be updated
 		self.text_edit.clear()
-		
-		
 
 def get_example_params():
 	params = []

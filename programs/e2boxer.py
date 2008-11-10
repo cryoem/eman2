@@ -957,8 +957,12 @@ class DatabaseAutoBoxer(QtCore.QObject):
 
 
 class EmptyObject:
+	'''
+	This just because I need an object I can assign attributes to, and object() doesn't seem to work
+	'''
 	def __init__(self):
 		pass
+	
 class EMBoxerModule(QtCore.QObject):
 	'''
 	Cleaning in progress
@@ -968,12 +972,20 @@ class EMBoxerModule(QtCore.QObject):
 	MANUALLY_ADDING = 2
 	FANCY_MODE = 'fancy'
 	PLAIN_MODE = 'plain'
-	def __init__(self,application,options): #image_names,boxes,box_size=-1, init_method="Swarm"):
+	def __init__(self,application,options=None):
 		QtCore.QObject.__init__(self)
 		"""Implements the 'boxer' GUI."""
 		self.application = application
+		self.required_options = ["filenames","running_mode"]
 		
-		if len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
+		form_init = False
+		for s in self.required_options: 
+			if not hasattr(options,s):
+				form_init = True
+				break
+			
+		
+		if form_init or len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
 			self.__run_form_initialization(options)
 		elif options.running_mode == "gui":
 			self.__gui_init(options)
@@ -992,13 +1004,9 @@ class EMBoxerModule(QtCore.QObject):
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 		
 	def on_form_ok(self,params):
-		
 		options = EmptyObject()
 		for key in params.keys():
 			setattr(options,key,params[key])
-			
-		print params
-		print options
 		
 		if len(options.filenames) == 0 or options.running_mode not in ["gui","auto_db"]:
 			print "we have to keep the dialog open"
@@ -1006,10 +1014,12 @@ class EMBoxerModule(QtCore.QObject):
 		elif options.running_mode == "gui":
 			self.__disconnect_form_signals()
 			self.application.close_specific(self.form)
+			self.form = None
 			self.__gui_init(options)
 		elif options.running_mode == "auto_db":
 			self.__disconnect_form_signals()
 			self.application.close_specific(self.form)
+			self.form = None
 			self.__auto_box_from_db(options)
 			
 	def __disconnect_form_signals(self):
@@ -1019,8 +1029,9 @@ class EMBoxerModule(QtCore.QObject):
 		
 	def on_form_cancel(self):
 		# this means e2boxer isn't doing anything. The application should probably be told to close the EMBoxerModule
-		self.__disconnect_form_signals()
+#		self.__disconnect_form_signals()
 		self.application.close_specific(self.form)
+		self.form = None
 		self.emit(QtCore.SIGNAL("e2boxer_idle"))
 	
 	def __auto_box_from_db(self,options):

@@ -568,6 +568,35 @@ class Scale:
 		else:
 			self.rotation_animation = None 
 			return False
+		
+class EMFormDisplayFrame(EMGLViewContainer):
+	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
+		EMGLViewContainer.__init__(self,parent,geometry)
+		self.focus_child = None
+		self.first_draw = [] # might use this for animations later
+	
+	def draw(self):
+		if self.focus_child == None: return
+		glPushMatrix()
+		glTranslate(*self.get_origin())
+		glTranslate(self.width()/2-self.focus_child.width()/2,self.height()/2-self.focus_child.height()/2,0)
+		self.focus_child.draw()
+		glPopMatrix()
+		
+		self.first_draw = []
+	
+	def attach_child(self,child):
+		self.focus_child = child
+		EMGLViewContainer.attach_child(self,child)
+		self.first_draw.append(child)
+		
+		
+	def detach_child(self,new_child):
+		EMGLViewContainer.detach_child(self,new_child)
+		if len(self.children) != 0:
+			self.focus_child = self.children[-1]
+		else:
+			self.focus_child = None
 
 class EMPlainDisplayFrame(EMGLViewContainer):
 	count = 0
@@ -1003,7 +1032,9 @@ class EMDesktopApplication(EMApplication):
 		pass
 
 	def get_qt_emitter(self,child):
-		return EMDesktop.main_widget
+		if isinstance(child,EMQtWidgetModule):
+			return child.qt_widget 
+		else: return EMDesktop.main_widget
 			
 	def get_qt_gl_updategl_target(self,child):
 		return EMDesktop.main_widget
@@ -1018,7 +1049,7 @@ class EMDesktopApplication(EMApplication):
 		owner = EMDesktop.main_widget.get_owner(child)
 		if owner != None:
 			QtCore.QObject.disconnect(self.get_qt_emitter(child),sig,owner.on_qt_pop_up)
-		else: print "diconnect_qt_pop_up_application_event disconnection failed"
+		else: print "disconnect_qt_pop_up_application_event disconnection failed"
 	
 	def isVisible(self,child):
 		owner = EMDesktop.main_widget.get_owner(child)
@@ -1036,12 +1067,14 @@ class EMDesktopFrame(EMFrame):
 		self.left_side_bar = LeftSideWidgetBar(self)
 		self.right_side_bar = RightSideWidgetBar(self)
 		self.display_frame = EMPlainDisplayFrame(self)
+		self.form_display_frame = EMFormDisplayFrame(self)
 		self.bottom_bar = BottomWidgetBar(self)
 		
 		self.attach_display_child(self.display_frame)
 		self.attach_child(self.right_side_bar)
 		self.attach_child(self.left_side_bar)
 		self.attach_child(self.bottom_bar)
+		self.attach_child(self.form_display_frame)
 		# what is this?
 		self.bgob2=ob2dimage(self,self.read_EMAN2_image())
 		self.child_mappings = {}
@@ -1093,8 +1126,10 @@ class EMDesktopFrame(EMFrame):
 		if len(self.display_frames) != 0:
 			width = int(EMDesktop.main_widget.viewport_width()-200)
 			height = int(EMDesktop.main_widget.viewport_height())-50
-			self.display_frames[0].set_geometry(Region(-width/2,-height/2,-20,width,height,100))
-			
+			self.display_frames[0].set_geometry(Region(-width/2,-height/2,-20,width,height,100)) # the depth of the z dimensions doesn't mean a whole lot
+		
+		self.form_display_frame.set_geometry(Region(-width/2,-height/2,0,width,height,100))
+		
 		if self.frame_dl:
 			glDeleteLists(self.frame_dl,1)
 			self.frame_dl = 0
@@ -1120,6 +1155,9 @@ class EMDesktopFrame(EMFrame):
 		elif hint == "settings":
 			self.bottom_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.bottom_bar
+		elif hint == "form":
+			self.form_display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			self.child_mappings[child] = self.form_display_frame
 		else:
 			print "unsupported",hint
 	
@@ -1358,6 +1396,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.frame_dl = 0 # display list of the desktop frame
 		self.fov = 35
 		self.resize_aware_objects = []
+		self.events_handlers = [] # For keep event related objects in memory
+		self.modules = [] # To keep track of the currently open modules
 		
 		self.setMouseTracking(True)
 		
@@ -1448,7 +1488,30 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 	def add_boxer_frame(self):
 		if not self.establish_target_frame("boxer"): return
 		
-		boxer = EMBoxerModule(EMDesktop.application,[ "test_box_0.mrc","test_box_1.mrc","test_box_2.mrc","test_box_3.mrc"],[],128)
+		# must keep a reference in order for signals to work!
+		boxer_module = EMBoxerModule(EMDesktop.application,None)
+		self.modules.append(boxer_module)
+		self.events_handlers.append(BoxerEventsHandler(self,boxer_module))
+	
+	def remove_boxer_module(self,boxer_module,boxer_events_handler):
+		for i, eh in enumerate(self.events_handlers):
+			if eh == boxer_events_handler:
+				self.events_handlers.pop(i)
+				break
+		else:
+			print "error, failed to remove boxer events handler" # this shouldn't really happen
+			
+		for i,m in enumerate(self.modules):
+			if m == boxer_module:
+				self.modules.pop(i)
+				break
+		else:
+			print "error, failed to remove boxer module" # this shouldn't really happen
+		
+		
+		for frame in self.desktop_frames:
+			if frame.get_type() == "boxer":
+				frame.set_type(None)
 		
 	def get_app_screen(self):
 		return self.appscreen
@@ -1610,6 +1673,15 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 	def getStartZ(self):
 		return self.start_z
 
+class BoxerEventsHandler:
+	def __init__(self,target,boxer_module):
+		self.target = target
+		self.boxer_module = boxer_module
+		QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("e2boxer_idle"), self.on_boxer_idle)
+
+	def on_boxer_idle(self):
+		self.target.remove_boxer_module(self.boxer_module,self)
+
 class EMBrowserSettings(object):
 	def __new__(cls,parent,application):
 		widget = EMBrowserSettingsInspector(parent)
@@ -1696,7 +1768,7 @@ class EMDesktopTaskWidget(object):
 		widget = EMDesktopTaskInspector(parent)
 		widget.show()
 		widget.hide()
-		widget.resize(150,150)
+		widget.resize(200,200)
 		#gl_view = EMQtGLView(EMDesktop.main_widget,widget)
 		module = EMQtWidgetModule(widget,application)
 		application.show_specific(module)
@@ -1721,10 +1793,33 @@ class EMDesktopTaskInspector(QtGui.QWidget):
 		
 		self.tree_widget = QtGui.QTreeWidget(self)
 		self.tree_widget_entries = []
+		
+		spr = QtGui.QTreeWidgetItem(QtCore.QStringList("SPR"))
+		self.tree_widget_entries.append(spr)
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Browse")))
-		#self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Thumb")))
-		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Box")))
+		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
+		
+		
+#		spr_tasks = QtGui.QTreeWidgetItem(spr)
+#		spr_tasks.setText(0,"Acquire Particles")
+#		spr_tasks.setText(1,"CTF correction")
+#		spr_tasks.setText(2,"Initial model")
+#		spr_tasks.setText(3,"Refinement")
+		
+		spr_list = []
+		ap = QtGui.QTreeWidgetItem(QtCore.QStringList("Acquire Particles"))
+		spr_list.append(ap)
+		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF correction")))
+		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Initial model")))
+		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refinement")))
+		spr.addChildren(spr_list)
+		
+		ap_list = []
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import")))
+		ap.addChildren(ap_list)
+		
 		self.tree_widget.setHeaderLabel("Choose a task")
 		
 		self.hbl_buttons2.addWidget(self.tree_widget)
@@ -1743,7 +1838,7 @@ class EMDesktopTaskInspector(QtGui.QWidget):
 			self.target.add_browser_frame()
 		if task == "Thumb":
 			self.target.add_selector_frame()
-		elif task == "Box":
+		elif task == "Boxer":
 			self.target.add_boxer_frame()
 		
 class ob2dimage:

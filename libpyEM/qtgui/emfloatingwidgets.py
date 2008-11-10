@@ -1879,7 +1879,6 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 		else : self.decoration.set_color_flag(EMBorderDecoration.DEFAULT_COLOR)
 	
 	def draw(self):
-		
 		self.cam.position()
 		self.vdtools.update_points((self.left,self.bottom,0),(self.right,self.bottom,0),(self.right,self.top,0),(self.left,self.top,0))
 		#self.vdtools.draw_frame(True)\
