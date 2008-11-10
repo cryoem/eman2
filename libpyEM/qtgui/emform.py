@@ -435,31 +435,6 @@ class ListWidgetParamWriter:
 			
 		dict[self.param_name] = choices
 
-#class FloatListParamWriter:
-	#def __init__(self,param_name,list_view):
-		#self.param_name = param_name
-		#self.list_view = list_view
-		
-	#def write_data(self,dict):
-		#choices = []
-		#for a in self.list_view.selectedItems():
-			#choices.append(str(a.text()))
-			
-		#dict[self.param_name] = float(choices)
-
-
-#class StringListParamWriter:
-	#def __init__(self,param_name,list_view):
-		#self.param_name = param_name
-		#self.list_view = list_view
-		
-	#def write_data(self,dict):
-		#choices = []
-		#for a in self.list_view.selectedItems():
-			#choices.append(str(a.text()))
-			
-		#dict[self.param_name] = str(choices)
-
 class StringParamWriter:
 	def __init__(self,param_name,line_edit):
 		self.param_name = param_name
