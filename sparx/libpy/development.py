@@ -11071,9 +11071,10 @@ def SSNR_func_MPI(args, data):
 		a0 = Util.infomask(SSNR, maskI, True)
 		sum_SSNR = a0[0]
 		print_msg("SSNR = %20.7f\n"%(sum_SSNR))
+		print "Before: SSNR=", sum_SSNR
 		if SSNR_fit:
 			from fundamentals import rot_avg_table
-			beta = 1.0
+			beta = 10.0
 			avgimg_2 = Util.pack_complex_to_real(avgimg_2)
 			var   = Util.pack_complex_to_real(var)
 			ravgimg_2 = rot_avg_table(avgimg_2)
@@ -11082,9 +11083,10 @@ def SSNR_func_MPI(args, data):
 			for i in xrange(N/2+1):
 				qt = max(0.0, ravgimg_2[i]/rvar[i] - 1.0)
 				diff = (qt-SSNR_r[i])/max(1.0, SSNR_r[i])
+				print "In bin %3d  Target SSNR = %10.4f  Actual SSNR= %10.4f difference in pct is %7.3f"%(i,SSNR_r[i], qt, diff)
+				print "Numerator: ", ravgimg_2[i], "Denominator: ", rvar[i]
 				SSNR_diff += diff**2
-			sum_SSNR -= beta*SSNR_diff
-				
+			sum_SSNR -= beta*SSNR_diff				
 			"""
 			Util.sub_img(SSNR, maskI)
 			SSNR = SSNR.process("threshold.belowtozero", {"minval": 0.0})
@@ -11094,7 +11096,7 @@ def SSNR_func_MPI(args, data):
 			a0 = Util.infomask(SSNR, maskI, True)
 			sum_SSNR -= beta*a0[0]
 			"""
-		#print "After:  SSNR=", sum_SSNR
+		print "After:  SSNR=", sum_SSNR
 	else: 	
 		sum_SSNR = 0.0
 	
@@ -11195,7 +11197,7 @@ def SSNR_grad_MPI(args, data):
 	if SSNR_fit:
 		from fundamentals import rot_avg_table
 		from math import sqrt, pi
-		beta = 1.0
+		beta = 10.0
 		avgimg_2 = Util.pack_complex_to_real(avgimg_2)
 		var   = Util.pack_complex_to_real(var)
 		ravgimg_2 = rot_avg_table(avgimg_2)
@@ -11468,7 +11470,7 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 	if myid == main_node:	print_begin_msg("ali_SSNR_MPI")
 
 	if opti_method!="CG" and opti_method!="LBFGSB":
-		 print "Wrong optimization method!"
+		 print "Unknown optimization method!"
 		 return
 		 
 	nima = EMUtil.get_image_count(stack)
@@ -14757,7 +14759,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou =
 	from utilities import dropSpiderDoc19289
 	dropSpiderDoc(ssnr_text_file+".doc", ssnr1)
 	dropImage(vol_ssnr2, output_volume+"2.spi", "s")
-	'''
+	
 
 def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", random_angles = 0):
 	from reconstruction import recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
@@ -14860,7 +14862,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		from utilities import dropSpiderDoc
 		dropSpiderDoc(ssnr_text_file+".doc", ssnr1)
 		dropImage(vol_ssnr2, output_volume+"2.spi", "s")
-
+"""
 
 
 def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_aliB_cone"):
@@ -15722,4 +15724,4 @@ def proj_ali_incore_cone(volref, kb, template_angles, projdata, first_ring, last
         if not(finfo is None):
 		finfo.write( "new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(phi, theta, psi, s2x, s2y) )
 		finfo.flush()
-"""
+
