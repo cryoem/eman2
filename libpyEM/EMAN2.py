@@ -50,7 +50,7 @@ EMANVERSION="EMAN2 v1.96"
 # behavior appropriately
 try:
 	import EMAN2db
-	from EMAN2db import EMAN2DB,db_open_dict,db_remove_dict
+	from EMAN2db import EMAN2DB,db_open_dict,db_remove_dict,db_list_dicts,db_check_dict
 	HOMEDB=EMAN2db.EMAN2DB.open_db()
 	HOMEDB.open_dict("history")
 except:

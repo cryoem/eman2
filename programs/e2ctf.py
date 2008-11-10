@@ -41,9 +41,12 @@ import time
 import os
 import sys
 
+from simplex import Simplex
+
 debug=False
 
 sfcurve=None		# This will store a global structure factor curve if specified
+envelopes=[]		# simplex minimizer needs to use a global at the moment
 
 def main():
 	global debug
@@ -128,16 +131,27 @@ operations are performed on oversampled images if specified."""
 		gui.run()
 
 	### This computes the intensity of the background subtracted power spectrum at each CTF maximum for all sets
-	envelopes=[]
+	global envelopes
 	for i in img_sets:
 		envelopes.append(ctf_env_points(i[2],i[3],i[1]))
 	
+	# we use a simplex minimizer to try to rescale the individual sets to match as best they can
 	scales=[1.0]*len(img_sets)
+	incr=[0.1]*len(img_sets)
+	simp=Simplex(env_cmp,scales,incr)
+	scales=simp.minimize()[0]
 	
-	
+	# apply the final rescaling
+	envelope=[]
+	for i in range(len(scales)):
+		cur=envelopes[i]
+		for j in range(len(cur)):
+			envelope.append(cur[j][0],cur[j][1]*scales[i])
+			
 	envelope.sort()
 	envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
 	
+	# write the final envelope
 	out=file("envelope.txt","w")
 	for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
 	out.close()
@@ -150,10 +164,10 @@ operations are performed on oversampled images if specified."""
 			name=get_file_tag(filename)
 			if debug: print "Processing ",filename
 
-			if options.phaseflip: phaseout="bdb:ctf.flip."+name
+			if options.phaseflip: phaseout="bdb:"+name+".ctf.flip"
 			else: phaseout=None
 		
-			if options.wiener: wienerout="bdb:ctf.wiener."+name
+			if options.wiener: wienerout="bdb:"+name+".ctf.wiener"
 			else : wienerout=None
 
 			if phaseout : print "Phase image out: ",phaseout,"\t",

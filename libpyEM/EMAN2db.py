@@ -113,6 +113,41 @@ def db_remove_dict(url):
 	ddb.remove_dict(name)
 	return
 
+def db_check_dict(url,readonly=True):
+	"""Checks for the existence of the named dictionary, and whether it can be opened 
+	read/write (or just read). Deals only with bdb: urls. Returns false for other specifiers"""
+	if url[:4].lower()!="bdb:": return False
+	url=url.replace("../",os.getcwd()+"/../")
+	if url[4]!='/' : 
+		if not '#' in url : url="bdb:"+os.getcwd()+"#"+url[4:]
+		else : url="bdb:"+os.getcwd()+"/"+url[4:]
+	sln=url.rfind("#")
+	qun=url.rfind("?")
+	if qun<0 : qun=len(url)
+#	print url,url[4:qun],url[4:sln],url[sln+1:]
+
+	path=url[4:sln]+"/EMAN2DB/"+url[sln+1:]+".bdb"
+#	print path
+	if os.access(path,os.W_OK|os.R_OK) : return True
+	if os.access(path,os.R_OK) and readonly : return True
+	
+	return False
+	
+def db_list_dicts(url):
+	"""Gives a list of available databases (dicts) at a given path. No '#' specification should be given."""
+
+	if url[:4].lower()!="bdb:": return None
+	url=url.replace("../",os.getcwd()+"/../")
+	if url[4:]=="." : url="bdb:"+os.getcwd()
+	if url[4:6]=="./" : url="bdb:"+os.gecwd()+url[5:]
+	try:
+		ld=os.listdir(url[4:]+"/EMAN2DB")
+	except: return []
+	
+	ld=[i for i in ld if i[-4:]==".bdb"]
+	
+	return ld
+	
 ##########
 #### replace a few EMData methods with python versions to intercept 'bdb:' filenames
 ##########
