@@ -40,9 +40,6 @@ import sys
 
 
 def main():
-	if(MPI):
-		from mpi import mpi_init
-   		sys.argv = mpi_init( len(sys.argv), sys.argv )
         arglist = []
         for arg in sys.argv:
         	arglist.append( arg )
@@ -55,6 +52,9 @@ def main():
 	parser.add_option("--CTF",    action="store_true", default=False, help="  Consider CTF correction during the alignment ")
 	parser.add_option("--snr",    type="float", 	   default=1,     help="  SNR > 0.0 (set to 1.0)")
 	parser.add_option("--sym",    type="string",       default="c1",  help="  symmetry group (set to c1)")
+	parser.add_option("--MPI",    action="store_true", default=False,         help="  whether using MPI version ")
+	parser.add_option("--debug",  action="store_true", default=False,         help="  debug mode ")
+	
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 3 or len(args) > 4):
     		print "usage: " + usage
@@ -65,10 +65,15 @@ def main():
 			mask = None
 		else:
 			mask = args[3]
+
+		if(options.MPI):
+			from mpi import mpi_init
+   			sys.argv = mpi_init( len(sys.argv), sys.argv )
+ 
 		from applications import ali3d_em_MPI
 		global_def.BATCH = True
-		if MPI:
-			ali3d_em_MPI(args[0], args[1], args[2], mask, options.ou, options.delta, options.maxit, options.CTF, options.snr, options.sym)
+		if options.MPI:
+			ali3d_em_MPI(args[0], args[1], args[2], mask, options.ou, options.delta, options.maxit, options.CTF, options.snr, options.sym,options.debug)
 		else:
 			print 'ali3d_em serial version not implemented'
 
