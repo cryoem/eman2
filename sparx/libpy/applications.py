@@ -8062,7 +8062,7 @@ def bootstrap_genbuf(prj_stack, buf_prefix, verbose, MPI=False):
 	for i in xrange(nimage):
 		proj = EMData()
 		proj.read_image( prj_stack, i )
-		store.add_image( proj )
+		store.add_image( proj, proj.get_attr("xform.proj") )
 
 		if( verbose !=0 and (i+1) % 100 == 0 ) :
 			output.write( "proj %4d done\n" % (i+1) )
@@ -8072,13 +8072,12 @@ def bootstrap_genbuf(prj_stack, buf_prefix, verbose, MPI=False):
 		output.write( "proj %4d done\n" % nimage )
 		output.flush()
  
-def bootstrap_run(prj_stack, media, vol_prefix, nvol, snr, sym, verbose, MPI=False):
+def bootstrap_run(prj_stack, media, vol_prefix, nvol, CTF, snr, sym, verbose, MPI=False):
 
 	import string
 	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_init
 
 	if MPI:
-		sys.argv = mpi_init(len(sys.argv),sys.argv)
 		size = mpi_comm_size(MPI_COMM_WORLD)
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
 	else:
@@ -8105,8 +8104,8 @@ def bootstrap_run(prj_stack, media, vol_prefix, nvol, snr, sym, verbose, MPI=Fal
 	npad = 4
 	sign = 1
 	list_proj = range(nproj)
-	from reconstruction import bootstrap_nnctf
-	bootstrap_nnctf( prj_stack, myvolume_file, list_proj, mynvol, media, npad, sym, mystatus, snr, sign)
+	from reconstruction import bootstrap_nn
+	bootstrap_nn( prj_stack, myvolume_file, list_proj, mynvol, media, npad, sym, mystatus, CTF, snr, sign)
 	
 def params_2D_to_3D(stack):
 	from utilities import params_2D_3D, print_begin_msg, print_end_msg, print_msg, get_params2D, set_params_proj, write_header
@@ -8898,10 +8897,7 @@ def defvar_mpi(files, nprj, output, fl, fh, radccc, writelp, writestack):
 	nimage = niter * ncpu
 	for i in xrange(myid, nimage, ncpu):
 		filename, imgid = mystack.get( i ) 	
-		if myid==0:
-			finf.write( "loading %20s img %6d write to %20s %6d\n" % (filename, imgid, lpstack, iwrite) )
-			finf.flush()
-
+	
 		img = get_im( filename, imgid )
 		img *= scale
 		img = circumference( img, radcir, radcir+1 )

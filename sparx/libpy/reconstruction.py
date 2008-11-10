@@ -439,7 +439,7 @@ class memory_store:
     def get_image(self, id):
         return self.m_imgs[id]
           
-def bootstrap_nnctf(proj_stack, volume_stack, list_proj, niter, media="memory", npad=4, symmetry="c1", output=-1, snr=10.0, sign=1, myseed=None ):
+def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npad=4, symmetry="c1", output=-1, CTF=False, snr=1.0, sign=1, myseed=None ):
 	from random import seed
 	from random import randint
 	from time   import time
@@ -489,8 +489,13 @@ def bootstrap_nnctf(proj_stack, volume_stack, list_proj, niter, media="memory", 
         		imgid = randint(0,nimages-1)
         		mults[imgid]=mults[imgid]+1
 
-        	params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign}
-        	r = Reconstructors.get("nn4_ctf", params);
+		if CTF:
+        		params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign}
+        		r = Reconstructors.get("nn4_ctf", params);
+		else:
+			params = {"size":size, "npad":npad, "symmetry":symmetry}
+			r = Reconstructors.get("nn4", params);
+        	
 
         	r.setup()
         	if not(output is None):
@@ -508,7 +513,11 @@ def bootstrap_nnctf(proj_stack, volume_stack, list_proj, niter, media="memory", 
         			img_j = EMData()
         			store.get_image( j, img_j );
 		    		img_j.set_attr( "mult", mults[j] );
-				tra_j = img_j.get_attr( "xform.proj" )
+				phi_j = img_j.get_attr( "phi" )
+				tht_j = img_j.get_attr( "theta" )
+				psi_j = img_j.get_attr( "psi" )
+				tra_j = Transform( {"type":"spider", "phi":phi_j, "theta":tht_j, "psi":psi_j} )
+
         		
 		    		r.insert_slice(img_j, tra_j)
 
