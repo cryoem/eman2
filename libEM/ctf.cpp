@@ -171,7 +171,7 @@ void EMAN1Ctf::copy_from(const Ctf * new_ctf)
 }
 
 
-vector < float >EMAN1Ctf::compute_1d(int size, CtfType type, XYData * sf)
+vector < float >EMAN1Ctf::compute_1d(int size, float ds, CtfType type, XYData * sf)
 {
 	Assert(size > 0);
 	
@@ -181,7 +181,7 @@ vector < float >EMAN1Ctf::compute_1d(int size, CtfType type, XYData * sf)
 
 	r.resize(np);
 
-	float ds = 1 / (apix * size * CTFOS);
+//	float ds = 1 / (apix * size * CTFOS);
 	float s = 0;
 	float g1 = calc_g1();
 	float g2 = calc_g2();
@@ -637,7 +637,7 @@ void EMAN2Ctf::copy_from(const Ctf * new_ctf)
 }
 
 
-vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
+vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf)
 {
 	Assert(size > 0);
 	
@@ -647,7 +647,7 @@ vector < float >EMAN2Ctf::compute_1d(int size, CtfType type, XYData * sf)
 
 	r.resize(np);
 
-	float ds = 1 / (apix * size);
+//	float ds = 1 / (apix * size);
 	float s = 0;
 	float g1 = calc_g1();
 	float g2 = calc_g2();

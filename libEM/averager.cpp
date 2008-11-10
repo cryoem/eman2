@@ -681,7 +681,7 @@ void CtfAverager::add_image(EMData * image)
 	Ctf *image_ctf = image->get_ctf();
 	int ny2 = image->get_ysize();
 
-	vector<float> ctf1 = image_ctf->compute_1d(ny2, curve_type);
+	vector<float> ctf1 = image_ctf->compute_1d(ny2,1.0/(image_ctf->apix*image->get_ysize()), curve_type);
 		
 	if (ctf1.size() == 0) {
 		LOGERR("Unexpected CTF correction problem");
@@ -691,10 +691,10 @@ void CtfAverager::add_image(EMData * image)
 
 	vector<float> ctfn1;
 	if (sf) {
-		ctfn1 = image_ctf->compute_1d(ny2, Ctf::CTF_SNR, sf);
+		ctfn1 = image_ctf->compute_1d(ny2,1.0/(image_ctf->apix*image->get_ysize()), Ctf::CTF_SNR, sf);
 	}
 	else {
-		ctfn1 = image_ctf->compute_1d(ny2, Ctf::CTF_SNR);
+		ctfn1 = image_ctf->compute_1d(ny2,1.0/(image_ctf->apix*image->get_ysize()), Ctf::CTF_SNR);
 	}
 
 	ctfn.push_back(ctfn1);

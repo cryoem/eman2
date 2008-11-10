@@ -78,6 +78,12 @@ namespace EMAN
 		{
 		}
 
+		float defocus;			// 	Defocus in microns, note that postitive is now underfocus, whereas values in EMAN1 are negative overfocus
+		float bfactor;			// 	B-factor expressed using the x-ray convention (e^-B/4 s^2 in amplitude space) EMAN1 used E^-B s^2
+		float voltage;			//  in kV
+		float cs;				//  in mm
+		float apix;				//
+
 		virtual int from_string(const string & ctf) = 0;	// The first letter of the string indicates the subclass type
 		virtual string to_string() const = 0;
 
@@ -87,7 +93,7 @@ namespace EMAN
 		virtual void from_vector(const vector<float>& vctf) = 0;
 		virtual vector<float> to_vector() const = 0;
 
-		virtual vector < float >compute_1d(int size, CtfType t, XYData * struct_factor = 0) = 0;
+		virtual vector < float >compute_1d(int size,float ds, CtfType t, XYData * struct_factor = 0) = 0;
 		virtual void compute_2d_real(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 		virtual void compute_2d_complex(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 
@@ -121,7 +127,7 @@ namespace EMAN
 		EMAN1Ctf();
 		~EMAN1Ctf();
 
-		vector < float >compute_1d(int size, CtfType type, XYData * struct_factor = 0);
+		vector < float >compute_1d(int size,float ds, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
 
@@ -235,7 +241,7 @@ namespace EMAN
 		EMAN2Ctf();
 		~EMAN2Ctf();
 
-		vector < float >compute_1d(int size, CtfType type, XYData * struct_factor = 0);
+		vector < float >compute_1d(int size,float ds, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
 

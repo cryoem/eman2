@@ -43,6 +43,8 @@ import sys
 
 debug=False
 
+sfcurve=None		# This will store a global structure factor curve if specified
+
 def main():
 	global debug
 	progname = os.path.basename(sys.argv[0])
@@ -69,6 +71,7 @@ operations are performed on oversampled images if specified."""
 	parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
 	parser.add_option("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False)
 	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
+	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Can improve B-factor determination.",default=None)
 	parser.add_option("--debug",action="store_true",default=False)
 
 	(options, args) = parser.parse_args()
@@ -77,8 +80,13 @@ operations are performed on oversampled images if specified."""
 	if options.voltage==0 : parser.error("Please specify voltage")
 	if options.cs==0 : parser.error("Please specify Cs")
 	if options.apix==0 : parser.error("Please specify A/Pix")
-		
+	
 	debug=options.debug
+
+	global sfcurve
+	if options.sf :
+		sfcurve=XYData()
+		sfcurve.read_file(options.sf)
 
 	logid=E2init(sys.argv)
 
@@ -90,6 +98,7 @@ operations are performed on oversampled images if specified."""
 	parms=db_open_dict("bdb:e2ctf.parms")
 	
 
+	### Power spectrum and CTF fitting
 	for filename in args:
 		name=get_file_tag(filename)
 
@@ -113,11 +122,29 @@ operations are performed on oversampled images if specified."""
 			
 		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
 
+	### GUI - user can update CTF parameters interactively
 	if options.gui :
 		gui=GUIctf(img_sets)
 		gui.run()
 
+	### This computes the intensity of the background subtracted power spectrum at each CTF maximum for all sets
+	envelopes=[]
+	for i in img_sets:
+		envelopes.append(ctf_env_points(i[2],i[3],i[1]))
+	
+	scales=[1.0]*len(img_sets)
+	
+	
+	envelope.sort()
+	envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
+	
+	out=file("envelope.txt","w")
+	for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
+	out.close()
+
+	### Process input files
 	if debug : print "Phase flipping / Wiener filtration"
+	# write wiener filtered and/or phase flipped particle data to the local database
 	if options.phaseflip or options.wiener:
 		for filename in args:
 			name=get_file_tag(filename)
@@ -138,6 +165,19 @@ operations are performed on oversampled images if specified."""
 
 	E2end(logid)
 
+def env_cmp(env,sca):
+	total=[]
+	for i,ii in enumerate(env):
+		for j in ii:
+			total.append((j[0],j[1]*sca[i]))
+	
+	total.sort()
+	
+	ret=0
+	for i in range(1,len(total)): ret+=fabs(total[i-1][1]/total[i][1]-1.0)/(total[i][1]-total[i][0]+.0005)
+
+	return ret
+	
 def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
@@ -338,6 +378,26 @@ def smooth_bg(curve,ds):
 	return curve[:first]+[pow(curve[i-1]*curve[i]*curve[i+1],.33333) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
 #	return curve[:first]+[pow(curve[i-2]*curve[i-1]*curve[i]*curve[i+1]*curve[i+2],.2) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
 
+def least_square(data,dolog=0):
+	"simple linear regression for y=mx+b on a list of (x,y) points. Use the C routine if you need speed."
+	sum,sum_x,sum_y,sum_xx,sum_xy=0,0,0,0,0
+	for d in data:
+		if dolog : y=log10(d[1])
+		else : y=d[1]
+
+		sum_x+=d[0]
+		sum_xx+=d[0]*d[0]
+		sum_y+=y
+		sum_xy+=d[0]*y
+		sum+=1.0
+	
+	denom=sum*sum_xx-sum_x*sum_x
+	if denom==0 : denom=.00001
+	
+	m=(sum*sum_xy-sum_x*sum_y)/denom
+	b=(sum_xx*sum_y-sum_x*sum_xy)/denom
+	
+	return(m,b)
 
 def snr_safe(s,n) :
 	if s<=0 or n<=0 : return 0.0
@@ -346,7 +406,11 @@ def snr_safe(s,n) :
 def sfact(s):
 	"""This will return a curve shaped something like the structure factor of a typical protein. It is not designed to be
 	highly accurate, but be good enough for approximate B-factor estimation"""
-
+	
+	global sfcurve
+	if sfcurve:			# Replace the generic structure factor with a user-provided one
+		v=sfcurve.get_yatx(s)
+		return max(0.001,v)
 	if s<.004 : return 0
 	if s>.2934 : s=.2934
 	return pow(10.0,3.6717 - 364.58 * s + 15597 * s**2 - 4.0678e+05 * s**3 + 6.7098e+06 * s**4 - 7.0735e+07 * s**5 + 4.7839e+08 * s**6 - 2.0574e+09 * s**7 +5.4288e+09 * s**8 - 8.0065e+09 * s**9 + 5.0518e+09 * s**10)
@@ -373,7 +437,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		df=dfi/20.0
 		ctf.defocus=df
 		ctf.ampcont=ac
-		cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
+		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 		st=.04/ds
 		norm=0
 		for fz in range(len(cc)): 
@@ -403,7 +467,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	for dfi in range(-10,10):			# loop over defocus
 		df=dfi/100.0+dfbest1[0]
 		ctf.defocus=df
-		cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
+		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 		st=.04/ds
 		norm=0
 		for fz in range(len(cc)): 
@@ -420,8 +484,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			dfbest=(df,tot)
 		if debug : dfout.write("%1.2f\t%g\n"%(df,tot))
 
-	ctf.defocus=dfbest1[0]
-	cc=ctf.compute_1d(ys,Ctf.CtfType.CTF_AMP)
+	ctf.defocus=dfbest[0]
+	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 	Util.save_data(0,ds,cc,"ctf.ctf.txt")
 
 	if bgadj:
@@ -466,6 +530,19 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	
 
 	return ctf
+
+def ctf_env_points(im_1d,bg_1d,ctf) :
+	"""This will return a list of x,y points corresponding to the maxima of the ctf in the background
+	subtracted power spectrum"""
+	ys=len(bg_1d)
+	ds=ctf.dsbg
+	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+	ret=[]
+	
+	for i in range(1,len(cc)-1):
+		if cc[i-1]<cc[i] and cc[i]>cc[i+1] : ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))
+		
+	return ret
 
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -539,6 +616,7 @@ class GUIctf(QtGui.QWidget):
 		self.splotmode.addItem("Ptcl & BG power")
 		self.splotmode.addItem("Bgsub & fit")
 		self.splotmode.addItem("SNR")
+		self.splotmode.addItem("Test")
 		self.vbl2.addWidget(self.splotmode)
 		self.hbl.addLayout(self.vbl2)
 		
@@ -614,12 +692,12 @@ class GUIctf(QtGui.QWidget):
 			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
 			
-			fit=ctf.compute_1d(len(s)*2,Ctf.CtfType.CTF_AMP)		# The fit curve
+			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
 			fit=[sfact(s[i])*fit[i]**2 for i in range(len(s))]		# squared * a generic structure factor
 
-			# autoamplitude for b-factor adjustment
+			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(len(s)): 
+			for i in range(int(.02/ds)+1,len(s)): 
 				if bgsub[i]>0 : 
 					rto+=fit[i]**2/bgsub[i]
 					nrto+=fit[i]
@@ -630,6 +708,13 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data("fit",(s,fit))
 		elif self.plotmode==2:
 			self.guiplot.set_data("snr",(s,ctf.snr),True)
+		elif self.plotmode==3:
+			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
+			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
+			
+			fit=[bgsub[i]/sfact(s[i]) for i in range(len(s))]		# squared * a generic structure factor
+
+			self.guiplot.set_data("fit",(s,fit))
 
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
