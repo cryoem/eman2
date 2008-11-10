@@ -15,12 +15,11 @@ def main():
 
 	from   optparse       import OptionParser
 	progname = os.path.basename(arglist[0])
-	usage = progname + " filelist outputfile --nprj  --fl=flit_low_value --fh=filt_high_value --radccc=radius_ccc --writelp --writestack"
+	usage = progname + " filelist outputfile  --fl=flit_low_value --fh=filt_high_value --radccc=radius_ccc --writelp --writestack --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--fl",        type="float",  default=0.2,    help="first parameter for low pass filter")
 	parser.add_option("--fh",        type="float",  default=0.4,    help="second parameter for low pass filter")
 	parser.add_option("--radccc",    type="int",    default=-1,     help="radius for ccc caclualtion")
-	parser.add_option("--nprj",      type="int", 	help="number of projections" )
 	parser.add_option("--writelp",   action="store_true", default=False, help="if write the low pass filtered volume to disk (default is False)" )
 	parser.add_option("--writestack", action="store_true", default=False, help="if write the stack contain all variance map" )
 	parser.add_option("--MPI", action="store_true", default=False, help="if use MPI version" )
@@ -33,15 +32,15 @@ def main():
 		if options.MPI:
 			files = args[0:-1]
 			output = args[-1]
-			print 'mpi version of incvar'
+			print 'mpi version of defvar'
 			from applications import defvar_mpi
-			defvar_mpi( files, options.nprj, output, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
+			defvar_mpi( files, 10000.0, output, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
 		else:
 			prefix = args[0]
 			nfile = int(args[1])
 			output = args[2]
 			from applications import incvar
-			incvar( prefix, nfile, options.nprj, output, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
+			incvar( prefix, nfile, 10000.0, output, options.fl, options.fh, options.radccc, options.writelp, options.writestack)
 
 
 if __name__ == "__main__":
