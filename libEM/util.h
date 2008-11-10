@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #ifndef eman__util_h__
@@ -70,7 +70,7 @@ namespace EMAN
 {
 	class EMData;
 	class Dict;
-	
+
 	typedef boost::multi_array<int, 3> MIArray3D;
 
 	/** @ingroup tested3c */
@@ -80,7 +80,7 @@ namespace EMAN
 	{
 		/** For those util function developed by Pawel's group */
 		#include "sparx/util_sparx.h"
-		
+
 	  public:
 		/** convert complex data array from Amplitude/Phase format
 		 * into Real/Imaginary format.
@@ -94,6 +94,15 @@ namespace EMAN
 		 * @param n array size.
 		 */
 		static void flip_complex_phase(float *data, size_t n);
+
+		/** rotate data vertically by ny/2,
+		 * to make the mrc phase origin compliance with EMAN1 and TNF reader
+		 * @param data complex data array
+		 * @param nx x dimension size
+		 * @param ny y dimension size
+		 * @param nz z dimension size
+		 * */
+		static void rotate_phase_origin(float *data, size_t nx, size_t ny, size_t nz);
 
 		/** lock a file. If the lock fails, wait for 1 second; then
 		 * try again. Repleat this wait-try for a maxinum of 5 times
@@ -137,10 +146,10 @@ namespace EMAN
 		 * @return the lower case converted version s
 		 */
 		static string str_to_lower(const string& s);
-		
+
 		/** Safe string compare. It compares 's2' with the first N
 		 * characters of 's1', where N is the length of 's2'.
-		 * 
+		 *
 		 * @param s1 String 1. Its first strlen(s2) characters will be
 		 *     used to do the comparison.
 		 * @param s2 String 2. Its whole string will be used to do the comparison.
@@ -160,12 +169,12 @@ namespace EMAN
 		 * string.
 		 *
 		 * @param[in,out] str  A multiple-line string.
-		 * @return A single line. 
+		 * @return A single line.
 		 */
 		static string get_line_from_string(char **str);
 
 		/** Extract the float value from a variable=value string
-		 * with format like "XYZ=1.1", 
+		 * with format like "XYZ=1.1",
 		 * where 'str' is "XYZ=1.1"; 'float_var' is "XYZ=";
 		 * 'p_val' points to float number 1.1.
 		 *
@@ -177,9 +186,9 @@ namespace EMAN
 		 */
 		static bool get_str_float(const char *str, const char *float_var, float *p_val);
 
-		
+
 		/** Extract the float values from a variable=value1,value2 string
-		 * with format like "XYZ=1.1,1.2", 
+		 * with format like "XYZ=1.1,1.2",
 		 * where 'str' is "XYZ=1.1,1.2"; 'float_var' is "XYZ=";
 		 * 'p_v1' points to  1.1; 'p_v2' points to  1.2.
 		 *
@@ -192,7 +201,7 @@ namespace EMAN
 		 */
 		static bool get_str_float(const char *str, const char *float_var,
 								  float *p_v1, float *p_v2);
-	
+
 		/** Extract number of values and the float values, if any,
 		 * from a string whose format is
 		 * either "variable=value1,value2 " or "variable".
@@ -202,7 +211,7 @@ namespace EMAN
 		 * 'p_nvalues' points to 2. 'p_v1' points to 1.1; 'p_v2' points to 1.2.
 		 * If the string is "XYZ", then 'str' is "XYZ"; 'float_var' is "XYZ".
 		 * 'p_nvalues' points to 0. 'p_v1' and 'p_v2' unchanged.
-		 * 
+		 *
 		 * @param[in] str A string like "XYZ=1.1,1.2" or "XYZ".
 		 * @param[in] float_var The variable name "XYZ".
 		 * @param[out] p_nvalues Number of values in the string.
@@ -211,11 +220,11 @@ namespace EMAN
 		 * @return True if the extraction succeeds; False if
 		 *         extraction fails.
 		 */
-		static bool get_str_float(const char *str, const char *float_var, 
+		static bool get_str_float(const char *str, const char *float_var,
 								  int *p_nvalues, float *p_v1, float *p_v2);
 
 		/** Extract the int value from a variable=value string
-		 * with format like "XYZ=1", 
+		 * with format like "XYZ=1",
 		 * where 'str' is "XYZ=1"; 'int_var' is "XYZ=";
 		 * 'p_val' points to float number 1.
 		 *
@@ -226,9 +235,9 @@ namespace EMAN
 		 *         extraction fails.
 		 */
 		static bool get_str_int(const char *str, const char *int_var, int *p_val);
-		
+
 		/** Extract the int value from a variable=value1,value2 string
-		 * with format like "XYZ=1,2", 
+		 * with format like "XYZ=1,2",
 		 * where 'str' is "XYZ=1,2"; 'int_var' is "XYZ=";
 		 * 'p_val' points to float number 1.
 		 *
@@ -241,7 +250,7 @@ namespace EMAN
 		 */
 		static bool get_str_int(const char *str, const char *int_var,
 								int *p_v1, int *p_v2);
-		
+
 		/** Extract number of values and the int values, if any,
 		 * from a string whose format is
 		 * either "variable=value1,value2 " or "variable".
@@ -251,7 +260,7 @@ namespace EMAN
 		 * 'p_nvalues' points to 2. 'p_v1' points to 1; 'p_v2' points to 2.
 		 * If the string is "XYZ", then 'str' is "XYZ"; 'int_var' is "XYZ".
 		 * 'p_nvalues' points to 0. 'p_v1' and 'p_v2' unchanged.
-		 * 
+		 *
 		 * @param[in] str A string like "XYZ=1,2" or "XYZ".
 		 * @param[in] int_var The variable name "XYZ".
 		 * @param[out] p_nvalues Number of values in the string.
@@ -260,7 +269,7 @@ namespace EMAN
 		 * @return True if the extraction succeeds; False if
 		 *         extraction fails.
 		 */
-		static bool get_str_int(const char *str, const char *int_var, 
+		static bool get_str_int(const char *str, const char *int_var,
 								int *p_nvalues, int *p_v1, int *p_v2);
 
 		/** Change a file's extension and return the new filename.
@@ -283,7 +292,7 @@ namespace EMAN
 		 * @return The new filename without extension.
 		 */
 		static string remove_filename_ext(const string& filename);
-		
+
 		/** Get a filename's extension.
 		 * @param[in] filename A given filename.
 		 * @return The filename's extension, or empty string if the
@@ -298,7 +307,7 @@ namespace EMAN
 		 * @return The basename of the filename.
 		 */
 		static string sbasename(const string & filename);
-		
+
 		/** calculate the least square fit value.
 		 *
 		 * @param[in] nitems Number of items in array data_x and data_y.
@@ -312,7 +321,7 @@ namespace EMAN
 		 * @param[in] absmax Ignores values in y more than absmax from zero
 		 */
 		static void calc_least_square_fit(size_t nitems, const float *data_x,
-										  const float *data_y, float *p_slope, 
+										  const float *data_y, float *p_slope,
 										  float *p_intercept, bool ignore_zero,float absmax=0);
 
 		/** calculate bilinear least-square fit, z = a + b x + c y
@@ -325,15 +334,15 @@ namespace EMAN
 
 		/** Save (x y) data array into a file. Each line of the file
 		 * have the format "x1TABy1", where x1, y1 are elements of x
-		 * array and y array. The x, y arrays must have the same 
+		 * array and y array. The x, y arrays must have the same
 		 * number of items.
 		 *
 		 * @param[in] x_array The x array.
 		 * @param[in] y_array The y array.
 		 * @param[in] filename The output filename.
 		 */
-		 
-		static void save_data(const vector < float >&x_array, 
+
+		static void save_data(const vector < float >&x_array,
 							  const vector < float >&y_array,
 							  const string & filename);
 
@@ -348,7 +357,7 @@ namespace EMAN
 		static void save_data(float x0, float dx,
 							  const vector < float >&y_array,
 							  const string & filename);
-		
+
 		/** Save x, y data into a file. Each line of the file have the
 		 * format "x1TABy1", where x1 = x0 + dx*i; y1 = y_array[i].
 		 *
@@ -358,10 +367,10 @@ namespace EMAN
 		 * @param[in] array_size The y data array size.
 		 * @param[in] filename The output filename.
 		 */
-		static void save_data(float x0, float dx, float *y_array, 
+		static void save_data(float x0, float dx, float *y_array,
 							  size_t array_size, const string & filename);
 
-		
+
 		/** does a sort as in Matlab. Carries along the Permutation
 		 * matrix
 		 * @param[in] left The array [left .. right] is sorted
@@ -370,34 +379,34 @@ namespace EMAN
 		 * @param[in] rightPerm The array [leftPerm rightPerm] is shuffled due to the sorting
 		 * Both arrays  are reshuffled.
 		 */
-		static void sort_mat(float *left, float *right, int *leftPerm, 
+		static void sort_mat(float *left, float *right, int *leftPerm,
 							 int *rightPerm);
-		
-		
+
+
 		/** Get the seed for Randnum class
-		 * @return 	the seed for current random number generator 
+		 * @return 	the seed for current random number generator
 		 * */
 		static unsigned long int get_randnum_seed();
 
 		/** Set the seed for Randnum class
-		 * @param[in]	the seed for current random number generator 
+		 * @param[in]	the seed for current random number generator
 		 * */
 		static void set_randnum_seed(unsigned long int seed);
-		
+
 		/** Get an integer random number between low and high, [low, high]
 		 * @param[in] low The lower bound of the random number.
 		 * @param[in] high The upper bound of the random number.
 		 * @return The random number between low and high.
 		 */
 		static int get_irand(int low, int high);
-		
+
 		/** Get a float random number between low and high, [low, high)
 		 * @param[in] low The lower bound of the random number.
 		 * @param[in] high The upper bound of the random number.
 		 * @return The random number between low and high.
 		 */
 		static float get_frand(int low, int high);
-		
+
 		/** Get a float random number between low and high, [low, high)
 		 * @param[in] low The lower bound of the random number.
 		 * @param[in] high The upper bound of the random number.
@@ -419,7 +428,7 @@ namespace EMAN
 		 * @return the gaussian random number.
 		 */
 		static float get_gauss_rand(float mean, float sigma);
-		
+
 		/** Get ceiling round of a float number x.
 		 * @param[in] x Given float number.
 		 * @return Ceiling round of x.
@@ -443,7 +452,7 @@ namespace EMAN
 			}
 			return (int) (x + 0.5);
 		}
-		
+
 		/** Calculate linear interpolation.
 		 * @param[in] p1 The first number. corresponding to (x0,y0).
 		 * @param[in] p2 The second number. corresponding to (x1,y0).
@@ -486,7 +495,7 @@ namespace EMAN
 		 * @return The trilinear interpolation value.
 		 */
 		static inline float trilinear_interpolate(float p1, float p2, float p3,
-							  float p4, float p5, float p6, 
+							  float p4, float p5, float p6,
 							 float p7, float p8, float t,
 								  float u, float v)
 		{
@@ -519,14 +528,14 @@ namespace EMAN
 									 float *p_max_val, float *p_min_val,
 									 int *p_max_index = 0, int *p_min_index = 0);
 
-		
+
 		/** Get the mean, standard deviation, skewness and kurtosis of the input data
 		* @param data the vector of input data
 		* @exception EmptyContainerException when the argument vector is empty
 		*/
 		static Dict get_stats( const vector<float>& data );
 		static Dict get_stats_cstyle( const vector<float>& data );
-		
+
 		/** Search the best FFT size with good primes. It supports
 		 * FFT size up to 4096 now.
 		 *
@@ -543,7 +552,7 @@ namespace EMAN
 		{
 			return (n * n);
 		}
-		
+
 		/** Calculate a number's square.
 		 * @param[in] x Given number.
 		 * @return (x*x).
@@ -581,7 +590,7 @@ namespace EMAN
 		{
 			return sqrtf(x * x + y * y);
 		}
-		
+
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
 		 * @param[in] x The first number.
 		 * @param[in] y The second number.
@@ -592,7 +601,7 @@ namespace EMAN
 		{
 			return sqrtf((float)(x * x + y * y + z * z));
 		}
-		
+
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
 		 * @param[in] x The first number.
 		 * @param[in] y The second number.
@@ -603,7 +612,7 @@ namespace EMAN
 		{
 			return sqrtf(x * x + y * y + z * z);
 		}
-		
+
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
 		 * @param[in] x The first number.
 		 * @param[in] y The second number.
@@ -630,10 +639,10 @@ namespace EMAN
 		}
 
 		/** Calculate Gaussian value.
-		 * @param[in] a 
-		 * @param[in] dx 
-		 * @param[in] dy 
-		 * @param[in] dz 
+		 * @param[in] a
+		 * @param[in] dx
+		 * @param[in] dy
+		 * @param[in] dz
 		 * @param[in] d
 		 * @return The Gaussian value.
 		 */
@@ -651,7 +660,7 @@ namespace EMAN
 		{
 			return (f1 < f2 ? f1 : f2);
 		}
-		
+
 		/** Get the minimum of 3 numbers.
 		 * @param[in] f1 The first number.
 		 * @param[in] f2 The second number.
@@ -678,7 +687,7 @@ namespace EMAN
 		{
 			return (f1 < f2 ? f1 : f2);
 		}
-		
+
 		/** Get the minimum of 3 numbers.
 		 * @param[in] f1 The first number.
 		 * @param[in] f2 The second number.
@@ -696,7 +705,7 @@ namespace EMAN
 			return f3;
 		}
 
-		
+
 		/** Get the minimum of 4 numbers.
 		 * @param[in] f1 The first number.
 		 * @param[in] f2 The second number.
@@ -718,7 +727,7 @@ namespace EMAN
 			}
 			return m;
 		}
-		
+
 		/** Get the maximum of 2 numbers.
 		 * @param[in] f1 The first number.
 		 * @param[in] f2 The second number.
@@ -728,7 +737,7 @@ namespace EMAN
 		{
 			return (f1 < f2 ? f2 : f1);
 		}
-		
+
 		/** Get the maximum of 3 numbers.
 		 * @param[in] f1 The first number.
 		 * @param[in] f2 The second number.
@@ -745,7 +754,7 @@ namespace EMAN
 			}
 			return f3;
 		}
-		
+
 		/** Get the maximum of 4 numbers.
 		 * @param[in] f1 The first number.
 		 * @param[in] f2 The second number.
@@ -809,10 +818,10 @@ namespace EMAN
 		 */
 		static inline int goodf(const float *p_f)
 		{
-			//This is the old way to judge a good float, which cause problem on 
+			//This is the old way to judge a good float, which cause problem on
 			//Fedora Core 64 bit system. Now use isinff() and isnanf() on Linux.
 			#if defined(_WIN32) || defined(__APPLE__)
-			// the first is abnormal zero the second is +-inf or NaN 
+			// the first is abnormal zero the second is +-inf or NaN
 			if ((((int *) p_f)[0] & 0x7f800000) == 0 ||
 				(((int *) p_f)[0] & 0x7f800000) == 255) {
 				return 0;
@@ -820,7 +829,7 @@ namespace EMAN
 			#else
 			if(isinff(*p_f) || isnanf(*p_f)) return 0;
 			#endif	//_WIN32 || __APPLE__
-			
+
 			return 1;
 		}
 
@@ -830,18 +839,18 @@ namespace EMAN
 		static string get_time_label();
 
 		/** Set program logging level through command line option "-v N",
-		 * where N is the level. 
+		 * where N is the level.
 		 *
 		 * @param[in] argc Number of arguments.
-		 * @param[in] argv Argument arrays.		 
+		 * @param[in] argv Argument arrays.
 		 */
 		static void set_log_level(int argc, char *argv[]);
-		
+
 		/** copy sign of a number. return a value whose absolute value
 		 * matches that of 'a', but whose sign matches that of 'b'.  If 'a'
 		 * is a NaN, then a NaN with the sign of 'b' is returned.
 		 *
-		 * It is exactly copysign() on non-Windows system.		 
+		 * It is exactly copysign() on non-Windows system.
 		 *
 		 * @param[in] a The first number.
 		 * @param[in] b The second number.
@@ -899,8 +908,8 @@ namespace EMAN
 			return (float)result;
 #endif
 		}
-		
-		/** Determine the equation of a plane that intersects 3 points in 3D space. 
+
+		/** Determine the equation of a plane that intersects 3 points in 3D space.
 		* Required by Symmetry3D::reduce
 		* IMPORTANT - does no error checking, if the float pointer is less than 4 in size will get unknown behavior
 		* @param p1 point one
@@ -913,9 +922,9 @@ namespace EMAN
 		*/
 		static void equation_of_plane(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, float * plane );
 
-		
-		
-		/** Determines if a point is in a 2D convex polygon described by 4 points using 
+
+
+		/** Determines if a point is in a 2D convex polygon described by 4 points using
 		 * the Barycentric method, which is a fast way of performing the query.
 		 * The points must be ordered in the way you would encounter them if you traversed
 		 * the boundary of the polygon. Direction is irrelevant.
@@ -930,7 +939,7 @@ namespace EMAN
 		 * @date October 2008
 		 */
 		static bool point_is_in_convex_polygon_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3, const Vec2f& p4,const Vec2f& actual_point);
-		
+
 		/** Determines if a point is in a 2D triangle using the Barycentric method, which is
 		 * a fast way of performing the query
 		 * Triangle points can be specified in any order
@@ -942,15 +951,15 @@ namespace EMAN
 		 * @author David Woolford
 		 * @date October 2008
 		*/
-		static bool point_is_in_triangle_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3, const Vec2f& actual_point); 
-		
+		static bool point_is_in_triangle_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3, const Vec2f& actual_point);
+
 		/** Print a 3D integer matrix to a file stream (std out by default).
 		 *
 		 * @param[in] mat integer 3-d multi_array reference
 		 * @param[in] str Message string to be printed.
 		 * @param[out] out stream; cout by default.
 		 */
-		static void printMatI3D(MIArray3D& mat, 
+		static void printMatI3D(MIArray3D& mat,
 								const string str = string(""),
 								ostream& out = std::cout);
 		/** Sign function
@@ -962,32 +971,32 @@ namespace EMAN
 		template<class T> static inline T sgn(T& val) {
 			return (val > 0) ? T(+1) : T(-1);
 		}
-		
-		/** Get the isosurface value for 3D image. 
-		 * 
+
+		/** Get the isosurface value for 3D image.
+		 *
 		 * @param[in] image 3D image data
 		 * @param[in] surface_value threshhold for isosurface valuse
 		 * @param[in] smooth boolean to specify whether the smooth value needed
-		 * 
+		 *
 		 * @return Dict to wrap the points(float array), and triangles(int array)
-		 * 
-		 * @exception ImageDimensionException 3D image only 
+		 *
+		 * @exception ImageDimensionException 3D image only
 		 * */
 //		static Dict get_isosurface(EMData * image, float surface_value, bool smooth);
-		
+
 		static float* getBaldwinGridWeights( const int& freq_cutoff, const float& P, const float& r, const float& dfreq = 1, const float& alpha=0.5, const float& beta = 0.2);
-	
-		/** Return true if an integer is positive and is power of 2 
-		 * 
+
+		/** Return true if an integer is positive and is power of 2
+		 *
 		 * @param[in] integer to be checked
-		 * 
+		 *
 		 * @return true if the integer is positive and is power of 2
 		 * */
 		static bool IsPower2(int x) {
 			return ( (x>1) && (x & (x-1))==0 );
 		}
-		
-		
+
+
 		static void apply_precision(float& value, const float& precision) {
 			float c = ceilf(value);
 			float f = (float)fast_floor(value);

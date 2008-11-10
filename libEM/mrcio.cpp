@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include <cstring>
@@ -69,11 +69,11 @@ MrcIO::~MrcIO()
 void MrcIO::init()
 {
 	ENTERFUNC;
-	
+
 	if (initialized) {
 		return;
 	}
-	
+
 	initialized = true;
 	mrcfile = sfopen(filename, rw_mode, &is_new_file);
 
@@ -93,6 +93,9 @@ void MrcIO::init()
 		//become_host_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
 		//become_host_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
 		mode_size = get_mode_size(mrch.mode);
+		if(is_complex_mode()) {
+			is_ri = 1;
+		}
 
 		if (mrch.nxstart != 0 || mrch.nystart != 0 || mrch.nzstart != 0) {
 			LOGWARN("nx/ny/nz start not zero");
@@ -180,7 +183,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 
 	//single image format, index can only be zero
 	image_index = 0;
-	check_read_access(image_index);	
+	check_read_access(image_index);
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 
 	dict["apix_x"] = mrch.xlen / mrch.mx;
@@ -232,7 +235,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	dict["MRC.nx"] = mrch.nx;
 	dict["MRC.ny"] = mrch.ny;
 	dict["MRC.nz"] = mrch.nz;
-	
+
 	dict["MRC.xlen"] = mrch.xlen;
 	dict["MRC.ylen"] = mrch.ylen;
 	dict["MRC.zlen"] = mrch.zlen;
@@ -256,13 +259,13 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 		sprintf(label, "MRC.label%d", i);
 		dict[string(label)] = mrch.labels[i];
 	}
-	
+
 	EMAN1Ctf ctf_;
 	if(read_ctf(ctf_) == 0) {
 		vector<float> vctf = ctf_.to_vector();
 		dict["ctf"] = vctf;
 	}
-	
+
 	Dict dic;
 	dic.put("type", "imagic");
 	dic.put("alpha", mrch.alpha);
@@ -278,7 +281,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	else {
 		dict["xform.align3d"] = trans;
 	}
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -287,7 +290,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType filestoragetype, bool use_host_endian)
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1);
@@ -296,7 +299,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		EXITFUNC;
 		return 0;
 	}
-	
+
 	int new_mode = to_mrcmode(filestoragetype, (int) dict["is_complex"]);
 	int nx = dict["nx"];
 	int ny = dict["ny"];
@@ -304,7 +307,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	is_ri =  dict["is_complex_ri"];
 
 	bool opposite_endian = false;
-	
+
 	if (!is_new_file) {
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 			opposite_endian = true;
@@ -356,7 +359,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 			mrch.zorigin = (float) dict["origin_sec"] - (float) dict["apix_z"] * image_index;
 		}
 	}
-	
+
 	if (dict.has_key("MRC.nlabels")) {
 		mrch.nlabels = dict["MRC.nlabels"];
 	}
@@ -399,23 +402,23 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mrch.amax = dict["maximum"];
 	mrch.amean = dict["mean"];
 
-	/** the folowing lines are commented out. 
+	/** the folowing lines are commented out.
 	 * To make EMAN2 consistent with IMOD. Especially "header" command in IMOD. */
 //	if(dict.has_key("MRC.mx")) {
-//		mrch.mx = dict["MRC.mx"]; 
+//		mrch.mx = dict["MRC.mx"];
 //	}
 //	else {
 		mrch.mx = nx;
 //	}
 //	if(dict.has_key("MRC.my")) {
 //		mrch.my = dict["MRC.my"];
-//	}	
+//	}
 //	else {
 		mrch.my = ny;
 //	}
 //	if(dict.has_key("MRC.mz")) {
-//		mrch.mz = dict["MRC.mz"];	
-//	}	
+//		mrch.mz = dict["MRC.mz"];
+//	}
 //	else {
 		mrch.mz = nz;
 //	}
@@ -427,46 +430,46 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	if(dict.has_key("MRC.nxstart")) {
 		mrch.nxstart = dict["MRC.nxstart"];
 	}
-	else {	
+	else {
 		mrch.nxstart = -nx / 2;
 	}
 	if(dict.has_key("MRC.nystart")) {
-		mrch.nystart = dict["MRC.nystart"];	
+		mrch.nystart = dict["MRC.nystart"];
 	}
 	else {
 		mrch.nystart = -ny / 2;
 	}
 	if(dict.has_key("MRC.nzstart")) {
-		mrch.nzstart = dict["MRC.nzstart"];	
+		mrch.nzstart = dict["MRC.nzstart"];
 	}
 	else {
 		mrch.nzstart = -nz / 2;
 	}
-	
+
 	sprintf(mrch.map, "MAP ");
 	mrch.machinestamp = generate_machine_stamp();
 	mrch.rms = (float)dict["MRC.rms"];
 
 	MrcHeader mrch2 = mrch;
-	
+
 	if (opposite_endian || !use_host_endian) {
 		swap_header(mrch2);
 	}
-	
+
 	if (fwrite(&mrch2, sizeof(MrcHeader), 1, mrcfile) != 1) {
 		throw ImageWriteException(filename, "MRC header");
 	}
 
 	mode_size = get_mode_size(mrch.mode);
 	is_new_file = false;
-	
+
 	if( dict.has_key("ctf") ) {
 		vector<float> vctf = dict["ctf"];
 		EMAN1Ctf ctf_;
 		ctf_.from_vector(vctf);
 		write_ctf(ctf_);
 	}
-	
+
 	EXITFUNC;
 	return 0;
 }
@@ -474,7 +477,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
-	
+
 	//single image format, index can only be zero
 	image_index = 0;
 	check_read_access(image_index, rdata);
@@ -531,8 +534,9 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 	}
 
 	if (is_complex_mode()) {
-		Util::ap2ri(rdata, size);
+		if(!is_ri) Util::ap2ri(rdata, size);
 		Util::flip_complex_phase(rdata, size);
+		Util::rotate_phase_origin(rdata, xlen, ylen, zlen);
 	}
 	EXITFUNC;
 	return 0;
@@ -546,7 +550,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
-	
+
 	int nx = mrch.nx;
 	int ny = mrch.ny;
 	int nz = mrch.nz;
@@ -559,6 +563,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 			is_ri = 1;
 		}
 		Util::flip_complex_phase(data, size);
+		Util::rotate_phase_origin(data, nx, ny, nz);
 	}
 
 	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
@@ -574,7 +579,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		}
 	}
 	mode_size = get_mode_size(mrch.mode);
-	
+
 //	int xlen = 0, ylen = 0, zlen = 0;
 //	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 //	int size = xlen * ylen * zlen;
@@ -583,7 +588,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	float rendermin = 0.0f;
 	float rendermax = 0.0f;
 	getRenderMinMax(data, nx, ny, rendermin, rendermax);
-	
+
 	unsigned char *cdata = 0;
 	short *sdata = 0;
 	unsigned short *usdata = 0;
@@ -591,7 +596,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		cdata = new unsigned char[size];
 		for (unsigned int i = 0; i < size; ++i) {
 			if(data[i] <= rendermin) {
-				cdata[i] = 0; 
+				cdata[i] = 0;
 			}
 			else if(data[i] >= rendermax){
 				cdata[i] = UCHAR_MAX;
@@ -606,7 +611,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		sdata = new short[size];
 		for (unsigned int i = 0; i < size; ++i) {
 			if(data[i] <= rendermin) {
-				sdata[i] = SHRT_MIN; 
+				sdata[i] = SHRT_MIN;
 			}
 			else if(data[i] >= rendermax) {
 				sdata[i] = SHRT_MAX;
@@ -621,7 +626,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		usdata = new unsigned short[size];
 		for (unsigned int i = 0; i < size; ++i) {
 			if(data[i] <= rendermin) {
-				usdata[i] = 0; 
+				usdata[i] = 0;
 			}
 			else if(data[i] >= rendermax) {
 				usdata[i] = USHRT_MAX;
@@ -638,24 +643,24 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	// #if 0  ... #endif block.
 	EMUtil::process_region_io(ptr_data, mrcfile, WRITE_ONLY, image_index,
 							  mode_size, nx, mrch.ny, mrch.nz, area);
-	
+
 	if(cdata) {delete [] cdata; cdata=0;}
 	if(sdata) {delete [] sdata; sdata=0;}
 	if(usdata) {delete [] usdata; usdata=0;}
-	
+
 #if 0
 	int row_size = nx * get_mode_size(mrch.mode);
 	int sec_size = nx * ny;
 
 	unsigned char *cbuf = new unsigned char[row_size];
 	unsigned short *sbuf = (unsigned short *) cbuf;
-	
+
 	for (int i = 0; i < nz; i++) {
 		int i2 = i * sec_size;
 		for (int j = 0; j < ny; j++) {
 			int k = i2 + j * nx;
 			void *pbuf = 0;
-			
+
 			switch (mrch.mode) {
 			case MRC_UCHAR:
 				for (int l = 0; l < nx; l++) {
@@ -681,7 +686,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				pbuf = sbuf;
 				fwrite(sbuf, row_size, 1, mrcfile);
 				break;
-				
+
 			case MRC_FLOAT:
 			case MRC_FLOAT_COMPLEX:
 				pbuf = &data[k];
@@ -699,15 +704,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		cbuf = 0;
 	}
 #endif
-	
-	if (is_complex_mode()) {
-		if (!is_ri) {
-			Util::ap2ri(data, size);
-			is_ri = 1;
-		}
-		Util::flip_complex_phase(data, size);
-	}
-
 
 	EXITFUNC;
 	return 0;
@@ -742,7 +738,7 @@ void MrcIO::write_ctf(const Ctf & ctf, int)
 {
 	ENTERFUNC;
 	init();
-	
+
 	string ctf_str = ctf.to_string();
 	sprintf(&mrch.labels[0][0], "%s%s", CTF_MAGIC, ctf_str.c_str());
 	rewind(mrcfile);

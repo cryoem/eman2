@@ -5,32 +5,32 @@
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
 
 #include "byteorder.h"
@@ -89,6 +89,48 @@ void Util::flip_complex_phase(float *data, size_t n)
 
 	for (size_t i = 0; i < n; i += 2) {
 		data[i + 1] *= -1;
+	}
+}
+
+void Util::rotate_phase_origin(float *data, size_t nx, size_t ny, size_t nz)
+{
+	if(ny==1 && nz==1) {	//1D, do nothing
+		return;
+	}
+	else if(ny!=1 && nz==1) {	//2D, rotate vertically by ny/2
+		size_t i, j, k, l;
+		float re;
+		l=ny/2*nx;
+		for (i=0; i<ny/2; i++) {
+			for (j=0; j<nx; j++) {
+				k=j+i*nx;
+				re=data[k];
+				data[k]=data[k+l];
+				data[k+l]=re;
+			}
+		}
+	}
+	else {	//3D, in the y,z plane, swaps quadrants I,III and II,IV, this is the 'rotation' in y and z
+		size_t i, j, k, l, ii, jj;
+		char * t=(char *)malloc(sizeof(float)*nx);
+
+		k=nx*ny*(nz+1)/2;
+		l=nx*ny*(nz-1)/2;
+		jj=nx*sizeof(float);
+		for (j=ii=0; j<nz/2; ++j) {
+			for (i=0; i<ny; ++i,ii+=nx) {
+				memcpy(t,data+ii,jj);
+				if (i<ny/2) {
+					memcpy(data+ii,data+ii+k,jj);
+					memcpy(data+ii+k,t,jj);
+				}
+				else {
+					memcpy(data+ii,data+ii+l,jj);
+					memcpy(data+ii+l,t,jj);
+				}
+			}
+		}
+		free(t);
 	}
 }
 
@@ -641,7 +683,7 @@ void Util::set_randnum_seed(unsigned long int seed)
 
 unsigned long int Util::get_randnum_seed()
 {
-	Randnum* randnum = Randnum::Instance();	
+	Randnum* randnum = Randnum::Instance();
 	return	randnum->get_seed();
 }
 
@@ -740,54 +782,54 @@ Dict Util::get_stats( const vector<float>& data )
 {
 	// Note that this is a heavy STL approach using generic algorithms - some memory could be saved
 	// using plain c style code, as in get_stats_cstyle below
-	
+
 	if (data.size() == 0) EmptyContainerException("Error, attempting to call get stats on an empty container (vector<double>)");
-	
+
 	double sum = accumulate(data.begin(), data.end(), 0.0);
-	
+
 	double mean = sum / static_cast<double> (data.size());
-	
+
 	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0;
-	
+
 	if (data.size() > 1)
 	{
 		// read mm is "minus_mean"
 		vector<double> data_mm(data.size());
 		// read ts as "then squared"
 		vector<double> data_mm_sq(data.size());
-		
+
 		// Subtract the mean from the data and store it in data_mm
 		transform(data.begin(), data.end(), data_mm.begin(), std::bind2nd(std::minus<double>(), mean));
-		
+
 		// Get the square of the data minus the mean and store it in data_mm_sq
 		transform(data_mm.begin(), data_mm.end(), data_mm.begin(), data_mm_sq.begin(), std::multiplies<double>());
-		
+
 		// Get the sum of the squares for the calculation of the standard deviation
 		double square_sum = accumulate(data_mm_sq.begin(), data_mm_sq.end(), 0.0);
-		
+
 		//Calculate teh standard deviation
 		std_dev = sqrt(square_sum / static_cast<double>(data.size()-1));
 		double std_dev_sq = std_dev * std_dev;
-		
+
 		// The numerator for the skewness fraction, as defined in http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
 		double cubic_sum = inner_product(data_mm.begin(), data_mm.end(),data_mm_sq.begin(), 0.0);
-		
+
 		// The numerator for the kurtosis fraction, as defined in http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
 		double quartic_sum = inner_product(data_mm_sq.begin(), data_mm_sq.end(),data_mm_sq.begin(), 0.0);
-		
+
 		// Finalize the calculation of the skewness and kurtosis, as defined in
 		// http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
 		skewness = cubic_sum / ((data.size()-1) * std_dev_sq * std_dev );
 		kurtosis = quartic_sum / ((data.size()-1) * std_dev_sq * std_dev_sq );
-		
+
 	}
-	
+
 	Dict parms;
 	parms["mean"] = mean;
 	parms["std_dev"] = std_dev;
 	parms["skewness"] = skewness;
 	parms["kurtosis"] = kurtosis;
-	
+
 	return parms;
 }
 
@@ -796,7 +838,7 @@ Dict Util::get_stats_cstyle( const vector<float>& data )
 {
 	// Performs the same calculations as in get_stats, but uses a single pass, optimized c approach
 	// Should perform better than get_stats
-	
+
 	if (data.size() == 0) EmptyContainerException("Error, attempting to call get stats on an empty container (vector<double>)");
 
 	double square_sum = 0.0, sum = 0.0, cube_sum = 0.0, quart_sum = 0.0;
@@ -809,40 +851,40 @@ Dict Util::get_stats_cstyle( const vector<float>& data )
 		square_sum += square;
 		sum += val;
 	}
-	
+
 	double mean = sum/(double)data.size();
-	
+
 	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0;
-	
+
 	if (data.size() > 1)
 	{
 		// The standard deviation is calculated here
 		std_dev = sqrt( (square_sum - mean*sum)/(double)(data.size()-1));
-		
+
 		double square_mean = mean*mean;
 		double cube_mean = mean*square_mean;
-		
+
 		double square_std_dev = std_dev*std_dev;
-		
+
 		// This is the numerator of the skewness fraction, if you expand the brackets, as defined in
 		// http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
 		double cubic_sum = cube_sum - 3*square_sum*mean + 3*sum*square_mean - cube_mean*data.size();
 		// Complete the skewness fraction
 		skewness = cubic_sum/((data.size()-1)*square_std_dev*std_dev);
-		
+
 		// This is the numerator of the kurtosis fraction, if you expand the brackets, as defined in
 		// http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
 		double quartic_sum = quart_sum - 4*cube_sum*mean + 6*square_sum*square_mean - 4*sum*cube_mean  + square_mean*square_mean*data.size();
 		// Complete the kurtosis fraction
 		kurtosis = quartic_sum /( (data.size()-1)*square_std_dev*square_std_dev);
 	}
-	
+
 	Dict parms;
 	parms["mean"] = mean;
 	parms["std_dev"] = std_dev;
 	parms["skewness"] = skewness;
 	parms["kurtosis"] = kurtosis;
-	
+
 	return parms;
 }
 
@@ -945,7 +987,7 @@ void printmatrix( gsl_matrix* M, const int n, const int m, const string& message
 		cout << endl;
 	}
 }
-			 
+
 void printvector( gsl_vector* M, const int n, const string& message = "")
 {
 	cout << message << endl;
@@ -954,17 +996,17 @@ void printvector( gsl_vector* M, const int n, const string& message = "")
 	}
 	cout << endl;
 }
-			 
+
 float* Util::getBaldwinGridWeights( const int& freq_cutoff, const float& P, const float& r, const float& dfreq, const float& alpha, const float& beta)
 {
 	int i = 0;
 	int discs = (int)(1+2*freq_cutoff/dfreq);
-	
+
 	float*  W = new float[discs];
-	
+
 	int fc = (int)(2*freq_cutoff + 1);
 	gsl_matrix* M = gsl_matrix_calloc(fc,fc);
-	
+
 	gsl_vector* rhs = gsl_vector_calloc(fc);
 	cout << i++ << endl;
 	for(int k = -freq_cutoff; k <= freq_cutoff; ++k){
@@ -984,27 +1026,27 @@ float* Util::getBaldwinGridWeights( const int& freq_cutoff, const float& P, cons
 		}
 	}
 	printmatrix(M,fc,fc,"M");
-	
+
 	gsl_vector_set(rhs,int(freq_cutoff),alpha*r*P);
 	gsl_matrix* V = gsl_matrix_calloc(fc,fc);
 	gsl_vector* S = gsl_vector_calloc(fc);
 	gsl_vector* soln = gsl_vector_calloc(fc);
 	gsl_linalg_SV_decomp(M,V,S,soln);
-	
+
 	gsl_linalg_SV_solve(M, V, S, rhs, soln); // soln now runs from -freq_cutoff to + freq_cutoff
 	printvector(soln,fc,"soln");
-	
+
 	// we want to solve for W, which ranges from -freq_cutoff to +freq_cutoff in steps of dfreq                            2
 	int Count=0;
 	for(float q = (float)(-freq_cutoff); q <= (float)(freq_cutoff); q+= dfreq){
 		float temp=0;
 		for(int k = -freq_cutoff; k <= freq_cutoff; ++k){
 			float dtemp;
-			if (q!=k) { 
+			if (q!=k) {
 				dtemp=(1/(float) P)* (float)gsl_vector_get(soln,int(k+freq_cutoff))  * sin(M_PI*(q-k))/sin(M_PI*(q-k)/((float) P));
 			} else{
 				dtemp = (1/(float) P)* (float)gsl_vector_get(soln,int(k+freq_cutoff))  * P;
-			}				
+			}
 			temp +=dtemp;
 		}
 		W[Count]=temp;
@@ -1026,44 +1068,44 @@ void Util::equation_of_plane(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, 
 }
 
 
-bool Util::point_is_in_triangle_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3,const Vec2f& point) 
+bool Util::point_is_in_triangle_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3,const Vec2f& point)
 {
 
 	Vec2f u = p2 - p1;
 	Vec2f v = p3 - p1;
 	Vec2f w = point - p1;
-	
+
 	float udotu = u.dot(u);
-	float udotv = u.dot(v); 
+	float udotv = u.dot(v);
 	float udotw = u.dot(w);
 	float vdotv = v.dot(v);
 	float vdotw = v.dot(w);
-	
+
 	float d = 1.0f/(udotv*udotv - udotu*vdotv);
 	float s = udotv*vdotw - vdotv*udotw;
 	s *= d;
-			
+
 	float t = udotv*udotw - udotu*vdotw;
 	t *= d;
-			
-	// We've done a few multiplications, so detect when there are tiny residuals that may throw off the final 
+
+	// We've done a few multiplications, so detect when there are tiny residuals that may throw off the final
 	// decision
 	if (fabs(s) < Transform::ERR_LIMIT ) s = 0;
 	if (fabs(t) < Transform::ERR_LIMIT ) t = 0;
-			
+
 	if ( fabs((fabs(s)-1.0)) < Transform::ERR_LIMIT ) s = 1;
 	if ( fabs((fabs(t)-1.0)) < Transform::ERR_LIMIT ) t = 1;
-			
+
 // 	cout << "s and t are " << s << " " << t << endl;
-	
+
 	// The final decision, if this is true then we've hit the jackpot
 	if ( s >= 0 && t >= 0 && (s+t) <= 1 ) return true;
 	else return false;
 }
 
-bool Util::point_is_in_convex_polygon_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3, const Vec2f& p4,const Vec2f& actual_point) 
+bool Util::point_is_in_convex_polygon_2d(const Vec2f& p1, const Vec2f& p2, const Vec2f& p3, const Vec2f& p4,const Vec2f& actual_point)
 {
-	
+
 	if (point_is_in_triangle_2d(p1,p2,p4,actual_point)) return true;
 	else return point_is_in_triangle_2d(p3,p2,p4,actual_point);
 }
@@ -1074,12 +1116,12 @@ Dict Util::get_isosurface(EMData * image, float surface_palue, bool smooth)
 	if (image->get_ndim() != 3) {
 		throw ImageDimensionException("3D only");
 	}
-	
+
 	MarchingCubes * mc = new MarchingCubes(image, smooth);
 	mc->set_surface_palue(surface_palue);
-	
+
 	Dict d;
-	if(smooth) {	
+	if(smooth) {
 		d.put("points", *(mc->get_points()));
 		d.put("faces", *(mc->get_faces()));
 		d.put("normals", *(mc->get_normalsSm()));
@@ -1089,10 +1131,10 @@ Dict Util::get_isosurface(EMData * image, float surface_palue, bool smooth)
 		d.put("faces", *(mc->get_faces()));
 		d.put("normals", *(mc->get_normals()));
 	}
-	
+
 	delete mc;
 	mc = 0;
-	
+
 	return d;
 }
 */
