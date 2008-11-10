@@ -3680,9 +3680,9 @@ file_store::~file_store()
 {
 }
 
-void file_store::add_image(  EMData* emdata )
+void file_store::add_image( EMData* emdata, const Transform& tf )
 {
-/*
+
     EMData* padfft = padfft_slice( emdata, tf, m_npad );
 
     float* data = padfft->get_data();
@@ -3704,9 +3704,16 @@ void file_store::add_image(  EMData* emdata )
     m_ctf_applied = padfft->get_attr( "ctf_applied" );
     m_amp_contrast = padfft->get_attr( "amp_contrast" );
     m_defocuses.push_back( (float)(padfft->get_attr( "defocus" )) );
-    m_phis.push_back( (float)(padfft->get_attr( "phi" )) );
-    m_thetas.push_back( (float)(padfft->get_attr( "theta" )) );
-    m_psis.push_back( (float)(padfft->get_attr( "psi" )) );
+
+    Dict params = tf.get_rotation( "spider" );
+    float phi = params.get( "phi" );
+    float tht = params.get( "theta" );
+    float psi = params.get( "psi" );
+
+
+    m_phis.push_back( phi );
+    m_thetas.push_back( tht );
+    m_psis.push_back( psi );
 
     if( m_write )
     {
@@ -3728,12 +3735,12 @@ void file_store::add_image(  EMData* emdata )
     }
 
     checked_delete(padfft);
-*/
+
 }
 
 void file_store::get_image( int id, EMData* padfft )
 {
-/*
+
     if( m_defocuses.size() == 0 ) {
         ifstream m_txt_ifs( m_txt_file.c_str() );
         m_txt_ifs.ignore( 4096, '\n' );
@@ -3797,11 +3804,11 @@ void file_store::get_image( int id, EMData* padfft )
     padfft->set_attr( "ctf_applied", m_ctf_applied );
     padfft->set_attr( "amp_contrast", m_amp_contrast );
     padfft->set_attr( "defocus", m_defocuses[id] );
+    padfft->set_attr( "padffted", 1 );
     padfft->set_attr( "phi", m_phis[id] );
     padfft->set_attr( "theta", m_thetas[id] );
     padfft->set_attr( "psi", m_psis[id] );
-    padfft->set_attr( "padffted", 1 );
-*/
+
 }
 
 void file_store::restart( )

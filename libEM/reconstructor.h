@@ -1114,7 +1114,7 @@ namespace EMAN
 
 		virtual ~file_store();
 
-		void add_image(EMData* data);
+		void add_image(EMData* data, const Transform& tf);
 
 		void get_image(int id, EMData* padfft);
 
