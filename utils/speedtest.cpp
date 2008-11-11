@@ -408,6 +408,7 @@ int main(int argc, char *argv[])
 		ti *= 10.0;
     if (!big && !slow && !newali) {
 		printf("\nFor comparison (note these numbers may change from release to release)\n");
+		printf("An AMD Athlon (32 bit) 900Mhz SF --------------------------------  360\n");
 		printf("An AMD Athlon XP 2400+ (32 bit) 2.0Ghz SF ----------------------- 1010\n");
 		printf("An AMD Athlon XP 2600+ (32 bit) 2.0Ghz SF ----------------------- 1090\n");
 		printf("An AMD Athlon 64 3700+ 2.2Ghz SF -------------------------------- 1530\n");
@@ -415,8 +416,10 @@ int main(int argc, char *argv[])
 		printf("An AMD Opteron 248 2.2Ghz SF ------------------------------------ 1870\n");
 		printf("An Intel Xeon E5335 2.0Ghz SF ----------------------------------- 2010\n");
 		printf("An AMD Opteron 280 2.4Ghz SF ------------------------------------ 2130\n");
+		printf("An Intel Core2 Duo 2.66Ghz SF ----------------------------------- 2600\n");
 		printf("An Intel Xeon E5430 2.66Ghz SF ---------------------------------- 2800\n");
 		printf("An Intel Xeon X5355 2.66Ghz SF ---------------------------------- 2920\n");
+		printf("An Intel Xeon X5450 3.0Ghz SF ----------------------------------- 3220\n");
 		printf("An Intel Xeon X5460 3.16Ghz SF ---------------------------------- 3320\n");
 		printf("\nYour machines speed factor = %1.1f\n", 25000.0 / ti);
 		printf("\n\nThis repesents %1.2f RTFAligns/sec\n",
