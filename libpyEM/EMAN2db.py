@@ -629,11 +629,11 @@ class DBDict:
 	def has_key(self,key):
 		return self.bdb.has_key(dumps(key,-1))
 
-	def get(self,key,txn=None,target=None,nodata=0):
+	def get(self,key,dfl=None,txn=None,target=None,nodata=0):
 		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
 		object in which to place the read object"""
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
-		except: return None
+		except: return dfl
 		if isinstance(r,dict) and r.has_key("is_complex_ri") :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])

@@ -62,7 +62,7 @@ operations are performed on oversampled images if specified."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
-	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which would largely mask out the particles",default=0)
+	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which would largely mask out the particles. Default is boxsize/2.",default=0)
 	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
 	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
@@ -70,7 +70,7 @@ operations are performed on oversampled images if specified."""
 	parser.add_option("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False)
 	parser.add_option("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
 	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
-	parser.add_option("--smooth",action="store_true",help="Smooth the background (running-average of the log) and adjust it at the zeroes of the CTF",default=False)
+	parser.add_option("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False)
 	parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
 	parser.add_option("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False)
 	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
@@ -109,13 +109,13 @@ operations are performed on oversampled images if specified."""
 		if debug : print "Processing ",filename
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
 		ds=1.0/(options.apix*im_2d.get_ysize())
-		if options.smooth : bg_1d=smooth_bg(bg_1d,ds)
+		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 
 		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
 		
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
-		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=options.smooth,autohp=options.autohp)
+		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=not options.nosmooth,autohp=options.autohp)
 		parms[name]=ctf.to_string()
 
 		if debug:
@@ -140,7 +140,7 @@ operations are performed on oversampled images if specified."""
 	if (len(img_sets)>3) :
 		incr=[0.2]*len(img_sets)
 		simp=Simplex(env_cmp,scales,incr)
-		scales=simp.minimize(maxiters=2500)[0]
+		scales=simp.minimize(maxiters=4000)[0]
 		print scales
 	
 	# apply the final rescaling
@@ -191,16 +191,16 @@ def env_cmp(sca):
 	
 	total.sort()
 	
-	#ret=0
-	#for i in range(2,len(total)-2):
-		#if total[i][1] :
-			#ret+=(total[i-2][1]-total[i][1])**2+(total[i-1][1]-total[i][1])**2+(total[i+1][1]-total[i][1])**2+(total[i+2][1]-total[i][1])**2
+	ret=0
+	for i in range(2,len(total)-2):
+		if total[i][1] :
+			ret+=((total[i-2][1]-total[i][1])**2+(total[i-1][1]-total[i][1])**2+(total[i+1][1]-total[i][1])**2+(total[i+2][1]-total[i][1])**2)
 #			ret+=fabs(total[i-2][1]-total[i][1])+fabs(total[i-1][1]-total[i][1])+fabs(total[i+1][1]-total[i][1])+fabs(total[i+2][1]-total[i][1])
 
-	ret=0
-	for i in range(1,len(total)):
-		if total[i][1] :
-			ret+=fabs((total[i-1][1]/total[i][1])-1.0)/(total[i][0]-total[i-1][0]+.0005)
+	#ret=0
+	#for i in range(1,len(total)):
+		#if total[i][1] :
+			#ret+=fabs((total[i-1][1]/total[i][1])-1.0)/(total[i][0]-total[i-1][0]+.0005)
 
 	return ret
 	
@@ -567,7 +567,8 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 	
 	for i in range(1,len(cc)-1):
 		if cc[i-1]<cc[i] and cc[i]>cc[i+1] and im_1d[i]-bg_1d[i]>0 :
-			ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))
+			ret.append((i*ds,(im_1d[i]-bg_1d[i])))
+#			ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))		# this version removes the structure factor (in theory)
 		
 	return ret
 
