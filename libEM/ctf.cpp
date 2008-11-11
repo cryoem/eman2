@@ -590,9 +590,9 @@ void EMAN2Ctf::from_vector(const vector<float>& vctf)
 	apix = vctf[7];
 	dsbg = vctf[8];
 	background.resize((int)vctf[9]);
-	for (i=0; i<(int)vctf[8]; i++) background[i]=vctf[i+10];
+	for (i=0; i<(int)vctf[9]; i++) background[i]=vctf[i+10];
 	snr.resize((int)vctf[i+10]);
-	for (int j=0; j<(int)vctf[j]; j++) snr[j]=vctf[i+j+11];
+	for (int j=0; j<(int)vctf[i+10]; j++) snr[j]=vctf[i+j+11];
 }
 
 vector<float> EMAN2Ctf::to_vector() const
