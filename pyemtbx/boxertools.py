@@ -1623,7 +1623,11 @@ class Boxable:
 	def get_image_file_name(self,imageformat="hdf"):
 		from os import path
 		name,suffix = path.splitext( self.image_name )
-		return name+"_particles."+imageformat
+		if imageformat == "bdb":
+			return "bdb:particles#"+remove_directories_from_name(name)+"_ptcls"
+		else:
+			
+			return name+"_particles."+imageformat
 
 	def write_box_images(self,box_size=-1,force=False,imageformat="hdf",normalize=True,norm_method="normalize.edgemean",verbose=True):
 		'''
@@ -1634,9 +1638,31 @@ class Boxable:
 		if len(self.boxes) == 0:
 			print "no boxes to write, doing nothing. Image name is",self.image_name
 		else:
+			# should check to see if the db exists or not
+			
+			if imageformat == "bdb":
+				if os.path.exists("particles"):
+					if not os.path.isdir("particles"):
+						print "error, particles exists and is not a directory. e2boxer needs to use this as a directory. Please rename the file to something else and try again"
+						return
+					#else: print "directory exists, particles"
+				else:
+					#print "making directory particles"
+					os.makedirs("particles")
+				
+				
 			image_name = self.get_image_file_name(imageformat)
 			
-			if file_exists(image_name):
+			if imageformat == "bdb":
+				if db_check_dict(image_name):
+					if not force:
+						print "db",image_name,"already exists, doing nothing. Use force to override this behavior"
+						return
+					else:
+						db_remove_dict(image_name)
+				
+			
+			elif file_exists(image_name):
 				if not force:
 					print "warning, file already exists - ", image_name, " doing nothing. Use force to override this behavior"
 					return

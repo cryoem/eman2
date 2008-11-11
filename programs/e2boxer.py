@@ -862,8 +862,8 @@ class DatabaseAutoBoxer(QtCore.QObject):
 		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=fo,choices=None)
 		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=wc,choices=None)
 		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=wb,choices=None)
-		pn =  ParamDef(name="normproc",vartype="stringlist",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits=norm,choices=["normalize","normalize.edgemean","none"])
-		pop = ParamDef(name="outformat",vartype="stringlist",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits=output,choices=["img","hdf"])
+		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgmean",choices=["normalize","normalize.edgemean","none"])
+		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
 		params.append([pbox,pfo])
 		params.append([pwc,pwb])
 		params.append(pn)
@@ -2457,8 +2457,6 @@ def histogram1d( data, nbin, presize=0 ) :
 
 	return region,hist
 
-
-
 class CcfHistogram(QtGui.QWidget):
 
 	def __init__(self, parent):	
@@ -2753,6 +2751,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.output_gridl.addWidget(self.outputformat,1,0, Qt.AlignRight)
 		
 		self.outputformats = QtGui.QComboBox(self)
+		self.outputformats.addItem("bdb")
 		self.outputformats.addItem("hdf")
 		self.outputformats.addItem("img")
 		self.output_gridl.addWidget(self.outputformats,1,1,Qt.AlignLeft)

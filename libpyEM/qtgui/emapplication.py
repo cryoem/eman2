@@ -357,8 +357,6 @@ class EMStandAloneApplication(EMApplication):
 	def exec_loop( *args, **kwargs ):
 		pass
 
-	
-	
 	def start_timer(self,interval,function):
 	
 		if self.tmr != None:
