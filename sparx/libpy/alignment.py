@@ -625,7 +625,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 			if dist < min_dist:
 				min_dist = dist
 				select_s = i
-		print neighbor
+
 		if len(neighbor) != 0:
 			K = len(neighbor)
 			dJe = [0.0]*K
@@ -655,7 +655,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 			if dist < min_dist:
 				min_dist = dist
 				select_m = i
-		print neighbor
+
 		if len(neighbor) != 0:
 			K = len(neighbor)
 			dJe = [0.0]*K
@@ -664,12 +664,12 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 			
 		ps = peaks[select_s][0]
 		pm = peakm[select_m][0]
-		p1 = ps/(ps+pm)
-		p = random()
-		if p < p1: 
-			use_mirror = 0
-		else:
-			use_mirror = 1
+		p = [0.0]*2
+		p[0] = 1.0
+		p[1] = min(ps/pm, pm/ps)
+		pk = select_k(p, T)
+		if ps > pm and pk == 0 or ps < pm and pk == 1: use_mirror = 0
+		else: use_mirror = 1
 	else:
 		select_s = 0
 		select_m = 0
