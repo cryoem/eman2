@@ -1409,7 +1409,7 @@ def oct_test_G():
 
 def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False, Way="SqEuclidean"):
 	"""
-	An experimental version of ali3d_e		
+	An experimental version of ali3d_e, comparing SqEuclidean (or ccc) in the real space		
 	"""
 	from alignment	import eqproj, Numrinit, ringwe, Applyws
 	from filter     import filt_ctf, filt_params, filt_table, filt_from_fsc
@@ -1539,7 +1539,7 @@ def eqprojG2(args, data):
 
 def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False):
 	"""
-	An experimental version of ali3d_e		
+	An experimental version of ali3d_e, comparing SqEuclidean in the Fourier space		
 	"""
 	from alignment	import eqproj, Numrinit, ringwe, Applyws
 	from filter     import filt_ctf, filt_params, filt_table, filt_from_fsc
@@ -1604,7 +1604,7 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 			#print "Projection", imn
 	
 			data[2] = dataim[imn].copy()
-			refi = dataim[mn].norm_pad(False, 2)
+			refi = dataim[imn].norm_pad(False, 2)
 			refi.do_fft_inplace()
 			data[4] = refi.copy()
 			
@@ -1653,9 +1653,10 @@ def eqprojG3(args, data):
 	#params = args
 	
 	# This part is copied from prgs
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
-	R    = Transform3D(EULER_SPIDER, args[0], args[1], args[2])
-	temp = data[0].extractplane(R, data[1])
+	#EULER_SPIDER = Transform3D.EulerType.SPIDER
+	#R    = Transform3D(EULER_SPIDER, args[0], args[1], args[2])
+	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	temp = data[0].extract_plane(R, data[1])
 	M    = temp.get_ysize()	
 	"""
 	temp.fft_shuffle()
@@ -1704,7 +1705,7 @@ def prepij(image):
 	
 def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False):
 	"""
-	An experimental version of ali3d_e		
+	An experimental version of ali3d_e, using ccf in the Fourier space		
 	"""
 	from alignment	import eqproj, Numrinit, ringwe, Applyws
 	from filter     import filt_ctf, filt_params, filt_table, filt_from_fsc
@@ -1893,7 +1894,7 @@ def eqprojG4(args, data):
 
 def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False):
 	"""
-	An experimental version of ali3d_e		
+	An experimental version of ali3d_e, using ccf in the real space		
 	"""
 	from alignment	import eqproj, Numrinit, ringwe, Applyws
 	from filter     import filt_ctf, filt_params, filt_table, filt_from_fsc
