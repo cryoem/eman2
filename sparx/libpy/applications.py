@@ -4496,9 +4496,9 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 						previous_defocus = ctf_params[1]
 						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
 
-				data[2] = dataim[imn-image_start]
+				data[2] = dataim[imn]
 
-				phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
+				phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
 				atparams = [phi, theta, psi, tx, ty]
 				if debug:
 					initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
@@ -4527,11 +4527,11 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 				outf.write("\n")
 				outf.flush()
 			#  3D stuff
-			if CTF: vol1 = recons3d_4nn_ctf(dataim, range(0,nima,2), snr, 1, sym)
-			else:	vol1 = recons3d_4nn(dataim, range(0,nima,2), sym)
+			if CTF: vol1 = recons3d_4nn_ctf(dataim, range(0, nima, 2), snr, 1, sym)
+			else:	vol1 = recons3d_4nn(dataim, range(0, nima, 2), sym)
 
-			if CTF: vol2 = recons3d_4nn_ctf(dataim, range(1,nima,2), snr, 1, sym)
-			else:	vol2 = recons3d_4nn(dataim, range(1,nima,2), sym)
+			if CTF: vol2 = recons3d_4nn_ctf(dataim, range(1, nima, 2), snr, 1, sym)
+			else:	vol2 = recons3d_4nn(dataim, range(1, nima, 2), sym)
 
 	    		# resolution
 			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(iteration*n_of_chunks+ic+1)))
