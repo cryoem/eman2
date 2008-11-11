@@ -245,12 +245,10 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.setSpacing(2)
 		defaults = ""
 		if param.defaultunits != None:
-			if len(param.defaultunits) == 1: defaults = str(param.defaultunits)
-			else:
-				for i,d in enumerate(param.defaultunits):
-					defaults += d
-					if i != (len(param.defaultunits)-1): 
-						defaults += '\n'
+			for i,d in enumerate(param.defaultunits):
+				defaults += d
+				if i != (len(param.defaultunits)-1): 
+					defaults += '\n'
 				
 		text_edit = QtGui.QTextEdit("",self)
 		text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
