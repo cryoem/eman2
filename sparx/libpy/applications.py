@@ -4379,6 +4379,10 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	import os 
 	import sys
 	from utilities      import print_begin_msg, print_end_msg, print_msg
+
+	from utilities      import amoeba2
+	from development    import prepij, eqprojG3
+
 	print_begin_msg('ali3d_e')
 
 	import user_functions
@@ -4470,7 +4474,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	ref_data.append( None )
 	ref_data.append( None )
 
-	data = [None]*4
+	data = [None]*8
 	data[3] = mask2D
 	jtep = 0
 	for iteration in xrange(maxit):
@@ -4478,7 +4482,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 		for ic in xrange(n_of_chunks):
 			jtep += 1
 			if not CTF:
-				data[0],data[1] = prep_vol(vol)
+				data[0], data[1] = prep_vol(vol)
 
 			image_start_in_chunk = ic*n_in_chunk
 			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, nima)
@@ -4494,12 +4498,25 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 					ctf_params = get_arb_params(dataim[imn], parnames)
 					if(ctf_params[1] != previous_defocus):
 						previous_defocus = ctf_params[1]
-						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
 
 				data[2] = dataim[imn]
-
+				
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				refi = dataim[imn].copy()
+				oo, qq, kb2 = prepij(refi)
+				data[4] = oo
+				data[5] = qq
+				data[6] = kb2
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
 				atparams = [phi, theta, psi, tx, ty]
+				
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				data[7] = [-tx, -ty]
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				
 				if debug:
 					initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
@@ -4511,7 +4528,16 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 
-				optm_params = amoeba(atparams, [weight_phi, delta, weight_phi, 1.0, 1.0], eqproj, 1.e-4, 1.e-4, 500, data)
+				#optm_params = amoeba(atparams, [weight_phi, delta, weight_phi, 1.0, 1.0], eqproj, 1.e-4, 1.e-4, 500, data)
+				
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				del atparams[3]
+				del atparams[3]
+				optm_params = amoeba2(atparams, [weight_phi, delta, weight_phi], eqprojG3, 1.e-4, 1.e-4, 500, data)
+				optm_params[0].append(optm_params[3][0])
+				optm_params[0].append(optm_params[3][1])
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				
 				optm_params[0][3] *= -1
 				optm_params[0][4] *= -1
 				
@@ -4564,7 +4590,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	"""
 		
 	"""
-	from alignment	  import eqproj
+	from alignment	    import eqproj
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_gaussl
 	from projection     import prep_vol
 	from utilities      import amoeba, bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj, get_arb_params
@@ -4575,26 +4601,29 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	from math           import pi
 	import os
 	import sys
-	from mpi 	        import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
+	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
+
+	from utilities      import amoeba2
+	from development    import prepij, eqprojG3
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 
-	if(CTF):
+	if CTF:
 		from filter import filt_ctf
 		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 	          #             0             1          2          3         4               5              6
 	main_node = 0
-	if(myid == main_node):
+	if myid == main_node:
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
-		if  CTF:
+		if CTF:
 			ima = EMData()
 			ima.read_image(stack, 0)
 			ctf_params = get_arb_params(ima, parnames)
-			if(ctf_params[6] == 1):  ERROR("ali3d_e does not work for CTF-applied data","ali3d_e",1)
+			if ctf_params[6] == 1:  ERROR("ali3d_e does not work for CTF-applied data","ali3d_e",1)
 			del ima
 	mpi_barrier(MPI_COMM_WORLD)
 	if debug:
@@ -4612,7 +4641,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	nx      = vol.get_xsize()
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
-	if (myid == main_node):
+	if myid == main_node:
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 
@@ -4637,7 +4666,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 		mask3D = model_circle(last_ring, nx, nx, nx)
 	mask2D = model_circle(last_ring, nx, nx)
 
-	if(myid == main_node):
+	if myid == main_node:
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
@@ -4648,7 +4677,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 		nima =0
 	nima = bcast_number_to_all(nima, source_node = main_node)
 	
-	if(myid != main_node):
+	if myid != main_node:
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
 
@@ -4660,7 +4689,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 		outf.flush()
 
 	# figure the size of the chunk (3D is updated after each chunk).  Chunk should be given as 0.0< chunk <= 1.0.  1.0 means all projections
-	if(chunk <= 0.0):  chunk = 1.0
+	if chunk <= 0.0:  chunk = 1.0
 	n_in_chunk  = max(int(chunk * (image_end-image_start+1)), 1)
 	n_of_chunks = (image_end-image_start+1)//n_in_chunk + min((image_end-image_start+1)%n_in_chunk,1)
 
@@ -4683,28 +4712,28 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 		outf.write("\n")
 		outf.flush()
 
-	if (myid == main_node):
+	if myid == main_node:
 		# initialize data for the reference preparation function
 		ref_data = []
 		ref_data.append( mask3D )
 		ref_data.append( center )
 		ref_data.append( None )
 		ref_data.append( None )
-	data = [None]*4
+		
+	data = [None]*8
 	data[3] = mask2D
-	jtep = 0
+
 	for iteration in xrange(maxit):
-		if (myid == main_node):
+		if myid == main_node:
 			print_msg("ITERATION #%3d\n"%(iteration+1))
-		if  debug:
+		if debug:
 			outf.write("  iteration = "+str(iteration)+"   ")
 			outf.write("\n")
 			outf.flush()
-		for  ic  in xrange(n_of_chunks):
-			jtep += 1
+		for ic in xrange(n_of_chunks):
 			bcast_EMData_to_all(vol, myid, main_node)
 			if not CTF:
-				data[0],data[1] = prep_vol(vol)
+				data[0], data[1] = prep_vol(vol)
 
 			image_start_in_chunk = image_start + ic*n_in_chunk
 			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, image_end)
@@ -4712,18 +4741,31 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 				outf.write("ic "+str(ic)+"   image_start "+str(image_start)+"   n_in_chunk "+str(n_in_chunk)+"   image_end "+str(image_end)+"\n")
 				outf.write("image_start_in_chunk "+str(image_start_in_chunk)+"  image_end_in_chunk "+str(image_end_in_chunk)+"\n")
 				outf.flush()
-			if(CTF):  previous_defocus = -1.0
+			if CTF:  previous_defocus = -1.0
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
-				if(CTF):
+				if CTF:
 					ctf_params = get_arb_params(dataim[imn-image_start], parnames)
 					if(ctf_params[1] != previous_defocus):
 						previous_defocus = ctf_params[1]
-						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
 
 				data[2] = dataim[imn-image_start]
 
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				refi = dataim[imn-image_start].copy()
+				oo, qq, kb2 = prepij(refi)
+				data[4] = oo
+				data[5] = qq
+				data[6] = kb2
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
 				atparams = [phi, theta, psi, tx, ty]
+
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				data[7] = [-tx, -ty]
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+
 				if debug:
 					initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
@@ -4733,21 +4775,23 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 				atparams[3] *= -1
 				atparams[4] *= -1
 
-				#optm_params = ali_G3(data, atparams, dtheta)
-				#  Align only Euler angles
-				#  change signs of shifts for projections
-				#data.insert(3, -atparams[3])
-				#data.insert(4, -atparams[4])
-
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 
-				optm_params =  amoeba(atparams, [weight_phi, delta, weight_phi, 1.0, 1.0], eqproj, 1.e-4, 1.e-4,500, data)
-				optm_params[0].append(imn)
+				#optm_params =  amoeba(atparams, [weight_phi, delta, weight_phi, 1.0, 1.0], eqproj, 1.e-4, 1.e-4,500, data)
+
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				del atparams[3]
+				del atparams[3]
+				optm_params = amoeba2(atparams, [weight_phi, delta, weight_phi], eqprojG3, 1.e-4, 1.e-4, 500, data)
+				optm_params[0].append(optm_params[3][0])
+				optm_params[0].append(optm_params[3][1])
+				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+
 				optm_params[0][3] *= -1
 				optm_params[0][4] *= -1
 
 				if debug:
-					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f     %7.4f    %d4   %7.1f'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4],optm_params[1], optm_params[2], ctf_params[1]))
+					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %7.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
 					outf.write("\n")
 					outf.flush()
 
@@ -4755,16 +4799,19 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 
 			# compute updated 3D after each chunk
  	    		# resolution
-			if  debug:
+			if debug:
 				outf.write("  begin reconstruction = "+str(image_start))
 				outf.write("\n")
 				outf.flush()
-			vol, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic) ), myid, main_node)
-			if  debug:
+				
+			# FIXME: This rec3D_MPI doesn't work for non-CTF images, Zhengfan Yang, 11/11/08
+			vol, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
+			
+			if debug:
 				outf.write("  done reconstruction = "+str(image_start))
 				outf.write("\n")
 				outf.flush()
-			if(myid == main_node):
+			if myid == main_node:
 				dropImage(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
 				ref_data[2] = vol
 				ref_data[3] = fscc
@@ -4775,65 +4822,13 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 					rotate_3D_shift(dataim, cs)
 				dropImage(vol, os.path.join(outdir, "volf%03d_%03d.hdf"%(iteration, ic) ))
 			bcast_EMData_to_all(vol, myid, main_node)
-			# write out headers  , under MPI writing has to be done sequentially
+			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.proj', 'ID']
-			if(myid == main_node): recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
+			if myid == main_node: recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
 			else:                  send_attr_dict(main_node, dataim, par_str, image_start, image_end)
-	if (myid == main_node): print_end_msg("ali3d_e_MPI")
+	if myid == main_node: print_end_msg("ali3d_e_MPI")
 
-def eqprojG3(args, data):
-	from utilities import peak_search, amoeba, dropImage, info, pad
-	from fundamentals import fft, ccf
-	from sys import exit
-	from development import twoD_fine_search
-
-	volft = data[0]
-	kb = data[1]
-	kb2 = data[6]
-	params = args
-	
-	# This part is copied from prgs
-	phi = params[0]
-	theta = params[1]
-	psi = params[2]
-	R = Transform({"type":"spider", "phi":phi, "theta":theta, "psi":psi})
-	temp = volft.extract_plane(R,kb)
-	M = temp.get_ysize()	
-	temp = temp.Four_shuf_ds_cen_us(M, M, 1, False)
-
-	nx = M/2
-	sx = (nx-data[7][0]*2)/2.0
-	sy = (nx-data[7][1]*2)/2.0
-
-	product = ccf(temp, data[5])
-	data2 = [0]*2
-	data2[0] = product
-	data2[1] = kb2
-	ps = amoeba([sx,sy],[1.0,1.0],twoD_fine_search,1.e-5,1.e-5,500,data2)
-	
-	s2x = (nx-ps[0][0]*2)/2
-	s2y = (nx-ps[0][1]*2)/2
-	
-	params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : s2x*2, "y_shift" : s2y*2, "z_shift" : 0.0}
-	temp2 = Processor.EMFourierFilter(temp, params2)
-	v = -temp2.cmp("SqEuclidean", data[4])
-
-	return v, [s2x, s2y]
-
-def prepij(image):
-	M=image.get_ysize()
-	npad = 2
-	N = M*npad
-	K = 6
-	alpha = 1.75
-	r = M/2
-	v = K/2.0/N
-	kb = Util.KaiserBessel(alpha, K, r, v, N)
-	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
-	o = image.FourInterpol(2*M, 2*M, 1, 0)
-	q = Processor.EMFourierFilter(o, params)
-	return  o, q, kb
 
 def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_aliB_cone"):
 	"""
