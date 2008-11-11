@@ -125,6 +125,7 @@ namespace EMAN
 
 	  public:
 		EMAN1Ctf();
+		EMAN1Ctf(const vector<float>& vf) {from_vector(vf);}	//for unpickling
 		~EMAN1Ctf();
 
 		vector < float >compute_1d(int size,float ds, CtfType type, XYData * struct_factor = 0);
@@ -239,6 +240,7 @@ namespace EMAN
 
 	  public:
 		EMAN2Ctf();
+		EMAN2Ctf(const vector<float>& vf) {from_vector(vf);}	//for unpickling
 		~EMAN2Ctf();
 
 		vector < float >compute_1d(int size,float ds, CtfType type, XYData * struct_factor = 0);
