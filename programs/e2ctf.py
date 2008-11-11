@@ -41,7 +41,7 @@ import time
 import os
 import sys
 
-from simplex import Simplex
+from Simplex import Simplex
 
 debug=False
 
@@ -137,16 +137,18 @@ operations are performed on oversampled images if specified."""
 	
 	# we use a simplex minimizer to try to rescale the individual sets to match as best they can
 	scales=[1.0]*len(img_sets)
-	incr=[0.1]*len(img_sets)
-	simp=Simplex(env_cmp,scales,incr)
-	scales=simp.minimize()[0]
+	if (len(img_sets)>3) :
+		incr=[0.2]*len(img_sets)
+		simp=Simplex(env_cmp,scales,incr)
+		scales=simp.minimize(maxiters=2500)[0]
+		print scales
 	
 	# apply the final rescaling
 	envelope=[]
 	for i in range(len(scales)):
 		cur=envelopes[i]
 		for j in range(len(cur)):
-			envelope.append(cur[j][0],cur[j][1]*scales[i])
+			envelope.append((cur[j][0],cur[j][1]*scales[i]))
 			
 	envelope.sort()
 	envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
@@ -179,7 +181,9 @@ operations are performed on oversampled images if specified."""
 
 	E2end(logid)
 
-def env_cmp(env,sca):
+def env_cmp(sca):
+	global envelopes
+	env=envelopes
 	total=[]
 	for i,ii in enumerate(env):
 		for j in ii:
@@ -187,8 +191,16 @@ def env_cmp(env,sca):
 	
 	total.sort()
 	
+	#ret=0
+	#for i in range(2,len(total)-2):
+		#if total[i][1] :
+			#ret+=(total[i-2][1]-total[i][1])**2+(total[i-1][1]-total[i][1])**2+(total[i+1][1]-total[i][1])**2+(total[i+2][1]-total[i][1])**2
+#			ret+=fabs(total[i-2][1]-total[i][1])+fabs(total[i-1][1]-total[i][1])+fabs(total[i+1][1]-total[i][1])+fabs(total[i+2][1]-total[i][1])
+
 	ret=0
-	for i in range(1,len(total)): ret+=fabs(total[i-1][1]/total[i][1]-1.0)/(total[i][1]-total[i][0]+.0005)
+	for i in range(1,len(total)):
+		if total[i][1] :
+			ret+=fabs((total[i-1][1]/total[i][1])-1.0)/(total[i][0]-total[i-1][0]+.0005)
 
 	return ret
 	
@@ -554,7 +566,8 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 	ret=[]
 	
 	for i in range(1,len(cc)-1):
-		if cc[i-1]<cc[i] and cc[i]>cc[i+1] : ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))
+		if cc[i-1]<cc[i] and cc[i]>cc[i+1] and im_1d[i]-bg_1d[i]>0 :
+			ret.append((i*ds,(im_1d[i]-bg_1d[i])/sfact(i*ds)))
 		
 	return ret
 
