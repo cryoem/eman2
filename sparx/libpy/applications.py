@@ -4369,7 +4369,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 		ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou, delta, center, maxit, CTF, snr, sym, chunk, user_func_name, debug)
 		return
 
-	from alignment	  import eqproj
+	from alignment	    import eqproj
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl
 	from projection     import prep_vol
 	from utilities      import amoeba, model_circle, get_params_proj, set_params_proj, get_arb_params
@@ -4446,11 +4446,10 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 		outf.write("\n")
 		outf.flush()
 
-	# figure the size of the chunk (3D is updated after each chunk).  Chunk should be given as 0.0< chunk <= 1.0.  1.0 means all projections
-	if(chunk <= 0.0):  chunk = 1.0
+	# figure the size of the chunk (3D is updated after each chunk). Chunk should be given as 0.0< chunk <= 1.0. 1.0 means all projections
+	if chunk <= 0.0:  chunk = 1.0
 	n_in_chunk  = max(int(chunk * nima), 1)
 	n_of_chunks = nima//n_in_chunk + min(nima%n_in_chunk,1)
-	image_start = 0
 	
 	print_msg("Number of chunks            : %i\n"%(n_of_chunks))
 	print_msg("Number of images in a chunk : %i\n"%(n_in_chunk))
@@ -4476,7 +4475,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	jtep = 0
 	for iteration in xrange(maxit):
 		print_msg("ITERATION #%3d\n"%(iteration+1))
-		for  ic  in xrange(n_of_chunks):
+		for ic in xrange(n_of_chunks):
 			jtep += 1
 			if not CTF:
 				data[0],data[1] = prep_vol(vol)
@@ -4489,10 +4488,10 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 				outf.write("image_end_in_chunk "+str(image_end_in_chunk)+"\n")
 				outf.write("\n")
 				outf.flush()
-			if(CTF):  previous_defocus = -1.0
+			if CTF:  previous_defocus = -1.0
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
-				if(CTF):
-					ctf_params = get_arb_params(dataim[imn-image_start], parnames)
+				if CTF:
+					ctf_params = get_arb_params(dataim[imn], parnames)
 					if(ctf_params[1] != previous_defocus):
 						previous_defocus = ctf_params[1]
 						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
@@ -4504,47 +4503,44 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 				if debug:
 					initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
-					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f    %7.4f'%(atparams[0], atparams[1], atparams[2], atparams[3], atparams[4], initial))
+					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %7.4f'%(atparams[0], atparams[1], atparams[2], atparams[3], atparams[4], initial))
 					outf.write("\n")
 				#  change signs of shifts for projections
 				atparams[3] *= -1
 				atparams[4] *= -1
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
-				#from utilities import start_time, finish_time
-				#t3=start_time()
-				optm_params =  amoeba(atparams, [weight_phi,delta,weight_phi,1.0,1.0], eqproj, 1.e-4,1.e-4,500,data)
-				optm_params[0].append(imn)
+
+				optm_params = amoeba(atparams, [weight_phi, delta, weight_phi, 1.0, 1.0], eqproj, 1.e-4, 1.e-4, 500, data)
 				optm_params[0][3] *= -1
 				optm_params[0][4] *= -1
-
+				
 				if debug:
-					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f     %7.4f    %d4   %7.1f'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4],optm_params[1], optm_params[2], ctf_params[1]))
+					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %7.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
 					outf.write("\n")
 					outf.flush()
 
-				set_params_proj(dataim[imn-image_start], optm_params[0])
+				set_params_proj(dataim[imn], optm_params[0])
 
 			# compute updated 3D after each chunk
-	    		# resolution
-			if  debug:
-				outf.write("  begin reconstruction = "+str(image_start))
+			if debug:
 				outf.write("\n")
 				outf.flush()
 			#  3D stuff
-			if(CTF): vol1 = recons3d_4nn_ctf(dataim, range(0,nima,2), snr, 1, sym)
-			else:	   vol1 = recons3d_4nn(dataim, range(0,nima,2), sym)
+			if CTF: vol1 = recons3d_4nn_ctf(dataim, range(0,nima,2), snr, 1, sym)
+			else:	vol1 = recons3d_4nn(dataim, range(0,nima,2), sym)
 
-			if(CTF): vol2 = recons3d_4nn_ctf(dataim, range(1,nima,2), snr, 1, sym)
-			else:	   vol2 = recons3d_4nn(dataim, range(1,nima,2), sym)
+			if CTF: vol2 = recons3d_4nn_ctf(dataim, range(1,nima,2), snr, 1, sym)
+			else:	vol2 = recons3d_4nn(dataim, range(1,nima,2), sym)
 
+	    		# resolution
 			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(iteration*n_of_chunks+ic+1)))
 			del vol1
 			del vol2
 
 			# calculate new and improved 3D
-			if(CTF): vol = recons3d_4nn_ctf(dataim, range(nima), snr, 1, sym)
-			else:	   vol = recons3d_4nn(dataim, range(nima), sym)
+			if CTF: vol = recons3d_4nn_ctf(dataim, range(nima), snr, 1, sym)
+			else:	vol = recons3d_4nn(dataim, range(nima), sym)
 
 			# store the reference volume
 			dropImage(vol, os.path.join(outdir, "vol%04d.hdf"%(iteration*n_of_chunks+ic+1)))
@@ -4558,9 +4554,9 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 				rotate_3D_shift(dataim, cs)
 			dropImage(vol,os.path.join(outdir, "volf%04d.hdf"%(iteration*n_of_chunks+ic+1)))
 
-			#  here we  write header info
+			#  here we write header infomation
 			from utilities import write_headers
-			write_headers( stack, dataim, list_of_particles)
+			write_headers(stack, dataim, list_of_particles)
 	print_end_msg("ali3d_e")
 
 def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, maxit=10, 
