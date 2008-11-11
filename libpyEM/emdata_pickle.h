@@ -161,6 +161,26 @@ struct Transform_pickle_suite : boost::python::pickle_suite
 	}
 };
 
+struct EMAN1Ctf_pickle_suite : boost::python::pickle_suite
+{
+	static
+		boost::python::tuple
+		getinitargs(const EMAN::EMAN1Ctf& ctf)
+		{
+			using namespace boost::python;
+			return make_tuple(ctf.to_vector());
+		}
+};
 
+struct EMAN2Ctf_pickle_suite : boost::python::pickle_suite
+{
+	static
+		boost::python::tuple
+		getinitargs(const EMAN::EMAN2Ctf& ctf)
+		{
+			using namespace boost::python;
+			return make_tuple(ctf.to_vector());
+		}
+};
 
 #endif	//EMDATA_PICKLE_H_

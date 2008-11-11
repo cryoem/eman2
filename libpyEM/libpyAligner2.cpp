@@ -10,6 +10,8 @@
 #include <emobject.h>
 #include <xydata.h>
 
+#include "emdata_pickle.h"
+
 // Using =======================================================================
 using namespace boost::python;
 
@@ -397,6 +399,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 
     class_< EMAN::EMAN1Ctf, bases< EMAN::Ctf > , EMAN_EMAN1Ctf_Wrapper >("EMAN1Ctf", init<  >())
         .def(init< const EMAN::EMAN1Ctf& >())
+        .def_pickle(EMAN1Ctf_pickle_suite())
         .def_readwrite("amplitude", &EMAN::EMAN1Ctf::amplitude)
         .def_readwrite("ampcont", &EMAN::EMAN1Ctf::ampcont)
         .def_readwrite("noise1", &EMAN::EMAN1Ctf::noise1)
@@ -424,6 +427,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 
     class_< EMAN::EMAN2Ctf, bases< EMAN::Ctf > , EMAN_EMAN2Ctf_Wrapper >("EMAN2Ctf", init<  >())
         .def(init< const EMAN::EMAN2Ctf& >())
+        .def_pickle(EMAN2Ctf_pickle_suite())
         .def_readwrite("defocus", &EMAN::EMAN2Ctf::defocus)
         .def_readwrite("dfdiff", &EMAN::EMAN2Ctf::defocus)
         .def_readwrite("dfang", &EMAN::EMAN2Ctf::defocus)
