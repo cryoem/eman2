@@ -473,10 +473,10 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 	else:  use_method = interpolation_method_2D
 
 	if(use_method == "linear"):
-		RA = Transform3D(0, 0, angle)
-		RA.set_scale(scale)
-		RA.set_posttrans((sx, sy, 0));
-		img = img.rot_scale_trans(RA)
+		T1  = Transform({'scale':scale})
+		T2  = Transform({'type': 'SPIDER', 'psi': psi, 'tx': sx, 'ty': sy})
+		T   = T1*T2
+		img = img.rot_scale_trans(T)
 		if  mirror: img.process_inplace("mirror", {"axis":'x'})
 		return img
 	elif(use_method == "quadratic"):
@@ -499,11 +499,10 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 
 def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scale = 1.0):
 	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift3D", 1)
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
-	RA = Transform3D(EULER_SPIDER, phi, theta, psi)
-	RA.set_posttrans(Vec3f(sx, sy, sz))
-	RA.set_scale(scale)
-	return image.rot_scale_trans(RA)
+	T1 = Transform({'scale':scale})
+	T2 = Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
+	T  = T1*T2
+	return image.rot_scale_trans(T)
 
 def rtshg(image, angle = 0.0, sx=0.0, sy=0.0, scale = 1.0):
 	from math import pi

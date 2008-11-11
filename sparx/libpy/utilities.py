@@ -887,27 +887,25 @@ def find_inplane_to_match(phiA,thetaA,phiB,thetaB,psiA=0,psiB=0):
 	    ZA  RA is as close as possible to RB
 	        this maximizes trace of ( RB^T ZA RA) = trace(ZA RA RB^T)
 	"""
-	from math import pi, sqrt, cos, acos, sin
+	#from math import pi, sqrt, cos, acos, sin
 
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
-	RA = Transform3D(EULER_SPIDER,phiA,thetaA,psiA)
+	RA   = Transform({'type': 'spider', 'phi': phiA, 'theta': thetaA, 'psi': psiA})
+	RB   = Transform({'type': 'spider', 'phi': phiB, 'theta': thetaB, 'psi': psiB})
+	RBT  = RB.transpose()
+	RABT = RA * RBT
 
-	RBT = Transform3D(EULER_SPIDER,phiB,thetaB,psiB)
-	RBT.transpose()
+	RABTeuler = RABT.get_rotation('spider')
+	RABTphi   = RABTeuler['phi']
+	RABTtheta = RABTeuler['theta']
+	RABTpsi   = RABTeuler['psi']
 
-	RABT=RA*RBT
+	#deg_to_rad = pi/180.0
+	#thetaAR = thetaA*deg_to_rad
+	#thetaBR = thetaB*deg_to_rad
+	#phiAR   = phiA*deg_to_rad
+	#phiBR   = phiB *deg_to_rad
 
-	RABTeuler = RABT.get_rotation(EULER_SPIDER)
-	RABTphi   = RABTeuler["phi"]
-	RABTtheta = RABTeuler["theta"]
-	RABTpsi   = RABTeuler["psi"]
-	deg_to_rad = pi/180.0
-	thetaAR = thetaA*deg_to_rad
-	thetaBR = thetaB*deg_to_rad
-	phiAR   = phiA*deg_to_rad
-	phiBR   = phiB *deg_to_rad
-
-	d12=cos(thetaAR)*cos(thetaBR) + sin(thetaAR)*sin(thetaBR)*cos(phiAR-phiBR)
+	#d12=cos(thetaAR)*cos(thetaBR) + sin(thetaAR)*sin(thetaBR)*cos(phiAR-phiBR)
 	return (-RABTpsi-RABTphi),RABTtheta #  180.0*acos(d12)/pi;
 
 def find(vv, cmp_str, n):
@@ -1021,20 +1019,13 @@ def get_inplane_angle(ima,ref, iring=1, fring=-1, ringstep=1, xtransSearch=0, yt
 	return angt,sxst, syst, mirrort, peakt
 
 def get_sym(symmetry):
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
-	RA = Transform3D()
+	RA   = Transform()
 	NTot = RA.get_nsym(symmetry)
-	angs=[]
+	angs = []
 	for j in xrange(NTot):
-		RNow = RA.get_sym(symmetry,j)
-		RNowE = RNow.get_rotation(EULER_SPIDER)
-		angs.append([RNowE["phi"],RNowE["theta"],RNowE["psi"] ] )
-
-	#ATTENTION
-	#angs=[]
-	#for transform in Symmetry3D.get_symmetries(symmetry):
-		#params = transform.get_params("spider")
-		#angs.append([params["phi"],params["theta"],params["psi"] ] )
+		RNow  = RA.get_sym(symmetry, j)
+		RNowE = RNow.get_rotation('spider')
+		angs.append([RNowE['phi'], RNowE['theta'], RNowE['psi']])
 		
 	return angs
 		
@@ -1156,19 +1147,15 @@ def inverse_transform3(phi, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, scale=1.
 	    Usage: inverse_transform3(phi,theta,psi,sx,sy,sz,scale)
 	       angles in degrees
 	"""
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
-	R = Transform3D(EULER_SPIDER,phi,theta,psi)
-	R.set_posttrans(Vec3f(sx,sy,sz))
-	R.set_scale(scale)
-	Rinv	 = R.inverse()
-	inveuler = Rinv.get_rotation(EULER_SPIDER);
-	invphi   = inveuler["phi"] ;
-	invtheta = inveuler["theta"];
-	invpsi   = inveuler["psi"];
-	invtrans =  [ Rinv.at(0,3),Rinv.at(1,3),Rinv.at(2,3) ] ;
-	invscale = Rinv.get_scale();
-	return invphi, invtheta, invpsi, invtrans[0], invtrans[1], invtrans[2], invscale
-
+	R1       = Transform({'scale': scale})
+	R2       = Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
+	R        = R1 * R2
+	Rinv     = R.inverse()
+	inveuler = Rinv.get_rotation('spider')
+	invtrans = Rinv.get_trans()
+	invscale = Rinv.get_scale()
+	return inveuler['phi'], inveuler['theta'], inveuler['psi'], invtrans.at(0), invtrans.at(1), invtrans.at(2), invscale
+	
 def list_syms():
 	"""Create a list of available symmetries
 	"""

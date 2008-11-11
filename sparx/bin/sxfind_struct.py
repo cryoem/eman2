@@ -38,7 +38,7 @@ from   optparse   import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --given --first_zero"
+	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --given --first_zero --weights"
 	parser   = OptionParser(usage, version = SPARXVERSION)
 	parser.add_option("--ir",         type="float",        default=-1,       help=" Inner radius of particle (set to )")
 	parser.add_option("--ou",         type="float",        default=-1,       help=" Outer radius of particle < int(nx/2)-1")
@@ -51,6 +51,7 @@ def main():
 	parser.add_option("--maxit",      type="int",          default=20,       help=" Maximum iterations ")
 	parser.add_option("--debug",      action="store_true", default=False,    help=" Help to debug")
 	parser.add_option("--first_zero", action="store_true", default=False,    help=" Assign the first projection orientation to 0")
+	parser.add_option("--weights",    action="store_true", default=False,    help=" Use Voronoi weighting (set to 0)")
 
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
@@ -59,9 +60,9 @@ def main():
 	else:
 		if options.maxit < 1: options.maxit = 1
 		
-		from development import find_struct_dev
+		from projection import find_struct
 		global_def.BATCH = True
-		find_struct_dev(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.debug)
+		find_struct(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, options.weights, options.debug)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
