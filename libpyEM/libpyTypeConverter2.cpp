@@ -100,6 +100,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::emobject_transform_from_python();
 	EMAN::emobject_ctf_from_python();
 	EMAN::emobject_eman1ctf_from_python();
+	EMAN::emobject_eman2ctf_from_python();
 	EMAN::emobject_null_from_python();
 
 	implicitly_convertible<int, EMAN::EMObject>();
