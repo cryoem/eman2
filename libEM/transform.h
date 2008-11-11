@@ -269,6 +269,15 @@ namespace EMAN
 			 * @return the inverse of this transformation matrix
 			 */
 			Transform inverse() const;
+
+			/** Get the transpose of this transformation matrix
+		 	 */
+			void transpose_inplace();
+
+			/** Get the transpose of this transformation matrix
+			 * @return the transpose of this transformation matrix
+			 */
+			Transform transpose() const;
 			
 			/** Get the value stored in the internal transformation matrix at at coordinate (r,c)
 			 */

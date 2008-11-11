@@ -290,7 +290,7 @@ EMData* mult_radial(EMData* radial);
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		EMData* rot_scale_trans(const Transform3D &RA);
+		EMData* rot_scale_trans(const Transform &RA);
 		
 		/*
 				To restrict the value to [0, nx)
@@ -318,9 +318,7 @@ EMData* mult_radial(EMData* radial);
 
 		//float cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2);
                 float cm_euc(EMData* sinoj, int n1, int n2);
-
-
-		
+                		
 		/** Rotate-Shift-Scale-Circulantly image using convolution 
 		 *
 		 *  If the image is a volume, then all slices are
@@ -480,7 +478,6 @@ EMData* mult_radial(EMData* radial);
 		 *       J. Opt. Soc. Am. A _21_, 499-509 (2004)
 		 *
 		 */
-		EMData* extractplane(const Transform3D& tf, Util::KaiserBessel& kb);
 		EMData* extract_plane(const Transform& tf, Util::KaiserBessel& kb);
 		
 		EMData* fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb);

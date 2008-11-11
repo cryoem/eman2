@@ -859,25 +859,25 @@ Transform Transform::inverse() const {
 	return t;
 }
 
-// Transform Transform::transpose() const
-// {
-// 	Transform t(*this);
-// 	t.transpose_inplace();
-// 	return t;
-// }
-// 
-// void Transform::transpose_inplace() {
-// 	float tempij;
-// 	for (int i = 0; i < 3; i++) {
-// 		for (int j = 0; j < i; j++) {
-// 			if (i != j) {
-// 				tempij= matrix[i][j];
-// 				matrix[i][j] = matrix[j][i];
-// 				matrix[j][i] = tempij;
-// 			}
-// 		}
-// 	}
-// }
+void Transform::transpose_inplace() {
+	float tempij;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < i; j++) {
+			if (i != j) {
+				tempij= matrix[i][j];
+				matrix[i][j] = matrix[j][i];
+				matrix[j][i] = tempij;
+			}
+		}
+	}
+}
+
+Transform Transform::transpose() const {
+	Transform t(*this);
+	t.transpose_inplace();
+	return t;
+}
+
 
 Transform EMAN::operator*(const Transform & M2, const Transform & M1)     // YYY
 {
