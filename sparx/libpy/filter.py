@@ -177,55 +177,36 @@ def filt_table(e, table):
 			"table" : table}
 	return Processor.EMFourierFilter(e, params)
 
-def filt_ctf(image, dz, cs, voltage, pixel_size, amp_contrast=0.1, b_factor=0.0, sign=-1.0, pad = True):
-	"""
-	Multiply the input image file with Contrast Transfer Function (CTF)
+def filt_ctf( img, ctf, dopad=True, sign=1 ) :
+	assert img.get_ysize() > 1
+	dict = ctf.to_dict()
+	dz = dict["defocus"]
+	cs = dict["cs"]
+	voltage = dict["voltage"]
+	pixel_size = dict["apix"]
+	b_factor = dict["bfactor"]
+	ampcont = dict["ampcont"]
 
-	= Usage =
-	  ctf_img  = filt_ctf(image, dz, cs, voltage, pixel_size,
-	                      amp_contrast, sign, b_factor, pad) 
-
-	== Input ==
-	  image:: input image, it can be real or Fourier
-
-	  dz:: defocus value in Angstroms.
-
-	  Cs:: spherical aberration constant of microscope [mm]. Cs of
-	    Polara at UT is 2.0 mm. 
-
-	  voltage:: electron accelerating voltage [kV]
-
-	  pixel_size:: pixel size of digitized files. It determines the maximum
-	    spatial frequency in the image. {{{`1/(2*"pixel_size")`}}} 
-
-	  amp_contrast:: Amplitude contrast ratio. Normally it is estimated to
-	    be 0.1 (it is also the default value of the program) 
-
-	  sign:: -1 or +1. Applying -1 will invert the phase inverse caused
-	    by the CTF. The default value is -1.
-
-	  b_factor:: B factor. A parameter roughly describes the decay of image
-	    Fourier amplitudes.
-	  
-	  pad:: apply padding with zeroes in real space to twice the size
-	     before CTF application (default True, if set to False, no padding
-	     if input image is Fourier, the flag has no effect).
-	"""
-	if image.is_complex():  ip = 0
+        if dopad:
+		ip = 1
 	else:
-		if(pad): ip = 1
-		else:    ip = 0
+		ip = 0
 
 	params = {"filter_type": Processor.fourier_filter_types.CTF_,
-		"defocus" : dz,
+	 	"defocus" : dz,
 		"Cs" : cs,
 		"voltage" : voltage,
 		"Pixel_size" : pixel_size,
 		"B_factor" : b_factor,
-		"amp_contrast": amp_contrast,
-		"dopad":ip,
+		"amp_contrast": ampcont,
+		"dopad":0,
 		"sign": sign}
-	return Processor.EMFourierFilter(image, params)
+	return Processor.EMFourierFilter(img, params)
+
+
+
+
+
 
 def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0):
 	"""
