@@ -36,7 +36,9 @@ import unittest
 from test import test_support
 import testlib
 import math
+from optparse import OptionParser
 
+IS_TEST_EXCEPTION = False
 
 class TestTransform(unittest.TestCase):
 	"""this is the unit test for Transform class"""
@@ -1225,16 +1227,21 @@ class TestTransform3D(unittest.TestCase):
 		"""test angles2tfvec() function ....................."""
 		t = Transform3D.angles2tfvec(Transform3D.EulerType.EMAN, (1.45232928554, -0.60170830102, 0))	
 		
-def test_main():
-	print 'Testing Transform'
-	test_support.run_unittest(TestTransform)
-	
-	print '\nTesting Symmetry3D'
-	test_support.run_unittest(TestSymmetry3D)
-	
-	print "\nTesting Transform3D"
-	test_support.run_unittest(TestTransform3D)
 
+def test_main():
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite1 = unittest.TestLoader().loadTestsFromTestCase(TestTransform)
+    suite2 = unittest.TestLoader().loadTestsFromTestCase(TestSymmetry3D)
+#    suite3 = unittest.TestLoader().loadTestsFromTestCase(TestTransform3D)
+    unittest.TextTestRunner(verbosity=2).run(suite1)
+    unittest.TextTestRunner(verbosity=2).run(suite2)
+#    unittest.TextTestRunner(verbosity=2).run(suite3)
 
 if __name__ == '__main__':
 	test_main()

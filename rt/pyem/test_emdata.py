@@ -40,6 +40,9 @@ import testlib
 import sys
 import math
 import os
+from optparse import OptionParser
+
+IS_TEST_EXCEPTION = False
 
 class TestEMData(unittest.TestCase):
     """this is the unit test for EMData class"""
@@ -246,27 +249,28 @@ class TestEMData(unittest.TestCase):
 									for s in range(size+m):
 										for t in range(size+l):
 											self.assertEqual(g.get_3dview()[r][s][t], f.get_3dview()[r][s][t])
-
-        region = Region(0,0,0,-1,1,1)
-        f = e.copy()
-        try:
-            f.clip_inplace(region)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-			
-        region = Region(0,0,0,1,-1,1)
-        f = e.copy()
-        try:
-            f.clip_inplace(region)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-			
-        region = Region(0,0,0,1,1,-1)
-        f = e.copy()
-        try:
-            f.clip_inplace(region)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
+        if(IS_TEST_EXCEPTION):
+            region = Region(0,0,0,-1,1,1)
+            f = e.copy()
+            try:
+                f.clip_inplace(region)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+    			
+            region = Region(0,0,0,1,-1,1)
+            f = e.copy()
+            try:
+                f.clip_inplace(region)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+    			
+            region = Region(0,0,0,1,1,-1)
+            f = e.copy()
+            try:
+                f.clip_inplace(region)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_insert_clip(self):
         """test insert_clip() function ......................"""
@@ -280,12 +284,13 @@ class TestEMData(unittest.TestCase):
         e2.to_zero()
         e2.process_inplace("testimage.noise.uniform.rand")
         
-        #test exception if the clip is out side of the image
-        self.assertRaises( RuntimeError, e.insert_clip, e2, (30,30,30) )
-        try:
-            e.insert_clip( e2,(30,30,30) )
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #test exception if the clip is out side of the image
+            self.assertRaises( RuntimeError, e.insert_clip, e2, (30,30,30) )
+            try:
+                e.insert_clip( e2,(30,30,30) )
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
         e.insert_clip(e2, (16,16,16))
         d1 = e.get_3dview()
@@ -309,15 +314,16 @@ class TestEMData(unittest.TestCase):
                 for i in range(32):
                     self.assertEqual(d[k+16][j][i], d2[k][j][i]) #(nz/2, nz] is the top half
         
-        e3 = EMData()
-        e3.set_size(32,32,1)
-        e3.to_one()
-        #get_top_half() should raise exception when apply to 2D image
-        self.assertRaises( RuntimeError, e3.get_top_half, )
-        try:
-            e3.get_top_half()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            e3 = EMData()
+            e3.set_size(32,32,1)
+            e3.to_one()
+            #get_top_half() should raise exception when apply to 2D image
+            self.assertRaises( RuntimeError, e3.get_top_half, )
+            try:
+                e3.get_top_half()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 			
     def test_insert_scaled_sum(self):
         """test insert_scaled_sum() function ................"""
@@ -335,13 +341,13 @@ class TestEMData(unittest.TestCase):
         e4 = EMData()
         e4.set_size(12,1,1)
         e4.to_one()
-        #insert_scaled_sum() will raise exception for 1D image
-        Log.logger().set_level(-1)    #perfect solution for quenching the Log error information, thank Liwei
-        self.assertRaises( RuntimeError, e3.insert_scaled_sum, e4, (0,0,0))
-        try:
-            e3.insert_scaled_sum(e4, (0,0,0))
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #insert_scaled_sum() will raise exception for 1D image
+            self.assertRaises( RuntimeError, e3.insert_scaled_sum, e4, (0,0,0))
+            try:
+                e3.insert_scaled_sum(e4, (0,0,0))
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_window_center(self):
         """test window_center() function ...................."""
@@ -350,23 +356,24 @@ class TestEMData(unittest.TestCase):
         e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.window_center(32)
         
-        #window_padded() only work for real data, raise exception for complex
-        e.set_complex(True)
-        self.assertRaises( RuntimeError, e.window_center, 32 )
-        try:
-            e2 = e.window_center(32)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #window_padded() only work for real data, raise exception for complex
+            e.set_complex(True)
+            self.assertRaises( RuntimeError, e.window_center, 32 )
+            try:
+                e2 = e.window_center(32)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
-        #window_padded() apply to cubic real space image only
-        e3 = EMData()
-        e3.set_size(64,64,62)
-        e3.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e3.window_center, 32 )
-        try:
-            e4 = e3.window_center(32)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            #window_padded() apply to cubic real space image only
+            e3 = EMData()
+            e3.set_size(64,64,62)
+            e3.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e3.window_center, 32 )
+            try:
+                e4 = e3.window_center(32)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
         #test 2-D support
         e7 = EMData()
@@ -387,14 +394,14 @@ class TestEMData(unittest.TestCase):
         e.process_inplace("testimage.noise.uniform.rand")
         e.center_origin()
         
-        #center_origin() only apply to real image
-        e.set_complex(True)
-        Log.logger().set_level(-1)
-        self.assertRaises( RuntimeError, e.center_origin, )
-        try:
-            e.center_origin()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #center_origin() only apply to real image
+            e.set_complex(True)
+            self.assertRaises( RuntimeError, e.center_origin, )
+            try:
+                e.center_origin()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
     def test_center_origin_fft(self):
         """test center_origin_fft() function ................"""
@@ -404,13 +411,14 @@ class TestEMData(unittest.TestCase):
         e.set_complex(True)
         e.center_origin_fft()
         
-        #center_origin_fft() apply to complex image only
-        e.set_complex(False)
-        self.assertRaises( RuntimeError, e.center_origin_fft, )
-        try:
-            e.center_origin_fft()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #center_origin_fft() apply to complex image only
+            e.set_complex(False)
+            self.assertRaises( RuntimeError, e.center_origin_fft, )
+            try:
+                e.center_origin_fft()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
         #there is no zeropad_ntimes() function anymore
     def no_test_zeropad_ntimes(self):
@@ -472,41 +480,41 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(31,31,1)
         e.process_inplace("testimage.noise.uniform.rand")
-        #Log.logger().set_level(-1)
         #import sys
         #outfile = "out.txt" 
         #sys.stdout = open(outfile,"w")
         e3 = e.real2FH(1.0)
         
-        #real2FH apply to 2D/Square/Real/odd image
-        e2 = EMData()
-        e2.set_size(31,31,31)
-        self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-        try:
-            e3 = e2.real2FH(1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-
-        e2.set_size(31,21,1)
-        self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-        try:
-            e3 = e2.real2FH(1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-            
-        e2.set_size(32,32,1)
-        self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-        try:
-            e3 = e2.real2FH(1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        e2.set_size(31,31,1)
-        e2.set_complex(True)
-        self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-        try:
-            e2.real2FH(1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #real2FH apply to 2D/Square/Real/odd image
+            e2 = EMData()
+            e2.set_size(31,31,31)
+            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+            try:
+                e3 = e2.real2FH(1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    
+            e2.set_size(31,21,1)
+            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+            try:
+                e3 = e2.real2FH(1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+                
+            e2.set_size(32,32,1)
+            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+            try:
+                e3 = e2.real2FH(1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            e2.set_size(31,31,1)
+            e2.set_complex(True)
+            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+            try:
+                e2.real2FH(1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
     def test_FH2F(self):
         """test FH2F() function ............................."""
@@ -516,13 +524,13 @@ class TestEMData(unittest.TestCase):
         e2 = e.real2FH(1.0)
         e3 = e2.FH2F(31, 1.0)
         
-        #for image not FH, should raise exception
-        Log.logger().set_level(-1)
-        self.assertRaises( RuntimeError, e.FH2F, 31, 1.0)
-        try:
-            e.FH2F(31, 1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #for image not FH, should raise exception
+            self.assertRaises( RuntimeError, e.FH2F, 31, 1.0)
+            try:
+                e.FH2F(31, 1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
     def test_do_fft(self):
         """test do_fft()/do_ift() function .................."""
@@ -576,19 +584,20 @@ class TestEMData(unittest.TestCase):
             for n in range(32):
                 self.assertEqual(e8.get_value_at(m,n,0), e8_copy.get_value_at(m,n,0))
         
-        #do_fft() only apply to real image
-        self.assertRaises( RuntimeError, e2.do_fft, )
-        try:
-            e2.do_fft()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
-        #do_ift() only apply to complex image
-        self.assertRaises( RuntimeError, e3.do_ift, )
-        try:
-            e3.do_ift()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #do_fft() only apply to real image
+            self.assertRaises( RuntimeError, e2.do_fft, )
+            try:
+                e2.do_fft()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+            #do_ift() only apply to complex image
+            self.assertRaises( RuntimeError, e3.do_ift, )
+            try:
+                e3.do_ift()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
     #for native FFT, this test will fail because the sign of the imaginary part
     def test_do_fft_complex_value(self):
@@ -1050,26 +1059,27 @@ class TestEMData(unittest.TestCase):
         e.set_complex(True)
         e.do_ift_inplace()
         
-        #do_ift_inplace() only apply to complex image
-        e4 = EMData()
-        e4.set_size(32,32,32)
-        e4.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e4.do_ift_inplace, )
-        try:
-            e4.do_ift_inplace()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
-        #do_fft_inplace() only apply to real image
-        e5 = EMData()
-        e5.set_size(32,32,32)
-        e5.process_inplace("testimage.noise.uniform.rand")
-        e6 = e5.do_fft()
-        self.assertRaises( RuntimeError, e6.do_fft_inplace, )
-        try:
-            e6.do_fft_inplace()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #do_ift_inplace() only apply to complex image
+            e4 = EMData()
+            e4.set_size(32,32,32)
+            e4.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e4.do_ift_inplace, )
+            try:
+                e4.do_ift_inplace()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+            #do_fft_inplace() only apply to real image
+            e5 = EMData()
+            e5.set_size(32,32,32)
+            e5.process_inplace("testimage.noise.uniform.rand")
+            e6 = e5.do_fft()
+            self.assertRaises( RuntimeError, e6.do_fft_inplace, )
+            try:
+                e6.do_fft_inplace()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
     def test_get_fft_amplitude(self):
         """test get_fft_amplitude() function ................"""
@@ -1080,12 +1090,13 @@ class TestEMData(unittest.TestCase):
         e3 = e2.get_fft_amplitude()
         self.assertEqual( e3.is_complex(), False)
         
-        #this function only apply to complex image
-        self.assertRaises( RuntimeError, e.get_fft_amplitude, )
-        try:
-            e.get_fft_amplitude()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #this function only apply to complex image
+            self.assertRaises( RuntimeError, e.get_fft_amplitude, )
+            try:
+                e.get_fft_amplitude()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
     def test_get_fft_phase(self):
         """test get_fft_phase() function ...................."""
@@ -1096,12 +1107,13 @@ class TestEMData(unittest.TestCase):
         e3 = e2.get_fft_phase()
         self.assertEqual( e3.is_complex(), False)
         
-        #this function only apply to complex image
-        self.assertRaises( RuntimeError, e.get_fft_phase, )
-        try:
-            e.get_fft_phase()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #this function only apply to complex image
+            self.assertRaises( RuntimeError, e.get_fft_phase, )
+            try:
+                e.get_fft_phase()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
     def test_get_fft_amplitude2D(self):
         """test get_fft_amplitude2D() function .............."""
@@ -1112,38 +1124,40 @@ class TestEMData(unittest.TestCase):
         e3 = e2.get_fft_amplitude2D()
         self.assertEqual( e3.is_complex(), False)
         
-        #this function only apply to 2D image
-        e4 = EMData()
-        e4.set_size(32,32,32)
-        self.assertRaises( RuntimeError, e4.get_fft_amplitude2D, )
-        try:
-            e4.get_fft_amplitude2D()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
-        #this function only apply to complex image
-        self.assertRaises( RuntimeError, e.get_fft_amplitude2D, )
-        try:
-            e.get_fft_amplitude2D()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #this function only apply to 2D image
+            e4 = EMData()
+            e4.set_size(32,32,32)
+            self.assertRaises( RuntimeError, e4.get_fft_amplitude2D, )
+            try:
+                e4.get_fft_amplitude2D()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+            #this function only apply to complex image
+            self.assertRaises( RuntimeError, e.get_fft_amplitude2D, )
+            try:
+                e.get_fft_amplitude2D()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
     def test_render_amp8(self):
-		"""test render_amp8() function ......................"""
-		e = EMData()
-		e.set_size(32,32,1)
-		e.process_inplace("testimage.noise.uniform.rand")
-		str = e.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
-		
-		#only apply to 2D image
-		e2 = EMData()
-		e2.set_size(32,32,32)
-		e2.process_inplace("testimage.noise.uniform.rand")
-		self.assertRaises( RuntimeError, e2.render_amp8, 0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
-		try:
-			str = e2.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
-		except RuntimeError, runtime_err:
-			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        """test render_amp8() function ......................"""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process_inplace("testimage.noise.uniform.rand")
+        str = e.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
+        
+        if(IS_TEST_EXCEPTION):
+            #only apply to 2D image
+            e2 = EMData()
+            e2.set_size(32,32,32)
+            e2.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e2.render_amp8, 0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
+            try:
+                str = e2.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     #def test_xform__phaseorigin_fourierorigin(self):
 		#"""test xform.phaseorigin and xform.fourierorigin ........................."""
@@ -1525,15 +1539,16 @@ class TestEMData(unittest.TestCase):
         
         e.rotate_x(10)
         
-        #apply only to 2D image
-        e2 = EMData()
-        e2.set_size(32,32,32)
-        e2.to_one()
-        self.assertRaises( RuntimeError, e2.rotate_x, 10)
-        try:
-            e2.rotate_x(10)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #apply only to 2D image
+            e2 = EMData()
+            e2.set_size(32,32,32)
+            e2.to_one()
+            self.assertRaises( RuntimeError, e2.rotate_x, 10)
+            try:
+                e2.rotate_x(10)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_rotate_180(self):
         """test rotate_180() function ......................."""
@@ -1542,15 +1557,16 @@ class TestEMData(unittest.TestCase):
         e.to_one()
         e.rotate_180()
         
-        #exception to 3D image
-        e3 = EMData()
-        e3.set_size(32,32,32)
-        e3.to_one()
-        self.assertRaises( RuntimeError, e3.rotate_180, )
-        try:
-            e3.rotate_180()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #exception to 3D image
+            e3 = EMData()
+            e3.set_size(32,32,32)
+            e3.to_one()
+            self.assertRaises( RuntimeError, e3.rotate_180, )
+            try:
+                e3.rotate_180()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_dot_rotate_translate(self):
         """test dot_rotate_translate() functon .............."""
@@ -1562,31 +1578,32 @@ class TestEMData(unittest.TestCase):
         e2.process_inplace("testimage.noise.uniform.rand")
         e.dot_rotate_translate(e2, 2.0, 3.0, 1.0)
         
-        #two image must be the same size
-        e3 =EMData()
-        e3.set_size(32,32,1)
-        e3.process_inplace("testimage.noise.uniform.rand")
-        e4 = EMData()
-        e4.set_size(24,24,1)
-        e4.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e3.dot_rotate_translate, e4, 2.0, 3.0, 1.0)
-        try:
-            e3.dot_rotate_translate(e4, 2.0, 3.0, 1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-
-        #two image must be 2D
-        e5 =EMData()
-        e5.set_size(32,32,32)
-        e5.process_inplace("testimage.noise.uniform.rand")
-        e6 = EMData()
-        e6.set_size(32,32,32)
-        e6.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e5.dot_rotate_translate, e6, 2.0, 3.0, 1.0)
-        try:
-            e5.dot_rotate_translate(e6, 2.0, 3.0, 1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #two image must be the same size
+            e3 =EMData()
+            e3.set_size(32,32,1)
+            e3.process_inplace("testimage.noise.uniform.rand")
+            e4 = EMData()
+            e4.set_size(24,24,1)
+            e4.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e3.dot_rotate_translate, e4, 2.0, 3.0, 1.0)
+            try:
+                e3.dot_rotate_translate(e4, 2.0, 3.0, 1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    
+            #two image must be 2D
+            e5 =EMData()
+            e5.set_size(32,32,32)
+            e5.process_inplace("testimage.noise.uniform.rand")
+            e6 = EMData()
+            e6.set_size(32,32,32)
+            e6.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e5.dot_rotate_translate, e6, 2.0, 3.0, 1.0)
+            try:
+                e5.dot_rotate_translate(e6, 2.0, 3.0, 1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
         #e7.set_size(32,32,1)
         #e7.process_inplace("testimage.noise.uniform.rand")
@@ -1610,15 +1627,16 @@ class TestEMData(unittest.TestCase):
         e2 = big.little_big_dot(small, True)
         self.assertNotEqual(e2, None)
         
-        #this image only can be 1D/2D
-        e3 = EMData()
-        e3.set_size(256,256,256)
-        e3.to_one()
-        self.assertRaises( RuntimeError, e3.little_big_dot, small)
-        try:
-            e3.little_big_dot(small)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #this image only can be 1D/2D
+            e3 = EMData()
+            e3.set_size(256,256,256)
+            e3.to_one()
+            self.assertRaises( RuntimeError, e3.little_big_dot, small)
+            try:
+                e3.little_big_dot(small)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_do_radon(self):
         """test do_radon() function ........................."""
@@ -1628,24 +1646,25 @@ class TestEMData(unittest.TestCase):
         
         e2 = e.do_radon()
         
-        #this function only apply to square 2D image
-        e3 = EMData()
-        e3.set_size(32,24,1)
-        e3.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e3.do_radon,)
-        try:
-            e3.do_radon()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
-        e4 = EMData()
-        e4.set_size(32,32,32)
-        e4.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e4.do_radon,)
-        try:
-            e4.do_radon()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #this function only apply to square 2D image
+            e3 = EMData()
+            e3.set_size(32,24,1)
+            e3.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e3.do_radon,)
+            try:
+                e3.do_radon()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+            e4 = EMData()
+            e4.set_size(32,32,32)
+            e4.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e4.do_radon,)
+            try:
+                e4.do_radon()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_calc_ccf(self):
         """test calc_ccf() function ........................."""
@@ -1702,8 +1721,6 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(re.get_ysize(), 1)
         self.assertEqual(re.get_zsize(), 1)
         
-        Log.logger().set_level(-1)
-        
         #test non-default parameter
         re = e.calc_ccfx(e2, 3, 20, True)
         self.assertEqual(re.is_complex(), False)
@@ -1711,33 +1728,35 @@ class TestEMData(unittest.TestCase):
         #self.assertEqual(re.get_ysize(), 1)    #fail here, need investigate further
         self.assertEqual(re.get_zsize(), 1)
         
-        #the input image can not be None
-        e3 = None
-        self.assertRaises( RuntimeError, e.calc_ccfx, e3)
-        try:
-            e.calc_ccfx(e3)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "NullPointerException")
-        
-        #two image must be same size
-        e4 = EMData()
-        e4.set_size(32,32,1)
-        self.assertRaises( RuntimeError, e.calc_ccfx, e4)
-        try:
-            e.calc_ccfx(e4)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #the input image can not be None
+            e3 = None
+            self.assertRaises( RuntimeError, e.calc_ccfx, e3)
+            try:
+                e.calc_ccfx(e3)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "NullPointerException")
             
-        #this funtion can not be used by 3D image
-        e5 = EMData()
-        e5.set_size(24,24,24)
-        e6 = EMData()
-        e6.set_size(24,24,24)
-        self.assertRaises( RuntimeError, e5.calc_ccfx, e6)
-        try:
-            e5.calc_ccfx(e6)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            #two image must be same size
+            e4 = EMData()
+            e4.set_size(32,32,1)
+            self.assertRaises( RuntimeError, e.calc_ccfx, e4)
+            try:
+                e.calc_ccfx(e4)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+                
+            #this funtion can not be used by 3D image
+            e5 = EMData()
+            e5.set_size(24,24,24)
+            e6 = EMData()
+            e6.set_size(24,24,24)
+            self.assertRaises( RuntimeError, e5.calc_ccfx, e6)
+            try:
+                e5.calc_ccfx(e6)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+                
     def no_test_calc_ccf_dsaw(self):
 		"""test calc_ccf function expected behavior.........."""
 		n = 16
@@ -1798,18 +1817,19 @@ class TestEMData(unittest.TestCase):
         e4.ap2ri()
         e.calc_mutual_correlation(e2, True, e4)
         
-        #two image must be in same size
-        e5 = EMData()
-        e5.set_size(24,24,24)
-        e5.process_inplace("testimage.noise.uniform.rand")
-        e6 = EMData()
-        e6.set_size(32,32,32)
-        e6.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e5.calc_mutual_correlation, e6)
-        try:
-            e5.calc_mutual_correlation(e6)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #two image must be in same size
+            e5 = EMData()
+            e5.set_size(24,24,24)
+            e5.process_inplace("testimage.noise.uniform.rand")
+            e6 = EMData()
+            e6.set_size(32,32,32)
+            e6.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e5.calc_mutual_correlation, e6)
+            try:
+                e5.calc_mutual_correlation(e6)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
     def test_unwrap(self):
         """test unwrap() function ..........................."""
@@ -1825,14 +1845,15 @@ class TestEMData(unittest.TestCase):
         e3 = e.unwrap(1,1,0,1,1,True)
         self.assertNotEqual(e3, None)
         
-        #this function only apply to 2D image
-        e4 = EMData()
-        e4.set_size(24,24,24)
-        self.assertRaises( RuntimeError, e4.unwrap,)
-        try:
-            e4.unwrap()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #this function only apply to 2D image
+            e4 = EMData()
+            e4.set_size(24,24,24)
+            self.assertRaises( RuntimeError, e4.unwrap,)
+            try:
+                e4.unwrap()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
 
     def test_apply_radial_func(self):
@@ -1858,23 +1879,24 @@ class TestEMData(unittest.TestCase):
         e4 = e2.do_fft()
         e3.add_incoherent(e4)
         
-        #two images must be the same size
-        e5 = EMData()
-        e5.set_size(24,24,24)
-        e5.process_inplace("testimage.noise.uniform.rand")
-        e6 = e5.do_fft()
-        self.assertRaises( RuntimeError, e3.add_incoherent, e6)
-        try:
-            e3.add_incoherent(e6)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
-        #two image must be complex
-        self.assertRaises( RuntimeError, e.add_incoherent, e2)
-        try:
-            e.add_incoherent(e2)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            #two images must be the same size
+            e5 = EMData()
+            e5.set_size(24,24,24)
+            e5.process_inplace("testimage.noise.uniform.rand")
+            e6 = e5.do_fft()
+            self.assertRaises( RuntimeError, e3.add_incoherent, e6)
+            try:
+                e3.add_incoherent(e6)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+            #two image must be complex
+            self.assertRaises( RuntimeError, e.add_incoherent, e2)
+            try:
+                e.add_incoherent(e2)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
     def test_calc_fourier_shell_correlation(self):
         """test calc_fourier_shell_correlation() ............"""
@@ -1888,13 +1910,14 @@ class TestEMData(unittest.TestCase):
         e2.do_fft_inplace()
         e.calc_fourier_shell_correlation(e2)
         
-        #input image can not be null
-        e3 = None
-        self.assertRaises( RuntimeError, e.calc_fourier_shell_correlation, e3)
-        try:
-            e.calc_fourier_shell_correlation(e3)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "NullPointerException")
+        if(IS_TEST_EXCEPTION):
+            #input image can not be null
+            e3 = None
+            self.assertRaises( RuntimeError, e.calc_fourier_shell_correlation, e3)
+            try:
+                e.calc_fourier_shell_correlation(e3)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "NullPointerException")
         
         # commented out by d.woolford because the calc fourier shell correlation function has a disclaiomer which prohibits modification
         # this stops the programmer from adding the error checking required to ensure the correct exception occurs.
@@ -1944,21 +1967,22 @@ class TestEMData(unittest.TestCase):
         #test for non-default argument
         dist2 = e.calc_dist(e2, 10)
         
-        e3 = EMData()
-        e3.set_size(32,32,1)
-        self.assertRaises( RuntimeError, e3.calc_dist, e2)
-        try:
-            e3.calc_dist(e2)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-            
-        e4 = EMData()
-        e4.set_size(24,1,1)
-        self.assertRaises( RuntimeError, e4.calc_dist, e2)
-        try:
-            e4.calc_dist(e2)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        if(IS_TEST_EXCEPTION):
+            e3 = EMData()
+            e3.set_size(32,32,1)
+            self.assertRaises( RuntimeError, e3.calc_dist, e2)
+            try:
+                e3.calc_dist(e2)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+                
+            e4 = EMData()
+            e4.set_size(24,1,1)
+            self.assertRaises( RuntimeError, e4.calc_dist, e2)
+            try:
+                e4.calc_dist(e2)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
     def test_calc_flcf(self):
         """test calc_flcf() function ........................"""
@@ -2038,23 +2062,24 @@ class TestEMData(unittest.TestCase):
         e.common_lines_real(e2,e3)
         
     def test_cut_slice(self):
-		"""test cut_slice() function ........................"""
-		e = EMData()
-		e.set_size(32,32,1)
-		e2 = EMData()
-		e2.set_size(32,32,32)     
-		e2.process_inplace("testimage.noise.uniform.rand")
-		t = Transform({"type":"eman","az":123,"alt":122,"phi":3})
-		t.set_trans(0,1,2)
-		e.cut_slice(e2, t)    #default argument
-		e.cut_slice(e2, t, False)
-		
-		e3 = None
-		self.assertRaises( RuntimeError, e.cut_slice, e3, t)
-		try:
-			e.cut_slice(e3, t)
-		except RuntimeError, runtime_err:
-			self.assertEqual(exception_type(runtime_err), "NullPointerException")
+        """test cut_slice() function ........................"""
+        e = EMData()
+        e.set_size(32,32,1)
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.process_inplace("testimage.noise.uniform.rand")
+        t = Transform({"type":"eman","az":123,"alt":122,"phi":3})
+        t.set_trans(0,1,2)
+        e.cut_slice(e2, t)    #default argument
+        e.cut_slice(e2, t, False)
+        
+        if(IS_TEST_EXCEPTION):
+    		e3 = None
+    		self.assertRaises( RuntimeError, e.cut_slice, e3, t)
+    		try:
+    			e.cut_slice(e3, t)
+    		except RuntimeError, runtime_err:
+    			self.assertEqual(exception_type(runtime_err), "NullPointerException")
             
     def test_uncut_slice(self):
         """test uncut_slice() function ......................"""
@@ -2268,26 +2293,27 @@ class TestEMData(unittest.TestCase):
                     self.assertEqual(e.get_value_at(k,j,i), 1)
                     self.assertEqual(e.sget_value_at(k,j,i), 1)
                     self.assertEqual(narray[i][j][k], 1)      
-                    
-        #test exception, if set value out of range
-        e2 = EMData()
-        e2.set_size(32,32,32)
-        e2.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e2.set_value_at, 32, 1, 1, 1.0)
-        try:
-            e2.set_value_at(32, 1, 1, 1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "OutofRangeException")
-        self.assertRaises( RuntimeError, e2.set_value_at, 31, 45, 1, 1.0)
-        try:
-            e2.set_value_at(31, 45, 1, 1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "OutofRangeException")
-        self.assertRaises( RuntimeError, e2.set_value_at, 31, 1, 1000, 1.0)
-        try:
-            e2.set_value_at(31, 1, 1000, 1.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "OutofRangeException")
+        
+        if(IS_TEST_EXCEPTION):            
+            #test exception, if set value out of range
+            e2 = EMData()
+            e2.set_size(32,32,32)
+            e2.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e2.set_value_at, 32, 1, 1, 1.0)
+            try:
+                e2.set_value_at(32, 1, 1, 1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "OutofRangeException")
+            self.assertRaises( RuntimeError, e2.set_value_at, 31, 45, 1, 1.0)
+            try:
+                e2.set_value_at(31, 45, 1, 1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "OutofRangeException")
+            self.assertRaises( RuntimeError, e2.set_value_at, 31, 1, 1000, 1.0)
+            try:
+                e2.set_value_at(31, 1, 1000, 1.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "OutofRangeException")
             
     def test_sget_value_at_interp(self):
         """test sget_value_at_interp() function ............."""
@@ -2329,14 +2355,15 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(re.get_ysize(), 1)
         self.assertEqual(re.get_zsize(), 1)
         
-        #this function not apply to 1D image
-        e2 = EMData()
-        e2.set_size(32,1,1)
-        self.assertRaises( RuntimeError, e2.rotavg, )
-        try:
-            e2.rotavg()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #this function not apply to 1D image
+            e2 = EMData()
+            e2.set_size(32,1,1)
+            self.assertRaises( RuntimeError, e2.rotavg, )
+            try:
+                e2.rotavg()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_image_arithmetic(self):
         """test image arithmetic operation .................."""
@@ -2360,23 +2387,27 @@ class TestEMData(unittest.TestCase):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d2[z][y][x]+1.0, d4[z][y][x], 3)
+        
+        if(IS_TEST_EXCEPTION):
         #image must be the same size
-        e5 = EMData()
-        e5.set_size(24,24,24)
-        self.assertRaises( RuntimeError, e.add, e5)
-        try:
-            e6 = e + e5
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        #image must be both real or both complex
-        e6 = EMData()
-        e6.set_size(32,32,32)
-        e6.set_complex(True)
-        self.assertRaises( RuntimeError, e.add, e6)
-        try:
-            e += e6
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            e5 = EMData()
+            e5.set_size(24,24,24)
+            if(IS_TEST_EXCEPTION):
+                self.assertRaises( RuntimeError, e.add, e5)
+                try:
+                    e6 = e + e5
+                except RuntimeError, runtime_err:
+                    self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            #image must be both real or both complex
+            e6 = EMData()
+            e6.set_size(32,32,32)
+            e6.set_complex(True)
+            if(IS_TEST_EXCEPTION):
+                self.assertRaises( RuntimeError, e.add, e6)
+                try:
+                    e += e6
+                except RuntimeError, runtime_err:
+                    self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
         #test addition
         e22 = 2.0 + e
@@ -2393,18 +2424,21 @@ class TestEMData(unittest.TestCase):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d[z][y][x]-3.0, d7[z][y][x], 3)
-        #image must be the same size
-        self.assertRaises( RuntimeError, e.sub, e5)
-        try:
-            e -= e5
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        #image must be both real or both complex   
-        self.assertRaises( RuntimeError, e.sub, e6) 
-        try:
-            e -= e6
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+        if(IS_TEST_EXCEPTION):
+            #image must be the same size
+            if(IS_TEST_EXCEPTION):
+                self.assertRaises( RuntimeError, e.sub, e5)
+                try:
+                    e -= e5
+                except RuntimeError, runtime_err:
+                    self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+                #image must be both real or both complex   
+                self.assertRaises( RuntimeError, e.sub, e6) 
+                try:
+                    e -= e6
+                except RuntimeError, runtime_err:
+                    self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
         #test substract
         e77 = 3.0 - e
@@ -2421,18 +2455,19 @@ class TestEMData(unittest.TestCase):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d[z][y][x] * 2.0, d8[z][y][x], 3)
-        #image must be the same size
-        self.assertRaises( RuntimeError, e.mult, e5)
-        try:
-            e *= e5
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        #image must be both real or both complex   
-        self.assertRaises( RuntimeError, e.mult, e6)
-        try:
-            e *= e6
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException") 
+        if(IS_TEST_EXCEPTION):
+            #image must be the same size
+            self.assertRaises( RuntimeError, e.mult, e5)
+            try:
+                e *= e5
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            #image must be both real or both complex   
+            self.assertRaises( RuntimeError, e.mult, e6)
+            try:
+                e *= e6
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException") 
             
         #test multiply
         e88 = 2.0 * e
@@ -2449,32 +2484,36 @@ class TestEMData(unittest.TestCase):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d[z][y][x]/5.0, d9[z][y][x], 3)
-        #image must be the same size
-        self.assertRaises( RuntimeError, e.div, e5)
-        try:
-            e /= e5
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        #image must be both real or both complex   
-        self.assertRaises( RuntimeError, e.div, e6)
-        try:
-            e /= e6
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        #division by zero exception
-        self.assertRaises( RuntimeError, e.div, 0.0 )
-        try:
-            e/= 0.0
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
-        e7 = EMData()
-        e7.set_size(32,32,32)
-        e7.to_zero()
-        self.assertRaises( RuntimeError, e.div, e7 )
-        try:
-            e/=e7
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+        
+        if(IS_TEST_EXCEPTION):
+            #image must be the same size
+            self.assertRaises( RuntimeError, e.div, e5)
+            try:
+                e /= e5
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            #image must be both real or both complex   
+            self.assertRaises( RuntimeError, e.div, e6)
+            try:
+                e /= e6
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            #division by zero exception
+            self.assertRaises( RuntimeError, e.div, 0.0 )
+            try:
+                e/= 0.0
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+        
+            e7 = EMData()
+            e7.set_size(32,32,32)
+            e7.to_zero()
+            if(IS_TEST_EXCEPTION):
+                self.assertRaises( RuntimeError, e.div, e7 )
+                try:
+                    e/=e7
+                except RuntimeError, runtime_err:
+                    self.assertEqual(exception_type(runtime_err), "InvalidValueException")
             
         #test division
         e99 = 0.005 / e
@@ -2604,24 +2643,25 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(e.get_ysize(), 34)
         self.assertEqual(e.get_zsize(), 56)
         
-        #test for exception
-        self.assertRaises( RuntimeError, e.set_size, 0, 32, 32)
-        try:
-            e.set_size(0, 32, 32)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
-            
-        self.assertRaises( RuntimeError, e.set_size, 32, -32, 32)
-        try:
-            e.set_size(32, -32, 32)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
-            
-        self.assertRaises( RuntimeError, e.set_size, 32, 32, -32)
-        try:
-            e.set_size(32, -32, 32)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+        if(IS_TEST_EXCEPTION):
+            #test for exception
+            self.assertRaises( RuntimeError, e.set_size, 0, 32, 32)
+            try:
+                e.set_size(0, 32, 32)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+                
+            self.assertRaises( RuntimeError, e.set_size, 32, -32, 32)
+            try:
+                e.set_size(32, -32, 32)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+                
+            self.assertRaises( RuntimeError, e.set_size, 32, 32, -32)
+            try:
+                e.set_size(32, -32, 32)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "InvalidValueException")
             
         #test set_complex_size()
         e2 = EMData()
@@ -2653,15 +2693,16 @@ class TestEMData(unittest.TestCase):
         d2 = e2.get_3dview()
         for x in range(32):
             self.assertEqual(d[1][x], d2[0][0][x])
-            
-        #this function only apply to 1D/2D image
-        e3 = EMData()
-        e3.set_size(32,32,32)
-        self.assertRaises( RuntimeError, e3.get_row, 1) 
-        try:
-            e3.get_row(1)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+
+        if(IS_TEST_EXCEPTION):
+            #this function only apply to 1D/2D image
+            e3 = EMData()
+            e3.set_size(32,32,32)
+            self.assertRaises( RuntimeError, e3.get_row, 1) 
+            try:
+                e3.get_row(1)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_set_row(self):
         """test set_row() function .........................."""
@@ -2678,15 +2719,16 @@ class TestEMData(unittest.TestCase):
         d2 = e2.get_3dview()
         for x in range(32):
             self.assertEqual(d[1][x], d2[0][0][x])
-            
-        #this function only apply to 1D/2D image
-        e3 = EMData()
-        e3.set_size(32,32,32)
-        self.assertRaises( RuntimeError, e3.set_row, e2, 1)
-        try:
-            e3.set_row(e2, 1)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
+        if(IS_TEST_EXCEPTION):    
+            #this function only apply to 1D/2D image
+            e3 = EMData()
+            e3.set_size(32,32,32)
+            self.assertRaises( RuntimeError, e3.set_row, e2, 1)
+            try:
+                e3.set_row(e2, 1)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_get_col(self):
         """test get_col() function .........................."""
@@ -2701,15 +2743,16 @@ class TestEMData(unittest.TestCase):
         d2 = e2.get_3dview()
         for y in range(32):
             self.assertEqual(d[y][1], d2[0][0][y])
-            
-        #this function only apply to 2D image
-        e3 = EMData()
-        e3.set_size(32,32,32)
-        self.assertRaises( RuntimeError, e3.get_col, 1) 
-        try:
-            e3.get_col(1)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
+        if(IS_TEST_EXCEPTION):    
+            #this function only apply to 2D image
+            e3 = EMData()
+            e3.set_size(32,32,32)
+            self.assertRaises( RuntimeError, e3.get_col, 1) 
+            try:
+                e3.get_col(1)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_set_col(self):
         """test set_col() function .........................."""
@@ -2724,15 +2767,16 @@ class TestEMData(unittest.TestCase):
         d2 = e2.get_3dview()
         for y in range(32):
             self.assertEqual(d[y][1], d2[0][0][y])
-            
-        #this function only apply to 2D image
-        e3 = EMData()
-        e3.set_size(32,32,32)
-        self.assertRaises( RuntimeError, e3.set_col, e2, 1) 
-        try:
-            e3.set_col(e2, 1)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
+        if(IS_TEST_EXCEPTION):
+            #this function only apply to 2D image
+            e3 = EMData()
+            e3.set_size(32,32,32)
+            self.assertRaises( RuntimeError, e3.set_col, e2, 1) 
+            try:
+                e3.set_col(e2, 1)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     
     def test_set_attr(self):
         """test set/get/del_attr() function ................."""
@@ -2852,11 +2896,12 @@ class TestEMData(unittest.TestCase):
                 for z in range(32):
                     self.assertEqual( d2[z][y][x], d[z][y][x*2] )
                     self.assertEqual( d3[z][y][x], d[z][y][x*2+1] )
-        self.assertRaises( RuntimeError, e.imag, )
-        try:
-            ee = e.imag()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "InvalidCallException")
+        if(IS_TEST_EXCEPTION):
+            self.assertRaises( RuntimeError, e.imag, )
+            try:
+                ee = e.imag()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "InvalidCallException")
                     
         e5 = e.real2complex()    #test default argument
         e6 = e.real2complex(1.0)    #test non-default argument
@@ -2939,22 +2984,23 @@ class TestEMData(unittest.TestCase):
         e2 = e.rot_trans2D(0.12)    #default argument
         e3 = e.rot_trans2D(0.12, 0.2, 0.3)    #non-default argument
         
-        #this functin only apply to 2D image
-        e4 = EMData()
-        e4.set_size(32,1,1)
-        self.assertRaises( RuntimeError, e4.rot_trans2D, 0.12)
-        try:
-            e4.rot_trans2D(0.12)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-            
-        e5 = EMData()
-        e5.set_size(32,32,32)
-        self.assertRaises( RuntimeError, e5.rot_trans2D, 0.12)
-        try:
-            e5.rot_trans2D(0.12)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #this functin only apply to 2D image
+            e4 = EMData()
+            e4.set_size(32,1,1)
+            self.assertRaises( RuntimeError, e4.rot_trans2D, 0.12)
+            try:
+                e4.rot_trans2D(0.12)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+                
+            e5 = EMData()
+            e5.set_size(32,32,32)
+            self.assertRaises( RuntimeError, e5.rot_trans2D, 0.12)
+            try:
+                e5.rot_trans2D(0.12)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     
     def test_rot_scale_trans2D(self):
         """test rot_scale_trans2D() function ................"""
@@ -2964,23 +3010,24 @@ class TestEMData(unittest.TestCase):
         e2 = e.rot_scale_trans2D(0.12)    #test default argument
         e3 = e.rot_scale_trans2D(0.12, 2.0, 0.2, 0.3)    #test non-default argument
         
-        #this function not apply to 1D image
-        e4 = EMData()
-        e4.set_size(32,1,1)
-        self.assertRaises( RuntimeError, e4.rot_scale_trans2D, 0.12)
-        try:
-            e4.rot_scale_trans2D(0.12)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-            
-        #this function can not apply to 3D image
-        e5 = EMData()
-        e5.set_size(32,32,32)
-        self.assertRaises( RuntimeError, e5.rot_scale_trans2D, 0.12)
-        try:
-            e5.rot_scale_trans2D(0.12)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #this function not apply to 1D image
+            e4 = EMData()
+            e4.set_size(32,1,1)
+            self.assertRaises( RuntimeError, e4.rot_scale_trans2D, 0.12)
+            try:
+                e4.rot_scale_trans2D(0.12)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+                
+            #this function can not apply to 3D image
+            e5 = EMData()
+            e5.set_size(32,32,32)
+            self.assertRaises( RuntimeError, e5.rot_scale_trans2D, 0.12)
+            try:
+                e5.rot_scale_trans2D(0.12)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
             
     def no_test_rotconvtrunc2d_kbi0(self):
@@ -2990,22 +3037,23 @@ class TestEMData(unittest.TestCase):
         e.process_inplace('testimage.noise.uniform.rand')
         e2 = e.rotconvtrunc2d_kbi0(0.1,0.2,10)
         
-        #this function only apply to 2D image
-        e3 = EMData()
-        e3.set_size(32,1,1)
-        self.assertRaises( RuntimeError, e3.rotconvtrunc2d_kbi0, 0.1, 0.2, 10)
-        try:
-            e3.rotconvtrunc2d_kbi0(0.1, 0.2, 10)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-            
-        e4 = EMData()
-        e4.set_size(32,32,32)
-        self.assertRaises( RuntimeError, e4.rotconvtrunc2d_kbi0, 0.1, 0.2, 10)
-        try:
-            e4.rotconvtrunc2d_kbi0(0.1, 0.2, 10)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #this function only apply to 2D image
+            e3 = EMData()
+            e3.set_size(32,1,1)
+            self.assertRaises( RuntimeError, e3.rotconvtrunc2d_kbi0, 0.1, 0.2, 10)
+            try:
+                e3.rotconvtrunc2d_kbi0(0.1, 0.2, 10)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+                
+            e4 = EMData()
+            e4.set_size(32,32,32)
+            self.assertRaises( RuntimeError, e4.rotconvtrunc2d_kbi0, 0.1, 0.2, 10)
+            try:
+                e4.rotconvtrunc2d_kbi0(0.1, 0.2, 10)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def no_test_gridrot2d_kbi0(self):
         """test gridrot2d_kbi0() function ..................."""
@@ -3272,9 +3320,17 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(q.to_string(), q2.to_string())
         self.assertEqual(q.to_dict(), q2.to_dict())
         testlib.safe_unlink('mydb2')
-        
+
 def test_main():
-    test_support.run_unittest(TestEMData)
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestEMData)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__ == '__main__':
     test_main()

@@ -39,6 +39,9 @@ import sys
 import testlib
 import os
 from pyemtbx.exceptions import *
+from optparse import OptionParser
+
+IS_TEST_EXCEPTION = False
 
 class TestEMIO(unittest.TestCase):
     """EM file IO test"""
@@ -391,7 +394,6 @@ class TestHdfIO(unittest.TestCase):
         
     def test_delete_attribute(self):
         """test add and delete attribute from hdf file ......"""
-        Log.logger().set_level(-1)    #no log message printed out
         e1 = EMData()
         e1.set_size(32,32)
         e1.process_inplace('testimage.noise.uniform.rand')
@@ -404,18 +406,19 @@ class TestHdfIO(unittest.TestCase):
         e2 = EMData()
         e2.read_image(testimage)
         self.assertEqual(e2.get_attr('Grant'), 10000)
-                
-        #testwhether the attribute 'Grant' can be removed from file
-        e2.del_attr('Grant')
-        e2.write_image(testimage)
-        del e2
-        e3 = EMData()
-        e3.read_image(testimage)
-        try:
-            no_such_attr = e3.get_attr('Grant')
-        except RuntimeError, runtime_err:
-            err_type = exception_type(runtime_err)
-            self.assertEqual(err_type, "NotExistingObjectException")           
+        
+        if(IS_TEST_EXCEPTION):        
+            #testwhether the attribute 'Grant' can be removed from file
+            e2.del_attr('Grant')
+            e2.write_image(testimage)
+            del e2
+            e3 = EMData()
+            e3.read_image(testimage)
+            try:
+                no_such_attr = e3.get_attr('Grant')
+            except RuntimeError, runtime_err:
+                err_type = exception_type(runtime_err)
+                self.assertEqual(err_type, "NotExistingObjectException")           
         
         os.unlink(testimage)
         
@@ -814,7 +817,7 @@ class TestImagicIO(unittest.TestCase):
         img = EMData(32,32)
         img.process_inplace('testimage.noise.uniform.rand')
         ctf1 = EMAN2Ctf()
-        ctf1.from_vector((1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0))
+        ctf1.from_vector((1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0, 0, 0))
         img.set_attr('ctf', ctf1)
         img.write_image(filename)
         
@@ -1072,10 +1075,37 @@ class TestImageIO(unittest.TestCase):
     def test_xplorio_region(self):
         self.region_read_write_test(XPLOR, "2f.xplor")
 """
-        
-def test_main():
-    TestUtil.set_progname("region")
-    test_support.run_unittest(TestEMIO, TestIcosIO, TestPNGIO, TestVTKIO, TestXPLORIO, TestPGMIO, TestSpiderIO, TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
 
+def test_main():
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite1 = unittest.TestLoader().loadTestsFromTestCase(TestEMIO)
+    suite2 = unittest.TestLoader().loadTestsFromTestCase(TestIcosIO)
+    suite3 = unittest.TestLoader().loadTestsFromTestCase(TestPNGIO)
+    suite4 = unittest.TestLoader().loadTestsFromTestCase(TestVTKIO)
+    suite5 = unittest.TestLoader().loadTestsFromTestCase(TestXPLORIO)
+    suite6 = unittest.TestLoader().loadTestsFromTestCase(TestPGMIO)
+    suite7 = unittest.TestLoader().loadTestsFromTestCase(TestSpiderIO)
+    suite8 = unittest.TestLoader().loadTestsFromTestCase(TestImageIO)
+    suite9 = unittest.TestLoader().loadTestsFromTestCase(TestHdfIO)
+    suite10 = unittest.TestLoader().loadTestsFromTestCase(TestMrcIO)
+    suite11 = unittest.TestLoader().loadTestsFromTestCase(TestImagicIO)
+    unittest.TextTestRunner(verbosity=2).run(suite1)
+    unittest.TextTestRunner(verbosity=2).run(suite2)
+    unittest.TextTestRunner(verbosity=2).run(suite3)
+    unittest.TextTestRunner(verbosity=2).run(suite4)
+    unittest.TextTestRunner(verbosity=2).run(suite5)
+    unittest.TextTestRunner(verbosity=2).run(suite6)
+    unittest.TextTestRunner(verbosity=2).run(suite7)
+    unittest.TextTestRunner(verbosity=2).run(suite8)
+    unittest.TextTestRunner(verbosity=2).run(suite9)
+    unittest.TextTestRunner(verbosity=2).run(suite10)
+    unittest.TextTestRunner(verbosity=2).run(suite11) 
+    
 if __name__ == '__main__':
     test_main()

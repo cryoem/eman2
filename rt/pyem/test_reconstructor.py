@@ -33,17 +33,20 @@
 
 from EMAN2 import *
 import unittest,os,sys
-from test import test_support
 import testlib
 from pyemtbx.exceptions import *
 import numpy
+from optparse import OptionParser
 
 FFT_RECON_ZERO_TOLERANCE = 1.e-3
+IS_TEST_EXCEPTION = False
 
 # This testing code will perform many tests than it currently does.
 
 class TestReconstructor(unittest.TestCase):
 	"""Reconstructor test"""
+	def setUp(self):
+		self.test_exception = True
 	
 	def notest_insert_remove(self):
 		"""test insert and remove .........................."""
@@ -190,8 +193,17 @@ class TestReconstructor(unittest.TestCase):
 		r.insert_slice(e2, Transform3D(EULER_EMAN, 0,0,0))
 		r.insert_slice(e3, Transform3D(EULER_EMAN, 0,0,0))
 		result = r.finish()
+
 def test_main():
-	test_support.run_unittest(TestReconstructor)
+	p = OptionParser()
+	p.add_option('--t', action='store_true', help='test exception', default=False )
+	global IS_TEST_EXCEPTION
+	opt, args = p.parse_args()
+	if opt.t:
+		IS_TEST_EXCEPTION = True
+	suite = unittest.TestLoader().loadTestsFromTestCase(TestReconstructor)
+	unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__ == '__main__':
-	test_main()
+    test_main()
+
