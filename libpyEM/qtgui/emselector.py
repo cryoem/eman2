@@ -74,6 +74,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		self.first_list_widget = QtGui.QListWidget(None)
 		self.starting_directory = os.getcwd()
+		self.historical_starting_directory = os.getcwd() # just incase anyone ever needs it (True). This should never be changed
 		
 		self.selections = []
 		self.current_list_widget = None
@@ -363,7 +364,9 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.selections = []
 		for a in self.current_list_widget.selectedItems():
 			file = directory+str(a.text())
-			if self.__is_previewable(a): self.selections.append(file)
+			previewable,previewer= self.__is_previewable(a)
+			if previewable: 
+				self.selections.append(previewer.path(file,self))
 		
 		# if there are no selections then close the preview
 		#if len(self.selections) == 0:
@@ -584,8 +587,8 @@ class EMSelectorDialog(QtGui.QDialog):
 	
 	def __is_previewable(self,item):
 		#if  self.db_listing.responsible_for(file_name):
-		if self.db_listing.is_previewable(item): return True 
-		else: return self.dir_listing.is_previewable(item)
+		if self.db_listing.is_previewable(item): return True,self.db_listing
+		else: return self.dir_listing.is_previewable(item),self.dir_listing
 		
 	def __is_non_empty_directory(self,s):
 		'''
@@ -655,7 +658,10 @@ class EMDirectoryListing:
 			#for s in strings:
 				
 		#else:
-			
+	
+	def path(self,full_path,selector):
+		return full_path
+	
 	def filter_strings(self,strings):
 		
 		filt = self.target.get_file_filter()
@@ -840,11 +846,31 @@ class EMBDBListing:
 		self.directory_replacements = {"EMAN2DB":"bdb"}
 	
 		self.db_mx = "database_emdata_mx"
+
 		self.emdata_3d_entry = "database_emdata_3d_entry"
 		self.emdata_entry = "database_emdata_entry"
 		self.db_dict_emdata_entry = "database_dictionary_emdata"
 		
 		self.previewable_types = [self.db_mx,self.emdata_3d_entry,self.emdata_entry,self.db_dict_emdata_entry] # add any others as functionality grows
+	
+	def path(self,full_path,selector):
+		import platform
+		cwd = selector.historical_starting_directory
+		
+		if full_path.startswith(cwd):
+			path = full_path[len(cwd)+1:]
+			if platform.system() == "Windows":
+				path = path.replace("\\bdb\\","#")
+			else:
+				path = path.replace("/bdb/","#")
+			
+			return "bdb:"+path
+			
+			
+			
+		else:
+			print "not supported yet"
+		#return full_path
 	
 	def responsible_for(self,file_or_folder):
 		real_name = self.convert_to_absolute_path(file_or_folder)
@@ -911,7 +937,7 @@ class EMBDBListing:
 				
 				if i == "EMAN2DB":
 					a = EMSelectionListItem(self.target.database_icon,"bdb",list_widget) # this is something we do not wish to support
-					a.type_of_me = "unwanted"
+					a.type_of_me = "unwanted" # really haven't accommodated for this...
 					continue
 			
 				file_length = 0
@@ -935,23 +961,30 @@ class EMBDBListing:
 					db_directory = self.get_emdatabase_directory(real_directory)
 					DB = EMAN2DB.open_db(db_directory)
 					DB.open_dict(f[0])
+					
 					if DB[f[0]].has_key("maxrec"):
 						n = DB[f[0]]["maxrec"]
-						if n > 1:
+						if n >= 1:
 							a = EMSelectionListItem(self.target.emdata_matrix_icon,f[0],list_widget)
 							a.type_of_me = self.db_mx
 							a.database_directory = db_directory
 							a.database = f[0]
+						elif n == 0:
+							d = DB[f[0]].get_header(0)
+							if d["nz"] <= 1:
+								a = EMSelectionListItem(self.target.emdata_icon,f[0],list_widget)
+								a.type_of_me = self.emdata_entry
+							else:
+								a = EMSelectionListItem(self.target.emdata_3d_icon,f[0],list_widget)
+								a.type_of_me = self.emdata_3d_entry
+							
+							a.database_directory = db_directory
+							a.database = f[0]
+							a.database_key = 0
+					
 						else:
 							a = EMSelectionListItem(self.target.database_icon,f[0],list_widget)
 							a.type_of_me = "regular"
-							#data = DB[f[0]].get_header(0)
-							#if data["nz"] > 1:
-								
-							#else:
-								
-							#print data
-						
 					else:
 						a = EMSelectionListItem(self.target.database_icon,f[0],list_widget)
 						a.type_of_me = "regular"
@@ -1164,7 +1197,7 @@ class EMBDBListing:
 			self.target.preview_data(data)	
 			return True
 				
-		elif item.type_of_me == self.emdata_3d_entry or item.type_of_me == self.emdata_entry:
+		elif item.type_of_me in [self.emdata_3d_entry,self.emdata_entry]:
 			
 			DB = EMAN2DB.open_db(item.database_directory)
 			DB.open_dict(item.database)

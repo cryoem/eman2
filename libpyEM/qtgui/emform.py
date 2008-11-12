@@ -226,7 +226,7 @@ class EMFormWidget(QtGui.QWidget):
 				
 		text_edit = QtGui.QTextEdit("",self)
 		text_edit.setReadOnly(True)
-		text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
+		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
 		text_edit.setText(param.defaultunits)
 		hbl.addWidget(text_edit)
 		
@@ -386,6 +386,9 @@ class EMFormWidget(QtGui.QWidget):
 
 	def update_texture(self):
 		self.parent.force_texture_update()
+		
+	def closeEvent(self,event):
+		self.emit(QtCore.SIGNAL("emform_close"))
 
 class BoolParamWriter:
 	def __init__(self,param_name,check_box):
@@ -518,8 +521,10 @@ class UrlEventHandler:
 		self.browser = None
 	def on_browser_ok(self,stringlist):
 		new_string = str(self.text_edit.toPlainText())
+		present_files = new_string.split() # this is to avoid redundancies
 		for i,s in enumerate(stringlist):
-			if len(new_string) != 0:
+			if s in present_files: continue
+			if len(new_string) != 0 :
 				new_string += '\n'
 			new_string += s
 

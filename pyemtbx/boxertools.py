@@ -1660,8 +1660,7 @@ class Boxable:
 						return
 					else:
 						db_remove_dict(image_name)
-				
-			
+
 			elif file_exists(image_name):
 				if not force:
 					print "warning, file already exists - ", image_name, " doing nothing. Use force to override this behavior"

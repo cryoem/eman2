@@ -248,7 +248,7 @@ class EMApplication:
 	
 	def deregister_qt_emitter(self,child):
 		self.qt_emission_registry.pop(child)
-		
+
 	#def starting_up(self):
 		#if self.app != None:
 			#if QtGui.QApplication.startingUp():
@@ -340,6 +340,7 @@ class EMStandAloneApplication(EMApplication):
 				widget = child.get_qt_widget()
 				if widget.isVisible() == False:
 					widget.show()
+					widget.setFocus()
 				return
 	
 		# if we make it here than we automatically attach the child
