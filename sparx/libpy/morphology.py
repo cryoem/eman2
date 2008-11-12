@@ -135,14 +135,23 @@ def ctf_2(nx, pixel_size, defocus, voltage = 300.0, cs = 2.0, amp_contrast=0.1, 
 		ctf_2[i] = ctf_val**2
 	return ctf_2
 
-def ctf_img(nx, pixel_size, defocus, voltage = 300.0, cs = 2.0, amp_contrast=0.1, b_factor=0.0, sign = -1, ny = 0, nz = 1):
+def ctf_img(nx, ctf, sign = -1, ny = 0, nz = 1):
 	"""
 	  Generate a 1-2-3-D complex image containing the CTF.
 	  Default is 2D output.
 	  
 	"""
+	dict = ctf.to_dict()
+	dz = dict["defocus"]
+	cs = dict["cs"]
+	voltage = dict["voltage"]
+	pixel_size = dict["apix"]
+	b_factor = dict["bfactor"]
+	ampcont = dict["ampcont"]
+
+
 	if(ny < 1):  ny = nx
-	return  Util.ctf_img(nx, ny, nz, defocus, pixel_size, voltage, cs, amp_contrast, b_factor, 0.0, 0.0, sign)
+	return  Util.ctf_img(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, 0.0, 0.0, sign)
 
 ###----D-----------------------		
 def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):
