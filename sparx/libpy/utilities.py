@@ -2399,3 +2399,14 @@ def set_params_proj(ima, p, xform = "xform.proj"):
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
 	t.set_trans(Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
+
+def convert_old_ctf( prj, defocus, pixel_size, cs, voltage, amp_contrast, bfactor=0.0 ):
+	from EMAN2 import EMAN2Ctf
+
+	defocus = defocus*1e-4
+	amp_contrast = amp_contrast * 100.0
+
+	ctf = EMAN2Ctf()
+	ctf.from_dict( {"defocus":defocus, "voltage":voltage, "cs":cs, "apix":pixel_size, "ampcont":amp_contrast, "bfactor":bfactor} )
+
+	prj.set_attr( "ctf", ctf )
