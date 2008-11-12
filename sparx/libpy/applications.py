@@ -4358,10 +4358,9 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 		ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou, delta, center, maxit, CTF, snr, sym, chunk, user_func_name, debug)
 		return
 
-	from alignment	    import eqproj
-	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl
+	from filter         import filt_ctf
 	from projection     import prep_vol
-	from utilities      import amoeba, model_circle, get_params_proj, set_params_proj, get_arb_params
+	from utilities      import model_circle, get_params_proj, set_params_proj
 	from utilities      import dropImage
 	from math           import pi
 	from statistics     import fsc_mask
@@ -4377,20 +4376,16 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
-	if CTF :
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		#                  0                  1              2          3              4               5                   6
-		#  ERROR if ctf applied
+	if CTF:
 		ima = EMData()
 		ima.read_image(stack, 0)
-		ctf_params = get_arb_params(ima, parnames)
-		if(ctf_params[6] == 1):  ERROR("ali3d_e does not work for CTF-applied data","ali3d_e",1)
+		ctf_applied = ima.get_attr("ctf_applied")
+		if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
 		from reconstruction import recons3d_4nn_ctf
 	else   : from reconstruction import recons3d_4nn
 
 	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 	os.mkdir(outdir)
-
 
 	last_ring   = int(ou)
 	max_iter    = int(maxit)
@@ -4404,7 +4399,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	vol     = EMData()
 	vol.read_image(ref_vol, 0)
 	nx      = vol.get_xsize()
-	if (last_ring == -1):	last_ring = nx//2 - 2
+	if last_ring == -1:	last_ring = nx//2 - 2
 
 	print_msg("Outer radius                : %i\n"%(last_ring))
 	print_msg("Angular search range        : %s\n"%(delta))
@@ -4416,8 +4411,8 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D=getImage(maskfile)
-		else:                                   mask3D = maskfile
+		if type(maskfile) is types.StringType:  mask3D=getImage(maskfile)
+		else:                                  mask3D = maskfile
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
 	mask2D = model_circle(last_ring, nx, nx)
@@ -4485,7 +4480,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if CTF:
 					ctf_params = dataim[imn].get_attr( "ctf" )
-					if(ctf_params.defocus != previous_defocus):
+					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
 						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
@@ -4568,10 +4563,9 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	"""
 		
 	"""
-	from alignment	    import eqproj
-	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_gaussl
+	from filter         import filt_ctf
 	from projection     import prep_vol
-	from utilities      import amoeba, bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj, get_arb_params
+	from utilities      import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities      import getImage, dropImage, bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, recv_attr_dict
 	from utilities      import get_im
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -4589,8 +4583,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 
 	if CTF:
 		from filter import filt_ctf
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-	          #             0             1          2          3         4               5              6
+
 	main_node = 0
 	if myid == main_node:
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
@@ -4600,8 +4593,8 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 		if CTF:
 			ima = EMData()
 			ima.read_image(stack, 0)
-			ctf_params = get_arb_params(ima, parnames)
-			if ctf_params[6] == 1:  ERROR("ali3d_e does not work for CTF-applied data","ali3d_e",1)
+			ctf_applied = ima.get_attr("ctf_applied")
+			if ctf_applied == 1:  ERROR("ali3d_e does not work for CTF-applied data", "ali3d_e", 1)
 			del ima
 	mpi_barrier(MPI_COMM_WORLD)
 	if debug:
@@ -4638,8 +4631,8 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D=getImage(maskfile)
-		else:                                   mask3D = maskfile
+		if type(maskfile) is types.StringType:  mask3D=getImage(maskfile)
+		else:                                  mask3D = maskfile
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
 	mask2D = model_circle(last_ring, nx, nx)
@@ -4723,7 +4716,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if CTF:
 					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
-					if(ctf_params.defocus != previous_defocus):
+					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
 						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
