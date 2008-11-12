@@ -116,27 +116,21 @@ class TestReconstructor(unittest.TestCase):
 		
 		testlib.safe_unlink('density.mrc')
 	
-	def test_WienerFourierReconstructor(self):
+	def no_test_WienerFourierReconstructor(self):
 		"""test WienerFourierReconstructor .................."""
 		a = 1
-		e1 = EMData()
-		e1.set_size(32,32,1)
-		e1.process_inplace('testimage.noise.uniform.rand')
+		e1 = test_image()
 		e1.do_fft_inplace()
-		e2 = EMData()
-		e2.set_size(32,32,1)
-		e2.process_inplace('testimage.noise.uniform.rand')
+		e2 = test_image()
 		e2.do_fft_inplace()
-		e3 = EMData()
-		e3.set_size(32,32,1)
-		e3.process_inplace('testimage.noise.uniform.rand')
+		e3 = test_image()
 		e3.do_fft_inplace()
 		
 		r = Reconstructors.get('wiener_fourier', {'size':10, 'mode':1, 'padratio':0.5, 'snr':(0.2, 3.4, 5.6)})
 		r.setup()
-		r.insert_slice(e1, Transform3D(EULER_EMAN, 0,0,0))
-		r.insert_slice(e2, Transform3D(EULER_EMAN, 0,0,0))
-		r.insert_slice(e3, Transform3D(EULER_EMAN, 0,0,0))
+		r.insert_slice(e1, Transform({'type':'eman', 'alt':1.56, 'az':2.56, 'phi':3.56}))
+		r.insert_slice(e2, Transform({'type':'eman', 'alt':1.56, 'az':2.56, 'phi':3.56}))
+		r.insert_slice(e3, Transform({'type':'eman', 'alt':1.56, 'az':2.56, 'phi':3.56}))
 		result = r.finish()
 		
 	def test_BackProjectionReconstructor(self):
