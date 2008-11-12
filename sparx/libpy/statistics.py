@@ -72,7 +72,6 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 		from morphology   import ctf_img
 		from filter       import filt_ctf, filt_table
 		from utilities    import get_arb_params
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
 			ERROR("data cannot be ctf-applied","add_ave_varf",1)
 		if ctf_2_sum:  get_ctf2 = False
@@ -89,11 +88,11 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
-	 		ctf_params = get_arb_params(ima, parnames)
-	 		oc = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad=False)
+	 		ctf_params = ima.get_attr( "ctf" )
+	 		oc = filt_ctf(ima, ctf_params, pad=False)
 			Util.add_img(ave, oc)
  			Util.add_img2(var, fft(ima))
-	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
+	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		sumsq = fft(ave)
 		ave = fft(Util.divn_img(sumsq, ctf_2_sum))
 		Util.mul_img(sumsq, sumsq.conjg())
@@ -163,8 +162,8 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 				#    here we use the first possibility
 			else:
 				ima = data[i].copy()
-	 		ctf_params = get_arb_params(ima, parnames)
-	 		oc = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad=False)
+	 		ctf_params = ima.get_attr( "ctf" )
+	 		oc = filt_ctf(ima, ctf_params, pad=False)
 			Util.add_img(ave, oc)
  			Util.add_img2(var, fft(ima))
 	else:
@@ -231,8 +230,8 @@ def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 				#    here we use the first possibility
 			else:
 		 		ima = data[i].copy()
-	 		ctf_params = get_arb_params(ima, parnames)
-	 		oc = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad=False)
+	 		ctf_params = ima.get_attr( "ctf" )
+	 		oc = filt_ctf(ima, ctf_params, pad=False)
 			Util.add_img(ave, oc)
  			Util.add_img2(var, fft(ima))
 	else:
@@ -865,14 +864,14 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	for i in xrange(n):
 		ima = EMData()
 		ima.read_image(input_stack, i)
-		ctf_params = get_arb_params(ima, parnames)
+		ctf_params = ima.get_attr( "ctf" )
 		if mode == "a":
 	 		alpha, sx, sy, mirror, scale = get_params2D(ima)
 		 	ima = rot_shift2D(ima, alpha, sx, sy, mirror)
-		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params)
 		Util.mul_scalar(oc, SNR)
 		Util.add_img(ave, oc)
-		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5], ny = ny2, nz = 1))
+		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
 	ctf_2_sum += 1.0
 	Util.div_filter(ave, ctf_2_sum)
 	# variance
@@ -881,11 +880,11 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	for i in xrange(n):
 		ima = EMData()
 		ima.read_image(input_stack, i)
-		ctf_params = get_arb_params(ima, parnames)
+		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
-		oc = filt_ctf(ave, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad= True)
+		oc = filt_ctf(ave, ctf_params, pad= True)
 		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
 		Util.add_img2(var, ima)
 	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
@@ -1108,15 +1107,15 @@ def varfctf(data, mask = None, mode=""):
 			ima.read_image(data, i)
 		else:
 			ima = data[i].copy()
-		ctf_params = get_arb_params(ima, parnames)
+		ctf_params = ima.get_attr("ctf")
 		if(mode == "a"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask): Util.mul_img(ima, mask)
-		oc = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad=True)
+		oc = filt_ctf(ima, ctf_params, pad=True)
 		Util.add_img(sumsq, fft(oc))
 		Util.add_img2(var, fft(ima))
-		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5], ny = ny, nz = nz))
+		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params, ny = ny, nz = nz))
 	Util.mul_img(sumsq, sumsq.conjg())
 	Util.div_img(sumsq, ctf_2_sum)
 	Util.sub_img(var, sumsq)
