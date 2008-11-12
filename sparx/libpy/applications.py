@@ -8221,7 +8221,7 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 	from string    import split
 	from utilities import write_header, file_type
 	from random    import random, randint
-	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj
+	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf
 
 	op = zero+one+randomize+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete
 	if op == 0:
@@ -8288,8 +8288,18 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 				s3z = extract_value(parmvalues[5])
 				mirror = int(extract_value(parmvalues[6]))
 				scale = extract_value(parmvalues[7])
-				print [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
-				set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], params[0])				
+				set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], params[0])
+			elif params[0] == "ctf":
+				if len(parmvalues) < 6:
+					print "Not enough parameters!"
+					return			
+				defocus = extract_value(parmvalues[0])
+				cs = extract_value(parmvalues[1])
+				voltage = extract_value(parmvalues[2])
+				apix = extract_value(parmvalues[3])
+				bfactor = extract_value(parmvalues[4])
+				ampcont = extract_value(parmvalues[5])
+				set_ctf(img, [defocus, cs, voltage, apix, bfactor, ampcont])
 			else:
 				if len(params)!=len(parmvalues):
 					print "Error: %d params need to be set, while %d values are provided in line %d of file." % ( len(params), len(parmvalues), i )
@@ -8307,10 +8317,13 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 						set_params_proj(img, [0.0, 0.0, 0.0, 0.0, 0.0], p)
 					elif p[:13] == "xform.align3d":
 						set_params3D(img, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0], p)
+					elif p == "ctf":
+						print "Invalid operation!"
+						return
 					else:
 						img.set_attr(p, 0.0)
 				elif one:
-					if p[:6] == "xform.":
+					if p[:6] == "xform." or p == "ctf":
 						print "Invalid operation!"
 						return
 					else:
@@ -8353,6 +8366,9 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 					elif p[:13] == "xform.align3d":
 						phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, p)
 						fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f"%(phi, theta, psi, s3x, s3y, s3z, mirror, scale))
+					elif p == "ctf":
+						defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
+						fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(defocus, cs, voltage, apix, bfactor, ampcont))
 					else:
 						fexp.write("%15s   "%str(img.get_attr(p)))
 				elif fprint:
@@ -8365,6 +8381,9 @@ def header(stack, params, zero, one, randomize, fimport, fexport, fprint, backup
 					elif p[:13] == "xform.align3d":
 						phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, p)
 						print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %10d %10.3f"%(phi, theta, psi, s3x, s3y, s3z, mirror, scale),
+					elif p == "ctf":
+						defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
+						print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(defocus, cs, voltage, apix, bfactor, ampcont),
 					else:
 						print "%15s   "%str(img.get_attr(p)),
 				elif backup:

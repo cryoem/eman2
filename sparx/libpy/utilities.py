@@ -2400,13 +2400,32 @@ def set_params_proj(ima, p, xform = "xform.proj"):
 	t.set_trans(Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
 
-def convert_old_ctf( prj, defocus, pixel_size, cs, voltage, amp_contrast, bfactor=0.0 ):
+def get_ctf(ima):
+	from EMAN2 import EMAN2Ctf
+	
+	ctf_params = ima.get_attr("ctf")
+	
+	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont
+
+
+def set_ctf(ima, p):
 	from EMAN2 import EMAN2Ctf
 
-	defocus = defocus*1e-4
-	amp_contrast = amp_contrast * 100.0
+	defocus = p[0]
+	cs = p[1]
+	voltage = p[2]
+	pixel_size = p[3]
+	bfactor = p[4]
+	amp_contrast = p[5]
+	
+	if defocus > 100:  # which means it is very likely in Angstrom, therefore it is using old convention
+		defocus *= 1e-4
+	
+	if amp_contrast < 1.0:
+		amp_contrast *= 100
 
 	ctf = EMAN2Ctf()
-	ctf.from_dict( {"defocus":defocus, "voltage":voltage, "cs":cs, "apix":pixel_size, "ampcont":amp_contrast, "bfactor":bfactor} )
+	ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
 
-	prj.set_attr( "ctf", ctf )
+	ima.set_attr("ctf", ctf)
+
