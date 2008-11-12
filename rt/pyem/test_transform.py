@@ -55,7 +55,7 @@ class TestTransform(unittest.TestCase):
 		return Util.get_frand(lower,upper)
 	
 	def test_set_parms_inverse(self):
-		"""test set params inverse ........................"""
+		"""test set params inverse .........................."""
 		
 		m = []
 		for i in range(12): m.append(Util.get_frand(-2,2))
@@ -90,7 +90,7 @@ class TestTransform(unittest.TestCase):
 						self.assert_matrix_equality(s,t)
 	
 	def test_get_set_matrix(self):
-		"""test set/get matrix ............................"""
+		"""test set/get matrix .............................."""
 		
 		m = []
 		for i in range(12): m.append(Util.get_frand(-2,2))
@@ -125,7 +125,7 @@ class TestTransform(unittest.TestCase):
 						
 	
 	def test_transform_projection_behavior(self):
-		"""test transform projection use .................."""
+		"""test transform projection use ...................."""
 		
 		# in projection use no tz is set
 		no_trans = {}
@@ -154,7 +154,7 @@ class TestTransform(unittest.TestCase):
 						try: self.assertAlmostEqual(fac*inv_params["tx"]/(-1*params["tx"]),1, 4)
 						except: self.assertAlmostEqual(fac*inv_params["tx"],(-1*params["tx"]), 4)
 	def test_get_trans(self):
-		"""test get trans ................................."""
+		"""test get trans ..................................."""
 		for scale in [1.0,2.0]:
 			for mirror in [True,False]:
 				dx = Util.get_frand(-30.0,30.0)
@@ -179,7 +179,7 @@ class TestTransform(unittest.TestCase):
 				self.assertAlmostEqual(v[2], dz, 5)
 	
 	def test_get_trans_2d(self):
-		"""test get trans 2d .............................."""
+		"""test get trans 2d ................................"""
 		for scale in [1.0,2.0]:
 			for mirror in [True,False]:
 				dx = Util.get_frand(-30.0,30.0)
@@ -204,7 +204,7 @@ class TestTransform(unittest.TestCase):
 				#self.assertAlmostEqual(v[1], dy, 5)
 	
 	def test_get_rotation(self):
-		"""test get rotation .............................."""	
+		"""test get rotation ................................"""	
 		for scale in [1.0,2.0]:
 			for mirror in [False,True]:
 				#2D convention
@@ -335,7 +335,7 @@ class TestTransform(unittest.TestCase):
 		self.assertAlmostEqual(m33,rot["m33"], 3)
 		
 	def test_set_get_scale(self):
-		"""test set/get scale ............................."""
+		"""test set/get scale ..............................."""
 		for scale in [1.0,2.0]:
 			for mirror in [True, False]:
 				d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror,"scale":scale}
@@ -351,7 +351,7 @@ class TestTransform(unittest.TestCase):
 				self.assertAlmostEqual(scale,t.get_scale(), 5)
 					
 	def test_set_get_mirror(self):
-		"""test set/get mirror............................."""
+		"""test set/get mirror..............................."""
 		for scale in [1.0,2.0]:
 			for mirror in [True, False]:
 				d = {"type":"2d","alpha":self.get_angle_rand(),"mirror":mirror,"scale":scale}
@@ -366,7 +366,7 @@ class TestTransform(unittest.TestCase):
 				t = Transform(d)
 				self.assertEqual(mirror,t.get_mirror())
 	def test_get_set_params(self):
-		"""test set/get params............................."""
+		"""test set/get params..............................."""
 		t = Transform()
 		t.set_params({"type":"eman","az":10,"alt":150,"scale":2.0,"mirror":True,"tx":3.4})
 		d = t.get_params("eman")
@@ -397,14 +397,14 @@ class TestTransform(unittest.TestCase):
 		s = Transform(d)
 		self.assert_matrix_equality(s,t)
 	def test_get_set_params_2d(self):
-		"""test set/get params 2d.........................."""
+		"""test set/get params 2d............................"""
 		t = Transform()
 		t.set_params({"type":"2d","alpha":10,"scale":2.0,"mirror":True,"tx":3.4,"ty":0.0})
 		d = t.get_params("2d") # no euler type required because there is only one ("2d")
 		s = Transform(d) # s is the same as t
 		self.assert_matrix_equality(s,t)
 	def test_multiplication(self):
-		"""test multiplication............................."""
+		"""test multiplication..............................."""
 		for v in [Vec3f(1,1,1),[1,1,1]]:
 			t = Transform()
 			v = Vec3f(1,1,1)
@@ -442,7 +442,7 @@ class TestTransform(unittest.TestCase):
 			self.assertAlmostEqual(v[2]+dz,v_d[2], 5)
 	
 	def test_transform(self):
-		"""test transform.................................."""
+		"""test transform...................................."""
 		t = Transform()
 		v = Vec3f(1,1,1)
 		v_d = t.transform(v)
@@ -479,7 +479,7 @@ class TestTransform(unittest.TestCase):
 		self.assertAlmostEqual(v[2]+dz,v_d[2], 5)
 		
 	def test_multiplication_2d(self):
-		"""test multiplication 2d.........................."""
+		"""test multiplication 2d............................"""
 		t = Transform()
 		v = Vec2f(1,1)
 		v_d = t*v
@@ -511,7 +511,7 @@ class TestTransform(unittest.TestCase):
 		self.assertAlmostEqual(v[1]+dy,v_d[1], 5)
 	
 	def test_transform_2d(self):
-		"""test transform 2d..............................."""
+		"""test transform 2d................................."""
 		t = Transform()
 		v = Vec2f(1,1)
 		v_d = t.transform(v)
@@ -543,7 +543,7 @@ class TestTransform(unittest.TestCase):
 		self.assertAlmostEqual(v[1]+dy,v_d[1], 5)
 		
 #	def test_set_get_post_x_mirror(self):
-#		"""test set/get post_x_mirror ....................."""
+#		"""test set/get post_x_mirror ......................."""
 #		for t in TestTransform.transforms:
 #			t.set_post_x_mirror(False)
 #			self.assertEqual(False,t.get_post_x_mirror())
@@ -553,7 +553,7 @@ class TestTransform(unittest.TestCase):
 #			self.assertEqual(True,t.get_post_x_mirror())
 #	
 #	def test_set_get_trans(self):
-#		"""test set/get trans ........................."""
+#		"""test set/get trans ..............................."""
 #		x = 1.3
 #		y = 3.3
 #		z = -9.0
@@ -566,7 +566,7 @@ class TestTransform(unittest.TestCase):
 #			self.assertAlmostEqual(z,v[2], 5)
 #			
 	def test_inverse_invert(self):
-		"""test inverse/invert ............................"""
+		"""test inverse/invert .............................."""
 		no_trans = {}
 		two_trans = {"tx":1.023,"ty":-1.002}
 		three_trans = {"tx":.023,"ty":431.22002,"tz":120.02}
@@ -610,7 +610,7 @@ class TestTransform(unittest.TestCase):
 					self.assert_identity(s*t)
 					self.assert_identity(t*s)
 	def test_copy_construction(self):
-		"""test copy construction.........................."""
+		"""test copy construction............................"""
 		three_trans = {"tx":.023,"ty":431.22002,"tz":120.02}
 		d = {"type":"eman","az":self.get_angle_rand(),"alt":self.get_angle_rand(0,179),"phi":self.get_angle_rand()}
 		t = Transform(d)
@@ -619,7 +619,7 @@ class TestTransform(unittest.TestCase):
 		self.assert_matrix_equality(t,t1)
 	
 	def test_set_pre_trans(self):
-		"""test set pre trans.............................."""
+		"""test set pre trans................................"""
 		no_trans = {}
 		one_trans = {"ty":Util.get_frand(-100,100)}
 		two_trans = {"tx":Util.get_frand(-100,100),"ty":Util.get_frand(-100,100)}
@@ -654,7 +654,7 @@ class TestTransform(unittest.TestCase):
 
 	
 	def test_get_pre_trans(self):
-		"""test get pre trans.............................."""
+		"""test get pre trans................................"""
 		dx = .023
 		dy = 431.220002
 		dz = 120.02
@@ -702,7 +702,7 @@ class TestTransform(unittest.TestCase):
 		self.assert_matrix_equality(without_trans*pre_trans,t)
 
 	def test_get_pre_trans_2d(self):
-		"""test get pre trans 2d..........................."""
+		"""test get pre trans 2d............................."""
 		dx = .023
 		dy = 431.220002
 		two_trans = {"tx":dx,"ty":dy}
@@ -746,7 +746,7 @@ class TestTransform(unittest.TestCase):
 		self.assert_matrix_equality(without_trans*pre_trans,t)
 
 	def test_get_params_inverse(self):
-		"""test get params inverse........................."""
+		"""test get params inverse..........................."""
 		dx = Util.get_frand(-200,200)
 		dy = Util.get_frand(-200,200)
 		dz = Util.get_frand(-200,200)
@@ -773,7 +773,7 @@ class TestTransform(unittest.TestCase):
 			self.assert_matrix_equality(t2*trans,t.inverse())
 	
 	def test_get_params_inverse_2d(self):
-		"""test get params inverse 2d......................"""
+		"""test get params inverse 2d........................"""
 		dx = Util.get_frand(-200,200)
 		dy = Util.get_frand(-200,200)
 		two_trans = {"tx":dx,"ty":dy}
@@ -815,7 +815,7 @@ class TestTransform(unittest.TestCase):
 					self.assertAlmostEqual(t.at(i,j),t1.at(i,j), 3)
 	
 	def test_transform_as_image_attribute(self):
-		"""test Transform as image attribute .............."""
+		"""test Transform as image attribute ................"""
 		t = Transform()
 		img = test_image()
 		img.set_attr('trans', t)
@@ -845,7 +845,7 @@ class TestSymmetry3D(unittest.TestCase):
 			self.assertAlmostEqual(result["alt"]/alt,1.0, 3)
 	
 	def test_symc_reduce(self):
-		"""test csym reduce ..............................."""
+		"""test csym reduce ................................."""
 		syms = []
 			
 		syms.append(Symmetries.get("c",{"nsym":2}))
@@ -872,7 +872,7 @@ class TestSymmetry3D(unittest.TestCase):
 				for i in range(1,n):
 					self.assert_reduction_works(i,az,alt,azmax,sym)
 	def test_symd_reduce(self):
-		"""test dsym reduce ..............................."""
+		"""test dsym reduce ................................."""
 		syms = []
 		syms.append(Symmetries.get("d",{"nsym":1}))
 		syms.append(Symmetries.get("d",{"nsym":2}))
@@ -900,7 +900,7 @@ class TestSymmetry3D(unittest.TestCase):
 				for i in range(1,n):
 					self.assert_reduction_works(i,az,alt,azmax,sym)
 	def test_symtet_reduce(self):
-		"""test tetsym reduce ............................."""
+		"""test tetsym reduce ..............................."""
 		syms = []
 		syms.append(Symmetries.get("tet",{}))
 		for sym in syms:
@@ -917,7 +917,7 @@ class TestSymmetry3D(unittest.TestCase):
 					self.assert_reduction_works(i,az,alt,azmax,sym)
 		
 	def test_symoct_reduce(self):
-		"""test octsym reduce ............................."""
+		"""test octsym reduce ..............................."""
 		syms = []
 		syms.append(Symmetries.get("oct",{}))
 		for sym in syms:
@@ -934,7 +934,7 @@ class TestSymmetry3D(unittest.TestCase):
 					self.assert_reduction_works(i,az,alt,azmax,sym)
 
 	def test_symicos_reduce(self):
-		"""test icossym reduce ............................"""
+		"""test icossym reduce .............................."""
 		syms = []
 			
 		syms.append(Symmetries.get("icos",{}))

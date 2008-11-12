@@ -3009,17 +3009,13 @@ class TestEMData(unittest.TestCase):
             
     def no_test_gridrot2d_kbi0(self):
         """test gridrot2d_kbi0() function ..................."""
-        e = EMData()
-        e.set_size(32,32,1)
-        e.process_inplace('testimage.noise.uniform.rand')
+        e = test_image()
         e2 = e.gridrot2d_kbi0(0.1)    #default argument
         e3 = e.gridrot2d_kbi0(0.1, 1.5, 10)
         
     def test_symvol(self):
         """test symvol() function ..........................."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
+        e = test_image()
         e2 = e.symvol('csym')
         e3 = e.symvol('dsym')
         #e4 = e.symvol('ICOS_SYM')    #todo problem here, need investigate

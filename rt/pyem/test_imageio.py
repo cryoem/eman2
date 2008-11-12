@@ -804,6 +804,25 @@ class TestImagicIO(unittest.TestCase):
         img2 = EMData(filename + 'img')
         ctf2 = img2.get_attr('ctf')
         self.assertEqual(ctf1.to_string(), ctf2.to_string())
+        del ctf1, ctf2
+        testlib.safe_unlink(filename+'hed')
+        testlib.safe_unlink(filename+'img')
+    
+    def test_eman2ctf_io(self):
+        """test EMAN2Ctf object I/O ........................."""
+        filename = 'test_imagic_ctf2.hdf'
+        img = EMData(32,32)
+        img.process_inplace('testimage.noise.uniform.rand')
+        ctf1 = EMAN2Ctf()
+        ctf1.from_vector((1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0))
+        img.set_attr('ctf', ctf1)
+        img.write_image(filename)
+        
+        img2 = EMData(filename)
+        ctf2 = img2.get_attr('ctf')
+        self.assertEqual(ctf1.to_string(), ctf2.to_string())
+        del ctf1, ctf2
+        testlib.safe_unlink(filename)
         
 class TestEmIO(unittest.TestCase):        
     """em file IO test"""
