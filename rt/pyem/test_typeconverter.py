@@ -38,8 +38,10 @@ import sys
 import numpy
 
 import unittest
-from test import test_support
 import testlib
+from optparse import OptionParser
+
+IS_TEST_EXCEPTION = False
 
 class TestTypeConverter(unittest.TestCase):
     """this is test call those routines in TestUtil class"""
@@ -342,9 +344,16 @@ class TestTypeConverter(unittest.TestCase):
         e.set_attr('Nothing', None)
         self.assertEqual(e.get_attr('Nothing'), None)
 
-
 def test_main():
-    test_support.run_unittest(TestTypeConverter)
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestTypeConverter)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__ == '__main__':
     test_main()
