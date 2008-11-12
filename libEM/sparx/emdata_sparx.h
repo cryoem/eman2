@@ -208,10 +208,9 @@ EMData* mult_radial(EMData* radial);
 		 * @param w Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
 		 * @param tf Transform3D reference
-		 * @param defocus
 		 * @param mult
 		 */
-		void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float defocus, int mult);
+		void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -232,10 +231,9 @@ EMData* mult_radial(EMData* radial);
 		 * @param w Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
 		 * @param tf Transform reference
-		 * @param defocus
 		 * @param mult
 		 */
-		void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float defocus, int mult);
+		void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
