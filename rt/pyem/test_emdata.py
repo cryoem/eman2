@@ -3020,8 +3020,8 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
-        e2 = e.symvol('CSYM')
-        e3 = e.symvol('DSYM')
+        e2 = e.symvol('csym')
+        e3 = e.symvol('dsym')
         #e4 = e.symvol('ICOS_SYM')    #todo problem here, need investigate
         #e5 = e.symvol('OCT_SYM')
         #e6 = e.symvol('ISYM')
@@ -3242,6 +3242,40 @@ class TestEMData(unittest.TestCase):
                     self.assertEqual(data1[z][y][x], data2[z][y][x])
         
         testlib.safe_unlink('mydb')
+        
+    def test_eman1ctf_pickling(self):
+        """test EMAN1Ctf pickle as image attribute .........."""
+        import pickle
+        c = EMAN1Ctf((1,2,3,4,5,6,7,8,9,10,11))
+        img = test_image()
+        img.set_attr('ctf', c)
+        mydb = open('mydb1', 'w')
+        pickle.dump(img, mydb)
+        mydb.close()
+        mydb2 = open('mydb1', 'r')
+        img2 = pickle.load(mydb2)
+        c2 = img2.get_attr('ctf')
+        self.assertEqual(c.to_vector(), c2.to_vector())
+        self.assertEqual(c.to_string(), c2.to_string())
+        self.assertEqual(c.to_dict(), c2.to_dict())
+        testlib.safe_unlink('mydb1')
+        
+    def test_eman2ctf_pickling(self):
+        """test EMAN2Ctf pickle as image attribute .........."""
+        import pickle
+        q = EMAN2Ctf((1,2,3,4,5,6,7,8,9,0,0))
+        img = test_image()
+        img.set_attr('ctf', q)
+        mydb = open('mydb2', 'w')
+        pickle.dump(img, mydb)
+        mydb.close()
+        mydb2 = open('mydb2', 'r')
+        img2 = pickle.load(mydb2)
+        q2 = img2.get_attr('ctf')
+        self.assertEqual(q.to_vector(), q2.to_vector())
+        self.assertEqual(q.to_string(), q2.to_string())
+        self.assertEqual(q.to_dict(), q2.to_dict())
+        testlib.safe_unlink('mydb2')
         
 def test_main():
     test_support.run_unittest(TestEMData)
