@@ -4988,10 +4988,17 @@ Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)  
 {
 	float cst  = cs*1.0e7f;
-	float wght = atan(wgh/(1.0f-wgh));
-	float lambda=12.398f/pow(voltage *(1022.f+voltage),.5f); 
-	float ctfv = static_cast<float>( sin(-M_PI*(dzz*lambda*ak*ak-cst*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wght)*sign );
-	if(b_factor != 0.0f)  ctfv *= b_factor*exp(-b_factor*ak*ak);
+
+        wgh /= 100.0;
+	float phase = atan(wgh/sqrt(1.0f-wgh*wgh));
+	float lambda=12.398f/sqrt(voltage*(1022.f+voltage));
+	float ak2 = ak*ak;
+	float g1 = dzz*1.0e4*lambda*ak2;
+	float g2 = cst*lambda*lambda*lambda*ak2*ak2/2.0;
+
+	float ctfv = static_cast<float>( sin(M_PI*(g1-g2)+phase)*sign );
+	if(b_factor != 0.0f)  ctfv *= exp(-b_factor*ak*ak/4.0);
+
 	return ctfv;
 }
 
