@@ -4500,49 +4500,37 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 						previous_defocus = ctf_params[1]
 						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
 
-				data[2] = dataim[imn]
-				
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				data[2] = dataim[imn]				
 				refi = dataim[imn].copy()
 				oo, qq, kb2 = prepij(refi)
 				data[4] = oo
 				data[5] = qq
 				data[6] = kb2
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
 				
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
-				atparams = [phi, theta, psi, tx, ty]
-				
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
-				data[7] = [-tx, -ty]
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				atparams = [phi, theta, psi]
+				data[7] = [tx, ty]
 				
 				if debug:
-					initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
+					initial, dummy  = eqprojG3(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
-					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %7.4f'%(atparams[0], atparams[1], atparams[2], atparams[3], atparams[4], initial))
+					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[7][0], data[7][1], -initial))
 					outf.write("\n")
-				#  change signs of shifts for projections
-				atparams[3] *= -1
-				atparams[4] *= -1
+					
+				# change signs of shifts for projections
+				data[7][0] *= -1
+				data[7][1] *= -1
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 
-				#optm_params = amoeba(atparams, [weight_phi, delta, weight_phi, 1.0, 1.0], eqproj, 1.e-4, 1.e-4, 500, data)
-				
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
-				del atparams[3]
-				del atparams[3]
 				optm_params = amoeba2(atparams, [weight_phi, delta, weight_phi], eqprojG3, 1.e-4, 1.e-4, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
-				
 				optm_params[0][3] *= -1
 				optm_params[0][4] *= -1
 				
 				if debug:
-					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %7.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
+					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], -optm_params[1], optm_params[2]))
 					outf.write("\n")
 					outf.flush()
 
@@ -4584,6 +4572,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 			from utilities import write_headers
 			write_headers(stack, dataim, list_of_particles)
 	print_end_msg("ali3d_e")
+
 
 def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, maxit=10, 
                 CTF = False, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_ali3d", debug = False):
@@ -4751,47 +4740,35 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 
 				data[2] = dataim[imn-image_start]
 
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
 				refi = dataim[imn-image_start].copy()
 				oo, qq, kb2 = prepij(refi)
 				data[4] = oo
 				data[5] = qq
 				data[6] = kb2
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
 
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
-				atparams = [phi, theta, psi, tx, ty]
-
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
-				data[7] = [-tx, -ty]
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
+				atparams = [phi, theta, psi]
+				data[7] = [tx, ty]
 
 				if debug:
-					initial  = eqproj(atparams, data)  # this is if we need initial discrepancy
+					initial, dummy = eqprojG3(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
-					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f    %7.4f'%(atparams[0], atparams[1], atparams[2], atparams[3], atparams[4], initial))
+					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[7][0], data[7][1], -initial))
 					outf.write("\n")
-				#  change signs of shifts for projections
-				atparams[3] *= -1
-				atparams[4] *= -1
+				# change signs of shifts for projections
+				data[7][0] *= -1
+				data[7][1] *= -1
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 
-				#optm_params =  amoeba(atparams, [weight_phi, delta, weight_phi, 1.0, 1.0], eqproj, 1.e-4, 1.e-4,500, data)
-
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
-				del atparams[3]
-				del atparams[3]
 				optm_params = amoeba2(atparams, [weight_phi, delta, weight_phi], eqprojG3, 1.e-4, 1.e-4, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
-				#########  These lines are necessary for using eqprojG3 (use ccf in Fourier space) ##########
-
 				optm_params[0][3] *= -1
 				optm_params[0][4] *= -1
 
 				if debug:
-					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %7.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
+					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], -optm_params[1], optm_params[2]))
 					outf.write("\n")
 					outf.flush()
 
