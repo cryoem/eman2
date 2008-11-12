@@ -243,7 +243,6 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 	if CTF:
 		from morphology   import ctf_img
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor", "ctf_applied"]
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
 		ctf_2_sum = None
@@ -257,8 +256,8 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		if CTF:
 			st = Util.infomask(data[im], mask, False)
 			data[im] -= st[0]
-			ctf_params = get_arb_params(data[im], parnames)
-	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
+			ctf_params = data[im].get_attr( "ctf" )
+	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 
 	# precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	
@@ -459,7 +458,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	if CTF:
 		from morphology   import ctf_img
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor", "ctf_applied"]
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	
 	for i in xrange(number_of_proc):
@@ -469,10 +467,10 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 
 	if CTF:
 		for im in xrange(image_start, image_end):
-			ctf_params = get_arb_params(data[im-image_start], parnames)
+			ctf_params = data[im-image_start].get_attr("ctf")
 			st = Util.infomask(data[im-image_start], mask, False)
 			data[im-image_start] -= st[0]
-	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5]))
+	 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 			
 	# precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 
@@ -714,11 +712,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	data = []
 	od = []
 	if(CTF):
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		#                        0                1              2     3              4                5                6
-		ctf_params = get_arb_params(ima, parnames)
+		ctf_params = ima.get_attr("ctf")
 		data_had_ctf = ctf_params[6]
-		ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctm = ctf_2(nx, ctf_param)
 		lctf = len(ctm)
 		ctf2 = []
 		ctf2.append([0.0]*lctf)
@@ -728,20 +724,19 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		ima = EMData()
 		ima.read_image(stack, im)
 		if(CTF):
-			ctf_params = get_arb_params(ima, parnames)
-			ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf_params = ima.get_attr( "ctf")
+			ctm = ctf_2(nx, ctf_params)
 			k = im%2
 			for i in xrange(lctf):
 				ctf2[k][i] += ctm[i]
-			if(ctf_params[6] == 0):
+			if(ima.get_attr("ctf_applied") == 0):
 				st = Util.infomask(ima, mask, False)
 				ima -= st[0]
 				from utilities import info
 				print im
 				info(ima)
 				od.append(ima)
-				#      filt_ctf(image,	     dz,		  cs,		   voltage,	     pixel_size,     amp_contrast=0.1,	  b_factor=0.0):
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad = True)
+				ima = filt_ctf(ima, ctf_params, pad = True)
 				ima.set_attr('ctf_applied', 1)
 				info(ima)
 
@@ -895,11 +890,9 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
  	mode = "F"
 	data = []
 	if CTF:
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		#                        0                1              2     3              4                5                6
-		ctf_params = get_arb_params(ima, parnames)
-		data_had_ctf = ctf_params[6]
-		ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctf_params = ima.get_attr( "ctf" )
+		ctf_applied = ima.get_attr( "ctf_applied" )
+		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = []
 		ctf2.append([0.0]*lctf)
@@ -910,16 +903,16 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	for im in xrange(nima):
 		data[im].set_attr('ID', im)
 		if CTF:
-			ctf_params = get_arb_params(data[im], parnames)
-			ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf_params = data[im].get_attr("ctf")
+			ctm = ctf_2(nx, ctf_params)
 			k = im%2
 			for i in xrange(lctf):
 				# ctf2[k][i] += ctm[i]
 				ctf2[k][i] = ctf2[k][i] + ctm[i]
-			if ctf_params[6] == 0:
+			if data[im].get_attr("ctf_applied") == 0:
 				st = Util.infomask(data[im], mask, False)
 				data[im] -= st[0]
-				data[im] = filt_ctf(data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 
 	
@@ -1097,11 +1090,9 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
  	mode = "F"
 	data = []
 	if CTF:
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		#                        0                1              2     3              4              5               6
-		ctf_params = get_arb_params(ima, parnames)
-		data_had_ctf = ctf_params[6]
-		ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctf_params = ima.get_attr("ctf")
+		data_had_ctf = ima.get_attr("ctf_applied")
+		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = []
 		ctf2.append([0.0]*lctf)
@@ -1118,15 +1109,15 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
 		if CTF:
-			ctf_params = get_arb_params(data[im-image_start], parnames)
-			ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf_params = data[im-image_start].get_attr("ctf")
+			ctm = ctf_2(nx, ctf_params)
 			k = im%2
 			for i in xrange(lctf):  ctf2[k][i] += ctm[i]
-			if ctf_params[6] == 0:
+			if data.get_attr( "ctf_applied" ) == 0:
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
 				from filter import filt_ctf
-				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
 				data[im-image_start].set_attr('ctf_applied', 1)
 		
 	
@@ -1288,26 +1279,24 @@ def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps 
 	data = EMData.read_images(stack)
 	nima = len(data)
 	if(CTF):
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		#                        0                1              2     3              4             5                6
-		ctf_params = get_arb_params(data[0], parnames)
-		data_had_ctf = ctf_params[6]
-		ctm = ctf_1d(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctf_params = data[0].get_attr("ctf")
+		data_had_ctf = data[0].get_attr("ctf_applied")
+		ctm = ctf_1d(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = []
 		ctf2.append([0.0]*lctf)
 		ctf2.append([0.0]*lctf)
 		ctfb2 = [0.0]*lctf
 		for im in xrange(nima):
-			ctf_params = get_arb_params(data[im], parnames)
-			ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf_params = data[im].get_attr( "ctf" )
+			ctm = ctf_2(nx, ctf_params)
 			k = im%2
 			for i in xrange(lctf):  ctf2[k][i] += ctm[i]
-			if(ctf_params[6] == 0):
+			if(data[im].get_attr("ctf_applied") == 0):
 				st = Util.infomask(data[im], mask, False)
 				data[im] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 		for i in xrange(lctf):
 			ctfb2[i] = 1.0/(ctf2[0][i] + ctf2[1][i] + 1.0/snr)
@@ -1437,9 +1426,9 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng
 	#  CTF stuff
 	if(CTF):
 		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		ctf_params = get_arb_params(ima, parnames)
-		data_had_ctf = ctf_params[6]
-		ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctf_params = ima.get_attr( "ctf" )
+		data_had_ctf = ima.get_attr( "ctf_applied" )
+		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
 	# do the alignment
@@ -1491,12 +1480,12 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng
 		for im in xrange(nima):
 			#
 			if(CTF):
-				ctf_params = get_arb_params(data[im], parnames)
-				if(ctf_params[6] == 0):
+				ctf_params = data[im].get_attr( "ctf" )
+				if(data[im].get_attr("ctf_applied")==0):
 					st = Util.infomask(data[im], mask, False)
 					data[im] -= st[0]
 					from filter import filt_ctf
-					data[im] = filt_ctf(data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+					data[im] = filt_ctf(data[im], ctf_params)
 					data[im].set_attr('ctf_applied', 1)
 			#normalize
 			alpha, sx, sy, mirror, scale =  get_params2D(data[im])
@@ -1515,7 +1504,7 @@ def ali2d_m(stack, refim, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, xrng
 			it = im%2
 			Util.add_img( refi[iref][it], temp)
 			if(CTF):
-				ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				ctm = ctf_2(nx, ctf_params)
 				for i in xrange(lctf):  ctf2[iref][it][i] += ctm[i]
 			assign[iref].append(im)
 			refi[iref][2] += 1
@@ -1687,9 +1676,9 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	#  CTF stuff
 	if(CTF):
 		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		ctf_params = get_arb_params(ima, parnames)
-		data_had_ctf = ctf_params[6]
-		ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctf_params = ima.get_attr( "ctf" )
+		data_had_ctf = ima.get_attr("ctf_applied")
+		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 	# do the alignment
 	# IMAGES ARE SQUARES!
@@ -1716,12 +1705,12 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
 		if(CTF):
-			ctf_params = get_arb_params(data[im-image_start], parnames)
-			if(ctf_params[6] == 0):
+			ctf_params = data[im-image_start].get_attr( "ctf" )
+			if(data[im-image_store].get_attr("ctf_applied") == 0):
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
 				from filter import filt_ctf
-				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				data[im-image_start] = filt_ctf(data[im-image_start], ctf_params)
 				data[im-image_start].set_attr('ctf_applied', 1)
 	if(myid == main_node):  seed(rand_seed)
 	a0 = -1.0
@@ -1765,8 +1754,8 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 			assign[iref].append(im)
 			if(CTF):
 				#  I wonder whether params are still there....
-				ctf_params = get_arb_params(data[im-image_start], parnames)
-				ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				ctf_params = data[im-image_start].get_attr("ctf")
+				ctm = ctf_2(nx, ctf_params)
 				for i in xrange(lctf):  ctf2[iref][it][i] += ctm[i]
 			#assign[im] = iref
 			refi[iref][2] += 1.0
@@ -1961,9 +1950,9 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 			if(im>0):
 				temp = EMData()
 				temp.read_image(stack, im)
-			ctf_params = get_arb_params(temp, parnames)
+			ctf_params = temp.get_attr( "ctf" )
 			if(im == 0):  data_had_ctf = temp.get_attr('ctf_applied')
-			ctf = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf = ctf_2(nx, ctf_params)
 			if(im == 0):
 				lctf = len(ctf)
 				ctf2 = [0.0]*lctf
@@ -1974,11 +1963,11 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 			temp = EMData()
 			temp.read_image(stack, im)
 			st = Util.infomask(temp, mask2D, False)
-					
+			ctf_params = temp.get_attr( "ctf" )
 			temp -= st[0]
-			if(ctf_params[6] == 0):
+			if(temp.get_attr("ctf_applied") == 0):
 				from filter import filt_ctf
-				temp = filt_ctf(temp, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				temp = filt_ctf(temp, ctf_params)
 				temp.set_attr('ctf_applied', 1)
 			from filter       import filt_table
 			refc = filt_table(temp, ctf2)
@@ -2119,9 +2108,9 @@ def ali2d_rag(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check
 			if(im>0):
 				temp = EMData()
 				temp.read_image(stack, im)
-			ctf_params = get_arb_params(temp, parnames)
+			ctf_params = temp.get_attr( "ctf" )
 			if(im == 0):  data_had_ctf = temp.get_attr('ctf_applied')
-			ctf = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf = ctf_2(nx, ctf_params)
 			if(im == 0):
 				lctf = len(ctf)
 				ctf2 = [0.0]*lctf
@@ -2134,9 +2123,10 @@ def ali2d_rag(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check
 			st = Util.infomask(temp, mask2D, False)
 					
 			temp -= st[0]
-			if(ctf_params[6] == 0):
+			if(temp.get_attr("ctf_applied") == 0):
 				from filter import filt_ctf
-				temp = filt_ctf(temp, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				ctf_params = temp.get_attr( "ctf" )
+				temp = filt_ctf(temp, ctf_params)
 				temp.set_attr('ctf_applied', 1)
 			from filter       import filt_table
 			refc = filt_table(temp, ctf2)
@@ -2568,11 +2558,9 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
  	cny = cnx
  	mode = "F"
 	if(CTF):
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		#                        0                1              2     3              4                5                6
-		ctf_params = get_arb_params(ima, parnames)
-		data_had_ctf = ctf_params[6]
-		ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctf_params = ima.get_attr( "ctf" )
+		data_had_ctf = ima.get_attr( "ctf_applied" )
+		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = [[[0.0]*lctf for j in xrange(2)] for i in xrange(NG)]
 		ctfb2 = [[0.0]*lctf for i in xrange(NG)]
@@ -2582,16 +2570,17 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 		all_data[im].set_attr('ID', im)
 		k = im%NG
 		if(CTF):
-			ctf_params = get_arb_params(all_data[im], parnames)
-			ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf_params = all_data[im].get_attr( "ctf" )
+			ctm = ctf_2(nx, ctf_params)
+
 			kl = (im//2)%NG  # not sure it will work for NG>2
 			for i in xrange(lctf):
 				ctf2[k][kl][i] += ctm[i]
-			if(ctf_params[6] == 0):
+	
+  			if(all_data[im].get_attr("ctf_applied") == 0):
 				st = Util.infomask(all_data[im], mask, False)
 				all_data[im] -= st[0]
-				#      filt_ctf(all_data[im]ge,	     dz,		  cs,		   voltage,	     pixel_size,     amp_contrast=0.1,	  b_factor=0.0):
-				all_data[im] = filt_ctf(all_data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				all_data[im] = filt_ctf(all_data[im], ctf_params)
 				all_data[im].set_attr('ctf_applied', 1)
 
 	#  create to lists of images in groups.
@@ -2948,13 +2937,13 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	nima = len(data)
 	for im in xrange(nima):
 		if(CTF):
-			ctf_params = get_arb_params(data[im], ctf_dicts)
+			ctf_params = data[im].get_attr( "ctf" )
 			if(im == 0): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			if(data[im].get_attr("ctf_applied") == 0):
 				st = Util.infomask(data[im], mask, False)
 				data[im] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 	# initialize data for the reference preparation function
 	ref_data = []
@@ -3123,13 +3112,13 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	for im in xrange(len(data)):
 		data[im].set_attr('ID', list_of_particles[im])
 		if(CTF):
-			ctf_params = get_arb_params(data[im], ctf_dicts)
-			if(im == 0): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			ctf_params = data[im].get_attr( "ctf" )
+			if(im == 0): data_had_ctf = data[im].get_attr( "ctf_applied" )
+			if(data[im].get_attr("ctf_applied") == 0):
 				st = Util.infomask(data[im], mask, False)
 				data[im] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 	if(debug) :
 		finfo.write( '%d loaded  \n' % len(data) )
@@ -3305,10 +3294,10 @@ def ali3d_m(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 					volref, kb = prep_vol(get_im(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref) )
 				for im in xrange(nima):
 					if(CTF):
-						ctf_params = get_arb_params(data[im], parnames)
-						if(ctf_params[1] != previous_defocus):
-							previous_defocus = ctf_params[1]
-							volref, kb = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+						ctf_params = data[im].get_attr("ctf")
+						if(ctf_params.defocus != previous_defocus):
+							previous_defocus = ctf_params.defocus
+							volref, kb = prep_vol(filt_ctf(vol, ctf_params))
 					phi, theta, psi, tx, ty = get_params_proj(data[im])
 					peak = prgs(volref, kb, [phi, theta, psi, tx, ty]).cmp("ccc", data[im], {"mask":mask, "negative":0})
 					if(peak > peaks[im]):
@@ -3603,10 +3592,10 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 					volref, kb = prep_vol(get_im(os.path.join(outdir, "volf%04d.hdf"%( total_iter-1)), iref) )
 				for im in xrange(nima):
 					if(CTF):
-						ctf_params = get_arb_params(data[im], parnames)
-						if(ctf_params[1] != previous_defocus):
-							previous_defocus = ctf_params[1]
-							volref, kb = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+						ctf_params = data[im].get_attr( "ctf" )
+						if(ctf_params.defocus != previous_defocus):
+							previous_defocus = ctf_params.defocus
+							volref, kb = prep_vol(filt_ctf(vol, ctf_params))
 					phi, theta, psi, tx, ty = get_params_proj(data[im])
 					peak = prgs(volref, kb, [phi, theta, psi, tx, ty]).cmp("ccc", data[im], {"mask":mask, "negative":0})
 					if(peak > peaks[im]):
@@ -3762,13 +3751,13 @@ def ali3d_em_MPI_origin(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 		dataim[im].set_attr('ID', im)
 		#set_arb_params(dataim[im], prm[im], prm_dict)
 		if(CTF):
-			ctf_params = get_arb_params(dataim[im], parnames)
-			if(im == image_start): data_had_ctf = ctf_params[6]
+			ctf_params = dataim[im].get_attr( "ctf" )
+			if(im == image_start): data_had_ctf = dataim[im].get_attr( "ctf_applied" )
 			if(ctf_params[6] == 0):
 				st = Util.infomask(dataim[im], mask2D, False)
 				dataim[im] -= st[0]
 				from filter import filt_ctf
-				dataim[im] = filt_ctf(dataim[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				dataim[im] = filt_ctf(dataim[im], ctf_params)
 				dataim[im].set_attr('ctf_applied', 1)
 		group = dataim[im].get_attr_default('group', 0)
 		dataim[im].set_attr('group', group)
@@ -4253,13 +4242,13 @@ def ali3d_en_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 
 		#set_arb_params(dataim[im], prm[im], prm_dict)
 		if(CTF):
-			ctf_params = get_arb_params(dataim[im], parnames)
-			if(im == image_start): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			ctf_params = dataim[im].get_attr( "ctf" )
+			if(im == image_start): data_had_ctf = dataim[im].get_attr( "ctf_applied" )
+			if(dataim.get_attr("ctf_applied") == 0):
 				st = Util.infomask(dataim[im], mask2D, False)
 				dataim[im] -= st[0]
 				from filter import filt_ctf
-				dataim[im] = filt_ctf(dataim[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				dataim[im] = filt_ctf(dataim[im], ctf_params)
 				dataim[im].set_attr('ctf_applied', 1)
 
 	outf.write("data read\n")
@@ -4495,10 +4484,10 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 			if CTF:  previous_defocus = -1.0
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if CTF:
-					ctf_params = get_arb_params(dataim[imn], parnames)
-					if(ctf_params[1] != previous_defocus):
-						previous_defocus = ctf_params[1]
-						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+					ctf_params = dataim[imn].get_attr( "ctf" )
+					if(ctf_params.defocus != previous_defocus):
+						previous_defocus = ctf_params.defocus
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
 				data[2] = dataim[imn]				
 				refi = dataim[imn].copy()
@@ -4733,10 +4722,10 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 			if CTF:  previous_defocus = -1.0
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if CTF:
-					ctf_params = get_arb_params(dataim[imn-image_start], parnames)
-					if(ctf_params[1] != previous_defocus):
-						previous_defocus = ctf_params[1]
-						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
+					if(ctf_params.defocus != previous_defocus):
+						previous_defocus = ctf_params.defocus
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
 				data[2] = dataim[imn-image_start]
 
@@ -5067,10 +5056,10 @@ def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 			if(CTF):  previous_defocus = -1.0
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if(CTF):
-					ctf_params = get_arb_params(dataim[imn-image_start], parnames)
-					if(ctf_params[1] != previous_defocus):
-						previous_defocus = ctf_params[1]
-						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
+					if(ctf_params.defocus != previous_defocus):
+						previous_defocus = ctf_params.defocus
+						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params))
 				data[2] = dataim[imn-image_start]
 
 				atparams = get_arb_params(dataim[imn-image_start], par_str)
@@ -5409,10 +5398,10 @@ def ali3d_eB_MPI_select(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit
 			if(CTF):  previous_defocus = -1.0
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if(CTF):
-					ctf_params = get_arb_params(dataim[imn-image_start], parnames)
-					if(ctf_params[1] != previous_defocus):
-						previous_defocus = ctf_params[1]
-						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5]))
+					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
+					if(ctf_params.defocus != previous_defocus):
+						previous_defocus = ctf_params.defocus
+						data[0],data[1] = prep_vol(filt_ctf(vol, ctf_params))
 				data[2] = dataim[imn-image_start]
 
 				atparams = get_arb_params(dataim[imn-image_start], par_str)
@@ -5602,13 +5591,13 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 		dataim[im].set_attr('ID', im)
 		set_arb_params(ima, prm[im], prm_dict)
 		if(CTF):
-			ctf_params = get_arb_params(data[im], parnames)
-			if(im == image_start): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			ctf_params = data[im].get_attr( "ctf" )
+			if(im == image_start): data_had_ctf = data[im].get_attr( "ctf_applied" )
+			if(data[im].get_attr("ctf_applied") == 0):
 				st = Util.infomask(data[im], mask2D, False)
 				data[im] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 	outf.write("  data read = "+str(image_start)+"   ")
 	outf.write("\n")
@@ -5676,7 +5665,7 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 					et = exp(-100.0*xs**2)
 					bckgt = exp(-0.8-100.0*xs**2)+0.01
 					ht = 1.0-0.6*exp(-xs**2/2.0/0.012**2)
-					H = 0.5*( tanh(pi*(xs*ctf_params[0]+fl)/2./aa/fl) - tanh(pi*(xs*ctf_params[0]-fl)/2./aa/fl) )
+					H = 0.5*( tanh(pi*(xs*ctf_params.apix+fl)/2./aa/fl) - tanh(pi*(xs*ctf_params.apix-fl)/2./aa/fl) )
 					fmt = H*ht/bckgt
 					envt.append(fmt)
 				from filter import filt_table
@@ -5752,9 +5741,9 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 			#new_params = []
 
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
-				ctf_params = get_arb_params(dataim[imn-image_start], parnames)
+				ctf_params = dataim[imn-image_start].get_attr( "ctf" )
 				from morphology import ctf_2
-				ctf2 = ctf_2(nx, ctf_params[0], ctf_params[1])
+				ctf2 = ctf_2(nx, ctf_params)
 				nct = len(ctf2)
 				from math import exp, sqrt, tanh, pi
 				#parameters of tanh filter are in absolute units.
@@ -5767,7 +5756,7 @@ def ali3d_eB_MPI_(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, C
 					et = exp(-100.0*xs**2)
 					bckgt = exp(-0.8-100.0*xs**2)+0.01
 					ht = 1.0-0.6*exp(-xs**2/2.0/0.012**2)
-					H = 0.5*( tanh(pi*(xs*ctf_params[0]+fl)/2./aa/fl) - tanh(pi*(xs*ctf_params[0]-fl)/2./aa/fl) )
+					H = 0.5*( tanh(pi*(xs*ctf_params.apix+fl)/2./aa/fl) - tanh(pi*(xs*ctf_params.apix-fl)/2./aa/fl) )
 					fmt = H*ht/(bckgt + ctf2[i]*et**2/5.0)
 					envt.append(fmt)
 				from filter import filt_table
@@ -5908,13 +5897,13 @@ def ali3d_eB_MPI__(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, 
 		ima.read_image(stack, im)
 		#set_arb_params(ima, prm[im], prm_dict)
 		if(CTF):
-			ctf_params = get_arb_params(ima, parnames)
-			if(im == image_start): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			ctf_params = ima.get_attr( "ctf" )
+			if(im == image_start): data_had_ctf = ima.get_attr( "ctf_applied" )
+			if(ima.get_attr("ctf_applied") == 0):
 				st = Util.infomask(ima, mask2D, False)
 				ima -= st[0]
 				from filter import filt_ctf
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				ima = filt_ctf(ima, ctf_params)
 				ima.set_attr('ctf_applied', 1)
 		dataim.append(ima)
 	outf.write("  data read = "+str(image_start)+"   ")
@@ -6048,9 +6037,9 @@ def ali3d_eB_MPI__(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, 
 					data.append(mask2D)
 					current_defocus = defocus
 				'''
-				ctf_params = get_arb_params(dataim[imn-image_start], parnames)
+				ctf_params = dataim[imn-image_start].get_attr( "ctf" )
 				from morphology import ctf_2
-				ctf2 = ctf_2(nx, ctf_params[0], ctf_params[1])
+				ctf2 = ctf_2(nx, ctf_params)
 				nct = len(ctf2)
 				from math import exp, sqrt, tanh, pi
 				#parameters of tanh filter are in absolute units.
@@ -6063,7 +6052,7 @@ def ali3d_eB_MPI__(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, 
 					et = exp(-100.0*xs**2)
 					bckgt = exp(-0.8-100.0*xs**2)+0.01
 					ht = 1.0-0.6*exp(-xs**2/2.0/0.012**2)
-					H = 0.5*( tanh(pi*(xs*ctf_params[0]+fl)/2./aa/fl) - tanh(pi*(xs*ctf_params[0]-fl)/2./aa/fl) )
+					H = 0.5*( tanh(pi*(xs*ctf_params.apix+fl)/2./aa/fl) - tanh(pi*(xs*ctf_params.apix-fl)/2./aa/fl) )
 					fmt = H*ht/(bckgt + ctf2[i]*et**2/5.0)
 					envt.append(fmt)
 				from filter import filt_table
@@ -6214,13 +6203,13 @@ def ali3d_f_MPI(stack, ref_vol, outdir, maskfile, ali_maskfile, radius=-1, snr=1
 	for im in xrange(image_start, image_end):
 		dataim[im].set_attr('ID', im)
 		if(CTF):
-			ctf_params = get_arb_params(data[im], parnames)
-			if(im == image_start): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			ctf_params = data[im].get_attr( "ctf" )
+			if(im == image_start): data_had_ctf = data[im].get_attr( "ctf_applied" )
+			if(data[im].get_attr("ctf_applied") == 0):
 				st = Util.infomask(data[im], mask2D, False)
 				data[im] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4])
+				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 
 
@@ -6495,7 +6484,7 @@ def autowin(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method, p_s
 		file_input    = os.path.join(indir, v)
 		img1 = EMData()
 		img1.read_image(file_input)
-		if CTF : ctf_params    = get_arb_params(img1, ctf_dicts)
+		if CTF : ctf_params    = img1.get_attr( "ctf" )
 		img1         *= contrast_invert
 		nx            = img1.get_xsize()
 		ny            = img1.get_ysize()
@@ -6552,7 +6541,7 @@ def autowin(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method, p_s
 			ra      = ramp(wi)
 			outlist = ce_fit(ra, e_n, mask)
 			outlist[2].set_attr_dict({'xp':peak[k*3+1], 'yp': peak[k*3+2], 'mic':filename})
-			if CTF: set_arb_params(outlist[2], ctf_params, ctf_dicts)
+			if CTF: outlist[2].set( "ctf", ctf_params)
 			outlist[2].write_image(file_particle, k)
 		out.close()
 
@@ -6793,13 +6782,13 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, min_cc_peak, xr, max_x_s
 	for im in xrange(nima):
 		data[im].set_attr('ID', im)
 		if(CTF):
-			ctf_params = get_arb_params(data[im], ctf_dicts)
-			if(im == 0): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			ctf_params = data[im].get_attr( "ctf" )
+			if(im == 0): data_had_ctf = data[im].get_attr( "ctf_applied" )
+			if( data[im].get_attr("ctf_applied") == 0):
 				st = Util.infomask(data[im], mask, False)
 				data[im] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 
 	finfo = None#open("desperado", 'w')
@@ -7934,26 +7923,26 @@ def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = Fal
 		for i in xrange(n):
 			ima = EMData()
 			ima.read_image(input_stack, i)
-			ctf_params = get_arb_params(ima, parnames)
+			ctf_params = ima.get_arb_params("ctf")
 			ali = get_arb_params(ima, pali)
 			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
 			if avg:
 				st = Util.infomask(ima, mask, False)
 				ima -= st[0]
-			oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+			oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params)
 			Util.add_img(ave, oc)
-			Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5], ny = ny2, nz = 1))
+			Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
 		Util.div_filter(ave, ctf_2_sum)
 		for i in xrange(n):
 			ima = EMData()
 			ima.read_image(input_stack, i)
-			ctf_params = get_arb_params(ima, parnames)
+			ctf_params = ima.get_attr( "ctf" )
 			ali = get_arb_params(ima, pali)
 			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
 			if avg:
 				st = Util.infomask(ima, mask, False)
 				ima -= st[0]
-			oc = filt_ctf(ave, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad= True)
+			oc = filt_ctf(ave, ctf_params, pad= True)
 			Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
 			set_arb_params(ima, [0.0,0.0,0.0,0], pali)
 			ima.write_image(output_stack, i)
