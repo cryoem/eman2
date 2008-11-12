@@ -97,9 +97,9 @@ operations are performed on oversampled images if specified."""
 
 	img_sets=[]
 
-	project=db_open_dict("bdb:project")
-	parms=db_open_dict("bdb:e2ctf.parms")
-	
+	db_project=db_open_dict("bdb:project")
+	db_parms=db_open_dict("bdb:e2ctf.parms")
+	db_misc=db_open_dict("bdb:e2ctf.misc")
 
 	### Power spectrum and CTF fitting
 	for filename in args:
@@ -116,7 +116,7 @@ operations are performed on oversampled images if specified."""
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=not options.nosmooth,autohp=options.autohp)
-		parms[name]=ctf.to_string()
+		db_parms[name]=ctf.to_string()
 
 		if debug:
 			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
@@ -140,7 +140,7 @@ operations are performed on oversampled images if specified."""
 	if (len(img_sets)>3) :
 		incr=[0.2]*len(img_sets)
 		simp=Simplex(env_cmp,scales,incr)
-		scales=simp.minimize(maxiters=4000)[0]
+		scales=simp.minimize(maxiters=1000)[0]
 		print scales
 	
 	# apply the final rescaling
@@ -154,9 +154,11 @@ operations are performed on oversampled images if specified."""
 	envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
 	
 	# write the final envelope
-	out=file("envelope.txt","w")
-	for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
-	out.close()
+	db_misc["envelope"]=envelope
+	
+	#out=file("envelope.txt","w")
+	#for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
+	#out.close()
 
 	### Process input files
 	if debug : print "Phase flipping / Wiener filtration"
@@ -176,7 +178,7 @@ operations are performed on oversampled images if specified."""
 			if wienerout : print "Wiener image out: ",wienerout,
 			print ""
 			ctf=EMAN2Ctf()
-			ctf.from_string(parms[name])
+			ctf.from_string(db_parms[name])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
 
 	E2end(logid)
@@ -194,7 +196,7 @@ def env_cmp(sca):
 	ret=0
 	for i in range(2,len(total)-2):
 		if total[i][1] :
-			ret+=((total[i-2][1]-total[i][1])**2+(total[i-1][1]-total[i][1])**2+(total[i+1][1]-total[i][1])**2+(total[i+2][1]-total[i][1])**2)
+			ret+=((total[i-2][1]-total[i][1])**2+(total[i-1][1]-total[i][1])**2+(total[i+1][1]-total[i][1])**2+(total[i+2][1]-total[i][1])**2)*i
 #			ret+=fabs(total[i-2][1]-total[i][1])+fabs(total[i-1][1]-total[i][1])+fabs(total[i+1][1]-total[i][1])+fabs(total[i+2][1]-total[i][1])
 
 	#ret=0
@@ -222,6 +224,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 		im1=EMData(stackfile,i)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
+		if type(ctf)==EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
