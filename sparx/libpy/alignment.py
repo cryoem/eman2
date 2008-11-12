@@ -40,8 +40,6 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 	from alignment import Applyws, ormq
 	if CTF:
 		from filter       import filt_ctf
-		from utilities    import get_arb_params
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor"]
 
 	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
 	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
@@ -71,8 +69,8 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 		alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy, 1.0)
 		if CTF:
 			#Apply CTF to image
-			ctf_params = get_arb_params(ima, parnames)
-			ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad = True)
+			ctf_params = ima.get_attr("ctf")
+			ima = filt_ctf(ima, ctf_params, True)
 
 		# align current image to the reference
 		if random_method == "SA":
@@ -787,14 +785,12 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 	ref_angles = even_angles(delta, symmetry = symmetry, method = ref_a, phiEqpsi = "Minus")
 
 	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
-	if(mask3D):
+	if mask3D:
 		[mean, sigma, xmin, xmax ] =  Util.infomask(volref, mask3D, False)
 		volref -= mean
 		Util.mul_img(volref, mask3D)
-	if(CTF):
+	if CTF:
 		from filter    import filt_ctf
-		from utilities import get_arb_params
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor"]
 
 	nx   = volref.get_xsize()
 	ny   = volref.get_ysize()
@@ -819,8 +815,8 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 			finfo.write( "proj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, sxo, syo) )
 			finfo.flush()
 		if  CTF:
-			ctf_params = get_arb_params(projdata[imn], parnames)
-			ima = filt_ctf(projdata[imn], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad = True)
+			ctf_params = projdata[imn].get_attr("ctf")
+			ima = filt_ctf(projdata[imn], ctf_params, True)
 			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d(ima.process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 		else:
 			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
@@ -829,8 +825,8 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 		#ang = (ang+360.0)%360.0
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1,  -ang, 0.,0.,1)
-		if  mirror:
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		if mirror:
                         phi   = (ref_angles[numref][0]+540.0)%360.0
                         theta = 180.0-ref_angles[numref][1]
                         psi   = (540.0-ref_angles[numref][2]+angb)%360.0
@@ -844,7 +840,7 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
                         s2y   = syb + syo
 		set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y] )
 		projdata[imn].set_attr('peak', peak)
-		if not(finfo is None):
+		if not (finfo is None):
 			finfo.write( "proj %4d new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, s2x, s2y) )
 			finfo.flush()
 
@@ -860,14 +856,12 @@ def proj_ali_incore_local(volref, mask3D, projdata, first_ring, last_ring, rstep
 	ref_angles = even_angles(delta, symmetry = symmetry, method = ref_a, phiEqpsi = "Minus")
 
 	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
-	if(mask3D):
+	if mask3D:
 		[mean, sigma, xmin, xmax ] =  Util.infomask(volref, mask3D, False)
 		volref -= mean
 		Util.mul_img(volref, mask3D)
-	if(CTF):
+	if CTF:
 		from filter    import filt_ctf
-		from utilities import get_arb_params
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor"]
 
 	nx   = volref.get_xsize()
 	ny   = volref.get_ysize()
@@ -880,7 +874,7 @@ def proj_ali_incore_local(volref, mask3D, projdata, first_ring, last_ring, rstep
 
 	# prepare 2-D mask for normalization
 	mask2D = model_circle(last_ring, nx, ny)
-	if(first_ring > 0): mask2D -= model_circle(first_ring, nx, ny)
+	if first_ring > 0: mask2D -= model_circle(first_ring, nx, ny)
 
 	# generate reference projections in polar coords
 	ref_proj_rings = prepare_refprojs( volref, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr, MPI )
@@ -896,19 +890,19 @@ def proj_ali_incore_local(volref, mask3D, projdata, first_ring, last_ring, rstep
 		from utilities import set_params_proj, get_params_proj
 		phi, theta, psi, sxo, syo = get_params_proj( projdata[imn] )
 
-		if not(finfo is None):
+		if not (finfo is None):
 			finfo.write( "prj %4d old params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, sxo, syo) )
 			finfo.flush()
-		if  CTF:
-			ctf_params = get_arb_params(projdata[imn], parnames)
-			ima = filt_ctf(projdata[imn], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad = True)
+		if CTF:
+			ctf_params = projdata[imn].get_attr("ctf")
+			ima = filt_ctf(projdata[imn], ctf_params, True)
 			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d_local(ima.process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 		else:
 			[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d_local(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 		numref=int(nref)
 		#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 		#ang = (ang+360.0)%360.0
-		if(numref > -1):
+		if numref > -1:
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 			angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1,  -ang, 0.,0.,1)
@@ -955,14 +949,12 @@ def proj_ali_incore_peaks(volref, mask3D, projdata, first_ring, last_ring, rstep
 	print len(ref_angles)
 
 	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
-	if(mask3D):
+	if mask3D:
 		[mean, sigma, xmin, xmax ] =  Util.infomask(volref, mask3D, False)
 		volref -= mean
 		Util.mul_img(volref, mask3D)
-	if(CTF):
+	if CTF:
 		from filter    import filt_ctf
-		from utilities import get_arb_params
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor"]
 
 	nx   = volref.get_xsize()
 	ny   = volref.get_ysize()
@@ -990,9 +982,9 @@ def proj_ali_incore_peaks(volref, mask3D, projdata, first_ring, last_ring, rstep
 		print ttime()
 		ccfs = EMData()
 		ccfm = EMData()
-		if  CTF:
-			ctf_params = get_arb_params(projdata[imn], parnames)
-			ima = filt_ctf(projdata[imn], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5], pad = True)
+		if CTF:
+			ctf_params = projdata[imn].get_attr("ctf")
+			ima = filt_ctf(projdata[imn], ctf_params, True)
 			Util.multiref_peaks_ali(ima.process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo, ccfs, ccfm, nphi, ntheta)
 		else:
 			Util.multiref_peaks_ali(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo, ccfs, ccfm, nphi, ntheta)
