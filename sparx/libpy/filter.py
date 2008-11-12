@@ -194,12 +194,12 @@ def filt_ctf( img, ctf, dopad=True, sign=1 ) :
 
 	params = {"filter_type": Processor.fourier_filter_types.CTF_,
 	 	"defocus" : dz,
-		"Cs" : cs,
-		"voltage" : voltage,
-		"Pixel_size" : pixel_size,
-		"B_factor" : b_factor,
+		"Cs": cs,
+		"voltage": voltage,
+		"Pixel_size": pixel_size,
+		"B_factor": b_factor,
 		"amp_contrast": ampcont,
-		"dopad":0,
+		"dopad": ip,
 		"sign": sign}
 	return Processor.EMFourierFilter(img, params)
 
@@ -390,7 +390,7 @@ def fit_tanh(dres, low = 0.1):
 		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < 0.5):
 			freq = dres[0][i-1]
 			break
-	if(freq < 0.0):
+	if freq < 0.0:
 		# the curve never falls below 0.5, most likely something's wrong; however, return reasonable values
 		freq = 0.2
 		fall_off = 0.1
