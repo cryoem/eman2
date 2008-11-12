@@ -110,29 +110,47 @@ def threshold_maxval(img, maxval = 0.0):
 	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )	
 
 ## CTF related functions
-def ctf_1d(nx, pixel_size, defocus, voltage = 300.0, cs = 2.0, amp_contrast=0.1, b_factor=0.0, sign = -1):
+def ctf_1d(nx, ctf, sign = -1):
 	"""
 		Generate a list of 1D CTF values 
 	"""
+	dict = ctf.to_dict()
+	dz = dict["defocus"]
+	cs = dict["cs"]
+	voltage = dict["voltage"]
+	pixel_size = dict["apix"]
+	bfactor = dict["bfactor"]
+	ampcont = dict["ampcont"]
+
+
 	ctf_1 = []
 	scl    = 1./pixel_size/nx
 	length = int(1.41*float(nx/2)) + 1
 	ctf_1 = [0.0]*length
 	for i in xrange(length):
-		ctf_1[i] = Util.tf(defocus, i*scl, voltage, cs, amp_contrast, b_factor, sign)
+		ctf_1[i] = Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign)
 	return ctf_1
 
-def ctf_2(nx, pixel_size, defocus, voltage = 300.0, cs = 2.0, amp_contrast=0.1, b_factor=0.0):
+def ctf_2(nx, ctf):
 	"""
 		Generate a list of 1D CTF^2 values 
 	"""
+	dict = ctf.to_dict()
+	dz = dict["defocus"]
+	cs = dict["cs"]
+	voltage = dict["voltage"]
+	pixel_size = dict["apix"]
+	b_factor = dict["bfactor"]
+	ampcont = dict["ampcont"]
+
+
 	ctf_2  = []
 	scl    = 1./pixel_size/nx
 	length = int(1.41*float(nx/2)) + 1
 	ctf_2 = [0.0]*length
 	for i in xrange(length):
 		ctf_val = Util.tf(defocus, i*scl, voltage, cs, amp_contrast, b_factor)
-		ctf_2[i] = ctf_val**2
+		ctf_2[i] = ctf_val*ctf_val
 	return ctf_2
 
 def ctf_img(nx, ctf, sign = -1, ny = 0, nz = 1):
