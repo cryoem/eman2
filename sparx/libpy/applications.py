@@ -4353,7 +4353,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	from filter         import filt_ctf
 	from projection     import prep_vol
 	from utilities      import model_circle, get_params_proj, set_params_proj
-	from utilities      import dropImage
+	from utilities      import getImage, dropImage
 	from math           import pi
 	from statistics     import fsc_mask
 	import os 
@@ -4403,7 +4403,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	
 	if maskfile:
 		import  types
-		if type(maskfile) is types.StringType:  mask3D=getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
 		else:                                  mask3D = maskfile
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
@@ -4566,7 +4566,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	from projection     import prep_vol
 	from utilities      import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities      import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, recv_attr_dict
-	from utilities      import dropImage
+	from utilities      import getImage, dropImage
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from reconstruction import rec3D_MPI
 	from math           import pi
@@ -4630,7 +4630,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 
 	if maskfile:
 		import  types
-		if type(maskfile) is types.StringType:  mask3D=getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
 		else:                                  mask3D = maskfile
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
