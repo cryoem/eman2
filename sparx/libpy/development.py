@@ -6528,7 +6528,7 @@ def h_stability(seed_name, nb_part, org):
 def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0, SA2=False):
 	from utilities 		import model_blank, print_msg
 	from random    		import seed, randint
-	from sys		import exit
+	import sys
 	import time
 	if CTF[0]:
 		from filter	        import filt_ctf, filt_table
@@ -6605,10 +6605,9 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0, SA2=False):
 		flag, k = 1, K
 		while k>0 and flag:
 			k -= 1
-			if Cls['n'][k] == 0:
+			if Cls['n'][k] <= 1:
 				flag = 0
-				if retrial == 0:
-					ERROR('Empty class in the initialization', 'k_means_classical', 1)
+				if retrial == 0: sys.exit()
 				for k in xrange(K):
 					Cls['n'][k] = 0
 
@@ -7212,30 +7211,35 @@ def k_means_stab_H(ALL_PART):
 	for i in xrange(K): nb_stb += len(ALL_PART[0][i])
 	stability = (float(nb_stb) / float(tot_gbl)) * 100
 
-	return stability, ALL_PART[0]
+	return stability, nb_stb, ALL_PART[0]
 
 # Build and export the stable class averages 
 def k_means_stab_export(PART, stack, num_run):
 	from utilities import model_blank
-	K = len(PART)
-	im = EMData()
+	K    = len(PART)
+	im   = EMData()
 	im.read_image(stack, 0, True)
-	nx = im.get_xsize()
-	ny = im.get_ysize()
-	AVE = []
+	nx   = im.get_xsize()
+	ny   = im.get_ysize()
 	imbk = model_blank(nx, ny)
+	AVE  = []
+	for k in xrange(K): AVE.append(imbk.copy())
 	for k in xrange(K):
-		AVE.append(imbk)
 		nobjs = len(PART[k])
 		if nobjs > 0:
 			for ID in PART[k]:
 				im.read_image(stack, int(ID))
 				Util.add_img(AVE[k], im)
-			Util.mul_scalar(AVE[k], 1.0 / float(len(PART[k])))
+			Util.mul_scalar(AVE[k], 1.0 / float(nobjs))
 
-		AVE[k].set_attr('Class_average', 1.0)
-		AVE[k].set_attr('nobjects', len(PART[k]))
-		AVE[k].set_attr('members', len(PART[k]))
+			AVE[k].set_attr('Class_average', 1.0)
+			AVE[k].set_attr('nobjects', nobjs)
+			AVE[k].set_attr('members', PART[k])
+		else:
+			AVE[k].set_attr('Class_average', 1.0)
+			AVE[k].set_attr('nobjects', 0)
+			AVE[k].set_attr('members', -1)
+
 		AVE[k].write_image('average_stb_run%02d.hdf' % num_run, k)
 
 # Init the header for the stack file
@@ -7384,6 +7388,21 @@ def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
 		im.set_attr('stab_part', val)
 		write_header(stack, im, n)
 
+# Gather all stable class averages in the same stack
+def k_means_stab_gather(nb_run, th):
+	ct = 0
+	im = EMData()
+	for nr in xrange(1, nb_run):
+		name = 'average_stb_run%02d.hdf' % nr
+		N = EMUtil.get_image_count(name)
+		for n in xrange(N):
+			im.read_image(name, n)
+			if im.get_attr('nobjects') > th:
+				im.write_image('all_stb_ave_run.hdf', ct)
+				ct += 1
+
+	return ct
+
 # K-means main driver
 def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, SA2 = False, DEBUG = False):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
@@ -7396,6 +7415,8 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 	trials   = 1
 	maxit    = 1000000
 	critname = ''
+	th       = 0        # remove cluster
+	maxrun   = 1        # max ite of run
 
 	# create main log
 	f = open('main_log.txt', 'w')
@@ -7413,41 +7434,85 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 	k_means_stab_init_tag(stack)
 
 	# loop over run
-	for num_run in xrange(1, 3):
-		logging.info('RUN %02d -------------' % num_run)
+	stb          = 3.0
+	flag_run     = True
+	num_run      = 0
+	while flag_run:
+		flag_cluster = False
+		num_run += 1
+		logging.info('RUN %02d K = %03d %s' % (num_run, K, 40 * '-'))
+
 		# open unstable images
-		logging.info('.. Open images')
+		logging.info('... Open images')
 		[im_M, mask, ctf, ctf2, LUT, N] = k_means_open_unstable(stack, maskname, CTF)
-		logging.info('.. %d unstable images found' % N)
-		T0 = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F, SA2)
-		logging.info('.. Select first temperature T0: %4.2f' % T0)
+		logging.info('... %d unstable images found' % N)
+		if N < 2:
+			logging.info('[STOP] Not enough images')
+			break
+		try:
+			T0 = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F, SA2)
+			logging.info('... Select first temperature T0: %4.2f' % T0)
+		except SystemExit:
+			logging.info('[STOP] Not enough images')
+			break
 
 		# loop over partition
 		ALL_ASG = []
 		print_begin_msg('k-means')
 		for n in xrange(npart):
-			logging.info('.... Start partition: %d' % (n + 1))
+			logging.info('...... Start partition: %d' % (n + 1))
 			k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, SA2, rnd[n], 1)
-			if   opt_method == 'cla': [Cls, assign] = k_means_classical(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
-			elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
+			if   opt_method == 'cla':
+				try:			[Cls, assign] = k_means_classical(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
+				except SystemExit:	flag_cluster = True
+
+			elif opt_method == 'SSE':
+				try:			[Cls, assign] = k_means_SSE(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
+				except SystemExit:      flag_cluster = True
+
+			if flag_cluster:
+				logging.info('[WARNING] Empty cluster')
+				break
+			
 			ALL_ASG.append(assign)
 		print_end_msg('k-means')
 
+		if flag_cluster:
+			num_run -= 1
+			K = K - int(K * (stb / 100.0))
+			if K > 1:
+				logging.info('[WARNING] Restart the run with K = %d' % K)
+				continue
+			else:
+				logging.info('[STOP] Not enough number of clusters ')
+				break
+
 		# convert local assignment to absolute partition
-		logging.info('.. Convert local asign to abs partition')
+		logging.info('... Convert local asign to abs partition')
 		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
 
 		# calculate the stability
-		stb, STB_PART = k_means_stab_H(ALL_PART)
-		logging.info('.. Stability: %5.2f %%' % stb)
+		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
+		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
 
 		# export the stable class averages
-		logging.info('.. Export stable class averages: average_stb_run%02d.hdf' % num_run)
+		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)
 		k_means_stab_export(STB_PART, stack, num_run)
 
 		# tag informations to the header
-		logging.info('.. Update info to the header')
+		logging.info('... Update info to the header')
 		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
+
+		# stop if max run is reach
+		if num_run == maxrun:
+			flag_run = False
+			logging.info('[STOP] Max number of runs is reached (%d)' % maxrun)
+
+	# merge and clean all stable averages
+	th = 0
+	logging.info('Remove class average with nb objs < %d' % th)
+	ct = k_means_stab_gather(num_run, th)
+	logging.info('Gather all stable class averages: all_stb_ave_run.hdf (%d images)' % ct)
 	
 	logging.info('::: END k-means stability :::')
 
