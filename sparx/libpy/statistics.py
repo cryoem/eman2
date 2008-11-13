@@ -1581,7 +1581,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 	from random    		import seed, randint
 	from utilities 		import print_msg
 	from copy		import deepcopy
-	from sys		import exit
+	import sys
 	import time
 	if CTF[0]:
 		from filter	        import filt_ctf, filt_table
@@ -1679,7 +1679,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 			flag, k = 1, K
 			while k>0 and flag:
 				k -= 1
-				if Cls['n'][k] == 0:
+				if Cls['n'][k] <= 1:
 					flag = 0
 					if retrial == 0:
 						ERROR('Empty class in the initialization', 'k_means_classical', 1)
@@ -1921,8 +1921,12 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 			flag_empty  = False
 			wd_trials  += 1
 			if wd_trials > 10:
-				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
-				if trials > 1: MemJe[ntrials-1] = 1e10
+				if trials > 1:
+					MemJe[ntrials-1] = 1e10
+					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+				else:
+					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					sys.exit()
 				wd_trials = 0
 			else:
 				ntrials -= 1
@@ -1936,7 +1940,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 				val_min = MemJe[n]
 				best    = n
 		
-		# affect the best
+		# affect the besta
 		Cls    = MemCls[best]
 		Je     = MemJe[best]
 		assign = MemAssign[best]		
@@ -1995,7 +1999,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from random       import seed, randint, shuffle
 	from copy         import deepcopy
-	from sys          import exit
+	import sys
 	import time
 	if CTF[0]:
 		from filter		import filt_ctf, filt_table
@@ -2091,7 +2095,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 			flag,k = 1,K
 			while k>0 and flag:
 				k -= 1 
-				if Cls['n'][k] == 0:
+				if Cls['n'][k] <= 1:
 					flag = 0
 					if retrial == 0:
 						ERROR('Empty class in the initialization', 'k_means_SSE', 1)
@@ -2312,7 +2316,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 										
 					# empty cluster control
 					if Cls['n'][assign_from] == 1:
-						print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
+						print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
 						flag_empty = True
 												
 					change = True
@@ -2410,8 +2414,13 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 			flag_empty  = False
 			wd_trials  += 1
 			if wd_trials > 10:
-				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
-				if trials >1: MemJe[ntrials-1] = 1e10
+				
+				if trials >1:
+					MemJe[ntrials-1] = 1e10
+					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+				else:
+					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					sys.exit()
 				wd_trials = 0
 			else:
 				ntrials -= 1
@@ -2588,7 +2597,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					Cls['n'][int(assign[im])] += 1
 				flag,k = 1,0
 				while k < K and flag:
-					if Cls['n'][k] == 0:
+					if Cls['n'][k] <= 1:
 						flag = 0
 						if retrial == 0:
 							ERROR('Empty class in the initialization', 'k_means_cla_MPI', 1)
@@ -2904,8 +2913,12 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			flag_empty  = False
 			wd_trials  += 1
 			if wd_trials > 10:
-				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
-				if trials > 1: MemJe[ntrials-1] = 1e10
+				if trials > 1:
+					MemJe[ntrials-1] = 1e10
+					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+				else:
+					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					sys.exit()
 				wd_trials = 0
 			else:
 				ntrials -= 1
@@ -3116,7 +3129,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 					Cls['n'][int(assign[im])] += 1
 				flag,k = 1,0
 				while k < K and flag:
-					if Cls['n'][k] == 0:
+					if Cls['n'][k] <= 1:
 						flag = 0
 						if retrial == 0:
 							ERROR('Empty class in the initialization', 'k_means_SSE_MPI', 1)
@@ -3540,8 +3553,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 			flag_empty  = False
 			wd_trials  += 1
 			if wd_trials > 10:
-				print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
-				if trials > 1: MemJe[ntrials-1] = 1e10
+				if trials > 1:
+					MemJe[ntrials-1] = 1e10
+					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+				else:
+					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					sys.exit()
 				wd_trials = 0
 			else:
 				ntrials -= 1
