@@ -1227,10 +1227,11 @@ class TestProcessor(unittest.TestCase):
         e4.set_size(16,16,16)
         e4.process_inplace('testimage.noise.uniform.rand')
         
-        try:
-            e5 = e.process('normalize.mask', {'mask':e4, 'no_sigma':1})
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            try:
+                e5 = e.process('normalize.mask', {'mask':e4, 'no_sigma':1})
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
         
     def test_normalize_edgemean(self):
