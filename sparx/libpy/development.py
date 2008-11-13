@@ -62,10 +62,9 @@ def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 	mode = "F"
 	low=.5
 	if(CTF):
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		ctf_params = get_arb_params(ima, parnames)
+		ctf_params = ima.get_attr('ctf')
 		data = []
-		ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = []
 		ctf2.append([0.0]*lctf)
@@ -75,13 +74,14 @@ def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 			if(im > 0):
 				ima = EMData()
 				ima.read_image(stack,im)
-				ctf_params = get_arb_params(ima, parnames)
-				ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				ctf_params = ima.get_attr('ctf')
+				ctm = ctf_2(nx, ctf_params)
 			k = im%2
 			for i in xrange(lctf):  ctf2[k][i] += ctm[i]
-			if(ctf_params[6] == 0):
+			if ima.get_attr('ctf_applied') == 0:
 				from filter import filt_ctf
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				ima = filt_ctf(ima, ctf_params)
+				ima.set_attr('ctf_applied', 1)
 			data.append(ima)
 		for i in xrange(lctf):
 			ctfb2[i] = 1.0/(ctf2[0][i] + ctf2[1][i] + 1.0/snr)
@@ -204,9 +204,8 @@ def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=
 	numref = EMUtil.get_image_count(refim)
 	#  CTF stuff
 	if(CTF):
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		ctf_params = get_arb_params(ima, parnames)
-		ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctf_params = ima.get_attr('ctf')
+		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
 	# do the alignment
@@ -254,10 +253,11 @@ def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=
 			ima = EMData()
 			ima.read_image(stack, im)
 			if(CTF):
-				ctf_params = get_arb_params(ima, parnames)
-				if(ctf_params[6] == 0):
+				ctf_params = ima.get_attr('ctf')
+				if ima.get_attr('ctf_applied') == 0:
 					from filter import filt_ctf
-					ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+					ima = filt_ctf(ima, ctf_params)
+					ima.set_attr('ctf_applied', 1)
 			sx =  ima.get_attr('sx')
 			sy =  ima.get_attr('sy')
 			# align current image to the reference
@@ -309,7 +309,7 @@ def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=
 			it = im%2
 			Util.add_img( refi[iref][it], temp)
 			if(CTF):
-				ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+				ctm = ctf_2(nx, ctf_params)
 				for i in xrange(lctf):  ctf2[iref][it][i] += ctm[i]
 			assign[iref].append(im)
 			refi[iref][2] += 1
@@ -638,11 +638,13 @@ def ali3d_e_iter(stack, mask3d, iteration, defocus, ptl_defgrp, radius, lowf, hi
 	sign=1.
 	par_str=["s2x", "s2y", "psi", "theta", "phi"]
 	par_str1=["psi", "theta", "phi", "s2x", "s2y"]
-	ctf_par=["Pixel_size", "Cs", "voltage"]
 	fdres_pat="dres{***}"
 	nl = EMUtil.get_image_count(stack)
 	img.read_image(stack,0)
-	[Pixel_size,cs,voltage] = get_arb_params(img,ctf_par)
+	ctf_params = img.get_attr('ctf')
+	Pixel_size = ctf_params.apix
+	cs = ctf_params.cs
+	voltage = ctf_params.voltage
 	for mic in range(len(ptl_defgrp)):
 		iteration += 1
 		lastp += ptl_defgrp[mic]
@@ -651,7 +653,8 @@ def ali3d_e_iter(stack, mask3d, iteration, defocus, ptl_defgrp, radius, lowf, hi
 		list_p = range(nl)
 		for e in list_of_particles:  list_p.remove(e)								  	  
 		vol = recons3d_4nn_ctf(stack,list_p, snr, sign, symmetry)
-		vol_ctf = filt_ctf(vol, defocus[mic], cs, voltage, Pixel_size)
+		ctf_params.defocus = defocus[mic]
+		vol_ctf = filt_ctf(vol, ctf_params)
 		vol = filt_btwl(vol_ctf, lowf, highf)
 		vol*=mask3d
 		data=[]
@@ -4617,7 +4620,6 @@ def proj_ali(volref, mask, projdata, first_ring, last_ring, rstep, xrng, yrng, s
 
 	print  ttime()
 	mode    = "F"
-	if(CTF): parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	tmp_sym = split(sym)
@@ -4681,10 +4683,11 @@ def proj_ali(volref, mask, projdata, first_ring, last_ring, rstep, xrng, yrng, s
 		print  imn, ttime()
 		exptimage.read_image(projdata, imn)
 		if(CTF):
-			ctf_params = get_arb_params(e, parnames)
-			if(ctf_params[6] == 0):
+			ctf_params = e.get_attr('ctf')
+			if e.get_attr('ctf_applied') == 0:
 				from filter import filt_ctf
-				exptimage = filt_ctf(exptimage, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], -1, ctf_params[5])
+				exptimage = filt_ctf(exptimage, ctf_params)
+				e.set_attr('ctf_applied', 1)
 		#pg = prepg(exptimage, kb)
 		#phi1 = exptimage.get_attr('phi')
 		#theta1 = exptimage.get_attr('theta')
@@ -4734,7 +4737,6 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 	initmem = memory()
 	print  initmem/1.0e6
 	mode    = "F"
-	if(CTF): parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	ref_angles = even_angles(delta, symmetry = symmetry, method = ref_a, phiEqpsi = "Zero")
@@ -5316,13 +5318,20 @@ def copy_trans_angles_s(transtr,ptlstr,angstr,defo_fname,stack,Pixel_size,voltag
 			params=[trans[im][2],angles[im][3],angles[im][4],-trans[im][3],-trans[im][4],trans[im][5],1,ctf_mul,data[igrp][2],amp_contrast,voltage,cs,Pixel_size,igrp]		
 			n_ptl+=1
 			img.read_image(ptl_stack, im)
-			if(ctf_mul==1): img=filt_ctf(img,data[igrp][2],cs,voltage,Pixel_size,amp_contrast)
+			if(ctf_mul==1):
+				ctf_params = EMAN2Ctf()
+				ctf_params.from_dict("defocus": data[igrp][2], "cs": cs, "voltage": voltage, "apix": Pixel_size, "ampcont": amp_contrast)
+				img=filt_ctf(img, ctf_params)
 			if(deci>1):
 				lowf=.5/deci-.05
 				highf=.5/deci+.05
 				img=filt_btwl(img,lowf,highf)
 				img=Util.decimate(img,deci,deci)
 			set_arb_params(img,params,par_str)
+			ctf_params = EMAN2Ctf()
+			ctf_params.from_dict("defocus": data[igrp][2], "cs": cs, "voltage": voltage, "apix": Pixel_size, "ampcont": amp_contrast)
+			img.set_attr('ctf', ctf_params)
+			img.set_attr('ctf_applied', 1)
 			img.write_image(stack,n_ptl)
 	m_radius=0
 	if(verify==1): get_3Dfsc_stack(stack,m_radius,sign=1,snr=1,symmetry="c1")	
@@ -5350,7 +5359,10 @@ def copy_trans_angles_a(par_list,sp_stack,hdf_stack,new_dim,voltage,Pixel_size,c
 	img=EMData()
 	for i in xrange(len(data)):
 		img.read_image(sp_stack,i)
-		if(ctf_mul>0): img=filt_ctf(img,defocus[i],cs,voltage,Pixel_size,wgh)
+		if(ctf_mul>0):
+			ctf_params = EMAN2Ctf()
+			ctf_params.from_dict("defocus": defocus[i], "cs": cs, "voltage": voltage, "apix": Pixel_size, "ampcont": amp_contrast)
+			img=filt_ctf(img, ctf_params)
 		img=fshift(img,-shift[i][0],-shift[i][1])
 		if(deci>1): 
 			lowf=.5/deci-.05
@@ -5360,6 +5372,10 @@ def copy_trans_angles_a(par_list,sp_stack,hdf_stack,new_dim,voltage,Pixel_size,c
 		if(new_dim>0): img=window2d(img,int(new_dim),int(new_dim))
 		params=[angles[i][0],angles[i][1],angles[i][2],0,0,1,ctf_mul,defocus[i],amp_contrast,voltage,cs,Pixel_size] # normal order
 		set_arb_params(img,params,par_str)
+		ctf_params = EMAN2Ctf()
+		ctf_params.from_dict("defocus": defocus[i], "cs": cs, "voltage": voltage, "apix": Pixel_size, "ampcont": amp_contrast)
+		img.set_attr('ctf', ctf_params)
+		img.set_attr('ctf_applied', 1)
 		img.write_image(hdf_stack,i)
 	sign=1
 	snr=1
@@ -7006,6 +7022,242 @@ def h_stability(seed_name, nb_part, org):
 ###############################################################################################
 ## PCK K-MEANS STABILITY ######################################################################
 
+# K-means SA define the first temperature T0
+def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0, SA2=False):
+	from utilities 		import model_blank, print_msg
+	from random    		import seed, randint
+	from sys		import exit
+	import time
+	if CTF[0]:
+		from filter	        import filt_ctf, filt_table
+		from fundamentals 	import fftip
+
+		ctf  = deepcopy(CTF[1])
+		ctf2 = deepcopy(CTF[2])
+		CTF  = True
+	else:
+		CTF  = False 
+
+	from math   import exp
+	from random import random
+
+	if mask != None:
+		if isinstance(mask, basestring):
+			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+
+	N = len(im_M)
+
+	t_start = time.time()
+		
+	# Informations about images
+	if CTF:
+		nx  = im_M[0].get_attr('or_nx')
+		ny  = im_M[0].get_attr('or_ny')
+		nz  = im_M[0].get_attr('or_nz')
+		buf = model_blank(nx, ny, nz)
+		fftip(buf)		
+		nx   = im_M[0].get_xsize()
+		ny   = im_M[0].get_ysize()
+		nz   = im_M[0].get_zsize()
+		norm = nx * ny * nz
+	else:
+		nx   = im_M[0].get_xsize()
+		ny   = im_M[0].get_ysize()
+		nz   = im_M[0].get_zsize()
+		norm = nx * ny * nz
+		buf  = model_blank(nx, ny, nz)
+
+	# Variables			
+	if rand_seed > 0:  seed(rand_seed)
+	else:              seed()
+	Cls        = {}
+	Cls['n']   = [0]*K   # number of objects in a given cluster
+	Cls['ave'] = [0]*K   # value of cluster average
+	Cls['var'] = [0]*K   # value of cluster variance
+	Cls['Ji']  = [0]*K   # value of Ji
+	Cls['k']   =  K	     # value of number of clusters
+	Cls['N']   =  N
+	assign     = [0]*N 
+	
+	if CTF:
+		Cls_ctf2    = {}
+		len_ctm	    = len(ctf2[0])
+			
+	# Init the cluster by an image empty
+	buf.to_zero()
+	for k in xrange(K):
+		Cls['ave'][k] = buf.copy()
+		Cls['var'][k] = buf.copy()
+		Cls['n'][k]   = 0
+		Cls['Ji'][k]  = 0
+
+	## Random method
+	retrial = 20
+	while retrial > 0:
+		retrial -= 1
+		i = 0
+		for im in xrange(N):
+			assign[im] = randint(0, K-1)
+			Cls['n'][assign[im]] += 1
+
+		flag, k = 1, K
+		while k>0 and flag:
+			k -= 1
+			if Cls['n'][k] == 0:
+				flag = 0
+				if retrial == 0:
+					ERROR('Empty class in the initialization', 'k_means_classical', 1)
+				for k in xrange(K):
+					Cls['n'][k] = 0
+
+		if flag == 1:	retrial = 0
+
+	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
+	if CTF:
+		# first init ctf2
+		for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
+
+		for im in xrange(N):
+			# compute ctf2				
+			for i in xrange(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
+
+			# compute average first step
+			CTFxF = filt_table(im_M[im], ctf[im])
+			Util.add_img(Cls['ave'][assign[im]], CTFxF)
+
+		for k in xrange(K):
+			for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
+			Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+
+		# compute Ji and Je
+		for n in xrange(N):
+			CTFxAve               = filt_table(Cls['ave'][assign[n]], ctf[n])
+			Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+		Je = 0
+		for k in xrange(K):        Je = Cls['Ji'][k]
+
+	else:
+		# compute average
+		for im in xrange(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
+		for k in xrange(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0 / float(Cls['n'][k]))
+
+		# compute Ji and Je
+		Je = 0
+		for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
+		for k in xrange(K):	Je += Cls['Ji'][k]	
+
+	## Clustering		
+	th = int(float(N)*0.8)
+	T0 = -1
+	lT = []
+	Tm = 40
+	for i in xrange(1, 10): lT.append(i/10.)
+	lT.extend(range(1, 5))
+	lT.extend(range(5, Tm, 2))
+	for T in lT:
+		ct_pert = 0
+		for im in xrange(N):
+
+			if CTF:
+				CTFxAVE = []
+				for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
+				res = Util.min_dist(im_M[im], CTFxAVE)
+			else:
+				res = Util.min_dist(im_M[im], Cls['ave'])
+
+			# Simulate annealing
+
+			if SA2:
+				dJe = [0.0] * K
+				ni  = float(Cls['n'][assign[im]])
+				di  = res['dist'][assign[im]]
+
+				for k in xrange(K):
+					if k != assign[im]:
+						nj  = float(Cls['n'][k])
+						dj  = res['dist'][k]
+
+						dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
+
+					else:
+						dJe[k] = 0
+
+				# norm <0 [-1;0], >=0 [0;+1], if just 0 norm to 1
+				nbneg  =  0
+				nbpos  =  0
+				minneg =  0
+				maxpos =  0
+				for k in xrange(K):
+					if dJe[k] < 0.0:
+						nbneg += 1
+						if dJe[k] < minneg: minneg = dJe[k]
+					else:
+						nbpos += 1
+						if dJe[k] > maxpos: maxpos = dJe[k]
+				if nbneg != 0:                   dneg = -1.0 / minneg
+				if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
+				for k in xrange(K):
+					if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
+					else:
+						if maxpos != 0: dJe[k] = dJe[k] * dpos
+						else:           dJe[k] = 1.0
+
+				# q[k]
+				q      = [0.0] * K
+				arg    = [0.0] * K
+				maxarg = 0
+				for k in xrange(K):
+					arg[k] = dJe[k] / T
+					if arg[k] > maxarg: maxarg = arg[k]
+				limarg = 17
+				if maxarg > limarg:
+					sumarg = float(sum(arg))
+					for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+				else:
+					for k in xrange(K): q[k] = exp(arg[k])
+
+				# p[k]
+				p = [[0.0, 0] for i in xrange(K)]
+				sumq = float(sum(q))
+				for k in xrange(K):
+					p[k][0] = q[k] / sumq
+					p[k][1] = k
+
+				p.sort()
+				c = [0.0] * K
+				c[0] = p[0][0]
+				for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
+
+				pb = random()
+				select = -1
+				for k in xrange(K):
+					if c[k] > pb:
+						select = p[k][1]
+						break
+
+
+				if select != res['pos']:
+					ct_pert    += 1
+					res['pos']  = select
+
+
+			else:
+				if exp( -(1) / float(T) ) > random():
+					res['pos']  = randint(0, K - 1)
+					ct_pert    += 1
+
+		# select the first temperature if > th
+		if ct_pert > th:
+			T0 = T
+			break
+
+	# if not found, set to the max value
+	if T0 == -1: T0 = Tm
+	
+	# return Cls, assign
+	return T0
+
+
 '''
 -- Munkres algorithm (or Hungarian algorithm) ----------------------------------
 
@@ -7394,12 +7646,12 @@ See the module documentation for usage.
 # Match two partitions asignment with hungarian algorithm
 def match_clusters_asg(asg1, asg2):
 	import sys
-	N   = len(asg1)
-	MAT = [[0] * N for i in xrange(N)]
+	K   = len(asg1)
+	MAT = [[0] * K for i in xrange(K)]
 
 	# prepare matrix
-	for k1 in xrange(N):
-		for k2 in xrange(N):
+	for k1 in xrange(K):
+		for k2 in xrange(K):
 			for index in asg1[k1]:
 				if index in asg2[k2]:
 					MAT[k1][k2] += 1
@@ -7434,266 +7686,201 @@ def match_clusters_asg(asg1, asg2):
 
 
 # Hierarchical stability between partitions given by k-means
-def k_means_stab_H(PART, nb_part):
+def k_means_stab_H(ALL_PART):
 	from copy import deepcopy
 
-	N = len(PART[0])
+	nb_part = len(ALL_PART)
+	K       = len(ALL_PART[0])
 	tot_gbl = 0
-	for i in xrange(N): tot_gbl += len(PART[0][i])
+	for i in xrange(K): tot_gbl += len(ALL_PART[0][i])
 	
 	for h in xrange(0, nb_part - 1):
 		newPART = []
 		for n in xrange(1, nb_part - h):
-			LIST_stb, tot_n = match_clusters_asg(PART[0], PART[n])
+			LIST_stb, tot_n = match_clusters_asg(ALL_PART[0], ALL_PART[n])
 			newPART.append(LIST_stb)
 
 			nb_stb = 0
-			for i in xrange(N): nb_stb += len(LIST_stb[i])
+			for i in xrange(K): nb_stb += len(LIST_stb[i])
 
-		PART = []
-		PART = deepcopy(newPART)
+		ALL_PART = []
+		ALL_PART = deepcopy(newPART)
 
 	nb_stb = 0
-	for i in xrange(N): nb_stb += len(PART[0][i])
+	for i in xrange(K): nb_stb += len(ALL_PART[0][i])
 	stability = (float(nb_stb) / float(tot_gbl)) * 100
 
-	return stability, PART[0]
+	return stability, ALL_PART[0]
 
-
-# K-means SA define the first temperature T0
-def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0, SA2=False):
-	from utilities 		import model_blank, print_msg
-	from random    		import seed, randint
-	from sys		import exit
-	import time
-	if CTF[0]:
-		from filter	        import filt_ctf, filt_table
-		from fundamentals 	import fftip
-
-		ctf  = deepcopy(CTF[1])
-		ctf2 = deepcopy(CTF[2])
-		CTF  = True
-	else:
-		CTF  = False 
-
-	from math   import exp
-	from random import random
-
-	if mask != None:
-		if isinstance(mask, basestring):
-			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
-
-	N = len(im_M)
-
-	t_start = time.time()
-		
-	# Informations about images
-	if CTF:
-		nx  = im_M[0].get_attr('or_nx')
-		ny  = im_M[0].get_attr('or_ny')
-		nz  = im_M[0].get_attr('or_nz')
-		buf = model_blank(nx, ny, nz)
-		fftip(buf)		
-		nx   = im_M[0].get_xsize()
-		ny   = im_M[0].get_ysize()
-		nz   = im_M[0].get_zsize()
-		norm = nx * ny * nz
-	else:
-		nx   = im_M[0].get_xsize()
-		ny   = im_M[0].get_ysize()
-		nz   = im_M[0].get_zsize()
-		norm = nx * ny * nz
-		buf  = model_blank(nx, ny, nz)
-
-	# Variables			
-	if rand_seed > 0:  seed(rand_seed)
-	else:              seed()
-	Cls        = {}
-	Cls['n']   = [0]*K   # number of objects in a given cluster
-	Cls['ave'] = [0]*K   # value of cluster average
-	Cls['var'] = [0]*K   # value of cluster variance
-	Cls['Ji']  = [0]*K   # value of Ji
-	Cls['k']   =  K	     # value of number of clusters
-	Cls['N']   =  N
-	assign     = [0]*N 
-	
-	if CTF:
-		Cls_ctf2    = {}
-		len_ctm	    = len(ctf2[0])
-			
-	# Init the cluster by an image empty
-	buf.to_zero()
+# Build and export the stable class averages 
+def k_means_stab_export(PART, stack, num_run):
+	from utilities import model_blank
+	K = len(PART)
+	im = EMData()
+	im.read_image(stack, 0, True)
+	nx = im.get_xsize()
+	ny = im.get_ysize()
+	AVE = []
+	imbk = model_blank(nx, ny)
 	for k in xrange(K):
-		Cls['ave'][k] = buf.copy()
-		Cls['var'][k] = buf.copy()
-		Cls['n'][k]   = 0
-		Cls['Ji'][k]  = 0
+		AVE.append(imbk)
+		nobjs = len(PART[k])
+		if nobjs > 0:
+			for ID in PART[k]:
+				im.read_image(stack, int(ID))
+				Util.add_img(AVE[k], im)
+			Util.mul_scalar(AVE[k], 1.0 / float(len(PART[k])))
 
-	## Random method
-	retrial = 20
-	while retrial > 0:
-		retrial -= 1
-		i = 0
-		for im in xrange(N):
-			assign[im] = randint(0, K-1)
-			Cls['n'][assign[im]] += 1
+		AVE[k].set_attr('Class_average', 1.0)
+		AVE[k].set_attr('nobjects', len(PART[k]))
+		AVE[k].set_attr('members', len(PART[k]))
+		AVE[k].write_image('average_stb_run%02d.hdf' % num_run, k)
 
-		flag, k = 1, K
-		while k>0 and flag:
-			k -= 1
-			if Cls['n'][k] == 0:
-				flag = 0
-				if retrial == 0:
-					ERROR('Empty class in the initialization', 'k_means_classical', 1)
-				for k in xrange(K):
-					Cls['n'][k] = 0
+# Init the header for the stack file
+def k_means_stab_init_tag(stack):
+	from utilities import write_header
+	N  = EMUtil.get_image_count(stack)
+	im = EMData()
+	for n in xrange(N):
+		im.read_image(stack, n, True)
+		im.set_attr('stab_active', 1)
+		im.set_attr('stab_part', -2)
+		write_header(stack, im, n)
 
-		if flag == 1:	retrial = 0
-
-	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
-	if CTF:
-		# first init ctf2
-		for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
-
-		for im in xrange(N):
-			# compute ctf2				
-			for i in xrange(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
-
-			# compute average first step
-			CTFxF = filt_table(im_M[im], ctf[im])
-			Util.add_img(Cls['ave'][assign[im]], CTFxF)
-
-		for k in xrange(K):
-			for i in xrange(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-			Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
-
-		# compute Ji and Je
-		for n in xrange(N):
-			CTFxAve               = filt_table(Cls['ave'][assign[n]], ctf[n])
-			Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
-		Je = 0
-		for k in xrange(K):        Je = Cls['Ji'][k]
-
-	else:
-		# compute average
-		for im in xrange(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
-		for k in xrange(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0 / float(Cls['n'][k]))
-
-		# compute Ji and Je
-		Je = 0
-		for n in xrange(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
-		for k in xrange(K):	Je += Cls['Ji'][k]	
-
-	## Clustering		
-	th = int(float(N)*0.8)
-	T0 = -1
-	lT = []
-	Tm = 40
-	for i in xrange(1, 10): lT.append(i/10.)
-	lT.extend(range(1, 5))
-	lT.extend(range(5, Tm, 2))
-	for T in lT:
-		ct_pert = 0
-		for im in xrange(N):
-
-			if CTF:
-				CTFxAVE = []
-				for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
-				res = Util.min_dist(im_M[im], CTFxAVE)
-			else:
-				res = Util.min_dist(im_M[im], Cls['ave'])
-
-			# Simulate annealing
-
-			if SA2:
-				dJe = [0.0] * K
-				ni  = float(Cls['n'][assign[im]])
-				di  = res['dist'][assign[im]]
-
-				for k in xrange(K):
-					if k != assign[im]:
-						nj  = float(Cls['n'][k])
-						dj  = res['dist'][k]
-
-						dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
-
-					else:
-						dJe[k] = 0
-
-				# norm <0 [-1;0], >=0 [0;+1], if just 0 norm to 1
-				nbneg  =  0
-				nbpos  =  0
-				minneg =  0
-				maxpos =  0
-				for k in xrange(K):
-					if dJe[k] < 0.0:
-						nbneg += 1
-						if dJe[k] < minneg: minneg = dJe[k]
-					else:
-						nbpos += 1
-						if dJe[k] > maxpos: maxpos = dJe[k]
-				if nbneg != 0:                   dneg = -1.0 / minneg
-				if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
-				for k in xrange(K):
-					if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
-					else:
-						if maxpos != 0: dJe[k] = dJe[k] * dpos
-						else:           dJe[k] = 1.0
-
-				# q[k]
-				q      = [0.0] * K
-				arg    = [0.0] * K
-				maxarg = 0
-				for k in xrange(K):
-					arg[k] = dJe[k] / T
-					if arg[k] > maxarg: maxarg = arg[k]
-				limarg = 17
-				if maxarg > limarg:
-					sumarg = float(sum(arg))
-					for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
-				else:
-					for k in xrange(K): q[k] = exp(arg[k])
-
-				# p[k]
-				p = [[0.0, 0] for i in xrange(K)]
-				sumq = float(sum(q))
-				for k in xrange(K):
-					p[k][0] = q[k] / sumq
-					p[k][1] = k
-
-				p.sort()
-				c = [0.0] * K
-				c[0] = p[0][0]
-				for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
-
-				pb = random()
-				select = -1
-				for k in xrange(K):
-					if c[k] > pb:
-						select = p[k][1]
-						break
-
-
-				if select != res['pos']:
-					ct_pert    += 1
-					res['pos']  = select
-
-
-			else:
-				if exp( -(1) / float(T) ) > random():
-					res['pos']  = randint(0, K - 1)
-					ct_pert    += 1
-
-		# select the first temperature if > th
-		if ct_pert > th:
-			T0 = T
-			break
-
-	# if not found, set to the max value
-	if T0 == -1: T0 = Tm
+# k-means open and prepare images, only unstable objects (active = 1)
+def k_means_open_unstable(stack, maskname, CTF):
+	from utilities     import get_params2D, getImage
+	from fundamentals  import rot_shift2D, rot_shift3D
 	
-	# return Cls, assign
-	return T0
+	if CTF:
+		from morphology		import ctf_2, ctf_1d
+		from filter		import filt_ctf, filt_table
+		from fundamentals 	import fftip
+		from utilities          import get_arb_params
+
+	# create list of unstable images
+	N   = EMUtil.get_image_count(stack)
+	im  = EMData()
+	lim = [] 
+	for n in xrange(N):
+		im.read_image(stack, n, True)
+		if im.get_attr('stab_active'): lim.append(n)
+
+	N = len(lim)
+
+	im_M = [0] * N
+	im.read_image(stack, 0, True)
+	nx = im.get_xsize()
+	ny = im.get_ysize()
+	nz = im.get_zsize()
+	
+	if CTF:
+		parnames    = ('Pixel_size', 'defocus', 'voltage', 'Cs', 'amp_contrast', 'B_factor',  'ctf_applied')
+		ctf	    = [[] for i in xrange(N)]
+		ctf2        = [[] for i in xrange(N)]
+		ctf_params  = get_arb_params(im, parnames)
+		if ctf_params[6]: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+
+	if maskname != None:
+		if isinstance(maskname, basestring):
+			mask = getImage(maskname)
+	else:
+		mask = None
+
+	ct   = 0
+	for ID in lim:
+		im.read_image(stack, ID)
+		# 3D object
+		if nz > 1:
+			try:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(im)
+			except:	phi, theta, psi, s3x, s3y, s3z, mirror, scale = 0, 0, 0, 0, 0, 0, 0, 0
+			im = rot_shift3D(im, phi, theta, psi, s3x, s3y, s3z)
+			if mirror: im.process_inplace('mirror', {'axis':'x'})
+		# 2D object
+		elif ny > 1:
+			try:	alpha, sx, sy, mirror, scale = get_params2D(im)
+			except: alpha, sx, sy, mirror, scale  = 0, 0, 0, 0, 0
+			im = rot_shift2D(im, alpha, sx, sy, mirror)
+		# obtain ctf
+		if CTF:
+			ctf_params = get_arb_params(im, parnames)
+			ctf[i]  = ctf_1d(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf2[i] = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+
+		# apply mask
+		if mask != None:
+			if CTF: Util.mul_img(im, mask)
+			else: im = Util.compress_image_mask(im, mask)
+
+		# fft
+		if CTF: fftip(im)
+
+		# mem the original size
+		if ct == 0:
+			im.set_attr('or_nx', nx)
+			im.set_attr('or_ny', ny)
+			im.set_attr('or_nz', nz)
+
+		# store image
+		im_M[ct] = im.copy()
+		ct += 1
+
+	if CTF: return im_M, mask, ctf, ctf2,  lim, N
+	else:   return im_M, mask, None, None, lim, N
+
+# Convert local assignment to absolute partition
+def k_means_stab_asg2part(ALL_ASG, LUT):
+	K = max(ALL_ASG[0]) + 1
+	N = len(ALL_ASG[0])
+	ALL_PART = []
+	for ASG in ALL_ASG:
+		PART = [[] for i in xrange(K)]
+		for n in xrange(N): PART[ASG[n]].append(LUT[n])
+		ALL_PART.append(PART)
+
+	return ALL_PART
+
+# Update information to the header of the stack file
+def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
+	from utilities import write_header
+	N  = EMUtil.get_image_count(stack)
+	im = EMData()
+
+	# update active images
+	list_stb = []
+	for part in STB_PART: list_stb.extend(part)
+	for ID in list_stb:
+		im.read_image(stack, ID, True)
+		im.set_attr('stab_active', 0)
+		write_header(stack, im, ID)
+
+	# update partition given by k-means
+	nb_part  = len(ALL_PART)
+	K        = len(ALL_PART[0])
+	ALL_ASG  = []
+	for PART in ALL_PART:
+		ASG = [-1] * N
+		for k in xrange(K):
+			for ID in PART[k]: ASG[ID] = k
+		ALL_ASG.append(ASG)
+
+	# update partition stable
+	STB_ASG = [-1] * N
+	for k in xrange(K):
+		for ID in STB_PART[k]: STB_ASG[ID] = k
+
+	# write head both part k-means and part stable
+	for n in xrange(N):
+		vec = []
+		for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
+		im.read_image(stack, n, True)
+		im.set_attr('stab_run%02d' % num_run, vec)
+		val = im.get_attr('stab_part')
+		if isinstance(val, list): val.append(STB_ASG[n])
+		elif  val == -2: val = [STB_ASG[n]]
+		else: val = [val, STB_ASG[n]]
+		im.set_attr('stab_part', val)
+		write_header(stack, im, n)
 
 # K-means main driver
 def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, SA2 = False, DEBUG = False):
@@ -7701,47 +7888,66 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 	from statistics  import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
 	from statistics  import k_means_classical, k_means_SSE
 	from development import k_means_SA_T0
-	import sys
+	import sys, logging
 
 	# check
 	trials   = 1
 	maxit    = 1000000
 	critname = ''
-	if opt_method != 'SSE' and opt_method != 'cla':
-		ERROR('opt_method %s unknown!' % opt_method, 'k_means_stab', 1)
-		sys.exit()
-	if npart < 2:
-		ERROR('number of partitions must be > 2!', 'k_means_stab', 1)
-		sys.exit()
 
-	# manage file format
-	ext = file_type(stack)
-	if ext == 'bdb': BDB = True
-	else:            BDB = False
+	# create main log
+	f = open('main_log.txt', 'w')
+	f.close()
+	logging.basicConfig(filename = 'main_log.txt', format = '%(asctime)s     %(message)s', level = logging.INFO)
+	logging.info('::: Start k-means stability :::')
 
 	# manage random seed
 	rnd = []
 	for n in xrange(1, npart + 1): rnd.append(n * (10**n))
+	logging.info('Init list random seed: %s' % rnd)
+
+	# init tag to the header for the stack file
+	logging.info('Init header to the stack file')
+	k_means_stab_init_tag(stack)
+
+	# loop over run
+	for num_run in xrange(1, 3):
+		logging.info('RUN %02d -------------' % num_run)
+		# open unstable images
+		logging.info('.. Open images')
+		[im_M, mask, ctf, ctf2, LUT, N] = k_means_open_unstable(stack, maskname, CTF)
+		logging.info('.. %d unstable images found' % N)
+		T0 = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F, SA2)
+		logging.info('.. Select first temperature T0: %4.2f' % T0)
+
+		# loop over partition
+		ALL_ASG = []
+		print_begin_msg('k-means')
+		for n in xrange(npart):
+			logging.info('.... Start partition: %d' % (n + 1))
+			k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, SA2, rnd[n], 1)
+			if   opt_method == 'cla': [Cls, assign] = k_means_classical(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
+			elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
+			ALL_ASG.append(assign)
+		print_end_msg('k-means')
+
+		# convert local assignment to absolute partition
+		logging.info('.. Convert local asign to abs partition')
+		ALL_PART = k_means_stab_asg2part(ALL_ASG, LUT)
+
+		# calculate the stability
+		stb, STB_PART = k_means_stab_H(ALL_PART)
+		logging.info('.. Stability: %5.2f %%' % stb)
+
+		# export the stable class averages
+		logging.info('.. Export stable class averages: average_stb_run%02d.hdf' % num_run)
+		k_means_stab_export(STB_PART, stack, num_run)
+
+		# tag informations to the header
+		logging.info('.. Update info to the header')
+		k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run)
 	
-	N = EMUtil.get_image_count(stack)
-	[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF)
-	T0 = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F, SA2)
-
-	# loop over partition
-	ALL_ASG = []
-	print_begin_msg('k-means')
-	for n in xrange(npart):
-		k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, SA2, rnd[n], 1)
-		if   opt_method == 'cla': [Cls, assign] = k_means_classical(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
-		elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
-		ALL_ASG.append(assign)
-	print_end_msg('k-means')
-
-	# fixme  take partition not assignment
-	#stb, STB_asg = k_means_stab_H(ALL_PART, npart)
-
-	print stb
-
+	logging.info('::: END k-means stability :::')
 
 
 ## END K-MEANS STABILITY ######################################################################
@@ -8703,7 +8909,6 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 	maskI.set_value_at(1, 0, 0)
 	
 	if CTF:
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor", "ctf_applied"]
 		defocus_list = []
 		ctfimg_list = []
 		index_list = []
@@ -8729,7 +8934,7 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 			ima = EMData()
 			ima.read_image(stack, im)
 		if CTF:
-			ctf_params = get_arb_params(ima, parnames)
+			ctf_params = ima.get_attr('ctf')
 		st = Util.infomask(ima, mask, False)
 		ima -= st[0]	
 		ima.divkbsinh(kb)
@@ -8738,13 +8943,13 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 		ima.center_origin_fft()
 		img_data.append(ima)
 		if CTF:
-			if not (ctf_params[1] in defocus_list):
-				defocus_list.append(ctf_params[1])
-				ctfimg = ctf_img(N, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5], ny = N, nz = 1)
+			if not (ctf_params.defocus in defocus_list):
+				defocus_list.append(ctf_params.defocus)
+				ctfimg = ctf_img(N, ctf_params, ny = N, nz = 1)
 				ctfimg_list.append(ctfimg)
 				index_list.append(len(defocus_list)-1)
 			else:
-				index = defocus_list.index(ctf_params[1])
+				index = defocus_list.index(ctf_params.defocus)
 				ctfimg = ctfimg_list[index]
 				index_list.append(index)
 			Util.add_img2(ctfimg2, ctfimg)			
@@ -8889,7 +9094,6 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 	maskI.set_value_at(1, 0, 0)
 	
 	if CTF:
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor"]
 		defocus_list = []
 		ctfimg_list = []
 		index_list = []
@@ -8915,7 +9119,7 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 			ima = EMData()
 			ima.read_image(stack, im)
 		if CTF:
-			ctf_params = get_arb_params(ima, parnames)
+			ctf_params = ima.get_attr('ctf')
 		if (im >= image_start) and (im < image_end):
 			st = Util.infomask(ima, mask, False)
 			ima -= st[0]	
@@ -8925,13 +9129,13 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 			ima.center_origin_fft()
 			img_data.append(ima)
 		if CTF:
-			if not (ctf_params[1] in defocus_list):
-				defocus_list.append(ctf_params[1])
-				ctfimg = ctf_img(N, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5], ny = N, nz = 1)
+			if not (ctf_params.defocus in defocus_list):
+				defocus_list.append(ctf_params.defocus)
+				ctfimg = ctf_img(N, ctf_params, ny = N, nz = 1)
 				ctfimg_list.append(ctfimg)
 				index_list.append(len(defocus_list)-1)
 			else:
-				index = defocus_list.index(ctf_params[1])
+				index = defocus_list.index(ctf_params.defocus)
 				ctfimg = ctfimg_list[index]
 				index_list.append(index)
 			Util.add_img2(ctfimg2, ctfimg)			
@@ -10565,8 +10769,8 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 		mask3D = model_circle(ou, nx, nx, nx)
 	mask2D = model_circle(ou, nx, nx)
 
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-	#                  0                 1            2            3            4                 5                 6
+
+
 	#from utilities import readSpiderDoc, set_arb_params
 	#prm = readSpiderDoc("params_new.doc")
 	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
@@ -10581,13 +10785,13 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 		#set_arb_params(ima, angn, prm_dict)
 		#set_arb_params(ima, prm[im], prm_dict)
 		if(CTF):
-			ctf_params = get_arb_params(data[im], parnames)
-			if(im == image_start): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			ctf_params = data[im].get_attr('ctf')
+			if(im == image_start): data_had_ctf = data[im].get_attr('ctf_applied')
+			if data[im].get_attr('ctf_applied') == 0:
 				st = Util.infomask(data[im], mask2D, False)
 				data[im] -= st[0]
 				from filter import filt_ctf
-				data[im] = filt_ctf(data[im], ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 
 	outf.write("  data read = "+str(image_start)+"   ")
@@ -10756,8 +10960,6 @@ def ali3d_eB_CCC(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	mask2D = model_circle(ou, nx, nx)
 
 	dataim = []
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-	#                  0                 1            2            3            4                 5                 6
 	#from utilities import readSpiderDoc, set_arb_params
 	#prm = readSpiderDoc("params_new.doc")
 	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
@@ -10772,13 +10974,13 @@ def ali3d_eB_CCC(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 		#set_arb_params(ima, angn, prm_dict)
 		#set_arb_params(ima, prm[im], prm_dict)
 		if(CTF):
-			ctf_params = get_arb_params(ima, parnames)
-			if(im == image_start): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			ctf_params = ima.get_attr('ctf')
+			if(im == image_start): data_had_ctf = ima.get_attr('ctf_applied')
+			if ima.get_attr('ctf_applied') == 0:
 				st = Util.infomask(ima, mask2D, False)
 				ima -= st[0]
 				from filter import filt_ctf
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				ima = filt_ctf(ima, ctf_params)
 				ima.set_attr('ctf_applied', 1)
 		dataim.append(ima)
 	outf.write("  data read = "+str(image_start)+"   ")
@@ -10930,8 +11132,6 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 	mask2D = model_circle(ou, nx, nx)
 
 	dataim = []
-	parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-	#                  0                 1            2            3            4                 5                 6
 	#from utilities import readSpiderDoc, set_arb_params
 	#prm = readSpiderDoc("params_new.doc")
 	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
@@ -10946,13 +11146,13 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 		#set_arb_params(ima, angn, prm_dict)
 		#set_arb_params(ima, prm[im], prm_dict)
 		if(CTF):
-			ctf_params = get_arb_params(ima, parnames)
-			if(im == image_start): data_had_ctf = ctf_params[6]
-			if(ctf_params[6] == 0):
+			ctf_params = ima.get_attr('ctf')
+			if(im == image_start): data_had_ctf = ima.get_attr('ctf_applied')
+			if ima.get_attr('ctf_applied') == 0:
 				st = Util.infomask(ima, mask2D, False)
 				ima -= st[0]
 				from filter import filt_ctf
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				ima = filt_ctf(ima, ctf_params)
 				ima.set_attr('ctf_applied', 1)
 		dataim.append(ima)
 	outf.write("  data read = "+str(image_start)+"   ")
@@ -11251,9 +11451,9 @@ def proj_ali_incore_localB(volref, mask3D, projdata, first_ring, last_ring, rste
 		# This is for Berlin only
 		from utilities import get_arb_params
 		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
-		ctf_params = get_arb_params(projdata[imn], ctf_dicts)
+		ctf_params = projdata[imn].get_attr('ctf')
 		from morphology import ctf_2
-		ctf2 = ctf_2(nx, ctf_params[3], ctf_params[0])
+		ctf2 = ctf_2(nx, ctf_params.apix, ctf_params.defocus)
 		nct = len(ctf2)
 		from math import exp
 		envt = []
