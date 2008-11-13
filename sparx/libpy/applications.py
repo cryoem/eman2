@@ -3603,7 +3603,7 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 				volref, kb = prep_vol(vol)
 
 	
-			if runtype=="ASSIGNMENT"	
+			if runtype=="ASSIGNMENT":	
 				for im in xrange(nima):
 					if(CTF):
 						ctf_params = data[im].get_attr( "ctf" )
