@@ -4369,7 +4369,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 
 	from utilities      import amoeba2
-	from development    import prepij, eqprojG3
+	from development    import eqprojG4
 
 	print_begin_msg('ali3d_e')
 
@@ -4458,13 +4458,21 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 	ref_data.append( None )
 	ref_data.append( None )
 
-	data = [None]*8
+	M = nx
+	npad = 2
+	N = M*npad
+	K = 6
+	alpha = 1.75
+	r = M/2
+	v = K/2.0/N
+	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+
+	data = [None]*6
 	data[3] = mask2D
-	jtep = 0
+
 	for iteration in xrange(maxit):
 		print_msg("ITERATION #%3d\n"%(iteration+1))
 		for ic in xrange(n_of_chunks):
-			jtep += 1
 			if not CTF:
 				data[0], data[1] = prep_vol(vol)
 
@@ -4484,37 +4492,36 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 						previous_defocus = ctf_params.defocus
 						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
-				data[2] = dataim[imn]				
+				data[2] = dataim[imn]
+
 				refi = dataim[imn].copy()
-				oo, qq, kb2 = prepij(refi)
-				data[4] = oo
-				data[5] = qq
-				data[6] = kb2
+				refi = refi.FourInterpol(nx*2, nx*2, 0, True)
+				data[4] = Processor.EMFourierFilter(refi, params)
 				
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
 				atparams = [phi, theta, psi]
-				data[7] = [tx, ty]
+				data[5] = [tx, ty]
 				
 				if debug:
-					initial, dummy  = eqprojG3(atparams, data)  # this is if we need initial discrepancy
+					initial, dummy  = eqprojG4(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
-					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[7][0], data[7][1], -initial))
+					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[5][0], data[5][1], initial))
 					outf.write("\n")
 					
 				# change signs of shifts for projections
-				data[7][0] *= -1
-				data[7][1] *= -1
+				data[5][0] *= -1
+				data[5][1] *= -1
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 
-				optm_params = amoeba2(atparams, [weight_phi, delta, weight_phi], eqprojG3, 1.e-4, 1.e-4, 500, data)
+				optm_params = amoeba2(atparams, [weight_phi, delta, weight_phi], eqprojG4, 1.e-4, 1.e-4, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
 				optm_params[0][3] *= -1
 				optm_params[0][4] *= -1
 				
 				if debug:
-					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], -optm_params[1], optm_params[2]))
+					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
 					outf.write("\n")
 					outf.flush()
 
@@ -4566,8 +4573,8 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	from filter         import filt_ctf
 	from projection     import prep_vol
 	from utilities      import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
-	from utilities      import getImage, dropImage, bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, recv_attr_dict
-	from utilities      import get_im
+	from utilities      import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import dropImage
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from reconstruction import rec3D_MPI
 	from math           import pi
@@ -4576,7 +4583,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 
 	from utilities      import amoeba2
-	from development    import prepij, eqprojG3
+	from development    import eqprojG4
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -4691,7 +4698,16 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 		ref_data.append( None )
 		ref_data.append( None )
 		
-	data = [None]*8
+	M = nx
+	npad = 2
+	N = M*npad
+	K = 6
+	alpha = 1.75
+	r = M/2
+	v = K/2.0/N
+	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
+
+	data = [None]*6
 	data[3] = mask2D
 
 	for iteration in xrange(maxit):
@@ -4721,36 +4737,33 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
 				data[2] = dataim[imn-image_start]
-
 				refi = dataim[imn-image_start].copy()
-				oo, qq, kb2 = prepij(refi)
-				data[4] = oo
-				data[5] = qq
-				data[6] = kb2
+				refi = refi.FourInterpol(nx*2, nx*2, 0, True)
+				data[4] = Processor.EMFourierFilter(refi, params)
 
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
 				atparams = [phi, theta, psi]
-				data[7] = [tx, ty]
+				data[5] = [tx, ty]
 
 				if debug:
-					initial, dummy = eqprojG3(atparams, data)  # this is if we need initial discrepancy
+					initial, dummy = eqprojG4(atparams, data)  # this is if we need initial discrepancy
 					outf.write("Image "+str(imn)+"\n")
-					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[7][0], data[7][1], -initial))
+					outf.write('Old  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f'%(atparams[0], atparams[1], atparams[2], data[5][0], data[5][1], initial))
 					outf.write("\n")
 				# change signs of shifts for projections
-				data[7][0] *= -1
-				data[7][1] *= -1
+				data[5][0] *= -1
+				data[5][1] *= -1
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
 
-				optm_params = amoeba2(atparams, [weight_phi, delta, weight_phi], eqprojG3, 1.e-4, 1.e-4, 500, data)
+				optm_params = amoeba2(atparams, [weight_phi, delta, weight_phi], eqprojG4, 1.e-4, 1.e-4, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
 				optm_params[0][3] *= -1
 				optm_params[0][4] *= -1
 
 				if debug:
-					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], -optm_params[1], optm_params[2]))
+					outf.write('New  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %11.4f  %4d'%(optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4], optm_params[1], optm_params[2]))
 					outf.write("\n")
 					outf.flush()
 

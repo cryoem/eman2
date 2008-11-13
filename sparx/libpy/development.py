@@ -1023,410 +1023,36 @@ def ali2d_b2(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 def eqprojGSq(args, data):
 	from projection import prgs
 	from utilities import info
-	#print  " AMOEBA ",args
-	#  data: 0 - volkb,  1 - kb, 2 - image,  3 - mask,
-	#  args: 0 - phi, 1 - theta, 2 - psi, 3 - sx, 4 - sy
+
 	proj = prgs(data[0], data[1], args)
-	#v = -proj.cmp("SqEuclidean", data[2], {"mask":shifted_mask})
-	#        CURRENTLY THE DISTANCE IS cross-correlation coefficient
 	v = -proj.cmp("SqEuclidean", data[2], {"mask":data[3]})
-	#v = proj.cmp("ccc", data[2], {"mask":data[3], "negative":0})
-	#v = proj.cmp("ccc", data[2], {"mask":shifted_mask, "negative":0})
-	#print  " AMOEBA o", args, v
 	return v
 	
 def eqprojGccc(args, data):
 	from projection import prgs
 	from utilities import info
-	#print  " AMOEBA ",args
-	#  data: 0 - volkb,  1 - kb, 2 - image,  3 - mask,
-	#  args: 0 - phi, 1 - theta, 2 - psi, 3 - sx, 4 - sy
+
 	proj = prgs(data[0], data[1], args)
-	#v = -proj.cmp("SqEuclidean", data[2], {"mask":shifted_mask})
-	#        CURRENTLY THE DISTANCE IS cross-correlation coefficient
-	#v = -proj.cmp("SqEuclidean", data[2], {"mask":data[3]})
 	v = proj.cmp("ccc", data[2], {"mask":data[3], "negative":0})
-	#v = proj.cmp("ccc", data[2], {"mask":shifted_mask, "negative":0})
-	#print  " AMOEBA o", args, v
 	return v
 
 
 def eqprojL(args, data):
 	from projection import project
-	#print  " AMOEBA ",args
-	#  data: 0 - vol,  1 - radius, 2 - image,  3 - mask,
-	#  args: 0 - phi, 1 - theta, 2 - psi, 3 - sx, 4 - sy
-	proj = project(data[0], args, data[1] )
+
+	proj = project(data[0], args, data[1])
 	v = -proj.cmp("SqEuclidean", data[2], {"mask":data[3]})
-	#v = proj.cmp("ccc", data[2], {"mask":data[3], "negative":0})
 	return v
 
-def oct_test_L_o():
-	from random import random
-	from time import time
-	from math import sqrt
-	import os
-	from string import replace
-	import sys
-	from projection import prep_vol, prgs
-	from utilities import model_circle, even_angles, model_gauss_noise
-	from fundamentals import fpol
-
-	sys.argv = mpi_init(len(sys.argv),sys.argv)
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	
-	ic = 4
-	filename = "result%4d"%(myid)
-	filename  = replace(filename, " ", "0")
-	outf = open(filename, "w")
-	dirname =  "tempdir%4d"%(myid)
-	dirname = replace(dirname, " ", "0")
-
-	osr = 1.5
-
-	vol = EMData()
-	vol.read_image("R70S_f.spi")
-	volft,kb = prep_vol(vol)
-	nx = vol.get_xsize()
-	ny = vol.get_ysize()
-	nz = vol.get_zsize()
-	if nx!=ny or ny!=nz : 
-		print "Warning: volume is not a cube!"
-		exit()
-	else                : 
-		n = nx
-		del nx,ny,nz
-	
-	mask = model_circle(int(n/2)-4, n, n)
-
-	delta_theta = 10
-	angles=even_angles(delta_theta, 0.0, 90.0, 0.0, 359.9, "S", symmetry='c1', phiEqpsi='Minus')
-	
-	for u in xrange(7):
-		snr= 10**(u/2.0-1)
-		stack = "R70S%4d.hdf"%(myid)
-		stack = replace(stack, " ", "0")
-		os.system('rm -f '+stack)
-
-		real_params = []
-
-		for i in xrange(ic):
-			dphi = 4.0*(random()-0.5)
-			dtheta = 4.0*(random()-0.5)
-			dpsi = 4.0*(random()-0.5)	
-			ds2x = 2.0*(random()-0.5)
-			ds2y = 2.0*(random()-0.5)
-			
-			pp = myid*ic+i
-			
-			phi = angles[pp][0]+dphi
-			theta = angles[pp][1]+dtheta
-			psi = angles[pp][2]+dpsi
-			s2x = -2.0+ds2x
-			s2y = 3.0+ds2y  
-	
-			real_params.append([phi, theta, psi, s2x, s2y])
-	
-			proj = prgs(volft, kb, [phi, theta, psi, s2x, s2y])
-			stat = Util.infomask(proj,mask,1)
-			noise = model_gauss_noise(stat[1]/sqrt(snr),n,n)
-			proj = proj+noise
-			proj = fpol(proj, int(n*osr), int(n*osr))
-			proj.set_attr_dict({'alpha':0.0, 'sx':0.0, 'sy':0.0, 'phi':angles[pp][0], 'theta':angles[pp][1], 'psi':angles[pp][2], 's2x':-2.0*osr, 's2y':3.0*osr, 'mirror':0, 'active':1, 'ctf_applied':0})
-			proj.write_image(stack, i)
-	
-		start_time = time()
-		tt, tt2 = ali3d_e_L(stack, "R70S_fx15.spi", dirname, maskfile=None, radius=-1, dtheta=2, max_it=1, symmetry="c1", CTF=False)
-		end_time = time()
-
-		# Calculating Error
-		error = 0.0
-		error2 = 0.0
-		ang_error = 0.0
-		ang_error2 = 0.0
-		shift_error = 0.0
-		shift_error2 = 0.0
-
-		for im in xrange(ic):
-			ima = EMData()
-			ima.read_image(stack, im)
-			phi = ima.get_attr("phi")
-			theta = ima.get_attr("theta")
-			psi = ima.get_attr("psi")
-			s2x = ima.get_attr("s2x")
-			s2y = ima.get_attr("s2y")
-			mirror = ima.get_attr("mirror")
-			
-			this_err = max_3D_pixel_error3(phi, theta, psi, s2x/osr, s2y/osr, real_params[im][0], real_params[im][1], real_params[im][2], real_params[im][3], real_params[im][4], n/2)
-			this_ang_err = max_3D_pixel_error3(phi, theta, psi, real_params[im][3], real_params[im][4], real_params[im][0], real_params[im][1], real_params[im][2], real_params[im][3], real_params[im][4], n/2)
-			this_shift_err = sqrt((s2x/osr-real_params[im][3])**2+(s2y/osr-real_params[im][4])**2)
-			#print phi, theta, psi, s2x/osr, s2y/osr, real_params[im][0], real_params[im][1], real_params[im][2], real_params[im][3], real_params[im][4]
-			#print "Projection", im+1, "  error =", this_err, "  ang_error =", this_ang_err, "  shift_error =", this_shift_err
-			error = error+this_err  
-			error2 = error2+this_err**2	
-			ang_error = ang_error+this_ang_err	
-			ang_error2 = ang_error2+this_ang_err**2 
-			shift_error = shift_error+this_shift_err	
-			shift_error2 = shift_error2+this_shift_err**2	
-	
-		datstrings = []
-		datstrings.append("%15f %15f %15f %15f %15f %15f %15f %15f\n" %(error,error2,ang_error,ang_error2,shift_error,shift_error2,tt,tt2))  
-		outf.write("".join(datstrings)) 
-	outf.close()
-
-def oct_test_L():
-	from random import random
-	from time import time
-	from math import sqrt
-	import os
-	from string import replace
-	import sys
-	from projection import prep_vol, prgs
-	from utilities import model_circle, even_angles, model_gauss_noise
-	from fundamentals import fpol
-
-	sys.argv = mpi_init(len(sys.argv),sys.argv)
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	
-	ic = 4
-	filename = "result%4d"%(myid)
-	filename  = replace(filename, " ", "0")
-	outf = open(filename, "w")
-	dirname =  "tempdir%4d"%(myid)
-	dirname = replace(dirname, " ", "0")
-
-	vol = EMData()
-	vol.read_image("R70S_f.spi")
-	volft,kb = prep_vol(vol)
-	nx = vol.get_xsize()
-	ny = vol.get_ysize()
-	nz = vol.get_zsize()
-	if nx!=ny or ny!=nz : 
-		print "Warning: volume is not a cube!"
-		exit()
-	else                : 
-		n = nx
-		del nx,ny,nz
-	
-	mask = model_circle(int(n/2)-4, n, n)
-
-	delta_theta = 10
-	angles=even_angles(delta_theta, 0.0, 90.0, 0.0, 359.9, "S", symmetry='c1', phiEqpsi='Minus')
-	
-	for u in xrange(7):
-		snr= 10**(u/2.0-1)
-		stack = "R70S%4d.hdf"%(myid)
-		stack = replace(stack, " ", "0")
-		os.system('rm -f '+stack)
-
-		real_params = []
-
-		for i in xrange(ic):
-			dphi = 4.0*(random()-0.5)
-			dtheta = 4.0*(random()-0.5)
-			dpsi = 4.0*(random()-0.5)	
-			ds2x = 2.0*(random()-0.5)
-			ds2y = 2.0*(random()-0.5)
-			
-			pp = myid*ic+i
-			
-			phi = angles[pp][0]+dphi
-			theta = angles[pp][1]+dtheta
-			psi = angles[pp][2]+dpsi
-			s2x = -2.0+ds2x
-			s2y = 3.0+ds2y  
-	
-			real_params.append([phi, theta, psi, s2x, s2y])
-	
-			proj = prgs(volft, kb, [phi, theta, psi, s2x, s2y])
-			stat = Util.infomask(proj,mask,1)
-			noise = model_gauss_noise(stat[1]/sqrt(snr),n,n)
-			proj = proj+noise
-			proj.set_attr_dict({'alpha':0.0, 'sx':0.0, 'sy':0.0, 'phi':angles[pp][0], 'theta':angles[pp][1], 'psi':angles[pp][2], 's2x':-2.0, 's2y':3.0, 'mirror':0, 'active':1, 'ctf_applied':0})
-			proj.write_image(stack, i)
-	
-		start_time = time()
-		tt, tt2 = ali3d_e_L(stack, "R70S_f.spi", dirname, maskfile=None, radius=-1, dtheta=2, max_it=1, symmetry="c1", CTF=False)
-		end_time = time()
-
-		# Calculating Error
-		error = 0.0
-		error2 = 0.0
-		ang_error = 0.0
-		ang_error2 = 0.0
-		shift_error = 0.0
-		shift_error2 = 0.0
-
-		for im in xrange(ic):
-			ima = EMData()
-			ima.read_image(stack, im)
-			phi = ima.get_attr("phi")
-			theta = ima.get_attr("theta")
-			psi = ima.get_attr("psi")
-			s2x = ima.get_attr("s2x")
-			s2y = ima.get_attr("s2y")
-			mirror = ima.get_attr("mirror")
-			
-			this_err = max_3D_pixel_error3(phi, theta, psi, s2x, s2y, real_params[im][0], real_params[im][1], real_params[im][2], real_params[im][3], real_params[im][4], n/2)
-			this_ang_err = max_3D_pixel_error3(phi, theta, psi, real_params[im][3], real_params[im][4], real_params[im][0], real_params[im][1], real_params[im][2], real_params[im][3], real_params[im][4], n/2)
-			this_shift_err = sqrt((s2x-real_params[im][3])**2+(s2y-real_params[im][4])**2)
-			#print phi, theta, psi, s2x/osr, s2y/osr, real_params[im][0], real_params[im][1], real_params[im][2], real_params[im][3], real_params[im][4]
-			#print "Projection", im+1, "  error =", this_err, "  ang_error =", this_ang_err, "  shift_error =", this_shift_err
-			error = error+this_err  
-			error2 = error2+this_err**2	
-			ang_error = ang_error+this_ang_err	
-			ang_error2 = ang_error2+this_ang_err**2 
-			shift_error = shift_error+this_shift_err	
-			shift_error2 = shift_error2+this_shift_err**2	
-	
-		datstrings = []
-		datstrings.append("%15f %15f %15f %15f %15f %15f %15f %15f\n" %(error,error2,ang_error,ang_error2,shift_error,shift_error2,tt,tt2))  
-		outf.write("".join(datstrings)) 
-	outf.close()
-
-def oct_test_G():
-	from random import random
-	from time import time
-	from math import sqrt
-	import os
-	from string import replace
-	import sys
-	from projection import prep_vol, prgs
-	from utilities import model_circle, even_angles, model_gauss_noise
-	from fundamentals import fpol
-
-	sys.argv = mpi_init(len(sys.argv),sys.argv)
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	
-	option = 1
-	ic = 4
-	filename = "result%4d"%(myid)
-	filename  = replace(filename, " ", "0")
-	outf = open(filename, "w")
-	dirname =  "tempdir%4d"%(myid)
-	dirname = replace(dirname, " ", "0")
-
-	vol = EMData()
-	vol.read_image("R70S_f.spi")
-	volft,kb = prep_vol(vol)
-	nx = vol.get_xsize()
-	ny = vol.get_ysize()
-	nz = vol.get_zsize()
-	if nx!=ny or ny!=nz : 
-		print "Warning: volume is not a cube!"
-		exit()
-	else                : 
-		n = nx
-		del nx,ny,nz
-	
-	mask = model_circle(int(n/2)-4, n, n)
-
-	delta_theta = 10
-	angles=even_angles(delta_theta, 0.0, 90.0, 0.0, 359.9, "S", symmetry='c1', phiEqpsi='Minus')
-	
-	for u in xrange(7):
-		snr= 10**(u/2.0-1)
-		stack = "R70S%4d.hdf"%(myid)
-		stack = replace(stack, " ", "0")
-		os.system('rm -f '+stack)
-
-		real_params = []
-
-		for i in xrange(ic):
-			dphi = 4.0*(random()-0.5)
-			dtheta = 4.0*(random()-0.5)
-			dpsi = 4.0*(random()-0.5)	
-			ds2x = 2.0*(random()-0.5)
-			ds2y = 2.0*(random()-0.5)
-			
-			pp = myid*ic+i
-			
-			phi = angles[pp][0]+dphi
-			theta = angles[pp][1]+dtheta
-			psi = angles[pp][2]+dpsi
-			s2x = -2.0+ds2x
-			s2y = 3.0+ds2y  
-	
-			real_params.append([phi, theta, psi, s2x, s2y])
-	
-			proj = prgs(volft, kb, [phi, theta, psi, s2x, s2y])
-			stat = Util.infomask(proj,mask,1)
-			noise = model_gauss_noise(stat[1]/sqrt(snr),n,n)
-			proj = proj+noise
-			proj.set_attr_dict({'alpha':0.0, 'sx':0.0, 'sy':0.0, 'phi':angles[pp][0], 'theta':angles[pp][1], 'psi':angles[pp][2], 's2x':-2.0, 's2y':3.0, 'mirror':0, 'active':1, 'ctf_applied':0})
-			proj.write_image(stack, i)
-	
-		start_time = time()
-		if option==1:
-			tt, tt2 = ali3d_e_G(stack, "R70S_f.spi", "tempdirG6", maskfile=None, radius=-1, dtheta=2, max_it=1, symmetry="c1", CTF=False, Way="SqEuclidean")
-		elif option==2:
-			tt, tt2 = ali3d_e_G(stack, "R70S_f.spi", "tempdirG7", maskfile=None, radius=-1, dtheta=2, max_it=1, symmetry="c1", CTF=False, Way="ccc")
-		elif option==3:
-			tt, tt2 = ali3d_e_G2(stack, "R70S_f.spi", "tempdirG8", maskfile=None, radius=-1, dtheta=2, max_it=1, symmetry="c1", CTF=False)
-		elif option==4:
-			tt, tt2 = ali3d_e_G3(stack, "R70S_f.spi", "tempdirG9", maskfile=None, radius=-1, dtheta=2, max_it=1, symmetry="c1", CTF=False)
-		elif option==5:
-			tt, tt2 = ali3d_e_G4(stack, "R70S_f.spi", "tempdirG10", maskfile=None, radius=-1, dtheta=2, max_it=1, symmetry="c1", CTF=False)
-		else:
-			print "Unknown option!"	
-		end_time = time()
-
-		# Calculating Error
-		error = 0.0
-		error2 = 0.0
-		ang_error = 0.0
-		ang_error2 = 0.0
-		shift_error = 0.0
-		shift_error2 = 0.0
-
-		for im in xrange(ic):
-			ima = EMData()
-			ima.read_image(stack, im)
-			phi = ima.get_attr("phi")
-			theta = ima.get_attr("theta")
-			psi = ima.get_attr("psi")
-			s2x = ima.get_attr("s2x")
-			s2y = ima.get_attr("s2y")
-			mirror = ima.get_attr("mirror")
-			
-			this_err = max_3D_pixel_error3(phi, theta, psi, s2x, s2y, real_params[im][0], real_params[im][1], real_params[im][2], real_params[im][3], real_params[im][4], n/2)
-			this_ang_err = max_3D_pixel_error3(phi, theta, psi, real_params[im][3], real_params[im][4], real_params[im][0], real_params[im][1], real_params[im][2], real_params[im][3], real_params[im][4], n/2)
-			this_shift_err = sqrt((s2x-real_params[im][3])**2+(s2y-real_params[im][4])**2)
-			#print phi, theta, psi, s2x/osr, s2y/osr, real_params[im][0], real_params[im][1], real_params[im][2], real_params[im][3], real_params[im][4]
-			#print "Projection", im+1, "  error =", this_err, "  ang_error =", this_ang_err, "  shift_error =", this_shift_err
-			error = error+this_err  
-			error2 = error2+this_err**2	
-			ang_error = ang_error+this_ang_err	
-			ang_error2 = ang_error2+this_ang_err**2 
-			shift_error = shift_error+this_shift_err	
-			shift_error2 = shift_error2+this_shift_err**2	
-	
-		datstrings = []
-		datstrings.append("%15f %15f %15f %15f %15f %15f %15f %15f\n" %(error,error2,ang_error,ang_error2,shift_error,shift_error2,tt,tt2))  
-		outf.write("".join(datstrings)) 
-	outf.close()
-
-
-def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False, Way="SqEuclidean"):
+def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF=False, crit="SqEuclidean"):
 	"""
 	An experimental version of ali3d_e, comparing SqEuclidean (or ccc) in the real space		
 	"""
-	from alignment	import eqproj, Numrinit, ringwe, Applyws
-	from filter     import filt_ctf, filt_params, filt_table, filt_from_fsc
-	from fundamentals   import fshift, fft
+	from filter     import filt_ctf
 	from projection import prep_vol
-	from utilities  import amoeba, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
-	from utilities  import dropImage, amoeba2
-	from math       import pi, sin, sqrt
-	from string     import replace
-	from reconstruction import recons3d_4nn, recons3d_4nn_ctf
-	from statistics import fsc
+	from utilities  import amoeba, model_circle, get_params_proj, set_params_proj
+	from math       import pi
 	import os 
-	import sys
-	from sys import exit
 	from time import time
 
 	nima = EMUtil.get_image_count(stack)
@@ -1441,7 +1067,7 @@ def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 	
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D=getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
 		else: mask3D = maskfile
 	else:
 		mask3D = model_circle(radius, nx, nx, nx)
@@ -1451,61 +1077,55 @@ def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		if(CTF):
+		if CTF:
 			ctf_params = get_arb_params(ima, parnames)
-			if(ctf_params[6] == 0):
+			if ctf_params[6] == 0:
 				from filter import filt_ctf
-				if(im==0): print  " APPLYING CTF"
+				if im==0: print  " APPLYING CTF"
 				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
-				set_arb_params(ima, ctf_params, parnames)  #I am not sure whether this is needed
 		dataim.append(ima)
 	
-	par_str=["phi", "theta", "psi", "s2x", "s2y"]
+	data = [None]*4
+	data[3] = mask2D
+
 	total_time = 0.0
 	total_time2 = 0.0
 	for iteration in xrange(max_it):
 		Util.mul_img(vol, mask3D)
-		volft,kb  = prep_vol(vol)
-		data = [0]*4
+		volft, kb  = prep_vol(vol)
 		data[0] = volft
 		data[1] = kb
-		data[3] = mask2D
-		#step = 0
+
 		for imn in xrange(nima):
 			begin_time = time()
-			#print "Projection", imn
 		
 			data[2] = dataim[imn]
-			atparams = get_arb_params(dataim[imn], par_str)
+			phi, theta, psi, s2x, s2y = get_params_proj(dataim[imn])
+			atparams = [phi, theta, psi, s2x, s2y]
 			#  change signs of shifts for projections
-			#atparams[3] *= -1
-			#atparams[4] *= -1
+			atparams[3] *= -1
+			atparams[4] *= -1
 			weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))
 			
 			# For downhill simplex method			
-			if Way=="SqEuclidean":
+			if crit == "SqEuclidean":
 				optm_params =  amoeba(atparams, [weight_phi,dtheta,weight_phi,1.0,1.0], eqprojGSq, 1.e-5,1.e-5,500,data)
-			elif Way=="ccc":
+			elif crit == "ccc":
 				optm_params =  amoeba(atparams, [weight_phi,dtheta,weight_phi,1.0,1.0], eqprojGccc, 1.e-5,1.e-5,500,data)
 			else: 
-				print "Wrong Way!"
-			optm_params[0].append(imn)
-			set_arb_params(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4]], par_str)
-			
+				print "Unknown criterion!"
 			# For LBFGSB method
 			#optm_params = Util.twoD_to_3D_ali(volft,kb,dataim[imn],mask2D,atparams[0],atparams[1],atparams[2],atparams[3],atparams[4])
-			#set_arb_params(dataim[imn], [optm_params[0], optm_params[1], optm_params[2], optm_params[3], optm_params[4]], par_str)
+			#set_params_proj(dataim[imn], [optm_params[0], optm_params[1], optm_params[2], optm_params[3], optm_params[4]])
+
+			optm_params[0][3] *= -1
+			optm_params[0][4] *= -1
+
+			set_params_proj(dataim[imn], optm_params[0])
 			
-			#optm_params[0][3] *= -1
-			#optm_params[0][4] *= -1
-			#print "Projection", imn, "  ", optm_params[2], "steps"
-			#step += optm_params[2]
 			end_time = time()
 			total_time += (end_time-begin_time)
 			total_time2 += (end_time-begin_time)**2
-		#print "Average step = ", step/float(nima)
-		
-			
 		for im in xrange(nima):
 			dataim[im].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	return total_time, total_time2
@@ -1513,28 +1133,15 @@ def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 def eqprojG2(args, data):
 	from fundamentals import fft
 	from sys import exit
-	#print  " AMOEBA ",args
-	#  data: 0 - volkb,  1 - kb, 2 - image,  3 - mask,
-	#  args: 0 - phi, 1 - theta, 2 - psi, 3 - sx, 4 - sy
 	
-	# proj = prgs(data[0], data[1], args)
-	volft = data[0]
-	kb = data[1]
-	params = args
-	
-	# This part is copied from prgs
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
-	psi = params[2]
-	theta = params[1]
-	phi = params[0]
-	R= Transform3D(EULER_SPIDER,phi,theta,psi)
-	temp = volft.extractplane(R,kb)
+	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	temp = data[0].extract_plane(R, data[1])
 	temp.fft_shuffle()
 	temp.center_origin_fft()
 
-	if(params[3]!=0. or params[4]!=0.):
-		params = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
-		temp=Processor.EMFourierFilter(temp, params)
+	if args[3]!=0.0 or args[4]!=0.0:
+		params = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":args[3], "y_shift":args[4], "z_shift":0.0}
+		temp = Processor.EMFourierFilter(temp, params)
 	
 	v = -temp.cmp("SqEuclidean", data[4])
 	return v
@@ -1544,26 +1151,18 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	"""
 	An experimental version of ali3d_e, comparing SqEuclidean in the Fourier space		
 	"""
-	from alignment	import eqproj, Numrinit, ringwe, Applyws
-	from filter     import filt_ctf, filt_params, filt_table, filt_from_fsc
-	from fundamentals   import fshift, fft
+	from filter     import filt_ctf
 	from projection import prep_vol
-	from utilities  import amoeba, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
-	from utilities  import dropImage, amoeba2
-	from math       import pi,sin
-	from string     import replace
-	from reconstruction import recons3d_4nn, recons3d_4nn_ctf
-	from statistics import fsc
+	from utilities  import amoeba, model_circle, get_params_proj, set_params_proj
+	from math       import pi
 	import os 
-	import sys
-	from sys import exit
 	from time import time
 
 	nima = EMUtil.get_image_count(stack)
 
 	vol = EMData()
 	vol.read_image(ref_vol)
-	nx  = vol.get_xsize()
+	nx = vol.get_xsize()
 	if radius <= 0:  radius = nx//2-1
 	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 	os.mkdir(outdir)
@@ -1571,7 +1170,7 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D=getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
 		else: mask3D = maskfile
 	else:
 		mask3D = model_circle(radius, nx, nx, nx)
@@ -1581,58 +1180,52 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		if(CTF):
+		if CTF:
 			ctf_params = get_arb_params(ima, parnames)
-			if(ctf_params[6] == 0):
+			if ctf_params[6] == 0:
 				from filter import filt_ctf
-				if(im==0): print  " APPLYING CTF"
+				if im == 0: print  " APPLYING CTF"
 				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
-				set_arb_params(ima, ctf_params, parnames)  #I am not sure whether this is needed
 		dataim.append(ima)
+
+	data = [None]*5
+	data[3] = mask2D
 	
-	par_str=["phi", "theta", "psi", "s2x", "s2y"]
 	total_time = 0.0
 	total_time2 = 0.0
 	for iteration in xrange(max_it):
 		Util.mul_img(vol, mask3D)
-		volft,kb  = prep_vol(vol)
-		data = [0]*5
+		volft, kb  = prep_vol(vol)
 		data[0] = volft
 		data[1] = kb
-		data[3] = mask2D
-		#new_params = []
-		#step = 0
 		for imn in xrange(nima):
 			begin_time = time()
-			#print "Projection", imn
 	
 			data[2] = dataim[imn].copy()
 			refi = dataim[imn].norm_pad(False, 2)
 			refi.do_fft_inplace()
 			data[4] = refi.copy()
 			
-			atparams = get_arb_params(dataim[imn], par_str)
+			phi, theta, psi, sx, sy = get_params_proj(dataim[imn])
+			atparams = [phi, theta, psi, sx, sy]
 			#  change signs of shifts for projections
-			#atparams[3] *= -1
-			#atparams[4] *= -1
+			atparams[3] *= -1
+			atparams[4] *= -1
 			weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))			
 			
 			# For downhill simplex method 
-			optm_params =  amoeba(atparams, [weight_phi,dtheta,weight_phi,1.0,1.0], eqprojG2, 1.e-5,1.e-5,500,data)
-			optm_params[0].append(imn)
-			#optm_params[0][3] *= -1
-			#optm_params[0][4] *= -1
-			set_arb_params(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[0][3], optm_params[0][4]], par_str)
+			optm_params = amoeba(atparams, [weight_phi, dtheta, weight_phi, 1.0, 1.0], eqprojG2, 1.e-5, 1.e-5, 500, data)
+			optm_params[0][3] *= -1
+			optm_params[0][4] *= -1
+			set_params_proj(dataim[imn], optm_params[0])
 			
 			# For LBFGSB method
 			# optm_params = Util.twoD_to_3D_ali(volft,kb,dataim[imn],mask2D,atparams[0],atparams[1],atparams[2],atparams[3],atparams[4])
-			# set_arb_params(dataim[imn], [optm_params[0], optm_params[1], optm_params[2], optm_params[3], optm_params[4]], par_str)
-			#step += optm_params[2]
-			#print "Projection", imn, "  ", optm_params[2], "steps"
+			# set_params_proj(dataim[imn], [optm_params[0], optm_params[1], optm_params[2], optm_params[3], optm_params[4]], par_str)
 			end_time = time()
 			total_time += (end_time-begin_time)
 			total_time2 += (end_time-begin_time)**2
-		#print "Average step = ", step/float(nima)
+
 		for im in xrange(nima):
 			dataim[im].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	return total_time, total_time2
@@ -1644,20 +1237,7 @@ def eqprojG3(args, data):
 	from utilities import amoeba
 	from fundamentals import ccf
 	from development import twoD_fine_search
-	#from sys import exit
-	#print  " AMOEBA ",args
-	#  data: 0 - volkb,  1 - kb, 2 - image,  3 - mask,
-	#  args: 0 - phi, 1 - theta, 2 - psi, 3 - sx, 4 - sy
 	
-	# proj = prgs(data[0], data[1], args)
-	#volft = data[0]
-	#kb = data[1]
-	#kb2 = data[6]
-	#params = args
-	
-	# This part is copied from prgs
-	#EULER_SPIDER = Transform3D.EulerType.SPIDER
-	#R    = Transform3D(EULER_SPIDER, args[0], args[1], args[2])
 	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
 	temp = data[0].extract_plane(R, data[1])
 	M    = temp.get_ysize()	
@@ -1674,26 +1254,22 @@ def eqprojG3(args, data):
 	sy = (nx-data[7][1]*2)/2.0
 
 	data2 = []
-	data2.append( ccf(temp, data[5]) )
+	data2.append(ccf(temp, data[5]))
 	data2.append(data[6])
 	#  search for shift
-	ps = amoeba( [sx,sy], [0.05,0.05], twoD_fine_search, 1.e-5,1.e-5, 500, data2)
+	ps = amoeba([sx, sy], [0.05, 0.05], twoD_fine_search, 1.e-5, 1.e-5, 500, data2)
 	
 	s2x = (nx-ps[0][0]*2)/2
 	s2y = (nx-ps[0][1]*2)/2
 	
-	params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : s2x*2, "y_shift" : s2y*2, "z_shift" : 0.0}
+	params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x*2, "y_shift":s2y*2, "z_shift":0.0}
 	temp2 = Processor.EMFourierFilter(temp, params2)
 	v = -temp2.cmp("SqEuclidean", data[4])
-	
-	#J = -temp.cmp("dot",temp)
-	#v2 = ps[1]*2/256.0/256.0-(J+data[6])
-	#print J, data[6], ps[1]*2/256.0/256.0, v, v2
 	
 	return v, [s2x, s2y]
 
 def prepij(image):
-	M=image.get_ysize()
+	M = image.get_ysize()
 	npad = 2
 	N = M*npad
 	K = 6
@@ -1705,31 +1281,24 @@ def prepij(image):
 	o = image.FourInterpol(2*M, 2*M, 1, 0)
 	q = Processor.EMFourierFilter(o, params)
 	return  o, q, kb
-	
+
+
 def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False):
 	"""
 	An experimental version of ali3d_e, using ccf in the Fourier space		
 	"""
-	from alignment	import eqproj, Numrinit, ringwe, Applyws
-	from filter     import filt_ctf, filt_params, filt_table, filt_from_fsc
-	from fundamentals   import fshift, fft
+	from filter     import filt_ctf
 	from projection import prep_vol
-	from utilities  import amoeba, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
-	from utilities  import dropImage, amoeba2, model_blank, info, pad
-	from math       import pi,sin
-	from string     import replace
-	from reconstruction import recons3d_4nn, recons3d_4nn_ctf
-	from statistics import fsc
+	from utilities  import amoeba2, model_circle, get_params_proj, set_params_proj
+	from math       import pi
 	import os 
-	import sys
-	from sys import exit
 	from time import time
 
 	nima = EMUtil.get_image_count(stack)
 
 	vol = EMData()
 	vol.read_image(ref_vol)
-	nx  = vol.get_xsize()
+	nx = vol.get_xsize()
 	if radius <= 0:  radius = nx//2-1
 	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 	os.mkdir(outdir)
@@ -1737,7 +1306,7 @@ def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D=getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
 		else: mask3D = maskfile
 	else:
 		mask3D = model_circle(radius, nx, nx, nx)
@@ -1747,73 +1316,47 @@ def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		if(CTF):
+		if CTF:
 			ctf_params = get_arb_params(ima, parnames)
-			if(ctf_params[6] == 0):
+			if ctf_params[6] == 0:
 				from filter import filt_ctf
-				if(im==0): print  " APPLYING CTF"
+				if im == 0: print  " APPLYING CTF"
 				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
-				set_arb_params(ima, ctf_params, parnames)  #I am not sure whether this is needed
 		dataim.append(ima)
 	
-	par_str=["phi", "theta", "psi", "s2x", "s2y"]
+	data = [None]*8
+	data[3] = mask2D
+
 	total_time = 0.0
 	total_time2 = 0.0
 	for iteration in xrange(max_it):
 		Util.mul_img(vol, mask3D)
-		volft,kb  = prep_vol(vol)
-		data = [0]*8
+		volft, kb  = prep_vol(vol)
 		data[0] = volft
 		data[1] = kb
-		data[3] = mask2D
-		#new_params = []
-		#step = 0 
+
 		for imn in xrange(nima):
 			begin_time = time()
-			#print "Projection", imn
 	
-			data[2] = dataim[imn].copy()
-			
+			data[2] = dataim[imn]
 			refi = dataim[imn].copy()
-			#refi2 = pad(refi,nx*2,nx*2)
 			oo, qq, kb2 = prepij(refi)
 			data[4] = oo
 			data[5] = qq
 			data[6] = kb2 
 			
-			#refi.divkbsinh(kb)
-			#refi = refi.FourInterpol(M*2, M*2, 1, 0)
-			#refi = Processor.EMFourierFilter(refi, params)
-			#refi = refi.pad_fft(2)
-			#refi.center_padded()
-			#refi.do_fft_inplace()
-			#data[4] = refi.copy()
-			
-			#refi = dataim[imn].copy()
-			#refi = refi.pad_fft(2)
-			#refi.center_padded()
-			#refi.do_fft_inplace()
-			#data[6] = refi.copy()
-			
-			#data[4] = data[2].FourInterpol(nx*2, nx*2, 1, 0)
-			#F = -data[4].cmp("dot",data[4])
-			
-			atparams = get_arb_params(dataim[imn], par_str)
-			data[7] = [atparams[3], atparams[4]]
-			#data[6] = F
-			del atparams[3]
-			del atparams[3]
+			phi, theta, psi, sx, sy = get_params_proj(dataim[imn])
+			atparams = [phi, theta, psi]
+			data[7] = [-sx, -sy]
 			weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))			
 			
 			# For downhill simplex method 
-			optm_params =  amoeba2(atparams, [weight_phi,dtheta,weight_phi], eqprojG3, 1.e-5,1.e-5,500,data)
-			set_arb_params(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[3][0], optm_params[3][1]], par_str)
-			#step += optm_params[2]
-			#print "Projection", imn, "  ", optm_params[2], "steps"
+			optm_params = amoeba2(atparams, [weight_phi, dtheta, weight_phi], eqprojG3, 1.e-5, 1.e-5, 500, data)
+			set_params_proj(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], -optm_params[3][0], -optm_params[3][1]])
+			
 			end_time = time()
 			total_time += (end_time-begin_time)
 			total_time2 += (end_time-begin_time)**2
-		#print "Average step = ", step/float(nima)
 		for im in xrange(nima):
 			dataim[im].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	return total_time, total_time2
@@ -1838,25 +1381,11 @@ def ali_G3(data, atparams, delta):
 	return optm_params
 
 def eqprojG4(args, data):
-	from utilities import peak_search, amoeba, dropImage, info
+	from utilities import peak_search, amoeba
 	from fundamentals import fft, ccf, fpol
-	from sys import exit
-	#print  " AMOEBA ",args
-	#  data: 0 - volkb,  1 - kb, 2 - image,  3 - mask,
-	#  args: 0 - phi, 1 - theta, 2 - psi, 3 - sx, 4 - sy
-	
-	# proj = prgs(data[0], data[1], args)
-	volft = data[0]
-	kb = data[1]
-	params = args
-	
-	# This part is copied from prgs
-	EULER_SPIDER = Transform3D.EulerType.SPIDER
-	psi = params[2]
-	theta = params[1]
-	phi = params[0]
-	R= Transform3D(EULER_SPIDER,phi,theta,psi)
-	temp = volft.extractplane(R,kb)
+
+	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
+	temp = data[0].extract_plane(R, data[1])
 	temp.fft_shuffle()
 	temp.center_origin_fft()
 	temp.do_ift_inplace()
@@ -1870,27 +1399,17 @@ def eqprojG4(args, data):
 	aaa = fpol(temp, 2*M, 2*M)
 	product = ccf(aaa, data[4])
 
-	"""
-	npad = 2
-	N = M*npad
-	K = 6
-	alpha = 1.75
-	r = M/2
-	v = K/2.0/N
-	#kb = Util.KaiserBessel(alpha, K, r, v, N)
-	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
-	q = Processor.EMFourierFilter(product, params)	
-	"""
 	data2 = [0]*2
 	data2[0] = product
-	data2[1] = kb
-	ps = amoeba([sx,sy],[1.0,1.0],twoD_fine_search,1.e-5,1.e-5,500,data2)
+	data2[1] = data[1]
+	ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-5, 1.e-5, 500, data2)
 	
 	s2x = nx/2-ps[0][0]
 	s2y = nx/2-ps[0][1]
-	params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : s2x, "y_shift" : s2y, "z_shift" : 0.0}
+	params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x, "y_shift":s2y, "z_shift":0.0}
 	temp2 = Processor.EMFourierFilter(temp, params2)
-	v = -temp2.cmp("SqEuclidean", data[2])
+	#v = -temp2.cmp("SqEuclidean", data[2], {"mask":data[3]})
+	v = temp2.cmp("ccc", data[2], {"mask":data[3], "negative":0})
 	
 	return v, [s2x, s2y]
 
@@ -1899,26 +1418,18 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	"""
 	An experimental version of ali3d_e, using ccf in the real space		
 	"""
-	from alignment	import eqproj, Numrinit, ringwe, Applyws
-	from filter     import filt_ctf, filt_params, filt_table, filt_from_fsc
-	from fundamentals   import fshift, fft
+	from filter     import filt_ctf
 	from projection import prep_vol
-	from utilities  import amoeba, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
-	from utilities  import dropImage, amoeba2, model_blank, info
-	from math       import pi,sin
-	from string     import replace
-	from reconstruction import recons3d_4nn, recons3d_4nn_ctf
-	from statistics import fsc
+	from utilities  import amoeba2, model_circle, get_params_proj, set_params_proj
+	from math       import pi
 	import os 
-	import sys
-	from sys import exit
 	from time import time
 
 	nima = EMUtil.get_image_count(stack)
 
 	vol = EMData()
 	vol.read_image(ref_vol)
-	nx  = vol.get_xsize()
+	nx = vol.get_xsize()
 	if radius <= 0:  radius = nx//2-1
 	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 	os.mkdir(outdir)
@@ -1926,7 +1437,7 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D=getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
 		else: mask3D = maskfile
 	else:
 		mask3D = model_circle(radius, nx, nx, nx)
@@ -1936,13 +1447,12 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	for im in xrange(nima):
 		ima = EMData()
 		ima.read_image(stack, im)
-		if(CTF):
+		if CTF:
 			ctf_params = get_arb_params(ima, parnames)
-			if(ctf_params[6] == 0):
+			if ctf_params[6] == 0:
 				from filter import filt_ctf
-				if(im==0): print  " APPLYING CTF"
+				if im == 0: print  " APPLYING CTF"
 				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
-				set_arb_params(ima, ctf_params, parnames)  #I am not sure whether this is needed
 		dataim.append(ima)
 	
 	M = nx
@@ -1952,47 +1462,39 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	alpha = 1.75
 	r = M/2
 	v = K/2.0/N
-	#kb = Util.KaiserBessel(alpha, K, r, v, N)
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 	
-	
-	par_str=["phi", "theta", "psi", "s2x", "s2y"]
+	data = [None]*6
+	data[3] = mask2D
+
 	total_time = 0.0
 	total_time2 = 0.0
 	for iteration in xrange(max_it):
 		Util.mul_img(vol, mask3D)
-		volft,kb  = prep_vol(vol)
-		data = [0]*6
+		volft, kb  = prep_vol(vol)
 		data[0] = volft
 		data[1] = kb
-		data[3] = mask2D
-		#new_params = []
-		#step = 0 
+
 		for imn in xrange(nima):
 			begin_time = time()
-			#print "Projection", imn
-	
-			data[2] = dataim[imn].copy()
 
+			data[2] = dataim[imn]
 			refi = dataim[imn].copy()
 			refi = refi.FourInterpol(nx*2,nx*2,0,True)
 			data[4] = Processor.EMFourierFilter(refi, params)
 			
-			atparams = get_arb_params(dataim[imn], par_str)
-			data[5] = [atparams[3], atparams[4]]
-			del atparams[3]
-			del atparams[3]
+			phi, theta, psi, sx, sy = get_params_proj(dataim[imn])
+			atparams = [phi, theta, psi]
+			data[5] = [-sx, -sy]
 			weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))			
 			
 			# For downhill simplex method 
-			optm_params =  amoeba2(atparams, [weight_phi,dtheta,weight_phi], eqprojG4, 1.e-5,1.e-5,500,data)
-			set_arb_params(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], optm_params[3][0], optm_params[3][1]], par_str)
-			#step += optm_params[2]
-			#print "Projection", imn, "  ", optm_params[2], "steps"
+			optm_params = amoeba2(atparams, [weight_phi, dtheta, weight_phi], eqprojG4, 1.e-5, 1.e-5, 500, data)
+			set_params_proj(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], -optm_params[3][0], -optm_params[3][1]])
+
 			end_time = time()
 			total_time += (end_time-begin_time)
 			total_time2 += (end_time-begin_time)**2
-		#print "Average step = ", step/float(nima)
 		for im in xrange(nima):
 			dataim[im].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	return total_time, total_time2
