@@ -4117,12 +4117,12 @@ def ali3d_em_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, na
 					vol, fscc[krf] = rec3D_MPI_noCTF(data, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d_%03d"%(krf, iteration, ichunk)), myid, main_node, index = krf)
 				
 
-				raw_vol_file = os.path.join.(outdir, "vol_%03d_%03d.hdf" %(iteration,ichunk))
+				raw_vol_file = os.path.join(outdir, "vol_%03d_%03d.hdf" %(iteration,ichunk))
 				if(myid==main_node):
 					vol.write_image( raw_vol_file,krf)
 			mpi_barrier(MPI_COMM_WORLD)
 
-			refvol_file = os.path.join.(outdir, "volf_%03d_%03d.hdf" %(iteration,ichunk))
+			refvol_file = os.path.join(outdir, "volf_%03d_%03d.hdf" %(iteration,ichunk))
 			if(myid == main_node):
 				flmin = 1.0
 				flmax = -1.0
