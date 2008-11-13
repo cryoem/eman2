@@ -65,68 +65,80 @@ atexit.register(DB_cleanup)
 # if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
 signal.signal(2,DB_cleanup)
 
-def db_open_dict(url,ro=False):
+def db_parse_path(url):
+	"""Takes a bdb: url and splits out (path,dict name,keylist). If keylist is None,
+	implies all of the images in the file. Acceptable urls are of the form:
+	bdb:dict
+	bdb:relative/path#dict
+	bdb:/path/to#dict?key,key,key
+	bdb:/path/to/dict   (also works, but # preferred)
+	"""
+	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only"
+	
+	url=url[4:].rsplit('#',1)
+	if len(url)==1 : url=url[0].rsplit("/",1)
+	if len(url)==1 :
+		url=url[0].split("?",1)
+		if len(url)==1 : return(".",url[0],None)			# bdb:dictname
+		url.insert(0,".")									# bdb:dictname?keys
+	else :
+		u1=url[1].split("?",1)
+		if url[0][0]!='/' : url[0]=os.getcwd()+"/"+url[0]	# relative path
+		if url[0][:3]=="../": url[0]=os.getcwd().rsplit("/",1)[0]+"/"+url[0]	# find cwd if we start with ../
+		if len(u1)==1 : return(url[0],url[1],None)			# bdb:path/to#dictname
+		url=[url[0]]+url[1].split("?")						# bdb:path/to#dictname?keys
+	
+	# if we're here we need to deal with ?keys
+	u2=url[2].split(",")
+	if len(u2)==1 :
+		if u2[0][:7]=="select." :
+			ddb=EMAN2DB.open_db(".")
+			ddb.open_dict("select")
+			if not ddb.select.has_key(u2[0][7:]) : raise Exception,"Unknown selection list %s"%u2[0][7:]
+			return (url[0],url[1],ddb.select[u2[0][7:]])		# bdb:path/to#dict?select/name
+		return url											# bdb:path/to#dict?onekey
+	# make sure integer string keys are integers
+	for i in range(len(u2)) :
+		try: u2[i]=int(u2[i])
+		except: pass
+	return (url[0],url[1],u2)								# bdb:path/to#dict?k1,k2,k3,...
+			
+
+def db_open_dict(url,ro=False,with_keys=False):
 	"""opens a DB through an environment from a db:/path/to/db#dbname string. If you want to specify a specific image by key,
 	you can specify the key as:  db:/path/to/db#dbname?key
 	If key is an integer, it will be converted to an integer before lookup. For commands like read_images, key may also be a
 	comma-separated list of keys. Thus it is impossible to access data items
 	with keys like '1' instead of (int)1 using this mechanism. ro is a read only flag, which will disable caching as well."""
-	if url[:4].lower()!="bdb:": return None
-	url=url.replace("../",os.getcwd()+"/../")
-	if url[4]!='/' : 
-		if not '#' in url : url="bdb:"+os.getcwd()+"#"+url[4:]
-		else : url="bdb:"+os.getcwd()+"/"+url[4:]
-	sln=url.rfind("#")
-	qun=url.rfind("?")
-	if qun<0 : qun=len(url)
-	if sln<0 :
-		ddb=EMAN2DB.open_db(".")
-		ddb.open_dict(url[4:qun],ro=ro)	# strip the ?xyz from the end if present
-		try:
-			if ro : return ddb.__dict__[url[4:qun]+"__ro"]
-		except: pass
-		return ddb.__dict__[url[4:qun]]
-	ddb=EMAN2DB.open_db(url[4:sln])
-	name=url[sln+1:]
-	ddb.open_dict(name,ro=ro)
-	try: 
-		if ro: return ddb.__dict__[name+"__ro"]
-	except: pass
-	return ddb.__dict__[name]
+
+	path,dictname,keys=db_parse_path(url)
+	
+	ddb=EMAN2DB.open_db(path)
+	ddb.open_dict(dictname,ro=ro)
+	
+	if with_keys :
+		if ro : return (ddb[dictname+"__ro"],keys)
+		return (ddb[dictname],keys)
+
+	if ro : return ddb[dictname+"__ro"]
+	return ddb[dictname]
 
 def db_remove_dict(url):
 	"""closes and deletes a database using the same specification as db_open_dict"""
-	if url[:4].lower()!="bdb:": return None
-	url=url.replace("../",os.getcwd()+"/../")
-	if url[4]!='/' : 
-		if not '#' in url : url="bdb:"+os.getcwd()+"#"+url[4:]
-		else : url="bdb:"+os.getcwd()+"/"+url[4:]
-	sln=url.rfind("#")
-	qun=url.rfind("?")
-	if qun<0 : qun=len(url)
-	if sln<0 :
-		ddb=EMAN2DB.open_db(".")
-		ddb.remove_dict(url[4:qun])	# strip the ?xyz from the end if present
-		return
-	ddb=EMAN2DB.open_db(url[4:sln])
-	name=url[sln+1:]
-	ddb.remove_dict(name)
+	path,dictname,keys=db_parse_path(url)
+	
+	ddb=EMAN2DB.open_db(path)
+	ddb.remove_dict(dictname)
+
 	return
 
 def db_check_dict(url,readonly=True):
 	"""Checks for the existence of the named dictionary, and whether it can be opened 
 	read/write (or just read). Deals only with bdb: urls. Returns false for other specifiers"""
-	if url[:4].lower()!="bdb:": return False
-	url=url.replace("../",os.getcwd()+"/../")
-	if url[4]!='/' : 
-		if not '#' in url : url="bdb:"+os.getcwd()+"#"+url[4:]
-		else : url="bdb:"+os.getcwd()+"/"+url[4:]
-	sln=url.rfind("#")
-	qun=url.rfind("?")
-	if qun<0 : qun=len(url)
-#	print url,url[4:qun],url[4:sln],url[sln+1:]
 
-	path=url[4:sln]+"/EMAN2DB/"+url[sln+1:]+".bdb"
+	path,dictname,keys=db_parse_path(url)
+	
+	path=path+"/EMAN2DB/"+dictname+".bdb"
 #	print path
 	if os.access(path,os.W_OK|os.R_OK) : return True
 	if os.access(path,os.R_OK) and readonly : return True
@@ -135,16 +147,13 @@ def db_check_dict(url,readonly=True):
 	
 def db_list_dicts(url):
 	"""Gives a list of available databases (dicts) at a given path. No '#' specification should be given."""
+	path,dictname,keys=db_parse_path(url)
 
-	if url[:4].lower()!="bdb:": return None
-	url=url.replace("../",os.getcwd()+"/../")
-	if url[4:]=="." : url="bdb:"+os.getcwd()
-	if url[4:6]=="./" : url="bdb:"+os.gecwd()+url[5:]
 	try:
-		ld=os.listdir(url[4:]+"/EMAN2DB")
+		ld=os.listdir(path+"/EMAN2DB")
 	except: return []
 	
-	ld=[i for i in ld if i[-4:]==".bdb"]
+	ld=[i[:-4] for i in ld if i[-4:]==".bdb"]
 	
 	return ld
 	
@@ -153,14 +162,11 @@ def db_list_dicts(url):
 ##########
 def db_read_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_dict(fsp,True)
+		db,keys=db_open_dict(fsp,True,True)
+		
 		if len(parms)>1 and parms[1] : nodata=1
 		else: nodata=0
-		if "?" in fsp:
-			keys=fsp[fsp.rfind("?")+1:].split(",")
-			for i in range(len(keys)):
-				try: keys[i]=int(keys[i])
-				except: pass
+		if keys:
 			key=keys[parms[0]]
 		else: key=parms[0]
 		x=db.get(key,target=self,nodata=nodata)
@@ -173,12 +179,9 @@ EMData.read_image=db_read_image
 
 def db_read_images(fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_dict(fsp,True)
-		if "?" in fsp:
-			keys=fsp[fsp.rfind("?")+1:].split(",")
-			for i in range(len(keys)):
-				try: keys[i]=int(keys[i])
-				except: pass
+		db,keys=db_open_dict(fsp,True,True)
+		if keys:
+			if len(parms)>0 : return [db.get(keys[i]) for i in parms[0]]
 			return [db.get(i) for i in keys]
 		else :
 			if len(parms)==0 : keys=range(0,len(db))
@@ -192,12 +195,11 @@ EMData.read_images=staticmethod(db_read_images)
 
 def db_write_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_dict(fsp)
-		if "?" in fsp :			# if the user specifies the key in fsp, we ignore parms
-			key=fsp[fsp.rfind("?")+1:]
-			try : key=int(key)
-			except: pass
-			db[key]=self
+		db,keys=db_open_dict(fsp,False,True)
+		if keys :			# if the user specifies the key in fsp, we ignore parms
+			if len(keys)>1 : raise Exception,"Too many keys provided in write_image %s"%str(keys)
+			if isinstance(keys[0],int) and keys[0]<0 : raise Exception,"Negative integer keys not allowed %d"%keys[0]
+			db[keys[0]]=self
 			return
 		if parms[0]<0 : parms=(len(db),)+parms[1:]
 		db[parms[0]]=self
@@ -209,13 +211,12 @@ EMData.write_image=db_write_image
 
 def db_get_image_count(fsp):
 	if fsp[:4].lower()=="bdb:" :
-		db=db_open_dict(fsp,True)
-		if "?" in fsp :			# if the user specifies the key in fsp, we ignore parms
-			key=fsp[fsp.rfind("?")+1:]
-			try : key=int(key)
-			except: pass
-			if db.has_key(key) : return 1
-			return 0
+		db,keys=db_open_dict(fsp,True,True)
+		if keys :			# if the user specifies the key in fsp, we ignore parms
+			n=0
+			for i in keys:
+				if i in db : n+=1
+			return n
 		return len(db)
 	return EMUtil.get_image_count_c(fsp)
 
@@ -609,7 +610,7 @@ class DBDict:
 		self.bdb.delete(dumps(key,-1),txn=self.txn)
 
 	def __contains__(self,key):
-		return self.bdb.has_key(dumps(key,-1),txn=self.txn)
+		return self.bdb.has_key(dumps(key,-1))
 
 	def item_type(self,key):
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))

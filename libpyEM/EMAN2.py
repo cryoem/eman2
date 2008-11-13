@@ -43,14 +43,14 @@ import cPickle
 import zlib
 import socket
 
-EMANVERSION="EMAN2 v1.96"
+EMANVERSION="EMAN2 v1.97"
 
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their
 # behavior appropriately
 try:
 	import EMAN2db
-	from EMAN2db import EMAN2DB,db_open_dict,db_remove_dict,db_list_dicts,db_check_dict
+	from EMAN2db import EMAN2DB,db_open_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path
 	HOMEDB=EMAN2db.EMAN2DB.open_db()
 	HOMEDB.open_dict("history")
 except:
