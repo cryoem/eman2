@@ -201,24 +201,25 @@ class TestEMData(unittest.TestCase):
             for j in range(3):
                 for i in range(3):
                     self.assertEqual(d3[i+2][j+2][k+2], 0)
-
-        region = Region(0,0,0,-1,1,1)
-        try:
-            f = e.get_clip(region)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-			
-        region = Region(0,0,0,1,-1,1)
-        try:
-            f = e.get_clip(region)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-			
-        region = Region(0,0,0,1,1,-1)
-        try:
-            f = e.get_clip(region)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
+        if(IS_TEST_EXCEPTION):
+            region = Region(0,0,0,-1,1,1)
+            try:
+                f = e.get_clip(region)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+    			
+            region = Region(0,0,0,1,-1,1)
+            try:
+                f = e.get_clip(region)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+    			
+            region = Region(0,0,0,1,1,-1)
+            try:
+                f = e.get_clip(region)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
 
     def test_clip_inplace(self):
@@ -1207,14 +1208,15 @@ class TestEMData(unittest.TestCase):
         e.to_one()
         e.make_rotational_footprint()
         
-        #test for bad input, only even sized image accepted, ImageFormatException raised 
-        e2 = EMData()
-        e.set_size(31,31,31)
-        e.to_one()
-        try:
-            e.make_rotational_footprint()
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #test for bad input, only even sized image accepted, ImageFormatException raised 
+            e2 = EMData()
+            e.set_size(31,31,31)
+            e.to_one()
+            try:
+                e.make_rotational_footprint()
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_to_zero(self):
         """test to_zero() function .........................."""
@@ -1944,15 +1946,16 @@ class TestEMData(unittest.TestCase):
         e.process_inplace("testimage.noise.uniform.rand")
         data = e.calc_az_dist(32, 0.0, 0.1, 0.0, 2.0)
         
-        #this function not apply to 3D image
-        e2 = EMData()
-        e2.set_size(32,32,32)
-        e2.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e2.calc_az_dist, 32, 0.0, 0.1, 0.0, 2.0)
-        try:
-            e2.calc_az_dist(32, 0.0, 0.1, 0.0, 2.0)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #this function not apply to 3D image
+            e2 = EMData()
+            e2.set_size(32,32,32)
+            e2.process_inplace("testimage.noise.uniform.rand")
+            self.assertRaises( RuntimeError, e2.calc_az_dist, 32, 0.0, 0.1, 0.0, 2.0)
+            try:
+                e2.calc_az_dist(32, 0.0, 0.1, 0.0, 2.0)
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def test_calc_dist(self):
         """test calc_dist() function ........................"""
