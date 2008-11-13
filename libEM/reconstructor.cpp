@@ -3412,18 +3412,7 @@ map<string, vector<string> > EMAN::dump_reconstructors_list()
 }
 
 
-float get_ctf( int winsize, float voltage, float pixel, float Cs, float amp_contrast, float b_factor, float defocus, int r2 )
-{
-	Cs      = Cs * 1.0e7f;
-	float winsize2= (float)(winsize*winsize);
-	float wgh=atan( amp_contrast/(1.0f-amp_contrast) );
-	float lambda = 12.398f/std::sqrt(voltage*(1022.f+voltage));
-	float ak = std::sqrt( r2/float(winsize2) )/pixel;
-	float a = lambda*ak*ak;
-	float b = lambda*a*a;
-	float ctf = -sin(-M_PI*(defocus*a-Cs*b/2.0f)-wgh);
-	return ctf;
-}
+
 
 
 using std::ofstream;
@@ -3457,15 +3446,16 @@ void newfile_store::add_image( EMData* emdata, const Transform& tf )
     int n2 = ny / 2;
     int n = ny;
 
-    float defocus = emdata->get_attr( "defocus" );
-    float voltage = emdata->get_attr( "voltage" );
-    float pixel = emdata->get_attr( "Pixel_size" );
-    float amp_contrast = emdata->get_attr( "amp_contrast" );
-    float Cs = emdata->get_attr( "Cs" );
-    float b_factor = 0.0;
+    Ctf* ctf = emdata->get_attr( "ctf" );
+    Dict params = ctf->to_dict();
+    float voltage = params["voltage"];
+    float pixel   = params["apix"];
+    float Cs      = params["cs"];
+    float ampcont = params["ampcont"];
+    float bfactor = params["bfactor"];
+    float defocus = params["defocus"];
 
     vector<point_t> points;
-
     for( int j=-ny/2+1; j <= ny/2; j++ )
     {
         int jp = (j>=0) ? j+1 : ny+j+1;
@@ -3474,7 +3464,8 @@ void newfile_store::add_image( EMData* emdata, const Transform& tf )
             int r2 = i*i + j*j;
             if( (r2<ny*ny/4) && !( (i==0) && (j<0) ) ) 
             {
-                float ctf = get_ctf( ny, voltage, pixel, Cs, amp_contrast, b_factor, defocus, r2);
+		float ak = std::sqrt( r2/float(ny*ny) );
+                float ctf = Util::tf( defocus, ak, voltage, Cs, ampcont, bfactor, 1);
                 float xnew = i*tf[0][0] + j*tf[1][0];
                 float ynew = i*tf[0][1] + j*tf[1][1];
                 float znew = i*tf[0][2] + j*tf[1][2];
@@ -3546,7 +3537,7 @@ void newfile_store::add_image( EMData* emdata, const Transform& tf )
 
                     points.push_back( p );
                 }
-	        }
+	    }
         }
     }
 
