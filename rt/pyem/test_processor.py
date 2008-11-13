@@ -1376,20 +1376,21 @@ class TestProcessor(unittest.TestCase):
 		
 		
     def test_math_radialsubtract(self):
-		"""test math.radialsubtract processor ..............."""	
-		e = EMData()
-		e.set_size(32,32)
-		e.process_inplace('testimage.noise.uniform.rand')
-		self.assertEqual(e.is_complex(), False)
-		
-		e.process_inplace('math.radialsubtract')
-		
-		e.set_size(32,32,32)
-		e.process_inplace('testimage.noise.uniform.rand')
-		# It only currently works for 3D - if that ever changes this test should be updated
-		try: e.process_inplace('testimage.noise.uniform.rand')
-		except RuntimeError, runtime_err:
-			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        """test math.radialsubtract processor ..............."""	
+        e = EMData()
+        e.set_size(32,32)
+        e.process_inplace('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        e.process_inplace('math.radialsubtract')
+        
+        if(IS_TEST_EXCEPTION):
+            e.set_size(32,32,32)
+            e.process_inplace('testimage.noise.uniform.rand')
+    		# It only currently works for 3D - if that ever changes this test should be updated
+            try: e.process_inplace('testimage.noise.uniform.rand')
+            except RuntimeError, runtime_err:
+    			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 		
     def test_xform_flip(self):
         """test xform.flip processor ........................"""
@@ -1767,14 +1768,15 @@ class TestProcessor(unittest.TestCase):
         e.set_size(32,32,1)
         e.process_inplace('testimage.scurve')
         
-        #only for 2D image
-        e2 = EMData()
-        e2.set_size(32,32,32)
-        self.assertRaises( RuntimeError, e2.process_inplace, 'testimage.scurve')
-        try:
-            e2.process_inplace('testimage.scurve')
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        if(IS_TEST_EXCEPTION):
+            #only for 2D image
+            e2 = EMData()
+            e2.set_size(32,32,32)
+            self.assertRaises( RuntimeError, e2.process_inplace, 'testimage.scurve')
+            try:
+                e2.process_inplace('testimage.scurve')
+            except RuntimeError, runtime_err:
+                self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     
     def test_testimage_sinewave(self):
         """test testimage.sinewave processor ................"""
