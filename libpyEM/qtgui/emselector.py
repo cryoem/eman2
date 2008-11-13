@@ -360,18 +360,16 @@ class EMSelectorDialog(QtGui.QDialog):
 			print "no list widget has focus?"
 			return
 		
-		# now make the list of selections accurate
-		self.selections = []
-		for a in self.current_list_widget.selectedItems():
-			file = directory+str(a.text())
-			previewable,previewer= self.__is_previewable(a)
-			if previewable: 
-				self.selections.append(previewer.path(file,self))
+		# now make the list of selections reflect what is need to display them using
 		
-		# if there are no selections then close the preview
-		#if len(self.selections) == 0:
-			#self.hide_preview()
-	
+		self.selections = []
+		items = self.current_list_widget.selectedItems()
+		if len(items) > 0:
+			a = items[0]
+			previewable,previewer= self.__is_previewable(a)
+			
+			self.selections = previewer.paths(items)
+
 	def hide_preview(self):
 		if self.gl_image_preview  != None:
 			self.application.hide_specific(self.gl_image_preview)
@@ -658,10 +656,14 @@ class EMDirectoryListing:
 			#for s in strings:
 				
 		#else:
-	
-	def path(self,full_path,selector):
-		return full_path
-	
+		
+	def paths(self,items):
+		ret = []
+		for item in items:
+			if self.is_previewable(item):
+			 	ret.append(item.full_path)
+		return ret
+
 	def filter_strings(self,strings):
 		
 		filt = self.target.get_file_filter()
@@ -853,25 +855,45 @@ class EMBDBListing:
 		
 		self.previewable_types = [self.db_mx,self.emdata_3d_entry,self.emdata_entry,self.db_dict_emdata_entry] # add any others as functionality grows
 	
-	def path(self,full_path,selector):
-		import platform
-		cwd = selector.historical_starting_directory
-		
-		if full_path.startswith(cwd):
-			path = full_path[len(cwd)+1:]
-			if platform.system() == "Windows":
-				path = path.replace("\\bdb\\","#")
+	def paths(self,items):
+		if len(items) > 1:
+			
+			# the point here is to see if the selected images are in the same bdb matrix directory
+			# if so we can exploit the "?" terminology
+			# Now the selector doesn't facilitate choosing images from seperate directories
+			# so if the first two items are from the same matrix database, then they all are
+			# if this wasn't the case then we could iterate through the items and group them, but
+			# currently isn't so hence this simplified approach
+						
+			item0 = items[0]
+			item1 = items[1]
+			# check to see if the first two items are in the same directory
+			if (item0.database_directory+item0.database) == (item1.database_directory+item1.database):
+				# we know assume they are all in the same directory
+				return_val = "bdb:"+item0.database_directory+'#'+item0.database + "?"
+				for i,item in enumerate(items):
+					if i != 0:
+						return_val += ","
+					return_val += str(item.database_key)
+					
+				return [return_val]
+					
+		# if the return didn't happen then this generic loop will work -
+		ret = []
+		for item in items:
+			if item.type_of_me == self.db_mx:
+				ret.append("bdb:"+item.database_directory+'#'+item.database)
+			elif item.type_of_me in [self.emdata_3d_entry,self.emdata_entry]:
+				# there is one problem with this approach - if the user is in a matrix
+				# directory then choosing the 0th image won't really work as was intended
+				if item.database_key != 0:
+					ret.append("bdb:"+item.database_directory+'#'+item.database+"?"+str(item.database_key))
+				else:
+					ret.append("bdb:"+item.database_directory+'#'+item.database)
 			else:
-				path = path.replace("/bdb/","#")
-			
-			return "bdb:"+path
-			
-			
-			
-		else:
-			print "not supported yet"
-		#return full_path
-	
+				pass #it's not viewable
+		return ret
+
 	def responsible_for(self,file_or_folder):
 		real_name = self.convert_to_absolute_path(file_or_folder)
 		#print file_or_folder,real_name

@@ -30,14 +30,22 @@
 #
 #
 
-from emform import EMFormModule
+from emform import EMFormModule,ParamTable
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
-from EMAN2db import db_check_dict, db_open_dict,db_remove_dict
-from EMAN2 import EMData,remove_directories_from_name
+from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts
+from EMAN2 import EMData,get_file_tag
 import os
 import copy
+from emapplication import EMProgressDialogModule
+from e2boxer import EMBoxerModule
 
+class EmptyObject:
+	'''
+	This just because I need an object I can assign attributes to, and object() doesn't seem to work
+	'''
+	def __init__(self):
+		pass
 
 class WorkFlowTask(QtCore.QObject):
 	def __init__(self,application):
@@ -71,10 +79,210 @@ class WorkFlowTask(QtCore.QObject):
 	def on_form_close(self):
 		self.emit(QtCore.SIGNAL("task_idle"))
 
+	def closeEvent(self,event):
+		self.application.close_specific(self.form)
+		#self.emit(QtCore.SIGNAL("task_idle"))
+
+class ParticleImportTask(WorkFlowTask):	
+	documentation_string = "Use this tool for importing particle image into the project database under the particle directory. Files that you import in this way will be automatically added the list of particle files in the project."
+	
+	def __init__(self,application):
+		WorkFlowTask.__init__(self,application)
+		self.window_title = "Import particles"
+
+	def get_params(self):
+		params = []
+		project_db = db_open_dict("bdb:project")
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Description",desc_long="",property=None,defaultunits=ParticleImportTask.documentation_string,choices=None))
+		params.append(ParamDef(name="global.imported_particle_files",vartype="url",desc_short="Imported particles",desc_long="A list of particle files that have been or will be imported into this project",property=None,defaultunits=project_db.get("global.imported_particle_files",dfl=[]),choices=[]))
+		return params
+
+
+	def write_db_entry(self,k,v):
+		pass
+		
+
+class E2BoxerTask(WorkFlowTask):	
+	documentation_string = "Use this tool to review which images in the project have been boxed, and to identify which images need boxing. You can choose from the list of images and hit ok which will lauch e2boxer and automatically load the selected images for boxing"
+	
+	def __init__(self,application):
+		WorkFlowTask.__init__(self,application)
+		self.window_title = "e2boxer management"
+		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
+
+	def get_params(self):
+		params = []
+		project_db = db_open_dict("bdb:project")
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerTask.documentation_string,choices=None))
+		
+		project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		num_boxes = self.get_num_particles(project_file_names)
+		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_file_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
+		
+		
+		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p.append(pnames)
+		p.append(pboxes)
+		params.append(p)
+		
+		boxer_project_db = db_open_dict("bdb:e2boxer.project")
+		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits="Swarm",choices=["Swarm"]))
+		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Boxing mode",desc_long="Whether to load the GUI or run automatic boxing based on information stored in the database",property=None,defaultunits="gui",choices=["gui","auto_db"]))
+		#params.append(ParamDef(name="global.imported_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.imported_micrograph_ccd_files",dfl=[]),choices=[]))
+		return params
+	
+	def get_num_particles(self,project_files_names):
+		if not os.path.exists("particles/EMAN2DB"):
+			vals = [ 0 for i in range(len(project_files_names))]
+			return vals
+		else:
+			#particle_db = project_db = db_open_dict("bdb:particles#")
+			dbs = db_list_dicts("bdb:particles")
+			ptcl_dbs = []
+			for db in dbs:
+				db_strip = get_file_tag(db)
+				if len(db_strip) > 5:
+					if db_strip[-6:] == "_ptcls":
+						ptcl_dbs.append(db_strip[:-6])
+			
+			
+			vals = []
+			for name in project_files_names:
+				name_strip = get_file_tag(name)
+				if name_strip in ptcl_dbs:
+					try:
+						db = db_open_dict("bdb:particles#"+name_strip+"_ptcls")
+						vals.append(db["maxrec"]+1)
+					except:
+						vals.append(0)
+				else:
+					vals.append(0)
+			return vals
+			
+	def on_form_ok(self,params):
+		for k,v in params.items():
+			if k != "blurb": self.write_db_entry(k,v)
+			
+		if len(params["filenames"]) == 0:
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.application.close_specific(self.form)
+			self.form = None
+			return
+
+		else:
+		
+			options = EmptyObject()
+			for key in params.keys():
+				setattr(options,key,params[key])
+				
+			self.boxer_module = EMBoxerModule(self.application,options)
+			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("e2boxer_idle"), self.on_boxer_idle)
+			self.application.close_specific(self.form)
+			self.form = None
+			
+	def on_form_close(self):
+		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+		if self.boxer_module == None:
+			self.emit(QtCore.SIGNAL("task_idle"))
+		else: pass
+	
+	def on_boxer_idle(self):
+		self.boxer_module = None
+		print "done"
+		self.emit(QtCore.SIGNAL("task_idle"))
+
+	def write_db_entry(self,key,value):
+		if key == "boxsize":
+			boxer_project_db = db_open_dict("bdb:e2boxer.project")
+			boxer_project_db["working_boxsize"] = value
+
+		else:
+			pass	
+
+class ParticlesTask(WorkFlowTask):
+	
+	documentation_string = "This is a list of particles images that are associated with this project. You can add and remove file names by editing the text entries directly and or by using the browse and clear buttons."
 	
 	
+	def __init__(self,application):
+		WorkFlowTask.__init__(self,application)
+		self.window_title = "Project particles"
+
+	def get_params(self):
+		params = []
+		
+		
+		particle_file_names = self.get_project_particle_file_names()
+		num_boxes = self.get_num_particles(particle_file_names)
+		dimensions = self.get_particle_dims(particle_file_names)
+		
+		
+		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=particle_file_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
+		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
+		
+		
+		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p.append(pnames)
+		p.append(pboxes)
+		p.append(pdims)
+		params.append(p)
+		
+		#boxer_project_db = db_open_dict("bdb:e2boxer.project")
+		#params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+		#params.append(ParamDef(name="global.imported_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.imported_micrograph_ccd_files",dfl=[]),choices=[]))
+		return params
+	
+	def get_project_particle_file_names(self):
+		project_db = db_open_dict("bdb:project")
+		project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		result = [get_file_tag(name)+"_ptcls" for name in project_file_names]
+		
+		dbs = db_list_dicts("bdb:particles")
+		
+		for db in dbs:
+			db_strip = get_file_tag(db)
+			if db_strip not in result:
+				result.append(db)
+				
+		return result
+					
+	def get_particle_dims(self,particle_file_names):
+		if not os.path.exists("particles/EMAN2DB"):
+			vals = [ "" for i in range(len(particle_file_names))]
+			return vals
+		else:
+			vals = []
+			for name in particle_file_names:
+				try:
+					db = db_open_dict("bdb:particles#"+name)
+					hdr = db.get_header(0)
+					#print hdr
+					vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+				except:	vals.append("")
+			return vals
+	
+	def get_num_particles(self,particle_file_names):
+		if not os.path.exists("particles/EMAN2DB"):
+			vals = [ 0 for i in range(len(particle_file_names))]
+			return vals
+		else:
+			vals = []
+			for name in particle_file_names:
+				try:
+					db = db_open_dict("bdb:particles#"+name)
+					vals.append(db["maxrec"]+1)
+				except:	vals.append(0)
+			return vals
+
+	def write_db_entry(self,key,value):
+		pass
+
+
 class MicrographCCDImportTask(WorkFlowTask):	
-	documentation_string = "Use this tool to manage the data that you have copied (or will copy) into into the project database. If you have done this than you do not necessarily have to keep a copy of the data in the local directory (or elsewhere). The files in this list are automatically included in the project. You can remove entries from list and they will be removed from the project database."
+	documentation_string = "Use this tool for importing flat files into the project database under the raw_data directory. Files that you import in this way will be automatically added the list of files in the project."
 	
 	def __init__(self,application):
 		WorkFlowTask.__init__(self,application)
@@ -84,69 +292,67 @@ class MicrographCCDImportTask(WorkFlowTask):
 		params = []
 		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Importing image data",desc_long="",property=None,defaultunits=MicrographCCDImportTask.documentation_string,choices=None))
-		params.append(ParamDef(name="global.imported_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.imported_micrograph_ccd_files",dfl=[]),choices=[]))
+		params.append(ParamDef(name="import_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=[],choices=[]))
 		return params
 
 	def write_db_entry(self,key,value):
-		if key == "global.imported_micrograph_ccd_files":
-			project_db = db_open_dict("bdb:project")
-			remove_files = project_db.get("global.imported_micrograph_ccd_files",dfl=[])
-			orig_names = copy.copy(remove_files)
-			orig_bdb_names = ["bdb:raw_data#"+remove_directories_from_name(name) for name in orig_names]
+		if key == "import_micrograph_ccd_files":
 			
-			no_dir_names = [remove_directories_from_name(name) for name in value]
+			no_dir_names = [get_file_tag(name) for name in value]
+			
+			for name in value:
+				if name.find("bdb:rawdata#") != -1:
+					print "you can't import files that are already in the project raw data directory,",name,"is invalid"
+					return
 			
 			for name in no_dir_names:
 				if no_dir_names.count(name) > 1:
 					print "you can't use images with the same name (",name,")"
 					return
-				
 			
-			new_names = []
+			project_db = db_open_dict("bdb:project")
 			
-			for name in value:
-				if os.path.exists(name): # if the name exists 
-					new_names.append(name) # store it as a name corresponding to an image that should be stored
-					
-					for i in range(len(remove_files)-1,-1,-1):
-						if remove_files[i] == name:
-							remove_files.pop(i) # we don't need to remove it
-							cont = False
-			
-			# now remove the files that the user no longer wants to exist
-			for rm in remove_files:
-				db_remove_dict("bdb:raw_data#"+remove_directories_from_name(rm))
-			
+			current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+			cpft = [get_file_tag(file) for file in current_project_files]
+
 			# now add the files to db (if they don't already exist
-			progress = QtGui.QProgressDialog("Importing files into database...", "Abort Copy", 0, len(new_names),None)
-			progress.show()
-			for i,name in enumerate(new_names):
-				progress.setValue(i)
-				db_name = "bdb:raw_data#"+remove_directories_from_name(name)
-				if name in orig_names: # this means the entry
-					if not db_check_dict(db_name):
-						print "there is an internal error. The database entry for",name,"doesn't exist"
-					else:
-						#it's the same image, continue
-						continue
+			progress = EMProgressDialogModule(self.application,"Importing files into database...", "Abort import", 0, len(value),None)
+			self.application.show_specific(progress)
+			for i,name in enumerate(value):
+				progress.qt_widget.setValue(i)
+				tag = get_file_tag(name)
+				if tag in cpft:
+					print "can't import images have identical tags to those already in the database"
+					continue
+				
+				
+				db_name = "bdb:raw_data#"+tag
+				if db_check_dict(db_name):
+					print "there is already a raw_data database entry for",tag
+					continue
 				else:
-					e = EMData(name)
+					e = EMData()
+					e.read_image(name,0)
 					e.set_attr("disk_file_name",name)
 					e.write_image(db_name,0)
 					raw_data_db = db_open_dict(db_name)
-					
-			new_bdb_names = ["bdb:raw_data#"+remove_directories_from_name(name) for name in new_names]
+					current_project_files.append(db_name)
+				
+				# why doesn't this work :(
+				#print progress.qt_widget.wasCanceled()
+				#if progress.qt_widget.wasCanceled():
+					#print "it was cancelled"
+			progress.qt_widget.setValue(len(value))
+			self.application.close_specific(progress)
 			
-			project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-			new_project_files = [ file for file in project_files if file not in orig_bdb_names]
-			new_project_files.extend(new_bdb_names)
-			project_db["global.micrograph_ccd_filenames"] = new_project_files
-			project_db["global.imported_micrograph_ccd_files"] = new_names
+			project_db["global.micrograph_ccd_filenames"] = current_project_files
 			
 		else:
 			print "unknown key:",key,"this object is",self
 			
-						
+	def on_import_cancel(self):
+		print "cancelled"
+		
 	
 class MicrographCCDTask(WorkFlowTask):
 	
@@ -166,55 +372,29 @@ class MicrographCCDTask(WorkFlowTask):
 
 	def write_db_entry(self,key,value):
 		if key == "global.micrograph_ccd_filenames":
-			project_db = db_open_dict("bdb:project")
-			current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-			
-			imported_names = project_db.get("global.imported_micrograph_ccd_files",dfl=[])
-			imported_db_names = ["bdb:raw_data#"+remove_directories_from_name(name) for name in imported_names]
-			
-			
-			# Make sure the list of imported names is update to date, and any imported data
-			# that has been removed is removed from the database
-			keep_imported_db_names = []
-			rm_imported_db_names = []
-			for name in value:
-				if name in imported_db_names:
-					file_name = db_open_dict(name).get_header(0)["disk_file_name"]
-					keep_imported_db_names.append(file_name)
-				else:
-					# pass
-					db_remove_dict(name) # or we could just pass and leave the data there
-		
-			project_db["global.imported_micrograph_ccd_files"] = keep_imported_db_names
-			
-			
-			new_names = []
-	
-			# now just update the static list of project file names
 			if value != None:
+				stipped_input = [get_file_tag(name) for name in value]
+				for name in stipped_input:
+					if stipped_input.count(name) > 1:
+						print "you can't use images with the same file tag (",name,")"
+						return
+
+				new_names = []
+		
+				# now just update the static list of project file names
 				e = EMData()
+				read_header_only = True
 				for i,name in enumerate(value):
-					#if len(name) >= 13 and name[:13] == "bdb:raw_data#":
-						
+					
 					if os.path.exists(name) or db_check_dict(name):
-						cont = True
-						for i in range(len(current_project_files)-1,-1,-1):
-							if current_project_files[i] == name:
-								new_names.append(current_project_files.pop(i))
-								cont = False
-								
-						if not cont: continue # the image is already stored in the database
-						
-						cool_to_go = True
-						read_header_only = True
 						try:
 							a = e.read_image(name,0,read_header_only)
-						except: cool_to_go = False
+						except: continue
 						
 						new_names.append(name)
-				
-				db = db_open_dict("bdb:project")
-				db["global.micrograph_ccd_filenames"] = new_names
+						
+				project_db = db_open_dict("bdb:project")
+				project_db["global.micrograph_ccd_filenames"] = new_names
 		else:
 			print "unknown key:",key,"this object is",self
 					

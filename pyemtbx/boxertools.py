@@ -1014,7 +1014,9 @@ class BigImage:
 			return self.alternate
 		
 		if self.image == None:
-			self.image = EMData(self.image_name)
+			
+			self.image = EMData()
+			self.image.read_image(self.image_name,0) # doing it this way makes it work with db terminology
 			self.image.process_inplace("normalize.edgemean") # this seams to be the normal behavior
 			
 		return self.image
@@ -1575,7 +1577,7 @@ class Boxable:
 		#print "Added",len(self.boxes)-a," manual boxes"
 
 	def get_coord_file_name(self):
-		return strip_file_tag(self.image_name)+".box"
+		return get_file_tag(self.image_name)+".box"
 		
 	def write_coord_file(self,box_size=-1,force=False,verbose=True):
 		'''
@@ -1590,7 +1592,7 @@ class Boxable:
 			if file_exists(boxname):
 				if not force:
 					f=file(boxname,'r')
-					boxname_backup =  strip_file_tag(self.image_name)+str(time()) + ".box.bak"
+					boxname_backup =  get_file_tag(self.image_name)+str(time()) + ".box.bak"
 					print "warning, found box name",boxname,"- am renaming it to", boxname_backup, "- use force to overwrite this behavior"
 					fbak=file(boxname_backup,'w')
 					fbak.writelines(f.readlines())
@@ -1624,7 +1626,7 @@ class Boxable:
 		from os import path
 		name,suffix = path.splitext( self.image_name )
 		if imageformat == "bdb":
-			return "bdb:particles#"+remove_directories_from_name(name)+"_ptcls"
+			return "bdb:particles#"+get_file_tag(self.image_name)+"_ptcls"
 		else:
 			
 			return name+"_particles."+imageformat
@@ -2129,7 +2131,7 @@ def merge_idd_key_entry_memory_to_disk(image_name,key):
 	project_db.set_key_entry(dbkey,data)
 	
 def get_idd_key(image_name):
-	return strip_file_tag(image_name)+"_DD"
+	return get_file_tag(image_name)+"_DD"
 
 def set_idd_key_entry_in_memory(image_name,key,object):
 	dbkey = get_idd_key(image_name)

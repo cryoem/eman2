@@ -813,17 +813,17 @@ class DatabaseAutoBoxer(QtCore.QObject):
 		self.form.setWindowTitle("Auto boxing parameters")
 		self.application.show_specific(self.form)
 		emitter = self.application.get_qt_emitter(self.form)
-		print emitter
-		print QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		print QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		#print emitter
+		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
+		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
 
 	def on_form_ok(self,params):
 		options = EmptyObject()
 		for key in params.keys():
 			setattr(options,key,params[key])
 			
-		print params
-		print options
+		#print params
+		#print options
 		
 		options_ready = True
 		for req_opt in self.required_options:
@@ -1035,35 +1035,12 @@ class EMBoxerModule(QtCore.QObject):
 		self.emit(QtCore.SIGNAL("e2boxer_idle"))
 	
 	def __auto_box_from_db(self,options):
-
 		print "auto data base boxing"
 		
 		self.dab = DatabaseAutoBoxer(self.application)
 		QtCore.QObject.connect(self.dab,QtCore.SIGNAL("db_auto_boxing_done"),self.on_db_autoboxing_done)
 		
 		self.dab.go(options)
-#		autobox_multi(options)
-		# this is the old parallized way, it was slower than doing it in a single program!
-		
-		#if len(filenames) == 1:
-			#autobox_single(filenames[0],options)
-			#exit(1)
-		#else:
-			#print "autoboxing using parallelism - you specified",options.parallel,"processors"
-			#autoboxer = AutoDBBoxer(filenames,options.parallel,options,options.force)
-			#try:
-				#from emimage import get_app
-			#except: 
-				#print "error, can't import get_app"
-				#exit(1)
-				
-			#a = get_app()
-			#autoboxer.go(a)
-			#a.exec_()
-			#print "done"
-		
-		# this means e2boxer isn't doing anything. The application should probably be told to close the EMBoxerModule
-#		self.emit(QtCore.SIGNAL("e2boxer_idle"))
 
 	def on_db_autoboxing_done(self):
 		self.emit(QtCore.SIGNAL("e2boxer_idle"))
@@ -1153,13 +1130,13 @@ class EMBoxerModule(QtCore.QObject):
 		self.guictlrotor.setWindowTitle("e2boxer Controllers")
 
 	def __init_guictl(self):
-		self.guictl=EMBoxerModulePanel(self,self.ab_sel_mediator)
+		self.guictl_module = EMBoxerModulePanelModule(self.application,self,self.ab_sel_mediator)
+		self.guictl = self.guictl_module.qt_widget
 		self.guictl.set_image_quality(self.boxable.get_quality())
 		self.guictl.setWindowTitle("e2boxer Controller")
 		self.guictl.set_dynapix(self.dynapix)
-		self.em_qt_inspector_widget = EMQtWidgetModule(self.guictl,self.application)
 		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
-		self.application.show_specific(self.em_qt_inspector_widget)
+		self.application.show_specific(self.guictl_module)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
 			print "Setting GUI for Gauss boxing method"
 			gauss_method_id = 1
@@ -2070,7 +2047,14 @@ class EMBoxerModule(QtCore.QObject):
 		
 	def done(self):
 		self.boxable.cache_exc_to_db()
-		self.application.quit()
+		
+		#print "here we
+		if self.guictl_module != None: self.guictl_module.closeEvent(None)
+		if self.guiim != None: self.guiim.closeEvent(None)
+		if self.guimx != None: self.guimx.closeEvent(None)
+		if self.guimxit != None: self.guimxit.closeEvent(None)
+		
+		self.emit(QtCore.SIGNAL("e2boxer_idle"))
 		
 	def try_data(self,data,thr):
 		print 'try that was pressed, this feature is currently disabled'
@@ -2112,9 +2096,6 @@ class EMBoxerModule(QtCore.QObject):
 	
 	def update_erase_rad(self,rad):
 		self.mouse_handlers["erasing"].set_erase_radius(rad)
-
-	def quit(self):
-		self.application.quit()
 	
 	def set_dummy_box(self,box):
 		self.autoboxer.set_dummy_box(box)
@@ -2566,17 +2547,31 @@ class CcfHistogram(QtGui.QWidget):
 		for i in xrange( newpos, newpos+2):
 			p.drawLine( i, self.height(), i, int(0.2*self.height()) )
 
-
+class EMBoxerModulePanelModule(EMQtWidgetModule):
+	'''
+	params should be a list of ParamDef objects
+	application should be an EMAN2 type application
+	After initializing this object you should probably call application.show(this)
+	or application.show_specific(this), depending on what you're doing
+	'''
+	def __init__(self,application,target,ab_sel_mediator):
+		self.application = application
+		self.widget = EMBoxerModulePanel(self,target,ab_sel_mediator)
+		EMQtWidgetModule.__init__(self,self.widget,application)
+		
+	def get_desktop_hint(self):
+		return "inspector"
 		
 class EMBoxerModulePanel(QtGui.QWidget):
 	def get_desktop_hint(self):
 		return "inspector"
 	
-	def __init__(self,target,ab_sel_mediator) :
+	def __init__(self,module,target,ab_sel_mediator) :
 		
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		self.ab_sel_mediator = ab_sel_mediator
+		self.module = module # please set this to be a EMBoxerModulePanelModule
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -2597,12 +2592,11 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
 	
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.new_threshold)
-		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.quit)
+		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.done)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
 		#self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
 		#self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
-	
 	
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.num_boxes_changed)
 	
@@ -2797,6 +2791,9 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.normalize_box_images,QtCore.SIGNAL("clicked(bool)"),self.normalize_box_images_toggled)
 
 		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
+
+	def closeEvent(self,event):
+		self.target.done()
 
 	def normalize_box_images_toggled(self):
 		val = self.normalize_box_images.isChecked()

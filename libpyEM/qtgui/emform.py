@@ -33,11 +33,24 @@
 
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
+from PyQt4.QtCore import Qt
 import os
 from emselector import EMSelectorModule
 from emapplication import EMQtWidgetModule
 from EMAN2 import Util
 
+
+class ParamTable(list):
+	'''
+	This is just a list of ParamDef objects
+	'''
+	def __init__(self,name=None,desc_short=None,desc_long=""):
+		list.__init__(self)
+		self.vartype = "paramtable"
+		self.name = name
+		self.desc_short = desc_short
+		self.desc_long = desc_long
+		
 class EMFormModule(EMQtWidgetModule):
 	'''
 	params should be a list of ParamDef objects
@@ -52,7 +65,6 @@ class EMFormModule(EMQtWidgetModule):
 		
 	def get_desktop_hint(self):
 		return "form"
-		
 		
 
 class EMFormWidget(QtGui.QWidget):
@@ -81,15 +93,16 @@ class EMFormWidget(QtGui.QWidget):
 		self.__auto_incorporate["stringlist"] = self.__incorporate_stringlist
 		self.__auto_incorporate["intlist"] = self.__incorporate_intlist
 		self.__auto_incorporate["floatlist"] = self.__incorporate_floatlist
+		self.__auto_incorporate["paramtable"] = self.__incorporate_paramtable
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.__incorporate_params(self.params,self.vbl)
 		self.__add_ok_cancel_buttons(self.vbl)
-			
+	
 	def __incorporate_params(self,params,layout):
 		for param in self.params:
 			try:
-				if len(param) != 1:
+				if len(param) != 1 and not isinstance(param,ParamTable):
 					hbl=QtGui.QHBoxLayout()
 					for iparam in param:
 						self.__auto_incorporate[iparam.vartype](iparam,hbl)
@@ -99,6 +112,52 @@ class EMFormWidget(QtGui.QWidget):
 			except: pass
 			self.__auto_incorporate[param.vartype](param,layout)
 	
+	def __incorporate_paramtable(self,paramtable,layout):
+		
+		num_choices = None
+		# first check that there are no inconsistencies in the number of parameter choices
+		for param in paramtable:
+			if num_choices == None:
+				num_choices = len(param.choices)
+			else:
+				if len(param.choices) != num_choices:
+					print "error, the number of choices is not consistent in __incorporate_paramtable"
+					return
+		
+		hbl=QtGui.QHBoxLayout()
+		hbl.setMargin(0)
+		hbl.setSpacing(2)
+		
+		table_widget = QtGui.QTableWidget(num_choices, len(paramtable), None)
+		#self.items = []
+		table_widget.setSortingEnabled(False)
+		for i,param in enumerate(paramtable):
+			for j,choice in enumerate(param.choices):
+				item = QtGui.QTableWidgetItem(str(choice))
+				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
+				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
+				flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
+				#flags = flags.
+				if i == 0:
+					item.setFlags(flag2|flag3|flag4)
+				else:
+					item.setFlags(flag3|flag4)
+				table_widget.setItem(j, i, item)
+				
+				
+			item = QtGui.QTableWidgetItem(param.desc_short)
+			table_widget.setHorizontalHeaderItem(i,item)
+			
+		table_widget.setSortingEnabled(True)
+		hbl.addWidget(table_widget)
+		
+		groupbox = QtGui.QGroupBox(paramtable.desc_short)
+		groupbox.setToolTip(paramtable.desc_long)
+		groupbox.setLayout(hbl)
+		layout.addWidget(groupbox)
+		
+		self.output_writers.append(ParamTableWriter(paramtable.name,table_widget,type(paramtable[0].choices[0])))
+		
 	def __incorporate_floatlist(self,param,layout):
 		hbl=QtGui.QHBoxLayout()
 		hbl.setMargin(0)
@@ -390,6 +449,19 @@ class EMFormWidget(QtGui.QWidget):
 	def closeEvent(self,event):
 		self.emit(QtCore.SIGNAL("emform_close"))
 
+		
+class ParamTableWriter:
+	def __init__(self,param_name,table_widget,type_of):
+		self.param_name = param_name
+		self.table_widget = table_widget
+		self.type_of = type_of
+		
+	def write_data(self,dict):
+		sel = [self.type_of(item.text()) for item in self.table_widget.selectedItems()]
+		print sel,self.param_name
+		print "\n\n\n"
+		dict[self.param_name] = sel
+
 class BoolParamWriter:
 	def __init__(self,param_name,check_box):
 		self.param_name = param_name
@@ -560,7 +632,10 @@ def get_example_params():
 	
 	pil = ParamDef(name="Int 1 to 10 from a list",vartype="intlist",desc_short="intlist",desc_long="Choose from a list of ints",property=None,defaultunits=[5],choices=[1,2,3,4,5,6,7,8,9,10])
 	pfl = ParamDef(name="Float 1 to 10 from a list",vartype="floatlist",desc_short="floatlist",desc_long="Choose from a list of floats",property=None,defaultunits=[2.1],choices=[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1,10.1])
-	params.append([pil,pfl])
+	a = ParamTable(name="table_choice",desc_short="Please choose using this information",desc_long="The left most column is what you're choosing from, the extra columns are used only to assist in the decision making process")
+	a.append(pil)
+	a.append(pfl)
+	params.append([pil,pfl,a])
 	
 	return params
 

@@ -84,6 +84,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		spr_list.append(rd)
 		
 		ap = QtGui.QTreeWidgetItem(QtCore.QStringList("Particles"))
+		self.launchers["Particles"] = self.launch_particle_task
 		spr_list.append(ap)
 		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF")))
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Initial model")))
@@ -92,7 +93,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		ap_list = []
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("e2boxer")))
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Import")))
+		self.launchers["e2boxer"] = self.launch_e2boxer_management
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
+		self.launchers["Particle import"] = self.launch_particle_import
 		ap.addChildren(ap_list)
 		
 		rd_list = []
@@ -113,6 +116,15 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
 		QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
 	
+	def launch_particle_task(self):
+		self.launch_task(ParticlesTask,"particles")
+	
+	def launch_particle_import(self):
+		self.launch_task(ParticleImportTask,"particle_import")
+		
+	def launch_e2boxer_management(self):
+		self.launch_task(E2BoxerTask,"e2boxer")
+	
 	def launch_spr(self):
 		self.launch_task(SPRInitTask,"spr")
 			
@@ -123,6 +135,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(MicrographCCDImportTask,"import_mic_ccd")
 	
 	def launch_task(self,task_type,task_unique_identifier):
+		if len(self.tasks) > 0: 
+			self.__clear_tasks()
+		
 		if not self.tasks.has_key(task_unique_identifier):
 			task = task_type(self.application)
 			
@@ -131,6 +146,13 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			self.event_managers[task_unique_identifier] = TaskEventsManager(task,self,task_unique_identifier)
 		else:
 			self.application.show_specific(self.tasks[task_unique_identifier])
+	
+	def __clear_tasks(self):
+		for v in self.tasks.values():
+			v.closeEvent(None)
+			#self.application.close_specific(v)
+		self.tasks = {}
+		self.event_managers = {}
 	
 	def pop_task_event_pair(self,task):
 		self.tasks.pop(task)
@@ -162,6 +184,7 @@ class TaskEventsManager:
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("task_idle"), self.on_task_idle)
 	
 	def on_task_idle(self):
+		print "recieved task idle"
 		self.selector.pop_task_event_pair(self.key)
 		
 

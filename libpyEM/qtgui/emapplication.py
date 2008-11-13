@@ -284,7 +284,9 @@ class EMStandAloneApplication(EMApplication):
 		child.get_qt_widget().initGL()
 	
 	def isVisible(self,child):
-		return child.gl_widget.isVisible()
+		if child.gl_widget != None:
+			return child.gl_widget.isVisible()
+		else: return False
 	
 	def show(self):
 		for child in self.children:
@@ -304,7 +306,7 @@ class EMStandAloneApplication(EMApplication):
 					inspector.close()
 				return
 			
-		print "couldn't close",child
+		#print "couldn't close",child
 	
 	def hide_specific(self,child,inspector_too=True):
 		for child_ in self.children:
@@ -381,6 +383,7 @@ class EMStandAloneApplication(EMApplication):
 		else:
 			print "warning, can't stop a timer when there is none"
 
+		
 class EMQtWidgetModule(EMGUIModule):
 	def __init__(self,qt_widget,application):
 		self.qt_widget = qt_widget
@@ -461,4 +464,47 @@ class EMQtWidgetModule(EMGUIModule):
 	def setWindowTitle(self,title):
 		if self.qt_widget != None:
 			self.qt_widget.setWindowTitle(title)
+			
+class EMProgressDialogModule(EMQtWidgetModule):
+	'''
+	params should be a list of ParamDef objects
+	application should be an EMAN2 type application
+	After initializing this object you should probably call application.show(this)
+	or application.show_specific(this), depending on what you're doing
+	'''
+	def __init__(self,application,label_text,cancel_button_text, minimum, maximum, parent):
+		self.application = application
+		self.widget = EMProgressDialog(label_text,cancel_button_text, minimum, maximum, parent)
+		EMQtWidgetModule.__init__(self,self.widget,application)
+		
+	def get_desktop_hint(self):
+		return "dialog"
+		
+
+#class EMProgressDialogModule(object):
+	#def __new__(cls,application,label_text,cancel_button_text, minimum, maximum, parent):
+		#widget = EMProgressDialog(label_text,cancel_button_text, minimum, maximum, parent)
+
+		##gl_view = EMQtGLView(EMDesktop.main_widget,widget)
+		#module = EMQtWidgetModule(widget,application)
+		#widget.widget_module = module
+		#application.show_specific(module)
+		##desktop_task_widget = EM2DGLWindow(gl_view)
+		#return module
+	
+class EMProgressDialog(QtGui.QProgressDialog):
+	'''
+	We need to do it this way in order to make the progress dialog work in the desktopp
+	'''
+	def __init__(self,label_text,cancel_button_text, minimum, maximum, parent = None):
+		QtGui.QProgressDialog.__init__(self,label_text,cancel_button_text, minimum, maximum, parent)
+		self.widget_module = None # this should be immediately set after init
+		
+	def set_widget_module(self,module): self.widget_module = module
+	def __setattr__( self, attr, value ):
+		QtGui.QProgressDialog.__setattr__(self,attr,value)
+		if self.widget_module != None:
+			self.widget_module.force_texture_update()
+		
+
 			
