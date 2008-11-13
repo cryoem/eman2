@@ -414,6 +414,7 @@ int main(int argc, char *argv[])
 		printf("An AMD Athlon 64 3700+ 2.2Ghz SF -------------------------------- 1530\n");
 		printf("An AMD Athlon 64 FX-51 2.2Ghz SF -------------------------------- 1760\n");
 		printf("An AMD Opteron 248 2.2Ghz SF ------------------------------------ 1870\n");
+		printf("An Intel Core2 T7200 2.0Ghz SF ---------------------------------- 1990\n");
 		printf("An Intel Xeon E5335 2.0Ghz SF ----------------------------------- 2010\n");
 		printf("An AMD Opteron 280 2.4Ghz SF ------------------------------------ 2130\n");
 		printf("An Intel Core2 Duo 2.66Ghz SF ----------------------------------- 2600\n");
