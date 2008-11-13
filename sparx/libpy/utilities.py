@@ -2423,7 +2423,7 @@ def set_ctf(ima, p):
 	
 	if amp_contrast < 1.0:
 		from math import sqrt
-		amp_contrast = amp_contrast*100/sqrt(2*amp_constrast**2-2*amp_constrast+1)
+		amp_contrast = amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)
 
 	ctf = EMAN2Ctf()
 	ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
