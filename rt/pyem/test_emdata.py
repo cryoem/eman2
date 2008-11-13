@@ -35,7 +35,6 @@ import EMAN2
 from EMAN2 import *
 from pyemtbx.exceptions import *
 import unittest
-from test import test_support
 import testlib
 import sys
 import math

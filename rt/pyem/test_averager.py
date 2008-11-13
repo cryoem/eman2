@@ -33,10 +33,12 @@
 
 from EMAN2 import *
 import unittest,os,sys
-from test import test_support
 import testlib
 from pyemtbx.exceptions import *
 from math import pi
+from optparse import OptionParser
+
+IS_TEST_EXCEPTION = False
 
 class TestAverager(unittest.TestCase):
     """averager test"""
@@ -46,7 +48,15 @@ class TestAverager(unittest.TestCase):
 
 
 def test_main():
-    test_support.run_unittest(TestAverager)
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestAverager)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__ == '__main__':
     test_main()

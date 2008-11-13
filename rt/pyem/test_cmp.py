@@ -33,9 +33,11 @@
 
 from EMAN2 import *
 import unittest,os,sys
-from test import test_support
 import testlib
 from pyemtbx.exceptions import *
+from optparse import OptionParser
+
+IS_TEST_EXCEPTION = False
 
 class TestCmp(unittest.TestCase):
     """cmp test"""
@@ -225,8 +227,17 @@ class TestCmp(unittest.TestCase):
 					neg_one  = e3.cmp('dot', e3.copy(), {"normalize":1})
 					self.assertAlmostEqual(neg_one,-1, places=6)
         
+
 def test_main():
-    test_support.run_unittest(TestCmp)
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestCmp)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__ == '__main__':
     test_main()

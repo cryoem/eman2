@@ -33,11 +33,13 @@
 
 from EMAN2 import *
 import unittest
-from test import test_support
 import os
 import random
 import math
 import testlib
+from optparse import OptionParser
+
+IS_TEST_EXCEPTION = False
 
 class TestUtils(unittest.TestCase):
     """test Util class"""
@@ -507,7 +509,6 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(EMUtil.get_image_type('mrcfile'), EMUtil.ImageType.IMAGE_MRC)
         testlib.safe_unlink('mrcfile')
         
-        Log.logger().set_level(-1)    #no log message printed out
         e.write_image('hdffile', 0, EMUtil.ImageType.IMAGE_HDF)
         self.assertEqual(EMUtil.get_image_type('hdffile'), EMUtil.ImageType.IMAGE_HDF)
         testlib.safe_unlink('hdffile')
@@ -564,7 +565,6 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(EMUtil.get_image_count('test_image_count.mrc'), 1)
         testlib.safe_unlink('test_image_count.mrc')
         
-        Log.logger().set_level(-1)    #no log message printed out
         e.write_image('test_image_count.hdf', 0)
         e.write_image('test_image_count.hdf', 1)
         e.write_image('test_image_count.hdf', 2)
@@ -617,11 +617,19 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_FLOAT_COMPLEX), 'FLOAT_COMPLEX')
         self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_UNKNOWN), 'UNKNOWN')
 
-    
-                       
+
 def test_main():
-    test_support.run_unittest(TestUtils)
-    test_support.run_unittest(TestEMUtils)
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite1 = unittest.TestLoader().loadTestsFromTestCase(TestUtils)
+    suite2 = unittest.TestLoader().loadTestsFromTestCase(TestEMUtils)
+    unittest.TextTestRunner(verbosity=2).run(suite1)
+    unittest.TextTestRunner(verbosity=2).run(suite2)
 
 if __name__ == '__main__':
     test_main()

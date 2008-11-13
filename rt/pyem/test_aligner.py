@@ -34,10 +34,12 @@
 from EMAN2 import *
 from EMAN2db import *
 import unittest,os,sys
-from test import test_support
 import testlib
 from pyemtbx.exceptions import *
 from math import *
+from optparse import OptionParser
+
+IS_TEST_EXCEPTION = False
 
 class TestAligner(unittest.TestCase):
 	"""aligner test"""
@@ -433,7 +435,15 @@ class TestAligner(unittest.TestCase):
 				
 	
 def test_main():
-	test_support.run_unittest(TestAligner)
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestAligner)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__ == '__main__':
 	test_main()

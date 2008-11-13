@@ -33,7 +33,9 @@
 
 from EMAN2 import *
 import unittest
-from test import test_support
+from optparse import OptionParser
+
+IS_TEST_EXCEPTION = False
 
 class TestVec(unittest.TestCase):
     """this is unit test for those self-defined vector class"""
@@ -168,7 +170,15 @@ class TestVec(unittest.TestCase):
         self.assertEqual(a9, Vec3f(2,-1,0))
 
 def test_main():
-    test_support.run_unittest(TestVec)
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestVec)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__ == '__main__':
     test_main()

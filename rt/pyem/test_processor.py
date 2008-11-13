@@ -33,7 +33,6 @@
 
 from EMAN2 import *
 import unittest,os,sys
-from test import test_support
 import testlib
 from pyemtbx.exceptions import *
 import numpy

@@ -33,7 +33,6 @@
 
 from EMAN2 import *
 import unittest
-from test import test_support
 import testlib
 import math
 from optparse import OptionParser

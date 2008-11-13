@@ -45,8 +45,6 @@ IS_TEST_EXCEPTION = False
 
 class TestReconstructor(unittest.TestCase):
 	"""Reconstructor test"""
-	def setUp(self):
-		self.test_exception = True
 	
 	def notest_insert_remove(self):
 		"""test insert and remove .........................."""

@@ -33,10 +33,12 @@
 
 from EMAN2 import *
 import unittest
-from test import test_support
 from pyemtbx.exceptions import *
 import testlib
 import sys
+from optparse import OptionParser
+
+IS_TEST_EXCEPTION = False
 
 class TestPixel(unittest.TestCase):
     """miscellaneous tests"""
@@ -88,36 +90,39 @@ class TestException(unittest.TestCase):
     
     def test_FileAccessException(self):
         """test file access exception ......................."""
-        Log.logger().set_level(-1)    #no log message printed out
         e = EMData()
         e.set_size(10, 10, 1)
-
-        try:
-            e.read_image("__notexistingfile__.mrc")
-        except RuntimeError, runtime_err:
-            err_type = exception_type(runtime_err)
-            self.assertEqual(err_type, "FileAccessException")
+        
+        if(IS_TEST_EXCEPTION):
+            try:
+                e.read_image("__notexistingfile__.mrc")
+            except RuntimeError, runtime_err:
+                err_type = exception_type(runtime_err)
+                self.assertEqual(err_type, "FileAccessException")
 
     def test_NotExistingObjectException(self):
         """test not existing object exception ..............."""
         e = EMData()
         e.set_size(100, 100, 1)
-
-        try:
-            e.process_inplace("NotExistintFilter_kfjda")
-        except RuntimeError, runtime_err:
-            err_type = exception_type(runtime_err)
-            self.assertEqual(err_type, "NotExistingObjectException")
+        
+        if(IS_TEST_EXCEPTION):
+            try:
+                e.process_inplace("NotExistintFilter_kfjda")
+            except RuntimeError, runtime_err:
+                err_type = exception_type(runtime_err)
+                self.assertEqual(err_type, "NotExistingObjectException")
 
     def test_ImageFormatException(self):
         """test image format exception ......................"""
         fake_img = TestUtil.get_debug_image("fake.mrc")
         e = EMData()
-        try:
-            e.read_image(fake_img)
-        except RuntimeError, runtime_err:
-            err_type = exception_type(runtime_err)
-            self.assertEqual(err_type, "FileAccessException")
+        
+        if(IS_TEST_EXCEPTION):
+            try:
+                e.read_image(fake_img)
+            except RuntimeError, runtime_err:
+                err_type = exception_type(runtime_err)
+                self.assertEqual(err_type, "FileAccessException")
             
 class TestRegion(unittest.TestCase):
     """tests for class Region"""
@@ -150,7 +155,21 @@ class TestRegion(unittest.TestCase):
         
 
 def test_main():
-    test_support.run_unittest(TestPixel, TestBoost, TestException, TestRegion)
+    p = OptionParser()
+    p.add_option('--t', action='store_true', help='test exception', default=False )
+    global IS_TEST_EXCEPTION
+    opt, args = p.parse_args()
+    if opt.t:
+        IS_TEST_EXCEPTION = True
+    Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
+    suite1 = unittest.TestLoader().loadTestsFromTestCase(TestPixel)
+    suite2 = unittest.TestLoader().loadTestsFromTestCase(TestBoost)
+    suite3 = unittest.TestLoader().loadTestsFromTestCase(TestException)
+    suite4 = unittest.TestLoader().loadTestsFromTestCase(TestRegion)
+    unittest.TextTestRunner(verbosity=2).run(suite1)
+    unittest.TextTestRunner(verbosity=2).run(suite2)
+    unittest.TextTestRunner(verbosity=2).run(suite3)
+    unittest.TextTestRunner(verbosity=2).run(suite4)
 
 if __name__ == '__main__':
     test_main()
