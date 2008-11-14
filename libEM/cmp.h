@@ -335,8 +335,8 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("invert", EMObject::INT, "If set, 'with' is rescaled rather than 'this'. 'this' should still be the noisier image. (default=0)");
-			d.put("keepzero", EMObject::INT, "If set, zero pixels will not be adjusted in the linear density optimization. (default=0)");
-			d.put("matchfilt", EMObject::INT, "If set, with will be filtered so its radial power spectrum matches 'this' before density optimization of this. (default=0)");
+			d.put("keepzero", EMObject::INT, "If set, zero pixels will not be adjusted in the linear density optimization. (default=1)");
+			d.put("matchfilt", EMObject::INT, "If set, with will be filtered so its radial power spectrum matches 'this' before density optimization of this. (default=1)");
 			d.put("matchamp", EMObject::INT, "Takes per-pixel Fourier amplitudes from self and imposes them on the target, but leaves the phases alone. (default=0)");
 			d.put("radweight", EMObject::INT, "Upweight variances closer to the edge of the image. (default=0)");
 			d.put("debug", EMObject::INT, "Performs various debugging actions if set.");
@@ -412,7 +412,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Mean Fourier ring correlation";
+			return "Computes a Fourier Ring Correlation between the images, and average (with optional weighting factors).";
 		}
 
 		static Cmp *NEW()
@@ -423,7 +423,9 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("snr", EMObject::FLOATARRAY);
+			d.put("snrweight", EMObject::INT, "If set, the SNR of 'this' will be used to weight the result (default=0)");
+			d.put("ampweight", EMObject::INT, "If set, the amplitude of 'this' will be used to weight the result (default=1)");
+			d.put("sweight", EMObject::INT, "If set, weight the (1-D) average by the spatial frequency (default=1)");
 			return d;
 		}
 	};

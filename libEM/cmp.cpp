@@ -488,9 +488,9 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	ENTERFUNC;
 	validate_input_args(image, with);
 
-	int keepzero = params.set_default("keepzero", 0);
+	int keepzero = params.set_default("keepzero", 1);
 	int invert = params.set_default("invert",0);
-	int matchfilt = params.set_default("matchfilt",0);
+	int matchfilt = params.set_default("matchfilt",1);
 	int matchamp = params.set_default("matchamp",0);
 	int radweight = params.set_default("radweight",0);
 	int dbug = params.set_default("debug",0);
@@ -500,7 +500,6 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	
 	EMData *with2=NULL;
 	if (matchfilt) {
-//		throw ImageDimensionException("matchfilt has not been implemented yet");
 		EMData *a = image->do_fft();
 		EMData *b = with->do_fft();
 		
@@ -565,7 +564,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	}
 
 
-	Util::calc_least_square_fit(size, x_data, y_data, &m, &b, 1);
+	Util::calc_least_square_fit(size, x_data, y_data, &m, &b, keepzero);
 	if (m == 0) {
 		m = FLT_MIN;
 	}
@@ -737,7 +736,14 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 {
 	ENTERFUNC;
 	validate_input_args(image, with);
+
+	if (!image->is_complex()) { image=image->do_fft(); image->set_attr("free_me",1); }
+	if (!with->is_complex()) { with=with->do_fft(); with->set_attr("free_me",1); }
 	
+	int snrweight = params.set_default("snrweight", 0);
+	int ampweight = params.set_default("ampweight", 1);
+	int sweight = params.set_default("sweight", 1);
+
 	static vector < float >default_snr;
 
 // 	if (image->get_zsize() > 1) {
@@ -747,37 +753,35 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	//int nx = image->get_xsize(); // <- not currently used
 	int ny = image->get_ysize();
 
-	vector < float >snr;
-	if (params.has_key("snr")) snr = params["snr"];
-	vector < float >fsc_array;
+	vector < float >fsc;
 
-	if (snr.size() == 0) {
-		int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
+	fsc = image->calc_fourier_shell_correlation(with,1);
 
-		fsc_array = image->calc_fourier_shell_correlation(with);
-		
-		if (default_snr.size() != (unsigned int) np) {
-			default_snr = vector < float >(np);
-			// float w = Util::square(nx / 8.0f); // <- Not currently used
-
-			for (int i = 0; i < np; i++) {
-//				float x2 = Util::square(i / (float) Ctf::CTFOS);
-//				default_snr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
-				float x2 = 10.0f*i/np;
-				default_snr[i] = x2 * exp(-x2);
-			}
-		}
+	vector<float> snr;
+	if (snrweight) {
+		if (!image->has_attr("ctf")) throw InvalidCallException("SNR weight with no CTF parameters");
+		Ctf *ctf=image->get_attr("ctf");
+		float ds=1.0/(ctf->apix*ny);
+		snr=ctf->compute_1d(ny/2,ds,Ctf::CTF_SNR);
 	}
-	double sum = 0;
-	double norm = 0;
+	
+	vector<float> amp;
+	if (ampweight) amp=image->calc_radial_dist(ny/2,0,1,0);
 
-	const int n = Ctf::CTFOS;
-	for (int i = 0; i < ny / 2 + 1; i++) {
-		int idx = i + fsc_array.size()/3;
-// 		cout << fsc_array[idx] << " ";
-		sum += fsc_array[idx] * i * default_snr[idx * n + n / 2];
-		norm += i * default_snr[idx * n + n / 2];
+	double sum,norm;
+	
+	for (int i=0; i<ny/2; i++) {
+		double weight=1.0;
+		if (sweight) weight*=fsc[(ny/2+1)*2+i];
+		if (ampweight) weight*=amp[i];
+		if (snrweight) weight*=snr[i];
+		sum+=weight*fsc[ny/2+1+i];
+		norm+=weight;
+		printf("%d\t%f\t%f\n",i,weight,fsc[ny/2+1+i]);
 	}
+
+	if (image->has_attr("free_me")) delete image;
+	if (with->has_attr("free_me")) delete with;
 
 	EXITFUNC;
 	

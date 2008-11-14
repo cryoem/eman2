@@ -777,7 +777,7 @@ namespace EMAN
 			return my_instance->my_dict[lower] ();
 		}
 		
-		throw NotExistingObjectException(instancename, "No such an instance existing");
+		throw NotExistingObjectException(instancename, "The named object doesn't exist");
 	}
 
 	template < class T > T * Factory < T >::get(const string & instancename,
