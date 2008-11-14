@@ -182,23 +182,37 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		
 	def get_particle_dims_direct(self,file_names):
 		'''
-		no checking, only call if you're confident the names are actually entries in the particles db
+		Iterates through the given names opening the bdb:particles#name
+		and returning the dimensions as string e.g. 128x128x1, in a list
+		You can use this function if the file_names are exactly those that exist in the particles BDB
+		otherwise use get_particle_dims
 		'''
 		vals = []
 		for name in file_names:
-			db = db_open_dict("bdb:particles#"+name)
-			hdr = db.get_header(0)
-			vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+			db_name = "bdb:particles#"+name
+			if db_check_dict(db_name):
+				db = db_open_dict(db_name)
+				hdr = db.get_header(0)
+				vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+			else: vals.append("No data")
 		return vals
 
 	def get_num_particles_direct(self,file_names):
 		'''
-		no checking, only call if you're confident the names are actually entries in the particles db
+		Iterates through the given names opening the bdb:particles#name
+		and returning the number of particles in each db, in a list. If for some reason the dictionary doesn't exist will
+		return a -1 in the list instead
+		You can use this function if the file_names are exactly those that exist in the particles BDB
+		otherwise use get_num_particles
 		'''
 		vals = []
 		for name in file_names:
-			db = db_open_dict("bdb:particles#"+name)
-			vals.append(db["maxrec"]+1)
+			db_name = "bdb:particles#"+name
+			if db_check_dict(db_name):
+				db = db_open_dict(db_name)
+				vals.append(db["maxrec"]+1)
+			else:
+				vals.append(-1)
 		return vals
 
 
@@ -410,22 +424,29 @@ class CTFWorkFlowTask(ParticleWorkFlowTask):
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 
-	def get_ctf_param_table(self):
-		particle_file_names = self.get_particle_db_names(strip_ptcls=False)
+	def get_ctf_param_table(self,particle_file_names=None):
+		'''
+		particle_files_names should be the return variable of self.get_particle_db_names(strip_ptcls=False), or get_ctf_project_names
+		'''
+		if particle_file_names == None: # just left this here in case anyone is wandering what to do
+			particle_file_names = self.get_particle_db_names(strip_ptcls=False)
 		
 		defocus,dfdiff,dfang,bfactor = self.get_ctf_info(particle_file_names)
 		
 		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=particle_file_names)
 		pdefocus = ParamDef(name="Defocus",vartype="floatlist",desc_short="Defocus",desc_long="Estimated defocus of the microscope",property=None,defaultunits=None,choices=defocus)
 		pbfactor = ParamDef(name="Bfactor",vartype="floatlist",desc_short="B factor",desc_long="Estimated B factor of the microscope",property=None,defaultunits=None,choices=bfactor)
-		num_boxes = self.get_num_particles_direct(particle_file_names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
-		
+		num_phase,num_wiener,num_particles = self.get_ctf_particle_info(particle_file_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles",desc_long="The number of particles stored for this image in the database",property=None,defaultunits=None,choices=num_particles)
+		pwiener = ParamDef(name="Num wiener",vartype="intlist",desc_short="Phase flipped",desc_long="The number of Wiener filter particles stored for this image in the database",property=None,defaultunits=None,choices=num_phase)
+		pphase = ParamDef(name="Num phase",vartype="intlist",desc_short="Wienered",desc_long="The number of phase flipped particles stored for this image in the database",property=None,defaultunits=None,choices=num_wiener)
 		
 		p = ParamTable(name="filenames",desc_short="Current CTF parameters",desc_long="")
 		
 		p.append(pnames)
 		p.append(pboxes)
+		p.append(pwiener)
+		p.append(pphase)
 		p.append(pdefocus)
 		p.append(pbfactor)
 		
@@ -457,6 +478,68 @@ class CTFWorkFlowTask(ParticleWorkFlowTask):
 		else:
 			dummy = [0 for i in range(len(particle_file_names))]
 			return dummy,dummy,dummy,dummy
+	def get_ctf_particle_info(self,particle_file_names):
+		'''
+		Returns three string lists containing entries that are either "yes" or "no"
+		The first question asked is do phase corrected images exist for this file name in the particles db?
+		The second question asked is do wiener filtered iamges exist for this file name in the particles db?
+		The third question is, do particle images exist for the given file name in the particles db?
+		A fourth question could be, do all of the existing particle files have the same number of images in them? That might be something that is 
+		useful, at some stage
+		
+		You could call this function with the names of the particle images in the bdb particles directory, i.e. all pariticle file names would
+		look like
+		img_001_ptcls
+		img_003_ptcls
+		And these would correspond to entries in the particles database, ie the following bdb entries would exist and contain particles
+		bdb:particles#:img_001_ptcls
+		bdb:particles#:img_003_ptcls
+		
+		But you might also call it with the filenames from the e2ctf.parms directory
+		
+		'''
+		phase = []
+		wiener = []
+		particles = []
+		
+		for name in particle_file_names:
+			particle_db_name = "bdb:particles#"+name
+			wiener_ptcl_db_name = particle_db_name + "_ctf_wiener"
+			flip_ptcl_db_name = particle_db_name + "_ctf_flip"
+			d = {}
+			d[particle_db_name] = particles
+			d[wiener_ptcl_db_name] = wiener
+			d[flip_ptcl_db_name] = phase
+			
+			for db_name,data_list in d.items():
+				if db_check_dict(db_name):
+					particle_db = db_open_dict(db_name)
+					if particle_db.has_key("maxrec"): 
+						data_list.append(particle_db["maxrec"]+1)
+					else: data_list.append("")
+				else: data_list.append("")
+		
+		return phase,wiener,particles
+#		else:
+#			print "no db for particles"
+#			dummy = [-1 for i in range(len(particle_file_names))]
+#			return dummy,dummy,dummy
+		
+		
+		
+	def get_ctf_project_names(self):
+		'''
+		Inspects the e2ctf.parms database for any images that have ctf parameters
+		'''
+		if db_check_dict("bdb:e2ctf.parms"):
+			ctf_parms_db = db_open_dict("bdb:e2ctf.parms")
+			vals = ctf_parms_db.keys()
+			print vals
+			if vals == None: vals = []
+			return vals
+		else:
+			print "empty, empty"
+			return []
 
 class E2CTFTask(CTFWorkFlowTask):	
 	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
@@ -469,7 +552,7 @@ class E2CTFTask(CTFWorkFlowTask):
 		params = []		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFTask.documentation_string,choices=None))
 		
-		params.append(self.get_ctf_param_table())
+		params.append(self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False)))
 		
 		project_db = db_open_dict("bdb:project")
 		ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
@@ -485,8 +568,11 @@ class E2CTFTask(CTFWorkFlowTask):
 		params.append(pcs)
 		params.append(pac)
 		params.append(pos)
-		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Run gui",desc_long="Whether to load the GUI or just run automated ctf determination",property=None,defaultunits="gui",choices=["gui","no gui"]))
-		
+		params.append(ParamDef(name="running_mode",vartype="boolean",desc_short="Run gui",desc_long="Load the GUI or just run automated ctf determination",property=None,defaultunits=False,choices=None))
+		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Generate wiener filtered output (phase flipping will also occur)",desc_long="Wiener filter the input particles",property=None,defaultunits=False,choices=None)
+		pphase= ParamDef(name="phase",vartype="boolean",desc_short="Generate phase flipped output",desc_long="Phase flip the input particles",property=None,defaultunits=False,choices=None)
+		params.append(pphase)
+		params.append(pwiener)
 		
 		return params
 	
@@ -587,15 +673,14 @@ class CTFReportTask(CTFWorkFlowTask):
 
 	def get_params(self):
 		params = []
-		
-		params = []		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string,choices=None))
 		
-		params.append(self.get_ctf_param_table())
+		params.append(self.get_ctf_param_table(self.get_ctf_project_names()))
 		return params
 
 	def write_db_entry(self,key,value):
 		pass
+
 
 class MicrographCCDImportTask(WorkFlowTask):	
 	documentation_string = "Use this tool for importing flat files into the raw_data directory in the project database. Files that you import in this way will be automatically added the list of files in the project."

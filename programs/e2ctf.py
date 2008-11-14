@@ -131,6 +131,8 @@ operations are performed on oversampled images if specified."""
 	envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
 	
 	# write the final envelope
+	db_project=db_open_dict("bdb:project")
+	db_parms=db_open_dict("bdb:e2ctf.parms")
 	db_misc=db_open_dict("bdb:e2ctf.misc")
 	db_misc["envelope"]=envelope
 	
@@ -224,7 +226,8 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 	oversamp will oversample as part of the processing, ostensibly permitting phase-flipping on a wider range of defocus values
 	"""
 	
-	im=EMData(stackfile,0)
+	im=EMData()
+	im.read_image(stackfile,0) # can't use the constructor if bdb terminology is being used
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
 	n=EMUtil.get_image_count(stackfile)
@@ -232,7 +235,8 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 	
 	
 	for i in range(n):
-		im1=EMData(stackfile,i)
+		im1 = EMData()
+		im1.read_image(stackfile,i)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
 		if type(ctf)==EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
