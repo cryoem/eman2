@@ -4660,15 +4660,15 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 
 	# figure the size of the chunk (3D is updated after each chunk).  Chunk should be given as 0.0< chunk <= 1.0.  1.0 means all projections
 	if chunk <= 0.0:  chunk = 1.0
-	n_in_chunk  = max(int(chunk * (image_end-image_start+1)), 1)
+	n_in_chunk  = max(int(chunk*(image_end-image_start)), 1)
 	n_of_chunks = (image_end-image_start+1)//n_in_chunk + min((image_end-image_start+1)%n_in_chunk,1)
 
 	if debug:
 		outf.write("  chunk = "+str(chunk)+"   ")
 		outf.write("\n")
 		outf.flush()
-		outf.write("  n_in_chunk = "+str(n_in_chunk)+"   ")
-		outf.write("  n_of_chunks = "+str(n_of_chunks)+"   ")
+		outf.write("  Number of images in a chunk = "+str(n_in_chunk)+"   ")
+		outf.write("  Number of chunks = "+str(n_of_chunks)+"   ")
 		outf.write("\n")
 		outf.flush()
 
@@ -4678,7 +4678,8 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	del list_of_particles
 
 	if debug:
-		outf.write("  data read = "+str(image_start)+"   ")
+		outf.write("  First image on this processor: "+str(image_start)+"   ")
+		outf.write("  Last image on this processor:  "+str(image_end)+"   ")
 		outf.write("\n")
 		outf.flush()
 
@@ -4717,8 +4718,8 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 			image_start_in_chunk = image_start + ic*n_in_chunk
 			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, image_end)
 			if debug:
-				outf.write("ic "+str(ic)+"   image_start "+str(image_start)+"   n_in_chunk "+str(n_in_chunk)+"   image_end "+str(image_end)+"\n")
-				outf.write("image_start_in_chunk "+str(image_start_in_chunk)+"  image_end_in_chunk "+str(image_end_in_chunk)+"\n")
+				outf.write("Chunk "+str(ic)+"   Number of images in this chunk: "+str(n_in_chunk)+"\n")
+				outf.write("First image in this chunk: "+str(image_start_in_chunk)+"   Last image in this chunk: "+str(image_end_in_chunk-1)+"\n")
 				outf.flush()
 			if CTF:  previous_defocus = -1.0
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
