@@ -69,8 +69,11 @@ Various utilities related to BDB databases."""
 		if options.filt:
 			dbs=[db for db in dbs if options.filt in db]
 		
-		maxname=max([len(s) for s in dbs])
-		
+		try: maxname=max([len(s) for s in dbs])
+		except: 
+			print "Error reading ",path
+			continue
+			
 		# long listing, one db per line
 		if options.long :
 			width=maxname+3
