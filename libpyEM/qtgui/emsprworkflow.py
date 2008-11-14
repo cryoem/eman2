@@ -39,7 +39,7 @@ import os
 import copy
 from emapplication import EMProgressDialogModule
 from e2boxer import EMBoxerModule
-from e2ctf import pspec_and_ctf_fit,GUIctfModule
+from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output
 
 class EmptyObject:
 	'''
@@ -547,6 +547,8 @@ class E2CTFTask(CTFWorkFlowTask):
 	def __init__(self,application):
 		CTFWorkFlowTask.__init__(self,application)
 		self.window_title = "e2ctf management"
+		self.options = None # will enventually store e2ctf options
+		self.gui = None # will eventually be a e2ctf gui
 
 	def get_params(self):
 		params = []		
@@ -568,9 +570,9 @@ class E2CTFTask(CTFWorkFlowTask):
 		params.append(pcs)
 		params.append(pac)
 		params.append(pos)
-		params.append(ParamDef(name="running_mode",vartype="boolean",desc_short="Run gui",desc_long="Load the GUI or just run automated ctf determination",property=None,defaultunits=False,choices=None))
+		params.append(ParamDef(name="gui",vartype="boolean",desc_short="Run gui",desc_long="Load the GUI or just run automated ctf determination",property=None,defaultunits=False,choices=None))
 		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Generate wiener filtered output (phase flipping will also occur)",desc_long="Wiener filter the input particles",property=None,defaultunits=False,choices=None)
-		pphase= ParamDef(name="phase",vartype="boolean",desc_short="Generate phase flipped output",desc_long="Phase flip the input particles",property=None,defaultunits=False,choices=None)
+		pphase= ParamDef(name="phaseflip",vartype="boolean",desc_short="Generate phase flipped output",desc_long="Phase flip the input particles",property=None,defaultunits=False,choices=None)
 		params.append(pphase)
 		params.append(pwiener)
 		
@@ -590,6 +592,7 @@ class E2CTFTask(CTFWorkFlowTask):
 		options.nosmooth = False
 		options.nonorm = False
 		options.autohp = False
+		options.invert = False
 		
 		filenames = params["filenames"]
 		
@@ -623,6 +626,9 @@ class E2CTFTask(CTFWorkFlowTask):
 		options.apix = params["global.apix"]
 		options.cs = params["global.microscope_cs"]
 		options.voltage = params["global.microscope_voltage"]
+		options.phaseflip = params["phaseflip"]
+		options.wiener = params["wiener"]
+		options.gui = params["gui"]
 		options.filenames = db_file_names
 		
 		return options
@@ -632,25 +638,35 @@ class E2CTFTask(CTFWorkFlowTask):
 		for k,v in params.items():
 			if k != "blurb": self.write_db_entry(k,v)
 
-		options = self.get_default_ctf_options(params)
-		if options != None:
-			img_sets = pspec_and_ctf_fit(options)
+		self.options = self.get_default_ctf_options(params)
+		if self.options != None:
+			img_sets = pspec_and_ctf_fit(self.options)
 		
-			if params["running_mode"] == "gui":
+			if self.options.gui:
 				self.gui=GUIctfModule(self.application,img_sets)
 				self.application.show_specific(self.gui)
+				self.application.close_specific(self.form)
+				QtCore.QObject.connect(self.gui.qt_widget,QtCore.SIGNAL("e2ctf_idle"), self.on_ctf_idle())
 			else:
+				write_e2ctf_output(self.options)
+				self.application.close_specific(self.form)
 				self.emit(QtCore.SIGNAL("task_idle"))
 		else:
+			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
+	
+	def on_ctf_idle(self):
+		print "on ctf idle"
+		self.gui = None
+		write_e2ctf_output(self.options)
+		self.options = None
+		self.emit(QtCore.SIGNAL("task_idle"))
 		
 	def on_form_close(self):
-		self.emit(QtCore.SIGNAL("task_idle"))
-		pass
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
-#		if self.boxer_module == None:
-#			self.emit(QtCore.SIGNAL("task_idle"))
-#		else: pass
+		if self.gui == None:
+			self.emit(QtCore.SIGNAL("task_idle"))
+		else: pass
 
 	def write_db_entry(self,key,value):
 		if key == "working_ac":

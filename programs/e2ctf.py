@@ -95,9 +95,10 @@ operations are performed on oversampled images if specified."""
 
 #	if options.oversamp>1 : options.apix/=float(options.oversamp)
 
-	# i did this so I could call the function from the workflow
+	
 	options.filenames = args
-	img_sets=pspec_and_ctf_fit(options,debug)
+	### Power spectrum and CTF fitting
+	img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
@@ -130,9 +131,6 @@ operations are performed on oversampled images if specified."""
 	envelope.sort()
 	envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
 	
-	# write the final envelope
-	db_project=db_open_dict("bdb:project")
-	db_parms=db_open_dict("bdb:e2ctf.parms")
 	db_misc=db_open_dict("bdb:e2ctf.misc")
 	db_misc["envelope"]=envelope
 	
@@ -143,8 +141,15 @@ operations are performed on oversampled images if specified."""
 	### Process input files
 	if debug : print "Phase flipping / Wiener filtration"
 	# write wiener filtered and/or phase flipped particle data to the local database
+	write_e2ctf_output(options) # converted to a function so to work with the workflow
+
+	E2end(logid)
+	
+def write_e2ctf_output(options):
+	# write wiener filtered and/or phase flipped particle data to the local database
 	if options.phaseflip or options.wiener:
-		for filename in args:
+		db_parms=db_open_dict("bdb:e2ctf.parms")
+		for filename in options.filenames:
 			name=get_file_tag(filename)
 			if debug: print "Processing ",filename
 
@@ -160,8 +165,6 @@ operations are performed on oversampled images if specified."""
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
-
-	E2end(logid)
 	
 def pspec_and_ctf_fit(options,debug=False):
 	### Power spectrum and CTF fitting
