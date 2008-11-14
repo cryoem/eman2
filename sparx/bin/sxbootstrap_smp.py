@@ -10,7 +10,7 @@ def bootstrap_genbuf( prjfile, bufprefix, beg, end, finfo=None ):
 	istore = newfile_store( bufprefix, 4 )
 	for i in xrange( beg, end ):
 		prj = get_im( prjfile, i ) 
-		istore.add_image( prj )
+		istore.add_image( prj, prj.get_attr("xform.proj")  )
 		if not(info is None) and (i%100==99):
 			finfo.write( "%6d buffered, time: %10.3f\n" % (i+1, time()-start_time) )
 			finfo.flush()
@@ -276,8 +276,7 @@ def bootstrap_calcwgts( prjfile, wgtfile, delta ):
 
 	for iprj in xrange(beg, end):
 		prj = get_im( prjfile, iprj )
-		phi = prj.get_attr( "phi" )
-		tht = prj.get_attr( "theta" )
+		phi,tht,psi,s2x,s2y = get_params_proj( prj )
 		aid = nearest_ang( eve_vecs, phi, tht )
 
 		finf.write( "prj %6d: %10.3f %10.3f close to ori %6d: %10.3f %10.3f\n" % (iprj, phi, tht, aid, eve_angs[aid][0], eve_angs[aid][1]))
