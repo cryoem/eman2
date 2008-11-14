@@ -386,7 +386,7 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 	if show:
 		try: os.system("display "+path)
 		except: pass
-		
+
 # Get the uniform dimension of the (square) input images. For instance
 # if the images are all 128x128 this will return 128. If the dimensions of the
 # images are not uniform an error is printed and the program exits.

@@ -34,11 +34,12 @@ from emform import EMFormModule,ParamTable
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts
-from EMAN2 import EMData,get_file_tag
+from EMAN2 import EMData,get_file_tag,EMAN2Ctf
 import os
 import copy
 from emapplication import EMProgressDialogModule
 from e2boxer import EMBoxerModule
+from e2ctf import pspec_and_ctf_fit,GUIctfModule
 
 class EmptyObject:
 	'''
@@ -81,32 +82,257 @@ class WorkFlowTask(QtCore.QObject):
 
 	def closeEvent(self,event):
 		self.application.close_specific(self.form)
-		#self.emit(QtCore.SIGNAL("task_idle"))
+		#self.emit(QtCore.SIGNAL("task_idle")
+		
+	def write_db_entry(self,key,value):
+		'''
+		Call this function if you need to
+		'''
+		if key == "global.apix":
+			db = db_open_dict("bdb:project")
+			db["global.apix"] = value
+		elif key == "global.microscope_voltage":
+			db = db_open_dict("bdb:project")
+			db["global.microscope_voltage"] = value
+		elif key == "global.microscope_cs":
+			db = db_open_dict("bdb:project")
+			db["global.microscope_cs"] = value
+		else:
+			pass
 
-class ParticleImportTask(WorkFlowTask):	
-	documentation_string = "Use this tool for importing particle image into the project database under the particle directory. Files that you import in this way will be automatically added the list of particle files in the project."
-	
+class ParticleWorkFlowTask(WorkFlowTask):
+	'''
+	Enncapsulates some functionality  common to the particle based work flow tasks
+	Such task should inherit from this class, not the the WorkFlowTask
+	'''
 	def __init__(self,application):
 		WorkFlowTask.__init__(self,application)
+		
+	def get_particle_db_names(self,strip_ptcls=True):
+		'''
+		returns a list of particle databases in the project
+		for instance if these dbs files exist in the particle bdb directory:
+		image_001_ptcls.bdb
+		image_1000_a_ptcls.bdb
+		image_001_ctf.bdbs
+		then this function will return [ image_001, image_1000_a]
+		Note the if strip_ptcls is False then the return list would instead be [ image_001_ptcls, image_1000_a_ptcls]
+		If there are no such dbs then an empty list is returned
+		'''
+		if os.path.exists("particles/EMAN2DB"):
+			dbs = db_list_dicts("bdb:particles#")
+			ptcl_dbs = []
+			for db in dbs:
+				db_strip = get_file_tag(db)
+				if len(db_strip) > 5:
+					if db_strip[-6:] == "_ptcls":
+						if strip_ptcls:
+							ptcl_dbs.append(db_strip[:-6])
+						else:
+							ptcl_dbs.append(db_strip)
+			return ptcl_dbs
+		else: return []
+
+	def get_particle_and_project_names(self):
+		'''
+		
+		'''
+		ptcl_dbs = self.get_particle_db_names()
+		
+		project_db = db_open_dict("bdb:project")
+		project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		for name in project_files:
+			stripped = get_file_tag(name)
+			if stripped not in ptcl_dbs:
+				ptcl_dbs.append(stripped)
+		
+		return ptcl_dbs
+	
+	def get_num_particles(self,project_files_names):
+		ptcl_dbs = self.get_particle_db_names()
+		vals = []
+		for name in project_files_names:
+			name_strip = get_file_tag(name)
+			if name_strip in ptcl_dbs:
+				db_name = "bdb:particles#"+name_strip+"_ptcls"
+				if db_check_dict(db_name):
+					db = db_open_dict(db_name)
+					vals.append(db["maxrec"]+1)
+				else:
+					vals.append(0)
+			else:
+				vals.append(0)
+		return vals
+	
+	def get_particle_dims(self,particle_file_names):
+		if not os.path.exists("particles/EMAN2DB"):
+			vals = [ "" for i in range(len(particle_file_names))]
+			return vals
+		else:
+			vals = []
+			for name in particle_file_names:
+				name_strip = get_file_tag(name)
+				db_name = "bdb:particles#"+name_strip+"_ptcls"
+				if db_check_dict(db_name):
+					db = db_open_dict(db_name)
+					hdr = db.get_header(0)
+					vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+				else: vals.append("")
+			return vals
+		
+	def get_particle_dims_direct(self,file_names):
+		'''
+		no checking, only call if you're confident the names are actually entries in the particles db
+		'''
+		vals = []
+		for name in file_names:
+			db = db_open_dict("bdb:particles#"+name)
+			hdr = db.get_header(0)
+			vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+		return vals
+
+	def get_num_particles_direct(self,file_names):
+		'''
+		no checking, only call if you're confident the names are actually entries in the particles db
+		'''
+		vals = []
+		for name in file_names:
+			db = db_open_dict("bdb:particles#"+name)
+			vals.append(db["maxrec"]+1)
+		return vals
+
+
+class ParticleReportTask(ParticleWorkFlowTask):
+	
+	documentation_string = "This tool is for displaying the particles that are currently associated with this project. You can add particles to the project by importing them or by using e2boxer."
+	
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "Project particles"
+
+	def get_params(self):
+		params = []
+		
+		
+		#particle_file_names = self.get_particle_and_project_names()
+		particle_file_names = self.get_particle_db_names(strip_ptcls=False)
+		
+		num_boxes = self.get_num_particles_direct(particle_file_names)
+		dimensions = self.get_particle_dims_direct(particle_file_names)
+		
+		
+		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=particle_file_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
+		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
+		
+		
+		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p.append(pnames)
+		p.append(pboxes)
+		p.append(pdims)
+		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
+		
+		params.append(p)
+		
+		#boxer_project_db = db_open_dict("bdb:e2boxer.project")
+		#params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
+		#params.append(ParamDef(name="global.imported_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.imported_micrograph_ccd_files",dfl=[]),choices=[]))
+		return params
+
+	
+	
+#	def get_num_particles(self,particle_file_names):
+#		if not os.path.exists("particles/EMAN2DB"):
+#			vals = [ 0 for i in range(len(particle_file_names))]
+#			return vals
+#		else:
+#			vals = []
+#			for name in particle_file_names:
+#				try:
+#					db = db_open_dict("bdb:particles#"+name+"_ptcls")
+#					vals.append(db["maxrec"]+1)
+#				except:	vals.append(0)
+#			return vals
+
+	def write_db_entry(self,key,value):
+		pass
+
+
+class ParticleImportTask(ParticleWorkFlowTask):	
+	documentation_string = "Use this tool for importing particle images into the particle directory in the project database. Files that you import in this way will be automatically added the list of particle files in the project."
+	
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "Import particles"
 
 	def get_params(self):
 		params = []
 		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Description",desc_long="",property=None,defaultunits=ParticleImportTask.documentation_string,choices=None))
-		params.append(ParamDef(name="global.imported_particle_files",vartype="url",desc_short="Imported particles",desc_long="A list of particle files that have been or will be imported into this project",property=None,defaultunits=project_db.get("global.imported_particle_files",dfl=[]),choices=[]))
+		params.append(ParamDef(name="import_particle_files",vartype="url",desc_short="Imported particles",desc_long="A list of particle files that have been or will be imported into this project",property=None,defaultunits=[],choices=[]))
 		return params
 
 
 	def write_db_entry(self,k,v):
-		pass
+		if k == "import_particle_files":
+			# first make sure that the file tags that will correspond to the imported file names do not conflict with names in the project files
+			project_db = db_open_dict("bdb:project")
+			project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+			pfnt = [ get_file_tag(name) for name in project_file_names]
+			
+			for name in v:
+				if get_file_tag(name) in pfnt:
+					print "error, you can't import particles that have the same file name as one of the project files - the problem is with:",get_file_tag(name)
+					return
+			# now check to see if there are duplicated filetags in the incoming list
+			# Actually the url form widget may have already dealt with this?
+			nt = [ get_file_tag(name) for name in v]
+			for name in v:
+				if nt.count(get_file_tag(name)) > 1:
+					print "error, you can't import particles that have the same file names! The problem is with:",get_file_tag(name)
+					return
+			
+			# now check to see if there isn't already an entry in the particle directory that corresponds to this name
+			particle_dbs = self.get_particle_db_names()
+			for name in v:
+				if get_file_tag(name) in particle_dbs:
+					print "error, you can't import particles that already have entries in the particle database! The problem is with:",get_file_tag(name)
+					return
+			# okay if we make it here we're fine, import that particles
+			progress = EMProgressDialogModule(self.application,"Importing files into database...", "Abort import", 0, len(v),None)
+			self.application.show_specific(progress)
+			read_header_only = True
+			a= EMData()
+			for i,name in enumerate(v):
+				progress.qt_widget.setValue(i)
+				if os.path.exists(name) or db_check_dict(name):
+					
+					try:
+						a.read_image(name,0,read_header_only)
+					except:
+						print "error,",name,"is not a valid image. Ignoring"
+						continue
+					
+					tag = get_file_tag(name)
+					db_name = "bdb:particles#"+tag+"_ptcls"
+					imgs = EMData().read_images(name)
+					for img in imgs: img.write_image(db_name,-1)
+				else:
+					print "error,",name,"doesn't exist. Ignoring"
+					
+			progress.qt_widget.setValue(len(v))
+			self.application.close_specific(progress)
+			
+				
+				# why doesn't this work :(
 		
 
-class E2BoxerTask(WorkFlowTask):	
-	documentation_string = "Use this tool to review which images in the project have been boxed, and to identify which images need boxing. You can choose from the list of images and hit ok which will lauch e2boxer and automatically load the selected images for boxing"
+class E2BoxerTask(ParticleWorkFlowTask):	
+	documentation_string = "Use this tool to box the selected images using e2boxer. Choose from the list of images and hit ok. This will lauch e2boxer and automatically load the selected images for boxing. Alternatively you may choose the auto_db option to execute automated boxing using information stored in the e2boxer database."
 	
 	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
+		ParticleWorkFlowTask.__init__(self,application)
 		self.window_title = "e2boxer management"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
@@ -116,8 +342,10 @@ class E2BoxerTask(WorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerTask.documentation_string,choices=None))
 		
 		project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		
 		num_boxes = self.get_num_particles(project_file_names)
-		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_file_names)
+#		if len(num_boxes) > 0:
+		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_file_names)
 		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
 		
 		
@@ -125,47 +353,24 @@ class E2BoxerTask(WorkFlowTask):
 		p.append(pnames)
 		p.append(pboxes)
 		params.append(p)
-		
+	
 		boxer_project_db = db_open_dict("bdb:e2boxer.project")
 		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
 		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits="Swarm",choices=["Swarm"]))
 		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Boxing mode",desc_long="Whether to load the GUI or run automatic boxing based on information stored in the database",property=None,defaultunits="gui",choices=["gui","auto_db"]))
-		#params.append(ParamDef(name="global.imported_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.imported_micrograph_ccd_files",dfl=[]),choices=[]))
+			#params.append(ParamDef(name="global.imported_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.imported_micrograph_ccd_files",dfl=[]),choices=[]))
+#		else:
+#			params.append(ParamDef(name="blurb",vartype="text",desc_short="No files",desc_long="",property=None,defaultunits="There are currently no files associated with the project",choices=None))
+		
+		
 		return params
-	
-	def get_num_particles(self,project_files_names):
-		if not os.path.exists("particles/EMAN2DB"):
-			vals = [ 0 for i in range(len(project_files_names))]
-			return vals
-		else:
-			#particle_db = project_db = db_open_dict("bdb:particles#")
-			dbs = db_list_dicts("bdb:particles")
-			ptcl_dbs = []
-			for db in dbs:
-				db_strip = get_file_tag(db)
-				if len(db_strip) > 5:
-					if db_strip[-6:] == "_ptcls":
-						ptcl_dbs.append(db_strip[:-6])
-			
-			
-			vals = []
-			for name in project_files_names:
-				name_strip = get_file_tag(name)
-				if name_strip in ptcl_dbs:
-					try:
-						db = db_open_dict("bdb:particles#"+name_strip+"_ptcls")
-						vals.append(db["maxrec"]+1)
-					except:
-						vals.append(0)
-				else:
-					vals.append(0)
-			return vals
 			
 	def on_form_ok(self,params):
 		for k,v in params.items():
 			if k != "blurb": self.write_db_entry(k,v)
 			
-		if len(params["filenames"]) == 0:
+		
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.application.close_specific(self.form)
 			self.form = None
@@ -199,90 +404,201 @@ class E2BoxerTask(WorkFlowTask):
 			boxer_project_db["working_boxsize"] = value
 
 		else:
-			pass	
+			pass
 
-class ParticlesTask(WorkFlowTask):
+class CTFWorkFlowTask(ParticleWorkFlowTask):
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
+
+	def get_ctf_param_table(self):
+		particle_file_names = self.get_particle_db_names(strip_ptcls=False)
+		
+		defocus,dfdiff,dfang,bfactor = self.get_ctf_info(particle_file_names)
+		
+		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=particle_file_names)
+		pdefocus = ParamDef(name="Defocus",vartype="floatlist",desc_short="Defocus",desc_long="Estimated defocus of the microscope",property=None,defaultunits=None,choices=defocus)
+		pbfactor = ParamDef(name="Bfactor",vartype="floatlist",desc_short="B factor",desc_long="Estimated B factor of the microscope",property=None,defaultunits=None,choices=bfactor)
+		num_boxes = self.get_num_particles_direct(particle_file_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Particles",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
+		
+		
+		p = ParamTable(name="filenames",desc_short="Current CTF parameters",desc_long="")
+		
+		p.append(pnames)
+		p.append(pboxes)
+		p.append(pdefocus)
+		p.append(pbfactor)
+		
+		return p
 	
-	documentation_string = "This is a list of particles images that are associated with this project. You can add and remove file names by editing the text entries directly and or by using the browse and clear buttons."
+	def get_ctf_info(self,particle_file_names):
+		if db_check_dict("bdb:e2ctf.parms"):
+			defocus = []
+			dfdiff = []
+			dfang = []
+			bfactor = []
+			ctf_db = db_open_dict("bdb:e2ctf.parms")
+			for name in particle_file_names:
+				try:
+					vals = ctf_db[name]
+					ctf = EMAN2Ctf()
+					ctf.from_string(vals)
+					vals = [ctf.defocus,ctf.dfdiff,ctf.dfang,ctf.bfactor]
+				except:
+					vals = [0,0,0,0]  # only need 4 at the moment
+					
+				defocus.append(vals[0])
+				dfdiff.append(vals[1])
+				dfang.append(vals[2])
+				bfactor.append(vals[3])
+
+			return defocus,dfdiff,dfang,bfactor
 	
+		else:
+			dummy = [0 for i in range(len(particle_file_names))]
+			return dummy,dummy,dummy,dummy
+
+class E2CTFTask(CTFWorkFlowTask):	
+	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
 	
 	def __init__(self,application):
-		WorkFlowTask.__init__(self,application)
+		CTFWorkFlowTask.__init__(self,application)
+		self.window_title = "e2ctf management"
+
+	def get_params(self):
+		params = []		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFTask.documentation_string,choices=None))
+		
+		params.append(self.get_ctf_param_table())
+		
+		project_db = db_open_dict("bdb:project")
+		ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
+		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
+		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
+		pac = ParamDef(name="working_ac",vartype="float",desc_short="Amplitude contrast",desc_long="The amplitude contrast constant. It is recommended that this value is identical in all of your images.",property=None,defaultunits=ctf_misc_db.get("working_ac",dfl=10),choices=None)
+		pos = ParamDef(name="working_oversamp",vartype="float",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=ctf_misc_db.get("working_oversamp",dfl=1),choices=None)
+		
+		
+		params.append(papix)
+		params.append(pvolt)
+		params.append(pcs)
+		params.append(pac)
+		params.append(pos)
+		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Run gui",desc_long="Whether to load the GUI or just run automated ctf determination",property=None,defaultunits="gui",choices=["gui","no gui"]))
+		
+		
+		return params
+	
+	def get_default_ctf_options(self,params):
+		'''
+		These are the options required to run pspec_and_ctf_fit in e2ctf.py
+		'''
+		
+		if not params.has_key("filenames") and len(params["filenames"]) == 0:
+			print "there is an internal error. You are asking for the default ctf options but there are no filenames to deduce the bgmask option from" # this shouldn't happen
+			return None
+		
+		
+		options = EmptyObject()
+		options.nosmooth = False
+		options.nonorm = False
+		options.autohp = False
+		
+		filenames = params["filenames"]
+		
+		boxsize = None
+		db_file_names = []
+		for i,name in enumerate(filenames):
+			db_name="bdb:particles#"+name
+			db_file_names.append(db_name)
+			if not db_check_dict(db_name):
+				print "error, can't particle entry doesn't exist for",name,"aborting."
+				return None
+			
+			if boxsize == None:
+				db = db_open_dict(db_name)
+				hdr = db.get_header(0)
+				boxsize = hdr["nx"] # no consideration is given for non square images
+			else:
+				db = db_open_dict(db_name)
+				hdr = db.get_header(0)
+				if boxsize != hdr["nx"]: # no consideration is given for non square images
+					print "error, can't run e2ctf on images with different box sizes. Specifically, I can not deduce the bgmask option for the group"
+					return None
+		
+		if boxsize == None or boxsize < 2:
+			print "error, boxsize is less than 2"
+			return None
+		
+		options.bgmask = boxsize/2
+		options.oversamp = params["working_oversamp"]
+		options.ac = params["working_ac"]
+		options.apix = params["global.apix"]
+		options.cs = params["global.microscope_cs"]
+		options.voltage = params["global.microscope_voltage"]
+		options.filenames = db_file_names
+		
+		return options
+
+	
+	def on_form_ok(self,params):
+		for k,v in params.items():
+			if k != "blurb": self.write_db_entry(k,v)
+
+		options = self.get_default_ctf_options(params)
+		if options != None:
+			img_sets = pspec_and_ctf_fit(options)
+		
+			if params["running_mode"] == "gui":
+				self.gui=GUIctfModule(self.application,img_sets)
+				self.application.show_specific(self.gui)
+			else:
+				self.emit(QtCore.SIGNAL("task_idle"))
+		else:
+			self.emit(QtCore.SIGNAL("task_idle"))
+		
+	def on_form_close(self):
+		self.emit(QtCore.SIGNAL("task_idle"))
+		pass
+		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+#		if self.boxer_module == None:
+#			self.emit(QtCore.SIGNAL("task_idle"))
+#		else: pass
+
+	def write_db_entry(self,key,value):
+		if key == "working_ac":
+			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+			ctf_misc_db["working_ac"] = value
+		elif key == "working_oversamp":
+			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+			ctf_misc_db["working_oversamp"] = value
+		else:
+			# there are some general parameters that need writing:
+			WorkFlowTask.write_db_entry(self,key,value)
+	
+class CTFReportTask(CTFWorkFlowTask):
+	
+	documentation_string = "This tool is for displaying the currently determined CTF parameters for the particles located in the project particle directory."
+	
+	def __init__(self,application):
+		CTFWorkFlowTask.__init__(self,application)
 		self.window_title = "Project particles"
 
 	def get_params(self):
 		params = []
 		
+		params = []		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string,choices=None))
 		
-		particle_file_names = self.get_project_particle_file_names()
-		num_boxes = self.get_num_particles(particle_file_names)
-		dimensions = self.get_particle_dims(particle_file_names)
-		
-		
-		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=particle_file_names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
-		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
-		
-		
-		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
-		p.append(pnames)
-		p.append(pboxes)
-		p.append(pdims)
-		params.append(p)
-		
-		#boxer_project_db = db_open_dict("bdb:e2boxer.project")
-		#params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
-		#params.append(ParamDef(name="global.imported_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.imported_micrograph_ccd_files",dfl=[]),choices=[]))
+		params.append(self.get_ctf_param_table())
 		return params
-	
-	def get_project_particle_file_names(self):
-		project_db = db_open_dict("bdb:project")
-		project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-		result = [get_file_tag(name)+"_ptcls" for name in project_file_names]
-		
-		dbs = db_list_dicts("bdb:particles")
-		
-		for db in dbs:
-			db_strip = get_file_tag(db)
-			if db_strip not in result:
-				result.append(db)
-				
-		return result
-					
-	def get_particle_dims(self,particle_file_names):
-		if not os.path.exists("particles/EMAN2DB"):
-			vals = [ "" for i in range(len(particle_file_names))]
-			return vals
-		else:
-			vals = []
-			for name in particle_file_names:
-				try:
-					db = db_open_dict("bdb:particles#"+name)
-					hdr = db.get_header(0)
-					#print hdr
-					vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
-				except:	vals.append("")
-			return vals
-	
-	def get_num_particles(self,particle_file_names):
-		if not os.path.exists("particles/EMAN2DB"):
-			vals = [ 0 for i in range(len(particle_file_names))]
-			return vals
-		else:
-			vals = []
-			for name in particle_file_names:
-				try:
-					db = db_open_dict("bdb:particles#"+name)
-					vals.append(db["maxrec"]+1)
-				except:	vals.append(0)
-			return vals
 
 	def write_db_entry(self,key,value):
 		pass
 
-
 class MicrographCCDImportTask(WorkFlowTask):	
-	documentation_string = "Use this tool for importing flat files into the project database under the raw_data directory. Files that you import in this way will be automatically added the list of files in the project."
+	documentation_string = "Use this tool for importing flat files into the raw_data directory in the project database. Files that you import in this way will be automatically added the list of files in the project."
 	
 	def __init__(self,application):
 		WorkFlowTask.__init__(self,application)
@@ -351,12 +667,12 @@ class MicrographCCDImportTask(WorkFlowTask):
 			print "unknown key:",key,"this object is",self
 			
 	def on_import_cancel(self):
-		print "cancelled"
+		print "canceled"
 		
 	
 class MicrographCCDTask(WorkFlowTask):
 	
-	documentation_string = "This is a list of micrographs or CCD frames that are associated with this project. You can add and remove file names by editing the text entries directly and or by using the browse and clear buttons. In addition to being able to specify images that are stored on your hard drive in the usual way, you can also choose images from EMAN2 style databases."
+	documentation_string = "This is a list of micrographs or CCD frames that you choose to associate with this project. You can add and remove file names by editing the text entries directly and or by using the browse and clear buttons. In addition to being able to specify images that are stored on your hard drive in the usual way, you can also choose images from EMAN2 style databases."
 	
 	
 	def __init__(self,application):
@@ -428,18 +744,7 @@ class SPRInitTask(WorkFlowTask):
 		return params
 
 	def write_db_entry(self,key,value):
-	
-		if key == "global.apix":
-			db = db_open_dict("bdb:project")
-			db["global.apix"] = value
-		elif key == "global.microscope_voltage":
-			db = db_open_dict("bdb:project")
-			db["global.microscope_voltage"] = value
-		elif key == "global.microscope_cs":
-			db = db_open_dict("bdb:project")
-			db["global.microscope_cs"] = value
-		else:
-			print "unknown key:",key,"this object is",self
+		WorkFlowTask.write_db_entry(self,key,value)
 		
 		
 if __name__ == '__main__':

@@ -139,9 +139,9 @@ class EMFormWidget(QtGui.QWidget):
 				flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
 				#flags = flags.
 				if i == 0:
-					item.setFlags(flag2|flag3|flag4)
+					item.setFlags(flag2|flag3)
 				else:
-					item.setFlags(flag3|flag4)
+					item.setFlags(flag3)
 				table_widget.setItem(j, i, item)
 				
 				
@@ -156,7 +156,12 @@ class EMFormWidget(QtGui.QWidget):
 		groupbox.setLayout(hbl)
 		layout.addWidget(groupbox)
 		
-		self.output_writers.append(ParamTableWriter(paramtable.name,table_widget,type(paramtable[0].choices[0])))
+		if len(paramtable[0].choices) > 0:
+			type_of = type(paramtable[0].choices[0])
+		else:
+			type_of = type(str) # this really doesn't matter
+	
+		self.output_writers.append(ParamTableWriter(paramtable.name,table_widget,type_of))
 		
 	def __incorporate_floatlist(self,param,layout):
 		hbl=QtGui.QHBoxLayout()
@@ -458,8 +463,6 @@ class ParamTableWriter:
 		
 	def write_data(self,dict):
 		sel = [self.type_of(item.text()) for item in self.table_widget.selectedItems()]
-		print sel,self.param_name
-		print "\n\n\n"
 		dict[self.param_name] = sel
 
 class BoolParamWriter:

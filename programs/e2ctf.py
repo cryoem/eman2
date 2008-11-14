@@ -95,41 +95,18 @@ operations are performed on oversampled images if specified."""
 
 #	if options.oversamp>1 : options.apix/=float(options.oversamp)
 
-	img_sets=[]
-
-	db_project=db_open_dict("bdb:project")
-	db_parms=db_open_dict("bdb:e2ctf.parms")
-	db_misc=db_open_dict("bdb:e2ctf.misc")
-
-	### Power spectrum and CTF fitting
-	for filename in args:
-		name=get_file_tag(filename)
-
-		# compute the power spectra
-		if debug : print "Processing ",filename
-		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
-		ds=1.0/(options.apix*im_2d.get_ysize())
-		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
-
-		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
-		
-		# Fit the CTF parameters
-		if debug : print "Fit CTF"
-		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=not options.nosmooth,autohp=options.autohp)
-		db_parms[name]=ctf.to_string()
-
-		if debug:
-			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
-			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
-			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
-			
-		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
+	# i did this so I could call the function from the workflow
+	options.filenames = args
+	img_sets=pspec_and_ctf_fit(options,debug)
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
-		gui=GUIctf(img_sets)
-		gui.run()
+		from emapplication import EMStandAloneApplication
+		app=EMStandAloneApplication()
+		gui=GUIctfModule(app,img_sets)
+		app.exec_()
 
+	print "done execution"
 	### This computes the intensity of the background subtracted power spectrum at each CTF maximum for all sets
 	global envelopes
 	for i in img_sets:
@@ -154,6 +131,7 @@ operations are performed on oversampled images if specified."""
 	envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
 	
 	# write the final envelope
+	db_misc=db_open_dict("bdb:e2ctf.misc")
 	db_misc["envelope"]=envelope
 	
 	#out=file("envelope.txt","w")
@@ -168,10 +146,10 @@ operations are performed on oversampled images if specified."""
 			name=get_file_tag(filename)
 			if debug: print "Processing ",filename
 
-			if options.phaseflip: phaseout="bdb:"+name+".ctf.flip"
+			if options.phaseflip: phaseout="bdb:particles#"+name+"_ctf_flip"
 			else: phaseout=None
 		
-			if options.wiener: wienerout="bdb:"+name+".ctf.wiener"
+			if options.wiener: wienerout="bdb:particles#"+name+"_ctf_wiener"
 			else : wienerout=None
 
 			if phaseout : print "Phase image out: ",phaseout,"\t",
@@ -182,6 +160,39 @@ operations are performed on oversampled images if specified."""
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
 
 	E2end(logid)
+	
+def pspec_and_ctf_fit(options,debug=False):
+	### Power spectrum and CTF fitting
+	img_sets=[]
+
+	db_project=db_open_dict("bdb:project")
+	db_parms=db_open_dict("bdb:e2ctf.parms")
+	db_misc=db_open_dict("bdb:e2ctf.misc")
+
+	for filename in options.filenames:
+		name=get_file_tag(filename)
+
+		# compute the power spectra
+		if debug : print "Processing ",filename
+		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
+		ds=1.0/(options.apix*im_2d.get_ysize())
+		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
+
+		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
+		
+		# Fit the CTF parameters
+		if debug : print "Fit CTF"
+		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=not options.nosmooth,autohp=options.autohp)
+		db_parms[name]=ctf.to_string()
+
+		if debug:
+			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
+			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
+			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
+			
+		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
+
+	return img_sets
 
 def env_cmp(sca):
 	global envelopes
@@ -301,7 +312,8 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	
 	global masks
 	
-	im=EMData(stackfile,0)
+	im = EMData()
+	im.read_image(stackfile,0)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
 	n=EMUtil.get_image_count(stackfile)
@@ -323,7 +335,9 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
 	
 	for i in range(n):
-		im1=EMData(stackfile,i)
+		im1 = EMData()
+		im1.read_image(stackfile,i)
+#		im1=EMData(stackfile,i)
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
@@ -589,10 +603,21 @@ except:
 			print "Qt4 has not been loaded"
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
+	
+from emapplication import EMQtWidgetModule
 
-
+class GUIctfModule(EMQtWidgetModule):
+	def __init__(self,application,data):
+		self.guictf = GUIctf(application,data)
+		EMQtWidgetModule.__init__(self,self.guictf,application)
+		self.application = application
+		self.application.show_specific(self)
+		
+	def get_desktop_hint(self):
+		return "inspector"
+		
 class GUIctf(QtGui.QWidget):
-	def __init__(self,data):
+	def __init__(self,application,data):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
@@ -608,9 +633,7 @@ class GUIctf(QtGui.QWidget):
 			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
 			sys.exit(1)
 		
-		from emapplication import EMStandAloneApplication
-		
-		self.app=EMStandAloneApplication()
+		self.app = application
 		
 		QtGui.QWidget.__init__(self,None)
 		
@@ -619,7 +642,9 @@ class GUIctf(QtGui.QWidget):
 		self.plotmode=0
 		
 		self.guiim=EMImage2DModule(application=self.app)
+		self.app.show_specific(self.guiim)
 		self.guiplot=EMPlot2DModule(application=self.app)
+		self.app.show_specific(self.guiplot)
 		
 		im_qt_target = self.app.get_qt_emitter(self.guiim)
 		plot_qt_target = self.app.get_qt_emitter(self.guiplot)
@@ -690,15 +715,20 @@ class GUIctf(QtGui.QWidget):
 
 		self.update_data()
 		
-		self.app.show() # should probably be name "show_all"
-		self.show() # this is the troublesome part.... this Widget has to be a module and should register itsefl with the application
-		self.app.execute()
+		
 
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()
+		if self.guiim != None:
+			self.app.close_specific(self.guiim)
+			self.guiim = None 
+		if self.guiplot != None:
+			self.app.close_specific(self.guiplot)
+		self.app.close_specific(self)
 		self.app.app.exit()
 		event.accept()
+		self.emit(QtCore.SIGNAL("e2ctf_idle")) # this signal is important when e2ctf is being used by a program running its own event loop
 
 	def newData(self,data):
 		self.data=data

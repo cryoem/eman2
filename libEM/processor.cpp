@@ -4625,10 +4625,16 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 	image->process_inplace("xform.phaseorigin.tocorner");
 	EMData* aligned = image->align("translational", 0, params1);
 	image->process_inplace("xform.phaseorigin.tocenter");
-	int alix = (int)aligned->get_attr_default("align.dx",0);
-	int aliy = (int)aligned->get_attr_default("align.dy",0);
-	int aliz = (int)aligned->get_attr_default("align.dz",0);
-	image->translate(alix,aliy,aliz);
+	if ( image->get_ndim() == 3 ) {
+		Transform* t = aligned->get_attr("xform.align3d");
+		image->translate(t->get_trans());
+	}
+	else {
+		// assumption is the image is 2D which may be  false
+		Transform* t = aligned->get_attr("xform.align2d");
+		image->translate(t->get_trans());
+	}
+	
 	
 	delete aligned;
 

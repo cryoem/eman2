@@ -84,12 +84,21 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		spr_list.append(rd)
 		
 		ap = QtGui.QTreeWidgetItem(QtCore.QStringList("Particles"))
-		self.launchers["Particles"] = self.launch_particle_task
+		self.launchers["Particles"] = self.launch_particle_report
 		spr_list.append(ap)
-		spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("CTF")))
+		ctf = QtGui.QTreeWidgetItem(QtCore.QStringList("CTF"))
+		self.launchers["CTF"] = self.launch_ctf_report
+		spr_list.append(ctf)
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Initial model")))
 		#spr_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Refinement")))
 		spr.addChildren(spr_list)
+		
+		
+		ctf_list = []
+		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("e2ctf")))
+		ctf.addChildren(ctf_list)
+		self.launchers["e2ctf"] = self.launch_e2ctf_management
+		
 		
 		ap_list = []
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("e2boxer")))
@@ -116,8 +125,14 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
 		QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
 	
-	def launch_particle_task(self):
-		self.launch_task(ParticlesTask,"particles")
+	def launch_e2ctf_management(self):
+		self.launch_task(E2CTFTask,"e2ctf")
+	
+	def launch_ctf_report(self):
+		self.launch_task(CTFReportTask,"ctf")
+	
+	def launch_particle_report(self):
+		self.launch_task(ParticleReportTask,"particles")
 	
 	def launch_particle_import(self):
 		self.launch_task(ParticleImportTask,"particle_import")

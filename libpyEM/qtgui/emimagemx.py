@@ -233,6 +233,8 @@ class EMMXDragMouseEvents(EMMXCoreMouseEvents):
 		EMMXCoreMouseEvents.__init__(self,mediator)
 	
 	def mouse_down(self,event):
+		return
+	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
 		if event.button()==Qt.LeftButton:
 			lc= self.mediator.scr_to_img((event.x(),event.y()))
 			if lc == None: 
@@ -324,7 +326,7 @@ class EMImageMXModule(EMGUIModule):
 			self.gl_widget = self.gl_context_parent
 			self.qt_context_parent.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/multiple_images.png"))
 			#self.optimally_resize()
-			self.qt_context_parent.setAcceptDrops(True)
+			#self.qt_context_parent.setAcceptDrops(True)
 		
 		return self.qt_context_parent
 	
