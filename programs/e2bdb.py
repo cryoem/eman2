@@ -52,6 +52,7 @@ Various utilities related to BDB databases."""
 
 	parser.add_option("--long","-l",action="store_true",help="Long listing",default=False)
 	parser.add_option("--short","-s",action="store_true",help="Dense listing of names only",default=False)
+	parser.add_option("--filt",type="string",help="Only include dictionaries containing the specified string (since wildcards like * cannot be used)",default=None)
 
 	(options, args) = parser.parse_args()
 
@@ -59,17 +60,34 @@ Various utilities related to BDB databases."""
 		
 	for path in args:
 		if path.lower()[:4]!="bdb:" : path="bdb:"+path
+		if not '#' in path and path[-1]!='/' : path+='/'
 		if len(args)>1 : print path,":"
 		
 		dbs=db_list_dicts(path)
 		
 		dbs.sort()
+		if options.filt:
+			dbs=[db for db in dbs if options.filt in db]
+		
+		maxname=max([len(s) for s in dbs])
 		
 		# long listing, one db per line
 		if options.long :
+			width=maxname+3
+			fmt="%%-%ds %%-07d %%dx%%dx%%d  %%s"%width
+			fmt2="%%-%ds (not an image stack)"%width
 			for db in dbs:
-				print db
-		
+				dct=db_open_dict(path+"#"+db)
+				first=EMData()
+				try: 
+					first.read_image(path+"#"+db,0,True)
+					size=first.get_xsize()*first.get_ysize()*first.get_zsize()*len(dct)*4;
+					if size>1000000000: size="%1.2f gb"%(size/1000000000)
+					elif size>1000000: size="%1.2f mb"%(size/1000000)
+					else: size="%1.2f kb"%(size/1000)
+					print fmt%(db,len(dct),first.get_xsize(),first.get_ysize(),first.get_zsize(),size)
+				except:
+					print fmt2%db
 		elif options.short :
 			for db in dbs:
 				print db,
@@ -77,7 +95,7 @@ Various utilities related to BDB databases."""
 
 		else :
 			# Nicely formatted 'ls' style display
-			cols=int(floor(80.0/(max([len(s) for s in dbs])+3)))
+			cols=int(floor(80.0/(maxname+3)))
 			width=80/cols
 			rows=int(ceil(float(len(dbs))/cols))
 			
