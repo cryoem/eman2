@@ -90,7 +90,7 @@ Various utilities related to BDB databases."""
 					print fmt2%db
 		elif options.short :
 			for db in dbs:
-				print db,
+				print "bdb:"+db,
 			print " "
 
 		else :
