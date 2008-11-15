@@ -212,6 +212,7 @@ vector < float >EMAN1Ctf::compute_1d(int size, float ds, CtfType type, XYData * 
 		break;
 
 	case CTF_SNR:
+	case CTF_SNR_SMOOTH:
 // 		if (!sf) {
 // 			LOGERR("CTF computation error, no SF found\n");
 // 			return r;
@@ -357,7 +358,7 @@ void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 		}
 
 	}
-	else if (type == CTF_SNR) {
+	else if (type == CTF_SNR || type == CTF_SNR_SMOOTH) {
 		float amp1 = calc_amp1();
 
 		for (int y = 0; y < ny; y++) {
@@ -690,6 +691,15 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			else r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
 			s+=ds;
 		}
+	case CTF_SNR_SMOOTH:
+		for (int i = 0; i < np; i++) {
+			float f = s/dsbg;
+			int j = (int)floor(f);
+			f-=j;
+			if (j>snr.size()-2) r[i]=snr.back();
+			else r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
+			s+=ds;
+		}
 		r[0]=0;
 		break;
 
@@ -836,6 +846,28 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	}
 	else if (type == CTF_SNR) {
 
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+
+#ifdef	_WIN32
+				float s = (float)_hypot(x, y ) * ds;
+#else
+				float s = (float)hypot(x, y ) * ds;
+#endif	
+				float f = s/dsbg;
+				int j = (int)floor(f);
+				f-=j;
+				if (j>snr.size()-2) d[x*2+ynx]=snr.back();
+				else d[x*2+ynx]=snr[j]*(1.0-f)+snr[j+1]*f;
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+		d[0]=0;
+	}
+	else if (type == CTF_SNR_SMOOTH) {
 		for (int y = -ny/2; y < ny/2; y++) {
 			int y2=(y+ny)%ny;
 			int ynx = y2 * nx;

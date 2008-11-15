@@ -777,7 +777,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 		if (snrweight) weight*=snr[i];
 		sum+=weight*fsc[ny/2+1+i];
 		norm+=weight;
-		printf("%d\t%f\t%f\n",i,weight,fsc[ny/2+1+i]);
+//		printf("%d\t%f\t%f\n",i,weight,fsc[ny/2+1+i]);
 	}
 
 	if (image->has_attr("free_me")) delete image;

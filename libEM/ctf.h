@@ -70,6 +70,7 @@ namespace EMAN
 			CTF_SIGN,			// ctf sign (+-1)
 			CTF_BACKGROUND,		// Background, no ctf oscillation
 			CTF_SNR,			// Signal to noise ratio
+			CTF_SNR_SMOOTH,		// Signal to noise ratio, smoothed, algorithm may vary, but this should be more suitable for weighting
 			CTF_WIENER_FILTER,	// Weiner Filter = 1/(1+1/snr)
 			CTF_TOTAL			// AMP*AMP+NOISE
 		};
