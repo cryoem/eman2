@@ -352,10 +352,10 @@ EMData* mult_radial(EMData* radial);
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		float get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb);
+		float  get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb);
 		float  get_pixel_filtered(float delx, float dely, float delz, Util::sincBlackman& kb);
 
-		float get_pixel_conv7(float delx, float dely, float delz, Util::KaiserBessel& kb);
+		float  get_pixel_conv7(float delx, float dely, float delz, Util::KaiserBessel& kb);
 
 	
 		/** Value of 2-D analytic masking (or 2-D convolution) at off-grid point.

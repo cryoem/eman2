@@ -16732,7 +16732,7 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
-			// for iref in xrange(len(crefim)): 
+			// for iref in xrange(len(crefim)):
 			for ( iref = 0; iref < (int)crefim_len; iref++) {
 				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
 				double qn = retvals["qn"];
@@ -16931,7 +16931,8 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 //  margin is needed for peak search and both arrays are initialized with -1.0e20
 void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 			float xrng, float yrng, float step, string mode,
-			vector< int >numr, float cnx, float cny, EMData *peaks, EMData *peakm) {
+			vector< int >numr, float cnx, float cny,
+			EMData *peaks, EMData *peakm) {
 
     // Determine shift and rotation between image and one reference
     // image (crefim, weights have to be applied) using quadratic
@@ -16962,6 +16963,71 @@ void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 			Crosrng_msg_vec(crefim, cimage, numr,
 			  p_ccf1ds+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin,
 			  p_ccf1dm+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin);
+			delete cimage; cimage = 0;
+		}
+	}
+	return;
+}
+
+void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
+			float xrng, float yrng, float step, string mode,
+			vector< int >numr, float cnx, float cny,
+			EMData *peaks, EMData *peakm, int nphi, int ntheta) {
+
+// formerly known as apmq
+    // Determine shift and rotation between image and many reference
+    // images (crefim, weights have to be applied) quadratic
+    // interpolation  
+    
+    
+    // Manually extract.
+/*    vector< EMAN::EMData* > crefim;
+    std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
+    crefim.reserve(crefim_len);
+
+    for(std::size_t i=0;i<crefim_len;i++) {
+        boost::python::extract<EMAN::EMData*> proxy(crefim_list[i]);
+        crefim.push_back(proxy());
+    }
+*/
+
+	int   maxrin = numr[numr.size()-1];
+
+	size_t crefim_len = crefim.size();
+
+	int   iref;
+	int   ky = int(2*yrng/step+0.5)/2; 
+	int   kx = int(2*xrng/step+0.5)/2;
+	int   tkx = 2*kx+3;
+	int   tky = 2*ky+3;
+
+	peaks->set_size(maxrin, nphi, ntheta, tkx, tky);
+	float *p_ccf1ds = peaks->get_data();
+
+//#define img_ptr(i,j,k,l)  img_ptr[i+(j+(k+(l*nz))*ny))*nx]
+//#define img_ptr(i,j,k,l)  img_ptr[i+(j+(k*ny))*nx]
+	peakm->set_size(maxrin, nphi, ntheta, tkx, tky);
+	float *p_ccf1dm = peakm->get_data();
+
+	for ( int i = 0; i<maxrin*(int)crefim_len*(2*kx+3)*(2*ky+3); i++) {
+		p_ccf1ds[i] = -1.e20f;
+		p_ccf1dm[i] = -1.e20f;
+	}
+
+	float  iy, ix;
+	for (int i = -ky; i <= ky; i++) {
+		iy = i * step ;
+		for (int j = -kx; j <= kx; j++) {
+			ix = j*step ; 
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			Frngs(cimage, numr);
+			//  compare with all reference images
+			// for iref in xrange(len(crefim)):
+			for ( iref = 0; iref < (int)crefim_len; iref++) {
+				Crosrng_msg_vec(crefim[iref], cimage, numr,
+					p_ccf1ds+(iref + (j+kx+1+((i+ky+1)*tkx))*(int)crefim_len )*maxrin,
+					p_ccf1dm+(iref + (j+kx+1+((i+ky+1)*tkx))*(int)crefim_len )*maxrin);
+			}
 			delete cimage; cimage = 0;
 		}
 	}
@@ -18073,3 +18139,33 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 }
 
 */
+#define data(i,j) group[i+j*ny]
+vector<float> Util::vareas(EMData* d) {
+	const float step=0.01;
+	int ny = d->get_ysize();
+	//  input emdata should have size 2xN, where N is number of points
+	//  output vector should be 2xN, first element is the number of elements
+	//  associated with this point, second is 0 is the element is touching the border, 1 if it is interior
+	vector<float> group(2*ny);
+	for(int i=0; i<2*ny; i++) group[i] = 0.0f;
+	int K = int(1.0f/step) +1;
+	int hit = 0;
+	for(int kx=0; kx<=K; kx++) {
+		float tx = kx*step;
+		for(int ky=0; ky<=K; ky++) {
+			float ty = ky*step;
+			float dm = 1.0e23f;
+			for(int i=0; i<ny; i++) {
+				float qd = pow(tx-(*d)(0,i),2) + pow(ty-(*d)(1,i),2);
+				if( qd < dm) {
+					dm = qd;
+					hit = i;
+				}
+				data(0,hit) += 1.0f;
+				if(kx == 0 || ky == 0)  data(1,hit) = 1.0f;
+			}
+		}
+	}
+	return  group;
+}
+#undef data

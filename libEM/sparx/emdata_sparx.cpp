@@ -3400,7 +3400,7 @@ vector<float> EMData::peak_search(int ml, float invert) {
 	EMData& buf = *this;
 	vector<Pixel> peaks;
 	int img_dim;
-	int i, j, k;
+	int i, j, k, l, m;
 	int i__1, i__2;
 	int j__1, j__2;
 	//int k__1, k__2;
@@ -3679,6 +3679,445 @@ vector<float> EMData::peak_search(int ml, float invert) {
 					}}}}}}}}}}}}}}}}}}}}}}}}}
 				}
 			}
+		}
+	break;
+ 	case(5):  //looks ugly, but it is the best I can do,  PAP 03/07/08
+ 	int nu = buf.get_usize();
+ 	int nv = buf.get_vsize();
+	vector<int> lu, mv;
+		for(m=1; m<=nv-2; ++m) {
+		 	mv.clear();
+			mv.push_back(m-1);
+			mv.push_back(m);
+			mv.push_back(m+1);
+		for(l=1; l<=nu-2; ++l) {
+		 	lu.clear();
+			lu.push_back(l-1);
+			lu.push_back(l);
+			lu.push_back(l+1);
+		for(k=1; k<=nz-2; ++k) {
+		 	kz.clear();
+			kz.push_back(k-1);
+			kz.push_back(k);
+			kz.push_back(k+1);
+ 			for(j=1; j<=ny-2; ++j) {
+				jy.clear();
+				jy.push_back(j-1);
+				jy.push_back(j);
+				jy.push_back(j+1);
+ 				for(i=1; i<=nx-2; ++i) {
+			        	ix.clear();
+			        	ix.push_back(i-1);
+			        	ix.push_back(i);
+			        	ix.push_back(i+1);
+					float qbf = buf(i,j,k,l,m)*invert;
+			        	peak_check = qbf > buf(ix[0],jy[0],kz[0],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2],lu[0],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],lu[0],mv[0])*invert;
+
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[0],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2],lu[1],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],lu[1],mv[0])*invert;
+
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[0],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2],lu[2],mv[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],lu[2],mv[0])*invert;
+
+
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[0],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2],lu[0],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],lu[0],mv[1])*invert;
+
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[0],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1],lu[1],mv[1])*invert;
+					//if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2],lu[1],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],lu[1],mv[1])*invert;
+
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[0],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2],lu[2],mv[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],lu[2],mv[1])*invert;
+
+
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[0],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2],lu[0],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],lu[0],mv[2])*invert;
+
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[0],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2],lu[1],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],lu[1],mv[2])*invert;
+
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[0],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2],lu[2],mv[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],lu[2],mv[2])*invert;
+					if(peak_check) {
+	    					if(count < ml) {
+							count++;
+							//peaks.push_back( Pixel(i, j, k, l, m, qbf) );
+							if(count == ml-1) sort(peaks.begin(), peaks.end(), peakcmp);
+						} else {
+							if( qbf > (peaks.back()).value ) {
+								//  do the switch and sort again
+								//cout << qbf<<"   "<< (peaks.back()).value <<"   "<< (*peaks.begin()).value <<endl;
+								peaks.pop_back();
+								//peaks.push_back( Pixel(i, j, k, l, m, qbf) );
+								if(ml > 1) sort(peaks.begin(), peaks.end(), peakcmp);
+							}
+						}
+					}
+					}}}}}}}}}}}}}}}}}}}}}}}}}}
+					}}}}}}}}}}}}}}}}}}}}}}}}}}}
+					}}}}}}}}}}}}}}}}}}}}}}}}}}}
+					}}}}}}}}}}}}}}}}}}}}}}}}}}}
+					}}}}}}}}}}}}}}}}}}}}}}}}}}
+					}}}}}}}}}}}}}}}}}}}}}}}}}}}
+					}}}}}}}}}}}}}}}}}}}}}}}}}}}
+					}}}}}}}}}}}}}}}}}}}}}}}}}}}
+					}}}}}}}}}}}}}}}}}}}}}}}}}}}
+				}
+			}
+		}
+		}
+		}
+		//  Add circular closure for x, y, and z directions: needed for circular ccf,
+		//  should not have adverse impact on other code.  PAP 11/7/08
+		for(m=1; m<=nv-2; ++m) {
+		 	mv.clear();
+			mv.push_back(m-1);
+			mv.push_back(m);
+			mv.push_back(m+1);
+		for(l=1; l<=nu-2; ++l) {
+		 	lu.clear();
+			lu.push_back(l-1);
+			lu.push_back(l);
+			lu.push_back(l+1);
+		for(k=1; k<=nz-2; ++k) {
+		 	kz.clear();
+			kz.push_back(k-1);
+			kz.push_back(k);
+			kz.push_back(k+1);
+ 			for(j=1; j<=ny-2; ++j) {
+				jy.clear();
+				jy.push_back(j-1);
+				jy.push_back(j);
+				jy.push_back(j+1);
+ 				for(i=0; i<=0; ++i) {
+			        	ix.clear();
+			        	ix.push_back(nx-1);
+			        	ix.push_back(i);
+			        	ix.push_back(i+1);
+					float qbf = buf(i,j,k)*invert;
+			        	peak_check = qbf > buf(ix[0],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1])*invert;
+					//if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2])*invert;
+					if(peak_check) {
+	    					if(count < ml) {
+							count++;
+							peaks.push_back( Pixel(i, j, k, qbf) );
+							if(count == ml-1) sort(peaks.begin(), peaks.end(), peakcmp);
+						} else {
+							if( qbf > (peaks.back()).value ) {
+								//  do the switch and sort again
+								//cout << qbf<<"   "<< (peaks.back()).value <<"   "<< (*peaks.begin()).value <<endl;
+								peaks.pop_back();
+								peaks.push_back( Pixel(i, j, k, qbf) );
+								if(ml > 1) sort(peaks.begin(), peaks.end(), peakcmp);
+							}
+						}
+					}
+					}}}}}}}}}}}}}}}}}}}}}}}}}
+				}
+ 				for(i=nx-1; i<=nx-1; ++i) {
+			        	ix.clear();
+			        	ix.push_back(i-1);
+			        	ix.push_back(i);
+			        	ix.push_back(0);
+					float qbf = buf(i,j,k)*invert;
+			        	peak_check = qbf > buf(ix[0],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[0])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[1])*invert;
+					//if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[1])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[0],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[1],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[0],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[1],jy[2],kz[2])*invert;
+					if( peak_check ) {peak_check = qbf > buf(ix[2],jy[2],kz[2],3,3)*invert;
+					if(peak_check) {
+	    					if(count < ml) {
+							count++;
+							peaks.push_back( Pixel(i, j, k, qbf) );
+							if(count == ml-1) sort(peaks.begin(), peaks.end(), peakcmp);
+						} else {
+							if( qbf > (peaks.back()).value ) {
+								//  do the switch and sort again
+								//cout << qbf<<"   "<< (peaks.back()).value <<"   "<< (*peaks.begin()).value <<endl;
+								peaks.pop_back();
+								peaks.push_back( Pixel(i, j, k, qbf) );
+								if(ml > 1) sort(peaks.begin(), peaks.end(), peakcmp);
+							}
+						}
+					}
+					}}}}}}}}}}}}}}}}}}}}}}}}}
+				}
+			}
+		}
+		}
 		}
 	break;
 	}
