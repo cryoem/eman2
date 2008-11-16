@@ -16968,7 +16968,7 @@ void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
 	}
 	return;
 }
-
+/*
 void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
 			float xrng, float yrng, float step, string mode,
 			vector< int >numr, float cnx, float cny,
@@ -16981,7 +16981,7 @@ void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
     
     
     // Manually extract.
-/*    vector< EMAN::EMData* > crefim;
+*//*    vector< EMAN::EMData* > crefim;
     std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
     crefim.reserve(crefim_len);
 
@@ -16990,7 +16990,7 @@ void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
         crefim.push_back(proxy());
     }
 */
-
+/*
 	int   maxrin = numr[numr.size()-1];
 
 	size_t crefim_len = crefim.size();
@@ -17033,7 +17033,7 @@ void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
 	}
 	return;
 }
-
+*/
 vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys) {
 	
 	EMData *rot;
