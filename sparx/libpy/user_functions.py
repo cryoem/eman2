@@ -285,7 +285,7 @@ def spruce_up( ref_data ):
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
 
-	print_msg("spruce_up\n")
+	print_msg("Changed3 spruce_up\n")
 	cs = [0.0]*3
 
 	stat = Util.infomask(ref_data[2], None, True)
@@ -295,7 +295,7 @@ def spruce_up( ref_data ):
 	# Apply B-factor
 	from filter import filt_gaussinv
 	from math import sqrt
-	B = 1.0/sqrt(2.*10.0)
+	B = 1.0/sqrt(2.*15.0)
 	volf = filt_gaussinv(volf, B, False)
 	nx = volf.get_xsize()
 	from utilities import model_circle
@@ -303,9 +303,9 @@ def spruce_up( ref_data ):
 
 	volf -= stat[0]
 	Util.mul_img(volf, ref_data[0])
-	fl, aa = fit_tanh(ref_data[3])
-	#fl = 0.32
-	#aa = 0.03
+	#fl, aa = fit_tanh(ref_data[3])
+	fl = 0.35
+	aa = 0.1
 	aa /= 2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)

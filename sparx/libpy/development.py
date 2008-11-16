@@ -1402,8 +1402,8 @@ def eqprojG4(args, data):
 	data2 = [0]*2
 	data2[0] = product
 	data2[1] = data[1]
-	ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-5, 1.e-5, 500, data2)
-	
+	ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-3, 1.e-3, 500, data2)
+
 	s2x = nx/2-ps[0][0]
 	s2y = nx/2-ps[0][1]
 	params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x, "y_shift":s2y, "z_shift":0.0}
