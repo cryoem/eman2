@@ -3681,7 +3681,7 @@ vector<float> EMData::peak_search(int ml, float invert) {
 			}
 		}
 	break;
- 	case(5):  //looks ugly, but it is the best I can do,  PAP 03/07/08
+/* 	case(5):  //looks ugly, but it is the best I can do,  PAP 03/07/08
  	int nu = buf.get_usize();
  	int nv = buf.get_vsize();
 	vector<int> lu, mv;
@@ -4119,7 +4119,7 @@ vector<float> EMData::peak_search(int ml, float invert) {
 		}
 		}
 		}
-	break;
+	break;*/
 	}
 	// do we have a peak list yet?
 	if (peaks.begin() != peaks.end()) {

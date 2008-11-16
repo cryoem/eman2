@@ -18139,9 +18139,9 @@ vector<float> Util::cluster_equalsize(EMData* d) {
 }
 
 */
-#define data(i,j) group[i+j*ny]
+#define data(i,j) group[i*ny+j]
 vector<float> Util::vareas(EMData* d) {
-	const float step=0.01;
+	const float step=0.001;
 	int ny = d->get_ysize();
 	//  input emdata should have size 2xN, where N is number of points
 	//  output vector should be 2xN, first element is the number of elements
@@ -18161,9 +18161,9 @@ vector<float> Util::vareas(EMData* d) {
 					dm = qd;
 					hit = i;
 				}
-				data(0,hit) += 1.0f;
-				if(kx == 0 || ky == 0)  data(1,hit) = 1.0f;
 			}
+			data(0,hit) += 1.0f;
+			if(kx == 0 || ky == 0 || kx == K || ky == K)  data(1,hit) = 1.0f;
 		}
 	}
 	return  group;
