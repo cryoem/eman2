@@ -39,21 +39,19 @@ import sys
 
 
 def main():
-	if(MPI):
-		from mpi import mpi_init
-		sys.argv = mpi_init( len(sys.argv), sys.argv )
 	arglist = []
     	for arg in sys.argv: arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack <output_volume> <ssnr_text_file> <2Dmaskfile> --ou=outer_radius --rw=ring_width --npad=padding_times --CTF --sign=CTF_sign --sym=symmetry --random_angles=0"
+	usage = progname + " stack <output_volume> <ssnr_text_file> <2Dmaskfile> --ou=outer_radius --rw=ring_width --npad=padding_times --CTF --MPI --sign=CTF_sign --sym=symmetry --random_angles=0"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ou",       type= "int",         default=  -1,          help="  radius of particle (set to int(nx/2)-1)")
-	parser.add_option("--rw",       type= "float",	     default=  1.0,        help="  ring width for calculating Fourier shell/ring correlation (set to 1)")
-	parser.add_option("--npad",     type= "int",         default=  1,          help="  image padding for 3D reconstruction (set to 1)")
-	parser.add_option("--CTF",      action="store_true", default=  False,      help="  Consider CTF correction during the reconstruction (set to False)")
-	parser.add_option("--sign",     type= "int",         default=  1,          help="  sign of the CTF (set to 1)")
-	parser.add_option("--sym",      type= "string",      default= "c1",        help="  symmetry of the structure (set to c1)")
-	parser.add_option("--random_angles",      type= "int",      default= "0",        help="  randomize Euler angles: 0 - no, 1 - only psi, 2 - all three")
+	parser.add_option("--ou",       type= "int",            default=  -1,      help="  radius of particle (set to int(nx/2)-1)")
+	parser.add_option("--rw",       type= "float",	        default=  1.0,     help="  ring width for calculating Fourier shell/ring correlation (set to 1)")
+	parser.add_option("--npad",     type= "int",            default=  1,       help="  image padding for 3D reconstruction (set to 1)")
+	parser.add_option("--CTF",      action="store_true",    default=  False,   help="  Consider CTF correction during the reconstruction (set to False)")
+	parser.add_option("--sign",     type= "int",            default=  1,       help="  sign of the CTF (set to 1)")
+	parser.add_option("--sym",      type= "string",         default= "c1",     help="  symmetry of the structure (set to c1)")
+	parser.add_option("--MPI",      action="store_true",    default=False,     help="  whether to use MPI version ")
+	parser.add_option("--random_angles",  type= "int",      default= "0",      help="  randomize Euler angles: 0 - no, 1 - only psi, 2 - all three")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 4:
     		print "usage: " + usage
@@ -77,9 +75,12 @@ def main():
 			ssnr_file = args[2]
 			mask      = args[3]
 
+		if options.MPI:
+			from mpi import mpi_init
+			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		from applications import ssnr3d		
 		global_def.BATCH = True
-		ssnr3d(stack, out_vol, ssnr_file, mask, options.ou, options.rw, options.npad, options.CTF, options.sign, options.sym, options.random_angles)
+		ssnr3d(stack, out_vol, ssnr_file, mask, options.ou, options.rw, options.npad, options.CTF, options.sign, options.sym, options.MPI, options.random_angles)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

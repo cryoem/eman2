@@ -2420,3 +2420,9 @@ def set_ctf(ima, p):
 
 	ima.set_attr("ctf", ctf)
 
+def delete_bdb(name):
+	"""
+	  Delete bdb stack
+	"""
+	a = db_open_dict(name)
+	db_remove_dict(name)

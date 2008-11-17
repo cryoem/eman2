@@ -2544,7 +2544,7 @@ void nnSSNR_Reconstructor::buildNorm2Volume() {
 	} else {
 		m_wptr2 = new EMData();
 		m_delete_weight2 = true;
-	}		
+	}
 	m_wptr2->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr2->to_zero();
 	m_wptr2->set_array_offsets(0,1,1);
@@ -2613,7 +2613,7 @@ EMData* nnSSNR_Reconstructor::finish()
 	//#EMData* vol_ssnr = new EMData();
 	//#vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
 	//#vol_ssnr->to_zero();
-	//#  new linea follow
+	//#  new line follow
 	EMData* vol_ssnr = new EMData();
 	vol_ssnr->set_size(m_vnxp+ 2 - m_vnxp%2, m_vnyp ,m_vnzp);
 	vol_ssnr->to_zero();
@@ -2729,6 +2729,8 @@ EMData* nnSSNR_Reconstructor::finish()
 
 					}
 					(*vol_ssnr)(2*ix, iy-1, iz-1) = denominator*wght;
+					//(*vol_ssnr)(2*ix, iy-1, iz-1) =  real(m_volume->cmplx(ix,iy,iz))*wght/Kn;
+					//(*vol_ssnr)(2*ix+1, iy-1, iz-1) = imag(m_volume->cmplx(ix,iy,iz))*wght/Kn;
 				} // end of Kn>4.5
 			}
 		}
@@ -3032,14 +3034,13 @@ EMData* nn4_ctfReconstructor::finish()
 		}
 	}
 
-	// back fft
+    // back fft
     m_volume->do_ift_inplace();
-	m_volume->depad();
+    m_volume->depad();
     circumference( m_volume );
     m_volume->set_array_offsets( 0, 0, 0 );
     m_result = m_volume->copy();
-	return m_result;
-	// clean up
+    return m_result;
 }
 #undef  tw
 

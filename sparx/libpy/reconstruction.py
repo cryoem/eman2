@@ -317,51 +317,48 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 		r = Reconstructors.get("nnSSNR", params)
 	r.setup()
 
-	if type(stack_name) == types.StringType:
-		for i in xrange(nima):
+	for i in xrange(nima):
+		if type(stack_name) == types.StringType:
 			proj.read_image(stack_name, i)
-			active = proj.get_attr_default('active', 1)
-			if(active == 1):
-				if(random_angles  == 2):
-					from  random import  random
-					phi    = 360.0*random()
-					theta  = 180.0*random()
-					psi    = 360.0*random()
-					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
-				elif(random_angles  == 1):
-					from  random import  random
-					old_xform_proj = proj.get_attr( "xform.proj" )
-					dict = old_xform_proj.get_rotation( "spider" )
-					dict["psi"] = 360.0*random()
-					xform_proj = Transform( dict )
-				else:
-					xform_proj = proj.get_attr( "xform.proj" )
-
-			 	if mask2D:
-					stats = Util.infomask(proj, mask2D, True)
-					proj -= stats[0]
-					proj *= mask2D
-				r.insert_slice(proj, xform_proj)
-		vol_ssnr = r.finish()
-	else:
-		for i in xrange(nima):
-			active = stack_name[i].get_attr_default('active',1)
-			if(active == 1):
+		else:
+			proj = stack_name[i]
+		active = proj.get_attr_default('active', 1)
+		if(active == 1):
+			if(random_angles  == 2):
+				from  random import  random
+				phi    = 360.0*random()
+				theta  = 180.0*random()
+				psi    = 360.0*random()
+				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
+			elif(random_angles  == 3):
+				from  random import  random
+				phi    = 360.0*random()
+				theta  = 180.0*random()
+				psi    = 360.0*random()
+				tx     = 6.0*(random() - 0.5)
+				ty     = 6.0*(random() - 0.5)
+				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
+			elif(random_angles  == 1):
+				from  random import  random
+				old_xform_proj = proj.get_attr( "xform.proj" )
+				dict = old_xform_proj.get_rotation( "spider" )
+				dict["psi"] = 360.0*random()
+				xform_proj = Transform( dict )
+			else:
 				xform_proj = proj.get_attr( "xform.proj" )
-				if mask2D:
-					proj = stack_name[i].copy()
-					stats = Util.infomask(proj, mask2D, True)
-					proj -= stats[0]
-					proj *= mask2D
-					r.insert_slice(proj, xform_proj)
-				else:
-					r.insert_slice(stack_name[i], xform_proj)
-		vol_ssnr = r.finish()
+
+		 	if mask2D:
+				stats = Util.infomask(proj, mask2D, True)
+				proj -= stats[0]
+				proj *= mask2D
+			r.insert_slice(proj, xform_proj)
+	vol_ssnr = r.finish()
 	outlist = [[] for i in xrange(6)]
 	nn = SSNR.get_xsize()
 	for i in xrange(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
 	for i in xrange(1,nn): outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))   # SSNR
-	for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0)/SSNR(i,3,0))	  # variance divided by two numbers
+	for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
+	#for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0)/SSNR(i,3,0))	  # variance divided by two numbers
 	for i in xrange(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
 	for i in xrange(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 	for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
@@ -393,9 +390,17 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 			if(random_angles  == 2):
 				from  random import  random
 				phi	 = 360.0*random()
-				theta  = 180.0*random()
+				theta    = 180.0*random()
 				psi	 = 360.0*random()
 				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
+			elif(random_angles  == 3):
+				from  random import  random
+				phi    = 360.0*random()
+				theta  = 180.0*random()
+				psi    = 360.0*random()
+				tx     = 6.0*(random() - 0.5)
+				ty     = 6.0*(random() - 0.5)
+				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
 			elif(random_angles  == 1):
 				from  random import  random
 				old_xform_proj = prj.get_attr( "xform.proj" )
@@ -422,7 +427,7 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		nn = SSNR.get_xsize()
 		for i in xrange(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
 		for i in xrange(1,nn): outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))   # SSNR
-		for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0)/SSNR(i,3,0))	  # variance divided by two numbers
+		for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	  # variance
 		for i in xrange(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
 		for i in xrange(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 		for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
