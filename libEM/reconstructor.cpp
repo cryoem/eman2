@@ -3464,7 +3464,7 @@ void newfile_store::add_image( EMData* emdata, const Transform& tf )
             int r2 = i*i + j*j;
             if( (r2<ny*ny/4) && !( (i==0) && (j<0) ) ) 
             {
-		float ak = std::sqrt( r2/float(ny*ny) );
+		float ak = std::sqrt( r2/float(ny*ny) )/pixel;
                 float ctf = Util::tf( defocus, ak, voltage, Cs, ampcont, bfactor, 1);
                 float xnew = i*tf[0][0] + j*tf[1][0];
                 float ynew = i*tf[0][1] + j*tf[1][1];
