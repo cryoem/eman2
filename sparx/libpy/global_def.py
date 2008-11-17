@@ -76,7 +76,7 @@ IS_LOGFILE_OPEN = False
 
 '''   SYSTEM FUNCTIONS - please do not change the text below '''
 global SPARXVERSION
-SPARXVERSION = "SPARX v0.90"
+SPARXVERSION = "SPARX v1.00"
 
 def ERROR(message, where, action = 1):
 	"""
