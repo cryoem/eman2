@@ -79,6 +79,7 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 			peaks, peakm, peaks_major, peakm_major = ormq_peaks_m(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			print "mirror::::", mn
 			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
 			ima2.set_attr_dict({'select': select})
 		elif random_method == "ML":
@@ -97,7 +98,7 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 				peakt.append(float(peaks[i][0]))					
 			set_params2D(ima2, [alphan[0], sxn[0], syn[0], mn[0], 1.0])
 			ima2.set_attr_dict({'alpha_l':alphan, 'sx_l':sxn, 'sy_l':syn, 'mirror_l':mn})
-			prob = sim_anneal2(peaks, Iter, F)
+			prob = sim_anneal2(peaks, Iter, T0, F, SA_stop)
 			ima2.set_attr_dict({'Prob': prob})
 		else:
 			[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
@@ -310,11 +311,12 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 			
 
 def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
-	"""Determine shift and rotation between image and reference image (crefim)
-		crefim should be as FT of polar coords with applied weights
-	        consider mirror
-		quadratic interpolation
-		cnx, cny in FORTRAN convention
+	"""
+	Determine shift and rotation between image and reference image (crefim)
+	crefim should be as FT of polar coords with applied weights
+	consider mirror
+	quadratic interpolation
+	cnx, cny in FORTRAN convention
 	"""
 	from math import pi, cos, sin
 	from utilities import peak_search
@@ -330,25 +332,8 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	for i in xrange(len(peakm)):	peakm[i].append(1)
 	peaks += peakm 
 	
-	peak_num = len(peaks)
-	maxrin = numr[-1]
-	for i in xrange(peak_num):
-		peaks[i][1]= ang_n(peaks[i][1]+1, mode, maxrin)
-	peaks.sort(reverse=True)
-	
-	for i in xrange(peak_num):
-		ang = peaks[i][1]
-		sx  = -peaks[i][6]*step
-		sy  = -peaks[i][7]*step
+	peaks = process_peak(peaks, step, mode, numr)
 
-		co =  cos(ang*pi/180.0)
-		so = -sin(ang*pi/180.0)
-		sxs = sx*co - sy*so
-		sys = sx*so + sy*co
-		
-		peaks[i][6] = sxs
-		peaks[i][7] = sys
-		
 	return peaks
 
 
@@ -405,11 +390,11 @@ def select_major_peaks(g, max_major_peaks, min_height):
 
 def ormq_peaks_m(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""
-	      Determine shift and rotation between image and reference image (crefim)
-		crefim should be as FT of polar coords with applied weights
-	        consider mirror
-		quadratic interpolation
-		cnx, cny in FORTRAN convention
+	Determine shift and rotation between image and reference image (crefim)
+	crefim should be as FT of polar coords with applied weights
+	consider mirror
+	quadratic interpolation
+	cnx, cny in FORTRAN convention
 	"""
 	from math import pi, cos, sin
 	from utilities import peak_search
@@ -422,9 +407,6 @@ def ormq_peaks_m(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	nx = ccfs.get_xsize()
 	ny = ccfs.get_ysize()
 	nz = ccfs.get_zsize()
-
-	mins = 1e22
-	minm = 1e22
 
 	fs = Util.window(ccfs, nx, ny-2, nz-2, 0, 0, 0)
 	fm = Util.window(ccfm, nx, ny-2, nz-2, 0, 0, 0)
@@ -461,101 +443,11 @@ def ormq_peaks_m(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	return peaks, peakm, peaks_major, peakm_major
 
 
-def sim_anneal(peaks, Iter, T0, F, SA_stop):
-	from math import exp, pow, log10
-	from random import random
-
-	if log10(F)*Iter > -3.0 and Iter < SA_stop:
-		# Determine the current temperature
-		T = T0*pow(F, Iter)	
-	
-		#K = max(int(len(peaks)*(1-float(Iter)/SA_stop)), 1)
-		K = len(peaks)
-		dJe = [0.0]*K
-		for k in xrange(K):
-			dJe[k] = peaks[k][0]/peaks[0][0]
-
-		# q[k]
-		q      = [0.0] * K
-		arg    = [0.0] * K
-		maxarg = 0
-		for k in xrange(K):
-			arg[k] = dJe[k] / T
-			if arg[k] > maxarg: maxarg = arg[k]
-		limarg = 500
-		if maxarg > limarg:
-			sumarg = float(sum(arg))
-			for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
-		else:
-			for k in xrange(K): q[k] = exp(arg[k])
-
-		# p[k]
-		p = [0.0] * K
-		sumq = float(sum(q))
-		for k in xrange(K):
-			p[k] = q[k] / sumq
-			
-		c = [0.0] * K
-		c[0] = p[0]
-		for k in xrange(1, K): c[k] = c[k-1] + p[k]
-
-		pb = random()
-		select = -1
-		for k in xrange(K):
-			if c[k] > pb:
-				select = k
-				break	
-	else:
-		select = 0
-
-	ang = peaks[select][1]
-	sx  = peaks[select][6]
-	sy  = peaks[select][7]
-	mirror = peaks[select][8]
-	peak = peaks[select][0]
-		
-	return  ang, sx, sy, mirror, peak, select
-
-def sim_anneal2(peaks, Iter, F):
-	from math import exp, pow, log10
-	from random import random
-
-	K = len(peaks)
-	p = [0.0] * K
-
-	if log10(F)*Iter > -3.0:
-		# Initial temperature
-		T0 = 1.0
-		# Determine the current temperature
-		T = T0*pow(F, Iter)	
-	
-		dJe = [0.0]*K
-		for k in xrange(K):
-			dJe[k] = peaks[k][0]/peaks[0][0]
-
-		# q[k]
-		q      = [0.0] * K
-		arg    = [0.0] * K
-		maxarg = 0
-		for k in xrange(K):
-			arg[k] = dJe[k] / T
-			if arg[k] > maxarg: maxarg = arg[k]
-		limarg = 200
-		if maxarg > limarg:
-			sumarg = float(sum(arg))
-			for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
-		else:
-			for k in xrange(K): q[k] = exp(arg[k])
-
-		sumq = float(sum(q))
-		for k in xrange(K):
-			p[k] = q[k] / sumq
-	else:
-		p[0] = 1.0
-	
-	return p
-
 def select_k(dJe, T):
+	"""
+	This routine is used in simulated annealing to select a random path
+	based on the weight of the each path and the temperature.
+	"""
 	from math import exp
 	from random import random
 
@@ -592,21 +484,86 @@ def select_k(dJe, T):
 			select = k
 			break
 	return select
-	
 
-def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
-	from math import log10, pow, sin, sqrt, pi
+
+def sim_anneal(peaks, Iter, T0, F, SA_stop):
+	from math import exp, pow
 	from random import random
 
-	if log10(F)*Iter > -3.0 and Iter < SA_stop:
-		# Determine the current temperature
-		T = T0*pow(F, Iter)	
+	# Determine the current temperature
+	T = T0*pow(F, Iter)	
+
+	if T > 0.001 and Iter < SA_stop:
+		dJe = [0.0]*K
+		for k in xrange(K): dJe[k] = peaks[k][0]/peaks[0][0]		
+		select = select_k(dJe, T)
+	else:
+		select = 0
+
+	ang = peaks[select][1]
+	sx  = peaks[select][6]
+	sy  = peaks[select][7]
+	mirror = peaks[select][8]
+	peak = peaks[select][0]
+		
+	return  ang, sx, sy, mirror, peak, select
+
+
+def sim_anneal2(peaks, Iter, T0, F, SA_stop):
+	from math import exp, pow
+	from random import random
+
+	# Determine the current temperature
+	T = T0*pow(F, Iter)	
+
+	K = len(peaks)
+	p = [0.0] * K
+
+	if T > 0.0001 and Iter < SA_stop:
+	
+		dJe = [0.0]*K
+		for k in xrange(K):
+			dJe[k] = peaks[k][0]/peaks[0][0]
+
+		# q[k]
+		q      = [0.0] * K
+		arg    = [0.0] * K
+		maxarg = 0
+		for k in xrange(K):
+			arg[k] = dJe[k] / T
+			if arg[k] > maxarg: maxarg = arg[k]
+		limarg = 200
+		if maxarg > limarg:
+			sumarg = float(sum(arg))
+			for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+		else:
+			for k in xrange(K): q[k] = exp(arg[k])
+
+		sumq = float(sum(q))
+		for k in xrange(K):
+			p[k] = q[k] / sumq
+	else:
+		p[0] = 1.0
+	
+	return p
+
+
+def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
+	from math import pow, sin, sqrt, pi
+	from random import random
+
+	# Determine the current temperature
+	T = T0*pow(F, Iter)	
+
+	if T > 0.001 and Iter < SA_stop:
 	
 		K = len(peaks_major)
 		dJe = [0.0]*K
 		for k in xrange(K):	dJe[k] = peaks_major[k][4]
-
+		
 		select_major = select_k(dJe, T)
+		
+		#print "Straight:", dJe, select_major
 		
 		ang_m = peaks_major[select_major][1]
 		sx_m = peaks_major[select_major][6]
@@ -623,14 +580,14 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 			if dist < min_dist:
 				min_dist = dist
 				select_s = i
-
+		
 		if len(neighbor) != 0:
 			K = len(neighbor)
 			dJe = [0.0]*K
 			for k in xrange(K):   dJe[k] = peaks[neighbor[k]][4]
 			select_s = neighbor[select_k(dJe, T)]
 			
-		###################################
+		#############################################################################################################
 
 		K = len(peakm_major)
 		dJe = [0.0]*K
@@ -638,6 +595,8 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 
 		select_major = select_k(dJe, T)
 				
+		#print "Mirror:", dJe, select_major
+
 		ang_m = peakm_major[select_major][1]
 		sx_m = peakm_major[select_major][6]
 		sy_m = peakm_major[select_major][7]
@@ -666,6 +625,9 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 		p[0] = 1.0
 		p[1] = min(ps/pm, pm/ps)
 		pk = select_k(p, T)
+		
+		#print "Total:", p, pk
+		
 		if ps > pm and pk == 0 or ps < pm and pk == 1: use_mirror = 0
 		else: use_mirror = 1
 	else:
@@ -678,6 +640,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 		else:
 			use_mirror = 1
 	
+	print use_mirror
 	if use_mirror == 0:
 		select = select_s	
 		ang = peaks[select][1]

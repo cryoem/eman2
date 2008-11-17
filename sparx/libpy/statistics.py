@@ -71,9 +71,8 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 	if CTF:
 		from morphology   import ctf_img
 		from filter       import filt_ctf, filt_table
-		from utilities    import get_arb_params
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied","add_ave_varf",1)
+			ERROR("data cannot be ctf-applied", "add_ave_varf", 1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
@@ -88,7 +87,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
-	 		ctf_params = ima.get_attr( "ctf" )
+	 		ctf_params = ima.get_attr("ctf")
 	 		oc = filt_ctf(ima, ctf_params, pad=False)
 			Util.add_img(ave, oc)
  			Util.add_img2(var, fft(ima))
@@ -146,10 +145,9 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 	if CTF:
 		from morphology   import ctf_img
 		from filter       import filt_ctf, filt_table
-		from utilities    import get_arb_params
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
+
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied","add_ave_varf_MPI",1)
+	 		ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
 	 	for i in xrange(n):
 	 		if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
@@ -162,8 +160,8 @@ def add_ave_varf_MPI(data, mask = None, mode = "a", CTF = False):
 				#    here we use the first possibility
 			else:
 				ima = data[i].copy()
-	 		ctf_params = ima.get_attr( "ctf" )
-	 		oc = filt_ctf(ima, ctf_params, pad=False)
+	 		ctf_params = ima.get_attr("ctf")
+	 		oc = filt_ctf(ima, ctf_params, dopad=False)
 			Util.add_img(ave, oc)
  			Util.add_img2(var, fft(ima))
 	else:
@@ -231,7 +229,7 @@ def add_ave_varf_ML_MPI(data, mask = None, mode = "a", CTF = False):
 			else:
 		 		ima = data[i].copy()
 	 		ctf_params = ima.get_attr( "ctf" )
-	 		oc = filt_ctf(ima, ctf_params, pad=False)
+	 		oc = filt_ctf(ima, ctf_params, dopad=False)
 			Util.add_img(ave, oc)
  			Util.add_img2(var, fft(ima))
 	else:

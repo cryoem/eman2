@@ -177,7 +177,7 @@ def filt_table(e, table):
 			"table" : table}
 	return Processor.EMFourierFilter(e, params)
 
-def filt_ctf( img, ctf, dopad=True, sign=1 ) :
+def filt_ctf(img, ctf, dopad=True, sign=1):
 	assert img.get_ysize() > 1
 	dict = ctf.to_dict()
 	dz = dict["defocus"]
