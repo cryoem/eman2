@@ -388,6 +388,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .value("CTF_SIGN", EMAN::Ctf::CTF_SIGN)
         .value("CTF_BACKGROUND", EMAN::Ctf::CTF_BACKGROUND)
         .value("CTF_SNR", EMAN::Ctf::CTF_SNR)
+        .value("CTF_SNR_SMOOTH", EMAN::Ctf::CTF_SNR_SMOOTH)
         .value("CTF_WIENER_FILTER", EMAN::Ctf::CTF_WIENER_FILTER)
         .value("CTF_TOTAL", EMAN::Ctf::CTF_TOTAL)
     ;

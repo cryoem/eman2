@@ -637,13 +637,16 @@ void EMAN2Ctf::copy_from(const Ctf * new_ctf)
 	}
 }
 
+inline int max_int(int a,int b) { return a>b?a:b; }
+inline int min_int(int a,int b) { return a<b?a:b; }
 
 vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf)
 {
 	Assert(size > 0);
 	
-	float tmp_f1 =  sqrt((float) 2) * size / 2;
-	int np = (int) ceil(tmp_f1) + 2;
+//	float tmp_f1 =  sqrt((float) 2) * size / 2;
+//	int np = (int) ceil(tmp_f1) + 2;
+	int np=size/2;
 	vector < float >r;
 
 	r.resize(np);
@@ -689,15 +692,26 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 			f-=j;
 			if (j>snr.size()-2) r[i]=snr.back();
 			else r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
+//			printf("%d\t%f\n",j,snr[j]);
 			s+=ds;
 		}
+		break;
 	case CTF_SNR_SMOOTH:
 		for (int i = 0; i < np; i++) {
+			float gamma = calc_gamma(g1, g2, s);	// we base the width of our smoothing on gamma
 			float f = s/dsbg;
 			int j = (int)floor(f);
-			f-=j;
-			if (j>snr.size()-2) r[i]=snr.back();
-			else r[i]=snr[j]*(1.0-f)+snr[j+1]*f;
+			
+			double sum=0,norm=0; 
+			for (int k=max_int(j-5,1); k<min_int(j+6,np); k++) {
+				float s2=f-k;
+				float e=exp(-14.0*s2*s2/(gamma));
+				if (k>snr.size()) break;
+				sum+=e*snr[k];
+				norm+=e;
+//				printf("%d\t%f\t%f\t%f\t%f\n",k,e,snr[k],sum,norm);
+			}
+			r[i]=norm==0?0:sum/norm;
 			s+=ds;
 		}
 		r[0]=0;

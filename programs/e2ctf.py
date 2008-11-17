@@ -53,11 +53,14 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input stack/image> ...
 	
-Various CTF-related operations on images. Input particles should be unmasked and unfiltered. A minimum of ~20% padding around the
+Various CTF-related operations on images, including automatic fitting. Note that automatic fitting is limited to 5 microns
+underfocus at most. Input particles should be unmasked and unfiltered. A minimum of ~20% padding around the
 particles is required for background extraction, even if this brings the edge of another particle into the box in some cases.
 Particles should be reasonably well centered. Can also optionally phase flip and Wiener filter particles. Wiener filtration comes
 after phase-flipping, so if phase flipping is performed Wiener filtered particles will also be phase-flipped. Note that both
-operations are performed on oversampled images if specified."""
+operations are performed on oversampled images if specified (though final real-space images are clipped back to their original
+size. Increasing padding during the particle picking process will improve the accuracy of phase-flipping, particularly for
+images far from focus."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -577,6 +580,12 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 
 	ctf.snr=snr
 	ctf.defocus=dfbest[0]
+	
+	# This smooths the SNR curve
+	#snr=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_SNR_SMOOTH)
+	#snr=snr[:len(ctf.snr)]
+	#ctf.snr=snr
+
 
 	if 1 : print "Best DF = ",dfbest[0]
 	
@@ -680,9 +689,10 @@ class GUIctf(QtGui.QWidget):
 		self.vbl2.addWidget(self.setlist)
 		
 		self.splotmode=QtGui.QComboBox(self)
-		self.splotmode.addItem("Ptcl & BG power")
 		self.splotmode.addItem("Bgsub & fit")
+		self.splotmode.addItem("Ptcl & BG power")
 		self.splotmode.addItem("SNR")
+		self.splotmode.addItem("Smoothed SNR")
 		self.splotmode.addItem("Test")
 		self.vbl2.addWidget(self.splotmode)
 		self.hbl.addLayout(self.vbl2)
@@ -757,10 +767,10 @@ class GUIctf(QtGui.QWidget):
 		ctf=self.data[val][1]
 		ds=self.data[val][1].dsbg
 		s=[ds*i for i in range(len(ctf.background))]
-		if self.plotmode==0:
+		if self.plotmode==1:
 			self.guiplot.set_data("fg",(s,self.data[val][2]),True,True)
 			self.guiplot.set_data("bg",(s,self.data[val][3]))
-		elif self.plotmode==1: 
+		elif self.plotmode==0: 
 			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
 			
@@ -779,8 +789,14 @@ class GUIctf(QtGui.QWidget):
 
 			self.guiplot.set_data("fit",(s,fit))
 		elif self.plotmode==2:
-			self.guiplot.set_data("snr",(s,ctf.snr),True)
+			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The fit curve
+			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
 		elif self.plotmode==3:
+			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The fit curve
+			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
+			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH)		# The fit curve
+			self.guiplot.set_data("ssnr",(s,ssnr[:len(s)]))
+		elif self.plotmode==4:
 			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
 			
