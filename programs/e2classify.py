@@ -227,7 +227,7 @@ def check(options,verbose):
 		if os.path.exists(options.outfile):
 			if (not options.force):
 				if verbose:
-					parser.error("File %s exists, will not write over, exiting" %args[1])
+					print "File %s exists, will not write over, exiting" %options.outfile
 				error = True
 		
 		if not os.path.exists(options.simmxfile):

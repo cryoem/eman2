@@ -65,6 +65,7 @@ images far from focus."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
+	parser.add_option("--auto_fit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
 	parser.add_option("--bgmask",type="int",help="Compute the background power spectrum from the edge of the image, specify a mask radius in pixels which would largely mask out the particles. Default is boxsize/2.",default=0)
 	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
 	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
@@ -105,51 +106,66 @@ images far from focus."""
 
 	options.filenames = args
 	### Power spectrum and CTF fitting
-	img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
+	if options.auto_fit:
+		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
+		
+		### This computes the intensity of the background subtracted power spectrum at each CTF maximum for all sets
+		global envelopes # needs to be a global for the Simplex minimizer
+		# envelopes is essentially a cache of information that could be useful at later stages of refinement
+		# as according to Steven Ludtke
+		for i in img_sets:
+			envelopes.append(ctf_env_points(i[2],i[3],i[1]))
+		
+		# we use a simplex minimizer to try to rescale the individual sets to match as best they can
+		scales=[1.0]*len(img_sets)
+		if (len(img_sets)>3) :
+			incr=[0.2]*len(img_sets)
+			simp=Simplex(env_cmp,scales,incr)
+			scales=simp.minimize(maxiters=1000)[0]
+	#		print scales
+			print " "
+		
+		# apply the final rescaling
+		envelope=[]
+		for i in range(len(scales)):
+			cur=envelopes[i]
+			for j in range(len(cur)):
+				envelope.append((cur[j][0],cur[j][1]*scales[i]))
+				
+		envelope.sort()
+		envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
+		
+		db_misc=db_open_dict("bdb:e2ctf.misc")
+		db_misc["envelope"]=envelope
+		
+		#out=file("envelope.txt","w")
+		#for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
+		#out.close()
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
-		from emapplication import EMStandAloneApplication
-		app=EMStandAloneApplication()
-		gui=GUIctfModule(app,img_sets)
-		app.exec_()
+		img_sets = []
+		for file in options.filenames:
+			name = get_file_tag(file)
+			img_set = db_parms[name]
+			ctf=EMAN2Ctf()
+			ctf.from_string(img_set[0]) # convert to ctf object seeing as it's a string
+			img_set[0] = ctf
+			actual = [file]
+			actual.extend(img_set)
+			img_sets.append(actual)
+			from emapplication import EMStandAloneApplication
+			app=EMStandAloneApplication()
+			gui=GUIctfModule(app,img_sets)
+			app.exec_()
 
-	print "done execution"
-	### This computes the intensity of the background subtracted power spectrum at each CTF maximum for all sets
-	global envelopes
-	for i in img_sets:
-		envelopes.append(ctf_env_points(i[2],i[3],i[1]))
-	
-	# we use a simplex minimizer to try to rescale the individual sets to match as best they can
-	scales=[1.0]*len(img_sets)
-	if (len(img_sets)>3) :
-		incr=[0.2]*len(img_sets)
-		simp=Simplex(env_cmp,scales,incr)
-		scales=simp.minimize(maxiters=1000)[0]
-#		print scales
-		print " "
-	
-	# apply the final rescaling
-	envelope=[]
-	for i in range(len(scales)):
-		cur=envelopes[i]
-		for j in range(len(cur)):
-			envelope.append((cur[j][0],cur[j][1]*scales[i]))
-			
-	envelope.sort()
-	envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
-	
-	db_misc=db_open_dict("bdb:e2ctf.misc")
-	db_misc["envelope"]=envelope
-	
-	#out=file("envelope.txt","w")
-	#for i in envelope: out.write("%f\t%f\n"%(i[0],i[1]))
-	#out.close()
+		print "done execution"
 
 	### Process input files
 	if debug : print "Phase flipping / Wiener filtration"
 	# write wiener filtered and/or phase flipped particle data to the local database
-	write_e2ctf_output(options) # converted to a function so to work with the workflow
+	if options.phaseflip or options.wiener: # only put this if statement here to make the program flow obvious
+		write_e2ctf_output(options) # converted to a function so to work with the workflow
 
 	E2end(logid)
 	
@@ -177,7 +193,7 @@ def write_e2ctf_output(options):
 			if wienerout : print "Wiener image out: ",wienerout,
 			print ""
 			ctf=EMAN2Ctf()
-			ctf.from_string(db_parms[name])
+			ctf.from_string(db_parms[name][0])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
 	
 def pspec_and_ctf_fit(options,debug=False):
@@ -202,7 +218,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
 		ctf=ctf_fit(im_1d,bg_1d,im_2d,bg_2d,options.voltage,options.cs,options.ac,options.apix,bgadj=not options.nosmooth,autohp=options.autohp)
-		db_parms[name]=ctf.to_string()
+		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,im_2d,bg_2d]
 
 		if debug:
 			Util.save_data(0,ds,im_1d,"ctf.fg.txt")

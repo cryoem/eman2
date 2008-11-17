@@ -151,14 +151,17 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		
 		ctf_list = []
-		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("e2ctf")))
+		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Automatic fitting - e2ctf")))
+		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive tuning - e2ctf")))
+		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2ctf")))
 		ctf.addChildren(ctf_list)
-		self.launchers["e2ctf"] = self.launch_e2ctf_management
+		#self.launchers["e2ctf"] = self.launch_e2ctf_management
 		
 		
 		ap_list = []
-		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("e2boxer")))
-		self.launchers["e2boxer"] = self.launch_e2boxer_management
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive boxing - e2boxer")))
+		self.launchers["Interactive boxing - e2boxer"] = self.launch_e2boxer_management
+		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Auto boxing - e2boxer")))
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
 		self.launchers["Particle import"] = self.launch_particle_import
 		ap.addChildren(ap_list)

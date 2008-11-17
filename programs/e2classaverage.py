@@ -33,7 +33,7 @@
 
 from EMAN2 import *
 from optparse import OptionParser
-from math import *
+import math
 from copy import deepcopy
 import os
 import sys
@@ -70,6 +70,7 @@ def main():
 	parser.add_option("--bootstrap",action="store_true",help="Bootstraps iterative alignment by using the first particle in each class to seed the iterative alignment. Only works if the number of iterations is greater than 0.")
 	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 	parser.add_option("--norm_proc",type="string",help="The normalization processor. Default is normalize.edgemean.", default="normalize.edgemean")
+	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
 
 	(options, args) = parser.parse_args()
 	
@@ -108,6 +109,8 @@ def main():
 	
 	if ( not options.lowmem ) :
 		images = EMData.read_images(args[0])
+		if options.usefilt: 
+			filt_images = EMData.read_images(options.usefilt) # check should already have determined that this is safe
 	
 	
 	if (options.verbose):
@@ -226,7 +229,7 @@ def main():
 			for p in range(0,num_part):
 				for c in range(0,num_classes):
 					if classes.get(c,p) == cl:
-							# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
+						# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
 						# latter case the class cache is used to print information
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
 						
@@ -246,13 +249,35 @@ def main():
 						else:
 							# there are a lot of ways to do and there is probably
 							# an improvement on what happens here, but it suffices
-							if (options.lowmem): 
-								image = EMData()
-								image.read_image(args[0],p)
-							else: image = images[p].copy()
-							
-							image.process_inplace(options.norm[0],options.norm[1])
-							ta = align(image,average,options)
+							if not options.usefilt:
+								
+								if (options.lowmem): 
+									image = EMData()
+									image.read_image(args[0],p)
+								else: image = images[p].copy()
+								
+								image.process_inplace(options.norm[0],options.norm[1])
+								ta = align(average,image,options)
+								t = ta.get_attr("xform.align2d")
+								t.invert()
+								ta = image.transform(t)
+							else:
+								if (options.lowmem): 
+									filt_image = EMData()
+									filt_image.read_image(usefilt,p)
+									image = EMData()
+									image.read_image(args[0],p)
+								else:
+									image = images[p].copy()
+									filt_image = filt_images[p].copy()
+								
+								image.process_inplace(options.norm[0],options.norm[1])
+								filt_image.process_inplace(options.norm[0],options.norm[1])
+								ta = align(average,filt_image,options)
+								t = ta.get_attr("xform.align2d")
+								t.invert()
+								ta = image.transform(t)
+								
 							ta.process_inplace("mask.sharp",{"outer_radius":ta.get_xsize()/2})				
 							np += 1
 							average.add(ta) # now add the image
@@ -293,15 +318,24 @@ def main():
 			for d in ccache:
 				p = d[0]
 				c = d[1]
-				if (options.lowmem): 
-					image = EMData()
-					image.read_image(args[0],p)
-				else: image = images[p]
 				
+				if not options.usefilt:
+					
+					if (options.lowmem): 
+						image = EMData()
+						image.read_image(args[0],p)
+					else: image = images[p].copy()
+				else:
+					if (options.lowmem): 
+						image = EMData()
+						image.read_image(usefilt,p)
+					else:
+						image = filt_images[p].copy()
+						
 				image.process_inplace(options.norm[0],options.norm[1])
 				ta = align(average,image,options)
 				t = ta.get_attr("xform.align2d")
-				t.invert()
+				t.invert() # because we aligned the average to the image, and not the other way around
 				params = t.get_params("2d")
 				
 				# store the refined translational and rotational values
@@ -398,14 +432,16 @@ def main():
 		if ( options.ref  ):
 			e = EMData()
 			e.read_image(options.ref, cl, READ_HEADER_ONLY)
-			average.set_attr("euler_alt", e.get_attr("euler_alt"))
-			average.set_attr("euler_az",e.get_attr("euler_az"))
-			average.set_attr("euler_phi",e.get_attr("euler_phi"))
+			average.set_attr("xform.projection", e.get_attr("xform.projection"))
+			#average.set_attr("euler_az",e.get_attr("euler_az"))
+			#average.set_attr("euler_phi",e.get_attr("euler_phi"))
 			if options.verbose:
 				edata = []
-				edata.append(e.get_attr("euler_alt"))
-				edata.append(e.get_attr("euler_az"))
-				edata.append(e.get_attr("euler_phi"))
+				t = e.get_attr("xform.projection")
+				rot = t.get_rotation("eman")
+				edata.append(rot["alt"])
+				edata.append(rot["az"])
+				edata.append(rot["phi"])
 		
 		# now write to disk
 		average.set_attr("ptcl_repr",np)
@@ -492,10 +528,38 @@ def check(options, verbose=False):
 			if (verbose):
 				print "Error: the file expected to contain the classification matrix (%s) was not found, cannot run e2classaverage.py" %(options.classifyfile)
 		
-		if not os.path.exists(options.datafile):
+		if not file_exists(options.datafile):
 			error = True
 			if (verbose):
-				print "Error: the file containing the particle data (%s) does not exist" %options.datafile
+				print "Error:  failed to find the particle data (%s)" %options.datafile
+		else:
+			if (options.usefilt != None):
+				if not file_exists(options.usefilt):
+					error = True
+					if verbose: print "Error: failed to find usefilt file %s" %options.usefilt
+				
+				n1 = EMUtil.get_image_count(options.usefilt)
+				n2 = EMUtil.get_image_count(options.datafile)
+				if n1 != n2:
+					if verbose: print "Error, the number of images in the starting particle set:",n2,"does not match the number in the usefilt set:",n1
+					error = True
+					
+				read_header_only=True
+				img1 = EMData()
+				img1.read_image(options.datafile,0,read_header_only)
+				img2 = EMData()
+				img2.read_image(options.usefilt,0,read_header_only)
+				
+				nx1 = img1.get_attr("nx") 
+				nx2 = img2.get_attr("nx") 
+				
+				ny1 = img1.get_attr("ny") 
+				ny2 = img2.get_attr("ny") 
+				
+				if nx1 != nx2 or ny1 != ny2:
+					error = True
+					if verbose: print "Error, the dimensions of particle data (%i x %i) and the usefilt data (%i x %i) do not match" %(nx1,ny1,nx2,ny2)
+				
 		
 		if os.path.exists(options.classifyfile) and os.path.exists(options.datafile):
 			(xsize, ysize ) = gimme_image_dimensions2D(options.classifyfile);

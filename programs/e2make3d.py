@@ -433,7 +433,7 @@ def fourier2D_reconstruction(options):
 		print i
 		image = get_processed_image(options,i)
 	
-		transform = Transform({"type":"2d","alpha",image.get_attr("euler_alt"})
+		transform = Transform({"type":"2d","alpha":image.get_attr("euler_alt")})
 		r = transform.get_params("2d")
 		failure = recon.insert_slice(image,transform)
 			

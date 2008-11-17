@@ -303,8 +303,8 @@ class EMImageMXRotorModule(EMGUIModule):
 	def get_inspector(self):
 		return self.inspector
 	
-	def emit(self,*args,**kargs):
-		self.application.get_qt_emitter(self).emit(*args,**kargs)
+	#def emit(self,*args,**kargs):
+		#self.application.get_qt_emitter(self).emit(*args,**kargs)
 		
 	def set_selected(self,n,update_gl=True):
 		widget = self.rotor[0]

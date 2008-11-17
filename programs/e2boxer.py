@@ -410,7 +410,7 @@ class AutoDBBoxer(QtCore.QObject):
 		#print "process started"
 		
 
-class EMBoxerModuleMouseEventsObject:
+class	EMBoxerModuleMouseEventsObject:
 	'''
 	A base class for objects that handle mouse events in the EMBoxerModule
 	

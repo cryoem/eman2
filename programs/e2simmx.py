@@ -63,6 +63,7 @@ def main():
 	parser.add_option("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
+	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up.")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 	
@@ -145,10 +146,25 @@ def main():
 
 	# Read all c images, then read and compare one r image at a time
 	cimgs=EMData.read_images(args[0],range(*crange))
+	if options.shrink != None: # the check function guarantees that shrink is an integer greater than 1
+		#d = [ image.process("math.meanshrink",{"n":options.shrink}) for image in cimgs]
+		#cimgs = d
+		for image in cimgs:
+			image.process_inplace("math.meanshrink",{"n":options.shrink})
+	
 	if (options.lowmem):
 		rimg=EMData()
 	else:
 		rimages = EMData.read_images(args[1],range(*rrange))
+		if options.shrink != None: # the check function guarantees that shrink is an integer greater than 1
+			#d = [ image.process("math.meanshrink",{"n":options.shrink}) for image in rimages]
+			#rimages = d
+			# I chose this way in the end for memory efficiency. There's probably a better way to do it
+			for image in rimages:
+				image.process_inplace("math.meanshrink",{"n":options.shrink})
+		
+	#dimages =  EMData.read_images(args[1],range(*rrange))
+	#d = [ image.process_inplace("math.meanshrink",{"n":options.shrink}) for image in dimages]
 	
 	for r in range(*rrange):
 		if options.exclude and r in excl : continue
@@ -159,6 +175,8 @@ def main():
 			
 		if ( options.lowmem ):
 			rimg.read_image(args[1],r)
+			if options.shrink != None: # the check function guarantees that shrink is an integer greater than 
+				rimg.process_inplace("math.meanshrink",{n:options.shrink})
 		else:
 			rimg = rimages[r]
 		
@@ -247,6 +265,16 @@ def check(options,verbose):
 	else:
 		if ( check_eman2_type(options.cmp,Cmps,"Comparitor") == False ):
 			error = True
+	
+	if (options.shrink != None):
+		if options.shrink == 1:
+			options.shrink = None # just leave it as None please
+			print "Warning, setting shrink to 1 does nothing. If you don't want shrinking to occur just forget the shrink argument"
+			
+		if options.shrink <= 1:
+			print "Error: shrink must be greater than 1"
+			error = True
+
 	
 	if (options.saveali):
 		if   (options.align == None or options.align == ""):
