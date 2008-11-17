@@ -126,7 +126,8 @@ images far from focus."""
 		incr=[0.2]*len(img_sets)
 		simp=Simplex(env_cmp,scales,incr)
 		scales=simp.minimize(maxiters=1000)[0]
-		print scales
+#		print scales
+		print " "
 	
 	# apply the final rescaling
 	envelope=[]
@@ -166,6 +167,12 @@ def write_e2ctf_output(options):
 			if options.wiener: wienerout="bdb:particles#"+name+"_ctf_wiener"
 			else : wienerout=None
 
+			#if options.phaseflip: phaseout=name+"_ctf_flip.hed"
+			#else: phaseout=None
+		
+			#if options.wiener: wienerout=name+"_ctf_wiener.hed"
+			#else : wienerout=None
+			
 			if phaseout : print "Phase image out: ",phaseout,"\t",
 			if wienerout : print "Wiener image out: ",wienerout,
 			print ""
@@ -283,11 +290,19 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			out["ctf"]=ctf
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert : out.mult(-1.0)
-			out.write_image(wiener,i)
-			
+			try: out.write_image(wiener,i)
+			except: 
+				print wiener,i
+				try: out.write_image(wiener,i)
+				except: 
+					print "!!! ",wiener,i
+					out.write_image("error.hed",-1)
 		lctf=ctf
 
-
+	if wiener and wiener[:4]=="bdb:" : db_close_dict(wiener)
+	if phaseflip and phaseflip[:4]=="bdb:" : db_close_dict(phaseflip)
+	
+	return
 
 def powspec(stackfile,mask=None,edgenorm=True,):
 	"""This routine will read the images from the specified file, optionally edgenormalize,

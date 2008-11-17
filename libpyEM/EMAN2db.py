@@ -123,6 +123,18 @@ def db_open_dict(url,ro=False,with_keys=False):
 	if ro : return ddb[dictname+"__ro"]
 	return ddb[dictname]
 
+def db_close_dict(url):
+	"""Closes a named dictionary to free resources. Otherwise open dictionaries are cached.
+	After closing, a dict CAN be reopened, but references to existing dict objects should not be used
+	after closing."""
+
+	path,dictname,keys=db_parse_path(url)
+	
+	ddb=EMAN2DB.open_db(path)
+	ddb.close_dict(dictname)
+	
+	return
+
 def db_remove_dict(url):
 	"""closes and deletes a database using the same specification as db_open_dict"""
 	path,dictname,keys=db_parse_path(url)
@@ -495,6 +507,7 @@ class DBDict:
 		if ro : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_RDONLY)
 		else : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE)
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
+#		print "Init ",name,file,path
 
 	def __str__(self): return "<EMAN2db DBHash instance: %s>" % self.name
 
