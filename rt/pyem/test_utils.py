@@ -504,12 +504,12 @@ class TestEMUtils(unittest.TestCase):
     def test_get_image_type(self):
         """test get_image_type function ....................."""
         e = test_image()
-        
         e.write_image('mrcfile', 0, EMUtil.ImageType.IMAGE_MRC)
         self.assertEqual(EMUtil.get_image_type('mrcfile'), EMUtil.ImageType.IMAGE_MRC)
         testlib.safe_unlink('mrcfile')
         
-        e.write_image('hdffile', 0, EMUtil.ImageType.IMAGE_HDF)
+        e2 = test_image()
+        e2.write_image('hdffile', 0, EMUtil.ImageType.IMAGE_HDF)
         self.assertEqual(EMUtil.get_image_type('hdffile'), EMUtil.ImageType.IMAGE_HDF)
         testlib.safe_unlink('hdffile')
         
@@ -517,11 +517,12 @@ class TestEMUtils(unittest.TestCase):
         #self.assertEqual(EMUtil.get_image_type('lstfile'), EMUtil.ImageType.IMAGE_LST)
         #testlib.safe_unlink('lstfile')
         
-        e.write_image('spiderfile', 0, EMUtil.ImageType.IMAGE_SPIDER)
+        e3 = test_image()
+        e3.write_image('spiderfile', 0, EMUtil.ImageType.IMAGE_SPIDER)
         self.assertEqual(EMUtil.get_image_type('spiderfile'), EMUtil.ImageType.IMAGE_SPIDER)
         testlib.safe_unlink('spiderfile')
         
-        e.write_image('sspiderfile', 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+        e3.write_image('sspiderfile', 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
         self.assertEqual(EMUtil.get_image_type('sspiderfile'), EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
         testlib.safe_unlink('sspiderfile')
         
@@ -529,31 +530,38 @@ class TestEMUtils(unittest.TestCase):
         #self.assertEqual(EMUtil.get_image_type('piffile'), EMUtil.ImageType.IMAGE_PIF)
         #testlib.safe_unlink('piffile')
         
-        e.write_image('pngfile', 0, EMUtil.ImageType.IMAGE_PNG)
+        e4 = test_image()
+        e4.write_image('pngfile', 0, EMUtil.ImageType.IMAGE_PNG)
         self.assertEqual(EMUtil.get_image_type('pngfile'), EMUtil.ImageType.IMAGE_PNG)
         testlib.safe_unlink('pngfile')
         
-        e.write_image('vtkfile', 0, EMUtil.ImageType.IMAGE_VTK)
+        e5 = test_image()
+        e5.write_image('vtkfile', 0, EMUtil.ImageType.IMAGE_VTK)
         self.assertEqual(EMUtil.get_image_type('vtkfile'), EMUtil.ImageType.IMAGE_VTK)
         testlib.safe_unlink('vtkfile')
         
-        e.write_image('pgmfile', 0, EMUtil.ImageType.IMAGE_PGM)
+        e6 = test_image()
+        e6.write_image('pgmfile', 0, EMUtil.ImageType.IMAGE_PGM)
         self.assertEqual(EMUtil.get_image_type('pgmfile'), EMUtil.ImageType.IMAGE_PGM)
         testlib.safe_unlink('pgmfile')
         
-        e.write_image('icosfile', 0, EMUtil.ImageType.IMAGE_ICOS)
+        e7 = test_image()
+        e7.write_image('icosfile', 0, EMUtil.ImageType.IMAGE_ICOS)
         self.assertEqual(EMUtil.get_image_type('icosfile'), EMUtil.ImageType.IMAGE_ICOS)
         testlib.safe_unlink('icosfile')
         
-        e.write_image('xplorfile', 0, EMUtil.ImageType.IMAGE_XPLOR)
+        e8 = test_image()
+        e8.write_image('xplorfile', 0, EMUtil.ImageType.IMAGE_XPLOR)
         self.assertEqual(EMUtil.get_image_type('xplorfile'), EMUtil.ImageType.IMAGE_XPLOR)
         testlib.safe_unlink('xplorfile')
         
-        e.write_image('emfile', 0, EMUtil.ImageType.IMAGE_EM)
+        e9 = test_image()
+        e9.write_image('emfile', 0, EMUtil.ImageType.IMAGE_EM)
         self.assertEqual(EMUtil.get_image_type('emfile'), EMUtil.ImageType.IMAGE_EM)
         testlib.safe_unlink('emfile')
         
-        e.write_image('imagicfile', 0, EMUtil.ImageType.IMAGE_IMAGIC)
+        e10 = test_image()
+        e10.write_image('imagicfile', 0, EMUtil.ImageType.IMAGE_IMAGIC)
         self.assertEqual(EMUtil.get_image_type('imagicfile.hed'), EMUtil.ImageType.IMAGE_IMAGIC)
         testlib.safe_unlink('imagicfile.hed')
         testlib.safe_unlink('imagicfile.img')
@@ -565,15 +573,17 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(EMUtil.get_image_count('test_image_count.mrc'), 1)
         testlib.safe_unlink('test_image_count.mrc')
         
-        e.write_image('test_image_count.hdf', 0)
-        e.write_image('test_image_count.hdf', 1)
-        e.write_image('test_image_count.hdf', 2)
+        f = test_image()
+        f.write_image('test_image_count.hdf', 0)
+        f.write_image('test_image_count.hdf', 1)
+        f.write_image('test_image_count.hdf', 2)
         self.assertEqual(EMUtil.get_image_count('test_image_count.hdf'), 3)
         testlib.safe_unlink('test_image_count.hdf')
         
-        e.write_image('test_image_count.spi', 0, EMUtil.ImageType.IMAGE_SPIDER)
-        e.write_image('test_image_count.spi', 1, EMUtil.ImageType.IMAGE_SPIDER)
-        e.write_image('test_image_count.spi', 2, EMUtil.ImageType.IMAGE_SPIDER)
+        g = test_image()
+        g.write_image('test_image_count.spi', 0, EMUtil.ImageType.IMAGE_SPIDER)
+        g.write_image('test_image_count.spi', 1, EMUtil.ImageType.IMAGE_SPIDER)
+        g.write_image('test_image_count.spi', 2, EMUtil.ImageType.IMAGE_SPIDER)
         self.assertEqual(EMUtil.get_image_count('test_image_count.spi'), 3)
         testlib.safe_unlink('test_image_count.spi')
         
