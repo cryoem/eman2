@@ -42,13 +42,13 @@ for iq in xrange(3,111):
 	#o = e.FourInterpol(nxn, nyn, 1, 0)
 	u = fft(o)
 	peak_search(u,print_screen = True)
-	#dropImage(u,"xxx1.hdf")
-	#printImage(o)
+	#drop_image(u,"xxx1.hdf")
+	#print_image(o)
 	b = pad(cyclic_shift(e,-2,+2),2*nx, 2*ny)
 	peak_search(b,print_screen = True)
 	cf = ccf(b,o)
 	peak_search(cf,print_screen = True)
-#printImage(cf)
+#print_image(cf)
 exit()
 print  "  EVEN  "
 #e = EMData()
@@ -59,11 +59,11 @@ e = model_circle(0.5,6,6)
 o = e.FourInterpol(2*nx, 2*ny, 1, 0)
 o = fft(o)
 peak_search(o,print_screen = True)
-printImage(o)
+print_image(o)
 b = fft(pad(cyclic_shift(e,-2,+2),2*nx, 2*ny))
 cf = ccf(b,o)
 peak_search(cf,print_screen = True)
-printImage(cf)
+print_image(cf)
 
 exit()
 
@@ -92,26 +92,26 @@ peak_search(e,print_screen = True)
 
 #u,kb=prepi(e)
 #es = u.rot_scale_conv(0., 0.114,-0.573, kb)
-#printImage(fft(e))
+#print_image(fft(e))
 es = e.FourInterpol(2*nx, 2*ny, 1, 0)
-#printImage(es)
+#print_image(es)
 qe = fshift(e, sx, sy)
 qes = qe.FourInterpol(2*nx, 2*ny, 1, 0)
-#printImage(qes)
+#print_image(qes)
 #info(qes)
 #es = fshift(e, 0.0,0.0)
 
 u = ccf(qes,es)  # large ccf
 info(u, None, " large ccf ")
-#printImage(fft(u))
+#print_image(fft(u))
 peak_search(u,print_screen = True)
-dropImage(u,"pi.hdf")
+drop_image(u,"pi.hdf")
 eg,kb = prepij(e)
 eg = fshift(eg,1,1)
 u = ccf(qes,eg)
 info(u, None, " grid ccf ")
 peak_search(u,print_screen = True)
-dropImage(u,"pig.hdf")
+drop_image(u,"pig.hdf")
 
 ns = 200
 #cfc = model_blank(2*ns+1,2*ns+1)
@@ -151,26 +151,26 @@ peak_search(e,print_screen = True)
 
 #u,kb=prepi(e)
 #es = u.rot_scale_conv(0., sx, sy, kb)
-#printImage(fft(e))
+#print_image(fft(e))
 #es = e.FourInterpol(2*nx, 2*ny, 1, 0)
-#printImage(es)
+#print_image(es)
 qes = fshift(e,sx, sy)
 #qes = fshift(qes, 0.5,0.5)
 #info(qes)
-#printImage(fft(qes))
+#print_image(fft(qes))
 #es = fshift(e, 0.0,0.0)
 
 u = ccf(qes,e)   #small
 qu = u.FourInterpol(2*nx, 2*ny, 1, 0)  # large ccf
-#printImage(qu)
+#print_image(qu)
 peak_search(fft(qu),print_screen = True)
 qc = fshift(qu,1,1)
 #info(qc)
-#printImage(qc)
+#print_image(qc)
 qcf = fft(qc)
 #info(qcf)
 peak_search(qcf,print_screen = True)
-dropImage(qcf,"pc.hdf")
+drop_image(qcf,"pc.hdf")
 
 
 
@@ -184,7 +184,7 @@ peak_search(u,print_screen = True)
 
 #qe,kb=prepij(e)
 #u = ccf(qes,qe)
-dropImage(u,"pic.hdf")
+drop_image(u,"pic.hdf")
 
 ns = 200
 #cfc = model_blank(2*ns+1,2*ns+1)
@@ -200,7 +200,7 @@ for i in xrange(-ns,ns+1):
 			im = xold+i/float(ns) - float(nx//2)
 			jm = yold+j/float(ns) - float(ny//2)
 print  "  PEAK  ",im,jm,xma
-#dropImage(cfc,"cfc.hdf")
+#drop_image(cfc,"cfc.hdf")
 
 
 
@@ -221,7 +221,7 @@ gs = u.rot_scale_conv(angle*pi/180., sx, sy, kb)
 peak_search(e,print_screen = True)
 peak_search(gs,print_screen = True)
 cf = ccfnp(gs,e)
-dropImage(cf,"cf.hdf")
+drop_image(cf,"cf.hdf")
 peak_search(cf,print_screen = True)
 
 u,kb=prepi(gs)
@@ -230,7 +230,7 @@ print ccc(e,res,mask)
 
 fs = fshift(e,sx,sy)
 ff = ccfnp(fs,e)
-dropImage(ff,"ff.hdf")
+drop_image(ff,"ff.hdf")
 peak_search(ff,print_screen = True)
 
 print ccc(e,fshift(fs,-sx,-sy),mask)
@@ -244,7 +244,7 @@ o = fs.FourInterpol(2*nx, 2*ny, 1, 0)
 #info(refi)
 print  "  padded "
 qt = fft(o)
-dropImage(qt,"qt.hdf")
+drop_image(qt,"qt.hdf")
 a=peak_search(qt,print_screen = True)
 
 
@@ -252,14 +252,14 @@ a=peak_search(qt,print_screen = True)
 # Calculate cross-correlation fucntion in Fourier space
 product = ccf(o,refi)
 info(product)
-dropImage(product,"product.hdf")
+drop_image(product,"product.hdf")
 
 ccfg = product.rot_scale_conv(0., 0., 0., kb)
 info(ccfg)
 
 a=peak_search(ccfg,print_screen = True)
 print " on gridding ",a
-dropImage(ccfg,"ccfg.hdf")
+drop_image(ccfg,"ccfg.hdf")
 
 xma = -1.0e23
 xold = float(nx//2)+int(a[0][4])
@@ -287,4 +287,4 @@ for i in xrange(-ns,ns+1):
 			im = xold+i/float(ns) - float(nx//2)
 			jm = yold+j/float(ns) - float(ny//2)
 print  "  PEAK  ",im,jm,xma
-dropImage(cfc,"cfc.hdf")
+drop_image(cfc,"cfc.hdf")

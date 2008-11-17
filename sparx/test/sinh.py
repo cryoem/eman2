@@ -49,5 +49,5 @@ params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH,
 q=Processor.EMFourierFilter(iqwtr,params)
 info(q)
 
-dropImage(q,'uuu.spi')
+drop_image(q,'uuu.spi')
 #q.print_image()

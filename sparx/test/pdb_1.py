@@ -27,7 +27,7 @@ from cctbx import xray
 from cctbx import adptbx
 from cctbx.array_family import flex
 
-from utilities import model_electron_density, dropImage
+from utilities import model_electron_density, drop_image
 import sys
 
 # 
@@ -142,7 +142,7 @@ print "done."
 sys.stdout.flush()
 
 # Save.
-dropImage(ed, image_file_name)
+drop_image(ed, image_file_name)
 
 # 
 #* Example from Pawel Afonine

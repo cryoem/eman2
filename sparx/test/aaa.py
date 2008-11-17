@@ -46,11 +46,11 @@ out = file("tccc_angle", "w")
 
 
 
-e = getImage("tst1.spi")#("tf2d0001.tfc")
+e = get_image("tst1.spi")#("tf2d0001.tfc")
 mask=model_circle(32,75,75)#(27,64,64)
 stat=Util.infomask(e,mask)
 ee=(e-stat[0])/stat[1]*mask
-dropImage(ee,'rtg1.spi')
+drop_image(ee,'rtg1.spi')
 #e.set_size(64,64,1)
 #e.to_zero()
 #e[0,0]=64*64/4
@@ -63,66 +63,66 @@ for i in range(0,0+1):
 	  o = ee.rot_scale_trans2D(i*pi/180.0)
 	  #print  Util.infomask(o,mask)
 	  o = o*mask
-	  dropImage(o,'rst2.spi')
+	  drop_image(o,'rst2.spi')
 	  #rops_textfile(o,"opw4")
 	  u = o.rot_scale_trans2D(-i*pi/180.0)
 	  u=u*mask
 	  stat=Util.infomask(u,mask)
 	  print  " STAT T",stat[0],"  ",stat[1],"  ",stat[2],"  ",stat[3]
 	  #u=(u-stat[0])/stat[1]
-	  dropImage(u,'rst3.spi')
+	  drop_image(u,'rst3.spi')
 	  fsc(ee,u,1,"fsct")
 	  ct= ccc(ee,u,mas)
           d=u-ee
 	  info(d,mas)
-	  dropImage(d,'rst4.spi')
+	  drop_image(d,'rst4.spi')
 	  a=Util.im_diff(u,ee,mas)
 	  d=a["imdiff"]
 	  info(d,mas)
 	  tnorm = d.cmp("dot",d,{"mask":mas,"negative":0})
-	  dropImage(d,'rst5.spi')
+	  drop_image(d,'rst5.spi')
 
 	  o = rtshg(ee,i,0.,0.)
 	  #print  Util.infomask(o,mask)
 	  o = o*mask
-	  dropImage(o,'rtg2.spi')
+	  drop_image(o,'rtg2.spi')
 	  #rops_textfile(o,"opw4")
 	  u = rtshg(o,-i,0.,0.)
 	  u=u*mask
 	  stat=Util.infomask(u,mask)
 	  print  " STAT G",stat[0],"  ",stat[1],"  ",stat[2],"  ",stat[3]
 	  #u=(u-stat[0])/stat[1]
-	  dropImage(u,'rtg3.spi')
+	  drop_image(u,'rtg3.spi')
 	  fsc(ee,u,1,"fscg")
 	  cg= ccc(ee,u,mas)
           d=u-ee
 	  info(d,mas)
-	  dropImage(d,'rtg4.spi')
+	  drop_image(d,'rtg4.spi')
 	  a=Util.im_diff(u,ee,mas)
 	  d=a["imdiff"]
 	  info(d,mas)
 	  gnorm = d.cmp("dot",d,{"mask":mas,"negative":0})
-	  dropImage(d,'rtg5.spi')
+	  drop_image(d,'rtg5.spi')
 
 	  s=ee.copy()
 	  s.rotate_translate(-i,0,0,0,0,0,0,0,0)
-	  dropImage(s,'sss2.spi')
+	  drop_image(s,'sss2.spi')
 	  s.rotate_translate(i,0,0,0,0,0,0,0,0)
 	  stat=Util.infomask(s,mask)
 	  print  " STAT L",stat[0],"  ",stat[1],"  ",stat[2],"  ",stat[3]
           #info(s)
 	  #s=(s-stat[0])/stat[1]
-	  dropImage(s,'sss3.spi')
+	  drop_image(s,'sss3.spi')
 	  fsc(ee,s,1,"fscs")
 	  cs= ccc(ee,s,mas)
           d=s-ee
-	  dropImage(d,'sss4.spi')
+	  drop_image(d,'sss4.spi')
 	  info(d,mas)
 	  a=Util.im_diff(s,ee,mas)
 	  d=a["imdiff"]
 	  snorm = d.cmp("dot",d,{"mask":mas,"negative":0})
 	  info(d,mas)
-	  dropImage(d,'sss5.spi')
+	  drop_image(d,'sss5.spi')
 
           print  i, cs, cg, ct, inorm, snorm, tnorm, gnorm
 	  if(snorm==0.0):

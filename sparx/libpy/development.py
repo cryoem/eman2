@@ -35,7 +35,7 @@ from global_def import *
 
 def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, center=1, maxit=10, CTF = False, snr = 1.):
 
-	from utilities    import model_circle, combine_params2, dropImage, getImage, get_arb_params, center_2D
+	from utilities    import model_circle, combine_params2, drop_image, get_image, get_arb_params, center_2D
 	from statistics   import aves, ave_oe_series, fsc, add_oe_series, ave_oe_series_g
 	from alignment    import Numrinit, ringwe, Applyws, ali2d_sg
 	from filter       import filt_from_fsc_bwt, filt_table, filt_ctf, filt_gaussinv
@@ -54,7 +54,7 @@ def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 	if(last_ring ==- 1): last_ring = int(nx/2)-2
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask=getImage(maskfile)
+		if(type(maskfile) is types.StringType):  mask=get_image(maskfile)
 		else: mask = maskfile
 	else : mask = model_circle(last_ring,nx,nx)
 	cnx = int(nx/2)+1
@@ -155,7 +155,7 @@ def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 		#tavg = filt_table(tavg, noise_table_inv2)
 		# tavg = filt_gaussinv(tavg, 0.3)
 		
-		dropImage(tavg, os.path.join(outdir, "aqc_%03d.spi"%(Iter+1)),"s")
+		drop_image(tavg, os.path.join(outdir, "aqc_%03d.spi"%(Iter+1)),"s")
 		
 	for im in xrange(nima): 
 		alpha  = datap[im].get_attr('alpha')
@@ -170,7 +170,7 @@ def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, center=1, maxit=10, CTF = False, snr = 1.):
 # 2D multi-reference alignment using rotational ccf in polar coords and NUFT interpolation
 
-	from utilities      import   model_circle, compose_transform2, combine_params2, dropImage, getImage
+	from utilities      import   model_circle, compose_transform2, combine_params2, drop_image, get_image
 	from utilities	    import   center_2D, get_arb_params
 	from statistics     import   fsc
 	from alignment      import   Numrinit, ringwe, Applyws, ang_n
@@ -196,7 +196,7 @@ def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=
 
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask=getImage(maskfile)
+		if(type(maskfile) is types.StringType):  mask=get_image(maskfile)
 		else: mask = maskfile
 	else : mask = model_circle(last_ring, nx, nx)
 	#  references
@@ -448,7 +448,7 @@ def ali_param_2d_to_3d(stack):
 '''	NOT USED
 def ali2d_r(stack, outdir, ir=1, ou=-1, rs=1, center=1, maxit=10):
 # 2D alignment using rotational ccf in polar coords and quadratic interpolation
-	from utilities import model_circle, compose_transform2, combine_params2, dropImage, start_time, finish_time
+	from utilities import model_circle, compose_transform2, combine_params2, drop_image, start_time, finish_time
 	from fundamentals import rot_shift2D
 	from statistics import aves, fsc, ave_oe_series
 	from alignment import Numrinit, ringwe, Applyws, ang_n
@@ -539,7 +539,7 @@ def ali2d_r(stack, outdir, ir=1, ou=-1, rs=1, center=1, maxit=10):
 		a0 = tave.cmp("dot", tave, {"negative":0,"mask":mask}) # tave' * tave
 		print'%-15 %5d %15 = %10.g'%(" ITERATION #",iter+1,"criterion",a0)
 		# write the current average
-		dropImage(tave, os.path.join(outdir, "aqc%03d.spi"%iter))
+		drop_image(tave, os.path.join(outdir, "aqc%03d.spi"%iter))
 	print finish_time(tt)
 '''
 '''	Not used anywhere
@@ -548,7 +548,7 @@ def ali3d_b(stack, ref_vol, outdir, maskfile = None,ir=1, ou=-1, rs=1, xr=0, yr=
     # 2D alignment using rotational ccf in polar coords and gridding
     # interpolation 
     
-	from utilities      import model_circle, dropImage
+	from utilities      import model_circle, drop_image
 	from alignment      import proj_ali
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
 	from statistics     import fsc
@@ -572,7 +572,7 @@ def ali3d_b(stack, ref_vol, outdir, maskfile = None,ir=1, ou=-1, rs=1, xr=0, yr=
 	if(last_ring==-1): last_ring=nx-2
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D=getImage(maskfile)
+		if(type(maskfile) is types.StringType):  mask3D=get_image(maskfile)
 		else: mask3D = maskfile
 	else: mask3D = model_circle(last_ring, nx, nx, nx)
 	#mask2D = model_circle(last_ring, nx, nx, 1)
@@ -606,14 +606,14 @@ def ali3d_b(stack, ref_vol, outdir, maskfile = None,ir=1, ou=-1, rs=1, xr=0, yr=
 		if(CTF): vol = recons3d_4nn_ctf(stack, list_p, snr, sign, sym)
 		else:    vol = recons3d_4nn(stack, list_p, sym)
 		# store the reference volume
-		dropImage(vol,os.path.join(outdir,"vol%03d.spi"%iter))
+		drop_image(vol,os.path.join(outdir,"vol%03d.spi"%iter))
 
 		# here figure the filtration parameters and filter vol for the
 		# next iteration
 		fl, fh = filt_params(res)
 		vol    = filt_btwl(vol, fl, fh)
 		# store the filtred reference volume
-		dropImage(vol, os.path.join(outdir, "volf%03d.spi"%iter))
+		drop_image(vol, os.path.join(outdir, "volf%03d.spi"%iter))
 		#  here the loop should end
 	return vol
 '''
@@ -683,7 +683,7 @@ def ali3d_e_iter(stack, mask3d, iteration, defocus, ptl_defgrp, radius, lowf, hi
 		# for the time being, do it after each iteration
 		list_p = range(0,nl,2)
 		vol1=recons3d_4nn_ctf(stack, list_p, snr, sign, symmetry)
-		#dropImage(vol1,"Cnvolcmm1.spi")
+		#drop_image(vol1,"Cnvolcmm1.spi")
 		list_p = range(1,nl,2)
 		vol2=recons3d_4nn_ctf(stack, list_o, snr, sign, symmetry)
 		vol1 *= mask3d
@@ -735,7 +735,7 @@ def ali3d_e(stack, maskfile, radius=25, snr=1.0, lowf=.25, highf=.3, max_it=10, 
 		ptl_num_def+=1
 	ptl_defgrp.append(ptl_num_def)
 	iteration=-1
-	if os.path.exists(maskfile): mask3D=getImage(maskfile)
+	if os.path.exists(maskfile): mask3D=get_image(maskfile)
 	else : mask3d=model_circle(radius, nx, nx, nx)
 	for dummy in xrange(1000): # fake loop
 		if(iteration <= max_it): iteration=ali3d_e_iter(stack,mask3d,iteration,defocus,ptl_defgrp,radius,lowf,highf,snr,dtheta,symmetry)		
@@ -747,7 +747,7 @@ def ali2d_b(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, c
 # 2D alignment using rotational ccf in polar coords and gridding interpolation
 
 	import os
-	from utilities import model_circle, compose_transform2, combine_params2, dropImage, info
+	from utilities import model_circle, compose_transform2, combine_params2, drop_image, info
 	from statistics import aves, fsc, ave_var_series_g, ave_oe_series_g
 	from alignment import Numrinit, ringwe, Applyws, ormqip, kbt, ormy3
 	from fundamentals import prepg, rtshgkb, fshift
@@ -784,12 +784,12 @@ def ali2d_b(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, c
 		data.append(prepg(temp,kb))
 		data[im].set_attr_dict({'alpha':alpha, 'sx':sx, 'sy':sy, 'mirror': mn})
 	if maskfile==None : mask = model_circle(last_ring,nx,nx)
-	else              : getImage(maskfile)
+	else              : get_image(maskfile)
 	
 	# calculate total average using current alignment parameters
 	tave,tvar = ave_var_series_g(data,kb)
-	#dropImage(tave,"a1.spi")
-	#dropImage(tvar,"a2.spi")
+	#drop_image(tave,"a1.spi")
+	#drop_image(tvar,"a2.spi")
 	a0 = tave.cmp("dot", tave, {"negative":0, "mask":mask})
 	print  "Initial criterion=",a0
 	
@@ -870,7 +870,7 @@ def ali2d_b(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, c
 			# write the current average
 			# fil_table=filt_from_fsc_bwt(frsc, low=0.5)
 			# tave=filt_table(tave,fil_table)
-			dropImage(tave,os.path.join(outdir,"aqm%03d.spi"%iter),"s")
+			drop_image(tave,os.path.join(outdir,"aqm%03d.spi"%iter),"s")
 		else:
 			break
 
@@ -889,7 +889,7 @@ def ali2d_b2(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 # 2D alignment using rotational ccf in polar coords and gridding interpolation
 
 	import os
-	from utilities import model_circle, compose_transform2, combine_params2, dropImage, info
+	from utilities import model_circle, compose_transform2, combine_params2, drop_image, info
 	from statistics import aves, fsc, ave_var_series_g, ave_oe_series_g
 	from alignment import Numrinit, ringwe, Applyws, ormqip, kbt, ormy3
 	from fundamentals import prepg, rtshgkb, fshift
@@ -926,12 +926,12 @@ def ali2d_b2(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 		data.append(prepg(temp,kb))
 		data[im].set_attr_dict({'alpha':alpha, 'sx':sx, 'sy':sy, 'mirror': mn})
 	if maskfile==None : mask = model_circle(last_ring,nx,nx)
-	else              : getImage(maskfile)
+	else              : get_image(maskfile)
 	
 	# calculate total average using current alignment parameters
 	tave,tvar = ave_var_series_g(data,kb)
-	#dropImage(tave,"a1.spi")
-	#dropImage(tvar,"a2.spi")
+	#drop_image(tave,"a1.spi")
+	#drop_image(tvar,"a2.spi")
 	a0 = tave.cmp("dot", tave, {"negative":0, "mask":mask})
 	print  "Initial criterion=",a0
 	
@@ -1004,7 +1004,7 @@ def ali2d_b2(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 			# write the current average
 			# fil_table=filt_from_fsc_bwt(frsc, low=0.5)
 			# tave=filt_table(tave,fil_table)
-			dropImage(tave,os.path.join(outdir,"aqm%03d.spi"%iter),"s")
+			drop_image(tave,os.path.join(outdir,"aqm%03d.spi"%iter),"s")
 		else:
 			break
 
@@ -1067,7 +1067,7 @@ def ali3d_e_G(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 	
 	if maskfile:
 		import  types
-		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = get_image(maskfile)
 		else: mask3D = maskfile
 	else:
 		mask3D = model_circle(radius, nx, nx, nx)
@@ -1170,7 +1170,7 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	
 	if maskfile:
 		import  types
-		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = get_image(maskfile)
 		else: mask3D = maskfile
 	else:
 		mask3D = model_circle(radius, nx, nx, nx)
@@ -1289,7 +1289,7 @@ def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	"""
 	from filter     import filt_ctf
 	from projection import prep_vol
-	from utilities  import amoeba2, model_circle, get_params_proj, set_params_proj
+	from utilities  import amoeba_multi_level, model_circle, get_params_proj, set_params_proj
 	from math       import pi
 	import os 
 	from time import time
@@ -1306,7 +1306,7 @@ def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	
 	if maskfile:
 		import  types
-		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = get_image(maskfile)
 		else: mask3D = maskfile
 	else:
 		mask3D = model_circle(radius, nx, nx, nx)
@@ -1351,7 +1351,7 @@ def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 			weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))			
 			
 			# For downhill simplex method 
-			optm_params = amoeba2(atparams, [weight_phi, dtheta, weight_phi], eqprojG3, 1.e-5, 1.e-5, 500, data)
+			optm_params = amoeba_multi_level(atparams, [weight_phi, dtheta, weight_phi], eqprojG3, 1.e-5, 1.e-5, 500, data)
 			set_params_proj(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], -optm_params[3][0], -optm_params[3][1]])
 			
 			end_time = time()
@@ -1362,7 +1362,7 @@ def ali3d_e_G3(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	return total_time, total_time2
 
 def ali_G3(data, atparams, delta):
-	from utilities import amoeba2
+	from utilities import amoeba_multi_level
 	from development import prepij
 	oo, qq, kb2 = prepij(data[2])
 	data.insert(4, oo)
@@ -1371,7 +1371,7 @@ def ali_G3(data, atparams, delta):
 	data.insert(7, [-atparams[3], -atparams[4]])
 
 	weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))	
-	optm_params =  amoeba2(atparams, [weight_phi, delta, weight_phi], eqprojG3, 1.e-5,1.e-5,500,data)
+	optm_params =  amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], eqprojG3, 1.e-5,1.e-5,500,data)
 
 	del data[4]
 	del data[4]
@@ -1380,39 +1380,6 @@ def ali_G3(data, atparams, delta):
 
 	return optm_params
 
-def eqprojG4(args, data):
-	from utilities import peak_search, amoeba
-	from fundamentals import fft, ccf, fpol
-
-	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
-	temp = data[0].extract_plane(R, data[1])
-	temp.fft_shuffle()
-	temp.center_origin_fft()
-	temp.do_ift_inplace()
-	M = temp.get_ysize()/2
-	temp = temp.window_center(M)
-	
-	nx = temp.get_ysize()
-	sx = (nx-data[5][0]*2)/2
-	sy = (nx-data[5][1]*2)/2
-	
-	aaa = fpol(temp, 2*M, 2*M)
-	product = ccf(aaa, data[4])
-
-	data2 = [0]*2
-	data2[0] = product
-	data2[1] = data[1]
-	ps = amoeba([sx, sy], [1.0, 1.0], twoD_fine_search, 1.e-3, 1.e-3, 500, data2)
-
-	s2x = nx/2-ps[0][0]
-	s2y = nx/2-ps[0][1]
-	params2 = {"filter_type":Processor.fourier_filter_types.SHIFT, "x_shift":s2x, "y_shift":s2y, "z_shift":0.0}
-	temp2 = Processor.EMFourierFilter(temp, params2)
-	#v = -temp2.cmp("SqEuclidean", data[2], {"mask":data[3]})
-	v = temp2.cmp("ccc", data[2], {"mask":data[3], "negative":0})
-	
-	return v, [s2x, s2y]
-
 
 def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, max_it=10, symmetry="c1", CTF = False):
 	"""
@@ -1420,7 +1387,7 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	"""
 	from filter     import filt_ctf
 	from projection import prep_vol
-	from utilities  import amoeba2, model_circle, get_params_proj, set_params_proj
+	from utilities  import amoeba_multi_level, model_circle, get_params_proj, set_params_proj
 	from math       import pi
 	import os 
 	from time import time
@@ -1437,7 +1404,7 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 	
 	if maskfile:
 		import  types
-		if type(maskfile) is types.StringType:  mask3D = getImage(maskfile)
+		if type(maskfile) is types.StringType:  mask3D = get_image(maskfile)
 		else: mask3D = maskfile
 	else:
 		mask3D = model_circle(radius, nx, nx, nx)
@@ -1489,7 +1456,7 @@ def ali3d_e_G4(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 			weight_phi = max(dtheta, dtheta*abs((atparams[1]-90.0)/180.0*pi))			
 			
 			# For downhill simplex method 
-			optm_params = amoeba2(atparams, [weight_phi, dtheta, weight_phi], eqprojG4, 1.e-5, 1.e-5, 500, data)
+			optm_params = amoeba_multi_level(atparams, [weight_phi, dtheta, weight_phi], eqprojG4, 1.e-5, 1.e-5, 500, data)
 			set_params_proj(dataim[imn], [optm_params[0][0], optm_params[0][1], optm_params[0][2], -optm_params[3][0], -optm_params[3][1]])
 
 			end_time = time()
@@ -1508,8 +1475,8 @@ def ali3d_e_L(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 	from filter     import filt_ctf, filt_params, filt_table, filt_from_fsc
 	from fundamentals   import fshift, fft
 	from projection import prep_vol
-	from utilities  import amoeba, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
-	from utilities  import dropImage, amoeba2
+	from utilities  import amoeba, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities  import drop_image, amoeba_multi_level
 	from math       import pi,sin
 	from string     import replace
 	from reconstruction import recons3d_4nn, recons3d_4nn_ctf
@@ -1530,7 +1497,7 @@ def ali3d_e_L(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 	
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D=getImage(maskfile)
+		if(type(maskfile) is types.StringType):  mask3D=get_image(maskfile)
 		else: mask3D = maskfile
 	else:
 		mask3D = model_circle(radius, nx, nx, nx)
@@ -1618,7 +1585,7 @@ def ali3d_e_L(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 		else:	 vol = recons3d_4nn(stack, list_p, symmetry)
 		# store the reference volume
 		filename =  replace("vol%3d.spi"%(iteration+1)," ","0")
-		dropImage(vol,os.path.join(outdir, filename), "s")
+		drop_image(vol,os.path.join(outdir, filename), "s")
 		# lk = 0
 		# while(fscc[1][lk] >0.9 and fscc[0][lk]<0.25):	lk+=1
 		# fl = fscc[0][lk]
@@ -1627,7 +1594,7 @@ def ali3d_e_L(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, ma
 		cs   = vol.phase_cog()
 		vol  = fshift(vol, -cs[0], -cs[1] -cs[2])
 		filename = replace("volf%3d.spi"%(iteration+1)," ","0")
-		dropImage(vol,os.path.join(outdir, filename), "s")
+		drop_image(vol,os.path.join(outdir, filename), "s")
 		"""
 		
 		for im in xrange(nima):
@@ -1792,7 +1759,7 @@ def ali_with_mask(vol, mdl, mask):
 def rot_3D_add_n(vol, refv, phi=0, theta=0, psi=0, radius=None):
 	# rotation only
 	from alignment    import ali_vol_func
-	from utilities    import get_im, model_circle, model_blank, get_arb_params, set_arb_params, dropImage
+	from utilities    import get_im, model_circle, model_blank, get_arb_params, set_arb_params, drop_image
 	from utilities    import amoeba
 	from fundamentals import rot_shift3D
 	ang_scale=5.0
@@ -1820,7 +1787,7 @@ def rot_3D_add_n(vol, refv, phi=0, theta=0, psi=0, radius=None):
 def rot_3D_add_n(stack, outdir, phi=0, theta=0, psi=0, radius=None):
 	
 	from alignment import find_rotation
-	from utilities import get_im, model_circle, model_blank, get_arb_params, set_arb_params, dropImage
+	from utilities import get_im, model_circle, model_blank, get_arb_params, set_arb_params, drop_image
 	from fundamentals import rot_shift3D
 	import sys
 	import os
@@ -1875,7 +1842,7 @@ def rot_3D_add_n(stack, outdir, phi=0, theta=0, psi=0, radius=None):
 		Criter = newt
 		ref = nref.copy()
 
-	dropImage(ref,outdir+"/vols.spi")
+	drop_image(ref,outdir+"/vols.spi")
 
 
 
@@ -1886,7 +1853,7 @@ def pufit(infile, Pixel_size):
 		Power spectrum of the structure 
 		created by X-ray crystallography
 	"""
-	from utilities  	import getImage, amoeba, readSpiderDoc, get_im
+	from utilities  	import get_image, amoeba, read_spider_doc, get_im
 	from math               import log
 	from fundamentals 	import rops
 	#from numpy 		import exp
@@ -1975,10 +1942,10 @@ def extract_signal_from_1dpw2_cl1(indir, outdir, Pixel_size = 1, polynomial_rank
 	for i, single_file in xrange(len(flist)):
 		(filename, filextension) = os.path.splitext(single_file)
 		input_file    = os.path.join(indir, single_file)
-		pw = readSpiderDoc(input_file)
+		pw = read_spider_doc(input_file)
 		out_file     = os.path.join(outdir, "residual_of_" + filename + ".txt")
 		res = residual_1dpw2(list_1dpw2, polynomial_rankB, Pixel_size, cut_off)
-		dropSpiderDoc(out_file, res)
+		drop_spider_doc(out_file, res)
 
 
 
@@ -2563,7 +2530,7 @@ def eqproj_xyx(args,data):
 def eqproj2(args, data):
 	from projection import prgs
 	from fundamentals import fft
-	from utilities import amoeba2
+	from utilities import amoeba_multi_level
 	from math import cos, sin, pi
 	
 	proj = prgs(data[0], data[1], args+[0.0, 0.0, 0.0])
@@ -2601,7 +2568,7 @@ def eqproj2(args, data):
 	data0.insert(9,kbline)
 	data0.insert(10,is_mirror)
 	
-	ps2 = amoeba2([sx,sy],[1,1],func_loop2,1.e-4,1.e-4,500,data0)	
+	ps2 = amoeba_multi_level([sx,sy],[1,1],func_loop2,1.e-4,1.e-4,500,data0)	
 		
 	sx = -ps2[0][0]
 	sy = -ps2[0][1]
@@ -3767,7 +3734,7 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 	"""
 	from math import pi, cos, sin
 	from fundamentals import fft, mirror
-	from utilities import amoeba2, model_circle, amoeba
+	from utilities import amoeba_multi_level, model_circle, amoeba
 	from sys import exit
 	from alignment import ang_n
 	
@@ -3874,7 +3841,7 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 		data0.insert(9,kbline)
 		data0.insert(10,is_mirror)
 		
-		ps2 = amoeba2([-sx,-sy],[1,1],func_loop2,1.e-4,1.e-4,500,data0)
+		ps2 = amoeba_multi_level([-sx,-sy],[1,1],func_loop2,1.e-4,1.e-4,500,data0)
 		
 		if ps2[1] > peak:
 			sx = -ps2[0][0]
@@ -3909,7 +3876,7 @@ def ormy3(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,interpolation_method=Non
 		data.insert(3,numr)
 		data.insert(4,mode)
 		data.insert(5,crefim)
-		ps2 = amoeba2([-sx,-sy],[1,1],func_loop,1.e-4,1.e-4,500,data)
+		ps2 = amoeba_multi_level([-sx,-sy],[1,1],func_loop,1.e-4,1.e-4,500,data)
 		if ps2[1]>peak:
 			sx = -ps2[0][0]
 			sy = -ps2[0][1]
@@ -3940,7 +3907,7 @@ def ormy3g(imali,kb,crefim,xrng,yrng,step,mode,numr,cnx,cny):
 	"""
 	from math import pi, cos, sin
 	from fundamentals import fft, mirror
-	from utilities import amoeba, model_circle, amoeba2
+	from utilities import amoeba, model_circle, amoeba_multi_level
 	from sys import exit
 	
 	maxrin=numr[len(numr)-1]
@@ -4020,7 +3987,7 @@ def ormy3g(imali,kb,crefim,xrng,yrng,step,mode,numr,cnx,cny):
 	data0.insert(9,kbline)
 	data0.insert(10,is_mirror)
 	
-	ps2 = amoeba2([-sx,-sy],[1,1],func_loop2,1.e-4,1.e-4,500,data0)
+	ps2 = amoeba_multi_level([-sx,-sy],[1,1],func_loop2,1.e-4,1.e-4,500,data0)
 	if ps2[1]>peak:
 		sx = -ps2[0][0]
 		sy = -ps2[0][1]
@@ -4113,7 +4080,7 @@ def func_loop2(args, data):
 
 '''
 def proj_ali(volref, mask, projdata, first_ring, last_ring, rstep, xrng, yrng, step, dtheta, ref_a, sym, CTF = False):
-	from utilities    import even_angles, model_circle, dropSpiderDoc, info
+	from utilities    import even_angles, model_circle, drop_spider_doc, info
 	from projection   import prgs
 	from fundamentals import prepg
 	from statistics   import ttime
@@ -4128,7 +4095,7 @@ def proj_ali(volref, mask, projdata, first_ring, last_ring, rstep, xrng, yrng, s
 	if(tmp_sym[0][0]=="d" or tmp_sym[0][0]=="D"): nfold = int(tmp_sym[0][1])*2
 	else:                                       nfold = int(tmp_sym[0][1])
 	ref_angles = even_angles(dtheta, 0.0, 90.0, 0.0, 359.99/nfold, ref_a, "Zero")
-	#dropSpiderDoc("angles.txt",ref_angles)
+	#drop_spider_doc("angles.txt",ref_angles)
 	num_ref = len(ref_angles)
 	# generate reference projections in polar coords
 	#  begin from applying the mask, i.e., subtract the average under the mask and multiply by the mask
@@ -4234,7 +4201,7 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 	from fundamentals import prepg
 
 	#from sys import exit
-	from utilities    import dropImage,info
+	from utilities    import drop_image,info
 	from statistics import memory
 	initmem = memory()
 	print  initmem/1.0e6
@@ -4242,8 +4209,8 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	ref_angles = even_angles(delta, symmetry = symmetry, method = ref_a, phiEqpsi = "Zero")
-	#from utilities import dropSpiderDoc
-	#dropSpiderDoc("angles.txt",ref_angles)
+	#from utilities import drop_spider_doc
+	#drop_spider_doc("angles.txt",ref_angles)
 	num_ref = len(ref_angles)
 	# generate reference projections in polar coords
 	#  begin from applying the mask, i.e., subtract the average under the mask and multiply by the mask
@@ -4251,7 +4218,7 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
 		[mean, sigma, xmin, xmax ] =  Util.infomask(volref, mask3D, True)
 		volref -= mean
 		Util.mul_img(volref, mask3D)
-	#dropImage(volref, "volref.spi", "s")
+	#drop_image(volref, "volref.spi", "s")
 	#exit()
 	nx   = volref.get_xsize()
 	ny   = volref.get_ysize()
@@ -4541,7 +4508,7 @@ def ref_3d_ali_spin(image,mask,volref,currentparams):
 
 def rot_func(args,data):
 	
-	from utilities import dropImage,info
+	from utilities import drop_image,info
 
 	'''The shift(float value) is divided into translational movement and an integer shift, dx & sx_ respectively'''
 	sx_ = int(args[3]);sy_ = int(args[4]);sz_ = int(args[4]); #integer shift
@@ -4558,7 +4525,7 @@ def rot_func(args,data):
 	print res
 	info(temp_ref_image)
 	info(data[0])
-	dropImage(x,"out.tfc")
+	drop_image(x,"out.tfc")
 	del temp_ref_image
 	return res
 
@@ -4582,9 +4549,9 @@ def enerp(ave, numr):
 		Squared norm of FTs of rings
 	'''
 	from math import pi
-	#from utilities  import printCol
+	#from utilities  import print_col
 	#print  "  ENER "
-	#printCol(ave)
+	#print_col(ave)
 	pi2 = pi*2
 	nring = len(numr)/3
 	maxrin = numr[len(numr)-1]
@@ -4696,7 +4663,7 @@ def rec3D_MPI_noCTF_index(data, index, symmetry, myid, main_node = 0):
   #This function is to be called within an MPI program to do a reconstruction on a dataset kept in the memory 
   #Computes reconstruction from projections whose attribute 'group' = index...
 '''
-	from utilities  import model_blank, reduce_EMData_to_root, getImage,send_EMData, recv_EMData
+	from utilities  import model_blank, reduce_EMData_to_root, get_image,send_EMData, recv_EMData
 	from random import randint
 
 	Ttype = Transform3D.EulerType.SPIDER
@@ -4898,20 +4865,20 @@ def get_3Dfsc_stack(stack,m_radius=0,sign=1,snr=1,symmetry="c1",dres="fsc001",fv
 		list_p.append(i)
 	print "start reconstruction"						 
 	val=recons3d_4nn_ctf(stack,list_p, snr, sign, symmetry)
-	dropImage(val,"val.spi")
+	drop_image(val,"val.spi")
 	print "finished"
 	plist=[]
 	for i in xrange(0,total,2):
 		plist.append(i) 
 	vole=recons3d_4nn_ctf(stack, plist, snr, sign, symmetry)		 
-	dropImage(vole,"vole.spi")
+	drop_image(vole,"vole.spi")
 	print "even finished"
 	del plist
 	plist=[]
 	for i in xrange(1,total,2):
 		plist.append(i) 
 	volo=recons3d_4nn_ctf(stack, plist, snr, sign, symmetry)		 
-	dropImage(volo,"volo.spi")
+	drop_image(volo,"volo.spi")
 	print "odd finished"
 	nx=vole.get_xsize()
 	if(m_radius<=1): m_radius=int(nx/2)-10
@@ -4925,7 +4892,7 @@ def get_3Dfsc_stack(stack,m_radius=0,sign=1,snr=1,symmetry="c1",dres="fsc001",fv
 	res=fsc(volo,vole,1,"fsc001")
 	fl, fh = filt_params(res)
 	vol=filt_btwl(val,fl,fh)
-	dropImage(vol,"vol.spi")
+	drop_image(vol,"vol.spi")
 ##############
 
 '''
@@ -5223,7 +5190,7 @@ def create_write_gridprojections(volume, filepattern, anglelist,
 
 	   Usage:
 	     anglist = voea(60.)
-	     vol = getImage("model.tcp")
+	     vol = get_image("model.tcp")
 	     kb_K = 6
 	     kb_alpha = 1.75
 	     create_write_gridprojections(vol,"prj{***}.tcp",anglist,kb_K,kb_alpha)
@@ -5278,7 +5245,7 @@ def cre(volume, filepattern, anglelist,
 #
 #       Usage:
 #         anglist = voea(60.)
-#         vol = getImage("model.tcp")
+#         vol = get_image("model.tcp")
 #         kb_K = 6
 #         kb_alpha = 1.75
 #         create_write_gridprojections(vol,"prj{***}.tcp",anglist,kb_K,kb_alpha)
@@ -5305,7 +5272,7 @@ def pw2_adjustment(vol_in, vol_model, fscdoc, q, shell_of_noise = 20, cut_off_fs
 	"""
 	import os
 	import types
-	from utilities import getImage, read_text_file
+	from utilities import get_image, read_text_file
 	from fundamentals import rops_table
 	from filter import filt_table
 	if type(vol_in) is types.StringType : vol_to_be_corrected = get_im( vol_in )
@@ -5369,13 +5336,13 @@ def pw2_adjustment(vol_in, vol_model, fscdoc, q, shell_of_noise = 20, cut_off_fs
 		rops_textfile(out_vol,  "roo_adjusted.txt")
 		rops_textfile(vol_model,"roo_model.txt")
 		rops_textfile(vol_to_be_corrected,"roo_original.txt")
-		dropSpiderDoc("snr.txt", tmp_snr)
-		dropSpiderDoc("H.txt", H)
-		dropSpiderDoc("bg.txt",p_n )
-		dropSpiderDoc("roo_noise.txt",p3b)
-		dropSpiderDoc("roo_original.txt",p3o)
-		dropImage(out_vol,"vol_adjusted.spi", "s")
-		dropImage(mask,"vol_mask.spi", "s")
+		drop_spider_doc("snr.txt", tmp_snr)
+		drop_spider_doc("H.txt", H)
+		drop_spider_doc("bg.txt",p_n )
+		drop_spider_doc("roo_noise.txt",p3b)
+		drop_spider_doc("roo_original.txt",p3o)
+		drop_image(out_vol,"vol_adjusted.spi", "s")
+		drop_image(mask,"vol_mask.spi", "s")
 	return  out_vol
 '''
 
@@ -5600,7 +5567,7 @@ def ali2d_rac_MPI(stack, maskfile = None, kmeans = 'None', ir = 1, ou = -1, rs =
 	if maskfile:
 		import  types
 		if(type(maskfile) is types.StringType):
-			mask2D = getImage(maskfile)
+			mask2D = get_image(maskfile)
 		else:
 			mask2D = maskfile
 	else:
@@ -7255,7 +7222,7 @@ def k_means_stab_init_tag(stack):
 
 # k-means open and prepare images, only unstable objects (active = 1)
 def k_means_open_unstable(stack, maskname, CTF):
-	from utilities     import get_params2D, getImage
+	from utilities     import get_params2D, get_image
 	from fundamentals  import rot_shift2D, rot_shift3D
 	
 	if CTF:
@@ -7289,7 +7256,7 @@ def k_means_open_unstable(stack, maskname, CTF):
 
 	if maskname != None:
 		if isinstance(maskname, basestring):
-			mask = getImage(maskname)
+			mask = get_image(maskname)
 	else:
 		mask = None
 
@@ -7529,8 +7496,8 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 		Cross resolution alignment
 	"""
 	import os
-	from utilities 		import model_circle, model_blank, combine_params2, dropImage
-	from utilities      import get_input_from_string, getImage, get_arb_params, set_arb_params
+	from utilities 		import model_circle, model_blank, combine_params2, drop_image
+	from utilities      import get_input_from_string, get_image, get_arb_params, set_arb_params
 	from fundamentals 	import rot_shift2D
 	from statistics 	import add_oe_series, ave_series_ctf, ave_series, fsc_mask
 	from alignment 		import Numrinit, ringwe, ali2d_s, align2d
@@ -7588,7 +7555,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	if maskfile:
 		if(type(maskfile) is types.StringType):
 			print_msg("Maskfile                    : %s\n\n"%(maskfile))
-			mask=getImage(maskfile)
+			mask=get_image(maskfile)
 		else:
 			print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
@@ -7650,7 +7617,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 		Util.add_img(av1, av2)
 		if(CTF):  tavg[k] = filt_table(av1, ctfb2[k])
 		else:	  tavg[k] = av1/len(data[k])
-		dropImage(tavg[k],os.path.join(outdir, "aqc_%03d_%03d.hdf"%(k, 0)))
+		drop_image(tavg[k],os.path.join(outdir, "aqc_%03d_%03d.hdf"%(k, 0)))
 	fscross = fsc_mask(tavg[0], tavg[1], mask, 1.0, os.path.join(outdir, "drcross_%03d"%(0)))
 
 	total_ave = model_blank(nx,nx)
@@ -7661,7 +7628,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 		for k in xrange(NG):
 			Util.add_img(total_ave, ave_series(data[k])*len(data[k]))
 		total_ave /= nima
-	dropImage(total_ave, os.path.join(outdir, "total_ave_%03d.hdf"%(0)))
+	drop_image(total_ave, os.path.join(outdir, "total_ave_%03d.hdf"%(0)))
 	a0 = total_ave.cmp("dot", total_ave, dict(negative = 0, mask = mask))
 	msg = "Initial criterion = %-20.7e\n"%(a0)
 	print_msg(msg)
@@ -7689,7 +7656,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 					av2    = filt_table(av2, ctf2[k][1])
 				else:
 					tavg[k] = (av1+av2)/len(data[k])
-				dropImage(tavg[k], os.path.join(outdir, "aqc_%03d_%03d.hdf"%(k, total_iter)))
+				drop_image(tavg[k], os.path.join(outdir, "aqc_%03d_%03d.hdf"%(k, total_iter)))
 
 				frsc.append(fsc_mask(av1, av2, ref_data[0], 1.0, os.path.join(outdir, "drc_%03d_%03d"%(k, total_iter))))
 				#  prepare averages for alignment
@@ -7729,7 +7696,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 				tavg[k], cs[k] = user_func( ref_data )
 				del ref_data[2]
 				del ref_data[2]
-				dropImage(tavg[k], os.path.join(outdir, "aqf_%03d_%03d.hdf"%(k, total_iter)))
+				drop_image(tavg[k], os.path.join(outdir, "aqf_%03d_%03d.hdf"%(k, total_iter)))
 			total_ave = model_blank(nx,nx)
 			if(CTF):
 				for k in xrange(NG):
@@ -7738,7 +7705,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 				for k in xrange(NG):
 					Util.add_img(total_ave, ave_series(data[k])*len(data[k]))
 				total_ave /= nima
-			dropImage(total_ave, os.path.join(outdir, "total_ave_%03d.hdf"%(total_iter)))
+			drop_image(total_ave, os.path.join(outdir, "total_ave_%03d.hdf"%(total_iter)))
 			# a0 should increase; stop algorithm when it decreases.
 			a1 = total_ave.cmp("dot", total_ave, dict(negative = 0, mask = ref_data[0]))
 			msg = "ITERATION #%3d	     criterion = %20.7e\n"%(total_iter,a1)
@@ -8415,7 +8382,7 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 	from numpy import Inf
 	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 	from scipy.optimize.optimize import fmin_cg
-	from utilities import getImage, get_params2D, set_params2D, print_begin_msg, print_end_msg, print_msg
+	from utilities import get_image, get_params2D, set_params2D, print_begin_msg, print_end_msg, print_msg
 	
 	if CTF:
 		from utilities import get_arb_params
@@ -8445,7 +8412,7 @@ def ali_SSNR(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="CG",
 		import  types
 		if type(maskfile) is types.StringType:  
 			print_msg("Maskfile                    : %s\n\n"%(maskfile))
-			mask = getImage(maskfile)
+			mask = get_image(maskfile)
 		else:
 			print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
@@ -8593,7 +8560,7 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 	from scipy.optimize.lbfgsb import fmin_l_bfgs_b
 	from scipy.optimize.optimize import fmin_cg
 	from mpi import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD
-	from utilities import getImage, set_params2D, get_params2D, print_begin_msg, print_end_msg, print_msg
+	from utilities import get_image, set_params2D, get_params2D, print_begin_msg, print_end_msg, print_msg
 	
 	if CTF:
 		from utilities import get_arb_params
@@ -8630,7 +8597,7 @@ def ali_SSNR_MPI(stack, maskfile=None, ou=-1, maxit=10, CTF=False, opti_method="
 		import  types
 		if type(maskfile) is types.StringType:  
 			if myid == main_node:		print_msg("Maskfile                    : %s\n\n"%(maskfile))
-			mask = getImage(maskfile)
+			mask = get_image(maskfile)
 		else:
 			if myid == main_node: 		print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
@@ -9890,10 +9857,10 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an="-1",
 	    center = 1, maxit = 5, CTF = False, snr = 1.0,  ref_a="S", sym="c1"):
 	#  THIS IS FOR PROCESSING BERLIN DATASET
-	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_string_to_all, getImage, get_input_from_string
-	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc,recv_attr_dict, send_attr_dict
-	from utilities      import dropSpiderDoc,get_im
+	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, drop_image
+	from utilities      import bcast_string_to_all, get_image, get_input_from_string
+	from utilities      import get_arb_params, set_arb_params, drop_spider_doc,recv_attr_dict, send_attr_dict
+	from utilities      import drop_spider_doc,get_im
 	from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, filt_gaussl
 	from alignment	    import proj_ali_incore
 	from random	    import randint
@@ -9936,7 +9903,7 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	nx      = vol.get_xsize()
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 	if(maskfile):
-		if(type(maskfile) is types.StringType): mask3D = getImage(maskfile)
+		if(type(maskfile) is types.StringType): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else:         mask3D = model_circle(last_ring, nx, nx, nx)
 	nima            = EMUtil.get_image_count(stack)
@@ -9944,15 +9911,15 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 
-	if(myid == main_node)       :  dropImage(vol, os.path.join(outdir,"ref_volf00.spi"), "s")
+	if(myid == main_node)       :  drop_image(vol, os.path.join(outdir,"ref_volf00.spi"), "s")
 	if(CTF):
 		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
 		#                 0      1         2            3               4                  5               6
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
-	from utilities import readSpiderDoc, set_arb_params
-	prm = readSpiderDoc("params_new.doc")
+	from utilities import read_spider_doc, set_arb_params
+	prm = read_spider_doc("params_new.doc")
 	prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
 	for im in xrange(image_start, image_end):
 		data[im-image_start].set_attr('ID', im)
@@ -10001,7 +9968,7 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
-				dropImage(volo,  os.path.join(outdir, replace("vol%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
+				drop_image(volo,  os.path.join(outdir, replace("vol%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 				from fundamentals import rot_avg
 				filt = filt_from_fsc(fscc, 0.1)
 				# This is a cheat - it moves the resolution curve to the right making the filter more lenient
@@ -10015,7 +9982,7 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 					if(qtq > 0.0):   rfsc.set_value_at(irf, filt[irf]/qtq)
 					else:            rfsc.set_value_at(irf, 0.0)
 				vol_ssnr = vol_ssnr.mult_radial(rfsc)  # adjust radially fsc filter to fsc curve
-				dropImage(vol_ssnr,  os.path.join(outdir, replace("filter%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
+				drop_image(vol_ssnr,  os.path.join(outdir, replace("filter%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 				#  Filter by volume
 				vol = volo.filter_by_image(vol_ssnr)
 				#vol  = filt_table(volo, filt)
@@ -10023,7 +9990,7 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 					cs   = vol.phase_cog()
 					vol  = fshift(vol, -cs[0], -cs[1] -cs[2])
 					volo = fshift(volo, -cs[0], -cs[1] -cs[2])
-				dropImage(vol, os.path.join(outdir, replace("volf%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
+				drop_image(vol, os.path.join(outdir, replace("volf%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 				adam = adaptive_mask(vol, 3000, 2.22)
 				vol = threshold( adam*vol )
 				h = histogram( vol )
@@ -10033,7 +10000,7 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				vol = vol.filter_by_image(vol_ssnr)
 				#vol  = filt_table(vol, filt)
 				#vol = filt_btwl(vol, fl, fh)
-				dropImage(vol, os.path.join(outdir, replace("vhlf%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
+				drop_image(vol, os.path.join(outdir, replace("vhlf%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 				del adam, vol_ssnr, rfsc, filt
 				del h
 			bcast_EMData_to_all(vol, myid, main_node)
@@ -10044,7 +10011,7 @@ def ali3d_dB(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				prml = get_arb_params(data[im-image_start], prm_dict)
 				prml.append(im)
 				prm.append(prml)
-			dropSpiderDoc(os.path.join(outdir, replace("new_params%8d"%((N_step*max_iter+Iter+1)*1000+myid),' ','0')), prm," phi, theta, psi, s2x, s2y, image number")
+			drop_spider_doc(os.path.join(outdir, replace("new_params%8d"%((N_step*max_iter+Iter+1)*1000+myid),' ','0')), prm," phi, theta, psi, s2x, s2y, image number")
 			del prm, prml
 
 	# write out headers  and STOP, under MPI writing has to be done sequentially
@@ -10075,7 +10042,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou =
 		ssnr3d_MPI(stack, output_volume, ssnr_text_file, mask, ou, rw, npad, CTF, sign, sym, random_angles)
 		return
 
-	from utilities import readSpiderDoc, dropImage, get_arb_params, set_arb_params, model_circle, get_im
+	from utilities import read_spider_doc, drop_image, get_arb_params, set_arb_params, model_circle, get_im
 	from filter import filt_ctf
 	from reconstruction import recons3d_nn_SSNR, recons3d_4nn, recons3d_4nn_ctf
 	from projection import prep_vol, prgs
@@ -10111,7 +10078,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou =
 		mask2D = None
 
 	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(stack, mask2D, rw, npad, sign, sym, CTF, random_angles)
-	dropImage(vol_ssnr1, output_volume+"1.spi", "s")
+	drop_image(vol_ssnr1, output_volume+"1.spi", "s")
 	outf = file(ssnr_text_file+"1.txt", "w")
 	for i in xrange(len(ssnr1)):
 		datstrings = []
@@ -10163,25 +10130,25 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou =
 		tqt = ssnr1[i][1] - ssnr2[i][1]
 		if( tqt<qt ): qt = tqt
 	for i in xrange(len(ssnr1)): ssnr1[i][1] -= (ssnr2[i][1] + qt)
-	from utilities import dropSpiderDoc19289
-	dropSpiderDoc(ssnr_text_file+".doc", ssnr1)
-	dropImage(vol_ssnr2, output_volume+"2.spi", "s")
+	from utilities import drop_spider_doc19289
+	drop_spider_doc(ssnr_text_file+".doc", ssnr1)
+	drop_image(vol_ssnr2, output_volume+"2.spi", "s")
 	
 
 def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", random_angles = 0):
 	from reconstruction import recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from string import replace
 	from time import time
-	from utilities import info, get_arb_params, set_arb_params, bcast_EMData_to_all, model_blank, model_circle, get_im, dropImage
+	from utilities import info, get_arb_params, set_arb_params, bcast_EMData_to_all, model_blank, model_circle, get_im, drop_image
 	from filter import filt_ctf
 	from projection import prep_vol, prgs
 
 	if output_volume  is None: output_volume  = "SSNR.spi"
 	if ssnr_text_file is None: ssnr_text_file = "ssnr"
-	from utilities import readSpiderDoc
+	from utilities import read_spider_doc
 
 	#   TWO NEXT LINEs FOR EXTRA PROJECT
-	#params_ref = readSpiderDoc("params_new.txt")
+	#params_ref = read_spider_doc("params_new.txt")
 	#headers = ["phi", "theta", "psi", "s2x", "s2y"]
 
 	nima = EMUtil.get_image_count(stack)
@@ -10212,7 +10179,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
 	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	if myid == 0:
-		dropImage(vol_ssnr1, output_volume+"1.spi", "s")
+		drop_image(vol_ssnr1, output_volume+"1.spi", "s")
 		outf = file(ssnr_text_file+"1.txt", "w")
 		for i in xrange(len(ssnr1)):
 			datstrings = []
@@ -10266,9 +10233,9 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 			tqt = ssnr1[i][1] - ssnr2[i][1]
 			if( tqt<qt ): qt = tqt
 		for i in xrange(len(ssnr1)): ssnr1[i][1] -= (ssnr2[i][1] + qt)
-		from utilities import dropSpiderDoc
-		dropSpiderDoc(ssnr_text_file+".doc", ssnr1)
-		dropImage(vol_ssnr2, output_volume+"2.spi", "s")
+		from utilities import drop_spider_doc
+		drop_spider_doc(ssnr_text_file+".doc", ssnr1)
+		drop_image(vol_ssnr2, output_volume+"2.spi", "s")
 """
 
 
@@ -10280,9 +10247,9 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
-	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
-	from utilities      import readSpiderDoc, get_im
+	from utilities      import bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import read_spider_doc, get_im
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
 	from math           import pi, sqrt
@@ -10330,7 +10297,7 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 	#if(myid == main_node):  vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D = getImage(maskfile)
+		if(type(maskfile) is types.StringType):  mask3D = get_image(maskfile)
 		else:                                   mask3D = maskfile
 	else:
 		mask3D = model_circle(ou, nx, nx, nx)
@@ -10338,8 +10305,8 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 
 
 
-	#from utilities import readSpiderDoc, set_arb_params
-	#prm = readSpiderDoc("params_new.doc")
+	#from utilities import read_spider_doc, set_arb_params
+	#prm = read_spider_doc("params_new.doc")
 	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
 	#prm_dict = ["phi", "theta", "psi"]
 	#from random import seed,gauss
@@ -10412,7 +10379,7 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 
 				mpi_barrier(MPI_COMM_WORLD)
 				if(myid == main_node):
-					dropImage(vol, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+					drop_image(vol, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
 					
 					ref_data.append( vol )
 					ref_data.append( fscc )
@@ -10421,7 +10388,7 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 					#  HERE CS SHOULD BE USED TO MODIFY PROJECTIONS' PARAMETERS  !!!
 					del ref_data[2]
 					del ref_data[2]
-					dropImage(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+					drop_image(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
 				#from sys import exit
 				#exit()
 
@@ -10444,7 +10411,7 @@ def ali3d_eB_MPI_LAST_USED(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, ma
 				from utilities import set_params_proj, get_params_proj
 				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
-			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
+			drop_spider_doc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
 
 			#from sys import exit
@@ -10466,9 +10433,9 @@ def ali3d_eB_CCC(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import model_circle, get_arb_params, set_arb_params, dropSpiderDoc
-	from utilities      import getImage, dropImage, send_attr_dict, recv_attr_dict
-	from utilities      import readSpiderDoc, get_im
+	from utilities      import model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import get_image, drop_image, send_attr_dict, recv_attr_dict
+	from utilities      import read_spider_doc, get_im
 	from statistics     import ccc
 	from statistics     import fsc_mask
 	from math           import pi, sqrt
@@ -10520,15 +10487,15 @@ def ali3d_eB_CCC(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 	#if(myid == main_node):  vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D = getImage(maskfile)
+		if(type(maskfile) is types.StringType):  mask3D = get_image(maskfile)
 		else:                                   mask3D = maskfile
 	else:
 		mask3D = model_circle(ou, nx, nx, nx)
 	mask2D = model_circle(ou, nx, nx)
 
 	dataim = []
-	#from utilities import readSpiderDoc, set_arb_params
-	#prm = readSpiderDoc("params_new.doc")
+	#from utilities import read_spider_doc, set_arb_params
+	#prm = read_spider_doc("params_new.doc")
 	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
 	#prm_dict = ["phi", "theta", "psi"]
 	#from random import seed,gauss
@@ -10577,7 +10544,7 @@ def ali3d_eB_CCC(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 		print_msg(msg)
 		for  ic  in xrange(n_of_chunks):
 			jtep += 1
-			dropImage(vol, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+			drop_image(vol, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
 			ref_data.append( vol )
 			ref_data.append( fscc )
 			#  call user-supplied function to prepare reference image, i.e., filter it
@@ -10585,7 +10552,7 @@ def ali3d_eB_CCC(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 			#  HERE CS SHOULD BE USED TO MODIFY PROJECTIONS' PARAMETERS  !!!
 			del ref_data[2]
 			del ref_data[2]
-			dropImage(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+			drop_image(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
 
 			volft,kb  = prep_vol(vol)
 
@@ -10603,7 +10570,7 @@ def ali3d_eB_CCC(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 				from utilities import set_params_proj, get_params_proj
 				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
-			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d"%(iteration, ic),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
+			drop_spider_doc(os.path.join(outdir, replace("new_params%3d_%3d"%(iteration, ic),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
 			from sys import exit
 			exit()
@@ -10629,8 +10596,8 @@ def ali3d_eB_CCC(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CT
 			if(CTF): vol = recons3d_4nn_ctf(stack, list_p, snr, 1, sym)
 			else:	 vol = recons3d_4nn(stack, list_p, sym)
 			# store the reference volume
-			#dropImage(vol,os.path.join(outdir, replace("vol%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
-			dropImage(vol,os.path.join(outdir, replace("vol%4d.hdf"%(iteration*n_of_chunks+ic+1),' ','0')), "s")
+			#drop_image(vol,os.path.join(outdir, replace("vol%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
+			drop_image(vol,os.path.join(outdir, replace("vol%4d.hdf"%(iteration*n_of_chunks+ic+1),' ','0')), "s")
 
 def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0):
 	'''
@@ -10640,9 +10607,9 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 	from filter         import filt_ctf, filt_params, filt_table, filt_from_fsc, filt_btwl, filt_tanl
 	from fundamentals   import fshift, rot_avg_image
 	from projection     import prep_vol, prgs
-	from utilities      import bcast_string_to_all, model_circle, get_arb_params, set_arb_params, dropSpiderDoc
-	from utilities      import getImage, dropImage, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
-	from utilities      import readSpiderDoc, get_im
+	from utilities      import bcast_string_to_all, model_circle, get_arb_params, set_arb_params, drop_spider_doc
+	from utilities      import get_image, drop_image, bcast_EMData_to_all, send_attr_dict, recv_attr_dict
+	from utilities      import read_spider_doc, get_im
 	from reconstruction import rec3D_MPI
 	from statistics     import ccc
 	from math           import pi, sqrt
@@ -10692,15 +10659,15 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 	#if(myid == main_node):  vol.write_image(os.path.join(outdir,"ref_volf00.hdf"))
 	if maskfile:
 		import  types
-		if(type(maskfile) is types.StringType):  mask3D = getImage(maskfile)
+		if(type(maskfile) is types.StringType):  mask3D = get_image(maskfile)
 		else:                                   mask3D = maskfile
 	else:
 		mask3D = model_circle(ou, nx, nx, nx)
 	mask2D = model_circle(ou, nx, nx)
 
 	dataim = []
-	#from utilities import readSpiderDoc, set_arb_params
-	#prm = readSpiderDoc("params_new.doc")
+	#from utilities import read_spider_doc, set_arb_params
+	#prm = read_spider_doc("params_new.doc")
 	#prm_dict = ["phi", "theta", "psi", "s2x", "s2y"]
 	#prm_dict = ["phi", "theta", "psi"]
 	#from random import seed,gauss
@@ -10844,7 +10811,7 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 			del recvbuf
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
-				dropImage(vol, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				drop_image(vol, os.path.join(outdir, replace("vol%3d_%3d.hdf"%(iteration, ic),' ','0') ))
 				stat = Util.infomask(vol, mask3D, False)
 				vol -= stat[0]
 				vol /= stat[1]
@@ -10864,7 +10831,7 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 				outf.write('tanh params %8.4f  %8.4f '%(fl, aa))
 				outf.write("\n")
 				outf.flush()
-				dropImage(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
+				drop_image(vol, os.path.join(outdir, replace("volf%3d_%3d.hdf"%(iteration, ic),' ','0') ))
 			#from sys import exit
 			#exit()
 
@@ -10887,7 +10854,7 @@ def ali3d_eB_MPI_conewithselect(stack, ref_vol, outdir, maskfile, ou=-1,  delta=
 				from utilities import set_params_proj, get_params_proj
 				phi,theta,psi,s2x,s2y = get_params_proj( dataim[imn-image_start] )
 				soto.append([phi,theta,psi,s2x,s2y,imn])
-			dropSpiderDoc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
+			drop_spider_doc(os.path.join(outdir, replace("new_params%3d_%3d_%3d"%(iteration, ic, myid),' ','0')), soto," phi, theta, psi, s2x, s2y, image number")
 			del soto
 
 			#from sys import exit
@@ -10909,14 +10876,14 @@ def proj_ali_incore_index(volref, iref, mask3D, projdata, first_ring, last_ring,
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	ref_angles = even_angles(delta, symmetry = symmetry, method = ref_a, phiEqpsi = "Minus")
-	#from utilities import dropSpiderDoc
-	#dropSpiderDoc("angles.txt",ref_angles)
+	#from utilities import drop_spider_doc
+	#drop_spider_doc("angles.txt",ref_angles)
 	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
 	if(mask3D):
 		[mean, sigma, xmin, xmax ] =  Util.infomask(volref, mask3D, False)
 		volref -= mean
 		Util.mul_img(volref, mask3D)
-	#dropImage(volref, "volref.spi", "s")
+	#drop_image(volref, "volref.spi", "s")
 	#exit()
 	nx   = volref.get_xsize()
 	ny   = volref.get_ysize()
@@ -10963,8 +10930,8 @@ def proj_ali_incore_index(volref, iref, mask3D, projdata, first_ring, last_ring,
 			from utilities import set_params_proj, get_params_proj
                 	set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y] )
 			#soto.append( [phi, theta,psi,s2x, s2y, mirror, numref, peak] )
-	#from utilities import dropSpiderDoc
-	#dropSpiderDoc("ali_s_params.txt",soto)
+	#from utilities import drop_spider_doc
+	#drop_spider_doc("ali_s_params.txt",soto)
 
 def proj_ali_incore_localB(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng, yrng, step, delta, an, ref_a, symmetry, info=None, MPI=False):
 	#This is for Berlin only
@@ -10977,14 +10944,14 @@ def proj_ali_incore_localB(volref, mask3D, projdata, first_ring, last_ring, rste
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	ref_angles = even_angles(delta, symmetry = symmetry, method = ref_a, phiEqpsi = "Minus")
-	#from utilities import dropSpiderDoc
-	#dropSpiderDoc("angles.txt",ref_angles)
+	#from utilities import drop_spider_doc
+	#drop_spider_doc("angles.txt",ref_angles)
 	#  begin from applying the mask, i.e., subtract the average outside the mask and multiply by the mask
 	if(mask3D):
 		[mean, sigma, xmin, xmax ] =  Util.infomask(volref, mask3D, False)
 		volref -= mean
 		Util.mul_img(volref, mask3D)
-	#dropImage(volref, "volref.spi", "s")
+	#drop_image(volref, "volref.spi", "s")
 	#exit()
 	nx   = volref.get_xsize()
 	ny   = volref.get_ysize()
@@ -11034,9 +11001,9 @@ def proj_ali_incore_localB(volref, mask3D, projdata, first_ring, last_ring, rste
 			envt.append(fmt)
 		from filter import filt_table
 		ima = filt_table(projdata[imn], envt)
-		#from utilities import dropSpiderDoc
+		#from utilities import drop_spider_doc
 		#if(myid == main_node):
-		#	if(im == image_start):  dropSpiderDoc("matc.doc", envt)
+		#	if(im == image_start):  drop_spider_doc("matc.doc", envt)
 		[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d_local(ima.process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 		#[ang, sxs, sys, mirror, nref, peak] = Util.multiref_polar_ali_2d_local(projdata[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 		numref=int(nref)

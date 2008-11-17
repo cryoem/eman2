@@ -206,10 +206,10 @@ def exhaust_ang(angs, anglst, func, data=None, info=None):
 	return optpsi,funval
 
 def drop_angle_doc(filename, phis, thetas, psis, comment=None):
-	from utilities import dropSpiderDoc
+	from utilities import drop_spider_doc
 	table = []
 	for i in xrange( len(phis) ): table.append( [ phis[i], thetas[i], psis[i] ] )
-	dropSpiderDoc(filename, table, comment)
+	drop_spider_doc(filename, table, comment)
 
 
 ###############################################################################################

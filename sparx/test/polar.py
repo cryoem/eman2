@@ -96,7 +96,7 @@ print  qn,tot,ang_n(tot,'f', numr[len(numr)-1])
 print  qm,tmt,ang_n(tmt,'f', numr[len(numr)-1])
 
 line = Util.Crosrng_msg(circ2,circ1,numr)
-printCol(line)
+print_col(line)
 M=lin1.get_xsize()
 # no pading
 npad=1

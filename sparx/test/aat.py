@@ -36,10 +36,10 @@ from sparx  import *
 
 from sys import exit
 
-#vol=getImage("model001.tcp")
-vol=Util.window(getImage("/mnt/shared/pawel/VAR/VOL.hdf"),95,95,95,0,0,0)
+#vol=get_image("model001.tcp")
+vol=Util.window(get_image("/mnt/shared/pawel/VAR/VOL.hdf"),95,95,95,0,0,0)
 mask = model_circle(45,95,95)
-#vol=getImage("/mnt/shared/pawel/VAR/VOL.hdf")
+#vol=get_image("/mnt/shared/pawel/VAR/VOL.hdf")
 #mask = model_circle(45,96,96)
 #M=75
 #msk=model_circle(30,M,M,1)
@@ -52,32 +52,32 @@ volft,kb=prep_vol(vol)
 params = [0.0,0.0,0.0,0.0,0.0]
 proj=prgs(volft,kb,params)
 info(proj)
-dropImage(proj,"xxx1.hdf")
+drop_image(proj,"xxx1.hdf")
 
 
 
 prl = project(vol,params,1000)
 info(prl)
-dropImage(proj,"xxx2.hdf")
+drop_image(proj,"xxx2.hdf")
 
 print  ccc(proj,prl)
 f = fsc(proj,prl,1.,"zero.txt")
 
 d = im_diff(proj,prl)
 p = periodogram(d[0])*mask
-dropImage(p,"xxx5.hdf")
+drop_image(p,"xxx5.hdf")
 
 
 params = [19.0,77.0,85.0,0.0,0.0]
 proj=prgs(volft,kb,params)
 info(proj)
-dropImage(proj,"xxx3.hdf")
+drop_image(proj,"xxx3.hdf")
 
 
 
 prl = project(vol,params,1000)
 info(prl)
-dropImage(proj,"xxx4.hdf")
+drop_image(proj,"xxx4.hdf")
 
 
 
@@ -89,7 +89,7 @@ f = fsc(proj,prl,1.,"weird.txt")
 
 d = im_diff(proj,prl)
 p = periodogram(d[0])*mask
-dropImage(p,"xxx6.hdf")
+drop_image(p,"xxx6.hdf")
 
 
 
@@ -99,17 +99,17 @@ exit()
 
 params = [19.0,77.0,0.0,0.0,0.0]
 proj0=prgs(volft,kb,params)
-dropImage(proj0,"xxx0.spi")
+drop_image(proj0,"xxx0.spi")
 a1 = 33.
 x1 = 2.0
 y1 = -3.0
 o = rtshg(proj,a1,x1,y1)
-dropImage(o,"xxx2.spi")
+drop_image(o,"xxx2.spi")
 a2 = -10.
 x2 = 3.0
 y2 = 2.0
 t = rtshg(o,a2,x2,y2)
-dropImage(t,"xxx3.spi")
+drop_image(t,"xxx3.spi")
 
 ia2,ix2,iy2,s = inverse_transform2(a2,x2,y2)
 
@@ -124,7 +124,7 @@ ta,tx,ty,s=compose_transform2(ia2,ix2,iy2,1.0,ia1,ix1,iy1,1.0)
 print  ta,tx,ty
 
 q = rtshg(t,ta,tx,ty)
-dropImage(q,"xxx4.spi")
+drop_image(q,"xxx4.spi")
 print ccc(q,proj,msk)
 
 # inverse trasformation in one step with additional rotation by psi added
@@ -133,7 +133,7 @@ tta,ttx,tty,s=compose_transform2(ta,tx,ty,1.0,-85.,0,0,1.0)
 print  tta,ttx,tty
 
 p = rtshg(t,tta,ttx,tty)
-dropImage(p,"xxx5.spi")
+drop_image(p,"xxx5.spi")
 print ccc(p,proj0,msk)
 
 # work until here
@@ -144,5 +144,5 @@ ia,ix,iy,s=inverse_transform2(tta,ttx,tty)
 print  ia,ix,iy
 params = [19.0,77.0,ia,ix,iy]
 projt=prgs(volft,kb,params)
-dropImage(projt,"xxx7.spi")
+drop_image(projt,"xxx7.spi")
 print ccc(t,projt,msk)

@@ -201,12 +201,12 @@ def fshift(e, delx=0, dely=0, delz=0):
 def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0):
 	from filter       import filt_btwl
 	from fundamentals import smallprime, window2d
-	from utilities    import getImage
+	from utilities    import get_image
 	"""
 		Window image to FFT-friendly size, apply Butterworth low pass filter,
 		and decimate image by integer factor
 	"""
-	if type(img)     == str:	img=getImage(img)
+	if type(img)     == str:	img=get_image(img)
 	nz       = img.get_zsize()
 	if( nz > 1):                    ERROR("This command works only for 2-D images", "image_decimate", 1)
 	if decimation    <= 1  : 	ERROR("Improper decimation ratio", "image_decimate", 1)
@@ -236,8 +236,8 @@ def resample(img, sub_rate=0.5, fit_to_fft = False, frequency_low=0.0, frequency
 		fit_to_fft will channge the ouput image size
 	"""
 	if type(img) == str:
-		from utilities    import getImage
-		img = getImage(img)
+		from utilities    import get_image
+		img = get_image(img)
 	if(sub_rate == 1.0): return  img.copy()
 	elif(sub_rate < 1.0):
 		if(frequency_low <= 0.0): 
@@ -560,7 +560,7 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	x_gaussian_hi = 1./win_size
 	del img
 	from filter    import filt_gaussh
-	from utilities import info, dropImage	
+	from utilities import info, drop_image	
 	e_fil = filt_gaussh(img1, x_gaussian_hi)
 	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
 	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
@@ -602,7 +602,7 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 	x_gaussian_hi = 1./win_x
 	del img
 	from filter import filt_gaussh
-	from utilities import dropImage, rot_image
+	from utilities import drop_image, rot_image
 	# The input img is rotated such that tilt axis is vertical
 	img2  = rot_image(img1,theta, 0, 0, 1.0,1.0)	
 	e_fil = filt_gaussh(img2, x_gaussian_hi)
@@ -623,7 +623,7 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 			if (iz == 1): pw2  = periodogram(ra)
 			else:         pw2 += periodogram(ra)
 		pw2/=float(iz)
-		# dropImage(pw2,"band%03d"%(ix))
+		# drop_image(pw2,"band%03d"%(ix))
 		pw2_band.append(pw2)	
 	return 	pw2_band
 

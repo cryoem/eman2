@@ -41,11 +41,11 @@ info(f)
 g=f.FourInterpol(256,256,0)
 info(g)
 
-dropImage(g,'xxx.spi')
+drop_image(g,'xxx.spi')
 e = EMData()
 e.read_image("vol001.tfc")
 info(e)
 
 o=e.FourInterpol(256,256,256)
 info(o)
-dropImage(o,'vvv.spi')
+drop_image(o,'vvv.spi')

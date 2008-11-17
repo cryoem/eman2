@@ -1056,14 +1056,14 @@ def sub_favj(ave, data, jtot, mirror, numr):
 		Subtract FT of rings from the average
 	'''
 	from math import pi,sin,cos
-	#from utilities  import printCol
+	#from utilities  import print_col
 	# trig functions in radians
 	pi2 = pi*2
 	nring = len(numr)/3
 	maxrin = numr[len(numr)-1]
 	#print  "update",psi
-	#printCol(ave)
-	#printCol(data)
+	#print_col(ave)
+	#print_col(data)
 	#print numr
 	if(mirror):
 		# for mirrored data has to be conjugated
@@ -1088,7 +1088,7 @@ def sub_favj(ave, data, jtot, mirror, numr):
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    -= cs.real
 				ave[np + j +1] -= cs.imag
-	#printCol(ave)
+	#print_col(ave)
 
 def symm_func(args, data):
 	from utilities import sym_vol
@@ -1103,14 +1103,14 @@ def update_favj(ave, data, jtot, mirror, numr):
 		Add FT of rings to the average
 	'''
 	from math import pi,sin,cos
-	#from utilities  import printCol
+	#from utilities  import print_col
 	# trig functions in radians
 	pi2 = pi*2
 	nring = len(numr)/3
 	maxrin = numr[len(numr)-1]
 	#print  "update",psi
-	#printCol(ave)
-	#printCol(data)
+	#print_col(ave)
+	#print_col(data)
 	#print numr
 	if(mirror):
 		# for mirrored data has to be conjugated
@@ -1135,7 +1135,7 @@ def update_favj(ave, data, jtot, mirror, numr):
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    += cs.real
 				ave[np + j +1] += cs.imag
-	#printCol(ave)
+	#print_col(ave)
 
 def fine_2D_refinement(data, br, mask, tavg, group = -1):
 	from utilities import amoeba
@@ -1237,7 +1237,7 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	"""  Determine shift and rotation between image and reference image
 	     quadratic interpolation
 	"""
-	#from utilities import printCol
+	#from utilities import print_col
 	from alignment import Numrinit, ringwe, Applyws
 	step = float(step)
 	nx = refim.get_xsize()
@@ -1252,7 +1252,7 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	#cimage=Util.Polar2Dmi(refim, cnx, cny, numr, mode, kb)
 	crefim = Util.Polar2Dm(refim, cnx, cny, numr, mode)
 	#crefim = Util.Polar2D(refim, numr, mode)
-	#printCol(crefim)
+	#print_col(crefim)
 	Util.Frngs(crefim, numr)
 	Applyws(crefim, numr, wr)
 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
@@ -1261,7 +1261,7 @@ def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=
 	"""  Determine shift and rotation between image and reference image
 	     quadratic interpolation
 	"""
-	#from utilities import printCol
+	#from utilities import print_col
 	from alignment import Numrinit, ringwe, Applyws
 	step = float(step)
 	nx = refim.get_xsize()
@@ -1276,7 +1276,7 @@ def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=
 	#cimage=Util.Polar2Dmi(refim, cnx, cny, numr, mode, kb)
 	crefim = Util.Polar2Dm(refim, cnx, cny, numr, mode)
 	#crefim = Util.Polar2D(refim, numr, mode)
-	#printCol(crefim)
+	#print_col(crefim)
 	Util.Frngs(crefim, numr)
 	Applyws(crefim, numr, wr)
 	return ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)

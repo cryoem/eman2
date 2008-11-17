@@ -216,7 +216,7 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 	    iteration += 1
 	    #print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
 
-def amoeba2(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data=None):
+def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data=None):
 	"""
 	Commented by Zhengfan Yang on 05/01/07
 
@@ -607,7 +607,7 @@ def combine_params2(a1, x1, y1, m1, a2, x2, y2, m2):
 			m3 = 0
 	return a3,x3,y3,m3
 
-def create_SpiderDoc(fname,spiderdoc):
+def create_spider_doc(fname,spiderdoc):
 	"""Convert a text file that is composed of columns of numbers into spider doc file
 	"""
 	from string import atoi,atof
@@ -621,12 +621,12 @@ def create_SpiderDoc(fname,spiderdoc):
 	for i in xrange(0,nmc):
 		data[i] = atof(data[i])
 		table.append(data)
-	dropSpiderDoc(spiderdoc ,table)
+	drop_spider_doc(spiderdoc ,table)
 
-def dropImage(imagename, destination, itype="h"):
+def drop_image(imagename, destination, itype="h"):
 	"""Write an image to the disk.
 
-	Usage:  dropImage(name_of_existing_image, "path/to/image",
+	Usage:  drop_image(name_of_existing_image, "path/to/image",
 			  type = <type>)
 	<type> is "h" (hdf) or "s" (spider)
 	"""
@@ -634,12 +634,12 @@ def dropImage(imagename, destination, itype="h"):
 	if type(destination) == type(""):
 		if(itype == "h"):    imgtype = EMUtil.ImageType.IMAGE_HDF
 		elif(itype == "s"):  imgtype = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
-		else:  ERROR("unknown image type","dropImage",1)
+		else:  ERROR("unknown image type","drop_image",1)
 		imagename.write_image(destination, 0, imgtype)
 	else:
-		ERROR("`destination` is not a file name","dropImage",1)
+		ERROR("`destination` is not a file name","drop_image",1)
 
-def dropSpiderDoc(filename, data, comment = None):
+def drop_spider_doc(filename, data, comment = None):
 	"""Create a spider-compatible "Doc" file.
 
 	   filename: name of the Doc file
@@ -664,15 +664,15 @@ def dropSpiderDoc(filename, data, comment = None):
 		count += 1
 	outf.close()
 
-def dumpRow(input, fname, ix=0, iz=0):
+def dump_row(input, fname, ix=0, iz=0):
 	"""Output the data in slice iz, row ix of an image to standard out.
 
-	Usage: dumpRow(image, ix, iz)
+	Usage: dump_row(image, ix, iz)
 	   or
-	       dumpRow("path/to/image", ix, iz)
+	       dump_row("path/to/image", ix, iz)
 	"""
 	fout = open(fname, "w")
-	image=getImage(input)
+	image=get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -863,7 +863,7 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 		and Get eigen images
 	"""
 	
-	from utilities import getImage
+	from utilities import get_image
 	
 	a = Analyzers.get('pca_large')
 	e = EMData()
@@ -947,7 +947,7 @@ def gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3):
 	kern /= (aves[0]*nx*ny*nz)
 	return  rsconvolution(sharp_edge_image, kern)
 
-def getImage(imagename, nx = 0, ny = 1, nz = 1, im = 0):
+def get_image(imagename, nx = 0, ny = 1, nz = 1, im = 0):
 	"""Read an image from the disk or assign existing object to the output.
 
 	Usage: myimage = readImage("path/to/image")
@@ -1083,7 +1083,7 @@ def info(image, mask=None, Comment=""):
 	Purpose: calculate basic statistical characteristics of an image.
 	"""
 	if(Comment):  print  " ***  ", Comment
-	e = getImage(image)
+	e = get_image(image)
 	[mean, sigma, imin, imax] = Util.infomask(e, mask, True)
 	nx = e.get_xsize()
 	ny = e.get_ysize()
@@ -1106,12 +1106,12 @@ def info(image, mask=None, Comment=""):
 def image_decimate(img,decimation=2, fit_to_fft=1,frequency_low=0, frequency_high=0):
 	from filter import filt_btwl
 	from fundamentals import smallprime, window2d
-	from utilities import getImage
+	from utilities import get_image
 	"""
 		Window image to FFT-friendly size, apply Butterworth low pass filter,
 		and decimate 2D image 
 	"""
-	if type(img)     == str :	img=getImage(img)
+	if type(img)     == str :	img=get_image(img)
 	if decimation    <= 1   :  	ERROR("Improper decimation ratio","image_decimation",1)
 	if frequency_low <= 0   :	
 		frequency_low  = .5/decimation- .05
@@ -1386,14 +1386,14 @@ def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 	return outpeaks
 
 ####--------------------------------------------------------------------------------------------------#########
-def printRow(input, ix=0, iz=0):
+def print_row(input, ix=0, iz=0):
 	"""Print the data in slice iz, row ix of an image to standard out.
 
-	Usage: printRow(image, ix, iz)
+	Usage: print_row(image, ix, iz)
 	   or
-	       printRow("path/to/image", ix, iz)
+	       print_row("path/to/image", ix, iz)
 	"""
-	image=getImage(input)
+	image=get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -1405,14 +1405,14 @@ def printRow(input, ix=0, iz=0):
 	line.append("\n")
 	print "".join(line)
 
-def printCol(input, iy=0, iz=0):
+def print_col(input, iy=0, iz=0):
 	"""Print the data in slice iz, column iy of an image to standard out.
 
-	   Usage: printCol(image, iy, iz)
+	   Usage: print_col(image, iy, iz)
 	      or
-		  printCol("path/to/image", iy, iz)
+		  print_col("path/to/image", iy, iz)
 	"""
-	image=getImage(input)
+	image=get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -1424,14 +1424,14 @@ def printCol(input, iy=0, iz=0):
 	line.append("\n")
 	print "".join(line)
 
-def printSlice(input, iz=0):
+def print_slice(input, iz=0):
 	"""Print the data in slice iz of an image to standard out.
 
-	Usage: printImage(image, int)
+	Usage: print_image(image, int)
 	   or
-	       printImage("path/to/image", int)
+	       print_image("path/to/image", int)
 	"""
-	image=getImage(input)
+	image=get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -1449,29 +1449,18 @@ def printSlice(input, iz=0):
 	    	if(nx%5 != 0): line.append("\n")
 	print "".join(line)
 
-def printImage(input):
-	"""Print the data in an image to standard out.
-
-	Usage: printImage(image)
-	   or
-	       printImage("path/to/image")
-	"""
-	image=getImage(input)
-	nz = image.get_zsize()
-	for iz in xrange(nz): printSlice(input, iz)
-
 
 def print_image(input):
 	"""Print the data in an image to standard out.
 
-	Usage: printImage(image)
+	Usage: print_image(image)
 	   or
-	       printImage("path/to/image")
+	       print_image("path/to/image")
 	"""
-	image=getImage(input)
+	image=get_image(input)
 	nz = image.get_zsize()
-	for iz in xrange(nz):
-		print_image_slice(input, iz)
+	for iz in xrange(nz): print_slice(input, iz)
+
 
 def print_image_col(input, ix=0, iz=0):
 	"""Print the data in slice iz, row ix of an image to standard out.
@@ -1480,7 +1469,7 @@ def print_image_col(input, ix=0, iz=0):
 	   or
 	       print_image_col("path/to/image", ix, iz)
 	"""
-	image=getImage(input)
+	image=get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -1499,7 +1488,7 @@ def print_image_row(input, iy=0, iz=0):
 	      or
 		  print_image_row("path/to/image", iy, iz)
 	"""
-	image=getImage(input)
+	image=get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -1518,7 +1507,7 @@ def print_image_slice(input, iz=0):
 	   or
 	       print_image_slice("path/to/image", int)
 	"""
-	image=getImage(input)
+	image=get_image(input)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -1582,7 +1571,7 @@ def pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "averag
 	else:                                    image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz,  background  )
 	return  image_padded
 
-def readSpiderDoc(fnam):
+def read_spider_doc(fnam):
 	from string import atof, atoi
 	"""
 		spider doc file format:
@@ -1781,7 +1770,7 @@ def reshape_1dpw2(input_object, rimage_size_to_be, rimage_size_interpolated, Pix
 		linearly interpolate a 1D power spectrum to required length with required Pixel size
 	""" 
 	import types
-	from utilities import readSpiderDoc
+	from utilities import read_spider_doc
 	from fundamentals import rops_table
 	if  type(input_object) == types.ClassType:
 		to_be_interpolated = []
@@ -1792,7 +1781,7 @@ def reshape_1dpw2(input_object, rimage_size_to_be, rimage_size_interpolated, Pix
 			for ir in xrange(input_object.get_xsize()): to_be_interpolated.append(input_object.get_value_at(ir))
 	elif type(input_object) == types.StringType:
 		to_be_interpolated = [] 
-		tmp_table = readSpiderDoc(input_object) # assume 1dpw2 is saved in SPIDER format
+		tmp_table = read_spider_doc(input_object) # assume 1dpw2 is saved in SPIDER format
 		for i in xrange(len(tmp_table)):
 			to_be_interpolated.append(tmp_table[i][0])
 	elif type(input_object) == types.ListType or type(input_object) == types.TupleType: to_be_interpolated = input_object
@@ -1836,7 +1825,7 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 		table = []
 		nr = sum_ima.get_xsize()
 		for ir in xrange(nr):  table.append([sum_ima.get_value_at(ir)])
-		dropSpiderDoc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
+		drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
 
 def rotate_3D_shift(data, shift3d):
 	from utilities import compose_transform3,get_params_proj, set_params_proj

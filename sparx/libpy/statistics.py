@@ -1213,7 +1213,7 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 		if(center):
 			if(ncnt>=2):
 				tavg= (refimgo*(int(ncnt/2)+(ncnt%2)) + refimge*int(ncnt/2))/ncnt
-				dropImage(tavg,"tavg.spi")
+				drop_image(tavg,"tavg.spi")
 				cs[ir] = tavg.phase_cog()
 				refimg = fshift(tavg, -cs[ir][0], -cs[ir][1])
 			else:
@@ -1277,7 +1277,7 @@ def im_diff(im1, im2, mask = None):
 
 # k-means open and prepare images
 def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
-	from utilities     import get_params2D, getImage
+	from utilities     import get_params2D, get_image
 	from fundamentals  import rot_shift2D, rot_shift3D
 	
 	if CTF:
@@ -1302,7 +1302,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 
 	if maskname != None:
 		if isinstance(maskname, basestring):
-			mask = getImage(maskname)
+			mask = get_image(maskname)
 	else:
 		mask = None
 

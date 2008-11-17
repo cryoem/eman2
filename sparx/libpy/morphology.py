@@ -382,7 +382,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 	"""
 	import os
 	import types
-	from utilities import set_arb_params, getImage
+	from utilities import set_arb_params, get_image
 	if writetodoc[0]   != "a" and writetodoc[0]   != "l" and writetodoc[0] != "a": 	writetodoc= "a"
 	if print_screen[0] != "p" and print_screen[0] != "n"			     : 	print_screen = "n"
 	if os.path.exists(indir) == False					     : 	ERROR("roodir doesn't exist", "defocus_get_fast",1)
@@ -457,7 +457,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 				ctf_param = [defocus, Pixel_size, volt, Cs, wgh, 0, 1]
 				mic_name  = os.path.join(micdir,"micrograph"+ fnam_root+ ".hdf")
 				if os.path.exists(mic_name) :
-					e = getImage (mic_name)
+					e = get_image (mic_name)
 					set_arb_params(e, ctf_param, ctf_dicts)
 					e.write_image(mic_name,0, EMUtil.ImageType.IMAGE_HDF, True)
 					print "ctf parameters is written back into headers of ", mic_name
@@ -718,7 +718,7 @@ def imf_params_cl1(pw,n=2,iswi=3,Pixel_size=1):
 			
 def imf_get_1dpw_list(fstr):
 	pw   = []
-	data = readSpiderDoc(fstr)
+	data = read_spider_doc(fstr)
 	for i in xrange(len(data)):
 		pw.append(data[i][0])
 	return pw
@@ -965,7 +965,7 @@ def adaptive_mask(vol, mass=2000, Pixel_size=3.6):
 
 def refine_with_mask(vol):
 	from filter     import filt_dilation
-	from utilities  import model_circle, model_gauss, dropImage
+	from utilities  import model_circle, model_gauss, drop_image
 	from morphology import collapse
 	# does not seem to be working all that well
 	nx = vol.get_xsize()
@@ -978,8 +978,8 @@ def refine_with_mask(vol):
 	print  avg,sigma,amin,amax
 	vol -= avg
 	mask = collapse(vol, -1.5*sigma, 1.5*sigma)
-	#from utilities import dropImage
-	#dropImage(mask,"m1.spi","s")
+	#from utilities import drop_image
+	#drop_image(mask,"m1.spi","s")
 	mask -= 1.0
 	mask *= -1.0
 
@@ -990,7 +990,7 @@ def refine_with_mask(vol):
 	avg,sigma,amin,amax = Util.infomask(gauss, None, False)
 	gauss /= (avg*9*9*9)
 	mask = rsconvolution(mask, gauss)
-	#dropImage(mask,"m2.spi","s")
+	#drop_image(mask,"m2.spi","s")
 	vol *= mask
 	return vol
 '''

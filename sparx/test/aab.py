@@ -35,9 +35,9 @@ for x in xrange(0,M+1):
 	print x,f
 	#d.set_value_at(x,f)
 exit()
-#printImage(d)
+#print_image(d)
 d = power(periodogram(d),0.5)
-#printImage(d)
+#print_image(d)
 
 nx = d.get_xsize()
 for i in xrange(nx):
@@ -76,11 +76,11 @@ kernel = model_gauss(r, n, n)
 """
 n = M+1
 info(kernel)
-printCol(kernel,n//2)
+print_col(kernel,n//2)
 ss = Util.infomask(kernel, None, True)
 kernel /=(ss[0]*n*n)
 info(kernel)
-printCol(kernel,n//2)
+print_col(kernel,n//2)
 """
 #a = model_gauss_noise(1.0,mx,my)
 a = model_circle(0.5,mx,my)
@@ -94,9 +94,9 @@ info(a)
 info(b)
 mmx = b.get_xsize()
 mmy = b.get_ysize()
-dropImage(b, "ito.hdf")
+drop_image(b, "ito.hdf")
 p = power(periodogram(b),0.5)*mmx*mmy
-dropImage(p, "oto.hdf")
+drop_image(p, "oto.hdf")
 d = []
 for i in xrange(mmx):
 	d.append(p.get_value_at(i,mmy//2))

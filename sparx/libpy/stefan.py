@@ -4,10 +4,10 @@ from global_def import *
 def ali3d_d_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an="-1",
 	    center = 1.0, maxit = 5, CTF = False, snr = 1.0,  ref_a="S", sym="c1"):
-	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_list_to_all, bcast_string_to_all, getImage, get_input_from_string
-	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc,recv_attr_dict, send_attr_dict
-	from utilities      import dropSpiderDoc,get_im
+	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, drop_image
+	from utilities      import bcast_list_to_all, bcast_string_to_all, get_image, get_input_from_string
+	from utilities      import get_arb_params, set_arb_params, drop_spider_doc,recv_attr_dict, send_attr_dict
+	from utilities      import drop_spider_doc,get_im
 	from filter	    import filt_params,filt_btwl, filt_from_fsc, filt_table
 	from alignment	    import proj_ali_incore
 	from random	    import randint
@@ -50,7 +50,7 @@ def ali3d_d_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1,
 	nx      = vol.get_xsize()
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 	if(maskfile):
-		if(type(maskfile) is types.StringType): mask3D = getImage(maskfile)
+		if(type(maskfile) is types.StringType): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else:         mask3D = model_circle(last_ring, nx, nx, nx)
 	nima            = EMUtil.get_image_count(stack)
@@ -58,7 +58,7 @@ def ali3d_d_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1,
 	image_start     = myid * nimage_per_node
 	if(myid == number_of_proc-1):  image_end = nima
 	else                        :  image_end = image_start + nimage_per_node
-	if(myid == main_node)       :  dropImage(vol, os.path.join(outdir,"ref_volf00.spi"), "s")
+	if(myid == main_node)       :  drop_image(vol, os.path.join(outdir,"ref_volf00.spi"), "s")
 	if(CTF):
 		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
 		#                 0      1         2            3               4                  5               6
@@ -86,7 +86,7 @@ def ali3d_d_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1,
 			#from filter import filt_btwl,filt_btwo
 			#vol = filt_btwl(filt_btwo(vol,0.25,0.35,0.1),0.35,0.45)
 			if(myid == main_node):
-				#dropImage(vol, os.path.join(outdir, replace("vhl%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
+				#drop_image(vol, os.path.join(outdir, replace("vhl%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 				print " ali3d_d_MPI: ITERATION #",N_step*max_iter + Iter+1
 			if(an[N_step] == -1): proj_ali_incore(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], ref_a, sym, CTF, finfo)
 			else:                proj_ali_incore_local(vol, mask3D, data, first_ring, last_ring, rstep, xrng[N_step], yrng[N_step], step[N_step], delta[N_step], an[N_step], ref_a, sym, CTF, finfo)
@@ -101,7 +101,7 @@ def ali3d_d_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1,
 
 			mpi_barrier(MPI_COMM_WORLD)
 			if(myid == main_node):
-				dropImage(vol,  os.path.join(outdir, replace("vol%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
+				drop_image(vol,  os.path.join(outdir, replace("vol%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 				#filt = filt_from_fsc(fscc, 0.05)
 				#vol  = filt_table(vol, filt)
 				# here figure the filtration parameters and filter vol for the  next iteration
@@ -123,7 +123,7 @@ def ali3d_d_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1,
 				if(center == 1):
 					cs   = vol.phase_cog()
 					vol  = fshift(vol, -cs[0], -cs[1] -cs[2])
-				dropImage(vol,  os.path.join(outdir, replace("volf%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
+				drop_image(vol,  os.path.join(outdir, replace("volf%4d.spi"%(N_step*max_iter+Iter+1),' ','0')), "s")
 			bcast_EMData_to_all(vol, myid, main_node)
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
@@ -137,9 +137,9 @@ def ali3d_m_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=
             xr              ="4 2  2  1",      yr="-1",
             translation_step="1 1 0.5 0.25",   delta="10  6  4  4",
 	    center = 0, maxit= 5, CTF = False, snr = 1.0,  ref_a="S", symmetry="c1"):
-	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, dropImage
-	from utilities      import bcast_list_to_all, bcast_string_to_all, getImage, get_input_from_string
-	from utilities      import get_arb_params, set_arb_params, dropSpiderDoc
+	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, drop_image
+	from utilities      import bcast_list_to_all, bcast_string_to_all, get_image, get_input_from_string
+	from utilities      import get_arb_params, set_arb_params, drop_spider_doc
 	from filter	    import filt_params,filt_btwl, filt_from_fsc2, filt_table
 	from alignment	    import proj_ali_incore_index
 	from random         import randint
@@ -177,7 +177,7 @@ def ali3d_m_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=
 	nx      = volref[0].get_xsize()
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 	if(maskfile):
-		if(type(maskfile) is types.StringType):	 mask3D = getImage(maskfile)
+		if(type(maskfile) is types.StringType):	 mask3D = get_image(maskfile)
 		else: 	                                mask3D = maskfile
 	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
 	nima            = EMUtil.get_image_count(stack)
@@ -225,7 +225,7 @@ def ali3d_m_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=
                                         volrefws[iref], fscc   = rec3D_MPI_noCTF(data, "d4", mask3D, os.path.join(outdir, replace("resolution%7d"%((N_step*max_iter+Iter+1)*10 + iref),' ','0')), myid, main_node, 1.0, index = iref)
 
 				if(myid == main_node):
-					dropImage(volref[iref],os.path.join(outdir, replace("vol%2d%4d.spi"%(iref, N_step*max_iter+Iter+1),' ','0')), "s")
+					drop_image(volref[iref],os.path.join(outdir, replace("vol%2d%4d.spi"%(iref, N_step*max_iter+Iter+1),' ','0')), "s")
 					if(fscc[1][0] < 0.5):  fscc[1][0] = 1.0
 					if(fscc[1][1] < 0.5):  fscc[1][1] = 1.0
 					
@@ -251,13 +251,13 @@ def ali3d_m_MPI_Stefan(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=
 					if(center == 1):
 						cs   = volref[iref].phase_cog()
 						volref[iref]  = fshift(volref[iref], -cs[0], -cs[1] -cs[2])
-					dropImage(volref[iref],os.path.join(outdir, replace("volf%2d%4d.spi"%(iref, N_step*max_iter+Iter+1),' ','0')), "s")
+					drop_image(volref[iref],os.path.join(outdir, replace("volf%2d%4d.spi"%(iref, N_step*max_iter+Iter+1),' ','0')), "s")
 			mpi_barrier(MPI_COMM_WORLD)
 			for iref in xrange(numref): bcast_EMData_to_all(volref[iref], myid, main_node)
 	mpi_barrier(MPI_COMM_WORLD)
 	del  volref
 	#vol, fscc = rec3D_MPI_noCTF(data, symmetry, mask3D, os.path.join(outdir, "resolution_merged"), myid, main_node, info=myinfo)
-	#if(myid == main_node):  dropImage(vol,os.path.join(outdir, "vol_merged.spi"), "s")
+	#if(myid == main_node):  drop_image(vol,os.path.join(outdir, "vol_merged.spi"), "s")
 	#  clean up
 	#del vol
 	# write out headers  and STOP, under MPI writing has to be done sequentially
