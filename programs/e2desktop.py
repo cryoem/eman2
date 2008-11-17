@@ -52,12 +52,13 @@ import math
 
 from emglobjects import Camera,EMGLProjectionViewMatrices
 from e2boxer import EMBoxerModule
-from embrowse import EMBrowserDialog
+from emselector import EMBrowserDialog
 from emselector import EMSelectorDialog
 from emapplication import EMApplication, EMQtWidgetModule
 from emanimationutil import *
 from emimageutil import EMEventRerouter
 from emfloatingwidgets import *
+from e2workflow import EMWorkFlowSelector
 
 class EMWindowNode:
 	def __init__(self,parent):
@@ -1420,7 +1421,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.move(0,0)
 		self.resize(self.appscreen.availableGeometry().size())
 		
-		self.task_widget = EMDesktopTaskWidget(self,self.application)
+		self.task_widget = EMWorkFlowSelector(self,self.application)
 		self.application.show_specific(self.task_widget)
 		
 	def get_gl_context_parent(self): return self

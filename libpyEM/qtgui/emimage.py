@@ -103,7 +103,6 @@ class EMImageModule(object):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance.
-		FIXME "old" aspect un tested
 		"""
 		from EMAN2 import remove_directories_from_name
 		if force_plot and force_2d:
@@ -158,7 +157,7 @@ class EMImageModule(object):
 class EMModuleFromFile(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMDisplay class,
 	using only a file name as input. Can force plot and force 2d display, also.
-	Used by embrowse.py
+	Used by emselector.py
 	"""
 	def __new__(cls,filename,application,force_plot=False,force_2d=False,old=None):
 		file_type = Util.get_filename_ext(filename)

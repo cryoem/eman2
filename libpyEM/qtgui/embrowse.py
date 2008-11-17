@@ -32,91 +32,12 @@
 #
 
 import PyQt4
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
-from emapplication import EMStandAloneApplication, EMQtWidgetModule
-from emimage2d import *
-from emselector import EMSelectorDialog
+from PyQt4 import QtCore, QtGui
+from emapplication import EMStandAloneApplication
+from emselector import EMBrowserModule
 
 
 from EMAN2 import EMData
-
-class EMBrowserDialog(EMSelectorDialog):
-	def __init__(self,target,application):
-		EMSelectorDialog.__init__(self,target,application)
-		
-		
-		self.current_force = None
-		#self.browse_gl_preview = None
-	
-	#def set_preview(self,item):
-		#if self.db_listing.do_preview(filename):
-			#return True
-		#else:
-			#if os.path.isdir(filename): return False
-			#try: # see if we can read the file name as an EMData
-				#read_header_only = True
-				#e = EMData()
-				#e.read_image(filename,0, read_header_only)	
-			#except: return False
-	
-			#from emimage import EMModuleFromFile
-			#self.application.setOverrideCursor(Qt.BusyCursor)
-			##if len(self.selections) > 1:
-			#f_2d = self.force_2d.isChecked()
-			#f_plot = self.force_plot.isChecked()
-			
-			#if self.single_preview.isChecked():
-				##if self.browse_gl_preview != None:
-					##self.browse_gl_preview.closeEvent(None)
-					###self.application.close_specific(self.browse_gl_preview)
-					##self.browse_gl_preview == None
-			
-				#preview = EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot,old=self.browse_gl_preview)
-				#if preview != self.browse_gl_preview:
-					#if self.browse_gl_preview != None: self.browse_gl_preview.closeEvent(None)
-					#self.browse_gl_preview = preview
-	
-					#self.application.show_specific(self.browse_gl_preview)
-					#try: self.browse_gl_preview.optimally_resize()
-					#except: pass
-					
-				#self.browse_gl_preview.updateGL()
-			#else:
-				#preview =EMModuleFromFile(filename,self.application,force_2d=f_2d,force_plot=f_plot)
-				#self.application.show_specific(preview)
-				#try: preview.optimally_resize()
-				#except: pass
-				#preview.updateGL()
-				
-			#self.application.setOverrideCursor(Qt.ArrowCursor)
-			#return True
-		
-		#return False
-	#def preview_data(self,a,filename=""):
-		#from emimage import EMImageModule
-		#if self.single_preview.isChecked():
-			
-			#f_2d = self.force_2d.isChecked()
-			#f_plot = self.force_plot.isChecked()
-			#preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=self.browse_gl_preview)
-			#if preview != self.browse_gl_preview:
-				#if self.browse_gl_preview != None: self.browse_gl_preview.closeEvent(None)
-				#self.browse_gl_preview = preview
-	
-			#self.application.show_specific(self.browse_gl_preview)
-			#try: self.browse_gl_preview.optimally_resize()
-			#except: pass
-					
-			#self.browse_gl_preview.updateGL()
-		#else:
-			#preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot)
-			#self.application.show_specific(preview)
-			#preview.updateGL()
-			
-		#self.application.setOverrideCursor(Qt.ArrowCursor)	
-
-	
 	
 app = None
 def on_done(string_list):
@@ -127,12 +48,11 @@ def on_done(string_list):
 		print
 	app.quit()
 
-
+# This is just an example of how to make a browser. You should import the browser module from emselector
 if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	app = em_app
-	dialog = EMBrowserDialog(None,em_app)
-	em_qt_widget = EMQtWidgetModule(dialog,em_app)
+	dialog = EMBrowserModule(em_app)
 	QtCore.QObject.connect(dialog,QtCore.SIGNAL("done"),on_done)
 	em_app.show()
 	em_app.execute()

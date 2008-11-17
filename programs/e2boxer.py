@@ -181,7 +181,7 @@ for single particle analysis."""
 	application = EMStandAloneApplication()
 	options.boxes = boxes
 	gui=EMBoxerModule(application,options)
-	QtCore.QObject.connect(gui, QtCore.SIGNAL("e2boxer_idle"), on_idle)
+#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 	application.execute()
 		
 	print "Exiting e2boxer"
@@ -1002,6 +1002,7 @@ class EMBoxerModule(QtCore.QObject):
 		emitter = self.application.get_qt_emitter(self.form)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_close"),self.on_form_cancel)
 		
 	def on_form_ok(self,params):
 		options = EmptyObject()
@@ -1025,14 +1026,15 @@ class EMBoxerModule(QtCore.QObject):
 	def __disconnect_form_signals(self):
 		emitter = self.application.get_qt_emitter(self.form)
 		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
-		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)	
+		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
+		QtCore.QObject.disconnect(emitter,QtCore.SIGNAL("emform_close"),self.on_form_cancel)	
 		
 	def on_form_cancel(self):
 		# this means e2boxer isn't doing anything. The application should probably be told to close the EMBoxerModule
 #		self.__disconnect_form_signals()
 		self.application.close_specific(self.form)
 		self.form = None
-		self.emit(QtCore.SIGNAL("e2boxer_idle"))
+		self.emit(QtCore.SIGNAL("module_idle"))
 	
 	def __auto_box_from_db(self,options):
 		print "auto data base boxing"
@@ -1043,7 +1045,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.dab.go(options)
 
 	def on_db_autoboxing_done(self):
-		self.emit(QtCore.SIGNAL("e2boxer_idle"))
+		self.emit(QtCore.SIGNAL("module_idle"))
 	
 	def __gui_init(self,options):
 		
@@ -1208,7 +1210,7 @@ class EMBoxerModule(QtCore.QObject):
 		
 		qt_target = self.application.get_qt_emitter(self.guiim)
 			
-		qt_target.setWindowTitle(imagename)
+		self.guiim.setWindowTitle(imagename)
 		
 		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedown"),self.mouse_down)
 		QtCore.QObject.connect(qt_target,QtCore.SIGNAL("mousedrag"),self.mouse_drag)
@@ -2046,15 +2048,14 @@ class EMBoxerModule(QtCore.QObject):
 		self.autoboxer.set_interactive_mode(self.dynapix)
 		
 	def done(self):
-		self.boxable.cache_exc_to_db()
-		
+		if self.boxable != None: self.boxable.cache_exc_to_db()
 		#print "here we
 		if self.guictl_module != None: self.guictl_module.closeEvent(None)
 		if self.guiim != None: self.guiim.closeEvent(None)
 		if self.guimx != None: self.guimx.closeEvent(None)
 		if self.guimxit != None: self.guimxit.closeEvent(None)
 		
-		self.emit(QtCore.SIGNAL("e2boxer_idle"))
+		self.emit(QtCore.SIGNAL("module_closed"))
 		
 	def try_data(self,data,thr):
 		print 'try that was pressed, this feature is currently disabled'

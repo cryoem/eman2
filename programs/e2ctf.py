@@ -739,7 +739,7 @@ class GUIctf(QtGui.QWidget):
 		self.app.close_specific(self)
 		self.app.app.exit()
 		event.accept()
-		self.emit(QtCore.SIGNAL("e2ctf_idle")) # this signal is important when e2ctf is being used by a program running its own event loop
+		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
 
 	def newData(self,data):
 		self.data=data

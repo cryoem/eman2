@@ -340,9 +340,9 @@ class EMImage2DModule(EMGUIModule):
 	"""
 	
 	
-	def emit(self,*args,**kargs):
-		qt_widget = self.application.get_qt_emitter(self)
-		qt_widget.emit(*args,**kargs)
+#	def emit(self,*args,**kargs):
+#		qt_widget = self.application.get_qt_emitter(self)
+#		qt_widget.emit(*args,**kargs)
 	
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
@@ -373,7 +373,7 @@ class EMImage2DModule(EMGUIModule):
 			self.gl_widget = EM2DGLWindow(self,gl_view)
 			self.gl_widget.set_enable_clip(self.enable_clip) # because we draw shapes that go out of screen
 			self.gl_widget.target_translations_allowed(True)
-			self.update_window_title(self.file_name)
+			self.setWindowTitle(self.file_name)
 			self.set_enable_clip(True) # 
 			
 		return self.gl_widget
@@ -617,7 +617,7 @@ class EMImage2DModule(EMGUIModule):
 	def get_data(self):
 		return self.data
 	
-	def update_window_title(self,filename):
+	def setWindowTitle(self,filename):
 		if isinstance(self.gl_context_parent,EMImage2DWidget):
 			self.qt_context_parent.setWindowTitle(remove_directories_from_name(filename))
 		else:
@@ -630,7 +630,7 @@ class EMImage2DModule(EMGUIModule):
 			self.__write_display_settings_to_db()
 			
 		self.set_file_name(file_name,load_cache_settings=False)
-		self.update_window_title(self.file_name)
+		self.setWindowTitle(self.file_name)
 		
 		data = incoming_data
 		

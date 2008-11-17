@@ -33,8 +33,60 @@
 
 from PyQt4 import QtGui,QtCore
 import os
-from emapplication import EMQtWidgetModule
+from emapplication import EMQtWidgetModule,ModuleEventsManager
 from emsprworkflow import *
+from emselector import EMBrowserModule
+from e2boxer import EMBoxerModule
+
+
+
+class EMTaskMonitorModule(object):
+	def __new__(cls,application):
+		widget = TaskMonitorWidget(application)
+		widget.resize(200,200)
+		module = EMQtWidgetModule(widget,application)
+		application.show_specific(module)
+		return module
+
+class TaskMonitorWidget(QtGui.QWidget):
+	def get_desktop_hint(self):
+		return "task_related"
+	
+	def __init__(self,application):
+		QtGui.QWidget.__init__(self,None)
+		
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+		
+		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2.setMargin(0)
+		self.vbl2.setSpacing(6)
+		self.vbl2.setObjectName("vbl2")
+		
+		self.num_rows = 2
+		self.num_cols = 2
+		
+		self.list_widget = QtGui.QListWidget(None)
+		QtCore.QObject.connect(self.list_widget,QtCore.SIGNAL("itemClicked(QListWidgetItem *)"),self.list_widget_item_clicked)
+			
+		self.vbl2.addWidget(self.list_widget) 
+		
+		self.groupbox = QtGui.QGroupBox("Running tasks")
+		self.groupbox.setToolTip("This is a list of currently running tasks.")
+		self.groupbox.setLayout(self.vbl2)
+		self.vbl.addWidget(self.groupbox)
+	
+	def set_entries(self,entries_dict):
+		self.entries_dict=entries_dict
+		self.list_widget.clear()
+		for val in entries_dict:
+			a = QtGui.QListWidgetItem(val,self.list_widget)
+			
+	def list_widget_item_clicked(self,item):
+		print "item clicked",item
+	
 
 class EMWorkFlowSelector(object):
 	def __new__(cls,parent,application):
@@ -67,13 +119,17 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers = {} # convenience launchers, to implement a pseudo factory
 		self.tasks = {} # a current list of tasks that are running. Helps to avoid running the same task more than once
 		self.event_managers = {} # event managers, coordinating signals and slots, same as keys in self.tasks
+		self.gui_modules = [] # keeps track of all gui modules that are running
+		self.module_events = [] # keeks track of gui module events managers
 		
 		spr = QtGui.QTreeWidgetItem(QtCore.QStringList("SPR"))
 		self.launchers["SPR"] = self.launch_spr
 		
 		self.tree_widget_entries.append(spr)
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Browse")))
+		self.launchers["Browse"] = self.launch_browser
 		self.tree_widget_entries.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Boxer")))
+		self.launchers["Boxer"] = self.launch_boxer_general
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 
 		
@@ -121,9 +177,45 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.vbl.addLayout(self.hbl_buttons2)
 		self.vbl.addWidget(self.close)
 		
-		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
+		#QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
 		QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
+	
+	def launch_browser(self):
+		module = EMBrowserModule(self.application)
+		self.application.show_specific(module)
+		self.add_module(module)
+		
+	def launch_boxer_general(self):
+		module = EMBoxerModule(self.application,None)
+#		self.application.show_specific(module) # it doesn't work this way for boxer ... hmmmmm ...
+		self.add_module(module)
+		
+	def add_module(self,module):
+		self.gui_modules.append(module)
+		self.module_events.append(ModuleEventsManager(self,module))
+		self.update_task_list()
+	
+	def module_idle(self,module):
+		# yes this is just the same as module_closed... thinking in progress
+		for i,mod in enumerate(self.gui_modules):
+			if mod == module:
+				self.gui_modules.pop(i)
+				self.module_events.pop(i)
+				self.update_task_list()
+				return
+			
+		print "failed to handle idle?" # this shouldn't happen if I have managed everything correctly
+	
+	def module_closed(self,module):
+		for i,mod in enumerate(self.gui_modules):
+			if mod == module:
+				self.gui_modules.pop(i)
+				self.module_events.pop(i)
+				self.update_task_list()
+				return
+			
+		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
 	
 	def launch_e2ctf_management(self):
 		self.launch_task(E2CTFTask,"e2ctf")
@@ -150,6 +242,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launch_task(MicrographCCDImportTask,"import_mic_ccd")
 	
 	def launch_task(self,task_type,task_unique_identifier):
+		'''
+		You can only have one of the task forms showing at any time
+		'''
 		if len(self.tasks) > 0: 
 			self.__clear_tasks()
 		
@@ -161,6 +256,26 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			self.event_managers[task_unique_identifier] = TaskEventsManager(task,self,task_unique_identifier)
 		else:
 			self.application.show_specific(self.tasks[task_unique_identifier])
+			
+		self.update_task_list()
+	
+	def update_task_list(self):
+		tasks = []
+		tasks_dict = {}
+		
+		if len(self.tasks) > 1:
+			print "error, I haven't been written to handle more than one task"
+			# solution is to turn the tasks into a module and add more modules
+			return
+		
+		for val in self.tasks.keys():
+			tasks.append(str(val))
+			#tasks_dict["workflow"] = 
+		
+		for val in self.gui_modules:
+			tasks.append(str(val))
+		
+		self.emit(QtCore.SIGNAL("tasks_updated"),tasks)
 	
 	def __clear_tasks(self):
 		for v in self.tasks.values():
@@ -172,7 +287,27 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def pop_task_event_pair(self,task):
 		self.tasks.pop(task)
 		self.event_managers.pop(task)
+		self.update_task_list()
 		
+	def gui_running(self,task_key):
+		'''
+		Tells this to take the task out of the dictionary of current tasks and put in another dictionary.
+		Essentially saying, "make this task disappear, but keep a reference to it until the associated gui ends"
+		'''
+		module = self.tasks.pop(task_key)
+		self.gui_modules.append(module)
+		self.module_events.append(None) # this makes the handling of the gui_modules and module_events more general, see code
+		self.update_task_list()
+	def gui_exit(self,module):
+		for i,mod in enumerate(self.gui_modules):
+			if mod == module:
+				self.gui_modules.pop(i)
+				self.module_events.pop(i)
+				self.update_task_list()
+				return
+			
+		print "gui exit failed" #this shouldn't happen if I have managed everything correctly
+	
 	def tree_widget_click(self,tree_item,i):
 		task = str(tree_item.text(0))
 		if task in self.launchers.keys():
@@ -181,25 +316,42 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			if task == "Browse":
 				print "hi"
 	
-	def tree_widget_double_click(self,tree_item,i):
-		task = tree_item.text(0)
-		if task == "Browse":
-			self.target.add_browser_frame()
-		if task == "Thumb":
-			self.target.add_selector_frame()
-		elif task == "Boxer":
-			self.target.add_boxer_frame()
+#	def tree_widget_double_click(self,tree_item,i):
+#		task = tree_item.text(0)
+#		if task == "Browse":
+#			self.target.add_browser_frame()
+#		if task == "Thumb":
+#			self.target.add_selector_frame()
+#		elif task == "Boxer":
+#			self.target.add_boxer_frame()
 
 
 class TaskEventsManager:
+	'''
+	This object coordinates the signals of the WorkFlowTask objects with the EMSelectorWorkFlowWidget.
+	When the WorkFlowTask is idle this object tells the SelectorWFW to release its reference, freeign memory etc
+	Occasionally the WorkFlowTask will launch a gui, in which case the task is idle but it must remain in memory in order for
+	signals of the spawned gui to connect properly. In which case the SelectorWFW can be told that it needs to keep a reference
+	to the task.
+	'''
 	def __init__(self,task,selector,key):
 		self.task = task
 		self.selector = selector
 		self.key = key
-		QtCore.QObject.connect(self.task, QtCore.SIGNAL("task_idle"), self.on_task_idle)
-	
+		QtCore.QObject.connect(self.task, QtCore.SIGNAL("task_idle"), self.on_task_idle) # this typically gets emitted when the user hits ok or cancel on the 
+		QtCore.QObject.connect(self.task, QtCore.SIGNAL("gui_running"),self.on_gui_running) # this one 
+		QtCore.QObject.connect(self.task, QtCore.SIGNAL("gui_exit"),self.on_gui_exit)
+#		
+	def on_gui_running(self):
+		''' 
+		
+		'''
+		self.selector.gui_running(self.key)
+		
+	def on_gui_exit(self):
+		self.selector.gui_exit(self.task)
+		
 	def on_task_idle(self):
-		print "recieved task idle"
 		self.selector.pop_task_event_pair(self.key)
 		
 
@@ -208,15 +360,21 @@ class EMWorkFlowManager:
 		self.application = application
 		self.selector = EMWorkFlowSelector(self,application)
 	
+		self.task_monitor = EMTaskMonitorModule(em_app)
+		QtCore.QObject.connect(self.selector.qt_widget, QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
+	#window = sprinit.run_form() 
+	
 	def close(self):
 		self.application.close_specific(self.selector)
+		self.application.close_specific(self.task_monitor)
 
 if __name__ == '__main__':
 	
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	sprinit = EMWorkFlowManager(em_app)
-	#window = sprinit.run_form() 
+	
+	
 	
 	#em_app.show()
 	em_app.execute()	

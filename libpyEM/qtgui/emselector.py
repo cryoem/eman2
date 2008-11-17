@@ -42,7 +42,7 @@ from emapplication import EMStandAloneApplication, EMQtWidgetModule
 from EMAN2db import EMAN2DB
 from emplot2d import EMPlot2DModule
 #from boxertools import TrimSwarmAutoBoxer
-from emapplication import EMQtWidgetModule
+from emapplication import EMQtWidgetModule, ModuleEventsManager
 
 class EMSelectorModule(EMQtWidgetModule):
 	def __init__(self,application=None):
@@ -52,11 +52,11 @@ class EMSelectorModule(EMQtWidgetModule):
 		
 
 class EMSelectorDialog(QtGui.QDialog):
-	def __init__(self,target,application):
+	def __init__(self,module,application):
 		QtGui.QDialog.__init__(self,None)
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.application=application
-		self.target=target
+		self.module=module
 		self.desktop_hint = "dialog"
 		self.db_listing = EMBDBListing(self)
 		self.dir_listing = EMDirectoryListing(self)
@@ -76,10 +76,13 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.starting_directory = os.getcwd()
 		self.historical_starting_directory = os.getcwd() # just incase anyone ever needs it (True). This should never be changed
 		
+		self.current_force = None # use to keep track of what is currently being forced, either 2D plotting, 2D image showing, or neither
 		self.selections = []
 		self.current_list_widget = None
 		self.lock = True
 		self.list_widgets = []
+		self.previews = [] # keeps track of all of the preview windows
+		self.module_events = [] # used to coordinate signals from the modules, especially close events, to free memory
 		self.list_widget_data= [] # entries should be tuples containing (current folder item)
 		self.__add_list_widget(self.first_list_widget)
 		self.__add_list_widget()
@@ -239,10 +242,10 @@ class EMSelectorDialog(QtGui.QDialog):
 		#print "not supported"
 	
 	def cancel_button_clicked(self,bool):
-		self.emit(QtCore.SIGNAL("cancel"),self.selections)
+		self.module.emit(QtCore.SIGNAL("cancel"),self.selections)
 	
 	def ok_button_clicked(self,bool):
-		self.emit(QtCore.SIGNAL("ok"),self.selections)
+		self.module.emit(QtCore.SIGNAL("ok"),self.selections)
 		
 	def __init_filter_combo(self):
 		self.filter_text = QtGui.QLabel("Filter:",self)
@@ -503,59 +506,51 @@ class EMSelectorDialog(QtGui.QDialog):
 			
 	def preview_data(self,a,filename=""):
 		from emimage import EMImageModule
-		if self.single_preview_only():
-			
-			f_2d = self.force_2d.isChecked()
-			f_plot = self.force_plot.isChecked()
-			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=self.gl_image_preview,filename=filename,replace=self.replace.isChecked())
-			if preview != self.gl_image_preview:
-				if self.gl_image_preview != None: self.application.close_specific(self.gl_image_preview)
-				self.gl_image_preview = preview
-	
-			self.application.show_specific(self.gl_image_preview)
-			try: self.gl_image_preview.optimally_resize()
-			except: pass
-					
-			self.gl_image_preview.updateGL()
+		f_2d = self.force_2d.isChecked()
+		f_plot = self.force_plot.isChecked()
+		
+		if self.single_preview_only() and len(self.previews) != 0:
+			old_preview = self.previews[-1] # this means we always choose the last preview if the user suddenly goes from multipreview to single preview
+			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=old_preview,filename=filename,replace=self.replace.isChecked())
+			if preview != old_preview:
+				self.module_closed(old_preview)
+				old_preview.closeEvent(None)
+				self.previews.append(preview)
+				self.module_events.append(ModuleEventsManager(self,preview))
 		else:
-			f_2d = self.force_2d.isChecked()
-			f_plot = self.force_plot.isChecked()
 			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,filename=filename)
-			self.application.show_specific(preview)
-			preview.updateGL()
-			
-		self.application.setOverrideCursor(Qt.ArrowCursor)	
-			
-	#def preview_data(self,a,filename=""):
-		#self.application.setOverrideCursor(Qt.BusyCursor)
+			self.previews.append(preview)
+			self.module_events.append(ModuleEventsManager(self,preview))
 		
-		#if type(a) == list and len(a) == 1:
-			#a = a[0]
-			#data = []
-			#if a.get_zsize() != 1:
-				#for z in range(a.get_zsize()):
-					#image = a.get_clip(Region(0,0,z,a.get_xsize(),a.get_ysize(),1))
-					#data.append(image)
-				#a = data
-		
-		#if self.single_preview.isChecked():
-			#if self.gl_image_preview == None:
-				#self.gl_image_preview = EMImage2DModule(application=self.application)
-				#self.gl_image_preview.set_data(a,filename)
-			#else:
-				#self.gl_image_preview.set_data(a,filename,retain_current_settings=True)
+		self.application.show_specific(preview)
+		try: preview.optimally_resize()
+		except: pass
 				
-			##self.gl_image_preview.set_file_name(f)
-			#self.application.show_specific(self.gl_image_preview)
-			#self.gl_image_preview.updateGL()
-		#else:
-			#preview = EMImage2DModule(application=self.application)
-			#preview.set_data(a,filename)
-			#self.application.show_specific(preview)
-			#preview.updateGL()
-			
-		#self.application.setOverrideCursor(Qt.ArrowCursor)
+		preview.updateGL()
 		
+		
+#			self.application.show_specific(preview)
+#			preview.updateGL()
+#			self.previews.append(preview)
+#			self.module_events.append(ModuleEventsManager(self,preview))
+#			
+		self.application.setOverrideCursor(Qt.ArrowCursor)	
+	
+	def module_closed(self,module):
+		for i,mod in enumerate(self.previews):
+			if mod == module:
+				self.previews.pop(i)
+				self.module_events.pop(i)
+				return
+			
+		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
+	
+	def closeEvent(self,event):
+		self.module_events=[]
+		for mod in self.previews:
+			mod.closeEvent(None)
+		
+		self.module.closeEvent(event)
 	
 	def get_file_filter(self):
 		return str(self.filter_combo.currentText())
@@ -635,6 +630,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 	def make_replacements(self,dirs,list_widget):
 		self.db_listing.make_replacements(dirs,list_widget)
+
 
 
 class EMDirectoryListing:
@@ -1323,8 +1319,18 @@ class EMSelectionListItem(QtGui.QListWidgetItem):
 		self.type_of_me = type_of_me
 		
 	def get_type_of_me(self): return self.type_of_me
-	
 
+class EMBrowserDialog(EMSelectorDialog):
+	def __init__(self,target,application):
+		EMSelectorDialog.__init__(self,target,application)
+		self.preview_options.setCurrentIndex(1)
+		self.preview_options_changed(self.preview_options.currentText())
+
+class EMBrowserModule(EMQtWidgetModule):
+	def __init__(self,application=None):
+		self.application = application
+		self.widget = EMBrowserDialog(self,application)
+		EMQtWidgetModule.__init__(self,self.widget,application)
 	
 app = None
 def on_done(string_list):
@@ -1343,8 +1349,8 @@ if __name__ == '__main__':
 	app = em_app
 	#dialog = EMSelectorDialog(None,em_app)
 	em_qt_widget = EMSelectorModule(em_app)
-	QtCore.QObject.connect(em_qt_widget.widget,QtCore.SIGNAL("ok"),on_done)
-	QtCore.QObject.connect(em_qt_widget.widget,QtCore.SIGNAL("cancel"),on_cancel)
+	QtCore.QObject.connect(em_qt_widget,QtCore.SIGNAL("ok"),on_done)
+	QtCore.QObject.connect(em_qt_widget,QtCore.SIGNAL("cancel"),on_cancel)
 	em_app.show()
 	em_app.execute()
 

@@ -43,7 +43,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from emapplication import EMStandAloneApplication
-from embrowse import *
+from emselector import EMBrowserModule
 
 #from valslider import ValSlider
 #from math import *
@@ -85,8 +85,7 @@ def main():
 	win=[]
 
 	if len(args)<1 :
-		dialog = EMBrowserDialog(None,app)
-		em_qt_widget = EMQtWidgetModule(dialog,app)
+		dialog =EMBrowserModule(app)
 		QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
 		QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
 		app.show()
@@ -114,7 +113,7 @@ def main():
 			display(a,app,i)
 	
 	
-	app.execute()
+	app.exec_()
 	#sys.exit(app.exec_())
 
 	E2end(logid)

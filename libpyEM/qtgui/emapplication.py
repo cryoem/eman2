@@ -56,13 +56,40 @@ class EMModule:
 		Must supply this, should return a list of ParamDef objects. If the blurb is only a string
 		'''
 		raise
+
+class ModuleEventsManager:
+	'''
+	Coordinates events of the various modules.
+	To begin with this is only the close event, then I added the idle event
+	'''
+	def __init__(self,target,module):
+		self.target = target
+		self.module = module
+		QtCore.QObject.connect(self.module, QtCore.SIGNAL("module_closed"), self.module_closed)
+		QtCore.QObject.connect(self.module, QtCore.SIGNAL("module_idle"), self.module_idle)
+		
+		QtCore.QObject.connect(self.module, QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
+		QtCore.QObject.connect(self.module, QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
+		
+	
+	def module_closed(self):
+		self.target.module_closed(self.module)
+		
+	def module_idle(self):
+		self.target.module_idle(self.module)
+		
+	def module_ok(self,*args,**kargs):
+		self.module.closeEvent(None)
+		
+	def module_cancel(self):
+		self.module.closeEvent(None)
 	
 	
-	
-class EMGUIModule(EventsEmitterAndReciever):
+class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	FTGL = "ftgl"
 	GLUT = "glut"
 	def __init__(self,application=None,ensure_gl_context=False):
+		QtCore.QObject.__init__(self)
 		self.under_qt_control = False
 		self.application = application
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
@@ -87,7 +114,6 @@ class EMGUIModule(EventsEmitterAndReciever):
 			application.ensure_gl_context(self)
 			
 		EventsEmitterAndReciever.__init__(self)
-	
 	
 	def updateGL(self):
 		if self.gl_widget != None and self.under_qt_control:
@@ -122,7 +148,7 @@ class EMGUIModule(EventsEmitterAndReciever):
 		return self.em_qt_inspector_widget
 	
 	def show_inspector(self,force=0):
-		
+		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
 		if self.application == None:
 			print "can't show an inspector with having an associated application"
 		
@@ -147,12 +173,13 @@ class EMGUIModule(EventsEmitterAndReciever):
 		if self.em_qt_inspector_widget != None:
 			self.em_qt_inspector_widget.force_texture_update()
 	
-	def closeEvent(self,event) :
+	def closeEvent(self,event):
 		if self.application != None:
 			if self.em_qt_inspector_widget != None: 
 				self.em_qt_inspector_widget.closeEvent(event)
 			
 			self.application.close_specific(self)
+		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		
 	def load_font_renderer(self):
 		try:
@@ -166,8 +193,8 @@ class EMGUIModule(EventsEmitterAndReciever):
 	def mouseDoubleClickEvent(self,event):
 		pass
 	
-	def emit(self,*args,**kargs):
-		self.application.get_qt_emitter(self).emit(*args,**kargs)
+#	def emit(self,*args,**kargs):
+#		self.application.get_qt_emitter(self).emit(*args,**kargs)
 		
 	def make_connections(self,calling_object):
 		'''
@@ -306,7 +333,7 @@ class EMStandAloneApplication(EMApplication):
 					inspector.close()
 				return
 			
-		#print "couldn't close",child
+		print "couldn't close",child
 	
 	def hide_specific(self,child,inspector_too=True):
 		for child_ in self.children:
@@ -321,6 +348,10 @@ class EMStandAloneApplication(EMApplication):
 		print "couldn't hide",child
 		
 	def get_qt_emitter(self,child):
+		if isinstance(child,QtCore.QObject):
+			return child
+	
+		# WARNING, THIS FUNCTIONALITY COULD CURRENTLY BE BROKEN DUE TO THE LINE I ADDED ABOVE
 		for child_ in self.children:
 			if child == child_:
 				return child.get_qt_widget()
@@ -444,6 +475,10 @@ class EMQtWidgetModule(EMGUIModule):
 			self.application.close_specific(self)
 		
 		if self.qt_widget != None: self.qt_widget.close()
+		self.qt_widget = None
+		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
+		
+		
 	
 	def connect_qt_pop_up_application_event(self,signal):
 		self.application.connect_qt_pop_up_application_event(signal,self)

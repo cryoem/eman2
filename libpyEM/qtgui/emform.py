@@ -452,7 +452,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.parent.force_texture_update()
 		
 	def closeEvent(self,event):
-		self.emit(QtCore.SIGNAL("emform_close"))
+		self.parent.emit(QtCore.SIGNAL("emform_close"))
 
 		
 class ParamTableWriter:
