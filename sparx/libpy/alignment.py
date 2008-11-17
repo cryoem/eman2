@@ -79,7 +79,6 @@ def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[
 			peaks, peakm, peaks_major, peakm_major = ormq_peaks_m(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			print "mirror::::", mn
 			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
 			ima2.set_attr_dict({'select': select})
 		elif random_method == "ML":
@@ -626,21 +625,18 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 		p[1] = min(ps/pm, pm/ps)
 		pk = select_k(p, T)
 		
-		#print "Total:", p, pk
-		
 		if ps > pm and pk == 0 or ps < pm and pk == 1: use_mirror = 0
 		else: use_mirror = 1
 	else:
 		select_s = 0
 		select_m = 0
 		ps = peaks[select_s][0]
-		pm = peaks[select_m][0]
+		pm = peakm[select_m][0]
 		if ps > pm:
 			use_mirror = 0
 		else:
 			use_mirror = 1
 	
-	print use_mirror
 	if use_mirror == 0:
 		select = select_s	
 		ang = peaks[select][1]
