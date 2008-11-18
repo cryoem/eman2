@@ -3287,7 +3287,7 @@ class TestEMData(unittest.TestCase):
                 for x in range(16):
                     self.assertEqual(data1[z][y][x], data2[z][y][x])
         
-        testlib.safe_unlink('mydb')
+        #testlib.safe_unlink('mydb')
         
     def test_eman1ctf_pickling(self):
         """test EMAN1Ctf pickle as image attribute .........."""
@@ -3304,7 +3304,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(c.to_vector(), c2.to_vector())
         self.assertEqual(c.to_string(), c2.to_string())
         self.assertEqual(c.to_dict(), c2.to_dict())
-        testlib.safe_unlink('mydb1')
+        #testlib.safe_unlink('mydb1')
         
     def test_eman2ctf_pickling(self):
         """test EMAN2Ctf pickle as image attribute .........."""
@@ -3321,7 +3321,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(q.to_vector(), q2.to_vector())
         self.assertEqual(q.to_string(), q2.to_string())
         self.assertEqual(q.to_dict(), q2.to_dict())
-        testlib.safe_unlink('mydb2')
+        #testlib.safe_unlink('mydb2')
 
 def test_main():
     p = OptionParser()
@@ -3333,6 +3333,9 @@ def test_main():
     Log.logger().set_level(-1)  #perfect solution for quenching the Log error information, thank Liwei
     suite = unittest.TestLoader().loadTestsFromTestCase(TestEMData)
     unittest.TextTestRunner(verbosity=2).run(suite)
+    testlib.safe_unlink('mydb2')
+    testlib.safe_unlink('mydb1')
+    testlib.safe_unlink('mydb')
 
 if __name__ == '__main__':
     test_main()
