@@ -68,7 +68,7 @@ def prj(vol, params, stack = None):
 	volft,kb = prep_vol(vol)
 	for i in xrange(len(params)):
 		proj = prgs(volft, kb, params[i])
-		set_arams_proj(proj, params)
+		set_params_proj(proj, params)
 		proj.set_attr_dict({'active':1, 'ctf_applied':0})
 		if(stack):
 			proj.write_image(stack, i)
