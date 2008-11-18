@@ -584,7 +584,7 @@ def cml_open_proj(stack, ir, ou, d_psi, lf, hf):
 	return Prj, Ori
 
 # export result obtain by the function find_struct
-def cml_export_struc(stack, outdir, Ori):
+def cml_export_struc(stack, outseed, Ori, BDB):
 	from projection import plot_angles
 	from utilities  import set_params_proj
 
@@ -597,14 +597,16 @@ def cml_export_struc(stack, outdir, Ori):
 		p = [Ori[4*i], Ori[4*i+1], Ori[4*i+2], 0.0, 0.0]
 		set_params_proj(data, p)
 		data.set_attr('active', 1)
-		data.write_image(outdir + '/structure.hdf', i)
+		if BDB:	data.write_image('bdb:%s_structure' % outseed, i)
+		else:	data.write_image(outseed + 'structure.hdf', i)
 
 		# prepare angles to plot
 		pagls.append([Ori[4*i], Ori[4*i+1], Ori[4*i+2]])
 
 	# plot angles
 	im = plot_angles(pagls)
-	im.write_image(outdir + '/plot_agls.hdf')
+	if BDB: im.write_image('bdb:%s_plot_agls' % outseed, 0)
+	else:   im.write_image(outseed + 'plot_agls.hdf')
 
 # init the global average used for lot of function to cml
 def cml_init_global_var(dpsi, delta, nprj, debug):
@@ -665,7 +667,7 @@ def cml_export_txtagls(outdir, Ori, disc, title):
 	import time
 	global g_n_prj, g_i_prj
 
-	angfile = open(outdir + '/angles', 'a')
+	angfile = open(outdir + 'angles', 'a')
 
 	angfile.write('|%s|-----------------------------------------------%s---------\n' % (title, time.ctime()))
 	for i in xrange(g_n_prj): angfile.write('%10.3f\t%10.3f\t%10.3f\n' % (Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
@@ -675,7 +677,7 @@ def cml_export_txtagls(outdir, Ori, disc, title):
 
 # export the progress of the find_struc function
 def cml_export_progress(outdir, ite, iprj, iagl, psi, disc, cmd):
-	infofile = open(outdir + '/progress', 'a')
+	infofile = open(outdir + 'progress', 'a')
 	global g_anglst
 
 	if cmd == 'progress':
@@ -901,18 +903,26 @@ def cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights):
 	return Ori, disc, ite
 	
 # application find structure
-def find_struct(stack, outdir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
+def find_struct(stack, out_seedname, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, given = False, first_zero = False, flag_weights = False, debug = False):
 	from utilities import print_begin_msg, print_msg, print_end_msg, start_time, running_time
 	import time
-	import os
 	import sys
 
 	# logfile
 	t_start = start_time()
 	print_begin_msg('find_struct')
 
-	if os.path.exists(outdir): os.system('rm -rf ' + outdir)
-	os.mkdir(outdir)
+	if out_seedname.split(':')[0] == 'bdb':
+		BDB = True
+		outdir = ''
+		out_seedname = out_seedname[4:]
+	else:
+		BDB = False
+		import os
+		if os.path.exists(out_seedname):  os.system('rm -rf ' + out_seedname)
+		os.mkdir(out_seedname)
+		out_seedname += '/'
+		outdir = out_seedname
 
 	# import
 	from projection  import cml_open_proj, cml_init_global_var, cml_head_log
@@ -955,7 +965,7 @@ def find_struct(stack, outdir, ir, ou, delta, dpsi, lf, hf, rand_seed, maxit, gi
 	Ori, disc, ite = cml_find_structure(Prj, Ori, outdir, maxit, first_zero, flag_weights)
 
 	# Export structure
-	cml_export_struc(stack, outdir, Ori)
+	cml_export_struc(stack, out_seedname, Ori, BDB)
 
 	# Compute disc without weights
 	disc_now = cml_disc(Prj, Ori, False)
