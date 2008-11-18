@@ -2396,8 +2396,7 @@ def get_ctf(ima):
 	
 	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont
 
-
-def set_ctf(ima, p):
+def gen_ctf(ima, p):
 	from EMAN2 import EMAN2Ctf
 
 	defocus = p[0]
@@ -2416,8 +2415,12 @@ def set_ctf(ima, p):
 
 	ctf = EMAN2Ctf()
 	ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
+	return ctf
 
-	ima.set_attr("ctf", ctf)
+def set_ctf(ima, p):
+	ctf = get_ctf( p )
+	ima.set_attr( "ctf", ctf )	
+
 
 def delete_bdb(name):
 	"""
