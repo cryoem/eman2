@@ -41,7 +41,7 @@ def project(volume, params, radius):
 		params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
 		proj=Processor.EMFourierFilter(proj, params2)
 		#proj = rot_shift2D(proj, sx = params[3], sy = params[4], interpolation_method = "linear")
-	set_params_proj(proj, params)
+	set_params_proj(proj, [params[0], params[1], params[2], -params[3], -params[4]])
 	proj.set_attr_dict({'active':1, 'ctf_applied':0})
 	return  proj
 
@@ -68,7 +68,7 @@ def prj(vol, params, stack = None):
 	volft,kb = prep_vol(vol)
 	for i in xrange(len(params)):
 		proj = prgs(volft, kb, params[i])
-		set_params_proj(proj, params)
+		set_arams_proj(proj, [params[i][0], params[i][1], params[i][2], -params[i][3], -params[i][4]])
 		proj.set_attr_dict({'active':1, 'ctf_applied':0})
 		if(stack):
 			proj.write_image(stack, i)
@@ -92,7 +92,7 @@ def prgs(volft, kb, params):
 				  "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
 		temp=Processor.EMFourierFilter(temp, filt_params)
 	temp.do_ift_inplace()
-	set_params_proj(temp, params)
+	set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
 	temp.set_attr_dict({'active':1, 'ctf_applied':0, 'npad':2})
 	temp.depad()
 	return temp

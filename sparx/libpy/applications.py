@@ -7996,7 +7996,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 			datstrings.append("  %15e" % ssnr1[2][i])    # variance
 			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
 			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
-			datstrings.append("  %15f" % ssnr1[5][i])    # square of signal
+			datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
 			datstrings.append("\n")
 			outf.write("".join(datstrings))
 		outf.close()
@@ -8013,18 +8013,22 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	else  :
 		if myid == 0 : vol = recons3d_4nn_MPI(myid, prjlist, sym)
 		else:		     recons3d_4nn_MPI(myid, prjlist, sym)
+	if  myid == 0:
+		from utilities import info
+		info(vol)
+		vol.write_image("recof.hdf",0)
 	bcast_EMData_to_all(vol, myid, 0)
 	if CTF: img_dicts = ["defocus", "Pixel_size",\
 	                    "voltage", "Cs", "amp_contrast", "sign", "B_factor", "active", "ctf_applied"]
 	re_prjlist = []
-	vol *= model_circle(radius, nx, nx, nx)
+	#vol *= model_circle(radius, nx, nx, nx)
 	volft,kb = prep_vol(vol)
 	del vol
 	from utilities import get_params_proj
 	for i in xrange(image_start, image_end):
 		prjlist[i-image_start].set_attr('sign', 1)
 		phi,theta,psi,tx,ty = get_params_proj(prjlist[i-image_start])
-		proj = prgs(volft, kb, [phi,theta,psi,tx,ty])
+		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
 		if CTF:
 			params = get_arb_params(prjlist[i-image_start], img_dicts)
 			proj = filt_ctf(proj, params[5], params[8], params[7], params[6], params[9], params[11])
@@ -8032,8 +8036,8 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		if(CTF):	 proj.set_attr('ctf_applied', 1)
 		re_prjlist.append(proj)
 	del volft
-	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, ssnr_text_file+"2.txt", mask2D, rw, npad, sign, sym, CTF)
-	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, ssnr_text_file+"2.txt", mask2D, rw, npad, sign, sym, CTF)
+	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
+	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
 	if myid == 0 :
 		vol_ssnr2.write_image( "ssnr2.hdf", 0)
 		outf = file("ssnr_text_file2", "w")
@@ -8044,7 +8048,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 			datstrings.append("  %15e" % ssnr2[2][i])    # variance
 			datstrings.append("  %15f" % ssnr2[3][i])    # number of points in the shell
 			datstrings.append("  %15f" % ssnr2[4][i])    # number of added Fourier points
-			datstrings.append("  %15f" % ssnr2[5][i])    # square of signal
+			datstrings.append("  %15e" % ssnr2[5][i])    # square of signal
 			datstrings.append("\n")
 			outf.write("".join(datstrings))
 		outf.close()
