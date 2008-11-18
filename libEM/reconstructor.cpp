@@ -2701,8 +2701,8 @@ EMData* nnSSNR_Reconstructor::finish()
 						}
 						wght = 1.0f / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
-					float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
-					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn-1.0f);
+					float nominator = std::norm(m_volume->cmplx(ix,iy,iz))/Kn;
+					float denominator = ((*m_wptr2)(ix,iy,iz)-nominator)/(Kn-1.0f);
 					// Skip Friedel related values
 					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
 						if ( r <= inc ) {
