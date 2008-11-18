@@ -359,33 +359,41 @@ class EMImage(object):
 
 def plot(data,show=1,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""
-	import matplotlib
-	matplotlib.use('Agg')
-	import pylab
-	pylab.figure(figsize=(size[0]/72.0,size[1]/72.0),dpi=72)
-	if isinstance(data,EMData) :
-		a=[]
-		for i in range(data.get_xsize()): 
-			a.append(data.get_value_at(i,0,0))
-		pylab.plot(a)
-	elif isinstance(data,list) or isinstance(data,tuple):
-		if isinstance(data[0],list) or isinstance(data[0],tuple) :
-			pylab.plot(data[0],data[1])
-		else:
-			try:
-				a=float(data[0])
-				pylab.plot(data)
-			except:
-				print "List, but data isn't floats"
-				return
+	if GUIMode:
+		from emplot2d import EMPlot2DModule
+		plotw=EMPlot2DModule(application=app)
+		plotw.set_data("interactive",data)
+		plotw.get_qt_widget().setWindowTitle("2D Plot")
+		app.show_specific(plotw)
+		return plotw
 	else :
-		print "I don't know how to plot that type"
-		return
-	
-	pylab.savefig(path)
-	if show:
-		try: os.system("display "+path)
-		except: pass
+		import matplotlib
+		matplotlib.use('Agg')
+		import pylab
+		pylab.figure(figsize=(size[0]/72.0,size[1]/72.0),dpi=72)
+		if isinstance(data,EMData) :
+			a=[]
+			for i in range(data.get_xsize()): 
+				a.append(data.get_value_at(i,0,0))
+			pylab.plot(a)
+		elif isinstance(data,list) or isinstance(data,tuple):
+			if isinstance(data[0],list) or isinstance(data[0],tuple) :
+				pylab.plot(data[0],data[1])
+			else:
+				try:
+					a=float(data[0])
+					pylab.plot(data)
+				except:
+					print "List, but data isn't floats"
+					return
+		else :
+			print "I don't know how to plot that type"
+			return
+		
+		pylab.savefig(path)
+		if show:
+			try: os.system("display "+path)
+			except: pass
 
 # Get the uniform dimension of the (square) input images. For instance
 # if the images are all 128x128 this will return 128. If the dimensions of the

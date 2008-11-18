@@ -585,9 +585,12 @@ class DBDict:
 		self[n]=a
 
 	def __len__(self):
-		if isinstance(n,int) and self.has_key("dict_map") :
+		if self.has_key("dict_map") :
 			dm=loads(self.bdb.get(dumps("dict_map",-1)))
 			return dm[-1][0]+db_get_image_count(dm[-1][1])
+		try: return self["maxrec"]+1
+		except: return 0
+
 
 	def __setitem__(self,key,val):
 		if isinstance(key,int) and self.has_key("dict_map") :
@@ -661,19 +664,19 @@ class DBDict:
 		return type(r)
 
 	def keys(self):
-		if isinstance(key,int) and self.has_key("dict_map") :
+		if self.has_key("dict_map") :
 			print "keys() not supported for dict_map"
 			return None
 		return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
 
 	def values(self):
-		if isinstance(key,int) and self.has_key("dict_map") :
+		if self.has_key("dict_map") :
 			print "values() not supported for dict_map"
 			return None
 		return [self[k] for k in self.keys()]
 
 	def items(self):
-		if isinstance(key,int) and self.has_key("dict_map") :
+		if self.has_key("dict_map") :
 			print "items() not supported for dict_map"
 			return None
 		return [(k,self[k]) for k in self.keys()]
