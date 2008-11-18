@@ -37,7 +37,7 @@ def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_arb_params, center_2D
 	from statistics   import aves, ave_oe_series, fsc, add_oe_series, ave_oe_series_g
-	from alignment    import Numrinit, ringwe, Applyws, ali2d_sg
+	from alignment    import Numrinit, ringwe, Applyws, ali2d_single_iterg
 	from filter       import filt_from_fsc_bwt, filt_table, filt_ctf, filt_gaussinv
 	from fundamentals import fshift, prepi
 	from morphology   import ctf_2
@@ -126,13 +126,13 @@ def ali2d_g(stack, outdir, maskfile= None, ir=1, ou=-1, rs=1, xr=0, yr=0, ts=1, 
 			datap.append(o)			
 	for Iter in xrange(max_iter):
 		if (CTF):
-			ali2d_sg(datap, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, range(nima))
+			ali2d_single_iterg(datap, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, range(nima))
 			av1, av2 = ave_oe_series_g(datap,kb)
 			tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
 			av1 = filt_table(av1, ctf2[0])
 			av2 = filt_table(av2, ctf2[1])
 		else:
-			ali2d_sg(datap, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, range(nima))
+			ali2d_single_iterg(datap, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, range(nima))
 			av1, av2 = ave_oe_series_g(datap, kb)
 			tavg = (av1*(int(nima/2)+(nima%2)) + av2*int(nima/2))/nima 
 		frsc = fsc(av1, av2, 1.0, os.path.join(outdir, "drc%03d"%(Iter+1)))
@@ -367,7 +367,7 @@ def ali2d_mg(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xr=0, yr=
 			os.system('cp '+newrefim+' multi_ref.hdf')
 			break
 			
-def ali2d_sg(data, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[]):
+def ali2d_single_iterg(data, kb, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[]):
 	"""
 		single iteration alignment using ormy3g
 	"""
@@ -7500,7 +7500,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	from utilities      import get_input_from_string, get_image, get_arb_params, set_arb_params
 	from fundamentals 	import rot_shift2D
 	from statistics 	import add_oe_series, ave_series_ctf, ave_series, fsc_mask
-	from alignment 		import Numrinit, ringwe, ali2d_s, align2d
+	from alignment 		import Numrinit, ringwe, ali2d_single_iter, align2d
 	from filter 		import filt_table, filt_ctf
 	from morphology     import ctf_2
 
@@ -7648,7 +7648,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 			frsc = []
 			ktavg = [None]*NG
 			for k in xrange(NG):
-				ali2d_s(data[k], numr, wr, cs[k], tavg[k], cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(len(data[k])))
+				ali2d_single_iter(data[k], numr, wr, cs[k], tavg[k], cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(len(data[k])))
 				av1, av2 = add_oe_series(data[k])
 				if(CTF):
 					tavg[k] = filt_table(Util.addn_img(av1, av2), ctfb2[k])

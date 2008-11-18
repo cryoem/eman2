@@ -31,7 +31,7 @@
 from EMAN2_cppwrap import *
 from global_def import *
 	
-def ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[], CTF=False, random_method="", Iter=0, T0=1.0, F=0.996, SA_stop=0):
+def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, list_p=[], CTF=False, random_method="", Iter=0, T0=1.0, F=0.996, SA_stop=0):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)

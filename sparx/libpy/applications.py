@@ -166,7 +166,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		return
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_arb_params, get_input_from_string
 	from statistics   import add_ave_varf
-	from alignment    import Numrinit, ringwe, ali2d_s
+	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
 	from random       import random
@@ -340,7 +340,7 @@ def ali2d_a(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 				if auto_stop == True: break
 			else:	a0 = a1
 			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
-			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima), CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
+			ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima), CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
 	# write out headers
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
@@ -352,7 +352,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_arb_params, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict, file_type
 	from statistics   import add_ave_varf_MPI, add_ave_varf_ML_MPI
-	from alignment    import Numrinit, ringwe, ali2d_s
+	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_tophatb
 	from morphology   import ctf_2
 	from numpy        import reshape, shape
@@ -620,7 +620,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			if N_step == len(xrng)-1 and Iter == max_iter-1:  break
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			cs = [float(cs[0]), float(cs[1])]
-			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
+			ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=CTF, random_method=random_method, Iter=total_iter, T0=T0, F=F, SA_stop=SA_stop)
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	par_str = ["xform.align2d"]
@@ -641,7 +641,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_arb_params, get_input_from_string
 	from utilities    import set_arb_params
 	from statistics   import aves, ave_oe_series, fsc_mask, add_oe_series
-	from alignment    import Numrinit, ringwe, ali2d_s
+	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_ctf, filt_table
 	from morphology   import ctf_2
 	from random       import random
@@ -803,7 +803,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			if(a1 < a0):
 				if (auto_stop == True): break
 			else:	a0 = a1
-			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima))
+			ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima))
 	# write out headers
 	if(CTF and data_had_ctf == 0):
 		for im in xrange(nima):
@@ -822,7 +822,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 
 	from utilities    import model_circle, combine_params2, drop_image, get_image, get_arb_params, get_input_from_string
 	from statistics   import fsc_mask, add_oe_series
-	from alignment    import Numrinit, ringwe, ali2d_s
+	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_ctf, filt_table
 	from morphology   import ctf_2
 	from utilities    import print_begin_msg, print_end_msg, print_msg
@@ -950,7 +950,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 		print_msg(msg)
 		for Iter in xrange(max_iter):
 					
-			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima))
+			ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(nima))
 			av1, av2 = add_oe_series(data)
 			if CTF:
 				tavg = filt_table(Util.addn_img(av1, av2), ctfb2)
@@ -992,7 +992,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	from utilities    import model_circle, model_blank, combine_params2, drop_image, get_image, get_arb_params, get_input_from_string
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, recv_attr_dict, file_type
 	from statistics   import fsc_mask, add_oe_series
-	from alignment    import Numrinit, ringwe, ali2d_s
+	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter       import filt_table, filt_ctf
 	from morphology   import ctf_2
 	from numpy        import reshape, shape
@@ -1167,7 +1167,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
 		if myid == main_node: print_msg(msg)
 		for Iter in xrange(max_iter):
-			ali2d_s(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
+			ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode)
 			av1, av2 = add_oe_series(data)
 			#  bring all partial sums together
 			reduce_EMData_to_root(av1, myid, main_node)
@@ -2489,7 +2489,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	from utilities      import get_input_from_string, get_image, get_arb_params, set_arb_params
 	from fundamentals 	import rot_shift2D
 	from statistics 	import add_oe_series, ave_series_ctf, ave_series, fsc_mask
-	from alignment 		import Numrinit, ringwe, ali2d_s, align2d
+	from alignment 		import Numrinit, ringwe, ali2d_single_iter, align2d
 	from filter 		import filt_table, filt_ctf
 	from morphology     import ctf_2
 
@@ -2636,7 +2636,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 			frsc = []
 			ktavg = [None]*NG
 			for k in xrange(NG):
-				ali2d_s(data[k], numr, wr, cs[k], tavg[k], cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(len(data[k])))
+				ali2d_single_iter(data[k], numr, wr, cs[k], tavg[k], cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, range(len(data[k])))
 				av1, av2 = add_oe_series(data[k])
 				if(CTF):
 					tavg[k] = filt_table(Util.addn_img(av1, av2), ctfb2[k])
