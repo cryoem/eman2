@@ -34,13 +34,14 @@ from global_def import *
 def project(volume, params, radius):
         # angles phi, theta, psi
 	from fundamentals import rot_shift2D
+	from utilities import set_params_proj
         myparams = {"transform":Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
         proj = volume.project("pawel", myparams)
 	if(params[3]!=0. or params[4]!=0.): 
 		params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
 		proj=Processor.EMFourierFilter(proj, params2)
 		#proj = rot_shift2D(proj, sx = params[3], sy = params[4], interpolation_method = "linear")
-	proj.set_attr_dict({'phi':params[0], 'theta':params[1], 'psi':params[2], 's2x':-params[3], 's2y':-params[4]})
+	set_params_proj(proj, params)
 	proj.set_attr_dict({'active':1, 'ctf_applied':0})
 	return  proj
 
@@ -67,7 +68,7 @@ def prj(vol, params, stack = None):
 	volft,kb = prep_vol(vol)
 	for i in xrange(len(params)):
 		proj = prgs(volft, kb, params[i])
-		proj.set_arams_proj(params)
+		set_arams_proj(proj, params)
 		proj.set_attr_dict({'active':1, 'ctf_applied':0})
 		if(stack):
 			proj.write_image(stack, i)
@@ -91,7 +92,7 @@ def prgs(volft, kb, params):
 				  "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
 		temp=Processor.EMFourierFilter(temp, filt_params)
 	temp.do_ift_inplace()
-	temp.set_params_proj(params)
+	set_params_proj(temp, params)
 	temp.set_attr_dict({'active':1, 'ctf_applied':0, 'npad':2})
 	temp.depad()
 	return temp
