@@ -149,7 +149,7 @@ def ctf_2(nx, ctf):
 	length = int(1.41*float(nx/2)) + 1
 	ctf_2 = [0.0]*length
 	for i in xrange(length):
-		ctf_val = Util.tf(defocus, i*scl, voltage, cs, amp_contrast, b_factor)
+		ctf_val = Util.tf(dz, i*scl, voltage, cs, ampcont, b_factor)
 		ctf_2[i] = ctf_val*ctf_val
 	return ctf_2
 
@@ -264,7 +264,7 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 		3. It returns Euclidean distance for defocus selection 
 	"""
 	from math 	import sqrt, atan
-	from utilities 	import read_txt_col
+	from utilities 	import read_txt_col, gen_ctf
 	roo     = []
 	res     = []
 	if docf == "a":
@@ -292,7 +292,7 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 	#
 	defocus=defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
 	nx  = int(len(roo)*2)
-	ctf = ctf_2(nx, Pixel_size, defocus, volt, Cs, wgh)
+	ctf = ctf_2(nx, gen_ctf([defocus,Cs,voltage,Pixel_size, 0.0, wgh]))
 	for i in xrange(len(Res_TE)):
 		ctf[i]=ctf[i]*Res_TE[i]
 	dis = defocus_L2_euc(ctf, Res_roo, i_start, i_stop)
@@ -344,7 +344,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 			diff   = 0
 			length = len(Res_roo)
 			nx     = int(length*2)
-			ctf    = ctf_2(nx, Pixel_size, dz,volt, Cs, wgh)
+			ctf    = ctf_2(nx, gen_ctf([dz,Cs,voltage,Pixel_size,0.0,wgh]))
 			if defocus_estimation_method == 1:
 	        		for ifreq in xrange(istart, istop, 1):
 	        			diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2
@@ -726,8 +726,7 @@ def imf_get_1dpw_list(fstr):
 def imf_B_factor_get(res_N,x,ctf_params):
 	from scipy.optimize import fmin
 	nx    = len(res_N)*2
-	Pixel_size, dz, volt, Cs, wgh, b_factor, sign = ctf_params
-	ctf   = ctf_1d(nx, Pixel_size, dz, volt, Cs, wgh, b_factor, sign)
+	ctf   = ctf_1d(nx, ctf_params)
 	p     = [1,1]	
 	xopt  = fmin(residuals_B1, p, (res_N,x))
 	p     = xopt
@@ -797,8 +796,7 @@ def imf_fit_pu(res_P, x, ctf_params, pu, C, B, q, w):
 	from scipy.optimize import fmin
 	res   = []
 	nx    = len(res_P)*2
-	Pixel_size,dz,volt,Cs,wgh,b_factor,sign=ctf_params
-	ctf   = ctf_1d(nx, Pixel_size, dz, volt, Cs, wgh, b_factor, sign)
+	ctf   = ctf_1d(nx, ctf_params)
 	for i in xrange(len(pu)):
 		res_P[i] = res_P[i]-q*C*ctf[1][i]*w[i]
 		pu[i]   *= ctf[1][i]
