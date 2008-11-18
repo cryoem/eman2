@@ -1113,7 +1113,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			ctm = ctf_2(nx, ctf_params)
 			k = im%2
 			for i in xrange(lctf):  ctf2[k][i] += ctm[i]
-			if data.get_attr( "ctf_applied" ) == 0:
+			if data[im-image_start].get_attr( "ctf_applied" ) == 0:
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
 				from filter import filt_ctf
@@ -8774,9 +8774,9 @@ def MPI_start_end(nima, nproc, myid):
 
 
 def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
-	def peak_range( nx, defocus, Cs, voltage, pixel ):
+	def peak_range( nx, ctf_params ):
 		from morphology import ctf_1d
-		ctf = ctf_1d( nx, pixel, defocus, voltage, Cs )
+		ctf = ctf_1d( nx, ctf_params )
     
 		for i in xrange( 1, len(ctf)-1 ):
 			prev = ctf[i-1]
@@ -8868,15 +8868,10 @@ def normal_prj( prj_stack, outdir, refvol, r, niter, snr, sym, MPI=False ):
 			ref_prj = prgs( volft, kb, [phi, theta, psi, -s2x, -s2y] )
 			ref_prj = filt_btwo( ref_prj, 0.01,0.1,0.2)
  
-			defocus = exp_prj.get_attr( 'defocus' )
-			wgh = exp_prj.get_attr( 'amp_contrast' )
-			Cs = exp_prj.get_attr( 'Cs' )
-			voltage = exp_prj.get_attr( 'voltage' )
-			pixel = exp_prj.get_attr( 'Pixel_size' )
-
+			ctf_params = exp_prj.get_attr( "ctf" )
 
 			nx = exp_prj.get_xsize()
-			frange = peak_range( nx, defocus, Cs, voltage, pixel )
+			frange = peak_range( nx, ctf_params)
 
 
 			ref_ctfprj = filt_ctf( ref_prj, defocus, Cs, voltage, pixel, wgh )
