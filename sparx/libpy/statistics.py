@@ -1322,7 +1322,7 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 			image = rot_shift2D(image, alpha, sx, sy, mirror)
 		# obtain ctf
 		if CTF:
-			ctf_params = get_arb_params(image, parnames)
+			ctf_params = image.get_attr( "ctf" )
 			ctf[i]  = ctf_1d(nx, ctf_params)
 			ctf2[i] = ctf_2(nx, ctf_params)
 
