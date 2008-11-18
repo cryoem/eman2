@@ -212,13 +212,7 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			#ta.debug_print_params()
 			
 			if ralign[0]:
-				ralign[1]["az"] = ta.get_attr_default("align.az",0)-1
-				ralign[1]["dx"] = ta.get_attr_default("align.dx",0)-1
-				ralign[1]["dy"] = ta.get_attr_default("align.dy",0)-1
-				refineparms[1]["mode"] = 0
-				refineparms[1]["stepx"] = 2
-				refineparms[1]["stepy"] = 2
-				refineparms[1]["stepaz"] = 5
+				ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
 				ta = target.align(ralign[0],r,ralign[1],alircmp[0],alircmp[1])
 				
 			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),ta.get_attr_default("align.dx",0),ta.get_attr_default("align.dy",0),ta.get_attr_default("align.az",0))
