@@ -34,7 +34,7 @@ from emform import EMFormModule,ParamTable
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts
-from EMAN2 import EMData,get_file_tag,EMAN2Ctf
+from EMAN2 import EMData,get_file_tag,EMAN2Ctf,num_cpus,memory_stats
 import os
 import copy
 from emapplication import EMProgressDialogModule
@@ -56,6 +56,7 @@ class WorkFlowTask(QtCore.QObject):
 	
 	def run_form(self):
 		self.form = EMFormModule(self.get_params(),self.application)
+		self.form.qt_widget.resize(640,640)
 		self.form.setWindowTitle(self.window_title)
 		self.application.show_specific(self.form)
 		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
@@ -88,15 +89,27 @@ class WorkFlowTask(QtCore.QObject):
 		'''
 		Call this function if you need to
 		'''
+		db = db_open_dict("bdb:project")
 		if key == "global.apix":
-			db = db_open_dict("bdb:project")
 			db["global.apix"] = value
 		elif key == "global.microscope_voltage":
-			db = db_open_dict("bdb:project")
 			db["global.microscope_voltage"] = value
 		elif key == "global.microscope_cs":
-			db = db_open_dict("bdb:project")
 			db["global.microscope_cs"] = value
+		elif key == "global.memory_available":
+			#mem = memory_stats()
+			#if value > mem[0]:
+				#print "error, memory usage is beyond the total amount available"
+			#else:
+			# we're avoiding validation because users have peculiar reasons some times
+			db["global.memory_available"] = value
+		elif key == "global.num_cpus":
+			#n = num_cpus()
+			#if value > n:
+				#print "error, num_cpus more than the available cpus"
+			#else:
+			#  we're avoiding validation because users have peculiar reasons some times
+			db["global.num_cpus"] = value
 		else:
 			pass
 	def get_wd(self):
@@ -473,7 +486,7 @@ class CTFWorkFlowTask(ParticleWorkFlowTask):
 			ctf_db = db_open_dict("bdb:e2ctf.parms")
 			for name in particle_file_names:
 				try:
-					vals = ctf_db[name]
+					vals = ctf_db[name][0]
 					ctf = EMAN2Ctf()
 					ctf.from_string(vals)
 					vals = [ctf.defocus,ctf.dfdiff,ctf.dfang,ctf.bfactor]
@@ -575,14 +588,12 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
 		pac = ParamDef(name="working_ac",vartype="float",desc_short="Amplitude contrast",desc_long="The amplitude contrast constant. It is recommended that this value is identical in all of your images.",property=None,defaultunits=ctf_misc_db.get("working_ac",dfl=10),choices=None)
 		pos = ParamDef(name="working_oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=ctf_misc_db.get("working_oversamp",dfl=1),choices=None)
+		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
+		mem = memory_stats()
 		
-		
-		params.append(papix)
-		params.append(pvolt)
-		params.append(pcs)
-		params.append(pac)
-		params.append(pos)
-		
+		params.append([papix,pvolt,pcs])
+		params.append([pac,pos,pncp])
+
 		return params
 	
 	def get_default_ctf_options(self,params):
@@ -645,27 +656,40 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 		self.options = self.get_default_ctf_options(params)
 		if self.options != None:
 			options = self.options
-			args = ["e2ctf.py"]
+			project_db = db_open_dict("bdb:project")
+			ncpu = project_db.get("global.num_cpus",dfl=num_cpus())
+			cf = float(len(options.filenames))/float(ncpu) # common factor
+			for n in range(ncpu):
+				b = int(n*cf)
+				t = int(n+1*cf)
+				if n == (ncpu-1):
+					t = len(options.filenames) # just make sure of it, round off error could 
+					
+				filenames = options.filenames[b:t]
+									
+				args = ["e2ctf.py"]
+		
+				for name in filenames:
+					args.append(name)
+				
+				for string in ["bgmask","oversamp","ac","apix","cs","voltage"]:
+					args.append("--"+string+"="+str(getattr(options,string)))
 	
-			for name in options.filenames:
-				args.append(name)
+				# okay the user can't currently change these, but in future the option might be there
+				for string in ["nosmooth","nonorm","autohp","invert"]:
+					# these are all booleans so the following works:
+					if getattr(options,string):
+						args.append("--"+string)
+				args.append("--auto_fit")
+				#print "command is ",program
+				#for i in args: print i
+				
+				#print args
+				file = open("e2ctf_autofit_stdout.txt","w+")
+				process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
+				print "started",process.pid
+				self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
-			for string in ["bgmask","oversamp","ac","apix","cs","voltage"]:
-				args.append("--"+string+"="+str(getattr(options,string)))
-
-			# okay the user can't currently change these, but in future the option might be there
-			for string in ["nosmooth","nonorm","autohp","invert"]:
-				# these are all booleans so the following works:
-				if getattr(options,string):
-					args.append("--"+string)
-			args.append("--auto_fit")
-			#print "command is ",program
-			#for i in args: print i
-			
-			print args
-			file = open("e2ctf_autofit_stdout.txt","w+")
-			process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
-			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			
@@ -673,25 +697,6 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
 			
-			
-#		self.options = self.get_default_ctf_options(params)
-#		if self.options != None:
-#			img_sets = pspec_and_ctf_fit(self.options)
-#		
-#			if self.options.gui:
-#				self.gui=GUIctfModule(self.application,img_sets)
-#				self.application.show_specific(self.gui)
-#				self.application.close_specific(self.form)
-#				QtCore.QObject.connect(self.gui.qt_widget,QtCore.SIGNAL("module_closed"), self.on_ctf_closed())
-#				self.emit(QtCore.SIGNAL("gui_running")) # 
-#			else:
-#				write_e2ctf_output(self.options)
-#				self.application.close_specific(self.form)
-#				self.emit(QtCore.SIGNAL("task_idle"))
-#		else:
-#			self.application.close_specific(self.form)
-#			self.emit(QtCore.SIGNAL("task_idle"))
-	
 	def on_ctf_closed(self):
 		self.gui = None
 		write_e2ctf_output(self.options)
@@ -884,6 +889,11 @@ class MicrographCCDImportTask(WorkFlowTask):
 		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Importing image data",desc_long="",property=None,defaultunits=MicrographCCDImportTask.documentation_string,choices=None))
 		params.append(ParamDef(name="import_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=[],choices=[]))
+		pinvert = ParamDef(name="invert",vartype="boolean",desc_short="Invert",desc_long="Tick this if you want eman2 to invert your images while importing",property=None,defaultunits=False,choices=None)
+		pxray = ParamDef(name="xraypixel",vartype="boolean",desc_short="X-ray pixel",desc_long="Tick this if you want eman2 to automatically filter out X-ray pixels while importing",property=None,defaultunits=False,choices=None)
+		pthumbnail = ParamDef(name="thumbs",vartype="boolean",desc_short="Thumbnails",desc_long="Tick this if you want eman2 to automatically generate thumbnails for your images. This will save time at later stages in the project",property=None,defaultunits=True,choices=None)
+		
+		params.append([pinvert,pxray,pthumbnail])
 		return params
 
 	def write_db_entry(self,key,value):
@@ -959,6 +969,7 @@ class MicrographCCDTask(WorkFlowTask):
 		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Raw image data",desc_long="",property=None,defaultunits=MicrographCCDTask.documentation_string,choices=None))
 		params.append(ParamDef(name="global.micrograph_ccd_filenames",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.micrograph_ccd_filenames",dfl=[]),choices=[]))
+		
 		return params
 
 	def write_db_entry(self,key,value):
@@ -1012,9 +1023,14 @@ class SPRInitTask(WorkFlowTask):
 		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
 		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
 		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
+		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
+		mem = memory_stats()
+		pmem = ParamDef(name="global.memory_available",vartype="float",desc_short="Memory usage ("+str(mem[0])+ " Gb total)",desc_long="The total amount of system memory you want to make available to the project in gigabytes",property=None,defaultunits=project_db.get("global.memory_available",dfl=mem[1]),choices=None)
 		params.append(papix)
 		params.append(pvolt)
 		params.append(pcs)
+		params.append(pncp)
+		params.append(pmem)
 		
 		return params
 

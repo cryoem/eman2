@@ -149,12 +149,12 @@ class EMFormWidget(QtGui.QWidget):
 			table_widget.setHorizontalHeaderItem(i,item)
 			
 		table_widget.setSortingEnabled(True)
-		hbl.addWidget(table_widget)
+		hbl.addWidget(table_widget,1)
 		
 		groupbox = QtGui.QGroupBox(paramtable.desc_short)
 		groupbox.setToolTip(paramtable.desc_long)
 		groupbox.setLayout(hbl)
-		layout.addWidget(groupbox)
+		layout.addWidget(groupbox,1)
 		
 		if len(paramtable[0].choices) > 0:
 			type_of = type(paramtable[0].choices[0])
@@ -292,13 +292,13 @@ class EMFormWidget(QtGui.QWidget):
 		text_edit.setReadOnly(True)
 		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
 		text_edit.setText(param.defaultunits)
-		hbl.addWidget(text_edit)
+		hbl.addWidget(text_edit,0)
 		
 		groupbox = QtGui.QGroupBox(param.desc_short)
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(hbl)
 		
-		layout.addWidget(groupbox)
+		layout.addWidget(groupbox,0)
 
 		self.output_writers.append(TextParamWriter(param.name,text_edit))	
 	

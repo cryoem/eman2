@@ -395,13 +395,44 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 			try: os.system("display "+path)
 			except: pass
 
+def memory_stats():
+	'''
+	Returns [total memory in GB,available memory in GB]
+	if any errors occur while trying to retrieve either of these values their retun value is -1
+	'''
+	import platform
+	platform_string = platform.system()
+	mem_total = -1
+	mem_avail = -1
+	if platform_string == "Linux":
+		try:
+			f = open("/proc/meminfo")
+			a = f.readlines()
+			mt = a[0].split()
+			if mt[0] == "MemTotal:":
+				mem_total = float(mt[1])/1000000.0
+			ma = a[1].split()
+			if ma[0] == "MemFree:":
+				mem_avail = float(ma[1])/1000000.0
+		except:
+			pass
+			
+	return [mem_total,mem_avail]
+
 def num_cpus():
+	'''
+	Returns the number of cpus available on the current platform
+	This program is in its infancy but should work in general. A very basic approach is employed for Linux,
+	however MAC and Windows should work fine.
+	Based on http://mail.python.org/pipermail/python-list/2007-October/460750.html
+	'''
 	import platform
 	platform_string = platform.system()
 	if platform_string == "Linux":
 		try:
 			f = open("/proc/cpuinfo")
 			a = f.readlines()
+			# assumes the entry 12 is the one we're looking for - this might not work but we can fix it as we go
 			split = a[11].split()
 			if split[0] == "cpu" and split[1] == "cores":
 				cores = int(split[-1])
@@ -420,6 +451,7 @@ def num_cpus():
 			return 1
 	elif platform_string == "Darwin":
 		import subprocess
+		import os
 		process = subprocess.Popen(["sysctl","hw.logicalcpu"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
 		while True:
 			try:
