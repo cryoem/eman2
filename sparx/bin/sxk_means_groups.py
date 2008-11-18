@@ -39,7 +39,7 @@ from  optparse import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stackfile output_file  <maskfile> --K1=Min_number_of_Cluster --K2=Max_number_of_Clusters --opt_method=K-means_method --trials=Number_of_trials_of_K-means --CTF --rand_seed=1000 --maxit=Maximum_number_of_iterations --crit=criterion_names --F=simulated_annealing --T0=simulated_annealing --SA2 --MPI"
+	usage = progname + " stackfile output_file  <maskfile> --K1=Min_number_of_Cluster --K2=Max_number_of_Clusters --opt_method=K-means_method --trials=Number_of_trials_of_K-means --CTF --rand_seed=1000 --maxit=Maximum_number_of_iterations --crit=criterion_names --F=simulated_annealing --T0=simulated_annealing --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K1",          type="int",          default=2,          help=" Mimimum number of Clusters")
 	parser.add_option("--K2",          type="int",          default=3,          help=" Maximum number of Clusters")
@@ -51,7 +51,6 @@ def main():
 	parser.add_option("--crit",        type="string",       default="all",      help=" Kind of criterions: Coleman [C], Harabasz [H], Davies-Bouldin [DB], All [all]")
 	parser.add_option("--F",           type="float",        default=0.0,        help=" Factor to decrease temperature in simulate annealing, ex.: 0.9")
 	parser.add_option("--T0",          type="float",        default=0.0,        help=" Initial temperature in simulate annealing, ex: 100")
-	parser.add_option("--SA2",         action="store_true", default=False,      help=" select the neighbour to simulate annealing according T")
 	parser.add_option("--MPI",         action="store_true", default=False,      help=" whether using MPI version ")
 	parser.add_option("--debug",       action="store_true", default=False,      help=" ")
 	(options, args) = parser.parse_args()
@@ -76,7 +75,7 @@ def main():
 
 		from applications import k_means_groups
 		global_def.BATCH = True
-		k_means_groups(args[0], args[1], mask, options.opt_method, options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, options.SA2, options.MPI, options.debug)
+		k_means_groups(args[0], args[1], mask, options.opt_method, options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.crit, options.CTF, options.F, options.T0, options.MPI, options.debug)
 		global_def.BATCH = False
 			
 if __name__ == "__main__":

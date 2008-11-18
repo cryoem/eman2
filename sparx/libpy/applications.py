@@ -4830,7 +4830,6 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 			else:                  send_attr_dict(main_node, dataim, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ali3d_e_MPI")
 
-
 def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_aliB_cone"):
 	"""
 		Version 03/20/08, all particles used
@@ -7549,7 +7548,7 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	ref = rot_shift3D(ref, params[0], params[1], params[2], params[3], params[4], params[5], params[7])
 	e = get_im(vol)
 	params = get_params3D(e)
-	print  " input params ", params
+	#print  " input params ", params
 	params2 = list(params)
 	del params2[6]
 	data=[e, ref, mask, params2, discrepancy]
@@ -9414,7 +9413,7 @@ def refvol( vollist, fsclist, output, mask ):
 # -- K-means main ---------------------------------------------------------------------------
 
 # K-means main driver
-def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname, CTF = False, F = 0, T0 = 0, MPI = False, SA2 = False, DEBUG = False):
+def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, trials, critname, CTF = False, F = 0, T0 = 0, MPI = False, DEBUG = False):
 	from utilities 	import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
 	import sys
@@ -9424,6 +9423,10 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	if ext == 'bdb': BDB = True
 	else:            BDB = False
 
+	if (T0 == 0 and F != 0) or (T0 != 0 and F == 0):
+		ERROR('Ambigues parameters F=%f T0=%f' % (F, T0), 'k-means', 1)
+		sys.exit()
+
 	if MPI:
 		from statistics import k_means_cla_MPI, k_means_SSE_MPI, k_means_init_MPI
 		from mpi 	import mpi_barrier, MPI_COMM_WORLD
@@ -9432,7 +9435,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 
 		if myid == main_node:
 			print_begin_msg('k-means')
-			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, SA2, rand_seed, ncpu)
+			k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu)
 
 		if BDB:
 			# with BDB only one by one node can read data base
@@ -9444,9 +9447,9 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 			[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, N_start, N_stop, N, CTF)
 	
 		if   opt_method == 'cla':
-			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0, SA2)
+			[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
 		elif opt_method == 'SSE':
-			[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, ncpu, N_start, N_stop, F, T0, SA2)
+			[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, ncpu, N_start, N_stop, F, T0)
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
 			sys.exit()
@@ -9468,15 +9471,19 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 	else:
 		from statistics import k_means_classical, k_means_SSE
 		N = EMUtil.get_image_count(stack)
+		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF)
+
+		if T0 == -1:
+			from development import k_means_SA_T0
+			T0 = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F)
 
 		print_begin_msg('k-means')
-		k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, SA2, rand_seed, 1)
-		[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF)
+		k_means_headlog(stack, out_dir, opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rand_seed, 1)
 		
 		if   opt_method == 'cla':
-			[Cls, assign] = k_means_classical(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
+			[Cls, assign] = k_means_classical(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
 		elif opt_method == 'SSE':
-			[Cls, assign] = k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
+			[Cls, assign] = k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
 		else:
 			ERROR('opt_method %s unknown!' % opt_method, 'k-means', 1)
 			sys.exit()
@@ -9486,7 +9493,7 @@ def k_means_main(stack, out_dir, maskname, opt_method, K, rand_seed, maxit, tria
 		print_end_msg('k-means')
 			
 # K-means groups driver
-def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, SA2, MPI=False, DEBUG=False):
+def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, MPI=False, DEBUG=False):
 
 	# check entry
 	if stack.split(':')[0] == 'bdb': BDB = True
@@ -9498,11 +9505,11 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 	
 	if MPI:
 		from statistics import k_means_groups_MPI
-		[rescrit, KK] = k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, SA2)
+		[rescrit, KK] = k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0)
 		
 	else:
 		from statistics import k_means_groups_serial
-		[rescrit, KK] = k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, SA2, DEBUG)
+		[rescrit, KK] = k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit, CTF, F, T0, DEBUG)
 		
 		return rescrit, KK
 	

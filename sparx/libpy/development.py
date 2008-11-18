@@ -6492,7 +6492,7 @@ def h_stability(seed_name, nb_part, org):
 ## PCK K-MEANS STABILITY ######################################################################
 
 # K-means SA define the first temperature T0
-def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0, SA2=False):
+def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0):
 	from utilities 		import model_blank, print_msg
 	from random    		import seed, randint
 	import sys
@@ -6505,7 +6505,9 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0, SA2=False):
 		ctf2 = deepcopy(CTF[2])
 		CTF  = True
 	else:
-		CTF  = False 
+		CTF  = False
+
+	SA2 = True # default use the new SA
 
 	from math   import exp
 	from random import random
@@ -6623,96 +6625,100 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F=0, SA2=False):
 	lT.extend(range(1, 5))
 	lT.extend(range(5, Tm, 2))
 	for T in lT:
+		
 		ct_pert = 0
-		for im in xrange(N):
+		for rep in xrange(2):
+			for im in xrange(N):
 
-			if CTF:
-				CTFxAVE = []
-				for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
-				res = Util.min_dist(im_M[im], CTFxAVE)
-			else:
-				res = Util.min_dist(im_M[im], Cls['ave'])
-
-			# Simulate annealing
-
-			if SA2:
-				dJe = [0.0] * K
-				ni  = float(Cls['n'][assign[im]])
-				di  = res['dist'][assign[im]]
-
-				for k in xrange(K):
-					if k != assign[im]:
-						nj  = float(Cls['n'][k])
-						dj  = res['dist'][k]
-
-						dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
-
-					else:
-						dJe[k] = 0
-
-				# norm <0 [-1;0], >=0 [0;+1], if just 0 norm to 1
-				nbneg  =  0
-				nbpos  =  0
-				minneg =  0
-				maxpos =  0
-				for k in xrange(K):
-					if dJe[k] < 0.0:
-						nbneg += 1
-						if dJe[k] < minneg: minneg = dJe[k]
-					else:
-						nbpos += 1
-						if dJe[k] > maxpos: maxpos = dJe[k]
-				if nbneg != 0:                   dneg = -1.0 / minneg
-				if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
-				for k in xrange(K):
-					if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
-					else:
-						if maxpos != 0: dJe[k] = dJe[k] * dpos
-						else:           dJe[k] = 1.0
-
-				# q[k]
-				q      = [0.0] * K
-				arg    = [0.0] * K
-				maxarg = 0
-				for k in xrange(K):
-					arg[k] = dJe[k] / T
-					if arg[k] > maxarg: maxarg = arg[k]
-				limarg = 17
-				if maxarg > limarg:
-					sumarg = float(sum(arg))
-					for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+				if CTF:
+					CTFxAVE = []
+					for k in xrange(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
+					res = Util.min_dist(im_M[im], CTFxAVE)
 				else:
-					for k in xrange(K): q[k] = exp(arg[k])
+					res = Util.min_dist(im_M[im], Cls['ave'])
 
-				# p[k]
-				p = [[0.0, 0] for i in xrange(K)]
-				sumq = float(sum(q))
-				for k in xrange(K):
-					p[k][0] = q[k] / sumq
-					p[k][1] = k
+				# Simulate annealing
 
-				p.sort()
-				c = [0.0] * K
-				c[0] = p[0][0]
-				for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
+				if SA2:
+					dJe = [0.0] * K
+					ni  = float(Cls['n'][assign[im]])
+					di  = res['dist'][assign[im]]
 
-				pb = random()
-				select = -1
-				for k in xrange(K):
-					if c[k] > pb:
-						select = p[k][1]
-						break
+					for k in xrange(K):
+						if k != assign[im]:
+							nj  = float(Cls['n'][k])
+							dj  = res['dist'][k]
+
+							dJe[k] = -( (nj/(nj+1))*(dj/norm) - (ni/(ni-1))*(di/norm) )
+
+						else:
+							dJe[k] = 0
+
+					# norm <0 [-1;0], >=0 [0;+1], if just 0 norm to 1
+					nbneg  =  0
+					nbpos  =  0
+					minneg =  0
+					maxpos =  0
+					for k in xrange(K):
+						if dJe[k] < 0.0:
+							nbneg += 1
+							if dJe[k] < minneg: minneg = dJe[k]
+						else:
+							nbpos += 1
+							if dJe[k] > maxpos: maxpos = dJe[k]
+					if nbneg != 0:                   dneg = -1.0 / minneg
+					if nbpos != 0 and maxpos != 0:   dpos =  1.0 / maxpos
+					for k in xrange(K):
+						if dJe[k] < 0.0: dJe[k] = dJe[k] * dneg
+						else:
+							if maxpos != 0: dJe[k] = dJe[k] * dpos
+							else:           dJe[k] = 1.0
+
+					# q[k]
+					q      = [0.0] * K
+					arg    = [0.0] * K
+					maxarg = 0
+					for k in xrange(K):
+						arg[k] = dJe[k] / T
+						if arg[k] > maxarg: maxarg = arg[k]
+					limarg = 17
+					if maxarg > limarg:
+						sumarg = float(sum(arg))
+						for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+					else:
+						for k in xrange(K): q[k] = exp(arg[k])
+
+					# p[k]
+					p = [[0.0, 0] for i in xrange(K)]
+					sumq = float(sum(q))
+					for k in xrange(K):
+						p[k][0] = q[k] / sumq
+						p[k][1] = k
+
+					p.sort()
+					c = [0.0] * K
+					c[0] = p[0][0]
+					for k in xrange(1, K): c[k] = c[k-1] + p[k][0]
+
+					pb = random()
+					select = -1
+					for k in xrange(K):
+						if c[k] > pb:
+							select = p[k][1]
+							break
 
 
-				if select != res['pos']:
-					ct_pert    += 1
-					res['pos']  = select
+					if select != res['pos']:
+						ct_pert    += 1
+						res['pos']  = select
 
 
-			else:
-				if exp( -(1) / float(T) ) > random():
-					res['pos']  = randint(0, K - 1)
-					ct_pert    += 1
+				else:
+					if exp( -(1) / float(T) ) > random():
+						res['pos']  = randint(0, K - 1)
+						ct_pert    += 1
+
+		ct_pert /= 2.0
 
 		# select the first temperature if > th
 		if ct_pert > th:
@@ -7211,14 +7217,13 @@ def k_means_stab_export(PART, stack, num_run):
 
 # Init the header for the stack file
 def k_means_stab_init_tag(stack):
-	from utilities import write_header
+	from utilities import write_headers
 	N  = EMUtil.get_image_count(stack)
-	im = EMData()
+	IM = EMData().read_images(stack, range(N), True)
 	for n in xrange(N):
-		im.read_image(stack, n, True)
-		im.set_attr('stab_active', 1)
-		im.set_attr('stab_part', -2)
-		write_header(stack, im, n)
+		IM[n].set_attr('stab_active', 1)
+		IM[n].set_attr('stab_part', -2)
+	write_headers(stack, IM, range(N))
 
 # k-means open and prepare images, only unstable objects (active = 1)
 def k_means_open_unstable(stack, maskname, CTF):
@@ -7232,27 +7237,33 @@ def k_means_open_unstable(stack, maskname, CTF):
 		from utilities          import get_arb_params
 
 	# create list of unstable images
-	N   = EMUtil.get_image_count(stack)
-	im  = EMData()
+	N    = EMUtil.get_image_count(stack)
+	im   = EMData()
+	HEAD = im.read_images(stack, range(N))
 	lim = [] 
 	for n in xrange(N):
-		im.read_image(stack, n, True)
-		if im.get_attr('stab_active'): lim.append(n)
+		try:
+			if HEAD[n].get_attr('stab_active'): lim.append(n)
+		except AttributeError:
+			for n in xrange(N):
+				if HEAD[n] == None:
+					print n, ':', n-1, HEAD[n], n+1
+			import sys
+			sys.exit()
 
 	N = len(lim)
-
 	im_M = [0] * N
-	im.read_image(stack, 0, True)
-	nx = im.get_xsize()
-	ny = im.get_ysize()
-	nz = im.get_zsize()
+
+	nx = HEAD[0].get_xsize()
+	ny = HEAD[0].get_ysize()
+	nz = HEAD[0].get_zsize()
 	
 	if CTF:
-		parnames    = ('Pixel_size', 'defocus', 'voltage', 'Cs', 'amp_contrast', 'B_factor',  'ctf_applied')
-		ctf	    = [[] for i in xrange(N)]
-		ctf2        = [[] for i in xrange(N)]
-		ctf_params  = get_arb_params(im, parnames)
-		if ctf_params[6]: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+		ctf	   = [[] for i in xrange(N)]
+		ctf2       = [[] for i in xrange(N)]
+		ctf_params = HEAD[0].get_attr('ctf')
+		if HEAD[0].get_attr('ctf_applied'): ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+	del HEAD, im
 
 	if maskname != None:
 		if isinstance(maskname, basestring):
@@ -7260,6 +7271,7 @@ def k_means_open_unstable(stack, maskname, CTF):
 	else:
 		mask = None
 
+	im = EMData()
 	ct   = 0
 	for ID in lim:
 		im.read_image(stack, ID)
@@ -7276,7 +7288,7 @@ def k_means_open_unstable(stack, maskname, CTF):
 			im = rot_shift2D(im, alpha, sx, sy, mirror)
 		# obtain ctf
 		if CTF:
-			ctf_params = im.get_attr( "ctf" )
+			ctf_params = im.get_attr('ctf')
 			ctf[i]  = ctf_1d(nx, ctf_params)
 			ctf2[i] = ctf_2(nx, ctf_params)
 
@@ -7315,45 +7327,52 @@ def k_means_stab_asg2part(ALL_ASG, LUT):
 
 # Update information to the header of the stack file
 def k_means_stab_update_tag(stack, ALL_PART, STB_PART, num_run):
-	from utilities import write_header
+	from utilities import write_headers
+
 	N  = EMUtil.get_image_count(stack)
-	im = EMData()
+	IM = EMData().read_images(stack, range(N), True)
 
-	# update active images
-	list_stb = []
-	for part in STB_PART: list_stb.extend(part)
-	for ID in list_stb:
-		im.read_image(stack, ID, True)
-		im.set_attr('stab_active', 0)
-		write_header(stack, im, ID)
-
-	# update partition given by k-means
-	nb_part  = len(ALL_PART)
-	K        = len(ALL_PART[0])
-	ALL_ASG  = []
+	# prepare partitions given by the run
+	nb_part = len(ALL_PART)
+	K       = len(ALL_PART[0])
+	ALL_ASG = []
 	for PART in ALL_PART:
 		ASG = [-1] * N
 		for k in xrange(K):
 			for ID in PART[k]: ASG[ID] = k
 		ALL_ASG.append(ASG)
 
-	# update partition stable
+	# prepare partition stable
 	STB_ASG = [-1] * N
 	for k in xrange(K):
 		for ID in STB_PART[k]: STB_ASG[ID] = k
 
-	# write head both part k-means and part stable
+	# prepare for active images
+	list_stb = []
+	for part in STB_PART: list_stb.extend(part)
+
+
+	# set headers
 	for n in xrange(N):
-		vec = []
-		for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
-		im.read_image(stack, n, True)
-		im.set_attr('stab_run%02d' % num_run, vec)
-		val = im.get_attr('stab_part')
-		if isinstance(val, list): val.append(STB_ASG[n])
-		elif  val == -2: val = [STB_ASG[n]]
-		else: val = [val, STB_ASG[n]]
-		im.set_attr('stab_part', val)
-		write_header(stack, im, n)
+		# run partitions    FIXME for bdb
+		#vec = []
+		#for i in xrange(nb_part): vec.append(ALL_ASG[i][n])
+		#IM[n].set_attr('stab_run%02d' % num_run, vec)
+
+		# stab partitions
+		val = IM[n].get_attr('stab_part')
+		if isinstance(val, list): val.append(STB_ASG[n]) # if n-ieme run (list of value)
+		elif  val == -2: val = [STB_ASG[n]]              # if first run  (no value define by -2)
+		else: val = [val, STB_ASG[n]]                    # if second run (scalar)
+		IM[n].set_attr('stab_part', val)
+
+	# active or not (unstable or not)
+	for ID in list_stb: IM[ID].set_attr('stab_active', 0)
+
+	# write headers
+	write_headers(stack, IM, range(N))
+
+
 
 # Gather all stable class averages in the same stack
 def k_means_stab_gather(nb_run, th):
@@ -7371,7 +7390,7 @@ def k_means_stab_gather(nb_run, th):
 	return ct
 
 # K-means main driver
-def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, SA2 = False, DEBUG = False):
+def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, DEBUG = False):
 	from utilities 	 import print_begin_msg, print_end_msg, print_msg, file_type
 	from statistics  import k_means_criterion, k_means_export, k_means_open_im, k_means_headlog
 	from statistics  import k_means_classical, k_means_SSE
@@ -7382,8 +7401,10 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 	trials   = 1
 	maxit    = 1000000
 	critname = ''
-	th       = 0        # remove cluster
-	maxrun   = 1        # max ite of run
+	th       = 0        # remove cluster this nb images / grp < th
+	maxrun   = 1000000  # max ite of run
+	th_stab  = 6.0      # stability minimum required to start the next run
+	th_dec   = 2        # decrement minimum for K if stability to low
 
 	# create main log
 	f = open('main_log.txt', 'w')
@@ -7401,7 +7422,7 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 	k_means_stab_init_tag(stack)
 
 	# loop over run
-	stb          = 3.0
+	stb          = 6.0
 	flag_run     = True
 	num_run      = 0
 	while flag_run:
@@ -7416,26 +7437,28 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 		if N < 2:
 			logging.info('[STOP] Not enough images')
 			break
-		try:
-			T0 = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F, SA2)
-			logging.info('... Select first temperature T0: %4.2f' % T0)
-		except SystemExit:
-			logging.info('[STOP] Not enough images')
-			break
+		if F != 0:
+			try:
+				T0 = k_means_SA_T0(im_M, mask, K, rand_seed, [CTF, ctf, ctf2], F)
+				logging.info('... Select first temperature T0: %4.2f' % T0)
+			except SystemExit:
+				logging.info('[STOP] Not enough images')
+				break
+		else: T0 = 0
 
 		# loop over partition
 		ALL_ASG = []
 		print_begin_msg('k-means')
 		for n in xrange(npart):
 			logging.info('...... Start partition: %d' % (n + 1))
-			k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, SA2, rnd[n], 1)
+			k_means_headlog(stack, 'partition %d' % (n+1), opt_method, N, K, critname, maskname, trials, maxit, CTF, T0, F, rnd[n], 1)
 			if   opt_method == 'cla':
-				try:			[Cls, assign] = k_means_classical(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
-				except SystemExit:	flag_cluster = True
+				try:			[Cls, assign] = k_means_classical(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
+				except SystemExit:	flag_cluster  = True
 
 			elif opt_method == 'SSE':
-				try:			[Cls, assign] = k_means_SSE(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
-				except SystemExit:      flag_cluster = True
+				try:			[Cls, assign] = k_means_SSE(im_M, mask, K, rnd[n], maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
+				except SystemExit:      flag_cluster  = True
 
 			if flag_cluster:
 				logging.info('[WARNING] Empty cluster')
@@ -7446,7 +7469,9 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 
 		if flag_cluster:
 			num_run -= 1
-			K = K - int(K * (stb / 100.0))
+			dec = int(K * (stb / 100.0))
+			if dec < th_dec: K -= th_dec
+			else: 	         K -= dec
 			if K > 1:
 				logging.info('[WARNING] Restart the run with K = %d' % K)
 				continue
@@ -7461,6 +7486,19 @@ def k_means_stab(stack, maskname, opt_method, K, npart = 5, CTF = False, F = 0, 
 		# calculate the stability
 		stb, nb_stb, STB_PART = k_means_stab_H(ALL_PART)
 		logging.info('... Stability: %5.2f %% (%d objects)' % (stb, nb_stb))
+
+		# manage the stability
+		if stb < th_stab:
+			dec = int(K * (stb / 100.0))
+			if dec < th_dec: K -= th_dec
+			else:            K -= dec
+			if K > 1:
+				logging.info('[WARNING] Stability too low, restart the run with K = %d' % K)
+				num_run -= 1
+				continue
+			else:
+				logging.info('[STOP] Not enough number of clusters ')
+				break
 
 		# export the stable class averages
 		logging.info('... Export stable class averages: average_stb_run%02d.hdf' % num_run)

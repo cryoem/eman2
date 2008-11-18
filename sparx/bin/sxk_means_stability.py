@@ -40,14 +40,13 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack <maskfile> --K=number_of_classes --nb_part=number_of_partitions --opt_method=optimization_method --CTF --F=factor_temperature --SA2"
+	usage = progname + " stack <maskfile> --K=number_of_classes --nb_part=number_of_partitions --opt_method=optimization_method --CTF --F=factor_temperature"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--K",          type="int",          default=2,         help=" Number of classes (default 2)")
 	parser.add_option("--nb_part",    type="int",          default=5,         help=" Number of partitions used to calculate the stability (default 5)")
 	parser.add_option("--opt_method", type='string',       default="SSE",     help=" K-means method: SSE (default), cla")
 	parser.add_option("--CTF",        action="store_true", default=False,     help=" Perform classification using CTF information")
 	parser.add_option("--F",          type="float",        default=0.0,       help=" Factor to decrease temperature in simulate annealing, ex.: 0.9")
-	parser.add_option("--SA2",        action="store_true", default=False,     help=" select the neighbour to simulate annealing according T")
 	parser.add_option("--debug",      action="store_true", default=False,     help="")
 	
 	(options, args) = parser.parse_args()
@@ -71,7 +70,7 @@ def main():
 
 		from  development  import  k_means_stab
 		global_def.BATCH = True
-		k_means_stab(args[0], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.SA2, options.debug)
+		k_means_stab(args[0], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.debug)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

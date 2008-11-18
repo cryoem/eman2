@@ -1378,7 +1378,7 @@ def k_means_init_MPI(stack):
 	return main_node, myid, number_of_proc, N_start, N_stop, N
 
 # k-means write the head of the logfile
-def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, SA2, rnd, ncpu):
+def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu):
 	from utilities import print_msg
 
 	if F != 0: SA = True
@@ -1406,8 +1406,8 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 	print_msg('Optimization method         : %s\n'     % method)
 	if SA:
 		print_msg('Simulate annealing          : ON\n')
-		if SA2: print_msg('   select neighbour         : closer according T\n')
-		else:	print_msg('   select neighbour         : randomly\n')
+		#if SA2: print_msg('   select neighbour         : closer according T\n')
+		#else: 	 print_msg('   select neighbour         : randomly\n')
 		print_msg('   T0                       : %f\n' % T0)
 		print_msg('   F                        : %f\n' % F)
 	else:
@@ -1436,7 +1436,7 @@ def k_means_export(Cls, crit, assign, out_seedname):
 	print_msg('\n\t%s\t%11.6e\n\n' % ('The total Sum of Squares Error (Je) = ', Je))
 
 	for name in crit['name']:
-		if name == 'C':   print_msg('\t%s\t%11.4e\n' % ('Criteria Coleman', crit['C']))
+		if name   == 'C': print_msg('\t%s\t%11.4e\n' % ('Criteria Coleman', crit['C']))
 		elif name == 'H': print_msg('\t%s\t%11.4e\n' % ('Criteria Harabasz', crit['H']))
 		elif name == 'D': print_msg('\t%s\t%11.4e\n' % ('Criteria Davies-Bouldin', crit['D']))
 		else:             ERROR('Kind of criterion k-means unknown', 'k_means_out_res', 0)	
@@ -1573,7 +1573,7 @@ def k_means_criterion(Cls, crit_name=''):
 	return Crit
 
 # K-means with classical method
-def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=False, DEBUG=False):
+def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
 	from utilities 		import model_blank, get_im, running_time
 	from random    		import seed, randint
 	from utilities 		import print_msg
@@ -1591,8 +1591,9 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 		CTF  = False 
 
 	# Simulate annealing use or not
-	if F != 0: SA = True
-	else:      SA = False
+	if F != 0:
+		SA = SA2 = True # default use the new SA2
+	else:   SA = SA2 = False
 
 	if SA:
 		# for simulate annealing
@@ -1991,7 +1992,7 @@ def k_means_classical(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, S
 
 
 # K-means with SSE method
-def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=False, DEBUG=False):
+def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False):
 	from utilities    import model_blank, get_im, running_time
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from random       import seed, randint, shuffle
@@ -2009,8 +2010,8 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 		CTF  = False
 
 	# Simulate annealing use or not
-	if T0 != 0: SA = True
-	else:       SA = False
+	if T0 != 0: SA = SA2 = True # default use the new SA2
+	else:       SA = SA2 = False
 
 	if SA:
 		# for simulate annealing
@@ -2483,7 +2484,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, SA2=Fal
 
 
 # K-means MPI with classical method
-def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, N_start, N_stop, F=0, T0=0, SA2=False):
+def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, N_start, N_stop, F=0, T0=0):
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
@@ -2505,8 +2506,8 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		CTF  = False
 
 	# Simulate annealing
-	if F != 0: SA = True
-	else:      SA = False
+	if F != 0: SA = SA2 = True # default use the new SA2
+	else:      SA = SA2 = False
 
 	if SA:
 		from math   import exp
@@ -3016,7 +3017,7 @@ def k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	else:                 return None, None
 
 # K-means MPI with SSE method
-def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, ncpu, N_start, N_stop, F=0, T0=0, SA2=False):
+def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_node, ncpu, N_start, N_stop, F=0, T0=0):
 	from utilities    import model_blank, get_im
 	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
 	from utilities    import print_msg, running_time
@@ -3038,8 +3039,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 		CTF  = False
 
 	# Simulate annealing
-	if F != 0: SA = True
-	else:      SA = False
+	if F != 0: SA = SA2 = True  # default use the new SA2
+	else:      SA = SA2 = False
 
 	if SA:
 		from math   import exp
@@ -3660,7 +3661,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, myid, main_nod
 	else:                 return None, None
 
 # to figure out the number of clusters
-def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit_name, CTF, F, T0, SA2, DEBUG=False):
+def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit_name, CTF, F, T0, DEBUG=False):
 	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time
 	from statistics  import k_means_open_im, k_means_criterion, k_means_headlog
 	from statistics  import k_means_classical, k_means_SSE
@@ -3679,7 +3680,7 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 	N       = EMUtil.get_image_count(stack)								
 
 	print_begin_msg('k-means groups')
-	k_means_headlog(stack, '', opt_method, N, [K1, K2], crit_name, maskname, trials, maxit, CTF, T0, F, SA2, rand_seed, 1)
+	k_means_headlog(stack, '', opt_method, N, [K1, K2], crit_name, maskname, trials, maxit, CTF, T0, F, rand_seed, 1)
 	
 	[im_M, mask, ctf, ctf2] = k_means_open_im(stack, maskname, 0, N, N, CTF, BDB)
 	
@@ -3735,8 +3736,8 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 		ct_rnd   = 0
 		while flag_run:
 			try:
-				if opt_method   == 'cla': [Cls, assign] = k_means_classical(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
-				elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, SA2, DEBUG)
+				if opt_method   == 'cla': [Cls, assign] = k_means_classical(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
+				elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
 				else:			  ERROR('Kind of k-means unknown', 'k_means_groups', 1)
 				flag_run = False
 			except SystemExit:
@@ -3819,7 +3820,7 @@ def k_means_groups_serial(stack, out_file, maskname, opt_method, K1, K2, rand_se
 	return Crit, KK
 
 # to figure out the number of clusters MPI version
-def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit_name, CTF, F, T0, SA2):
+def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed, maxit, trials, crit_name, CTF, F, T0):
 	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time
 	from mpi 	 import MPI_COMM_WORLD, mpi_barrier
 	from statistics  import k_means_init_MPI, k_means_open_im, k_means_criterion, k_means_headlog
@@ -3846,7 +3847,7 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 		t_start = time.time()
 
 		print_begin_msg('k-means groups')
-		k_means_headlog(stack, '', opt_method, N, [K1, K2], crit_name, maskname, trials, maxit, CTF, T0, F, SA2, rand_seed, ncpu)
+		k_means_headlog(stack, '', opt_method, N, [K1, K2], crit_name, maskname, trials, maxit, CTF, T0, F, rand_seed, ncpu)
 		
 		# watch file
 		out = open(out_file + '/WATCH_GRP_KMEANS', 'w')
@@ -3907,9 +3908,9 @@ def k_means_groups_MPI(stack, out_file, maskname, opt_method, K1, K2, rand_seed,
 		while flag_run:
 			try:
 				if   opt_method == 'cla':
-					[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0, SA2)
+					[Cls, assign] = k_means_cla_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, N_start, N_stop, F, T0)
 				elif opt_method == 'SSE':
-					[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, ncpu, N_start, N_stop, F, T0, SA2)
+					[Cls, assign] = k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], myid, main_node, ncpu, N_start, N_stop, F, T0)
 				else:   ERROR('kind of k-means unknown', 'k_means_groups', 1)
 				flag_run = False
 			except SystemExit:
