@@ -418,14 +418,14 @@ def num_cpus():
 			else: return cores
 		except:
 			return 1
-	elif plaform_string == "Darwin":
+	elif platform_string == "Darwin":
 		import subprocess
 		try:
-			process = subprocess.Popen(["systctl","hw.logicalcpu"],stdout=PIPE,stderr=subprocess.STDOUT)
+			process = subprocess.Popen(["sysctl","hw.logicalcpu"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
 			while process.poll():
 				pass
 			a = process.stdout.readlines()
-			split = a.split()
+			split = a[0].split()
 			cores = int(split[-1])
 			if cores < 1: return 1 # just for safety
 			else: return cores
