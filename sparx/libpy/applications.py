@@ -4373,6 +4373,10 @@ def eqproj_cascaded_ccc(args, data):
 	return v, [s2x, s2y]
 
 
+
+def twoD_fine_search(args, data):
+	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
+
 def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center = 1, maxit = 10, 
            CTF = False, snr = 1.0, sym="c1", chunk = -1.0, user_func_name="ref_ali3d", MPI = False, 
 	   debug = False):
