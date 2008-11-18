@@ -420,17 +420,17 @@ def num_cpus():
 			return 1
 	elif platform_string == "Darwin":
 		import subprocess
-		try:
-			process = subprocess.Popen(["sysctl","hw.logicalcpu"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-			while process.poll():
-				pass
-			a = process.stdout.readlines()
-			split = a[0].split()
-			cores = int(split[-1])
-			if cores < 1: return 1 # just for safety
-			else: return cores
-		except:
-			return 1
+		process = subprocess.Popen(["sysctl","hw.logicalcpu"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+		while True:
+			try:
+				os.waitpid(process.pid,0)
+				break
+			except: pass
+		a = process.stdout.readlines()
+		split = a[0].split()
+		cores = int(split[-1])
+		if cores < 1: return 1 # just for safety
+		else: return cores
 	else:
 		print "error, in num_cpus - uknown platform string:",platform_string," - returning 1"
 		return 1
