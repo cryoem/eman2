@@ -8036,8 +8036,8 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		if(CTF):	 proj.set_attr('ctf_applied', 1)
 		re_prjlist.append(proj)
 	del volft
-	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
-	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
+	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	if myid == 0 :
 		vol_ssnr2.write_image( "ssnr2.hdf", 0)
 		outf = file("ssnr_text_file2", "w")
