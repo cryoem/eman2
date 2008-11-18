@@ -63,10 +63,11 @@ def prl(vol, params, radius, stack = None):
 	else:      return out
 """
 def prj(vol, params, stack = None):
+	from utilities import set_params_proj
 	volft,kb = prep_vol(vol)
 	for i in xrange(len(params)):
 		proj = prgs(volft, kb, params[i])
-		proj.set_attr_dict({'phi':params[i][0], 'theta':params[i][1], 'psi':params[i][2], 's2x':-params[i][3], 's2y':-params[i][4]})
+		proj.set_arams_proj(params)
 		proj.set_attr_dict({'active':1, 'ctf_applied':0})
 		if(stack):
 			proj.write_image(stack, i)
@@ -79,6 +80,7 @@ def prj(vol, params, stack = None):
 def prgs(volft, kb, params):
 	#  params:  phi, theta, psi, sx, sy
 	from fundamentals import fft
+	from utilities import set_params_proj
 	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
 	temp = volft.extract_plane(R,kb)
 	temp.fft_shuffle()
@@ -89,7 +91,7 @@ def prgs(volft, kb, params):
 				  "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
 		temp=Processor.EMFourierFilter(temp, filt_params)
 	temp.do_ift_inplace()
-	temp.set_attr_dict({'phi':params[0], 'theta':params[1], 'psi':params[2], 's2x':-params[3], 's2y':-params[4]})
+	temp.set_params_proj(params)
 	temp.set_attr_dict({'active':1, 'ctf_applied':0, 'npad':2})
 	temp.depad()
 	return temp

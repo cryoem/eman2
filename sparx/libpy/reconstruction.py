@@ -411,10 +411,9 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 				xform_proj = prj.get_attr( "xform.proj" )
 			if mask2D:
 				stats = Util.infomask(prj, mask2D, True)
-				proj = (prj - stats[0])*mask2D
-				r.insert_slice(proj, xform_proj)
-			else:
-				r.insert_slice(prj, xform_proj )
+				prj -= stats[0]
+				prj *= mask2D
+			r.insert_slice(prj, xform_proj )
 	#  WEI: what if none inserted
 	#from utilities import info
 	reduce_EMData_to_root(weight,  myid, 0)
@@ -426,8 +425,12 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		outlist = [[] for i in xrange(6)]
 		nn = SSNR.get_xsize()
 		for i in xrange(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
-		for i in xrange(1,nn): outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))   # SSNR
-		for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	  # variance
+		for i in xrange(1,nn):
+			if(SSNR(i,1,0) > 0.0):
+				outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))   # SSNR
+			else:
+				outlist[1].append(0.0)
+		for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
 		for i in xrange(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
 		for i in xrange(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 		for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
