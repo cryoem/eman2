@@ -3197,6 +3197,32 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.gauss_width_slider.setRange( -100, 100 )
 		self.gauss_width_slider.setValue( 0 )
 
+		# --------------------
+		# XXX CTF button
+		pawel_grid1.addWidget( QtGui.QLabel("Window size:"), 4,0 )
+		self.ctf_window_size = QtGui.QLineEdit("512", self)
+		pawel_grid1.addWidget( self.ctf_window_size , 4,1 )		
+
+		pawel_grid1.addWidget( QtGui.QLabel("Edge size:"), 5,0 )
+		self.ctf_edge_size = QtGui.QLineEdit("0", self)	
+		pawel_grid1.addWidget( self.ctf_edge_size , 5,1 )		
+
+		pawel_grid1.addWidget( QtGui.QLabel("Overlap:"), 6,0 )
+		self.ctf_overlap_size = QtGui.QLineEdit("50", self)	
+		pawel_grid1.addWidget( self.ctf_overlap_size , 6,1 )		
+
+		self.ctf_button =  QtGui.QPushButton("Estimate CTF")
+		pawel_grid1.addWidget( self.ctf_button, 7, 0)
+		self.connect(self.ctf_button,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
+
+		self.inspect_button =  QtGui.QPushButton("Inspect CTF")
+		pawel_grid1.addWidget( self.inspect_button, 7, 1)
+		self.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
+		self.ctf_inspector = None
+		self.ctf_inspector_gone=True
+		# XXX
+		# --------------------
+
 
 		self.pawel_option_vbox.addWidget( QtGui.QLabel("CCF Histogram") )
 		self.pawel_histogram = CcfHistogram( self )
@@ -3236,6 +3262,71 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.difbut, QtCore.SIGNAL("clicked(bool)"), self.cmp_box_changed)
 		self.connect(self.gauss_width_slider, QtCore.SIGNAL("valueChanged(int)"), self.gauss_width_changed)
 		self.connect(self.gauss_width, QtCore.SIGNAL("editingFinished()"), self.gauss_width_edited)
+		
+
+	# --------------------
+	# XXX: calculate ctf and defocus from current image		
+	def inspect_ctf(self):
+		if not(self.ctf_inspector):
+			self.ctf_inspector = CTFInspector(self)
+			self.ctf_inspector.show()
+			self.ctf_inspector_gone=False
+		else:
+			if (self.ctf_inspector_gone):
+				self.ctf_inspector.show()
+				self.ctf_inspector_gone=False
+			else:
+				pass
+			
+	def calc_ctf(self):
+		# calculate power spectrum of image with welch method (welch_pw2)
+		# calculate rotational average of power spectrum (rot_avg_table)
+		# calculate ctf values with ctf_get
+		print "starting CTF estimation"
+
+		# get the current image
+		image_name = self.target.boxable.get_image_name()
+		img = BigImageCache.get_image_directly( image_name )
+
+		# XXX: get parameters from gui
+		# conversion from text necessary
+		try:
+			ctf_window_size = int(self.ctf_window_size.text())
+			ctf_edge_size = int(self.ctf_edge_size.text())
+			ctf_overlap_size = int(self.ctf_overlap_size.text())
+		except ValueError,extras:
+			# conversion of a value failed!
+			print "integer conversion failed."
+			if not(extras.args is None):
+				print extras.args[0]
+			return
+		except:
+			print "error"
+			print self.ctf_window_size.text()
+			print self.ctf_overlap_size.text()
+			print self.ctf_edge_size.text()
+			return
+
+		print "determine power spectrum"
+		from fundamentals import welch_pw2
+		# XXX: check image dimensions, especially box size for welch_pw2!
+		power_sp = welch_pw2(img,win_size=ctf_window_size,overlp_x=ctf_overlap_size,overlp_y=ctf_overlap_size,
+				     edge_x=ctf_edge_size,edge_y=ctf_edge_size)
+		del img,image_name
+
+		print "averaging power spectrum"
+		from fundamentals import rot_avg_table
+		avg_sp = rot_avg_table(power_sp)
+		del power_sp
+
+		print "determine ctf"
+		from morphology import defocus_gett
+		ctf = defocus_gett(avg_sp)
+		del avg_sp
+		
+		print "CTF estimation done"
+	# XXX
+	# --------------------
 
 	def pawel_parm_changed(self, row, col ):
 		from string import atof
@@ -3386,6 +3477,85 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	def new_threshold(self,val):
 		#print "new threshold"
 		self.try_dummy_parameters()
+
+
+# --------------------
+# XXX: class for popup display of CTF. this is a rough prototype meant to be extended for full
+#    display of values and CTF.
+
+class CTFInspector(QtGui.QWidget):
+
+	def __init__(self,parent) :
+		QtGui.QWidget.__init__(self) 
+		# we need to keep track of our parent to signal when we are gone again....
+		self.parent = parent
+		self.setGeometry(300, 300, 250, 150)
+		self.setWindowTitle("CTF Inspector")
+
+		# test data, to ensure something is displayed even if no data is set yet. this is
+		#    for development only and can be removed later.....
+		self.data = [80,20,10,9,8,7,6,5,4,3,2,1,0,0,0,0,0]
+
+
+	def setData(self,data):
+		# check data type is a list and break, if not
+		if not(type(data) is list):
+			return False
+		
+		# free previous and reset our data to the passed list
+		del self.data
+		self.data = [i for i in data]
+		# return success
+		return True
+		
+	def paintEvent(self,event):
+		h=self.height()
+		w=self.width()
+
+		hborder = int (h / 15.0)
+		wborder = int (w / 15.0)
+
+		p=QtGui.QPainter()
+		p.begin(self)
+		p.setBackground(QtGui.QColor(16,16,16))
+		p.eraseRect(0,0,self.width(),self.height())
+		p.setPen(Qt.yellow)
+
+		if not(self.data == []):
+			# scaling factors in x and y, respectively. margins are left around the plot,
+			#    stepw along x and 10% of height in y... explicit conversion is necessary,
+			#    since we are working with ints....
+			stepw = float(w-2*wborder) / float(len(self.data))
+			steph = float(h-2*hborder) / float(max(self.data)) 
+			
+			for index in xrange(len(self.data)):
+				# skip first point, since there is no previous point to connect to
+				if (0 == index):
+					continue
+				else:
+					# determine coords, relative to top left (0,0)
+					#    and margin around the plot itself.
+					oldx = int(wborder+stepw * (index-1))
+					newx = int(wborder+stepw * (index))
+					oldy = int(h-hborder-steph*self.data[index-1])
+					newy = int(h-hborder-steph*self.data[index])
+					
+					p.drawLine(oldx,oldy,newx,newy)
+		p.end()
+
+	# closing the window is tricky: we need to notify the parent window we are gone, but
+	#    cannot set parent.ctf_inspector directly, since that would destroy ourselves in
+	#    the middle of the event handler, prompting an error. instead, we set a flag in
+	#    the parent object and let it handle destroying, resetting or updating when
+	#    it becomes necessary....
+	def closeEvent(self,event):
+		# set the flag of our parent object
+		self.parent.ctf_inspector_gone=True
+		# and close ourselves by accepting the event....
+		event.accept()
+
+# XXX
+# --------------------
 
 if __name__ == "__main__":
 	main()
