@@ -38,24 +38,37 @@ from emsprworkflow import *
 from emselector import EMBrowserModule
 from e2boxer import EMBoxerModule
 from EMAN2 import HOMEDB
+from emanimationutil import Animator
 
 
 class EMTaskMonitorModule(object):
 	def __new__(cls,application):
-		widget = TaskMonitorWidget(application)
+		widget = EMTaskMonitorWidget(application)
 		widget.resize(200,200)
 		module = EMQtWidgetModule(widget,application)
 		application.show_specific(module)
 		return module
 
-class TaskMonitorWidget(QtGui.QWidget):
+class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 	def get_desktop_hint(self):
-		return "task_related"
+		return "inspector"
 	
 	def __init__(self,application):
 		QtGui.QWidget.__init__(self,None)
-		
-		self.init_history_db_entries = HOMEDB.history["count"]
+		Animator.__init__(self)
+		# animation specific
+		self.timer_interval = 500 # half a second time interval
+		self.register_animatable(self)
+		# remember the number of entries in the history db when this was initialized
+		# so that keeping track of processes using pids is more efficient
+		try: self.init_history_db_entries = HOMEDB.history["count"]
+		except: self.init_history_db_entries = 0
+		print self.init_history_db_entries
+		self.project_db = db_open_dict("bdb:project")
+		self.current_process_info = self.project_db.get("workflow.process_ids",{})
+		#self.current_process_info = {}
+		self.entries_dict = {}
+		self.history_check = []
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -79,20 +92,65 @@ class TaskMonitorWidget(QtGui.QWidget):
 		self.groupbox.setToolTip("This is a list of currently running tasks.")
 		self.groupbox.setLayout(self.vbl2)
 		self.vbl.addWidget(self.groupbox)
+		
+		self.set_entries(self.entries_dict)
 	
+	def animate(self,time):
+		for i,pid in enumerate(self.history_check):
+			for j in range(self.init_history_db_entries+1,HOMEDB.history["count"]+1):
+				try:
+					if HOMEDB.history[j]["pid"] == pid:
+						self.current_process_info[j] = HOMEDB.history[j]
+						self.history_check.pop(i) # ok what if two are ended at the same time? oh well there is time lag...
+						self.project_db ["workflow.process_ids"] = self.current_process_info
+						self.set_entries(self.entries_dict)
+						return True
+				except:
+					continue
+		
+		
+		for key in self.current_process_info.keys():
+			if HOMEDB.history[key].has_key("end"):
+				self.current_process_info.pop(key)
+				self.set_entries(self.entries_dict)
+				self.project_db ["workflow.process_ids"] = self.current_process_info
+				return True
+		
+		return True
+				
+			
 	def set_entries(self,entries_dict):
 		self.entries_dict=entries_dict
 		self.list_widget.clear()
 		for val in entries_dict:
 			a = QtGui.QListWidgetItem(val,self.list_widget)
+		self.list_processes()
+		
+	def list_processes(self):
+		for key in self.current_process_info.keys():
+			print key
+			a =  QtGui.QListWidgetItem(str(self.current_process_info[key]["pid"]),self.list_widget)
+	
+	def accrue_process_info(self):
+		
+		for i in range(len(self.current_process_info),len(self.current_processes)):
+			for j in range(self.init_history_db_entries,HOMEDB.history["count"]):
+				print db[j]["pid"],self.current_processes[i]
+				
+	
+	def add_process(self,pid):
+		
+		self.history_check.append(pid) # the program hasn't added the entry to the db (There is lag)
+				
+		
 			
 	def list_widget_item_clicked(self,item):
 		print "item clicked",item
 	
 
 class EMWorkFlowSelector(object):
-	def __new__(cls,parent,application):
-		widget = EMWorkFlowSelectorWidget(parent,application)
+	def __new__(cls,parent,application,task_monitor):
+		widget = EMWorkFlowSelectorWidget(parent,application,task_monitor)
 		widget.resize(200,200)
 		#gl_view = EMQtGLView(EMDesktop.main_widget,widget)
 		module = EMQtWidgetModule(widget,application)
@@ -104,10 +162,16 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def get_desktop_hint(self):
 		return "inspector"
 	
-	def __init__(self,target,application):
+	def __init__(self,target,application,task_monitor):
+		'''
+		Target is not really currently used
+		application is required
+		task_monitor should probably be supplied, it should be an instance of a EMTaskMonitorWidget
+		'''
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		self.application = application
+		self.task_monitor = task_monitor
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -350,6 +414,7 @@ class TaskEventsManager:
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("task_idle"), self.on_task_idle) # this typically gets emitted when the user hits ok or cancel on the 
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("gui_running"),self.on_gui_running) # this one 
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("gui_exit"),self.on_gui_exit)
+		QtCore.QObject.connect(self.task, QtCore.SIGNAL("process_started"), self.on_process_started)
 #		
 	def on_gui_running(self):
 		''' 
@@ -363,13 +428,18 @@ class TaskEventsManager:
 	def on_task_idle(self):
 		self.selector.pop_task_event_pair(self.key)
 		
+	def on_process_started(self,pid):
+		print "process started"
+		self.selector.task_monitor.add_process(pid)
+		
 
 class EMWorkFlowManager:
 	def __init__(self,application):
 		self.application = application
-		self.selector = EMWorkFlowSelector(self,application)
+		
 	
 		self.task_monitor = EMTaskMonitorModule(em_app)
+		self.selector = EMWorkFlowSelector(self,application,self.task_monitor.qt_widget)
 		QtCore.QObject.connect(self.selector.qt_widget, QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
 	
 	

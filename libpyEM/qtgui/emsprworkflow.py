@@ -665,10 +665,10 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 			print args
 			file = open("e2ctf_autofit_stdout.txt","w+")
 			process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
-			
+			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
-			self.emit(QtCore.SIGNAL("process_started"),process.pid)
+			
 		else:
 			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))

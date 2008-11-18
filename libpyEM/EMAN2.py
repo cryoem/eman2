@@ -395,6 +395,50 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 			try: os.system("display "+path)
 			except: pass
 
+def num_cpus():
+	import platform
+	platform_string = platform.system()
+	if platform_string == "Linux":
+		try:
+			f = open("/proc/cpuinfo")
+			a = f.readlines()
+			split = a[11].split()
+			if split[0] == "cpu" and split[1] == "cores":
+				cores = int(split[-1])
+				if cores < 1: return 1 # just for safety
+				else: return cores
+			else:
+				return 1
+		except:
+			return 1
+	elif platform_string == "Windows":
+		try:
+			cores = os.getenv("NUMBER_OF_PROCESSORS")
+			if cores < 1: return 1 # just for safety
+			else: return cores
+		except:
+			return 1
+	elif plaform_string == "Darwin":
+		import subprocess
+		try:
+			process = subprocess.Popen(["systctl","hw.logicalcpu"],stdout=PIPE,stderr=subprocess.STDOUT)
+			while process.poll():
+				pass
+			a = process.stdout.readlines()
+			split = a.split()
+			cores = int(split[-1])
+			if cores < 1: return 1 # just for safety
+			else: return cores
+		except:
+			return 1
+	else:
+		print "error, in num_cpus - uknown platform string:",platform_string," - returning 1"
+		return 1
+
+		
+			
+		 
+
 # Get the uniform dimension of the (square) input images. For instance
 # if the images are all 128x128 this will return 128. If the dimensions of the
 # images are not uniform an error is printed and the program exits.

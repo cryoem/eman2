@@ -47,7 +47,7 @@ import numpy
 
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
-from PyQt4.QtCore import QTimer
+#from PyQt4.QtCore import QTimer
 import math
 
 from emglobjects import Camera,EMGLProjectionViewMatrices
