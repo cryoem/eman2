@@ -1706,7 +1706,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 		data[im-image_start].set_attr('ID', im)
 		if(CTF):
 			ctf_params = data[im-image_start].get_attr( "ctf" )
-			if(data[im-image_store].get_attr("ctf_applied") == 0):
+			if(data[im-image_start].get_attr("ctf_applied") == 0):
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
 				from filter import filt_ctf
@@ -1838,8 +1838,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 					print_msg(msg)
 				# write the current average
 				TMP = []
-				for i_tmp in xrange(len(assign[j])):
-					TMP.append(float(assign[j][i_tmp]))
+				for i_tmp in xrange(len(assign[j])): TMP.append(float(assign[j][i_tmp]))
 				TMP.sort()
 				refi[j][0].set_attr_dict({'ave_n': refi[j][2],  'members': TMP })
 				del TMP
