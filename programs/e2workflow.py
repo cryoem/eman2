@@ -37,7 +37,7 @@ from emapplication import EMQtWidgetModule,ModuleEventsManager
 from emsprworkflow import *
 from emselector import EMBrowserModule
 from e2boxer import EMBoxerModule
-
+from EMAN2 import HOMEDB
 
 
 class EMTaskMonitorModule(object):
@@ -54,6 +54,8 @@ class TaskMonitorWidget(QtGui.QWidget):
 	
 	def __init__(self,application):
 		QtGui.QWidget.__init__(self,None)
+		
+		self.init_history_db_entries = HOMEDB.history["count"]
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -152,6 +154,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		ctf_list = []
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Automatic fitting - e2ctf")))
+		self.launchers["Automatic fitting - e2ctf"] = self.launch_e2ctf_auto_ft
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive tuning - e2ctf")))
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2ctf")))
 		ctf.addChildren(ctf_list)
@@ -219,6 +222,9 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 				return
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
+	
+	def launch_e2ctf_auto_ft(self):
+		self.launch_task(E2CTFAutoFitTask,"e2ctf_auto")
 	
 	def launch_e2ctf_management(self):
 		self.launch_task(E2CTFTask,"e2ctf")
@@ -365,7 +371,7 @@ class EMWorkFlowManager:
 	
 		self.task_monitor = EMTaskMonitorModule(em_app)
 		QtCore.QObject.connect(self.selector.qt_widget, QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
-	#window = sprinit.run_form() 
+	
 	
 	def close(self):
 		self.application.close_specific(self.selector)
@@ -376,8 +382,6 @@ if __name__ == '__main__':
 	from emapplication import EMStandAloneApplication
 	em_app = EMStandAloneApplication()
 	sprinit = EMWorkFlowManager(em_app)
-	
-	
 	
 	#em_app.show()
 	em_app.execute()	

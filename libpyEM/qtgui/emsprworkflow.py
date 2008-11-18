@@ -40,7 +40,7 @@ import copy
 from emapplication import EMProgressDialogModule
 from e2boxer import EMBoxerModule
 from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output
-
+import subprocess
 class EmptyObject:
 	'''
 	This just because I need an object I can assign attributes to, and object() doesn't seem to work
@@ -99,6 +99,12 @@ class WorkFlowTask(QtCore.QObject):
 			db["global.microscope_cs"] = value
 		else:
 			pass
+	def get_wd(self):
+		'''
+		Get the working directory, originally introduced to provide a centralized mechanism for accessing the working directory,
+		specificially for the purpose of spawning processes. Could be used more generally, however.
+		'''
+		return os.getcwd()
 
 class ParticleWorkFlowTask(WorkFlowTask):
 	'''
@@ -546,6 +552,168 @@ class CTFWorkFlowTask(ParticleWorkFlowTask):
 		else:
 			print "empty, empty"
 			return []
+
+class E2CTFAutoFitTask(CTFWorkFlowTask):	
+	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
+	
+	def __init__(self,application):
+		CTFWorkFlowTask.__init__(self,application)
+		self.window_title = "e2ctf auto fit"
+		self.options = None # will enventually store e2ctf options
+		self.gui = None # will eventually be a e2ctf gui
+
+	def get_params(self):
+		params = []		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFTask.documentation_string,choices=None))
+		
+		params.append(self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False)))
+		
+		project_db = db_open_dict("bdb:project")
+		ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
+		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
+		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
+		pac = ParamDef(name="working_ac",vartype="float",desc_short="Amplitude contrast",desc_long="The amplitude contrast constant. It is recommended that this value is identical in all of your images.",property=None,defaultunits=ctf_misc_db.get("working_ac",dfl=10),choices=None)
+		pos = ParamDef(name="working_oversamp",vartype="int",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=ctf_misc_db.get("working_oversamp",dfl=1),choices=None)
+		
+		
+		params.append(papix)
+		params.append(pvolt)
+		params.append(pcs)
+		params.append(pac)
+		params.append(pos)
+		
+		return params
+	
+	def get_default_ctf_options(self,params):
+		'''
+		These are the options required to run pspec_and_ctf_fit in e2ctf.py
+		'''
+		
+		if not params.has_key("filenames") and len(params["filenames"]) == 0:
+			print "there is an internal error. You are asking for the default ctf options but there are no filenames to deduce the bgmask option from" # this shouldn't happen
+			return None
+		
+		
+		options = EmptyObject()
+		options.nosmooth = False
+		options.nonorm = False
+		options.autohp = False
+		options.invert = False
+		
+		filenames = params["filenames"]
+		
+		boxsize = None
+		db_file_names = []
+		for i,name in enumerate(filenames):
+			db_name="bdb:particles#"+name
+			db_file_names.append(db_name)
+			if not db_check_dict(db_name):
+				print "error, can't particle entry doesn't exist for",name,"aborting."
+				return None
+			
+			if boxsize == None:
+				db = db_open_dict(db_name)
+				hdr = db.get_header(0)
+				boxsize = hdr["nx"] # no consideration is given for non square images
+			else:
+				db = db_open_dict(db_name)
+				hdr = db.get_header(0)
+				if boxsize != hdr["nx"]: # no consideration is given for non square images
+					print "error, can't run e2ctf on images with different box sizes. Specifically, I can not deduce the bgmask option for the group"
+					return None
+		
+		if boxsize == None or boxsize < 2:
+			print "error, boxsize is less than 2"
+			return None
+		
+		options.bgmask = boxsize/2
+		options.oversamp = params["working_oversamp"]
+		options.ac = params["working_ac"]
+		options.apix = params["global.apix"]
+		options.cs = params["global.microscope_cs"]
+		options.voltage = params["global.microscope_voltage"]
+		options.filenames = db_file_names
+		
+		return options
+
+	
+	def on_form_ok(self,params):
+		for k,v in params.items():
+			if k != "blurb": self.write_db_entry(k,v)
+		
+		self.options = self.get_default_ctf_options(params)
+		if self.options != None:
+			options = self.options
+			args = ["e2ctf.py"]
+	
+			for name in options.filenames:
+				args.append(name)
+			
+			for string in ["bgmask","oversamp","ac","apix","cs","voltage"]:
+				args.append("--"+string+"="+str(getattr(options,string)))
+
+			# okay the user can't currently change these, but in future the option might be there
+			for string in ["nosmooth","nonorm","autohp","invert"]:
+				# these are all booleans so the following works:
+				if getattr(options,string):
+					args.append("--"+string)
+			args.append("--auto_fit")
+			#print "command is ",program
+			#for i in args: print i
+			
+			print args
+			file = open("e2ctf_autofit_stdout.txt","w+")
+			process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
+			
+			self.application.close_specific(self.form)
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.emit(QtCore.SIGNAL("process_started"),process.pid)
+		else:
+			self.application.close_specific(self.form)
+			self.emit(QtCore.SIGNAL("task_idle"))
+			
+			
+#		self.options = self.get_default_ctf_options(params)
+#		if self.options != None:
+#			img_sets = pspec_and_ctf_fit(self.options)
+#		
+#			if self.options.gui:
+#				self.gui=GUIctfModule(self.application,img_sets)
+#				self.application.show_specific(self.gui)
+#				self.application.close_specific(self.form)
+#				QtCore.QObject.connect(self.gui.qt_widget,QtCore.SIGNAL("module_closed"), self.on_ctf_closed())
+#				self.emit(QtCore.SIGNAL("gui_running")) # 
+#			else:
+#				write_e2ctf_output(self.options)
+#				self.application.close_specific(self.form)
+#				self.emit(QtCore.SIGNAL("task_idle"))
+#		else:
+#			self.application.close_specific(self.form)
+#			self.emit(QtCore.SIGNAL("task_idle"))
+	
+	def on_ctf_closed(self):
+		self.gui = None
+		write_e2ctf_output(self.options)
+		self.options = None
+		self.emit(QtCore.SIGNAL("gui_exit")) #
+		
+	def on_form_close(self):
+		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+		if self.gui == None:
+			self.emit(QtCore.SIGNAL("task_idle"))
+		else: pass
+
+	def write_db_entry(self,key,value):
+		if key == "working_ac":
+			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+			ctf_misc_db["working_ac"] = value
+		elif key == "working_oversamp":
+			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+			ctf_misc_db["working_oversamp"] = value
+		else:
+			# there are some general parameters that need writing:
+			WorkFlowTask.write_db_entry(self,key,value)
 
 class E2CTFTask(CTFWorkFlowTask):	
 	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"

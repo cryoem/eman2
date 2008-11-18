@@ -80,10 +80,9 @@ images far from focus."""
 	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
 	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Can improve B-factor determination.",default=None)
 	parser.add_option("--debug",action="store_true",default=False)
-
+	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
-
 	if options.voltage==0 : parser.error("Please specify voltage")
 	if options.cs==0 : parser.error("Please specify Cs")
 	if options.apix==0 : parser.error("Please specify A/Pix")
