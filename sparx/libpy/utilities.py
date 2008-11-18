@@ -2326,7 +2326,6 @@ def write_header(filename, data, lima):
 	if ftp == "bdb":
 		DB = db_open_dict(filename)
 		DB.set_header(lima, data)
-		DB.close()
 	elif ftp == "hdf":
 		data.write_image(filename, lima, EMUtil.ImageType.IMAGE_HDF, True)
 	else:
