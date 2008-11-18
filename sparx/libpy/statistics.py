@@ -1294,11 +1294,10 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 	nz = im.get_zsize()
 	
 	if CTF:
-		parnames    = ('Pixel_size', 'defocus', 'voltage', 'Cs', 'amp_contrast', 'B_factor',  'ctf_applied')
 		ctf	    = [[] for i in xrange(N)]
 		ctf2        = [[] for i in xrange(N)]
-		ctf_params  = get_arb_params(im, parnames)
-		if ctf_params[6]: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+		ctf_params  = im.get_attr( "ctf" )
+		if im.get_attr("ctf_applied")>0.0: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
 	if maskname != None:
 		if isinstance(maskname, basestring):
@@ -1324,8 +1323,8 @@ def k_means_open_im(stack, maskname, N_start, N_stop, N, CTF):
 		# obtain ctf
 		if CTF:
 			ctf_params = get_arb_params(image, parnames)
-			ctf[i]  = ctf_1d(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
-			ctf2[i] = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf[i]  = ctf_1d(nx, ctf_params)
+			ctf2[i] = ctf_2(nx, ctf_params)
 
 		# apply mask
 		if mask != None:

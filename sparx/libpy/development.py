@@ -7276,9 +7276,9 @@ def k_means_open_unstable(stack, maskname, CTF):
 			im = rot_shift2D(im, alpha, sx, sy, mirror)
 		# obtain ctf
 		if CTF:
-			ctf_params = get_arb_params(im, parnames)
-			ctf[i]  = ctf_1d(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
-			ctf2[i] = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf_params = im.get_attr( "ctf" )
+			ctf[i]  = ctf_1d(nx, ctf_params)
+			ctf2[i] = ctf_2(nx, ctf_params)
 
 		# apply mask
 		if mask != None:
@@ -7571,11 +7571,9 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	data = [[] for i in xrange(NG)]
 	all_data = []
 	if(CTF):
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
-		#                        0                1              2     3              4                5                6
-		ctf_params = get_arb_params(ima, parnames)
-		data_had_ctf = ctf_params[6]
-		ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+		ctf_params = ima.get_attr( "ctf" )
+		data_had_ctf = ima.get_attr( "ctf_applied" )
+		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = [[[0.0]*lctf for j in xrange(2)] for i in xrange(NG)]
 		ctfb2 = [[0.0]*lctf for i in xrange(NG)]
@@ -7584,16 +7582,16 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 		ima = EMData()
 		ima.read_image(stack, im)
 		if(CTF):
-			ctf_params = get_arb_params(ima, parnames)
-			ctm = ctf_2(nx, ctf_params[0], ctf_params[1], ctf_params[2], ctf_params[3], ctf_params[4], ctf_params[5])
+			ctf_params = ima.get_attr( "ctf" )
+			ctm = ctf_2(nx, ctf_params)
 			kl = (im//2)%NG  # not sure it will work for NG>2
 			for i in xrange(lctf):
 				ctf2[k][kl][i] += ctm[i]
-			if(ctf_params[6] == 0):
+			if(ima.get_attr("ctf_applied") == 0):
 				st = Util.infomask(ima, mask, False)
 				ima -= st[0]
 				#      filt_ctf(image,	     dz,		  cs,		   voltage,	     pixel_size,     amp_contrast=0.1,	  b_factor=0.0):
-				ima = filt_ctf(ima, ctf_params[1], ctf_params[3], ctf_params[2], ctf_params[0], ctf_params[4], ctf_params[5])
+				ima = filt_ctf(ima, ctf_params)
 				ima.set_attr('ctf_applied', 1)
 		data[k].append(ima)
 
@@ -10984,10 +10982,9 @@ def proj_ali_incore_localB(volref, mask3D, projdata, first_ring, last_ring, rste
 			info.flush()
 		# This is for Berlin only
 		from utilities import get_arb_params
-		ctf_dicts = ["defocus", "Cs", "voltage", "Pixel_size", "amp_contrast", "B_factor", "ctf_applied" ]
 		ctf_params = projdata[imn].get_attr('ctf')
 		from morphology import ctf_2
-		ctf2 = ctf_2(nx, ctf_params.apix, ctf_params.defocus)
+		ctf2 = ctf_2(nx, ctf_params)
 		nct = len(ctf2)
 		from math import exp
 		envt = []
