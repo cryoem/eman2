@@ -2679,12 +2679,12 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 
 def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
-            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta="10 6 4 4", an="-1", 
-	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym="c1",
-	    user_func_name="ref_ali3d", MPI=False, pinfo = False):
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", 
+	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
+	    user_func_name = "ref_ali3d", debug = False, MPI=False):
 	if MPI:
 		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
-	      delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, pinfo)
+	        	delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, debug)
 		return
 
 	from utilities      import model_circle, drop_image, get_image, get_input_from_string
@@ -2700,9 +2700,6 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
-	if CTF:	from reconstruction import recons3d_4nn_ctf
-	else: from reconstruction import recons3d_4nn
-
 	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 	os.mkdir(outdir)
 
@@ -2714,8 +2711,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 	if an == "-1":
 		from alignment import proj_ali_incore
-		an = []
-		for i in xrange(lstp):   an.append(-1)
+		an = [-1] * lstp
 	else:
 		from alignment import proj_ali_incore_local
 		an = get_input_from_string(an)
@@ -2756,7 +2752,10 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	else          :   mask3D = model_circle(last_ring, nx, nx, nx)
 	mask = model_circle(last_ring, nx, nx)
 
-	if pinfo:  outf = file(os.path.join(outdir, "progress"), "w")
+	if CTF:	from reconstruction import recons3d_4nn_ctf
+	else: from reconstruction import recons3d_4nn
+
+	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
 	else:      outf = None
 
 	active = EMUtil.get_all_attributes(stack, 'active')
@@ -2838,9 +2837,11 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				for im in xrange(nima): data[im].set_attr('ctf_applied', 1)
 	print_end_msg("ali3d_d")
 
+
 def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
-            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an="-1",
-	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a="S", sym="c1", user_func_name="ref_ali3d", debug=False):
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1",
+	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1", 
+	    user_func_name = "ref_ali3d", debug = False):
 
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
@@ -2861,7 +2862,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
-	from string import replace
+
 	if debug:
 		info_file = outdir+("/progress%04d"%myid)
 		finfo = open(info_file, 'w')
@@ -2876,8 +2877,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 	if an == "-1":
 		from alignment      import proj_ali_incore
-		an = []
-		for i in xrange(lstp):   an.append(-1)
+		an = [-1] * lstp
 	else:
 		from  alignment	    import proj_ali_incore_local
 		an      = get_input_from_string(an)
@@ -3008,7 +3008,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 					mpi_send(ali_params_old, n_params, MPI_FLOAT, main_node, myid, MPI_COMM_WORLD)
 				
 			if myid == main_node:
-				drop_image(vol,  os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
+				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
 				ref_data[2] = vol
 				ref_data[3] = fscc
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
@@ -3316,7 +3316,6 @@ def ali3d_m_MPI(stack, ref_vol, outdir, maskfile = None, ir=1, ou=-1, rs=1,
 	from projection     import prep_vol, prgs
 	import os
 	import types
-	from string         import replace
 	from mpi            import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
