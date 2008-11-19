@@ -1827,6 +1827,34 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 		for ir in xrange(nr):  table.append([sum_ima.get_value_at(ir)])
 		drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
 
+
+def estimate_3D_center(ali_params):
+	from math import cos, sin, pi
+	from numpy import matrix
+	from numpy import linalg
+	
+	N = len(ali_params)
+	A = []
+	b = []
+	
+	for i in xrange(N):
+		phi_rad = ali_params[i][0]/180*pi
+		theta_rad = ali_params[i][1]/180*pi
+		psi_rad = ali_params[i][2]/180*pi
+		A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad), 
+			cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
+		A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad), 
+			-sin(psi_rad)*cos(theta_rad)*sin(phi_rad)+cos(psi_rad)*cos(phi_rad), sin(psi_rad)*sin(theta_rad), 0, 1])	
+		b.append([ali_params[i][3]])
+		b.append([ali_params[i][4]])
+	
+	A_mat = matrix(A)
+	b_max = matrix(b)
+
+	K = linalg.solve(A_mat.T*A_mat, A_mat.T*b)
+	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
+
+
 def rotate_3D_shift(data, shift3d):
 	from utilities import compose_transform3,get_params_proj, set_params_proj
 

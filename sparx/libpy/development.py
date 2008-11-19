@@ -1230,13 +1230,10 @@ def ali3d_e_G2(stack, ref_vol, outdir, maskfile, radius=-1, snr=1.0, dtheta=2, m
 			dataim[im].write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
 	return total_time, total_time2
 			
-def twoD_fine_search(args, data):
-	return data[0].get_pixel_conv7(args[0]*2, args[1]*2, 0.0, data[1])
-
 def eqprojG3(args, data):
 	from utilities import amoeba
 	from fundamentals import ccf
-	from development import twoD_fine_search
+	from applications import twoD_fine_search
 	
 	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
 	temp = data[0].extract_plane(R, data[1])

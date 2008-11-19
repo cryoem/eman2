@@ -179,9 +179,9 @@ def ref_ali3d( ref_data ):
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = filt_tanl(volf, fl, aa)
-	if(ref_data[1] == 1):
-		cs    = volf.phase_cog()
-		msg = "Center x =	%10.3f        Center y       = %10.3f        Center z       = %10.3f\n"%(cs[0], cs[1], cs[2])
+	if ref_data[1] == 1:
+		cs = volf.phase_cog()
+		msg = "Center x =       %10.3f        Center y =       %10.3f        Center z =       %10.3f\n"%(cs[0], cs[1], cs[2])
 		print_msg(msg)
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs

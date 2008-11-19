@@ -53,6 +53,9 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	else:	
 		is_string = False
 		if(len(list_p) == 0): list_p = range(len(data))
+		
+	sx_sum = 0.0
+	sy_sum = 0.0
 	
 	for im in list_p:
 		if is_string:
@@ -104,10 +107,17 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(ima2, [alphan, sxn, syn, mn, 1.0])
+
+		if mn == 0: sx_sum += sxn
+		else: sx_sum -= sxn
+		sy_sum += syn
+
 		if is_string:
 			ima2.write_image(data, im, EMUtil.ImageType.IMAGE_HDF, True)
 		else:
 			data[im] = ima2.copy()
+	
+	return sx_sum, sy_sum
 			
 
 def ang_n(tot, mode, maxrin):
@@ -797,7 +807,7 @@ def proj_ali_incore(volref, mask3D, projdata, first_ring, last_ring, rstep, xrng
                         psi   = (ref_angles[numref][2]+angb+360.0)%360.0
                         s2x   = sxb + sxo
                         s2y   = syb + syo
-		set_params_proj( projdata[imn], [phi, theta, psi, s2x, s2y] )
+		set_params_proj(projdata[imn], [phi, theta, psi, s2x, s2y])
 		projdata[imn].set_attr('peak', peak)
 		if not (finfo is None):
 			finfo.write( "proj %4d new params: %8.3f %8.3f %8.3f %8.3f %8.3f\n" %(imn, phi, theta, psi, s2x, s2y) )
