@@ -47,13 +47,13 @@ def main():
 	usage = progname + " prj_stack vol_stack [begin end step] --CTF --npad=ntimes_padding --snr=signal_noise_ratio --sym=symmetry --verbose=(0|1) --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--CTF", action="store_true", default=False, help=" Apply CTF correction")
-	parser.add_option("--npad", type="int", default=4, help="number of times padding" )
-	parser.add_option("--snr",  type="float",   default=1.0, help="Signal-to-Noise Ratio" )
-	parser.add_option("--sym",  type="string",  default="c1", help="symmetry" )
-	parser.add_option("--list",  type="string",  help="file with list of images to be used in the first column" )
-	parser.add_option("--verbose", type="int", default=0, help="verbose level: 0 no verbose, 1 verbose" )
-	parser.add_option("--MPI", action="store_true", default=False,     help="  whether using MPI version ")
+	parser.add_option("--CTF",     action="store_true", default=False, help="apply CTF correction")
+	parser.add_option("--npad",    type="int",	    default=4,     help="number of times padding" )
+	parser.add_option("--snr",     type="float",	    default=1.0,   help="Signal-to-Noise Ratio" )
+	parser.add_option("--sym",     type="string",	    default="c1",  help="symmetry" )
+	parser.add_option("--list",    type="string",                      help="file with list of images to be used in the first column" )
+	parser.add_option("--verbose", type="int", default=0,              help="verbose level: 0 no verbose, 1 verbose" )
+	parser.add_option("--MPI",     action="store_true", default=False, help="use MPI version ")
 	(options,args) = parser.parse_args(arglist[1:])
 
 	if len(args) == 2:
@@ -69,7 +69,8 @@ def main():
 		step  = atoi( args[4] )
 		pid_list = range(begin, end, step)
 	else:
-		ERROR("wrong argument","recon3d_n",1)
+		ERROR("incomplete list of arguments","recon3d_n",1)
+		exit()
 
 	if(options.list):
 		from utilities import read_text_file
