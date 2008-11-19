@@ -2769,7 +2769,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
 			if im == 0: data_had_ctf = ctf_params[6]
-			if data[im].get_attr("ctf_applied" == 0):
+			if data[im].get_attr("ctf_applied") == 0:
 				st = Util.infomask(data[im], mask, False)
 				data[im] -= st[0]
 				from filter import filt_ctf
@@ -2822,7 +2822,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(ali_params)
 				from fundamentals import fshift
 				tavg = fshift(tavg, -cs[0], -cs[1], -cs[2])
-				msg = "Center x =       %10.3f        Center y =       %10.3f        Center z =       %10.3f\n"%(cs[0], cs[1], cs[2])
+				msg = "Center x =       %10.3f        Center y =       %10.3f        Center Z =       %10.3f\n"%(cs[0], cs[1], cs[2])
 				print_msg(msg)				
 
 			if center == 1 or center == -1:
