@@ -83,10 +83,11 @@ images far from focus."""
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
-	if options.voltage==0 : parser.error("Please specify voltage")
-	if options.cs==0 : parser.error("Please specify Cs")
-	if options.apix==0 : parser.error("Please specify A/Pix")
-	
+	if options.auto_fit:
+		if options.voltage==0 : parser.error("Please specify voltage")
+		if options.cs==0 : parser.error("Please specify Cs")
+		if options.apix==0 : parser.error("Please specify A/Pix")
+		
 	debug=options.debug
 
 	global sfcurve
@@ -143,20 +144,11 @@ images far from focus."""
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
-		img_sets = []
-		for file in options.filenames:
-			name = get_file_tag(file)
-			img_set = db_parms[name]
-			ctf=EMAN2Ctf()
-			ctf.from_string(img_set[0]) # convert to ctf object seeing as it's a string
-			img_set[0] = ctf
-			actual = [file]
-			actual.extend(img_set)
-			img_sets.append(actual)
-			from emapplication import EMStandAloneApplication
-			app=EMStandAloneApplication()
-			gui=GUIctfModule(app,img_sets)
-			app.exec_()
+		img_sets = get_gui_arg_img_sets(options.filenames)
+		from emapplication import EMStandAloneApplication
+		app=EMStandAloneApplication()
+		gui=GUIctfModule(app,img_sets)
+		app.exec_()
 
 		print "done execution"
 
@@ -167,7 +159,25 @@ images far from focus."""
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
 
 	E2end(logid)
-	
+
+def get_gui_arg_img_sets(filenames):
+	'''
+	returns the img_sets list required to intialized the GUI correctly
+	'''
+	db_parms=db_open_dict("bdb:e2ctf.parms")
+	img_sets = []
+	for file in filenames:
+		name = get_file_tag(file)
+		img_set = db_parms[name]
+		ctf=EMAN2Ctf()
+		ctf.from_string(img_set[0]) # convert to ctf object seeing as it's a string
+		img_set[0] = ctf
+		actual = [file]
+		actual.extend(img_set)
+		img_sets.append(actual)
+		
+	return img_sets
+
 def write_e2ctf_output(options):
 	# write wiener filtered and/or phase flipped particle data to the local database
 	if options.phaseflip or options.wiener:
@@ -766,8 +776,6 @@ class GUIctf(QtGui.QWidget):
 
 		self.update_data()
 		
-		
-
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()
@@ -777,7 +785,6 @@ class GUIctf(QtGui.QWidget):
 		if self.guiplot != None:
 			self.app.close_specific(self.guiplot)
 		self.app.close_specific(self)
-		self.app.app.exit()
 		event.accept()
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
 

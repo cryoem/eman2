@@ -39,7 +39,7 @@ import os
 import copy
 from emapplication import EMProgressDialogModule
 from e2boxer import EMBoxerModule
-from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output
+from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output,get_gui_arg_img_sets
 import subprocess
 class EmptyObject:
 	'''
@@ -361,18 +361,18 @@ class ParticleImportTask(ParticleWorkFlowTask):
 				# why doesn't this work :(
 		
 
-class E2BoxerTask(ParticleWorkFlowTask):	
+class E2BoxerGuiTask(ParticleWorkFlowTask):	
 	documentation_string = "Use this tool to box the selected images using e2boxer. Choose from the list of images and hit ok. This will lauch e2boxer and automatically load the selected images for boxing. Alternatively you may choose the auto_db option to execute automated boxing using information stored in the e2boxer database."
 	
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
-		self.window_title = "e2boxer management"
+		self.window_title = "e2boxer interface"
 		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
 
 	def get_params(self):
 		params = []
 		project_db = db_open_dict("bdb:project")
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
 		
 		project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
 		
@@ -389,12 +389,6 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	
 		boxer_project_db = db_open_dict("bdb:e2boxer.project")
 		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
-		params.append(ParamDef(name="method",vartype="choice",desc_short="Boxing mode",desc_long="Currently only one mode is supported, but this could change",property=None,defaultunits="Swarm",choices=["Swarm"]))
-		params.append(ParamDef(name="running_mode",vartype="choice",desc_short="Boxing mode",desc_long="Whether to load the GUI or run automatic boxing based on information stored in the database",property=None,defaultunits="gui",choices=["gui","auto_db"]))
-			#params.append(ParamDef(name="global.imported_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.imported_micrograph_ccd_files",dfl=[]),choices=[]))
-#		else:
-#			params.append(ParamDef(name="blurb",vartype="text",desc_short="No files",desc_long="",property=None,defaultunits="There are currently no files associated with the project",choices=None))
-		
 		
 		return params
 			
@@ -412,6 +406,8 @@ class E2BoxerTask(ParticleWorkFlowTask):
 			options = EmptyObject()
 			for key in params.keys():
 				setattr(options,key,params[key])
+			options.running_mode = "gui"
+			options.method = "Swarm"
 				
 			self.boxer_module = EMBoxerModule(self.application,options)
 			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_idle"), self.on_boxer_idle)
@@ -577,7 +573,7 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 
 	def get_params(self):
 		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFAutoFitTask.documentation_string,choices=None))
 		
 		params.append(self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False)))
 		
@@ -664,7 +660,10 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 				t = int(n+1*cf)
 				if n == (ncpu-1):
 					t = len(options.filenames) # just make sure of it, round off error could 
-					
+				
+				if b == t:
+					print "hmmmm b equals t"
+					continue # it's okay this happens when there are more cpus than there are filenames	
 				filenames = options.filenames[b:t]
 									
 				args = ["e2ctf.py"]
@@ -720,7 +719,7 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 			# there are some general parameters that need writing:
 			WorkFlowTask.write_db_entry(self,key,value)
 
-class E2CTFTask(CTFWorkFlowTask):	
+class E2CTFOutputTask(CTFWorkFlowTask):	
 	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
 	
 	def __init__(self,application):
@@ -731,30 +730,15 @@ class E2CTFTask(CTFWorkFlowTask):
 
 	def get_params(self):
 		params = []		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFTask.documentation_string,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFOutputTask.documentation_string,choices=None))
 		
 		params.append(self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False)))
 		
-		project_db = db_open_dict("bdb:project")
-		ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
-		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
-		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
-		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
-		pac = ParamDef(name="working_ac",vartype="float",desc_short="Amplitude contrast",desc_long="The amplitude contrast constant. It is recommended that this value is identical in all of your images.",property=None,defaultunits=ctf_misc_db.get("working_ac",dfl=10),choices=None)
-		pos = ParamDef(name="working_oversamp",vartype="float",desc_short="Oversampling",desc_long="If greater than 1, oversampling by this amount will be used when images are being phase flipped and Wiener filtered.",property=None,defaultunits=ctf_misc_db.get("working_oversamp",dfl=1),choices=None)
+		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Wiener + phase flip",desc_long="Wiener filter your particle images using parameters in the database. Phase flipping will also occur",property=None,defaultunits=False,choices=None)
+		pphase = ParamDef(name="phaseflip",vartype="boolean",desc_short="Phase flip",desc_long="Phase flip your particle images using parameters in the database",property=None,defaultunits=False,choices=None)
 		
-		
-		params.append(papix)
-		params.append(pvolt)
-		params.append(pcs)
-		params.append(pac)
-		params.append(pos)
-		params.append(ParamDef(name="gui",vartype="boolean",desc_short="Run gui",desc_long="Load the GUI or just run automated ctf determination",property=None,defaultunits=False,choices=None))
-		pwiener = ParamDef(name="wiener",vartype="boolean",desc_short="Generate wiener filtered output (phase flipping will also occur)",desc_long="Wiener filter the input particles",property=None,defaultunits=False,choices=None)
-		pphase= ParamDef(name="phaseflip",vartype="boolean",desc_short="Generate phase flipped output",desc_long="Phase flip the input particles",property=None,defaultunits=False,choices=None)
-		params.append(pphase)
 		params.append(pwiener)
-		
+		params.append(pphase)
 		return params
 	
 	def get_default_ctf_options(self,params):
@@ -768,14 +752,9 @@ class E2CTFTask(CTFWorkFlowTask):
 		
 		
 		options = EmptyObject()
-		options.nosmooth = False
-		options.nonorm = False
-		options.autohp = False
-		options.invert = False
-		
+	
 		filenames = params["filenames"]
-		
-		boxsize = None
+#
 		db_file_names = []
 		for i,name in enumerate(filenames):
 			db_name="bdb:particles#"+name
@@ -783,33 +762,121 @@ class E2CTFTask(CTFWorkFlowTask):
 			if not db_check_dict(db_name):
 				print "error, can't particle entry doesn't exist for",name,"aborting."
 				return None
+		options.filenames = db_file_names
+		options.wiener = params["wiener"]
+		options.phaseflip = params["phaseflip"]
+#		
+		return options
+
+	
+	def on_form_ok(self,params):
+		for k,v in params.items():
+			if k != "blurb": self.write_db_entry(k,v)
+
+		options = self.get_default_ctf_options(params)
+		if options != None and len(options.filenames) > 0 and (options.wiener or options.phaseflip):
 			
-			if boxsize == None:
-				db = db_open_dict(db_name)
-				hdr = db.get_header(0)
-				boxsize = hdr["nx"] # no consideration is given for non square images
-			else:
-				db = db_open_dict(db_name)
-				hdr = db.get_header(0)
-				if boxsize != hdr["nx"]: # no consideration is given for non square images
-					print "error, can't run e2ctf on images with different box sizes. Specifically, I can not deduce the bgmask option for the group"
-					return None
+			project_db = db_open_dict("bdb:project")
+			ncpu = project_db.get("global.num_cpus",dfl=num_cpus())
+			cf = float(len(options.filenames))/float(ncpu) # common factor
+			for n in range(ncpu):
+				b = int(n*cf)
+				t = int(n+1*cf)
+				if n == (ncpu-1):
+					t = len(options.filenames) # just make sure of it, round off error could be problematic
+				
+				if b == t:
+					continue # it's okay this happens when there are more cpus than there are filenames	
+				filenames = options.filenames[b:t]
+									
+				args = ["e2ctf.py"]
 		
-		if boxsize == None or boxsize < 2:
-			print "error, boxsize is less than 2"
+				for name in filenames:
+					args.append(name)
+					
+				if options.wiener:
+					args.append("--wiener")
+					
+				if options.phaseflip:
+					args.append("--phaseflip")
+
+				file = open("e2ctf_output_stdout.txt","w+")
+				process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
+				print "started",process.pid
+				self.emit(QtCore.SIGNAL("process_started"),process.pid)
+			
+			self.application.close_specific(self.form)
+			self.emit(QtCore.SIGNAL("task_idle"))
+		else:
+			self.application.close_specific(self.form)
+			self.emit(QtCore.SIGNAL("task_idle"))
+	
+	def on_ctf_closed(self):
+		self.gui = None
+		self.options = None
+		self.emit(QtCore.SIGNAL("gui_exit")) #
+		
+	def on_form_close(self):
+		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+		if self.gui == None:
+			self.emit(QtCore.SIGNAL("task_idle"))
+		else: pass
+
+	def write_db_entry(self,key,value):
+		if key == "working_ac":
+			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+			ctf_misc_db["working_ac"] = value
+		elif key == "working_oversamp":
+			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
+			ctf_misc_db["working_oversamp"] = value
+		else:
+			# there are some general parameters that need writing:
+			WorkFlowTask.write_db_entry(self,key,value)
+	
+
+class E2CTFGuiTask(CTFWorkFlowTask):	
+	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
+	
+	def __init__(self,application):
+		CTFWorkFlowTask.__init__(self,application)
+		self.window_title = "e2ctf management"
+		self.options = None # will enventually store e2ctf options
+		self.gui = None # will eventually be a e2ctf gui
+
+	def get_params(self):
+		params = []		
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string,choices=None))
+		
+		params.append(self.get_ctf_param_table(self.get_particle_db_names(strip_ptcls=False)))
+		return params
+	
+	def get_default_ctf_options(self,params):
+		'''
+		These are the options required to run pspec_and_ctf_fit in e2ctf.py
+		'''
+		
+		if not params.has_key("filenames") and len(params["filenames"]) == 0:
+			print "there is an internal error. You are asking for the default ctf options but there are no filenames to deduce the bgmask option from" # this shouldn't happen
 			return None
 		
-		options.bgmask = boxsize/2
-		options.oversamp = params["working_oversamp"]
-		options.ac = params["working_ac"]
-		options.apix = params["global.apix"]
-		options.cs = params["global.microscope_cs"]
-		options.voltage = params["global.microscope_voltage"]
-		options.phaseflip = params["phaseflip"]
-		options.wiener = params["wiener"]
-		options.gui = params["gui"]
-		options.filenames = db_file_names
 		
+		options = EmptyObject()
+#		options.nosmooth = False
+#		options.nonorm = False
+#		options.autohp = False
+#		options.invert = False
+#		
+		filenames = params["filenames"]
+#
+		db_file_names = []
+		for i,name in enumerate(filenames):
+			db_name="bdb:particles#"+name
+			db_file_names.append(db_name)
+			if not db_check_dict(db_name):
+				print "error, can't particle entry doesn't exist for",name,"aborting."
+				return None
+		options.filenames = db_file_names
+#		
 		return options
 
 	
@@ -818,26 +885,21 @@ class E2CTFTask(CTFWorkFlowTask):
 			if k != "blurb": self.write_db_entry(k,v)
 
 		self.options = self.get_default_ctf_options(params)
-		if self.options != None:
-			img_sets = pspec_and_ctf_fit(self.options)
+		if self.options != None and len(self.options.filenames) > 0:
+			
+			img_sets = get_gui_arg_img_sets(self.options.filenames)
 		
-			if self.options.gui:
-				self.gui=GUIctfModule(self.application,img_sets)
-				self.application.show_specific(self.gui)
-				self.application.close_specific(self.form)
-				QtCore.QObject.connect(self.gui.qt_widget,QtCore.SIGNAL("module_closed"), self.on_ctf_closed())
-				self.emit(QtCore.SIGNAL("gui_running")) # 
-			else:
-				write_e2ctf_output(self.options)
-				self.application.close_specific(self.form)
-				self.emit(QtCore.SIGNAL("task_idle"))
+			self.gui=GUIctfModule(self.application,img_sets)
+			self.application.show_specific(self.gui)
+			self.application.close_specific(self.form)
+			QtCore.QObject.connect(self.gui.qt_widget,QtCore.SIGNAL("module_closed"), self.on_ctf_closed())
+			self.emit(QtCore.SIGNAL("gui_running")) # 
 		else:
 			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
 	
 	def on_ctf_closed(self):
 		self.gui = None
-		write_e2ctf_output(self.options)
 		self.options = None
 		self.emit(QtCore.SIGNAL("gui_exit")) #
 		

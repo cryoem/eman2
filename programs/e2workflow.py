@@ -220,14 +220,16 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Automatic fitting - e2ctf")))
 		self.launchers["Automatic fitting - e2ctf"] = self.launch_e2ctf_auto_ft
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive tuning - e2ctf")))
+		self.launchers["Interactive tuning - e2ctf"] = self.launch_e2ctf_tune
 		ctf_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Generate output - e2ctf")))
+		self.launchers["Generate output - e2ctf"] =  self.launch_e2ctf_write_ouptut
 		ctf.addChildren(ctf_list)
 		#self.launchers["e2ctf"] = self.launch_e2ctf_management
 		
 		
 		ap_list = []
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive boxing - e2boxer")))
-		self.launchers["Interactive boxing - e2boxer"] = self.launch_e2boxer_management
+		self.launchers["Interactive boxing - e2boxer"] = self.launch_e2boxer_gui
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Auto boxing - e2boxer")))
 		ap_list.append(QtGui.QTreeWidgetItem(QtCore.QStringList("Particle import")))
 		self.launchers["Particle import"] = self.launch_particle_import
@@ -287,10 +289,17 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
 	
+	def launch_e2ctf_write_ouptut(self):
+		self.launch_task(E2CTFOutputTask,"e2ctf_wo")
+	
+	def launch_e2ctf_tune(self):
+		self.launch_task(E2CTFGuiTask,"e2ctf_tune")
+	
 	def launch_e2ctf_auto_ft(self):
 		self.launch_task(E2CTFAutoFitTask,"e2ctf_auto")
 	
 	def launch_e2ctf_management(self):
+		return
 		self.launch_task(E2CTFTask,"e2ctf")
 	
 	def launch_ctf_report(self):
@@ -302,8 +311,8 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_particle_import(self):
 		self.launch_task(ParticleImportTask,"particle_import")
 		
-	def launch_e2boxer_management(self):
-		self.launch_task(E2BoxerTask,"e2boxer")
+	def launch_e2boxer_gui(self):
+		self.launch_task(E2BoxerGuiTask,"e2boxer")
 	
 	def launch_spr(self):
 		self.launch_task(SPRInitTask,"spr")
