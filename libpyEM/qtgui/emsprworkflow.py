@@ -65,7 +65,7 @@ class WorkFlowTask(QtCore.QObject):
 		
 	def on_form_ok(self,params):
 		for k,v in params.items():
-			if k != "blurb": self.write_db_entry(k,v)
+			self.write_db_entry(k,v)
 			
 		self.application.close_specific(self.form)
 		self.form = None
@@ -118,6 +118,54 @@ class WorkFlowTask(QtCore.QObject):
 		specificially for the purpose of spawning processes. Could be used more generally, however.
 		'''
 		return os.getcwd()
+
+	def run_task(self,program,options,string_args,bool_args,additional_args=[],temp_file_name="e2workflow_tmp.txt"):
+		'''
+		splits the task over the available processors
+		example-
+		program="e2ctf.py"
+		options is an object with the filenames, all string args and all bool_args as attributes 
+		string_args=["
+		bool_args=["
+		additional_args=["--auto_db,--auto_fit"]
+		temp_file_name = "etctf_auto_tmp.txt"
+		'''
+		project_db = db_open_dict("bdb:project")
+		ncpu = project_db.get("global.num_cpus",dfl=num_cpus())
+		cf = float(len(options.filenames))/float(ncpu) # common factor
+		for n in range(ncpu):
+			b = int(n*cf)
+			t = int(n+1*cf)
+			if n == (ncpu-1):
+				t = len(options.filenames) # just make sure of it, round off error could 
+			
+			if b == t:
+				continue # it's okay this happens when there are more cpus than there are filenames	
+			filenames = options.filenames[b:t]
+								
+			args = [program]
+	
+			for name in filenames:
+				args.append(name)
+			
+			for string in string_args:
+				args.append("--"+string+"="+str(getattr(options,string)))
+
+			# okay the user can't currently change these, but in future the option might be there
+			for string in bool_args:
+				# these are all booleans so the following works:
+				if getattr(options,string):
+					args.append("--"+string)
+					
+			for arg in additional_args:
+				args.append(arg)
+			#print "command is ",program
+			#for i in args: print i
+			
+			#print args
+			file = open(temp_file_name,"w+")
+			process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
+			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 
 class ParticleWorkFlowTask(WorkFlowTask):
 	'''
@@ -359,7 +407,96 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			
 				
 				# why doesn't this work :(
+
+class E2BoxerAutoTask(ParticleWorkFlowTask):	
+	documentation_string = "Information"
+	def __init__(self,application):
+		ParticleWorkFlowTask.__init__(self,application)
+		self.window_title = "e2boxer auto"
+		self.boxer_module = None # this will actually point to an EMBoxerModule, potentially
+
+	def get_params(self):
+		params = []
+		project_db = db_open_dict("bdb:project")
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
 		
+		project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		
+		num_boxes = self.get_num_particles(project_file_names)
+#		if len(num_boxes) > 0:
+		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_file_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
+		
+		
+		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p.append(pnames)
+		p.append(pboxes)
+		params.append(p)
+	
+		boxer_project_db = db_open_dict("bdb:e2boxer.project")
+		pbox = ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[])
+		
+		pfo = ParamDef(name="force",vartype="boolean",desc_short="Force overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=False,choices=None)
+		pwc = ParamDef(name="write_coord_files",vartype="boolean",desc_short="Write box db files",desc_long="Whether or not box db files should be written",property=None,defaultunits=False,choices=None)
+		pwb = ParamDef(name="write_box_images",vartype="boolean",desc_short="Write box image files",desc_long="Whether or not box images should be written",property=None,defaultunits=True,choices=None)
+		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize images",desc_long="How the output box images should be normalized",property=None,defaultunits="normalize.edgemean",choices=["normalize","normalize.edgemean","none"])
+		pop = ParamDef(name="outformat",vartype="string",desc_short="Output image format",desc_long="The format of the output box images",property=None,defaultunits="bdb",choices=["bdb","img","hdf"])
+		params.append([pbox,pfo])
+		params.append([pwc,pwb])
+		params.append(pn)
+		params.append(pop)
+		
+		return params
+			
+	def on_form_ok(self,params):
+		for k,v in params.items():
+			self.write_db_entry(k,v)
+			
+		if not params.has_key("filenames") or len(params["filenames"]) == 0:
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.application.close_specific(self.form)
+			self.form = None
+			return
+	
+		else:
+			options = EmptyObject()
+			for k,v in params.items():
+				setattr(options,k,v)
+			
+			string_args = ["normproc","outformat","boxsize"]
+			bool_args = ["force","write_coord_files","write_box_images"]
+			additional_args = ["--method=Swarm", "--auto=db"]
+			temp_file_name = "e2boxer_autobox_stdout.txt"
+			self.run_task("e2boxer.py",options,string_args,bool_args,additional_args,temp_file_name)
+			self.emit(QtCore.SIGNAL("task_idle"))
+			self.application.close_specific(self.form)
+			self.form = None
+	
+	def on_form_close(self):
+		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
+		if self.boxer_module == None:
+			self.emit(QtCore.SIGNAL("task_idle"))
+		else: pass
+	
+	def on_boxer_closed(self):
+		self.boxer_module = None
+		self.emit(QtCore.SIGNAL("gui_exit"))
+	
+	def on_boxer_idle(self):
+		'''
+		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
+		'''
+		self.boxer_module = None
+		self.emit(QtCore.SIGNAL("gui_exit"))
+
+	def write_db_entry(self,key,value):
+		if key == "boxsize":
+			boxer_project_db = db_open_dict("bdb:e2boxer.project")
+			boxer_project_db["working_boxsize"] = value
+
+		else:
+			pass
+	
 
 class E2BoxerGuiTask(ParticleWorkFlowTask):	
 	documentation_string = "Use this tool to box the selected images using e2boxer. Choose from the list of images and hit ok. This will lauch e2boxer and automatically load the selected images for boxing. Alternatively you may choose the auto_db option to execute automated boxing using information stored in the e2boxer database."
@@ -394,7 +531,7 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 			
 	def on_form_ok(self,params):
 		for k,v in params.items():
-			if k != "blurb": self.write_db_entry(k,v)
+			self.write_db_entry(k,v)
 			
 		if not params.has_key("filenames") or len(params["filenames"]) == 0:
 			self.emit(QtCore.SIGNAL("task_idle"))
@@ -647,47 +784,54 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 	
 	def on_form_ok(self,params):
 		for k,v in params.items():
-			if k != "blurb": self.write_db_entry(k,v)
+			self.write_db_entry(k,v)
 		
 		self.options = self.get_default_ctf_options(params)
 		if self.options != None:
 			options = self.options
-			project_db = db_open_dict("bdb:project")
-			ncpu = project_db.get("global.num_cpus",dfl=num_cpus())
-			cf = float(len(options.filenames))/float(ncpu) # common factor
-			for n in range(ncpu):
-				b = int(n*cf)
-				t = int(n+1*cf)
-				if n == (ncpu-1):
-					t = len(options.filenames) # just make sure of it, round off error could 
-				
-				if b == t:
-					print "hmmmm b equals t"
-					continue # it's okay this happens when there are more cpus than there are filenames	
-				filenames = options.filenames[b:t]
-									
-				args = ["e2ctf.py"]
-		
-				for name in filenames:
-					args.append(name)
-				
-				for string in ["bgmask","oversamp","ac","apix","cs","voltage"]:
-					args.append("--"+string+"="+str(getattr(options,string)))
-	
-				# okay the user can't currently change these, but in future the option might be there
-				for string in ["nosmooth","nonorm","autohp","invert"]:
-					# these are all booleans so the following works:
-					if getattr(options,string):
-						args.append("--"+string)
-				args.append("--auto_fit")
-				#print "command is ",program
-				#for i in args: print i
-				
-				#print args
-				file = open("e2ctf_autofit_stdout.txt","w+")
-				process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
-				print "started",process.pid
-				self.emit(QtCore.SIGNAL("process_started"),process.pid)
+			
+			string_args = ["bgmask","oversamp","ac","apix","cs","voltage"]
+			bool_args = ["nosmooth","nonorm","autohp","invert"]
+			additional_args = ["--auto_fit"]
+			temp_file_name = "e2ctf_autofit_stdout.txt"
+			self.run_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
+			
+#			project_db = db_open_dict("bdb:project")
+#			ncpu = project_db.get("global.num_cpus",dfl=num_cpus())
+#			cf = float(len(options.filenames))/float(ncpu) # common factor
+#			for n in range(ncpu):
+#				b = int(n*cf)
+#				t = int(n+1*cf)
+#				if n == (ncpu-1):
+#					t = len(options.filenames) # just make sure of it, round off error could 
+#				
+#				if b == t:
+#					print "hmmmm b equals t"
+#					continue # it's okay this happens when there are more cpus than there are filenames	
+#				filenames = options.filenames[b:t]
+#									
+#				args = ["e2ctf.py"]
+#		
+#				for name in filenames:
+#					args.append(name)
+#				
+#				for string in ["bgmask","oversamp","ac","apix","cs","voltage"]:
+#					args.append("--"+string+"="+str(getattr(options,string)))
+#	
+#				# okay the user can't currently change these, but in future the option might be there
+#				for string in ["nosmooth","nonorm","autohp","invert"]:
+#					# these are all booleans so the following works:
+#					if getattr(options,string):
+#						args.append("--"+string)
+#				args.append("--auto_fit")
+#				#print "command is ",program
+#				#for i in args: print i
+#				
+#				#print args
+#				file = open("e2ctf_autofit_stdout.txt","w+")
+#				process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
+#				print "started",process.pid
+#				self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
 			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
@@ -771,39 +915,47 @@ class E2CTFOutputTask(CTFWorkFlowTask):
 	
 	def on_form_ok(self,params):
 		for k,v in params.items():
-			if k != "blurb": self.write_db_entry(k,v)
+			self.write_db_entry(k,v)
 
 		options = self.get_default_ctf_options(params)
 		if options != None and len(options.filenames) > 0 and (options.wiener or options.phaseflip):
 			
-			project_db = db_open_dict("bdb:project")
-			ncpu = project_db.get("global.num_cpus",dfl=num_cpus())
-			cf = float(len(options.filenames))/float(ncpu) # common factor
-			for n in range(ncpu):
-				b = int(n*cf)
-				t = int(n+1*cf)
-				if n == (ncpu-1):
-					t = len(options.filenames) # just make sure of it, round off error could be problematic
-				
-				if b == t:
-					continue # it's okay this happens when there are more cpus than there are filenames	
-				filenames = options.filenames[b:t]
-									
-				args = ["e2ctf.py"]
-		
-				for name in filenames:
-					args.append(name)
-					
-				if options.wiener:
-					args.append("--wiener")
-					
-				if options.phaseflip:
-					args.append("--phaseflip")
-
-				file = open("e2ctf_output_stdout.txt","w+")
-				process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
-				print "started",process.pid
-				self.emit(QtCore.SIGNAL("process_started"),process.pid)
+			
+			
+			string_args = []
+			bool_args = ["wiener","phaseflip"]
+			additional_args = []
+			temp_file_name = "e2ctf_output_stdout.txt"
+			self.run_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
+			
+#			project_db = db_open_dict("bdb:project")
+#			ncpu = project_db.get("global.num_cpus",dfl=num_cpus())
+#			cf = float(len(options.filenames))/float(ncpu) # common factor
+#			for n in range(ncpu):
+#				b = int(n*cf)
+#				t = int(n+1*cf)
+#				if n == (ncpu-1):
+#					t = len(options.filenames) # just make sure of it, round off error could be problematic
+#				
+#				if b == t:
+#					continue # it's okay this happens when there are more cpus than there are filenames	
+#				filenames = options.filenames[b:t]
+#									
+#				args = ["e2ctf.py"]
+#		
+#				for name in filenames:
+#					args.append(name)
+#					
+#				if options.wiener:
+#					args.append("--wiener")
+#					
+#				if options.phaseflip:
+#					args.append("--phaseflip")
+#
+#				file = open("e2ctf_output_stdout.txt","w+")
+#				process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
+#				print "started",process.pid
+#				self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
 			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
@@ -882,7 +1034,7 @@ class E2CTFGuiTask(CTFWorkFlowTask):
 	
 	def on_form_ok(self,params):
 		for k,v in params.items():
-			if k != "blurb": self.write_db_entry(k,v)
+			self.write_db_entry(k,v)
 
 		self.options = self.get_default_ctf_options(params)
 		if self.options != None and len(self.options.filenames) > 0:

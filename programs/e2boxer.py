@@ -33,6 +33,8 @@
 # e2boxer.py  07/27/2004  Steven Ludtke
 # This program is used to box out particles from micrographs/CCD frames
 
+import PyQt4
+from PyQt4 import QtCore, QtGui
 from EMAN2 import *
 from pyemtbx.boxertools import *
 from optparse import OptionParser
@@ -104,10 +106,11 @@ for single particle analysis."""
 	#parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
 	#parser.add_option("--retestlist",type="string",help="(auto:ref) Comma separated list of image numbers for retest cycle",default="")
 	#parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
-	parser.add_option("--parallel",type="int",help="specify more than one processor",default=1)
 	parser.add_option("--merge_boxes_to_db",action="store_true",help="A special argument, if true all input arguments are considered to be box files and they are merged into the project database as manually selected particles",default=False)
 	parser.add_option("--subsample_method",help="The method used to subsample images prior to generation of the correlation image. Available methods are standard,careful",default="standard")	
 	parser.add_option("--method", help="boxer method, Swarm or Gauss", default="Swarm")
+	parser.add_option("--outformat", help="Format of the output particles images, should be bdb,img, or hdf", default="bdb")
+	parser.add_option("--normproc", help="Normalization processor to apply to particle images. Should be normalize, normalize.edgemean or none", default="normalize.edgemean")
 
 	# options added for cmdline calling of screening with gauss convolution. parameters for Gauss are passed as
 	#    commandline arguments and will have to be parsed only if auto="cmd" option is specified. note that these parameters
@@ -177,13 +180,19 @@ for single particle analysis."""
 			# this is fine the boxer module should be smart enough to handle it
 			pass
 
+	
+	if options.running_mode == "auto_db":
+		dab = RawDatabaseAutoBoxer()
+		dab.go(options)
+	else:
+		application = EMStandAloneApplication()
+		options.boxes = boxes
+		gui=EMBoxerModule(application,options)
+	#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
+		application.execute()
+	
 	E2end(logid)
-	application = EMStandAloneApplication()
-	options.boxes = boxes
-	gui=EMBoxerModule(application,options)
-#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
-	application.execute()
-		
+	
 	print "Exiting e2boxer"
 
 def on_idle():
@@ -281,22 +290,6 @@ def do_gauss_cmd_line_boxing(options):
 
 	project_db.close()
 	#done
-
-try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
-	from valslider import ValSlider
-except:
-	print "Warning: PyQt4 must be installed to use the --gui option"
-	class dummy:
-		pass
-	class QWidget:
-		"A dummy class for use when Qt not installed"
-		def __init__(self,parent):
-			print "Qt4 has not been loaded"
-	QtGui=dummy()
-	QtGui.QWidget=QWidget
-
 
 def merge_boxes_as_manual_to_db(filenames):
 	'''
@@ -783,6 +776,105 @@ class EMBoxerModuleEventsMediator:
 		return self.parent.get_shape_string()
 
 
+class RawDatabaseAutoBoxer:
+	def __init__(self):
+		self.required_options = ["boxsize","write_coord_files","write_box_images","force","normproc","outformat"]
+	
+	def go(self,options):
+		options_ready = True
+		for req_opt in self.required_options:
+			if not hasattr(options,req_opt):
+				if not self.application:
+					print "there are insufficient parameters to run autoboxing"
+					print "required option:", req_opt, "is missing"
+					return
+			
+		if options_ready:
+			self.autobox_multi(options)
+				
+	def autobox_multi(self,options):
+		image_names = options.filenames
+		project_db = EMProjectDB()
+		for image_name in image_names:
+			print "autoboxing",image_name
+			
+			try:
+				data = project_db[get_idd_key(image_name)]
+				
+				trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+				autoboxer = SwarmAutoBoxer(None)
+				autoboxer.become(trim_autoboxer)
+				print 'using cached autoboxer db'
+			except:
+				try:
+					print "using most recent autoboxer"
+					if project_db["current_autoboxer_type"]=="Gauss":
+						trim_autoboxer = project_db["current_autoboxer"]
+						autoboxer = PawelAutoBoxer(None)
+						autoboxer.become(trim_autoboxer)
+					else:
+						trim_autoboxer = project_db["current_autoboxer"]
+						autoboxer = SwarmAutoBoxer(None)
+						autoboxer.become(trim_autoboxer)
+				except:
+					print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
+					continue
+			
+			boxable = Boxable(image_name,None,autoboxer)
+			
+			if boxable.is_excluded():
+				print "Image",image_name,"is excluded and being ignored"
+				continue
+			
+			autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+			# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
+			autoboxer.auto_box(boxable,False)
+			if options.write_coord_files:
+				boxable.write_coord_file(options.boxsize,options.force)
+			if options.write_box_images:
+				if options.normproc == "none":normalize=False
+				else: normalize=True
+				boxable.write_box_images(options.boxsize,options.force,imageformat=options.outformat,normalize=normalize,norm_method=options.normproc)
+		
+		project_db.close()
+
+	def autobox_single(self,image_name,options):
+		
+		project_db = EMProjectDB()
+		try:
+			data = project_db[get_idd_key(image_name)]
+			trim_autoboxer = project_db[data["autoboxer_unique_id"]]["autoboxer"]
+			autoboxer = SwarmAutoBoxer(None)
+			autoboxer.become(trim_autoboxer)
+			print 'using cached autoboxer db'
+		except:
+			try:
+				trim_autoboxer = project_db["current_autoboxer"]
+				autoboxer = SwarmAutoBoxer(None)
+				autoboxer.become(trim_autoboxer)
+			except:
+				print "Error - there seems to be no autoboxing information in the database - autobox interactively first - bailing"
+				project_db.close()
+				return 0
+		
+		boxable = Boxable(image_name,None,autoboxer)
+		if boxable.is_excluded():
+			print "Image",image_name,"is excluded and being ignored"
+			return
+		
+		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
+		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
+		autoboxer.auto_box(boxable,False)
+		if options.write_coord_files:
+			print "writing box coordinates"
+			boxable.write_coord_file(-1,options.force)
+		if options.write_box_images:
+			print "writing boxed images"
+			boxable.write_box_images(-1,options.force)
+		
+		project_db.close()
+		return 1
+
 
 class DatabaseAutoBoxer(QtCore.QObject):
 	'''
@@ -800,6 +892,11 @@ class DatabaseAutoBoxer(QtCore.QObject):
 		options_ready = True
 		for req_opt in self.required_options:
 			if not hasattr(options,req_opt):
+				if not self.application:
+					print "there are insufficient parameters to run autoboxing"
+					print "required option:", req_opt, "is missing"
+					return
+				
 				options_ready = False
 				self.__run_form_initialization(options)
 				return
@@ -962,6 +1059,22 @@ class EmptyObject:
 	'''
 	def __init__(self):
 		pass
+	
+# FIXME check for pyqt sometime
+#try:
+#	from PyQt4 import QtCore, QtGui, QtOpenGL
+#	from PyQt4.QtCore import Qt
+#	from valslider import ValSlider
+#except:
+#	print "Warning: PyQt4 must be installed to use the --gui option"
+#	class dummy:
+#		pass
+#	class QWidget:
+#		"A dummy class for use when Qt not installed"
+#		def __init__(self,parent):
+#			print "Qt4 has not been loaded"
+#	QtGui=dummy()
+#	QtGui.QWidget=QWidget
 	
 class EMBoxerModule(QtCore.QObject):
 	'''
