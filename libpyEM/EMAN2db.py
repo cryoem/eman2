@@ -535,21 +535,9 @@ class DBDict:
 			time.sleep(.1)
 		self.txn=txn
 
-	def dict_map_key(self,n):
-		"""If dict_map is set, then for purposes of integer keys, this key will redirect
-		access to an alternative file. dict map is: [[n_start_1,alt_file_1],[n_start_2,alt_file_2],...]
-		"""
-		dm=loads(self.bdb.get(dumps("dict_map",-1)))
-		for i in range(len(dm)-1,-1,-1):
-			if dm[i][0]<=n : break
-		return (n-dm[i][0],dm[i][1])
-
 	def get_attr(self,n,attr):
 		"""Returns an attribute or set of attributes for an image or set of images. n may be a single key or a list/tuple/set of keys,
 		and attr may be a single attribute or a list/tuple/set. Returns the attribute, a dict of attributes or a image keyed dict of dicts keyed by attribute"""
-		if isinstance(n,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(n)
-			return db_open_dict(tgt[1]).get_attr(tgt[0])
 		try :
 			ret={}
 			for i in n:
@@ -574,10 +562,6 @@ class DBDict:
 	def set_attr(self,n,attr,val=None):
 		"""Sets an attribute to val in EMData object 'n'. Alternatively, attr may be a dictionary containing multiple key/value pairs
 		to be updated in the EMData object. Unlike with get_attr, n must always refer to a single EMData object in the database."""
-		if isinstance(n,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(n)
-			db_open_dict(tgt[1]).set_attr(tgt[0],attr,val)
-			return
 		a=loads(self.bdb.get(dumps(n,-1),txn=self.txn))
 		if isinstance(attr,dict) :
 			a.update(attr)
@@ -585,19 +569,12 @@ class DBDict:
 		self[n]=a
 
 	def __len__(self):
-		if self.has_key("dict_map") :
-			dm=loads(self.bdb.get(dumps("dict_map",-1)))
-			return dm[-1][0]+db_get_image_count(dm[-1][1])
 		try: return self["maxrec"]+1
 		except: return 0
-
+#		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
+#		return len(self.bdb)
 
 	def __setitem__(self,key,val):
-		if isinstance(key,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(key)
-			db_open_dict(tgt[1])[key]=val
-			return
-
 		if (val==None) :
 			try:
 				self.__delitem__(key)
@@ -617,6 +594,8 @@ class DBDict:
 			self.bdb.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
 			
 			# write the metadata
+			try: del ad["data_path"]
+			except:pass
 			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			
@@ -627,9 +606,6 @@ class DBDict:
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
 				
 	def __getitem__(self,key):
-		if isinstance(key,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(key)
-			return db_open_dict(tgt[1])[tgt[0]]
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
@@ -637,8 +613,12 @@ class DBDict:
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
 			ret=EMData(r["nx"],r["ny"],r["nz"])
-			n=loads(self.bdb.get(fkey+dumps(key,-1)))
-			ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
+			if r.has_key("data_path"):
+				p,l=r["data_path"].split("*")
+				ret.read_data(p,int(l))
+			else:
+				n=loads(self.bdb.get(fkey+dumps(key,-1)))
+				ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
 			for i in k: ret.set_attr(i,r[i])
@@ -649,53 +629,44 @@ class DBDict:
 		self.bdb.delete(dumps(key,-1),txn=self.txn)
 
 	def __contains__(self,key):
-		if isinstance(key,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(key)
-			return db_open_dict(tgt[1]).has_key(tgt[0])
 		return self.bdb.has_key(dumps(key,-1))
 
 	def item_type(self,key):
-		if isinstance(key,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(key)
-			return db_open_dict(tgt[1]).item_type(tgt[0])
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
 		except: return None
 		if isinstance(r,dict) and r.has_key("is_complex_x") : return EMData
 		return type(r)
 
 	def keys(self):
-		if self.has_key("dict_map") :
-			print "keys() not supported for dict_map"
-			return None
 		return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
 
 	def values(self):
-		if self.has_key("dict_map") :
-			print "values() not supported for dict_map"
-			return None
 		return [self[k] for k in self.keys()]
 
 	def items(self):
-		if self.has_key("dict_map") :
-			print "items() not supported for dict_map"
-			return None
 		return [(k,self[k]) for k in self.keys()]
 
 	def has_key(self,key):
-		if isinstance(key,int) and self.has_key("dict_map") :
-			print "has_key() not supported for dict_map"
-			return None
 		return self.bdb.has_key(dumps(key,-1))
+
+	def get_data_path(self,key):
+		"""returns the path to the binary data as "path*location". Only valid for EMData objects."""
+		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
+		except: return None
+		if isinstance(r,dict) and r.has_key("is_complex_x") :
+			pkey="%s/%s_"%(self.path,self.name)
+			n=loads(self.bdb.get(fkey+dumps(key,-1)))
+			if r.has_key("data_path"): return r["data_path"]
+			else : return "%s*%d"%(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
+		return None
+
 
 	def get(self,key,dfl=None,txn=None,target=None,nodata=0):
 		"""Alternate method for retrieving records. Permits specification of an EMData 'target'
 		object in which to place the read object"""
-		if isinstance(key,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(key)
-			return db_open_dict(tgt[1]).get(key,dfl,txn,target,nodata)
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return dfl
-		if isinstance(r,dict) and r.has_key("is_complex_ri") :
+		if isinstance(r,dict) and r.has_key("is_complex_x") :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 #			print "r",fkey
@@ -711,24 +682,21 @@ class DBDict:
 
 			# binary data
 			if not nodata: 
-				ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
+				if r.has_key("data_path"):
+					p,l=r["data_path"].split("*")
+					ret.read_data(p,int(l))
+				else:
+					ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			return ret
 		return r
 		
 	def get_header(self,key,txn=None,target=None):
 		"""Alternate method for retrieving metadata for EMData records."""
-		if isinstance(key,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(key)
-			return db_open_dict(tgt[1]).get_header(key,txn,target)
 		try: return loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: return None
 
 	def set(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
-		if isinstance(key,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(key)
-			db_open_dict(tgt[1]).set(key,val,txn)
-			return
 		if (val==None) :
 			try:
 				self.__delitem__(key)
@@ -748,6 +716,8 @@ class DBDict:
 			self.bdb.put(fkey+dumps(key,-1),dumps(n,-1))		# a special key for the binary location
 			
 			# write the metadata
+			try: del ad["data_path"]
+			except:pass
 			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
 			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			
@@ -759,10 +729,6 @@ class DBDict:
 
 	def set_header(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
-		if isinstance(key,int) and self.has_key("dict_map") :
-			tgt=self.dict_map_key(key)
-			db_open_dict(tgt[1]).set_header(key,val,txn)
-			return
 		# make sure the object exists and is an EMData object
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
 		except: raise Exception,"set_header can only be used to update existing EMData objects"
@@ -813,3 +779,5 @@ metadata associated with a particular EMAN2 refinement. Data stored in this
 database may be extracted into standard flat-files, but use of a database
 with standard naming conventions, etc. helps provide the capability to log
 the entire refinement process."""
+
+
