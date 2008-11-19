@@ -181,7 +181,7 @@ def ref_ali3d( ref_data ):
 	volf = filt_tanl(volf, fl, aa)
 	if ref_data[1] == 1:
 		cs = volf.phase_cog()
-		msg = "Center x =       %10.3f        Center y =       %10.3f        Center z =       %10.3f\n"%(cs[0], cs[1], cs[2])
+		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 		print_msg(msg)
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
@@ -231,7 +231,7 @@ def ref_aliB_cone( ref_data ):
 	"""
 	if(ref_data[1] == 1):
 		cs    = volf.phase_cog()
-		msg = "Center x =	%10.3f        Center y       = %10.3f        Center z       = %10.3f\n"%(cs[0], cs[1], cs[2])
+		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 		print_msg(msg)
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	"""
