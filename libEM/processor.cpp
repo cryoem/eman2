@@ -6888,9 +6888,17 @@ void ClampingProcessor::process_inplace( EMData* image )
 {
 	
 	if ( image->is_complex() ) throw ImageFormatException("Error: clamping processor does not work on complex images");
-	
+
 	float min = params.set_default("minval",default_min);
 	float max = params.set_default("maxval",default_max);
+	bool tomean = params.set_default("tomean",false);
+	float new_min_vals = min;
+	float new_max_vals = max;
+	if (tomean){
+		
+		new_min_vals = image->get_attr("mean");
+		new_max_vals = image->get_attr("mean");
+	}
 	
 	// Okay, throwing such an error is probably overkill - but atleast the user will get a loud message
 	// saying what went wrong.
@@ -6900,8 +6908,8 @@ void ClampingProcessor::process_inplace( EMData* image )
 	for(int i = 0; i < size; ++i )
 	{
 		float * data = &image->get_data()[i];
-		if ( *data < min ) *data = min;
-		else if ( *data > max ) *data = max;
+		if ( *data < min ) *data = new_min_vals;
+		else if ( *data > max ) *data = new_max_vals;
 	}
 }
 

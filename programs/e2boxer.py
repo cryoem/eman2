@@ -54,7 +54,7 @@ import sys
 import signal
 from copy import *
 from OpenGL import contextdata
-
+from emglplot import *
 # import SPARX definitions
 import global_def
 from global_def import *
@@ -2173,6 +2173,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.emit(QtCore.SIGNAL("module_closed"))
 		
 	def try_data(self,data,thr):
+		print data, thr
 		print 'try that was pressed, this feature is currently disabled'
 		
 	def opt_params_updated(self,thresh,profile,radius):
@@ -2710,8 +2711,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.new_threshold)
 		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.done)
 		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
-		#self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
-		#self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
+		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
+		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
 	
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.num_boxes_changed)
@@ -3192,23 +3193,23 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.plothbl = QtGui.QHBoxLayout()
 		
 		# This was commented out because the extra GL context crashes the desktop
-		#self.window = EMGLPlotWidget(self)
-		#self.window.setInit()
-		#self.window.resize(100,100)
-		#self.window2=EMParentWin(self.window)
-		#self.window2.resize(100,100)
+		self.window = EMGLPlotWidget(self)
+		self.window.setInit()
+		self.window.resize(100,100)
+		self.window2=EMParentWin(self.window)
+		self.window2.resize(100,100)
 		
-		#self.plothbl.addWidget(self.window2)
+		self.plothbl.addWidget(self.window2)
 		
-		#self.plotbuttonvbl = QtGui.QVBoxLayout()
+		self.plotbuttonvbl = QtGui.QVBoxLayout()
 		
-		#self.trythat=QtGui.QPushButton("Try That")
-		#self.plotbuttonvbl.addWidget(self.trythat)
+		self.trythat=QtGui.QPushButton("Try That")
+		self.plotbuttonvbl.addWidget(self.trythat)
 		
-		#self.reset=QtGui.QPushButton("Reset")
-		#self.plotbuttonvbl.addWidget(self.reset)
+		self.reset=QtGui.QPushButton("Reset")
+		self.plotbuttonvbl.addWidget(self.reset)
 		
-		#self.plothbl.addLayout(self.plotbuttonvbl)
+		self.plothbl.addLayout(self.plotbuttonvbl)
 		
 		self.advanced_vbl2 = QtGui.QVBoxLayout()
 		
@@ -3239,10 +3240,11 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.advanced_vbl.addWidget(self.groupbox)
 
 		self.ratiobut = QtGui.QRadioButton("Ratio")
-		self.ratiobut.setChecked(True)
+		
 		self.difbut = QtGui.QRadioButton("Difference")
 		self.ratio_average_but = QtGui.QRadioButton("Average Ratio")
-
+		self.ratio_average_but.setChecked(True)
+		
 		self.cmpmethodhbox = QtGui.QHBoxLayout()
 		self.cmpmethodhbox.addWidget(self.ratiobut)
 		self.cmpmethodhbox.addWidget(self.difbut)
@@ -3533,8 +3535,6 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.target.set_selection_mode(str(s))
 	
 	def try_dummy_parameters(self):
-		print "option currently disabled"
-		return
 		self.dummybox.set_opt_profile(self.window.getData())
 		self.dummybox.set_correlation_score(float(self.thr.getValue()))
 		self.target.set_dummy_box(self.dummybox)

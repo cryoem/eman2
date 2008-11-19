@@ -2378,7 +2378,11 @@ class SwarmTemplate(Template):
 		#black.to_zero()
 		#black.write_image("aligned_refs.img",-1)
 		#END uncomment block
+		#ave.write_image("template.hdf",-1)
+		ave.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
 		self.template = ave
+		#ave.write_image("template.hdf",-1)
+		
 		
 		self.template_ts = gm_time_string()
 		self.template.set_attr("template_time_stamp",self.template_ts)
@@ -3026,12 +3030,12 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.template = SwarmTemplate(self)	# an EMData object that is the template
 		self.shrink = -1
 		
-		self.templatedimmin = 20  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
+		self.templatedimmin = 40  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
 		self.opt_threshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.opt_profile = []	# the optimum correlation profile used as the basis of auto selection
 		self.opt_profile_radius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
 		self.selection_mode = SwarmAutoBoxer.SELECTIVE	# the autobox method - see EMData::BoxingTools for more details
-		self.cmp_mode = BoxingTools.CmpMode.SWARM_RATIO
+		self.cmp_mode = BoxingTools.CmpMode.SWARM_AVERAGE_RATIO
 		BoxingTools.set_mode(self.cmp_mode)
 		self.__shrink = -1
 		
@@ -3046,7 +3050,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.permissableselection_modes = [SwarmAutoBoxer.THRESHOLD,SwarmAutoBoxer.SELECTIVE,SwarmAutoBoxer.MORESELECTIVE]  # the permissiable selection modes - for convenience when double checking the calling program is setting the selectionmode explicitly (through set_selection_mode )
 		#self.regressiveflag = False	# flags a force removal of non references in the Boxable in auto_box
 		
-		self.dummybox = None
+		self.dummy_box = None
 		self.parent = parent
 		
 		self.creation_ts = gm_time_string()
@@ -3101,21 +3105,9 @@ class SwarmAutoBoxer(AutoBoxer):
 		return self.template
 	
 	def set_dummy_box(self,box):
-		if not box==None and not box.isdummy:
-			print "you can never set a dummy box unless the isdummy flag is true"
-			return 0
-		
-		if box != None:
-			for i,ref in enumerate(self.get_ref_boxes()):
-				if ref.isdummy:
-					self.remove_reference(ref)
-				break
-			self.add_reference(box)
-		else:
-			if self.dummybox != None:
-				self.remove_reference(self.dummybox)
-			
-		self.dummybox = box
+		self.dummy_box = box
+		if not self.__full_update() : return 0
+		self.auto_box(self.get_boxable())
 	
 	def set_mode_explicit(self,mode):
 		if mode in self.permissablemodes:
@@ -3171,6 +3163,13 @@ class SwarmAutoBoxer(AutoBoxer):
 	def name(self):
 		return 'swarmautoboxer'
 
+
+	def add_dummy(self,box):
+		print "in add dummy"
+		self.dummy_box = box
+		if not self.__full_update() : return 0
+		self.auto_box(self.get_boxable())
+		
 	def add_reference(self,boxes):
 		'''
 		 add a reference box - the box should be in the format of a Box, see above):
@@ -3180,8 +3179,8 @@ class SwarmAutoBoxer(AutoBoxer):
 		except:
 			box = boxes
 			if box.isdummy:
-				print "dummy boxes not yet supported"
-				return 0
+				self.add_dummy(box)
+				return
 			self.template.append_reference(box)
 			
 		
@@ -3365,10 +3364,10 @@ class SwarmAutoBoxer(AutoBoxer):
 			print 'error, unknown mode in SwarmAutoBoxer'
 	
 	def get_search_radius(self):
-		return int(0.75*(self.box_size)/float(self.get_subsample_rate()))
+		return int((self.box_size)/float(self.get_subsample_rate()))
 	
 	def get_constraining_radius(self):
-		return int(0.5*(self.box_size)/float(self.get_subsample_rate()))
+		return int(0.75*(self.box_size)/float(self.get_subsample_rate()))
 	
 	def get_subsample_rate(self,force=True):	
 		if self.box_size == -1:
@@ -3651,7 +3650,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		#print 'profile:',self.opt_profile
 		#print 'optrad:',self.opt_profile_radius
 		
-		if self.dummybox == None:
+		if self.dummy_box == None:
 			found = False
 			for i,box in enumerate(self.get_ref_boxes()):
 				if box.get_correlation_score() == None:
@@ -3694,8 +3693,8 @@ class SwarmAutoBoxer(AutoBoxer):
 					for j in range(0,n):
 						if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
 		else:
-			self.opt_profile = self.dummybox.get_opt_profile()
-			self.opt_threshold = self.dummybox.get_correlation_score()
+			self.opt_profile = self.dummy_box.get_opt_profile()
+			self.opt_threshold = self.dummy_box.get_correlation_score()
 		
 	
 		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius

@@ -1109,61 +1109,141 @@ class MicrographCCDImportTask(WorkFlowTask):
 		
 		params.append([pinvert,pxray,pthumbnail])
 		return params
+	
+	def on_form_ok(self,params):
+		for k,v in params.items():
+			if key == "import_micrograph_ccd_files":
+				self.do_import(params)
+			else:
+				self.write_db_entry(k,v)
+		
+		
+		
+		
+		self.application.close_specific(self.form)
+		self.form = None
+	
+		self.emit(QtCore.SIGNAL("task_idle"))
 
-	def write_db_entry(self,key,value):
-		if key == "import_micrograph_ccd_files":
+	def do_import(self,params):
+		filenames = params["import_micrograph_ccd_files"]
+		
 			
-			no_dir_names = [get_file_tag(name) for name in value]
+		no_dir_names = [get_file_tag(name) for name in filenames]
+		
+		for name in filenames:
+			if name.find("bdb:rawdata#") != -1:
+				print "you can't import files that are already in the project raw data directory,",name,"is invalid"
+				return
+		
+		for name in no_dir_names:
+			if no_dir_names.count(name) > 1:
+				print "you can't use images with the same name (",name,")"
+				return
+		
+		project_db = db_open_dict("bdb:project")
+		
+		current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		cpft = [get_file_tag(file) for file in current_project_files]
+		
+		# get the number of process operation - the progress dialog reflects image copying and image processing operations
+		num_processing_operations = 1 # there is atleast a copy
+		if options["invert"]: num_processing_operations += 1
+		if options["xraypixel"]: num_processing_operations += 1
+		if options["thumbs"]:num_processing_operations += 1
+		
+		
+		# now add the files to db (if they don't already exist
+		progress = EMProgressDialogModule(self.application,"Importing files into database...", "Abort import", 0, len(filenames)*num_processing_operations,None)
+		self.application.show_specific(progress)
+		i = 0
+		for name in filenames:
+			progress.qt_widget.setValue(i)
+			tag = get_file_tag(name)
+			if tag in cpft:
+				print "can't import images have identical tags to those already in the database"
+				continue
 			
-			for name in value:
-				if name.find("bdb:rawdata#") != -1:
-					print "you can't import files that are already in the project raw data directory,",name,"is invalid"
-					return
 			
-			for name in no_dir_names:
-				if no_dir_names.count(name) > 1:
-					print "you can't use images with the same name (",name,")"
-					return
+			db_name = "bdb:raw_data#"+tag
+			if db_check_dict(db_name):
+				print "there is already a raw_data database entry for",tag
+				continue
+			else:
+				e = EMData()
+				e.read_image(name,0)
+				e.set_attr("disk_file_name",name)
+				e.write_image(db_name,0)
+				raw_data_db = db_open_dict(db_name)
+				current_project_files.append(db_name)
 			
-			project_db = db_open_dict("bdb:project")
-			
-			current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-			cpft = [get_file_tag(file) for file in current_project_files]
+			# why doesn't this work :(
+			#print progress.qt_widget.wasCanceled()
+			#if progress.qt_widget.wasCanceled():
+				#print "it was cancelled"
+		progress.qt_widget.setValue(len(filenames))
+		self.application.close_specific(progress)
+		
+		project_db["global.micrograph_ccd_filenames"] = current_project_files
 
-			# now add the files to db (if they don't already exist
-			progress = EMProgressDialogModule(self.application,"Importing files into database...", "Abort import", 0, len(value),None)
-			self.application.show_specific(progress)
-			for i,name in enumerate(value):
-				progress.qt_widget.setValue(i)
-				tag = get_file_tag(name)
-				if tag in cpft:
-					print "can't import images have identical tags to those already in the database"
-					continue
-				
-				
-				db_name = "bdb:raw_data#"+tag
-				if db_check_dict(db_name):
-					print "there is already a raw_data database entry for",tag
-					continue
-				else:
-					e = EMData()
-					e.read_image(name,0)
-					e.set_attr("disk_file_name",name)
-					e.write_image(db_name,0)
-					raw_data_db = db_open_dict(db_name)
-					current_project_files.append(db_name)
-				
-				# why doesn't this work :(
-				#print progress.qt_widget.wasCanceled()
-				#if progress.qt_widget.wasCanceled():
-					#print "it was cancelled"
-			progress.qt_widget.setValue(len(value))
-			self.application.close_specific(progress)
+
+	#def write_db_entry(self,key,value):
+		#if key == "import_micrograph_ccd_files":
 			
-			project_db["global.micrograph_ccd_filenames"] = current_project_files
+			#no_dir_names = [get_file_tag(name) for name in value]
 			
-		else:
-			print "unknown key:",key,"this object is",self
+			#for name in value:
+				#if name.find("bdb:rawdata#") != -1:
+					#print "you can't import files that are already in the project raw data directory,",name,"is invalid"
+					#return
+			
+			#for name in no_dir_names:
+				#if no_dir_names.count(name) > 1:
+					#print "you can't use images with the same name (",name,")"
+					#return
+			
+			#project_db = db_open_dict("bdb:project")
+			
+			#current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+			#cpft = [get_file_tag(file) for file in current_project_files]
+			
+			#if options.
+
+			## now add the files to db (if they don't already exist
+			#progress = EMProgressDialogModule(self.application,"Importing files into database...", "Abort import", 0, len(value),None)
+			#self.application.show_specific(progress)
+			#i = 0
+			#for name in value:
+				#progress.qt_widget.setValue(i)
+				#tag = get_file_tag(name)
+				#if tag in cpft:
+					#print "can't import images have identical tags to those already in the database"
+					#continue
+				
+				
+				#db_name = "bdb:raw_data#"+tag
+				#if db_check_dict(db_name):
+					#print "there is already a raw_data database entry for",tag
+					#continue
+				#else:
+					#e = EMData()
+					#e.read_image(name,0)
+					#e.set_attr("disk_file_name",name)
+					#e.write_image(db_name,0)
+					#raw_data_db = db_open_dict(db_name)
+					#current_project_files.append(db_name)
+				
+				## why doesn't this work :(
+				##print progress.qt_widget.wasCanceled()
+				##if progress.qt_widget.wasCanceled():
+					##print "it was cancelled"
+			#progress.qt_widget.setValue(len(value))
+			#self.application.close_specific(progress)
+			
+			#project_db["global.micrograph_ccd_filenames"] = current_project_files
+			
+		#else:
+			#print "unknown key:",key,"this object is",self
 			
 	def on_import_cancel(self):
 		print "canceled"
