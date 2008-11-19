@@ -34,7 +34,7 @@
 # This program is used to box out particles from micrographs/CCD frames
 
 import PyQt4
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore, QtGui, Qt
 from EMAN2 import *
 from pyemtbx.boxertools import *
 from optparse import OptionParser
