@@ -324,6 +324,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 	"""
 	
 	from math import sqrt
+	from utilities import gen_ctf
 
 	if istop <= istart : 			istop=len(Res_roo)
 	step = (dz_high-dz_low)/nloop
