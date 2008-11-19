@@ -35,6 +35,7 @@
 
 import PyQt4
 from PyQt4 import QtCore, QtGui, Qt
+from PyQt4.QtCore import Qt
 from EMAN2 import *
 from pyemtbx.boxertools import *
 from optparse import OptionParser
@@ -1754,7 +1755,7 @@ class EMBoxerModule(QtCore.QObject):
 		if (nim == 1): return 0
 		
 		app = QtGui.QApplication.instance()
-		app.setOverrideCursor(Qt.BusyCursor)
+		app.setOverrideCursor(QtCore.Qt.BusyCursor)
 	
 		try:
 			n = self.get_image_thumb_shrink()
@@ -1799,13 +1800,13 @@ class EMBoxerModule(QtCore.QObject):
 			
 			self.guimxit.set_mouse_mode("app")
 			app = QtGui.QApplication.instance()
-			app.setOverrideCursor(Qt.BusyCursor)
+			app.setOverrideCursor(QtCore.Qt.BusyCursor)
 		except: 
-			app.setOverrideCursor(Qt.ArrowCursor)
+			app.setOverrideCursor(QtCore.Qt.ArrowCursor)
 			return 0
 			pass
 		
-		app.setOverrideCursor(Qt.ArrowCursor)
+		app.setOverrideCursor(QtCore.Qt.ArrowCursor)
 		return 1
 		
 	def get_image_thumb(self,i):
@@ -1955,7 +1956,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.box_display_update()
 
 	def keypress(self,event):
-		if event.key() == Qt.Key_Tab:
+		if event.key() == QtCore.Qt.Key_Tab:
 			pass
 			#self.rendcor = not self.rendcor
 			#if ( self.correlation != None ):
@@ -2591,7 +2592,7 @@ class CcfHistogram(QtGui.QWidget):
 		p.begin(self)
 		p.setBackground(QtGui.QColor(16,16,16))
 		p.eraseRect(0,0,self.width(),self.height())
-		p.setPen(Qt.darkGray)
+		p.setPen(QtCore.Qt.darkGray)
 
 		if self.data is None:
 			return

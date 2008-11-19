@@ -586,8 +586,8 @@ class UrlEventHandler:
 			self.browser.widget.desktop_hint = "form" # this is to make things work as expected in the desktop
 			self.browser.setWindowTitle(self.browser_title)
 			self.application.show_specific(self.browser)
-			QtCore.QObject.connect(self.browser.widget,QtCore.SIGNAL("ok"),self.on_browser_ok)
-			QtCore.QObject.connect(self.browser.widget,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
+			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("ok"),self.on_browser_ok)
+			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
 		else:
 			self.application.show_specific(self.browser)
 
