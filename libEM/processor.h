@@ -2527,55 +2527,6 @@ The basic design of EMAN Processors: <br>\
 		int npeaks;
 	};
 
-	/**peak processor -> if npeaks or more surrounding values >= value, value->0
-	 *@param npeaks
-	 */
-	class XrayPixelProcessor:public BoxStatProcessor
-	{
-	  public:
-		string get_name() const
-		{
-			return "mask.xraypixel";
-		}
-		static Processor *NEW()
-		{
-			return new XrayPixelProcessor();
-		}
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			max_peak_ratio = params["max_peak_ratio"];
-			if (max_peak_ratio == 0) {
-				max_peak_ratio=0.1f;
-			}
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("max_peak_ratio", EMObject::FLOAT,"Max ratio of neighbor amp/peak amp, default 0.1");
-			return d;
-		}
-
-		string get_desc() const
-		{
-			return "Removes isolated pixels where all neighbors are less than a limiting fraction of the pixel amplitude. Will not work after standard normalization.";
-		}
-
-	  protected:
-		void process_pixel(float *pixel, const float *data, int n) const
-		{
-			
-			for (int i = 0; i < n; i++)
-			{
-				if (data[i] >= *pixel*max_peak_ratio) return;
-			}
-
-		}
-	  private:
-		float max_peak_ratio;
-	};
-
 	/**
 	 */
 	class DiffBlockProcessor:public Processor

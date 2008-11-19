@@ -130,7 +130,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 	pats=[]
 	for j,i in enumerate(args):
 		img=EMData(i,0)
-		img.process_inplace("mask.xraypixel",{})
+		img.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0})
 		img.process_inplace("normalize.edgemean",{})
 		pats.append(l2pa(findstars(img,scale)))
 #		showstars(img,pats[-1])
@@ -139,7 +139,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 	
 #	dorun()
 	avg=EMData(args[0],0)
-	avg.process_inplace("mask.xraypixel",{})
+	avg.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0})
 	avg.process_inplace("normalize.edgemean",{})
 	nx=avg.get_xsize()
 	ny=avg.get_ysize()
@@ -155,7 +155,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 		xf=pats[i].align_2d(pats[0],options.maxerr)
 		print "%d. %6.2f\t%6.2f\t"%(i,xf.get_pretrans().at(0),xf.get_pretrans().at(1)),
 		img=EMData(args[i],0)
-		img.process_inplace("mask.xraypixel",{})
+		img.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0})
 		img.process_inplace("normalize.edgemean",{})
 		if scale!=1.0 : 
 			img=img.get_clip(Region(-nx*(scale-1)/2,-ny*(scale-1)/2,nx*scale,ny*scale))
