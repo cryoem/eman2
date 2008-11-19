@@ -40,14 +40,19 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack <maskfile> --K=number_of_classes --nb_part=number_of_partitions --opt_method=optimization_method --CTF --F=factor_temperature"
+	usage = progname + " stack <maskfile> --K=2 --nb_part=5 --opt_method='SSE' --CTF --F=0.9 --max_run=10 --th_nboj=10 --th_stab=6.0 --min_dec_K=5 --restart=5 --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--K",          type="int",          default=2,         help=" Number of classes (default 2)")
-	parser.add_option("--nb_part",    type="int",          default=5,         help=" Number of partitions used to calculate the stability (default 5)")
-	parser.add_option("--opt_method", type='string',       default="SSE",     help=" K-means method: SSE (default), cla")
-	parser.add_option("--CTF",        action="store_true", default=False,     help=" Perform classification using CTF information")
-	parser.add_option("--F",          type="float",        default=0.0,       help=" Factor to decrease temperature in simulate annealing, ex.: 0.9")
-	parser.add_option("--debug",      action="store_true", default=False,     help="")
+	parser.add_option("--K",          type="int",          default=2,         help="Number of classes for k-means (default 2)")
+	parser.add_option("--nb_part",    type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
+	parser.add_option("--opt_method", type='string',       default="SSE",     help="K-means method: SSE (default), cla")
+	parser.add_option("--CTF",        action="store_true", default=False,     help="Perform classification using CTF information")
+	parser.add_option("--F",          type="float",        default=0.0,       help="Factor to decrease temperature in simulate annealing, ex.: 0.95")
+	parser.add_option("--max_run",    type="int",          default=50,        help="Maximum number of runs (default 50)")
+	parser.add_option("--th_nobj",    type="int",          default=10,        help="Cleanning threshold, classes with number of images < th_nobj are removed (default 10) ")
+	parser.add_option("--th_stab",    type="float",        default=6.0,       help="Stability threshold required to start the next run in percent (default 6.0)")
+	parser.add_option("--min_dec_K",  type="int",          default=5,         help="Minimum decrement value to K when the stability is to low (default 5)")
+	parser.add_option("--restart",    type="int",          default=1,         help="Restart run n from a previous one, means start without init the header and read the current (default 1)")
+	parser.add_option("--MPI",        action="store_true", default=False,     help="MPI version")
 	
 	(options, args) = parser.parse_args()
     	if len(args) < 1 or len(args) > 2:
@@ -70,7 +75,7 @@ def main():
 
 		from  development  import  k_means_stab
 		global_def.BATCH = True
-		k_means_stab(args[0], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.debug)
+		k_means_stab(args[0], mask, options.opt_method, options.K, options.nb_part, options.CTF, options.F, options.max_run, options.th_nobj, options.th_stab, options.min_dec_K, options.restart, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
