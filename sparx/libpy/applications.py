@@ -2837,7 +2837,6 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				for im in xrange(nima): data[im].set_attr('ctf_applied', 1)
 	print_end_msg("ali3d_d")
 
-
 def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an="-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a="S", sym="c1", user_func_name="ref_ali3d", debug=False):
@@ -7693,7 +7692,7 @@ def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym=
 
 
 
-def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou = -1, rw = 1.0,  npad = 1, CTF = False, sign = 1, sym ="c1", MPI = False, random_angles = 0):
+def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, reference_structure = None, ou = -1, rw = 1.0,  npad = 1, CTF = False, sign = 1, sym ="c1", MPI = False, random_angles = 0):
 	'''
 	        Perform 3D reconstruction using selected particle images, 
 	        and calculate spectrum signal noise ratio (SSNR).
@@ -7701,13 +7700,13 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou =
 	        2. The 3D alignment parameters have been written in headers of the particle images.
 	''' 
 	if MPI:
-		ssnr3d_MPI(stack, output_volume, ssnr_text_file, mask, ou, rw, npad, CTF, sign, sym, random_angles)
+		ssnr3d_MPI(stack, output_volume, ssnr_text_file, mask, reference_structure, ou, rw, npad, CTF, sign, sym, random_angles)
 		return
 
 	from utilities               import model_circle, get_im
 	from filter                  import filt_ctf
 	from reconstruction          import recons3d_nn_SSNR, recons3d_4nn, recons3d_4nn_ctf
-	#from projection              import prep_vol, prgs
+	from projection              import prep_vol, prgs
 	from utilities               import print_begin_msg, print_end_msg, print_msg
 	
 	print_begin_msg("ssnr3d")
@@ -7753,40 +7752,40 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou =
 		datstrings.append("\n")
 		outf.write("".join(datstrings))
 	outf.close()
-	print_end_msg("ssnr3d")
-	return ssnr1, vol_ssnr1
-	'''
+	#print_end_msg("ssnr3d")
+	#return ssnr1, vol_ssnr1
 	# perform 3D reconstruction
-	if CTF:
-		snr = 1.0e20
-		vol = recons3d_4nn_ctf(stack, range(nima), snr, sign, sym)
-	else :   vol = recons3d_4nn(stack, range(nima), sym)
+	if(reference_structure == None):
+		if CTF:
+			snr = 1.0e20
+			vol = recons3d_4nn_ctf(stack, range(nima), snr, sign, sym)
+		else :   vol = recons3d_4nn(stack, range(nima), sym)
+	else:
+		vol = get_im(reference_structure)
 	# re-project the reconstructed volume
-	if CTF :img_dicts = ["phi", "theta", "psi", "s2x", "s2y", "defocus", "Pixel_size",\
-                  "voltage", "Cs", "amp_contrast", "sign", "B_factor", "active", "ctf_applied"]
-	else   :img_dicts = ["phi", "theta", "psi", "s2x", "s2y", "active"]
 	nx = vol.get_xsize()
 	if int(ou) == -1: radius = nx//2 - 1
 	else :            radius = int(ou)
 	#
-	prjlist = []
 	vol *= model_circle(radius, nx, nx, nx)
 	volft,kb = prep_vol(vol)
 	del vol
+	prjlist = []
+	from utilities import get_params_proj
 	for i in xrange(nima):
 		e = EMData()
 		e.read_image(stack, i, True)
 		e.set_attr('sign', 1)
-		params = get_arb_params(e, img_dicts)
+		phi,theta,psi,tx,ty = get_params_proj(e, img_dicts)
 		#proj = project(vol,[params[0], params[1], params[2], params[3], params[4]] , radius)
-		proj = prgs(volft, kb, [params[0], params[1], params[2], params[3], params[4]])
-		if CTF :  proj = filt_ctf(proj, params[5], params[8], params[7], params[6], params[9], params[11])
-		set_arb_params(proj, params, img_dicts)
-		if(CTF):	 proj.set_attr('ctf_applied', 1)
-		else:		 proj.set_attr('ctf_applied', 0)
+		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
+		if CTF :
+			ctf_params = proj.get_attr("ctf")			
+			proj = filt_ctf(proj, ctf_params)
 		prjlist.append(proj)
 	del volft
 	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(prjlist, mask2D, CTF, sym, npad, sign, fring_width, filename=ssnr_text_file+"2.txt")
+	'''
 	qt = 0.0
 	for i in xrange(len(ssnr1)):
 		tqt = ssnr1[i][1] - ssnr2[i][1]
@@ -7797,7 +7796,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, ou =
 	dropImage(vol_ssnr2, output_volume+"2.spi", "s")
 	'''
 
-def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", random_angles = 0):
+def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", random_angles = 0):
 	from reconstruction import recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import bcast_EMData_to_all, model_blank, model_circle, get_im
 	from projection     import prep_vol, prgs
@@ -7819,11 +7818,8 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	else:
 		mask2D = None
 
-	prjlist = []
-	for i in range(image_start, image_end):
-		prj = EMData()
-		prj.read_image( stack, i)
-		prjlist.append( prj )
+	prjlist = EMData.read_images(stack, range(image_start, image_end))
+
 	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
 	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	if myid == 0:
@@ -7843,42 +7839,42 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		#return ssnr1, vol_ssnr1
 
 	nx  = prjlist[0].get_xsize()
-	vol = model_blank(nx,nx,nx)
 	if ou == -1: radius = int(nx/2) - 1
 	else:        radius = int(ou)
-	if CTF :
-		snr = 1.0e20
-		if myid == 0 : vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
-		else :  	     recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
-	else  :
-		if myid == 0 : vol = recons3d_4nn_MPI(myid, prjlist, sym)
-		else:		     recons3d_4nn_MPI(myid, prjlist, sym)
+	if(reference_structure == None):
+		vol = model_blank(nx,nx,nx)
+		if CTF :
+			snr = 1.0e20
+			if myid == 0 : vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+			else :  	     recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+		else  :
+			if myid == 0 : vol = recons3d_4nn_MPI(myid, prjlist, sym)
+			else:		     recons3d_4nn_MPI(myid, prjlist, sym)
+	else:
+		if  myid == 0: vol = get_im(reference_structure)
 	if  myid == 0:
 		from utilities import info
 		info(vol)
 		vol.write_image("recof.hdf",0)
 	bcast_EMData_to_all(vol, myid, 0)
-	if CTF: img_dicts = ["defocus", "Pixel_size",\
-	                    "voltage", "Cs", "amp_contrast", "sign", "B_factor", "active", "ctf_applied"]
 	re_prjlist = []
 	#vol *= model_circle(radius, nx, nx, nx)
 	volft,kb = prep_vol(vol)
 	del vol
 	from utilities import get_params_proj
+	if CTF: from filter import filt_ctf
 	for i in xrange(image_start, image_end):
-		prjlist[i-image_start].set_attr('sign', 1)
 		phi,theta,psi,tx,ty = get_params_proj(prjlist[i-image_start])
 		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
 		if CTF:
-			params = get_arb_params(prjlist[i-image_start], img_dicts)
-			proj = filt_ctf(proj, params[5], params[8], params[7], params[6], params[9], params[11])
-			set_arb_params(proj, params, img_dicts)
-		if(CTF):	 proj.set_attr('ctf_applied', 1)
+			ctf_params = prjlist[i-image_start].get_attr("ctf")			
+			proj = filt_ctf(proj, ctf_params)
+			proj.set_attr('sign', 1)
 		re_prjlist.append(proj)
 	del volft
 	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
-	if myid == 0 :
+	if myid == 0:
 		vol_ssnr2.write_image( "ssnr2.hdf", 0)
 		outf = file("ssnr_text_file2", "w")
 		for i in xrange(len(ssnr2[0])):
@@ -7892,8 +7888,8 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 			datstrings.append("\n")
 			outf.write("".join(datstrings))
 		outf.close()
-		qt = 0.0
 		"""
+		qt = 0.0
 		for i in xrange(len(ssnr2)):
 			tqt = ssnr1[i][1] - ssnr2[i][1]
 			if( tqt<qt ): qt = tqt
