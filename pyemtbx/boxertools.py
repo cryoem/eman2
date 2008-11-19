@@ -3030,7 +3030,7 @@ class SwarmAutoBoxer(AutoBoxer):
 		self.template = SwarmTemplate(self)	# an EMData object that is the template
 		self.shrink = -1
 		
-		self.templatedimmin = 40  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
+		self.templatedimmin = 20  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
 		self.opt_threshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.opt_profile = []	# the optimum correlation profile used as the basis of auto selection
 		self.opt_profile_radius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection
@@ -3649,52 +3649,68 @@ class SwarmAutoBoxer(AutoBoxer):
 		#print 'threshod:',self.opt_threshold
 		#print 'profile:',self.opt_profile
 		#print 'optrad:',self.opt_profile_radius
-		
-		if self.dummy_box == None:
-			found = False
-			for i,box in enumerate(self.get_ref_boxes()):
-				if box.get_correlation_score() == None:
-					# this is an error which probably means that the box, as created by the user, has a strong correlation maximum next to it which is disrupting the auto parameters
-					# this is mostly an error for dwoolfords attention
-					# for the time being just ignoring it  probably suffices
-					# FIXME
-					#print "continuing on faulty"
-					continue
-				if found == False:
-					self.opt_threshold = box.get_correlation_score()
-					found = True
-				else:	
-					if box.get_correlation_score() < self.opt_threshold: self.opt_threshold = box.get_correlation_score()
 	
-			# catch the circumstance where for some strange reason things just didn't work
-			# probably the user has some strange data and the rotational template isn't responding normally. 
-			# correlation peaks aren't where the user thinks they are.
-			if not found:
-				print 'error, there were no parameter data that I could inspect. I cant make the optimal parameters'
-				return False
+		
+		found = False
+		for i,box in enumerate(self.get_ref_boxes()):
+			if box.get_correlation_score() == None:
+				# this is an error which probably means that the box, as created by the user, has a strong correlation maximum next to it which is disrupting the auto parameters
+				# this is mostly an error for dwoolfords attention
+				# for the time being just ignoring it  probably suffices
+				# FIXME
+				#print "continuing on faulty"
+				continue
+			if found == False:
+				self.opt_threshold = box.get_correlation_score()
+				found = True
+			else:	
+				if box.get_correlation_score() < self.opt_threshold: self.opt_threshold = box.get_correlation_score()
+
+		# catch the circumstance where for some strange reason things just didn't work
+		# probably the user has some strange data and the rotational template isn't responding normally. 
+		# correlation peaks aren't where the user thinks they are.
+		if not found:
+			print 'error, there were no parameter data that I could inspect. I cant make the optimal parameters'
+			return False
+		
+		# Iterate through the reference boxes and accrue what you can think of
+		# as the worst case scenario, in terms of correlation profiles
+		
+		
+		found = False
+		for i,box in enumerate(self.get_ref_boxes()):
+			if box.get_correlation_score() == None:
+				##print "continuing on faulty" - this was already printed above
+				continue
 			
-			# Iterate through the reference boxes and accrue what you can think of
-			# as the worst case scenario, in terms of correlation profiles
+			#print i,box.get_opt_profile()
+			if found == False:
+				self.opt_profile = copy(box.get_opt_profile())
+				n = len(self.opt_profile)
+				found = True
+			else:
+				profile = box.get_opt_profile()
+				for j in range(0,n):
+					if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
+		if self.dummy_box != None:
+			box = self.dummy_box
 			
+			if found == False:
+				self.opt_threshold = box.get_correlation_score()
+				found = True
+			else:	
+				if box.get_correlation_score() < self.opt_threshold: self.opt_threshold = box.get_correlation_score()
 			
-			found = False
-			for i,box in enumerate(self.get_ref_boxes()):
-				if box.get_correlation_score() == None:
-					##print "continuing on faulty" - this was already printed above
-					continue
-				
-				#print i,box.get_opt_profile()
-				if found == False:
-					self.opt_profile = copy(box.get_opt_profile())
-					n = len(self.opt_profile)
-					found = True
-				else:
-					profile = box.get_opt_profile()
-					for j in range(0,n):
-						if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
-		else:
-			self.opt_profile = self.dummy_box.get_opt_profile()
-			self.opt_threshold = self.dummy_box.get_correlation_score()
+			if found == False:
+				self.opt_profile = copy(box.get_opt_profile())
+			else:
+				profile = box.get_opt_profile()
+				for j in range(0,n):
+					if profile[j] < self.opt_profile[j]: self.opt_profile[j] = profile[j]
+					
+					
+			#self.opt_profile = self.dummy_box.get_opt_profile()
+			#self.opt_threshold = self.dummy_box.get_correlation_score()
 		
 	
 		# determine the point in the profile where the drop in correlation score is the greatest, store it in radius

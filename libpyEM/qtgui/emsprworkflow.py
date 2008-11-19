@@ -41,6 +41,8 @@ from emapplication import EMProgressDialogModule
 from e2boxer import EMBoxerModule
 from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output,get_gui_arg_img_sets
 import subprocess
+from boxertools import set_idd_key_entry
+
 class EmptyObject:
 	'''
 	This just because I need an object I can assign attributes to, and object() doesn't seem to work
@@ -1097,7 +1099,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 	def __init__(self,application):
 		WorkFlowTask.__init__(self,application)
 		self.window_title = "Import micrographs"
-
+		self.thumb_shrink = -1
 	def get_params(self):
 		params = []
 		project_db = db_open_dict("bdb:project")
@@ -1112,7 +1114,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 	
 	def on_form_ok(self,params):
 		for k,v in params.items():
-			if key == "import_micrograph_ccd_files":
+			if k == "import_micrograph_ccd_files":
 				self.do_import(params)
 			else:
 				self.write_db_entry(k,v)
@@ -1147,10 +1149,10 @@ class MicrographCCDImportTask(WorkFlowTask):
 		cpft = [get_file_tag(file) for file in current_project_files]
 		
 		# get the number of process operation - the progress dialog reflects image copying and image processing operations
-		num_processing_operations = 1 # there is atleast a copy
-		if options["invert"]: num_processing_operations += 1
-		if options["xraypixel"]: num_processing_operations += 1
-		if options["thumbs"]:num_processing_operations += 1
+		num_processing_operations = 2 # there is atleast a copy and a disk write
+		if params["invert"]: num_processing_operations += 1
+		if params["xraypixel"]: num_processing_operations += 1
+		if params["thumbs"]:num_processing_operations += 1
 		
 		
 		# now add the files to db (if they don't already exist
@@ -1158,7 +1160,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		self.application.show_specific(progress)
 		i = 0
 		for name in filenames:
-			progress.qt_widget.setValue(i)
+			
 			tag = get_file_tag(name)
 			if tag in cpft:
 				print "can't import images have identical tags to those already in the database"
@@ -1172,19 +1174,51 @@ class MicrographCCDImportTask(WorkFlowTask):
 			else:
 				e = EMData()
 				e.read_image(name,0)
+				i += 1
+				progress.qt_widget.setValue(i)	
 				e.set_attr("disk_file_name",name)
+				
+				if params["invert"]:
+					e.mult(-1)
+					i += 1
+					progress.qt_widget.setValue(i)	
+				
+				if params["xraypixel"]:
+					e.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
+					i += 1
+					progress.qt_widget.setValue(i)	
+				
 				e.write_image(db_name,0)
-				raw_data_db = db_open_dict(db_name)
+				i += 1
+				progress.qt_widget.setValue(i)	
 				current_project_files.append(db_name)
+				
+				if params["thumbs"]:
+					shrink = self.get_thumb_shrink(e.get_xsize(),e.get_ysize())
+					thumb = e.process("math.meanshrink",{"n":shrink})
+					set_idd_key_entry(get_file_tag(db_name),"e2boxer_image_thumb",thumb)
+					i += 1
+					progress.qt_widget.setValue(i)	
 			
-			# why doesn't this work :(
-			#print progress.qt_widget.wasCanceled()
-			#if progress.qt_widget.wasCanceled():
-				#print "it was cancelled"
+				
 		progress.qt_widget.setValue(len(filenames))
 		self.application.close_specific(progress)
 		
 		project_db["global.micrograph_ccd_filenames"] = current_project_files
+	
+	def get_thumb_shrink(self,nx,ny):
+		if self.thumb_shrink == -1:
+			shrink = 1
+			inx =  nx/2
+			iny =  ny/2
+			while ( inx >= 128 and iny >= 128):
+				inx /= 2
+				iny /= 2
+				shrink *= 2
+		
+			self.thumb_shrink=shrink
+		
+		return self.thumb_shrink
 
 
 	#def write_db_entry(self,key,value):
