@@ -98,7 +98,6 @@ template <> Factory < Processor >::Factory()
 	force_add(&MaskNoiseProcessor::NEW);
 	force_add(&MaskGaussProcessor::NEW);
 	force_add(&MaskGaussInvProcessor::NEW);
-	force_add(&XrayPixelProcessor::NEW);
 	
 	force_add(&MaxShrinkProcessor::NEW);
 	force_add(&MinShrinkProcessor::NEW);
