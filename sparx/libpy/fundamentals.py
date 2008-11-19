@@ -136,9 +136,6 @@ def cyclic_shift(img, dx=0, dy=0, dz=0):
 	Util.cyclicshift(e,{"dx":dx,"dy":dy,"dz":dz})
 	return e
 
-def expn(e, r):
-	return  e.get_pow(r)
-
 def mirror(img, axis = 'x'):
 	"""Mirror of an image about by changing the sign of the specified axis
 	"""
