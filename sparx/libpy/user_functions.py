@@ -339,7 +339,7 @@ class factory_class:
 	def __getitem__(self,index):
 
 		if (type(index) is str):
-			#print "str"
+			print "str"
 			try:
 				return self.contents[index]
 			except KeyError:
@@ -375,18 +375,29 @@ factory=factory_class()
 # Note that the returned function (at this time) does not support dynamic argument lists,
 #    so the interface of the function (i.e. number of arguments and the way that they are used)
 #    has to be known and is static!
+
 def build_user_function(module_name=None,function_name=None,path_name=None):
 
 	if (module_name is None) or (function_name is None):
 		return None
 
+	# set default path list here. this can be extended to include user directories, for
+	#    instance $HOME,$HOME/sparx. list is necessary, since find_module expects a list
+	#    of paths to try as second argument
+	import os
 	if (path_name is None):
-		path_name = "/home/justus"
+		path_list = [os.path.expanduser("~"),os.path.expanduser("~")+os.sep+"sparx",]
+
+	if (type(path_name) is list):
+		path_list = path_name
+
+	if (type(path_name) is str):
+		path_list = [path_name,]
 
 	import imp
 
 	try:
-		(file,path,descript) = imp.find_module(module_name,[path_name,])
+		(file,path,descript) = imp.find_module(module_name,path_list)
 	except ImportError:
 		print "could not find module "+str(module_name)+" in path "+str(path_name)
 		return None
