@@ -41,7 +41,7 @@ from emapplication import EMProgressDialogModule
 from e2boxer import EMBoxerModule
 from e2ctf import pspec_and_ctf_fit,GUIctfModule,write_e2ctf_output,get_gui_arg_img_sets
 import subprocess
-from boxertools import set_idd_key_entry
+from pyemtbx.boxertools import set_idd_key_entry
 
 class EmptyObject:
 	'''
