@@ -390,6 +390,7 @@ class EMBorderDecoration:
 			
 			if EMBorderDecoration.x_texture_dl == 0:
 				print "BORDER GENERATION FAILED"
+				import sys
 				sys.exit(1)
 				return
 			glNewList( EMBorderDecoration.x_texture_dl,GL_COMPILE)
