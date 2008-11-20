@@ -2989,7 +2989,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 					phi, theta, psi, s2x, s2y = get_params_proj(im)
 					ali_params.append([phi, theta, psi, s2x, s2y])
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(ali_params, nima)				
-				
+
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
 				ref_data[2] = vol
@@ -3004,7 +3004,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 					from fundamentals import fshift
 					vol = fshift(vol, -cs[0], -cs[1], -cs[2])
 					msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-					print_msg(msg)				
+					print_msg(msg)
 					
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 
@@ -4696,7 +4696,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.proj', 'ID']
 			if myid == main_node: recv_attr_dict(main_node, stack, dataim, par_str, image_start, image_end, number_of_proc)
-			else:                  send_attr_dict(main_node, dataim, par_str, image_start, image_end)
+			else:                 send_attr_dict(main_node, dataim, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ali3d_e_MPI")
 
 def ali3d_eB_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, maxit=10, CTF = None, snr=1.0, sym="c1", chunk = -1.0, user_func_name="ref_aliB_cone"):
