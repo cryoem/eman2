@@ -339,14 +339,11 @@ class factory_class:
 	def __getitem__(self,index):
 
 		if (type(index) is str):
-			print "str"
 			try:
 				return self.contents[index]
 			except KeyError:
-				print "key"
 				return None
 			except:
-				print "something"
 				return None
 		if (type(index) is list):
 			try:
