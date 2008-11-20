@@ -428,7 +428,7 @@ def select_major_peaks(g, max_major_peaks, min_height):
 		K = len(peakg)
 		list_a = [0.0]*K
 		for i in xrange(K):  list_a[i] = peakg[i][4]
-		k = find_postion(list_a, min_height)
+		k = find_position(list_a, min_height)
 		if k <= max_major_peaks: break
 	return peakg[0:k] 
 
