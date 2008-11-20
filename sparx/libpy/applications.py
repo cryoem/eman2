@@ -2680,7 +2680,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", 
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
-	    user_func_name = "ref_ali3d", debug = False, MPI=False):
+	    user_func_name = "ref_ali3d", debug = False, MPI = False):
 	if MPI:
 		ali3d_d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
 	        	delta, an, center, maxit, CTF, snr, ref_a, sym, user_func_name, debug)

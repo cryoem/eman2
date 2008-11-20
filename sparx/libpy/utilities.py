@@ -2423,10 +2423,9 @@ def get_ctf(ima):
 	from EMAN2 import EMAN2Ctf
 	
 	ctf_params = ima.get_attr("ctf")
-	
 	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont
 
-def gen_ctf(p):
+def generate_ctf(p):
 	from EMAN2 import EMAN2Ctf
 
 	defocus = p[0]
@@ -2448,8 +2447,8 @@ def gen_ctf(p):
 	return ctf
 
 def set_ctf(ima, p):
-	ctf = get_ctf( p )
-	ima.set_attr( "ctf", ctf )	
+	ctf = generate_ctf(p)
+	ima.set_attr("ctf", ctf)	
 
 
 def delete_bdb(name):

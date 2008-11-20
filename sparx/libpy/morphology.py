@@ -264,7 +264,7 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 		3. It returns Euclidean distance for defocus selection 
 	"""
 	from math 	import sqrt, atan
-	from utilities 	import read_txt_col, gen_ctf
+	from utilities 	import read_txt_col, generate_ctf
 	roo     = []
 	res     = []
 	if docf == "a":
@@ -292,7 +292,7 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 	#
 	defocus=defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
 	nx  = int(len(roo)*2)
-	ctf = ctf_2(nx, gen_ctf([defocus,Cs,voltage,Pixel_size, 0.0, wgh]))
+	ctf = ctf_2(nx, generate_ctf([defocus,Cs,voltage,Pixel_size, 0.0, wgh]))
 	for i in xrange(len(Res_TE)):
 		ctf[i]=ctf[i]*Res_TE[i]
 	dis = defocus_L2_euc(ctf, Res_roo, i_start, i_stop)
@@ -324,7 +324,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 	"""
 	
 	from math import sqrt
-	from utilities import gen_ctf
+	from utilities import generate_ctf
 
 	if istop <= istart : 			istop=len(Res_roo)
 	step = (dz_high-dz_low)/nloop
@@ -345,7 +345,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 			diff   = 0
 			length = len(Res_roo)
 			nx     = int(length*2)
-			ctf    = ctf_2(nx, gen_ctf([dz,Cs,volt,Pixel_size,0.0,wgh]))
+			ctf    = ctf_2(nx, generate_ctf([dz,Cs,volt,Pixel_size,0.0,wgh]))
 			if defocus_estimation_method == 1:
 	        		for ifreq in xrange(istart, istop, 1):
 	        			diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2
