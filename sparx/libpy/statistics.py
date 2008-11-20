@@ -1107,6 +1107,68 @@ def varfctf(data, mask = None, mode=""):
 
 	return var, rot_avg_table(Util.pack_complex_to_real(var))
 
+def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0):
+	"""
+	  Calculate variance in Fourier space of an object reconstructed from projections
+	"""
+	from reconstruction import   recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
+	from utilities      import   bcast_EMData_to_all, model_blank
+	from projection     import   prep_vol, prgs
+
+	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
+	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+
+	nx  = prjlist[0].get_xsize()
+	if ou == -1: radius = int(nx/2) - 1
+	else:        radius = int(ou)
+	if(reference_structure == None):
+		reference_structure = model_blank(nx, nx, nx)
+		if CTF :
+			snr = 1.0e20
+			if myid == 0 : reference_structure = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+			else :  	                     recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+		else  :
+			if myid == 0 : reference_structure = recons3d_4nn_MPI(myid, prjlist, sym)
+			else:		                     recons3d_4nn_MPI(myid, prjlist, sym)
+		bcast_EMData_to_all(reference_structure, myid, 0)
+	#vol *= model_circle(radius, nx, nx, nx)
+	volft,kb = prep_vol(reference_structure)
+	del reference_structure
+	from utilities import get_params_proj
+	if CTF: from filter import filt_ctf
+	re_prjlist = []
+	for prj in prjlist:
+		phi,theta,psi,tx,ty = get_params_proj(prj)
+		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
+		if CTF:
+			ctf_params = prj.get_attr("ctf")			
+			proj = filt_ctf(proj, ctf_params)
+			proj.set_attr('sign', 1)
+		re_prjlist.append(proj)
+	del volft
+	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+	if myid == 0:
+		outf = file(ssnr_text_file, "w")
+		for i in xrange(len(ssnr2[0])):
+			datstrings = []
+			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
+			datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
+			datstrings.append("  %15e" % ssnr1[2][i])    # variance
+			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
+			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
+			datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
+			datstrings.append("  %15f" % ssnr2[0][i])    #  have to subtract 0.5 as in C code there is round.
+			datstrings.append("  %15e" % ssnr2[1][i])    # SSNR
+			datstrings.append("  %15e" % ssnr2[2][i])    # variance
+			datstrings.append("  %15f" % ssnr2[3][i])    # number of points in the shell
+			datstrings.append("  %15f" % ssnr2[4][i])    # number of added Fourier points
+			datstrings.append("  %15e" % ssnr2[5][i])    # square of signal
+			datstrings.append("\n")
+			outf.write("".join(datstrings))
+		outf.close()
+	from morphology import threshold_to_minval
+	return  threshold_to_minval(vol_ssnr1-vol_ssnr2,1.0)
 
 def ccc(img1, img2, mask=None):
 	"""Cross-correlation coefficient.

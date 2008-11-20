@@ -4474,18 +4474,19 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 	"""
 		
 	"""
-	from filter         import filt_ctf
-	from projection     import prep_vol
-	from utilities      import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
-	from utilities      import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, recv_attr_dict
-	from utilities      import get_image, drop_image
-	from utilities      import amoeba_multi_level
-	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from reconstruction import rec3D_MPI, rec3D_MPI_noCTF
-	from math           import pi
+	from filter           import filt_ctf
+	from projection       import prep_vol
+	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
+	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, recv_attr_dict
+	from utilities        import get_image, drop_image
+	from utilities        import amoeba_multi_level
+	from utilities        import print_begin_msg, print_end_msg, print_msg
+	from reconstruction   import rec3D_MPI, rec3D_MPI_noCTF
+	from statistics       import varf3d_MPI
+	from math             import pi
 	import os
 	import sys
-	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
+	from mpi 	      import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
@@ -4681,12 +4682,13 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 				outf.flush()
 				
 			if CTF: vol, fscc = rec3D_MPI(dataim, snr, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
-			else: vol, fscc = rec3D_MPI_noCTF(dataim, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
+			else:   vol, fscc = rec3D_MPI_noCTF(dataim, sym, mask3D, os.path.join(outdir, "resolution%03d_%03d"%(iteration, ic)), myid, main_node)
 			
 			if debug:
 				outf.write("  done reconstruction = "+str(image_start))
 				outf.write("\n")
 				outf.flush()
+			#  Insert of the variance
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
 				ref_data[2] = vol
@@ -7901,7 +7903,6 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 			else:		     recons3d_4nn_MPI(myid, prjlist, sym)
 	else:
 		if  myid == 0: vol = get_im(reference_structure)
-	del prjlist
 	if  myid == 0:
 		vol.write_image("recof.hdf",0)
 	bcast_EMData_to_all(vol, myid, 0)
@@ -7911,15 +7912,15 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	del vol
 	from utilities import get_params_proj
 	if CTF: from filter import filt_ctf
-	for i in xrange(image_start, image_end):
-		phi,theta,psi,tx,ty = get_params_proj(prjlist[i-image_start])
+	for prj in prjlist:
+		phi,theta,psi,tx,ty = get_params_proj(prj)
 		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
 		if CTF:
-			ctf_params = prjlist[i-image_start].get_attr("ctf")			
+			ctf_params = prj.get_attr("ctf")			
 			proj = filt_ctf(proj, ctf_params)
 			proj.set_attr('sign', 1)
 		re_prjlist.append(proj)
-	del volft
+	del volft, prjlist
 	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	if myid == 0:
