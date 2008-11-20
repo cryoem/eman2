@@ -1862,17 +1862,13 @@ def estimate_3D_center(data):
 	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
 
 
-def estimate_3D_center_MPI(data, nima):
+def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 	from math import cos, sin, pi
 	from numpy import matrix
 	from numpy import linalg
-	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi import MPI_COMM_WORLD
 	from mpi import mpi_recv, mpi_send, MPI_FLOAT
 	from applications import MPI_start_end
-	
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-	myid           = mpi_comm_rank(MPI_COMM_WORLD)
-	main_node = 0
 	
 	ali_params_series = []
 	for im in data:
@@ -1884,11 +1880,12 @@ def estimate_3D_center_MPI(data, nima):
 		ali_params_series.append(s2y)
 
 	if myid == main_node:
-		for proc in xrange(1, number_of_proc):
-			image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
-			n_params = (image_end_proc - image_start_proc)*5
-			temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, MPI_COMM_WORLD)
-			for nn in xrange(n_params): 	ali_params_series.append(temp[nn])	
+		for proc in xrange(number_of_proc):
+			if proc != main_node:
+				image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
+				n_params = (image_end_proc - image_start_proc)*5
+				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, MPI_COMM_WORLD)
+				for nn in xrange(n_params): 	ali_params_series.append(temp[nn])	
 		ali_params = []
 		for im in xrange(len(ali_params_series)/5):
 			ali_params.append([ali_params_series[im*5], ali_params_series[im*5+1], ali_params_series[im*5+2], ali_params_series[im*5+3], ali_params_series[im*5+4]])
