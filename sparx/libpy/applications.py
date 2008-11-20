@@ -592,8 +592,8 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					# When center = -1, which is by default, we use the average center method
 					ref_data[1] = 0
 					tavg, cs = user_func(ref_data)
-					cs[0] = sx_sum/float(nima)
-					cs[1] = sy_sum/float(nima)
+					cs[0] = float(sx_sum)/nima
+					cs[1] = float(sy_sum)/nima
 					from fundamentals import fshift
 					tavg = fshift(tavg, -cs[0], -cs[1])
 					msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
@@ -635,8 +635,6 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if myid == main_node:  print_end_msg("ali2d_a_MPI")
 
 
-
-#* ali2d_c
 def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d", rand_alpha = False, MPI=False):
 	if MPI:
 		ali2d_c_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, center, maxit, CTF, snr, user_func_name, rand_alpha)
@@ -1026,8 +1024,8 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 					# When center = -1, which is by default, we use the average center method
 					ref_data[1] = 0
 					tavg, cs = user_func(ref_data)
-					cs[0] = sx_sum/float(nima)
-					cs[1] = sy_sum/float(nima)
+					cs[0] = float(sx_sum)/nima
+					cs[1] = float(sy_sum)/nima
 					from fundamentals import fshift
 					tavg = fshift(tavg, -cs[0], -cs[1])
 					msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
@@ -1046,6 +1044,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 			again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 			bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			cs = [float(cs[0]), float(cs[1])]
 			if not again: break
 	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers  and STOP, under MPI writing has to be done sequentially

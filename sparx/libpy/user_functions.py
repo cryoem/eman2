@@ -339,7 +339,7 @@ class factory_class:
 	def __getitem__(self,index):
 
 		if (type(index) is str):
-			print "str"
+			#print "str"
 			try:
 				return self.contents[index]
 			except KeyError:

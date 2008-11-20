@@ -35,7 +35,7 @@ import types
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
-		Convert 2D alignment parameters (alpha,sx,sy, mirror) into
+		Convert 2D alignment parameters (alpha, sx, sy, mirror) into
 		3D alignment parameters (phi, theta, psi, s2x, s2y, mirror)
 	"""
 	phi = 0
@@ -52,7 +52,7 @@ def params_2D_3D(alpha, sx, sy, mirror):
 	
 def params_3D_2D(phi, theta, psi, s2x, s2y):
 	"""
-		Convert 3D alignment parameters ( phi, theta, psi, s2x, s2y)  # there is no mirror in 3D! 
+		Convert 3D alignment parameters (phi, theta, psi, s2x, s2y)  # there is no mirror in 3D! 
 		into 2D alignment parameters (alpha, sx, sy, mirror)
 	"""
 	if (theta > 90.0):
@@ -216,6 +216,7 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 	    iteration += 1
 	    #print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
 
+
 def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data=None):
 	"""
 	Commented by Zhengfan Yang on 05/01/07
@@ -313,6 +314,7 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	    fvalue[ssworst] = fnew
 	    iteration += 1
 	    #print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
+
 
 def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
 	""" Given a function of one-variable and a possible bracketing interval,
