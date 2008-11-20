@@ -345,7 +345,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 			diff   = 0
 			length = len(Res_roo)
 			nx     = int(length*2)
-			ctf    = ctf_2(nx, gen_ctf([dz,Cs,voltage,Pixel_size,0.0,wgh]))
+			ctf    = ctf_2(nx, gen_ctf([dz,Cs,volt,Pixel_size,0.0,wgh]))
 			if defocus_estimation_method == 1:
 	        		for ifreq in xrange(istart, istop, 1):
 	        			diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2
