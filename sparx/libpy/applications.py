@@ -2984,8 +2984,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	
 			if center == -1:
 				ali_params_old = []
-				for im in xrange(len(data)):
-					phi, theta, psi, s2x, s2y = get_params_proj(data[im])
+				for im in data:
+					phi, theta, psi, s2x, s2y = get_params_proj(im)
 					ali_params_old.append(phi)
 					ali_params_old.append(theta)
 					ali_params_old.append(psi)
@@ -4602,6 +4602,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 		ref_data.append( center )
 		ref_data.append( None )
 		ref_data.append( None )
+		ref_data.append( None )
 		
 	M = nx
 	npad = 2
@@ -4689,10 +4690,15 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 				outf.write("\n")
 				outf.flush()
 			#  Insert of the variance
+			varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+
 			if myid == main_node:
+				varf = 1.0/varf
 				drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
+				drop_image(vol, os.path.join(outdir, "varf%03d_%03d.hdf"%(iteration, ic) ))
 				ref_data[2] = vol
 				ref_data[3] = fscc
+				ref_data[4] = varf
 				#  call user-supplied function to prepare reference image, i.e., filter it
 				vol, cs = user_func( ref_data )
 				if center == 1:

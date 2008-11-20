@@ -1116,20 +1116,25 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 	from projection     import   prep_vol, prgs
 
 	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
-	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+	else:
+		recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+		vol_ssnr1 = model_blank(2,2,2)
 
 	nx  = prjlist[0].get_xsize()
 	if ou == -1: radius = int(nx/2) - 1
 	else:        radius = int(ou)
 	if(reference_structure == None):
-		reference_structure = model_blank(nx, nx, nx)
 		if CTF :
 			snr = 1.0e20
 			if myid == 0 : reference_structure = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
-			else :  	                     recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+			else :
+				recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+				reference_structure = model_blank(nx, nx, nx)
 		else  :
 			if myid == 0 : reference_structure = recons3d_4nn_MPI(myid, prjlist, sym)
-			else:		                     recons3d_4nn_MPI(myid, prjlist, sym)
+			else:
+				recons3d_4nn_MPI(myid, prjlist, sym)
+				reference_structure = model_blank(nx, nx, nx)
 		bcast_EMData_to_all(reference_structure, myid, 0)
 	#vol *= model_circle(radius, nx, nx, nx)
 	volft,kb = prep_vol(reference_structure)
@@ -1147,7 +1152,10 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 		re_prjlist.append(proj)
 	del volft
 	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
-	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+	else:
+		recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+		vol_ssnr2 = model_blank(2,2,2)
+
 	if myid == 0:
 		outf = file(ssnr_text_file, "w")
 		for i in xrange(len(ssnr2[0])):
@@ -1168,7 +1176,7 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 			outf.write("".join(datstrings))
 		outf.close()
 	from morphology import threshold_to_minval
-	return  threshold_to_minval(vol_ssnr1-vol_ssnr2,1.0)
+	return  threshold_to_minval(Util.subn(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
 
 def ccc(img1, img2, mask=None):
 	"""Cross-correlation coefficient.
