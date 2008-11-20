@@ -1251,7 +1251,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 
 		volodd = recons_from_fftvol(nx, fftvol, weight, symmetry)
 		voleve = recv_EMData(main_node_eve, tag_voleve)
-		fscdat = fsc( volodd, voleve, mask3D, rstep, fsc_curve)
+		fscdat = fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
 		volall = recv_EMData(main_node_all, tag_volall)
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
 		return volall,fscdat
@@ -1267,7 +1267,7 @@ def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rste
 		send_EMData(voleve, main_node_odd, tag_voleve)
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
 
-		return model_blank(nx,nx,nx),None
+		return model_blank(nx,nx,nx), None
 
         
 	if myid == main_node_all:
