@@ -7746,9 +7746,6 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 	
 	print_begin_msg("ssnr3d")
 
-	if output_volume  is None: output_volume  = "SSNR.hdf"
-	if ssnr_text_file is None: ssnr_text_file = "ssnr"
-
 	print_msg("Input stack                 : %s\n"%(stack))
 	print_msg("Output volume               : %s\n"%(output_volume))	
 	print_msg("SSNR text file              : %s\n"%(ssnr_text_file))
@@ -7886,8 +7883,9 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		random_angles = 0
 	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
 	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
-	if myid == 0: vol_ssnr1.write_image( output_volume, 0)
-	del vol_ssnr1
+	if myid == 0:
+		vol_ssnr1.write_image( output_volume, 0)
+		del vol_ssnr1
 
 	nx  = prjlist[0].get_xsize()
 	if ou == -1: radius = int(nx/2) - 1
