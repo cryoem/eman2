@@ -768,8 +768,8 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 
 	if myid == main_node_half:
 		tmpid = randint(0, 1000000)
-		fftvol_half_file = ("/tmp/fftvol_half%d.hdf" % tmpid)
-		weight_half_file = ("/tmp/weight_half%d.hdf" % tmpid)
+		fftvol_half_file = ("fftvol_half%d.hdf" % tmpid)
+		weight_half_file = ("weight_half%d.hdf" % tmpid)
 		fftvol_half.write_image(fftvol_half_file)
 		weight_half.write_image(weight_half_file)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -843,8 +843,8 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
         
 	if myid == main_node_half:
 		tmpid = randint(0, 1000000) 
-		fftvol_half_file = ("/tmp/fftvol_half%d.hdf" % tmpid)
-		weight_half_file = ("/tmp/weight_half%d.hdf" % tmpid)
+		fftvol_half_file = ("fftvol_half%d.hdf" % tmpid)
+		weight_half_file = ("weight_half%d.hdf" % tmpid)
 		fftvol_half.write_image(fftvol_half_file)
 		weight_half.write_image(weight_half_file)
 	mpi_barrier(MPI_COMM_WORLD)
