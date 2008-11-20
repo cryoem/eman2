@@ -48,7 +48,7 @@ def main():
 	parser.add_option("--xr",    type="string", default="4 2 1 1",     help="  range for translation search in x direction, search is +/xr ")
 	parser.add_option("--yr",    type="string", default="-1",          help="  range for translation search in y direction, search is +/yr ")
 	parser.add_option("--ts",    type="string", default="2 1 0.5 0.25",help="  step of translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
-	parser.add_option("--center",type="float",  default=-1             help="  -1. average center method 0.not centered 1.phase approximation 2.cc with Gaussian function 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
+	parser.add_option("--center",type="float",  default=-1             help="  -1. average center method 0.not centered 1.phase approximation 2.cc with Gaussian function 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average"
 	parser.add_option("--maxit", type="float",  default=0,             help="  maximum number of iterations (0 means the maximum iterations is 10, but it will automatically stop should the criterion falls")
 	parser.add_option("--CTF", action="store_true", default=False,     help="  Consider CTF correction during the alignment ")
 	parser.add_option("--function", type="string", default="ref_ali2d",help="  name of the reference preparation function")
