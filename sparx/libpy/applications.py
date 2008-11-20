@@ -7759,7 +7759,6 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 	print_msg("CTF sign                    : %i\n"%(sign))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
 	
-	#nima = EMUtil.get_image_count(stack)
 	fring_width = float(rw)
 	if mask:
 		import  types
@@ -7775,20 +7774,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 
 	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(stack, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	vol_ssnr1.write_image(output_volume, 0)
-	outf = file(ssnr_text_file, "w")
-	for i in xrange(len(ssnr1[0])):
-		datstrings = []
-		datstrings.append("  %15f" % ssnr1[0][i])	 #  have to subtract 0.5 as in C code there is round.
-		datstrings.append("  %15e" % ssnr1[1][i])	 # SSNR
-		datstrings.append("  %15e" % ssnr1[2][i])	 # varianc
-		datstrings.append("  %15f" % ssnr1[3][i])	 # number of points in the shell
-		datstrings.append("  %15f" % ssnr1[4][i])	 # number of added Fourier points
-		datstrings.append("  %15f" % ssnr1[5][i])	 # square of signal
-		datstrings.append("\n")
-		outf.write("".join(datstrings))
-	outf.close()
-	#print_end_msg("ssnr3d")
-	#return ssnr1, vol_ssnr1
+	del vol_ssnr1
 	# perform 3D reconstruction
 	if(reference_structure == None):
 		if CTF:
@@ -7812,7 +7798,6 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 		e.read_image(stack, i, True)
 		e.set_attr('sign', 1)
 		phi,theta,psi,tx,ty = get_params_proj(e, img_dicts)
-		#proj = project(vol,[params[0], params[1], params[2], params[3], params[4]] , radius)
 		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
 		if CTF :
 			ctf_params = proj.get_attr("ctf")			
@@ -7820,6 +7805,26 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 		prjlist.append(proj)
 	del volft
 	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(prjlist, mask2D, CTF, sym, npad, sign, fring_width, filename=ssnr_text_file+"2.txt")
+	vol_ssnr2.write_image(output_volume, 1)
+	outf = file(ssnr_text_file, "w")
+	for i in xrange(len(ssnr2[0])):
+		datstrings = []
+		datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
+		datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
+		datstrings.append("  %15e" % ssnr1[2][i])    # variance
+		datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
+		datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
+		datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
+		datstrings.append("  %15f" % ssnr2[0][i])    #  have to subtract 0.5 as in C code there is round.
+		datstrings.append("  %15e" % ssnr2[1][i])    # SSNR
+		datstrings.append("  %15e" % ssnr2[2][i])    # variance
+		datstrings.append("  %15f" % ssnr2[3][i])    # number of points in the shell
+		datstrings.append("  %15f" % ssnr2[4][i])    # number of added Fourier points
+		datstrings.append("  %15e" % ssnr2[5][i])    # square of signal
+		datstrings.append("\n")
+		outf.write("".join(datstrings))
+	outf.close()
+	
 	'''
 	qt = 0.0
 	for i in xrange(len(ssnr1)):
@@ -7837,9 +7842,6 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	from projection     import prep_vol, prgs
 	from mpi            import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 
-	if output_volume  is None: output_volume  = "SSNR.hdf"
-	if ssnr_text_file is None: ssnr_text_file = "ssnr"
-
 	nima = EMUtil.get_image_count(stack)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 	myid  = mpi_comm_rank(MPI_COMM_WORLD)
@@ -7854,30 +7856,44 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		mask2D = None
 
 	prjlist = EMData.read_images(stack, range(image_start, image_end))
-
+	if random_angles > 0:
+		for prj in prjlist:
+			active = prj.get_attr_default('active', 1)
+			if(active == 1):
+				if(random_angles  == 2):
+					from  random import  random
+					phi	 = 360.0*random()
+					theta	 = 180.0*random()
+					psi	 = 360.0*random()
+					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
+					prj.set_attr( "xform.proj", xform_proj )
+				elif(random_angles  == 3):
+					from  random import  random
+					phi    = 360.0*random()
+					theta  = 180.0*random()
+					psi    = 360.0*random()
+					tx     = 6.0*(random() - 0.5)
+					ty     = 6.0*(random() - 0.5)
+					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
+					prj.set_attr( "xform.proj", xform_proj )
+				elif(random_angles  == 1):
+					from  random import  random
+					old_xform_proj = prj.get_attr( "xform.proj" )
+					dict = old_xform_proj.get_rotation( "spider" )
+					dict["psi"] = 360.0*random()
+					xform_proj = Transform( dict )
+					prj.set_attr( "xform.proj", xform_proj )
+		random_angles = 0
 	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
 	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
-	if myid == 0:
-		vol_ssnr1.write_image( output_volume, 0)
-		outf = file(ssnr_text_file, "w")
-		for i in xrange(len(ssnr1[0])):
-			datstrings = []
-			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
-			datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
-			datstrings.append("  %15e" % ssnr1[2][i])    # variance
-			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
-			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
-			datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
-			datstrings.append("\n")
-			outf.write("".join(datstrings))
-		outf.close()
-		#return ssnr1, vol_ssnr1
+	if myid == 0: vol_ssnr1.write_image( output_volume, 0)
+	del vol_ssnr1
 
 	nx  = prjlist[0].get_xsize()
 	if ou == -1: radius = int(nx/2) - 1
 	else:        radius = int(ou)
 	if(reference_structure == None):
-		vol = model_blank(nx,nx,nx)
+		vol = model_blank(nx, nx, nx)
 		if CTF :
 			snr = 1.0e20
 			if myid == 0 : vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
@@ -7887,9 +7903,8 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 			else:		     recons3d_4nn_MPI(myid, prjlist, sym)
 	else:
 		if  myid == 0: vol = get_im(reference_structure)
+	del prjlist
 	if  myid == 0:
-		from utilities import info
-		info(vol)
 		vol.write_image("recof.hdf",0)
 	bcast_EMData_to_all(vol, myid, 0)
 	re_prjlist = []
@@ -7910,10 +7925,16 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	if myid == 0:
-		vol_ssnr2.write_image( "ssnr2.hdf", 0)
-		outf = file("ssnr_text_file2", "w")
+		vol_ssnr2.write_image( output_volume, 1)
+		outf = file(ssnr_text_file, "w")
 		for i in xrange(len(ssnr2[0])):
 			datstrings = []
+			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
+			datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
+			datstrings.append("  %15e" % ssnr1[2][i])    # variance
+			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
+			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
+			datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
 			datstrings.append("  %15f" % ssnr2[0][i])    #  have to subtract 0.5 as in C code there is round.
 			datstrings.append("  %15e" % ssnr2[1][i])    # SSNR
 			datstrings.append("  %15e" % ssnr2[2][i])    # variance
