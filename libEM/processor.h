@@ -1704,7 +1704,7 @@ The basic design of EMAN Processors: <br>\
 		float value2;
 	};
 
-	/**f(x) = log10(x/max_pixel) if x > 0; else f(x) = 0
+	/**f(x) = log10(x) if x > 0; else f(x) = 0
 	 */
 	class LogProcessor:public RealPixelProcessor
 	{
@@ -1720,7 +1720,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "f(x) = log10(x/max_pixel) if x > 0; else f(x) = 0;";
+			return "f(x) = log10(x) if x > 0; else f(x) = 0;";
 		}
 
 	  protected:
@@ -1728,7 +1728,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			if (*x > 0)
 			{
-				*x = log10(*x / maxval);
+				*x = log10(*x);
 			}
 			else
 			{
