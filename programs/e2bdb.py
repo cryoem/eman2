@@ -62,6 +62,7 @@ Various utilities related to BDB databases."""
 	if options.makevstack : vstack=db_open_dict(options.makevstack)
 	else : vstack=None
 	vstackn=0
+	print options.makevstack,vstack
 	
 	for path in args:
 		if path.lower()[:4]!="bdb:" : path="bdb:"+path
@@ -76,11 +77,13 @@ Various utilities related to BDB databases."""
 		
 		if vstack :
 			for db in dbs:
+				print db,vstackn
 				dct=db_open_dict(db)
 				for n in range(len(dct)):
 					d=dct.get(n,nodata=1).get_attr_dict()
 					d["data_path"]=dct.get_data_path(n)
 					vstack[vstackn]=d
+					print vstackn,d
 					vstackn+=1
 		
 		try: maxname=max([len(s) for s in dbs])

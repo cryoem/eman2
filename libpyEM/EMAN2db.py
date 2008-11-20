@@ -599,13 +599,14 @@ class DBDict:
 			try: del ad["data_path"]
 			except:pass
 			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
-			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
+			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 			
 			# write the binary data
 			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
+			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 				
 	def __getitem__(self,key):
 		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
@@ -721,13 +722,14 @@ class DBDict:
 			try: del ad["data_path"]
 			except:pass
 			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
-			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
+			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 			
 			# write the binary data
 			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
 			
 		else :
 			self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
+			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 
 	def set_header(self,key,val,txn=None):
 		"Alternative to x[key]=val with transaction set"
