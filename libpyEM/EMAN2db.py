@@ -436,6 +436,7 @@ class EMAN2DB:
 #		print "get ",key
 		try: return self.dicts[key]
 		except:
+			# if the database is open read/write, return that instead
 			if key[-4:]=="__ro" : return self.dicts[key[:-4]]
 			raise KeyError
 
@@ -443,7 +444,8 @@ class EMAN2DB:
 #		print "open ",name,ro
 		if self.dicts.has_key(name) : return
 		if ro:
-			if self.dicts.has_key(name+"__ro") : return
+			# note, if the database is already open read/write, we just use that
+			if self.dicts.has_key(name+"__ro") or self.dicts.has_key(name) : return
 			self.dicts[name+"__ro"]=DBDict(name,dbenv=self.dbenv,path=self.path+"/EMAN2DB",parent=self,ro=ro)
 			self.__dict__[name+"__ro"]=self.dicts[name+"__ro"]
 		else:
