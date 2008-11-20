@@ -335,7 +335,6 @@ class factory_class:
 		self.contents["spruce_up"] = spruce_up
 		self.contents["ref_aliB_cone"] = ref_aliB_cone
 		self.contents["ref_7grp"] = ref_7grp
-		print "factory init done"
 		
 	def __getitem__(self,index):
 
