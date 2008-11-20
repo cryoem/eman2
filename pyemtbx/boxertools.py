@@ -1695,6 +1695,9 @@ class Boxable:
 				
 				if box_size != -1:
 					box.change_box_size(origbox_size)
+			
+			if imageformat == "bdb":
+				db_close_dict(image_name)
 
 	def move_box(self,box,dx,dy,box_num):
 		if box.ismanual:

@@ -33,7 +33,7 @@
 from emform import EMFormModule,ParamTable
 from emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
-from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts
+from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts,db_close_dict
 from EMAN2 import EMData,get_file_tag,EMAN2Ctf,num_cpus,memory_stats
 import os
 import copy
@@ -114,6 +114,8 @@ class WorkFlowTask(QtCore.QObject):
 			db["global.num_cpus"] = value
 		else:
 			pass
+		
+		db_close_dict("bdb:project")
 	def get_wd(self):
 		'''
 		Get the working directory, originally introduced to provide a centralized mechanism for accessing the working directory,
@@ -168,6 +170,8 @@ class WorkFlowTask(QtCore.QObject):
 			file = open(temp_file_name,"w+")
 			process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
+			
+		db_close_dict("bdb:project")
 
 class ParticleWorkFlowTask(WorkFlowTask):
 	'''
@@ -214,7 +218,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			stripped = get_file_tag(name)
 			if stripped not in ptcl_dbs:
 				ptcl_dbs.append(stripped)
-		
+		db_close_dict("bdb:project")
 		return ptcl_dbs
 	
 	def get_num_particles(self,project_files_names):
@@ -227,6 +231,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				if db_check_dict(db_name):
 					db = db_open_dict(db_name)
 					vals.append(db["maxrec"]+1)
+					db_close_dict(db_name)
 				else:
 					vals.append(0)
 			else:
@@ -246,6 +251,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 					db = db_open_dict(db_name)
 					hdr = db.get_header(0)
 					vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+					db_close_dict(db_name)
 				else: vals.append("")
 			return vals
 		
@@ -263,6 +269,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				db = db_open_dict(db_name)
 				hdr = db.get_header(0)
 				vals.append(str(hdr["nx"])+'x'+str(hdr["ny"])+'x'+str(hdr["nz"]))
+				db_close_dict(db_name)
 			else: vals.append("No data")
 		return vals
 
@@ -280,6 +287,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			if db_check_dict(db_name):
 				db = db_open_dict(db_name)
 				vals.append(db["maxrec"]+1)
+				db_close_dict(db_name)
 			else:
 				vals.append(-1)
 		return vals
@@ -354,6 +362,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Description",desc_long="",property=None,defaultunits=ParticleImportTask.documentation_string,choices=None))
 		params.append(ParamDef(name="import_particle_files",vartype="url",desc_short="Imported particles",desc_long="A list of particle files that have been or will be imported into this project",property=None,defaultunits=[],choices=[]))
+		db_close_dict("bdb:project")
 		return params
 
 
@@ -367,6 +376,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			for name in v:
 				if get_file_tag(name) in pfnt:
 					print "error, you can't import particles that have the same file name as one of the project files - the problem is with:",get_file_tag(name)
+					db_close_dict("bdb:project")
 					return
 			# now check to see if there are duplicated filetags in the incoming list
 			# Actually the url form widget may have already dealt with this?
@@ -374,6 +384,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			for name in v:
 				if nt.count(get_file_tag(name)) > 1:
 					print "error, you can't import particles that have the same file names! The problem is with:",get_file_tag(name)
+					db_close_dict("bdb:project")
 					return
 			
 			# now check to see if there isn't already an entry in the particle directory that corresponds to this name
@@ -381,6 +392,7 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			for name in v:
 				if get_file_tag(name) in particle_dbs:
 					print "error, you can't import particles that already have entries in the particle database! The problem is with:",get_file_tag(name)
+					db_close_dict("bdb:project")
 					return
 			# okay if we make it here we're fine, import that particles
 			progress = EMProgressDialogModule(self.application,"Importing files into database...", "Abort import", 0, len(v),None)
@@ -407,8 +419,8 @@ class ParticleImportTask(ParticleWorkFlowTask):
 			progress.qt_widget.setValue(len(v))
 			self.application.close_specific(progress)
 			
-				
-				# why doesn't this work :(
+			
+			db_close_dict("bdb:project")
 
 class E2BoxerAutoTask(ParticleWorkFlowTask):	
 	documentation_string = "Information"
@@ -447,7 +459,7 @@ class E2BoxerAutoTask(ParticleWorkFlowTask):
 		params.append([pwc,pwb])
 		params.append(pn)
 		params.append(pop)
-		
+		db_close_dict("bdb:project")
 		return params
 			
 	def on_form_ok(self,params):
@@ -495,7 +507,7 @@ class E2BoxerAutoTask(ParticleWorkFlowTask):
 		if key == "boxsize":
 			boxer_project_db = db_open_dict("bdb:e2boxer.project")
 			boxer_project_db["working_boxsize"] = value
-
+			db_close_dict("bdb:e2boxer.project")
 		else:
 			pass
 	
@@ -528,7 +540,7 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 	
 		boxer_project_db = db_open_dict("bdb:e2boxer.project")
 		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
-		
+		db_close_dict("bdb:project")
 		return params
 			
 	def on_form_ok(self,params):
@@ -576,7 +588,7 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 		if key == "boxsize":
 			boxer_project_db = db_open_dict("bdb:e2boxer.project")
 			boxer_project_db["working_boxsize"] = value
-
+			db_close_dict("bdb:e2boxer.project")
 		else:
 			pass
 
@@ -626,17 +638,19 @@ class CTFWorkFlowTask(ParticleWorkFlowTask):
 					ctf.from_string(vals)
 					vals = [ctf.defocus,ctf.dfdiff,ctf.dfang,ctf.bfactor]
 				except:
-					vals = [0,0,0,0]  # only need 4 at the moment
+					vals = ["","","",""]  # only need 4 at the moment
 					
 				defocus.append(vals[0])
 				dfdiff.append(vals[1])
 				dfang.append(vals[2])
 				bfactor.append(vals[3])
+				
+			db_close_dict("bdb:e2ctf.parms")
 
 			return defocus,dfdiff,dfang,bfactor
 	
 		else:
-			dummy = [0 for i in range(len(particle_file_names))]
+			dummy = ["" for i in range(len(particle_file_names))]
 			return dummy,dummy,dummy,dummy
 	def get_ctf_particle_info(self,particle_file_names):
 		'''
@@ -677,6 +691,7 @@ class CTFWorkFlowTask(ParticleWorkFlowTask):
 					if particle_db.has_key("maxrec"): 
 						data_list.append(particle_db["maxrec"]+1)
 					else: data_list.append("")
+					db_close_dict(db_name)
 				else: data_list.append("")
 		
 		return phase,wiener,particles
@@ -694,8 +709,9 @@ class CTFWorkFlowTask(ParticleWorkFlowTask):
 		if db_check_dict("bdb:e2ctf.parms"):
 			ctf_parms_db = db_open_dict("bdb:e2ctf.parms")
 			vals = ctf_parms_db.keys()
-			print vals
+			#print vals
 			if vals == None: vals = []
+			db_close_dict("bdb:e2ctf.parms")
 			return vals
 		else:
 			print "empty, empty"
@@ -729,6 +745,7 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 		params.append([papix,pvolt,pcs])
 		params.append([pac,pos,pncp])
 
+		db_close_dict("bdb:project")
 		return params
 	
 	def get_default_ctf_options(self,params):
@@ -762,9 +779,11 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 				db = db_open_dict(db_name)
 				hdr = db.get_header(0)
 				boxsize = hdr["nx"] # no consideration is given for non square images
+				db_close_dict(db_name)
 			else:
 				db = db_open_dict(db_name)
 				hdr = db.get_header(0)
+				db_close_dict(db_name)
 				if boxsize != hdr["nx"]: # no consideration is given for non square images
 					print "error, can't run e2ctf on images with different box sizes. Specifically, I can not deduce the bgmask option for the group"
 					return None
@@ -858,9 +877,11 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 		if key == "working_ac":
 			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
 			ctf_misc_db["working_ac"] = value
+			db_close_dict("bdb:e2ctf.misc")
 		elif key == "working_oversamp":
 			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
 			ctf_misc_db["working_oversamp"] = value
+			db_close_dict("bdb:e2ctf.misc")
 		else:
 			# there are some general parameters that need writing:
 			WorkFlowTask.write_db_entry(self,key,value)
@@ -930,35 +951,7 @@ class E2CTFOutputTask(CTFWorkFlowTask):
 			temp_file_name = "e2ctf_output_stdout.txt"
 			self.run_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			
-#			project_db = db_open_dict("bdb:project")
-#			ncpu = project_db.get("global.num_cpus",dfl=num_cpus())
-#			cf = float(len(options.filenames))/float(ncpu) # common factor
-#			for n in range(ncpu):
-#				b = int(n*cf)
-#				t = int(n+1*cf)
-#				if n == (ncpu-1):
-#					t = len(options.filenames) # just make sure of it, round off error could be problematic
-#				
-#				if b == t:
-#					continue # it's okay this happens when there are more cpus than there are filenames	
-#				filenames = options.filenames[b:t]
-#									
-#				args = ["e2ctf.py"]
-#		
-#				for name in filenames:
-#					args.append(name)
-#					
-#				if options.wiener:
-#					args.append("--wiener")
-#					
-#				if options.phaseflip:
-#					args.append("--phaseflip")
-#
-#				file = open("e2ctf_output_stdout.txt","w+")
-#				process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
-#				print "started",process.pid
-#				self.emit(QtCore.SIGNAL("process_started"),process.pid)
-			
+
 			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else:
@@ -975,19 +968,7 @@ class E2CTFOutputTask(CTFWorkFlowTask):
 		if self.gui == None:
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else: pass
-
-	def write_db_entry(self,key,value):
-		if key == "working_ac":
-			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
-			ctf_misc_db["working_ac"] = value
-		elif key == "working_oversamp":
-			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
-			ctf_misc_db["working_oversamp"] = value
-		else:
-			# there are some general parameters that need writing:
-			WorkFlowTask.write_db_entry(self,key,value)
 	
-
 class E2CTFGuiTask(CTFWorkFlowTask):	
 	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
 	
@@ -1063,17 +1044,6 @@ class E2CTFGuiTask(CTFWorkFlowTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else: pass
 
-	def write_db_entry(self,key,value):
-		if key == "working_ac":
-			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
-			ctf_misc_db["working_ac"] = value
-		elif key == "working_oversamp":
-			ctf_misc_db = db_open_dict("bdb:e2ctf.misc")
-			ctf_misc_db["working_oversamp"] = value
-		else:
-			# there are some general parameters that need writing:
-			WorkFlowTask.write_db_entry(self,key,value)
-	
 class CTFReportTask(CTFWorkFlowTask):
 	
 	documentation_string = "This tool is for displaying the currently determined CTF parameters for the particles located in the project particle directory."
@@ -1110,6 +1080,8 @@ class MicrographCCDImportTask(WorkFlowTask):
 		pthumbnail = ParamDef(name="thumbs",vartype="boolean",desc_short="Thumbnails",desc_long="Tick this if you want eman2 to automatically generate thumbnails for your images. This will save time at later stages in the project",property=None,defaultunits=True,choices=None)
 		
 		params.append([pinvert,pxray,pthumbnail])
+		
+		db_close_dict("bdb:project")
 		return params
 	
 	def on_form_ok(self,params):
@@ -1205,6 +1177,7 @@ class MicrographCCDImportTask(WorkFlowTask):
 		self.application.close_specific(progress)
 		
 		project_db["global.micrograph_ccd_filenames"] = current_project_files
+		db_close_dict("bdb:project")
 	
 	def get_thumb_shrink(self,nx,ny):
 		if self.thumb_shrink == -1:
@@ -1219,65 +1192,6 @@ class MicrographCCDImportTask(WorkFlowTask):
 			self.thumb_shrink=shrink
 		
 		return self.thumb_shrink
-
-
-	#def write_db_entry(self,key,value):
-		#if key == "import_micrograph_ccd_files":
-			
-			#no_dir_names = [get_file_tag(name) for name in value]
-			
-			#for name in value:
-				#if name.find("bdb:rawdata#") != -1:
-					#print "you can't import files that are already in the project raw data directory,",name,"is invalid"
-					#return
-			
-			#for name in no_dir_names:
-				#if no_dir_names.count(name) > 1:
-					#print "you can't use images with the same name (",name,")"
-					#return
-			
-			#project_db = db_open_dict("bdb:project")
-			
-			#current_project_files = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-			#cpft = [get_file_tag(file) for file in current_project_files]
-			
-			#if options.
-
-			## now add the files to db (if they don't already exist
-			#progress = EMProgressDialogModule(self.application,"Importing files into database...", "Abort import", 0, len(value),None)
-			#self.application.show_specific(progress)
-			#i = 0
-			#for name in value:
-				#progress.qt_widget.setValue(i)
-				#tag = get_file_tag(name)
-				#if tag in cpft:
-					#print "can't import images have identical tags to those already in the database"
-					#continue
-				
-				
-				#db_name = "bdb:raw_data#"+tag
-				#if db_check_dict(db_name):
-					#print "there is already a raw_data database entry for",tag
-					#continue
-				#else:
-					#e = EMData()
-					#e.read_image(name,0)
-					#e.set_attr("disk_file_name",name)
-					#e.write_image(db_name,0)
-					#raw_data_db = db_open_dict(db_name)
-					#current_project_files.append(db_name)
-				
-				## why doesn't this work :(
-				##print progress.qt_widget.wasCanceled()
-				##if progress.qt_widget.wasCanceled():
-					##print "it was cancelled"
-			#progress.qt_widget.setValue(len(value))
-			#self.application.close_specific(progress)
-			
-			#project_db["global.micrograph_ccd_filenames"] = current_project_files
-			
-		#else:
-			#print "unknown key:",key,"this object is",self
 			
 	def on_import_cancel(self):
 		print "canceled"
@@ -1298,6 +1212,7 @@ class MicrographCCDTask(WorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Raw image data",desc_long="",property=None,defaultunits=MicrographCCDTask.documentation_string,choices=None))
 		params.append(ParamDef(name="global.micrograph_ccd_filenames",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.micrograph_ccd_filenames",dfl=[]),choices=[]))
 		
+		db_close_dict("bdb:project")
 		return params
 
 	def write_db_entry(self,key,value):
@@ -1325,6 +1240,7 @@ class MicrographCCDTask(WorkFlowTask):
 						
 				project_db = db_open_dict("bdb:project")
 				project_db["global.micrograph_ccd_filenames"] = new_names
+				db_close_dict("bdb:project")
 		else:
 			print "unknown key:",key,"this object is",self
 					
@@ -1359,7 +1275,7 @@ class SPRInitTask(WorkFlowTask):
 		params.append(pcs)
 		params.append(pncp)
 		params.append(pmem)
-		
+		db_close_dict("bdb:project")
 		return params
 
 	def write_db_entry(self,key,value):

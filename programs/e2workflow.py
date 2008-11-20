@@ -111,9 +111,11 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		
 		for key in self.current_process_info.keys():
 			if HOMEDB.history[key].has_key("end"):
+				self.project_db = db_open_dict("bdb:project")
 				self.current_process_info.pop(key)
 				self.set_entries(self.entries_dict)
 				self.project_db ["workflow.process_ids"] = self.current_process_info
+				db_close_dict("bdb:project")
 				return True
 		
 		return True
