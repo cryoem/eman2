@@ -2813,19 +2813,19 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			else:
 				# When center = -1, which is by default, we use the average center method
 				ref_data[1] = 0
-				tavg, cs = user_func(ref_data)
+				vol, cs = user_func(ref_data)
 				ali_params = []
 				for im in xrange(nima):
 					phi, theta, psi, s2x, s2y = get_params_proj(data[im])
 					ali_params.append([phi, theta, psi, s2x, s2y])
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(ali_params)
 				from fundamentals import fshift
-				tavg = fshift(tavg, -cs[0], -cs[1], -cs[2])
+				vol = fshift(vol, -cs[0], -cs[1], -cs[2])
 				msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 				print_msg(msg)				
 
-			if center == 1 or center == -1:
-				rotate_3D_shift(data, cs)
+			if center == 1 or center == -1:	rotate_3D_shift(data, cs)
+			
 			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
 			#  here we  write header info
 			if CTF and data_had_ctf == 0:
@@ -2846,13 +2846,13 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, reduce_array_to_root 
 	from utilities      import recv_attr_dict, send_attr_dict
 	from utilities      import get_params_proj
-	from utilities      import estimate_3D_center, rotate_3D_shift
+	from utilities      import estimate_3D_center_MPI, rotate_3D_shift
 	from fundamentals   import rot_avg_image
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi 	    import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	    import mpi_barrier, mpi_recv, mpi_send, MPI_FLOAT
+	from mpi 	    import mpi_barrier, mpi_bcast, MPI_FLOAT
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -2879,7 +2879,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		an = [-1] * lstp
 	else:
 		from  alignment	    import proj_ali_incore_local
-		an      = get_input_from_string(an)
+		an = get_input_from_string(an)
 
 	first_ring  = int(ir)
 	rstep       = int(rs)
@@ -2970,7 +2970,8 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 		ref_data.append( center )
 		ref_data.append( None )
 		ref_data.append( None )
-
+	
+	cs = [0.0]*3
 	# do the projection matching
 	for N_step in xrange(lstp):
  		for Iter in xrange(max_iter):
@@ -2983,28 +2984,11 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, mask3D, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)), myid, main_node)
 	
 			if center == -1:
-				ali_params_old = []
+				ali_params = []
 				for im in data:
 					phi, theta, psi, s2x, s2y = get_params_proj(im)
-					ali_params_old.append(phi)
-					ali_params_old.append(theta)
-					ali_params_old.append(psi)
-					ali_params_old.append(s2x)
-					ali_params_old.append(s2y)
-				
-				if myid == main_node:
-					for proc in xrange(1, number_of_proc):
-						image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
-						n_params = (image_end_proc - image_start_proc)*5
-						temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, MPI_COMM_WORLD)
-						for nn in xrange(n_params): ali_params_old.append(temp[nn])	
-					ali_params = []
-					for im in xrange(len(ali_params_old)/5):
-						ali_params.append([ali_params_old[im*5], ali_params_old[im*5+1], ali_params_old[im*5+2], ali_params_old[im*5+3], ali_params_old[im*5+4]])
-				else:
-					image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, myid)
-					n_params = (image_end_proc - image_start_proc)*5
-					mpi_send(ali_params_old, n_params, MPI_FLOAT, main_node, myid, MPI_COMM_WORLD)
+					ali_params.append([phi, theta, psi, s2x, s2y])
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(ali_params, nima)				
 				
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
@@ -3016,16 +3000,18 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 				else:
 					# When center = -1, which is by default, we use the average center method
 					ref_data[1] = 0
-					tavg, cs = user_func(ref_data)
-					cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(ali_params)
+					vol, dummy = user_func(ref_data)
 					from fundamentals import fshift
-					tavg = fshift(tavg, -cs[0], -cs[1], -cs[2])
+					vol = fshift(vol, -cs[0], -cs[1], -cs[2])
 					msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					print_msg(msg)				
 					
-				if center == 1 or center == -1:
-					rotate_3D_shift(data, cs)
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
+
+			cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			cs = [float(cs[0]), float(cs[1]), float(cs[2])]
+			if center == 1 or center == -1: rotate_3D_shift(data, cs)
+
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)

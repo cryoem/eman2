@@ -1857,6 +1857,65 @@ def estimate_3D_center(ali_params):
 	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
 
 
+def estimate_3D_center_MPI(ali_params, nima):
+	from math import cos, sin, pi
+	from numpy import matrix
+	from numpy import linalg
+	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi import mpi_recv, mpi_send, MPI_FLOAT
+	from applications import MPI_start_end
+	
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid           = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+	
+	ali_params_series = []
+	for i in xrange(len(ali_params)):
+		ali_params_series.append(ali_params[i][0])
+		ali_params_series.append(ali_params[i][1])
+		ali_params_series.append(ali_params[i][2])
+		ali_params_series.append(ali_params[i][3])
+		ali_params_series.append(ali_params[i][4])
+	
+	if myid == main_node:
+		for proc in xrange(1, number_of_proc):
+			image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
+			n_params = (image_end_proc - image_start_proc)*5
+			temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, MPI_COMM_WORLD)
+			for nn in xrange(n_params): 	ali_params_series.append(temp[nn])	
+		ali_params = []
+		for im in xrange(len(ali_params_series)/5):
+			ali_params.append([ali_params_series[im*5], ali_params_series[im*5+1], ali_params_series[im*5+2], ali_params_series[im*5+3], ali_params_series[im*5+4]])
+
+		N = len(ali_params)
+		A = []
+		b = []
+	
+		for i in xrange(N):
+			phi_rad = ali_params[i][0]/180*pi
+			theta_rad = ali_params[i][1]/180*pi
+			psi_rad = ali_params[i][2]/180*pi
+			A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad), 
+				cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
+			A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad), 
+				-sin(psi_rad)*cos(theta_rad)*sin(phi_rad)+cos(psi_rad)*cos(phi_rad), sin(psi_rad)*sin(theta_rad), 0, 1])	
+			b.append([ali_params[i][3]])
+			b.append([ali_params[i][4]])
+	
+		A_mat = matrix(A)
+		b_max = matrix(b)
+
+		K = linalg.solve(A_mat.T*A_mat, A_mat.T*b)
+		return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
+
+	else:
+		image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, myid)
+		n_params = (image_end_proc - image_start_proc)*5
+		mpi_send(ali_params_series, n_params, MPI_FLOAT, main_node, myid, MPI_COMM_WORLD)
+		
+		return 0.0, 0.0, 0.0, 0.0, 0.0	
+
+
 def rotate_3D_shift(data, shift3d):
 	from utilities import compose_transform3,get_params_proj, set_params_proj
 
