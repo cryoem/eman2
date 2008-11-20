@@ -39,7 +39,7 @@ from emselector import EMBrowserModule
 from e2boxer import EMBoxerModule
 from EMAN2 import HOMEDB
 from emanimationutil import Animator
-
+import time
 
 class EMTaskMonitorModule(object):
 	def __new__(cls,application):
@@ -51,7 +51,7 @@ class EMTaskMonitorModule(object):
 
 class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 	def get_desktop_hint(self):
-		return "inspector"
+		return "workflow"
 	
 	def __init__(self,application):
 		QtGui.QWidget.__init__(self,None)
@@ -124,14 +124,20 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 	def set_entries(self,entries_dict):
 		self.entries_dict=entries_dict
 		self.list_widget.clear()
-		for val in entries_dict:
+		for val in entries_dict.keys():
 			a = QtGui.QListWidgetItem(val,self.list_widget)
 		self.list_processes()
 		
 	def list_processes(self):
+		
 		for key in self.current_process_info.keys():
-			print key
-			a =  QtGui.QListWidgetItem(str(self.current_process_info[key]["pid"]),self.list_widget)
+			d = self.current_process_info[key]
+			pid = str(d["pid"])
+			prog = get_file_tag(d["args"][0])
+			t = str(time.ctime(d["start"]))
+			s = pid + "\t" + prog + "\t" + t
+			
+			a =  QtGui.QListWidgetItem(s,self.list_widget)
 	
 	def accrue_process_info(self):
 		
@@ -147,7 +153,9 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		
 			
 	def list_widget_item_clicked(self,item):
-		print "item clicked",item
+		
+		print "item clicked",item.text(),self.entries_dict[str(item.text())]
+		self.emit(QtCore.SIGNAL("task_selected"),str(item.text()),self.entries_dict[str(item.text())])
 	
 
 class EMWorkFlowSelector(object):
@@ -162,7 +170,7 @@ class EMWorkFlowSelector(object):
 	
 class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def get_desktop_hint(self):
-		return "inspector"
+		return "workflow"
 	
 	def __init__(self,target,application,task_monitor):
 		'''
@@ -259,22 +267,22 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def launch_browser(self):
 		module = EMBrowserModule(self.application)
 		self.application.show_specific(module)
-		self.add_module(module)
+		self.add_module([str(module),"e2display",module])
 		
 	def launch_boxer_general(self):
 		module = EMBoxerModule(self.application,None)
 #		self.application.show_specific(module) # it doesn't work this way for boxer ... hmmmmm ...
-		self.add_module(module)
+		self.add_module([str(module),"e2boxer",module])
 		
 	def add_module(self,module):
 		self.gui_modules.append(module)
-		self.module_events.append(ModuleEventsManager(self,module))
+		self.module_events.append(ModuleEventsManager(self,module[2]))
 		self.update_task_list()
 	
 	def module_idle(self,module):
 		# yes this is just the same as module_closed... thinking in progress
 		for i,mod in enumerate(self.gui_modules):
-			if mod == module:
+			if mod[2] == module:
 				self.gui_modules.pop(i)
 				self.module_events.pop(i)
 				self.update_task_list()
@@ -284,7 +292,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	
 	def module_closed(self,module):
 		for i,mod in enumerate(self.gui_modules):
-			if mod == module:
+			if mod[2] == module:
 				self.gui_modules.pop(i)
 				self.module_events.pop(i)
 				self.update_task_list()
@@ -356,14 +364,19 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			# solution is to turn the tasks into a module and add more modules
 			return
 		
+		
+		
 		for val in self.tasks.keys():
+			print "task appending",val
 			tasks.append(str(val))
+			tasks_dict["Workflow"] = val
 			#tasks_dict["workflow"] = 
 		
 		for val in self.gui_modules:
-			tasks.append(str(val))
+			tasks_dict[val[1]] = val[2]
+			tasks.append(str(val[1]))
 		
-		self.emit(QtCore.SIGNAL("tasks_updated"),tasks)
+		self.emit(QtCore.SIGNAL("tasks_updated"),tasks_dict)
 	
 	def __clear_tasks(self):
 		for v in self.tasks.values():
@@ -377,24 +390,25 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.event_managers.pop(task)
 		self.update_task_list()
 		
-	def gui_running(self,task_key):
+	def gui_running(self,task_key,module_string_name,module):
 		'''
 		Tells this to take the task out of the dictionary of current tasks and put in another dictionary.
 		Essentially saying, "make this task disappear, but keep a reference to it until the associated gui ends"
 		'''
-		module = self.tasks.pop(task_key)
+		module = [self.tasks.pop(task_key),module_string_name,module]
 		self.gui_modules.append(module)
 		self.module_events.append(None) # this makes the handling of the gui_modules and module_events more general, see code
 		self.update_task_list()
 	def gui_exit(self,module):
 		for i,mod in enumerate(self.gui_modules):
-			if mod == module:
+			if mod[0] == module:
+				#print "gui exit succeeded",module
 				self.gui_modules.pop(i)
 				self.module_events.pop(i)
 				self.update_task_list()
 				return
 			
-		print "gui exit failed" #this shouldn't happen if I have managed everything correctly
+		print "gui exit failed",module #this shouldn't happen if I have managed everything correctly
 	
 	def tree_widget_click(self,tree_item,i):
 		task = str(tree_item.text(0))
@@ -431,11 +445,11 @@ class TaskEventsManager:
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("gui_exit"),self.on_gui_exit)
 		QtCore.QObject.connect(self.task, QtCore.SIGNAL("process_started"), self.on_process_started)
 #		
-	def on_gui_running(self):
+	def on_gui_running(self,module_string_name,module):
 		''' 
 		
 		'''
-		self.selector.gui_running(self.key)
+		self.selector.gui_running(self.key,module_string_name,module)
 		
 	def on_gui_exit(self):
 		self.selector.gui_exit(self.task)
@@ -453,7 +467,7 @@ class EMWorkFlowManager:
 		self.application = application
 		
 	
-		self.task_monitor = EMTaskMonitorModule(em_app)
+		self.task_monitor = EMTaskMonitorModule(self.application)
 		self.selector = EMWorkFlowSelector(self,application,self.task_monitor.qt_widget)
 		QtCore.QObject.connect(self.selector.qt_widget, QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
 	

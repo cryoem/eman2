@@ -668,7 +668,7 @@ from emapplication import EMQtWidgetModule
 
 class GUIctfModule(EMQtWidgetModule):
 	def __init__(self,application,data):
-		self.guictf = GUIctf(application,data)
+		self.guictf = GUIctf(application,data,self)
 		EMQtWidgetModule.__init__(self,self.guictf,application)
 		self.application = application
 		self.application.show_specific(self)
@@ -677,7 +677,7 @@ class GUIctfModule(EMQtWidgetModule):
 		return "inspector"
 		
 class GUIctf(QtGui.QWidget):
-	def __init__(self,application,data):
+	def __init__(self,application,data,module=None):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
@@ -694,6 +694,7 @@ class GUIctf(QtGui.QWidget):
 			sys.exit(1)
 		
 		self.app = application
+		self.module = module
 		
 		QtGui.QWidget.__init__(self,None)
 		
@@ -786,7 +787,8 @@ class GUIctf(QtGui.QWidget):
 			self.app.close_specific(self.guiplot)
 		self.app.close_specific(self)
 		event.accept()
-		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
+		if self.module != None:
+			self.module.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
 
 	def newData(self,data):
 		self.data=data

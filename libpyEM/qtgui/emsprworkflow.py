@@ -469,23 +469,6 @@ class E2BoxerAutoTask(ParticleWorkFlowTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 			self.application.close_specific(self.form)
 			self.form = None
-	
-	def on_form_close(self):
-		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
-		if self.boxer_module == None:
-			self.emit(QtCore.SIGNAL("task_idle"))
-		else: pass
-	
-	def on_boxer_closed(self):
-		self.boxer_module = None
-		self.emit(QtCore.SIGNAL("gui_exit"))
-	
-	def on_boxer_idle(self):
-		'''
-		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
-		'''
-		self.boxer_module = None
-		self.emit(QtCore.SIGNAL("gui_exit"))
 
 	def write_db_entry(self,key,value):
 		if key == "boxsize":
@@ -536,7 +519,7 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 			QtCore.QObject.connect(self.boxer_module, QtCore.SIGNAL("module_closed"), self.on_boxer_closed)
 			self.application.close_specific(self.form)
 			self.form = None
-			self.emit(QtCore.SIGNAL("gui_running")) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
+			self.emit(QtCore.SIGNAL("gui_running"),"e2boxer",self.boxer_module) # The controlled program should intercept this signal and keep the E2BoxerTask instance in memory, else signals emitted internally in boxer won't work
 			
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
@@ -544,14 +527,16 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else: pass
 	
-	def on_boxer_closed(self):
-		self.boxer_module = None
-		self.emit(QtCore.SIGNAL("gui_exit"))
+	def on_boxer_closed(self): 
+		if self.boxer_module != None:
+			self.boxer_module = None
+			self.emit(QtCore.SIGNAL("gui_exit"))
 	
 	def on_boxer_idle(self):
 		'''
 		Presently this means boxer did stuff but never opened any guis, so it's safe just to emit the signal
 		'''
+		print "boxer idle"
 		self.boxer_module = None
 		self.emit(QtCore.SIGNAL("gui_exit"))
 
@@ -998,16 +983,17 @@ class E2CTFGuiTask(E2CTFWorkFlowTask):
 			self.gui=GUIctfModule(self.application,img_sets)
 			self.application.show_specific(self.gui)
 			self.application.close_specific(self.form)
-			QtCore.QObject.connect(self.gui.qt_widget,QtCore.SIGNAL("module_closed"), self.on_ctf_closed())
-			self.emit(QtCore.SIGNAL("gui_running")) # 
+			QtCore.QObject.connect(self.gui,QtCore.SIGNAL("module_closed"), self.on_ctf_closed)
+			self.emit(QtCore.SIGNAL("gui_running"), "e2ctf", self.gui) # 
 		else:
 			self.application.close_specific(self.form)
 			self.emit(QtCore.SIGNAL("task_idle"))
 	
 	def on_ctf_closed(self):
-		self.gui = None
-		self.options = None
-		self.emit(QtCore.SIGNAL("gui_exit")) #
+		if self.gui != None:
+			self.gui = None
+			self.options = None
+			self.emit(QtCore.SIGNAL("gui_exit")) #
 		
 	def on_form_close(self):
 		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running

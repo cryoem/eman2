@@ -58,7 +58,7 @@ from emapplication import EMApplication, EMQtWidgetModule
 from emanimationutil import *
 from emimageutil import EMEventRerouter
 from emfloatingwidgets import *
-from e2workflow import EMWorkFlowSelector
+from e2workflow import EMWorkFlowManager
 
 class EMWindowNode:
 	def __init__(self,parent):
@@ -1070,11 +1070,13 @@ class EMDesktopFrame(EMFrame):
 		self.display_frame = EMPlainDisplayFrame(self)
 		self.form_display_frame = EMFormDisplayFrame(self)
 		self.bottom_bar = BottomWidgetBar(self)
+		self.top_bar = TopWidgetBar(self)
 		
 		self.attach_display_child(self.display_frame)
 		self.attach_child(self.right_side_bar)
 		self.attach_child(self.left_side_bar)
 		self.attach_child(self.bottom_bar)
+		self.attach_child(self.top_bar)
 		self.attach_child(self.form_display_frame)
 		# what is this?
 		self.bgob2=ob2dimage(self,self.read_EMAN2_image())
@@ -1156,6 +1158,9 @@ class EMDesktopFrame(EMFrame):
 		elif hint == "settings":
 			self.bottom_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.bottom_bar
+		elif hint == "workflow":
+			self.top_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			self.child_mappings[child] = self.top_bar
 		elif hint == "form":
 			self.form_display_frame.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
 			self.child_mappings[child] = self.form_display_frame
@@ -1421,7 +1426,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.move(0,0)
 		self.resize(self.appscreen.availableGeometry().size())
 		
-		self.task_widget = EMWorkFlowSelector(self,self.application)
+		self.work_flow_manager = EMWorkFlowManager(self.application)
+		self.task_widget = self.work_flow_manager.selector
 		self.application.show_specific(self.task_widget)
 		
 	def get_gl_context_parent(self): return self
@@ -2211,6 +2217,76 @@ class BottomWidgetBar(SideWidgetBar):
 			SideTransform.transform(self)
 			glRotate(self.rotation,1,0,0)
 		
+		
+		def has_focus(self):
+			return self.rotation == self.target_rotation
+		
+class TopWidgetBar(SideWidgetBar):
+	def __init__(self,parent):
+		SideWidgetBar.__init__(self,parent)
+		self.total_width=0
+	def draw(self):
+		#if len(self.children) != 1 : 
+			##print len(self.children)
+			#return
+		depth_back_on = False
+
+		
+		#print "in draw"
+		
+		if self.transformers[0].has_focus():
+			depth_back_on = glIsEnabled(GL_DEPTH_TEST)
+			glDisable(GL_DEPTH_TEST)
+		#child = self.children[0]
+		#glPushMatrix()
+		#glTranslate(-self.total_width/2,self.parent.height()/2.0-15,0)
+		#child.correct_internal_translations()
+		#self.transformers[0].transform()
+		#child.draw()
+		#glPopMatrix()
+		
+		glPushMatrix()
+		glTranslate(-self.total_width/2,self.parent.height()/2.0-15,0)
+		for i,child in enumerate(self.children):
+			glPushMatrix()
+			child.correct_internal_translations()
+			self.transformers[i].transform()
+			child.draw()
+			glPopMatrix()
+			glTranslate(child.width_inc_border(),0,0)
+		glPopMatrix()
+		
+		if self.transformers[0].has_focus():
+			if depth_back_on: glEnable(GL_DEPTH_TEST)
+		
+	def attach_child(self,new_child):
+		#print "attached child"
+		#self.transforms = []
+		#self.children = []
+		new_child.enable_interactive_translation(False)
+		self.transformers.append(TopWidgetBar.TopTransform(new_child))
+		EMWindowNode.attach_child(self,new_child)
+		self.reset_scale_animation()
+		
+		self.total_width=0
+		for child in self.children:
+			self.total_width += child.width_inc_border()
+		
+		#print "total width is",self.total_width
+		#print len(self.children)
+		#print_node_hierarchy(self.parent)
+
+	class TopTransform(SideTransform):
+		def __init__(self,child):
+			SideTransform.__init__(self,child)
+			self.rotation = 90
+			self.default_rotation = 90
+			self.target_rotation = 0
+			
+		def transform(self):
+			SideTransform.transform(self)
+			glRotate(self.rotation,1,0,0)
+			glTranslate(0,-self.child.height(),0)
 		
 		def has_focus(self):
 			return self.rotation == self.target_rotation
