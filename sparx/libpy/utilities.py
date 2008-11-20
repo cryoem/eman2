@@ -1830,10 +1830,15 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 		drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
 
 
-def estimate_3D_center(ali_params):
+def estimate_3D_center(data):
 	from math import cos, sin, pi
 	from numpy import matrix
 	from numpy import linalg
+	
+	ali_params = []
+	for im in data:
+		phi, theta, psi, s2x, s2y = get_params_proj(im)
+		ali_params.append([phi, theta, psi, s2x, s2y])
 	
 	N = len(ali_params)
 	A = []
@@ -1857,7 +1862,7 @@ def estimate_3D_center(ali_params):
 	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
 
 
-def estimate_3D_center_MPI(ali_params, nima):
+def estimate_3D_center_MPI(data, nima):
 	from math import cos, sin, pi
 	from numpy import matrix
 	from numpy import linalg
@@ -1870,13 +1875,14 @@ def estimate_3D_center_MPI(ali_params, nima):
 	main_node = 0
 	
 	ali_params_series = []
-	for i in xrange(len(ali_params)):
-		ali_params_series.append(ali_params[i][0])
-		ali_params_series.append(ali_params[i][1])
-		ali_params_series.append(ali_params[i][2])
-		ali_params_series.append(ali_params[i][3])
-		ali_params_series.append(ali_params[i][4])
-	
+	for im in data:
+		phi, theta, psi, s2x, s2y = get_params_proj(im)
+		ali_params_series.append(phi)
+		ali_params_series.append(theta)
+		ali_params_series.append(psi)
+		ali_params_series.append(s2x)
+		ali_params_series.append(s2y)
+
 	if myid == main_node:
 		for proc in xrange(1, number_of_proc):
 			image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
