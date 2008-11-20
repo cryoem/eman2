@@ -865,14 +865,17 @@ class CoarsenedFlattenedImage:
 		If they match current parameters than nothing happens - the correct image is already cached
 		'''
 		image = BigImageCache.get_image_directly(self.image_name)
-
+		
+#		tmp = image.process("filter.lowpass.gauss",{"cutoff_abs":0.01})
+	   	tmp = image
+	   	
 		flattenradius = params_mediator.get_template_radius()
 		shrink =  params_mediator.get_subsample_rate()
 
 		if shrink <= 1.0:
-			self.smallimage = image.copy()
+			self.smallimage = tmp.copy()
 		else:
-			self.smallimage = image.process("math.meanshrink",{"n":shrink})
+			self.smallimage = tmp.process("math.meanshrink",{"n":shrink})
 			self.smallimage.process_inplace("filter.flattenbackground",{"radius":flattenradius})
 			
 		self.smallimage.set_attr("flatten_radius",flattenradius)
@@ -2382,11 +2385,9 @@ class SwarmTemplate(Template):
 		#black.write_image("aligned_refs.img",-1)
 		#END uncomment block
 		#ave.write_image("template.hdf",-1)
-		ave.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
 		self.template = ave
-		#ave.write_image("template.hdf",-1)
-		
-		
+		ave.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
+
 		self.template_ts = gm_time_string()
 		self.template.set_attr("template_time_stamp",self.template_ts)
 		return 1
@@ -3032,8 +3033,8 @@ class SwarmAutoBoxer(AutoBoxer):
 
 		self.template = SwarmTemplate(self)	# an EMData object that is the template
 		self.shrink = -1
-		
-		self.templatedimmin = 20  # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up.
+
+		self.templatedimmin = 20 # the smallest amount the template can be shrunken to. Will attempt to get as close to as possible. This is an important part of speeding things up
 		self.opt_threshold = -1	# the correlation threshold, used to as the basis of finding local maxima
 		self.opt_profile = []	# the optimum correlation profile used as the basis of auto selection
 		self.opt_profile_radius = -1 # the optimum radius - used to choose which part of the optprofile is used as the basis of selection

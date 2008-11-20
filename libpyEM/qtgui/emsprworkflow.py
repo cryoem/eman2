@@ -233,9 +233,9 @@ class ParticleWorkFlowTask(WorkFlowTask):
 					vals.append(db["maxrec"]+1)
 					db_close_dict(db_name)
 				else:
-					vals.append(0)
+					vals.append("")
 			else:
-				vals.append(0)
+				vals.append("")
 		return vals
 	
 	def get_particle_dims(self,particle_file_names):
@@ -292,6 +292,24 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				vals.append(-1)
 		return vals
 
+	def get_particle_param_table(self):
+		project_db = db_open_dict("bdb:project")	
+		particle_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
+		
+		num_boxes = self.get_num_particles(particle_file_names)
+		dimensions = self.get_particle_dims(particle_file_names)
+		
+		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=particle_file_names)
+		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
+		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
+		
+		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
+		p.append(pnames)
+		p.append(pboxes)
+		p.append(pdims)
+		
+		
+		return p
 
 class ParticleReportTask(ParticleWorkFlowTask):
 	
@@ -304,31 +322,11 @@ class ParticleReportTask(ParticleWorkFlowTask):
 	def get_params(self):
 		params = []
 		
-		
-		#particle_file_names = self.get_particle_and_project_names()
-		particle_file_names = self.get_particle_db_names(strip_ptcls=False)
-		
-		num_boxes = self.get_num_particles_direct(particle_file_names)
-		dimensions = self.get_particle_dims_direct(particle_file_names)
-		
-		
-		pnames = ParamDef(name="global.micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=particle_file_names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
-		pdims = ParamDef(name="Dimensions",vartype="stringlist",desc_short="Dimensions",desc_long="The dimensions of the particle images",property=None,defaultunits=None,choices=dimensions)
-		
-		
-		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
-		p.append(pnames)
-		p.append(pboxes)
-		p.append(pdims)
-		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=ParticleReportTask.documentation_string,choices=None))
 		
-		params.append(p)
+	   	p = self.get_particle_param_table()
+		params.append(p)  
 		
-		#boxer_project_db = db_open_dict("bdb:e2boxer.project")
-		#params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
-		#params.append(ParamDef(name="global.imported_micrograph_ccd_files",vartype="url",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=project_db.get("global.imported_micrograph_ccd_files",dfl=[]),choices=[]))
 		return params
 
 	
@@ -346,8 +344,6 @@ class ParticleReportTask(ParticleWorkFlowTask):
 #				except:	vals.append(0)
 #			return vals
 
-	def write_db_entry(self,key,value):
-		pass
 
 
 class ParticleImportTask(ParticleWorkFlowTask):	
@@ -431,20 +427,9 @@ class E2BoxerAutoTask(ParticleWorkFlowTask):
 
 	def get_params(self):
 		params = []
-		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerAutoTask.documentation_string,choices=None))
 		
-		project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-		
-		num_boxes = self.get_num_particles(project_file_names)
-#		if len(num_boxes) > 0:
-		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_file_names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
-		
-		
-		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
-		p.append(pnames)
-		p.append(pboxes)
+		p = self.get_particle_param_table()
 		params.append(p)
 	
 		boxer_project_db = db_open_dict("bdb:e2boxer.project")
@@ -459,7 +444,6 @@ class E2BoxerAutoTask(ParticleWorkFlowTask):
 		params.append([pwc,pwb])
 		params.append(pn)
 		params.append(pop)
-		db_close_dict("bdb:project")
 		return params
 			
 	def on_form_ok(self,params):
@@ -522,25 +506,12 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 
 	def get_params(self):
 		params = []
-		project_db = db_open_dict("bdb:project")
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Using e2boxer",desc_long="",property=None,defaultunits=E2BoxerGuiTask.documentation_string,choices=None))
 		
-		project_file_names = project_db.get("global.micrograph_ccd_filenames",dfl=[])
-		
-		num_boxes = self.get_num_particles(project_file_names)
-#		if len(num_boxes) > 0:
-		pnames = ParamDef(name="micrograph_ccd_filenames",vartype="stringlist",desc_short="File names",desc_long="The raw data from which particles will be extracted and ultimately refined to produce a reconstruction",property=None,defaultunits=None,choices=project_file_names)
-		pboxes = ParamDef(name="Num boxes",vartype="intlist",desc_short="Number of boxes",desc_long="The number of box images stored for this image in the database",property=None,defaultunits=None,choices=num_boxes)
-		
-		
-		p = ParamTable(name="filenames",desc_short="Choose images to box",desc_long="")
-		p.append(pnames)
-		p.append(pboxes)
+		p = self.get_particle_param_table()
 		params.append(p)
-	
 		boxer_project_db = db_open_dict("bdb:e2boxer.project")
 		params.append(ParamDef(name="boxsize",vartype="int",desc_short="Box size",desc_long="An integer value",property=None,defaultunits=boxer_project_db.get("working_boxsize",dfl=128),choices=[]))
-		db_close_dict("bdb:project")
 		return params
 			
 	def on_form_ok(self,params):
@@ -592,7 +563,7 @@ class E2BoxerGuiTask(ParticleWorkFlowTask):
 		else:
 			pass
 
-class CTFWorkFlowTask(ParticleWorkFlowTask):
+class E2CTFWorkFlowTask(ParticleWorkFlowTask):
 	def __init__(self,application):
 		ParticleWorkFlowTask.__init__(self,application)
 
@@ -717,11 +688,11 @@ class CTFWorkFlowTask(ParticleWorkFlowTask):
 			print "empty, empty"
 			return []
 
-class E2CTFAutoFitTask(CTFWorkFlowTask):	
+class E2CTFAutoFitTask(E2CTFWorkFlowTask):	
 	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
 	
 	def __init__(self,application):
-		CTFWorkFlowTask.__init__(self,application)
+		E2CTFWorkFlowTask.__init__(self,application)
 		self.window_title = "e2ctf auto fit"
 		self.options = None # will enventually store e2ctf options
 		self.gui = None # will eventually be a e2ctf gui
@@ -886,11 +857,11 @@ class E2CTFAutoFitTask(CTFWorkFlowTask):
 			# there are some general parameters that need writing:
 			WorkFlowTask.write_db_entry(self,key,value)
 
-class E2CTFOutputTask(CTFWorkFlowTask):	
+class E2CTFOutputTask(E2CTFWorkFlowTask):	
 	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
 	
 	def __init__(self,application):
-		CTFWorkFlowTask.__init__(self,application)
+		E2CTFWorkFlowTask.__init__(self,application)
 		self.window_title = "e2ctf management"
 		self.options = None # will enventually store e2ctf options
 		self.gui = None # will eventually be a e2ctf gui
@@ -969,11 +940,11 @@ class E2CTFOutputTask(CTFWorkFlowTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else: pass
 	
-class E2CTFGuiTask(CTFWorkFlowTask):	
+class E2CTFGuiTask(E2CTFWorkFlowTask):	
 	documentation_string = "Use this tool to use e2ctf to generate ctf parameters for the particles located in the project particle directory"
 	
 	def __init__(self,application):
-		CTFWorkFlowTask.__init__(self,application)
+		E2CTFWorkFlowTask.__init__(self,application)
 		self.window_title = "e2ctf management"
 		self.options = None # will enventually store e2ctf options
 		self.gui = None # will eventually be a e2ctf gui
@@ -1044,12 +1015,12 @@ class E2CTFGuiTask(CTFWorkFlowTask):
 			self.emit(QtCore.SIGNAL("task_idle"))
 		else: pass
 
-class CTFReportTask(CTFWorkFlowTask):
+class CTFReportTask(E2CTFWorkFlowTask):
 	
 	documentation_string = "This tool is for displaying the currently determined CTF parameters for the particles located in the project particle directory."
 	
 	def __init__(self,application):
-		CTFWorkFlowTask.__init__(self,application)
+		E2CTFWorkFlowTask.__init__(self,application)
 		self.window_title = "Project particles"
 
 	def get_params(self):
