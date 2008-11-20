@@ -285,7 +285,7 @@ def spruce_up( ref_data ):
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
 
-	print_msg("Changed3 spruce_up\n")
+	print_msg("Changed4 spruce_up\n")
 	cs = [0.0]*3
 
 	stat = Util.infomask(ref_data[2], None, True)
@@ -295,7 +295,7 @@ def spruce_up( ref_data ):
 	# Apply B-factor
 	from filter import filt_gaussinv
 	from math import sqrt
-	B = 1.0/sqrt(2.*15.0)
+	B = 1.0/sqrt(2.*14.0)
 	volf = filt_gaussinv(volf, B, False)
 	nx = volf.get_xsize()
 	from utilities import model_circle
@@ -303,9 +303,9 @@ def spruce_up( ref_data ):
 
 	volf -= stat[0]
 	Util.mul_img(volf, ref_data[0])
-	#fl, aa = fit_tanh(ref_data[3])
-	fl = 0.35
-	aa = 0.1
+	fl, aa = fit_tanh(ref_data[3])
+	#fl = 0.35
+	#aa = 0.1
 	aa /= 2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
@@ -318,10 +318,100 @@ def spruce_up( ref_data ):
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
 
-factory = {}
-factory["ref_ali2d"] = ref_ali2d
-factory["ref_random"] = ref_random
-factory["ref_ali3d"] = ref_ali3d
-factory["spruce_up"] = spruce_up
-factory["ref_aliB_cone"] = ref_aliB_cone
-factory["ref_7grp"] = ref_7grp
+# rewrote factory dict to provide a flexible interface for providing user functions dynamically.
+#    factory is a class that checks how it's called. static labels are rerouted to the original
+#    functions, new are are routed to build_user_function (provided below), to load from file
+#    and pathname settings....
+# Note: this is a workaround to provide backwards compatibility and to avoid rewriting all functions
+#    using user_functions. this can be removed when this is no longer necessary....
+
+class factory_class:
+
+	def __init__(self):
+		self.contents = {}
+		self.contents["ref_ali2d"] = ref_ali2d
+		self.contents["ref_random"] = ref_random
+		self.contents["ref_ali3d"] = ref_ali3d
+		self.contents["spruce_up"] = spruce_up
+		self.contents["ref_aliB_cone"] = ref_aliB_cone
+		self.contents["ref_7grp"] = ref_7grp
+		print "factory init done"
+		
+	def __getitem__(self,index):
+
+		if (type(index) is str):
+			print "str"
+			try:
+				return self.contents[index]
+			except KeyError:
+				print "key"
+				return None
+			except:
+				print "something"
+				return None
+		if (type(index) is list):
+			try:
+				# try building with module, function and path
+				return build_user_function(module_name=index[0],function_name=index[1],
+							   path_name=index[2])
+			except IndexError:
+				# we probably have a list [module,function] only, no path
+				return build_user_function(module_name=index[0],function_name=index[1])
+			except:
+				# the parameter is something we can't understand... return None or
+				#    raise an exception....
+				return None
+
+		print type(index)
+		return None
+	
+
+factory=factory_class()
+						   
+# build_user_function: instead of a static user function factory that has to be updated for
+#    every change, we use the imp import mechanism: a module can be supplied at runtime (as
+#    an argument of the function), which will be imported. from that modules we try to import
+#    the function (function name is supplied as a second argument). this function object is
+#    returned to the caller.
+# Note that the returned function (at this time) does not support dynamic argument lists,
+#    so the interface of the function (i.e. number of arguments and the way that they are used)
+#    has to be known and is static!
+def build_user_function(module_name=None,function_name=None,path_name=None):
+
+	if (module_name is None) or (function_name is None):
+		return None
+
+	if (path_name is None):
+		path_name = "/home/justus"
+
+	import imp
+
+	try:
+		(file,path,descript) = imp.find_module(module_name,[path_name,])
+	except ImportError:
+		print "could not find module "+str(module_name)+" in path "+str(path_name)
+		return None
+
+	try:
+		dynamic_mod = imp.load_module(module_name,file,path,descript)
+	except ImportError:
+		print "could not load module "+str(module_name)+" in path "+str(path)
+		return None
+		
+	# function name has to be taken from dict, since otherwise we would be trying an
+	#    equivalent of "import dynamic_mod.function_name"
+	try:
+		dynamic_func = dynamic_mod.__dict__[function_name]
+	except KeyError:
+		# key error means function is not defined in the module....
+		print "could not import user function "+str(function_name)+" from module"
+		print str(path)
+		return None
+	except:
+		print "unknown error getting function!"
+		return None
+	else:
+		return dynamic_func
+
+	
+	
