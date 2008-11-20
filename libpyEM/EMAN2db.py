@@ -409,7 +409,10 @@ class EMAN2DB:
 		# Make the database directory
 		if not os.access("%s/EMAN2DB"%self.path,os.F_OK) : os.makedirs("%s/EMAN2DB"%self.path)
 		# make the shared cache directory in /tmp
-		if not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
+		if(sys.platform != 'win32'):
+			if not os.access("/tmp/eman2db-%s"%os.getenv("USER","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USER","anyone"))
+		else:
+			if not os.access("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),os.F_OK) : os.makedirs("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"))
 		self.dbenv=db.DBEnv()
 		self.dbenv.set_cachesize(0,cachesize,4)		# gbytes, bytes, ncache (splits into groups)
 #		self.dbenv.set_cachesize(1,0,8)		# gbytes, bytes, ncache (splits into groups)
@@ -419,8 +422,11 @@ class EMAN2DB:
 		#if self.__dbenv.DBfailchk(flags=0) :
 			#self.LOG(1,"Database recovery required")
 			#sys.exit(1)
-			
-		self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USER","anyone"),envopenflags)
+		
+		if(sys.platform != 'win32'):
+			self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USER","anyone"),envopenflags)
+		else:
+			self.dbenv.open("/tmp/eman2db-%s"%os.getenv("USERNAME","anyone"),envopenflags)
 		
 	def close(self):
 		"""close the environment associated with this object"""
