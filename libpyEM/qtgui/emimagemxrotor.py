@@ -857,7 +857,7 @@ class EMDataListCache:
 		elif isinstance(object,str):
 			#print "file mode"
 			self.mode = EMDataListCache.FILE_MODE
-			if not os.path.exists(object):
+			if not os.path.exists(object) and not db_check_dict(object):
 				print "error, the file you specified does not exist:",object
 				return
 			self.file_name = object
@@ -1028,7 +1028,9 @@ class EMDataListCache:
 				except:
 					try:
 						if self.mode ==  EMDataListCache.FILE_MODE:
-							cache[idx] = EMData(self.file_name,idx)
+							a = EMData()
+							a.read_image(self.file_name,idx)
+							cache[idx] = a
 							if self.exclusions.count(idx) != 0:
 								cache[idx].set_attr("excluded",True)
 						else:
@@ -1076,9 +1078,10 @@ if __name__ == '__main__':
 			
 		window.set_data(data) 
 	else :
-		a=EMData.read_images(sys.argv[1])
-		window.set_file_name(sys.argv[1])
-		window.set_data(a)
+#		a=EMData.read_images(sys.argv[1])
+		window.set_image_file_name(sys.argv[1])
+#		window.set_file_name(sys.argv[1])
+#		window.set_data(a)
 	
 	em_app.show()
 	#window.get_qt_widget().resize(640,640)
