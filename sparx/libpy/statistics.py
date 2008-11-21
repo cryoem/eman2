@@ -1115,9 +1115,9 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 	from utilities      import   bcast_EMData_to_all, model_blank
 	from projection     import   prep_vol, prgs
 
-	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
+	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF)
 	else:
-		recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+		recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF)
 		vol_ssnr1 = model_blank(2,2,2)
 
 	nx  = prjlist[0].get_xsize()
@@ -1151,9 +1151,9 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 			proj.set_attr('sign', 1)
 		re_prjlist.append(proj)
 	del volft
-	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
 	else:
-		recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
+		recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
 		vol_ssnr2 = model_blank(2,2,2)
 
 	if myid == 0:
