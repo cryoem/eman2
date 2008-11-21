@@ -4683,6 +4683,7 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 					from utilities import rotate_3D_shift
 					rotate_3D_shift(dataim, cs)
 				drop_image(vol, os.path.join(outdir, "volf%03d_%03d.hdf"%(iteration, ic) ))
+			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
