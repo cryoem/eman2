@@ -1169,7 +1169,7 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 			datstrings.append("\n")
 			outf.write("".join(datstrings))
 		outf.close()
-	if my_id == 0:
+	if myid == 0:
 		from morphology import threshold_to_minval
 		return  threshold_to_minval(Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
 	else:  return  model_blank(2,2,2)
