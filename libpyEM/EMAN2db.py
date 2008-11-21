@@ -74,7 +74,8 @@ def db_parse_path(url):
 	bdb:/path/to/dict   (also works, but # preferred)
 	"""
 	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only"
-	
+	url=url.replace("~",os.getenv("HOME"))
+
 	url=url[4:].rsplit('#',1)
 	if len(url)==1 : url=url[0].rsplit("/",1)
 	if len(url)==1 :
@@ -604,7 +605,16 @@ class DBDict:
 			# write the metadata
 			try: del ad["data_path"]
 			except:pass
-			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
+
+			try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
+			except:
+				print "Warning: problem writing ",key," to ",self.name,". Retrying"
+				try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
+				except: 
+					print "Error: failed a second time. Something is wrong."
+					return
+					
+			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 			
 			# write the binary data
@@ -727,7 +737,16 @@ class DBDict:
 			# write the metadata
 			try: del ad["data_path"]
 			except:pass
-			self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
+
+			try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
+			except:
+				print "Warning: problem writing ",key," to ",self.name,". Retrying"
+				try: self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
+				except: 
+					print "Error: failed a second time. Something is wrong."
+					return
+
+			if not self.has_key("maxrec") or key>self["maxrec"] : self["maxrec"]=key
 			if isinstance(key,int) and (not self.has_key("maxrec") or key>self["maxrec"]) : self["maxrec"]=key
 			
 			# write the binary data

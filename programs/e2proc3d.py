@@ -56,8 +56,11 @@ def main():
     usage = progname + " options inputfile outputfile"
     parser = OptionParser(usage)
     
-    parser.add_option("--shrink", metavar="n", type="int", action="append", 
+    parser.add_option("--medianshrink", metavar="n", type="int", action="append", 
                                 help="Shrinks the image by integer n using median filter")
+
+    parser.add_option("--meanshrink", metavar="n", type="int", action="append", 
+                                help="Shrinks the image by integer n using mean filter")
 
     parser.add_option("--scale", metavar="n", type="float", action="append",
                                 help="Rescales the image by 'n', generally used with clip option.")
@@ -109,7 +112,7 @@ def main():
     
     parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)	
     
-    append_options = ["clip", "fftclip", "filter", "shrink", "scale"]
+    append_options = ["clip", "fftclip", "filter", "meanshrink", "medianshrink", "scale"]
     
     optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
     
@@ -225,10 +228,19 @@ def main():
                     data.scale(scale_f)
                 index_d[option1] += 1
 
-            elif option1 == "shrink":
+            elif option1 == "medianshrink":
                 shrink_f = options.shrink[index_d[option1]]
                 if shrink_f > 1:
                     data.process_inplace("math.medianshrink",{"n":shrink_f})
+                    nx = data.get_xsize()
+                    ny = data.get_ysize()
+                    nz = data.get_zsize()
+                index_d[option1] += 1
+
+            elif option1 == "meanshrink":
+                shrink_f = options.shrink[index_d[option1]]
+                if shrink_f > 1:
+                    data.process_inplace("math.meanshrink",{"n":shrink_f})
                     nx = data.get_xsize()
                     ny = data.get_ysize()
                     nz = data.get_zsize()

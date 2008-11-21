@@ -99,10 +99,8 @@ def main():
 					help="Averages all input images (without alignment) and writes a single (normalized) output image")
 	parser.add_option("--calcsf", metavar="n outputfile", type="string", nargs=2,
 					help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
-	parser.add_option("--clip", metavar="xsize ysize", type="float", nargs=2, action="append",
-					help="Define the output image size. CLIP=xsize ysize")
-	parser.add_option("--ctfsplit", action="store_true",
-					help="Splits the input file into output files with the same CTF parameters")
+	parser.add_option("--clip", metavar="xsize,ysize", type="string", action="append",
+					help="Specify the output size in pixels (xsize,ysize), images can be made larger or smaller.")
 	parser.add_option("--exclude", metavar="exclude-list-file",
 					type="string", help="Excludes image numbers in EXCLUDE file")
 	parser.add_option("--fftavg", metavar="filename", type="string",
@@ -111,23 +109,23 @@ def main():
 					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 	parser.add_option("--mult", metavar="k", type="float", help="Multiply image by a constant. mult=-1 to invert contrast.")
 	parser.add_option("--first", metavar="n", type="int", default=0, help="the first image in the input to process [0 - n-1])")
+	parser.add_option("--last", metavar="n", type="int", default=-1, help="the last image in the input to process")
+	parser.add_option("--list", metavar="listfile", type="string",
+					help="Works only on the image numbers in LIST file")
 	parser.add_option("--inplace", action="store_true",
 					help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
 	parser.add_option("--interlv", metavar="interleave-file",
 					type="string", help="Specifies a 2nd input file. Output will be 2 files interleaved.")
-	parser.add_option("--last", metavar="n", type="int", default=-1, help="the last image in the input to process")
-	parser.add_option("--list", metavar="listfile", type="string",
-					help="Works only on the image numbers in LIST file")
 	parser.add_option("--meanshrink", metavar="n", type="int", action="append",
 					help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
+	parser.add_option("--medianshrink", metavar="n", type="int", action="append",
+					help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
 	parser.add_option("--mraprep",  action="store_true", help="this is an experimental option")
 	parser.add_option("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
 	parser.add_option("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
 	parser.add_option("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
 	parser.add_option("--outtype", metavar="image-type", type="string",
 					help="output image format, mrc, imagic, hdf, etc")
-	parser.add_option("--plt", metavar="plt-file", type="string",
-					help="output the orientations in IMAGIC .plt file format")
 	parser.add_option("--radon",  action="store_true", help="Do Radon transform")
 	parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
 	parser.add_option("--fp",  action="store_true", help="this is an experimental option")
@@ -137,8 +135,6 @@ def main():
 					help="Output file will be a 180x180 self-common lines map for each image.")
 	parser.add_option("--setsfpairs",  action="store_true",
 					help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
-	parser.add_option("--shrink", metavar="n", type="int", action="append",
-					help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
 	parser.add_option("--split", metavar="n", type="int",
 					help="Splits the input file into a set of n output files")
 	parser.add_option("--verbose", metavar="n", type="int", help="verbose level [1-4]")
@@ -150,7 +146,7 @@ def main():
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 	
-	append_options = ["clip", "process", "meanshrink", "shrink", "scale"]
+	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 	
@@ -185,10 +181,6 @@ def main():
 	MAXMICROCTF = 1000
 	defocus_val = [0] * MAXMICROCTF
 	bfactor_val = [0] * MAXMICROCTF
-
-	pltfp = None
-	if options.plt:
-		pltfp = open(options.plt, "wb")
 	
 	if options.verbose>2:
 		Log.logger().set_level(options.verbose-2)
@@ -260,14 +252,6 @@ def main():
 				d = threed.get_clip(roi)
 				#d.read_image(infile,0, HEADER_AND_DATA, roi)
 				d.set_size(tomo_ny,tomo_nz,1)
-		
-		if pltfp:
-			r = d.get_rotation()
-			pi2d = 180/math.pi
-			pltfp.write("%f,%f,%f \n" % (r.eman_phi() * pi2d,
-										r.eman_alt() * pi2d,
-										r.eman_az() * pi2d))
-			continue
 
 		nx = d.get_xsize()
 		ny = d.get_ysize()
@@ -301,24 +285,6 @@ def main():
 				d.mult(options.mult)
 			elif option1 == "norefs" and d.get_average_nimg() <= 0:
 				continue
-			
-			elif option1 == "ctfsplit":
-
-				if i == n0 or (not EMUtil.is_same_ctf(d, ld)):
-					ctf = d.get_ctf()
-			
-					for j in range(1, options.ctfsplit):
-						if defocus_val[j] == ctf.get_defocus() and bfactor_val[j] == ctf.get_bfactor():
-							break
-					if options.ctfsplit <= j:
-						options.ctfsplit = j + 1
-						print "New CTF at " + i
-				
-					defocus_val[j] = ctf.get_defocus()
-					bfactor_val[j] = ctf.get_bfactor()
-					outfile = outfile + ".%02d.img" % j
-					ld = d.copy(False, False)
-			
 				
 			elif option1 == "setsfpairs":
 				dataf = d.do_fft()
@@ -354,7 +320,8 @@ def main():
 				
 			elif option1 == "clip":
 				ci = index_d[option1]
-				(clipx, clipy) = options.clip[ci]
+				clipx, clipy = options.clip[ci].split(",")
+				clipx, clipy = int(clipx),int(clipy)
 				
 				e = d.get_clip(Region((nx-clipx)/2, (ny-clipy)/2, clipx, clipy))
 				try: e.set_attr("avgnimg", d.get_attr("avgnimg"))
@@ -362,8 +329,8 @@ def main():
 				d = e
 				#index_d[option1] += 1
 			
-			elif option1 == "shrink":
-				shrink_f = options.shrink[index_d[option1]]
+			elif option1 == "medianshrink":
+				shrink_f = options.medianshrink[index_d[option1]]
 				if shrink_f > 1:
 					d.process_inplace("math.medianshrink",{"n":shrink_f})
 				#index_d[option1] += 1
