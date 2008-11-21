@@ -36,6 +36,7 @@ import os
 import global_def
 from   global_def import *
 from   optparse import OptionParser
+from   utilities import parse_user_function
 import sys
 
 
@@ -73,7 +74,7 @@ def main():
 	   		sys.argv = mpi_init(len(sys.argv), sys.argv)
 		from applications import ali3d_e
 		global_def.BATCH = True
-		ali3d_e(args[0], args[1], args[2], mask, options.ou, options.delta, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk,  options.function, options.MPI, options.debug)
+		ali3d_e(args[0], args[1], args[2], mask, options.ou, options.delta, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk, parse_user_function(options.function), options.MPI, options.debug)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

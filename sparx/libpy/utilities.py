@@ -35,7 +35,7 @@ import types
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
-		Convert 2D alignment parameters (alpha, sx, sy, mirror) into
+		Convert 2D alignment parameters (alpha,sx,sy, mirror) into
 		3D alignment parameters (phi, theta, psi, s2x, s2y, mirror)
 	"""
 	phi = 0
@@ -52,7 +52,7 @@ def params_2D_3D(alpha, sx, sy, mirror):
 	
 def params_3D_2D(phi, theta, psi, s2x, s2y):
 	"""
-		Convert 3D alignment parameters (phi, theta, psi, s2x, s2y)  # there is no mirror in 3D! 
+		Convert 3D alignment parameters ( phi, theta, psi, s2x, s2y)  # there is no mirror in 3D! 
 		into 2D alignment parameters (alpha, sx, sy, mirror)
 	"""
 	if (theta > 90.0):
@@ -216,7 +216,6 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 	    iteration += 1
 	    #print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
 
-
 def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data=None):
 	"""
 	Commented by Zhengfan Yang on 05/01/07
@@ -314,7 +313,6 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	    fvalue[ssworst] = fnew
 	    iteration += 1
 	    #print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
-
 
 def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
 	""" Given a function of one-variable and a possible bracketing interval,
@@ -1830,15 +1828,10 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 		drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
 
 
-def estimate_3D_center(data):
+def estimate_3D_center(ali_params):
 	from math import cos, sin, pi
 	from numpy import matrix
 	from numpy import linalg
-	
-	ali_params = []
-	for im in data:
-		phi, theta, psi, s2x, s2y = get_params_proj(im)
-		ali_params.append([phi, theta, psi, s2x, s2y])
 	
 	N = len(ali_params)
 	A = []
@@ -1860,63 +1853,6 @@ def estimate_3D_center(data):
 
 	K = linalg.solve(A_mat.T*A_mat, A_mat.T*b)
 	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
-
-
-def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
-	from math import cos, sin, pi
-	from numpy import matrix
-	from numpy import linalg
-	from mpi import MPI_COMM_WORLD
-	from mpi import mpi_recv, mpi_send, MPI_FLOAT
-	from applications import MPI_start_end
-	
-	ali_params_series = []
-	for im in data:
-		phi, theta, psi, s2x, s2y = get_params_proj(im)
-		ali_params_series.append(phi)
-		ali_params_series.append(theta)
-		ali_params_series.append(psi)
-		ali_params_series.append(s2x)
-		ali_params_series.append(s2y)
-
-	if myid == main_node:
-		for proc in xrange(number_of_proc):
-			if proc != main_node:
-				image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
-				n_params = (image_end_proc - image_start_proc)*5
-				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, MPI_COMM_WORLD)
-				for nn in xrange(n_params): 	ali_params_series.append(temp[nn])	
-		ali_params = []
-		for im in xrange(len(ali_params_series)/5):
-			ali_params.append([ali_params_series[im*5], ali_params_series[im*5+1], ali_params_series[im*5+2], ali_params_series[im*5+3], ali_params_series[im*5+4]])
-
-		N = len(ali_params)
-		A = []
-		b = []
-	
-		for i in xrange(N):
-			phi_rad = ali_params[i][0]/180*pi
-			theta_rad = ali_params[i][1]/180*pi
-			psi_rad = ali_params[i][2]/180*pi
-			A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad), 
-				cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
-			A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad), 
-				-sin(psi_rad)*cos(theta_rad)*sin(phi_rad)+cos(psi_rad)*cos(phi_rad), sin(psi_rad)*sin(theta_rad), 0, 1])	
-			b.append([ali_params[i][3]])
-			b.append([ali_params[i][4]])
-	
-		A_mat = matrix(A)
-		b_max = matrix(b)
-
-		K = linalg.solve(A_mat.T*A_mat, A_mat.T*b)
-		return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
-
-	else:
-		image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, myid)
-		n_params = (image_end_proc - image_start_proc)*5
-		mpi_send(ali_params_series, n_params, MPI_FLOAT, main_node, myid, MPI_COMM_WORLD)
-		
-		return 0.0, 0.0, 0.0, 0.0, 0.0	
 
 
 def rotate_3D_shift(data, shift3d):
@@ -2485,9 +2421,10 @@ def get_ctf(ima):
 	from EMAN2 import EMAN2Ctf
 	
 	ctf_params = ima.get_attr("ctf")
+	
 	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont
 
-def generate_ctf(p):
+def gen_ctf(p):
 	from EMAN2 import EMAN2Ctf
 
 	defocus = p[0]
@@ -2509,8 +2446,8 @@ def generate_ctf(p):
 	return ctf
 
 def set_ctf(ima, p):
-	ctf = generate_ctf(p)
-	ima.set_attr("ctf", ctf)	
+	ctf = get_ctf( p )
+	ima.set_attr( "ctf", ctf )	
 
 
 def delete_bdb(name):
@@ -2519,3 +2456,35 @@ def delete_bdb(name):
 	"""
 	a = db_open_dict(name)
 	db_remove_dict(name)
+
+
+# parse user function parses the --function option. this option
+#    can be either a single function name (i.e. --function=ali3d_e)
+#    or a list of names, specifying the location of a user-defined
+#    function; this will have the form --function=/path/module/function
+
+def parse_user_function(opt_string):
+
+    # check if option string is a string and return None if not. this
+    #    will cause the user function to be set to default value
+    #    "ref_ali3d" in the ali functions....
+    if not(type(opt_string) is str):
+        return None
+
+    # check opt_string for format:
+    if (opt_string.startswith("[") and opt_string.endswith("]")):
+        # options string is [path,file,function]
+        opt_list = opt_string[1:-1].split(",")
+        if (2 == len(opt_list)):
+            # options are [file,function]
+            return [opt_list[0],opt_list[1]]
+        elif (3 == len(opt_list)):
+            # options are [path,file,function]. note the order!
+            return [opt_list[1],opt_list[2],opt_list[0]]
+        else:
+            # neither. assume this is an error and return default
+            return None
+    else:
+        # no list format used, so we assume this is a function name
+        #    defined (and referenced) in user_functions.
+        return opt_string
