@@ -4671,9 +4671,10 @@ def ali3d_e_MPI(stack, ref_vol, outdir, maskfile, ou=-1,  delta=2, center = 1, m
 			varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
 
 			if myid == main_node:
+				drop_image(varf, os.path.join(outdir, "varf%03d_%03d.hdf"%(iteration, ic) ))
 				varf = 1.0/varf
 				drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
-				drop_image(vol, os.path.join(outdir, "varf%03d_%03d.hdf"%(iteration, ic) ))
+				drop_image(varf, os.path.join(outdir, "overvarf%03d_%03d.hdf"%(iteration, ic) ))
 				ref_data[2] = vol
 				ref_data[3] = fscc
 				ref_data[4] = varf
@@ -7799,11 +7800,8 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 		datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
 		datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
 		datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
-		datstrings.append("  %15f" % ssnr2[0][i])    #  have to subtract 0.5 as in C code there is round.
 		datstrings.append("  %15e" % ssnr2[1][i])    # SSNR
 		datstrings.append("  %15e" % ssnr2[2][i])    # variance
-		datstrings.append("  %15f" % ssnr2[3][i])    # number of points in the shell
-		datstrings.append("  %15f" % ssnr2[4][i])    # number of added Fourier points
 		datstrings.append("  %15e" % ssnr2[5][i])    # square of signal
 		datstrings.append("\n")
 		outf.write("".join(datstrings))
@@ -7919,11 +7917,8 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
 			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
 			datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
-			datstrings.append("  %15f" % ssnr2[0][i])    #  have to subtract 0.5 as in C code there is round.
 			datstrings.append("  %15e" % ssnr2[1][i])    # SSNR
 			datstrings.append("  %15e" % ssnr2[2][i])    # variance
-			datstrings.append("  %15f" % ssnr2[3][i])    # number of points in the shell
-			datstrings.append("  %15f" % ssnr2[4][i])    # number of added Fourier points
 			datstrings.append("  %15e" % ssnr2[5][i])    # square of signal
 			datstrings.append("\n")
 			outf.write("".join(datstrings))

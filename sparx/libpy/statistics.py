@@ -1132,6 +1132,7 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 			if myid == 0 : reference_structure = recons3d_4nn_MPI(myid, prjlist, sym)
 			else:           recons3d_4nn_MPI(myid, prjlist, sym)
 		bcast_EMData_to_all(reference_structure, myid, 0)
+	if myid == 0:  reference_structure.write_image("refer.hdf",0)
 	#vol *= model_circle(radius, nx, nx, nx)
 	volft,kb = prep_vol(reference_structure)
 	del reference_structure
@@ -1160,11 +1161,8 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
 			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
 			datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
-			datstrings.append("  %15f" % ssnr2[0][i])    #  have to subtract 0.5 as in C code there is round.
 			datstrings.append("  %15e" % ssnr2[1][i])    # SSNR
 			datstrings.append("  %15e" % ssnr2[2][i])    # variance
-			datstrings.append("  %15f" % ssnr2[3][i])    # number of points in the shell
-			datstrings.append("  %15f" % ssnr2[4][i])    # number of added Fourier points
 			datstrings.append("  %15e" % ssnr2[5][i])    # square of signal
 			datstrings.append("\n")
 			outf.write("".join(datstrings))
