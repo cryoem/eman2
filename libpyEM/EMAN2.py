@@ -394,7 +394,26 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 		if show:
 			try: os.system("display "+path)
 			except: pass
-
+			
+def process_running(pid):
+	import platform
+	platform_string = platform.system()
+	if platform == "Windows":
+		# taken from http://www.python.org/doc/faq/windows/#how-do-i-emulate-os-kill-in-windows
+		import win32api
+		try:
+			# I _think_ this will work but could definitely be wrong
+			handle = win32api.OpenProcess(1, 0, pid)
+			return 1
+		except:
+			return 0
+	else:
+		try:
+			os.kill(pid,0)
+			return 1
+		except:
+			return 0
+			
 def memory_stats():
 	'''
 	Returns [total memory in GB,available memory in GB]

@@ -49,6 +49,8 @@ class EmptyObject:
 	'''
 	def __init__(self):
 		pass
+	
+	
 
 class WorkFlowTask(QtCore.QObject):
 	def __init__(self,application):
@@ -169,6 +171,7 @@ class WorkFlowTask(QtCore.QObject):
 			#print args
 			file = open(temp_file_name,"w+")
 			process = subprocess.Popen(args,stdout=file,stderr=subprocess.STDOUT)
+			print "started process",process.pid
 			self.emit(QtCore.SIGNAL("process_started"),process.pid)
 			
 		db_close_dict("bdb:project")
@@ -1201,6 +1204,12 @@ class MicrographCCDTask(WorkFlowTask):
 		else:
 			print "unknown key:",key,"this object is",self
 					
+
+
+class RunE2BoxerTask(WorkFlowTask):
+	'''
+	A generalized form for running e2boxer tasks
+	'''
 	
 
 class SPRInitTask(WorkFlowTask):

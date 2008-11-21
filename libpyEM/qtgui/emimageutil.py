@@ -106,6 +106,93 @@ class EMEventRerouter:
 	def get_target(self):
 		return self.target # use this one instead of the above
  
+ 
+class EMEventRerouterToList:
+	'''
+	Like and EMEventRerouter but has a list of possible targets
+	'''
+	def __init__(self,targets=[]):
+		self.targets = targets
+		self.orig_targets  = targets
+		self.selected_object = None
+		self.multi_selected_objects = [] # as grown using "ctrl-click" selection, for event master slave relationships
+		
+	def lock_target(self,target):
+		self.targets = [target]
+		
+	def unlock_target(self):
+		self.targets = self.orig_targets
+
+	def set_target(self,target):
+		self.targets = [target]
+		self.orig_targets  = [target]
+		
+	def set_targets(self,targets):
+		self.targets = targets
+		self.orig_targets  = targets
+
+	def mousePressEvent(self, event):
+		for target in self.targets:
+			if target.mousePressEvent(event):
+				event.accept()
+				return
+			
+	def wheelEvent(self,event):
+		for target in self.targets:
+			if target.wheelEvent(event):
+				event.accept()
+				return
+	
+	def mouseMoveEvent(self,event):
+		for target in self.targets:
+			if target.mouseMoveEvent(event):
+				event.accept()
+				return
+	
+	def mouseReleaseEvent(self,event):
+		for target in self.targets:
+			if target.mouseReleaseEvent(event):
+				event.accept()
+				return
+			
+	def mouseDoubleClickEvent(self,event):
+		for target in self.targets:
+			if target.mouseDoubleClickEvent(event):
+				event.accept()
+				return
+
+	def wheelEvent(self,event):
+		for target in self.targets:
+			if target.wheelEvent(event):
+				event.accept()
+				return
+			
+	def keyPressEvent(self,event):
+		for target in self.targets:
+			if event.isAccepted(): return
+			self.target.keyPressEvent(event)
+			
+	def dropEvent(self,event):
+		for target in self.targets:
+			if event.isAccepted():return
+			self.target.dropEvent(event)
+	
+	def dragEnterEvent(self,event):
+		for target in self.targets:
+			if event.isAccepted():return
+			self.target.dragEnterEvent(event)
+	
+	def closeEvent(self,event):
+		for target in self.targets:
+			target.closeEvent(event)
+
+
+	def leaveEvent(self,event):
+		for target in self.targets:
+			target.leaveEvent(event)
+
+	def get_targets(self):
+		return self.targets # use this one instead of the above
 
 class EMTransformPanel:
 	def __init__(self,target,parent):

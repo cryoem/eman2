@@ -539,7 +539,7 @@ class EMSelectorDialog(QtGui.QDialog):
 	def module_closed(self,module):
 		for i,mod in enumerate(self.previews):
 			if mod == module:
-				self.previews.pop(i)
+				p = self.previews.pop(i)
 				self.module_events.pop(i)
 				return
 			

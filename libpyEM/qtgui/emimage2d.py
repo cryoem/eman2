@@ -1358,6 +1358,7 @@ class EMImage2DModule(EMGUIModule):
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
+		self.mouse_events_mediator = None # garbage collection! :(
 		EMGUIModule.closeEvent(self,event)
 		
 	def dragEnterEvent(self,event):

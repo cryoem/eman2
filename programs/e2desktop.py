@@ -896,6 +896,11 @@ class EMFrame(EMWindowNode,EMRegion):
 		EMRegion.__init__(self,geometry)
 		self.children = []
 		self.current = None
+		
+		
+	def updateGL(self):
+		self.parent.updateGL()
+		
 	def draw(self):
 		for child in self.children:
 			glPushMatrix()
@@ -1056,6 +1061,45 @@ class EMDesktopApplication(EMApplication):
 		owner = EMDesktop.main_widget.get_owner(child)
 		if owner != None: return True
 		else: return False
+		
+class EMWorkFlowFrame(EMFrame):
+	'''
+	A special frame that only has a top bar, for managing the workflow stuff
+	'''
+	def __init__(self,parent,geometry=Region(0,0,0,0)):
+		EMFrame.__init__(self,parent,geometry)
+		EMDesktop.main_widget.register_resize_aware(self)
+		self.display_frames = []
+		self.top_bar = TopWidgetBar(self)
+		self.attach_child(self.top_bar)
+		self.borderwidth=10.0
+		self.child_mappings = {}
+		
+	def attach_gl_child(self,child,hint):
+		for child_,t in self.child_mappings.items():
+			if child_ == child: return
+
+		if hint == "workflow":
+			self.top_bar.attach_child(child.get_gl_widget(EMDesktop.main_widget,EMDesktop.main_widget))
+			self.child_mappings[child] = self.top_bar
+		else:
+			print "only workflow hint is understood form the EMWorkFlowFrame"
+			
+	def resize_gl(self):
+	
+		self.set_geometry(Region(0,0,int(EMDesktop.main_widget.viewport_width()),int(EMDesktop.main_widget.viewport_height())))
+		
+	def draw(self):
+		glPushMatrix()
+		glTranslatef(0.,0.,self.get_z_opt())
+		EMFrame.draw(self)
+		glPopMatrix()
+		
+	def get_z_opt(self):
+		return self.parent.get_z_opt()
+	
+	def closeEvent(self,event):
+		pass
 	
 class EMDesktopFrame(EMFrame):
 	image = None
@@ -1070,13 +1114,11 @@ class EMDesktopFrame(EMFrame):
 		self.display_frame = EMPlainDisplayFrame(self)
 		self.form_display_frame = EMFormDisplayFrame(self)
 		self.bottom_bar = BottomWidgetBar(self)
-		self.top_bar = TopWidgetBar(self)
 		
 		self.attach_display_child(self.display_frame)
 		self.attach_child(self.right_side_bar)
 		self.attach_child(self.left_side_bar)
 		self.attach_child(self.bottom_bar)
-		self.attach_child(self.top_bar)
 		self.attach_child(self.form_display_frame)
 		# what is this?
 		self.bgob2=ob2dimage(self,self.read_EMAN2_image())
@@ -1085,8 +1127,8 @@ class EMDesktopFrame(EMFrame):
 		self.glbasicobjects = EMBasicOpenGLObjects()
 		self.borderwidth=10.0
 		
-		self.type_name = None
-	
+		self.type_name = None # identifier string
+		self.module = None # identifier module, a Python object of some kind
 	def __del__(self):
 		if self.frame_dl:
 			glDeleteLists(self.frame_dl,1)
@@ -1098,18 +1140,9 @@ class EMDesktopFrame(EMFrame):
 	def set_type(self,type_name):
 		self.type_name = type_name
 	
-	#def append_task_widget(self,task_widget):
-		#self.left_side_bar.attach_child(task_widget)
+	def get_module(self): return self.module
+	def set_module(self,module): self.module = module
 	
-	def set_geometry(self,geometry):
-		EMFrame.set_geometry(self,geometry)
-		#try:
-			#for child in self.children:
-				#if isinstance(child,EMDesktopTaskWidget):
-					#child.set_cam_pos(-self.parent.width()/2.0+child.width()/2.0,self.parent.height()/2.0-child.height()/2.0,0)
-					
-		#except: pass
-
 	def updateGL(self):
 		self.parent.updateGL()
 	
@@ -1370,7 +1403,7 @@ def print_node_hierarchy(node):
 			print child,
 			print_node_hierarchy(child)
 
-class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMatrices):
+class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjectionViewMatrices):
 	main_widget = None
 	"""An OpenGL windowing system, which can contain other EMAN2 widgets and 3-D objects.
 	"""
@@ -1411,9 +1444,10 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		
 		self.desktop_frames = [EMDesktopFrame(self)]
 		self.current_desktop_frame = self.desktop_frames[0]
-		
-		
-		EMEventRerouter.__init__(self,self.current_desktop_frame)
+		self.work_flow_frame = EMWorkFlowFrame(self)
+	
+
+		EMEventRerouterToList.__init__(self,[self.current_desktop_frame,self.work_flow_frame])
 		
 		#print_node_hierarchy(self.current_desktop_frame)
 		#print fw1.width(),fw1.height()
@@ -1427,9 +1461,84 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		self.resize(self.appscreen.availableGeometry().size())
 		
 		self.work_flow_manager = EMWorkFlowManager(self.application)
+		self.task_monitor = self.work_flow_manager.task_monitor
 		self.task_widget = self.work_flow_manager.selector
 		self.application.show_specific(self.task_widget)
+		self.application.show_specific(self.task_monitor)
 		
+		self.connect(self.task_monitor,QtCore.SIGNAL("task_selected"),self.task_selected)
+		self.connect(self.task_widget,QtCore.SIGNAL("task_selected"),self.task_selected)
+		self.connect(self.task_widget,QtCore.SIGNAL("launching_module"),self.launching_module)
+		self.connect(self.task_widget,QtCore.SIGNAL("module_closed"),self.module_closed)
+		self.launching_module("Workflow","Workflow")
+		
+	def task_selected(self,module_string,module):
+		if module == self.current_desktop_frame.get_module():
+			print "it's this one"
+			return
+		
+		else:
+			
+			for frame in self.desktop_frames:
+				if module == frame.get_module():
+					old_frame = self.current_desktop_frame
+					self.current_desktop_frame = frame
+					self.set_targets([frame,self.work_flow_frame]) # for the EMEventRerouterToList
+					self.start_frame_entry_exit_animation(frame,old_frame)
+					self.updateGL()
+					return
+				
+			
+				
+		print "failed in task selected"
+	
+	def module_closed(self,module_string,module):
+		for i,frame in enumerate(self.desktop_frames):
+			if module == frame.get_module():
+				self.desktop_frames.pop(i)
+				if len(self.desktop_frames) == 0:
+					self.desktop_frames = [EMDesktopFrame(self)]
+					self.current_desktop_frame = self.desktop_frames[0]
+				else:
+					self.current_desktop_frame = self.desktop_frames[i-1]
+				
+				self.set_targets([self.current_desktop_frame,self.work_flow_frame]) # for the EMEventRerouterToList
+				return
+				
+			
+		print "close module failed"
+				
+	
+	def launching_module(self,module_string,module):
+		print "launching",module_string,module
+		
+		display_frame = None
+		if self.current_desktop_frame.get_type() == None:
+			display_frame = self.current_desktop_frame
+		else:
+			display_frame = EMDesktopFrame(self)
+			display_frame.resize_gl()
+			self.desktop_frames.append(display_frame)
+			old_frame = self.current_desktop_frame
+			self.current_desktop_frame = display_frame
+			self.set_targets([display_frame,self.work_flow_frame]) # for the EMEventRerouterToList
+			self.start_frame_entry_exit_animation(display_frame,old_frame)
+	
+		display_frame.set_type(module_string)
+		display_frame.set_module(module)
+		
+		if module_string == "Browser":
+			browser_settings = EMBrowserSettings(self.current_desktop_frame.display_frame,self.application)
+		
+	def start_frame_entry_exit_animation(self,entry_frame,exit_frame):
+		pass
+
+	def add_module(self,module_string,module):
+		print module,module_string
+		
+	def remove_module(self,module_string,module):
+		print module,module_string
+	
 	def get_gl_context_parent(self): return self
 		
 	def emit(self,*args, **kargs):
@@ -1442,63 +1551,67 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		return self.current_desktop_frame.get_owner(child)
 	
 	def attach_gl_child(self,child,hint):
-		self.current_desktop_frame.attach_gl_child(child,hint)
+		if hint != "workflow":
+			self.current_desktop_frame.attach_gl_child(child,hint)
+		else:
+			self.work_flow_frame.attach_gl_child(child,hint)
 		
 	def detach_gl_child(self,child):
 		self.current_desktop_frame.detach_gl_child(child)
 	
-	def add_browser_frame(self):
-		if not self.establish_target_frame("browse"):
-			return
+	
+	#def add_browser_frame(self):
+		#if not self.establish_target_frame("browse"):
+			#return
 		
-		dialog = EMBrowserDialog(self,EMDesktop.application)
-		em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
-		EMDesktop.application.show_specific(em_qt_widget)
-		self.browser_settings = EMBrowserSettings(self.current_desktop_frame.display_frame,self.application)
+		#dialog = EMBrowserDialog(self,EMDesktop.application)
+		#em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
+		#EMDesktop.application.show_specific(em_qt_widget)
+		#self.browser_settings = EMBrowserSettings(self.current_desktop_frame.display_frame,self.application)
 
 		
-	def establish_target_frame(self,type_name):
-		for frame in self.desktop_frames:
-			if frame.get_type() == type_name:
-				self.application.close_specific(self.task_widget)
-				self.current_desktop_frame = frame
-				EMEventRerouter.set_target(self,self.current_desktop_frame)
-				self.application.show_specific(self.task_widget)
-				print "that already exists"
-				print "now animate change"
-				return False
+	#def establish_target_frame(self,type_name):
+		#for frame in self.desktop_frames:
+			#if frame.get_type() == type_name:
+				#self.application.close_specific(self.task_widget)
+				#self.current_desktop_frame = frame
+				#EMEventRerouterToList.set_target(self,[self.current_desktop_frame])
+				#self.application.show_specific(self.task_widget)
+				#print "that already exists"
+				#print "now animate change"
+				#return False
 	
-		target_frame = None
-		if self.current_desktop_frame.get_type() == None:
-			target_frame = self.current_desktop_frame
-		else:
-			self.application.close_specific(self.task_widget)
-			target_frame = EMDesktopFrame(self)
-			target_frame.resize_gl()
-			#target_frame.append_task_widget(self.task_widget.gl_widget)
-			self.desktop_frames.append(target_frame)
-			self.current_desktop_frame = target_frame
-			self.application.show_specific(self.task_widget)
+		#target_frame = None
+		#if self.current_desktop_frame.get_type() == None:
+			#target_frame = self.current_desktop_frame
+		#else:
+			#self.application.close_specific(self.task_widget)
+			#target_frame = EMDesktopFrame(self)
+			#target_frame.resize_gl()
+			##target_frame.append_task_widget(self.task_widget.gl_widget)
+			#self.desktop_frames.append(target_frame)
+			#self.current_desktop_frame = target_frame
+			#self.application.show_specific(self.task_widget)
 		
-		EMEventRerouter.set_target(self,self.current_desktop_frame)
+		#EMEventRerouterToList.set_target(self,[self.current_desktop_frame])
 		
-		target_frame.set_type(type_name)
+		#target_frame.set_type(type_name)
 		
-		return True
+		#return True
 		
-	def add_selector_frame(self):
-		if not self.establish_target_frame("thumb"): return
-		dialog = EMSelectorDialog(self,EMDesktop.application)
-		em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
-		EMDesktop.application.show_specific(em_qt_widget)
+	#def add_selector_frame(self):
+		#if not self.establish_target_frame("thumb"): return
+		#dialog = EMSelectorDialog(self,EMDesktop.application)
+		#em_qt_widget = EMQtWidgetModule(dialog,EMDesktop.application)
+		#EMDesktop.application.show_specific(em_qt_widget)
 	
-	def add_boxer_frame(self):
-		if not self.establish_target_frame("boxer"): return
+	#def add_boxer_frame(self):
+		#if not self.establish_target_frame("boxer"): return
 		
-		# must keep a reference in order for signals to work!
-		boxer_module = EMBoxerModule(EMDesktop.application,None)
-		self.modules.append(boxer_module)
-		self.events_handlers.append(BoxerEventsHandler(self,boxer_module))
+		## must keep a reference in order for signals to work!
+		#boxer_module = EMBoxerModule(EMDesktop.application,None)
+		#self.modules.append(boxer_module)
+		#self.events_handlers.append(BoxerEventsHandler(self,boxer_module))
 	
 	def remove_boxer_module(self,boxer_module,boxer_events_handler):
 		for i, eh in enumerate(self.events_handlers):
@@ -1620,7 +1733,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouter,Animator,EMGLProjectionViewMa
 		#else:
 			##print -2*self.zopt+0.1
 		glTranslatef(0.,0.,-2*self.get_z_opt()+0.1)
-		
+		self.work_flow_frame.draw()
 		self.current_desktop_frame.draw()
 		glPopMatrix()
 		
@@ -2226,25 +2339,14 @@ class TopWidgetBar(SideWidgetBar):
 		SideWidgetBar.__init__(self,parent)
 		self.total_width=0
 	def draw(self):
-		#if len(self.children) != 1 : 
-			##print len(self.children)
-			#return
+		if len(self.children) == 0 : 
+			return
 		depth_back_on = False
 
-		
-		#print "in draw"
-		
-		if self.transformers[0].has_focus():
-			depth_back_on = glIsEnabled(GL_DEPTH_TEST)
-			glDisable(GL_DEPTH_TEST)
-		#child = self.children[0]
-		#glPushMatrix()
-		#glTranslate(-self.total_width/2,self.parent.height()/2.0-15,0)
-		#child.correct_internal_translations()
-		#self.transformers[0].transform()
-		#child.draw()
-		#glPopMatrix()
-		
+		#if self.transformers[0].has_focus():
+			#depth_back_on = glIsEnabled(GL_DEPTH_TEST)
+			#glDisable(GL_DEPTH_TEST)
+
 		glPushMatrix()
 		glTranslate(-self.total_width/2,self.parent.height()/2.0-15,0)
 		for i,child in enumerate(self.children):
@@ -2256,8 +2358,8 @@ class TopWidgetBar(SideWidgetBar):
 			glTranslate(child.width_inc_border(),0,0)
 		glPopMatrix()
 		
-		if self.transformers[0].has_focus():
-			if depth_back_on: glEnable(GL_DEPTH_TEST)
+		#if self.transformers[0].has_focus():
+			#if depth_back_on: glEnable(GL_DEPTH_TEST)
 		
 	def attach_child(self,new_child):
 		#print "attached child"

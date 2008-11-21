@@ -37,25 +37,25 @@ from emapplication import EMQtWidgetModule,ModuleEventsManager
 from emsprworkflow import *
 from emselector import EMBrowserModule
 from e2boxer import EMBoxerModule
-from EMAN2 import HOMEDB
+from EMAN2 import HOMEDB, process_running
 from emanimationutil import Animator
 import time
 
-class EMTaskMonitorModule(object):
-	def __new__(cls,application):
-		widget = EMTaskMonitorWidget(application)
-		widget.resize(200,200)
-		module = EMQtWidgetModule(widget,application)
-		application.show_specific(module)
-		return module
+class EMTaskMonitorModule(EMQtWidgetModule):
+	def __init__(self,application=None):
+		self.application = application
+		self.widget = EMTaskMonitorWidget(self,application)
+		self.widget.resize(200,200)
+		EMQtWidgetModule.__init__(self,self.widget,application)
 
 class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 	def get_desktop_hint(self):
 		return "workflow"
-	
-	def __init__(self,application):
+
+	def __init__(self,module,application):
 		QtGui.QWidget.__init__(self,None)
 		Animator.__init__(self)
+		self.module = module
 		# animation specific
 		self.timer_interval = 500 # half a second time interval
 		self.register_animatable(self)
@@ -92,14 +92,20 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		self.groupbox.setToolTip("This is a list of currently running tasks.")
 		self.groupbox.setLayout(self.vbl2)
 		self.vbl.addWidget(self.groupbox)
+		self.kill = QtGui.QPushButton("Kill")
+		
+		self.vbl.addWidget(self.kill)
 		
 		self.set_entries(self.entries_dict)
 	
+		QtCore.QObject.connect(self.kill, QtCore.SIGNAL("clicked()"), self.on_kill)
 	def animate(self,time):
 		for i,pid in enumerate(self.history_check):
 			for j in range(self.init_history_db_entries+1,HOMEDB.history["count"]+1):
 				try:
+					print "adding process",pid
 					if HOMEDB.history[j]["pid"] == pid:
+						self.project_db = db_open_dict("bdb:project")
 						self.current_process_info[j] = HOMEDB.history[j]
 						self.history_check.pop(i) # ok what if two are ended at the same time? oh well there is time lag...
 						self.project_db ["workflow.process_ids"] = self.current_process_info
@@ -110,22 +116,29 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 		
 		
 		for key in self.current_process_info.keys():
-			if HOMEDB.history[key].has_key("end"):
+			#if not process_running(HOMEDB.history[key]["pid"]):
+			if not process_running(HOMEDB.history[key]["pid"]):
 				self.project_db = db_open_dict("bdb:project")
 				self.current_process_info.pop(key)
 				self.set_entries(self.entries_dict)
 				self.project_db ["workflow.process_ids"] = self.current_process_info
 				db_close_dict("bdb:project")
 				return True
+			#else:
+				#print "process running",HOMEDB.history[key]["pid"]
 		
+		# kill defunct child processes
+		# i.e. If I don't do this defunct processes will still show up as running
+		if len(self.current_process_info) > 0: pid,stat = os.waitpid(0,os.WNOHANG)
 		return True
 				
 			
 	def set_entries(self,entries_dict):
 		self.entries_dict=entries_dict
 		self.list_widget.clear()
-		for val in entries_dict.keys():
+		for k,val in entries_dict.items():
 			a = QtGui.QListWidgetItem(val,self.list_widget)
+			a.module = k
 		self.list_processes()
 		
 	def list_processes(self):
@@ -138,6 +151,8 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 			s = pid + "\t" + prog + "\t" + t
 			
 			a =  QtGui.QListWidgetItem(s,self.list_widget)
+			a.module = "process"
+			a.pid = pid
 	
 	def accrue_process_info(self):
 		
@@ -147,40 +162,73 @@ class EMTaskMonitorWidget(QtGui.QWidget,Animator):
 				
 	
 	def add_process(self,pid):
-		
 		self.history_check.append(pid) # the program hasn't added the entry to the db (There is lag)
-				
-		
-			
-	def list_widget_item_clicked(self,item):
-		
-		print "item clicked",item.text(),self.entries_dict[str(item.text())]
-		self.emit(QtCore.SIGNAL("task_selected"),str(item.text()),self.entries_dict[str(item.text())])
 	
+	def list_widget_item_clicked(self,item):
+		#val = None
+		#for k,v in  self.entries_dict.items():
+			#if v == str(item.text()):
+				#val = k
+				#break
+			
+		#if val == None:
+			#print "error, this shouldn't happen"
+		print item.module
+		self.module.emit(QtCore.SIGNAL("task_selected"),str(item.text()),item.module)
+	
+	def on_kill(self):
+		selected_items = self.list_widget.selectedItems()
+		if len(selected_items) == 0:
+			return
+		
+		# not sure if there will ever be more than one selected but oh well let's support closing them all
+		
+		for item in selected_items:
+			if item.module == "process":
+				pass
+			else:
+				#print self.entries_dict
+				self.entries_dict.pop(item.module)
+				self.module.emit(QtCore.SIGNAL("task_killed"),str(item.text()),item.module)
+				self.set_entries(self.entries_dict)
+			
+			
+		
+		#self.list_widget.
+			#print "removing item",item
+			#self.list_widget.removeItemWidget(item)
 
-class EMWorkFlowSelector(object):
-	def __new__(cls,parent,application,task_monitor):
-		widget = EMWorkFlowSelectorWidget(parent,application,task_monitor)
-		widget.resize(200,200)
-		#gl_view = EMQtGLView(EMDesktop.main_widget,widget)
-		module = EMQtWidgetModule(widget,application)
-		application.show_specific(module)
-		#desktop_task_widget = EM2DGLWindow(gl_view)
-		return module
+class EMWorkFlowSelector(EMQtWidgetModule):
+	def __init__(self,application,task_monitor):
+		self.application = application
+		self.widget = EMWorkFlowSelectorWidget(self,application,task_monitor)
+		self.widget.resize(200,200)
+		EMQtWidgetModule.__init__(self,self.widget,application)
+
+
+#class EMWorkFlowSelector(object):
+	#def __new__(cls,parent,application,task_monitor):
+		#widget = EMWorkFlowSelectorWidget(parent,application,task_monitor)
+		#widget.resize(200,200)
+		##gl_view = EMQtGLView(EMDesktop.main_widget,widget)
+		#module = EMQtWidgetModule(widget,application)
+		#application.show_specific(module)
+		##desktop_task_widget = EM2DGLWindow(gl_view)
+		#return module
 	
 class EMWorkFlowSelectorWidget(QtGui.QWidget):
 	def get_desktop_hint(self):
 		return "workflow"
 	
-	def __init__(self,target,application,task_monitor):
+	def __init__(self,module,application,task_monitor):
 		'''
 		Target is not really currently used
 		application is required
 		task_monitor should probably be supplied, it should be an instance of a EMTaskMonitorWidget
 		'''
 		QtGui.QWidget.__init__(self,None)
-		self.target=target
 		self.application = application
+		self.module = module
 		self.task_monitor = task_monitor
 		
 		self.vbl = QtGui.QVBoxLayout(self)
@@ -208,7 +256,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.launchers["Boxer"] = self.launch_boxer_general
 		self.tree_widget.insertTopLevelItems(0,self.tree_widget_entries)
 
-		
 		spr_list = []
 		
 		rd = QtGui.QTreeWidgetItem(QtCore.QStringList("Micrograph/CCD"))
@@ -255,24 +302,32 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		
 		self.hbl_buttons2.addWidget(self.tree_widget)
 		
-		self.close = QtGui.QPushButton("Close")
+		#self.close = QtGui.QPushButton("")
 		
 		self.vbl.addLayout(self.hbl_buttons2)
-		self.vbl.addWidget(self.close)
+		#self.vbl.addWidget(self.close)
 		
 		#QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem*,int)"), self.tree_widget_double_click)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.tree_widget_click)
-		QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
+		#QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.target.close)
+	
+	
+	def task_killed(self,module_string,module):
+		module.closeEvent(None)
+		self.module.emit(QtCore.SIGNAL("module_closed"),"module_string",module)
 	
 	def launch_browser(self):
 		module = EMBrowserModule(self.application)
+		self.module.emit(QtCore.SIGNAL("launching_module"),"Browser",module)
 		self.application.show_specific(module)
-		self.add_module([str(module),"e2display",module])
+		self.add_module([str(module),"Browse",module])
+		
 		
 	def launch_boxer_general(self):
 		module = EMBoxerModule(self.application,None)
+		self.module.emit(QtCore.SIGNAL("launching_module"),"Boxer",module)
 #		self.application.show_specific(module) # it doesn't work this way for boxer ... hmmmmm ...
-		self.add_module([str(module),"e2boxer",module])
+		self.add_module([str(module),"Boxer",module])
 		
 	def add_module(self,module):
 		self.gui_modules.append(module)
@@ -344,6 +399,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		if len(self.tasks) > 0: 
 			self.__clear_tasks()
 		
+		self.module.emit(QtCore.SIGNAL("task_selected"),"Workflow","Workflow")
 		if not self.tasks.has_key(task_unique_identifier):
 			task = task_type(self.application)
 			
@@ -364,8 +420,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			# solution is to turn the tasks into a module and add more modules
 			return
 		
-		
-		
 		for val in self.tasks.keys():
 			print "task appending",val
 			tasks.append(str(val))
@@ -373,10 +427,10 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 			#tasks_dict["workflow"] = 
 		
 		for val in self.gui_modules:
-			tasks_dict[val[1]] = val[2]
+			tasks_dict[val[2]] = val[1]
 			tasks.append(str(val[1]))
 		
-		self.emit(QtCore.SIGNAL("tasks_updated"),tasks_dict)
+		self.module.emit(QtCore.SIGNAL("tasks_updated"),tasks_dict)
 	
 	def __clear_tasks(self):
 		for v in self.tasks.values():
@@ -399,6 +453,7 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.gui_modules.append(module)
 		self.module_events.append(None) # this makes the handling of the gui_modules and module_events more general, see code
 		self.update_task_list()
+	
 	def gui_exit(self,module):
 		for i,mod in enumerate(self.gui_modules):
 			if mod[0] == module:
@@ -468,8 +523,10 @@ class EMWorkFlowManager:
 		
 	
 		self.task_monitor = EMTaskMonitorModule(self.application)
-		self.selector = EMWorkFlowSelector(self,application,self.task_monitor.qt_widget)
-		QtCore.QObject.connect(self.selector.qt_widget, QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
+		self.selector = EMWorkFlowSelector(application,self.task_monitor.qt_widget)
+		QtCore.QObject.connect(self.selector, QtCore.SIGNAL("tasks_updated"),self.task_monitor.qt_widget.set_entries)
+		QtCore.QObject.connect(self.task_monitor, QtCore.SIGNAL("task_killed"),self.selector.qt_widget.task_killed)
+		
 	
 	
 	def close(self):
@@ -482,5 +539,5 @@ if __name__ == '__main__':
 	em_app = EMStandAloneApplication()
 	sprinit = EMWorkFlowManager(em_app)
 	
-	#em_app.show()
+	em_app.show()
 	em_app.execute()	

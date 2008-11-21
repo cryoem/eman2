@@ -1054,7 +1054,10 @@ class DatabaseAutoBoxer(QtCore.QObject):
 		project_db.close()
 		return 1
 
-
+	def close(self):
+		if self.form != None:
+			self.application.close_specific(self.form)
+			self.form = None
 class EmptyObject:
 	'''
 	This just because I need an object I can assign attributes to, and object() doesn't seem to work
@@ -1092,6 +1095,14 @@ class EMBoxerModule(QtCore.QObject):
 		"""Implements the 'boxer' GUI."""
 		self.application = application
 		self.required_options = ["filenames","running_mode"]
+		
+		self.boxable = None
+		self.guictl_module = None
+		self.guiim = None
+		self.guimx = None
+		self.guimxit = None
+		self.dab = None
+		self.form = None
 		
 		form_init = False
 		for s in self.required_options: 
@@ -2169,9 +2180,14 @@ class EMBoxerModule(QtCore.QObject):
 		if self.guiim != None: self.guiim.closeEvent(None)
 		if self.guimx != None: self.guimx.closeEvent(None)
 		if self.guimxit != None: self.guimxit.closeEvent(None)
+		if self.dab != None : self.dab.close()
+		if self.form != None : self.form.closeEvent(None)
 		
 		self.emit(QtCore.SIGNAL("module_closed"))
-		
+
+	def closeEvent(self,event):
+		self.done()
+
 	def try_data(self,data,thr):
 		print data, thr
 		print 'try that was pressed, this feature is currently disabled'
