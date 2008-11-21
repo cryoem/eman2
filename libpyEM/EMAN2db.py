@@ -73,7 +73,9 @@ def db_parse_path(url):
 	bdb:/path/to#dict?key,key,key
 	bdb:/path/to/dict   (also works, but # preferred)
 	"""
-	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only"
+
+
+	if url[:4].lower()!="bdb:": raise Exception,"Invalid URL, bdb: only (%s)"%url
 	url=url.replace("~",os.getenv("HOME"))
 
 	url=url[4:].rsplit('#',1)
@@ -514,7 +516,9 @@ class DBDict:
 		if file==None : file=name+".bdb"
 #		print "open ",self.path+"/"+file,name
 		if ro : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_RDONLY)
-		else : self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE)
+		else : 
+			try: self.bdb.open(self.path+"/"+file,name,db.DB_BTREE,db.DB_CREATE)
+			except: raise Exception,"Cannot create database : %s"%self.path+"/"+file
 #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
 #		print "Init ",name,file,path
 
@@ -670,10 +674,11 @@ class DBDict:
 
 	def get_data_path(self,key):
 		"""returns the path to the binary data as "path*location". Only valid for EMData objects."""
-		try: r=loads(self.bdb.get(dumps(key,-1),txn=txn))
+		try: r=loads(self.bdb.get(dumps(key,-1)))
 		except: return None
 		if isinstance(r,dict) and r.has_key("is_complex_x") :
 			pkey="%s/%s_"%(self.path,self.name)
+			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
 			n=loads(self.bdb.get(fkey+dumps(key,-1)))
 			if r.has_key("data_path"): return r["data_path"]
 			else : return "%s*%d"%(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])

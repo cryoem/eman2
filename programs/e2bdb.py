@@ -40,6 +40,7 @@ from math import *
 import time
 import os
 import sys
+import re
 
 def main():
 	global debug
@@ -52,7 +53,8 @@ Various utilities related to BDB databases."""
 
 	parser.add_option("--long","-l",action="store_true",help="Long listing",default=False)
 	parser.add_option("--short","-s",action="store_true",help="Dense listing of names only",default=False)
-	parser.add_option("--filt",type="string",help="Only include dictionaries containing the specified string (since wildcards like * cannot be used)",default=None)
+	parser.add_option("--filt",type="string",help="Only include dictionary names containing the specified string",default=None)
+	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
 	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 
 	(options, args) = parser.parse_args()
@@ -62,11 +64,10 @@ Various utilities related to BDB databases."""
 	if options.makevstack : vstack=db_open_dict(options.makevstack)
 	else : vstack=None
 	vstackn=0
-	print options.makevstack,vstack
 	
 	for path in args:
 		if path.lower()[:4]!="bdb:" : path="bdb:"+path
-		if not '#' in path and path[-1]!='/' : path+='/'
+		if not '#' in path and path[-1]!='/' : path+='#'
 		if len(args)>1 : print path,":"
 		
 		dbs=db_list_dicts(path)
@@ -74,18 +75,31 @@ Various utilities related to BDB databases."""
 		dbs.sort()
 		if options.filt:
 			dbs=[db for db in dbs if options.filt in db]
+			
+		if options.match:
+			dbs=[db for db in dbs if re.match(options.match,db)]
 		
-		if vstack :
+		if options.makevstack :
 			for db in dbs:
-				print db,vstackn
-				dct=db_open_dict(db)
+				dct=db_open_dict(path+db)
+				if dct==vstack : continue
 				for n in range(len(dct)):
-					d=dct.get(n,nodata=1).get_attr_dict()
+					try: d=dct.get(n,nodata=1).get_attr_dict()
+					except:
+						print "error reading ",db,n 
+						continue
 					d["data_path"]=dct.get_data_path(n)
+					if not d["data_path"] :
+						print "error with data_path ",db,n
+						continue
 					vstack[vstackn]=d
-					print vstackn,d
 					vstackn+=1
-		
+					if vstackn%100==0:
+						try:
+							print "\r  ",vstackn,"     ",
+							sys.stdout.flush()
+						except: pass	
+			print " "
 		try: maxname=max([len(s) for s in dbs])
 		except: 
 			print "Error reading ",path
@@ -110,7 +124,7 @@ Various utilities related to BDB databases."""
 					print fmt2%db
 		elif options.short :
 			for db in dbs:
-				print "bdb:"+db,
+				print path+db,
 			print " "
 
 		else :

@@ -734,7 +734,7 @@ class GUIctf(QtGui.QWidget):
 		self.splotmode.addItem("Ptcl & BG power")
 		self.splotmode.addItem("SNR")
 		self.splotmode.addItem("Smoothed SNR")
-		self.splotmode.addItem("Test")
+		self.splotmode.addItem("Integrated SNR")
 		self.vbl2.addWidget(self.splotmode)
 		self.hbl.addLayout(self.vbl2)
 		
@@ -828,20 +828,26 @@ class GUIctf(QtGui.QWidget):
 
 			self.guiplot.set_data("fit",(s,fit))
 		elif self.plotmode==2:
-			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The fit curve
+			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
 			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
 		elif self.plotmode==3:
-			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The fit curve
+			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
 			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
 			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH)		# The fit curve
 			self.guiplot.set_data("ssnr",(s,ssnr[:len(s)]))
 		elif self.plotmode==4:
-			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
-			self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
-			
-			fit=[bgsub[i]/sfact(s[i]) for i in range(len(s))]		# squared * a generic structure factor
+			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
+			for i in range(1,len(snr)): snr[i]+=snr[i-1]			# integrate
+			for i in range(1,len(snr)): snr[i]/=snr[-1]				# normalize
+			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
 
-			self.guiplot.set_data("fit",(s,fit))
+			
+			#bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
+			#self.guiplot.set_data("fg-bg",(s,bgsub),True,True)
+			
+			#fit=[bgsub[i]/sfact(s[i]) for i in range(len(s))]		# squared * a generic structure factor
+
+			#self.guiplot.set_data("fit",(s,fit))
 
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
