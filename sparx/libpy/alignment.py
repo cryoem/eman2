@@ -1258,7 +1258,7 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
-	if(last_ring == 0):  last_ring = nx//2-2-max(xrng,yrng)
+	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
 	# center in SPIDER convention
 	cnx = nx//2+1
 	cny = ny//2+1
@@ -1282,7 +1282,7 @@ def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
-	if(last_ring == 0):  last_ring = nx//2-2-max(xrng,yrng)
+	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
 	# center in SPIDER convention
 	cnx = nx//2+1
 	cny = ny//2+1
@@ -1308,7 +1308,7 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
-	if(last_ring == 0):  last_ring = nx//2-2-max(xrng,yrng)
+	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
 	# center in SPIDER convention
 	cnx = int(nx/2)+1
 	cny = int(ny/2)+1
@@ -1321,7 +1321,7 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	alpha = 1.75
 	r = nx/2
 	v = K/2.0/N
-	kb = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
 	refi = refim.FourInterpol(N,N,1,0)  
 	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
 	q = Processor.EMFourierFilter(refi,params)
