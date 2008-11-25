@@ -190,6 +190,7 @@ for single particle analysis."""
 		application = EMStandAloneApplication()
 		options.boxes = boxes
 		gui=EMBoxerModule(application,options)
+		gui.show_guis()
 	#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 		application.execute()
 	
@@ -647,6 +648,9 @@ class EMBoxerModuleEventsMediator:
 	
 	All things considered, the class remains for documentation purposes. It should only be removed if 
 	it poses a significant performance hit
+	
+	
+	NOVEMBER d.woolford says just use inheritance instead, then there isn't function call expenses but the documentation aspect remains
 	'''
 	def __init__(self,parent):
 		'''
@@ -656,38 +660,38 @@ class EMBoxerModuleEventsMediator:
 			print "error, the parent of a EMBoxerModuleMouseEraseEvents must be a EMBoxerModule"
 			return
 		
-		self.parent = parent	# need a referene to the parent to send it events
+		self.parent = weakref.ref(parent)	# need a referene to the parent to send it events, what's more it needs to be week or we get cyclic regferences
 
 	def get_2d_gui_image(self):
 		'''
 		Return the parent's EMImage2D object
 		'''
-		return self.parent.get_2d_gui_image()
+		return self.parent().get_2d_gui_image()
 	
 	def get_gui_ctl(self):
 		'''
 		Return the parent's Controller widgit object
 		'''
-		return self.parent.get_gui_ctl()
+		return self.parent().get_gui_ctl()
 	
 	def get_mx_gui_image(self):
 		'''
 		Return the parent's EMImageMX object
 		'''
-		return self.parent.get_mx_gui_image()
+		return self.parent().get_mx_gui_image()
 	
 	def update_image_display(self):
 		'''
 		Send an event to the parent that the EMImage2D should update its display
 		'''
-		self.parent.update_image_display()
+		self.parent().update_image_display()
 		
 	def update_all_image_displays(self):
 		'''
 		Send an event to the parent that the EMImage2D and EMImageMX objects should
 		update their displays
 		'''
-		self.parent.update_all_image_displays()
+		self.parent().update_all_image_displays()
 		
 	def exclusion_area_added(self,typeofexclusion,x,y,radius,mode):
 		'''
@@ -695,45 +699,45 @@ class EMBoxerModuleEventsMediator:
 		The parameters define the type of exclusion area. In future the exclusion area
 		should probably just be its own class.
 		'''
-		self.parent.exclusion_area_added(typeofexclusion,x,y,radius,mode)
+		self.parent().exclusion_area_added(typeofexclusion,x,y,radius,mode)
 
 	def erasing_done(self,erase_mode):
 		'''
 		Send an event to the parent letting it know that the user has stopped adding
 		erased area
 		'''
-		self.parent.erasing_done(erase_mode)
+		self.parent().erasing_done(erase_mode)
 		
 	def detect_box_collision(self,coords):
 		'''
 		Ask the parent to detect a collision between a resident box and the given coordinates.
 		This is in terms of the EMImage2D 
 		'''
-		return self.parent.detect_box_collision(coords)
+		return self.parent().detect_box_collision(coords)
 	
 	def get_current_image_name(self):
 		'''
 		Ask the parent for the current name of the image in the large image view...
 		'''
-		return self.parent.get_current_image_name()
+		return self.parent().get_current_image_name()
 
 	def get_box_size(self):
 		'''
 		Ask the parent for the current project box_size
 		'''
-		return self.parent.get_box_size()
+		return self.parent().get_box_size()
 	
 	def add_box(self,box):
 		'''
 		Tell the parent to store a box
 		'''
-		self.parent.add_box(box)
+		self.parent().add_box(box)
 	
 	def box_display_update(self):
 		'''
 		Tell the parent the a general box display update needs to occur
 		'''
-		self.parent.box_display_update()
+		self.parent().box_display_update()
 		
 	#def mouse_click_update_ppc(self):
 		#'''
@@ -745,37 +749,37 @@ class EMBoxerModuleEventsMediator:
 		'''
 		Tell the parent to remove a box, as given by the box_num
 		'''
-		self.parent.remove_box(box_num)
+		self.parent().remove_box(box_num)
 		
 	def get_box(self,box_num):
 		'''
 		Ask the parent for the box, as given by the box_num
 		'''
-		return self.parent.get_box(box_num)
+		return self.parent().get_box(box_num)
 	
 	def move_box(self,box_num,dx,dy):
 		'''
 		Tell the parent to handle the movement of a box
 		'''
-		self.parent.move_box(box_num,dx,dy)
+		self.parent().move_box(box_num,dx,dy)
 	
 	def reference_moved(self,box):
 		'''
 		Tell the parent that a reference was moved - this could trigger automatic boxing
 		'''
-		self.parent.reference_moved(box)
+		self.parent().reference_moved(box)
 		
 	def within_main_image_bounds(self,coords):
 		'''
 		Ask the parent to determine if the coords are within the currently display image boundaries
 		'''
-		return self.parent.within_main_image_bounds(coords)
+		return self.parent().within_main_image_bounds(coords)
 	
 	def get_shape_string(self):
 		'''
 		Gets the shape string currently used for creating shapes for the 2D image
 		'''
-		return self.parent.get_shape_string()
+		return self.parent().get_shape_string()
 
 
 class RawDatabaseAutoBoxer:
@@ -1120,11 +1124,24 @@ class EMBoxerModule(QtCore.QObject):
 		else: # if the first if statement is false then one of the second must be true
 			print "this shouldn't happen"
 	
+	def show_guis(self):
+		'''
+		Generally called after initialization. 
+		Will emit the module_idle signal if no guis/forms currently exist, this can be useful for closing the module.
+		'''
+		something_shown = False
+		for gui in [self.guiim,self.guictl_module,self.guimxit,self.guimx,self.form]:
+			if gui != None:
+				something_shown = True
+				self.application.show_specific(gui)
+				
+		if not something_shown:
+			self.emit(QtCore.SIGNAL("module_idle"))
+	
 	def __run_form_initialization(self,options):
 		from emform import EMFormModule
 		self.form = EMFormModule(self.get_params(options),self.application)
 		self.form.setWindowTitle("Boxer input variables")
-		self.application.show_specific(self.form)
 		emitter = self.application.get_qt_emitter(self.form)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_ok"),self.on_form_ok)
 		QtCore.QObject.connect(emitter,QtCore.SIGNAL("emform_cancel"),self.on_form_cancel)
@@ -1189,7 +1206,7 @@ class EMBoxerModule(QtCore.QObject):
 	
 		if isinstance(self.autoboxer,SwarmAutoBoxer):
 			self.autoboxer.auto_box(self.boxable,False) # Do the automatic autoboxing - this makes the user see results immediately
-		self.box_display_update() # update displays to show boxes etc
+		self.box_display_update(stop_animation=True) # update displays to show boxes etc
 
 	def get_params(self,options=None):
 		'''
@@ -1264,7 +1281,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.guictl.setWindowTitle("e2boxer Controller")
 		self.guictl.set_dynapix(self.dynapix)
 		#if self.fancy_mode == EMBoxerModule.FANCY_MODE: self.guictl.hide()
-		self.application.show_specific(self.guictl_module)
+		#self.application.show_specific(self.guictl_module)
 		if isinstance(self.autoboxer,PawelAutoBoxer):
 			print "Setting GUI for Gauss boxing method"
 			gauss_method_id = 1
@@ -1329,7 +1346,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.guiim= EMImage2DModule(application=self.application)
 		self.guiim.set_data(image,imagename)
 		self.guiim.force_display_update()
-		self.application.show_specific(self.guiim)
+		#self.application.show_specific(self.guiim)
 
 		self.__update_guiim_states()
 		self.guiim.set_mouse_mode(0)
@@ -1656,7 +1673,7 @@ class EMBoxerModule(QtCore.QObject):
 			if self.guimx == None:
 				self.__init_guimx()
 			if len(data) != 0:
-				self.application.show_specific(self.guimx)
+				#self.application.show_specific(self.guimx) #NEED TO CHANGE THIS IN THE MIDDLE OF REFURBISHMENT
 				self.guimx.set_data(data)
 			
 				#qt_target = self.guimx.get_parent()
@@ -1687,7 +1704,8 @@ class EMBoxerModule(QtCore.QObject):
 			
 			image=BigImageCache.get_image_directly(self.image_names[im])
 			
-			try: self.guiim.get_parent().setWindowTitle(self.image_names[im])
+			try: 
+				self.guiim.setWindowTitle(self.image_names[im])
 			except:
 				print "set window title failed"
 				
@@ -1799,7 +1817,7 @@ class EMBoxerModule(QtCore.QObject):
 				qt_parent.setWindowTitle("Image Thumbs")
 			except:
 				pass
-			self.application.show_specific(self.guimxit)
+			#self.application.show_specific(self.guimxit)
 			self.guimxit.set_data(self.imagethumbs)
 			
 			try:
@@ -1823,7 +1841,7 @@ class EMBoxerModule(QtCore.QObject):
 		
 	def get_image_thumb(self,i):
 		
-		image = get_idd_key_entry(self.image_names[i],"e2boxer_image_thumb")
+		image = get_idd_image_entry(self.image_names[i],"image_thumb")
 		if image == None:
 			n = self.get_image_thumb_shrink()
 
@@ -1833,7 +1851,7 @@ class EMBoxerModule(QtCore.QObject):
 				#image = image.process("math.meanshrink",{"n":2})
 				#n /= 2
 			image = image.process("math.meanshrink",{"n":n})
-			set_idd_key_entry(self.image_names[i],"e2boxer_image_thumb",image)
+			set_idd_image_entry(self.image_names[i],"image_thumb",image)
 		return image
 		
 	def get_image_thumb_shrink(self):
@@ -2107,7 +2125,7 @@ class EMBoxerModule(QtCore.QObject):
 		self.update_all_image_displays()
 		
 		
-	def box_display_update(self,force=False):
+	def box_display_update(self,force=False,stop_animation=False):
 		
 		ns = {}
 		idx = 0
@@ -2126,14 +2144,16 @@ class EMBoxerModule(QtCore.QObject):
 			box.shape = EMShape([self.shape_string,box.r,box.g,box.b,box.xcorner,box.ycorner,box.xcorner+box.xsize,box.ycorner+box.ysize,2.0])
 			
 			if not force and not box.isref and not box.ismanual:
-				box.shape.isanimated = True
-				box.shape.set_blend(0)
-				register_animation = True
+				if not stop_animation:
+					box.shape.isanimated = True
+					box.shape.set_blend(0)
+					register_animation = True
 			ns[idx]=box.shape
 			if idx>=len(self.ptcl) : self.ptcl.append(im)
 			else : self.ptcl[idx]=im
 			idx += 1
 		
+		if stop_animation: register_animation=False
 		self.guiim.add_shapes(ns,register_animation)
 		self.set_ptcl_mx_data(self.ptcl)
 		
@@ -2388,7 +2408,7 @@ class AutoBoxerSelectionsMediator:
 		if not isinstance(parent,EMBoxerModule):
 			print "error, the AutoBoxerSelectionsMediator must be initialized with a EMBoxerModule type as its first constructor argument"
 			return
-		self.parent=parent
+		self.parent=weakref.ref(parent)
 		self.current_image_idx_name = None
 		self.image_names = []
 		self.name_map = {}
@@ -2435,17 +2455,17 @@ class AutoBoxerSelectionsMediator:
 	
 	def get_current_autoboxer_ts(self):
 		try:
-			return self.name_map["autoboxer_"+self.parent.get_current_autoboxer_ts()]
+			return self.name_map["autoboxer_"+self.parent().get_current_autoboxer_ts()]
 		except:
 			return None
 
 	def add_new_autoboxer(self):
-		return self.parent.add_new_autoboxer_db(self.get_total_autoboxers())
+		return self.parent().add_new_autoboxer_db(self.get_total_autoboxers())
 
 	def add_copy_autoboxer(self,tag):
 		autoboxer_id = self.__get_autoboxer_id_from_tag(tag)
 		if autoboxer_id != None:
-			return self.parent.add_copy_autoboxer_db(autoboxer_id,self.get_total_autoboxers())
+			return self.parent().add_copy_autoboxer_db(autoboxer_id,self.get_total_autoboxers())
 		else:
 			print "error, couldn't find autoboxer from tag",tag
 			return None
@@ -2454,7 +2474,7 @@ class AutoBoxerSelectionsMediator:
 		# FIXME - is there any way to use a bidirectional map?pyt
 		autoboxer_id = self.__get_autoboxer_id_from_tag(tag)
 		if autoboxer_id != None:
-			return self.parent.change_current_autoboxer(autoboxer_id)
+			return self.parent().change_current_autoboxer(autoboxer_id)
 		else:
 			print "error, couldn't get autoboxer_id"
 			return None
@@ -2517,7 +2537,7 @@ class AutoBoxerSelectionsMediator:
 			#boxable.set_autoboxer_id(autoboxer_id)
 			#boxable.write_to_db()
 		#boxable.write_to_db()
-		self.parent.toggle_frozen()
+		self.parent().toggle_frozen()
 		
 	def clear_current(self):
 		new_name = self.add_new_autoboxer()
@@ -2527,11 +2547,11 @@ class AutoBoxerSelectionsMediator:
 		
 		self.get_autoboxer_data() # FIXME this is inefficient, could just add to self.dict_data etc
 		autoboxer_id = self.__get_autoboxer_id_from_tag(new_name)
-		boxable = self.parent.get_boxable()
+		boxable = self.parent().get_boxable()
 		boxable.set_autoboxer_id(autoboxer_id)
 		boxable.write_to_db()
 		boxable.clear_and_cache(True)
-		self.parent.clear_displays()
+		self.parent().clear_displays()
 		return new_name
 
 	def closeEvent(self,event=None):
@@ -2575,7 +2595,7 @@ class CcfHistogram(QtGui.QWidget):
 
 	def __init__(self, parent):	
 		QtGui.QWidget.__init__(self,parent)
-		self.parent=parent
+		self.parent= weakref.ref(parent)  # this needs to be a weakref ask David Woolford for details, but otherwise just call self.parent() in place of self.parent
 		self.data=None
                 self.setMinimumSize(QtCore.QSize(256,256))
 		self.PRESIZE = 28
@@ -2585,9 +2605,9 @@ class CcfHistogram(QtGui.QWidget):
 	def clear( self ):
 		self.ccfs = None
 		self.data = None
-		self.parent.ccf_range.setText( "Range: (N/A, N/A)" )
-		self.parent.threshold_low.setText( "N/A" )
-		self.parent.threshold_hgh.setText( "N/A" )
+		self.parent().ccf_range.setText( "Range: (N/A, N/A)" )
+		self.parent().threshold_low.setText( "N/A" )
+		self.parent().threshold_hgh.setText( "N/A" )
 
 	def set_data( self, data ):
 		self.ccfs = data
@@ -2599,9 +2619,9 @@ class CcfHistogram(QtGui.QWidget):
 
 		info = "Range: (%8.4f, %8.4f)" % (hmin, hmax)
 
-		self.parent.ccf_range.setText( info )
-		self.parent.threshold_low.setText( str(hmin) )
-		self.parent.threshold_hgh.setText( str(hmax) )
+		self.parent().ccf_range.setText( info )
+		self.parent().threshold_low.setText( str(hmin) )
+		self.parent().threshold_hgh.setText( str(hmax) )
 		
 		self.tickers =[1, self.width()-2]
 
@@ -2636,7 +2656,7 @@ class CcfHistogram(QtGui.QWidget):
 				self.cur_ticker = 1
 
 			if not hasattr( self, "shapes" ):
-				self.shapes = self.parent.target.guiim.get_shapes().copy()
+				self.shapes = self.parent().target.guiim.get_shapes().copy()
 
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton and event.x() > 0 :
@@ -2652,16 +2672,16 @@ class CcfHistogram(QtGui.QWidget):
 				thr = self.data[0][x-1]
 
 			if self.cur_ticker==0:
-				self.parent.threshold_low.setText( str(thr) )
+				self.parent().threshold_low.setText( str(thr) )
 			else:
-				self.parent.threshold_hgh.setText( str(thr) )
+				self.parent().threshold_hgh.setText( str(thr) )
 
 
-			thr_low = float( self.parent.threshold_low.text() )
-			thr_hgh = float( self.parent.threshold_hgh.text() )
+			thr_low = float( self.parent().threshold_low.text() )
+			thr_hgh = float( self.parent().threshold_hgh.text() )
 	
 			#guiim = self.parent.target.guiim
-			target = self.parent.get_target() # using getter functions is much preferable. Add support for them yourself if you need them
+			target = self.parent().get_target() # using getter functions is much preferable. Add support for them yourself if you need them
 			boxable = target.get_boxable()
 			
 			[added_boxes,added_ref_boxes] = boxable.update_included_boxes_hist(thr_low,thr_hgh)
@@ -2702,7 +2722,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	def __init__(self,module,target,ab_sel_mediator) :
 		
 		QtGui.QWidget.__init__(self,None)
-		self.target=target
+		self.target=weakref.ref(target)
 		self.ab_sel_mediator = ab_sel_mediator
 		self.module = module # please set this to be a EMBoxerModulePanelModule
 		
@@ -2725,17 +2745,17 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.new_box_size)
 	
 		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.new_threshold)
-		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.done)
-		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target.classify)
-		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
-		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
+		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target().done)
+		self.connect(self.classifybut,QtCore.SIGNAL("clicked(bool)"),self.target().classify)
+#		self.connect(self.trythat,QtCore.SIGNAL("clicked(bool)"),self.try_dummy_parameters)
+#		self.connect(self.reset,QtCore.SIGNAL("clicked(bool)"),self.target.remove_dummy)
 		self.connect(self.thrbut, QtCore.SIGNAL("clicked(bool)"), self.selection_mode_changed)
 	
 #		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.num_boxes_changed)
 	
 	#def centerpushed(self,unused):
 		#self.target.center(str(self.centerooptions.currentText()))
-	def get_target(self): return self.target
+	def get_target(self): return self.target()
 	
 	def insert_main_tab(self):
 		# this is the box layout that will store everything
@@ -2743,7 +2763,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.main_vbl =  QtGui.QVBoxLayout(self.main_inspector)
 		
 		self.infohbl = QtGui.QHBoxLayout()
-		self.info = QtGui.QLabel("%d Boxes"%len(self.target.get_boxes()),self)
+		self.info = QtGui.QLabel("%d Boxes"%len(self.target().get_boxes()),self)
 		#self.ppc = QtGui.QLabel("%f particles per click"%0,self)
 		self.infohbl.addWidget(self.info)
 		#self.infohbl.addWidget(self.ppc)
@@ -2773,7 +2793,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.boxinghbl1.addWidget(self.lblbs)
 		self.pos_int_validator = QtGui.QIntValidator(self)
 		self.pos_int_validator.setBottom(1)
-		self.bs = QtGui.QLineEdit(str(self.target.box_size),self)
+		self.bs = QtGui.QLineEdit(str(self.target().box_size),self)
 		self.bs.setValidator(self.pos_int_validator)
 		self.boxinghbl1.addWidget(self.bs)
 		
@@ -2781,7 +2801,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	
 		self.boxinghbl3=QtGui.QHBoxLayout()
 		self.dynapix = QtGui.QCheckBox("Dynapix")
-		self.dynapix.setChecked(self.target.dynapix)
+		self.dynapix.setChecked(self.target().dynapix)
 		self.boxinghbl3.addWidget(self.dynapix)
 
 		self.method=QtGui.QComboBox()
@@ -2814,7 +2834,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.eraseradtext=QtGui.QLabel("Erase Radius:",self)
 		self.boxinghbl2.addWidget(self.eraseradtext)
 		
-		self.eraserad = QtGui.QLineEdit(str(self.target.eraseradius),self)
+		self.eraserad = QtGui.QLineEdit(str(self.target().eraseradius),self)
 		self.boxinghbl2.addWidget(self.eraserad)
 		self.eraserad.setEnabled(False)
 		
@@ -2823,6 +2843,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.invert_contrast_mic = QtGui.QCheckBox("Invert Contrast")
 		self.invert_contrast_mic.setChecked(False)
 		self.boxingvbl.addWidget(self.invert_contrast_mic,0, Qt.AlignLeft)
+		self.invert_contrast_mic.setEnabled(False) # this presents a problem with the Swarm approach
 		self.connect(self.invert_contrast_mic,QtCore.SIGNAL("clicked(bool)"),self.invert_contrast_mic_toggled)
 
 		self.boxinghbl4=QtGui.QHBoxLayout()
@@ -2870,7 +2891,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.usingbox_sizetext=QtGui.QLabel("Using Box Size:",self)
 		self.output_gridl.addWidget(self.usingbox_sizetext,0,0,Qt.AlignRight)
 		
-		self.usingbox_size = QtGui.QLineEdit(str(self.target.box_size),self)
+		self.usingbox_size = QtGui.QLineEdit(str(self.target().box_size),self)
 		self.usingbox_size.setValidator(self.pos_int_validator)
 		self.output_gridl.addWidget(self.usingbox_size,0,1,Qt.AlignLeft)
 		
@@ -2908,7 +2929,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.connect(self.eraserad,QtCore.SIGNAL("editingFinished()"),self.update_erase_rad)
 		self.connect(self.erase, QtCore.SIGNAL("clicked(bool)"), self.erase_toggled)
 		self.connect(self.unerase, QtCore.SIGNAL("clicked(bool)"), self.unerase_toggled)
-		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target.force_autobox)
+		self.connect(self.autobox,QtCore.SIGNAL("clicked(bool)"),self.target().force_autobox)
 		self.connect(self.togfreeze,QtCore.SIGNAL("clicked(bool)"),self.toggle_frozen)
 		self.connect(self.clear,QtCore.SIGNAL("clicked(bool)"),self.clear_current)
 		self.connect(self.dynapix,QtCore.SIGNAL("clicked(bool)"),self.dynapix_toggled)
@@ -2926,7 +2947,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		QtCore.QObject.connect(self.imagequalities, QtCore.SIGNAL("currentIndexChanged(QString)"), self.image_quality_changed)
 
 	def closeEvent(self,event):
-		self.target.done()
+		self.target().done()
 
 	def normalize_box_images_toggled(self):
 		val = self.normalize_box_images.isChecked()
@@ -2935,7 +2956,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	
 	def invert_contrast_mic_toggled(self):
 		from EMAN2 import Util
-		image_name = self.target.boxable.get_image_name()
+		image_name = self.target().boxable.get_image_name()
 		img = BigImageCache.get_image_directly( image_name )
 
 		[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
@@ -2945,7 +2966,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		img *= -1
 		img += avg
 		BigImageCache.get_object(image_name).register_alternate(img)
-		self.target.big_image_change()
+		self.target().big_image_change()
 		print " after invert, info: ", Util.infomask( img, None, True )
 
 	def set_method( self, name ):
@@ -2956,6 +2977,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 				self.tabwidget.insertTab( tabid, self.david_option, "Swarm Advanced" )
 				self.autobox.setText("Autobox")
 				self.setWindowIcon( self.swarm_icon )
+				self.invert_contrast_mic.setEnabled(False)
 		else:
 			assert name[0:5]=="Gauss"
 			tabid = self.tabwidget.indexOf( self.david_option )
@@ -2964,6 +2986,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 				self.tabwidget.insertTab( tabid, self.pawel_option, "Gauss Advanced" )
 				self.autobox.setText("Run")
 				self.setWindowIcon( self.pp_icon )
+				self.invert_contrast_mic.setEnabled(True)
 	
 	def method_changed(self, methodid):
 
@@ -2971,7 +2994,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		self.set_method( name )
 
-		self.target.set_autoboxer(self.target.image_names[0], name[0:5])
+		self.target().set_autoboxer(self.target().image_names[0], name[0:5])
 
 	def set_image_quality(self,integer):
 		self.lock = True
@@ -2980,7 +3003,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		
 	def image_quality_changed(self,val):
 		if self.lock == False:
-			self.target.change_image_quality(str(val))
+			self.target().change_image_quality(str(val))
 
 	def clear_current(self,unused):
 		self.lock = True
@@ -3000,14 +3023,14 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		realbox_size = int(str(self.bs.text()))
 		if realbox_size == box_size:
 			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-		self.target.write_all_box_image_files(box_size,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()),self.normalize_box_images.isChecked(),str(self.normalization_options.currentText()))
+		self.target().write_all_box_image_files(box_size,self.outputforceoverwrite.isChecked(),str(self.outputformats.currentText()),self.normalize_box_images.isChecked(),str(self.normalization_options.currentText()))
 		
 	def write_box_coords(self,unused):
 		box_size = int(str(self.usingbox_size.text()))
 		realbox_size = int(str(self.bs.text()))
 		if realbox_size == box_size:
 			box_size = -1 # negative one is a flag that tells the boxes they don't need to be resized... all the way in the Box Class
-		self.target.write_all_coord_files(box_size,self.outputforceoverwrite.isChecked(),)
+		self.target().write_all_coord_files(box_size,self.outputforceoverwrite.isChecked(),)
 	
 	def setChecked(self,tag):
 		
@@ -3153,7 +3176,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.viewhbl.addWidget(self.viewboxes)
 		self.viewhbl.addWidget(self.viewimage)
 		
-		if self.target.has_thumbnails():
+		if self.target().has_thumbnails():
 			self.viewthumbs = QtGui.QCheckBox("Image Thumbnails Window")
 			self.viewthumbs.setChecked(True)
 			self.viewhbl.addWidget(self.viewthumbs)
@@ -3180,10 +3203,10 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		
 		self.tabwidget.addTab(self.view_inspector,"Display Options")
 		
-		self.connect(self.viewboxes,QtCore.SIGNAL("clicked(bool)"),self.target.view_boxes_clicked)
-		self.connect(self.viewimage,QtCore.SIGNAL("clicked(bool)"),self.target.view_image_clicked)
-		if self.target.has_thumbnails():
-			self.connect(self.viewthumbs,QtCore.SIGNAL("clicked(bool)"),self.target.view_thumbs_clicked)
+		self.connect(self.viewboxes,QtCore.SIGNAL("clicked(bool)"),self.target().view_boxes_clicked)
+		self.connect(self.viewimage,QtCore.SIGNAL("clicked(bool)"),self.target().view_image_clicked)
+		if self.target().has_thumbnails():
+			self.connect(self.viewthumbs,QtCore.SIGNAL("clicked(bool)"),self.target().view_thumbs_clicked)
 			
 		QtCore.QObject.connect(self.boxformats, QtCore.SIGNAL("currentIndexChanged(QString)"), self.box_format_changed)
 	
@@ -3197,7 +3220,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			print "errror, unknown format" 
 			return
 		print "format changed to ", format
-		self.target.change_shapes(format)
+		self.target().change_shapes(format)
 
 	
 	def insert_advanced_tab(self):
@@ -3206,30 +3229,30 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.advanced_vbl =  QtGui.QVBoxLayout(self.adv_inspector)
 		
 		#Insert the plot widget
-		self.plothbl = QtGui.QHBoxLayout()
+#		self.plothbl = QtGui.QHBoxLayout()
 		
 		# This was commented out because the extra GL context crashes the desktop
-		self.window = EMGLPlotWidget(self)
-		self.window.setInit()
-		self.window.resize(100,100)
-		self.window2=EMParentWin(self.window)
-		self.window2.resize(100,100)
+#		self.window = EMGLPlotWidget(self)
+#		self.window.setInit()
+#		self.window.resize(100,100)
+#		self.window2=EMParentWin(self.window)
+#		self.window2.resize(100,100)
+#		
+#		self.plothbl.addWidget(self.window)
 		
-		self.plothbl.addWidget(self.window2)
-		
-		self.plotbuttonvbl = QtGui.QVBoxLayout()
-		
-		self.trythat=QtGui.QPushButton("Try That")
-		self.plotbuttonvbl.addWidget(self.trythat)
-		
-		self.reset=QtGui.QPushButton("Reset")
-		self.plotbuttonvbl.addWidget(self.reset)
-		
-		self.plothbl.addLayout(self.plotbuttonvbl)
-		
+#		self.plotbuttonvbl = QtGui.QVBoxLayout()
+#		
+#		self.trythat=QtGui.QPushButton("Try That")
+#		self.plotbuttonvbl.addWidget(self.trythat)
+#		
+#		self.reset=QtGui.QPushButton("Reset")
+#		self.plotbuttonvbl.addWidget(self.reset)
+#		
+#		self.plothbl.addLayout(self.plotbuttonvbl)
+#		
 		self.advanced_vbl2 = QtGui.QVBoxLayout()
 		
-		self.advanced_vbl2.addLayout(self.plothbl)
+#		self.advanced_vbl2.addLayout(self.plothbl)
 		
 		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
 		self.thr.setValue(1.0)
@@ -3418,7 +3441,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		print "starting CTF estimation"
 
 		# get the current image
-		image_name = self.target.boxable.get_image_name()
+		image_name = self.target().boxable.get_image_name()
 		img = BigImageCache.get_image_directly( image_name )
 
 		# XXX: get parameters from gui
@@ -3471,10 +3494,10 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		print 'row, col, text: ', row, col, t
 
 		if row==0:
-			self.target.autoboxer.pixel_input = atof( t )
+			self.target().autoboxer.pixel_input = atof( t )
 		else:
 			assert row==1
-			self.target.autoboxer.pixel_output = atof( t )		
+			self.target().autoboxer.pixel_output = atof( t )		
 
 	def gauss_width_edited(self):
 		from string import atof
@@ -3500,7 +3523,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		if not self.refbutton.isChecked():
 			self.manualbutton.setChecked(True)
 
-		self.target.set_boxing_method(self.refbutton.isChecked(),self.manualbutton.isChecked())
+		self.target().set_boxing_method(self.refbutton.isChecked(),self.manualbutton.isChecked())
 		
 	def manual_button_toggled(self,bool):
 		if self.manualbutton.isChecked():
@@ -3509,22 +3532,22 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		if not self.manualbutton.isChecked():
 			self.refbutton.setChecked(True)
 			
-		self.target.set_boxing_method(self.refbutton.isChecked(),self.manualbutton.isChecked())
+		self.target().set_boxing_method(self.refbutton.isChecked(),self.manualbutton.isChecked())
 
 	def erase_toggled(self,bool):
 		self.unerase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_qt_context_parent().setMouseTracking(bool)
-		self.target.erase_toggled(bool)
+		#self.target.get_2d_gui_image().get_qt_context_parent().setMouseTracking(bool)
+		self.target().erase_toggled(bool)
 		
 	def unerase_toggled(self,bool):
 		self.erase.setChecked(False)
 		self.eraserad.setEnabled(bool)
-		self.target.get_2d_gui_image().get_qt_context_parent().setMouseTracking(bool)
-		self.target.unerase_toggled(bool)
+		#self.target.get_2d_gui_image().get_qt_context_parent().setMouseTracking(bool)
+		self.target().unerase_toggled(bool)
 		
 	def dynapix_toggled(self,bool):
-		self.target.toggle_dynapix(bool)
+		self.target().toggle_dynapix(bool)
 	
 	def cmp_box_changed(self,unusedbool):
 		if self.ratiobut.isChecked():
@@ -3536,7 +3559,7 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		else:
 			print "Bug intercepted in e2boxer.py. Please email the development team."
 			
-		self.target.set_profile_comparitor(s)
+		self.target().set_profile_comparitor(s)
 	
 	def selection_mode_changed(self,unusedbool):
 		if self.thrbut.isChecked():
@@ -3548,12 +3571,12 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		else:
 			print "Bug intercepted in e2boxer.py. Please email the development team."
 			
-		self.target.set_selection_mode(str(s))
+		self.target().set_selection_mode(str(s))
 	
 	def try_dummy_parameters(self):
 		self.dummybox.set_opt_profile(self.window.getData())
 		self.dummybox.set_correlation_score(float(self.thr.getValue()))
-		self.target.set_dummy_box(self.dummybox)
+		self.target().set_dummy_box(self.dummybox)
 	
 	def update_data(self,thresh,data,datar):
 		#print data
@@ -3584,21 +3607,21 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	def update_erase_rad(self):
 		v = int(self.eraserad.text())
 		if ( v < 1 ): raise Exception
-		self.target.update_erase_rad(v)
+		self.target().update_erase_rad(v)
 	
 	def new_box_size(self):
 		try:
 			v=int(self.bs.text())
 			if v<12 : raise Exception
 		except:
-			self.bs.setText(str(self.target.box_size))
+			self.bs.setText(str(self.target().box_size))
 			return
 		
 		
 		self.usingbox_size.setText(self.bs.text())
 		app = QtGui.QApplication.instance()
 		app.setOverrideCursor(Qt.BusyCursor)
-		self.target.update_box_size(v,1)
+		self.target().update_box_size(v,1)
 		app.setOverrideCursor(Qt.ArrowCursor)
 	
 	def set_box_size(self,box_size):
@@ -3607,6 +3630,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 	
 	def new_threshold(self,val):
 		#print "new threshold"
+		print "option currently disabled"
+		return
 		self.try_dummy_parameters()
 
 
@@ -3619,7 +3644,7 @@ class CTFInspector(QtGui.QWidget):
 	def __init__(self,parent) :
 		QtGui.QWidget.__init__(self) 
 		# we need to keep track of our parent to signal when we are gone again....
-		self.parent = parent
+		self.parent = weakref.ref(parent) # this needs to be a weakref ask David Woolford for details, but otherwise just call self.parent() in place of self.parent
 		self.setGeometry(300, 300, 250, 150)
 		self.setWindowTitle("CTF Inspector")
 
@@ -3681,7 +3706,7 @@ class CTFInspector(QtGui.QWidget):
 	#    it becomes necessary....
 	def closeEvent(self,event):
 		# set the flag of our parent object
-		self.parent.ctf_inspector_gone=True
+		self.parent().ctf_inspector_gone=True
 		# and close ourselves by accepting the event....
 		event.accept()
 

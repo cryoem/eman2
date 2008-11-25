@@ -43,10 +43,11 @@ from EMAN2db import EMAN2DB
 from emplot2d import EMPlot2DModule
 #from boxertools import TrimSwarmAutoBoxer
 from emapplication import EMQtWidgetModule, ModuleEventsManager
+import weakref
 
 class EMSelectorModule(EMQtWidgetModule):
 	def __init__(self,application=None):
-		self.application = application
+		self.application = weakref.ref(application)
 		self.widget = EMSelectorDialog(self,application)
 		EMQtWidgetModule.__init__(self,self.widget,application)
 		
@@ -55,7 +56,7 @@ class EMSelectorDialog(QtGui.QDialog):
 	def __init__(self,module,application):
 		QtGui.QDialog.__init__(self,None)
 		self.setFocusPolicy(Qt.StrongFocus)
-		self.application=application
+		self.application=weakref.ref(application)
 		self.module=module
 		self.desktop_hint = "dialog"
 		self.db_listing = EMBDBListing(self)
@@ -136,7 +137,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		return self.desktop_hint
 		
 	def set_application(self,app):
-		self.application = app
+		self.application = weakref.ref(app)
 		
 	def __init_icons(self):
 		self.setWindowIcon(QtGui.QIcon(os.getenv("EMAN2DIR")+"/images/display_icon.png"))
@@ -258,7 +259,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.filter_combo.setEditable(True)
 	
 		QtCore.QObject.connect(self.filter_combo, QtCore.SIGNAL("currentIndexChanged(int)"),self.filter_index_changed)
-		QtCore.QObject.connect(self.filter_combo, QtCore.SIGNAL("currentIndexChanged(QString&)"),self.filter_index_changed)
+#		QtCore.QObject.connect(self.filter_combo, QtCore.SIGNAL("currentIndexChanged(QString&)"),self.filter_index_changed)
 
 	def filter_index_changed(self):
 		self.__redo_list_widget_contents()
@@ -292,11 +293,21 @@ class EMSelectorDialog(QtGui.QDialog):
 		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemEntered(QListWidgetItem*)"),self.list_widget_item_entered)
 		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
-		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
-		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
+		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
+		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
 		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("activated(QModelIndex)"),self.activated)
-		QtCore.QObject.connect(list_widget, QtCore.SIGNAL("selectionChanged(QItemSelection,QItemSelection)"),self.selection_changed)
-		
+		#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("selectionChanged(QItemSelection,QItemSelection)"),self.selection_changed)
+	
+	
+	def list_widget_item_activated(self,item):
+		pass
+	
+	def list_widget_item_changed(self,item):
+		pass
+	
+	def list_widget_current_changed(self,item1,item2):
+		pass
+	
 	def __go_back_a_directory(self):
 		self.lock = True
 		new_dir = self.starting_directory[0:self.starting_directory.rfind('/')]
@@ -375,17 +386,8 @@ class EMSelectorDialog(QtGui.QDialog):
 
 	def hide_preview(self):
 		if self.gl_image_preview  != None:
-			self.application.hide_specific(self.gl_image_preview)
+			self.application().hide_specific(self.gl_image_preview)
 	
-	def list_widget_item_activated(self,item):
-		pass
-		
-	
-	def list_widget_item_changed(self,item):
-		pass
-	
-	def list_widget_current_changed(self,item1,item2):
-		pass
 		
 	def list_widget_item_entered(self,item):
 		self.current_list_widget = item.listWidget()
@@ -483,7 +485,7 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		return False
 	
-	#def try_preview_plot(self,filename):		#preview = EMModuleFromFile(filename,app=self.application,force_2d=False,force_plot=True,old=self.browse_gl_preview)
+	#def try_preview_plot(self,filename):		#preview = EMModuleFromFile(filename,app=self.application(),force_2d=False,force_plot=True,old=self.browse_gl_preview)
 		#if preview != self.browse_gl_preview:
 			#if self.browse_gl_preview != None: self.browse_gl_preview.closeEvent(None):
 				#self.browse_gl_preview = preview
@@ -492,17 +494,17 @@ class EMSelectorDialog(QtGui.QDialog):
 	def preview_plot(self,filename):
 		if self.single_preview_only():
 			if not isinstance(self.gl_image_preview,EMPlot2DModule):
-				if self.gl_image_preview != None: self.application.close_specific(self.gl_image_preview)
-				self.gl_image_preview = EMPlot2DModule(self.application)
+				if self.gl_image_preview != None: self.application().close_specific(self.gl_image_preview)
+				self.gl_image_preview = EMPlot2DModule(self.application())
 	
 			self.gl_image_preview.set_data_from_file(filename,self.replace.isChecked())
-			self.application.show_specific(self.gl_image_preview)
+			self.application().show_specific(self.gl_image_preview)
 			self.gl_image_preview.updateGL()
 			
 		else:
-			preview =EMPlot2DModule(self.application)
+			preview =EMPlot2DModule(self.application())
 			preview.set_data_from_file(filename,self.replace.isChecked())
-			self.application.show_specific(preview)
+			self.application().show_specific(preview)
 			
 	def preview_data(self,a,filename=""):
 		from emimage import EMImageModule
@@ -511,36 +513,36 @@ class EMSelectorDialog(QtGui.QDialog):
 		
 		if self.single_preview_only() and len(self.previews) != 0:
 			old_preview = self.previews[-1] # this means we always choose the last preview if the user suddenly goes from multipreview to single preview
-			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,old=old_preview,filename=filename,replace=self.replace.isChecked())
+			preview = EMImageModule(data=a,app=self.application(),force_2d=f_2d,force_plot=f_plot,old=old_preview,filename=filename,replace=self.replace.isChecked())
 			if preview != old_preview:
 				self.module_closed(old_preview)
 				old_preview.closeEvent(None)
 				self.previews.append(preview)
 				self.module_events.append(ModuleEventsManager(self,preview))
+				try: preview.optimally_resize()
+				except: pass
 		else:
-			preview = EMImageModule(data=a,app=self.application,force_2d=f_2d,force_plot=f_plot,filename=filename)
+			preview = EMImageModule(data=a,app=self.application(),force_2d=f_2d,force_plot=f_plot,filename=filename)
 			self.previews.append(preview)
 			self.module_events.append(ModuleEventsManager(self,preview))
+			try: preview.optimally_resize()
+			except: pass
 		
-		self.application.show_specific(preview)
-		try: preview.optimally_resize()
-		except: pass
+		self.application().show_specific(preview)
 				
 		preview.updateGL()
-		
-		
-#			self.application.show_specific(preview)
-#			preview.updateGL()
-#			self.previews.append(preview)
-#			self.module_events.append(ModuleEventsManager(self,preview))
-#			
-		self.application.setOverrideCursor(Qt.ArrowCursor)	
+			
+		self.application().setOverrideCursor(Qt.ArrowCursor)	
 	
 	def module_closed(self,module):
+		import sys
 		for i,mod in enumerate(self.previews):
 			if mod == module:
 				p = self.previews.pop(i)
 				self.module_events.pop(i)
+				# right here is where the memory should be cleaned up for the module, so you could put some print statements like this if you were memory debugging:
+				# print sys.getrefcount(p)
+				# To date I have made sure the modules are being deleted
 				return
 			
 		print "failed to close module?" # this shouldn't happen if I have managed everything correctly
@@ -663,7 +665,9 @@ class EMDirectoryListing:
 	def filter_strings(self,strings):
 		
 		filt = self.target.get_file_filter()
-		if filt == "EM types": 	return strings # this is a bit of hack unfortunately
+		if filt == "EM types": 	
+			return [i for i in strings if i[-4:]!=".hed"]
+#			return strings # this is a bit of hack unfortunately
 		
 		filters = filt.split(",")
 
@@ -1328,7 +1332,7 @@ class EMBrowserDialog(EMSelectorDialog):
 
 class EMBrowserModule(EMQtWidgetModule):
 	def __init__(self,application=None):
-		self.application = application
+		self.application = weakref.ref(application)
 		self.widget = EMBrowserDialog(self,application)
 		EMQtWidgetModule.__init__(self,self.widget,application)
 	

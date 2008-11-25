@@ -38,7 +38,7 @@ import os
 from emselector import EMSelectorModule
 from emapplication import EMQtWidgetModule
 from EMAN2 import Util
-
+import weakref
 
 class ParamTable(list):
 	'''
@@ -59,7 +59,7 @@ class EMFormModule(EMQtWidgetModule):
 	or application.show_specific(this), depending on what you're doing
 	'''
 	def __init__(self,params,application):
-		self.application = application
+		self.application = weakref.ref(application)()
 		self.widget = EMFormWidget(self,params)
 		EMQtWidgetModule.__init__(self,self.widget,application)
 		
@@ -75,7 +75,7 @@ class EMFormWidget(QtGui.QWidget):
 	'''
 	def __init__(self,parent,params=None):
 		QtGui.QWidget.__init__(self,None)
-		self.parent = parent
+		self.parent = weakref.ref(parent)()
 		self.params = params
 		self.event_handlers = [] # used to keep event handlers in memory
 		self.output_writers = [] # used to register output write objects, for the purpose of returning the results
@@ -131,8 +131,13 @@ class EMFormWidget(QtGui.QWidget):
 		table_widget = QtGui.QTableWidget(num_choices, len(paramtable), None)
 		#self.items = []
 		table_widget.setSortingEnabled(False)
+		max_len_sum = 0
 		for i,param in enumerate(paramtable):
+			max_len = -1
 			for j,choice in enumerate(param.choices):
+				str_choice = str(choice)
+				str_len = len(str_choice)
+				if str_len > max_len: max_len = str_len 
 				item = QtGui.QTableWidgetItem(str(choice))
 				flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
 				flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
@@ -142,11 +147,16 @@ class EMFormWidget(QtGui.QWidget):
 					item.setFlags(flag2|flag3)
 				else:
 					item.setFlags(flag3)
+				item.setTextAlignment(QtCore.Qt.AlignHCenter)
 				table_widget.setItem(j, i, item)
 				
 				
 			item = QtGui.QTableWidgetItem(param.desc_short)
+			if len(param.desc_short) > max_len: max_len = len(param.desc_short)
+			item.setTextAlignment(QtCore.Qt.AlignHCenter)
 			table_widget.setHorizontalHeaderItem(i,item)
+			correct_len = 7.5*max_len # the 7.5 means "string are rendered approximately 7.5 pixels wide"
+			table_widget.setColumnWidth(i,int(correct_len))
 			
 		table_widget.setSortingEnabled(True)
 		hbl.addWidget(table_widget,1)
@@ -634,7 +644,7 @@ def get_example_params():
 	params.append(ParamDef(name="Selected Files",vartype="stringlist",desc_short="stringlist",desc_long="Choose from a list of strings",property=None,defaultunits=["C.mrc","E.mrc"],choices=[chr(i)+".mrc" for i in range(65,91)]))
 	
 	pil = ParamDef(name="Int 1 to 10 from a list",vartype="intlist",desc_short="intlist",desc_long="Choose from a list of ints",property=None,defaultunits=[5],choices=[1,2,3,4,5,6,7,8,9,10])
-	pfl = ParamDef(name="Float 1 to 10 from a list",vartype="floatlist",desc_short="floatlist",desc_long="Choose from a list of floats",property=None,defaultunits=[2.1],choices=[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1,10.1])
+	pfl = ParamDef(name="Float 1 to 10 from a list",vartype="floatlist",desc_short="floatlist",desc_long="Choose from a list of floats",property=None,defaultunits=[2.1],choices=[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1,10.11111111111111111111111111111])
 	a = ParamTable(name="table_choice",desc_short="Please choose using this information",desc_long="The left most column is what you're choosing from, the extra columns are used only to assist in the decision making process")
 	a.append(pil)
 	a.append(pfl)

@@ -1848,11 +1848,73 @@ def estimate_3D_center(ali_params):
 		b.append([ali_params[i][3]])
 		b.append([ali_params[i][4]])
 	
-	A_mat = matrix(A)
-	b_max = matrix(b)
+	A_matrix = matrix(A)
+	b_matrix = matrix(b)
 
-	K = linalg.solve(A_mat.T*A_mat, A_mat.T*b)
+	K = linalg.solve(A_matrix.T*A_matrix, A_matrix.T*b_matrix)
 	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
+
+
+def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
+	from math import cos, sin, pi
+	from numpy import matrix
+	from numpy import linalg
+	from mpi import MPI_COMM_WORLD
+	from mpi import mpi_recv, mpi_send, MPI_FLOAT
+	from applications import MPI_start_end
+	
+	ali_params_series = []
+	for im in data:
+		phi, theta, psi, s2x, s2y = get_params_proj(im)
+		ali_params_series.append(phi)
+		ali_params_series.append(theta)
+		ali_params_series.append(psi)
+		ali_params_series.append(s2x)
+		ali_params_series.append(s2y)
+
+	if myid == main_node:
+		for proc in xrange(number_of_proc):
+			if proc != main_node:
+				image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
+				n_params = (image_end_proc - image_start_proc)*5
+				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, MPI_COMM_WORLD)
+				for nn in xrange(n_params): 	ali_params_series.append(temp[nn])
+					
+		ali_params = []
+		N = len(ali_params_series)/5
+		for im in xrange(N):
+			ali_params.append([ali_params_series[im*5], ali_params_series[im*5+1], ali_params_series[im*5+2], ali_params_series[im*5+3], ali_params_series[im*5+4]])
+
+		A = []
+		b = []
+		DEG_to_RAD = pi/180.0
+	
+		for i in xrange(N):
+			phi_rad = ali_params[i][0]*DEG_to_RAD
+			theta_rad = ali_params[i][1]*DEG_to_RAD
+			psi_rad = ali_params[i][2]*DEG_to_RAD
+			A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad), 
+				cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
+			A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad), 
+				-sin(psi_rad)*cos(theta_rad)*sin(phi_rad)+cos(psi_rad)*cos(phi_rad), sin(psi_rad)*sin(theta_rad), 0, 1])	
+			b.append([ali_params[i][3]])
+			b.append([ali_params[i][4]])
+		
+		print A
+		print b
+	
+		A_matrix = matrix(A)
+		b_matrix = matrix(b)
+
+		K = linalg.solve(A_matrix.T*A_matrix, A_matrix.T*b_matrix)
+		return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
+
+	else:
+		image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, myid)
+		n_params = (image_end_proc - image_start_proc)*5
+		mpi_send(ali_params_series, n_params, MPI_FLOAT, main_node, myid, MPI_COMM_WORLD)
+		
+		return 0.0, 0.0, 0.0, 0.0, 0.0	
 
 
 def rotate_3D_shift(data, shift3d):

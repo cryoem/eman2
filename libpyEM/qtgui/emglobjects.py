@@ -39,6 +39,8 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 
+
+import weakref
 from emapplication import EMGUIModule,EMQtWidgetModule
 from emimageutil import EventsEmitterAndReciever
 
@@ -319,14 +321,14 @@ class EMViewportDepthTools2:
 	def __init__(self, parent):
 		
 		self.glbasicobjects = EMBasicOpenGLObjects()		# need basic objects for drawing the frame
-		self.matrices = parent			# an object that stores static instances of the important viewing matrices
+		self.matrices = weakref.ref(parent)			# an object that stores static instances of the important viewing matrices
 		self.borderwidth = 3.0								# effects the border width of the frame decoration
 		
 	def set_update_P_inv(self,val=True):
-		self.matrices.set_projection_view_update(val)
+		self.matrices().set_projection_view_update(val)
 	
 	def get_viewport_dimensions(self):
-		return self.matrices.get_viewport_matrix()
+		return self.matrices().get_viewport_matrix()
 	
 	def draw_frame(self, ftest=False):
 		
@@ -348,7 +350,7 @@ class EMViewportDepthTools2:
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		glOrtho(0.0,self.matrices.viewport_width(),0.0,self.matrices.viewport_height(),-5,5)
+		glOrtho(0.0,self.matrices().viewport_width(),0.0,self.matrices().viewport_height(),-5,5)
 
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
@@ -424,8 +426,8 @@ class EMViewportDepthTools2:
 	def update(self,width,height):
 		
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		self.wproj = self.matrices.get_proj_matrix()
-		self.wview = self.matrices.get_viewport_matrix()
+		self.wproj = self.matrices().get_proj_matrix()
+		self.wview = self.matrices().get_viewport_matrix()
 
 		try:
 			self.mc00=gluProject(-width,-height,0.,self.wmodel,self.wproj,self.wview)
@@ -442,8 +444,8 @@ class EMViewportDepthTools2:
 	def unproject_points(self,points):
 		unprojected = []
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		self.wproj = self.matrices.get_proj_matrix()
-		self.wview = self.matrices.get_viewport_matrix()
+		self.wproj = self.matrices().get_proj_matrix()
+		self.wview = self.matrices().get_viewport_matrix()
 		for p in points:
 			unprojected.append(gluProject(p[0],p[1],p[2],self.wmodel,self.wproj,self.wview))
 			
@@ -458,8 +460,8 @@ class EMViewportDepthTools2:
 	def update_points(self,p1,p2,p3,p4):
 		
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		self.wproj = self.matrices.get_proj_matrix()
-		self.wview = self.matrices.get_viewport_matrix()
+		self.wproj = self.matrices().get_proj_matrix()
+		self.wview = self.matrices().get_viewport_matrix()
 
 		try:
 			self.mc00=gluProject(p1[0],p1[1],p1[2],self.wmodel,self.wproj,self.wview)
@@ -503,8 +505,8 @@ class EMViewportDepthTools2:
 	
 	def printUnproj(self,x,y):
 		self.wmodel= glGetDoublev(GL_MODELVIEW_MATRIX)
-		self.wproj = self.matrices.get_proj_matrix()
-		self.wview = self.matrices.get_viewport_matrix()
+		self.wproj = self.matrices().get_proj_matrix()
+		self.wview = self.matrices().get_viewport_matrix()
 	
 		t = gluProject(x,y,0.,self.wmodel,self.wproj,self.wview)
 		print t[0],t[1],t[2]
@@ -572,7 +574,7 @@ class EMViewportDepthTools2:
 		return atan2(sinaeb,cosaeb)
 	
 	def eye_coords_dif(self,x1,y1,x2,y2,maintaindepth=True):
-		self.wview = self.matrices.get_viewport_matrix()
+		self.wview = self.matrices().get_viewport_matrix()
 		# get x and y normalized device coordinates
 		xNDC1 = 2.0*(x1-self.wview[0])/self.wview[2] - 1
 		yNDC1 = 2.0*(y1-self.wview[1])/self.wview[3] - 1
@@ -580,7 +582,7 @@ class EMViewportDepthTools2:
 		xNDC2 = 2.0*(x2-self.wview[0])/self.wview[2] - 1
 		yNDC2 = 2.0*(y2-self.wview[1])/self.wview[3] - 1
 		
-		self.P_inv = self.matrices.get_proj_inv_matrix()
+		self.P_inv = self.matrices().get_proj_inv_matrix()
 		
 		try:
 			M = numpy.matrix(self.wmodel)
@@ -613,7 +615,7 @@ class EMViewportDepthTools2:
 		return [ex2-ex1,ey2-ey1]
 
 	def mouseinwin(self,x,y,width,height):
-		self.wview = self.matrices.get_viewport_matrix()
+		self.wview = self.matrices().get_viewport_matrix()
 		# to determine the mouse coordinates in the window we carefully perform
 		# linear algebra similar to what's done in gluUnProject
 
@@ -627,7 +629,7 @@ class EMViewportDepthTools2:
 		# invert the projection and model view matrices, they will be used shortly
 		# note the OpenGL returns matrices are in column major format -  the calculations below 
 		# are done with this in  mind - this saves the need to transpose the matrices
-		self.P_inv = self.matrices.get_proj_inv_matrix()
+		self.P_inv = self.matrices().get_proj_inv_matrix()
 		
 		try:
 			M = numpy.matrix(self.wmodel)
@@ -1156,7 +1158,7 @@ class Camera2(EventsEmitterAndReciever):
 		EventsEmitterAndReciever.__init__(self)
 		# The magnification factor influences how the scale (zoom) is altered when a zoom event is received.
 		# The equation is scale *= mag_factor or scale /= mag_factor, depending on the event.
-		self.parent=parent
+		self.parent=weakref.ref(parent)
 		self.mag_factor = 1.1
 		
 		self.t3d_stack = []
@@ -1244,7 +1246,7 @@ class Camera2(EventsEmitterAndReciever):
 		
 	def scale_event(self,delta):
 		self.scale_delta(delta)
-		if self.emit_events:self.parent.emit(QtCore.SIGNAL("scale_delta"),delta)
+		if self.emit_events:self.parent().emit(QtCore.SIGNAL("scale_delta"),delta)
 		
 	def scale_delta(self,delta):
 		if delta > 0:
@@ -1329,7 +1331,7 @@ class Camera2(EventsEmitterAndReciever):
 		t3d.set_rotation( EULER_SPIN, quaternion )
 		
 		if self.emit_events: 
-			self.parent.emit(QtCore.SIGNAL("apply_rotation"),t3d)
+			self.parent().emit(QtCore.SIGNAL("apply_rotation"),t3d)
 		
 		size = len(self.t3d_stack)
 		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
@@ -1416,7 +1418,7 @@ class Camera2(EventsEmitterAndReciever):
 	
 	def motion_translate_z_only(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
-			[dx,dy] = self.parent.eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
+			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
 		else:
 			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
 
@@ -1427,11 +1429,11 @@ class Camera2(EventsEmitterAndReciever):
 			
 		if self.emit_events: 
 			#print "emitting applyt translation"
-			self.parent.emit(QtCore.SIGNAL("apply_translation"),v)
+			self.parent().emit(QtCore.SIGNAL("apply_translation"),v)
 	
 	def motion_translateLA(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
-			[dx,dy] = self.parent.eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
+			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
 		else:
 			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
 
@@ -1471,7 +1473,7 @@ class Camera2(EventsEmitterAndReciever):
 			
 		if self.emit_events: 
 			#print "emitting applyt translation"
-			self.parent.emit(QtCore.SIGNAL("apply_translation"),v)
+			self.parent().emit(QtCore.SIGNAL("apply_translation"),v)
 	
 	def explicit_translate(self,x,y,z):
 		
@@ -1479,7 +1481,7 @@ class Camera2(EventsEmitterAndReciever):
 		self.cam_y += y
 		self.cam_z += z
 		
-		if self.emit_events: self.parent.emit(QtCore.SIGNAL("apply_translation"),(x,y,z))
+		if self.emit_events: self.parent().emit(QtCore.SIGNAL("apply_translation"),(x,y,z))
 			
 	def apply_translation(self,v):
 		self.cam_x += v[0]
@@ -1812,13 +1814,13 @@ class EMImage3DGUIModule(EMGUIModule):
 
 	
 	def get_gl_widget(self,qt_context_parent,gl_context_parent):
-		from emfloatingwidgets import EMGLView3D, EM3DGLWindow
+		from emfloatingwidgets import EM3DGLView, EM3DGLWindow
 		if self.gl_widget == None:
 			
 			self.gl_context_parent = gl_context_parent
 			self.qt_context_parent = qt_context_parent
 			
-			gl_view = EMGLView3D(self,image=None)
+			gl_view = EM3DGLView(self,image=None)
 			self.gl_widget = EM3DGLWindow(self,gl_view)
 			
 			self.gl_widget.target_translations_allowed(True)
@@ -1829,9 +1831,9 @@ class EMImage3DGUIModule(EMGUIModule):
 		return self.gl_widget
 	
 	#def get_gl_widget(self,qt_parent=None):
-		#from emfloatingwidgets import EMGLView3D,EM3DGLWindow
+		#from emfloatingwidgets import EM3DGLView,EM3DGLWindow
 		#if self.gl_widget == None:
-			#gl_view = EMGLView3D(self,image=None)
+			#gl_view = EM3DGLView(self,image=None)
 			#self.gl_widget = EM3DGLWindow(self,gl_view)
 			#self.set_gl_parent(qt_parent)
 			#self.gl_widget.target_translations_allowed(True)
@@ -2009,6 +2011,9 @@ class EMImage3DGUIModule(EMGUIModule):
 		elif event.key() == Qt.Key_Right:
 			self.cam.explicit_translate(1,0,0)
 			self.updateGL()
+			
+		elif event.key() == Qt.Key_I:
+			self.show_inspector()
 	
 	def leaveEvent(self,event):
 		pass

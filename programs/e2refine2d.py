@@ -66,14 +66,14 @@ def main():
 	parser.add_option("--nbasisfp",type="int",default=5,help="Number of MSA basis vectors to use when classifiying based on invariants for making starting class-averages")
 
 	# options associated with e2simmx.py
-	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate")
-	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments",default="dot")
+	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate_flip)", default="rotate_translate")
+	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments (default=dot)",default="dot")
 	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
-	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
-	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
+	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot")
+	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images (default=dot:normalize=1)", default="dot:normalize=1")
 
 	# options associated with e2basis.py
-	parser.add_option("--normproj", default=False, action="store_true",help="Normalizes each projection vector. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image")
+	parser.add_option("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image")
 
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
@@ -123,7 +123,8 @@ def main():
 	else: excludestr=""
 
 	if options.maxshift<0 : 
-		tmp=EMData(options.input,0)
+		tmp=EMData()
+		tmp.read_image(options.input,0)
 		options.maxshift=tmp.get_xsize()/3	
 	
 	if options.parallel :

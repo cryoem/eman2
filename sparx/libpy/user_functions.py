@@ -335,17 +335,8 @@ def spruce_up_variance( ref_data ):
 	print_msg("spruce_up with variance\n")
 	cs = [0.0]*3
 
-	stat = Util.infomask(ref_data[2], None, True)
-	volf = ref_data[2] - stat[0]
-	Util.mul_scalar(volf, 1.0/stat[1])
-	volf = threshold(volf)
-	volf = volf.filter_by_image(ref_data[4])
-	nx = volf.get_xsize()
-	from utilities import model_circle
-	stat = Util.infomask(volf, model_circle(nx//2-2,nx,nx,nx)-model_circle(nx//2-6,nx,nx,nx), True)
+	volf = ref_data[2].filter_by_image(ref_data[4])
 
-	volf -= stat[0]
-	Util.mul_img(volf, ref_data[0])
 	fl, aa = fit_tanh(ref_data[3])
 	#fl = 0.35
 	#aa = 0.1
@@ -353,6 +344,21 @@ def spruce_up_variance( ref_data ):
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = filt_tanl(volf, fl, aa)
+
+	stat = Util.infomask(volf, None, True)
+	volf = volf - stat[0]
+	Util.mul_scalar(volf, 1.0/stat[1])
+
+	from utilities import model_circle
+	nx = volf.get_xsize()
+	stat = Util.infomask(volf, model_circle(nx//2-2,nx,nx,nx)-model_circle(nx//2-6,nx,nx,nx), True)
+
+	volf -= stat[0]
+	Util.mul_img(volf, ref_data[0])
+
+	volf = threshold(volf)
+	# The next line is to smooth edges
+	volf = filt_gaussl(volf, 0.4)
 	if(ref_data[1] == 1):
 		from fundamentals   import fshift
 		cs    = volf.phase_cog()

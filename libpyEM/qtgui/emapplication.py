@@ -37,6 +37,7 @@ import sys
 import platform
 from emimageutil import EMParentWin,EventsEmitterAndReciever
 from EMAN2 import remove_directories_from_name
+import weakref
 
 class EMModule:
 	'''
@@ -63,26 +64,26 @@ class ModuleEventsManager:
 	To begin with this is only the close event, then I added the idle event
 	'''
 	def __init__(self,target,module):
-		self.target = target
-		self.module = module
-		QtCore.QObject.connect(self.module, QtCore.SIGNAL("module_closed"), self.module_closed)
-		QtCore.QObject.connect(self.module, QtCore.SIGNAL("module_idle"), self.module_idle)
+		self.target = weakref.ref(target)
+		self.module = weakref.ref(module)
+		QtCore.QObject.connect(self.module(), QtCore.SIGNAL("module_closed"), self.module_closed)
+		QtCore.QObject.connect(self.module(), QtCore.SIGNAL("module_idle"), self.module_idle)
 		
-		QtCore.QObject.connect(self.module, QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
-		QtCore.QObject.connect(self.module, QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
+		QtCore.QObject.connect(self.module(), QtCore.SIGNAL("ok"), self.module_ok) # yes, redundant, but time is short
+		QtCore.QObject.connect(self.module(), QtCore.SIGNAL("cancel"), self.module_cancel)# yes, redundant, but time is short
 		
 	
 	def module_closed(self):
-		self.target.module_closed(self.module)
+		self.target().module_closed(self.module())
 		
 	def module_idle(self):
-		self.target.module_idle(self.module)
+		self.target().module_idle(self.module())
 		
 	def module_ok(self,*args,**kargs):
-		self.module.closeEvent(None)
+		self.module().closeEvent(None)
 		
 	def module_cancel(self):
-		self.module.closeEvent(None)
+		self.module().closeEvent(None)
 	
 	
 class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
@@ -91,7 +92,9 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	def __init__(self,application=None,ensure_gl_context=False):
 		QtCore.QObject.__init__(self)
 		self.under_qt_control = False
-		self.application = application
+		if application != None:
+			self.application = weakref.ref(application)
+		else: self.application = None
 		self.em_qt_inspector_widget = None # shoudl be = EMQtWidgetModule(application) somewher 
 		self.suppress_inspector = False # turn on to suppress showing the inspector
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
@@ -122,7 +125,7 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 	def is_visible(self):
 		return self.qt_context_parent.isVisible()
 		
-	def set_app(self,application): self.application = application
+	def set_app(self,application): self.application = weakref.ref(application)
 	def get_app(self): return self.application
 	
 	def set_gl_context_parent(self,parent): self.gl_context_parent = parent
@@ -158,16 +161,16 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 			self.inspector = self.get_inspector()
 			if self.inspector == None: return # sometimes this happens
 		if not self.em_qt_inspector_widget:
-			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application)
+			self.em_qt_inspector_widget = EMQtWidgetModule(self.inspector,self.application())
 			self.em_qt_inspector_widget.setWindowTitle(remove_directories_from_name(self.file_name))
 			if self.gl_widget != None:
 				try:
 					self.em_qt_inspector_widget.set_selected(self.gl_widget.decoration.is_selected())
 				except: pass
 
-		if not self.application.child_is_attached(self.em_qt_inspector_widget):
-			self.application.attach_child(self.em_qt_inspector_widget)
-		self.application.show_specific(self.em_qt_inspector_widget)
+		if not self.application().child_is_attached(self.em_qt_inspector_widget):
+			self.application().attach_child(self.em_qt_inspector_widget)
+		self.application().show_specific(self.em_qt_inspector_widget)
 	
 	def update_inspector_texture(self):
 		if self.em_qt_inspector_widget != None:
@@ -178,7 +181,7 @@ class EMGUIModule(EventsEmitterAndReciever,QtCore.QObject):
 			if self.em_qt_inspector_widget != None: 
 				self.em_qt_inspector_widget.closeEvent(event)
 			
-			self.application.close_specific(self)
+			self.application().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		
 	def load_font_renderer(self):
@@ -472,7 +475,7 @@ class EMQtWidgetModule(EMGUIModule):
 	
 	def closeEvent(self,event) :
 		if self.application != None:
-			self.application.close_specific(self)
+			self.application().close_specific(self)
 		
 		if self.qt_widget != None: self.qt_widget.close()
 		self.qt_widget = None
@@ -481,14 +484,14 @@ class EMQtWidgetModule(EMGUIModule):
 		
 	
 	def connect_qt_pop_up_application_event(self,signal):
-		self.application.connect_qt_pop_up_application_event(signal,self)
+		self.application().connect_qt_pop_up_application_event(signal,self)
 	
 	
 	def force_texture_update(self,val=True):
 		if not self.under_qt_control and val == True:
-			if self.application.isVisible(self):
-				self.gl_widget.drawable.gen_texture = True
-				self.gl_widget.drawable.updateTexture()
+			if self.application().isVisible(self):
+				#self.gl_widget.drawable.gen_texture = True
+				self.gl_widget.drawable.set_refresh_dl()
 				
 	def get_inspector(self):
 		'''
@@ -508,7 +511,7 @@ class EMProgressDialogModule(EMQtWidgetModule):
 	or application.show_specific(this), depending on what you're doing
 	'''
 	def __init__(self,application,label_text,cancel_button_text, minimum, maximum, parent):
-		self.application = application
+		self.application = weakref.ref(application)
 		self.widget = EMProgressDialog(label_text,cancel_button_text, minimum, maximum, parent)
 		EMQtWidgetModule.__init__(self,self.widget,application)
 		

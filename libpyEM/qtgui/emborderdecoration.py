@@ -40,10 +40,11 @@ import os
 
 
 white = (1.0,1.0,1.0,1.0)
+grey = (0.5,0.5,0.5,1.0)
 yellow = (1.0,1.0,0.0,1.0)
 red = (1.0,1.0,1.0,1.0)
 blue = (0.0,0.0,1.0,1.0)
-black = (0.0,0.0,0.0,0.0)
+black = (0.2,0.2,0.2,1.0)
 grey = (0.6,0.6,0.6,0.0)
 green = (0.0,1.0,0.0,1.0)
 purple = (1.0,0.0,1.0,1.0)
@@ -57,6 +58,7 @@ ligh_yellow_ambient = (.83,.83,.38,1.0)
 ligh_yellow_specular = (.76,.75,.39,1.0)
 
 from EMAN2 import Vec3f
+import weakref
 
 
 class EMBorderDecoration:
@@ -69,10 +71,11 @@ class EMBorderDecoration:
 	FROZEN_COLOR = "frozen"
 	DEFAULT_COLOR = "default"
 	YELLOW_COLOR = "yellow"
+	BLACK_COLOR = "black"
 	x_texture_dl = None
-	PERMISSABLE_COLOR_FLAGS = [FROZEN_COLOR,DEFAULT_COLOR,YELLOW_COLOR]
+	PERMISSABLE_COLOR_FLAGS = [FROZEN_COLOR,DEFAULT_COLOR,YELLOW_COLOR,BLACK_COLOR]
 	def __init__(self,object):
-		self.object = object
+		self.object = weakref.ref(object)
 		self.color_flag = EMBorderDecoration.DEFAULT_COLOR
 		self.display_list = None
 		self.unprojected_points = [] # for determing mouse-border collision detection
@@ -356,6 +359,12 @@ class EMBorderDecoration:
 			glMaterial(GL_FRONT,GL_SPECULAR,ligh_yellow_specular)
 			glMaterial(GL_FRONT,GL_SHININESS,18.0)
 			glColor(*blue)
+		elif self.color_flag ==  EMBorderDecoration.BLACK_COLOR:
+			glMaterial(GL_FRONT,GL_AMBIENT,black)
+			glMaterial(GL_FRONT,GL_DIFFUSE,black)
+			glMaterial(GL_FRONT,GL_SPECULAR,white)
+			glMaterial(GL_FRONT,GL_SHININESS,100.0)
+			glColor(*blue)
 		else:
 			print "warning, unknown color flag, coloring failed"
 
@@ -385,7 +394,7 @@ class EMBorderDecoration:
 			pixmap = QtGui.QPixmap(os.getenv("EMAN2DIR")+"/images/Close.png")
 			#self.qwidget.setVisible(False)
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
-			self.texture = self.object.parent.get_gl_context_parent().bindTexture(pixmap)
+			self.texture = self.object().parent().get_gl_context_parent().bindTexture(pixmap)
 			EMBorderDecoration.x_texture_dl=glGenLists(1)
 			
 			if EMBorderDecoration.x_texture_dl == 0:
@@ -435,13 +444,13 @@ class EMBorderDecoration:
 	def mousePressEvent(self,event):
 		self.pressed = self.currently_selected_frame 
 		if self.currently_selected_frame == 5: # top
-			self.object.set_mouse_lock(self)
-			self.object.cam.mousePressEvent(event)
-			self.object.updateGL()
+			self.object().set_mouse_lock(self)
+			self.object().cam.mousePressEvent(event)
+			self.object().updateGL()
 			self.current_frame = self.frame_unproject_order[self.currently_selected_frame]
 		elif self.currently_selected_frame in [0,1,2,3,4,6,7]:  # right
 			if (event.buttons()&Qt.LeftButton):
-				self.object.set_mouse_lock(self)
+				self.object().set_mouse_lock(self)
 				self.current_frame = self.frame_unproject_order[self.currently_selected_frame]
 				self.moving = [event.x(), event.y()]
 			
@@ -449,61 +458,61 @@ class EMBorderDecoration:
 	def mouseMoveEvent(self,event):
 		if self.current_frame != "": # establishing and destablished in mousePress and mouseRelease
 			if self.currently_selected_frame == 5: # top
-				self.object.cam.mouseMoveEvent(event)
-				self.object.updateGL()
+				self.object().cam.mouseMoveEvent(event)
+				self.object().updateGL()
 			if (event.buttons()&Qt.LeftButton):
 				movement = [event.x()-self.moving[0],event.y()-self.moving[1]]
 				self.moving = [event.x(), event.y()]
 				if self.current_frame == "right":
-					self.object.add_width_right(movement[0])
-					self.object.updateGL()
+					self.object().add_width_right(movement[0])
+					self.object().updateGL()
 				if self.current_frame == "left":
-					self.object.add_width_left(-movement[0])
-					self.object.updateGL()
+					self.object().add_width_left(-movement[0])
+					self.object().updateGL()
 				if self.current_frame == "bottom":
-					self.object.add_height_bottom(movement[1])
-					self.object.updateGL()
+					self.object().add_height_bottom(movement[1])
+					self.object().updateGL()
 				if self.current_frame == "bottom_left":
-					self.object.add_width_left(-movement[0])
-					self.object.add_height_bottom(movement[1])
-					self.object.add_depth((movement[1]+movement[0])/2)
-					self.object.updateGL()
+					self.object().add_width_left(-movement[0])
+					self.object().add_height_bottom(movement[1])
+					self.object().add_depth((movement[1]+movement[0])/2)
+					self.object().updateGL()
 				if self.current_frame == "bottom_right":
-					self.object.add_width_right(movement[0])
-					self.object.add_height_bottom(movement[1])
-					self.object.add_depth((movement[1]+movement[0])/2)
-					self.object.updateGL()
+					self.object().add_width_right(movement[0])
+					self.object().add_height_bottom(movement[1])
+					self.object().add_depth((movement[1]+movement[0])/2)
+					self.object().updateGL()
 				if self.current_frame == "top_right":
-					self.object.add_width_right(movement[0])
-					self.object.add_height_top(-movement[1])
-					self.object.add_depth((movement[1]+movement[0])/2)
-					self.object.updateGL()
+					self.object().add_width_right(movement[0])
+					self.object().add_height_top(-movement[1])
+					self.object().add_depth((movement[1]+movement[0])/2)
+					self.object().updateGL()
 				if self.current_frame == "top_left":
-					self.object.add_width_left(-movement[0])
-					self.object.add_height_top(-movement[1])
-					self.object.add_depth((movement[1]+movement[0])/2)
-					self.object.updateGL()
+					self.object().add_width_left(-movement[0])
+					self.object().add_height_top(-movement[1])
+					self.object().add_depth((movement[1]+movement[0])/2)
+					self.object().updateGL()
 			
 	def mouseReleaseEvent(self,event):
 		if self.currently_selected_frame == 5: # top
-			self.object.release_mouse_lock()
-			self.object.cam.mouseReleaseEvent(event)
-			self.object.updateGL()
+			self.object().release_mouse_lock()
+			self.object().cam.mouseReleaseEvent(event)
+			self.object().updateGL()
 		elif self.currently_selected_frame == 8 and self.pressed == 8:
-			self.object.closeEvent(event)
+			self.object().closeEvent(event)
 		
 		if self.current_frame != "":
-			self.object.release_mouse_lock()
+			self.object().release_mouse_lock()
 			self.current_frame = ""
-			self.object.updateGL()
+			self.object().updateGL()
 	
 	def mouseDoubleClickEvent(self,event):
 		pass
 	
 	def wheelEvent(self,event):
 		if self.currently_selected_frame == 5: # top
-			self.object.top_frame_wheel(event.delta())
-			self.object.updateGL()
+			self.object().top_frame_wheel(event.delta())
+			self.object().updateGL()
 			
 	def keyPressEvent(self,event):
 		pass
@@ -525,7 +534,7 @@ class EM2DPlainBorderDecoration(EMBorderDecoration):
 			print "error, EM2DPlainBorderDecoration works only for EM2DGLWindow and EMGLViewQtWidget"
 			self.faulty = True
 			return
-		else: self.object = object
+		else: self.object = weakref.ref(object)
 		
 	def draw(self,force_update=False):
 		#self.init_x_texture()
@@ -549,7 +558,7 @@ class EM2DPlainBorderDecoration(EMBorderDecoration):
 		else: print "An error occured"
 	
 		glPushMatrix()
-		glTranslate(self.object.width()/2.0-self.top_border_height/2,self.object.height()/2.0+self.top_border_height/2.0,self.border_depth+.1)
+		glTranslate(self.object().width()/2.0-self.top_border_height/2,self.object().height()/2.0+self.top_border_height/2.0,self.border_depth+.1)
 		glScale(self.top_border_height,self.top_border_height,1.0)
 		#glEnable(GL_BLEND)
 		#glBlendFunc(GL_DST_ALPHA,GL_ONE_MINUS_DST_ALPHA)
@@ -566,14 +575,14 @@ class EM2DPlainBorderDecoration(EMBorderDecoration):
 
 			glTranslate((bbox[0]-bbox[3])/2,0,0)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			glTranslate(0,self.object.height()/2.0,self.border_depth+.1)
+			glTranslate(0,self.object().height()/2.0,self.border_depth+.1)
 			self.font_renderer.render_string(self.window_title)
 			glPopMatrix()
 		
 	def viewport_update(self):
 		self.corner_sets = []
-		width = self.object.width()
-		height = self.object.height()
+		width = self.object().width()
+		height = self.object().height()
 			
 			# plus, i.e. plus the border
 		left = -width/2.0
@@ -668,8 +677,8 @@ class EM2DPlainBorderDecoration(EMBorderDecoration):
 		self.delete_list()
 		if self.display_list == None:
 			
-			width = self.object.width()
-			height = self.object.height()
+			width = self.object().width()
+			height = self.object().height()
 			
 			# plus, i.e. plus the border
 			left = -width/2.0
@@ -745,7 +754,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			#self.faulty = True
 			#return
 		#else:
-		self.object = object
+		self.object = weakref.ref(object)
 		
 	
 	def get_border_width(self): return self.border_width
@@ -805,7 +814,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 	
 	
 		if self.font_renderer != None:
-			dims = self.object.get_lr_bt_nf()
+			dims = self.object().get_lr_bt_nf()
 			glPushMatrix()
 			light_on = glIsEnabled(GL_LIGHTING)
 			texture_on = glIsEnabled(GL_TEXTURE_2D)
@@ -816,7 +825,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 
 			glTranslate((bbox[0]-bbox[3])/2,0,0)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-			glTranslate(0,self.object.height()/2.0,self.border_depth+.1)
+			glTranslate(0,self.object().height()/2.0,self.border_depth+.1)
 			self.font_renderer.render_string(self.window_title)
 			glPopMatrix()
 			
@@ -826,7 +835,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		self.draw_x()
 		
 	def draw_x(self):
-		dims = self.object.get_lr_bt_nf()
+		dims = self.object().get_lr_bt_nf()
 		# plus, i.e. plus the border
 		
 		right = dims[1]
@@ -841,7 +850,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 		glPopMatrix()
 		
 	def calculate_clip_planes(self,two_d_only=False):
-		dims = self.object.get_lr_bt_nf()
+		dims = self.object().get_lr_bt_nf()
 		if two_d_only:
 			front = 0
 			back = -1
@@ -966,7 +975,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 			thick_front = 0
 			thick_back = -self.border_depth
 				
-			dims = self.object.get_lr_bt_nf()
+			dims = self.object().get_lr_bt_nf()
 			# plus, i.e. plus the border
 			left =  dims[0]
 			left_plus = left-self.border_width
@@ -1057,7 +1066,7 @@ class EM3DPlainBorderDecoration(EMBorderDecoration):
 	def viewport_update(self):
 		self.corner_sets = []
 		
-		dims = self.object.get_lr_bt_nf()
+		dims = self.object().get_lr_bt_nf()
 		# plus, i.e. plus the border
 		left =  dims[0]
 		left_plus = left-self.border_width

@@ -45,6 +45,7 @@ import numpy
 from emshape import *
 from emimageutil import ImgHistogram,EMParentWin
 from weakref import WeakKeyDictionary
+import weakref
 from pickle import dumps,loads
 import struct
 
@@ -82,7 +83,7 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
-		self.target.render()
+		self.target().render()
 		
 	def resizeGL(self, width, height):
 #		print "resize ",self.width()
@@ -97,14 +98,13 @@ class EMPlot2DWidget(QtOpenGL.QGLWidget,EMEventRerouter,):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.target.resize_event(width,height)
+		self.target().resize_event(width,height)
 		
 class EMPlot2DModule(EMGUIModule):
 
 	def get_desktop_hint(self):
 		return "plot"
-	
-	
+
 	def get_qt_widget(self):
 		if self.qt_context_parent == None:	
 			self.under_qt_control = True
@@ -311,6 +311,8 @@ class EMPlot2DModule(EMGUIModule):
 			glNewList(self.main_display_list,GL_COMPILE)
 			render = True
 		
+		lighting = glIsEnabled(GL_LIGHTING)
+		glDisable(GL_LIGHTING)
 		GL.glPushMatrix()
 		glTranslate(0,0,5)
 		for k,s in self.shapes.items():
@@ -375,7 +377,9 @@ class EMPlot2DModule(EMGUIModule):
 		if render :
 			glEndList()
 			glCallList(self.main_display_list)
-			
+		
+		
+		if lighting : glEnable(GL_LIGHTING)
 		
 		
 	def __texture_plot(self,image_data):
@@ -493,6 +497,7 @@ class EMPlot2DModule(EMGUIModule):
 		elif event.button()==Qt.LeftButton:
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-100,self.scrlim[3]-10,"%1.4g, %1.4g"%(lc[0],lc[1]),120.0,-1)))
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				#return
@@ -548,7 +553,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
-		self.target=target
+		self.target=weakref.ref(target)
 		
 		self.hbl = QtGui.QHBoxLayout(self)
 		self.hbl.setMargin(2)
@@ -669,7 +674,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def updPlot(self,s=None):
 		if self.quiet : return
-		self.target.setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
+		self.target().setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
 			self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),
 			self.symsel.currentIndex(),self.symsize.value())
 
@@ -680,14 +685,14 @@ class EMPlot2DInspector(QtGui.QWidget):
 		except: 
 			print "plot error"
 			return
-		self.slidex.setRange(-1,len(self.target.data[i])-1)
-		self.slidey.setRange(-1,len(self.target.data[i])-1)
-		self.slidec.setRange(-1,len(self.target.data[i])-1)
-		self.slidex.setValue(self.target.axes[i][0])
-		self.slidey.setValue(self.target.axes[i][1])
-		self.slidec.setValue(self.target.axes[i][2])
+		self.slidex.setRange(-1,len(self.target().data[i])-1)
+		self.slidey.setRange(-1,len(self.target().data[i])-1)
+		self.slidec.setRange(-1,len(self.target().data[i])-1)
+		self.slidex.setValue(self.target().axes[i][0])
+		self.slidey.setValue(self.target().axes[i][1])
+		self.slidec.setValue(self.target().axes[i][2])
 		
-		pp=self.target.pparm[i]
+		pp=self.target().pparm[i]
 		self.color.setCurrentIndex(pp[0])
 		
 		self.lintog.setChecked(pp[1])
@@ -701,13 +706,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def newCols(self,val):
 		if self.target: 
-			self.target.setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value())
+			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value())
 	
 	def datachange(self):
 		
 		self.setlist.clear()
 		
-		keys=self.target.data.keys()
+		keys=self.target().data.keys()
 		keys.sort()
 		
 		for i,j in enumerate(keys) :

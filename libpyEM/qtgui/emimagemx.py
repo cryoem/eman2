@@ -50,6 +50,7 @@ from PyQt4.QtCore import QTimer
 
 from emglobjects import EMOpenGLFlagsAndTools
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+import weakref
 
 GLUT.glutInit(sys.argv)
 
@@ -71,10 +72,10 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		#self.resize(480,480)
 		
 	def get_target(self):
-		return self.target
+		return self.target()
 	
 	def set_data(self,data):
-		self.target.set_data(data)
+		self.target().set_data(data)
 	
 	def set_file_name(self,name):
 		#print "set image file name",name
@@ -94,6 +95,8 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+		
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 
 		glEnable(GL_CULL_FACE)
 		glCullFace(GL_BACK)
@@ -105,7 +108,7 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glLoadIdentity()
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Matrix context is", context
-		self.target.render()
+		self.target().render()
 
 	
 	def resizeGL(self, width, height):
@@ -118,11 +121,11 @@ class EMImageMXWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		try: self.target.resize_event(width,height)
+		try: self.target().resize_event(width,height)
 		except: pass
 	def set_mouse_mode(self,mode):
 		self.mmode = mode
-		self.target.set_mouse_mode(mode)
+		self.target().set_mouse_mode(mode)
 	
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
@@ -180,40 +183,40 @@ class EMMXCoreMouseEventsMediator:
 			print "error, the target should be a EMImageMXModule"
 			return
 		
-		self.target = target
+		self.target = weakref.ref(target)
 		
 	def scr_to_img(self,vec):
-		return self.target.scr_to_img(vec)
+		return self.target().scr_to_img(vec)
 	
 	def get_parent(self):
-		return self.target.get_parent()
+		return self.target().get_parent()
 
 	def get_box_image(self,idx):
-		return self.target.get_box_image(idx)
+		return self.target().get_box_image(idx)
 	
 	def pop_box_image(self,idx,event=None,redraw=False):
-		self.target.pop_box_image(idx,event,redraw)
+		self.target().pop_box_image(idx,event,redraw)
 	
 	def get_density_max(self):
-		return self.target.get_density_max()
+		return self.target().get_density_max()
 	
 	def get_density_min(self):
-		return self.target.get_density_min()
+		return self.target().get_density_min()
 	
 	def emit(self,*args,**kargs):
-		self.target.emit(*args,**kargs)
+		self.target().emit(*args,**kargs)
 
 	def set_selected(self,selected,update_gl=True):
-		self.target.set_selected(selected,update_gl)
+		self.target().set_selected(selected,update_gl)
 		
 	def force_display_update(self):
-		self.target.force_display_update() 
+		self.target().force_display_update() 
 		
 	def get_scale(self):
-		return self.target.get_scale()
+		return self.target().get_scale()
 	
 	def update_inspector_texture(self):
-		self.target.update_inspector_texture()
+		self.target().update_inspector_texture()
 
 class EMMXDelMouseEvents(EMMXCoreMouseEvents):
 	def __init__(self,mediator):
@@ -337,6 +340,7 @@ class EMImageMXModule(EMGUIModule):
 			self.under_qt_control = False
 			self.gl_context_parent = gl_context_parent
 			self.qt_context_parent = qt_context_parent
+			self.draw_background = True
 			
 			gl_view = EM2DGLView(self,image=None)
 			self.gl_widget = EM2DGLWindow(self,gl_view)
@@ -380,6 +384,8 @@ class EMImageMXModule(EMGUIModule):
 		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
 		self.suppress_inspector = False 	# Suppresses showing the inspector - switched on in emfloatingwidgets
 		self.image_file_name = None
+		self.first_render = True # a hack, something is slowing us down in FTGL
+		
 		
 		self.coords={}
 		self.nshown=0
@@ -491,7 +497,7 @@ class EMImageMXModule(EMGUIModule):
 	
 		if ( len(self.tex_names) > 0 ):	
 			glDeleteTextures(self.tex_names)
-			self.tex_names = []
+			self.tex_names = []	
 	
 	def get_cols(self):
 		return self.mx_cols
@@ -534,9 +540,6 @@ class EMImageMXModule(EMGUIModule):
 		''' warning - could return none in some circumstances'''
 		try: return self.gl_widget.get_image_file_name()
 		except: return None
-	
-	def __del__(self):
-		if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 	
 	def optimally_resize(self):
 		if isinstance(self.gl_context_parent,EMImageMXWidget):
@@ -860,15 +863,15 @@ class EMImageMXModule(EMGUIModule):
 			#if len(self.coords)>n : self.coords=self.coords[:n] # dont know what this does? Had to comment out, changing from a list to a dictionary
 			glColor(0.5,1.0,0.5)
 			glLineWidth(2)
-			try:
-				# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
-				# contrast the text labels...
-				a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
-				ims=[ord(pv) for pv in a]
-				if sum(ims)>32768 : txtcol=(0.0,0.0,0.0)
-				else : txtcol=(1,1,1.0)
-			except: txtcol=(1.0,1.0,1.0)
-	
+#			try:
+#				# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
+#				# contrast the text labels...
+#				a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
+#				ims=[ord(pv) for pv in a]
+#				if sum(ims)>32768 : txtcol=(0.0,0.0,0.0)
+#				else : txtcol=(1,1,1.0)
+#			except: txtcol=(1.0,1.0,1.0)
+			txtcol=(0,1,1) # nice cyan color
 			if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 			self.tex_names = []
 	
@@ -880,7 +883,7 @@ class EMImageMXModule(EMGUIModule):
 			
 			[xstart,visiblecols,ystart,visiblerows] = self.get_matrix_ranges(x,y)
 				
-			#print "rows",visiblerows-ystart,"cols",visiblecols-xstart
+#			print "rows",visiblerows-ystart,"cols",visiblecols-xstart
 			#print "yoffset",yoff,"xoffset",xoff
 			#print (visiblerows-ystart)*(h+2)+yoff,self.gl_widget.height(),"height",(visiblecols-xstart)*(w+2)+xoff,self.gl_widget.width()		
 			invscale=1.0/self.scale
@@ -995,6 +998,9 @@ class EMImageMXModule(EMGUIModule):
 		if self.use_display_list and render :
 			glEndList()
 			glCallList(self.main_display_list)
+			if self.first_render: #A hack, FTGL is slowing us down
+				self.display_states = []
+				self.first_render = False 
 	
 	def __render_excluded_square(self):
 		glBegin(GL_QUADS)
@@ -1019,24 +1025,26 @@ class EMImageMXModule(EMGUIModule):
 			glEnable(GL_TEXTURE_2D)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 			lighting = glIsEnabled(GL_LIGHTING)
-			glDisable(GL_LIGHTING)
+			glEnable(GL_LIGHTING)
 			#glEnable(GL_NORMALIZE)
 			tagy = ty
 			glColor(*txtcol)
-			#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
-			#glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
-			#glMaterial(GL_FRONT,GL_SHININESS,100.0)
+			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
+			glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
+			glMaterial(GL_FRONT,GL_SHININESS,1.0)
 			for v in self.valstodisp:
 				glPushMatrix()
 				glTranslate(tx,tagy,0)
-				#bbox = self.bounding_box(str(i))
 				glTranslate(4,4,0.2)
+				
 
 				#glTranslate(-(bbox[0]-bbox[3])/2,-(bbox[1]-bbox[4])/2,-(bbox[2]-bbox[5])/2)
 				#glRotate(-10,1,0,0)
 				#glTranslate((bbox[0]-bbox[3])/2,(bbox[1]-bbox[4])/2,(bbox[2]-bbox[5])/2)
 				
 				glScale(self.scale/2.0,self.scale/2.0,1)
+				
+				
 				if v=="Img #" : 
 					#print i,self.img_num_offset,self.max_idx,(i+self.img_num_offset)%self.max_idx,
 					idx = i+self.img_num_offset
@@ -1046,7 +1054,8 @@ class EMImageMXModule(EMGUIModule):
 					av=self.data[i].get_attr(v)
 					if isinstance(av,float) : avs="%1.4g"%av
 					else: avs=str(av)
-					try: self.font_renderer.render_string(str(avs))
+					try: 
+						self.font_renderer.render_string(str(avs))
 					except:	self.font_renderer.render_string("------")
 				tagy+=self.font_renderer.get_face_size()*self.scale/2.0
 				glPopMatrix()
@@ -1146,7 +1155,9 @@ class EMImageMXModule(EMGUIModule):
 			self.scale=min(float(self.gl_widget.height())/self.data[0].get_ysize(),float(self.gl_widget.width())/self.data[0].get_xsize())
 				
 	def is_visible(self,n):
-		try: return self.coords[n][4]
+		try:
+			val = self.coords[n][4]
+			return True
 		except: return False
 	
 	def scroll_to(self,n,yonly=0):
@@ -1308,10 +1319,10 @@ class EMImageMXModule(EMGUIModule):
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			app =  QtGui.QApplication.instance()
 			try:
-				self.application.setOverrideCursor(Qt.ClosedHandCursor)
+				self.application().setOverrideCursor(Qt.ClosedHandCursor)
 				#app.setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				self.application.setOverrideCursor(Qt.SizeAllCursor)
+				self.application().setOverrideCursor(Qt.SizeAllCursor)
 				#app.setOverrideCursor(Qt.SizeAllCursor)
 				
 			self.mousedrag=(event.x(),event.y())
@@ -1328,7 +1339,7 @@ class EMImageMXModule(EMGUIModule):
 			self.mouse_event_handler.mouse_move(event)
 		
 	def mouseReleaseEvent(self, event):
-		self.application.setOverrideCursor(Qt.ArrowCursor)
+		self.application().setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img((event.x(),event.y()))
 		if self.mousedrag:
 			self.mousedrag=None
@@ -1348,7 +1359,7 @@ class EMImageMXModule(EMGUIModule):
 		
 		
 	def leaveEvent(self,event):
-		self.application.setOverrideCursor(Qt.ArrowCursor)
+		self.application().setOverrideCursor(Qt.ArrowCursor)
 		if self.mousedrag:
 			self.mousedrag=None
 			
@@ -1358,7 +1369,7 @@ class EMImageMXModule(EMGUIModule):
 class EMImageInspectorMX(QtGui.QWidget):
 	def __init__(self,target,allow_col_variation=False,allow_window_variation=False,allow_opt_button=False):
 		QtGui.QWidget.__init__(self,None)
-		self.target=target
+		self.target=weakref.ref(target)
 		
 		self.vals = QtGui.QMenu()
 		self.valsbut = QtGui.QPushButton("Values")
@@ -1366,7 +1377,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		
 		try:
 			self.vals.clear()
-			vn=self.target.get_image(0).get_attr_dict().keys()
+			vn=self.target().get_image(0).get_attr_dict().keys()
 			vn.sort()
 			for i in vn:
 				action=self.vals.addAction(i)
@@ -1454,7 +1465,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		
 		self.hbl.addWidget(self.valsbut)
 		
-		if self.target.using_ftgl():
+		if self.target().using_ftgl():
 			self.font_label = QtGui.QLabel("font size:")
 			self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
 			self.hbl.addWidget(self.font_label)
@@ -1462,10 +1473,10 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.font_size = QtGui.QSpinBox(self)
 			self.font_size.setObjectName("nrow")
 			self.font_size.setRange(1,50)
-			self.font_size.setValue(int(self.target.get_font_size()))
+			self.font_size.setValue(int(self.target().get_font_size()))
 			self.hbl.addWidget(self.font_size)
 			
-			QtCore.QObject.connect(self.font_size, QtCore.SIGNAL("valueChanged(int)"), target.set_font_size)
+			QtCore.QObject.connect(self.font_size, QtCore.SIGNAL("valueChanged(int)"), self.target().set_font_size)
 		
 		
 		if allow_col_variation:
@@ -1476,7 +1487,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.ncol = QtGui.QSpinBox(self)
 			self.ncol.setObjectName("ncol")
 			self.ncol.setRange(1,50)
-			self.ncol.setValue(self.target.get_rows())
+			self.ncol.setValue(self.target().get_rows())
 			self.hbl.addWidget(self.ncol)
 			
 		self.lbl = QtGui.QLabel("#/row:")
@@ -1486,7 +1497,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.nrow = QtGui.QSpinBox(self)
 		self.nrow.setObjectName("nrow")
 		self.nrow.setRange(1,50)
-		self.nrow.setValue(self.target.get_cols())
+		self.nrow.setValue(self.target().get_cols())
 		self.hbl.addWidget(self.nrow)
 		
 		if allow_window_variation:
@@ -1497,7 +1508,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.nmx = QtGui.QSpinBox(self)
 			self.nmx.setObjectName("ncol")
 			self.nmx.setRange(1,50)
-			self.nmx.setValue(self.target.get_mxs())
+			self.nmx.setValue(self.target().get_mxs())
 			self.hbl.addWidget(self.nmx)
 		
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
@@ -1506,8 +1517,8 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.vbl.addWidget(self.scale)
 		
 		self.mins = ValSlider(self,label="Min:")
-		minden = self.target.get_density_min()
-		maxden = self.target.get_density_max()
+		minden = self.target().get_density_min()
+		maxden = self.target().get_density_max()
 		self.mins.setValue(minden)
 		self.mins.setRange(minden,maxden)
 		self.mins.setObjectName("mins")
@@ -1536,17 +1547,17 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.highlim=1.0
 		
 		self.update_brightness_contrast()
-		self.hist.set_data(self.target.get_hist(),minden,maxden)
+		self.hist.set_data(self.target().get_hist(),minden,maxden)
 		self.busy=0
 		
 		QtCore.QObject.connect(self.vals, QtCore.SIGNAL("triggered(QAction*)"), self.newValDisp)
-		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), target.set_mx_cols)
+		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), self.target().set_mx_cols)
 		if allow_col_variation:
-			QtCore.QObject.connect(self.ncol, QtCore.SIGNAL("valueChanged(int)"), target.set_mx_rows)
+			QtCore.QObject.connect(self.ncol, QtCore.SIGNAL("valueChanged(int)"), self.target().set_mx_rows)
 		if allow_window_variation:
-			QtCore.QObject.connect(self.nmx, QtCore.SIGNAL("valueChanged(int)"), target.set_mxs)
+			QtCore.QObject.connect(self.nmx, QtCore.SIGNAL("valueChanged(int)"), self.target().set_mxs)
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), self.target().set_scale)
 		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
@@ -1560,7 +1571,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		QtCore.QObject.connect(self.bsavedata, QtCore.SIGNAL("clicked(bool)"), self.save_data)
 		if allow_opt_button:
-			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target.optimize_fit)
+			QtCore.QObject.connect(self.opt_fit, QtCore.SIGNAL("clicked(bool)"), self.target().optimize_fit)
 		QtCore.QObject.connect(self.bsavelst, QtCore.SIGNAL("clicked(bool)"), self.save_lst)
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
 	
@@ -1584,16 +1595,16 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.nmx = val
 	
 	def save_data(self):
-		self.target.save_data()
+		self.target().save_data()
 		
 	def save_lst(self):
-		self.target.save_lst()
+		self.target().save_lst()
 			
 	def snapShot(self):
 		"Save a screenshot of the current image display"
 		
 		#try:
-		qim=self.target.get_frame_buffer()
+		qim=self.target().get_frame_buffer()
 		#except:
 			#QtGui.QMessageBox.warning ( self, "Framebuffer ?", "Could not read framebuffer")
 		
@@ -1605,24 +1616,24 @@ class EMImageInspectorMX(QtGui.QWidget):
 		
 	def newValDisp(self):
 		v2d=[str(i.text()) for i in self.vals.actions() if i.isChecked()]
-		self.target.set_display_values(v2d)
+		self.target().set_display_values(v2d)
 
 	def setAppMode(self,i):
-		self.target.set_mouse_mode("app")
+		self.target().set_mouse_mode("app")
 	
 	#def setMeasMode(self,i):
 		#self.target.set_mouse_mode("meas")
 	
 	def setDelMode(self,i):
-		self.target.set_mouse_mode("del")
+		self.target().set_mouse_mode("del")
 	
 	def setDragMode(self,i):
-		self.target.set_mouse_mode("drag")
+		self.target().set_mouse_mode("drag")
 
 	def newMin(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.set_density_min(val)
+		self.target().set_density_min(val)
 
 		self.update_brightness_contrast()
 		self.busy=0
@@ -1630,7 +1641,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def newMax(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.set_density_max(val)
+		self.target().set_density_max(val)
 		self.update_brightness_contrast()
 		self.busy=0
 	
@@ -1649,7 +1660,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def newGamma(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.set_gamma(val)
+		self.target().set_gamma(val)
 		self.busy=0
 
 	def update_brightness_contrast(self):
@@ -1663,7 +1674,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0)
 		self.maxs.setValue(x1)
-		self.target.set_den_range(x0,x1)
+		self.target().set_den_range(x0,x1)
 		
 	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)

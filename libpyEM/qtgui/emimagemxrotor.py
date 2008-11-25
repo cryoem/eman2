@@ -61,8 +61,6 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 	def __init__(self, em_mx_rotor_module):
 		
 		assert(isinstance(em_mx_rotor_module,EMImageMXRotorModule))
-		
-		self.target = None
 		self.mmode = "drag"
 
 		fmt=QtOpenGL.QGLFormat()
@@ -70,13 +68,11 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 		fmt.setSampleBuffers(True)
 		#fmt.setDepthBuffer(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
-		EMEventRerouter.__init__(self)
+		EMEventRerouter.__init__(self,em_mx_rotor_module)
 		EMGLProjectionViewMatrices.__init__(self)
 		EMImageMXRotorWidget.allim[self]=0
 		
 		self.setFocusPolicy(Qt.StrongFocus)
-		
-		self.target = em_mx_rotor_module
 		
 		self.imagefilename = None
 		
@@ -90,10 +86,10 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 		self.resize(480,480)
 		
 	def set_data(self,data):
-		self.target.set_data(data)
+		self.target().set_data(data)
 	
 	def get_optimal_size(self):
-		lr = self.target.rotor.get_suggested_lr_bt_nf()
+		lr = self.target().rotor.get_suggested_lr_bt_nf()
 		width = lr[1] - lr[0]
 		height = lr[3] - lr[2]
 		return [width+20,height+20]
@@ -102,7 +98,7 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 	def set_image_file_name(self,name):
 		#print "set image file name",name
 		self.imagefilename = name
-		self.target.set_image_file_name(name)
+		self.target().set_image_file_name(name)
 		
 	def get_image_file_name(self):
 		return self.imagefilename
@@ -116,7 +112,8 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,1.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [.1,.1,1.,1.])
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE)
 
 		
 		glEnable(GL_DEPTH_TEST)
@@ -130,8 +127,8 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		#glLoadIdentity()
-		if ( self.target == None ): return
-		self.target.render()
+		if ( self.target() == None ): return
+		self.target().render()
 
 	
 	def resizeGL(self, width, height):
@@ -147,7 +144,7 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 		GL.glLoadIdentity()
 		
 		self.set_projection_view_update()
-		self.target.resize_event(width,height)
+		self.target().resize_event(width,height)
 	
 	def set_near_far(self,near,far):
 		self.z_near = near
@@ -160,7 +157,7 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.target.projection_or_viewport_changed()
+		self.target().projection_or_viewport_changed()
 		
 	def get_depth_for_height(self, height):
 		depth = height/(2.0*tan(self.fov/2.0*pi/180.0))
@@ -173,16 +170,16 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 
 	def set_mouse_mode(self,mode):
 		self.mmode = mode
-		self.target.set_mouse_mode(mode)
+		self.target().set_mouse_mode(mode)
 	
 	def dropEvent(self,event):
-		self.target.dropEvent(event)
+		self.target().dropEvent(event)
 	
 	def set_shapes(self,shapes,shrink):
-		self.target.set_shapes(shapes,shrink)
+		self.target().set_shapes(shapes,shrink)
 	
 	def set_frozen(self,frozen):
-		self.target.set_frozen(frozen)
+		self.target().set_frozen(frozen)
 	
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context to be created and this is what the True flag
@@ -193,13 +190,13 @@ class EMImageMXRotorWidget(QtOpenGL.QGLWidget,EMEventRerouter,EMGLProjectionView
 		# to get around it we would have to render everything without display lists (a supreme pain).
 		
 	def set_selected(self,n):
-		return self.target.set_selected(n)
+		return self.target().set_selected(n)
 	
 	def get_core_object(self):
-		return self.target
+		return self.target()
 	
 	def keyPressEvent(self,event):
-		self.target.keyPressEvent(event)
+		self.target().keyPressEvent(event)
 	
 class EMImageMXRotorModule(EMGUIModule):
 	
@@ -281,12 +278,12 @@ class EMImageMXRotorModule(EMGUIModule):
 
 	def __del__(self):
 		for widget in self.rotor.get_widgets():
-			self.application.deregister_qt_emitter(widget.get_drawable().get_drawable())
+			self.application().deregister_qt_emitter(widget.get_drawable().get_drawable())
 		
 	def __init_gl_widget(self):
 		self.widget = EM3DGLWindowOverride(self,self.rotor)
 		self.widget.set_enable_clip(False)
-		self.widget.set_draw_frame(True)
+		self.widget.set_draw_frame(False)
 		self.disable_mx_zoom()
 		self.disable_mx_translate()
 			
@@ -295,7 +292,7 @@ class EMImageMXRotorModule(EMGUIModule):
 			self.font_renderer = get_3d_font_renderer()
 			self.font_renderer.set_face_size(32)
 			self.font_renderer.set_depth(8)
-			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
+#			self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
 			self.font_render_mode = EMGUIModule.FTGL
 		except:
 			self.font_render_mode = EMGUIModule.GLUT
@@ -628,7 +625,7 @@ class EMImageMXRotorModule(EMGUIModule):
 
 	def __regenerate_rotor(self):
 		for widget in self.rotor.get_widgets():
-			self.application.deregister_qt_emitter(widget.get_drawable().get_drawable())
+			self.application().deregister_qt_emitter(widget.get_drawable().get_drawable())
 			self.rotor.clear_widgets()
 #		self.parent.updateGL() # i can't figure out why I have to do this (when this function is called from set_mxs
 		num_per_view = self.mx_rows*self.mx_cols
@@ -655,8 +652,8 @@ class EMImageMXRotorModule(EMGUIModule):
 				for i in range(start_idx,start_idx+num_per_view): d.append(self.emdata_list_cache[i])
 
 			e = EM2DGLView(self,d)
-			e.get_drawable().set_app(self.application)
-			self.application.register_qt_emitter(e.get_drawable(),self.application.get_qt_emitter(self))
+			e.get_drawable().set_app(self.application())
+			self.application().register_qt_emitter(e.get_drawable(),self.application().get_qt_emitter(self))
 			x = EM2DGLWindow(self,e)
 			self.rotor.add_widget(x)
 			
@@ -788,6 +785,10 @@ class EMImageMXRotorModule(EMGUIModule):
 	def get_frame_buffer(self):
 		return self.gl_widget.get_frame_buffer()
 	
+	
+	ligh_yellow_diffuse = (.84,.82,.38,1.0)
+	ligh_yellow_ambient = (.83,.83,.38,1.0)
+	ligh_yellow_specular = (.76,.75,.39,1.0)
 	def draw_hud(self):
 		width = self.gl_widget.viewport_width()
 		height =self.gl_widget.viewport_height()
@@ -797,17 +798,18 @@ class EMImageMXRotorModule(EMGUIModule):
 		glOrtho(0,width,0,height,-200,200)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		glEnable(GL_LIGHTING)
+		glDisable(GL_LIGHTING)
 		glEnable(GL_NORMALIZE)
-		glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 0.9, 0.2,1.0))
-		glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 0.9, 0.9,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(0.9, 0.5, 0.2,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,20.0)
+
+		glMaterial(GL_FRONT,GL_AMBIENT,EMImageMXRotorModule.ligh_yellow_ambient)
+		glMaterial(GL_FRONT,GL_DIFFUSE,EMImageMXRotorModule.ligh_yellow_diffuse)
+		glMaterial(GL_FRONT,GL_SPECULAR,EMImageMXRotorModule.ligh_yellow_specular)
+		glMaterial(GL_FRONT,GL_SHININESS,30.0)
 		
 		enable_depth = glIsEnabled(GL_DEPTH_TEST)
 		glDisable(GL_DEPTH_TEST)
 		glColor(1.0,1.0,1.0)
-		
+		glColor(*EMImageMXRotorModule.ligh_yellow_specular)
 		
 		if self.font_render_mode == EMImageMXModule.FTGL:
 			panels = self.get_num_panels()

@@ -52,6 +52,7 @@ from time import *
 from emglobjects import EMImage3DGUIModule, Camera, Camera2, EMViewportDepthTools
 from emimageutil import ImgHistogram, EMEventRerouter, EMTransformPanel
 from emapplication import EMStandAloneApplication, EMQtWidgetModule, EMGUIModule
+import weakref
 
 MAG_INCREMENT_FACTOR = 1.1
 
@@ -730,14 +731,13 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		fmt.setDepth(1)
 		fmt.setSampleBuffers(True)
 		QtOpenGL.QGLWidget.__init__(self,fmt)
-		EMEventRerouter.__init__(self)
+		EMEventRerouter.__init__(self,em_slice_viwer)
 		
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.startz = 1
 		self.endz = 5000
 		self.cam = Camera()
-		self.target = em_slice_viwer
 		self.cam.setCamTrans("default_z",-100)
 		
 		self.resize(640,640)
@@ -771,7 +771,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.cam.position()
 		
 		glPushMatrix()
-		self.target.render()
+		self.target().render()
 		glPopMatrix()
 		
 	def resizeGL(self, width, height):
@@ -792,7 +792,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.target.resizeEvent()
+		self.target().resizeEvent()
 
 	def get_start_z(self):
 		return self.startz
@@ -803,7 +803,7 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		return [width,height]
 
 	def show_inspector(self,force=0):
-		self.target.show_inspector(self,force)
+		self.target().show_inspector(self,force)
 
 	def get_render_dims_at_depth(self,depth):
 		# This function returns the width and height of the renderable 
@@ -817,8 +817,8 @@ class EMSymViewerWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 class EMSymInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
-		self.target=target
-		self.rotation_sliders = EMTransformPanel(target,self)
+		self.target=weakref.ref(target)
+		self.rotation_sliders = EMTransformPanel(self.target(),self)
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -883,7 +883,7 @@ class EMSymInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.triangletog, QtCore.SIGNAL("clicked(bool)"), target.triangletog)
 		QtCore.QObject.connect(self.arctog, QtCore.SIGNAL("clicked(bool)"), target.arctog)
 		QtCore.QObject.connect(self.tracetog, QtCore.SIGNAL("clicked(bool)"), self.toggle_trace)
-		QtCore.QObject.connect(self.reducetog, QtCore.SIGNAL("clicked(bool)"), self.target.reducetog)
+		QtCore.QObject.connect(self.reducetog, QtCore.SIGNAL("clicked(bool)"), self.target().reducetog)
 		QtCore.QObject.connect(self.lowrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
 		QtCore.QObject.connect(self.highrange, QtCore.SIGNAL("editingFinished()"), self.trace_update)
 		QtCore.QObject.connect(self.tracefile, QtCore.SIGNAL("editingFinished()"), self.trace_update)
@@ -911,10 +911,10 @@ class EMSymInspector(QtGui.QWidget):
 		return self.symtog.isChecked()
 	
 	def perturbtoggled(self,val):
-		self.target.regen_dl()
+		self.target().regen_dl()
 		
 	def angle_label_changed(self,string):
-		self.target.regen_dl()
+		self.target().regen_dl()
 		
 	def orient_label_changed(self,string):
 		label = string
@@ -925,7 +925,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.angle_label.addItem('delta')
 			self.angle_label.addItem('n')
 			
-		self.target.regen_dl()
+		self.target().regen_dl()
 
 	def sym_changed(self, sym):
 		if sym == ' D ' or sym == ' C ' or sym == ' H ':
@@ -933,7 +933,7 @@ class EMSymInspector(QtGui.QWidget):
 		else:
 			self.sym_text.setEnabled(False)
 		
-		self.target.regen_dl()
+		self.target().regen_dl()
 
 	def get_sym(self):
 		sym = self.sym_map[str(self.sym_combo.currentText())]
@@ -966,7 +966,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.hr = hr
 			self.lr = lr
 			
-			self.target.trace_update(file,lr,hr)
+			self.target().trace_update(file,lr,hr)
 
 	def toggle_trace(self,bool):
 		self.tracefile.setEnabled(bool)
@@ -1130,7 +1130,7 @@ class EMSymInspector(QtGui.QWidget):
 		return maintab
 
 	def slider_rotate(self):
-		self.target.load_rotation(self.get_current_rotation())
+		self.target().load_rotation(self.get_current_rotation())
 	
 	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)

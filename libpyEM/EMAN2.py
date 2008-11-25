@@ -88,7 +88,9 @@ def timer(fn,n=1):
 
 def E2init(argv) :
 	"""E2init(argv)
-This function is called to log information about the current job to the local logfile"""
+This function is called to log information about the current job to the local logfile. The flags stored for each process
+are pid, start, args, progress and end. progress is from 0.0-1.0 and may or may not be updated. end is not set until the process
+is complete. If the process is killed, 'end' may never be set."""
 	global HOMEDB
 	if HOMEDB :
 		if not HOMEDB.history.has_key("count") : HOMEDB.history["count"]=1
@@ -108,10 +110,28 @@ This function is called to log information about the current job to the local lo
 		except:
 			n=1
 			sdb["count"]=n
-		sdb[str(n)]={"pid":os.getpid(),"start":time.time(),"args":argv}
+		sdb[str(n)]={"pid":os.getpid(),"start":time.time(),"args":argv,"progress":0.0}
 		sdb.close()
 
 	return n
+
+def E2progress(n,progress):
+	"""Updates the progress fraction (0.0-1.0) for a running job. Negative values may optionally be
+set to indicate an error exit."""
+	global HOMEDB
+	
+	if HOMEDB :
+		d=HOMEDB.history[n]
+		d["progress"]=progress
+		HOMEDB.history[n]=d
+	else :
+		db=shelve.open(".eman2log")
+		d=db[str(n)]
+		d["progress"]=progress
+		db[str(n)]=d
+	
+	return n
+	
 
 def E2end(n):
 	"""E2end(n)
@@ -121,12 +141,14 @@ This function is called to log the end of the current job. n is returned by E2in
 	if HOMEDB :
 		d=HOMEDB.history[n]
 		d["end"]=time.time()
+		d["progress"]=1.0
 		HOMEDB.history[n]=d
 		HOMEDB.close_dict("history")
 	else :
 		db=shelve.open(".eman2log")
 		d=db[str(n)]
 		d["end"]=time.time()
+		d["progress"]=1.0
 		db[str(n)]=d
 		db.close()
 	
@@ -394,8 +416,12 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 		if show:
 			try: os.system("display "+path)
 			except: pass
-			
-def process_running(pid):
+
+def kill_process(pid):
+	'''
+	platform independent way of kill a process 
+	'''
+	import os
 	import platform
 	platform_string = platform.system()
 	if platform == "Windows":
@@ -404,6 +430,29 @@ def process_running(pid):
 		try:
 			# I _think_ this will work but could definitely be wrong
 			handle = win32api.OpenProcess(1, 0, pid)
+			win32api.TerminateProcess(handle,-1)
+			win32api.CloseHandle(handle)
+			return 1
+		except:
+			return 0
+	else:
+		try:
+			os.kill(pid,1)
+			return 1
+		except:
+			return 0
+
+def process_running(pid):
+	import platform
+	import os
+	platform_string = platform.system()
+	if platform == "Windows":
+		# taken from http://www.python.org/doc/faq/windows/#how-do-i-emulate-os-kill-in-windows
+		import win32api
+		try:
+			# I _think_ this will work but could definitely be wrong
+			handle = win32api.OpenProcess(1, 0, pid)
+			#win32api.CloseHandle(handle) # is this necessary?
 			return 1
 		except:
 			return 0
@@ -577,6 +626,51 @@ def gm_time_string():
 	
 	val = str(b[3])+':'+str(b[4])+':'+str(b[5])+decimalseconds +' '+str(b[2])+'-'+str(b[1])+'-'+str(b[0])
 	return val
+
+def check_files_are_2d_images(filenames):
+	'''
+	Checks that the files exist, are valid EM types, and are non matrix 2D images
+	'''
+	fine, message = check_files_are_em_images(filenames)
+	if not fine:
+		return fine, message
+	else:
+		for name in filenames:
+			if EMUtil.get_image_count(name) > 1:
+				return False, "Image contains more than one image :", name
+			
+			else:
+				read_header_only = True
+				a = EMData()
+				# this is guaranteed not to raise unless the image has been removed from disk since the last call to check_files_are_em_images
+				a.read_image(name,0,read_header_only)
+				if a.get_ndim() != 2:
+					return False, "Image is not 2D :", name
+				
+		return True, "Images are all valid and 2D"
+			
+
+def check_files_are_em_images(filenames):
+	'''
+	Checks a list of filenames to first verify that they exist, and secondly to verify that they are valid EM images
+	Returns bool, string where bool means the filenames are good, and the string is an error message or similar
+	'''
+	for file in filenames:
+		if not os.path.exists(file):
+		  	try:
+		  		is_db = db_check_dict(file)
+		  		if not is_db: raise
+		  	except: return False, "File doesn't exist:"+file
+		  	
+		read_header_only = True
+		a = EMData()
+		try:
+			a.read_image(file,0,read_header_only)
+		except:
+			return False, "File is not a valid EM image:"+file
+			
+	return True,"images are fine"
+	
 # A function for checking if a file exists
 # basically wraps os.path.exists, but when an img or hed file is the argument, it
 # checks for the existence of both images

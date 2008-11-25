@@ -175,6 +175,20 @@ def db_list_dicts(url):
 ##########
 #### replace a few EMData methods with python versions to intercept 'bdb:' filenames
 ##########
+def db_emd_init(self,*parms):
+	try :
+		if len(parms)==2 and parms[0][:4].lower()=="bdb:":
+			self.__initc()
+			self.read_image(*parms)
+			return
+		raise Exception
+	except:
+		return self.__initc(*parms)	
+
+EMData.__initc=EMData.__init__
+EMData.__init__=db_emd_init
+
+
 def db_read_image(self,fsp,*parms):
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,True,True)
@@ -184,8 +198,10 @@ def db_read_image(self,fsp,*parms):
 		if keys:
 			key=keys[parms[0]]
 		else: key=parms[0]
+#		try :
 		x=db.get(key,target=self,nodata=nodata)
-		if not x : raise Exception("Could not access "+str(fsp)+" "+str(parms))
+#		except: 
+#			raise Exception("Could not access "+str(fsp)+" "+str(key))
 		return None
 	return self.read_image_c(fsp,*parms)
 
@@ -699,7 +715,6 @@ class DBDict:
 				ret=target
 			else: ret=EMData(r["nx"],r["ny"],r["nz"])
 			# metadata
-			n=loads(self.bdb.get(fkey+dumps(key,-1)))
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
 			for i in k: ret.set_attr(i,r[i])
@@ -710,6 +725,8 @@ class DBDict:
 					p,l=r["data_path"].split("*")
 					ret.read_data(p,int(l))
 				else:
+					try: n=loads(self.bdb.get(fkey+dumps(key,-1)))
+					except: raise KeyError,"Undefined data location key for : ",key
 					ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			return ret
 		return r

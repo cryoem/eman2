@@ -1110,6 +1110,11 @@ def varfctf(data, mask = None, mode=""):
 def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0):
 	"""
 	  Calculate variance in Fourier space of an object reconstructed from projections
+	  
+	  Known problems: properly speaking, the SSNR has to be calculated using snr=inf and this is what recons3d_nn_SSNR_MPI does.
+	  So, when one computes reference structure, snr should be 1.0e20.  However, when the reference structure is passed
+	  from the reconstruction program, it was computed using different snr.  I tested it and in practice there is no difference,
+	  as this only changes the background variance due to reconstruction algorithm, which is much lower anyway.  PAP.
 	"""
 	from reconstruction import   recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import   bcast_EMData_to_all, model_blank
@@ -1123,7 +1128,7 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 	else:        radius = int(ou)
 	if(reference_structure == None):
 		if CTF :
-			snr = 1.0e20
+			snr = 1.0#e20
 			if myid == 0 : reference_structure = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
 			else :
 				recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
@@ -1132,7 +1137,7 @@ def varf3d_MPI(prjlist,ssnr_text_file = None, mask2D = None, reference_structure
 			if myid == 0 : reference_structure = recons3d_4nn_MPI(myid, prjlist, sym)
 			else:           recons3d_4nn_MPI(myid, prjlist, sym)
 		bcast_EMData_to_all(reference_structure, myid, 0)
-	if myid == 0:  reference_structure.write_image("refer.hdf",0)
+	#if myid == 0:  reference_structure.write_image("refer.hdf",0)
 	#vol *= model_circle(radius, nx, nx, nx)
 	volft,kb = prep_vol(reference_structure)
 	del reference_structure

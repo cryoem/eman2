@@ -45,7 +45,7 @@ import numpy
 from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
-
+import weakref
 from time import *
 
 from emglobjects import Camera2, EMImage3DGUIModule, EMViewportDepthTools, Camera2, Camera,get_default_gl_colors
@@ -346,7 +346,7 @@ class EMIsosurfaceModule(EMImage3DGUIModule):
 class EMIsoInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
-		self.target=target
+		self.target=weakref.ref(target)
 		self.rotation_sliders = EMTransformPanel(target,self)
 		
 		self.vbl = QtGui.QVBoxLayout(self)
@@ -440,7 +440,7 @@ class EMIsoInspector(QtGui.QWidget):
 	
 	
 	def update_material(self):
-		self.target.isocolor = "custom"
+		self.target().isocolor = "custom"
 		custom = {}
 		
 		custom["ambient"] = [self.ambient_tab.r.getValue(), self.ambient_tab.g.getValue(), self.ambient_tab.b.getValue(),1.0]
@@ -448,16 +448,16 @@ class EMIsoInspector(QtGui.QWidget):
 		custom["specular"] = [self.specular_tab.r.getValue(), self.specular_tab.g.getValue(), self.specular_tab.b.getValue(),1.0]
 		custom["emission"] = [self.emission_tab.r.getValue(), self.emission_tab.g.getValue(), self.emission_tab.b.getValue(),1.0]
 		custom["shininess"] = self.shininess.getValue()
-		self.target.colors["custom"] = custom
+		self.target().colors["custom"] = custom
 		
 		n = self.cbb.findText(QtCore.QString("custom"))
 		if n < 0: return
 		self.cbb.setCurrentIndex(n)
-		self.target.updateGL()
+		self.target().updateGL()
 	
 	def set_material(self,color):
-		self.target.set_material(color)
-		material = self.target.get_material()
+		self.target().set_material(color)
+		material = self.target().get_material()
 		
 		self.ambient_tab.r.setValue(material["ambient"][0])
 		self.ambient_tab.g.setValue(material["ambient"][1])
@@ -559,7 +559,7 @@ class EMIsoInspector(QtGui.QWidget):
 	
 	def toggle_texture(self):
 		self.texture = not self.texture
-		self.target.toggle_texture()
+		self.target().toggle_texture()
 		self.get_texture_tab().setEnabled(self.texture)
 	
 	def get_texture_tab(self):
@@ -632,7 +632,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.smp.setMaximum(1+range-1)
 	
 	def slider_rotate(self):
-		self.target.load_rotation(self.get_current_rotation())
+		self.target().load_rotation(self.get_current_rotation())
 	
 	
 	def set_materials(self,colors,current_color):
@@ -644,7 +644,7 @@ class EMIsoInspector(QtGui.QWidget):
 			a += 1
 
 	def on_threshold_slider(self,val):
-		self.target.set_threshold(val)
+		self.target().set_threshold(val)
 		self.bright.setValue(-val,True)
 		
 	def set_thresholds(self,low,high,val):

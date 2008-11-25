@@ -44,12 +44,13 @@ import sys
 from Simplex import Simplex
 
 debug=False
+logid=None
 
 sfcurve=None		# This will store a global structure factor curve if specified
 envelopes=[]		# simplex minimizer needs to use a global at the moment
-
+import weakref
 def main():
-	global debug
+	global debug,logid
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input stack/image> ...
 	
@@ -145,9 +146,13 @@ images far from focus."""
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
 		img_sets = get_gui_arg_img_sets(options.filenames)
+		if len(img_sets) == 0:
+			E2end(logid)
+			exit(1)
 		from emapplication import EMStandAloneApplication
 		app=EMStandAloneApplication()
 		gui=GUIctfModule(app,img_sets)
+		gui.show_guis()
 		app.exec_()
 
 		print "done execution"
@@ -168,6 +173,9 @@ def get_gui_arg_img_sets(filenames):
 	img_sets = []
 	for file in filenames:
 		name = get_file_tag(file)
+		if not db_parms.has_key(name):
+			print "error, you must first run auto fit before running the gui - there are no parameters for",name
+			return []
 		img_set = db_parms[name]
 		ctf=EMAN2Ctf()
 		ctf.from_string(img_set[0]) # convert to ctf object seeing as it's a string
@@ -179,10 +187,12 @@ def get_gui_arg_img_sets(filenames):
 	return img_sets
 
 def write_e2ctf_output(options):
-	# write wiener filtered and/or phase flipped particle data to the local database
+	"write wiener filtered and/or phase flipped particle data to the local database"
+	global logid
+	
 	if options.phaseflip or options.wiener:
 		db_parms=db_open_dict("bdb:e2ctf.parms")
-		for filename in options.filenames:
+		for i,filename in enumerate(options.filenames):
 			name=get_file_tag(filename)
 			if debug: print "Processing ",filename
 
@@ -204,9 +214,11 @@ def write_e2ctf_output(options):
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
+			if logid : E2progress(logid,float(i)/len(options.filenames))
 	
 def pspec_and_ctf_fit(options,debug=False):
-	### Power spectrum and CTF fitting
+	"Power spectrum and CTF fitting"
+	global logid
 	img_sets=[]
 
 	db_project=db_open_dict("bdb:project")
@@ -235,7 +247,13 @@ def pspec_and_ctf_fit(options,debug=False):
 			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
 			
 		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
-
+		if logid : E2progress(logid,float(i)/len(options.filenames))
+		
+	project_db = db_open_dict("bdb:project")
+	project_db["global.microscope_voltage"] = options.voltage
+	project_db["global.microscope_cs"] = options.cs
+	project_db["global.apix"] = options.apix
+	
 	return img_sets
 
 def env_cmp(sca):
@@ -670,11 +688,14 @@ class GUIctfModule(EMQtWidgetModule):
 	def __init__(self,application,data):
 		self.guictf = GUIctf(application,data,self)
 		EMQtWidgetModule.__init__(self,self.guictf,application)
-		self.application = application
-		self.application.show_specific(self)
+		self.application = weakref.ref(application)
+		self.setWindowTitle("CTF")
 		
 	def get_desktop_hint(self):
 		return "inspector"
+	
+	def show_guis(self):
+		self.guictf.show_guis()
 		
 class GUIctf(QtGui.QWidget):
 	def __init__(self,application,data,module=None):
@@ -693,8 +714,8 @@ class GUIctf(QtGui.QWidget):
 			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
 			sys.exit(1)
 		
-		self.app = application
-		self.module = module
+		self.app = weakref.ref(application)
+		self.module = weakref.ref(module)
 		
 		QtGui.QWidget.__init__(self,None)
 		
@@ -702,13 +723,12 @@ class GUIctf(QtGui.QWidget):
 		self.curset=0
 		self.plotmode=0
 		
-		self.guiim=EMImage2DModule(application=self.app)
-		self.app.show_specific(self.guiim)
-		self.guiplot=EMPlot2DModule(application=self.app)
-		self.app.show_specific(self.guiplot)
+		self.guiim=EMImage2DModule(application=self.app())
+		self.guiplot=EMPlot2DModule(application=self.app())
 		
-		im_qt_target = self.app.get_qt_emitter(self.guiim)
-		plot_qt_target = self.app.get_qt_emitter(self.guiplot)
+		# FIXME these "emitters" might be unnecessary.
+		im_qt_target = self.app().get_qt_emitter(self.guiim)
+		plot_qt_target = self.app().get_qt_emitter(self.guiplot)
 		
 		im_qt_target.connect(im_qt_target,QtCore.SIGNAL("mousedown"),self.imgmousedown)
 		im_qt_target.connect(im_qt_target,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
@@ -765,7 +785,17 @@ class GUIctf(QtGui.QWidget):
 		
 		self.scs=ValSlider(self,(0,5),"Cs (mm):",0,90)
 		self.vbl.addWidget(self.scs)
-
+		self.hbl_buttons = QtGui.QHBoxLayout()
+		self.saveparms = QtGui.QPushButton("Save parms")
+		self.recallparms = QtGui.QPushButton("Recall")
+		self.output = QtGui.QPushButton("Output")
+		self.hbl_buttons.addWidget(self.saveparms)
+		self.hbl_buttons.addWidget(self.recallparms)
+		self.hbl_buttons2 = QtGui.QHBoxLayout()
+		self.hbl_buttons2.addWidget(self.output)
+		self.vbl.addLayout(self.hbl_buttons)
+		self.vbl.addLayout(self.hbl_buttons2)
+		
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
 #		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
@@ -775,20 +805,87 @@ class GUIctf(QtGui.QWidget):
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
 
+	   	QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
+		QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
+		QtCore.QObject.connect(self.output,QtCore.SIGNAL("clicked(bool)"),self.on_output)
+		
 		self.update_data()
 		
+		self.update_data()
+		self.resize(460,380) # figured these values out by printing the width and height in resize event
+		
+#	def resizeEvent(self,event):
+#		print self.width(),self.height()
+	def on_save_params(self):
+		
+		if len(self.setlist.selectedItems()) == 0: return
+			
+		val = self.curset
+		name = str(self.setlist.item(val).text())
+		name = get_file_tag(name)
+		
+#		if not db_check_dict(name):
+#			print "error, the db doesn't exist:",name
+#			
+		db_parms=db_open_dict("bdb:e2ctf.parms")
+		ctf = self.data[val][1].to_string()
+		output = []
+		for i,val in enumerate(self.data[val]):
+			# ignore i == 0 it's just the filename
+			if i > 1:
+				output.append(val)
+			elif i == 1:
+				output.append(ctf)
+
+		db_parms[name] = output
+
+	def on_recall_params(self):
+		if len(self.setlist.selectedItems()) == 0: return
+			
+		val = self.curset
+		name = str(self.setlist.item(val).text())
+		data = [name]
+		name = get_file_tag(name)
+		
+		db_parms=db_open_dict("bdb:e2ctf.parms")
+		if not db_parms.has_key(name):
+			print "error, ctf parameters do not exist for:",name
+#			
+		
+		data.extend(db_parms[name])
+		ctf=EMAN2Ctf()
+		ctf.from_string(data[1])
+		data[1] = ctf
+		
+		self.data[val] = data
+		self.newSet(self.curset)
+	
+#	def get_output_params(self):
+	
+	def on_output(self):
+		from emsprworkflow import E2CTFOutputTaskAlternate
+		self.form = E2CTFOutputTaskAlternate(self.app())
+		self.form.run_form()
+	
+	def show_guis(self):
+		if self.guiim != None:
+			self.app().show_specific(self.guiim)
+		if self.guiplot != None:
+			self.app().show_specific(self.guiplot)
+		
+		self.app().show_specific(self.module())
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()
 		if self.guiim != None:
-			self.app.close_specific(self.guiim)
+			self.app().close_specific(self.guiim)
 			self.guiim = None 
 		if self.guiplot != None:
-			self.app.close_specific(self.guiplot)
-		self.app.close_specific(self)
+			self.app().close_specific(self.guiplot)
 		event.accept()
 		if self.module != None:
-			self.module.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
+			self.app().close_specific(self.module())
+			self.module().emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
 
 	def newData(self,data):
 		self.data=data
@@ -837,7 +934,7 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data("ssnr",(s,ssnr[:len(s)]))
 		elif self.plotmode==4:
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
-			for i in range(1,len(snr)): snr[i]+=snr[i-1]			# integrate
+			for i in range(1,len(snr)): snr[i]=snr[i]*i+snr[i-1]			# integrate SNR*s
 			for i in range(1,len(snr)): snr[i]/=snr[-1]				# normalize
 			self.guiplot.set_data("snr",(s,snr[:len(s)]),True)
 

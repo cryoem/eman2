@@ -99,7 +99,8 @@ Various utilities related to BDB databases."""
 							print "\r  ",vstackn,"     ",
 							sys.stdout.flush()
 						except: pass	
-			print " "
+				print "\r  ",vstackn,"     "
+
 		try: maxname=max([len(s) for s in dbs])
 		except: 
 			print "Error reading ",path
@@ -108,20 +109,22 @@ Various utilities related to BDB databases."""
 		# long listing, one db per line
 		if options.long :
 			width=maxname+3
-			fmt="%%-%ds %%-07d %%dx%%dx%%d  %%s"%width
+			fmt="%%-%ds %%-07d %%14s  %%s"%width
 			fmt2="%%-%ds (not an image stack)"%width
+			total=[0,0]
 			for db in dbs:
-				dct=db_open_dict(path+"#"+db)
+				dct=db_open_dict(path+db)
 				first=EMData()
 				try: 
-					first.read_image(path+"#"+db,0,True)
+					first.read_image(path+db,0,True)
 					size=first.get_xsize()*first.get_ysize()*first.get_zsize()*len(dct)*4;
-					if size>1000000000: size="%1.2f gb"%(size/1000000000)
-					elif size>1000000: size="%1.2f mb"%(size/1000000)
-					else: size="%1.2f kb"%(size/1000)
-					print fmt%(db,len(dct),first.get_xsize(),first.get_ysize(),first.get_zsize(),size)
+					total[0]+=len(dct)
+					total[1]+=size
+					print fmt%(db,len(dct),"%dx%dx%d"%(first.get_xsize(),first.get_ysize(),first.get_zsize()),human_size(size))
 				except:
 					print fmt2%db
+			print fmt%("TOTAL",total[0],"",human_size(total[1]))
+
 		elif options.short :
 			for db in dbs:
 				print path+db,
@@ -139,7 +142,12 @@ Various utilities related to BDB databases."""
 					try: print fmt%dbs[r+c*rows],
 					except: pass
 				print " "
-			
+
+def human_size(size):
+	if size>1000000000: return "%1.2f gb"%(size/1000000000)
+	elif size>1000000: return "%1.2f mb"%(size/1000000)
+	else: return "%1.2f kb"%(size/1000)
+	return str(size)
 			
 if __name__ == "__main__":
 	main()

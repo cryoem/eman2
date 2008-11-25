@@ -1,4 +1,5 @@
-# Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+#
+# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -519,7 +520,7 @@ def ali2d_a_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 				for im in xrange(image_start, image_end):
 					this_select = data[im-image_start].get_attr("select")
 					select += this_select
-			select  = mpi_reduce(select, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			select = mpi_reduce(select, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			
 			total_iter += 1
 			
@@ -809,7 +810,7 @@ def ali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-
 			else:	a0 = a1
 	drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
-	if CTF and data_had_ctf == 0:
+	if CTF and ctf_applied == 0:
 		for im in xrange(nima):	data[im].set_attr('ctf_applied', 0)
 	from utilities import write_headers
 	write_headers(stack, data, range(nima))
@@ -920,7 +921,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		data_had_ctf = ima.get_attr("ctf_applied")
+		ctf_applied = ima.get_attr("ctf_applied")
 		ctm = ctf_2(nx, ctf_params)
 		lctf = len(ctm)
 		ctf2 = []
@@ -1049,7 +1050,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	if myid == main_node:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers  and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
-	if CTF and data_had_ctf == 0:
+	if CTF and ctf_applied == 0:
 		for im in xrange(len(data)):  data[im].set_attr('ctf_applied', 0)
 	par_str = ["xform.align2d"]
 	if myid == main_node: recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
@@ -1547,7 +1548,7 @@ def ali2d_m_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrng=0
 		data[im-image_start].set_attr('ID', im)
 		if CTF:
 			ctf_params = data[im-image_start].get_attr( "ctf" )
-			if data[im-image_store].get_attr("ctf_applied") == 0:
+			if data[im-image_start].get_attr("ctf_applied") == 0:
 				st = Util.infomask(data[im-image_start], mask, False)
 				data[im-image_start] -= st[0]
 				from filter import filt_ctf
@@ -2915,7 +2916,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
-	else:         mask3D = model_circle(last_ring, nx, nx, nx)
+	else: mask3D = model_circle(last_ring, nx, nx, nx)
 	mask = model_circle(last_ring, nx, nx)
 
 	if CTF:	from reconstruction import rec3D_MPI
@@ -2940,7 +2941,7 @@ def ali3d_d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
 	if debug:
-		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
+		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
 		finfo.flush()
 
 	data = EMData.read_images(stack, list_of_particles)
@@ -4266,7 +4267,7 @@ def ali3d_e(stack, ref_vol, outdir, maskfile = None, ou = -1,  delta = 2, center
 		from reconstruction import recons3d_4nn_ctf
 	else   : from reconstruction import recons3d_4nn
 
-	if os.path.exists(outdir):  os.system('rm -rf '+outdir)
+	if os.path.exists(outdir): os.system('rm -rf '+outdir)
 	os.mkdir(outdir)
 
 	last_ring   = int(ou)

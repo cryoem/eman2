@@ -37,6 +37,8 @@ import numpy
 from EMAN2 import *
 from valslider import ValSlider
 from emanimationutil import Animator
+import weakref
+
 
 class EventsEmitterAndReciever:
 	def __init__(self):
@@ -52,8 +54,12 @@ class EventsEmitterAndReciever:
 
 class EMEventRerouter:
 	def __init__(self,target=None):
-		self.target = target
-		self.orig_target  = target
+		if target != None:
+			self.target = weakref.ref(target)
+			self.orig_target  = weakref.ref(target)
+		else:
+			self.target = None
+			self.orig_target = None
 		self.selected_object = None
 		self.multi_selected_objects = [] # as grown using "ctrl-click" selection, for event master slave relationships
 		
@@ -61,50 +67,53 @@ class EMEventRerouter:
 		self.target = target
 		
 	def unlock_target(self):
-		self.target = self.orig_target
+		self.target = self.orig_target # will this work in the weak ref approach ???
 
 	def set_target(self,target):
-		self.target = target
-		self.orig_target  = target
+		self.target = weakref.ref(target)
+		self.orig_target  = weakref.ref(target)
+#		self.target = target
+#		self.orig_target  = target
 
 	def mousePressEvent(self, event):
-		self.target.mousePressEvent(event)
+		self.target().mousePressEvent(event)
 			
 	def wheelEvent(self,event):
-		self.target.wheelEvent(event)
+		self.target().wheelEvent(event)
 	
 	def mouseMoveEvent(self,event):
-		self.target.mouseMoveEvent(event)
+		self.target().mouseMoveEvent(event)
 
 	def mouseReleaseEvent(self,event):
-		self.target.mouseReleaseEvent(event)
+		self.target().mouseReleaseEvent(event)
 		
 	def mouseDoubleClickEvent(self,event):
-		self.target.mouseDoubleClickEvent(event)
+		self.target().mouseDoubleClickEvent(event)
 		
 	def keyPressEvent(self,event):
-		self.target.keyPressEvent(event)
+		self.target().keyPressEvent(event)
 		
 	def dropEvent(self,event):
-		self.target.dropEvent(event)
+		self.target().dropEvent(event)
 		
 	def closeEvent(self,event) :
-		self.target.closeEvent(event)
+		self.target().closeEvent(event)
 		
 	def dragEnterEvent(self,event):
-		self.target.dragEnterEvent(event)
+		self.target().dragEnterEvent(event)
 		
 	def keyPressEvent(self,event):
-		self.target.keyPressEvent(event)
+		self.target().keyPressEvent(event)
 
 	def leaveEvent(self,event):
-		self.target.leaveEvent(event)
-		
+		try:
+			self.target().leaveEvent(event)
+		except: print "leave failed"
 	def get_core_object(self):
-		return self.target
+		return self.target()
 	
 	def get_target(self):
-		return self.target # use this one instead of the above
+		return self.target() # use this one instead of the above
  
  
 class EMEventRerouterToList:
@@ -116,7 +125,7 @@ class EMEventRerouterToList:
 		self.orig_targets  = targets
 		self.selected_object = None
 		self.multi_selected_objects = [] # as grown using "ctrl-click" selection, for event master slave relationships
-		
+	
 	def lock_target(self,target):
 		self.targets = [target]
 		
@@ -169,9 +178,9 @@ class EMEventRerouterToList:
 			
 	def keyPressEvent(self,event):
 		for target in self.targets:
-			if event.isAccepted(): return
-			self.target.keyPressEvent(event)
-			
+			if target.keyPressEvent(event):
+				return
+
 	def dropEvent(self,event):
 		for target in self.targets:
 			if event.isAccepted():return
@@ -189,6 +198,7 @@ class EMEventRerouterToList:
 
 	def leaveEvent(self,event):
 		for target in self.targets:
+			
 			target.leaveEvent(event)
 
 	def get_targets(self):
@@ -196,8 +206,8 @@ class EMEventRerouterToList:
 
 class EMTransformPanel:
 	def __init__(self,target,parent):
-		self.target = target
-		self.parent = parent
+		self.target = weakref.ref(target)
+		self.parent = weakref.ref(parent)
 		
 		self.label_src = QtGui.QLabel(parent)
 		self.label_src.setText('Rotation Convention')
@@ -253,10 +263,10 @@ class EMTransformPanel:
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), self.target().set_scale)
+		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), self.target().set_cam_x)
+		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), self.target().set_cam_y)
+		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), self.target().set_cam_z)
 		
 		
 	def set_defaults(self):
@@ -269,7 +279,7 @@ class EMTransformPanel:
 		self.phi.setValue(0.0)
 		
 	def slider_rotate(self):
-		self.target.load_rotation(self.get_current_rotation())
+		self.target().load_rotation(self.get_current_rotation())
 		
 	def get_current_rotation(self):
 		convention = self.src.currentText()
@@ -331,7 +341,7 @@ class EMTransformPanel:
 		t3d = self.get_current_rotation()
 		
 		if (self.n3_showing) :
-			self.parent.get_transform_layout().removeWidget(self.n3)
+			self.parent().get_transform_layout().removeWidget(self.n3)
 			self.n3.deleteLater()
 			self.n3_showing = False
 			self.az.setRange(-360,360)
@@ -366,10 +376,10 @@ class EMTransformPanel:
 			self.alt.setLabel('n1')
 			self.phi.setLabel('n2')
 			
-			self.n3 = ValSlider(self.parent,(-360.0,360.0),"n3",-1)
+			self.n3 = ValSlider(self.parent(),(-360.0,360.0),"n3",-1)
 			self.n3.setRange(-1,1)
 			self.n3.setObjectName("n3")
-			self.parent.get_transform_layout().addWidget(self.n3)
+			self.parent().get_transform_layout().addWidget(self.n3)
 			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
 			self.n3_showing = True
 		

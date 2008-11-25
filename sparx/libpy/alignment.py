@@ -405,9 +405,7 @@ def select_major_peaks(g, max_major_peaks, min_height):
 	
 	G = fft(g)
 	
-	"""	
 	found = False
-	
 	min_fl = 0.005
 	max_fl = 0.5
 	
@@ -417,19 +415,15 @@ def select_major_peaks(g, max_major_peaks, min_height):
 		K = len(peakg)
 		list_a = [0.0]*K
 		for i in xrange(K):  list_a[i] = peakg[i][4]
-		k = find_postion(list_a, min_height)
-		if k > max_major_peaks: 
-			a = 2	
-	"""
-		
-	for i in xrange(50):
-		fl = 0.5-i*0.01
-		peakg = peak_search(fft(filt_gaussl(G, fl)), 1000)
-		K = len(peakg)
-		list_a = [0.0]*K
-		for i in xrange(K):  list_a[i] = peakg[i][4]
 		k = find_position(list_a, min_height)
-		if k <= max_major_peaks: break
+		if k > max_major_peaks: 
+			max_fl = fl
+		elif k < max_major_peaks:
+			min_fl = fl
+		else:
+			found = True
+		if max_fl - min_fl < 0.001: found = True
+		 
 	return peakg[0:k] 
 
 
@@ -589,7 +583,9 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 	from random import random
 
 	# Determine the current temperature
-	T = T0*pow(F, Iter)	
+	T = T0*pow(F, Iter)
+	max_peak = 5
+	DEG_to_RAD = pi/180.0	
 
 	if T > 0.001 and Iter < SA_stop:
 	
@@ -604,22 +600,17 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 		sy_m = peaks_major[select_major][7]
 		
 		neighbor = []
-		min_dist = 1e22
 		for i in xrange(len(peaks)):
 			ang = peaks[i][1]
 			sx = peaks[i][6]
 			sy = peaks[i][7]		
-			dist = 64*abs(sin((ang-ang_m)/2/180*pi))+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
-			if dist < 5.0: neighbor.append(i)
-			if dist < min_dist:
-				min_dist = dist
-				select_s = i
-		
-		if len(neighbor) != 0:
-			K = len(neighbor)
-			dJe = [0.0]*K
-			for k in xrange(K):   dJe[k] = peaks[neighbor[k]][4]
-			select_s = neighbor[select_k(dJe, T)]
+			dist = 64*abs(sin((ang-ang_m)/2*DEG_to_RAD))+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
+			neighbor.append([dist, i])
+		neighbor.sort()
+
+		dJe = [0.0]*max_peak
+		for k in xrange(max_peak):   dJe[k] = peaks[neighbor[k][1]][4]
+		select_s = neighbor[select_k(dJe, T)][1]
 			
 		#############################################################################################################
 
@@ -634,29 +625,21 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 		sy_m = peakm_major[select_major][7]
 		
 		neighbor = []
-		min_dist = 1e22
 		for i in xrange(len(peakm)):
 			ang = peakm[i][1]
 			sx = peakm[i][6]
 			sy = peakm[i][7]		
-			dist = 64*abs(sin((ang-ang_m)/2/180*pi))+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
-			if dist < 5.0: neighbor.append(i)
-			if dist < min_dist:
-				min_dist = dist
-				select_m = i
+			dist = 64*abs(sin((ang-ang_m)/2*DEG_to_RAD))+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
+			neighbor.append([dist, i])
+		neighbor.sort()
 
-		if len(neighbor) != 0:
-			K = len(neighbor)
-			dJe = [0.0]*K
-			for k in xrange(K):   dJe[k] = peakm[neighbor[k]][4]
-			select_m = neighbor[select_k(dJe, T)]
-			
+		dJe = [0.0]*max_peak
+		for k in xrange(max_peak):   dJe[k] = peakm[neighbor[k][1]][4]
+		select_m = neighbor[select_k(dJe, T)][1]
+
 		ps = peaks[select_s][0]
 		pm = peakm[select_m][0]
-		p = [0.0]*2
-		p[0] = 1.0
-		p[1] = min(ps/pm, pm/ps)
-		pk = select_k(p, T)
+		pk = select_k([1.0, min(ps/pm, pm/ps)], T)
 		
 		if ps > pm and pk == 0 or ps < pm and pk == 1: use_mirror = 0
 		else: use_mirror = 1

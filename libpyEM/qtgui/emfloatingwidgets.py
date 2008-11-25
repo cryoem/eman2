@@ -58,12 +58,15 @@ from emplot2d import EMPlot2DModule
 height_plane = 500
 
 from emborderdecoration import EM2DPlainBorderDecoration,EM3DPlainBorderDecoration, EMBorderDecoration
+import weakref
 
 class GLView:
 	def __init__(self,window=None):
-		self.window = window
+		if window != None:
+			self.window = weakref.ref(window)
+		else: self.window = None
 		
-	def set_window(self,window): self.window = window
+	def set_window(self,window): self.window = weakref.ref(window)
 	
 	def get_window(self): return self.window
 
@@ -278,7 +281,7 @@ class EMGLRotorWidget(EM3DVolume,GLView):
 		return 1 if a redraw is necessary
 		return 0 if a redraw is not necessary 
 		'''
-		if not isinstance(widget,EMGLViewQtWidget) and not isinstance(widget,EMGLView3D) and not isinstance(widget,EM3DGLWindow)  and not isinstance(widget,EM2DGLWindow):
+		if not isinstance(widget,EMGLViewQtWidget) and not isinstance(widget,EM3DGLView) and not isinstance(widget,EM3DGLWindow)  and not isinstance(widget,EM2DGLWindow):
 			print "error, can only add instances of EMGLViewQtWidget to the EMGLRotorWidget"
 			return 0
 		else:
@@ -949,7 +952,7 @@ class EMGLRotorWidget(EM3DVolume,GLView):
 
 class EMGLWindow:
 	def __init__(self,parent,drawable):
-		self.parent = parent
+		self.parent = weakref.ref(parent)
 		self.drawable = drawable
 		self.drawable.set_window(self)
 		self.cam = Camera2(self) # a camera/orientation/postion object
@@ -985,19 +988,20 @@ class EMGLWindow:
 		self.window_selected_emit_signal = string
 		
 	def get_connection_object(self):
-		return self.parent.get_gl_context_parent()
+		return self.parent().get_gl_context_parent()
 	
 	def emit(self,*args,**kargs):
-		self.parent.emit(*args,**kargs)
+		print "drawable emitting",self.drawable
+		self.parent().emit(*args,**kargs)
 	
 	def set_events_master(self,val=True):
-		self.drawable.drawable.enable_emit_events(val)
+		self.drawable.drawable().enable_emit_events(val)
 		
 	def is_events_master(self,val=True):
-		self.drawable.drawable.is_emitting()
+		self.drawable.drawable().is_emitting()
 	
 	def get_emit_signals_and_connections(self):
-		return self.drawable.drawable.get_emit_signals_and_connections()
+		return self.drawable.drawable().get_emit_signals_and_connections()
 	
 	def camera_slaved(self):
 		return self.camera_is_slaved
@@ -1018,20 +1022,20 @@ class EMGLWindow:
 		self.cam.cam_z += z
 	
 	def closeEvent(self,event):
-		self.parent.closeEvent(event)
+		self.parent().closeEvent(event)
 
 	def updateGL(self):
-		self.parent.get_gl_context_parent().updateGL()
+		self.parent().get_gl_context_parent().updateGL()
 	
 	def get_border(self):
 		return self.decoration
 	
 	def set_inspector_enabled(self,bool):
-		self.parent.set_inspector_selected(bool)
+		self.parent().set_inspector_selected(bool)
 	
 	def set_selected(self,bool=True):
 		self.decoration.set_selected(bool)
-		self.parent.set_inspector_selected(bool)
+		self.parent().set_inspector_selected(bool)
 	
 	def get_camera(self):
 		return self.cam
@@ -1049,10 +1053,10 @@ class EMGLWindow:
 		return self.decoration.total_height()
 	
 	def set_mouse_lock(self,target):
-		self.parent.get_qt_context_parent().lock_target(target)
+		self.parent().get_qt_context_parent().lock_target(target)
 		
 	def release_mouse_lock(self):
-		self.parent.get_qt_context_parent().unlock_target()
+		self.parent().get_qt_context_parent().unlock_target()
 
 	def lock_texture(self):
 		self.texture_lock += 1
@@ -1084,7 +1088,7 @@ class EMGLWindow:
 		self.update_border_flag = True
 		self.drawable.resize_event(self.width(),self.height())
 	def context(self):
-		return self.parent.context() # Fixme, this will raise if the parent isn't a QtOpenGL.QGLWidget, which is a more recent development. However, this function may become redundant, it is not currently used but it potentially could be
+		return self.parent().context() # Fixme, this will raise if the parent isn't a QtOpenGL.QGLWidget, which is a more recent development. However, this function may become redundant, it is not currently used but it potentially could be
 	
 	def add_depth(self,d):
 		pass
@@ -1121,12 +1125,12 @@ class EMGLWindow:
 		
 		if self.mouse_event_target == self.decoration:
 			self.decoration.mousePressEvent(event)
-			self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
+			self.parent().emit(QtCore.SIGNAL("window_selected"),self,event)
 		elif event.modifiers() == Qt.AltModifier or (event.button()==Qt.RightButton and not self.allow_target_translations):
 			self.cam.set_plane('xy')
 			self.cam.mousePressEvent(event)
 		elif self.mouse_event_target == self.drawable:
-			self.parent.emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
+			self.parent().emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
 			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mousePressEvent(qme)
@@ -1147,12 +1151,12 @@ class EMGLWindow:
 		elif event.modifiers() == Qt.AltModifier:
 			self.border_scale_event(event.delta())
 		elif self.mouse_event_target == self.drawable and self.allow_target_wheel_events:
-			self.parent.emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
+			self.parent().emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
 			self.drawable.wheelEvent(event)
 			
 		else: print "mouse wheel error",self.drawable# this shouldn't happen
 
-		#self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
+		#self.parent().emit(QtCore.SIGNAL("window_selected"),self,event)
 
 	def mouseMoveEvent(self,event):
 		if self.texture_lock > 0: return
@@ -1168,7 +1172,7 @@ class EMGLWindow:
 			self.drawable.mouseMoveEvent(qme)
 		else: print "mouse move error" # this shouldn't happen
 		
-		#self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
+		#self.parent().emit(QtCore.SIGNAL("window_selected"),self,event)
 		
 	def mouseDoubleClickEvent(self, event):
 		if self.texture_lock > 0: return
@@ -1179,14 +1183,14 @@ class EMGLWindow:
 			self.cam.set_plane('xy')
 			self.cam.mouseMoveEvent(event)
 		elif self.mouse_event_target == self.drawable:
-			self.parent.emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
+			self.parent().emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
 			l=self.vdtools.mouseinwin(*self.mouse_in_win_args(event))
 			qme=QtGui.QMouseEvent(event.type(),QtCore.QPoint(l[0],l[1]),event.button(),event.buttons(),event.modifiers())
 			self.drawable.mouseDoubleClickEvent(qme)
 			
 		else: print "mouse double click error" # this shouldn't happen
 	
-		#self.parent.emit(QtCore.SIGNAL("window_selected"),self,event)
+		#self.parent().emit(QtCore.SIGNAL("window_selected"),self,event)
 
 	def mouseReleaseEvent(self,event):
 		if self.texture_lock > 0: return
@@ -1203,7 +1207,7 @@ class EMGLWindow:
 		else: print "mouse release error" # this shouldn't happen
 	
 	def mouse_in_win_args(self,event):
-		return [event.x()-self.decoration.border_width,self.parent.get_gl_context_parent().viewport_height()-event.y()-self.decoration.bottom_border_height,self.width(),self.height()]
+		return [event.x()-self.decoration.border_width,self.parent().get_gl_context_parent().viewport_height()-event.y()-self.decoration.bottom_border_height,self.width(),self.height()]
 	
 	def toolTipEvent(self,event):
 		if self.texture_lock > 0: return
@@ -1211,8 +1215,8 @@ class EMGLWindow:
 	
 	def keyPressEvent(self,event):
 		if self.texture_lock > 0: return
-		if not event.modifiers() & Qt.ControlModifier: self.parent.emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
-		pos = self.parent.get_gl_context_parent().mapFromGlobal(QtGui.QCursor.pos())
+		if not event.modifiers() & Qt.ControlModifier: self.parent().emit(QtCore.SIGNAL(self.window_selected_emit_signal),self,event)
+		pos = self.parent().get_gl_context_parent().mapFromGlobal(QtGui.QCursor.pos())
 		l=self.vdtools.mouseinwin(*self.mouse_in_win_args(pos))
 		if isinstance(self.drawable,EMQtGLView):
 			self.drawable.keyPressEvent(event,l)
@@ -1273,7 +1277,7 @@ class EM3DGLWindow(EMGLWindow,EM3DVolume):
 		self.texture_lock -= 1
 	
 	def context(self):
-		return self.parent.context()
+		return self.parent().context()
 	
 	def set_draw_frame(self,bool):
 		self.draw_frame = bool
@@ -1581,7 +1585,7 @@ class EM3DGLWindowOverride(EM3DGLWindow):
 			self.decoration.draw(self.update_border_flag)
 			self.update_border_flag = False
 	
-class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
+class EM3DGLView(EM3DVolume,EMEventRerouter,GLView):
 	"""
 	A view of an EMAN2 3D type, such as an isosurface or a 
 	volume rendition, etc.
@@ -1590,18 +1594,18 @@ class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 		GLView.__init__(self)
 		EM3DVolume.__init__(self)
 	
-		self.parent = parent
+		self.parent = weakref.ref(parent)
 		self.cam = Camera2(self)
 		self.cam.motiondull = 1.0
 		
 		if isinstance(parent,EMImage3DGUIModule):
-			self.drawable = parent
+			self.drawable = self.parent
 			#self.w = self.drawable.width()
 			#self.h = self.drawable.height()
 			#self.d = self.drawable.height() # height of window
 			#print self.w,self.h,self.d
 			
-			d = self.parent.get_data_dims()
+			d = self.parent().get_data_dims()
 			#self.cam.cam_z = d[2]/2
 			#self.cam.cam_y += d[1]/2
 			#self.cam.cam_x += d[0]/2
@@ -1619,18 +1623,18 @@ class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 			#self.h = image.get_ysize()	# height of window
 			#self.d = image.get_zsize()	# depth of the window
 					
-			self.w = self.parent.width()	# width of window
-			self.h = self.parent.height() # height of window
-			self.d = self.parent.height() # height of window
+			self.w = self.parent().width()	# width of window
+			self.h = self.parent().height() # height of window
+			self.d = self.parent().height() # height of window
 			
-	
-			self.image = image # FIXME is this allright?
-			self.drawable = EMImage3DModule(image,self)		# the object that is drawable (has a draw function)
+
+			self.module = EMImage3DModule(image,self)		# the object that is drawable (has a draw function)
+			self.drawable = weakref.ref(self.module)
 			
-			self.drawable.cam.basicmapping = True
-			self.drawable.cam.motiondull = 1.0
+			self.drawable().cam.basicmapping = True
+			self.drawable().cam.motiondull = 1.0
 		
-		EMEventRerouter.__init__(self,self.drawable)
+		EMEventRerouter.__init__(self,self.drawable())
 		self.sizescale = 1.0		# scale/zoom factor
 		self.changefactor = 1.1		# used to zoom
 		self.invchangefactor = 1.0/self.changefactor # used to invert zoom
@@ -1644,17 +1648,17 @@ class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 		self.init_scale_flag = True
 		
 	def set_opt_scale(self):
-		dims = self.drawable.get_data_dims()
+		dims = self.drawable().get_data_dims()
 		
-		xscale = self.parent.width()/dims[0]
-		yscale = self.parent.height()/dims[1]
+		xscale = self.parent().width()/dims[0]
+		yscale = self.parent().height()/dims[1]
 		
 		if yscale < xscale: xscale = yscale
 		
-		self.drawable.cam.scale = xscale
+		self.drawable().cam.scale = xscale
 		
 	def get_data_dims(self):
-		return self.drawable.get_data_dims()
+		return self.drawable().get_data_dims()
 	
 	def determine_dimensions(self):
 		#print "determing dimensions"
@@ -1673,28 +1677,21 @@ class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 
 	def width(self):
 		try:
-			return int(self.parent.width())
+			return int(self.parent().width())
 		except:
 			return 0
 	
 	def height(self):
 		try:
-			return int(self.parent.height())
+			return int(self.parent().height())
 		except:
 			return 0
 	
 	def depth(self):
 		try:
-			return int(self.parent.height())
+			return int(self.parent().height())
 		except:
 			return 0
-	
-	def set_data(self,data):
-		try:
-			self.drawable.set_data(data)
-			self.image = image
-			self.update()
-		except: pass
 	
 	def render(self):
 		self.draw()
@@ -1709,7 +1706,7 @@ class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 		
 		glPushMatrix()
 		self.cam.position()
-		self.drawable.render()
+		self.drawable().render()
 		glPopMatrix()
 		
 		if not lighting: glDisable(GL_LIGHTING)
@@ -1718,16 +1715,16 @@ class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 		self.cam.set_plane(plane)
 	
 	def updateGL(self):
-		self.parent.updateGL()
+		self.parent().updateGL()
 		
 	def get_render_dims_at_depth(self, depth):
-		return self.parent.get_render_dims_at_depth(depth)
+		return self.parent().get_render_dims_at_depth(depth)
 	
 	def get_near_plane_dims(self):
-		return self.parent.get_near_plane_dims()
+		return self.parent().get_near_plane_dims()
 		
 	def get_start_z(self):
-		return self.parent.get_start_z()
+		return self.parent().get_start_z()
 	
 	
 	def resize_event_with_border_data(self,width,height,decoration):
@@ -1744,7 +1741,7 @@ class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 
 		#print self.get_lr_bt_nf()
 		self.update_dims = False
-		self.drawable.resize_event(width,height)
+		self.drawable().resize_event(width,height)
 	
 	def resize_event(self,width,height):
 
@@ -1760,7 +1757,7 @@ class EMGLView3D(EM3DVolume,EMEventRerouter,GLView):
 		pass
 	
 	def closeEvent(self,event):
-		self.drawable.closeEvent(event)
+		self.drawable().closeEvent(event)
 
 class EM2DGLWindow(EMGLWindow,EM3DVolume):
 	'''
@@ -1859,7 +1856,7 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 			scale = self.inv_border_scale
 		else: return
 
-		print self.width(),self.height()
+#		print self.width(),self.height()
 		x_change = (scale-1)*self.width()/2
 		
 		self.left -= int(x_change)
@@ -1877,6 +1874,9 @@ class EM2DGLWindow(EMGLWindow,EM3DVolume):
 	def set_frozen(self,frozen):
 		if frozen: self.decoration.set_color_flag(EMBorderDecoration.FROZEN_COLOR)
 		else : self.decoration.set_color_flag(EMBorderDecoration.DEFAULT_COLOR)
+	
+	def set_frame_color(self,color):
+		self.decoration.set_color_flag(color)
 	
 	def draw(self):
 		self.cam.position()
@@ -1909,29 +1909,30 @@ class EM2DGLView(EMEventRerouter,GLView):
 	"""
 	def __init__(self, parent,image,window=None):
 		GLView.__init__(self,window)
-		self.parent = parent
+		self.parent = weakref.ref(parent)
 		if isinstance(parent,EMImageMXModule) or isinstance(parent,EMImage2DModule) or isinstance(parent,EMPlot2DModule):
-			self.drawable = parent
-			self.w = self.parent.width()
-			self.h = self.parent.height()
+			self.drawable = self.parent
+			self.w = self.parent().width()
+			self.h = self.parent().height()
 		else:
 			if isinstance(image,list):
 				if len(image) == 1:
 					self.become_2d_image(image[0])
 				else:
-					self.drawable = EMImageMXModule(image)
-					self.drawable.set_parent(self)
-					self.w = self.parent.width()
-					self.h = self.parent.height()
+					self.module = EMImageMXModule(image)
+					self.drawable = weakref.ref(self.module)
+					self.drawable().set_parent(self)
+					self.w = self.parent().width()
+					self.h = self.parent().height()
 			elif isinstance(image,EMData):
 				self.become_2d_image(image)
 			else:
 				print "error, the EMGLView2D class must be initialized with data"
 				return
 			
-		self.drawable.suppressInspector = True
+		self.drawable().suppressInspector = True
 		
-		EMEventRerouter.__init__(self,self.drawable)
+		EMEventRerouter.__init__(self,self.drawable())
 		self.initflag = True
 		
 		self.update_flag = True
@@ -1942,20 +1943,18 @@ class EM2DGLView(EMEventRerouter,GLView):
 		self.invchangefactor = 1.0/self.changefactor
 	
 	def get_drawable(self):
-		return self.drawable
+		return self.drawable()
 
 	def set_sizescale(self,scale):
 		self.sizescale = scale
 	
-	def get_drawable(self):
-		return self.drawable
-	
 	def set_shapes(self,shapes,shrink):
-		self.drawable.set_shapes(shapes,shrink)
+		self.drawable().set_shapes(shapes,shrink)
 		
 	def become_2d_image(self,a):
-		self.drawable = EMImage2DModule(a)
-		self.drawable.set_parent(self)
+		self.module = EMImage2DModule(a)
+		self.drawable = weakref.ref(self.module)
+		self.drawable().set_parent(self)
 		#self.drawable.originshift = False
 		self.w = a.get_xsize()
 		#if self.w > self.parent.width(): self.w = self.parent.width()
@@ -1964,25 +1963,25 @@ class EM2DGLView(EMEventRerouter,GLView):
 		#print self.w,self.h
 		
 	def resize_event(self,width,height):
-		self.drawable.resize_event(self.width,height)
+		self.drawable().resize_event(self.width,height)
 
 	def width(self):
-		self.window.width()
+		self.window().width()
 	
 	def height(self):
-		self.window.height()
+		self.window().height()
 
 	def set_data(self,data):
-		self.drawable.set_data(data)
+		self.drawable().set_data(data)
 		
 	def initializeGL(self):
-		self.drawable.initializeGL()
+		self.drawable().initializeGL()
 	
 	def draw(self):
-		self.drawable.render()
+		self.drawable().render()
 
 	def closeEvent(self,event):
-		self.drawable.closeEvent(event)
+		self.drawable().closeEvent(event)
 
 class EM2DQtGLWindow(EM2DGLWindow):
 	def __init__(self,parent,gl_view):
@@ -1994,16 +1993,16 @@ class EM2DQtGLWindow(EM2DGLWindow):
 		'''
 		:( hack
 		'''
-		return [event.x(),self.parent.get_gl_context_parent().viewport_height()-event.y(),self.width(),self.height()]
+		return [event.x(),self.parent().get_gl_context_parent().viewport_height()-event.y(),self.width(),self.height()]
 	
 	
 	def connect_qt_pop_up_event(self):
-		self.parent.connect_qt_pop_up_application_event(QtCore.SIGNAL("gl_qt_pop_up"))
+		self.parent().connect_qt_pop_up_application_event(QtCore.SIGNAL("gl_qt_pop_up"))
 
 class EMQtGLView(GLView):
 	def __init__(self, parent, qwidget=None, widget_parent=None,qtglview_parent=None):
 		GLView.__init__(self,None)
-		self.parent = parent
+		self.parent = weakref.ref(parent)
 
 		self.qwidget = qwidget
 		self.itex = 0
@@ -2032,7 +2031,7 @@ class EMQtGLView(GLView):
 		self.target_lock = None
 		
 	def closeEvent(self,event):
-		self.parent.closeEvent(event)
+		self.parent().closeEvent(event)
 	
 	def get_decoration(self):
 		return self.decoration
@@ -2045,7 +2044,7 @@ class EMQtGLView(GLView):
 	
 	def __del__(self):
 		if (self.itex != 0 ):
-			self.parent.deleteTexture(self.itex)
+			self.parent().deleteTexture(self.itex)
 			self.itex = 0
 		if self.texture_dl != 0:
 			glDeleteLists(self.texture_dl,1)
@@ -2080,7 +2079,7 @@ class EMQtGLView(GLView):
 			self.refresh_dl = True
 			if (self.itex != 0 ):
 				#passpyth
-				self.parent.get_gl_context_parent().deleteTexture(self.itex)
+				self.parent().get_gl_context_parent().deleteTexture(self.itex)
 			self.gen_texture = False
 			##print "binding texture"
 			#self.qwidget.setVisible(True)
@@ -2091,7 +2090,7 @@ class EMQtGLView(GLView):
 				pixmap = QtGui.QPixmap.grabWidget(self.qwidget.widget())
 			#self.qwidget.setVisible(False)
 			if (pixmap.isNull() == True ): print 'error, the pixmap was null'
-			self.itex = self.parent.get_gl_context_parent().bindTexture(pixmap)
+			self.itex = self.parent().get_gl_context_parent().bindTexture(pixmap)
 			if ( self.itex == 0 ): print 'Error - I could not generate the texture'
 		
 			#self.decoration.set_force_update()
@@ -2162,7 +2161,7 @@ class EMQtGLView(GLView):
 			return
 	
 		p1 = QtCore.QPoint(event.x(),event.y())
-		p2 = self.parent.mapToGlobal(p1)
+		p2 = self.parent().mapToGlobal(p1)
 		QtGui.QToolTip.showText(p2,cw.toolTip())
 	
 	def wheelEvent(self,event):
@@ -2205,7 +2204,7 @@ class EMQtGLView(GLView):
 		self.updateTexture()
 		
 	def get_depth_for_height(self,height_plane):
-		return self.parent.get_depth_for_height(height_plane)
+		return self.parent().get_depth_for_height(height_plane)
 	
 	def mousePressEvent(self, event):
 		if event.modifiers() == Qt.AltModifier:
@@ -2223,8 +2222,8 @@ class EMQtGLView(GLView):
 			if (isinstance(cw,QtGui.QComboBox)):
 				cw.showPopup()
 				cw.hidePopup()
-				self.widget = EMQtGLView(self.parent,cw.view(),cw,self);
-				self.gl_widget = EM2DQtGLWindow(self.parent,self.widget)
+				self.widget = EMQtGLView(self.parent(),cw.view(),cw,self);
+				self.gl_widget = EM2DQtGLWindow(self.parent(),self.widget)
 				self.gl_widget.cam.loadIdentity()	
 				p = QtCore.QPoint(cw.geometry().x(),cw.geometry().y())
 				p2 = cw.mapToParent(p)
@@ -2233,8 +2232,8 @@ class EMQtGLView(GLView):
 				self.gl_widget.cam.setCamTrans("z",0.1+6) # 6 is border depth
 				self.e2children.append(self.gl_widget)
 				self.widget.is_child = True
-				self.window.connect_qt_pop_up_event()
-				self.window.emit(QtCore.SIGNAL("gl_qt_pop_up"),self.gl_widget)
+				self.window().connect_qt_pop_up_event()
+				self.window().emit(QtCore.SIGNAL("gl_qt_pop_up"),self.gl_widget)
 			else:
 				qme=QtGui.QMouseEvent( event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child): QtCore.QCoreApplication.sendEvent(self.qwidget,qme)
@@ -2369,7 +2368,7 @@ class EMQtGLView(GLView):
 				qme=QtGui.QMouseEvent(event.type(),lp,event.button(),event.buttons(),event.modifiers())
 				if (self.is_child):
 					self.widget_parent.setCurrentIndex(self.qwidget.currentIndex().row())
-					self.qtglview_parent.pop_me(self.window)
+					self.qtglview_parent.pop_me(self.window())
 					self.qtglview_parent.gen_texture = True
 					self.qtglview_parent.target_lock = None
 					return
@@ -3107,7 +3106,7 @@ class EMFloatingWidgetsCore:
 			f.setQtWidget(insp2)
 			rotor.add_widget(f)
 			
-			w3 = EMGLView3D(self,test_image_3d(3))
+			w3 = EM3DGLView(self,test_image_3d(3))
 			ww = EM3DGLWindow(self.parent,w3)
 			rotor.add_widget(ww)
 			insp3 = w3.get_inspector()
@@ -3160,7 +3159,7 @@ class EMFloatingWidgetsCore:
 				if len(a) == 1:
 					a = a[0]
 					if a.get_zsize() != 1:
-						w = EMGLView3D(self,a)
+						w = EM3DGLView(self,a)
 						self.qwidgets.append(w)
 					else:
 						w = EMGLView2D(self,a)

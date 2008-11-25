@@ -59,7 +59,7 @@ from emanimationutil import *
 from emimageutil import EMEventRerouter
 from emfloatingwidgets import *
 from e2workflow import EMWorkFlowManager
-
+from e2ctf import GUIctfModule
 class EMWindowNode:
 	def __init__(self,parent):
 		self.parent = parent
@@ -289,7 +289,7 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 			children = [self.target]
 		elif self.current != None:
 			children = [self.current]
-			
+		
 		for child in children:
 			pos = EMDesktop.main_widget.mapFromGlobal(QtGui.QCursor.pos())
 			if ( child.isinwin(pos.x(),EMDesktop.main_widget.viewport_height()-pos.y()) ):
@@ -434,15 +434,15 @@ class EMGLViewContainer(EMWindowNode,EMRegion):
 						signals_2 = object.get_emit_signals_and_connections()
 						for sig in signals:
 							try:
-								QtCore.QObject.connect(EMDesktop.main_widget, QtCore.SIGNAL(sig), signals_2[sig])
-								self.connections.append({sig:signals_2[sig]})
+								QtCore.QObject.connect(self.selected_object.parent(), QtCore.SIGNAL(sig), signals_2[sig])
+								self.connections.append([signals_2[sig],sig,self.selected_object.parent])
 							except: 
 								print "failed on",sig
 								
 	def __clear_connections(self):
 		for c in self.connections:
-			a = c.items()[0]
-			QtCore.QObject.disconnect(EMDesktop.main_widget, QtCore.SIGNAL(a[0]), a[1])
+			signal_2,sig,emitter = c
+			QtCore.QObject.disconnect(emitter(), QtCore.SIGNAL(sig), signal_2)
 		
 		self.connections = []
 		
@@ -573,8 +573,8 @@ class Scale:
 class EMFormDisplayFrame(EMGLViewContainer):
 	def __init__(self,parent,geometry=Region(0,0,0,0,0,0)):
 		EMGLViewContainer.__init__(self,parent,geometry)
-		self.focus_child = None
 		self.first_draw = [] # might use this for animations later
+		self.focus_child = None
 	
 	def draw(self):
 		if self.focus_child == None: return
@@ -587,6 +587,8 @@ class EMFormDisplayFrame(EMGLViewContainer):
 		self.first_draw = []
 	
 	def attach_child(self,child):
+		#  if the EMGLViewContainer has a target then events need only be sent to one thing, and collision detection is minimized
+		self.target = child
 		self.focus_child = child
 		EMGLViewContainer.attach_child(self,child)
 		self.first_draw.append(child)
@@ -595,9 +597,11 @@ class EMFormDisplayFrame(EMGLViewContainer):
 	def detach_child(self,new_child):
 		EMGLViewContainer.detach_child(self,new_child)
 		if len(self.children) != 0:
-			self.focus_child = self.children[-1]
+			self.target = self.children[-1]
+			self.focus_child = self.target
 		else:
 			self.focus_child = None
+			self.target = None
 
 class EMPlainDisplayFrame(EMGLViewContainer):
 	count = 0
@@ -720,7 +724,9 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1))
 	
 	def draw(self):
+		if len(self.children) == 0: return
 		glPushMatrix()
+		
 		glTranslate(*self.get_origin())
 		for i,child in enumerate(self.children):
 			if child in self.first_draw:
@@ -870,10 +876,14 @@ class EMPlainDisplayFrame(EMGLViewContainer):
 			return
 		
 		EMGLViewContainer.attach_child(self,child)
+		
 		child.set_window_selected_emit_signal( self.window_selected_emit_signal )
+		try:
+			QtCore.QObject.connect(child.parent(), QtCore.SIGNAL(self.window_selected_emit_signal), self.window_selected)
+		except: print "couldn't connect that "
+		
 		self.transformers.append([])
 		self.first_draw.append(child)
-		
 		
 	def detach_child(self,new_child):
 		for i,child in enumerate(self.children):
@@ -916,6 +926,7 @@ class EMFrame(EMWindowNode,EMRegion):
 	
 	def mousePressEvent(self, event):
 		#this could be optimized
+		
 		for i in self.children:
 			if i.mousePressEvent(event):
 				self.set_current(i) 
@@ -930,6 +941,7 @@ class EMFrame(EMWindowNode,EMRegion):
 			if i.mouseMoveEvent(event):
 				self.set_current(i) 
 				return True
+
 		#EMDesktop.main_widget.updateGL()
 		self.set_current(None)
 		
@@ -963,8 +975,8 @@ class EMFrame(EMWindowNode,EMRegion):
 	def keyPressEvent(self, event):
 		#this could be optimized
 		for i in self.children:
-			i.keyPressEvent(event)
-	
+			if i.keyPressEvent(event) :
+				return
 	def toolTipEvent(self, event):
 		#this could be optimized
 		for i in self.children:
@@ -1038,9 +1050,16 @@ class EMDesktopApplication(EMApplication):
 		pass
 
 	def get_qt_emitter(self,child):
+		'''
+		renovations in progress
+		'''
 		if isinstance(child,EMQtWidgetModule):
-			return child.qt_widget 
-		else: return EMDesktop.main_widget
+			return child 
+		elif isinstance(child,QtCore.QObject):
+			return child
+		else:
+			print "get qt_emitter, returning desktop"
+			return EMDesktop.main_widget
 			
 	def get_qt_gl_updategl_target(self,child):
 		return EMDesktop.main_widget
@@ -1164,7 +1183,7 @@ class EMDesktopFrame(EMFrame):
 			height = int(EMDesktop.main_widget.viewport_height())-50
 			self.display_frames[0].set_geometry(Region(-width/2,-height/2,-20,width,height,100)) # the depth of the z dimensions doesn't mean a whole lot
 		
-		self.form_display_frame.set_geometry(Region(-width/2,-height/2,0,width,height,100))
+		self.form_display_frame.set_geometry(Region(-width/2,-height/2,-20,width,height,100)) # -20 so it's behing the side bars
 		
 		if self.frame_dl:
 			glDeleteLists(self.frame_dl,1)
@@ -1309,22 +1328,24 @@ class EMDesktopFrame(EMFrame):
 	
 	def draw(self):
 		#print EMDesktop.main_widget.context()
+		
+		#glDisable(GL_FOG)
+
+		glPushMatrix()
+		glTranslatef(0.,0.,self.parent.z_opt)
+		EMFrame.draw(self)
+		glPopMatrix()
+		
+		
 		glPushMatrix()
 		self.draw_frame()
 		glPopMatrix()
 		
 		#glEnable(GL_FOG)
-		glPushMatrix()
-		glScalef(self.height()/2.0,self.height()/2.0,1.0)
-		self.bgob2.render()
-		glPopMatrix()
-		#glDisable(GL_FOG)
-
-		glPushMatrix()
-		glTranslatef(0.,0.,self.get_z_opt())
-		EMFrame.draw(self)
-		glPopMatrix()
-		
+#		glPushMatrix()
+#		glScalef(self.height()/2.0,self.height()/2.0,1.0)
+#		self.bgob2.render()
+#		glPopMatrix()
 	def read_EMAN2_image(self):
 		#self.p = QtGui.QPixmap("EMAN2.0.big2.jpg")
 		if EMDesktopFrame.image == None:
@@ -1426,6 +1447,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		if EMDesktop.application == None:
 			EMDesktop.application = self.application
 		
+		self.z_opt = -1
+		
 		self.setMinimumSize(400,400)
 		
 		self.modules = [] # a list of all the modules that currently exist
@@ -1444,6 +1467,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		
 		self.desktop_frames = [EMDesktopFrame(self)]
 		self.current_desktop_frame = self.desktop_frames[0]
+		self.old_desktop = None
 		self.work_flow_frame = EMWorkFlowFrame(self)
 	
 
@@ -1474,7 +1498,7 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		
 	def task_selected(self,module_string,module):
 		if module == self.current_desktop_frame.get_module():
-			print "it's this one"
+#			print "it's this one"
 			return
 		
 		else:
@@ -1510,13 +1534,12 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 				
 	
 	def launching_module(self,module_string,module):
-		print "launching",module_string,module
-		
 		display_frame = None
 		if self.current_desktop_frame.get_type() == None:
 			display_frame = self.current_desktop_frame
 		else:
 			display_frame = EMDesktopFrame(self)
+			
 			display_frame.resize_gl()
 			self.desktop_frames.append(display_frame)
 			old_frame = self.current_desktop_frame
@@ -1526,11 +1549,52 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 	
 		display_frame.set_type(module_string)
 		display_frame.set_module(module)
-		
-		if module_string == "Browser":
+		if isinstance(module,EMBoxerModule) or module_string== "Boxer":
+			display_frame.display_frame.set_num_rows(1)
+			display_frame.display_frame.set_num_cols(1)
+		elif isinstance(module,GUIctfModule):
+			pass
+			#display_frame.display_frame.set_num_rows(2)
+			#display_frame.display_frame.set_num_cols(1)
+		elif module_string == "Browser":
 			browser_settings = EMBrowserSettings(self.current_desktop_frame.display_frame,self.application)
 		
 	def start_frame_entry_exit_animation(self,entry_frame,exit_frame):
+		
+		
+		entry_idx = -1
+		exit_idx = -1
+		for i,frame in enumerate(self.desktop_frames):
+			if entry_frame == frame:
+				entry_idx = i
+			elif exit_frame == frame:
+				exit_idx = i
+				
+		if entry_idx == -1 or exit_idx == -1:
+			print "error, frame animation, entry and exit frame coincide or are not in the current list of display frames"
+			return
+
+		df = entry_idx - exit_idx # doing it this way means frames grow to the left - not the right - just because I thought it didn't matter
+		
+		
+		
+		self.t_old = Translation(self)
+		new_pos = (self.width()*df*1.5,0,0)
+		new_pos_2 = (-self.width()*df*1.5,0,0)
+		old_pos = (0,0,0)
+		self.t_old.seed_translation_animation(old_pos,new_pos)
+		self.t_new = Translation(self)
+		self.t_new.seed_translation_animation(new_pos_2,old_pos)
+	
+		self.old_desktop = exit_frame # the the old_desktop isn't None then it will be drawn in paintGL and the animation will operate
+	
+	def lock_texture(self):
+		pass
+	def unlock_texture(self):
+		self.old_desktop=None
+		self.updateGL()
+		
+	def animation_done_event(self):
 		pass
 
 	def add_module(self,module_string,module):
@@ -1658,7 +1722,8 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		return float(self.width())/float(self.height())
 	
 	def get_z_opt(self):
-		return (1.0/tan(self.get_fov()/2.0*pi/180.0))*self.height()/2
+		return self.z_opt
+		
 	
 	def get_fov(self):
 		return self.fov
@@ -1733,8 +1798,27 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 		#else:
 			##print -2*self.zopt+0.1
 		glTranslatef(0.,0.,-2*self.get_z_opt()+0.1)
+		
+		
+		normal = False
+		if self.old_desktop != None:
+			glPushMatrix()
+			if not self.t_old.transform():
+				normal = True
+				glPopMatrix()
+			else:
+				self.old_desktop.draw()
+				glPopMatrix()
+				
+				glPushMatrix()
+				self.t_new.transform()
+				self.current_desktop_frame.draw()
+				glPopMatrix()
+		else:
+			normal = True
+		if normal: self.current_desktop_frame.draw()
+		
 		self.work_flow_frame.draw()
-		self.current_desktop_frame.draw()
 		glPopMatrix()
 		
 	def update(self): self.updateGL()
@@ -1742,6 +1826,9 @@ class EMDesktop(QtOpenGL.QGLWidget,EMEventRerouterToList,Animator,EMGLProjection
 	def resizeGL(self, width, height):
 		#side = min(width, height)
 		glViewport(0,0,self.width(),self.height())
+		
+		self.z_opt =  (1.0/tan(self.fov/2.0*pi/180.0))*self.height()/2
+		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		

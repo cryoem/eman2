@@ -5428,7 +5428,7 @@ EMData *EMData::filter_by_image(EMData* image, bool RetReal) {
 		// fimage must remain pristine
 		fp = this->copy();
 	} else {
-		fp = this->norm_pad( false, 1); 
+		fp = this->norm_pad( false, 1);
 		fp->do_fft_inplace();
 	}
 	fp->set_array_offsets(1,1,1);

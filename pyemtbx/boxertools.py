@@ -491,7 +491,7 @@ class TrimBox:
 class Cache:
 	'''
 	Provides a cache of static size (as defined by self.maxsize, self.set_max_size())
-	As the cache grows objects are popped off the end of the self.cache tuple
+	As the cache grows objects are popped off the end of the self.cache list
 	
 	===
 	Typical TYPE 1 usage is:
@@ -632,7 +632,7 @@ class ExclusionImage:
 		try:
 			# we may have the image already on disk, if so parse it
 			# the image on disk is likely up to date but not necessarily so
-			self.image = get_idd_key_entry(self.image_name,"exclusion_image")
+			self.image = get_image_key_entry(self.image_name,"exclusion_image")
 			#self.image = EMData(self.ouputimage_name)
 			#print "I read the image",self.ouputimage_name
 		except:
@@ -718,7 +718,7 @@ class SincBlackmanSubsampledImage:
 		
 		try:
 			# we may have the image already in the database, if so parse get it
-			self.smallimage = get_idd_key_entry(self.image_name,"subsampled_image")
+			self.smallimage = get_idd_image_entry(self.image_name,"subsampled_image")
 			#print "I read the image",self.ouputimage_name
 		except:
 			#print "could not read", self.ouputimage_name 
@@ -779,7 +779,7 @@ class SincBlackmanSubsampledImage:
 		self.smallimage.set_attr("template_min",template_min)
 		self.smallimage.set_attr("creation_time_stamp",gm_time_string())
 
-		set_idd_key_entry(self.image_name,"subsampled_image",self.smallimage)
+		set_idd_image_entry(self.image_name,"subsampled_image",self.smallimage)
 				
 			
 	def get_image(self):
@@ -841,7 +841,7 @@ class CoarsenedFlattenedImage:
 		try:
 			# we may have the image already on disk, if so parse it
 			# the image on disk is likely up to date but not necessarily so
-			self.smallimage = get_idd_key_entry(self.image_name,"coarse_flat_image")
+			self.smallimage = get_idd_image_entry(self.image_name,"coarse_flat_image")
 			#print "I read the image",self.ouputimage_name
 		except:
 			#print "could not read", self.ouputimage_name 
@@ -882,7 +882,7 @@ class CoarsenedFlattenedImage:
 		self.smallimage.set_attr("shrink_factor",shrink)
 		self.smallimage.set_attr("creation_time_stamp",gm_time_string())
 		
-		set_idd_key_entry(self.image_name,"coarse_flat_image",self.smallimage)
+		set_idd_image_entry(self.image_name,"coarse_flat_image",self.smallimage)
 				
 		#else:
 			#print "doing nothing to currently stored small image in CoarsenedFlattenedImage"
@@ -930,7 +930,7 @@ class InverseSigmaImage:
 		#try:
 			## we may have the image already on disk, if so parse it
 			## the image on disk is likely up to date but not necessarily so
-			#self.image = get_idd_key_entry(self.image_name,"coarse_sigma_image")
+		self.image = get_idd_image_entry(self.image_name,"coarse_sigma_image")
 			##print "I read the image",self.ouputimage_name
 		#except:
 			##print "could not read", self.ouputimage_name 
@@ -962,7 +962,7 @@ class InverseSigmaImage:
 		
 		self.image.process_inplace("math.invert.carefully",{"zero_to":1.0})
 		
-		#set_idd_key_entry(self.image_name,"coarse_sigma_image",self.image)
+		set_idd_image_entry(self.image_name,"coarse_sigma_image",self.image)
 		
 		return self.image
 	
@@ -1045,7 +1045,7 @@ class FLCFImage:
 		self.image_name=image_name # we must store this it's used externally to determine if the FLCFImage is cached
 		
 		try: # try to read the image from disk - it may already exist and save us lots of time
-			self.flcfimage = get_idd_key_entry(self.image_name,"flcf_image")
+			self.flcfimage = get_idd_image_entry(self.image_name,"flcf_image")
 		except:
 			# the image doesn't exist, that's okay
 			pass
@@ -1103,7 +1103,7 @@ class FLCFImage:
 		self.flcfimage.set_attr("get_sigma_image_shrink_factor",shrink_factor)
 		self.flcfimage.set_attr("get_sigma_image_flatten_radius",flatten_radius)
 		
-		set_idd_key_entry(self.image_name,"flcf_image",self.flcfimage)
+		set_idd_image_entry(self.image_name,"flcf_image",self.flcfimage)
 		
 	def get_image(self):
 		return self.flcfimage
@@ -1320,7 +1320,7 @@ class Boxable:
 		
 	def cache_exc_to_db(self):
 		if self.exclusionimage != None:
-			set_idd_key_entry(self.image_name,"exclusion_image",self.exclusionimage)
+			set_idd_image_entry(self.image_name,"exclusion_image",self.exclusionimage)
 			merge_idd_key_entry_memory_to_disk(self.image_name,"moved_boxes")
 
 	def center(self,method):
@@ -2154,7 +2154,45 @@ def set_idd_key_entry_in_memory(image_name,key,object):
 	
 	data[key] = object
 	project_db.set_key_entry_in_memory(dbkey,data)
+
+
+def set_idd_image_entry(image_name,key,image):
+	'''
+	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
+	'''
+	image.set_attr("e2boxer_image_name",image_name)
+	# first have to make sure it's not already there
+	db = db_open_dict("bdb:e2boxercache#"+key)
 	
+	if db.has_key("maxrec"):
+		for idx in range(0,db["maxrec"]+1):
+			header = db.get_header(idx)
+			try:
+				if header["e2boxer_image_name"] == image_name:
+					db[idx] = image
+					#image.write_image("bdb:e2boxercache#"+key,idx)
+					return
+			except:
+				pass
+
+	# if we make it here then go ahead and append
+	image.write_image("bdb:e2boxercache#"+key,-1)
+
+def get_idd_image_entry(image_name,key):
+	'''
+	Using EMAN2 style image dbs has efficiency payoffs in various ways... 
+	'''
+	db = db_open_dict("bdb:e2boxercache#"+key)
+	
+	if db.has_key("maxrec"):
+		for idx in range(0,db["maxrec"]):
+			header = db.get_header(idx)
+			try:
+				if header["e2boxer_image_name"] == image_name:
+					return db[idx]
+			except:
+				pass
+	return None
 
 def set_idd_key_entry(image_name,key,object):
 	'''
@@ -2176,7 +2214,7 @@ def set_idd_key_entry(image_name,key,object):
 	project_db.set_key_entry(dbkey,data)
 
 def get_idd_key_entry_in_memory(image_name,key):
-	
+
 	dbkey = get_idd_key(image_name)
 	project_db = EMProjectDB()
 	try:
@@ -2187,6 +2225,7 @@ def get_idd_key_entry_in_memory(image_name,key):
 	
 	
 def get_idd_key_entry(image_name,key):
+
 	dbkey = get_idd_key(image_name)
 	
 	project_db = EMProjectDB()

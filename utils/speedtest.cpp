@@ -418,6 +418,7 @@ int main(int argc, char *argv[])
 		printf("An Intel Xeon E5335 2.0Ghz SF ----------------------------------- 2010\n");
 		printf("An AMD Opteron 280 2.4Ghz SF ------------------------------------ 2130\n");
 		printf("An Intel Core2 Duo 2.66Ghz SF ----------------------------------- 2600\n");
+		printf("An Intel Core2 Duo T9400 2.53Ghz SF ----------------------------- 2700\n");
 		printf("An Intel Xeon E5430 2.66Ghz SF ---------------------------------- 2800\n");
 		printf("An Intel Xeon X5355 2.66Ghz SF ---------------------------------- 2920\n");
 		printf("An Intel Xeon X5450 3.0Ghz SF ----------------------------------- 3220\n");

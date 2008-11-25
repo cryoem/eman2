@@ -47,6 +47,7 @@ from emimageutil import ImgHistogram,EMEventRerouter, EMParentWin
 import emshape 
 from emshape import EMShape
 from weakref import WeakKeyDictionary
+import weakref
 from pickle import dumps,loads
 
 from emglobjects import EMOpenGLFlagsAndTools, EMGUIModule
@@ -75,12 +76,13 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		self.initimageflag = True
 		
 		self.setFocusPolicy(Qt.StrongFocus)
+		self.setMouseTracking(True)
 
 	def set_parent(self,parent):
 		self.parent = parent
 
 	def set_data(self,data):
-		self.target.set_data(data)
+		self.target().set_data(data)
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -93,7 +95,7 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		try:
-			self.target.initializeGL()
+			self.target().initializeGL()
 			self.initimageflag = False
 		except:
 			pass
@@ -113,12 +115,12 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		
 		#self.cam.position()
 		if self.initimageflag == True:
-			self.target.initializeGL()
+			self.target().initializeGL()
 			self.initimageflag = False
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Image2D context is", context
 		glPushMatrix()
-		self.target.render()
+		self.target().render()
 		glPopMatrix()
 		
 	def resizeGL(self, width, height):
@@ -131,41 +133,41 @@ class EMImage2DWidget(QtOpenGL.QGLWidget,EMEventRerouter):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-		self.target.resize_event(width,height)
+		self.target().resize_event(width,height)
 		#except: pass
 		
 	def add_shapes(self,s):
-		self.target.add_shapes(s)
+		self.target().add_shapes(s)
 		
 	def add_shape(self,name,shape):
-		return self.target.add_shape(name,shape)
+		return self.target().add_shape(name,shape)
 
 	def scr_to_img(self,p):
-		return self.target.scr_to_img(p)
+		return self.target().scr_to_img(p)
 	
 	def set_active(self,a,b,c,d):
-		return self.target.set_active(a,b,c,d)
+		return self.target().set_active(a,b,c,d)
 	
 	def get_shapes(self):
-		return self.target.get_shapes()
+		return self.target().get_shapes()
 	
 	def del_shapes(self):
-		return self.target.del_shapes()
+		return self.target().del_shapes()
 	
 	def del_shape(self,p):
-		return self.target.del_shape(p)
+		return self.target().del_shape(p)
 
 	def scroll_to(self,x,y):
-		return self.target.scroll_to(x,y)
+		return self.target().scroll_to(x,y)
 	
 	def register_scroll_motion(self,x,y):
-		return self.target.register_scroll_motion(x,y)
+		return self.target().register_scroll_motion(x,y)
 	
 	def get_depth_for_height(self, height):
 		return 0
 	
 	def get_shapes(self):
-		return self.target.get_shapes()
+		return self.target().get_shapes()
 
 class EMImage2DMouseEvents:
 	'''
@@ -192,49 +194,49 @@ class EMImage2DMouseEventsMediator:
 			print "error, the target should be a EMImage2DModule"
 			return
 		
-		self.target = target
+		self.target = weakref.ref(target)
 	
 	def get_parent(self):
-		return self.target.get_parent()
+		return self.target().get_parent()
 	
 	def emit(self,*args,**kargs):
-		self.target.emit(*args,**kargs)
+		self.target().emit(*args,**kargs)
 		
 	def get_inspector(self):
-		return self.target.get_inspector()
+		return self.target().get_inspector()
 	
 	def add_shape(self,shape_string,shape):
-		self.target.add_shape(shape_string,shape)
+		self.target().add_shape(shape_string,shape)
 		
 	def del_shape(self,shape_string):
-		self.target.del_shape(shape_string)
+		self.target().del_shape(shape_string)
 		
 	def get_shapes(self):
-		return self.target.get_shapes()
+		return self.target().get_shapes()
 
 	def scr_to_img(self,x,y):
-		return self.target.scr_to_img(x,y)
+		return self.target().scr_to_img(x,y)
 	
 	def force_display_update(self):
-		self.target.force_display_update()
+		self.target().force_display_update()
 		
 	def get_data(self):
-		return self.target.get_data()
+		return self.target().get_data()
 	
 	def set_data(self,data):
-		self.target.set_data(data)
+		self.target().set_data(data)
 		
 	def replace_data(self,data):
-		self.target.replace_data(data)
+		self.target().replace_data(data)
 		
 	def updateGL(self):
-		self.target.updateGL()
+		self.target().updateGL()
 		
 	def redo_fft(self):
-		self.target.redo_fft()
+		self.target().redo_fft()
 		
 	def update_inspector_texture(self):
-		self.target.update_inspector_texture()
+		self.target().update_inspector_texture()
 
 class EMImage2DEmitMouseMode(EMImage2DMouseEvents):
 	def __init__(self,mediator):
@@ -462,6 +464,8 @@ class EMImage2DModule(EMGUIModule):
 		self.otherdata = None
 		self.otherdatascale = -1
 		self.otherdatablend = False
+		self.otherdataupdate = False # Used for forcing a 
+		self.otherdatadl = 0
 		self.other_tex_name = None
 		self.init_size_flag = True
 		self.frozen = False
@@ -581,7 +585,7 @@ class EMImage2DModule(EMGUIModule):
 		self.otherdata = data
 		self.otherdatascale = scale
 		self.otherdatablend = blend
-	
+		self.otherdataupdate=True
 	def get_data_dims(self):
 		data = None
 		
@@ -736,7 +740,7 @@ class EMImage2DModule(EMGUIModule):
 		if self.file_name == "": return # there is no file name, we have no means to stores information
 		
 		try:
-			DB = EMAN2db.EMAN2DB.open_db(".")
+			DB = HOMEDB
 			DB.open_dict("image_2d_display_settings")
 		except:
 			# Databasing is not supported, in which case w
@@ -779,7 +783,7 @@ class EMImage2DModule(EMGUIModule):
 		if self.file_name == None: return # there is no file name, we have no means to stores information
 		
 		try:
-			DB = EMAN2db.EMAN2DB.open_db(".")
+			DB = HOMEDB
 			DB.open_dict("image_2d_display_settings")
 		except:
 			# Databasing is not supported, in which case we do nothing
@@ -991,26 +995,6 @@ class EMImage2DModule(EMGUIModule):
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		
-		if self.otherdata != None and isinstance(self.otherdata,EMData) and not self.glflags.npt_textures_unsupported():
-			scale = self.scale*self.otherdatascale
-			b=self.otherdata.render_amp8(int(self.origin[0]/scale),int(self.origin[1]/scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
-			gl_render_type = GL_LUMINANCE
-			
-			if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
-			self.other_tex_name = GL.glGenTextures(1)
-			if ( self.other_tex_name <= 0 ):
-				raise("failed to generate texture name")
-			
-			glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
-			glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-			glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.gl_widget.width(),self.gl_widget.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
-			
-			glPushMatrix()
-			glTranslatef(width,height,0)
-			self.__draw_texture(self.other_tex_name,-width,-height,width,height)
-			glPopMatrix()
-
-
 		update = False
 		if self.display_state_changed():
 			update = True
@@ -1027,7 +1011,6 @@ class EMImage2DModule(EMGUIModule):
 
 			if self.main_display_list == 0:
 				self.main_display_list = glGenLists(1)
-				glNewList(self.main_display_list,GL_COMPILE)
 				render = True
 		else: render = True
 		
@@ -1054,28 +1037,26 @@ class EMImage2DModule(EMGUIModule):
 				if ( self.tex_name <= 0 ):
 					raise("failed to generate texture name")
 				
-				if self.otherdatablend and self.otherdata != None:
-					GL.glEnable(GL.GL_BLEND);
-					depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
-					GL.glDisable(GL.GL_DEPTH_TEST);
-					try:
-						GL.glBlendEquation(GL.GL_FUNC_SUBTRACT);
-					except: pass
-					#GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
-					GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
+				#if self.otherdatablend and self.otherdata != None:
+				
+					#glBlendFunc(GL_DST_ALPHA,GL_ONE_MINUS_DST_ALPHA)
 	
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
 				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.gl_widget.width(),self.gl_widget.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 				
+				glNewList(self.main_display_list,GL_COMPILE)
+				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPushMatrix()
 				glTranslatef(width,height,0)
 				self.__draw_texture(self.tex_name,-width,-height,width,height)
 				glPopMatrix()
 				
-				if self.otherdatablend and self.otherdata != None:
-					GL.glDisable( GL.GL_BLEND);
-					if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
+				#
+				
+				#if self.otherdatablend and self.otherdata != None:
+				#	GL.glDisable( GL.GL_BLEND);
+				#	if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
 			
 			else:
 				GL.glRasterPos(0,self.gl_widget.height()-1)
@@ -1087,6 +1068,54 @@ class EMImage2DModule(EMGUIModule):
 		if self.use_display_list and render :
 			glEndList()
 			glCallList(self.main_display_list)
+		
+		
+		if self.otherdata != None and isinstance(self.otherdata,EMData) and not self.glflags.npt_textures_unsupported():
+			if self.otherdataupdate or self.otherdatadl == 0:
+				
+				
+				if self.other_tex_name != 0: glDeleteTextures(self.other_tex_name)
+				
+				scale = self.scale*self.otherdatascale
+				b=self.otherdata.render_amp8(int(self.origin[0]/scale),int(self.origin[1]/scale),self.gl_widget.width(),self.gl_widget.height(),(self.gl_widget.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
+				gl_render_type = GL_LUMINANCE
+				
+				if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
+				self.other_tex_name = GL.glGenTextures(1)
+				if ( self.other_tex_name <= 0 ):
+					raise("failed to generate texture name")
+				
+				glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
+				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
+				glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.gl_widget.width(),self.gl_widget.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
+				
+				
+				if self.otherdatadl != 0: glDeleteLists(self.otherdatadl,1)
+				
+				self.otherdatadl = glGenLists(1)
+				
+				glNewList(self.otherdatadl,GL_COMPILE)
+				glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
+				glDisable(GL_DEPTH_TEST)
+				GL.glEnable(GL.GL_BLEND);
+						#depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
+				try:
+					GL.glBlendEquation(GL.GL_FUNC_REVERSE_SUBTRACT);
+				except: pass
+	#					GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA)
+				GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
+				glPushMatrix()
+				glTranslatef(width,height,0)
+				self.__draw_texture(self.other_tex_name,-width,-height,width,height)
+				glPopMatrix()
+				
+				GL.glDisable(GL_BLEND)
+				glEnable(GL_DEPTH_TEST)
+				glEndList()
+			
+			glCallList(self.otherdatadl)
+
+		
 		
 		if self.frozen or self.isexcluded:
 			if self.isexcluded:	glColor(0,0.1,0,1)
@@ -1328,6 +1357,7 @@ class EMImage2DModule(EMGUIModule):
 	def add_shapes(self,d,register_animation=False):
 		if register_animation:
 			animation = SingleValueIncrementAnimation(self,0,1)
+			
 			self.get_qt_context_parent().register_animatable(animation)
 		self.shapes.update(d)
 		self.shapechange=1
@@ -1358,7 +1388,7 @@ class EMImage2DModule(EMGUIModule):
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
-		self.mouse_events_mediator = None # garbage collection! :(
+#		self.mouse_events_mediator = None # garbage collection! :(
 		EMGUIModule.closeEvent(self,event)
 		
 	def dragEnterEvent(self,event):
@@ -1385,9 +1415,9 @@ class EMImage2DModule(EMGUIModule):
 			self.show_inspector(1)
 		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			try:
-				self.application.setOverrideCursor(Qt.ClosedHandCursor)
+				self.application().setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				self.application.setOverrideCursor(Qt.SizeAllCursor)
+				self.application().setOverrideCursor(Qt.SizeAllCursor)
 			self.rmousedrag=(event.x(),event.y() )
 		else:
 			self.mouse_event_handler.mouse_down(event)
@@ -1407,7 +1437,7 @@ class EMImage2DModule(EMGUIModule):
 		self.origin = new_origin
 	
 	def mouseReleaseEvent(self, event):
-		self.application.setOverrideCursor(Qt.ArrowCursor)
+		self.application().setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img(event.x(),event.y())
 		if self.rmousedrag:
 			self.rmousedrag=None
@@ -1531,7 +1561,7 @@ class EMImage2DModule(EMGUIModule):
 			self.updateGL()
 
 	def leaveEvent(self,event):
-		self.application.setOverrideCursor(Qt.ArrowCursor)
+		self.application().setOverrideCursor(Qt.ArrowCursor)
 		if self.rmousedrag:
 			self.rmousedrag=None
 		
@@ -1600,7 +1630,7 @@ class EMImageInspector2D(QtGui.QWidget):
 	
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
-		self.target=target
+		self.target=weakref.ref(target)
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(2)
@@ -1735,12 +1765,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		self.mins = ValSlider(self,label="Min:")
 		self.mins.setObjectName("mins")
-		self.mins.setValue(self.target.get_minden())
+		self.mins.setValue(self.target().get_minden())
 		self.vbl.addWidget(self.mins)
 		
 		self.maxs = ValSlider(self,label="Max:")
 		self.maxs.setObjectName("maxs")
-		self.maxs.setValue(self.target.get_maxden())
+		self.maxs.setValue(self.target().get_maxden())
 		self.vbl.addWidget(self.maxs)
 		
 		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
@@ -1755,7 +1785,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		self.gammas = ValSlider(self,(.1,5.0),"Gam:")
 		self.gammas.setObjectName("gamma")
-		self.gammas.setValue(self.target.get_gamma())
+		self.gammas.setValue(self.target().get_gamma())
 		#self.gammas.setValue(1.0)
 		self.vbl.addWidget(self.gammas)
 
@@ -1778,8 +1808,13 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.fftg, QtCore.SIGNAL("buttonClicked(int)"), target.set_FFT)
 		QtCore.QObject.connect(self.mmtab, QtCore.SIGNAL("currentChanged(int)"), target.set_mouse_mode)
 		QtCore.QObject.connect(self.auto_contrast_button, QtCore.SIGNAL("clicked(bool)"), target.auto_contrast)
+		
+		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 #		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.set_mouse_mode)
 
+
+#	def resizeEvent(self,event):
+#		print self.width(),self.height()
 
 	def disable_image_range(self):
 		if self.image_range != None:
@@ -1800,7 +1835,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.image_range.setRange(minimum,maximum)
 		self.image_range.setValue(current_idx)
 		
-		QtCore.QObject.connect(self.image_range, QtCore.SIGNAL("valueChanged"), self.target.image_range_changed)
+		QtCore.QObject.connect(self.image_range, QtCore.SIGNAL("valueChanged"), self.target().image_range_changed)
 
 	def set_image_idx(self,val):
 		self.image_range.setValue(val)
@@ -1838,14 +1873,14 @@ class EMImageInspector2D(QtGui.QWidget):
 	def new_min(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.set_density_min(val)
+		self.target().set_density_min(val)
 		self.update_brightness_contrast()
 		self.busy=0
 		
 	def new_max(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.set_density_max(val)
+		self.target().set_density_max(val)
 		self.update_brightness_contrast()
 		self.busy=0
 	
@@ -1864,7 +1899,7 @@ class EMImageInspector2D(QtGui.QWidget):
 	def new_gamma(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.set_gamma(val)
+		self.target().set_gamma(val)
 		self.busy=0
 
 	def update_brightness_contrast(self):
@@ -1881,7 +1916,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0)
 		self.maxs.setValue(x1)
-		self.target.set_density_range(x0,x1)
+		self.target().set_density_range(x0,x1)
 		
 	def set_hist(self,hist,minden,maxden):
 		if hist != None and len(hist) != 0:self.hist.set_data(hist,minden,maxden)
@@ -1900,7 +1935,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.maxs.setRange(lowlim,highlim)
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
-		self.target.set_density_range(curmin,curmax)
+		self.target().set_density_range(curmin,curmax)
 		#print "leave set limits", self.conts.getValue(), self.conts.getValue()
 		
 
