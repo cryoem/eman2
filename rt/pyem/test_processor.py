@@ -773,7 +773,7 @@ class TestProcessor(unittest.TestCase):
             for y in range(32):
                 for z in range(32):
                     if( d[z][y][x] > 0 ):
-                        self.assertAlmostEqual(d2[z][y][x], log10(d[z][y][x]/max), 3)
+                        self.assertAlmostEqual(d2[z][y][x], log10(d[z][y][x]), 3)
                     else:
                         self.assertAlmostEqual(d2[z][y][x], 0.0, 3)
     
