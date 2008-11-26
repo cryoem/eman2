@@ -110,7 +110,7 @@ def threshold_maxval(img, maxval = 0.0):
 	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )	
 
 ## CTF related functions
-def ctf_1d(nx, ctf, sign = -1):
+def ctf_1d(nx, ctf, sign = 1):
 	"""
 		Generate a list of 1D CTF values 
 	"""
@@ -153,7 +153,7 @@ def ctf_2(nx, ctf):
 		ctf_2[i] = ctf_val*ctf_val
 	return ctf_2
 
-def ctf_img(nx, ctf, sign = -1, ny = 0, nz = 1):
+def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 	"""
 	  Generate a 1-2-3-D complex image containing the CTF.
 	  Default is 2D output.
