@@ -232,6 +232,18 @@ This function will get an application default by first checking the local direct
 	
 	return None
 
+def numbered_path(prefix,makenew):
+	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB 
+exists will produce refine_02 if makenew is set (and create refine_02) and refine_01 if not"""
+	n=1
+	while os.access("%s_%02d/EMAN2DB"%(prefix,n),os.F_OK) : n+=1
+	if makenew or n==1:
+		path="%s_%02d"%(prefix,n)
+		try: os.mkdir(path)
+		except: pass
+		return path
+	return "%s_%02d"%(prefix,n-1)
+
 def remove_image(fsp):
 	"""This will remove the image file pointed to by fsp. The reason for this function
 	to exist is formats like IMAGIC which store data in two files. This insures that
