@@ -1900,9 +1900,6 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 			b.append([ali_params[i][3]])
 			b.append([ali_params[i][4]])
 		
-		print A
-		print b
-	
 		A_matrix = matrix(A)
 		b_matrix = matrix(b)
 

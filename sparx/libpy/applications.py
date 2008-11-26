@@ -1055,7 +1055,7 @@ def ali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", y
 	par_str = ["xform.align2d"]
 	if myid == main_node: recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	else: send_attr_dict(main_node, data, par_str, image_start, image_end)
-	if myid == main_node:	print_end_msg("ali2d_c_MPI")
+	if myid == main_node: print_end_msg("ali2d_c_MPI")
 
 
 def ali2d_e(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, eps = 0.001, maxit = 10, CTF = False, snr = 1.0, user_func_name="ref_ali2d"):
@@ -2768,7 +2768,7 @@ def ali3d_d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	for im in xrange(nima):
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
-			if im == 0: data_had_ctf = ctf_params[6]
+			if im == 0: data_had_ctf = data[im].get_attr("ctf_applied")
 			if data[im].get_attr("ctf_applied") == 0:
 				st = Util.infomask(data[im], mask, False)
 				data[im] -= st[0]

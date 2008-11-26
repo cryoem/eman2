@@ -82,7 +82,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None):
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
 	 		ctf_params = ima.get_attr("ctf")
-	 		oc = filt_ctf(ima, ctf_params, pad=False)
+	 		oc = filt_ctf(ima, ctf_params, dopad=False)
 			Util.add_img(ave, oc)
  			Util.add_img2(var, fft(ima))
 	 		if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
