@@ -3689,13 +3689,18 @@ void file_store::add_image( EMData* emdata, const Transform& tf )
     m_x_out = padfft->get_xsize();
     m_y_out = padfft->get_ysize();
     m_z_out = padfft->get_zsize();
-    m_totsize = m_x_out*m_y_out*m_z_out;  
-    m_Cs = padfft->get_attr( "Cs" );
-    m_pixel = padfft->get_attr( "Pixel_size" );
-    m_voltage = padfft->get_attr( "voltage" );
+    m_totsize = m_x_out*m_y_out*m_z_out;
+
+    Ctf* ctf = padfft->get_attr( "ctf" );
+    Dict ctf_params = ctf->to_dict();
+
     m_ctf_applied = padfft->get_attr( "ctf_applied" );
-    m_amp_contrast = padfft->get_attr( "amp_contrast" );
-    m_defocuses.push_back( (float)(padfft->get_attr( "defocus" )) );
+
+    m_Cs = ctf_params["cs"];
+    m_pixel = ctf_params["apix"];
+    m_voltage = ctf_params["voltage"];
+    m_amp_contrast = ctf_params["ampcont"];
+    m_defocuses.push_back( ctf_params["defocus"] );
 
     Dict params = tf.get_rotation( "spider" );
     float phi = params.get( "phi" );
@@ -3735,7 +3740,14 @@ void file_store::get_image( int id, EMData* padfft )
 
     if( m_defocuses.size() == 0 ) {
         ifstream m_txt_ifs( m_txt_file.c_str() );
-        m_txt_ifs.ignore( 4096, '\n' );
+
+	if( !m_txt_ifs )
+	{
+            std::cerr << "Error: file " << m_txt_file << " does not exist" << std::endl;
+        }
+
+	string line;
+	std::getline( m_txt_ifs, line );
 
         float defocus, phi, theta, psi;
 
