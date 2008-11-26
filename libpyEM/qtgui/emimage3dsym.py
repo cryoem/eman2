@@ -458,7 +458,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		if self.sym_dl > 0:
 			glDeleteLists(self.sym_dl,1)
 		self.sym_dl = glGenLists(1)
-		print len(points),len(point_colors),len(eulers)
 		glNewList(self.sym_dl,GL_COMPILE)
 		for i,p in enumerate(eulers):
 			self.gl_color(point_colors[i])

@@ -97,8 +97,8 @@ def main():
 			remove_file(args[1])
 
 	num_sim =  EMUtil.get_image_count(args[0])
-	if (num_sim != 4):
-		print "Error, the similarity matrix did not contain 4 images - be sure to use the --saveali argument when running e2simmx.py"
+	if (num_sim != 5):
+		print "Error, the similarity matrix did not contain  5 images - be sure to use the --saveali argument when running e2simmx.py"
 		exit(1)
 
 	if ( options.verbose ):
@@ -111,6 +111,8 @@ def main():
 	TransyImg.read_image(args[0],2)
 	RotImg=EMData();
 	RotImg.read_image(args[0],3)
+	MirrorImg=EMData();
+	MirrorImg.read_image(args[0],4)
 	
 	NumProj= Simimg.get_xsize()
 	NumPart= Simimg.get_ysize()
@@ -137,6 +139,7 @@ def main():
 	ReturnTransx  = [ range(NumPart) for j in range(NumPeaks)]
 	ReturnTransy  = [ range(NumPart) for j in range(NumPeaks)]
 	ReturnRot     = [ range(NumPart) for j in range(NumPeaks)]
+	ReturnMirror  = [ range(NumPart) for j in range(NumPeaks)]
 	
 	for iPart in range(NumPart):
 		for iProj in range(NumProj):
@@ -176,6 +179,7 @@ def main():
 			ReturnTransx[iPeaks][iPart]= TransxImg.get_value_at(RelProj,iPart);
 			ReturnTransy[iPeaks][iPart]= TransyImg.get_value_at(RelProj,iPart);
 			ReturnRot[iPeaks][iPart]= RotImg.get_value_at(RelProj,iPart);
+			ReturnMirror[iPeaks][iPart]= MirrorImg.get_value_at(RelProj,iPart);
 	
 	
 	
@@ -195,6 +199,7 @@ def main():
 	writeListToImage(ReturnTransx, args[1]   ,2,NumPeaks,NumPart)
 	writeListToImage(ReturnTransy, args[1]   ,3,NumPeaks,NumPart)
 	writeListToImage(ReturnRot,    args[1]   ,4,NumPeaks,NumPart)
+	writeListToImage(ReturnMirror, args[1]   ,5,NumPeaks,NumPart)
 
 	if ( options.verbose ):
 		print "e2classify...done"
@@ -236,9 +241,9 @@ def check(options,verbose):
 			error = True
 		else:
 			num_sim =  EMUtil.get_image_count(options.simmxfile)
-			if (num_sim != 4):
+			if (num_sim != 5):
 				if verbose:
-					print "Error, the similarity matrix did not contain 4 images - be sure to use the --saveali argument when running e2simmx.py"
+					print "Error, the similarity matrix did not contain 5 images - be sure to use the --saveali argument when running e2simmx.py"
 				error = True
 	
 	return error

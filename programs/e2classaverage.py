@@ -71,7 +71,9 @@ def main():
 	parser.add_option("--resultmx",type="string",help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 	parser.add_option("--norm_proc",type="string",help="The normalization processor. Default is normalize.edgemean.", default="normalize.edgemean")
 	parser.add_option("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual class average")
-
+	parser.add_option("--dbidxcache", default=False, action="store_true", help="Stores the indices of all particles in the given class in the Python list in the e2classaverage.indices database")
+	parser.add_option("--dbdir", default=False, help="Use in conjunction with --dbidxcache to specify a directory where the database entries should be stored, e.g. \"refine_01\" ", default=".")
+	
 	(options, args) = parser.parse_args()
 	
 	if len(args)<3 : parser.error("Input, classification matix, and output files required")
@@ -138,6 +140,10 @@ def main():
 		print "Error, the number of rows (%d) in the classification matrix (image) does not match the number of particles (%d) in the input image." %(num_part,num_part_check)
 		exit(1)
 	
+	if EMUtil.get_image_count(args[1]) != 6:
+		print "error, the classification matrix is the wrong size"
+		sys.exit(1)
+	
 	# weights contains the weighting of the classification scheme stored in the EMData object "classes" - above
 	# row is particle number, column data contains weights - rows should add to 1, but this is not checked.
 	weights = EMData()
@@ -154,21 +160,34 @@ def main():
 	# row is particle number, column is class idx (to class number stored in classes)
 	da = EMData()
 	da.read_image(args[1],4)
+	# dmirror contains is the mirror alignment
+	# row is particle number, column is class idx (to class number stored in classes)
+	dflip = EMData()
+	dflip.read_image(args[1],5)
 	
 	# empty space for storing x-flipping flags (0s or 1s, if a 1 is stored it will be used at the necessary point to flip prior to adding to the average)
 	# sometimes this will not be used at all (it depends on whether or not the aligners that the user has specified do flipping and set flip flags)
-	dflip = EMData(da.get_xsize(),da.get_ysize())
-	dflip.to_zero()
+#	dflip = EMData(da.get_xsize(),da.get_ysize())
+#	dflip.to_zero()
 	
 	options.norm = parsemodopt(options.norm_proc)
 	
 	if (options.iter > 0 or options.bootstrap):
 		set_aligner_params_in_options(options)
 	
+	if options.dbidxcache:
+		try:
+			class_db = db_open_dict("bdb:"+options.dbdir+"#e2classaverage.indices")
+		except:
+			print "error with db terminology: can't open db:", "bdb:"+options.dbdir+"#classaverage.indices"
+			sys.exit(1)
 	# do one class at a time
 	for cl in range(class_min,class_max+1):
 		if (options.verbose):
 			ndata = []
+			
+		if options.dbidxcache:
+			class_indices = []
 		
 		if (options.iter > 0 or options.verbose): ccache = [] # class cache
 		
@@ -185,6 +204,7 @@ def main():
 			for p in range(0,num_part):
 				for c in range(0,num_classes):
 					if classes.get(c,p) == cl:
+						if options.dbidxcache: class_indices.append(p)
 						# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
 						# latter case the class cache is used to print information
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
@@ -193,7 +213,7 @@ def main():
 #						print da.get(c,p)
 						#t3d = Transform3D(EULER_EMAN,da.get(c,p),0,0)
 						#t3d.set_posttrans(dx.get(c,p),dy.get(c,p))
-						t3d = Transform({"type":"2d","alpha":da.get(c,p)})
+						t3d = Transform({"type":"2d","alpha":da.get(c,p),"mirror":int(dflip(c,p))})
 						t3d.set_trans(dx.get(c,p),dy.get(c,p))
 						if (options.lowmem):
 							image = EMData()
@@ -213,18 +233,7 @@ def main():
 			if np == 0 or weightsum == 0:
 				if options.verbose:
 					print "Class",cl,"...no particles"
-				# FIX
-				
-				if ( options.ref  ):
-					e = EMData()
-					e.read_image(options.ref, cl, READ_HEADER_ONLY)
-					average.set_attr("xform.projection", e.get_attr("xform.projection"))
-			
-		
-				# now write to disk
-				average.set_attr("ptcl_repr",0)
-				average.write_image(args[2],-1)
-				continue
+				# FIXME
 				
 				# write blank image? Write meta data?
 				continue
@@ -241,6 +250,7 @@ def main():
 			for p in range(0,num_part):
 				for c in range(0,num_classes):
 					if classes.get(c,p) == cl:
+						if options.dbidxcache: class_indices.append(p)
 						# cache the hit if necessary - this is if there is more than one iteration, and/or the user has specifed verbose. In the
 						# latter case the class cache is used to print information
 						if (options.iter > 0 or options.verbose): ccache.append((p,c))
@@ -311,22 +321,15 @@ def main():
 			average.process_inplace("mask.sharp",{"outer_radius":average.get_xsize()/2})
 			#average.process_inplace("normalize.edgemean")
 			#average.write_image("e2_bootstrapped.img",-1)
-					
+		
+		
+		if options.dbidxcache:
+			class_db[str(cl)] = class_indices
+				
 		if np == 0:
 			if options.verbose:
 				print "Class",cl,"...no particles"
 			# FIXME
-			# write blank image? Write meta data?
-			
-			if ( options.ref  ):
-				e = EMData()
-				e.read_image(options.ref, cl, READ_HEADER_ONLY)
-				average.set_attr("xform.projection", e.get_attr("xform.projection"))
-			
-		
-			# now write to disk
-			average.set_attr("ptcl_repr",0)
-			average.write_image(args[2],-1)
 			continue
 		
 	
@@ -455,6 +458,8 @@ def main():
 			e = EMData()
 			e.read_image(options.ref, cl, READ_HEADER_ONLY)
 			average.set_attr("xform.projection", e.get_attr("xform.projection"))
+			average.set_attr("projection_image",options.ref)
+			average.set_attr("projection_image_idx",cl)
 			#average.set_attr("euler_az",e.get_attr("euler_az"))
 			#average.set_attr("euler_phi",e.get_attr("euler_phi"))
 			if options.verbose:

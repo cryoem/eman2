@@ -57,7 +57,7 @@ def main():
 	parser.add_option("--raligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
-	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
+	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=True)
 	parser.add_option("--verbose","-v",type="int",help="Verbose display during run",default=0)
 	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_option("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
@@ -139,9 +139,10 @@ def main():
 	mxout[0].set_size(crange[1]-crange[0],rrange[1]-rrange[0],1)
 	mxout[0].to_zero()
 	if options.saveali : 
-		mxout.append(mxout[0].copy())
-		mxout.append(mxout[0].copy())
-		mxout.append(mxout[0].copy())
+		mxout.append(mxout[0].copy()) # dx
+		mxout.append(mxout[0].copy()) # dy
+		mxout.append(mxout[0].copy()) # alpha (angle)
+		mxout.append(mxout[0].copy()) # mirror
 	if options.verbose: print "Computing Similarities"
 
 	# Read all c images, then read and compare one r image at a time
@@ -191,6 +192,7 @@ def main():
 				mxout[1].set_value_at(c,r,0,v[1])
 				mxout[2].set_value_at(c,r,0,v[2])
 				mxout[3].set_value_at(c,r,0,v[3])
+				mxout[4].set_value_at(c,r,0,v[4])
 	
 	if options.verbose : print"\nSimilarity computation complete"
 	
@@ -218,9 +220,9 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			t = ta.get_attr("xform.align2d")
 			p = t.get_params("2d")
 			
-			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),p["tx"],p["ty"],p["alpha"])
+			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),p["tx"],p["ty"],p["alpha"],p["mirror"])
 		else :
-			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0)
+			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,False)
 		
 	return ret
 

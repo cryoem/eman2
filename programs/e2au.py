@@ -371,6 +371,11 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		
 		try:
 			b = EMData(self.average_file,i)
+			if a == None:
+				try:
+					a = EMData(b.get_attr("projection_image"),b.get_attr("projection_image_idx"))
+				except:
+					a = None
 		except: b = None
 		if a == None and b == None: return
 		
