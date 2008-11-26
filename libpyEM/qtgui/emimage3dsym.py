@@ -72,7 +72,9 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		EMImage3DGUIModule.__init__(self,application,ensure_gl_context=True)
 		self.init()
 		self.initialized = True
-		
+		self.eulers = [] # will eventually store Transform objects
+		self.points = [] # will eventually store the points on the asymmetric unit
+		self.point_colors = [] # will eventually store colors for the different points
 		self.get_inspector()
 		
 	def get_inspector(self):
@@ -98,6 +100,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.sym_dl = 0
 		self.spheredl = 0
 		self.highresspheredl = 0
+		self.diskdl = 0
 
 		self.glcontrast = 1.0
 		self.glbrightness = 0.0
@@ -118,6 +121,7 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.display_tri = False
 		self.display_arc = True
 		self.sym_object = None
+		self.update_sym_dl = True
 		
 		self.radius = 50
 		
@@ -130,6 +134,12 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		
 		
 		self.reduce = False
+		
+		
+		self.eulers_specified = False # from e2au.py = if you want to specify a specific set of eulers this is required
+		self.specified_eulers = None # from e2au.py = if you want to specify a specific set of eulers this is required
+		self.colors_specified = False # as above
+		self.specified_colors = None # as above
 		
 		self.file = None
 		self.lr = -1
@@ -212,7 +222,14 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		else:
 			self.gold()
 				
-		
+	
+	def gl_color(self,color):
+		glColor(*color)
+		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,color)
+		glMaterial(GL_FRONT,GL_SPECULAR,color)
+		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
+		glMaterial(GL_FRONT,GL_SHININESS,64.0)
+	
 	def gold(self):
 		glMaterial(GL_FRONT,GL_AMBIENT,(0.24725, 0.2245, 0.0645,1.0))
 		glMaterial(GL_FRONT,GL_DIFFUSE,(0.34615, 0.3143, 0.0903,1.0))
@@ -314,7 +331,16 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		glScalef(0.2,0.2,length)
 		glCallList(self.cylinderdl)
 		glPopMatrix()
-			
+
+	def specify_colors(self,colors):
+		print colors
+		self.colors_specified = True
+		self.specified_colors = colors
+
+	def specify_eulers(self,eulers):
+		self.eulers_specified = True
+		self.specified_eulers = eulers
+	
 	def generate_current_display_list(self):
 		sym = self.inspector.get_sym()
 		prop = self.inspector.get_prop()
@@ -331,7 +357,14 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 			self.perturb = perturb
 			self.angle_label = angle_label
 			self.strategy = strategy
-			
+		
+		if self.diskdl == 0:
+			self.diskdl=glGenLists(1)
+				
+			glNewList(self.diskdl,GL_COMPILE)
+			gluDisk(self.gq,.1,.8,8,2)
+			glEndList()
+		
 		if self.spheredl == 0:
 			self.spheredl=glGenLists(1)
 				
@@ -384,9 +417,10 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		[og_name,og_args] = parsemodopt(str(og))
 		
 		filedebug = False
-		if ( not filedebug ):
+		if ( not filedebug and not self.eulers_specified):
 			eulers = self.sym_object.gen_orientations(og_name, og_args)
-		
+		elif self.eulers_specified:
+			eulers = self.specified_eulers
 		else:
 			f = file("angles.txt")
 			lines=f.readlines()
@@ -397,22 +431,55 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 				alt = angles[0]
 				az = angles[1]
 				eulers.append(Transform({"type":"eman","az":az}))
-
-		glNewList(self.sym_dl,GL_COMPILE)
+		
+		self.eulers = eulers
+		if not self.colors_specified: self.point_colors = []
+		else: self.point_colors = self.specified_colors
+		print "self point colors are", len(self.point_colors)
+		self.points = []
 		for i in eulers:
-			
-			
+			p = i.transpose()*Vec3f(0,0,self.radius)
+			self.points.append(p)
+			if not self.colors_specified: self.point_colors.append((0.34615, 0.3143, 0.0903,1))
+		print "self point colors are", len(self.point_colors)
+		self.make_sym_dl_list(self.points,self.point_colors,eulers)
+	
+	def set_sym(self,sym):
+		'''
+		Warning, this probably doesn't work in general don't use it
+		'''
+		self.sym = sym
+		self.sym_object = parsesym(str(sym))
+		self.get_inspector().set_sym(sym)
+		self.force_update = True
+	
+	def make_sym_dl_list(self,points,point_colors,eulers):
+		
+		if self.sym_dl > 0:
+			glDeleteLists(self.sym_dl,1)
+		self.sym_dl = glGenLists(1)
+		print len(points),len(point_colors),len(eulers)
+		glNewList(self.sym_dl,GL_COMPILE)
+		for i,p in enumerate(eulers):
+			self.gl_color(point_colors[i])
 			glPushMatrix()
-
-			d = i.get_rotation("eman")
-			#print d
+			d = p.get_rotation("eman")
 			glRotate(d["az"],0,0,1)
 			glRotate(d["alt"],1,0,0)
 			glRotate(d["phi"],0,0,1)
-			glTranslate(0,0,self.radius)
-			glCallList(self.highresspheredl)
+#			glTranslate(p[0],p[1],p[2])
+	   	   	glTranslate(0,0,self.radius)
+			glCallList(self.diskdl)
 			glPopMatrix()
+			
 		glEndList()
+		
+	def set_point_colors(self,new_color_map):
+		for k,v in new_color_map.items():
+			self.point_colors[k] = v
+		self.update_sym_dl = True
+		#self.make_sym_dl_list(self.points,self.point_colors)
+			
 	
 	def angular_deviation(self,t1,t2):
 
@@ -549,6 +616,11 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.updateGL()
 		
 	def render(self):
+		
+		if self.update_sym_dl:
+			self.make_sym_dl_list(self.points,self.point_colors,self.eulers)
+			self.update_sym_dl = False
+		
 		lighting = glIsEnabled(GL_LIGHTING)
 		cull = glIsEnabled(GL_CULL_FACE)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
@@ -564,6 +636,8 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		glPopMatrix()
 		
 		self.cam.position()
+		self.model_matrix = glGetDoublev(GL_MODELVIEW_MATRIX) # this is for e2au.py ... there is a better solution but no time
+		
 		
 		if ( self.sym_dl == 0 or self.force_update):
 			self.generate_current_display_list()
@@ -842,24 +916,31 @@ class EMSymInspector(QtGui.QWidget):
 		#self.cubetog.setCheckable(1)
 		#self.vbl2.addWidget(self.cubetog)
 		
+		self.button_hbl1 = QtGui.QHBoxLayout()
+		
 		self.symtogdisplay = QtGui.QPushButton("Display Eulers")
 		self.symtogdisplay.setCheckable(1)
 		self.symtogdisplay.setChecked(1)
-		self.vbl2.addWidget(self.symtogdisplay)
+		self.button_hbl1.addWidget(self.symtogdisplay)
 		
 		self.triangletog = QtGui.QPushButton("Display Triangles")
 		self.triangletog.setCheckable(1)
 		self.triangletog.setChecked(0)
-		self.vbl2.addWidget(self.triangletog)
+		self.button_hbl1.addWidget(self.triangletog)
+		
+		self.vbl2.addLayout(self.button_hbl1)
+		
+		self.button_hbl2 = QtGui.QHBoxLayout()
 		
 		self.arctog = QtGui.QPushButton("Display Arcs")
 		self.arctog.setCheckable(1)
 		self.arctog.setChecked(1)
-		self.vbl2.addWidget(self.arctog)
+		self.button_hbl2.addWidget(self.arctog)
 		
 		self.symtog = QtGui.QPushButton("All syms")
 		self.symtog.setCheckable(1)
-		self.vbl2.addWidget(self.symtog)
+		self.button_hbl2.addWidget(self.symtog)
+		self.vbl2.addLayout(self.button_hbl2)
 		
 		
 		self.vbl.addWidget(self.get_main_tab())
@@ -934,6 +1015,36 @@ class EMSymInspector(QtGui.QWidget):
 			self.sym_text.setEnabled(False)
 		
 		self.target().regen_dl()
+
+	def set_sym(self,sym):
+		s = sym.lower()
+		if s == "icos":
+			self.sym_combo.setCurrentIndex(0)
+		elif s == "oct":
+			self.sym_combo.setCurrentIndex(1)
+		elif s == "tet":
+			self.sym_combo.setCurrentIndex(2)
+		else:
+			try:
+				nsym = s[1:]
+			except:
+				print "can't interpret",sym
+				return
+			
+			if s[0] == "d":
+				self.sym_combo.setCurrentIndex(3)
+			elif s[0] == "c":
+				self.sym_combo.setCurrentIndex(4)
+			elif s[0] == "h":
+				self.sym_combo.setCurrentIndex(5)
+			else:
+				print "can't interpret",sym
+				return
+			
+			self.sym_text.setText(s[1:])
+			self.target().regen_dl()
+		return
+		
 
 	def get_sym(self):
 		sym = self.sym_map[str(self.sym_combo.currentText())]

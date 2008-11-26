@@ -214,8 +214,11 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			if ralign[0]:
 				ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
 				ta = target.align(ralign[0],r,ralign[1],alircmp[0],alircmp[1])
-				
-			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),ta.get_attr_default("align.dx",0),ta.get_attr_default("align.dy",0),ta.get_attr_default("align.az",0))
+			
+			t = ta.get_attr("xform.align2d")
+			p = t.get_params("2d")
+			
+			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),p["tx"],p["ty"],p["alpha"])
 		else :
 			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0)
 		
@@ -225,11 +228,11 @@ def check(options,verbose):
 	
 	error = False
 	if ( options.nofilecheck == False ):
-		if not os.path.exists(options.datafile):
+		if not os.path.exists(options.datafile) and not db_check_dict(options.datafile):
 			if verbose:
 				print "Error: the file expected to contain the particle images (%s) does not exist." %(options.reffile)
 			error = True
-		if not os.path.exists(options.reffile):
+		if not os.path.exists(options.reffile) and not db_check_dict(options.reffile):
 			if verbose:
 				print "Error: the file expected to contain the projection images (%s) does not exist." %(options.reffile)
 			error = True

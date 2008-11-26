@@ -1057,6 +1057,62 @@ float* Util::getBaldwinGridWeights( const int& freq_cutoff, const float& P, cons
 	return W;
 }
 
+#ifdef EMAN2_USING_OPENGL
+#ifdef __APPLE__
+	#include "OpenGL/glu.h"
+#else // WIN32, LINUX
+	#include "GL/glu.h"
+#endif	//__APPLE__
+
+int Util::nearest_projected_points(const vector<float>& model_matrix, const vector<float>& proj_matrix, const vector<int>& view_matrix,
+		const vector<Vec3f>& points, const float mouse_x, const float mouse_y,const float& nearness)
+{
+	double proj[16];
+	double model[16];
+	int view[4];
+	
+	copy(proj_matrix.begin(), proj_matrix.end(), proj);
+	copy(model_matrix.begin(), model_matrix.end(), model);
+	copy(view_matrix.begin(), view_matrix.end(), view);
+	
+	vector<Vec3f> unproj_points;
+	double x,y,z;
+	double r,s,t;
+	for(vector<Vec3f>::const_iterator it = points.begin(); it != points.end(); ++it) {
+		r = (double) (*it)[0];
+		s = (double) (*it)[1];
+		t = (double) (*it)[2]; 
+		gluProject(r,s,t, model, proj, view, &x,&y,&z);
+		unproj_points.push_back(Vec3f(x,y,z));
+	}
+	
+	vector<int> intersections;
+	
+	float n_squared = nearness*nearness;
+	for(unsigned int i = 0; i < unproj_points.size(); ++i){
+		Vec3f& v = unproj_points[i];
+		float dx = v[0] - mouse_x;
+		dx *= dx;
+		float dy = v[1] - mouse_y;
+		dy *= dy;
+		if ((dx+dy) <= n_squared) intersections.push_back((int)i);
+	}
+	
+	int intersection = -1;
+	float near_z = 0;
+	for(vector<int>::const_iterator it = intersections.begin(); it != intersections.end(); ++it) {
+		if (intersection == -1 || unproj_points[*it][2] < near_z) {
+			intersection = *it;
+			near_z = unproj_points[*it][2];
+		}
+	}
+	
+	
+	return intersection;
+}
+#endif
+		
+
 void Util::equation_of_plane(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, float * plane )
 {
 	int x=0,y=1,z=2;

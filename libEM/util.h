@@ -908,7 +908,13 @@ namespace EMAN
 			return (float)result;
 #endif
 		}
+#ifdef EMAN2_USING_OPENGL
 
+		/** Determine the intersection of .... just ask David Woolford
+		 * 
+		 */
+		static int nearest_projected_points(const vector<float>& model_matrix, const vector<float>& proj_matrix, const vector<int>& view_matrix, const vector<Vec3f>& points, const float mouse_x, const float mouse_y,const float& nearnes);
+#endif
 		/** Determine the equation of a plane that intersects 3 points in 3D space.
 		* Required by Symmetry3D::reduce
 		* IMPORTANT - does no error checking, if the float pointer is less than 4 in size will get unknown behavior

@@ -320,7 +320,10 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("merge_peaks", &EMAN::Util::merge_peaks )
 		.def("point_is_in_triangle_2d", &EMAN::Util::point_is_in_triangle_2d )
 		.def("point_is_in_convex_polygon_2d", &EMAN::Util::point_is_in_convex_polygon_2d )
-
+#ifdef EMAN2_USING_OPENGL
+		.def("nearest_projected_points", &EMAN::Util::nearest_projected_points )
+		.staticmethod("nearest_projected_points")
+#endif
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")

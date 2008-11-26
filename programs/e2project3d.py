@@ -117,7 +117,7 @@ def main():
 	eulers = []
 	
 	data = EMData()
-	data.read_image(args[0])
+	data.read_image(args[0],0)
 	
 	sym_object = parsesym(options.sym)
 	[og_name,og_args] = parsemodopt(options.orientgen)
@@ -230,7 +230,7 @@ def check(options, verbose=False):
 	if ( check_eman2_type(options.projector,Projectors,"Projector") == False ):
 		error = True
 
-	if not os.path.exists(options.model):
+	if not os.path.exists(options.model) and not db_check_dict(options.model):
 		if verbose:
 			print "Error: 3D image %s does not exist" %options.model
 		error = True

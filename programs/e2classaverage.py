@@ -124,7 +124,7 @@ def main():
 	
 	# double check that the argument reference image makes sense
 	if (options.ref):
-		if not os.path.exists(options.ref):
+		if not os.path.exists(options.ref) and not db_check_dict(options.ref):
 			parser.error("File %s does not exist" %options.ref)
 			
 		num_ref= EMUtil.get_image_count(options.ref)
@@ -213,7 +213,19 @@ def main():
 			if np == 0 or weightsum == 0:
 				if options.verbose:
 					print "Class",cl,"...no particles"
-				# FIXME
+				# FIX
+				
+				if ( options.ref  ):
+					e = EMData()
+					e.read_image(options.ref, cl, READ_HEADER_ONLY)
+					average.set_attr("xform.projection", e.get_attr("xform.projection"))
+			
+		
+				# now write to disk
+				average.set_attr("ptcl_repr",0)
+				average.write_image(args[2],-1)
+				continue
+				
 				# write blank image? Write meta data?
 				continue
 				
@@ -305,6 +317,16 @@ def main():
 				print "Class",cl,"...no particles"
 			# FIXME
 			# write blank image? Write meta data?
+			
+			if ( options.ref  ):
+				e = EMData()
+				e.read_image(options.ref, cl, READ_HEADER_ONLY)
+				average.set_attr("xform.projection", e.get_attr("xform.projection"))
+			
+		
+			# now write to disk
+			average.set_attr("ptcl_repr",0)
+			average.write_image(args[2],-1)
 			continue
 		
 	
@@ -368,7 +390,7 @@ def main():
 					# and there were 10 particles, then they would all be kept. If floor were
 					# used instead of ceil, the last particle would be thrown away (in the
 					# class average)
-					idx = int(ceil(((1.0-itfrac)+itfrac*options.keep)*len(b))-1)
+					idx = int(math.ceil(((1.0-itfrac)+itfrac*options.keep)*len(b))-1)
 					cullthresh = b[idx]
 			
 			#finally average
@@ -528,7 +550,7 @@ def check(options, verbose=False):
 			if (verbose):
 				print "Error: the file expected to contain the classification matrix (%s) was not found, cannot run e2classaverage.py" %(options.classifyfile)
 		
-		if not file_exists(options.datafile):
+		if not file_exists(options.datafile) and not db_check_dict(options.datafile):
 			error = True
 			if (verbose):
 				print "Error:  failed to find the particle data (%s)" %options.datafile
@@ -570,16 +592,16 @@ def check(options, verbose=False):
 					print "Error - the number of rows (%d) in the classification matrix image %s does not match the number of images (%d) in %s" %(ysize, options.classifyfile,numimg,options.datafile)
 				
 			
-		if options.ref != None and not os.path.exists(options.ref):
+		if options.ref != None and not os.path.exists(options.ref) and not db_check_dict(options.ref):
 			print "Error: the file expected to contain the reference images (%s) does not exist" %(options.ref)
 			error = True
-			if os.path.exists(options.ref) and os.path.exists(options.datafile):
-				(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
-				(pxsize, pysize ) = gimme_image_dimensions2D(options.ref);
-				if ( xsize != pxsize ):
-					error = True
-					if (verbose):
-						print "Error - the dimensions of the reference and particle images do not match"
+		elif os.path.exists(options.ref) and (os.path.exists(options.datafile) or db_check_dict(options.ref)):
+			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
+			(pxsize, pysize ) = gimme_image_dimensions2D(options.ref);
+			if ( xsize != pxsize ):
+				error = True
+				if (verbose):
+					print "Error - the dimensions of the reference and particle images do not match"
 
 	if options.align == None:
 		print "Error: you must specify the align argument"

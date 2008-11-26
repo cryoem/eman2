@@ -230,7 +230,7 @@ def check(options,verbose):
 					print "File %s exists, will not write over, exiting" %options.outfile
 				error = True
 		
-		if not os.path.exists(options.simmxfile):
+		if not os.path.exists(options.simmxfile) and not db_check_dict(options.simmxfile):
 			if verbose:
 				print "Error: the similarity matrix file (%s) was not found, cannot run e2classify.py" %(options.simmxfile)
 			error = True

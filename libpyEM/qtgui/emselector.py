@@ -124,7 +124,6 @@ class EMSelectorDialog(QtGui.QDialog):
 		self.groupbox.setLayout(self.bottom_hbl3)
 		self.groupbox.setEnabled(False)
 		
-		
 		self.bottom_hbl2.addWidget(self.groupbox)
 		
 		self.resize(480,480)

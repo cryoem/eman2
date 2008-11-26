@@ -627,6 +627,27 @@ def gm_time_string():
 	val = str(b[3])+':'+str(b[4])+':'+str(b[5])+decimalseconds +' '+str(b[2])+'-'+str(b[1])+'-'+str(b[0])
 	return val
 
+def is_2d_image_mx(filename):
+	'''
+	Returns true if the filename exists, is an EM image type, is 2D, and has more than one image
+	'''
+	if not os.path.exists(filename):
+	  	try:
+	  		is_db = db_check_dict(filename)
+	  		if not is_db: raise
+	  	except: return False, "File doesn't exist:"+filename
+	
+	read_header_only = True
+	a = EMData()
+	# this is guaranteed not to raise unless the image has been removed from disk since the last call to check_files_are_em_images
+	a.read_image(filename,0,read_header_only)
+	if a.get_ndim() != 2:
+		return False, "Image is not 2D :", filename
+	elif EMUtil.get_image_count(filename) < 2:
+		return False, "Image is not a matrix :", filename
+	else:
+		return True, "Image is a 2D stack"
+
 def check_files_are_2d_images(filenames):
 	'''
 	Checks that the files exist, are valid EM types, and are non matrix 2D images
@@ -817,6 +838,25 @@ def error_exit(s) :
 	print s
 	exit(1)
 	
+
+
+def write_test_refine_data(num_im=1000):
+	threed = test_image_3d()
+	sym = Symmetries.get("c1")
+	angles = sym.gen_orientations("rand",{"n":num_im})
+	for angle in angles:
+		image = threed.project("standard",angle)
+		dx = Util.get_frand(-5,5)
+		dy = Util.get_frand(-5,5)
+		image.translate(dx,dy,0)
+		image.process_inplace("math.addnoise",{"noise":1})
+		image.write_image("bdb:starting_data#ptcls",-1)
+	
+	threed.write_image("bdb:refine_1#starting_model",-1)
+	
+	
+	
+
 
 def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	

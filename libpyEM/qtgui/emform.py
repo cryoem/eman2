@@ -59,7 +59,7 @@ class EMFormModule(EMQtWidgetModule):
 	or application.show_specific(this), depending on what you're doing
 	'''
 	def __init__(self,params,application):
-		self.application = weakref.ref(application)()
+		self.application = weakref.ref(application)
 		self.widget = EMFormWidget(self,params)
 		EMQtWidgetModule.__init__(self,self.widget,application)
 		
@@ -75,7 +75,7 @@ class EMFormWidget(QtGui.QWidget):
 	'''
 	def __init__(self,parent,params=None):
 		QtGui.QWidget.__init__(self,None)
-		self.parent = weakref.ref(parent)()
+		self.parent = weakref.ref(parent)
 		self.params = params
 		self.event_handlers = [] # used to keep event handlers in memory
 		self.output_writers = [] # used to register output write objects, for the purpose of returning the results
@@ -346,7 +346,7 @@ class EMFormWidget(QtGui.QWidget):
 		
 		layout.addWidget(groupbox)
 		
-		self.event_handlers.append(UrlEventHandler(self,text_edit,browse_button,clear_button,self.parent.application,param.desc_short))
+		self.event_handlers.append(UrlEventHandler(self,text_edit,browse_button,clear_button,self.parent().application(),param.desc_short))
 		self.output_writers.append(UrlParamWriter(param.name,text_edit))
 
 	def __incorporate_choice(self,param,layout):
@@ -452,17 +452,17 @@ class EMFormWidget(QtGui.QWidget):
 	def ok_pressed(self,bool):
 		ret = {}
 		for output in self.output_writers: output.write_data(ret)
-		self.parent.emit(QtCore.SIGNAL("emform_ok"),ret) # getting the parent to emit ensures integration with the desktop
+		self.parent().emit(QtCore.SIGNAL("emform_ok"),ret) # getting the parent to emit ensures integration with the desktop
 		
 	def cancel_pressed(self,bool):
-		self.parent.emit(QtCore.SIGNAL("emform_cancel")) # getting the parent to emit ensures integration with the desktop
+		self.parent().emit(QtCore.SIGNAL("emform_cancel")) # getting the parent to emit ensures integration with the desktop
 
 
 	def update_texture(self):
-		self.parent.force_texture_update()
+		self.parent().force_texture_update()
 		
 	def closeEvent(self,event):
-		self.parent.emit(QtCore.SIGNAL("emform_close"))
+		self.parent().emit(QtCore.SIGNAL("emform_close"))
 
 		
 class ParamTableWriter:
@@ -582,8 +582,8 @@ class UrlEventHandler:
 	Basically to simplify things when there is more than one url type.
 	'''
 	def __init__(self,target,text_edit,browse_button,clear_button,application,title=""):
-		self.target = target
-		self.application = application
+		self.target = weakref.ref(target)
+		self.application = weakref.ref(application)
 		self.text_edit = text_edit
 		self.browser = None # this will be the browser itself
 		self.browser_title = title
@@ -592,17 +592,17 @@ class UrlEventHandler:
 		
 	def browse_pressed(self,bool):
 		if self.browser == None:
-			self.browser = EMSelectorModule(self.application)
+			self.browser = EMSelectorModule(self.application())
 			self.browser.widget.desktop_hint = "form" # this is to make things work as expected in the desktop
 			self.browser.setWindowTitle(self.browser_title)
-			self.application.show_specific(self.browser)
+			self.application().show_specific(self.browser)
 			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("ok"),self.on_browser_ok)
 			QtCore.QObject.connect(self.browser,QtCore.SIGNAL("cancel"),self.on_browser_cancel)
 		else:
-			self.application.show_specific(self.browser)
+			self.application().show_specific(self.browser)
 
 	def on_browser_cancel(self):
-		self.application.close_specific(self.browser)
+		self.application().close_specific(self.browser)
 		self.browser = None
 	def on_browser_ok(self,stringlist):
 		new_string = str(self.text_edit.toPlainText())
@@ -614,11 +614,11 @@ class UrlEventHandler:
 			new_string += s
 
 		self.text_edit.setText(new_string)
-		self.target.update_texture()# in the desktop the texture would have to be updated
-		self.application.close_specific(self.browser)
+		self.target().update_texture()# in the desktop the texture would have to be updated
+		self.application().close_specific(self.browser)
 		self.browser = None
 	def clear_pressed(self,bool):
-		#self.target.update_texture()# in the desktop the texture would have to be updated
+		#self.target().update_texture()# in the desktop the texture would have to be updated
 		self.text_edit.clear()
 
 def get_example_params():
