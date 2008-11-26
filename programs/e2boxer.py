@@ -128,6 +128,12 @@ for single particle analysis."""
 	parser.add_option("--var",action="store_true",default=False,help="Use variance flag (default is False)")
 	parser.add_option("--inv",action="store_true",default=False,help="Invert image flag (default is False)")
 
+	parser.add_option("--do_ctf",action="store_true",default=False,help="determine CTF (default is False)")
+	parser.add_option("--ctf_fstart",default=False,help="Start frequency for CTF determination")
+	parser.add_option("--ctf_fstop",default=False,help="Stop frequency for CTF determination")
+	parser.add_option("--ctf_window",default=False,help="Window size for CTF determination")
+	parser.add_option("--ctf_edge",default=False,help="Edge for CTF determination")
+	parser.add_option("--ctf_overlap",default=False,help="Overlap value for CTF determination")
 	
 	
 	(options, args) = parser.parse_args()
@@ -270,6 +276,43 @@ def do_gauss_cmd_line_boxing(options):
 	else:
 		parm_dict["invert"] = False
 
+
+	# check ctf cmdline flag. if set, try to read f_start and f_stop parameters
+	if (options.do_ctf):
+		if (options.ctf_fstart):
+			try:
+				parm_dict["ctf_fstart"] = int(options.ctf_fstart)
+			except ValueError:
+				print "could not convert fstart value. bad value",options.ctf_fstart,". exiting!"
+				sys.exit(1)
+		if (options.ctf_fstop):
+			try:
+				parm_dict["ctf_fstop"] = int(options.ctf_fstop)
+			except ValueError:
+				print "could not convert fstop value. bad value",options.ctf_fstop,". exiting!"
+				sys.exit(1)
+
+		if (options.ctf_window):
+			try:
+				parm_dict["ctf_window"] = int(options.ctf_window)
+			except ValueError:
+				print "could not convert window value. bad value",options.ctf_window,". exiting!"
+				sys.exit(1)
+		if (options.ctf_edge):
+			try:
+				parm_dict["ctf_edge"] = int(options.ctf_edge)
+			except ValueError:
+				print "could not convert edge value. bad value",options.ctf_edge,". exiting!"
+				sys.exit(1)
+		if (options.ctf_overlap):
+			try:
+				parm_dict["ctf_overlap"] = int(options.ctf_overlap)
+			except ValueError:
+				print "could not convert overlap value. bad value",options.ctf_overlap,". exiting!"
+				sys.exit(1)
+		
+		
+
 	# PawelAutoBoxer is changed to allow passing in of a parameter dictionary
 	#    as additional argument....
 	
@@ -286,6 +329,9 @@ def do_gauss_cmd_line_boxing(options):
 		autoboxer.set_mode_explicit(SwarmAutoBoxer.COMMANDLINE)
 		# Tell the boxer to delete non refs - FIXME - the uniform appraoch needs to occur - see SwarmAutoBoxer.auto_box
 		autoboxer.auto_box(boxable,False)
+		# new method to determine ctf...
+		autoboxer.auto_ctf(boxable)
+		# XXX: ctf values of particles need to be set somewhere....!
 		if options.write_coord_files:
 			boxable.write_coord_file(-1,options.force)
 		if options.write_box_images:
@@ -3367,12 +3413,20 @@ class EMBoxerModulePanel(QtGui.QWidget):
 		self.ctf_overlap_size = QtGui.QLineEdit("50", self)	
 		pawel_grid1.addWidget( self.ctf_overlap_size , 6,1 )		
 
+		pawel_grid1.addWidget( QtGui.QLabel("F_stop:"), 8,0 )
+		self.ctf_f_stop = QtGui.QLineEdit("8", self)	
+		pawel_grid1.addWidget( self.ctf_f_stop , 8,1 )		
+
+		pawel_grid1.addWidget( QtGui.QLabel("F_start:"), 7,0 )
+		self.ctf_f_start = QtGui.QLineEdit("80", self)	
+		pawel_grid1.addWidget( self.ctf_f_start , 7,1 )		
+
 		self.ctf_button =  QtGui.QPushButton("Estimate CTF")
-		pawel_grid1.addWidget( self.ctf_button, 7, 0)
+		pawel_grid1.addWidget( self.ctf_button, 9, 0)
 		self.connect(self.ctf_button,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
 
 		self.inspect_button =  QtGui.QPushButton("Inspect CTF")
-		pawel_grid1.addWidget( self.inspect_button, 7, 1)
+		pawel_grid1.addWidget( self.inspect_button, 9, 1)
 		self.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
 		self.ctf_inspector = None
 		self.ctf_inspector_gone=True
@@ -3450,6 +3504,8 @@ class EMBoxerModulePanel(QtGui.QWidget):
 			ctf_window_size = int(self.ctf_window_size.text())
 			ctf_edge_size = int(self.ctf_edge_size.text())
 			ctf_overlap_size = int(self.ctf_overlap_size.text())
+			ctf_f_start = int(self.ctf_f_start.text())
+			ctf_f_stop = int(self.ctf_f_stop.text())
 		except ValueError,extras:
 			# conversion of a value failed!
 			print "integer conversion failed."
@@ -3477,10 +3533,17 @@ class EMBoxerModulePanel(QtGui.QWidget):
 
 		print "determine ctf"
 		from morphology import defocus_gett
-		ctf = defocus_gett(avg_sp)
+		ctf = defocus_gett(avg_sp,Pixel_size=4.84,f_start=ctf_f_start,f_stop=ctf_f_stop)
 		del avg_sp
 		
 		print "CTF estimation done"
+		print ctf
+
+		#XXX: insert f_stop & f_start boxes
+		#XXX: update ctf inspector
+
+
+
 	# XXX
 	# --------------------
 

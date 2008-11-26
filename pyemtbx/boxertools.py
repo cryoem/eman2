@@ -2699,18 +2699,41 @@ class PawelAutoBoxer(AutoBoxer):
 	'''
 	This is an autoboxer that encapsulates the boxing approach first developed in SwarmPS
 	'''
-	def __init__(self,parent):
+
+	def __init__(self,parent,dict=None):
 		AutoBoxer.__init__(self)
 		self.parent = parent
-		self.box_size = 128
-		self.pixel_input = 1.0
-		self.pixel_output = 1.0
-		self.frequency_cutoff = 0
-		self.window_size_min = 15
-		self.gauss_width = 1.0
-		self.use_variance = True
-		self.invert = False
+                
+                self.box_size = 128
+                self.pixel_input = 1.0
+                self.pixel_output = 1.0
+                self.frequency_cutoff = 0
+                self.window_size_min = 15
+                self.gauss_width = 1.0
+                self.use_variance = True
+                self.invert = False
 
+                # default values for ctf:
+                self.ctf_fstart = 80
+                self.ctf_fstop = 8
+                self.ctf_window = 512
+                self.ctf_edge = 0
+                self.ctf_overlap = 50
+
+                if not(dict is None):
+                    # assume the dictionary uses variable names as keys, so we loop over all
+                    #    keys
+                    for key in dict.keys():
+                        try:
+                            # and set our contents according to the dict
+                            self.__dict__[key] = dict[key]
+                        except:
+                            # error. just ignore.
+                            pass
+                    
+
+                    
+  
 	#### Functions that must be supplied so the ImageProcParamsMediator works
 	def get_subsample_rate(self):
 		return self.pixel_input/self.pixel_output
@@ -2836,6 +2859,37 @@ class PawelAutoBoxer(AutoBoxer):
 		self.write_to_db( True )
 		print "nbox, boxable.numbox: ", len(boxes), boxable.num_boxes()
 
+        # auto_ctf is meant to be called for batch only...
+        def auto_ctf(self,boxable):
+            print "auto ctf"
+            # get image
+            image_name = boxable.get_image_name()
+            # XXX: cache in batch mode??
+            img = BigImageCache.get_image_directly( image_name )
+
+            print "determine power spectrum"
+            from fundamentals import welch_pw2
+            # XXX: check image dimensions, especially box size for welch_pw2!
+            power_sp = welch_pw2(img,win_size=self.ctf_window,overlp_x=self.ctf_overlap,overlp_y=self.ctf_overlap,
+                                 edge_x=self.ctf_edge,edge_y=self.ctf_edge)
+            del img,image_name
+            
+            print "averaging power spectrum"
+            from fundamentals import rot_avg_table
+            avg_sp = rot_avg_table(power_sp)
+            del power_sp
+            
+            print "determine ctf"
+            from morphology import defocus_gett
+            # XXX: self.pixel_output??
+            ctf = defocus_gett(avg_sp,Pixel_size=self.pixel_input,f_start=self.ctf_fstart,f_stop=self.ctf_fstop)
+            del avg_sp
+            
+            print "CTF estimation done:"
+            print ctf
+            
+            
+
 	def run(self, imgname, boxable=None):
 		from sparx import get_im, filt_gaussl, filt_gaussh
 		print "running Gauss Convolution: "
@@ -2863,6 +2917,7 @@ class PawelAutoBoxer(AutoBoxer):
 		img = SincBlackmanSubsampleCache.get_image(boxable.get_image_name(),self.get_params_mediator())
 		BigImageCache.get_object(boxable.get_image_name()).register_alternate(img)
 
+                [avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
 		img -= avg
 		img /= sigma
 		print "stat: ",avg,sigma
