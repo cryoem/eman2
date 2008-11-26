@@ -49,14 +49,14 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",     type="float",        default=-1,    help="  radius < int(nx/2)-1 (set to int(nx/2)-1)")
 	parser.add_option("--delta",  type="float",        default=2,     help="  angular bracket (set to 2)")
+	parser.add_option("--center", type="float",        default=-1,    help="  -1 - average centering method (default) 0 - if you do not want the volume to be centered, 1 - center the volume using cog")
 	parser.add_option("--maxit",  type="int",          default=10,    help="  maximum number of iterations (set to 10) ")
-	parser.add_option("--center", type="float",  default= 1,                  help="  0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=1)")
 	parser.add_option("--CTF",    action="store_true", default=False, help="  Consider CTF correction during the alignment ")
-	parser.add_option("--debug",  action="store_true", default=False, help="  Debug printout ")
 	parser.add_option("--snr",    type="float", 	   default=1,     help="  SNR > 0.0 (set to 1.0)")
 	parser.add_option("--sym",    type="string",       default="c1",  help="  symmetry group (set to c1)")
-	parser.add_option("--function", type="string", default="ref_ali3d",         help="  name of the reference preparation function")
 	parser.add_option("--chunk",  type="float",        default=1.0,   help="  chunk of data after which the 3D will be updated 0<chunk<=1.0 (set to 1.0) ")
+	parser.add_option("--function", type="string", default="ref_ali3d",         help="  name of the reference preparation function")
+	parser.add_option("--debug",  action="store_true", default=False, help="  Debug printout ")
 	parser.add_option("--MPI",    action="store_true", default=False, help="  whether using MPI version ")
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 3 or len(args) > 4):
@@ -74,7 +74,7 @@ def main():
 	   		sys.argv = mpi_init(len(sys.argv), sys.argv)
 		from applications import ali3d_e
 		global_def.BATCH = True
-		ali3d_e(args[0], args[1], args[2], mask, options.ou, options.delta, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk, parse_user_function(options.function), options.MPI, options.debug)
+		ali3d_e(args[0], args[1], args[2], mask, options.ou, options.delta, options.center, options.maxit, options.CTF, options.snr, options.sym, options.chunk, parse_user_function(options.function), options.debug, options.MPI)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
