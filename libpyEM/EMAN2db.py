@@ -163,7 +163,10 @@ def db_check_dict(url,readonly=True):
 def db_list_dicts(url):
 	"""Gives a list of available databases (dicts) at a given path. No '#' specification should be given."""
 	path,dictname,keys=db_parse_path(url)
+	
+	if not "#" in url : path=path+"/"+dictname
 
+#	if path=="." and dictname!="" : path=dictname
 	try:
 		ld=os.listdir(path+"/EMAN2DB")
 	except: return []
