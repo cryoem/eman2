@@ -177,7 +177,7 @@ def db_list_dicts(url):
 ##########
 def db_emd_init(self,*parms):
 	try :
-		if len(parms)==2 and parms[0][:4].lower()=="bdb:":
+		if len(parms)<4 and parms[0][:4].lower()=="bdb:":
 			self.__initc()
 			self.read_image(*parms)
 			return
