@@ -333,7 +333,6 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		glPopMatrix()
 
 	def specify_colors(self,colors):
-		print colors
 		self.colors_specified = True
 		self.specified_colors = colors
 
@@ -435,13 +434,11 @@ class EM3DSymViewerModule(EMImage3DGUIModule):
 		self.eulers = eulers
 		if not self.colors_specified: self.point_colors = []
 		else: self.point_colors = self.specified_colors
-		print "self point colors are", len(self.point_colors)
 		self.points = []
 		for i in eulers:
 			p = i.transpose()*Vec3f(0,0,self.radius)
 			self.points.append(p)
 			if not self.colors_specified: self.point_colors.append((0.34615, 0.3143, 0.0903,1))
-		print "self point colors are", len(self.point_colors)
 		self.make_sym_dl_list(self.points,self.point_colors,eulers)
 	
 	def set_sym(self,sym):

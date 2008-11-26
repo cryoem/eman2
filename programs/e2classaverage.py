@@ -494,6 +494,7 @@ def main():
 		dx.write_image(options.resultmx,-1)
 		dy.write_image(options.resultmx,-1)
 		da.write_image(options.resultmx,-1)
+		dflip.write_image(options.resultmx,-1)
 		
 	
 	E2end(logger)

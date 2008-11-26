@@ -40,7 +40,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import weakref
 from optparse import OptionParser
-from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData
+from EMAN2 import Util, E2init, E2end,EMANVERSION,is_2d_image_mx, EMUtil, db_open_dict, EMData, Transform
 from emimagemx import EMImageMXModule
 import os
 import sys
@@ -139,13 +139,21 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <class image>
 	
-Asymmetric unit viewer for EMAN2."""
+Asymmetric unit viewer for EMAN2.
+
+For example:
+
+e2au.py --averages=classes.hdf --sym=d4 --clsdb=refine_1 --particles=bdb:starting_data#ptcls --alignment=result.hdf
+"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_option("--sym",type="string",help="Guiding symmetry",default="icos")
 	parser.add_option("--projections",type="string",help="File containing projections",default=None)
 	parser.add_option("--averages",type="string",help="File containing averages",default=None)
+	parser.add_option("--clsdb",type="string",help="Directory containing classification idx information",default=None)
+	parser.add_option("--particles",type="string",help="Particle data file name",default=None)
+	parser.add_option("--alignment",type="string",help="result matrix produced by e2classaverage",default=None)
 	
 	(options, args) = parser.parse_args()
 	
@@ -199,6 +207,9 @@ Asymmetric unit viewer for EMAN2."""
 		
 	window.projection_file = options.projections
 	window.average_file = options.averages
+	window.particle_file = options.particles
+	window.alignment_file = options.alignment
+	window.clsdb = options.clsdb
 	window.set_sym(options.sym)
 	em_app.show()
 	em_app.execute()
@@ -349,6 +360,19 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 		self.projection_file = None
 		self.average_file = None
 		self.mx_viewer = None
+		self.mx_particle_viewer = None
+		self.clsdb = None
+		self.particle_file = None
+		self.alignment_file = None
+		self.dx = None
+		self.dy = None
+		self.da = None
+		self.dflip = None
+		self.classes = None
+		
+		self.average = None
+		self.projection = None
+		self.class_idx = None
 		#self.mousePressEvent = InputEventsManager.mousePressEvent
 		
 	def set_projection_file(self,projection_file): self.projection_file = projection_file
@@ -366,33 +390,101 @@ class EMAsymmetricUnitViewer(InputEventsManager,EM3DSymViewerModule):
 	
 	def au_point_selected(self,i):
 		try:
-			a = EMData(self.projection_file,i)
-		except: a = None
+			self.projection = EMData(self.projection_file,i)
+		except: self.projection = None
 		
 		try:
-			b = EMData(self.average_file,i)
-			if a == None:
+			self.average = EMData(self.average_file,i)
+			if self.projection == None:
 				try:
-					a = EMData(b.get_attr("projection_image"),b.get_attr("projection_image_idx"))
+					self.projection = EMData(self.average.get_attr("projection_image"),self.average.get_attr("projection_image_idx"))
 				except:
-					a = None
-		except: b = None
-		if a == None and b == None: return
+					self.projection = None
+					
+				try:
+					self.class_idx = self.average.get_attr("projection_image_idx")
+				except:
+					self.class_idx = -1
+		except: self.average = None
+		if self.projection  == None and self.average == None: return
 		
 		first = False
 		if self.mx_viewer == None:
 			first = True
 			self.mx_viewer = EMImageMXModule(data=None,application=self.application())
+			self.mx_viewer.set_mouse_mode("app" )
+			self.connect(self.mx_viewer,QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			self.application().show_specific(self.mx_viewer)
 			
 		
 		disp = []
-		if a != None: disp.append(a)
-		if b != None: disp.append(b)
+		if self.projection != None: disp.append(self.projection)
+		if self.average != None: disp.append(self.average)
 
 		self.mx_viewer.set_data(disp)
 		if first: self.mx_viewer.optimally_resize()
 		self.mx_viewer.updateGL()
+		
+		if self.mx_particle_viewer != None:
+			self.mx_image_selected(None,None)
+		
+	def mx_image_selected(self,event,lc):
+		if lc != None: self.sel = lc[0]
+		if self.clsdb != None and self.particle_file != None and self.class_idx > -1:
+			class_db = db_open_dict("bdb:"+self.clsdb+"#e2classaverage.indices")
+			indices = class_db[str(self.class_idx)]
+			mx = []
+			for val in indices:
+				mx.append(EMData(self.particle_file,val))
+			
+			first = False
+			if self.mx_particle_viewer == None:
+				first = True
+				self.mx_particle_viewer = EMImageMXModule(data=None,application=self.application())
+				self.application().show_specific(self.mx_particle_viewer)
+			
+			
+			if self.sel== 0 or self.alignment_file == None:
+				self.mx_particle_viewer.set_data(mx)
+			else:
+				self.check_images_in_memory()
+				for i,idx in enumerate(indices):
+					index = -1
+					for j in range(self.classes.get_xsize()):
+						if int(self.classes.get(j,idx)) == self.class_idx:
+							index = j
+							break
+					if index == -1:
+						print "couldn't find"
+						return
+				
+					x = self.dx.get(index,idx)
+					y = self.dy.get(index,idx)
+					a = self.da.get(index,idx)
+					m = self.dflip.get(index,idx)
+					
+					t = Transform({"type":"2d","alpha":a,"mirror":int(m)})
+					t.set_trans(x,y)
+					mx[i].transform(t)
+				self.mx_particle_viewer.set_data(mx)
+
+			if first: self.mx_particle_viewer.optimally_resize()
+			self.mx_particle_viewer.updateGL()
+		
+	def check_images_in_memory(self):
+		if self.alignment_file != None:
+			if self.dx == None:
+				self.dx = EMData(self.alignment_file,2)
+			if self.dy == None:
+				self.dy = EMData(self.alignment_file,3)
+			if self.da == None:
+				self.da = EMData(self.alignment_file,4)
+			if self.dflip == None:
+				self.dflip  = EMData(self.alignment_file,5)
+			if self.classes == None:
+				self.classes  = EMData(self.alignment_file,0)
+			
+		
 	def set_events_mode(self,mode):
 		if not self.events_handlers.has_key(mode):
 			print "error, unknown events mode", mode
