@@ -1110,7 +1110,7 @@ namespace EMAN
 	class file_store
 	{
 	  public: 
-		file_store(const string& filename, int npad, int write);
+		file_store(const string& filename, int npad, int write, bool CTF);
 
 		virtual ~file_store();
 
@@ -1125,6 +1125,7 @@ namespace EMAN
 		shared_ptr<std::ofstream> m_txt_ohandle;
 		string m_bin_file;
 		string m_txt_file;
+		int m_ctf;
 		int m_npad;
 		int m_prev;
 		int m_x_out;

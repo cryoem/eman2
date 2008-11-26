@@ -3659,10 +3659,11 @@ void newfile_store::restart()
     m_bin_if = shared_ptr< ifstream>( new ifstream(m_bin_file.c_str(), std::ios::in|std::ios::binary) );
 } 
                 
-file_store::file_store(const string& filename, int npad, int write)
+file_store::file_store(const string& filename, int npad, int write, bool ctf)
     : m_bin_file(filename + ".bin"), 
       m_txt_file(filename + ".txt")
 {
+    m_ctf = ctf;
     m_prev = -1;
     m_npad = npad;
     m_write = write;
@@ -3683,7 +3684,10 @@ void file_store::add_image( EMData* emdata, const Transform& tf )
     {
         m_bin_ohandle = shared_ptr< ofstream >( new ofstream(m_bin_file.c_str(), std::ios::out | std::ios::binary) );
         m_txt_ohandle = shared_ptr< ofstream >( new ofstream(m_txt_file.c_str() ) );
-        *m_txt_ohandle << "#Cs pixel voltage ctf_applied amp_contrast defocus phi theta psi" << std::endl;
+        if( m_ctf )
+		 *m_txt_ohandle << "Cs pixel voltage ctf_applied amp_contrast defocus ";
+
+	*m_txt_ohandle << "phi theta psi" << std::endl;
     }
 
     m_x_out = padfft->get_xsize();
@@ -3691,16 +3695,19 @@ void file_store::add_image( EMData* emdata, const Transform& tf )
     m_z_out = padfft->get_zsize();
     m_totsize = m_x_out*m_y_out*m_z_out;
 
-    Ctf* ctf = padfft->get_attr( "ctf" );
-    Dict ctf_params = ctf->to_dict();
+    if( m_ctf )
+    {
+        Ctf* ctf = padfft->get_attr( "ctf" );
+        Dict ctf_params = ctf->to_dict();
 
-    m_ctf_applied = padfft->get_attr( "ctf_applied" );
+        m_ctf_applied = padfft->get_attr( "ctf_applied" );
 
-    m_Cs = ctf_params["cs"];
-    m_pixel = ctf_params["apix"];
-    m_voltage = ctf_params["voltage"];
-    m_amp_contrast = ctf_params["ampcont"];
-    m_defocuses.push_back( ctf_params["defocus"] );
+        m_Cs = ctf_params["cs"];
+        m_pixel = ctf_params["apix"];
+        m_voltage = ctf_params["voltage"];
+        m_amp_contrast = ctf_params["ampcont"];
+        m_defocuses.push_back( ctf_params["defocus"] );
+    }
 
     Dict params = tf.get_rotation( "spider" );
     float phi = params.get( "phi" );
@@ -3716,12 +3723,15 @@ void file_store::add_image( EMData* emdata, const Transform& tf )
     {
         m_bin_ohandle->write( (char*)data, sizeof(float)*m_totsize );
 
-        *m_txt_ohandle << m_Cs << " ";
-        *m_txt_ohandle << m_pixel << " ";
-        *m_txt_ohandle << m_voltage << " ";
-        *m_txt_ohandle << m_ctf_applied << " ";
-        *m_txt_ohandle << m_amp_contrast << " ";
-        *m_txt_ohandle << m_defocuses.back() << " ";
+        if( m_ctf )
+        {
+            *m_txt_ohandle << m_Cs << " ";
+            *m_txt_ohandle << m_pixel << " ";
+            *m_txt_ohandle << m_voltage << " ";
+            *m_txt_ohandle << m_ctf_applied << " ";
+            *m_txt_ohandle << m_amp_contrast << " ";
+            *m_txt_ohandle << m_defocuses.back() << " ";
+        }
         *m_txt_ohandle << m_phis.back() << " ";
         *m_txt_ohandle << m_thetas.back() << " ";
         *m_txt_ohandle << m_psis.back() << " ";
@@ -3738,7 +3748,7 @@ void file_store::add_image( EMData* emdata, const Transform& tf )
 void file_store::get_image( int id, EMData* padfft )
 {
 
-    if( m_defocuses.size() == 0 ) {
+    if( m_phis.size() == 0 ) {
         ifstream m_txt_ifs( m_txt_file.c_str() );
 
 	if( !m_txt_ifs )
@@ -3749,14 +3759,27 @@ void file_store::get_image( int id, EMData* padfft )
 	string line;
 	std::getline( m_txt_ifs, line );
 
-        float defocus, phi, theta, psi;
+        float first, defocus, phi, theta, psi;
 
-        while( m_txt_ifs >> m_Cs ) {
-            m_txt_ifs >> m_pixel >> m_voltage;
-            m_txt_ifs >> m_ctf_applied >> m_amp_contrast;
-            m_txt_ifs >> defocus >> phi >> theta >> psi;
+        
+
+        while( m_txt_ifs >> first ) {
+
+            if( m_ctf )
+            {
+                m_Cs = first;
+                m_txt_ifs >> m_pixel >> m_voltage;
+                m_txt_ifs >> m_ctf_applied >> m_amp_contrast;
+                m_txt_ifs >> defocus >> phi >> theta >> psi;
+                m_defocuses.push_back( defocus );
+            }
+            else
+            {
+                phi = first;
+                m_txt_ifs >> theta >> psi;
+            }
+
             m_txt_ifs >> m_x_out >> m_y_out >> m_z_out >> m_totsize;
-            m_defocuses.push_back( defocus );
             m_phis.push_back( phi );
             m_thetas.push_back( theta );
             m_psis.push_back( psi );
@@ -3802,12 +3825,16 @@ void file_store::get_image( int id, EMData* padfft )
     m_ihandle->read( data, sizeof(float)*m_totsize );
     padfft->update();
 
-    padfft->set_attr( "Cs", m_Cs );
-    padfft->set_attr( "Pixel_size", m_pixel );
-    padfft->set_attr( "voltage", m_voltage );
-    padfft->set_attr( "ctf_applied", m_ctf_applied );
-    padfft->set_attr( "amp_contrast", m_amp_contrast );
-    padfft->set_attr( "defocus", m_defocuses[id] );
+    if( m_ctf )
+    {
+        padfft->set_attr( "Cs", m_Cs );
+        padfft->set_attr( "Pixel_size", m_pixel );
+        padfft->set_attr( "voltage", m_voltage );
+        padfft->set_attr( "ctf_applied", m_ctf_applied );
+        padfft->set_attr( "amp_contrast", m_amp_contrast );
+        padfft->set_attr( "defocus", m_defocuses[id] );
+    }
+
     padfft->set_attr( "padffted", 1 );
     padfft->set_attr( "phi", m_phis[id] );
     padfft->set_attr( "theta", m_thetas[id] );
