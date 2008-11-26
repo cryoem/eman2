@@ -2483,7 +2483,7 @@ def get_ctf(ima):
 	
 	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont
 
-def gen_ctf(p):
+def generate_ctf(p):
 	from EMAN2 import EMAN2Ctf
 
 	defocus = p[0]
@@ -2505,7 +2505,7 @@ def gen_ctf(p):
 	return ctf
 
 def set_ctf(ima, p):
-	ctf = get_ctf( p )
+	ctf = generate_ctf( p )
 	ima.set_attr( "ctf", ctf )	
 
 
