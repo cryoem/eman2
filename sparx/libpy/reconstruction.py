@@ -469,7 +469,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 	if media=="memory" :
 		store = memory_store(npad)
 	else :
-		store = file_store(media,npad, 0)
+		store = file_store(media,npad, 0, CTF)
 		if not(output is None):
 			output.flush()
 
@@ -527,14 +527,14 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 				psi_j = img_j.get_attr( "psi" )
 				tra_j = Transform( {"type":"spider", "phi":phi_j, "theta":tht_j, "psi":psi_j} )
 
-				cs = img_j.get_attr( "Cs" )
-				pixel   = img_j.get_attr( "Pixel_size" )
-				defocus = img_j.get_attr( "defocus" )
-				voltage = img_j.get_attr( "voltage" )
-				ampcont = img_j.get_attr( "amp_contrast" )
-				bfactor = 0.0
-
-				set_ctf( img_j, [defocus, cs, voltage, pixel, bfactor, ampcont] )
+				if CTF:
+					cs = img_j.get_attr( "Cs" )
+					pixel   = img_j.get_attr( "Pixel_size" )
+					defocus = img_j.get_attr( "defocus" )
+					voltage = img_j.get_attr( "voltage" )
+					ampcont = img_j.get_attr( "amp_contrast" )
+					bfactor = 0.0
+					set_ctf( img_j, [defocus, cs, voltage, pixel, bfactor, ampcont] )
         		
 		    		r.insert_slice(img_j, tra_j)
 

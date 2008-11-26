@@ -8113,7 +8113,7 @@ def varimax(input_stack, imglist, output_stack, mask_radius, verbose ) :
 		vec.write_image( output_stack, iout)
 		iout = iout + 1
 
-def bootstrap_genbuf(prj_stack, buf_prefix, verbose, MPI=False):
+def bootstrap_genbuf(prj_stack, buf_prefix, verbose, CTF=False, MPI=False):
 	from EMAN2 import file_store
 	import string
 	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_init
@@ -8128,7 +8128,7 @@ def bootstrap_genbuf(prj_stack, buf_prefix, verbose, MPI=False):
 		size = 1
 		myid = 0
 
-	store = file_store(buf_prefix, npad, 1)
+	store = file_store(buf_prefix, npad, 1, CTF)
 
 	if verbose != 0 :
 		mystatus = "genbuf%4d.txt" % ( myid )

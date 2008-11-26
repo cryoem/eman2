@@ -35,7 +35,7 @@ from   global_def import *
 import sys
 from   optparse import OptionParser
 import os
-from utilities import getImage
+from utilities import get_image
 def main():
 
 	arglist = []
@@ -63,7 +63,7 @@ def main():
 	fsc_curve = args[2]
 
 	if len(args) == 3: mask = None
-	else:              mask = getImage( args[3] )
+	else:              mask = get_image( args[3] )
 
 	from applications import recons3d_f
 	if options.MPI:
