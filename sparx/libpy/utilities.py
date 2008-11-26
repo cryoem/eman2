@@ -1828,11 +1828,16 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 		drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
 
 
-def estimate_3D_center(ali_params):
+def estimate_3D_center(data):
 	from math import cos, sin, pi
 	from numpy import matrix
 	from numpy import linalg
 	
+	ali_params = []
+	for im in data:
+		phi, theta, psi, s2x, s2y = get_params_proj(im)
+		ali_params.append([phi, theta, psi, s2x, s2y])
+
 	N = len(ali_params)
 	A = []
 	b = []
@@ -1852,6 +1857,7 @@ def estimate_3D_center(ali_params):
 	b_matrix = matrix(b)
 
 	K = linalg.solve(A_matrix.T*A_matrix, A_matrix.T*b_matrix)
+
 	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
 
 
