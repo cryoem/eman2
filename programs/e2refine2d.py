@@ -50,6 +50,7 @@ def main():
 	# and snag a bunch of related code from David
 	
 	#options associated with e2refine2d.py
+	parser.add_option("--path",type="string",default=None,help="Path for the refinement, default=auto")
 	parser.add_option("--iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
 	parser.add_option("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_option("--verbose","-v", type="int", default=0,help="Verbosity of output (1-9)")
@@ -135,6 +136,8 @@ def main():
 		options.normproj="--normproj"
 	else : options.normproj=""
 	
+	if not options.path : options.path=numbered_path("r2d",not options.resume)
+	
 	fit=1
 	if options.resume :
 		while os.access("classes.%02d.hdf"%fit,os.F_OK): fit+=1
@@ -150,7 +153,7 @@ def main():
 		fpfile=options.input[:options.input.rfind(".")]+".fp.hdf"
 		fpfile=fpfile.split("/")[-1]
 		if not os.access(fpfile,os.R_OK) :
-			run("e2proc2d.py %s %s --fp --verbose=%d %s"%(options.input,fpfile,subverbose,parstr))
+			run("e2proc2d.py %s %s --fp --verbose=%d --inplace %s"%(options.input,fpfile,subverbose,parstr))
 		
 		# MSA on the footprints
 		fpbasis=options.input[:options.input.rfind(".")]+".fp.basis.hdf"
