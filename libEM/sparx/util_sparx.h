@@ -32,13 +32,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  */
- 
-/** This file is a part of util.h, 
+
+/** This file is a part of util.h,
  * To use this file's functions, you should include "util.h"
  * NEVER directly include this file */
- 
+
 #ifndef util__sparx_h__
-#define util__sparx_h__ 
+#define util__sparx_h__
 
 public:
 
@@ -53,7 +53,7 @@ static void WTM(EMData* PROJ, vector<float> SS,int DIAMETER,int NUMP);
 static void WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> exptable);
 
 static Dict CANG(float PHI, float THETA, float PSI);
- 
+
 static void BPCQ(EMData* B, EMData *CUBE,vector<float> DM);
 
 static vector<float> infomask(EMData* Vol, EMData* mask, bool);
@@ -75,17 +75,17 @@ static Dict im_diff(EMData* V1, EMData* V2, EMData* mask=0);
  * @param flag
  * @param[in] alphaDeg the projection angle
  * @return The 2D test pattern in real space, fourier space,
- *               or the projection in real or fourier space 
+ *               or the projection in real or fourier space
  *               or the FH of the pattern
 */
-static EMData* TwoDTestFunc(int Size, float p, float q,  float a, float b, 
+static EMData* TwoDTestFunc(int Size, float p, float q,  float a, float b,
                    int flag=0, float alphaDeg=0); //PRB
 
 
 /** Given a tabulated function y of x (n unordered points), and
  * Given the values of the m values xq to be interpolated
  * This routine returns the interpolated array yq, PRB
- * This function is called by splint 
+ * This function is called by splint
  * @param x
  * @param[in] y of x is the tabulated function of length n
  * @param n
@@ -99,7 +99,7 @@ static void spline_mat(float *x, float *y, int n,  float *xq, float *yq, int m);
  * Given the values of the first derivatives at the end points
  * This routine returns an array y2, that contains the second derivatives
  * of the function at the tabulated points.   PRB
- * This function is called by splint 
+ * This function is called by splint
  * @param x
  * @param[in] y of x is the tabulated function of length n
  * @param n
@@ -109,7 +109,7 @@ static void spline_mat(float *x, float *y, int n,  float *xq, float *yq, int m);
 */
 static void spline(float *x, float *y, int n, float yp1, float ypn, float *y2);
 
-/** Given the arrays xa(ordered, ya of length n, which tabulate a function 
+/** Given the arrays xa(ordered, ya of length n, which tabulate a function
  *  and given the array y2a which is the output of spline and an unordered array xq,
  *  this routine returns a cubic-spline interpolated array yq.
  * @param xa
@@ -120,23 +120,23 @@ static void spline(float *x, float *y, int n, float yp1, float ypn, float *y2);
  * @param[out]  yq are the splined values
  * @param m
 */  // PRB
-static void splint( float *xa, float *ya, float *y2a, int n,  
+static void splint( float *xa, float *ya, float *y2a, int n,
                                      float *xq, float *yq, int m);
 
 
-/** list the sorted lengths of the  integer lattice 
+/** list the sorted lengths of the  integer lattice
  * sites of a square sided image of  size Size. PRB
- * @param[out] PermMatTr  The matrix telling the ordering of the lattice 
+ * @param[out] PermMatTr  The matrix telling the ordering of the lattice
  *                        sites wrt the array
  * @param [out] kValsSorted
  * @param[out] weightofkvalsSorted the number of sites at that distance
- * @param[in] Size The length of the image 
+ * @param[in] Size The length of the image
  * @param [out] SizeReturned
- * 
+ *
  */
 static void Radialize(int *PermMatTr,  float * kValsSorted,
             float *weightofkvalsSorted, int Size, int *SizeReturned);
-		            
+
 
 
 class sincBlackman
@@ -168,7 +168,7 @@ class sincBlackman
  *   instantiated and held in the instance object.)
  *
  *  The I0 version can be tabulated and interpolated upon
- *  demand, but the max error needs to be checked.  The 
+ *  demand, but the max error needs to be checked.  The
  *  "vtable" parameter corresponds to the maximum value of x
  *  for which the I0 window is non-zero.  Setting "vtable"
  *  different from "v" corresponds to a change in units of x.
@@ -178,15 +178,15 @@ class sincBlackman
 
  *
  *  The get_kbsinh_win and get_kbi0_win functions return
- *  single-argument function objects, which is what a 
+ *  single-argument function objects, which is what a
  *  generic routine is likely to want.
  *
  *  @see P. A. Penczek, R. Renka, and H. Schomberg,
  *      J. Opt. Soc. Am. _21_, 449 (2004)
- * 
+ *
  */
 
-class KaiserBessel 
+class KaiserBessel
 {
 	protected:
 		float alpha, v, r; /** Kaiser-Bessel parameters */
@@ -198,13 +198,13 @@ class KaiserBessel
 		float dtable; /** table spacing */
 		float alphar; /** alpha*r */
 		float fac; /** 2*pi*alpha*r*v */
-		float vadjust; 
+		float vadjust;
 		float facadj; /** 2*pi*alpha*r*vadjust */
 		virtual void build_I0table(); /** Tabulate I0 window for speed */
 		float fltb;
 	public:
 		KaiserBessel(float alpha_, int K, float r_,
-				     float v_, int N_, float vtable_=0.f, 
+				     float v_, int N_, float vtable_=0.f,
 					 int ntable_ = 5999);
 		virtual ~KaiserBessel() {};
 		/** Compute the maximum error in the table */
@@ -242,7 +242,7 @@ class KaiserBessel
 			int get_window_size() const {return kb.get_window_size();}
 		};
 		/** Sinh window function object factory */
-		kbsinh_win get_kbsinh_win() { 
+		kbsinh_win get_kbsinh_win() {
 			return kbsinh_win(*this);
 		}
 		/** I0 window function object */
@@ -256,7 +256,7 @@ class KaiserBessel
 			int get_window_size() const {return kb.get_window_size();}
 		};
 		/** I0 window function object factory */
-		kbi0_win get_kbi0_win() { 
+		kbi0_win get_kbi0_win() {
 			return kbi0_win(*this);
 		}
 };
@@ -265,7 +265,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	public:
 		FakeKaiserBessel(float alpha, int K, float r_,
 				         float v_, int N_, float vtable_=0.f,
-						 int ntable_ = 5999) 
+						 int ntable_ = 5999)
         : KaiserBessel(alpha, K, r_, v_, N_, vtable_, ntable_) {
 			build_I0table();
 		}
@@ -297,7 +297,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *
 		 *@see M. Abramowitz & I.E. Stegun, Handbook of Mathematical
 		 *     Functions (Dover, New York, 1964), Sec. 25.2.67.
-		 *     http://www.math.sfu.ca/~cbm/aands/page_882.htm.
+		 *     http://www.math.sfu.ca/~cbm/aands/page_882.htm
 		 *
 		 *@see http://www.cl.cam.ac.uk/users/nad/pubs/quad.pdf
 		 *
@@ -314,7 +314,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *	f0 - f4 are image values near the interpolated point X.
 		 *	f0 is the interior mesh point nearest x.
 		 *
-		 *	Coords:  
+		 *	Coords:
 		 *@li        f0 = (x0, y0)
 		 *@li        f1 = (xb, y0)
 		 *@li        f2 = (xa, y0)
@@ -322,7 +322,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *@li        f4 = (x0, ya)
 		 *@li        fc = (xc, yc)
 		 *
-		 *	Mesh spacings: 
+		 *	Mesh spacings:
 		 *@li              hxa -- x- mesh spacing to the left of f0
 		 *@li              hxb -- x- mesh spacing to the right of f0
 		 *@li              hyb -- y- mesh spacing above f0
@@ -342,11 +342,11 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *	@return Interpolated value
 		 */
 		static float quadri(float x, float y, int nx, int ny, float* image);
-		
+
 		static float get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb);
-		
+
 		static std::complex<float> extractpoint2(int nx, int ny, float nuxnew, float nuynew, EMData *fimage, Util::KaiserBessel& kb);
-		
+
 		/*static float quadris(float x, float y, int nx, int ny, float* image);*/
 		static float bilinear(float xold, float yold, int nsam, int nrow, float* xim);
 
@@ -408,7 +408,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		Crosrng_ew is the one that you could apply weights to different rings
 		Crosrng_ms assumes the user already apply weights to circ1, it also returns both
 		           straight and mirrored positions simultaneously.
-	        Crosrng_msg differs from the previous ones in that it returns the cross-correlation 
+	        Crosrng_msg differs from the previous ones in that it returns the cross-correlation
 			    function entirely instead of the peak value and position, thus makes it
 			    possible to use the gridding method to determine the peak position
 	        Crosrng_msg_s is same as Crosrng_msg except that it only checks straight position
@@ -416,22 +416,22 @@ class FakeKaiserBessel : public KaiserBessel {
 	  */
 	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
 	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
-	    	   
+
 	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
 	static Dict Crosrng_ns(EMData* circ1, EMData* circ2, vector<int> numr);
-	    		    
+
 	static EMData* Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr);
 	static void Crosrng_msg_vec(EMData* circ1, EMData* circ2, vector<int> numr, float *q, float *t);
 	static EMData* Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr);
 	static EMData* Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr);
 
 	static void  prb1d(double *b, int npoint, float *pos);
-		
+
 	static void update_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
 	static void sub_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
 
 	static float ener(EMData* ave, vector<int> numr);
-	
+
 	static float ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float> tot);
 
         static Dict min_dist(EMData* im, const vector<EMData*>& data);
@@ -441,38 +441,38 @@ class FakeKaiserBessel : public KaiserBessel {
         static vector<double> cml_line_in3d_iagl(const vector<float>& Ori, float phi, float theta, int iprj);
 
         static vector<double> cml_weights(const vector<float>& cml);
-      
+
         static vector<float> cml_spin(int n_psi, int i_prj, int n_prj, vector<float> weights, vector<int> com, const vector<EMData*>& data);
 
         static vector<int> cml_line_pos(float phi1, float theta1, float psi1, float phi2, float theta2, float psi2, int nangle);
 
         static vector<int> cml_list_line_pos(vector<float> Ori, float newphi, float newtheta, int i_prj, int n_prj, int nangle, int nlines);
-        
+
 	/* Decimates the image with respect to the image center.
-	 * (i.e) the center of the original image is kept the same 
-	 * and then the initial start pixel is calculated with respect to the 
+	 * (i.e) the center of the original image is kept the same
+	 * and then the initial start pixel is calculated with respect to the
 	 * center of the image
 	 * @params(image, x-pixel, y-pixel,z-pixel)
 	 * works for all 3 dimensions
 	**/
 	static EMData* decimate(EMData* img, int x_step,int y_step=1,int z_step=1);
-	
+
 	static EMData* window(EMData* img,int new_nx ,int new_ny=1, int new_nz=1, int x_offset=0, int y_offset=0, int z_offset=0);
 
 	static EMData* pad(EMData* img, int new_nx, int new_ny=1, int new_nz=1, int x_offset=0, int y_offset=0, int z_offset=0, char *params="average");
 
 	static vector<float> histogram(EMData* image, EMData* mask, int nbins = 128, float hmin =0.0f, float hmax = 0.0f );
-	
+
 	static Dict histc(EMData *ref,EMData *img,EMData *mask);
-	
+
 	static float hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min);
 
 
-	/* The unit in the ctf function: dz: Angstrom, cs: CM  Ps: Angstrom, Voltage: Kv,dza: Angstrom, azz: degree wgh: None unit. b_factor: Angstrom^2 
+	/* The unit in the ctf function: dz: Angstrom, cs: CM  Ps: Angstrom, Voltage: Kv,dza: Angstrom, azz: degree wgh: None unit. b_factor: Angstrom^2
 	 The CTF function takes form of   *sin(-quadpi*(dz*lambda*ak^2-cs*lambda^3*ak^4/2.)-wgh)*exp(-b_factor*ak^2)*sign
           * sign can be set as +1 or -1 . The unit of frequency ak is 1/Angstrom
                   Attention: Envelope function in power spectrum has a form of exp(-b_factor*ak^2)
-                                          */ 
+                                          */
 	static float   tf(float dzz, float ak, float voltage = 300.0f, float cs = 2.0f, float wgh = 0.1f, float b_factor = 0.0f, float sign = -1.0f);
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);
@@ -502,7 +502,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static bool cmp2(tmpstruct tmp1,tmpstruct tmp2);
 	/**********************************************************/
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
-	static int trmsh3_(int *n0, double *tol, double *x, double *y, double *z__, int *n, int *list, int *lptr, 
+	static int trmsh3_(int *n0, double *tol, double *x, double *y, double *z__, int *n, int *list, int *lptr,
 	       int *lend, int *lnew, int *indx, int *lcnt, int *near__, int *next, double *dist, int *ier);
 	static double areav_(int *k, int *n, double *x, double *y, double *z__, int *list, int *lptr, int *lend, int *ier);
 	/**********************************************************/
@@ -511,7 +511,7 @@ class FakeKaiserBessel : public KaiserBessel {
     /*  Various operation on images */
 	/* out = img + scalar * img1  */
 	static EMData* madn_scalar(EMData* img, EMData* img1, float scalar);
-	/* out = scalar * img  */	
+	/* out = scalar * img  */
 	static EMData* mult_scalar(EMData* img, float scalar);
 	/* out = img + img1  */
 	static EMData* addn_img(EMData* img, EMData* img1);
@@ -524,7 +524,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	/* img /= Re(img1) with zero check  */
 	static EMData* divn_filter(EMData* img, EMData* img1);
 
-	/* img += scalar * img1 */	
+	/* img += scalar * img1 */
 	static void mad_scalar(EMData* img, EMData* img1, float scalar);
 	/* img *= scalar  */
 	static void mul_scalar(EMData* img, float scalar);
@@ -563,19 +563,19 @@ public:
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny, EMData* peaks, EMData* peakm,
 		    int nphi, int ntheta);
-*/		
+*/
 	static vector<float> twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys);
-	
+
 	static vector<float> twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sxs, float sys);
-	
+
 	static vector<float> twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData *refim, EMData* mask, float phi, float theta, float psi, float sxs, float sxy);
-	
+
 	static vector<float> twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys);
 
 	static float ccc_images(EMData *, EMData *, EMData *, float , float , float );
 
 	static vector<float> twoD_fine_ali_SD_G(EMData* image, EMData *refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sxs, float sys);
-	
+
 	static float ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sx, float sy);
 
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
@@ -584,7 +584,7 @@ public:
 
 	//static EMData* ctf_img(int nx, int ny, int nz, float dz, float ps, float voltage=300.0f,float cs=2.0f,float wgh=0.1f,float b_factor=0.0f,float dza=0.0f,float azz=0.0f,float sign=-1.0f);
 	static EMData* ctf_img(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
-	
+
 	static inline int mono(int k1, int k2) {
 #ifdef _WIN32
 		int  mk = _cpp_max(k1,k2);
@@ -592,14 +592,14 @@ public:
 #else
 		int  mk = std::max(k1,k2);
 		return  std::min(k1,k2) + mk*(mk-1)/2;
-#endif	//_WIN32	
+#endif	//_WIN32
 	}
 
 	static vector<float> cluster_pairwise(EMData* d, int K, float T, float F);
 	//static vector<float> cluster_equalsize(EMData* d, int m);
 	static vector<float> cluster_equalsize(EMData* d);
 	static vector<float> vareas(EMData* d);
-		
+
 	/*
 			To restrict the value to [0, nx)
 	*/
